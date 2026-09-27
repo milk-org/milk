@@ -44,6 +44,14 @@ void ov_cmdlog_push(OV_CMDLOG *log, ov_cmdlog_level_t level, const char *fmt, ..
     vsnprintf(e->msg, OV_CMDLOG_MSG, fmt, ap);
     va_end(ap);
 
+    for (char *p = e->msg; *p != '\0'; p++)
+    {
+        if (*p == '\n' || *p == '\r' || *p == '\t')
+        {
+            *p = ' ';
+        }
+    }
+
     log->head = (log->head + 1) % OV_CMDLOG_MAX;
     if (log->count < OV_CMDLOG_MAX)
     {

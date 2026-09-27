@@ -15,6 +15,8 @@
 
 #include "overview_render_internal.h"
 #include "overview_render_fps_params.h"
+#include "overview_render_loops.h"
+#include "milk_config.h"
 #include <math.h>
 
 
@@ -81,52 +83,81 @@ static int get_fps_rank(const char *name)
     return 999999;
 }
 
-static int sort_stream_by_rank(const void *a, const void *b)
+typedef struct
 {
-    int ra = get_stream_rank(((const OV_STREAM *) a)->name);
-    int rb = get_stream_rank(((const OV_STREAM *) b)->name);
-    if (ra != rb)
-    {
-        return ra - rb;
-    }
-    return strcmp(((const OV_STREAM *) a)->name, ((const OV_STREAM *) b)->name);
-}
+    int         rank;
+    int         orig_idx;
+    const char *name;
+} ov_sort_rank_entry_t;
 
-static int sort_proc_by_rank(const void *a, const void *b)
+static int sort_entry_by_rank(const void *a, const void *b)
 {
-    int ra = get_proc_rank(((const OV_PROC *) a)->name);
-    int rb = get_proc_rank(((const OV_PROC *) b)->name);
-    if (ra != rb)
+    const ov_sort_rank_entry_t *ea = (const ov_sort_rank_entry_t *) a;
+    const ov_sort_rank_entry_t *eb = (const ov_sort_rank_entry_t *) b;
+    if (ea->rank != eb->rank)
     {
-        return ra - rb;
+        return ea->rank - eb->rank;
     }
-    return strcmp(((const OV_PROC *) a)->name, ((const OV_PROC *) b)->name);
-}
-
-static int sort_fps_by_rank(const void *a, const void *b)
-{
-    int ra = get_fps_rank(((const OV_FPS *) a)->name);
-    int rb = get_fps_rank(((const OV_FPS *) b)->name);
-    if (ra != rb)
-    {
-        return ra - rb;
-    }
-    return strcmp(((const OV_FPS *) a)->name, ((const OV_FPS *) b)->name);
+    return strcmp(ea->name, eb->name);
 }
 
 static void ov_apply_rank_sort(OV_MODEL *mm)
 {
-    if (g_nb_stream_order > 0)
+    if (g_nb_stream_order > 0 && mm->nb_streams > 1)
     {
-        qsort(mm->streams, (size_t) mm->nb_streams, sizeof(OV_STREAM), sort_stream_by_rank);
+        static ov_sort_rank_entry_t entries[OV_MAX_STREAMS];
+        for (int i = 0; i < mm->nb_streams; i++)
+        {
+            entries[i].orig_idx = i;
+            entries[i].name     = mm->streams[i].name;
+            entries[i].rank     = get_stream_rank(mm->streams[i].name);
+        }
+        qsort(entries, (size_t) mm->nb_streams, sizeof(ov_sort_rank_entry_t), sort_entry_by_rank);
+
+        static OV_STREAM temp_streams[OV_MAX_STREAMS];
+        memcpy(temp_streams, mm->streams, (size_t) mm->nb_streams * sizeof(OV_STREAM));
+        for (int i = 0; i < mm->nb_streams; i++)
+        {
+            mm->streams[i] = temp_streams[entries[i].orig_idx];
+        }
     }
-    if (g_nb_proc_order > 0)
+
+    if (g_nb_proc_order > 0 && mm->nb_procs > 1)
     {
-        qsort(mm->procs, (size_t) mm->nb_procs, sizeof(OV_PROC), sort_proc_by_rank);
+        static ov_sort_rank_entry_t entries[OV_MAX_PROCS];
+        for (int i = 0; i < mm->nb_procs; i++)
+        {
+            entries[i].orig_idx = i;
+            entries[i].name     = mm->procs[i].name;
+            entries[i].rank     = get_proc_rank(mm->procs[i].name);
+        }
+        qsort(entries, (size_t) mm->nb_procs, sizeof(ov_sort_rank_entry_t), sort_entry_by_rank);
+
+        static OV_PROC temp_procs[OV_MAX_PROCS];
+        memcpy(temp_procs, mm->procs, (size_t) mm->nb_procs * sizeof(OV_PROC));
+        for (int i = 0; i < mm->nb_procs; i++)
+        {
+            mm->procs[i] = temp_procs[entries[i].orig_idx];
+        }
     }
-    if (g_nb_fps_order > 0)
+
+    if (g_nb_fps_order > 0 && mm->nb_fps > 1)
     {
-        qsort(mm->fps, (size_t) mm->nb_fps, sizeof(OV_FPS), sort_fps_by_rank);
+        static ov_sort_rank_entry_t entries[OV_MAX_FPS];
+        for (int i = 0; i < mm->nb_fps; i++)
+        {
+            entries[i].orig_idx = i;
+            entries[i].name     = mm->fps[i].name;
+            entries[i].rank     = get_fps_rank(mm->fps[i].name);
+        }
+        qsort(entries, (size_t) mm->nb_fps, sizeof(ov_sort_rank_entry_t), sort_entry_by_rank);
+
+        static OV_FPS temp_fps[OV_MAX_FPS];
+        memcpy(temp_fps, mm->fps, (size_t) mm->nb_fps * sizeof(OV_FPS));
+        for (int i = 0; i < mm->nb_fps; i++)
+        {
+            mm->fps[i] = temp_fps[entries[i].orig_idx];
+        }
     }
 }
 
@@ -203,6 +234,8 @@ static const char *view_label(ov_view_t v)
         return "FPS";
     case OV_VIEW_GRAPH:
         return "CONN";
+    case OV_VIEW_LOOPS:
+        return "LOOPS";
     default:
         return "";
     }
@@ -323,12 +356,21 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     ov_theme_fg(OV_GRAD_HI);
     ov_buf_printf("%s ", OV_LCARS_RIGHT);
 
+    /* Version / commit tracking */
+    ov_theme_fg(OV_FG_DIM);
+    ov_buf_printf("[%s] ", MILK_GIT_COMMIT);
+
+    /* Shared memory directory */
+    const char *shmdir = ov_get_shmdir();
+    ov_theme_fg(OV_FG_DIM);
+    ov_buf_printf("[shm: %s] ", shmdir);
+
     /* Blinking badge — visible when ctrl_mode is ON, READ ONLY when OFF */
     int ctrl_w = 0;
     if (lay->ctrl_mode)
     {
-        /* Software blinking badge for "CONTROL" (10 fps -> 2Hz blink) */
-        if ((lay->ctrl_blink % 10) < 5)
+        /* Software blinking badge for "CONTROL" (fast 2.5Hz blink) */
+        if ((lay->ctrl_blink % 4) < 2)
         {
             ov_buf_bg(OV_ANIM_PULSE_BG_MAX.r, OV_ANIM_PULSE_BG_MAX.g, OV_ANIM_PULSE_BG_MAX.b);
             ov_buf_fg(OV_ANIM_PULSE_FG_MAX.r, OV_ANIM_PULSE_FG_MAX.g, OV_ANIM_PULSE_FG_MAX.b);
@@ -361,27 +403,225 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     if (lay->mouse_hover)
     {
         /* Mouse hover active badge */
-        ov_buf_bg(180, 180, 20);  /* deep yellow background */
-        ov_buf_fg(255, 255, 220); /* light text */
+        ov_buf_bg(180, 180, 20); /* deep yellow background */
+        ov_buf_fg(20, 20, 20);   /* dark text */
         ov_buf_bold();
         ov_buf_printf(" [m] HOVER: ON ");
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_HEADER);
-        hover_w = 16; /* visual width of "  [m] HOVER: ON " */
+        hover_w = 15; /* visual width of " [m] HOVER: ON " */
     }
     else
     {
         /* Mouse hover inactive badge */
-        ov_buf_bg(80, 80, 80);    /* dim gray background */
-        ov_buf_fg(200, 200, 200); /* light gray text */
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_DIM);
         ov_buf_bold();
         ov_buf_printf(" [m] HOVER: OFF ");
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_HEADER);
-        hover_w = 17; /* visual width of "  [m] HOVER: OFF " */
+        hover_w = 16; /* visual width of " [m] HOVER: OFF " */
     }
 
-    int chars_left = 17 + 1 + ctrl_w + hover_w; /* +1 for heartbeat */
+    int filter_w        = 0;
+    lay->r_filter_count = 0;
+    int b_start = 17 + (int) strlen(MILK_GIT_COMMIT) + 3 + (int) strlen(shmdir) + 8 + 1 + ctrl_w +
+                  1 + hover_w + 1;
+
+    ov_focus_t fpanel = ov_get_effective_filter_panel(lay);
+
+    if (lay->view == OV_VIEW_DASHBOARD)
+    {
+        ov_focus_t  d_panels[3] = { OV_FOCUS_STREAMS, OV_FOCUS_PROCS, OV_FOCUS_FPS };
+        const char *d_pnames[3] = { "STRM", "PROC", "FPS" };
+
+        for (int p = 0; p < 3; p++)
+        {
+            ov_focus_t  curr_p  = d_panels[p];
+            const char *curr_nm = d_pnames[p];
+            const char *fpat    = ov_get_panel_filter_pattern(lay, curr_p);
+            int         is_act  = ov_is_panel_filter_active(lay, curr_p);
+            int         is_foc  = (fpanel == curr_p);
+
+            ov_buf_printf(" ");
+            filter_w++;
+
+            char fbadge[64];
+            if (is_act)
+            {
+                if (is_foc)
+                {
+                    if ((lay->ctrl_blink % 4) < 2)
+                    {
+                        ov_buf_bg(255, 190, 0); /* bright amber/gold */
+                        ov_buf_fg(20, 20, 20);  /* dark text */
+                    }
+                    else
+                    {
+                        ov_buf_bg(230, 80, 20);   /* vibrant red-orange */
+                        ov_buf_fg(255, 255, 255); /* white text */
+                    }
+                    snprintf(fbadge, sizeof(fbadge), " [f] %s: /%.8s/ ", curr_nm, fpat);
+                }
+                else
+                {
+                    /* Unselected panel: solid vivid amber pill */
+                    ov_buf_bg(220, 130, 20);
+                    ov_buf_fg(255, 255, 255);
+                    snprintf(fbadge, sizeof(fbadge), " %s: /%.8s/ ", curr_nm, fpat);
+                }
+                ov_buf_bold();
+                ov_buf_printf("%s", fbadge);
+                ov_buf_reset_attr();
+                ov_theme_bg(OV_BG_HEADER);
+            }
+            else if (fpat[0] != '\0')
+            {
+                ov_theme_bg(OV_BG_PANEL_ALT);
+                ov_theme_fg(OV_FG_WARN);
+                ov_buf_bold();
+                if (is_foc)
+                {
+                    snprintf(fbadge, sizeof(fbadge), " [f] %s: OFF (/%.6s/) ", curr_nm, fpat);
+                }
+                else
+                {
+                    snprintf(fbadge, sizeof(fbadge), " %s: OFF ", curr_nm);
+                }
+                ov_buf_printf("%s", fbadge);
+                ov_buf_reset_attr();
+                ov_theme_bg(OV_BG_HEADER);
+            }
+            else
+            {
+                ov_theme_bg(OV_BG_PANEL);
+                ov_theme_fg(OV_FG_DIM);
+                ov_buf_bold();
+                if (is_foc)
+                {
+                    snprintf(fbadge, sizeof(fbadge), " [/] %s: ALL ", curr_nm);
+                }
+                else
+                {
+                    snprintf(fbadge, sizeof(fbadge), " %s: ALL ", curr_nm);
+                }
+                ov_buf_printf("%s", fbadge);
+                ov_buf_reset_attr();
+                ov_theme_bg(OV_BG_HEADER);
+            }
+
+            int bw = (int) strlen(fbadge);
+            if (lay->r_filter_count < 4)
+            {
+                lay->r_filter_start[lay->r_filter_count] = b_start;
+                lay->r_filter_width[lay->r_filter_count] = bw;
+                lay->r_filter_panel[lay->r_filter_count] = curr_p;
+                lay->r_filter_count++;
+            }
+            b_start += bw + 1;
+            filter_w += bw;
+        }
+    }
+    else
+    {
+        /* Dedicated or graph view: show focused panel filter badge */
+        const char *pname  = (fpanel == OV_FOCUS_STREAMS) ? "STRM"
+                             : (fpanel == OV_FOCUS_PROCS) ? "PROC"
+                             : (fpanel == OV_FOCUS_FPS)   ? "FPS"
+                                                          : "FILTER";
+        const char *fpat   = (fpanel != OV_FOCUS_GRAPH) ? ov_get_panel_filter_pattern(lay, fpanel)
+                                                        : ov_get_filter_pattern(lay);
+        int         is_act = (fpanel != OV_FOCUS_GRAPH) ? ov_is_panel_filter_active(lay, fpanel)
+                                                        : ov_is_filter_active(lay);
+
+        ov_buf_printf(" ");
+        filter_w++;
+
+        char fbadge[64];
+        if (is_act)
+        {
+            if ((lay->ctrl_blink % 4) < 2)
+            {
+                ov_buf_bg(255, 190, 0);
+                ov_buf_fg(20, 20, 20);
+            }
+            else
+            {
+                ov_buf_bg(230, 80, 20);
+                ov_buf_fg(255, 255, 255);
+            }
+            ov_buf_bold();
+            snprintf(fbadge, sizeof(fbadge), " [f] %s: /%.10s/ ", pname, fpat);
+            ov_buf_printf("%s", fbadge);
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_HEADER);
+        }
+        else if (fpat[0] != '\0')
+        {
+            ov_theme_bg(OV_BG_PANEL_ALT);
+            ov_theme_fg(OV_FG_WARN);
+            ov_buf_bold();
+            snprintf(fbadge, sizeof(fbadge), " [f] %s: OFF (/%.8s/) ", pname, fpat);
+            ov_buf_printf("%s", fbadge);
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_HEADER);
+        }
+        else
+        {
+            ov_theme_bg(OV_BG_PANEL);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_bold();
+            snprintf(fbadge, sizeof(fbadge), " [/] %s: ALL ", pname);
+            ov_buf_printf("%s", fbadge);
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_HEADER);
+        }
+
+        int bw                 = (int) strlen(fbadge);
+        lay->r_filter_start[0] = b_start;
+        lay->r_filter_width[0] = bw;
+        lay->r_filter_panel[0] = fpanel;
+        lay->r_filter_count    = 1;
+        b_start += bw + 1;
+        filter_w += bw;
+
+        /* Also show alert pills for any other panels with active filters */
+        ov_focus_t  bg_panels[3] = { OV_FOCUS_STREAMS, OV_FOCUS_PROCS, OV_FOCUS_FPS };
+        const char *bg_names[3]  = { "STRM", "PROC", "FPS" };
+        for (int p = 0; p < 3; p++)
+        {
+            if (bg_panels[p] != fpanel && ov_is_panel_filter_active(lay, bg_panels[p]))
+            {
+                const char *bg_pat = ov_get_panel_filter_pattern(lay, bg_panels[p]);
+                char        bg_badge[64];
+                snprintf(bg_badge, sizeof(bg_badge), " %s: /%.8s/ ", bg_names[p], bg_pat);
+                ov_buf_printf(" ");
+                filter_w++;
+                ov_buf_bold();
+                ov_buf_bg(220, 130, 20);
+                ov_buf_fg(255, 255, 255);
+                ov_buf_printf("%s", bg_badge);
+                ov_buf_reset_attr();
+                ov_theme_bg(OV_BG_HEADER);
+
+                int bg_w = (int) strlen(bg_badge);
+                if (lay->r_filter_count < 4)
+                {
+                    lay->r_filter_start[lay->r_filter_count] = b_start;
+                    lay->r_filter_width[lay->r_filter_count] = bg_w;
+                    lay->r_filter_panel[lay->r_filter_count] = bg_panels[p];
+                    lay->r_filter_count++;
+                }
+                b_start += bg_w + 1;
+                filter_w += bg_w;
+            }
+        }
+    }
+
+    int commit_w = (int) strlen(MILK_GIT_COMMIT) + 3;
+    int shmdir_w = (int) strlen(shmdir) + 8;
+    int chars_left =
+        17 + commit_w + shmdir_w + 1 + ctrl_w + 1 + hover_w + 1 + filter_w; /* +1 for heartbeat */
 
     ov_theme_fg(OV_FG_STREAM);
     chars_left += snprintf(NULL, 0, " %d stm", m->nb_streams);
@@ -412,19 +652,38 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_printf("  BW: %4.1f kB/s", bw_kbs);
     }
 
-    int tabs_width = 0;
-    for (int v = 0; v < OV_VIEW_COUNT; v++)
+    int pad = r.width - chars_left;
+    if (pad > 0)
     {
-        tabs_width += (int) strlen(view_label((ov_view_t) v)) + 9;
+        ov_theme_bg(OV_BG_HEADER);
+        ov_buf_hline(' ', pad);
     }
 
-    int pad = r.width - tabs_width - chars_left;
-    if (pad < 1)
-    {
-        pad = 1;
-    }
     ov_theme_bg(OV_BG_HEADER);
-    ov_buf_hline(' ', pad);
+}
+
+/**
+ * ov_render_tabs - render dedicated tab selection bar and prominent help button.
+ * @lay: layout state
+ *
+ * Renders on row 2 (lay->r_tabs.row). Left side displays function key view tabs
+ * ([F2:DASH] .. [F7:LOOPS]), and right side displays prominent [h: HELP] button
+ * with slow blink color when idle, and active pill styling when help is open.
+ */
+void ov_render_tabs(OV_LAYOUT *lay)
+{
+    OV_RECT r = lay->r_tabs;
+    ov_buf_pos(r.row, r.col);
+    ov_theme_bg(OV_BG_HEADER);
+
+    /* Render view tabs */
+    int tabs_total_width = 0;
+    int tab_widths[OV_VIEW_COUNT];
+    for (int v = 0; v < OV_VIEW_COUNT; v++)
+    {
+        tab_widths[v] = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
+        tabs_total_width += tab_widths[v];
+    }
 
     for (int v = 0; v < OV_VIEW_COUNT; v++)
     {
@@ -436,7 +695,7 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
             ov_theme_bg(OV_FG_TITLE);
             ov_theme_fg(OV_BG_TERMINAL);
             ov_buf_bold();
-            ov_buf_printf(" F%d:%s ", v + 2, view_label((ov_view_t) v));
+            ov_buf_printf(" F%d:%s ", v + 2, ov_view_label((ov_view_t) v));
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_HEADER);
             ov_theme_fg(OV_FG_TITLE);
@@ -449,7 +708,7 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
             ov_buf_printf(" [");
             ov_theme_fg(OV_FG_TEXT);
             ov_buf_bold();
-            ov_buf_printf(" F%d:%s ", v + 2, view_label((ov_view_t) v));
+            ov_buf_printf(" F%d:%s ", v + 2, ov_view_label((ov_view_t) v));
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_HEADER);
             ov_theme_fg(OV_FG_DIM);
@@ -457,6 +716,68 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         }
     }
 
+    /* Help button [h: HELP] - prominent with slow blink */
+    int help_width = 11; /* visual width of " [h: HELP] " */
+    int pad        = r.width - tabs_total_width - help_width;
+    if (pad > 0)
+    {
+        ov_theme_bg(OV_BG_HEADER);
+        ov_buf_hline(' ', pad);
+    }
+    else
+    {
+        pad = 0;
+    }
+
+    /* Render prominent help button */
+    if (lay->show_help)
+    {
+        /* Active state when help overlay is visible: light-blue solid pill */
+        ov_theme_bg(OV_BG_HEADER);
+        ov_theme_fg(OV_FG_TITLE);
+        ov_buf_printf(" %s", OV_LCARS_LEFT);
+        ov_theme_bg(OV_FG_TITLE);
+        ov_theme_fg(OV_BG_TERMINAL);
+        ov_buf_bold();
+        ov_buf_printf("h: HELP");
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+        ov_theme_fg(OV_FG_TITLE);
+        ov_buf_printf("%s ", OV_LCARS_RIGHT);
+    }
+    else
+    {
+        /* Slow blinking prominent amber badge (1s bright, 1s dim) */
+        struct timespec now_ts;
+        clock_gettime(CLOCK_MONOTONIC, &now_ts);
+        ov_theme_bg(OV_BG_HEADER);
+        ov_buf_printf(" ");
+        if ((now_ts.tv_sec % 2) == 0)
+        {
+            /* Bright prominent state: vibrant gold/amber bg, dark crisp text */
+            ov_buf_bg(240, 175, 20);
+            ov_buf_fg(20, 20, 25);
+        }
+        else
+        {
+            /* Dim prominent state themed to panel bg with warning text */
+            ov_theme_bg(OV_BG_PANEL);
+            ov_theme_fg(OV_FG_WARN);
+        }
+        ov_buf_bold();
+        ov_buf_printf("[h: HELP]");
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+        ov_buf_printf(" ");
+    }
+
+    /* Pad trailing space if line not completely filled */
+    int rendered_w = tabs_total_width + pad + help_width;
+    if (rendered_w < r.width)
+    {
+        ov_theme_bg(OV_BG_HEADER);
+        ov_buf_hline(' ', r.width - rendered_w);
+    }
     ov_theme_bg(OV_BG_HEADER);
 }
 
@@ -501,19 +822,190 @@ static void ov_draw_tooltip(OV_LAYOUT *lay)
     lay->hover_tooltip[0] = '\0';
 }
 
+void ov_render_theme_popup(OV_LAYOUT *lay)
+{
+    if (!lay->theme_popup_active)
+    {
+        return;
+    }
+
+    struct timespec now_ts;
+    clock_gettime(CLOCK_MONOTONIC, &now_ts);
+    double elapsed = (now_ts.tv_sec - lay->theme_popup_ts.tv_sec) +
+                     (now_ts.tv_nsec - lay->theme_popup_ts.tv_nsec) * 1e-9;
+    if (elapsed >= 1.0)
+    {
+        lay->theme_popup_active = 0;
+        return;
+    }
+
+    int nthemes = ov_theme_count();
+    int pw      = 46;
+    int ph      = nthemes + 2;
+
+    int pr = lay->term_rows - ph;
+    int pc = lay->term_cols - pw - 2;
+
+    if (pr < 2)
+    {
+        pr = 2;
+    }
+    if (pc < 1)
+    {
+        pc = 1;
+    }
+    if (pr + ph > lay->term_rows)
+    {
+        ph = lay->term_rows - pr;
+    }
+    if (pc + pw > lay->term_cols)
+    {
+        pw = lay->term_cols - pc;
+    }
+
+    lay->r_theme_popup.row    = pr;
+    lay->r_theme_popup.col    = pc;
+    lay->r_theme_popup.height = ph;
+    lay->r_theme_popup.width  = pw;
+
+    /* Top border */
+    ov_buf_pos(pr, pc);
+    ov_theme_bg(OV_BG_HEADER);
+    ov_theme_fg(OV_FG_WARN);
+    ov_buf_bold();
+    ov_buf_printf("%s%s", OV_BOX_TL, OV_BOX_H);
+    ov_theme_fg(OV_FG_TITLE);
+    ov_buf_printf(" THEME SELECTOR (↑/↓ • ESC) ");
+    ov_theme_fg(OV_FG_WARN);
+    int top_rem = (pc + pw - 1) - ov__cursor_col;
+    if (top_rem > 0)
+    {
+        ov_buf_hline_utf8(OV_BOX_H, top_rem);
+    }
+    ov_buf_printf("%s", OV_BOX_TR);
+    ov_buf_reset_attr();
+
+    /* Render theme items */
+    for (int i = 0; i < nthemes && (pr + 1 + i) < (pr + ph - 1); i++)
+    {
+        int               row       = pr + 1 + i;
+        int               is_sel    = (i == lay->theme_popup_sel);
+        int               is_active = (i == ov_theme_get_active_index());
+        const ov_theme_t *th        = ov_theme_get(i);
+
+        ov_buf_pos(row, pc);
+
+        /* Left border */
+        ov_theme_bg(OV_BG_HEADER);
+        ov_theme_fg(OV_FG_WARN);
+        ov_buf_printf("%s", OV_BOX_V);
+
+        /* Row content */
+        ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : OV_BG_PANEL;
+        ov_theme_bg(row_bg);
+
+        if (is_sel)
+        {
+            ov_buf_bold();
+            ov_theme_fg(OV_FG_WARN);
+            ov_buf_printf(" ▶ ");
+        }
+        else
+        {
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf("   ");
+        }
+
+        /* Swatch: 4 color preview blocks */
+        ov_buf_bg(th->bg_terminal.r, th->bg_terminal.g, th->bg_terminal.b);
+        ov_buf_fg(th->fg_title.r, th->fg_title.g, th->fg_title.b);
+        ov_buf_printf("■");
+        ov_buf_fg(th->fg_stream.r, th->fg_stream.g, th->fg_stream.b);
+        ov_buf_printf("■");
+        ov_buf_fg(th->fg_active.r, th->fg_active.g, th->fg_active.b);
+        ov_buf_printf("■");
+        ov_buf_fg(th->fg_warn.r, th->fg_warn.g, th->fg_warn.b);
+        ov_buf_printf("■ ");
+
+        /* Restore row background */
+        ov_theme_bg(row_bg);
+
+        /* Theme name */
+        if (is_sel)
+        {
+            ov_buf_bold();
+            ov_theme_fg(OV_FG_BRIGHT);
+        }
+        else
+        {
+            ov_theme_fg(OV_FG_TEXT);
+        }
+        ov_buf_printf("%-18.18s ", th->name);
+
+        /* Active tag */
+        if (is_active)
+        {
+            ov_buf_bold();
+            ov_theme_fg(OV_FG_ACTIVE);
+            ov_buf_printf("● active");
+        }
+        else
+        {
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf("        ");
+        }
+
+        /* Pad row to right edge */
+        render_pad_to_col(pc + pw - 1);
+
+        /* Right border */
+        ov_theme_bg(OV_BG_HEADER);
+        ov_theme_fg(OV_FG_WARN);
+        ov_buf_printf("%s", OV_BOX_V);
+        ov_buf_reset_attr();
+    }
+
+    /* Bottom border with auto-close countdown */
+    int bot_row = pr + ph - 1;
+    ov_buf_pos(bot_row, pc);
+    ov_theme_bg(OV_BG_HEADER);
+    ov_theme_fg(OV_FG_WARN);
+    ov_buf_bold();
+    ov_buf_printf("%s%s", OV_BOX_BL, OV_BOX_H);
+
+    double remain = 1.0 - elapsed;
+    if (remain < 0.0)
+    {
+        remain = 0.0;
+    }
+    char hint[48];
+    snprintf(hint, sizeof(hint), " auto-closes in %.1fs ", remain);
+    ov_theme_fg(OV_FG_DIM);
+    ov_buf_printf("%s", hint);
+
+    ov_theme_fg(OV_FG_WARN);
+    int bot_rem = (pc + pw - 1) - ov__cursor_col;
+    if (bot_rem > 0)
+    {
+        ov_buf_hline_utf8(OV_BOX_H, bot_rem);
+    }
+    ov_buf_printf("%s", OV_BOX_BR);
+    ov_buf_reset_attr();
+}
 
 void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    ov_buf_reset();
+    ov_buf_reset_size(lay->term_rows, lay->term_cols);
 
     /* Perform global hit-test to populate hover state */
     ov_hittest(lay, m, ov_mouse_row, ov_mouse_col);
     ov_hittest_resolve_globals(lay, m);
 
     /* Ensure there exists a valid selected parameter when in the PARAMS panel on F5 view */
-    if (lay->view == OV_VIEW_FPS && lay->sel_fps >= 0 && lay->sel_fps < m->nb_fps)
+    int cur_fidx = ov_get_selected_fps_idx(lay, m);
+    if (lay->view == OV_VIEW_FPS && cur_fidx >= 0 && cur_fidx < m->nb_fps)
     {
-        const OV_FPS   *fps = &m->fps[lay->sel_fps];
+        const OV_FPS   *fps = &m->fps[cur_fidx];
         fps_tree_item_t items[1024];
         int             nitems = ov_get_fps_tree_items(fps, lay->fps_param_path, items, 1024);
 
@@ -557,13 +1049,16 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             const char *names[OV_MAX_NODES];
             int         fidx[OV_MAX_NODES];
+            const char *f_str = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
+            const char *f_prc = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
+            const char *f_fps = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
 
             /* Streams */
             for (int i = 0; i < mm->nb_streams; i++)
             {
                 names[i] = mm->streams[i].name;
             }
-            int fn = ov_filter_build(lay->filter_stream, names, mm->nb_streams, fidx, OV_MAX_NODES);
+            int fn = ov_filter_build(f_str, names, mm->nb_streams, fidx, OV_MAX_NODES);
             if (lay->sel_stream >= 0 && lay->sel_stream < fn)
             {
                 strncpy(saved_sel_stream, mm->streams[fidx[lay->sel_stream]].name, 79);
@@ -578,7 +1073,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 names[i] = mm->procs[i].name;
             }
-            fn = ov_filter_build(lay->filter_proc, names, mm->nb_procs, fidx, OV_MAX_NODES);
+            fn = ov_filter_build(f_prc, names, mm->nb_procs, fidx, OV_MAX_NODES);
             if (lay->sel_proc >= 0 && lay->sel_proc < fn)
             {
                 strncpy(saved_sel_proc, mm->procs[fidx[lay->sel_proc]].name, 79);
@@ -593,7 +1088,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 names[i] = mm->fps[i].name;
             }
-            fn = ov_filter_build(lay->filter_fps, names, mm->nb_fps, fidx, OV_MAX_NODES);
+            fn = ov_filter_build(f_fps, names, mm->nb_fps, fidx, OV_MAX_NODES);
             if (lay->sel_fps >= 0 && lay->sel_fps < fn)
             {
                 strncpy(saved_sel_fps, mm->fps[fidx[lay->sel_fps]].name, 79);
@@ -639,6 +1134,9 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             const char *names[OV_MAX_NODES];
             int         fidx[OV_MAX_NODES];
+            const char *f_str = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
+            const char *f_prc = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
+            const char *f_fps = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
 
             if (saved_sel_stream[0] != '\0')
             {
@@ -646,8 +1144,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
                 {
                     names[i] = mm->streams[i].name;
                 }
-                int fn =
-                    ov_filter_build(lay->filter_stream, names, mm->nb_streams, fidx, OV_MAX_NODES);
+                int fn = ov_filter_build(f_str, names, mm->nb_streams, fidx, OV_MAX_NODES);
                 for (int i = 0; i < fn; i++)
                 {
                     if (strcmp(saved_sel_stream, mm->streams[fidx[i]].name) == 0)
@@ -676,7 +1173,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
                 {
                     names[i] = mm->procs[i].name;
                 }
-                int fn = ov_filter_build(lay->filter_proc, names, mm->nb_procs, fidx, OV_MAX_NODES);
+                int fn = ov_filter_build(f_prc, names, mm->nb_procs, fidx, OV_MAX_NODES);
                 for (int i = 0; i < fn; i++)
                 {
                     if (strcmp(saved_sel_proc, mm->procs[fidx[i]].name) == 0)
@@ -705,7 +1202,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
                 {
                     names[i] = mm->fps[i].name;
                 }
-                int fn = ov_filter_build(lay->filter_fps, names, mm->nb_fps, fidx, OV_MAX_NODES);
+                int fn = ov_filter_build(f_fps, names, mm->nb_fps, fidx, OV_MAX_NODES);
                 for (int i = 0; i < fn; i++)
                 {
                     if (strcmp(saved_sel_fps, mm->fps[fidx[i]].name) == 0)
@@ -747,13 +1244,16 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     {
         const char *names[OV_MAX_NODES];
         int         fidx[OV_MAX_NODES];
+        const char *f_str = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
+        const char *f_prc = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
+        const char *f_fps = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
 
         /* Streams */
         for (int i = 0; i < m->nb_streams; i++)
         {
             names[i] = m->streams[i].name;
         }
-        int fn = ov_filter_build(lay->filter_stream, names, m->nb_streams, fidx, OV_MAX_NODES);
+        int fn = ov_filter_build(f_str, names, m->nb_streams, fidx, OV_MAX_NODES);
         if (fn > 0)
         {
             if (lay->sel_name_stream[0] != '\0')
@@ -806,7 +1306,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             names[i] = m->procs[i].name;
         }
-        fn = ov_filter_build(lay->filter_proc, names, m->nb_procs, fidx, OV_MAX_NODES);
+        fn = ov_filter_build(f_prc, names, m->nb_procs, fidx, OV_MAX_NODES);
         if (fn > 0)
         {
             if (lay->sel_name_proc[0] != '\0')
@@ -862,7 +1362,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             names[i] = m->fps[i].name;
         }
-        fn = ov_filter_build(lay->filter_fps, names, m->nb_fps, fidx, OV_MAX_NODES);
+        fn = ov_filter_build(f_fps, names, m->nb_fps, fidx, OV_MAX_NODES);
         if (fn > 0)
         {
             if (lay->sel_name_fps[0] != '\0')
@@ -952,13 +1452,13 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
 
 
     ov_render_header(lay, m);
+    ov_render_tabs(lay);
 
     /* To prevent flickering on terminals that do not support synchronized updates,
      * we skip rendering the background panels when the help overlay is active.
      * The existing background is preserved on the terminal's screen. */
     if (!lay->show_help)
     {
-        ov_render_highlighted_column_description(lay);
         switch (lay->view)
         {
         case OV_VIEW_DASHBOARD:
@@ -969,9 +1469,14 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
             int rendered = 0;
             if (lay->graph_tab_mode == 1)
             {
-                rendered = ov_render_detail_panel(lay, m);
+                ov_render_loops_panel(lay, m);
+                rendered = 1;
             }
             else if (lay->graph_tab_mode == 2)
+            {
+                rendered = ov_render_detail_panel(lay, m);
+            }
+            else if (lay->graph_tab_mode == 3)
             {
                 rendered = ov_render_resources_panel(lay, m);
             }
@@ -984,6 +1489,9 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         case OV_VIEW_GRAPH:
             ov_render_graph_panel(lay, m);
             break;
+        case OV_VIEW_LOOPS:
+            ov_render_loops_view(lay, m);
+            break;
         case OV_VIEW_STREAMS:
             ov_render_streams_panel(lay, m, &rel);
             break;
@@ -993,8 +1501,8 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         case OV_VIEW_FPS:
             ov_render_fps_param_info(lay, m);
             ov_render_fps_panel(lay, m, &rel);
-            if (lay->sel_fps >= 0 && lay->sel_fps < m->nb_fps &&
-                m->fps[lay->sel_fps].nb_disp_params > 0)
+            int cur_fsel = ov_get_selected_fps_idx(lay, m);
+            if (cur_fsel >= 0 && cur_fsel < m->nb_fps && m->fps[cur_fsel].nb_disp_params > 0)
             {
                 ov_render_fps_params_panel(lay, m);
             }
@@ -1013,10 +1521,13 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
 
     if (lay->show_help)
     {
-        ov_render_help(lay);
+        ov_render_help(lay, m);
     }
 
-    ov_render_cmdlog(lay);
+    if (!lay->show_help)
+    {
+        ov_render_cmdlog(lay);
+    }
     ov_render_status(lay, m);
 
     /* Highlight movable edges if hovering */
@@ -1079,6 +1590,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     /* End frame */
+    ov_render_theme_popup(lay);
     ov_draw_tooltip(lay);
 
     ov_buf_flush_delta(lay->term_rows, lay->term_cols);

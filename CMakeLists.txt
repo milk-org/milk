@@ -105,6 +105,70 @@ if(_suffix_pos EQUAL -1)
 endif()
 set(INSTALLDIR "${CMAKE_INSTALL_PREFIX}")
 
+# Determine git commit hash for version tracking
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+  # Automatically re-run cmake when git commit or branch changes
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --git-path HEAD
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    OUTPUT_VARIABLE _git_head_rel
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  if(_git_head_rel)
+    get_filename_component(_git_head_file "${_git_head_rel}"
+      ABSOLUTE BASE_DIR "${PROJECT_SOURCE_DIR}")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_git_head_file}")
+
+    if(EXISTS "${_git_head_file}")
+      file(READ "${_git_head_file}" _git_head_content)
+      if("${_git_head_content}" MATCHES "^ref: *([^\r\n]+)")
+        execute_process(
+          COMMAND ${GIT_EXECUTABLE} rev-parse --git-path "${CMAKE_MATCH_1}"
+          WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+          OUTPUT_VARIABLE _git_ref_rel
+          OUTPUT_STRIP_TRAILING_WHITESPACE
+          ERROR_QUIET
+        )
+        if(_git_ref_rel)
+          get_filename_component(_git_ref_file "${_git_ref_rel}"
+            ABSOLUTE BASE_DIR "${PROJECT_SOURCE_DIR}")
+          if(EXISTS "${_git_ref_file}")
+            set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_git_ref_file}")
+          endif()
+        endif()
+      endif()
+    endif()
+  endif()
+
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --git-path logs/HEAD
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    OUTPUT_VARIABLE _git_log_rel
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  if(_git_log_rel)
+    get_filename_component(_git_log_file "${_git_log_rel}"
+      ABSOLUTE BASE_DIR "${PROJECT_SOURCE_DIR}")
+    if(EXISTS "${_git_log_file}")
+      set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_git_log_file}")
+    endif()
+  endif()
+
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    OUTPUT_VARIABLE MILK_GIT_COMMIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+endif()
+if(NOT MILK_GIT_COMMIT)
+  set(MILK_GIT_COMMIT "unknown")
+endif()
+
 # Configure a header file to pass some of the CMake settings to the source code.
 # Generated into the build tree (not the source tree), which is shared across
 # out-of-source builds with differing options/install prefixes.

@@ -22,30 +22,14 @@ static int ov_procs__filter(const OV_LAYOUT  *lay,
                             int              *has_re,
                             regex_t          *re)
 {
-    const char *names[OV_MAX_PROCS];
-    for (int i = 0; i < m->nb_procs; i++)
-    {
-        names[i] = m->procs[i].name;
-    }
-    int filt_n = ov_filter_build(lay->filter_proc, names, m->nb_procs, filt_idx, OV_MAX_PROCS);
+    int         filt_n        = ov_filter_procs(lay, m, rel, filt_idx, OV_MAX_PROCS);
+    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
 
-    if (lay->freeze && lay->freeze_focus != OV_FOCUS_PROCS && rel != NULL)
-    {
-        int new_filt_n = 0;
-        for (int i = 0; i < filt_n; i++)
-        {
-            if (bget(rel->procs, filt_idx[i]))
-            {
-                filt_idx[new_filt_n++] = filt_idx[i];
-            }
-        }
-        filt_n = new_filt_n;
-    }
 
     *has_re = 0;
-    if (lay->filter_proc[0] != '\0')
+    if (active_filter[0] != '\0')
     {
-        if (regcomp(re, lay->filter_proc, REG_EXTENDED | REG_ICASE) == 0)
+        if (regcomp(re, active_filter, REG_EXTENDED | REG_ICASE) == 0)
         {
             *has_re = 1;
         }
@@ -96,7 +80,7 @@ static void ov_procs__render_header(const OV_LAYOUT *lay, int hrow, int hs, OV_R
     int  w_lpcnt = sort_col_label(c_lpcnt, sizeof(c_lpcnt), "LOOPCNT", 9, sk, sd, 10);
     int  w_mem   = sort_col_label(c_mem, sizeof(c_mem), "MEM", 4, sk, sd, 5);
 
-    cols[num_cols++] = (PROC_COL_SPEC) { 0, c_anc, 4, 0 };
+    cols[num_cols++] = (PROC_COL_SPEC) { 0, c_anc, w_anc, 0 };
     cols[num_cols++] = (PROC_COL_SPEC) { 1, c_name, w_name, 0 };
     cols[num_cols++] = (PROC_COL_SPEC) { 2, c_pid, w_pid, 1 };
     cols[num_cols++] = (PROC_COL_SPEC) { 3, c_prio, w_prio, 1 };
@@ -213,6 +197,25 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
     int max_rows = r.height - 4;
     int start    = lay->scroll_proc;
 
+    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
+    if (filt_n == 0 && active_filter[0] != '\0')
+    {
+        int row = hrow + 2;
+        ov_buf_pos(row, r.col + 1);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_WARN);
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No matching processes for '/%s/'", active_filter);
+        ov_buf_printf("%s", msg);
+        render_pad_spaces((int) strlen(msg), r.width);
+        for (int i = 1; i < max_rows; i++)
+        {
+            clear_row(hrow + 2 + i, r.col + 1, r.width - 2, OV_BG_PANEL);
+        }
+        render_scroll_indicators(r, 0, max_rows, 0, OV_FG_PROC);
+        return;
+    }
+
     for (int i = 0; i < max_rows; i++)
     {
         int row = hrow + 2 + i;
@@ -229,7 +232,18 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
             int        has_rel   = (rel != NULL && bget(rel->procs, pi));
             int        is_rel   = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_PROCS && has_rel);
             int        is_write = (has_rel && rel != NULL && bget(rel->proc_writes, pi));
-            ov_rgb_t   row_bg   = OV_BG_PANEL;
+            int        is_loop_member = 0;
+            if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) && lay->sel_loop >= 0 &&
+                lay->sel_loop < m->nb_loops)
+            {
+                uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+                if (p->loop_mask & active_mask)
+                {
+                    is_loop_member = 1;
+                }
+            }
+
+            ov_rgb_t row_bg = OV_BG_PANEL;
             if (is_sel)
             {
                 row_bg = OV_BG_SELECTED;
@@ -237,6 +251,10 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
             else if (is_frozen)
             {
                 row_bg = OV_BG_FROZEN;
+            }
+            else if (is_loop_member)
+            {
+                row_bg = (p->nb_loops > 1) ? OV_BG_LOOP_SHARED : OV_BG_LOOP;
             }
             else if (is_rel)
             {
@@ -345,12 +363,22 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
             {
                 snprintf(anc_str, sizeof(anc_str), "\xe2\x97\x8f   ");
             }
+            else if (p->nb_loops > 1)
+            {
+                snprintf(anc_str, sizeof(anc_str), "\xe2\xae\x82   "); /* ⮂ */
+            }
+            else if (p->nb_loops == 1)
+            {
+                snprintf(anc_str, sizeof(anc_str), "\xe2\x86\xba   "); /* ↺ */
+            }
             else
             {
                 snprintf(anc_str, sizeof(anc_str), "    ");
             }
 
-            ov_render_cell(0, 0, OV_FG_WARN, row_bg, anc_str, &hs_rem, &printed, avail,
+            ov_rgb_t anc_color = (p->nb_loops > 1) ? OV_FG_LOOP_SHARED
+                                                   : ((p->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
+            ov_render_cell(0, 0, anc_color, row_bg, anc_str, &hs_rem, &printed, avail,
                            lay->highlight_col_proc, lay->col_collapsed_proc);
 
             /* Name */
@@ -709,17 +737,12 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
     regex_t re;
     int     filt_n = ov_procs__filter(lay, m, rel, filt_idx, &has_re, &re);
 
-    char title[80];
-    if (lay->filter_proc[0] != '\0')
-    {
-        snprintf(title, sizeof(title), "PROCESSINFO /%s/", lay->filter_proc);
-    }
-    else
-    {
-        snprintf(title, sizeof(title), "PROCESSINFO");
-    }
-    ov_draw_panel_border(r.row, r.col, r.height, r.width, title, OV_FG_PROC,
-                         lay->focus == OV_FOCUS_PROCS, 0);
+    int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+                      ? m->loops[lay->sel_loop].loop_id
+                      : -1;
+    ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "PROCESSINFO", OV_FG_PROC,
+                                lay->focus == OV_FOCUS_PROCS, 0, lay->ctrl_blink, loop_id,
+                                lay->filter_proc, lay->filter_proc_active, filt_n, m->nb_procs);
 
     int hrow = r.row + 1;
     int hs   = lay->hscroll_proc;

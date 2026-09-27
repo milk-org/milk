@@ -244,6 +244,7 @@ add_executable(
   milk-fps-info
   tools/milk-fps-info.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data.c
+  ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_loops.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_sys.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_cache.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_scan.c

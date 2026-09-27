@@ -18,43 +18,19 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
 {
     OV_RECT r = lay->r_streams;
 
-    /* Build filtered index array */
-    const char *names[OV_MAX_STREAMS];
-    for (int i = 0; i < m->nb_streams; i++)
-    {
-        names[i] = m->streams[i].name;
-    }
-    int filt_idx[OV_MAX_STREAMS];
-    int filt_n =
-        ov_filter_build(lay->filter_stream, names, m->nb_streams, filt_idx, OV_MAX_STREAMS);
+    int         filt_idx[OV_MAX_STREAMS];
+    int         filt_n        = ov_filter_streams(lay, m, rel, filt_idx, OV_MAX_STREAMS);
+    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
 
-    if (lay->freeze && lay->freeze_focus != OV_FOCUS_STREAMS && rel != NULL)
+    /* Panel title with prominent filter indicator */
     {
-        int new_filt_n = 0;
-        for (int i = 0; i < filt_n; i++)
-        {
-            if (bget(rel->streams, filt_idx[i]))
-            {
-                filt_idx[new_filt_n++] = filt_idx[i];
-            }
-        }
-        filt_n = new_filt_n;
-    }
-
-
-    /* Panel title with filter indicator */
-    {
-        char title[80];
-        if (lay->filter_stream[0] != '\0')
-        {
-            snprintf(title, sizeof(title), "STREAMS /%s/", lay->filter_stream);
-        }
-        else
-        {
-            snprintf(title, sizeof(title), "STREAMS");
-        }
-        ov_draw_panel_border(r.row, r.col, r.height, r.width, title, OV_FG_STREAM,
-                             lay->focus == OV_FOCUS_STREAMS, 0);
+        int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+                          ? lay->sel_loop + 1
+                          : -1;
+        ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "STREAMS", OV_FG_STREAM,
+                                    lay->focus == OV_FOCUS_STREAMS, 0, lay->ctrl_blink, loop_id,
+                                    lay->filter_stream, lay->filter_stream_active, filt_n,
+                                    m->nb_streams);
     }
 
     int hrow = r.row + 1;
@@ -286,6 +262,38 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
     int max_rows = r.height - 4;
     int start    = lay->scroll_stream;
 
+    regex_t re;
+    int     has_re = 0;
+    if (active_filter[0] != '\0')
+    {
+        if (regcomp(&re, active_filter, REG_EXTENDED | REG_ICASE) == 0)
+        {
+            has_re = 1;
+        }
+    }
+
+    if (filt_n == 0 && active_filter[0] != '\0')
+    {
+        int row = hrow + 2;
+        ov_buf_pos(row, r.col + 1);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_WARN);
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No matching streams for '/%s/'", active_filter);
+        ov_buf_printf("%s", msg);
+        render_pad_spaces((int) strlen(msg), r.width);
+        for (int i = 1; i < max_rows; i++)
+        {
+            clear_row(hrow + 2 + i, r.col + 1, r.width - 2, OV_BG_PANEL);
+        }
+        if (has_re)
+        {
+            regfree(&re);
+        }
+        render_scroll_indicators(r, 0, max_rows, 0, OV_FG_STREAM);
+        return;
+    }
+
     for (int i = 0; i < max_rows; i++)
     {
         int row = hrow + 2 + i;
@@ -301,6 +309,17 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
             ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
             int is_rel = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_STREAMS && rel != NULL &&
                           bget(rel->streams, si));
+            int is_loop_member = 0;
+            if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) && lay->sel_loop >= 0 &&
+                lay->sel_loop < m->nb_loops)
+            {
+                uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+                if (s->loop_mask & active_mask)
+                {
+                    is_loop_member = 1;
+                }
+            }
+
             ov_rgb_t row_bg = OV_BG_PANEL;
             if (is_sel)
             {
@@ -309,6 +328,10 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
             else if (is_frozen)
             {
                 row_bg = OV_BG_FROZEN;
+            }
+            else if (is_loop_member)
+            {
+                row_bg = (s->nb_loops > 1) ? OV_BG_LOOP_SHARED : OV_BG_LOOP;
             }
             else if (is_rel)
             {
@@ -403,8 +426,16 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
             }
             else
             {
-                /* Activity dot */
-                if (s->update_hz > 0.1)
+                /* Activity & Loop indicator */
+                if (s->nb_loops > 1)
+                {
+                    snprintf(anc_str, sizeof(anc_str), "\xe2\xae\x82 "); /* ⮂ */
+                }
+                else if (s->nb_loops == 1)
+                {
+                    snprintf(anc_str, sizeof(anc_str), "\xe2\x86\xba "); /* ↺ */
+                }
+                else if (s->update_hz > 0.1)
                 {
                     snprintf(anc_str, sizeof(anc_str), "\xe2\x97\x8f ");
                 }
@@ -427,12 +458,43 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
                 }
             }
 
-            ov_render_cell(0, 0, OV_FG_WARN, row_bg, anc_str, &hs_rem, &printed, avail,
+            ov_rgb_t anc_color = (s->nb_loops > 1) ? OV_FG_LOOP_SHARED
+                                                   : ((s->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
+            ov_render_cell(0, 0, anc_color, row_bg, anc_str, &hs_rem, &printed, avail,
                            lay->highlight_col_stream, lay->col_collapsed_stream);
 
             ov_rgb_t base_color = s->active ? OV_FG_STREAM : OV_FG_DIM;
 
-            STRM_FIELD(base_color, "%-14.14s ", s->name);
+            /* Stream Name with regex match highlighting */
+            {
+                char       name_cell[128];
+                regmatch_t pm[1];
+                if (has_re && regexec(&re, s->name, 1, pm, 0) == 0)
+                {
+                    int b_len = pm[0].rm_so;
+                    if (b_len > 14)
+                    {
+                        b_len = 14;
+                    }
+                    int m_len = pm[0].rm_eo - pm[0].rm_so;
+                    if (b_len + m_len > 14)
+                    {
+                        m_len = 14 - b_len;
+                    }
+                    int tail_len = 14 - (b_len + m_len);
+                    if (tail_len < 0)
+                    {
+                        tail_len = 0;
+                    }
+                    snprintf(name_cell, sizeof(name_cell), "%.*s\x01%.*s\x02%.*s ", b_len, s->name,
+                             m_len, s->name + b_len, tail_len, s->name + b_len + m_len);
+                }
+                else
+                {
+                    snprintf(name_cell, sizeof(name_cell), "%-14.14s ", s->name);
+                }
+                STRM_FIELD(base_color, "%s", name_cell);
+            }
             STRM_FIELD(OV_FG_MUTED, "%4s ", render_dtype(s->datatype));
 
             STRM_FIELD(OV_FG_TEXT, "%11s ", s->size_str);
@@ -599,6 +661,10 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         }
     }
     render_scroll_indicators(r, lay->scroll_stream, max_rows, filt_n, OV_FG_STREAM);
+    if (has_re)
+    {
+        regfree(&re);
+    }
 
     /* Total MB/s footer on bottom border */
     {

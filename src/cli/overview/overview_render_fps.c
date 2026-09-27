@@ -19,38 +19,16 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
     OV_RECT r = lay->r_fps;
 
     /* Build filtered index array */
-    const char *names[OV_MAX_FPS];
-    for (int i = 0; i < m->nb_fps; i++)
-    {
-        names[i] = m->fps[i].name;
-    }
-    int fidx[OV_MAX_FPS];
-    int filt_n = ov_filter_build(lay->filter_fps, names, m->nb_fps, fidx, OV_MAX_FPS);
+    int         fidx[OV_MAX_FPS];
+    int         filt_n        = ov_filter_fps(lay, m, rel, fidx, OV_MAX_FPS);
+    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
 
-    if (lay->freeze && lay->freeze_focus != OV_FOCUS_FPS && rel != NULL)
-    {
-        int new_filt_n = 0;
-        for (int i = 0; i < filt_n; i++)
-        {
-            if (bget(rel->fps, fidx[i]))
-            {
-                fidx[new_filt_n++] = fidx[i];
-            }
-        }
-        filt_n = new_filt_n;
-    }
-
-    char title[80];
-    if (lay->filter_fps[0] != '\0')
-    {
-        snprintf(title, sizeof(title), "FPS /%s/", lay->filter_fps);
-    }
-    else
-    {
-        snprintf(title, sizeof(title), "FPS");
-    }
-    ov_draw_panel_border(r.row, r.col, r.height, r.width, title, OV_FG_FPS,
-                         lay->focus == OV_FOCUS_FPS, 0);
+    int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+                      ? m->loops[lay->sel_loop].loop_id
+                      : -1;
+    ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "FPS", OV_FG_FPS,
+                                lay->focus == OV_FOCUS_FPS, 0, lay->ctrl_blink, loop_id,
+                                lay->filter_fps, lay->filter_fps_active, filt_n, m->nb_fps);
 
     int hrow = r.row + 1;
     int hs   = lay->hscroll_fps;
@@ -189,6 +167,38 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
     int max_rows = r.height - 4;
     int start    = lay->scroll_fps;
 
+    regex_t re;
+    int     has_re = 0;
+    if (active_filter[0] != '\0')
+    {
+        if (regcomp(&re, active_filter, REG_EXTENDED | REG_ICASE) == 0)
+        {
+            has_re = 1;
+        }
+    }
+
+    if (filt_n == 0 && active_filter[0] != '\0')
+    {
+        int row = hrow + 2;
+        ov_buf_pos(row, r.col + 1);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_WARN);
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No matching FPS modules for '/%s/'", active_filter);
+        ov_buf_printf("%s", msg);
+        render_pad_spaces((int) strlen(msg), r.width);
+        for (int i = 1; i < max_rows; i++)
+        {
+            clear_row(hrow + 2 + i, r.col + 1, r.width - 2, OV_BG_PANEL);
+        }
+        if (has_re)
+        {
+            regfree(&re);
+        }
+        render_scroll_indicators(r, 0, max_rows, 0, OV_FG_FPS);
+        return;
+    }
+
     for (int i = 0; i < max_rows; i++)
     {
         int row = hrow + 2 + i;
@@ -204,7 +214,18 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
             ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
             int        has_rel   = (rel != NULL && bget(rel->fps, fi));
             int        is_rel    = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_FPS && has_rel);
-            ov_rgb_t   row_bg    = OV_BG_PANEL;
+            int        is_loop_member = 0;
+            if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) && lay->sel_loop >= 0 &&
+                lay->sel_loop < m->nb_loops)
+            {
+                uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+                if (f->loop_mask & active_mask)
+                {
+                    is_loop_member = 1;
+                }
+            }
+
+            ov_rgb_t row_bg = OV_BG_PANEL;
 
             if (is_sel)
             {
@@ -213,6 +234,10 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
             else if (is_frozen)
             {
                 row_bg = OV_BG_FROZEN;
+            }
+            else if (is_loop_member)
+            {
+                row_bg = (f->nb_loops > 1) ? OV_BG_LOOP_SHARED : OV_BG_LOOP;
             }
             else if (is_rel)
             {
@@ -283,12 +308,22 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
                 snprintf(anc_str, sizeof(anc_str),
                          is_written ? "\xe2\x96\xb6   " : "\xe2\x97\x80   ");
             }
+            else if (f->nb_loops > 1)
+            {
+                snprintf(anc_str, sizeof(anc_str), "\xe2\xae\x82   "); /* ⮂ */
+            }
+            else if (f->nb_loops == 1)
+            {
+                snprintf(anc_str, sizeof(anc_str), "\xe2\x86\xba   "); /* ↺ */
+            }
             else
             {
                 snprintf(anc_str, sizeof(anc_str), "    ");
             }
 
-            ov_render_cell(0, 0, OV_FG_WARN, row_bg, anc_str, &hs_rem, &printed, avail,
+            ov_rgb_t anc_color = (f->nb_loops > 1) ? OV_FG_LOOP_SHARED
+                                                   : ((f->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
+            ov_render_cell(0, 0, anc_color, row_bg, anc_str, &hs_rem, &printed, avail,
                            lay->highlight_col_fps, lay->col_collapsed_fps);
 
 #define FPS_FIELD_WITH_COL(vcol_idx, logical_idx, color, bg_color, fmt, ...)                      \
@@ -355,7 +390,36 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
             int      vcol    = 1;
             ov_rgb_t cell_bg = row_bg;
 
-            FPS_FIELD(OV_FG_FPS, "%-18.18s ", f->name);
+            /* FPS Name with regex match highlighting */
+            {
+                char       name_cell[128];
+                regmatch_t pm[1];
+                if (has_re && regexec(&re, f->name, 1, pm, 0) == 0)
+                {
+                    int b_len = pm[0].rm_so;
+                    if (b_len > 18)
+                    {
+                        b_len = 18;
+                    }
+                    int m_len = pm[0].rm_eo - pm[0].rm_so;
+                    if (b_len + m_len > 18)
+                    {
+                        m_len = 18 - b_len;
+                    }
+                    int tail_len = 18 - (b_len + m_len);
+                    if (tail_len < 0)
+                    {
+                        tail_len = 0;
+                    }
+                    snprintf(name_cell, sizeof(name_cell), "%.*s\x01%.*s\x02%.*s ", b_len, f->name,
+                             m_len, f->name + b_len, tail_len, f->name + b_len + m_len);
+                }
+                else
+                {
+                    snprintf(name_cell, sizeof(name_cell), "%-18.18s ", f->name);
+                }
+                FPS_FIELD(OV_FG_FPS, "%s", name_cell);
+            }
 
             char tmx_str[4] = { (f->tmux_flags & OV_TMUX_CTRL) ? 'c' : '-',
                                 (f->tmux_flags & OV_TMUX_CONF) ? 'C' : '-',
@@ -433,10 +497,7 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
                         int w = snprintf(NULL, 0, " [TRIG]");
                         ov_buf_printf(" [TRIG]");
                         ov_buf_reset_attr();
-                        if (is_sel || is_frozen || is_rel)
-                        {
-                            ov_theme_bg(row_bg);
-                        }
+                        ov_theme_bg(row_bg);
                         n5 += w;
                     }
                     else
@@ -487,6 +548,10 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
         }
     }
     render_scroll_indicators(r, lay->scroll_fps, max_rows, filt_n, OV_FG_FPS);
+    if (has_re)
+    {
+        regfree(&re);
+    }
 
     /* ---- Footer stats on bottom border ---- */
     {

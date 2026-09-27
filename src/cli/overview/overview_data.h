@@ -179,6 +179,11 @@ typedef struct
     /* graph node index (-1 if not in graph) */
     int node_idx;
 
+    /* loop membership */
+    uint32_t loop_mask;
+    int      nb_loops;
+    int      primary_loop_id;
+
     /* new-item flash counter (frames remaining) */
     int is_new;
 } OV_STREAM;
@@ -189,6 +194,29 @@ typedef struct
  * ========================================================= */
 
 #define OV_FPS_MAX_STREAM_PARAMS 24
+#define OV_FPS_MAX_DISP_PARAMS 100
+
+typedef struct
+{
+    int      nb_disp_params;
+    char     disp_param_name[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    char     disp_param_value[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    char     disp_param_descr[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_DESCR_STRMAXLEN];
+    char     disp_param_min[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    char     disp_param_max[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    uint8_t  disp_param_has_min[OV_FPS_MAX_DISP_PARAMS];
+    uint8_t  disp_param_has_max[OV_FPS_MAX_DISP_PARAMS];
+    uint32_t disp_param_type[OV_FPS_MAX_DISP_PARAMS];
+    uint64_t disp_param_flags[OV_FPS_MAX_DISP_PARAMS];
+} OV_FPS_PARAMS;
+
+/**
+ * ov_fps_get_params - fetch display parameters for an FPS on-demand.
+ * @fps_name: name of the FPS
+ *
+ * Return: pointer to thread-safe static parameters struct, or NULL.
+ */
+const OV_FPS_PARAMS *ov_fps_get_params(const char *fps_name);
 
 typedef struct
 {
@@ -217,18 +245,8 @@ typedef struct
     char     stream_param_value[OV_FPS_MAX_STREAM_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
     uint64_t stream_param_flags[OV_FPS_MAX_STREAM_PARAMS];
 
-#define OV_FPS_MAX_DISP_PARAMS 100
-    /* display parameters */
-    int      nb_disp_params;
-    char     disp_param_name[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
-    char     disp_param_value[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
-    char     disp_param_descr[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_DESCR_STRMAXLEN];
-    char     disp_param_min[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
-    char     disp_param_max[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
-    uint8_t  disp_param_has_min[OV_FPS_MAX_DISP_PARAMS];
-    uint8_t  disp_param_has_max[OV_FPS_MAX_DISP_PARAMS];
-    uint32_t disp_param_type[OV_FPS_MAX_DISP_PARAMS];
-    uint64_t disp_param_flags[OV_FPS_MAX_DISP_PARAMS];
+    /* display parameters count */
+    int nb_disp_params;
 
     /* graph node index */
     int node_idx;
@@ -236,6 +254,11 @@ typedef struct
     /* sparkline history: run-process Hz */
     float hz_hist[OV_SPARKLINE_LEN];
     int   hz_hist_idx;
+
+    /* loop membership */
+    uint32_t loop_mask;
+    int      nb_loops;
+    int      primary_loop_id;
 
     /* new-item flash counter (frames remaining) */
     int is_new;
@@ -308,6 +331,11 @@ typedef struct
     /* new-item flash counter (frames remaining) */
     int is_new;
 
+    /* loop membership */
+    uint32_t loop_mask;
+    int      nb_loops;
+    int      primary_loop_id;
+
     /* status message / log */
     char statusmsg[200];
 } OV_PROC;
@@ -344,6 +372,51 @@ typedef struct
 
 
 /* =========================================================
+ * Loop / Cycle info
+ * ========================================================= */
+
+#define OV_MAX_LOOPS 32
+#define OV_MAX_LOOP_NODES 32
+#define OV_LOOP_NAME_LEN 48
+
+typedef struct
+{
+    int      loop_id;                       /* 1-based loop ID: 1, 2, ... */
+    uint64_t signature_hash;                /* 64-bit hash of canonical cycle */
+    char     signature[256];                /* Canonical signature string */
+    char     name[OV_LOOP_NAME_LEN];        /* Display name (custom or auto) */
+    char     auto_name[OV_LOOP_NAME_LEN];   /* Generated name: "wfs_tt->dmcomb" */
+    char     custom_name[OV_LOOP_NAME_LEN]; /* User-assigned custom name */
+    int      has_custom_name;
+
+    /* Cycle nodes in topological sequence (alternate stream <-> proc/fps) */
+    int nb_nodes;
+    int node_indices[OV_MAX_LOOP_NODES];
+
+    /* Membership indices */
+    int nb_streams;
+    int stream_indices[OV_MAX_LOOP_NODES / 2];
+    int nb_procs;
+    int proc_indices[OV_MAX_LOOP_NODES / 2];
+    int nb_fps;
+    int fps_indices[OV_MAX_LOOP_NODES / 2];
+
+    /* Overlap metadata */
+    uint32_t overlap_mask;       /* Bitmask of other loop IDs (1 << (id-1)) */
+    int      nb_shared_nodes;    /* Count of nodes shared with other loops */
+    int      nb_exclusive_nodes; /* Count of nodes private to this loop */
+
+    /* Telemetry & Health */
+    double min_hz; /* Bottleneck loop frequency */
+    double max_hz;
+    int    is_running; /* 1 if all processes in loop are RUN */
+    int    is_paused;  /* 1 if any process in loop is PAUS */
+    int    is_stale;   /* 1 if any process has unchanging loopcnt */
+    int    is_error;   /* 1 if any process is ERR */
+} OV_LOOP;
+
+
+/* =========================================================
  * Complete system model
  * ========================================================= */
 
@@ -365,6 +438,10 @@ typedef struct
 
     OV_EDGE edges[OV_MAX_EDGES];
     int     nb_edges;
+
+    /* detected loops */
+    OV_LOOP loops[OV_MAX_LOOPS];
+    int     nb_loops;
 
     /* scan metadata */
     double          scan_time_ms;
@@ -426,6 +503,29 @@ void ov_build_graph(OV_MODEL *model);
  * @model: model to populate
  */
 void ov_model_full_scan(OV_MODEL *model);
+
+/**
+ * ov_scan_start - launch the background scan thread.
+ * Return: 0 on success, -1 on failure.
+ */
+int ov_scan_start(void);
+
+/**
+ * ov_scan_stop - signal the scan thread to stop and join.
+ */
+void ov_scan_stop(void);
+
+/**
+ * ov_scan_get_model - pick up the latest complete model.
+ * Return: pointer to the current display model.
+ */
+const OV_MODEL *ov_scan_get_model(void);
+
+/**
+ * ov_scan_get_event_fd - get eventfd notified on new scan data.
+ * Return: eventfd file descriptor, or -1 if not initialized.
+ */
+int ov_scan_get_event_fd(void);
 
 /**
  * ov_scan_has_new_data - check if the first scan has completed.

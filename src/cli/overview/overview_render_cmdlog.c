@@ -44,24 +44,28 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
      * (head - show). */
     int start = (log->head - show + OV_CMDLOG_MAX) % OV_CMDLOG_MAX;
 
-    /* Dark background for the log strip */
-    ov_rgb_t bg = { 20, 20, 30 };
+    /* Pad blank rows at the top so entries anchor to bottom above status bar */
+    int blank_rows = r.height - show;
+
+    /* Background for the log strip */
+    ov_rgb_t bg = OV_BG_PANEL_ALT;
 
     /* Render each row */
     for (int row = 0; row < r.height; row++)
     {
         ov_buf_pos(r.row + row, r.col);
         ov_theme_bg(bg);
+        ov_theme_fg(OV_FG_DIM);
+        ov_buf_hline(' ', r.width);
 
-        if (row >= show)
+        if (row < blank_rows)
         {
-            /* Empty row — fill with background */
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_hline(' ', r.width);
             continue;
         }
 
-        int                    idx = (start + row) % OV_CMDLOG_MAX;
+        ov_buf_pos(r.row + row, r.col);
+
+        int                    idx = (start + (row - blank_rows)) % OV_CMDLOG_MAX;
         const OV_CMDLOG_ENTRY *e   = &log->entries[idx];
 
         /* Format timestamp HH:MM:SS */
@@ -77,35 +81,35 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         switch (e->level)
         {
         case OV_CMDLOG_OK:
-            bullet_fg = (ov_rgb_t) { 80, 220, 80 };
+            bullet_fg = OV_FG_ACTIVE;
             bullet    = "✓";
             break;
         case OV_CMDLOG_FAIL:
-            bullet_fg = (ov_rgb_t) { 220, 60, 60 };
+            bullet_fg = OV_FG_ERROR;
             bullet    = "✗";
             break;
         case OV_CMDLOG_WARN:
-            bullet_fg = (ov_rgb_t) { 220, 180, 40 };
+            bullet_fg = OV_FG_WARN;
             bullet    = "⚠";
             break;
         default: /* INFO */
-            bullet_fg = (ov_rgb_t) { 100, 140, 200 };
+            bullet_fg = OV_FG_CONN;
             bullet    = "ℹ";
             break;
         }
 
         /* Dim timestamp */
-        ov_buf_fg(80, 80, 100);
+        ov_theme_fg(OV_FG_DIM);
         int nw = snprintf(NULL, 0, " %s ", tstr);
         ov_buf_printf(" %s ", tstr);
 
         /* Status bullet */
-        ov_buf_fg(bullet_fg.r, bullet_fg.g, bullet_fg.b);
+        ov_theme_fg(bullet_fg);
         ov_buf_printf("%s ", bullet);
-        nw += 2; /* 1 col bullet + space */
+        nw += ov_str_display_width(bullet) + 1;
 
         /* Message text */
-        ov_buf_fg(180, 180, 200);
+        ov_theme_fg(OV_FG_TEXT);
         int msg_max = r.width - nw - 1;
         if (msg_max < 0)
         {
@@ -116,14 +120,19 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         int max_bytes    = 0;
         for (int i = 0; e->msg[i] != '\0';)
         {
-            int cw = utf8_char_length((unsigned char) e->msg[i]);
-            if (msg_disp_len + 1 > msg_max)
+            int b = 0, w = 1;
+            ov_utf8_next_cluster(&e->msg[i], (int) strlen(&e->msg[i]), &b, &w);
+            if (b <= 0)
             {
                 break;
             }
-            msg_disp_len += 1;
-            max_bytes += cw;
-            i += cw;
+            if (msg_disp_len + w > msg_max)
+            {
+                break;
+            }
+            msg_disp_len += w;
+            max_bytes += b;
+            i += b;
         }
 
         ov_buf_printf("%.*s", max_bytes, e->msg);

@@ -24,7 +24,7 @@
 void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m);
 
 /**
- * ov_render_fps_param_info - draw FPS parameter metadata header on rows 2 and 3.
+ * ov_render_fps_param_info - draw FPS parameter metadata header on rows 3 and 4.
  * @lay: layout state
  * @m:   data model
  */

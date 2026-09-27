@@ -24,6 +24,7 @@
 
 #include "overview_defs.h"
 #include "overview_data.h"
+#include "overview_data_loops.h"
 
 #include "ImageStreamIO/ImageStreamIO.h"
 
@@ -72,6 +73,7 @@ void ov_model_full_scan(OV_MODEL *model)
     model->nb_procs   = 0;
     model->nb_nodes   = 0;
     model->nb_edges   = 0;
+    model->nb_loops   = 0;
 
     ov_scan_streams(model);
     ov_scan_fps(model);
@@ -79,6 +81,7 @@ void ov_model_full_scan(OV_MODEL *model)
     ov_scan_procs(model);
 
     ov_build_graph(model);
+    ov_detect_loops(model, SG_MODE_FULL);
 
     /* Post-scan enrichment: sparklines, uptime,
      * stale detection, new-item flash */

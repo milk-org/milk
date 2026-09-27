@@ -5,8 +5,16 @@
 #ifndef OVERVIEW_ANSI_H
 #define OVERVIEW_ANSI_H
 
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#endif
+#ifndef _XOPEN_SOURCE
+#    define _XOPEN_SOURCE 700
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
@@ -16,12 +24,16 @@
 #include <signal.h>
 #include <errno.h>
 #include <poll.h>
+#include <wchar.h>
+
+extern int wcwidth(wchar_t c);
 
 /* =========================================================
  * Key code constants
  * ========================================================= */
 
 #define OV_KEY_NONE 0
+#define OV_KEY_EOF (-1)
 #define OV_KEY_UP 256
 #define OV_KEY_DOWN 257
 #define OV_KEY_LEFT 258
@@ -59,11 +71,12 @@
 #define OV_KEY_CTRL_SCROLL_DOWN 290
 #define OV_KEY_MOUSE_MOVE 291
 
-extern int ov_mouse_row;
-extern int ov_mouse_col;
-extern int ov_mouse_btn;
-extern int ov_hover_row;
-extern int ov_hover_col;
+extern int      ov_mouse_row;
+extern int      ov_mouse_col;
+extern uint32_t ov__default_bg;
+extern int      ov_mouse_btn;
+extern int      ov_hover_row;
+extern int      ov_hover_col;
 
 #ifndef ctrl
 #    define ctrl(x) ((x) & 0x1f)
@@ -74,6 +87,7 @@ extern int ov_hover_col;
  * ========================================================= */
 
 extern struct termios ov__orig_termios;
+extern int            ov__orig_flags;
 extern int            ov__raw_active;
 
 static inline void ov_raw_mode_enter(void)
@@ -96,8 +110,11 @@ static inline void ov_raw_mode_enter(void)
     raw.c_cc[VTIME] = 0;
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 
-    int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+    ov__orig_flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    if (ov__orig_flags >= 0)
+    {
+        fcntl(STDIN_FILENO, F_SETFL, ov__orig_flags | O_NONBLOCK);
+    }
 
     const char seq[] = "\033[?1049h\033[?25l\033[?7l\033[?1002h\033[?1006h";
     if (write(STDOUT_FILENO, seq, sizeof(seq) - 1) < 0)
@@ -115,6 +132,10 @@ static inline void ov_raw_mode_exit(void)
     const char seq[] = "\033[?1003l\033[?1006l\033[?1002l\033[?25h\033[?7h\033[0m\033[?1049l";
     if (write(STDOUT_FILENO, seq, sizeof(seq) - 1) < 0)
     {
+    }
+    if (ov__orig_flags >= 0)
+    {
+        fcntl(STDIN_FILENO, F_SETFL, ov__orig_flags);
     }
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &ov__orig_termios);
     ov__raw_active = 0;
@@ -179,11 +200,12 @@ static inline void ov_get_terminal_size(int *rows, int *cols)
 
 typedef struct
 {
-    char     ch[5]; // UTF-8 char up to 4 bytes + null terminator
-    uint32_t fg;    // Color code + flag
-    uint32_t bg;    // Color code + flag
-    uint32_t ul;    // Underline color
-    uint8_t  attr;  // bitmask for BOLD, DIM, REVERSE, etc.
+    char     ch[16]; // UTF-8 char/cluster up to 15 bytes + null terminator
+    uint8_t  width;  // visual display width: 1 or 2 (0 for continuation cell)
+    uint8_t  attr;   // bitmask for BOLD, DIM, REVERSE, etc.
+    uint32_t fg;     // Color code + flag
+    uint32_t bg;     // Color code + flag
+    uint32_t ul;     // Underline color
 } OV_CELL;
 
 extern char     ov__screenbuf[OV_SCREENBUF_SIZE];
@@ -205,28 +227,44 @@ static inline void ov_buf_force_clear(void)
     memset(ov__front, 0, sizeof(ov__front));
 }
 
-static inline void ov_buf_reset(void)
+static inline void ov_buf_reset_size(int rows, int cols)
 {
     ov__screenbuf_len = 0;
     ov__cursor_row    = 1;
     ov__cursor_col    = 1;
     ov__current_fg    = OV_COLOR_NONE;
-    ov__current_bg    = OV_COLOR_NONE;
+    ov__current_bg    = ov__default_bg;
     ov__current_ul    = OV_COLOR_NONE;
     ov__current_attr  = 0;
 
-    for (int r = 0; r < OV_MAX_ROWS; r++)
+    if (rows <= 0 || rows > OV_MAX_ROWS)
     {
-        for (int c = 0; c < OV_MAX_COLS; c++)
+        rows = OV_MAX_ROWS;
+    }
+    if (cols <= 0 || cols > OV_MAX_COLS)
+    {
+        cols = OV_MAX_COLS;
+    }
+
+    for (int r = 0; r < rows; r++)
+    {
+        for (int c = 0; c < cols; c++)
         {
+            memset(&ov__shadow[r][c], 0, sizeof(OV_CELL));
             ov__shadow[r][c].ch[0] = ' ';
             ov__shadow[r][c].ch[1] = '\0';
+            ov__shadow[r][c].width = 1;
             ov__shadow[r][c].fg    = OV_COLOR_NONE;
-            ov__shadow[r][c].bg    = OV_COLOR_NONE;
+            ov__shadow[r][c].bg    = ov__default_bg;
             ov__shadow[r][c].ul    = OV_COLOR_NONE;
             ov__shadow[r][c].attr  = 0;
         }
     }
+}
+
+static inline void ov_buf_reset(void)
+{
+    ov_buf_reset_size(OV_MAX_ROWS, OV_MAX_COLS);
 }
 
 static inline void ov_buf_append(const char *data, int len)
@@ -274,6 +312,176 @@ static inline void ov_buf_flush_internal(void)
     }
 }
 
+static inline void ov_buf_emit_sgr_delta(const OV_CELL *sc,
+                                         uint8_t       *emit_attr,
+                                         uint32_t      *emit_fg,
+                                         uint32_t      *emit_bg,
+                                         uint32_t      *emit_ul)
+{
+    int need_reset =
+        ((*emit_attr & ~sc->attr) != 0 ||
+         (sc->fg != *emit_fg && *emit_fg != OV_COLOR_NONE && sc->fg == OV_COLOR_NONE) ||
+         (sc->bg != *emit_bg && *emit_bg != OV_COLOR_NONE && sc->bg == OV_COLOR_NONE) ||
+         (sc->ul != *emit_ul && *emit_ul != OV_COLOR_NONE && sc->ul == OV_COLOR_NONE));
+
+    if (!need_reset && sc->attr == *emit_attr && sc->fg == *emit_fg && sc->bg == *emit_bg &&
+        sc->ul == *emit_ul)
+    {
+        return;
+    }
+
+    if (need_reset)
+    {
+        *emit_attr = 0;
+        *emit_fg   = OV_COLOR_NONE;
+        *emit_bg   = OV_COLOR_NONE;
+        *emit_ul   = OV_COLOR_NONE;
+    }
+
+    char tmp[128];
+    int  len   = 0;
+    tmp[len++] = '\033';
+    tmp[len++] = '[';
+    int first  = 1;
+
+    if (need_reset)
+    {
+        tmp[len++] = '0';
+        first      = 0;
+    }
+
+    if (sc->attr != *emit_attr)
+    {
+        if ((sc->attr & OV_ATTR_BOLD) && !(*emit_attr & OV_ATTR_BOLD))
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            tmp[len++] = '1';
+            first      = 0;
+        }
+        if ((sc->attr & OV_ATTR_DIM) && !(*emit_attr & OV_ATTR_DIM))
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            tmp[len++] = '2';
+            first      = 0;
+        }
+        if ((sc->attr & OV_ATTR_ITALIC) && !(*emit_attr & OV_ATTR_ITALIC))
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            tmp[len++] = '3';
+            first      = 0;
+        }
+        if ((sc->attr & OV_ATTR_UNDERLINE) && !(*emit_attr & OV_ATTR_UNDERLINE))
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            tmp[len++] = '4';
+            first      = 0;
+        }
+        if ((sc->attr & OV_ATTR_REVERSE) && !(*emit_attr & OV_ATTR_REVERSE))
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            tmp[len++] = '7';
+            first      = 0;
+        }
+        if ((sc->attr & OV_ATTR_BLINK) && !(*emit_attr & OV_ATTR_BLINK))
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            tmp[len++] = '5';
+            first      = 0;
+        }
+        *emit_attr = sc->attr;
+    }
+
+    if (sc->fg != *emit_fg)
+    {
+        if (sc->fg != OV_COLOR_NONE)
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            if (sc->fg & OV_COLOR_TRUE)
+            {
+                len += snprintf(tmp + len, sizeof(tmp) - len, "38;2;%u;%u;%u",
+                                (sc->fg >> 16) & 0xFF, (sc->fg >> 8) & 0xFF, sc->fg & 0xFF);
+            }
+            else if (sc->fg & OV_COLOR_256)
+            {
+                len += snprintf(tmp + len, sizeof(tmp) - len, "38;5;%u", sc->fg & 0xFF);
+            }
+            first = 0;
+        }
+        *emit_fg = sc->fg;
+    }
+
+    if (sc->bg != *emit_bg)
+    {
+        if (sc->bg != OV_COLOR_NONE)
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            if (sc->bg & OV_COLOR_TRUE)
+            {
+                len += snprintf(tmp + len, sizeof(tmp) - len, "48;2;%u;%u;%u",
+                                (sc->bg >> 16) & 0xFF, (sc->bg >> 8) & 0xFF, sc->bg & 0xFF);
+            }
+            else if (sc->bg & OV_COLOR_256)
+            {
+                len += snprintf(tmp + len, sizeof(tmp) - len, "48;5;%u", sc->bg & 0xFF);
+            }
+            first = 0;
+        }
+        *emit_bg = sc->bg;
+    }
+
+    if (sc->ul != *emit_ul)
+    {
+        if (sc->ul != OV_COLOR_NONE)
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            if (sc->ul & OV_COLOR_TRUE)
+            {
+                len += snprintf(tmp + len, sizeof(tmp) - len, "58;2;%u;%u;%u",
+                                (sc->ul >> 16) & 0xFF, (sc->ul >> 8) & 0xFF, sc->ul & 0xFF);
+            }
+            else if (sc->ul & OV_COLOR_256)
+            {
+                len += snprintf(tmp + len, sizeof(tmp) - len, "58;5;%u", sc->ul & 0xFF);
+            }
+            first = 0;
+        }
+        *emit_ul = sc->ul;
+    }
+
+    if (!first)
+    {
+        tmp[len++] = 'm';
+        ov_buf_append(tmp, len);
+    }
+}
+
 static inline void ov_buf_flush_delta(int term_rows, int term_cols)
 {
     int      emit_cursor_r = -1;
@@ -303,13 +511,22 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
             OV_CELL *sc = &ov__shadow[r][c];
             OV_CELL *fc = &ov__front[r][c];
 
+            /* Continuation cell of a wide character: already drawn by column c-1 */
+            if (sc->width == 0)
+            {
+                *fc = *sc;
+                continue;
+            }
+
             if (sc->ch[0] == '\0')
             {
                 sc->ch[0] = ' ';
                 sc->ch[1] = '\0'; // ensure valid char
+                sc->width = 1;
             }
 
-            if (memcmp(sc, fc, sizeof(OV_CELL)) != 0)
+            if (sc->attr != fc->attr || sc->fg != fc->fg || sc->bg != fc->bg || sc->ul != fc->ul ||
+                sc->width != fc->width || memcmp(sc->ch, fc->ch, sizeof(sc->ch)) != 0)
             {
                 // Pos
                 if (emit_cursor_r != r + 1 || emit_cursor_c != c + 1)
@@ -320,114 +537,19 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
                     emit_cursor_c = c + 1;
                 }
 
-                // Attr reset if missing
-                if ((emit_attr & ~sc->attr) != 0 ||
-                    (sc->fg != emit_fg && emit_fg != OV_COLOR_NONE && sc->fg == OV_COLOR_NONE) ||
-                    (sc->bg != emit_bg && emit_bg != OV_COLOR_NONE && sc->bg == OV_COLOR_NONE) ||
-                    (sc->ul != emit_ul && emit_ul != OV_COLOR_NONE && sc->ul == OV_COLOR_NONE))
-                {
-                    ov_buf_append("\033[0m", 4);
-                    emit_attr = 0;
-                    emit_fg   = OV_COLOR_NONE;
-                    emit_bg   = OV_COLOR_NONE;
-                    emit_ul   = OV_COLOR_NONE;
-                }
-
-                // Add attrs
-                if (sc->attr != emit_attr)
-                {
-                    if ((sc->attr & OV_ATTR_BOLD) && !(emit_attr & OV_ATTR_BOLD))
-                    {
-                        ov_buf_append("\033[1m", 4);
-                    }
-                    if ((sc->attr & OV_ATTR_DIM) && !(emit_attr & OV_ATTR_DIM))
-                    {
-                        ov_buf_append("\033[2m", 4);
-                    }
-                    if ((sc->attr & OV_ATTR_ITALIC) && !(emit_attr & OV_ATTR_ITALIC))
-                    {
-                        ov_buf_append("\033[3m", 4);
-                    }
-                    if ((sc->attr & OV_ATTR_UNDERLINE) && !(emit_attr & OV_ATTR_UNDERLINE))
-                    {
-                        ov_buf_append("\033[4m", 4);
-                    }
-                    if ((sc->attr & OV_ATTR_REVERSE) && !(emit_attr & OV_ATTR_REVERSE))
-                    {
-                        ov_buf_append("\033[7m", 4);
-                    }
-                    if ((sc->attr & OV_ATTR_BLINK) && !(emit_attr & OV_ATTR_BLINK))
-                    {
-                        ov_buf_append("\033[5m", 4);
-                    }
-                    emit_attr = sc->attr;
-                }
-
-                // Colors
-                if (sc->fg != emit_fg)
-                {
-                    if (sc->fg != OV_COLOR_NONE)
-                    {
-                        if (sc->fg & OV_COLOR_TRUE)
-                        {
-                            int n = snprintf(tmp, sizeof(tmp), "\033[38;2;%u;%u;%um",
-                                             (sc->fg >> 16) & 0xFF, (sc->fg >> 8) & 0xFF,
-                                             sc->fg & 0xFF);
-                            ov_buf_append(tmp, n);
-                        }
-                        else if (sc->fg & OV_COLOR_256)
-                        {
-                            int n = snprintf(tmp, sizeof(tmp), "\033[38;5;%um", sc->fg & 0xFF);
-                            ov_buf_append(tmp, n);
-                        }
-                    }
-                    emit_fg = sc->fg;
-                }
-                if (sc->bg != emit_bg)
-                {
-                    if (sc->bg != OV_COLOR_NONE)
-                    {
-                        if (sc->bg & OV_COLOR_TRUE)
-                        {
-                            int n = snprintf(tmp, sizeof(tmp), "\033[48;2;%u;%u;%um",
-                                             (sc->bg >> 16) & 0xFF, (sc->bg >> 8) & 0xFF,
-                                             sc->bg & 0xFF);
-                            ov_buf_append(tmp, n);
-                        }
-                        else if (sc->bg & OV_COLOR_256)
-                        {
-                            int n = snprintf(tmp, sizeof(tmp), "\033[48;5;%um", sc->bg & 0xFF);
-                            ov_buf_append(tmp, n);
-                        }
-                    }
-                    emit_bg = sc->bg;
-                }
-                if (sc->ul != emit_ul)
-                {
-                    if (sc->ul != OV_COLOR_NONE)
-                    {
-                        if (sc->ul & OV_COLOR_TRUE)
-                        {
-                            int n = snprintf(tmp, sizeof(tmp), "\033[58;2;%u;%u;%um",
-                                             (sc->ul >> 16) & 0xFF, (sc->ul >> 8) & 0xFF,
-                                             sc->ul & 0xFF);
-                            ov_buf_append(tmp, n);
-                        }
-                        else if (sc->ul & OV_COLOR_256)
-                        {
-                            int n = snprintf(tmp, sizeof(tmp), "\033[58;5;%um", sc->ul & 0xFF);
-                            ov_buf_append(tmp, n);
-                        }
-                    }
-                    emit_ul = sc->ul;
-                }
+                // Batch SGR attributes and colors
+                ov_buf_emit_sgr_delta(sc, &emit_attr, &emit_fg, &emit_bg, &emit_ul);
 
                 // Char
                 size_t chlen = strlen(sc->ch);
-                ov_buf_append(sc->ch, chlen);
-                emit_cursor_c++;
+                ov_buf_append(sc->ch, (int) chlen);
+                emit_cursor_c += sc->width;
 
                 *fc = *sc;
+                if (sc->width == 2 && c + 1 < term_cols)
+                {
+                    ov__front[r][c + 1] = ov__shadow[r][c + 1];
+                }
             }
         }
     }
@@ -443,22 +565,6 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
     ov_buf_append("\033[?2026l", 8);
 
     ov_buf_flush_internal();
-}
-
-static inline void ov_buf_append_char(const char *utf8_seq, int bytes)
-{
-    if (ov__cursor_row >= 1 && ov__cursor_row <= OV_MAX_ROWS && ov__cursor_col >= 1 &&
-        ov__cursor_col <= OV_MAX_COLS)
-    {
-        OV_CELL *cell = &ov__shadow[ov__cursor_row - 1][ov__cursor_col - 1];
-        memcpy(cell->ch, utf8_seq, bytes);
-        cell->ch[bytes] = '\0';
-        cell->fg        = ov__current_fg;
-        cell->bg        = ov__current_bg;
-        cell->ul        = ov__current_ul;
-        cell->attr      = ov__current_attr;
-    }
-    ov__cursor_col++;
 }
 
 static inline int utf8_char_length(unsigned char c)
@@ -482,6 +588,174 @@ static inline int utf8_char_length(unsigned char c)
     return 1;
 }
 
+static inline int ov_utf8_decode(const char *s, int len, uint32_t *cp)
+{
+    if (len <= 0)
+    {
+        *cp = 0;
+        return 0;
+    }
+    unsigned char c = (unsigned char) s[0];
+    if (c < 0x80)
+    {
+        *cp = c;
+        return 1;
+    }
+    if ((c & 0xE0) == 0xC0 && len >= 2)
+    {
+        *cp = (uint32_t) (((c & 0x1F) << 6) | (s[1] & 0x3F));
+        return 2;
+    }
+    if ((c & 0xF0) == 0xE0 && len >= 3)
+    {
+        *cp = (uint32_t) (((c & 0x0F) << 12) | ((s[1] & 0x3F) << 6) | (s[2] & 0x3F));
+        return 3;
+    }
+    if ((c & 0xF8) == 0xF0 && len >= 4)
+    {
+        *cp = (uint32_t) (((c & 0x07) << 18) | ((s[1] & 0x3F) << 12) | ((s[2] & 0x3F) << 6) |
+                          (s[3] & 0x3F));
+        return 4;
+    }
+    *cp = c;
+    return 1;
+}
+
+static inline int ov_utf8_next_cluster(const char *s, int max_len, int *bytes_out, int *width_out)
+{
+    if (max_len <= 0 || s[0] == '\0')
+    {
+        *bytes_out = 0;
+        *width_out = 0;
+        return 0;
+    }
+
+    uint32_t cp0         = 0;
+    int      b0          = ov_utf8_decode(s, max_len, &cp0);
+    int      total_bytes = b0;
+    int      has_vs16    = 0;
+
+    /* Consume trailing modifiers: VS16 (U+FE0F), Keycap (U+20E3), etc. */
+    while (total_bytes < max_len && total_bytes < 15)
+    {
+        uint32_t next_cp = 0;
+        int      nb      = ov_utf8_decode(s + total_bytes, max_len - total_bytes, &next_cp);
+        if (next_cp == 0xFE0F)
+        {
+            has_vs16 = 1;
+            total_bytes += nb;
+        }
+        else if (next_cp == 0x20E3 || next_cp == 0xFE0E)
+        {
+            total_bytes += nb;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    int w = 1;
+    if (has_vs16)
+    {
+        w = 2;
+    }
+    else if (cp0 >= 0x1F000 && cp0 <= 0x1FAFF)
+    {
+        /* Standard emoji symbols / pictographs */
+        w = 2;
+    }
+    else if (cp0 >= 0x2600 && cp0 <= 0x27BF)
+    {
+        if (cp0 == 0x2705 || cp0 == 0x274C || cp0 == 0x274E || (cp0 >= 0x2753 && cp0 <= 0x2755) ||
+            cp0 == 0x2757 || cp0 == 0x2728 || cp0 == 0x26A0 || cp0 == 0x26A1 || cp0 == 0x26BD ||
+            cp0 == 0x26BE || cp0 == 0x26C4 || cp0 == 0x26C5 || cp0 == 0x26D4 || cp0 == 0x26EA ||
+            cp0 == 0x26F2 || cp0 == 0x26F3 || cp0 == 0x26F5 || cp0 == 0x26FA || cp0 == 0x26FD)
+        {
+            w = 2;
+        }
+        else
+        {
+            int sys_w = wcwidth((wchar_t) cp0);
+            w         = (sys_w == 2) ? 2 : 1;
+        }
+    }
+    else
+    {
+        int sys_w = wcwidth((wchar_t) cp0);
+        w         = (sys_w == 2) ? 2 : 1;
+    }
+
+    *bytes_out = total_bytes;
+    *width_out = w;
+    return 1;
+}
+
+static inline int ov_str_display_width(const char *s)
+{
+    if (s == NULL)
+    {
+        return 0;
+    }
+    int len     = (int) strlen(s);
+    int total_w = 0;
+    int pos     = 0;
+    while (pos < len)
+    {
+        int b = 0, w = 0;
+        if (!ov_utf8_next_cluster(s + pos, len - pos, &b, &w))
+        {
+            break;
+        }
+        total_w += w;
+        pos += b;
+    }
+    return total_w;
+}
+
+static inline void ov_buf_append_cluster(const char *utf8_seq, int bytes, int width)
+{
+    if (width <= 0)
+    {
+        return;
+    }
+    if (ov__cursor_row >= 1 && ov__cursor_row <= OV_MAX_ROWS && ov__cursor_col >= 1 &&
+        ov__cursor_col <= OV_MAX_COLS)
+    {
+        OV_CELL *cell = &ov__shadow[ov__cursor_row - 1][ov__cursor_col - 1];
+        if (bytes >= (int) sizeof(cell->ch))
+        {
+            bytes = (int) sizeof(cell->ch) - 1;
+        }
+        memset(cell->ch, 0, sizeof(cell->ch));
+        memcpy(cell->ch, utf8_seq, (size_t) bytes);
+        cell->width = (uint8_t) width;
+        cell->fg    = ov__current_fg;
+        cell->bg    = ov__current_bg;
+        cell->ul    = ov__current_ul;
+        cell->attr  = ov__current_attr;
+
+        if (width == 2 && ov__cursor_col < OV_MAX_COLS)
+        {
+            OV_CELL *cont = &ov__shadow[ov__cursor_row - 1][ov__cursor_col];
+            memset(cont->ch, 0, sizeof(cont->ch));
+            cont->width = 0;
+            cont->fg    = ov__current_fg;
+            cont->bg    = ov__current_bg;
+            cont->ul    = ov__current_ul;
+            cont->attr  = ov__current_attr;
+        }
+    }
+    ov__cursor_col += width;
+}
+
+static inline void ov_buf_append_char(const char *utf8_seq, int bytes)
+{
+    int b = 0, w = 1;
+    ov_utf8_next_cluster(utf8_seq, bytes, &b, &w);
+    ov_buf_append_cluster(utf8_seq, bytes, w);
+}
+
 static inline void ov_buf_printf(const char *fmt, ...)
 {
     char    tmp[4096];
@@ -499,13 +773,14 @@ static inline void ov_buf_printf(const char *fmt, ...)
         int i = 0;
         while (i < n)
         {
-            int char_len = utf8_char_length((unsigned char) tmp[i]);
-            if (i + char_len > n)
+            int b = 0, w = 1;
+            ov_utf8_next_cluster(&tmp[i], n - i, &b, &w);
+            if (b <= 0)
             {
-                char_len = n - i;
+                break;
             }
-            ov_buf_append_char(&tmp[i], char_len);
-            i += char_len;
+            ov_buf_append_cluster(&tmp[i], b, w);
+            i += b;
         }
     }
 }
@@ -643,11 +918,49 @@ static inline int ov_get_key(void)
     static int           buf_len = 0;
     ssize_t              n;
 
-    n = read(STDIN_FILENO, buf + buf_len, sizeof(buf) - (size_t) buf_len);
-    if (n > 0)
+    /* Safety flush if buffer accumulated unexpected volume of bytes */
+    if (buf_len > 64)
     {
-        buf_len += (int) n;
+        buf_len = 0;
     }
+
+    /* If buffer is empty, check if input is actually available before reading */
+    if (buf_len == 0)
+    {
+        struct pollfd pfd = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
+        int           pr  = poll(&pfd, 1, 0);
+        if (pr <= 0 || !(pfd.revents & POLLIN))
+        {
+            if (pr > 0 && (pfd.revents & (POLLHUP | POLLERR | POLLNVAL)))
+            {
+                return OV_KEY_EOF;
+            }
+            return OV_KEY_NONE;
+        }
+
+        n = read(STDIN_FILENO, buf, sizeof(buf));
+        if (n > 0)
+        {
+            buf_len = (int) n;
+        }
+        else if (n == 0)
+        {
+            if (pfd.revents & (POLLHUP | POLLERR | POLLNVAL))
+            {
+                return OV_KEY_EOF;
+            }
+            return OV_KEY_NONE;
+        }
+        else
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+            {
+                return OV_KEY_NONE;
+            }
+            return OV_KEY_EOF;
+        }
+    }
+
     if (buf_len == 0)
     {
         return OV_KEY_NONE;
@@ -660,6 +973,48 @@ static inline int ov_get_key(void)
         memmove(buf, buf + 1, (size_t) (buf_len - 1));
         buf_len--;
         return key;
+    }
+
+    /* Check if trailing bytes follow ESC for an escape sequence */
+    if (buf_len == 1)
+    {
+        struct pollfd pfd = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
+        if (poll(&pfd, 1, 50) > 0 && (pfd.revents & POLLIN))
+        {
+            n = read(STDIN_FILENO, buf + buf_len, sizeof(buf) - (size_t) buf_len);
+            if (n > 0)
+            {
+                buf_len += (int) n;
+            }
+        }
+    }
+
+    /* Solitary ESC with no subsequent bytes */
+    if (buf_len == 1)
+    {
+        buf_len = 0;
+        return OV_KEY_ESC;
+    }
+
+    /* ESC with '[' or 'O' waiting for a 3rd byte */
+    if (buf_len == 2 && (buf[1] == '[' || buf[1] == 'O'))
+    {
+        struct pollfd pfd = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
+        if (poll(&pfd, 1, 50) > 0 && (pfd.revents & POLLIN))
+        {
+            n = read(STDIN_FILENO, buf + buf_len, sizeof(buf) - (size_t) buf_len);
+            if (n > 0)
+            {
+                buf_len += (int) n;
+            }
+        }
+        if (buf_len == 2)
+        {
+            /* No 3rd byte arrived: treat as solitary ESC followed by '[' or 'O' */
+            memmove(buf, buf + 1, (size_t) (buf_len - 1));
+            buf_len--;
+            return OV_KEY_ESC;
+        }
     }
 
     /* Escape sequence */
@@ -830,6 +1185,26 @@ static inline int ov_get_key(void)
                             break;
                         }
                     }
+                    if (end_idx <= 0 && buf_len < 32)
+                    {
+                        struct pollfd pfd = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
+                        if (poll(&pfd, 1, 20) > 0 && (pfd.revents & POLLIN))
+                        {
+                            n = read(STDIN_FILENO, buf + buf_len, sizeof(buf) - (size_t) buf_len);
+                            if (n > 0)
+                            {
+                                buf_len += (int) n;
+                                for (int i = 3; i < buf_len && i < 32; i++)
+                                {
+                                    if (buf[i] == 'M' || buf[i] == 'm')
+                                    {
+                                        end_idx = i;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                     if (end_idx > 0)
                     {
                         int  mb = 0, mc = 0, mr = 0;
@@ -890,6 +1265,19 @@ static inline int ov_get_key(void)
                         }
                         return OV_KEY_NONE;
                     }
+
+                    /* Incomplete or malformed mouse sequence: safely discard prefix */
+                    int discard = 3;
+                    for (int i = 3; i < buf_len; i++)
+                    {
+                        if ((buf[i] >= 0x40 && buf[i] <= 0x7E) || buf[i] == 0x1b)
+                        {
+                            discard = (buf[i] == 0x1b) ? i : (i + 1);
+                            break;
+                        }
+                    }
+                    memmove(buf, buf + discard, (size_t) (buf_len - discard));
+                    buf_len -= discard;
                     return OV_KEY_NONE;
                 }
 
@@ -902,11 +1290,18 @@ static inline int ov_get_key(void)
                         return OV_KEY_NONE;
                     }
                 }
+
+                if (buf_len > 16)
+                {
+                    memmove(buf, buf + 2, (size_t) (buf_len - 2));
+                    buf_len -= 2;
+                    return OV_KEY_NONE;
+                }
             }
             return OV_KEY_NONE;
         }
 
-        /* SS3: ESC O ... (xterm F1-F4) */
+        /* SS3: ESC O ... (application cursor keys and xterm F1-F4) */
         if (buf[1] == 'O')
         {
             if (buf_len >= 3)
@@ -915,6 +1310,24 @@ static inline int ov_get_key(void)
                 int consumed = 3;
                 switch (buf[2])
                 {
+                case 'A':
+                    key = OV_KEY_UP;
+                    break;
+                case 'B':
+                    key = OV_KEY_DOWN;
+                    break;
+                case 'C':
+                    key = OV_KEY_RIGHT;
+                    break;
+                case 'D':
+                    key = OV_KEY_LEFT;
+                    break;
+                case 'H':
+                    key = OV_KEY_HOME;
+                    break;
+                case 'F':
+                    key = OV_KEY_END;
+                    break;
                 case 'P':
                     key = OV_KEY_F1;
                     break;
@@ -937,6 +1350,7 @@ static inline int ov_get_key(void)
             return OV_KEY_NONE;
         }
 
+        /* Consume solitary ESC or unhandled escape prefix */
         memmove(buf, buf + 1, (size_t) (buf_len - 1));
         buf_len--;
         return OV_KEY_ESC;

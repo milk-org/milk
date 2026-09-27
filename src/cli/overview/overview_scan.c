@@ -28,6 +28,8 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <time.h>
+#include <math.h>
+#include <sys/eventfd.h>
 
 #include "overview_defs.h"
 #include "overview_data.h"
@@ -49,7 +51,9 @@ static int        ov_ready_idx   = 1;
 static int        ov_display_idx = 2;
 static atomic_int ov_new_data    = 0;
 
-static pthread_mutex_t ov_model_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t ov_model_mutex   = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  ov_scan_cond     = PTHREAD_COND_INITIALIZER;
+static int             ov_scan_event_fd = -1;
 
 
 /* =========================================================
@@ -96,6 +100,14 @@ int ov_scan_has_new_data(void)
     return atomic_load_explicit(&ov_new_data, memory_order_acquire);
 }
 
+/**
+ * ov_scan_get_event_fd - get eventfd notified on new scan data.
+ */
+int ov_scan_get_event_fd(void)
+{
+    return ov_scan_event_fd;
+}
+
 
 /* =========================================================
  * Scan thread main loop
@@ -122,26 +134,35 @@ static void *ov_scan_thread_func(void *arg __attribute__((unused)))
         }
         pthread_mutex_unlock(&ov_model_mutex);
 
-        /* Sleep for the configured interval in small increments
-         * so we can exit immediately if requested. */
+        /* Wake up the UI poll loop immediately */
+        if (ov_scan_event_fd >= 0)
         {
-            float           interval = ov_scan_interval_s;
-            struct timespec ts;
-            ts.tv_sec  = 0;
-            ts.tv_nsec = 10000000L; /* 10 ms */
-
-            int num_sleeps = (int) (interval / 0.01f);
-            for (int i = 0; i < num_sleeps; i++)
-            {
-                if (!ov_scan_running || OV_SIG_ANY_SET() ||
-                    atomic_load_explicit(&ov_force_update_flag, memory_order_acquire))
-                {
-                    atomic_store_explicit(&ov_force_update_flag, 0, memory_order_release);
-                    break;
-                }
-                nanosleep(&ts, NULL);
-            }
+            uint64_t one = 1;
+            ssize_t  ret = write(ov_scan_event_fd, &one, sizeof(one));
+            (void) ret;
         }
+
+        /* Sleep for the configured interval, waking up immediately
+         * if an update is forced or stop is requested. */
+        pthread_mutex_lock(&ov_model_mutex);
+        if (ov_scan_running && !OV_SIG_ANY_SET() &&
+            !atomic_load_explicit(&ov_force_update_flag, memory_order_acquire))
+        {
+            struct timespec ts;
+            clock_gettime(CLOCK_REALTIME, &ts);
+            double sec_part  = 0.0;
+            double frac_part = modf((double) ov_scan_interval_s, &sec_part);
+            ts.tv_sec += (time_t) sec_part;
+            ts.tv_nsec += (long) (frac_part * 1e9);
+            if (ts.tv_nsec >= 1000000000L)
+            {
+                ts.tv_sec += ts.tv_nsec / 1000000000L;
+                ts.tv_nsec %= 1000000000L;
+            }
+            pthread_cond_timedwait(&ov_scan_cond, &ov_model_mutex, &ts);
+        }
+        atomic_store_explicit(&ov_force_update_flag, 0, memory_order_release);
+        pthread_mutex_unlock(&ov_model_mutex);
     }
 
     return NULL;
@@ -163,11 +184,20 @@ int ov_scan_start(void)
     {
         return 0;
     }
+    if (ov_scan_event_fd < 0)
+    {
+        ov_scan_event_fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+    }
     ov_scan_running = 1;
 
     if (pthread_create(&ov_scan_thread, NULL, ov_scan_thread_func, NULL) != 0)
     {
         ov_scan_running = 0;
+        if (ov_scan_event_fd >= 0)
+        {
+            close(ov_scan_event_fd);
+            ov_scan_event_fd = -1;
+        }
         return -1;
     }
     return 0;
@@ -178,9 +208,19 @@ int ov_scan_start(void)
  */
 void ov_scan_stop(void)
 {
+    pthread_mutex_lock(&ov_model_mutex);
     ov_scan_running = 0;
+    pthread_cond_broadcast(&ov_scan_cond);
+    pthread_mutex_unlock(&ov_model_mutex);
+
     pthread_join(ov_scan_thread, NULL);
     ov_scan_cache_cleanup();
+
+    if (ov_scan_event_fd >= 0)
+    {
+        close(ov_scan_event_fd);
+        ov_scan_event_fd = -1;
+    }
 }
 
 /**
@@ -203,6 +243,13 @@ const OV_MODEL *ov_scan_get_model(void)
         ov_display_idx = ov_ready_idx;
         ov_ready_idx   = tmp;
         atomic_store(&ov_new_data, 0);
+
+        if (ov_scan_event_fd >= 0)
+        {
+            uint64_t val = 0;
+            ssize_t  ret = read(ov_scan_event_fd, &val, sizeof(val));
+            (void) ret;
+        }
     }
     pthread_mutex_unlock(&ov_model_mutex);
 
@@ -215,4 +262,7 @@ const OV_MODEL *ov_scan_get_model(void)
 void ov_scan_force_update(void)
 {
     atomic_store_explicit(&ov_force_update_flag, 1, memory_order_release);
+    pthread_mutex_lock(&ov_model_mutex);
+    pthread_cond_broadcast(&ov_scan_cond);
+    pthread_mutex_unlock(&ov_model_mutex);
 }

@@ -21,8 +21,30 @@ typedef enum
     OV_VIEW_PROCS,
     OV_VIEW_FPS,
     OV_VIEW_GRAPH,
+    OV_VIEW_LOOPS,
     OV_VIEW_COUNT,
 } ov_view_t;
+
+static inline const char *ov_view_label(ov_view_t v)
+{
+    switch (v)
+    {
+    case OV_VIEW_DASHBOARD:
+        return "DASH";
+    case OV_VIEW_STREAMS:
+        return "STRM";
+    case OV_VIEW_PROCS:
+        return "PROC";
+    case OV_VIEW_FPS:
+        return "FPS";
+    case OV_VIEW_GRAPH:
+        return "CONN";
+    case OV_VIEW_LOOPS:
+        return "LOOPS";
+    default:
+        return "";
+    }
+}
 
 /* Panel rectangle */
 typedef struct
@@ -91,24 +113,45 @@ typedef struct
     int        sel_proc;
     int        sel_fps;
     int        sel_graph;
+    int        sel_loop;
     int        scroll_stream;
     int        scroll_proc;
     int        scroll_fps;
     int        scroll_graph;
+    int        scroll_loop;
     int        scroll_detail;
+    int        loop_filter_active;
+    int        renaming_loop;
+    char       rename_buf[64];
+    int        rename_cursor;
     int        detail_total_lines;
     int        show_help;
-    int        help_sel;    /* cursor row in help */
-    uint32_t   help_expand; /* bitmask: 1=expanded */
+    int        help_mode;          /* 0 = Controls & keybindings, 1 = Intro to milk-CTRL */
+    int        help_intro_scroll;  /* scroll row in full intro view */
+    int        help_sel;           /* cursor row in help */
+    uint32_t   help_expand;        /* bitmask: 1=expanded */
+    char       help_search[64];    /* keyword/topic search query */
+    int        help_search_active; /* 1 if typing in search prompt */
+    int        help_search_cursor; /* cursor position in search query */
     int        paused;
     char       filter[64];
     /* Per-panel regex filter strings */
-    char filter_stream[64];
-    char filter_proc[64];
-    char filter_fps[64];
-    int  filter_editing; /* 1 = typing filter */
-    int  filter_cursor;  /* cursor pos in filter */
-    int  filter_jump;    /* 1 = jump-to-match mode */
+    char       filter_stream[64];
+    char       filter_proc[64];
+    char       filter_fps[64];
+    int        filter_stream_active; /* 1 = stream filter active, 0 = paused/off */
+    int        filter_proc_active;   /* 1 = proc filter active, 0 = paused/off */
+    int        filter_fps_active;    /* 1 = fps filter active, 0 = paused/off */
+    ov_focus_t filter_panel;         /* panel currently being edited/filtered */
+    int        filter_active;        /* 1 = any panel filter active, 0 = none */
+    int        filter_editing;       /* 1 = typing filter */
+    int        filter_cursor;        /* cursor pos in filter */
+    int        filter_jump;          /* 1 = jump-to-match mode */
+    /* Header filter badge hit rects / positions */
+    int        r_filter_start[4];
+    int        r_filter_width[4];
+    ov_focus_t r_filter_panel[4];
+    int        r_filter_count;
     /* Multi-select state for FPS batch ops (#8) */
     uint8_t multi_sel_fps[200]; /* per-FPS select */
     int     multi_sel_count;    /* count of selected */
@@ -116,12 +159,18 @@ typedef struct
     int compact_mode;
     /* Dashboard panel rects */
     OV_RECT r_header;
+    OV_RECT r_tabs;
     OV_RECT r_streams;
     OV_RECT r_procs;
     OV_RECT r_fps;
     OV_RECT r_graph;
     OV_RECT r_cmdlog;
     OV_RECT r_status;
+    /* Theme selector popup */
+    int             theme_popup_active;
+    int             theme_popup_sel;
+    struct timespec theme_popup_ts;
+    OV_RECT         r_theme_popup;
     /* Command log */
     OV_CMDLOG cmdlog;
     int       cmdlog_rows; /* 0=hidden, default=4 */
@@ -138,7 +187,7 @@ typedef struct
     int  hover_global_stream; /* Global stream index hovered (-1 if none) */
     int  hover_global_proc;   /* Global proc index hovered (-1 if none) */
     int  hover_global_fps;    /* Global fps index hovered (-1 if none) */
-    /* Graph panel tab mode: 0=CONNECTIONS, 1=DETAILS, 2=RESOURCES */
+    /* Graph panel tab mode: 0=CONNECTIONS, 1=LOOPS, 2=DETAILS, 3=RESOURCES */
     int graph_tab_mode;
     /* Horizontal scroll per panel */
     int hscroll_stream;
@@ -305,6 +354,141 @@ static inline int ov_get_logical_col_proc(int vis_col, int compact)
         return 15;
     }
     return vis_col;
+}
+
+typedef struct
+{
+    int logical_col;
+    int sort_key;
+    int width;
+} OV_COL_LAYOUT;
+
+/**
+ * @brief Populate column layout for STREAMS table.
+ *
+ * @param[in]  compact  1 if compact mode is enabled, 0 otherwise
+ * @param[out] cols     Array to store column layout entries (min size 12)
+ * @return Number of columns populated
+ */
+static inline int ov_get_stream_col_layout(int compact, OV_COL_LAYOUT *cols)
+{
+    int n     = 0;
+    cols[n++] = (OV_COL_LAYOUT) { 0, 7, 3 };  /* A */
+    cols[n++] = (OV_COL_LAYOUT) { 1, 0, 14 }; /* NAME */
+    cols[n++] = (OV_COL_LAYOUT) { 2, 1, 4 };  /* TYP */
+    cols[n++] = (OV_COL_LAYOUT) { 3, 2, 11 }; /* SIZE */
+    cols[n++] = (OV_COL_LAYOUT) { 4, 3, 6 };  /* Hz */
+    cols[n++] = (OV_COL_LAYOUT) { 5, 4, 7 };  /* MB/s */
+    if (!compact)
+    {
+        cols[n++] = (OV_COL_LAYOUT) { 6, 5, 10 }; /* INODE */
+    }
+    cols[n++] = (OV_COL_LAYOUT) { 7, -1, 7 }; /* OWNER */
+    if (!compact)
+    {
+        cols[n++] = (OV_COL_LAYOUT) { 8, 6, 10 };  /* COUNT */
+        cols[n++] = (OV_COL_LAYOUT) { 9, -1, 10 }; /* SEMS */
+    }
+    cols[n++] = (OV_COL_LAYOUT) { 10, -1, 7 }; /* WPID */
+    cols[n++] = (OV_COL_LAYOUT) { 11, -1, 7 }; /* RPID */
+    return n;
+}
+
+/**
+ * @brief Populate column layout for PROCS table.
+ *
+ * @param[in]  compact  1 if compact mode is enabled, 0 otherwise
+ * @param[out] cols     Array to store column layout entries (min size 16)
+ * @return Number of columns populated
+ */
+static inline int ov_get_proc_col_layout(int compact, OV_COL_LAYOUT *cols)
+{
+    int n     = 0;
+    cols[n++] = (OV_COL_LAYOUT) { 0, 5, 3 };  /* A */
+    cols[n++] = (OV_COL_LAYOUT) { 1, 0, 14 }; /* NAME */
+    cols[n++] = (OV_COL_LAYOUT) { 2, 1, 7 };  /* PID */
+    cols[n++] = (OV_COL_LAYOUT) { 3, 6, 4 };  /* PRIO */
+    cols[n++] = (OV_COL_LAYOUT) { 4, 2, 5 };  /* STAT */
+    cols[n++] = (OV_COL_LAYOUT) { 5, 3, 6 };  /* Hz */
+    cols[n++] = (OV_COL_LAYOUT) { 6, 7, 6 };  /* UPTIME */
+    if (!compact)
+    {
+        cols[n++] = (OV_COL_LAYOUT) { 7, -1, 3 };  /* TRG */
+        cols[n++] = (OV_COL_LAYOUT) { 8, -1, 10 }; /* trig-strm */
+        cols[n++] = (OV_COL_LAYOUT) { 9, -1, 8 };  /* exec */
+        cols[n++] = (OV_COL_LAYOUT) { 10, 10, 5 }; /* DUTY */
+    }
+    cols[n++] = (OV_COL_LAYOUT) { 11, 8, 10 }; /* CPU% */
+    cols[n++] = (OV_COL_LAYOUT) { 12, 9, 10 }; /* LOOPCNT */
+    cols[n++] = (OV_COL_LAYOUT) { 13, 4, 5 };  /* MEM */
+    if (!compact)
+    {
+        cols[n++] = (OV_COL_LAYOUT) { 14, -1, 10 }; /* MISSED */
+    }
+    cols[n++] = (OV_COL_LAYOUT) { 15, -1, 200 }; /* MSG */
+    return n;
+}
+
+/**
+ * @brief Populate column layout for FPS table.
+ *
+ * @param[in]  compact  1 if compact mode is enabled, 0 otherwise
+ * @param[in]  view     Current overview view (OV_VIEW_FPS or other)
+ * @param[out] cols     Array to store column layout entries (min size 8)
+ * @return Number of columns populated
+ */
+static inline int ov_get_fps_col_layout(int compact, int view, OV_COL_LAYOUT *cols)
+{
+    int n      = 0;
+    int desc_w = (view == OV_VIEW_FPS) ? 30 : 20;
+    cols[n++]  = (OV_COL_LAYOUT) { 0, 3, 3 };  /* A */
+    cols[n++]  = (OV_COL_LAYOUT) { 1, 0, 18 }; /* NAME */
+    cols[n++]  = (OV_COL_LAYOUT) { 2, 5, 3 };  /* TMX */
+    cols[n++]  = (OV_COL_LAYOUT) { 3, 1, 7 };  /* CPID */
+    cols[n++]  = (OV_COL_LAYOUT) { 4, 4, 7 };  /* RPID */
+    cols[n++]  = (OV_COL_LAYOUT) { 5, 6, 3 };  /* STR */
+    cols[n++]  = (OV_COL_LAYOUT) { 6, 2, 5 };  /* MEM */
+    if (!compact)
+    {
+        cols[n++] = (OV_COL_LAYOUT) { 7, -1, desc_w }; /* DESCRIPTION */
+    }
+    return n;
+}
+
+/**
+ * @brief Hit-test a table column header given horizontal table offset.
+ *
+ * @param[in] cols            Array of column specifications
+ * @param[in] num_cols        Number of columns
+ * @param[in] collapsed_mask  Bitmask of collapsed logical columns
+ * @param[in] table_x         0-based horizontal character offset in table data
+ * @return Sort key index of clicked column, or -1 if none or non-sortable
+ */
+static inline int ov_header_hittest_sort_key(const OV_COL_LAYOUT *cols,
+                                             int                  num_cols,
+                                             uint32_t             collapsed_mask,
+                                             int                  table_x)
+{
+    if (table_x < 0)
+    {
+        return -1;
+    }
+
+    int cur_x = 0;
+    for (int c = 0; c < num_cols; c++)
+    {
+        int is_coll = (collapsed_mask & (1U << cols[c].logical_col)) != 0;
+        int col_w   = is_coll ? 1 : cols[c].width;
+        int sep_w   = (c < num_cols - 1 && !is_coll) ? 1 : 0;
+
+        if (table_x >= cur_x && table_x < cur_x + col_w + sep_w)
+        {
+            return cols[c].sort_key;
+        }
+        cur_x += col_w + sep_w;
+    }
+
+    return -1;
 }
 
 #endif /* OVERVIEW_LAYOUT_H */

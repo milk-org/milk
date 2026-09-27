@@ -4,7 +4,7 @@
 
 /**
  * @file overview_theme.h
- * @brief btop-inspired dark theme for milk-CTRL
+ * @brief Theme definitions and palette management for milk-CTRL
  *
  * Defines semantic color tokens used throughout the TUI.
  * Uses TrueColor (24-bit) RGB values and provides helpers
@@ -34,63 +34,147 @@ typedef struct
 } ov_rgb_t;
 
 /* =========================================================
- * Semantic color palette
+ * Theme structure & palette
+ * ========================================================= */
+
+typedef struct
+{
+    const char *id;
+    const char *name;
+    const char *desc;
+
+    /* Panel backgrounds */
+    ov_rgb_t bg_terminal;
+    ov_rgb_t bg_panel;
+    ov_rgb_t bg_panel_alt;
+    ov_rgb_t bg_header;
+    ov_rgb_t bg_selected;
+    ov_rgb_t bg_related;
+    ov_rgb_t bg_frozen;
+    ov_rgb_t bg_hover;
+    ov_rgb_t bg_pid_match;
+    ov_rgb_t bg_stale;
+    ov_rgb_t bg_new_item;
+    ov_rgb_t bg_loop;
+    ov_rgb_t bg_loop_shared;
+
+    /* Foreground — text */
+    ov_rgb_t fg_title;
+    ov_rgb_t fg_dim;
+    ov_rgb_t fg_text;
+    ov_rgb_t fg_bright;
+    ov_rgb_t fg_muted;
+
+    /* Foreground — node types */
+    ov_rgb_t fg_stream;
+    ov_rgb_t fg_fps;
+    ov_rgb_t fg_proc;
+
+    /* Dimmed accent colors for column headers */
+    ov_rgb_t fg_stream_hdr;
+    ov_rgb_t fg_fps_hdr;
+    ov_rgb_t fg_proc_hdr;
+
+    /* Foreground — status */
+    ov_rgb_t fg_active;
+    ov_rgb_t fg_idle;
+
+    /* Animation pulse parameters & status fg */
+    ov_rgb_t anim_pulse_bg_min;
+    ov_rgb_t anim_pulse_bg_max;
+    ov_rgb_t anim_pulse_fg_min;
+    ov_rgb_t anim_pulse_fg_max;
+    ov_rgb_t fg_warn;
+    ov_rgb_t fg_error;
+    ov_rgb_t fg_zombie;
+
+    /* Foreground — graph & loops */
+    ov_rgb_t fg_conn;
+    ov_rgb_t fg_edge_active;
+    ov_rgb_t fg_loop;
+    ov_rgb_t fg_loop_shared;
+
+    /* Gradient endpoints for bars/sparklines */
+    ov_rgb_t grad_lo;
+    ov_rgb_t grad_hi;
+    ov_rgb_t grad_cpu_lo;
+    ov_rgb_t grad_cpu_hi;
+} ov_theme_t;
+
+extern const ov_theme_t *ov_active_theme;
+
+/* Theme API declarations */
+int               ov_theme_count(void);
+const ov_theme_t *ov_theme_get(int index);
+const ov_theme_t *ov_theme_get_active(void);
+int               ov_theme_get_active_index(void);
+int               ov_theme_find_by_id(const char *id);
+void              ov_theme_set(int index);
+void              ov_theme_cycle(void);
+void              ov_theme_init(const char *preferred_theme);
+
+/* =========================================================
+ * Semantic color palette (maps to active theme)
  * ========================================================= */
 
 /* Panel backgrounds */
-#define OV_BG_TERMINAL (ov_rgb_t){ 20, 22, 28 }
-#define OV_BG_PANEL (ov_rgb_t){ 30, 32, 40 }
-#define OV_BG_PANEL_ALT (ov_rgb_t){ 25, 27, 35 }
-#define OV_BG_HEADER (ov_rgb_t){ 40, 44, 58 }
-#define OV_BG_SELECTED (ov_rgb_t){ 50, 60, 90 }
-#define OV_BG_RELATED (ov_rgb_t){ 38, 50, 42 } /* soft green tint for related items */
-#define OV_BG_FROZEN (ov_rgb_t){ 40, 90, 140 } /* bright blue tint for frozen selection */
-#define OV_BG_HOVER (ov_rgb_t){ 45, 52, 72 }
-#define OV_BG_PID_MATCH (ov_rgb_t){ 50, 180, 50 } /* green bg for PID match */
-#define OV_BG_STALE (ov_rgb_t){ 55, 45, 20 }      /* amber tint for stale procs */
-#define OV_BG_NEW_ITEM (ov_rgb_t){ 40, 60, 50 }   /* green flash for new items */
+#define OV_BG_TERMINAL (ov_active_theme->bg_terminal)
+#define OV_BG_PANEL (ov_active_theme->bg_panel)
+#define OV_BG_PANEL_ALT (ov_active_theme->bg_panel_alt)
+#define OV_BG_HEADER (ov_active_theme->bg_header)
+#define OV_BG_SELECTED (ov_active_theme->bg_selected)
+#define OV_BG_RELATED (ov_active_theme->bg_related)
+#define OV_BG_FROZEN (ov_active_theme->bg_frozen)
+#define OV_BG_HOVER (ov_active_theme->bg_hover)
+#define OV_BG_PID_MATCH (ov_active_theme->bg_pid_match)
+#define OV_BG_STALE (ov_active_theme->bg_stale)
+#define OV_BG_NEW_ITEM (ov_active_theme->bg_new_item)
+#define OV_BG_LOOP (ov_active_theme->bg_loop)
+#define OV_BG_LOOP_SHARED (ov_active_theme->bg_loop_shared)
 
 /* Foreground — text */
-#define OV_FG_TITLE (ov_rgb_t){ 130, 170, 255 }
-#define OV_FG_DIM (ov_rgb_t){ 100, 105, 120 }
-#define OV_FG_TEXT (ov_rgb_t){ 200, 205, 215 }
-#define OV_FG_BRIGHT (ov_rgb_t){ 240, 245, 255 }
-#define OV_FG_MUTED (ov_rgb_t){ 70, 75, 85 }
+#define OV_FG_TITLE (ov_active_theme->fg_title)
+#define OV_FG_DIM (ov_active_theme->fg_dim)
+#define OV_FG_TEXT (ov_active_theme->fg_text)
+#define OV_FG_BRIGHT (ov_active_theme->fg_bright)
+#define OV_FG_MUTED (ov_active_theme->fg_muted)
 
 /* Foreground — node types */
-#define OV_FG_STREAM (ov_rgb_t){ 80, 200, 220 }
-#define OV_FG_FPS (ov_rgb_t){ 130, 170, 255 }
-#define OV_FG_PROC (ov_rgb_t){ 180, 140, 255 }
+#define OV_FG_STREAM (ov_active_theme->fg_stream)
+#define OV_FG_FPS (ov_active_theme->fg_fps)
+#define OV_FG_PROC (ov_active_theme->fg_proc)
 
 /* Dimmed accent colors for column headers */
-#define OV_FG_STREAM_HDR (ov_rgb_t){ 55, 140, 155 }
-#define OV_FG_FPS_HDR (ov_rgb_t){ 90, 120, 180 }
-#define OV_FG_PROC_HDR (ov_rgb_t){ 125, 100, 180 }
+#define OV_FG_STREAM_HDR (ov_active_theme->fg_stream_hdr)
+#define OV_FG_FPS_HDR (ov_active_theme->fg_fps_hdr)
+#define OV_FG_PROC_HDR (ov_active_theme->fg_proc_hdr)
 
 /* Foreground — status */
-#define OV_FG_ACTIVE (ov_rgb_t){ 80, 220, 80 }
-#define OV_FG_IDLE (ov_rgb_t){ 130, 140, 160 }
+#define OV_FG_ACTIVE (ov_active_theme->fg_active)
+#define OV_FG_IDLE (ov_active_theme->fg_idle)
 
 /* Animation Parameters */
 #define OV_ANIM_PULSE_SPEED 0.15f
-#define OV_ANIM_PULSE_BG_MIN (ov_rgb_t){ 80, 10, 10 }
-#define OV_ANIM_PULSE_BG_MAX (ov_rgb_t){ 180, 20, 20 }
-#define OV_ANIM_PULSE_FG_MIN (ov_rgb_t){ 160, 80, 80 }
-#define OV_ANIM_PULSE_FG_MAX (ov_rgb_t){ 255, 220, 220 }
-#define OV_FG_WARN (ov_rgb_t){ 255, 180, 0 }
-#define OV_FG_ERROR (ov_rgb_t){ 240, 60, 60 }
-#define OV_FG_ZOMBIE (ov_rgb_t){ 180, 120, 40 }
+#define OV_ANIM_PULSE_BG_MIN (ov_active_theme->anim_pulse_bg_min)
+#define OV_ANIM_PULSE_BG_MAX (ov_active_theme->anim_pulse_bg_max)
+#define OV_ANIM_PULSE_FG_MIN (ov_active_theme->anim_pulse_fg_min)
+#define OV_ANIM_PULSE_FG_MAX (ov_active_theme->anim_pulse_fg_max)
+#define OV_FG_WARN (ov_active_theme->fg_warn)
+#define OV_FG_ERROR (ov_active_theme->fg_error)
+#define OV_FG_ZOMBIE (ov_active_theme->fg_zombie)
 
-/* Foreground — graph */
-#define OV_FG_CONN (ov_rgb_t){ 100, 130, 180 }
-#define OV_FG_EDGE_ACTIVE (ov_rgb_t){ 140, 200, 255 }
+/* Foreground — graph & loops */
+#define OV_FG_CONN (ov_active_theme->fg_conn)
+#define OV_FG_EDGE_ACTIVE (ov_active_theme->fg_edge_active)
+#define OV_FG_LOOP (ov_active_theme->fg_loop)
+#define OV_FG_LOOP_SHARED (ov_active_theme->fg_loop_shared)
 
 /* Gradient endpoints for bars/sparklines */
-#define OV_GRAD_LO (ov_rgb_t){ 60, 90, 140 }
-#define OV_GRAD_HI (ov_rgb_t){ 100, 200, 255 }
+#define OV_GRAD_LO (ov_active_theme->grad_lo)
+#define OV_GRAD_HI (ov_active_theme->grad_hi)
 
-#define OV_GRAD_CPU_LO (ov_rgb_t){ 60, 180, 60 }
-#define OV_GRAD_CPU_HI (ov_rgb_t){ 240, 60, 60 }
+#define OV_GRAD_CPU_LO (ov_active_theme->grad_cpu_lo)
+#define OV_GRAD_CPU_HI (ov_active_theme->grad_cpu_hi)
 
 /* =========================================================
  * Borders & box-drawing
@@ -278,30 +362,32 @@ static inline void ov_buf_printf_gradient(ov_rgb_t a, ov_rgb_t b, const char *fm
         int i           = 0;
         while (i < n)
         {
-            int char_len = utf8_char_length((unsigned char) tmp[i]);
-            if (i + char_len > n)
+            int nb = 0, w = 1;
+            ov_utf8_next_cluster(&tmp[i], n - i, &nb, &w);
+            if (nb <= 0)
             {
-                char_len = n - i;
+                break;
             }
             total_chars++;
-            i += char_len;
+            i += nb;
         }
 
         i            = 0;
         int char_idx = 0;
         while (i < n)
         {
-            int char_len = utf8_char_length((unsigned char) tmp[i]);
-            if (i + char_len > n)
+            int nb = 0, w = 1;
+            ov_utf8_next_cluster(&tmp[i], n - i, &nb, &w);
+            if (nb <= 0)
             {
-                char_len = n - i;
+                break;
             }
 
             float t = (total_chars > 1) ? (float) char_idx / (float) (total_chars - 1) : 0.0f;
             ov_theme_fg(ov_rgb_lerp(a, b, t));
 
-            ov_buf_append_char(&tmp[i], char_len);
-            i += char_len;
+            ov_buf_append_cluster(&tmp[i], nb, w);
+            i += nb;
             char_idx++;
         }
     }
@@ -394,6 +480,180 @@ static inline void ov_draw_panel_border(int         row,
             ov_buf_printf(" %s ", title);
         }
         ov_buf_reset_attr();
+    }
+
+    /* sides */
+    for (int r = row + 1; r < row + height - 1; r++)
+    {
+        ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
+        ov_theme_bg(OV_BG_TERMINAL);
+        ov_buf_pos(r, col);
+        ov_buf_printf("%s", v);
+        ov_buf_pos(r, col + width - 1);
+        ov_buf_printf("%s", v);
+    }
+
+    /* bottom edge */
+    ov_buf_pos(row + height - 1, col);
+    ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
+    ov_buf_printf("%s", bl);
+    ov_buf_hline_utf8(h, width - 2);
+    ov_buf_printf("%s", br);
+
+    /* drop shadow */
+    if (drop_shadow)
+    {
+        ov_theme_fg(OV_FG_DIM);
+        ov_theme_bg(OV_BG_TERMINAL);
+        /* bottom shadow */
+        ov_buf_pos(row + height, col + 1);
+        ov_buf_hline_utf8("▒", width);
+        /* right shadow */
+        for (int r = row + 1; r < row + height; r++)
+        {
+            ov_buf_pos(r, col + width);
+            ov_buf_printf("▒");
+        }
+        ov_buf_pos(row + height, col + width);
+        ov_buf_printf("▒");
+    }
+
+    ov_buf_reset_attr();
+}
+
+/**
+ * ov_draw_panel_border_filter - draw panel frame with title and prominent filter badge.
+ * @row:           top-left row
+ * @col:           top-left column
+ * @height:        total panel height
+ * @width:         total panel width
+ * @title:         base panel name (e.g. "STREAMS", "PROCESSINFO", "FPS")
+ * @tcolor:        panel theme color
+ * @is_focused:    1 if panel has focus, 0 otherwise
+ * @drop_shadow:   1 to draw drop shadow, 0 otherwise
+ * @ctrl_blink:    global blink tick for animated indicators
+ * @loop_id:       loop ID if loop isolation active, or -1
+ * @filter_pat:    regex filter pattern string, or NULL/""
+ * @filter_active: 1 if regex filter is actively applied, 0 if paused/off
+ * @filt_count:    number of items visible after filter
+ * @total_count:   total number of items in panel
+ */
+static inline void ov_draw_panel_border_filter(int         row,
+                                               int         col,
+                                               int         height,
+                                               int         width,
+                                               const char *title,
+                                               ov_rgb_t    tcolor,
+                                               int         is_focused,
+                                               int         drop_shadow,
+                                               uint32_t    ctrl_blink,
+                                               int         loop_id,
+                                               const char *filter_pat,
+                                               int         filter_active,
+                                               int         filt_count,
+                                               int         total_count)
+{
+    ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
+    ov_theme_bg(OV_BG_TERMINAL);
+
+    const char *tl = is_focused ? OV_BOX_TL_D : OV_BOX_TL;
+    const char *tr = is_focused ? OV_BOX_TR_D : OV_BOX_TR;
+    const char *bl = is_focused ? OV_BOX_BL_D : OV_BOX_BL;
+    const char *br = is_focused ? OV_BOX_BR_D : OV_BOX_BR;
+    const char *h  = is_focused ? OV_BOX_H_D : OV_BOX_H;
+    const char *v  = is_focused ? OV_BOX_V_D : OV_BOX_V;
+
+    /* top edge */
+    ov_buf_pos(row, col);
+    ov_buf_printf("%s", tl);
+    ov_buf_hline_utf8(h, width - 2);
+    ov_buf_printf("%s", tr);
+
+    /* title overlay */
+    if (title && title[0])
+    {
+        ov_buf_pos(row, col + 2);
+        ov_buf_bold();
+        if (is_focused)
+        {
+            ov_theme_bg(tcolor);
+            ov_theme_fg(OV_BG_TERMINAL);
+            ov_buf_printf(" %s ", title);
+        }
+        else
+        {
+            ov_theme_fg(OV_FG_MUTED);
+            ov_theme_bg(OV_BG_TERMINAL);
+            ov_buf_printf(" %s ", title);
+        }
+        ov_buf_reset_attr();
+
+        int has_filter_pat = (filter_pat != NULL && filter_pat[0] != '\0');
+        if (loop_id >= 0)
+        {
+            ov_buf_bold();
+            ov_theme_bg(OV_FG_LOOP);
+            ov_theme_fg(OV_BG_TERMINAL);
+            ov_buf_printf(" [LOOP L%02d] ", loop_id);
+            ov_buf_reset_attr();
+            ov_theme_fg(OV_FG_LOOP);
+            ov_theme_bg(OV_BG_TERMINAL);
+            ov_buf_printf(" (%d/%d) ", filt_count, total_count);
+            ov_buf_reset_attr();
+        }
+        else if (filter_active && has_filter_pat)
+        {
+            /* HIGH-VISIBILITY FILTER ON BADGE — visible whether focused or unselected! */
+            ov_buf_bold();
+            if (is_focused)
+            {
+                if ((ctrl_blink % 4) < 2)
+                {
+                    ov_buf_bg(255, 190, 0); /* bright amber/gold */
+                    ov_buf_fg(20, 20, 20);  /* dark text */
+                }
+                else
+                {
+                    ov_buf_bg(230, 80, 20);   /* vibrant red-orange */
+                    ov_buf_fg(255, 255, 255); /* white text */
+                }
+            }
+            else
+            {
+                /* Unselected panel: solid vivid amber-orange pill */
+                ov_buf_bg(220, 130, 20);
+                ov_buf_fg(255, 255, 255);
+            }
+            ov_buf_printf(" [FILTER ON: /%.12s/] ", filter_pat);
+            ov_buf_reset_attr();
+
+            ov_buf_bold();
+            ov_theme_fg(OV_FG_WARN);
+            ov_theme_bg(OV_BG_TERMINAL);
+            ov_buf_printf(" (%d/%d) ", filt_count, total_count);
+            ov_buf_reset_attr();
+        }
+        else if (has_filter_pat)
+        {
+            /* Paused filter (query retained but disabled) */
+            ov_buf_bold();
+            ov_theme_bg(OV_BG_PANEL_ALT);
+            ov_theme_fg(OV_FG_WARN);
+            ov_buf_printf(" [FILTER OFF: /%.8s/] ", filter_pat);
+            ov_buf_reset_attr();
+
+            ov_theme_fg(OV_FG_DIM);
+            ov_theme_bg(OV_BG_TERMINAL);
+            ov_buf_printf(" (%d) ", total_count);
+            ov_buf_reset_attr();
+        }
+        else
+        {
+            ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
+            ov_theme_bg(OV_BG_TERMINAL);
+            ov_buf_printf(" (%d) ", total_count);
+            ov_buf_reset_attr();
+        }
     }
 
     /* sides */
@@ -529,20 +789,20 @@ static inline void ov_draw_panel_tabs(int          row,
 static inline ov_rgb_t ov_theme_highlight_bg(ov_rgb_t base_bg)
 {
     ov_rgb_t highlight;
-    highlight.r = base_bg.r + 15;
-    highlight.g = base_bg.g + 15;
-    highlight.b = base_bg.b + 18;
-    if (highlight.r > 255)
+    int      sum = base_bg.r + base_bg.g + base_bg.b;
+    if (sum > 384)
     {
-        highlight.r = 255;
+        /* Light palette: darken slightly */
+        highlight.r = (base_bg.r > 18) ? base_bg.r - 18 : 0;
+        highlight.g = (base_bg.g > 18) ? base_bg.g - 18 : 0;
+        highlight.b = (base_bg.b > 15) ? base_bg.b - 15 : 0;
     }
-    if (highlight.g > 255)
+    else
     {
-        highlight.g = 255;
-    }
-    if (highlight.b > 255)
-    {
-        highlight.b = 255;
+        /* Dark palette: lighten slightly */
+        highlight.r = (base_bg.r + 15 <= 255) ? base_bg.r + 15 : 255;
+        highlight.g = (base_bg.g + 15 <= 255) ? base_bg.g + 15 : 255;
+        highlight.b = (base_bg.b + 18 <= 255) ? base_bg.b + 18 : 255;
     }
     return highlight;
 }

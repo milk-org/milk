@@ -142,12 +142,23 @@ int ov_get_fps_tree_items(const OV_FPS    *fps,
                           fps_tree_item_t *items,
                           int              max_items)
 {
+    if (fps == NULL)
+    {
+        return 0;
+    }
+
+    const OV_FPS_PARAMS *params = ov_fps_get_params(fps->name);
+    if (params == NULL)
+    {
+        return 0;
+    }
+
     int count    = 0;
     int path_len = strlen(path);
 
-    for (int i = 0; i < fps->nb_disp_params; i++)
+    for (int i = 0; i < params->nb_disp_params; i++)
     {
-        const char *pname = fps->disp_param_name[i];
+        const char *pname = params->disp_param_name[i];
         if (pname[0] == '.')
         {
             pname++;
@@ -265,7 +276,8 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
         return;
     }
 
-    const OV_FPS *fps = &m->fps[fsel];
+    const OV_FPS        *fps    = &m->fps[fsel];
+    const OV_FPS_PARAMS *params = ov_fps_get_params(fps->name);
 
     fps_tree_item_t items[1024];
     int             nitems = ov_get_fps_tree_items(fps, lay->fps_param_path, items, 1024);
@@ -387,14 +399,22 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
         else
         {
             /* Leaf parameter row */
-            int pi = item->param_idx;
+            int         pi  = item->param_idx;
+            uint64_t    fl  = (params != NULL && pi >= 0 && pi < params->nb_disp_params)
+                                  ? params->disp_param_flags[pi]
+                                  : 0;
+            uint32_t    pt  = (params != NULL && pi >= 0 && pi < params->nb_disp_params)
+                                  ? params->disp_param_type[pi]
+                                  : 0;
+            const char *val = (params != NULL && pi >= 0 && pi < params->nb_disp_params)
+                                  ? params->disp_param_value[pi]
+                                  : "";
 
             /* Write-status badge: W (writable now) / C (conf only) / NW (locked)
              * Mirrors the W /NW display in milk-fpsCTRL. Column is 3 chars wide. */
             {
-                uint64_t fl = fps->disp_param_flags[pi];
-                int      ws = (fl & FPFLAG_WRITESTATUS) != 0;
-                int      wc = (fl & FPFLAG_WRITECONF) != 0;
+                int ws = (fl & FPFLAG_WRITESTATUS) != 0;
+                int wc = (fl & FPFLAG_WRITECONF) != 0;
 
                 if (ws)
                 {
@@ -423,18 +443,17 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
 
             /* Type badge */
             {
-                ov_rgb_t tc = fps_param_type_color(fps->disp_param_type[pi]);
+                ov_rgb_t tc = fps_param_type_color(pt);
                 if (is_sel)
                 {
                     tc = OV_FG_TEXT;
                 }
                 ov_theme_fg(tc);
-                ov_buf_printf("%4s  ", fps_param_type_badge(fps->disp_param_type[pi]));
+                ov_buf_printf("%4s  ", fps_param_type_badge(pt));
             }
 
             /* Value */
             {
-                const char *val = fps->disp_param_value[pi];
                 /* budget: badge(3) + sep(1) + kw + 1 + typebadge(6) = kw + 11 */
                 int vw = r.width - kw - 14;
                 if (vw < 4)
@@ -443,7 +462,7 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
                 }
 
                 /* ONOFF: color based on string value "ON" / "OFF" */
-                if (fps->disp_param_type[pi] == FPTYPE_ONOFF)
+                if (pt == FPTYPE_ONOFF)
                 {
                     int is_on = (val[0] == 'O' && val[1] == 'N');
                     if (is_on)
@@ -489,7 +508,7 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
 }
 
 /**
- * ov_render_fps_param_info - draw FPS parameter metadata header on rows 2 and 3.
+ * ov_render_fps_param_info - draw FPS parameter metadata header on rows 3 and 4.
  * @lay: layout state
  * @m:   data model
  */
@@ -497,19 +516,19 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (lay->fps_param_focus == 0)
     {
-        /* Clear row 3 to prevent stale parameter info */
-        ov_buf_pos(3, 1);
+        /* Clear row 4 to prevent stale parameter info */
+        ov_buf_pos(4, 1);
         ov_theme_bg(OV_BG_PANEL);
         ov_buf_hline(' ', lay->term_cols);
         return;
     }
 
-    /* Clear rows 2 and 3 */
-    ov_buf_pos(2, 1);
+    /* Clear rows 3 and 4 */
+    ov_buf_pos(3, 1);
     ov_theme_bg(OV_BG_PANEL);
     ov_buf_hline(' ', lay->term_cols);
 
-    ov_buf_pos(3, 1);
+    ov_buf_pos(4, 1);
     ov_theme_bg(OV_BG_PANEL);
     ov_buf_hline(' ', lay->term_cols);
 
@@ -533,14 +552,14 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
     if (item->is_dir)
     {
         /* Draw directory info */
-        ov_buf_pos(2, 2);
+        ov_buf_pos(3, 2);
         ov_theme_fg(OV_FG_WARN);
         ov_buf_bold();
         ov_buf_printf("DIR: ");
         ov_theme_fg(OV_FG_TEXT);
         ov_buf_printf("%s%s%s", lay->fps_param_path, lay->fps_param_path[0] ? "." : "", item->name);
 
-        ov_buf_pos(3, 2);
+        ov_buf_pos(4, 2);
         ov_theme_fg(OV_FG_DIM);
         ov_buf_printf("Description: (Directory)");
         ov_buf_reset_attr();
@@ -548,6 +567,12 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     int pi = item->param_idx;
+
+    const OV_FPS_PARAMS *params = ov_fps_get_params(fps->name);
+    if (params == NULL || pi < 0 || pi >= params->nb_disp_params)
+    {
+        return;
+    }
 
     /* Format full parameter path/name */
     char full_name[256];
@@ -562,7 +587,7 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
 
     /* Type badge */
     const char *type_name = "UNKNOWN";
-    uint32_t    type      = fps->disp_param_type[pi];
+    uint32_t    type      = params->disp_param_type[pi];
     if (type == FPTYPE_INT64 || type == FPTYPE_INT32)
     {
         type_name = "INT";
@@ -596,8 +621,8 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
         type_name = "TIMESPEC";
     }
 
-    /* Display values and limits on Row 2 */
-    ov_buf_pos(2, 2);
+    /* Display values and limits on Row 3 */
+    ov_buf_pos(3, 2);
     ov_theme_fg(OV_FG_FPS);
     ov_buf_bold();
     ov_buf_printf("PARAM: ");
@@ -610,29 +635,29 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
     ov_theme_fg(OV_FG_FPS);
     ov_buf_printf("Value: ");
     ov_theme_fg(OV_FG_TEXT);
-    ov_buf_printf("%s  ", fps->disp_param_value[pi]);
+    ov_buf_printf("%s  ", params->disp_param_value[pi]);
 
-    if (fps->disp_param_has_min[pi])
+    if (params->disp_param_has_min[pi])
     {
         ov_theme_fg(OV_FG_FPS);
         ov_buf_printf("Min: ");
         ov_theme_fg(OV_FG_TEXT);
-        ov_buf_printf("%s  ", fps->disp_param_min[pi]);
+        ov_buf_printf("%s  ", params->disp_param_min[pi]);
     }
-    if (fps->disp_param_has_max[pi])
+    if (params->disp_param_has_max[pi])
     {
         ov_theme_fg(OV_FG_FPS);
         ov_buf_printf("Max: ");
         ov_theme_fg(OV_FG_TEXT);
-        ov_buf_printf("%s  ", fps->disp_param_max[pi]);
+        ov_buf_printf("%s  ", params->disp_param_max[pi]);
     }
 
-    /* Display description on Row 3 */
-    ov_buf_pos(3, 2);
+    /* Display description on Row 4 */
+    ov_buf_pos(4, 2);
     ov_theme_fg(OV_FG_DIM);
     ov_buf_printf("Description: ");
     ov_theme_fg(OV_FG_TEXT);
-    ov_buf_printf("%s", fps->disp_param_descr[pi][0] ? fps->disp_param_descr[pi] : "(none)");
+    ov_buf_printf("%s", params->disp_param_descr[pi][0] ? params->disp_param_descr[pi] : "(none)");
 
     if (type == FPTYPE_ONOFF)
     {

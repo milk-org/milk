@@ -19,6 +19,7 @@
 
 #include "fpsCTRL_TUIcompat.h"
 #include "fpsCTRL_globals.h"
+#include "milk_config.h"
 
 #include "fpsCTRL_FPSdisplay.h"
 
@@ -109,7 +110,7 @@ inline static void fpsCTRLscreen_print_footer_status(FPSCTRL_PROCESS_VARS *fpsCT
         SC_APPEND("[SORT: %s] ", smode[sm]);
     }
 
-    SC_APPEND("[PID %d] [%d FPS] ", (int) getpid(), NBfps);
+    SC_APPEND("[PID %d] [%d FPS] [%s] ", (int) getpid(), NBfps, MILK_GIT_COMMIT);
     SC_APPEND("| (x) Exit  (h) Help  (?) Log  (F2) CTRL  (F3) SEQ  (/) Search ");
 
     if (fpsCTRLvar->fpsCTRL_DisplayVerbose)

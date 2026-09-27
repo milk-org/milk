@@ -28,6 +28,7 @@
 #include "overview_theme.h"
 #include "overview_data.h"
 #include "overview_layout.h"
+#include "milk_config.h"
 #include "processinfo_shm_list_create.h"
 
 /* =========================================================
@@ -38,6 +39,7 @@ volatile sig_atomic_t ov_sigINT  = 0;
 volatile sig_atomic_t ov_sigTERM = 0;
 
 struct termios ov__orig_termios;
+int            ov__orig_flags  = -1;
 int            ov__raw_active  = 0;
 int            ov__color_level = 0;
 
@@ -58,6 +60,7 @@ int      ov__cursor_row   = 1;
 int      ov__cursor_col   = 1;
 uint32_t ov__current_fg   = OV_COLOR_NONE;
 uint32_t ov__current_bg   = OV_COLOR_NONE;
+uint32_t ov__default_bg   = OV_COLOR_NONE;
 uint32_t ov__current_ul   = OV_COLOR_NONE;
 uint8_t  ov__current_attr = 0;
 
@@ -94,6 +97,10 @@ static void crash_handler(int sig)
     }
     if (ov__raw_active)
     {
+        if (ov__orig_flags >= 0)
+        {
+            fcntl(STDIN_FILENO, F_SETFL, ov__orig_flags);
+        }
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &ov__orig_termios);
     }
     struct sigaction sa;
@@ -133,7 +140,8 @@ static void print_help(const char *prog, int mh_color)
         prog, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes", mh_color);
 
     milk_help_section("Usage", mh_color);
-    printf("  $ %s [%s %s]\n\n", prog, MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"));
+    printf("  $ %s [%s %s]  (commit %s, shm %s)\n\n", prog, MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"),
+           MILK_GIT_COMMIT, ov_get_shmdir());
 
     milk_help_section("Description", mh_color);
     printf("  milk-CTRL is the unified real-time dashboard for the milk framework.\n"
@@ -147,22 +155,36 @@ static void print_help(const char *prog, int mh_color)
            "  diagnose CPU/dTLB bottlenecks, and orchestrate compute loops dynamically.\n\n",
            MH(MH_BOLD, "ImageStreamIO"), MH(MH_BOLD, "FPS"), MH(MH_BOLD, "processinfo"));
 
-    milk_help_section("Dashboard Layout (F2 - F6)", mh_color);
+    milk_help_section("Dashboard Layout (F2 - F7)", mh_color);
     printf(
         "  - %s (F2): Grid overview of Streams, Processes, and FPS panels.\n"
         "  - %s (F3): Full-screen Streams panel with detailed dimensions, semaphores, & IO rates.\n"
         "  - %s (F4): Full-screen Process monitor with status (RUN/STOP/CRSH), CPU, & loop "
         "counts.\n"
         "  - %s  (F5): Full-screen FPS list (left) and interactive parameter tree (right).\n"
-        "  - %s (F6): Visual dataflow node graph tracing upstream/downstream lineage.\n\n",
+        "  - %s (F6): Visual dataflow node graph tracing upstream/downstream lineage.\n"
+        "  - %s (F7): Closed feedback loops detection, circuit breakdown, & overlap analysis.\n\n",
         MH(MH_BOLD, "DASH"), MH(MH_BOLD, "STRM"), MH(MH_BOLD, "PROC"), MH(MH_BOLD, "FPS"),
-        MH(MH_BOLD, "CONN"));
+        MH(MH_BOLD, "CONN"), MH(MH_BOLD, "LOOP"));
+
+    milk_help_section("Feedback Loops (LOOPS tab / F7 view)", mh_color);
+    printf("  %-30s Cycle Graph sub-tabs (CONNECTIONS, LOOPS, DETAILS, RESOURCES)\n",
+           MH(MH_OPT, "SHIFT + TAB"));
+    printf("  %-30s Rename selected feedback loop (persisted across sessions)\n", MH(MH_OPT, "r"));
+    printf("  %-30s Toggle loop isolation filter (isolate loop streams, procs, & FPS)\n",
+           MH(MH_OPT, "f / ENTER"));
+    printf("  %-30s Switch to graph CONNECTIONS tab to inspect dataflow circuit tree\n\n",
+           MH(MH_OPT, "g"));
 
     milk_help_section("Options", mh_color);
     printf("  %-30s Show this help and exit\n", MH(MH_OPT, "-h, --help"));
     printf("  %-30s One-line description and exit\n", MH(MH_OPT, "-h1, --help-oneline"));
     printf("  %-30s Full help, forced monochrome\n", MH(MH_OPT, "-hm, --help-mono"));
-    printf("  %-30s Override SHM/process directory\n\n", MH(MH_OPT, "-d <DIR>"));
+    printf("  %-30s Set color theme: dark, night, accessible, light, nordic,\n"
+           "  %-30s   dracula, solarized-dark, solarized-light, monokai, matrix\n",
+           MH(MH_OPT, "-T, --theme <NAME>"), "");
+    printf("  %-30s Override SHM/process directory (current: %s)\n\n", MH(MH_OPT, "-d <DIR>"),
+           ov_get_shmdir());
 
     milk_help_section("Navigation & View Controls", mh_color);
     printf("  %-30s Switch active panel focus (Dashboard / FPS view)\n", MH(MH_OPT, "TAB"));
@@ -170,9 +192,12 @@ static void print_help(const char *prog, int mh_color)
     printf("  %-30s Scroll page up / down\n", MH(MH_OPT, "PgUp / PgDn"));
     printf("  %-30s Jump to top / bottom of the list\n", MH(MH_OPT, "Home / End"));
     printf("  %-30s Scroll list/table horizontally\n", MH(MH_OPT, "LEFT / RIGHT"));
+    printf("  %-30s Open theme selector popup (↑/↓ to choose, ESC/1s to close)\n",
+           MH(MH_OPT, "F8 / CTRL+T"));
     printf("  %-30s Toggle detailed inspection pane / parameter edit mode\n", MH(MH_OPT, "ENTER"));
     printf("  %-30s Toggle details tab on selected item / Graph details\n", MH(MH_OPT, "D"));
     printf("  %-30s Filter items in the focused list (regex search)\n", MH(MH_OPT, "/"));
+    printf("  %-30s Toggle regex filter ON/OFF (preserves query string)\n", MH(MH_OPT, "f"));
     printf("  %-30s Freeze selection highlight (prevents jumping during updates)\n",
            MH(MH_OPT, "SPACE"));
     printf("  %-30s Export current dashboard state snapshot to file\n", MH(MH_OPT, "W"));
@@ -240,6 +265,23 @@ static void print_help(const char *prog, int mh_color)
 
 int main(int argc, char *argv[])
 {
+    /* --- Early options parsing (e.g. -d so help reflects it) --- */
+    const char *cli_theme = NULL;
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "-d") == 0 && (i + 1 < argc))
+        {
+            i++;
+            setenv("MILK_SHM_DIR", argv[i], 1);
+            setenv("MILK_PROC_DIR", argv[i], 1);
+        }
+        else if ((strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--theme") == 0) && (i + 1 < argc))
+        {
+            i++;
+            cli_theme = argv[i];
+        }
+    }
+
     /* --- Help handling --- */
     int action = milk_help_init(
         argc, argv, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
@@ -262,12 +304,16 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    /* --- Custom options parsing ---*/
+    /* --- Validate remaining options --- */
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-d") == 0 && (i + 1 < argc))
         {
-            setenv("MILK_SHM_DIR", argv[++i], 1);
+            i++;
+        }
+        else if ((strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--theme") == 0) && (i + 1 < argc))
+        {
+            i++;
         }
         else if (argv[i][0] == '-')
         {
@@ -278,6 +324,13 @@ int main(int argc, char *argv[])
                     mh_color ? MH_CMD : "", argv[0], mh_color ? MH_RST : "", MH(MH_OPT, "-h"));
             return 1;
         }
+    }
+
+    /* --- Require interactive terminal --- */
+    if (!isatty(STDIN_FILENO))
+    {
+        fprintf(stderr, "%s: interactive terminal required on stdin.\n", argv[0]);
+        return 1;
     }
 
     /* --- Install signal handlers --- */
@@ -299,6 +352,9 @@ int main(int argc, char *argv[])
 
     /* --- Detect color level --- */
     ov_detect_color_level();
+
+    /* --- Initialize color theme --- */
+    ov_theme_init(cli_theme);
 
     /* --- Enter raw mode --- */
     ov_raw_mode_enter();
@@ -353,6 +409,8 @@ int main(int argc, char *argv[])
     lay.dash_split_v_dragging = 0;
     lay.dash_split_h_dragging = 0;
 
+    ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO, "Shared memory directory: %s", ov_get_shmdir());
+
     /* --- Main TUI loop (~10 fps) --- */
     /* Clear screen once on startup */
     {
@@ -362,27 +420,33 @@ int main(int argc, char *argv[])
         }
     }
 
-    int             last_rows   = -1;
-    int             last_cols   = -1;
-    const OV_MODEL *m           = NULL;
-    int             need_render = 1; /* force first frame */
+    int             last_rows        = -1;
+    int             last_cols        = -1;
+    int             last_cmdlog_rows = lay.cmdlog_rows;
+    const OV_MODEL *m                = NULL;
+    int             need_render      = 1; /* force first frame */
 
     while (!OV_SIG_ANY_SET())
     {
         /* Recompute layout (handles resize) */
         ov_layout_compute(&lay);
 
-        if (lay.term_rows != last_rows || lay.term_cols != last_cols)
+        if (lay.term_rows != last_rows || lay.term_cols != last_cols ||
+            lay.cmdlog_rows != last_cmdlog_rows)
         {
-            /* Size changed, force clear */
-            const char cls[] = "\033[2J\033[H";
-            if (write(STDOUT_FILENO, cls, sizeof(cls) - 1) < 0)
+            if (lay.term_rows != last_rows || lay.term_cols != last_cols)
             {
+                /* Size changed, force clear */
+                const char cls[] = "\033[2J\033[H";
+                if (write(STDOUT_FILENO, cls, sizeof(cls) - 1) < 0)
+                {
+                }
             }
             ov_buf_force_clear();
-            last_rows   = lay.term_rows;
-            last_cols   = lay.term_cols;
-            need_render = 1;
+            last_rows        = lay.term_rows;
+            last_cols        = lay.term_cols;
+            last_cmdlog_rows = lay.cmdlog_rows;
+            need_render      = 1;
         }
 
         /* Pick up new model if available */
@@ -402,6 +466,11 @@ int main(int argc, char *argv[])
             int key;
             while ((key = ov_get_key()) != OV_KEY_NONE)
             {
+                if (key == OV_KEY_EOF)
+                {
+                    quit = 1;
+                    break;
+                }
                 need_render = 1;
                 if (ov_handle_key(key, &lay, m))
                 {
@@ -415,6 +484,25 @@ int main(int argc, char *argv[])
             }
         }
 
+        /* Check if theme selector popup timed out (1s inactivity) */
+        if (lay.theme_popup_active)
+        {
+            struct timespec now_ts;
+            clock_gettime(CLOCK_MONOTONIC, &now_ts);
+            double elapsed = (now_ts.tv_sec - lay.theme_popup_ts.tv_sec) +
+                             (now_ts.tv_nsec - lay.theme_popup_ts.tv_nsec) * 1e-9;
+            if (elapsed >= 1.0)
+            {
+                lay.theme_popup_active = 0;
+                need_render            = 1;
+            }
+            else
+            {
+                /* Force frame redraw to update auto-close countdown in popup */
+                need_render = 1;
+            }
+        }
+
         /* Render only when something changed */
         if (need_render)
         {
@@ -422,43 +510,32 @@ int main(int argc, char *argv[])
             need_render = 0;
         }
 
-        /* Frame delay: poll stdin, wake on
-         * new data or keypress */
+        /* Frame delay: poll stdin and scan eventfd, wake on
+         * new data, keypress, or 100ms timeout (~10 Hz frame tick) */
         {
-            struct pollfd pfd;
-            pfd.fd       = STDIN_FILENO;
-            pfd.events   = POLLIN;
-            int quit_now = 0;
+            struct pollfd pfds[2];
+            int           npfd = 1;
 
-            for (int i = 0; i < 10; i++)
+            pfds[0].fd     = STDIN_FILENO;
+            pfds[0].events = POLLIN;
+
+            int scan_efd = ov_scan_get_event_fd();
+            if (scan_efd >= 0)
             {
-                if (poll(&pfd, 1, 10) > 0)
+                pfds[1].fd     = scan_efd;
+                pfds[1].events = POLLIN;
+                npfd           = 2;
+            }
+
+            int pr = poll(pfds, npfd, 100);
+            if (pr > 0)
+            {
+                if (pfds[0].revents & (POLLHUP | POLLERR | POLLNVAL))
                 {
-                    if (pfd.revents & POLLIN)
-                    {
-                        int pk = ov_get_key();
-                        if (pk == 'q' || pk == 'x')
-                        {
-                            quit_now = 1;
-                        }
-                        else if (pk != OV_KEY_NONE)
-                        {
-                            if (ov_handle_key(pk, &lay, m))
-                            {
-                                quit_now = 1;
-                            }
-                            need_render = 1;
-                        }
-                        break;
-                    }
-                }
-                if (ov_scan_has_new_data())
-                {
-                    need_render = 1;
                     break;
                 }
             }
-            if (quit_now)
+            else if (pr < 0 && errno != EINTR)
             {
                 break;
             }

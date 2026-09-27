@@ -142,7 +142,7 @@ void ov_ctrl_fps_run_toggle(const OV_FPS *f, OV_CMDLOG *log)
         int rc = ov_ctrl_fps_action(f->name, functionparameter_RUNstop);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "⏹️ FPS \"%s\" — RUN stop",
+            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\" — RUN stop",
                            f->name);
         }
         return;
@@ -158,7 +158,7 @@ void ov_ctrl_fps_run_toggle(const OV_FPS *f, OV_CMDLOG *log)
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "▶️ FPS \"%s\" — RUN start"
+                           "FPS \"%s\" — RUN start"
                            " failed (connect)",
                            f->name);
         }
@@ -757,7 +757,7 @@ void ov_ctrl_fps_remove(const OV_FPS *f, OV_CMDLOG *log)
 void ov_ctrl_procs_cleanup(OV_CMDLOG *log)
 {
     /* Silently remove crashed/stopped procinfo entries */
-    int rc = system("milk-procinfo-rm -c >/dev/null 2>&1");
+    int rc = system("milk-procinfo-rm -c </dev/null >/dev/null 2>&1");
     if (log != NULL)
     {
         ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
