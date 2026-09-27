@@ -224,41 +224,108 @@ install(TARGETS milk-termview DESTINATION bin)
 # milkCTRL: unified system dashboard TUI
 add_executable(
   milk-CTRL
-  ../overview/milkCTRL.c
-  ../overview/overview_data.c
-  ../overview/overview_data_loops.c
-  ../overview/overview_data_sys.c
-  ../overview/overview_data_cache.c
-  ../overview/overview_data_scan.c
-  ../overview/overview_data_graph.c
-  ../overview/overview_data_sort.c
-  ../overview/overview_scan.c
+  ../overview/tools/milkCTRL.c
+  ../overview/tools/milkCTRL_opts.c
+  ../overview/data/overview_data.c
+  ../overview/data/overview_data_cache.c
+  ../overview/data/overview_data_cache_fps.c
+  ../overview/data/overview_data_graph.c
+  ../overview/data/overview_data_loops.c
+  ../overview/data/overview_data_loops_names.c
+  ../overview/data/overview_data_loops_reg.c
+  ../overview/data/overview_data_scan.c
+  ../overview/data/overview_data_scan_streams.c
+  ../overview/data/overview_data_scan_fps.c
+  ../overview/data/overview_data_scan_procs.c
+  ../overview/data/overview_data_scan_tmux.c
+  ../overview/data/overview_data_sort.c
+  ../overview/data/overview_data_sort_streams.c
+  ../overview/data/overview_data_sort_procs.c
+  ../overview/data/overview_data_sort_fps.c
+  ../overview/data/overview_data_sys.c
+  ../overview/data/overview_data_sys_proc.c
+  ../overview/data/overview_data_sys_perf.c
+  ../overview/data/overview_scan.c
+  ../overview/data/stream_graph.c
+  ../overview/data/stream_graph_lineage.c
+  ../overview/data/stream_graph_tree.c
   ../overview/overview_layout.c
+  ../overview/ansi/overview_ansi_term.c
+  ../overview/ansi/overview_ansi_buf.c
+  ../overview/ansi/overview_ansi_delta.c
+  ../overview/ansi/overview_ansi_utf8.c
+  ../overview/ansi/overview_ansi_key.c
   ../overview/overview_cmdlog.c
-  ../overview/overview_render.c
-  ../overview/overview_render_loops.c
-  ../overview/overview_render_detail.c
-  ../overview/overview_render_utils.c
-  ../overview/overview_render_relate.c
-  ../overview/overview_render_streams.c
-  ../overview/overview_render_procs.c
-  ../overview/overview_render_fps.c
-  ../overview/overview_render_graph.c
-  ../overview/overview_render_status.c
-  ../overview/overview_render_help.c
-  ../overview/overview_render_cmdlog.c
-  ../overview/overview_input.c
-  ../overview/overview_ctrl.c
-  ../overview/overview_fps_edit.c
-  ../overview/overview_render_fps_params.c
-  ../overview/stream_graph.c
-  ../overview/overview_theme.c)
+  ../overview/render/overview_theme.c
+  ../overview/render/overview_theme_palettes.c
+  ../overview/render/overview_theme_palettes_extra.c
+  ../overview/render/overview_help_data.c
+  ../overview/render/overview_render_utils.c
+  ../overview/render/overview_render_filter.c
+  ../overview/render/overview_render_relate.c
+  ../overview/render/overview_render_header.c
+  ../overview/render/overview_render_tabs.c
+  ../overview/render/overview_render_popup.c
+  ../overview/render/overview_render_sync.c
+  ../overview/render/overview_render_status.c
+  ../overview/render/overview_render_cmdlog.c
+  ../overview/render/overview_render_preview.c
+  ../overview/render/overview_render_graph.c
+  ../overview/render/overview_render_streams.c
+  ../overview/render/overview_render_streams_hdr.c
+  ../overview/render/overview_render_streams_row.c
+  ../overview/render/overview_render_procs.c
+  ../overview/render/overview_render_procs_hdr.c
+  ../overview/render/overview_render_procs_row.c
+  ../overview/render/overview_render_fps.c
+  ../overview/render/overview_render_fps_hdr.c
+  ../overview/render/overview_render_fps_params.c
+  ../overview/render/overview_render_fps_params_info.c
+  ../overview/render/overview_render_loops.c
+  ../overview/render/overview_render_loops_panel.c
+  ../overview/render/overview_render_detail.c
+  ../overview/render/overview_render_detail_stream.c
+  ../overview/render/overview_render_detail_proc.c
+  ../overview/render/overview_render_detail_fps.c
+  ../overview/render/overview_render_resources.c
+  ../overview/render/overview_render_resources_perf.c
+  ../overview/render/overview_render_help.c
+  ../overview/render/overview_render_help_search.c
+  ../overview/render/overview_render_help_nav.c
+  ../overview/render/overview_render_help_detail.c
+  ../overview/render/overview_render_help_intro.c
+  ../overview/render/overview_render_help_list.c
+  ../overview/render/overview_render.c
+  ../overview/input/overview_ctrl.c
+  ../overview/input/overview_ctrl_proc.c
+  ../overview/input/overview_fps_edit.c
+  ../overview/input/overview_input.c
+  ../overview/input/overview_input_actions.c
+  ../overview/input/overview_input_help.c
+  ../overview/input/overview_input_history.c
+  ../overview/input/overview_input_hittest.c
+  ../overview/input/overview_input_hittest_cols.c
+  ../overview/input/overview_input_modal.c
+  ../overview/input/overview_input_modal_filter.c
+  ../overview/input/overview_input_mouse.c
+  ../overview/input/overview_input_mouse_drag.c
+  ../overview/input/overview_input_mouse_panels.c
+  ../overview/input/overview_input_nav.c
+  ../overview/input/overview_input_nav_fps.c
+  ../overview/input/overview_input_nav_lineage.c
+  ../overview/input/overview_input_sort_keys.c
+  ../overview/input/overview_input_toggles.c)
 target_include_directories(
   milk-CTRL
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
           ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
           ${CMAKE_SOURCE_DIR}/src/engine/libfps
-          ${CMAKE_SOURCE_DIR}/src/cli/overview)
+          ${CMAKE_SOURCE_DIR}/src/cli/overview
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/data
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/input
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/render
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
 target_link_libraries(milk-CTRL PUBLIC ImageStreamIO milkprocessinfo milkfps m
                                        rt pthread)
 install(TARGETS milk-CTRL DESTINATION bin)
@@ -267,23 +334,40 @@ install(PROGRAMS ../overview/milk-setup-caps DESTINATION bin)
 # milk-stream-graph: stream dependency graph tool
 add_executable(
   milk-stream-graph
-  ../overview/milk-stream-graph.c
-  ../overview/stream_graph.c
-  ../overview/overview_data.c
-  ../overview/overview_data_loops.c
-  ../overview/overview_data_sys.c
-  ../overview/overview_data_cache.c
-  ../overview/overview_data_scan.c
-  ../overview/overview_data_graph.c
-  ../overview/overview_data_sort.c
-  ../overview/overview_scan.c
+  ../overview/tools/milk-stream-graph.c
+  ../overview/tools/milk-stream-graph_export.c
+  ../overview/tools/milk-stream-graph_tui.c
+  ../overview/data/overview_data.c
+  ../overview/data/overview_data_cache.c
+  ../overview/data/overview_data_cache_fps.c
+  ../overview/data/overview_data_graph.c
+  ../overview/data/overview_data_loops.c
+  ../overview/data/overview_data_loops_names.c
+  ../overview/data/overview_data_loops_reg.c
+  ../overview/data/overview_data_scan.c
+  ../overview/data/overview_data_scan_streams.c
+  ../overview/data/overview_data_scan_fps.c
+  ../overview/data/overview_data_scan_procs.c
+  ../overview/data/overview_data_scan_tmux.c
+  ../overview/data/overview_data_sort.c
+  ../overview/data/overview_data_sort_streams.c
+  ../overview/data/overview_data_sort_procs.c
+  ../overview/data/overview_data_sort_fps.c
+  ../overview/data/overview_data_sys.c
+  ../overview/data/overview_data_sys_proc.c
+  ../overview/data/overview_data_sys_perf.c
+  ../overview/data/overview_scan.c
+  ../overview/data/stream_graph.c
+  ../overview/data/stream_graph_lineage.c
+  ../overview/data/stream_graph_tree.c
   ../overview/overview_layout.c)
 target_include_directories(
   milk-stream-graph
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
           ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
           ${CMAKE_SOURCE_DIR}/src/engine/libfps
-          ${CMAKE_SOURCE_DIR}/src/cli/overview)
+          ${CMAKE_SOURCE_DIR}/src/cli/overview
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
 target_link_libraries(milk-stream-graph PUBLIC ImageStreamIO milkprocessinfo
                                                milkfps m rt pthread)
 install(TARGETS milk-stream-graph DESTINATION bin)
@@ -291,20 +375,34 @@ install(TARGETS milk-stream-graph DESTINATION bin)
 # milk-stream-info: detailed stream info with connections
 add_executable(
   milk-stream-info
-  ../overview/milk-stream-info.c
-  ../overview/overview_data.c
-  ../overview/overview_data_loops.c
-  ../overview/overview_data_sys.c
-  ../overview/overview_data_cache.c
-  ../overview/overview_data_scan.c
-  ../overview/overview_data_graph.c
-  ../overview/overview_data_sort.c)
+  ../overview/tools/milk-stream-info.c
+  ../overview/tools/milk-stream-info_print.c
+  ../overview/data/overview_data.c
+  ../overview/data/overview_data_loops.c
+  ../overview/data/overview_data_loops_names.c
+  ../overview/data/overview_data_loops_reg.c
+  ../overview/data/overview_data_sys.c
+  ../overview/data/overview_data_sys_proc.c
+  ../overview/data/overview_data_sys_perf.c
+  ../overview/data/overview_data_cache.c
+  ../overview/data/overview_data_cache_fps.c
+  ../overview/data/overview_data_scan.c
+  ../overview/data/overview_data_scan_streams.c
+  ../overview/data/overview_data_scan_fps.c
+  ../overview/data/overview_data_scan_procs.c
+  ../overview/data/overview_data_scan_tmux.c
+  ../overview/data/overview_data_graph.c
+  ../overview/data/overview_data_sort.c
+  ../overview/data/overview_data_sort_streams.c
+  ../overview/data/overview_data_sort_procs.c
+  ../overview/data/overview_data_sort_fps.c)
 target_include_directories(
   milk-stream-info
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
           ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
           ${CMAKE_SOURCE_DIR}/src/engine/libfps
-          ${CMAKE_SOURCE_DIR}/src/cli/overview)
+          ${CMAKE_SOURCE_DIR}/src/cli/overview
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
 target_link_libraries(milk-stream-info PUBLIC ImageStreamIO milkprocessinfo
                                               milkfps m rt pthread)
 install(TARGETS milk-stream-info DESTINATION bin)
@@ -312,20 +410,33 @@ install(TARGETS milk-stream-info DESTINATION bin)
 # milk-procinfo-info: detailed processinfo with connections
 add_executable(
   milk-procinfo-info
-  ../overview/milk-procinfo-info.c
-  ../overview/overview_data.c
-  ../overview/overview_data_loops.c
-  ../overview/overview_data_sys.c
-  ../overview/overview_data_cache.c
-  ../overview/overview_data_scan.c
-  ../overview/overview_data_graph.c
-  ../overview/overview_data_sort.c)
+  ../overview/tools/milk-procinfo-info.c
+  ../overview/data/overview_data.c
+  ../overview/data/overview_data_loops.c
+  ../overview/data/overview_data_loops_names.c
+  ../overview/data/overview_data_loops_reg.c
+  ../overview/data/overview_data_sys.c
+  ../overview/data/overview_data_sys_proc.c
+  ../overview/data/overview_data_sys_perf.c
+  ../overview/data/overview_data_cache.c
+  ../overview/data/overview_data_cache_fps.c
+  ../overview/data/overview_data_scan.c
+  ../overview/data/overview_data_scan_streams.c
+  ../overview/data/overview_data_scan_fps.c
+  ../overview/data/overview_data_scan_procs.c
+  ../overview/data/overview_data_scan_tmux.c
+  ../overview/data/overview_data_graph.c
+  ../overview/data/overview_data_sort.c
+  ../overview/data/overview_data_sort_streams.c
+  ../overview/data/overview_data_sort_procs.c
+  ../overview/data/overview_data_sort_fps.c)
 target_include_directories(
   milk-procinfo-info
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
           ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
           ${CMAKE_SOURCE_DIR}/src/engine/libfps
-          ${CMAKE_SOURCE_DIR}/src/cli/overview)
+          ${CMAKE_SOURCE_DIR}/src/cli/overview
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
 target_link_libraries(milk-procinfo-info PUBLIC ImageStreamIO milkprocessinfo
                                                 milkfps m rt pthread)
 install(TARGETS milk-procinfo-info DESTINATION bin)
