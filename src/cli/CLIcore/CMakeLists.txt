@@ -226,6 +226,7 @@ add_executable(
   milk-CTRL
   ../overview/milkCTRL.c
   ../overview/overview_data.c
+  ../overview/overview_data_loops.c
   ../overview/overview_data_sys.c
   ../overview/overview_data_cache.c
   ../overview/overview_data_scan.c
@@ -235,6 +236,7 @@ add_executable(
   ../overview/overview_layout.c
   ../overview/overview_cmdlog.c
   ../overview/overview_render.c
+  ../overview/overview_render_loops.c
   ../overview/overview_render_detail.c
   ../overview/overview_render_utils.c
   ../overview/overview_render_relate.c
@@ -267,6 +269,7 @@ add_executable(
   ../overview/milk-stream-graph.c
   ../overview/stream_graph.c
   ../overview/overview_data.c
+  ../overview/overview_data_loops.c
   ../overview/overview_data_sys.c
   ../overview/overview_data_cache.c
   ../overview/overview_data_scan.c
@@ -289,6 +292,7 @@ add_executable(
   milk-stream-info
   ../overview/milk-stream-info.c
   ../overview/overview_data.c
+  ../overview/overview_data_loops.c
   ../overview/overview_data_sys.c
   ../overview/overview_data_cache.c
   ../overview/overview_data_scan.c
@@ -309,6 +313,7 @@ add_executable(
   milk-procinfo-info
   ../overview/milk-procinfo-info.c
   ../overview/overview_data.c
+  ../overview/overview_data_loops.c
   ../overview/overview_data_sys.c
   ../overview/overview_data_cache.c
   ../overview/overview_data_scan.c

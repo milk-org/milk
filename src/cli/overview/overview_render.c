@@ -15,6 +15,7 @@
 
 #include "overview_render_internal.h"
 #include "overview_render_fps_params.h"
+#include "overview_render_loops.h"
 #include "milk_config.h"
 #include <math.h>
 
@@ -204,6 +205,8 @@ static const char *view_label(ov_view_t v)
         return "FPS";
     case OV_VIEW_GRAPH:
         return "CONN";
+    case OV_VIEW_LOOPS:
+        return "LOOPS";
     default:
         return "";
     }
@@ -1027,9 +1030,14 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
             int rendered = 0;
             if (lay->graph_tab_mode == 1)
             {
-                rendered = ov_render_detail_panel(lay, m);
+                ov_render_loops_panel(lay, m);
+                rendered = 1;
             }
             else if (lay->graph_tab_mode == 2)
+            {
+                rendered = ov_render_detail_panel(lay, m);
+            }
+            else if (lay->graph_tab_mode == 3)
             {
                 rendered = ov_render_resources_panel(lay, m);
             }
@@ -1041,6 +1049,9 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
             break;
         case OV_VIEW_GRAPH:
             ov_render_graph_panel(lay, m);
+            break;
+        case OV_VIEW_LOOPS:
+            ov_render_loops_view(lay, m);
             break;
         case OV_VIEW_STREAMS:
             ov_render_streams_panel(lay, m, &rel);

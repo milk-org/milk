@@ -41,8 +41,27 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
         filt_n = new_filt_n;
     }
 
+    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    {
+        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        int      new_filt_n  = 0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            if (m->fps[fidx[i]].loop_mask & active_mask)
+            {
+                fidx[new_filt_n++] = fidx[i];
+            }
+        }
+        filt_n = new_filt_n;
+    }
+
     char title[128];
-    if (active_filter[0] != '\0')
+    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    {
+        snprintf(title, sizeof(title), "FPS [LOOP L%02d] (%d/%d)",
+                 m->loops[lay->sel_loop].loop_id, filt_n, m->nb_fps);
+    }
+    else if (active_filter[0] != '\0')
     {
         snprintf(title, sizeof(title), "FPS [FILTER ON: /%s/] (%d/%d)",
                  active_filter, filt_n, m->nb_fps);
@@ -238,7 +257,18 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
             ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
             int        has_rel   = (rel != NULL && bget(rel->fps, fi));
             int        is_rel    = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_FPS && has_rel);
-            ov_rgb_t   row_bg    = OV_BG_PANEL;
+            int is_loop_member = 0;
+            if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) &&
+                lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+            {
+                uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+                if (f->loop_mask & active_mask)
+                {
+                    is_loop_member = 1;
+                }
+            }
+
+            ov_rgb_t row_bg = OV_BG_PANEL;
 
             if (is_sel)
             {
@@ -247,6 +277,10 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
             else if (is_frozen)
             {
                 row_bg = OV_BG_FROZEN;
+            }
+            else if (is_loop_member)
+            {
+                row_bg = (f->nb_loops > 1) ? OV_BG_LOOP_SHARED : OV_BG_LOOP;
             }
             else if (is_rel)
             {
@@ -317,12 +351,22 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
                 snprintf(anc_str, sizeof(anc_str),
                          is_written ? "\xe2\x96\xb6   " : "\xe2\x97\x80   ");
             }
+            else if (f->nb_loops > 1)
+            {
+                snprintf(anc_str, sizeof(anc_str), "\xe2\xae\x82   "); /* ⮂ */
+            }
+            else if (f->nb_loops == 1)
+            {
+                snprintf(anc_str, sizeof(anc_str), "\xe2\x86\xba   "); /* ↺ */
+            }
             else
             {
                 snprintf(anc_str, sizeof(anc_str), "    ");
             }
 
-            ov_render_cell(0, 0, OV_FG_WARN, row_bg, anc_str, &hs_rem, &printed, avail,
+            ov_rgb_t anc_color = (f->nb_loops > 1) ? OV_FG_LOOP_SHARED
+                                 : ((f->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
+            ov_render_cell(0, 0, anc_color, row_bg, anc_str, &hs_rem, &printed, avail,
                            lay->highlight_col_fps, lay->col_collapsed_fps);
 
 #define FPS_FIELD_WITH_COL(vcol_idx, logical_idx, color, bg_color, fmt, ...)                      \

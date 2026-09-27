@@ -764,6 +764,7 @@ static void sg_dfs_tree(const OV_MODEL *m,
     node->stream_idx   = current_stream;
     node->is_target    = (current_stream == target_stream);
     node->depth        = depth;
+    node->is_loop      = is_cycle;
     strncpy(node->name, m->streams[current_stream].name, sizeof(node->name) - 1);
     node->name[sizeof(node->name) - 1] = '\0';
 
@@ -795,8 +796,6 @@ static void sg_dfs_tree(const OV_MODEL *m,
 
     if (is_cycle)
     {
-        /* Append cycle indicator to name */
-        strncat(node->name, " (loop)", sizeof(node->name) - strlen(node->name) - 1);
         (*nb_out_nodes)++;
         return;
     }

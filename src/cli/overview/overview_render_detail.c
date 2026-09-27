@@ -82,8 +82,8 @@ static int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
 {
     const OV_STREAM *s = &m->streams[ssel];
 
-    const char *tabs[] = { "CONNECTIONS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 3, lay->graph_tab_mode, OV_FG_STREAM,
+    const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_STREAM,
                        lay->focus == OV_FOCUS_GRAPH);
 
     int ri       = 0;
@@ -496,8 +496,8 @@ static int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
 {
     const OV_PROC *p = &m->procs[psel];
 
-    const char *tabs[] = { "CONNECTIONS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 3, lay->graph_tab_mode, OV_FG_PROC,
+    const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_PROC,
                        lay->focus == OV_FOCUS_GRAPH);
 
     int ri       = 0;
@@ -667,8 +667,8 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
 {
     const OV_FPS *f = &m->fps[fsel];
 
-    const char *tabs[] = { "CONNECTIONS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 3, lay->graph_tab_mode, OV_FG_FPS,
+    const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_FPS,
                        lay->focus == OV_FOCUS_GRAPH);
 
     int ri       = 0;
@@ -742,7 +742,7 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
         H_ov_theme_bg(OV_BG_PANEL);
 
         /* Hint: ↑↓ ENTER (only when graph focused) */
-        if (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 1)
+        if (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 2)
         {
             H_ov_theme_fg(OV_FG_DIM);
             int h = snprintf(NULL, 0, "  [↑↓ ENTER]");
@@ -799,10 +799,10 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             }
 
             int is_sel =
-                (dp == lay->param_sel && lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 1);
+                (dp == lay->param_sel && lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 2);
             int header_rows = 3 + (f->description[0] != '\0' ? 1 : 0);
             int is_hover    = (lay->mouse_hover && lay->hover_view == OV_FOCUS_GRAPH &&
-                               lay->graph_tab_mode == 1 &&
+                               lay->graph_tab_mode == 2 &&
                                lay->hover_idx == header_rows + (dp - lay->param_scroll));
 
             ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : (is_hover ? OV_BG_HOVER : OV_BG_PANEL);
@@ -1028,8 +1028,8 @@ int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         target_color = OV_FG_FPS;
     }
 
-    const char *tabs[] = { "CONNECTIONS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 3, lay->graph_tab_mode, target_color,
+    const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, target_color,
                        lay->focus == OV_FOCUS_GRAPH);
 
     int ri       = 0;

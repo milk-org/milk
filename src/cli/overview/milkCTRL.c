@@ -149,16 +149,27 @@ static void print_help(const char *prog, int mh_color)
            "  diagnose CPU/dTLB bottlenecks, and orchestrate compute loops dynamically.\n\n",
            MH(MH_BOLD, "ImageStreamIO"), MH(MH_BOLD, "FPS"), MH(MH_BOLD, "processinfo"));
 
-    milk_help_section("Dashboard Layout (F2 - F6)", mh_color);
+    milk_help_section("Dashboard Layout (F2 - F7)", mh_color);
     printf(
         "  - %s (F2): Grid overview of Streams, Processes, and FPS panels.\n"
         "  - %s (F3): Full-screen Streams panel with detailed dimensions, semaphores, & IO rates.\n"
         "  - %s (F4): Full-screen Process monitor with status (RUN/STOP/CRSH), CPU, & loop "
         "counts.\n"
         "  - %s  (F5): Full-screen FPS list (left) and interactive parameter tree (right).\n"
-        "  - %s (F6): Visual dataflow node graph tracing upstream/downstream lineage.\n\n",
+        "  - %s (F6): Visual dataflow node graph tracing upstream/downstream lineage.\n"
+        "  - %s (F7): Closed feedback loops detection, circuit breakdown, & overlap analysis.\n\n",
         MH(MH_BOLD, "DASH"), MH(MH_BOLD, "STRM"), MH(MH_BOLD, "PROC"), MH(MH_BOLD, "FPS"),
-        MH(MH_BOLD, "CONN"));
+        MH(MH_BOLD, "CONN"), MH(MH_BOLD, "LOOP"));
+
+    milk_help_section("Feedback Loops (LOOPS tab / F7 view)", mh_color);
+    printf("  %-30s Cycle Graph sub-tabs (CONNECTIONS, LOOPS, DETAILS, RESOURCES)\n",
+           MH(MH_OPT, "SHIFT + TAB"));
+    printf("  %-30s Rename selected feedback loop (persisted across sessions)\n",
+           MH(MH_OPT, "r"));
+    printf("  %-30s Toggle loop isolation filter (isolate loop streams, procs, & FPS)\n",
+           MH(MH_OPT, "f / ENTER"));
+    printf("  %-30s Switch to graph CONNECTIONS tab to inspect dataflow circuit tree\n\n",
+           MH(MH_OPT, "g"));
 
     milk_help_section("Options", mh_color);
     printf("  %-30s Show this help and exit\n", MH(MH_OPT, "-h, --help"));

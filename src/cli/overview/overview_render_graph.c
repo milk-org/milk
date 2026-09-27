@@ -7,6 +7,7 @@
  */
 
 #include "overview_render_internal.h"
+#include "overview_data_loops.h"
 #include "stream_graph.h"
 
 /**
@@ -60,13 +61,24 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             snprintf(szb, sizeof(szb), "%ux%ux%u", (unsigned) s->size[0], (unsigned) s->size[1],
                      (unsigned) s->size[2]);
         }
+        char loopinfo[48];
+        loopinfo[0] = '\0';
+        if (s->nb_loops > 1)
+        {
+            snprintf(loopinfo, sizeof(loopinfo), "  \xe2\xae\x82 %d loops", s->nb_loops);
+        }
+        else if (s->nb_loops == 1)
+        {
+            snprintf(loopinfo, sizeof(loopinfo), "  \xe2\x86\xba L%02d", s->primary_loop_id);
+        }
         len = snprintf(line, sizeof(line),
                        " STM  %s  %s %s"
                        "  Hz:%.1f  ino:%" PRIu64 ""
                        "  own:%d  cnt:%" PRIu64 ""
-                       "  wpid:%d  sem:%d",
+                       "  wpid:%d  sem:%d%s",
                        s->name, render_dtype(s->datatype), szb, s->update_hz, (uint64_t) s->inode,
-                       (int) s->ownerPID, (uint64_t) s->cnt0, (int) s->write_pid, s->nb_sem);
+                       (int) s->ownerPID, (uint64_t) s->cnt0, (int) s->write_pid, s->nb_sem,
+                       loopinfo);
         break;
     }
     case OV_FOCUS_PROCS:
@@ -99,14 +111,25 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             sl = "??";
             break;
         }
+        char loopinfo[48];
+        loopinfo[0] = '\0';
+        if (p->nb_loops > 1)
+        {
+            snprintf(loopinfo, sizeof(loopinfo), "  \xe2\xae\x82 %d loops", p->nb_loops);
+        }
+        else if (p->nb_loops == 1)
+        {
+            snprintf(loopinfo, sizeof(loopinfo), "  \xe2\x86\xba L%02d", p->primary_loop_id);
+        }
         len = snprintf(line, sizeof(line),
                        " PRC  %s  PID:%d  %s"
                        "  Hz:%.1f  trig:%s"
                        "  sem:%d  loop:%" PRId64 ""
-                       "  miss:%d  prio:%d",
+                       "  miss:%d  prio:%d%s",
                        p->name, (int) p->PID, sl, p->loop_hz,
                        p->trigstreamname[0] ? p->trigstreamname : "-", p->triggersem,
-                       (int64_t) p->loopcnt, p->triggermissed, p->rt_priority);
+                       (int64_t) p->loopcnt, p->triggermissed, p->rt_priority,
+                       loopinfo);
         break;
     }
     case OV_FOCUS_FPS:
@@ -117,12 +140,37 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             break;
         }
         const OV_FPS *f = &m->fps[fsel];
+        char loopinfo[48];
+        loopinfo[0] = '\0';
+        if (f->nb_loops > 1)
+        {
+            snprintf(loopinfo, sizeof(loopinfo), "  \xe2\xae\x82 %d loops", f->nb_loops);
+        }
+        else if (f->nb_loops == 1)
+        {
+            snprintf(loopinfo, sizeof(loopinfo), "  \xe2\x86\xba L%02d", f->primary_loop_id);
+        }
         len = snprintf(line, sizeof(line),
                        " FPS  %s  C:%s R:%s"
                        "  st:%08X  cpid:%d  rpid:%d"
-                       "  %s",
+                       "  %s%s",
                        f->name, f->conf_alive ? "Y" : "-", f->run_alive ? "Y" : "-", f->md_status,
-                       (int) f->confpid, (int) f->runpid, f->description);
+                       (int) f->confpid, (int) f->runpid, f->description, loopinfo);
+        break;
+    }
+    case OV_FOCUS_GRAPH:
+    {
+        label_color = OV_FG_LOOP;
+        if (lay->graph_tab_mode == 1 && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+        {
+            const OV_LOOP *lp = &m->loops[lay->sel_loop];
+            len = snprintf(line, sizeof(line),
+                           " LOOP L%02d  %-20.20s  Nodes:%d (%ds, %dp)  Hz:%.1f  %s  %s",
+                           lp->loop_id, lp->name, lp->nb_nodes, lp->nb_streams,
+                           lp->nb_procs + lp->nb_fps, lp->min_hz,
+                           lp->is_running ? "RUN" : (lp->is_paused ? "PAUS" : "IDLE"),
+                           (lp->overlap_mask != 0) ? "OVERLAPPING" : "EXCLUSIVE");
+        }
         break;
     }
     default:
@@ -391,8 +439,8 @@ static int get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
 void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_RECT     r      = lay->r_graph;
-    const char *tabs[] = { "CONNECTIONS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 3, lay->graph_tab_mode, OV_FG_CONN,
+    const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_CONN,
                        lay->focus == OV_FOCUS_GRAPH);
 
     int max_rows = r.height - 3;
@@ -508,6 +556,40 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
             ov_theme_bg(row_bg);
         }
 
+        /* Loop badge & cycle closure indicator */
+        if (rn->is_loop)
+        {
+            if (rn->stream_idx >= 0 && rn->stream_idx < m->nb_streams &&
+                m->streams[rn->stream_idx].primary_loop_id > 0)
+            {
+                int lid = m->streams[rn->stream_idx].primary_loop_id;
+                const char *lname = ov_get_loop_name(m, lid);
+                GRAPH_FIELD(OV_FG_LOOP, " \xe2\x86\xba [L%02d: %s]", lid, lname);
+                if (m->streams[rn->stream_idx].nb_loops > 1)
+                {
+                    GRAPH_FIELD(OV_FG_LOOP_SHARED, " (\xe2\xae\x82 %d loops)",
+                                m->streams[rn->stream_idx].nb_loops);
+                }
+            }
+            else
+            {
+                GRAPH_FIELD(OV_FG_LOOP, " \xe2\x86\xba (loop)");
+            }
+        }
+        else if (rn->stream_idx >= 0 && rn->stream_idx < m->nb_streams &&
+                 m->streams[rn->stream_idx].nb_loops > 0)
+        {
+            int lid = m->streams[rn->stream_idx].primary_loop_id;
+            if (m->streams[rn->stream_idx].nb_loops > 1)
+            {
+                GRAPH_FIELD(OV_FG_LOOP_SHARED, " [\xe2\xae\x82 L%02d+]", lid);
+            }
+            else
+            {
+                GRAPH_FIELD(OV_FG_LOOP, " [L%02d]", lid);
+            }
+        }
+
         /* Draw reader proc */
         if (rn->reader_name[0] != '\0')
         {
@@ -535,6 +617,18 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
                 ov_theme_bg(OV_BG_HOVER);
             }
             GRAPH_FIELD(proc_color, "%s", rn->reader_name);
+            if (proc_idx >= 0 && proc_idx < m->nb_procs && m->procs[proc_idx].nb_loops > 0)
+            {
+                int plid = m->procs[proc_idx].primary_loop_id;
+                if (m->procs[proc_idx].nb_loops > 1)
+                {
+                    GRAPH_FIELD(OV_FG_LOOP_SHARED, " \xe2\xae\x82L%02d+", plid);
+                }
+                else
+                {
+                    GRAPH_FIELD(OV_FG_LOOP, " L%02d", plid);
+                }
+            }
             if (hl_proc)
             {
                 ov_theme_bg(row_bg);

@@ -92,9 +92,10 @@ typedef struct
     int  is_target;        /* 1 if this is the target root stream */
     int  is_target_proc;   /* 1 if the reader_name matches the target process */
     int  depth;            /* Graph depth */
+    int  is_loop;          /* 1 if this node closes a cycle */
     char name[64];         /* Stream name */
     char reader_name[64];  /* Name of the process/fps reading this stream */
-    char tree_prefix[128]; /* Prefix strings for rendering (e.g. "├── ") */
+    char tree_prefix[128]; /* Prefix strings for rendering (e.g. "|-- ") */
 } SG_TREE_NODE;
 
 /**
@@ -160,7 +161,8 @@ void sg_compute_node_depths(const OV_MODEL *m, int start_node, sg_mode_t mode, i
 const char *sg_mode_label(sg_mode_t mode);
 
 /**
- * sg_compute_render_nodes - Computes a flattened, sorted list of nodes for vertical graph rendering.
+ * sg_compute_render_nodes - Computes a flattened, sorted list of nodes
+ *                           for vertical graph rendering.
  * @m:          system model
  * @start_node: root node to traverse from
  * @mode:       traversal mode
@@ -174,7 +176,8 @@ int sg_compute_render_nodes(const OV_MODEL *m,
                             SG_RENDER_NODE *out_nodes);
 
 /**
- * sg_compute_render_tree - Computes a top-down flattened list of stream nodes representing the lineage.
+ * sg_compute_render_tree - Computes a top-down flattened list of stream
+ *                          nodes representing the lineage.
  * @m:          system model
  * @start_node: root node to traverse from
  * @mode:       traversal mode

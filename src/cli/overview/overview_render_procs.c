@@ -43,6 +43,20 @@ static int ov_procs__filter(const OV_LAYOUT  *lay,
         filt_n = new_filt_n;
     }
 
+    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    {
+        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        int      new_filt_n  = 0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            if (m->procs[filt_idx[i]].loop_mask & active_mask)
+            {
+                filt_idx[new_filt_n++] = filt_idx[i];
+            }
+        }
+        filt_n = new_filt_n;
+    }
+
     *has_re = 0;
     if (active_filter[0] != '\0')
     {
@@ -249,6 +263,17 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
             int        has_rel   = (rel != NULL && bget(rel->procs, pi));
             int        is_rel   = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_PROCS && has_rel);
             int        is_write = (has_rel && rel != NULL && bget(rel->proc_writes, pi));
+            int is_loop_member = 0;
+            if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) &&
+                lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+            {
+                uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+                if (p->loop_mask & active_mask)
+                {
+                    is_loop_member = 1;
+                }
+            }
+
             ov_rgb_t   row_bg   = OV_BG_PANEL;
             if (is_sel)
             {
@@ -257,6 +282,10 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
             else if (is_frozen)
             {
                 row_bg = OV_BG_FROZEN;
+            }
+            else if (is_loop_member)
+            {
+                row_bg = (p->nb_loops > 1) ? OV_BG_LOOP_SHARED : OV_BG_LOOP;
             }
             else if (is_rel)
             {
@@ -365,12 +394,22 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
             {
                 snprintf(anc_str, sizeof(anc_str), "\xe2\x97\x8f   ");
             }
+            else if (p->nb_loops > 1)
+            {
+                snprintf(anc_str, sizeof(anc_str), "\xe2\xae\x82   "); /* ⮂ */
+            }
+            else if (p->nb_loops == 1)
+            {
+                snprintf(anc_str, sizeof(anc_str), "\xe2\x86\xba   "); /* ↺ */
+            }
             else
             {
                 snprintf(anc_str, sizeof(anc_str), "    ");
             }
 
-            ov_render_cell(0, 0, OV_FG_WARN, row_bg, anc_str, &hs_rem, &printed, avail,
+            ov_rgb_t anc_color = (p->nb_loops > 1) ? OV_FG_LOOP_SHARED
+                                 : ((p->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
+            ov_render_cell(0, 0, anc_color, row_bg, anc_str, &hs_rem, &printed, avail,
                            lay->highlight_col_proc, lay->col_collapsed_proc);
 
             /* Name */
@@ -731,7 +770,12 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
 
     char        title[128];
     const char *active_filter = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
-    if (active_filter[0] != '\0')
+    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    {
+        snprintf(title, sizeof(title), "PROCESSINFO [LOOP L%02d] (%d/%d)",
+                 m->loops[lay->sel_loop].loop_id, filt_n, m->nb_procs);
+    }
+    else if (active_filter[0] != '\0')
     {
         snprintf(title, sizeof(title), "PROCESSINFO [FILTER ON: /%s/] (%d/%d)",
                  active_filter, filt_n, m->nb_procs);

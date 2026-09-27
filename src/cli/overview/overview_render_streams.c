@@ -42,11 +42,29 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         filt_n = new_filt_n;
     }
 
+    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    {
+        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        int      new_filt_n  = 0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            if (m->streams[filt_idx[i]].loop_mask & active_mask)
+            {
+                filt_idx[new_filt_n++] = filt_idx[i];
+            }
+        }
+        filt_n = new_filt_n;
+    }
 
     /* Panel title with filter indicator */
     {
         char title[128];
-        if (active_filter[0] != '\0')
+        if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+        {
+            snprintf(title, sizeof(title), "STREAMS [LOOP L%02d] (%d/%d)",
+                     lay->sel_loop + 1, filt_n, m->nb_streams);
+        }
+        else if (active_filter[0] != '\0')
         {
             snprintf(title, sizeof(title), "STREAMS [FILTER ON: /%s/] (%d/%d)",
                      active_filter, filt_n, m->nb_streams);
@@ -335,6 +353,17 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
             ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
             int is_rel = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_STREAMS && rel != NULL &&
                           bget(rel->streams, si));
+            int is_loop_member = 0;
+            if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) &&
+                lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+            {
+                uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+                if (s->loop_mask & active_mask)
+                {
+                    is_loop_member = 1;
+                }
+            }
+
             ov_rgb_t row_bg = OV_BG_PANEL;
             if (is_sel)
             {
@@ -343,6 +372,10 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
             else if (is_frozen)
             {
                 row_bg = OV_BG_FROZEN;
+            }
+            else if (is_loop_member)
+            {
+                row_bg = (s->nb_loops > 1) ? OV_BG_LOOP_SHARED : OV_BG_LOOP;
             }
             else if (is_rel)
             {
@@ -437,8 +470,16 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
             }
             else
             {
-                /* Activity dot */
-                if (s->update_hz > 0.1)
+                /* Activity & Loop indicator */
+                if (s->nb_loops > 1)
+                {
+                    snprintf(anc_str, sizeof(anc_str), "\xe2\xae\x82 "); /* ⮂ */
+                }
+                else if (s->nb_loops == 1)
+                {
+                    snprintf(anc_str, sizeof(anc_str), "\xe2\x86\xba "); /* ↺ */
+                }
+                else if (s->update_hz > 0.1)
                 {
                     snprintf(anc_str, sizeof(anc_str), "\xe2\x97\x8f ");
                 }
@@ -461,7 +502,9 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
                 }
             }
 
-            ov_render_cell(0, 0, OV_FG_WARN, row_bg, anc_str, &hs_rem, &printed, avail,
+            ov_rgb_t anc_color = (s->nb_loops > 1) ? OV_FG_LOOP_SHARED
+                                 : ((s->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
+            ov_render_cell(0, 0, anc_color, row_bg, anc_str, &hs_rem, &printed, avail,
                            lay->highlight_col_stream, lay->col_collapsed_stream);
 
             ov_rgb_t base_color = s->active ? OV_FG_STREAM : OV_FG_DIM;

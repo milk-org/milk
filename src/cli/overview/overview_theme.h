@@ -49,6 +49,8 @@ typedef struct
 #define OV_BG_PID_MATCH (ov_rgb_t){ 50, 180, 50 } /* green bg for PID match */
 #define OV_BG_STALE (ov_rgb_t){ 55, 45, 20 }      /* amber tint for stale procs */
 #define OV_BG_NEW_ITEM (ov_rgb_t){ 40, 60, 50 }   /* green flash for new items */
+#define OV_BG_LOOP (ov_rgb_t){ 45, 30, 55 }       /* soft purple tint for loop items */
+#define OV_BG_LOOP_SHARED (ov_rgb_t){ 55, 42, 25 }/* amber tint for shared loop items */
 
 /* Foreground — text */
 #define OV_FG_TITLE (ov_rgb_t){ 130, 170, 255 }
@@ -81,9 +83,11 @@ typedef struct
 #define OV_FG_ERROR (ov_rgb_t){ 240, 60, 60 }
 #define OV_FG_ZOMBIE (ov_rgb_t){ 180, 120, 40 }
 
-/* Foreground — graph */
+/* Foreground — graph & loops */
 #define OV_FG_CONN (ov_rgb_t){ 100, 130, 180 }
 #define OV_FG_EDGE_ACTIVE (ov_rgb_t){ 140, 200, 255 }
+#define OV_FG_LOOP (ov_rgb_t){ 220, 120, 255 }
+#define OV_FG_LOOP_SHARED (ov_rgb_t){ 255, 175, 40 }
 
 /* Gradient endpoints for bars/sparklines */
 #define OV_GRAD_LO (ov_rgb_t){ 60, 90, 140 }
