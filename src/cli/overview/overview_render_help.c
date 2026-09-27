@@ -35,6 +35,13 @@ typedef struct
     int score; /* Composite relevance score */
 } help_search_match_t;
 
+/**
+ * compare_search_matches - qsort comparator for help search results by relevance score.
+ * @a: Pointer to first help_search_match_t.
+ * @b: Pointer to second help_search_match_t.
+ *
+ * Return: Negative if a > b (descending score), positive if b > a, or tie-break on index.
+ */
 static int compare_search_matches(const void *a, const void *b)
 {
     const help_search_match_t *ma = (const help_search_match_t *) a;

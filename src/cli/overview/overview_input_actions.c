@@ -32,6 +32,13 @@ const OV_STREAM *ov_input_get_sel_stream(const OV_LAYOUT *lay, const OV_MODEL *m
     return NULL;
 }
 
+/**
+ * ov_input_get_sel_proc - get pointer to currently selected process in model.
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to data model snapshot.
+ *
+ * Return: Selected OV_PROC pointer, or NULL if none or not found.
+ */
 const OV_PROC *ov_input_get_sel_proc(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (lay->sel_name_proc[0] == '\0')
@@ -50,7 +57,11 @@ const OV_PROC *ov_input_get_sel_proc(const OV_LAYOUT *lay, const OV_MODEL *m)
 }
 
 /**
- * @brief Get the currently selected FPS entry.
+ * ov_input_get_sel_fps - get pointer to currently selected FPS module in model.
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to data model snapshot.
+ *
+ * Return: Selected OV_FPS pointer, or NULL if none or not found.
  */
 const OV_FPS *ov_input_get_sel_fps(const OV_LAYOUT *lay, const OV_MODEL *m)
 {

@@ -84,6 +84,15 @@ int64_t pid_get_rss_kb(pid_t pid)
     return (rss * sysconf(_SC_PAGESIZE)) / 1024;
 }
 
+/**
+ * pid_get_status - Get process lifecycle status (alive, zombie, dead)
+ * @pid: Process ID to query
+ *
+ * Checks process status using kill(pid, 0) and procfs status inspection,
+ * caching results to avoid redundant syscalls per scan tick.
+ *
+ * Return: Status enum (OV_PID_DEAD, OV_PID_ALIVE, OV_PID_ZOMBIE).
+ */
 ov_pid_status_t pid_get_status(pid_t pid)
 {
     if (pid <= 0)
@@ -390,11 +399,22 @@ static uint64_t s_perf_prev_l1d    = 0;
 static uint64_t s_perf_prev_llc    = 0;
 static uint64_t s_perf_prev_dtlb   = 0;
 
-static long _perf_event_open(struct perf_event_attr *attr,
-                             pid_t                   pid,
-                             int                     cpu,
-                             int                     group_fd,
-                             unsigned long           flags)
+/**
+ * _perf_event_open - Direct syscall wrapper for perf_event_open
+ * @attr:     Perf event attribute structure
+ * @pid:      Process ID to monitor (-1 for any process)
+ * @cpu:      CPU core to monitor (-1 for any CPU)
+ * @group_fd: Group leader file descriptor or -1
+ * @flags:    Syscall control flags
+ *
+ * Return: File descriptor on success, -1 on failure with errno set.
+ */
+static long _perf_event_open(
+    struct perf_event_attr *attr,
+    pid_t                   pid,
+    int                     cpu,
+    int                     group_fd,
+    unsigned long           flags)
 {
     return syscall(__NR_perf_event_open, attr, pid, cpu, group_fd, flags);
 }

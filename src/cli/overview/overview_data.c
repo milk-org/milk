@@ -42,6 +42,13 @@
  * Full scan
  * ========================================================= */
 
+/**
+ * ov_model_full_scan - Perform a full discovery and state scan into the model
+ * @model: Target data model to populate
+ *
+ * Scans streams, FPS instances, tmux sessions, and processes. Then builds
+ * the relationship graph, detects loops, and enriches historical metrics.
+ */
 void ov_model_full_scan(OV_MODEL *model)
 {
     static struct timespec s_last_scan     = { 0, 0 };
@@ -101,6 +108,10 @@ void ov_model_full_scan(OV_MODEL *model)
  * Snapshot export
  * ========================================================= */
 
+/**
+ * ov_model_export_snapshot - Export current model state to a text file in /tmp
+ * @m: Pointer to data model snapshot
+ */
 void ov_model_export_snapshot(const OV_MODEL *m)
 {
     if (m == NULL)

@@ -137,10 +137,20 @@ static void render_param_breadcrumb(const OV_LAYOUT *lay, const OV_FPS *fps, OV_
  * Tree Helpers
  * ========================================================= */
 
-int ov_get_fps_tree_items(const OV_FPS    *fps,
-                          const char      *path,
-                          fps_tree_item_t *items,
-                          int              max_items)
+/**
+ * ov_get_fps_tree_items - enumerate hierarchical parameter directory nodes for an FPS module.
+ * @fps:       Pointer to FPS module descriptor.
+ * @path:      Directory sub-path within parameter tree.
+ * @items:     Output array to receive tree items.
+ * @max_items: Maximum capacity of items array.
+ *
+ * Return: Number of items populated into array.
+ */
+int ov_get_fps_tree_items(
+    const OV_FPS    *fps,
+    const char      *path,
+    fps_tree_item_t *items,
+    int              max_items)
 {
     if (fps == NULL)
     {

@@ -12,9 +12,14 @@
 /* All overview headers included via
  * overview_render_internal.h */
 
-/* forward declarations for scan API */
-
-void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
+/**
+ * ov_render_status - Render the bottom status bar and key hints
+ * @lay: Layout configuration
+ * @m:   Data model snapshot
+ */
+void ov_render_status(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m)
 {
     OV_RECT r = lay->r_status;
     ov_buf_pos(r.row, r.col);

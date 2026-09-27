@@ -26,7 +26,20 @@ extern float ov_scan_get_interval(void);
 
 static const OV_MODEL *g_last_model = NULL;
 
-int ov_render_header_text(const char *text, int hs, int max_vis_width, ov_rgb_t base_fg)
+/**
+ * ov_render_header_text - render formatted header text with highlight markers and UTF-8 handling.
+ * @text:          Input string with optional \x01 (highlight on) and \x02 (highlight off).
+ * @hs:            Horizontal scroll offset.
+ * @max_vis_width: Maximum visible columns allowed to be printed.
+ * @base_fg:       Base foreground color when not highlighted.
+ *
+ * Return: Number of visible character cells printed.
+ */
+int ov_render_header_text(
+    const char *text,
+    int         hs,
+    int         max_vis_width,
+    ov_rgb_t    base_fg)
 {
     int vis_col = 0;
     int printed = 0;
@@ -84,7 +97,12 @@ int ov_render_header_text(const char *text, int hs, int max_vis_width, ov_rgb_t 
 
 void render_pad_spaces(int chars_written, int panel_width);
 
-
+/**
+ * view_label - get short 4-letter view mode tag string.
+ * @v: View mode enum.
+ *
+ * Return: Static label string ("DASH", "STRM", "PROC", "FPS", "CONN", "LOOPS").
+ */
 static const char *view_label(ov_view_t v)
 {
     switch (v)
@@ -106,7 +124,14 @@ static const char *view_label(ov_view_t v)
     }
 }
 
-void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
+/**
+ * ov_render_header - render the top status header bar of milk-CTRL.
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to current data model snapshot.
+ */
+void ov_render_header(
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m)
 {
     /* Advance blink counter each frame */
     lay->ctrl_blink++;
@@ -574,6 +599,10 @@ void ov_render_tabs(OV_LAYOUT *lay)
     ov_theme_bg(OV_BG_HEADER);
 }
 
+/**
+ * ov_draw_tooltip - render floating mouse hover tooltip box near cursor.
+ * @lay: Pointer to layout structure.
+ */
 static void ov_draw_tooltip(OV_LAYOUT *lay)
 {
     if (!lay->mouse_hover || lay->hover_tooltip[0] == '\0')
@@ -615,6 +644,10 @@ static void ov_draw_tooltip(OV_LAYOUT *lay)
     lay->hover_tooltip[0] = '\0';
 }
 
+/**
+ * ov_render_theme_popup - render interactive color theme selection popup.
+ * @lay: Pointer to layout structure.
+ */
 void ov_render_theme_popup(OV_LAYOUT *lay)
 {
     if (!lay->theme_popup_active)

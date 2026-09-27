@@ -15,16 +15,27 @@
  * now static inline in overview_render_internal.h */
 
 
-static int ov_procs__filter(const OV_LAYOUT  *lay,
-                            const OV_MODEL   *m,
-                            const OV_RELATED *rel,
-                            int              *filt_idx,
-                            int              *has_re,
-                            regex_t          *re)
+/**
+ * ov_procs__filter - Filter processes based on current layout and relations
+ * @lay:      Layout configuration
+ * @m:        Data model containing processes
+ * @rel:      Related items bitmasks
+ * @filt_idx: Output array of filtered process indices
+ * @has_re:   Output flag set to 1 if regex compilation succeeded
+ * @re:       Output compiled regex structure
+ *
+ * Return: Number of filtered processes in @filt_idx.
+ */
+static int ov_procs__filter(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel,
+    int              *filt_idx,
+    int              *has_re,
+    regex_t          *re)
 {
     int         filt_n        = ov_filter_procs(lay, m, rel, filt_idx, OV_MAX_PROCS);
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
-
 
     *has_re = 0;
     if (active_filter[0] != '\0')
@@ -38,9 +49,17 @@ static int ov_procs__filter(const OV_LAYOUT  *lay,
 }
 
 /**
- * @brief Render the process panel column headers.
+ * ov_procs__render_header - Render process panel column headers
+ * @lay:  Layout configuration
+ * @hrow: Screen row for headers
+ * @hs:   Horizontal scroll offset
+ * @r:    Bounding rectangle of panel
  */
-static void ov_procs__render_header(const OV_LAYOUT *lay, int hrow, int hs, OV_RECT r)
+static void ov_procs__render_header(
+    const OV_LAYOUT *lay,
+    int              hrow,
+    int              hs,
+    OV_RECT          r)
 {
     int hs_rem  = hs;
     int printed = 1;
@@ -148,18 +167,29 @@ static void ov_procs__render_header(const OV_LAYOUT *lay, int hrow, int hs, OV_R
 }
 
 /**
- * @brief Render process rows in the overview.
+ * ov_procs__render_rows - Render process rows in the overview
+ * @lay:      Layout configuration
+ * @m:        Data model containing processes
+ * @rel:      Related items bitmasks
+ * @hrow:     Screen row for headers
+ * @hs:       Horizontal scroll offset
+ * @r:        Bounding rectangle of panel
+ * @filt_idx: Array of filtered process indices
+ * @filt_n:   Count of matching processes
+ * @has_re:   Flag indicating whether regex is compiled
+ * @re:       Compiled regex pointer or NULL
  */
-static void ov_procs__render_rows(const OV_LAYOUT  *lay,
-                                  const OV_MODEL   *m,
-                                  const OV_RELATED *rel,
-                                  int               hrow,
-                                  int               hs,
-                                  OV_RECT           r,
-                                  const int        *filt_idx,
-                                  int               filt_n,
-                                  int               has_re,
-                                  const regex_t    *re)
+static void ov_procs__render_rows(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel,
+    int               hrow,
+    int               hs,
+    OV_RECT           r,
+    const int        *filt_idx,
+    int               filt_n,
+    int               has_re,
+    const regex_t    *re)
 {
     int8_t local_depth[OV_MAX_PROCS];
     memset(local_depth, 0, sizeof(local_depth));
@@ -744,9 +774,15 @@ static void ov_procs__render_footer(
     ov_buf_reset_attr();
 }
 /**
- * @brief Render the processes panel in the overview.
+ * ov_render_procs_panel - Render the processes panel in the overview
+ * @lay: Layout configuration
+ * @m:   Data model containing processes
+ * @rel: Related items bitmasks
  */
-void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
+void ov_render_procs_panel(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel)
 {
     OV_RECT r = lay->r_procs;
 

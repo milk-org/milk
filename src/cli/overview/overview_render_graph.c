@@ -396,6 +396,13 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
     ov_buf_reset_attr();
 }
 
+/**
+ * get_graph_start_node - resolve source graph node index for connection tree root.
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to data model snapshot.
+ *
+ * Return: Node index in m->nodes, or -1 if no matching selection.
+ */
 static int get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     ov_focus_t eff_focus   = lay->freeze ? lay->freeze_focus : lay->focus;

@@ -4,16 +4,21 @@
 
 #include "overview_render_internal.h"
 /**
- * @brief Render a name with search-match highlighting.
- *
- * Colors matching substring in the display.
+ * render_highlighted_name - Render a name with regex search-match highlighting
+ * @name:      String to render
+ * @max_len:   Maximum characters to display
+ * @re:        Pointer to compiled regex or NULL
+ * @has_re:    Flag indicating whether regex is compiled
+ * @normal_fg: Default foreground color
+ * @row_bg:    Current row background color
  */
-void render_highlighted_name(const char *name,
-                             int         max_len,
-                             regex_t    *re,
-                             int         has_re,
-                             ov_rgb_t    normal_fg,
-                             ov_rgb_t    row_bg)
+void render_highlighted_name(
+    const char *name,
+    int         max_len,
+    regex_t    *re,
+    int         has_re,
+    ov_rgb_t    normal_fg,
+    ov_rgb_t    row_bg)
 {
     int len = (int) strlen(name);
     if (len > max_len)
@@ -70,7 +75,10 @@ void render_highlighted_name(const char *name,
 
 
 /**
- * @brief Render a data type badge with color coding.
+ * render_dtype - Get 3-character mnemonic string for datatype
+ * @dt: Datatype code
+ *
+ * Return: Short string representation (e.g. "F32", "U16").
  */
 const char *render_dtype(uint8_t dt)
 {
@@ -102,7 +110,10 @@ const char *render_dtype(uint8_t dt)
 }
 
 /**
- * dtype_bytesize - bytes per element for a datatype.
+ * dtype_bytesize - Get number of bytes per element for a datatype
+ * @dt: Datatype code
+ *
+ * Return: Size in bytes (1, 2, 4, or 8).
  */
 int dtype_bytesize(uint8_t dt)
 {
@@ -128,9 +139,17 @@ int dtype_bytesize(uint8_t dt)
 }
 
 /**
- * @brief Clear a screen row to blank.
+ * clear_row - Clear a screen row range with background color
+ * @row:   Terminal row coordinate
+ * @col:   Starting column coordinate
+ * @width: Number of columns to clear
+ * @bg:    Background color
  */
-void clear_row(int row, int col, int width, ov_rgb_t bg)
+void clear_row(
+    int      row,
+    int      col,
+    int      width,
+    ov_rgb_t bg)
 {
     ov_buf_reset_attr();
     ov_buf_pos(row, col);
@@ -139,8 +158,14 @@ void clear_row(int row, int col, int width, ov_rgb_t bg)
     ov_buf_reset_attr();
 }
 
-/* Pad the remainder of a panel's interior row */
-void render_pad_spaces(int chars_written, int panel_width)
+/**
+ * render_pad_spaces - Pad the remainder of a panel interior row with spaces
+ * @chars_written: Number of characters already written
+ * @panel_width:   Total panel width
+ */
+void render_pad_spaces(
+    int chars_written,
+    int panel_width)
 {
     int remain = (panel_width - 2) - chars_written;
     if (remain > 0)
@@ -149,7 +174,10 @@ void render_pad_spaces(int chars_written, int panel_width)
     }
 }
 
-/* Pad remainder of row up to target absolute screen column */
+/**
+ * render_pad_to_col - Pad current terminal row with spaces up to end column
+ * @end_col: Target 1-based column position
+ */
 void render_pad_to_col(int end_col)
 {
     if (ov__cursor_col < end_col)
@@ -159,17 +187,19 @@ void render_pad_to_col(int end_col)
 }
 
 /**
- * render_scroll_indicators - draw ▲N / ▼N on panel borders.
- * @r:         panel rect
- * @scroll:    current scroll offset (first visible index)
- * @max_rows:  visible rows in the panel body
- * @total:     total item count
- * @accent:    panel accent color for the arrow
- *
- * Draws indicators on the top and bottom border lines of
- * the panel to show how many items are hidden above / below.
+ * render_scroll_indicators - Draw scroll indicators on panel border
+ * @r:        Panel bounding rectangle
+ * @scroll:   Current scroll offset (first visible index)
+ * @max_rows: Visible rows in panel body
+ * @total:    Total item count
+ * @accent:   Accent color for the arrows
  */
-void render_scroll_indicators(OV_RECT r, int scroll, int max_rows, int total, ov_rgb_t accent)
+void render_scroll_indicators(
+    OV_RECT  r,
+    int      scroll,
+    int      max_rows,
+    int      total,
+    ov_rgb_t accent)
 {
     int above = scroll;
     int below = total - scroll - max_rows;
@@ -232,18 +262,29 @@ void render_scroll_indicators(OV_RECT r, int scroll, int max_rows, int total, ov
 }
 
 /**
- * @brief Render a single table cell with highlighting and collapse support.
+ * ov_render_cell - Render a single table cell with highlighting and collapse support
+ * @logical_col:     Column index in logical data table
+ * @vis_col:         Visible column index on screen
+ * @fg:              Foreground color
+ * @bg:              Background color
+ * @str:             Cell text content
+ * @hs_rem:          Pointer to horizontal scroll remaining characters
+ * @printed:         Pointer to running count of printed characters
+ * @avail:           Maximum available width
+ * @highlighted_col: Currently highlighted column index
+ * @collapsed_mask:  Bitmask of collapsed columns
  */
-void ov_render_cell(int         logical_col,
-                    int         vis_col,
-                    ov_rgb_t    fg,
-                    ov_rgb_t    bg,
-                    const char *str,
-                    int        *hs_rem,
-                    int        *printed,
-                    int         avail,
-                    int         highlighted_col,
-                    uint32_t    collapsed_mask)
+void ov_render_cell(
+    int         logical_col,
+    int         vis_col,
+    ov_rgb_t    fg,
+    ov_rgb_t    bg,
+    const char *str,
+    int        *hs_rem,
+    int        *printed,
+    int         avail,
+    int         highlighted_col,
+    uint32_t    collapsed_mask)
 {
     int is_high = (vis_col == highlighted_col);
     int is_coll = (collapsed_mask & (1U << logical_col)) != 0;

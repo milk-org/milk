@@ -37,6 +37,11 @@ int ov_input_hit_panel_tab(int mc, int panel_col, const char **tabs, int num_tab
 static const char *stream_col_names[] = { "NAME", "TYP",   "SIZE",  "Hz",
                                           "MB/s", "INODE", "COUNT", "ANCESTRY" };
 
+/**
+ * ov_input__streams_header_click - handle mouse clicks on streams table column headers.
+ * @lay: Pointer to layout structure.
+ * @mc:  Mouse column coordinate.
+ */
 void ov_input__streams_header_click(OV_LAYOUT *lay, int mc)
 {
     int           table_x = mc - lay->r_streams.col - 2 + lay->hscroll_stream;
@@ -65,6 +70,11 @@ void ov_input__streams_header_click(OV_LAYOUT *lay, int mc)
 static const char *proc_col_names[] = { "NAME", "PID",    "STAT", "Hz",      "MEM", "ANCESTRY",
                                         "PRIO", "UPTIME", "CPU%", "LOOPCNT", "DUTY" };
 
+/**
+ * ov_input__procs_header_click - handle mouse clicks on process table column headers.
+ * @lay: Pointer to layout structure.
+ * @mc:  Mouse column coordinate.
+ */
 void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
 {
     int           table_x = mc - lay->r_procs.col - 2 + lay->hscroll_proc;
@@ -92,6 +102,11 @@ void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
 
 static const char *fps_col_names[] = { "NAME", "CPID", "MEM", "ANCESTRY", "RPID", "TMX", "STR" };
 
+/**
+ * ov_input__fps_header_click - handle mouse clicks on FPS table column headers.
+ * @lay: Pointer to layout structure.
+ * @mc:  Mouse column coordinate.
+ */
 void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
 {
     int           table_x = mc - lay->r_fps.col - 2 + lay->hscroll_fps;
@@ -117,7 +132,13 @@ void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
     }
 }
 
-
+/**
+ * ov_hittest - evaluate mouse coordinates against panel bounding boxes and elements.
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to data model snapshot.
+ * @mr:  Mouse row coordinate.
+ * @mc:  Mouse column coordinate.
+ */
 void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
 {
     lay->hover_view         = -1;
@@ -426,7 +447,14 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
     }
 }
 
-void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
+/**
+ * ov_hittest_resolve_globals - Resolve hover index into global indices for cross-panel lineage
+ * @lay: Pointer to layout structure
+ * @m:   Pointer to data model snapshot
+ */
+void ov_hittest_resolve_globals(
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m)
 {
     lay->hover_global_stream = -1;
     lay->hover_global_proc   = -1;

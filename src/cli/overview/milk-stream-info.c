@@ -63,6 +63,12 @@ volatile sig_atomic_t ov_sigTERM = 0;
  * Datatype name helper
  * ========================================================= */
 
+/**
+ * dtype_name - Get human-readable datatype name
+ * @dt: ImageStreamIO datatype code
+ *
+ * Return: Constant string name of the datatype.
+ */
 static const char *dtype_name(uint8_t dt)
 {
     switch (dt)
@@ -96,6 +102,12 @@ static const char *dtype_name(uint8_t dt)
     }
 }
 
+/**
+ * dtype_bytes - Get element byte size for datatype
+ * @dt: ImageStreamIO datatype code
+ *
+ * Return: Size in bytes of a single element.
+ */
 static unsigned int dtype_bytes(uint8_t dt)
 {
     switch (dt)
@@ -126,6 +138,12 @@ static unsigned int dtype_bytes(uint8_t dt)
  * PID status string
  * ========================================================= */
 
+/**
+ * pid_status_str - Format process PID status with ANSI color tags
+ * @pid: Process ID to query
+ *
+ * Return: Color-formatted string (ALIVE, ZOMBIE, DEAD, or N/A).
+ */
 static const char *pid_status_str(pid_t pid)
 {
     if (pid <= 0)
@@ -148,7 +166,16 @@ static const char *pid_status_str(pid_t pid)
  * Find process name from model by PID
  * ========================================================= */
 
-static const char *proc_name_by_pid(const OV_MODEL *m, pid_t pid)
+/**
+ * proc_name_by_pid - Lookup process name from model by PID
+ * @m:   Pointer to data model
+ * @pid: Process ID to find
+ *
+ * Return: Process name string or NULL if not found.
+ */
+static const char *proc_name_by_pid(
+    const OV_MODEL *m,
+    pid_t           pid)
 {
     int pi = ov_find_proc_by_pid(m, pid);
     if (pi >= 0)
@@ -162,7 +189,14 @@ static const char *proc_name_by_pid(const OV_MODEL *m, pid_t pid)
  * Print the stream info
  * ========================================================= */
 
-static void print_stream_info(const OV_MODEL *m, int si)
+/**
+ * print_stream_info - Print formatted metadata report for a shared memory stream
+ * @m:  Pointer to data model
+ * @si: Stream index in @m->streams
+ */
+static void print_stream_info(
+    const OV_MODEL *m,
+    int             si)
 {
     const OV_STREAM *s = &m->streams[si];
 
@@ -399,7 +433,14 @@ static void print_stream_info(const OV_MODEL *m, int si)
  * Help
  * ========================================================= */
 
-static void print_help(const char *progname, int mh_color)
+/**
+ * print_help - Print command-line help message for milk-stream-info
+ * @progname: Name of executable
+ * @mh_color: Flag indicating whether color is enabled
+ */
+static void print_help(
+    const char *progname,
+    int         mh_color)
 {
     milk_help_banner(progname, SI_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -430,7 +471,16 @@ static void print_help(const char *progname, int mh_color)
  * main
  * ========================================================= */
 
-int main(int argc, char *argv[])
+/**
+ * main - Entry point for milk-stream-info utility
+ * @argc: Argument count
+ * @argv: Argument vector
+ *
+ * Return: 0 on success, non-zero on error.
+ */
+int main(
+    int   argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv, SI_ONELINE, SI_DESC_LONG);
     if (action == MH_ACTION_H1 || action == MH_ACTION_H2)

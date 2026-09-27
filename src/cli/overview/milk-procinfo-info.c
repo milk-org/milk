@@ -63,6 +63,12 @@ volatile sig_atomic_t ov_sigTERM = 0;
  * Loop status / CTRL val strings
  * ========================================================= */
 
+/**
+ * loopstat_str - Format process loop status code into colored display string
+ * @stat: Loop status code (e.g. 0=IDLE, 1=ACTIVE, 2=ERROR, 3=CRASHED)
+ *
+ * Return: Color-formatted string.
+ */
 static const char *loopstat_str(int stat)
 {
     switch (stat)
@@ -122,7 +128,14 @@ static const char *trigmode_str(int mode)
  * Print the processinfo
  * ========================================================= */
 
-static void print_proc_info(const OV_MODEL *m, int pi)
+/**
+ * print_proc_info - Print formatted processinfo diagnostic report
+ * @m:  Pointer to data model
+ * @pi: Process index in @m->procs
+ */
+static void print_proc_info(
+    const OV_MODEL *m,
+    int             pi)
 {
     const OV_PROC *p = &m->procs[pi];
 
@@ -309,7 +322,14 @@ static void print_proc_info(const OV_MODEL *m, int pi)
  * Help
  * ========================================================= */
 
-static void print_help(const char *progname, int mh_color)
+/**
+ * print_help - Print command-line help message for milk-procinfo-info
+ * @progname: Name of executable
+ * @mh_color: Flag indicating whether color is enabled
+ */
+static void print_help(
+    const char *progname,
+    int         mh_color)
 {
     milk_help_banner(progname, PI_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -345,7 +365,16 @@ static void print_help(const char *progname, int mh_color)
  * Find proc by name in model
  * ========================================================= */
 
-static int find_proc_by_name(const OV_MODEL *m, const char *name)
+/**
+ * find_proc_by_name - Search for process index in model by process name
+ * @m:    Pointer to data model
+ * @name: Process name string to match
+ *
+ * Return: Process index or -1 if not found.
+ */
+static int find_proc_by_name(
+    const OV_MODEL *m,
+    const char     *name)
 {
     for (int i = 0; i < m->nb_procs; i++)
     {
@@ -361,7 +390,16 @@ static int find_proc_by_name(const OV_MODEL *m, const char *name)
  * main
  * ========================================================= */
 
-int main(int argc, char *argv[])
+/**
+ * main - Entry point for milk-procinfo-info utility
+ * @argc: Argument count
+ * @argv: Argument vector
+ *
+ * Return: 0 on success, non-zero on error.
+ */
+int main(
+    int   argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv, PI_ONELINE, PI_DESC_LONG);
     if (action == MH_ACTION_H1 || action == MH_ACTION_H2)

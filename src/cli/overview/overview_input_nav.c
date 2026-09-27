@@ -162,6 +162,14 @@ static int find_relative_node_of_type(const OV_MODEL *m,
     return -1;
 }
 
+/**
+ * ov_input__handle_ancestry_nav - navigate to immediate upstream parent or downstream child in DAG.
+ * @key: Pressed key code (Shift+Up or Shift+Down).
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to data model snapshot.
+ *
+ * Return: 1 if ancestry navigation key was handled, 0 otherwise.
+ */
 int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (key != OV_KEY_SHIFT_UP && key != OV_KEY_SHIFT_DOWN)
@@ -251,6 +259,14 @@ int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     return 1;
 }
 
+/**
+ * ov_input__handle_navigation - dispatch cursor keys, paging, and scroll navigation.
+ * @key: Pressed key code (arrows, Home/End, PgUp/PgDn, etc.).
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to data model snapshot.
+ *
+ * Return: 1 if navigation key was consumed, 0 otherwise.
+ */
 int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     int *sel                            = NULL;

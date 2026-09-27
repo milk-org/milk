@@ -130,6 +130,13 @@ int pcache_find_pid(pid_t pid)
     return -1;
 }
 
+/**
+ * pcache_evict - Evict a cached processinfo mapping by index
+ * @ci: Cache slot index to evict
+ *
+ * Unmaps shared memory, closes file descriptor, and replaces the slot
+ * with the last cache entry to keep cache contiguous.
+ */
 void pcache_evict(int ci)
 {
     munmap(s_pcache[ci].pinfo, sizeof(PROCESSINFO));

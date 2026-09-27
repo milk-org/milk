@@ -8,7 +8,16 @@
  * Lookup helpers
  * ========================================================= */
 
-int ov_find_stream_by_inode(const OV_MODEL *model, ino_t inode)
+/**
+ * ov_find_stream_by_inode - Find stream index by inode number
+ * @model: Pointer to data model
+ * @inode: Inode number to match
+ *
+ * Return: Stream index in @model->streams, or -1 if not found.
+ */
+int ov_find_stream_by_inode(
+    const OV_MODEL *model,
+    ino_t           inode)
 {
     if (inode == 0)
     {
@@ -25,9 +34,15 @@ int ov_find_stream_by_inode(const OV_MODEL *model, ino_t inode)
 }
 
 /**
- * @brief Find a stream node by name in the graph.
+ * ov_find_stream_by_name - Find stream index by name
+ * @model: Pointer to data model
+ * @name:  Stream name to match
+ *
+ * Return: Stream index in @model->streams, or -1 if not found.
  */
-int ov_find_stream_by_name(const OV_MODEL *model, const char *name)
+int ov_find_stream_by_name(
+    const OV_MODEL *model,
+    const char     *name)
 {
     if (name == NULL || name[0] == '\0')
     {
@@ -44,9 +59,15 @@ int ov_find_stream_by_name(const OV_MODEL *model, const char *name)
 }
 
 /**
- * @brief Find a process node by PID in the graph.
+ * ov_find_proc_by_pid - Find process index by PID
+ * @model: Pointer to data model
+ * @pid:   Process ID to match
+ *
+ * Return: Process index in @model->procs, or -1 if not found.
  */
-int ov_find_proc_by_pid(const OV_MODEL *model, pid_t pid)
+int ov_find_proc_by_pid(
+    const OV_MODEL *model,
+    pid_t           pid)
 {
     if (pid <= 0)
     {
@@ -67,7 +88,20 @@ int ov_find_proc_by_pid(const OV_MODEL *model, pid_t pid)
  * Edge management
  * ========================================================= */
 
-void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, const char *label)
+/**
+ * ov_add_edge - Add a directed relationship edge between two graph nodes
+ * @model: Pointer to data model
+ * @src:   Source node index
+ * @tgt:   Target node index
+ * @type:  Relationship edge type
+ * @label: Text label for edge
+ */
+void ov_add_edge(
+    OV_MODEL       *model,
+    int             src,
+    int             tgt,
+    ov_edge_type_t  type,
+    const char     *label)
 {
     if (src < 0 || tgt < 0 || src == tgt)
     {

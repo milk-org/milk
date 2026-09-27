@@ -12,7 +12,16 @@
 #include "overview_data.h"
 #include "stream_graph.h"
 
-int main(int argc, char *argv[])
+/**
+ * main - CLI debug tool dumping lineage for a specified stream
+ * @argc: Argument count
+ * @argv: Argument vector
+ *
+ * Return: 0 on success, non-zero on error.
+ */
+int main(
+    int   argc,
+    char *argv[])
 {
     if (argc < 2)
     {

@@ -109,10 +109,15 @@ int ov_scan_get_event_fd(void)
 }
 
 
-/* =========================================================
- * Scan thread main loop
- * ========================================================= */
-
+/**
+ * ov_scan_thread_func - Background worker thread scanning system and milk state
+ * @arg: Unused thread argument
+ *
+ * Continuously polls shared memory, processes, FPS contexts, and system metrics
+ * into private model buffer slots and publishes new data to UI via eventfd.
+ *
+ * Return: NULL on termination.
+ */
 static void *ov_scan_thread_func(void *arg __attribute__((unused)))
 {
     memset(ov_model_slots, 0, sizeof(ov_model_slots));

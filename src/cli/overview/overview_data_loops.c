@@ -285,6 +285,12 @@ int ov_find_loop_by_id(const OV_MODEL *model, int loop_id)
  * FNV-1a 64-bit Hash Helper
  * ========================================================= */
 
+/**
+ * fnv1a_hash - Compute 64-bit FNV-1a hash of a null-terminated string
+ * @str: Input string
+ *
+ * Return: 64-bit unsigned hash value.
+ */
 static uint64_t fnv1a_hash(const char *str)
 {
     uint64_t hash = UINT64_C(14695981039346656037);
@@ -300,7 +306,18 @@ static uint64_t fnv1a_hash(const char *str)
  * Cycle Edge Validator
  * ========================================================= */
 
-static int is_valid_loop_edge(const OV_MODEL *m, const OV_EDGE *e, sg_mode_t mode)
+/**
+ * is_valid_loop_edge - Check if an edge is eligible to form a causal feedback loop
+ * @m:    Pointer to data model
+ * @e:    Pointer to edge to validate
+ * @mode: Stream graph traversal mode (trigger vs full)
+ *
+ * Return: 1 if edge is a valid loop edge, 0 otherwise.
+ */
+static int is_valid_loop_edge(
+    const OV_MODEL *m,
+    const OV_EDGE  *e,
+    sg_mode_t       mode)
 {
     if (!e->active)
     {
@@ -344,7 +361,18 @@ static int is_valid_loop_edge(const OV_MODEL *m, const OV_EDGE *e, sg_mode_t mod
  * Cycle Canonicalization & Registration
  * ========================================================= */
 
-static int register_cycle(OV_MODEL *model, const int *path, int path_len)
+/**
+ * register_cycle - Canonicalize a detected cycle and register it in model
+ * @model:    Pointer to data model
+ * @path:     Array of node indices forming the cycle
+ * @path_len: Number of nodes in @path
+ *
+ * Return: 1 if new cycle registered, 0 if duplicate or full.
+ */
+static int register_cycle(
+    OV_MODEL  *model,
+    const int *path,
+    int        path_len)
 {
     if (path_len < 2 || model->nb_loops >= OV_MAX_LOOPS)
     {
@@ -494,15 +522,28 @@ static int register_cycle(OV_MODEL *model, const int *path, int path_len)
  * DFS Cycle Search
  * ========================================================= */
 
-static void dfs_search_cycles(OV_MODEL *model,
-                              int       start_node,
-                              int       curr_node,
-                              int       depth,
-                              int      *path,
-                              uint8_t  *in_path,
-                              const int adj[OV_MAX_NODES][64],
-                              const int adj_cnt[OV_MAX_NODES],
-                              int      *total_explored)
+/**
+ * dfs_search_cycles - Recursively search for cycles using depth-first search
+ * @model:          Pointer to data model
+ * @start_node:     Initial node index of traversal
+ * @curr_node:      Current node being visited
+ * @depth:          Current path depth
+ * @path:           Array recording current traversal path
+ * @in_path:        Bitmask/array marking nodes currently on the DFS path
+ * @adj:            Adjacency matrix of outgoing edges
+ * @adj_cnt:        Count of outgoing edges per node
+ * @total_explored: Pointer to running counter of explored states
+ */
+static void dfs_search_cycles(
+    OV_MODEL  *model,
+    int        start_node,
+    int        curr_node,
+    int        depth,
+    int       *path,
+    uint8_t   *in_path,
+    const int  adj[OV_MAX_NODES][64],
+    const int  adj_cnt[OV_MAX_NODES],
+    int       *total_explored)
 {
     if (model->nb_loops >= OV_MAX_LOOPS || *total_explored > 4096)
     {

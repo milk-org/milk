@@ -854,6 +854,13 @@ static ov_tmux_cache_entry_t s_tmux_cache[OV_MAX_FPS];
 static int                   s_tmux_cache_cnt = 0;
 static struct timespec       s_last_tmux_scan = { 0, 0 };
 
+/**
+ * ov_scan_tmux_sessions - Query tmux server sessions and match against FPS entries
+ * @model: Pointer to data model
+ *
+ * Populates tmux session flags (e.g. running, attached, ctrl window) for each
+ * known FPS instance by parsing tmux list-windows output.
+ */
 void ov_scan_tmux_sessions(OV_MODEL *model)
 {
     /* Reset all tmux flags */
@@ -999,6 +1006,12 @@ void ov_scan_tmux_sessions(OV_MODEL *model)
  * Cache cleanup (called from ov_scan_stop)
  * ========================================================= */
 
+/**
+ * ov_scan_cache_cleanup - Release and unmap all cached streams and FPS descriptors
+ *
+ * Called during worker shutdown to close opened ImageStreamIO images, disconnect
+ * active FPS mappings, and free cached processinfo entries.
+ */
 void ov_scan_cache_cleanup(void)
 {
     /* Close all cached stream mappings */
@@ -1165,6 +1178,13 @@ static int name_in_list(const char *name, const char *list, int count, int width
     return 0;
 }
 
+/**
+ * ov_post_scan_enrich - Enrich model entries with historical sparklines and stale flags
+ * @model: Pointer to data model
+ *
+ * Updates sparklines, calculates uptime, detects stale streams/processes, and
+ * flags newly appeared items for UI highlight effects.
+ */
 void ov_post_scan_enrich(OV_MODEL *model)
 {
     int64_t now_epoch = (int64_t) time(NULL);

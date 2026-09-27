@@ -149,7 +149,14 @@ static void sg_raw_exit(void)
  * Usage
  * ========================================================= */
 
-static void print_usage(const char *prog, int mh_color)
+/**
+ * print_usage - Print command-line usage information for milk-stream-graph
+ * @prog:     Program invocation name
+ * @mh_color: Color mode flag
+ */
+static void print_usage(
+    const char *prog,
+    int         mh_color)
 {
     milk_help_banner(prog, SG_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -197,6 +204,12 @@ static void print_usage(const char *prog, int mh_color)
  * Parse mode string
  * ========================================================= */
 
+/**
+ * parse_mode - Parse graph traversal mode string
+ * @s: Mode name ("input", "full", or "trigger")
+ *
+ * Return: Corresponding sg_mode_t enum.
+ */
 static sg_mode_t parse_mode(const char *s)
 {
     if (strcmp(s, "input") == 0)
@@ -214,6 +227,10 @@ static sg_mode_t parse_mode(const char *s)
  * Scan + build model
  * ========================================================= */
 
+/**
+ * sg_scan_model - Scan system state and build graph model
+ * @model: Target data model to populate
+ */
 static void sg_scan_model(OV_MODEL *model)
 {
     memset(model, 0, sizeof(*model));
@@ -227,10 +244,18 @@ static void sg_scan_model(OV_MODEL *model)
  * Text output (machine-readable)
  * ========================================================= */
 
-static void sg_print_text(const OV_MODEL   *m,
-                          const char       *stream_name,
-                          sg_mode_t         mode,
-                          const SG_LINEAGE *lin)
+/**
+ * sg_print_text - Output plain-text machine-readable lineage report
+ * @m:           Pointer to data model
+ * @stream_name: Root stream name
+ * @mode:        Active traversal mode
+ * @lin:         Computed lineage data
+ */
+static void sg_print_text(
+    const OV_MODEL   *m,
+    const char       *stream_name,
+    sg_mode_t         mode,
+    const SG_LINEAGE *lin)
 {
     printf("# milk-stream-graph v%s\n", SG_VERSION);
     printf("# stream: %s\n", stream_name);
@@ -284,10 +309,18 @@ static void sg_print_text(const OV_MODEL   *m,
  * JSON output
  * ========================================================= */
 
-static void sg_print_json(const OV_MODEL   *m,
-                          const char       *stream_name,
-                          sg_mode_t         mode,
-                          const SG_LINEAGE *lin)
+/**
+ * sg_print_json - Output JSON formatted lineage data
+ * @m:           Pointer to data model
+ * @stream_name: Root stream name
+ * @mode:        Active traversal mode
+ * @lin:         Computed lineage data
+ */
+static void sg_print_json(
+    const OV_MODEL   *m,
+    const char       *stream_name,
+    sg_mode_t         mode,
+    const SG_LINEAGE *lin)
 {
     printf("{\n");
     printf("  \"stream\": \"%s\",\n", stream_name);
@@ -351,10 +384,18 @@ static void sg_print_json(const OV_MODEL   *m,
  * Pretty output (TrueColor ANSI)
  * ========================================================= */
 
-static void sg_print_pretty(const OV_MODEL   *m,
-                            const char       *stream_name,
-                            sg_mode_t         mode,
-                            const SG_LINEAGE *lin)
+/**
+ * sg_print_pretty - Output TrueColor ANSI formatted interactive lineage tree
+ * @m:           Pointer to data model
+ * @stream_name: Root stream name
+ * @mode:        Active traversal mode
+ * @lin:         Computed lineage data
+ */
+static void sg_print_pretty(
+    const OV_MODEL   *m,
+    const char       *stream_name,
+    sg_mode_t         mode,
+    const SG_LINEAGE *lin)
 {
     printf(SGC_BOLD SGC_HEADER "Stream Graph" SGC_RESET SGC_TEXT "  stream: " SGC_BOLD SGC_STREAM
                                "%s" SGC_RESET SGC_TEXT "  mode: " SGC_FPS "%s" SGC_RESET "\n\n",
@@ -432,7 +473,16 @@ static void sg_print_pretty(const OV_MODEL   *m,
  * Interactive mode
  * ========================================================= */
 
-static void sg_interactive(OV_MODEL *model, const char *initial_stream, sg_mode_t mode)
+/**
+ * sg_interactive - Run interactive terminal lineage explorer
+ * @model:          Pointer to data model
+ * @initial_stream: Starting stream name
+ * @mode:           Initial graph traversal mode
+ */
+static void sg_interactive(
+    OV_MODEL   *model,
+    const char *initial_stream,
+    sg_mode_t   mode)
 {
     sg_raw_enter();
 
@@ -696,7 +746,16 @@ static void sg_interactive(OV_MODEL *model, const char *initial_stream, sg_mode_
  * main
  * ========================================================= */
 
-int main(int argc, char *argv[])
+/**
+ * main - Entry point for milk-stream-graph utility
+ * @argc: Argument count
+ * @argv: Argument vector
+ *
+ * Return: 0 on success, non-zero on error.
+ */
+int main(
+    int   argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv, SG_ONELINE, SG_DESC_LONG);
     if (action == MH_ACTION_H1 || action == MH_ACTION_H2)

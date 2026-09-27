@@ -106,11 +106,20 @@ static int sg_edge_matches_mode_from_stream(const OV_EDGE *e, sg_mode_t mode)
  * Each stream->proc->stream hop increments depth.
  * ========================================================= */
 
-static void sg_bfs_downstream(const OV_MODEL *m,
-                              int             start_node,
-                              int             root_stream_idx,
-                              sg_mode_t       mode,
-                              SG_LINEAGE     *out)
+/**
+ * sg_bfs_downstream - Breadth-first search traversing forward graph dependencies
+ * @m:               Pointer to data model
+ * @start_node:      Graph node index to start from
+ * @root_stream_idx: Index of root stream
+ * @mode:            Traversal mode (trigger, input, full, FPS)
+ * @out:             Output lineage structure receiving descendant nodes
+ */
+static void sg_bfs_downstream(
+    const OV_MODEL *m,
+    int             start_node,
+    int             root_stream_idx,
+    sg_mode_t       mode,
+    SG_LINEAGE     *out)
 {
     uint64_t visited[SG_BSET_WORDS(OV_MAX_NODES)];
     memset(visited, 0, sizeof(visited));
@@ -242,11 +251,20 @@ static void sg_bfs_downstream(const OV_MODEL *m,
  * From those, find streams that feed them.
  * ========================================================= */
 
-static void sg_bfs_upstream(const OV_MODEL *m,
-                            int             start_node,
-                            int             root_stream_idx,
-                            sg_mode_t       mode,
-                            SG_LINEAGE     *out)
+/**
+ * sg_bfs_upstream - Breadth-first search traversing backward graph dependencies
+ * @m:               Pointer to data model
+ * @start_node:      Graph node index to start from
+ * @root_stream_idx: Index of root stream
+ * @mode:            Traversal mode (trigger, input, full, FPS)
+ * @out:             Output lineage structure receiving ancestor nodes
+ */
+static void sg_bfs_upstream(
+    const OV_MODEL *m,
+    int             start_node,
+    int             root_stream_idx,
+    sg_mode_t       mode,
+    SG_LINEAGE     *out)
 {
     uint64_t visited[SG_BSET_WORDS(OV_MAX_NODES)];
     memset(visited, 0, sizeof(visited));
@@ -373,7 +391,18 @@ static void sg_bfs_upstream(const OV_MODEL *m,
  * Public API
  * ========================================================= */
 
-void sg_compute_lineage(const OV_MODEL *m, int stream_idx, sg_mode_t mode, SG_LINEAGE *out)
+/**
+ * sg_compute_lineage - Compute both upstream and downstream lineage for a stream
+ * @m:          Pointer to data model
+ * @stream_idx: Index of stream to analyze
+ * @mode:       Graph mode filter
+ * @out:        Output lineage structure
+ */
+void sg_compute_lineage(
+    const OV_MODEL *m,
+    int             stream_idx,
+    sg_mode_t       mode,
+    SG_LINEAGE     *out)
 {
     memset(out, 0, sizeof(*out));
 
@@ -441,7 +470,18 @@ const char *sg_mode_label(sg_mode_t mode)
  * Generic node BFS (all node types)
  * ========================================================= */
 
-void sg_compute_node_depths(const OV_MODEL *m, int start_node, sg_mode_t mode, int8_t *node_depths)
+/**
+ * sg_compute_node_depths - Compute signed graph topological depths from start node
+ * @m:           Pointer to data model
+ * @start_node:  Source node index
+ * @mode:        Graph mode filter
+ * @node_depths: Output array of depth offsets (negative for ancestors, positive for descendants)
+ */
+void sg_compute_node_depths(
+    const OV_MODEL *m,
+    int             start_node,
+    sg_mode_t       mode,
+    int8_t         *node_depths)
 {
     for (int i = 0; i < OV_MAX_NODES; i++)
     {
@@ -644,10 +684,20 @@ void sg_compute_node_depths(const OV_MODEL *m, int start_node, sg_mode_t mode, i
     }
 }
 
-int sg_compute_render_nodes(const OV_MODEL *m,
-                            int             start_node,
-                            sg_mode_t       mode,
-                            SG_RENDER_NODE *out_nodes)
+/**
+ * sg_compute_render_nodes - Build flat ordered array of reachable nodes for rendering
+ * @m:          Pointer to data model
+ * @start_node: Source node index
+ * @mode:       Graph mode filter
+ * @out_nodes:  Output array of render nodes
+ *
+ * Return: Number of reachable nodes placed in @out_nodes.
+ */
+int sg_compute_render_nodes(
+    const OV_MODEL *m,
+    int             start_node,
+    sg_mode_t       mode,
+    SG_RENDER_NODE *out_nodes)
 {
     if (start_node < 0 || start_node >= m->nb_nodes)
     {
@@ -728,21 +778,40 @@ int sg_compute_render_nodes(const OV_MODEL *m,
 
     return nb_nodes;
 }
-static void sg_dfs_tree(const OV_MODEL *m,
-                        int             current_stream,
-                        int             reader_node_idx,
-                        int             target_stream,
-                        int             target_proc,
-                        const uint64_t *S_words,
-                        sg_mode_t       mode,
-                        const char     *prefix,
-                        int             is_last,
-                        int             is_root,
-                        int             depth,
-                        int            *path,
-                        int             path_len,
-                        SG_TREE_NODE   *out_nodes,
-                        int            *nb_out_nodes)
+/**
+ * sg_dfs_tree - Recursively format graph tree hierarchy with Unicode box-drawing branches
+ * @m:               Pointer to data model
+ * @current_stream:  Current stream index in traversal
+ * @reader_node_idx: Node index of consuming process or FPS
+ * @target_stream:   Root stream index
+ * @target_proc:     Root process index
+ * @S_words:         Reachable streams bitmask
+ * @mode:            Graph mode filter
+ * @prefix:          Prefix indentation string for tree branches
+ * @is_last:         Flag indicating if this is the last sibling
+ * @is_root:         Flag indicating if this is the root node
+ * @depth:           Current tree depth
+ * @path:            Array tracking ancestor nodes on path for cycle detection
+ * @path_len:        Length of @path
+ * @out_nodes:       Output array of formatted tree nodes
+ * @nb_out_nodes:    Running count of tree nodes in output
+ */
+static void sg_dfs_tree(
+    const OV_MODEL *m,
+    int             current_stream,
+    int             reader_node_idx,
+    int             target_stream,
+    int             target_proc,
+    const uint64_t *S_words,
+    sg_mode_t       mode,
+    const char     *prefix,
+    int             is_last,
+    int             is_root,
+    int             depth,
+    int            *path,
+    int             path_len,
+    SG_TREE_NODE   *out_nodes,
+    int            *nb_out_nodes)
 {
     if (*nb_out_nodes >= OV_MAX_NODES)
     {
@@ -925,10 +994,20 @@ static void sg_dfs_tree(const OV_MODEL *m,
     }
 }
 
-int sg_compute_render_tree(const OV_MODEL *m,
-                           int             start_node,
-                           sg_mode_t       mode,
-                           SG_TREE_NODE   *out_nodes)
+/**
+ * sg_compute_render_tree - Generate hierarchical tree layout with branch graphics
+ * @m:          Pointer to data model
+ * @start_node: Root node index for tree
+ * @mode:       Graph mode filter
+ * @out_nodes:  Output array of tree nodes with branch prefixes
+ *
+ * Return: Total number of tree nodes populated.
+ */
+int sg_compute_render_tree(
+    const OV_MODEL *m,
+    int             start_node,
+    sg_mode_t       mode,
+    SG_TREE_NODE   *out_nodes)
 {
     int nb_out = 0;
     if (start_node < 0 || start_node >= m->nb_nodes)

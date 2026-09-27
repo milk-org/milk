@@ -436,16 +436,27 @@ static void render_lineage_group(OV_LAYOUT              *lay,
 } // render_lineage_group
 
 /**
- * @brief Render stream lineage (ancestry) info.
+ * ov_fps__render_detail_stream_lineage - render stream lineage (ancestors and descendants).
+ * @lay:      Pointer to layout structure.
+ * @m:        Pointer to data model snapshot.
+ * @ssel:     Selected stream index in model.
+ * @r:        Bounding rectangle of detail panel.
+ * @ri:       Current rendering row offset within panel.
+ * @line_idx: Logical line counter for vertical scrolling.
+ * @row:      Base row coordinate on terminal.
+ * @max_rows: Maximum visible rows in panel.
+ *
+ * Return: 1 on success, 0 otherwise.
  */
-static int ov_fps__render_detail_stream_lineage(OV_LAYOUT      *lay,
-                                                const OV_MODEL *m,
-                                                int             ssel,
-                                                OV_RECT         r,
-                                                int            *ri,
-                                                int            *line_idx,
-                                                int             row,
-                                                int             max_rows)
+static int ov_fps__render_detail_stream_lineage(
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m,
+    int             ssel,
+    OV_RECT         r,
+    int            *ri,
+    int            *line_idx,
+    int             row,
+    int             max_rows)
 {
     SG_LINEAGE lin;
     sg_compute_lineage(m, ssel, (sg_mode_t) lay->lineage_mode, &lin);
@@ -658,12 +669,24 @@ static int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
     return 1;
 } // ov_fps__render_detail_proc
 
-static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
-                                     const OV_MODEL *m,
-                                     int             fsel,
-                                     OV_RECT         r,
-                                     int             max_rows,
-                                     int             row)
+/**
+ * ov_fps__render_detail_fps - render comprehensive inspector pane for selected FPS module.
+ * @lay:      Pointer to layout structure.
+ * @m:        Pointer to data model snapshot.
+ * @fsel:     Selected FPS index in model.
+ * @r:        Bounding rectangle of detail panel.
+ * @max_rows: Maximum visible rows in panel.
+ * @row:      Base row coordinate on terminal.
+ *
+ * Return: 1 on success, 0 otherwise.
+ */
+static int ov_fps__render_detail_fps(
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m,
+    int             fsel,
+    OV_RECT         r,
+    int             max_rows,
+    int             row)
 {
     const OV_FPS *f = &m->fps[fsel];
 
@@ -953,7 +976,16 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
     return 1;
 } // ov_fps__render_detail_fps
 
-int ov_render_detail_panel(OV_LAYOUT *lay, const OV_MODEL *m)
+/**
+ * ov_render_detail_panel - dispatch detail inspector pane based on active focus and selection.
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to current data model snapshot.
+ *
+ * Return: 1 if detail was drawn, 0 if nothing to show (caller falls back to graph panel).
+ */
+int ov_render_detail_panel(
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m)
 {
     OV_RECT r        = lay->r_graph;
     int     max_rows = r.height - 2;

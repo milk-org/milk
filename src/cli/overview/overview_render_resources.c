@@ -97,8 +97,16 @@ static void detail_update_telemetry(pid_t target_pid, int64_t target_loopcnt)
     }
 }
 
-
-int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
+/**
+ * ov_render_resources_panel - render system hardware, thread affinity, and perf metrics panel.
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to current data model snapshot.
+ *
+ * Return: 1 if panel was rendered, 0 otherwise.
+ */
+int ov_render_resources_panel(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m)
 {
     OV_RECT r        = lay->r_graph;
     int     max_rows = r.height - 2;

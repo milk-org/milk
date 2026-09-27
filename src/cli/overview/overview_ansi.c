@@ -34,6 +34,12 @@ uint32_t ov__default_bg   = OV_COLOR_NONE;
 uint32_t ov__current_ul   = OV_COLOR_NONE;
 uint8_t  ov__current_attr = 0;
 
+/**
+ * ov_raw_mode_enter - Configure terminal in non-canonical raw mode
+ *
+ * Saves original termios settings, disables ECHO/ICANON/signals, sets non-blocking
+ * standard input, switches to alternate screen buffer, and enables SGR mouse reporting.
+ */
 void ov_raw_mode_enter(void)
 {
     struct termios raw;
@@ -67,6 +73,12 @@ void ov_raw_mode_enter(void)
     ov__raw_active = 1;
 }
 
+/**
+ * ov_raw_mode_exit - Restore original terminal settings and exit raw mode
+ *
+ * Restores original termios, re-enables cursor, disables mouse reporting,
+ * and switches back to the primary terminal screen buffer.
+ */
 void ov_raw_mode_exit(void)
 {
     if (!ov__raw_active)
@@ -85,6 +97,10 @@ void ov_raw_mode_exit(void)
     ov__raw_active = 0;
 }
 
+/**
+ * ov_set_mouse_hover - Toggle mouse movement / hover tracking
+ * @enable: 1 to enable all-motion mouse tracking (1003h), 0 for click-only (1002h)
+ */
 void ov_set_mouse_hover(int enable)
 {
     if (enable)
@@ -103,7 +119,14 @@ void ov_set_mouse_hover(int enable)
     }
 }
 
-void ov_get_terminal_size(int *rows, int *cols)
+/**
+ * ov_get_terminal_size - Query current terminal dimensions via ioctl
+ * @rows: Output pointer for number of terminal rows
+ * @cols: Output pointer for number of terminal columns
+ */
+void ov_get_terminal_size(
+    int *rows,
+    int *cols)
 {
     struct winsize ws;
     *rows = 24;
@@ -121,12 +144,22 @@ void ov_get_terminal_size(int *rows, int *cols)
     }
 }
 
+/**
+ * ov_buf_force_clear - Invalidate the front buffer to force full screen repaint
+ */
 void ov_buf_force_clear(void)
 {
     memset(ov__front, 0, sizeof(ov__front));
 }
 
-void ov_buf_reset_size(int rows, int cols)
+/**
+ * ov_buf_reset_size - Reset shadow buffer dimensions and clear cells
+ * @rows: Target terminal rows
+ * @cols: Target terminal columns
+ */
+void ov_buf_reset_size(
+    int rows,
+    int cols)
 {
     ov__screenbuf_len = 0;
     ov__cursor_row    = 1;
@@ -161,12 +194,22 @@ void ov_buf_reset_size(int rows, int cols)
     }
 }
 
+/**
+ * ov_buf_reset - Reset shadow screen buffer to max terminal dimensions
+ */
 void ov_buf_reset(void)
 {
     ov_buf_reset_size(OV_MAX_ROWS, OV_MAX_COLS);
 }
 
-void ov_buf_append(const char *data, int len)
+/**
+ * ov_buf_append - Append raw ANSI sequence bytes to the screen output buffer
+ * @data: Byte buffer containing ANSI sequences or text
+ * @len:  Number of bytes to append
+ */
+void ov_buf_append(
+    const char *data,
+    int         len)
 {
     if (ov__screenbuf_len + len < OV_SCREENBUF_SIZE)
     {
@@ -175,6 +218,9 @@ void ov_buf_append(const char *data, int len)
     }
 }
 
+/**
+ * ov_buf_flush_internal - Flush accumulated screen output buffer to stdout
+ */
 void ov_buf_flush_internal(void)
 {
     if (ov__screenbuf_len > 0)
@@ -211,11 +257,20 @@ void ov_buf_flush_internal(void)
     }
 }
 
-static void ov_buf_emit_sgr_delta(const OV_CELL *sc,
-                                         uint8_t       *emit_attr,
-                                         uint32_t      *emit_fg,
-                                         uint32_t      *emit_bg,
-                                         uint32_t      *emit_ul)
+/**
+ * ov_buf_emit_sgr_delta - Emit ANSI SGR codes to transition between styling states
+ * @sc:        Target cell style to transition to
+ * @emit_attr: Current terminal attribute state pointer
+ * @emit_fg:   Current terminal foreground color pointer
+ * @emit_bg:   Current terminal background color pointer
+ * @emit_ul:   Current terminal underline color pointer
+ */
+static void ov_buf_emit_sgr_delta(
+    const OV_CELL *sc,
+    uint8_t       *emit_attr,
+    uint32_t      *emit_fg,
+    uint32_t      *emit_bg,
+    uint32_t      *emit_ul)
 {
     int need_reset =
         ((*emit_attr & ~sc->attr) != 0 ||
@@ -381,7 +436,17 @@ static void ov_buf_emit_sgr_delta(const OV_CELL *sc,
     }
 }
 
-void ov_buf_flush_delta(int term_rows, int term_cols)
+/**
+ * ov_buf_flush_delta - Diff shadow buffer against front buffer and render changes
+ * @term_rows: Active terminal rows
+ * @term_cols: Active terminal columns
+ *
+ * Emits cursor movements and minimal SGR styling deltas to stdout, utilizing
+ * synchronized update escapes (mode 2026) to prevent screen tearing.
+ */
+void ov_buf_flush_delta(
+    int term_rows,
+    int term_cols)
 {
     int      emit_cursor_r = -1;
     int      emit_cursor_c = -1;
@@ -466,6 +531,12 @@ void ov_buf_flush_delta(int term_rows, int term_cols)
     ov_buf_flush_internal();
 }
 
+/**
+ * utf8_char_length - Determine the expected byte length of a UTF-8 character
+ * @c: Leading byte of UTF-8 sequence
+ *
+ * Return: Byte count (1 to 4).
+ */
 int utf8_char_length(unsigned char c)
 {
     if ((c & 0x80) == 0)
@@ -487,7 +558,18 @@ int utf8_char_length(unsigned char c)
     return 1;
 }
 
-int ov_utf8_decode(const char *s, int len, uint32_t *cp)
+/**
+ * ov_utf8_decode - Decode a single UTF-8 codepoint from string
+ * @s:   Pointer to byte sequence
+ * @len: Available buffer length
+ * @cp:  Output decoded Unicode codepoint
+ *
+ * Return: Number of consumed bytes, or 0 on error.
+ */
+int ov_utf8_decode(
+    const char *s,
+    int         len,
+    uint32_t   *cp)
 {
     if (len <= 0)
     {
@@ -520,7 +602,20 @@ int ov_utf8_decode(const char *s, int len, uint32_t *cp)
     return 1;
 }
 
-int ov_utf8_next_cluster(const char *s, int max_len, int *bytes_out, int *width_out)
+/**
+ * ov_utf8_next_cluster - Extract next grapheme cluster, handling emoji and variation selectors
+ * @s:         Pointer to UTF-8 text
+ * @max_len:   Maximum available bytes
+ * @bytes_out: Output byte count of grapheme cluster
+ * @width_out: Output terminal cell width (1 or 2)
+ *
+ * Return: 1 if cluster extracted, 0 on end of string or error.
+ */
+int ov_utf8_next_cluster(
+    const char *s,
+    int         max_len,
+    int        *bytes_out,
+    int        *width_out)
 {
     if (max_len <= 0 || s[0] == '\0')
     {
@@ -590,6 +685,12 @@ int ov_utf8_next_cluster(const char *s, int max_len, int *bytes_out, int *width_
     return 1;
 }
 
+/**
+ * ov_str_display_width - Calculate total visual column width of UTF-8 string
+ * @s: Null-terminated UTF-8 string
+ *
+ * Return: Total column display width.
+ */
 int ov_str_display_width(const char *s)
 {
     if (s == NULL)
@@ -612,7 +713,16 @@ int ov_str_display_width(const char *s)
     return total_w;
 }
 
-void ov_buf_append_cluster(const char *utf8_seq, int bytes, int width)
+/**
+ * ov_buf_append_cluster - Append a single grapheme cluster to the shadow buffer
+ * @utf8_seq: Grapheme cluster bytes
+ * @bytes:    Length of sequence in bytes
+ * @width:    Display column width (1 or 2)
+ */
+void ov_buf_append_cluster(
+    const char *utf8_seq,
+    int         bytes,
+    int         width)
 {
     if (width <= 0)
     {
@@ -648,14 +758,28 @@ void ov_buf_append_cluster(const char *utf8_seq, int bytes, int width)
     ov__cursor_col += width;
 }
 
-void ov_buf_append_char(const char *utf8_seq, int bytes)
+/**
+ * ov_buf_append_char - Append a UTF-8 character sequence to the shadow buffer
+ * @utf8_seq: Character bytes
+ * @bytes:    Length in bytes
+ */
+void ov_buf_append_char(
+    const char *utf8_seq,
+    int         bytes)
 {
     int b = 0, w = 1;
     ov_utf8_next_cluster(utf8_seq, bytes, &b, &w);
     ov_buf_append_cluster(utf8_seq, bytes, w);
 }
 
-void ov_buf_printf(const char *fmt, ...)
+/**
+ * ov_buf_printf - Format and print string into shadow buffer at current cursor
+ * @fmt: Printf format string
+ * @...: Variable arguments
+ */
+void ov_buf_printf(
+    const char *fmt,
+    ...)
 {
     char    tmp[4096];
     va_list ap;
@@ -688,7 +812,14 @@ void ov_buf_printf(const char *fmt, ...)
  * Buffered color / attribute helpers
  * ========================================================= */
 
-void ov_buf_hline(char ch, int len)
+/**
+ * ov_buf_hline - Draw horizontal line of ASCII characters in shadow buffer
+ * @ch:  Character to draw
+ * @len: Number of columns to fill
+ */
+void ov_buf_hline(
+    char ch,
+    int  len)
 {
     for (int i = 0; i < len; i++)
     {
@@ -696,7 +827,14 @@ void ov_buf_hline(char ch, int len)
     }
 }
 
-void ov_buf_hline_utf8(const char *s, int len)
+/**
+ * ov_buf_hline_utf8 - Draw horizontal line of UTF-8 glyphs in shadow buffer
+ * @s:   UTF-8 character string
+ * @len: Number of repetitions
+ */
+void ov_buf_hline_utf8(
+    const char *s,
+    int         len)
 {
     int slen = (int) strlen(s);
     for (int i = 0; i < len; i++)
@@ -710,6 +848,12 @@ void ov_buf_hline_utf8(const char *s, int len)
  * ========================================================= */
 
 
+/**
+ * ov_detect_color_level - Detect terminal color capabilities from environment variables
+ *
+ * Sets ov__color_level to 3 (TrueColor), 2 (256-color), or 1 (16-color) based on
+ * COLORTERM and TERM environment variables.
+ */
 void ov_detect_color_level(void)
 {
     if (ov__color_level > 0)
@@ -736,6 +880,14 @@ void ov_detect_color_level(void)
  * Keyboard input (non-blocking)
  * ========================================================= */
 
+/**
+ * ov_get_key - Read a non-blocking keypress or escape sequence from stdin
+ *
+ * Parses ANSI escape sequences, arrow keys, function keys, and mouse SGR reports.
+ *
+ * Return: Key code enum (e.g. OV_KEY_UP, OV_KEY_MOUSE), ASCII character code,
+ *         OV_KEY_NONE if no key available, or OV_KEY_EOF on EOF.
+ */
 int ov_get_key(void)
 {
     static unsigned char buf[256];

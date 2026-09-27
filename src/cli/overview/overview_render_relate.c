@@ -30,7 +30,16 @@ typedef struct
 static ov_filter_cache_entry_t s_filter_cache[OV_FILTER_CACHE_SIZE];
 static int                     s_filter_cache_init = 0;
 
-static regex_t *get_cached_regex(const char *pattern, int *out_reg_ok)
+/**
+ * get_cached_regex - lookup or compile regular expression in circular LRU cache.
+ * @pattern:    Regular expression pattern string.
+ * @out_reg_ok: Output flag set to 1 if regex compilation succeeded, 0 otherwise.
+ *
+ * Return: Pointer to compiled regex_t, or NULL if compilation failed.
+ */
+static regex_t *get_cached_regex(
+    const char *pattern,
+    int        *out_reg_ok)
 {
     if (!s_filter_cache_init)
     {
@@ -73,7 +82,22 @@ static regex_t *get_cached_regex(const char *pattern, int *out_reg_ok)
     return NULL;
 }
 
-int ov_filter_build(const char *pattern, const char **names, int count, int *out, int max_out)
+/**
+ * ov_filter_build - filter a string list using POSIX regex or case-insensitive substring matching.
+ * @pattern: Regex or substring pattern.
+ * @names:   Array of name strings to test.
+ * @count:   Number of items in names array.
+ * @out:     Output buffer to receive indices of matching items.
+ * @max_out: Maximum capacity of out buffer.
+ *
+ * Return: Number of matching indices written to out buffer.
+ */
+int ov_filter_build(
+    const char  *pattern,
+    const char **names,
+    int          count,
+    int         *out,
+    int          max_out)
 {
     if (pattern == NULL || pattern[0] == '\0')
     {
@@ -705,19 +729,38 @@ int ov_get_selected_fps_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
  * overview_render_internal.h
  */
 
+/**
+ * bset - set bit at index in 64-bit word bitset array.
+ * @words: Pointer to 64-bit integer bitset words.
+ * @idx:   0-based bit index to set.
+ */
 void bset(uint64_t *words, int idx)
 {
     words[idx / BITS_PER_WORD] |= (UINT64_C(1) << (idx % BITS_PER_WORD));
 }
 
+/**
+ * bget - test bit at index in 64-bit word bitset array.
+ * @words: Pointer to 64-bit integer bitset words.
+ * @idx:   0-based bit index to test.
+ *
+ * Return: 1 if bit is set, 0 otherwise.
+ */
 int bget(const uint64_t *words, int idx)
 {
     return (words[idx / BITS_PER_WORD] >> (idx % BITS_PER_WORD)) & 1;
 }
+
 /**
- * @brief Compute related items for graph linking.
+ * ov_compute_related - identify all items connected to the active selection across all panels.
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to data model snapshot.
+ * @out: Output structure populated with highlight bitsets and selected IDs.
  */
-void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *out)
+void ov_compute_related(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m,
+    OV_RELATED      *out)
 {
     memset(out, 0, sizeof(*out));
     /* fps_param_mask initialised to 0 by memset — no matches yet */

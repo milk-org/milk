@@ -43,6 +43,10 @@ volatile sig_atomic_t ov_sigTERM = 0;
  * Signal handlers
  * ========================================================= */
 
+/**
+ * handle_sigint - Signal handler for SIGINT (Ctrl-C)
+ * @sig: Signal number
+ */
 static void handle_sigint(int sig)
 {
     (void) sig;
@@ -50,7 +54,8 @@ static void handle_sigint(int sig)
 }
 
 /**
- * @brief SIGTERM handler for milkCTRL exit.
+ * handle_sigterm - SIGTERM handler for milkCTRL exit
+ * @sig: Signal number
  */
 static void handle_sigterm(int sig)
 {
@@ -59,7 +64,8 @@ static void handle_sigterm(int sig)
 }
 
 /**
- * @brief Crash signal handler for milkCTRL.
+ * crash_handler - Crash signal handler for milkCTRL
+ * @sig: Signal number
  *
  * Captures SIGSEGV/SIGABRT, restores terminal,
  * and prints a diagnostic message.
@@ -109,7 +115,14 @@ extern int ov_handle_key(int key, OV_LAYOUT *lay, const OV_MODEL *m);
  * Usage / help
  * ========================================================= */
 
-static void print_help(const char *prog, int mh_color)
+/**
+ * print_help - Print command-line help message
+ * @prog:     Program invocation name
+ * @mh_color: Color formatting mode flag
+ */
+static void print_help(
+    const char *prog,
+    int         mh_color)
 {
     milk_help_banner(
         prog, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes", mh_color);
@@ -238,7 +251,16 @@ static void print_help(const char *prog, int mh_color)
  * main
  * ========================================================= */
 
-int main(int argc, char *argv[])
+/**
+ * main - Entry point for milk-CTRL standalone TUI dashboard
+ * @argc: Command-line argument count
+ * @argv: Command-line argument vector
+ *
+ * Return: 0 on clean exit, non-zero on error.
+ */
+int main(
+    int   argc,
+    char *argv[])
 {
     /* --- Early options parsing (e.g. -d so help reflects it) --- */
     const char *cli_theme = NULL;

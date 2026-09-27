@@ -31,7 +31,8 @@ static int ov_sort_dir_mul = 1;
 static int8_t g_sort_depths[OV_MAX_NODES];
 
 /**
- * @brief Compute graph depth for topological sorting.
+ * ov_sort_set_depths - Set node graph depth cache for topological sorting
+ * @depths: Array of depth values indexed by node index
  */
 void ov_sort_set_depths(const int8_t *depths)
 {
@@ -40,13 +41,24 @@ void ov_sort_set_depths(const int8_t *depths)
 
 /* ----- Stream comparators ----- */
 
+/**
+ * sort_stream_by_name - Compare streams alphabetically by name
+ * @a: Pointer to first OV_STREAM
+ * @b: Pointer to second OV_STREAM
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_stream_by_name(const void *a, const void *b)
 {
     return ov_sort_dir_mul * strcmp(((const OV_STREAM *) a)->name, ((const OV_STREAM *) b)->name);
 }
 
 /**
- * @brief Sort streams by data type.
+ * sort_stream_by_type - Compare streams by data type code
+ * @a: Pointer to first OV_STREAM
+ * @b: Pointer to second OV_STREAM
+ *
+ * Return: Negative, zero, or positive comparison result.
  */
 static int sort_stream_by_type(const void *a, const void *b)
 {
@@ -64,7 +76,11 @@ static int sort_stream_by_type(const void *a, const void *b)
 }
 
 /**
- * @brief Sort streams by total element count.
+ * sort_stream_by_size - Compare streams by total element count
+ * @a: Pointer to first OV_STREAM
+ * @b: Pointer to second OV_STREAM
+ *
+ * Return: Negative, zero, or positive comparison result.
  */
 static int sort_stream_by_size(const void *a, const void *b)
 {
@@ -83,6 +99,13 @@ static int sort_stream_by_size(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_stream_by_hz - Compare streams by update frequency
+ * @a: Pointer to first OV_STREAM
+ * @b: Pointer to second OV_STREAM
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_stream_by_hz(const void *a, const void *b)
 {
     double ha = ((const OV_STREAM *) a)->update_hz;
@@ -124,6 +147,13 @@ static int dtype_bytes(uint8_t dt)
     }
 }
 
+/**
+ * sort_stream_by_throughput - Compare streams by calculated data throughput
+ * @a: Pointer to first OV_STREAM
+ * @b: Pointer to second OV_STREAM
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_stream_by_throughput(const void *a, const void *b)
 {
     const OV_STREAM *sa = (const OV_STREAM *) a;
@@ -141,6 +171,13 @@ static int sort_stream_by_throughput(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_stream_by_inode - Compare streams by shared memory file inode
+ * @a: Pointer to first OV_STREAM
+ * @b: Pointer to second OV_STREAM
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_stream_by_inode(const void *a, const void *b)
 {
     ino_t ia = ((const OV_STREAM *) a)->inode;
@@ -156,6 +193,13 @@ static int sort_stream_by_inode(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_stream_by_count - Compare streams by write counter cnt0
+ * @a: Pointer to first OV_STREAM
+ * @b: Pointer to second OV_STREAM
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_stream_by_count(const void *a, const void *b)
 {
     uint64_t ca = ((const OV_STREAM *) a)->cnt0;
@@ -171,6 +215,13 @@ static int sort_stream_by_count(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_stream_by_ancestry - Compare streams by graph lineage depth
+ * @a: Pointer to first OV_STREAM
+ * @b: Pointer to second OV_STREAM
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_stream_by_ancestry(const void *a, const void *b)
 {
     const OV_STREAM *sa = (const OV_STREAM *) a;
@@ -199,7 +250,16 @@ static int sort_stream_by_ancestry(const void *a, const void *b)
 /** Number of sortable stream columns. */
 #define OV_STREAM_SORT_NCOL 7
 
-void ov_sort_streams(OV_MODEL *model, int key, int dir)
+/**
+ * ov_sort_streams - Sort streams array in model according to selected key and direction
+ * @model: Pointer to data model
+ * @key:   Column sort key index
+ * @dir:   Sort direction (0 for asc, 1 for desc)
+ */
+void ov_sort_streams(
+    OV_MODEL *model,
+    int       key,
+    int       dir)
 {
     if (model->nb_streams < 2)
     {
@@ -240,11 +300,25 @@ void ov_sort_streams(OV_MODEL *model, int key, int dir)
 
 /* ----- Process comparators ----- */
 
+/**
+ * sort_proc_by_name - Compare processes alphabetically by name
+ * @a: Pointer to first OV_PROC
+ * @b: Pointer to second OV_PROC
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_proc_by_name(const void *a, const void *b)
 {
     return ov_sort_dir_mul * strcmp(((const OV_PROC *) a)->name, ((const OV_PROC *) b)->name);
 }
 
+/**
+ * sort_proc_by_pid - Compare processes by process ID
+ * @a: Pointer to first OV_PROC
+ * @b: Pointer to second OV_PROC
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_proc_by_pid(const void *a, const void *b)
 {
     pid_t pa = ((const OV_PROC *) a)->PID;
@@ -260,6 +334,13 @@ static int sort_proc_by_pid(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_proc_by_stat - Compare processes by loop status
+ * @a: Pointer to first OV_PROC
+ * @b: Pointer to second OV_PROC
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_proc_by_stat(const void *a, const void *b)
 {
     int sa = ((const OV_PROC *) a)->loopstat;
@@ -275,6 +356,13 @@ static int sort_proc_by_stat(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_proc_by_hz - Compare processes by loop frequency
+ * @a: Pointer to first OV_PROC
+ * @b: Pointer to second OV_PROC
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_proc_by_hz(const void *a, const void *b)
 {
     double ha = ((const OV_PROC *) a)->loop_hz;
@@ -290,6 +378,13 @@ static int sort_proc_by_hz(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_proc_by_mem - Compare processes by resident memory usage
+ * @a: Pointer to first OV_PROC
+ * @b: Pointer to second OV_PROC
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_proc_by_mem(const void *a, const void *b)
 {
     int64_t ma = ((const OV_PROC *) a)->mem_rss_kb;
@@ -305,6 +400,13 @@ static int sort_proc_by_mem(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_proc_by_ancestry - Compare processes by graph lineage depth
+ * @a: Pointer to first OV_PROC
+ * @b: Pointer to second OV_PROC
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_proc_by_ancestry(const void *a, const void *b)
 {
     const OV_PROC *pa = (const OV_PROC *) a;
@@ -330,6 +432,13 @@ static int sort_proc_by_ancestry(const void *a, const void *b)
     return sort_proc_by_name(a, b);
 }
 
+/**
+ * sort_proc_by_prio - Compare processes by real-time priority
+ * @a: Pointer to first OV_PROC
+ * @b: Pointer to second OV_PROC
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_proc_by_prio(const void *a, const void *b)
 {
     int pa = ((const OV_PROC *) a)->rt_priority;
@@ -345,6 +454,13 @@ static int sort_proc_by_prio(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_proc_by_uptime - Compare processes by start time / uptime
+ * @a: Pointer to first OV_PROC
+ * @b: Pointer to second OV_PROC
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_proc_by_uptime(const void *a, const void *b)
 {
     int64_t ua = ((const OV_PROC *) a)->start_time_sec;
@@ -360,6 +476,13 @@ static int sort_proc_by_uptime(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_proc_by_cpu - Compare processes by CPU utilization percentage
+ * @a: Pointer to first OV_PROC
+ * @b: Pointer to second OV_PROC
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_proc_by_cpu(const void *a, const void *b)
 {
     float ca = ((const OV_PROC *) a)->cpu_used;
@@ -375,6 +498,13 @@ static int sort_proc_by_cpu(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_proc_by_loopcnt - Compare processes by iteration count
+ * @a: Pointer to first OV_PROC
+ * @b: Pointer to second OV_PROC
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_proc_by_loopcnt(const void *a, const void *b)
 {
     int64_t la = ((const OV_PROC *) a)->loopcnt;
@@ -390,6 +520,13 @@ static int sort_proc_by_loopcnt(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_proc_by_duty - Compare processes by execution duty cycle
+ * @a: Pointer to first OV_PROC
+ * @b: Pointer to second OV_PROC
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_proc_by_duty(const void *a, const void *b)
 {
     const OV_PROC *pa = (const OV_PROC *) a;
@@ -414,7 +551,16 @@ static int sort_proc_by_duty(const void *a, const void *b)
 /** Number of sortable proc columns. */
 #define OV_PROC_SORT_NCOL 10
 
-void ov_sort_procs(OV_MODEL *model, int key, int dir)
+/**
+ * ov_sort_procs - Sort processes array in model according to selected key and direction
+ * @model: Pointer to data model
+ * @key:   Column sort key index
+ * @dir:   Sort direction (0 for asc, 1 for desc)
+ */
+void ov_sort_procs(
+    OV_MODEL *model,
+    int       key,
+    int       dir)
 {
     if (model->nb_procs < 2)
     {
@@ -464,11 +610,25 @@ void ov_sort_procs(OV_MODEL *model, int key, int dir)
 
 /* ----- FPS comparators ----- */
 
+/**
+ * sort_fps_by_name - Compare FPS entries alphabetically by name
+ * @a: Pointer to first OV_FPS
+ * @b: Pointer to second OV_FPS
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_fps_by_name(const void *a, const void *b)
 {
     return ov_sort_dir_mul * strcmp(((const OV_FPS *) a)->name, ((const OV_FPS *) b)->name);
 }
 
+/**
+ * sort_fps_by_cpid - Compare FPS entries by config process ID
+ * @a: Pointer to first OV_FPS
+ * @b: Pointer to second OV_FPS
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_fps_by_cpid(const void *a, const void *b)
 {
     pid_t pa = ((const OV_FPS *) a)->confpid;
@@ -484,6 +644,13 @@ static int sort_fps_by_cpid(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_fps_by_rpid - Compare FPS entries by run process ID
+ * @a: Pointer to first OV_FPS
+ * @b: Pointer to second OV_FPS
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_fps_by_rpid(const void *a, const void *b)
 {
     pid_t pa = ((const OV_FPS *) a)->runpid;
@@ -499,6 +666,13 @@ static int sort_fps_by_rpid(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_fps_by_mem - Compare FPS entries by memory usage
+ * @a: Pointer to first OV_FPS
+ * @b: Pointer to second OV_FPS
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_fps_by_mem(const void *a, const void *b)
 {
     int64_t ma = ((const OV_FPS *) a)->mem_rss_kb;
@@ -514,6 +688,13 @@ static int sort_fps_by_mem(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_fps_by_ancestry - Compare FPS entries by graph lineage depth
+ * @a: Pointer to first OV_FPS
+ * @b: Pointer to second OV_FPS
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_fps_by_ancestry(const void *a, const void *b)
 {
     const OV_FPS *fa = (const OV_FPS *) a;
@@ -539,6 +720,13 @@ static int sort_fps_by_ancestry(const void *a, const void *b)
     return sort_fps_by_name(a, b);
 }
 
+/**
+ * sort_fps_by_tmux - Compare FPS entries by tmux session status
+ * @a: Pointer to first OV_FPS
+ * @b: Pointer to second OV_FPS
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_fps_by_tmux(const void *a, const void *b)
 {
     int ta = ((const OV_FPS *) a)->tmux_flags;
@@ -554,6 +742,13 @@ static int sort_fps_by_tmux(const void *a, const void *b)
     return 0;
 }
 
+/**
+ * sort_fps_by_nstreams - Compare FPS entries by number of configured streams
+ * @a: Pointer to first OV_FPS
+ * @b: Pointer to second OV_FPS
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_fps_by_nstreams(const void *a, const void *b)
 {
     int sa = ((const OV_FPS *) a)->nb_stream_params;
@@ -572,7 +767,16 @@ static int sort_fps_by_nstreams(const void *a, const void *b)
 /** Number of sortable FPS columns. */
 #define OV_FPS_SORT_NCOL 6
 
-void ov_sort_fps(OV_MODEL *model, int key, int dir)
+/**
+ * ov_sort_fps - Sort FPS array in model according to selected key and direction
+ * @model: Pointer to data model
+ * @key:   Column sort key index
+ * @dir:   Sort direction (0 for asc, 1 for desc)
+ */
+void ov_sort_fps(
+    OV_MODEL *model,
+    int       key,
+    int       dir)
 {
     if (model->nb_fps < 2)
     {
@@ -680,6 +884,13 @@ typedef struct
     const char *name;
 } ov_sort_rank_entry_t;
 
+/**
+ * sort_entry_by_rank - Compare snapshot rank entries by preserved visual rank
+ * @a: Pointer to first ov_sort_rank_entry_t
+ * @b: Pointer to second ov_sort_rank_entry_t
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_entry_by_rank(const void *a, const void *b)
 {
     const ov_sort_rank_entry_t *ea = (const ov_sort_rank_entry_t *) a;
