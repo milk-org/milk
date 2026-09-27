@@ -425,8 +425,17 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
 
     ov_buf_printf(" ");
     int         filter_w = 0;
-    const char *fpat     = ov_get_filter_pattern(lay);
-    if (ov_is_filter_active(lay))
+    ov_focus_t  fpanel   = ov_get_effective_filter_panel(lay);
+    const char *pname    = (fpanel == OV_FOCUS_STREAMS) ? "STRM"
+                           : (fpanel == OV_FOCUS_PROCS) ? "PROC"
+                           : (fpanel == OV_FOCUS_FPS)   ? "FPS"
+                                                        : "FILTER";
+    const char *fpat     = (fpanel != OV_FOCUS_GRAPH) ? ov_get_panel_filter_pattern(lay, fpanel)
+                                                      : ov_get_filter_pattern(lay);
+    int is_act           = (fpanel != OV_FOCUS_GRAPH) ? ov_is_panel_filter_active(lay, fpanel)
+                                                      : ov_is_filter_active(lay);
+
+    if (is_act)
     {
         /* Software blinking badge for "FILTER ON" (fast 2.5Hz blink) */
         if ((lay->ctrl_blink % 4) < 2)
@@ -441,7 +450,14 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         }
         ov_buf_bold();
         char fbadge[64];
-        snprintf(fbadge, sizeof(fbadge), " [f] FILTER ON: /%.12s/ ", fpat);
+        if (fpanel != OV_FOCUS_GRAPH)
+        {
+            snprintf(fbadge, sizeof(fbadge), " [f] %s: /%.10s/ ", pname, fpat);
+        }
+        else
+        {
+            snprintf(fbadge, sizeof(fbadge), " [f] FILTER ON: /%.12s/ ", fpat);
+        }
         filter_w = (int) strlen(fbadge);
         ov_buf_printf("%s", fbadge);
         ov_buf_reset_attr();
@@ -454,7 +470,14 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         ov_theme_fg(OV_FG_WARN);
         ov_buf_bold();
         char fbadge[64];
-        snprintf(fbadge, sizeof(fbadge), " [f] FILTER: OFF (/%.12s/) ", fpat);
+        if (fpanel != OV_FOCUS_GRAPH)
+        {
+            snprintf(fbadge, sizeof(fbadge), " [f] %s: OFF (/%.8s/) ", pname, fpat);
+        }
+        else
+        {
+            snprintf(fbadge, sizeof(fbadge), " [f] FILTER: OFF (/%.12s/) ", fpat);
+        }
         filter_w = (int) strlen(fbadge);
         ov_buf_printf("%s", fbadge);
         ov_buf_reset_attr();
@@ -466,10 +489,19 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         ov_theme_bg(OV_BG_PANEL);
         ov_theme_fg(OV_FG_DIM);
         ov_buf_bold();
-        ov_buf_printf(" [/] FILTER: OFF ");
+        char fbadge[64];
+        if (fpanel != OV_FOCUS_GRAPH)
+        {
+            snprintf(fbadge, sizeof(fbadge), " [/] %s: ALL ", pname);
+        }
+        else
+        {
+            snprintf(fbadge, sizeof(fbadge), " [/] FILTER: OFF ");
+        }
+        filter_w = (int) strlen(fbadge);
+        ov_buf_printf("%s", fbadge);
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_HEADER);
-        filter_w = 17; /* visual width of " [/] FILTER: OFF " */
     }
 
     int commit_w   = (int) strlen(MILK_GIT_COMMIT) + 3;
@@ -904,9 +936,9 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             const char *names[OV_MAX_NODES];
             int         fidx[OV_MAX_NODES];
-            const char *f_str = ov_get_active_filter(lay);
-            const char *f_prc = ov_get_active_filter(lay);
-            const char *f_fps = ov_get_active_filter(lay);
+            const char *f_str = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
+            const char *f_prc = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
+            const char *f_fps = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
 
             /* Streams */
             for (int i = 0; i < mm->nb_streams; i++)
@@ -989,9 +1021,9 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             const char *names[OV_MAX_NODES];
             int         fidx[OV_MAX_NODES];
-            const char *f_str = ov_get_active_filter(lay);
-            const char *f_prc = ov_get_active_filter(lay);
-            const char *f_fps = ov_get_active_filter(lay);
+            const char *f_str = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
+            const char *f_prc = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
+            const char *f_fps = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
 
             if (saved_sel_stream[0] != '\0')
             {
@@ -1099,9 +1131,9 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     {
         const char *names[OV_MAX_NODES];
         int         fidx[OV_MAX_NODES];
-        const char *f_str = ov_get_active_filter(lay);
-        const char *f_prc = ov_get_active_filter(lay);
-        const char *f_fps = ov_get_active_filter(lay);
+        const char *f_str = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
+        const char *f_prc = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
+        const char *f_fps = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
 
         /* Streams */
         for (int i = 0; i < m->nb_streams; i++)

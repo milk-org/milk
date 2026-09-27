@@ -171,17 +171,18 @@ static const help_entry_t HELP[] =
     },
     {
         "/",
-        "Filter items (regex search)",
-        "Opens interactive regex filter. Displays only matching items with a fast-blinking "
-        "FILTER ON indicator in header and status bar. Enter applies; Esc clears.",
+        "Filter panel items (regex search)",
+        "Opens interactive regex filter for focused panel (STREAMS, PROCESSINFO, or FPS). "
+        "Displays matching items with FILTER ON badge in panel border & header. Enter applies; "
+        "Esc clears.",
         HF_ENTRY,
         HS_NAV,
     },
     {
         "f",
         "Toggle regex filter ON / OFF",
-        "Toggles regex filtering on or off without erasing the filter query. When OFF, "
-        "all items are displayed while retaining the filter query for quick re-activation.",
+        "Toggles regex filtering on or off for focused panel without losing the filter query. "
+        "When OFF, all panel items are displayed while retaining query for quick resumption.",
         HF_ENTRY,
         HS_NAV,
     },
@@ -1859,7 +1860,7 @@ static const intro_item_t INTRO_ITEMS[] = {
     { IL_KEY,       "  ↑ / ↓ (j / k)", "Navigate items in focused list, or scroll this guide" },
     { IL_KEY,       "  c", "Toggle Control Mode ON to enable management actions" },
     { IL_KEY,       "  /", "Search topics in help, or regex filter in dashboard" },
-    { IL_KEY,       "  f", "Toggle regex filter ON/OFF without losing query string" },
+    { IL_KEY,       "  f", "Toggle regex filter ON/OFF for focused panel" },
     { IL_KEY,       "  SPACE", "Freeze selection highlight during rapid live updates" },
     { IL_KEY,       "  ESC", "Close help overlay or exit current prompt" },
     { IL_KEY,       "  q / x", "Quit milk-CTRL cleanly" },

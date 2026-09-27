@@ -85,6 +85,29 @@ int ov_filter_build(
     int         *out,
     int          max_out);
 
+ov_focus_t ov_get_effective_filter_panel(
+    const OV_LAYOUT *lay);
+
+int ov_has_panel_filter(
+    const OV_LAYOUT *lay,
+    ov_focus_t       panel);
+
+int ov_is_panel_filter_active(
+    const OV_LAYOUT *lay,
+    ov_focus_t       panel);
+
+const char *ov_get_panel_filter_pattern(
+    const OV_LAYOUT *lay,
+    ov_focus_t       panel);
+
+const char *ov_get_active_filter_for(
+    const OV_LAYOUT *lay,
+    ov_focus_t       panel);
+
+void ov_clear_panel_filter(
+    OV_LAYOUT  *lay,
+    ov_focus_t  panel);
+
 int ov_has_filter(
     const OV_LAYOUT *lay);
 

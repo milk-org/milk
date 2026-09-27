@@ -127,7 +127,10 @@ static int hit_panel_tab(int mc, int panel_col, const char **tabs, int num_tabs)
  */
 
 
-static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
+static int ov_input__handle_filter_mode(
+    int             key,
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m)
 {
     char *active_filter = lay->filter;
 
@@ -137,6 +140,8 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
         if (key == 27)
         {
             lay->filter_editing = 0;
+            lay->filter[0]      = '\0';
+            lay->filter_cursor  = 0;
             return 1;
         }
 
@@ -144,32 +149,172 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
         if (key == '\n' || key == '\r' || key == OV_KEY_ENTER)
         {
             lay->filter_editing = 0;
-            lay->sel_stream     = 0;
-            lay->scroll_stream  = 0;
-            lay->sel_proc       = 0;
-            lay->scroll_proc    = 0;
-            lay->sel_fps        = 0;
-            lay->scroll_fps     = 0;
+            ov_focus_t target   = lay->filter_panel;
 
-            /* Jump mode: clear filter after jumping
-             * to first match (#5) */
+            /* Jump mode: jump to first matching item without applying persistent filter */
             if (lay->filter_jump)
             {
+                lay->filter_jump = 0;
+                if (lay->filter[0] != '\0' && m != NULL)
+                {
+                    int         count = 0;
+                    const char *names[OV_MAX_NODES];
+                    if (target == OV_FOCUS_STREAMS)
+                    {
+                        count = m->nb_streams;
+                        for (int i = 0; i < count; i++)
+                        {
+                            names[i] = m->streams[i].name;
+                        }
+                    }
+                    else if (target == OV_FOCUS_PROCS)
+                    {
+                        count = m->nb_procs;
+                        for (int i = 0; i < count; i++)
+                        {
+                            names[i] = m->procs[i].name;
+                        }
+                    }
+                    else if (target == OV_FOCUS_FPS)
+                    {
+                        count = m->nb_fps;
+                        for (int i = 0; i < count; i++)
+                        {
+                            names[i] = m->fps[i].name;
+                        }
+                    }
+                    int fidx[OV_MAX_NODES];
+                    int n = ov_filter_build(lay->filter, names, count, fidx, OV_MAX_NODES);
+                    if (n > 0)
+                    {
+                        int found = fidx[0];
+                        if (target == OV_FOCUS_STREAMS)
+                        {
+                            lay->sel_stream = found;
+                            int page_h      = lay->r_streams.height - 3;
+                            if (page_h > 0)
+                            {
+                                if (lay->sel_stream < lay->scroll_stream)
+                                {
+                                    lay->scroll_stream = lay->sel_stream;
+                                }
+                                if (lay->sel_stream >= lay->scroll_stream + page_h)
+                                {
+                                    lay->scroll_stream = lay->sel_stream - page_h + 1;
+                                }
+                            }
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                           "Jumped to stream: %s", names[found]);
+                        }
+                        else if (target == OV_FOCUS_PROCS)
+                        {
+                            lay->sel_proc = found;
+                            int page_h    = lay->r_procs.height - 3;
+                            if (page_h > 0)
+                            {
+                                if (lay->sel_proc < lay->scroll_proc)
+                                {
+                                    lay->scroll_proc = lay->sel_proc;
+                                }
+                                if (lay->sel_proc >= lay->scroll_proc + page_h)
+                                {
+                                    lay->scroll_proc = lay->sel_proc - page_h + 1;
+                                }
+                            }
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                           "Jumped to process: %s", names[found]);
+                        }
+                        else if (target == OV_FOCUS_FPS)
+                        {
+                            lay->sel_fps = found;
+                            int page_h   = lay->r_fps.height - 3;
+                            if (page_h > 0)
+                            {
+                                if (lay->sel_fps < lay->scroll_fps)
+                                {
+                                    lay->scroll_fps = lay->sel_fps;
+                                }
+                                if (lay->sel_fps >= lay->scroll_fps + page_h)
+                                {
+                                    lay->scroll_fps = lay->sel_fps - page_h + 1;
+                                }
+                            }
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                           "Jumped to FPS: %s", names[found]);
+                        }
+                    }
+                    else
+                    {
+                        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
+                                       "No match found for jump query: /%s/", lay->filter);
+                    }
+                }
                 lay->filter[0]     = '\0';
-                lay->filter_jump   = 0;
-                lay->filter_active = 0;
+                lay->filter_cursor = 0;
+                return 1;
             }
-            else if (lay->filter[0] != '\0')
+
+            /* Regular filter mode */
+            if (target == OV_FOCUS_STREAMS)
             {
-                lay->filter_active = 1;
-                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                               "Regex filter applied: /%s/ ('f' to toggle, ESC to clear)",
-                               lay->filter);
+                strncpy(lay->filter_stream, lay->filter, sizeof(lay->filter_stream) - 1);
+                lay->filter_stream[sizeof(lay->filter_stream) - 1] = '\0';
+                lay->filter_stream_active = (lay->filter_stream[0] != '\0') ? 1 : 0;
+                lay->sel_stream    = 0;
+                lay->scroll_stream = 0;
+                if (lay->filter_stream_active)
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                   "STREAMS regex filter applied: /%s/ ('f' toggle, ESC clear)",
+                                   lay->filter_stream);
+                }
+                else
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "STREAMS filter cleared");
+                }
             }
-            else
+            else if (target == OV_FOCUS_PROCS)
             {
-                lay->filter_active = 0;
+                strncpy(lay->filter_proc, lay->filter, sizeof(lay->filter_proc) - 1);
+                lay->filter_proc[sizeof(lay->filter_proc) - 1] = '\0';
+                lay->filter_proc_active = (lay->filter_proc[0] != '\0') ? 1 : 0;
+                lay->sel_proc    = 0;
+                lay->scroll_proc = 0;
+                if (lay->filter_proc_active)
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                   "PROCESSINFO regex filter applied: /%s/ ('f' toggle, "
+                                   "ESC clear)",
+                                   lay->filter_proc);
+                }
+                else
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "PROCESSINFO filter cleared");
+                }
             }
+            else if (target == OV_FOCUS_FPS)
+            {
+                strncpy(lay->filter_fps, lay->filter, sizeof(lay->filter_fps) - 1);
+                lay->filter_fps[sizeof(lay->filter_fps) - 1] = '\0';
+                lay->filter_fps_active = (lay->filter_fps[0] != '\0') ? 1 : 0;
+                lay->sel_fps    = 0;
+                lay->scroll_fps = 0;
+                if (lay->filter_fps_active)
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                   "FPS regex filter applied: /%s/ ('f' toggle, ESC clear)",
+                                   lay->filter_fps);
+                }
+                else
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "FPS filter cleared");
+                }
+            }
+            lay->filter_active = (lay->filter_stream_active ||
+                                  lay->filter_proc_active ||
+                                  lay->filter_fps_active);
+            lay->filter[0]     = '\0';
+            lay->filter_cursor = 0;
             return 1;
         }
 
@@ -210,42 +355,121 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
                      lay->focus == OV_FOCUS_GRAPH));
     if ((!in_loops && key == 'f') || key == ctrl('f'))
     {
-        if (ov_has_filter(lay))
+        ov_focus_t target = ov_get_effective_filter_panel(lay);
+        if (target == OV_FOCUS_GRAPH)
         {
-            lay->filter_active = !lay->filter_active;
-            lay->sel_stream    = 0;
-            lay->scroll_stream = 0;
-            lay->sel_proc      = 0;
-            lay->scroll_proc   = 0;
-            lay->sel_fps       = 0;
-            lay->scroll_fps    = 0;
-            if (lay->filter_active)
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                           "Filter available on STREAMS, PROCESSINFO, or FPS panel");
+            return 1;
+        }
+
+        if (target == OV_FOCUS_STREAMS)
+        {
+            if (lay->filter_stream[0] != '\0')
             {
-                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                               "Regex filter: ON (/%s/)", ov_get_filter_pattern(lay));
+                lay->filter_stream_active = !lay->filter_stream_active;
+                lay->sel_stream    = 0;
+                lay->scroll_stream = 0;
+                if (lay->filter_stream_active)
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                   "STREAMS regex filter: ON (/%s/)", lay->filter_stream);
+                }
+                else
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                   "STREAMS regex filter: OFF (paused, press 'f' to resume, "
+                                   "ESC to clear)");
+                }
             }
             else
             {
                 ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                               "Regex filter: OFF (paused, press 'f' to resume, ESC to clear)");
+                               "No STREAMS filter set. Press [/] to set filter");
             }
         }
-        else
+        else if (target == OV_FOCUS_PROCS)
         {
-            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                           "No filter set. Press [/] to set filter");
+            if (lay->filter_proc[0] != '\0')
+            {
+                lay->filter_proc_active = !lay->filter_proc_active;
+                lay->sel_proc    = 0;
+                lay->scroll_proc = 0;
+                if (lay->filter_proc_active)
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                   "PROCESSINFO regex filter: ON (/%s/)", lay->filter_proc);
+                }
+                else
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                   "PROCESSINFO regex filter: OFF (paused, press 'f' to resume, "
+                                   "ESC to clear)");
+                }
+            }
+            else
+            {
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                               "No PROCESSINFO filter set. Press [/] to set filter");
+            }
         }
+        else if (target == OV_FOCUS_FPS)
+        {
+            if (lay->filter_fps[0] != '\0')
+            {
+                lay->filter_fps_active = !lay->filter_fps_active;
+                lay->sel_fps    = 0;
+                lay->scroll_fps = 0;
+                if (lay->filter_fps_active)
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                   "FPS regex filter: ON (/%s/)", lay->filter_fps);
+                }
+                else
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                   "FPS regex filter: OFF (paused, press 'f' to resume, "
+                                   "ESC to clear)");
+                }
+            }
+            else
+            {
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                               "No FPS filter set. Press [/] to set filter");
+            }
+        }
+        lay->filter_active = (lay->filter_stream_active ||
+                              lay->filter_proc_active ||
+                              lay->filter_fps_active);
         return 1;
     }
 
     /* '/' — enter filter editing mode (pre-filled with existing filter) */
     if (key == '/')
     {
+        ov_focus_t target = ov_get_effective_filter_panel(lay);
+        if (target == OV_FOCUS_GRAPH)
+        {
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
+                           "Filter available on STREAMS, PROCESSINFO, or FPS panel");
+            return 1;
+        }
+
+        lay->filter_panel   = target;
         lay->filter_editing = 1;
         lay->filter_jump    = 0;
-        lay->filter_cursor  = (int) strlen(lay->filter);
+
+        const char *existing = ov_get_panel_filter_pattern(lay, target);
+        strncpy(lay->filter, existing, sizeof(lay->filter) - 1);
+        lay->filter[sizeof(lay->filter) - 1] = '\0';
+        lay->filter_cursor = (int) strlen(lay->filter);
+
+        const char *pname = (target == OV_FOCUS_STREAMS) ? "STREAMS"
+                            : (target == OV_FOCUS_PROCS) ? "PROCESSINFO"
+                            : "FPS";
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                       "Type regex filter (ENTER=apply, ESC=cancel, Ctrl+U=clear)");
+                       "Type %s regex filter (ENTER=apply, ESC=cancel, Ctrl+U=clear)",
+                       pname);
         return 1;
     }
 
@@ -253,25 +477,68 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
      * jump to first match on Enter */
     if (key == '?')
     {
-        ov_clear_all_filters(lay);
+        ov_focus_t target = ov_get_effective_filter_panel(lay);
+        if (target == OV_FOCUS_GRAPH)
+        {
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
+                           "Jump search available on STREAMS, PROCESSINFO, or FPS panel");
+            return 1;
+        }
+
+        lay->filter_panel   = target;
         lay->filter_editing = 1;
         lay->filter_jump    = 1;
+        lay->filter[0]      = '\0';
         lay->filter_cursor  = 0;
+
+        const char *pname = (target == OV_FOCUS_STREAMS) ? "STREAMS"
+                            : (target == OV_FOCUS_PROCS) ? "PROCESSINFO"
+                            : "FPS";
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                       "Type jump query for %s (ENTER=jump, ESC=cancel)",
+                       pname);
         return 1;
     }
 
     /* ESC — clear filter if one is defined */
-    if (key == 27 && ov_has_filter(lay))
+    if (key == 27)
     {
-        ov_clear_all_filters(lay);
-        lay->sel_stream    = 0;
-        lay->scroll_stream = 0;
-        lay->sel_proc      = 0;
-        lay->scroll_proc   = 0;
-        lay->sel_fps       = 0;
-        lay->scroll_fps    = 0;
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Regex filter cleared");
-        return 1;
+        ov_focus_t target = ov_get_effective_filter_panel(lay);
+        if (ov_has_panel_filter(lay, target))
+        {
+            ov_clear_panel_filter(lay, target);
+            if (target == OV_FOCUS_STREAMS)
+            {
+                lay->sel_stream    = 0;
+                lay->scroll_stream = 0;
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "STREAMS regex filter cleared");
+            }
+            else if (target == OV_FOCUS_PROCS)
+            {
+                lay->sel_proc    = 0;
+                lay->scroll_proc = 0;
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "PROCESSINFO regex filter cleared");
+            }
+            else if (target == OV_FOCUS_FPS)
+            {
+                lay->sel_fps    = 0;
+                lay->scroll_fps = 0;
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "FPS regex filter cleared");
+            }
+            return 1;
+        }
+        else if (ov_has_filter(lay))
+        {
+            ov_clear_all_filters(lay);
+            lay->sel_stream    = 0;
+            lay->scroll_stream = 0;
+            lay->sel_proc      = 0;
+            lay->scroll_proc   = 0;
+            lay->sel_fps       = 0;
+            lay->scroll_fps    = 0;
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "All regex filters cleared");
+            return 1;
+        }
     }
 
     return 0;
@@ -421,7 +688,7 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
     if (focus == OV_FOCUS_STREAMS)
     {
         count = m->nb_streams;
-        const char *filt = ov_get_active_filter(lay);
+        const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
         if (filt[0] != '\0')
         {
             const char *names[OV_MAX_STREAMS];
@@ -436,7 +703,7 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
     else if (focus == OV_FOCUS_PROCS)
     {
         count = m->nb_procs;
-        const char *filt = ov_get_active_filter(lay);
+        const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
         if (filt[0] != '\0')
         {
             const char *names[OV_MAX_PROCS];
@@ -451,7 +718,7 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
     else if (focus == OV_FOCUS_FPS)
     {
         count = m->nb_fps;
-        const char *filt = ov_get_active_filter(lay);
+        const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
         if (filt[0] != '\0')
         {
             const char *names[OV_MAX_FPS];
@@ -720,35 +987,77 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
         }
         int         filter_badge_start = hover_badge_start + hover_badge_w + 1;
         int         filter_badge_w     = 17;
-        const char *fpat               = ov_get_filter_pattern(lay);
-        if (ov_is_filter_active(lay))
+        ov_focus_t  fpanel             = ov_get_effective_filter_panel(lay);
+        const char *pname              = (fpanel == OV_FOCUS_STREAMS) ? "STRM"
+                                         : (fpanel == OV_FOCUS_PROCS) ? "PROC"
+                                         : (fpanel == OV_FOCUS_FPS)   ? "FPS"
+                                                                      : "FILTER";
+        const char *fpat               = (fpanel != OV_FOCUS_GRAPH)
+                                             ? ov_get_panel_filter_pattern(lay, fpanel)
+                                             : ov_get_filter_pattern(lay);
+        int is_act                     = (fpanel != OV_FOCUS_GRAPH)
+                                             ? ov_is_panel_filter_active(lay, fpanel)
+                                             : ov_is_filter_active(lay);
+
+        if (is_act)
         {
             char fb[64];
-            snprintf(fb, sizeof(fb), " [f] FILTER ON: /%.12s/ ", fpat);
+            if (fpanel != OV_FOCUS_GRAPH)
+            {
+                snprintf(fb, sizeof(fb), " [f] %s: /%.10s/ ", pname, fpat);
+            }
+            else
+            {
+                snprintf(fb, sizeof(fb), " [f] FILTER ON: /%.12s/ ", fpat);
+            }
             filter_badge_w = (int) strlen(fb);
         }
         else if (fpat[0] != '\0')
         {
             char fb[64];
-            snprintf(fb, sizeof(fb), " [f] FILTER: OFF (/%.12s/) ", fpat);
+            if (fpanel != OV_FOCUS_GRAPH)
+            {
+                snprintf(fb, sizeof(fb), " [f] %s: OFF (/%.8s/) ", pname, fpat);
+            }
+            else
+            {
+                snprintf(fb, sizeof(fb), " [f] FILTER: OFF (/%.12s/) ", fpat);
+            }
+            filter_badge_w = (int) strlen(fb);
+        }
+        else
+        {
+            char fb[64];
+            if (fpanel != OV_FOCUS_GRAPH)
+            {
+                snprintf(fb, sizeof(fb), " [/] %s: ALL ", pname);
+            }
+            else
+            {
+                snprintf(fb, sizeof(fb), " [/] FILTER: OFF ");
+            }
             filter_badge_w = (int) strlen(fb);
         }
         if (mc >= filter_badge_start && mc < filter_badge_start + filter_badge_w)
         {
-            if (ov_is_filter_active(lay))
+            const char *panel_full = (fpanel == OV_FOCUS_STREAMS) ? "Streams"
+                                     : (fpanel == OV_FOCUS_PROCS) ? "Processes"
+                                     : (fpanel == OV_FOCUS_FPS)   ? "FPS"
+                                                                  : "Panel";
+            if (is_act)
             {
                 snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                         "Filter ON: Click or 'f' to pause, ESC to clear");
+                         "%s Filter ON: Click or 'f' to pause, ESC to clear", panel_full);
             }
             else if (fpat[0] != '\0')
             {
                 snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                         "Filter OFF: Click or 'f' to resume, ESC to clear");
+                         "%s Filter OFF: Click or 'f' to resume, ESC to clear", panel_full);
             }
             else
             {
                 snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                         "Filter: Click or press [/] to set regex filter");
+                         "%s Filter: Click or press [/] to set regex filter", panel_full);
             }
             return;
         }
@@ -1007,7 +1316,7 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             fidx[i] = i;
         }
-        const char *filt = ov_get_active_filter(lay);
+        const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
         if (filt[0] != '\0')
         {
             const char *names[OV_MAX_STREAMS];
@@ -1030,7 +1339,7 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             fidx[i] = i;
         }
-        const char *filt = ov_get_active_filter(lay);
+        const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
         if (filt[0] != '\0')
         {
             const char *names[OV_MAX_PROCS];
@@ -1053,7 +1362,7 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             fidx[i] = i;
         }
-        const char *filt = ov_get_active_filter(lay);
+        const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
         if (filt[0] != '\0')
         {
             const char *names[OV_MAX_FPS];
@@ -1267,49 +1576,136 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             /* Check for FILTER badge click */
             int         filter_badge_start = hover_badge_start + hover_badge_w + 1;
             int         filter_badge_w     = 17;
-            const char *fpat               = ov_get_filter_pattern(lay);
-            if (ov_is_filter_active(lay))
+            ov_focus_t  fpanel             = ov_get_effective_filter_panel(lay);
+            const char *pname              = (fpanel == OV_FOCUS_STREAMS) ? "STRM"
+                                             : (fpanel == OV_FOCUS_PROCS) ? "PROC"
+                                             : (fpanel == OV_FOCUS_FPS)   ? "FPS"
+                                                                          : "FILTER";
+            const char *fpat               = (fpanel != OV_FOCUS_GRAPH)
+                                                 ? ov_get_panel_filter_pattern(lay, fpanel)
+                                                 : ov_get_filter_pattern(lay);
+            int is_act                     = (fpanel != OV_FOCUS_GRAPH)
+                                                 ? ov_is_panel_filter_active(lay, fpanel)
+                                                 : ov_is_filter_active(lay);
+
+            if (is_act)
             {
                 char fb[64];
-                snprintf(fb, sizeof(fb), " [f] FILTER ON: /%.12s/ ", fpat);
+                if (fpanel != OV_FOCUS_GRAPH)
+                {
+                    snprintf(fb, sizeof(fb), " [f] %s: /%.10s/ ", pname, fpat);
+                }
+                else
+                {
+                    snprintf(fb, sizeof(fb), " [f] FILTER ON: /%.12s/ ", fpat);
+                }
                 filter_badge_w = (int) strlen(fb);
             }
             else if (fpat[0] != '\0')
             {
                 char fb[64];
-                snprintf(fb, sizeof(fb), " [f] FILTER: OFF (/%.12s/) ", fpat);
+                if (fpanel != OV_FOCUS_GRAPH)
+                {
+                    snprintf(fb, sizeof(fb), " [f] %s: OFF (/%.8s/) ", pname, fpat);
+                }
+                else
+                {
+                    snprintf(fb, sizeof(fb), " [f] FILTER: OFF (/%.12s/) ", fpat);
+                }
+                filter_badge_w = (int) strlen(fb);
+            }
+            else
+            {
+                char fb[64];
+                if (fpanel != OV_FOCUS_GRAPH)
+                {
+                    snprintf(fb, sizeof(fb), " [/] %s: ALL ", pname);
+                }
+                else
+                {
+                    snprintf(fb, sizeof(fb), " [/] FILTER: OFF ");
+                }
                 filter_badge_w = (int) strlen(fb);
             }
             if (mc >= filter_badge_start && mc < filter_badge_start + filter_badge_w)
             {
+                if (fpanel == OV_FOCUS_GRAPH)
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
+                                   "Filter available on STREAMS, PROCESSINFO, or FPS panel");
+                    return 1;
+                }
+                const char *panel_full = (fpanel == OV_FOCUS_STREAMS) ? "STREAMS"
+                                         : (fpanel == OV_FOCUS_PROCS) ? "PROCESSINFO"
+                                         : "FPS";
                 if (fpat[0] != '\0')
                 {
-                    lay->filter_active = !lay->filter_active;
-                    lay->sel_stream    = 0;
-                    lay->scroll_stream = 0;
-                    lay->sel_proc      = 0;
-                    lay->scroll_proc   = 0;
-                    lay->sel_fps       = 0;
-                    lay->scroll_fps    = 0;
-                    if (lay->filter_active)
+                    if (fpanel == OV_FOCUS_STREAMS)
                     {
-                        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                       "Regex filter: ON (/%s/)", fpat);
+                        lay->filter_stream_active = !lay->filter_stream_active;
+                        lay->sel_stream    = 0;
+                        lay->scroll_stream = 0;
+                        if (lay->filter_stream_active)
+                        {
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                           "STREAMS regex filter: ON (/%s/)", lay->filter_stream);
+                        }
+                        else
+                        {
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                           "STREAMS regex filter: OFF (paused, click/'f' resume, "
+                                           "ESC clear)");
+                        }
                     }
-                    else
+                    else if (fpanel == OV_FOCUS_PROCS)
                     {
-                        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                       "Regex filter: OFF (paused, click/'f' resume, ESC clear)");
+                        lay->filter_proc_active = !lay->filter_proc_active;
+                        lay->sel_proc    = 0;
+                        lay->scroll_proc = 0;
+                        if (lay->filter_proc_active)
+                        {
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                           "PROCESSINFO regex filter: ON (/%s/)",
+                                           lay->filter_proc);
+                        }
+                        else
+                        {
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                           "PROCESSINFO regex filter: OFF (paused, click/'f' "
+                                           "resume, ESC clear)");
+                        }
                     }
+                    else if (fpanel == OV_FOCUS_FPS)
+                    {
+                        lay->filter_fps_active = !lay->filter_fps_active;
+                        lay->sel_fps    = 0;
+                        lay->scroll_fps = 0;
+                        if (lay->filter_fps_active)
+                        {
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                           "FPS regex filter: ON (/%s/)", lay->filter_fps);
+                        }
+                        else
+                        {
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                           "FPS regex filter: OFF (paused, click/'f' resume, "
+                                           "ESC clear)");
+                        }
+                    }
+                    lay->filter_active = (lay->filter_stream_active ||
+                                          lay->filter_proc_active ||
+                                          lay->filter_fps_active);
                 }
                 else
                 {
+                    lay->filter_panel   = fpanel;
                     lay->filter_editing = 1;
                     lay->filter_jump    = 0;
                     lay->filter_cursor  = 0;
                     lay->filter[0]      = '\0';
                     ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                   "Type regex filter (ENTER=apply, ESC=cancel)");
+                                   "Type %s regex filter (ENTER=apply, ESC=cancel)",
+                                   panel_full);
                 }
                 return 1;
             }
@@ -3630,7 +4026,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
         scroll = &lay->scroll_stream;
         count  = m->nb_streams;
         {
-            const char *filt = ov_get_active_filter(lay);
+            const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
             if (filt[0] != '\0')
             {
                 const char *names[OV_MAX_STREAMS];
@@ -3649,7 +4045,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
         scroll = &lay->scroll_proc;
         count  = m->nb_procs;
         {
-            const char *filt = ov_get_active_filter(lay);
+            const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
             if (filt[0] != '\0')
             {
                 const char *names[OV_MAX_PROCS];
@@ -3668,7 +4064,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
         scroll = &lay->scroll_fps;
         count  = m->nb_fps;
         {
-            const char *filt = ov_get_active_filter(lay);
+            const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
             if (filt[0] != '\0')
             {
                 const char *names[OV_MAX_FPS];
@@ -4398,7 +4794,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     /* 2. Filter editing mode: all characters belong to the filter prompt */
     if (lay->filter_editing)
     {
-        ov_input__handle_filter_mode(key, lay);
+        ov_input__handle_filter_mode(key, lay, m);
         return 0;
     }
 
@@ -4406,7 +4802,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     if (key == '/' || key == '?' || key == 'f' || key == ctrl('f') ||
         (key == 27 && ov_has_filter(lay)))
     {
-        if (ov_input__handle_filter_mode(key, lay))
+        if (ov_input__handle_filter_mode(key, lay, m))
         {
             return 0;
         }

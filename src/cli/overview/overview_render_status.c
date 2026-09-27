@@ -163,28 +163,15 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
     /* Filter editing prompt overrides normal status */
     if (lay->filter_editing)
     {
-        const char *fstr = lay->filter;
-        if (fstr[0] == '\0')
-        {
-            switch (lay->focus)
-            {
-            case OV_FOCUS_STREAMS:
-                fstr = lay->filter_stream;
-                break;
-            case OV_FOCUS_PROCS:
-                fstr = lay->filter_proc;
-                break;
-            case OV_FOCUS_FPS:
-                fstr = lay->filter_fps;
-                break;
-            default:
-                break;
-            }
-        }
+        const char *fstr  = lay->filter;
+        const char *pname = (lay->filter_panel == OV_FOCUS_STREAMS) ? "STREAMS"
+                            : (lay->filter_panel == OV_FOCUS_PROCS) ? "PROCESSINFO"
+                            : (lay->filter_panel == OV_FOCUS_FPS)   ? "FPS"
+                                                                    : "FILTER";
         ov_theme_fg(OV_FG_TEXT);
         char pfx = lay->filter_jump ? '?' : '/';
-        int  np  = snprintf(NULL, 0, " %c%s", pfx, fstr);
-        ov_buf_printf(" %c%s", pfx, fstr);
+        int  np  = snprintf(NULL, 0, " [%s] %c%s", pname, pfx, fstr);
+        ov_buf_printf(" [%s] %c%s", pname, pfx, fstr);
 
         /* Blinking cursor */
         ov_buf_fg(255, 200, 50);
@@ -283,8 +270,17 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_theme_fg(OV_FG_DIM);
     }
 
-    const char *fpat = ov_get_filter_pattern(lay);
-    if (ov_is_filter_active(lay))
+    ov_focus_t  fpanel   = ov_get_effective_filter_panel(lay);
+    const char *pname    = (fpanel == OV_FOCUS_STREAMS) ? "STRM"
+                           : (fpanel == OV_FOCUS_PROCS) ? "PROC"
+                           : (fpanel == OV_FOCUS_FPS)   ? "FPS"
+                                                        : "FILTER";
+    const char *fpat     = (fpanel != OV_FOCUS_GRAPH) ? ov_get_panel_filter_pattern(lay, fpanel)
+                                                      : ov_get_filter_pattern(lay);
+    int is_act           = (fpanel != OV_FOCUS_GRAPH) ? ov_is_panel_filter_active(lay, fpanel)
+                                                      : ov_is_filter_active(lay);
+
+    if (is_act)
     {
         if ((lay->ctrl_blink % 4) < 2)
         {
@@ -298,7 +294,18 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         }
         ov_buf_bold();
         char fstatus[64];
-        snprintf(fstatus, sizeof(fstatus), " [FILTER ON: /%.12s/ ('f' toggle, ESC clear)] ", fpat);
+        if (fpanel != OV_FOCUS_GRAPH)
+        {
+            snprintf(fstatus, sizeof(fstatus),
+                     " [%s FILTER ON: /%.10s/ ('f' toggle, ESC clear)] ",
+                     pname, fpat);
+        }
+        else
+        {
+            snprintf(fstatus, sizeof(fstatus),
+                     " [FILTER ON: /%.12s/ ('f' toggle, ESC clear)] ",
+                     fpat);
+        }
         ov_buf_printf("%s", fstatus);
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_HEADER);
@@ -311,7 +318,18 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_theme_fg(OV_FG_WARN);
         ov_buf_bold();
         char fstatus[64];
-        snprintf(fstatus, sizeof(fstatus), " [Filter OFF: /%.12s/ ('f' enable)] ", fpat);
+        if (fpanel != OV_FOCUS_GRAPH)
+        {
+            snprintf(fstatus, sizeof(fstatus),
+                     " [%s Filter OFF: /%.10s/ ('f' enable)] ",
+                     pname, fpat);
+        }
+        else
+        {
+            snprintf(fstatus, sizeof(fstatus),
+                     " [Filter OFF: /%.12s/ ('f' enable)] ",
+                     fpat);
+        }
         ov_buf_printf("%s", fstatus);
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_HEADER);

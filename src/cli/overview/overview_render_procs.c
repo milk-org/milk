@@ -27,7 +27,7 @@ static int ov_procs__filter(const OV_LAYOUT  *lay,
     {
         names[i] = m->procs[i].name;
     }
-    const char *active_filter = ov_get_active_filter(lay);
+    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
     int filt_n = ov_filter_build(active_filter, names, m->nb_procs, filt_idx, OV_MAX_PROCS);
 
     if (lay->freeze && lay->freeze_focus != OV_FOCUS_PROCS && rel != NULL)
@@ -228,7 +228,7 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
     int max_rows = r.height - 4;
     int start    = lay->scroll_proc;
 
-    const char *active_filter = ov_get_active_filter(lay);
+    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
     if (filt_n == 0 && active_filter[0] != '\0')
     {
         int row = hrow + 2;
@@ -769,7 +769,7 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
     int     filt_n = ov_procs__filter(lay, m, rel, filt_idx, &has_re, &re);
 
     char        title[128];
-    const char *active_filter = ov_get_active_filter(lay);
+    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
     if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
     {
         snprintf(title, sizeof(title), "PROCESSINFO [LOOP L%02d] (%d/%d)",
@@ -779,6 +779,11 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
     {
         snprintf(title, sizeof(title), "PROCESSINFO [FILTER ON: /%s/] (%d/%d)",
                  active_filter, filt_n, m->nb_procs);
+    }
+    else if (lay->filter_proc[0] != '\0')
+    {
+        snprintf(title, sizeof(title), "PROCESSINFO [FILTER OFF: /%s/] (%d)",
+                 lay->filter_proc, m->nb_procs);
     }
     else
     {

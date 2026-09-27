@@ -136,13 +136,17 @@ typedef struct
     int        paused;
     char       filter[64];
     /* Per-panel regex filter strings */
-    char filter_stream[64];
-    char filter_proc[64];
-    char filter_fps[64];
-    int  filter_active;  /* 1 = filter currently active/applied, 0 = toggled off / paused */
-    int  filter_editing; /* 1 = typing filter */
-    int  filter_cursor;  /* cursor pos in filter */
-    int  filter_jump;    /* 1 = jump-to-match mode */
+    char       filter_stream[64];
+    char       filter_proc[64];
+    char       filter_fps[64];
+    int        filter_stream_active; /* 1 = stream filter active, 0 = paused/off */
+    int        filter_proc_active;   /* 1 = proc filter active, 0 = paused/off */
+    int        filter_fps_active;    /* 1 = fps filter active, 0 = paused/off */
+    ov_focus_t filter_panel;         /* panel currently being edited/filtered */
+    int        filter_active;        /* 1 = any panel filter active, 0 = none */
+    int        filter_editing;       /* 1 = typing filter */
+    int        filter_cursor;        /* cursor pos in filter */
+    int        filter_jump;          /* 1 = jump-to-match mode */
     /* Multi-select state for FPS batch ops (#8) */
     uint8_t multi_sel_fps[200]; /* per-FPS select */
     int     multi_sel_count;    /* count of selected */

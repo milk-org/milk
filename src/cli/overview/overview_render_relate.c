@@ -121,9 +121,185 @@ int ov_filter_build(
 }
 
 /**
+ * @brief Get effective panel for filtering based on current focus or view.
+ *
+ * @param[in] lay Layout structure
+ * @return Panel focus enum (OV_FOCUS_STREAMS, OV_FOCUS_PROCS, OV_FOCUS_FPS, or OV_FOCUS_GRAPH)
+ */
+ov_focus_t ov_get_effective_filter_panel(
+    const OV_LAYOUT *lay)
+{
+    if (lay == NULL)
+    {
+        return OV_FOCUS_STREAMS;
+    }
+    if (lay->view == OV_VIEW_STREAMS)
+    {
+        return OV_FOCUS_STREAMS;
+    }
+    if (lay->view == OV_VIEW_PROCS)
+    {
+        return OV_FOCUS_PROCS;
+    }
+    if (lay->view == OV_VIEW_FPS)
+    {
+        return OV_FOCUS_FPS;
+    }
+    if (lay->focus == OV_FOCUS_STREAMS ||
+        lay->focus == OV_FOCUS_PROCS ||
+        lay->focus == OV_FOCUS_FPS)
+    {
+        return lay->focus;
+    }
+    return OV_FOCUS_GRAPH;
+}
+
+/**
+ * @brief Check if a specific panel has a defined filter pattern string.
+ *
+ * @param[in] lay   Layout structure
+ * @param[in] panel Panel focus enum
+ * @return 1 if defined, 0 otherwise
+ */
+int ov_has_panel_filter(
+    const OV_LAYOUT *lay,
+    ov_focus_t       panel)
+{
+    if (lay == NULL)
+    {
+        return 0;
+    }
+    if (panel == OV_FOCUS_STREAMS)
+    {
+        return (lay->filter_stream[0] != '\0');
+    }
+    if (panel == OV_FOCUS_PROCS)
+    {
+        return (lay->filter_proc[0] != '\0');
+    }
+    if (panel == OV_FOCUS_FPS)
+    {
+        return (lay->filter_fps[0] != '\0');
+    }
+    return 0;
+}
+
+/**
+ * @brief Check if a specific panel's filter is currently active/enabled.
+ *
+ * @param[in] lay   Layout structure
+ * @param[in] panel Panel focus enum
+ * @return 1 if active, 0 otherwise
+ */
+int ov_is_panel_filter_active(
+    const OV_LAYOUT *lay,
+    ov_focus_t       panel)
+{
+    if (lay == NULL)
+    {
+        return 0;
+    }
+    if (panel == OV_FOCUS_STREAMS)
+    {
+        return lay->filter_stream_active && (lay->filter_stream[0] != '\0');
+    }
+    if (panel == OV_FOCUS_PROCS)
+    {
+        return lay->filter_proc_active && (lay->filter_proc[0] != '\0');
+    }
+    if (panel == OV_FOCUS_FPS)
+    {
+        return lay->filter_fps_active && (lay->filter_fps[0] != '\0');
+    }
+    return 0;
+}
+
+/**
+ * @brief Get the configured filter pattern for a specific panel.
+ *
+ * @param[in] lay   Layout structure
+ * @param[in] panel Panel focus enum
+ * @return Pointer to filter pattern string, or "" if none
+ */
+const char *ov_get_panel_filter_pattern(
+    const OV_LAYOUT *lay,
+    ov_focus_t       panel)
+{
+    if (lay == NULL)
+    {
+        return "";
+    }
+    if (panel == OV_FOCUS_STREAMS)
+    {
+        return lay->filter_stream;
+    }
+    if (panel == OV_FOCUS_PROCS)
+    {
+        return lay->filter_proc;
+    }
+    if (panel == OV_FOCUS_FPS)
+    {
+        return lay->filter_fps;
+    }
+    return "";
+}
+
+/**
+ * @brief Get the active filter pattern string for a specific panel.
+ *
+ * @param[in] lay   Layout structure
+ * @param[in] panel Panel focus enum
+ * @return Pointer to active filter string, or "" if inactive/empty
+ */
+const char *ov_get_active_filter_for(
+    const OV_LAYOUT *lay,
+    ov_focus_t       panel)
+{
+    if (!ov_is_panel_filter_active(lay, panel))
+    {
+        return "";
+    }
+    return ov_get_panel_filter_pattern(lay, panel);
+}
+
+/**
+ * @brief Clear filter string and reset active state for a specific panel.
+ *
+ * @param[in,out] lay   Layout structure
+ * @param[in]     panel Panel focus enum
+ */
+void ov_clear_panel_filter(
+    OV_LAYOUT  *lay,
+    ov_focus_t  panel)
+{
+    if (lay == NULL)
+    {
+        return;
+    }
+    if (panel == OV_FOCUS_STREAMS)
+    {
+        lay->filter_stream[0]     = '\0';
+        lay->filter_stream_active = 0;
+    }
+    else if (panel == OV_FOCUS_PROCS)
+    {
+        lay->filter_proc[0]     = '\0';
+        lay->filter_proc_active = 0;
+    }
+    else if (panel == OV_FOCUS_FPS)
+    {
+        lay->filter_fps[0]     = '\0';
+        lay->filter_fps_active = 0;
+    }
+    lay->filter_active = (lay->filter_stream_active ||
+                          lay->filter_proc_active ||
+                          lay->filter_fps_active);
+}
+
+/**
  * @brief Check if any regular expression filter pattern is defined in layout.
  *
- * @param lay Layout structure
+ * @param[in] lay Layout structure
  * @return 1 if any filter pattern is set, 0 otherwise
  */
 int ov_has_filter(
@@ -133,30 +309,38 @@ int ov_has_filter(
     {
         return 0;
     }
-    return (lay->filter[0] != '\0' || lay->filter_stream[0] != '\0' ||
-            lay->filter_proc[0] != '\0' || lay->filter_fps[0] != '\0');
+    return (lay->filter_stream[0] != '\0' ||
+            lay->filter_proc[0] != '\0' ||
+            lay->filter_fps[0] != '\0');
 }
 
 /**
- * @brief Check if any regular expression filter is active in layout.
+ * @brief Check if filter is active for the current focused panel (or any panel).
  *
- * @param lay Layout structure
- * @return 1 if any filter is active and enabled, 0 otherwise
+ * @param[in] lay Layout structure
+ * @return 1 if active, 0 otherwise
  */
 int ov_is_filter_active(
     const OV_LAYOUT *lay)
 {
-    if (lay == NULL || !lay->filter_active)
+    if (lay == NULL)
     {
         return 0;
     }
-    return ov_has_filter(lay);
+    ov_focus_t panel = ov_get_effective_filter_panel(lay);
+    if (panel == OV_FOCUS_STREAMS || panel == OV_FOCUS_PROCS || panel == OV_FOCUS_FPS)
+    {
+        return ov_is_panel_filter_active(lay, panel);
+    }
+    return (ov_is_panel_filter_active(lay, OV_FOCUS_STREAMS) ||
+            ov_is_panel_filter_active(lay, OV_FOCUS_PROCS) ||
+            ov_is_panel_filter_active(lay, OV_FOCUS_FPS));
 }
 
 /**
- * @brief Get the configured filter pattern string regardless of active state.
+ * @brief Get the configured filter pattern for the current focused panel.
  *
- * @param lay Layout structure
+ * @param[in] lay Layout structure
  * @return Pointer to filter pattern string, or "" if none
  */
 const char *ov_get_filter_pattern(
@@ -166,19 +350,16 @@ const char *ov_get_filter_pattern(
     {
         return "";
     }
-    if (lay->filter[0] != '\0')
-    {
-        return lay->filter;
-    }
-    if (lay->focus == OV_FOCUS_STREAMS && lay->filter_stream[0] != '\0')
+    ov_focus_t panel = ov_get_effective_filter_panel(lay);
+    if (panel == OV_FOCUS_STREAMS && lay->filter_stream[0] != '\0')
     {
         return lay->filter_stream;
     }
-    if (lay->focus == OV_FOCUS_PROCS && lay->filter_proc[0] != '\0')
+    if (panel == OV_FOCUS_PROCS && lay->filter_proc[0] != '\0')
     {
         return lay->filter_proc;
     }
-    if (lay->focus == OV_FOCUS_FPS && lay->filter_fps[0] != '\0')
+    if (panel == OV_FOCUS_FPS && lay->filter_fps[0] != '\0')
     {
         return lay->filter_fps;
     }
@@ -198,25 +379,26 @@ const char *ov_get_filter_pattern(
 }
 
 /**
- * @brief Get the active filter pattern string.
+ * @brief Get the active filter pattern string for the current focused panel.
  *
- * @param lay Layout structure
+ * @param[in] lay Layout structure
  * @return Pointer to active filter string, or "" if filter is inactive/empty
  */
 const char *ov_get_active_filter(
     const OV_LAYOUT *lay)
 {
-    if (!ov_is_filter_active(lay))
+    if (lay == NULL)
     {
         return "";
     }
-    return ov_get_filter_pattern(lay);
+    ov_focus_t panel = ov_get_effective_filter_panel(lay);
+    return ov_get_active_filter_for(lay, panel);
 }
 
 /**
- * @brief Clear all filter strings and reset filter state.
+ * @brief Clear all filter strings and reset filter state across all panels.
  *
- * @param lay Layout structure
+ * @param[in,out] lay Layout structure
  */
 void ov_clear_all_filters(
     OV_LAYOUT *lay)
@@ -225,21 +407,24 @@ void ov_clear_all_filters(
     {
         return;
     }
-    lay->filter[0]        = '\0';
-    lay->filter_stream[0] = '\0';
-    lay->filter_proc[0]   = '\0';
-    lay->filter_fps[0]    = '\0';
-    lay->filter_active    = 0;
-    lay->filter_editing   = 0;
-    lay->filter_cursor    = 0;
-    lay->filter_jump      = 0;
+    lay->filter[0]            = '\0';
+    lay->filter_stream[0]     = '\0';
+    lay->filter_proc[0]       = '\0';
+    lay->filter_fps[0]        = '\0';
+    lay->filter_stream_active = 0;
+    lay->filter_proc_active   = 0;
+    lay->filter_fps_active    = 0;
+    lay->filter_active        = 0;
+    lay->filter_editing       = 0;
+    lay->filter_cursor        = 0;
+    lay->filter_jump          = 0;
 }
 
 /**
  * @brief Resolve the selected stream row to its index in OV_MODEL.
  *
- * @param lay Layout structure
- * @param m   Current model
+ * @param[in] lay Layout structure
+ * @param[in] m   Current model
  * @return Model stream index in 0..nb_streams-1, or -1 if none
  */
 int ov_get_selected_stream_idx(
@@ -255,7 +440,7 @@ int ov_get_selected_stream_idx(
     {
         return -1;
     }
-    const char *filt = ov_get_active_filter(lay);
+    const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
     if (filt != NULL && filt[0] != '\0')
     {
         const char *names[OV_MAX_STREAMS];
@@ -277,8 +462,8 @@ int ov_get_selected_stream_idx(
 /**
  * @brief Resolve the selected process row to its index in OV_MODEL.
  *
- * @param lay Layout structure
- * @param m   Current model
+ * @param[in] lay Layout structure
+ * @param[in] m   Current model
  * @return Model process index in 0..nb_procs-1, or -1 if none
  */
 int ov_get_selected_proc_idx(
@@ -294,7 +479,7 @@ int ov_get_selected_proc_idx(
     {
         return -1;
     }
-    const char *filt = ov_get_active_filter(lay);
+    const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
     if (filt != NULL && filt[0] != '\0')
     {
         const char *names[OV_MAX_PROCS];
@@ -316,8 +501,8 @@ int ov_get_selected_proc_idx(
 /**
  * @brief Resolve the selected FPS row to its index in OV_MODEL.
  *
- * @param lay Layout structure
- * @param m   Current model
+ * @param[in] lay Layout structure
+ * @param[in] m   Current model
  * @return Model FPS index in 0..nb_fps-1, or -1 if none
  */
 int ov_get_selected_fps_idx(
@@ -333,7 +518,7 @@ int ov_get_selected_fps_idx(
     {
         return -1;
     }
-    const char *filt = ov_get_active_filter(lay);
+    const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
     if (filt != NULL && filt[0] != '\0')
     {
         const char *names[OV_MAX_FPS];

@@ -25,7 +25,7 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         names[i] = m->streams[i].name;
     }
     int filt_idx[OV_MAX_STREAMS];
-    const char *active_filter = ov_get_active_filter(lay);
+    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
     int filt_n =
         ov_filter_build(active_filter, names, m->nb_streams, filt_idx, OV_MAX_STREAMS);
 
@@ -68,6 +68,11 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         {
             snprintf(title, sizeof(title), "STREAMS [FILTER ON: /%s/] (%d/%d)",
                      active_filter, filt_n, m->nb_streams);
+        }
+        else if (lay->filter_stream[0] != '\0')
+        {
+            snprintf(title, sizeof(title), "STREAMS [FILTER OFF: /%s/] (%d)",
+                     lay->filter_stream, m->nb_streams);
         }
         else
         {
