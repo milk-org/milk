@@ -17,11 +17,10 @@
  * @mode:        Active traversal mode
  * @lin:         Computed lineage data
  */
-void sg_print_text(
-    const OV_MODEL   *m,
-    const char       *stream_name,
-    sg_mode_t         mode,
-    const SG_LINEAGE *lin)
+void sg_print_text(const OV_MODEL   *m,
+                   const char       *stream_name,
+                   sg_mode_t         mode,
+                   const SG_LINEAGE *lin)
 {
     printf("# milk-stream-graph v%s\n", SG_VERSION);
     printf("# stream: %s\n", stream_name);
@@ -74,11 +73,10 @@ void sg_print_text(
  * @mode:        Active traversal mode
  * @lin:         Computed lineage data
  */
-void sg_print_json(
-    const OV_MODEL   *m,
-    const char       *stream_name,
-    sg_mode_t         mode,
-    const SG_LINEAGE *lin)
+void sg_print_json(const OV_MODEL   *m,
+                   const char       *stream_name,
+                   sg_mode_t         mode,
+                   const SG_LINEAGE *lin)
 {
     printf("{\n");
     printf("  \"stream\": \"%s\",\n", stream_name);
@@ -145,11 +143,10 @@ void sg_print_json(
  * @mode:        Active traversal mode
  * @lin:         Computed lineage data
  */
-void sg_print_pretty(
-    const OV_MODEL   *m,
-    const char       *stream_name,
-    sg_mode_t         mode,
-    const SG_LINEAGE *lin)
+void sg_print_pretty(const OV_MODEL   *m,
+                     const char       *stream_name,
+                     sg_mode_t         mode,
+                     const SG_LINEAGE *lin)
 {
     printf(SGC_BOLD SGC_HEADER "Stream Graph" SGC_RESET SGC_TEXT "  stream: " SGC_BOLD SGC_STREAM
                                "%s" SGC_RESET SGC_TEXT "  mode: " SGC_FPS "%s" SGC_RESET "\n\n",

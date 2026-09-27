@@ -14,9 +14,7 @@
  * @lay: Layout configuration.
  * @r:   Bounding rectangle of panel.
  */
-void ov_procs__render_header(
-    const OV_LAYOUT *lay,
-    OV_RECT          r)
+void ov_procs__render_header(const OV_LAYOUT *lay, OV_RECT r)
 {
     int hrow    = r.row + 1;
     int hs      = lay->hscroll_proc;
@@ -134,13 +132,12 @@ void ov_procs__render_header(
  * @filt_n:   Count of matching processes.
  * @max_rows: Maximum visible rows in panel.
  */
-void ov_procs__render_footer(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
-    OV_RECT          r,
-    const int       *pidx,
-    int              filt_n,
-    int              max_rows)
+void ov_procs__render_footer(const OV_LAYOUT *lay,
+                             const OV_MODEL  *m,
+                             OV_RECT          r,
+                             const int       *pidx,
+                             int              filt_n,
+                             int              max_rows)
 {
     (void) max_rows;
     /* Compute totals over ALL procs */
@@ -155,8 +152,7 @@ void ov_procs__render_footer(
             tot_run++;
         }
         if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE ||
-            p->loopstat == PROCESSINFO_LOOPSTAT_SPIN ||
-            p->loopstat == PROCESSINFO_LOOPSTAT_INIT)
+            p->loopstat == PROCESSINFO_LOOPSTAT_SPIN || p->loopstat == PROCESSINFO_LOOPSTAT_INIT)
         {
             tot_cpu += p->cpu_used;
         }
@@ -175,8 +171,7 @@ void ov_procs__render_footer(
             flt_run++;
         }
         if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE ||
-            p->loopstat == PROCESSINFO_LOOPSTAT_SPIN ||
-            p->loopstat == PROCESSINFO_LOOPSTAT_INIT)
+            p->loopstat == PROCESSINFO_LOOPSTAT_SPIN || p->loopstat == PROCESSINFO_LOOPSTAT_INIT)
         {
             flt_cpu += p->cpu_used;
         }
@@ -190,8 +185,8 @@ void ov_procs__render_footer(
     char tmem[16];
     format_mem_kb(tmem, sizeof(tmem), tot_mem);
     char rbuf[80];
-    snprintf(rbuf, sizeof(rbuf), " %d RUN \u2502 %.0f%% CPU \u2502 %s ", tot_run,
-             (double) tot_cpu, tmem);
+    snprintf(rbuf, sizeof(rbuf), " %d RUN \u2502 %.0f%% CPU \u2502 %s ", tot_run, (double) tot_cpu,
+             tmem);
     int rlen  = (int) strlen(rbuf);
     int below = filt_n - lay->scroll_proc - (r.height - 3);
     int dw    = 0;

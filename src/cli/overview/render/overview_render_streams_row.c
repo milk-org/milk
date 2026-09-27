@@ -26,28 +26,27 @@
  * @re:     Pointer to compiled regex.
  * @r:      Bounding rectangle of streams panel.
  */
-void ov_streams_render_single_row(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    int               row,
-    int               i,
-    int               fi,
-    int               si,
-    int8_t            sdepth,
-    int               has_re,
-    const regex_t    *re,
-    OV_RECT           r)
+void ov_streams_render_single_row(const OV_LAYOUT  *lay,
+                                  const OV_MODEL   *m,
+                                  const OV_RELATED *rel,
+                                  int               row,
+                                  int               i,
+                                  int               fi,
+                                  int               si,
+                                  int8_t            sdepth,
+                                  int               has_re,
+                                  const regex_t    *re,
+                                  OV_RECT           r)
 {
-    const OV_STREAM *s         = &m->streams[si];
-    int              is_sel    = (fi == lay->sel_stream &&
-                                 (lay->focus == OV_FOCUS_STREAMS || lay->focus == OV_FOCUS_GRAPH));
-    int              is_frozen = (lay->freeze && lay->freeze_focus == OV_FOCUS_STREAMS &&
-                                 fi == lay->freeze_sel_stream);
-    ov_focus_t       eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
-    int              is_rel    = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_STREAMS &&
-                                 rel != NULL && bget(rel->streams, si));
-    int              is_loop_member = 0;
+    const OV_STREAM *s = &m->streams[si];
+    int              is_sel =
+        (fi == lay->sel_stream && (lay->focus == OV_FOCUS_STREAMS || lay->focus == OV_FOCUS_GRAPH));
+    int is_frozen =
+        (lay->freeze && lay->freeze_focus == OV_FOCUS_STREAMS && fi == lay->freeze_sel_stream);
+    ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
+    int        is_rel    = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_STREAMS && rel != NULL &&
+                            bget(rel->streams, si));
+    int        is_loop_member = 0;
     if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) && lay->sel_loop >= 0 &&
         lay->sel_loop < m->nb_loops)
     {
@@ -96,15 +95,14 @@ void ov_streams_render_single_row(
     int panel_focused = (lay->focus == OV_FOCUS_STREAMS);
     render_focus_strip(row, r.col + 1, panel_focused, OV_FG_STREAM, row_bg);
 
-#define STRM_FIELD_WITH_COL(vcol_idx, logical_idx, color, bg_color, fmt, ...)           \
-    do                                                                                  \
-    {                                                                                   \
-        char _fb[128];                                                                  \
-        int  _fl = snprintf(_fb, sizeof(_fb), fmt, ##__VA_ARGS__);                      \
-        (void) _fl;                                                                     \
-        ov_render_cell(logical_idx, vcol_idx, (color), (bg_color), _fb, &hs_rem,        \
-                       &printed, avail, lay->highlight_col_stream,                      \
-                       lay->col_collapsed_stream);                                      \
+#define STRM_FIELD_WITH_COL(vcol_idx, logical_idx, color, bg_color, fmt, ...)                     \
+    do                                                                                            \
+    {                                                                                             \
+        char _fb[128];                                                                            \
+        int  _fl = snprintf(_fb, sizeof(_fb), fmt, ##__VA_ARGS__);                                \
+        (void) _fl;                                                                               \
+        ov_render_cell(logical_idx, vcol_idx, (color), (bg_color), _fb, &hs_rem, &printed, avail, \
+                       lay->highlight_col_stream, lay->col_collapsed_stream);                     \
     } while (0)
 
 #define STRM_FIELD(color, fmt, ...)                                                   \
@@ -149,13 +147,13 @@ void ov_streams_render_single_row(
         }
         if (sdepth < 0)
         {
-            snprintf(anc_str, sizeof(anc_str),
-                     abs_d < 10 ? "\xe2\x97\x80%d  " : "\xe2\x97\x80%d ", abs_d);
+            snprintf(anc_str, sizeof(anc_str), abs_d < 10 ? "\xe2\x97\x80%d  " : "\xe2\x97\x80%d ",
+                     abs_d);
         }
         else
         {
-            snprintf(anc_str, sizeof(anc_str),
-                     abs_d < 10 ? "%d\xe2\x96\xb6  " : "%d\xe2\x96\xb6 ", abs_d);
+            snprintf(anc_str, sizeof(anc_str), abs_d < 10 ? "%d\xe2\x96\xb6  " : "%d\xe2\x96\xb6 ",
+                     abs_d);
         }
     }
     else
@@ -179,8 +177,7 @@ void ov_streams_render_single_row(
         }
 
         /* R/W direction arrow */
-        if ((eff_focus == OV_FOCUS_PROCS || eff_focus == OV_FOCUS_FPS) && is_rel &&
-            rel != NULL)
+        if ((eff_focus == OV_FOCUS_PROCS || eff_focus == OV_FOCUS_FPS) && is_rel && rel != NULL)
         {
             int is_written = bget(rel->stream_written, si);
             strncat(anc_str, is_written ? "\xe2\x96\xb6 " : "\xe2\x97\x80 ",
@@ -192,8 +189,8 @@ void ov_streams_render_single_row(
         }
     }
 
-    ov_rgb_t anc_color = (s->nb_loops > 1) ? OV_FG_LOOP_SHARED
-                                           : ((s->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
+    ov_rgb_t anc_color =
+        (s->nb_loops > 1) ? OV_FG_LOOP_SHARED : ((s->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
     ov_render_cell(0, 0, anc_color, row_bg, anc_str, &hs_rem, &printed, avail,
                    lay->highlight_col_stream, lay->col_collapsed_stream);
 
@@ -220,8 +217,8 @@ void ov_streams_render_single_row(
             {
                 tail_len = 0;
             }
-            snprintf(name_cell, sizeof(name_cell), "%.*s\x01%.*s\x02%.*s ", b_len, s->name,
-                     m_len, s->name + b_len, tail_len, s->name + b_len + m_len);
+            snprintf(name_cell, sizeof(name_cell), "%.*s\x01%.*s\x02%.*s ", b_len, s->name, m_len,
+                     s->name + b_len, tail_len, s->name + b_len + m_len);
         }
         else
         {
@@ -245,8 +242,8 @@ void ov_streams_render_single_row(
     /* MB/s throughput */
     if (s->update_hz > 0.1)
     {
-        double mbps = s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype) /
-                      (1024.0 * 1024.0);
+        double mbps =
+            s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype) / (1024.0 * 1024.0);
         if (mbps >= 1000.0)
         {
             STRM_FIELD(OV_FG_ACTIVE, "%6.1fG ", mbps / 1024.0);
@@ -269,8 +266,7 @@ void ov_streams_render_single_row(
     STRM_PID_FIELD(s->ownerPID, "%7d ", (int) s->ownerPID);
     if (!lay->compact_mode)
     {
-        STRM_FIELD(s->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM, "%10" PRIu64 " ",
-                   (uint64_t) s->cnt0);
+        STRM_FIELD(s->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM, "%10" PRIu64 " ", (uint64_t) s->cnt0);
 
         int sem_logical   = ov_get_logical_col_stream(vcol, lay->compact_mode);
         int sem_collapsed = (lay->col_collapsed_stream & (1U << sem_logical)) != 0;
@@ -298,8 +294,7 @@ void ov_streams_render_single_row(
                     {
                         c = '0' + val;
                     }
-                    STRM_FIELD_WITH_COL(vcol, sem_logical, ov_get_sem_color(val), cell_bg,
-                                        "%c", c);
+                    STRM_FIELD_WITH_COL(vcol, sem_logical, ov_get_sem_color(val), cell_bg, "%c", c);
                 }
                 else
                 {
@@ -370,8 +365,8 @@ void ov_streams_render_single_row(
     if (lay->mouse_hover && lay->hover_view == OV_FOCUS_STREAMS && lay->hover_idx == si)
     {
         snprintf((char *) lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                 "Stream: %s | Dimensions: %dD (%s) | Semaphores: %d | inode: %" PRIu64,
-                 s->name, s->naxis, s->size_str, s->nb_sem, (uint64_t) s->inode);
+                 "Stream: %s | Dimensions: %dD (%s) | Semaphores: %d | inode: %" PRIu64, s->name,
+                 s->naxis, s->size_str, s->nb_sem, (uint64_t) s->inode);
 
         int btn_w = 10; /* " [Delete] " */
         int rem   = r.width - printed;

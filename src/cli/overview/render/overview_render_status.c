@@ -17,9 +17,7 @@
  * @lay: Layout configuration
  * @m:   Data model snapshot
  */
-void ov_render_status(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_RECT r = lay->r_status;
     ov_buf_pos(r.row, r.col);

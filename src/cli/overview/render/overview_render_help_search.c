@@ -224,4 +224,3 @@ int help_visible_rows(const OV_LAYOUT *lay, int *map)
     }
     return vis;
 }
-

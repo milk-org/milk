@@ -45,24 +45,18 @@ static inline int sg_edge_matches_mode_from_stream(const OV_EDGE *e, sg_mode_t m
     switch (mode)
     {
     case SG_MODE_TRIGGER:
-        return (e->type == OV_EDGE_STREAM_TRIGGERS_PROC ||
-                e->type == OV_EDGE_PROC_TRIGGER_STREAM);
+        return (e->type == OV_EDGE_STREAM_TRIGGERS_PROC || e->type == OV_EDGE_PROC_TRIGGER_STREAM);
 
     case SG_MODE_INPUT:
-        return (e->type == OV_EDGE_FPS_INPUT_STREAM ||
-                e->type == OV_EDGE_STREAM_READ_BY_PROC);
+        return (e->type == OV_EDGE_FPS_INPUT_STREAM || e->type == OV_EDGE_STREAM_READ_BY_PROC);
 
     case SG_MODE_FULL:
-        return (e->type == OV_EDGE_STREAM_TRIGGERS_PROC ||
-                e->type == OV_EDGE_PROC_TRIGGER_STREAM ||
-                e->type == OV_EDGE_FPS_INPUT_STREAM ||
-                e->type == OV_EDGE_FPS_OUTPUT_STREAM ||
-                e->type == OV_EDGE_STREAM_READ_BY_PROC ||
-                e->type == OV_EDGE_PROC_WRITES_STREAM);
+        return (e->type == OV_EDGE_STREAM_TRIGGERS_PROC || e->type == OV_EDGE_PROC_TRIGGER_STREAM ||
+                e->type == OV_EDGE_FPS_INPUT_STREAM || e->type == OV_EDGE_FPS_OUTPUT_STREAM ||
+                e->type == OV_EDGE_STREAM_READ_BY_PROC || e->type == OV_EDGE_PROC_WRITES_STREAM);
 
     case SG_MODE_FPS:
-        return (e->type == OV_EDGE_FPS_INPUT_STREAM ||
-                e->type == OV_EDGE_FPS_OUTPUT_STREAM);
+        return (e->type == OV_EDGE_FPS_INPUT_STREAM || e->type == OV_EDGE_FPS_OUTPUT_STREAM);
     }
 
     return 0;

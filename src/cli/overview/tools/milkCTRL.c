@@ -116,9 +116,7 @@ extern int             ov_handle_key(int key, OV_LAYOUT *lay, const OV_MODEL *m)
  *
  * Return: 0 on clean exit, non-zero on error.
  */
-int main(
-    int   argc,
-    char *argv[])
+int main(int argc, char *argv[])
 {
     const char *cli_theme = NULL;
     int         opt_rc    = milkctrl_parse_options(argc, argv, &cli_theme);

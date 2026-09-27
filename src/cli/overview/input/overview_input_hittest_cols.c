@@ -18,11 +18,7 @@
  *
  * Return: Tab index [0..num_tabs-1], or -1 if no tab hit.
  */
-int ov_input_hit_panel_tab(
-    int          mc,
-    int          panel_col,
-    const char **tabs,
-    int          num_tabs)
+int ov_input_hit_panel_tab(int mc, int panel_col, const char **tabs, int num_tabs)
 {
     int cur = panel_col + 2;
     for (int ii = 0; ii < num_tabs; ii++)
@@ -46,15 +42,12 @@ static const char *stream_col_names[] = { "NAME", "TYP",   "SIZE",  "Hz",
  * @lay: Pointer to layout structure.
  * @mc:  Mouse column coordinate.
  */
-void ov_input__streams_header_click(
-    OV_LAYOUT *lay,
-    int        mc)
+void ov_input__streams_header_click(OV_LAYOUT *lay, int mc)
 {
     int           table_x = mc - lay->r_streams.col - 2 + lay->hscroll_stream;
     OV_COL_LAYOUT cols[12];
     int           num_cols = ov_get_stream_col_layout(lay->compact_mode, cols);
-    int col_idx = ov_header_hittest_sort_key(cols, num_cols,
-                                             lay->col_collapsed_stream, table_x);
+    int col_idx = ov_header_hittest_sort_key(cols, num_cols, lay->col_collapsed_stream, table_x);
 
     if (col_idx >= 0)
     {
@@ -82,15 +75,12 @@ static const char *proc_col_names[] = { "NAME", "PID",    "STAT", "Hz",      "ME
  * @lay: Pointer to layout structure.
  * @mc:  Mouse column coordinate.
  */
-void ov_input__procs_header_click(
-    OV_LAYOUT *lay,
-    int        mc)
+void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
 {
     int           table_x = mc - lay->r_procs.col - 2 + lay->hscroll_proc;
     OV_COL_LAYOUT cols[16];
     int           num_cols = ov_get_proc_col_layout(lay->compact_mode, cols);
-    int col_idx = ov_header_hittest_sort_key(cols, num_cols,
-                                             lay->col_collapsed_proc, table_x);
+    int col_idx = ov_header_hittest_sort_key(cols, num_cols, lay->col_collapsed_proc, table_x);
 
     if (col_idx >= 0)
     {
@@ -103,30 +93,26 @@ void ov_input__procs_header_click(
             lay->sort_key_proc = col_idx;
             lay->sort_dir_proc = 0;
         }
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Sort PROCS by %s %s",
-                       proc_col_names[col_idx], lay->sort_dir_proc ? "▼" : "▲");
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Sort PROCS by %s %s", proc_col_names[col_idx],
+                       lay->sort_dir_proc ? "▼" : "▲");
         lay->sort_pending = 1;
         ov_scan_force_update();
     }
 }
 
-static const char *fps_col_names[] = { "NAME", "CPID", "MEM", "ANCESTRY",
-                                       "RPID", "TMX", "STR" };
+static const char *fps_col_names[] = { "NAME", "CPID", "MEM", "ANCESTRY", "RPID", "TMX", "STR" };
 
 /**
  * ov_input__fps_header_click - handle mouse clicks on FPS table column headers.
  * @lay: Pointer to layout structure.
  * @mc:  Mouse column coordinate.
  */
-void ov_input__fps_header_click(
-    OV_LAYOUT *lay,
-    int        mc)
+void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
 {
     int           table_x = mc - lay->r_fps.col - 2 + lay->hscroll_fps;
     OV_COL_LAYOUT cols[8];
     int           num_cols = ov_get_fps_col_layout(lay->compact_mode, lay->view, cols);
-    int col_idx = ov_header_hittest_sort_key(cols, num_cols,
-                                             lay->col_collapsed_fps, table_x);
+    int col_idx = ov_header_hittest_sort_key(cols, num_cols, lay->col_collapsed_fps, table_x);
 
     if (col_idx >= 0)
     {
@@ -139,8 +125,8 @@ void ov_input__fps_header_click(
             lay->sort_key_fps = col_idx;
             lay->sort_dir_fps = 0;
         }
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Sort FPS by %s %s",
-                       fps_col_names[col_idx], lay->sort_dir_fps ? "▼" : "▲");
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Sort FPS by %s %s", fps_col_names[col_idx],
+                       lay->sort_dir_fps ? "▼" : "▲");
         lay->sort_pending = 1;
         ov_scan_force_update();
     }
@@ -151,9 +137,7 @@ void ov_input__fps_header_click(
  * @lay: Pointer to layout structure
  * @m:   Pointer to data model snapshot
  */
-void ov_hittest_resolve_globals(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
 {
     lay->hover_global_stream = -1;
     lay->hover_global_proc   = -1;
@@ -239,8 +223,7 @@ void ov_hittest_resolve_globals(
         if (start_node >= 0)
         {
             SG_RENDER_NODE rnodes[OV_MAX_NODES];
-            int n_rnodes = sg_compute_render_nodes(m, start_node,
-                                                   lay->lineage_mode, rnodes);
+            int n_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
             if (lay->hover_idx < n_rnodes)
             {
                 int node_idx = rnodes[lay->hover_idx].node_idx;

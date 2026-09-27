@@ -10,13 +10,8 @@
  * @brief Command-line option parsing and help banner for milk-CTRL.
  */
 
-void milkctrl_print_help(
-    const char *prog,
-    int         mh_color);
+void milkctrl_print_help(const char *prog, int mh_color);
 
-int milkctrl_parse_options(
-    int          argc,
-    char        *argv[],
-    const char **out_cli_theme);
+int milkctrl_parse_options(int argc, char *argv[], const char **out_cli_theme);
 
 #endif /* MILKCTRL_OPTS_H */

@@ -20,10 +20,7 @@
  *
  * Return: 1 if mouse event was consumed, 0 otherwise, 2 if exit requested.
  */
-int ov_input__handle_mouse(
-    int             key,
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (key == OV_KEY_MOUSE_CLICK)
     {
@@ -116,18 +113,16 @@ int ov_input__handle_mouse(
                 int fb_w     = lay->r_filter_width[fb];
                 if (mc >= fb_start && mc < fb_start + fb_w)
                 {
-                    ov_focus_t fpanel = lay->r_filter_panel[fb];
-                    const char *panel_full =
-                        (fpanel == OV_FOCUS_STREAMS) ? "Streams"
-                        : (fpanel == OV_FOCUS_PROCS) ? "Processes"
-                        : (fpanel == OV_FOCUS_FPS)   ? "FPS"
-                                                     : "Panel";
-                    const char *fpat = (fpanel != OV_FOCUS_GRAPH)
-                                           ? ov_get_panel_filter_pattern(lay, fpanel)
-                                           : ov_get_filter_pattern(lay);
-                    int is_act = (fpanel != OV_FOCUS_GRAPH)
-                                     ? ov_is_panel_filter_active(lay, fpanel)
-                                     : ov_is_filter_active(lay);
+                    ov_focus_t  fpanel     = lay->r_filter_panel[fb];
+                    const char *panel_full = (fpanel == OV_FOCUS_STREAMS) ? "Streams"
+                                             : (fpanel == OV_FOCUS_PROCS) ? "Processes"
+                                             : (fpanel == OV_FOCUS_FPS)   ? "FPS"
+                                                                          : "Panel";
+                    const char *fpat       = (fpanel != OV_FOCUS_GRAPH)
+                                                 ? ov_get_panel_filter_pattern(lay, fpanel)
+                                                 : ov_get_filter_pattern(lay);
+                    int is_act = (fpanel != OV_FOCUS_GRAPH) ? ov_is_panel_filter_active(lay, fpanel)
+                                                            : ov_is_filter_active(lay);
 
                     if (is_act)
                     {
@@ -148,11 +143,9 @@ int ov_input__handle_mouse(
                             lay->filter_active = 0;
                         }
                         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                       "%s filter paused (press 'f' to resume)",
-                                       panel_full);
-                        lay->filter_active =
-                            (lay->filter_stream_active || lay->filter_proc_active ||
-                             lay->filter_fps_active);
+                                       "%s filter paused (press 'f' to resume)", panel_full);
+                        lay->filter_active = (lay->filter_stream_active ||
+                                              lay->filter_proc_active || lay->filter_fps_active);
                     }
                     else if (fpat[0] != '\0')
                     {
@@ -172,12 +165,10 @@ int ov_input__handle_mouse(
                         {
                             lay->filter_active = 1;
                         }
-                        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                       "%s filter resumed: /%s/", panel_full,
-                                       fpat);
-                        lay->filter_active =
-                            (lay->filter_stream_active || lay->filter_proc_active ||
-                             lay->filter_fps_active);
+                        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s filter resumed: /%s/",
+                                       panel_full, fpat);
+                        lay->filter_active = (lay->filter_stream_active ||
+                                              lay->filter_proc_active || lay->filter_fps_active);
                     }
                     else
                     {
@@ -264,8 +255,7 @@ int ov_input__handle_mouse(
         {
             if (lay->hover_view == OV_FOCUS_STREAMS && lay->hover_idx < m->nb_streams)
             {
-                if (mr >= lay->r_streams.row + 3 &&
-                    mr < lay->r_streams.row + lay->r_streams.height)
+                if (mr >= lay->r_streams.row + 3 && mr < lay->r_streams.row + lay->r_streams.height)
                 {
                     int idx = lay->scroll_stream + (mr - lay->r_streams.row - 3);
                     if (idx == lay->hover_idx)
@@ -281,8 +271,7 @@ int ov_input__handle_mouse(
             }
             else if (lay->hover_view == OV_FOCUS_PROCS && lay->hover_idx < m->nb_procs)
             {
-                if (mr >= lay->r_procs.row + 3 &&
-                    mr < lay->r_procs.row + lay->r_procs.height)
+                if (mr >= lay->r_procs.row + 3 && mr < lay->r_procs.row + lay->r_procs.height)
                 {
                     int idx = lay->scroll_proc + (mr - lay->r_procs.row - 3);
                     if (idx == lay->hover_idx)
@@ -298,8 +287,7 @@ int ov_input__handle_mouse(
             }
             else if (lay->hover_view == OV_FOCUS_FPS && lay->hover_idx < m->nb_fps)
             {
-                if (mr >= lay->r_fps.row + 3 &&
-                    mr < lay->r_fps.row + lay->r_fps.height)
+                if (mr >= lay->r_fps.row + 3 && mr < lay->r_fps.row + lay->r_fps.height)
                 {
                     int idx = lay->scroll_fps + (mr - lay->r_fps.row - 3);
                     if (idx == lay->hover_idx)
@@ -376,8 +364,8 @@ int ov_input__handle_mouse(
         return ov_input_mouse_drag(lay, m, ov_mouse_row, ov_mouse_col);
     }
 
-    if (key == OV_KEY_CTRL_SCROLL_UP || key == OV_KEY_CTRL_SCROLL_DOWN ||
-        key == OV_KEY_MOUSE_UP || key == OV_KEY_MOUSE_DOWN)
+    if (key == OV_KEY_CTRL_SCROLL_UP || key == OV_KEY_CTRL_SCROLL_DOWN || key == OV_KEY_MOUSE_UP ||
+        key == OV_KEY_MOUSE_DOWN)
     {
         return ov_input_mouse_wheel(key, lay, m);
     }

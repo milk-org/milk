@@ -40,12 +40,11 @@ static uint64_t s_perf_prev_dtlb   = 0;
  *
  * Return: File descriptor on success, -1 on failure with errno set.
  */
-static long _perf_event_open(
-    struct perf_event_attr *attr,
-    pid_t                   pid,
-    int                     cpu,
-    int                     group_fd,
-    unsigned long           flags)
+static long _perf_event_open(struct perf_event_attr *attr,
+                             pid_t                   pid,
+                             int                     cpu,
+                             int                     group_fd,
+                             unsigned long           flags)
 {
     return syscall(__NR_perf_event_open, attr, pid, cpu, group_fd, flags);
 }

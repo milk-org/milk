@@ -185,15 +185,14 @@ static void render_lineage_group(OV_LAYOUT              *lay,
  *
  * Return: 1 on success, 0 otherwise.
  */
-static int ov_fps__render_detail_stream_lineage(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m,
-    int             ssel,
-    OV_RECT         r,
-    int            *ri,
-    int            *line_idx,
-    int             row,
-    int             max_rows)
+static int ov_fps__render_detail_stream_lineage(OV_LAYOUT      *lay,
+                                                const OV_MODEL *m,
+                                                int             ssel,
+                                                OV_RECT         r,
+                                                int            *ri,
+                                                int            *line_idx,
+                                                int             row,
+                                                int             max_rows)
 {
     SG_LINEAGE lin;
     sg_compute_lineage(m, ssel, (sg_mode_t) lay->lineage_mode, &lin);
@@ -237,11 +236,11 @@ static int ov_fps__render_detail_stream_lineage(
  * @brief Render detailed stream info in the panel.
  */
 int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
-                                        const OV_MODEL *m,
-                                        int             ssel,
-                                        OV_RECT         r,
-                                        int             max_rows,
-                                        int             row)
+                                 const OV_MODEL *m,
+                                 int             ssel,
+                                 OV_RECT         r,
+                                 int             max_rows,
+                                 int             row)
 {
     const OV_STREAM *s = &m->streams[ssel];
 

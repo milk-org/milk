@@ -133,9 +133,7 @@ static const char *trigmode_str(int mode)
  * @m:  Pointer to data model
  * @pi: Process index in @m->procs
  */
-static void print_proc_info(
-    const OV_MODEL *m,
-    int             pi)
+static void print_proc_info(const OV_MODEL *m, int pi)
 {
     const OV_PROC *p = &m->procs[pi];
 
@@ -327,9 +325,7 @@ static void print_proc_info(
  * @progname: Name of executable
  * @mh_color: Flag indicating whether color is enabled
  */
-static void print_help(
-    const char *progname,
-    int         mh_color)
+static void print_help(const char *progname, int mh_color)
 {
     milk_help_banner(progname, PI_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -372,9 +368,7 @@ static void print_help(
  *
  * Return: Process index or -1 if not found.
  */
-static int find_proc_by_name(
-    const OV_MODEL *m,
-    const char     *name)
+static int find_proc_by_name(const OV_MODEL *m, const char *name)
 {
     for (int i = 0; i < m->nb_procs; i++)
     {
@@ -397,9 +391,7 @@ static int find_proc_by_name(
  *
  * Return: 0 on success, non-zero on error.
  */
-int main(
-    int   argc,
-    char *argv[])
+int main(int argc, char *argv[])
 {
     int action = milk_help_init(argc, argv, PI_ONELINE, PI_DESC_LONG);
     if (action == MH_ACTION_H1 || action == MH_ACTION_H2)

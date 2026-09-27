@@ -15,11 +15,11 @@
  * @brief Render detailed process info in the panel.
  */
 int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
-                                      const OV_MODEL *m,
-                                      int             psel,
-                                      OV_RECT         r,
-                                      int             max_rows,
-                                      int             row)
+                               const OV_MODEL *m,
+                               int             psel,
+                               OV_RECT         r,
+                               int             max_rows,
+                               int             row)
 {
     const OV_PROC *p = &m->procs[psel];
 

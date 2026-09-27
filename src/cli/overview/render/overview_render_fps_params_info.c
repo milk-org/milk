@@ -95,11 +95,10 @@ ov_rgb_t fps_param_type_color(uint32_t type)
  *
  * Return: Number of items populated into array.
  */
-int ov_get_fps_tree_items(
-    const OV_FPS    *fps,
-    const char      *path,
-    fps_tree_item_t *items,
-    int              max_items)
+int ov_get_fps_tree_items(const OV_FPS    *fps,
+                          const char      *path,
+                          fps_tree_item_t *items,
+                          int              max_items)
 {
     if (fps == NULL)
     {
@@ -259,8 +258,7 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_bold();
         ov_buf_printf("DIR: ");
         ov_theme_fg(OV_FG_TEXT);
-        ov_buf_printf("%s%s%s", lay->fps_param_path,
-                      lay->fps_param_path[0] ? "." : "", item->name);
+        ov_buf_printf("%s%s%s", lay->fps_param_path, lay->fps_param_path[0] ? "." : "", item->name);
 
         ov_buf_pos(4, 2);
         ov_theme_fg(OV_FG_DIM);
@@ -360,8 +358,7 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
     ov_theme_fg(OV_FG_DIM);
     ov_buf_printf("Description: ");
     ov_theme_fg(OV_FG_TEXT);
-    ov_buf_printf("%s", params->disp_param_descr[pi][0] ?
-                  params->disp_param_descr[pi] : "(none)");
+    ov_buf_printf("%s", params->disp_param_descr[pi][0] ? params->disp_param_descr[pi] : "(none)");
 
     if (type == FPTYPE_ONOFF)
     {

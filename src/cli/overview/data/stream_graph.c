@@ -34,11 +34,7 @@ const char *sg_mode_label(sg_mode_t mode)
  * @mode:        Graph mode filter
  * @node_depths: Output array of depth offsets (negative for ancestors, positive for descendants)
  */
-void sg_compute_node_depths(
-    const OV_MODEL *m,
-    int             start_node,
-    sg_mode_t       mode,
-    int8_t         *node_depths)
+void sg_compute_node_depths(const OV_MODEL *m, int start_node, sg_mode_t mode, int8_t *node_depths)
 {
     for (int i = 0; i < OV_MAX_NODES; i++)
     {
@@ -250,11 +246,10 @@ void sg_compute_node_depths(
  *
  * Return: Number of reachable nodes placed in @out_nodes.
  */
-int sg_compute_render_nodes(
-    const OV_MODEL *m,
-    int             start_node,
-    sg_mode_t       mode,
-    SG_RENDER_NODE *out_nodes)
+int sg_compute_render_nodes(const OV_MODEL *m,
+                            int             start_node,
+                            sg_mode_t       mode,
+                            SG_RENDER_NODE *out_nodes)
 {
     if (start_node < 0 || start_node >= m->nb_nodes)
     {

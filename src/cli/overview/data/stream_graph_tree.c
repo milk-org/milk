@@ -4,22 +4,21 @@
 
 #include "stream_graph_internal.h"
 
-static void sg_dfs_tree(
-    const OV_MODEL *m,
-    int             current_stream,
-    int             reader_node_idx,
-    int             target_stream,
-    int             target_proc,
-    const uint64_t *S_words,
-    sg_mode_t       mode,
-    const char     *prefix,
-    int             is_last,
-    int             is_root,
-    int             depth,
-    int            *path,
-    int             path_len,
-    SG_TREE_NODE   *out_nodes,
-    int            *nb_out_nodes)
+static void sg_dfs_tree(const OV_MODEL *m,
+                        int             current_stream,
+                        int             reader_node_idx,
+                        int             target_stream,
+                        int             target_proc,
+                        const uint64_t *S_words,
+                        sg_mode_t       mode,
+                        const char     *prefix,
+                        int             is_last,
+                        int             is_root,
+                        int             depth,
+                        int            *path,
+                        int             path_len,
+                        SG_TREE_NODE   *out_nodes,
+                        int            *nb_out_nodes)
 {
     if (*nb_out_nodes >= OV_MAX_NODES)
     {
@@ -211,11 +210,10 @@ static void sg_dfs_tree(
  *
  * Return: Total number of tree nodes populated.
  */
-int sg_compute_render_tree(
-    const OV_MODEL *m,
-    int             start_node,
-    sg_mode_t       mode,
-    SG_TREE_NODE   *out_nodes)
+int sg_compute_render_tree(const OV_MODEL *m,
+                           int             start_node,
+                           sg_mode_t       mode,
+                           SG_TREE_NODE   *out_nodes)
 {
     int nb_out = 0;
     if (start_node < 0 || start_node >= m->nb_nodes)

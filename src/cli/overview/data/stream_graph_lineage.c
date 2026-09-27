@@ -22,12 +22,11 @@
  * @mode:            Traversal mode (trigger, input, full, FPS)
  * @out:             Output lineage structure receiving descendant nodes
  */
-static void sg_bfs_downstream(
-    const OV_MODEL *m,
-    int             start_node,
-    int             root_stream_idx,
-    sg_mode_t       mode,
-    SG_LINEAGE     *out)
+static void sg_bfs_downstream(const OV_MODEL *m,
+                              int             start_node,
+                              int             root_stream_idx,
+                              sg_mode_t       mode,
+                              SG_LINEAGE     *out)
 {
     uint64_t visited[SG_BSET_WORDS(OV_MAX_NODES)];
     memset(visited, 0, sizeof(visited));
@@ -167,12 +166,11 @@ static void sg_bfs_downstream(
  * @mode:            Traversal mode (trigger, input, full, FPS)
  * @out:             Output lineage structure receiving ancestor nodes
  */
-static void sg_bfs_upstream(
-    const OV_MODEL *m,
-    int             start_node,
-    int             root_stream_idx,
-    sg_mode_t       mode,
-    SG_LINEAGE     *out)
+static void sg_bfs_upstream(const OV_MODEL *m,
+                            int             start_node,
+                            int             root_stream_idx,
+                            sg_mode_t       mode,
+                            SG_LINEAGE     *out)
 {
     uint64_t visited[SG_BSET_WORDS(OV_MAX_NODES)];
     memset(visited, 0, sizeof(visited));
@@ -306,11 +304,7 @@ static void sg_bfs_upstream(
  * @mode:       Graph mode filter
  * @out:        Output lineage structure
  */
-void sg_compute_lineage(
-    const OV_MODEL *m,
-    int             stream_idx,
-    sg_mode_t       mode,
-    SG_LINEAGE     *out)
+void sg_compute_lineage(const OV_MODEL *m, int stream_idx, sg_mode_t mode, SG_LINEAGE *out)
 {
     memset(out, 0, sizeof(*out));
 

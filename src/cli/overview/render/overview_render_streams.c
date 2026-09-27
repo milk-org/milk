@@ -21,14 +21,13 @@
  * @filt_n:        Count of matching streams.
  * @active_filter: Active filter string.
  */
-static void ov_streams__render_rows(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    OV_RECT           r,
-    const int        *filt_idx,
-    int               filt_n,
-    const char       *active_filter)
+static void ov_streams__render_rows(const OV_LAYOUT  *lay,
+                                    const OV_MODEL   *m,
+                                    const OV_RELATED *rel,
+                                    OV_RECT           r,
+                                    const int        *filt_idx,
+                                    int               filt_n,
+                                    const char       *active_filter)
 {
     int hrow = r.row + 1;
 
@@ -54,8 +53,7 @@ static void ov_streams__render_rows(
         {
             eff_sel = lay->freeze_sel_stream;
         }
-        else if (lay->focus == OV_FOCUS_STREAMS && lay->sel_stream >= 0 &&
-                 lay->sel_stream < filt_n)
+        else if (lay->focus == OV_FOCUS_STREAMS && lay->sel_stream >= 0 && lay->sel_stream < filt_n)
         {
             eff_sel = lay->sel_stream;
         }
@@ -137,8 +135,8 @@ static void ov_streams__render_rows(
         if (fi < filt_n)
         {
             int si = filt_idx[fi];
-            ov_streams_render_single_row(lay, m, rel, row, i, fi, si, local_depth[si],
-                                         has_re, has_re ? &re : NULL, r);
+            ov_streams_render_single_row(lay, m, rel, row, i, fi, si, local_depth[si], has_re,
+                                         has_re ? &re : NULL, r);
         }
         else
         {
@@ -158,10 +156,7 @@ static void ov_streams__render_rows(
  * @m:   Pointer to current data model snapshot.
  * @rel: Pointer to relationship lookup tables.
  */
-void ov_render_streams_panel(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel)
+void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
 {
     OV_RECT r = lay->r_streams;
 
@@ -171,10 +166,9 @@ void ov_render_streams_panel(
 
     /* Panel title with prominent filter indicator */
     {
-        int loop_id =
-            (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-                ? lay->sel_loop + 1
-                : -1;
+        int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+                          ? lay->sel_loop + 1
+                          : -1;
         ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "STREAMS", OV_FG_STREAM,
                                     lay->focus == OV_FOCUS_STREAMS, 0, lay->ctrl_blink, loop_id,
                                     lay->filter_stream, lay->filter_stream_active, filt_n,

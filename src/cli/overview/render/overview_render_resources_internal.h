@@ -13,13 +13,12 @@
 #include "overview_render_internal.h"
 #include "overview_data_internal.h"
 
-void ov_render_resources_perf_section(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
-    pid_t            target_pid,
-    int              row,
-    int             *ri,
-    int             *line_idx,
-    int              max_rows);
+void ov_render_resources_perf_section(const OV_LAYOUT *lay,
+                                      const OV_MODEL  *m,
+                                      pid_t            target_pid,
+                                      int              row,
+                                      int             *ri,
+                                      int             *line_idx,
+                                      int              max_rows);
 
 #endif /* OVERVIEW_RENDER_RESOURCES_INTERNAL_H */

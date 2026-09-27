@@ -17,10 +17,7 @@
  * @m:   Pointer to data model snapshot.
  * @rel: Pointer to relationship lookup tables.
  */
-static void ov_render__dispatch_view(
-    OV_LAYOUT        *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel)
+static void ov_render__dispatch_view(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
 {
     switch (lay->view)
     {
@@ -145,17 +142,13 @@ static void ov_render__draw_edge_highlights(const OV_LAYOUT *lay)
 
         ov_buf_reset_attr();
     }
-
-
 }
 /**
  * ov_render_frame - compose and render one full overview frame.
  * @lay: Pointer to layout structure.
  * @m:   Pointer to current data model snapshot.
  */
-void ov_render_frame(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
 {
     ov_buf_reset_size(lay->term_rows, lay->term_cols);
 

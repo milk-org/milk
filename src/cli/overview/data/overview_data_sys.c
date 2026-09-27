@@ -80,8 +80,8 @@ double ov_sys_get_cpu_usage(void)
         return 0.0;
     }
 
-    double dt = (current_time.tv_sec - last_time.tv_sec) +
-                (current_time.tv_nsec - last_time.tv_nsec) / 1e9;
+    double dt =
+        (current_time.tv_sec - last_time.tv_sec) + (current_time.tv_nsec - last_time.tv_nsec) / 1e9;
 
     if (dt >= 0.5) /* update every 0.5s */
     {
@@ -121,8 +121,8 @@ double ov_sys_get_bandwidth_usage(void)
         return 0.0;
     }
 
-    double dt = (current_time.tv_sec - last_time.tv_sec) +
-                (current_time.tv_nsec - last_time.tv_nsec) / 1e9;
+    double dt =
+        (current_time.tv_sec - last_time.tv_sec) + (current_time.tv_nsec - last_time.tv_nsec) / 1e9;
 
     if (dt >= 0.5) /* update every 0.5s */
     {

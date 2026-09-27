@@ -298,9 +298,11 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     for (int vr = 0; vr < list_h && vr + scroll < nvis; vr++)
-    for (int vr = 0; vr < list_h && vr + scroll < nvis; vr++)
     {
-        ov_help_render_list_row(lay, vr, scroll, sel, map, nvis, list_top, pc, pw, inner_w);
+        for (int vr = 0; vr < list_h && vr + scroll < nvis; vr++)
+        {
+            ov_help_render_list_row(lay, vr, scroll, sel, map, nvis, list_top, pc, pw, inner_w);
+        }
     }
 
     /* Scroll indicators */

@@ -29,9 +29,7 @@ static int                     s_filter_cache_init = 0;
  *
  * Return: Pointer to compiled regex_t, or NULL if compilation failed.
  */
-static regex_t *get_cached_regex(
-    const char *pattern,
-    int        *out_reg_ok)
+static regex_t *get_cached_regex(const char *pattern, int *out_reg_ok)
 {
     if (!s_filter_cache_init)
     {
@@ -84,12 +82,7 @@ static regex_t *get_cached_regex(
  *
  * Return: Number of matching indices written to out buffer.
  */
-int ov_filter_build(
-    const char  *pattern,
-    const char **names,
-    int          count,
-    int         *out,
-    int          max_out)
+int ov_filter_build(const char *pattern, const char **names, int count, int *out, int max_out)
 {
     if (pattern == NULL || pattern[0] == '\0')
     {
@@ -170,9 +163,7 @@ ov_focus_t ov_get_effective_filter_panel(const OV_LAYOUT *lay)
  *
  * Return: 1 if non-empty filter exists, 0 otherwise.
  */
-int ov_has_panel_filter(
-    const OV_LAYOUT *lay,
-    ov_focus_t       panel)
+int ov_has_panel_filter(const OV_LAYOUT *lay, ov_focus_t panel)
 {
     if (lay == NULL)
     {
@@ -200,9 +191,7 @@ int ov_has_panel_filter(
  *
  * Return: 1 if active, 0 otherwise.
  */
-int ov_is_panel_filter_active(
-    const OV_LAYOUT *lay,
-    ov_focus_t       panel)
+int ov_is_panel_filter_active(const OV_LAYOUT *lay, ov_focus_t panel)
 {
     if (lay == NULL)
     {
@@ -230,9 +219,7 @@ int ov_is_panel_filter_active(
  *
  * Return: Pointer to filter string or empty string.
  */
-const char *ov_get_panel_filter_pattern(
-    const OV_LAYOUT *lay,
-    ov_focus_t       panel)
+const char *ov_get_panel_filter_pattern(const OV_LAYOUT *lay, ov_focus_t panel)
 {
     if (lay == NULL)
     {
@@ -260,9 +247,7 @@ const char *ov_get_panel_filter_pattern(
  *
  * Return: Pointer to pattern string if active, or empty string.
  */
-const char *ov_get_active_filter_for(
-    const OV_LAYOUT *lay,
-    ov_focus_t       panel)
+const char *ov_get_active_filter_for(const OV_LAYOUT *lay, ov_focus_t panel)
 {
     if (!ov_is_panel_filter_active(lay, panel))
     {
@@ -276,9 +261,7 @@ const char *ov_get_active_filter_for(
  * @lay:   Pointer to layout structure.
  * @panel: Panel focus enum.
  */
-void ov_clear_panel_filter(
-    OV_LAYOUT *lay,
-    ov_focus_t panel)
+void ov_clear_panel_filter(OV_LAYOUT *lay, ov_focus_t panel)
 {
     if (lay == NULL)
     {

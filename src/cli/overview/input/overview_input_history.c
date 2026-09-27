@@ -15,10 +15,7 @@
  * @fps_name: Active FPS instance name.
  * @path:     Directory path within the parameter tree.
  */
-void ov_input_save_dir_history(
-    OV_LAYOUT  *lay,
-    const char *fps_name,
-    const char *path)
+void ov_input_save_dir_history(OV_LAYOUT *lay, const char *fps_name, const char *path)
 {
     if (fps_name == NULL || fps_name[0] == '\0')
     {
@@ -67,10 +64,7 @@ void ov_input_save_dir_history(
  * @fps_name: Active FPS instance name.
  * @path:     Directory path within the parameter tree.
  */
-void ov_input_load_dir_history(
-    OV_LAYOUT  *lay,
-    const char *fps_name,
-    const char *path)
+void ov_input_load_dir_history(OV_LAYOUT *lay, const char *fps_name, const char *path)
 {
     if (fps_name == NULL || fps_name[0] == '\0')
     {
@@ -105,9 +99,7 @@ void ov_input_load_dir_history(
  * @lay:      Pointer to overview layout structure.
  * @fps_name: Active FPS instance name.
  */
-void ov_input_save_fps_history(
-    OV_LAYOUT  *lay,
-    const char *fps_name)
+void ov_input_save_fps_history(OV_LAYOUT *lay, const char *fps_name)
 {
     if (fps_name == NULL || fps_name[0] == '\0')
     {
@@ -155,9 +147,7 @@ void ov_input_save_fps_history(
  * @lay:      Pointer to overview layout structure.
  * @fps_name: Active FPS instance name.
  */
-void ov_input_load_fps_history(
-    OV_LAYOUT  *lay,
-    const char *fps_name)
+void ov_input_load_fps_history(OV_LAYOUT *lay, const char *fps_name)
 {
     if (fps_name == NULL || fps_name[0] == '\0')
     {

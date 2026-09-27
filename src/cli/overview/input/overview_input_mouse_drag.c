@@ -18,17 +18,12 @@
  *
  * Return: 1 if handled.
  */
-int ov_input_mouse_drag(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m,
-    int             mr,
-    int             mc)
+int ov_input_mouse_drag(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
 {
     (void) m;
 
     /* Global: Command log panel height drag */
-    int cmdlog_top =
-        (lay->cmdlog_rows > 0) ? (lay->term_rows - lay->cmdlog_rows) : lay->term_rows;
+    int cmdlog_top = (lay->cmdlog_rows > 0) ? (lay->term_rows - lay->cmdlog_rows) : lay->term_rows;
     if (lay->cmdlog_dragging || (mr == cmdlog_top - 1 || mr == cmdlog_top))
     {
         lay->cmdlog_dragging = 1;
@@ -131,10 +126,7 @@ int ov_input_mouse_drag(
  *
  * Return: 1 if handled.
  */
-int ov_input_mouse_wheel(
-    int             key,
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     /* Ctrl+scroll: cycle views (#12) */
     if (key == OV_KEY_CTRL_SCROLL_UP || key == OV_KEY_CTRL_SCROLL_DOWN)
@@ -219,8 +211,7 @@ int ov_input_mouse_wheel(
                 if (start_node >= 0)
                 {
                     SG_RENDER_NODE rnodes[OV_MAX_NODES];
-                    count = sg_compute_render_nodes(m, start_node,
-                                                   lay->lineage_mode, rnodes);
+                    count = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
                 }
                 else
                 {
@@ -234,8 +225,7 @@ int ov_input_mouse_wheel(
                 scroll = &lay->scroll_loop;
                 count  = m->nb_loops;
                 page_h = (lay->r_graph.height - 3 >= 6)
-                             ? ((lay->r_graph.height - 3 > 8)
-                                    ? ((lay->r_graph.height - 3) / 2) : 3)
+                             ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
                              : (lay->r_graph.height - 3);
             }
             else if (lay->graph_tab_mode == 2)
@@ -302,8 +292,7 @@ int ov_input_mouse_wheel(
                     if (start_node >= 0)
                     {
                         SG_RENDER_NODE rnodes[OV_MAX_NODES];
-                        count = sg_compute_render_nodes(m, start_node,
-                                                       lay->lineage_mode, rnodes);
+                        count = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
                     }
                     else
                     {
@@ -318,8 +307,7 @@ int ov_input_mouse_wheel(
                     count  = m->nb_loops;
                     page_h =
                         (lay->r_graph.height - 3 >= 6)
-                            ? ((lay->r_graph.height - 3 > 8)
-                                   ? ((lay->r_graph.height - 3) / 2) : 3)
+                            ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
                             : (lay->r_graph.height - 3);
                 }
                 else if (lay->graph_tab_mode == 2)

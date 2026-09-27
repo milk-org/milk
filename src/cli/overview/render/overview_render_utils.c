@@ -12,13 +12,12 @@
  * @normal_fg: Default foreground color
  * @row_bg:    Current row background color
  */
-void render_highlighted_name(
-    const char *name,
-    int         max_len,
-    regex_t    *re,
-    int         has_re,
-    ov_rgb_t    normal_fg,
-    ov_rgb_t    row_bg)
+void render_highlighted_name(const char *name,
+                             int         max_len,
+                             regex_t    *re,
+                             int         has_re,
+                             ov_rgb_t    normal_fg,
+                             ov_rgb_t    row_bg)
 {
     int len = (int) strlen(name);
     if (len > max_len)
@@ -145,11 +144,7 @@ int dtype_bytesize(uint8_t dt)
  * @width: Number of columns to clear
  * @bg:    Background color
  */
-void clear_row(
-    int      row,
-    int      col,
-    int      width,
-    ov_rgb_t bg)
+void clear_row(int row, int col, int width, ov_rgb_t bg)
 {
     ov_buf_reset_attr();
     ov_buf_pos(row, col);
@@ -163,9 +158,7 @@ void clear_row(
  * @chars_written: Number of characters already written
  * @panel_width:   Total panel width
  */
-void render_pad_spaces(
-    int chars_written,
-    int panel_width)
+void render_pad_spaces(int chars_written, int panel_width)
 {
     int remain = (panel_width - 2) - chars_written;
     if (remain > 0)
@@ -194,12 +187,7 @@ void render_pad_to_col(int end_col)
  * @total:    Total item count
  * @accent:   Accent color for the arrows
  */
-void render_scroll_indicators(
-    OV_RECT  r,
-    int      scroll,
-    int      max_rows,
-    int      total,
-    ov_rgb_t accent)
+void render_scroll_indicators(OV_RECT r, int scroll, int max_rows, int total, ov_rgb_t accent)
 {
     int above = scroll;
     int below = total - scroll - max_rows;
@@ -274,17 +262,16 @@ void render_scroll_indicators(
  * @highlighted_col: Currently highlighted column index
  * @collapsed_mask:  Bitmask of collapsed columns
  */
-void ov_render_cell(
-    int         logical_col,
-    int         vis_col,
-    ov_rgb_t    fg,
-    ov_rgb_t    bg,
-    const char *str,
-    int        *hs_rem,
-    int        *printed,
-    int         avail,
-    int         highlighted_col,
-    uint32_t    collapsed_mask)
+void ov_render_cell(int         logical_col,
+                    int         vis_col,
+                    ov_rgb_t    fg,
+                    ov_rgb_t    bg,
+                    const char *str,
+                    int        *hs_rem,
+                    int        *printed,
+                    int         avail,
+                    int         highlighted_col,
+                    uint32_t    collapsed_mask)
 {
     int is_high = (vis_col == highlighted_col);
     int is_coll = (collapsed_mask & (1U << logical_col)) != 0;

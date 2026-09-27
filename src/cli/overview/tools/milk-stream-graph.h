@@ -69,30 +69,23 @@ typedef enum
  * Function declarations
  * ========================================================= */
 
-void sg_scan_model(
-    OV_MODEL *model);
+void sg_scan_model(OV_MODEL *model);
 
-void sg_print_text(
-    const OV_MODEL   *m,
-    const char       *stream_name,
-    sg_mode_t         mode,
-    const SG_LINEAGE *lin);
+void sg_print_text(const OV_MODEL   *m,
+                   const char       *stream_name,
+                   sg_mode_t         mode,
+                   const SG_LINEAGE *lin);
 
-void sg_print_json(
-    const OV_MODEL   *m,
-    const char       *stream_name,
-    sg_mode_t         mode,
-    const SG_LINEAGE *lin);
+void sg_print_json(const OV_MODEL   *m,
+                   const char       *stream_name,
+                   sg_mode_t         mode,
+                   const SG_LINEAGE *lin);
 
-void sg_print_pretty(
-    const OV_MODEL   *m,
-    const char       *stream_name,
-    sg_mode_t         mode,
-    const SG_LINEAGE *lin);
+void sg_print_pretty(const OV_MODEL   *m,
+                     const char       *stream_name,
+                     sg_mode_t         mode,
+                     const SG_LINEAGE *lin);
 
-void sg_interactive(
-    OV_MODEL   *model,
-    const char *initial_stream,
-    sg_mode_t   mode);
+void sg_interactive(OV_MODEL *model, const char *initial_stream, sg_mode_t mode);
 
 #endif /* MILK_STREAM_GRAPH_H */

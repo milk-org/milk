@@ -17,10 +17,7 @@
  *
  * Return: 1 if key was consumed, 0 otherwise.
  */
-int ov_input__handle_column_highlights(
-    int             key,
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+int ov_input__handle_column_highlights(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     (void) m;
 
@@ -55,14 +52,12 @@ int ov_input__handle_column_highlights(
         }
         else if (lay->focus == OV_FOCUS_PROCS)
         {
-            int logical_col =
-                ov_get_logical_col_proc(lay->highlight_col_proc, lay->compact_mode);
+            int logical_col = ov_get_logical_col_proc(lay->highlight_col_proc, lay->compact_mode);
             lay->col_collapsed_proc ^= (1U << logical_col);
         }
         else if (lay->focus == OV_FOCUS_FPS)
         {
-            int logical_col =
-                ov_get_logical_col_fps(lay->highlight_col_fps, lay->compact_mode);
+            int logical_col = ov_get_logical_col_fps(lay->highlight_col_fps, lay->compact_mode);
             lay->col_collapsed_fps ^= (1U << logical_col);
         }
         return 1;
@@ -78,9 +73,7 @@ int ov_input__handle_column_highlights(
  *
  * Return: 1 if key was consumed, 0 otherwise.
  */
-int ov_input__handle_sorting(
-    int        key,
-    OV_LAYOUT *lay)
+int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
 {
     if (key == 'S')
     {

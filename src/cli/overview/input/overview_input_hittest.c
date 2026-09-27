@@ -18,11 +18,7 @@
  * @mr:  Mouse row coordinate.
  * @mc:  Mouse column coordinate.
  */
-void ov_hittest(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m,
-    int             mr,
-    int             mc)
+void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
 {
     lay->hover_view         = -1;
     lay->hover_idx          = -1;
@@ -74,9 +70,8 @@ void ov_hittest(
                 const char *fpat       = (fpanel != OV_FOCUS_GRAPH)
                                              ? ov_get_panel_filter_pattern(lay, fpanel)
                                              : ov_get_filter_pattern(lay);
-                int is_act = (fpanel != OV_FOCUS_GRAPH)
-                                 ? ov_is_panel_filter_active(lay, fpanel)
-                                 : ov_is_filter_active(lay);
+                int is_act = (fpanel != OV_FOCUS_GRAPH) ? ov_is_panel_filter_active(lay, fpanel)
+                                                        : ov_is_filter_active(lay);
 
                 if (is_act)
                 {
@@ -125,8 +120,7 @@ void ov_hittest(
             if (mc >= tx && mc < tx + tab_widths[v])
             {
                 snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                         "View: Switch to %s view (key: F%d)",
-                         ov_view_label((ov_view_t) v), v + 2);
+                         "View: Switch to %s view (key: F%d)", ov_view_label((ov_view_t) v), v + 2);
                 return;
             }
             tx += tab_widths[v];

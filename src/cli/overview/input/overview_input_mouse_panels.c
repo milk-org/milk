@@ -20,12 +20,7 @@
  *
  * Return: 1 if click was consumed.
  */
-int ov_input_mouse_panel_click(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m,
-    int             mr,
-    int             mc,
-    int             is_dbl)
+int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc, int is_dbl)
 {
     if (lay->view == OV_VIEW_FPS)
     {
@@ -326,8 +321,8 @@ int ov_input_mouse_panel_click(
                         if (start_node >= 0)
                         {
                             SG_TREE_NODE rnodes[OV_MAX_NODES];
-                            int nb_rnodes = sg_compute_render_tree(m, start_node,
-                                                                   lay->lineage_mode, rnodes);
+                            int          nb_rnodes =
+                                sg_compute_render_tree(m, start_node, lay->lineage_mode, rnodes);
 
                             int idx = lay->scroll_graph + body_row;
                             if (idx < nb_rnodes)
@@ -441,8 +436,7 @@ int ov_input_mouse_panel_click(
                                 {
                                     int                  dp     = lay->param_scroll + param_row;
                                     const OV_FPS_PARAMS *params = ov_fps_get_params(f->name);
-                                    if (params != NULL && dp >= 0 &&
-                                        dp < params->nb_disp_params)
+                                    if (params != NULL && dp >= 0 && dp < params->nb_disp_params)
                                     {
                                         lay->param_sel = dp;
                                         if (params->disp_param_type[dp] == FPTYPE_STREAMNAME)
@@ -471,8 +465,7 @@ int ov_input_mouse_panel_click(
     }
 
     /* Check if clicking on cmdlog border to start dragging */
-    int cmdlog_top =
-        (lay->cmdlog_rows > 0) ? (lay->term_rows - lay->cmdlog_rows) : lay->term_rows;
+    int cmdlog_top = (lay->cmdlog_rows > 0) ? (lay->term_rows - lay->cmdlog_rows) : lay->term_rows;
     if (mr == cmdlog_top - 1 || mr == cmdlog_top)
     {
         lay->cmdlog_dragging = 1;

@@ -20,8 +20,7 @@
  *
  * Return: Constant string name of the datatype.
  */
-static const char *dtype_name(
-    uint8_t dt)
+static const char *dtype_name(uint8_t dt)
 {
     switch (dt)
     {
@@ -60,8 +59,7 @@ static const char *dtype_name(
  *
  * Return: Size in bytes of a single element.
  */
-static unsigned int dtype_bytes(
-    uint8_t dt)
+static unsigned int dtype_bytes(uint8_t dt)
 {
     switch (dt)
     {
@@ -93,8 +91,7 @@ static unsigned int dtype_bytes(
  *
  * Return: Color-formatted string (ALIVE, ZOMBIE, DEAD, or N/A).
  */
-static const char *pid_status_str(
-    pid_t pid)
+static const char *pid_status_str(pid_t pid)
 {
     if (pid <= 0)
     {
@@ -119,9 +116,7 @@ static const char *pid_status_str(
  *
  * Return: Process name string or NULL if not found.
  */
-static const char *proc_name_by_pid(
-    const OV_MODEL *m,
-    pid_t           pid)
+static const char *proc_name_by_pid(const OV_MODEL *m, pid_t pid)
 {
     int pi = ov_find_proc_by_pid(m, pid);
     if (pi >= 0)
@@ -136,9 +131,7 @@ static const char *proc_name_by_pid(
  * @m:  Pointer to data model
  * @si: Stream index in @m->streams
  */
-void print_stream_info(
-    const OV_MODEL *m,
-    int             si)
+void print_stream_info(const OV_MODEL *m, int si)
 {
     const OV_STREAM *s = &m->streams[si];
 
@@ -251,8 +244,8 @@ void print_stream_info(
                 continue;
             }
             int pi = m->nodes[ni].index;
-            printf("   %-18s: " C_PROC "%s" C_RST " (PID %d)\n", "Written by",
-                   m->procs[pi].name, (int) m->procs[pi].PID);
+            printf("   %-18s: " C_PROC "%s" C_RST " (PID %d)\n", "Written by", m->procs[pi].name,
+                   (int) m->procs[pi].PID);
             found_any = 1;
         }
 
@@ -274,8 +267,8 @@ void print_stream_info(
                 continue;
             }
             int pi = m->nodes[ni].index;
-            printf("   %-18s: " C_PROC "%s" C_RST " (PID %d)\n", "Triggers",
-                   m->procs[pi].name, (int) m->procs[pi].PID);
+            printf("   %-18s: " C_PROC "%s" C_RST " (PID %d)\n", "Triggers", m->procs[pi].name,
+                   (int) m->procs[pi].PID);
             found_any = 1;
         }
 
@@ -296,8 +289,8 @@ void print_stream_info(
                 continue;
             }
             int pi = m->nodes[ni].index;
-            printf("   %-18s: " C_PROC "%s" C_RST " (PID %d)\n", "Read by (sem)",
-                   m->procs[pi].name, (int) m->procs[pi].PID);
+            printf("   %-18s: " C_PROC "%s" C_RST " (PID %d)\n", "Read by (sem)", m->procs[pi].name,
+                   (int) m->procs[pi].PID);
             found_any = 1;
         }
 
@@ -356,8 +349,8 @@ void print_stream_info(
         for (int t = 0; t < s->nb_proctrace; t++)
         {
             const char *pn = proc_name_by_pid(m, s->proctrace_pid[t]);
-            printf("   [%d] PID=%-6d  trig_inode=%-8" PRIu64 "  mode=%d",
-                   t, (int) s->proctrace_pid[t], (uint64_t) s->proctrace_inode[t],
+            printf("   [%d] PID=%-6d  trig_inode=%-8" PRIu64 "  mode=%d", t,
+                   (int) s->proctrace_pid[t], (uint64_t) s->proctrace_inode[t],
                    s->proctrace_trigmode[t]);
             if (pn)
             {

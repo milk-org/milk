@@ -25,11 +25,7 @@ extern float ov_scan_get_interval(void);
  *
  * Return: Number of visible character cells printed.
  */
-int ov_render_header_text(
-    const char *text,
-    int         hs,
-    int         max_vis_width,
-    ov_rgb_t    base_fg)
+int ov_render_header_text(const char *text, int hs, int max_vis_width, ov_rgb_t base_fg)
 {
     int vis_col = 0;
     int printed = 0;
@@ -119,9 +115,7 @@ static const char *view_label(ov_view_t v)
  * @lay: Pointer to layout structure.
  * @m:   Pointer to current data model snapshot.
  */
-void ov_render_header(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
 {
     /* Advance blink counter each frame */
     lay->ctrl_blink++;
@@ -469,4 +463,3 @@ void ov_render_header(
 
     ov_theme_bg(OV_BG_HEADER);
 }
-

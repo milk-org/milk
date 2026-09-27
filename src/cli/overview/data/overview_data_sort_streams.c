@@ -226,10 +226,7 @@ static int sort_stream_by_ancestry(const void *a, const void *b)
  * @key:   Column sort key index
  * @dir:   Sort direction (0 for asc, 1 for desc)
  */
-void ov_sort_streams(
-    OV_MODEL *model,
-    int       key,
-    int       dir)
+void ov_sort_streams(OV_MODEL *model, int key, int dir)
 {
     if (model->nb_streams < 2)
     {

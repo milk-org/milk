@@ -20,12 +20,11 @@
  *
  * Return: Number of matching stream indices written to fidx.
  */
-int ov_filter_streams(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    int              *fidx,
-    int               max_fidx)
+int ov_filter_streams(const OV_LAYOUT  *lay,
+                      const OV_MODEL   *m,
+                      const OV_RELATED *rel,
+                      int              *fidx,
+                      int               max_fidx)
 {
     if (lay == NULL || m == NULL || m->nb_streams <= 0 || fidx == NULL || max_fidx <= 0)
     {
@@ -94,12 +93,11 @@ int ov_filter_streams(
  *
  * Return: Number of matching process indices written to fidx.
  */
-int ov_filter_procs(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    int              *fidx,
-    int               max_fidx)
+int ov_filter_procs(const OV_LAYOUT  *lay,
+                    const OV_MODEL   *m,
+                    const OV_RELATED *rel,
+                    int              *fidx,
+                    int               max_fidx)
 {
     if (lay == NULL || m == NULL || m->nb_procs <= 0 || fidx == NULL || max_fidx <= 0)
     {
@@ -168,12 +166,11 @@ int ov_filter_procs(
  *
  * Return: Number of matching FPS indices written to fidx.
  */
-int ov_filter_fps(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    int              *fidx,
-    int               max_fidx)
+int ov_filter_fps(const OV_LAYOUT  *lay,
+                  const OV_MODEL   *m,
+                  const OV_RELATED *rel,
+                  int              *fidx,
+                  int               max_fidx)
 {
     if (lay == NULL || m == NULL || m->nb_fps <= 0 || fidx == NULL || max_fidx <= 0)
     {
@@ -239,9 +236,7 @@ int ov_filter_fps(
  *
  * Return: Model stream index in 0..nb_streams-1, or -1 if none.
  */
-int ov_get_selected_stream_idx(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+int ov_get_selected_stream_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (lay == NULL || m == NULL || m->nb_streams <= 0)
     {
@@ -268,9 +263,7 @@ int ov_get_selected_stream_idx(
  *
  * Return: Model process index in 0..nb_procs-1, or -1 if none.
  */
-int ov_get_selected_proc_idx(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+int ov_get_selected_proc_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (lay == NULL || m == NULL || m->nb_procs <= 0)
     {
@@ -297,9 +290,7 @@ int ov_get_selected_proc_idx(
  *
  * Return: Model FPS index in 0..nb_fps-1, or -1 if none.
  */
-int ov_get_selected_fps_idx(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+int ov_get_selected_fps_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (lay == NULL || m == NULL || m->nb_fps <= 0)
     {
@@ -324,9 +315,7 @@ int ov_get_selected_fps_idx(
  * @words: Pointer to 64-bit integer bitset words.
  * @idx:   0-based bit index to set.
  */
-void bset(
-    uint64_t *words,
-    int       idx)
+void bset(uint64_t *words, int idx)
 {
     words[idx / BITS_PER_WORD] |= (UINT64_C(1) << (idx % BITS_PER_WORD));
 }
@@ -338,9 +327,7 @@ void bset(
  *
  * Return: 1 if bit is set, 0 otherwise.
  */
-int bget(
-    const uint64_t *words,
-    int             idx)
+int bget(const uint64_t *words, int idx)
 {
     return (words[idx / BITS_PER_WORD] >> (idx % BITS_PER_WORD)) & 1;
 }
@@ -351,10 +338,7 @@ int bget(
  * @m:   Pointer to data model snapshot.
  * @out: Output structure populated with highlight bitsets and selected IDs.
  */
-void ov_compute_related(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
-    OV_RELATED      *out)
+void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *out)
 {
     memset(out, 0, sizeof(*out));
 
@@ -407,23 +391,23 @@ void ov_compute_related(
     /* Walk all edges; mark neighbours of sel_node */
     for (int ei = 0; ei < m->nb_edges; ei++)
     {
-        const OV_EDGE *e        = &m->edges[ei];
-        int            other    = -1;
-        int            is_write = 0; /* 1 = proc writes stream */
+        const OV_EDGE *e          = &m->edges[ei];
+        int            other      = -1;
+        int            is_write   = 0; /* 1 = proc writes stream */
         int            fps_is_src = 0;
 
         if (e->src_node == sel_node)
         {
-            other    = e->tgt_node;
-            is_write = (e->type == OV_EDGE_PROC_WRITES_STREAM) ||
-                       (e->type == OV_EDGE_FPS_OUTPUT_STREAM);
+            other = e->tgt_node;
+            is_write =
+                (e->type == OV_EDGE_PROC_WRITES_STREAM) || (e->type == OV_EDGE_FPS_OUTPUT_STREAM);
             fps_is_src = 0;
         }
         else if (e->tgt_node == sel_node)
         {
-            other    = e->src_node;
-            is_write = (e->type == OV_EDGE_PROC_WRITES_STREAM) ||
-                       (e->type == OV_EDGE_FPS_OUTPUT_STREAM);
+            other = e->src_node;
+            is_write =
+                (e->type == OV_EDGE_PROC_WRITES_STREAM) || (e->type == OV_EDGE_FPS_OUTPUT_STREAM);
             fps_is_src = 1;
         }
 
@@ -451,8 +435,7 @@ void ov_compute_related(
             }
 
             /* Find all stream params of this FPS that match sel_node */
-            if (focus == OV_FOCUS_STREAMS && sel_stream_idx >= 0 &&
-                sel_stream_idx < m->nb_streams)
+            if (focus == OV_FOCUS_STREAMS && sel_stream_idx >= 0 && sel_stream_idx < m->nb_streams)
             {
                 const char   *sname = m->streams[sel_stream_idx].name;
                 const OV_FPS *f     = &m->fps[fi];

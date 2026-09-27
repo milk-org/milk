@@ -30,9 +30,7 @@ void ov_buf_force_clear(void)
  * @rows: Target terminal rows
  * @cols: Target terminal columns
  */
-void ov_buf_reset_size(
-    int rows,
-    int cols)
+void ov_buf_reset_size(int rows, int cols)
 {
     ov__screenbuf_len = 0;
     ov__cursor_row    = 1;
@@ -80,9 +78,7 @@ void ov_buf_reset(void)
  * @data: Byte buffer containing ANSI sequences or text
  * @len:  Number of bytes to append
  */
-void ov_buf_append(
-    const char *data,
-    int         len)
+void ov_buf_append(const char *data, int len)
 {
     if (ov__screenbuf_len + len < OV_SCREENBUF_SIZE)
     {
@@ -136,10 +132,7 @@ void ov_buf_flush_internal(void)
  * @bytes:    Length of sequence in bytes
  * @width:    Display column width (1 or 2)
  */
-void ov_buf_append_cluster(
-    const char *utf8_seq,
-    int         bytes,
-    int         width)
+void ov_buf_append_cluster(const char *utf8_seq, int bytes, int width)
 {
     if (width <= 0)
     {
@@ -180,9 +173,7 @@ void ov_buf_append_cluster(
  * @utf8_seq: Character bytes
  * @bytes:    Length in bytes
  */
-void ov_buf_append_char(
-    const char *utf8_seq,
-    int         bytes)
+void ov_buf_append_char(const char *utf8_seq, int bytes)
 {
     int b = 0, w = 1;
     ov_utf8_next_cluster(utf8_seq, bytes, &b, &w);
@@ -194,9 +185,7 @@ void ov_buf_append_char(
  * @fmt: Printf format string
  * @...: Variable arguments
  */
-void ov_buf_printf(
-    const char *fmt,
-    ...)
+void ov_buf_printf(const char *fmt, ...)
 {
     char    tmp[4096];
     va_list ap;
@@ -230,9 +219,7 @@ void ov_buf_printf(
  * @ch:  Character to draw
  * @len: Number of columns to fill
  */
-void ov_buf_hline(
-    char ch,
-    int  len)
+void ov_buf_hline(char ch, int len)
 {
     for (int i = 0; i < len; i++)
     {
@@ -245,9 +232,7 @@ void ov_buf_hline(
  * @s:   UTF-8 character string
  * @len: Number of repetitions
  */
-void ov_buf_hline_utf8(
-    const char *s,
-    int         len)
+void ov_buf_hline_utf8(const char *s, int len)
 {
     int slen = (int) strlen(s);
     for (int i = 0; i < len; i++)

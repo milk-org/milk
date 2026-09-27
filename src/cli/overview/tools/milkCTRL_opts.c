@@ -20,13 +20,10 @@
  * @prog:     Program invocation name.
  * @mh_color: Color formatting mode flag.
  */
-void milkctrl_print_help(
-    const char *prog,
-    int         mh_color)
+void milkctrl_print_help(const char *prog, int mh_color)
 {
     milk_help_banner(
-        prog, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
-        mh_color);
+        prog, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes", mh_color);
 
     milk_help_section("Usage", mh_color);
     printf("  $ %s [%s %s]  (commit %s, shm %s)\n\n", prog, MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"),
@@ -156,10 +153,7 @@ void milkctrl_print_help(
  *
  * Return: 0 to continue execution, 1 on clean help/version exit, -1 on error.
  */
-int milkctrl_parse_options(
-    int          argc,
-    char        *argv[],
-    const char **out_cli_theme)
+int milkctrl_parse_options(int argc, char *argv[], const char **out_cli_theme)
 {
     const char *cli_theme = NULL;
     for (int i = 1; i < argc; i++)
@@ -217,9 +211,8 @@ int milkctrl_parse_options(
             fprintf(stderr,
                     "%s Invalid option: %s%s%s\n"
                     "Run %s%s%s %s for usage.\n",
-                    MH(MH_ERR, "Error:"), mh_color ? MH_OPT : "", argv[i],
-                    mh_color ? MH_RST : "", mh_color ? MH_CMD : "", argv[0],
-                    mh_color ? MH_RST : "", MH(MH_OPT, "-h"));
+                    MH(MH_ERR, "Error:"), mh_color ? MH_OPT : "", argv[i], mh_color ? MH_RST : "",
+                    mh_color ? MH_CMD : "", argv[0], mh_color ? MH_RST : "", MH(MH_OPT, "-h"));
             return -1;
         }
     }

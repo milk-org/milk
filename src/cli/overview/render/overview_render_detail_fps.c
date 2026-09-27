@@ -22,13 +22,12 @@
  *
  * Return: 1 on success, 0 otherwise.
  */
-int ov_fps__render_detail_fps(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m,
-    int             fsel,
-    OV_RECT         r,
-    int             max_rows,
-    int             row)
+int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
+                              const OV_MODEL *m,
+                              int             fsel,
+                              OV_RECT         r,
+                              int             max_rows,
+                              int             row)
 {
     const OV_FPS *f = &m->fps[fsel];
 

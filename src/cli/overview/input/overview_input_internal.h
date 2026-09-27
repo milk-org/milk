@@ -35,9 +35,9 @@
 #include "fps_WriteParameterToDisk.h"
 #include "fps_save2disk.h"
 
-#define INSIDE(R, MR, MC) \
-    ((MR) >= (R).row && (MR) < (R).row + (R).height && \
-     (MC) >= (R).col && (MC) < (R).col + (R).width)
+#define INSIDE(R, MR, MC)                                                 \
+    ((MR) >= (R).row && (MR) < (R).row + (R).height && (MC) >= (R).col && \
+     (MC) < (R).col + (R).width)
 
 /* External scan and help API */
 float ov_scan_get_interval(void);

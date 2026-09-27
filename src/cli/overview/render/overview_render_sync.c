@@ -21,9 +21,7 @@ static const OV_MODEL *g_last_model = NULL;
  * @lay: Pointer to layout structure.
  * @m:   Pointer to data model snapshot.
  */
-void ov_render__sync_selection(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+void ov_render__sync_selection(OV_LAYOUT *lay, const OV_MODEL *m)
 {
     /* Ensure there exists a valid selected parameter when in the PARAMS panel on F5 view */
     int cur_fidx = ov_get_selected_fps_idx(lay, m);

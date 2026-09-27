@@ -16,9 +16,7 @@
  *
  * Return: 1 if detail was drawn, 0 if nothing to show (caller falls back to graph panel).
  */
-int ov_render_detail_panel(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+int ov_render_detail_panel(OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_RECT r        = lay->r_graph;
     int     max_rows = r.height - 2;

@@ -244,4 +244,3 @@ void ov_help_render_intro(const OV_LAYOUT *lay, int pr, int pc, int ph, int pw)
 
     ov_buf_reset_attr();
 }
-

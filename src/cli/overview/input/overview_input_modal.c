@@ -19,10 +19,7 @@
  *
  * Return: 1 if key was consumed, 0 otherwise.
  */
-int ov_input__handle_loop_rename(
-    int        key,
-    OV_LAYOUT *lay,
-    OV_MODEL  *m)
+int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, OV_MODEL *m)
 {
     if (!lay->renaming_loop)
     {
@@ -87,10 +84,7 @@ int ov_input__handle_loop_rename(
  *
  * Return: 1 if key was consumed, 0 otherwise.
  */
-int ov_input__handle_loop_actions(
-    int        key,
-    OV_LAYOUT *lay,
-    OV_MODEL  *m)
+int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, OV_MODEL *m)
 {
     int in_loops =
         (lay->view == OV_VIEW_LOOPS || (lay->view == OV_VIEW_DASHBOARD &&

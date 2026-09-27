@@ -22,14 +22,8 @@ extern ov_saved_loop_name_t s_saved_names[OV_MAX_SAVED_NAMES];
 extern int                  s_nb_saved_names;
 extern int                  s_names_loaded;
 
-int is_valid_loop_edge(
-    const OV_MODEL *m,
-    const OV_EDGE  *e,
-    sg_mode_t       mode);
+int is_valid_loop_edge(const OV_MODEL *m, const OV_EDGE *e, sg_mode_t mode);
 
-int register_cycle(
-    OV_MODEL  *model,
-    const int *path,
-    int        path_len);
+int register_cycle(OV_MODEL *model, const int *path, int path_len);
 
 #endif /* OVERVIEW_DATA_LOOPS_INTERNAL_H */

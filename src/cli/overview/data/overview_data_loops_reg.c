@@ -43,10 +43,7 @@ static uint64_t fnv1a_hash(const char *str)
  *
  * Return: 1 if edge is a valid loop edge, 0 otherwise.
  */
-int is_valid_loop_edge(
-    const OV_MODEL *m,
-    const OV_EDGE  *e,
-    sg_mode_t       mode)
+int is_valid_loop_edge(const OV_MODEL *m, const OV_EDGE *e, sg_mode_t mode)
 {
     if (!e->active)
     {
@@ -98,10 +95,7 @@ int is_valid_loop_edge(
  *
  * Return: 1 if new cycle registered, 0 if duplicate or full.
  */
-int register_cycle(
-    OV_MODEL  *model,
-    const int *path,
-    int        path_len)
+int register_cycle(OV_MODEL *model, const int *path, int path_len)
 {
     if (path_len < 2 || model->nb_loops >= OV_MAX_LOOPS)
     {

@@ -55,9 +55,7 @@ int pid_is_stopped(pid_t pid)
  * @p:   process model entry
  * @log: command log (may be NULL)
  */
-void ov_ctrl_proc_kill(
-    const OV_PROC *p,
-    OV_CMDLOG     *log)
+void ov_ctrl_proc_kill(const OV_PROC *p, OV_CMDLOG *log)
 {
     if (p == NULL || p->PID <= 0)
     {
@@ -68,8 +66,7 @@ void ov_ctrl_proc_kill(
     if (log != NULL)
     {
         ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "💀 Process \"%s\" (PID %d) — SIGTERM",
-                       p->name, p->PID);
+                       "💀 Process \"%s\" (PID %d) — SIGTERM", p->name, p->PID);
     }
 }
 
@@ -78,9 +75,7 @@ void ov_ctrl_proc_kill(
  * @p:   process model entry
  * @log: command log (may be NULL)
  */
-void ov_ctrl_proc_sigkill(
-    const OV_PROC *p,
-    OV_CMDLOG     *log)
+void ov_ctrl_proc_sigkill(const OV_PROC *p, OV_CMDLOG *log)
 {
     if (p == NULL || p->PID <= 0)
     {
@@ -90,8 +85,7 @@ void ov_ctrl_proc_sigkill(
     if (log != NULL)
     {
         ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "Process \"%s\" (PID %d) — SIGKILL",
-                       p->name, p->PID);
+                       "Process \"%s\" (PID %d) — SIGKILL", p->name, p->PID);
     }
 }
 
@@ -101,10 +95,7 @@ void ov_ctrl_proc_sigkill(
  * @val: new value (-1 to toggle between 0 and 1)
  * @log: command log (may be NULL)
  */
-void ov_ctrl_proc_set_ctrlval(
-    const OV_PROC *p,
-    int            val,
-    OV_CMDLOG     *log)
+void ov_ctrl_proc_set_ctrlval(const OV_PROC *p, int val, OV_CMDLOG *log)
 {
     if (p == NULL || p->PID <= 0 || !p->valid)
     {
@@ -112,16 +103,14 @@ void ov_ctrl_proc_set_ctrlval(
     }
 
     char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm",
-             ov_get_shmdir(), p->name, (int) p->PID);
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
 
     int fd = open(fname, O_RDWR);
     if (fd < 0)
     {
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" — ctrl failed (open)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (open)", p->name);
         }
         return;
     }
@@ -132,22 +121,19 @@ void ov_ctrl_proc_set_ctrlval(
         close(fd);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" — ctrl failed (stat)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (stat)", p->name);
         }
         return;
     }
 
-    PROCESSINFO *pinfo = (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO),
-                                              PROT_READ | PROT_WRITE,
-                                              MAP_SHARED, fd, 0);
+    PROCESSINFO *pinfo =
+        (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (pinfo == MAP_FAILED)
     {
         close(fd);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" — ctrl failed (mmap)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (mmap)", p->name);
         }
         return;
     }
@@ -188,8 +174,7 @@ void ov_ctrl_proc_set_ctrlval(
             action = "CTRLval updated";
         }
 
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "%s Process \"%s\" — %s",
-                       emoji, p->name, action);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "%s Process \"%s\" — %s", emoji, p->name, action);
     }
 }
 
@@ -198,9 +183,7 @@ void ov_ctrl_proc_set_ctrlval(
  * @p:   process model entry
  * @log: command log (may be NULL)
  */
-void ov_ctrl_proc_zero_counters(
-    const OV_PROC *p,
-    OV_CMDLOG     *log)
+void ov_ctrl_proc_zero_counters(const OV_PROC *p, OV_CMDLOG *log)
 {
     if (p == NULL || p->PID <= 0 || !p->valid)
     {
@@ -208,16 +191,14 @@ void ov_ctrl_proc_zero_counters(
     }
 
     char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm",
-             ov_get_shmdir(), p->name, (int) p->PID);
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
 
     int fd = open(fname, O_RDWR);
     if (fd < 0)
     {
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" — zero failed (open)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (open)", p->name);
         }
         return;
     }
@@ -228,22 +209,19 @@ void ov_ctrl_proc_zero_counters(
         close(fd);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" — zero failed (stat)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (stat)", p->name);
         }
         return;
     }
 
-    PROCESSINFO *pinfo = (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO),
-                                              PROT_READ | PROT_WRITE,
-                                              MAP_SHARED, fd, 0);
+    PROCESSINFO *pinfo =
+        (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (pinfo == MAP_FAILED)
     {
         close(fd);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" — zero failed (mmap)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (mmap)", p->name);
         }
         return;
     }
@@ -255,8 +233,7 @@ void ov_ctrl_proc_zero_counters(
 
     if (log != NULL)
     {
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "0️⃣ Process \"%s\" — Counters zeroed",
-                       p->name);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "0️⃣ Process \"%s\" — Counters zeroed", p->name);
     }
 }
 
@@ -265,9 +242,7 @@ void ov_ctrl_proc_zero_counters(
  * @p:   process model entry
  * @log: command log (may be NULL)
  */
-void ov_ctrl_proc_remove(
-    const OV_PROC *p,
-    OV_CMDLOG     *log)
+void ov_ctrl_proc_remove(const OV_PROC *p, OV_CMDLOG *log)
 {
     if (p == NULL || p->PID <= 0)
     {
@@ -278,16 +253,14 @@ void ov_ctrl_proc_remove(
     {
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" (PID %d) is still alive",
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" (PID %d) is still alive",
                            p->name, p->PID);
         }
         return;
     }
 
     char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm",
-             ov_get_shmdir(), p->name, (int) p->PID);
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
 
     int rc        = unlink(fname);
     int file_gone = (rc == 0 || errno == ENOENT);
@@ -316,14 +289,12 @@ void ov_ctrl_proc_remove(
     {
         if (deactivated || file_gone)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_OK,
-                           "🗑 Process \"%s\" (PID %d) entry removed",
-                           p->name, p->PID);
+            ov_cmdlog_push(log, OV_CMDLOG_OK, "🗑 Process \"%s\" (PID %d) entry removed", p->name,
+                           p->PID);
         }
         else
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "failed to remove entry for process \"%s\"",
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "failed to remove entry for process \"%s\"",
                            p->name);
         }
     }
@@ -334,9 +305,7 @@ void ov_ctrl_proc_remove(
  * @p:   process model entry
  * @log: command log (may be NULL)
  */
-void ov_ctrl_proc_pause_toggle(
-    const OV_PROC *p,
-    OV_CMDLOG     *log)
+void ov_ctrl_proc_pause_toggle(const OV_PROC *p, OV_CMDLOG *log)
 {
     if (p == NULL || p->PID <= 0)
     {
@@ -348,8 +317,7 @@ void ov_ctrl_proc_pause_toggle(
     if (log != NULL)
     {
         ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "%s Process \"%s\" (PID %d) — %s",
-                       stopped ? "⏯️" : "⏸️", p->name, p->PID,
+                       "%s Process \"%s\" (PID %d) — %s", stopped ? "⏯️" : "⏸️", p->name, p->PID,
                        stopped ? "resumed" : "paused");
     }
 }
@@ -374,9 +342,7 @@ void ov_ctrl_procs_cleanup(OV_CMDLOG *log)
  * @panel: the active panel type
  * @item:  pointer to the selected item (OV_STREAM, OV_PROC, or OV_FPS)
  */
-void ov_ctrl_inspect_item(
-    ov_focus_t  panel,
-    const void *item)
+void ov_ctrl_inspect_item(ov_focus_t panel, const void *item)
 {
     if (item == NULL)
     {

@@ -19,9 +19,7 @@
  *
  * Return: 0 on success, non-zero on error.
  */
-int main(
-    int   argc,
-    char *argv[])
+int main(int argc, char *argv[])
 {
     if (argc < 2)
     {

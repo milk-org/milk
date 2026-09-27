@@ -16,17 +16,10 @@
 #include "overview_theme_internal.h"
 #include "overview_ansi.h"
 
-static const ov_theme_t * const ov_themes[] = {
-    &ov_theme_dark,
-    &ov_theme_night,
-    &ov_theme_accessible,
-    &ov_theme_light,
-    &ov_theme_nordic,
-    &ov_theme_dracula,
-    &ov_theme_solarized_dark,
-    &ov_theme_solarized_light,
-    &ov_theme_monokai,
-    &ov_theme_matrix,
+static const ov_theme_t *const ov_themes[] = {
+    &ov_theme_dark,    &ov_theme_night,   &ov_theme_accessible,     &ov_theme_light,
+    &ov_theme_nordic,  &ov_theme_dracula, &ov_theme_solarized_dark, &ov_theme_solarized_light,
+    &ov_theme_monokai, &ov_theme_matrix,
 };
 
 static const int ov_num_themes = (int) (sizeof(ov_themes) / sizeof(ov_themes[0]));

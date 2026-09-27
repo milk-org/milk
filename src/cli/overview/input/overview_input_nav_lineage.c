@@ -17,9 +17,7 @@
  *
  * Return: Node index in m->nodes, or -1 if no matching selection.
  */
-int ov_input_get_graph_start_node(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+int ov_input_get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     ov_focus_t eff_focus   = lay->freeze ? lay->freeze_focus : lay->focus;
     int        target_type = -1;
@@ -62,10 +60,7 @@ int ov_input_get_graph_start_node(
  *
  * Return: Number of items matching current filter.
  */
-int ov_input_get_filtered_count(
-    int              focus,
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     int count = 0;
     if (focus == OV_FOCUS_STREAMS)
@@ -125,11 +120,10 @@ int ov_input_get_filtered_count(
  *
  * Return: Target relative node index, or -1 if none found.
  */
-static int find_relative_node_of_type(
-    const OV_MODEL *m,
-    int             start_node,
-    int             target_type,
-    int             upstream)
+static int find_relative_node_of_type(const OV_MODEL *m,
+                                      int             start_node,
+                                      int             target_type,
+                                      int             upstream)
 {
     int queue[OV_MAX_NODES];
     int visited[OV_MAX_NODES];
@@ -178,10 +172,7 @@ static int find_relative_node_of_type(
  *
  * Return: 1 if ancestry navigation key was handled, 0 otherwise.
  */
-int ov_input__handle_ancestry_nav(
-    int             key,
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (key != OV_KEY_SHIFT_UP && key != OV_KEY_SHIFT_DOWN)
     {
@@ -190,20 +181,17 @@ int ov_input__handle_ancestry_nav(
 
     int current_node = -1;
     int target_type  = -1;
-    if (lay->focus == OV_FOCUS_STREAMS && lay->sel_stream >= 0 &&
-        lay->sel_stream < m->nb_streams)
+    if (lay->focus == OV_FOCUS_STREAMS && lay->sel_stream >= 0 && lay->sel_stream < m->nb_streams)
     {
         current_node = m->streams[lay->sel_stream].node_idx;
         target_type  = OV_NODE_STREAM;
     }
-    else if (lay->focus == OV_FOCUS_PROCS && lay->sel_proc >= 0 &&
-             lay->sel_proc < m->nb_procs)
+    else if (lay->focus == OV_FOCUS_PROCS && lay->sel_proc >= 0 && lay->sel_proc < m->nb_procs)
     {
         current_node = m->procs[lay->sel_proc].node_idx;
         target_type  = OV_NODE_PROC;
     }
-    else if (lay->focus == OV_FOCUS_FPS && lay->sel_fps >= 0 &&
-             lay->sel_fps < m->nb_fps)
+    else if (lay->focus == OV_FOCUS_FPS && lay->sel_fps >= 0 && lay->sel_fps < m->nb_fps)
     {
         current_node = m->fps[lay->sel_fps].node_idx;
         target_type  = OV_NODE_FPS;
@@ -214,8 +202,7 @@ int ov_input__handle_ancestry_nav(
         if (start_node >= 0)
         {
             SG_RENDER_NODE rnodes[OV_MAX_NODES];
-            int n_rnodes = sg_compute_render_nodes(m, start_node,
-                                                   lay->lineage_mode, rnodes);
+            int n_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
             if (lay->sel_graph >= 0 && lay->sel_graph < n_rnodes)
             {
                 current_node = rnodes[lay->sel_graph].node_idx;
@@ -241,8 +228,7 @@ int ov_input__handle_ancestry_nav(
             if (start_node >= 0)
             {
                 SG_RENDER_NODE rnodes[OV_MAX_NODES];
-                int n_rnodes = sg_compute_render_nodes(m, start_node,
-                                                       lay->lineage_mode, rnodes);
+                int n_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
                 for (int i = 0; i < n_rnodes; i++)
                 {
                     if (rnodes[i].node_idx == target_node)

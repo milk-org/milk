@@ -86,10 +86,7 @@ static void sg_sighandler(int sig)
  * @initial_stream: Starting stream name
  * @mode:           Initial graph traversal mode
  */
-void sg_interactive(
-    OV_MODEL   *model,
-    const char *initial_stream,
-    sg_mode_t   mode)
+void sg_interactive(OV_MODEL *model, const char *initial_stream, sg_mode_t mode)
 {
     sg_raw_enter();
 
@@ -161,8 +158,7 @@ void sg_interactive(
                 {
                     printf("\033[7m");
                 }
-                printf(" " SGC_DEPTH "-%-2d" SGC_RESET " " SGC_STREAM "%s" SGC_RESET,
-                       e->depth, sn);
+                printf(" " SGC_DEPTH "-%-2d" SGC_RESET " " SGC_STREAM "%s" SGC_RESET, e->depth, sn);
                 if (e->is_loop)
                 {
                     printf(" " SGC_LOOP "[LOOP]" SGC_RESET);
@@ -209,8 +205,7 @@ void sg_interactive(
                 {
                     printf("\033[7m");
                 }
-                printf(" " SGC_DEPTH "+%-2d" SGC_RESET " " SGC_STREAM "%s" SGC_RESET,
-                       e->depth, sn);
+                printf(" " SGC_DEPTH "+%-2d" SGC_RESET " " SGC_STREAM "%s" SGC_RESET, e->depth, sn);
                 if (e->is_loop)
                 {
                     printf(" " SGC_LOOP "[LOOP]" SGC_RESET);

@@ -27,9 +27,7 @@ volatile sig_atomic_t ov_sigTERM = 0;
  * @prog:     Program invocation name
  * @mh_color: Color mode flag
  */
-static void print_usage(
-    const char *prog,
-    int         mh_color)
+static void print_usage(const char *prog, int mh_color)
 {
     milk_help_banner(prog, SG_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -79,8 +77,7 @@ static void print_usage(
  *
  * Return: Corresponding sg_mode_t enum.
  */
-static sg_mode_t parse_mode(
-    const char *s)
+static sg_mode_t parse_mode(const char *s)
 {
     if (strcmp(s, "input") == 0)
     {
@@ -97,8 +94,7 @@ static sg_mode_t parse_mode(
  * sg_scan_model - Scan system state and build graph model
  * @model: Target data model to populate
  */
-void sg_scan_model(
-    OV_MODEL *model)
+void sg_scan_model(OV_MODEL *model)
 {
     memset(model, 0, sizeof(*model));
     ov_scan_streams(model);
@@ -114,9 +110,7 @@ void sg_scan_model(
  *
  * Return: 0 on success, non-zero on error.
  */
-int main(
-    int   argc,
-    char *argv[])
+int main(int argc, char *argv[])
 {
     int action = milk_help_init(argc, argv, SG_ONELINE, SG_DESC_LONG);
     if (action == MH_ACTION_H1 || action == MH_ACTION_H2)

@@ -19,14 +19,13 @@
  * @fg:        Foreground color.
  * @bg:        Background color.
  */
-void ov_help_print_wrapped(
-    const char *text,
-    int         row,
-    int         col,
-    int         max_w,
-    int         max_lines,
-    ov_rgb_t    fg,
-    ov_rgb_t    bg)
+void ov_help_print_wrapped(const char *text,
+                           int         row,
+                           int         col,
+                           int         max_w,
+                           int         max_lines,
+                           ov_rgb_t    fg,
+                           ov_rgb_t    bg)
 {
     if (text == NULL || max_w <= 0 || max_lines <= 0)
     {
@@ -106,12 +105,12 @@ void ov_help_print_wrapped(
  * @detail_h: height of detail pane
  */
 void ov_help_render_detail(const OV_LAYOUT    *lay,
-                                  const OV_MODEL     *m,
-                                  const help_entry_t *entry,
-                                  int                 split_r,
-                                  int                 pc,
-                                  int                 pw,
-                                  int                 detail_h)
+                           const OV_MODEL     *m,
+                           const help_entry_t *entry,
+                           int                 split_r,
+                           int                 pc,
+                           int                 pw,
+                           int                 detail_h)
 {
     int inner_w = pw - 4;
     int col     = pc + 2;
@@ -371,4 +370,3 @@ void ov_help_render_detail(const OV_LAYOUT    *lay,
         ov_buf_hline(' ', target_pad);
     }
 }
-

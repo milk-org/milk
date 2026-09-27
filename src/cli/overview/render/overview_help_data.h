@@ -15,10 +15,10 @@
 #include "overview_layout.h"
 
 /** Flag values for help entries */
-#define HF_SECTION   1 /* Section header row                         */
-#define HF_ENTRY     2 /* Standard keystroke command entry           */
+#define HF_SECTION 1   /* Section header row                         */
+#define HF_ENTRY 2     /* Standard keystroke command entry           */
 #define HF_CTRL_MODE 4 /* Requires Control Mode ON (press 'c')       */
-#define HF_COLORS    8 /* Render as theme color legend               */
+#define HF_COLORS 8    /* Render as theme color legend               */
 
 /** Structure representing a single help topic or keystroke entry */
 typedef struct
@@ -84,8 +84,7 @@ int ov_help_nb_sections(void);
  *
  * Return: Section title string.
  */
-const char *ov_help_section_name(
-    int sec);
+const char *ov_help_section_name(int sec);
 
 /**
  * ov_help_focus_section - map layout focus to its corresponding help section.
@@ -93,8 +92,7 @@ const char *ov_help_section_name(
  *
  * Return: Corresponding section index (HS_STREAMS, HS_PROCS, etc.).
  */
-int ov_help_focus_section(
-    ov_focus_t focus);
+int ov_help_focus_section(ov_focus_t focus);
 
 /**
  * ov_help_section_tag - get short 3-4 letter badge for section.
@@ -102,8 +100,7 @@ int ov_help_focus_section(
  *
  * Return: Badge string (e.g. "STRM", "PROC", "FPS").
  */
-const char *ov_help_section_tag(
-    int sec);
+const char *ov_help_section_tag(int sec);
 
 /**
  * ov_help_section_color - get semantic theme color for section.
@@ -111,7 +108,6 @@ const char *ov_help_section_tag(
  *
  * Return: ov_rgb_t theme color.
  */
-ov_rgb_t ov_help_section_color(
-    int sec);
+ov_rgb_t ov_help_section_color(int sec);
 
 #endif /* OVERVIEW_HELP_DATA_H */

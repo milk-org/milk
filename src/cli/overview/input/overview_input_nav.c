@@ -17,10 +17,7 @@
  *
  * Return: 1 if navigation key was consumed, 0 otherwise.
  */
-int ov_input__handle_navigation(
-    int             key,
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     int *sel                            = NULL;
     int *scroll __attribute__((unused)) = NULL;
@@ -335,8 +332,8 @@ int ov_input__handle_navigation(
                     if (start_node >= 0)
                     {
                         SG_RENDER_NODE rnodes[OV_MAX_NODES];
-                        int n_rnodes = sg_compute_render_nodes(m, start_node,
-                                                               lay->lineage_mode, rnodes);
+                        int            n_rnodes =
+                            sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
                         if (*sel < n_rnodes)
                         {
                             const SG_RENDER_NODE *rn   = &rnodes[*sel];
@@ -367,8 +364,7 @@ int ov_input__handle_navigation(
                                     lay->scroll_proc = lay->sel_proc;
                                 }
                                 if (lay->r_procs.height > 3 &&
-                                    lay->sel_proc >=
-                                        lay->scroll_proc + lay->r_procs.height - 3)
+                                    lay->sel_proc >= lay->scroll_proc + lay->r_procs.height - 3)
                                 {
                                     lay->scroll_proc =
                                         lay->sel_proc - (lay->r_procs.height - 3) + 1;
@@ -383,11 +379,9 @@ int ov_input__handle_navigation(
                                     lay->scroll_fps = lay->sel_fps;
                                 }
                                 if (lay->r_fps.height > 3 &&
-                                    lay->sel_fps >=
-                                        lay->scroll_fps + lay->r_fps.height - 3)
+                                    lay->sel_fps >= lay->scroll_fps + lay->r_fps.height - 3)
                                 {
-                                    lay->scroll_fps =
-                                        lay->sel_fps - (lay->r_fps.height - 3) + 1;
+                                    lay->scroll_fps = lay->sel_fps - (lay->r_fps.height - 3) + 1;
                                 }
                             }
                         }

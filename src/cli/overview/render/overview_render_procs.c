@@ -20,13 +20,12 @@
  *
  * Return: Number of filtered processes in @filt_idx.
  */
-static int ov_procs__filter(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    int              *filt_idx,
-    int              *has_re,
-    regex_t          *re)
+static int ov_procs__filter(const OV_LAYOUT  *lay,
+                            const OV_MODEL   *m,
+                            const OV_RELATED *rel,
+                            int              *filt_idx,
+                            int              *has_re,
+                            regex_t          *re)
 {
     int         filt_n        = ov_filter_procs(lay, m, rel, filt_idx, OV_MAX_PROCS);
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
@@ -54,16 +53,15 @@ static int ov_procs__filter(
  * @has_re:   Flag indicating whether regex is compiled
  * @re:       Compiled regex pointer or NULL
  */
-static void ov_procs__render_rows(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    int               hrow,
-    OV_RECT           r,
-    const int        *filt_idx,
-    int               filt_n,
-    int               has_re,
-    const regex_t    *re)
+static void ov_procs__render_rows(const OV_LAYOUT  *lay,
+                                  const OV_MODEL   *m,
+                                  const OV_RELATED *rel,
+                                  int               hrow,
+                                  OV_RECT           r,
+                                  const int        *filt_idx,
+                                  int               filt_n,
+                                  int               has_re,
+                                  const regex_t    *re)
 {
     int8_t local_depth[OV_MAX_PROCS];
     memset(local_depth, 0, sizeof(local_depth));
@@ -145,10 +143,7 @@ static void ov_procs__render_rows(
  * @m:   Data model containing processes
  * @rel: Related items bitmasks
  */
-void ov_render_procs_panel(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel)
+void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
 {
     OV_RECT r = lay->r_procs;
 

@@ -97,8 +97,7 @@ int ov_help_nb_sections(void)
  *
  * Return: Short section name string.
  */
-const char *ov_help_section_name(
-    int sec)
+const char *ov_help_section_name(int sec)
 {
     switch (sec)
     {
@@ -131,8 +130,7 @@ const char *ov_help_section_name(
  *
  * Return: Corresponding section index (HS_STREAMS, HS_PROCS, etc.).
  */
-int ov_help_focus_section(
-    ov_focus_t focus)
+int ov_help_focus_section(ov_focus_t focus)
 {
     switch (focus)
     {
@@ -155,8 +153,7 @@ int ov_help_focus_section(
  *
  * Return: Short uppercase badge string.
  */
-const char *ov_help_section_tag(
-    int sec)
+const char *ov_help_section_tag(int sec)
 {
     switch (sec)
     {
@@ -189,8 +186,7 @@ const char *ov_help_section_tag(
  *
  * Return: Theme ov_rgb_t color.
  */
-ov_rgb_t ov_help_section_color(
-    int sec)
+ov_rgb_t ov_help_section_color(int sec)
 {
     switch (sec)
     {

@@ -15,9 +15,7 @@
  *
  * Return: Stream index in @model->streams, or -1 if not found.
  */
-int ov_find_stream_by_inode(
-    const OV_MODEL *model,
-    ino_t           inode)
+int ov_find_stream_by_inode(const OV_MODEL *model, ino_t inode)
 {
     if (inode == 0)
     {
@@ -40,9 +38,7 @@ int ov_find_stream_by_inode(
  *
  * Return: Stream index in @model->streams, or -1 if not found.
  */
-int ov_find_stream_by_name(
-    const OV_MODEL *model,
-    const char     *name)
+int ov_find_stream_by_name(const OV_MODEL *model, const char *name)
 {
     if (name == NULL || name[0] == '\0')
     {
@@ -65,9 +61,7 @@ int ov_find_stream_by_name(
  *
  * Return: Process index in @model->procs, or -1 if not found.
  */
-int ov_find_proc_by_pid(
-    const OV_MODEL *model,
-    pid_t           pid)
+int ov_find_proc_by_pid(const OV_MODEL *model, pid_t pid)
 {
     if (pid <= 0)
     {
@@ -96,12 +90,7 @@ int ov_find_proc_by_pid(
  * @type:  Relationship edge type
  * @label: Text label for edge
  */
-void ov_add_edge(
-    OV_MODEL       *model,
-    int             src,
-    int             tgt,
-    ov_edge_type_t  type,
-    const char     *label)
+void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, const char *label)
 {
     if (src < 0 || tgt < 0 || src == tgt)
     {

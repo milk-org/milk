@@ -24,9 +24,7 @@ volatile sig_atomic_t ov_sigTERM = 0;
  * @progname: Name of executable
  * @mh_color: Flag indicating whether color is enabled
  */
-static void print_help(
-    const char *progname,
-    int         mh_color)
+static void print_help(const char *progname, int mh_color)
 {
     milk_help_banner(progname, SI_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -42,8 +40,8 @@ static void print_help(
            mh_color ? MH_RST : "", "One-line description and exit");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-h2, --help-description",
            mh_color ? MH_RST : "", "Verbose description and exit");
-    printf("  %s%-25s%s %s\n\n", mh_color ? MH_OPT : "", "-hm, --help-mono",
-           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    printf("  %s%-25s%s %s\n\n", mh_color ? MH_OPT : "", "-hm, --help-mono", mh_color ? MH_RST : "",
+           "Full help, no ANSI color");
     milk_help_section("Examples", mh_color);
     printf("  %s$ milk-stream-info%s %sdm00disp%s\n\n", mh_color ? MH_CMD : "",
            mh_color ? MH_RST : "", mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
@@ -60,9 +58,7 @@ static void print_help(
  *
  * Return: 0 on success, non-zero on error.
  */
-int main(
-    int   argc,
-    char *argv[])
+int main(int argc, char *argv[])
 {
     int action = milk_help_init(argc, argv, SI_ONELINE, SI_DESC_LONG);
     if (action == MH_ACTION_H1 || action == MH_ACTION_H2)

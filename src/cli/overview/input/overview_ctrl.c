@@ -43,9 +43,7 @@ int pid_is_stopped(pid_t pid);
  *
  * Return: 0 on success, -1 on failure
  */
-static int ov_ctrl_fps_action(
-    const char *fps_name,
-    errno_t (*action)(FPS *))
+static int ov_ctrl_fps_action(const char *fps_name, errno_t (*action)(FPS *))
 {
     if (fps_name == NULL || action == NULL)
     {
@@ -73,9 +71,7 @@ static int ov_ctrl_fps_action(
  * @f:   FPS model entry
  * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_run_toggle(
-    const OV_FPS *f,
-    OV_CMDLOG    *log)
+void ov_ctrl_fps_run_toggle(const OV_FPS *f, OV_CMDLOG *log)
 {
     if (f == NULL || !f->valid)
     {
@@ -87,9 +83,8 @@ void ov_ctrl_fps_run_toggle(
         int rc = ov_ctrl_fps_action(f->name, functionparameter_RUNstop);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                           "FPS \"%s\" — RUNstop %s", f->name,
-                           rc == 0 ? "succeeded" : "failed");
+            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\" — RUNstop %s",
+                           f->name, rc == 0 ? "succeeded" : "failed");
         }
     }
     else
@@ -102,8 +97,7 @@ void ov_ctrl_fps_run_toggle(
         {
             if (log != NULL)
             {
-                ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                               "FPS \"%s\" — RUNstart connect failed",
+                ov_cmdlog_push(log, OV_CMDLOG_FAIL, "FPS \"%s\" — RUNstart connect failed",
                                f->name);
             }
             return;
@@ -133,9 +127,8 @@ void ov_ctrl_fps_run_toggle(
         int rc = (arc == RETURN_SUCCESS) ? 0 : -1;
         if (log != NULL)
         {
-            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                           "FPS \"%s\" — RUNstart %s", f->name,
-                           rc == 0 ? "succeeded" : "failed");
+            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\" — RUNstart %s",
+                           f->name, rc == 0 ? "succeeded" : "failed");
         }
     }
 }
@@ -145,9 +138,7 @@ void ov_ctrl_fps_run_toggle(
  * @f:   FPS model entry
  * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_conf_toggle(
-    const OV_FPS *f,
-    OV_CMDLOG    *log)
+void ov_ctrl_fps_conf_toggle(const OV_FPS *f, OV_CMDLOG *log)
 {
     if (f == NULL || !f->valid)
     {
@@ -159,9 +150,8 @@ void ov_ctrl_fps_conf_toggle(
         int rc = ov_ctrl_fps_action(f->name, functionparameter_CONFstop);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                           "FPS \"%s\" — CONFstop %s", f->name,
-                           rc == 0 ? "succeeded" : "failed");
+            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\" — CONFstop %s",
+                           f->name, rc == 0 ? "succeeded" : "failed");
         }
     }
     else
@@ -174,8 +164,7 @@ void ov_ctrl_fps_conf_toggle(
         {
             if (log != NULL)
             {
-                ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                               "FPS \"%s\" — CONFstart connect failed",
+                ov_cmdlog_push(log, OV_CMDLOG_FAIL, "FPS \"%s\" — CONFstart connect failed",
                                f->name);
             }
             return;
@@ -206,8 +195,7 @@ void ov_ctrl_fps_conf_toggle(
         if (log != NULL)
         {
             ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                           "FPS \"%s\" — CONFstart %s", f->name,
-                           rc == 0 ? "succeeded" : "failed");
+                           "FPS \"%s\" — CONFstart %s", f->name, rc == 0 ? "succeeded" : "failed");
         }
     }
 }
@@ -217,9 +205,7 @@ void ov_ctrl_fps_conf_toggle(
  * @s:   stream model entry
  * @log: command log (may be NULL)
  */
-void ov_ctrl_stream_delete(
-    const OV_STREAM *s,
-    OV_CMDLOG       *log)
+void ov_ctrl_stream_delete(const OV_STREAM *s, OV_CMDLOG *log)
 {
     if (s == NULL || !s->valid)
     {
@@ -233,9 +219,7 @@ void ov_ctrl_stream_delete(
     {
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Stream \"%s\" — delete failed (open)",
-                           s->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Stream \"%s\" — delete failed (open)", s->name);
         }
         return;
     }
@@ -256,8 +240,7 @@ void ov_ctrl_stream_delete(
     {
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Stream \"%s\" — delete failed (unlink)",
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Stream \"%s\" — delete failed (unlink)",
                            s->name);
         }
         return;
@@ -275,10 +258,7 @@ void ov_ctrl_stream_delete(
  * @sig: signal number
  * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_signal_pid(
-    const OV_FPS *f,
-    int           sig,
-    OV_CMDLOG    *log)
+void ov_ctrl_fps_signal_pid(const OV_FPS *f, int sig, OV_CMDLOG *log)
 {
     if (f == NULL)
     {
@@ -304,8 +284,8 @@ void ov_ctrl_fps_signal_pid(
         const char *signame = (sig == SIGTERM)   ? "SIGTERM"
                               : (sig == SIGKILL) ? "SIGKILL"
                                                  : "signal";
-        ov_cmdlog_push(log, ok ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "FPS \"%s\" — %s sent", f->name, signame);
+        ov_cmdlog_push(log, ok ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\" — %s sent", f->name,
+                       signame);
     }
 }
 
@@ -314,9 +294,7 @@ void ov_ctrl_fps_signal_pid(
  * @f:   FPS model entry
  * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_pause_toggle(
-    const OV_FPS *f,
-    OV_CMDLOG    *log)
+void ov_ctrl_fps_pause_toggle(const OV_FPS *f, OV_CMDLOG *log)
 {
     if (f == NULL)
     {
@@ -339,8 +317,7 @@ void ov_ctrl_fps_pause_toggle(
     }
     if (log != NULL)
     {
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "%s FPS \"%s\" — %s",
-                       stopped ? "⏯️" : "⏸️", f->name,
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "%s FPS \"%s\" — %s", stopped ? "⏯️" : "⏸️", f->name,
                        stopped ? "resumed" : "paused");
     }
 }
@@ -350,9 +327,7 @@ void ov_ctrl_fps_pause_toggle(
  * @f:   FPS model entry
  * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_remove(
-    const OV_FPS *f,
-    OV_CMDLOG    *log)
+void ov_ctrl_fps_remove(const OV_FPS *f, OV_CMDLOG *log)
 {
     if (f == NULL || !f->valid)
     {
@@ -367,9 +342,7 @@ void ov_ctrl_fps_remove(
     {
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "FPS \"%s\" — erase failed (connect)",
-                           f->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "FPS \"%s\" — erase failed (connect)", f->name);
         }
         return;
     }

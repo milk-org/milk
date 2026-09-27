@@ -14,9 +14,7 @@
  * @lay: Pointer to layout structure.
  * @r:   Bounding rectangle of FPS panel.
  */
-void ov_fps__render_header(
-    const OV_LAYOUT *lay,
-    OV_RECT          r)
+void ov_fps__render_header(const OV_LAYOUT *lay, OV_RECT r)
 {
     int hrow = r.row + 1;
     int hs   = lay->hscroll_fps;
@@ -118,13 +116,12 @@ void ov_fps__render_header(
  * @filt_n:   Count of matching FPS modules.
  * @max_rows: Maximum visible rows in panel.
  */
-void ov_fps__render_footer(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
-    OV_RECT          r,
-    const int       *fidx,
-    int              filt_n,
-    int              max_rows)
+void ov_fps__render_footer(const OV_LAYOUT *lay,
+                           const OV_MODEL  *m,
+                           OV_RECT          r,
+                           const int       *fidx,
+                           int              filt_n,
+                           int              max_rows)
 {
     /* Totals over ALL FPS */
     int     tot_conf  = 0;

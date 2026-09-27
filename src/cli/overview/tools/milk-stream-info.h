@@ -41,8 +41,6 @@
 #define C_WARN MH_ERR
 #define C_SEP MH_DFLT
 
-void print_stream_info(
-    const OV_MODEL *m,
-    int             si);
+void print_stream_info(const OV_MODEL *m, int si);
 
 #endif /* MILK_STREAM_INFO_H */

@@ -17,9 +17,7 @@
  * @lay: Pointer to layout structure.
  * @r:   Bounding rectangle of streams panel.
  */
-void ov_streams__render_header(
-    const OV_LAYOUT *lay,
-    OV_RECT          r)
+void ov_streams__render_header(const OV_LAYOUT *lay, OV_RECT r)
 {
     int hrow = r.row + 1;
     int hs   = lay->hscroll_stream;
@@ -128,13 +126,12 @@ void ov_streams__render_header(
  * @filt_n:   Number of streams currently visible after filtering.
  * @max_rows: Maximum visible data rows in panel.
  */
-void ov_streams__render_footer(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
-    OV_RECT          r,
-    const int       *filt_idx,
-    int              filt_n,
-    int              max_rows)
+void ov_streams__render_footer(const OV_LAYOUT *lay,
+                               const OV_MODEL  *m,
+                               OV_RECT          r,
+                               const int       *filt_idx,
+                               int              filt_n,
+                               int              max_rows)
 {
     /* Totals over ALL streams */
     double total_all_bps = 0.0;

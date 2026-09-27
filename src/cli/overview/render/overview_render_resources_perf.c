@@ -12,19 +12,26 @@
 #define skip_draw ((*line_idx) < lay->scroll_detail || (*ri) >= max_rows)
 
 #define H_ov_buf_pos(r, c) \
-    if (!(skip_draw)) ov_buf_pos(r, c)
+    if (!(skip_draw))      \
+    ov_buf_pos(r, c)
 #define H_ov_theme_bg(c) \
-    if (!(skip_draw)) ov_theme_bg(c)
+    if (!(skip_draw))    \
+    ov_theme_bg(c)
 #define H_ov_theme_fg(c) \
-    if (!(skip_draw)) ov_theme_fg(c)
+    if (!(skip_draw))    \
+    ov_theme_fg(c)
 #define H_ov_buf_bold() \
-    if (!(skip_draw)) ov_buf_bold()
+    if (!(skip_draw))   \
+    ov_buf_bold()
 #define H_ov_buf_reset_attr() \
-    if (!(skip_draw)) ov_buf_reset_attr()
+    if (!(skip_draw))         \
+    ov_buf_reset_attr()
 #define H_ov_buf_printf(...) \
-    if (!(skip_draw)) ov_buf_printf(__VA_ARGS__)
+    if (!(skip_draw))        \
+    ov_buf_printf(__VA_ARGS__)
 #define H_render_pad_spaces(n, w) \
-    if (!(skip_draw)) render_pad_spaces(n, w)
+    if (!(skip_draw))             \
+    render_pad_spaces(n, w)
 
 typedef struct
 {
@@ -90,14 +97,13 @@ static void detail_update_telemetry(pid_t target_pid, int64_t target_loopcnt)
  * @line_idx:   Logical line index for scrolling (in/out).
  * @max_rows:   Max visible rows.
  */
-void ov_render_resources_perf_section(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
-    pid_t            target_pid,
-    int              row,
-    int             *ri,
-    int             *line_idx,
-    int              max_rows)
+void ov_render_resources_perf_section(const OV_LAYOUT *lay,
+                                      const OV_MODEL  *m,
+                                      pid_t            target_pid,
+                                      int              row,
+                                      int             *ri,
+                                      int             *line_idx,
+                                      int              max_rows)
 {
     OV_RECT r = lay->r_graph;
 
@@ -191,8 +197,7 @@ void ov_render_resources_perf_section(
         /* Context switches */
         H_ov_buf_pos(row + (*ri), r.col + 1);
         H_ov_theme_fg(OV_FG_TEXT);
-        nb = snprintf(buf, sizeof(buf),
-                      "   Ctx Sw:  %4" PRIu64 " (Vol) / %4" PRIu64 " (Invol)",
+        nb = snprintf(buf, sizeof(buf), "   Ctx Sw:  %4" PRIu64 " (Vol) / %4" PRIu64 " (Invol)",
                       adv_stats.vol_ctxt, adv_stats.nonvol_ctxt);
         H_ov_buf_printf("%s", buf);
         H_render_pad_spaces(nb, r.width);
@@ -205,8 +210,7 @@ void ov_render_resources_perf_section(
         /* Page faults */
         H_ov_buf_pos(row + (*ri), r.col + 1);
         H_ov_theme_fg(OV_FG_TEXT);
-        nb = snprintf(buf, sizeof(buf),
-                      "   Faults:  %4" PRIu64 " (Min) / %4" PRIu64 " (Maj)",
+        nb = snprintf(buf, sizeof(buf), "   Faults:  %4" PRIu64 " (Min) / %4" PRIu64 " (Maj)",
                       adv_stats.minflt, adv_stats.majflt);
         H_ov_buf_printf("%s", buf);
         H_render_pad_spaces(nb, r.width);
@@ -261,8 +265,7 @@ void ov_render_resources_perf_section(
         {
             /* Per-iteration instructions + cache miss */
             H_ov_buf_pos(row + (*ri), r.col + 1);
-            int nb2 = snprintf(buf, sizeof(buf),
-                               "   Inst/Iter:  %.1f    Cache Miss/Iter: %.1f",
+            int nb2 = snprintf(buf, sizeof(buf), "   Inst/Iter:  %.1f    Cache Miss/Iter: %.1f",
                                perf_cnt.inst_per_loop, perf_cnt.cache_miss_per_loop);
             H_ov_buf_printf("%s", buf);
             H_render_pad_spaces(nb2, r.width);

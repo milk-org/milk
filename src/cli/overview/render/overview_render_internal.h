@@ -421,56 +421,51 @@ static inline void format_uptime(char *buf, int sz, int64_t secs)
 
 /* Panel header and footer sub-renderers */
 void ov_fps__render_header(const OV_LAYOUT *lay, OV_RECT r);
-void ov_fps__render_footer(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
-    OV_RECT          r,
-    const int       *fidx,
-    int              filt_n,
-    int              max_rows);
+void ov_fps__render_footer(const OV_LAYOUT *lay,
+                           const OV_MODEL  *m,
+                           OV_RECT          r,
+                           const int       *fidx,
+                           int              filt_n,
+                           int              max_rows);
 
 void ov_procs__render_header(const OV_LAYOUT *lay, OV_RECT r);
-void ov_procs__render_footer(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
-    OV_RECT          r,
-    const int       *pidx,
-    int              filt_n,
-    int              max_rows);
+void ov_procs__render_footer(const OV_LAYOUT *lay,
+                             const OV_MODEL  *m,
+                             OV_RECT          r,
+                             const int       *pidx,
+                             int              filt_n,
+                             int              max_rows);
 
-void ov_procs_render_single_row(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    int               row,
-    int               i,
-    int               fi,
-    int               pi,
-    int8_t            sdepth,
-    int               has_re,
-    const regex_t    *re,
-    OV_RECT           r);
+void ov_procs_render_single_row(const OV_LAYOUT  *lay,
+                                const OV_MODEL   *m,
+                                const OV_RELATED *rel,
+                                int               row,
+                                int               i,
+                                int               fi,
+                                int               pi,
+                                int8_t            sdepth,
+                                int               has_re,
+                                const regex_t    *re,
+                                OV_RECT           r);
 
 void ov_streams__render_header(const OV_LAYOUT *lay, OV_RECT r);
-void ov_streams__render_footer(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
-    OV_RECT          r,
-    const int       *sidx,
-    int              filt_n,
-    int              max_rows);
+void ov_streams__render_footer(const OV_LAYOUT *lay,
+                               const OV_MODEL  *m,
+                               OV_RECT          r,
+                               const int       *sidx,
+                               int              filt_n,
+                               int              max_rows);
 
-void ov_streams_render_single_row(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    int               row,
-    int               i,
-    int               fi,
-    int               si,
-    int8_t            sdepth,
-    int               has_re,
-    const regex_t    *re,
-    OV_RECT           r);
+void ov_streams_render_single_row(const OV_LAYOUT  *lay,
+                                  const OV_MODEL   *m,
+                                  const OV_RELATED *rel,
+                                  int               row,
+                                  int               i,
+                                  int               fi,
+                                  int               si,
+                                  int8_t            sdepth,
+                                  int               has_re,
+                                  const regex_t    *re,
+                                  OV_RECT           r);
 
 #endif /* OVERVIEW_RENDER_INTERNAL_H */

@@ -54,28 +54,25 @@
         (line_idx)++;                                    \
     } while (0)
 
-int ov_fps__render_detail_stream(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m,
-    int             ssel,
-    OV_RECT         r,
-    int             max_rows,
-    int             row);
+int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
+                                 const OV_MODEL *m,
+                                 int             ssel,
+                                 OV_RECT         r,
+                                 int             max_rows,
+                                 int             row);
 
-int ov_fps__render_detail_proc(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m,
-    int             psel,
-    OV_RECT         r,
-    int             max_rows,
-    int             row);
+int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
+                               const OV_MODEL *m,
+                               int             psel,
+                               OV_RECT         r,
+                               int             max_rows,
+                               int             row);
 
-int ov_fps__render_detail_fps(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m,
-    int             fsel,
-    OV_RECT         r,
-    int             max_rows,
-    int             row);
+int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
+                              const OV_MODEL *m,
+                              int             fsel,
+                              OV_RECT         r,
+                              int             max_rows,
+                              int             row);
 
 #endif /* OVERVIEW_RENDER_DETAIL_INTERNAL_H */

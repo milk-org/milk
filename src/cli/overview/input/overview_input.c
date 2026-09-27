@@ -193,7 +193,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         if (lay->mouse_hover)
         {
             ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
-                            "Warning: Hover uses extra CPU on slow connections");
+                           "Warning: Hover uses extra CPU on slow connections");
         }
         return 0;
     }

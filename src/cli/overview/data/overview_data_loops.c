@@ -26,16 +26,15 @@
  * @adj_cnt:        Count of outgoing edges per node
  * @total_explored: Pointer to running counter of explored states
  */
-static void dfs_search_cycles(
-    OV_MODEL  *model,
-    int        start_node,
-    int        curr_node,
-    int        depth,
-    int       *path,
-    uint8_t   *in_path,
-    const int  adj[OV_MAX_NODES][64],
-    const int  adj_cnt[OV_MAX_NODES],
-    int       *total_explored)
+static void dfs_search_cycles(OV_MODEL *model,
+                              int       start_node,
+                              int       curr_node,
+                              int       depth,
+                              int      *path,
+                              uint8_t  *in_path,
+                              const int adj[OV_MAX_NODES][64],
+                              const int adj_cnt[OV_MAX_NODES],
+                              int      *total_explored)
 {
     if (model->nb_loops >= OV_MAX_LOOPS || *total_explored > 4096)
     {

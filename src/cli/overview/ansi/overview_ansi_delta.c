@@ -11,12 +11,11 @@
  * @emit_bg:   Current terminal background color pointer
  * @emit_ul:   Current terminal underline color pointer
  */
-static void ov_buf_emit_sgr_delta(
-    const OV_CELL *sc,
-    uint8_t       *emit_attr,
-    uint32_t      *emit_fg,
-    uint32_t      *emit_bg,
-    uint32_t      *emit_ul)
+static void ov_buf_emit_sgr_delta(const OV_CELL *sc,
+                                  uint8_t       *emit_attr,
+                                  uint32_t      *emit_fg,
+                                  uint32_t      *emit_bg,
+                                  uint32_t      *emit_ul)
 {
     int need_reset =
         ((*emit_attr & ~sc->attr) != 0 ||
@@ -190,9 +189,7 @@ static void ov_buf_emit_sgr_delta(
  * Emits cursor movements and minimal SGR styling deltas to stdout, utilizing
  * synchronized update escapes (mode 2026) to prevent screen tearing.
  */
-void ov_buf_flush_delta(
-    int term_rows,
-    int term_cols)
+void ov_buf_flush_delta(int term_rows, int term_cols)
 {
     int      emit_cursor_r = -1;
     int      emit_cursor_c = -1;

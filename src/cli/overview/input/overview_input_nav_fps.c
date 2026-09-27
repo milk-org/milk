@@ -19,10 +19,7 @@
  *
  * Return: 1 if key was consumed, 0 otherwise.
  */
-int ov_input_nav_fps(
-    int             key,
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+int ov_input_nav_fps(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     int fsel       = lay->sel_fps;
     int has_params = (fsel >= 0 && fsel < m->nb_fps && m->fps[fsel].nb_disp_params > 0);
@@ -36,8 +33,7 @@ int ov_input_nav_fps(
 
     /* RIGHT from list -> enter param panel */
     if (lay->fps_param_focus == 0 &&
-        (key == OV_KEY_RIGHT || key == OV_KEY_ENTER || key == '\r' || key == '\n') &&
-        has_params)
+        (key == OV_KEY_RIGHT || key == OV_KEY_ENTER || key == '\r' || key == '\n') && has_params)
     {
         lay->fps_param_focus = 1;
         if (nitems > 0)
@@ -99,13 +95,12 @@ int ov_input_nav_fps(
                 if (has_params)
                 {
                     fps_tree_item_t parent_items[1024];
-                    int             n_parent_items = ov_get_fps_tree_items(
-                        &m->fps[fsel], lay->fps_param_path, parent_items, 1024);
+                    int n_parent_items = ov_get_fps_tree_items(&m->fps[fsel], lay->fps_param_path,
+                                                               parent_items, 1024);
 
                     for (int i = 0; i < n_parent_items; i++)
                     {
-                        if (parent_items[i].is_dir &&
-                            strcmp(parent_items[i].name, exited_dir) == 0)
+                        if (parent_items[i].is_dir && strcmp(parent_items[i].name, exited_dir) == 0)
                         {
                             found_sel = i;
                             break;
@@ -186,8 +181,7 @@ int ov_input_nav_fps(
                     /* Descend directory */
                     if (lay->fps_param_path[0] == '\0')
                     {
-                        strncpy(lay->fps_param_path, item->name,
-                                sizeof(lay->fps_param_path) - 1);
+                        strncpy(lay->fps_param_path, item->name, sizeof(lay->fps_param_path) - 1);
                     }
                     else
                     {

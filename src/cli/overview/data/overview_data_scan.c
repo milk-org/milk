@@ -15,9 +15,9 @@
  * active FPS mappings, and free cached processinfo entries.
  */
 
-struct timespec s_shm_mtime  = {0, 0};
-struct timespec s_fps_mtime  = {0, 0};
-struct timespec s_proc_mtime = {0, 0};
+struct timespec s_shm_mtime   = { 0, 0 };
+struct timespec s_fps_mtime   = { 0, 0 };
+struct timespec s_proc_mtime  = { 0, 0 };
 double          s_scan_dt_sec = 0.0;
 
 void ov_scan_cache_cleanup(void)

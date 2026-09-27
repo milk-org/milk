@@ -38,10 +38,7 @@ int utf8_char_length(unsigned char c)
  *
  * Return: Number of consumed bytes, or 0 on error.
  */
-int ov_utf8_decode(
-    const char *s,
-    int         len,
-    uint32_t   *cp)
+int ov_utf8_decode(const char *s, int len, uint32_t *cp)
 {
     if (len <= 0)
     {
@@ -83,11 +80,7 @@ int ov_utf8_decode(
  *
  * Return: 1 if cluster extracted, 0 on end of string or error.
  */
-int ov_utf8_next_cluster(
-    const char *s,
-    int         max_len,
-    int        *bytes_out,
-    int        *width_out)
+int ov_utf8_next_cluster(const char *s, int max_len, int *bytes_out, int *width_out)
 {
     if (max_len <= 0 || s[0] == '\0')
     {

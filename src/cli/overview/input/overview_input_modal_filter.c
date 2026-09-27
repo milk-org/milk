@@ -19,10 +19,7 @@
  *
  * Return: 1 if key was consumed, 0 otherwise.
  */
-int ov_input__handle_filter_mode(
-    int              key,
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m)
+int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     char *active_filter = lay->filter;
 

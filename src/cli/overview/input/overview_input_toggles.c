@@ -16,9 +16,7 @@
  *
  * Return: 1 if key was consumed, 0 otherwise.
  */
-int ov_input__handle_view_switch(
-    int        key,
-    OV_LAYOUT *lay)
+int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
 {
     if (key >= OV_KEY_F2 && key <= OV_KEY_F7)
     {
@@ -117,10 +115,7 @@ int ov_input__handle_view_switch(
  *
  * Return: 1 if key was consumed, 0 otherwise.
  */
-int ov_input__handle_misc_toggles(
-    int             key,
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (key == '+' || key == '=')
     {
@@ -229,8 +224,7 @@ int ov_input__handle_misc_toggles(
     if (key == 'F')
     {
         lay->paused = !lay->paused;
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s Display %s",
-                       lay->paused ? "⏸️" : "▶️",
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s Display %s", lay->paused ? "⏸️" : "▶️",
                        lay->paused ? "paused" : "resumed");
         return 1;
     }
@@ -249,15 +243,13 @@ int ov_input__handle_misc_toggles(
         lay->theme_popup_active = 1;
         clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
         const ov_theme_t *th = ov_theme_get_active();
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)",
-                       th->name, th->desc);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name, th->desc);
         return 1;
     }
 
     /* Loop filter toggle on Enter when on Loops */
     if ((key == '\n' || key == '\r' || key == 10 || key == 13) &&
-        (lay->view == OV_VIEW_LOOPS ||
-         (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 1)))
+        (lay->view == OV_VIEW_LOOPS || (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 1)))
     {
         lay->loop_filter_active = !lay->loop_filter_active;
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
@@ -267,15 +259,13 @@ int ov_input__handle_misc_toggles(
     }
 
     /* Graph jump on Enter (must be before detail mode toggle) */
-    if ((key == '\n' || key == '\r') &&
-        lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 0)
+    if ((key == '\n' || key == '\r') && lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 0)
     {
         int start_node = ov_input_get_graph_start_node(lay, m);
         if (start_node >= 0)
         {
             SG_RENDER_NODE rnodes[OV_MAX_NODES];
-            int n_rnodes = sg_compute_render_nodes(m, start_node,
-                                                   lay->lineage_mode, rnodes);
+            int n_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
             if (lay->sel_graph < n_rnodes)
             {
                 const SG_RENDER_NODE *rn   = &rnodes[lay->sel_graph];

@@ -12,19 +12,26 @@
 #define skip_draw (line_idx < lay->scroll_detail || ri >= max_rows)
 
 #define H_ov_buf_pos(r, c) \
-    if (!(skip_draw)) ov_buf_pos(r, c)
+    if (!(skip_draw))      \
+    ov_buf_pos(r, c)
 #define H_ov_theme_bg(c) \
-    if (!(skip_draw)) ov_theme_bg(c)
+    if (!(skip_draw))    \
+    ov_theme_bg(c)
 #define H_ov_theme_fg(c) \
-    if (!(skip_draw)) ov_theme_fg(c)
+    if (!(skip_draw))    \
+    ov_theme_fg(c)
 #define H_ov_buf_bold() \
-    if (!(skip_draw)) ov_buf_bold()
+    if (!(skip_draw))   \
+    ov_buf_bold()
 #define H_ov_buf_reset_attr() \
-    if (!(skip_draw)) ov_buf_reset_attr()
+    if (!(skip_draw))         \
+    ov_buf_reset_attr()
 #define H_ov_buf_printf(...) \
-    if (!(skip_draw)) ov_buf_printf(__VA_ARGS__)
+    if (!(skip_draw))        \
+    ov_buf_printf(__VA_ARGS__)
 #define H_render_pad_spaces(n, w) \
-    if (!(skip_draw)) render_pad_spaces(n, w)
+    if (!(skip_draw))             \
+    render_pad_spaces(n, w)
 
 /**
  * ov_render_resources_panel - render system hardware, thread affinity, and perf metrics panel.
@@ -33,9 +40,7 @@
  *
  * Return: 1 if panel was rendered, 0 otherwise.
  */
-int ov_render_resources_panel(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_RECT r        = lay->r_graph;
     int     max_rows = r.height - 2;
@@ -153,15 +158,15 @@ int ov_render_resources_panel(
         {
             if (policy == SCHED_FIFO || policy == SCHED_RR)
             {
-                n = snprintf(NULL, 0, " %s  (PID %d, %s prio %d)", target_name,
-                             (int) target_pid, policy_name, priority);
+                n = snprintf(NULL, 0, " %s  (PID %d, %s prio %d)", target_name, (int) target_pid,
+                             policy_name, priority);
                 H_ov_buf_printf(" %s  (PID %d, %s prio %d)", target_name, (int) target_pid,
                                 policy_name, priority);
             }
             else
             {
-                n = snprintf(NULL, 0, " %s  (PID %d, %s nice %d)", target_name,
-                             (int) target_pid, policy_name, priority);
+                n = snprintf(NULL, 0, " %s  (PID %d, %s nice %d)", target_name, (int) target_pid,
+                             policy_name, priority);
                 H_ov_buf_printf(" %s  (PID %d, %s nice %d)", target_name, (int) target_pid,
                                 policy_name, priority);
             }
@@ -194,7 +199,7 @@ int ov_render_resources_panel(
 
         /* Memory values */
         uint64_t vm_size = 0, vm_rss = 0;
-        char stat_path[256];
+        char     stat_path[256];
         snprintf(stat_path, sizeof(stat_path), "/proc/%d/statm", (int) target_pid);
         FILE *fp = fopen(stat_path, "r");
         if (fp)

@@ -98,9 +98,7 @@ void ov_set_mouse_hover(int enable)
  * @rows: Output pointer for number of terminal rows
  * @cols: Output pointer for number of terminal columns
  */
-void ov_get_terminal_size(
-    int *rows,
-    int *cols)
+void ov_get_terminal_size(int *rows, int *cols)
 {
     struct winsize ws;
     *rows = 24;

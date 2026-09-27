@@ -19,17 +19,16 @@
  * @filt_n:        Count of matching FPS modules.
  * @active_filter: Active filter string.
  */
-static void ov_fps__render_rows(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    OV_RECT           r,
-    const int        *fidx,
-    int               filt_n,
-    const char       *active_filter)
+static void ov_fps__render_rows(const OV_LAYOUT  *lay,
+                                const OV_MODEL   *m,
+                                const OV_RELATED *rel,
+                                OV_RECT           r,
+                                const int        *fidx,
+                                int               filt_n,
+                                const char       *active_filter)
 {
-    int hrow = r.row + 1;
-    int hs   = lay->hscroll_fps;
+    int    hrow = r.row + 1;
+    int    hs   = lay->hscroll_fps;
     int8_t local_depth[OV_MAX_FPS];
     memset(local_depth, 0, sizeof(local_depth));
     {
@@ -249,46 +248,45 @@ static void ov_fps__render_rows(
         vcol++;                                                                      \
     } while (0)
 
-#define FPS_PID_FIELD(pid_val, fmt, ...) \
-    do \
-    { \
-        pid_t    _pval    = (pid_t) (pid_val); \
-        int      _match   = (_spid > 0 && _pval == _spid); \
-        int      _idx     = ov_find_proc_by_pid(m, _pval); \
-        int      _crashed = (_idx >= 0 && \
-                             m->procs[_idx].loopstat == PROCESSINFO_LOOPSTAT_CRASHED); \
-        ov_rgb_t prev_bg  = cell_bg; \
-        if (_match) \
-        { \
-            if (_crashed) \
-            { \
-                cell_bg = OV_FG_ERROR; \
-            } \
-            else \
-            { \
-                cell_bg = OV_BG_PID_MATCH; \
-            } \
-            ov_buf_bold(); \
-        } \
-        ov_rgb_t _fg; \
-        if (_crashed) \
-        { \
-            _fg = _match ? (ov_rgb_t) { 255, 255, 255 } : OV_FG_ERROR; \
-        } \
-        else if (_match) \
-        { \
-            _fg = (ov_rgb_t) { 0, 0, 0 }; \
-        } \
-        else \
-        { \
-            _fg = ov_pid_color(_pval); \
-        } \
-        FPS_FIELD(_fg, fmt, ##__VA_ARGS__); \
-        if (_match) \
-        { \
-            ov_buf_reset_attr(); \
-            cell_bg = prev_bg; \
-        } \
+#define FPS_PID_FIELD(pid_val, fmt, ...)                                                            \
+    do                                                                                              \
+    {                                                                                               \
+        pid_t    _pval    = (pid_t) (pid_val);                                                      \
+        int      _match   = (_spid > 0 && _pval == _spid);                                          \
+        int      _idx     = ov_find_proc_by_pid(m, _pval);                                          \
+        int      _crashed = (_idx >= 0 && m->procs[_idx].loopstat == PROCESSINFO_LOOPSTAT_CRASHED); \
+        ov_rgb_t prev_bg  = cell_bg;                                                                \
+        if (_match)                                                                                 \
+        {                                                                                           \
+            if (_crashed)                                                                           \
+            {                                                                                       \
+                cell_bg = OV_FG_ERROR;                                                              \
+            }                                                                                       \
+            else                                                                                    \
+            {                                                                                       \
+                cell_bg = OV_BG_PID_MATCH;                                                          \
+            }                                                                                       \
+            ov_buf_bold();                                                                          \
+        }                                                                                           \
+        ov_rgb_t _fg;                                                                               \
+        if (_crashed)                                                                               \
+        {                                                                                           \
+            _fg = _match ? (ov_rgb_t) { 255, 255, 255 } : OV_FG_ERROR;                              \
+        }                                                                                           \
+        else if (_match)                                                                            \
+        {                                                                                           \
+            _fg = (ov_rgb_t) { 0, 0, 0 };                                                           \
+        }                                                                                           \
+        else                                                                                        \
+        {                                                                                           \
+            _fg = ov_pid_color(_pval);                                                              \
+        }                                                                                           \
+        FPS_FIELD(_fg, fmt, ##__VA_ARGS__);                                                         \
+        if (_match)                                                                                 \
+        {                                                                                           \
+            ov_buf_reset_attr();                                                                    \
+            cell_bg = prev_bg;                                                                      \
+        }                                                                                           \
     } while (0)
 
             pid_t    _spid   = (rel != NULL) ? rel->sel_pid : 0;
@@ -465,10 +463,7 @@ static void ov_fps__render_rows(
  * @m:   Pointer to current data model snapshot.
  * @rel: Pointer to relationship lookup tables.
  */
-void ov_render_fps_panel(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel)
+void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
 {
     OV_RECT r = lay->r_fps;
 
