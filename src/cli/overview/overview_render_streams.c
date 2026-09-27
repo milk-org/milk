@@ -56,30 +56,16 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         filt_n = new_filt_n;
     }
 
-    /* Panel title with filter indicator */
+    /* Panel title with prominent filter indicator */
     {
-        char title[128];
-        if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-        {
-            snprintf(title, sizeof(title), "STREAMS [LOOP L%02d] (%d/%d)",
-                     lay->sel_loop + 1, filt_n, m->nb_streams);
-        }
-        else if (active_filter[0] != '\0')
-        {
-            snprintf(title, sizeof(title), "STREAMS [FILTER ON: /%s/] (%d/%d)",
-                     active_filter, filt_n, m->nb_streams);
-        }
-        else if (lay->filter_stream[0] != '\0')
-        {
-            snprintf(title, sizeof(title), "STREAMS [FILTER OFF: /%s/] (%d)",
-                     lay->filter_stream, m->nb_streams);
-        }
-        else
-        {
-            snprintf(title, sizeof(title), "STREAMS (%d)", m->nb_streams);
-        }
-        ov_draw_panel_border(r.row, r.col, r.height, r.width, title, OV_FG_STREAM,
-                             lay->focus == OV_FOCUS_STREAMS, 0);
+        int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 &&
+                       lay->sel_loop < m->nb_loops)
+                          ? lay->sel_loop + 1
+                          : -1;
+        ov_draw_panel_border_filter(
+            r.row, r.col, r.height, r.width, "STREAMS", OV_FG_STREAM,
+            lay->focus == OV_FOCUS_STREAMS, 0, lay->ctrl_blink, loop_id,
+            lay->filter_stream, lay->filter_stream_active, filt_n, m->nb_streams);
     }
 
     int hrow = r.row + 1;

@@ -55,28 +55,14 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
         filt_n = new_filt_n;
     }
 
-    char title[128];
-    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-    {
-        snprintf(title, sizeof(title), "FPS [LOOP L%02d] (%d/%d)",
-                 m->loops[lay->sel_loop].loop_id, filt_n, m->nb_fps);
-    }
-    else if (active_filter[0] != '\0')
-    {
-        snprintf(title, sizeof(title), "FPS [FILTER ON: /%s/] (%d/%d)",
-                 active_filter, filt_n, m->nb_fps);
-    }
-    else if (lay->filter_fps[0] != '\0')
-    {
-        snprintf(title, sizeof(title), "FPS [FILTER OFF: /%s/] (%d)",
-                 lay->filter_fps, m->nb_fps);
-    }
-    else
-    {
-        snprintf(title, sizeof(title), "FPS (%d)", m->nb_fps);
-    }
-    ov_draw_panel_border(r.row, r.col, r.height, r.width, title, OV_FG_FPS,
-                         lay->focus == OV_FOCUS_FPS, 0);
+    int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 &&
+                   lay->sel_loop < m->nb_loops)
+                      ? m->loops[lay->sel_loop].loop_id
+                      : -1;
+    ov_draw_panel_border_filter(
+        r.row, r.col, r.height, r.width, "FPS", OV_FG_FPS,
+        lay->focus == OV_FOCUS_FPS, 0, lay->ctrl_blink, loop_id,
+        lay->filter_fps, lay->filter_fps_active, filt_n, m->nb_fps);
 
     int hrow = r.row + 1;
     int hs   = lay->hscroll_fps;

@@ -768,29 +768,14 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
     regex_t re;
     int     filt_n = ov_procs__filter(lay, m, rel, filt_idx, &has_re, &re);
 
-    char        title[128];
-    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
-    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-    {
-        snprintf(title, sizeof(title), "PROCESSINFO [LOOP L%02d] (%d/%d)",
-                 m->loops[lay->sel_loop].loop_id, filt_n, m->nb_procs);
-    }
-    else if (active_filter[0] != '\0')
-    {
-        snprintf(title, sizeof(title), "PROCESSINFO [FILTER ON: /%s/] (%d/%d)",
-                 active_filter, filt_n, m->nb_procs);
-    }
-    else if (lay->filter_proc[0] != '\0')
-    {
-        snprintf(title, sizeof(title), "PROCESSINFO [FILTER OFF: /%s/] (%d)",
-                 lay->filter_proc, m->nb_procs);
-    }
-    else
-    {
-        snprintf(title, sizeof(title), "PROCESSINFO (%d)", m->nb_procs);
-    }
-    ov_draw_panel_border(r.row, r.col, r.height, r.width, title, OV_FG_PROC,
-                         lay->focus == OV_FOCUS_PROCS, 0);
+    int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 &&
+                   lay->sel_loop < m->nb_loops)
+                      ? m->loops[lay->sel_loop].loop_id
+                      : -1;
+    ov_draw_panel_border_filter(
+        r.row, r.col, r.height, r.width, "PROCESSINFO", OV_FG_PROC,
+        lay->focus == OV_FOCUS_PROCS, 0, lay->ctrl_blink, loop_id,
+        lay->filter_proc, lay->filter_proc_active, filt_n, m->nb_procs);
 
     int hrow = r.row + 1;
     int hs   = lay->hscroll_proc;

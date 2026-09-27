@@ -147,6 +147,11 @@ typedef struct
     int        filter_editing;       /* 1 = typing filter */
     int        filter_cursor;        /* cursor pos in filter */
     int        filter_jump;          /* 1 = jump-to-match mode */
+    /* Header filter badge hit rects / positions */
+    int        r_filter_start[4];
+    int        r_filter_width[4];
+    ov_focus_t r_filter_panel[4];
+    int        r_filter_count;
     /* Multi-select state for FPS batch ops (#8) */
     uint8_t multi_sel_fps[200]; /* per-FPS select */
     int     multi_sel_count;    /* count of selected */

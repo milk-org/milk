@@ -423,85 +423,199 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         hover_w = 16; /* visual width of " [m] HOVER: OFF " */
     }
 
-    ov_buf_printf(" ");
-    int         filter_w = 0;
-    ov_focus_t  fpanel   = ov_get_effective_filter_panel(lay);
-    const char *pname    = (fpanel == OV_FOCUS_STREAMS) ? "STRM"
-                           : (fpanel == OV_FOCUS_PROCS) ? "PROC"
-                           : (fpanel == OV_FOCUS_FPS)   ? "FPS"
-                                                        : "FILTER";
-    const char *fpat     = (fpanel != OV_FOCUS_GRAPH) ? ov_get_panel_filter_pattern(lay, fpanel)
-                                                      : ov_get_filter_pattern(lay);
-    int is_act           = (fpanel != OV_FOCUS_GRAPH) ? ov_is_panel_filter_active(lay, fpanel)
-                                                      : ov_is_filter_active(lay);
+    int filter_w = 0;
+    lay->r_filter_count = 0;
+    int b_start = 17 + (int) strlen(MILK_GIT_COMMIT) + 3 + (int) strlen(shmdir) + 8 +
+                  1 + ctrl_w + 1 + hover_w + 1;
 
-    if (is_act)
+    ov_focus_t fpanel = ov_get_effective_filter_panel(lay);
+
+    if (lay->view == OV_VIEW_DASHBOARD)
     {
-        /* Software blinking badge for "FILTER ON" (fast 2.5Hz blink) */
-        if ((lay->ctrl_blink % 4) < 2)
+        ov_focus_t  d_panels[3] = { OV_FOCUS_STREAMS, OV_FOCUS_PROCS, OV_FOCUS_FPS };
+        const char *d_pnames[3] = { "STRM", "PROC", "FPS" };
+
+        for (int p = 0; p < 3; p++)
         {
-            ov_buf_bg(255, 190, 0);   /* bright amber/gold */
-            ov_buf_fg(20, 20, 20);    /* dark text */
+            ov_focus_t  curr_p  = d_panels[p];
+            const char *curr_nm = d_pnames[p];
+            const char *fpat    = ov_get_panel_filter_pattern(lay, curr_p);
+            int         is_act  = ov_is_panel_filter_active(lay, curr_p);
+            int         is_foc  = (fpanel == curr_p);
+
+            ov_buf_printf(" ");
+            filter_w++;
+
+            char fbadge[64];
+            if (is_act)
+            {
+                if (is_foc)
+                {
+                    if ((lay->ctrl_blink % 4) < 2)
+                    {
+                        ov_buf_bg(255, 190, 0);   /* bright amber/gold */
+                        ov_buf_fg(20, 20, 20);    /* dark text */
+                    }
+                    else
+                    {
+                        ov_buf_bg(230, 80, 20);   /* vibrant red-orange */
+                        ov_buf_fg(255, 255, 255); /* white text */
+                    }
+                    snprintf(fbadge, sizeof(fbadge), " [f] %s: /%.8s/ ", curr_nm, fpat);
+                }
+                else
+                {
+                    /* Unselected panel: solid vivid amber pill */
+                    ov_buf_bg(220, 130, 20);
+                    ov_buf_fg(255, 255, 255);
+                    snprintf(fbadge, sizeof(fbadge), " %s: /%.8s/ ", curr_nm, fpat);
+                }
+                ov_buf_bold();
+                ov_buf_printf("%s", fbadge);
+                ov_buf_reset_attr();
+                ov_theme_bg(OV_BG_HEADER);
+            }
+            else if (fpat[0] != '\0')
+            {
+                ov_theme_bg(OV_BG_PANEL_ALT);
+                ov_theme_fg(OV_FG_WARN);
+                ov_buf_bold();
+                if (is_foc)
+                {
+                    snprintf(fbadge, sizeof(fbadge), " [f] %s: OFF (/%.6s/) ", curr_nm, fpat);
+                }
+                else
+                {
+                    snprintf(fbadge, sizeof(fbadge), " %s: OFF ", curr_nm);
+                }
+                ov_buf_printf("%s", fbadge);
+                ov_buf_reset_attr();
+                ov_theme_bg(OV_BG_HEADER);
+            }
+            else
+            {
+                ov_theme_bg(OV_BG_PANEL);
+                ov_theme_fg(OV_FG_DIM);
+                ov_buf_bold();
+                if (is_foc)
+                {
+                    snprintf(fbadge, sizeof(fbadge), " [/] %s: ALL ", curr_nm);
+                }
+                else
+                {
+                    snprintf(fbadge, sizeof(fbadge), " %s: ALL ", curr_nm);
+                }
+                ov_buf_printf("%s", fbadge);
+                ov_buf_reset_attr();
+                ov_theme_bg(OV_BG_HEADER);
+            }
+
+            int bw = (int) strlen(fbadge);
+            if (lay->r_filter_count < 4)
+            {
+                lay->r_filter_start[lay->r_filter_count] = b_start;
+                lay->r_filter_width[lay->r_filter_count] = bw;
+                lay->r_filter_panel[lay->r_filter_count] = curr_p;
+                lay->r_filter_count++;
+            }
+            b_start += bw + 1;
+            filter_w += bw;
         }
-        else
-        {
-            ov_buf_bg(230, 80, 20);   /* vibrant red-orange */
-            ov_buf_fg(255, 255, 255); /* white text */
-        }
-        ov_buf_bold();
-        char fbadge[64];
-        if (fpanel != OV_FOCUS_GRAPH)
-        {
-            snprintf(fbadge, sizeof(fbadge), " [f] %s: /%.10s/ ", pname, fpat);
-        }
-        else
-        {
-            snprintf(fbadge, sizeof(fbadge), " [f] FILTER ON: /%.12s/ ", fpat);
-        }
-        filter_w = (int) strlen(fbadge);
-        ov_buf_printf("%s", fbadge);
-        ov_buf_reset_attr();
-        ov_theme_bg(OV_BG_HEADER);
-    }
-    else if (fpat[0] != '\0')
-    {
-        /* Defined but paused filter badge: shows retained query */
-        ov_theme_bg(OV_BG_PANEL_ALT);
-        ov_theme_fg(OV_FG_WARN);
-        ov_buf_bold();
-        char fbadge[64];
-        if (fpanel != OV_FOCUS_GRAPH)
-        {
-            snprintf(fbadge, sizeof(fbadge), " [f] %s: OFF (/%.8s/) ", pname, fpat);
-        }
-        else
-        {
-            snprintf(fbadge, sizeof(fbadge), " [f] FILTER: OFF (/%.12s/) ", fpat);
-        }
-        filter_w = (int) strlen(fbadge);
-        ov_buf_printf("%s", fbadge);
-        ov_buf_reset_attr();
-        ov_theme_bg(OV_BG_HEADER);
     }
     else
     {
-        /* Inactive / empty filter badge */
-        ov_theme_bg(OV_BG_PANEL);
-        ov_theme_fg(OV_FG_DIM);
-        ov_buf_bold();
+        /* Dedicated or graph view: show focused panel filter badge */
+        const char *pname  = (fpanel == OV_FOCUS_STREAMS) ? "STRM"
+                             : (fpanel == OV_FOCUS_PROCS) ? "PROC"
+                             : (fpanel == OV_FOCUS_FPS)   ? "FPS"
+                                                          : "FILTER";
+        const char *fpat   = (fpanel != OV_FOCUS_GRAPH) ? ov_get_panel_filter_pattern(lay, fpanel)
+                                                        : ov_get_filter_pattern(lay);
+        int         is_act = (fpanel != OV_FOCUS_GRAPH) ? ov_is_panel_filter_active(lay, fpanel)
+                                                        : ov_is_filter_active(lay);
+
+        ov_buf_printf(" ");
+        filter_w++;
+
         char fbadge[64];
-        if (fpanel != OV_FOCUS_GRAPH)
+        if (is_act)
         {
-            snprintf(fbadge, sizeof(fbadge), " [/] %s: ALL ", pname);
+            if ((lay->ctrl_blink % 4) < 2)
+            {
+                ov_buf_bg(255, 190, 0);
+                ov_buf_fg(20, 20, 20);
+            }
+            else
+            {
+                ov_buf_bg(230, 80, 20);
+                ov_buf_fg(255, 255, 255);
+            }
+            ov_buf_bold();
+            snprintf(fbadge, sizeof(fbadge), " [f] %s: /%.10s/ ", pname, fpat);
+            ov_buf_printf("%s", fbadge);
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_HEADER);
+        }
+        else if (fpat[0] != '\0')
+        {
+            ov_theme_bg(OV_BG_PANEL_ALT);
+            ov_theme_fg(OV_FG_WARN);
+            ov_buf_bold();
+            snprintf(fbadge, sizeof(fbadge), " [f] %s: OFF (/%.8s/) ", pname, fpat);
+            ov_buf_printf("%s", fbadge);
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_HEADER);
         }
         else
         {
-            snprintf(fbadge, sizeof(fbadge), " [/] FILTER: OFF ");
+            ov_theme_bg(OV_BG_PANEL);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_bold();
+            snprintf(fbadge, sizeof(fbadge), " [/] %s: ALL ", pname);
+            ov_buf_printf("%s", fbadge);
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_HEADER);
         }
-        filter_w = (int) strlen(fbadge);
-        ov_buf_printf("%s", fbadge);
-        ov_buf_reset_attr();
-        ov_theme_bg(OV_BG_HEADER);
+
+        int bw = (int) strlen(fbadge);
+        lay->r_filter_start[0] = b_start;
+        lay->r_filter_width[0] = bw;
+        lay->r_filter_panel[0] = fpanel;
+        lay->r_filter_count    = 1;
+        b_start += bw + 1;
+        filter_w += bw;
+
+        /* Also show alert pills for any other panels with active filters */
+        ov_focus_t  bg_panels[3] = { OV_FOCUS_STREAMS, OV_FOCUS_PROCS, OV_FOCUS_FPS };
+        const char *bg_names[3]  = { "STRM", "PROC", "FPS" };
+        for (int p = 0; p < 3; p++)
+        {
+            if (bg_panels[p] != fpanel && ov_is_panel_filter_active(lay, bg_panels[p]))
+            {
+                const char *bg_pat = ov_get_panel_filter_pattern(lay, bg_panels[p]);
+                char        bg_badge[64];
+                snprintf(bg_badge, sizeof(bg_badge), " %s: /%.8s/ ", bg_names[p], bg_pat);
+                ov_buf_printf(" ");
+                filter_w++;
+                ov_buf_bold();
+                ov_buf_bg(220, 130, 20);
+                ov_buf_fg(255, 255, 255);
+                ov_buf_printf("%s", bg_badge);
+                ov_buf_reset_attr();
+                ov_theme_bg(OV_BG_HEADER);
+
+                int bg_w = (int) strlen(bg_badge);
+                if (lay->r_filter_count < 4)
+                {
+                    lay->r_filter_start[lay->r_filter_count] = b_start;
+                    lay->r_filter_width[lay->r_filter_count] = bg_w;
+                    lay->r_filter_panel[lay->r_filter_count] = bg_panels[p];
+                    lay->r_filter_count++;
+                }
+                b_start += bg_w + 1;
+                filter_w += bg_w;
+            }
+        }
     }
 
     int commit_w   = (int) strlen(MILK_GIT_COMMIT) + 3;

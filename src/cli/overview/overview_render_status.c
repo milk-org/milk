@@ -337,6 +337,27 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         n1 += (int) strlen(fstatus);
     }
 
+    /* Also show alert badges for other panels with active filters */
+    ov_focus_t  bg_panels[3] = { OV_FOCUS_STREAMS, OV_FOCUS_PROCS, OV_FOCUS_FPS };
+    const char *bg_names[3]  = { "STRM", "PROC", "FPS" };
+    for (int p = 0; p < 3; p++)
+    {
+        if (bg_panels[p] != fpanel && ov_is_panel_filter_active(lay, bg_panels[p]))
+        {
+            const char *bg_pat = ov_get_panel_filter_pattern(lay, bg_panels[p]);
+            char        bg_status[64];
+            snprintf(bg_status, sizeof(bg_status), " [%s: /%.8s/] ", bg_names[p], bg_pat);
+            ov_buf_bold();
+            ov_buf_bg(220, 130, 20);
+            ov_buf_fg(255, 255, 255);
+            ov_buf_printf("%s", bg_status);
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_HEADER);
+            ov_theme_fg(OV_FG_DIM);
+            n1 += (int) strlen(bg_status);
+        }
+    }
+
     const char *exit_label = " [x] exit ";
     if (lay->show_help)
     {
