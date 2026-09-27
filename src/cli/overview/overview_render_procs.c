@@ -628,7 +628,25 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
     }
     render_scroll_indicators(r, lay->scroll_proc, max_rows, filt_n, OV_FG_PROC);
 
-    /* ---- Footer stats on bottom border ---- */
+
+    ov_buf_reset_attr();
+}
+
+/**
+ * ov_procs__render_footer - render process CPU and memory statistics footer.
+ * @lay:      Pointer to layout structure.
+ * @m:        Pointer to data model snapshot.
+ * @r:        Bounding rectangle of procs panel.
+ * @filt_idx: Array of indices matching active filter.
+ * @filt_n:   Count of matching processes.
+ */
+static void ov_procs__render_footer(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m,
+    OV_RECT          r,
+    const int       *filt_idx,
+    int              filt_n)
+{    /* ---- Footer stats on bottom border ---- */
     {
         /* Compute totals over ALL procs */
         int     tot_run = 0;
@@ -722,9 +740,9 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
         }
     }
 
+
     ov_buf_reset_attr();
 }
-
 /**
  * @brief Render the processes panel in the overview.
  */
@@ -750,6 +768,7 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
     ov_procs__render_header(lay, hrow, hs, r);
     ov_procs__render_rows(lay, m, rel, hrow, hs, r, filt_idx, filt_n, has_re, &re);
 
+    ov_procs__render_footer(lay, m, r, filt_idx, filt_n);
     if (has_re)
     {
         regfree(&re);

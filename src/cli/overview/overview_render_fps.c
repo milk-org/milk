@@ -4,32 +4,20 @@
 
 /**
  * @file    overview_render_fps.c
- * @brief   FPS panel + detail panel rendering for milk-CTRL
- *
- * Split from overview_render.c for navigability.
+ * @brief   FPS panel rendering for milk-CTRL
  */
 
 #include "overview_render_internal.h"
 
 /**
- * @brief Render the FPS panel in the overview dashboard.
+ * ov_fps__render_header - render column headers for FPS panel.
+ * @lay: Pointer to layout structure.
+ * @r:   Bounding rectangle of FPS panel.
  */
-void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
+static void ov_fps__render_header(
+    const OV_LAYOUT *lay,
+    OV_RECT          r)
 {
-    OV_RECT r = lay->r_fps;
-
-    /* Build filtered index array */
-    int         fidx[OV_MAX_FPS];
-    int         filt_n        = ov_filter_fps(lay, m, rel, fidx, OV_MAX_FPS);
-    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
-
-    int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-                      ? m->loops[lay->sel_loop].loop_id
-                      : -1;
-    ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "FPS", OV_FG_FPS,
-                                lay->focus == OV_FOCUS_FPS, 0, lay->ctrl_blink, loop_id,
-                                lay->filter_fps, lay->filter_fps_active, filt_n, m->nb_fps);
-
     int hrow = r.row + 1;
     int hs   = lay->hscroll_fps;
 
@@ -120,6 +108,159 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
     /* Separator between header and data rows */
     render_separator(hrow + 1, r.col + 1, r.width - 2, OV_FG_FPS_HDR);
 
+
+}
+
+/**
+ * ov_fps__render_footer - render totals and active counts on FPS panel footer.
+ * @lay:      Pointer to layout structure.
+ * @m:        Pointer to data model snapshot.
+ * @r:        Bounding rectangle of FPS panel.
+ * @fidx:     Array of visible FPS indices.
+ * @filt_n:   Count of matching FPS modules.
+ * @max_rows: Maximum visible rows in panel.
+ */
+static void ov_fps__render_footer(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m,
+    OV_RECT          r,
+    const int       *fidx,
+    int              filt_n,
+    int              max_rows)
+{
+    /* ---- Footer stats on bottom border ---- */
+    {
+        /* Totals over ALL FPS */
+        int     tot_conf  = 0;
+        int     tot_run   = 0;
+        int     tot_crash = 0;
+        int     tot_idle  = 0;
+        int64_t tot_mem   = 0;
+        for (int j = 0; j < m->nb_fps; j++)
+        {
+            const OV_FPS *f = &m->fps[j];
+            if (f->conf_alive)
+            {
+                tot_conf++;
+            }
+            if (f->run_alive)
+            {
+                tot_run++;
+            }
+            tot_mem += f->mem_rss_kb;
+            if (f->runpid > 0 && !f->run_alive)
+            {
+                tot_crash++;
+            }
+            if (f->conf_alive && !f->run_alive && f->runpid <= 0)
+            {
+                tot_idle++;
+            }
+        }
+
+        /* Totals over filtered subset */
+        int     flt_conf = 0;
+        int     flt_run  = 0;
+        int64_t flt_mem  = 0;
+        for (int j = 0; j < filt_n; j++)
+        {
+            const OV_FPS *f = &m->fps[fidx[j]];
+            if (f->conf_alive)
+            {
+                flt_conf++;
+            }
+            if (f->run_alive)
+            {
+                flt_run++;
+            }
+            flt_mem += f->mem_rss_kb;
+        }
+
+        int brow      = r.row + r.height - 1;
+        int is_subset = (filt_n < m->nb_fps);
+
+        /* Right side: total stats (always) */
+        char tmem[16];
+        format_mem_kb(tmem, sizeof(tmem), tot_mem);
+        char rbuf[120];
+        int  roff = snprintf(rbuf, sizeof(rbuf), " %d conf \u2502 %d run", tot_conf, tot_run);
+        if (tot_crash > 0)
+        {
+            roff +=
+                snprintf(rbuf + roff, sizeof(rbuf) - (size_t) roff, " \u2502 %d crash", tot_crash);
+        }
+        if (tot_idle > 0)
+        {
+            roff +=
+                snprintf(rbuf + roff, sizeof(rbuf) - (size_t) roff, " \u2502 %d idle", tot_idle);
+        }
+        snprintf(rbuf + roff, sizeof(rbuf) - (size_t) roff, " \u2502 %s ", tmem);
+        int rlen  = (int) strlen(rbuf);
+        int below = filt_n - lay->scroll_fps - max_rows;
+        int dw    = 0;
+        if (below > 0)
+        {
+            dw      = 3;
+            int tmp = below;
+            while (tmp > 0)
+            {
+                dw++;
+                tmp /= 10;
+            }
+        }
+        int rcol = r.col + r.width - rlen - dw - 4;
+        if (rcol > r.col + 1)
+        {
+            ov_buf_pos(brow, rcol);
+            ov_theme_fg(tot_run > 0 ? OV_FG_ACTIVE : OV_FG_DIM);
+            ov_theme_bg(OV_BG_PANEL);
+            ov_buf_printf("%s", rbuf);
+        }
+
+        /* Left side: filtered stats */
+        if (is_subset)
+        {
+            char fmem[16];
+            format_mem_kb(fmem, sizeof(fmem), flt_mem);
+            char lbuf[80];
+            snprintf(lbuf, sizeof(lbuf), " %d conf \u2502 %d run \u2502 %s ", flt_conf, flt_run,
+                     fmem);
+            int llen = (int) strlen(lbuf);
+            int lcol = r.col + 2;
+            if (lcol + llen < rcol)
+            {
+                ov_buf_pos(brow, lcol);
+                ov_theme_fg(OV_FG_WARN);
+                ov_theme_bg(OV_BG_PANEL);
+                ov_buf_printf("%s", lbuf);
+            }
+        }
+    }
+
+    ov_buf_reset_attr();
+}
+
+/**
+ * ov_fps__render_rows - render filtered FPS module rows and scrollbar.
+ * @lay:           Pointer to layout structure.
+ * @m:             Pointer to data model snapshot.
+ * @rel:           Pointer to related entities lookup.
+ * @r:             Bounding rectangle of FPS panel.
+ * @fidx:          Array of visible FPS indices.
+ * @filt_n:        Count of matching FPS modules.
+ * @active_filter: Active filter string.
+ */
+static void ov_fps__render_rows(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel,
+    OV_RECT           r,
+    const int        *fidx,
+    int               filt_n,
+    const char       *active_filter)
+{
+    int hrow = r.row + 1;
+    int hs   = lay->hscroll_fps;
     int8_t local_depth[OV_MAX_FPS];
     memset(local_depth, 0, sizeof(local_depth));
     {
@@ -345,45 +486,46 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
 
             /* PID field with inverted highlight when it
              * matches the selected process PID */
-#define FPS_PID_FIELD(pid_val, fmt, ...)                                                            \
-    do                                                                                              \
-    {                                                                                               \
-        pid_t    _pval    = (pid_t) (pid_val);                                                      \
-        int      _match   = (_spid > 0 && _pval == _spid);                                          \
-        int      _idx     = ov_find_proc_by_pid(m, _pval);                                          \
-        int      _crashed = (_idx >= 0 && m->procs[_idx].loopstat == PROCESSINFO_LOOPSTAT_CRASHED); \
-        ov_rgb_t prev_bg  = cell_bg;                                                                \
-        if (_match)                                                                                 \
-        {                                                                                           \
-            if (_crashed)                                                                           \
-            {                                                                                       \
-                cell_bg = OV_FG_ERROR;                                                              \
-            }                                                                                       \
-            else                                                                                    \
-            {                                                                                       \
-                cell_bg = OV_BG_PID_MATCH;                                                          \
-            }                                                                                       \
-            ov_buf_bold();                                                                          \
-        }                                                                                           \
-        ov_rgb_t _fg;                                                                               \
-        if (_crashed)                                                                               \
-        {                                                                                           \
-            _fg = _match ? (ov_rgb_t) { 255, 255, 255 } : OV_FG_ERROR;                              \
-        }                                                                                           \
-        else if (_match)                                                                            \
-        {                                                                                           \
-            _fg = (ov_rgb_t) { 0, 0, 0 };                                                           \
-        }                                                                                           \
-        else                                                                                        \
-        {                                                                                           \
-            _fg = ov_pid_color(_pval);                                                              \
-        }                                                                                           \
-        FPS_FIELD(_fg, fmt, ##__VA_ARGS__);                                                         \
-        if (_match)                                                                                 \
-        {                                                                                           \
-            ov_buf_reset_attr();                                                                    \
-            cell_bg = prev_bg;                                                                      \
-        }                                                                                           \
+#define FPS_PID_FIELD(pid_val, fmt, ...) \
+    do \
+    { \
+        pid_t    _pval    = (pid_t) (pid_val); \
+        int      _match   = (_spid > 0 && _pval == _spid); \
+        int      _idx     = ov_find_proc_by_pid(m, _pval); \
+        int      _crashed = (_idx >= 0 && \
+                             m->procs[_idx].loopstat == PROCESSINFO_LOOPSTAT_CRASHED); \
+        ov_rgb_t prev_bg  = cell_bg; \
+        if (_match) \
+        { \
+            if (_crashed) \
+            { \
+                cell_bg = OV_FG_ERROR; \
+            } \
+            else \
+            { \
+                cell_bg = OV_BG_PID_MATCH; \
+            } \
+            ov_buf_bold(); \
+        } \
+        ov_rgb_t _fg; \
+        if (_crashed) \
+        { \
+            _fg = _match ? (ov_rgb_t) { 255, 255, 255 } : OV_FG_ERROR; \
+        } \
+        else if (_match) \
+        { \
+            _fg = (ov_rgb_t) { 0, 0, 0 }; \
+        } \
+        else \
+        { \
+            _fg = ov_pid_color(_pval); \
+        } \
+        FPS_FIELD(_fg, fmt, ##__VA_ARGS__); \
+        if (_match) \
+        { \
+            ov_buf_reset_attr(); \
+            cell_bg = prev_bg; \
+        } \
     } while (0)
 
             pid_t    _spid   = (rel != NULL) ? rel->sel_pid : 0;
@@ -553,128 +695,39 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
         regfree(&re);
     }
 
-    /* ---- Footer stats on bottom border ---- */
-    {
-        /* Totals over ALL FPS */
-        int     tot_conf  = 0;
-        int     tot_run   = 0;
-        int     tot_crash = 0;
-        int     tot_idle  = 0;
-        int64_t tot_mem   = 0;
-        for (int j = 0; j < m->nb_fps; j++)
-        {
-            const OV_FPS *f = &m->fps[j];
-            if (f->conf_alive)
-            {
-                tot_conf++;
-            }
-            if (f->run_alive)
-            {
-                tot_run++;
-            }
-            tot_mem += f->mem_rss_kb;
-            if (f->runpid > 0 && !f->run_alive)
-            {
-                tot_crash++;
-            }
-            if (f->conf_alive && !f->run_alive && f->runpid <= 0)
-            {
-                tot_idle++;
-            }
-        }
 
-        /* Totals over filtered subset */
-        int     flt_conf = 0;
-        int     flt_run  = 0;
-        int64_t flt_mem  = 0;
-        for (int j = 0; j < filt_n; j++)
-        {
-            const OV_FPS *f = &m->fps[fidx[j]];
-            if (f->conf_alive)
-            {
-                flt_conf++;
-            }
-            if (f->run_alive)
-            {
-                flt_run++;
-            }
-            flt_mem += f->mem_rss_kb;
-        }
+}
 
-        int brow      = r.row + r.height - 1;
-        int is_subset = (filt_n < m->nb_fps);
+/**
+ * ov_render_fps_panel - render the entire FPS panel (border, header, rows, footer).
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to current data model snapshot.
+ * @rel: Pointer to relationship lookup tables.
+ */
+void ov_render_fps_panel(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel)
+{
+    OV_RECT r = lay->r_fps;
 
-        /* Right side: total stats (always) */
-        char tmem[16];
-        format_mem_kb(tmem, sizeof(tmem), tot_mem);
-        char rbuf[120];
-        int  roff = snprintf(rbuf, sizeof(rbuf), " %d conf \u2502 %d run", tot_conf, tot_run);
-        if (tot_crash > 0)
-        {
-            roff +=
-                snprintf(rbuf + roff, sizeof(rbuf) - (size_t) roff, " \u2502 %d crash", tot_crash);
-        }
-        if (tot_idle > 0)
-        {
-            roff +=
-                snprintf(rbuf + roff, sizeof(rbuf) - (size_t) roff, " \u2502 %d idle", tot_idle);
-        }
-        snprintf(rbuf + roff, sizeof(rbuf) - (size_t) roff, " \u2502 %s ", tmem);
-        int rlen  = (int) strlen(rbuf);
-        int below = filt_n - lay->scroll_fps - max_rows;
-        int dw    = 0;
-        if (below > 0)
-        {
-            dw      = 3;
-            int tmp = below;
-            while (tmp > 0)
-            {
-                dw++;
-                tmp /= 10;
-            }
-        }
-        int rcol = r.col + r.width - rlen - dw - 4;
-        if (rcol > r.col + 1)
-        {
-            ov_buf_pos(brow, rcol);
-            ov_theme_fg(tot_run > 0 ? OV_FG_ACTIVE : OV_FG_DIM);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_buf_printf("%s", rbuf);
-        }
+    /* Build filtered index array */
+    int         fidx[OV_MAX_FPS];
+    int         filt_n        = ov_filter_fps(lay, m, rel, fidx, OV_MAX_FPS);
+    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
 
-        /* Left side: filtered stats */
-        if (is_subset)
-        {
-            char fmem[16];
-            format_mem_kb(fmem, sizeof(fmem), flt_mem);
-            char lbuf[80];
-            snprintf(lbuf, sizeof(lbuf), " %d conf \u2502 %d run \u2502 %s ", flt_conf, flt_run,
-                     fmem);
-            int llen = (int) strlen(lbuf);
-            int lcol = r.col + 2;
-            if (lcol + llen < rcol)
-            {
-                ov_buf_pos(brow, lcol);
-                ov_theme_fg(OV_FG_WARN);
-                ov_theme_bg(OV_BG_PANEL);
-                ov_buf_printf("%s", lbuf);
-            }
-        }
-    }
+    int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+                      ? m->loops[lay->sel_loop].loop_id
+                      : -1;
+    ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "FPS", OV_FG_FPS,
+                                lay->focus == OV_FOCUS_FPS, 0, lay->ctrl_blink, loop_id,
+                                lay->filter_fps, lay->filter_fps_active, filt_n, m->nb_fps);
+
+    ov_fps__render_header(lay, r);
+    ov_fps__render_rows(lay, m, rel, r, fidx, filt_n, active_filter);
+
+    int max_rows = r.height - 4;
+    ov_fps__render_footer(lay, m, r, fidx, filt_n, max_rows);
 
     ov_buf_reset_attr();
 }
-
-/* =========================================================
- * Detail pane — replaces CONNECTIONS when item selected
- * ========================================================= */
-
-/**
- * ov_render_detail_panel - show detail for selected item.
- * @lay: layout (holds selection + graph rect)
- * @m:   data model
- *
- * Renders into the graph panel rectangle. Returns 1 if
- * detail was drawn, 0 if nothing to show (caller should
- * fall back to graph panel).
- */

@@ -5,34 +5,21 @@
 /**
  * @file    overview_render_streams.c
  * @brief   STREAMS panel rendering for milk-CTRL
- *
- * Split from overview_render.c for navigability.
  */
 
 #include "overview_render_internal.h"
 
 /**
- * @brief Render the streams panel in the overview.
+ * ov_streams__render_header - render column headers for streams panel.
+ * @lay:  Pointer to layout structure.
+ * @hrow: Row index for header text.
+ * @hs:   Horizontal scroll offset.
+ * @r:    Bounding rectangle of streams panel.
  */
-void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
+static void ov_streams__render_header(
+    const OV_LAYOUT *lay,
+    OV_RECT          r)
 {
-    OV_RECT r = lay->r_streams;
-
-    int         filt_idx[OV_MAX_STREAMS];
-    int         filt_n        = ov_filter_streams(lay, m, rel, filt_idx, OV_MAX_STREAMS);
-    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
-
-    /* Panel title with prominent filter indicator */
-    {
-        int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-                          ? lay->sel_loop + 1
-                          : -1;
-        ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "STREAMS", OV_FG_STREAM,
-                                    lay->focus == OV_FOCUS_STREAMS, 0, lay->ctrl_blink, loop_id,
-                                    lay->filter_stream, lay->filter_stream_active, filt_n,
-                                    m->nb_streams);
-    }
-
     int hrow = r.row + 1;
     int hs   = lay->hscroll_stream;
 
@@ -131,6 +118,134 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
     render_separator(hrow + 1, r.col + 1, r.width - 2, OV_FG_STREAM_HDR);
 
 
+}
+
+/**
+ * ov_streams__render_footer - render total and filtered bandwidth footer.
+ * @lay:      Pointer to layout structure.
+ * @m:        Pointer to data model snapshot.
+ * @r:        Bounding rectangle of streams panel.
+ * @filt_n:   Number of streams currently visible after filtering.
+ * @max_rows: Maximum visible data rows in panel.
+ */
+static void ov_streams__render_footer(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m,
+    OV_RECT          r,
+    const int       *filt_idx,
+    int              filt_n,
+    int              max_rows)
+{
+    {
+        /* Totals over ALL streams */
+        double total_all_bps = 0.0;
+        for (int i = 0; i < m->nb_streams; i++)
+        {
+            const OV_STREAM *s = &m->streams[i];
+            if (s->update_hz > 0.1)
+            {
+                total_all_bps += s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype);
+            }
+        }
+
+        /* Totals over filtered subset */
+        double total_flt_bps = 0.0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            int              si = filt_idx[i];
+            const OV_STREAM *s  = &m->streams[si];
+            if (s->update_hz > 0.1)
+            {
+                total_flt_bps += s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype);
+            }
+        }
+
+        int brow      = r.row + r.height - 1;
+        int is_subset = (filt_n < m->nb_streams);
+
+        /* Right side: total (always) */
+        double total_all_mb = total_all_bps / (1024.0 * 1024.0);
+        char   rbuf[40];
+        if (total_all_mb >= 1000.0)
+        {
+            snprintf(rbuf, sizeof(rbuf), " %.1f GB/s ", total_all_mb / 1024.0);
+        }
+        else
+        {
+            snprintf(rbuf, sizeof(rbuf), " %.1f MB/s ", total_all_mb);
+        }
+        int rlen  = (int) strlen(rbuf);
+        int below = filt_n - lay->scroll_stream - max_rows;
+        int dw    = 0;
+        if (below > 0)
+        {
+            dw      = 3;
+            int tmp = below;
+            while (tmp > 0)
+            {
+                dw++;
+                tmp /= 10;
+            }
+        }
+        int rcol = r.col + r.width - rlen - dw - 4;
+        if (rcol > r.col + 1)
+        {
+            ov_buf_pos(brow, rcol);
+            ov_theme_fg(OV_FG_ACTIVE);
+            ov_theme_bg(OV_BG_PANEL);
+            ov_buf_printf("%s", rbuf);
+        }
+
+        /* Left side: filtered (only when
+         * filter is active) */
+        if (is_subset)
+        {
+            double flt_mb = total_flt_bps / (1024.0 * 1024.0);
+            char   lbuf[40];
+            if (flt_mb >= 1000.0)
+            {
+                snprintf(lbuf, sizeof(lbuf), " %.1f GB/s ", flt_mb / 1024.0);
+            }
+            else
+            {
+                snprintf(lbuf, sizeof(lbuf), " %.1f MB/s ", flt_mb);
+            }
+            int llen = (int) strlen(lbuf);
+            int lcol = r.col + 2;
+            if (lcol + llen < rcol)
+            {
+                ov_buf_pos(brow, lcol);
+                ov_theme_fg(OV_FG_WARN);
+                ov_theme_bg(OV_BG_PANEL);
+                ov_buf_printf("%s", lbuf);
+            }
+        }
+    }
+    ov_buf_reset_attr();
+
+}
+
+/**
+ * ov_streams__render_rows - render filtered stream rows and scrollbar.
+ * @lay:          Pointer to layout structure.
+ * @m:            Pointer to data model snapshot.
+ * @rel:          Pointer to related entities lookup.
+ * @r:            Bounding rectangle of streams panel.
+ * @filt_idx:     Array of stream indices matching active filter.
+ * @filt_n:       Count of matching streams.
+ * @active_filter: Active filter string.
+ */
+static void ov_streams__render_rows(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel,
+    OV_RECT           r,
+    const int        *filt_idx,
+    int               filt_n,
+    const char       *active_filter)
+{
+    int hrow = r.row + 1;
+    int hs   = lay->hscroll_stream;
     /* Compute lineage depths when a stream
      * is selected.  sel_stream is a position in
      * the filtered list; convert via filt_idx[]
@@ -666,91 +781,42 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         regfree(&re);
     }
 
-    /* Total MB/s footer on bottom border */
+
+}
+
+/**
+ * ov_render_streams_panel - render the entire streams panel (border, header, rows, footer).
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to current data model snapshot.
+ * @rel: Pointer to relationship lookup tables.
+ */
+void ov_render_streams_panel(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel)
+{
+    OV_RECT r = lay->r_streams;
+
+    int         filt_idx[OV_MAX_STREAMS];
+    int         filt_n        = ov_filter_streams(lay, m, rel, filt_idx, OV_MAX_STREAMS);
+    const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
+
+    /* Panel title with prominent filter indicator */
     {
-        /* Totals over ALL streams */
-        double total_all_bps = 0.0;
-        for (int i = 0; i < m->nb_streams; i++)
-        {
-            const OV_STREAM *s = &m->streams[i];
-            if (s->update_hz > 0.1)
-            {
-                total_all_bps += s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype);
-            }
-        }
-
-        /* Totals over filtered subset */
-        double total_flt_bps = 0.0;
-        for (int i = 0; i < filt_n; i++)
-        {
-            int              si = filt_idx[i];
-            const OV_STREAM *s  = &m->streams[si];
-            if (s->update_hz > 0.1)
-            {
-                total_flt_bps += s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype);
-            }
-        }
-
-        int brow      = r.row + r.height - 1;
-        int is_subset = (filt_n < m->nb_streams);
-
-        /* Right side: total (always) */
-        double total_all_mb = total_all_bps / (1024.0 * 1024.0);
-        char   rbuf[40];
-        if (total_all_mb >= 1000.0)
-        {
-            snprintf(rbuf, sizeof(rbuf), " %.1f GB/s ", total_all_mb / 1024.0);
-        }
-        else
-        {
-            snprintf(rbuf, sizeof(rbuf), " %.1f MB/s ", total_all_mb);
-        }
-        int rlen  = (int) strlen(rbuf);
-        int below = filt_n - lay->scroll_stream - max_rows;
-        int dw    = 0;
-        if (below > 0)
-        {
-            dw      = 3;
-            int tmp = below;
-            while (tmp > 0)
-            {
-                dw++;
-                tmp /= 10;
-            }
-        }
-        int rcol = r.col + r.width - rlen - dw - 4;
-        if (rcol > r.col + 1)
-        {
-            ov_buf_pos(brow, rcol);
-            ov_theme_fg(OV_FG_ACTIVE);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_buf_printf("%s", rbuf);
-        }
-
-        /* Left side: filtered (only when
-         * filter is active) */
-        if (is_subset)
-        {
-            double flt_mb = total_flt_bps / (1024.0 * 1024.0);
-            char   lbuf[40];
-            if (flt_mb >= 1000.0)
-            {
-                snprintf(lbuf, sizeof(lbuf), " %.1f GB/s ", flt_mb / 1024.0);
-            }
-            else
-            {
-                snprintf(lbuf, sizeof(lbuf), " %.1f MB/s ", flt_mb);
-            }
-            int llen = (int) strlen(lbuf);
-            int lcol = r.col + 2;
-            if (lcol + llen < rcol)
-            {
-                ov_buf_pos(brow, lcol);
-                ov_theme_fg(OV_FG_WARN);
-                ov_theme_bg(OV_BG_PANEL);
-                ov_buf_printf("%s", lbuf);
-            }
-        }
+        int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+                          ? lay->sel_loop + 1
+                          : -1;
+        ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "STREAMS", OV_FG_STREAM,
+                                    lay->focus == OV_FOCUS_STREAMS, 0, lay->ctrl_blink, loop_id,
+                                    lay->filter_stream, lay->filter_stream_active, filt_n,
+                                    m->nb_streams);
     }
+
+    ov_streams__render_header(lay, r);
+    ov_streams__render_rows(lay, m, rel, r, filt_idx, filt_n, active_filter);
+
+    int max_rows = r.height - 4;
+    ov_streams__render_footer(lay, m, r, filt_idx, filt_n, max_rows);
+
     ov_buf_reset_attr();
 }
