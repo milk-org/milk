@@ -703,17 +703,17 @@ static const help_entry_t HELP[] =
         NULL,
         "Theme & Color Legend",
         "Color coding conventions and selectable theme styles in milk-CTRL. "
-        "Supports dark, observatory red, high-contrast, paper light, and nordic themes.",
+        "Supports 10 dark, light, high-contrast, and vibrant palettes.",
         HF_SECTION,
         HS_COLORS,
     },
     {
         "F8 / ^T",
-        "Cycle color theme (dark, night, accessible, light, nordic)",
-        "Cycles through available color palettes: dark (default slate), night "
-        "(observatory dark-adapted red), accessible (colorblind-friendly high-contrast), "
-        "light (paper light for daylight/papers), and nordic (arctic slate). milk-CTRL "
-        "starts with the default dark theme on launch.",
+        "Open theme selector popup (↑/↓ to choose, ESC or 1s to close)",
+        "Brings up a theme selector popup with live palette swatches. Select with "
+        "Up/Down arrows or ^T; closes after 1s inactivity or on ESC. Available: "
+        "dark, night, accessible, light, nordic, dracula, solarized-dark, "
+        "solarized-light, monokai, matrix.",
         HF_ENTRY,
         HS_COLORS,
     },

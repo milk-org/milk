@@ -123,6 +123,7 @@ void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *rel
 void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc);
 
 void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m);
+void ov_render_theme_popup(OV_LAYOUT *lay);
 
 void render_highlighted_name(const char *name,
                              int         max_len,

@@ -41,6 +41,24 @@ Press `c` to toggle Control Mode ON/OFF:
 - **FPS**: Manage tmux sessions (`k`/`K`) and toggle execution loops (`r`: run, `s`: config).
 - **Parameters**: Edit scalar, string, timespec, and boolean parameters inline with ENTER.
 
+## Themes & Customization
+
+`milk-CTRL` includes 10 built-in color themes with 24-bit TrueColor palettes:
+- `dark` (Default Dark): Slate dark palette
+- `night` (Observatory Red): Dark-adapted monochrome red palette
+- `accessible` (High-Contrast CVD): Colorblind-friendly palette (Okabe-Ito)
+- `light` (Paper Light): Clean light palette for daylight and publications
+- `nordic` (Nordic Slate): Cool slate and arctic blue palette
+- `dracula` (Dracula): Gothic dark slate with vibrant purple, pink, and cyan
+- `solarized-dark` (Solarized Dark): Precision cyan and amber dark palette
+- `solarized-light` (Solarized Light): Warm cream and cyan light palette
+- `monokai` (Monokai Pro): Warm charcoal with radiant neon accents
+- `matrix` (Matrix Phosphor): High-contrast phosphor green on pure black
+
+Press `^T` or `F8` to open the interactive theme selector popup. Navigate themes with `UP` / `DOWN`
+arrows with live preview; the popup automatically closes after 1s of inactivity or on `ESC`.
+Themes can also be selected at launch using `-T <name>` (e.g. `milk-CTRL -T dracula`).
+
 ## Build Requirements
 
 - Standalone executable target: `milk-CTRL`

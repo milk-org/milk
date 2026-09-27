@@ -157,6 +157,11 @@ typedef struct
     OV_RECT r_graph;
     OV_RECT r_cmdlog;
     OV_RECT r_status;
+    /* Theme selector popup */
+    int             theme_popup_active;
+    int             theme_popup_sel;
+    struct timespec theme_popup_ts;
+    OV_RECT         r_theme_popup;
     /* Command log */
     OV_CMDLOG cmdlog;
     int       cmdlog_rows; /* 0=hidden, default=4 */

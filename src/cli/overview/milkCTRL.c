@@ -176,8 +176,9 @@ static void print_help(const char *prog, int mh_color)
     printf("  %-30s Show this help and exit\n", MH(MH_OPT, "-h, --help"));
     printf("  %-30s One-line description and exit\n", MH(MH_OPT, "-h1, --help-oneline"));
     printf("  %-30s Full help, forced monochrome\n", MH(MH_OPT, "-hm, --help-mono"));
-    printf("  %-30s Set color theme (dark, night, accessible, light, nordic)\n",
-           MH(MH_OPT, "-T, --theme <NAME>"));
+    printf("  %-30s Set color theme: dark, night, accessible, light, nordic,\n"
+           "  %-30s   dracula, solarized-dark, solarized-light, monokai, matrix\n",
+           MH(MH_OPT, "-T, --theme <NAME>"), "");
     printf("  %-30s Override SHM/process directory (current: %s)\n\n", MH(MH_OPT, "-d <DIR>"),
            ov_get_shmdir());
 
@@ -187,7 +188,7 @@ static void print_help(const char *prog, int mh_color)
     printf("  %-30s Scroll page up / down\n", MH(MH_OPT, "PgUp / PgDn"));
     printf("  %-30s Jump to top / bottom of the list\n", MH(MH_OPT, "Home / End"));
     printf("  %-30s Scroll list/table horizontally\n", MH(MH_OPT, "LEFT / RIGHT"));
-    printf("  %-30s Cycle color theme (dark, night, accessible, light, nordic)\n",
+    printf("  %-30s Open theme selector popup (↑/↓ to choose, ESC/1s to close)\n",
            MH(MH_OPT, "F8 / CTRL+T"));
     printf("  %-30s Toggle detailed inspection pane / parameter edit mode\n", MH(MH_OPT, "ENTER"));
     printf("  %-30s Toggle details tab on selected item / Graph details\n", MH(MH_OPT, "D"));
@@ -476,6 +477,25 @@ int main(int argc, char *argv[])
             if (quit)
             {
                 break;
+            }
+        }
+
+        /* Check if theme selector popup timed out (1s inactivity) */
+        if (lay.theme_popup_active)
+        {
+            struct timespec now_ts;
+            clock_gettime(CLOCK_MONOTONIC, &now_ts);
+            double elapsed = (now_ts.tv_sec - lay.theme_popup_ts.tv_sec) +
+                             (now_ts.tv_nsec - lay.theme_popup_ts.tv_nsec) * 1e-9;
+            if (elapsed >= 1.0)
+            {
+                lay.theme_popup_active = 0;
+                need_render            = 1;
+            }
+            else
+            {
+                /* Force frame redraw to update auto-close countdown in popup */
+                need_render = 1;
             }
         }
 
