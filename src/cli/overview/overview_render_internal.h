@@ -84,7 +84,13 @@ int ov_filter_build(
     int         *out,
     int          max_out);
 
+int ov_has_filter(
+    const OV_LAYOUT *lay);
+
 int ov_is_filter_active(
+    const OV_LAYOUT *lay);
+
+const char *ov_get_filter_pattern(
     const OV_LAYOUT *lay);
 
 const char *ov_get_active_filter(
@@ -297,6 +303,7 @@ void ov_render_help(
     const OV_MODEL  *m);
 
 void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m);
+void ov_render_tabs(OV_LAYOUT *lay);
 
 /* Help panel utilities */
 void ov_help_open(OV_LAYOUT *lay);

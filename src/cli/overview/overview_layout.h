@@ -25,6 +25,27 @@ typedef enum
     OV_VIEW_COUNT,
 } ov_view_t;
 
+static inline const char *ov_view_label(ov_view_t v)
+{
+    switch (v)
+    {
+    case OV_VIEW_DASHBOARD:
+        return "DASH";
+    case OV_VIEW_STREAMS:
+        return "STRM";
+    case OV_VIEW_PROCS:
+        return "PROC";
+    case OV_VIEW_FPS:
+        return "FPS";
+    case OV_VIEW_GRAPH:
+        return "CONN";
+    case OV_VIEW_LOOPS:
+        return "LOOPS";
+    default:
+        return "";
+    }
+}
+
 /* Panel rectangle */
 typedef struct
 {
@@ -105,6 +126,8 @@ typedef struct
     int        rename_cursor;
     int        detail_total_lines;
     int        show_help;
+    int        help_mode;          /* 0 = Controls & keybindings, 1 = Intro to milk-CTRL */
+    int        help_intro_scroll;  /* scroll row in full intro view */
     int        help_sel;           /* cursor row in help */
     uint32_t   help_expand;        /* bitmask: 1=expanded */
     char       help_search[64];    /* keyword/topic search query */
@@ -116,6 +139,7 @@ typedef struct
     char filter_stream[64];
     char filter_proc[64];
     char filter_fps[64];
+    int  filter_active;  /* 1 = filter currently active/applied, 0 = toggled off / paused */
     int  filter_editing; /* 1 = typing filter */
     int  filter_cursor;  /* cursor pos in filter */
     int  filter_jump;    /* 1 = jump-to-match mode */
@@ -126,6 +150,7 @@ typedef struct
     int compact_mode;
     /* Dashboard panel rects */
     OV_RECT r_header;
+    OV_RECT r_tabs;
     OV_RECT r_streams;
     OV_RECT r_procs;
     OV_RECT r_fps;

@@ -133,16 +133,10 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
 
     if (lay->filter_editing)
     {
-        /* ESC — cancel filter edit, restore empty */
+        /* ESC — cancel filter edit, keep previous filter */
         if (key == 27)
         {
-            ov_clear_all_filters(lay);
-            lay->sel_stream     = 0;
-            lay->scroll_stream  = 0;
-            lay->sel_proc       = 0;
-            lay->scroll_proc    = 0;
-            lay->sel_fps        = 0;
-            lay->scroll_fps     = 0;
+            lay->filter_editing = 0;
             return 1;
         }
 
@@ -161,13 +155,20 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
              * to first match (#5) */
             if (lay->filter_jump)
             {
-                lay->filter[0]   = '\0';
-                lay->filter_jump = 0;
+                lay->filter[0]     = '\0';
+                lay->filter_jump   = 0;
+                lay->filter_active = 0;
             }
             else if (lay->filter[0] != '\0')
             {
+                lay->filter_active = 1;
                 ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                               "Regex filter applied: /%s/", lay->filter);
+                               "Regex filter applied: /%s/ ('f' to toggle, ESC to clear)",
+                               lay->filter);
+            }
+            else
+            {
+                lay->filter_active = 0;
             }
             return 1;
         }
@@ -203,13 +204,48 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
         return 1; /* Ignore other keys during editing */
     }
 
-    /* '/' — enter filter editing mode */
+    /* 'f' or Ctrl+F — toggle active filter without erasing */
+    int in_loops = (lay->view == OV_VIEW_LOOPS ||
+                    (lay->view == OV_VIEW_DASHBOARD && lay->graph_tab_mode == 1 &&
+                     lay->focus == OV_FOCUS_GRAPH));
+    if ((!in_loops && key == 'f') || key == ctrl('f'))
+    {
+        if (ov_has_filter(lay))
+        {
+            lay->filter_active = !lay->filter_active;
+            lay->sel_stream    = 0;
+            lay->scroll_stream = 0;
+            lay->sel_proc      = 0;
+            lay->scroll_proc   = 0;
+            lay->sel_fps       = 0;
+            lay->scroll_fps    = 0;
+            if (lay->filter_active)
+            {
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                               "Regex filter: ON (/%s/)", ov_get_filter_pattern(lay));
+            }
+            else
+            {
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                               "Regex filter: OFF (paused, press 'f' to resume, ESC to clear)");
+            }
+        }
+        else
+        {
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                           "No filter set. Press [/] to set filter");
+        }
+        return 1;
+    }
+
+    /* '/' — enter filter editing mode (pre-filled with existing filter) */
     if (key == '/')
     {
-        ov_clear_all_filters(lay);
         lay->filter_editing = 1;
         lay->filter_jump    = 0;
-        lay->filter_cursor  = 0;
+        lay->filter_cursor  = (int) strlen(lay->filter);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                       "Type regex filter (ENTER=apply, ESC=cancel, Ctrl+U=clear)");
         return 1;
     }
 
@@ -224,8 +260,8 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
         return 1;
     }
 
-    /* ESC — clear active filter if one is active */
-    if (key == 27 && ov_is_filter_active(lay))
+    /* ESC — clear filter if one is defined */
+    if (key == 27 && ov_has_filter(lay))
     {
         ov_clear_all_filters(lay);
         lay->sel_stream    = 0;
@@ -385,7 +421,7 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
     if (focus == OV_FOCUS_STREAMS)
     {
         count = m->nb_streams;
-        const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
+        const char *filt = ov_get_active_filter(lay);
         if (filt[0] != '\0')
         {
             const char *names[OV_MAX_STREAMS];
@@ -400,7 +436,7 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
     else if (focus == OV_FOCUS_PROCS)
     {
         count = m->nb_procs;
-        const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+        const char *filt = ov_get_active_filter(lay);
         if (filt[0] != '\0')
         {
             const char *names[OV_MAX_PROCS];
@@ -415,7 +451,7 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
     else if (focus == OV_FOCUS_FPS)
     {
         count = m->nb_fps;
-        const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
+        const char *filt = ov_get_active_filter(lay);
         if (filt[0] != '\0')
         {
             const char *names[OV_MAX_FPS];
@@ -662,6 +698,97 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
         return;
     }
 
+    if (mr == lay->r_header.row)
+    {
+        int commit_w    = (int) strlen(MILK_GIT_COMMIT) + 3;
+        int shmdir_w    = (int) strlen(ov_get_shmdir()) + 8;
+        int badge_start = lay->r_header.col + 18 + commit_w + shmdir_w;
+        int badge_w     = lay->ctrl_mode ? 13 : 15;
+        if (mc >= badge_start && mc < badge_start + badge_w)
+        {
+            snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
+                     "Control Mode: Toggle write access & actions (key: c)");
+            return;
+        }
+        int hover_badge_start = badge_start + badge_w + 1;
+        int hover_badge_w     = lay->mouse_hover ? 15 : 16;
+        if (mc >= hover_badge_start && mc < hover_badge_start + hover_badge_w)
+        {
+            snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
+                     "Mouse Hover: Toggle hover tooltips (key: m)");
+            return;
+        }
+        int         filter_badge_start = hover_badge_start + hover_badge_w + 1;
+        int         filter_badge_w     = 17;
+        const char *fpat               = ov_get_filter_pattern(lay);
+        if (ov_is_filter_active(lay))
+        {
+            char fb[64];
+            snprintf(fb, sizeof(fb), " [f] FILTER ON: /%.12s/ ", fpat);
+            filter_badge_w = (int) strlen(fb);
+        }
+        else if (fpat[0] != '\0')
+        {
+            char fb[64];
+            snprintf(fb, sizeof(fb), " [f] FILTER: OFF (/%.12s/) ", fpat);
+            filter_badge_w = (int) strlen(fb);
+        }
+        if (mc >= filter_badge_start && mc < filter_badge_start + filter_badge_w)
+        {
+            if (ov_is_filter_active(lay))
+            {
+                snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
+                         "Filter ON: Click or 'f' to pause, ESC to clear");
+            }
+            else if (fpat[0] != '\0')
+            {
+                snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
+                         "Filter OFF: Click or 'f' to resume, ESC to clear");
+            }
+            else
+            {
+                snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
+                         "Filter: Click or press [/] to set regex filter");
+            }
+            return;
+        }
+    }
+
+    if (mr == lay->r_tabs.row)
+    {
+        int tab_widths[OV_VIEW_COUNT];
+        int tabs_total_width = 0;
+        for (int v = 0; v < OV_VIEW_COUNT; v++)
+        {
+            tab_widths[v] = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
+            tabs_total_width += tab_widths[v];
+        }
+        int help_width = 11;
+        int help_col   = (lay->term_cols >= tabs_total_width + help_width)
+                           ? (lay->term_cols - help_width + 1)
+                           : (tabs_total_width + 1);
+
+        if (mc >= help_col && mc < help_col + help_width)
+        {
+            snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
+                     "Help: Toggle interactive help & keybinding menu (key: h)");
+            return;
+        }
+
+        int tx = 1;
+        for (int v = 0; v < OV_VIEW_COUNT; v++)
+        {
+            if (mc >= tx && mc < tx + tab_widths[v])
+            {
+                snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
+                         "View: Switch to %s view (key: F%d)",
+                         ov_view_label((ov_view_t) v), v + 2);
+                return;
+            }
+            tx += tab_widths[v];
+        }
+    }
+
     int cmdlog_top = (lay->cmdlog_rows > 0) ? (lay->term_rows - lay->cmdlog_rows) : lay->term_rows;
     if (mr == cmdlog_top - 1 || mr == cmdlog_top)
     {
@@ -880,7 +1007,7 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             fidx[i] = i;
         }
-        const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
+        const char *filt = ov_get_active_filter(lay);
         if (filt[0] != '\0')
         {
             const char *names[OV_MAX_STREAMS];
@@ -903,7 +1030,7 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             fidx[i] = i;
         }
-        const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+        const char *filt = ov_get_active_filter(lay);
         if (filt[0] != '\0')
         {
             const char *names[OV_MAX_PROCS];
@@ -926,7 +1053,7 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             fidx[i] = i;
         }
-        const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
+        const char *filt = ov_get_active_filter(lay);
         if (filt[0] != '\0')
         {
             const char *names[OV_MAX_FPS];
@@ -1119,27 +1246,42 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
 
             /* Check for FILTER badge click */
-            int filter_badge_start = hover_badge_start + hover_badge_w + 1;
-            int filter_badge_w     = 17;
-            const char *fpat       = ov_get_active_filter(lay);
-            if (fpat[0] != '\0')
+            int         filter_badge_start = hover_badge_start + hover_badge_w + 1;
+            int         filter_badge_w     = 17;
+            const char *fpat               = ov_get_filter_pattern(lay);
+            if (ov_is_filter_active(lay))
             {
-                char fb[48];
-                snprintf(fb, sizeof(fb), " [/] FILTER ON: /%.12s/ ", fpat);
+                char fb[64];
+                snprintf(fb, sizeof(fb), " [f] FILTER ON: /%.12s/ ", fpat);
+                filter_badge_w = (int) strlen(fb);
+            }
+            else if (fpat[0] != '\0')
+            {
+                char fb[64];
+                snprintf(fb, sizeof(fb), " [f] FILTER: OFF (/%.12s/) ", fpat);
                 filter_badge_w = (int) strlen(fb);
             }
             if (mc >= filter_badge_start && mc < filter_badge_start + filter_badge_w)
             {
-                if (ov_is_filter_active(lay))
+                if (fpat[0] != '\0')
                 {
-                    ov_clear_all_filters(lay);
+                    lay->filter_active = !lay->filter_active;
                     lay->sel_stream    = 0;
                     lay->scroll_stream = 0;
                     lay->sel_proc      = 0;
                     lay->scroll_proc   = 0;
                     lay->sel_fps       = 0;
                     lay->scroll_fps    = 0;
-                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Regex filter cleared");
+                    if (lay->filter_active)
+                    {
+                        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                       "Regex filter: ON (/%s/)", fpat);
+                    }
+                    else
+                    {
+                        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                       "Regex filter: OFF (paused, click/'f' resume, ESC clear)");
+                    }
                 }
                 else
                 {
@@ -1152,38 +1294,59 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 }
                 return 1;
             }
+        }
 
-            /* Tab widths must match the renderer in ov_render_header():
-             * each tab renders as " [" + " Fn:LABEL " + "] " (inactive)
-             * or " " + ← + " Fn:LABEL " + → + " " (active),
-             * both totalling strlen(label) + 9 visible columns. */
-            static const char *vlabels[OV_VIEW_COUNT] = { "DASH", "STRM", "PROC",
-                                                          "FPS",  "CONN", "LOOPS" };
-            int                tab_widths[OV_VIEW_COUNT];
-            int                tabs_total_width = 0;
+        /* Check for tab selection & help button clicks (row 2) */
+        if (mr == lay->r_tabs.row && mc >= 1)
+        {
+            int tab_widths[OV_VIEW_COUNT];
+            int tabs_total_width = 0;
             for (int v = 0; v < OV_VIEW_COUNT; v++)
             {
-                tab_widths[v] = (int) strlen(vlabels[v]) + 9;
+                tab_widths[v] = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
                 tabs_total_width += tab_widths[v];
             }
 
-            int x = lay->term_cols - tabs_total_width + 1;
-            if (mc >= x)
+            int help_width = 11;
+            int help_col   = (lay->term_cols >= tabs_total_width + help_width)
+                               ? (lay->term_cols - help_width + 1)
+                               : (tabs_total_width + 1);
+
+            /* Check help button click */
+            if (mc >= help_col && mc < help_col + help_width)
             {
-                for (int v = 0; v < OV_VIEW_COUNT; v++)
+                if (lay->show_help)
                 {
-                    if (mc >= x && mc < x + tab_widths[v])
-                    {
-                        lay->view = (ov_view_t) v;
-                        break;
-                    }
-                    x += tab_widths[v];
+                    lay->show_help = 0;
+                    ov_buf_force_clear();
                 }
+                else
+                {
+                    ov_help_open(lay);
+                }
+                return 1;
+            }
+
+            /* Check tab selection clicks */
+            int tx = 1;
+            for (int v = 0; v < OV_VIEW_COUNT; v++)
+            {
+                if (mc >= tx && mc < tx + tab_widths[v])
+                {
+                    lay->view = (ov_view_t) v;
+                    if (lay->show_help)
+                    {
+                        lay->show_help = 0;
+                        ov_buf_force_clear();
+                    }
+                    return 1;
+                }
+                tx += tab_widths[v];
             }
         }
 
-        /* --- Preview-bar button clicks (row 2) --- */
-        if (mr == 2 && lay->nb_preview_btns > 0)
+        /* --- Preview-bar button clicks (row 3) --- */
+        if (mr == 3 && lay->nb_preview_btns > 0)
         {
             for (int bi = 0; bi < lay->nb_preview_btns; bi++)
             {
@@ -1838,8 +2001,8 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 {
                     log_h = 0;
                 }
-                int body_top = 3;
-                int body_h   = lay->term_rows - 3 - log_h;
+                int body_top = 4;
+                int body_h   = lay->term_rows - 4 - log_h;
                 if (body_h < 4)
                 {
                     body_h = 4;
@@ -3431,7 +3594,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
         scroll = &lay->scroll_stream;
         count  = m->nb_streams;
         {
-            const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
+            const char *filt = ov_get_active_filter(lay);
             if (filt[0] != '\0')
             {
                 const char *names[OV_MAX_STREAMS];
@@ -3450,7 +3613,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
         scroll = &lay->scroll_proc;
         count  = m->nb_procs;
         {
-            const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+            const char *filt = ov_get_active_filter(lay);
             if (filt[0] != '\0')
             {
                 const char *names[OV_MAX_PROCS];
@@ -3469,7 +3632,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
         scroll = &lay->scroll_fps;
         count  = m->nb_fps;
         {
-            const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
+            const char *filt = ov_get_active_filter(lay);
             if (filt[0] != '\0')
             {
                 const char *names[OV_MAX_FPS];
@@ -3826,6 +3989,84 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     /* 1. Interactive help overlay: when open, modal navigation and search only */
     if (lay->show_help)
     {
+        /* Mode 1: Full interactive Introduction to milk-CTRL */
+        if (lay->help_mode == 1)
+        {
+            int ph = (lay->term_rows > 6) ? (lay->term_rows - 3) : lay->term_rows;
+            int body_h = ph - 5;
+            if (body_h < 4)
+            {
+                body_h = 4;
+            }
+            int total_lines = 44;
+            int max_scroll  = (total_lines > body_h) ? (total_lines - body_h) : 0;
+
+            switch (key)
+            {
+            case '2':
+            case 'k':
+            case '1':
+            case 'i':
+            case '\t':
+                lay->help_mode = 0;
+                break;
+
+            case OV_KEY_UP:
+            case OV_KEY_MOUSE_UP:
+                if (lay->help_intro_scroll > 0)
+                {
+                    lay->help_intro_scroll--;
+                }
+                break;
+
+            case OV_KEY_DOWN:
+            case OV_KEY_MOUSE_DOWN:
+                if (lay->help_intro_scroll < max_scroll)
+                {
+                    lay->help_intro_scroll++;
+                }
+                break;
+
+            case OV_KEY_PGUP:
+                lay->help_intro_scroll -= (body_h > 4) ? (body_h - 2) : 4;
+                if (lay->help_intro_scroll < 0)
+                {
+                    lay->help_intro_scroll = 0;
+                }
+                break;
+
+            case OV_KEY_PGDN:
+                lay->help_intro_scroll += (body_h > 4) ? (body_h - 2) : 4;
+                if (lay->help_intro_scroll > max_scroll)
+                {
+                    lay->help_intro_scroll = max_scroll;
+                }
+                break;
+
+            case OV_KEY_HOME:
+                lay->help_intro_scroll = 0;
+                break;
+
+            case OV_KEY_END:
+                lay->help_intro_scroll = max_scroll;
+                break;
+
+            case OV_KEY_MOUSE_CLICK:
+                ov_help_handle_click(lay, ov_mouse_row, ov_mouse_col);
+                break;
+
+            case 27: /* ESC — exit help overlay */
+                lay->show_help = 0;
+                ov_buf_force_clear();
+                break;
+
+            default:
+                break;
+            }
+            return 0;
+        }
+
+        /* Mode 0: Controls & Keybindings Reference */
         /* Active search input mode */
         if (lay->help_search_active)
         {
@@ -3919,6 +4160,13 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
         switch (key)
         {
+        case '1':
+        case 'i':
+        case '\t':
+            lay->help_mode         = 1;
+            lay->help_intro_scroll = 0;
+            break;
+
         case '/':
             lay->help_search_active = 1;
             lay->help_search_cursor = (int) strlen(lay->help_search);
@@ -3975,6 +4223,13 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         case OV_KEY_ENTER:
         case '\r':
         {
+            if (lay->help_search[0] == '\0' && lay->help_sel == 0)
+            {
+                /* Landed on Introduction section: toggle into full intro guide */
+                lay->help_mode         = 1;
+                lay->help_intro_scroll = 0;
+                break;
+            }
             ov_help_toggle_at(lay, lay->help_sel);
             /* Clamp cursor after expand change */
             int new_nvis = ov_help_visible_count(lay);
@@ -4026,8 +4281,9 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 0;
     }
 
-    /* 3. Filter activation ('/') and active filter clearing (ESC) */
-    if (key == '/' || key == '?' || (key == 27 && ov_is_filter_active(lay)))
+    /* 3. Filter activation ('/'), toggle ('f'), and filter clearing (ESC) */
+    if (key == '/' || key == '?' || key == 'f' || key == ctrl('f') ||
+        (key == 27 && ov_has_filter(lay)))
     {
         if (ov_input__handle_filter_mode(key, lay))
         {

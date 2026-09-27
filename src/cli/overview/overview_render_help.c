@@ -35,20 +35,71 @@ typedef struct
 /* Section indices matching GUI panels */
 enum
 {
-    HS_NAV = 0, /* Global & Navigation       */
-    HS_STREAMS, /* Streams Panel (STRM)      */
-    HS_PROCS,   /* Processes Panel (PROC)    */
-    HS_FPS,     /* FPS Panel (FPS)           */
-    HS_GRAPH,   /* Graph & Lineage (CONN)    */
-    HS_CMDLOG,  /* Command Log & Display     */
-    HS_MOUSE,   /* Mouse Interactions        */
-    HS_COLORS,  /* Theme & Colors            */
+    HS_INTRO = 0, /* Introduction & Overview    */
+    HS_NAV,       /* Global & Navigation        */
+    HS_STREAMS,   /* Streams Panel (STRM)       */
+    HS_PROCS,     /* Processes Panel (PROC)     */
+    HS_FPS,       /* FPS Panel (FPS)            */
+    HS_GRAPH,     /* Graph & Lineage (CONN)     */
+    HS_CMDLOG,    /* Command Log & Display      */
+    HS_MOUSE,     /* Mouse Interactions         */
+    HS_COLORS,    /* Theme & Colors             */
     HS_COUNT
 };
 
 /* clang-format off */
 static const help_entry_t HELP[] =
 {
+    /* =========================================================
+     * 0. Introduction & Overview
+     * ========================================================= */
+    {
+        NULL,
+        "Introduction: What is milk-CTRL & Features",
+        "milk-CTRL is the unified, real-time diagnostic and control dashboard for the "
+        "milk framework. It monitors and orchestrates three core shared-memory pillars: "
+        "ImageStreamIO (streams), FPS (compute modules & parameters), and processinfo "
+        "(telemetry & loop rates). Press 1, 'i', or ENTER to open the interactive guide.",
+        HF_SECTION,
+        HS_INTRO,
+    },
+    {
+        "1 / i",
+        "Display full interactive introduction guide",
+        "Toggles the full-screen interactive Introduction guide explaining what milk-CTRL "
+        "is, its three core architectural pillars, primary capabilities, and operational "
+        "workflows.",
+        HF_ENTRY,
+        HS_INTRO,
+    },
+    {
+        "Overview",
+        "High-performance adaptive optics dashboard",
+        "Designed for microsecond-latency adaptive optics and image processing pipelines. "
+        "Provides single-pane-of-glass observability and control across all streams, "
+        "processes, and FPS compute units without impacting compute loop latency.",
+        HF_ENTRY,
+        HS_INTRO,
+    },
+    {
+        "Pillars",
+        "ImageStreamIO, FPS, and processinfo",
+        "1. ImageStreamIO: Zero-copy SHM circular buffers and semaphores (/milk/shm/). "
+        "2. FPS: Standardized compute units with parameter trees in isolated tmux sessions. "
+        "3. processinfo: Real-time telemetry, loop frequencies, and CPU core affinities.",
+        HF_ENTRY,
+        HS_INTRO,
+    },
+    {
+        "Features",
+        "Topology graphs, loops, and control mode",
+        "Features include dataflow connection graphs (F6), closed feedback loop detection "
+        "(F7), live parameter tree editing (F5), Control Mode actions (press 'c'), regex "
+        "filtering ('/'), and command logging ('G').",
+        HF_ENTRY,
+        HS_INTRO,
+    },
+
     /* =========================================================
      * 1. Global & Navigation
      * ========================================================= */
@@ -121,8 +172,16 @@ static const help_entry_t HELP[] =
     {
         "/",
         "Filter items (regex search)",
-        "Opens interactive regex filter. Displays only matching items with a blinking "
+        "Opens interactive regex filter. Displays only matching items with a fast-blinking "
         "FILTER ON indicator in header and status bar. Enter applies; Esc clears.",
+        HF_ENTRY,
+        HS_NAV,
+    },
+    {
+        "f",
+        "Toggle regex filter ON / OFF",
+        "Toggles regex filtering on or off without erasing the filter query. When OFF, "
+        "all items are displayed while retaining the filter query for quick re-activation.",
         HF_ENTRY,
         HS_NAV,
     },
@@ -592,7 +651,7 @@ static const help_entry_t HELP[] =
         "Left Click",
         "Select item / Focus panel",
         "Clicking anywhere on a row focuses that panel and selects the clicked item. "
-        "Clicking dashboard header tabs (DASH, STRM, etc.) switches views.",
+        "Clicking tabs (DASH, STRM, etc.) switches views; clicking [h: HELP] toggles help.",
         HF_ENTRY,
         HS_MOUSE,
     },
@@ -688,6 +747,8 @@ static const char *ov_help_section_name(int sec)
 {
     switch (sec)
     {
+    case HS_INTRO:
+        return "Intro";
     case HS_NAV:
         return "Global & Nav";
     case HS_STREAMS:
@@ -740,6 +801,8 @@ static const char *ov_help_section_tag(int sec)
 {
     switch (sec)
     {
+    case HS_INTRO:
+        return "INTR";
     case HS_NAV:
         return "NAV";
     case HS_STREAMS:
@@ -769,6 +832,8 @@ static ov_rgb_t ov_help_section_color(int sec)
 {
     switch (sec)
     {
+    case HS_INTRO:
+        return (ov_rgb_t){ 255, 215, 80 };
     case HS_NAV:
         return OV_FG_TITLE;
     case HS_STREAMS:
@@ -1050,8 +1115,9 @@ void ov_help_open(OV_LAYOUT *lay)
     lay->help_search[0]     = '\0';
     lay->help_search_active = 0;
     lay->help_search_cursor = 0;
-    int sec                 = ov_help_focus_section(lay->focus);
-    lay->help_sel           = ov_help_section_first_vis_row(lay, sec);
+    lay->help_mode          = 0;
+    lay->help_intro_scroll  = 0;
+    lay->help_sel           = 0;
 }
 
 /**
@@ -1161,6 +1227,42 @@ int ov_help_expand_at(
 }
 
 /**
+ * ov_help_get_rect - compute bounding box for help overlay.
+ * @lay: layout state
+ * @pr:  output top row (1-based)
+ * @pc:  output left column (1-based)
+ * @ph:  output height in rows
+ * @pw:  output width in columns
+ *
+ * Takes the whole available terminal space: starts below the dedicated tab bar
+ * (row 3) and extends across the entire terminal width to the row above the status bar.
+ */
+static void ov_help_get_rect(
+    const OV_LAYOUT *lay,
+    int             *pr,
+    int             *pc,
+    int             *ph,
+    int             *pw)
+{
+    int W = lay->term_cols;
+    int H = lay->term_rows;
+
+    *pc = 1;
+    *pw = W;
+
+    if (H <= 6)
+    {
+        *pr = 1;
+        *ph = H;
+    }
+    else
+    {
+        *pr = 3;
+        *ph = H - 3;
+    }
+}
+
+/**
  * ov_help_handle_click - handle mouse click within help overlay.
  * @lay: layout state
  * @mr:  clicked terminal row (1-based)
@@ -1173,49 +1275,64 @@ int ov_help_handle_click(
     int        mr,
     int        mc)
 {
-    int W = lay->term_cols;
-    int H = lay->term_rows;
-
-    int pw = (W >= 94) ? 88 : (W - 4);
-    if (pw < 48)
-    {
-        pw = (W > 4) ? (W - 2) : 44;
-    }
-
-    int ph = (H >= 34) ? 30 : ((H >= 24) ? (H - 4) : (H - 2));
-    if (ph < 16)
-    {
-        ph = (H > 2) ? (H - 2) : 14;
-    }
-
-    int pr = (H - ph) / 2;
-    int pc = (W - pw) / 2;
-    if (pr < 1)
-    {
-        pr = 1;
-    }
-    if (pc < 1)
-    {
-        pc = 1;
-    }
+    int pr, pc, ph, pw;
+    ov_help_get_rect(lay, &pr, &pc, &ph, &pw);
 
     /* Click outside popup -> close help overlay */
     if (mr < pr || mr >= pr + ph || mc < pc || mc >= pc + pw)
     {
         lay->show_help = 0;
         ov_buf_force_clear();
+        if (mr == lay->r_tabs.row)
+        {
+            int tx = 1;
+            for (int v = 0; v < OV_VIEW_COUNT; v++)
+            {
+                int tw = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
+                if (mc >= tx && mc < tx + tw)
+                {
+                    lay->view = (ov_view_t) v;
+                    break;
+                }
+                tx += tw;
+            }
+        }
         return 1;
     }
 
-    /* Click close button area on top border */
-    if (mr == pr && mc >= pc + pw - 6)
+    /* Click close button area on top border or header row */
+    if ((mr == pr && mc >= pc + pw - 6) || (mr == pr + 1 && mc >= pc + pw - 6))
     {
         lay->show_help = 0;
         ov_buf_force_clear();
         return 1;
     }
 
-    /* Click on search bar area on row pr + 2 */
+    /* Click on header row (pr + 1): Mode selector tabs */
+    if (mr == pr + 1)
+    {
+        int tab1_w = (pw >= 100) ? 26 : 14;
+        int tab2_w = (pw >= 100) ? 32 : 20;
+        if (mc >= pc + 2 && mc < pc + 2 + tab1_w)
+        {
+            lay->help_mode         = 1;
+            lay->help_intro_scroll = 0;
+            return 1;
+        }
+        if (mc >= pc + 2 + tab1_w && mc < pc + 2 + tab1_w + tab2_w)
+        {
+            lay->help_mode = 0;
+            return 1;
+        }
+    }
+
+    /* If in Intro mode (help_mode == 1), clicks in body do not alter list */
+    if (lay->help_mode == 1)
+    {
+        return 1;
+    }
+
+    /* Click on search bar area on row pr + 2 (in Controls mode) */
     if (mr == pr + 2 && mc >= pc + 1 && mc < pc + pw - 1)
     {
         if (lay->help_search[0] != '\0' && mc >= pc + pw - 16)
@@ -1236,7 +1353,7 @@ int ov_help_handle_click(
     }
 
     /* Detail pane height and split line */
-    int detail_h = (ph >= 26) ? 7 : ((ph >= 20) ? 5 : 4);
+    int detail_h = (ph >= 36) ? 10 : ((ph >= 28) ? 8 : ((ph >= 22) ? 6 : 5));
     int split_r  = (pr + ph - 1) - detail_h;
     int list_top = pr + 4;
     int list_h   = split_r - list_top;
@@ -1266,6 +1383,14 @@ int ov_help_handle_click(
         int vis_row = (mr - list_top) + scroll;
         if (vis_row >= 0 && vis_row < nvis)
         {
+            int idx = map[vis_row];
+            if (HELP[idx].section == HS_INTRO && (lay->help_sel == vis_row || mr == list_top))
+            {
+                /* Clicking on Introduction entry/header opens full intro guide */
+                lay->help_mode         = 1;
+                lay->help_intro_scroll = 0;
+                return 1;
+            }
             if (lay->help_search[0] == '\0' && lay->help_sel == vis_row)
             {
                 /* Clicking selected header toggles expansion */
@@ -1398,20 +1523,38 @@ static void ov_help_render_detail(
     {
         ov_buf_bold();
         ov_theme_fg(OV_FG_TITLE);
-        ov_buf_printf("■ PANEL OVERVIEW: %s", entry->label);
-        ov_buf_reset_attr();
-        ov_theme_bg(OV_BG_PANEL);
-
-        const char *hint = help_is_expanded(lay, entry->section)
-                               ? "[Press ← / ENTER to collapse]"
-                               : "[Press → / ENTER to expand]";
-        int rem = inner_w - (18 + (int) strlen(entry->label) + (int) strlen(hint));
-        if (rem > 0)
+        if (entry->section == HS_INTRO)
         {
-            ov_buf_hline(' ', rem);
+            ov_buf_printf("■ INTRODUCTION: %s", entry->label);
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_PANEL);
+
+            const char *hint = "[Press 1, 'i', or ENTER to open full interactive guide]";
+            int rem = inner_w - (16 + (int) strlen(entry->label) + (int) strlen(hint));
+            if (rem > 0)
+            {
+                ov_buf_hline(' ', rem);
+            }
+            ov_theme_fg(OV_FG_WARN);
+            ov_buf_printf("%s", hint);
         }
-        ov_theme_fg(OV_FG_DIM);
-        ov_buf_printf("%s", hint);
+        else
+        {
+            ov_buf_printf("■ PANEL OVERVIEW: %s", entry->label);
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_PANEL);
+
+            const char *hint = help_is_expanded(lay, entry->section)
+                                   ? "[Press ← / ENTER to collapse]"
+                                   : "[Press → / ENTER to expand]";
+            int rem = inner_w - (18 + (int) strlen(entry->label) + (int) strlen(hint));
+            if (rem > 0)
+            {
+                ov_buf_hline(' ', rem);
+            }
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf("%s", hint);
+        }
     }
     else if (entry->flags & HF_ENTRY)
     {
@@ -1488,7 +1631,13 @@ static void ov_help_render_detail(
     tbuf[0] = '\0';
     ov_rgb_t target_fg = OV_FG_DIM;
 
-    if (entry->section == HS_STREAMS)
+    if (entry->section == HS_INTRO)
+    {
+        target_fg = OV_FG_TITLE;
+        snprintf(tbuf, sizeof(tbuf),
+                 "Intro Guide: Press '1', 'i', or ENTER to open the interactive introduction");
+    }
+    else if (entry->section == HS_STREAMS)
     {
         int si = ov_get_selected_stream_idx(lay, m);
         if (si >= 0 && si < m->nb_streams)
@@ -1622,6 +1771,324 @@ static void ov_help_render_detail(
     }
 }
 
+/* clang-format off */
+typedef enum
+{
+    IL_BLANK = 0,
+    IL_HEADER,
+    IL_SUBHEADER,
+    IL_BULLET,
+    IL_TEXT,
+    IL_KEY
+} intro_line_type_t;
+
+typedef struct
+{
+    intro_line_type_t type;
+    const char       *prefix;
+    const char       *text;
+} intro_item_t;
+
+static const intro_item_t INTRO_ITEMS[] = {
+    { IL_HEADER,    "■ WHAT IS milk-CTRL?", NULL },
+    { IL_TEXT,      NULL, "milk-CTRL is the unified, real-time diagnostic and control dashboard" },
+    { IL_TEXT,      NULL, "for the milk (Modular Image Processing Library Kernel) framework." },
+    { IL_TEXT,      NULL, "It provides a high-performance, flicker-free terminal interface" },
+    { IL_TEXT,      NULL, "specially designed for mission-critical astronomical adaptive optics" },
+    { IL_TEXT,      NULL, "(AO), wavefront control, and image processing pipelines." },
+    { IL_BLANK,     NULL, NULL },
+    { IL_TEXT,      NULL, "Built on zero-copy shared memory, milk-CTRL aggregates live system" },
+    { IL_TEXT,      NULL, "state into a single dashboard without adding IPC overhead or latency." },
+    { IL_BLANK,     NULL, NULL },
+
+    { IL_HEADER,    "■ THE THREE CORE PILLARS", NULL },
+    { IL_SUBHEADER, "1. ImageStreamIO (Streams — STRM / F3)", NULL },
+    { IL_BULLET,    "• Zero-Copy SHM: ", "Circular buffers & image arrays in /milk/shm/." },
+    { IL_BULLET,    "• Ultra-High Speed: ", "Transfers multi-dimensional data up to 10+ kHz." },
+    { IL_BULLET,    "• Data Diversity: ", "Supports FLOAT, DOUBLE, UINT16, INT32, etc." },
+    { IL_BULLET,    "• Synchronization: ", "POSIX read/write semaphores coordinate clients." },
+    { IL_BLANK,     NULL, NULL },
+
+    { IL_SUBHEADER, "2. FPS — Function Processing System (FPS — FPS / F5)", NULL },
+    { IL_BULLET,    "• Compute Units: ", "Modular compute engines for algorithms & AO." },
+    { IL_BULLET,    "• Tmux Isolation: ", "Runs compute tasks in isolated tmux sessions." },
+    { IL_BULLET,    "• Dual Loops: ", "Separates parameter config (conf) from processing (run)." },
+    { IL_BULLET,    "• Parameter Trees: ", "Hierarchical parameter directories editable live." },
+    { IL_BLANK,     NULL, NULL },
+
+    { IL_SUBHEADER, "3. processinfo (Processes — PROC / F4)", NULL },
+    { IL_BULLET,    "• Telemetry: ", "Heartbeat registration, loop frequencies (Hz) & jitter." },
+    { IL_BULLET,    "• Resources: ", "CPU core pinning masks, RSS memory, & cycle times." },
+    { IL_BULLET,    "• Lifecycle: ", "Tracks RUNNING, PAUSED, STOPPED, & CRASHED states." },
+    { IL_BLANK,     NULL, NULL },
+
+    { IL_HEADER,    "■ WHAT CAN milk-CTRL DO?", NULL },
+    { IL_BULLET,    "• Multi-Panel (F2): ", "View Streams, Procs, FPS, & Graph together." },
+    { IL_BULLET,    "• Full Monitors (F3-F5): ", "Deep-dive into streams, telemetry, or FPS." },
+    { IL_BULLET,    "• Data Lineage (F6): ", "Maps upstream producers & downstream consumers." },
+    { IL_BULLET,    "• Feedback Loops (LOOPS/F7): ", "Detects closed directed loops (WFS -> DM)." },
+    { IL_BULLET,    "• Control Mode ('c'): ", "Start/stop FPS, signal procs, or delete streams." },
+    { IL_BULLET,    "• Parameter Editing: ", "Browse and edit FPS variables with limits check." },
+    { IL_BULLET,    "• Filtering & Search: ", "Regex filter ('/'), toggle ('f'), freeze (SPACE)." },
+    { IL_BULLET,    "• Snapshots & Logging: ", "Save state snapshots ('W') & command ring ('G')." },
+    { IL_BLANK,     NULL, NULL },
+
+    { IL_HEADER,    "■ QUICK START & KEYSTROKES", NULL },
+    { IL_KEY,       "  1 / i", "Toggle this Introduction guide on or off" },
+    { IL_KEY,       "  2 / k", "Switch to the Controls & Keybindings reference" },
+    { IL_KEY,       "  F2 - F7", "Switch view panels (DASH, STRM, PROC, FPS, CONN, LOOPS)" },
+    { IL_KEY,       "  TAB", "Cycle active panel focus (Streams -> Procs -> FPS -> Graph)" },
+    { IL_KEY,       "  ↑ / ↓ (j / k)", "Navigate items in focused list, or scroll this guide" },
+    { IL_KEY,       "  c", "Toggle Control Mode ON to enable management actions" },
+    { IL_KEY,       "  /", "Search topics in help, or regex filter in dashboard" },
+    { IL_KEY,       "  f", "Toggle regex filter ON/OFF without losing query string" },
+    { IL_KEY,       "  SPACE", "Freeze selection highlight during rapid live updates" },
+    { IL_KEY,       "  ESC", "Close help overlay or exit current prompt" },
+    { IL_KEY,       "  q / x", "Quit milk-CTRL cleanly" },
+};
+/* clang-format on */
+
+/**
+ * ov_help_render_intro - render full interactive introduction guide to milk-CTRL.
+ * @lay: layout state
+ * @pr:  top row (1-based)
+ * @pc:  left column (1-based)
+ * @ph:  height in rows
+ * @pw:  width in columns
+ */
+static void ov_help_render_intro(
+    const OV_LAYOUT *lay,
+    int              pr,
+    int              pc,
+    int              ph,
+    int              pw)
+{
+    const char *title =
+        (pw >= 84)
+            ? "ABOUT milk-CTRL (1/i: Intro • 2/k: Controls • ↑↓: Scroll • ESC: Close)"
+            : ((pw >= 52) ? "ABOUT milk-CTRL (1/i: Intro • 2/k: Controls • ESC: Close)"
+                          : "ABOUT milk-CTRL");
+    ov_draw_panel_border(pr, pc, ph, pw, title, OV_FG_TITLE, 1, 0);
+
+    for (int r = pr + 1; r < pr + ph - 1; r++)
+    {
+        clear_row(r, pc + 1, pw - 2, OV_BG_PANEL);
+    }
+
+    int inner_w = pw - 4;
+    int col     = pc + 2;
+
+    /* Header Row (pr + 1): Mode selector tabs */
+    ov_buf_pos(pr + 1, col);
+    ov_theme_bg(OV_BG_PANEL);
+
+    int tab1_w = (pw >= 100) ? 26 : 14;
+    int tab2_w = (pw >= 100) ? 32 : 20;
+
+    /* Tab 1 (Active): Intro & Overview */
+    ov_buf_bg(240, 175, 20);
+    ov_buf_fg(20, 20, 25);
+    ov_buf_bold();
+    ov_buf_printf("%s", (pw >= 100) ? " [▶ 1: INTRO & OVERVIEW ◀] " : " [▶ 1: INTRO ◀] ");
+    ov_buf_reset_attr();
+    ov_theme_bg(OV_BG_PANEL);
+    ov_buf_printf(" ");
+
+    /* Tab 2 (Inactive): Keystrokes & Controls */
+    ov_buf_bg(45, 50, 65);
+    ov_buf_fg(190, 200, 220);
+    ov_buf_bold();
+    ov_buf_printf("%s", (pw >= 100) ? " [ 2: KEYSTROKES & CONTROLS ] " : " [2: CONTROLS] ");
+    ov_buf_reset_attr();
+    ov_theme_bg(OV_BG_PANEL);
+
+    /* Close hint on right */
+    const char *close_hint = "[ESC: Close Help] [X] ";
+    int used_hdr = tab1_w + 1 + tab2_w;
+    int rem_hdr  = inner_w - used_hdr - (int) strlen(close_hint);
+    if (rem_hdr > 0)
+    {
+        ov_buf_hline(' ', rem_hdr);
+    }
+    ov_buf_fg(255, 120, 100);
+    ov_buf_bold();
+    ov_buf_printf("%s", close_hint);
+    ov_buf_reset_attr();
+    ov_theme_bg(OV_BG_PANEL);
+
+    /* Row pr + 2: Subtitle */
+    ov_buf_pos(pr + 2, col);
+    ov_theme_fg(OV_FG_DIM);
+    ov_buf_printf("Unified Real-Time Dashboard for Shared Memory, Telemetry, and AO Pipelines");
+    int sub_rem = inner_w - 75;
+    if (sub_rem > 0)
+    {
+        ov_buf_hline(' ', sub_rem);
+    }
+
+    /* Row pr + 3: Divider */
+    ov_buf_pos(pr + 3, pc);
+    ov_theme_fg(OV_FG_DIM);
+    ov_buf_printf("├");
+    for (int c = pc + 1; c < pc + pw - 1; c++)
+    {
+        ov_buf_printf("─");
+    }
+    ov_buf_printf("┤");
+
+    /* Body viewport calculation */
+    int body_top    = pr + 4;
+    int body_bot    = pr + ph - 2;
+    int body_h      = body_bot - body_top + 1;
+    int total_lines = (int) (sizeof(INTRO_ITEMS) / sizeof(INTRO_ITEMS[0]));
+    int max_scroll  = (total_lines > body_h) ? (total_lines - body_h) : 0;
+
+    int scroll = lay->help_intro_scroll;
+    if (scroll < 0)
+    {
+        scroll = 0;
+    }
+    if (scroll > max_scroll)
+    {
+        scroll = max_scroll;
+    }
+
+    for (int r = 0; r < body_h; r++)
+    {
+        int row_idx = r + scroll;
+        int cur_row = body_top + r;
+        ov_buf_pos(cur_row, col);
+        ov_theme_bg(OV_BG_PANEL);
+
+        if (row_idx >= total_lines)
+        {
+            ov_buf_hline(' ', inner_w);
+            continue;
+        }
+
+        const intro_item_t *item = &INTRO_ITEMS[row_idx];
+        int printed_len = 0;
+
+        switch (item->type)
+        {
+        case IL_HEADER:
+            ov_buf_bold();
+            ov_buf_bg(40, 50, 75);
+            ov_theme_fg(OV_FG_TITLE);
+            ov_buf_printf(" %s ", item->prefix);
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_PANEL);
+            printed_len = (int) strlen(item->prefix) + 2;
+            break;
+
+        case IL_SUBHEADER:
+            ov_buf_bold();
+            ov_theme_fg(OV_FG_WARN);
+            ov_buf_printf("  %s", item->prefix);
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_PANEL);
+            printed_len = (int) strlen(item->prefix) + 2;
+            break;
+
+        case IL_BULLET:
+            ov_buf_bold();
+            ov_theme_fg(OV_FG_TITLE);
+            ov_buf_printf("    %s", item->prefix);
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_PANEL);
+            ov_theme_fg(OV_FG_TEXT);
+            ov_buf_printf("%s", item->text ? item->text : "");
+            printed_len = (int) strlen(item->prefix) + 4 +
+                          (item->text ? (int) strlen(item->text) : 0);
+            break;
+
+        case IL_TEXT:
+            ov_theme_fg(OV_FG_TEXT);
+            ov_buf_printf("  %s", item->text ? item->text : "");
+            printed_len = (item->text ? (int) strlen(item->text) : 0) + 2;
+            break;
+
+        case IL_KEY:
+            ov_buf_bold();
+            ov_buf_fg(130, 205, 255);
+            ov_buf_printf("  %-16s", item->prefix ? item->prefix : "");
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_PANEL);
+            ov_theme_fg(OV_FG_TEXT);
+            ov_buf_printf(" %s", item->text ? item->text : "");
+            printed_len = 2 + 16 + 1 + (item->text ? (int) strlen(item->text) : 0);
+            break;
+
+        case IL_BLANK:
+        default:
+            printed_len = 0;
+            break;
+        }
+
+        int pad = inner_w - printed_len;
+        if (pad > 0)
+        {
+            ov_buf_hline(' ', pad);
+        }
+    }
+
+    if (scroll > 0)
+    {
+        ov_buf_pos(body_top, pc + pw - 2);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_WARN);
+        ov_buf_printf("▲");
+    }
+    if (scroll < max_scroll)
+    {
+        ov_buf_pos(body_bot, pc + pw - 2);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_WARN);
+        ov_buf_printf("▼");
+    }
+
+    /* Bottom divider */
+    {
+        ov_buf_pos(body_bot + 1, pc);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_DIM);
+        ov_buf_printf("├─");
+
+        char bstatus[80];
+        if (max_scroll > 0)
+        {
+            snprintf(bstatus, sizeof(bstatus),
+                     " [↑↓ / PgUp/PgDn: Scroll (%d/%d) • 2/k: Controls • ESC: Close] ",
+                     scroll + 1, total_lines);
+        }
+        else
+        {
+            snprintf(bstatus, sizeof(bstatus),
+                     " [2 / k: Controls Reference • ESC: Close] ");
+        }
+
+        ov_buf_bold();
+        ov_theme_fg(OV_FG_TITLE);
+        ov_buf_printf("%s", bstatus);
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_DIM);
+
+        int used_b = 2 + (int) strlen(bstatus);
+        int rem_b  = (pw - 2) - used_b;
+        if (rem_b > 0)
+        {
+            for (int i = 0; i < rem_b; i++)
+            {
+                ov_buf_printf("─");
+            }
+        }
+        ov_buf_printf("┤");
+    }
+
+    ov_buf_reset_attr();
+}
+
 /* ---- Render entry point ---- */
 
 /**
@@ -1633,39 +2100,23 @@ void ov_render_help(
     const OV_LAYOUT *lay,
     const OV_MODEL  *m)
 {
+    int pr, pc, ph, pw;
+    ov_help_get_rect(lay, &pr, &pc, &ph, &pw);
+
+    if (lay->help_mode == 1)
+    {
+        ov_help_render_intro(lay, pr, pc, ph, pw);
+        return;
+    }
+
     int map[128];
     int nvis = help_visible_rows(lay, map);
 
-    int W = lay->term_cols;
-    int H = lay->term_rows;
-
-    int pw = (W >= 94) ? 88 : (W - 4);
-    if (pw < 48)
-    {
-        pw = (W > 4) ? (W - 2) : 44;
-    }
-
-    int ph = (H >= 34) ? 30 : ((H >= 24) ? (H - 4) : (H - 2));
-    if (ph < 16)
-    {
-        ph = (H > 2) ? (H - 2) : 14;
-    }
-
-    int pr = (H - ph) / 2;
-    int pc = (W - pw) / 2;
-    if (pr < 1)
-    {
-        pr = 1;
-    }
-    if (pc < 1)
-    {
-        pc = 1;
-    }
-
     /* Draw outer panel border */
     const char *title =
-        (pw >= 80) ? "HELP & CONTROLS  (↑↓ nav • →/← expand • / search • ESC close)"
-                   : ((pw >= 54) ? "HELP (↑↓ nav • / search • ESC close)" : "HELP");
+        (pw >= 84)
+            ? "HELP & CONTROLS (1/i: Intro • 2/k: Controls • ↑↓ nav • / search • ESC close)"
+            : ((pw >= 54) ? "HELP & CONTROLS (1/i: Intro • / search • ESC close)" : "HELP");
     ov_draw_panel_border(pr, pc, ph, pw, title, OV_FG_BRIGHT, 1, 0);
 
     /* Clear interior background */
@@ -1674,10 +2125,35 @@ void ov_render_help(
         clear_row(r, pc + 1, pw - 2, OV_BG_PANEL);
     }
 
-    /* Row 1: Header Context and Control Mode Status */
+    int inner_w = pw - 4;
+
+    /* Row 1: Header Mode Selector and Context */
     {
         ov_buf_pos(pr + 1, pc + 2);
         ov_theme_bg(OV_BG_PANEL);
+
+        int tab1_w = (pw >= 100) ? 26 : 14;
+        int tab2_w = (pw >= 100) ? 32 : 20;
+
+        /* Tab 1 (Inactive): Intro & Overview */
+        ov_buf_bg(45, 50, 65);
+        ov_buf_fg(190, 200, 220);
+        ov_buf_bold();
+        ov_buf_printf("%s", (pw >= 100) ? " [ 1: INTRO & OVERVIEW ] " : " [1: INTRO] ");
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_PANEL);
+        ov_buf_printf(" ");
+
+        /* Tab 2 (Active): Keystrokes & Controls */
+        ov_buf_bg(240, 175, 20);
+        ov_buf_fg(20, 20, 25);
+        ov_buf_bold();
+        ov_buf_printf("%s", (pw >= 100) ? " [▶ 2: KEYSTROKES & CONTROLS ◀] "
+                                        : " [▶ 2: CONTROLS ◀] ");
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_PANEL);
+        ov_buf_printf("  ");
+
         ov_theme_fg(OV_FG_DIM);
         ov_buf_printf("Context: ");
         ov_buf_bold();
@@ -1733,7 +2209,7 @@ void ov_render_help(
 
         /* Control Mode badge on right side of header row */
         int ctrl_badge_col = pc + pw - 27;
-        if (ctrl_badge_col > pc + 36)
+        if (ctrl_badge_col > pc + tab1_w + tab2_w + 35)
         {
             ov_buf_pos(pr + 1, ctrl_badge_col);
             if (lay->ctrl_mode)
@@ -1754,8 +2230,6 @@ void ov_render_help(
             ov_theme_bg(OV_BG_PANEL);
         }
     }
-
-    int inner_w = pw - 4;
 
     /* Row 2: Search Bar or Search Feature Notification Note */
     {
@@ -1865,7 +2339,7 @@ void ov_render_help(
     }
 
     /* Detailed Help split calculation */
-    int detail_h = (ph >= 26) ? 7 : ((ph >= 20) ? 5 : 4);
+    int detail_h = (ph >= 36) ? 10 : ((ph >= 28) ? 8 : ((ph >= 22) ? 6 : 5));
     int split_r  = (pr + ph - 1) - detail_h;
     int list_top = pr + 4;
     int list_h   = split_r - list_top;

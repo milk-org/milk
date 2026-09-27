@@ -489,7 +489,7 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
 }
 
 /**
- * ov_render_fps_param_info - draw FPS parameter metadata header on rows 2 and 3.
+ * ov_render_fps_param_info - draw FPS parameter metadata header on rows 3 and 4.
  * @lay: layout state
  * @m:   data model
  */
@@ -497,19 +497,19 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (lay->fps_param_focus == 0)
     {
-        /* Clear row 3 to prevent stale parameter info */
-        ov_buf_pos(3, 1);
+        /* Clear row 4 to prevent stale parameter info */
+        ov_buf_pos(4, 1);
         ov_theme_bg(OV_BG_PANEL);
         ov_buf_hline(' ', lay->term_cols);
         return;
     }
 
-    /* Clear rows 2 and 3 */
-    ov_buf_pos(2, 1);
+    /* Clear rows 3 and 4 */
+    ov_buf_pos(3, 1);
     ov_theme_bg(OV_BG_PANEL);
     ov_buf_hline(' ', lay->term_cols);
 
-    ov_buf_pos(3, 1);
+    ov_buf_pos(4, 1);
     ov_theme_bg(OV_BG_PANEL);
     ov_buf_hline(' ', lay->term_cols);
 
@@ -533,14 +533,14 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
     if (item->is_dir)
     {
         /* Draw directory info */
-        ov_buf_pos(2, 2);
+        ov_buf_pos(3, 2);
         ov_theme_fg(OV_FG_WARN);
         ov_buf_bold();
         ov_buf_printf("DIR: ");
         ov_theme_fg(OV_FG_TEXT);
         ov_buf_printf("%s%s%s", lay->fps_param_path, lay->fps_param_path[0] ? "." : "", item->name);
 
-        ov_buf_pos(3, 2);
+        ov_buf_pos(4, 2);
         ov_theme_fg(OV_FG_DIM);
         ov_buf_printf("Description: (Directory)");
         ov_buf_reset_attr();
@@ -596,8 +596,8 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
         type_name = "TIMESPEC";
     }
 
-    /* Display values and limits on Row 2 */
-    ov_buf_pos(2, 2);
+    /* Display values and limits on Row 3 */
+    ov_buf_pos(3, 2);
     ov_theme_fg(OV_FG_FPS);
     ov_buf_bold();
     ov_buf_printf("PARAM: ");
@@ -627,8 +627,8 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_printf("%s  ", fps->disp_param_max[pi]);
     }
 
-    /* Display description on Row 3 */
-    ov_buf_pos(3, 2);
+    /* Display description on Row 4 */
+    ov_buf_pos(4, 2);
     ov_theme_fg(OV_FG_DIM);
     ov_buf_printf("Description: ");
     ov_theme_fg(OV_FG_TEXT);

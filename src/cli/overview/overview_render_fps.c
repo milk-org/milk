@@ -25,7 +25,7 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
         names[i] = m->fps[i].name;
     }
     int         fidx[OV_MAX_FPS];
-    const char *active_filter = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
+    const char *active_filter = ov_get_active_filter(lay);
     int         filt_n        = ov_filter_build(active_filter, names, m->nb_fps, fidx, OV_MAX_FPS);
 
     if (lay->freeze && lay->freeze_focus != OV_FOCUS_FPS && rel != NULL)

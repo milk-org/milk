@@ -416,8 +416,8 @@ void ov_render_loops_view(
     int W = lay->term_cols;
     int H = lay->term_rows;
 
-    int body_top = 3;
-    int body_h   = H - 4;
+    int body_top = lay->r_graph.row;
+    int body_h   = lay->r_graph.height;
     if (body_h < 4)
     {
         body_h = 4;

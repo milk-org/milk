@@ -340,8 +340,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     int ctrl_w = 0;
     if (lay->ctrl_mode)
     {
-        /* Software blinking badge for "CONTROL" (10 fps -> 2Hz blink) */
-        if ((lay->ctrl_blink % 10) < 5)
+        /* Software blinking badge for "CONTROL" (fast 2.5Hz blink) */
+        if ((lay->ctrl_blink % 4) < 2)
         {
             ov_buf_bg(OV_ANIM_PULSE_BG_MAX.r, OV_ANIM_PULSE_BG_MAX.g, OV_ANIM_PULSE_BG_MAX.b);
             ov_buf_fg(OV_ANIM_PULSE_FG_MAX.r, OV_ANIM_PULSE_FG_MAX.g, OV_ANIM_PULSE_FG_MAX.b);
@@ -395,12 +395,12 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     ov_buf_printf(" ");
-    int filter_w = 0;
-    const char *fpat = ov_get_active_filter(lay);
-    if (fpat[0] != '\0')
+    int         filter_w = 0;
+    const char *fpat     = ov_get_filter_pattern(lay);
+    if (ov_is_filter_active(lay))
     {
-        /* Software blinking badge for "FILTER ON" (10 fps -> 2Hz blink) */
-        if ((lay->ctrl_blink % 10) < 5)
+        /* Software blinking badge for "FILTER ON" (fast 2.5Hz blink) */
+        if ((lay->ctrl_blink % 4) < 2)
         {
             ov_buf_bg(255, 190, 0);   /* bright amber/gold */
             ov_buf_fg(20, 20, 20);    /* dark text */
@@ -411,8 +411,21 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
             ov_buf_fg(255, 255, 255); /* white text */
         }
         ov_buf_bold();
-        char fbadge[48];
-        snprintf(fbadge, sizeof(fbadge), " [/] FILTER ON: /%.12s/ ", fpat);
+        char fbadge[64];
+        snprintf(fbadge, sizeof(fbadge), " [f] FILTER ON: /%.12s/ ", fpat);
+        filter_w = (int) strlen(fbadge);
+        ov_buf_printf("%s", fbadge);
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+    }
+    else if (fpat[0] != '\0')
+    {
+        /* Defined but paused filter badge: shows retained query */
+        ov_buf_bg(50, 50, 70);     /* slate / dim blue-gray */
+        ov_buf_fg(180, 190, 220);  /* soft bluish-white */
+        ov_buf_bold();
+        char fbadge[64];
+        snprintf(fbadge, sizeof(fbadge), " [f] FILTER: OFF (/%.12s/) ", fpat);
         filter_w = (int) strlen(fbadge);
         ov_buf_printf("%s", fbadge);
         ov_buf_reset_attr();
@@ -420,7 +433,7 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     }
     else
     {
-        /* Inactive filter badge */
+        /* Inactive / empty filter badge */
         ov_buf_bg(60, 60, 60);
         ov_buf_fg(160, 160, 160);
         ov_buf_bold();
@@ -464,19 +477,39 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_printf("  BW: %4.1f kB/s", bw_kbs);
     }
 
-    int tabs_width = 0;
-    for (int v = 0; v < OV_VIEW_COUNT; v++)
+    int pad = r.width - chars_left;
+    if (pad > 0)
     {
-        tabs_width += (int) strlen(view_label((ov_view_t) v)) + 9;
+        ov_theme_bg(OV_BG_HEADER);
+        ov_buf_hline(' ', pad);
     }
 
-    int pad = r.width - tabs_width - chars_left;
-    if (pad < 1)
-    {
-        pad = 1;
-    }
     ov_theme_bg(OV_BG_HEADER);
-    ov_buf_hline(' ', pad);
+}
+
+/**
+ * ov_render_tabs - render dedicated tab selection bar and prominent help button.
+ * @lay: layout state
+ *
+ * Renders on row 2 (lay->r_tabs.row). Left side displays function key view tabs
+ * ([F2:DASH] .. [F7:LOOPS]), and right side displays prominent [h: HELP] button
+ * with slow blink color when idle, and active pill styling when help is open.
+ */
+void ov_render_tabs(
+    OV_LAYOUT *lay)
+{
+    OV_RECT r = lay->r_tabs;
+    ov_buf_pos(r.row, r.col);
+    ov_theme_bg(OV_BG_HEADER);
+
+    /* Render view tabs */
+    int tabs_total_width = 0;
+    int tab_widths[OV_VIEW_COUNT];
+    for (int v = 0; v < OV_VIEW_COUNT; v++)
+    {
+        tab_widths[v] = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
+        tabs_total_width += tab_widths[v];
+    }
 
     for (int v = 0; v < OV_VIEW_COUNT; v++)
     {
@@ -488,7 +521,7 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
             ov_theme_bg(OV_FG_TITLE);
             ov_theme_fg(OV_BG_TERMINAL);
             ov_buf_bold();
-            ov_buf_printf(" F%d:%s ", v + 2, view_label((ov_view_t) v));
+            ov_buf_printf(" F%d:%s ", v + 2, ov_view_label((ov_view_t) v));
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_HEADER);
             ov_theme_fg(OV_FG_TITLE);
@@ -501,7 +534,7 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
             ov_buf_printf(" [");
             ov_theme_fg(OV_FG_TEXT);
             ov_buf_bold();
-            ov_buf_printf(" F%d:%s ", v + 2, view_label((ov_view_t) v));
+            ov_buf_printf(" F%d:%s ", v + 2, ov_view_label((ov_view_t) v));
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_HEADER);
             ov_theme_fg(OV_FG_DIM);
@@ -509,6 +542,68 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         }
     }
 
+    /* Help button [h: HELP] - prominent with slow blink */
+    int help_width = 11; /* visual width of " [h: HELP] " */
+    int pad        = r.width - tabs_total_width - help_width;
+    if (pad > 0)
+    {
+        ov_theme_bg(OV_BG_HEADER);
+        ov_buf_hline(' ', pad);
+    }
+    else
+    {
+        pad = 0;
+    }
+
+    /* Render prominent help button */
+    if (lay->show_help)
+    {
+        /* Active state when help overlay is visible: light-blue solid pill */
+        ov_theme_bg(OV_BG_HEADER);
+        ov_theme_fg(OV_FG_TITLE);
+        ov_buf_printf(" %s", OV_LCARS_LEFT);
+        ov_theme_bg(OV_FG_TITLE);
+        ov_theme_fg(OV_BG_TERMINAL);
+        ov_buf_bold();
+        ov_buf_printf("h: HELP");
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+        ov_theme_fg(OV_FG_TITLE);
+        ov_buf_printf("%s ", OV_LCARS_RIGHT);
+    }
+    else
+    {
+        /* Slow blinking prominent amber badge (1s bright, 1s dim) */
+        struct timespec now_ts;
+        clock_gettime(CLOCK_MONOTONIC, &now_ts);
+        ov_theme_bg(OV_BG_HEADER);
+        ov_buf_printf(" ");
+        if ((now_ts.tv_sec % 2) == 0)
+        {
+            /* Bright prominent state: vibrant gold/amber bg, dark crisp text */
+            ov_buf_bg(240, 175, 20);
+            ov_buf_fg(20, 20, 25);
+        }
+        else
+        {
+            /* Dim prominent state: rich dark amber bg, warm luminous gold text */
+            ov_buf_bg(85, 60, 15);
+            ov_buf_fg(255, 215, 100);
+        }
+        ov_buf_bold();
+        ov_buf_printf("[h: HELP]");
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+        ov_buf_printf(" ");
+    }
+
+    /* Pad trailing space if line not completely filled */
+    int rendered_w = tabs_total_width + pad + help_width;
+    if (rendered_w < r.width)
+    {
+        ov_theme_bg(OV_BG_HEADER);
+        ov_buf_hline(' ', r.width - rendered_w);
+    }
     ov_theme_bg(OV_BG_HEADER);
 }
 
@@ -610,9 +705,9 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             const char *names[OV_MAX_NODES];
             int         fidx[OV_MAX_NODES];
-            const char *f_str = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
-            const char *f_prc = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
-            const char *f_fps = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
+            const char *f_str = ov_get_active_filter(lay);
+            const char *f_prc = ov_get_active_filter(lay);
+            const char *f_fps = ov_get_active_filter(lay);
 
             /* Streams */
             for (int i = 0; i < mm->nb_streams; i++)
@@ -695,9 +790,9 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             const char *names[OV_MAX_NODES];
             int         fidx[OV_MAX_NODES];
-            const char *f_str = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
-            const char *f_prc = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
-            const char *f_fps = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
+            const char *f_str = ov_get_active_filter(lay);
+            const char *f_prc = ov_get_active_filter(lay);
+            const char *f_fps = ov_get_active_filter(lay);
 
             if (saved_sel_stream[0] != '\0')
             {
@@ -805,9 +900,9 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     {
         const char *names[OV_MAX_NODES];
         int         fidx[OV_MAX_NODES];
-        const char *f_str = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
-        const char *f_prc = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
-        const char *f_fps = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
+        const char *f_str = ov_get_active_filter(lay);
+        const char *f_prc = ov_get_active_filter(lay);
+        const char *f_fps = ov_get_active_filter(lay);
 
         /* Streams */
         for (int i = 0; i < m->nb_streams; i++)
@@ -1013,6 +1108,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
 
 
     ov_render_header(lay, m);
+    ov_render_tabs(lay);
 
     /* To prevent flickering on terminals that do not support synchronized updates,
      * we skip rendering the background panels when the help overlay is active.
@@ -1085,7 +1181,10 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         ov_render_help(lay, m);
     }
 
-    ov_render_cmdlog(lay);
+    if (!lay->show_help)
+    {
+        ov_render_cmdlog(lay);
+    }
     ov_render_status(lay, m);
 
     /* Highlight movable edges if hovering */

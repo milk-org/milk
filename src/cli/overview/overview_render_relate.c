@@ -67,12 +67,12 @@ int ov_filter_build(
 }
 
 /**
- * @brief Check if any regular expression filter is active in layout.
+ * @brief Check if any regular expression filter pattern is defined in layout.
  *
  * @param lay Layout structure
- * @return 1 if any filter is active, 0 otherwise
+ * @return 1 if any filter pattern is set, 0 otherwise
  */
-int ov_is_filter_active(
+int ov_has_filter(
     const OV_LAYOUT *lay)
 {
     if (lay == NULL)
@@ -84,12 +84,28 @@ int ov_is_filter_active(
 }
 
 /**
- * @brief Get the active filter pattern string.
+ * @brief Check if any regular expression filter is active in layout.
  *
  * @param lay Layout structure
- * @return Pointer to active filter string, or "" if none
+ * @return 1 if any filter is active and enabled, 0 otherwise
  */
-const char *ov_get_active_filter(
+int ov_is_filter_active(
+    const OV_LAYOUT *lay)
+{
+    if (lay == NULL || !lay->filter_active)
+    {
+        return 0;
+    }
+    return ov_has_filter(lay);
+}
+
+/**
+ * @brief Get the configured filter pattern string regardless of active state.
+ *
+ * @param lay Layout structure
+ * @return Pointer to filter pattern string, or "" if none
+ */
+const char *ov_get_filter_pattern(
     const OV_LAYOUT *lay)
 {
     if (lay == NULL)
@@ -128,6 +144,22 @@ const char *ov_get_active_filter(
 }
 
 /**
+ * @brief Get the active filter pattern string.
+ *
+ * @param lay Layout structure
+ * @return Pointer to active filter string, or "" if filter is inactive/empty
+ */
+const char *ov_get_active_filter(
+    const OV_LAYOUT *lay)
+{
+    if (!ov_is_filter_active(lay))
+    {
+        return "";
+    }
+    return ov_get_filter_pattern(lay);
+}
+
+/**
  * @brief Clear all filter strings and reset filter state.
  *
  * @param lay Layout structure
@@ -143,6 +175,7 @@ void ov_clear_all_filters(
     lay->filter_stream[0] = '\0';
     lay->filter_proc[0]   = '\0';
     lay->filter_fps[0]    = '\0';
+    lay->filter_active    = 0;
     lay->filter_editing   = 0;
     lay->filter_cursor    = 0;
     lay->filter_jump      = 0;
@@ -168,7 +201,7 @@ int ov_get_selected_stream_idx(
     {
         return -1;
     }
-    const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
+    const char *filt = ov_get_active_filter(lay);
     if (filt != NULL && filt[0] != '\0')
     {
         const char *names[OV_MAX_STREAMS];
@@ -207,7 +240,7 @@ int ov_get_selected_proc_idx(
     {
         return -1;
     }
-    const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+    const char *filt = ov_get_active_filter(lay);
     if (filt != NULL && filt[0] != '\0')
     {
         const char *names[OV_MAX_PROCS];
@@ -246,7 +279,7 @@ int ov_get_selected_fps_idx(
     {
         return -1;
     }
-    const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
+    const char *filt = ov_get_active_filter(lay);
     if (filt != NULL && filt[0] != '\0')
     {
         const char *names[OV_MAX_FPS];

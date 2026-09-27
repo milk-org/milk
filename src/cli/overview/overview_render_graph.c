@@ -11,7 +11,7 @@
 #include "stream_graph.h"
 
 /**
- * Renders on row 2, between header and panels.
+ * Renders on row 3, between tabs and panels.
  * Shows untruncated fields for the focused panel's
  * selected item.
  */
@@ -22,10 +22,10 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
     /* Reset button tracking */
     lay->nb_preview_btns = 0;
 
-    ov_buf_pos(2, 1);
+    ov_buf_pos(3, 1);
     ov_theme_bg(OV_BG_PANEL);
     ov_buf_hline(' ', W);
-    ov_buf_pos(2, 1);
+    ov_buf_pos(3, 1);
 
     /* Use resolved selection from model */
     ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
@@ -342,7 +342,7 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             int col = start_col;
             for (int bi = 0; bi < nb; bi++)
             {
-                ov_buf_pos(2, col);
+                ov_buf_pos(3, col);
                 if (btns[bi].always_active)
                 {
                     /* Always-active buttons (Inspect)
@@ -387,7 +387,7 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
         int         col   = W - bw + 1;
         if (col > 1)
         {
-            ov_buf_pos(2, col);
+            ov_buf_pos(3, col);
             ov_buf_bg(60, 130, 200);
             ov_buf_fg(255, 255, 255);
             ov_buf_bold();

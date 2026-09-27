@@ -25,7 +25,7 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         names[i] = m->streams[i].name;
     }
     int filt_idx[OV_MAX_STREAMS];
-    const char *active_filter = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
+    const char *active_filter = ov_get_active_filter(lay);
     int filt_n =
         ov_filter_build(active_filter, names, m->nb_streams, filt_idx, OV_MAX_STREAMS);
 

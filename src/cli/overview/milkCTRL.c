@@ -187,6 +187,7 @@ static void print_help(const char *prog, int mh_color)
     printf("  %-30s Toggle detailed inspection pane / parameter edit mode\n", MH(MH_OPT, "ENTER"));
     printf("  %-30s Toggle details tab on selected item / Graph details\n", MH(MH_OPT, "D"));
     printf("  %-30s Filter items in the focused list (regex search)\n", MH(MH_OPT, "/"));
+    printf("  %-30s Toggle regex filter ON/OFF (preserves query string)\n", MH(MH_OPT, "f"));
     printf("  %-30s Freeze selection highlight (prevents jumping during updates)\n",
            MH(MH_OPT, "SPACE"));
     printf("  %-30s Export current dashboard state snapshot to file\n", MH(MH_OPT, "W"));
@@ -490,6 +491,10 @@ int main(int argc, char *argv[])
             if (quit_now)
             {
                 break;
+            }
+            if (!lay.paused)
+            {
+                need_render = 1;
             }
         }
     }

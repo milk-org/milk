@@ -283,10 +283,10 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_theme_fg(OV_FG_DIM);
     }
 
-    const char *fpat = ov_get_active_filter(lay);
-    if (fpat[0] != '\0')
+    const char *fpat = ov_get_filter_pattern(lay);
+    if (ov_is_filter_active(lay))
     {
-        if ((lay->ctrl_blink % 10) < 5)
+        if ((lay->ctrl_blink % 4) < 2)
         {
             ov_buf_bg(255, 190, 0);   /* bright amber/gold */
             ov_buf_fg(20, 20, 20);    /* dark text */
@@ -298,7 +298,20 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         }
         ov_buf_bold();
         char fstatus[64];
-        snprintf(fstatus, sizeof(fstatus), " [FILTER ON: /%.12s/ (ESC to clear)] ", fpat);
+        snprintf(fstatus, sizeof(fstatus), " [FILTER ON: /%.12s/ ('f' toggle, ESC clear)] ", fpat);
+        ov_buf_printf("%s", fstatus);
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+        ov_theme_fg(OV_FG_DIM);
+        n1 += (int) strlen(fstatus);
+    }
+    else if (fpat[0] != '\0')
+    {
+        ov_buf_bg(45, 45, 60);
+        ov_buf_fg(190, 200, 220);
+        ov_buf_bold();
+        char fstatus[64];
+        snprintf(fstatus, sizeof(fstatus), " [Filter OFF: /%.12s/ ('f' enable)] ", fpat);
         ov_buf_printf("%s", fstatus);
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_HEADER);
@@ -326,9 +339,13 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         {
             help_hints = " ↑↓ Navigate results   [/] Edit search   ESC Clear search";
         }
+        else if (lay->help_mode == 1)
+        {
+            help_hints = " ↑↓/PgUp/PgDn Scroll   2/k Controls Reference   ESC Close";
+        }
         else
         {
-            help_hints = " ↑↓ Navigate   →/← Expand/Collapse   [/] Search   ESC Close";
+            help_hints = " 1/i Intro   ↑↓ Nav   →/← Expand   [/] Search   ESC Close";
         }
         ov_buf_bold();
         ov_theme_fg(OV_FG_TITLE);
