@@ -29,8 +29,7 @@ variableID variable_ID(const char *name)
     {
         if (dcvar[i].used == 1)
         {
-            if ((strncmp(name, dcvar[i].name, namelen) == 0) &&
-                (dcvar[i].name[namelen] == '\0'))
+            if ((strncmp(name, dcvar[i].name, namelen) == 0) && (dcvar[i].name[namelen] == '\0'))
             {
                 return i;
             }

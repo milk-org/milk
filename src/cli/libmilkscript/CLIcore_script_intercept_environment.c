@@ -146,9 +146,8 @@ int cli_intercept_cmd_source(const char *p)
 
         if (cli_source_depth >= CLI_MAX_SOURCE_DEPTH)
         {
-            fprintf(stderr,
-                    "source: %s: maximum recursion depth (%d) exceeded\n",
-                    fn, CLI_MAX_SOURCE_DEPTH);
+            fprintf(stderr, "source: %s: maximum recursion depth (%d) exceeded\n", fn,
+                    CLI_MAX_SOURCE_DEPTH);
             return 1;
         }
         cli_source_depth++;

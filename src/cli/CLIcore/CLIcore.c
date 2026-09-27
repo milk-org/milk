@@ -1261,14 +1261,14 @@ static int command_line_process_options(int argc, char **argv)
                 }
                 strncpy(data.processname, optarg, STRINGMAXLEN_PROCESSNAME - 1);
                 data.processname[STRINGMAXLEN_PROCESSNAME - 1] = '\0';
-                data.processnameflag = 1; // this process has been named
+                data.processnameflag                           = 1; // this process has been named
 
                 // extract first word before '.'
                 // it can be used to name processinfo and function parameter structure for process
                 char tmpstring[STRINGMAXLEN_PROCESSNAME];
                 strncpy(tmpstring, data.processname, STRINGMAXLEN_PROCESSNAME - 1);
                 tmpstring[STRINGMAXLEN_PROCESSNAME - 1] = '\0';
-                char *firstword = strtok(tmpstring, ".");
+                char *firstword                         = strtok(tmpstring, ".");
                 if (firstword == NULL || firstword[0] == '\0')
                 {
                     firstword = data.processname;
@@ -1301,7 +1301,7 @@ static int command_line_process_options(int argc, char **argv)
         case 'c':
             strncpy(single_command_string, optarg, STRINGMAXLEN_CLICMDLINE - 1);
             single_command_string[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-            single_command_flag = 1;
+            single_command_flag                                = 1;
             break;
 
         case 's':
@@ -1337,7 +1337,7 @@ static int command_line_process_options(int argc, char **argv)
         }
         strncpy(data.processname0, data.processname, STRINGMAXLEN_PROCESSNAME - 1);
         data.processname0[STRINGMAXLEN_PROCESSNAME - 1] = '\0';
-        data.processnameflag = 1;
+        data.processnameflag                            = 1;
         prctl(PR_SET_NAME, data.processname, 0, 0, 0);
     }
 

@@ -50,8 +50,9 @@ variableID create_variable_ID(const char *name, double value)
 
         if (ID == -1)
         {
-            printf("ERROR: cannot create variable \"%s\": variable table full (max %ld variables)\n",
-                   name, dcnvar);
+            printf(
+                "ERROR: cannot create variable \"%s\": variable table full (max %ld variables)\n",
+                name, dcnvar);
             return -1;
         }
 
@@ -94,8 +95,9 @@ variableID create_variable_long_ID(const char *name, long value)
 
         if (ID == -1)
         {
-            printf("ERROR: cannot create variable \"%s\": variable table full (max %ld variables)\n",
-                   name, dcnvar);
+            printf(
+                "ERROR: cannot create variable \"%s\": variable table full (max %ld variables)\n",
+                name, dcnvar);
             return -1;
         }
 
@@ -144,8 +146,9 @@ variableID create_variable_string_ID(const char *name, const char *value)
 
         if (ID == -1)
         {
-            printf("ERROR: cannot create variable \"%s\": variable table full (max %ld variables)\n",
-                   name, dcnvar);
+            printf(
+                "ERROR: cannot create variable \"%s\": variable table full (max %ld variables)\n",
+                name, dcnvar);
             return -1;
         }
 

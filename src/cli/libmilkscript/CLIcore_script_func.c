@@ -82,8 +82,7 @@ int cli_try_func_call(const char *line)
 
     if (cli_func_call_depth >= CLI_MAX_FUNC_CALL_DEPTH)
     {
-        fprintf(stderr,
-                "milk-cli: error: maximum function call recursion depth (%d) exceeded\n",
+        fprintf(stderr, "milk-cli: error: maximum function call recursion depth (%d) exceeded\n",
                 CLI_MAX_FUNC_CALL_DEPTH);
         return 1;
     }
@@ -138,7 +137,7 @@ int cli_try_func_call(const char *line)
     {
         cli_local_depth++;
         cli_local_shadow_count[cli_local_depth] = 0;
-        pushed_scope = 1;
+        pushed_scope                            = 1;
     }
 
     /* Execute body lines */

@@ -380,7 +380,8 @@ void sig_handler(int signo)
         if (cli_fault_isolation_active)
         {
             fprintf(stderr,
-                    "\n\033[1;31m[CRASH INTERCEPTED]\033[0m Signal %d (%s) caught during command execution.\n"
+                    "\n\033[1;31m[CRASH INTERCEPTED]\033[0m Signal %d (%s) caught during command "
+                    "execution.\n"
                     "\033[33mCommand aborted safely. Session preserved.\033[0m\n",
                     signo, strsignal(signo));
             siglongjmp(cli_repl_env, 1);
@@ -398,9 +399,10 @@ void sig_handler(int signo)
         set_terminal_echo_on();
         if (cli_fault_isolation_active)
         {
-            fprintf(stderr,
-                    "\n\033[1;31m[ABORT INTERCEPTED]\033[0m SIGABRT caught during command execution.\n"
-                    "\033[33mCommand aborted safely. Session preserved.\033[0m\n");
+            fprintf(
+                stderr,
+                "\n\033[1;31m[ABORT INTERCEPTED]\033[0m SIGABRT caught during command execution.\n"
+                "\033[33mCommand aborted safely. Session preserved.\033[0m\n");
             siglongjmp(cli_repl_env, 1);
         }
         else

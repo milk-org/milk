@@ -339,7 +339,7 @@ int cli_handle_subshell(errno_t *retval)
     }
     memcpy(sbuf, sp + 1, (size_t) copy_len);
     sbuf[copy_len] = '\0';
-    pid_t spid    = fork();
+    pid_t spid     = fork();
     if (spid == 0)
     {
         char *tok = strtok(sbuf, ";");
