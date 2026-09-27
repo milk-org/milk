@@ -406,12 +406,11 @@ void ov_clear_all_filters(OV_LAYOUT *lay)
  * @param[in]  max_fidx Maximum capacity of fidx
  * @return Number of matching stream indices written to fidx
  */
-int ov_filter_streams(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    int              *fidx,
-    int               max_fidx)
+int ov_filter_streams(const OV_LAYOUT  *lay,
+                      const OV_MODEL   *m,
+                      const OV_RELATED *rel,
+                      int              *fidx,
+                      int               max_fidx)
 {
     if (lay == NULL || m == NULL || m->nb_streams <= 0 || fidx == NULL || max_fidx <= 0)
     {
@@ -419,14 +418,14 @@ int ov_filter_streams(
     }
 
     const char *names[OV_MAX_STREAMS];
-    int total = (m->nb_streams < max_fidx) ? m->nb_streams : max_fidx;
+    int         total = (m->nb_streams < max_fidx) ? m->nb_streams : max_fidx;
     for (int i = 0; i < m->nb_streams; i++)
     {
         names[i] = m->streams[i].name;
     }
 
-    const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
-    int filt_n = 0;
+    const char *filt   = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
+    int         filt_n = 0;
     if (filt != NULL && filt[0] != '\0')
     {
         filt_n = ov_filter_build(filt, names, m->nb_streams, fidx, max_fidx);
@@ -480,12 +479,11 @@ int ov_filter_streams(
  * @param[in]  max_fidx Maximum capacity of fidx
  * @return Number of matching process indices written to fidx
  */
-int ov_filter_procs(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    int              *fidx,
-    int               max_fidx)
+int ov_filter_procs(const OV_LAYOUT  *lay,
+                    const OV_MODEL   *m,
+                    const OV_RELATED *rel,
+                    int              *fidx,
+                    int               max_fidx)
 {
     if (lay == NULL || m == NULL || m->nb_procs <= 0 || fidx == NULL || max_fidx <= 0)
     {
@@ -493,14 +491,14 @@ int ov_filter_procs(
     }
 
     const char *names[OV_MAX_PROCS];
-    int total = (m->nb_procs < max_fidx) ? m->nb_procs : max_fidx;
+    int         total = (m->nb_procs < max_fidx) ? m->nb_procs : max_fidx;
     for (int i = 0; i < m->nb_procs; i++)
     {
         names[i] = m->procs[i].name;
     }
 
-    const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
-    int filt_n = 0;
+    const char *filt   = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
+    int         filt_n = 0;
     if (filt != NULL && filt[0] != '\0')
     {
         filt_n = ov_filter_build(filt, names, m->nb_procs, fidx, max_fidx);
@@ -554,12 +552,11 @@ int ov_filter_procs(
  * @param[in]  max_fidx Maximum capacity of fidx
  * @return Number of matching FPS indices written to fidx
  */
-int ov_filter_fps(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel,
-    int              *fidx,
-    int               max_fidx)
+int ov_filter_fps(const OV_LAYOUT  *lay,
+                  const OV_MODEL   *m,
+                  const OV_RELATED *rel,
+                  int              *fidx,
+                  int               max_fidx)
 {
     if (lay == NULL || m == NULL || m->nb_fps <= 0 || fidx == NULL || max_fidx <= 0)
     {
@@ -567,14 +564,14 @@ int ov_filter_fps(
     }
 
     const char *names[OV_MAX_FPS];
-    int total = (m->nb_fps < max_fidx) ? m->nb_fps : max_fidx;
+    int         total = (m->nb_fps < max_fidx) ? m->nb_fps : max_fidx;
     for (int i = 0; i < m->nb_fps; i++)
     {
         names[i] = m->fps[i].name;
     }
 
-    const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
-    int filt_n = 0;
+    const char *filt   = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
+    int         filt_n = 0;
     if (filt != NULL && filt[0] != '\0')
     {
         filt_n = ov_filter_build(filt, names, m->nb_fps, fidx, max_fidx);

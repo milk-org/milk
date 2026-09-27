@@ -117,24 +117,17 @@ typedef struct
 } ov_fps_param_info_t;
 
 /** Fetch parameter metadata safely under cache lock */
-int ov_fcache_get_param_info(
-    const char          *fps_name,
-    int                  disp_idx,
-    ov_fps_param_info_t *info);
+int ov_fcache_get_param_info(const char *fps_name, int disp_idx, ov_fps_param_info_t *info);
 
 /** Toggle an ONOFF parameter under cache lock */
-int ov_fcache_toggle_param(
-    const char *fps_name,
-    int         disp_idx,
-    char       *out_keyword,
-    size_t      kw_size,
-    int        *out_newval);
+int ov_fcache_toggle_param(const char *fps_name,
+                           int         disp_idx,
+                           char       *out_keyword,
+                           size_t      kw_size,
+                           int        *out_newval);
 
 /** Set an FPS parameter value string under cache lock */
-int ov_fcache_set_param_value(
-    const char *fps_name,
-    int         disp_idx,
-    const char *valstr);
+int ov_fcache_set_param_value(const char *fps_name, int disp_idx, const char *valstr);
 
 /** Post-scan enrichment: sparklines, uptime, stale, new-item */
 void ov_post_scan_enrich(OV_MODEL *model);

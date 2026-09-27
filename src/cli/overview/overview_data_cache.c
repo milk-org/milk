@@ -153,10 +153,7 @@ void pcache_evict(int ci)
  * @param[out] info     Output struct populated with parameter info
  * @return 0 on success, -1 if not found or invalid index
  */
-int ov_fcache_get_param_info(
-    const char          *fps_name,
-    int                  disp_idx,
-    ov_fps_param_info_t *info)
+int ov_fcache_get_param_info(const char *fps_name, int disp_idx, ov_fps_param_info_t *info)
 {
     if (fps_name == NULL || info == NULL)
     {
@@ -192,9 +189,9 @@ int ov_fcache_get_param_info(
         return -1;
     }
 
-    FPS_PARAM *fp = &fps->parray[pindex];
-    info->type = fp->type;
-    info->fpflag = fp->fpflag;
+    FPS_PARAM *fp     = &fps->parray[pindex];
+    info->type        = fp->type;
+    info->fpflag      = fp->fpflag;
     info->is_writable = (fp->fpflag & FPFLAG_WRITESTATUS) ? 1 : 0;
 
     strncpy(info->keyword, fp->keywordfull, sizeof(info->keyword) - 1);
@@ -203,8 +200,8 @@ int ov_fcache_get_param_info(
     functionparameter_GetParamValueString(fp, info->valstr, (int) sizeof(info->valstr));
 
     /* Strip FPS name prefix from keyword if present */
-    const char *dkw = fp->keywordfull;
-    int prefix_len = (int) strlen(fps->md->name);
+    const char *dkw        = fp->keywordfull;
+    int         prefix_len = (int) strlen(fps->md->name);
     if (strncmp(dkw, fps->md->name, (size_t) prefix_len) == 0 && dkw[prefix_len] == '.')
     {
         dkw += prefix_len + 1;
@@ -226,12 +223,11 @@ int ov_fcache_get_param_info(
  * @param[out] out_newval  Optional pointer to receive new value (0 or 1, can be NULL)
  * @return 0 on success, -1 on error
  */
-int ov_fcache_toggle_param(
-    const char *fps_name,
-    int         disp_idx,
-    char       *out_keyword,
-    size_t      kw_size,
-    int        *out_newval)
+int ov_fcache_toggle_param(const char *fps_name,
+                           int         disp_idx,
+                           char       *out_keyword,
+                           size_t      kw_size,
+                           int        *out_newval)
 {
     if (fps_name == NULL)
     {
@@ -246,8 +242,8 @@ int ov_fcache_toggle_param(
         return -1;
     }
 
-    ov_fps_cache_t *ce = &s_fcache[ci];
-    FPS *fps = &ce->fps;
+    ov_fps_cache_t *ce  = &s_fcache[ci];
+    FPS            *fps = &ce->fps;
     if (fps->md == NULL || fps->parray == NULL)
     {
         pthread_mutex_unlock(&s_fcache_mutex);
@@ -269,7 +265,7 @@ int ov_fcache_toggle_param(
     }
 
     int current = (fp->fpflag & FPFLAG_ONOFF) ? 1 : 0;
-    int newval = current ? 0 : 1;
+    int newval  = current ? 0 : 1;
     functionparameter_SetParamValue_ONOFF(fps, fp->keywordfull, newval);
     fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
@@ -301,10 +297,7 @@ int ov_fcache_toggle_param(
  * @param[in] valstr   New value string to parse and apply
  * @return 0 on success, -1 on error or invalid value
  */
-int ov_fcache_set_param_value(
-    const char *fps_name,
-    int         disp_idx,
-    const char *valstr)
+int ov_fcache_set_param_value(const char *fps_name, int disp_idx, const char *valstr)
 {
     if (fps_name == NULL || valstr == NULL)
     {
@@ -319,8 +312,8 @@ int ov_fcache_set_param_value(
         return -1;
     }
 
-    ov_fps_cache_t *ce = &s_fcache[ci];
-    FPS *fps = &ce->fps;
+    ov_fps_cache_t *ce  = &s_fcache[ci];
+    FPS            *fps = &ce->fps;
     if (fps->md == NULL || fps->parray == NULL)
     {
         pthread_mutex_unlock(&s_fcache_mutex);

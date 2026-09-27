@@ -71,8 +71,7 @@ void ov_loop_names_load(OV_MODEL *model)
         if (home != NULL && home[0] != '\0')
         {
             char legacy_path[256];
-            snprintf(legacy_path, sizeof(legacy_path),
-                     "%s/.milk/milk-CTRL_loops.conf", home);
+            snprintf(legacy_path, sizeof(legacy_path), "%s/.milk/milk-CTRL_loops.conf", home);
             fp = fopen(legacy_path, "r");
         }
     }
@@ -98,8 +97,7 @@ void ov_loop_names_load(OV_MODEL *model)
                 if (s_nb_saved_names < OV_MAX_SAVED_NAMES)
                 {
                     s_saved_names[s_nb_saved_names].hash = h;
-                    strncpy(s_saved_names[s_nb_saved_names].name, nm,
-                            OV_LOOP_NAME_LEN - 1);
+                    strncpy(s_saved_names[s_nb_saved_names].name, nm, OV_LOOP_NAME_LEN - 1);
                     s_saved_names[s_nb_saved_names].name[OV_LOOP_NAME_LEN - 1] = '\0';
                     s_nb_saved_names++;
                 }
@@ -119,8 +117,7 @@ void ov_loop_names_load(OV_MODEL *model)
             {
                 if (s_saved_names[k].hash == lp->signature_hash)
                 {
-                    strncpy(lp->custom_name, s_saved_names[k].name,
-                            sizeof(lp->custom_name) - 1);
+                    strncpy(lp->custom_name, s_saved_names[k].name, sizeof(lp->custom_name) - 1);
                     lp->custom_name[sizeof(lp->custom_name) - 1] = '\0';
                     lp->has_custom_name                          = 1;
                     strncpy(lp->name, lp->custom_name, sizeof(lp->name) - 1);
@@ -151,8 +148,7 @@ static void ov_loop_names_save_locked(void)
     fprintf(fp, "# Format: <canonical_signature_hash_hex> <custom_name>\n");
     for (int i = 0; i < s_nb_saved_names; i++)
     {
-        fprintf(fp, "%016" PRIx64 " %s\n", s_saved_names[i].hash,
-                s_saved_names[i].name);
+        fprintf(fp, "%016" PRIx64 " %s\n", s_saved_names[i].hash, s_saved_names[i].name);
     }
     fclose(fp);
 }
@@ -161,8 +157,7 @@ static void ov_loop_names_save_locked(void)
  * @brief Save persistent custom loop names to disk.
  * @param[in] model System model containing detected loops (unused)
  */
-void ov_loop_names_save(
-    const OV_MODEL *model)
+void ov_loop_names_save(const OV_MODEL *model)
 {
     (void) model;
     pthread_mutex_lock(&s_loop_names_mutex);
@@ -222,8 +217,7 @@ int ov_loop_rename(OV_MODEL *model, int loop_idx, const char *new_name)
         {
             if (s_saved_names[i].hash == lp->signature_hash)
             {
-                strncpy(s_saved_names[i].name, lp->custom_name,
-                        OV_LOOP_NAME_LEN - 1);
+                strncpy(s_saved_names[i].name, lp->custom_name, OV_LOOP_NAME_LEN - 1);
                 s_saved_names[i].name[OV_LOOP_NAME_LEN - 1] = '\0';
                 found                                       = 1;
                 break;
@@ -232,8 +226,7 @@ int ov_loop_rename(OV_MODEL *model, int loop_idx, const char *new_name)
         if (!found && s_nb_saved_names < OV_MAX_SAVED_NAMES)
         {
             s_saved_names[s_nb_saved_names].hash = lp->signature_hash;
-            strncpy(s_saved_names[s_nb_saved_names].name, lp->custom_name,
-                    OV_LOOP_NAME_LEN - 1);
+            strncpy(s_saved_names[s_nb_saved_names].name, lp->custom_name, OV_LOOP_NAME_LEN - 1);
             s_saved_names[s_nb_saved_names].name[OV_LOOP_NAME_LEN - 1] = '\0';
             s_nb_saved_names++;
         }
@@ -329,8 +322,7 @@ static int is_valid_loop_edge(const OV_MODEL *m, const OV_EDGE *e, sg_mode_t mod
         if (mode == SG_MODE_TRIGGER)
         {
             return (e->type == OV_EDGE_STREAM_TRIGGERS_PROC ||
-                    e->type == OV_EDGE_PROC_TRIGGER_STREAM ||
-                    e->type == OV_EDGE_FPS_INPUT_STREAM);
+                    e->type == OV_EDGE_PROC_TRIGGER_STREAM || e->type == OV_EDGE_FPS_INPUT_STREAM);
         }
         else
         {

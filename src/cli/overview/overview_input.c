@@ -3870,13 +3870,13 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                             else
                             {
                                 char kw[FUNCTION_PARAMETER_STRMAXLEN] = { 0 };
-                                int  newval = 0;
-                                if (ov_fcache_toggle_param(m->fps[fsel].name, pi,
-                                                           kw, sizeof(kw), &newval) == 0)
+                                int  newval                           = 0;
+                                if (ov_fcache_toggle_param(m->fps[fsel].name, pi, kw, sizeof(kw),
+                                                           &newval) == 0)
                                 {
                                     ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                                   "Toggled parameter %s to %s",
-                                                   kw, newval ? "ON" : "OFF");
+                                                   "Toggled parameter %s to %s", kw,
+                                                   newval ? "ON" : "OFF");
                                 }
                             }
                         }

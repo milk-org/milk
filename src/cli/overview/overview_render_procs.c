@@ -22,7 +22,7 @@ static int ov_procs__filter(const OV_LAYOUT  *lay,
                             int              *has_re,
                             regex_t          *re)
 {
-    int filt_n = ov_filter_procs(lay, m, rel, filt_idx, OV_MAX_PROCS);
+    int         filt_n        = ov_filter_procs(lay, m, rel, filt_idx, OV_MAX_PROCS);
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
 
 

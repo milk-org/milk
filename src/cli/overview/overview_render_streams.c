@@ -18,8 +18,8 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
 {
     OV_RECT r = lay->r_streams;
 
-    int filt_idx[OV_MAX_STREAMS];
-    int filt_n = ov_filter_streams(lay, m, rel, filt_idx, OV_MAX_STREAMS);
+    int         filt_idx[OV_MAX_STREAMS];
+    int         filt_n        = ov_filter_streams(lay, m, rel, filt_idx, OV_MAX_STREAMS);
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
 
     /* Panel title with prominent filter indicator */
