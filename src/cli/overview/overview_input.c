@@ -71,9 +71,16 @@ extern float ov_scan_get_interval(void);
 extern void  ov_scan_set_interval(float s);
 
 /* help panel utilities (overview_render_help.c) */
-extern int ov_help_visible_count(const OV_LAYOUT *lay);
-extern int ov_help_nb_sections(void);
-extern int ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
+extern void ov_help_open(OV_LAYOUT *lay);
+extern int  ov_help_visible_count(const OV_LAYOUT *lay);
+extern int  ov_help_nb_sections(void);
+extern int  ov_help_toggle_at(
+    OV_LAYOUT *lay,
+    int        vis_row);
+extern int  ov_help_handle_click(
+    OV_LAYOUT *lay,
+    int        mr,
+    int        mc);
 
 /**
  * hit_panel_tab - detect which tab label was clicked.
@@ -3629,10 +3636,13 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     /* Help toggle */
     if (key == 'h')
     {
-        lay->show_help = !lay->show_help;
         if (lay->show_help)
         {
-            lay->help_sel = 0;
+            lay->show_help = 0;
+        }
+        else
+        {
+            ov_help_open(lay);
         }
         return 0;
     }
@@ -3650,6 +3660,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
         case OV_KEY_UP:
         case 'k':
+        case OV_KEY_MOUSE_UP:
             if (lay->help_sel > 0)
             {
                 lay->help_sel--;
@@ -3658,6 +3669,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
         case OV_KEY_DOWN:
         case 'j':
+        case OV_KEY_MOUSE_DOWN:
             if (lay->help_sel < nvis - 1)
             {
                 lay->help_sel++;
@@ -3700,6 +3712,10 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
             break;
         }
+
+        case OV_KEY_MOUSE_CLICK:
+            ov_help_handle_click(lay, ov_mouse_row, ov_mouse_col);
+            break;
 
         case 'q':
         case 27: /* ESC */

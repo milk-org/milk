@@ -266,14 +266,28 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m);
 
 void ov_render_cmdlog(const OV_LAYOUT *lay);
 
-void ov_render_help(const OV_LAYOUT *lay);
+void ov_render_help(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m);
+
 void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m);
 void ov_render_highlighted_column_description(const OV_LAYOUT *lay);
 
 /* Help panel utilities */
-int ov_help_nb_sections(void);
-int ov_help_visible_count(const OV_LAYOUT *lay);
-int ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
+void ov_help_open(OV_LAYOUT *lay);
+int  ov_help_nb_sections(void);
+int  ov_help_visible_count(const OV_LAYOUT *lay);
+int  ov_help_toggle_at(
+    OV_LAYOUT *lay,
+    int        vis_row);
+int  ov_help_focus_section(ov_focus_t focus);
+int  ov_help_section_first_vis_row(
+    const OV_LAYOUT *lay,
+    int              sec);
+int  ov_help_handle_click(
+    OV_LAYOUT *lay,
+    int        mr,
+    int        mc);
 
 extern float ov_scan_get_interval(void);
 

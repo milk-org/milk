@@ -1025,7 +1025,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
 
     if (lay->show_help)
     {
-        ov_render_help(lay);
+        ov_render_help(lay, m);
     }
 
     ov_render_cmdlog(lay);
