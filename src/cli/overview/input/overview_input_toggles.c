@@ -4,7 +4,7 @@
 
 /**
  * @file overview_input_toggles.c
- * @brief View switching, column highlights, sorting controls, and option toggles.
+ * @brief View switching, option toggles, interval controls, and dashboard focus navigation
  */
 
 #include "overview_input_internal.h"
@@ -16,7 +16,9 @@
  *
  * Return: 1 if key was consumed, 0 otherwise.
  */
-int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
+int ov_input__handle_view_switch(
+    int        key,
+    OV_LAYOUT *lay)
 {
     if (key >= OV_KEY_F2 && key <= OV_KEY_F7)
     {
@@ -115,7 +117,10 @@ int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
  *
  * Return: 1 if key was consumed, 0 otherwise.
  */
-int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+int ov_input__handle_misc_toggles(
+    int             key,
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m)
 {
     if (key == '+' || key == '=')
     {
@@ -221,40 +226,11 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         }
     }
 
-    if (key == '{' || key == '}')
-    {
-        float step = (key == '{') ? -0.05f : 0.05f;
-        if (lay->view == OV_VIEW_DASHBOARD)
-        {
-            lay->dash_split_v_ratio += step;
-            if (lay->dash_split_v_ratio < 0.1f)
-            {
-                lay->dash_split_v_ratio = 0.1f;
-            }
-            if (lay->dash_split_v_ratio > 0.9f)
-            {
-                lay->dash_split_v_ratio = 0.9f;
-            }
-            return 1;
-        }
-        else if (lay->view == OV_VIEW_FPS)
-        {
-            lay->fps_split_ratio += step;
-            if (lay->fps_split_ratio < 0.1f)
-            {
-                lay->fps_split_ratio = 0.1f;
-            }
-            if (lay->fps_split_ratio > 0.9f)
-            {
-                lay->fps_split_ratio = 0.9f;
-            }
-            return 1;
-        }
-    }
     if (key == 'F')
     {
         lay->paused = !lay->paused;
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s Display %s", lay->paused ? "⏸️" : "▶️",
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s Display %s",
+                       lay->paused ? "⏸️" : "▶️",
                        lay->paused ? "paused" : "resumed");
         return 1;
     }
@@ -273,13 +249,15 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         lay->theme_popup_active = 1;
         clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
         const ov_theme_t *th = ov_theme_get_active();
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name, th->desc);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)",
+                       th->name, th->desc);
         return 1;
     }
 
     /* Loop filter toggle on Enter when on Loops */
     if ((key == '\n' || key == '\r' || key == 10 || key == 13) &&
-        (lay->view == OV_VIEW_LOOPS || (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 1)))
+        (lay->view == OV_VIEW_LOOPS ||
+         (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 1)))
     {
         lay->loop_filter_active = !lay->loop_filter_active;
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
@@ -289,13 +267,15 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     /* Graph jump on Enter (must be before detail mode toggle) */
-    if ((key == '\n' || key == '\r') && lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 0)
+    if ((key == '\n' || key == '\r') &&
+        lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 0)
     {
         int start_node = ov_input_get_graph_start_node(lay, m);
         if (start_node >= 0)
         {
             SG_RENDER_NODE rnodes[OV_MAX_NODES];
-            int n_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
+            int n_rnodes = sg_compute_render_nodes(m, start_node,
+                                                   lay->lineage_mode, rnodes);
             if (lay->sel_graph < n_rnodes)
             {
                 const SG_RENDER_NODE *rn   = &rnodes[lay->sel_graph];
@@ -363,15 +343,11 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
     if (key == OV_KEY_LEFT || key == OV_KEY_RIGHT)
     {
-        /* In single-panel views (F3–F6), lock focus to
-         * the panel being shown — only allow left-right
-         * panel cycling on the Dashboard.
-         */
         if (lay->view != OV_VIEW_DASHBOARD)
         {
             if (lay->view == OV_VIEW_FPS)
             {
-                return 0; /* Let handle_navigation process it */
+                return 0;
             }
             return 1;
         }
@@ -419,197 +395,3 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
     return 0;
 }
-
-/**
- * ov_input__handle_column_highlights - handle column highlight cycling shortcuts.
- * @key: Pressed key code.
- * @lay: Pointer to layout structure.
- * @m:   Pointer to data model snapshot.
- *
- * Return: 1 if key was consumed, 0 otherwise.
- */
-int ov_input__handle_column_highlights(int key, OV_LAYOUT *lay, const OV_MODEL *m)
-{
-    (void) m;
-
-    if (key == OV_KEY_SHIFT_LEFT || key == OV_KEY_SHIFT_RIGHT)
-    {
-        int dir = (key == OV_KEY_SHIFT_LEFT) ? -1 : 1;
-        if (lay->focus == OV_FOCUS_STREAMS)
-        {
-            int num_cols              = ov_get_num_cols(lay, OV_FOCUS_STREAMS);
-            lay->highlight_col_stream = (lay->highlight_col_stream + dir + num_cols) % num_cols;
-        }
-        else if (lay->focus == OV_FOCUS_PROCS)
-        {
-            int num_cols            = ov_get_num_cols(lay, OV_FOCUS_PROCS);
-            lay->highlight_col_proc = (lay->highlight_col_proc + dir + num_cols) % num_cols;
-        }
-        else if (lay->focus == OV_FOCUS_FPS)
-        {
-            int num_cols           = ov_get_num_cols(lay, OV_FOCUS_FPS);
-            lay->highlight_col_fps = (lay->highlight_col_fps + dir + num_cols) % num_cols;
-        }
-        return 1;
-    }
-
-    if (key == 't' || key == 'T')
-    {
-        if (lay->focus == OV_FOCUS_STREAMS)
-        {
-            int logical_col =
-                ov_get_logical_col_stream(lay->highlight_col_stream, lay->compact_mode);
-            lay->col_collapsed_stream ^= (1U << logical_col);
-        }
-        else if (lay->focus == OV_FOCUS_PROCS)
-        {
-            int logical_col = ov_get_logical_col_proc(lay->highlight_col_proc, lay->compact_mode);
-            lay->col_collapsed_proc ^= (1U << logical_col);
-        }
-        else if (lay->focus == OV_FOCUS_FPS)
-        {
-            int logical_col = ov_get_logical_col_fps(lay->highlight_col_fps, lay->compact_mode);
-            lay->col_collapsed_fps ^= (1U << logical_col);
-        }
-        return 1;
-    }
-
-    return 0;
-}
-
-/**
- * ov_input__handle_sorting - handle column sorting shortcuts and direction toggles.
- * @key: Pressed key code.
- * @lay: Pointer to layout structure.
- *
- * Return: 1 if key was consumed, 0 otherwise.
- */
-int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
-{
-    if (key == 'S')
-    {
-        switch (lay->focus)
-        {
-        case OV_FOCUS_STREAMS:
-            lay->sort_key_stream = 3;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->sort_key_proc = 3;
-            break;
-        case OV_FOCUS_FPS:
-            lay->sort_key_fps = 1;
-            break;
-        default:
-            break;
-        }
-        lay->sort_pending = 1;
-        return 1;
-    }
-
-    if (key == 'A')
-    {
-        switch (lay->focus)
-        {
-        case OV_FOCUS_STREAMS:
-            lay->sort_key_stream = 7;
-            lay->sort_dir_stream = 0;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->sort_key_proc = 5;
-            lay->sort_dir_proc = 0;
-            break;
-        case OV_FOCUS_FPS:
-            lay->sort_key_fps = 3;
-            lay->sort_dir_fps = 0;
-            break;
-        default:
-            break;
-        }
-        lay->sort_pending = 1;
-        return 1;
-    }
-
-    if (key == 's' &&
-        !(lay->ctrl_mode && (lay->focus == OV_FOCUS_FPS || lay->focus == OV_FOCUS_PROCS)))
-    {
-        switch (lay->focus)
-        {
-        case OV_FOCUS_STREAMS:
-            lay->sort_key_stream = 0;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->sort_key_proc = 0;
-            break;
-        case OV_FOCUS_FPS:
-            lay->sort_key_fps = 0;
-            break;
-        default:
-            break;
-        }
-        lay->sort_pending = 1;
-        return 1;
-    }
-
-    if (key == '>' || key == ']')
-    {
-        switch (lay->focus)
-        {
-        case OV_FOCUS_STREAMS:
-            lay->sort_key_stream = (lay->sort_key_stream + 1) % 8;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->sort_key_proc = (lay->sort_key_proc + 1) % 11;
-            break;
-        case OV_FOCUS_FPS:
-            lay->sort_key_fps = (lay->sort_key_fps + 1) % 7;
-            break;
-        default:
-            break;
-        }
-        lay->sort_pending = 1;
-        return 1;
-    }
-
-    if (key == '<')
-    {
-        switch (lay->focus)
-        {
-        case OV_FOCUS_STREAMS:
-            lay->sort_key_stream = (lay->sort_key_stream + 7) % 8;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->sort_key_proc = (lay->sort_key_proc + 10) % 11;
-            break;
-        case OV_FOCUS_FPS:
-            lay->sort_key_fps = (lay->sort_key_fps + 6) % 7;
-            break;
-        default:
-            break;
-        }
-        lay->sort_pending = 1;
-        return 1;
-    }
-
-    if (key == '[')
-    {
-        switch (lay->focus)
-        {
-        case OV_FOCUS_STREAMS:
-            lay->sort_dir_stream = !lay->sort_dir_stream;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->sort_dir_proc = !lay->sort_dir_proc;
-            break;
-        case OV_FOCUS_FPS:
-            lay->sort_dir_fps = !lay->sort_dir_fps;
-            break;
-        default:
-            break;
-        }
-        lay->sort_pending = 1;
-        return 1;
-    }
-
-    return 0;
-}
-

@@ -269,16 +269,25 @@ add_executable(
   ../overview/overview_help_data.c
   ../overview/overview_render_help.c
   ../overview/overview_render_cmdlog.c
-  ../overview/overview_input.c
-  ../overview/overview_input_history.c
-  ../overview/overview_input_modal.c
-  ../overview/overview_input_actions.c
-  ../overview/overview_input_nav.c
-  ../overview/overview_input_toggles.c
-  ../overview/overview_input_hittest.c
-  ../overview/overview_input_mouse.c
-  ../overview/overview_ctrl.c
-  ../overview/overview_fps_edit.c
+  ../overview/input/overview_ctrl.c
+  ../overview/input/overview_ctrl_proc.c
+  ../overview/input/overview_fps_edit.c
+  ../overview/input/overview_input.c
+  ../overview/input/overview_input_actions.c
+  ../overview/input/overview_input_help.c
+  ../overview/input/overview_input_history.c
+  ../overview/input/overview_input_hittest.c
+  ../overview/input/overview_input_hittest_cols.c
+  ../overview/input/overview_input_modal.c
+  ../overview/input/overview_input_modal_filter.c
+  ../overview/input/overview_input_mouse.c
+  ../overview/input/overview_input_mouse_drag.c
+  ../overview/input/overview_input_mouse_panels.c
+  ../overview/input/overview_input_nav.c
+  ../overview/input/overview_input_nav_fps.c
+  ../overview/input/overview_input_nav_lineage.c
+  ../overview/input/overview_input_sort_keys.c
+  ../overview/input/overview_input_toggles.c
   ../overview/overview_render_fps_params.c
   ../overview/overview_theme.c)
 target_include_directories(
