@@ -1019,7 +1019,6 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
      * The existing background is preserved on the terminal's screen. */
     if (!lay->show_help)
     {
-        ov_render_highlighted_column_description(lay);
         switch (lay->view)
         {
         case OV_VIEW_DASHBOARD:

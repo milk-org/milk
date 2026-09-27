@@ -297,7 +297,6 @@ void ov_render_help(
     const OV_MODEL  *m);
 
 void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m);
-void ov_render_highlighted_column_description(const OV_LAYOUT *lay);
 
 /* Help panel utilities */
 void ov_help_open(OV_LAYOUT *lay);

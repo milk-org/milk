@@ -52,9 +52,8 @@ void ov_layout_compute(OV_LAYOUT *lay)
     if (lay->view == OV_VIEW_DASHBOARD)
     {
         /* Row 2 = preview bar for selected item */
-        /* Row 3 = highlighted column description line */
-        body_top = 4;
-        body_h   = H - 4 - log_h;
+        body_top = 3;
+        body_h   = H - 3 - log_h;
         if (body_h < 4)
         {
             body_h = 4;
@@ -88,9 +87,8 @@ void ov_layout_compute(OV_LAYOUT *lay)
     }
     else
     {
-        /* Row 2 (or row 4 for FPS view) = highlighted column description line */
-        body_top = 3;
-        body_h   = H - 3 - log_h;
+        body_top = 2;
+        body_h   = H - 2 - log_h;
         if (lay->view == OV_VIEW_FPS)
         {
             if (body_h < 6)
