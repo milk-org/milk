@@ -104,7 +104,7 @@ static inline void ov_raw_mode_enter(void)
     raw.c_oflag &= ~(unsigned int) (OPOST);
     raw.c_cflag |= (unsigned int) (CS8);
     raw.c_lflag &= ~(unsigned int) (ECHO | ICANON | IEXTEN | ISIG);
-    raw.c_cc[VMIN]  = 0;
+    raw.c_cc[VMIN]  = 1;
     raw.c_cc[VTIME] = 0;
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 
@@ -937,7 +937,11 @@ static inline int ov_get_key(void)
     }
     if (buf_len == 0)
     {
-        if (n == 0 || (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR))
+        if (n == 0)
+        {
+            return OV_KEY_EOF;
+        }
+        if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)
         {
             return OV_KEY_EOF;
         }

@@ -320,6 +320,13 @@ int main(int argc, char *argv[])
         }
     }
 
+    /* --- Require interactive terminal --- */
+    if (!isatty(STDIN_FILENO))
+    {
+        fprintf(stderr, "%s: interactive terminal required on stdin.\n", argv[0]);
+        return 1;
+    }
+
     /* --- Install signal handlers --- */
     {
         struct sigaction sa;
