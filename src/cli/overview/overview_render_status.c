@@ -234,29 +234,45 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         case OV_VIEW_PROCS:
             view_name = "PRC";
             break;
+        case OV_VIEW_GRAPH:
+            view_name = "GRP";
+            break;
+        case OV_VIEW_LOOPS:
+            view_name = "LOOP";
+            break;
         default:
             view_name = "???";
             break;
         }
         const char *panel_name = "";
         ov_rgb_t    panel_fg   = OV_FG_DIM;
-        switch (lay->focus)
+        if (lay->view == OV_VIEW_LOOPS ||
+            (lay->view == OV_VIEW_DASHBOARD && lay->graph_tab_mode == 1 &&
+             lay->focus == OV_FOCUS_GRAPH))
         {
-        case OV_FOCUS_STREAMS:
-            panel_name = "Streams";
-            panel_fg   = OV_FG_STREAM;
-            break;
-        case OV_FOCUS_FPS:
-            panel_name = "FPS";
-            panel_fg   = OV_FG_FPS;
-            break;
-        case OV_FOCUS_PROCS:
-            panel_name = "Procs";
-            panel_fg   = OV_FG_PROC;
-            break;
-        default:
-            panel_name = "Graph";
-            break;
+            panel_name = "Loops";
+            panel_fg   = OV_FG_LOOP;
+        }
+        else
+        {
+            switch (lay->focus)
+            {
+            case OV_FOCUS_STREAMS:
+                panel_name = "Streams";
+                panel_fg   = OV_FG_STREAM;
+                break;
+            case OV_FOCUS_FPS:
+                panel_name = "FPS";
+                panel_fg   = OV_FG_FPS;
+                break;
+            case OV_FOCUS_PROCS:
+                panel_name = "Procs";
+                panel_fg   = OV_FG_PROC;
+                break;
+            default:
+                panel_name = "Graph";
+                break;
+            }
         }
         ov_theme_fg(OV_FG_DIM);
         ov_buf_printf("  %s", view_name);
@@ -290,13 +306,30 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         n1 += (int) strlen(fstatus);
     }
 
-    const char *exit_label = lay->show_help ? " [ESC] close " : " [x] exit ";
-    int         n_exit     = (int) strlen(exit_label);
+    const char *exit_label = " [x] exit ";
+    if (lay->show_help)
+    {
+        exit_label = (lay->help_search[0] != '\0' || lay->help_search_active)
+                         ? " [ESC] clear "
+                         : " [ESC] close ";
+    }
+    int n_exit = (int) strlen(exit_label);
 
     if (lay->show_help)
     {
-        const char *help_hints =
-            " ↑↓ Navigate   →/← Expand/Collapse   ENTER Toggle   ESC Close Help";
+        const char *help_hints;
+        if (lay->help_search_active)
+        {
+            help_hints = " Type to search   ENTER Browse results   ESC Back";
+        }
+        else if (lay->help_search[0] != '\0')
+        {
+            help_hints = " ↑↓ Navigate results   [/] Edit search   ESC Clear search";
+        }
+        else
+        {
+            help_hints = " ↑↓ Navigate   →/← Expand/Collapse   [/] Search   ESC Close";
+        }
         ov_buf_bold();
         ov_theme_fg(OV_FG_TITLE);
         ov_buf_printf("%s", help_hints);

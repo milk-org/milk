@@ -56,25 +56,25 @@ static const help_entry_t HELP[] =
         NULL,
         "Global & Navigation",
         "Global controls available from any view or panel. Includes view switching "
-        "(F2-F6), panel focus cycling (TAB), real-time scan rate tuning, display pause, "
+        "(F2-F7), panel focus cycling (TAB), real-time scan rate tuning, display pause, "
         "regex filtering, snapshot export, and application exit.",
         HF_SECTION,
         HS_NAV,
     },
     {
-        "F2 - F6",
-        "Switch views (DASH, STRM, PROC, FPS, CONN)",
+        "F2 - F7",
+        "Switch views (DASH, STRM, PROC, FPS, CONN, LOOPS)",
         "Switches full-screen or grid dashboard view: F2=Dashboard (all panels), "
         "F3=Streams (SHM), F4=Processes (procinfo), F5=FPS (module list & param tree), "
-        "F6=Node Graph (dataflow connections).",
+        "F6=Node Graph (dataflow connections), F7=Feedback Loops (circuit & overlap).",
         HF_ENTRY,
         HS_NAV,
     },
     {
         "^Left/^Right",
         "Cycle views sequentially",
-        "Cycles forward or backward through the 5 dashboard view modes "
-        "(DASH -> STRM -> PROC -> FPS -> CONN). Equivalent to pressing F2 through F6.",
+        "Cycles forward or backward through the 6 dashboard view modes "
+        "(DASH -> STRM -> PROC -> FPS -> CONN -> LOOPS). Equivalent to pressing F2 through F7.",
         HF_ENTRY,
         HS_NAV,
     },
@@ -492,6 +492,37 @@ static const help_entry_t HELP[] =
         HF_ENTRY,
         HS_GRAPH,
     },
+    {
+        "Shift+TAB",
+        "Cycle graph tab (CONN, LOOPS, DETAIL, RES)",
+        "Cycles the graph panel display through: CONNECTIONS tree, LOOPS detection list, "
+        "DETAILS connectivity inspector, and RESOURCES allocation panel.",
+        HF_ENTRY,
+        HS_GRAPH,
+    },
+    {
+        "r",
+        "Rename feedback loop",
+        "When focused on a loop in the LOOPS tab or F7 view, opens inline prompt to assign "
+        "a custom name. Names are automatically persisted across sessions.",
+        HF_ENTRY,
+        HS_GRAPH,
+    },
+    {
+        "f",
+        "Toggle loop isolation filter",
+        "Filters the Streams, Processes, and FPS panels to isolate components belonging to "
+        "the selected feedback loop. Press ESC to clear.",
+        HF_ENTRY,
+        HS_GRAPH,
+    },
+    {
+        "g",
+        "Switch to graph CONNECTIONS tab",
+        "Switches the panel to the CONNECTIONS lineage tree to view the loop's dataflow circuit.",
+        HF_ENTRY,
+        HS_GRAPH,
+    },
 
     /* =========================================================
      * 6. Command Log & Display
@@ -702,8 +733,219 @@ int ov_help_focus_section(ov_focus_t focus)
 }
 
 /**
+ * ov_help_section_tag - return short 4-letter panel tag for search results.
+ * @sec: section index
+ */
+static const char *ov_help_section_tag(int sec)
+{
+    switch (sec)
+    {
+    case HS_NAV:
+        return "NAV";
+    case HS_STREAMS:
+        return "STRM";
+    case HS_PROCS:
+        return "PROC";
+    case HS_FPS:
+        return "FPS";
+    case HS_GRAPH:
+        return "CONN";
+    case HS_CMDLOG:
+        return "LOG";
+    case HS_MOUSE:
+        return "MOUS";
+    case HS_COLORS:
+        return "COLR";
+    default:
+        return "HELP";
+    }
+}
+
+/**
+ * ov_help_section_color - return theme color for section badge.
+ * @sec: section index
+ */
+static ov_rgb_t ov_help_section_color(int sec)
+{
+    switch (sec)
+    {
+    case HS_NAV:
+        return OV_FG_TITLE;
+    case HS_STREAMS:
+        return OV_FG_STREAM;
+    case HS_PROCS:
+        return OV_FG_PROC;
+    case HS_FPS:
+        return OV_FG_FPS;
+    case HS_GRAPH:
+        return OV_FG_CONN;
+    case HS_CMDLOG:
+        return (ov_rgb_t){ 180, 210, 170 };
+    case HS_MOUSE:
+        return OV_FG_WARN;
+    case HS_COLORS:
+        return (ov_rgb_t){ 230, 130, 255 };
+    default:
+        return OV_FG_DIM;
+    }
+}
+
+typedef struct
+{
+    int index; /* Index in HELP[] array */
+    int score; /* Composite relevance score */
+} help_search_match_t;
+
+static int compare_search_matches(
+    const void *a,
+    const void *b)
+{
+    const help_search_match_t *ma = (const help_search_match_t *) a;
+    const help_search_match_t *mb = (const help_search_match_t *) b;
+    if (mb->score != ma->score)
+    {
+        return mb->score - ma->score; /* descending score */
+    }
+    return ma->index - mb->index;     /* stable tie-breaker */
+}
+
+/**
+ * help_score_entry - score a help entry against a search query.
+ * @entry: help entry to evaluate
+ * @query: user search string
+ *
+ * Supports multi-token queries where all tokens must match (AND-logic).
+ *
+ * Return: score >= 0 (0 means no match).
+ */
+static int help_score_entry(
+    const help_entry_t *entry,
+    const char         *query)
+{
+    if (entry == NULL || query == NULL || query[0] == '\0')
+    {
+        return 0;
+    }
+
+    char qbuf[64];
+    strncpy(qbuf, query, sizeof(qbuf) - 1);
+    qbuf[sizeof(qbuf) - 1] = '\0';
+
+    char *tokens[8];
+    int   ntok    = 0;
+    char *saveptr = NULL;
+    char *tok     = strtok_r(qbuf, " \t", &saveptr);
+    while (tok != NULL && ntok < 8)
+    {
+        tokens[ntok++] = tok;
+        tok = strtok_r(NULL, " \t", &saveptr);
+    }
+
+    if (ntok == 0)
+    {
+        return 0;
+    }
+
+    int         total_score = 0;
+    const char *sec_name    = ov_help_section_name(entry->section);
+    const char *sec_tag     = ov_help_section_tag(entry->section);
+
+    for (int t = 0; t < ntok; t++)
+    {
+        const char *w = tokens[t];
+        int wlen      = (int) strlen(w);
+        if (wlen == 0)
+        {
+            continue;
+        }
+
+        int tok_score = 0;
+
+        /* 1. Keystroke exact or prefix match */
+        if (entry->key != NULL)
+        {
+            if (strcasecmp(entry->key, w) == 0)
+            {
+                tok_score += 350; /* Exact match on key, e.g. "k" or "F2" */
+            }
+            else if (strncasecmp(entry->key, w, (size_t) wlen) == 0)
+            {
+                tok_score += 180; /* Key prefix match */
+            }
+            else if (strcasestr(entry->key, w) != NULL)
+            {
+                tok_score += 90;
+            }
+        }
+
+        /* 2. Label match (primary title summary) */
+        if (entry->label != NULL)
+        {
+            const char *p = strcasestr(entry->label, w);
+            if (p != NULL)
+            {
+                int at_boundary = (p == entry->label || *(p - 1) == ' ' || *(p - 1) == '/' ||
+                                   *(p - 1) == '(' || *(p - 1) == '[' || *(p - 1) == '-');
+                if (at_boundary)
+                {
+                    if (p[wlen] == '\0' || p[wlen] == ' ' || p[wlen] == '/' ||
+                        p[wlen] == ')' || p[wlen] == ']')
+                    {
+                        tok_score += 160;
+                    }
+                    else
+                    {
+                        tok_score += 120;
+                    }
+                }
+                else
+                {
+                    tok_score += 60;
+                }
+            }
+        }
+
+        /* 3. Section/topic match */
+        if (sec_name != NULL && strcasestr(sec_name, w) != NULL)
+        {
+            tok_score += 70;
+        }
+        if (sec_tag != NULL && strcasecmp(sec_tag, w) == 0)
+        {
+            tok_score += 80;
+        }
+
+        /* 4. Detail documentation match */
+        if (entry->detail != NULL)
+        {
+            const char *p = strcasestr(entry->detail, w);
+            if (p != NULL)
+            {
+                tok_score += 35;
+            }
+        }
+
+        /* Every token must match somewhere (AND logic) */
+        if (tok_score == 0)
+        {
+            return 0;
+        }
+
+        total_score += tok_score;
+    }
+
+    /* Command entries get a priority boost over section headers */
+    if (entry->flags & HF_ENTRY)
+    {
+        total_score += 15;
+    }
+
+    return total_score;
+}
+
+/**
  * help_visible_rows - count visible rows and populate mapping array.
- * @lay: layout state (for expand bitmask)
+ * @lay: layout state (for expand bitmask or active search query)
  * @map: output array mapping visible row index to HELP[] index
  *
  * Return: number of visible rows.
@@ -712,6 +954,36 @@ static int help_visible_rows(
     const OV_LAYOUT *lay,
     int             *map)
 {
+    /* If search query is non-empty, populate map with ranked search matches */
+    if (lay->help_search[0] != '\0')
+    {
+        help_search_match_t matches[128];
+        int                 n_matches = 0;
+
+        for (int i = 0; i < HELP_TOTAL; i++)
+        {
+            int s = help_score_entry(&HELP[i], lay->help_search);
+            if (s > 0 && n_matches < 128)
+            {
+                matches[n_matches].index = i;
+                matches[n_matches].score = s;
+                n_matches++;
+            }
+        }
+
+        if (n_matches > 1)
+        {
+            qsort(matches, (size_t) n_matches, sizeof(help_search_match_t),
+                  compare_search_matches);
+        }
+
+        for (int i = 0; i < n_matches; i++)
+        {
+            map[i] = matches[i].index;
+        }
+        return n_matches;
+    }
+
     int vis = 0;
     for (int i = 0; i < HELP_TOTAL; i++)
     {
@@ -772,11 +1044,14 @@ int ov_help_section_first_vis_row(
  */
 void ov_help_open(OV_LAYOUT *lay)
 {
-    lay->show_help      = 1;
-    lay->help_expand    = 0;
-    lay->filter_editing = 0;
-    int sec             = ov_help_focus_section(lay->focus);
-    lay->help_sel       = ov_help_section_first_vis_row(lay, sec);
+    lay->show_help          = 1;
+    lay->help_expand        = 0;
+    lay->filter_editing     = 0;
+    lay->help_search[0]     = '\0';
+    lay->help_search_active = 0;
+    lay->help_search_cursor = 0;
+    int sec                 = ov_help_focus_section(lay->focus);
+    lay->help_sel           = ov_help_section_first_vis_row(lay, sec);
 }
 
 /**
@@ -790,6 +1065,11 @@ int ov_help_toggle_at(
     OV_LAYOUT *lay,
     int        vis_row)
 {
+    if (lay->help_search[0] != '\0')
+    {
+        return -1;
+    }
+
     int map[128];
     int nvis = help_visible_rows(lay, map);
 
@@ -822,6 +1102,11 @@ int ov_help_expand_at(
     int        vis_row,
     int        expand)
 {
+    if (lay->help_search[0] != '\0')
+    {
+        return -1;
+    }
+
     int map[128];
     int nvis = help_visible_rows(lay, map);
 
@@ -930,18 +1215,39 @@ int ov_help_handle_click(
         return 1;
     }
 
+    /* Click on search bar area on row pr + 2 */
+    if (mr == pr + 2 && mc >= pc + 1 && mc < pc + pw - 1)
+    {
+        if (lay->help_search[0] != '\0' && mc >= pc + pw - 16)
+        {
+            /* Clicked on [ESC: clear] button */
+            lay->help_search[0]     = '\0';
+            lay->help_search_cursor = 0;
+            lay->help_search_active = 0;
+            lay->help_sel           = 0;
+        }
+        else
+        {
+            /* Clicked on search input box */
+            lay->help_search_active = 1;
+            lay->help_search_cursor = (int) strlen(lay->help_search);
+        }
+        return 1;
+    }
+
     /* Detail pane height and split line */
     int detail_h = (ph >= 26) ? 7 : ((ph >= 20) ? 5 : 4);
     int split_r  = (pr + ph - 1) - detail_h;
+    int list_top = pr + 4;
+    int list_h   = split_r - list_top;
 
     /* Check if click is inside the list area */
-    if (mr >= pr + 3 && mr < split_r)
+    if (mr >= list_top && mr < split_r)
     {
         int map[128];
         int nvis = help_visible_rows(lay, map);
 
-        int list_h = split_r - (pr + 3);
-        int sel    = lay->help_sel;
+        int sel = lay->help_sel;
         if (sel < 0)
         {
             sel = 0;
@@ -957,10 +1263,10 @@ int ov_help_handle_click(
             scroll = sel - list_h + 1;
         }
 
-        int vis_row = (mr - (pr + 3)) + scroll;
+        int vis_row = (mr - list_top) + scroll;
         if (vis_row >= 0 && vis_row < nvis)
         {
-            if (lay->help_sel == vis_row)
+            if (lay->help_search[0] == '\0' && lay->help_sel == vis_row)
             {
                 /* Clicking selected header toggles expansion */
                 ov_help_toggle_at(lay, vis_row);
@@ -1358,8 +1664,8 @@ void ov_render_help(
 
     /* Draw outer panel border */
     const char *title =
-        (pw >= 76) ? "HELP & CONTROLS  (↑↓ nav • →/← expand/collapse • ESC close)"
-                   : ((pw >= 54) ? "HELP (↑↓ nav • →/← expand • ESC close)" : "HELP");
+        (pw >= 80) ? "HELP & CONTROLS  (↑↓ nav • →/← expand • / search • ESC close)"
+                   : ((pw >= 54) ? "HELP (↑↓ nav • / search • ESC close)" : "HELP");
     ov_draw_panel_border(pr, pc, ph, pw, title, OV_FG_BRIGHT, 1, 0);
 
     /* Clear interior background */
@@ -1449,9 +1755,105 @@ void ov_render_help(
         }
     }
 
-    /* Row 2: Top divider */
+    int inner_w = pw - 4;
+
+    /* Row 2: Search Bar or Search Feature Notification Note */
     {
-        ov_buf_pos(pr + 2, pc);
+        ov_buf_pos(pr + 2, pc + 2);
+        ov_theme_bg(OV_BG_PANEL);
+
+        if (lay->help_search_active || lay->help_search[0] != '\0')
+        {
+            ov_buf_bold();
+            ov_buf_fg(255, 220, 100);
+            ov_buf_printf("Search: ");
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_PANEL);
+
+            /* Search input box */
+            if (lay->help_search_active)
+            {
+                ov_buf_bg(25, 45, 65);
+                ov_buf_fg(255, 255, 255);
+            }
+            else
+            {
+                ov_buf_bg(35, 40, 50);
+                ov_theme_fg(OV_FG_TEXT);
+            }
+            ov_buf_bold();
+
+            int qbox_w = 26;
+            if (qbox_w > pw - 38)
+            {
+                qbox_w = pw - 38;
+            }
+            if (qbox_w < 12)
+            {
+                qbox_w = 12;
+            }
+
+            char qdisp[48];
+            snprintf(qdisp, sizeof(qdisp), "%s%s", lay->help_search,
+                     lay->help_search_active ? "█" : "");
+            ov_buf_printf(" %-*.*s ", qbox_w, qbox_w, qdisp);
+
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_PANEL);
+            ov_theme_fg(OV_FG_DIM);
+
+            /* Matches count */
+            char count_str[32];
+            if (lay->help_search[0] == '\0')
+            {
+                snprintf(count_str, sizeof(count_str), " (type query)");
+            }
+            else
+            {
+                snprintf(count_str, sizeof(count_str), " (%d match%s)", nvis,
+                         (nvis == 1) ? "" : "es");
+            }
+            ov_buf_printf("%s", count_str);
+
+            /* Clear / cancel button */
+            const char *btn_str = (lay->help_search[0] == '\0')
+                                      ? " [ESC: cancel] "
+                                      : " [ESC: clear] ";
+            int used = 8 + qbox_w + 2 + (int) strlen(count_str);
+            int rem  = inner_w - used - (int) strlen(btn_str);
+            if (rem > 0)
+            {
+                ov_buf_hline(' ', rem);
+            }
+            ov_buf_fg(255, 120, 100);
+            ov_buf_printf("%s", btn_str);
+        }
+        else
+        {
+            /* 1-line note notifying users of the search feature */
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf("Search: ");
+            ov_buf_bold();
+            ov_buf_fg(255, 220, 100);
+            ov_buf_printf("[/]");
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_PANEL);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf(
+                " Press '/' to search topics & commands (e.g. \"kill\", \"stream\", \"fps\")");
+
+            int used = 8 + 3 + 68;
+            int rem  = inner_w - used;
+            if (rem > 0)
+            {
+                ov_buf_hline(' ', rem);
+            }
+        }
+    }
+
+    /* Row 3: Top divider */
+    {
+        ov_buf_pos(pr + 3, pc);
         ov_theme_bg(OV_BG_PANEL);
         ov_theme_fg(OV_FG_DIM);
         ov_buf_printf("├");
@@ -1465,7 +1867,7 @@ void ov_render_help(
     /* Detailed Help split calculation */
     int detail_h = (ph >= 26) ? 7 : ((ph >= 20) ? 5 : 4);
     int split_r  = (pr + ph - 1) - detail_h;
-    int list_top = pr + 3;
+    int list_top = pr + 4;
     int list_h   = split_r - list_top;
     if (list_h < 4)
     {
@@ -1492,9 +1894,18 @@ void ov_render_help(
         scroll = sel - list_h + 1;
     }
 
-    int inner_w = pw - 4;
-
     /* Render visible rows in list area */
+    if (lay->help_search[0] != '\0' && nvis == 0)
+    {
+        ov_buf_pos(list_top + 1, pc + 4);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_WARN);
+        ov_buf_printf("No matching commands found for \"%s\"", lay->help_search);
+        ov_buf_pos(list_top + 2, pc + 4);
+        ov_theme_fg(OV_FG_DIM);
+        ov_buf_printf("Try searching: stream, proc, fps, kill, sort, filter, view");
+    }
+
     for (int vr = 0; vr < list_h && vr + scroll < nvis; vr++)
     {
         int                 idx    = map[vr + scroll];
@@ -1512,7 +1923,87 @@ void ov_render_help(
             ov_theme_bg(OV_BG_PANEL);
         }
 
-        if (h->flags & HF_SECTION)
+        if (lay->help_search[0] != '\0')
+        {
+            /* Search match row with section badge */
+            if (is_sel)
+            {
+                ov_buf_fg(255, 220, 100);
+                ov_buf_printf(" ▶ ");
+            }
+            else
+            {
+                ov_buf_printf("   ");
+            }
+
+            /* Section badge */
+            ov_buf_bold();
+            ov_theme_fg(ov_help_section_color(h->section));
+            ov_buf_printf("[%-4s] ", ov_help_section_tag(h->section));
+            ov_buf_reset_attr();
+            if (is_sel)
+            {
+                ov_buf_bg(45, 55, 85);
+            }
+            else
+            {
+                ov_theme_bg(OV_BG_PANEL);
+            }
+
+            /* Keystroke or category indicator */
+            ov_buf_bold();
+            if (h->flags & HF_SECTION)
+            {
+                ov_theme_fg(OV_FG_TITLE);
+                ov_buf_printf("%-13s", "Topic");
+                ov_buf_printf("   ");
+            }
+            else if (h->flags & HF_CTRL_MODE)
+            {
+                if (lay->ctrl_mode)
+                {
+                    ov_buf_fg(255, 95, 75);
+                    ov_buf_printf("%-13s", h->key ? h->key : "");
+                    ov_buf_fg(255, 80, 80);
+                    ov_buf_printf(" ⚡ ");
+                }
+                else
+                {
+                    ov_buf_fg(200, 140, 50);
+                    ov_buf_printf("%-13s", h->key ? h->key : "");
+                    ov_buf_fg(160, 115, 45);
+                    ov_buf_printf(" 🔒 ");
+                }
+            }
+            else
+            {
+                ov_buf_fg(130, 205, 255);
+                ov_buf_printf("%-13s", h->key ? h->key : "");
+                ov_buf_printf("   ");
+            }
+
+            /* Summary label */
+            ov_buf_reset_attr();
+            if (is_sel)
+            {
+                ov_buf_bg(45, 55, 85);
+                ov_buf_fg(255, 255, 255);
+            }
+            else
+            {
+                ov_theme_bg(OV_BG_PANEL);
+                ov_theme_fg(OV_FG_TEXT);
+            }
+            ov_buf_printf("%s", h->label);
+
+            int used = 3 + 7 + 13 + 3 + (int) strlen(h->label);
+            int pad  = inner_w - used;
+            if (pad > 0)
+            {
+                ov_buf_hline(' ', pad);
+            }
+        }
+        else if (h->flags & HF_SECTION)
         {
             int         expanded = help_is_expanded(lay, h->section);
             const char *chev     = expanded ? "▾" : "▸";
@@ -1682,7 +2173,9 @@ void ov_render_help(
         ov_theme_fg(OV_FG_DIM);
 
         int         used_div = 17;
-        const char *hint     = "[↑↓ nav • →/← expand • ESC close]";
+        const char *hint     = (lay->help_search[0] != '\0')
+                                   ? "[↑↓ nav • ESC clear search]"
+                                   : "[↑↓ nav • →/← expand • [/] search • ESC close]";
         int         hint_len = (int) strlen(hint);
         int         div_pad  = (pw - 2) - used_div - hint_len - 1;
         if (div_pad > 0)

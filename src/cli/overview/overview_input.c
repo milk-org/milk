@@ -20,6 +20,7 @@
 #include "stream_graph.h"
 #include "overview_data_internal.h"
 #include "overview_render_internal.h"
+#include "overview_data_loops.h"
 
 /* libfps headers after overview headers to
  * avoid macro redefinition warnings */
@@ -234,6 +235,119 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
         lay->sel_fps       = 0;
         lay->scroll_fps    = 0;
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Regex filter cleared");
+        return 1;
+    }
+
+    return 0;
+}
+
+static int ov_input__handle_loop_rename(
+    int        key,
+    OV_LAYOUT *lay,
+    OV_MODEL  *m)
+{
+    if (!lay->renaming_loop)
+    {
+        return 0;
+    }
+
+    /* ESC — cancel loop rename */
+    if (key == 27)
+    {
+        lay->renaming_loop = 0;
+        return 1;
+    }
+
+    /* ENTER — commit loop rename */
+    if (key == '\n' || key == '\r' || key == OV_KEY_ENTER)
+    {
+        lay->renaming_loop = 0;
+        if (lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+        {
+            ov_loop_rename(m, lay->sel_loop, lay->rename_buf);
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                           "Loop L%02d renamed to '%s'",
+                           m->loops[lay->sel_loop].loop_id,
+                           m->loops[lay->sel_loop].name);
+        }
+        return 1;
+    }
+
+    /* Ctrl+U — clear buffer */
+    if (key == ctrl('u') || key == 21)
+    {
+        lay->rename_cursor = 0;
+        lay->rename_buf[0] = '\0';
+        return 1;
+    }
+
+    /* Backspace — delete character */
+    if (key == 127 || key == 8)
+    {
+        if (lay->rename_cursor > 0)
+        {
+            lay->rename_cursor--;
+            lay->rename_buf[lay->rename_cursor] = '\0';
+        }
+        return 1;
+    }
+
+    /* Printable ASCII */
+    if (key >= 32 && key < 127 && lay->rename_cursor < (int) sizeof(lay->rename_buf) - 2)
+    {
+        lay->rename_buf[lay->rename_cursor++] = (char) key;
+        lay->rename_buf[lay->rename_cursor]   = '\0';
+        return 1;
+    }
+
+    return 1;
+}
+
+static int ov_input__handle_loop_actions(
+    int        key,
+    OV_LAYOUT *lay,
+    OV_MODEL  *m)
+{
+    int in_loops = (lay->view == OV_VIEW_LOOPS ||
+                    (lay->view == OV_VIEW_DASHBOARD && lay->graph_tab_mode == 1 &&
+                     lay->focus == OV_FOCUS_GRAPH));
+    if (!in_loops)
+    {
+        return 0;
+    }
+
+    /* 'r' or 'R' — rename selected loop */
+    if (key == 'r' || key == 'R')
+    {
+        if (lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+        {
+            lay->renaming_loop = 1;
+            const OV_LOOP *lp  = &m->loops[lay->sel_loop];
+            snprintf(lay->rename_buf, sizeof(lay->rename_buf), "%s",
+                     lp->has_custom_name ? lp->custom_name : lp->name);
+            lay->rename_cursor = (int) strlen(lay->rename_buf);
+            return 1;
+        }
+    }
+
+    /* 'f' — toggle loop isolation filter */
+    if (key == 'f')
+    {
+        lay->loop_filter_active = !lay->loop_filter_active;
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                       lay->loop_filter_active ? "Loop isolation filter: ON"
+                                               : "Loop isolation filter: OFF");
+        return 1;
+    }
+
+    /* 'g' — switch to graph CONNECTIONS tab to view circuit tree */
+    if (key == 'g')
+    {
+        lay->graph_tab_mode = 0;
+        if (lay->view == OV_VIEW_LOOPS)
+        {
+            lay->view = OV_VIEW_GRAPH;
+        }
         return 1;
     }
 
@@ -634,16 +748,25 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
             }
         }
     }
-    else if (lay->view == OV_VIEW_GRAPH && INSIDE(lay->r_graph, mr, mc))
+    else if ((lay->view == OV_VIEW_GRAPH || lay->view == OV_VIEW_LOOPS) &&
+             INSIDE(lay->r_graph, mr, mc))
     {
         lay->hover_view = OV_FOCUS_GRAPH;
         int body_row    = mr - lay->r_graph.row - 2;
         if (body_row >= 0)
         {
-            if (lay->graph_tab_mode == 0)
+            if (lay->graph_tab_mode == 0 && lay->view != OV_VIEW_LOOPS)
             {
                 int idx = lay->scroll_graph + body_row;
                 if (idx < m->nb_edges)
+                {
+                    lay->hover_idx = idx;
+                }
+            }
+            else if (lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS)
+            {
+                int idx = lay->scroll_loop + body_row;
+                if (idx < m->nb_loops)
                 {
                     lay->hover_idx = idx;
                 }
@@ -717,6 +840,14 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
                 {
                     int idx = lay->scroll_graph + body_row;
                     if (idx < m->nb_edges)
+                    {
+                        lay->hover_idx = idx;
+                    }
+                }
+                else if (lay->graph_tab_mode == 1)
+                {
+                    int idx = lay->scroll_loop + body_row;
+                    if (idx < m->nb_loops)
                     {
                         lay->hover_idx = idx;
                     }
@@ -868,7 +999,7 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
                 }
             }
         }
-        else if (lay->graph_tab_mode == 1)
+        else if (lay->graph_tab_mode == 2)
         {
             ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
             int        fsel  = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
@@ -1026,7 +1157,8 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
              * each tab renders as " [" + " Fn:LABEL " + "] " (inactive)
              * or " " + ← + " Fn:LABEL " + → + " " (active),
              * both totalling strlen(label) + 9 visible columns. */
-            static const char *vlabels[] = { "DASH", "STRM", "PROC", "FPS", "CONN" };
+            static const char *vlabels[OV_VIEW_COUNT] = { "DASH", "STRM", "PROC",
+                                                          "FPS",  "CONN", "LOOPS" };
             int                tab_widths[OV_VIEW_COUNT];
             int                tabs_total_width = 0;
             for (int v = 0; v < OV_VIEW_COUNT; v++)
@@ -1234,7 +1366,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         }
                         if (is_dbl)
                         {
-                            lay->graph_tab_mode = 1;
+                            lay->graph_tab_mode = 2;
                         }
                     }
                 }
@@ -1257,7 +1389,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     lay->sel_name_stream[0] = '\0';
                     if (is_dbl)
                     {
-                        lay->graph_tab_mode = 1;
+                        lay->graph_tab_mode = 2;
                     }
                 }
             }
@@ -1279,20 +1411,21 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     lay->sel_name_proc[0] = '\0';
                     if (is_dbl)
                     {
-                        lay->graph_tab_mode = 1;
+                        lay->graph_tab_mode = 2;
                     }
                 }
             }
         }
-        else if (lay->view == OV_VIEW_GRAPH && INSIDE(lay->r_graph, mr, mc))
+        else if ((lay->view == OV_VIEW_GRAPH || lay->view == OV_VIEW_LOOPS) &&
+                 INSIDE(lay->r_graph, mr, mc))
         {
             lay->focus = OV_FOCUS_GRAPH;
 
             /* Tab header click */
-            if (mr == lay->r_graph.row)
+            if (lay->view == OV_VIEW_GRAPH && mr == lay->r_graph.row)
             {
-                const char *dtabs[] = { "CONNECTIONS", "DETAILS", "RESOURCES" };
-                int         ti      = hit_panel_tab(mc, lay->r_graph.col, dtabs, 3);
+                const char *dtabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
+                int         ti      = hit_panel_tab(mc, lay->r_graph.col, dtabs, 4);
                 if (ti >= 0)
                 {
                     lay->graph_tab_mode = ti;
@@ -1398,7 +1531,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         lay->sel_name_stream[0] = '\0';
                         if (is_dbl)
                         {
-                            lay->graph_tab_mode = 1;
+                            lay->graph_tab_mode = 2;
                         }
                     }
                 }
@@ -1420,7 +1553,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         lay->sel_name_proc[0] = '\0';
                         if (is_dbl)
                         {
-                            lay->graph_tab_mode = 1;
+                            lay->graph_tab_mode = 2;
                         }
                     }
                 }
@@ -1442,7 +1575,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         lay->sel_name_fps[0] = '\0';
                         if (is_dbl)
                         {
-                            lay->graph_tab_mode = 1;
+                            lay->graph_tab_mode = 2;
                         }
                     }
                 }
@@ -1454,8 +1587,8 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 /* Tab header click */
                 if (mr == lay->r_graph.row)
                 {
-                    const char *dtabs[] = { "CONNECTIONS", "DETAILS", "RESOURCES" };
-                    int         ti      = hit_panel_tab(mc, lay->r_graph.col, dtabs, 3);
+                    const char *dtabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
+                    int         ti      = hit_panel_tab(mc, lay->r_graph.col, dtabs, 4);
                     if (ti >= 0)
                     {
                         lay->graph_tab_mode = ti;
@@ -1542,6 +1675,25 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                             }
                         }
                         else if (lay->graph_tab_mode == 1)
+                        {
+                            int max_rows  = lay->r_graph.height - 3;
+                            int list_rows = (max_rows >= 6)
+                                            ? ((max_rows > 8) ? (max_rows / 2) : 3)
+                                            : max_rows;
+                            if (body_row >= 0 && body_row < list_rows)
+                            {
+                                int li = lay->scroll_loop + body_row;
+                                if (li >= 0 && li < m->nb_loops)
+                                {
+                                    lay->sel_loop = li;
+                                    if (is_dbl)
+                                    {
+                                        lay->view = OV_VIEW_LOOPS;
+                                    }
+                                }
+                            }
+                        }
+                        else if (lay->graph_tab_mode == 2)
                         {
                             ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
                             int        fsel  = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
@@ -1824,6 +1976,15 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
             else if (lay->graph_tab_mode == 1)
             {
+                sel    = &lay->sel_loop;
+                scroll = &lay->scroll_loop;
+                count  = m->nb_loops;
+                page_h = (lay->r_graph.height - 3 >= 6)
+                         ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
+                         : (lay->r_graph.height - 3);
+            }
+            else if (lay->graph_tab_mode == 2)
+            {
                 page_h = lay->r_graph.height - 3;
                 lay->scroll_detail += dir;
                 if (lay->scroll_detail < 0)
@@ -1845,6 +2006,13 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 /* RESOURCES panel */
                 return 1;
             }
+        }
+        else if (lay->view == OV_VIEW_LOOPS)
+        {
+            sel    = &lay->sel_loop;
+            scroll = &lay->scroll_loop;
+            count  = m->nb_loops;
+            page_h = lay->r_graph.height - 3;
         }
         else if (lay->view == OV_VIEW_DASHBOARD)
         {
@@ -1889,6 +2057,15 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     page_h = lay->r_graph.height - 3;
                 }
                 else if (lay->graph_tab_mode == 1)
+                {
+                    sel    = &lay->sel_loop;
+                    scroll = &lay->scroll_loop;
+                    count  = m->nb_loops;
+                    page_h = (lay->r_graph.height - 3 >= 6)
+                             ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
+                             : (lay->r_graph.height - 3);
+                }
+                else if (lay->graph_tab_mode == 2)
                 {
                     page_h = lay->r_graph.height - 3;
                     lay->scroll_detail += dir;
@@ -1970,7 +2147,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
 static int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
 {
-    if (key >= OV_KEY_F2 && key <= OV_KEY_F6)
+    if (key >= OV_KEY_F2 && key <= OV_KEY_F7)
     {
         int vi = key - OV_KEY_F2;
         if (vi < OV_VIEW_COUNT)
@@ -1988,7 +2165,7 @@ static int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
             {
                 lay->focus = OV_FOCUS_FPS;
             }
-            else if (vi == OV_VIEW_GRAPH)
+            else if (vi == OV_VIEW_GRAPH || vi == OV_VIEW_LOOPS)
             {
                 lay->focus = OV_FOCUS_GRAPH;
             }
@@ -2013,7 +2190,7 @@ static int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
         {
             lay->focus = OV_FOCUS_FPS;
         }
-        else if (v == OV_VIEW_GRAPH)
+        else if (v == OV_VIEW_GRAPH || v == OV_VIEW_LOOPS)
         {
             lay->focus = OV_FOCUS_GRAPH;
         }
@@ -2036,7 +2213,7 @@ static int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
         {
             lay->focus = OV_FOCUS_FPS;
         }
-        else if (v == OV_VIEW_GRAPH)
+        else if (v == OV_VIEW_GRAPH || v == OV_VIEW_LOOPS)
         {
             lay->focus = OV_FOCUS_GRAPH;
         }
@@ -2051,7 +2228,7 @@ static int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
 
     if (key == OV_KEY_BTAB)
     {
-        lay->graph_tab_mode = (lay->graph_tab_mode + 1) % 3;
+        lay->graph_tab_mode = (lay->graph_tab_mode + 1) % 4;
         return 1;
     }
 
@@ -2074,7 +2251,7 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
     }
     if (key == 'D')
     {
-        lay->graph_tab_mode = (lay->graph_tab_mode == 1) ? 0 : 1;
+        lay->graph_tab_mode = (lay->graph_tab_mode == 2) ? 0 : 2;
         return 1;
     }
     /* Compact column mode toggle (#13) */
@@ -2208,8 +2385,20 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
         return 1;
     }
 
+    /* Loop filter toggle on Enter when on Loops */
+    if ((key == '\n' || key == '\r' || key == 10 || key == 13) &&
+        (lay->view == OV_VIEW_LOOPS ||
+         (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 1)))
+    {
+        lay->loop_filter_active = !lay->loop_filter_active;
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                       lay->loop_filter_active ? "Loop isolation filter: ON"
+                                               : "Loop isolation filter: OFF");
+        return 1;
+    }
+
     /* Graph jump on Enter (must be before detail mode toggle) */
-    if ((key == '\n' || key == '\r') && lay->focus == OV_FOCUS_GRAPH)
+    if ((key == '\n' || key == '\r') && lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 0)
     {
         int start_node = get_graph_start_node(lay, m);
         if (start_node >= 0)
@@ -2255,11 +2444,11 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
             lay->focus == OV_FOCUS_FPS)
         {
             /* Always jump to DETAILS sub-tab */
-            lay->graph_tab_mode = 1;
+            lay->graph_tab_mode = 2;
         }
         else
         {
-            lay->graph_tab_mode = (lay->graph_tab_mode == 1) ? 0 : 1;
+            lay->graph_tab_mode = (lay->graph_tab_mode == 2) ? 0 : 2;
         }
         return 1;
     }
@@ -3313,7 +3502,17 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
             }
             page_h = lay->r_graph.height - 3;
         }
-        else if (lay->graph_tab_mode == 1)
+        else if (lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS)
+        {
+            sel    = &lay->sel_loop;
+            scroll = &lay->scroll_loop;
+            count  = m->nb_loops;
+            page_h = (lay->r_graph.height - 3 >= 6)
+                     ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
+                     : (lay->r_graph.height - 3);
+            break;
+        }
+        else if (lay->graph_tab_mode == 2)
         {
             /* DETAILS tab: param nav if FPS selected */
             int fps_sel = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
@@ -3544,7 +3743,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                     }
                 }
 
-                if (lay->focus == OV_FOCUS_GRAPH && *sel != old_sel)
+                if (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 0 && *sel != old_sel)
                 {
                     int start_node = get_graph_start_node(lay, m);
                     if (start_node >= 0)
@@ -3624,9 +3823,94 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 0;
     }
 
-    /* 1. Interactive help overlay: when open, modal navigation only */
+    /* 1. Interactive help overlay: when open, modal navigation and search only */
     if (lay->show_help)
     {
+        /* Active search input mode */
+        if (lay->help_search_active)
+        {
+            if (key == 27) /* ESC */
+            {
+                if (lay->help_search[0] != '\0')
+                {
+                    lay->help_search[0]     = '\0';
+                    lay->help_search_cursor = 0;
+                    lay->help_sel           = 0;
+                }
+                lay->help_search_active = 0;
+                return 0;
+            }
+
+            if (key == OV_KEY_ENTER || key == '\r' || key == '\n')
+            {
+                /* Transfer focus to navigating search results */
+                lay->help_search_active = 0;
+                return 0;
+            }
+
+            if (key == 8 || key == 127 || key == OV_KEY_DEL)
+            {
+                int len = (int) strlen(lay->help_search);
+                if (len > 0)
+                {
+                    lay->help_search[len - 1] = '\0';
+                    lay->help_search_cursor   = len - 1;
+                    lay->help_sel             = 0;
+                }
+                return 0;
+            }
+
+            if (key == 21 || key == ctrl('u'))
+            {
+                lay->help_search[0]     = '\0';
+                lay->help_search_cursor = 0;
+                lay->help_sel           = 0;
+                return 0;
+            }
+
+            if (key == OV_KEY_UP || key == OV_KEY_MOUSE_UP)
+            {
+                if (lay->help_sel > 0)
+                {
+                    lay->help_sel--;
+                }
+                return 0;
+            }
+
+            if (key == OV_KEY_DOWN || key == OV_KEY_MOUSE_DOWN)
+            {
+                int nvis = ov_help_visible_count(lay);
+                if (lay->help_sel < nvis - 1)
+                {
+                    lay->help_sel++;
+                }
+                return 0;
+            }
+
+            if (key == OV_KEY_MOUSE_CLICK)
+            {
+                ov_help_handle_click(lay, ov_mouse_row, ov_mouse_col);
+                return 0;
+            }
+
+            if (key >= 32 && key <= 126)
+            {
+                int len = (int) strlen(lay->help_search);
+                if (len + 1 < (int) sizeof(lay->help_search))
+                {
+                    lay->help_search[len]     = (char) key;
+                    lay->help_search[len + 1] = '\0';
+                    lay->help_search_cursor   = len + 1;
+                    lay->help_sel             = 0;
+                }
+                return 0;
+            }
+
+            /* Ignore other keystrokes while typing search query */
+            return 0;
+        }
+
+        /* Browsing mode (category tree or search results) */
         int nvis = ov_help_visible_count(lay);
         if (nvis < 1)
         {
@@ -3635,6 +3919,11 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
         switch (key)
         {
+        case '/':
+            lay->help_search_active = 1;
+            lay->help_search_cursor = (int) strlen(lay->help_search);
+            break;
+
         case OV_KEY_UP:
         case OV_KEY_MOUSE_UP:
             if (lay->help_sel > 0)
@@ -3700,9 +3989,19 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             ov_help_handle_click(lay, ov_mouse_row, ov_mouse_col);
             break;
 
-        case 27: /* ESC — exit help overlay */
-            lay->show_help = 0;
-            ov_buf_force_clear();
+        case 27: /* ESC — clear search query if present, else exit help overlay */
+            if (lay->help_search[0] != '\0')
+            {
+                lay->help_search[0]     = '\0';
+                lay->help_search_cursor = 0;
+                lay->help_search_active = 0;
+                lay->help_sel           = 0;
+            }
+            else
+            {
+                lay->show_help = 0;
+                ov_buf_force_clear();
+            }
             break;
 
         default:
@@ -3710,6 +4009,13 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
              * ignore silently so they never affect underlying panels or control */
             break;
         }
+        return 0;
+    }
+
+    /* 1b. Loop rename mode: all characters belong to the rename prompt */
+    if (lay->renaming_loop)
+    {
+        ov_input__handle_loop_rename(key, lay, (OV_MODEL *) m);
         return 0;
     }
 
@@ -3727,6 +4033,14 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
             return 0;
         }
+    }
+
+    /* ESC — clear loop filter if active */
+    if (key == 27 && lay->loop_filter_active)
+    {
+        lay->loop_filter_active = 0;
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Loop isolation filter: OFF");
+        return 0;
     }
 
     /* Standalone ESC with no active filter: ignore silently */
@@ -3817,6 +4131,10 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         return 0;
     }
+    if (ov_input__handle_loop_actions(key, lay, (OV_MODEL *) m))
+    {
+        return 0;
+    }
 
     if (ov_input__handle_ancestry_nav(key, lay, m) || ov_input__handle_navigation(key, lay, m))
     {
@@ -3842,9 +4160,20 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             page_h = lay->r_fps.height - 3;
             break;
         case OV_FOCUS_GRAPH:
-            sel    = &lay->sel_graph;
-            scroll = &lay->scroll_graph;
-            page_h = lay->r_graph.height - 3;
+            if (lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS)
+            {
+                sel    = &lay->sel_loop;
+                scroll = &lay->scroll_loop;
+                page_h = (lay->r_graph.height - 3 >= 6)
+                         ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
+                         : (lay->r_graph.height - 3);
+            }
+            else
+            {
+                sel    = &lay->sel_graph;
+                scroll = &lay->scroll_graph;
+                page_h = lay->r_graph.height - 3;
+            }
             break;
         default:
             break;

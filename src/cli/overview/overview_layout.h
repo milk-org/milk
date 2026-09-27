@@ -21,6 +21,7 @@ typedef enum
     OV_VIEW_PROCS,
     OV_VIEW_FPS,
     OV_VIEW_GRAPH,
+    OV_VIEW_LOOPS,
     OV_VIEW_COUNT,
 } ov_view_t;
 
@@ -91,15 +92,24 @@ typedef struct
     int        sel_proc;
     int        sel_fps;
     int        sel_graph;
+    int        sel_loop;
     int        scroll_stream;
     int        scroll_proc;
     int        scroll_fps;
     int        scroll_graph;
+    int        scroll_loop;
     int        scroll_detail;
+    int        loop_filter_active;
+    int        renaming_loop;
+    char       rename_buf[64];
+    int        rename_cursor;
     int        detail_total_lines;
     int        show_help;
-    int        help_sel;    /* cursor row in help */
-    uint32_t   help_expand; /* bitmask: 1=expanded */
+    int        help_sel;           /* cursor row in help */
+    uint32_t   help_expand;        /* bitmask: 1=expanded */
+    char       help_search[64];    /* keyword/topic search query */
+    int        help_search_active; /* 1 if typing in search prompt */
+    int        help_search_cursor; /* cursor position in search query */
     int        paused;
     char       filter[64];
     /* Per-panel regex filter strings */
@@ -138,7 +148,7 @@ typedef struct
     int  hover_global_stream; /* Global stream index hovered (-1 if none) */
     int  hover_global_proc;   /* Global proc index hovered (-1 if none) */
     int  hover_global_fps;    /* Global fps index hovered (-1 if none) */
-    /* Graph panel tab mode: 0=CONNECTIONS, 1=DETAILS, 2=RESOURCES */
+    /* Graph panel tab mode: 0=CONNECTIONS, 1=LOOPS, 2=DETAILS, 3=RESOURCES */
     int graph_tab_mode;
     /* Horizontal scroll per panel */
     int hscroll_stream;
