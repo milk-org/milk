@@ -348,7 +348,7 @@ static struct timespec s_fps_mtime = { 0, 0 };
  * Called once per FPS.
  * @ce: FPS cache entry
  */
-static void fcache_build_params(ov_fps_cache_t *ce)
+void fcache_build_params(ov_fps_cache_t *ce)
 {
     FPS *fpsp = &ce->fps;
     int  sp   = 0;
@@ -465,150 +465,7 @@ static void fill_fps_from_struct(OV_FPS *f, ov_fps_cache_t *ce)
     }
     f->nb_stream_params = ce->sparam_nb;
 
-    /* Read the cached display params */
-    for (int dp = 0; dp < ce->dparam_nb; dp++)
-    {
-        FPS_PARAM *fp = &fpsp->parray[ce->dparam_idx[dp]];
-        strncpy(f->disp_param_name[dp], ce->dparam_key[dp], FUNCTION_PARAMETER_STRMAXLEN - 1);
-
-        /* Format value to string based on type */
-        char valstr[FUNCTION_PARAMETER_STRMAXLEN] = { 0 };
-        switch (fp->type)
-        {
-        case FPTYPE_UNDEF:
-            snprintf(valstr, sizeof(valstr), "[UNDEF]");
-            break;
-        case FPTYPE_INT32:
-            snprintf(valstr, sizeof(valstr), "%" PRIi32, fp->val.i32[0]);
-            break;
-        case FPTYPE_UINT32:
-            snprintf(valstr, sizeof(valstr), "%" PRIu32, fp->val.ui32[0]);
-            break;
-        case FPTYPE_INT64:
-            snprintf(valstr, sizeof(valstr), "%" PRIi64, fp->val.i64[0]);
-            break;
-        case FPTYPE_UINT64:
-            snprintf(valstr, sizeof(valstr), "%" PRIu64, fp->val.ui64[0]);
-            break;
-        case FPTYPE_FLOAT64:
-            snprintf(valstr, sizeof(valstr), "%g", fp->val.f64[0]);
-            break;
-        case FPTYPE_FLOAT32:
-            snprintf(valstr, sizeof(valstr), "%g", fp->val.f32[0]);
-            break;
-        case FPTYPE_PID:
-            snprintf(valstr, sizeof(valstr), "%d", (int) fp->val.pid[0]);
-            break;
-        case FPTYPE_TIMESPEC:
-        {
-            double secs = fp->val.ts[0].tv_sec + (fp->val.ts[0].tv_nsec / 1e9);
-            snprintf(valstr, sizeof(valstr), "%g s", secs);
-            break;
-        }
-        case FPTYPE_ONOFF:
-            snprintf(valstr, sizeof(valstr), "%s", fp->val.i64[0] ? "ON" : "OFF");
-            break;
-        case FPTYPE_FPSNAME:
-        case FPTYPE_STREAMNAME:
-        case FPTYPE_STRING:
-        case FPTYPE_DIRNAME:
-        case FPTYPE_FILENAME:
-        case FPTYPE_EXECFILENAME:
-        case FPTYPE_FITSFILENAME:
-        case FPTYPE_PROCESS:
-        case FPTYPE_STRING_NOT_STREAM:
-            strncpy(valstr, fp->val.string[0], sizeof(valstr) - 1);
-            break;
-        default:
-            snprintf(valstr, sizeof(valstr), "[Type %d]", fp->type);
-            break;
-        }
-        strncpy(f->disp_param_value[dp], valstr, FUNCTION_PARAMETER_STRMAXLEN - 1);
-        f->disp_param_type[dp]  = fp->type;
-        f->disp_param_flags[dp] = fp->fpflag;
-
-        /* Description */
-        strncpy(f->disp_param_descr[dp], fp->description, FUNCTION_PARAMETER_DESCR_STRMAXLEN - 1);
-        f->disp_param_descr[dp][FUNCTION_PARAMETER_DESCR_STRMAXLEN - 1] = '\0';
-
-        /* Min & Max limits */
-        f->disp_param_has_min[dp] = (fp->fpflag & FPFLAG_MINLIMIT) != 0;
-        f->disp_param_has_max[dp] = (fp->fpflag & FPFLAG_MAXLIMIT) != 0;
-
-        if (f->disp_param_has_min[dp])
-        {
-            char minstr[FUNCTION_PARAMETER_STRMAXLEN] = { 0 };
-            switch (fp->type)
-            {
-            case FPTYPE_INT64:
-                snprintf(minstr, sizeof(minstr), "%" PRIi64, fp->val.i64[1]);
-                break;
-            case FPTYPE_INT32:
-                snprintf(minstr, sizeof(minstr), "%" PRIi32, fp->val.i32[1]);
-                break;
-            case FPTYPE_UINT64:
-                snprintf(minstr, sizeof(minstr), "%" PRIu64, fp->val.ui64[1]);
-                break;
-            case FPTYPE_UINT32:
-                snprintf(minstr, sizeof(minstr), "%" PRIu32, fp->val.ui32[1]);
-                break;
-            case FPTYPE_FLOAT64:
-                snprintf(minstr, sizeof(minstr), "%g", fp->val.f64[1]);
-                break;
-            case FPTYPE_FLOAT32:
-                snprintf(minstr, sizeof(minstr), "%g", (double) fp->val.f32[1]);
-                break;
-            case FPTYPE_TIMESPEC:
-            {
-                double secs = fp->val.ts[1].tv_sec + (fp->val.ts[1].tv_nsec / 1e9);
-                snprintf(minstr, sizeof(minstr), "%g s", secs);
-                break;
-            }
-            default:
-                f->disp_param_has_min[dp] = 0;
-                break;
-            }
-            strncpy(f->disp_param_min[dp], minstr, FUNCTION_PARAMETER_STRMAXLEN - 1);
-            f->disp_param_min[dp][FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
-        }
-
-        if (f->disp_param_has_max[dp])
-        {
-            char maxstr[FUNCTION_PARAMETER_STRMAXLEN] = { 0 };
-            switch (fp->type)
-            {
-            case FPTYPE_INT64:
-                snprintf(maxstr, sizeof(maxstr), "%" PRIi64, fp->val.i64[2]);
-                break;
-            case FPTYPE_INT32:
-                snprintf(maxstr, sizeof(maxstr), "%" PRIi32, fp->val.i32[2]);
-                break;
-            case FPTYPE_UINT64:
-                snprintf(maxstr, sizeof(maxstr), "%" PRIu64, fp->val.ui64[2]);
-                break;
-            case FPTYPE_UINT32:
-                snprintf(maxstr, sizeof(maxstr), "%" PRIu32, fp->val.ui32[2]);
-                break;
-            case FPTYPE_FLOAT64:
-                snprintf(maxstr, sizeof(maxstr), "%g", fp->val.f64[2]);
-                break;
-            case FPTYPE_FLOAT32:
-                snprintf(maxstr, sizeof(maxstr), "%g", (double) fp->val.f32[2]);
-                break;
-            case FPTYPE_TIMESPEC:
-            {
-                double secs = fp->val.ts[2].tv_sec + (fp->val.ts[2].tv_nsec / 1e9);
-                snprintf(maxstr, sizeof(maxstr), "%g s", secs);
-                break;
-            }
-            default:
-                f->disp_param_has_max[dp] = 0;
-                break;
-            }
-            strncpy(f->disp_param_max[dp], maxstr, FUNCTION_PARAMETER_STRMAXLEN - 1);
-            f->disp_param_max[dp][FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
-        }
-    }
+    /* Display parameters are queried on demand via ov_fps_get_params() */
     f->nb_disp_params = ce->dparam_nb;
 
     /* Read description from md */
@@ -710,6 +567,7 @@ void ov_scan_fps(OV_MODEL *model)
                 continue;
             }
 
+            pthread_mutex_lock(&s_fcache_mutex);
             ci = s_fcache_nb;
             memset(&s_fcache[ci], 0, sizeof(ov_fps_cache_t));
             s_fcache[ci].fps.SMfd = -1;
@@ -717,12 +575,14 @@ void ov_scan_fps(OV_MODEL *model)
             long fpsID = fps_connect(fname, &s_fcache[ci].fps, FPSCONNECT_SIMPLE);
             if (fpsID < 0)
             {
+                pthread_mutex_unlock(&s_fcache_mutex);
                 continue;
             }
 
             strncpy(s_fcache[ci].fname, fname, sizeof(s_fcache[ci].fname) - 1);
             s_fcache[ci].in_use = 1;
             s_fcache_nb++;
+            pthread_mutex_unlock(&s_fcache_mutex);
         }
 
         fill_fps_from_struct(&model->fps[idx], &s_fcache[ci]);
@@ -843,6 +703,7 @@ void ov_scan_procs(OV_MODEL *model)
                     if (pm != MAP_FAILED)
                     {
                         ci                  = s_pcache_nb;
+                        memset(&s_pcache[ci], 0, sizeof(ov_proc_cache_t));
                         s_pcache[ci].pid    = pid;
                         s_pcache[ci].pinfo  = pm;
                         s_pcache[ci].fd     = pfd;
@@ -984,6 +845,16 @@ void ov_scan_procs(OV_MODEL *model)
  * tmux session scanning
  * ========================================================= */
 
+typedef struct
+{
+    char    name[STRINGMAXLEN_FPS_NAME];
+    uint8_t flags;
+} ov_tmux_cache_entry_t;
+
+static ov_tmux_cache_entry_t s_tmux_cache[OV_MAX_FPS];
+static int                   s_tmux_cache_cnt = 0;
+static struct timespec       s_last_tmux_scan = { 0, 0 };
+
 void ov_scan_tmux_sessions(OV_MODEL *model)
 {
     /* Reset all tmux flags */
@@ -996,6 +867,54 @@ void ov_scan_tmux_sessions(OV_MODEL *model)
     {
         return;
     }
+
+    /* Fast check: does the tmux socket directory exist?
+     * If not, tmux is definitely not running, avoid popen fork. */
+    static char tmux_dir[128] = { 0 };
+    if (tmux_dir[0] == '\0')
+    {
+        const char *tmpdir = getenv("TMUX_TMPDIR");
+        if (tmpdir != NULL && tmpdir[0] != '\0')
+        {
+            snprintf(tmux_dir, sizeof(tmux_dir), "%s/tmux-%u", tmpdir, (unsigned int) getuid());
+        }
+        else
+        {
+            snprintf(tmux_dir, sizeof(tmux_dir), "/tmp/tmux-%u", (unsigned int) getuid());
+        }
+    }
+
+    if (access(tmux_dir, F_OK) != 0)
+    {
+        s_tmux_cache_cnt = 0;
+        return;
+    }
+
+    /* Rate limit popen("tmux ...") to at most once every 3.0 seconds */
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    double elapsed = (double) (now.tv_sec - s_last_tmux_scan.tv_sec) +
+                     (double) (now.tv_nsec - s_last_tmux_scan.tv_nsec) * 1e-9;
+
+    if (s_last_tmux_scan.tv_sec != 0 && elapsed < 3.0)
+    {
+        /* Apply cached tmux flags */
+        for (int i = 0; i < model->nb_fps; i++)
+        {
+            for (int j = 0; j < s_tmux_cache_cnt; j++)
+            {
+                if (strcmp(model->fps[i].name, s_tmux_cache[j].name) == 0)
+                {
+                    model->fps[i].tmux_flags = s_tmux_cache[j].flags;
+                    break;
+                }
+            }
+        }
+        return;
+    }
+
+    s_last_tmux_scan = now;
+    s_tmux_cache_cnt = 0;
 
     FILE *fp = popen("tmux list-windows -a -F \"#{session_name}:#{window_name}\" 2>/dev/null", "r");
     if (fp == NULL)
@@ -1024,24 +943,50 @@ void ov_scan_tmux_sessions(OV_MODEL *model)
         const char *session_name = line;
         const char *window_name  = colon + 1;
 
-        /* Find matching FPS in model */
-        for (int i = 0; i < model->nb_fps; i++)
+        uint8_t win_flag = 0;
+        if (strcmp(window_name, "ctrl") == 0)
         {
-            if (strcmp(model->fps[i].name, session_name) == 0)
+            win_flag = OV_TMUX_CTRL;
+        }
+        else if (strcmp(window_name, "conf") == 0)
+        {
+            win_flag = OV_TMUX_CONF;
+        }
+        else if (strcmp(window_name, "run") == 0)
+        {
+            win_flag = OV_TMUX_RUN;
+        }
+
+        if (win_flag != 0)
+        {
+            /* Update cache entry */
+            int found_cache = 0;
+            for (int j = 0; j < s_tmux_cache_cnt; j++)
             {
-                if (strcmp(window_name, "ctrl") == 0)
+                if (strcmp(s_tmux_cache[j].name, session_name) == 0)
                 {
-                    model->fps[i].tmux_flags |= OV_TMUX_CTRL;
+                    s_tmux_cache[j].flags |= win_flag;
+                    found_cache = 1;
+                    break;
                 }
-                else if (strcmp(window_name, "conf") == 0)
+            }
+            if (!found_cache && s_tmux_cache_cnt < OV_MAX_FPS)
+            {
+                strncpy(s_tmux_cache[s_tmux_cache_cnt].name, session_name,
+                        sizeof(s_tmux_cache[s_tmux_cache_cnt].name) - 1);
+                s_tmux_cache[s_tmux_cache_cnt].name[sizeof(s_tmux_cache[0].name) - 1] = '\0';
+                s_tmux_cache[s_tmux_cache_cnt].flags = win_flag;
+                s_tmux_cache_cnt++;
+            }
+
+            /* Find matching FPS in model */
+            for (int i = 0; i < model->nb_fps; i++)
+            {
+                if (strcmp(model->fps[i].name, session_name) == 0)
                 {
-                    model->fps[i].tmux_flags |= OV_TMUX_CONF;
+                    model->fps[i].tmux_flags |= win_flag;
+                    break;
                 }
-                else if (strcmp(window_name, "run") == 0)
-                {
-                    model->fps[i].tmux_flags |= OV_TMUX_RUN;
-                }
-                break;
             }
         }
     }
@@ -1064,11 +1009,13 @@ void ov_scan_cache_cleanup(void)
     s_scache_nb = 0;
 
     /* Disconnect all cached FPS mappings */
+    pthread_mutex_lock(&s_fcache_mutex);
     for (int i = s_fcache_nb - 1; i >= 0; i--)
     {
         fps_disconnect(&s_fcache[i].fps);
     }
     s_fcache_nb = 0;
+    pthread_mutex_unlock(&s_fcache_mutex);
 
     /* Unmap all cached proc mappings */
     for (int i = s_pcache_nb - 1; i >= 0; i--)
@@ -1249,10 +1196,26 @@ void ov_post_scan_enrich(OV_MODEL *model)
         OV_PROC *p = &model->procs[pi];
         if (p->PID > 0)
         {
-            int64_t st = pid_get_start_time(p->PID);
-            if (st > 0)
+            int ci = pcache_find_pid(p->PID);
+            if (ci >= 0 && s_pcache[ci].has_start_time)
             {
-                p->start_time_sec = now_epoch - st;
+                if (s_pcache[ci].start_time > 0)
+                {
+                    p->start_time_sec = now_epoch - s_pcache[ci].start_time;
+                }
+            }
+            else
+            {
+                int64_t st = pid_get_start_time(p->PID);
+                if (ci >= 0)
+                {
+                    s_pcache[ci].start_time     = st;
+                    s_pcache[ci].has_start_time = 1;
+                }
+                if (st > 0)
+                {
+                    p->start_time_sec = now_epoch - st;
+                }
             }
         }
     }

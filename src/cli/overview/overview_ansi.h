@@ -33,6 +33,7 @@ extern int wcwidth(wchar_t c);
  * ========================================================= */
 
 #define OV_KEY_NONE 0
+#define OV_KEY_EOF (-1)
 #define OV_KEY_UP 256
 #define OV_KEY_DOWN 257
 #define OV_KEY_LEFT 258
@@ -217,7 +218,7 @@ static inline void ov_buf_force_clear(void)
     memset(ov__front, 0, sizeof(ov__front));
 }
 
-static inline void ov_buf_reset(void)
+static inline void ov_buf_reset_size(int rows, int cols)
 {
     ov__screenbuf_len = 0;
     ov__cursor_row    = 1;
@@ -227,10 +228,20 @@ static inline void ov_buf_reset(void)
     ov__current_ul    = OV_COLOR_NONE;
     ov__current_attr  = 0;
 
-    for (int r = 0; r < OV_MAX_ROWS; r++)
+    if (rows <= 0 || rows > OV_MAX_ROWS)
     {
-        for (int c = 0; c < OV_MAX_COLS; c++)
+        rows = OV_MAX_ROWS;
+    }
+    if (cols <= 0 || cols > OV_MAX_COLS)
+    {
+        cols = OV_MAX_COLS;
+    }
+
+    for (int r = 0; r < rows; r++)
+    {
+        for (int c = 0; c < cols; c++)
         {
+            memset(&ov__shadow[r][c], 0, sizeof(OV_CELL));
             ov__shadow[r][c].ch[0] = ' ';
             ov__shadow[r][c].ch[1] = '\0';
             ov__shadow[r][c].width = 1;
@@ -240,6 +251,11 @@ static inline void ov_buf_reset(void)
             ov__shadow[r][c].attr  = 0;
         }
     }
+}
+
+static inline void ov_buf_reset(void)
+{
+    ov_buf_reset_size(OV_MAX_ROWS, OV_MAX_COLS);
 }
 
 static inline void ov_buf_append(const char *data, int len)
@@ -287,6 +303,179 @@ static inline void ov_buf_flush_internal(void)
     }
 }
 
+static inline void ov_buf_emit_sgr_delta(
+    const OV_CELL *sc,
+    uint8_t       *emit_attr,
+    uint32_t      *emit_fg,
+    uint32_t      *emit_bg,
+    uint32_t      *emit_ul)
+{
+    int need_reset = ((*emit_attr & ~sc->attr) != 0 ||
+                      (sc->fg != *emit_fg && *emit_fg != OV_COLOR_NONE &&
+                       sc->fg == OV_COLOR_NONE) ||
+                      (sc->bg != *emit_bg && *emit_bg != OV_COLOR_NONE &&
+                       sc->bg == OV_COLOR_NONE) ||
+                      (sc->ul != *emit_ul && *emit_ul != OV_COLOR_NONE &&
+                       sc->ul == OV_COLOR_NONE));
+
+    if (!need_reset && sc->attr == *emit_attr && sc->fg == *emit_fg &&
+        sc->bg == *emit_bg && sc->ul == *emit_ul)
+    {
+        return;
+    }
+
+    if (need_reset)
+    {
+        *emit_attr = 0;
+        *emit_fg   = OV_COLOR_NONE;
+        *emit_bg   = OV_COLOR_NONE;
+        *emit_ul   = OV_COLOR_NONE;
+    }
+
+    char tmp[128];
+    int  len   = 0;
+    tmp[len++] = '\033';
+    tmp[len++] = '[';
+    int first  = 1;
+
+    if (need_reset)
+    {
+        tmp[len++] = '0';
+        first      = 0;
+    }
+
+    if (sc->attr != *emit_attr)
+    {
+        if ((sc->attr & OV_ATTR_BOLD) && !(*emit_attr & OV_ATTR_BOLD))
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            tmp[len++] = '1';
+            first      = 0;
+        }
+        if ((sc->attr & OV_ATTR_DIM) && !(*emit_attr & OV_ATTR_DIM))
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            tmp[len++] = '2';
+            first      = 0;
+        }
+        if ((sc->attr & OV_ATTR_ITALIC) && !(*emit_attr & OV_ATTR_ITALIC))
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            tmp[len++] = '3';
+            first      = 0;
+        }
+        if ((sc->attr & OV_ATTR_UNDERLINE) && !(*emit_attr & OV_ATTR_UNDERLINE))
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            tmp[len++] = '4';
+            first      = 0;
+        }
+        if ((sc->attr & OV_ATTR_REVERSE) && !(*emit_attr & OV_ATTR_REVERSE))
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            tmp[len++] = '7';
+            first      = 0;
+        }
+        if ((sc->attr & OV_ATTR_BLINK) && !(*emit_attr & OV_ATTR_BLINK))
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            tmp[len++] = '5';
+            first      = 0;
+        }
+        *emit_attr = sc->attr;
+    }
+
+    if (sc->fg != *emit_fg)
+    {
+        if (sc->fg != OV_COLOR_NONE)
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            if (sc->fg & OV_COLOR_TRUE)
+            {
+                len += snprintf(tmp + len, sizeof(tmp) - len, "38;2;%u;%u;%u",
+                                (sc->fg >> 16) & 0xFF, (sc->fg >> 8) & 0xFF, sc->fg & 0xFF);
+            }
+            else if (sc->fg & OV_COLOR_256)
+            {
+                len += snprintf(tmp + len, sizeof(tmp) - len, "38;5;%u", sc->fg & 0xFF);
+            }
+            first = 0;
+        }
+        *emit_fg = sc->fg;
+    }
+
+    if (sc->bg != *emit_bg)
+    {
+        if (sc->bg != OV_COLOR_NONE)
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            if (sc->bg & OV_COLOR_TRUE)
+            {
+                len += snprintf(tmp + len, sizeof(tmp) - len, "48;2;%u;%u;%u",
+                                (sc->bg >> 16) & 0xFF, (sc->bg >> 8) & 0xFF, sc->bg & 0xFF);
+            }
+            else if (sc->bg & OV_COLOR_256)
+            {
+                len += snprintf(tmp + len, sizeof(tmp) - len, "48;5;%u", sc->bg & 0xFF);
+            }
+            first = 0;
+        }
+        *emit_bg = sc->bg;
+    }
+
+    if (sc->ul != *emit_ul)
+    {
+        if (sc->ul != OV_COLOR_NONE)
+        {
+            if (!first)
+            {
+                tmp[len++] = ';';
+            }
+            if (sc->ul & OV_COLOR_TRUE)
+            {
+                len += snprintf(tmp + len, sizeof(tmp) - len, "58;2;%u;%u;%u",
+                                (sc->ul >> 16) & 0xFF, (sc->ul >> 8) & 0xFF, sc->ul & 0xFF);
+            }
+            else if (sc->ul & OV_COLOR_256)
+            {
+                len += snprintf(tmp + len, sizeof(tmp) - len, "58;5;%u", sc->ul & 0xFF);
+            }
+            first = 0;
+        }
+        *emit_ul = sc->ul;
+    }
+
+    if (!first)
+    {
+        tmp[len++] = 'm';
+        ov_buf_append(tmp, len);
+    }
+}
+
 static inline void ov_buf_flush_delta(int term_rows, int term_cols)
 {
     int      emit_cursor_r = -1;
@@ -330,7 +519,9 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
                 sc->width = 1;
             }
 
-            if (memcmp(sc, fc, sizeof(OV_CELL)) != 0)
+            if (sc->attr != fc->attr || sc->fg != fc->fg || sc->bg != fc->bg ||
+                sc->ul != fc->ul || sc->width != fc->width ||
+                memcmp(sc->ch, fc->ch, sizeof(sc->ch)) != 0)
             {
                 // Pos
                 if (emit_cursor_r != r + 1 || emit_cursor_c != c + 1)
@@ -341,107 +532,8 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
                     emit_cursor_c = c + 1;
                 }
 
-                // Attr reset if missing
-                if ((emit_attr & ~sc->attr) != 0 ||
-                    (sc->fg != emit_fg && emit_fg != OV_COLOR_NONE && sc->fg == OV_COLOR_NONE) ||
-                    (sc->bg != emit_bg && emit_bg != OV_COLOR_NONE && sc->bg == OV_COLOR_NONE) ||
-                    (sc->ul != emit_ul && emit_ul != OV_COLOR_NONE && sc->ul == OV_COLOR_NONE))
-                {
-                    ov_buf_append("\033[0m", 4);
-                    emit_attr = 0;
-                    emit_fg   = OV_COLOR_NONE;
-                    emit_bg   = OV_COLOR_NONE;
-                    emit_ul   = OV_COLOR_NONE;
-                }
-
-                // Add attrs
-                if (sc->attr != emit_attr)
-                {
-                    if ((sc->attr & OV_ATTR_BOLD) && !(emit_attr & OV_ATTR_BOLD))
-                    {
-                        ov_buf_append("\033[1m", 4);
-                    }
-                    if ((sc->attr & OV_ATTR_DIM) && !(emit_attr & OV_ATTR_DIM))
-                    {
-                        ov_buf_append("\033[2m", 4);
-                    }
-                    if ((sc->attr & OV_ATTR_ITALIC) && !(emit_attr & OV_ATTR_ITALIC))
-                    {
-                        ov_buf_append("\033[3m", 4);
-                    }
-                    if ((sc->attr & OV_ATTR_UNDERLINE) && !(emit_attr & OV_ATTR_UNDERLINE))
-                    {
-                        ov_buf_append("\033[4m", 4);
-                    }
-                    if ((sc->attr & OV_ATTR_REVERSE) && !(emit_attr & OV_ATTR_REVERSE))
-                    {
-                        ov_buf_append("\033[7m", 4);
-                    }
-                    if ((sc->attr & OV_ATTR_BLINK) && !(emit_attr & OV_ATTR_BLINK))
-                    {
-                        ov_buf_append("\033[5m", 4);
-                    }
-                    emit_attr = sc->attr;
-                }
-
-                // Colors
-                if (sc->fg != emit_fg)
-                {
-                    if (sc->fg != OV_COLOR_NONE)
-                    {
-                        if (sc->fg & OV_COLOR_TRUE)
-                        {
-                            int n = snprintf(tmp, sizeof(tmp), "\033[38;2;%u;%u;%um",
-                                             (sc->fg >> 16) & 0xFF, (sc->fg >> 8) & 0xFF,
-                                             sc->fg & 0xFF);
-                            ov_buf_append(tmp, n);
-                        }
-                        else if (sc->fg & OV_COLOR_256)
-                        {
-                            int n = snprintf(tmp, sizeof(tmp), "\033[38;5;%um", sc->fg & 0xFF);
-                            ov_buf_append(tmp, n);
-                        }
-                    }
-                    emit_fg = sc->fg;
-                }
-                if (sc->bg != emit_bg)
-                {
-                    if (sc->bg != OV_COLOR_NONE)
-                    {
-                        if (sc->bg & OV_COLOR_TRUE)
-                        {
-                            int n = snprintf(tmp, sizeof(tmp), "\033[48;2;%u;%u;%um",
-                                             (sc->bg >> 16) & 0xFF, (sc->bg >> 8) & 0xFF,
-                                             sc->bg & 0xFF);
-                            ov_buf_append(tmp, n);
-                        }
-                        else if (sc->bg & OV_COLOR_256)
-                        {
-                            int n = snprintf(tmp, sizeof(tmp), "\033[48;5;%um", sc->bg & 0xFF);
-                            ov_buf_append(tmp, n);
-                        }
-                    }
-                    emit_bg = sc->bg;
-                }
-                if (sc->ul != emit_ul)
-                {
-                    if (sc->ul != OV_COLOR_NONE)
-                    {
-                        if (sc->ul & OV_COLOR_TRUE)
-                        {
-                            int n = snprintf(tmp, sizeof(tmp), "\033[58;2;%u;%u;%um",
-                                             (sc->ul >> 16) & 0xFF, (sc->ul >> 8) & 0xFF,
-                                             sc->ul & 0xFF);
-                            ov_buf_append(tmp, n);
-                        }
-                        else if (sc->ul & OV_COLOR_256)
-                        {
-                            int n = snprintf(tmp, sizeof(tmp), "\033[58;5;%um", sc->ul & 0xFF);
-                            ov_buf_append(tmp, n);
-                        }
-                    }
-                    emit_ul = sc->ul;
-                }
+                // Batch SGR attributes and colors
+                ov_buf_emit_sgr_delta(sc, &emit_attr, &emit_fg, &emit_bg, &emit_ul);
 
                 // Char
                 size_t chlen = strlen(sc->ch);
@@ -643,18 +735,18 @@ static inline void ov_buf_append_cluster(
         {
             bytes = (int) sizeof(cell->ch) - 1;
         }
+        memset(cell->ch, 0, sizeof(cell->ch));
         memcpy(cell->ch, utf8_seq, (size_t) bytes);
-        cell->ch[bytes] = '\0';
-        cell->width     = (uint8_t) width;
-        cell->fg        = ov__current_fg;
-        cell->bg        = ov__current_bg;
-        cell->ul        = ov__current_ul;
-        cell->attr      = ov__current_attr;
+        cell->width = (uint8_t) width;
+        cell->fg    = ov__current_fg;
+        cell->bg    = ov__current_bg;
+        cell->ul    = ov__current_ul;
+        cell->attr  = ov__current_attr;
 
         if (width == 2 && ov__cursor_col < OV_MAX_COLS)
         {
             OV_CELL *cont = &ov__shadow[ov__cursor_row - 1][ov__cursor_col];
-            cont->ch[0]   = '\0';
+            memset(cont->ch, 0, sizeof(cont->ch));
             cont->width   = 0;
             cont->fg      = ov__current_fg;
             cont->bg      = ov__current_bg;
@@ -845,6 +937,10 @@ static inline int ov_get_key(void)
     }
     if (buf_len == 0)
     {
+        if (n == 0 || (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR))
+        {
+            return OV_KEY_EOF;
+        }
         return OV_KEY_NONE;
     }
 

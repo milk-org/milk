@@ -78,7 +78,13 @@ typedef struct
 
     int64_t prev_loopcnt;
     int     has_prev_loop;
+
+    int64_t start_time;
+    int     has_start_time;
 } ov_proc_cache_t;
+
+extern pthread_mutex_t s_fcache_mutex;
+void                   fcache_build_params(ov_fps_cache_t *ce);
 
 extern ov_proc_cache_t s_pcache[OV_MAX_PROCS];
 extern int             s_pcache_nb;

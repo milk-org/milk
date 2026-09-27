@@ -789,6 +789,7 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             }
         }
 
+        const OV_FPS_PARAMS *params = ov_fps_get_params(f->name);
         for (int dp = 0; dp < f->nb_disp_params; dp++)
         {
             /* Skip rows above scroll window */
@@ -810,8 +811,21 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             H_ov_buf_pos(row + ri, r.col + 1);
             H_ov_theme_bg(row_bg);
 
+            uint64_t pfl = (params != NULL && dp < params->nb_disp_params)
+                               ? params->disp_param_flags[dp]
+                               : 0;
+            uint32_t pt = (params != NULL && dp < params->nb_disp_params)
+                              ? params->disp_param_type[dp]
+                              : 0;
+            const char *pname = (params != NULL && dp < params->nb_disp_params)
+                                    ? params->disp_param_name[dp]
+                                    : "";
+            const char *pval = (params != NULL && dp < params->nb_disp_params)
+                                   ? params->disp_param_value[dp]
+                                   : "";
+
             /* Writability indicator */
-            int writable = (f->disp_param_flags[dp] & FPFLAG_WRITESTATUS) != 0;
+            int writable = (pfl & FPFLAG_WRITESTATUS) != 0;
             if (is_sel)
             {
                 H_ov_theme_fg(writable ? OV_FG_ACTIVE : OV_FG_DIM);
@@ -825,7 +839,6 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             /* Type badge */
             const char *tbadge = "???";
             ov_rgb_t    tcolor = OV_FG_DIM;
-            uint32_t    pt     = f->disp_param_type[dp];
             if (pt == FPTYPE_INT64 || pt == FPTYPE_INT32)
             {
                 tbadge = "INT";
@@ -877,12 +890,12 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
 
             /* Parameter name */
             H_ov_theme_fg(is_sel ? OV_FG_BRIGHT : OV_FG_CONN);
-            H_ov_buf_printf(" %-20.20s", f->disp_param_name[dp]);
+            H_ov_buf_printf(" %-20.20s", pname);
 
             /* Value */
             if (pt == FPTYPE_STREAMNAME)
             {
-                int      s_idx  = ov_find_stream_by_name(m, f->disp_param_value[dp]);
+                int      s_idx  = ov_find_stream_by_name(m, pval);
                 ov_rgb_t vcolor = (s_idx >= 0) ? OV_FG_STREAM : OV_FG_DIM;
                 if (is_sel || is_hover)
                 {
@@ -896,8 +909,8 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             }
             else if (pt == FPTYPE_ONOFF)
             {
-                int      is_on  = (strcmp(f->disp_param_value[dp], "ON") == 0 ||
-                                   strcmp(f->disp_param_value[dp], "1") == 0);
+                int      is_on  = (strcmp(pval, "ON") == 0 ||
+                                   strcmp(pval, "1") == 0);
                 ov_rgb_t vcolor = is_on ? (ov_rgb_t) { 100, 255, 100 } : OV_FG_DIM;
                 if (is_sel || is_hover)
                 {
@@ -914,8 +927,8 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
                 H_ov_theme_fg(is_sel ? OV_FG_BRIGHT : OV_FG_TEXT);
             }
 
-            int n2 = snprintf(NULL, 0, " = %s", f->disp_param_value[dp]);
-            H_ov_buf_printf(" = %s", f->disp_param_value[dp]);
+            int n2 = snprintf(NULL, 0, " = %s", pval);
+            H_ov_buf_printf(" = %s", pval);
 
             if ((is_sel || is_hover) && (pt == FPTYPE_STREAMNAME || pt == FPTYPE_ONOFF))
             {
@@ -944,6 +957,62 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
     H_ov_buf_reset_attr();
     return 1;
 } // ov_fps__render_detail_fps
+
+typedef struct
+{
+    pid_t               pid;
+    struct timespec     last_update;
+    uint64_t            core_mask;
+    ov_advanced_stats_t adv_stats;
+    int                 has_adv_stats;
+    ov_perf_counters_t  perf_cnt;
+    int                 has_perf;
+    int64_t             target_loopcnt;
+} ov_detail_telemetry_cache_t;
+
+static ov_detail_telemetry_cache_t s_detail_cache;
+
+/**
+ * detail_update_telemetry - throttle /proc reads for process telemetry.
+ * @target_pid:      PID of process being inspected
+ * @target_loopcnt:  current iteration count of the process
+ */
+static void detail_update_telemetry(
+    pid_t   target_pid,
+    int64_t target_loopcnt)
+{
+    s_detail_cache.target_loopcnt = target_loopcnt;
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    double elapsed = (double) (now.tv_sec - s_detail_cache.last_update.tv_sec) +
+                     (double) (now.tv_nsec - s_detail_cache.last_update.tv_nsec) * 1e-9;
+
+    if (s_detail_cache.pid != target_pid || elapsed >= 0.5)
+    {
+        s_detail_cache.pid         = target_pid;
+        s_detail_cache.last_update = now;
+
+        /* Core mask */
+        int active_cores[128];
+        int num_active = pid_get_core_utilization(target_pid, active_cores, 128);
+        s_detail_cache.core_mask = 0;
+        for (int ii = 0; ii < num_active; ii++)
+        {
+            if (active_cores[ii] >= 0 && active_cores[ii] < 64)
+            {
+                s_detail_cache.core_mask |= (1ULL << active_cores[ii]);
+            }
+        }
+
+        /* Advanced stats */
+        s_detail_cache.has_adv_stats =
+            (pid_get_advanced_stats(target_pid, &s_detail_cache.adv_stats) == 0);
+
+        /* Perf counters */
+        s_detail_cache.has_perf =
+            (pid_read_perf_counters(target_pid, target_loopcnt, &s_detail_cache.perf_cnt) == 0);
+    }
+}
 
 int ov_render_detail_panel(OV_LAYOUT *lay, const OV_MODEL *m)
 {
@@ -1199,18 +1268,18 @@ int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 
         /* Draw core mask — sysconf cached once per render frame */
         {
-            uint64_t core_mask = 0;
+            int64_t target_loopcnt = 0;
+            for (int ii = 0; ii < m->nb_procs; ii++)
             {
-                int active_cores[128];
-                int num_active = pid_get_core_utilization(target_pid, active_cores, 128);
-                for (int ii = 0; ii < num_active; ii++)
+                if (m->procs[ii].PID == target_pid && m->procs[ii].active)
                 {
-                    if (active_cores[ii] >= 0 && active_cores[ii] < 64)
-                    {
-                        core_mask |= (1ULL << active_cores[ii]);
-                    }
+                    target_loopcnt = m->procs[ii].loopcnt;
+                    break;
                 }
             }
+            detail_update_telemetry(target_pid, target_loopcnt);
+
+            uint64_t core_mask = s_detail_cache.core_mask;
 
             H_ov_buf_pos(row + ri, r.col + 1);
             H_ov_theme_fg(OV_FG_TEXT);
@@ -1248,9 +1317,9 @@ int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
             line_idx++;
         }
 
-        ov_advanced_stats_t adv_stats;
-        if (pid_get_advanced_stats(target_pid, &adv_stats) == 0)
+        if (s_detail_cache.has_adv_stats)
         {
+            ov_advanced_stats_t adv_stats = s_detail_cache.adv_stats;
             /* Blank separator */
             {
                 H_ov_buf_pos(row + ri, r.col + 1);
@@ -1355,18 +1424,8 @@ int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 
         /* Hardware counter values */
         {
-            int64_t target_loopcnt = 0;
-            for (int ii = 0; ii < m->nb_procs; ii++)
-            {
-                if (m->procs[ii].PID == target_pid && m->procs[ii].active)
-                {
-                    target_loopcnt = m->procs[ii].loopcnt;
-                    break;
-                }
-            }
-
-            ov_perf_counters_t perf_cnt;
-            int has_perf = (pid_read_perf_counters(target_pid, target_loopcnt, &perf_cnt) == 0);
+            int                has_perf = s_detail_cache.has_perf;
+            ov_perf_counters_t perf_cnt = s_detail_cache.perf_cnt;
 
             H_ov_buf_pos(row + ri, r.col + 1);
             if (has_perf)
@@ -1384,7 +1443,7 @@ int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
                 }
                 line_idx++;
 
-                if (target_loopcnt > 0)
+                if (s_detail_cache.target_loopcnt > 0)
                 {
                     /* Per-iteration instructions + cache miss */
                     {

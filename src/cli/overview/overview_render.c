@@ -83,52 +83,81 @@ static int get_fps_rank(const char *name)
     return 999999;
 }
 
-static int sort_stream_by_rank(const void *a, const void *b)
+typedef struct
 {
-    int ra = get_stream_rank(((const OV_STREAM *) a)->name);
-    int rb = get_stream_rank(((const OV_STREAM *) b)->name);
-    if (ra != rb)
-    {
-        return ra - rb;
-    }
-    return strcmp(((const OV_STREAM *) a)->name, ((const OV_STREAM *) b)->name);
-}
+    int         rank;
+    int         orig_idx;
+    const char *name;
+} ov_sort_rank_entry_t;
 
-static int sort_proc_by_rank(const void *a, const void *b)
+static int sort_entry_by_rank(const void *a, const void *b)
 {
-    int ra = get_proc_rank(((const OV_PROC *) a)->name);
-    int rb = get_proc_rank(((const OV_PROC *) b)->name);
-    if (ra != rb)
+    const ov_sort_rank_entry_t *ea = (const ov_sort_rank_entry_t *) a;
+    const ov_sort_rank_entry_t *eb = (const ov_sort_rank_entry_t *) b;
+    if (ea->rank != eb->rank)
     {
-        return ra - rb;
+        return ea->rank - eb->rank;
     }
-    return strcmp(((const OV_PROC *) a)->name, ((const OV_PROC *) b)->name);
-}
-
-static int sort_fps_by_rank(const void *a, const void *b)
-{
-    int ra = get_fps_rank(((const OV_FPS *) a)->name);
-    int rb = get_fps_rank(((const OV_FPS *) b)->name);
-    if (ra != rb)
-    {
-        return ra - rb;
-    }
-    return strcmp(((const OV_FPS *) a)->name, ((const OV_FPS *) b)->name);
+    return strcmp(ea->name, eb->name);
 }
 
 static void ov_apply_rank_sort(OV_MODEL *mm)
 {
-    if (g_nb_stream_order > 0)
+    if (g_nb_stream_order > 0 && mm->nb_streams > 1)
     {
-        qsort(mm->streams, (size_t) mm->nb_streams, sizeof(OV_STREAM), sort_stream_by_rank);
+        static ov_sort_rank_entry_t entries[OV_MAX_STREAMS];
+        for (int i = 0; i < mm->nb_streams; i++)
+        {
+            entries[i].orig_idx = i;
+            entries[i].name     = mm->streams[i].name;
+            entries[i].rank     = get_stream_rank(mm->streams[i].name);
+        }
+        qsort(entries, (size_t) mm->nb_streams, sizeof(ov_sort_rank_entry_t), sort_entry_by_rank);
+
+        static OV_STREAM temp_streams[OV_MAX_STREAMS];
+        memcpy(temp_streams, mm->streams, (size_t) mm->nb_streams * sizeof(OV_STREAM));
+        for (int i = 0; i < mm->nb_streams; i++)
+        {
+            mm->streams[i] = temp_streams[entries[i].orig_idx];
+        }
     }
-    if (g_nb_proc_order > 0)
+
+    if (g_nb_proc_order > 0 && mm->nb_procs > 1)
     {
-        qsort(mm->procs, (size_t) mm->nb_procs, sizeof(OV_PROC), sort_proc_by_rank);
+        static ov_sort_rank_entry_t entries[OV_MAX_PROCS];
+        for (int i = 0; i < mm->nb_procs; i++)
+        {
+            entries[i].orig_idx = i;
+            entries[i].name     = mm->procs[i].name;
+            entries[i].rank     = get_proc_rank(mm->procs[i].name);
+        }
+        qsort(entries, (size_t) mm->nb_procs, sizeof(ov_sort_rank_entry_t), sort_entry_by_rank);
+
+        static OV_PROC temp_procs[OV_MAX_PROCS];
+        memcpy(temp_procs, mm->procs, (size_t) mm->nb_procs * sizeof(OV_PROC));
+        for (int i = 0; i < mm->nb_procs; i++)
+        {
+            mm->procs[i] = temp_procs[entries[i].orig_idx];
+        }
     }
-    if (g_nb_fps_order > 0)
+
+    if (g_nb_fps_order > 0 && mm->nb_fps > 1)
     {
-        qsort(mm->fps, (size_t) mm->nb_fps, sizeof(OV_FPS), sort_fps_by_rank);
+        static ov_sort_rank_entry_t entries[OV_MAX_FPS];
+        for (int i = 0; i < mm->nb_fps; i++)
+        {
+            entries[i].orig_idx = i;
+            entries[i].name     = mm->fps[i].name;
+            entries[i].rank     = get_fps_rank(mm->fps[i].name);
+        }
+        qsort(entries, (size_t) mm->nb_fps, sizeof(ov_sort_rank_entry_t), sort_entry_by_rank);
+
+        static OV_FPS temp_fps[OV_MAX_FPS];
+        memcpy(temp_fps, mm->fps, (size_t) mm->nb_fps * sizeof(OV_FPS));
+        for (int i = 0; i < mm->nb_fps; i++)
+        {
+            mm->fps[i] = temp_fps[entries[i].orig_idx];
+        }
     }
 }
 
@@ -651,7 +680,7 @@ static void ov_draw_tooltip(OV_LAYOUT *lay)
 
 void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    ov_buf_reset();
+    ov_buf_reset_size(lay->term_rows, lay->term_cols);
 
     /* Perform global hit-test to populate hover state */
     ov_hittest(lay, m, ov_mouse_row, ov_mouse_col);

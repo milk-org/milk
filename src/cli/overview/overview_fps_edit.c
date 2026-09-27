@@ -168,7 +168,7 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
         }
         usleep(800000);
         /* Drain buffered keys */
-        while (ov_get_key() != OV_KEY_NONE)
+        while (ov_get_key() > 0)
         {
         }
         /* Hide cursor */
@@ -210,7 +210,7 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
             }
         }
         usleep(300000);
-        while (ov_get_key() != OV_KEY_NONE)
+        while (ov_get_key() > 0)
         {
         }
         if (write(STDOUT_FILENO, "\033[?25l", 6) < 0)
@@ -255,8 +255,8 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
             continue;
         }
 
-        /* ESC — abort */
-        if (key == OV_KEY_ESC)
+        /* ESC or EOF — abort */
+        if (key == OV_KEY_ESC || key == OV_KEY_EOF)
         {
             aborted = 1;
             break;

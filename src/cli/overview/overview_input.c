@@ -1153,12 +1153,13 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
                     int param_row   = lay->hover_idx - header_rows;
                     if (param_row >= 0)
                     {
-                        int dp = lay->param_scroll + param_row;
-                        if (dp >= 0 && dp < f->nb_disp_params)
+                        int                  dp     = lay->param_scroll + param_row;
+                        const OV_FPS_PARAMS *params = ov_fps_get_params(f->name);
+                        if (params != NULL && dp >= 0 && dp < params->nb_disp_params)
                         {
-                            if (f->disp_param_type[dp] == FPTYPE_STREAMNAME)
+                            if (params->disp_param_type[dp] == FPTYPE_STREAMNAME)
                             {
-                                int si = ov_find_stream_by_name(m, f->disp_param_value[dp]);
+                                int si = ov_find_stream_by_name(m, params->disp_param_value[dp]);
                                 if (si >= 0)
                                 {
                                     lay->hover_global_stream = si;
@@ -1896,14 +1897,16 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                                     int param_row   = body_row - header_rows;
                                     if (param_row >= 0)
                                     {
-                                        int dp = lay->param_scroll + param_row;
-                                        if (dp >= 0 && dp < f->nb_disp_params)
+                                        int                  dp     = lay->param_scroll + param_row;
+                                        const OV_FPS_PARAMS *params = ov_fps_get_params(f->name);
+                                        if (params != NULL && dp >= 0 &&
+                                            dp < params->nb_disp_params)
                                         {
                                             lay->param_sel = dp;
-                                            if (f->disp_param_type[dp] == FPTYPE_STREAMNAME)
+                                            if (params->disp_param_type[dp] == FPTYPE_STREAMNAME)
                                             {
                                                 int si = ov_find_stream_by_name(
-                                                    m, f->disp_param_value[dp]);
+                                                    m, params->disp_param_value[dp]);
                                                 if (si >= 0)
                                                 {
                                                     lay->focus              = OV_FOCUS_STREAMS;
@@ -3562,8 +3565,10 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                     fps_tree_item_t *item = &items[lay->fps_param_sel];
                     if (!item->is_dir)
                     {
-                        int pi = item->param_idx;
-                        if (m->fps[fsel].disp_param_type[pi] == FPTYPE_ONOFF)
+                        int                  pi     = item->param_idx;
+                        const OV_FPS_PARAMS *params = ov_fps_get_params(m->fps[fsel].name);
+                        if (params != NULL && pi >= 0 && pi < params->nb_disp_params &&
+                            params->disp_param_type[pi] == FPTYPE_ONOFF)
                         {
                             if (!lay->ctrl_mode)
                             {

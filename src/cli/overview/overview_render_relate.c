@@ -18,6 +18,61 @@
  * @param max_out  Maximum capacity of output array
  * @return Number of matching entries written to @out
  */
+#define OV_FILTER_CACHE_SIZE 4
+
+typedef struct
+{
+    char    pattern[64];
+    regex_t re;
+    int     valid;
+} ov_filter_cache_entry_t;
+
+static ov_filter_cache_entry_t s_filter_cache[OV_FILTER_CACHE_SIZE];
+static int                     s_filter_cache_init = 0;
+
+static regex_t *get_cached_regex(const char *pattern, int *out_reg_ok)
+{
+    if (!s_filter_cache_init)
+    {
+        memset(s_filter_cache, 0, sizeof(s_filter_cache));
+        s_filter_cache_init = 1;
+    }
+
+    /* Check cache hit */
+    for (int i = 0; i < OV_FILTER_CACHE_SIZE; i++)
+    {
+        if (s_filter_cache[i].valid && strcmp(s_filter_cache[i].pattern, pattern) == 0)
+        {
+            *out_reg_ok = 1;
+            return &s_filter_cache[i].re;
+        }
+    }
+
+    /* Cache miss: evict slot round-robin */
+    static int next_slot = 0;
+    int        slot      = next_slot;
+    next_slot            = (next_slot + 1) % OV_FILTER_CACHE_SIZE;
+
+    if (s_filter_cache[slot].valid)
+    {
+        regfree(&s_filter_cache[slot].re);
+        s_filter_cache[slot].valid = 0;
+    }
+
+    strncpy(s_filter_cache[slot].pattern, pattern, sizeof(s_filter_cache[slot].pattern) - 1);
+    s_filter_cache[slot].pattern[sizeof(s_filter_cache[slot].pattern) - 1] = '\0';
+
+    if (regcomp(&s_filter_cache[slot].re, pattern, REG_EXTENDED | REG_NOSUB | REG_ICASE) == 0)
+    {
+        s_filter_cache[slot].valid = 1;
+        *out_reg_ok                = 1;
+        return &s_filter_cache[slot].re;
+    }
+
+    *out_reg_ok = 0;
+    return NULL;
+}
+
 int ov_filter_build(
     const char  *pattern,
     const char **names,
@@ -36,20 +91,19 @@ int ov_filter_build(
         return n;
     }
 
-    regex_t re;
-    int     reg_ok = (regcomp(&re, pattern, REG_EXTENDED | REG_NOSUB | REG_ICASE) == 0);
-    int     n      = 0;
+    int      reg_ok = 0;
+    regex_t *re     = get_cached_regex(pattern, &reg_ok);
+    int      n      = 0;
 
-    if (reg_ok)
+    if (reg_ok && re != NULL)
     {
         for (int i = 0; i < count && n < max_out; i++)
         {
-            if (names[i] != NULL && regexec(&re, names[i], 0, NULL, 0) == 0)
+            if (names[i] != NULL && regexec(re, names[i], 0, NULL, 0) == 0)
             {
                 out[n++] = i;
             }
         }
-        regfree(&re);
     }
     else
     {

@@ -453,6 +453,11 @@ int main(int argc, char *argv[])
             int key;
             while ((key = ov_get_key()) != OV_KEY_NONE)
             {
+                if (key == OV_KEY_EOF)
+                {
+                    quit = 1;
+                    break;
+                }
                 need_render = 1;
                 if (ov_handle_key(key, &lay, m))
                 {
@@ -473,45 +478,34 @@ int main(int argc, char *argv[])
             need_render = 0;
         }
 
-        /* Frame delay: poll stdin, wake on
-         * new data or keypress */
+        /* Frame delay: poll stdin and scan eventfd, wake on
+         * new data, keypress, or 100ms timeout (~10 Hz frame tick) */
         {
-            struct pollfd pfd;
-            pfd.fd       = STDIN_FILENO;
-            pfd.events   = POLLIN;
-            int quit_now = 0;
+            struct pollfd pfds[2];
+            int           npfd = 1;
 
-            for (int i = 0; i < 10; i++)
+            pfds[0].fd     = STDIN_FILENO;
+            pfds[0].events = POLLIN;
+
+            int scan_efd = ov_scan_get_event_fd();
+            if (scan_efd >= 0)
             {
-                if (poll(&pfd, 1, 10) > 0)
+                pfds[1].fd     = scan_efd;
+                pfds[1].events = POLLIN;
+                npfd           = 2;
+            }
+
+            int pr = poll(pfds, npfd, 100);
+            if (pr > 0)
+            {
+                if (pfds[0].revents & (POLLHUP | POLLERR | POLLNVAL))
                 {
-                    if (pfd.revents & POLLIN)
-                    {
-                        int pk = ov_get_key();
-                        if (pk != OV_KEY_NONE)
-                        {
-                            if (ov_handle_key(pk, &lay, m))
-                            {
-                                quit_now = 1;
-                            }
-                            need_render = 1;
-                        }
-                        break;
-                    }
-                }
-                if (ov_scan_has_new_data())
-                {
-                    need_render = 1;
                     break;
                 }
             }
-            if (quit_now)
+            else if (pr < 0 && errno != EINTR)
             {
                 break;
-            }
-            if (!lay.paused)
-            {
-                need_render = 1;
             }
         }
     }

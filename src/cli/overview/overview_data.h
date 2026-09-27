@@ -194,6 +194,29 @@ typedef struct
  * ========================================================= */
 
 #define OV_FPS_MAX_STREAM_PARAMS 24
+#define OV_FPS_MAX_DISP_PARAMS 100
+
+typedef struct
+{
+    int      nb_disp_params;
+    char     disp_param_name[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    char     disp_param_value[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    char     disp_param_descr[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_DESCR_STRMAXLEN];
+    char     disp_param_min[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    char     disp_param_max[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    uint8_t  disp_param_has_min[OV_FPS_MAX_DISP_PARAMS];
+    uint8_t  disp_param_has_max[OV_FPS_MAX_DISP_PARAMS];
+    uint32_t disp_param_type[OV_FPS_MAX_DISP_PARAMS];
+    uint64_t disp_param_flags[OV_FPS_MAX_DISP_PARAMS];
+} OV_FPS_PARAMS;
+
+/**
+ * ov_fps_get_params - fetch display parameters for an FPS on-demand.
+ * @fps_name: name of the FPS
+ *
+ * Return: pointer to thread-safe static parameters struct, or NULL.
+ */
+const OV_FPS_PARAMS *ov_fps_get_params(const char *fps_name);
 
 typedef struct
 {
@@ -222,18 +245,8 @@ typedef struct
     char     stream_param_value[OV_FPS_MAX_STREAM_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
     uint64_t stream_param_flags[OV_FPS_MAX_STREAM_PARAMS];
 
-#define OV_FPS_MAX_DISP_PARAMS 100
-    /* display parameters */
+    /* display parameters count */
     int      nb_disp_params;
-    char     disp_param_name[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
-    char     disp_param_value[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
-    char     disp_param_descr[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_DESCR_STRMAXLEN];
-    char     disp_param_min[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
-    char     disp_param_max[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
-    uint8_t  disp_param_has_min[OV_FPS_MAX_DISP_PARAMS];
-    uint8_t  disp_param_has_max[OV_FPS_MAX_DISP_PARAMS];
-    uint32_t disp_param_type[OV_FPS_MAX_DISP_PARAMS];
-    uint64_t disp_param_flags[OV_FPS_MAX_DISP_PARAMS];
 
     /* graph node index */
     int node_idx;
@@ -490,6 +503,29 @@ void ov_build_graph(OV_MODEL *model);
  * @model: model to populate
  */
 void ov_model_full_scan(OV_MODEL *model);
+
+/**
+ * ov_scan_start - launch the background scan thread.
+ * Return: 0 on success, -1 on failure.
+ */
+int ov_scan_start(void);
+
+/**
+ * ov_scan_stop - signal the scan thread to stop and join.
+ */
+void ov_scan_stop(void);
+
+/**
+ * ov_scan_get_model - pick up the latest complete model.
+ * Return: pointer to the current display model.
+ */
+const OV_MODEL *ov_scan_get_model(void);
+
+/**
+ * ov_scan_get_event_fd - get eventfd notified on new scan data.
+ * Return: eventfd file descriptor, or -1 if not initialized.
+ */
+int ov_scan_get_event_fd(void);
 
 /**
  * ov_scan_has_new_data - check if the first scan has completed.
