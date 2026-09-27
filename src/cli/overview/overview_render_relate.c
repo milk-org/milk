@@ -73,12 +73,7 @@ static regex_t *get_cached_regex(const char *pattern, int *out_reg_ok)
     return NULL;
 }
 
-int ov_filter_build(
-    const char  *pattern,
-    const char **names,
-    int          count,
-    int         *out,
-    int          max_out)
+int ov_filter_build(const char *pattern, const char **names, int count, int *out, int max_out)
 {
     if (pattern == NULL || pattern[0] == '\0')
     {
@@ -126,8 +121,7 @@ int ov_filter_build(
  * @param[in] lay Layout structure
  * @return Panel focus enum (OV_FOCUS_STREAMS, OV_FOCUS_PROCS, OV_FOCUS_FPS, or OV_FOCUS_GRAPH)
  */
-ov_focus_t ov_get_effective_filter_panel(
-    const OV_LAYOUT *lay)
+ov_focus_t ov_get_effective_filter_panel(const OV_LAYOUT *lay)
 {
     if (lay == NULL)
     {
@@ -145,8 +139,7 @@ ov_focus_t ov_get_effective_filter_panel(
     {
         return OV_FOCUS_FPS;
     }
-    if (lay->focus == OV_FOCUS_STREAMS ||
-        lay->focus == OV_FOCUS_PROCS ||
+    if (lay->focus == OV_FOCUS_STREAMS || lay->focus == OV_FOCUS_PROCS ||
         lay->focus == OV_FOCUS_FPS)
     {
         return lay->focus;
@@ -161,9 +154,7 @@ ov_focus_t ov_get_effective_filter_panel(
  * @param[in] panel Panel focus enum
  * @return 1 if defined, 0 otherwise
  */
-int ov_has_panel_filter(
-    const OV_LAYOUT *lay,
-    ov_focus_t       panel)
+int ov_has_panel_filter(const OV_LAYOUT *lay, ov_focus_t panel)
 {
     if (lay == NULL)
     {
@@ -191,9 +182,7 @@ int ov_has_panel_filter(
  * @param[in] panel Panel focus enum
  * @return 1 if active, 0 otherwise
  */
-int ov_is_panel_filter_active(
-    const OV_LAYOUT *lay,
-    ov_focus_t       panel)
+int ov_is_panel_filter_active(const OV_LAYOUT *lay, ov_focus_t panel)
 {
     if (lay == NULL)
     {
@@ -221,9 +210,7 @@ int ov_is_panel_filter_active(
  * @param[in] panel Panel focus enum
  * @return Pointer to filter pattern string, or "" if none
  */
-const char *ov_get_panel_filter_pattern(
-    const OV_LAYOUT *lay,
-    ov_focus_t       panel)
+const char *ov_get_panel_filter_pattern(const OV_LAYOUT *lay, ov_focus_t panel)
 {
     if (lay == NULL)
     {
@@ -251,9 +238,7 @@ const char *ov_get_panel_filter_pattern(
  * @param[in] panel Panel focus enum
  * @return Pointer to active filter string, or "" if inactive/empty
  */
-const char *ov_get_active_filter_for(
-    const OV_LAYOUT *lay,
-    ov_focus_t       panel)
+const char *ov_get_active_filter_for(const OV_LAYOUT *lay, ov_focus_t panel)
 {
     if (!ov_is_panel_filter_active(lay, panel))
     {
@@ -268,9 +253,7 @@ const char *ov_get_active_filter_for(
  * @param[in,out] lay   Layout structure
  * @param[in]     panel Panel focus enum
  */
-void ov_clear_panel_filter(
-    OV_LAYOUT  *lay,
-    ov_focus_t  panel)
+void ov_clear_panel_filter(OV_LAYOUT *lay, ov_focus_t panel)
 {
     if (lay == NULL)
     {
@@ -291,9 +274,8 @@ void ov_clear_panel_filter(
         lay->filter_fps[0]     = '\0';
         lay->filter_fps_active = 0;
     }
-    lay->filter_active = (lay->filter_stream_active ||
-                          lay->filter_proc_active ||
-                          lay->filter_fps_active);
+    lay->filter_active =
+        (lay->filter_stream_active || lay->filter_proc_active || lay->filter_fps_active);
 }
 
 /**
@@ -302,15 +284,13 @@ void ov_clear_panel_filter(
  * @param[in] lay Layout structure
  * @return 1 if any filter pattern is set, 0 otherwise
  */
-int ov_has_filter(
-    const OV_LAYOUT *lay)
+int ov_has_filter(const OV_LAYOUT *lay)
 {
     if (lay == NULL)
     {
         return 0;
     }
-    return (lay->filter_stream[0] != '\0' ||
-            lay->filter_proc[0] != '\0' ||
+    return (lay->filter_stream[0] != '\0' || lay->filter_proc[0] != '\0' ||
             lay->filter_fps[0] != '\0');
 }
 
@@ -320,8 +300,7 @@ int ov_has_filter(
  * @param[in] lay Layout structure
  * @return 1 if active, 0 otherwise
  */
-int ov_is_filter_active(
-    const OV_LAYOUT *lay)
+int ov_is_filter_active(const OV_LAYOUT *lay)
 {
     if (lay == NULL)
     {
@@ -343,8 +322,7 @@ int ov_is_filter_active(
  * @param[in] lay Layout structure
  * @return Pointer to filter pattern string, or "" if none
  */
-const char *ov_get_filter_pattern(
-    const OV_LAYOUT *lay)
+const char *ov_get_filter_pattern(const OV_LAYOUT *lay)
 {
     if (lay == NULL)
     {
@@ -384,8 +362,7 @@ const char *ov_get_filter_pattern(
  * @param[in] lay Layout structure
  * @return Pointer to active filter string, or "" if filter is inactive/empty
  */
-const char *ov_get_active_filter(
-    const OV_LAYOUT *lay)
+const char *ov_get_active_filter(const OV_LAYOUT *lay)
 {
     if (lay == NULL)
     {
@@ -400,8 +377,7 @@ const char *ov_get_active_filter(
  *
  * @param[in,out] lay Layout structure
  */
-void ov_clear_all_filters(
-    OV_LAYOUT *lay)
+void ov_clear_all_filters(OV_LAYOUT *lay)
 {
     if (lay == NULL)
     {
@@ -427,9 +403,7 @@ void ov_clear_all_filters(
  * @param[in] m   Current model
  * @return Model stream index in 0..nb_streams-1, or -1 if none
  */
-int ov_get_selected_stream_idx(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+int ov_get_selected_stream_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (lay == NULL || m == NULL || m->nb_streams <= 0)
     {
@@ -466,9 +440,7 @@ int ov_get_selected_stream_idx(
  * @param[in] m   Current model
  * @return Model process index in 0..nb_procs-1, or -1 if none
  */
-int ov_get_selected_proc_idx(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+int ov_get_selected_proc_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (lay == NULL || m == NULL || m->nb_procs <= 0)
     {
@@ -505,9 +477,7 @@ int ov_get_selected_proc_idx(
  * @param[in] m   Current model
  * @return Model FPS index in 0..nb_fps-1, or -1 if none
  */
-int ov_get_selected_fps_idx(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+int ov_get_selected_fps_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (lay == NULL || m == NULL || m->nb_fps <= 0)
     {

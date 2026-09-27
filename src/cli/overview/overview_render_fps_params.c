@@ -399,13 +399,13 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
         else
         {
             /* Leaf parameter row */
-            int      pi = item->param_idx;
-            uint64_t fl = (params != NULL && pi >= 0 && pi < params->nb_disp_params)
-                              ? params->disp_param_flags[pi]
-                              : 0;
-            uint32_t pt = (params != NULL && pi >= 0 && pi < params->nb_disp_params)
-                              ? params->disp_param_type[pi]
-                              : 0;
+            int         pi  = item->param_idx;
+            uint64_t    fl  = (params != NULL && pi >= 0 && pi < params->nb_disp_params)
+                                  ? params->disp_param_flags[pi]
+                                  : 0;
+            uint32_t    pt  = (params != NULL && pi >= 0 && pi < params->nb_disp_params)
+                                  ? params->disp_param_type[pi]
+                                  : 0;
             const char *val = (params != NULL && pi >= 0 && pi < params->nb_disp_params)
                                   ? params->disp_param_value[pi]
                                   : "";

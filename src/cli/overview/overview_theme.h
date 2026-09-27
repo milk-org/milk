@@ -538,21 +538,20 @@ static inline void ov_draw_panel_border(int         row,
  * @filt_count:    number of items visible after filter
  * @total_count:   total number of items in panel
  */
-static inline void ov_draw_panel_border_filter(
-    int         row,
-    int         col,
-    int         height,
-    int         width,
-    const char *title,
-    ov_rgb_t    tcolor,
-    int         is_focused,
-    int         drop_shadow,
-    uint32_t    ctrl_blink,
-    int         loop_id,
-    const char *filter_pat,
-    int         filter_active,
-    int         filt_count,
-    int         total_count)
+static inline void ov_draw_panel_border_filter(int         row,
+                                               int         col,
+                                               int         height,
+                                               int         width,
+                                               const char *title,
+                                               ov_rgb_t    tcolor,
+                                               int         is_focused,
+                                               int         drop_shadow,
+                                               uint32_t    ctrl_blink,
+                                               int         loop_id,
+                                               const char *filter_pat,
+                                               int         filter_active,
+                                               int         filt_count,
+                                               int         total_count)
 {
     ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
     ov_theme_bg(OV_BG_TERMINAL);
@@ -610,8 +609,8 @@ static inline void ov_draw_panel_border_filter(
             {
                 if ((ctrl_blink % 4) < 2)
                 {
-                    ov_buf_bg(255, 190, 0);   /* bright amber/gold */
-                    ov_buf_fg(20, 20, 20);    /* dark text */
+                    ov_buf_bg(255, 190, 0); /* bright amber/gold */
+                    ov_buf_fg(20, 20, 20);  /* dark text */
                 }
                 else
                 {
@@ -790,7 +789,7 @@ static inline void ov_draw_panel_tabs(int          row,
 static inline ov_rgb_t ov_theme_highlight_bg(ov_rgb_t base_bg)
 {
     ov_rgb_t highlight;
-    int sum = base_bg.r + base_bg.g + base_bg.b;
+    int      sum = base_bg.r + base_bg.g + base_bg.b;
     if (sum > 384)
     {
         /* Light palette: darken slightly */

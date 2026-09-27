@@ -170,8 +170,7 @@ static void print_help(const char *prog, int mh_color)
     milk_help_section("Feedback Loops (LOOPS tab / F7 view)", mh_color);
     printf("  %-30s Cycle Graph sub-tabs (CONNECTIONS, LOOPS, DETAILS, RESOURCES)\n",
            MH(MH_OPT, "SHIFT + TAB"));
-    printf("  %-30s Rename selected feedback loop (persisted across sessions)\n",
-           MH(MH_OPT, "r"));
+    printf("  %-30s Rename selected feedback loop (persisted across sessions)\n", MH(MH_OPT, "r"));
     printf("  %-30s Toggle loop isolation filter (isolate loop streams, procs, & FPS)\n",
            MH(MH_OPT, "f / ENTER"));
     printf("  %-30s Switch to graph CONNECTIONS tab to inspect dataflow circuit tree\n\n",

@@ -573,8 +573,8 @@ static const ov_theme_t ov_themes[] = {
 
 static const int ov_num_themes = (int) (sizeof(ov_themes) / sizeof(ov_themes[0]));
 
-static int ov_theme_active_idx = 0;
-const ov_theme_t *ov_active_theme = &ov_themes[0];
+static int        ov_theme_active_idx = 0;
+const ov_theme_t *ov_active_theme     = &ov_themes[0];
 
 /* =========================================================
  * Public API implementation
@@ -634,8 +634,7 @@ int ov_theme_find_by_id(const char *id)
 
     for (int i = 0; i < ov_num_themes; i++)
     {
-        if (strcasecmp(ov_themes[i].id, id) == 0 ||
-            strcasecmp(ov_themes[i].name, id) == 0)
+        if (strcasecmp(ov_themes[i].id, id) == 0 || strcasecmp(ov_themes[i].name, id) == 0)
         {
             return i;
         }
@@ -698,9 +697,9 @@ void ov_theme_set(int index)
     ov_theme_active_idx = index;
     ov_active_theme     = &ov_themes[index];
 
-    ov_rgb_t tbg   = ov_active_theme->bg_terminal;
-    ov__default_bg = OV_COLOR_TRUE | ((tbg.r & 0xFF) << 16) | ((tbg.g & 0xFF) << 8) |
-                     (tbg.b & 0xFF);
+    ov_rgb_t tbg = ov_active_theme->bg_terminal;
+    ov__default_bg =
+        OV_COLOR_TRUE | ((tbg.r & 0xFF) << 16) | ((tbg.g & 0xFF) << 8) | (tbg.b & 0xFF);
 
     /* Invalidate front delta cache so full screen repaints with new palette */
     ov_buf_force_clear();
@@ -751,7 +750,7 @@ void ov_theme_init(const char *preferred_theme)
     ov_theme_active_idx = idx;
     ov_active_theme     = &ov_themes[idx];
 
-    ov_rgb_t tbg   = ov_active_theme->bg_terminal;
-    ov__default_bg = OV_COLOR_TRUE | ((tbg.r & 0xFF) << 16) | ((tbg.g & 0xFF) << 8) |
-                     (tbg.b & 0xFF);
+    ov_rgb_t tbg = ov_active_theme->bg_terminal;
+    ov__default_bg =
+        OV_COLOR_TRUE | ((tbg.r & 0xFF) << 16) | ((tbg.g & 0xFF) << 8) | (tbg.b & 0xFF);
 }

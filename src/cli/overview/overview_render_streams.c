@@ -24,10 +24,9 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
     {
         names[i] = m->streams[i].name;
     }
-    int filt_idx[OV_MAX_STREAMS];
+    int         filt_idx[OV_MAX_STREAMS];
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
-    int filt_n =
-        ov_filter_build(active_filter, names, m->nb_streams, filt_idx, OV_MAX_STREAMS);
+    int filt_n = ov_filter_build(active_filter, names, m->nb_streams, filt_idx, OV_MAX_STREAMS);
 
     if (lay->freeze && lay->freeze_focus != OV_FOCUS_STREAMS && rel != NULL)
     {
@@ -58,14 +57,13 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
 
     /* Panel title with prominent filter indicator */
     {
-        int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 &&
-                       lay->sel_loop < m->nb_loops)
+        int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
                           ? lay->sel_loop + 1
                           : -1;
-        ov_draw_panel_border_filter(
-            r.row, r.col, r.height, r.width, "STREAMS", OV_FG_STREAM,
-            lay->focus == OV_FOCUS_STREAMS, 0, lay->ctrl_blink, loop_id,
-            lay->filter_stream, lay->filter_stream_active, filt_n, m->nb_streams);
+        ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "STREAMS", OV_FG_STREAM,
+                                    lay->focus == OV_FOCUS_STREAMS, 0, lay->ctrl_blink, loop_id,
+                                    lay->filter_stream, lay->filter_stream_active, filt_n,
+                                    m->nb_streams);
     }
 
     int hrow = r.row + 1;
@@ -345,8 +343,8 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
             int is_rel = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_STREAMS && rel != NULL &&
                           bget(rel->streams, si));
             int is_loop_member = 0;
-            if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) &&
-                lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+            if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) && lay->sel_loop >= 0 &&
+                lay->sel_loop < m->nb_loops)
             {
                 uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
                 if (s->loop_mask & active_mask)
@@ -494,7 +492,7 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
             }
 
             ov_rgb_t anc_color = (s->nb_loops > 1) ? OV_FG_LOOP_SHARED
-                                 : ((s->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
+                                                   : ((s->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
             ov_render_cell(0, 0, anc_color, row_bg, anc_str, &hs_rem, &printed, avail,
                            lay->highlight_col_stream, lay->col_collapsed_stream);
 
@@ -521,9 +519,8 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
                     {
                         tail_len = 0;
                     }
-                    snprintf(name_cell, sizeof(name_cell), "%.*s\x01%.*s\x02%.*s ",
-                             b_len, s->name, m_len, s->name + b_len, tail_len,
-                             s->name + b_len + m_len);
+                    snprintf(name_cell, sizeof(name_cell), "%.*s\x01%.*s\x02%.*s ", b_len, s->name,
+                             m_len, s->name + b_len, tail_len, s->name + b_len + m_len);
                 }
                 else
                 {

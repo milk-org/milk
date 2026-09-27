@@ -54,7 +54,7 @@ void scache_evict(int ci)
 
 /* --- FPS cache --- */
 
-pthread_mutex_t s_fcache_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t      s_fcache_mutex = PTHREAD_MUTEX_INITIALIZER;
 static OV_FPS_PARAMS s_active_fps_params;
 
 ov_fps_cache_t s_fcache[OV_MAX_FPS];
@@ -136,7 +136,7 @@ void pcache_evict(int ci)
 FPS *ov_fcache_get_fps(const char *name)
 {
     pthread_mutex_lock(&s_fcache_mutex);
-    int ci = fcache_find(name);
+    int  ci  = fcache_find(name);
     FPS *res = (ci >= 0) ? &s_fcache[ci].fps : NULL;
     pthread_mutex_unlock(&s_fcache_mutex);
     return res;
@@ -258,11 +258,10 @@ const OV_FPS_PARAMS *ov_fps_get_params(const char *fps_name)
             snprintf(valstr, sizeof(valstr), "[Type %d]", fp->type);
             break;
         }
-        strncpy(s_active_fps_params.disp_param_value[dp], valstr,
-                FUNCTION_PARAMETER_STRMAXLEN - 1);
+        strncpy(s_active_fps_params.disp_param_value[dp], valstr, FUNCTION_PARAMETER_STRMAXLEN - 1);
         s_active_fps_params.disp_param_value[dp][FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
-        s_active_fps_params.disp_param_type[dp]  = fp->type;
-        s_active_fps_params.disp_param_flags[dp] = fp->fpflag;
+        s_active_fps_params.disp_param_type[dp]                                    = fp->type;
+        s_active_fps_params.disp_param_flags[dp]                                   = fp->fpflag;
 
         strncpy(s_active_fps_params.disp_param_descr[dp], fp->description,
                 FUNCTION_PARAMETER_DESCR_STRMAXLEN - 1);

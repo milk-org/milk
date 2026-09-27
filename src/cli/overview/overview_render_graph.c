@@ -128,8 +128,7 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
                        "  miss:%d  prio:%d%s",
                        p->name, (int) p->PID, sl, p->loop_hz,
                        p->trigstreamname[0] ? p->trigstreamname : "-", p->triggersem,
-                       (int64_t) p->loopcnt, p->triggermissed, p->rt_priority,
-                       loopinfo);
+                       (int64_t) p->loopcnt, p->triggermissed, p->rt_priority, loopinfo);
         break;
     }
     case OV_FOCUS_FPS:
@@ -140,7 +139,7 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             break;
         }
         const OV_FPS *f = &m->fps[fsel];
-        char loopinfo[48];
+        char          loopinfo[48];
         loopinfo[0] = '\0';
         if (f->nb_loops > 1)
         {
@@ -164,12 +163,11 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
         if (lay->graph_tab_mode == 1 && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
         {
             const OV_LOOP *lp = &m->loops[lay->sel_loop];
-            len = snprintf(line, sizeof(line),
-                           " LOOP L%02d  %-20.20s  Nodes:%d (%ds, %dp)  Hz:%.1f  %s  %s",
-                           lp->loop_id, lp->name, lp->nb_nodes, lp->nb_streams,
-                           lp->nb_procs + lp->nb_fps, lp->min_hz,
-                           lp->is_running ? "RUN" : (lp->is_paused ? "PAUS" : "IDLE"),
-                           (lp->overlap_mask != 0) ? "OVERLAPPING" : "EXCLUSIVE");
+            len               = snprintf(
+                line, sizeof(line), " LOOP L%02d  %-20.20s  Nodes:%d (%ds, %dp)  Hz:%.1f  %s  %s",
+                lp->loop_id, lp->name, lp->nb_nodes, lp->nb_streams, lp->nb_procs + lp->nb_fps,
+                lp->min_hz, lp->is_running ? "RUN" : (lp->is_paused ? "PAUS" : "IDLE"),
+                (lp->overlap_mask != 0) ? "OVERLAPPING" : "EXCLUSIVE");
         }
         break;
     }
@@ -562,7 +560,7 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
             if (rn->stream_idx >= 0 && rn->stream_idx < m->nb_streams &&
                 m->streams[rn->stream_idx].primary_loop_id > 0)
             {
-                int lid = m->streams[rn->stream_idx].primary_loop_id;
+                int         lid   = m->streams[rn->stream_idx].primary_loop_id;
                 const char *lname = ov_get_loop_name(m, lid);
                 GRAPH_FIELD(OV_FG_LOOP, " \xe2\x86\xba [L%02d: %s]", lid, lname);
                 if (m->streams[rn->stream_idx].nb_loops > 1)

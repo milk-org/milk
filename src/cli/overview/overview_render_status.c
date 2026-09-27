@@ -270,22 +270,22 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_theme_fg(OV_FG_DIM);
     }
 
-    ov_focus_t  fpanel   = ov_get_effective_filter_panel(lay);
-    const char *pname    = (fpanel == OV_FOCUS_STREAMS) ? "STRM"
-                           : (fpanel == OV_FOCUS_PROCS) ? "PROC"
-                           : (fpanel == OV_FOCUS_FPS)   ? "FPS"
-                                                        : "FILTER";
-    const char *fpat     = (fpanel != OV_FOCUS_GRAPH) ? ov_get_panel_filter_pattern(lay, fpanel)
-                                                      : ov_get_filter_pattern(lay);
-    int is_act           = (fpanel != OV_FOCUS_GRAPH) ? ov_is_panel_filter_active(lay, fpanel)
-                                                      : ov_is_filter_active(lay);
+    ov_focus_t  fpanel = ov_get_effective_filter_panel(lay);
+    const char *pname  = (fpanel == OV_FOCUS_STREAMS) ? "STRM"
+                         : (fpanel == OV_FOCUS_PROCS) ? "PROC"
+                         : (fpanel == OV_FOCUS_FPS)   ? "FPS"
+                                                      : "FILTER";
+    const char *fpat   = (fpanel != OV_FOCUS_GRAPH) ? ov_get_panel_filter_pattern(lay, fpanel)
+                                                    : ov_get_filter_pattern(lay);
+    int         is_act = (fpanel != OV_FOCUS_GRAPH) ? ov_is_panel_filter_active(lay, fpanel)
+                                                    : ov_is_filter_active(lay);
 
     if (is_act)
     {
         if ((lay->ctrl_blink % 4) < 2)
         {
-            ov_buf_bg(255, 190, 0);   /* bright amber/gold */
-            ov_buf_fg(20, 20, 20);    /* dark text */
+            ov_buf_bg(255, 190, 0); /* bright amber/gold */
+            ov_buf_fg(20, 20, 20);  /* dark text */
         }
         else
         {
@@ -296,14 +296,12 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         char fstatus[64];
         if (fpanel != OV_FOCUS_GRAPH)
         {
-            snprintf(fstatus, sizeof(fstatus),
-                     " [%s FILTER ON: /%.10s/ ('f' toggle, ESC clear)] ",
+            snprintf(fstatus, sizeof(fstatus), " [%s FILTER ON: /%.10s/ ('f' toggle, ESC clear)] ",
                      pname, fpat);
         }
         else
         {
-            snprintf(fstatus, sizeof(fstatus),
-                     " [FILTER ON: /%.12s/ ('f' toggle, ESC clear)] ",
+            snprintf(fstatus, sizeof(fstatus), " [FILTER ON: /%.12s/ ('f' toggle, ESC clear)] ",
                      fpat);
         }
         ov_buf_printf("%s", fstatus);
@@ -320,15 +318,12 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         char fstatus[64];
         if (fpanel != OV_FOCUS_GRAPH)
         {
-            snprintf(fstatus, sizeof(fstatus),
-                     " [%s Filter OFF: /%.10s/ ('f' enable)] ",
-                     pname, fpat);
+            snprintf(fstatus, sizeof(fstatus), " [%s Filter OFF: /%.10s/ ('f' enable)] ", pname,
+                     fpat);
         }
         else
         {
-            snprintf(fstatus, sizeof(fstatus),
-                     " [Filter OFF: /%.12s/ ('f' enable)] ",
-                     fpat);
+            snprintf(fstatus, sizeof(fstatus), " [Filter OFF: /%.12s/ ('f' enable)] ", fpat);
         }
         ov_buf_printf("%s", fstatus);
         ov_buf_reset_attr();
@@ -361,9 +356,8 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
     const char *exit_label = " [x] exit ";
     if (lay->show_help)
     {
-        exit_label = (lay->help_search[0] != '\0' || lay->help_search_active)
-                         ? " [ESC] clear "
-                         : " [ESC] close ";
+        exit_label = (lay->help_search[0] != '\0' || lay->help_search_active) ? " [ESC] clear "
+                                                                              : " [ESC] close ";
     }
     int n_exit = (int) strlen(exit_label);
 
@@ -398,8 +392,8 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
     {
         int n_hints = snprintf(NULL, 0, "%s%s%s  +/- TAB D S/s / p c m G h q  (Click headers/tabs)",
                                ctrl_hint, sort_label, detail_label);
-        ov_buf_printf("%s%s%s  +/- TAB D S/s / p c m G h q  (Click headers/tabs)",
-                      ctrl_hint, sort_label, detail_label);
+        ov_buf_printf("%s%s%s  +/- TAB D S/s / p c m G h q  (Click headers/tabs)", ctrl_hint,
+                      sort_label, detail_label);
         n1 += n_hints;
     }
 

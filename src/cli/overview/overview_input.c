@@ -76,17 +76,9 @@ extern void  ov_scan_set_interval(float s);
 extern void ov_help_open(OV_LAYOUT *lay);
 extern int  ov_help_visible_count(const OV_LAYOUT *lay);
 extern int  ov_help_nb_sections(void);
-extern int  ov_help_toggle_at(
-    OV_LAYOUT *lay,
-    int        vis_row);
-extern int  ov_help_expand_at(
-    OV_LAYOUT *lay,
-    int        vis_row,
-    int        expand);
-extern int  ov_help_handle_click(
-    OV_LAYOUT *lay,
-    int        mr,
-    int        mc);
+extern int  ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
+extern int  ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand);
+extern int  ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc);
 
 /**
  * hit_panel_tab - detect which tab label was clicked.
@@ -127,10 +119,7 @@ static int hit_panel_tab(int mc, int panel_col, const char **tabs, int num_tabs)
  */
 
 
-static int ov_input__handle_filter_mode(
-    int             key,
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m)
+static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     char *active_filter = lay->filter;
 
@@ -203,8 +192,8 @@ static int ov_input__handle_filter_mode(
                                     lay->scroll_stream = lay->sel_stream - page_h + 1;
                                 }
                             }
-                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                           "Jumped to stream: %s", names[found]);
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Jumped to stream: %s",
+                                           names[found]);
                         }
                         else if (target == OV_FOCUS_PROCS)
                         {
@@ -221,8 +210,8 @@ static int ov_input__handle_filter_mode(
                                     lay->scroll_proc = lay->sel_proc - page_h + 1;
                                 }
                             }
-                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                           "Jumped to process: %s", names[found]);
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Jumped to process: %s",
+                                           names[found]);
                         }
                         else if (target == OV_FOCUS_FPS)
                         {
@@ -239,8 +228,8 @@ static int ov_input__handle_filter_mode(
                                     lay->scroll_fps = lay->sel_fps - page_h + 1;
                                 }
                             }
-                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                           "Jumped to FPS: %s", names[found]);
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Jumped to FPS: %s",
+                                           names[found]);
                         }
                     }
                     else
@@ -260,8 +249,8 @@ static int ov_input__handle_filter_mode(
                 strncpy(lay->filter_stream, lay->filter, sizeof(lay->filter_stream) - 1);
                 lay->filter_stream[sizeof(lay->filter_stream) - 1] = '\0';
                 lay->filter_stream_active = (lay->filter_stream[0] != '\0') ? 1 : 0;
-                lay->sel_stream    = 0;
-                lay->scroll_stream = 0;
+                lay->sel_stream           = 0;
+                lay->scroll_stream        = 0;
                 if (lay->filter_stream_active)
                 {
                     ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
@@ -278,8 +267,8 @@ static int ov_input__handle_filter_mode(
                 strncpy(lay->filter_proc, lay->filter, sizeof(lay->filter_proc) - 1);
                 lay->filter_proc[sizeof(lay->filter_proc) - 1] = '\0';
                 lay->filter_proc_active = (lay->filter_proc[0] != '\0') ? 1 : 0;
-                lay->sel_proc    = 0;
-                lay->scroll_proc = 0;
+                lay->sel_proc           = 0;
+                lay->scroll_proc        = 0;
                 if (lay->filter_proc_active)
                 {
                     ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
@@ -296,9 +285,9 @@ static int ov_input__handle_filter_mode(
             {
                 strncpy(lay->filter_fps, lay->filter, sizeof(lay->filter_fps) - 1);
                 lay->filter_fps[sizeof(lay->filter_fps) - 1] = '\0';
-                lay->filter_fps_active = (lay->filter_fps[0] != '\0') ? 1 : 0;
-                lay->sel_fps    = 0;
-                lay->scroll_fps = 0;
+                lay->filter_fps_active                       = (lay->filter_fps[0] != '\0') ? 1 : 0;
+                lay->sel_fps                                 = 0;
+                lay->scroll_fps                              = 0;
                 if (lay->filter_fps_active)
                 {
                     ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
@@ -310,9 +299,8 @@ static int ov_input__handle_filter_mode(
                     ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "FPS filter cleared");
                 }
             }
-            lay->filter_active = (lay->filter_stream_active ||
-                                  lay->filter_proc_active ||
-                                  lay->filter_fps_active);
+            lay->filter_active =
+                (lay->filter_stream_active || lay->filter_proc_active || lay->filter_fps_active);
             lay->filter[0]     = '\0';
             lay->filter_cursor = 0;
             return 1;
@@ -350,9 +338,9 @@ static int ov_input__handle_filter_mode(
     }
 
     /* 'f' or Ctrl+F — toggle active filter without erasing */
-    int in_loops = (lay->view == OV_VIEW_LOOPS ||
-                    (lay->view == OV_VIEW_DASHBOARD && lay->graph_tab_mode == 1 &&
-                     lay->focus == OV_FOCUS_GRAPH));
+    int in_loops =
+        (lay->view == OV_VIEW_LOOPS || (lay->view == OV_VIEW_DASHBOARD &&
+                                        lay->graph_tab_mode == 1 && lay->focus == OV_FOCUS_GRAPH));
     if ((!in_loops && key == 'f') || key == ctrl('f'))
     {
         ov_focus_t target = ov_get_effective_filter_panel(lay);
@@ -368,12 +356,12 @@ static int ov_input__handle_filter_mode(
             if (lay->filter_stream[0] != '\0')
             {
                 lay->filter_stream_active = !lay->filter_stream_active;
-                lay->sel_stream    = 0;
-                lay->scroll_stream = 0;
+                lay->sel_stream           = 0;
+                lay->scroll_stream        = 0;
                 if (lay->filter_stream_active)
                 {
-                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                   "STREAMS regex filter: ON (/%s/)", lay->filter_stream);
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "STREAMS regex filter: ON (/%s/)",
+                                   lay->filter_stream);
                 }
                 else
                 {
@@ -393,8 +381,8 @@ static int ov_input__handle_filter_mode(
             if (lay->filter_proc[0] != '\0')
             {
                 lay->filter_proc_active = !lay->filter_proc_active;
-                lay->sel_proc    = 0;
-                lay->scroll_proc = 0;
+                lay->sel_proc           = 0;
+                lay->scroll_proc        = 0;
                 if (lay->filter_proc_active)
                 {
                     ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
@@ -418,12 +406,12 @@ static int ov_input__handle_filter_mode(
             if (lay->filter_fps[0] != '\0')
             {
                 lay->filter_fps_active = !lay->filter_fps_active;
-                lay->sel_fps    = 0;
-                lay->scroll_fps = 0;
+                lay->sel_fps           = 0;
+                lay->scroll_fps        = 0;
                 if (lay->filter_fps_active)
                 {
-                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                   "FPS regex filter: ON (/%s/)", lay->filter_fps);
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "FPS regex filter: ON (/%s/)",
+                                   lay->filter_fps);
                 }
                 else
                 {
@@ -438,9 +426,8 @@ static int ov_input__handle_filter_mode(
                                "No FPS filter set. Press [/] to set filter");
             }
         }
-        lay->filter_active = (lay->filter_stream_active ||
-                              lay->filter_proc_active ||
-                              lay->filter_fps_active);
+        lay->filter_active =
+            (lay->filter_stream_active || lay->filter_proc_active || lay->filter_fps_active);
         return 1;
     }
 
@@ -462,14 +449,13 @@ static int ov_input__handle_filter_mode(
         const char *existing = ov_get_panel_filter_pattern(lay, target);
         strncpy(lay->filter, existing, sizeof(lay->filter) - 1);
         lay->filter[sizeof(lay->filter) - 1] = '\0';
-        lay->filter_cursor = (int) strlen(lay->filter);
+        lay->filter_cursor                   = (int) strlen(lay->filter);
 
         const char *pname = (target == OV_FOCUS_STREAMS) ? "STREAMS"
                             : (target == OV_FOCUS_PROCS) ? "PROCESSINFO"
-                            : "FPS";
+                                                         : "FPS";
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                       "Type %s regex filter (ENTER=apply, ESC=cancel, Ctrl+U=clear)",
-                       pname);
+                       "Type %s regex filter (ENTER=apply, ESC=cancel, Ctrl+U=clear)", pname);
         return 1;
     }
 
@@ -493,10 +479,9 @@ static int ov_input__handle_filter_mode(
 
         const char *pname = (target == OV_FOCUS_STREAMS) ? "STREAMS"
                             : (target == OV_FOCUS_PROCS) ? "PROCESSINFO"
-                            : "FPS";
+                                                         : "FPS";
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                       "Type jump query for %s (ENTER=jump, ESC=cancel)",
-                       pname);
+                       "Type jump query for %s (ENTER=jump, ESC=cancel)", pname);
         return 1;
     }
 
@@ -544,10 +529,7 @@ static int ov_input__handle_filter_mode(
     return 0;
 }
 
-static int ov_input__handle_loop_rename(
-    int        key,
-    OV_LAYOUT *lay,
-    OV_MODEL  *m)
+static int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, OV_MODEL *m)
 {
     if (!lay->renaming_loop)
     {
@@ -568,10 +550,8 @@ static int ov_input__handle_loop_rename(
         if (lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
         {
             ov_loop_rename(m, lay->sel_loop, lay->rename_buf);
-            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                           "Loop L%02d renamed to '%s'",
-                           m->loops[lay->sel_loop].loop_id,
-                           m->loops[lay->sel_loop].name);
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Loop L%02d renamed to '%s'",
+                           m->loops[lay->sel_loop].loop_id, m->loops[lay->sel_loop].name);
         }
         return 1;
     }
@@ -606,14 +586,11 @@ static int ov_input__handle_loop_rename(
     return 1;
 }
 
-static int ov_input__handle_loop_actions(
-    int        key,
-    OV_LAYOUT *lay,
-    OV_MODEL  *m)
+static int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, OV_MODEL *m)
 {
-    int in_loops = (lay->view == OV_VIEW_LOOPS ||
-                    (lay->view == OV_VIEW_DASHBOARD && lay->graph_tab_mode == 1 &&
-                     lay->focus == OV_FOCUS_GRAPH));
+    int in_loops =
+        (lay->view == OV_VIEW_LOOPS || (lay->view == OV_VIEW_DASHBOARD &&
+                                        lay->graph_tab_mode == 1 && lay->focus == OV_FOCUS_GRAPH));
     if (!in_loops)
     {
         return 0;
@@ -687,7 +664,7 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
     int count = 0;
     if (focus == OV_FOCUS_STREAMS)
     {
-        count = m->nb_streams;
+        count            = m->nb_streams;
         const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
         if (filt[0] != '\0')
         {
@@ -702,7 +679,7 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
     }
     else if (focus == OV_FOCUS_PROCS)
     {
-        count = m->nb_procs;
+        count            = m->nb_procs;
         const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
         if (filt[0] != '\0')
         {
@@ -717,7 +694,7 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
     }
     else if (focus == OV_FOCUS_FPS)
     {
-        count = m->nb_fps;
+        count            = m->nb_fps;
         const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
         if (filt[0] != '\0')
         {
@@ -736,15 +713,12 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
 static const char *stream_col_names[] = { "NAME", "TYP",   "SIZE",  "Hz",
                                           "MB/s", "INODE", "COUNT", "ANCESTRY" };
 
-static void ov_input__streams_header_click(
-    OV_LAYOUT *lay,
-    int        mc)
+static void ov_input__streams_header_click(OV_LAYOUT *lay, int mc)
 {
-    int           table_x  = mc - lay->r_streams.col - 2 + lay->hscroll_stream;
+    int           table_x = mc - lay->r_streams.col - 2 + lay->hscroll_stream;
     OV_COL_LAYOUT cols[12];
     int           num_cols = ov_get_stream_col_layout(lay->compact_mode, cols);
-    int           col_idx  = ov_header_hittest_sort_key(cols, num_cols,
-                                                        lay->col_collapsed_stream, table_x);
+    int col_idx = ov_header_hittest_sort_key(cols, num_cols, lay->col_collapsed_stream, table_x);
 
     if (col_idx >= 0)
     {
@@ -767,15 +741,12 @@ static void ov_input__streams_header_click(
 static const char *proc_col_names[] = { "NAME", "PID",    "STAT", "Hz",      "MEM", "ANCESTRY",
                                         "PRIO", "UPTIME", "CPU%", "LOOPCNT", "DUTY" };
 
-static void ov_input__procs_header_click(
-    OV_LAYOUT *lay,
-    int        mc)
+static void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
 {
-    int           table_x  = mc - lay->r_procs.col - 2 + lay->hscroll_proc;
+    int           table_x = mc - lay->r_procs.col - 2 + lay->hscroll_proc;
     OV_COL_LAYOUT cols[16];
     int           num_cols = ov_get_proc_col_layout(lay->compact_mode, cols);
-    int           col_idx  = ov_header_hittest_sort_key(cols, num_cols,
-                                                        lay->col_collapsed_proc, table_x);
+    int col_idx = ov_header_hittest_sort_key(cols, num_cols, lay->col_collapsed_proc, table_x);
 
     if (col_idx >= 0)
     {
@@ -797,15 +768,12 @@ static void ov_input__procs_header_click(
 
 static const char *fps_col_names[] = { "NAME", "CPID", "MEM", "ANCESTRY", "RPID", "TMX", "STR" };
 
-static void ov_input__fps_header_click(
-    OV_LAYOUT *lay,
-    int        mc)
+static void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
 {
-    int           table_x  = mc - lay->r_fps.col - 2 + lay->hscroll_fps;
+    int           table_x = mc - lay->r_fps.col - 2 + lay->hscroll_fps;
     OV_COL_LAYOUT cols[8];
     int           num_cols = ov_get_fps_col_layout(lay->compact_mode, lay->view, cols);
-    int           col_idx  = ov_header_hittest_sort_key(cols, num_cols,
-                                                        lay->col_collapsed_fps, table_x);
+    int col_idx = ov_header_hittest_sort_key(cols, num_cols, lay->col_collapsed_fps, table_x);
 
     if (col_idx >= 0)
     {
@@ -1000,27 +968,23 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
                 const char *fpat       = (fpanel != OV_FOCUS_GRAPH)
                                              ? ov_get_panel_filter_pattern(lay, fpanel)
                                              : ov_get_filter_pattern(lay);
-                int is_act             = (fpanel != OV_FOCUS_GRAPH)
-                                             ? ov_is_panel_filter_active(lay, fpanel)
-                                             : ov_is_filter_active(lay);
+                int is_act = (fpanel != OV_FOCUS_GRAPH) ? ov_is_panel_filter_active(lay, fpanel)
+                                                        : ov_is_filter_active(lay);
 
                 if (is_act)
                 {
                     snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                             "%s Filter ON: Click or 'f' to pause, ESC to clear",
-                             panel_full);
+                             "%s Filter ON: Click or 'f' to pause, ESC to clear", panel_full);
                 }
                 else if (fpat[0] != '\0')
                 {
                     snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                             "%s Filter OFF: Click or 'f' to resume, ESC to clear",
-                             panel_full);
+                             "%s Filter OFF: Click or 'f' to resume, ESC to clear", panel_full);
                 }
                 else
                 {
                     snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                             "%s Filter: Click or press [/] to set regex filter",
-                             panel_full);
+                             "%s Filter: Click or press [/] to set regex filter", panel_full);
                 }
                 return;
             }
@@ -1038,8 +1002,8 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
         }
         int help_width = 11;
         int help_col   = (lay->term_cols >= tabs_total_width + help_width)
-                           ? (lay->term_cols - help_width + 1)
-                           : (tabs_total_width + 1);
+                             ? (lay->term_cols - help_width + 1)
+                             : (tabs_total_width + 1);
 
         if (mc >= help_col && mc < help_col + help_width)
         {
@@ -1054,8 +1018,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
             if (mc >= tx && mc < tx + tab_widths[v])
             {
                 snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                         "View: Switch to %s view (key: F%d)",
-                         ov_view_label((ov_view_t) v), v + 2);
+                         "View: Switch to %s view (key: F%d)", ov_view_label((ov_view_t) v), v + 2);
                 return;
             }
             tx += tab_widths[v];
@@ -1487,19 +1450,19 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
             char th_buf[32];
             snprintf(th_buf, sizeof(th_buf), " [%s] ", ov_active_theme->id);
-            int n_th = (int) strlen(th_buf);
+            int n_th   = (int) strlen(th_buf);
             int col_th = col_exit - n_th;
             if (mc >= col_th && mc < col_exit)
             {
-                int count               = ov_theme_count();
-                int next                = (ov_theme_get_active_index() + 1) % count;
+                int count = ov_theme_count();
+                int next  = (ov_theme_get_active_index() + 1) % count;
                 ov_theme_set(next);
                 lay->theme_popup_sel    = next;
                 lay->theme_popup_active = 1;
                 clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
                 const ov_theme_t *th = ov_theme_get_active();
-                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)",
-                               th->name, th->desc);
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name,
+                               th->desc);
                 return 1;
             }
         }
@@ -1556,7 +1519,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
                     const char *panel_full = (fpanel == OV_FOCUS_STREAMS) ? "STREAMS"
                                              : (fpanel == OV_FOCUS_PROCS) ? "PROCESSINFO"
-                                             : "FPS";
+                                                                          : "FPS";
                     const char *fpat       = ov_get_panel_filter_pattern(lay, fpanel);
 
                     if (fpat[0] != '\0')
@@ -1607,20 +1570,17 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                             if (lay->filter_fps_active)
                             {
                                 ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                               "FPS regex filter: ON (/%s/)",
-                                               lay->filter_fps);
+                                               "FPS regex filter: ON (/%s/)", lay->filter_fps);
                             }
                             else
                             {
-                                ov_cmdlog_push(
-                                    &lay->cmdlog, OV_CMDLOG_INFO,
-                                    "FPS regex filter: OFF (paused, click/'f' resume, "
-                                    "ESC clear)");
+                                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                               "FPS regex filter: OFF (paused, click/'f' resume, "
+                                               "ESC clear)");
                             }
                         }
                         lay->filter_active = (lay->filter_stream_active ||
-                                              lay->filter_proc_active ||
-                                              lay->filter_fps_active);
+                                              lay->filter_proc_active || lay->filter_fps_active);
                     }
                     else
                     {
@@ -1651,8 +1611,8 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
             int help_width = 11;
             int help_col   = (lay->term_cols >= tabs_total_width + help_width)
-                               ? (lay->term_cols - help_width + 1)
-                               : (tabs_total_width + 1);
+                                 ? (lay->term_cols - help_width + 1)
+                                 : (tabs_total_width + 1);
 
             /* Check help button click */
             if (mc >= help_col && mc < help_col + help_width)
@@ -2181,10 +2141,9 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         }
                         else if (lay->graph_tab_mode == 1)
                         {
-                            int max_rows  = lay->r_graph.height - 3;
-                            int list_rows = (max_rows >= 6)
-                                            ? ((max_rows > 8) ? (max_rows / 2) : 3)
-                                            : max_rows;
+                            int max_rows = lay->r_graph.height - 3;
+                            int list_rows =
+                                (max_rows >= 6) ? ((max_rows > 8) ? (max_rows / 2) : 3) : max_rows;
                             if (body_row >= 0 && body_row < list_rows)
                             {
                                 int li = lay->scroll_loop + body_row;
@@ -2487,8 +2446,8 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 scroll = &lay->scroll_loop;
                 count  = m->nb_loops;
                 page_h = (lay->r_graph.height - 3 >= 6)
-                         ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
-                         : (lay->r_graph.height - 3);
+                             ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
+                             : (lay->r_graph.height - 3);
             }
             else if (lay->graph_tab_mode == 2)
             {
@@ -2568,9 +2527,10 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     sel    = &lay->sel_loop;
                     scroll = &lay->scroll_loop;
                     count  = m->nb_loops;
-                    page_h = (lay->r_graph.height - 3 >= 6)
-                             ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
-                             : (lay->r_graph.height - 3);
+                    page_h =
+                        (lay->r_graph.height - 3 >= 6)
+                            ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
+                            : (lay->r_graph.height - 3);
                 }
                 else if (lay->graph_tab_mode == 2)
                 {
@@ -2777,7 +2737,7 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
     if (key == 'v' || key == 'V')
     {
         int prev_rows = lay->cmdlog_rows;
-        int step = (key == 'v') ? -1 : 1;
+        int step      = (key == 'v') ? -1 : 1;
         if (lay->cmdlog_rows == 0 && step > 0)
         {
             lay->cmdlog_rows = 4;
@@ -2893,22 +2853,20 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
     }
     if (key == OV_KEY_F8 || key == ctrl('t'))
     {
-        int count               = ov_theme_count();
-        int next                = (ov_theme_get_active_index() + 1) % count;
+        int count = ov_theme_count();
+        int next  = (ov_theme_get_active_index() + 1) % count;
         ov_theme_set(next);
         lay->theme_popup_sel    = next;
         lay->theme_popup_active = 1;
         clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
         const ov_theme_t *th = ov_theme_get_active();
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)",
-                       th->name, th->desc);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name, th->desc);
         return 1;
     }
 
     /* Loop filter toggle on Enter when on Loops */
     if ((key == '\n' || key == '\r' || key == 10 || key == 13) &&
-        (lay->view == OV_VIEW_LOOPS ||
-         (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 1)))
+        (lay->view == OV_VIEW_LOOPS || (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 1)))
     {
         lay->loop_filter_active = !lay->loop_filter_active;
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
@@ -4030,8 +3988,8 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
             scroll = &lay->scroll_loop;
             count  = m->nb_loops;
             page_h = (lay->r_graph.height - 3 >= 6)
-                     ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
-                     : (lay->r_graph.height - 3);
+                         ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
+                         : (lay->r_graph.height - 3);
             break;
         }
         else if (lay->graph_tab_mode == 2)
@@ -4368,35 +4326,32 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         }
         else if (key == OV_KEY_UP || key == 'k' || key == OV_KEY_MOUSE_UP)
         {
-            int count               = ov_theme_count();
-            lay->theme_popup_sel    = (lay->theme_popup_sel - 1 + count) % count;
+            int count            = ov_theme_count();
+            lay->theme_popup_sel = (lay->theme_popup_sel - 1 + count) % count;
             ov_theme_set(lay->theme_popup_sel);
             clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
             const ov_theme_t *th = ov_theme_get_active();
-            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)",
-                           th->name, th->desc);
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name, th->desc);
             return 0;
         }
         else if (key == OV_KEY_DOWN || key == 'j' || key == OV_KEY_MOUSE_DOWN)
         {
-            int count               = ov_theme_count();
-            lay->theme_popup_sel    = (lay->theme_popup_sel + 1) % count;
+            int count            = ov_theme_count();
+            lay->theme_popup_sel = (lay->theme_popup_sel + 1) % count;
             ov_theme_set(lay->theme_popup_sel);
             clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
             const ov_theme_t *th = ov_theme_get_active();
-            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)",
-                           th->name, th->desc);
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name, th->desc);
             return 0;
         }
         else if (key == ctrl('t') || key == OV_KEY_F8)
         {
-            int count               = ov_theme_count();
-            lay->theme_popup_sel    = (lay->theme_popup_sel + 1) % count;
+            int count            = ov_theme_count();
+            lay->theme_popup_sel = (lay->theme_popup_sel + 1) % count;
             ov_theme_set(lay->theme_popup_sel);
             clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
             const ov_theme_t *th = ov_theme_get_active();
-            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)",
-                           th->name, th->desc);
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name, th->desc);
             return 0;
         }
         else if (key == OV_KEY_MOUSE_CLICK)
@@ -4415,8 +4370,8 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     ov_theme_set(item_idx);
                     clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
                     const ov_theme_t *th = ov_theme_get_active();
-                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)",
-                                   th->name, th->desc);
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name,
+                                   th->desc);
                     return 0;
                 }
             }
@@ -4436,7 +4391,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         /* Mode 1: Full interactive Introduction to milk-CTRL */
         if (lay->help_mode == 1)
         {
-            int ph = (lay->term_rows > 6) ? (lay->term_rows - 3) : lay->term_rows;
+            int ph     = (lay->term_rows > 6) ? (lay->term_rows - 3) : lay->term_rows;
             int body_h = ph - 5;
             if (body_h < 4)
             {
@@ -4758,9 +4713,8 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     /* 4. Global quit */
-    if (key == 'q' || key == 'x' || key == 3 || key == ctrl('c') ||
-        key == 4 || key == ctrl('d') || key == 24 || key == ctrl('x') ||
-        key == 17 || key == ctrl('q'))
+    if (key == 'q' || key == 'x' || key == 3 || key == ctrl('c') || key == 4 || key == ctrl('d') ||
+        key == 24 || key == ctrl('x') || key == 17 || key == ctrl('q'))
     {
         return 1;
     }
@@ -4875,8 +4829,8 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 sel    = &lay->sel_loop;
                 scroll = &lay->scroll_loop;
                 page_h = (lay->r_graph.height - 3 >= 6)
-                         ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
-                         : (lay->r_graph.height - 3);
+                             ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
+                             : (lay->r_graph.height - 3);
             }
             else
             {

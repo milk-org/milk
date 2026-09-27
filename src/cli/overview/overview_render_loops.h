@@ -18,17 +18,13 @@
  * @lay: Layout state
  * @m:   System model
  */
-void ov_render_loops_panel(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m);
+void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m);
 
 /**
  * ov_render_loops_view - Render the dedicated fullscreen F7 LOOPS view.
  * @lay: Layout state
  * @m:   System model
  */
-void ov_render_loops_view(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m);
+void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m);
 
 #endif /* OVERVIEW_RENDER_LOOPS_H */

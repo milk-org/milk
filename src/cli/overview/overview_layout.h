@@ -370,22 +370,20 @@ typedef struct
  * @param[out] cols     Array to store column layout entries (min size 12)
  * @return Number of columns populated
  */
-static inline int ov_get_stream_col_layout(
-    int            compact,
-    OV_COL_LAYOUT *cols)
+static inline int ov_get_stream_col_layout(int compact, OV_COL_LAYOUT *cols)
 {
-    int n = 0;
-    cols[n++] = (OV_COL_LAYOUT) { 0, 7, 3 };   /* A */
-    cols[n++] = (OV_COL_LAYOUT) { 1, 0, 14 };  /* NAME */
-    cols[n++] = (OV_COL_LAYOUT) { 2, 1, 4 };   /* TYP */
-    cols[n++] = (OV_COL_LAYOUT) { 3, 2, 11 };  /* SIZE */
-    cols[n++] = (OV_COL_LAYOUT) { 4, 3, 6 };   /* Hz */
-    cols[n++] = (OV_COL_LAYOUT) { 5, 4, 7 };   /* MB/s */
+    int n     = 0;
+    cols[n++] = (OV_COL_LAYOUT) { 0, 7, 3 };  /* A */
+    cols[n++] = (OV_COL_LAYOUT) { 1, 0, 14 }; /* NAME */
+    cols[n++] = (OV_COL_LAYOUT) { 2, 1, 4 };  /* TYP */
+    cols[n++] = (OV_COL_LAYOUT) { 3, 2, 11 }; /* SIZE */
+    cols[n++] = (OV_COL_LAYOUT) { 4, 3, 6 };  /* Hz */
+    cols[n++] = (OV_COL_LAYOUT) { 5, 4, 7 };  /* MB/s */
     if (!compact)
     {
         cols[n++] = (OV_COL_LAYOUT) { 6, 5, 10 }; /* INODE */
     }
-    cols[n++] = (OV_COL_LAYOUT) { 7, -1, 7 };  /* OWNER */
+    cols[n++] = (OV_COL_LAYOUT) { 7, -1, 7 }; /* OWNER */
     if (!compact)
     {
         cols[n++] = (OV_COL_LAYOUT) { 8, 6, 10 };  /* COUNT */
@@ -403,24 +401,22 @@ static inline int ov_get_stream_col_layout(
  * @param[out] cols     Array to store column layout entries (min size 16)
  * @return Number of columns populated
  */
-static inline int ov_get_proc_col_layout(
-    int            compact,
-    OV_COL_LAYOUT *cols)
+static inline int ov_get_proc_col_layout(int compact, OV_COL_LAYOUT *cols)
 {
-    int n = 0;
-    cols[n++] = (OV_COL_LAYOUT) { 0, 5, 3 };   /* A */
-    cols[n++] = (OV_COL_LAYOUT) { 1, 0, 14 };  /* NAME */
-    cols[n++] = (OV_COL_LAYOUT) { 2, 1, 7 };   /* PID */
-    cols[n++] = (OV_COL_LAYOUT) { 3, 6, 4 };   /* PRIO */
-    cols[n++] = (OV_COL_LAYOUT) { 4, 2, 5 };   /* STAT */
-    cols[n++] = (OV_COL_LAYOUT) { 5, 3, 6 };   /* Hz */
-    cols[n++] = (OV_COL_LAYOUT) { 6, 7, 6 };   /* UPTIME */
+    int n     = 0;
+    cols[n++] = (OV_COL_LAYOUT) { 0, 5, 3 };  /* A */
+    cols[n++] = (OV_COL_LAYOUT) { 1, 0, 14 }; /* NAME */
+    cols[n++] = (OV_COL_LAYOUT) { 2, 1, 7 };  /* PID */
+    cols[n++] = (OV_COL_LAYOUT) { 3, 6, 4 };  /* PRIO */
+    cols[n++] = (OV_COL_LAYOUT) { 4, 2, 5 };  /* STAT */
+    cols[n++] = (OV_COL_LAYOUT) { 5, 3, 6 };  /* Hz */
+    cols[n++] = (OV_COL_LAYOUT) { 6, 7, 6 };  /* UPTIME */
     if (!compact)
     {
-        cols[n++] = (OV_COL_LAYOUT) { 7, -1, 3 };   /* TRG */
-        cols[n++] = (OV_COL_LAYOUT) { 8, -1, 10 };  /* trig-strm */
-        cols[n++] = (OV_COL_LAYOUT) { 9, -1, 8 };   /* exec */
-        cols[n++] = (OV_COL_LAYOUT) { 10, 10, 5 };  /* DUTY */
+        cols[n++] = (OV_COL_LAYOUT) { 7, -1, 3 };  /* TRG */
+        cols[n++] = (OV_COL_LAYOUT) { 8, -1, 10 }; /* trig-strm */
+        cols[n++] = (OV_COL_LAYOUT) { 9, -1, 8 };  /* exec */
+        cols[n++] = (OV_COL_LAYOUT) { 10, 10, 5 }; /* DUTY */
     }
     cols[n++] = (OV_COL_LAYOUT) { 11, 8, 10 }; /* CPU% */
     cols[n++] = (OV_COL_LAYOUT) { 12, 9, 10 }; /* LOOPCNT */
@@ -441,20 +437,17 @@ static inline int ov_get_proc_col_layout(
  * @param[out] cols     Array to store column layout entries (min size 8)
  * @return Number of columns populated
  */
-static inline int ov_get_fps_col_layout(
-    int            compact,
-    int            view,
-    OV_COL_LAYOUT *cols)
+static inline int ov_get_fps_col_layout(int compact, int view, OV_COL_LAYOUT *cols)
 {
     int n      = 0;
     int desc_w = (view == OV_VIEW_FPS) ? 30 : 20;
-    cols[n++] = (OV_COL_LAYOUT) { 0, 3, 3 };   /* A */
-    cols[n++] = (OV_COL_LAYOUT) { 1, 0, 18 };  /* NAME */
-    cols[n++] = (OV_COL_LAYOUT) { 2, 5, 3 };   /* TMX */
-    cols[n++] = (OV_COL_LAYOUT) { 3, 1, 7 };   /* CPID */
-    cols[n++] = (OV_COL_LAYOUT) { 4, 4, 7 };   /* RPID */
-    cols[n++] = (OV_COL_LAYOUT) { 5, 6, 3 };   /* STR */
-    cols[n++] = (OV_COL_LAYOUT) { 6, 2, 5 };   /* MEM */
+    cols[n++]  = (OV_COL_LAYOUT) { 0, 3, 3 };  /* A */
+    cols[n++]  = (OV_COL_LAYOUT) { 1, 0, 18 }; /* NAME */
+    cols[n++]  = (OV_COL_LAYOUT) { 2, 5, 3 };  /* TMX */
+    cols[n++]  = (OV_COL_LAYOUT) { 3, 1, 7 };  /* CPID */
+    cols[n++]  = (OV_COL_LAYOUT) { 4, 4, 7 };  /* RPID */
+    cols[n++]  = (OV_COL_LAYOUT) { 5, 6, 3 };  /* STR */
+    cols[n++]  = (OV_COL_LAYOUT) { 6, 2, 5 };  /* MEM */
     if (!compact)
     {
         cols[n++] = (OV_COL_LAYOUT) { 7, -1, desc_w }; /* DESCRIPTION */
@@ -471,11 +464,10 @@ static inline int ov_get_fps_col_layout(
  * @param[in] table_x         0-based horizontal character offset in table data
  * @return Sort key index of clicked column, or -1 if none or non-sortable
  */
-static inline int ov_header_hittest_sort_key(
-    const OV_COL_LAYOUT *cols,
-    int                  num_cols,
-    uint32_t             collapsed_mask,
-    int                  table_x)
+static inline int ov_header_hittest_sort_key(const OV_COL_LAYOUT *cols,
+                                             int                  num_cols,
+                                             uint32_t             collapsed_mask,
+                                             int                  table_x)
 {
     if (table_x < 0)
     {

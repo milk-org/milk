@@ -474,8 +474,7 @@ static void fpsCTRL__render_summary_and_breadcrumbs(KEYWORD_TREE_NODE    *keywno
     {
         screenprint_setbold();
         TUI_printfw("  [%s] %s  [%s]", fpsarray[fpsCTRLvar->fpsindexSelected].md->name,
-                    fpsarray[fpsCTRLvar->fpsindexSelected].md->description,
-                    MILK_GIT_COMMIT);
+                    fpsarray[fpsCTRLvar->fpsindexSelected].md->description, MILK_GIT_COMMIT);
         screenprint_unsetbold();
         TUI_newline();
     }
@@ -1264,7 +1263,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
         TUI_newline();
         TUI_newline();
         TUI_printfw("  Waiting for FPS shared"
-                    " memory files ...  [%s]", MILK_GIT_COMMIT);
+                    " memory files ...  [%s]",
+                    MILK_GIT_COMMIT);
         TUI_newline();
         TUI_printfw("  Press [s] to rescan,"
                     " [x] to exit");

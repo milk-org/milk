@@ -702,7 +702,7 @@ void ov_scan_procs(OV_MODEL *model)
                                                            MAP_SHARED, pfd, 0);
                     if (pm != MAP_FAILED)
                     {
-                        ci                  = s_pcache_nb;
+                        ci = s_pcache_nb;
                         memset(&s_pcache[ci], 0, sizeof(ov_proc_cache_t));
                         s_pcache[ci].pid    = pid;
                         s_pcache[ci].pinfo  = pm;
@@ -976,7 +976,7 @@ void ov_scan_tmux_sessions(OV_MODEL *model)
                 strncpy(s_tmux_cache[s_tmux_cache_cnt].name, session_name,
                         sizeof(s_tmux_cache[s_tmux_cache_cnt].name) - 1);
                 s_tmux_cache[s_tmux_cache_cnt].name[sizeof(s_tmux_cache[0].name) - 1] = '\0';
-                s_tmux_cache[s_tmux_cache_cnt].flags = win_flag;
+                s_tmux_cache[s_tmux_cache_cnt].flags                                  = win_flag;
                 s_tmux_cache_cnt++;
             }
 

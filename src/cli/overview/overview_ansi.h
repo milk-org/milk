@@ -71,12 +71,12 @@ extern int wcwidth(wchar_t c);
 #define OV_KEY_CTRL_SCROLL_DOWN 290
 #define OV_KEY_MOUSE_MOVE 291
 
-extern int ov_mouse_row;
-extern int ov_mouse_col;
+extern int      ov_mouse_row;
+extern int      ov_mouse_col;
 extern uint32_t ov__default_bg;
-extern int ov_mouse_btn;
-extern int ov_hover_row;
-extern int ov_hover_col;
+extern int      ov_mouse_btn;
+extern int      ov_hover_row;
+extern int      ov_hover_col;
 
 #ifndef ctrl
 #    define ctrl(x) ((x) & 0x1f)
@@ -312,23 +312,20 @@ static inline void ov_buf_flush_internal(void)
     }
 }
 
-static inline void ov_buf_emit_sgr_delta(
-    const OV_CELL *sc,
-    uint8_t       *emit_attr,
-    uint32_t      *emit_fg,
-    uint32_t      *emit_bg,
-    uint32_t      *emit_ul)
+static inline void ov_buf_emit_sgr_delta(const OV_CELL *sc,
+                                         uint8_t       *emit_attr,
+                                         uint32_t      *emit_fg,
+                                         uint32_t      *emit_bg,
+                                         uint32_t      *emit_ul)
 {
-    int need_reset = ((*emit_attr & ~sc->attr) != 0 ||
-                      (sc->fg != *emit_fg && *emit_fg != OV_COLOR_NONE &&
-                       sc->fg == OV_COLOR_NONE) ||
-                      (sc->bg != *emit_bg && *emit_bg != OV_COLOR_NONE &&
-                       sc->bg == OV_COLOR_NONE) ||
-                      (sc->ul != *emit_ul && *emit_ul != OV_COLOR_NONE &&
-                       sc->ul == OV_COLOR_NONE));
+    int need_reset =
+        ((*emit_attr & ~sc->attr) != 0 ||
+         (sc->fg != *emit_fg && *emit_fg != OV_COLOR_NONE && sc->fg == OV_COLOR_NONE) ||
+         (sc->bg != *emit_bg && *emit_bg != OV_COLOR_NONE && sc->bg == OV_COLOR_NONE) ||
+         (sc->ul != *emit_ul && *emit_ul != OV_COLOR_NONE && sc->ul == OV_COLOR_NONE));
 
-    if (!need_reset && sc->attr == *emit_attr && sc->fg == *emit_fg &&
-        sc->bg == *emit_bg && sc->ul == *emit_ul)
+    if (!need_reset && sc->attr == *emit_attr && sc->fg == *emit_fg && sc->bg == *emit_bg &&
+        sc->ul == *emit_ul)
     {
         return;
     }
@@ -528,9 +525,8 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
                 sc->width = 1;
             }
 
-            if (sc->attr != fc->attr || sc->fg != fc->fg || sc->bg != fc->bg ||
-                sc->ul != fc->ul || sc->width != fc->width ||
-                memcmp(sc->ch, fc->ch, sizeof(sc->ch)) != 0)
+            if (sc->attr != fc->attr || sc->fg != fc->fg || sc->bg != fc->bg || sc->ul != fc->ul ||
+                sc->width != fc->width || memcmp(sc->ch, fc->ch, sizeof(sc->ch)) != 0)
             {
                 // Pos
                 if (emit_cursor_r != r + 1 || emit_cursor_c != c + 1)
@@ -592,10 +588,7 @@ static inline int utf8_char_length(unsigned char c)
     return 1;
 }
 
-static inline int ov_utf8_decode(
-    const char *s,
-    int         len,
-    uint32_t   *cp)
+static inline int ov_utf8_decode(const char *s, int len, uint32_t *cp)
 {
     if (len <= 0)
     {
@@ -620,19 +613,15 @@ static inline int ov_utf8_decode(
     }
     if ((c & 0xF8) == 0xF0 && len >= 4)
     {
-        *cp = (uint32_t) (((c & 0x07) << 18) | ((s[1] & 0x3F) << 12) |
-                          ((s[2] & 0x3F) << 6) | (s[3] & 0x3F));
+        *cp = (uint32_t) (((c & 0x07) << 18) | ((s[1] & 0x3F) << 12) | ((s[2] & 0x3F) << 6) |
+                          (s[3] & 0x3F));
         return 4;
     }
     *cp = c;
     return 1;
 }
 
-static inline int ov_utf8_next_cluster(
-    const char *s,
-    int         max_len,
-    int        *bytes_out,
-    int        *width_out)
+static inline int ov_utf8_next_cluster(const char *s, int max_len, int *bytes_out, int *width_out)
 {
     if (max_len <= 0 || s[0] == '\0')
     {
@@ -678,13 +667,10 @@ static inline int ov_utf8_next_cluster(
     }
     else if (cp0 >= 0x2600 && cp0 <= 0x27BF)
     {
-        if (cp0 == 0x2705 || cp0 == 0x274C || cp0 == 0x274E ||
-            (cp0 >= 0x2753 && cp0 <= 0x2755) || cp0 == 0x2757 ||
-            cp0 == 0x2728 || cp0 == 0x26A0 || cp0 == 0x26A1 ||
-            cp0 == 0x26BD || cp0 == 0x26BE || cp0 == 0x26C4 ||
-            cp0 == 0x26C5 || cp0 == 0x26D4 || cp0 == 0x26EA ||
-            cp0 == 0x26F2 || cp0 == 0x26F3 || cp0 == 0x26F5 ||
-            cp0 == 0x26FA || cp0 == 0x26FD)
+        if (cp0 == 0x2705 || cp0 == 0x274C || cp0 == 0x274E || (cp0 >= 0x2753 && cp0 <= 0x2755) ||
+            cp0 == 0x2757 || cp0 == 0x2728 || cp0 == 0x26A0 || cp0 == 0x26A1 || cp0 == 0x26BD ||
+            cp0 == 0x26BE || cp0 == 0x26C4 || cp0 == 0x26C5 || cp0 == 0x26D4 || cp0 == 0x26EA ||
+            cp0 == 0x26F2 || cp0 == 0x26F3 || cp0 == 0x26F5 || cp0 == 0x26FA || cp0 == 0x26FD)
         {
             w = 2;
         }
@@ -727,17 +713,14 @@ static inline int ov_str_display_width(const char *s)
     return total_w;
 }
 
-static inline void ov_buf_append_cluster(
-    const char *utf8_seq,
-    int         bytes,
-    int         width)
+static inline void ov_buf_append_cluster(const char *utf8_seq, int bytes, int width)
 {
     if (width <= 0)
     {
         return;
     }
-    if (ov__cursor_row >= 1 && ov__cursor_row <= OV_MAX_ROWS &&
-        ov__cursor_col >= 1 && ov__cursor_col <= OV_MAX_COLS)
+    if (ov__cursor_row >= 1 && ov__cursor_row <= OV_MAX_ROWS && ov__cursor_col >= 1 &&
+        ov__cursor_col <= OV_MAX_COLS)
     {
         OV_CELL *cell = &ov__shadow[ov__cursor_row - 1][ov__cursor_col - 1];
         if (bytes >= (int) sizeof(cell->ch))
@@ -756,28 +739,24 @@ static inline void ov_buf_append_cluster(
         {
             OV_CELL *cont = &ov__shadow[ov__cursor_row - 1][ov__cursor_col];
             memset(cont->ch, 0, sizeof(cont->ch));
-            cont->width   = 0;
-            cont->fg      = ov__current_fg;
-            cont->bg      = ov__current_bg;
-            cont->ul      = ov__current_ul;
-            cont->attr    = ov__current_attr;
+            cont->width = 0;
+            cont->fg    = ov__current_fg;
+            cont->bg    = ov__current_bg;
+            cont->ul    = ov__current_ul;
+            cont->attr  = ov__current_attr;
         }
     }
     ov__cursor_col += width;
 }
 
-static inline void ov_buf_append_char(
-    const char *utf8_seq,
-    int         bytes)
+static inline void ov_buf_append_char(const char *utf8_seq, int bytes)
 {
     int b = 0, w = 1;
     ov_utf8_next_cluster(utf8_seq, bytes, &b, &w);
     ov_buf_append_cluster(utf8_seq, bytes, w);
 }
 
-static inline void ov_buf_printf(
-    const char *fmt,
-    ...)
+static inline void ov_buf_printf(const char *fmt, ...)
 {
     char    tmp[4096];
     va_list ap;

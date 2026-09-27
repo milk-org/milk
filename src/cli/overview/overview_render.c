@@ -403,8 +403,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     if (lay->mouse_hover)
     {
         /* Mouse hover active badge */
-        ov_buf_bg(180, 180, 20);   /* deep yellow background */
-        ov_buf_fg(20, 20, 20);     /* dark text */
+        ov_buf_bg(180, 180, 20); /* deep yellow background */
+        ov_buf_fg(20, 20, 20);   /* dark text */
         ov_buf_bold();
         ov_buf_printf(" [m] HOVER: ON ");
         ov_buf_reset_attr();
@@ -423,10 +423,10 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         hover_w = 16; /* visual width of " [m] HOVER: OFF " */
     }
 
-    int filter_w = 0;
+    int filter_w        = 0;
     lay->r_filter_count = 0;
-    int b_start = 17 + (int) strlen(MILK_GIT_COMMIT) + 3 + (int) strlen(shmdir) + 8 +
-                  1 + ctrl_w + 1 + hover_w + 1;
+    int b_start = 17 + (int) strlen(MILK_GIT_COMMIT) + 3 + (int) strlen(shmdir) + 8 + 1 + ctrl_w +
+                  1 + hover_w + 1;
 
     ov_focus_t fpanel = ov_get_effective_filter_panel(lay);
 
@@ -453,8 +453,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
                 {
                     if ((lay->ctrl_blink % 4) < 2)
                     {
-                        ov_buf_bg(255, 190, 0);   /* bright amber/gold */
-                        ov_buf_fg(20, 20, 20);    /* dark text */
+                        ov_buf_bg(255, 190, 0); /* bright amber/gold */
+                        ov_buf_fg(20, 20, 20);  /* dark text */
                     }
                     else
                     {
@@ -577,7 +577,7 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
             ov_theme_bg(OV_BG_HEADER);
         }
 
-        int bw = (int) strlen(fbadge);
+        int bw                 = (int) strlen(fbadge);
         lay->r_filter_start[0] = b_start;
         lay->r_filter_width[0] = bw;
         lay->r_filter_panel[0] = fpanel;
@@ -618,10 +618,10 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         }
     }
 
-    int commit_w   = (int) strlen(MILK_GIT_COMMIT) + 3;
-    int shmdir_w   = (int) strlen(shmdir) + 8;
-    int chars_left = 17 + commit_w + shmdir_w + 1 + ctrl_w + 1 + hover_w + 1 +
-                     filter_w; /* +1 for heartbeat */
+    int commit_w = (int) strlen(MILK_GIT_COMMIT) + 3;
+    int shmdir_w = (int) strlen(shmdir) + 8;
+    int chars_left =
+        17 + commit_w + shmdir_w + 1 + ctrl_w + 1 + hover_w + 1 + filter_w; /* +1 for heartbeat */
 
     ov_theme_fg(OV_FG_STREAM);
     chars_left += snprintf(NULL, 0, " %d stm", m->nb_streams);
@@ -670,8 +670,7 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
  * ([F2:DASH] .. [F7:LOOPS]), and right side displays prominent [h: HELP] button
  * with slow blink color when idle, and active pill styling when help is open.
  */
-void ov_render_tabs(
-    OV_LAYOUT *lay)
+void ov_render_tabs(OV_LAYOUT *lay)
 {
     OV_RECT r = lay->r_tabs;
     ov_buf_pos(r.row, r.col);
@@ -1503,8 +1502,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
             ov_render_fps_param_info(lay, m);
             ov_render_fps_panel(lay, m, &rel);
             int cur_fsel = ov_get_selected_fps_idx(lay, m);
-            if (cur_fsel >= 0 && cur_fsel < m->nb_fps &&
-                m->fps[cur_fsel].nb_disp_params > 0)
+            if (cur_fsel >= 0 && cur_fsel < m->nb_fps && m->fps[cur_fsel].nb_disp_params > 0)
             {
                 ov_render_fps_params_panel(lay, m);
             }

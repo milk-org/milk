@@ -27,23 +27,19 @@
  * @model: System model containing streams, processes, FPS, nodes, and edges
  * @mode:  Traversal mode (trigger, input, full)
  */
-void ov_detect_loops(
-    OV_MODEL *model,
-    sg_mode_t mode);
+void ov_detect_loops(OV_MODEL *model, sg_mode_t mode);
 
 /**
  * ov_loop_names_load - Load custom loop names from config file.
  * @model: System model containing detected loops
  */
-void ov_loop_names_load(
-    OV_MODEL *model);
+void ov_loop_names_load(OV_MODEL *model);
 
 /**
  * ov_loop_names_save - Save custom loop names to config file.
  * @model: System model containing detected loops
  */
-void ov_loop_names_save(
-    const OV_MODEL *model);
+void ov_loop_names_save(const OV_MODEL *model);
 
 /**
  * ov_loop_rename - Set a custom name for a loop and persist it.
@@ -53,10 +49,7 @@ void ov_loop_names_save(
  *
  * Return: 0 on success, non-zero on error.
  */
-int ov_loop_rename(
-    OV_MODEL   *model,
-    int         loop_idx,
-    const char *new_name);
+int ov_loop_rename(OV_MODEL *model, int loop_idx, const char *new_name);
 
 /**
  * ov_get_loop_name - Retrieve display name for a loop ID.
@@ -65,9 +58,7 @@ int ov_loop_rename(
  *
  * Return: Display name string or fallback label.
  */
-const char *ov_get_loop_name(
-    const OV_MODEL *model,
-    int             loop_id);
+const char *ov_get_loop_name(const OV_MODEL *model, int loop_id);
 
 /**
  * ov_find_loop_by_id - Find loop array index from 1-based loop ID.
@@ -76,8 +67,6 @@ const char *ov_get_loop_name(
  *
  * Return: Array index in model->loops[], or -1 if not found.
  */
-int ov_find_loop_by_id(
-    const OV_MODEL *model,
-    int             loop_id);
+int ov_find_loop_by_id(const OV_MODEL *model, int loop_id);
 
 #endif /* OVERVIEW_DATA_LOOPS_H */

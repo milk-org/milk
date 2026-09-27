@@ -811,18 +811,14 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             H_ov_buf_pos(row + ri, r.col + 1);
             H_ov_theme_bg(row_bg);
 
-            uint64_t pfl = (params != NULL && dp < params->nb_disp_params)
-                               ? params->disp_param_flags[dp]
-                               : 0;
-            uint32_t pt = (params != NULL && dp < params->nb_disp_params)
-                              ? params->disp_param_type[dp]
-                              : 0;
-            const char *pname = (params != NULL && dp < params->nb_disp_params)
-                                    ? params->disp_param_name[dp]
-                                    : "";
-            const char *pval = (params != NULL && dp < params->nb_disp_params)
-                                   ? params->disp_param_value[dp]
-                                   : "";
+            uint64_t pfl =
+                (params != NULL && dp < params->nb_disp_params) ? params->disp_param_flags[dp] : 0;
+            uint32_t pt =
+                (params != NULL && dp < params->nb_disp_params) ? params->disp_param_type[dp] : 0;
+            const char *pname =
+                (params != NULL && dp < params->nb_disp_params) ? params->disp_param_name[dp] : "";
+            const char *pval =
+                (params != NULL && dp < params->nb_disp_params) ? params->disp_param_value[dp] : "";
 
             /* Writability indicator */
             int writable = (pfl & FPFLAG_WRITESTATUS) != 0;
@@ -909,8 +905,7 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             }
             else if (pt == FPTYPE_ONOFF)
             {
-                int      is_on  = (strcmp(pval, "ON") == 0 ||
-                                   strcmp(pval, "1") == 0);
+                int      is_on  = (strcmp(pval, "ON") == 0 || strcmp(pval, "1") == 0);
                 ov_rgb_t vcolor = is_on ? (ov_rgb_t) { 100, 255, 100 } : OV_FG_DIM;
                 if (is_sel || is_hover)
                 {
@@ -977,9 +972,7 @@ static ov_detail_telemetry_cache_t s_detail_cache;
  * @target_pid:      PID of process being inspected
  * @target_loopcnt:  current iteration count of the process
  */
-static void detail_update_telemetry(
-    pid_t   target_pid,
-    int64_t target_loopcnt)
+static void detail_update_telemetry(pid_t target_pid, int64_t target_loopcnt)
 {
     s_detail_cache.target_loopcnt = target_loopcnt;
     struct timespec now;
@@ -994,7 +987,7 @@ static void detail_update_telemetry(
 
         /* Core mask */
         int active_cores[128];
-        int num_active = pid_get_core_utilization(target_pid, active_cores, 128);
+        int num_active           = pid_get_core_utilization(target_pid, active_cores, 128);
         s_detail_cache.core_mask = 0;
         for (int ii = 0; ii < num_active; ii++)
         {

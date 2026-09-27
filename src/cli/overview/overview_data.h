@@ -246,7 +246,7 @@ typedef struct
     uint64_t stream_param_flags[OV_FPS_MAX_STREAM_PARAMS];
 
     /* display parameters count */
-    int      nb_disp_params;
+    int nb_disp_params;
 
     /* graph node index */
     int node_idx;
@@ -402,17 +402,17 @@ typedef struct
     int fps_indices[OV_MAX_LOOP_NODES / 2];
 
     /* Overlap metadata */
-    uint32_t overlap_mask;                  /* Bitmask of other loop IDs (1 << (id-1)) */
-    int      nb_shared_nodes;               /* Count of nodes shared with other loops */
-    int      nb_exclusive_nodes;            /* Count of nodes private to this loop */
+    uint32_t overlap_mask;       /* Bitmask of other loop IDs (1 << (id-1)) */
+    int      nb_shared_nodes;    /* Count of nodes shared with other loops */
+    int      nb_exclusive_nodes; /* Count of nodes private to this loop */
 
     /* Telemetry & Health */
-    double min_hz;                          /* Bottleneck loop frequency */
+    double min_hz; /* Bottleneck loop frequency */
     double max_hz;
-    int    is_running;                      /* 1 if all processes in loop are RUN */
-    int    is_paused;                       /* 1 if any process in loop is PAUS */
-    int    is_stale;                        /* 1 if any process has unchanging loopcnt */
-    int    is_error;                        /* 1 if any process is ERR */
+    int    is_running; /* 1 if all processes in loop are RUN */
+    int    is_paused;  /* 1 if any process in loop is PAUS */
+    int    is_stale;   /* 1 if any process has unchanging loopcnt */
+    int    is_error;   /* 1 if any process is ERR */
 } OV_LOOP;
 
 

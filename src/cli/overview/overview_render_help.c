@@ -739,9 +739,7 @@ static const int HELP_TOTAL = (int) (sizeof(HELP) / sizeof(HELP[0]));
  *
  * Return: 1 if expanded, 0 if collapsed.
  */
-static inline int help_is_expanded(
-    const OV_LAYOUT *lay,
-    int              sec)
+static inline int help_is_expanded(const OV_LAYOUT *lay, int sec)
 {
     return (lay->help_expand >> sec) & 1;
 }
@@ -852,7 +850,7 @@ static ov_rgb_t ov_help_section_color(int sec)
     switch (sec)
     {
     case HS_INTRO:
-        return (ov_rgb_t){ 255, 215, 80 };
+        return (ov_rgb_t) { 255, 215, 80 };
     case HS_NAV:
         return OV_FG_TITLE;
     case HS_STREAMS:
@@ -864,11 +862,11 @@ static ov_rgb_t ov_help_section_color(int sec)
     case HS_GRAPH:
         return OV_FG_CONN;
     case HS_CMDLOG:
-        return (ov_rgb_t){ 180, 210, 170 };
+        return (ov_rgb_t) { 180, 210, 170 };
     case HS_MOUSE:
         return OV_FG_WARN;
     case HS_COLORS:
-        return (ov_rgb_t){ 230, 130, 255 };
+        return (ov_rgb_t) { 230, 130, 255 };
     default:
         return OV_FG_DIM;
     }
@@ -880,9 +878,7 @@ typedef struct
     int score; /* Composite relevance score */
 } help_search_match_t;
 
-static int compare_search_matches(
-    const void *a,
-    const void *b)
+static int compare_search_matches(const void *a, const void *b)
 {
     const help_search_match_t *ma = (const help_search_match_t *) a;
     const help_search_match_t *mb = (const help_search_match_t *) b;
@@ -890,7 +886,7 @@ static int compare_search_matches(
     {
         return mb->score - ma->score; /* descending score */
     }
-    return ma->index - mb->index;     /* stable tie-breaker */
+    return ma->index - mb->index; /* stable tie-breaker */
 }
 
 /**
@@ -902,9 +898,7 @@ static int compare_search_matches(
  *
  * Return: score >= 0 (0 means no match).
  */
-static int help_score_entry(
-    const help_entry_t *entry,
-    const char         *query)
+static int help_score_entry(const help_entry_t *entry, const char *query)
 {
     if (entry == NULL || query == NULL || query[0] == '\0')
     {
@@ -922,7 +916,7 @@ static int help_score_entry(
     while (tok != NULL && ntok < 8)
     {
         tokens[ntok++] = tok;
-        tok = strtok_r(NULL, " \t", &saveptr);
+        tok            = strtok_r(NULL, " \t", &saveptr);
     }
 
     if (ntok == 0)
@@ -936,8 +930,8 @@ static int help_score_entry(
 
     for (int t = 0; t < ntok; t++)
     {
-        const char *w = tokens[t];
-        int wlen      = (int) strlen(w);
+        const char *w    = tokens[t];
+        int         wlen = (int) strlen(w);
         if (wlen == 0)
         {
             continue;
@@ -972,8 +966,8 @@ static int help_score_entry(
                                    *(p - 1) == '(' || *(p - 1) == '[' || *(p - 1) == '-');
                 if (at_boundary)
                 {
-                    if (p[wlen] == '\0' || p[wlen] == ' ' || p[wlen] == '/' ||
-                        p[wlen] == ')' || p[wlen] == ']')
+                    if (p[wlen] == '\0' || p[wlen] == ' ' || p[wlen] == '/' || p[wlen] == ')' ||
+                        p[wlen] == ']')
                     {
                         tok_score += 160;
                     }
@@ -1034,9 +1028,7 @@ static int help_score_entry(
  *
  * Return: number of visible rows.
  */
-static int help_visible_rows(
-    const OV_LAYOUT *lay,
-    int             *map)
+static int help_visible_rows(const OV_LAYOUT *lay, int *map)
 {
     /* If search query is non-empty, populate map with ranked search matches */
     if (lay->help_search[0] != '\0')
@@ -1057,8 +1049,7 @@ static int help_visible_rows(
 
         if (n_matches > 1)
         {
-            qsort(matches, (size_t) n_matches, sizeof(help_search_match_t),
-                  compare_search_matches);
+            qsort(matches, (size_t) n_matches, sizeof(help_search_match_t), compare_search_matches);
         }
 
         for (int i = 0; i < n_matches; i++)
@@ -1105,9 +1096,7 @@ int ov_help_visible_count(const OV_LAYOUT *lay)
  *
  * Return: visible row index in map[], or 0 if not found.
  */
-int ov_help_section_first_vis_row(
-    const OV_LAYOUT *lay,
-    int              sec)
+int ov_help_section_first_vis_row(const OV_LAYOUT *lay, int sec)
 {
     int map[128];
     int nvis = help_visible_rows(lay, map);
@@ -1146,9 +1135,7 @@ void ov_help_open(OV_LAYOUT *lay)
  *
  * Return: section index if toggled, or -1 if row is not a section header.
  */
-int ov_help_toggle_at(
-    OV_LAYOUT *lay,
-    int        vis_row)
+int ov_help_toggle_at(OV_LAYOUT *lay, int vis_row)
 {
     if (lay->help_search[0] != '\0')
     {
@@ -1182,10 +1169,7 @@ int ov_help_toggle_at(
  *
  * Return: section index if modified, or -1 if row is not eligible.
  */
-int ov_help_expand_at(
-    OV_LAYOUT *lay,
-    int        vis_row,
-    int        expand)
+int ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand)
 {
     if (lay->help_search[0] != '\0')
     {
@@ -1256,12 +1240,7 @@ int ov_help_expand_at(
  * Takes the whole available terminal space: starts below the dedicated tab bar
  * (row 3) and extends across the entire terminal width to the row above the status bar.
  */
-static void ov_help_get_rect(
-    const OV_LAYOUT *lay,
-    int             *pr,
-    int             *pc,
-    int             *ph,
-    int             *pw)
+static void ov_help_get_rect(const OV_LAYOUT *lay, int *pr, int *pc, int *ph, int *pw)
 {
     int W = lay->term_cols;
     int H = lay->term_rows;
@@ -1289,10 +1268,7 @@ static void ov_help_get_rect(
  *
  * Return: 1 if click was handled inside help overlay, 0 otherwise.
  */
-int ov_help_handle_click(
-    OV_LAYOUT *lay,
-    int        mr,
-    int        mc)
+int ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc)
 {
     int pr, pc, ph, pw;
     ov_help_get_rect(lay, &pr, &pc, &ph, &pw);
@@ -1436,14 +1412,13 @@ int ov_help_handle_click(
  * @fg:        foreground color
  * @bg:        background color
  */
-static void ov_help_print_wrapped(
-    const char *text,
-    int         row,
-    int         col,
-    int         max_w,
-    int         max_lines,
-    ov_rgb_t    fg,
-    ov_rgb_t    bg)
+static void ov_help_print_wrapped(const char *text,
+                                  int         row,
+                                  int         col,
+                                  int         max_w,
+                                  int         max_lines,
+                                  ov_rgb_t    fg,
+                                  ov_rgb_t    bg)
 {
     if (text == NULL || max_w <= 0 || max_lines <= 0)
     {
@@ -1522,14 +1497,13 @@ static void ov_help_print_wrapped(
  * @pw:       width of help box
  * @detail_h: height of detail pane
  */
-static void ov_help_render_detail(
-    const OV_LAYOUT    *lay,
-    const OV_MODEL     *m,
-    const help_entry_t *entry,
-    int                 split_r,
-    int                 pc,
-    int                 pw,
-    int                 detail_h)
+static void ov_help_render_detail(const OV_LAYOUT    *lay,
+                                  const OV_MODEL     *m,
+                                  const help_entry_t *entry,
+                                  int                 split_r,
+                                  int                 pc,
+                                  int                 pw,
+                                  int                 detail_h)
 {
     int inner_w = pw - 4;
     int col     = pc + 2;
@@ -1549,7 +1523,7 @@ static void ov_help_render_detail(
             ov_theme_bg(OV_BG_PANEL);
 
             const char *hint = "[Press 1, 'i', or ENTER to open full interactive guide]";
-            int rem = inner_w - (16 + (int) strlen(entry->label) + (int) strlen(hint));
+            int         rem  = inner_w - (16 + (int) strlen(entry->label) + (int) strlen(hint));
             if (rem > 0)
             {
                 ov_buf_hline(' ', rem);
@@ -1566,7 +1540,7 @@ static void ov_help_render_detail(
             const char *hint = help_is_expanded(lay, entry->section)
                                    ? "[Press ← / ENTER to collapse]"
                                    : "[Press → / ENTER to expand]";
-            int rem = inner_w - (18 + (int) strlen(entry->label) + (int) strlen(hint));
+            int         rem  = inner_w - (18 + (int) strlen(entry->label) + (int) strlen(hint));
             if (rem > 0)
             {
                 ov_buf_hline(' ', rem);
@@ -1631,8 +1605,8 @@ static void ov_help_render_detail(
     int text_lines = detail_h - 3;
     if (text_lines > 0)
     {
-        ov_help_print_wrapped(entry->detail, split_r + 2, col, inner_w, text_lines,
-                              OV_FG_TEXT, OV_BG_PANEL);
+        ov_help_print_wrapped(entry->detail, split_r + 2, col, inner_w, text_lines, OV_FG_TEXT,
+                              OV_BG_PANEL);
     }
 
     /* Last row: Live Target info for the currently selected GUI item */
@@ -1647,7 +1621,7 @@ static void ov_help_render_detail(
 
     int  target_avail = inner_w - 8;
     char tbuf[160];
-    tbuf[0] = '\0';
+    tbuf[0]            = '\0';
     ov_rgb_t target_fg = OV_FG_DIM;
 
     if (entry->section == HS_INTRO)
@@ -1664,15 +1638,15 @@ static void ov_help_render_detail(
             const OV_STREAM *s = &m->streams[si];
             if (entry->flags & HF_CTRL_MODE)
             {
-                target_fg = (ov_rgb_t){ 255, 95, 75 };
-                snprintf(tbuf, sizeof(tbuf), "Will delete stream '%s' (%s %s) from SHM",
-                         s->name, s->size_str, render_dtype(s->datatype));
+                target_fg = (ov_rgb_t) { 255, 95, 75 };
+                snprintf(tbuf, sizeof(tbuf), "Will delete stream '%s' (%s %s) from SHM", s->name,
+                         s->size_str, render_dtype(s->datatype));
             }
             else
             {
                 target_fg = OV_FG_STREAM;
-                snprintf(tbuf, sizeof(tbuf), "Selected stream '%s' (%s %s, %.1f Hz)",
-                         s->name, s->size_str, render_dtype(s->datatype), s->update_hz);
+                snprintf(tbuf, sizeof(tbuf), "Selected stream '%s' (%s %s, %.1f Hz)", s->name,
+                         s->size_str, render_dtype(s->datatype), s->update_hz);
             }
         }
         else
@@ -1689,9 +1663,9 @@ static void ov_help_render_detail(
             const OV_PROC *p = &m->procs[pi];
             if (entry->flags & HF_CTRL_MODE)
             {
-                target_fg = (ov_rgb_t){ 255, 95, 75 };
-                snprintf(tbuf, sizeof(tbuf), "Will signal process '%s' (PID %d, %s)",
-                         p->name, (int) p->PID, p->statusmsg);
+                target_fg = (ov_rgb_t) { 255, 95, 75 };
+                snprintf(tbuf, sizeof(tbuf), "Will signal process '%s' (PID %d, %s)", p->name,
+                         (int) p->PID, p->statusmsg);
             }
             else
             {
@@ -1714,7 +1688,7 @@ static void ov_help_render_detail(
             const OV_FPS *f = &m->fps[fi];
             if (entry->flags & HF_CTRL_MODE)
             {
-                target_fg = (ov_rgb_t){ 255, 95, 75 };
+                target_fg = (ov_rgb_t) { 255, 95, 75 };
                 snprintf(tbuf, sizeof(tbuf), "Will control FPS module '%s' (run=%s, conf=%s)",
                          f->name, f->run_alive ? "ON" : "OFF", f->conf_alive ? "ON" : "OFF");
             }
@@ -1722,8 +1696,8 @@ static void ov_help_render_detail(
             {
                 target_fg = OV_FG_FPS;
                 snprintf(tbuf, sizeof(tbuf),
-                         "Selected FPS module '%s' (run=%s, conf=%s, RSS: %ld KB)",
-                         f->name, f->run_alive ? "ON" : "OFF", f->conf_alive ? "ON" : "OFF",
+                         "Selected FPS module '%s' (run=%s, conf=%s, RSS: %ld KB)", f->name,
+                         f->run_alive ? "ON" : "OFF", f->conf_alive ? "ON" : "OFF",
                          (long) f->mem_rss_kb);
             }
         }
@@ -1738,10 +1712,10 @@ static void ov_help_render_detail(
         if (m != NULL && lay->sel_graph >= 0 && lay->sel_graph < m->nb_nodes)
         {
             const OV_NODE *n = &m->nodes[lay->sel_graph];
-            target_fg = OV_FG_CONN;
+            target_fg        = OV_FG_CONN;
             snprintf(tbuf, sizeof(tbuf), "Selected node '%s' (type: %s)", n->name,
-                     (n->type == OV_NODE_STREAM) ? "Stream" :
-                     ((n->type == OV_NODE_PROC) ? "Process" : "FPS"));
+                     (n->type == OV_NODE_STREAM) ? "Stream"
+                                                 : ((n->type == OV_NODE_PROC) ? "Process" : "FPS"));
         }
         else
         {
@@ -1875,18 +1849,12 @@ static const intro_item_t INTRO_ITEMS[] = {
  * @ph:  height in rows
  * @pw:  width in columns
  */
-static void ov_help_render_intro(
-    const OV_LAYOUT *lay,
-    int              pr,
-    int              pc,
-    int              ph,
-    int              pw)
+static void ov_help_render_intro(const OV_LAYOUT *lay, int pr, int pc, int ph, int pw)
 {
     const char *title =
-        (pw >= 84)
-            ? "ABOUT milk-CTRL (1/i: Intro • 2/k: Controls • ↑↓: Scroll • ESC: Close)"
-            : ((pw >= 52) ? "ABOUT milk-CTRL (1/i: Intro • 2/k: Controls • ESC: Close)"
-                          : "ABOUT milk-CTRL");
+        (pw >= 84) ? "ABOUT milk-CTRL (1/i: Intro • 2/k: Controls • ↑↓: Scroll • ESC: Close)"
+                   : ((pw >= 52) ? "ABOUT milk-CTRL (1/i: Intro • 2/k: Controls • ESC: Close)"
+                                 : "ABOUT milk-CTRL");
     ov_draw_panel_border(pr, pc, ph, pw, title, OV_FG_TITLE, 1, 0);
 
     for (int r = pr + 1; r < pr + ph - 1; r++)
@@ -1923,8 +1891,8 @@ static void ov_help_render_intro(
 
     /* Close hint on right */
     const char *close_hint = "[ESC: Close Help] [X] ";
-    int used_hdr = tab1_w + 1 + tab2_w;
-    int rem_hdr  = inner_w - used_hdr - (int) strlen(close_hint);
+    int         used_hdr   = tab1_w + 1 + tab2_w;
+    int         rem_hdr    = inner_w - used_hdr - (int) strlen(close_hint);
     if (rem_hdr > 0)
     {
         ov_buf_hline(' ', rem_hdr);
@@ -1985,8 +1953,8 @@ static void ov_help_render_intro(
             continue;
         }
 
-        const intro_item_t *item = &INTRO_ITEMS[row_idx];
-        int printed_len = 0;
+        const intro_item_t *item        = &INTRO_ITEMS[row_idx];
+        int                 printed_len = 0;
 
         switch (item->type)
         {
@@ -2017,8 +1985,8 @@ static void ov_help_render_intro(
             ov_theme_bg(OV_BG_PANEL);
             ov_theme_fg(OV_FG_TEXT);
             ov_buf_printf("%s", item->text ? item->text : "");
-            printed_len = (int) strlen(item->prefix) + 4 +
-                          (item->text ? (int) strlen(item->text) : 0);
+            printed_len =
+                (int) strlen(item->prefix) + 4 + (item->text ? (int) strlen(item->text) : 0);
             break;
 
         case IL_TEXT:
@@ -2077,13 +2045,12 @@ static void ov_help_render_intro(
         if (max_scroll > 0)
         {
             snprintf(bstatus, sizeof(bstatus),
-                     " [↑↓ / PgUp/PgDn: Scroll (%d/%d) • 2/k: Controls • ESC: Close] ",
-                     scroll + 1, total_lines);
+                     " [↑↓ / PgUp/PgDn: Scroll (%d/%d) • 2/k: Controls • ESC: Close] ", scroll + 1,
+                     total_lines);
         }
         else
         {
-            snprintf(bstatus, sizeof(bstatus),
-                     " [2 / k: Controls Reference • ESC: Close] ");
+            snprintf(bstatus, sizeof(bstatus), " [2 / k: Controls Reference • ESC: Close] ");
         }
 
         ov_buf_bold();
@@ -2115,9 +2082,7 @@ static void ov_help_render_intro(
  * @lay: layout state
  * @m:   system model
  */
-void ov_render_help(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     int pr, pc, ph, pw;
     ov_help_get_rect(lay, &pr, &pc, &ph, &pw);
@@ -2133,9 +2098,8 @@ void ov_render_help(
 
     /* Draw outer panel border */
     const char *title =
-        (pw >= 84)
-            ? "HELP & CONTROLS (1/i: Intro • 2/k: Controls • ↑↓ nav • / search • ESC close)"
-            : ((pw >= 54) ? "HELP & CONTROLS (1/i: Intro • / search • ESC close)" : "HELP");
+        (pw >= 84) ? "HELP & CONTROLS (1/i: Intro • 2/k: Controls • ↑↓ nav • / search • ESC close)"
+                   : ((pw >= 54) ? "HELP & CONTROLS (1/i: Intro • / search • ESC close)" : "HELP");
     ov_draw_panel_border(pr, pc, ph, pw, title, OV_FG_BRIGHT, 1, 0);
 
     /* Clear interior background */
@@ -2167,8 +2131,8 @@ void ov_render_help(
         ov_buf_bg(240, 175, 20);
         ov_buf_fg(20, 20, 25);
         ov_buf_bold();
-        ov_buf_printf("%s", (pw >= 100) ? " [▶ 2: KEYSTROKES & CONTROLS ◀] "
-                                        : " [▶ 2: CONTROLS ◀] ");
+        ov_buf_printf("%s",
+                      (pw >= 100) ? " [▶ 2: KEYSTROKES & CONTROLS ◀] " : " [▶ 2: CONTROLS ◀] ");
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_PANEL);
         ov_buf_printf("  ");
@@ -2309,9 +2273,8 @@ void ov_render_help(
             ov_buf_printf("%s", count_str);
 
             /* Clear / cancel button */
-            const char *btn_str = (lay->help_search[0] == '\0')
-                                      ? " [ESC: cancel] "
-                                      : " [ESC: clear] ";
+            const char *btn_str =
+                (lay->help_search[0] == '\0') ? " [ESC: cancel] " : " [ESC: clear] ";
             int used = 8 + qbox_w + 2 + (int) strlen(count_str);
             int rem  = inner_w - used - (int) strlen(btn_str);
             if (rem > 0)

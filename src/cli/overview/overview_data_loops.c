@@ -39,9 +39,7 @@ static int                  s_names_loaded   = 0;
  * @buf: Output buffer
  * @sz:  Buffer capacity
  */
-static void get_config_filepath(
-    char  *buf,
-    size_t sz)
+static void get_config_filepath(char *buf, size_t sz)
 {
     const char *shmdir = getenv("MILK_SHM_DIR");
     if (shmdir != NULL && shmdir[0] != '\0')
@@ -67,8 +65,7 @@ static void get_config_filepath(
  * ov_loop_names_load - Load custom loop names from disk into memory table.
  * @model: System model containing detected loops
  */
-void ov_loop_names_load(
-    OV_MODEL *model)
+void ov_loop_names_load(OV_MODEL *model)
 {
     char path[256];
     get_config_filepath(path, sizeof(path));
@@ -119,7 +116,7 @@ void ov_loop_names_load(
                     lp->custom_name[sizeof(lp->custom_name) - 1] = '\0';
                     lp->has_custom_name                          = 1;
                     strncpy(lp->name, lp->custom_name, sizeof(lp->name) - 1);
-                    lp->name[sizeof(lp->name) - 1]               = '\0';
+                    lp->name[sizeof(lp->name) - 1] = '\0';
                     break;
                 }
             }
@@ -131,8 +128,7 @@ void ov_loop_names_load(
  * ov_loop_names_save - Save persistent custom loop names to disk.
  * @model: System model containing detected loops
  */
-void ov_loop_names_save(
-    const OV_MODEL *model)
+void ov_loop_names_save(const OV_MODEL *model)
 {
     (void) model;
     char path[256];
@@ -161,10 +157,7 @@ void ov_loop_names_save(
  *
  * Return: 0 on success, non-zero on error.
  */
-int ov_loop_rename(
-    OV_MODEL   *model,
-    int         loop_idx,
-    const char *new_name)
+int ov_loop_rename(OV_MODEL *model, int loop_idx, const char *new_name)
 {
     if (model == NULL || loop_idx < 0 || loop_idx >= model->nb_loops || new_name == NULL)
     {
@@ -175,8 +168,8 @@ int ov_loop_rename(
     if (new_name[0] == '\0')
     {
         /* Clear custom name, restore auto_name */
-        lp->has_custom_name    = 0;
-        lp->custom_name[0]     = '\0';
+        lp->has_custom_name = 0;
+        lp->custom_name[0]  = '\0';
         strncpy(lp->name, lp->auto_name, sizeof(lp->name) - 1);
         lp->name[sizeof(lp->name) - 1] = '\0';
 
@@ -200,7 +193,7 @@ int ov_loop_rename(
         lp->custom_name[sizeof(lp->custom_name) - 1] = '\0';
         lp->has_custom_name                          = 1;
         strncpy(lp->name, lp->custom_name, sizeof(lp->name) - 1);
-        lp->name[sizeof(lp->name) - 1]               = '\0';
+        lp->name[sizeof(lp->name) - 1] = '\0';
 
         /* Update or add in saved table */
         int found = 0;
@@ -234,9 +227,7 @@ int ov_loop_rename(
  *
  * Return: Display name string or fallback label.
  */
-const char *ov_get_loop_name(
-    const OV_MODEL *model,
-    int             loop_id)
+const char *ov_get_loop_name(const OV_MODEL *model, int loop_id)
 {
     if (model == NULL || loop_id <= 0)
     {
@@ -257,9 +248,7 @@ const char *ov_get_loop_name(
  *
  * Return: Array index in model->loops[], or -1 if not found.
  */
-int ov_find_loop_by_id(
-    const OV_MODEL *model,
-    int             loop_id)
+int ov_find_loop_by_id(const OV_MODEL *model, int loop_id)
 {
     if (model == NULL || loop_id <= 0)
     {
@@ -279,8 +268,7 @@ int ov_find_loop_by_id(
  * FNV-1a 64-bit Hash Helper
  * ========================================================= */
 
-static uint64_t fnv1a_hash(
-    const char *str)
+static uint64_t fnv1a_hash(const char *str)
 {
     uint64_t hash = UINT64_C(14695981039346656037);
     while (*str)
@@ -295,10 +283,7 @@ static uint64_t fnv1a_hash(
  * Cycle Edge Validator
  * ========================================================= */
 
-static int is_valid_loop_edge(
-    const OV_MODEL *m,
-    const OV_EDGE  *e,
-    sg_mode_t       mode)
+static int is_valid_loop_edge(const OV_MODEL *m, const OV_EDGE *e, sg_mode_t mode)
 {
     if (!e->active)
     {
@@ -326,15 +311,13 @@ static int is_valid_loop_edge(
         {
             return (e->type == OV_EDGE_STREAM_TRIGGERS_PROC ||
                     e->type == OV_EDGE_PROC_TRIGGER_STREAM ||
-                    e->type == OV_EDGE_STREAM_READ_BY_PROC ||
-                    e->type == OV_EDGE_FPS_INPUT_STREAM);
+                    e->type == OV_EDGE_STREAM_READ_BY_PROC || e->type == OV_EDGE_FPS_INPUT_STREAM);
         }
     }
     /* Proc / FPS -> Stream */
     else if ((stype == OV_NODE_PROC || stype == OV_NODE_FPS) && ttype == OV_NODE_STREAM)
     {
-        return (e->type == OV_EDGE_PROC_WRITES_STREAM ||
-                e->type == OV_EDGE_FPS_OUTPUT_STREAM);
+        return (e->type == OV_EDGE_PROC_WRITES_STREAM || e->type == OV_EDGE_FPS_OUTPUT_STREAM);
     }
 
     return 0;
@@ -344,10 +327,7 @@ static int is_valid_loop_edge(
  * Cycle Canonicalization & Registration
  * ========================================================= */
 
-static int register_cycle(
-    OV_MODEL  *model,
-    const int *path,
-    int        path_len)
+static int register_cycle(OV_MODEL *model, const int *path, int path_len)
 {
     if (path_len < 2 || model->nb_loops >= OV_MAX_LOOPS)
     {
@@ -355,8 +335,8 @@ static int register_cycle(
     }
 
     /* Find stream node with lexicographically smallest name to anchor representation */
-    int min_stream_pos = -1;
-    const char *min_name = NULL;
+    int         min_stream_pos = -1;
+    const char *min_name       = NULL;
 
     for (int i = 0; i < path_len; i++)
     {
@@ -366,7 +346,7 @@ static int register_cycle(
             const char *curr_name = model->nodes[ni].name;
             if (min_name == NULL || strcmp(curr_name, min_name) < 0)
             {
-                min_name = curr_name;
+                min_name       = curr_name;
                 min_stream_pos = i;
             }
         }
@@ -389,13 +369,11 @@ static int register_cycle(
     sig[0] = '\0';
     for (int i = 0; i < path_len; i++)
     {
-        int ni = rot_path[i];
-        const OV_NODE *n = &model->nodes[ni];
-        char seg[80];
-        snprintf(seg, sizeof(seg), "%s%s:%s",
-                 (i == 0) ? "" : "->",
-                 (n->type == OV_NODE_STREAM) ? "s" : "p",
-                 n->name);
+        int            ni = rot_path[i];
+        const OV_NODE *n  = &model->nodes[ni];
+        char           seg[80];
+        snprintf(seg, sizeof(seg), "%s%s:%s", (i == 0) ? "" : "->",
+                 (n->type == OV_NODE_STREAM) ? "s" : "p", n->name);
         strncat(sig, seg, sizeof(sig) - strlen(sig) - 1);
     }
 
@@ -411,38 +389,38 @@ static int register_cycle(
     }
 
     /* Register new loop */
-    int lidx = model->nb_loops;
-    OV_LOOP *lp = &model->loops[lidx];
+    int      lidx = model->nb_loops;
+    OV_LOOP *lp   = &model->loops[lidx];
     memset(lp, 0, sizeof(*lp));
 
-    lp->loop_id = lidx + 1;
+    lp->loop_id        = lidx + 1;
     lp->signature_hash = sig_hash;
     strncpy(lp->signature, sig, sizeof(lp->signature) - 1);
     lp->nb_nodes = path_len;
 
     for (int i = 0; i < path_len; i++)
     {
-        int ni = rot_path[i];
+        int ni              = rot_path[i];
         lp->node_indices[i] = ni;
-        const OV_NODE *n = &model->nodes[ni];
+        const OV_NODE *n    = &model->nodes[ni];
 
         if (n->type == OV_NODE_STREAM)
         {
-            if (lp->nb_streams < (int)(sizeof(lp->stream_indices) / sizeof(lp->stream_indices[0])))
+            if (lp->nb_streams < (int) (sizeof(lp->stream_indices) / sizeof(lp->stream_indices[0])))
             {
                 lp->stream_indices[lp->nb_streams++] = n->index;
             }
         }
         else if (n->type == OV_NODE_PROC)
         {
-            if (lp->nb_procs < (int)(sizeof(lp->proc_indices) / sizeof(lp->proc_indices[0])))
+            if (lp->nb_procs < (int) (sizeof(lp->proc_indices) / sizeof(lp->proc_indices[0])))
             {
                 lp->proc_indices[lp->nb_procs++] = n->index;
             }
         }
         else if (n->type == OV_NODE_FPS)
         {
-            if (lp->nb_fps < (int)(sizeof(lp->fps_indices) / sizeof(lp->fps_indices[0])))
+            if (lp->nb_fps < (int) (sizeof(lp->fps_indices) / sizeof(lp->fps_indices[0])))
             {
                 lp->fps_indices[lp->nb_fps++] = n->index;
             }
@@ -452,13 +430,12 @@ static int register_cycle(
     /* Build auto-name */
     if (lp->nb_streams == 1)
     {
-        snprintf(lp->auto_name, sizeof(lp->auto_name), "L%02d [%s]",
-                 lp->loop_id, model->streams[lp->stream_indices[0]].name);
+        snprintf(lp->auto_name, sizeof(lp->auto_name), "L%02d [%s]", lp->loop_id,
+                 model->streams[lp->stream_indices[0]].name);
     }
     else if (lp->nb_streams >= 2)
     {
-        snprintf(lp->auto_name, sizeof(lp->auto_name), "L%02d [%s->%s]",
-                 lp->loop_id,
+        snprintf(lp->auto_name, sizeof(lp->auto_name), "L%02d [%s->%s]", lp->loop_id,
                  model->streams[lp->stream_indices[0]].name,
                  model->streams[lp->stream_indices[lp->nb_streams - 1]].name);
     }
@@ -475,7 +452,7 @@ static int register_cycle(
         {
             strncpy(lp->custom_name, s_saved_names[k].name, sizeof(lp->custom_name) - 1);
             lp->custom_name[sizeof(lp->custom_name) - 1] = '\0';
-            lp->has_custom_name = 1;
+            lp->has_custom_name                          = 1;
             break;
         }
     }
@@ -498,16 +475,15 @@ static int register_cycle(
  * DFS Cycle Search
  * ========================================================= */
 
-static void dfs_search_cycles(
-    OV_MODEL  *model,
-    int        start_node,
-    int        curr_node,
-    int        depth,
-    int       *path,
-    uint8_t   *in_path,
-    const int  adj[OV_MAX_NODES][64],
-    const int  adj_cnt[OV_MAX_NODES],
-    int       *total_explored)
+static void dfs_search_cycles(OV_MODEL *model,
+                              int       start_node,
+                              int       curr_node,
+                              int       depth,
+                              int      *path,
+                              uint8_t  *in_path,
+                              const int adj[OV_MAX_NODES][64],
+                              const int adj_cnt[OV_MAX_NODES],
+                              int      *total_explored)
 {
     if (model->nb_loops >= OV_MAX_LOOPS || *total_explored > 4096)
     {
@@ -520,7 +496,7 @@ static void dfs_search_cycles(
         return;
     }
 
-    path[depth] = curr_node;
+    path[depth]        = curr_node;
     in_path[curr_node] = 1;
 
     for (int i = 0; i < adj_cnt[curr_node]; i++)
@@ -542,8 +518,8 @@ static void dfs_search_cycles(
             /* Avoid visiting nodes with index < start_node to reduce redundant traversals */
             if (next >= start_node)
             {
-                dfs_search_cycles(model, start_node, next, depth + 1, path, in_path,
-                                  adj, adj_cnt, total_explored);
+                dfs_search_cycles(model, start_node, next, depth + 1, path, in_path, adj, adj_cnt,
+                                  total_explored);
             }
         }
     }
@@ -560,9 +536,7 @@ static void dfs_search_cycles(
  * @model: System model containing streams, processes, FPS, nodes, and edges
  * @mode:  Traversal mode (trigger, input, full)
  */
-void ov_detect_loops(
-    OV_MODEL *model,
-    sg_mode_t mode)
+void ov_detect_loops(OV_MODEL *model, sg_mode_t mode)
 {
     if (model == NULL || model->nb_nodes <= 0)
     {
@@ -628,7 +602,7 @@ void ov_detect_loops(
     }
 
     /* Search for cycles starting from each stream node */
-    int path[OV_MAX_LOOP_NODES];
+    int     path[OV_MAX_LOOP_NODES];
     uint8_t in_path[OV_MAX_NODES];
     memset(in_path, 0, sizeof(in_path));
 
@@ -648,15 +622,15 @@ void ov_detect_loops(
     /* Tag member entities and aggregate health/rate metrics */
     for (int l = 0; l < model->nb_loops; l++)
     {
-        OV_LOOP *lp = &model->loops[l];
+        OV_LOOP *lp   = &model->loops[l];
         uint32_t mask = (UINT32_C(1) << l);
 
-        lp->is_running = 1;
-        lp->is_paused  = 0;
-        lp->is_stale   = 0;
-        lp->is_error   = 0;
-        lp->min_hz     = 1e9;
-        lp->max_hz     = 0.0;
+        lp->is_running   = 1;
+        lp->is_paused    = 0;
+        lp->is_stale     = 0;
+        lp->is_error     = 0;
+        lp->min_hz       = 1e9;
+        lp->max_hz       = 0.0;
         int active_rates = 0;
 
         /* Streams */
@@ -756,15 +730,15 @@ void ov_detect_loops(
     /* Compute pairwise overlaps and shared vs exclusive component counts */
     for (int i = 0; i < model->nb_loops; i++)
     {
-        OV_LOOP *lp1 = &model->loops[i];
-        lp1->overlap_mask = 0;
+        OV_LOOP *lp1         = &model->loops[i];
+        lp1->overlap_mask    = 0;
         lp1->nb_shared_nodes = 0;
 
         for (int k = 0; k < lp1->nb_nodes; k++)
         {
-            int ni = lp1->node_indices[k];
-            const OV_NODE *n = &model->nodes[ni];
-            int n_loops = 0;
+            int            ni      = lp1->node_indices[k];
+            const OV_NODE *n       = &model->nodes[ni];
+            int            n_loops = 0;
 
             if (n->type == OV_NODE_STREAM && n->index >= 0 && n->index < model->nb_streams)
             {
@@ -793,8 +767,8 @@ void ov_detect_loops(
             {
                 continue;
             }
-            const OV_LOOP *lp2 = &model->loops[j];
-            int shares = 0;
+            const OV_LOOP *lp2    = &model->loops[j];
+            int            shares = 0;
 
             for (int k1 = 0; k1 < lp1->nb_nodes; k1++)
             {
