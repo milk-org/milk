@@ -4,7 +4,7 @@
 
 /**
  * @file overview_theme.h
- * @brief btop-inspired dark theme for milk-CTRL
+ * @brief Theme definitions and palette management for milk-CTRL
  *
  * Defines semantic color tokens used throughout the TUI.
  * Uses TrueColor (24-bit) RGB values and provides helpers
@@ -112,7 +112,6 @@ int               ov_theme_find_by_id(const char *id);
 void              ov_theme_set(int index);
 void              ov_theme_cycle(void);
 void              ov_theme_init(const char *preferred_theme);
-void              ov_theme_save_preference(void);
 
 /* =========================================================
  * Semantic color palette (maps to active theme)

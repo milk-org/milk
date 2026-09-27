@@ -10,8 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include "overview_theme.h"
@@ -23,12 +21,12 @@
 
 static const ov_theme_t ov_themes[] = {
     /* -----------------------------------------------------
-     * 0. Default Dark (btop-inspired slate)
+     * 0. Default Dark (Slate dark palette)
      * ----------------------------------------------------- */
     {
         .id   = "dark",
         .name = "Default Dark",
-        .desc = "btop-inspired slate dark palette",
+        .desc = "Default slate dark palette",
 
         .bg_terminal    = { 20, 22, 28 },
         .bg_panel       = { 30, 32, 40 },
@@ -409,43 +407,18 @@ void ov_theme_set(int index)
 }
 
 /**
- * @brief Cycle to the next theme and persist preference.
+ * @brief Cycle to the next theme.
  */
 void ov_theme_cycle(void)
 {
     int next = (ov_theme_active_idx + 1) % ov_num_themes;
     ov_theme_set(next);
-    ov_theme_save_preference();
 }
 
 /**
- * @brief Persist current theme selection to ~/.milk/ctrl_theme.
- */
-void ov_theme_save_preference(void)
-{
-    const char *home = getenv("HOME");
-    if (home == NULL)
-    {
-        return;
-    }
-
-    char dirpath[512];
-    snprintf(dirpath, sizeof(dirpath), "%s/.milk", home);
-    mkdir(dirpath, 0755);
-
-    char filepath[512];
-    snprintf(filepath, sizeof(filepath), "%s/.milk/ctrl_theme", home);
-
-    FILE *fp = fopen(filepath, "w");
-    if (fp != NULL)
-    {
-        fprintf(fp, "%s\n", ov_active_theme->id);
-        fclose(fp);
-    }
-}
-
-/**
- * @brief Initialize theme subsystem from CLI arg, environment, or saved pref.
+ * @brief Initialize theme subsystem from CLI arg or environment.
+ *
+ * Defaults to the standard dark color theme (index 0).
  *
  * @param preferred_theme CLI argument or NULL
  */
@@ -453,7 +426,7 @@ void ov_theme_init(const char *preferred_theme)
 {
     int idx = -1;
 
-    /* 1. CLI argument */
+    /* 1. CLI argument override */
     if (preferred_theme != NULL && preferred_theme[0] != '\0')
     {
         idx = ov_theme_find_by_id(preferred_theme);
@@ -469,36 +442,7 @@ void ov_theme_init(const char *preferred_theme)
         }
     }
 
-    /* 3. Persistent preference ~/.milk/ctrl_theme */
-    if (idx < 0)
-    {
-        const char *home = getenv("HOME");
-        if (home != NULL)
-        {
-            char filepath[512];
-            snprintf(filepath, sizeof(filepath), "%s/.milk/ctrl_theme", home);
-            FILE *fp = fopen(filepath, "r");
-            if (fp != NULL)
-            {
-                char line[64];
-                if (fgets(line, sizeof(line), fp) != NULL)
-                {
-                    /* Strip trailing newline / whitespace */
-                    int len = (int) strlen(line);
-                    while (len > 0 && (line[len - 1] == '\n' ||
-                                      line[len - 1] == '\r' ||
-                                      line[len - 1] == ' '))
-                    {
-                        line[--len] = '\0';
-                    }
-                    idx = ov_theme_find_by_id(line);
-                }
-                fclose(fp);
-            }
-        }
-    }
-
-    /* 4. Default to index 0 (dark) */
+    /* 3. Default to index 0 (Default Dark) */
     if (idx < 0)
     {
         idx = 0;

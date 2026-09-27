@@ -712,8 +712,8 @@ static const help_entry_t HELP[] =
         "Cycle color theme (dark, night, accessible, light, nordic)",
         "Cycles through available color palettes: dark (default slate), night "
         "(observatory dark-adapted red), accessible (colorblind-friendly high-contrast), "
-        "light (paper light for daylight/papers), and nordic (arctic slate). Selection "
-        "is automatically saved to ~/.milk/ctrl_theme.",
+        "light (paper light for daylight/papers), and nordic (arctic slate). milk-CTRL "
+        "starts with the default dark theme on launch.",
         HF_ENTRY,
         HS_COLORS,
     },
