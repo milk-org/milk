@@ -234,7 +234,11 @@ add_executable(
   ../overview/overview_data_sort.c
   ../overview/overview_scan.c
   ../overview/overview_layout.c
-  ../overview/overview_ansi.c
+  ../overview/ansi/overview_ansi_term.c
+  ../overview/ansi/overview_ansi_buf.c
+  ../overview/ansi/overview_ansi_delta.c
+  ../overview/ansi/overview_ansi_utf8.c
+  ../overview/ansi/overview_ansi_key.c
   ../overview/overview_cmdlog.c
   ../overview/overview_render.c
   ../overview/overview_render_loops.c
@@ -268,7 +272,12 @@ target_include_directories(
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
           ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
           ${CMAKE_SOURCE_DIR}/src/engine/libfps
-          ${CMAKE_SOURCE_DIR}/src/cli/overview)
+          ${CMAKE_SOURCE_DIR}/src/cli/overview
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/data
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/input
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/render
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
 target_link_libraries(milk-CTRL PUBLIC ImageStreamIO milkprocessinfo milkfps m
                                        rt pthread)
 install(TARGETS milk-CTRL DESTINATION bin)
