@@ -251,6 +251,13 @@ add_executable(
   ../overview/overview_render_help.c
   ../overview/overview_render_cmdlog.c
   ../overview/overview_input.c
+  ../overview/overview_input_history.c
+  ../overview/overview_input_modal.c
+  ../overview/overview_input_actions.c
+  ../overview/overview_input_nav.c
+  ../overview/overview_input_toggles.c
+  ../overview/overview_input_hittest.c
+  ../overview/overview_input_mouse.c
   ../overview/overview_ctrl.c
   ../overview/overview_fps_edit.c
   ../overview/overview_render_fps_params.c
