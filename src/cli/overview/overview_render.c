@@ -22,144 +22,9 @@
 
 extern float ov_scan_get_interval(void);
 
-/* =========================================================
- * Persistent sort ordering caches
- * ========================================================= */
-static char g_stream_order[OV_MAX_STREAMS][80];
-static int  g_nb_stream_order = 0;
-
-static char g_proc_order[OV_MAX_PROCS][80];
-static int  g_nb_proc_order = 0;
-
-static char g_fps_order[OV_MAX_FPS][80];
-static int  g_nb_fps_order = 0;
+#include "overview_data_internal.h"
 
 static const OV_MODEL *g_last_model = NULL;
-
-/**
- * @brief Compute display rank for a stream.
- *
- * Returns a score for priority-based ordering.
- */
-static int get_stream_rank(const char *name)
-{
-    for (int i = 0; i < g_nb_stream_order; i++)
-    {
-        if (strncmp(g_stream_order[i], name, 80) == 0)
-        {
-            return i;
-        }
-    }
-    return 999999;
-}
-
-/**
- * @brief Compute display rank for a process.
- */
-static int get_proc_rank(const char *name)
-{
-    for (int i = 0; i < g_nb_proc_order; i++)
-    {
-        if (strncmp(g_proc_order[i], name, 80) == 0)
-        {
-            return i;
-        }
-    }
-    return 999999;
-}
-
-/**
- * @brief Compute display rank for an FPS instance.
- */
-static int get_fps_rank(const char *name)
-{
-    for (int i = 0; i < g_nb_fps_order; i++)
-    {
-        if (strncmp(g_fps_order[i], name, 80) == 0)
-        {
-            return i;
-        }
-    }
-    return 999999;
-}
-
-typedef struct
-{
-    int         rank;
-    int         orig_idx;
-    const char *name;
-} ov_sort_rank_entry_t;
-
-static int sort_entry_by_rank(const void *a, const void *b)
-{
-    const ov_sort_rank_entry_t *ea = (const ov_sort_rank_entry_t *) a;
-    const ov_sort_rank_entry_t *eb = (const ov_sort_rank_entry_t *) b;
-    if (ea->rank != eb->rank)
-    {
-        return ea->rank - eb->rank;
-    }
-    return strcmp(ea->name, eb->name);
-}
-
-static void ov_apply_rank_sort(OV_MODEL *mm)
-{
-    if (g_nb_stream_order > 0 && mm->nb_streams > 1)
-    {
-        static ov_sort_rank_entry_t entries[OV_MAX_STREAMS];
-        for (int i = 0; i < mm->nb_streams; i++)
-        {
-            entries[i].orig_idx = i;
-            entries[i].name     = mm->streams[i].name;
-            entries[i].rank     = get_stream_rank(mm->streams[i].name);
-        }
-        qsort(entries, (size_t) mm->nb_streams, sizeof(ov_sort_rank_entry_t), sort_entry_by_rank);
-
-        static OV_STREAM temp_streams[OV_MAX_STREAMS];
-        memcpy(temp_streams, mm->streams, (size_t) mm->nb_streams * sizeof(OV_STREAM));
-        for (int i = 0; i < mm->nb_streams; i++)
-        {
-            mm->streams[i] = temp_streams[entries[i].orig_idx];
-        }
-    }
-
-    if (g_nb_proc_order > 0 && mm->nb_procs > 1)
-    {
-        static ov_sort_rank_entry_t entries[OV_MAX_PROCS];
-        for (int i = 0; i < mm->nb_procs; i++)
-        {
-            entries[i].orig_idx = i;
-            entries[i].name     = mm->procs[i].name;
-            entries[i].rank     = get_proc_rank(mm->procs[i].name);
-        }
-        qsort(entries, (size_t) mm->nb_procs, sizeof(ov_sort_rank_entry_t), sort_entry_by_rank);
-
-        static OV_PROC temp_procs[OV_MAX_PROCS];
-        memcpy(temp_procs, mm->procs, (size_t) mm->nb_procs * sizeof(OV_PROC));
-        for (int i = 0; i < mm->nb_procs; i++)
-        {
-            mm->procs[i] = temp_procs[entries[i].orig_idx];
-        }
-    }
-
-    if (g_nb_fps_order > 0 && mm->nb_fps > 1)
-    {
-        static ov_sort_rank_entry_t entries[OV_MAX_FPS];
-        for (int i = 0; i < mm->nb_fps; i++)
-        {
-            entries[i].orig_idx = i;
-            entries[i].name     = mm->fps[i].name;
-            entries[i].rank     = get_fps_rank(mm->fps[i].name);
-        }
-        qsort(entries, (size_t) mm->nb_fps, sizeof(ov_sort_rank_entry_t), sort_entry_by_rank);
-
-        static OV_FPS temp_fps[OV_MAX_FPS];
-        memcpy(temp_fps, mm->fps, (size_t) mm->nb_fps * sizeof(OV_FPS));
-        for (int i = 0; i < mm->nb_fps; i++)
-        {
-            mm->fps[i] = temp_fps[entries[i].orig_idx];
-        }
-    }
-}
 
 int ov_render_header_text(const char *text, int hs, int max_vis_width, ov_rgb_t base_fg)
 {
@@ -239,78 +104,6 @@ static const char *view_label(ov_view_t v)
     default:
         return "";
     }
-}
-
-static double get_cpu_usage(void)
-{
-    static struct rusage   last_usage;
-    static struct timespec last_time;
-    static int             initialized  = 0;
-    static double          smoothed_cpu = 0.0;
-
-    struct rusage   current_usage;
-    struct timespec current_time;
-
-    getrusage(RUSAGE_SELF, &current_usage);
-    clock_gettime(CLOCK_MONOTONIC, &current_time);
-
-    if (!initialized)
-    {
-        last_usage  = current_usage;
-        last_time   = current_time;
-        initialized = 1;
-        return 0.0;
-    }
-
-    double dt =
-        (current_time.tv_sec - last_time.tv_sec) + (current_time.tv_nsec - last_time.tv_nsec) / 1e9;
-
-    if (dt >= 0.5) /* update every 0.5s */
-    {
-        double d_utime = (current_usage.ru_utime.tv_sec - last_usage.ru_utime.tv_sec) +
-                         (current_usage.ru_utime.tv_usec - last_usage.ru_utime.tv_usec) / 1e6;
-        double d_stime = (current_usage.ru_stime.tv_sec - last_usage.ru_stime.tv_sec) +
-                         (current_usage.ru_stime.tv_usec - last_usage.ru_stime.tv_usec) / 1e6;
-
-        double inst_cpu = 100.0 * (d_utime + d_stime) / dt;
-        smoothed_cpu    = inst_cpu;
-        last_usage      = current_usage;
-        last_time       = current_time;
-    }
-    return smoothed_cpu;
-}
-
-static double get_bandwidth_usage(void)
-{
-    static struct timespec last_time;
-    static uint64_t        last_bytes  = 0;
-    static int             initialized = 0;
-    static double          smoothed_bw = 0.0;
-
-    struct timespec current_time;
-    clock_gettime(CLOCK_MONOTONIC, &current_time);
-
-    if (!initialized)
-    {
-        last_time   = current_time;
-        last_bytes  = ov__total_bytes_rendered;
-        initialized = 1;
-        return 0.0;
-    }
-
-    double dt =
-        (current_time.tv_sec - last_time.tv_sec) + (current_time.tv_nsec - last_time.tv_nsec) / 1e9;
-
-    if (dt >= 0.5) /* update every 0.5s */
-    {
-        uint64_t d_bytes = ov__total_bytes_rendered - last_bytes;
-        /* bandwidth in kB/s */
-        double inst_bw = (double) d_bytes / 1024.0 / dt;
-        smoothed_bw    = inst_bw;
-        last_bytes     = ov__total_bytes_rendered;
-        last_time      = current_time;
-    }
-    return smoothed_bw;
 }
 
 void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
@@ -641,13 +434,13 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
 
     ov_theme_fg(OV_FG_DIM);
     {
-        double cpu_pct = get_cpu_usage();
+        double cpu_pct = ov_sys_get_cpu_usage();
         chars_left += snprintf(NULL, 0, "  CPU: %4.1f%%", cpu_pct);
         ov_buf_printf("  CPU: %4.1f%%", cpu_pct);
     }
 
     {
-        double bw_kbs = get_bandwidth_usage();
+        double bw_kbs = ov_sys_get_bandwidth_usage();
         chars_left += snprintf(NULL, 0, "  BW: %4.1f kB/s", bw_kbs);
         ov_buf_printf("  BW: %4.1f kB/s", bw_kbs);
     }
@@ -1110,26 +903,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         ov_sort_procs(mm, lay->sort_key_proc, lay->sort_dir_proc);
         ov_sort_fps(mm, lay->sort_key_fps, lay->sort_dir_fps);
 
-        g_nb_stream_order = mm->nb_streams;
-        for (int i = 0; i < mm->nb_streams; i++)
-        {
-            strncpy(g_stream_order[i], mm->streams[i].name, 79);
-            g_stream_order[i][79] = '\0';
-        }
-
-        g_nb_proc_order = mm->nb_procs;
-        for (int i = 0; i < mm->nb_procs; i++)
-        {
-            strncpy(g_proc_order[i], mm->procs[i].name, 79);
-            g_proc_order[i][79] = '\0';
-        }
-
-        g_nb_fps_order = mm->nb_fps;
-        for (int i = 0; i < mm->nb_fps; i++)
-        {
-            strncpy(g_fps_order[i], mm->fps[i].name, 79);
-            g_fps_order[i][79] = '\0';
-        }
+        ov_sort_freeze_snapshot(mm);
 
         {
             const char *names[OV_MAX_NODES];
@@ -1233,7 +1007,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     {
         /* A new scan model arrived. Re-apply the saved order so items don't shuffle. */
         OV_MODEL *mm = (OV_MODEL *) (uintptr_t) m;
-        ov_apply_rank_sort(mm);
+        ov_sort_apply_ranks(mm);
         g_last_model = m;
     }
 

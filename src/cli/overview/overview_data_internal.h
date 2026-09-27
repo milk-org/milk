@@ -132,4 +132,12 @@ int ov_fcache_set_param_value(const char *fps_name, int disp_idx, const char *va
 /** Post-scan enrichment: sparklines, uptime, stale, new-item */
 void ov_post_scan_enrich(OV_MODEL *model);
 
+/** System metrics and telemetry */
+double ov_sys_get_cpu_usage(void);
+double ov_sys_get_bandwidth_usage(void);
+
+/** Ordering and rank sorting */
+void ov_sort_freeze_snapshot(const OV_MODEL *mm);
+void ov_sort_apply_ranks(OV_MODEL *mm);
+
 #endif // OVERVIEW_DATA_INTERNAL_H

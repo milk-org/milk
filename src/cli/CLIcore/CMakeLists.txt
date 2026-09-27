@@ -239,6 +239,7 @@ add_executable(
   ../overview/overview_render.c
   ../overview/overview_render_loops.c
   ../overview/overview_render_detail.c
+  ../overview/overview_render_resources.c
   ../overview/overview_render_utils.c
   ../overview/overview_render_relate.c
   ../overview/overview_render_streams.c
