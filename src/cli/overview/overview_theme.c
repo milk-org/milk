@@ -81,7 +81,7 @@ static const ov_theme_t ov_themes[] = {
     {
         .id   = "night",
         .name = "Observatory Red",
-        .desc = "Dark-adapted monochrome red for telescope domes",
+        .desc = "Dark-adapted monochrome red palette",
 
         .bg_terminal    = { 10, 0, 0 },
         .bg_panel       = { 22, 4, 4 },
