@@ -255,20 +255,46 @@ add_executable(
   ../overview/ansi/overview_ansi_utf8.c
   ../overview/ansi/overview_ansi_key.c
   ../overview/overview_cmdlog.c
-  ../overview/overview_render.c
-  ../overview/overview_render_loops.c
-  ../overview/overview_render_detail.c
-  ../overview/overview_render_resources.c
-  ../overview/overview_render_utils.c
-  ../overview/overview_render_relate.c
-  ../overview/overview_render_streams.c
-  ../overview/overview_render_procs.c
-  ../overview/overview_render_fps.c
-  ../overview/overview_render_graph.c
-  ../overview/overview_render_status.c
-  ../overview/overview_help_data.c
-  ../overview/overview_render_help.c
-  ../overview/overview_render_cmdlog.c
+  ../overview/render/overview_theme.c
+  ../overview/render/overview_theme_palettes.c
+  ../overview/render/overview_theme_palettes_extra.c
+  ../overview/render/overview_help_data.c
+  ../overview/render/overview_render_utils.c
+  ../overview/render/overview_render_filter.c
+  ../overview/render/overview_render_relate.c
+  ../overview/render/overview_render_header.c
+  ../overview/render/overview_render_tabs.c
+  ../overview/render/overview_render_popup.c
+  ../overview/render/overview_render_sync.c
+  ../overview/render/overview_render_status.c
+  ../overview/render/overview_render_cmdlog.c
+  ../overview/render/overview_render_preview.c
+  ../overview/render/overview_render_graph.c
+  ../overview/render/overview_render_streams.c
+  ../overview/render/overview_render_streams_hdr.c
+  ../overview/render/overview_render_streams_row.c
+  ../overview/render/overview_render_procs.c
+  ../overview/render/overview_render_procs_hdr.c
+  ../overview/render/overview_render_procs_row.c
+  ../overview/render/overview_render_fps.c
+  ../overview/render/overview_render_fps_hdr.c
+  ../overview/render/overview_render_fps_params.c
+  ../overview/render/overview_render_fps_params_info.c
+  ../overview/render/overview_render_loops.c
+  ../overview/render/overview_render_loops_panel.c
+  ../overview/render/overview_render_detail.c
+  ../overview/render/overview_render_detail_stream.c
+  ../overview/render/overview_render_detail_proc.c
+  ../overview/render/overview_render_detail_fps.c
+  ../overview/render/overview_render_resources.c
+  ../overview/render/overview_render_resources_perf.c
+  ../overview/render/overview_render_help.c
+  ../overview/render/overview_render_help_search.c
+  ../overview/render/overview_render_help_nav.c
+  ../overview/render/overview_render_help_detail.c
+  ../overview/render/overview_render_help_intro.c
+  ../overview/render/overview_render_help_list.c
+  ../overview/render/overview_render.c
   ../overview/input/overview_ctrl.c
   ../overview/input/overview_ctrl_proc.c
   ../overview/input/overview_fps_edit.c
@@ -287,9 +313,7 @@ add_executable(
   ../overview/input/overview_input_nav_fps.c
   ../overview/input/overview_input_nav_lineage.c
   ../overview/input/overview_input_sort_keys.c
-  ../overview/input/overview_input_toggles.c
-  ../overview/overview_render_fps_params.c
-  ../overview/overview_theme.c)
+  ../overview/input/overview_input_toggles.c)
 target_include_directories(
   milk-CTRL
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
