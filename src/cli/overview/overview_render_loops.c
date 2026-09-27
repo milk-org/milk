@@ -92,8 +92,8 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
     ov_theme_bg(OV_BG_HEADER);
     ov_theme_fg(OV_FG_DIM);
     char htext[256];
-    snprintf(htext, sizeof(htext), " %-4s %-20s %-8s %-10s %-8s %s", "ID", "NAME",
-             "NODES", "RATE (Hz)", "STATUS", "OVERLAP");
+    snprintf(htext, sizeof(htext), " %-4s %-20s %-8s %-10s %-8s %s", "ID", "NAME", "NODES",
+             "RATE (Hz)", "STATUS", "OVERLAP");
     ov_buf_printf("%s", htext);
     render_pad_to_col(r.col + r.width - 1);
     row++;
