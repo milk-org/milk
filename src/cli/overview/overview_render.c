@@ -367,6 +367,31 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     ov_buf_printf(" ");
+    int hover_w = 0;
+    if (lay->mouse_hover)
+    {
+        /* Mouse hover active badge */
+        ov_buf_bg(180, 180, 20);   /* deep yellow background */
+        ov_buf_fg(20, 20, 20);     /* dark text */
+        ov_buf_bold();
+        ov_buf_printf(" [m] HOVER: ON ");
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+        hover_w = 15; /* visual width of " [m] HOVER: ON " */
+    }
+    else
+    {
+        /* Mouse hover inactive badge */
+        ov_buf_bg(60, 60, 60);     /* dim gray background */
+        ov_buf_fg(160, 160, 160);  /* light gray text */
+        ov_buf_bold();
+        ov_buf_printf(" [m] HOVER: OFF ");
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+        hover_w = 16; /* visual width of " [m] HOVER: OFF " */
+    }
+
+    ov_buf_printf(" ");
     int filter_w = 0;
     const char *fpat = ov_get_active_filter(lay);
     if (fpat[0] != '\0')
@@ -404,7 +429,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
 
     int commit_w   = (int) strlen(MILK_GIT_COMMIT) + 3;
     int shmdir_w   = (int) strlen(shmdir) + 8;
-    int chars_left = 17 + commit_w + shmdir_w + 1 + ctrl_w + 1 + filter_w; /* +1 for heartbeat */
+    int chars_left = 17 + commit_w + shmdir_w + 1 + ctrl_w + 1 + hover_w + 1 +
+                     filter_w; /* +1 for heartbeat */
 
     ov_theme_fg(OV_FG_STREAM);
     chars_left += snprintf(NULL, 0, " %d stm", m->nb_streams);

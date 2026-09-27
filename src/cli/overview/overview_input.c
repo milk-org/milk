@@ -965,13 +965,30 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             if (mc >= badge_start && mc < badge_start + badge_w)
             {
                 lay->ctrl_mode = !lay->ctrl_mode;
-                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎛️ Control mode %s",
-                               lay->ctrl_mode ? "✅ ON" : "❌ OFF");
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Control mode %s",
+                               lay->ctrl_mode ? "ON" : "OFF");
+                return 1;
+            }
+
+            /* Check for HOVER badge click */
+            int hover_badge_start = badge_start + badge_w + 1;
+            int hover_badge_w     = lay->mouse_hover ? 15 : 16;
+            if (mc >= hover_badge_start && mc < hover_badge_start + hover_badge_w)
+            {
+                lay->mouse_hover = !lay->mouse_hover;
+                ov_set_mouse_hover(lay->mouse_hover);
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Mouse hover %s",
+                               lay->mouse_hover ? "ON" : "OFF");
+                if (lay->mouse_hover)
+                {
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
+                                   "Warning: Hover uses extra CPU on slow connections");
+                }
                 return 1;
             }
 
             /* Check for FILTER badge click */
-            int filter_badge_start = badge_start + badge_w + 1;
+            int filter_badge_start = hover_badge_start + hover_badge_w + 1;
             int filter_badge_w     = 17;
             const char *fpat       = ov_get_active_filter(lay);
             if (fpat[0] != '\0')
