@@ -306,6 +306,10 @@ int  ov_help_visible_count(const OV_LAYOUT *lay);
 int  ov_help_toggle_at(
     OV_LAYOUT *lay,
     int        vis_row);
+int  ov_help_expand_at(
+    OV_LAYOUT *lay,
+    int        vis_row,
+    int        expand);
 int  ov_help_focus_section(ov_focus_t focus);
 int  ov_help_section_first_vis_row(
     const OV_LAYOUT *lay,

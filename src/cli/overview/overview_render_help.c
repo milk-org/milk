@@ -772,10 +772,10 @@ int ov_help_section_first_vis_row(
  */
 void ov_help_open(OV_LAYOUT *lay)
 {
-    lay->show_help = 1;
-    int sec        = ov_help_focus_section(lay->focus);
-    lay->help_expand |= (1U << sec) | (1U << HS_NAV);
-    lay->help_sel = ov_help_section_first_vis_row(lay, sec);
+    lay->show_help   = 1;
+    lay->help_expand = 0;
+    int sec          = ov_help_focus_section(lay->focus);
+    lay->help_sel    = ov_help_section_first_vis_row(lay, sec);
 }
 
 /**
@@ -806,6 +806,72 @@ int ov_help_toggle_at(
     int sec = HELP[idx].section;
     lay->help_expand ^= (1U << sec);
     return sec;
+}
+
+/**
+ * ov_help_expand_at - expand or collapse section at visible row.
+ * @lay:     layout state (help_expand bitmask modified)
+ * @vis_row: 0-based visible row index
+ * @expand:  1 to expand, 0 to collapse
+ *
+ * Return: section index if modified, or -1 if row is not eligible.
+ */
+int ov_help_expand_at(
+    OV_LAYOUT *lay,
+    int        vis_row,
+    int        expand)
+{
+    int map[128];
+    int nvis = help_visible_rows(lay, map);
+
+    if (vis_row < 0 || vis_row >= nvis)
+    {
+        return -1;
+    }
+
+    int idx = map[vis_row];
+    int sec = HELP[idx].section;
+
+    if (expand)
+    {
+        if (HELP[idx].flags & HF_SECTION)
+        {
+            if (!help_is_expanded(lay, sec))
+            {
+                lay->help_expand |= (1U << sec);
+                return sec;
+            }
+            else
+            {
+                int new_nvis = ov_help_visible_count(lay);
+                if (lay->help_sel + 1 < new_nvis)
+                {
+                    lay->help_sel++;
+                }
+                return sec;
+            }
+        }
+    }
+    else
+    {
+        if (HELP[idx].flags & HF_SECTION)
+        {
+            if (help_is_expanded(lay, sec))
+            {
+                lay->help_expand &= ~(1U << sec);
+                return sec;
+            }
+        }
+        else
+        {
+            /* On child item: collapse parent section and land on section header */
+            lay->help_expand &= ~(1U << sec);
+            lay->help_sel = ov_help_section_first_vis_row(lay, sec);
+            return sec;
+        }
+    }
+
+    return -1;
 }
 
 /**
@@ -851,6 +917,7 @@ int ov_help_handle_click(
     if (mr < pr || mr >= pr + ph || mc < pc || mc >= pc + pw)
     {
         lay->show_help = 0;
+        ov_buf_force_clear();
         return 1;
     }
 
@@ -858,6 +925,7 @@ int ov_help_handle_click(
     if (mr == pr && mc >= pc + pw - 6)
     {
         lay->show_help = 0;
+        ov_buf_force_clear();
         return 1;
     }
 
@@ -1037,8 +1105,8 @@ static void ov_help_render_detail(
         ov_theme_bg(OV_BG_PANEL);
 
         const char *hint = help_is_expanded(lay, entry->section)
-                               ? "[Press ENTER to collapse]"
-                               : "[Press ENTER to expand]";
+                               ? "[Press ← / ENTER to collapse]"
+                               : "[Press → / ENTER to expand]";
         int rem = inner_w - (18 + (int) strlen(entry->label) + (int) strlen(hint));
         if (rem > 0)
         {
@@ -1298,8 +1366,8 @@ void ov_render_help(
 
     /* Draw outer panel border */
     const char *title =
-        (pw >= 76) ? "HELP & CONTROLS  (↑↓ select • ENTER expand • c ctrl • h/q close)"
-                   : ((pw >= 54) ? "HELP (↑↓ select • ENTER expand • h close)" : "HELP");
+        (pw >= 76) ? "HELP & CONTROLS  (↑↓ nav • →/← expand/collapse • ESC close)"
+                   : ((pw >= 54) ? "HELP (↑↓ nav • →/← expand • ESC close)" : "HELP");
     ov_draw_panel_border(pr, pc, ph, pw, title, OV_FG_BRIGHT, 1, 0);
 
     /* Clear interior background */
@@ -1622,7 +1690,7 @@ void ov_render_help(
         ov_theme_fg(OV_FG_DIM);
 
         int         used_div = 17;
-        const char *hint     = "[↑↓ select • ENTER expand]";
+        const char *hint     = "[↑↓ nav • →/← expand • ESC close]";
         int         hint_len = (int) strlen(hint);
         int         div_pad  = (pw - 2) - used_div - hint_len - 1;
         if (div_pad > 0)

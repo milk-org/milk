@@ -78,6 +78,10 @@ extern int  ov_help_nb_sections(void);
 extern int  ov_help_toggle_at(
     OV_LAYOUT *lay,
     int        vis_row);
+extern int  ov_help_expand_at(
+    OV_LAYOUT *lay,
+    int        vis_row,
+    int        expand);
 extern int  ov_help_handle_click(
     OV_LAYOUT *lay,
     int        mr,
@@ -3662,6 +3666,19 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 lay->help_sel = nvis - 1;
             }
             break;
+
+        case OV_KEY_RIGHT:
+        case 'l':
+        {
+            ov_help_expand_at(lay, lay->help_sel, 1);
+            break;
+        }
+
+        case OV_KEY_LEFT:
+        {
+            ov_help_expand_at(lay, lay->help_sel, 0);
+            break;
+        }
 
         case OV_KEY_ENTER:
         case '\r':
