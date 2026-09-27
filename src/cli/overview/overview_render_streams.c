@@ -18,42 +18,9 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
 {
     OV_RECT r = lay->r_streams;
 
-    /* Build filtered index array */
-    const char *names[OV_MAX_STREAMS];
-    for (int i = 0; i < m->nb_streams; i++)
-    {
-        names[i] = m->streams[i].name;
-    }
-    int         filt_idx[OV_MAX_STREAMS];
+    int filt_idx[OV_MAX_STREAMS];
+    int filt_n = ov_filter_streams(lay, m, rel, filt_idx, OV_MAX_STREAMS);
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
-    int filt_n = ov_filter_build(active_filter, names, m->nb_streams, filt_idx, OV_MAX_STREAMS);
-
-    if (lay->freeze && lay->freeze_focus != OV_FOCUS_STREAMS && rel != NULL)
-    {
-        int new_filt_n = 0;
-        for (int i = 0; i < filt_n; i++)
-        {
-            if (bget(rel->streams, filt_idx[i]))
-            {
-                filt_idx[new_filt_n++] = filt_idx[i];
-            }
-        }
-        filt_n = new_filt_n;
-    }
-
-    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-    {
-        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
-        int      new_filt_n  = 0;
-        for (int i = 0; i < filt_n; i++)
-        {
-            if (m->streams[filt_idx[i]].loop_mask & active_mask)
-            {
-                filt_idx[new_filt_n++] = filt_idx[i];
-            }
-        }
-        filt_n = new_filt_n;
-    }
 
     /* Panel title with prominent filter indicator */
     {

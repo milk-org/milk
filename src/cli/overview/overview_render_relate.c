@@ -397,6 +397,228 @@ void ov_clear_all_filters(OV_LAYOUT *lay)
 }
 
 /**
+ * @brief Filter stream indices by regex, freeze relations, and loop isolation.
+ *
+ * @param[in]  lay      Layout structure
+ * @param[in]  m        Current model
+ * @param[in]  rel      Related items bitset (optional, used in freeze mode)
+ * @param[out] fidx     Output array for filtered model stream indices
+ * @param[in]  max_fidx Maximum capacity of fidx
+ * @return Number of matching stream indices written to fidx
+ */
+int ov_filter_streams(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel,
+    int              *fidx,
+    int               max_fidx)
+{
+    if (lay == NULL || m == NULL || m->nb_streams <= 0 || fidx == NULL || max_fidx <= 0)
+    {
+        return 0;
+    }
+
+    const char *names[OV_MAX_STREAMS];
+    int total = (m->nb_streams < max_fidx) ? m->nb_streams : max_fidx;
+    for (int i = 0; i < m->nb_streams; i++)
+    {
+        names[i] = m->streams[i].name;
+    }
+
+    const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
+    int filt_n = 0;
+    if (filt != NULL && filt[0] != '\0')
+    {
+        filt_n = ov_filter_build(filt, names, m->nb_streams, fidx, max_fidx);
+    }
+    else
+    {
+        filt_n = total;
+        for (int i = 0; i < filt_n; i++)
+        {
+            fidx[i] = i;
+        }
+    }
+
+    if (lay->freeze && lay->freeze_focus != OV_FOCUS_STREAMS && rel != NULL)
+    {
+        int new_filt_n = 0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            if (bget(rel->streams, fidx[i]))
+            {
+                fidx[new_filt_n++] = fidx[i];
+            }
+        }
+        filt_n = new_filt_n;
+    }
+
+    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    {
+        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        int      new_filt_n  = 0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            if (m->streams[fidx[i]].loop_mask & active_mask)
+            {
+                fidx[new_filt_n++] = fidx[i];
+            }
+        }
+        filt_n = new_filt_n;
+    }
+
+    return filt_n;
+}
+
+/**
+ * @brief Filter process indices by regex, freeze relations, and loop isolation.
+ *
+ * @param[in]  lay      Layout structure
+ * @param[in]  m        Current model
+ * @param[in]  rel      Related items bitset (optional, used in freeze mode)
+ * @param[out] fidx     Output array for filtered model process indices
+ * @param[in]  max_fidx Maximum capacity of fidx
+ * @return Number of matching process indices written to fidx
+ */
+int ov_filter_procs(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel,
+    int              *fidx,
+    int               max_fidx)
+{
+    if (lay == NULL || m == NULL || m->nb_procs <= 0 || fidx == NULL || max_fidx <= 0)
+    {
+        return 0;
+    }
+
+    const char *names[OV_MAX_PROCS];
+    int total = (m->nb_procs < max_fidx) ? m->nb_procs : max_fidx;
+    for (int i = 0; i < m->nb_procs; i++)
+    {
+        names[i] = m->procs[i].name;
+    }
+
+    const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
+    int filt_n = 0;
+    if (filt != NULL && filt[0] != '\0')
+    {
+        filt_n = ov_filter_build(filt, names, m->nb_procs, fidx, max_fidx);
+    }
+    else
+    {
+        filt_n = total;
+        for (int i = 0; i < filt_n; i++)
+        {
+            fidx[i] = i;
+        }
+    }
+
+    if (lay->freeze && lay->freeze_focus != OV_FOCUS_PROCS && rel != NULL)
+    {
+        int new_filt_n = 0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            if (bget(rel->procs, fidx[i]))
+            {
+                fidx[new_filt_n++] = fidx[i];
+            }
+        }
+        filt_n = new_filt_n;
+    }
+
+    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    {
+        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        int      new_filt_n  = 0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            if (m->procs[fidx[i]].loop_mask & active_mask)
+            {
+                fidx[new_filt_n++] = fidx[i];
+            }
+        }
+        filt_n = new_filt_n;
+    }
+
+    return filt_n;
+}
+
+/**
+ * @brief Filter FPS indices by regex, freeze relations, and loop isolation.
+ *
+ * @param[in]  lay      Layout structure
+ * @param[in]  m        Current model
+ * @param[in]  rel      Related items bitset (optional, used in freeze mode)
+ * @param[out] fidx     Output array for filtered model FPS indices
+ * @param[in]  max_fidx Maximum capacity of fidx
+ * @return Number of matching FPS indices written to fidx
+ */
+int ov_filter_fps(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel,
+    int              *fidx,
+    int               max_fidx)
+{
+    if (lay == NULL || m == NULL || m->nb_fps <= 0 || fidx == NULL || max_fidx <= 0)
+    {
+        return 0;
+    }
+
+    const char *names[OV_MAX_FPS];
+    int total = (m->nb_fps < max_fidx) ? m->nb_fps : max_fidx;
+    for (int i = 0; i < m->nb_fps; i++)
+    {
+        names[i] = m->fps[i].name;
+    }
+
+    const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
+    int filt_n = 0;
+    if (filt != NULL && filt[0] != '\0')
+    {
+        filt_n = ov_filter_build(filt, names, m->nb_fps, fidx, max_fidx);
+    }
+    else
+    {
+        filt_n = total;
+        for (int i = 0; i < filt_n; i++)
+        {
+            fidx[i] = i;
+        }
+    }
+
+    if (lay->freeze && lay->freeze_focus != OV_FOCUS_FPS && rel != NULL)
+    {
+        int new_filt_n = 0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            if (bget(rel->fps, fidx[i]))
+            {
+                fidx[new_filt_n++] = fidx[i];
+            }
+        }
+        filt_n = new_filt_n;
+    }
+
+    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    {
+        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        int      new_filt_n  = 0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            if (m->fps[fidx[i]].loop_mask & active_mask)
+            {
+                fidx[new_filt_n++] = fidx[i];
+            }
+        }
+        filt_n = new_filt_n;
+    }
+
+    return filt_n;
+}
+
+/**
  * @brief Resolve the selected stream row to its index in OV_MODEL.
  *
  * @param[in] lay Layout structure
@@ -414,23 +636,13 @@ int ov_get_selected_stream_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
     {
         return -1;
     }
-    const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
-    if (filt != NULL && filt[0] != '\0')
+    int fidx[OV_MAX_STREAMS];
+    int n = ov_filter_streams(lay, m, NULL, fidx, OV_MAX_STREAMS);
+    if (ssel < n)
     {
-        const char *names[OV_MAX_STREAMS];
-        for (int i = 0; i < m->nb_streams; i++)
-        {
-            names[i] = m->streams[i].name;
-        }
-        int fidx[OV_MAX_STREAMS];
-        int n = ov_filter_build(filt, names, m->nb_streams, fidx, OV_MAX_STREAMS);
-        if (ssel < n)
-        {
-            return fidx[ssel];
-        }
-        return -1;
+        return fidx[ssel];
     }
-    return (ssel < m->nb_streams) ? ssel : -1;
+    return -1;
 }
 
 /**
@@ -451,23 +663,13 @@ int ov_get_selected_proc_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
     {
         return -1;
     }
-    const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
-    if (filt != NULL && filt[0] != '\0')
+    int fidx[OV_MAX_PROCS];
+    int n = ov_filter_procs(lay, m, NULL, fidx, OV_MAX_PROCS);
+    if (psel < n)
     {
-        const char *names[OV_MAX_PROCS];
-        for (int i = 0; i < m->nb_procs; i++)
-        {
-            names[i] = m->procs[i].name;
-        }
-        int fidx[OV_MAX_PROCS];
-        int n = ov_filter_build(filt, names, m->nb_procs, fidx, OV_MAX_PROCS);
-        if (psel < n)
-        {
-            return fidx[psel];
-        }
-        return -1;
+        return fidx[psel];
     }
-    return (psel < m->nb_procs) ? psel : -1;
+    return -1;
 }
 
 /**
@@ -488,23 +690,13 @@ int ov_get_selected_fps_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
     {
         return -1;
     }
-    const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
-    if (filt != NULL && filt[0] != '\0')
+    int fidx[OV_MAX_FPS];
+    int n = ov_filter_fps(lay, m, NULL, fidx, OV_MAX_FPS);
+    if (fsel < n)
     {
-        const char *names[OV_MAX_FPS];
-        for (int i = 0; i < m->nb_fps; i++)
-        {
-            names[i] = m->fps[i].name;
-        }
-        int fidx[OV_MAX_FPS];
-        int n = ov_filter_build(filt, names, m->nb_fps, fidx, OV_MAX_FPS);
-        if (fsel < n)
-        {
-            return fidx[fsel];
-        }
-        return -1;
+        return fidx[fsel];
     }
-    return (fsel < m->nb_fps) ? fsel : -1;
+    return -1;
 }
 
 /* =========================================================

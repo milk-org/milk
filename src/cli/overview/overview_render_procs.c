@@ -22,40 +22,9 @@ static int ov_procs__filter(const OV_LAYOUT  *lay,
                             int              *has_re,
                             regex_t          *re)
 {
-    const char *names[OV_MAX_PROCS];
-    for (int i = 0; i < m->nb_procs; i++)
-    {
-        names[i] = m->procs[i].name;
-    }
+    int filt_n = ov_filter_procs(lay, m, rel, filt_idx, OV_MAX_PROCS);
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
-    int         filt_n = ov_filter_build(active_filter, names, m->nb_procs, filt_idx, OV_MAX_PROCS);
 
-    if (lay->freeze && lay->freeze_focus != OV_FOCUS_PROCS && rel != NULL)
-    {
-        int new_filt_n = 0;
-        for (int i = 0; i < filt_n; i++)
-        {
-            if (bget(rel->procs, filt_idx[i]))
-            {
-                filt_idx[new_filt_n++] = filt_idx[i];
-            }
-        }
-        filt_n = new_filt_n;
-    }
-
-    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-    {
-        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
-        int      new_filt_n  = 0;
-        for (int i = 0; i < filt_n; i++)
-        {
-            if (m->procs[filt_idx[i]].loop_mask & active_mask)
-            {
-                filt_idx[new_filt_n++] = filt_idx[i];
-            }
-        }
-        filt_n = new_filt_n;
-    }
 
     *has_re = 0;
     if (active_filter[0] != '\0')

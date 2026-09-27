@@ -3869,30 +3869,14 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                             }
                             else
                             {
-                                FPS *fps = ov_fcache_get_fps(m->fps[fsel].name);
-                                if (fps != NULL && fps->md != NULL)
+                                char kw[FUNCTION_PARAMETER_STRMAXLEN] = { 0 };
+                                int  newval = 0;
+                                if (ov_fcache_toggle_param(m->fps[fsel].name, pi,
+                                                           kw, sizeof(kw), &newval) == 0)
                                 {
-                                    int pindex = ov_fcache_get_param_index(m->fps[fsel].name, pi);
-                                    if (pindex >= 0)
-                                    {
-                                        FPS_PARAM *fp      = &fps->parray[pindex];
-                                        int        current = (fp->fpflag & FPFLAG_ONOFF) ? 1 : 0;
-                                        int        newval  = current ? 0 : 1;
-                                        functionparameter_SetParamValue_ONOFF(fps, fp->keywordfull,
-                                                                              newval);
-
-                                        fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
-
-                                        if (fp->fpflag & FPFLAG_SAVEONCHANGE)
-                                        {
-                                            functionparameter_WriteParameterToDisk(
-                                                fps, pindex, "setval", "milk-CTRL_toggle");
-                                            functionparameter_SaveFPS2disk(fps);
-                                        }
-                                        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                                                       "Toggled parameter %s to %s",
-                                                       fp->keywordfull, newval ? "ON" : "OFF");
-                                    }
+                                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                                   "Toggled parameter %s to %s",
+                                                   kw, newval ? "ON" : "OFF");
                                 }
                             }
                         }
@@ -3909,57 +3893,27 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
     case OV_FOCUS_STREAMS:
         sel    = &lay->sel_stream;
         scroll = &lay->scroll_stream;
-        count  = m->nb_streams;
         {
-            const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
-            if (filt[0] != '\0')
-            {
-                const char *names[OV_MAX_STREAMS];
-                for (int i = 0; i < count; i++)
-                {
-                    names[i] = m->streams[i].name;
-                }
-                int fidx[OV_MAX_STREAMS];
-                count = ov_filter_build(filt, names, count, fidx, OV_MAX_STREAMS);
-            }
+            int fidx[OV_MAX_STREAMS];
+            count = ov_filter_streams(lay, m, NULL, fidx, OV_MAX_STREAMS);
         }
         page_h = lay->r_streams.height - 3;
         break;
     case OV_FOCUS_PROCS:
         sel    = &lay->sel_proc;
         scroll = &lay->scroll_proc;
-        count  = m->nb_procs;
         {
-            const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
-            if (filt[0] != '\0')
-            {
-                const char *names[OV_MAX_PROCS];
-                for (int i = 0; i < count; i++)
-                {
-                    names[i] = m->procs[i].name;
-                }
-                int fidx[OV_MAX_PROCS];
-                count = ov_filter_build(filt, names, count, fidx, OV_MAX_PROCS);
-            }
+            int fidx[OV_MAX_PROCS];
+            count = ov_filter_procs(lay, m, NULL, fidx, OV_MAX_PROCS);
         }
         page_h = lay->r_procs.height - 3;
         break;
     case OV_FOCUS_FPS:
         sel    = &lay->sel_fps;
         scroll = &lay->scroll_fps;
-        count  = m->nb_fps;
         {
-            const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
-            if (filt[0] != '\0')
-            {
-                const char *names[OV_MAX_FPS];
-                for (int i = 0; i < count; i++)
-                {
-                    names[i] = m->fps[i].name;
-                }
-                int fidx[OV_MAX_FPS];
-                count = ov_filter_build(filt, names, count, fidx, OV_MAX_FPS);
-            }
+            int fidx[OV_MAX_FPS];
+            count = ov_filter_fps(lay, m, NULL, fidx, OV_MAX_FPS);
         }
         page_h = lay->r_fps.height - 3;
         break;

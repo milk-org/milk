@@ -22,17 +22,12 @@
 #include "overview_data.h"
 #include "overview_data_internal.h"
 
-/* libfps headers after overview headers to
- * avoid macro redefinition warnings */
+/* libfps types after overview headers */
 #undef STRINGMAXLEN_DIRNAME
 #undef STRINGMAXLEN_FULLFILENAME
 #undef STRINGMAXLEN_COMMAND
 #undef PRINT_ERROR
 #include "fps_types.h"
-#include "fps_paramvalue.h"
-#include "fps_printparameter_valuestring.h"
-#include "fps_WriteParameterToDisk.h"
-#include "fps_save2disk.h"
 
 /**
  * ov_fps_type_short_label - return a short type label.
@@ -100,35 +95,15 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
 {
     (void) lay;
 
-    FPS *fps = ov_fcache_get_fps(fps_name);
-    if (fps == NULL || fps->md == NULL)
+    ov_fps_param_info_t pinfo;
+    if (ov_fcache_get_param_info(fps_name, disp_idx, &pinfo) != 0)
     {
         return -1;
     }
 
-    int pindex = ov_fcache_get_param_index(fps_name, disp_idx);
-    if (pindex < 0)
-    {
-        return -1;
-    }
-
-    FPS_PARAM *fp = &fps->parray[pindex];
-
-    /* Get current value as string */
-    char curval[200];
-    functionparameter_GetParamValueString(fp, curval, (int) sizeof(curval));
-
-    /* Short type label */
-    const char *tlabel = ov_fps_type_short_label(fp->type);
-
-    /* Strip FPS name prefix from keyword */
-    const char *display_kw = fp->keywordfull;
-    int         prefix_len = (int) strlen(fps->md->name);
-    if (strncmp(display_kw, fps->md->name, (size_t) prefix_len) == 0 &&
-        display_kw[prefix_len] == '.')
-    {
-        display_kw += prefix_len + 1;
-    }
+    const char *curval     = pinfo.valstr;
+    const char *tlabel     = ov_fps_type_short_label(pinfo.type);
+    const char *display_kw = pinfo.display_kw;
 
     /* Get terminal size */
     int trows, tcols;
@@ -152,7 +127,7 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
     }
 
     /* Check writability */
-    if (!(fp->fpflag & FPFLAG_WRITESTATUS))
+    if (!pinfo.is_writable)
     {
         char prompt[512];
         int  n = snprintf(prompt, sizeof(prompt),
@@ -181,18 +156,11 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
     }
 
     /* ONOFF: toggle immediately, no text input */
-    if (fp->type == FPTYPE_ONOFF)
+    if (pinfo.type == FPTYPE_ONOFF)
     {
-        int64_t newval = fp->val.i64[0] ? 0 : 1;
-        fp->val.i64[0] = newval;
-
-        fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
-
-        if (fp->fpflag & FPFLAG_SAVEONCHANGE)
-        {
-            functionparameter_WriteParameterToDisk(fps, pindex, "setval", "milk-CTRL_toggle");
-            functionparameter_SaveFPS2disk(fps);
-        }
+        int  newval = 0;
+        char kw[FUNCTION_PARAMETER_STRMAXLEN];
+        ov_fcache_toggle_param(fps_name, disp_idx, kw, sizeof(kw), &newval);
 
         /* Brief flash */
         {
@@ -319,7 +287,7 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
 
     if (!aborted && bufpos > 0)
     {
-        if (functionparameter_SetParamValue_fromString(fps, pindex, buf) != 0)
+        if (ov_fcache_set_param_value(fps_name, disp_idx, buf) != 0)
         {
             /* Show error briefly */
             const char errmsg[] = "\033[1;31m  ERROR: invalid value"
@@ -328,25 +296,6 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
             {
             }
             usleep(500000);
-        }
-        else
-        {
-            /* Signal update */
-            fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
-
-            /* Processinfo change tracking */
-            if (strncmp(fp->keywordfull, ".procinfo.", 10) == 0)
-            {
-                fps->md->processinfo_change_cnt++;
-            }
-
-            /* Save to disk if flagged */
-            if (fp->fpflag & FPFLAG_SAVEONCHANGE)
-            {
-                functionparameter_WriteParameterToDisk(fps, pindex, "setval",
-                                                       "milk-CTRL_SetParamValue");
-                functionparameter_SaveFPS2disk(fps);
-            }
         }
     }
 

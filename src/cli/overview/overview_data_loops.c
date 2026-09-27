@@ -13,6 +13,7 @@
 
 #include "overview_data_loops.h"
 #include <inttypes.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,47 +31,52 @@ typedef struct
     char     name[OV_LOOP_NAME_LEN];
 } ov_saved_loop_name_t;
 
+static pthread_mutex_t      s_loop_names_mutex = PTHREAD_MUTEX_INITIALIZER;
 static ov_saved_loop_name_t s_saved_names[OV_MAX_SAVED_NAMES];
 static int                  s_nb_saved_names = 0;
 static int                  s_names_loaded   = 0;
 
 /**
- * get_config_filepath - Resolve config path in MILK_SHM_DIR or ~/.milk.
+ * get_config_filepath - Resolve config path (~/.milk_loop_names.conf).
  * @buf: Output buffer
  * @sz:  Buffer capacity
  */
 static void get_config_filepath(char *buf, size_t sz)
 {
-    const char *shmdir = getenv("MILK_SHM_DIR");
-    if (shmdir != NULL && shmdir[0] != '\0')
-    {
-        snprintf(buf, sz, "%s/milk-CTRL_loops.conf", shmdir);
-        return;
-    }
-
     const char *home = getenv("HOME");
     if (home != NULL && home[0] != '\0')
     {
-        char dir[256];
-        snprintf(dir, sizeof(dir), "%s/.milk", home);
-        mkdir(dir, 0755);
-        snprintf(buf, sz, "%s/.milk/milk-CTRL_loops.conf", home);
+        snprintf(buf, sz, "%s/.milk_loop_names.conf", home);
         return;
     }
 
-    snprintf(buf, sz, "/tmp/milk-CTRL_loops.conf");
+    snprintf(buf, sz, "/tmp/milk_loop_names.conf");
 }
 
 /**
- * ov_loop_names_load - Load custom loop names from disk into memory table.
- * @model: System model containing detected loops
+ * @brief Load custom loop names from disk into memory table.
+ * @param[in,out] model System model containing detected loops
  */
 void ov_loop_names_load(OV_MODEL *model)
 {
+    pthread_mutex_lock(&s_loop_names_mutex);
     char path[256];
     get_config_filepath(path, sizeof(path));
 
     FILE *fp = fopen(path, "r");
+    if (fp == NULL)
+    {
+        /* Fallback check if user previously had ~/.milk/milk-CTRL_loops.conf */
+        const char *home = getenv("HOME");
+        if (home != NULL && home[0] != '\0')
+        {
+            char legacy_path[256];
+            snprintf(legacy_path, sizeof(legacy_path),
+                     "%s/.milk/milk-CTRL_loops.conf", home);
+            fp = fopen(legacy_path, "r");
+        }
+    }
+
     if (fp != NULL)
     {
         s_nb_saved_names = 0;
@@ -92,7 +98,8 @@ void ov_loop_names_load(OV_MODEL *model)
                 if (s_nb_saved_names < OV_MAX_SAVED_NAMES)
                 {
                     s_saved_names[s_nb_saved_names].hash = h;
-                    strncpy(s_saved_names[s_nb_saved_names].name, nm, OV_LOOP_NAME_LEN - 1);
+                    strncpy(s_saved_names[s_nb_saved_names].name, nm,
+                            OV_LOOP_NAME_LEN - 1);
                     s_saved_names[s_nb_saved_names].name[OV_LOOP_NAME_LEN - 1] = '\0';
                     s_nb_saved_names++;
                 }
@@ -112,7 +119,8 @@ void ov_loop_names_load(OV_MODEL *model)
             {
                 if (s_saved_names[k].hash == lp->signature_hash)
                 {
-                    strncpy(lp->custom_name, s_saved_names[k].name, sizeof(lp->custom_name) - 1);
+                    strncpy(lp->custom_name, s_saved_names[k].name,
+                            sizeof(lp->custom_name) - 1);
                     lp->custom_name[sizeof(lp->custom_name) - 1] = '\0';
                     lp->has_custom_name                          = 1;
                     strncpy(lp->name, lp->custom_name, sizeof(lp->name) - 1);
@@ -122,15 +130,14 @@ void ov_loop_names_load(OV_MODEL *model)
             }
         }
     }
+    pthread_mutex_unlock(&s_loop_names_mutex);
 }
 
 /**
- * ov_loop_names_save - Save persistent custom loop names to disk.
- * @model: System model containing detected loops
+ * @brief Save persistent custom loop names to disk (must hold s_loop_names_mutex).
  */
-void ov_loop_names_save(const OV_MODEL *model)
+static void ov_loop_names_save_locked(void)
 {
-    (void) model;
     char path[256];
     get_config_filepath(path, sizeof(path));
 
@@ -144,18 +151,31 @@ void ov_loop_names_save(const OV_MODEL *model)
     fprintf(fp, "# Format: <canonical_signature_hash_hex> <custom_name>\n");
     for (int i = 0; i < s_nb_saved_names; i++)
     {
-        fprintf(fp, "%016" PRIx64 " %s\n", s_saved_names[i].hash, s_saved_names[i].name);
+        fprintf(fp, "%016" PRIx64 " %s\n", s_saved_names[i].hash,
+                s_saved_names[i].name);
     }
     fclose(fp);
 }
 
 /**
- * ov_loop_rename - Set a custom name for a loop and persist it.
- * @model:    System model
- * @loop_idx: Index in model->loops[] (0..nb_loops-1)
- * @new_name: New human-readable name string
- *
- * Return: 0 on success, non-zero on error.
+ * @brief Save persistent custom loop names to disk.
+ * @param[in] model System model containing detected loops (unused)
+ */
+void ov_loop_names_save(
+    const OV_MODEL *model)
+{
+    (void) model;
+    pthread_mutex_lock(&s_loop_names_mutex);
+    ov_loop_names_save_locked();
+    pthread_mutex_unlock(&s_loop_names_mutex);
+}
+
+/**
+ * @brief Set a custom name for a loop and persist it.
+ * @param[in,out] model    System model
+ * @param[in]     loop_idx Index in model->loops[] (0..nb_loops-1)
+ * @param[in]     new_name New human-readable name string
+ * @return 0 on success, non-zero on error.
  */
 int ov_loop_rename(OV_MODEL *model, int loop_idx, const char *new_name)
 {
@@ -164,6 +184,7 @@ int ov_loop_rename(OV_MODEL *model, int loop_idx, const char *new_name)
         return -1;
     }
 
+    pthread_mutex_lock(&s_loop_names_mutex);
     OV_LOOP *lp = &model->loops[loop_idx];
     if (new_name[0] == '\0')
     {
@@ -201,7 +222,8 @@ int ov_loop_rename(OV_MODEL *model, int loop_idx, const char *new_name)
         {
             if (s_saved_names[i].hash == lp->signature_hash)
             {
-                strncpy(s_saved_names[i].name, lp->custom_name, OV_LOOP_NAME_LEN - 1);
+                strncpy(s_saved_names[i].name, lp->custom_name,
+                        OV_LOOP_NAME_LEN - 1);
                 s_saved_names[i].name[OV_LOOP_NAME_LEN - 1] = '\0';
                 found                                       = 1;
                 break;
@@ -210,13 +232,15 @@ int ov_loop_rename(OV_MODEL *model, int loop_idx, const char *new_name)
         if (!found && s_nb_saved_names < OV_MAX_SAVED_NAMES)
         {
             s_saved_names[s_nb_saved_names].hash = lp->signature_hash;
-            strncpy(s_saved_names[s_nb_saved_names].name, lp->custom_name, OV_LOOP_NAME_LEN - 1);
+            strncpy(s_saved_names[s_nb_saved_names].name, lp->custom_name,
+                    OV_LOOP_NAME_LEN - 1);
             s_saved_names[s_nb_saved_names].name[OV_LOOP_NAME_LEN - 1] = '\0';
             s_nb_saved_names++;
         }
     }
 
-    ov_loop_names_save(model);
+    ov_loop_names_save_locked();
+    pthread_mutex_unlock(&s_loop_names_mutex);
     return 0;
 }
 
@@ -305,7 +329,8 @@ static int is_valid_loop_edge(const OV_MODEL *m, const OV_EDGE *e, sg_mode_t mod
         if (mode == SG_MODE_TRIGGER)
         {
             return (e->type == OV_EDGE_STREAM_TRIGGERS_PROC ||
-                    e->type == OV_EDGE_PROC_TRIGGER_STREAM);
+                    e->type == OV_EDGE_PROC_TRIGGER_STREAM ||
+                    e->type == OV_EDGE_FPS_INPUT_STREAM);
         }
         else
         {
@@ -446,6 +471,7 @@ static int register_cycle(OV_MODEL *model, const int *path, int path_len)
 
     /* Check saved custom names */
     lp->has_custom_name = 0;
+    pthread_mutex_lock(&s_loop_names_mutex);
     for (int k = 0; k < s_nb_saved_names; k++)
     {
         if (s_saved_names[k].hash == sig_hash)
@@ -456,6 +482,7 @@ static int register_cycle(OV_MODEL *model, const int *path, int path_len)
             break;
         }
     }
+    pthread_mutex_unlock(&s_loop_names_mutex);
 
     if (lp->has_custom_name)
     {

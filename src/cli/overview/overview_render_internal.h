@@ -102,6 +102,27 @@ const char *ov_get_active_filter(const OV_LAYOUT *lay);
 
 void ov_clear_all_filters(OV_LAYOUT *lay);
 
+int ov_filter_streams(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel,
+    int              *fidx,
+    int               max_fidx);
+
+int ov_filter_procs(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel,
+    int              *fidx,
+    int               max_fidx);
+
+int ov_filter_fps(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    const OV_RELATED *rel,
+    int              *fidx,
+    int               max_fidx);
+
 int ov_get_selected_stream_idx(const OV_LAYOUT *lay, const OV_MODEL *m);
 
 int ov_get_selected_proc_idx(const OV_LAYOUT *lay, const OV_MODEL *m);

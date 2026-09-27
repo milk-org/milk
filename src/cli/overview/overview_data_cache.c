@@ -5,6 +5,16 @@
 
 #include "overview_data_internal.h"
 
+#undef STRINGMAXLEN_DIRNAME
+#undef STRINGMAXLEN_FULLFILENAME
+#undef STRINGMAXLEN_COMMAND
+#undef PRINT_ERROR
+#include "fps_types.h"
+#include "fps_paramvalue.h"
+#include "fps_printparameter_valuestring.h"
+#include "fps_WriteParameterToDisk.h"
+#include "fps_save2disk.h"
+
 /* =========================================================
  * Persistent SHM mapping caches
  *
@@ -76,17 +86,25 @@ int fcache_find(const char *name)
 }
 
 /**
- * @brief Evict and disconnect an FPS cache entry.
+ * @brief Evict and disconnect an FPS cache entry (caller must hold s_fcache_mutex).
  */
-void fcache_evict(int ci)
+void fcache_evict_locked(int ci)
 {
-    pthread_mutex_lock(&s_fcache_mutex);
     fps_disconnect(&s_fcache[ci].fps);
     s_fcache_nb--;
     if (ci < s_fcache_nb)
     {
         s_fcache[ci] = s_fcache[s_fcache_nb];
     }
+}
+
+/**
+ * @brief Evict and disconnect an FPS cache entry.
+ */
+void fcache_evict(int ci)
+{
+    pthread_mutex_lock(&s_fcache_mutex);
+    fcache_evict_locked(ci);
     pthread_mutex_unlock(&s_fcache_mutex);
 }
 
@@ -128,31 +146,24 @@ void pcache_evict(int ci)
  * ========================================================= */
 
 /**
- * ov_fcache_get_fps - return raw FPS pointer by name.
+ * @brief Fetch parameter metadata safely under cache lock.
  *
- * Returns the memory-mapped FPS struct from the cache,
- * or NULL if the FPS is not currently cached.
+ * @param[in]  fps_name Name of the FPS
+ * @param[in]  disp_idx Display parameter index
+ * @param[out] info     Output struct populated with parameter info
+ * @return 0 on success, -1 if not found or invalid index
  */
-FPS *ov_fcache_get_fps(const char *name)
+int ov_fcache_get_param_info(
+    const char          *fps_name,
+    int                  disp_idx,
+    ov_fps_param_info_t *info)
 {
-    pthread_mutex_lock(&s_fcache_mutex);
-    int  ci  = fcache_find(name);
-    FPS *res = (ci >= 0) ? &s_fcache[ci].fps : NULL;
-    pthread_mutex_unlock(&s_fcache_mutex);
-    return res;
-}
+    if (fps_name == NULL || info == NULL)
+    {
+        return -1;
+    }
+    memset(info, 0, sizeof(*info));
 
-/**
- * ov_fcache_get_param_index - map display index to
- *     raw FPS parameter array index.
- *
- * @fps_name: FPS name to look up in cache
- * @disp_idx: display parameter index (0..nb_disp_params-1)
- *
- * Return: raw parray index, or -1 on error.
- */
-int ov_fcache_get_param_index(const char *fps_name, int disp_idx)
-{
     pthread_mutex_lock(&s_fcache_mutex);
     int ci = fcache_find(fps_name);
     if (ci < 0 || disp_idx < 0 || disp_idx >= s_fcache[ci].dparam_nb)
@@ -160,9 +171,197 @@ int ov_fcache_get_param_index(const char *fps_name, int disp_idx)
         pthread_mutex_unlock(&s_fcache_mutex);
         return -1;
     }
-    int res = s_fcache[ci].dparam_idx[disp_idx];
+
+    ov_fps_cache_t *ce = &s_fcache[ci];
+    if (!ce->sparam_cached)
+    {
+        fcache_build_params(ce);
+    }
+
+    FPS *fps = &ce->fps;
+    if (fps->md == NULL || fps->parray == NULL)
+    {
+        pthread_mutex_unlock(&s_fcache_mutex);
+        return -1;
+    }
+
+    int pindex = ce->dparam_idx[disp_idx];
+    if (pindex < 0 || pindex >= fps->md->NBparamMAX)
+    {
+        pthread_mutex_unlock(&s_fcache_mutex);
+        return -1;
+    }
+
+    FPS_PARAM *fp = &fps->parray[pindex];
+    info->type = fp->type;
+    info->fpflag = fp->fpflag;
+    info->is_writable = (fp->fpflag & FPFLAG_WRITESTATUS) ? 1 : 0;
+
+    strncpy(info->keyword, fp->keywordfull, sizeof(info->keyword) - 1);
+    info->keyword[sizeof(info->keyword) - 1] = '\0';
+
+    functionparameter_GetParamValueString(fp, info->valstr, (int) sizeof(info->valstr));
+
+    /* Strip FPS name prefix from keyword if present */
+    const char *dkw = fp->keywordfull;
+    int prefix_len = (int) strlen(fps->md->name);
+    if (strncmp(dkw, fps->md->name, (size_t) prefix_len) == 0 && dkw[prefix_len] == '.')
+    {
+        dkw += prefix_len + 1;
+    }
+    strncpy(info->display_kw, dkw, sizeof(info->display_kw) - 1);
+    info->display_kw[sizeof(info->display_kw) - 1] = '\0';
+
     pthread_mutex_unlock(&s_fcache_mutex);
-    return res;
+    return 0;
+}
+
+/**
+ * @brief Toggle an ONOFF parameter under cache lock.
+ *
+ * @param[in]  fps_name    Name of the FPS
+ * @param[in]  disp_idx    Display parameter index
+ * @param[out] out_keyword Optional buffer to receive parameter keyword (can be NULL)
+ * @param[in]  kw_size     Size of out_keyword buffer
+ * @param[out] out_newval  Optional pointer to receive new value (0 or 1, can be NULL)
+ * @return 0 on success, -1 on error
+ */
+int ov_fcache_toggle_param(
+    const char *fps_name,
+    int         disp_idx,
+    char       *out_keyword,
+    size_t      kw_size,
+    int        *out_newval)
+{
+    if (fps_name == NULL)
+    {
+        return -1;
+    }
+
+    pthread_mutex_lock(&s_fcache_mutex);
+    int ci = fcache_find(fps_name);
+    if (ci < 0 || disp_idx < 0 || disp_idx >= s_fcache[ci].dparam_nb)
+    {
+        pthread_mutex_unlock(&s_fcache_mutex);
+        return -1;
+    }
+
+    ov_fps_cache_t *ce = &s_fcache[ci];
+    FPS *fps = &ce->fps;
+    if (fps->md == NULL || fps->parray == NULL)
+    {
+        pthread_mutex_unlock(&s_fcache_mutex);
+        return -1;
+    }
+
+    int pindex = ce->dparam_idx[disp_idx];
+    if (pindex < 0 || pindex >= fps->md->NBparamMAX)
+    {
+        pthread_mutex_unlock(&s_fcache_mutex);
+        return -1;
+    }
+
+    FPS_PARAM *fp = &fps->parray[pindex];
+    if (fp->type != FPTYPE_ONOFF)
+    {
+        pthread_mutex_unlock(&s_fcache_mutex);
+        return -1;
+    }
+
+    int current = (fp->fpflag & FPFLAG_ONOFF) ? 1 : 0;
+    int newval = current ? 0 : 1;
+    functionparameter_SetParamValue_ONOFF(fps, fp->keywordfull, newval);
+    fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+
+    if (fp->fpflag & FPFLAG_SAVEONCHANGE)
+    {
+        functionparameter_WriteParameterToDisk(fps, pindex, "setval", "milk-CTRL_toggle");
+        functionparameter_SaveFPS2disk(fps);
+    }
+
+    if (out_keyword != NULL && kw_size > 0)
+    {
+        strncpy(out_keyword, fp->keywordfull, kw_size - 1);
+        out_keyword[kw_size - 1] = '\0';
+    }
+    if (out_newval != NULL)
+    {
+        *out_newval = newval;
+    }
+
+    pthread_mutex_unlock(&s_fcache_mutex);
+    return 0;
+}
+
+/**
+ * @brief Set an FPS parameter value string under cache lock.
+ *
+ * @param[in] fps_name Name of the FPS
+ * @param[in] disp_idx Display parameter index
+ * @param[in] valstr   New value string to parse and apply
+ * @return 0 on success, -1 on error or invalid value
+ */
+int ov_fcache_set_param_value(
+    const char *fps_name,
+    int         disp_idx,
+    const char *valstr)
+{
+    if (fps_name == NULL || valstr == NULL)
+    {
+        return -1;
+    }
+
+    pthread_mutex_lock(&s_fcache_mutex);
+    int ci = fcache_find(fps_name);
+    if (ci < 0 || disp_idx < 0 || disp_idx >= s_fcache[ci].dparam_nb)
+    {
+        pthread_mutex_unlock(&s_fcache_mutex);
+        return -1;
+    }
+
+    ov_fps_cache_t *ce = &s_fcache[ci];
+    FPS *fps = &ce->fps;
+    if (fps->md == NULL || fps->parray == NULL)
+    {
+        pthread_mutex_unlock(&s_fcache_mutex);
+        return -1;
+    }
+
+    int pindex = ce->dparam_idx[disp_idx];
+    if (pindex < 0 || pindex >= fps->md->NBparamMAX)
+    {
+        pthread_mutex_unlock(&s_fcache_mutex);
+        return -1;
+    }
+
+    FPS_PARAM *fp = &fps->parray[pindex];
+    if (!(fp->fpflag & FPFLAG_WRITESTATUS))
+    {
+        pthread_mutex_unlock(&s_fcache_mutex);
+        return -1;
+    }
+
+    if (functionparameter_SetParamValue_fromString(fps, pindex, valstr) != 0)
+    {
+        pthread_mutex_unlock(&s_fcache_mutex);
+        return -1;
+    }
+
+    fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+
+    if (strncmp(fp->keywordfull, ".procinfo.", 10) == 0)
+    {
+        fps->md->processinfo_change_cnt++;
+    }
+
+    if (fp->fpflag & FPFLAG_SAVEONCHANGE)
+    {
+        functionparameter_WriteParameterToDisk(fps, pindex, "setval", "milk-CTRL_SetParamValue");
+        functionparameter_SaveFPS2disk(fps);
+    }
+
+    pthread_mutex_unlock(&s_fcache_mutex);
+    return 0;
 }
 
 /**

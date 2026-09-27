@@ -19,41 +19,9 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
     OV_RECT r = lay->r_fps;
 
     /* Build filtered index array */
-    const char *names[OV_MAX_FPS];
-    for (int i = 0; i < m->nb_fps; i++)
-    {
-        names[i] = m->fps[i].name;
-    }
-    int         fidx[OV_MAX_FPS];
+    int fidx[OV_MAX_FPS];
+    int filt_n = ov_filter_fps(lay, m, rel, fidx, OV_MAX_FPS);
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
-    int         filt_n        = ov_filter_build(active_filter, names, m->nb_fps, fidx, OV_MAX_FPS);
-
-    if (lay->freeze && lay->freeze_focus != OV_FOCUS_FPS && rel != NULL)
-    {
-        int new_filt_n = 0;
-        for (int i = 0; i < filt_n; i++)
-        {
-            if (bget(rel->fps, fidx[i]))
-            {
-                fidx[new_filt_n++] = fidx[i];
-            }
-        }
-        filt_n = new_filt_n;
-    }
-
-    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-    {
-        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
-        int      new_filt_n  = 0;
-        for (int i = 0; i < filt_n; i++)
-        {
-            if (m->fps[fidx[i]].loop_mask & active_mask)
-            {
-                fidx[new_filt_n++] = fidx[i];
-            }
-        }
-        filt_n = new_filt_n;
-    }
 
     int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
                       ? m->loops[lay->sel_loop].loop_id

@@ -102,14 +102,40 @@ int  scache_find(const char *name);
 void scache_evict(int ci);
 int  fcache_find(const char *name);
 void fcache_evict(int ci);
+void fcache_evict_locked(int ci);
 int  pcache_find_pid(pid_t pid);
 void pcache_evict(int ci);
 
-/** Get cached FPS pointer for direct parameter access */
-FPS *ov_fcache_get_fps(const char *name);
+typedef struct
+{
+    char     keyword[FUNCTION_PARAMETER_STRMAXLEN];
+    char     display_kw[FUNCTION_PARAMETER_STRMAXLEN];
+    char     valstr[FUNCTION_PARAMETER_STRMAXLEN];
+    uint32_t type;
+    uint64_t fpflag;
+    int      is_writable;
+} ov_fps_param_info_t;
 
-/** Get raw parameter index by display index */
-int ov_fcache_get_param_index(const char *fps_name, int disp_idx);
+/** Fetch parameter metadata safely under cache lock */
+int ov_fcache_get_param_info(
+    const char          *fps_name,
+    int                  disp_idx,
+    ov_fps_param_info_t *info);
+
+/** Toggle an ONOFF parameter under cache lock */
+int ov_fcache_toggle_param(
+    const char *fps_name,
+    int         disp_idx,
+    char       *out_keyword,
+    size_t      kw_size,
+    int        *out_newval);
+
+/** Set an FPS parameter value string under cache lock */
+int ov_fcache_set_param_value(
+    const char *fps_name,
+    int         disp_idx,
+    const char *valstr);
+
 /** Post-scan enrichment: sparklines, uptime, stale, new-item */
 void ov_post_scan_enrich(OV_MODEL *model);
 

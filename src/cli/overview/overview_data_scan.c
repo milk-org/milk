@@ -519,7 +519,8 @@ void ov_scan_fps(OV_MODEL *model)
         return;
     }
 
-    /* Mark all FPS cache entries as not-in-use */
+    /* Mark all FPS cache entries as not-in-use under cache mutex */
+    pthread_mutex_lock(&s_fcache_mutex);
     for (int i = 0; i < s_fcache_nb; i++)
     {
         s_fcache[i].in_use = 0;
@@ -567,7 +568,6 @@ void ov_scan_fps(OV_MODEL *model)
                 continue;
             }
 
-            pthread_mutex_lock(&s_fcache_mutex);
             ci = s_fcache_nb;
             memset(&s_fcache[ci], 0, sizeof(ov_fps_cache_t));
             s_fcache[ci].fps.SMfd = -1;
@@ -575,14 +575,12 @@ void ov_scan_fps(OV_MODEL *model)
             long fpsID = fps_connect(fname, &s_fcache[ci].fps, FPSCONNECT_SIMPLE);
             if (fpsID < 0)
             {
-                pthread_mutex_unlock(&s_fcache_mutex);
                 continue;
             }
 
             strncpy(s_fcache[ci].fname, fname, sizeof(s_fcache[ci].fname) - 1);
             s_fcache[ci].in_use = 1;
             s_fcache_nb++;
-            pthread_mutex_unlock(&s_fcache_mutex);
         }
 
         fill_fps_from_struct(&model->fps[idx], &s_fcache[ci]);
@@ -597,9 +595,10 @@ void ov_scan_fps(OV_MODEL *model)
     {
         if (!s_fcache[i].in_use)
         {
-            fcache_evict(i);
+            fcache_evict_locked(i);
         }
     }
+    pthread_mutex_unlock(&s_fcache_mutex);
 }
 
 
