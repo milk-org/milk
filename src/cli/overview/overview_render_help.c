@@ -1455,15 +1455,17 @@ void ov_render_help(
 
             if (is_sel)
             {
+                ov_buf_bg(55, 65, 95);
                 ov_buf_bold();
                 ov_buf_fg(255, 220, 100);
-                ov_buf_printf(" ▶ %s %s", chev, h->label);
+                ov_buf_printf("▶ %s %s", chev, h->label);
             }
             else
             {
+                ov_buf_bg(36, 40, 52);
                 ov_buf_bold();
                 ov_theme_fg(OV_FG_TITLE);
-                ov_buf_printf("   %s %s", chev, h->label);
+                ov_buf_printf("  %s %s", chev, h->label);
             }
 
             /* Count child entries in section */
@@ -1478,7 +1480,7 @@ void ov_render_help(
 
             char tag[32];
             snprintf(tag, sizeof(tag), "(%d keys)", nchildren);
-            int used = 5 + (int) strlen(h->label) + (int) strlen(tag) + 1;
+            int used = 4 + (int) strlen(h->label) + 1 + (int) strlen(tag);
             int pad  = inner_w - used;
             if (pad > 0)
             {
@@ -1490,7 +1492,16 @@ void ov_render_help(
         else if (h->flags & HF_COLORS)
         {
             ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf("   ");
+            if (is_sel)
+            {
+                ov_buf_fg(255, 220, 100);
+                ov_buf_printf("    ▶ ");
+            }
+            else
+            {
+                ov_buf_printf("      ");
+            }
+
             ov_theme_fg(OV_FG_STREAM);
             ov_buf_printf("● stream ");
             ov_theme_fg(OV_FG_PROC);
@@ -1506,7 +1517,7 @@ void ov_render_help(
             ov_theme_fg(OV_FG_ERROR);
             ov_buf_printf("● error");
 
-            int used = 56;
+            int used = 6 + 53;
             int pad  = inner_w - used;
             if (pad > 0)
             {
@@ -1515,15 +1526,15 @@ void ov_render_help(
         }
         else
         {
-            /* Standard keystroke entry */
+            /* Standard keystroke entry with tab offset */
             if (is_sel)
             {
                 ov_buf_fg(255, 220, 100);
-                ov_buf_printf(" ▶ ");
+                ov_buf_printf("    ▶ ");
             }
             else
             {
-                ov_buf_printf("   ");
+                ov_buf_printf("      ");
             }
 
             /* Keystroke column in standard bold font */
@@ -1566,7 +1577,7 @@ void ov_render_help(
             }
             ov_buf_printf("%s", h->label);
 
-            int used = 3 + 13 + 4 + (int) strlen(h->label);
+            int used = 6 + 13 + 4 + (int) strlen(h->label);
             int pad  = inner_w - used;
             if (pad > 0)
             {
