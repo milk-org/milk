@@ -136,8 +136,8 @@ static int ov_input__handle_filter_mode(
 
     if (lay->filter_editing)
     {
-        /* ESC — cancel filter edit, keep previous filter */
-        if (key == 27)
+        /* ESC or Ctrl+C — cancel filter edit, keep previous filter */
+        if (key == 27 || key == 3 || key == ctrl('c'))
         {
             lay->filter_editing = 0;
             lay->filter[0]      = '\0';
@@ -554,8 +554,8 @@ static int ov_input__handle_loop_rename(
         return 0;
     }
 
-    /* ESC — cancel loop rename */
-    if (key == 27)
+    /* ESC or Ctrl+C — cancel loop rename */
+    if (key == 27 || key == 3 || key == ctrl('c'))
     {
         lay->renaming_loop = 0;
         return 1;
@@ -4500,6 +4500,10 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 break;
 
             case 27: /* ESC — exit help overlay */
+            case 3:  /* Ctrl+C */
+            case 4:  /* Ctrl+D */
+            case 'q':
+            case 'x':
                 lay->show_help = 0;
                 ov_buf_force_clear();
                 break;
@@ -4514,7 +4518,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         /* Active search input mode */
         if (lay->help_search_active)
         {
-            if (key == 27) /* ESC */
+            if (key == 27 || key == 3 || key == ctrl('c')) /* ESC or Ctrl+C */
             {
                 if (lay->help_search[0] != '\0')
                 {
@@ -4689,6 +4693,10 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             break;
 
         case 27: /* ESC — clear search query if present, else exit help overlay */
+        case 3:  /* Ctrl+C */
+        case 4:  /* Ctrl+D */
+        case 'q':
+        case 'x':
             if (lay->help_search[0] != '\0')
             {
                 lay->help_search[0]     = '\0';
@@ -4750,7 +4758,9 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     /* 4. Global quit */
-    if (key == 'q' || key == 'x')
+    if (key == 'q' || key == 'x' || key == 3 || key == ctrl('c') ||
+        key == 4 || key == ctrl('d') || key == 24 || key == ctrl('x') ||
+        key == 17 || key == ctrl('q'))
     {
         return 1;
     }

@@ -87,6 +87,7 @@ extern int ov_hover_col;
  * ========================================================= */
 
 extern struct termios ov__orig_termios;
+extern int            ov__orig_flags;
 extern int            ov__raw_active;
 
 static inline void ov_raw_mode_enter(void)
@@ -105,12 +106,15 @@ static inline void ov_raw_mode_enter(void)
     raw.c_oflag &= ~(unsigned int) (OPOST);
     raw.c_cflag |= (unsigned int) (CS8);
     raw.c_lflag &= ~(unsigned int) (ECHO | ICANON | IEXTEN | ISIG);
-    raw.c_cc[VMIN]  = 1;
+    raw.c_cc[VMIN]  = 0;
     raw.c_cc[VTIME] = 0;
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 
-    int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+    ov__orig_flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    if (ov__orig_flags >= 0)
+    {
+        fcntl(STDIN_FILENO, F_SETFL, ov__orig_flags | O_NONBLOCK);
+    }
 
     const char seq[] = "\033[?1049h\033[?25l\033[?7l\033[?1002h\033[?1006h";
     if (write(STDOUT_FILENO, seq, sizeof(seq) - 1) < 0)
@@ -128,6 +132,10 @@ static inline void ov_raw_mode_exit(void)
     const char seq[] = "\033[?1003l\033[?1006l\033[?1002l\033[?25h\033[?7h\033[0m\033[?1049l";
     if (write(STDOUT_FILENO, seq, sizeof(seq) - 1) < 0)
     {
+    }
+    if (ov__orig_flags >= 0)
+    {
+        fcntl(STDIN_FILENO, F_SETFL, ov__orig_flags);
     }
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &ov__orig_termios);
     ov__raw_active = 0;
@@ -931,21 +939,51 @@ static inline int ov_get_key(void)
     static int           buf_len = 0;
     ssize_t              n;
 
-    n = read(STDIN_FILENO, buf + buf_len, sizeof(buf) - (size_t) buf_len);
-    if (n > 0)
+    /* Safety flush if buffer accumulated unexpected volume of bytes */
+    if (buf_len > 64)
     {
-        buf_len += (int) n;
+        buf_len = 0;
     }
+
+    /* If buffer is empty, check if input is actually available before reading */
     if (buf_len == 0)
     {
-        if (n == 0)
+        struct pollfd pfd = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
+        int           pr  = poll(&pfd, 1, 0);
+        if (pr <= 0 || !(pfd.revents & POLLIN))
         {
+            if (pr > 0 && (pfd.revents & (POLLHUP | POLLERR | POLLNVAL)))
+            {
+                return OV_KEY_EOF;
+            }
+            return OV_KEY_NONE;
+        }
+
+        n = read(STDIN_FILENO, buf, sizeof(buf));
+        if (n > 0)
+        {
+            buf_len = (int) n;
+        }
+        else if (n == 0)
+        {
+            if (pfd.revents & (POLLHUP | POLLERR | POLLNVAL))
+            {
+                return OV_KEY_EOF;
+            }
+            return OV_KEY_NONE;
+        }
+        else
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+            {
+                return OV_KEY_NONE;
+            }
             return OV_KEY_EOF;
         }
-        if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)
-        {
-            return OV_KEY_EOF;
-        }
+    }
+
+    if (buf_len == 0)
+    {
         return OV_KEY_NONE;
     }
 
@@ -990,6 +1028,13 @@ static inline int ov_get_key(void)
             {
                 buf_len += (int) n;
             }
+        }
+        if (buf_len == 2)
+        {
+            /* No 3rd byte arrived: treat as solitary ESC followed by '[' or 'O' */
+            memmove(buf, buf + 1, (size_t) (buf_len - 1));
+            buf_len--;
+            return OV_KEY_ESC;
         }
     }
 
@@ -1161,6 +1206,26 @@ static inline int ov_get_key(void)
                             break;
                         }
                     }
+                    if (end_idx <= 0 && buf_len < 32)
+                    {
+                        struct pollfd pfd = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
+                        if (poll(&pfd, 1, 20) > 0 && (pfd.revents & POLLIN))
+                        {
+                            n = read(STDIN_FILENO, buf + buf_len, sizeof(buf) - (size_t) buf_len);
+                            if (n > 0)
+                            {
+                                buf_len += (int) n;
+                                for (int i = 3; i < buf_len && i < 32; i++)
+                                {
+                                    if (buf[i] == 'M' || buf[i] == 'm')
+                                    {
+                                        end_idx = i;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                     if (end_idx > 0)
                     {
                         int  mb = 0, mc = 0, mr = 0;
@@ -1221,6 +1286,19 @@ static inline int ov_get_key(void)
                         }
                         return OV_KEY_NONE;
                     }
+
+                    /* Incomplete or malformed mouse sequence: safely discard prefix */
+                    int discard = 3;
+                    for (int i = 3; i < buf_len; i++)
+                    {
+                        if ((buf[i] >= 0x40 && buf[i] <= 0x7E) || buf[i] == 0x1b)
+                        {
+                            discard = (buf[i] == 0x1b) ? i : (i + 1);
+                            break;
+                        }
+                    }
+                    memmove(buf, buf + discard, (size_t) (buf_len - discard));
+                    buf_len -= discard;
                     return OV_KEY_NONE;
                 }
 
@@ -1232,6 +1310,13 @@ static inline int ov_get_key(void)
                         buf_len -= (i + 1);
                         return OV_KEY_NONE;
                     }
+                }
+
+                if (buf_len > 16)
+                {
+                    memmove(buf, buf + 2, (size_t) (buf_len - 2));
+                    buf_len -= 2;
+                    return OV_KEY_NONE;
                 }
             }
             return OV_KEY_NONE;
@@ -1286,12 +1371,7 @@ static inline int ov_get_key(void)
             return OV_KEY_NONE;
         }
 
-        /* If this is an incomplete CSI or SS3 sequence, do NOT split into ESC + char */
-        if (buf_len >= 2 && (buf[1] == '[' || buf[1] == 'O'))
-        {
-            return OV_KEY_NONE;
-        }
-
+        /* Consume solitary ESC or unhandled escape prefix */
         memmove(buf, buf + 1, (size_t) (buf_len - 1));
         buf_len--;
         return OV_KEY_ESC;

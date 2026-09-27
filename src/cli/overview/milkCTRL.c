@@ -39,6 +39,7 @@ volatile sig_atomic_t ov_sigINT  = 0;
 volatile sig_atomic_t ov_sigTERM = 0;
 
 struct termios ov__orig_termios;
+int            ov__orig_flags  = -1;
 int            ov__raw_active  = 0;
 int            ov__color_level = 0;
 
@@ -96,6 +97,10 @@ static void crash_handler(int sig)
     }
     if (ov__raw_active)
     {
+        if (ov__orig_flags >= 0)
+        {
+            fcntl(STDIN_FILENO, F_SETFL, ov__orig_flags);
+        }
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &ov__orig_termios);
     }
     struct sigaction sa;

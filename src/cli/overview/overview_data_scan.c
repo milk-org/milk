@@ -916,7 +916,8 @@ void ov_scan_tmux_sessions(OV_MODEL *model)
     s_last_tmux_scan = now;
     s_tmux_cache_cnt = 0;
 
-    FILE *fp = popen("tmux list-windows -a -F \"#{session_name}:#{window_name}\" 2>/dev/null", "r");
+    FILE *fp = popen(
+        "tmux list-windows -a -F \"#{session_name}:#{window_name}\" </dev/null 2>/dev/null", "r");
     if (fp == NULL)
     {
         return;
