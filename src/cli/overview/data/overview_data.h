@@ -204,6 +204,11 @@ int ov_scan_has_new_data(void);
  */
 void ov_scan_force_update(void);
 
+/**
+ * ov_scan_drain_event_fd - drain pending wakeups from scan eventfd.
+ */
+void ov_scan_drain_event_fd(void);
+
 
 /**
  * ov_scan_cache_cleanup - release all persistent

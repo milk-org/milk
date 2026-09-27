@@ -103,6 +103,7 @@ extern int             ov_scan_start(void);
 extern void            ov_scan_stop(void);
 extern const OV_MODEL *ov_scan_get_model(void);
 extern void            ov_render_frame(const OV_LAYOUT *lay, const OV_MODEL *m);
+extern void            ov_render__sync_selection(OV_LAYOUT *lay, const OV_MODEL *m);
 extern int             ov_handle_key(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 
 /* =========================================================
@@ -259,8 +260,14 @@ int main(int argc, char *argv[])
             m                    = ov_scan_get_model();
             if (m != prev)
             {
+                ov_render__sync_selection(&lay, m);
                 need_render = 1;
             }
+        }
+        else
+        {
+            /* Drain eventfd to prevent waking up poll loop while paused */
+            ov_scan_drain_event_fd();
         }
 
         /* Drain all pending input */
@@ -323,7 +330,7 @@ int main(int argc, char *argv[])
             pfds[0].events = POLLIN;
 
             int scan_efd = ov_scan_get_event_fd();
-            if (scan_efd >= 0)
+            if (scan_efd >= 0 && !lay.paused)
             {
                 pfds[1].fd     = scan_efd;
                 pfds[1].events = POLLIN;
@@ -336,6 +343,10 @@ int main(int argc, char *argv[])
                 if (pfds[0].revents & (POLLHUP | POLLERR | POLLNVAL))
                 {
                     break;
+                }
+                if (npfd > 1 && (pfds[1].revents & POLLIN))
+                {
+                    ov_scan_drain_event_fd();
                 }
             }
             else if (pr < 0 && errno != EINTR)

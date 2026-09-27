@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <signal.h>
+#include <pthread.h>
 
 /* =========================================================
  * Helpers
@@ -32,7 +33,8 @@ static struct
     ov_pid_status_t status;
 } s_pid_cache[PID_CACHE_MAX];
 
-static int s_pid_cache_nb = 0;
+static int             s_pid_cache_nb    = 0;
+static pthread_mutex_t s_pid_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**
  * pid_cache_reset - clear PID cache.
@@ -41,7 +43,9 @@ static int s_pid_cache_nb = 0;
  */
 void pid_cache_reset(void)
 {
+    pthread_mutex_lock(&s_pid_cache_mutex);
     s_pid_cache_nb = 0;
+    pthread_mutex_unlock(&s_pid_cache_mutex);
 }
 
 /**
@@ -106,20 +110,36 @@ ov_pid_status_t pid_get_status(pid_t pid)
         return OV_PID_DEAD;
     }
 
-    /* Search cache */
+    /* Search cache under lock */
+    pthread_mutex_lock(&s_pid_cache_mutex);
     for (int i = 0; i < s_pid_cache_nb; i++)
     {
         if (s_pid_cache[i].pid == pid)
         {
-            return s_pid_cache[i].status;
+            ov_pid_status_t st = s_pid_cache[i].status;
+            pthread_mutex_unlock(&s_pid_cache_mutex);
+            return st;
         }
     }
+    pthread_mutex_unlock(&s_pid_cache_mutex);
 
-    /* Cache miss — do the syscall(s) */
+    /* Cache miss — do the syscall(s) outside lock */
     ov_pid_status_t st = OV_PID_DEAD;
     if (kill(pid, 0) == 0)
     {
         st = pid_check_zombie(pid) ? OV_PID_ZOMBIE : OV_PID_ALIVE;
+    }
+
+    /* Re-acquire lock to insert */
+    pthread_mutex_lock(&s_pid_cache_mutex);
+    for (int i = 0; i < s_pid_cache_nb; i++)
+    {
+        if (s_pid_cache[i].pid == pid)
+        {
+            s_pid_cache[i].status = st;
+            pthread_mutex_unlock(&s_pid_cache_mutex);
+            return st;
+        }
     }
 
     if (s_pid_cache_nb < PID_CACHE_MAX)
@@ -128,6 +148,7 @@ ov_pid_status_t pid_get_status(pid_t pid)
         s_pid_cache[s_pid_cache_nb].status = st;
         s_pid_cache_nb++;
     }
+    pthread_mutex_unlock(&s_pid_cache_mutex);
 
     return st;
 }

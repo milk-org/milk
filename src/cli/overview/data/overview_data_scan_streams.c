@@ -130,14 +130,21 @@ static void fill_stream_from_img(OV_STREAM *s, IMAGE *imgp, const char *name, in
 
     s->active = pid_is_alive(s->ownerPID) || pid_is_alive(s->creatorPID);
 
-    s->nb_sem = imgp->md->sem;
+    s->nb_sem = (imgp->md != NULL) ? imgp->md->sem : 0;
     if (s->nb_sem > 10)
     {
         s->nb_sem = 10;
     }
     for (int sm = 0; sm < s->nb_sem; sm++)
     {
-        s->semval[sm] = ImageStreamIO_semvalue(imgp, sm);
+        if (imgp->semptr != NULL && imgp->semptr[sm] != NULL)
+        {
+            s->semval[sm] = ImageStreamIO_semvalue(imgp, sm);
+        }
+        else
+        {
+            s->semval[sm] = 0;
+        }
     }
 
     /* Writer PID: first active proc trace entry */
@@ -200,6 +207,7 @@ void ov_scan_streams(OV_MODEL *model)
     {
         /* Fast path: no files added/removed.
          * Just re-read metadata from cache. */
+        pthread_mutex_lock(&s_scache_mutex);
         int idx = 0;
         for (int ci = 0; ci < s_scache_nb && idx < OV_MAX_STREAMS; ci++)
         {
@@ -208,6 +216,7 @@ void ov_scan_streams(OV_MODEL *model)
             scache_rate_update(&model->streams[idx], ci);
             idx++;
         }
+        pthread_mutex_unlock(&s_scache_mutex);
         model->nb_streams = idx;
         return;
     }
@@ -221,6 +230,8 @@ void ov_scan_streams(OV_MODEL *model)
         model->nb_streams = 0;
         return;
     }
+
+    pthread_mutex_lock(&s_scache_mutex);
 
     /* Mark all cache entries as not-in-use */
     for (int i = 0; i < s_scache_nb; i++)
@@ -278,7 +289,7 @@ void ov_scan_streams(OV_MODEL *model)
             /* Cache miss or inode changed */
             if (ci >= 0)
             {
-                scache_evict(ci);
+                scache_evict_locked(ci);
                 ci = -1;
             }
 
@@ -316,7 +327,8 @@ void ov_scan_streams(OV_MODEL *model)
     {
         if (!s_scache[i].in_use)
         {
-            scache_evict(i);
+            scache_evict_locked(i);
         }
     }
+    pthread_mutex_unlock(&s_scache_mutex);
 }
