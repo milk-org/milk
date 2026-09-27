@@ -96,7 +96,7 @@ static void ov_procs__render_header(const OV_LAYOUT *lay, int hrow, int hs, OV_R
     int  w_lpcnt = sort_col_label(c_lpcnt, sizeof(c_lpcnt), "LOOPCNT", 9, sk, sd, 10);
     int  w_mem   = sort_col_label(c_mem, sizeof(c_mem), "MEM", 4, sk, sd, 5);
 
-    cols[num_cols++] = (PROC_COL_SPEC) { 0, c_anc, 4, 0 };
+    cols[num_cols++] = (PROC_COL_SPEC) { 0, c_anc, w_anc, 0 };
     cols[num_cols++] = (PROC_COL_SPEC) { 1, c_name, w_name, 0 };
     cols[num_cols++] = (PROC_COL_SPEC) { 2, c_pid, w_pid, 1 };
     cols[num_cols++] = (PROC_COL_SPEC) { 3, c_prio, w_prio, 1 };

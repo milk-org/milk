@@ -322,46 +322,15 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
 static const char *stream_col_names[] = { "NAME", "TYP",   "SIZE",  "Hz",
                                           "MB/s", "INODE", "COUNT", "ANCESTRY" };
 
-static void ov_input__streams_header_click(OV_LAYOUT *lay, int mc)
+static void ov_input__streams_header_click(
+    OV_LAYOUT *lay,
+    int        mc)
 {
-    int c = mc - lay->r_streams.col - 5 + lay->hscroll_stream;
-    if (c < 0)
-    {
-        return;
-    }
-    int col_idx = -1;
-    if (c < 4)
-    {
-        col_idx = 7;
-    }
-    else if (c < 19)
-    {
-        col_idx = 0;
-    }
-    else if (c < 24)
-    {
-        col_idx = 1;
-    }
-    else if (c < 36)
-    {
-        col_idx = 2;
-    }
-    else if (c < 43)
-    {
-        col_idx = 3;
-    }
-    else if (c < 51)
-    {
-        col_idx = 4;
-    }
-    else if (c < 62)
-    {
-        col_idx = 5;
-    }
-    else if (c >= 70 && c < 81)
-    {
-        col_idx = 6;
-    }
+    int           table_x  = mc - lay->r_streams.col - 2 + lay->hscroll_stream;
+    OV_COL_LAYOUT cols[12];
+    int           num_cols = ov_get_stream_col_layout(lay->compact_mode, cols);
+    int           col_idx  = ov_header_hittest_sort_key(cols, num_cols,
+                                                        lay->col_collapsed_stream, table_x);
 
     if (col_idx >= 0)
     {
@@ -384,58 +353,15 @@ static void ov_input__streams_header_click(OV_LAYOUT *lay, int mc)
 static const char *proc_col_names[] = { "NAME", "PID",    "STAT", "Hz",      "MEM", "ANCESTRY",
                                         "PRIO", "UPTIME", "CPU%", "LOOPCNT", "DUTY" };
 
-static void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
+static void ov_input__procs_header_click(
+    OV_LAYOUT *lay,
+    int        mc)
 {
-    int c = mc - lay->r_procs.col - 5 + lay->hscroll_proc;
-    if (c < 0)
-    {
-        return;
-    }
-    int col_idx = -1;
-    if (c < 4)
-    {
-        col_idx = 5; /* ANCESTRY */
-    }
-    else if (c < 19)
-    {
-        col_idx = 0; /* NAME */
-    }
-    else if (c < 27)
-    {
-        col_idx = 1; /* PID */
-    }
-    else if (c < 32)
-    {
-        col_idx = 6; /* PRIO */
-    }
-    else if (c < 37)
-    {
-        col_idx = 2; /* STAT */
-    }
-    else if (c < 44)
-    {
-        col_idx = 3; /* Hz */
-    }
-    else if (c < 51)
-    {
-        col_idx = 7; /* UPTIME */
-    }
-    else if (c >= 73 && c < 79)
-    {
-        col_idx = 10; /* DUTY */
-    }
-    else if (c >= 79 && c < 86)
-    {
-        col_idx = 8; /* CPU% */
-    }
-    else if (c >= 86 && c < 96)
-    {
-        col_idx = 9; /* LOOPCNT */
-    }
-    else if (c >= 96 && c < 102)
-    {
-        col_idx = 4; /* MEM */
-    }
+    int           table_x  = mc - lay->r_procs.col - 2 + lay->hscroll_proc;
+    OV_COL_LAYOUT cols[16];
+    int           num_cols = ov_get_proc_col_layout(lay->compact_mode, cols);
+    int           col_idx  = ov_header_hittest_sort_key(cols, num_cols,
+                                                        lay->col_collapsed_proc, table_x);
 
     if (col_idx >= 0)
     {
@@ -457,42 +383,15 @@ static void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
 
 static const char *fps_col_names[] = { "NAME", "CPID", "MEM", "ANCESTRY", "RPID", "TMX", "STR" };
 
-static void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
+static void ov_input__fps_header_click(
+    OV_LAYOUT *lay,
+    int        mc)
 {
-    int c = mc - lay->r_fps.col - 4 + lay->hscroll_fps;
-    if (c < 0)
-    {
-        return;
-    }
-    int col_idx = -1;
-    if (c < 4)
-    {
-        col_idx = 3; /* ANCESTRY */
-    }
-    else if (c <= 23)
-    {
-        col_idx = 0; /* NAME */
-    }
-    else if (c >= 24 && c <= 27)
-    {
-        col_idx = 5; /* TMX */
-    }
-    else if (c >= 28 && c <= 35)
-    {
-        col_idx = 1; /* CPID */
-    }
-    else if (c >= 36 && c <= 43)
-    {
-        col_idx = 4; /* RPID */
-    }
-    else if (c >= 44 && c <= 47)
-    {
-        col_idx = 6; /* STR */
-    }
-    else if (c >= 48 && c <= 53)
-    {
-        col_idx = 2; /* MEM */
-    }
+    int           table_x  = mc - lay->r_fps.col - 2 + lay->hscroll_fps;
+    OV_COL_LAYOUT cols[8];
+    int           num_cols = ov_get_fps_col_layout(lay->compact_mode, lay->view, cols);
+    int           col_idx  = ov_header_hittest_sort_key(cols, num_cols,
+                                                        lay->col_collapsed_fps, table_x);
 
     if (col_idx >= 0)
     {
@@ -708,7 +607,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
     {
         lay->hover_view = OV_FOCUS_STREAMS;
         int body_row    = mr - lay->r_streams.row - 3;
-        if (body_row == -1)
+        if (body_row == -1 || body_row == -2)
         {
             lay->hover_is_header = 1;
         }
@@ -725,7 +624,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
     {
         lay->hover_view = OV_FOCUS_PROCS;
         int body_row    = mr - lay->r_procs.row - 3;
-        if (body_row == -1)
+        if (body_row == -1 || body_row == -2)
         {
             lay->hover_is_header = 1;
         }

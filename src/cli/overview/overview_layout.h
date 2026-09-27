@@ -307,4 +307,147 @@ static inline int ov_get_logical_col_proc(int vis_col, int compact)
     return vis_col;
 }
 
+typedef struct
+{
+    int logical_col;
+    int sort_key;
+    int width;
+} OV_COL_LAYOUT;
+
+/**
+ * @brief Populate column layout for STREAMS table.
+ *
+ * @param[in]  compact  1 if compact mode is enabled, 0 otherwise
+ * @param[out] cols     Array to store column layout entries (min size 12)
+ * @return Number of columns populated
+ */
+static inline int ov_get_stream_col_layout(
+    int            compact,
+    OV_COL_LAYOUT *cols)
+{
+    int n = 0;
+    cols[n++] = (OV_COL_LAYOUT) { 0, 7, 3 };   /* A */
+    cols[n++] = (OV_COL_LAYOUT) { 1, 0, 14 };  /* NAME */
+    cols[n++] = (OV_COL_LAYOUT) { 2, 1, 4 };   /* TYP */
+    cols[n++] = (OV_COL_LAYOUT) { 3, 2, 11 };  /* SIZE */
+    cols[n++] = (OV_COL_LAYOUT) { 4, 3, 6 };   /* Hz */
+    cols[n++] = (OV_COL_LAYOUT) { 5, 4, 7 };   /* MB/s */
+    if (!compact)
+    {
+        cols[n++] = (OV_COL_LAYOUT) { 6, 5, 10 }; /* INODE */
+    }
+    cols[n++] = (OV_COL_LAYOUT) { 7, -1, 7 };  /* OWNER */
+    if (!compact)
+    {
+        cols[n++] = (OV_COL_LAYOUT) { 8, 6, 10 };  /* COUNT */
+        cols[n++] = (OV_COL_LAYOUT) { 9, -1, 10 }; /* SEMS */
+    }
+    cols[n++] = (OV_COL_LAYOUT) { 10, -1, 7 }; /* WPID */
+    cols[n++] = (OV_COL_LAYOUT) { 11, -1, 7 }; /* RPID */
+    return n;
+}
+
+/**
+ * @brief Populate column layout for PROCS table.
+ *
+ * @param[in]  compact  1 if compact mode is enabled, 0 otherwise
+ * @param[out] cols     Array to store column layout entries (min size 16)
+ * @return Number of columns populated
+ */
+static inline int ov_get_proc_col_layout(
+    int            compact,
+    OV_COL_LAYOUT *cols)
+{
+    int n = 0;
+    cols[n++] = (OV_COL_LAYOUT) { 0, 5, 3 };   /* A */
+    cols[n++] = (OV_COL_LAYOUT) { 1, 0, 14 };  /* NAME */
+    cols[n++] = (OV_COL_LAYOUT) { 2, 1, 7 };   /* PID */
+    cols[n++] = (OV_COL_LAYOUT) { 3, 6, 4 };   /* PRIO */
+    cols[n++] = (OV_COL_LAYOUT) { 4, 2, 5 };   /* STAT */
+    cols[n++] = (OV_COL_LAYOUT) { 5, 3, 6 };   /* Hz */
+    cols[n++] = (OV_COL_LAYOUT) { 6, 7, 6 };   /* UPTIME */
+    if (!compact)
+    {
+        cols[n++] = (OV_COL_LAYOUT) { 7, -1, 3 };   /* TRG */
+        cols[n++] = (OV_COL_LAYOUT) { 8, -1, 10 };  /* trig-strm */
+        cols[n++] = (OV_COL_LAYOUT) { 9, -1, 8 };   /* exec */
+        cols[n++] = (OV_COL_LAYOUT) { 10, 10, 5 };  /* DUTY */
+    }
+    cols[n++] = (OV_COL_LAYOUT) { 11, 8, 10 }; /* CPU% */
+    cols[n++] = (OV_COL_LAYOUT) { 12, 9, 10 }; /* LOOPCNT */
+    cols[n++] = (OV_COL_LAYOUT) { 13, 4, 5 };  /* MEM */
+    if (!compact)
+    {
+        cols[n++] = (OV_COL_LAYOUT) { 14, -1, 10 }; /* MISSED */
+    }
+    cols[n++] = (OV_COL_LAYOUT) { 15, -1, 200 }; /* MSG */
+    return n;
+}
+
+/**
+ * @brief Populate column layout for FPS table.
+ *
+ * @param[in]  compact  1 if compact mode is enabled, 0 otherwise
+ * @param[in]  view     Current overview view (OV_VIEW_FPS or other)
+ * @param[out] cols     Array to store column layout entries (min size 8)
+ * @return Number of columns populated
+ */
+static inline int ov_get_fps_col_layout(
+    int            compact,
+    int            view,
+    OV_COL_LAYOUT *cols)
+{
+    int n      = 0;
+    int desc_w = (view == OV_VIEW_FPS) ? 30 : 20;
+    cols[n++] = (OV_COL_LAYOUT) { 0, 3, 3 };   /* A */
+    cols[n++] = (OV_COL_LAYOUT) { 1, 0, 18 };  /* NAME */
+    cols[n++] = (OV_COL_LAYOUT) { 2, 5, 3 };   /* TMX */
+    cols[n++] = (OV_COL_LAYOUT) { 3, 1, 7 };   /* CPID */
+    cols[n++] = (OV_COL_LAYOUT) { 4, 4, 7 };   /* RPID */
+    cols[n++] = (OV_COL_LAYOUT) { 5, 6, 3 };   /* STR */
+    cols[n++] = (OV_COL_LAYOUT) { 6, 2, 5 };   /* MEM */
+    if (!compact)
+    {
+        cols[n++] = (OV_COL_LAYOUT) { 7, -1, desc_w }; /* DESCRIPTION */
+    }
+    return n;
+}
+
+/**
+ * @brief Hit-test a table column header given horizontal table offset.
+ *
+ * @param[in] cols            Array of column specifications
+ * @param[in] num_cols        Number of columns
+ * @param[in] collapsed_mask  Bitmask of collapsed logical columns
+ * @param[in] table_x         0-based horizontal character offset in table data
+ * @return Sort key index of clicked column, or -1 if none or non-sortable
+ */
+static inline int ov_header_hittest_sort_key(
+    const OV_COL_LAYOUT *cols,
+    int                  num_cols,
+    uint32_t             collapsed_mask,
+    int                  table_x)
+{
+    if (table_x < 0)
+    {
+        return -1;
+    }
+
+    int cur_x = 0;
+    for (int c = 0; c < num_cols; c++)
+    {
+        int is_coll = (collapsed_mask & (1U << cols[c].logical_col)) != 0;
+        int col_w   = is_coll ? 1 : cols[c].width;
+        int sep_w   = (c < num_cols - 1 && !is_coll) ? 1 : 0;
+
+        if (table_x >= cur_x && table_x < cur_x + col_w + sep_w)
+        {
+            return cols[c].sort_key;
+        }
+        cur_x += col_w + sep_w;
+    }
+
+    return -1;
+}
+
 #endif /* OVERVIEW_LAYOUT_H */
