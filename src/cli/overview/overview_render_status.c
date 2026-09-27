@@ -163,20 +163,23 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
     /* Filter editing prompt overrides normal status */
     if (lay->filter_editing)
     {
-        const char *fstr = "";
-        switch (lay->focus)
+        const char *fstr = lay->filter;
+        if (fstr[0] == '\0')
         {
-        case OV_FOCUS_STREAMS:
-            fstr = lay->filter_stream;
-            break;
-        case OV_FOCUS_PROCS:
-            fstr = lay->filter_proc;
-            break;
-        case OV_FOCUS_FPS:
-            fstr = lay->filter_fps;
-            break;
-        default:
-            break;
+            switch (lay->focus)
+            {
+            case OV_FOCUS_STREAMS:
+                fstr = lay->filter_stream;
+                break;
+            case OV_FOCUS_PROCS:
+                fstr = lay->filter_proc;
+                break;
+            case OV_FOCUS_FPS:
+                fstr = lay->filter_fps;
+                break;
+            default:
+                break;
+            }
         }
         ov_theme_fg(OV_FG_TEXT);
         char pfx = lay->filter_jump ? '?' : '/';
@@ -262,6 +265,29 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_printf("%s", panel_name);
         n1 += 3 + (int) strlen(view_name) + 3 + (int) strlen(panel_name);
         ov_theme_fg(OV_FG_DIM);
+    }
+
+    const char *fpat = ov_get_active_filter(lay);
+    if (fpat[0] != '\0')
+    {
+        if ((lay->ctrl_blink % 10) < 5)
+        {
+            ov_buf_bg(255, 190, 0);   /* bright amber/gold */
+            ov_buf_fg(20, 20, 20);    /* dark text */
+        }
+        else
+        {
+            ov_buf_bg(230, 80, 20);   /* vibrant red-orange */
+            ov_buf_fg(255, 255, 255); /* white text */
+        }
+        ov_buf_bold();
+        char fstatus[64];
+        snprintf(fstatus, sizeof(fstatus), " [FILTER ON: /%.12s/ (ESC to clear)] ", fpat);
+        ov_buf_printf("%s", fstatus);
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+        ov_theme_fg(OV_FG_DIM);
+        n1 += (int) strlen(fstatus);
     }
 
     int n_hints = snprintf(NULL, 0, "%s%s%s  +/- TAB D S/s / p c G h q  (Click headers/tabs)",

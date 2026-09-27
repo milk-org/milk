@@ -121,8 +121,8 @@ static const help_entry_t HELP[] =
     {
         "/",
         "Filter items (regex search)",
-        "Opens an interactive regex search prompt for the focused panel. Matches "
-        "highlight in real time. Press Enter to lock filter, or Esc to clear.",
+        "Opens interactive regex filter. Displays only matching items with a blinking "
+        "FILTER ON indicator in header and status bar. Enter applies; Esc clears.",
         HF_ENTRY,
         HS_NAV,
     },
@@ -1124,9 +1124,10 @@ static void ov_help_render_detail(
 
     if (entry->section == HS_STREAMS)
     {
-        if (m != NULL && lay->sel_stream >= 0 && lay->sel_stream < m->nb_streams)
+        int si = ov_get_selected_stream_idx(lay, m);
+        if (si >= 0 && si < m->nb_streams)
         {
-            const OV_STREAM *s = &m->streams[lay->sel_stream];
+            const OV_STREAM *s = &m->streams[si];
             if (entry->flags & HF_CTRL_MODE)
             {
                 target_fg = (ov_rgb_t){ 255, 95, 75 };
@@ -1148,9 +1149,10 @@ static void ov_help_render_detail(
     }
     else if (entry->section == HS_PROCS)
     {
-        if (m != NULL && lay->sel_proc >= 0 && lay->sel_proc < m->nb_procs)
+        int pi = ov_get_selected_proc_idx(lay, m);
+        if (pi >= 0 && pi < m->nb_procs)
         {
-            const OV_PROC *p = &m->procs[lay->sel_proc];
+            const OV_PROC *p = &m->procs[pi];
             if (entry->flags & HF_CTRL_MODE)
             {
                 target_fg = (ov_rgb_t){ 255, 95, 75 };
@@ -1172,9 +1174,10 @@ static void ov_help_render_detail(
     }
     else if (entry->section == HS_FPS)
     {
-        if (m != NULL && lay->sel_fps >= 0 && lay->sel_fps < m->nb_fps)
+        int fi = ov_get_selected_fps_idx(lay, m);
+        if (fi >= 0 && fi < m->nb_fps)
         {
-            const OV_FPS *f = &m->fps[lay->sel_fps];
+            const OV_FPS *f = &m->fps[fi];
             if (entry->flags & HF_CTRL_MODE)
             {
                 target_fg = (ov_rgb_t){ 255, 95, 75 };
@@ -1215,26 +1218,26 @@ static void ov_help_render_detail(
     else
     {
         /* Global & Display sections: show active GUI selection */
-        if (lay->focus == OV_FOCUS_STREAMS && m && lay->sel_stream >= 0 &&
-            lay->sel_stream < m->nb_streams)
+        int sel_s = ov_get_selected_stream_idx(lay, m);
+        int sel_p = ov_get_selected_proc_idx(lay, m);
+        int sel_f = ov_get_selected_fps_idx(lay, m);
+        if (lay->focus == OV_FOCUS_STREAMS && m && sel_s >= 0 && sel_s < m->nb_streams)
         {
             target_fg = OV_FG_STREAM;
             snprintf(tbuf, sizeof(tbuf), "Active selection: Stream '%s' (Panel: Streams)",
-                     m->streams[lay->sel_stream].name);
+                     m->streams[sel_s].name);
         }
-        else if (lay->focus == OV_FOCUS_PROCS && m && lay->sel_proc >= 0 &&
-                 lay->sel_proc < m->nb_procs)
+        else if (lay->focus == OV_FOCUS_PROCS && m && sel_p >= 0 && sel_p < m->nb_procs)
         {
             target_fg = OV_FG_PROC;
             snprintf(tbuf, sizeof(tbuf), "Active selection: Process '%s' (PID %d) (Panel: Procs)",
-                     m->procs[lay->sel_proc].name, (int) m->procs[lay->sel_proc].PID);
+                     m->procs[sel_p].name, (int) m->procs[sel_p].PID);
         }
-        else if (lay->focus == OV_FOCUS_FPS && m && lay->sel_fps >= 0 &&
-                 lay->sel_fps < m->nb_fps)
+        else if (lay->focus == OV_FOCUS_FPS && m && sel_f >= 0 && sel_f < m->nb_fps)
         {
             target_fg = OV_FG_FPS;
             snprintf(tbuf, sizeof(tbuf), "Active selection: FPS '%s' (Panel: FPS)",
-                     m->fps[lay->sel_fps].name);
+                     m->fps[sel_f].name);
         }
         else
         {
@@ -1327,36 +1330,37 @@ void ov_render_help(
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_PANEL);
 
-        if (lay->focus == OV_FOCUS_STREAMS && m && lay->sel_stream >= 0 &&
-            lay->sel_stream < m->nb_streams)
+        int sel_s = ov_get_selected_stream_idx(lay, m);
+        int sel_p = ov_get_selected_proc_idx(lay, m);
+        int sel_f = ov_get_selected_fps_idx(lay, m);
+
+        if (lay->focus == OV_FOCUS_STREAMS && m && sel_s >= 0 && sel_s < m->nb_streams)
         {
             ov_theme_fg(OV_FG_DIM);
             ov_buf_printf(" sel: ");
             ov_theme_fg(OV_FG_STREAM);
             ov_buf_bold();
-            ov_buf_printf("'%s'", m->streams[lay->sel_stream].name);
+            ov_buf_printf("'%s'", m->streams[sel_s].name);
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_PANEL);
         }
-        else if (lay->focus == OV_FOCUS_PROCS && m && lay->sel_proc >= 0 &&
-                 lay->sel_proc < m->nb_procs)
+        else if (lay->focus == OV_FOCUS_PROCS && m && sel_p >= 0 && sel_p < m->nb_procs)
         {
             ov_theme_fg(OV_FG_DIM);
             ov_buf_printf(" sel: ");
             ov_theme_fg(OV_FG_PROC);
             ov_buf_bold();
-            ov_buf_printf("'%s'", m->procs[lay->sel_proc].name);
+            ov_buf_printf("'%s'", m->procs[sel_p].name);
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_PANEL);
         }
-        else if (lay->focus == OV_FOCUS_FPS && m && lay->sel_fps >= 0 &&
-                 lay->sel_fps < m->nb_fps)
+        else if (lay->focus == OV_FOCUS_FPS && m && sel_f >= 0 && sel_f < m->nb_fps)
         {
             ov_theme_fg(OV_FG_DIM);
             ov_buf_printf(" sel: ");
             ov_theme_fg(OV_FG_FPS);
             ov_buf_bold();
-            ov_buf_printf("'%s'", m->fps[lay->sel_fps].name);
+            ov_buf_printf("'%s'", m->fps[sel_f].name);
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_PANEL);
         }

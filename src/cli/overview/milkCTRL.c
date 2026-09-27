@@ -459,11 +459,7 @@ int main(int argc, char *argv[])
                     if (pfd.revents & POLLIN)
                     {
                         int pk = ov_get_key();
-                        if (pk == 'q' || pk == 'x')
-                        {
-                            quit_now = 1;
-                        }
-                        else if (pk != OV_KEY_NONE)
+                        if (pk != OV_KEY_NONE)
                         {
                             if (ov_handle_key(pk, &lay, m))
                             {

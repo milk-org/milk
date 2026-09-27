@@ -857,6 +857,41 @@ static inline int ov_get_key(void)
         return key;
     }
 
+    /* Check if trailing bytes follow ESC for an escape sequence */
+    if (buf_len == 1)
+    {
+        struct pollfd pfd = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
+        if (poll(&pfd, 1, 25) > 0 && (pfd.revents & POLLIN))
+        {
+            n = read(STDIN_FILENO, buf + buf_len, sizeof(buf) - (size_t) buf_len);
+            if (n > 0)
+            {
+                buf_len += (int) n;
+            }
+        }
+    }
+
+    /* Solitary ESC with no subsequent bytes */
+    if (buf_len == 1)
+    {
+        buf_len = 0;
+        return OV_KEY_ESC;
+    }
+
+    /* ESC with '[' or 'O' waiting for a 3rd byte */
+    if (buf_len == 2 && (buf[1] == '[' || buf[1] == 'O'))
+    {
+        struct pollfd pfd = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
+        if (poll(&pfd, 1, 25) > 0 && (pfd.revents & POLLIN))
+        {
+            n = read(STDIN_FILENO, buf + buf_len, sizeof(buf) - (size_t) buf_len);
+            if (n > 0)
+            {
+                buf_len += (int) n;
+            }
+        }
+    }
+
     /* Escape sequence */
     if (buf_len >= 2)
     {

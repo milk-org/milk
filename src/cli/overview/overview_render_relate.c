@@ -4,14 +4,28 @@
 
 #include "overview_render_internal.h"
 /**
- * @brief Build the cross-panel relationship filter.
+ * @brief Build filtered index array based on regular expression.
  *
- * Marks related streams/procs/FPS for the
- * currently selected item.
+ * Compiles @pattern with POSIX extended case-insensitive regex.
+ * If regex compilation fails (e.g. incomplete pattern), falls back
+ * to case-insensitive substring search.
+ * When a pattern is provided, strictly matching indices are returned.
+ *
+ * @param pattern  Pattern string to filter by (empty = match all)
+ * @param names    Array of string names
+ * @param count    Total count of names
+ * @param out      Output array for matching indices
+ * @param max_out  Maximum capacity of output array
+ * @return Number of matching entries written to @out
  */
-int ov_filter_build(const char *pattern, const char **names, int count, int *out, int max_out)
+int ov_filter_build(
+    const char  *pattern,
+    const char **names,
+    int          count,
+    int         *out,
+    int          max_out)
 {
-    if (pattern[0] == '\0')
+    if (pattern == NULL || pattern[0] == '\0')
     {
         /* No filter — all items match */
         int n = count < max_out ? count : max_out;
@@ -23,27 +37,232 @@ int ov_filter_build(const char *pattern, const char **names, int count, int *out
     }
 
     regex_t re;
-    if (regcomp(&re, pattern, REG_EXTENDED | REG_NOSUB | REG_ICASE) != 0)
+    int     reg_ok = (regcomp(&re, pattern, REG_EXTENDED | REG_NOSUB | REG_ICASE) == 0);
+    int     n      = 0;
+
+    if (reg_ok)
     {
-        /* Invalid regex — show all */
-        int n = count < max_out ? count : max_out;
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < count && n < max_out; i++)
         {
-            out[i] = i;
+            if (names[i] != NULL && regexec(&re, names[i], 0, NULL, 0) == 0)
+            {
+                out[n++] = i;
+            }
         }
-        return n;
+        regfree(&re);
+    }
+    else
+    {
+        /* Fallback: case-insensitive literal substring search */
+        for (int i = 0; i < count && n < max_out; i++)
+        {
+            if (names[i] != NULL && strcasestr(names[i], pattern) != NULL)
+            {
+                out[n++] = i;
+            }
+        }
     }
 
-    int n = 0;
-    for (int i = 0; i < count && n < max_out; i++)
-    {
-        if (regexec(&re, names[i], 0, NULL, 0) == 0)
-        {
-            out[n++] = i;
-        }
-    }
-    regfree(&re);
     return n;
+}
+
+/**
+ * @brief Check if any regular expression filter is active in layout.
+ *
+ * @param lay Layout structure
+ * @return 1 if any filter is active, 0 otherwise
+ */
+int ov_is_filter_active(
+    const OV_LAYOUT *lay)
+{
+    if (lay == NULL)
+    {
+        return 0;
+    }
+    return (lay->filter[0] != '\0' || lay->filter_stream[0] != '\0' ||
+            lay->filter_proc[0] != '\0' || lay->filter_fps[0] != '\0');
+}
+
+/**
+ * @brief Get the active filter pattern string.
+ *
+ * @param lay Layout structure
+ * @return Pointer to active filter string, or "" if none
+ */
+const char *ov_get_active_filter(
+    const OV_LAYOUT *lay)
+{
+    if (lay == NULL)
+    {
+        return "";
+    }
+    if (lay->filter[0] != '\0')
+    {
+        return lay->filter;
+    }
+    if (lay->focus == OV_FOCUS_STREAMS && lay->filter_stream[0] != '\0')
+    {
+        return lay->filter_stream;
+    }
+    if (lay->focus == OV_FOCUS_PROCS && lay->filter_proc[0] != '\0')
+    {
+        return lay->filter_proc;
+    }
+    if (lay->focus == OV_FOCUS_FPS && lay->filter_fps[0] != '\0')
+    {
+        return lay->filter_fps;
+    }
+    if (lay->filter_stream[0] != '\0')
+    {
+        return lay->filter_stream;
+    }
+    if (lay->filter_proc[0] != '\0')
+    {
+        return lay->filter_proc;
+    }
+    if (lay->filter_fps[0] != '\0')
+    {
+        return lay->filter_fps;
+    }
+    return "";
+}
+
+/**
+ * @brief Clear all filter strings and reset filter state.
+ *
+ * @param lay Layout structure
+ */
+void ov_clear_all_filters(
+    OV_LAYOUT *lay)
+{
+    if (lay == NULL)
+    {
+        return;
+    }
+    lay->filter[0]        = '\0';
+    lay->filter_stream[0] = '\0';
+    lay->filter_proc[0]   = '\0';
+    lay->filter_fps[0]    = '\0';
+    lay->filter_editing   = 0;
+    lay->filter_cursor    = 0;
+    lay->filter_jump      = 0;
+}
+
+/**
+ * @brief Resolve the selected stream row to its index in OV_MODEL.
+ *
+ * @param lay Layout structure
+ * @param m   Current model
+ * @return Model stream index in 0..nb_streams-1, or -1 if none
+ */
+int ov_get_selected_stream_idx(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m)
+{
+    if (lay == NULL || m == NULL || m->nb_streams <= 0)
+    {
+        return -1;
+    }
+    int ssel = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
+    if (ssel < 0)
+    {
+        return -1;
+    }
+    const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
+    if (filt != NULL && filt[0] != '\0')
+    {
+        const char *names[OV_MAX_STREAMS];
+        for (int i = 0; i < m->nb_streams; i++)
+        {
+            names[i] = m->streams[i].name;
+        }
+        int fidx[OV_MAX_STREAMS];
+        int n = ov_filter_build(filt, names, m->nb_streams, fidx, OV_MAX_STREAMS);
+        if (ssel < n)
+        {
+            return fidx[ssel];
+        }
+        return -1;
+    }
+    return (ssel < m->nb_streams) ? ssel : -1;
+}
+
+/**
+ * @brief Resolve the selected process row to its index in OV_MODEL.
+ *
+ * @param lay Layout structure
+ * @param m   Current model
+ * @return Model process index in 0..nb_procs-1, or -1 if none
+ */
+int ov_get_selected_proc_idx(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m)
+{
+    if (lay == NULL || m == NULL || m->nb_procs <= 0)
+    {
+        return -1;
+    }
+    int psel = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
+    if (psel < 0)
+    {
+        return -1;
+    }
+    const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+    if (filt != NULL && filt[0] != '\0')
+    {
+        const char *names[OV_MAX_PROCS];
+        for (int i = 0; i < m->nb_procs; i++)
+        {
+            names[i] = m->procs[i].name;
+        }
+        int fidx[OV_MAX_PROCS];
+        int n = ov_filter_build(filt, names, m->nb_procs, fidx, OV_MAX_PROCS);
+        if (psel < n)
+        {
+            return fidx[psel];
+        }
+        return -1;
+    }
+    return (psel < m->nb_procs) ? psel : -1;
+}
+
+/**
+ * @brief Resolve the selected FPS row to its index in OV_MODEL.
+ *
+ * @param lay Layout structure
+ * @param m   Current model
+ * @return Model FPS index in 0..nb_fps-1, or -1 if none
+ */
+int ov_get_selected_fps_idx(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m)
+{
+    if (lay == NULL || m == NULL || m->nb_fps <= 0)
+    {
+        return -1;
+    }
+    int fsel = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
+    if (fsel < 0)
+    {
+        return -1;
+    }
+    const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
+    if (filt != NULL && filt[0] != '\0')
+    {
+        const char *names[OV_MAX_FPS];
+        for (int i = 0; i < m->nb_fps; i++)
+        {
+            names[i] = m->fps[i].name;
+        }
+        int fidx[OV_MAX_FPS];
+        int n = ov_filter_build(filt, names, m->nb_fps, fidx, OV_MAX_FPS);
+        if (fsel < n)
+        {
+            return fidx[fsel];
+        }
+        return -1;
+    }
+    return (fsel < m->nb_fps) ? fsel : -1;
 }
 
 /* =========================================================
@@ -72,80 +291,40 @@ void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *out
     memset(out, 0, sizeof(*out));
     /* fps_param_mask initialised to 0 by memset — no matches yet */
 
-    ov_focus_t focus;
-    int        sel_stream_idx;
-    int        sel_proc_idx;
-    int        sel_fps_idx;
-
+    ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
     if (lay->mouse_hover && lay->hover_idx >= 0 && lay->hover_view != -1)
     {
-        focus          = lay->hover_view;
-        sel_stream_idx = (focus == OV_FOCUS_STREAMS) ? lay->hover_idx : -1;
-        sel_proc_idx   = (focus == OV_FOCUS_PROCS) ? lay->hover_idx : -1;
-        sel_fps_idx    = (focus == OV_FOCUS_FPS) ? lay->hover_idx : -1;
+        focus = lay->hover_view;
     }
-    else
-    {
-        focus          = lay->freeze ? lay->freeze_focus : lay->focus;
-        sel_stream_idx = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
-        sel_proc_idx   = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
-        sel_fps_idx    = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
-    }
+
+    int sel_stream_idx = (lay->mouse_hover && lay->hover_global_stream >= 0)
+                             ? lay->hover_global_stream
+                             : ov_get_selected_stream_idx(lay, m);
 
     /* Determine the graph node index of the selected item */
     int sel_node = -1;
-    if (focus == OV_FOCUS_STREAMS && sel_stream_idx >= 0)
+    if (focus == OV_FOCUS_STREAMS)
     {
-        int model_idx = sel_stream_idx;
-        if (lay->filter_stream[0] != '\0')
+        if (sel_stream_idx >= 0 && sel_stream_idx < m->nb_streams)
         {
-            const char *names[OV_MAX_STREAMS];
-            for (int i = 0; i < m->nb_streams; i++)
-            {
-                names[i] = m->streams[i].name;
-            }
-            int fidx[OV_MAX_STREAMS];
-            int n = ov_filter_build(lay->filter_stream, names, m->nb_streams, fidx, OV_MAX_STREAMS);
-            model_idx = (sel_stream_idx < n) ? fidx[sel_stream_idx] : -1;
-        }
-        if (model_idx >= 0 && model_idx < m->nb_streams)
-        {
-            sel_node = m->streams[model_idx].node_idx;
+            sel_node = m->streams[sel_stream_idx].node_idx;
         }
     }
-    else if (focus == OV_FOCUS_FPS && sel_fps_idx >= 0)
+    else if (focus == OV_FOCUS_FPS)
     {
-        int model_idx = sel_fps_idx;
-        if (lay->filter_fps[0] != '\0')
-        {
-            const char *names[OV_MAX_FPS];
-            for (int i = 0; i < m->nb_fps; i++)
-            {
-                names[i] = m->fps[i].name;
-            }
-            int fidx[OV_MAX_FPS];
-            int n     = ov_filter_build(lay->filter_fps, names, m->nb_fps, fidx, OV_MAX_FPS);
-            model_idx = (sel_fps_idx < n) ? fidx[sel_fps_idx] : -1;
-        }
+        int model_idx = (lay->mouse_hover && lay->hover_global_fps >= 0)
+                            ? lay->hover_global_fps
+                            : ov_get_selected_fps_idx(lay, m);
         if (model_idx >= 0 && model_idx < m->nb_fps)
         {
             sel_node = m->fps[model_idx].node_idx;
         }
     }
-    else if (focus == OV_FOCUS_PROCS && sel_proc_idx >= 0)
+    else if (focus == OV_FOCUS_PROCS)
     {
-        int model_idx = sel_proc_idx;
-        if (lay->filter_proc[0] != '\0')
-        {
-            const char *names[OV_MAX_PROCS];
-            for (int i = 0; i < m->nb_procs; i++)
-            {
-                names[i] = m->procs[i].name;
-            }
-            int fidx[OV_MAX_PROCS];
-            int n     = ov_filter_build(lay->filter_proc, names, m->nb_procs, fidx, OV_MAX_PROCS);
-            model_idx = (sel_proc_idx < n) ? fidx[sel_proc_idx] : -1;
-        }
+        int model_idx = (lay->mouse_hover && lay->hover_global_proc >= 0)
+                            ? lay->hover_global_proc
+                            : ov_get_selected_proc_idx(lay, m);
         if (model_idx >= 0 && model_idx < m->nb_procs)
         {
             sel_node     = m->procs[model_idx].node_idx;

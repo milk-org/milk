@@ -952,9 +952,9 @@ int ov_render_detail_panel(OV_LAYOUT *lay, const OV_MODEL *m)
     int     row      = r.row + 1;
 
     ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
-    int        ssel  = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
-    int        psel  = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
-    int        fsel  = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
+    int        ssel  = ov_get_selected_stream_idx(lay, m);
+    int        psel  = ov_get_selected_proc_idx(lay, m);
+    int        fsel  = ov_get_selected_fps_idx(lay, m);
 
     /* If a list panel is directly focused, show its item's details. */
     if (focus == OV_FOCUS_STREAMS && ssel >= 0 && ssel < m->nb_streams)
@@ -997,9 +997,9 @@ int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
     int     row      = r.row + 1;
 
     ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
-    int        ssel  = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
-    int        psel  = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
-    int        fsel  = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
+    int        ssel  = ov_get_selected_stream_idx(lay, m);
+    int        psel  = ov_get_selected_proc_idx(lay, m);
+    int        fsel  = ov_get_selected_fps_idx(lay, m);
 
     pid_t       target_pid   = 0;
     const char *target_name  = "UNKNOWN";

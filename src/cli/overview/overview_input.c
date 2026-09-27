@@ -19,6 +19,7 @@
 #include "overview_fps_edit.h"
 #include "stream_graph.h"
 #include "overview_data_internal.h"
+#include "overview_render_internal.h"
 
 /* libfps headers after overview headers to
  * avoid macro redefinition warnings */
@@ -123,36 +124,14 @@ static int hit_panel_tab(int mc, int panel_col, const char **tabs, int num_tabs)
 
 static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
 {
-    char *active_filter = NULL;
-    switch (lay->focus)
-    {
-    case OV_FOCUS_STREAMS:
-        active_filter = lay->filter_stream;
-        break;
-    case OV_FOCUS_PROCS:
-        active_filter = lay->filter_proc;
-        break;
-    case OV_FOCUS_FPS:
-        active_filter = lay->filter_fps;
-        break;
-    default:
-        break;
-    }
+    char *active_filter = lay->filter;
 
     if (lay->filter_editing)
     {
-        if (active_filter == NULL)
-        {
-            lay->filter_editing = 0;
-            return 1;
-        }
-
         /* ESC — cancel filter edit, restore empty */
         if (key == 27)
         {
-            active_filter[0]    = '\0';
-            lay->filter_cursor  = 0;
-            lay->filter_editing = 0;
+            ov_clear_all_filters(lay);
             lay->sel_stream     = 0;
             lay->scroll_stream  = 0;
             lay->sel_proc       = 0;
@@ -163,33 +142,36 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
         }
 
         /* ENTER — accept filter */
-        if (key == '\n' || key == '\r')
+        if (key == '\n' || key == '\r' || key == OV_KEY_ENTER)
         {
             lay->filter_editing = 0;
-            switch (lay->focus)
-            {
-            case OV_FOCUS_STREAMS:
-                lay->sel_stream    = 0;
-                lay->scroll_stream = 0;
-                break;
-            case OV_FOCUS_PROCS:
-                lay->sel_proc    = 0;
-                lay->scroll_proc = 0;
-                break;
-            case OV_FOCUS_FPS:
-                lay->sel_fps    = 0;
-                lay->scroll_fps = 0;
-                break;
-            default:
-                break;
-            }
+            lay->sel_stream     = 0;
+            lay->scroll_stream  = 0;
+            lay->sel_proc       = 0;
+            lay->scroll_proc    = 0;
+            lay->sel_fps        = 0;
+            lay->scroll_fps     = 0;
+
             /* Jump mode: clear filter after jumping
              * to first match (#5) */
             if (lay->filter_jump)
             {
-                active_filter[0] = '\0';
+                lay->filter[0]   = '\0';
                 lay->filter_jump = 0;
             }
+            else if (lay->filter[0] != '\0')
+            {
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                               "Regex filter applied: /%s/", lay->filter);
+            }
+            return 1;
+        }
+
+        /* Ctrl+U — clear filter text */
+        if (key == ctrl('u') || key == 21)
+        {
+            lay->filter_cursor = 0;
+            active_filter[0]   = '\0';
             return 1;
         }
 
@@ -217,36 +199,37 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
     }
 
     /* '/' — enter filter editing mode */
-    if (key == '/' && active_filter != NULL)
+    if (key == '/')
     {
+        ov_clear_all_filters(lay);
         lay->filter_editing = 1;
         lay->filter_jump    = 0;
-        active_filter[0]    = '\0';
         lay->filter_cursor  = 0;
         return 1;
     }
 
     /* '?' — jump-search mode (#5): filter then
      * jump to first match on Enter */
-    if (key == '?' && active_filter != NULL)
+    if (key == '?')
     {
+        ov_clear_all_filters(lay);
         lay->filter_editing = 1;
         lay->filter_jump    = 1;
-        active_filter[0]    = '\0';
         lay->filter_cursor  = 0;
         return 1;
     }
 
-    /* ESC — clear active filter on focused panel */
-    if (key == 27 && active_filter != NULL && active_filter[0] != '\0')
+    /* ESC — clear active filter if one is active */
+    if (key == 27 && ov_is_filter_active(lay))
     {
-        active_filter[0]   = '\0';
+        ov_clear_all_filters(lay);
         lay->sel_stream    = 0;
         lay->scroll_stream = 0;
         lay->sel_proc      = 0;
         lay->scroll_proc   = 0;
         lay->sel_fps       = 0;
         lay->scroll_fps    = 0;
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Regex filter cleared");
         return 1;
     }
 
@@ -284,7 +267,8 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
     if (focus == OV_FOCUS_STREAMS)
     {
         count = m->nb_streams;
-        if (lay->filter_stream[0] != '\0')
+        const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
+        if (filt[0] != '\0')
         {
             const char *names[OV_MAX_STREAMS];
             for (int i = 0; i < count; i++)
@@ -292,13 +276,14 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
                 names[i] = m->streams[i].name;
             }
             int fidx[OV_MAX_STREAMS];
-            count = ov_filter_build(lay->filter_stream, names, count, fidx, OV_MAX_STREAMS);
+            count = ov_filter_build(filt, names, count, fidx, OV_MAX_STREAMS);
         }
     }
     else if (focus == OV_FOCUS_PROCS)
     {
         count = m->nb_procs;
-        if (lay->filter_proc[0] != '\0')
+        const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+        if (filt[0] != '\0')
         {
             const char *names[OV_MAX_PROCS];
             for (int i = 0; i < count; i++)
@@ -306,13 +291,14 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
                 names[i] = m->procs[i].name;
             }
             int fidx[OV_MAX_PROCS];
-            count = ov_filter_build(lay->filter_proc, names, count, fidx, OV_MAX_PROCS);
+            count = ov_filter_build(filt, names, count, fidx, OV_MAX_PROCS);
         }
     }
     else if (focus == OV_FOCUS_FPS)
     {
         count = m->nb_fps;
-        if (lay->filter_fps[0] != '\0')
+        const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
+        if (filt[0] != '\0')
         {
             const char *names[OV_MAX_FPS];
             for (int i = 0; i < count; i++)
@@ -320,7 +306,7 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
                 names[i] = m->fps[i].name;
             }
             int fidx[OV_MAX_FPS];
-            count = ov_filter_build(lay->filter_fps, names, count, fidx, OV_MAX_FPS);
+            count = ov_filter_build(filt, names, count, fidx, OV_MAX_FPS);
         }
     }
     return count;
@@ -759,14 +745,15 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             fidx[i] = i;
         }
-        if (lay->filter_stream[0] != '\0')
+        const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
+        if (filt[0] != '\0')
         {
             const char *names[OV_MAX_STREAMS];
             for (int i = 0; i < count; i++)
             {
                 names[i] = m->streams[i].name;
             }
-            count = ov_filter_build(lay->filter_stream, names, m->nb_streams, fidx, OV_MAX_STREAMS);
+            count = ov_filter_build(filt, names, m->nb_streams, fidx, OV_MAX_STREAMS);
         }
         if (lay->hover_idx < count)
         {
@@ -781,14 +768,15 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             fidx[i] = i;
         }
-        if (lay->filter_proc[0] != '\0')
+        const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+        if (filt[0] != '\0')
         {
             const char *names[OV_MAX_PROCS];
             for (int i = 0; i < count; i++)
             {
                 names[i] = m->procs[i].name;
             }
-            count = ov_filter_build(lay->filter_proc, names, m->nb_procs, fidx, OV_MAX_PROCS);
+            count = ov_filter_build(filt, names, m->nb_procs, fidx, OV_MAX_PROCS);
         }
         if (lay->hover_idx < count)
         {
@@ -803,14 +791,15 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             fidx[i] = i;
         }
-        if (lay->filter_fps[0] != '\0')
+        const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
+        if (filt[0] != '\0')
         {
             const char *names[OV_MAX_FPS];
             for (int i = 0; i < count; i++)
             {
                 names[i] = m->fps[i].name;
             }
-            count = ov_filter_build(lay->filter_fps, names, m->nb_fps, fidx, OV_MAX_FPS);
+            count = ov_filter_build(filt, names, m->nb_fps, fidx, OV_MAX_FPS);
         }
         if (lay->hover_idx < count)
         {
@@ -977,20 +966,37 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 return 1;
             }
 
-            /* Check for HOVER mode toggle click */
-            int hover_badge_start = badge_start + badge_w + 1;
-            int hover_badge_w     = lay->mouse_hover ? 15 : 16;
-            if (mc >= hover_badge_start && mc < hover_badge_start + hover_badge_w)
+            /* Check for FILTER badge click */
+            int filter_badge_start = badge_start + badge_w + 1;
+            int filter_badge_w     = 17;
+            const char *fpat       = ov_get_active_filter(lay);
+            if (fpat[0] != '\0')
             {
-                lay->mouse_hover = !lay->mouse_hover;
-                ov_set_mouse_hover(lay->mouse_hover);
-                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🖱️ Mouse hover %s",
-                               lay->mouse_hover ? "✅ ON" : "❌ OFF");
-                if (lay->mouse_hover)
+                char fb[48];
+                snprintf(fb, sizeof(fb), " [/] FILTER ON: /%.12s/ ", fpat);
+                filter_badge_w = (int) strlen(fb);
+            }
+            if (mc >= filter_badge_start && mc < filter_badge_start + filter_badge_w)
+            {
+                if (ov_is_filter_active(lay))
                 {
-                    ov_cmdlog_push(
-                        &lay->cmdlog, OV_CMDLOG_WARN,
-                        "⚠️ Warning: Hover uses more CPU & character BW on slow connections");
+                    ov_clear_all_filters(lay);
+                    lay->sel_stream    = 0;
+                    lay->scroll_stream = 0;
+                    lay->sel_proc      = 0;
+                    lay->scroll_proc   = 0;
+                    lay->sel_fps       = 0;
+                    lay->scroll_fps    = 0;
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Regex filter cleared");
+                }
+                else
+                {
+                    lay->filter_editing = 1;
+                    lay->filter_jump    = 0;
+                    lay->filter_cursor  = 0;
+                    lay->filter[0]      = '\0';
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                   "Type regex filter (ENTER=apply, ESC=cancel)");
                 }
                 return 1;
             }
@@ -3214,15 +3220,18 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
         sel    = &lay->sel_stream;
         scroll = &lay->scroll_stream;
         count  = m->nb_streams;
-        if (lay->filter_stream[0] != '\0')
         {
-            const char *names[OV_MAX_STREAMS];
-            for (int i = 0; i < count; i++)
+            const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
+            if (filt[0] != '\0')
             {
-                names[i] = m->streams[i].name;
+                const char *names[OV_MAX_STREAMS];
+                for (int i = 0; i < count; i++)
+                {
+                    names[i] = m->streams[i].name;
+                }
+                int fidx[OV_MAX_STREAMS];
+                count = ov_filter_build(filt, names, count, fidx, OV_MAX_STREAMS);
             }
-            int fidx[OV_MAX_STREAMS];
-            count = ov_filter_build(lay->filter_stream, names, count, fidx, OV_MAX_STREAMS);
         }
         page_h = lay->r_streams.height - 3;
         break;
@@ -3230,15 +3239,18 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
         sel    = &lay->sel_proc;
         scroll = &lay->scroll_proc;
         count  = m->nb_procs;
-        if (lay->filter_proc[0] != '\0')
         {
-            const char *names[OV_MAX_PROCS];
-            for (int i = 0; i < count; i++)
+            const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+            if (filt[0] != '\0')
             {
-                names[i] = m->procs[i].name;
+                const char *names[OV_MAX_PROCS];
+                for (int i = 0; i < count; i++)
+                {
+                    names[i] = m->procs[i].name;
+                }
+                int fidx[OV_MAX_PROCS];
+                count = ov_filter_build(filt, names, count, fidx, OV_MAX_PROCS);
             }
-            int fidx[OV_MAX_PROCS];
-            count = ov_filter_build(lay->filter_proc, names, count, fidx, OV_MAX_PROCS);
         }
         page_h = lay->r_procs.height - 3;
         break;
@@ -3246,15 +3258,18 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
         sel    = &lay->sel_fps;
         scroll = &lay->scroll_fps;
         count  = m->nb_fps;
-        if (lay->filter_fps[0] != '\0')
         {
-            const char *names[OV_MAX_FPS];
-            for (int i = 0; i < count; i++)
+            const char *filt = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
+            if (filt[0] != '\0')
             {
-                names[i] = m->fps[i].name;
+                const char *names[OV_MAX_FPS];
+                for (int i = 0; i < count; i++)
+                {
+                    names[i] = m->fps[i].name;
+                }
+                int fidx[OV_MAX_FPS];
+                count = ov_filter_build(filt, names, count, fidx, OV_MAX_FPS);
             }
-            int fidx[OV_MAX_FPS];
-            count = ov_filter_build(lay->filter_fps, names, count, fidx, OV_MAX_FPS);
         }
         page_h = lay->r_fps.height - 3;
         break;
@@ -3588,66 +3603,14 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 0;
     }
 
-    /* Quit */
-    if (key == 'q' || key == 'x')
+    /* 1. Filter editing mode: all characters belong to the filter prompt */
+    if (lay->filter_editing)
     {
-        return 1;
-    }
-
-    /* Command log panel toggle — 'G' */
-    if (key == 'G')
-    {
-        if (lay->cmdlog_rows > 0)
-        {
-            lay->cmdlog_rows = 0;
-        }
-        else
-        {
-            lay->cmdlog_rows = 4;
-        }
-        ov_buf_force_clear();
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Command log %s",
-                       lay->cmdlog_rows > 0 ? "shown" : "hidden");
+        ov_input__handle_filter_mode(key, lay);
         return 0;
     }
 
-    if (key == 'c')
-    {
-        lay->ctrl_mode = !lay->ctrl_mode;
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎛️ Control mode %s",
-                       lay->ctrl_mode ? "✅ ON" : "❌ OFF");
-        return 0;
-    }
-
-    if (key == 'm')
-    {
-        lay->mouse_hover = !lay->mouse_hover;
-        ov_set_mouse_hover(lay->mouse_hover);
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🖱️ Mouse hover %s",
-                       lay->mouse_hover ? "✅ ON" : "❌ OFF");
-        if (lay->mouse_hover)
-        {
-            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
-                           "⚠️ Warning: Hover uses more CPU & character BW on slow connections");
-        }
-        return 0;
-    }
-
-    /* Help toggle */
-    if (key == 'h')
-    {
-        if (lay->show_help)
-        {
-            lay->show_help = 0;
-        }
-        else
-        {
-            ov_help_open(lay);
-        }
-        return 0;
-    }
-
-    /* Interactive help navigation when overlay is open */
+    /* 2. Interactive help overlay */
     if (lay->show_help)
     {
         int nvis = ov_help_visible_count(lay);
@@ -3718,20 +3681,85 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             break;
 
         case 'q':
+        case 'h':
         case 27: /* ESC */
             lay->show_help = 0;
+            ov_buf_force_clear();
             break;
 
         default:
-            /* Unknown key while help showing —
-             * ignore silently */
+            /* Unknown key while help showing — ignore silently */
             break;
         }
         return 0;
     }
 
-    if (ov_input__handle_filter_mode(key, lay))
+    /* 3. Filter activation ('/') and active filter clearing (ESC) */
+    if (key == '/' || key == '?' || (key == 27 && ov_is_filter_active(lay)))
     {
+        if (ov_input__handle_filter_mode(key, lay))
+        {
+            return 0;
+        }
+    }
+
+    /* Standalone ESC with no active filter: ignore silently */
+    if (key == 27)
+    {
+        return 0;
+    }
+
+    /* 4. Global quit */
+    if (key == 'q' || key == 'x')
+    {
+        return 1;
+    }
+
+    /* 5. Command log panel toggle — 'G' */
+    if (key == 'G')
+    {
+        if (lay->cmdlog_rows > 0)
+        {
+            lay->cmdlog_rows = 0;
+        }
+        else
+        {
+            lay->cmdlog_rows = 4;
+        }
+        ov_buf_force_clear();
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Command log %s",
+                       lay->cmdlog_rows > 0 ? "shown" : "hidden");
+        return 0;
+    }
+
+    /* 6. Control mode toggle — 'c' */
+    if (key == 'c')
+    {
+        lay->ctrl_mode = !lay->ctrl_mode;
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Control mode %s",
+                       lay->ctrl_mode ? "ON" : "OFF");
+        return 0;
+    }
+
+    /* 7. Mouse hover toggle — 'm' */
+    if (key == 'm')
+    {
+        lay->mouse_hover = !lay->mouse_hover;
+        ov_set_mouse_hover(lay->mouse_hover);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Mouse hover %s",
+                       lay->mouse_hover ? "ON" : "OFF");
+        if (lay->mouse_hover)
+        {
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
+                           "Warning: Hover uses extra CPU on slow connections");
+        }
+        return 0;
+    }
+
+    /* 8. Help toggle — 'h' */
+    if (key == 'h')
+    {
+        ov_help_open(lay);
         return 0;
     }
     int mouse_res = ov_input__handle_mouse(key, lay, m);
@@ -3835,7 +3863,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
         }
 
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "⌨️ %s%s", keys_str, ctrl_str);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s%s", keys_str, ctrl_str);
         if (lay->cmdlog_rows == 0)
         {
             lay->cmdlog_rows = 4;
@@ -3846,18 +3874,18 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
     if (key == OV_KEY_SHIFT_UP || key == OV_KEY_SHIFT_DOWN || key == OV_KEY_SHIFT_LEFT ||
         key == OV_KEY_SHIFT_RIGHT || key == OV_KEY_CTRL_LEFT || key == OV_KEY_CTRL_RIGHT ||
-        key == OV_KEY_BTAB)
+        key == OV_KEY_BTAB || key == 27)
     {
         return 0;
     }
 
     if (key >= 32 && key <= 126)
     {
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "❔ Unmapped key: '%c' (code %d)", key, key);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "Unmapped key: '%c' (code %d)", key, key);
     }
     else
     {
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "❔ Unmapped key code: %d", key);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "Unmapped key code: %d", key);
     }
     return 0;
 }

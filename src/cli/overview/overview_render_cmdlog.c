@@ -55,14 +55,15 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
     {
         ov_buf_pos(r.row + row, r.col);
         ov_theme_bg(bg);
+        ov_theme_fg(OV_FG_DIM);
+        ov_buf_hline(' ', r.width);
 
         if (row < blank_rows)
         {
-            /* Empty row — fill with background */
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_hline(' ', r.width);
             continue;
         }
+
+        ov_buf_pos(r.row + row, r.col);
 
         int                    idx = (start + (row - blank_rows)) % OV_CMDLOG_MAX;
         const OV_CMDLOG_ENTRY *e   = &log->entries[idx];

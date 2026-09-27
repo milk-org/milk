@@ -77,7 +77,33 @@ void render_scroll_indicators(OV_RECT r, int scroll, int max_rows, int total, ov
 
 void clear_row(int row, int col, int width, ov_rgb_t bg);
 
-int ov_filter_build(const char *filter, const char *names[], int count, int *out_idx, int max_out);
+int ov_filter_build(
+    const char  *pattern,
+    const char **names,
+    int          count,
+    int         *out,
+    int          max_out);
+
+int ov_is_filter_active(
+    const OV_LAYOUT *lay);
+
+const char *ov_get_active_filter(
+    const OV_LAYOUT *lay);
+
+void ov_clear_all_filters(
+    OV_LAYOUT *lay);
+
+int ov_get_selected_stream_idx(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m);
+
+int ov_get_selected_proc_idx(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m);
+
+int ov_get_selected_fps_idx(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m);
 
 void bset(uint64_t *words, int idx);
 int  bget(const uint64_t *words, int idx);

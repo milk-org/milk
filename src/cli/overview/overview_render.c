@@ -367,33 +367,44 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     ov_buf_printf(" ");
-    int hover_w = 0;
-    if (lay->mouse_hover)
+    int filter_w = 0;
+    const char *fpat = ov_get_active_filter(lay);
+    if (fpat[0] != '\0')
     {
-        /* Mouse hover active badge */
-        ov_buf_bg(180, 180, 20);  /* deep yellow background */
-        ov_buf_fg(255, 255, 220); /* light text */
+        /* Software blinking badge for "FILTER ON" (10 fps -> 2Hz blink) */
+        if ((lay->ctrl_blink % 10) < 5)
+        {
+            ov_buf_bg(255, 190, 0);   /* bright amber/gold */
+            ov_buf_fg(20, 20, 20);    /* dark text */
+        }
+        else
+        {
+            ov_buf_bg(230, 80, 20);   /* vibrant red-orange */
+            ov_buf_fg(255, 255, 255); /* white text */
+        }
         ov_buf_bold();
-        ov_buf_printf(" [m] HOVER: ON ");
+        char fbadge[48];
+        snprintf(fbadge, sizeof(fbadge), " [/] FILTER ON: /%.12s/ ", fpat);
+        filter_w = (int) strlen(fbadge);
+        ov_buf_printf("%s", fbadge);
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_HEADER);
-        hover_w = 16; /* visual width of "  [m] HOVER: ON " */
     }
     else
     {
-        /* Mouse hover inactive badge */
-        ov_buf_bg(80, 80, 80);    /* dim gray background */
-        ov_buf_fg(200, 200, 200); /* light gray text */
+        /* Inactive filter badge */
+        ov_buf_bg(60, 60, 60);
+        ov_buf_fg(160, 160, 160);
         ov_buf_bold();
-        ov_buf_printf(" [m] HOVER: OFF ");
+        ov_buf_printf(" [/] FILTER: OFF ");
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_HEADER);
-        hover_w = 17; /* visual width of "  [m] HOVER: OFF " */
+        filter_w = 17; /* visual width of " [/] FILTER: OFF " */
     }
 
     int commit_w   = (int) strlen(MILK_GIT_COMMIT) + 3;
     int shmdir_w   = (int) strlen(shmdir) + 8;
-    int chars_left = 17 + commit_w + shmdir_w + 1 + ctrl_w + hover_w; /* +1 for heartbeat */
+    int chars_left = 17 + commit_w + shmdir_w + 1 + ctrl_w + 1 + filter_w; /* +1 for heartbeat */
 
     ov_theme_fg(OV_FG_STREAM);
     chars_left += snprintf(NULL, 0, " %d stm", m->nb_streams);
@@ -523,9 +534,10 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     ov_hittest_resolve_globals(lay, m);
 
     /* Ensure there exists a valid selected parameter when in the PARAMS panel on F5 view */
-    if (lay->view == OV_VIEW_FPS && lay->sel_fps >= 0 && lay->sel_fps < m->nb_fps)
+    int cur_fidx = ov_get_selected_fps_idx(lay, m);
+    if (lay->view == OV_VIEW_FPS && cur_fidx >= 0 && cur_fidx < m->nb_fps)
     {
-        const OV_FPS   *fps = &m->fps[lay->sel_fps];
+        const OV_FPS   *fps = &m->fps[cur_fidx];
         fps_tree_item_t items[1024];
         int             nitems = ov_get_fps_tree_items(fps, lay->fps_param_path, items, 1024);
 
@@ -569,13 +581,16 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             const char *names[OV_MAX_NODES];
             int         fidx[OV_MAX_NODES];
+            const char *f_str = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
+            const char *f_prc = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+            const char *f_fps = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
 
             /* Streams */
             for (int i = 0; i < mm->nb_streams; i++)
             {
                 names[i] = mm->streams[i].name;
             }
-            int fn = ov_filter_build(lay->filter_stream, names, mm->nb_streams, fidx, OV_MAX_NODES);
+            int fn = ov_filter_build(f_str, names, mm->nb_streams, fidx, OV_MAX_NODES);
             if (lay->sel_stream >= 0 && lay->sel_stream < fn)
             {
                 strncpy(saved_sel_stream, mm->streams[fidx[lay->sel_stream]].name, 79);
@@ -590,7 +605,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 names[i] = mm->procs[i].name;
             }
-            fn = ov_filter_build(lay->filter_proc, names, mm->nb_procs, fidx, OV_MAX_NODES);
+            fn = ov_filter_build(f_prc, names, mm->nb_procs, fidx, OV_MAX_NODES);
             if (lay->sel_proc >= 0 && lay->sel_proc < fn)
             {
                 strncpy(saved_sel_proc, mm->procs[fidx[lay->sel_proc]].name, 79);
@@ -605,7 +620,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 names[i] = mm->fps[i].name;
             }
-            fn = ov_filter_build(lay->filter_fps, names, mm->nb_fps, fidx, OV_MAX_NODES);
+            fn = ov_filter_build(f_fps, names, mm->nb_fps, fidx, OV_MAX_NODES);
             if (lay->sel_fps >= 0 && lay->sel_fps < fn)
             {
                 strncpy(saved_sel_fps, mm->fps[fidx[lay->sel_fps]].name, 79);
@@ -651,6 +666,9 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             const char *names[OV_MAX_NODES];
             int         fidx[OV_MAX_NODES];
+            const char *f_str = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
+            const char *f_prc = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+            const char *f_fps = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
 
             if (saved_sel_stream[0] != '\0')
             {
@@ -658,8 +676,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
                 {
                     names[i] = mm->streams[i].name;
                 }
-                int fn =
-                    ov_filter_build(lay->filter_stream, names, mm->nb_streams, fidx, OV_MAX_NODES);
+                int fn = ov_filter_build(f_str, names, mm->nb_streams, fidx, OV_MAX_NODES);
                 for (int i = 0; i < fn; i++)
                 {
                     if (strcmp(saved_sel_stream, mm->streams[fidx[i]].name) == 0)
@@ -688,7 +705,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
                 {
                     names[i] = mm->procs[i].name;
                 }
-                int fn = ov_filter_build(lay->filter_proc, names, mm->nb_procs, fidx, OV_MAX_NODES);
+                int fn = ov_filter_build(f_prc, names, mm->nb_procs, fidx, OV_MAX_NODES);
                 for (int i = 0; i < fn; i++)
                 {
                     if (strcmp(saved_sel_proc, mm->procs[fidx[i]].name) == 0)
@@ -717,7 +734,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
                 {
                     names[i] = mm->fps[i].name;
                 }
-                int fn = ov_filter_build(lay->filter_fps, names, mm->nb_fps, fidx, OV_MAX_NODES);
+                int fn = ov_filter_build(f_fps, names, mm->nb_fps, fidx, OV_MAX_NODES);
                 for (int i = 0; i < fn; i++)
                 {
                     if (strcmp(saved_sel_fps, mm->fps[fidx[i]].name) == 0)
@@ -759,13 +776,16 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     {
         const char *names[OV_MAX_NODES];
         int         fidx[OV_MAX_NODES];
+        const char *f_str = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
+        const char *f_prc = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+        const char *f_fps = (lay->filter[0] != '\0') ? lay->filter : lay->filter_fps;
 
         /* Streams */
         for (int i = 0; i < m->nb_streams; i++)
         {
             names[i] = m->streams[i].name;
         }
-        int fn = ov_filter_build(lay->filter_stream, names, m->nb_streams, fidx, OV_MAX_NODES);
+        int fn = ov_filter_build(f_str, names, m->nb_streams, fidx, OV_MAX_NODES);
         if (fn > 0)
         {
             if (lay->sel_name_stream[0] != '\0')
@@ -818,7 +838,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             names[i] = m->procs[i].name;
         }
-        fn = ov_filter_build(lay->filter_proc, names, m->nb_procs, fidx, OV_MAX_NODES);
+        fn = ov_filter_build(f_prc, names, m->nb_procs, fidx, OV_MAX_NODES);
         if (fn > 0)
         {
             if (lay->sel_name_proc[0] != '\0')
@@ -874,7 +894,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             names[i] = m->fps[i].name;
         }
-        fn = ov_filter_build(lay->filter_fps, names, m->nb_fps, fidx, OV_MAX_NODES);
+        fn = ov_filter_build(f_fps, names, m->nb_fps, fidx, OV_MAX_NODES);
         if (fn > 0)
         {
             if (lay->sel_name_fps[0] != '\0')
@@ -1005,8 +1025,9 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
         case OV_VIEW_FPS:
             ov_render_fps_param_info(lay, m);
             ov_render_fps_panel(lay, m, &rel);
-            if (lay->sel_fps >= 0 && lay->sel_fps < m->nb_fps &&
-                m->fps[lay->sel_fps].nb_disp_params > 0)
+            int cur_fsel = ov_get_selected_fps_idx(lay, m);
+            if (cur_fsel >= 0 && cur_fsel < m->nb_fps &&
+                m->fps[cur_fsel].nb_disp_params > 0)
             {
                 ov_render_fps_params_panel(lay, m);
             }

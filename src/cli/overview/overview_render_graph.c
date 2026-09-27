@@ -26,11 +26,11 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
     ov_buf_hline(' ', W);
     ov_buf_pos(2, 1);
 
-    /* Use frozen selection when freeze is active */
+    /* Use resolved selection from model */
     ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
-    int        ssel  = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
-    int        psel  = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
-    int        fsel  = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
+    int        ssel  = ov_get_selected_stream_idx(lay, m);
+    int        psel  = ov_get_selected_proc_idx(lay, m);
+    int        fsel  = ov_get_selected_fps_idx(lay, m);
 
     char     line[512];
     int      len         = 0;
@@ -359,17 +359,17 @@ static int get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
     if (eff_focus == OV_FOCUS_STREAMS || eff_focus == OV_FOCUS_GRAPH)
     {
         target_type = OV_NODE_STREAM;
-        target_idx  = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
+        target_idx  = ov_get_selected_stream_idx(lay, m);
     }
     else if (eff_focus == OV_FOCUS_PROCS)
     {
         target_type = OV_NODE_PROC;
-        target_idx  = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
+        target_idx  = ov_get_selected_proc_idx(lay, m);
     }
     else if (eff_focus == OV_FOCUS_FPS)
     {
         target_type = OV_NODE_FPS;
-        target_idx  = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
+        target_idx  = ov_get_selected_fps_idx(lay, m);
     }
 
     if (target_type != -1 && target_idx != -1)

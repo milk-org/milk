@@ -27,7 +27,8 @@ static int ov_procs__filter(const OV_LAYOUT  *lay,
     {
         names[i] = m->procs[i].name;
     }
-    int filt_n = ov_filter_build(lay->filter_proc, names, m->nb_procs, filt_idx, OV_MAX_PROCS);
+    const char *active_filter = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+    int filt_n = ov_filter_build(active_filter, names, m->nb_procs, filt_idx, OV_MAX_PROCS);
 
     if (lay->freeze && lay->freeze_focus != OV_FOCUS_PROCS && rel != NULL)
     {
@@ -43,9 +44,9 @@ static int ov_procs__filter(const OV_LAYOUT  *lay,
     }
 
     *has_re = 0;
-    if (lay->filter_proc[0] != '\0')
+    if (active_filter[0] != '\0')
     {
-        if (regcomp(re, lay->filter_proc, REG_EXTENDED | REG_ICASE) == 0)
+        if (regcomp(re, active_filter, REG_EXTENDED | REG_ICASE) == 0)
         {
             *has_re = 1;
         }
@@ -212,6 +213,25 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
 
     int max_rows = r.height - 4;
     int start    = lay->scroll_proc;
+
+    const char *active_filter = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+    if (filt_n == 0 && active_filter[0] != '\0')
+    {
+        int row = hrow + 2;
+        ov_buf_pos(row, r.col + 1);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_WARN);
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No matching processes for '/%s/'", active_filter);
+        ov_buf_printf("%s", msg);
+        render_pad_spaces((int) strlen(msg), r.width);
+        for (int i = 1; i < max_rows; i++)
+        {
+            clear_row(hrow + 2 + i, r.col + 1, r.width - 2, OV_BG_PANEL);
+        }
+        render_scroll_indicators(r, 0, max_rows, 0, OV_FG_PROC);
+        return;
+    }
 
     for (int i = 0; i < max_rows; i++)
     {
@@ -709,14 +729,16 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
     regex_t re;
     int     filt_n = ov_procs__filter(lay, m, rel, filt_idx, &has_re, &re);
 
-    char title[80];
-    if (lay->filter_proc[0] != '\0')
+    char        title[128];
+    const char *active_filter = (lay->filter[0] != '\0') ? lay->filter : lay->filter_proc;
+    if (active_filter[0] != '\0')
     {
-        snprintf(title, sizeof(title), "PROCESSINFO /%s/", lay->filter_proc);
+        snprintf(title, sizeof(title), "PROCESSINFO [FILTER ON: /%s/] (%d/%d)",
+                 active_filter, filt_n, m->nb_procs);
     }
     else
     {
-        snprintf(title, sizeof(title), "PROCESSINFO");
+        snprintf(title, sizeof(title), "PROCESSINFO (%d)", m->nb_procs);
     }
     ov_draw_panel_border(r.row, r.col, r.height, r.width, title, OV_FG_PROC,
                          lay->focus == OV_FOCUS_PROCS, 0);

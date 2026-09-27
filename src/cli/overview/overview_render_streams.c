@@ -25,8 +25,9 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         names[i] = m->streams[i].name;
     }
     int filt_idx[OV_MAX_STREAMS];
+    const char *active_filter = (lay->filter[0] != '\0') ? lay->filter : lay->filter_stream;
     int filt_n =
-        ov_filter_build(lay->filter_stream, names, m->nb_streams, filt_idx, OV_MAX_STREAMS);
+        ov_filter_build(active_filter, names, m->nb_streams, filt_idx, OV_MAX_STREAMS);
 
     if (lay->freeze && lay->freeze_focus != OV_FOCUS_STREAMS && rel != NULL)
     {
@@ -44,14 +45,15 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
 
     /* Panel title with filter indicator */
     {
-        char title[80];
-        if (lay->filter_stream[0] != '\0')
+        char title[128];
+        if (active_filter[0] != '\0')
         {
-            snprintf(title, sizeof(title), "STREAMS /%s/", lay->filter_stream);
+            snprintf(title, sizeof(title), "STREAMS [FILTER ON: /%s/] (%d/%d)",
+                     active_filter, filt_n, m->nb_streams);
         }
         else
         {
-            snprintf(title, sizeof(title), "STREAMS");
+            snprintf(title, sizeof(title), "STREAMS (%d)", m->nb_streams);
         }
         ov_draw_panel_border(r.row, r.col, r.height, r.width, title, OV_FG_STREAM,
                              lay->focus == OV_FOCUS_STREAMS, 0);
@@ -286,6 +288,38 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
     int max_rows = r.height - 4;
     int start    = lay->scroll_stream;
 
+    regex_t re;
+    int     has_re = 0;
+    if (active_filter[0] != '\0')
+    {
+        if (regcomp(&re, active_filter, REG_EXTENDED | REG_ICASE) == 0)
+        {
+            has_re = 1;
+        }
+    }
+
+    if (filt_n == 0 && active_filter[0] != '\0')
+    {
+        int row = hrow + 2;
+        ov_buf_pos(row, r.col + 1);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_WARN);
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No matching streams for '/%s/'", active_filter);
+        ov_buf_printf("%s", msg);
+        render_pad_spaces((int) strlen(msg), r.width);
+        for (int i = 1; i < max_rows; i++)
+        {
+            clear_row(hrow + 2 + i, r.col + 1, r.width - 2, OV_BG_PANEL);
+        }
+        if (has_re)
+        {
+            regfree(&re);
+        }
+        render_scroll_indicators(r, 0, max_rows, 0, OV_FG_STREAM);
+        return;
+    }
+
     for (int i = 0; i < max_rows; i++)
     {
         int row = hrow + 2 + i;
@@ -432,7 +466,37 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
 
             ov_rgb_t base_color = s->active ? OV_FG_STREAM : OV_FG_DIM;
 
-            STRM_FIELD(base_color, "%-14.14s ", s->name);
+            /* Stream Name with regex match highlighting */
+            {
+                char       name_cell[128];
+                regmatch_t pm[1];
+                if (has_re && regexec(&re, s->name, 1, pm, 0) == 0)
+                {
+                    int b_len = pm[0].rm_so;
+                    if (b_len > 14)
+                    {
+                        b_len = 14;
+                    }
+                    int m_len = pm[0].rm_eo - pm[0].rm_so;
+                    if (b_len + m_len > 14)
+                    {
+                        m_len = 14 - b_len;
+                    }
+                    int tail_len = 14 - (b_len + m_len);
+                    if (tail_len < 0)
+                    {
+                        tail_len = 0;
+                    }
+                    snprintf(name_cell, sizeof(name_cell), "%.*s\x01%.*s\x02%.*s ",
+                             b_len, s->name, m_len, s->name + b_len, tail_len,
+                             s->name + b_len + m_len);
+                }
+                else
+                {
+                    snprintf(name_cell, sizeof(name_cell), "%-14.14s ", s->name);
+                }
+                STRM_FIELD(base_color, "%s", name_cell);
+            }
             STRM_FIELD(OV_FG_MUTED, "%4s ", render_dtype(s->datatype));
 
             STRM_FIELD(OV_FG_TEXT, "%11s ", s->size_str);
@@ -599,6 +663,10 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         }
     }
     render_scroll_indicators(r, lay->scroll_stream, max_rows, filt_n, OV_FG_STREAM);
+    if (has_re)
+    {
+        regfree(&re);
+    }
 
     /* Total MB/s footer on bottom border */
     {
