@@ -861,7 +861,7 @@ static inline int ov_get_key(void)
     if (buf_len == 1)
     {
         struct pollfd pfd = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
-        if (poll(&pfd, 1, 25) > 0 && (pfd.revents & POLLIN))
+        if (poll(&pfd, 1, 50) > 0 && (pfd.revents & POLLIN))
         {
             n = read(STDIN_FILENO, buf + buf_len, sizeof(buf) - (size_t) buf_len);
             if (n > 0)
@@ -882,7 +882,7 @@ static inline int ov_get_key(void)
     if (buf_len == 2 && (buf[1] == '[' || buf[1] == 'O'))
     {
         struct pollfd pfd = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
-        if (poll(&pfd, 1, 25) > 0 && (pfd.revents & POLLIN))
+        if (poll(&pfd, 1, 50) > 0 && (pfd.revents & POLLIN))
         {
             n = read(STDIN_FILENO, buf + buf_len, sizeof(buf) - (size_t) buf_len);
             if (n > 0)
@@ -1136,7 +1136,7 @@ static inline int ov_get_key(void)
             return OV_KEY_NONE;
         }
 
-        /* SS3: ESC O ... (xterm F1-F4) */
+        /* SS3: ESC O ... (application cursor keys and xterm F1-F4) */
         if (buf[1] == 'O')
         {
             if (buf_len >= 3)
@@ -1145,6 +1145,24 @@ static inline int ov_get_key(void)
                 int consumed = 3;
                 switch (buf[2])
                 {
+                case 'A':
+                    key = OV_KEY_UP;
+                    break;
+                case 'B':
+                    key = OV_KEY_DOWN;
+                    break;
+                case 'C':
+                    key = OV_KEY_RIGHT;
+                    break;
+                case 'D':
+                    key = OV_KEY_LEFT;
+                    break;
+                case 'H':
+                    key = OV_KEY_HOME;
+                    break;
+                case 'F':
+                    key = OV_KEY_END;
+                    break;
                 case 'P':
                     key = OV_KEY_F1;
                     break;
@@ -1164,6 +1182,12 @@ static inline int ov_get_key(void)
                 buf_len -= consumed;
                 return key ? key : OV_KEY_NONE;
             }
+            return OV_KEY_NONE;
+        }
+
+        /* If this is an incomplete CSI or SS3 sequence, do NOT split into ESC + char */
+        if (buf_len >= 2 && (buf[1] == '[' || buf[1] == 'O'))
+        {
             return OV_KEY_NONE;
         }
 

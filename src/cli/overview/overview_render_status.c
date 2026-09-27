@@ -290,15 +290,29 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         n1 += (int) strlen(fstatus);
     }
 
-    int n_hints = snprintf(NULL, 0, "%s%s%s  +/- TAB D S/s / p c m G h q  (Click headers/tabs)",
-                           ctrl_hint, sort_label, detail_label);
-    ov_buf_printf("%s%s%s  +/- TAB D S/s / p c m G h q  (Click headers/tabs)",
-                  ctrl_hint, sort_label, detail_label);
-    n1 += n_hints;
-
-    /* [x] exit button */
-    const char *exit_label = " [x] exit ";
+    const char *exit_label = lay->show_help ? " [ESC] close " : " [x] exit ";
     int         n_exit     = (int) strlen(exit_label);
+
+    if (lay->show_help)
+    {
+        const char *help_hints =
+            " ↑↓ Navigate   →/← Expand/Collapse   ENTER Toggle   ESC Close Help";
+        ov_buf_bold();
+        ov_theme_fg(OV_FG_TITLE);
+        ov_buf_printf("%s", help_hints);
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+        ov_theme_fg(OV_FG_DIM);
+        n1 += (int) strlen(help_hints);
+    }
+    else
+    {
+        int n_hints = snprintf(NULL, 0, "%s%s%s  +/- TAB D S/s / p c m G h q  (Click headers/tabs)",
+                               ctrl_hint, sort_label, detail_label);
+        ov_buf_printf("%s%s%s  +/- TAB D S/s / p c m G h q  (Click headers/tabs)",
+                      ctrl_hint, sort_label, detail_label);
+        n1 += n_hints;
+    }
 
     time_t     now    = time(NULL);
     struct tm *tm_ptr = localtime(&now);

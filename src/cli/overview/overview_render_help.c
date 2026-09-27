@@ -772,10 +772,11 @@ int ov_help_section_first_vis_row(
  */
 void ov_help_open(OV_LAYOUT *lay)
 {
-    lay->show_help   = 1;
-    lay->help_expand = 0;
-    int sec          = ov_help_focus_section(lay->focus);
-    lay->help_sel    = ov_help_section_first_vis_row(lay, sec);
+    lay->show_help      = 1;
+    lay->help_expand    = 0;
+    lay->filter_editing = 0;
+    int sec             = ov_help_focus_section(lay->focus);
+    lay->help_sel       = ov_help_section_first_vis_row(lay, sec);
 }
 
 /**
@@ -926,15 +927,6 @@ int ov_help_handle_click(
     {
         lay->show_help = 0;
         ov_buf_force_clear();
-        return 1;
-    }
-
-    /* Click on control mode toggle badge in header line */
-    if (mr == pr + 1 && mc >= pc + pw - 28)
-    {
-        lay->ctrl_mode = !lay->ctrl_mode;
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Control mode %s",
-                       lay->ctrl_mode ? "ON" : "OFF");
         return 1;
     }
 
@@ -1443,14 +1435,14 @@ void ov_render_help(
                 ov_buf_bg(220, 40, 40);
                 ov_buf_fg(255, 255, 255);
                 ov_buf_bold();
-                ov_buf_printf(" [c] CONTROL MODE: ON  ");
+                ov_buf_printf("  CONTROL MODE: ON   ");
             }
             else
             {
                 ov_buf_bg(35, 75, 45);
                 ov_buf_fg(160, 230, 160);
                 ov_buf_bold();
-                ov_buf_printf(" [c] CONTROL MODE: OFF ");
+                ov_buf_printf("  CONTROL MODE: OFF  ");
             }
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_PANEL);

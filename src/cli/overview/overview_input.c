@@ -3624,14 +3624,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 0;
     }
 
-    /* 1. Filter editing mode: all characters belong to the filter prompt */
-    if (lay->filter_editing)
-    {
-        ov_input__handle_filter_mode(key, lay);
-        return 0;
-    }
-
-    /* 2. Interactive help overlay */
+    /* 1. Interactive help overlay: when open, modal navigation only */
     if (lay->show_help)
     {
         int nvis = ov_help_visible_count(lay);
@@ -3643,7 +3636,6 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         switch (key)
         {
         case OV_KEY_UP:
-        case 'k':
         case OV_KEY_MOUSE_UP:
             if (lay->help_sel > 0)
             {
@@ -3652,7 +3644,6 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             break;
 
         case OV_KEY_DOWN:
-        case 'j':
         case OV_KEY_MOUSE_DOWN:
             if (lay->help_sel < nvis - 1)
             {
@@ -3685,17 +3676,12 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             break;
 
         case OV_KEY_RIGHT:
-        case 'l':
-        {
             ov_help_expand_at(lay, lay->help_sel, 1);
             break;
-        }
 
         case OV_KEY_LEFT:
-        {
             ov_help_expand_at(lay, lay->help_sel, 0);
             break;
-        }
 
         case OV_KEY_ENTER:
         case '\r':
@@ -3714,17 +3700,23 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             ov_help_handle_click(lay, ov_mouse_row, ov_mouse_col);
             break;
 
-        case 'q':
-        case 'h':
-        case 27: /* ESC */
+        case 27: /* ESC — exit help overlay */
             lay->show_help = 0;
             ov_buf_force_clear();
             break;
 
         default:
-            /* Unknown key while help showing — ignore silently */
+            /* All other keystrokes are disabled in help mode:
+             * ignore silently so they never affect underlying panels or control */
             break;
         }
+        return 0;
+    }
+
+    /* 2. Filter editing mode: all characters belong to the filter prompt */
+    if (lay->filter_editing)
+    {
+        ov_input__handle_filter_mode(key, lay);
         return 0;
     }
 
