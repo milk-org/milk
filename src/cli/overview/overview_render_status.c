@@ -307,8 +307,8 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
     }
     else if (fpat[0] != '\0')
     {
-        ov_buf_bg(45, 45, 60);
-        ov_buf_fg(190, 200, 220);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_WARN);
         ov_buf_bold();
         char fstatus[64];
         snprintf(fstatus, sizeof(fstatus), " [Filter OFF: /%.12s/ ('f' enable)] ", fpat);
@@ -385,8 +385,8 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
     if (lay->mouse_hover && (ov_mouse_row == r.row) && (ov_mouse_col >= col_th_start) &&
         (ov_mouse_col < col_th_start + n_th))
     {
-        ov_buf_bg(70, 90, 130);
-        ov_buf_fg(255, 255, 255);
+        ov_theme_bg(OV_BG_SELECTED);
+        ov_theme_fg(OV_FG_BRIGHT);
     }
     else
     {

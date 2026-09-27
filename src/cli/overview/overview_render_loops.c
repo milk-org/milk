@@ -104,7 +104,7 @@ void ov_render_loops_panel(
                         " %-4s %-20s %-8s %-10s %-8s %s",
                         "ID", "NAME", "NODES", "RATE (Hz)", "STATUS", "OVERLAP");
     ov_buf_printf("%s", htext);
-    render_pad_spaces(hlen, r.width);
+    render_pad_to_col(r.col + r.width - 1);
     row++;
 
     if (m->nb_loops == 0)
@@ -115,7 +115,7 @@ void ov_render_loops_panel(
         ov_theme_fg(OV_FG_DIM);
         ov_buf_printf("No closed feedback loops detected (mode: %s)",
                       sg_mode_label(lay->lineage_mode));
-        render_pad_spaces(35, r.width);
+        render_pad_to_col(r.col + r.width - 1);
         row++;
         for (int i = 1; i < max_rows; i++, row++)
         {
@@ -248,7 +248,7 @@ void ov_render_loops_panel(
             ov_buf_printf("%-24s", "exclusive");
         }
 
-        render_pad_spaces(1 + 4 + 21 + 9 + 11 + 6 + 24, r.width);
+        render_pad_to_col(r.col + r.width - 1);
         row++;
         rendered_list++;
     }
@@ -294,7 +294,7 @@ void ov_render_loops_panel(
             ov_theme_fg(OV_FG_WARN);
             ov_buf_printf(" Rename L%02d: [ %s_ ]  (Enter: save, Esc: cancel)",
                           cl->loop_id, lay->rename_buf);
-            render_pad_spaces(35 + (int) strlen(lay->rename_buf), r.width);
+            render_pad_to_col(r.col + r.width - 1);
             row++;
             detail_rows--;
         }
@@ -311,7 +311,7 @@ void ov_render_loops_panel(
             ov_buf_printf(" Path: ");
             ov_theme_fg(OV_FG_STREAM);
             ov_buf_printf("%.*s", r.width - 12, pathbuf);
-            render_pad_spaces(7 + (int) strlen(pathbuf), r.width);
+            render_pad_to_col(r.col + r.width - 1);
             row++;
             detail_rows--;
         }
@@ -355,8 +355,7 @@ void ov_render_loops_panel(
                 }
                 ov_theme_fg(OV_FG_DIM);
                 ov_buf_printf("(*shared across %d loops)", cl->nb_shared_nodes);
-                printed_sh += 24;
-                render_pad_spaces(printed_sh, r.width);
+                render_pad_to_col(r.col + r.width - 1);
             }
             else
             {
@@ -365,7 +364,7 @@ void ov_render_loops_panel(
                 ov_theme_fg(OV_FG_DIM);
                 ov_buf_printf("All %d nodes dedicated strictly to loop L%02d",
                               cl->nb_nodes, cl->loop_id);
-                render_pad_spaces(12 + 45, r.width);
+                render_pad_to_col(r.col + r.width - 1);
             }
             row++;
             detail_rows--;
@@ -383,12 +382,12 @@ void ov_render_loops_panel(
                 ov_theme_fg(OV_FG_WARN);
                 ov_buf_printf(" [FILTER ACTIVE: Loop L%02d]  [f] Clear Filter  [r] Rename",
                               cl->loop_id);
-                render_pad_spaces(52, r.width);
+                render_pad_to_col(r.col + r.width - 1);
             }
             else
             {
                 ov_buf_printf(" [r] Rename Loop   [f] Filter Dashboard to Loop   [Shift-Tab] Mode");
-                render_pad_spaces(65, r.width);
+                render_pad_to_col(r.col + r.width - 1);
             }
             row++;
             detail_rows--;
@@ -522,7 +521,7 @@ void ov_render_loops_view(
             ov_buf_printf("IDLE");
         }
 
-        render_pad_spaces(1 + 4 + 17 + 7 + 9 + 4, lw);
+        render_pad_to_col(lw);
         lrow++;
         rendered++;
     }
@@ -534,7 +533,7 @@ void ov_render_loops_view(
 
     /* Right Pane: Selected Loop Deep Inspector */
     int rrow = body_top + 1;
-    int max_rrows = body_h - 3;
+    int max_rrows = body_h - 2;
     int r_rendered = 0;
 
     if (m->nb_loops > 0 && sel_idx < m->nb_loops)
@@ -549,7 +548,7 @@ void ov_render_loops_view(
         ov_theme_fg(OV_FG_DIM);
         ov_buf_printf("  |  Bottleneck: %.1f Hz  |  Nodes: %d (%d streams, %d procs)",
                       cl->min_hz, cl->nb_nodes, cl->nb_streams, cl->nb_procs);
-        render_pad_spaces(30 + (int) strlen(cl->name) + 50, rw);
+        render_pad_to_col(lw + rw);
         rrow++;
         r_rendered++;
 
@@ -558,17 +557,18 @@ void ov_render_loops_view(
         ov_theme_bg(OV_BG_PANEL);
         ov_theme_fg(OV_FG_DIM);
         ov_buf_printf(" Topo Circuit:");
+        render_pad_to_col(lw + rw);
         rrow++;
         r_rendered++;
 
         char pathbuf[256];
         format_loop_path(m, cl, pathbuf, sizeof(pathbuf));
 
-        ov_buf_pos(rrow, lw + 4);
+        ov_buf_pos(rrow, lw + 2);
         ov_theme_bg(OV_BG_PANEL);
         ov_theme_fg(OV_FG_STREAM);
-        ov_buf_printf("%s", pathbuf);
-        render_pad_spaces((int) strlen(pathbuf) + 2, rw - 2);
+        ov_buf_printf("  %s", pathbuf);
+        render_pad_to_col(lw + rw);
         rrow++;
         r_rendered++;
 
@@ -586,7 +586,7 @@ void ov_render_loops_view(
             ov_theme_fg(OV_FG_ACTIVE);
             ov_buf_printf(" Overlap Analysis: 100%% Isolated Loop (no shared resources)");
         }
-        render_pad_spaces(50, rw);
+        render_pad_to_col(lw + rw);
         rrow++;
         r_rendered++;
 
@@ -596,7 +596,7 @@ void ov_render_loops_view(
         ov_theme_fg(OV_FG_STREAM_HDR);
         ov_buf_printf("  %-16s %-8s %-12s %-10s %s", "STREAM", "DTYPE", "DIMENSIONS",
                       "UPDATE HZ", "LOOP STATUS");
-        render_pad_spaces(56, rw);
+        render_pad_to_col(lw + rw);
         rrow++;
         r_rendered++;
 
@@ -642,7 +642,7 @@ void ov_render_loops_view(
                 ov_buf_printf("Exclusive");
             }
 
-            render_pad_spaces(2 + 17 + 9 + 13 + 11 + 18, rw);
+            render_pad_to_col(lw + rw);
             rrow++;
             r_rendered++;
         }
@@ -655,7 +655,7 @@ void ov_render_loops_view(
             ov_theme_fg(OV_FG_PROC_HDR);
             ov_buf_printf("  %-16s %-8s %-8s %-10s %s", "PROCESS", "PID", "STATUS",
                           "RATE (Hz)", "LOOP STATUS");
-            render_pad_spaces(52, rw);
+            render_pad_to_col(lw + rw);
             rrow++;
             r_rendered++;
 
@@ -706,7 +706,7 @@ void ov_render_loops_view(
                     ov_buf_printf("Exclusive");
                 }
 
-                render_pad_spaces(2 + 17 + 9 + 9 + 11 + 18, rw);
+                render_pad_to_col(lw + rw);
                 rrow++;
                 r_rendered++;
             }

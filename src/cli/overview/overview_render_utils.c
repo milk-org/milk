@@ -149,6 +149,15 @@ void render_pad_spaces(int chars_written, int panel_width)
     }
 }
 
+/* Pad remainder of row up to target absolute screen column */
+void render_pad_to_col(int end_col)
+{
+    if (ov__cursor_col < end_col)
+    {
+        ov_buf_hline(' ', end_col - ov__cursor_col);
+    }
+}
+
 /**
  * render_scroll_indicators - draw ▲N / ▼N on panel borders.
  * @r:         panel rect

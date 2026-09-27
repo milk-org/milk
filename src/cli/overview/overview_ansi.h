@@ -73,6 +73,7 @@ extern int wcwidth(wchar_t c);
 
 extern int ov_mouse_row;
 extern int ov_mouse_col;
+extern uint32_t ov__default_bg;
 extern int ov_mouse_btn;
 extern int ov_hover_row;
 extern int ov_hover_col;
@@ -224,7 +225,7 @@ static inline void ov_buf_reset_size(int rows, int cols)
     ov__cursor_row    = 1;
     ov__cursor_col    = 1;
     ov__current_fg    = OV_COLOR_NONE;
-    ov__current_bg    = OV_COLOR_NONE;
+    ov__current_bg    = ov__default_bg;
     ov__current_ul    = OV_COLOR_NONE;
     ov__current_attr  = 0;
 
@@ -246,7 +247,7 @@ static inline void ov_buf_reset_size(int rows, int cols)
             ov__shadow[r][c].ch[1] = '\0';
             ov__shadow[r][c].width = 1;
             ov__shadow[r][c].fg    = OV_COLOR_NONE;
-            ov__shadow[r][c].bg    = OV_COLOR_NONE;
+            ov__shadow[r][c].bg    = ov__default_bg;
             ov__shadow[r][c].ul    = OV_COLOR_NONE;
             ov__shadow[r][c].attr  = 0;
         }

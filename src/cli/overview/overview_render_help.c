@@ -1913,8 +1913,8 @@ static void ov_help_render_intro(
     ov_buf_printf(" ");
 
     /* Tab 2 (Inactive): Keystrokes & Controls */
-    ov_buf_bg(45, 50, 65);
-    ov_buf_fg(190, 200, 220);
+    ov_theme_bg(OV_BG_PANEL_ALT);
+    ov_theme_fg(OV_FG_MUTED);
     ov_buf_bold();
     ov_buf_printf("%s", (pw >= 100) ? " [ 2: KEYSTROKES & CONTROLS ] " : " [2: CONTROLS] ");
     ov_buf_reset_attr();
@@ -1991,7 +1991,7 @@ static void ov_help_render_intro(
         {
         case IL_HEADER:
             ov_buf_bold();
-            ov_buf_bg(40, 50, 75);
+            ov_theme_bg(OV_BG_PANEL_ALT);
             ov_theme_fg(OV_FG_TITLE);
             ov_buf_printf(" %s ", item->prefix);
             ov_buf_reset_attr();
@@ -2154,8 +2154,8 @@ void ov_render_help(
         int tab2_w = (pw >= 100) ? 32 : 20;
 
         /* Tab 1 (Inactive): Intro & Overview */
-        ov_buf_bg(45, 50, 65);
-        ov_buf_fg(190, 200, 220);
+        ov_theme_bg(OV_BG_PANEL_ALT);
+        ov_theme_fg(OV_FG_MUTED);
         ov_buf_bold();
         ov_buf_printf("%s", (pw >= 100) ? " [ 1: INTRO & OVERVIEW ] " : " [1: INTRO] ");
         ov_buf_reset_attr();
@@ -2239,8 +2239,8 @@ void ov_render_help(
             }
             else
             {
-                ov_buf_bg(35, 75, 45);
-                ov_buf_fg(160, 230, 160);
+                ov_theme_bg(OV_BG_PANEL_ALT);
+                ov_theme_fg(OV_FG_DIM);
                 ov_buf_bold();
                 ov_buf_printf("  CONTROL MODE: OFF  ");
             }
@@ -2265,12 +2265,12 @@ void ov_render_help(
             /* Search input box */
             if (lay->help_search_active)
             {
-                ov_buf_bg(25, 45, 65);
-                ov_buf_fg(255, 255, 255);
+                ov_theme_bg(OV_BG_SELECTED);
+                ov_theme_fg(OV_FG_BRIGHT);
             }
             else
             {
-                ov_buf_bg(35, 40, 50);
+                ov_theme_bg(OV_BG_PANEL_ALT);
                 ov_theme_fg(OV_FG_TEXT);
             }
             ov_buf_bold();
@@ -2408,7 +2408,7 @@ void ov_render_help(
         ov_buf_pos(row, pc + 2);
         if (is_sel)
         {
-            ov_buf_bg(45, 55, 85);
+            ov_theme_bg(OV_BG_SELECTED);
         }
         else
         {
@@ -2435,7 +2435,7 @@ void ov_render_help(
             ov_buf_reset_attr();
             if (is_sel)
             {
-                ov_buf_bg(45, 55, 85);
+                ov_theme_bg(OV_BG_SELECTED);
             }
             else
             {
@@ -2478,8 +2478,8 @@ void ov_render_help(
             ov_buf_reset_attr();
             if (is_sel)
             {
-                ov_buf_bg(45, 55, 85);
-                ov_buf_fg(255, 255, 255);
+                ov_theme_bg(OV_BG_SELECTED);
+                ov_theme_fg(OV_FG_BRIGHT);
             }
             else
             {
@@ -2502,14 +2502,14 @@ void ov_render_help(
 
             if (is_sel)
             {
-                ov_buf_bg(55, 65, 95);
+                ov_theme_bg(OV_BG_SELECTED);
                 ov_buf_bold();
-                ov_buf_fg(255, 220, 100);
+                ov_theme_fg(OV_FG_BRIGHT);
                 ov_buf_printf("▶ %s %s", chev, h->label);
             }
             else
             {
-                ov_buf_bg(36, 40, 52);
+                ov_theme_bg(OV_BG_PANEL_ALT);
                 ov_buf_bold();
                 ov_theme_fg(OV_FG_TITLE);
                 ov_buf_printf("  %s %s", chev, h->label);
@@ -2614,8 +2614,8 @@ void ov_render_help(
             ov_buf_reset_attr();
             if (is_sel)
             {
-                ov_buf_bg(45, 55, 85);
-                ov_buf_fg(255, 255, 255);
+                ov_theme_bg(OV_BG_SELECTED);
+                ov_theme_fg(OV_FG_BRIGHT);
             }
             else
             {

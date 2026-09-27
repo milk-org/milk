@@ -414,8 +414,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     else
     {
         /* Mouse hover inactive badge */
-        ov_buf_bg(60, 60, 60);     /* dim gray background */
-        ov_buf_fg(160, 160, 160);  /* light gray text */
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_DIM);
         ov_buf_bold();
         ov_buf_printf(" [m] HOVER: OFF ");
         ov_buf_reset_attr();
@@ -450,8 +450,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     else if (fpat[0] != '\0')
     {
         /* Defined but paused filter badge: shows retained query */
-        ov_buf_bg(50, 50, 70);     /* slate / dim blue-gray */
-        ov_buf_fg(180, 190, 220);  /* soft bluish-white */
+        ov_theme_bg(OV_BG_PANEL_ALT);
+        ov_theme_fg(OV_FG_WARN);
         ov_buf_bold();
         char fbadge[64];
         snprintf(fbadge, sizeof(fbadge), " [f] FILTER: OFF (/%.12s/) ", fpat);
@@ -463,8 +463,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     else
     {
         /* Inactive / empty filter badge */
-        ov_buf_bg(60, 60, 60);
-        ov_buf_fg(160, 160, 160);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_DIM);
         ov_buf_bold();
         ov_buf_printf(" [/] FILTER: OFF ");
         ov_buf_reset_attr();
@@ -615,9 +615,9 @@ void ov_render_tabs(
         }
         else
         {
-            /* Dim prominent state: rich dark amber bg, warm luminous gold text */
-            ov_buf_bg(85, 60, 15);
-            ov_buf_fg(255, 215, 100);
+            /* Dim prominent state themed to panel bg with warning text */
+            ov_theme_bg(OV_BG_PANEL);
+            ov_theme_fg(OV_FG_WARN);
         }
         ov_buf_bold();
         ov_buf_printf("[h: HELP]");

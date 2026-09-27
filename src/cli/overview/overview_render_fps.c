@@ -543,10 +543,7 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
                         int w = snprintf(NULL, 0, " [TRIG]");
                         ov_buf_printf(" [TRIG]");
                         ov_buf_reset_attr();
-                        if (is_sel || is_frozen || is_rel)
-                        {
-                            ov_theme_bg(row_bg);
-                        }
+                        ov_theme_bg(row_bg);
                         n5 += w;
                     }
                     else

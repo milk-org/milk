@@ -352,8 +352,8 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
                 }
                 else if (!lay->ctrl_mode)
                 {
-                    ov_buf_bg(60, 60, 60);
-                    ov_buf_fg(180, 180, 180);
+                    ov_theme_bg(OV_BG_PANEL_ALT);
+                    ov_theme_fg(OV_FG_MUTED);
                 }
                 else
                 {
