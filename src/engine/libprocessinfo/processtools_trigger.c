@@ -138,14 +138,12 @@ errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
         processinfo->triggersem = ImageStreamIO_getsemwaitindex(image, semindexrequested);
         if (processinfo->triggersem == -1)
         {
-            // could not find available semaphore
-            // fall back to CNT0 trigger mode
+            PRINT_ERROR("fallback to CNT0 triggermode (busywait)");
             processinfo->triggermode      = PROCESSINFO_TRIGGERMODE_CNT0;
             processinfo->triggerstreamcnt = image->md[0].cnt0;
         }
         else
         {
-            // register PID to stream
             image->semReadPID[processinfo->triggersem] = getpid();
         }
     }
