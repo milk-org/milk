@@ -121,7 +121,8 @@ errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
     }
 
     // checking if semaphore trigger mode OK
-    if (processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE)
+    if (processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE ||
+        processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE_PROP_TIMEOUTS)
     {
         DEBUG_TRACEPOINT("trigger mode %d = semaphore %d on ID %ld",
                          PROCESSINFO_TRIGGERMODE_SEMAPHORE, semindexrequested, trigID);
@@ -131,8 +132,6 @@ errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
         }
         if (trigID == -1)
         {
-            printf("trigID not valid: %ld\n", trigID);
-
             FUNC_RETURN_FAILURE("invalid image ID %ld", trigID);
         }
         processinfo->triggersem =
@@ -142,12 +141,10 @@ errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
             // could not find available semaphore
             // fall back to CNT0 trigger mode
             processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT0;
+            FUNC_RETURN_FAILURE("Cannot obtain a semaphore on image %s", data.image[trigID].name);
         }
-        else
-        {
-            // register PID to stream
-            data.image[trigID].semReadPID[processinfo->triggersem] = getpid();
-        }
+        // register PID to stream
+        data.image[trigID].semReadPID[processinfo->triggersem] = getpid();
     }
 
     DEBUG_TRACE_FEXIT();
