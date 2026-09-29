@@ -466,9 +466,10 @@ EXPECT_GREP: list[tuple[list[str], str]] = [
 @pytest.mark.timeout(TIMEOUT)
 @pytest.mark.parametrize("milk_cmds", EXPECT_OK)
 def test_expect_ok(milk_cmds: list[str]):
+    joined_cmd = ";".join(milk_cmds)
     with CLICommands(milk_cmds) as result:
         assert result.returncode == 0, (
-            f'"\033[1;33m{';'.join(milk_cmds)}\033[0m": expected clean exit, got "{result.returncode}"'
+            f'"\033[1;33m{joined_cmd}\033[0m": expected clean exit, got "{result.returncode}"'
             f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
         )
 
@@ -476,18 +477,20 @@ def test_expect_ok(milk_cmds: list[str]):
 @pytest.mark.timeout(TIMEOUT)
 @pytest.mark.parametrize("milk_cmds", EXPECT_ERROR)
 def test_expect_error(milk_cmds: list[str]):
+    joined_cmd = ";".join(milk_cmds)
     with CLICommands(milk_cmds) as result:
         combined = result.stdout + result.stderr
 
         assert ERROR_REGEX.search(
             combined
-        ), f'"\033[1;33m{';'.join(milk_cmds)}\033[0m": expected an error message, got: "{combined}"'
+        ), f'"\033[1;33m{joined_cmd}\033[0m": expected an error message, got: "{combined}"'
 
 
 @pytest.mark.timeout(TIMEOUT)
 @pytest.mark.parametrize("milk_cmds,needle", EXPECT_GREP)
 def test_expect_grep(milk_cmds: list[str], needle: str):
+    joined_cmd = ";".join(milk_cmds)
     with CLICommands(milk_cmds) as result:
         assert (
             needle in result.stdout
-        ), f'"\033[1;33m{';'.join(milk_cmds)}\033[0m" (grepping:{needle}): expected {needle!r} in stdout, got: "{result.stdout}"'
+        ), f'"\033[1;33m{joined_cmd}\033[0m" (grepping:{needle}): expected {needle!r} in stdout, got: "{result.stdout}"'
