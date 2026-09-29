@@ -46,8 +46,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    char AppName[STRINGMAXLEN_APPNAME];
-    memset(AppName, 0, sizeof(AppName));
+    char AppName[STRINGMAXLEN_APPNAME] = { 0 };
 
     char *CLI_APPNAME = getenv("MILKCLI_APPNAME");
     if (CLI_APPNAME != NULL)
@@ -209,19 +208,12 @@ int main(int argc, char *argv[])
 
             /* 2. Overwrite entire row with spaces */
             {
-                char spaces[256];
-                int  remain = c;
-                memset(spaces, ' ', sizeof(spaces));
+                char spaces[256] = { [0 ... 254] = ' ', [255] = '\0' };
+                int  remain      = c;
                 while (remain > 0)
                 {
-                    int chunk = remain;
-                    if (chunk > (int) sizeof(spaces))
-                    {
-                        chunk = (int) sizeof(spaces);
-                    }
-                    if (write(STDOUT_FILENO, spaces, chunk) < 0)
-                    {
-                    }
+                    int chunk = remain <= (int) sizeof(spaces) ? remain : (int) sizeof(spaces);
+                    int _     = write(STDOUT_FILENO, spaces, chunk);
                     remain -= chunk;
                 }
             }
