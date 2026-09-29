@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil, os
+import re
 import subprocess
 import typing as typ
 import ctypes
@@ -28,8 +29,19 @@ MILK_CLI_EXEC = shutil.which("milk-cli") if HAVE_CLI else None
 # milk-cli always ends its prompt with this suffix, with no trailing newline.
 _PROMPT_SUFFIX = " >"
 
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+_LOADED_MODULES_RE = re.compile(r"Loaded \d+ modules, \d+ commands")
+
+
+def _strip_ansi(text: str) -> str:
+    return _ANSI_RE.sub("", text)
+
 
 class MilkBuildException(Exception): ...
+
+
+class CLICrashError(Exception):
+    """Raised when milk-cli was killed by a signal (CRASH)."""
 
 
 class CLI:
@@ -51,6 +63,7 @@ class CLI:
         )
         self.open = True
         self.strip_ansi = strip_ansi
+        self.retcode: int | None = None
         self._read_until_prompt()  # discard startup banner + first prompt
 
     def _read_until_prompt(self) -> str:
@@ -63,19 +76,9 @@ class CLI:
             char = self._proc.stdout.read(1)
             if char == "":
                 break  # REPL process exited
-            if self.strip_ansi:
-                if len(escape) > 0:  # enter
-                    escape += char
-                    # CSI sequences end on a final byte in '@'-'~'; other
-                    # (non-CSI) escape sequences are just ESC + one char.
-                    if char != "[" or "@" <= char <= "~":
-                        escape = ""
-                    continue
-                if char == "\x1b":
-                    escape = char
-                    continue
-
             buf += char
+        if self.strip_ansi:
+            buf = _strip_ansi(buf)
         # Look for last linebreak
         for k in range(1, len(buf)):
             if buf[-k] == "\n":
@@ -99,18 +102,86 @@ class CLI:
             except (BrokenPipeError, ValueError):
                 pass
         try:
-            self._proc.wait(timeout=5)
+            self.retcode = self._proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
             self._proc.terminate()
-            self._proc.wait(timeout=5)
+            self.retcode = self._proc.wait(timeout=5)
         self.open = False
-
-    def __enter__(self) -> typ.Self:
-        return self
-
-    def __exit__(self, *exc_info: object) -> None:
-        self.close()
 
     def run(self, commands: typ.Sequence[str]) -> list[str]:
         """Feed a batch of commands to the REPL, returning their outputs."""
         return [self.send_line(command) for command in commands]
+
+
+class CLICommands:
+    """Run a batch of commands via ``milk-cli -s <temp_file>``.
+
+    Context manager whose ``__enter__`` returns the ``CompletedProcess``
+    (stdout, stderr, returncode). Raises :class:`CLICrashError` when the
+    shell is killed by a signal. ``__exit__`` kills the shell if it has
+    not already exited.
+    """
+
+    def __init__(
+        self,
+        commands: list[str],
+        *,
+        strip_ansi: bool = True,
+        quiet: bool = True,
+    ) -> None:
+        if MILK_CLI_EXEC is None:
+            raise MilkBuildException(
+                "MILK built without CLI support. Must build with -DUSE_CLI=ON."
+            )
+        self.commands = commands
+        self.strip_ansi = strip_ansi
+        self.quiet = quiet
+        self._proc: subprocess.Popen[str] | None = None
+        self.result: subprocess.CompletedProcess[str] | None = None
+
+    def __enter__(self) -> subprocess.CompletedProcess[str]:
+        assert MILK_CLI_EXEC is not None
+        env = dict(os.environ)
+        # TODO MILK_QUIET is broken and disables stdout/stderr.
+        # if self.quiet:
+        #    env["MILK_QUIET"] = "1"
+        import time
+
+        filename = f"/tmp/milk-pycli.{os.getpid()}.{int(time.time() * 1e9)}.milk"
+        with open(filename, "w") as f:
+            f.writelines([c + "\n" for c in self.commands])
+        self._proc = subprocess.Popen(
+            # [MILK_CLI_EXEC, "-c", ";".join(self.commands)],
+            [MILK_CLI_EXEC, "-s", filename],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+        )
+        stdout, stderr = self._proc.communicate()
+        if self.strip_ansi:
+            stdout = _strip_ansi(stdout)
+            stderr = _strip_ansi(stderr)
+        if self.quiet:
+            lines = stdout.splitlines(keepends=True)
+            for i, line in enumerate(lines):
+                if _LOADED_MODULES_RE.search(line):
+                    stdout = "".join(lines[i + 2 :])
+                    break
+        returncode = self._proc.returncode
+        self.result = subprocess.CompletedProcess(
+            self._proc.args, returncode, stdout, stderr
+        )
+        os.remove(filename)
+        # Negative return code == killed by signal (bash CRASH: exit >= 128)
+        if returncode < 0:
+            raise CLICrashError(
+                f"milk-cli killed by signal {-returncode}: "
+                f"{';'.join(self.commands)!r}"
+            )
+        return self.result
+
+    def __exit__(self, *exc_info: object) -> None:
+        if self._proc is not None and self._proc.poll() is None:
+            self._proc.kill()
+            self._proc.wait()
