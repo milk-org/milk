@@ -22,41 +22,31 @@ imageID image_ID(const char *name, IMAGE *imagearray, long NB_images)
 {
     DEBUG_TRACE_FSTART();
 
-    imageID i;
-    int     loopOK;
-    imageID tmpID = 0;
-
-    if (imagearray == NULL)
+    if (imagearray == NULL || name == NULL || NB_images <= 0)
     {
+        DEBUG_TRACE_FEXIT();
         return -1;
     }
 
-    i      = 0;
-    loopOK = 1;
-    while (loopOK == 1)
+    size_t namelen = strlen(name);
+    for (imageID i = 0; i < NB_images; i++)
     {
         if (imagearray[i].used == 1)
         {
-            if ((strncmp(name, imagearray[i].name, strlen(name)) == 0) &&
-                (imagearray[i].name[strlen(name)] == '\0'))
+            if ((strncmp(name, imagearray[i].name, namelen) == 0) &&
+                (imagearray[i].name[namelen] == '\0'))
             {
-                loopOK = 0;
-                tmpID  = i;
                 clock_gettime(CLOCK_MILK, &imagearray[i].md[0].lastaccesstime);
+                DEBUG_TRACEPOINT("FOUT %s -> %ld", name, i);
+                DEBUG_TRACE_FEXIT();
+                return i;
             }
-        }
-        i++;
-
-        if (i == NB_images)
-        {
-            loopOK = 0;
-            tmpID  = -1;
         }
     }
 
-    DEBUG_TRACEPOINT("FOUT %s -> %ld", name, tmpID);
+    DEBUG_TRACEPOINT("FOUT %s -> -1", name);
     DEBUG_TRACE_FEXIT();
-    return tmpID;
+    return -1;
 }
 
 /* ID number corresponding to a name */
@@ -64,39 +54,28 @@ MILK_PURE imageID image_ID_noaccessupdate(const char *name, IMAGE *imagearray, l
 {
     DEBUG_TRACE_FSTART();
 
-    imageID i;
-    imageID tmpID = 0;
-    int     loopOK;
-
-    if (imagearray == NULL)
+    if (imagearray == NULL || name == NULL || NB_images <= 0)
     {
+        DEBUG_TRACE_FEXIT();
         return -1;
     }
 
-    i      = 0;
-    loopOK = 1;
-    while (loopOK == 1)
+    size_t namelen = strlen(name);
+    for (imageID i = 0; i < NB_images; i++)
     {
         if (imagearray[i].used == 1)
         {
-            if ((strncmp(name, imagearray[i].name, strlen(name)) == 0) &&
-                (imagearray[i].name[strlen(name)] == '\0'))
+            if ((strncmp(name, imagearray[i].name, namelen) == 0) &&
+                (imagearray[i].name[namelen] == '\0'))
             {
-                loopOK = 0;
-                tmpID  = i;
+                DEBUG_TRACE_FEXIT();
+                return i;
             }
-        }
-        i++;
-
-        if (i == NB_images)
-        {
-            loopOK = 0;
-            tmpID  = -1;
         }
     }
 
     DEBUG_TRACE_FEXIT();
-    return tmpID;
+    return -1;
 }
 
 /* next available ID number */

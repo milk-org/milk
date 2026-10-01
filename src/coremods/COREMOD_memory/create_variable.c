@@ -22,12 +22,14 @@
 /* creates floating point variable */
 variableID create_variable_ID(const char *name, double value)
 {
-    variableID ID;
-    long       i2;
+    variableID ID = -1;
 
-    ID = -1;
+    if (name == NULL)
+    {
+        return -1;
+    }
 
-    i2 = variable_ID(name);
+    long i2 = variable_ID(name);
 
     if (imgid_exists(name))
     {
@@ -39,12 +41,19 @@ variableID create_variable_ID(const char *name, double value)
     {
         if (i2 != -1)
         {
-            //	  printf("Warning : variable name \"%s\" is already in use\n",name);
             ID = i2;
         }
         else
         {
             ID = next_avail_variable_ID();
+        }
+
+        if (ID == -1)
+        {
+            printf(
+                "ERROR: cannot create variable \"%s\": variable table full (max %ld variables)\n",
+                name, dcnvar);
+            return -1;
         }
 
         dcvar[ID].used = 1;
@@ -58,11 +67,14 @@ variableID create_variable_ID(const char *name, double value)
 /* creates long variable */
 variableID create_variable_long_ID(const char *name, long value)
 {
-    variableID ID;
-    long       i2;
+    variableID ID = -1;
 
-    ID = -1;
-    i2 = variable_ID(name);
+    if (name == NULL)
+    {
+        return -1;
+    }
+
+    long i2 = variable_ID(name);
 
     if (imgid_exists(name))
     {
@@ -74,12 +86,19 @@ variableID create_variable_long_ID(const char *name, long value)
     {
         if (i2 != -1)
         {
-            //	  printf("Warning : variable name \"%s\" is already in use\n",name);
             ID = i2;
         }
         else
         {
             ID = next_avail_variable_ID();
+        }
+
+        if (ID == -1)
+        {
+            printf(
+                "ERROR: cannot create variable \"%s\": variable table full (max %ld variables)\n",
+                name, dcnvar);
+            return -1;
         }
 
         dcvar[ID].used = 1;
@@ -91,14 +110,22 @@ variableID create_variable_long_ID(const char *name, long value)
     return ID;
 }
 
-/* creates long variable */
+/* creates string variable */
 variableID create_variable_string_ID(const char *name, const char *value)
 {
-    variableID ID;
-    long       i2;
+    variableID ID = -1;
 
-    ID = -1;
-    i2 = variable_ID(name);
+    if (name == NULL)
+    {
+        return -1;
+    }
+
+    if (value == NULL)
+    {
+        value = "";
+    }
+
+    long i2 = variable_ID(name);
 
     if (imgid_exists(name))
     {
@@ -110,12 +137,19 @@ variableID create_variable_string_ID(const char *name, const char *value)
     {
         if (i2 != -1)
         {
-            //	  printf("Warning : variable name \"%s\" is already in use\n",name);
             ID = i2;
         }
         else
         {
             ID = next_avail_variable_ID();
+        }
+
+        if (ID == -1)
+        {
+            printf(
+                "ERROR: cannot create variable \"%s\": variable table full (max %ld variables)\n",
+                name, dcnvar);
+            return -1;
         }
 
         dcvar[ID].used = 1;

@@ -39,6 +39,18 @@
  *  for now use a file-scope buffer. */
 char cli_prompt_format[200] = "";
 
+static void append_prompt_str(char *out, int *pos, int maxlen, const char *s)
+{
+    if (s == NULL)
+    {
+        return;
+    }
+    while (*s != '\0' && *pos < maxlen - 1)
+    {
+        out[(*pos)++] = *s++;
+    }
+}
+
 /**
  * @brief Build prompt string from format tokens
  */
@@ -56,13 +68,13 @@ void cli_build_prompt(const char *fmt, char *out, int maxlen)
             {
                 char hn[64];
                 gethostname(hn, sizeof(hn));
-                pos += snprintf(out + pos, (size_t) (maxlen - pos), "%s", hn);
+                append_prompt_str(out, &pos, maxlen, hn);
                 break;
             }
             case 'u':
             {
                 const char *u = getenv("USER");
-                pos += snprintf(out + pos, (size_t) (maxlen - pos), "%s", u ? u : "?");
+                append_prompt_str(out, &pos, maxlen, u ? u : "?");
                 break;
             }
             case 'd':
@@ -71,8 +83,7 @@ void cli_build_prompt(const char *fmt, char *out, int maxlen)
                 if (getcwd(cwd, sizeof(cwd)))
                 {
                     char *base = strrchr(cwd, '/');
-                    pos +=
-                        snprintf(out + pos, (size_t) (maxlen - pos), "%s", base ? base + 1 : cwd);
+                    append_prompt_str(out, &pos, maxlen, base ? base + 1 : cwd);
                 }
                 break;
             }
@@ -80,11 +91,13 @@ void cli_build_prompt(const char *fmt, char *out, int maxlen)
             {
                 time_t     now = time(NULL);
                 struct tm *tm  = localtime(&now);
-                pos += (int) strftime(out + pos, (size_t) (maxlen - pos), "%H:%M:%S", tm);
+                char       tbuf[32];
+                strftime(tbuf, sizeof(tbuf), "%H:%M:%S", tm);
+                append_prompt_str(out, &pos, maxlen, tbuf);
                 break;
             }
             case 'n':
-                pos += snprintf(out + pos, (size_t) (maxlen - pos), "%s", data.processname);
+                append_prompt_str(out, &pos, maxlen, data.processname);
                 break;
             default:
                 if (pos < maxlen - 2)
@@ -181,6 +194,10 @@ void cli_expand_braces(char *line, int maxlen)
                         }
                         for (long v = sv; v <= ev; v += step)
                         {
+                            if (opos >= maxlen - 1)
+                            {
+                                break;
+                            }
                             char nb[32];
                             snprintf(nb, sizeof(nb), "%s%ld", first ? "" : " ", v);
                             first = 0;
@@ -195,6 +212,10 @@ void cli_expand_braces(char *line, int maxlen)
                         }
                         for (long v = sv; v >= ev; v += step)
                         {
+                            if (opos >= maxlen - 1)
+                            {
+                                break;
+                            }
                             char nb[32];
                             snprintf(nb, sizeof(nb), "%s%ld", first ? "" : " ", v);
                             first = 0;
@@ -205,11 +226,25 @@ void cli_expand_braces(char *line, int maxlen)
                     continue;
                 }
             }
-            out[opos++] = line[i++];
+            if (opos < maxlen - 1)
+            {
+                out[opos++] = line[i++];
+            }
+            else
+            {
+                break;
+            }
         }
         else
         {
-            out[opos++] = line[i++];
+            if (opos < maxlen - 1)
+            {
+                out[opos++] = line[i++];
+            }
+            else
+            {
+                break;
+            }
         }
     }
     out[opos] = '\0';
