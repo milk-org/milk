@@ -16,7 +16,7 @@ Code metrics (dev branch) :
 
 ---
 
-_The development of MILK and CACAO is supported by the National Science Foundation under award 2410616 (CSSI program)_
+The development of MILK and CACAO is supported by the National Science Foundation under award 2410616 (CSSI program)
 
 ---
 
