@@ -93,6 +93,7 @@
 #include "../libmilkscript/milkscript.h"
 #include "treesitter/cli_treesitter.h"
 
+#include "milk_path.h"
 #include "milk_rt.h"
 
 /*-----------------------------------------
@@ -431,14 +432,14 @@ errno_t CLI_startup()
     char *installdir_env = getenv("MILK_INSTALLDIR");
     if (installdir_env != NULL)
     {
-        strncpy(dcinstalldir, installdir_env, STRINGMAXLEN_DIRNAME - 1);
+        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, installdir_env);
     }
     else
     {
 #ifdef INSTALLDIR
-        strncpy(dcinstalldir, INSTALLDIR, STRINGMAXLEN_DIRNAME - 1);
+        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, INSTALLDIR);
 #else
-        strncpy(dcinstalldir, "/usr/local/milk", STRINGMAXLEN_DIRNAME - 1);
+        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, "/usr/local/milk");
 #endif
     }
 
