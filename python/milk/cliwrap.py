@@ -79,12 +79,15 @@ class CLI:
             buf += char
         if self.strip_ansi:
             buf = _strip_ansi(buf)
-        # Look for last linebreak
+
+        # It seems that the suggestion-complete echoes back... let's ditch the first line (the echo)
+        buf = buf.split("\n", 1)[1]
+
+        # Look for last linebreak and discard last line (the new prompt)
         for k in range(1, len(buf)):
             if buf[-k] == "\n":
                 return buf[:-k]
-
-        return buf[: -len(_PROMPT_SUFFIX)]  # No newlines ??
+        return buf  # We couldn't find a linebreak.
 
     def send_line(self, line: str) -> str:
         assert self._proc.stdin is not None
