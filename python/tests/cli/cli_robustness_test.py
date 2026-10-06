@@ -18,8 +18,10 @@ import pytest
 
 from milk.cliwrap import CLICommands, HAVE_CLI
 
-if not HAVE_CLI:
-    pytest.skip(reason="MILK compiled without CLI support", allow_module_level=True)
+# "pytestmark" applies to all tests in this file
+pytestmark = pytest.mark.skipif(
+    not HAVE_CLI, reason="MILK compiled without CLI support"
+)
 
 # Per-case wall-clock guard (seconds) via pytest-timeout.
 TIMEOUT = 10
@@ -273,7 +275,6 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
 ]
 # fmt: on
 
-
 # ==========================================================================
 # EXPECT_ERROR: command prints a recognizable error message.
 # ==========================================================================
@@ -349,7 +350,6 @@ TESTLIST_EXPECT_ERROR: list[list[str]] = [
     ["milkquery foo"],
 ]
 # fmt: on
-
 
 # ==========================================================================
 # EXPECT_GREP: (commands, substring-required-on-stdout).

@@ -10,6 +10,7 @@ import pytest
 
 from milk.cliwrap import CLI, CLICommands, HAVE_CLI
 
+# "pytestmark" applies to all tests in this file
 pytestmark = pytest.mark.skipif(
     not HAVE_CLI, reason="MILK compiled without CLI support"
 )
