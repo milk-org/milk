@@ -122,6 +122,9 @@ int cli_intercept_cmd_export(const char *p)
     return 0;
 }
 
+#define CLI_MAX_SOURCE_DEPTH 16
+static int cli_source_depth = 0;
+
 /**
  * @brief Handler: source (execute) a script file.
  */
@@ -139,7 +142,16 @@ int cli_intercept_cmd_source(const char *p)
         {
             fn = p + 6;
         }
-        fn       = strip_ws(fn);
+        fn = strip_ws(fn);
+
+        if (cli_source_depth >= CLI_MAX_SOURCE_DEPTH)
+        {
+            fprintf(stderr, "source: %s: maximum recursion depth (%d) exceeded\n", fn,
+                    CLI_MAX_SOURCE_DEPTH);
+            return 1;
+        }
+        cli_source_depth++;
+
         FILE *sf = fopen(fn, "r");
         if (sf == NULL)
         {
@@ -163,6 +175,7 @@ int cli_intercept_cmd_source(const char *p)
             }
             fclose(sf);
         }
+        cli_source_depth--;
         return 1;
     }
     return 0;

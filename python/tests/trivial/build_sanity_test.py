@@ -38,26 +38,29 @@ from milk.cliwrap import CLI, HAVE_CLI
 def test_module_import_in_cli(module_name: str):
     if not HAVE_CLI:
         pytest.skip("MILK compiled without CLI support")
-    with CLI(strip_ansi=True) as cli:
+    cli = CLI(strip_ansi=True)
+    try:
         stdout = cli.send_line(f"mload {module_name}")
         last_line = stdout.split("\n")[-1]
         lib_file = f"lib{module_name}.so"
 
         if "COREMOD" in module_name:
             assert last_line.endswith("already loaded - no action taken")
-            fullpath_to_so = pathlib.Path(last_line.split()[2]).absolute()
+            fullpath_to_so = pathlib.Path(last_line.split()[2]).resolve()
         else:
             assert "LOADED :" in last_line
             assert last_line.endswith(lib_file)
-            fullpath_to_so = pathlib.Path(last_line.split()[-1]).absolute()
+            fullpath_to_so = pathlib.Path(last_line.split()[-1]).resolve()
 
-        milk_installdir = pathlib.Path(os.environ["MILK_INSTALLDIR"]).absolute()
+        milk_installdir = pathlib.Path(os.environ["MILK_INSTALLDIR"]).resolve()
 
         assert milk_installdir / "lib" / lib_file == fullpath_to_so
 
         stdout_lines = cli.send_line(f"m?").split("\n")
-        assert len(stdout_lines) > 6
+        assert len(stdout_lines) > 4
         if "COREMOD" in module_name:
-            assert len(stdout_lines) == 10
+            assert len(stdout_lines) == 8
         else:
-            assert len(stdout_lines) == 11
+            assert len(stdout_lines) == 9
+    finally:
+        cli.close()

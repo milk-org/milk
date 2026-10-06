@@ -89,6 +89,12 @@ double arith_atom(ArithParser *p)
     /* Parenthesized sub-expression */
     if (p->s[p->pos] == '(')
     {
+        static int paren_depth = 0;
+        if (paren_depth >= 64)
+        {
+            return 0.0;
+        }
+        paren_depth++;
         p->pos++;
         double v = arith_expr(p);
         arith_skip_ws(p);
@@ -96,6 +102,7 @@ double arith_atom(ArithParser *p)
         {
             p->pos++;
         }
+        paren_depth--;
         return v;
     }
 
@@ -202,13 +209,18 @@ double arith_shift(ArithParser *p)
         p->pos += 2;
         double right = arith_term(p);
         arith_skip_ws(p);
-        if (op == '<')
+        long s = (long) right;
+        if (s < 0 || s >= 64)
         {
-            left = (double) ((long) left << (long) right);
+            left = 0.0;
+        }
+        else if (op == '<')
+        {
+            left = (double) ((long) left << s);
         }
         else
         {
-            left = (double) ((long) left >> (long) right);
+            left = (double) ((long) left >> s);
         }
     }
     return left;
@@ -345,10 +357,14 @@ void cli_expand_arith(char *line, int maxlen)
             char expr[512];
             int  elen  = 0;
             int  depth = 1;
-            while (line[i] != '\0' && elen < 511)
+            while (line[i] != '\0' && elen < (int) sizeof(expr) - 1)
             {
                 if (line[i] == '(' && line[i + 1] == '(')
                 {
+                    if (elen >= (int) sizeof(expr) - 3)
+                    {
+                        break;
+                    }
                     depth++;
                     expr[elen++] = line[i++];
                     expr[elen++] = line[i++];
@@ -360,6 +376,10 @@ void cli_expand_arith(char *line, int maxlen)
                     if (depth == 0)
                     {
                         i += 2;
+                        break;
+                    }
+                    if (elen >= (int) sizeof(expr) - 3)
+                    {
                         break;
                     }
                     expr[elen++] = line[i++];

@@ -137,12 +137,17 @@ static void expand_env_array_all(const char  *varname,
             {
                 for (int e = 0; e < cli_arrays[a].nelem; e++)
                 {
-                    if (e > 0)
+                    size_t curlen = strlen(out_buf);
+                    if (e > 0 && curlen + 1 < STRINGMAXLEN_CLICMDLINE - 1)
                     {
-                        strncat(out_buf, " ", STRINGMAXLEN_CLICMDLINE - strlen(out_buf) - 1);
+                        strncat(out_buf, " ", STRINGMAXLEN_CLICMDLINE - curlen - 1);
+                        curlen++;
                     }
-                    strncat(out_buf, cli_arrays[a].elem[e],
-                            STRINGMAXLEN_CLICMDLINE - strlen(out_buf) - 1);
+                    if (curlen + 1 < STRINGMAXLEN_CLICMDLINE)
+                    {
+                        strncat(out_buf, cli_arrays[a].elem[e],
+                                STRINGMAXLEN_CLICMDLINE - curlen - 1);
+                    }
                 }
             }
             *out_val = out_buf;
@@ -414,16 +419,30 @@ void cli_expand_env(char *line, int maxlen)
         /* Skip $((  — arithmetic, handled downstream */
         if (line[i + 1] == '(' && line[i + 2] == '(')
         {
-            out[opos++] = line[i++];
-            out[opos++] = line[i++];
-            out[opos++] = line[i++];
+            if (opos + 3 < maxlen)
+            {
+                out[opos++] = line[i++];
+                out[opos++] = line[i++];
+                out[opos++] = line[i++];
+            }
+            else
+            {
+                break;
+            }
             continue;
         }
         /* Skip $(  — command substitution, handled downstream */
         if (line[i + 1] == '(')
         {
-            out[opos++] = line[i++];
-            out[opos++] = line[i++];
+            if (opos + 2 < maxlen)
+            {
+                out[opos++] = line[i++];
+                out[opos++] = line[i++];
+            }
+            else
+            {
+                break;
+            }
             continue;
         }
 
@@ -553,9 +572,15 @@ void cli_expand_env(char *line, int maxlen)
             else
             {
                 /* Complex expression — pass through */
-                out[opos++] = '$';
-                out[opos++] = '{';
-                if (is_length)
+                if (opos < maxlen - 1)
+                {
+                    out[opos++] = '$';
+                }
+                if (opos < maxlen - 1)
+                {
+                    out[opos++] = '{';
+                }
+                if (is_length && opos < maxlen - 1)
                 {
                     out[opos++] = '#';
                 }
@@ -621,8 +646,11 @@ void cli_expand_env(char *line, int maxlen)
         else
         {
             /* Variable not found — restore literal */
-            out[opos++] = '$';
-            if (has_brace)
+            if (opos < maxlen - 1)
+            {
+                out[opos++] = '$';
+            }
+            if (has_brace && opos < maxlen - 1)
             {
                 out[opos++] = '{';
             }

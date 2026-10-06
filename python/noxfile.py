@@ -30,7 +30,7 @@ def milk_build_and_test(
     use_cli: bool = False,
 ):
 
-    session.install("setuptools", "coverage", "pytest")
+    session.install("setuptools", "coverage", "pytest", "pytest-timeout")
     session.run(*("uv pip install -e .").split())  # install milk
 
     this_path = pathlib.Path(os.path.abspath(os.getcwd()))

@@ -577,33 +577,52 @@ static int handle_fifo_input(const char *prompt)
     ssize_t bytes;
     size_t  total_bytes = 0;
     char    buf0[1];
-    char    buf1[1024];
+    char    buf1[STRINGMAXLEN_CLICMDLINE];
 
     for (;;)
     {
         bytes = read(data.fifofd, buf0, 1);
         if (bytes > 0)
         {
-            buf1[total_bytes] = buf0[0];
-            total_bytes += (size_t) bytes;
+            if (total_bytes < sizeof(buf1) - 1)
+            {
+                buf1[total_bytes++] = buf0[0];
+            }
+        }
+        else if (bytes == 0)
+        {
+            /* EOF: writer closed the FIFO. Re-open to avoid 100% CPU select() loop */
+            close(data.fifofd);
+            data.fifofd = open(data.fifoname, O_RDWR | O_NONBLOCK);
+            break;
         }
         else
         {
-            if (errno == EWOULDBLOCK)
+            if (errno == EWOULDBLOCK || errno == EAGAIN)
             {
                 break;
             }
             else
             {
                 PRINT_ERROR("read: %s", strerror(errno));
+                close(data.fifofd);
+                data.fifofd = open(data.fifoname, O_RDWR | O_NONBLOCK);
                 return -1; /* signal error */
             }
         }
 
         if (buf0[0] == '\n')
         {
-            buf1[total_bytes - 1] = '\0';
+            if (total_bytes > 0 && buf1[total_bytes - 1] == '\n')
+            {
+                buf1[total_bytes - 1] = '\0';
+            }
+            else
+            {
+                buf1[total_bytes] = '\0';
+            }
             strncpy(data.CLIcmdline, buf1, STRINGMAXLEN_CLICMDLINE - 1);
+            data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
             printf("\033[36m[fifo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
 
@@ -713,7 +732,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     WRITE_FULLFILENAME(data.fifoname, "%s/.%s.fifo.%07d", dcshmdir, data.processname, getpid());
 
     DEBUG_TRACEPOINT("Get command-line options");
-    command_line_process_options(argc, argv);
+    if (command_line_process_options(argc, argv) != RETURN_SUCCESS)
+    {
+        DEBUG_TRACE_FEXIT();
+        return EXIT_FAILURE;
+    }
 
     dcprogstatus = 1;
     printf("\n");
@@ -872,6 +895,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         }
         initstartup = 1;
 
+        if (single_command_flag == 0 && data.fifoON == 0 && isatty(fileno(stdin)))
+        {
+            cli_set_interactive_mode(1);
+        }
+
         DEBUG_TRACEPOINT("Get user input fifo=%d",
                          data.fifoON); //===============================
         tv.tv_sec  = 0;
@@ -1000,7 +1028,19 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     {
                         data.CLIcmdline[strcspn(data.CLIcmdline, "\n")] = 0; // strip newline
                         cli_history_log_prompt(data.CLIcmdline);
-                        CLI_execute_line();
+                        cli_fault_isolation_arm();
+                        if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
+                        {
+                            CLI_execute_line();
+                        }
+                        else
+                        {
+                            dcsigINT  = 0;
+                            dcsigSEGV = 0;
+                            dcsigBUS  = 0;
+                            dcsigABRT = 0;
+                        }
+                        cli_fault_isolation_disarm();
                     }
                     else
                     {
@@ -1016,6 +1056,8 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     CLI_cleanup_scroll_region();
     rl_callback_handler_remove();
 #endif
+
+    cli_set_interactive_mode(0);
 
     cli_trap_run_exit();
 
@@ -1212,21 +1254,30 @@ static int command_line_process_options(int argc, char **argv)
             break;
 
         case 'n':
-            if (dcquiet == 0)
+            if (optarg != NULL && optarg[0] != '\0')
             {
-                printf("process name '%s'\n", optarg);
-            }
-            strncpy(data.processname, optarg, STRINGMAXLEN_PROCESSNAME - 1);
-            data.processnameflag = 1; // this process has been named
+                if (dcquiet == 0)
+                {
+                    printf("process name '%s'\n", optarg);
+                }
+                strncpy(data.processname, optarg, STRINGMAXLEN_PROCESSNAME - 1);
+                data.processname[STRINGMAXLEN_PROCESSNAME - 1] = '\0';
+                data.processnameflag                           = 1; // this process has been named
 
-            // extract first word before '.'
-            // it can be used to name processinfo and function parameter structure for process
-            char tmpstring[200];
-            strncpy(tmpstring, data.processname, STRINGMAXLEN_PROCESSNAME - 1);
-            char *firstword;
-            firstword = strtok(tmpstring, ".");
-            strncpy(data.processname0, firstword, STRINGMAXLEN_PROCESSNAME - 1);
-            prctl(PR_SET_NAME, optarg, 0, 0, 0);
+                // extract first word before '.'
+                // it can be used to name processinfo and function parameter structure for process
+                char tmpstring[STRINGMAXLEN_PROCESSNAME];
+                strncpy(tmpstring, data.processname, STRINGMAXLEN_PROCESSNAME - 1);
+                tmpstring[STRINGMAXLEN_PROCESSNAME - 1] = '\0';
+                char *firstword                         = strtok(tmpstring, ".");
+                if (firstword == NULL || firstword[0] == '\0')
+                {
+                    firstword = data.processname;
+                }
+                strncpy(data.processname0, firstword, STRINGMAXLEN_PROCESSNAME - 1);
+                data.processname0[STRINGMAXLEN_PROCESSNAME - 1] = '\0';
+                prctl(PR_SET_NAME, optarg, 0, 0, 0);
+            }
             break;
 
         case 'p':
@@ -1250,11 +1301,13 @@ static int command_line_process_options(int argc, char **argv)
 
         case 'c':
             strncpy(single_command_string, optarg, STRINGMAXLEN_CLICMDLINE - 1);
-            single_command_flag = 1;
+            single_command_string[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+            single_command_flag                                = 1;
             break;
 
         case 's':
             strncpy(CLIstartupfilename, optarg, STRINGMAXLEN_CLISTARTUPFILENAME - 1);
+            CLIstartupfilename[STRINGMAXLEN_CLISTARTUPFILENAME - 1] = '\0';
             if (dcquiet == 0)
             {
                 printf("Startup file : %s\n", CLIstartupfilename);
@@ -1263,10 +1316,11 @@ static int command_line_process_options(int argc, char **argv)
 
         case '?':
             /* getopt_long already printed an error message. */
-            break;
+            return RETURN_FAILURE;
 
         default:
-            abort();
+            fprintf(stderr, "Unrecognized or invalid option.\n");
+            return RETURN_FAILURE;
         }
     }
 
@@ -1283,7 +1337,8 @@ static int command_line_process_options(int argc, char **argv)
             PRINT_ERROR("snprintf error building default processname");
         }
         strncpy(data.processname0, data.processname, STRINGMAXLEN_PROCESSNAME - 1);
-        data.processnameflag = 1;
+        data.processname0[STRINGMAXLEN_PROCESSNAME - 1] = '\0';
+        data.processnameflag                            = 1;
         prctl(PR_SET_NAME, data.processname, 0, 0, 0);
     }
 

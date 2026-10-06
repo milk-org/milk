@@ -255,13 +255,16 @@ retry_fuzzy:
 
     if (data.CLImatchMode == CLICOMPLETIONMODE_CMDARGS)
     {
-        while ((int) list_index < data.cmd[data.cmdindex].nbarg)
+        if (data.cmd[data.cmdindex].argdata != NULL)
         {
-            name = data.cmd[data.cmdindex].argdata[list_index].fpstag;
-            list_index++;
-            if (strncmp(name, text, len) == 0)
+            while ((int) list_index < data.cmd[data.cmdindex].nbarg)
             {
-                return (dupstr(name));
+                name = data.cmd[data.cmdindex].argdata[list_index].fpstag;
+                list_index++;
+                if (name != NULL && strncmp(name, text, len) == 0)
+                {
+                    return (dupstr(name));
+                }
             }
         }
     }
@@ -662,24 +665,27 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
 
             int cli_ai       = 0;
             int matched_file = 0;
-            for (int ai = 0; ai < data.cmd[cmdimatch].nbparam; ai++)
+            if (data.cmd[cmdimatch].argdata != NULL)
             {
-                if (data.cmd[cmdimatch].argdata[ai].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+                for (int ai = 0; ai < data.cmd[cmdimatch].nbparam; ai++)
                 {
-                    if (cli_ai == argpos)
+                    if (data.cmd[cmdimatch].argdata[ai].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
                     {
-                        uint64_t atype = data.cmd[cmdimatch].argdata[ai].type;
-                        if (atype == CLIARG_FILENAME || atype == CLIARG_FITSFILENAME)
+                        if (cli_ai == argpos)
                         {
-                            matched_file = 1;
+                            uint64_t atype = data.cmd[cmdimatch].argdata[ai].type;
+                            if (atype == CLIARG_FILENAME || atype == CLIARG_FITSFILENAME)
+                            {
+                                matched_file = 1;
+                            }
+                            if (atype == CLIARG_FPSNAME)
+                            {
+                                data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
+                            }
+                            break;
                         }
-                        if (atype == CLIARG_FPSNAME)
-                        {
-                            data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
-                        }
-                        break;
+                        cli_ai++;
                     }
-                    cli_ai++;
                 }
             }
 

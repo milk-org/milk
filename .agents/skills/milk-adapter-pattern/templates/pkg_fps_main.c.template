@@ -68,8 +68,7 @@ static errno_t compute_function(void)
         return 1;
     }
 
-    IMAGE out_img;
-    memset(&out_img, 0, sizeof(IMAGE));
+    IMAGE out_img = {0};
     uint32_t dims[2] = { xsize, ysize };
     if (ImageStreamIO_createIm_gpu(&out_img, fps_out_name, 2, dims, _DATATYPE_FLOAT,
                                    -1, 1, 10, 0, 0, 0) != 0)
