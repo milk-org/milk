@@ -162,8 +162,8 @@ is `src/milk_module_example/examplefunc_fps_cli_poc.c`.
 Standalones are specifically designed to execute one compute unit in isolation without relying on the broader CLI environment. They act as native Linux processes managed via `tmux` and `fpsCTRL`.
 
 !!! tip
-**Writing a custom plugin?** See [plugins.md](../developer/plugins.md) for a complete guide on how to
-integrate custom plugins into the build system.
+    **Writing a custom plugin?** See [plugins.md](../developer/plugins.md) for a complete guide on how to
+    integrate custom plugins into the build system.
 
 ## 5. Dependency Architecture
 
