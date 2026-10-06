@@ -14,7 +14,7 @@
  * Modules compiled with this header can provide
  * computation functions that standalone fpsexec
  * programs call, but CLI registration code
- * (INIT_MODULE_LIB, RegisterCLIcommand, etc.)
+ * (MILK_MODULE, RegisterCLIcommand, etc.)
  * becomes no-op stubs.
  */
 
@@ -47,9 +47,8 @@
 
 #include "milkDebugTools.h"
 
-#define PI 3.14159265358979323846264338328
-
-#define SZ_CLICOREVARRAY 1000
+#include "milk_types.h"
+#include "fps_procinfo_macros.h"
 
 /* =====================================
  * Stubs for CLI-only declarations
@@ -75,66 +74,11 @@ static uid_t   euid_called __attribute__((unused));
 static uid_t   suid __attribute__((unused));
 static uint8_t TYPESIZE[32] __attribute__((unused));
 
-
-/* TUI stubs moved to fps_standalone_data.c */
-
-
-/* =====================================
- * String length constants
- * ===================================== */
-
-#define STRINGMAXLEN_CLISTARTUPFILENAME 200
-#define STRINGMAXLEN_CLIPROMPT 200
-
-#define CFITSEXIT                    \
-    printf("Abnormal termination, "  \
-           "File \"%s\", line %d\n", \
-           __FILE__, __LINE__);      \
-    exit(0)
-
-#ifdef DEBUG
-#    define nmalloc(f, type, n)                         \
-        f = (type *) calloc(n, sizeof(type));           \
-        if (f == NULL)                                  \
-        {                                               \
-            printf("ERROR: \"" #f "\" alloc failed\n"); \
-            exit(0);                                    \
-        }                                               \
-        else                                            \
-        {                                               \
-            printf("\nMALLOC: \"" #f "\" allocated\n"); \
-        }
-#    define nfree(f) \
-        free(f);     \
-        printf("\nMALLOC: \"" #f "\" freed\n");
-#else
-#    define nmalloc(f, type, n)                         \
-        f = (type *) calloc(n, sizeof(type));           \
-        if (f == NULL)                                  \
-        {                                               \
-            printf("ERROR: \"" #f "\" alloc failed\n"); \
-            exit(0);                                    \
-        }
-#    define nfree(f) free(f);
-#endif
-
-#define TEST_ALLOC(f)                               \
-    if (f == NULL)                                  \
-    {                                               \
-        printf("ERROR: \"" #f "\" alloc failed\n"); \
-        exit(0);                                    \
-    }
-
 #define NB_ARG_MAX 100
 
 typedef errno_t (*module_cli_reg_fn)(void);
 
 #define MILK_MODULE(modname, _cli_reg_call, _deps) /* standalone: no descriptor table */
-
-#define INIT_MODULE_LIB(modname)                              \
-    static errno_t                     init_module_CLI(void); \
-    static int __attribute__((unused)) INITSTATUS_##modname = 0;
-
 
 /* =====================================
  * Type definitions
@@ -242,35 +186,5 @@ static inline errno_t set_signal_catch(void)
 static inline void sig_handler(int signo __attribute__((unused)))
 {
 }
-
-static inline errno_t RegisterModule(const char *f __attribute__((unused)),
-                                     const char *p __attribute__((unused)),
-                                     const char *i __attribute__((unused)),
-                                     int         ma __attribute__((unused)),
-                                     int         mi __attribute__((unused)),
-                                     int         pa __attribute__((unused)))
-{
-    return 0;
-}
-
-static inline uint32_t RegisterCLIcmd(CLICMDDATA cd __attribute__((unused)),
-                                      errno_t (*fp)(void) __attribute__((unused)))
-{
-    return 0;
-}
-
-static inline uint32_t RegisterCLIcommand(const char *k __attribute__((unused)),
-                                          const char *s __attribute__((unused)),
-                                          errno_t (*fp)() __attribute__((unused)),
-                                          const char *i __attribute__((unused)),
-                                          const char *sy __attribute__((unused)),
-                                          const char *e __attribute__((unused)),
-                                          const char *c __attribute__((unused)))
-{
-    return 0;
-}
-
-#include "milk_types.h"
-#include "fps_procinfo_macros.h"
 
 #endif /* CLICORE_STANDALONE_H */

@@ -31,11 +31,7 @@
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "CLIcore.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -67,18 +63,7 @@ typedef struct
     long *children_index;
 } BIRCHCF;
 
-#ifndef MILK_NO_CLI
-
-/* ================================================================== */
-/* ================================================================== */
-/*            INITIALIZE LIBRARY                                      */
-/* ================================================================== */
-/* ================================================================== */
-
-// Module initialization macro in CLIcore.h
-// macro argument defines module name for bindings
-//
-INIT_MODULE_LIB(statistic)
+#ifndef MILK_NO_CLI // TODO WHY IS THIS GUARD HERE ?????
 
 /* ================================================================== */
 /* ================================================================== */
@@ -222,6 +207,10 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+
+// INITIALIZE MILK IMPORTABLE MODULE
+MILK_MODULE(statistic, init_module_CLI, NULL);
+
 #endif /* MILK_NO_CLI */
 
 /* =============================================================================================== */

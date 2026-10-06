@@ -100,19 +100,32 @@ static errno_t compute_function()
 }
 
 /**
- * @brief Macro to generate standard FPS integration functions:
- * - FPSCONFfunction: Handles parameter configuration.
- * - FPSRUNfunction:  Handles the main compute loop.
- * - CLIfunction:     The entry point called by the milk shell.
+ * @brief Standard FPS integration function:
+ * the CLIfunction entry point called by the milk shell.
  */
-INSERT_STD_CLIfunction
+static errno_t CLIfunction(void)
+{
+    errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);
+    if (retval == RETURN_SUCCESS)
+    {
+        STD_FARG_LINKfunction return compute_function();
+    }
+    if (retval == RETURN_CLICHECKARGARRAY_HELP)
+    {
+        return RETURN_SUCCESS;
+    }
+    if (retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
+    {
+        return RETURN_SUCCESS;
+    }
+    return retval;
+}
 
-    /**
+/**
  * @brief Registers the 'processor03' command with the Milk framework.
  * Called by the module initializer in example03fps_module.c.
  */
-    errno_t
-    CLIADDCMD_processor03()
+errno_t CLIADDCMD_processor03()
 {
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
     INSERT_STD_CLIREGISTERFUNC

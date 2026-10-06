@@ -32,23 +32,4 @@ imageID linopt_imtools_make1Dpolynomials(const char *IDout_name,
                                          long        MaxOrder,
                                          float       r0pix);
 
-/*
-double linopt_imtools_match_slow(
-    const char *ID_name,
-    const char *IDref_name,
-    const char *IDmask_name,
-    const char *IDsol_name,
-    const char *IDout_name
-);
-*/
-/*
-double linopt_imtools_match(
-    const char *ID_name,
-    const char *IDref_name,
-    const char *IDmask_name,
-    const char *IDsol_name,
-    const char *IDout_name
-);
-*/
-
 #endif

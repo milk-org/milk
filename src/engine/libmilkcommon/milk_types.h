@@ -20,16 +20,17 @@
 #include <sys/types.h>
 
 /* Core data structure (MILK_DATA) */
-#include "milkdata.h"
+#include "libmilkdata/milkdata.h"
 
 /* ImageStreamIO dependencies */
-#include "ImageStreamIO.h"
-#include "ImageStruct.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+#include "ImageStreamIO/ImageStruct.h"
 
 /* Process tools and timeutils */
-#include "processtools.h"
-#include "timeutils.h"
+#include "libprocessinfo/processtools.h"
+#include "libprocessinfo/timeutils.h"
 #include "milkDebugTools.h"
+
 
 #define PI 3.14159265358979323846264338328
 #define SZ_CLICOREVARRAY 1000

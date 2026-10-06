@@ -19,57 +19,38 @@
 /* ID number corresponding to a name */
 variableID variable_ID(const char *name)
 {
-    variableID i;
-    variableID tmpID;
-    int        loopOK;
+    if (name == NULL || dcnvar <= 0)
+    {
+        return -1;
+    }
 
-    i      = 0;
-    loopOK = 1;
-    while (loopOK == 1)
+    size_t namelen = strlen(name);
+    for (variableID i = 0; i < dcnvar; i++)
     {
         if (dcvar[i].used == 1)
         {
-            if ((strncmp(name, dcvar[i].name, strlen(name)) == 0) &&
-                (dcvar[i].name[strlen(name)] == '\0'))
+            if ((strncmp(name, dcvar[i].name, namelen) == 0) && (dcvar[i].name[namelen] == '\0'))
             {
-                loopOK = 0;
-                tmpID  = i;
+                return i;
             }
         }
-
-        i++;
-        if (i == dcnvar)
-        {
-            loopOK = 0;
-            tmpID  = -1;
-        }
     }
 
-    return tmpID;
+    return -1;
 }
 
-/* next available ID number */
+/* next available ID number, or -1 if full */
 variableID next_avail_variable_ID()
 {
-    variableID i;
-    variableID ID    = -1;
-    int        found = 0;
-
-    for (i = 0; i < dcnvar; i++)
+    for (variableID i = 0; i < dcnvar; i++)
     {
-        if ((dcvar[i].used == 0) && (found == 0))
+        if (dcvar[i].used == 0)
         {
-            ID    = i;
-            found = 1;
+            return i;
         }
     }
 
-    if (ID == -1)
-    {
-        ID = dcnvar;
-    }
-
-    return ID;
+    return -1;
 }
 
 /**

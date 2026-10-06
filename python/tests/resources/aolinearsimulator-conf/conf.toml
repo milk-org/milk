@@ -1,0 +1,33 @@
+long_name = "aolinearsimulator"
+name = "simulator"
+loop_number = 1
+tasks = [ "init_folders", "fetch_assets", "fps_init", "conf_start" ] # TODO auto-parse this and run it.
+
+# This loop is a test loop for the typical AO linear simulator
+# DM stream => delay -> MVM -> camera simulator ==> WFS
+
+[sessions]
+delay = 'milk-fpsexec-mem-streamdelay'
+mvm = 'milk-fpsexec-linalg-MVMextract'
+wfscamsim = 'cacao-fpsexec-cacaoiot-wfscamsim'
+
+
+
+[delay]
+in_name = 'dmvolt'
+out_name = 'dmvolt_delayed'
+procinfo.loopcntMax = -1
+
+[mvm]
+procinfo.enabled = true
+procinfo.loopcntMax = -1
+procinfo.triggermode = 3
+procinfo.triggersname = 'dmvolt_delayed'
+GPUindex = 99
+insname = 'dmvolt_delayed'
+immodes = 'aol1_simu_modes' # todo reinterpret as f-string
+axmode = 1
+option.MODENORM = false
+outcoeff = 'wfssim'
+
+[wfscamsim]

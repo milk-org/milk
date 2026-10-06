@@ -50,11 +50,7 @@
 #    include "CLIcore_modules.h"
 
 #    include "milkDebugTools.h"
-
-#    define PI 3.14159265358979323846264338328
-
-/// Size of array CLICOREVARRAY
-#    define SZ_CLICOREVARRAY 1000
+#    include "milk_types.h"
 
 // Initialize CLI
 errno_t CLI_startup();
@@ -138,51 +134,6 @@ static inline errno_t TUI_exit()
 #    endif
 
 
-#    define STRINGMAXLEN_CLISTARTUPFILENAME 200
-
-#    define STRINGMAXLEN_CLIPROMPT 200
-
-
-/* #define DEBUG */
-#    define CFITSEXIT                                                                        \
-        printf("Program abnormally terminated, File \"%s\", line %d\n", __FILE__, __LINE__); \
-        exit(0)
-
-#    ifdef DEBUG
-#        define nmalloc(f, type, n)                                      \
-            f = (type *) calloc(n, sizeof(type));                        \
-            if (f == NULL)                                               \
-            {                                                            \
-                printf("ERROR: pointer \"" #f "\" allocation failed\n"); \
-                exit(0);                                                 \
-            }                                                            \
-            else                                                         \
-            {                                                            \
-                printf("\nMALLOC: \"" #f "\" allocated\n");              \
-            }
-#        define nfree(f) \
-            free(f);     \
-            printf("\nMALLOC: \"" #f "\" freed\n");
-#    else
-#        define nmalloc(f, type, n)                                      \
-            f = (type *) calloc(n, sizeof(type));                        \
-            if (f == NULL)                                               \
-            {                                                            \
-                printf("ERROR: pointer \"" #f "\" allocation failed\n"); \
-                exit(0);                                                 \
-            }
-#        define nfree(f) free(f);
-#    endif
-
-#    define TEST_ALLOC(f)                                            \
-        if (f == NULL)                                               \
-        {                                                            \
-            printf("ERROR: pointer \"" #f "\" allocation failed\n"); \
-            exit(0);                                                 \
-        }
-
-#    define NB_ARG_MAX 100
-
 //
 //  ************ lib module init **********************************
 //
@@ -190,9 +141,8 @@ static inline errno_t TUI_exit()
 /**
  * @brief Declare module dependencies.
  *
- * Place this macro before INIT_MODULE_LIB() in the
- * module's main .c file.  Arguments are loadnames
- * (matching mload convention), e.g.:
+ * Place this macro before MILK_MODULE(name, init_module_CLI, _module_deps) in the
+ * module's main .c file.  Arguments are loadnames (matching mload convention), e.g.:
  *
  *     MODULE_DEPS("milkfft", "milkimage_gen")
  *
@@ -209,15 +159,11 @@ typedef errno_t (*module_cli_reg_fn)(void);
 /**
  * @brief Per-module registration descriptor.
  *
- * Export as the symbol __milk_module_info from the
- * module's main .c file.  load_sharedobj() reads it
- * after dlopen() and drives the full registration
- * sequence without __attribute__((constructor)).
+ * Export as the symbol __milk_module_info from the module's main .c file.
+ * load_sharedobj() reads it after dlopen() and drives the full registration
+ * sequence without ever needing __attribute__((constructor)).
  *
- * Use the MILK_MODULE() macro to define and export
- * this struct.  Modules using INIT_MODULE_LIB()
- * (old-style) are unaffected: their constructor
- * fires as before and __milk_module_info is absent.
+ * Use the MILK_MODULE() macro to define and export this module-defining struct.
  */
 typedef struct
 {
@@ -242,11 +188,9 @@ typedef struct
 /**
  * @brief Define and export the module descriptor.
  *
- * Use in a module's main .c instead of
- * INIT_MODULE_LIB().  load_sharedobj() reads the
- * descriptor after dlopen() and calls the module's
- * init_module_CLI(); no __attribute__((constructor))
- * is emitted.
+ * Use in a module's main .c.  load_sharedobj() reads the descriptor after dlopen() and calls the module's
+ * init_module_CLI(); no __attribute__((constructor)) is emitted.
+ * Deprecates INIT_MODULE_LIB().
  *
  * @param modname       Module name token (unquoted)
  * @param cli_reg_call  init_module_CLI function pointer
@@ -267,40 +211,6 @@ typedef struct
                                                 .deps               = (_deps),                  \
                                                 .mod_registered     = 0,                        \
                                                 .constructor_called = 0 }
-
-/** @brief Initialize module (no dependencies)
- */
-// TODO: remove when all modules migrated.
-#    define INIT_MODULE_LIB(modname)                                                              \
-        static errno_t                    init_module_CLI(); /* forward declaration */            \
-        static int                        INITSTATUS_##modname = 0;                               \
-        void __attribute__((constructor)) libinit_##modname()                                     \
-        {                                                                                         \
-            if (INITSTATUS_##modname == 0) /* only run once */                                    \
-            {                                                                                     \
-                strncpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT,                   \
-                        STRINGMAXLEN_MODULE_SHORTNAME - 1);                                       \
-                strncpy(data.moduledatestring, __DATE__, STRINGMAXLEN_MODULE_DATESTRING - 1);     \
-                strncpy(data.moduletimestring, __TIME__, STRINGMAXLEN_MODULE_TIMESTRING - 1);     \
-                strncpy(data.modulename, (#modname), STRINGMAXLEN_MODULE_NAME);                   \
-                data.module_nbdep = 0;                                                            \
-                RegisterModule(__FILE__, PROJECT_NAME, MODULE_DESCRIPTION, VERSION_MAJOR,         \
-                               VERSION_MINOR, VERSION_PATCH);                                     \
-                init_module_CLI();                                                                \
-                INITSTATUS_##modname = 1;                                                         \
-                strncpy(data.modulename, "", STRINGMAXLEN_MODULE_NAME - 1); /* reset after use */ \
-                strncpy(data.moduleshortname_default, "",                                         \
-                        STRINGMAXLEN_MODULE_SHORTNAME - 1); /* reset after use */                 \
-                strncpy(data.moduleshortname, "",                                                 \
-                        STRINGMAXLEN_MODULE_SHORTNAME - 1); /* reset after use */                 \
-            }                                                                                     \
-        }                                                                                         \
-        void __attribute__((destructor)) libclose_##modname()                                     \
-        {                                                                                         \
-            if (INITSTATUS_##modname == 1)                                                        \
-            {                                                                                     \
-            }                                                                                     \
-        }
 
 #    define MAX_NB_FRAMENAME_CHAR 500
 #    define MAX_NB_EXCLUSIONS 40

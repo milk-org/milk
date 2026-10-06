@@ -82,10 +82,7 @@ if(USE_STATIC_LTO)
   else()
     target_link_libraries(${LIBNAME_STATIC} PUBLIC m milkstatistic_static)
   endif()
-  install(
-    TARGETS ${LIBNAME_STATIC}
-    EXPORT milkTargets
-    DESTINATION lib)
+  # Not installed nor added to the milkTargets export set — see notes_for_future.md
 endif()
 
 add_milk_standalone(imggen-mkrandom mkrandomim.c)

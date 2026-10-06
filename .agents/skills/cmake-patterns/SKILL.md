@@ -15,7 +15,6 @@ and build tier requirements.
 
 - Creating a new module or standalone executable
 - Debugging CMake build errors
-- Understanding `_compute` library variants
 - Adding new dependencies to a module
 
 ## Module CMakeLists.txt Anatomy
@@ -118,21 +117,21 @@ add_cacao_standalone_plugins(
 
 These helpers automatically:
 
-- Set `FPS_STANDALONE` and `MILK_NO_CLI` defines
-- Link `_compute` variants instead of full libs
+- Set `FPS_STANDALONE` and `MILK_NO_CLI` defines on the executable target (this is what keeps the build CLI-free, not a separate library variant)
+- Link the common standalone library set
 - Set correct include directories
 - Configure install target
 
 ### Additional Link Dependencies
 
 If a standalone needs extra libraries beyond the
-standard set:
+standard set, link the module's regular library:
 
 ```cmake
 add_cacao_standalone(myname myname.c)
 target_link_libraries(
     cacao-fpsexec-myname
-    PUBLIC milkstatistic_compute)
+    PUBLIC milkstatistic)
 ```
 
 ### Never Do This
@@ -146,29 +145,11 @@ target_compile_definitions(...)
 install(TARGETS ...)
 ```
 
-## `_compute` Library Variants
-
 Standalone executables must never link `CLIcore`.
-Instead, they link `_compute` variants compiled
-with `MILK_NO_CLI`:
-
-```cmake
-set(LIBNAME_COMPUTE ${LIBNAME}_compute)
-add_library(
-    ${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
-target_compile_definitions(
-    ${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
-target_link_libraries(
-    ${LIBNAME_COMPUTE}
-    PRIVATE milkdata ImageStreamIO milkfps)
-```
-
-The `_compute` variant:
-
-- Includes `CLIcore_standalone.h` (stubs)
-- Does **not** register CLI commands
-- Links only engine-tier libraries
-- Is safe for standalone executables
+The regular module library is safe to link as-is:
+`-DMILK_NO_CLI`, applied by the standalone helper macros to the executable target,
+redirects `CLIcore.h` to `CLIcore_standalone.h` (stubs) for that target's own
+translation units, so no separate build variant of the library is needed.
 
 ## Build Tier Constraints
 
@@ -178,7 +159,7 @@ The `_compute` variant:
 | Core       | Engine + COREMOD\_{arith,memory,tools}            |
 | Core+FITS  | Core + COREMOD_iofits, cfitsio                    |
 | Full       | Everything: CLIcore, all plugins                  |
-| Standalone | Engine + `_compute` variants only                 |
+| Standalone | Engine + regular COREMOD libs, `-DMILK_NO_CLI`    |
 
 Before adding a dependency, check
 `docs/dependency_graph.md` to verify the link
@@ -256,26 +237,3 @@ top-level CMake. Link via the milkfft module:
 target_link_libraries(${LIBNAME}
     PRIVATE milkfft)
 ```
-
-For standalone targets, use the `_compute`
-variant:
-
-```cmake
-add_milk_standalone(myname myname.c)
-target_link_libraries(
-    milk-fpsexec-myname
-    PRIVATE milkfft_compute)
-```
-
-### When to Create a `_compute` Variant
-
-Create a `_compute` variant if:
-
-- Your module provides functions that
-  standalone executables need to link against
-- Another module's standalone links your lib
-
-Do **not** create a `_compute` variant if:
-
-- Your module is CLI-only (TUI, interactive)
-- No standalone executable needs your code

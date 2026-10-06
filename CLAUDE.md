@@ -12,8 +12,9 @@ follow its reading order (section 2).
   for all new code.
 - Always compile-test after C/CMake edits (see
   `.agents/workflows/compile-test.md`).
-- Max 80 character lines, Linux kernel C style,
-  Kernel-Doc comments above functions.
+- Max 120 character lines, Linux kernel C style,
+  Kernel-Doc comments above functions. Keep these one or two-liners
+  as if pitching to senior devs that can read code. Don't duplicate docstrings between h and c files.
 - Check `docs/dependency_graph.md` before adding
   cross-module dependencies.
 - Use `restrict` and performance macros on hot

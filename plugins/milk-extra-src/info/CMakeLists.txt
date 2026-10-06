@@ -92,6 +92,6 @@ if(USE_CLI)
     milk-shmimmon
     PRIVATE ${CMAKE_SOURCE_DIR}/src/engine
             ${CMAKE_SOURCE_DIR}/src/engine/libfps ${CMAKE_SOURCE_DIR}/src)
-  target_link_libraries(milk-shmimmon PRIVATE ImageStreamIO m)
+  target_link_libraries(milk-shmimmon PRIVATE ImageStreamIO pthread m)
   install(TARGETS milk-shmimmon DESTINATION bin)
 endif()

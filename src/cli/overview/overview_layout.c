@@ -27,6 +27,9 @@ void ov_layout_compute(OV_LAYOUT *lay)
     /* Header: 1 row at top */
     lay->r_header = (OV_RECT) { 1, 1, 1, W };
 
+    /* Tab selection bar: 1 row below header */
+    lay->r_tabs = (OV_RECT) { 2, 1, 1, W };
+
     /* Status: 1 row at bottom */
     lay->r_status = (OV_RECT) { H, 1, 1, W };
 
@@ -45,14 +48,13 @@ void ov_layout_compute(OV_LAYOUT *lay)
         lay->r_cmdlog = (OV_RECT) { 0, 0, 0, 0 };
     }
 
-    /* Usable height excludes header + status + log */
+    /* Usable height excludes header + tabs + status + log */
     int body_top;
     int body_h;
 
     if (lay->view == OV_VIEW_DASHBOARD)
     {
-        /* Row 2 = preview bar for selected item */
-        /* Row 3 = highlighted column description line */
+        /* Row 3 = preview bar for selected item */
         body_top = 4;
         body_h   = H - 4 - log_h;
         if (body_h < 4)
@@ -88,7 +90,6 @@ void ov_layout_compute(OV_LAYOUT *lay)
     }
     else
     {
-        /* Row 2 (or row 4 for FPS view) = highlighted column description line */
         body_top = 3;
         body_h   = H - 3 - log_h;
         if (lay->view == OV_VIEW_FPS)

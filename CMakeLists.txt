@@ -73,6 +73,12 @@ include(CheckLanguage)
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 
+# Force colors with ninja
+option (FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU only)." FALSE)
+if (${FORCE_COLORED_OUTPUT})
+  add_compile_options (-fdiagnostics-color=always) # This is for gcc/g++, alt option for clang.
+endif ()
+
 enable_language(C)
 
 # =======================================
@@ -99,12 +105,78 @@ if(_suffix_pos EQUAL -1)
 endif()
 set(INSTALLDIR "${CMAKE_INSTALL_PREFIX}")
 
-# Configure a header file to pass some of the CMake settings to the source code
+# Determine git commit hash for version tracking
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+  # Automatically re-run cmake when git commit or branch changes
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --git-path HEAD
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    OUTPUT_VARIABLE _git_head_rel
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  if(_git_head_rel)
+    get_filename_component(_git_head_file "${_git_head_rel}"
+      ABSOLUTE BASE_DIR "${PROJECT_SOURCE_DIR}")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_git_head_file}")
+
+    if(EXISTS "${_git_head_file}")
+      file(READ "${_git_head_file}" _git_head_content)
+      if("${_git_head_content}" MATCHES "^ref: *([^\r\n]+)")
+        execute_process(
+          COMMAND ${GIT_EXECUTABLE} rev-parse --git-path "${CMAKE_MATCH_1}"
+          WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+          OUTPUT_VARIABLE _git_ref_rel
+          OUTPUT_STRIP_TRAILING_WHITESPACE
+          ERROR_QUIET
+        )
+        if(_git_ref_rel)
+          get_filename_component(_git_ref_file "${_git_ref_rel}"
+            ABSOLUTE BASE_DIR "${PROJECT_SOURCE_DIR}")
+          if(EXISTS "${_git_ref_file}")
+            set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_git_ref_file}")
+          endif()
+        endif()
+      endif()
+    endif()
+  endif()
+
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --git-path logs/HEAD
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    OUTPUT_VARIABLE _git_log_rel
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  if(_git_log_rel)
+    get_filename_component(_git_log_file "${_git_log_rel}"
+      ABSOLUTE BASE_DIR "${PROJECT_SOURCE_DIR}")
+    if(EXISTS "${_git_log_file}")
+      set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_git_log_file}")
+    endif()
+  endif()
+
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    OUTPUT_VARIABLE MILK_GIT_COMMIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+endif()
+if(NOT MILK_GIT_COMMIT)
+  set(MILK_GIT_COMMIT "unknown")
+endif()
+
+# Configure a header file to pass some of the CMake settings to the source code.
+# Generated into the build tree (not the source tree), which is shared across
+# out-of-source builds with differing options/install prefixes.
 configure_file("${PROJECT_SOURCE_DIR}/src/milk_config.h.in"
-  "${PROJECT_SOURCE_DIR}/src/milk_config.h")
+  "${CMAKE_BINARY_DIR}/config/milk_config.h")
 
 configure_file("${PROJECT_SOURCE_DIR}/src/config.h.in"
-  "${PROJECT_SOURCE_DIR}/src/config.h")
+  "${CMAKE_BINARY_DIR}/config/config.h")
 
 # select most recent version available
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
@@ -167,7 +239,7 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
       RESULT_VARIABLE GIT_SUBMOD_RESULT)
     if(NOT GIT_SUBMOD_RESULT EQUAL "0")
       message(
-        FATAL_ERROR
+	      WARNING
         "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules"
       )
     endif()
@@ -404,6 +476,8 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # src/engine is needed globally so that all targets can resolve #include
 # "ImageStreamIO/ImageStreamIO.h"
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine)
+# Generated config.h/milk_config.h live in the build tree; see configure_file() above.
+include_directories(${CMAKE_BINARY_DIR}/config)
 
 # =======================================
 # SOURCE DIRECTORIES
@@ -433,6 +507,21 @@ foreach(lsrcdir IN LISTS libsrcdir libextradir)
     endif()
   endif()
 endforeach()
+
+# Ensure ImageStreamIO exports pthread for POSIX semaphore support
+# (guard in case submodule checkout does not yet include the fix)
+if(TARGET ImageStreamIO)
+  get_target_property(_isio_libs ImageStreamIO LINK_LIBRARIES)
+  if(NOT _isio_libs MATCHES "pthread")
+    target_link_libraries(ImageStreamIO PUBLIC pthread)
+  endif()
+endif()
+if(TARGET ImageStreamIO_static)
+  get_target_property(_isio_static_libs ImageStreamIO_static LINK_LIBRARIES)
+  if(NOT _isio_static_libs MATCHES "pthread")
+    target_link_libraries(ImageStreamIO_static PUBLIC pthread)
+  endif()
+endif()
 
 # example module and isio-tools depend on coremods
 if(USE_COREMODS)
@@ -581,8 +670,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/milk.pc.in
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/milk.pc
   DESTINATION "${INSTALL_PKGCONFIG_DIR}")
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/milk_config.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h DESTINATION include)
+install(FILES ${CMAKE_BINARY_DIR}/config/milk_config.h
+  ${CMAKE_BINARY_DIR}/config/config.h DESTINATION include)
 
 if(build_python_module)
   add_subdirectory(python_module)
@@ -620,6 +709,7 @@ if(USE_CLI)
     scripts/tmuxkillall
     scripts/tmuxsessionname
     scripts/waitforfile
+    scripts/milk-env.sh
     DESTINATION bin)
 
 endif(USE_CLI)

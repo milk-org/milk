@@ -13,6 +13,7 @@
 #include "fpsCTRL_TUI.h"
 #include "fpsCTRL_globals.h"
 #include "fpsCTRL_ansi.h"
+#include "milk_config.h"
 
 
 /**
@@ -54,7 +55,7 @@ void fpsCTRL_crash_handler(int sig)
  */
 void print_usage(const char *progname)
 {
-    printf("Usage: %s [options]\n", progname);
+    printf("Usage: %s [options]  (commit %s)\n", progname, MILK_GIT_COMMIT);
     printf("Options:\n");
     printf("  -m, --match       "
            "Force match with "

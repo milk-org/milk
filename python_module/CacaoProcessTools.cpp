@@ -14,7 +14,20 @@ using namespace pybind11::literals;
 
 extern "C"
 {
-    DATA __attribute__((used)) data;
+DATA __attribute__((used)) data;
+}
+
+struct timespec double_to_timespec(double value)
+{
+    struct timespec tspec;
+    tspec.tv_sec  = static_cast<time_t>(value);
+    tspec.tv_nsec = static_cast<long>((value - tspec.tv_sec) * 1e9);
+    return tspec;
+}
+
+double timespec_to_double(struct timespec tspec)
+{
+    return static_cast<double>(tspec.tv_sec) + static_cast<double>(tspec.tv_nsec) * 1e-9;
 }
 
 int fps_value_to_key(pyFps &cls, const std::string &key, const FPS_type fps_type, py::object value)
@@ -44,7 +57,8 @@ int fps_value_to_key(pyFps &cls, const std::string &key, const FPS_type fps_type
         return functionparameter_SetParamValue_STRING(cls, key.c_str(),
                                                       std::string(py::str(value)).c_str());
     case FPS_type::TIMESPEC:
-        return functionparameter_SetParamValue_TIMESPEC(cls, key.c_str(), py::float_(value));
+        return functionparameter_SetParamValue_TIMESPEC(
+            cls, key.c_str(), double_to_timespec(nb::cast<double>(value)));
     default:
         return EXIT_FAILURE;
     }
@@ -74,7 +88,8 @@ py::object fps_value_from_key(pyFps &cls, const std::string &key, const FPS_type
     case FPS_type::FITSFILENAME:
         return py::str(functionparameter_GetParamPtr_STRING(cls, key.c_str()));
     case FPS_type::TIMESPEC:
-        return py::float_(functionparameter_GetParamValue_TIMESPEC(cls, key.c_str()));
+        return nb::float_(
+            timespec_to_double(functionparameter_GetParamValue_TIMESPEC(cls, key.c_str())));
     default:
         return py::none();
     }

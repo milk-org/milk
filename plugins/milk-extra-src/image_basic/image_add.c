@@ -109,7 +109,6 @@ static CLICMDDATA      CLIcmddata_2    = {
 };
 FPS_CMDSETTINGS_INIT(2, CLIcmddata_2, FPS_app_info_2)
 
-
 static MILK_HOT errno_t compute_function_2()
 {
     basic_add3D(p2_in1, p2_in2, p2_out, (long) p2_ox, (long) p2_oy, (long) p2_oz);
@@ -122,6 +121,7 @@ static errno_t CLIfunction_2(void)
                                         nb_bindings_2, compute_function_2);
 }
 
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 errno_t CLIADDCMD_image_basic__image_add()
 {
     safe_fps_fill_farg_examples(farg_1, my_bindings_1, nb_bindings_1);
@@ -138,6 +138,7 @@ errno_t CLIADDCMD_image_basic__image_add()
 
     return RETURN_SUCCESS;
 }
+#endif // #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
 imageID basic_add(const char *__restrict ID_name1,
                   const char *__restrict ID_name2,

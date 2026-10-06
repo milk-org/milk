@@ -28,6 +28,8 @@
 #define dcfpscode (milk_data.FPS_CMDCODE)
 #define dcfpsname (milk_data.FPS_name)
 #define dcfpststamp (milk_data.FPS_TIMESTAMP)
+#define dcfpsbindings (milk_data.fpsbindings)
+#define dcfpsnbindings (milk_data.fpsnbindings)
 
 /* SHM */
 #define dcshmdir (milk_data.shmdir)

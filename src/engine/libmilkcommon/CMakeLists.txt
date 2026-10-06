@@ -1,6 +1,6 @@
 set(LIBNAME "milkcommon")
 
-add_library(${LIBNAME} SHARED milk_rt.c)
+add_library(${LIBNAME} SHARED milk_compiler.c milk_rt.c milk_path.c)
 
 target_include_directories(
   ${LIBNAME}
@@ -15,4 +15,4 @@ install(
   EXPORT milkTargets
   DESTINATION lib)
 install(FILES milkDebugTools.h milk_compiler.h pixel_dispatch.h milk_types.h
-              multiselect_parse.h milk_rt.h DESTINATION include/libmilkcommon)
+              multiselect_parse.h milk_rt.h milk_path.h DESTINATION include/libmilkcommon)

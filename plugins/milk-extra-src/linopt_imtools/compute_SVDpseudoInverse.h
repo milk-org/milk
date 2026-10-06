@@ -10,7 +10,7 @@
 #ifndef LINOPT_IMTOOLS__COMPUTE_SVDPSEUDOINVERSE_H
 #define LINOPT_IMTOOLS__COMPUTE_SVDPSEUDOINVERSE_H
 
-errno_t CLIADDCMD_linopt_imtools__compute_SVDpseudoinverse();
+MILK_WEAK errno_t CLIADDCMD_linopt_imtools__compute_SVDpseudoinverse() MILK_WEAK_CLIFUNCDEF;
 
 #include "milkDebugTools.h"
 

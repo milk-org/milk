@@ -49,7 +49,7 @@ _Note: Make sure your module links against `${BLAS_LIBRARIES}` in its `CMakeList
 Do not implement custom FFT logic or call `fftw` directly if you can avoid it. Milk has a dedicated `milkfft` plugin that wraps FFT operations safely into the stream processing architecture.
 
 - Include `fft/fft.h` (from `plugins/milk-extra-src/fft`).
-- In your `CMakeLists.txt`, link against `milkfft` (or `milkfft_compute` for standalone executables).
+- In your `CMakeLists.txt`, link against `milkfft`.
 - Use `dofft()` or `init_fftwplan()` provided by the `milkfft` API to perform distributed or optimized 2D/3D transforms on `IMGID` streams.
 
 ## 3. Loop Vectorization (SIMD)

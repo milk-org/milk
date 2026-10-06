@@ -6,11 +6,6 @@
  * @file    fps_loadmemstream_lite.c
  * @brief   Lite version of load memory stream for libfps.
  *
- * This file is compiled into libmilkfps.so which does
- * NOT link against libCLIcore.so. We use weak
- * references to accessor globals defined in
- * fps_standalone_data.c (linked into standalone
- * executables only).
  *
  * Supports @X: prefix modifiers on stream names:
  *   L  Only search local imarray (no SHM)

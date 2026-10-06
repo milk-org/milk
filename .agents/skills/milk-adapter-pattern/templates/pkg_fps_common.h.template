@@ -1,0 +1,75 @@
+/**
+ * @file @PKG_NAME@_fps_common.h.template
+ * @brief Common adapter state and prototypes for Milk integration.
+ */
+
+#ifndef @PKG_UPPER@_FPS_COMMON_H
+#define @PKG_UPPER@_FPS_COMMON_H
+
+#include "milk_compiler.h"
+#include "fps.h"
+#include "fps_procinfo_macros.h"
+#include "processinfo.h"
+#include <ImageStreamIO/ImageStreamIO.h>
+#include <stdint.h>
+#include <time.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Global parameter variables mapped by FPS */
+extern char     fps_in_name[FUNCTION_PARAMETER_STRMAXLEN];
+extern char     fps_out_name[FUNCTION_PARAMETER_STRMAXLEN];
+extern int32_t  fps_stream_out;
+extern int32_t  fps_allow_drop;
+extern double   fps_threshold;
+extern uint32_t fps_max_items;
+extern uint32_t fps_ncpu;
+extern int32_t  fps_reset_state;
+
+/**
+ * @brief Validate configuration parameters and check input stream readiness.
+ *
+ * @return 0 on success, non-zero error code on invalid parameters.
+ */
+errno_t @PKG_NAME@_fps_custom_conf_check(void);
+
+/**
+ * @brief Initialize underlying compute engine and conversion buffers.
+ *
+ * @param ndim Dimensionality of input feature vectors.
+ * @return 0 on success, non-zero on failure.
+ */
+errno_t @PKG_NAME@_fps_init_engine(
+    uint32_t ndim);
+
+/**
+ * @brief Free underlying compute engine and conversion buffers.
+ */
+void @PKG_NAME@_fps_cleanup_engine(void);
+
+/**
+ * @brief Process a single frame through the core package engine.
+ *
+ * @param raw_pixels  Pointer to raw pixel data buffer.
+ * @param datatype    ImageStreamIO data type code (_DATATYPE_FLOAT, etc.).
+ * @param ndim        Number of elements / pixels in the frame.
+ * @param frame_index Frame counter (cnt0).
+ * @param frame_time  Frame arrival timestamp.
+ * @param out_img     Pointer to output ImageStreamIO IMAGE structure.
+ * @return 0 on success, non-zero on failure.
+ */
+errno_t @PKG_NAME@_fps_process_frame(
+    const void      *raw_pixels,
+    int              datatype,
+    uint32_t         ndim,
+    uint64_t         frame_index,
+    struct timespec  frame_time,
+    IMAGE           *out_img);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* @PKG_UPPER@_FPS_COMMON_H */

@@ -21,6 +21,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <signal.h>
 #include <time.h>
 
@@ -84,9 +85,12 @@ typedef long imageID;
  * ========================================================= */
 
 /**
- * ov_get_shmdir - return the SHM directory path.
+ * @brief Return the shared memory directory path.
  *
- * Reads $MILK_SHM_DIR if set, otherwise returns "/dev/shm".
+ * Reads $MILK_SHM_DIR if set, otherwise checks standard /milk/shm,
+ * /dev/shm, and falls back to /tmp.
+ *
+ * @return Pointer to directory path string.
  */
 static inline const char *ov_get_shmdir(void)
 {
@@ -95,7 +99,19 @@ static inline const char *ov_get_shmdir(void)
     {
         return d;
     }
-    return "/dev/shm";
+
+    struct stat st;
+    if (stat("/milk/shm", &st) == 0 && S_ISDIR(st.st_mode))
+    {
+        return "/milk/shm";
+    }
+
+    if (stat("/dev/shm", &st) == 0 && S_ISDIR(st.st_mode))
+    {
+        return "/dev/shm";
+    }
+
+    return "/tmp";
 }
 
 #define SHAREDSHMDIR (ov_get_shmdir())

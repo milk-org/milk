@@ -46,16 +46,18 @@ int main(int argc, char *argv[])
         }
     }
 
-    char AppName[STRINGMAXLEN_APPNAME];
+    char AppName[STRINGMAXLEN_APPNAME] = { 0 };
 
     char *CLI_APPNAME = getenv("MILKCLI_APPNAME");
     if (CLI_APPNAME != NULL)
     {
         strncpy(AppName, CLI_APPNAME, STRINGMAXLEN_APPNAME - 1);
+        AppName[STRINGMAXLEN_APPNAME - 1] = '\0';
     }
     else
     {
         strncpy(AppName, "milk-cli", STRINGMAXLEN_APPNAME - 1);
+        AppName[STRINGMAXLEN_APPNAME - 1] = '\0';
     }
 
     if (getenv("MILK_QUIET"))
@@ -80,13 +82,20 @@ int main(int argc, char *argv[])
 #ifndef NDEBUG
     printf("        [ENABLED]  Code test point tracing\n");
     // allocate circular buffer memory
-    dctestptarr  = (CODETESTPOINT *) malloc(sizeof(CODETESTPOINT) * CODETESTPOINTARRAY_NBCNT);
-    dctestptinit = 1;
-    // initialize loop counter
-    // loop counter increments when reaching end of circular buffer
-    dctestptlcnt = 0;
-    // set current entry index to zero
-    dctestptcnt = 0;
+    dctestptarr = (CODETESTPOINT *) malloc(sizeof(CODETESTPOINT) * CODETESTPOINTARRAY_NBCNT);
+    if (dctestptarr != NULL)
+    {
+        dctestptinit = 1;
+        // initialize loop counter
+        // loop counter increments when reaching end of circular buffer
+        dctestptlcnt = 0;
+        // set current entry index to zero
+        dctestptcnt = 0;
+    }
+    else
+    {
+        fprintf(stderr, "WARNING: failed to allocate memory for dctestptarr\n");
+    }
 #endif
 
     char versionstring[STRINGMAXLEN_VERSIONSTRING];
@@ -118,6 +127,7 @@ int main(int argc, char *argv[])
     strncpy(dcpkgver, versionstring, sizeof(dcpkgver) - 1);
     dcpkgver[sizeof(dcpkgver) - 1] = '\0';
 
+    // TODO This is clobbered in CLI_startup. What's the point of having it here?
     strncpy(dcsourcedir, SOURCEDIR, sizeof(dcsourcedir) - 1);
     dcsourcedir[sizeof(dcsourcedir) - 1] = '\0';
     strncpy(dcconfigdir, CONFIGDIR, sizeof(dcconfigdir) - 1);
@@ -140,7 +150,11 @@ int main(int argc, char *argv[])
     // default exit code
     dcexitcode = RETURN_SUCCESS;
 
-    runCLI(argc, argv, AppName);
+    errno_t cli_status = runCLI(argc, argv, AppName);
+    if (dcexitcode == RETURN_SUCCESS && cli_status != RETURN_SUCCESS)
+    {
+        dcexitcode = cli_status;
+    }
 
     //errno_t CLIretval = RETURN_SUCCESS;
 
@@ -195,19 +209,12 @@ int main(int argc, char *argv[])
 
             /* 2. Overwrite entire row with spaces */
             {
-                char spaces[256];
-                int  remain = c;
-                memset(spaces, ' ', sizeof(spaces));
+                char spaces[256] = { [0 ... 254] = ' ', [255] = '\0' };
+                int  remain      = c;
                 while (remain > 0)
                 {
-                    int chunk = remain;
-                    if (chunk > (int) sizeof(spaces))
-                    {
-                        chunk = (int) sizeof(spaces);
-                    }
-                    if (write(STDOUT_FILENO, spaces, chunk) < 0)
-                    {
-                    }
+                    int chunk = remain <= (int) sizeof(spaces) ? remain : (int) sizeof(spaces);
+                    int _     = write(STDOUT_FILENO, spaces, chunk);
                     remain -= chunk;
                 }
             }

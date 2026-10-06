@@ -1,0 +1,115 @@
+/**
+ * @file @PKG_NAME@_fps_common.c.template
+ * @brief Common adapter implementation for stream ingestion and core dispatch.
+ */
+
+#include "@PKG_NAME@_fps_common.h"
+#include "@PKG_NAME@_fps_params.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* Parameter storage bound by FPS */
+char     fps_in_name[FUNCTION_PARAMETER_STRMAXLEN]  = {0};
+char     fps_out_name[FUNCTION_PARAMETER_STRMAXLEN] = {0};
+int32_t  fps_stream_out                             = 1;
+int32_t  fps_allow_drop                             = 0;
+double   fps_threshold                              = 0.1;
+uint32_t fps_max_items                              = 1000;
+uint32_t fps_ncpu                                   = 1;
+int32_t  fps_reset_state                            = 0;
+
+/**
+ * @PKG_NAME@_fps_custom_conf_check() - Validate parameters and stream readiness.
+ *
+ * Return: 0 on success, non-zero error code on invalid configuration.
+ */
+errno_t @PKG_NAME@_fps_custom_conf_check(void)
+{
+    if (fps_in_name[0] == '\0')
+    {
+        return 1;
+    }
+
+    if (fps_threshold <= 0.0)
+    {
+        fps_threshold = 0.1;
+    }
+
+    if (fps_ncpu == 0)
+    {
+        fps_ncpu = 1;
+    }
+
+    /* Verify input stream exists in shared memory */
+    IMAGE test_img;
+    if (ImageStreamIO_read_sharedmem_image_toIMAGE(fps_in_name, &test_img) != 0)
+    {
+        return 1;
+    }
+    ImageStreamIO_closeIm(&test_img);
+
+    return 0;
+}
+
+/**
+ * @PKG_NAME@_fps_init_engine() - Setup compute engine.
+ * @ndim: Input vector dimension.
+ *
+ * Return: 0 on success, non-zero on failure.
+ */
+errno_t @PKG_NAME@_fps_init_engine(
+    uint32_t ndim)
+{
+    (void)ndim;
+    /* Initialize core library instance / context here */
+    return 0;
+}
+
+/**
+ * @PKG_NAME@_fps_cleanup_engine() - Destroy compute engine and free resources.
+ */
+void @PKG_NAME@_fps_cleanup_engine(void)
+{
+    /* Clean up core library instance / context here */
+}
+
+/**
+ * @PKG_NAME@_fps_process_frame() - Ingest raw frame, invoke core engine, write output.
+ * @raw_pixels:  Pointer to input frame buffer.
+ * @datatype:    ImageStreamIO datatype enum.
+ * @ndim:        Number of elements in the slice.
+ * @frame_index: Ingested frame counter (cnt0).
+ * @frame_time:  Acquisition timestamp.
+ * @out_img:     Pointer to output image struct.
+ *
+ * Return: 0 on success, non-zero on failure.
+ */
+errno_t @PKG_NAME@_fps_process_frame(
+    const void      *raw_pixels,
+    int              datatype,
+    uint32_t         ndim,
+    uint64_t         frame_index,
+    struct timespec  frame_time,
+    IMAGE           *out_img)
+{
+    (void)datatype;
+    (void)ndim;
+    (void)frame_index;
+    (void)frame_time;
+
+    if (!raw_pixels || !out_img)
+    {
+        return 1;
+    }
+
+    /* Check dynamic reset trigger */
+    if (fps_reset_state != 0)
+    {
+        fps_reset_state = 0;
+        /* Call core state reset API */
+    }
+
+    /* Ingest input data, invoke core package API, and write to out_img */
+    return 0;
+}

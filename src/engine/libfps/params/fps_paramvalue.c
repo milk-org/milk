@@ -513,19 +513,16 @@ float *functionparameter_GetParamPtr_FLOAT32(FPS *fps, const char *paramname)
  * @param paramname  Parameter keyword
  * @return Time in seconds
  */
-float functionparameter_GetParamValue_TIMESPEC(FPS *fps, const char *paramname)
+struct timespec functionparameter_GetParamValue_TIMESPEC(FPS *fps, const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if (fpsi < 0)
     {
-        return 0.0f;
+        struct timespec t = { .tv_sec = 0, .tv_nsec = 0 };
+        return t;
     }
-    long value_sec                      = fps->parray[fpsi].val.ts[0].tv_sec;
-    long value_nsec                     = fps->parray[fpsi].val.ts[0].tv_nsec;
-    fps->parray[fpsi].val.ts[3].tv_sec  = value_sec;
-    fps->parray[fpsi].val.ts[3].tv_nsec = value_nsec;
-
-    return 1.0f * value_sec + 1.0e-9f * value_nsec;
+    fps->parray[fpsi].val.ts[3] = fps->parray[fpsi].val.ts[0];
+    return fps->parray[fpsi].val.ts[0];
 }
 
 /**
@@ -538,21 +535,16 @@ float functionparameter_GetParamValue_TIMESPEC(FPS *fps, const char *paramname)
  * @param value      Time in seconds
  * @return EXIT_SUCCESS
  */
-int functionparameter_SetParamValue_TIMESPEC(FPS *fps, const char *paramname, float value)
+int functionparameter_SetParamValue_TIMESPEC(FPS *fps, const char *paramname, struct timespec value)
 {
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if (fpsi < 0)
     {
         return EXIT_FAILURE;
     }
-
-    long valuesec                       = (long) value;
-    long valuensec                      = (long) (1.0e9 * (value - valuesec));
-    fps->parray[fpsi].val.ts[0].tv_sec  = valuesec;
-    fps->parray[fpsi].val.ts[0].tv_nsec = valuensec;
-
     fps->parray[fpsi].cnt0++;
     fps->parray[fpsi].value_cnt++;
+    fps->parray[fpsi].val.ts[0] = value;
 
     return EXIT_SUCCESS;
 }
@@ -802,26 +794,14 @@ int functionparameter_SetParamValue_fromString(FPS *fps, int pindex, const char 
     }
 
     case FPTYPE_FLOAT32:
-    case FPTYPE_TIMESPEC:
     {
         float val = strtof(strval, &endptr);
         if (*endptr == '\0' || *endptr == '\n')
         {
-            if (fps->parray[pindex].type == FPTYPE_TIMESPEC)
+            if (functionparameter_SetParamValue_FLOAT32(fps, kw, val) == EXIT_SUCCESS)
             {
-                if (functionparameter_SetParamValue_TIMESPEC(fps, kw, val) == EXIT_SUCCESS)
-                {
-                    functionparameter_outlog("SETVAL", "%s TIMESPEC %f", kwf, val);
-                    return 0;
-                }
-            }
-            else
-            {
-                if (functionparameter_SetParamValue_FLOAT32(fps, kw, val) == EXIT_SUCCESS)
-                {
-                    functionparameter_outlog("SETVAL", "%s FLOAT32 %f", kwf, val);
-                    return 0;
-                }
+                functionparameter_outlog("SETVAL", "%s FLOAT32 %f", kwf, val);
+                return 0;
             }
         }
         break;
@@ -835,6 +815,24 @@ int functionparameter_SetParamValue_fromString(FPS *fps, int pindex, const char 
             if (functionparameter_SetParamValue_FLOAT64(fps, kw, val) == EXIT_SUCCESS)
             {
                 functionparameter_outlog("SETVAL", "%s FLOAT64 %lf", kwf, val);
+                return 0;
+            }
+        }
+        break;
+    }
+
+    case FPTYPE_TIMESPEC:
+    {
+        double val = strtod(strval, &endptr);
+        if (*endptr == '\0' || *endptr == '\n')
+        {
+            struct timespec tspec = { .tv_sec = val, .tv_nsec = 0 };
+            tspec.tv_nsec         = (long) ((val - tspec.tv_sec) * 1e9);
+
+            if (functionparameter_SetParamValue_TIMESPEC(fps, kw, tspec) == EXIT_SUCCESS)
+            {
+                functionparameter_outlog("SETVAL", "%s FLOAT64 %lf", kwf,
+                                         (double) tspec.tv_sec + 1e-9 * tspec.tv_nsec);
                 return 0;
             }
         }

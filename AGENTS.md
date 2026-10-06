@@ -62,7 +62,7 @@ isolation — a crash in one unit never takes down others.
 | Priority   | Document                                                 | What you learn                                                                                      |
 | ---------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | 🔴 **1st** | [`docs/programmers_guide.md`](docs/programmers_guide.md) | Architecture overview, V2 compute unit template, directory map, CMake conventions, header hierarchy |
-| 🔴 **2nd** | [`docs/dependency_graph.md`](docs/dependency_graph.md)   | Full build-tier diagrams, library link tables, `_compute` variant patterns                          |
+| 🔴 **2nd** | [`docs/dependency_graph.md`](docs/dependency_graph.md)   | Full build-tier diagrams, library link tables, standalone executable cmake patterns                 |
 | 🟠 **3rd** | [`docs/streams.md`](docs/streams.md)                     | `IMGID` C API, stream creation/connection, semaphore model, stream modifiers (`@S:`, `@L:`)         |
 | 🟠 **4th** | [`docs/fps.md`](docs/fps.md)                             | FPS parameter types, tmux dispatch, `milk-fpsCTRL`, `fpslist.txt` workflow                          |
 | 🟡 **5th** | [`docs/code_assist.md`](docs/code_assist.md)             | Index of all agent rules and workflows                                                              |
@@ -141,16 +141,13 @@ standalone executable use conditional includes:
 #include "fps.h"
 ```
 
-### 4.3 `_compute` Library Variants
+### 4.3 Standalone Linking
 
 Standalone executables must **never** link `CLIcore`.
-Instead they link `_compute` variants of libraries
-(compiled with `MILK_NO_CLI`):
-
-```
-milkfft        → milkfft_compute        (standalone safe)
-milkstatistic  → milkstatistic_compute   (standalone safe)
-```
+They link the same regular module libraries as the CLI
+(e.g. `milkfft`, `milkstatistic`) — `MILK_NO_CLI`,
+applied to the executable target itself, is what
+excludes CLI registration code, not a separate library.
 
 Use `add_milk_standalone()` or `add_cacao_standalone()`
 CMake helpers — they set up the correct link set
@@ -185,8 +182,9 @@ float *data = img.im->array.F;
    direction breaks lower tiers.
 
 2. **Linking standalone executables to CLIcore.** Use
-   `_compute` variants only. Run
-   `milk-check-standalone-deps` to verify.
+   `add_milk_standalone()` / `add_cacao_standalone()`,
+   which apply `-DMILK_NO_CLI` to the executable target.
+   Run `milk-check-standalone-deps` to verify.
 
 3. **Implicit header includes.** Every `.c` file must
    include exactly the headers it uses. Don't rely on
@@ -266,7 +264,7 @@ when domain-specific tasks require extended capabilities.
 | `api-quick-reference`        | API cheat sheet for IMGID, processinfo macros, stream variables, datatypes, and parameter sync |
 | `batch-kernel-doc`           | Systematic Kernel-Doc documentation passes                                                     |
 | `cli-test-writer`            | Writing CLI robustness test cases                                                              |
-| `cmake-patterns`             | Module CMake setup, standalone builds, `_compute` variants                                     |
+| `cmake-patterns`             | Module CMake setup, standalone builds                                                          |
 | `debug-cli-behavior`         | Investigating CLI crashes, display bugs, missing errors                                        |
 | `diagnose-build-failure`     | Triaging CMake/GCC build errors                                                                |
 | `feature-planner`            | Structured planning and decomposition for new features                                         |

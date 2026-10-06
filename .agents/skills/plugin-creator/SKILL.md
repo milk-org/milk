@@ -30,7 +30,7 @@ Inside, create the following core files:
 
 ## 2. CMake Integration
 
-Your plugin's `CMakeLists.txt` must define the shared library, include directories, linking, and installation. If your plugin will provide compute functions for standalone executables, it must also build a `_compute` variant.
+Your plugin's `CMakeLists.txt` must define the shared library, include directories, linking, and installation. If your plugin provides functions for standalone executables, they link this same regular library — no separate variant is needed. Use `add_milk_standalone()` / `add_cacao_standalone()` for the standalone executable target; those helpers apply `-DMILK_NO_CLI` to the executable itself.
 
 ```cmake
 # CMakeLists.txt example for "myplugin"
@@ -51,32 +51,13 @@ install(TARGETS myplugin
     LIBRARY DESTINATION lib
 )
 
+# add_milk_standalone()/add_cacao_standalone() apply -DMILK_NO_CLI to the executable target itself.
+
 install(FILES myplugin.h DESTINATION include)
-
-# Build _compute variant for standalone linking.
-# This compiles the SAME source with -DMILK_NO_CLI.
-add_library(myplugin_compute SHARED myplugin.c)
-target_include_directories(myplugin_compute PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/src
-)
-# Must NOT link CLIcore — only standalone-safe libs
-target_link_libraries(
-    myplugin_compute PUBLIC ImageStreamIO)
-target_compile_definitions(
-    myplugin_compute PRIVATE MILK_NO_CLI)
-
-install(TARGETS myplugin_compute
-    EXPORT milkTargets
-    LIBRARY DESTINATION lib
-)
 ```
 
-# Note: Plugins are dynamically discovered by the root CMakeLists.txt
-
-# (using find -L plugins -mindepth 2 -maxdepth 2 -type d).
-
-# There is NO need to edit any parent CMakeLists.txt to register the plugin.
+Note: Plugins are dynamically discovered by the root CMakeLists.txt (using `find -L plugins -mindepth 2 -maxdepth 2 -type d` for folders that contain a `CMakeLists.txt`).
+**There is NO need to edit any parent CMakeLists.txt to register the plugin.**
 
 ## 3. Module Registration (C Code)
 

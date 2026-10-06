@@ -57,7 +57,6 @@ errno_t load_sharedobj(const char *__restrict libname)
     int mmatch = -1;
     for (int m = 0; m < data.NBmodule; m++)
     {
-        //printf("  [%03d] %s\n", m, data.module[m].sofilename);
         if (strcmp(libnameloaded, data.module[m].sofilename) == 0)
         {
             mmatch = m;

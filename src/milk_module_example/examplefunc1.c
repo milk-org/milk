@@ -141,16 +141,30 @@ static MILK_HOT errno_t compute_function()
 }
 
 
-INSERT_STD_CLIfunction
+static errno_t CLIfunction(void)
+{
+    errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);
+    if (retval == RETURN_SUCCESS)
+    {
+        STD_FARG_LINKfunction return compute_function();
+    }
+    if (retval == RETURN_CLICHECKARGARRAY_HELP)
+    {
+        return RETURN_SUCCESS;
+    }
+    if (retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
+    {
+        return RETURN_SUCCESS;
+    }
+    return retval;
+}
 
-
-    /** @brief Register CLI command
-*
-* Adds function to list of CLI commands.
-* Called by main module initialization function init_module_CLI().
-*/
-    errno_t
-    CLIADDCMD_milk_module_example__simplefunc()
+/** @brief Register CLI command
+ *
+ * Adds function to list of CLI commands.
+ * Called by main module initialization function init_module_CLI().
+ */
+errno_t CLIADDCMD_milk_module_example__simplefunc()
 {
     INSERT_STD_CLIREGISTERFUNC
 

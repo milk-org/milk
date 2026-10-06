@@ -9,13 +9,18 @@
  *
  */
 
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#endif
+
+#include <setjmp.h>
 #include <stdarg.h>
 #include <sys/resource.h> // getrlimit
 #include <sys/stat.h>
 #include <termios.h>
 
 #include "CLIcore.h"
-
+#include "CLIcore_signals.h"
 #include "CLIcore_UI_execute.h"
 
 #include "timeutils.h"
@@ -106,8 +111,21 @@ static void fprintf_stdout(FILE *f, char const *fmt, ...)
 /** @brief signal catching
  *
  */
+#define CLI_SIG_ALTSTACK_SIZE 65536
+static char sig_altstack_mem[CLI_SIG_ALTSTACK_SIZE];
+
 errno_t set_signal_catch()
 {
+    stack_t ss;
+    ss.ss_sp    = sig_altstack_mem;
+    ss.ss_size  = sizeof(sig_altstack_mem);
+    ss.ss_flags = 0;
+    sigaltstack(&ss, NULL);
+
+    dcsigact.sa_handler = sig_handler;
+    sigemptyset(&dcsigact.sa_mask);
+    dcsigact.sa_flags = SA_ONSTACK;
+
     // catch signals for clean exit
     if (sigaction(SIGTERM, &dcsigact, NULL) == -1)
     {
@@ -142,6 +160,16 @@ errno_t set_signal_catch()
     if (sigaction(SIGPIPE, &dcsigact, NULL) == -1)
     {
         printf("\ncan't catch SIGPIPE\n");
+    }
+
+    if (sigaction(SIGFPE, &dcsigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGFPE\n");
+    }
+
+    if (sigaction(SIGILL, &dcsigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGILL\n");
     }
 
     return RETURN_SUCCESS;
@@ -231,6 +259,10 @@ errno_t write_process_exit_report(const char *__restrict errortypestring)
         fprintf_stdout(fpexit, "File descriptors\n");
         getrlimit(RLIMIT_NOFILE, &rlimits);
         max_fd_number = getdtablesize();
+        if (max_fd_number > 1024)
+        {
+            max_fd_number = 1024;
+        }
         fprintf_stdout(fpexit, "    max_fd_number  : %d\n", max_fd_number);
         fprintf_stdout(fpexit, "    rlim_cur       : %lu\n", rlimits.rlim_cur);
         fprintf_stdout(fpexit, "    rlim_max       : %lu\n", rlimits.rlim_max);
@@ -253,20 +285,66 @@ errno_t write_process_exit_report(const char *__restrict errortypestring)
     return RETURN_SUCCESS;
 }
 
+static sigjmp_buf            cli_repl_env;
+static volatile sig_atomic_t cli_fault_isolation_active = 0;
+static volatile sig_atomic_t cli_interactive_mode       = 0;
+
+void cli_set_interactive_mode(int mode)
+{
+    cli_interactive_mode = mode;
+}
+
+int cli_is_interactive_mode(void)
+{
+    return cli_interactive_mode;
+}
+
+sigjmp_buf *cli_get_repl_env(void)
+{
+    return &cli_repl_env;
+}
+
+void cli_fault_isolation_arm(void)
+{
+    cli_fault_isolation_active = 1;
+}
+
+void cli_fault_isolation_disarm(void)
+{
+    cli_fault_isolation_active = 0;
+}
+
+int cli_is_fault_isolation_armed(void)
+{
+    return cli_fault_isolation_active;
+}
+
 /**
- * @brief Signal handler
- *
- *
+ * @brief Signal handler with interactive fault isolation
  */
 void sig_handler(int signo)
 {
     switch (signo)
     {
     case SIGINT:
-        printf("PID %d sig_handler received SIGINT\n", CLIPID);
-        dcsigINT = 1;
         set_terminal_echo_on();
-        exit(EXIT_FAILURE);
+        if (cli_fault_isolation_active)
+        {
+            dcsigINT = 1;
+            fprintf(stderr, "\n^C\n");
+            siglongjmp(cli_repl_env, 2);
+        }
+        else if (cli_interactive_mode)
+        {
+            dcsigINT = 0;
+            fprintf(stderr, "\n");
+        }
+        else
+        {
+            dcsigINT = 1;
+            printf("PID %d sig_handler received SIGINT\n", CLIPID);
+            exit(EXIT_FAILURE);
+        }
         break;
 
     case SIGTERM:
@@ -286,28 +364,53 @@ void sig_handler(int signo)
         dcsigUSR2 = 1;
         break;
 
-    case SIGBUS: // exit program after SIGSEGV
-        printf("PID %d sig_handler received SIGBUS \n", CLIPID);
-        write_process_exit_report("SIGBUS");
-        dcsigBUS = 1;
+    case SIGBUS:
+    case SIGSEGV:
+    case SIGFPE:
+    case SIGILL:
+        if (signo == SIGBUS)
+        {
+            dcsigBUS = 1;
+        }
+        if (signo == SIGSEGV)
+        {
+            dcsigSEGV = 1;
+        }
         set_terminal_echo_on();
-        exit(EXIT_FAILURE);
+        if (cli_fault_isolation_active)
+        {
+            fprintf(stderr,
+                    "\n\033[1;31m[CRASH INTERCEPTED]\033[0m Signal %d (%s) caught during command "
+                    "execution.\n"
+                    "\033[33mCommand aborted safely. Session preserved.\033[0m\n",
+                    signo, strsignal(signo));
+            siglongjmp(cli_repl_env, 1);
+        }
+        else
+        {
+            printf("PID %d sig_handler received %s\n", CLIPID, strsignal(signo));
+            write_process_exit_report(strsignal(signo));
+            exit(EXIT_FAILURE);
+        }
         break;
 
     case SIGABRT:
-        printf("PID %d sig_handler received SIGABRT\n", CLIPID);
-        write_process_exit_report("SIGABRT");
         dcsigABRT = 1;
         set_terminal_echo_on();
-        exit(EXIT_FAILURE);
-        break;
-
-    case SIGSEGV: // exit program after SIGSEGV
-        printf("PID %d sig_handler received SIGSEGV\n", CLIPID);
-        write_process_exit_report("SIGSEGV");
-        dcsigSEGV = 1;
-        set_terminal_echo_on();
-        exit(EXIT_FAILURE);
+        if (cli_fault_isolation_active)
+        {
+            fprintf(
+                stderr,
+                "\n\033[1;31m[ABORT INTERCEPTED]\033[0m SIGABRT caught during command execution.\n"
+                "\033[33mCommand aborted safely. Session preserved.\033[0m\n");
+            siglongjmp(cli_repl_env, 1);
+        }
+        else
+        {
+            printf("PID %d sig_handler received SIGABRT\n", CLIPID);
+            write_process_exit_report("SIGABRT");
+            exit(EXIT_FAILURE);
+        }
         break;
 
     case SIGHUP:
@@ -319,7 +422,6 @@ void sig_handler(int signo)
         break;
 
     case SIGPIPE:
-        printf("PID %d sig_handler received SIGPIPE\n", CLIPID);
         dcsigPIPE = 1;
         break;
     }

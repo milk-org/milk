@@ -77,23 +77,9 @@ Key elements:
 - `install(FILES ... DESTINATION include/<module>)`
   for headers
 
-### `_compute` Library Variant
-
-If the module will have standalone executables,
-**also** create a `_compute` variant:
-
-```cmake
-set(LIBNAME_COMPUTE ${LIBNAME}_compute)
-add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
-target_compile_definitions(
-    ${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
-target_link_libraries(
-    ${LIBNAME_COMPUTE} PRIVATE milkdata ImageStreamIO)
-```
-
 Standalone executables must **never** link `CLIcore`.
-The `_compute` variant is compiled with `MILK_NO_CLI`
-and links only engine libraries.
+If the module will have standalone executables, link the library from them via
+`add_milk_standalone()` / `add_cacao_standalone()` — those helpers apply `-DMILK_NO_CLI`.
 
 ## 6. README.md
 

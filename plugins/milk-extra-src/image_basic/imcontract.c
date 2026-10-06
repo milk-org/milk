@@ -109,6 +109,7 @@ static errno_t CLIfunction_2(void)
                                         nb_bindings_2, compute_function_2);
 }
 
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 errno_t CLIADDCMD_image_basic__imcontract()
 {
     safe_fps_fill_farg_examples(farg_1, my_bindings_1, nb_bindings_1);
@@ -125,6 +126,7 @@ errno_t CLIADDCMD_image_basic__imcontract()
 
     return RETURN_SUCCESS;
 }
+#endif // #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
 imageID basic_contract(const char *ID_name, const char *ID_name_out, int n1, int n2)
 {
