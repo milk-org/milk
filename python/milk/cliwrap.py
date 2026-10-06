@@ -47,7 +47,7 @@ class CLICrashError(Exception):
 class CLI:
     open: bool = False
 
-    def __init__(self, strip_ansi: bool = False) -> None:
+    def __init__(self, strip_ansi: bool = True) -> None:
         if MILK_CLI_EXEC is None:
             raise MilkBuildException(
                 "MILK built without CLI support. Must build with -DUSE_CLI=ON."
@@ -64,7 +64,14 @@ class CLI:
         self.open = True
         self.strip_ansi = strip_ansi
         self.retcode: int | None = None
+
+        self._known_prompt = None
         self._read_until_prompt()  # discard startup banner + first prompt
+
+        self._known_prompt = self.send_line(
+            ""
+        )  # initializes the prompt typically "milk-cli >"
+        self.timeout = 5
 
     def _read_until_prompt(self) -> str:
         # Prompt has no trailing newline, so this must read char-by-char
@@ -83,11 +90,9 @@ class CLI:
         # It seems that the suggestion-complete echoes back... let's ditch the first line (the echo)
         buf = buf.split("\n", 1)[1]
 
-        # Look for last linebreak and discard last line (the new prompt)
-        for k in range(1, len(buf)):
-            if buf[-k] == "\n":
-                return buf[:-k]
-        return buf  # We couldn't find a linebreak.
+        if self._known_prompt:
+            buf = buf.removesuffix(self._known_prompt)
+        return buf
 
     def send_line(self, line: str) -> str:
         assert self._proc.stdin is not None
@@ -105,10 +110,10 @@ class CLI:
             except (BrokenPipeError, ValueError):
                 pass
         try:
-            self.retcode = self._proc.wait(timeout=5)
+            self.retcode = self._proc.wait(timeout=self.timeout)
         except subprocess.TimeoutExpired:
             self._proc.terminate()
-            self.retcode = self._proc.wait(timeout=5)
+            self.retcode = self._proc.wait(timeout=self.timeout)
         self.open = False
 
     def run(self, commands: typ.Sequence[str]) -> list[str]:
@@ -143,6 +148,18 @@ class CLICommands:
         self.result: subprocess.CompletedProcess[str] | None = None
 
     def __enter__(self) -> subprocess.CompletedProcess[str]:
+        try:
+            return self._enter_exception_unsafe()
+        except:  # It's important NOT to specify the exception here !
+            # If self._proc killed by external signal we may get something that is NOT a sub Exception.
+            self._cleanup()
+            raise
+        finally:
+            if os.path.exists(self.script_filename):
+                os.remove(self.script_filename)
+
+    def _enter_exception_unsafe(self) -> subprocess.CompletedProcess[str]:
+
         assert MILK_CLI_EXEC is not None
         env = dict(os.environ)
         # TODO MILK_QUIET is broken and disables stdout/stderr.
@@ -150,12 +167,14 @@ class CLICommands:
         #    env["MILK_QUIET"] = "1"
         import time
 
-        filename = f"/tmp/milk-pycli.{os.getpid()}.{int(time.time() * 1e9)}.milk"
-        with open(filename, "w") as f:
+        self.script_filename = (
+            f"/tmp/milk-pycli.{os.getpid()}.{int(time.time() * 1e9)}.milk"
+        )
+        with open(self.script_filename, "w") as f:
             f.writelines([c + "\n" for c in self.commands])
         self._proc = subprocess.Popen(
             # [MILK_CLI_EXEC, "-c", ";".join(self.commands)],
-            [MILK_CLI_EXEC, "-s", filename],
+            [MILK_CLI_EXEC, "-s", self.script_filename],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -175,7 +194,6 @@ class CLICommands:
         self.result = subprocess.CompletedProcess(
             self._proc.args, returncode, stdout, stderr
         )
-        os.remove(filename)
         # Negative return code == killed by signal (bash CRASH: exit >= 128)
         if returncode < 0:
             raise CLICrashError(
@@ -185,6 +203,15 @@ class CLICommands:
         return self.result
 
     def __exit__(self, *exc_info: object) -> None:
+        self._cleanup()
+
+    def _cleanup(self) -> None:
+        """
+        _cleanup can be invoked even if __enter__ excepted and did not succeed.
+
+        This function must run and kill the child... even if something else caused the interruption
+
+        """
         if self._proc is not None and self._proc.poll() is None:
             self._proc.kill()
             self._proc.wait()

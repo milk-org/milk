@@ -355,7 +355,7 @@ TESTLIST_EXPECT_ERROR: list[list[str]] = [
 # EXPECT_GREP: (commands, substring-required-on-stdout).
 # ==========================================================================
 # fmt: off
-TESTLIST_EXPECT_GREP: list[tuple[list[str], str]] = [
+TESTLIST_EXPECT_GREP_WORKING: list[tuple[list[str], str]] = [
     # --- Section 1: echo output ---
     (["   echo hello"], "hello"),
     (["echo hello world"], "hello world"),
@@ -365,9 +365,108 @@ TESTLIST_EXPECT_GREP: list[tuple[list[str], str]] = [
     (["echo test_value # this is a comment"], "test_value"),
     # --- Section 5: variables ---
     (["_teststr=hello", "echo ${#_teststr}"], "5"),
-    (["_TESTUP=HELLO", "echo ${_TESTUP,,}"], "hello"),
+    #(["_TESTUP=HELLO", "echo ${_TESTUP,,}"], "hello"),
     (["echo ${_unsetvar:-fallback}"], "fallback"),
     (["echo ${_defvar:=assigned}"], "assigned"),
+    # --- Section 6: arithmetic ---
+    #(["_arith_a=10", "_arith_b=$(( _arith_a + 5 ))", "echo $_arith_b"], "15"),
+    #(["_arith_d=$(( 17 % 3 ))", "echo $_arith_d"], "2"),
+    #(["echo $(( 100 + 200 ))"], "300"),
+    # --- Section 7: flow control ---
+    #(["_fc_x=10", "if [ $_fc_x -gt 5 ]; then echo big; fi"], "big"),
+    #(["_fc_n=0", "while [ $_fc_n -lt 3 ]; do _fc_n=$(( _fc_n + 1 )); done", "echo $_fc_n"], "3"),
+    #(["for _fc_item in alpha beta gamma; do echo $_fc_item; done"], "alpha"),
+    #(["for _fc_i in {1..3}; do echo iter_$_fc_i; done"], "iter_1"),
+    #(["_fc_m=0", "while [ $_fc_m -lt 3 ]; do _fc_m=$(( _fc_m + 1 )); if [ $_fc_m -eq 2 ]; then echo found_two; fi; done"], "found_two"),
+    #(["_fc_k=0", "while [ $_fc_k -lt 100 ]; do _fc_k=$(( _fc_k + 1 )); if [ $_fc_k -eq 3 ]; then break; fi; done", "echo $_fc_k"], "3"),
+    #(["_fc_sum=0", "_fc_j=0", "while [ $_fc_j -lt 5 ]; do _fc_j=$(( _fc_j + 1 )); if [ $_fc_j -eq 3 ]; then continue; fi; _fc_sum=$(( _fc_sum + _fc_j )); done", "echo $_fc_sum"], "12"),
+    #(["_fc_mode=fast", "case $_fc_mode in fast) echo speed ;; safe) echo caution ;; *) echo other ;; esac"], "speed"),
+    #(["_fc_s=hello", "if [ $_fc_s = hello ]; then echo match; fi"], "match"),
+    #(["if [ -d /tmp ]; then echo dir_exists; fi"], "dir_exists"),
+    #(["if [ ! -f /tmp/no_such_file_xyz ]; then echo not_found; fi"], "not_found"),
+    # --- Section 8: user functions ---
+    (["function _testfunc_check { if [ $1 -gt 10 ]; then return 0; fi; return 1; }", "_testfunc_check 20", "echo $?"], "0"),
+    #(["_gvar=global", "function _testfunc_local { local _gvar=localized; echo $_gvar; }", "_testfunc_local"], "localized"),
+    #(["function _testfunc_add { _result=$(( $1 + $2 )); echo $_result; }", "_testfunc_add 3 7"], "10"),
+    # --- Section 9: command chaining ---
+    (["echo first ; echo second"], "second"),
+    (["echo ok_cmd && echo and_ran"], "and_ran"),
+    (["echo ok_cmd || echo or_skipped"], "ok_cmd"),
+    # --- Section 10: shell features ---
+    (["_subst_val=$(echo hello_sub)", "echo $_subst_val"], "hello_sub"),
+    (["echo {1..5}"], "1 2 3 4 5"),
+    (["echo {0..10..2}"], "0 2 4 6 8 10"),
+    (["echo searchable_text | grep searchable"], "searchable_text"),
+    # --- Section 13: let arithmetic ---
+    #(['let "_decl_count=5+3"', "echo $_decl_count"], "8"),
+    # --- Section 18b: SHM stream present ---
+    #(["mem.mk2Dim _clitest_shm_s 8 8", "if [ -S _clitest_shm_s ]; then echo stream_exists; fi"], "stream_exists"),
+    #(["if [ ! -S _clitest_nostream_xyz ]; then echo stream_absent; fi"], "stream_absent"),
+    # --- Section 19: final marker ---
+    (["echo CLI_ROBUSTNESS_TESTS_COMPLETE"], "CLI_ROBUSTNESS_TESTS_COMPLETE"),
+    # --- Section 22: advanced expansions ---
+    (["echo ${_unset_adv:-fallback_adv}"], "fallback_adv"),
+    (["echo ${_unset_adv2:=assigned_adv}", "echo ${_unset_adv2}"], "assigned_adv"),
+    (['_sub_str="hello_world"', "echo ${_sub_str:0:5}"], "hello"),
+    # --- Section 23: advanced test evaluator ---
+    #(["if [ 5 -gt 3 -a 10 -lt 20 ]; then echo both_true; fi"], "both_true"),
+    #(["if [ 5 -lt 3 -o 10 -gt 5 ]; then echo one_true; fi"], "one_true"),
+    # --- Section 24: bitwise / native math ---
+    #(["_bit_val=$(( 5 & 3 | 8 ))", "echo $_bit_val"], "9"),
+    #(["_bit_shift=$(( 1 << 4 ))", "if [ $_bit_shift -eq 16 ]; then echo shifted; fi"], "shifted"),
+    # --- Section 25: C-style loop ---
+    #(["_c_loop_sum=0", "for (( i=0; i<3; i++ )); do _c_loop_sum=$(( _c_loop_sum + i )); done", "echo $_c_loop_sum"], "3"),
+    # --- Section 27: regex matching ---
+    #(['if [ "hello_world" =~ ^hello ]; then echo matched; fi'], "matched"),
+    # --- Section 28: array splat ---
+    #(["_test_arr[0]=a", "_test_arr[1]=b", "_test_arr[2]=c", "echo ${_test_arr[@]}"], "a b c"),
+    # --- Section 29: stream pipeline ---
+    (["mem.mk2Dim _spipe_test 16 16", "_spipe_test |> mem.rm", "echo pipeline_done"], "pipeline_done"),
+    (["mem.mk2Dim _spipe_a 8 8", "mem.mk2Dim _spipe_b 8 8", "_spipe_a |> mem.rm", "_spipe_b |> mem.rm", "echo pipe_cleanup_done"], "pipe_cleanup_done"),
+    # --- Section 33: alias overwrite/run ---
+    #(['alias _testalias "echo alias_works"', 'alias _testalias "echo overwritten"', "_testalias"], "overwritten"),
+    # --- Section 34: bookmark run ---
+    #(['bookmark save _tbm "echo bookmark_ok"', "bookmark run _tbm"], "bookmark_ok"),
+    # --- Section 35: printf ---
+    ([r'printf "%s=%d\n" hello 42'], "hello=42"),
+    #([r'printf "%.3f\n" 3.14159'], "3.142"),
+    ([r'printf "literal\n"'], "literal"),
+    # --- Section 42: shell bypass valid ---
+    (["! echo shell_bypass_test"], "shell_bypass_test"),
+    # --- Section 44: edge cases ---
+    (["_var123abc=test_digits", "echo $_var123abc"], "test_digits"),
+    #(["_deep=$(( ((1 + 2) * (3 + 4)) + ((5 - 6) * 7) ))", "echo $_deep"], "14"),
+    #(["function _outer { echo outer_$1; }", "function _inner { _outer inner; }", "_inner"], "outer_inner"),
+    #(["xyzzy_nonexistent_12345 || echo fallback_ok"], "fallback_ok"),
+    (["xyzzy_nonexistent_12345 && echo skipped", "echo and_chain_done"], "and_chain_done"),
+    (["echo first_sc ;   echo second_sc"], "second_sc"),
+    (["_ev=", "echo prefix${_ev}suffix"], "prefixsuffix"),
+    # --- printf builtin (second group) ---
+    ([r'printf "value=%d\n" 42'], "value=42"),
+    ([r'printf "%s world\n" hello'], "hello world"),
+    ([r'printf "pi=%f\n" 3.14'], "pi=3.14"),
+    # --- export builtin ---
+    (["export _CLI_TESTVAR=hello123", "echo $_CLI_TESTVAR"], "hello123"),
+    # --- shift builtin ---
+    #(["function _test_shift { echo $1; shift; echo $1; }", "_test_shift alpha beta"], "beta"),
+    # --- string functions ---
+    #(['_su = "hello"', "_up = toupper(_su)", "echo $_up"], "HELLO"),
+    #(['_sl = "HELLO"', "_lo = tolower(_sl)", "echo $_lo"], "hello"),
+    # --- default parameter expansion ---
+    (['_unsetvar123=""', '_dv="${_unsetvar123:-fallback}"', "echo $_dv"], "fallback"),
+    (['_unsetvar456=""', '_iv="${_unsetvar456:=assigned}"', "echo $_unsetvar456"], "assigned"),
+    (['_setvar="yes"', '_av="${_setvar:+alternate}"', "echo $_av"], "alternate"),
+    # --- string slicing ---
+    (['_ss="helloworld"', '_sub="${_ss:5:5}"', "echo $_sub"], "world"),
+    # --- time command ---
+    (["time echo timed_output"], "timed_output"),
+    # --- comment handling ---
+    (["echo comment_ok # this is a comment and should not error"], "comment_ok"),
+    (["echo indented_comment_ok   # indented comment"], "indented_comment_ok"),
+]
+TESTLIST_EXPECT_GREP_XFAILING: list[tuple[list[str], str]] = [
+    # --- Section 5: variables ---
+    (["_TESTUP=HELLO", "echo ${_TESTUP,,}"], "hello"),
     # --- Section 6: arithmetic ---
     (["_arith_a=10", "_arith_b=$(( _arith_a + 5 ))", "echo $_arith_b"], "15"),
     (["_arith_d=$(( 17 % 3 ))", "echo $_arith_d"], "2"),
@@ -385,29 +484,13 @@ TESTLIST_EXPECT_GREP: list[tuple[list[str], str]] = [
     (["if [ -d /tmp ]; then echo dir_exists; fi"], "dir_exists"),
     (["if [ ! -f /tmp/no_such_file_xyz ]; then echo not_found; fi"], "not_found"),
     # --- Section 8: user functions ---
-    (["function _testfunc_check { if [ $1 -gt 10 ]; then return 0; fi; return 1; }", "_testfunc_check 20", "echo $?"], "0"),
     (["_gvar=global", "function _testfunc_local { local _gvar=localized; echo $_gvar; }", "_testfunc_local"], "localized"),
     (["function _testfunc_add { _result=$(( $1 + $2 )); echo $_result; }", "_testfunc_add 3 7"], "10"),
-    # --- Section 9: command chaining ---
-    (["echo first ; echo second"], "second"),
-    (["echo ok_cmd && echo and_ran"], "and_ran"),
-    (["echo ok_cmd || echo or_skipped"], "ok_cmd"),
-    # --- Section 10: shell features ---
-    (["_subst_val=$(echo hello_sub)", "echo $_subst_val"], "hello_sub"),
-    (["echo {1..5}"], "1 2 3 4 5"),
-    (["echo {0..10..2}"], "0 2 4 6 8 10"),
-    (["echo searchable_text | grep searchable"], "searchable_text"),
     # --- Section 13: let arithmetic ---
     (['let "_decl_count=5+3"', "echo $_decl_count"], "8"),
     # --- Section 18b: SHM stream present ---
     (["mem.mk2Dim _clitest_shm_s 8 8", "if [ -S _clitest_shm_s ]; then echo stream_exists; fi"], "stream_exists"),
     (["if [ ! -S _clitest_nostream_xyz ]; then echo stream_absent; fi"], "stream_absent"),
-    # --- Section 19: final marker ---
-    (["echo CLI_ROBUSTNESS_TESTS_COMPLETE"], "CLI_ROBUSTNESS_TESTS_COMPLETE"),
-    # --- Section 22: advanced expansions ---
-    (["echo ${_unset_adv:-fallback_adv}"], "fallback_adv"),
-    (["echo ${_unset_adv2:=assigned_adv}", "echo ${_unset_adv2}"], "assigned_adv"),
-    (['_sub_str="hello_world"', "echo ${_sub_str:0:5}"], "hello"),
     # --- Section 23: advanced test evaluator ---
     (["if [ 5 -gt 3 -a 10 -lt 20 ]; then echo both_true; fi"], "both_true"),
     (["if [ 5 -lt 3 -o 10 -gt 5 ]; then echo one_true; fi"], "one_true"),
@@ -420,49 +503,20 @@ TESTLIST_EXPECT_GREP: list[tuple[list[str], str]] = [
     (['if [ "hello_world" =~ ^hello ]; then echo matched; fi'], "matched"),
     # --- Section 28: array splat ---
     (["_test_arr[0]=a", "_test_arr[1]=b", "_test_arr[2]=c", "echo ${_test_arr[@]}"], "a b c"),
-    # --- Section 29: stream pipeline ---
-    (["mem.mk2Dim _spipe_test 16 16", "_spipe_test |> mem.rm", "echo pipeline_done"], "pipeline_done"),
-    (["mem.mk2Dim _spipe_a 8 8", "mem.mk2Dim _spipe_b 8 8", "_spipe_a |> mem.rm", "_spipe_b |> mem.rm", "echo pipe_cleanup_done"], "pipe_cleanup_done"),
     # --- Section 33: alias overwrite/run ---
     (['alias _testalias "echo alias_works"', 'alias _testalias "echo overwritten"', "_testalias"], "overwritten"),
     # --- Section 34: bookmark run ---
     (['bookmark save _tbm "echo bookmark_ok"', "bookmark run _tbm"], "bookmark_ok"),
     # --- Section 35: printf ---
-    ([r'printf "%s=%d\n" hello 42'], "hello=42"),
     ([r'printf "%.3f\n" 3.14159'], "3.142"),
-    ([r'printf "literal\n"'], "literal"),
-    # --- Section 42: shell bypass valid ---
-    (["! echo shell_bypass_test"], "shell_bypass_test"),
-    # --- Section 44: edge cases ---
-    (["_var123abc=test_digits", "echo $_var123abc"], "test_digits"),
     (["_deep=$(( ((1 + 2) * (3 + 4)) + ((5 - 6) * 7) ))", "echo $_deep"], "14"),
     (["function _outer { echo outer_$1; }", "function _inner { _outer inner; }", "_inner"], "outer_inner"),
     (["xyzzy_nonexistent_12345 || echo fallback_ok"], "fallback_ok"),
-    (["xyzzy_nonexistent_12345 && echo skipped", "echo and_chain_done"], "and_chain_done"),
-    (["echo first_sc ;   echo second_sc"], "second_sc"),
-    (["_ev=", "echo prefix${_ev}suffix"], "prefixsuffix"),
-    # --- printf builtin (second group) ---
-    ([r'printf "value=%d\n" 42'], "value=42"),
-    ([r'printf "%s world\n" hello'], "hello world"),
-    ([r'printf "pi=%f\n" 3.14'], "pi=3.14"),
-    # --- export builtin ---
-    (["export _CLI_TESTVAR=hello123", "echo $_CLI_TESTVAR"], "hello123"),
     # --- shift builtin ---
     (["function _test_shift { echo $1; shift; echo $1; }", "_test_shift alpha beta"], "beta"),
     # --- string functions ---
     (['_su = "hello"', "_up = toupper(_su)", "echo $_up"], "HELLO"),
     (['_sl = "HELLO"', "_lo = tolower(_sl)", "echo $_lo"], "hello"),
-    # --- default parameter expansion ---
-    (['_unsetvar123=""', '_dv="${_unsetvar123:-fallback}"', "echo $_dv"], "fallback"),
-    (['_unsetvar456=""', '_iv="${_unsetvar456:=assigned}"', "echo $_unsetvar456"], "assigned"),
-    (['_setvar="yes"', '_av="${_setvar:+alternate}"', "echo $_av"], "alternate"),
-    # --- string slicing ---
-    (['_ss="helloworld"', '_sub="${_ss:5:5}"', "echo $_sub"], "world"),
-    # --- time command ---
-    (["time echo timed_output"], "timed_output"),
-    # --- comment handling ---
-    (["echo comment_ok # this is a comment and should not error"], "comment_ok"),
-    (["echo indented_comment_ok   # indented comment"], "indented_comment_ok"),
 ]
 # fmt: on
 
@@ -491,10 +545,20 @@ def test_expect_error(milk_cmds: list[str]):
         ), f'"\033[1;33m{joined_cmd}\033[0m": expected an error message, got: "{combined}"'
 
 
+@pytest.mark.timeout(TIMEOUT)
+@pytest.mark.parametrize("milk_cmds,needle", TESTLIST_EXPECT_GREP_WORKING)
+def test_expect_grep(milk_cmds: list[str], needle: str):
+    joined_cmd = ";".join(milk_cmds)
+    with CLICommands(milk_cmds) as result:
+        assert (
+            needle in result.stdout
+        ), f'"\033[1;33m{joined_cmd}\033[0m" (grepping:{needle}): expected {needle!r} in stdout, got: "{result.stdout}"'
+
+
 @pytest.mark.xfail(reason="CLI doesn't behave as expected for control flow statements.")
 @pytest.mark.timeout(TIMEOUT)
-@pytest.mark.parametrize("milk_cmds,needle", TESTLIST_EXPECT_GREP)
-def test_expect_grep(milk_cmds: list[str], needle: str):
+@pytest.mark.parametrize("milk_cmds,needle", TESTLIST_EXPECT_GREP_XFAILING)
+def test_expect_grep_xfails(milk_cmds: list[str], needle: str):
     joined_cmd = ";".join(milk_cmds)
     with CLICommands(milk_cmds) as result:
         assert (

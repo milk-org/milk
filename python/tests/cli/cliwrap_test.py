@@ -44,3 +44,14 @@ def test_clicommands_multiple():
         assert "one" in result.stdout
         assert "two" in result.stdout
         assert "three" in result.stdout
+
+
+@pytest.mark.timeout(0.5)
+def test_interrupted_by_timeout():
+    cmd = CLICommands(["sleep 100"])
+    with pytest.raises(pytest.fail.Exception):  # Caused by the timeout after 0.3s
+        with cmd:
+            pass
+
+    assert cmd._proc is not None  # A process was actually started
+    assert cmd._proc.returncode == -9
