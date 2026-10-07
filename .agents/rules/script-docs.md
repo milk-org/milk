@@ -1,5 +1,5 @@
 ---
-description: Update docs/scripts.md and script help
+description: Update docs/guide/scripts.md and script help
   when shell scripts change.
 ---
 
@@ -16,7 +16,7 @@ you MUST:
 
 ## Required Actions
 
-1. **Update `docs/scripts.md`** — add, rename, or
+1. **Update `docs/guide/scripts.md`** — add, rename, or
    remove the script's entry. Include a one-line
    description and the install path.
 2. **Ensure `--help` support** — every script must

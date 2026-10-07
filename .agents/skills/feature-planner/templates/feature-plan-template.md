@@ -15,7 +15,7 @@ plain function / CLI builtin / none]
 - **Affected tier(s)**: [Engine / Core / Full]
 - **New dependencies**: [list or "none"]
 - **Dependency direction valid**: [yes/no — check
-  `dependency_graph.md`]
+  `docs/arch/dependency_graph.md`]
 
 ### Shared Memory Objects
 

@@ -26,7 +26,7 @@ tables so they stay in sync.
 - **Section 8** (Workflows): update the workflows
   table.
 
-### 2. Update `docs/code_assist.md`
+### 2. Update `docs/developer/code_assist.md`
 
 - Update the **Agent Rules** table.
 - Update the **Skills** table.

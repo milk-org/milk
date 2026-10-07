@@ -52,7 +52,7 @@ Error message
    ```
 2. Check the module's `CMakeLists.txt` for
    `target_link_libraries`
-3. Check `docs/dependency_graph.md` to verify the
+3. Check `docs/arch/dependency_graph.md` to verify the
    dependency is allowed
 
 **Fixes**:

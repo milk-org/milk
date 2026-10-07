@@ -162,7 +162,7 @@ translation units, so no separate build variant of the library is needed.
 | Standalone | Engine + regular COREMOD libs, `-DMILK_NO_CLI`    |
 
 Before adding a dependency, check
-`docs/dependency_graph.md` to verify the link
+`docs/arch/dependency_graph.md` to verify the link
 is allowed at your target's build tier.
 
 ## Conditional Compilation

@@ -99,6 +99,6 @@ FPS_app_info)` after the `CLIcmddata`
     `/compile-test` after modifying C or CMake
     files.
 
-18. **Not updating `docs/dependency_graph.md`.**
+18. **Not updating `docs/arch/dependency_graph.md`.**
     Required when adding new cross-module
     dependencies.

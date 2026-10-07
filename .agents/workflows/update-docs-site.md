@@ -27,10 +27,11 @@ subdirectory:
 
 | Content type         | Directory         |
 | -------------------- | ----------------- |
-| Installation / setup | `docs/install/`   |
-| CLI documentation    | `docs/cli/`       |
-| Developer guides     | `docs/developer/` |
-| Top-level concepts   | `docs/` (root)    |
+| Installation / setup | `docs/quickstart/` |
+| User guides, CLI     | `docs/guide/`      |
+| Developer guides     | `docs/developer/`  |
+| Architecture         | `docs/arch/`       |
+| Operations           | `docs/operations/` |
 
 Add YAML frontmatter to the very top of the new markdown
 file to categorize it in the Tag Index (`docs/tags.md`):
@@ -54,12 +55,12 @@ Add the new page to the correct tab section in the
 ```yaml
 nav:
   - Home: index.md
-  - Getting Started: # install, build, CLI overview, FAQ
-  - User Guide: # streams, FPS, procinfo, CLI, scripts
-  - Developer Guide: # tutorial, coding standards, plugins
-  - Architecture: # programmer's guide, dep graph
-  - Operations: # performance, PGO/LTO, debugging
-  - API Reference: api/html/index.html
+  - Getting Started: # quickstart/: install, build, CLI overview, FAQ
+  - User Guide: # guide/: streams, FPS, procinfo, CLI, scripts
+  - Developer Guide: # developer/: tutorial, coding standards, plugins
+  - Architecture: # arch/: programmer's guide, dep graph
+  - Operations: # operations/: performance, PGO/LTO, debugging
+  - Maintenance: maintenance/pm_operations.md
 ```
 
 ### 3. Update `docs/index.md`

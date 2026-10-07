@@ -61,12 +61,12 @@ isolation — a crash in one unit never takes down others.
 
 | Priority   | Document                                                 | What you learn                                                                                      |
 | ---------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| 🔴 **1st** | [`docs/programmers_guide.md`](docs/programmers_guide.md) | Architecture overview, V2 compute unit template, directory map, CMake conventions, header hierarchy |
-| 🔴 **2nd** | [`docs/dependency_graph.md`](docs/dependency_graph.md)   | Full build-tier diagrams, library link tables, standalone executable cmake patterns                 |
-| 🟠 **3rd** | [`docs/streams.md`](docs/streams.md)                     | `IMGID` C API, stream creation/connection, semaphore model, stream modifiers (`@S:`, `@L:`)         |
-| 🟠 **4th** | [`docs/fps.md`](docs/fps.md)                             | FPS parameter types, tmux dispatch, `milk-fpsCTRL`, `fpslist.txt` workflow                          |
-| 🟡 **5th** | [`docs/code_assist.md`](docs/code_assist.md)             | Index of all agent rules and workflows                                                              |
-| 🟡 **6th** | [`docs/procinfo.md`](docs/procinfo.md)                   | `PROCESSINFO` C API, loop profiling                                                                 |
+| 🔴 **1st** | [`docs/arch/programmers_guide.md`](docs/arch/programmers_guide.md) | Architecture overview, V2 compute unit template, directory map, CMake conventions, header hierarchy |
+| 🔴 **2nd** | [`docs/arch/dependency_graph.md`](docs/arch/dependency_graph.md)   | Full build-tier diagrams, library link tables, standalone executable cmake patterns                 |
+| 🟠 **3rd** | [`docs/guide/streams.md`](docs/guide/streams.md)                     | `IMGID` C API, stream creation/connection, semaphore model, stream modifiers (`@S:`, `@L:`)         |
+| 🟠 **4th** | [`docs/guide/fps.md`](docs/guide/fps.md)                             | FPS parameter types, tmux dispatch, `milk-fpsCTRL`, `fpslist.txt` workflow                          |
+| 🟡 **5th** | [`docs/developer/code_assist.md`](docs/developer/code_assist.md)             | Index of all agent rules and workflows                                                              |
+| 🟡 **6th** | [`docs/guide/procinfo.md`](docs/guide/procinfo.md)                   | `PROCESSINFO` C API, loop profiling                                                                 |
 
 ---
 
@@ -177,7 +177,7 @@ float *data = img.im->array.F;
 > These are the mistakes agents most commonly make.
 
 1. **Adding cross-module dependencies without checking
-   `docs/dependency_graph.md`.** The build is layered —
+   `docs/arch/dependency_graph.md`.** The build is layered —
    engine → core → full. Adding a dependency in the wrong
    direction breaks lower tiers.
 
@@ -190,7 +190,7 @@ float *data = img.im->array.F;
    include exactly the headers it uses. Don't rely on
    `CLIcore.h` pulling in `math.h` or `stdlib.h`.
 
-4. **Forgetting to update `docs/programmers_guide.md`**
+4. **Forgetting to update `docs/arch/programmers_guide.md`**
    after architectural changes (the
    `maintain-programmers-guide` rule enforces this).
 

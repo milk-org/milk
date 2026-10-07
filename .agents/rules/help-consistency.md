@@ -22,9 +22,9 @@ The project's help content lives in these locations:
 | 7   | In-code help (C)     | `src/cli/CLIcore/CLIcore/CLIcore_help_*.c`          | Interactive `?`/`help`/`cmd?` |
 | 8   | Kernel-Doc / Doxygen | `@brief`/`@file` comments in `.c`/`.h` files        | Per-function API docs         |
 | 9   | FPS_APP_INFO         | `.description` field in each fpsexec source         | One-line summaries (`-h1`)    |
-| 10  | Markdown docs        | `docs/*.md` (fps.md, streams.md, procinfo.md, cli/) | User/developer reference      |
+| 10  | Markdown docs        | `docs/guide/*.md` (fps.md, streams.md, procinfo.md) | User/developer reference      |
 | 11  | Module READMEs       | `src/*/README.md`                                   | Per-module overviews          |
-| 12  | Programmer's Guide   | `docs/programmers_guide.md`                         | Architecture overview         |
+| 12  | Programmer's Guide   | `docs/arch/programmers_guide.md`                    | Architecture overview         |
 | 13  | Examples / tutorials | `src/milk_module_example/examples/`                 | Getting-started walkthroughs  |
 
 ## Cross-Reference Groups
@@ -33,21 +33,21 @@ Sources that cover the **same topic** must stay
 consistent with each other. The main groups are:
 
 1. **CLI usage & options**
-   Rows 1, 6, 7, 10 (`docs/cli/CLI_Overview.md`,
-   `docs/cli/CLIcore.md`)
+   Rows 1, 6, 7, 10 (`docs/quickstart/CLI_Overview.md`,
+   `docs/guide/CLIcore.md`)
 
 2. **FPS concepts & management**
-   Rows 2, 3, 10 (`docs/fps.md`,
-   `docs/FPS_Standalone_CMD_Modes.md`)
+   Rows 2, 3, 10 (`docs/guide/fps.md`,
+   `docs/arch/FPS_Standalone_CMD_Modes.md`)
 
 3. **Processinfo & real-time**
-   Rows 4, 5, 10 (`docs/procinfo.md`)
+   Rows 4, 5, 10 (`docs/guide/procinfo.md`)
 
 4. **Streams / synchronization**
-   Rows 5, 10 (`docs/streams.md`)
+   Rows 5, 10 (`docs/guide/streams.md`)
 
 5. **fpsexec executables**
-   Rows 3, 9, 10 (`docs/FPS_Standalone_CMD_Modes.md`),
+   Rows 3, 9, 10 (`docs/arch/FPS_Standalone_CMD_Modes.md`),
    12
 
 6. **Per-function / per-module**

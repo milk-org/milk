@@ -47,7 +47,7 @@ flag this early — it likely needs phased delivery.
 
 ### 2.1 Dependency Analysis
 
-1. Read `docs/dependency_graph.md` — identify
+1. Read `docs/arch/dependency_graph.md` — identify
    which libraries and modules are in scope.
 2. Check whether new cross-module dependencies
    are needed. If so, verify they respect the
@@ -97,9 +97,9 @@ Check which documentation rules will fire:
 | ---------------------------- | --------------------------- | --------------------------- |
 | `readme-update`              | Module files added/removed? | Update module README        |
 | `help-consistency`           | CLI commands changed?       | Cross-check help sources    |
-| `whatsnew-update`            | Significant feature?        | Add entry to whatsnew.md    |
-| `maintain-programmers-guide` | Architecture changed?       | Update programmers_guide.md |
-| `script-docs`                | Scripts changed?            | Update docs/scripts.md      |
+| `whatsnew-update`            | Significant feature?        | Add entry to docs/whatsnew.md         |
+| `maintain-programmers-guide` | Architecture changed?       | Update docs/arch/programmers_guide.md |
+| `script-docs`                | Scripts changed?            | Update docs/guide/scripts.md          |
 | `documentation-site`         | New doc page needed?        | Add to mkdocs.yml nav       |
 
 ### 3.3 Test Touchpoints
@@ -150,7 +150,7 @@ Flag any of these if they apply:
 
 | Risk                          | Mitigation                                             |
 | ----------------------------- | ------------------------------------------------------ |
-| Cross-module dependency added | Verify with `dependency_graph.md`                      |
+| Cross-module dependency added | Verify with `docs/arch/dependency_graph.md`                      |
 | Performance-sensitive path    | Consult `performance-practices.md`; plan benchmarking  |
 | Breaking API change           | Document migration path; consider deprecation period   |
 | Standalone linkage            | Verify with `add_milk_standalone()`                    |
