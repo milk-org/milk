@@ -678,8 +678,6 @@ if(build_python_module)
 endif()
 
 if(USE_CLI)
-
-  install(TARGETS CLIcore DESTINATION bin)
   install(
     PROGRAMS scripts/milk-cli-all
     scripts/milk-argparse
