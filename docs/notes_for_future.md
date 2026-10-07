@@ -7,7 +7,7 @@ tags:
 # Notes for Future Reference
 
 Working notes on design decisions that are correct for the project's current philosophy but may need revisiting if that philosophy changes.
-Not a tutorial — see [Architecture](architecture.md) and [PGO](pgo.md) for those.
+Not a tutorial — see [Architecture](arch/architecture.md) and [PGO](operations/pgo.md) for those.
 
 ---
 

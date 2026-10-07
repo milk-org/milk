@@ -3,6 +3,7 @@ tags:
   - performance
   - optimization
   - developer-guide
+render_macros: true
 ---
 
 # Performance Tuning
@@ -12,7 +13,7 @@ process scheduling, memory layout, and GPU acceleration.
 
 See also: [Process Info](../guide/procinfo.md) · [Streams](../guide/streams.md) · [FPS](../guide/fps.md) ·
 [Debugging](debugging.md) · [FAQ](../quickstart/faq.md) ·
-[Code-Level Optimization Rules](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/performance-practices.md)
+[Code-Level Optimization Rules]({{ github_blob_url }}/.agents/rules/performance-practices.md)
 · [Code Assist Tools](../developer/code_assist.md)
 
 ---

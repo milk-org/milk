@@ -18,7 +18,7 @@ The documentation website is generated using the `mkdoc` package; `mkdoc` is ins
 
 With mkdocs installed, start a local doc server with `mkdoc serve`.
 
-Refer to [Operational Tooling](./ops_tooling.md) for more information.
+Refer to [Developer tooling](tooling.md) for more information.
 
 ---
 

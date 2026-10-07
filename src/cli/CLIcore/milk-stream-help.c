@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
            "    " C_STRM "mystream@F:2" C_RST "       Specific circular buffer frame index 2\n"
            "\n");
 
-    printf(C_NOTE "Refer to docs/streams.md in the milk source tree for full details.\n" C_RST
+    printf(C_NOTE "Refer to docs/guide/streams.md in the milk source tree for full details.\n" C_RST
                   "\n");
 
     return 0;

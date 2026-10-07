@@ -14,6 +14,12 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ## framework-dev
 
+### 2026-10
+
+- **2026-10-06** — Reorganized `docs/` into topic subfolders
+  (`quickstart/`, `guide/`, `developer/`, `arch/`, `operations/`,
+  `maintenance/`) matching the site navigation `#docs`
+
 ### 2026-03
 
 - **2026-03-29** — Complete CLI/Scripting layer decoupling; introduction of `libmilkscript` engine

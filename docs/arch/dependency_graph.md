@@ -448,7 +448,7 @@ Valid plugin names: `fft`, `imagegen`, `imagefilter`, `imagebasic`.
 apply `-DMILK_NO_CLI` to the standalone executable target,
 redirecting `CLIcore.h` to the `CLIcore_standalone.h` stub for that target, which does some placeholding.
 
-When `USE_STATIC_LTO=ON`, `_static`-suffixed static archives (e.g. `milkCOREMODmemory_static`) of these libraries are linked instead, enabling cross-module Link-Time Optimization. See [PGO & LTO](pgo.md).
+When `USE_STATIC_LTO=ON`, `_static`-suffixed static archives (e.g. `milkCOREMODmemory_static`) of these libraries are linked instead, enabling cross-module Link-Time Optimization. See [PGO & LTO](../operations/pgo.md).
 
 </details>
 

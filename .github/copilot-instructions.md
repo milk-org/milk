@@ -13,17 +13,17 @@ Adaptive Optics. Architecture: shared-memory streams
 
 ## Quick Reference
 
-| Topic | Source of Truth |
-|-------|----------------|
-| Coding style | `.agents/rules/code-style-guide.md` |
-| Performance | `.agents/rules/performance-practices.md` |
-| Architecture | `.agents/rules/architecture-principles.md` |
-| FPS executables | `.agents/rules/fpsexec-conventions.md` |
-| CMake | `.agents/rules/cmake-conventions.md` |
-| Git/PR workflow | `.agents/rules/git-workflow.md` |
-| V2 template | `src/milk_module_example/examplefunc_fps_cli_poc.c` |
-| Dependency graph | `docs/dependency_graph.md` |
-| Full onboarding | `AGENTS.md` |
+| Topic            | Source of Truth                                     |
+|------------------|-----------------------------------------------------|
+| Coding style     | `.agents/rules/code-style-guide.md`                 |
+| Performance      | `.agents/rules/performance-practices.md`            |
+| Architecture     | `.agents/rules/architecture-principles.md`          |
+| FPS executables  | `.agents/rules/fpsexec-conventions.md`              |
+| CMake            | `.agents/rules/cmake-conventions.md`                |
+| Git/PR workflow  | `.agents/rules/git-workflow.md`                     |
+| V2 template      | `src/milk_module_example/examplefunc_fps_cli_poc.c` |
+| Dependency graph | `docs/arch/dependency_graph.md`                     |
+| Full onboarding  | `AGENTS.md`                                         |
 
 ## Critical Rules (Summary)
 

@@ -3,10 +3,10 @@
 Thank you for your interest in contributing!
 
 See also: [Coding Standards](docs/developer/coding_standards.md) ·
-[Programmer's Guide](docs/programmers_guide.md) ·
+[Programmer's Guide](docs/arch/programmers_guide.md) ·
 [Developer Tutorial](docs/developer/tutorial.md) ·
 [Working with Git](docs/developer/WorkingWithGit.md) ·
-[Code Assist](docs/code_assist.md)
+[Code Assist](docs/developer/code_assist.md)
 
 ## AI-Assisted Development
 
@@ -32,7 +32,7 @@ Key resources live under `.agents/`:
    git checkout -b feat/my-change
    ```
 
-3. Build and test your changes (see [Installation](docs/install/compile.md)).
+3. Build and test your changes (see [Installation](docs/quickstart/compile.md)).
 
 ## Code Style
 
@@ -83,11 +83,11 @@ refactor: extract processinfo loop into helper
 ## Architecture Guidelines
 
 - Avoid introducing cross-module dependencies. Review
-  `docs/dependency_graph.md` before adding `#include` from
+  `docs/arch/dependency_graph.md` before adding `#include` from
   other modules.
 - Use the public API headers (`module_name/header.h`), not
   internal headers.
-- See `docs/programmers_guide.md` for the layered architecture.
+- See `docs/arch/programmers_guide.md` for the layered architecture.
 
 ## Reporting Issues
 

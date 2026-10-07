@@ -3,6 +3,7 @@ tags:
   - developer-guide
   - architecture
   - c-api
+render_macros: true
 ---
 
 # Programmer's Guide to `milk`
@@ -221,7 +222,7 @@ Each module builds a single regular library, shared by `milk-cli` and standalone
 
 
 
-When `USE_STATIC_LTO=ON`, standalone executables instead link `_static`-suffixed static archives (e.g. `milkCOREMODmemory_static`) of the same libraries, letting GCC's LTO inline and optimize across library boundaries. See [PGO & LTO](pgo.md) for details.
+When `USE_STATIC_LTO=ON`, standalone executables instead link `_static`-suffixed static archives (e.g. `milkCOREMODmemory_static`) of the same libraries, letting GCC's LTO inline and optimize across library boundaries. See [PGO & LTO](../operations/pgo.md) for details.
 
 **CMake standalone helpers:**
 
@@ -376,7 +377,7 @@ Each module directory should have a `README.md` with:
 ---
 
 _(This guide is automatically updated by your coding agent using the
-[/update-programmers-guide](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/update-programmers-guide.md)
+[/update-programmers-guide]({{ github_blob_url }}/.agents/workflows/update-programmers-guide.md)
 workflow)_
 
 ---

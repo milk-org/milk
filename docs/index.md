@@ -25,6 +25,26 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
 ---
 
+<!-- A block comment
+
+Maybe I want to start with 4 cards for 1st visitors
+
+Clone & Install
+MILK pipelines explained
+Adaptive Optics with CACAO (an intro page with showcases)
+CACAO full (basic) loop deploy tutorial
+Run and inspect your first AO loop: useful tooling
+
+Who might you be?
+- A user of MILK/CACAO -- inspecting data flow, understanding pipelines, AO-centric knowledge.
+- A extension developer -- Module templates, etc
+- A core developer -- Coding standards, internal craziness, library layers, API references
+- A maintainer -- I need to know about the geeky stuff, project management, release cycle, future avenues !
+
+
+-->
+
+
 ## :rocket: Getting Started
 
 <!-- prettier-ignore-start -->

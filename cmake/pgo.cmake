@@ -2,7 +2,7 @@
 # PROFILE-GUIDED OPTIMIZATION (PGO)
 # =======================================
 # Usage: cmake -DUSE_PGO=GENERATE ..   # instrument cmake -DUSE_PGO=USE .. #
-# optimized See docs/pgo.md for the full workflow.
+# optimized See docs/operations/pgo.md for the full workflow.
 #
 # Global flags apply to shared libraries. Standalone executables get per-target
 # profile directories via milk_pgo_target() in MilkStandalone.cmake.
