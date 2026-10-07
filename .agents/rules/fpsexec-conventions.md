@@ -51,12 +51,8 @@ trigger: always_on
    - Use `FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)`
    - Or `FPS_MAIN_STANDALONE_V2_CONFCHECK(...)` if you have a `customCONFcheck`.
 
-8. **CMake targets** — use the helper macros:
-   ```cmake
-   add_milk_standalone(cmdkey source.c)
-   ```
-   See the `cmake-patterns` skill for details.
-   **Do not** use the old 4-line manual pattern.
+8. **CMake targets** — follow `src/milk_module_example/CMakeLists.txt`
+   (`add_milk_standalone(cmdkey source.c)`).
 
 ## Required: `-h1` one-line help option
 

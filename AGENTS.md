@@ -332,13 +332,10 @@ $ make install
 $ ctest --output-on-failure
 ```
 
-### Standalone CMake helpers
+### Module CMakeLists.txt
 
-```cmake
-add_milk_standalone(myname  myname.c)           # milk-fpsexec-myname
-add_cacao_standalone(myname myname.c)           # cacao-fpsexec-myname
-add_cacao_standalone_plugins(myname myname.c fft imagegen)
-```
+Follow `src/milk_module_example/CMakeLists.txt`; skeleton and
+standalone helpers in `docs/programmers_guide.md` §6.
 
 ---
 

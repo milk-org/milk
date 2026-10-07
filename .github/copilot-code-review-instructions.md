@@ -40,7 +40,7 @@
 - V2 template: 8-section layout from
   `src/milk_module_example/examplefunc_fps_cli_poc.c`
 - Must have `.description` in `FPS_APP_INFO` for `-h1`
-- CMake: use `add_milk_standalone()`, not manual pattern
+- CMake: follow `src/milk_module_example/CMakeLists.txt`
 
 ## Git — `.agents/rules/git-workflow.md`
 

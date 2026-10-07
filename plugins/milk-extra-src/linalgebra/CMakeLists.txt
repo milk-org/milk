@@ -2,7 +2,7 @@
 set(LIBNAME "milklinalgebra")
 set(SRCNAME "linalgebra")
 
-message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
+message("MODULE ---- SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
 # This is only good so far as we're taking everything
 # And no mixing of CPP files
@@ -23,7 +23,7 @@ add_library(${LIBNAME} SHARED ${SOURCEFILES})
 target_include_directories(
   ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
 
-message("---- module linalgebra ------------------")
+message("---- module ${SRCNAME} ------------------")
 
 milk_apply_extensions(${LIBNAME})
 
@@ -49,7 +49,6 @@ add_milk_standalone(linalg-cublasPCA cublas_PCA.c)
 add_milk_standalone(linalg-modalremap modalremap.c)
 
 # Link module library into every standalone in this directory
-# FIXME can do better than this in the future I'm sure !
 get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
              PROPERTY BUILDSYSTEM_TARGETS)
 foreach(_t IN LISTS _stdalones)

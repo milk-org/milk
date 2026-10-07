@@ -121,12 +121,8 @@ FPS_MAIN_STANDALONE_V2(
 
 ## 4. Update CMakeLists.txt
 
-If the old CMake used the 4-line manual pattern,
-replace with:
-
-```cmake
-add_milk_standalone(cmdkey source.c)
-```
+Declare the standalone following
+`src/milk_module_example/CMakeLists.txt`.
 
 ## 5. Compile and Verify
 

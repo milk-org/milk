@@ -105,18 +105,8 @@ differ from a basic FPS compute unit:
 
 ## 7. Update CMake
 
-Append the standalone target to `CMakeLists.txt`:
-
-```cmake
-# For milk:
-add_milk_standalone(cmdkey source_file.c)
-
-# For cacao:
-add_cacao_standalone(cmdkey source_file.c)
-```
-
-Also add the `.c` file to `SOURCEFILES` in
-the module's library build.
+Add the standalone target, following `src/milk_module_example/CMakeLists.txt`
+(`add_milk_standalone(cmdkey source_file.c)`, or `add_cacao_standalone` for cacao).
 
 ## 8. Update CLI Registration
 

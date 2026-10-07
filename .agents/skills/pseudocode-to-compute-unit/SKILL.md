@@ -116,8 +116,8 @@ outimg.im, inimg.im)` to finalize. Do NOT call
 
 Copy the chosen template, replace `FPS_APP_INFO`,
 inject your `FPS_PARAMS`, and place your core logic
-inside the computation function. Define the CMake
-target with `add_milk_standalone()` or equivalent.
+inside the computation function. Add the standalone
+target following `src/milk_module_example/CMakeLists.txt`.
 
 ---
 

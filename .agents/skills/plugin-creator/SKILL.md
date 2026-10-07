@@ -30,31 +30,7 @@ Inside, create the following core files:
 
 ## 2. CMake Integration
 
-Your plugin's `CMakeLists.txt` must define the shared library, include directories, linking, and installation. If your plugin provides functions for standalone executables, they link this same regular library — no separate variant is needed. Use `add_milk_standalone()` / `add_cacao_standalone()` for the standalone executable target; those helpers apply `-DMILK_NO_CLI` to the executable itself.
-
-```cmake
-# CMakeLists.txt example for "myplugin"
-add_library(myplugin SHARED myplugin.c)
-
-# Include current directory and the root source directory
-target_include_directories(myplugin PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/src
-)
-
-# Link against core libraries
-target_link_libraries(myplugin PUBLIC CLIcore ImageStreamIO)
-
-# Export and install
-install(TARGETS myplugin
-    EXPORT milkTargets
-    LIBRARY DESTINATION lib
-)
-
-# add_milk_standalone()/add_cacao_standalone() apply -DMILK_NO_CLI to the executable target itself.
-
-install(FILES myplugin.h DESTINATION include)
-```
+Copy `src/milk_module_example/CMakeLists.txt` and rename. Layout and rules: `docs/programmers_guide.md` §6.
 
 Note: Plugins are dynamically discovered by the root CMakeLists.txt (using `find -L plugins -mindepth 2 -maxdepth 2 -type d` for folders that contain a `CMakeLists.txt`).
 **There is NO need to edit any parent CMakeLists.txt to register the plugin.**

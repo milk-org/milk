@@ -32,31 +32,7 @@ When a plugin registers a standalone executable (e.g., `milk-fpsexec-myplugin`),
 
 When `milk` detects a `CMakeLists.txt` in your plugin's directory, it will automatically process it via `add_subdirectory()`. The file is expected to define your module's shared library and register its standalone executables.
 
-Here is a standard template for a plugin's `CMakeLists.txt`:
-
-```cmake
-# =======================================
-# my_new_plugin - Short description
-# =======================================
-
-set(LIBNAME my_new_plugin)
-
-# 1. Source files
-set(SOURCEFILES
-    my_plugin_func.c
-)
-
-# 2. Shared Library (used by the interactive milk-cli, and
-#    linked as-is by standalone executables that need it)
-add_library(${LIBNAME} SHARED ${SOURCEFILES})
-target_include_directories(${LIBNAME}
-    PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
-
-# 3. Standalone Executable Definition
-# This automatically handles the FPS lifecycle, applies -DMILK_NO_CLI
-# to the executable target, and links the common standalone lib set.
-add_milk_standalone(my_plugin_func my_plugin_func.c)
-```
+Copy `src/milk_module_example/CMakeLists.txt`; its skeleton and rules are in the [Programmer's Guide](../programmers_guide.md#6-cmakeliststxt-conventions).
 
 ## 3. Writing the Source Code
 

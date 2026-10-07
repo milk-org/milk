@@ -64,22 +64,8 @@ module name.
 
 ## 5. CMakeLists.txt
 
-Create a `CMakeLists.txt` for the module. Use an
-existing module's CMakeLists.txt as reference
-(e.g., `src/coremods/COREMOD_arith/CMakeLists.txt`).
-
-Key elements:
-
-- `add_library(<libname> SHARED ...)`
-- `target_link_libraries` with required dependencies
-- `target_include_directories`
-- `install(TARGETS ...)` for the library
-- `install(FILES ... DESTINATION include/<module>)`
-  for headers
-
-Standalone executables must **never** link `CLIcore`.
-If the module will have standalone executables, link the library from them via
-`add_milk_standalone()` / `add_cacao_standalone()` — those helpers apply `-DMILK_NO_CLI`.
+Copy `src/milk_module_example/CMakeLists.txt` and rename.
+Layout and rules: `docs/programmers_guide.md` §6.
 
 ## 6. README.md
 
@@ -89,13 +75,10 @@ Create a README following the standardized template:
 - Source file table (`| File | Description |`)
 - Dependency list
 
-## 7. Register in Parent CMake
+## 7. Registration
 
-Add `add_subdirectory(<module_name>)` in the
-appropriate parent `CMakeLists.txt`:
-
-- For core modules: `src/CMakeLists.txt`
-- For plugins: the plugin's root `CMakeLists.txt`
+Plugins under `plugins/` are discovered automatically.
+Core modules are listed in the root `CMakeLists.txt` (`libsrcdir`).
 
 ## 8. Compile and Verify
 

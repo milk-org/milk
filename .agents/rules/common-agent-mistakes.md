@@ -10,11 +10,10 @@ this list before finalizing any generated code.
 
 ## New Compute Unit (fpsexec)
 
-1. **Forgetting to add `.c` to SOURCEFILES.**
-   The new file must be added to the module's
-   `CMakeLists.txt` `SOURCEFILES` list (for the
-   shared library build), in addition to the
-   standalone target.
+1. **Forgetting to re-run `cmake` after adding a `.c`.**
+   Sources are globbed by the module's
+   `CMakeLists.txt`; a new file is only picked up at
+   configure time. Add a standalone line if needed.
 
 2. **Forgetting to register in `initModule()`.**
    The `CLIADDCMD_<module>__<function>()` call
@@ -30,26 +29,26 @@ FPS_app_info)` after the `CLIcmddata`
    `INSERT_STD_PROCINFO_COMPUTEFUNC_END`
    dereferences NULL.
 
-4. **Using `FPS_MAIN_STANDALONE` instead of
+1. **Using `FPS_MAIN_STANDALONE` instead of
    `FPS_MAIN_STANDALONE_V2`.** The V1 macro
    does not support the `FPS_PARAMS` X-macro.
    Always use `FPS_MAIN_STANDALONE_V2` (or
    `_V2_CONFCHECK` if you have a
    `customCONFcheck`).
 
-5. **Wrong string parameter pattern.** Use
+2. **Wrong string parameter pattern.** Use
    `static char var[FUNCTION_PARAMETER_STRMAXLEN]`
    and pass `var` (no `&`) in the X-macro.
    Do not use `char *var` with `&var` in new
    code.
 
-6. **Using `FPFLAG_DEFAULT_INPUT` for stream
+3. **Using `FPFLAG_DEFAULT_INPUT` for stream
    parameters.** Use `FPFLAG_DEFAULT_TRIGGER_STREAM`
    for input streams that drive the compute loop,
    or `FPFLAG_DEFAULT_INPUT_STREAM` for required
    input streams.
 
-7. **Forgetting `outimg->md->write = 1`.**
+4. **Forgetting `outimg->md->write = 1`.**
    Must be set before modifying output stream
    pixels (inside the per-frame function).
    `processinfo_update_output_stream()` handles
@@ -60,8 +59,7 @@ FPS_app_info)` after the `CLIcmddata`
 10. **Unnecessarily editing parent directories for plugins**:
     Plugins under `plugins/` are dynamically discovered and added by
     the root `CMakeLists.txt`. Do NOT edit parent directories to
-    add `add_subdirectory()`. (Only core engine modules under `src/`
-    require manual registration in their parent `CMakeLists.txt`).
+    add `add_subdirectory()`.
 
 11. **Placing new plugins under `milk-extra-src`**:
     `milk-extra-src/` is reserved for core extra plugins included in the main
