@@ -12,8 +12,7 @@ from milk.cliwrap import CLI, HAVE_CLI
 TIMEOUT = 1
 
 FPSEXEC_LINKS_CLICORE_EXCEPTIONS = [
-    "milk-fpsexec-fft-dofft",
-    "milk-fpsexec-fft-pup2foc",
+    # There are no more exceptions !
 ]
 
 
