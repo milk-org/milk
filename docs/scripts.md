@@ -21,7 +21,6 @@ Installed from the root `CMakeLists.txt` into `bin/`:
 | Script                       | Description                                        |
 | ---------------------------- | -------------------------------------------------- |
 | `milk-check`                 | Verify installation (libraries, paths, SHM)        |
-| `milk-check-standalone-deps` | Check standalone build dependencies                |
 | `milk-argparse`              | Argument parsing helper for milk scripts           |
 | `milk-script-std-config`     | Standard configuration for milk scripts            |
 | `milk-scriptexample`         | Example/template for writing new scripts           |

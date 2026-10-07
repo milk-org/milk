@@ -6,9 +6,45 @@ import pytest
 
 import pathlib
 import os
+import subprocess
 from milk.cliwrap import CLI, HAVE_CLI
 
+TIMEOUT = 1
 
+FPSEXEC_LINKS_CLICORE_EXCEPTIONS = [
+    "milk-fpsexec-fft-dofft",
+    "milk-fpsexec-fft-pup2foc",
+]
+
+
+def _find_fpsexecs() -> list[pathlib.Path]:
+    installdir = os.environ.get("MILK_INSTALLDIR")
+    if not installdir:
+        return []
+    bindir = pathlib.Path(installdir).resolve() / "bin"
+    exes = [
+        p
+        for pattern in ("milk-fpsexec-*", "cacao-fpsexec-*")
+        for p in bindir.glob(pattern)
+        if p.is_file()
+    ]
+    return sorted(exes)
+
+
+FPSEXECS = _find_fpsexecs()
+
+
+def _params(mark_exceptions: bool):
+    for exe in FPSEXECS:
+        marks = []
+        if mark_exceptions and exe.name in FPSEXEC_LINKS_CLICORE_EXCEPTIONS:
+            marks.append(
+                pytest.mark.xfail(reason="listed CLIcore dependency", strict=False)
+            )
+        yield pytest.param(exe, id=exe.name, marks=marks)
+
+
+@pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support")
 @pytest.mark.parametrize(
     "module_name",
     [
@@ -36,8 +72,6 @@ from milk.cliwrap import CLI, HAVE_CLI
     ],
 )
 def test_module_import_in_cli(module_name: str):
-    if not HAVE_CLI:
-        pytest.skip("MILK compiled without CLI support")
     cli = CLI(strip_ansi=True)
     try:
         stdout = cli.send_line(f"mload {module_name}")
@@ -64,3 +98,31 @@ def test_module_import_in_cli(module_name: str):
             assert len(stdout_lines) == 9
     finally:
         cli.close()
+
+
+def test_fpsexecs_found():
+    assert os.environ.get("MILK_INSTALLDIR"), "MILK_INSTALLDIR is not set"
+    assert FPSEXECS, "no fpsexec executables found in $MILK_INSTALLDIR/bin"
+
+
+@pytest.mark.parametrize("fpsexec", _params(mark_exceptions=True))
+def test_no_clicore_link(fpsexec: pathlib.Path):
+    proc = subprocess.run(
+        ["ldd", "-d", str(fpsexec)], capture_output=True, text=True, timeout=TIMEOUT
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "CLIcore" not in proc.stdout
+
+
+@pytest.mark.parametrize("fpsexec", _params(mark_exceptions=False))
+def test_run_help(fpsexec: pathlib.Path):
+    assert os.access(fpsexec, os.X_OK)
+    proc = subprocess.run(
+        [str(fpsexec), "-h"],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=TIMEOUT,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip(), f"stdout is empty for fpsexec {fpsexec}"

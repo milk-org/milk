@@ -181,10 +181,10 @@ float *data = img.im->array.F;
    engine → core → full. Adding a dependency in the wrong
    direction breaks lower tiers.
 
-2. **Linking standalone executables to CLIcore.** Use
-   `add_milk_standalone()` / `add_cacao_standalone()`,
+2. **Linking standalone executables to CLIcore.** Use `add_milk_standalone()` / `add_cacao_standalone()`,
    which apply `-DMILK_NO_CLI` to the executable target.
-   Run `milk-check-standalone-deps` to verify.
+   Verify with `pytest -q --color=no --tb=short tests/trivial/build_sanity_test.py`
+   (from `python/`, `MILK_INSTALLDIR` set).
 
 3. **Implicit header includes.** Every `.c` file must
    include exactly the headers it uses. Don't rely on

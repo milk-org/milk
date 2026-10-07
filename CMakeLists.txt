@@ -716,10 +716,3 @@ install(FILES docs/cli/help.txt DESTINATION doc)
 
 # milk-cli script payloads (.milk files) – installed as data, not executables
 install(FILES scripts/makecircleofdisks.milk DESTINATION share/milk/scripts)
-
-# Guard: verify no standalone links CLIcore unexpectedly
-add_test(NAME standalone-dep-check
-  COMMAND ${PROJECT_SOURCE_DIR}/scripts/milk-check-standalone-deps
-  ${CMAKE_CURRENT_BINARY_DIR})
-
-install(PROGRAMS scripts/milk-check-standalone-deps DESTINATION bin)

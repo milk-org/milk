@@ -234,10 +234,9 @@ When `USE_STATIC_LTO=ON`, standalone executables instead link `_static`-suffixed
 
 ### Verifying Dependencies
 
-Run `milk-check-standalone-deps` to verify no standalone accidentally links CLIcore.
-It is also integrated as a CTest (`standalone-dep-check`) and runs automatically with
-`ctest` in the build directory. 14 standalones are whitelisted as known exceptions
-(they require module-lib symbols for OpenBLAS, FFT, etc.).
+To verify no standalone accidentally links CLIcore (and that each runs with `-h`), run
+`pytest tests/trivial/build_sanity_test.py` from `python/` with `MILK_INSTALLDIR` set. Known
+exceptions are listed in that file.
 
 ## 6. CMakeLists.txt Conventions
 
