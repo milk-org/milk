@@ -9,11 +9,18 @@ set(SRCNAME "milk_module_example") # the name of the main module source: ${SRCNA
 
 message("Module CMakeLists.txt ---- SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
+# CUSTOM ===========
+# Module-specific external dependencies, e.g.:
+# find_package(PkgConfig REQUIRED)
+# pkg_check_modules(FFTW REQUIRED fftw3)
+# ==================
+
 # -- Source files ---------------------------------
-# Collect all the h files and c files at the source of the project
+# Collect all the h files and c/cpp files at the source of the project
 # auxiliaries are better included in an internal/ subfolder.
-file(GLOB SOURCEFILES "*.c")
-file(GLOB INCLUDEFILES "*.h")
+# Extra executables with their own main() belong in bin/ (not globbed).
+file(GLOB SOURCEFILES "*.c" "*.cpp")
+file(GLOB INCLUDEFILES "*.h" "*.hpp")
 
 # Scripts installed to ${prefix}/bin/
 # All the files in scripts/* are considered to be executable scripts
@@ -33,6 +40,20 @@ target_include_directories(
 # And apply appropriate linkage
 milk_apply_extensions(${LIBNAME})
 
+# CUSTOM ===========
+# Module-specific compile definitions and external libraries, e.g.:
+# set_target_properties(
+#   ${LIBNAME} PROPERTIES COMPILE_FLAGS
+#   "-DFFTCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\"")
+# target_link_libraries(${LIBNAME} PUBLIC ${FFTW_LIBRARIES} ${FFTWF_LIBRARIES})
+# ==================
+
+# Static archive for USE_STATIC_LTO builds (see cmake/milk_static_lto.cmake).
+# The function is a no-op unless USE_STATIC_LTO is ON.
+# milk_add_static_lto(${LIBNAME}
+#   LINK_LIBS <static deps>
+#   CFITSIO_LINK_LIBS <static deps needing CFITSIO>)
+
 install(
   TARGETS ${LIBNAME}
   EXPORT milkTargets
@@ -43,14 +64,13 @@ install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 # -- Standalone executables -----------------------
 # V2 pattern: each is a single source file compiled with -DFPS_STANDALONE.
 # add_milk_standalone() handles linking, include paths, and install.
-# ${LIBNAME} is linked by default.
+# ${LIBNAME} is linked by the loop below.
 
 add_milk_standalone(clitest examplefunc_fps_cli_poc.c)
 add_milk_standalone(imsum2 examplefunc2_FPS.c)
 add_milk_standalone(streamprocess examplefunc4_streamprocess.c)
 
-# In case of optional dependency management, this block handles removing
-# the standalones that don't meet their mandated dependencies.
+# Link the module library into every standalone of this directory.
 get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   PROPERTY BUILDSYSTEM_TARGETS)
 foreach(_t IN LISTS _stdalones)
@@ -59,6 +79,14 @@ foreach(_t IN LISTS _stdalones)
     target_link_libraries(${_t} PUBLIC ${LIBNAME})
   endif()
 endforeach()
+
+# CUSTOM ===========
+# Extra executables (sources in bin/) and per-standalone links, e.g.:
+# add_executable(milk-mytool bin/milk-mytool.c)
+# target_link_libraries(milk-mytool PRIVATE ImageStreamIO)
+# install(TARGETS milk-mytool DESTINATION bin)
+# target_link_libraries(milk-fpsexec-clitest PUBLIC otherlib)
+# ==================
 
 
 # -- Tests ----------------------------------------

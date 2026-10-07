@@ -1,55 +1,37 @@
-# library name
 set(LIBNAME "milkimagefilter")
 set(SRCNAME "image_filter")
 
-message("")
-message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
+message("Module CMakeLists.txt ---- SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
-set(SOURCEFILES
-    ${SRCNAME}.c
-    cubepercentile.c
-    fconvolve.c
-    fit1D.c
-    fit2DcosKernel.c
-    fit2Dcossin.c
-    gaussfilter.c
-    im2Dfilter_1pixbblurr.c
-    medianfilter.c
-    percentile_interpolation.c)
-
-set(INCLUDEFILES
-    ${SRCNAME}.h
-    cubepercentile.h
-    fconvolve.h
-    fit1D.h
-    fit2DcosKernel.h
-    fit2Dcossin.h
-    im2Dfilter_1pixbblurr.h
-    gaussfilter.h
-    medianfilter.h
-    percentile_interpolation.h)
-
-# DEFAULT SETTINGS Do not change unless needed
-# =====================================================================
+file(GLOB SOURCEFILES "*.c" "*.cpp")
+file(GLOB INCLUDEFILES "*.h" "*.hpp")
+file(GLOB SCRIPTS "scripts/*")
 
 project(lib_${LIBNAME}_project)
 
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
 
-# Library can be compiled from multiple source files Convention: the main souce
-# file is named <libname>.c
-#
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 target_include_directories(
   ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
+milk_apply_extensions(${LIBNAME})
 
 install(
   TARGETS ${LIBNAME}
   EXPORT milkTargets
   DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 
 add_milk_standalone(imgfilt-gaussfilt gaussfilter.c)
-
 add_milk_standalone(imgfilt-im2Dfilt1pxbb im2Dfilter_1pixbblurr.c)
+
+get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  PROPERTY BUILDSYSTEM_TARGETS)
+foreach(_t IN LISTS _stdalones)
+  get_target_property(_type ${_t} TYPE)
+  if(_type STREQUAL "EXECUTABLE")
+    target_link_libraries(${_t} PUBLIC ${LIBNAME})
+  endif()
+endforeach()

@@ -1,54 +1,31 @@
-# library name
 set(LIBNAME "milkstatistic")
 set(SRCNAME "statistic")
 
-message("")
-message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
+message("Module CMakeLists.txt ---- SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
-set(SOURCEFILES ${SRCNAME}.c)
-
-set(INCLUDEFILES ${SRCNAME}.h)
-
-# DEFAULT SETTINGS Do not change unless needed
-# =====================================================================
+file(GLOB SOURCEFILES "*.c" "*.cpp")
+file(GLOB INCLUDEFILES "*.h" "*.hpp")
+file(GLOB SCRIPTS "scripts/*")
 
 project(lib_${LIBNAME}_project)
 
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
 
-# Library can be compiled from multiple source files Convention: the main souce
-# file is named <libname>.c
-#
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 target_include_directories(
   ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
+milk_apply_extensions(${LIBNAME})
+
+# CUSTOM ===========
+milk_add_static_lto(${LIBNAME}
+  LINK_LIBS milkCOREMODmemory_static
+  CFITSIO_LINK_LIBS milkCOREMODiofits_static)
+# ==================
 
 install(
   TARGETS ${LIBNAME}
   EXPORT milkTargets
   DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
-
-# Static archive for USE_STATIC_LTO builds
-if(USE_STATIC_LTO)
-  set(LIBNAME_STATIC "${LIBNAME}_static")
-  add_library(${LIBNAME_STATIC} STATIC ${SOURCEFILES})
-  set_target_properties(${LIBNAME_STATIC} PROPERTIES OUTPUT_NAME ${LIBNAME})
-  target_include_directories(
-    ${LIBNAME_STATIC}
-    PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-           $<INSTALL_INTERFACE:include>)
-  if(USE_CFITSIO AND CFITSIO_FOUND)
-    target_link_libraries(
-      ${LIBNAME_STATIC} PUBLIC m ${CFITSIO_LIBRARIES} milkCOREMODmemory_static
-                               milkCOREMODiofits_static)
-  else()
-    target_link_libraries(${LIBNAME_STATIC} PUBLIC m milkCOREMODmemory_static)
-  endif()
-  # Not installed nor added to the milkTargets export set — see notes_for_future.md
-endif()
+install(PROGRAMS ${SCRIPTS} DESTINATION bin)

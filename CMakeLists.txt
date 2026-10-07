@@ -253,6 +253,11 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO/CMakeLists.txt")
   )
 endif()
 
+# Needed for finding CLICore.h / CLICore_standalone.h for both USE_CLI={ON,OFF} builds.
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore)
 if(USE_CLI)
   list(APPEND libsrcdir src/cli/libmilkscript)
   list(APPEND libname milkscript)
@@ -266,10 +271,6 @@ else()
   # Provide CLI header paths so modules can find CLIcore.h (which redirects to
   # standalone stubs)
   include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps
@@ -459,6 +460,7 @@ include(CTest)
 # add_cacao_standalone_plugins See cmake/milk_standalone.cmake for docs.
 
 include(${PROJECT_SOURCE_DIR}/cmake/milk_standalone.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/milk_static_lto.cmake)
 
 # =======================================
 # INSTALL PATHS
@@ -489,7 +491,8 @@ if(USE_COREMODS)
     COMMAND
     bash -c
     "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 1 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
-    OUTPUT_VARIABLE libextradir)
+    OUTPUT_VARIABLE libextradir
+  )
   string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
 endif()
 

@@ -1,31 +1,25 @@
-# library name
 set(LIBNAME "milkkdtree")
 set(SRCNAME "kdtree")
 
-message("")
-message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
+message("Module CMakeLists.txt ---- SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
-set(SOURCEFILES ${SRCNAME}.c)
-
-set(INCLUDEFILES ${SRCNAME}.h)
-
-# DEFAULT SETTINGS Do not change unless needed
-# =====================================================================
+file(GLOB SOURCEFILES "*.c" "*.cpp")
+file(GLOB INCLUDEFILES "*.h" "*.hpp")
+file(GLOB SCRIPTS "scripts/*")
 
 project(lib_${LIBNAME}_project)
 
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
 
-# Library can be compiled from multiple source files Convention: the main souce
-# file is named <libname>.c
-#
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 target_include_directories(
   ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
+milk_apply_extensions(${LIBNAME})
 
 install(
   TARGETS ${LIBNAME}
   EXPORT milkTargets
   DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+install(PROGRAMS ${SCRIPTS} DESTINATION bin)

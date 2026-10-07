@@ -251,8 +251,8 @@ set(LIBNAME "mymodule") # lib${LIBNAME}.so
 set(SRCNAME "mymodule") # main module source: ${SRCNAME}.c
 
 # Sources are globbed; keep auxiliaries in an internal/ subfolder.
-file(GLOB SOURCEFILES "*.c")
-file(GLOB INCLUDEFILES "*.h")
+file(GLOB SOURCEFILES "*.c" "*.cpp")
+file(GLOB INCLUDEFILES "*.h" "*.hpp")
 file(GLOB SCRIPTS "scripts/*") # installed to bin/
 
 project(lib_${LIBNAME}_project)
@@ -293,6 +293,10 @@ add_test(NAME mymodule-myfunc-h1 COMMAND milk-fpsexec-myfunc -h1)
 **Key rules:**
 
 - Plugins under `plugins/` are discovered automatically; no parent `CMakeLists.txt` edit is needed.
+- Module-specific logic goes in the `# CUSTOM ===` blocks of the template (before the glob, after `milk_apply_extensions`, and after the standalone loop).
+- Extra executables with their own `main()` live in a `bin/` subfolder (not globbed) and are declared in the last `# CUSTOM` block.
+- Coremods cannot reference the `CLIcore` target (it links them); they use `$<TARGET_PROPERTY:milkfps,INCLUDE_DIRECTORIES>` instead.
+- `milk_add_static_lto(${LIBNAME} ...)` (`cmake/milk_static_lto.cmake`) builds the `_static` archive used by `USE_STATIC_LTO`.
 - Express optional dependencies with the `MILK_CMAKE_REQUEST_<X>` / `MILK_CMAKE_MANDATE_<X>` tags (see [Managing Dependencies](developer/dependency_system.md)); do not hand-write include or link rules.
 - Each module installs only its own headers.
 - Keep lines ≤ 80 characters.
