@@ -16,7 +16,7 @@
 ## Architecture — `.agents/rules/architecture-principles.md`
 
 - Flag **new cross-module `#include`** that may violate
-  the dependency graph (`docs/dependency_graph.md`)
+  the dependency graph (`docs/arch/dependency_graph.md`)
 - Standalone executables must **never link `CLIcore`** —
   use `_compute` library variants
 - Dual-mode files need `#ifdef MILK_NO_CLI` guards

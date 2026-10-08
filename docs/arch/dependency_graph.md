@@ -1,9 +1,9 @@
 # Dependency Graph
 
+<!-- prettier-ignore -->
 !!! note
-Generated from CMakeLists.txt — 2026-05-30.
-See [Build Tiers](install/build_tiers.md) for cmake
-commands.
+    Generated from CMakeLists.txt. See [Build Tiers](../quickstart/build_tiers.md) for cmake
+    commands.
 
 ## Legend
 
@@ -446,14 +446,14 @@ add_cacao_standalone_plugins(name src.c fft imagegen)   # selective
 
 Valid plugin names: `fft`, `imagegen`, `imagefilter`, `imagebasic`.
 
-**ℹ️ Note:** `add_milk_standalone()` / `add_cacao_standalone()`
+**Note:** `add_milk_standalone()` / `add_cacao_standalone()`
 apply `-DMILK_NO_CLI` to the standalone executable target,
 redirecting `CLIcore.h` to the `CLIcore_standalone.h` stub for that target, which does some placeholding.
 
-When `USE_STATIC_LTO=ON`, `_static`-suffixed static archives (e.g. `milkCOREMODmemory_static`) of these libraries are linked instead, enabling cross-module Link-Time Optimization. See [PGO & LTO](pgo.md).
+When `USE_STATIC_LTO=ON`, `_static`-suffixed static archives (e.g. `milkCOREMODmemory_static`) of these libraries are linked instead, enabling cross-module Link-Time Optimization. See [PGO & LTO](../operations/pgo.md).
 
 </details>
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

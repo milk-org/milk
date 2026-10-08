@@ -41,7 +41,7 @@ Following the guidelines in the `plugin-creator` skill, create the following fil
 5. The `#ifdef MILK_NO_CLI` conditional include
    guard in the main `.c` file.
 6. If adding new cross-module dependencies,
-   update `docs/dependency_graph.md`.
+   update `docs/arch/dependency_graph.md`.
 
 Note: The parent directory does NOT need to be edited to add `add_subdirectory()`. The root `CMakeLists.txt` dynamically discovers all plugins at depth 1 and 2 under `plugins/`.
 

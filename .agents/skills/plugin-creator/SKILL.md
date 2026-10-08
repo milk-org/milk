@@ -62,7 +62,7 @@ static errno_t init_module_CLI()
 
 ## 4. Dependencies
 
-Consult `docs/dependency_graph.md`. Plugins sit at the top of the hierarchy. If your plugin depends on another plugin, use `MODULE_DEPS("other_plugin")` and link it in CMake. Do not create circular dependencies.
+Consult `docs/arch/dependency_graph.md`. Plugins sit at the top of the hierarchy. If your plugin depends on another plugin, use `MODULE_DEPS("other_plugin")` and link it in CMake. Do not create circular dependencies.
 
 ## 5. Git Tracking Policy
 

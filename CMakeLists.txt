@@ -24,7 +24,7 @@ project(milk LANGUAGES C)
 # cfitsio. Disable for a POSIX-only core build.
 #
 
-# Build tiers (see docs/install/build_tiers.md):
+# Build tiers (see docs/quickstart/build_tiers.md):
 #
 # Engine-only (POSIX deps only): cmake .. -DUSE_COREMODS=OFF -DUSE_CLI=OFF
 #

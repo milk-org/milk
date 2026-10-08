@@ -29,7 +29,7 @@ Optional dependencies: `docs/developer/dependency_system.md`.
 | Standalone | Engine + regular COREMOD libs, `-DMILK_NO_CLI`    |
 
 Before adding a dependency, check
-`docs/dependency_graph.md` to verify the link
+`docs/arch/dependency_graph.md` to verify the link
 is allowed at your target's build tier.
 
 ## Conditional Compilation

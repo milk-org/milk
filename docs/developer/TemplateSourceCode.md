@@ -1,7 +1,6 @@
 # Template Source Code
 
-The primary template for writing new compute units is the V2 template in
-`src/milk_module_example/`:
+The primary template for writing new compute units is the V2 template in `src/milk_module_example/`:
 
 | Template File                    | Purpose                                                          |
 | -------------------------------- | ---------------------------------------------------------------- |
@@ -19,8 +18,8 @@ The primary template for writing new compute units is the V2 template in
 
 ## Documenting Functions
 
-Use Kernel-Doc style comments above each function. See
-`docs/developer/DocumentingCode.md` for the full style guide.
+Use Kernel-Doc style comments above each function. See `docs/developer/DocumentingCode.md` for the
+full style guide.
 
 ---
 

@@ -132,5 +132,5 @@ Each worktree needs its own `_build` directory.
   coding agents
 - [`CONTRIBUTING.md`](../../CONTRIBUTING.md) —
   contribution guidelines
-- [`docs/code_assist.md`](../../docs/code_assist.md)
+- [`docs/developer/code_assist.md`](../../docs/developer/code_assist.md)
   — rules and workflows index

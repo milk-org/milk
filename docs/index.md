@@ -1,205 +1,221 @@
+---
+render_macros: true
+---
+
 <div class="md-hero" markdown>
 
-# :telescope: milk
+# MILK & CACAO
 
-<p class="md-hero__tagline">
-High-performance real-time image processing framework
-for Adaptive Optics and scientific computing.
-Microsecond-latency pipelines through zero-copy
-shared memory.
-</p>
+<p class="md-hero__tagline" markdown="span">
+<b>CACAO - The Compute And Control for Adaptive Optics
+[:fontawesome-brands-github: cacao-org/cacao](https://github.com/cacao-org/cacao/tree/{{ repo_branch }})</b><br>
 
-<p class="md-hero__badges">
-<a href="https://github.com/milk-org/milk">
-<img alt="GitHub stars" src="https://img.shields.io/github/stars/milk-org/milk?style=flat-square&color=00bfa5">
-</a>
-<a href="https://github.com/milk-org/milk/blob/framework-dev/LICENSE">
-<img alt="License" src="https://img.shields.io/github/license/milk-org/milk?style=flat-square&color=0097a7">
-</a>
-<a href="https://github.com/milk-org/milk/actions">
-<img alt="Build" src="https://img.shields.io/github/actions/workflow/status/milk-org/milk/docs.yml?style=flat-square&label=docs&color=26a69a">
-</a>
+A high-performance, free, open-source, community-centric and R&D-oriented RTC suite for adaptive optics systems.<br><br>
+
+<b>MILK - Modular Image Library Toolkit
+[:fontawesome-brands-github: milk-org/milk](https://github.com/milk-org/milk/tree/{{ repo_branch }})</b><br>
+A core infrastructure for orchestrating real-time pipelines, between zero-copy shared memory tensors and a rich library of data processing units.
 </p>
 
 </div>
 
-`milk` orchestrates many small compute units that
-communicate through zero-copy shared memory tensors,
-enabling microsecond-latency data pipelines. The three
-pillars — **ImageStreamIO**, **FPS**, and
-**processinfo** — live entirely in `/dev/shm/`.
+`milk` orchestrates many small compute units that communicate through zero-copy shared memory
+tensors, enabling microsecond-latency data pipelines. The three pillars — **ImageStreamIO**,
+**FPS**, and **processinfo** — live entirely in `/dev/shm/`.
 
 ---
 
+<!-- A block comment
+
+Maybe I want to start with 4 cards for 1st visitors
+
+Clone & Install
+MILK pipelines explained
+Adaptive Optics with CACAO (an intro page with showcases)
+CACAO full (basic) loop deploy tutorial
+Run and inspect your first AO loop: useful tooling
+
+Who might you be?
+- A user of MILK/CACAO -- inspecting data flow, understanding pipelines, AO-centric knowledge.
+- A extension developer -- Module templates, etc
+- A core developer -- Coding standards, internal craziness, library layers, API references
+- A maintainer -- I need to know about the geeky stuff, project management, release cycle, future avenues !
+
+
+-->
+
+
 ## :rocket: Getting Started
 
+<!-- prettier-ignore-start -->
 <div class="grid cards" markdown>
 
 - :material-download-circle:{ .lg .middle } **Install**
 
-  ***
+    ***
 
-  Clone, build, and configure the milk framework.
+    Clone, build, and configure the milk framework.
 
-  [:octicons-arrow-right-24: Installation](install/compile.md)
+    [⮕ Installation](quickstart/compile.md)
 
 - :material-layers-outline:{ .lg .middle } **Build Tiers**
 
-  ***
+    ***
 
-  Engine → Core → Full: compile only what you need.
+    Engine → Core → Full: compile only what you need.
 
-  [:octicons-arrow-right-24: Build tiers](install/build_tiers.md)
+    [⮕ Build tiers](quickstart/build_tiers.md)
 
 - :material-console:{ .lg .middle } **CLI Overview**
 
-  ***
+    ***
 
-  Interactive shell, standalone executables, and
-  scripting basics.
+    Interactive shell, standalone executables, and scripting basics.
 
-  [:octicons-arrow-right-24: CLI overview](cli/CLI_Overview.md)
+    [⮕ CLI overview](quickstart/CLI_Overview.md)
 
 - :material-help-circle-outline:{ .lg .middle } **FAQ**
 
-  ***
+    ***
 
-  Common issues with builds, SHM, FPS, and CLI.
+    Common issues with builds, SHM, FPS, and CLI.
 
-  [:octicons-arrow-right-24: FAQ & Troubleshooting](faq.md)
+    [⮕ FAQ & Troubleshooting](quickstart/faq.md)
 
 </div>
+
+<!-- prettier-ignore-end -->
+<!-- note: prettier comments NEED a blank line just before -->
 
 ---
 
 ## :classical_building: Core Concepts
 
+<!-- prettier-ignore-start -->
 <div class="grid cards" markdown>
 
 - :material-memory:{ .lg .middle } **Streams**
 
-  ***
+    ***
 
-  Zero-copy shared memory tensors (`ImageStreamIO`).
+    Zero-copy shared memory tensors (`ImageStreamIO`).
 
-  [:octicons-arrow-right-24: Streams](streams.md)
+    [⮕ Streams](guide/streams.md)
 
 - :material-tune-variant:{ .lg .middle } **FPS**
 
-  ***
+    ***
 
-  Live parameter sync, state control, TUI dashboards.
+    Live parameter sync, state control, TUI dashboards.
 
-  [:octicons-arrow-right-24: FPS](fps.md)
+    [⮕ FPS](guide/fps.md)
 
 - :material-heart-pulse:{ .lg .middle } **Process Info**
 
-  ***
+    ***
 
-  Heartbeat telemetry, loop-rate profiling, health
-  monitoring.
+    Heartbeat telemetry, loop-rate profiling, health monitoring.
 
-  [:octicons-arrow-right-24: Process Info](procinfo.md)
+    [⮕ Process Info](guide/procinfo.md)
 
 - :material-sitemap-outline:{ .lg .middle } **Architecture**
 
-  ***
+    ***
 
-  System overview, layered design, data flow diagrams.
+    System overview, layered design, data flow diagrams.
 
-  [:octicons-arrow-right-24: Architecture](architecture.md)
+    [⮕ Architecture](arch/architecture.md)
 
 </div>
+
+<!-- prettier-ignore-end -->
 
 ---
 
 ## :hammer_and_wrench: Developer Guides
 
+<!-- prettier-ignore-start -->
 <div class="grid cards" markdown>
 
 - :material-school-outline:{ .lg .middle } **Tutorial**
 
-  ***
+    ***
 
-  Write your first compute module step by step.
+    Write your first compute module step by step.
 
-  [:octicons-arrow-right-24: Tutorial](developer/tutorial.md)
+    [⮕ Tutorial](developer/tutorial.md)
 
 - :material-code-braces:{ .lg .middle } **Coding Standards**
 
-  ***
+    ***
 
-  C style, line length, includes, Kernel-Doc.
+    C style, line length, includes, Kernel-Doc.
 
-  [:octicons-arrow-right-24: Coding standards](developer/coding_standards.md)
+    [⮕ Coding standards](developer/coding_standards.md)
 
 - :material-puzzle-outline:{ .lg .middle } **Adding Plugins**
 
-  ***
+    ***
 
-  Build modules that compile alongside the core.
+    Build modules that compile alongside the core.
 
-  [:octicons-arrow-right-24: Plugins](developer/plugins.md)
+    [⮕ Plugins](developer/plugins.md)
 
 - :material-file-tree-outline:{ .lg .middle } **Template Code**
 
-  ***
+    ***
 
-  Breakdown of `milk_module_example`.
+    Breakdown of `milk_module_example`.
 
-  [:octicons-arrow-right-24: Template source](developer/TemplateSourceCode.md)
+    [⮕ Template source](developer/TemplateSourceCode.md)
 
 </div>
+
+<!-- prettier-ignore-end -->
 
 ---
 
 ## :bar_chart: Operations & Reference
 
+<!-- prettier-ignore-start -->
 <div class="grid cards" markdown>
 
 - :material-speedometer:{ .lg .middle } **Performance**
 
-  ***
+    ***
 
-  CPU pinning, RT scheduling, SIMD, BLAS, GPU.
+    CPU pinning, RT scheduling, SIMD, BLAS, GPU.
 
-  [:octicons-arrow-right-24: Performance](performance.md)
+    [⮕ Performance](operations/performance.md)
 
 - :material-chart-line:{ .lg .middle } **PGO & LTO**
 
-  ***
+    ***
 
-  Profile-guided optimization + static link-time
-  optimization for 15–40 % speedup.
+    Profile-guided optimization + static link-time optimization for 15–40 % speedup.
 
-  [:octicons-arrow-right-24: PGO & LTO](pgo.md)
+    [⮕ PGO & LTO](operations/pgo.md)
 
 - :material-bug-outline:{ .lg .middle } **Debugging**
 
-  ***
+    ***
 
-  GDB, tmux logs, procinfo diagnostics, common
-  failures.
+    GDB, tmux logs, procinfo diagnostics, common failures.
 
-  [:octicons-arrow-right-24: Debugging](debugging.md)
+    [⮕ Debugging](operations/debugging.md)
 
 </div>
+
+<!-- prettier-ignore-end -->
 
 ---
 
 ## :link: More Resources
 
-- **[What's New](whatsnew.md)** — recent features
-  and upgrades
-- [CLI Syntax Reference](cli/CLIcore.md) ·
-  [Readline Keys](cli/helpreadline.md)
-- [Scripts Reference](scripts.md) ·
-  [Python API](python.md) ·
-  [Valkey Integration](valkey.md)
-- [Programmer's Guide](programmers_guide.md) ·
-  [Dependency Graph](dependency_graph.md) ·
-  [fpsCTRL Reference](fpsCTRL_reference.md)
-- [Working with Git](developer/WorkingWithGit.md) ·
-  [Code Assist Tools](code_assist.md)
-- [All Markdown Files](Markdown_Index.md) ·
-  [Tag Index](tags.md)
+- **[What's New](whatsnew.md)** — recent features and upgrades
+- [CLI Syntax Reference](guide/CLIcore.md) · [Readline Keys](guide/helpreadline.md)
+- [Scripts Reference](guide/scripts.md) · [Python API](guide/python.md) · [Valkey Integration](guide/valkey.md)
+- [Programmer's Guide](arch/programmers_guide.md) · [Dependency Graph](arch/dependency_graph.md) ·
+  [fpsCTRL Reference](guide/fpsCTRL_reference.md)
+- [Working with Git](developer/WorkingWithGit.md) · [Code Assist Tools](developer/code_assist.md)
+- [All Markdown Files](Markdown_Index.md) · [Tag Index](tags.md)

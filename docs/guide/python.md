@@ -3,16 +3,15 @@ tags:
   - python
   - pymilk
   - api
+render_macros: true
 ---
 
 # Python API
 
-Accessing `milk` shared memory streams from Python using
-the `ImageStreamIOWrap` bindings and `pyMilk`.
+Accessing `milk` shared memory streams from Python using the `ImageStreamIOWrap` bindings and
+`pyMilk`.
 
-See also: [Streams](streams.md) ·
-[FPS](fps.md) ·
-[Programmer's Guide](programmers_guide.md)
+See also: [Streams](streams.md) · [FPS](fps.md) · [Programmer's Guide](../arch/programmers_guide.md)
 
 ---
 
@@ -20,8 +19,7 @@ See also: [Streams](streams.md) ·
 
 ### 1.1. `ImageStreamIOWrap` (low-level bindings)
 
-The C-extension bindings are built automatically when
-`milk` is compiled with Python support:
+The C-extension bindings are built automatically when `milk` is compiled with Python support:
 
 ```bash
 $ cd _build
@@ -39,8 +37,7 @@ Verify:
 
 ### 1.2. `pyMilk` (high-level API)
 
-`pyMilk` provides a Pythonic wrapper around
-`ImageStreamIOWrap` with numpy integration:
+`pyMilk` provides a Pythonic wrapper around `ImageStreamIOWrap` with numpy integration:
 
 ```bash
 $ pip install pyMilk
@@ -93,8 +90,7 @@ shm.set_data(new_frame)
 frame = shm.get_data(check=True)
 ```
 
-This uses the same semaphore mechanism as the C API,
-providing microsecond-level wake-up latency.
+This uses the same semaphore mechanism as the C API, providing microsecond-level wake-up latency.
 
 ---
 
@@ -117,8 +113,7 @@ for kw in keywords:
 
 ## 4. Integration with NumPy
 
-All data returned by `pyMilk` is a standard numpy
-array. This means you can use the full numpy/scipy
+All data returned by `pyMilk` is a standard numpy array. This means you can use the full numpy/scipy
 ecosystem directly:
 
 ```python
@@ -142,8 +137,7 @@ filtered = median_filter(frame, size=3)
 
 ## 5. Real-Time Loop Example
 
-A minimal Python loop that reads frames and computes
-running statistics:
+A minimal Python loop that reads frames and computes running statistics:
 
 ```python
 import numpy as np
@@ -166,18 +160,16 @@ while True:
               f"mean={np.mean(running_mean):.2f}")
 ```
 
+<!-- prettier-ignore -->
 !!! warning
-Python's GIL limits true parallel performance.
-For latency-critical loops (>1 kHz), use C modules.
-Python is best suited for monitoring, scripting,
-and offline analysis.
+    Python's GIL limits true parallel performance. For latency-critical loops (>1 kHz), use C modules.
+    Python is best suited for monitoring, scripting, and offline analysis.
 
 ---
 
 ## 6. CacaoProcessTools
 
-The `python_module/` directory contains
-`CacaoProcessTools`, a set of Python utilities for
+The `python_module/` directory contains `CacaoProcessTools`, a set of Python utilities for
 controlling `cacao` processes:
 
 ```bash
@@ -185,10 +177,8 @@ $ cd python_module
 $ pip install .
 ```
 
-See
-[`python_module/README.md`](../python_module/README.md)
-for usage details.
+See [`python_module/README.md`]({{ github_blob_url }}/python_module/README.md) for usage details.
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

@@ -1,5 +1,5 @@
 ---
-description: Sync docs/scripts.md after adding or modifying shell scripts
+description: Sync docs/guide/scripts.md after adding or modifying shell scripts
 ---
 
 # Update Scripts Documentation
@@ -23,14 +23,14 @@ installed.
 ## 2. Read Current Documentation
 
 ```bash
-view_file docs/scripts.md
+view_file docs/guide/scripts.md
 ```
 
 ## 3. Compare and Update
 
 For each script:
 
-- Verify it appears in `docs/scripts.md`.
+- Verify it appears in `docs/guide/scripts.md`.
 - Verify the description is accurate.
 - If the script is new, add it to the appropriate
   section.

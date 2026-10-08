@@ -31,7 +31,7 @@ git log --oneline --name-only -n 30 -- \
   'src/engine/libfps/milk-fps-help.c' \
   'src/engine/libfps/milk-fpsexec-help.c' \
   'src/engine/libprocessinfo/milk-procinfo-help.c' \
-  'docs/*.md' \
+  'docs/**/*.md' \
   'src/*/README.md'
 ```
 

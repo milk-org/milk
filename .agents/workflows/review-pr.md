@@ -30,7 +30,7 @@ For each modified `.c` and `.h` file, verify:
 ## 3. Architecture Check
 
 - [ ] No new cross-module dependencies violating
-      `docs/dependency_graph.md`
+      `docs/arch/dependency_graph.md`
 - [ ] Dual-mode files use `#ifdef MILK_NO_CLI`
       pattern
 - [ ] New modules follow
@@ -52,7 +52,7 @@ For compute-function changes:
 
 - [ ] Module README updated if files changed
 - [ ] Kernel-Doc on new/modified functions
-- [ ] `docs/programmers_guide.md` updated if
+- [ ] `docs/arch/programmers_guide.md` updated if
       architecture changed
 - [ ] FPS_APP_INFO `.description` is descriptive
 - [ ] Help sources consistent (run

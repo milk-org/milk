@@ -7,11 +7,9 @@ tags:
 
 # FIFO Command Input
 
-milk-cli supports **command FIFO** (named pipe) input,
-allowing external processes to inject commands into a
-running CLI session. This enables powerful automation
-workflows where shell pipelines feed commands into
-milk-cli in real time.
+milk-cli supports **command FIFO** (named pipe) input, allowing external processes to inject
+commands into a running CLI session. This enables powerful automation workflows where shell
+pipelines feed commands into milk-cli in real time.
 
 ## Quick Start
 
@@ -51,10 +49,8 @@ The milk-cli session shows ingestion feedback:
 
 ## The `$MCLIFIFO` Variable
 
-The special variable `$MCLIFIFO` expands to the
-current FIFO path when a FIFO is active, or an empty
-string when no FIFO is open. This makes it easy to
-reference the FIFO in shell commands:
+The special variable `$MCLIFIFO` expands to the current FIFO path when a FIFO is active, or an empty
+string when no FIFO is open. This makes it easy to reference the FIFO in shell commands:
 
 ```text
 milk> fifo create
@@ -70,15 +66,13 @@ FIFOs can also be enabled at startup:
 | `-f`        | Auto-create a FIFO (path based on process name and PID) |
 | `-F <path>` | Create a FIFO at the specified path                     |
 
-These are equivalent to running `fifo create` or
-`fifo create <path>` immediately after startup.
+These are equivalent to running `fifo create` or `fifo create <path>` immediately after startup.
 
 ## Examples
 
 ### Batch Command Injection
 
-Feed a list of commands from a file into a running
-milk-cli session:
+Feed a list of commands from a file into a running milk-cli session:
 
 ```bash
 # Terminal 1: start milk-cli with FIFO
@@ -90,8 +84,7 @@ cat commands.milk > $(cat /milk/shm/.milk.fifo.*)
 
 ### Dynamic Processing with awk
 
-Process a list of images and save specific ones based
-on metadata:
+Process a list of images and save specific ones based on metadata:
 
 ```text
 milk> fifo create
@@ -109,8 +102,7 @@ Each generated command appears with ingestion feedback:
 
 ### Pausing and Resuming FIFO Input
 
-Temporarily disable FIFO input while doing interactive
-work, then re-enable it:
+Temporarily disable FIFO input while doing interactive work, then re-enable it:
 
 ```text
 milk> fifo create
@@ -125,8 +117,7 @@ milk> fifo on
 
 ### Connecting to Another Session's FIFO
 
-If another milk-cli session has a FIFO open, you can
-connect to it:
+If another milk-cli session has a FIFO open, you can connect to it:
 
 ```text
 milk> fifo open /milk/shm/.othersession.fifo.54321
@@ -135,8 +126,7 @@ milk> fifo open /milk/shm/.othersession.fifo.54321
 
 ### Using with xargs
 
-Combine `find`, `xargs`, and FIFO to batch-process
-files:
+Combine `find`, `xargs`, and FIFO to batch-process files:
 
 ```text
 milk> fifo create
@@ -145,8 +135,7 @@ milk> !find /data/frames -name "*.fits" | xargs -I {} echo "iofits.loadfits {} f
 
 ### Scripted FIFO Workflow
 
-Create a shell script that starts milk-cli and feeds
-commands through the FIFO:
+Create a shell script that starts milk-cli and feeds commands through the FIFO:
 
 ```bash
 #!/bin/bash

@@ -5,6 +5,9 @@
     },
     {
       "pattern": "\\.html$"
+    },
+    {
+      "pattern": "^\\{\\{"
     }
   ],
   "timeout": "5s",

@@ -1,7 +1,6 @@
 # FAQ & Troubleshooting
 
-Common issues and solutions when building, installing, and
-running `milk`.
+Common issues and solutions when building, installing, and running `milk`.
 
 ---
 
@@ -31,8 +30,8 @@ running `milk`.
     cmake .. -DUSE_CFITSIO=OFF
     ```
 
-    See [Build Tiers](install/build_tiers.md) and
-    [Compile Instructions](install/compile.md) for details.
+    See [Build Tiers](build_tiers.md) and [Compile Instructions](compile.md) for
+    details.
 
 ??? faq "Build fails with missing readline"
 
@@ -76,7 +75,7 @@ running `milk`.
 
 ## 2. Shared Memory
 
-See also: [Streams](streams.md)
+See also: [Streams](../guide/streams.md)
 
 ??? faq "Permission denied when accessing /milk/shm"
 
@@ -124,9 +123,8 @@ See also: [Streams](streams.md)
 
 ## 3. FPS / Process Control
 
-See also: [FPS](fps.md) ·
-[Process Info](procinfo.md) ·
-[FPS Standalone Modes](FPS_Standalone_CMD_Modes.md)
+See also: [FPS](../guide/fps.md) · [Process Info](../guide/procinfo.md) ·
+[FPS Standalone Modes](../arch/FPS_Standalone_CMD_Modes.md)
 
 ??? faq "FPS process won't start — \"FPS already exists\""
 
@@ -142,8 +140,7 @@ See also: [FPS](fps.md) ·
 
 ??? faq "milk-fpsCTRL shows no processes"
 
-    Ensure the processinfo SHM directory exists and processes are
-    registered:
+    Ensure the processinfo SHM directory exists and processes are registered:
 
     ```bash
     ls $MILK_SHM_DIR/proc.*.shm   # (1)!
@@ -165,14 +162,13 @@ See also: [FPS](fps.md) ·
 
 ## 4. CLI
 
-See also: [CLI Reference](cli/CLIcore.md)
+See also: [CLI Reference](../guide/CLIcore.md)
 
 ??? faq "milk-cli prompt jumps to bottom of terminal"
 
     This can happen when the startup banner clears the screen.
 
-    **Solution:** This is a known cosmetic issue. The prompt will
-    stabilize after the first command.
+    **Solution:** This is a known cosmetic issue. The prompt will stabilize after the first command.
 
 ??? faq "Command not found — \"Unknown command\""
 
@@ -190,8 +186,7 @@ See also: [CLI Reference](cli/CLIcore.md)
     1. List all loaded modules
     2. Search for a command
 
-    If the module is a plugin, ensure it was compiled and the `.so`
-    file is in the library path.
+    If the module is a plugin, ensure it was compiled and the `.so` file is in the library path.
 
 ---
 
@@ -199,8 +194,7 @@ See also: [CLI Reference](cli/CLIcore.md)
 
 ??? faq "Real-time scheduling"
 
-    For latency-critical applications (AO loops), configure
-    real-time scheduling:
+    For latency-critical applications (AO loops), configure real-time scheduling:
 
     ```bash
     milk-makecsetandrt           # (1)!
@@ -227,9 +221,9 @@ See also: [CLI Reference](cli/CLIcore.md)
 - **CLI help:** Type `?` or `help` at the `milk-cli >` prompt
 - **Command help:** `cmd? <command>` for detailed usage
 - **Module list:** `m?` to list all loaded modules
-- **Documentation:** See [docs/index.md](index.md)
+- **Documentation:** See [docs/index.md](../index.md)
 - **Issues:** Report on [GitHub Issues](https://github.com/milk-org/milk/issues)
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

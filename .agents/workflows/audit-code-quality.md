@@ -34,7 +34,7 @@ Run this workflow when asked to review or audit code quality, or when you notice
 
 6. **Audit Dependencies and Performance**:
    - Ensure the file strictly includes only what it uses. Check for implicit dependencies and remove unused headers.
-   - Cross-check `#include` and cross-module dependencies against `docs/dependency_graph.md`.
+   - Cross-check `#include` and cross-module dependencies against `docs/arch/dependency_graph.md`.
    - Identify dependencies that can be simplified or decoupled.
    - Verify the code aligns with `performance-practices.md` (e.g., using `MILK_RESTRICT`, avoiding allocations in hot paths).
 
