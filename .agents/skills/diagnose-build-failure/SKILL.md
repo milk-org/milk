@@ -76,6 +76,7 @@ Error message
 | `fps_*`, `FPS_*`   | `milkfps`                                  |
 | `processinfo_*`    | `milkprocessinfo`                          |
 | `RegisterCLIcmd`   | `CLIcore` (never for standalone!)          |
+| `data` (`DATA`)    | Raw `RegisterCLIcmd`/`data.cmd[]` in module code: use `INSERT_STD_CLIREGISTERFUNC[_NAMED]` |
 | `cblas_sgemv`      | `// MILK_CMAKE_REQUEST_BLAS` in the source |
 | Math functions     | `m` (libm)                                 |
 
@@ -195,5 +196,6 @@ When a standalone executable fails to build:
 - [ ] Has `FPS_STANDALONE` compile definition
 - [ ] Has `MILK_NO_CLI` compile definition
 - [ ] Does NOT call `RegisterCLIcmd` or any CLI
-      functions
+      functions; registers via
+      `INSERT_STD_CLIREGISTERFUNC[_NAMED]` only
 - [ ] Follows `src/milk_module_example/CMakeLists.txt`

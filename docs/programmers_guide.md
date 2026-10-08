@@ -129,7 +129,7 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 4. **Compute Function (`fpsexec()`):** Pure calculation core.
 5. **`CLIcmddata`:** CLI registry scoping.
 6. **Compute wrapper:** Processinfo loop via `INSERT_STD_PROCINFO_COMPUTEFUNC_*` macros.
-7. **Module registration:** `CLIADDCMD_*` function for CLI mode (guarded by `#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)`).
+7. **Module registration:** `CLIADDCMD_*` function for CLI mode. Register commands with `INSERT_STD_CLIREGISTERFUNC` (standard `CLIcmddata`/`CLIfunction` names) or `INSERT_STD_CLIREGISTERFUNC_NAMED(varCLIcmddata, varCLIfunction)` (other names, several commands per function/file).
 8. **Standalone `main()`:** `FPS_MAIN_STANDALONE_V2` (or `_V2_CONFCHECK` if a `customCONFcheck` is needed) handles FPS lifecycle, `-h1`, `-tmux`.
 
 ## 4. Directory Map

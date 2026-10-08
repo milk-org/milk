@@ -94,7 +94,9 @@ A compute unit's source file is compiled twice: once into the module's regular l
    #endif
    ```
 
-## Plugins and Compute Units Mapping
+3. **Register through the macros**, never `RegisterCLIcmd()` or `data.cmd[]` directly:
+   `INSERT_STD_CLIREGISTERFUNC` / `INSERT_STD_CLIREGISTERFUNC_NAMED(var, fn)` (see
+   [`docs/programmers_guide.md`](../../docs/programmers_guide.md), 8-Section Layout item 7).
 
 A plugin typically consists of multiple separate compute units (standalone executables) rather
 than a single monolithic executable with internal mode switching.

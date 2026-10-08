@@ -29,26 +29,32 @@ FPS_app_info)` after the `CLIcmddata`
    `INSERT_STD_PROCINFO_COMPUTEFUNC_END`
    dereferences NULL.
 
-1. **Using `FPS_MAIN_STANDALONE` instead of
+4. **Calling `RegisterCLIcmd()` / `data.cmd[]` directly.**
+   Use `INSERT_STD_CLIREGISTERFUNC` or
+   `INSERT_STD_CLIREGISTERFUNC_NAMED(var, fn)`; see
+   [`docs/programmers_guide.md`](../../docs/programmers_guide.md)
+   (8-Section Layout, item 7).
+
+5. **Using `FPS_MAIN_STANDALONE` instead of
    `FPS_MAIN_STANDALONE_V2`.** The V1 macro
    does not support the `FPS_PARAMS` X-macro.
    Always use `FPS_MAIN_STANDALONE_V2` (or
    `_V2_CONFCHECK` if you have a
    `customCONFcheck`).
 
-2. **Wrong string parameter pattern.** Use
+6. **Wrong string parameter pattern.** Use
    `static char var[FUNCTION_PARAMETER_STRMAXLEN]`
    and pass `var` (no `&`) in the X-macro.
    Do not use `char *var` with `&var` in new
    code.
 
-3. **Using `FPFLAG_DEFAULT_INPUT` for stream
+7. **Using `FPFLAG_DEFAULT_INPUT` for stream
    parameters.** Use `FPFLAG_DEFAULT_TRIGGER_STREAM`
    for input streams that drive the compute loop,
    or `FPFLAG_DEFAULT_INPUT_STREAM` for required
    input streams.
 
-4. **Forgetting `outimg->md->write = 1`.**
+8. **Forgetting `outimg->md->write = 1`.**
    Must be set before modifying output stream
    pixels (inside the per-frame function).
    `processinfo_update_output_stream()` handles
