@@ -74,8 +74,9 @@ int cli_intercept_cmd_exit(const char *p)
             }
         }
 
-        cli_trap_run_exit();
-        exit(exitcode);
+        dcexitcode     = exitcode;
+        data.CLIloopON = 0;
+        return 1;
     }
 
     /* exitCLI — milk-specific graceful stop.
