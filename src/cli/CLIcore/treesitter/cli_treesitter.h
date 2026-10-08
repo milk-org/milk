@@ -75,4 +75,28 @@ void cli_ts_cleanup(void);
  */
 int cli_ts_is_incomplete(const char *buffer);
 
+/**
+ * @brief Determine completion mode and command context using tree-sitter AST
+ *
+ * Inspects the input buffer up to cursor position @p start to determine
+ * whether the token at @p start is a command, file, image stream, FPS parameter,
+ * or variable.
+ *
+ * @param line         Full command line buffer
+ * @param start        Byte offset where the token to complete starts
+ * @param text         Token string to complete
+ * @param out_cmdname  Output buffer for extracted command name (can be NULL)
+ * @param cmdname_size Size of out_cmdname buffer
+ * @param out_argidx   Output pointer for 0-indexed argument position (can be NULL)
+ * @return Completion mode (CLICOMPLETIONMODE_*), or -1 if a command was identified
+ *         and the caller should check command argument types.
+ */
+int cli_ts_determine_completion_mode(
+    const char *line,
+    int         start,
+    const char *text,
+    char       *out_cmdname,
+    size_t      cmdname_size,
+    int        *out_argidx);
+
 #endif /* CLI_TREESITTER_H */

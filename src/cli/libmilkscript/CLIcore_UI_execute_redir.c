@@ -73,11 +73,17 @@ int cli_find_unquoted_op(const char *line, char primary, char reject, char accep
 {
     int in_sq = 0;
     int in_dq = 0;
+    int in_bt = 0;
     int depth = 0;
 
     for (int i = 0; line[i] != '\0'; i++)
     {
         char c = line[i];
+        if (c == '\\' && line[i + 1] != '\0' && !in_sq)
+        {
+            i++;
+            continue;
+        }
         if (c == '\'' && !in_dq)
         {
             in_sq = !in_sq;
@@ -86,7 +92,11 @@ int cli_find_unquoted_op(const char *line, char primary, char reject, char accep
         {
             in_dq = !in_dq;
         }
-        else if (!in_sq && !in_dq)
+        else if (c == '`' && !in_sq)
+        {
+            in_bt = !in_bt;
+        }
+        else if (!in_sq && !in_dq && !in_bt)
         {
             if (c == '(')
             {
@@ -98,7 +108,8 @@ int cli_find_unquoted_op(const char *line, char primary, char reject, char accep
             }
             else if (depth == 0 && c == primary)
             {
-                if (reject != 0 && line[i + 1] == reject)
+                if (reject != 0 &&
+                    (line[i + 1] == reject || (i > 0 && line[i - 1] == reject)))
                 {
                     continue;
                 }

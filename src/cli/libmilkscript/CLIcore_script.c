@@ -180,6 +180,46 @@ const char *cli_var_lookup(const char *name)
         return retbuf;
     }
 
+    /* $$ — current process ID */
+    if (strcmp(name, "$") == 0)
+    {
+        snprintf(retbuf, sizeof(retbuf), "%ld", (long) getpid());
+        return retbuf;
+    }
+
+    /* $# — positional argument count */
+    if (strcmp(name, "#") == 0)
+    {
+        const char *v = cli_var_get("#");
+        if (v != NULL)
+        {
+            return v;
+        }
+        return "0";
+    }
+
+    /* $! — last background process ID */
+    if (strcmp(name, "!") == 0)
+    {
+        const char *v = cli_var_get("!");
+        if (v != NULL)
+        {
+            return v;
+        }
+        return "";
+    }
+
+    /* $0 — script/program name */
+    if (strcmp(name, "0") == 0)
+    {
+        const char *v = cli_var_get("0");
+        if (v != NULL)
+        {
+            return v;
+        }
+        return "milk-cli";
+    }
+
     /* $MCLIFIFO — current command FIFO path */
     if (strcmp(name, "MCLIFIFO") == 0)
     {

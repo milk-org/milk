@@ -58,15 +58,6 @@
 
 #include "timeutils.h"
 
-#define CLICOMPLETIONMODE_COMMANDS 0
-#define CLICOMPLETIONMODE_IMAGES 1
-#define CLICOMPLETIONMODE_CMDARGS 2
-#define CLICOMPLETIONMODE_FILES 3
-#define CLICOMPLETIONMODE_FPSPARAMS 4
-#define CLICOMPLETIONMODE_VARS_FPS 5
-#define CLICOMPLETIONMODE_VARS_SEQ 6
-#define CLICOMPLETIONMODE_VARS_STREAM 7
-
 #define COLORRED "\001\033[31m\002"
 #define COLORHBOLDCYAN "\001\e[0;96m\002"
 #define COLORDIMYELLOW "\033[2;33m"
@@ -99,7 +90,7 @@ void *xmalloc(int size)
  * @param s  String to duplicate
  * @return Newly allocated copy of @s
  */
-char *dupstr(char *s)
+char *dupstr(const char *s)
 {
     char *r;
 

@@ -27,22 +27,16 @@
 #    include <readline/readline.h>
 #endif
 
+#include <ctype.h>
+
 #include "CLIcore.h"
+#include "CLIcore_script.h"
+#include "CLIcore_UI_execute.h"
+#include "fps_connect.h"
+#include "treesitter/cli_treesitter.h"
 
-/* Completion mode constants — must match
- * CLIcore_UI_completion.c */
-#define CLICOMPLETIONMODE_COMMANDS 0
-#define CLICOMPLETIONMODE_IMAGES 1
-#define CLICOMPLETIONMODE_CMDARGS 2
-#define CLICOMPLETIONMODE_FILES 3
-#define CLICOMPLETIONMODE_FPSPARAMS 4
-#define CLICOMPLETIONMODE_VARS_FPS 5
-#define CLICOMPLETIONMODE_VARS_SEQ 6
-#define CLICOMPLETIONMODE_VARS_STREAM 7
+extern char **environ;
 
-/* From CLIcore_UI_completion.c */
-extern void *xmalloc(int size);
-extern char *dupstr(const char *s);
 
 
 #ifdef USE_READLINE
@@ -74,13 +68,17 @@ char *CLI_generator(const char *text, int state)
 {
     static unsigned int list_index;
     static unsigned int len;
+    static int          matches_found_in_pass = 0;
     char               *name;
+
+#define GEN_DUPSTR(s) (matches_found_in_pass++, dupstr(s))
 
     if (!state)
     {
-        list_index           = 0;
-        len                  = strlen(text);
-        generator_fuzzy_pass = 0;
+        list_index            = 0;
+        len                   = strlen(text);
+        generator_fuzzy_pass  = 0;
+        matches_found_in_pass = 0;
     }
 
 retry_fuzzy:
@@ -164,7 +162,7 @@ retry_fuzzy:
             {
                 if (strncmp(name, text, len) == 0)
                 {
-                    return (dupstr(name));
+                    return (GEN_DUPSTR(name));
                 }
             }
             else
@@ -172,7 +170,7 @@ retry_fuzzy:
                 /* Fuzzy: substring match */
                 if (strstr(name, text) != NULL)
                 {
-                    return (dupstr(name));
+                    return (GEN_DUPSTR(name));
                 }
             }
         }
@@ -188,14 +186,14 @@ retry_fuzzy:
             {
                 if (strncmp(name, text, len) == 0)
                 {
-                    return (dupstr(name));
+                    return (GEN_DUPSTR(name));
                 }
             }
             else
             {
                 if (strstr(name, text) != NULL)
                 {
-                    return (dupstr(name));
+                    return (GEN_DUPSTR(name));
                 }
             }
         }
@@ -236,14 +234,14 @@ retry_fuzzy:
                     {
                         if (strncmp(imgname, text, len) == 0)
                         {
-                            return (dupstr(imgname));
+                            return (GEN_DUPSTR(imgname));
                         }
                     }
                     else
                     {
                         if (strstr(imgname, text) != NULL)
                         {
-                            return (dupstr(imgname));
+                            return (GEN_DUPSTR(imgname));
                         }
                     }
                 }
@@ -263,7 +261,7 @@ retry_fuzzy:
                 list_index++;
                 if (name != NULL && strncmp(name, text, len) == 0)
                 {
-                    return (dupstr(name));
+                    return (GEN_DUPSTR(name));
                 }
             }
         }
@@ -339,7 +337,7 @@ retry_fuzzy:
                         strncat(result, "/", sizeof(result) - strlen(result) - 1);
                     }
 
-                    return dupstr(result);
+                    return GEN_DUPSTR(result);
                 }
             }
             closedir(dirp);
@@ -386,14 +384,14 @@ retry_fuzzy:
                     {
                         if (strncmp(fpsname, text, len) == 0)
                         {
-                            return dupstr(fpsname);
+                            return GEN_DUPSTR(fpsname);
                         }
                     }
                     else
                     {
                         if (strstr(fpsname, text) != NULL)
                         {
-                            return dupstr(fpsname);
+                            return GEN_DUPSTR(fpsname);
                         }
                     }
                 }
@@ -405,53 +403,122 @@ retry_fuzzy:
 
     if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_FPS)
     {
-        static DIR *vfps_dirp = NULL;
-        if (!state)
+        const char *dot1 = strchr(text, '.');
+        const char *dot2 = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
+
+        if (dot2 != NULL)
         {
+            static FPS  fps;
+            static int  fps_connected = 0;
+            static int  param_idx     = 0;
+            static char fps_target[128];
+            static char param_prefix[128];
+
+            if (!state)
+            {
+                param_idx = 0;
+                size_t fnlen = (size_t) (dot2 - (dot1 + 1));
+                if (fnlen >= sizeof(fps_target))
+                {
+                    fnlen = sizeof(fps_target) - 1;
+                }
+                strncpy(fps_target, dot1 + 1, fnlen);
+                fps_target[fnlen] = '\0';
+
+                strncpy(param_prefix, dot2 + 1, sizeof(param_prefix) - 1);
+                param_prefix[sizeof(param_prefix) - 1] = '\0';
+
+                memset(&fps, 0, sizeof(FPS));
+                fps_connected = (fps_connect(fps_target, &fps, FPSCONNECT_SIMPLE) == 0 &&
+                                 fps.parray != NULL);
+            }
+
+            if (fps_connected)
+            {
+                while (param_idx < fps.md->NBparamMAX)
+                {
+                    int pi = param_idx++;
+                    if (!(fps.parray[pi].fpflag & FPFLAG_ACTIVE))
+                    {
+                        continue;
+                    }
+
+                    const char *pname = fps.parray[pi].keyword[0];
+                    if (pname == NULL || pname[0] == '\0')
+                    {
+                        continue;
+                    }
+
+                    int match = 0;
+                    if (generator_fuzzy_pass == 0)
+                    {
+                        if (strncmp(pname, param_prefix, strlen(param_prefix)) == 0)
+                        {
+                            match = 1;
+                        }
+                    }
+                    else if (strstr(pname, param_prefix) != NULL)
+                    {
+                        match = 1;
+                    }
+
+                    if (match)
+                    {
+                        char buf[256];
+                        snprintf(buf, sizeof(buf), "@fps.%s.%s", fps_target, pname);
+                        return GEN_DUPSTR(buf);
+                    }
+                }
+            }
+        }
+        else
+        {
+            static DIR *vfps_dirp = NULL;
+            if (!state)
+            {
+                if (vfps_dirp != NULL)
+                {
+                    closedir(vfps_dirp);
+                    vfps_dirp = NULL;
+                }
+                vfps_dirp = opendir(dcshmdir);
+            }
             if (vfps_dirp != NULL)
             {
-                closedir(vfps_dirp);
-                vfps_dirp = NULL;
-            }
-            vfps_dirp = opendir(dcshmdir);
-        }
-        if (vfps_dirp != NULL)
-        {
-            struct dirent *ent;
-            while ((ent = readdir(vfps_dirp)) != NULL)
-            {
-                if (strncmp(ent->d_name, "fps.", 4) == 0)
+                struct dirent *ent;
+                while ((ent = readdir(vfps_dirp)) != NULL)
                 {
-                    char *ext = strstr(ent->d_name, ".datadir");
-                    if (ext != NULL && strcmp(ext, ".datadir") == 0)
+                    if (strncmp(ent->d_name, "fps.", 4) == 0)
                     {
-                        char fpsname[256];
-                        int  namelen = ext - (ent->d_name + 4);
-                        if (namelen > 240)
+                        char *ext = strstr(ent->d_name, ".datadir");
+                        if (ext != NULL && strcmp(ext, ".datadir") == 0)
                         {
-                            namelen = 240;
-                        }
-                        snprintf(fpsname, sizeof(fpsname), "@fps.%.*s.", namelen, ent->d_name + 4);
-
-                        if (generator_fuzzy_pass == 0)
-                        {
-                            if (strncmp(fpsname, text, len) == 0)
+                            char fpsname[256];
+                            int  namelen = ext - (ent->d_name + 4);
+                            if (namelen > 240)
                             {
-                                return dupstr(fpsname);
+                                namelen = 240;
                             }
-                        }
-                        else
-                        {
-                            if (strstr(fpsname, text) != NULL)
+                            snprintf(fpsname, sizeof(fpsname), "@fps.%.*s.",
+                                     namelen, ent->d_name + 4);
+
+                            if (generator_fuzzy_pass == 0)
                             {
-                                return dupstr(fpsname);
+                                if (strncmp(fpsname, text, len) == 0)
+                                {
+                                    return GEN_DUPSTR(fpsname);
+                                }
+                            }
+                            else if (strstr(fpsname, text) != NULL)
+                            {
+                                return GEN_DUPSTR(fpsname);
                             }
                         }
                     }
                 }
+                closedir(vfps_dirp);
+                vfps_dirp = NULL;
             }
-            closedir(vfps_dirp);
-            vfps_dirp = NULL;
         }
     }
 
@@ -483,21 +550,19 @@ retry_fuzzy:
                         {
                             namelen = 240;
                         }
-                        snprintf(seqname, sizeof(seqname), "@seq.%.*s.", namelen, ent->d_name + 4);
+                        snprintf(seqname, sizeof(seqname), "@seq.%.*s.",
+                                 namelen, ent->d_name + 4);
 
                         if (generator_fuzzy_pass == 0)
                         {
                             if (strncmp(seqname, text, len) == 0)
                             {
-                                return dupstr(seqname);
+                                return GEN_DUPSTR(seqname);
                             }
                         }
-                        else
+                        else if (strstr(seqname, text) != NULL)
                         {
-                            if (strstr(seqname, text) != NULL)
-                            {
-                                return dupstr(seqname);
-                            }
+                            return GEN_DUPSTR(seqname);
                         }
                     }
                 }
@@ -509,61 +574,382 @@ retry_fuzzy:
 
     if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_STREAM)
     {
-        static DIR *vstream_dirp = NULL;
-        if (!state)
-        {
-            if (vstream_dirp != NULL)
-            {
-                closedir(vstream_dirp);
-                vstream_dirp = NULL;
-            }
-            vstream_dirp = opendir(dcshmdir);
-        }
-        if (vstream_dirp != NULL)
-        {
-            struct dirent *ent;
-            while ((ent = readdir(vstream_dirp)) != NULL)
-            {
-                char *ext = strstr(ent->d_name, ".im.shm");
-                if (ext != NULL && strcmp(ext, ".im.shm") == 0)
-                {
-                    char sname[256];
-                    int  namelen = ext - ent->d_name;
-                    if (namelen > 240)
-                    {
-                        namelen = 240;
-                    }
-                    snprintf(sname, sizeof(sname), "${s.%.*s.", namelen, ent->d_name);
+        const char *dot1 = strchr(text, '.');
+        const char *dot2 = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
+        int has_brace = (text[0] == '$' && text[1] == '{');
 
-                    if (generator_fuzzy_pass == 0)
+        if (dot2 != NULL)
+        {
+            static int prop_idx = 0;
+            static const char *stream_props[] = {
+                "xsize", "ysize", "zsize", "naxis", "type", "typename",
+                "nelem", "cnt0", "cnt1", "sem", NULL
+            };
+            static char stream_target[128];
+            static char prop_prefix[64];
+
+            if (!state)
+            {
+                prop_idx = 0;
+                size_t snlen = (size_t) (dot2 - (dot1 + 1));
+                if (snlen >= sizeof(stream_target))
+                {
+                    snlen = sizeof(stream_target) - 1;
+                }
+                strncpy(stream_target, dot1 + 1, snlen);
+                stream_target[snlen] = '\0';
+
+                strncpy(prop_prefix, dot2 + 1, sizeof(prop_prefix) - 1);
+                prop_prefix[sizeof(prop_prefix) - 1] = '\0';
+            }
+
+            while (stream_props[prop_idx] != NULL)
+            {
+                const char *sprop = stream_props[prop_idx++];
+                int match = 0;
+                if (generator_fuzzy_pass == 0)
+                {
+                    if (strncmp(sprop, prop_prefix, strlen(prop_prefix)) == 0)
                     {
-                        if (strncmp(sname, text, len) == 0)
-                        {
-                            return dupstr(sname);
-                        }
+                        match = 1;
+                    }
+                }
+                else if (strstr(sprop, prop_prefix) != NULL)
+                {
+                    match = 1;
+                }
+
+                if (match)
+                {
+                    char buf[256];
+                    if (has_brace)
+                    {
+                        snprintf(buf, sizeof(buf), "${s.%s.%s}", stream_target, sprop);
                     }
                     else
                     {
-                        if (strstr(sname, text) != NULL)
+                        snprintf(buf, sizeof(buf), "@s.%s.%s", stream_target, sprop);
+                    }
+                    return GEN_DUPSTR(buf);
+                }
+            }
+        }
+        else
+        {
+            static DIR *vstream_dirp = NULL;
+            if (!state)
+            {
+                if (vstream_dirp != NULL)
+                {
+                    closedir(vstream_dirp);
+                    vstream_dirp = NULL;
+                }
+                vstream_dirp = opendir(dcshmdir);
+            }
+            if (vstream_dirp != NULL)
+            {
+                struct dirent *ent;
+                while ((ent = readdir(vstream_dirp)) != NULL)
+                {
+                    char *ext = strstr(ent->d_name, ".im.shm");
+                    if (ext != NULL && strcmp(ext, ".im.shm") == 0)
+                    {
+                        char sname[256];
+                        int  namelen = ext - ent->d_name;
+                        if (namelen > 240)
                         {
-                            return dupstr(sname);
+                            namelen = 240;
+                        }
+                        if (has_brace)
+                        {
+                            snprintf(sname, sizeof(sname), "${s.%.*s.",
+                                     namelen, ent->d_name);
+                        }
+                        else
+                        {
+                            snprintf(sname, sizeof(sname), "@s.%.*s.",
+                                     namelen, ent->d_name);
+                        }
+
+                        if (generator_fuzzy_pass == 0)
+                        {
+                            if (strncmp(sname, text, len) == 0)
+                            {
+                                return GEN_DUPSTR(sname);
+                            }
+                        }
+                        else if (strstr(sname, text) != NULL)
+                        {
+                            return GEN_DUPSTR(sname);
                         }
                     }
                 }
+                closedir(vstream_dirp);
+                vstream_dirp = NULL;
             }
-            closedir(vstream_dirp);
-            vstream_dirp = NULL;
+        }
+    }
+
+    if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_ENV)
+    {
+        static int  var_phase;
+        static int  var_idx;
+        static int  has_dollar;
+        static int  has_brace;
+        static char vprefix[256];
+        static int  vpreflen;
+
+        if (!state)
+        {
+            var_phase  = 0;
+            var_idx    = 0;
+            has_dollar = (text[0] == '$');
+            has_brace  = (has_dollar && text[1] == '{');
+
+            const char *vp = text;
+            if (has_brace)
+            {
+                vp = text + 2;
+            }
+            else if (has_dollar)
+            {
+                vp = text + 1;
+            }
+            strncpy(vprefix, vp, sizeof(vprefix) - 1);
+            vprefix[sizeof(vprefix) - 1] = '\0';
+            vpreflen = (int) strlen(vprefix);
+        }
+
+        /* Phase 0: special shell variables */
+        static const char *special_vars[] = {
+            "?", "$", "!", "#", "0", "MCLIFIFO", "PROCINFO_NCPU", "PROCINFO_NPROC", NULL
+        };
+
+        while (var_phase == 0)
+        {
+            const char *sname = special_vars[var_idx++];
+            if (sname == NULL)
+            {
+                var_phase = 1;
+                var_idx   = 0;
+                break;
+            }
+
+            int match = 0;
+            if (generator_fuzzy_pass == 0)
+            {
+                if (strncmp(sname, vprefix, vpreflen) == 0)
+                {
+                    match = 1;
+                }
+            }
+            else if (strstr(sname, vprefix) != NULL)
+            {
+                match = 1;
+            }
+
+            if (match)
+            {
+                char buf[512];
+                if (has_brace)
+                {
+                    snprintf(buf, sizeof(buf), "${%s}", sname);
+                }
+                else if (has_dollar)
+                {
+                    snprintf(buf, sizeof(buf), "$%s", sname);
+                }
+                else
+                {
+                    snprintf(buf, sizeof(buf), "%s", sname);
+                }
+                return GEN_DUPSTR(buf);
+            }
+        }
+
+        /* Phase 1: CLI script variables */
+        while (var_phase == 1)
+        {
+            if (var_idx >= CLI_MAX_VARS)
+            {
+                var_phase = 2;
+                var_idx   = 0;
+                break;
+            }
+
+            int i = var_idx++;
+            if (!cli_vars[i].used)
+            {
+                continue;
+            }
+
+            const char *vname = cli_vars[i].name;
+            int match = 0;
+            if (generator_fuzzy_pass == 0)
+            {
+                if (strncmp(vname, vprefix, vpreflen) == 0)
+                {
+                    match = 1;
+                }
+            }
+            else if (strstr(vname, vprefix) != NULL)
+            {
+                match = 1;
+            }
+
+            if (match)
+            {
+                char buf[512];
+                if (has_brace)
+                {
+                    snprintf(buf, sizeof(buf), "${%s}", vname);
+                }
+                else if (has_dollar)
+                {
+                    snprintf(buf, sizeof(buf), "$%s", vname);
+                }
+                else
+                {
+                    snprintf(buf, sizeof(buf), "%s", vname);
+                }
+                return GEN_DUPSTR(buf);
+            }
+        }
+
+        /* Phase 2: CLI script arrays */
+        while (var_phase == 2)
+        {
+            if (var_idx >= CLI_MAX_ARRAYS)
+            {
+                var_phase = 3;
+                var_idx   = 0;
+                break;
+            }
+
+            int i = var_idx++;
+            if (!cli_arrays[i].used)
+            {
+                continue;
+            }
+
+            const char *aname = cli_arrays[i].name;
+            int match = 0;
+            if (generator_fuzzy_pass == 0)
+            {
+                if (strncmp(aname, vprefix, vpreflen) == 0)
+                {
+                    match = 1;
+                }
+            }
+            else if (strstr(aname, vprefix) != NULL)
+            {
+                match = 1;
+            }
+
+            if (match)
+            {
+                char buf[512];
+                if (has_brace)
+                {
+                    snprintf(buf, sizeof(buf), "${%s[@]}", aname);
+                }
+                else if (has_dollar)
+                {
+                    snprintf(buf, sizeof(buf), "$%s", aname);
+                }
+                else
+                {
+                    snprintf(buf, sizeof(buf), "%s", aname);
+                }
+                return GEN_DUPSTR(buf);
+            }
+        }
+
+        /* Phase 3: Environment variables */
+        while (var_phase == 3)
+        {
+            if (environ == NULL || environ[var_idx] == NULL)
+            {
+                var_phase = 4;
+                var_idx   = 0;
+                break;
+            }
+
+            const char *entry = environ[var_idx++];
+            const char *eq = strchr(entry, '=');
+            if (eq == NULL)
+            {
+                continue;
+            }
+
+            char ename[256];
+            size_t nlen = (size_t) (eq - entry);
+            if (nlen >= sizeof(ename))
+            {
+                nlen = sizeof(ename) - 1;
+            }
+            strncpy(ename, entry, nlen);
+            ename[nlen] = '\0';
+
+            /* Avoid duplicating variables already in cli_vars */
+            int already_in_cli = 0;
+            for (int k = 0; k < CLI_MAX_VARS; k++)
+            {
+                if (cli_vars[k].used && strcmp(cli_vars[k].name, ename) == 0)
+                {
+                    already_in_cli = 1;
+                    break;
+                }
+            }
+            if (already_in_cli)
+            {
+                continue;
+            }
+
+            int match = 0;
+            if (generator_fuzzy_pass == 0)
+            {
+                if (strncmp(ename, vprefix, vpreflen) == 0)
+                {
+                    match = 1;
+                }
+            }
+            else if (strstr(ename, vprefix) != NULL)
+            {
+                match = 1;
+            }
+
+            if (match)
+            {
+                char buf[512];
+                if (has_brace)
+                {
+                    snprintf(buf, sizeof(buf), "${%s}", ename);
+                }
+                else if (has_dollar)
+                {
+                    snprintf(buf, sizeof(buf), "$%s", ename);
+                }
+                else
+                {
+                    snprintf(buf, sizeof(buf), "%s", ename);
+                }
+                return GEN_DUPSTR(buf);
+            }
         }
     }
 
     /* Fuzzy fallback: if prefix pass found
      * nothing, restart with substring */
-    if (generator_fuzzy_pass == 0 && data.autocomplete_fuzzy)
+    if (generator_fuzzy_pass == 0 && matches_found_in_pass == 0 && data.autocomplete_fuzzy)
     {
         generator_fuzzy_pass = 1;
         list_index           = 0;
+        state                = 0;
         goto retry_fuzzy;
     }
+
+#undef GEN_DUPSTR
 
     return ((char *) NULL);
 }
@@ -574,113 +960,101 @@ retry_fuzzy:
 /**
  * @brief Readline custom completion dispatcher
  *
- * Invoked on TAB. Determines completion mode
- * based on cursor position and the command
- * being typed.
+ * Invoked on TAB. Uses Tree-sitter AST and statement-boundary
+ * classification to determine completion mode based on cursor position
+ * and the command/argument being typed.
  */
 char **CLI_completion(const char *text, int start, int __attribute__((unused)) end)
 {
-    char **matches;
+    char **matches = NULL;
+    char   cmdname[128] = "";
+    int    argidx = 0;
 
-    matches = (char **) NULL;
+    int mode = cli_ts_determine_completion_mode(
+        rl_line_buffer, start, text, cmdname, sizeof(cmdname), &argidx);
 
-    if ((start == 0) || (strncmp(rl_line_buffer, "cmd?", strlen("cmd?")) == 0))
+    if (mode >= 0)
     {
-        data.CLImatchMode = CLICOMPLETIONMODE_COMMANDS;
-    }
-    else if (strncmp(text, "@fps.", 5) == 0)
-    {
-        data.CLImatchMode = CLICOMPLETIONMODE_VARS_FPS;
-    }
-    else if (strncmp(text, "@seq.", 5) == 0)
-    {
-        data.CLImatchMode = CLICOMPLETIONMODE_VARS_SEQ;
-    }
-    else if (strncmp(text, "${s.", 4) == 0)
-    {
-        data.CLImatchMode = CLICOMPLETIONMODE_VARS_STREAM;
+        data.CLImatchMode = mode;
     }
     else
     {
-        char  str[200];
-        char *firstword;
-        strncpy(str, rl_line_buffer, sizeof(str) - 1);
-        str[sizeof(str) - 1] = '\0';
-        firstword            = strtok(str, " ");
-        if (firstword == NULL)
-        {
-            return NULL;
-        }
-        int      cmdimatch = -1;
-        uint32_t cmdi      = 0;
-        while ((cmdimatch == -1) && (cmdi < data.NBcmd))
-        {
-            if (strcmp(firstword, data.cmd[cmdi].key) == 0)
-            {
-                cmdimatch     = cmdi;
-                data.cmdindex = cmdi;
-            }
-            cmdi++;
-        }
-
-        if ((cmdimatch != -1) && (text[0] == '.'))
+        /* A command was found (cmdname), and cursor is on argument argidx */
+        if (text[0] == '.' && text[1] != '/' && text[1] != '.')
         {
             data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
         }
-        else if (cmdimatch != -1)
+        else if (strcmp(cmdname, "loadfits") == 0 ||
+                 strcmp(cmdname, "savefits") == 0 ||
+                 strcmp(cmdname, "saveFITS") == 0 ||
+                 strcmp(cmdname, "source") == 0 ||
+                 strcmp(cmdname, ".") == 0 ||
+                 strcmp(cmdname, "cat") == 0 ||
+                 strcmp(cmdname, "cd") == 0 ||
+                 strcmp(cmdname, "ls") == 0 ||
+                 strcmp(cmdname, "vi") == 0 ||
+                 strcmp(cmdname, "vim") == 0 ||
+                 strcmp(cmdname, "nano") == 0 ||
+                 strcmp(cmdname, "head") == 0 ||
+                 strcmp(cmdname, "tail") == 0 ||
+                 strcmp(cmdname, "cp") == 0 ||
+                 strcmp(cmdname, "mv") == 0 ||
+                 strcmp(cmdname, "rm") == 0 ||
+                 strcmp(cmdname, "less") == 0 ||
+                 strcmp(cmdname, "more") == 0 ||
+                 strcmp(cmdname, "include_once") == 0 ||
+                 strcmp(cmdname, "savescript") == 0 ||
+                 strcmp(cmdname, "savehistory") == 0 ||
+                 strcmp(cmdname, "run") == 0)
         {
-            int argpos = 0;
-            {
-                const char *p = rl_line_buffer;
-                while (*p && *p != ' ')
-                {
-                    p++;
-                }
-                int in_word = 0;
-                while (*p)
-                {
-                    if (*p != ' ')
-                    {
-                        if (!in_word)
-                        {
-                            argpos++;
-                            in_word = 1;
-                        }
-                    }
-                    else
-                    {
-                        in_word = 0;
-                    }
-                    p++;
-                }
-                if (rl_end > 0 && rl_line_buffer[rl_end - 1] == ' ')
-                {
-                    /* argpos correct */
-                }
-                else if (argpos > 0)
-                {
-                    argpos--;
-                }
-            }
+            data.CLImatchMode = CLICOMPLETIONMODE_FILES;
+        }
+        else if (strcmp(cmdname, "fpsCTRL") == 0 ||
+                 strcmp(cmdname, "fparam") == 0 ||
+                 strcmp(cmdname, "fpsload") == 0 ||
+                 strcmp(cmdname, "dpsingle") == 0 ||
+                 strcmp(cmdname, "fpsconf") == 0 ||
+                 strcmp(cmdname, "fpsrun") == 0 ||
+                 strcmp(cmdname, "fpsstop") == 0 ||
+                 strcmp(cmdname, "waitfor_fps") == 0)
+        {
+            data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
+        }
+        else if (strcmp(cmdname, "export") == 0 ||
+                 strcmp(cmdname, "readonly") == 0 ||
+                 strcmp(cmdname, "unset") == 0 ||
+                 strcmp(cmdname, "local") == 0 ||
+                 strcmp(cmdname, "declare") == 0)
+        {
+            data.CLImatchMode = CLICOMPLETIONMODE_VARS_ENV;
+        }
+        else
+        {
+            /* Lookup registered milk command in data.cmd */
+            int cmdimatch = find_command_match(cmdname);
+            int matched_mode = -1;
 
-            int cli_ai       = 0;
-            int matched_file = 0;
-            if (data.cmd[cmdimatch].argdata != NULL)
+            if (cmdimatch >= 0 && data.cmd[cmdimatch].argdata != NULL)
             {
+                int cli_ai = 0;
                 for (int ai = 0; ai < data.cmd[cmdimatch].nbparam; ai++)
                 {
                     if (data.cmd[cmdimatch].argdata[ai].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
                     {
-                        if (cli_ai == argpos)
+                        if (cli_ai == argidx)
                         {
                             uint64_t atype = data.cmd[cmdimatch].argdata[ai].type;
                             if (atype == CLIARG_FILENAME || atype == CLIARG_FITSFILENAME)
                             {
-                                matched_file = 1;
+                                matched_mode = CLICOMPLETIONMODE_FILES;
                             }
-                            if (atype == CLIARG_FPSNAME)
+                            else if (atype == CLIARG_FPSNAME)
                             {
-                                data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
+                                matched_mode = CLICOMPLETIONMODE_FPSPARAMS;
+                            }
+                            else if (atype == CLIARG_IMG || atype == CLIARG_STREAM)
+                            {
+                                matched_mode = CLICOMPLETIONMODE_IMAGES;
                             }
                             break;
                         }
@@ -689,37 +1063,22 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
                 }
             }
 
-            if (matched_file)
+            if (matched_mode >= 0)
             {
-                data.CLImatchMode              = CLICOMPLETIONMODE_FILES;
-                rl_completion_append_character = '\0';
+                data.CLImatchMode = matched_mode;
             }
-            else if (data.CLImatchMode != CLICOMPLETIONMODE_FPSPARAMS)
+            else
             {
-                if (strcmp(data.cmd[cmdimatch].key, "fparam") == 0 ||
-                    strcmp(data.cmd[cmdimatch].key, "fpsCTRL") == 0 ||
-                    strcmp(data.cmd[cmdimatch].key, "fpsload") == 0 ||
-                    strcmp(data.cmd[cmdimatch].key, "dpsingle") == 0)
-                {
-                    data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
-                }
-                else
-                {
-                    data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
-                }
+                data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
             }
-        }
-        else
-        {
-            data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
         }
     }
 
     if (data.CLImatchMode == CLICOMPLETIONMODE_FILES)
     {
         /* Use standard readline filename completion */
-        matches = rl_completion_matches((char *) text,
-                                        (rl_compentry_func_t *) rl_filename_completion_function);
+        matches = rl_completion_matches(
+            (char *) text, (rl_compentry_func_t *) rl_filename_completion_function);
     }
     else
     {
@@ -731,11 +1090,24 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
      * when our custom generators return NULL. */
     rl_attempted_completion_over = 1;
 
-    /* Reset append char to default space */
-    if (data.CLImatchMode == CLICOMPLETIONMODE_FILES ||
-        data.CLImatchMode == CLICOMPLETIONMODE_VARS_FPS ||
-        data.CLImatchMode == CLICOMPLETIONMODE_VARS_SEQ ||
-        data.CLImatchMode == CLICOMPLETIONMODE_VARS_STREAM)
+    /* Reset append char based on completion mode */
+    if (data.CLImatchMode == CLICOMPLETIONMODE_FILES)
+    {
+        rl_completion_append_character = '\0';
+    }
+    else if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_FPS)
+    {
+        const char *d1 = strchr(text, '.');
+        const char *d2 = (d1 != NULL) ? strchr(d1 + 1, '.') : NULL;
+        rl_completion_append_character = (d2 != NULL) ? ' ' : '\0';
+    }
+    else if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_STREAM)
+    {
+        const char *d1 = strchr(text, '.');
+        const char *d2 = (d1 != NULL) ? strchr(d1 + 1, '.') : NULL;
+        rl_completion_append_character = (d2 != NULL) ? ' ' : '\0';
+    }
+    else if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_SEQ)
     {
         rl_completion_append_character = '\0';
     }
@@ -744,6 +1116,6 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
         rl_completion_append_character = ' ';
     }
 
-    return (matches);
+    return matches;
 }
 #endif

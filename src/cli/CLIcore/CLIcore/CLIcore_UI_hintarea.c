@@ -49,6 +49,7 @@
 
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
+#include "treesitter/cli_treesitter.h"
 
 
 #ifdef USE_READLINE
@@ -315,56 +316,19 @@ void update_hint_area(void)
     /* Move to hint line, clear it */
     printf("\033[%d;1H\033[2K", cached_term_rows);
 
-    /* Check if first word is a known command */
+    /* Check if active word is a known command */
     if (rl_line_buffer[0] != '\0')
     {
-        char  buf[200];
-        char *saveptr_hint = NULL;
-        snprintf(buf, sizeof(buf), "%s", rl_line_buffer);
-        char *fw = strtok_r(buf, " ", &saveptr_hint);
+        char cmdname[128] = "";
+        int  argidx       = 0;
+        cli_ts_determine_completion_mode(
+            rl_line_buffer, rl_point, "", cmdname, sizeof(cmdname), &argidx);
 
-        if (fw != NULL)
+        if (cmdname[0] != '\0')
         {
-            int cmi = find_command_match(fw);
+            int cmi = find_command_match(cmdname);
             if (cmi >= 0)
             {
-                /* Count argument words after
-                 * cmd to determine current
-                 * argument index */
-                int argidx = 0;
-                {
-                    const char *p = rl_line_buffer;
-                    while (*p && *p != ' ')
-                    {
-                        p++;
-                    }
-                    int wcount  = 0;
-                    int in_word = 0;
-                    while (*p)
-                    {
-                        if (*p != ' ')
-                        {
-                            if (!in_word)
-                            {
-                                wcount++;
-                                in_word = 1;
-                            }
-                        }
-                        else
-                        {
-                            in_word = 0;
-                        }
-                        p++;
-                    }
-                    if (rl_end > 0 && rl_line_buffer[rl_end - 1] == ' ')
-                    {
-                        argidx = wcount;
-                    }
-                    else
-                    {
-                        argidx = wcount > 0 ? wcount - 1 : 0;
-                    }
-                }
 
                 /* Print syntax with <> tokens,
                  * highlighting current arg */
@@ -560,48 +524,115 @@ void CLI_redisplay(void)
 
     char *text = rl_line_buffer + start;
 
-    /* Determine matching mode */
-    if ((start == 0) || (strncmp(rl_line_buffer, "cmd?", strlen("cmd?")) == 0))
+    /* Determine matching mode using tree-sitter AST & boundary classifier */
+    char cmdname[128] = "";
+    int  argidx       = 0;
+    int  mode = cli_ts_determine_completion_mode(
+        rl_line_buffer, start, text, cmdname, sizeof(cmdname), &argidx);
+
+    if (mode >= 0)
     {
-        data.CLImatchMode = 0; /* COMMANDS */
+        data.CLImatchMode = mode;
     }
     else
     {
-        char  str[200];
-        char *saveptr_comp = NULL;
-        snprintf(str, 200, "%s", rl_line_buffer);
-        char *firstword = strtok_r(str, " ", &saveptr_comp);
-
-        int cmdimatch = -1;
-        if (firstword != NULL)
+        if (text[0] == '.' && text[1] != '/' && text[1] != '.')
         {
-            cmdimatch = find_command_match(firstword);
+            data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
         }
-
-        /* If command has no <> argument tokens,
-         * don't suggest arguments */
-        if (cmdimatch >= 0)
+        else if (strcmp(cmdname, "loadfits") == 0 ||
+                 strcmp(cmdname, "savefits") == 0 ||
+                 strcmp(cmdname, "saveFITS") == 0 ||
+                 strcmp(cmdname, "source") == 0 ||
+                 strcmp(cmdname, ".") == 0 ||
+                 strcmp(cmdname, "cat") == 0 ||
+                 strcmp(cmdname, "cd") == 0 ||
+                 strcmp(cmdname, "ls") == 0 ||
+                 strcmp(cmdname, "vi") == 0 ||
+                 strcmp(cmdname, "vim") == 0 ||
+                 strcmp(cmdname, "nano") == 0 ||
+                 strcmp(cmdname, "head") == 0 ||
+                 strcmp(cmdname, "tail") == 0 ||
+                 strcmp(cmdname, "cp") == 0 ||
+                 strcmp(cmdname, "mv") == 0 ||
+                 strcmp(cmdname, "rm") == 0 ||
+                 strcmp(cmdname, "less") == 0 ||
+                 strcmp(cmdname, "more") == 0 ||
+                 strcmp(cmdname, "include_once") == 0 ||
+                 strcmp(cmdname, "savescript") == 0 ||
+                 strcmp(cmdname, "savehistory") == 0 ||
+                 strcmp(cmdname, "run") == 0)
         {
-            const char *syn = data.cmd[cmdimatch].syntax;
-            if (syn == NULL || strchr(syn, '<') == NULL)
-            {
-                update_hint_area();
-                return;
-            }
+            data.CLImatchMode = CLICOMPLETIONMODE_FILES;
         }
-
-        if ((cmdimatch != -1) && (text[0] == '.'))
+        else if (strcmp(cmdname, "fpsCTRL") == 0 ||
+                 strcmp(cmdname, "fparam") == 0 ||
+                 strcmp(cmdname, "fpsload") == 0 ||
+                 strcmp(cmdname, "dpsingle") == 0 ||
+                 strcmp(cmdname, "fpsconf") == 0 ||
+                 strcmp(cmdname, "fpsrun") == 0 ||
+                 strcmp(cmdname, "fpsstop") == 0 ||
+                 strcmp(cmdname, "waitfor_fps") == 0)
         {
-            data.CLImatchMode = 2; /* CMDARGS */
+            data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
+        }
+        else if (strcmp(cmdname, "export") == 0 ||
+                 strcmp(cmdname, "readonly") == 0 ||
+                 strcmp(cmdname, "unset") == 0 ||
+                 strcmp(cmdname, "local") == 0 ||
+                 strcmp(cmdname, "declare") == 0)
+        {
+            data.CLImatchMode = CLICOMPLETIONMODE_VARS_ENV;
         }
         else
         {
-            data.CLImatchMode = 1; /* IMAGES */
+            int cmdimatch = find_command_match(cmdname);
+            int matched_mode = -1;
+
+            if (cmdimatch >= 0 && data.cmd[cmdimatch].argdata != NULL)
+            {
+                int cli_ai = 0;
+                for (int ai = 0; ai < data.cmd[cmdimatch].nbparam; ai++)
+                {
+                    if (data.cmd[cmdimatch].argdata[ai].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+                    {
+                        if (cli_ai == argidx)
+                        {
+                            uint64_t atype = data.cmd[cmdimatch].argdata[ai].type;
+                            if (atype == CLIARG_FILENAME || atype == CLIARG_FITSFILENAME)
+                            {
+                                matched_mode = CLICOMPLETIONMODE_FILES;
+                            }
+                            else if (atype == CLIARG_FPSNAME)
+                            {
+                                matched_mode = CLICOMPLETIONMODE_FPSPARAMS;
+                            }
+                            else if (atype == CLIARG_IMG || atype == CLIARG_STREAM)
+                            {
+                                matched_mode = CLICOMPLETIONMODE_IMAGES;
+                            }
+                            break;
+                        }
+                        cli_ai++;
+                    }
+                }
+            }
+
+            if (matched_mode >= 0)
+            {
+                data.CLImatchMode = matched_mode;
+            }
+            else
+            {
+                data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
+            }
         }
     }
 
     /* Get best match */
-    char *match = CLI_generator(text, 0);
+    char *match = (data.CLImatchMode == CLICOMPLETIONMODE_FILES)
+                      ? rl_filename_completion_function(text, 0)
+                      : CLI_generator(text, 0);
 
     if (match)
     {

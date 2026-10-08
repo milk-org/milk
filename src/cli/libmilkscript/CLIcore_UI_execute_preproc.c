@@ -405,7 +405,7 @@ int cli_split_semicolon(errno_t *retval)
     strncpy(fullline, data.CLIcmdline, STRINGMAXLEN_CLICMDLINE - 1);
     fullline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
-    int p_semi = cli_find_unquoted_op(fullline, ';', 0, 0);
+    int p_semi = cli_find_unquoted_op(fullline, ';', ';', 0);
     int p_and  = cli_find_unquoted_op(fullline, '&', 0, '&');
     int p_or   = cli_find_unquoted_op(fullline, '|', 0, '|');
 

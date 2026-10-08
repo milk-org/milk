@@ -495,11 +495,16 @@ void cli_expand_env(char *line, int maxlen)
         char varname[256];
         int  vlen = 0;
 
-        /* $# special case: treat '#' as a solo variable name */
-        if (!is_length && !has_brace && line[i] == '#')
+        /* Special one-character variable names without braces: $#, $$, $! */
+        if (!is_length && !has_brace &&
+            (line[i] == '#' || line[i] == '$' || line[i] == '!'))
         {
-            varname[vlen++] = '#';
-            i++;
+            varname[vlen++] = line[i++];
+        }
+        /* Positional parameters $0..$9 without braces take only a single digit */
+        else if (!is_length && !has_brace && (line[i] >= '0' && line[i] <= '9'))
+        {
+            varname[vlen++] = line[i++];
         }
         else
         {

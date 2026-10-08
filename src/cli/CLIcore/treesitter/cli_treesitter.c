@@ -8,6 +8,260 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
+
+#include "CLIcore.h"
+
+/**
+ * @brief Lexical fallback for determining completion mode and active command
+ *
+ * Scans backward from @p start to identify statement boundaries, command
+ * positions, and command arguments.
+ *
+ * @param line         Full command line buffer
+ * @param start        Byte offset where the token to complete starts
+ * @param text         Token string to complete
+ * @param out_cmdname  Output buffer for extracted command name (can be NULL)
+ * @param cmdname_size Size of out_cmdname buffer
+ * @param out_argidx   Output pointer for 0-indexed argument position (can be NULL)
+ * @return Completion mode (CLICOMPLETIONMODE_*), or -1 if a command was identified
+ */
+static int cli_determine_mode_lexical(
+    const char *line,
+    int         start,
+    const char *text,
+    char       *out_cmdname,
+    size_t      cmdname_size,
+    int        *out_argidx)
+{
+    if (out_cmdname && cmdname_size > 0)
+    {
+        out_cmdname[0] = '\0';
+    }
+    if (out_argidx)
+    {
+        *out_argidx = 0;
+    }
+
+    if (!line)
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+
+    /* 1. Direct token prefix overrides */
+    if (text)
+    {
+        if (strncmp(text, "${s.", 4) == 0 || strncmp(text, "@s.", 3) == 0)
+        {
+            return CLICOMPLETIONMODE_VARS_STREAM;
+        }
+        if (strncmp(text, "@fps.", 5) == 0)
+        {
+            return CLICOMPLETIONMODE_VARS_FPS;
+        }
+        if (strncmp(text, "@seq.", 5) == 0)
+        {
+            return CLICOMPLETIONMODE_VARS_SEQ;
+        }
+        if (text[0] == '$')
+        {
+            return CLICOMPLETIONMODE_VARS_ENV;
+        }
+        if (strncmp(text, "./", 2) == 0 || strncmp(text, "../", 3) == 0 ||
+            text[0] == '/' || text[0] == '~')
+        {
+            return CLICOMPLETIONMODE_FILES;
+        }
+    }
+
+    /* 2. Backward check from start to find statement boundary or command position */
+    int prev_idx = start - 1;
+    while (prev_idx >= 0 && (line[prev_idx] == ' ' || line[prev_idx] == '\t'))
+    {
+        prev_idx--;
+    }
+    if (prev_idx < 0)
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+
+    char prev_c = line[prev_idx];
+    if (prev_c == ';' || prev_c == '|' || prev_c == '&' ||
+        prev_c == '(' || prev_c == '{' || prev_c == '\n' || prev_c == '`')
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_c == '>' || prev_c == '<')
+    {
+        return CLICOMPLETIONMODE_FILES;
+    }
+
+    /* Check keyword separators */
+    if (prev_idx >= 1 && strncmp(&line[prev_idx - 1], "do", 2) == 0 &&
+        (prev_idx - 1 == 0 || isspace((unsigned char) line[prev_idx - 2]) ||
+         line[prev_idx - 2] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 3 && strncmp(&line[prev_idx - 3], "then", 4) == 0 &&
+        (prev_idx - 3 == 0 || isspace((unsigned char) line[prev_idx - 4]) ||
+         line[prev_idx - 4] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 3 && strncmp(&line[prev_idx - 3], "else", 4) == 0 &&
+        (prev_idx - 3 == 0 || isspace((unsigned char) line[prev_idx - 4]) ||
+         line[prev_idx - 4] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 3 && strncmp(&line[prev_idx - 3], "elif", 4) == 0 &&
+        (prev_idx - 3 == 0 || isspace((unsigned char) line[prev_idx - 4]) ||
+         line[prev_idx - 4] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 1 && strncmp(&line[prev_idx - 1], "if", 2) == 0 &&
+        (prev_idx - 1 == 0 || isspace((unsigned char) line[prev_idx - 2]) ||
+         line[prev_idx - 2] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 4 && strncmp(&line[prev_idx - 4], "while", 5) == 0 &&
+        (prev_idx - 4 == 0 || isspace((unsigned char) line[prev_idx - 5]) ||
+         line[prev_idx - 5] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 4 && strncmp(&line[prev_idx - 4], "until", 5) == 0 &&
+        (prev_idx - 4 == 0 || isspace((unsigned char) line[prev_idx - 5]) ||
+         line[prev_idx - 5] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 0 && line[prev_idx] == '!')
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 3 && strncmp(&line[prev_idx - 3], "time", 4) == 0 &&
+        (prev_idx - 3 == 0 || isspace((unsigned char) line[prev_idx - 4])))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 4 && strncmp(&line[prev_idx - 4], "watch", 5) == 0 &&
+        (prev_idx - 4 == 0 || isspace((unsigned char) line[prev_idx - 5])))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+
+    /* 3. Find start of current statement by scanning backwards */
+    int in_sq      = 0;
+    int in_dq      = 0;
+    int stmt_start = 0;
+
+    for (int i = 0; i < start; i++)
+    {
+        char c = line[i];
+        if (c == '\\' && line[i + 1] != '\0' && !in_sq)
+        {
+            i++;
+            continue;
+        }
+        if (c == '\'' && !in_dq)
+        {
+            in_sq = !in_sq;
+        }
+        else if (c == '"' && !in_sq)
+        {
+            in_dq = !in_dq;
+        }
+        else if (!in_sq && !in_dq)
+        {
+            if (c == ';' || c == '|' || c == '&' || c == '(' || c == '{' ||
+                c == '\n' || c == '`')
+            {
+                stmt_start = i + 1;
+            }
+        }
+    }
+
+    const char *p = line + stmt_start;
+    while (*p && (p - line) < start && isspace((unsigned char) *p))
+    {
+        p++;
+    }
+
+    const char *cmd_start = p;
+    while (*p && (p - line) < start && !isspace((unsigned char) *p) &&
+           *p != ';' && *p != '|' && *p != '&' && *p != '(' && *p != ')')
+    {
+        p++;
+    }
+    const char *cmd_end = p;
+
+    if (cmd_start >= line + start || (line + start) <= cmd_end)
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+
+    size_t clen = (size_t) (cmd_end - cmd_start);
+    if (out_cmdname && cmdname_size > 0)
+    {
+        if (clen >= cmdname_size)
+        {
+            clen = cmdname_size - 1;
+        }
+        strncpy(out_cmdname, cmd_start, clen);
+        out_cmdname[clen] = '\0';
+    }
+
+    int arg_count = 0;
+    int in_word   = 0;
+    in_sq         = 0;
+    in_dq         = 0;
+    for (const char *ap = cmd_end; ap < line + start; ap++)
+    {
+        char ac = *ap;
+        if (ac == '\\' && *(ap + 1) != '\0' && !in_sq)
+        {
+            ap++;
+            in_word = 1;
+            continue;
+        }
+        if (ac == '\'' && !in_dq)
+        {
+            in_sq   = !in_sq;
+            in_word = 1;
+        }
+        else if (ac == '"' && !in_sq)
+        {
+            in_dq   = !in_dq;
+            in_word = 1;
+        }
+        else if (!in_sq && !in_dq)
+        {
+            if (isspace((unsigned char) ac))
+            {
+                in_word = 0;
+            }
+            else
+            {
+                if (!in_word)
+                {
+                    arg_count++;
+                    in_word = 1;
+                }
+            }
+        }
+    }
+
+    if (out_argidx)
+    {
+        *out_argidx = (arg_count > 0) ? (arg_count - 1) : 0;
+    }
+
+    return -1;
+}
 
 #ifdef USE_TREESITTER
 
@@ -613,6 +867,257 @@ int cli_ts_is_incomplete(const char *buffer)
     return incomplete ? 1 : 0;
 }
 
+/**
+ * @brief Determine completion mode and command context using tree-sitter AST
+ */
+int cli_ts_determine_completion_mode(
+    const char *line,
+    int         start,
+    const char *text,
+    char       *out_cmdname,
+    size_t      cmdname_size,
+    int        *out_argidx)
+{
+    if (out_cmdname && cmdname_size > 0)
+    {
+        out_cmdname[0] = '\0';
+    }
+    if (out_argidx)
+    {
+        *out_argidx = 0;
+    }
+
+    if (!line)
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+
+    /* 1. Direct token prefix overrides */
+    if (text)
+    {
+        if (strncmp(text, "${s.", 4) == 0 || strncmp(text, "@s.", 3) == 0)
+        {
+            return CLICOMPLETIONMODE_VARS_STREAM;
+        }
+        if (strncmp(text, "@fps.", 5) == 0)
+        {
+            return CLICOMPLETIONMODE_VARS_FPS;
+        }
+        if (strncmp(text, "@seq.", 5) == 0)
+        {
+            return CLICOMPLETIONMODE_VARS_SEQ;
+        }
+        if (text[0] == '$')
+        {
+            return CLICOMPLETIONMODE_VARS_ENV;
+        }
+        if (strncmp(text, "./", 2) == 0 || strncmp(text, "../", 3) == 0 ||
+            text[0] == '/' || text[0] == '~')
+        {
+            return CLICOMPLETIONMODE_FILES;
+        }
+    }
+
+    /* 2. Boundary / whitespace check */
+    int prev_idx = start - 1;
+    while (prev_idx >= 0 && (line[prev_idx] == ' ' || line[prev_idx] == '\t'))
+    {
+        prev_idx--;
+    }
+    if (prev_idx < 0)
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+
+    char prev_c = line[prev_idx];
+    if (prev_c == ';' || prev_c == '|' || prev_c == '&' ||
+        prev_c == '(' || prev_c == '{' || prev_c == '\n' || prev_c == '`')
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_c == '>' || prev_c == '<')
+    {
+        return CLICOMPLETIONMODE_FILES;
+    }
+
+    /* Check keyword separators */
+    if (prev_idx >= 1 && strncmp(&line[prev_idx - 1], "do", 2) == 0 &&
+        (prev_idx - 1 == 0 || isspace((unsigned char) line[prev_idx - 2]) ||
+         line[prev_idx - 2] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 3 && strncmp(&line[prev_idx - 3], "then", 4) == 0 &&
+        (prev_idx - 3 == 0 || isspace((unsigned char) line[prev_idx - 4]) ||
+         line[prev_idx - 4] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 3 && strncmp(&line[prev_idx - 3], "else", 4) == 0 &&
+        (prev_idx - 3 == 0 || isspace((unsigned char) line[prev_idx - 4]) ||
+         line[prev_idx - 4] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 3 && strncmp(&line[prev_idx - 3], "elif", 4) == 0 &&
+        (prev_idx - 3 == 0 || isspace((unsigned char) line[prev_idx - 4]) ||
+         line[prev_idx - 4] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 1 && strncmp(&line[prev_idx - 1], "if", 2) == 0 &&
+        (prev_idx - 1 == 0 || isspace((unsigned char) line[prev_idx - 2]) ||
+         line[prev_idx - 2] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 4 && strncmp(&line[prev_idx - 4], "while", 5) == 0 &&
+        (prev_idx - 4 == 0 || isspace((unsigned char) line[prev_idx - 5]) ||
+         line[prev_idx - 5] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 4 && strncmp(&line[prev_idx - 4], "until", 5) == 0 &&
+        (prev_idx - 4 == 0 || isspace((unsigned char) line[prev_idx - 5]) ||
+         line[prev_idx - 5] == ';'))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 0 && line[prev_idx] == '!')
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 3 && strncmp(&line[prev_idx - 3], "time", 4) == 0 &&
+        (prev_idx - 3 == 0 || isspace((unsigned char) line[prev_idx - 4])))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+    if (prev_idx >= 4 && strncmp(&line[prev_idx - 4], "watch", 5) == 0 &&
+        (prev_idx - 4 == 0 || isspace((unsigned char) line[prev_idx - 5])))
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
+
+    /* 3. Tree-sitter AST analysis */
+    if (ts_parser != NULL)
+    {
+        TSTree *tree = ts_parser_parse_string(ts_parser, NULL, line, (uint32_t) strlen(line));
+        if (tree != NULL)
+        {
+            TSNode root = ts_tree_root_node(tree);
+            uint32_t cpos = start > 0 ? (uint32_t) start : 0;
+            TSNode node = ts_node_descendant_for_byte_range(
+                root, cpos > 0 ? cpos - 1 : 0, cpos);
+
+            TSNode curr = node;
+            bool in_expansion = false;
+            bool in_redirect  = false;
+            TSNode cmd_node   = { 0 };
+            bool found_cmd    = false;
+
+            while (!ts_node_is_null(curr))
+            {
+                const char *ntype = ts_node_type(curr);
+                if (strcmp(ntype, "simple_expansion") == 0 ||
+                    strcmp(ntype, "expansion") == 0)
+                {
+                    in_expansion = true;
+                    break;
+                }
+                if (strcmp(ntype, "fps_variable") == 0)
+                {
+                    ts_tree_delete(tree);
+                    return CLICOMPLETIONMODE_VARS_FPS;
+                }
+                if (strcmp(ntype, "seq_variable") == 0)
+                {
+                    ts_tree_delete(tree);
+                    return CLICOMPLETIONMODE_VARS_SEQ;
+                }
+                if (strcmp(ntype, "stream_metadata") == 0)
+                {
+                    ts_tree_delete(tree);
+                    return CLICOMPLETIONMODE_VARS_STREAM;
+                }
+                if (strcmp(ntype, "file_path") == 0 ||
+                    strcmp(ntype, "io_redirect") == 0)
+                {
+                    in_redirect = true;
+                    break;
+                }
+                if (!found_cmd && strcmp(ntype, "command") == 0)
+                {
+                    cmd_node  = curr;
+                    found_cmd = true;
+                }
+                curr = ts_node_parent(curr);
+            }
+
+            if (in_expansion)
+            {
+                ts_tree_delete(tree);
+                return CLICOMPLETIONMODE_VARS_ENV;
+            }
+            if (in_redirect)
+            {
+                ts_tree_delete(tree);
+                return CLICOMPLETIONMODE_FILES;
+            }
+
+            if (found_cmd)
+            {
+                uint32_t ccount = ts_node_child_count(cmd_node);
+                if (ccount > 0)
+                {
+                    TSNode first = ts_node_child(cmd_node, 0);
+                    uint32_t fstart = ts_node_start_byte(first);
+                    uint32_t fend   = ts_node_end_byte(first);
+                    if (cpos <= fend)
+                    {
+                        ts_tree_delete(tree);
+                        return CLICOMPLETIONMODE_COMMANDS;
+                    }
+
+                    if (out_cmdname && cmdname_size > 0)
+                    {
+                        uint32_t len = fend - fstart;
+                        if (len >= cmdname_size)
+                        {
+                            len = (uint32_t) cmdname_size - 1;
+                        }
+                        strncpy(out_cmdname, line + fstart, len);
+                        out_cmdname[len] = '\0';
+                    }
+
+                    int argi = 0;
+                    for (uint32_t ci = 1; ci < ccount; ci++)
+                    {
+                        TSNode child = ts_node_child(cmd_node, ci);
+                        uint32_t ch_start = ts_node_start_byte(child);
+                        if (ch_start >= cpos)
+                        {
+                            break;
+                        }
+                        argi++;
+                    }
+                    if (out_argidx)
+                    {
+                        *out_argidx = (argi > 0) ? (argi - 1) : 0;
+                    }
+
+                    ts_tree_delete(tree);
+                    return -1;
+                }
+            }
+
+            ts_tree_delete(tree);
+        }
+    }
+
+    return cli_determine_mode_lexical(
+        line, start, text, out_cmdname, cmdname_size, out_argidx);
+}
+
 #else
 
 // Stubs when USE_TREESITTER is not defined
@@ -703,6 +1208,18 @@ int cli_ts_is_incomplete(const char *buffer)
     }
 
     return 0;
+}
+
+int cli_ts_determine_completion_mode(
+    const char *line,
+    int         start,
+    const char *text,
+    char       *out_cmdname,
+    size_t      cmdname_size,
+    int        *out_argidx)
+{
+    return cli_determine_mode_lexical(
+        line, start, text, out_cmdname, cmdname_size, out_argidx);
 }
 
 #endif
