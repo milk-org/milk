@@ -91,6 +91,7 @@ errno_t cli_timing_toggle(void);
 errno_t cli_syntax_highlight_toggle(void);
 errno_t cli_syntax_diag_toggle(void);
 errno_t cli_auto_indent_toggle(void);
+errno_t cli_showmatch_toggle(void);
 #endif
 
 /* Script formatting and block folding */

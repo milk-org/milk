@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #define CLI_DIAG_SEVERITY_NONE  0
 #define CLI_DIAG_SEVERITY_INFO  1
@@ -31,6 +32,15 @@ typedef struct
     char     message[128];
     char     token[64];
 } CLI_SYNTAX_DIAG;
+
+typedef struct
+{
+    uint32_t token_start;
+    uint32_t token_end;
+    uint32_t match_start;
+    uint32_t match_end;
+    bool     has_match;
+} CLI_MATCH_PAIR;
 
 /**
  * @brief Initialize tree-sitter parser and query
@@ -47,16 +57,43 @@ int cli_ts_init(void);
  * @brief Highlight a line and write colored output
  *
  * Parses the line with tree-sitter, walks highlight
- * captures, and writes ANSI-colored text to @p out.
+ * captures, applies delimiter/keyword matching if enabled,
+ * and writes ANSI-colored text to @p out.
  * The output includes a leading cursor-save and
  * trailing cursor-restore so readline state is
  * preserved.
  *
- * @param line  Null-terminated input line
- * @param len   Length of the line in bytes
- * @param out   Output stream (typically rl_outstream)
+ * @param line       Null-terminated input line
+ * @param len        Length of the line in bytes
+ * @param cursor_pos Current cursor position in line (-1 to disable match highlighting)
+ * @param out        Output stream (typically rl_outstream)
  */
-void cli_ts_highlight_line(const char *line, int len, FILE *out);
+void cli_ts_highlight_line(
+    const char *line,
+    int         len,
+    int         cursor_pos,
+    FILE       *out);
+
+/**
+ * @brief Find matching structural delimiter or block keyword pair
+ *
+ * Inspects the token at or adjacent to @p cursor_pos in @p line.
+ * If the cursor is on or next to an opening or closing delimiter
+ * ((), [], {}, ${...}, $((...))) or block keyword (if/fi, do/done,
+ * for/while/until/done, case/esac), finds the corresponding matching
+ * token's start and end byte offsets.
+ *
+ * Uses Tree-sitter AST with lexical fallback.
+ *
+ * @param line       Input line buffer
+ * @param cursor_pos Current cursor position (0 <= cursor_pos <= strlen(line))
+ * @param pair       Output structure with matched byte ranges
+ * @return true if a matching pair was found, false otherwise
+ */
+bool cli_ts_find_match_pair(
+    const char     *line,
+    int             cursor_pos,
+    CLI_MATCH_PAIR *pair);
 
 /**
  * @brief Detect if terminal supports 256 colors

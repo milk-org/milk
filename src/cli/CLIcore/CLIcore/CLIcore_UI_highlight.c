@@ -129,7 +129,8 @@ void cli_highlight_redisplay(void)
             fprintf(rl_outstream, "\033[%dD", back);
         }
 
-        cli_ts_highlight_line(rl_line_buffer, strlen(rl_line_buffer), rl_outstream);
+        cli_ts_highlight_line(
+            rl_line_buffer, (int) strlen(rl_line_buffer), rl_point, rl_outstream);
 
         fprintf(rl_outstream, "\033[u"); // Restore cursor
         fflush(rl_outstream);
@@ -225,6 +226,44 @@ void cli_highlight_redisplay(void)
     }
     fprintf(rl_outstream, "%s%s\033[0m", col, firstword);
     fprintf(rl_outstream, "\033[u"); /* restore */
+
+    if (data.show_match && rl_line_buffer != NULL)
+    {
+        CLI_MATCH_PAIR pair;
+        if (cli_ts_find_match_pair(rl_line_buffer, rl_point, &pair))
+        {
+            /* Highlight first matching token in inverse video */
+            int back1 = rl_point - (int) pair.token_start;
+            if (back1 > 0)
+            {
+                fprintf(rl_outstream, "\033[%dD", back1);
+            }
+            else if (back1 < 0)
+            {
+                fprintf(rl_outstream, "\033[%dC", -back1);
+            }
+            fprintf(rl_outstream, "\033[7m%.*s\033[0m",
+                    (int) (pair.token_end - pair.token_start),
+                    rl_line_buffer + pair.token_start);
+            fprintf(rl_outstream, "\033[u");
+
+            /* Highlight second matching token in inverse video */
+            int back2 = rl_point - (int) pair.match_start;
+            if (back2 > 0)
+            {
+                fprintf(rl_outstream, "\033[%dD", back2);
+            }
+            else if (back2 < 0)
+            {
+                fprintf(rl_outstream, "\033[%dC", -back2);
+            }
+            fprintf(rl_outstream, "\033[7m%.*s\033[0m",
+                    (int) (pair.match_end - pair.match_start),
+                    rl_line_buffer + pair.match_start);
+            fprintf(rl_outstream, "\033[u");
+        }
+    }
+
     fflush(rl_outstream);
 }
 #endif

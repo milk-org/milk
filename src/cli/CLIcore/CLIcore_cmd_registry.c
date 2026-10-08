@@ -286,6 +286,10 @@ void runCLI_cmd_init()
     RegisterCLIcommand("cliindent", __FILE__, cli_auto_indent_toggle,
                        "toggle multi-line auto-indentation", "[on|off|<spaces>]",
                        "cliindent 4", "cli_auto_indent_toggle()");
+
+    RegisterCLIcommand("showmatch", __FILE__, cli_showmatch_toggle,
+                       "toggle structural delimiter and keyword matching", "[on|off]",
+                       "showmatch off", "cli_showmatch_toggle()");
 #endif
 
     RegisterCLIcommand("cliformat", __FILE__, cli_format_cmd,

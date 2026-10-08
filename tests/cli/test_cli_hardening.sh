@@ -320,6 +320,82 @@ EOF
 run_check "Interactive continuation auto-indentation in PTY" \
     "python3 $TMPDIR/test_pty_auto_indent.py $MILK_BIN" "0"
 
+# 8. Structural delimiter & keyword matching (showmatch)
+echo -e "\n${YLW}--- Section 8: Structural Delimiter & Keyword Matching (showmatch) ---${RST}"
+
+run_check "showmatch command toggle & status" \
+    "$MILK_BIN -c 'showmatch; showmatch off; showmatch on'" "0" "Showmatch ON"
+
+cat << 'EOF' > "$TMPDIR/test_pty_showmatch.py"
+import pty, os, time, sys
+
+master, slave = pty.openpty()
+pid = os.fork()
+if pid == 0:
+    os.close(master)
+    os.dup2(slave, 0)
+    os.dup2(slave, 1)
+    os.dup2(slave, 2)
+    os.close(slave)
+    os.environ['TERM'] = 'xterm-256color'
+    os.environ['COLORTERM'] = 'truecolor'
+    bin_path = sys.argv[1] if len(sys.argv) > 1 else './_build/milk-cli'
+    os.execl(bin_path, bin_path)
+else:
+    os.close(slave)
+    def read_until(pattern, timeout=3.0):
+        buf = b''
+        t0 = time.time()
+        while time.time() - t0 < timeout:
+            try:
+                r = os.read(master, 1024)
+                if r:
+                    buf += r
+                    if pattern in buf:
+                        return buf
+            except OSError:
+                break
+            time.sleep(0.05)
+        return buf
+
+    read_until(b'> ')
+
+    # 1. Delimiter matching '()'
+    os.write(master, b'(1)')
+    time.sleep(0.2)
+    out1 = read_until(b'(1)')
+    if b'\x1b[7m' not in out1:
+        sys.exit(1)
+    os.write(master, b'\n')
+    time.sleep(0.1)
+
+    # 2. Block keyword matching 'if ... fi'
+    os.write(master, b'if true; then echo 1; fi')
+    time.sleep(0.2)
+    out2 = read_until(b'fi')
+    if b'\x1b[7m' not in out2:
+        sys.exit(2)
+    os.write(master, b'\n')
+    time.sleep(0.1)
+
+    # 3. showmatch off disables highlight
+    os.write(master, b'showmatch off\n')
+    time.sleep(0.2)
+    read_until(b'Showmatch OFF')
+    os.write(master, b'(1)')
+    time.sleep(0.2)
+    out3 = read_until(b'(1)')
+    if b'\x1b[7m' in out3:
+        sys.exit(3)
+
+    os.write(master, b'\nexit\n')
+    time.sleep(0.2)
+    sys.exit(0)
+EOF
+
+run_check "Interactive delimiter & block keyword match in PTY" \
+    "python3 $TMPDIR/test_pty_showmatch.py $MILK_BIN" "0"
+
 echo -e "\n${CYN}═════════════════════════════════════════════════════════════════${RST}"
 echo -e " Hardening Test Summary: ${GRN}$PASS passed${RST}, ${RED}$FAIL failed${RST} (total $TOTAL)"
 echo -e "${CYN}═════════════════════════════════════════════════════════════════${RST}"

@@ -263,6 +263,867 @@ static int cli_determine_mode_lexical(
     return -1;
 }
 
+static bool is_word_char(char c)
+{
+    return isalnum((unsigned char) c) || c == '_';
+}
+
+static bool is_word_at(
+    const char *line,
+    int         len,
+    int         pos,
+    const char *word,
+    int        *wlen)
+{
+    int wl = (int) strlen(word);
+    if (wlen != NULL)
+    {
+        *wlen = wl;
+    }
+    if (pos < 0 || pos + wl > len)
+    {
+        return false;
+    }
+    if (strncmp(&line[pos], word, (size_t) wl) != 0)
+    {
+        return false;
+    }
+    if (pos > 0 && is_word_char(line[pos - 1]))
+    {
+        return false;
+    }
+    if (pos + wl < len && is_word_char(line[pos + wl]))
+    {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief Lexical delimiter and block keyword match scanner
+ *
+ * Scans @p line for matching pairs of delimiters ((), [], {}, ${}, $(( )))
+ * and block keywords (if/fi, do/done, for/while/until/done, case/esac)
+ * ignoring matches inside string literals and comments.
+ *
+ * @param line       Input command line string
+ * @param len        Length of input line
+ * @param cursor_pos Current cursor position
+ * @param pair       Output structure with match byte offsets
+ * @return true if a match was found, false otherwise
+ */
+static bool find_match_pair_lexical(
+    const char     *line,
+    int             len,
+    int             cursor_pos,
+    CLI_MATCH_PAIR *pair)
+{
+    memset(pair, 0, sizeof(*pair));
+    if (line == NULL || len <= 0 || cursor_pos < 0)
+    {
+        return false;
+    }
+
+    uint8_t  mask_buf[1024];
+    uint8_t *mask =
+        (len < 1024) ? mask_buf : (uint8_t *) malloc((size_t) (len + 1));
+    if (mask == NULL)
+    {
+        return false;
+    }
+
+    int in_sq  = 0;
+    int in_dq  = 0;
+    int in_cmt = 0;
+    for (int i = 0; i < len; i++)
+    {
+        char c = line[i];
+        if (in_cmt)
+        {
+            mask[i] = 3;
+            if (c == '\n')
+            {
+                in_cmt = 0;
+            }
+            continue;
+        }
+        if (c == '\\' && i + 1 < len && !in_sq)
+        {
+            mask[i]     = in_dq ? 2 : 0;
+            mask[i + 1] = in_dq ? 2 : 0;
+            i++;
+            continue;
+        }
+        if (c == '\'' && !in_dq)
+        {
+            in_sq   = !in_sq;
+            mask[i] = 1;
+            continue;
+        }
+        if (c == '"' && !in_sq)
+        {
+            in_dq   = !in_dq;
+            mask[i] = 2;
+            continue;
+        }
+        if (c == '#' && !in_sq && !in_dq)
+        {
+            in_cmt  = 1;
+            mask[i] = 3;
+            continue;
+        }
+        mask[i] = in_sq ? 1 : (in_dq ? 2 : 0);
+    }
+
+    int test_positions[2];
+    int npos = 0;
+    if (cursor_pos < len)
+    {
+        test_positions[npos++] = cursor_pos;
+    }
+    if (cursor_pos > 0)
+    {
+        test_positions[npos++] = cursor_pos - 1;
+    }
+
+    bool matched = false;
+
+    for (int p = 0; p < npos; p++)
+    {
+        int pos = test_positions[p];
+        if (mask[pos] == 1 || mask[pos] == 3)
+        {
+            continue;
+        }
+
+        // Multi-char delimiters: $(( and ))
+        if (pos + 2 < len && strncmp(&line[pos], "$((", 3) == 0)
+        {
+            int depth = 1;
+            for (int i = pos + 3; i + 1 < len; i++)
+            {
+                if (mask[i] == 1 || mask[i] == 3)
+                {
+                    continue;
+                }
+                if (strncmp(&line[i], "$((", 3) == 0)
+                {
+                    depth++;
+                    i += 2;
+                }
+                else if (strncmp(&line[i], "))", 2) == 0)
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        pair->token_start = pos;
+                        pair->token_end   = pos + 3;
+                        pair->match_start = i;
+                        pair->match_end   = i + 2;
+                        pair->has_match   = true;
+                        matched           = true;
+                        break;
+                    }
+                    i++;
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+        if (pos + 1 < len && strncmp(&line[pos], "))", 2) == 0)
+        {
+            int depth = 1;
+            for (int i = pos - 1; i >= 0; i--)
+            {
+                if (mask[i] == 1 || mask[i] == 3)
+                {
+                    continue;
+                }
+                if (i >= 2 && strncmp(&line[i - 2], "$((", 3) == 0)
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        pair->token_start = pos;
+                        pair->token_end   = pos + 2;
+                        pair->match_start = i - 2;
+                        pair->match_end   = i + 1;
+                        pair->has_match   = true;
+                        matched           = true;
+                        break;
+                    }
+                    i -= 2;
+                }
+                else if (i >= 1 && strncmp(&line[i - 1], "))", 2) == 0)
+                {
+                    depth++;
+                    i--;
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+
+        // $( and )
+        if (pos + 1 < len && strncmp(&line[pos], "$(", 2) == 0)
+        {
+            int depth = 1;
+            for (int i = pos + 2; i < len; i++)
+            {
+                if (mask[i] == 1 || mask[i] == 3)
+                {
+                    continue;
+                }
+                if (strncmp(&line[i], "$(", 2) == 0)
+                {
+                    depth++;
+                    i++;
+                }
+                else if (line[i] == '(')
+                {
+                    depth++;
+                }
+                else if (line[i] == ')')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        pair->token_start = pos;
+                        pair->token_end   = pos + 2;
+                        pair->match_start = i;
+                        pair->match_end   = i + 1;
+                        pair->has_match   = true;
+                        matched           = true;
+                        break;
+                    }
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+
+        // ${ and }
+        if (pos + 1 < len && strncmp(&line[pos], "${", 2) == 0)
+        {
+            int depth = 1;
+            for (int i = pos + 2; i < len; i++)
+            {
+                if (mask[i] == 1 || mask[i] == 3)
+                {
+                    continue;
+                }
+                if (strncmp(&line[i], "${", 2) == 0)
+                {
+                    depth++;
+                    i++;
+                }
+                else if (line[i] == '{')
+                {
+                    depth++;
+                }
+                else if (line[i] == '}')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        pair->token_start = pos;
+                        pair->token_end   = pos + 2;
+                        pair->match_start = i;
+                        pair->match_end   = i + 1;
+                        pair->has_match   = true;
+                        matched           = true;
+                        break;
+                    }
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+        if (pos > 0 && line[pos - 1] == '$' && line[pos] == '{')
+        {
+            int depth = 1;
+            for (int i = pos + 1; i < len; i++)
+            {
+                if (mask[i] == 1 || mask[i] == 3)
+                {
+                    continue;
+                }
+                if (strncmp(&line[i], "${", 2) == 0)
+                {
+                    depth++;
+                    i++;
+                }
+                else if (line[i] == '{')
+                {
+                    depth++;
+                }
+                else if (line[i] == '}')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        pair->token_start = pos - 1;
+                        pair->token_end   = pos + 1;
+                        pair->match_start = i;
+                        pair->match_end   = i + 1;
+                        pair->has_match   = true;
+                        matched           = true;
+                        break;
+                    }
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+
+        // [[ and ]]
+        if (pos + 1 < len && strncmp(&line[pos], "[[", 2) == 0 && mask[pos] == 0)
+        {
+            for (int i = pos + 2; i + 1 < len; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    continue;
+                }
+                if (strncmp(&line[i], "]]", 2) == 0)
+                {
+                    pair->token_start = pos;
+                    pair->token_end   = pos + 2;
+                    pair->match_start = i;
+                    pair->match_end   = i + 2;
+                    pair->has_match   = true;
+                    matched           = true;
+                    break;
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+        if (pos + 1 < len && strncmp(&line[pos], "]]", 2) == 0 && mask[pos] == 0)
+        {
+            for (int i = pos - 2; i >= 0; i--)
+            {
+                if (mask[i] != 0)
+                {
+                    continue;
+                }
+                if (strncmp(&line[i], "[[", 2) == 0)
+                {
+                    pair->token_start = pos;
+                    pair->token_end   = pos + 2;
+                    pair->match_start = i;
+                    pair->match_end   = i + 2;
+                    pair->has_match   = true;
+                    matched           = true;
+                    break;
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+
+        // Single delimiters: (, ), [, ], {, }
+        char c = line[pos];
+        if (c == '(' && (pos == 0 || line[pos - 1] != '$') && mask[pos] == 0)
+        {
+            int depth = 1;
+            for (int i = pos + 1; i < len; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    continue;
+                }
+                if (line[i] == '(')
+                {
+                    depth++;
+                }
+                else if (line[i] == ')')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        pair->token_start = pos;
+                        pair->token_end   = pos + 1;
+                        pair->match_start = i;
+                        pair->match_end   = i + 1;
+                        pair->has_match   = true;
+                        matched           = true;
+                        break;
+                    }
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+        else if (c == ')' && mask[pos] == 0)
+        {
+            int depth = 1;
+            for (int i = pos - 1; i >= 0; i--)
+            {
+                if (mask[i] != 0)
+                {
+                    continue;
+                }
+                if (line[i] == ')')
+                {
+                    depth++;
+                }
+                else if (line[i] == '(')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        int start_idx = (i > 0 && line[i - 1] == '$') ? i - 1 : i;
+                        pair->token_start = pos;
+                        pair->token_end   = pos + 1;
+                        pair->match_start = start_idx;
+                        pair->match_end   = i + 1;
+                        pair->has_match   = true;
+                        matched           = true;
+                        break;
+                    }
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+        else if (c == '[' && (pos + 1 >= len || line[pos + 1] != '[') &&
+                 (pos == 0 || line[pos - 1] != '[') && mask[pos] == 0)
+        {
+            int depth = 1;
+            for (int i = pos + 1; i < len; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    continue;
+                }
+                if (line[i] == '[')
+                {
+                    depth++;
+                }
+                else if (line[i] == ']')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        pair->token_start = pos;
+                        pair->token_end   = pos + 1;
+                        pair->match_start = i;
+                        pair->match_end   = i + 1;
+                        pair->has_match   = true;
+                        matched           = true;
+                        break;
+                    }
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+        else if (c == ']' && (pos + 1 >= len || line[pos + 1] != ']') &&
+                 (pos == 0 || line[pos - 1] != ']') && mask[pos] == 0)
+        {
+            int depth = 1;
+            for (int i = pos - 1; i >= 0; i--)
+            {
+                if (mask[i] != 0)
+                {
+                    continue;
+                }
+                if (line[i] == ']')
+                {
+                    depth++;
+                }
+                else if (line[i] == '[')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        pair->token_start = pos;
+                        pair->token_end   = pos + 1;
+                        pair->match_start = i;
+                        pair->match_end   = i + 1;
+                        pair->has_match   = true;
+                        matched           = true;
+                        break;
+                    }
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+        else if (c == '{' && (pos == 0 || line[pos - 1] != '$') && mask[pos] == 0)
+        {
+            int depth = 1;
+            for (int i = pos + 1; i < len; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    continue;
+                }
+                if (line[i] == '{')
+                {
+                    depth++;
+                }
+                else if (line[i] == '}')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        pair->token_start = pos;
+                        pair->token_end   = pos + 1;
+                        pair->match_start = i;
+                        pair->match_end   = i + 1;
+                        pair->has_match   = true;
+                        matched           = true;
+                        break;
+                    }
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+        else if (c == '}')
+        {
+            int depth = 1;
+            for (int i = pos - 1; i >= 0; i--)
+            {
+                if (mask[i] == 1 || mask[i] == 3)
+                {
+                    continue;
+                }
+                if (line[i] == '}')
+                {
+                    depth++;
+                }
+                else if (line[i] == '{')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        int start_idx = (i > 0 && line[i - 1] == '$') ? i - 1 : i;
+                        pair->token_start = pos;
+                        pair->token_end   = pos + 1;
+                        pair->match_start = start_idx;
+                        pair->match_end   = i + 1;
+                        pair->has_match   = true;
+                        matched           = true;
+                        break;
+                    }
+                }
+            }
+            if (matched)
+            {
+                break;
+            }
+        }
+
+        // Keywords (outside quotes & comments)
+        if (mask[pos] == 0)
+        {
+            int wstart = pos;
+            while (wstart > 0 && is_word_char(line[wstart - 1]))
+            {
+                wstart--;
+            }
+            int wend = pos;
+            while (wend < len && is_word_char(line[wend]))
+            {
+                wend++;
+            }
+
+            if (wend > wstart)
+            {
+                int  wlen = wend - wstart;
+                char word[32];
+                if (wlen < 31)
+                {
+                    strncpy(word, &line[wstart], (size_t) wlen);
+                    word[wlen] = '\0';
+
+                    if (strcmp(word, "if") == 0)
+                    {
+                        int depth = 1;
+                        for (int i = wend; i < len; i++)
+                        {
+                            if (mask[i] != 0)
+                            {
+                                continue;
+                            }
+                            int dummy;
+                            if (is_word_at(line, len, i, "if", &dummy))
+                            {
+                                depth++;
+                            }
+                            else if (is_word_at(line, len, i, "fi", &dummy))
+                            {
+                                depth--;
+                                if (depth == 0)
+                                {
+                                    pair->token_start = wstart;
+                                    pair->token_end   = wend;
+                                    pair->match_start = i;
+                                    pair->match_end   = i + 2;
+                                    pair->has_match   = true;
+                                    matched           = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (matched)
+                        {
+                            break;
+                        }
+                    }
+                    else if (strcmp(word, "fi") == 0)
+                    {
+                        int depth = 1;
+                        for (int i = wstart - 1; i >= 0; i--)
+                        {
+                            if (mask[i] != 0)
+                            {
+                                continue;
+                            }
+                            int dummy;
+                            if (is_word_at(line, len, i, "fi", &dummy))
+                            {
+                                depth++;
+                            }
+                            else if (is_word_at(line, len, i, "if", &dummy))
+                            {
+                                depth--;
+                                if (depth == 0)
+                                {
+                                    pair->token_start = wstart;
+                                    pair->token_end   = wend;
+                                    pair->match_start = i;
+                                    pair->match_end   = i + 2;
+                                    pair->has_match   = true;
+                                    matched           = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (matched)
+                        {
+                            break;
+                        }
+                    }
+                    else if (strcmp(word, "for") == 0 || strcmp(word, "while") == 0 ||
+                             strcmp(word, "until") == 0)
+                    {
+                        int depth = 1;
+                        for (int i = wend; i < len; i++)
+                        {
+                            if (mask[i] != 0)
+                            {
+                                continue;
+                            }
+                            int dummy;
+                            if (is_word_at(line, len, i, "for", &dummy) ||
+                                is_word_at(line, len, i, "while", &dummy) ||
+                                is_word_at(line, len, i, "until", &dummy))
+                            {
+                                depth++;
+                            }
+                            else if (is_word_at(line, len, i, "done", &dummy))
+                            {
+                                depth--;
+                                if (depth == 0)
+                                {
+                                    pair->token_start = wstart;
+                                    pair->token_end   = wend;
+                                    pair->match_start = i;
+                                    pair->match_end   = i + 4;
+                                    pair->has_match   = true;
+                                    matched           = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (matched)
+                        {
+                            break;
+                        }
+                    }
+                    else if (strcmp(word, "do") == 0)
+                    {
+                        int depth = 1;
+                        for (int i = wend; i < len; i++)
+                        {
+                            if (mask[i] != 0)
+                            {
+                                continue;
+                            }
+                            int dummy;
+                            if (is_word_at(line, len, i, "do", &dummy))
+                            {
+                                depth++;
+                            }
+                            else if (is_word_at(line, len, i, "done", &dummy))
+                            {
+                                depth--;
+                                if (depth == 0)
+                                {
+                                    pair->token_start = wstart;
+                                    pair->token_end   = wend;
+                                    pair->match_start = i;
+                                    pair->match_end   = i + 4;
+                                    pair->has_match   = true;
+                                    matched           = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (matched)
+                        {
+                            break;
+                        }
+                    }
+                    else if (strcmp(word, "done") == 0)
+                    {
+                        int depth = 1;
+                        for (int i = wstart - 1; i >= 0; i--)
+                        {
+                            if (mask[i] != 0)
+                            {
+                                continue;
+                            }
+                            int dummy;
+                            if (is_word_at(line, len, i, "done", &dummy))
+                            {
+                                depth++;
+                            }
+                            else if (is_word_at(line, len, i, "do", &dummy) ||
+                                     is_word_at(line, len, i, "for", &dummy) ||
+                                     is_word_at(line, len, i, "while", &dummy) ||
+                                     is_word_at(line, len, i, "until", &dummy))
+                            {
+                                depth--;
+                                if (depth == 0)
+                                {
+                                    int match_len =
+                                        is_word_at(line, len, i, "do", &dummy) ? 2 :
+                                        is_word_at(line, len, i, "for", &dummy) ? 3 :
+                                        is_word_at(line, len, i, "while", &dummy) ? 5 : 5;
+                                    pair->token_start = wstart;
+                                    pair->token_end   = wend;
+                                    pair->match_start = i;
+                                    pair->match_end   = i + match_len;
+                                    pair->has_match   = true;
+                                    matched           = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (matched)
+                        {
+                            break;
+                        }
+                    }
+                    else if (strcmp(word, "case") == 0)
+                    {
+                        int depth = 1;
+                        for (int i = wend; i < len; i++)
+                        {
+                            if (mask[i] != 0)
+                            {
+                                continue;
+                            }
+                            int dummy;
+                            if (is_word_at(line, len, i, "case", &dummy))
+                            {
+                                depth++;
+                            }
+                            else if (is_word_at(line, len, i, "esac", &dummy))
+                            {
+                                depth--;
+                                if (depth == 0)
+                                {
+                                    pair->token_start = wstart;
+                                    pair->token_end   = wend;
+                                    pair->match_start = i;
+                                    pair->match_end   = i + 4;
+                                    pair->has_match   = true;
+                                    matched           = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (matched)
+                        {
+                            break;
+                        }
+                    }
+                    else if (strcmp(word, "esac") == 0)
+                    {
+                        int depth = 1;
+                        for (int i = wstart - 1; i >= 0; i--)
+                        {
+                            if (mask[i] != 0)
+                            {
+                                continue;
+                            }
+                            int dummy;
+                            if (is_word_at(line, len, i, "esac", &dummy))
+                            {
+                                depth++;
+                            }
+                            else if (is_word_at(line, len, i, "case", &dummy))
+                            {
+                                depth--;
+                                if (depth == 0)
+                                {
+                                    pair->token_start = wstart;
+                                    pair->token_end   = wend;
+                                    pair->match_start = i;
+                                    pair->match_end   = i + 4;
+                                    pair->has_match   = true;
+                                    matched           = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (matched)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (mask != mask_buf)
+    {
+        free(mask);
+    }
+    return matched;
+}
+
 #ifdef USE_TREESITTER
 
 #    include <tree_sitter/api.h>
@@ -398,6 +1259,7 @@ typedef struct
     uint32_t    start_byte;
     uint32_t    end_byte;
     const char *color;
+    int         priority; // 0 = normal syntax, 1 = error/diag, 2 = match pair
 } HighlightSpan;
 
 static void collect_error_spans(
@@ -415,14 +1277,324 @@ static int compare_spans(const void *a, const void *b)
     const HighlightSpan *sb = (const HighlightSpan *) b;
     if (sa->start_byte != sb->start_byte)
     {
-        return sa->start_byte - sb->start_byte;
+        return (int) (sa->start_byte - sb->start_byte);
     }
     // If they start at the same place, earlier end_byte goes first so outer spans
     // enclose inner spans
-    return sb->end_byte - sa->end_byte;
+    if (sa->end_byte != sb->end_byte)
+    {
+        return (int) (sb->end_byte - sa->end_byte);
+    }
+    // Lower priority first so higher priority is pushed later and takes precedence
+    return sa->priority - sb->priority;
 }
 
-void cli_ts_highlight_line(const char *line, int len, FILE *out)
+/**
+ * @brief Search AST for matching delimiter or block keyword pair
+ *
+ * Traverses parent/sibling nodes of the AST to match:
+ *  - Parentheses: ( and )
+ *  - Subshells and command substitutions: $( and )
+ *  - Arithmetic expansions: $(( and ))
+ *  - Test brackets: [ and ], [[ and ]]
+ *  - Braces: { and }, ${ and }
+ *  - Conditionals: if and fi
+ *  - Loops: do/for/while/until and done
+ *  - Case blocks: case and esac, ) and ;;
+ *
+ * @param root       Tree-sitter root node
+ * @param line       Command line string
+ * @param len        Length of line
+ * @param cursor_pos Current cursor position
+ * @param pair       Output structure with matched byte ranges
+ * @return true if match found, false otherwise
+ */
+static bool find_match_pair_ast(
+    TSNode          root,
+    const char     *line,
+    int             len,
+    int             cursor_pos,
+    CLI_MATCH_PAIR *pair)
+{
+    memset(pair, 0, sizeof(*pair));
+    if (cursor_pos < 0 || len <= 0 || line == NULL)
+    {
+        return false;
+    }
+
+    int test_positions[2];
+    int npos = 0;
+    if (cursor_pos < len)
+    {
+        test_positions[npos++] = cursor_pos;
+    }
+    if (cursor_pos > 0)
+    {
+        test_positions[npos++] = cursor_pos - 1;
+    }
+
+    for (int p = 0; p < npos; p++)
+    {
+        uint32_t pos  = (uint32_t) test_positions[p];
+        TSNode   node = ts_node_descendant_for_byte_range(root, pos, pos + 1);
+        if (ts_node_is_null(node))
+        {
+            continue;
+        }
+
+        const char *type   = ts_node_type(node);
+        TSNode      parent = ts_node_parent(node);
+        if (ts_node_is_null(parent))
+        {
+            continue;
+        }
+
+        uint32_t ccount = ts_node_child_count(parent);
+        TSNode   target = { 0 };
+        bool     found  = false;
+
+        if (strcmp(type, "(") == 0 || strcmp(type, "$(") == 0 ||
+            strcmp(type, "$(( ") == 0 || strcmp(type, "$((") == 0)
+        {
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode      ch = ts_node_child(parent, i);
+                const char *ct = ts_node_type(ch);
+                if (strcmp(ct, ")") == 0 || strcmp(ct, "))") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+        }
+        else if (strcmp(type, ")") == 0 || strcmp(type, "))") == 0)
+        {
+            /* If inside case_item: ')' matches ';;' */
+            if (strcmp(ts_node_type(parent), "case_item") == 0)
+            {
+                for (uint32_t i = 0; i < ccount; i++)
+                {
+                    TSNode ch = ts_node_child(parent, i);
+                    if (strcmp(ts_node_type(ch), ";;") == 0)
+                    {
+                        target = ch;
+                        found  = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                for (uint32_t i = 0; i < ccount; i++)
+                {
+                    TSNode      ch = ts_node_child(parent, i);
+                    const char *ct = ts_node_type(ch);
+                    if (strcmp(ct, "(") == 0 || strcmp(ct, "$(") == 0 ||
+                        strcmp(ct, "$(( ") == 0 || strcmp(ct, "$((") == 0)
+                    {
+                        target = ch;
+                        found  = true;
+                        break;
+                    }
+                }
+            }
+        }
+        else if (strcmp(type, ";;") == 0)
+        {
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode ch = ts_node_child(parent, i);
+                if (strcmp(ts_node_type(ch), ")") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+        }
+        else if (strcmp(type, "[") == 0 || strcmp(type, "[[") == 0)
+        {
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode      ch = ts_node_child(parent, i);
+                const char *ct = ts_node_type(ch);
+                if (strcmp(ct, "]") == 0 || strcmp(ct, "]]") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+        }
+        else if (strcmp(type, "]") == 0 || strcmp(type, "]]") == 0)
+        {
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode      ch = ts_node_child(parent, i);
+                const char *ct = ts_node_type(ch);
+                if (strcmp(ct, "[") == 0 || strcmp(ct, "[[") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+        }
+        else if (strcmp(type, "{") == 0 || strcmp(type, "${") == 0)
+        {
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode ch = ts_node_child(parent, i);
+                if (strcmp(ts_node_type(ch), "}") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+        }
+        else if (strcmp(type, "}") == 0)
+        {
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode      ch = ts_node_child(parent, i);
+                const char *ct = ts_node_type(ch);
+                if (strcmp(ct, "{") == 0 || strcmp(ct, "${") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+        }
+        else if (strcmp(type, "if") == 0)
+        {
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode ch = ts_node_child(parent, i);
+                if (strcmp(ts_node_type(ch), "fi") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+        }
+        else if (strcmp(type, "fi") == 0)
+        {
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode ch = ts_node_child(parent, i);
+                if (strcmp(ts_node_type(ch), "if") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+        }
+        else if (strcmp(type, "do") == 0)
+        {
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode ch = ts_node_child(parent, i);
+                if (strcmp(ts_node_type(ch), "done") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+        }
+        else if (strcmp(type, "for") == 0 || strcmp(type, "while") == 0 ||
+                 strcmp(type, "until") == 0)
+        {
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode ch = ts_node_child(parent, i);
+                if (strcmp(ts_node_type(ch), "done") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+        }
+        else if (strcmp(type, "done") == 0)
+        {
+            /* Match 'do' first, then loop header */
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode ch = ts_node_child(parent, i);
+                if (strcmp(ts_node_type(ch), "do") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                for (uint32_t i = 0; i < ccount; i++)
+                {
+                    TSNode      ch = ts_node_child(parent, i);
+                    const char *ct = ts_node_type(ch);
+                    if (strcmp(ct, "for") == 0 || strcmp(ct, "while") == 0 ||
+                        strcmp(ct, "until") == 0)
+                    {
+                        target = ch;
+                        found  = true;
+                        break;
+                    }
+                }
+            }
+        }
+        else if (strcmp(type, "case") == 0)
+        {
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode ch = ts_node_child(parent, i);
+                if (strcmp(ts_node_type(ch), "esac") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+        }
+        else if (strcmp(type, "esac") == 0)
+        {
+            for (uint32_t i = 0; i < ccount; i++)
+            {
+                TSNode ch = ts_node_child(parent, i);
+                if (strcmp(ts_node_type(ch), "case") == 0)
+                {
+                    target = ch;
+                    found  = true;
+                    break;
+                }
+            }
+        }
+
+        if (found && !ts_node_is_null(target))
+        {
+            pair->token_start = ts_node_start_byte(node);
+            pair->token_end   = ts_node_end_byte(node);
+            pair->match_start = ts_node_start_byte(target);
+            pair->match_end   = ts_node_end_byte(target);
+            pair->has_match   = true;
+            return true;
+        }
+    }
+    return false;
+}
+
+void cli_ts_highlight_line(
+    const char *line,
+    int         len,
+    int         cursor_pos,
+    FILE       *out)
 {
     if (!ts_parser || !ts_query || !line || len == 0)
     {
@@ -469,6 +1641,7 @@ void cli_ts_highlight_line(const char *line, int len, FILE *out)
                 spans[num_spans].start_byte = ts_node_start_byte(node);
                 spans[num_spans].end_byte   = ts_node_end_byte(node);
                 spans[num_spans].color      = color;
+                spans[num_spans].priority   = 0;
                 num_spans++;
             }
         }
@@ -480,6 +1653,36 @@ void cli_ts_highlight_line(const char *line, int len, FILE *out)
     {
         collect_error_spans(
             root_node, line, (size_t) len, spans, &num_spans, 1024, color_level);
+    }
+
+    if (data.show_match && cursor_pos >= 0)
+    {
+        CLI_MATCH_PAIR mp;
+        bool ok = find_match_pair_ast(root_node, line, len, cursor_pos, &mp);
+        if (!ok || !mp.has_match)
+        {
+            ok = find_match_pair_lexical(line, len, cursor_pos, &mp);
+        }
+        if (ok && mp.has_match)
+        {
+            const char *match_style = "\033[7m";
+            if (num_spans < 1024)
+            {
+                spans[num_spans].start_byte = mp.token_start;
+                spans[num_spans].end_byte   = mp.token_end;
+                spans[num_spans].color      = match_style;
+                spans[num_spans].priority   = 2;
+                num_spans++;
+            }
+            if (num_spans < 1024)
+            {
+                spans[num_spans].start_byte = mp.match_start;
+                spans[num_spans].end_byte   = mp.match_end;
+                spans[num_spans].color      = match_style;
+                spans[num_spans].priority   = 2;
+                num_spans++;
+            }
+        }
     }
 
     ts_tree_delete(tree);
@@ -549,6 +1752,56 @@ void cli_ts_highlight_line(const char *line, int len, FILE *out)
 
     fprintf(out, "%s", RESET);
     fflush(out);
+}
+
+/**
+ * @brief Find matching structural delimiter or block keyword pair
+ *
+ * Inspects the token at or adjacent to @p cursor_pos in @p line.
+ * If the cursor is on or next to an opening or closing delimiter
+ * ((), [], {}, ${...}, $((...))) or block keyword (if/fi, do/done,
+ * for/while/until/done, case/esac), finds the corresponding matching
+ * token's start and end byte offsets.
+ *
+ * Uses Tree-sitter AST with lexical fallback.
+ *
+ * @param line       Input line buffer
+ * @param cursor_pos Current cursor position (0 <= cursor_pos <= strlen(line))
+ * @param pair       Output structure with matched byte ranges
+ * @return true if a matching pair was found, false otherwise
+ */
+bool cli_ts_find_match_pair(
+    const char     *line,
+    int             cursor_pos,
+    CLI_MATCH_PAIR *pair)
+{
+    memset(pair, 0, sizeof(*pair));
+    if (line == NULL || cursor_pos < 0)
+    {
+        return false;
+    }
+    int len = (int) strlen(line);
+    if (len <= 0)
+    {
+        return false;
+    }
+
+    if (ts_parser != NULL)
+    {
+        TSTree *tree = ts_parser_parse_string(ts_parser, NULL, line, len);
+        if (tree != NULL)
+        {
+            TSNode root = ts_tree_root_node(tree);
+            bool   ok   = find_match_pair_ast(root, line, len, cursor_pos, pair);
+            ts_tree_delete(tree);
+            if (ok && pair->has_match)
+            {
+                return true;
+            }
+        }
+    }
+
+    return find_match_pair_lexical(line, len, cursor_pos, pair);
 }
 
 static int has_unclosed_quotes(const char *s)
@@ -951,6 +2204,7 @@ static void collect_error_spans(
                     spans[*num_spans].color =
                         (color_lvl >= 2) ? "\033[4;38;5;203m" : "\033[4;31m";
                 }
+                spans[*num_spans].priority = 1;
                 (*num_spans)++;
             }
         }
@@ -2332,11 +3586,55 @@ int cli_ts_detect_color_level(void)
 void cli_ts_cleanup(void)
 {
 }
-void cli_ts_highlight_line(const char *line, int len, FILE *out)
+void cli_ts_highlight_line(
+    const char *line,
+    int         len,
+    int         cursor_pos,
+    FILE       *out)
 {
-    (void) len;
+    if (line == NULL || len == 0)
+    {
+        return;
+    }
+    if (data.show_match && cursor_pos >= 0)
+    {
+        CLI_MATCH_PAIR mp;
+        if (find_match_pair_lexical(line, len, cursor_pos, &mp) && mp.has_match)
+        {
+            for (int i = 0; i < len; i++)
+            {
+                if (i == (int) mp.token_start || i == (int) mp.match_start)
+                {
+                    fprintf(out, "\033[7m");
+                }
+                fputc(line[i], out);
+                if (i + 1 == (int) mp.token_end || i + 1 == (int) mp.match_end)
+                {
+                    fprintf(out, "\033[0m");
+                }
+            }
+            fflush(out);
+            return;
+        }
+    }
     fprintf(out, "%s", line);
     fflush(out);
+}
+
+bool cli_ts_find_match_pair(
+    const char     *line,
+    int             cursor_pos,
+    CLI_MATCH_PAIR *pair)
+{
+    if (line == NULL || cursor_pos < 0)
+    {
+        if (pair != NULL)
+        {
+            memset(pair, 0, sizeof(*pair));
+        }
+        return false;
+    }
+    return find_match_pair_lexical(line, (int) strlen(line), cursor_pos, pair);
 }
 
 int cli_ts_is_incomplete(const char *buffer)

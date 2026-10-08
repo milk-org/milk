@@ -439,6 +439,43 @@ errno_t cli_auto_indent_toggle(void)
     }
     return RETURN_SUCCESS;
 }
+
+/**
+ * @brief Toggle structural delimiter & block keyword matching (showmatch).
+ *
+ * Controls whether matching parentheses, brackets, braces, expansions, and
+ * block keywords (if/fi, do/done, case/esac) are highlighted at cursor.
+ * Usage: showmatch [on|off]
+ *
+ * @return RETURN_SUCCESS
+ */
+errno_t cli_showmatch_toggle(void)
+{
+    if (data.cmdNBarg >= 2)
+    {
+        const char *arg = data.cmdargtoken[1].val.string;
+        if (strcmp(arg, "on") == 0 || strcmp(arg, "1") == 0)
+        {
+            data.show_match = 1;
+            printf("Showmatch ON\n");
+        }
+        else if (strcmp(arg, "off") == 0 || strcmp(arg, "0") == 0)
+        {
+            data.show_match = 0;
+            printf("Showmatch OFF\n");
+        }
+        else
+        {
+            printf("Usage: showmatch [on|off]\n");
+        }
+    }
+    else
+    {
+        data.show_match = !data.show_match;
+        printf("Showmatch %s\n", data.show_match ? "ON" : "OFF");
+    }
+    return RETURN_SUCCESS;
+}
 #endif
 
 
