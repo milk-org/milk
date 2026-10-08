@@ -279,8 +279,8 @@ void CLI_cleanup_scroll_region(void)
         return;
     }
 
-    int r = cached_term_rows;
-    int c = cached_term_cols;
+    int            r = cached_term_rows;
+    int            c = cached_term_cols;
     struct winsize ws;
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0 && ws.ws_row > 0)
     {
