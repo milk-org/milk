@@ -50,9 +50,7 @@ milk_apply_extensions(${LIBNAME})
 
 # Static archive for USE_STATIC_LTO builds (see cmake/milk_static_lto.cmake).
 # The function is a no-op unless USE_STATIC_LTO is ON.
-# milk_add_static_lto(${LIBNAME}
-#   LINK_LIBS <static deps>
-#   CFITSIO_LINK_LIBS <static deps needing CFITSIO>)
+milk_add_static_lto(${LIBNAME})
 
 install(
   TARGETS ${LIBNAME}
