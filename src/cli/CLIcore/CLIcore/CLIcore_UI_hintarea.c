@@ -292,7 +292,7 @@ void CLI_cleanup_scroll_region(void)
  */
 void update_hint_area(void)
 {
-    if (!hint_area_active || !data.autocomplete_arghint)
+    if (!hint_area_active || (!data.autocomplete_arghint && !data.syntax_diagnostics))
     {
         return;
     }
@@ -316,78 +316,114 @@ void update_hint_area(void)
     /* Move to hint line, clear it */
     printf("\033[%d;1H\033[2K", cached_term_rows);
 
-    /* Check if active word is a known command */
+    /* Check if active line has diagnostics or known command */
     if (rl_line_buffer[0] != '\0')
     {
-        char cmdname[128] = "";
-        int  argidx       = 0;
-        cli_ts_determine_completion_mode(
-            rl_line_buffer, rl_point, "", cmdname, sizeof(cmdname), &argidx);
+        int col = 0;
 
-        if (cmdname[0] != '\0')
+        /* 1. Real-time syntax diagnostics */
+        if (data.syntax_diagnostics)
         {
-            int cmi = find_command_match(cmdname);
-            if (cmi >= 0)
+            CLI_SYNTAX_DIAG diag;
+            memset(&diag, 0, sizeof(diag));
+            if (cli_ts_get_diagnostic(rl_line_buffer, &diag) &&
+                diag.severity != CLI_DIAG_SEVERITY_NONE)
             {
-
-                /* Print syntax with <> tokens,
-                 * highlighting current arg */
-                const char *syn  = data.cmd[cmi].syntax;
-                int         col  = 0;
-                int         tidx = 0;
-                const char *p    = syn;
-
-                while (*p && col < cached_term_cols - 2)
+                char diag_buf[160];
+                int  dlen = 0;
+                if (diag.severity == CLI_DIAG_SEVERITY_ERROR)
                 {
-                    if (*p == ' ')
+                    dlen = snprintf(
+                        diag_buf, sizeof(diag_buf), "[syntax error: %s] ", diag.message);
+                    if (col + dlen < cached_term_cols - 1)
                     {
-                        printf(" ");
-                        col++;
-                        p++;
-                        continue;
+                        printf("\033[1;31m[syntax error: %s]\033[0m ", diag.message);
+                        col += dlen;
                     }
+                }
+                else
+                {
+                    dlen = snprintf(diag_buf, sizeof(diag_buf), "[%s] ", diag.message);
+                    if (col + dlen < cached_term_cols - 1)
+                    {
+                        printf("\033[1;33m[%s]\033[0m ", diag.message);
+                        col += dlen;
+                    }
+                }
+            }
+        }
 
-                    const char *tstart = p;
-                    if (*p == '<')
-                    {
-                        while (*p && *p != '>')
-                        {
-                            p++;
-                        }
-                        if (*p == '>')
-                        {
-                            p++;
-                        }
-                    }
-                    else
-                    {
-                        while (*p && *p != ' ' && *p != '<')
-                        {
-                            p++;
-                        }
-                    }
-                    int tlen  = (int) (p - tstart);
-                    int avail = cached_term_cols - 1 - col;
-                    int plen  = tlen < avail ? tlen : avail;
+        /* 2. Command argument syntax */
+        if (data.autocomplete_arghint && col < cached_term_cols - 4)
+        {
+            char cmdname[128] = "";
+            int  argidx       = 0;
+            cli_ts_determine_completion_mode(
+                rl_line_buffer, rl_point, "", cmdname, sizeof(cmdname), &argidx);
 
-                    if (*tstart == '<' && tidx == argidx)
+            if (cmdname[0] != '\0')
+            {
+                int cmi = find_command_match(cmdname);
+                if (cmi >= 0)
+                {
+                    /* Print syntax with <> tokens,
+                     * highlighting current arg */
+                    const char *syn  = data.cmd[cmi].syntax;
+                    int         tidx = 0;
+                    const char *p    = syn;
+
+                    while (*p && col < cached_term_cols - 2)
                     {
-                        printf("\033[1;97m"
-                               "%.*s"
-                               "\033[0m",
-                               plen, tstart);
-                    }
-                    else
-                    {
-                        printf("\033[2m"
-                               "%.*s"
-                               "\033[0m",
-                               plen, tstart);
-                    }
-                    col += plen;
-                    if (*tstart == '<')
-                    {
-                        tidx++;
+                        if (*p == ' ')
+                        {
+                            printf(" ");
+                            col++;
+                            p++;
+                            continue;
+                        }
+
+                        const char *tstart = p;
+                        if (*p == '<')
+                        {
+                            while (*p && *p != '>')
+                            {
+                                p++;
+                            }
+                            if (*p == '>')
+                            {
+                                p++;
+                            }
+                        }
+                        else
+                        {
+                            while (*p && *p != ' ' && *p != '<')
+                            {
+                                p++;
+                            }
+                        }
+                        int tlen  = (int) (p - tstart);
+                        int avail = cached_term_cols - 1 - col;
+                        int plen  = tlen < avail ? tlen : avail;
+
+                        if (*tstart == '<' && tidx == argidx)
+                        {
+                            printf("\033[1;97m"
+                                   "%.*s"
+                                   "\033[0m",
+                                   plen, tstart);
+                        }
+                        else
+                        {
+                            printf("\033[2m"
+                                   "%.*s"
+                                   "\033[0m",
+                                   plen, tstart);
+                        }
+                        col += plen;
+                        if (*tstart == '<')
+                        {
+                            tidx++;
+                        }
                     }
                 }
             }

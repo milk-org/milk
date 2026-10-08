@@ -89,6 +89,7 @@ errno_t cli_timing_toggle(void);
 /* Syntax highlighting toggle */
 #ifdef USE_READLINE
 errno_t cli_syntax_highlight_toggle(void);
+errno_t cli_syntax_diag_toggle(void);
 #endif
 
 /* Persistent history */

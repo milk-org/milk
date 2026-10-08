@@ -17,6 +17,20 @@
 #define CLI_TREESITTER_H
 
 #include <stdio.h>
+#include <stdint.h>
+
+#define CLI_DIAG_SEVERITY_NONE  0
+#define CLI_DIAG_SEVERITY_INFO  1
+#define CLI_DIAG_SEVERITY_ERROR 2
+
+typedef struct
+{
+    int      severity;
+    uint32_t start_byte;
+    uint32_t end_byte;
+    char     message[128];
+    char     token[64];
+} CLI_SYNTAX_DIAG;
 
 /**
  * @brief Initialize tree-sitter parser and query
@@ -98,5 +112,20 @@ int cli_ts_determine_completion_mode(
     char       *out_cmdname,
     size_t      cmdname_size,
     int        *out_argidx);
+
+/**
+ * @brief Get real-time syntax diagnostic for current input buffer
+ *
+ * Inspects the input line for incomplete constructs (unclosed quotes, open
+ * control blocks, dangling pipes/operators) and syntax errors (unexpected
+ * tokens, malformed statements) using Tree-sitter AST or lexical analysis.
+ *
+ * @param line Input line buffer
+ * @param diag Output structure populated with severity, span, and message
+ * @return 1 if a diagnostic was detected, 0 if clean/valid
+ */
+int cli_ts_get_diagnostic(
+    const char      *line,
+    CLI_SYNTAX_DIAG *diag);
 
 #endif /* CLI_TREESITTER_H */

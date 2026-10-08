@@ -278,6 +278,10 @@ void runCLI_cmd_init()
 #ifdef USE_READLINE
     RegisterCLIcommand("synhl", __FILE__, cli_syntax_highlight_toggle, "toggle syntax highlighting",
                        "[on|off]", "synhl off", "cli_syntax_highlight_toggle()");
+
+    RegisterCLIcommand("syndiag", __FILE__, cli_syntax_diag_toggle,
+                       "toggle real-time syntax diagnostics", "[on|off]", "syndiag off",
+                       "cli_syntax_diag_toggle()");
 #endif
 
     RegisterCLIcommand("source", __FILE__, cli_source, "execute a milk script file", "<filename>",

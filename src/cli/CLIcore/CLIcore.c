@@ -474,6 +474,7 @@ errno_t CLI_startup()
     data.autocomplete_history = 1; // history suggestions ON
     data.autocomplete_arghint = 1; // argument hint line ON
     data.autocomplete_fuzzy   = 1; // fuzzy matching ON
+    data.syntax_diagnostics   = 1; // syntax diagnostics ON
 
     // signal handling
 

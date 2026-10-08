@@ -346,6 +346,46 @@ errno_t cli_syntax_highlight_toggle(void)
     }
     return RETURN_SUCCESS;
 }
+
+/**
+ * @brief Toggle real-time inline syntax diagnostics
+ *
+ * Controls whether real-time syntax error and continuation
+ * diagnostics are displayed in the bottom hint area and highlighted
+ * in the input line.
+ * With an argument of "on" or "1", enables diagnostics.
+ * With an argument of "off" or "0", disables diagnostics.
+ * With no args, toggles the current state.
+ *
+ * @return RETURN_SUCCESS
+ */
+errno_t cli_syntax_diag_toggle(void)
+{
+    if (data.cmdNBarg >= 2)
+    {
+        const char *arg = data.cmdargtoken[1].val.string;
+        if (strcmp(arg, "on") == 0 || strcmp(arg, "1") == 0)
+        {
+            data.syntax_diagnostics = 1;
+            printf("Syntax diagnostics ON\n");
+        }
+        else if (strcmp(arg, "off") == 0 || strcmp(arg, "0") == 0)
+        {
+            data.syntax_diagnostics = 0;
+            printf("Syntax diagnostics OFF\n");
+        }
+        else
+        {
+            printf("Usage: syndiag [on|off]\n");
+        }
+    }
+    else
+    {
+        data.syntax_diagnostics = !data.syntax_diagnostics;
+        printf("Syntax diagnostics %s\n", data.syntax_diagnostics ? "ON" : "OFF");
+    }
+    return RETURN_SUCCESS;
+}
 #endif
 
 

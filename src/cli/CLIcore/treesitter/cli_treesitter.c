@@ -400,6 +400,15 @@ typedef struct
     const char *color;
 } HighlightSpan;
 
+static void collect_error_spans(
+    TSNode         node,
+    const char    *source,
+    size_t         linelen,
+    HighlightSpan *spans,
+    int           *num_spans,
+    int            max_spans,
+    int            color_lvl);
+
 static int compare_spans(const void *a, const void *b)
 {
     const HighlightSpan *sa = (const HighlightSpan *) a;
@@ -466,6 +475,13 @@ void cli_ts_highlight_line(const char *line, int len, FILE *out)
     }
 
     ts_query_cursor_delete(cursor);
+
+    if (data.syntax_diagnostics && ts_node_has_error(root_node))
+    {
+        collect_error_spans(
+            root_node, line, (size_t) len, spans, &num_spans, 1024, color_level);
+    }
+
     ts_tree_delete(tree);
 
     // Sort spans by start_byte, then by size (largest first)
@@ -691,6 +707,534 @@ static int count_shell_keyword(
     } // for (size_t i = 0; s[i] != '\0'; i++)
 
     return count;
+}
+
+/**
+ * @brief Test if an ERROR node represents an unclosed control block.
+ *
+ * In shell syntax, incomplete blocks (like for without done, if without fi)
+ * can cause Tree-sitter to generate an ERROR node enclosing the block.
+ * We distinguish this from true syntax errors so in-progress blocks are not
+ * displayed with jarring red underlines.
+ *
+ * @param node   Tree-sitter AST node to inspect
+ * @param source Input line string
+ * @return true if error node is due to an open block, false otherwise
+ */
+static bool is_open_block_error(
+    TSNode      node,
+    const char *source)
+{
+    uint32_t count = ts_node_child_count(node);
+    for (uint32_t i = 0; i < count; i++)
+    {
+        TSNode      child = ts_node_child(node, i);
+        const char *ctype = ts_node_type(child);
+        if (strcmp(ctype, "for") == 0 ||
+            strcmp(ctype, "while") == 0 ||
+            strcmp(ctype, "until") == 0 ||
+            strcmp(ctype, "do") == 0)
+        {
+            int starters = count_shell_keyword(source, "for") +
+                           count_shell_keyword(source, "while") +
+                           count_shell_keyword(source, "until");
+            int closers  = count_shell_keyword(source, "done");
+            if (starters > closers)
+            {
+                return true;
+            }
+        }
+        else if (strcmp(ctype, "if") == 0 ||
+                 strcmp(ctype, "then") == 0 ||
+                 strcmp(ctype, "elif") == 0 ||
+                 strcmp(ctype, "else") == 0)
+        {
+            int starters = count_shell_keyword(source, "if");
+            int closers  = count_shell_keyword(source, "fi");
+            if (starters > closers)
+            {
+                return true;
+            }
+        }
+        else if (strcmp(ctype, "case") == 0)
+        {
+            int starters = count_shell_keyword(source, "case");
+            int closers  = count_shell_keyword(source, "esac");
+            if (starters > closers)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Collect error and continuation highlight spans from Tree-sitter AST.
+ *
+ * Traverses the AST for ERROR nodes. Unclosed strings and parameter expansions
+ * at line end are highlighted in their respective semantic colors, while genuine
+ * syntax errors (such as unexpected tokens) are highlighted with red underlines.
+ *
+ * @param node      Current AST node
+ * @param source    Input line string
+ * @param linelen   Length of input line in bytes
+ * @param spans     Output array of highlight spans
+ * @param num_spans Current number of spans in array
+ * @param max_spans Maximum capacity of spans array
+ * @param color_lvl Active color capability level (1 = 16-color, 2 = 256-color)
+ */
+static void collect_error_spans(
+    TSNode         node,
+    const char    *source,
+    size_t         linelen,
+    HighlightSpan *spans,
+    int           *num_spans,
+    int            max_spans,
+    int            color_lvl)
+{
+    const char *type = ts_node_type(node);
+    if (strcmp(type, "ERROR") == 0)
+    {
+        /* If this error node is caused by an open control block, do not underline */
+        if (is_open_block_error(node, source))
+        {
+            return;
+        }
+
+        if (*num_spans < max_spans)
+        {
+            uint32_t sb = ts_node_start_byte(node);
+            uint32_t eb = ts_node_end_byte(node);
+            if (eb > sb)
+            {
+                spans[*num_spans].start_byte = sb;
+                spans[*num_spans].end_byte   = eb;
+
+                /* If unclosed string at end of line, use string color */
+                if (eb >= linelen && (source[sb] == '"' || source[sb] == '\''))
+                {
+                    spans[*num_spans].color =
+                        (color_lvl >= 2) ? "\033[38;5;150m" : "\033[32m";
+                }
+                /* If unclosed variable expansion at end of line, use variable color */
+                else if (eb >= linelen && source[sb] == '$')
+                {
+                    spans[*num_spans].color =
+                        (color_lvl >= 2) ? "\033[38;5;178m" : "\033[33m";
+                }
+                else
+                {
+                    /* Real syntax error: underline red */
+                    spans[*num_spans].color =
+                        (color_lvl >= 2) ? "\033[4;38;5;203m" : "\033[4;31m";
+                }
+                (*num_spans)++;
+            }
+        }
+        return;
+    }
+
+    uint32_t count = ts_node_child_count(node);
+    for (uint32_t i = 0; i < count; i++)
+    {
+        collect_error_spans(
+            ts_node_child(node, i), source, linelen, spans, num_spans, max_spans, color_lvl);
+    }
+}
+
+/**
+ * @brief Search AST recursively for the first syntax error or missing token.
+ *
+ * Evaluates missing tokens (missing 'done', 'fi', 'esac', '}', etc.) and ERROR nodes,
+ * extracting diagnostic token text, byte positions, and human-readable message.
+ *
+ * @param node   Root or current AST node
+ * @param source Input line string
+ * @param diag   Output diagnostic structure
+ * @return true if an error or incomplete state was identified, false otherwise
+ */
+static bool find_first_error(
+    TSNode           node,
+    const char      *source,
+    CLI_SYNTAX_DIAG *diag)
+{
+    if (ts_node_is_missing(node))
+    {
+        const char *mtype = ts_node_type(node);
+        if (strcmp(mtype, "done") == 0)
+        {
+            int starters = count_shell_keyword(source, "for") +
+                           count_shell_keyword(source, "while") +
+                           count_shell_keyword(source, "until");
+            int closers  = count_shell_keyword(source, "done");
+            if (starters <= closers)
+            {
+                return false;
+            }
+            diag->severity = CLI_DIAG_SEVERITY_INFO;
+            snprintf(diag->message, sizeof(diag->message), "loop open: missing 'done'");
+        }
+        else if (strcmp(mtype, "fi") == 0)
+        {
+            int starters = count_shell_keyword(source, "if");
+            int closers  = count_shell_keyword(source, "fi");
+            if (starters <= closers)
+            {
+                return false;
+            }
+            diag->severity = CLI_DIAG_SEVERITY_INFO;
+            snprintf(diag->message, sizeof(diag->message), "if block open: missing 'fi'");
+        }
+        else if (strcmp(mtype, "esac") == 0)
+        {
+            int starters = count_shell_keyword(source, "case");
+            int closers  = count_shell_keyword(source, "esac");
+            if (starters <= closers)
+            {
+                return false;
+            }
+            diag->severity = CLI_DIAG_SEVERITY_INFO;
+            snprintf(diag->message, sizeof(diag->message), "case block open: missing 'esac'");
+        }
+        else if (strcmp(mtype, "then") == 0)
+        {
+            diag->severity = CLI_DIAG_SEVERITY_INFO;
+            snprintf(diag->message, sizeof(diag->message), "condition open: missing 'then'");
+        }
+        else if (strcmp(mtype, "do") == 0)
+        {
+            diag->severity = CLI_DIAG_SEVERITY_INFO;
+            snprintf(diag->message, sizeof(diag->message), "loop open: missing 'do'");
+        }
+        else if (strcmp(mtype, "}") == 0)
+        {
+            int o = count_shell_keyword(source, "{");
+            int c = count_shell_keyword(source, "}");
+            if (o <= c)
+            {
+                return false;
+            }
+            diag->severity = CLI_DIAG_SEVERITY_INFO;
+            snprintf(diag->message, sizeof(diag->message), "unclosed '{': missing '}'");
+        }
+        else if (strcmp(mtype, ")") == 0)
+        {
+            int o = count_shell_keyword(source, "(");
+            int c = count_shell_keyword(source, ")");
+            if (o <= c)
+            {
+                return false;
+            }
+            diag->severity = CLI_DIAG_SEVERITY_INFO;
+            snprintf(diag->message, sizeof(diag->message), "unclosed '(': missing ')'");
+        }
+        else if (strcmp(mtype, "]") == 0 || strcmp(mtype, "]]") == 0)
+        {
+            diag->severity = CLI_DIAG_SEVERITY_INFO;
+            snprintf(
+                diag->message, sizeof(diag->message),
+                "unclosed test bracket: missing '%s'", mtype);
+        }
+        else
+        {
+            diag->severity = CLI_DIAG_SEVERITY_INFO;
+            snprintf(
+                diag->message, sizeof(diag->message),
+                "syntax incomplete: expected '%s'", mtype);
+        }
+
+        diag->start_byte = ts_node_start_byte(node);
+        diag->end_byte   = ts_node_end_byte(node);
+        snprintf(diag->token, sizeof(diag->token), "%s", mtype);
+        return true;
+    }
+
+    const char *type = ts_node_type(node);
+    if (strcmp(type, "ERROR") == 0)
+    {
+        uint32_t count = ts_node_child_count(node);
+        for (uint32_t i = 0; i < count; i++)
+        {
+            TSNode      child = ts_node_child(node, i);
+            const char *ctype = ts_node_type(child);
+            if (strcmp(ctype, "for") == 0 ||
+                strcmp(ctype, "while") == 0 ||
+                strcmp(ctype, "until") == 0 ||
+                strcmp(ctype, "do") == 0)
+            {
+                int starters = count_shell_keyword(source, "for") +
+                               count_shell_keyword(source, "while") +
+                               count_shell_keyword(source, "until");
+                int closers  = count_shell_keyword(source, "done");
+                if (starters > closers)
+                {
+                    diag->severity   = CLI_DIAG_SEVERITY_INFO;
+                    diag->start_byte = ts_node_start_byte(child);
+                    diag->end_byte   = ts_node_end_byte(child);
+                    snprintf(diag->token, sizeof(diag->token), "%s", ctype);
+                    snprintf(
+                        diag->message, sizeof(diag->message), "loop open: missing 'done'");
+                    return true;
+                }
+            }
+            else if (strcmp(ctype, "if") == 0 ||
+                     strcmp(ctype, "then") == 0 ||
+                     strcmp(ctype, "elif") == 0 ||
+                     strcmp(ctype, "else") == 0)
+            {
+                int starters = count_shell_keyword(source, "if");
+                int closers  = count_shell_keyword(source, "fi");
+                if (starters > closers)
+                {
+                    diag->severity   = CLI_DIAG_SEVERITY_INFO;
+                    diag->start_byte = ts_node_start_byte(child);
+                    diag->end_byte   = ts_node_end_byte(child);
+                    snprintf(diag->token, sizeof(diag->token), "%s", ctype);
+                    snprintf(
+                        diag->message, sizeof(diag->message), "if block open: missing 'fi'");
+                    return true;
+                }
+            }
+            else if (strcmp(ctype, "case") == 0)
+            {
+                int starters = count_shell_keyword(source, "case");
+                int closers  = count_shell_keyword(source, "esac");
+                if (starters > closers)
+                {
+                    diag->severity   = CLI_DIAG_SEVERITY_INFO;
+                    diag->start_byte = ts_node_start_byte(child);
+                    diag->end_byte   = ts_node_end_byte(child);
+                    snprintf(diag->token, sizeof(diag->token), "%s", ctype);
+                    snprintf(
+                        diag->message, sizeof(diag->message), "case block open: missing 'esac'");
+                    return true;
+                }
+            }
+        }
+
+        uint32_t sb      = ts_node_start_byte(node);
+        uint32_t eb      = ts_node_end_byte(node);
+        size_t   linelen = strlen(source);
+
+        diag->start_byte = sb;
+        diag->end_byte   = eb;
+
+        int toklen = (int) (eb - sb);
+        if (toklen > (int) sizeof(diag->token) - 1)
+        {
+            toklen = (int) sizeof(diag->token) - 1;
+        }
+        if (toklen > 0)
+        {
+            memcpy(diag->token, source + sb, (size_t) toklen);
+            diag->token[toklen] = '\0';
+        }
+        else
+        {
+            diag->token[0] = '\0';
+        }
+
+        /* Check for incomplete constructs at end of line */
+        if (eb >= linelen)
+        {
+            if (strstr(diag->token, "${") != NULL)
+            {
+                diag->severity = CLI_DIAG_SEVERITY_INFO;
+                snprintf(diag->message, sizeof(diag->message), "unclosed '${': missing '}'");
+                return true;
+            }
+            if (strstr(diag->token, "$(") != NULL)
+            {
+                diag->severity = CLI_DIAG_SEVERITY_INFO;
+                snprintf(diag->message, sizeof(diag->message), "unclosed '$(': missing ')'");
+                return true;
+            }
+            if (strstr(diag->token, "((") != NULL)
+            {
+                diag->severity = CLI_DIAG_SEVERITY_INFO;
+                snprintf(
+                    diag->message, sizeof(diag->message),
+                    "unclosed arithmetic '$((': missing '))'");
+                return true;
+            }
+        }
+
+        diag->severity = CLI_DIAG_SEVERITY_ERROR;
+        if (strcmp(diag->token, "<") == 0 || strcmp(diag->token, ">") == 0 ||
+            strcmp(diag->token, ">>") == 0)
+        {
+            snprintf(diag->message, sizeof(diag->message), "missing redirection file operand");
+        }
+        else if (diag->token[0] != '\0')
+        {
+            snprintf(diag->message, sizeof(diag->message), "unexpected token '%s'", diag->token);
+        }
+        else
+        {
+            snprintf(diag->message, sizeof(diag->message), "syntax error");
+        }
+        return true;
+    }
+
+    uint32_t count = ts_node_child_count(node);
+    for (uint32_t i = 0; i < count; i++)
+    {
+        if (find_first_error(ts_node_child(node, i), source, diag))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Get real-time syntax diagnostic for current input buffer.
+ *
+ * Inspects the input line for incomplete constructs (unclosed quotes, open
+ * control blocks, dangling pipes/operators) and syntax errors (unexpected
+ * tokens, malformed statements) using Tree-sitter AST.
+ *
+ * @param line Input line buffer
+ * @param diag Output structure populated with severity, span, and message
+ * @return 1 if a diagnostic was detected, 0 if clean/valid
+ */
+int cli_ts_get_diagnostic(
+    const char      *line,
+    CLI_SYNTAX_DIAG *diag)
+{
+    if (diag)
+    {
+        memset(diag, 0, sizeof(*diag));
+    }
+    if (!line || line[0] == '\0' || !diag)
+    {
+        return 0;
+    }
+
+    /* 1. Unclosed quotes */
+    int in_dquote = 0;
+    int in_squote = 0;
+    int q_start   = -1;
+    for (int i = 0; line[i] != '\0'; i++)
+    {
+        if (line[i] == '\\' && line[i + 1] != '\0' && !in_squote)
+        {
+            i++;
+            continue;
+        }
+        if (line[i] == '"' && !in_squote)
+        {
+            if (!in_dquote)
+            {
+                q_start = i;
+            }
+            in_dquote = !in_dquote;
+        }
+        else if (line[i] == '\'' && !in_dquote)
+        {
+            if (!in_squote)
+            {
+                q_start = i;
+            }
+            in_squote = !in_squote;
+        }
+    }
+
+    if (in_dquote)
+    {
+        diag->severity   = CLI_DIAG_SEVERITY_INFO;
+        diag->start_byte = (uint32_t) q_start;
+        diag->end_byte   = (uint32_t) strlen(line);
+        snprintf(diag->message, sizeof(diag->message), "unclosed double quote \"");
+        snprintf(diag->token, sizeof(diag->token), "\"");
+        return 1;
+    }
+    if (in_squote)
+    {
+        diag->severity   = CLI_DIAG_SEVERITY_INFO;
+        diag->start_byte = (uint32_t) q_start;
+        diag->end_byte   = (uint32_t) strlen(line);
+        snprintf(diag->message, sizeof(diag->message), "unclosed single quote '");
+        snprintf(diag->token, sizeof(diag->token), "'");
+        return 1;
+    }
+
+    /* 2. Trailing continuation operators */
+    size_t len = strlen(line);
+    while (len > 0 && isspace((unsigned char) line[len - 1]))
+    {
+        len--;
+    }
+    if (len > 0)
+    {
+        if (line[len - 1] == '\\' && (len == 1 || line[len - 2] != '\\'))
+        {
+            diag->severity   = CLI_DIAG_SEVERITY_INFO;
+            diag->start_byte = (uint32_t) (len - 1);
+            diag->end_byte   = (uint32_t) len;
+            snprintf(diag->message, sizeof(diag->message), "trailing '\\' (line continuation)");
+            snprintf(diag->token, sizeof(diag->token), "\\");
+            return 1;
+        }
+        if (line[len - 1] == '|' && (len == 1 || line[len - 2] != '|'))
+        {
+            diag->severity   = CLI_DIAG_SEVERITY_INFO;
+            diag->start_byte = (uint32_t) (len - 1);
+            diag->end_byte   = (uint32_t) len;
+            snprintf(
+                diag->message, sizeof(diag->message),
+                "trailing pipe '|' (waiting for command)");
+            snprintf(diag->token, sizeof(diag->token), "|");
+            return 1;
+        }
+        if (len >= 2 && line[len - 1] == '&' && line[len - 2] == '&')
+        {
+            diag->severity   = CLI_DIAG_SEVERITY_INFO;
+            diag->start_byte = (uint32_t) (len - 2);
+            diag->end_byte   = (uint32_t) len;
+            snprintf(
+                diag->message, sizeof(diag->message),
+                "trailing '&&' (waiting for command)");
+            snprintf(diag->token, sizeof(diag->token), "&&");
+            return 1;
+        }
+        if (len >= 2 && line[len - 1] == '|' && line[len - 2] == '|')
+        {
+            diag->severity   = CLI_DIAG_SEVERITY_INFO;
+            diag->start_byte = (uint32_t) (len - 2);
+            diag->end_byte   = (uint32_t) len;
+            snprintf(
+                diag->message, sizeof(diag->message),
+                "trailing '||' (waiting for command)");
+            snprintf(diag->token, sizeof(diag->token), "||");
+            return 1;
+        }
+    }
+
+    if (!ts_parser)
+    {
+        if (cli_ts_init() != 0)
+        {
+            return 0;
+        }
+    }
+
+    /* 3. Tree-sitter AST error detection */
+    TSTree *tree = ts_parser_parse_string(ts_parser, NULL, line, (uint32_t) strlen(line));
+    if (!tree)
+    {
+        return 0;
+    }
+
+    TSNode root = ts_tree_root_node(tree);
+    if (ts_node_has_error(root))
+    {
+        find_first_error(root, line, diag);
+    }
+    ts_tree_delete(tree);
+
+    return (diag->severity != CLI_DIAG_SEVERITY_NONE);
 }
 
 static bool node_tree_has_missing(
@@ -1220,6 +1764,169 @@ int cli_ts_determine_completion_mode(
 {
     return cli_determine_mode_lexical(
         line, start, text, out_cmdname, cmdname_size, out_argidx);
+}
+
+int cli_ts_get_diagnostic(
+    const char      *line,
+    CLI_SYNTAX_DIAG *diag)
+{
+    if (diag)
+    {
+        memset(diag, 0, sizeof(*diag));
+    }
+    if (!line || line[0] == '\0' || !diag)
+    {
+        return 0;
+    }
+
+    /* 1. Unclosed quotes */
+    int in_dquote = 0;
+    int in_squote = 0;
+    int q_start   = -1;
+    for (int i = 0; line[i] != '\0'; i++)
+    {
+        if (line[i] == '\\' && line[i + 1] != '\0' && !in_squote)
+        {
+            i++;
+            continue;
+        }
+        if (line[i] == '"' && !in_squote)
+        {
+            if (!in_dquote)
+            {
+                q_start = i;
+            }
+            in_dquote = !in_dquote;
+        }
+        else if (line[i] == '\'' && !in_dquote)
+        {
+            if (!in_squote)
+            {
+                q_start = i;
+            }
+            in_squote = !in_squote;
+        }
+    }
+
+    if (in_dquote)
+    {
+        diag->severity   = CLI_DIAG_SEVERITY_INFO;
+        diag->start_byte = (uint32_t) q_start;
+        diag->end_byte   = (uint32_t) strlen(line);
+        snprintf(diag->message, sizeof(diag->message), "unclosed double quote \"");
+        snprintf(diag->token, sizeof(diag->token), "\"");
+        return 1;
+    }
+    if (in_squote)
+    {
+        diag->severity   = CLI_DIAG_SEVERITY_INFO;
+        diag->start_byte = (uint32_t) q_start;
+        diag->end_byte   = (uint32_t) strlen(line);
+        snprintf(diag->message, sizeof(diag->message), "unclosed single quote '");
+        snprintf(diag->token, sizeof(diag->token), "'");
+        return 1;
+    }
+
+    /* 2. Trailing continuation operators */
+    size_t len = strlen(line);
+    while (len > 0 && isspace((unsigned char) line[len - 1]))
+    {
+        len--;
+    }
+    if (len > 0)
+    {
+        if (line[len - 1] == '\\' && (len == 1 || line[len - 2] != '\\'))
+        {
+            diag->severity   = CLI_DIAG_SEVERITY_INFO;
+            diag->start_byte = (uint32_t) (len - 1);
+            diag->end_byte   = (uint32_t) len;
+            snprintf(diag->message, sizeof(diag->message), "trailing '\\' (line continuation)");
+            snprintf(diag->token, sizeof(diag->token), "\\");
+            return 1;
+        }
+        if (line[len - 1] == '|' && (len == 1 || line[len - 2] != '|'))
+        {
+            diag->severity   = CLI_DIAG_SEVERITY_INFO;
+            diag->start_byte = (uint32_t) (len - 1);
+            diag->end_byte   = (uint32_t) len;
+            snprintf(
+                diag->message, sizeof(diag->message),
+                "trailing pipe '|' (waiting for command)");
+            snprintf(diag->token, sizeof(diag->token), "|");
+            return 1;
+        }
+        if (len >= 2 && line[len - 1] == '&' && line[len - 2] == '&')
+        {
+            diag->severity   = CLI_DIAG_SEVERITY_INFO;
+            diag->start_byte = (uint32_t) (len - 2);
+            diag->end_byte   = (uint32_t) len;
+            snprintf(
+                diag->message, sizeof(diag->message),
+                "trailing '&&' (waiting for command)");
+            snprintf(diag->token, sizeof(diag->token), "&&");
+            return 1;
+        }
+        if (len >= 2 && line[len - 1] == '|' && line[len - 2] == '|')
+        {
+            diag->severity   = CLI_DIAG_SEVERITY_INFO;
+            diag->start_byte = (uint32_t) (len - 2);
+            diag->end_byte   = (uint32_t) len;
+            snprintf(
+                diag->message, sizeof(diag->message),
+                "trailing '||' (waiting for command)");
+            snprintf(diag->token, sizeof(diag->token), "||");
+            return 1;
+        }
+        if (line[len - 1] == '<' || line[len - 1] == '>')
+        {
+            diag->severity   = CLI_DIAG_SEVERITY_ERROR;
+            diag->start_byte = (uint32_t) (len - 1);
+            diag->end_byte   = (uint32_t) len;
+            snprintf(diag->message, sizeof(diag->message), "missing redirection file operand");
+            snprintf(diag->token, sizeof(diag->token), "%c", line[len - 1]);
+            return 1;
+        }
+    }
+
+    /* 3. Check for open braces and shell blocks */
+    int obrace   = 0;
+    int cbrace   = 0;
+    int case_cnt = 0;
+    int esac_cnt = 0;
+
+    for (size_t i = 0; line[i] != '\0'; i++)
+    {
+        if (line[i] == '{')
+        {
+            obrace++;
+        }
+        else if (line[i] == '}')
+        {
+            cbrace++;
+        }
+        else if (line[i] == ';' && line[i + 1] == ';')
+        {
+            if (case_cnt <= esac_cnt)
+            {
+                diag->severity   = CLI_DIAG_SEVERITY_ERROR;
+                diag->start_byte = (uint32_t) i;
+                diag->end_byte   = (uint32_t) (i + 2);
+                snprintf(diag->message, sizeof(diag->message), "unexpected token ';;'");
+                snprintf(diag->token, sizeof(diag->token), ";;");
+                return 1;
+            }
+        }
+    }
+
+    if (obrace > cbrace)
+    {
+        diag->severity = CLI_DIAG_SEVERITY_INFO;
+        snprintf(diag->message, sizeof(diag->message), "unclosed '{': missing '}'");
+        snprintf(diag->token, sizeof(diag->token), "}");
+        return 1;
+    }
+
+    return (diag->severity != CLI_DIAG_SEVERITY_NONE);
 }
 
 #endif
