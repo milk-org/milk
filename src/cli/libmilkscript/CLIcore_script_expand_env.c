@@ -628,6 +628,18 @@ void cli_expand_env(char *line, int maxlen)
             val = cli_var_lookup(varname);
         }
 
+        /* ---- Stream / FPS / proc / seq variable fallback ---- */
+        char fps_buf[512];
+        if (val == NULL && strchr(varname, '.') != NULL)
+        {
+            snprintf(fps_buf, sizeof(fps_buf), "@%s", varname);
+            cli_expand_fpsvar(fps_buf, (int) sizeof(fps_buf));
+            if (fps_buf[0] != '@')
+            {
+                val = fps_buf;
+            }
+        }
+
         /* ---- Apply modifier if present ---- */
         char val_buf[256];
         val_buf[0] = '\0';

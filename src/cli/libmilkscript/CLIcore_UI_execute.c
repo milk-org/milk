@@ -188,8 +188,11 @@ errno_t CLI_execute_line()
     cli_expand_fpsvar(data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);
 
     /* Expand milk variables ($VAR, $cam.xsize).
-     * Leaves other expansions $(...), $((...)) for wordexp. */
+     * Leaves command substitutions $(...) for wordexp. */
     cli_expand_env(data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);
+
+    /* Expand $((...)) arithmetic expressions */
+    cli_expand_arith(data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);
 
     /* Expand brace ranges {N..M} {N..M..S} (wordexp does not support) */
     cli_expand_braces(data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);

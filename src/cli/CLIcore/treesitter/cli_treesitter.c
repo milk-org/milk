@@ -2133,8 +2133,8 @@ static bool is_open_block_error(
 /**
  * @brief Collect error and continuation highlight spans from Tree-sitter AST.
  *
- * Traverses the AST for ERROR nodes. Unclosed strings and parameter expansions
- * at line end are highlighted in their respective semantic colors, while genuine
+ * Traverses the AST for ERROR nodes. Incomplete variable prefixes ($) at line end
+ * are preserved in variable color, while unclosed strings, expansions, and genuine
  * syntax errors (such as unexpected tokens) are highlighted with red underlines.
  *
  * @param node      Current AST node
@@ -2186,21 +2186,15 @@ static void collect_error_spans(
                 spans[*num_spans].start_byte = sb;
                 spans[*num_spans].end_byte   = eb;
 
-                /* If unclosed string at end of line, use string color */
-                if (eb >= linelen && (source[sb] == '"' || source[sb] == '\''))
-                {
-                    spans[*num_spans].color =
-                        (color_lvl >= 2) ? "\033[38;5;150m" : "\033[32m";
-                }
-                /* If unclosed variable expansion at end of line, use variable color */
-                else if (eb >= linelen && source[sb] == '$')
+                /* If incomplete variable prefix ($) at end of line, preserve variable color */
+                if (eb >= linelen && source[sb] == '$' && eb - sb == 1)
                 {
                     spans[*num_spans].color =
                         (color_lvl >= 2) ? "\033[38;5;178m" : "\033[33m";
                 }
                 else
                 {
-                    /* Real syntax error: underline red */
+                    /* Real syntax error or unclosed string/token: underline red */
                     spans[*num_spans].color =
                         (color_lvl >= 2) ? "\033[4;38;5;203m" : "\033[4;31m";
                 }

@@ -396,6 +396,86 @@ EOF
 run_check "Interactive delimiter & block keyword match in PTY" \
     "python3 $TMPDIR/test_pty_showmatch.py $MILK_BIN" "0"
 
+# --- Section 9: Real-Time Syntax Diagnostics (syndiag) ---
+echo -e "\n${BLD}--- Section 9: Real-Time Syntax Diagnostics (syndiag) ---${RST}"
+
+run_check "syndiag command toggle & status" \
+    "printf 'syndiag\nsyndiag off\nsyndiag on\nexit\n' | $MILK_BIN" "0"
+
+cat << 'EOF' > "$TMPDIR/test_pty_syndiag.py"
+import os, sys, time, pty, select
+
+milk_bin = sys.argv[1]
+master, slave = pty.openpty()
+pid = os.fork()
+if pid == 0:
+    os.close(master)
+    os.setsid()
+    os.dup2(slave, 0)
+    os.dup2(slave, 1)
+    os.dup2(slave, 2)
+    os.close(slave)
+    os.environ["TERM"] = "xterm-256color"
+    os.execl(milk_bin, milk_bin)
+
+os.close(slave)
+
+def read_until(pattern, timeout=2.0):
+    t0 = time.time()
+    buf = b""
+    while time.time() - t0 < timeout:
+        r, _, _ = select.select([master], [], [], 0.05)
+        if r:
+            try:
+                chunk = os.read(master, 1024)
+                if chunk:
+                    buf += chunk
+                    if pattern in buf:
+                        return buf
+            except OSError:
+                break
+    return buf
+
+read_until(b"> ")
+
+# 1. Unclosed quote triggers red underline
+os.write(master, b"echo \"uncl sfr")
+time.sleep(0.2)
+out1 = read_until(b"echo \"uncl sfr")
+if b"\x1b[4;" not in out1 or (b"203m" not in out1 and b"31m" not in out1):
+    sys.exit(1)
+
+# 2. Closing quote removes red underline
+os.write(master, b"\"")
+time.sleep(0.2)
+out2 = read_until(b"\"uncl sfr\"")
+if b"\x1b[4;" in out2:
+    sys.exit(2)
+if b"38;5;150m" not in out2 and b"32m" not in out2:
+    sys.exit(2)
+
+os.write(master, b"\n")
+time.sleep(0.1)
+
+# 3. syndiag off disables underline
+os.write(master, b"syndiag off\n")
+time.sleep(0.2)
+read_until(b"Syntax diagnostics OFF")
+
+os.write(master, b"echo \"uncl sfr")
+time.sleep(0.2)
+out3 = read_until(b"echo \"uncl sfr")
+if b"\x1b[4;" in out3:
+    sys.exit(3)
+
+os.write(master, b"\nexit\n")
+time.sleep(0.2)
+sys.exit(0)
+EOF
+
+run_check "Interactive syntax diagnostics & unclosed quote in PTY" \
+    "python3 $TMPDIR/test_pty_syndiag.py $MILK_BIN" "0"
+
 echo -e "\n${CYN}═════════════════════════════════════════════════════════════════${RST}"
 echo -e " Hardening Test Summary: ${GRN}$PASS passed${RST}, ${RED}$FAIL failed${RST} (total $TOTAL)"
 echo -e "${CYN}═════════════════════════════════════════════════════════════════${RST}"
