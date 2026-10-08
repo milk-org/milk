@@ -32,8 +32,8 @@ Error message
   │    → Missing #include in source file (§3)
   ├─ "multiple definition of ..."
   │    → Symbol defined in header without
-  │      static/inline, or duplicate .c in
-  │      SOURCEFILES (§4)
+  │      static/inline, or duplicate
+  │      definition across .c files (§4)
   ├─ "relocation ... cannot be used"
   │    → Static lib not built with -fPIC (§5)
   └─ CMake errors
@@ -70,14 +70,15 @@ Error message
 
 **Common missing libraries**:
 
-| Symbol             | Library                           |
-| ------------------ | --------------------------------- |
-| `imgid_*`, `IMGID` | `milkdata`                        |
-| `fps_*`, `FPS_*`   | `milkfps`                         |
-| `processinfo_*`    | `milkprocessinfo`                 |
-| `RegisterCLIcmd`   | `CLIcore` (never for standalone!) |
-| `cblas_sgemv`      | `${BLAS_LIBRARIES}`               |
-| Math functions     | `m` (libm)                        |
+| Symbol             | Library                                    |
+| ------------------ | ------------------------------------------ |
+| `imgid_*`, `IMGID` | `milkdata`                                 |
+| `fps_*`, `FPS_*`   | `milkfps`                                  |
+| `processinfo_*`    | `milkprocessinfo`                          |
+| `RegisterCLIcmd`   | `CLIcore` (never for standalone!)          |
+| `data` (`DATA`)    | Raw `RegisterCLIcmd`/`data.cmd[]` in module code: use `INSERT_STD_CLIREGISTERFUNC[_NAMED]` |
+| `cblas_sgemv`      | `// MILK_CMAKE_REQUEST_BLAS` in the source |
+| Math functions     | `m` (libm)                                 |
 
 ## §2 — Missing Header (Compiler)
 
@@ -142,7 +143,8 @@ Common missing includes:
 1. Non-static global defined in a `.h` file
    included by multiple `.c` files → make it
    `extern` in `.h`, define in one `.c`
-2. Same `.c` file listed twice in `SOURCEFILES`
+2. Same function defined in two `.c` files of
+   the module
 3. Function defined (not just declared) in `.h`
    without `static inline`
 
@@ -169,7 +171,7 @@ set_target_properties(mylib_static PROPERTIES
 | ------------------------- | -------------------------------------------------------------------------- |
 | `Could NOT find ...`      | Install the dependency or set `-DCMAKE_PREFIX_PATH`                        |
 | `target ... not found`    | Check spelling; target might be created conditionally                      |
-| `Cannot find source file` | File was moved/renamed but `CMakeLists.txt` not updated                    |
+| `Cannot find source file` | File was deleted or renamed; re-run `cmake` (sources are globbed)          |
 | Path doubling in install  | Use `CMAKE_INSTALL_PREFIX` only at configure time, not embedded in targets |
 
 ## Build Tier Reference
@@ -194,6 +196,6 @@ When a standalone executable fails to build:
 - [ ] Has `FPS_STANDALONE` compile definition
 - [ ] Has `MILK_NO_CLI` compile definition
 - [ ] Does NOT call `RegisterCLIcmd` or any CLI
-      functions
-- [ ] Uses `add_milk_standalone()` or
-      `add_cacao_standalone()` CMake helper
+      functions; registers via
+      `INSERT_STD_CLIREGISTERFUNC[_NAMED]` only
+- [ ] Follows `src/milk_module_example/CMakeLists.txt`

@@ -210,9 +210,7 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
   else()
     target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_LIBS})
   endif()
-  milk_apply_extensions(
-    ${EXE_NAME}) # May set EXCLUDE_FROM_ALL on a standalone target that misses
-                 # its MILK_CMAKE_MANDATE_X
+  milk_apply_extensions(${EXE_NAME})
   milk_pgo_target(${EXE_NAME})
   milk_lto_target(${EXE_NAME})
   milk_build_tag_target(${EXE_NAME})

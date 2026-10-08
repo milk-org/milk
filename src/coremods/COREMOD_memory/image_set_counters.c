@@ -176,21 +176,10 @@ static errno_t CLIfunction_cnt1(void)
 errno_t CLIADDCMD_COREMOD_memory__image_set_counters()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC;
 
-    {
-        int cmdi                      = RegisterCLIcmd(CLIcmddata_status, CLIfunction_status);
-        CLIcmddata_status.cmdsettings = &data.cmd[cmdi].cmdsettings;
-    }
-
-    {
-        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
-    }
-
-    {
-        int cmdi                    = RegisterCLIcmd(CLIcmddata_cnt1, CLIfunction_cnt1);
-        CLIcmddata_cnt1.cmdsettings = &data.cmd[cmdi].cmdsettings;
-    }
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_status, CLIfunction_status);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_cnt1, CLIfunction_cnt1);
 
     return RETURN_SUCCESS;
 }

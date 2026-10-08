@@ -22,6 +22,7 @@ Adaptive Optics. Architecture: shared-memory streams
 | CMake | `.agents/rules/cmake-conventions.md` |
 | Git/PR workflow | `.agents/rules/git-workflow.md` |
 | V2 template | `src/milk_module_example/examplefunc_fps_cli_poc.c` |
+| Module CMakeLists | `src/milk_module_example/CMakeLists.txt` |
 | Dependency graph | `docs/dependency_graph.md` |
 | Full onboarding | `AGENTS.md` |
 

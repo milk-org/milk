@@ -181,10 +181,10 @@ float *data = img.im->array.F;
    engine → core → full. Adding a dependency in the wrong
    direction breaks lower tiers.
 
-2. **Linking standalone executables to CLIcore.** Use
-   `add_milk_standalone()` / `add_cacao_standalone()`,
+2. **Linking standalone executables to CLIcore.** Use `add_milk_standalone()` / `add_cacao_standalone()`,
    which apply `-DMILK_NO_CLI` to the executable target.
-   Run `milk-check-standalone-deps` to verify.
+   Verify with `pytest -q --color=no --tb=short tests/trivial/build_sanity_test.py`
+   (from `python/`, `MILK_INSTALLDIR` set).
 
 3. **Implicit header includes.** Every `.c` file must
    include exactly the headers it uses. Don't rely on
@@ -332,13 +332,10 @@ $ make install
 $ ctest --output-on-failure
 ```
 
-### Standalone CMake helpers
+### Module CMakeLists.txt
 
-```cmake
-add_milk_standalone(myname  myname.c)           # milk-fpsexec-myname
-add_cacao_standalone(myname myname.c)           # cacao-fpsexec-myname
-add_cacao_standalone_plugins(myname myname.c fft imagegen)
-```
+Follow `src/milk_module_example/CMakeLists.txt`; skeleton and
+standalone helpers in `docs/programmers_guide.md` §6.
 
 ---
 

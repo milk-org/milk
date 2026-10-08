@@ -108,15 +108,9 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 4. **Implement logic** (section 4 — `fpsexec()`):
    - Pure computation; parameters are already synced
 
-5. **Add CMake targets**: In your module's `CMakeLists.txt`:
+5. **Add CMake targets**: In your module's `CMakeLists.txt` (see [§6](#6-cmakeliststxt-conventions)), add one line per executable:
 
    ```cmake
-   # Shared library (for milk CLI usage)
-   add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
-   target_include_directories(${LIBNAME}
-       PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
-
-   # Standalone executable (1 line per exe!)
    add_milk_standalone(myfunction myfunction.c)
    # For cacao plugins:
    add_cacao_standalone(myfunc myfunction.c)
@@ -135,7 +129,7 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 4. **Compute Function (`fpsexec()`):** Pure calculation core.
 5. **`CLIcmddata`:** CLI registry scoping.
 6. **Compute wrapper:** Processinfo loop via `INSERT_STD_PROCINFO_COMPUTEFUNC_*` macros.
-7. **Module registration:** `CLIADDCMD_*` function for CLI mode (guarded by `#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)`).
+7. **Module registration:** `CLIADDCMD_*` function for CLI mode. Register commands with `INSERT_STD_CLIREGISTERFUNC` (standard `CLIcmddata`/`CLIfunction` names) or `INSERT_STD_CLIREGISTERFUNC_NAMED(varCLIcmddata, varCLIfunction)` (other names, several commands per function/file).
 8. **Standalone `main()`:** `FPS_MAIN_STANDALONE_V2` (or `_V2_CONFCHECK` if a `customCONFcheck` is needed) handles FPS lifecycle, `-h1`, `-tmux`.
 
 ## 4. Directory Map
@@ -240,55 +234,79 @@ When `USE_STATIC_LTO=ON`, standalone executables instead link `_static`-suffixed
 
 ### Verifying Dependencies
 
-Run `milk-check-standalone-deps` to verify no standalone accidentally links CLIcore.
-It is also integrated as a CTest (`standalone-dep-check`) and runs automatically with
-`ctest` in the build directory. 14 standalones are whitelisted as known exceptions
-(they require module-lib symbols for OpenBLAS, FFT, etc.).
+To verify no standalone accidentally links CLIcore (and that each runs with `-h`), run
+`pytest tests/trivial/build_sanity_test.py` from `python/` with `MILK_INSTALLDIR` set. Known
+exceptions are listed in that file.
 
 ## 6. CMakeLists.txt Conventions
 
-Use `src/milk_module_example/CMakeLists.txt` as the template
-for new modules.
+`src/milk_module_example/CMakeLists.txt` is the reference for every module under
+`src/coremods/`, `src/milk_module_example/` and `plugins/`. Copy it and rename.
 
 <details markdown="1">
-<summary><b>Standard CMakeLists.txt layout</b></summary>
+<summary><b>Standard CMakeLists.txt skeleton</b></summary>
 
-```text
-## ═══════════════════════════════════════
-##  module_name — Short description
-## ═══════════════════════════════════════
+```cmake
+set(LIBNAME "mymodule") # lib${LIBNAME}.so
+set(SRCNAME "mymodule") # main module source: ${SRCNAME}.c
 
-set(LIBNAME ...)
+# Sources are globbed; keep auxiliaries in an internal/ subfolder.
+file(GLOB SOURCEFILES "*.c" "*.cpp")
+file(GLOB INCLUDEFILES "*.h" "*.hpp")
+file(GLOB SCRIPTS "scripts/*") # installed to bin/
 
-## ── Source files ─────────────────────
-set(SOURCEFILES ...)
+project(lib_${LIBNAME}_project)
 
-## ── Library ──────────────────────────
-add_library(${LIBNAME} ...)
+include_directories("${PROJECT_SOURCE_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}/..")
 
-## ── Compute-only variant ─────────────
-## (if applicable)
-set(LIBNAME_COMPUTE ...)
+add_library(${LIBNAME} SHARED ${SOURCEFILES})
+target_include_directories(
+  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
 
-## ── Standalone executables ───────────
-add_milk_standalone(...)
+# Resolves MILK_CMAKE_REQUEST / MILK_CMAKE_MANDATE and applies linkage.
+milk_apply_extensions(${LIBNAME})
 
-## ── Tests ────────────────────────────
-add_test(...)
+install(
+  TARGETS ${LIBNAME}
+  EXPORT milkTargets
+  DESTINATION lib)
+install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+install(PROGRAMS ${SCRIPTS} DESTINATION bin)
+
+# One line per standalone: single source file, built with -DFPS_STANDALONE.
+add_milk_standalone(myfunc myfunc.c)
+
+# Link ${LIBNAME} into every standalone of this directory.
+get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  PROPERTY BUILDSYSTEM_TARGETS)
+foreach(_t IN LISTS _stdalones)
+  get_target_property(_type ${_t} TYPE)
+  if(_type STREQUAL "EXECUTABLE")
+    milk_link_module(${_t} ${LIBNAME})
+  endif()
+endforeach()
+
+add_test(NAME mymodule-myfunc-h1 COMMAND milk-fpsexec-myfunc -h1)
 ```
 
 **Key rules:**
 
-- Comment each source file in `SOURCEFILES` if it is also a standalone (dual-mode)
-- Place `target_link_libraries()` calls directly below the `add_*_standalone()` they modify
-- Keep lines ≤ 80 characters; split long `target_link_libraries` across lines
+- Plugins under `plugins/` are discovered automatically; no parent `CMakeLists.txt` edit is needed.
+- Module-specific logic goes in the `# CUSTOM ===` blocks of the template (before the glob, after `milk_apply_extensions`, and after the standalone loop).
+- Extra executables with their own `main()` live in a `bin/` subfolder (not globbed) and are declared in the last `# CUSTOM` block.
+- Coremods cannot reference the `CLIcore` target (it links them); they use `$<TARGET_PROPERTY:milkfps,INCLUDE_DIRECTORIES>` instead.
+- `milk_add_static_lto(${LIBNAME} ...)` (`cmake/milk_static_lto.cmake`) builds the `_static` archive used by `USE_STATIC_LTO`.
+- Express optional dependencies with the `MILK_CMAKE_REQUEST_<X>` / `MILK_CMAKE_MANDATE_<X>` tags (see [Managing Dependencies](developer/dependency_system.md)); do not hand-write include or link rules.
+- Each module installs only its own headers.
+- Keep lines ≤ 80 characters.
 
 </details>
 
 <details markdown="1">
 <summary><b>Standalone helper functions</b></summary>
 
-Defined in `cmake/MilkStandalone.cmake` (included by root CMakeLists):
+Defined in `cmake/milk_standalone.cmake` (included by root CMakeLists):
 
 | Function                                      | Creates              | Plugin deps |
 | --------------------------------------------- | -------------------- | ----------- |

@@ -83,17 +83,8 @@ For each new `.c` file:
 
 ## Phase 3 — Update the Build System
 
-1. **Edit `CMakeLists.txt`** in the target
-   directory:
-   - Add each new `.c` file to `SOURCEFILES`
-   - Remove any deleted `.c` files from
-     `SOURCEFILES`
-   - Do NOT add `.h` files to `SOURCEFILES`
-
-2. **Check for install headers**: if any of the
-   new `.h` files define public API used by other
-   modules (not just internal helpers), add them
-   to `INSTALL_HEADERS` in the `CMakeLists.txt`.
+1. **Re-run `cmake`**: sources and headers are globbed by
+   the module's `CMakeLists.txt`, so no edit is needed.
 
 ## Phase 4 — Verify
 

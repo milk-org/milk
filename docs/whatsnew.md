@@ -18,6 +18,11 @@ for the full history.
 
 ## framework-dev
 
+### 2026-10
+
+- **2026-10-07** — Unified module `CMakeLists.txt` template, `milk_link_module()` for static-LTO standalones, and
+  `INSERT_STD_CLIREGISTERFUNC_NAMED` for CLI registration `#build` `#api`
+
 ### 2026-03
 
 - **2026-03-29** — Complete CLI/Scripting layer decoupling;

@@ -47,14 +47,9 @@ For a non-CLI helper function (no CLI registration):
 
 ## 3. Add to CMakeLists.txt
 
-Append the new `.c` file to `SOURCEFILES` in the
-module's `CMakeLists.txt`.
-
-If the function is an FPS standalone, also add:
-
-```cmake
-add_milk_standalone(cmdkey source_file.c)
-```
+If the function is an FPS standalone, add an
+`add_milk_standalone(cmdkey source_file.c)` line,
+following `src/milk_module_example/CMakeLists.txt`.
 
 Also ensure `FPS_CMDSETTINGS_INIT(dft,
 CLIcmddata, FPS_app_info)` is present in

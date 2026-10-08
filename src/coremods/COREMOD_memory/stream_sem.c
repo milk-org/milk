@@ -255,26 +255,11 @@ errno_t CLIADDCMD_COREMOD_memory__stream_sem()
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     safe_fps_fill_farg_examples(farg_imsem, bindings_imsem, nb_bindings_imsem);
 
-    {
-        int cmdi                       = RegisterCLIcmd(CLIcmddata_seminfo, CLIfunction_seminfo);
-        CLIcmddata_seminfo.cmdsettings = &data.cmd[cmdi].cmdsettings;
-    }
-    {
-        int cmdi                       = RegisterCLIcmd(CLIcmddata_sempost, CLIfunction_sempost);
-        CLIcmddata_sempost.cmdsettings = &data.cmd[cmdi].cmdsettings;
-    }
-    {
-        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
-    }
-    {
-        int cmdi                       = RegisterCLIcmd(CLIcmddata_semwait, CLIfunction_semwait);
-        CLIcmddata_semwait.cmdsettings = &data.cmd[cmdi].cmdsettings;
-    }
-    {
-        int cmdi                        = RegisterCLIcmd(CLIcmddata_semflush, CLIfunction_semflush);
-        CLIcmddata_semflush.cmdsettings = &data.cmd[cmdi].cmdsettings;
-    }
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_seminfo, CLIfunction_seminfo);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_sempost, CLIfunction_sempost);
+    INSERT_STD_CLIREGISTERFUNC;
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_semwait, CLIfunction_semwait);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_semflush, CLIfunction_semflush);
 
     return RETURN_SUCCESS;
 }

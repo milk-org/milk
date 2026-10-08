@@ -20,14 +20,19 @@
 
 #include "fps_procinfo_macros.h" // Will define the macro that we undef later in this file.
 
-#undef INSERT_STD_CLIREGISTERFUNC
-#define INSERT_STD_CLIREGISTERFUNC                                        \
-    {                                                                     \
-        if (getenv("MILK_FPSPROCINFO"))                                   \
-        {                                                                 \
-            CLIcmddata.flags |= CLICMDFLAG_PROCINFO;                      \
-        }                                                                 \
-        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction); \
-        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;             \
+#undef INSERT_STD_CLIREGISTERFUNC_NAMED
+#define INSERT_STD_CLIREGISTERFUNC_NAMED(varCLIcmddata, varCLIfunction)            \
+    {                                                                              \
+        if (getenv("MILK_FPSPROCINFO"))                                            \
+        {                                                                          \
+            varCLIcmddata.flags |= CLICMDFLAG_PROCINFO;                            \
+        }                                                                          \
+        int cmdi                  = RegisterCLIcmd(varCLIcmddata, varCLIfunction); \
+        varCLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;                   \
     }
-#endif
+
+#undef INSERT_STD_CLIREGISTERFUNC
+#define INSERT_STD_CLIREGISTERFUNC INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata, CLIfunction)
+
+
+#endif // #ifndef CLICORE_UTILS_H

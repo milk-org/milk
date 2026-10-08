@@ -1,15 +1,10 @@
 ---
 name: cmake-patterns
-description: Comprehensive CMake patterns for milk
-  modules, standalone executables, and build tiers
+description: Pointer to the module CMakeLists.txt
+  template, plus build tiers and common CMake errors
 ---
 
 # CMake Patterns
-
-This skill provides a complete reference for CMake
-conventions in the milk project, covering module
-setup, standalone executables, header installation,
-and build tier requirements.
 
 ## When to Use
 
@@ -17,139 +12,11 @@ and build tier requirements.
 - Debugging CMake build errors
 - Adding new dependencies to a module
 
-## Module CMakeLists.txt Anatomy
+## Module CMakeLists.txt
 
-A typical module `CMakeLists.txt` has this
-structure:
-
-```cmake
-# Source files
-set(SOURCEFILES
-    module_name.c
-    func1.c
-    func2.c
-)
-
-# Header files to install
-set(INSTALLHEADERS
-    module_name.h
-    func1.h
-    func2.h
-)
-
-# Library name
-set(LIBNAME "milkmodulename")
-
-# Build the shared library
-add_library(${LIBNAME} SHARED ${SOURCEFILES})
-
-# Link dependencies
-target_link_libraries(${LIBNAME}
-    PUBLIC CLIcore milkdata)
-
-# Include paths
-target_include_directories(${LIBNAME}
-    PUBLIC ${PROJECT_SOURCE_DIR}/..)
-
-# Install library
-install(TARGETS ${LIBNAME}
-    DESTINATION lib)
-
-# Install headers
-install(FILES ${INSTALLHEADERS}
-    DESTINATION include/${LIBNAME})
-```
-
-## Key Conventions
-
-### PUBLIC vs PRIVATE vs INTERFACE
-
-| Scope       | When to Use                                                      |
-| ----------- | ---------------------------------------------------------------- |
-| `PUBLIC`    | Dependency used in both this module's headers AND implementation |
-| `PRIVATE`   | Dependency used only in `.c` files (not exposed in headers)      |
-| `INTERFACE` | Dependency used only in headers (rare)                           |
-
-**Rule of thumb**: use `PUBLIC` for `CLIcore`,
-`milkdata`, `ImageStreamIO`, `milkfps`. Use
-`PRIVATE` for `m` (libm), `pthread`, BLAS.
-
-### Header Installation
-
-Each module is **strictly responsible** for
-installing only its own headers. Never install
-headers from another module.
-
-```cmake
-# Correct: install own headers
-install(FILES ${INSTALLHEADERS}
-    DESTINATION include/${LIBNAME})
-
-# WRONG: installing another module's header
-install(FILES ../othermod/other.h
-    DESTINATION include/${LIBNAME})
-```
-
-### SOURCEFILES
-
-- Add `.c` files only (never `.h` files).
-- One file per line for clean diffs.
-- Order: main module file first, then
-  alphabetically.
-
-## Standalone Executables
-
-### Using CMake Helpers
-
-Always use the provided helper macros:
-
-```cmake
-# milk standalone (creates milk-fpsexec-<name>)
-add_milk_standalone(myname myname.c)
-
-# cacao standalone (creates cacao-fpsexec-<name>)
-add_cacao_standalone(myname myname.c)
-
-# cacao with plugin dependencies
-add_cacao_standalone_plugins(
-    myname myname.c fft imagegen)
-```
-
-These helpers automatically:
-
-- Set `FPS_STANDALONE` and `MILK_NO_CLI` defines on the executable target (this is what keeps the build CLI-free, not a separate library variant)
-- Link the common standalone library set
-- Set correct include directories
-- Configure install target
-
-### Additional Link Dependencies
-
-If a standalone needs extra libraries beyond the
-standard set, link the module's regular library:
-
-```cmake
-add_cacao_standalone(myname myname.c)
-target_link_libraries(
-    cacao-fpsexec-myname
-    PUBLIC milkstatistic)
-```
-
-### Never Do This
-
-```cmake
-# WRONG — the old 4-line manual pattern:
-add_executable(milk-fpsexec-foo foo.c)
-target_link_libraries(milk-fpsexec-foo
-    CLIcore ...)  # NEVER link CLIcore
-target_compile_definitions(...)
-install(TARGETS ...)
-```
-
-Standalone executables must never link `CLIcore`.
-The regular module library is safe to link as-is:
-`-DMILK_NO_CLI`, applied by the standalone helper macros to the executable target,
-redirects `CLIcore.h` to `CLIcore_standalone.h` (stubs) for that target's own
-translation units, so no separate build variant of the library is needed.
+Follow `src/milk_module_example/CMakeLists.txt`.
+Skeleton, helpers and rules: `docs/programmers_guide.md` §6.
+Optional dependencies: `docs/developer/dependency_system.md`.
 
 ## Build Tier Constraints
 
@@ -175,15 +42,6 @@ is allowed at your target's build tier.
 | `USE_STATIC_LTO` | `OFF`   | Static LTO builds             |
 | `VEC_REPORT`     | `OFF`   | GCC vectorization report      |
 
-Guard optional dependencies in CMake:
-
-```cmake
-if(USE_CFITSIO)
-    target_link_libraries(${LIBNAME}
-        PRIVATE cfitsio)
-endif()
-```
-
 ## Common Errors and Fixes
 
 | Error                                | Cause                            | Fix                                                     |
@@ -192,48 +50,3 @@ endif()
 | `No such file or directory` (header) | Missing include dir              | Add `target_include_directories` or link the owning lib |
 | `multiple definition`                | Non-static global in `.h`        | Make `extern` in `.h`, define in one `.c`               |
 | Path doubling in install             | `CMAKE_INSTALL_PREFIX` in target | Use only at configure time                              |
-
-## Adding a Module to the Build
-
-Register your module in the parent
-`CMakeLists.txt`:
-
-```cmake
-# For core modules: src/CMakeLists.txt
-add_subdirectory(module_name)
-
-# For plugins: plugins/milk-extra-src/CMakeLists.txt
-add_subdirectory(module_name)
-```
-
-## Linking External Libraries
-
-### BLAS (Matrix Operations)
-
-BLAS is found by CMake at the top level. Link
-it as `PRIVATE` since it's an implementation
-detail:
-
-```cmake
-target_link_libraries(${LIBNAME}
-    PRIVATE ${BLAS_LIBRARIES})
-```
-
-For standalone executables that need BLAS:
-
-```cmake
-add_milk_standalone(myname myname.c)
-target_link_libraries(
-    milk-fpsexec-myname
-    PRIVATE ${BLAS_LIBRARIES})
-```
-
-### FFTW
-
-FFTW is found via `pkg_check_modules` in the
-top-level CMake. Link via the milkfft module:
-
-```cmake
-target_link_libraries(${LIBNAME}
-    PRIVATE milkfft)
-```

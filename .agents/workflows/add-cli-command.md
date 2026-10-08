@@ -100,8 +100,8 @@ In the module's main `.c` file (e.g.,
 
 ## 5. Update CMakeLists.txt
 
-Add the new `.c` file to `SOURCEFILES` in the
-module's `CMakeLists.txt`.
+Nothing to list: sources are globbed. Follow
+`src/milk_module_example/CMakeLists.txt` if a standalone is needed.
 
 ## 6. Update README
 

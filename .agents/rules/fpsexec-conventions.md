@@ -51,12 +51,8 @@ trigger: always_on
    - Use `FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)`
    - Or `FPS_MAIN_STANDALONE_V2_CONFCHECK(...)` if you have a `customCONFcheck`.
 
-8. **CMake targets** — use the helper macros:
-   ```cmake
-   add_milk_standalone(cmdkey source.c)
-   ```
-   See the `cmake-patterns` skill for details.
-   **Do not** use the old 4-line manual pattern.
+8. **CMake targets** — follow `src/milk_module_example/CMakeLists.txt`
+   (`add_milk_standalone(cmdkey source.c)`).
 
 ## Required: `-h1` one-line help option
 
@@ -98,7 +94,9 @@ A compute unit's source file is compiled twice: once into the module's regular l
    #endif
    ```
 
-## Plugins and Compute Units Mapping
+3. **Register through the macros**, never `RegisterCLIcmd()` or `data.cmd[]` directly:
+   `INSERT_STD_CLIREGISTERFUNC` / `INSERT_STD_CLIREGISTERFUNC_NAMED(var, fn)` (see
+   [`docs/programmers_guide.md`](../../docs/programmers_guide.md), 8-Section Layout item 7).
 
 A plugin typically consists of multiple separate compute units (standalone executables) rather
 than a single monolithic executable with internal mode switching.

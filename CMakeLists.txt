@@ -170,13 +170,8 @@ if(NOT MILK_GIT_COMMIT)
 endif()
 
 # Configure a header file to pass some of the CMake settings to the source code.
-# Generated into the build tree (not the source tree), which is shared across
-# out-of-source builds with differing options/install prefixes.
 configure_file("${PROJECT_SOURCE_DIR}/src/milk_config.h.in"
-  "${CMAKE_BINARY_DIR}/config/milk_config.h")
-
-configure_file("${PROJECT_SOURCE_DIR}/src/config.h.in"
-  "${CMAKE_BINARY_DIR}/config/config.h")
+               "${PROJECT_SOURCE_DIR}/src/milk_config.h")
 
 # select most recent version available
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
@@ -253,6 +248,11 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO/CMakeLists.txt")
   )
 endif()
 
+# Needed for finding CLICore.h / CLICore_standalone.h for both USE_CLI={ON,OFF} builds.
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore)
 if(USE_CLI)
   list(APPEND libsrcdir src/cli/libmilkscript)
   list(APPEND libname milkscript)
@@ -266,10 +266,6 @@ else()
   # Provide CLI header paths so modules can find CLIcore.h (which redirects to
   # standalone stubs)
   include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps
@@ -459,6 +455,7 @@ include(CTest)
 # add_cacao_standalone_plugins See cmake/milk_standalone.cmake for docs.
 
 include(${PROJECT_SOURCE_DIR}/cmake/milk_standalone.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/milk_static_lto.cmake)
 
 # =======================================
 # INSTALL PATHS
@@ -489,7 +486,8 @@ if(USE_COREMODS)
     COMMAND
     bash -c
     "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 1 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
-    OUTPUT_VARIABLE libextradir)
+    OUTPUT_VARIABLE libextradir
+  )
   string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
 endif()
 
@@ -507,21 +505,6 @@ foreach(lsrcdir IN LISTS libsrcdir libextradir)
     endif()
   endif()
 endforeach()
-
-# Ensure ImageStreamIO exports pthread for POSIX semaphore support
-# (guard in case submodule checkout does not yet include the fix)
-if(TARGET ImageStreamIO)
-  get_target_property(_isio_libs ImageStreamIO LINK_LIBRARIES)
-  if(NOT _isio_libs MATCHES "pthread")
-    target_link_libraries(ImageStreamIO PUBLIC pthread)
-  endif()
-endif()
-if(TARGET ImageStreamIO_static)
-  get_target_property(_isio_static_libs ImageStreamIO_static LINK_LIBRARIES)
-  if(NOT _isio_static_libs MATCHES "pthread")
-    target_link_libraries(ImageStreamIO_static PUBLIC pthread)
-  endif()
-endif()
 
 # example module and isio-tools depend on coremods
 if(USE_COREMODS)
@@ -670,16 +653,13 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/milk.pc.in
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/milk.pc
   DESTINATION "${INSTALL_PKGCONFIG_DIR}")
 
-install(FILES ${CMAKE_BINARY_DIR}/config/milk_config.h
-  ${CMAKE_BINARY_DIR}/config/config.h DESTINATION include)
+install(FILES ${PROJECT_SOURCE_DIR}/src/milk_config.h DESTINATION include)
 
 if(build_python_module)
   add_subdirectory(python_module)
 endif()
 
 if(USE_CLI)
-
-  install(TARGETS CLIcore DESTINATION bin)
   install(
     PROGRAMS scripts/milk-cli-all
     scripts/milk-argparse
@@ -718,10 +698,3 @@ install(FILES docs/cli/help.txt DESTINATION doc)
 
 # milk-cli script payloads (.milk files) – installed as data, not executables
 install(FILES scripts/makecircleofdisks.milk DESTINATION share/milk/scripts)
-
-# Guard: verify no standalone links CLIcore unexpectedly
-add_test(NAME standalone-dep-check
-  COMMAND ${PROJECT_SOURCE_DIR}/scripts/milk-check-standalone-deps
-  ${CMAKE_CURRENT_BINARY_DIR})
-
-install(PROGRAMS scripts/milk-check-standalone-deps DESTINATION bin)

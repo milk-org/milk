@@ -42,7 +42,7 @@ cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
             0.0f, matrixC_ptr, N_cols);
 ```
 
-_Note: Make sure your module links against `${BLAS_LIBRARIES}` in its `CMakeLists.txt`._
+_Note: Add `// MILK_CMAKE_REQUEST_BLAS` (or `MILK_CMAKE_MANDATE_BLAS`) to the source file; see `docs/developer/dependency_system.md`._
 
 ## 2. Fast Fourier Transforms (FFT)
 

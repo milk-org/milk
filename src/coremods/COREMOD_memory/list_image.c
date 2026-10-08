@@ -120,11 +120,7 @@ static errno_t CLIfunction_listim(void)
 
 errno_t CLIADDCMD_COREMOD_memory__list_image()
 {
-    {
-        int cmdi                      = RegisterCLIcmd(CLIcmddata_listim, CLIfunction_listim);
-        CLIcmddata_listim.cmdsettings = &data.cmd[cmdi].cmdsettings;
-    }
-
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_listim, CLIfunction_listim);
     return RETURN_SUCCESS;
 }
 #endif /* MILK_NO_CLI */
