@@ -20,7 +20,7 @@ void cli_exec_lines(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
 {
     for (int i = 0; i < nlines; i++)
     {
-        if (cli_break_flag || cli_continue_flag || cli_return_flag)
+        if (cli_break_flag || cli_continue_flag || cli_return_flag || data.CLIloopON == 0)
         {
             break;
         }

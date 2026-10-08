@@ -235,6 +235,13 @@ int cached_term_cols = 0;
  */
 void CLI_setup_hint_area(void)
 {
+    static int atexit_registered = 0;
+    if (!atexit_registered)
+    {
+        atexit(CLI_cleanup_scroll_region);
+        atexit_registered = 1;
+    }
+
     struct winsize ws;
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) < 0 || ws.ws_row <= 3)
     {
@@ -272,9 +279,23 @@ void CLI_cleanup_scroll_region(void)
         return;
     }
 
+    int r = cached_term_rows;
+    int c = cached_term_cols;
+    struct winsize ws;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0 && ws.ws_row > 0)
+    {
+        r = ws.ws_row;
+        c = ws.ws_col;
+    }
+
     printf("\033[s");
-    printf("\033[%d;1H\033[2K", cached_term_rows);
+    printf("\033[%d;1H\033[2K", r);
+    if (c > 0)
+    {
+        printf("\033[%d;1H%*s", r, c, "");
+    }
     printf("\033[r");
+    printf("\033[1;%dr", r);
     printf("\033[u");
     fflush(stdout);
 

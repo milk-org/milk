@@ -289,7 +289,7 @@ void cli_exec_block_while(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
         cli_continue_flag = 0;
         cli_exec_lines(lines + body_start, body_end - body_start);
 
-        if (cli_break_flag)
+        if (cli_break_flag || data.CLIloopON == 0)
         {
             cli_break_flag = 0;
             break;
@@ -394,7 +394,7 @@ void cli_exec_block_until(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
         cli_continue_flag = 0;
         cli_exec_lines(lines + body_start, body_end - body_start);
 
-        if (cli_break_flag)
+        if (cli_break_flag || data.CLIloopON == 0)
         {
             cli_break_flag = 0;
             break;
@@ -647,7 +647,7 @@ void cli_exec_block_for(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
         cli_continue_flag = 0;
         cli_exec_lines(lines + body_start, body_end - body_start);
 
-        if (cli_break_flag)
+        if (cli_break_flag || data.CLIloopON == 0)
         {
             cli_break_flag = 0;
             break;

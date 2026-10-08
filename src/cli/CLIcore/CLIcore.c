@@ -162,8 +162,16 @@ errno_t cli_fifo(void);
 
 /// CLI functions
 
+static int exitCLI_done = 0;
+
 errno_t exitCLI()
 {
+    if (exitCLI_done)
+    {
+        return RETURN_SUCCESS;
+    }
+    exitCLI_done = 1;
+
     /* Clean up hint area FIRST, before any output
      * that would scroll within the restricted
      * scroll region and desync row positions. */
@@ -1051,6 +1059,8 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             }
         }
     }
+
+    exitCLI();
 
 #ifdef USE_READLINE
     CLI_cleanup_scroll_region();

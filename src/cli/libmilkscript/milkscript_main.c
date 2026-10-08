@@ -347,5 +347,5 @@ int main(int argc, char **argv)
     }
 
     milkscript_cleanup();
-    return 0;
+    return dcexitcode;
 }
