@@ -39,8 +39,8 @@ void CLI_cleanup_scroll_region(void);
 void        cli_set_active_prompt(const char *prompt);
 const char *cli_get_active_prompt(void);
 void       *xmalloc(int size);
-char      *dupstr(const char *s);
-extern int ghost_chars_on_line;
+char       *dupstr(const char *s);
+extern int  ghost_chars_on_line;
 
 #ifdef USE_READLINE
 int   cli_accept_line(int count, int key);

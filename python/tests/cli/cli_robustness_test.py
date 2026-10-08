@@ -503,7 +503,10 @@ def test_expect_grep(milk_cmds: list[str], needle: str):
 
 
 if TESTLIST_EXPECT_GREP_XFAILING:
-    @pytest.mark.xfail(reason="CLI doesn't behave as expected for control flow statements.")
+
+    @pytest.mark.xfail(
+        reason="CLI doesn't behave as expected for control flow statements."
+    )
     @pytest.mark.timeout(TIMEOUT)
     @pytest.mark.parametrize("milk_cmds,needle", TESTLIST_EXPECT_GREP_XFAILING)
     def test_expect_grep_xfails(milk_cmds: list[str], needle: str):

@@ -543,8 +543,7 @@ void cli_expand_env(char *line, int maxlen)
         int  vlen = 0;
 
         /* Special one-character variable names without braces: $#, $$, $! */
-        if (!is_length && !has_brace &&
-            (line[i] == '#' || line[i] == '$' || line[i] == '!'))
+        if (!is_length && !has_brace && (line[i] == '#' || line[i] == '$' || line[i] == '!'))
         {
             varname[vlen++] = line[i++];
         }

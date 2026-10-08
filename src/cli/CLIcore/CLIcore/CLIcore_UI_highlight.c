@@ -129,8 +129,7 @@ void cli_highlight_redisplay(void)
             fprintf(rl_outstream, "\033[%dD", back);
         }
 
-        cli_ts_highlight_line(
-            rl_line_buffer, (int) strlen(rl_line_buffer), rl_point, rl_outstream);
+        cli_ts_highlight_line(rl_line_buffer, (int) strlen(rl_line_buffer), rl_point, rl_outstream);
 
         fprintf(rl_outstream, "\033[u"); // Restore cursor
         fflush(rl_outstream);
@@ -242,8 +241,7 @@ void cli_highlight_redisplay(void)
             {
                 fprintf(rl_outstream, "\033[%dC", -back1);
             }
-            fprintf(rl_outstream, "\033[7m%.*s\033[0m",
-                    (int) (pair.token_end - pair.token_start),
+            fprintf(rl_outstream, "\033[7m%.*s\033[0m", (int) (pair.token_end - pair.token_start),
                     rl_line_buffer + pair.token_start);
             fprintf(rl_outstream, "\033[u");
 
@@ -257,8 +255,7 @@ void cli_highlight_redisplay(void)
             {
                 fprintf(rl_outstream, "\033[%dC", -back2);
             }
-            fprintf(rl_outstream, "\033[7m%.*s\033[0m",
-                    (int) (pair.match_end - pair.match_start),
+            fprintf(rl_outstream, "\033[7m%.*s\033[0m", (int) (pair.match_end - pair.match_start),
                     rl_line_buffer + pair.match_start);
             fprintf(rl_outstream, "\033[u");
         }

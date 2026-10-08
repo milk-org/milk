@@ -26,13 +26,12 @@
  * @param out_argidx   Output pointer for 0-indexed argument position (can be NULL)
  * @return Completion mode (CLICOMPLETIONMODE_*), or -1 if a command was identified
  */
-static int cli_determine_mode_lexical(
-    const char *line,
-    int         start,
-    const char *text,
-    char       *out_cmdname,
-    size_t      cmdname_size,
-    int        *out_argidx)
+static int cli_determine_mode_lexical(const char *line,
+                                      int         start,
+                                      const char *text,
+                                      char       *out_cmdname,
+                                      size_t      cmdname_size,
+                                      int        *out_argidx)
 {
     if (out_cmdname && cmdname_size > 0)
     {
@@ -67,8 +66,8 @@ static int cli_determine_mode_lexical(
         {
             return CLICOMPLETIONMODE_VARS_ENV;
         }
-        if (strncmp(text, "./", 2) == 0 || strncmp(text, "../", 3) == 0 ||
-            text[0] == '/' || text[0] == '~')
+        if (strncmp(text, "./", 2) == 0 || strncmp(text, "../", 3) == 0 || text[0] == '/' ||
+            text[0] == '~')
         {
             return CLICOMPLETIONMODE_FILES;
         }
@@ -86,8 +85,8 @@ static int cli_determine_mode_lexical(
     }
 
     char prev_c = line[prev_idx];
-    if (prev_c == ';' || prev_c == '|' || prev_c == '&' ||
-        prev_c == '(' || prev_c == '{' || prev_c == '\n' || prev_c == '`')
+    if (prev_c == ';' || prev_c == '|' || prev_c == '&' || prev_c == '(' || prev_c == '{' ||
+        prev_c == '\n' || prev_c == '`')
     {
         return CLICOMPLETIONMODE_COMMANDS;
     }
@@ -177,8 +176,7 @@ static int cli_determine_mode_lexical(
         }
         else if (!in_sq && !in_dq)
         {
-            if (c == ';' || c == '|' || c == '&' || c == '(' || c == '{' ||
-                c == '\n' || c == '`')
+            if (c == ';' || c == '|' || c == '&' || c == '(' || c == '{' || c == '\n' || c == '`')
             {
                 stmt_start = i + 1;
             }
@@ -192,8 +190,8 @@ static int cli_determine_mode_lexical(
     }
 
     const char *cmd_start = p;
-    while (*p && (p - line) < start && !isspace((unsigned char) *p) &&
-           *p != ';' && *p != '|' && *p != '&' && *p != '(' && *p != ')')
+    while (*p && (p - line) < start && !isspace((unsigned char) *p) && *p != ';' && *p != '|' &&
+           *p != '&' && *p != '(' && *p != ')')
     {
         p++;
     }
@@ -268,12 +266,7 @@ static bool is_word_char(char c)
     return isalnum((unsigned char) c) || c == '_';
 }
 
-static bool is_word_at(
-    const char *line,
-    int         len,
-    int         pos,
-    const char *word,
-    int        *wlen)
+static bool is_word_at(const char *line, int len, int pos, const char *word, int *wlen)
 {
     int wl = (int) strlen(word);
     if (wlen != NULL)
@@ -312,11 +305,7 @@ static bool is_word_at(
  * @param pair       Output structure with match byte offsets
  * @return true if a match was found, false otherwise
  */
-static bool find_match_pair_lexical(
-    const char     *line,
-    int             len,
-    int             cursor_pos,
-    CLI_MATCH_PAIR *pair)
+static bool find_match_pair_lexical(const char *line, int len, int cursor_pos, CLI_MATCH_PAIR *pair)
 {
     memset(pair, 0, sizeof(*pair));
     if (line == NULL || len <= 0 || cursor_pos < 0)
@@ -325,8 +314,7 @@ static bool find_match_pair_lexical(
     }
 
     uint8_t  mask_buf[1024];
-    uint8_t *mask =
-        (len < 1024) ? mask_buf : (uint8_t *) malloc((size_t) (len + 1));
+    uint8_t *mask = (len < 1024) ? mask_buf : (uint8_t *) malloc((size_t) (len + 1));
     if (mask == NULL)
     {
         return false;
@@ -689,7 +677,7 @@ static bool find_match_pair_lexical(
                     depth--;
                     if (depth == 0)
                     {
-                        int start_idx = (i > 0 && line[i - 1] == '$') ? i - 1 : i;
+                        int start_idx     = (i > 0 && line[i - 1] == '$') ? i - 1 : i;
                         pair->token_start = pos;
                         pair->token_end   = pos + 1;
                         pair->match_start = start_idx;
@@ -824,7 +812,7 @@ static bool find_match_pair_lexical(
                     depth--;
                     if (depth == 0)
                     {
-                        int start_idx = (i > 0 && line[i - 1] == '$') ? i - 1 : i;
+                        int start_idx     = (i > 0 && line[i - 1] == '$') ? i - 1 : i;
                         pair->token_start = pos;
                         pair->token_end   = pos + 1;
                         pair->match_start = start_idx;
@@ -1025,10 +1013,10 @@ static bool find_match_pair_lexical(
                                 depth--;
                                 if (depth == 0)
                                 {
-                                    int match_len =
-                                        is_word_at(line, len, i, "do", &dummy) ? 2 :
-                                        is_word_at(line, len, i, "for", &dummy) ? 3 :
-                                        is_word_at(line, len, i, "while", &dummy) ? 5 : 5;
+                                    int match_len = is_word_at(line, len, i, "do", &dummy)      ? 2
+                                                    : is_word_at(line, len, i, "for", &dummy)   ? 3
+                                                    : is_word_at(line, len, i, "while", &dummy) ? 5
+                                                                                                : 5;
                                     pair->token_start = wstart;
                                     pair->token_end   = wend;
                                     pair->match_start = i;
@@ -1262,14 +1250,13 @@ typedef struct
     int         priority; // 0 = normal syntax, 1 = error/diag, 2 = match pair
 } HighlightSpan;
 
-static void collect_error_spans(
-    TSNode         node,
-    const char    *source,
-    size_t         linelen,
-    HighlightSpan *spans,
-    int           *num_spans,
-    int            max_spans,
-    int            color_lvl);
+static void collect_error_spans(TSNode         node,
+                                const char    *source,
+                                size_t         linelen,
+                                HighlightSpan *spans,
+                                int           *num_spans,
+                                int            max_spans,
+                                int            color_lvl);
 
 static int compare_spans(const void *a, const void *b)
 {
@@ -1309,12 +1296,11 @@ static int compare_spans(const void *a, const void *b)
  * @param pair       Output structure with matched byte ranges
  * @return true if match found, false otherwise
  */
-static bool find_match_pair_ast(
-    TSNode          root,
-    const char     *line,
-    int             len,
-    int             cursor_pos,
-    CLI_MATCH_PAIR *pair)
+static bool find_match_pair_ast(TSNode          root,
+                                const char     *line,
+                                int             len,
+                                int             cursor_pos,
+                                CLI_MATCH_PAIR *pair)
 {
     memset(pair, 0, sizeof(*pair));
     if (cursor_pos < 0 || len <= 0 || line == NULL)
@@ -1353,8 +1339,8 @@ static bool find_match_pair_ast(
         TSNode   target = { 0 };
         bool     found  = false;
 
-        if (strcmp(type, "(") == 0 || strcmp(type, "$(") == 0 ||
-            strcmp(type, "$(( ") == 0 || strcmp(type, "$((") == 0)
+        if (strcmp(type, "(") == 0 || strcmp(type, "$(") == 0 || strcmp(type, "$(( ") == 0 ||
+            strcmp(type, "$((") == 0)
         {
             for (uint32_t i = 0; i < ccount; i++)
             {
@@ -1390,8 +1376,8 @@ static bool find_match_pair_ast(
                 {
                     TSNode      ch = ts_node_child(parent, i);
                     const char *ct = ts_node_type(ch);
-                    if (strcmp(ct, "(") == 0 || strcmp(ct, "$(") == 0 ||
-                        strcmp(ct, "$(( ") == 0 || strcmp(ct, "$((") == 0)
+                    if (strcmp(ct, "(") == 0 || strcmp(ct, "$(") == 0 || strcmp(ct, "$(( ") == 0 ||
+                        strcmp(ct, "$((") == 0)
                     {
                         target = ch;
                         found  = true;
@@ -1590,11 +1576,7 @@ static bool find_match_pair_ast(
     return false;
 }
 
-void cli_ts_highlight_line(
-    const char *line,
-    int         len,
-    int         cursor_pos,
-    FILE       *out)
+void cli_ts_highlight_line(const char *line, int len, int cursor_pos, FILE *out)
 {
     if (!ts_parser || !ts_query || !line || len == 0)
     {
@@ -1651,14 +1633,13 @@ void cli_ts_highlight_line(
 
     if (data.syntax_diagnostics && ts_node_has_error(root_node))
     {
-        collect_error_spans(
-            root_node, line, (size_t) len, spans, &num_spans, 1024, color_level);
+        collect_error_spans(root_node, line, (size_t) len, spans, &num_spans, 1024, color_level);
     }
 
     if (data.show_match && cursor_pos >= 0)
     {
         CLI_MATCH_PAIR mp;
-        bool ok = find_match_pair_ast(root_node, line, len, cursor_pos, &mp);
+        bool           ok = find_match_pair_ast(root_node, line, len, cursor_pos, &mp);
         if (!ok || !mp.has_match)
         {
             ok = find_match_pair_lexical(line, len, cursor_pos, &mp);
@@ -1770,10 +1751,7 @@ void cli_ts_highlight_line(
  * @param pair       Output structure with matched byte ranges
  * @return true if a matching pair was found, false otherwise
  */
-bool cli_ts_find_match_pair(
-    const char     *line,
-    int             cursor_pos,
-    CLI_MATCH_PAIR *pair)
+bool cli_ts_find_match_pair(const char *line, int cursor_pos, CLI_MATCH_PAIR *pair)
 {
     memset(pair, 0, sizeof(*pair));
     if (line == NULL || cursor_pos < 0)
@@ -1840,9 +1818,7 @@ static int has_unclosed_quotes(const char *s)
  * @param i Index of token start
  * @return true if preceded by statement boundary, false otherwise
  */
-static bool is_statement_boundary_before(
-    const char *s,
-    size_t      i)
+static bool is_statement_boundary_before(const char *s, size_t i)
 {
     while (i > 0 && (s[i - 1] == ' ' || s[i - 1] == '\t' || s[i - 1] == '\r'))
     {
@@ -1853,33 +1829,28 @@ static bool is_statement_boundary_before(
         return true;
     }
     char prev = s[i - 1];
-    if (prev == '\n' || prev == ';' || prev == '|' || prev == '&' ||
-        prev == '(' || prev == '{')
+    if (prev == '\n' || prev == ';' || prev == '|' || prev == '&' || prev == '(' || prev == '{')
     {
         return true;
     }
 
     if (i >= 2 && strncmp(&s[i - 2], "do", 2) == 0 &&
-        (i == 2 || s[i - 3] == ' ' || s[i - 3] == '\t' ||
-         s[i - 3] == '\n' || s[i - 3] == ';'))
+        (i == 2 || s[i - 3] == ' ' || s[i - 3] == '\t' || s[i - 3] == '\n' || s[i - 3] == ';'))
     {
         return true;
     }
     if (i >= 4 && strncmp(&s[i - 4], "then", 4) == 0 &&
-        (i == 4 || s[i - 5] == ' ' || s[i - 5] == '\t' ||
-         s[i - 5] == '\n' || s[i - 5] == ';'))
+        (i == 4 || s[i - 5] == ' ' || s[i - 5] == '\t' || s[i - 5] == '\n' || s[i - 5] == ';'))
     {
         return true;
     }
     if (i >= 4 && strncmp(&s[i - 4], "else", 4) == 0 &&
-        (i == 4 || s[i - 5] == ' ' || s[i - 5] == '\t' ||
-         s[i - 5] == '\n' || s[i - 5] == ';'))
+        (i == 4 || s[i - 5] == ' ' || s[i - 5] == '\t' || s[i - 5] == '\n' || s[i - 5] == ';'))
     {
         return true;
     }
     if (i >= 4 && strncmp(&s[i - 4], "elif", 4) == 0 &&
-        (i == 4 || s[i - 5] == ' ' || s[i - 5] == '\t' ||
-         s[i - 5] == '\n' || s[i - 5] == ';'))
+        (i == 4 || s[i - 5] == ' ' || s[i - 5] == '\t' || s[i - 5] == '\n' || s[i - 5] == ';'))
     {
         return true;
     }
@@ -1897,15 +1868,13 @@ static bool is_statement_boundary_before(
  * @param kw Reserved word to count
  * @return Number of valid keyword occurrences
  */
-static int count_shell_keyword(
-    const char *s,
-    const char *kw)
+static int count_shell_keyword(const char *s, const char *kw)
 {
-    size_t kwlen = strlen(kw);
-    int count = 0;
-    int in_dquote = 0;
-    int in_squote = 0;
-    int in_comment = 0;
+    size_t kwlen      = strlen(kw);
+    int    count      = 0;
+    int    in_dquote  = 0;
+    int    in_squote  = 0;
+    int    in_comment = 0;
 
     for (size_t i = 0; s[i] != '\0'; i++)
     {
@@ -1947,10 +1916,9 @@ static int count_shell_keyword(
 
         if (strncmp(&s[i], kw, kwlen) == 0)
         {
-            char rc = s[i + kwlen];
-            bool right_ok = (rc == '\0' || rc == ' ' || rc == '\t' ||
-                             rc == '\n' || rc == '\r' || rc == ';' ||
-                             rc == ')' || rc == '}' || rc == '|' || rc == '&');
+            char rc       = s[i + kwlen];
+            bool right_ok = (rc == '\0' || rc == ' ' || rc == '\t' || rc == '\n' || rc == '\r' ||
+                             rc == ';' || rc == ')' || rc == '}' || rc == '|' || rc == '&');
             if (right_ok && is_statement_boundary_before(s, i))
             {
                 count++;
@@ -1976,10 +1944,7 @@ static bool is_transition_token_line(const char *trimmed);
  * @param out_open  Receives count of opening block braces
  * @param out_close Receives count of closing block braces
  */
-static void count_block_braces(
-    const char *s,
-    int        *out_open,
-    int        *out_close)
+static void count_block_braces(const char *s, int *out_open, int *out_close)
 {
     int open_cnt        = 0;
     int close_cnt       = 0;
@@ -2071,19 +2036,15 @@ static void count_block_braces(
  * @param source Input line string
  * @return true if error node is due to an open block, false otherwise
  */
-static bool is_open_block_error(
-    TSNode      node,
-    const char *source)
+static bool is_open_block_error(TSNode node, const char *source)
 {
     uint32_t count = ts_node_child_count(node);
     for (uint32_t i = 0; i < count; i++)
     {
         TSNode      child = ts_node_child(node, i);
         const char *ctype = ts_node_type(child);
-        if (strcmp(ctype, "for") == 0 ||
-            strcmp(ctype, "while") == 0 ||
-            strcmp(ctype, "until") == 0 ||
-            strcmp(ctype, "do") == 0)
+        if (strcmp(ctype, "for") == 0 || strcmp(ctype, "while") == 0 ||
+            strcmp(ctype, "until") == 0 || strcmp(ctype, "do") == 0)
         {
             int starters = count_shell_keyword(source, "for") +
                            count_shell_keyword(source, "while") +
@@ -2094,10 +2055,8 @@ static bool is_open_block_error(
                 return true;
             }
         }
-        else if (strcmp(ctype, "if") == 0 ||
-                 strcmp(ctype, "then") == 0 ||
-                 strcmp(ctype, "elif") == 0 ||
-                 strcmp(ctype, "else") == 0)
+        else if (strcmp(ctype, "if") == 0 || strcmp(ctype, "then") == 0 ||
+                 strcmp(ctype, "elif") == 0 || strcmp(ctype, "else") == 0)
         {
             int starters = count_shell_keyword(source, "if");
             int closers  = count_shell_keyword(source, "fi");
@@ -2115,8 +2074,7 @@ static bool is_open_block_error(
                 return true;
             }
         }
-        else if (strcmp(ctype, "function") == 0 ||
-                 strcmp(ctype, "{") == 0)
+        else if (strcmp(ctype, "function") == 0 || strcmp(ctype, "{") == 0)
         {
             int o = 0;
             int c = 0;
@@ -2145,14 +2103,13 @@ static bool is_open_block_error(
  * @param max_spans Maximum capacity of spans array
  * @param color_lvl Active color capability level (1 = 16-color, 2 = 256-color)
  */
-static void collect_error_spans(
-    TSNode         node,
-    const char    *source,
-    size_t         linelen,
-    HighlightSpan *spans,
-    int           *num_spans,
-    int            max_spans,
-    int            color_lvl)
+static void collect_error_spans(TSNode         node,
+                                const char    *source,
+                                size_t         linelen,
+                                HighlightSpan *spans,
+                                int           *num_spans,
+                                int            max_spans,
+                                int            color_lvl)
 {
     const char *type = ts_node_type(node);
     if (strcmp(type, "ERROR") == 0)
@@ -2189,14 +2146,12 @@ static void collect_error_spans(
                 /* If incomplete variable prefix ($) at end of line, preserve variable color */
                 if (eb >= linelen && source[sb] == '$' && eb - sb == 1)
                 {
-                    spans[*num_spans].color =
-                        (color_lvl >= 2) ? "\033[38;5;178m" : "\033[33m";
+                    spans[*num_spans].color = (color_lvl >= 2) ? "\033[38;5;178m" : "\033[33m";
                 }
                 else
                 {
                     /* Real syntax error or unclosed string/token: underline red */
-                    spans[*num_spans].color =
-                        (color_lvl >= 2) ? "\033[4;38;5;203m" : "\033[4;31m";
+                    spans[*num_spans].color = (color_lvl >= 2) ? "\033[4;38;5;203m" : "\033[4;31m";
                 }
                 spans[*num_spans].priority = 1;
                 (*num_spans)++;
@@ -2208,8 +2163,8 @@ static void collect_error_spans(
     uint32_t count = ts_node_child_count(node);
     for (uint32_t i = 0; i < count; i++)
     {
-        collect_error_spans(
-            ts_node_child(node, i), source, linelen, spans, num_spans, max_spans, color_lvl);
+        collect_error_spans(ts_node_child(node, i), source, linelen, spans, num_spans, max_spans,
+                            color_lvl);
     }
 }
 
@@ -2224,10 +2179,7 @@ static void collect_error_spans(
  * @param diag   Output diagnostic structure
  * @return true if an error or incomplete state was identified, false otherwise
  */
-static bool find_first_error(
-    TSNode           node,
-    const char      *source,
-    CLI_SYNTAX_DIAG *diag)
+static bool find_first_error(TSNode node, const char *source, CLI_SYNTAX_DIAG *diag)
 {
     if (ts_node_is_missing(node))
     {
@@ -2302,16 +2254,14 @@ static bool find_first_error(
         else if (strcmp(mtype, "]") == 0 || strcmp(mtype, "]]") == 0)
         {
             diag->severity = CLI_DIAG_SEVERITY_INFO;
-            snprintf(
-                diag->message, sizeof(diag->message),
-                "unclosed test bracket: missing '%s'", mtype);
+            snprintf(diag->message, sizeof(diag->message), "unclosed test bracket: missing '%s'",
+                     mtype);
         }
         else
         {
             diag->severity = CLI_DIAG_SEVERITY_INFO;
-            snprintf(
-                diag->message, sizeof(diag->message),
-                "syntax incomplete: expected '%s'", mtype);
+            snprintf(diag->message, sizeof(diag->message), "syntax incomplete: expected '%s'",
+                     mtype);
         }
 
         diag->start_byte = ts_node_start_byte(node);
@@ -2328,10 +2278,8 @@ static bool find_first_error(
         {
             TSNode      child = ts_node_child(node, i);
             const char *ctype = ts_node_type(child);
-            if (strcmp(ctype, "for") == 0 ||
-                strcmp(ctype, "while") == 0 ||
-                strcmp(ctype, "until") == 0 ||
-                strcmp(ctype, "do") == 0)
+            if (strcmp(ctype, "for") == 0 || strcmp(ctype, "while") == 0 ||
+                strcmp(ctype, "until") == 0 || strcmp(ctype, "do") == 0)
             {
                 int starters = count_shell_keyword(source, "for") +
                                count_shell_keyword(source, "while") +
@@ -2343,15 +2291,12 @@ static bool find_first_error(
                     diag->start_byte = ts_node_start_byte(child);
                     diag->end_byte   = ts_node_end_byte(child);
                     snprintf(diag->token, sizeof(diag->token), "%s", ctype);
-                    snprintf(
-                        diag->message, sizeof(diag->message), "loop open: missing 'done'");
+                    snprintf(diag->message, sizeof(diag->message), "loop open: missing 'done'");
                     return true;
                 }
             }
-            else if (strcmp(ctype, "if") == 0 ||
-                     strcmp(ctype, "then") == 0 ||
-                     strcmp(ctype, "elif") == 0 ||
-                     strcmp(ctype, "else") == 0)
+            else if (strcmp(ctype, "if") == 0 || strcmp(ctype, "then") == 0 ||
+                     strcmp(ctype, "elif") == 0 || strcmp(ctype, "else") == 0)
             {
                 int starters = count_shell_keyword(source, "if");
                 int closers  = count_shell_keyword(source, "fi");
@@ -2361,8 +2306,7 @@ static bool find_first_error(
                     diag->start_byte = ts_node_start_byte(child);
                     diag->end_byte   = ts_node_end_byte(child);
                     snprintf(diag->token, sizeof(diag->token), "%s", ctype);
-                    snprintf(
-                        diag->message, sizeof(diag->message), "if block open: missing 'fi'");
+                    snprintf(diag->message, sizeof(diag->message), "if block open: missing 'fi'");
                     return true;
                 }
             }
@@ -2376,8 +2320,8 @@ static bool find_first_error(
                     diag->start_byte = ts_node_start_byte(child);
                     diag->end_byte   = ts_node_end_byte(child);
                     snprintf(diag->token, sizeof(diag->token), "%s", ctype);
-                    snprintf(
-                        diag->message, sizeof(diag->message), "case block open: missing 'esac'");
+                    snprintf(diag->message, sizeof(diag->message),
+                             "case block open: missing 'esac'");
                     return true;
                 }
             }
@@ -2423,9 +2367,8 @@ static bool find_first_error(
             if (strstr(diag->token, "((") != NULL)
             {
                 diag->severity = CLI_DIAG_SEVERITY_INFO;
-                snprintf(
-                    diag->message, sizeof(diag->message),
-                    "unclosed arithmetic '$((': missing '))'");
+                snprintf(diag->message, sizeof(diag->message),
+                         "unclosed arithmetic '$((': missing '))'");
                 return true;
             }
         }
@@ -2469,9 +2412,7 @@ static bool find_first_error(
  * @param diag Output structure populated with severity, span, and message
  * @return 1 if a diagnostic was detected, 0 if clean/valid
  */
-int cli_ts_get_diagnostic(
-    const char      *line,
-    CLI_SYNTAX_DIAG *diag)
+int cli_ts_get_diagnostic(const char *line, CLI_SYNTAX_DIAG *diag)
 {
     if (diag)
     {
@@ -2552,9 +2493,8 @@ int cli_ts_get_diagnostic(
             diag->severity   = CLI_DIAG_SEVERITY_INFO;
             diag->start_byte = (uint32_t) (len - 1);
             diag->end_byte   = (uint32_t) len;
-            snprintf(
-                diag->message, sizeof(diag->message),
-                "trailing pipe '|' (waiting for command)");
+            snprintf(diag->message, sizeof(diag->message),
+                     "trailing pipe '|' (waiting for command)");
             snprintf(diag->token, sizeof(diag->token), "|");
             return 1;
         }
@@ -2563,9 +2503,7 @@ int cli_ts_get_diagnostic(
             diag->severity   = CLI_DIAG_SEVERITY_INFO;
             diag->start_byte = (uint32_t) (len - 2);
             diag->end_byte   = (uint32_t) len;
-            snprintf(
-                diag->message, sizeof(diag->message),
-                "trailing '&&' (waiting for command)");
+            snprintf(diag->message, sizeof(diag->message), "trailing '&&' (waiting for command)");
             snprintf(diag->token, sizeof(diag->token), "&&");
             return 1;
         }
@@ -2574,9 +2512,7 @@ int cli_ts_get_diagnostic(
             diag->severity   = CLI_DIAG_SEVERITY_INFO;
             diag->start_byte = (uint32_t) (len - 2);
             diag->end_byte   = (uint32_t) len;
-            snprintf(
-                diag->message, sizeof(diag->message),
-                "trailing '||' (waiting for command)");
+            snprintf(diag->message, sizeof(diag->message), "trailing '||' (waiting for command)");
             snprintf(diag->token, sizeof(diag->token), "||");
             return 1;
         }
@@ -2700,15 +2636,14 @@ int cli_ts_compute_indent_depth(const char *buffer)
         return 0;
     }
 
-    int loops  = count_shell_keyword(buffer, "for") +
-                 count_shell_keyword(buffer, "while") +
+    int loops  = count_shell_keyword(buffer, "for") + count_shell_keyword(buffer, "while") +
                  count_shell_keyword(buffer, "until");
     int dones  = count_shell_keyword(buffer, "done");
     int loop_d = (loops > dones) ? (loops - dones) : 0;
 
-    int ifs    = count_shell_keyword(buffer, "if");
-    int fis    = count_shell_keyword(buffer, "fi");
-    int if_d   = (ifs > fis) ? (ifs - fis) : 0;
+    int ifs  = count_shell_keyword(buffer, "if");
+    int fis  = count_shell_keyword(buffer, "fi");
+    int if_d = (ifs > fis) ? (ifs - fis) : 0;
 
     int cases  = count_shell_keyword(buffer, "case");
     int esacs  = count_shell_keyword(buffer, "esac");
@@ -2717,7 +2652,7 @@ int cli_ts_compute_indent_depth(const char *buffer)
     int obrace = 0;
     int cbrace = 0;
     count_block_braces(buffer, &obrace, &cbrace);
-    int brc_d  = (obrace > cbrace) ? (obrace - cbrace) : 0;
+    int brc_d = (obrace > cbrace) ? (obrace - cbrace) : 0;
 
     return loop_d + if_d + case_d + brc_d;
 }
@@ -2734,20 +2669,16 @@ int cli_ts_compute_indent_depth(const char *buffer)
  * @param num_lines  Total number of lines in script
  * @param lines      Array of trimmed line strings (used to detect closer tokens)
  */
-static void compute_ast_line_depths(
-    TSNode              node,
-    int                *line_depth,
-    int                 num_lines,
-    const char * const *lines)
+static void compute_ast_line_depths(TSNode             node,
+                                    int               *line_depth,
+                                    int                num_lines,
+                                    const char *const *lines)
 {
     const char *type = ts_node_type(node);
-    bool is_block = (strcmp(type, "for_statement") == 0 ||
-                     strcmp(type, "while_statement") == 0 ||
-                     strcmp(type, "until_statement") == 0 ||
-                     strcmp(type, "if_statement") == 0 ||
+    bool is_block = (strcmp(type, "for_statement") == 0 || strcmp(type, "while_statement") == 0 ||
+                     strcmp(type, "until_statement") == 0 || strcmp(type, "if_statement") == 0 ||
                      strcmp(type, "case_statement") == 0 ||
-                     strcmp(type, "function_definition") == 0 ||
-                     strcmp(type, "subshell") == 0);
+                     strcmp(type, "function_definition") == 0 || strcmp(type, "subshell") == 0);
 
     if (is_block)
     {
@@ -2756,8 +2687,7 @@ static void compute_ast_line_depths(
         if (ep.row > sp.row)
         {
             uint32_t end_row = ep.row;
-            if (end_row < (uint32_t) num_lines &&
-                lines && is_closer_token_line(lines[end_row]))
+            if (end_row < (uint32_t) num_lines && lines && is_closer_token_line(lines[end_row]))
             {
                 end_row = ep.row - 1;
             }
@@ -2784,9 +2714,7 @@ static void compute_ast_line_depths(
  * @param indent_width Number of spaces per indentation level (default: 4)
  * @return Dynamically allocated formatted string (caller must free), or NULL on error
  */
-char *cli_ts_format_code(
-    const char *code,
-    int         indent_width)
+char *cli_ts_format_code(const char *code, int indent_width)
 {
     if (!code)
     {
@@ -2847,8 +2775,8 @@ char *cli_ts_format_code(
             start++;
         }
         size_t slen = strlen(start);
-        while (slen > 0 && (start[slen - 1] == ' ' || start[slen - 1] == '\t' ||
-                            start[slen - 1] == '\r'))
+        while (slen > 0 &&
+               (start[slen - 1] == ' ' || start[slen - 1] == '\t' || start[slen - 1] == '\r'))
         {
             slen--;
         }
@@ -2876,11 +2804,8 @@ char *cli_ts_format_code(
         TSTree *tree = ts_parser_parse_string(ts_parser, NULL, code, (uint32_t) strlen(code));
         if (tree)
         {
-            compute_ast_line_depths(
-                ts_tree_root_node(tree),
-                line_depth,
-                num_lines,
-                (const char * const *) trimmed_lines);
+            compute_ast_line_depths(ts_tree_root_node(tree), line_depth, num_lines,
+                                    (const char *const *) trimmed_lines);
             ts_tree_delete(tree);
             used_ast = true;
         }
@@ -2907,8 +2832,7 @@ char *cli_ts_format_code(
                 line_depth[i] = depth;
             }
 
-            int loops = count_shell_keyword(start, "for") +
-                        count_shell_keyword(start, "while") +
+            int loops = count_shell_keyword(start, "for") + count_shell_keyword(start, "while") +
                         count_shell_keyword(start, "until");
             int dones = count_shell_keyword(start, "done");
             depth += (loops - dones);
@@ -2949,7 +2873,7 @@ char *cli_ts_format_code(
         free(line_depth);
         return NULL;
     }
-    out[0] = '\0';
+    out[0]         = '\0';
     size_t out_len = 0;
 
     for (int i = 0; i < num_lines; i++)
@@ -3010,21 +2934,17 @@ char *cli_ts_format_code(
     return out;
 }
 
-static void print_folds_ast_walk(
-    TSNode      node,
-    const char *source,
-    int         depth,
-    int        *block_count,
-    FILE       *out)
+static void print_folds_ast_walk(TSNode      node,
+                                 const char *source,
+                                 int         depth,
+                                 int        *block_count,
+                                 FILE       *out)
 {
     const char *type = ts_node_type(node);
-    bool is_block = (strcmp(type, "for_statement") == 0 ||
-                     strcmp(type, "while_statement") == 0 ||
-                     strcmp(type, "until_statement") == 0 ||
-                     strcmp(type, "if_statement") == 0 ||
+    bool is_block = (strcmp(type, "for_statement") == 0 || strcmp(type, "while_statement") == 0 ||
+                     strcmp(type, "until_statement") == 0 || strcmp(type, "if_statement") == 0 ||
                      strcmp(type, "case_statement") == 0 ||
-                     strcmp(type, "function_definition") == 0 ||
-                     strcmp(type, "subshell") == 0);
+                     strcmp(type, "function_definition") == 0 || strcmp(type, "subshell") == 0);
 
     if (is_block)
     {
@@ -3044,11 +2964,8 @@ static void print_folds_ast_walk(
             memcpy(first_line, p, flen);
             first_line[flen] = '\0';
 
-            fprintf(
-                out, "  %*sLines %3u-%-3u (%2u lines): %s ...\n",
-                depth * 2, "",
-                sp.row + 1, ep.row + 1, ep.row - sp.row + 1,
-                first_line);
+            fprintf(out, "  %*sLines %3u-%-3u (%2u lines): %s ...\n", depth * 2, "", sp.row + 1,
+                    ep.row + 1, ep.row - sp.row + 1, first_line);
             (*block_count)++;
         }
     }
@@ -3056,8 +2973,8 @@ static void print_folds_ast_walk(
     uint32_t count = ts_node_child_count(node);
     for (uint32_t i = 0; i < count; i++)
     {
-        print_folds_ast_walk(
-            ts_node_child(node, i), source, depth + (is_block ? 1 : 0), block_count, out);
+        print_folds_ast_walk(ts_node_child(node, i), source, depth + (is_block ? 1 : 0),
+                             block_count, out);
     }
 }
 
@@ -3072,10 +2989,7 @@ static void print_folds_ast_walk(
  * @param out   Output stream (typically stdout)
  * @return Number of blocks found
  */
-int cli_ts_print_block_folds(
-    const char *code,
-    const char *label,
-    FILE       *out)
+int cli_ts_print_block_folds(const char *code, const char *label, FILE *out)
 {
     if (!code || code[0] == '\0')
     {
@@ -3117,9 +3031,7 @@ int cli_ts_print_block_folds(
     return block_count;
 }
 
-static bool node_tree_has_missing(
-    TSNode      node,
-    const char *buffer)
+static bool node_tree_has_missing(TSNode node, const char *buffer)
 {
     if (ts_node_is_missing(node))
     {
@@ -3176,12 +3088,10 @@ static bool node_tree_has_missing(
         uint32_t count = ts_node_child_count(node);
         for (uint32_t i = 0; i < count; i++)
         {
-            TSNode child = ts_node_child(node, i);
+            TSNode      child = ts_node_child(node, i);
             const char *ctype = ts_node_type(child);
-            if (strcmp(ctype, "for") == 0 ||
-                strcmp(ctype, "while") == 0 ||
-                strcmp(ctype, "until") == 0 ||
-                strcmp(ctype, "do") == 0)
+            if (strcmp(ctype, "for") == 0 || strcmp(ctype, "while") == 0 ||
+                strcmp(ctype, "until") == 0 || strcmp(ctype, "do") == 0)
             {
                 int starters = count_shell_keyword(buffer, "for") +
                                count_shell_keyword(buffer, "while") +
@@ -3192,10 +3102,8 @@ static bool node_tree_has_missing(
                     return true;
                 }
             }
-            else if (strcmp(ctype, "if") == 0 ||
-                     strcmp(ctype, "then") == 0 ||
-                     strcmp(ctype, "elif") == 0 ||
-                     strcmp(ctype, "else") == 0)
+            else if (strcmp(ctype, "if") == 0 || strcmp(ctype, "then") == 0 ||
+                     strcmp(ctype, "elif") == 0 || strcmp(ctype, "else") == 0)
             {
                 int starters = count_shell_keyword(buffer, "if");
                 int closers  = count_shell_keyword(buffer, "fi");
@@ -3213,8 +3121,7 @@ static bool node_tree_has_missing(
                     return true;
                 }
             }
-            else if (strcmp(ctype, "function") == 0 ||
-                     strcmp(ctype, "{") == 0)
+            else if (strcmp(ctype, "function") == 0 || strcmp(ctype, "{") == 0)
             {
                 int o = 0;
                 int c = 0;
@@ -3292,8 +3199,8 @@ int cli_ts_is_incomplete(const char *buffer)
         return 0;
     }
 
-    TSNode root = ts_tree_root_node(tree);
-    bool incomplete = false;
+    TSNode root       = ts_tree_root_node(tree);
+    bool   incomplete = false;
     if (ts_node_has_error(root))
     {
         incomplete = node_tree_has_missing(root, buffer);
@@ -3306,13 +3213,12 @@ int cli_ts_is_incomplete(const char *buffer)
 /**
  * @brief Determine completion mode and command context using tree-sitter AST
  */
-int cli_ts_determine_completion_mode(
-    const char *line,
-    int         start,
-    const char *text,
-    char       *out_cmdname,
-    size_t      cmdname_size,
-    int        *out_argidx)
+int cli_ts_determine_completion_mode(const char *line,
+                                     int         start,
+                                     const char *text,
+                                     char       *out_cmdname,
+                                     size_t      cmdname_size,
+                                     int        *out_argidx)
 {
     if (out_cmdname && cmdname_size > 0)
     {
@@ -3347,8 +3253,8 @@ int cli_ts_determine_completion_mode(
         {
             return CLICOMPLETIONMODE_VARS_ENV;
         }
-        if (strncmp(text, "./", 2) == 0 || strncmp(text, "../", 3) == 0 ||
-            text[0] == '/' || text[0] == '~')
+        if (strncmp(text, "./", 2) == 0 || strncmp(text, "../", 3) == 0 || text[0] == '/' ||
+            text[0] == '~')
         {
             return CLICOMPLETIONMODE_FILES;
         }
@@ -3366,8 +3272,8 @@ int cli_ts_determine_completion_mode(
     }
 
     char prev_c = line[prev_idx];
-    if (prev_c == ';' || prev_c == '|' || prev_c == '&' ||
-        prev_c == '(' || prev_c == '{' || prev_c == '\n' || prev_c == '`')
+    if (prev_c == ';' || prev_c == '|' || prev_c == '&' || prev_c == '(' || prev_c == '{' ||
+        prev_c == '\n' || prev_c == '`')
     {
         return CLICOMPLETIONMODE_COMMANDS;
     }
@@ -3440,22 +3346,20 @@ int cli_ts_determine_completion_mode(
         TSTree *tree = ts_parser_parse_string(ts_parser, NULL, line, (uint32_t) strlen(line));
         if (tree != NULL)
         {
-            TSNode root = ts_tree_root_node(tree);
+            TSNode   root = ts_tree_root_node(tree);
             uint32_t cpos = start > 0 ? (uint32_t) start : 0;
-            TSNode node = ts_node_descendant_for_byte_range(
-                root, cpos > 0 ? cpos - 1 : 0, cpos);
+            TSNode   node = ts_node_descendant_for_byte_range(root, cpos > 0 ? cpos - 1 : 0, cpos);
 
-            TSNode curr = node;
-            bool in_expansion = false;
-            bool in_redirect  = false;
-            TSNode cmd_node   = { 0 };
-            bool found_cmd    = false;
+            TSNode curr         = node;
+            bool   in_expansion = false;
+            bool   in_redirect  = false;
+            TSNode cmd_node     = { 0 };
+            bool   found_cmd    = false;
 
             while (!ts_node_is_null(curr))
             {
                 const char *ntype = ts_node_type(curr);
-                if (strcmp(ntype, "simple_expansion") == 0 ||
-                    strcmp(ntype, "expansion") == 0)
+                if (strcmp(ntype, "simple_expansion") == 0 || strcmp(ntype, "expansion") == 0)
                 {
                     in_expansion = true;
                     break;
@@ -3475,8 +3379,7 @@ int cli_ts_determine_completion_mode(
                     ts_tree_delete(tree);
                     return CLICOMPLETIONMODE_VARS_STREAM;
                 }
-                if (strcmp(ntype, "file_path") == 0 ||
-                    strcmp(ntype, "io_redirect") == 0)
+                if (strcmp(ntype, "file_path") == 0 || strcmp(ntype, "io_redirect") == 0)
                 {
                     in_redirect = true;
                     break;
@@ -3505,7 +3408,7 @@ int cli_ts_determine_completion_mode(
                 uint32_t ccount = ts_node_child_count(cmd_node);
                 if (ccount > 0)
                 {
-                    TSNode first = ts_node_child(cmd_node, 0);
+                    TSNode   first  = ts_node_child(cmd_node, 0);
                     uint32_t fstart = ts_node_start_byte(first);
                     uint32_t fend   = ts_node_end_byte(first);
                     if (cpos <= fend)
@@ -3528,7 +3431,7 @@ int cli_ts_determine_completion_mode(
                     int argi = 0;
                     for (uint32_t ci = 1; ci < ccount; ci++)
                     {
-                        TSNode child = ts_node_child(cmd_node, ci);
+                        TSNode   child    = ts_node_child(cmd_node, ci);
                         uint32_t ch_start = ts_node_start_byte(child);
                         if (ch_start >= cpos)
                         {
@@ -3550,8 +3453,7 @@ int cli_ts_determine_completion_mode(
         }
     }
 
-    return cli_determine_mode_lexical(
-        line, start, text, out_cmdname, cmdname_size, out_argidx);
+    return cli_determine_mode_lexical(line, start, text, out_cmdname, cmdname_size, out_argidx);
 }
 
 #else
@@ -3580,11 +3482,7 @@ int cli_ts_detect_color_level(void)
 void cli_ts_cleanup(void)
 {
 }
-void cli_ts_highlight_line(
-    const char *line,
-    int         len,
-    int         cursor_pos,
-    FILE       *out)
+void cli_ts_highlight_line(const char *line, int len, int cursor_pos, FILE *out)
 {
     if (line == NULL || len == 0)
     {
@@ -3615,10 +3513,7 @@ void cli_ts_highlight_line(
     fflush(out);
 }
 
-bool cli_ts_find_match_pair(
-    const char     *line,
-    int             cursor_pos,
-    CLI_MATCH_PAIR *pair)
+bool cli_ts_find_match_pair(const char *line, int cursor_pos, CLI_MATCH_PAIR *pair)
 {
     if (line == NULL || cursor_pos < 0)
     {
@@ -3690,21 +3585,17 @@ int cli_ts_is_incomplete(const char *buffer)
     return 0;
 }
 
-int cli_ts_determine_completion_mode(
-    const char *line,
-    int         start,
-    const char *text,
-    char       *out_cmdname,
-    size_t      cmdname_size,
-    int        *out_argidx)
+int cli_ts_determine_completion_mode(const char *line,
+                                     int         start,
+                                     const char *text,
+                                     char       *out_cmdname,
+                                     size_t      cmdname_size,
+                                     int        *out_argidx)
 {
-    return cli_determine_mode_lexical(
-        line, start, text, out_cmdname, cmdname_size, out_argidx);
+    return cli_determine_mode_lexical(line, start, text, out_cmdname, cmdname_size, out_argidx);
 }
 
-int cli_ts_get_diagnostic(
-    const char      *line,
-    CLI_SYNTAX_DIAG *diag)
+int cli_ts_get_diagnostic(const char *line, CLI_SYNTAX_DIAG *diag)
 {
     if (diag)
     {
@@ -3785,9 +3676,8 @@ int cli_ts_get_diagnostic(
             diag->severity   = CLI_DIAG_SEVERITY_INFO;
             diag->start_byte = (uint32_t) (len - 1);
             diag->end_byte   = (uint32_t) len;
-            snprintf(
-                diag->message, sizeof(diag->message),
-                "trailing pipe '|' (waiting for command)");
+            snprintf(diag->message, sizeof(diag->message),
+                     "trailing pipe '|' (waiting for command)");
             snprintf(diag->token, sizeof(diag->token), "|");
             return 1;
         }
@@ -3796,9 +3686,7 @@ int cli_ts_get_diagnostic(
             diag->severity   = CLI_DIAG_SEVERITY_INFO;
             diag->start_byte = (uint32_t) (len - 2);
             diag->end_byte   = (uint32_t) len;
-            snprintf(
-                diag->message, sizeof(diag->message),
-                "trailing '&&' (waiting for command)");
+            snprintf(diag->message, sizeof(diag->message), "trailing '&&' (waiting for command)");
             snprintf(diag->token, sizeof(diag->token), "&&");
             return 1;
         }
@@ -3807,9 +3695,7 @@ int cli_ts_get_diagnostic(
             diag->severity   = CLI_DIAG_SEVERITY_INFO;
             diag->start_byte = (uint32_t) (len - 2);
             diag->end_byte   = (uint32_t) len;
-            snprintf(
-                diag->message, sizeof(diag->message),
-                "trailing '||' (waiting for command)");
+            snprintf(diag->message, sizeof(diag->message), "trailing '||' (waiting for command)");
             snprintf(diag->token, sizeof(diag->token), "||");
             return 1;
         }
@@ -3888,9 +3774,7 @@ int cli_ts_compute_indent_depth(const char *buffer)
     return (obrace > cbrace) ? (obrace - cbrace) : 0;
 }
 
-char *cli_ts_format_code(
-    const char *code,
-    int         indent_width)
+char *cli_ts_format_code(const char *code, int indent_width)
 {
     (void) indent_width;
     if (!code)
@@ -3900,10 +3784,7 @@ char *cli_ts_format_code(
     return strdup(code);
 }
 
-int cli_ts_print_block_folds(
-    const char *code,
-    const char *label,
-    FILE       *out)
+int cli_ts_print_block_folds(const char *code, const char *label, FILE *out)
 {
     (void) code;
     (void) label;

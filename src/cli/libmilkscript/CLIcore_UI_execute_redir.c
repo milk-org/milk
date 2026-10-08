@@ -108,8 +108,7 @@ int cli_find_unquoted_op(const char *line, char primary, char reject, char accep
             }
             else if (depth == 0 && c == primary)
             {
-                if (reject != 0 &&
-                    (line[i + 1] == reject || (i > 0 && line[i - 1] == reject)))
+                if (reject != 0 && (line[i + 1] == reject || (i > 0 && line[i - 1] == reject)))
                 {
                     continue;
                 }

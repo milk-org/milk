@@ -928,4 +928,3 @@ errno_t cli_pwd(void)
         return RETURN_FAILURE;
     }
 }
-

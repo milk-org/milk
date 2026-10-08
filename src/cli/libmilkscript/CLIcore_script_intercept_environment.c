@@ -338,10 +338,10 @@ int cli_intercept_cmd_printf(const char *p)
                     continue;
                 }
 
-                char        spec[32];
-                int         si = 0;
-                spec[si++]     = '%';
-                const char *q  = f + 1;
+                char spec[32];
+                int  si       = 0;
+                spec[si++]    = '%';
+                const char *q = f + 1;
                 while (*q != '\0' && si < (int) sizeof(spec) - 2 &&
                        (*q == '-' || *q == '+' || *q == ' ' || *q == '0' || *q == '#' ||
                         (*q >= '0' && *q <= '9') || *q == '.'))

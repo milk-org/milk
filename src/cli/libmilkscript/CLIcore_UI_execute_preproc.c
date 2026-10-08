@@ -434,7 +434,7 @@ int cli_split_semicolon(errno_t *retval)
 
                 strncpy(data.CLIcmdline, frest, STRINGMAXLEN_CLICMDLINE - 1);
                 data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-                *retval = CLI_execute_line();
+                *retval                                      = CLI_execute_line();
                 return 1;
             }
         }
@@ -502,7 +502,7 @@ int cli_split_semicolon(errno_t *retval)
         {
             strncpy(data.CLIcmdline, rest, STRINGMAXLEN_CLICMDLINE - 1);
             data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-            *retval = CLI_execute_line();
+            *retval                                      = CLI_execute_line();
         }
     }
     return 1;

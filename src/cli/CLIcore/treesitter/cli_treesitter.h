@@ -20,8 +20,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define CLI_DIAG_SEVERITY_NONE  0
-#define CLI_DIAG_SEVERITY_INFO  1
+#define CLI_DIAG_SEVERITY_NONE 0
+#define CLI_DIAG_SEVERITY_INFO 1
 #define CLI_DIAG_SEVERITY_ERROR 2
 
 typedef struct
@@ -68,11 +68,7 @@ int cli_ts_init(void);
  * @param cursor_pos Current cursor position in line (-1 to disable match highlighting)
  * @param out        Output stream (typically rl_outstream)
  */
-void cli_ts_highlight_line(
-    const char *line,
-    int         len,
-    int         cursor_pos,
-    FILE       *out);
+void cli_ts_highlight_line(const char *line, int len, int cursor_pos, FILE *out);
 
 /**
  * @brief Find matching structural delimiter or block keyword pair
@@ -90,10 +86,7 @@ void cli_ts_highlight_line(
  * @param pair       Output structure with matched byte ranges
  * @return true if a matching pair was found, false otherwise
  */
-bool cli_ts_find_match_pair(
-    const char     *line,
-    int             cursor_pos,
-    CLI_MATCH_PAIR *pair);
+bool cli_ts_find_match_pair(const char *line, int cursor_pos, CLI_MATCH_PAIR *pair);
 
 /**
  * @brief Detect if terminal supports 256 colors
@@ -142,13 +135,12 @@ int cli_ts_is_incomplete(const char *buffer);
  * @return Completion mode (CLICOMPLETIONMODE_*), or -1 if a command was identified
  *         and the caller should check command argument types.
  */
-int cli_ts_determine_completion_mode(
-    const char *line,
-    int         start,
-    const char *text,
-    char       *out_cmdname,
-    size_t      cmdname_size,
-    int        *out_argidx);
+int cli_ts_determine_completion_mode(const char *line,
+                                     int         start,
+                                     const char *text,
+                                     char       *out_cmdname,
+                                     size_t      cmdname_size,
+                                     int        *out_argidx);
 
 /**
  * @brief Get real-time syntax diagnostic for current input buffer
@@ -161,9 +153,7 @@ int cli_ts_determine_completion_mode(
  * @param diag Output structure populated with severity, span, and message
  * @return 1 if a diagnostic was detected, 0 if clean/valid
  */
-int cli_ts_get_diagnostic(
-    const char      *line,
-    CLI_SYNTAX_DIAG *diag);
+int cli_ts_get_diagnostic(const char *line, CLI_SYNTAX_DIAG *diag);
 
 /**
  * @brief Compute block nesting depth for auto-indentation
@@ -185,9 +175,7 @@ int cli_ts_compute_indent_depth(const char *buffer);
  * @param indent_width Number of spaces per indentation level (typically 2 or 4)
  * @return Dynamically allocated formatted string (caller must free), or NULL on error
  */
-char *cli_ts_format_code(
-    const char *code,
-    int         indent_width);
+char *cli_ts_format_code(const char *code, int indent_width);
 
 /**
  * @brief Print structural outline of AST blocks in code
@@ -200,10 +188,7 @@ char *cli_ts_format_code(
  * @param out   Output stream (typically stdout)
  * @return Number of blocks found
  */
-int cli_ts_print_block_folds(
-    const char *code,
-    const char *label,
-    FILE       *out);
+int cli_ts_print_block_folds(const char *code, const char *label, FILE *out);
 
 /**
  * @brief Check if CLI is currently prompting for a multi-line continuation line

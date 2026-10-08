@@ -38,7 +38,6 @@
 extern char **environ;
 
 
-
 #ifdef USE_READLINE
 
 /* ---- Tab-completion generator ---- */
@@ -71,7 +70,7 @@ char *CLI_generator(const char *text, int state)
     static int          matches_found_in_pass = 0;
     char               *name;
 
-#define GEN_DUPSTR(s) (matches_found_in_pass++, dupstr(s))
+#    define GEN_DUPSTR(s) (matches_found_in_pass++, dupstr(s))
 
     if (!state)
     {
@@ -416,7 +415,7 @@ retry_fuzzy:
 
             if (!state)
             {
-                param_idx = 0;
+                param_idx    = 0;
                 size_t fnlen = (size_t) (dot2 - (dot1 + 1));
                 if (fnlen >= sizeof(fps_target))
                 {
@@ -429,8 +428,8 @@ retry_fuzzy:
                 param_prefix[sizeof(param_prefix) - 1] = '\0';
 
                 memset(&fps, 0, sizeof(FPS));
-                fps_connected = (fps_connect(fps_target, &fps, FPSCONNECT_SIMPLE) == 0 &&
-                                 fps.parray != NULL);
+                fps_connected =
+                    (fps_connect(fps_target, &fps, FPSCONNECT_SIMPLE) == 0 && fps.parray != NULL);
             }
 
             if (fps_connected)
@@ -499,8 +498,8 @@ retry_fuzzy:
                             {
                                 namelen = 240;
                             }
-                            snprintf(fpsname, sizeof(fpsname), "@fps.%.*s.",
-                                     namelen, ent->d_name + 4);
+                            snprintf(fpsname, sizeof(fpsname), "@fps.%.*s.", namelen,
+                                     ent->d_name + 4);
 
                             if (generator_fuzzy_pass == 0)
                             {
@@ -550,8 +549,7 @@ retry_fuzzy:
                         {
                             namelen = 240;
                         }
-                        snprintf(seqname, sizeof(seqname), "@seq.%.*s.",
-                                 namelen, ent->d_name + 4);
+                        snprintf(seqname, sizeof(seqname), "@seq.%.*s.", namelen, ent->d_name + 4);
 
                         if (generator_fuzzy_pass == 0)
                         {
@@ -574,23 +572,22 @@ retry_fuzzy:
 
     if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_STREAM)
     {
-        const char *dot1 = strchr(text, '.');
-        const char *dot2 = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
-        int has_brace = (text[0] == '$' && text[1] == '{');
+        const char *dot1      = strchr(text, '.');
+        const char *dot2      = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
+        int         has_brace = (text[0] == '$' && text[1] == '{');
 
         if (dot2 != NULL)
         {
-            static int prop_idx = 0;
-            static const char *stream_props[] = {
-                "xsize", "ysize", "zsize", "naxis", "type", "typename",
-                "nelem", "cnt0", "cnt1", "sem", NULL
-            };
-            static char stream_target[128];
-            static char prop_prefix[64];
+            static int         prop_idx       = 0;
+            static const char *stream_props[] = { "xsize", "ysize",    "zsize", "naxis",
+                                                  "type",  "typename", "nelem", "cnt0",
+                                                  "cnt1",  "sem",      NULL };
+            static char        stream_target[128];
+            static char        prop_prefix[64];
 
             if (!state)
             {
-                prop_idx = 0;
+                prop_idx     = 0;
                 size_t snlen = (size_t) (dot2 - (dot1 + 1));
                 if (snlen >= sizeof(stream_target))
                 {
@@ -606,7 +603,7 @@ retry_fuzzy:
             while (stream_props[prop_idx] != NULL)
             {
                 const char *sprop = stream_props[prop_idx++];
-                int match = 0;
+                int         match = 0;
                 if (generator_fuzzy_pass == 0)
                 {
                     if (strncmp(sprop, prop_prefix, strlen(prop_prefix)) == 0)
@@ -662,13 +659,11 @@ retry_fuzzy:
                         }
                         if (has_brace)
                         {
-                            snprintf(sname, sizeof(sname), "${s.%.*s.",
-                                     namelen, ent->d_name);
+                            snprintf(sname, sizeof(sname), "${s.%.*s.", namelen, ent->d_name);
                         }
                         else
                         {
-                            snprintf(sname, sizeof(sname), "@s.%.*s.",
-                                     namelen, ent->d_name);
+                            snprintf(sname, sizeof(sname), "@s.%.*s.", namelen, ent->d_name);
                         }
 
                         if (generator_fuzzy_pass == 0)
@@ -717,7 +712,7 @@ retry_fuzzy:
             }
             strncpy(vprefix, vp, sizeof(vprefix) - 1);
             vprefix[sizeof(vprefix) - 1] = '\0';
-            vpreflen = (int) strlen(vprefix);
+            vpreflen                     = (int) strlen(vprefix);
         }
 
         /* Phase 0: special shell variables */
@@ -784,7 +779,7 @@ retry_fuzzy:
             }
 
             const char *vname = cli_vars[i].name;
-            int match = 0;
+            int         match = 0;
             if (generator_fuzzy_pass == 0)
             {
                 if (strncmp(vname, vprefix, vpreflen) == 0)
@@ -833,7 +828,7 @@ retry_fuzzy:
             }
 
             const char *aname = cli_arrays[i].name;
-            int match = 0;
+            int         match = 0;
             if (generator_fuzzy_pass == 0)
             {
                 if (strncmp(aname, vprefix, vpreflen) == 0)
@@ -876,13 +871,13 @@ retry_fuzzy:
             }
 
             const char *entry = environ[var_idx++];
-            const char *eq = strchr(entry, '=');
+            const char *eq    = strchr(entry, '=');
             if (eq == NULL)
             {
                 continue;
             }
 
-            char ename[256];
+            char   ename[256];
             size_t nlen = (size_t) (eq - entry);
             if (nlen >= sizeof(ename))
             {
@@ -949,7 +944,7 @@ retry_fuzzy:
         goto retry_fuzzy;
     }
 
-#undef GEN_DUPSTR
+#    undef GEN_DUPSTR
 
     return ((char *) NULL);
 }
@@ -966,12 +961,12 @@ retry_fuzzy:
  */
 char **CLI_completion(const char *text, int start, int __attribute__((unused)) end)
 {
-    char **matches = NULL;
+    char **matches      = NULL;
     char   cmdname[128] = "";
-    int    argidx = 0;
+    int    argidx       = 0;
 
-    int mode = cli_ts_determine_completion_mode(
-        rl_line_buffer, start, text, cmdname, sizeof(cmdname), &argidx);
+    int mode = cli_ts_determine_completion_mode(rl_line_buffer, start, text, cmdname,
+                                                sizeof(cmdname), &argidx);
 
     if (mode >= 0)
     {
@@ -984,46 +979,29 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
         {
             data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
         }
-        else if (strcmp(cmdname, "loadfits") == 0 ||
-                 strcmp(cmdname, "savefits") == 0 ||
-                 strcmp(cmdname, "saveFITS") == 0 ||
-                 strcmp(cmdname, "source") == 0 ||
-                 strcmp(cmdname, ".") == 0 ||
-                 strcmp(cmdname, "cat") == 0 ||
-                 strcmp(cmdname, "cd") == 0 ||
-                 strcmp(cmdname, "ls") == 0 ||
-                 strcmp(cmdname, "vi") == 0 ||
-                 strcmp(cmdname, "vim") == 0 ||
-                 strcmp(cmdname, "nano") == 0 ||
-                 strcmp(cmdname, "head") == 0 ||
-                 strcmp(cmdname, "tail") == 0 ||
-                 strcmp(cmdname, "cp") == 0 ||
-                 strcmp(cmdname, "mv") == 0 ||
-                 strcmp(cmdname, "rm") == 0 ||
-                 strcmp(cmdname, "less") == 0 ||
-                 strcmp(cmdname, "more") == 0 ||
-                 strcmp(cmdname, "include_once") == 0 ||
-                 strcmp(cmdname, "savescript") == 0 ||
-                 strcmp(cmdname, "savehistory") == 0 ||
-                 strcmp(cmdname, "run") == 0)
+        else if (strcmp(cmdname, "loadfits") == 0 || strcmp(cmdname, "savefits") == 0 ||
+                 strcmp(cmdname, "saveFITS") == 0 || strcmp(cmdname, "source") == 0 ||
+                 strcmp(cmdname, ".") == 0 || strcmp(cmdname, "cat") == 0 ||
+                 strcmp(cmdname, "cd") == 0 || strcmp(cmdname, "ls") == 0 ||
+                 strcmp(cmdname, "vi") == 0 || strcmp(cmdname, "vim") == 0 ||
+                 strcmp(cmdname, "nano") == 0 || strcmp(cmdname, "head") == 0 ||
+                 strcmp(cmdname, "tail") == 0 || strcmp(cmdname, "cp") == 0 ||
+                 strcmp(cmdname, "mv") == 0 || strcmp(cmdname, "rm") == 0 ||
+                 strcmp(cmdname, "less") == 0 || strcmp(cmdname, "more") == 0 ||
+                 strcmp(cmdname, "include_once") == 0 || strcmp(cmdname, "savescript") == 0 ||
+                 strcmp(cmdname, "savehistory") == 0 || strcmp(cmdname, "run") == 0)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_FILES;
         }
-        else if (strcmp(cmdname, "fpsCTRL") == 0 ||
-                 strcmp(cmdname, "fparam") == 0 ||
-                 strcmp(cmdname, "fpsload") == 0 ||
-                 strcmp(cmdname, "dpsingle") == 0 ||
-                 strcmp(cmdname, "fpsconf") == 0 ||
-                 strcmp(cmdname, "fpsrun") == 0 ||
-                 strcmp(cmdname, "fpsstop") == 0 ||
-                 strcmp(cmdname, "waitfor_fps") == 0)
+        else if (strcmp(cmdname, "fpsCTRL") == 0 || strcmp(cmdname, "fparam") == 0 ||
+                 strcmp(cmdname, "fpsload") == 0 || strcmp(cmdname, "dpsingle") == 0 ||
+                 strcmp(cmdname, "fpsconf") == 0 || strcmp(cmdname, "fpsrun") == 0 ||
+                 strcmp(cmdname, "fpsstop") == 0 || strcmp(cmdname, "waitfor_fps") == 0)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
         }
-        else if (strcmp(cmdname, "export") == 0 ||
-                 strcmp(cmdname, "readonly") == 0 ||
-                 strcmp(cmdname, "unset") == 0 ||
-                 strcmp(cmdname, "local") == 0 ||
+        else if (strcmp(cmdname, "export") == 0 || strcmp(cmdname, "readonly") == 0 ||
+                 strcmp(cmdname, "unset") == 0 || strcmp(cmdname, "local") == 0 ||
                  strcmp(cmdname, "declare") == 0)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_VARS_ENV;
@@ -1031,7 +1009,7 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
         else
         {
             /* Lookup registered milk command in data.cmd */
-            int cmdimatch = find_command_match(cmdname);
+            int cmdimatch    = find_command_match(cmdname);
             int matched_mode = -1;
 
             if (cmdimatch >= 0 && data.cmd[cmdimatch].argdata != NULL)
@@ -1077,8 +1055,8 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
     if (data.CLImatchMode == CLICOMPLETIONMODE_FILES)
     {
         /* Use standard readline filename completion */
-        matches = rl_completion_matches(
-            (char *) text, (rl_compentry_func_t *) rl_filename_completion_function);
+        matches = rl_completion_matches((char *) text,
+                                        (rl_compentry_func_t *) rl_filename_completion_function);
     }
     else
     {
@@ -1097,14 +1075,14 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
     }
     else if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_FPS)
     {
-        const char *d1 = strchr(text, '.');
-        const char *d2 = (d1 != NULL) ? strchr(d1 + 1, '.') : NULL;
+        const char *d1                 = strchr(text, '.');
+        const char *d2                 = (d1 != NULL) ? strchr(d1 + 1, '.') : NULL;
         rl_completion_append_character = (d2 != NULL) ? ' ' : '\0';
     }
     else if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_STREAM)
     {
-        const char *d1 = strchr(text, '.');
-        const char *d2 = (d1 != NULL) ? strchr(d1 + 1, '.') : NULL;
+        const char *d1                 = strchr(text, '.');
+        const char *d2                 = (d1 != NULL) ? strchr(d1 + 1, '.') : NULL;
         rl_completion_append_character = (d2 != NULL) ? ' ' : '\0';
     }
     else if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_SEQ)

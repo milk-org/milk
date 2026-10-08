@@ -179,8 +179,7 @@ static void cli_execute_single_segment(const char *cmd)
     data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
     size_t len = strlen(data.CLIcmdline);
-    while (len > 0 && (data.CLIcmdline[len - 1] == ' ' ||
-                       data.CLIcmdline[len - 1] == '\t' ||
+    while (len > 0 && (data.CLIcmdline[len - 1] == ' ' || data.CLIcmdline[len - 1] == '\t' ||
                        data.CLIcmdline[len - 1] == '\r'))
     {
         data.CLIcmdline[--len] = '\0';
@@ -325,8 +324,8 @@ static void cli_multiline_to_single_line(const char *multiline, char *single, si
             linelen--;
         }
         /* Trim trailing whitespace */
-        while (linelen > 0 && (line[linelen - 1] == ' ' || line[linelen - 1] == '\t' ||
-                               line[linelen - 1] == '\r'))
+        while (linelen > 0 &&
+               (line[linelen - 1] == ' ' || line[linelen - 1] == '\t' || line[linelen - 1] == '\r'))
         {
             linelen--;
         }
@@ -443,8 +442,8 @@ void rl_cb_linehandler(char *linein)
 
         while (cli_ts_is_incomplete(multiline_buf))
         {
-            size_t len = strlen(multiline_buf);
-            int is_bslash = (len > 0 && multiline_buf[len - 1] == '\\');
+            size_t len       = strlen(multiline_buf);
+            int    is_bslash = (len > 0 && multiline_buf[len - 1] == '\\');
             if (is_bslash)
             {
                 multiline_buf[len - 1] = ' ';
@@ -456,7 +455,7 @@ void rl_cb_linehandler(char *linein)
                 ps2 = "> ";
             }
 
-            int depth = cli_ts_compute_indent_depth(multiline_buf);
+            int depth         = cli_ts_compute_indent_depth(multiline_buf);
             int indent_spaces = (data.auto_indent > 0) ? (depth * data.auto_indent) : 0;
 
             g_auto_indent_spaces     = indent_spaces;
@@ -485,12 +484,9 @@ void rl_cb_linehandler(char *linein)
             }
 
             if (data.auto_indent > 0 && depth > 0 &&
-                (strncmp(cstart, "done", 4) == 0 ||
-                 strncmp(cstart, "fi", 2) == 0 ||
-                 strncmp(cstart, "esac", 4) == 0 ||
-                 strncmp(cstart, "}", 1) == 0 ||
-                 strncmp(cstart, "else", 4) == 0 ||
-                 strncmp(cstart, "elif", 4) == 0))
+                (strncmp(cstart, "done", 4) == 0 || strncmp(cstart, "fi", 2) == 0 ||
+                 strncmp(cstart, "esac", 4) == 0 || strncmp(cstart, "}", 1) == 0 ||
+                 strncmp(cstart, "else", 4) == 0 || strncmp(cstart, "elif", 4) == 0))
             {
                 int closer_depth = (depth > 0) ? (depth - 1) : 0;
                 int nsp          = closer_depth * data.auto_indent;
@@ -574,8 +570,7 @@ void rl_cb_linehandler(char *linein)
 
     if (had_continuation)
     {
-        rl_callback_handler_install(cli_get_active_prompt(),
-                                    (rl_vcpfunc_t *) &rl_cb_linehandler);
+        rl_callback_handler_install(cli_get_active_prompt(), (rl_vcpfunc_t *) &rl_cb_linehandler);
     }
 
     free(linein);

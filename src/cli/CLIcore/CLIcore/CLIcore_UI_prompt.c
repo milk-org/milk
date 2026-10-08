@@ -147,7 +147,5 @@ errno_t cli_setprompt(void)
 }
 
 
-
 // cli_expand_braces moved to CLIcore_script_expand.c
 // cli_expand_env moved to CLIcore_script_expand.c
-

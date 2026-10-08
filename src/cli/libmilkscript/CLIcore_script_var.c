@@ -205,8 +205,8 @@ int cli_try_var_assign(const char *line)
     int namelen = (int) (p - name_start);
 
     /* Check for indexed array assignment: arr[idx]=val */
-    int  has_idx          = 0;
-    char idx_str[64]      = { 0 };
+    int  has_idx     = 0;
+    char idx_str[64] = { 0 };
     if (*p == '[')
     {
         p++;
@@ -331,11 +331,11 @@ int cli_try_var_assign(const char *line)
                     {
                         if (!cli_arrays[i].used)
                         {
-                            slot = i;
+                            slot                  = i;
                             cli_arrays[slot].used = 1;
                             strncpy(cli_arrays[slot].name, tmpname, CLI_VAR_NAMELEN - 1);
                             cli_arrays[slot].name[CLI_VAR_NAMELEN - 1] = '\0';
-                            cli_arrays[slot].nelem = 0;
+                            cli_arrays[slot].nelem                     = 0;
                             break;
                         }
                     }

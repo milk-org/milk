@@ -333,8 +333,8 @@ void update_hint_area(void)
                 int  dlen = 0;
                 if (diag.severity == CLI_DIAG_SEVERITY_ERROR)
                 {
-                    dlen = snprintf(
-                        diag_buf, sizeof(diag_buf), "[syntax error: %s] ", diag.message);
+                    dlen =
+                        snprintf(diag_buf, sizeof(diag_buf), "[syntax error: %s] ", diag.message);
                     if (col + dlen < cached_term_cols - 1)
                     {
                         printf("\033[1;31m[syntax error: %s]\033[0m ", diag.message);
@@ -358,8 +358,8 @@ void update_hint_area(void)
         {
             char cmdname[128] = "";
             int  argidx       = 0;
-            cli_ts_determine_completion_mode(
-                rl_line_buffer, rl_point, "", cmdname, sizeof(cmdname), &argidx);
+            cli_ts_determine_completion_mode(rl_line_buffer, rl_point, "", cmdname, sizeof(cmdname),
+                                             &argidx);
 
             if (cmdname[0] != '\0')
             {
@@ -563,8 +563,8 @@ void CLI_redisplay(void)
     /* Determine matching mode using tree-sitter AST & boundary classifier */
     char cmdname[128] = "";
     int  argidx       = 0;
-    int  mode = cli_ts_determine_completion_mode(
-        rl_line_buffer, start, text, cmdname, sizeof(cmdname), &argidx);
+    int  mode         = cli_ts_determine_completion_mode(rl_line_buffer, start, text, cmdname,
+                                                         sizeof(cmdname), &argidx);
 
     if (mode >= 0)
     {
@@ -576,53 +576,36 @@ void CLI_redisplay(void)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
         }
-        else if (strcmp(cmdname, "loadfits") == 0 ||
-                 strcmp(cmdname, "savefits") == 0 ||
-                 strcmp(cmdname, "saveFITS") == 0 ||
-                 strcmp(cmdname, "source") == 0 ||
-                 strcmp(cmdname, ".") == 0 ||
-                 strcmp(cmdname, "cat") == 0 ||
-                 strcmp(cmdname, "cd") == 0 ||
-                 strcmp(cmdname, "ls") == 0 ||
-                 strcmp(cmdname, "vi") == 0 ||
-                 strcmp(cmdname, "vim") == 0 ||
-                 strcmp(cmdname, "nano") == 0 ||
-                 strcmp(cmdname, "head") == 0 ||
-                 strcmp(cmdname, "tail") == 0 ||
-                 strcmp(cmdname, "cp") == 0 ||
-                 strcmp(cmdname, "mv") == 0 ||
-                 strcmp(cmdname, "rm") == 0 ||
-                 strcmp(cmdname, "less") == 0 ||
-                 strcmp(cmdname, "more") == 0 ||
-                 strcmp(cmdname, "include_once") == 0 ||
-                 strcmp(cmdname, "savescript") == 0 ||
-                 strcmp(cmdname, "savehistory") == 0 ||
-                 strcmp(cmdname, "run") == 0)
+        else if (strcmp(cmdname, "loadfits") == 0 || strcmp(cmdname, "savefits") == 0 ||
+                 strcmp(cmdname, "saveFITS") == 0 || strcmp(cmdname, "source") == 0 ||
+                 strcmp(cmdname, ".") == 0 || strcmp(cmdname, "cat") == 0 ||
+                 strcmp(cmdname, "cd") == 0 || strcmp(cmdname, "ls") == 0 ||
+                 strcmp(cmdname, "vi") == 0 || strcmp(cmdname, "vim") == 0 ||
+                 strcmp(cmdname, "nano") == 0 || strcmp(cmdname, "head") == 0 ||
+                 strcmp(cmdname, "tail") == 0 || strcmp(cmdname, "cp") == 0 ||
+                 strcmp(cmdname, "mv") == 0 || strcmp(cmdname, "rm") == 0 ||
+                 strcmp(cmdname, "less") == 0 || strcmp(cmdname, "more") == 0 ||
+                 strcmp(cmdname, "include_once") == 0 || strcmp(cmdname, "savescript") == 0 ||
+                 strcmp(cmdname, "savehistory") == 0 || strcmp(cmdname, "run") == 0)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_FILES;
         }
-        else if (strcmp(cmdname, "fpsCTRL") == 0 ||
-                 strcmp(cmdname, "fparam") == 0 ||
-                 strcmp(cmdname, "fpsload") == 0 ||
-                 strcmp(cmdname, "dpsingle") == 0 ||
-                 strcmp(cmdname, "fpsconf") == 0 ||
-                 strcmp(cmdname, "fpsrun") == 0 ||
-                 strcmp(cmdname, "fpsstop") == 0 ||
-                 strcmp(cmdname, "waitfor_fps") == 0)
+        else if (strcmp(cmdname, "fpsCTRL") == 0 || strcmp(cmdname, "fparam") == 0 ||
+                 strcmp(cmdname, "fpsload") == 0 || strcmp(cmdname, "dpsingle") == 0 ||
+                 strcmp(cmdname, "fpsconf") == 0 || strcmp(cmdname, "fpsrun") == 0 ||
+                 strcmp(cmdname, "fpsstop") == 0 || strcmp(cmdname, "waitfor_fps") == 0)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
         }
-        else if (strcmp(cmdname, "export") == 0 ||
-                 strcmp(cmdname, "readonly") == 0 ||
-                 strcmp(cmdname, "unset") == 0 ||
-                 strcmp(cmdname, "local") == 0 ||
+        else if (strcmp(cmdname, "export") == 0 || strcmp(cmdname, "readonly") == 0 ||
+                 strcmp(cmdname, "unset") == 0 || strcmp(cmdname, "local") == 0 ||
                  strcmp(cmdname, "declare") == 0)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_VARS_ENV;
         }
         else
         {
-            int cmdimatch = find_command_match(cmdname);
+            int cmdimatch    = find_command_match(cmdname);
             int matched_mode = -1;
 
             if (cmdimatch >= 0 && data.cmd[cmdimatch].argdata != NULL)
