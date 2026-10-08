@@ -511,18 +511,11 @@ foreach(lsrcdir IN LISTS libsrcdir libextradir)
   endif()
 endforeach()
 
-# Ensure ImageStreamIO exports pthread for POSIX semaphore support
-# (guard in case submodule checkout does not yet include the fix)
-if(TARGET ImageStreamIO)
-  get_target_property(_isio_libs ImageStreamIO LINK_LIBRARIES)
-  if(NOT _isio_libs MATCHES "pthread")
-    target_link_libraries(ImageStreamIO PUBLIC pthread)
-  endif()
-endif()
 if(TARGET ImageStreamIO_static)
-  get_target_property(_isio_static_libs ImageStreamIO_static LINK_LIBRARIES)
-  if(NOT _isio_static_libs MATCHES "pthread")
-    target_link_libraries(ImageStreamIO_static PUBLIC pthread)
+  # The submodule's static archive is built with -DHAVE_CUDA but links no CUDA runtime.
+  if(HAVE_CUDA)
+    # TODO not this, add this to ImageStreamIO directly...
+    target_link_libraries(ImageStreamIO_static PRIVATE CUDA::toolkit CUDA::cudart)
   endif()
 endif()
 

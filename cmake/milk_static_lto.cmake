@@ -9,7 +9,8 @@
 # framework state.
 #
 function(milk_link_module target LIBNAME)
-    if(USE_STATIC_LTO AND TARGET ${LIBNAME}_static)
+    #if(USE_STATIC_LTO AND TARGET ${LIBNAME}_static)
+    if(USE_STATIC_LTO)
         target_link_libraries(${target} PUBLIC ${LIBNAME}_static)
     else()
         target_link_libraries(${target} PUBLIC ${LIBNAME})
