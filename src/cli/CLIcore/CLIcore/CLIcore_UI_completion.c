@@ -48,6 +48,7 @@
 #include "CLIcore_script.h"
 #include "CLIcore_signals.h"
 #include "CLIcore_UI_execute.h"
+#include "treesitter/cli_treesitter.h"
 
 #include <fnmatch.h>
 #include <glob.h>
@@ -162,6 +163,103 @@ int cli_accept_line(int count, int key)
  * @param linein  Line text from readline
  *                (caller-allocated, freed here)
  */
+/**
+ * @brief Execute a multi-line buffer statement by statement
+ *
+ * Splits the accumulated buffer by newlines occurring outside of quotes,
+ * executing each line with fault isolation.
+ *
+ * @param buffer  Multi-line input buffer
+ */
+static void cli_execute_multiline(const char *buffer)
+{
+    char   line[STRINGMAXLEN_CLICMDLINE];
+    size_t line_len  = 0;
+    int    in_dquote = 0;
+    int    in_squote = 0;
+
+    for (size_t i = 0; buffer[i] != '\0'; i++)
+    {
+        char c = buffer[i];
+
+        if (c == '\\' && buffer[i + 1] != '\0' && !in_squote)
+        {
+            if (line_len < sizeof(line) - 1)
+            {
+                line[line_len++] = c;
+            }
+            if (line_len < sizeof(line) - 1)
+            {
+                line[line_len++] = buffer[++i];
+            }
+            continue;
+        }
+
+        if (c == '"' && !in_squote)
+        {
+            in_dquote = !in_dquote;
+        }
+        else if (c == '\'' && !in_dquote)
+        {
+            in_squote = !in_squote;
+        }
+
+        if (c == '\n' && !in_dquote && !in_squote)
+        {
+            line[line_len] = '\0';
+            if (line_len > 0)
+            {
+                strncpy(data.CLIcmdline, line, STRINGMAXLEN_CLICMDLINE - 1);
+                data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+                cli_history_expand();
+                cli_fault_isolation_arm();
+                if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
+                {
+                    CLI_execute_line();
+                }
+                else
+                {
+                    dcsigINT  = 0;
+                    dcsigSEGV = 0;
+                    dcsigBUS  = 0;
+                    dcsigABRT = 0;
+                    rl_on_new_line();
+                }
+                cli_fault_isolation_disarm();
+            }
+            line_len = 0;
+            continue;
+        }
+
+        if (line_len < sizeof(line) - 1)
+        {
+            line[line_len++] = c;
+        }
+    }
+
+    if (line_len > 0)
+    {
+        line[line_len] = '\0';
+        strncpy(data.CLIcmdline, line, STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        cli_history_expand();
+        cli_fault_isolation_arm();
+        if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
+        {
+            CLI_execute_line();
+        }
+        else
+        {
+            dcsigINT  = 0;
+            dcsigSEGV = 0;
+            dcsigBUS  = 0;
+            dcsigABRT = 0;
+            rl_on_new_line();
+        }
+        cli_fault_isolation_disarm();
+    }
+}
+
 void rl_cb_linehandler(char *linein)
 {
     if (NULL == linein)
@@ -172,50 +270,71 @@ void rl_cb_linehandler(char *linein)
 
     data.CLIexecuteCMDready = 1;
 
-    // copy input into data.CLIcmdline
-    strncpy(data.CLIcmdline, linein, STRINGMAXLEN_CLICMDLINE - 1);
-    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    char multiline_buf[16384];
+    strncpy(multiline_buf, linein, sizeof(multiline_buf) - 1);
+    multiline_buf[sizeof(multiline_buf) - 1] = '\0';
 
-    /* We will add to history AFTER backslash continuation and history expansion */
-
-    /* Handle backslash line continuation:
-     * temporarily switch to blocking readline
-     * to read additional lines */
+    /* Handle multi-line continuation:
+     * both backslash continuation and tree-sitter syntactic continuation */
+    while (cli_ts_is_incomplete(multiline_buf))
     {
-        size_t len = strlen(data.CLIcmdline);
-        while (len > 0 && data.CLIcmdline[len - 1] == '\\')
+        size_t len = strlen(multiline_buf);
+        int is_bslash = (len > 0 && multiline_buf[len - 1] == '\\');
+        if (is_bslash)
         {
-            data.CLIcmdline[len - 1] = ' ';
-            /* Remove callback handler to avoid
-             * interference, use direct readline
-             * for continuation */
-            rl_callback_handler_remove();
-            char *cont = readline("> ");
-            /* Re-install with dummy prompt;
-             * the main loop will re-install
-             * with the proper prompt after this
-             * handler returns */
-            rl_callback_handler_install("", (rl_vcpfunc_t *) &rl_cb_linehandler);
-            if (cont == NULL)
-            {
-                break;
-            }
-            int avail = STRINGMAXLEN_CLICMDLINE - (int) strlen(data.CLIcmdline) - 1;
-            if (avail > 0)
-            {
-                strncat(data.CLIcmdline, cont, (size_t) avail);
-            }
-            free(cont);
-            len = strlen(data.CLIcmdline);
+            multiline_buf[len - 1] = ' ';
         }
+
+        const char *ps2 = cli_var_get("PS2");
+        if (ps2 == NULL || ps2[0] == '\0')
+        {
+            ps2 = "> ";
+        }
+
+        const char *saved_prompt = rl_prompt;
+        rl_callback_handler_remove();
+        char *cont = readline(ps2);
+        rl_callback_handler_install(
+            saved_prompt ? saved_prompt : "", (rl_vcpfunc_t *) &rl_cb_linehandler);
+        if (cont == NULL)
+        {
+            /* Interrupted or EOF (Ctrl-C / Ctrl-D) */
+            multiline_buf[0] = '\0';
+            break;
+        }
+
+        size_t curlen = strlen(multiline_buf);
+        size_t contlen = strlen(cont);
+        if (curlen + 2 + contlen < sizeof(multiline_buf))
+        {
+            if (!is_bslash)
+            {
+                /* Check if preceding non-space was pipe or logical op */
+                size_t trimmed = curlen;
+                while (trimmed > 0 && (multiline_buf[trimmed - 1] == ' ' ||
+                                       multiline_buf[trimmed - 1] == '\t'))
+                {
+                    trimmed--;
+                }
+                int join_space = 0;
+                if (trimmed > 0)
+                {
+                    char lastc = multiline_buf[trimmed - 1];
+                    if (lastc == '|' || lastc == '&')
+                    {
+                        join_space = 1;
+                    }
+                }
+                multiline_buf[curlen++] = join_space ? ' ' : '\n';
+                multiline_buf[curlen] = '\0';
+            }
+            strncat(multiline_buf, cont, sizeof(multiline_buf) - curlen - 1);
+        }
+        free(cont);
     }
 
-    /* Expand history (!! and !$) now that the full line is assembled */
-    cli_history_expand();
-
-    if (data.CLIcmdline[0] == '\0')
+    if (multiline_buf[0] == '\0')
     {
-        /* Expansion error. Exit loop and prevent execution. */
         free(linein);
         return;
     }
@@ -224,38 +343,21 @@ void rl_cb_linehandler(char *linein)
      * and structured log BEFORE alias resolution.
      * This ensures up-arrow recalls the expanded command,
      * consistent with native bash behavior. */
-    if (data.CLIcmdline[0] != '\0')
+    add_history(multiline_buf);
+    cli_history_log_prompt(multiline_buf);
+    if (data.autocomplete_history)
     {
-        add_history(data.CLIcmdline);
-        cli_history_log_prompt(data.CLIcmdline);
-        if (data.autocomplete_history)
-        {
-            append_history(1, CLI_history_file());
-            history_truncate_file(CLI_history_file(), 10000);
-        }
+        append_history(1, CLI_history_file());
+        history_truncate_file(CLI_history_file(), 10000);
     }
 
     if (data.echo_input)
     {
-        printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
+        printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", multiline_buf);
     }
 
-    cli_fault_isolation_arm();
-    int jmp_res = sigsetjmp(*cli_get_repl_env(), 1);
-    if (jmp_res == 0)
-    {
-        CLI_execute_line();
-    }
-    else
-    {
-        /* Crash or SIGINT intercepted: reset signal flags and readline prompt */
-        dcsigINT  = 0;
-        dcsigSEGV = 0;
-        dcsigBUS  = 0;
-        dcsigABRT = 0;
-        rl_on_new_line();
-    }
-    cli_fault_isolation_disarm();
+    /* Execute the accumulated multi-line block */
+    cli_execute_multiline(multiline_buf);
 
     free(linein);
 }

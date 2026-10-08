@@ -280,6 +280,114 @@ void cli_ts_highlight_line(const char *line, int len, FILE *out)
     fflush(out);
 }
 
+static int has_unclosed_quotes(const char *s)
+{
+    int in_dquote = 0;
+    int in_squote = 0;
+
+    for (size_t i = 0; s[i] != '\0'; i++)
+    {
+        if (s[i] == '\\' && s[i + 1] != '\0' && !in_squote)
+        {
+            i++;
+            continue;
+        }
+        if (s[i] == '"' && !in_squote)
+        {
+            in_dquote = !in_dquote;
+        }
+        else if (s[i] == '\'' && !in_dquote)
+        {
+            in_squote = !in_squote;
+        }
+    }
+
+    return in_dquote || in_squote;
+}
+
+static bool node_tree_has_missing(TSNode node)
+{
+    if (ts_node_is_missing(node))
+    {
+        return true;
+    }
+
+    uint32_t count = ts_node_child_count(node);
+    for (uint32_t i = 0; i < count; i++)
+    {
+        if (node_tree_has_missing(ts_node_child(node, i)))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int cli_ts_is_incomplete(const char *buffer)
+{
+    if (buffer == NULL || buffer[0] == '\0')
+    {
+        return 0;
+    }
+
+    if (has_unclosed_quotes(buffer))
+    {
+        return 1;
+    }
+
+    /* Check trailing continuation operators */
+    size_t len = strlen(buffer);
+    while (len > 0 && (buffer[len - 1] == ' ' || buffer[len - 1] == '\t' ||
+                       buffer[len - 1] == '\n' || buffer[len - 1] == '\r'))
+    {
+        len--;
+    }
+    if (len > 0)
+    {
+        if (buffer[len - 1] == '\\' && (len == 1 || buffer[len - 2] != '\\'))
+        {
+            return 1;
+        }
+        if (buffer[len - 1] == '|' && (len == 1 || buffer[len - 2] != '|'))
+        {
+            return 1;
+        }
+        if (len >= 2 && buffer[len - 1] == '&' && buffer[len - 2] == '&')
+        {
+            return 1;
+        }
+        if (len >= 2 && buffer[len - 1] == '|' && buffer[len - 2] == '|')
+        {
+            return 1;
+        }
+    }
+
+    if (ts_parser == NULL)
+    {
+        if (cli_ts_init() != 0)
+        {
+            return 0;
+        }
+    }
+
+    TSTree *tree = ts_parser_parse_string(ts_parser, NULL, buffer, (uint32_t) strlen(buffer));
+    if (!tree)
+    {
+        return 0;
+    }
+
+    TSNode root = ts_tree_root_node(tree);
+    bool incomplete = false;
+    if (ts_node_has_error(root))
+    {
+        incomplete = node_tree_has_missing(root);
+    }
+    ts_tree_delete(tree);
+
+    return incomplete ? 1 : 0;
+}
+
 #else
 
 // Stubs when USE_TREESITTER is not defined
@@ -311,6 +419,65 @@ void cli_ts_highlight_line(const char *line, int len, FILE *out)
     (void) len;
     fprintf(out, "%s", line);
     fflush(out);
+}
+
+int cli_ts_is_incomplete(const char *buffer)
+{
+    if (buffer == NULL || buffer[0] == '\0')
+    {
+        return 0;
+    }
+
+    int in_dquote = 0;
+    int in_squote = 0;
+    for (size_t i = 0; buffer[i] != '\0'; i++)
+    {
+        if (buffer[i] == '\\' && buffer[i + 1] != '\0' && !in_squote)
+        {
+            i++;
+            continue;
+        }
+        if (buffer[i] == '"' && !in_squote)
+        {
+            in_dquote = !in_dquote;
+        }
+        else if (buffer[i] == '\'' && !in_dquote)
+        {
+            in_squote = !in_squote;
+        }
+    }
+    if (in_dquote || in_squote)
+    {
+        return 1;
+    }
+
+    size_t len = strlen(buffer);
+    while (len > 0 && (buffer[len - 1] == ' ' || buffer[len - 1] == '\t' ||
+                       buffer[len - 1] == '\n' || buffer[len - 1] == '\r'))
+    {
+        len--;
+    }
+    if (len > 0)
+    {
+        if (buffer[len - 1] == '\\' && (len == 1 || buffer[len - 2] != '\\'))
+        {
+            return 1;
+        }
+        if (buffer[len - 1] == '|' && (len == 1 || buffer[len - 2] != '|'))
+        {
+            return 1;
+        }
+        if (len >= 2 && buffer[len - 1] == '&' && buffer[len - 2] == '&')
+        {
+            return 1;
+        }
+        if (len >= 2 && buffer[len - 1] == '|' && buffer[len - 2] == '|')
+        {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 #endif
