@@ -174,17 +174,9 @@ errno_t CLIADDCMD_COREMOD_memory__shmim_setowner()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    {
-        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_creator, CLIfunction_creator);
-    }
-
-    {
-        INSERT_STD_CLIREGISTERFUNC
-    }
-
-    {
-        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_init, CLIfunction_init);
-    }
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_creator, CLIfunction_creator);
+    INSERT_STD_CLIREGISTERFUNC;
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_init, CLIfunction_init);
 
     return RETURN_SUCCESS;
 }

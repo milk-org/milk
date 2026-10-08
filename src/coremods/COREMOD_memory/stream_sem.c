@@ -255,21 +255,11 @@ errno_t CLIADDCMD_COREMOD_memory__stream_sem()
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     safe_fps_fill_farg_examples(farg_imsem, bindings_imsem, nb_bindings_imsem);
 
-    {
-        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_seminfo, CLIfunction_seminfo);
-    }
-    {
-        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_sempost, CLIfunction_sempost);
-    }
-    {
-        INSERT_STD_CLIREGISTERFUNC
-    }
-    {
-        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_semwait, CLIfunction_semwait);
-    }
-    {
-        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_semflush, CLIfunction_semflush);
-    }
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_seminfo, CLIfunction_seminfo);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_sempost, CLIfunction_sempost);
+    INSERT_STD_CLIREGISTERFUNC;
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_semwait, CLIfunction_semwait);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_semflush, CLIfunction_semflush);
 
     return RETURN_SUCCESS;
 }

@@ -192,17 +192,13 @@ static errno_t CLIfunction_strig(void)
 errno_t CLIADDCMD_COREMOD_memory__stream_updateloop()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    safe_fps_fill_farg_examples(farg_burst, bindings_burst, nb_bindings_burst);
+    INSERT_STD_CLIREGISTERFUNC;
 
-    {
-        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_burst, CLIfunction_burst);
-    }
-    {
-        INSERT_STD_CLIREGISTERFUNC
-    }
-    {
-        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_strig, CLIfunction_strig);
-    }
+    safe_fps_fill_farg_examples(farg_burst, bindings_burst, nb_bindings_burst);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_burst, CLIfunction_burst);
+
+    safe_fps_fill_farg_examples(farg_burst, bindings_strig, nb_bindings_strig);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_strig, CLIfunction_strig);
 
     return RETURN_SUCCESS;
 }

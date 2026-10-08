@@ -175,16 +175,12 @@ static errno_t rmp_CLIfunction(void)
 static errno_t init_module_CLI()
 {
     /* mkzer */
-    {
-        safe_fps_fill_farg_examples(farg, mkz_bindings, mkz_nb_bindings);
-        INSERT_STD_CLIREGISTERFUNC
-    }
+    safe_fps_fill_farg_examples(farg, mkz_bindings, mkz_nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC;
 
     /* rmcpiston */
-    {
-        safe_fps_fill_farg_examples(rmp_farg, rmp_bindings, rmp_nb_bindings);
-        INSERT_STD_CLIREGISTERFUNC_NAMED(rmp_CLIcmddata, rmp_CLIfunction);
-    }
+    safe_fps_fill_farg_examples(rmp_farg, rmp_bindings, rmp_nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(rmp_CLIcmddata, rmp_CLIfunction);
 
     CLIADDCMD_ZernikePolyn__mkzercube();
 

@@ -98,14 +98,10 @@ errno_t CLIADDCMD_info__image_stats()
 {
 #ifndef MILK_NO_CLI
     safe_fps_fill_farg_examples(farg_1, my_bindings_1, nb_bindings_1);
-    {
-        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_1, CLIfunction_1);
-    }
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_1, CLIfunction_1);
 
     safe_fps_fill_farg_examples(farg_2, my_bindings_2, nb_bindings_2);
-    {
-        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_2, CLIfunction_2);
-    }
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_2, CLIfunction_2);
 #endif
 
     return RETURN_SUCCESS;

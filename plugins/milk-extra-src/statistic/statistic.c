@@ -190,16 +190,12 @@ static errno_t gn_CLIfunction(void)
 static errno_t init_module_CLI()
 {
     /* putphnoise */
-    {
-        safe_fps_fill_farg_examples(farg, phn_bindings, phn_nb_bindings);
-        INSERT_STD_CLIREGISTERFUNC
-    }
+    safe_fps_fill_farg_examples(farg, phn_bindings, phn_nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC;
 
     /* putgaussnoise */
-    {
-        safe_fps_fill_farg_examples(gn_farg, gn_bindings, gn_nb_bindings);
-        INSERT_STD_CLIREGISTERFUNC_NAMED(gn_CLIcmddata, gn_CLIfunction);
-    }
+    safe_fps_fill_farg_examples(gn_farg, gn_bindings, gn_nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(gn_CLIcmddata, gn_CLIfunction);
 
     // add atexit functions here
 

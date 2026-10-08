@@ -337,34 +337,25 @@ static errno_t cp_CLIfunction(void)
 static errno_t init_module_CLI()
 {
     /* rmbadpixfast */
-    {
-        safe_fps_fill_farg_examples(farg, bpf_bindings, bpf_nb);
-        INSERT_STD_CLIREGISTERFUNC
-    }
+    safe_fps_fill_farg_examples(farg, bpf_bindings, bpf_nb);
+    INSERT_STD_CLIREGISTERFUNC;
 
     /* rmbadpixfasts */
-    {
-        safe_fps_fill_farg_examples(bps_farg, bps_bindings, bps_nb);
-        INSERT_STD_CLIREGISTERFUNC_NAMED(bps_data, bps_CLIfunction);
-    }
+    safe_fps_fill_farg_examples(bps_farg, bps_bindings, bps_nb);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(bps_data, bps_CLIfunction);
 
     /* cubesimplestat */
-    {
-        safe_fps_fill_farg_examples(css_farg, css_bindings, css_nb);
-        INSERT_STD_CLIREGISTERFUNC_NAMED(css_data, css_CLIfunction);
-    }
+    safe_fps_fill_farg_examples(css_farg, css_bindings, css_nb);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(css_data, css_CLIfunction);
 
     /* imcenternorm */
-    {
-        safe_fps_fill_farg_examples(cn_farg, cn_bindings, cn_nb);
-        INSERT_STD_CLIREGISTERFUNC_NAMED(cn_data, cn_CLIfunction);
-    }
+    safe_fps_fill_farg_examples(cn_farg, cn_bindings, cn_nb);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(cn_data, cn_CLIfunction);
 
     /* imgcubeprocess */
-    {
-        safe_fps_fill_farg_examples(cp_farg, cp_bindings, cp_nb);
-        INSERT_STD_CLIREGISTERFUNC_NAMED(cp_data, cp_CLIfunction);
-    }
+    safe_fps_fill_farg_examples(cp_farg, cp_bindings, cp_nb);
+    INSERT_STD_CLIREGISTERFUNC_NAMED(cp_data, cp_CLIfunction);
+
 
     // add atexit functions here
 
