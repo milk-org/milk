@@ -902,6 +902,20 @@ errno_t cli_cd(void)
  */
 errno_t cli_pwd(void)
 {
+    if (data.cmdNBarg > 1)
+    {
+        for (int i = 1; i < data.cmdNBarg; i++)
+        {
+            const char *arg = data.cmdargtoken[i].val.string;
+            if (arg != NULL && strcmp(arg, "-L") != 0 && strcmp(arg, "-P") != 0)
+            {
+                printf("pwd: invalid option '%s'\n", arg);
+                printf("Usage: pwd [-L | -P]\n");
+                return RETURN_FAILURE;
+            }
+        }
+    }
+
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) != NULL)
     {
@@ -914,3 +928,4 @@ errno_t cli_pwd(void)
         return RETURN_FAILURE;
     }
 }
+

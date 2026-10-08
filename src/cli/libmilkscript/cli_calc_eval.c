@@ -237,15 +237,23 @@ val_t parse_primary(void)
             /* compound: fetch old, apply op */
             if (aop != TOK_EQUAL)
             {
-                long vid = variable_ID(t->sval);
+                long   vid = variable_ID(t->sval);
+                double old = 0.0;
                 if (vid == -1)
                 {
-                    parse_errmsg("Variable not found"
-                                 " for compound assign");
-                    return mk_double(0);
+                    const char *cval = cli_var_get(t->sval);
+                    if (cval != NULL)
+                    {
+                        old = strtod(cval, NULL);
+                    }
+                    else
+                    {
+                        parse_errmsg("Variable not found"
+                                     " for compound assign");
+                        return mk_double(0);
+                    }
                 }
-                double old;
-                if (data.core.variable[vid].type == 1)
+                else if (data.core.variable[vid].type == 1)
                 {
                     old = (double) data.core.variable[vid].value.l;
                 }
@@ -277,7 +285,8 @@ val_t parse_primary(void)
                     break;
                 }
                 /* check if result is integer */
-                if (v.type == VAL_LONG && data.core.variable[vid].type == 1 &&
+                if (v.type == VAL_LONG &&
+                    ((vid != -1 && data.core.variable[vid].type == 1) || vid == -1) &&
                     aop != TOK_OP_SLASH_EQ)
                 {
                     v = mk_long((long) nv);
@@ -290,26 +299,74 @@ val_t parse_primary(void)
 
             if (v.type == VAL_STRING)
             {
-                /* var = image -> rename */
-                chname_image_ID(v.sval, t->sval);
-                if (data.core.Debug > 0)
+                if (image_ID(v.sval, data.core.image, data.core.NB_MAX_IMAGE) != -1)
                 {
-                    printf("changing name\n");
+                    /* var = image -> rename */
+                    chname_image_ID(v.sval, t->sval);
+                    if (data.core.Debug > 0)
+                    {
+                        printf("changing name\n");
+                    }
+                    return mk_string(t->sval);
                 }
+                const char *strval = cli_var_get(v.sval);
+                if (strval == NULL)
+                {
+                    strval = v.sval;
+                }
+                cli_var_set(t->sval, strval);
                 return mk_string(t->sval);
             }
             if (v.type == VAL_LONG)
             {
-                create_variable_long_ID(t->sval, v.lval);
+                long vid = variable_ID(t->sval);
+                if (vid != -1)
+                {
+                    create_variable_long_ID(t->sval, v.lval);
+                }
+                if (parse_mode == 1 || vid == -1)
+                {
+                    char numv[64];
+                    snprintf(numv, 64, "%ld", v.lval);
+                    cli_var_set(t->sval, numv);
+                }
                 return mk_long(v.lval);
             }
-            create_variable_ID(t->sval, to_double(v));
-            return mk_double(to_double(v));
+            {
+                long vid = variable_ID(t->sval);
+                if (vid != -1)
+                {
+                    create_variable_ID(t->sval, to_double(v));
+                }
+                if (parse_mode == 1 || vid == -1)
+                {
+                    char numv[64];
+                    snprintf(numv, 64, "%.*g", cli_float_digits, to_double(v));
+                    cli_var_set(t->sval, numv);
+                }
+                return mk_double(to_double(v));
+            }
         }
         /* just a variable reference */
         long vID = variable_ID(t->sval);
         if (vID == -1)
         {
+            const char *cval = cli_var_get(t->sval);
+            if (cval != NULL)
+            {
+                char *endp = NULL;
+                long  lval = strtol(cval, &endp, 0);
+                if (*endp == '\0' && endp != cval)
+                {
+                    return mk_long(lval);
+                }
+                double dval = strtod(cval, &endp);
+                if (*endp == '\0' && endp != cval)
+                {
+                    return mk_double(dval);
+                }
+                return mk_string(t->sval);
+            }
             char msg[2048];
             snprintf(msg, sizeof(msg), "Variable '%s' not found", t->sval);
             parse_errmsg(msg);
@@ -337,16 +394,21 @@ val_t parse_primary(void)
             }
             if (v.type == VAL_STRING)
             {
-                if (image_ID(v.sval, data.core.image, data.core.NB_MAX_IMAGE) == -1)
+                if (image_ID(v.sval, data.core.image, data.core.NB_MAX_IMAGE) != -1)
                 {
-                    parse_errmsg("Source image does not exist");
-                    return mk_double(0);
+                    chname_image_ID(v.sval, t->sval);
+                    if (data.core.Debug > 0)
+                    {
+                        printf("changing name\n");
+                    }
+                    return mk_string(t->sval);
                 }
-                chname_image_ID(v.sval, t->sval);
-                if (data.core.Debug > 0)
+                const char *strval = cli_var_get(v.sval);
+                if (strval == NULL)
                 {
-                    printf("changing name\n");
+                    strval = v.sval;
                 }
+                cli_var_set(t->sval, strval);
                 return mk_string(t->sval);
             }
             if (v.type == VAL_LONG)
@@ -394,6 +456,26 @@ val_t parse_primary(void)
             {
                 printf("this is a string "
                        "(new variable/image)\n");
+            }
+        }
+        else
+        {
+            if (strchr(t->sval, '[') != NULL)
+            {
+                char bare[200];
+                char btext[200];
+                int  has_brk = imgid_slice_split_name(t->sval, bare, (int) sizeof(bare), btext,
+                                                      (int) sizeof(btext));
+                if (!has_brk)
+                {
+                    parse_errmsg("Malformed slice: missing closing ']'");
+                    return mk_double(0);
+                }
+                else
+                {
+                    parse_errmsg("Source image not found for slice");
+                    return mk_double(0);
+                }
             }
         }
         return mk_string(t->sval);
@@ -505,6 +587,11 @@ val_t parse_primary(void)
                     imgid_slice_materialize(&simg);
                 }
                 return mk_string(tmpn);
+            }
+            else
+            {
+                parse_errmsg("Malformed slice: missing closing ']'");
+                return mk_double(0);
             }
         }
         return mk_string(t->sval);

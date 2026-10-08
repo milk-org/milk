@@ -405,6 +405,41 @@ int cli_split_semicolon(errno_t *retval)
     strncpy(fullline, data.CLIcmdline, STRINGMAXLEN_CLICMDLINE - 1);
     fullline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
+    /* Special case: function with inline body: function name { body... */
+    if (strncmp(fullline, "function ", 9) == 0 || strncmp(fullline, "function\t", 9) == 0)
+    {
+        char *bo = strchr(fullline, '{');
+        if (bo != NULL)
+        {
+            char *after_bo = bo + 1;
+            while (*after_bo == ' ' || *after_bo == '\t')
+            {
+                after_bo++;
+            }
+            if (*after_bo != '\0' && *after_bo != '\n')
+            {
+                /* Split function header from body */
+                char   fhdr[STRINGMAXLEN_CLICMDLINE];
+                size_t hlen = (size_t) (bo + 1 - fullline);
+                strncpy(fhdr, fullline, hlen);
+                fhdr[hlen] = '\0';
+
+                char frest[STRINGMAXLEN_CLICMDLINE];
+                strncpy(frest, after_bo, sizeof(frest) - 1);
+                frest[sizeof(frest) - 1] = '\0';
+
+                strncpy(data.CLIcmdline, fhdr, STRINGMAXLEN_CLICMDLINE - 1);
+                data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+                CLI_execute_line();
+
+                strncpy(data.CLIcmdline, frest, STRINGMAXLEN_CLICMDLINE - 1);
+                data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+                *retval = CLI_execute_line();
+                return 1;
+            }
+        }
+    }
+
     int p_semi = cli_find_unquoted_op(fullline, ';', ';', 0);
     int p_and  = cli_find_unquoted_op(fullline, '&', 0, '&');
     int p_or   = cli_find_unquoted_op(fullline, '|', 0, '|');
@@ -449,12 +484,13 @@ int cli_split_semicolon(errno_t *retval)
     }
     else if (chain_type == 2)
     {
-        run_rest = (ret1 == RETURN_SUCCESS) ? 1 : 0;
+        run_rest = (ret1 == RETURN_SUCCESS && cli_last_retval == 0) ? 1 : 0;
     }
     else if (chain_type == 3)
     {
-        run_rest = (ret1 != RETURN_SUCCESS) ? 1 : 0;
+        run_rest = (ret1 != RETURN_SUCCESS || cli_last_retval != 0) ? 1 : 0;
     }
+    *retval = ret1;
     if (run_rest)
     {
         const char *rest = fullline + chain_off + chain_len;
@@ -466,10 +502,9 @@ int cli_split_semicolon(errno_t *retval)
         {
             strncpy(data.CLIcmdline, rest, STRINGMAXLEN_CLICMDLINE - 1);
             data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-            CLI_execute_line();
+            *retval = CLI_execute_line();
         }
     }
-    *retval = RETURN_SUCCESS;
     return 1;
 }
 

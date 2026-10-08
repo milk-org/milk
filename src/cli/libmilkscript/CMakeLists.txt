@@ -52,6 +52,7 @@ set(MILKSCRIPT_SOURCES
     CLIcore_script_cmd_inspect.c
     CLIcore_script_cmd_defer.c
     CLIcore_script_case.c
+    CLIcore_script_expand.c
     CLIcore_script_expand_arith.c
     CLIcore_script_expand_fps.c
     CLIcore_script_expand_test.c

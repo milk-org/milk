@@ -9,7 +9,10 @@ from __future__ import annotations
 import os
 import subprocess
 
-from pyMilk.interfacing.shm import IMAGESTREAMIO_HAVE_CUDA
+try:
+    from pyMilk.interfacing.shm import IMAGESTREAMIO_HAVE_CUDA
+except ImportError:
+    IMAGESTREAMIO_HAVE_CUDA = 0
 
 
 def find_nvidia_in_lsmod() -> bool:

@@ -204,6 +204,35 @@ int cli_try_var_assign(const char *line)
 
     int namelen = (int) (p - name_start);
 
+    /* Check for indexed array assignment: arr[idx]=val */
+    int  has_idx          = 0;
+    char idx_str[64]      = { 0 };
+    if (*p == '[')
+    {
+        p++;
+        const char *idx_start = p;
+        while (*p != '\0' && *p != ']')
+        {
+            p++;
+        }
+        if (*p == ']')
+        {
+            int ilen = (int) (p - idx_start);
+            if (ilen >= (int) sizeof(idx_str))
+            {
+                ilen = (int) sizeof(idx_str) - 1;
+            }
+            memcpy(idx_str, idx_start, (size_t) ilen);
+            idx_str[ilen] = '\0';
+            has_idx       = 1;
+            p++; /* skip ']' */
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
     /* Skip spaces before '=' */
     while (*p == ' ' || *p == '\t')
     {
@@ -242,26 +271,93 @@ int cli_try_var_assign(const char *line)
         }
 
         /* Use wordexp to evaluate command substitution, variables, and quotes natively. */
-        wordexp_t p;
+        wordexp_t wep;
+        char      final_val[CLI_VAR_VALLEN] = "";
         cli_export_vars_to_env();
-        if (wordexp(valbuf, &p, 0) == 0)
+        if (wordexp(valbuf, &wep, 0) == 0)
         {
-            char expanded_val[CLI_VAR_VALLEN] = "";
-            for (size_t i = 0; i < p.we_wordc; i++)
+            for (size_t i = 0; i < wep.we_wordc; i++)
             {
                 if (i > 0)
                 {
-                    strncat(expanded_val, " ", CLI_VAR_VALLEN - strlen(expanded_val) - 1);
+                    strncat(final_val, " ", CLI_VAR_VALLEN - strlen(final_val) - 1);
                 }
-                strncat(expanded_val, p.we_wordv[i], CLI_VAR_VALLEN - strlen(expanded_val) - 1);
+                strncat(final_val, wep.we_wordv[i], CLI_VAR_VALLEN - strlen(final_val) - 1);
             }
-            wordfree(&p);
-            cli_var_set(tmpname, expanded_val);
+            wordfree(&wep);
         }
         else
         {
-            cli_var_set(tmpname, valbuf);
+            strncpy(final_val, valbuf, CLI_VAR_VALLEN - 1);
+            final_val[CLI_VAR_VALLEN - 1] = '\0';
         }
+
+        if (has_idx)
+        {
+            /* Check if idx is numeric or resolve variable/expression */
+            long        arr_idx      = -1;
+            const char *resolved_idx = cli_var_lookup(idx_str);
+            if (resolved_idx == NULL)
+            {
+                resolved_idx = idx_str;
+            }
+            char *endptr = NULL;
+            arr_idx      = strtol(resolved_idx, &endptr, 10);
+            if (endptr == resolved_idx)
+            {
+                int    mtype;
+                long   mlval;
+                double mdval;
+                if (cli_calc_eval_math_to_val(resolved_idx, &mtype, &mlval, &mdval))
+                {
+                    arr_idx = mlval;
+                }
+            }
+
+            if (arr_idx >= 0 && arr_idx < CLI_ARRAY_MAXELEM)
+            {
+                int slot = -1;
+                for (int i = 0; i < CLI_MAX_ARRAYS; i++)
+                {
+                    if (cli_arrays[i].used && strcmp(cli_arrays[i].name, tmpname) == 0)
+                    {
+                        slot = i;
+                        break;
+                    }
+                }
+                if (slot < 0)
+                {
+                    for (int i = 0; i < CLI_MAX_ARRAYS; i++)
+                    {
+                        if (!cli_arrays[i].used)
+                        {
+                            slot = i;
+                            cli_arrays[slot].used = 1;
+                            strncpy(cli_arrays[slot].name, tmpname, CLI_VAR_NAMELEN - 1);
+                            cli_arrays[slot].name[CLI_VAR_NAMELEN - 1] = '\0';
+                            cli_arrays[slot].nelem = 0;
+                            break;
+                        }
+                    }
+                }
+                if (slot >= 0)
+                {
+                    strncpy(cli_arrays[slot].elem[arr_idx], final_val, CLI_VAR_VALLEN - 1);
+                    cli_arrays[slot].elem[arr_idx][CLI_VAR_VALLEN - 1] = '\0';
+                    if ((int) arr_idx >= cli_arrays[slot].nelem)
+                    {
+                        for (int k = cli_arrays[slot].nelem; k < (int) arr_idx; k++)
+                        {
+                            cli_arrays[slot].elem[k][0] = '\0';
+                        }
+                        cli_arrays[slot].nelem = (int) arr_idx + 1;
+                    }
+                }
+            }
+            return 1;
+        }
+
+        cli_var_set(tmpname, final_val);
 
         /* Print the assigned value if Debug is enabled */
         if (data.core.Debug > 0)

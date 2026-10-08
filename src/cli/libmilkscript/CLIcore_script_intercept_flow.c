@@ -152,10 +152,81 @@ int cli_intercept_cmd_case(const char *p)
 {
     if (starts_with(p, "case ") || starts_with(p, "case\t"))
     {
+        const char *esac_pos = strstr(p, "esac");
+        if (esac_pos != NULL)
+        {
+            const char *in_pos = strstr(p, " in ");
+            if (in_pos == NULL)
+            {
+                in_pos = strstr(p, " in\t");
+            }
+            if (in_pos == NULL)
+            {
+                in_pos = strstr(p, "\tin ");
+            }
+            if (in_pos != NULL && in_pos < esac_pos)
+            {
+                char lines[CLI_BLOCK_MAXLINES][STRINGMAXLEN_CLICMDLINE];
+                int  nlines = 0;
+
+                size_t hlen = (size_t) (in_pos + 4 - p);
+                if (hlen >= STRINGMAXLEN_CLICMDLINE)
+                {
+                    hlen = STRINGMAXLEN_CLICMDLINE - 1;
+                }
+                strncpy(lines[0], p, hlen);
+                lines[0][hlen] = '\0';
+                nlines         = 1;
+
+                const char *cur = in_pos + 4;
+                while (cur < esac_pos && nlines < CLI_BLOCK_MAXLINES - 1)
+                {
+                    while (*cur == ' ' || *cur == '\t')
+                    {
+                        cur++;
+                    }
+                    if (cur >= esac_pos)
+                    {
+                        break;
+                    }
+                    const char *semi2 = strstr(cur, ";;");
+                    if (semi2 != NULL && semi2 <= esac_pos)
+                    {
+                        size_t clen = (size_t) (semi2 + 2 - cur);
+                        if (clen >= STRINGMAXLEN_CLICMDLINE)
+                        {
+                            clen = STRINGMAXLEN_CLICMDLINE - 1;
+                        }
+                        strncpy(lines[nlines], cur, clen);
+                        lines[nlines][clen] = '\0';
+                        nlines++;
+                        cur = semi2 + 2;
+                    }
+                    else
+                    {
+                        size_t clen = (size_t) (esac_pos - cur);
+                        if (clen >= STRINGMAXLEN_CLICMDLINE)
+                        {
+                            clen = STRINGMAXLEN_CLICMDLINE - 1;
+                        }
+                        strncpy(lines[nlines], cur, clen);
+                        lines[nlines][clen] = '\0';
+                        nlines++;
+                        break;
+                    }
+                }
+                strncpy(lines[nlines], "esac", STRINGMAXLEN_CLICMDLINE - 1);
+                lines[nlines][STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+                nlines++;
+
+                cli_exec_block_case(lines, nlines);
+                return 1;
+            }
+        }
+
         if (cli_block_level >= CLI_BLOCK_MAXDEPTH)
         {
-            printf("Error: max block "
-                   "nesting exceeded\n");
+            printf("Error: max block nesting exceeded\n");
             return 1;
         }
         CLI_BLOCK *blk = &cli_block_stack[cli_block_level];
@@ -236,9 +307,16 @@ int cli_intercept_cmd_alias(const char *p)
         }
         else
         {
-            /* alias name='cmd' or
-             * alias name=cmd */
+            /* alias name='cmd', alias name=cmd, or alias name "cmd" */
             char *eq = strchr(p, '=');
+            if (eq == NULL)
+            {
+                eq = strchr(p, ' ');
+            }
+            if (eq == NULL)
+            {
+                eq = strchr(p, '\t');
+            }
             if (eq != NULL)
             {
                 char aname[CLI_ALIAS_NAMELEN];
@@ -250,6 +328,10 @@ int cli_intercept_cmd_alias(const char *p)
                 memcpy(aname, p, (size_t) nl);
                 aname[nl]      = '\0';
                 const char *av = eq + 1;
+                while (*av == ' ' || *av == '\t')
+                {
+                    av++;
+                }
                 /* Strip quotes */
                 int avl = (int) strlen(av);
                 if (avl >= 2 && ((av[0] == '\'' && av[avl - 1] == '\'') ||

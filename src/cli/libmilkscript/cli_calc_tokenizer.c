@@ -419,6 +419,31 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
             continue;
         }
 
+        /* Quoted string literal: "hello" */
+        if (*p == '"')
+        {
+            p++;
+            const char *start = p;
+            while (*p != '"' && *p != '\0' && *p != '\n')
+            {
+                p++;
+            }
+            size_t slen = (size_t) (p - start);
+            if (slen >= CLI_CALC_TOKEN_MAXLEN)
+            {
+                slen = CLI_CALC_TOKEN_MAXLEN - 1;
+            }
+            memcpy(tokens[nt].sval, start, slen);
+            tokens[nt].sval[slen] = '\0';
+            tokens[nt].type       = TOK_NVAR;
+            if (*p == '"')
+            {
+                p++;
+            }
+            nt++;
+            continue;
+        }
+
         /*
          * Identifier or built-in function
          *
@@ -439,6 +464,8 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
                     {
                         tokens[nt].type    = builtins[i].ttype;
                         tokens[nt].fnctptr = builtins[i].fptr;
+                        strncpy(tokens[nt].sval, builtins[i].name, sizeof(tokens[nt].sval) - 1);
+                        tokens[nt].sval[sizeof(tokens[nt].sval) - 1] = '\0';
                         if (data.core.Debug > 0)
                         {
                             printf("DEBUG: TOKENIZER:"

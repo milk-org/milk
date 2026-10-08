@@ -92,16 +92,16 @@ cli_token *advance_eval(void)
  */
 void parse_errmsg(const char *msg)
 {
-    if ((parse_mode == 1 || data.core.Debug > 0) && dcquiet == 0)
+    if ((parse_mode == 1 || data.core.Debug > 0) && parse_mode != 2 && dcquiet == 0)
     {
         PRINT_ERROR("   [CALC_PARSER_ERROR] %s", msg);
     }
-    data.parseerror = 1;
-    parse_error     = 1;
-    if (parse_mode == 1)
+    if (parse_mode != 2)
     {
-        eval_error = 1;
+        data.parseerror = 1;
     }
+    parse_error = 1;
+    eval_error  = 1;
 }
 
 
@@ -315,13 +315,58 @@ int cli_calc_eval_line(const char *input)
 
     eval_ntok = cli_tokenize(tbuf, eval_tokens, CLI_CALC_MAX_TOKENS);
 
-    parse_error = 0;
-    eval_error  = 0;
-    eval_pos    = 0;
+    data.parseerror = 0;
+    parse_error     = 0;
+    eval_error      = 0;
+    eval_pos        = 0;
 
     if (eval_ntok <= 0 || cur_eval()->type == TOK_NEWLINE || cur_eval()->type == TOK_EOF)
     {
         return 0; // empty expression
+    }
+
+    int is_assign_op = 0;
+    if (eval_ntok >= 2)
+    {
+        cli_token_type atype = eval_tokens[1].type;
+        if (atype == TOK_EQUAL || atype == TOK_OP_PLUS_EQ || atype == TOK_OP_MINUS_EQ ||
+            atype == TOK_OP_STAR_EQ || atype == TOK_OP_SLASH_EQ)
+        {
+            is_assign_op = 1;
+        }
+    }
+
+    /* If first token is an unassigned non-variable/image token (e.g. shell command "ls -la"),
+     * do not attempt to evaluate as math unless it is an assignment or function call. */
+    if (eval_tokens[0].type == TOK_NVAR && !is_assign_op)
+    {
+        return 0;
+    }
+
+    /* If it is an assignment with empty RHS (e.g. "_ev=" or "_ev = "),
+     * it is not a math expression; let cli_try_var_assign handle empty assignment. */
+    if (eval_ntok >= 2 && eval_tokens[1].type == TOK_EQUAL &&
+        (eval_ntok == 2 || eval_tokens[2].type == TOK_NEWLINE || eval_tokens[2].type == TOK_EOF))
+    {
+        return 0;
+    }
+
+    /* If LHS has '[' (e.g. "_test_arr[0] = val"), check if base is an existing image.
+     * If not, it is an indexed array assignment, not an image slice assignment. */
+    if (eval_ntok >= 2 && is_assign_op && strchr(eval_tokens[0].sval, '[') != NULL)
+    {
+        char        bare[CLI_CALC_TOKEN_MAXLEN];
+        const char *bk = strchr(eval_tokens[0].sval, '[');
+        size_t      bn = (size_t) (bk - eval_tokens[0].sval);
+        if (bn > 0 && bn < CLI_CALC_TOKEN_MAXLEN)
+        {
+            memcpy(bare, eval_tokens[0].sval, bn);
+            bare[bn] = '\0';
+            if (image_ID(bare, data.core.image, data.core.NB_MAX_IMAGE) == -1)
+            {
+                return 0;
+            }
+        }
     }
 
     val_t result = parse_expr(0);
@@ -381,7 +426,8 @@ int cli_calc_eval_line(const char *input)
             /* it took operators to combine them into string? Rare... */
             if (is_assignment)
             {
-                printf("    %s string: %s\n", assign_var_name, result.sval);
+                const char *val_str = cli_var_get(assign_var_name);
+                printf("    %s string: %s\n", assign_var_name, val_str ? val_str : result.sval);
             }
             else
             {
@@ -431,62 +477,71 @@ int cli_calc_eval_line(const char *input)
  */
 int cli_calc_eval_math_to_val(const char *input, int *out_type, long *out_lval, double *out_dval)
 {
-    parse_mode = 1;
+    /* Save parser state in case of re-entrant evaluation */
+    int       saved_mode  = parse_mode;
+    int       saved_pos   = eval_pos;
+    int       saved_ntok  = eval_ntok;
+    int       saved_perr  = parse_error;
+    int       saved_eerr  = eval_error;
+    int       saved_dperr = data.parseerror;
+    cli_token saved_tokens[CLI_CALC_MAX_TOKENS];
+    memcpy(saved_tokens, eval_tokens, sizeof(eval_tokens));
+
+    parse_mode = 2;
     char tbuf[8192];
     snprintf(tbuf, 8192, "%s\n", input);
 
-    eval_ntok   = cli_tokenize(tbuf, eval_tokens, CLI_CALC_MAX_TOKENS);
-    parse_error = 0;
-    eval_error  = 0;
-    eval_pos    = 0;
+    eval_ntok       = cli_tokenize(tbuf, eval_tokens, CLI_CALC_MAX_TOKENS);
+    data.parseerror = 0;
+    parse_error     = 0;
+    eval_error      = 0;
+    eval_pos        = 0;
 
-    if (eval_ntok <= 0 || cur_eval()->type == TOK_NEWLINE || cur_eval()->type == TOK_EOF)
+    int success = 0;
+
+    if (eval_ntok > 0 && cur_eval()->type != TOK_NEWLINE && cur_eval()->type != TOK_EOF)
     {
-        return 0; // empty expression
-    }
+        val_t result = parse_expr(0);
 
-    val_t result = parse_expr(0);
-
-    /* if there is any parse error or trailing garbage */
-    if (parse_error || eval_error ||
-        (cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE))
-    {
-        return 0; /* not a pure math expression */
-    }
-
-    /* Success! If it's a string, it's not pure math unless it was evaluated from an operator */
-    if (result.type == VAL_STRING && eval_ntok <= 2)
-    {
-        return 0;
-    }
-
-    /* Output values */
-    if (result.type == VAL_LONG)
-    {
-        if (out_type)
+        if (!parse_error && !eval_error &&
+            (cur_eval()->type == TOK_EOF || cur_eval()->type == TOK_NEWLINE) &&
+            !(result.type == VAL_STRING && eval_ntok <= 2))
         {
-            *out_type = 1;
-        }
-        if (out_lval)
-        {
-            *out_lval = result.lval;
-        }
-    }
-    else if (result.type == VAL_DOUBLE)
-    {
-        if (out_type)
-        {
-            *out_type = 2;
-        }
-        if (out_dval)
-        {
-            *out_dval = result.dval;
+            if (result.type == VAL_LONG)
+            {
+                if (out_type)
+                {
+                    *out_type = 1;
+                }
+                if (out_lval)
+                {
+                    *out_lval = result.lval;
+                }
+                success = 1;
+            }
+            else if (result.type == VAL_DOUBLE)
+            {
+                if (out_type)
+                {
+                    *out_type = 2;
+                }
+                if (out_dval)
+                {
+                    *out_dval = result.dval;
+                }
+                success = 1;
+            }
         }
     }
-    else
-    {
-        return 0; // Not a numeric result
-    }
 
-    return 1;
+    /* Restore parser state */
+    memcpy(eval_tokens, saved_tokens, sizeof(eval_tokens));
+    parse_mode      = saved_mode;
+    eval_pos        = saved_pos;
+    eval_ntok       = saved_ntok;
+    parse_error     = saved_perr;
+    eval_error      = saved_eerr;
+    data.parseerror = saved_dperr;
+
+    return success;
 }

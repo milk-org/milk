@@ -34,6 +34,7 @@
  *   cli_expand_env()
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -267,6 +268,52 @@ static void apply_modifier(const char  *varname,
                            int          val_buf_size,
                            const char **val)
 {
+    if (mod_op[0] == '^')
+    {
+        if (*val == NULL)
+        {
+            return;
+        }
+        strncpy(val_buf, *val, (size_t) (val_buf_size - 1));
+        val_buf[val_buf_size - 1] = '\0';
+        if (mod_op[1] == '^')
+        {
+            for (int k = 0; val_buf[k] != '\0'; k++)
+            {
+                val_buf[k] = (char) toupper((unsigned char) val_buf[k]);
+            }
+        }
+        else
+        {
+            val_buf[0] = (char) toupper((unsigned char) val_buf[0]);
+        }
+        *val = val_buf;
+        return;
+    }
+
+    if (mod_op[0] == ',')
+    {
+        if (*val == NULL)
+        {
+            return;
+        }
+        strncpy(val_buf, *val, (size_t) (val_buf_size - 1));
+        val_buf[val_buf_size - 1] = '\0';
+        if (mod_op[1] == ',')
+        {
+            for (int k = 0; val_buf[k] != '\0'; k++)
+            {
+                val_buf[k] = (char) tolower((unsigned char) val_buf[k]);
+            }
+        }
+        else
+        {
+            val_buf[0] = (char) tolower((unsigned char) val_buf[0]);
+        }
+        *val = val_buf;
+        return;
+    }
+
     char op = mod_op[1]; /* '-', '=', '?', '+', or '\0' */
 
     if (op == '-')
@@ -544,7 +591,7 @@ void cli_expand_env(char *line, int maxlen)
             has_index       = 1;
         }
 
-        /* Optional modifier: ${VAR:-…} etc. */
+        /* Optional modifier: ${VAR:-…}, ${VAR,,}, ${VAR^^} etc. */
         char mod_op[3]    = { 0 };
         char mod_arg[256] = { 0 };
         if (has_brace && line[i] == ':')
@@ -558,6 +605,20 @@ void cli_expand_env(char *line, int maxlen)
             else
             {
                 mod_op[0] = ':';
+            }
+            int mlen = 0;
+            while (line[i] != '\0' && line[i] != '}' && mlen < 255)
+            {
+                mod_arg[mlen++] = line[i++];
+            }
+            mod_arg[mlen] = '\0';
+        }
+        else if (has_brace && (line[i] == '^' || line[i] == ','))
+        {
+            mod_op[0] = line[i++];
+            if (line[i] == mod_op[0])
+            {
+                mod_op[1] = line[i++];
             }
             int mlen = 0;
             while (line[i] != '\0' && line[i] != '}' && mlen < 255)
