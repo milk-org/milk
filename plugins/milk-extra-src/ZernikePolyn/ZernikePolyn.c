@@ -177,15 +177,13 @@ static errno_t init_module_CLI()
     /* mkzer */
     {
         safe_fps_fill_farg_examples(farg, mkz_bindings, mkz_nb_bindings);
-        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC
     }
 
     /* rmcpiston */
     {
         safe_fps_fill_farg_examples(rmp_farg, rmp_bindings, rmp_nb_bindings);
-        int cmdi                   = RegisterCLIcmd(rmp_CLIcmddata, rmp_CLIfunction);
-        rmp_CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(rmp_CLIcmddata, rmp_CLIfunction);
     }
 
     CLIADDCMD_ZernikePolyn__mkzercube();

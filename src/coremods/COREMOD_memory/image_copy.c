@@ -160,18 +160,15 @@ errno_t CLIADDCMD_COREMOD_memory__image_copy()
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
     {
-        int cmdi                  = RegisterCLIcmd(CLIcmddata_cp, CLIfunction_cp);
-        CLIcmddata_cp.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_cp, CLIfunction_cp);
     }
 
     {
-        int cmdi                  = RegisterCLIcmd(CLIcmddata_mv, CLIfunction_mv);
-        CLIcmddata_mv.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_mv, CLIfunction_mv);
     }
 
     {
-        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC
     }
 
     return RETURN_SUCCESS;

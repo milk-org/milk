@@ -88,7 +88,7 @@ static errno_t cm_compute(void)
     LINALGEBRA_Coeff2Map_Loop(cm_m, cm_c, (int) cm_gpu, cm_o, 0, " ");
     return RETURN_SUCCESS;
 }
-static errno_t cm_CLIfunc(void)
+static errno_t __attribute__((unused)) cm_CLIfunc(void)
 {
     return safe_fps_generic_CLIfunction(&FPS_app_info_cm, cm_farg, &cm_d, cm_b, cm_nb, cm_compute);
 }
@@ -134,7 +134,7 @@ static errno_t co_compute(void)
     LINALGEBRA_Coeff2Map_Loop(co_m, co_c, (int) co_gpu, co_o, 1, co_off);
     return RETURN_SUCCESS;
 }
-static errno_t co_CLIfunc(void)
+static errno_t __attribute__((unused)) co_CLIfunc(void)
 {
     return safe_fps_generic_CLIfunction(&FPS_app_info_co, co_farg, &co_d, co_b, co_nb, co_compute);
 }
@@ -143,13 +143,11 @@ errno_t Coeff2Map_Loop_addCLIcmd()
 {
     {
         safe_fps_fill_farg_examples(cm_farg, cm_b, cm_nb);
-        int cmdi         = RegisterCLIcmd(cm_d, cm_CLIfunc);
-        cm_d.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(cm_d, cm_CLIfunc);
     }
     {
         safe_fps_fill_farg_examples(co_farg, co_b, co_nb);
-        int cmdi         = RegisterCLIcmd(co_d, co_CLIfunc);
-        co_d.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(co_d, co_CLIfunc);
     }
 
     return RETURN_SUCCESS;

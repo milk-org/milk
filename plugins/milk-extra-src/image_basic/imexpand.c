@@ -114,14 +114,12 @@ errno_t CLIADDCMD_image_basic__imexpand()
 {
     safe_fps_fill_farg_examples(farg_1, my_bindings_1, nb_bindings_1);
     {
-        int cmdi                 = RegisterCLIcmd(CLIcmddata_1, CLIfunction_1);
-        CLIcmddata_1.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_1, CLIfunction_1);
     }
 
     safe_fps_fill_farg_examples(farg_2, my_bindings_2, nb_bindings_2);
     {
-        int cmdi                 = RegisterCLIcmd(CLIcmddata_2, CLIfunction_2);
-        CLIcmddata_2.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_2, CLIfunction_2);
     }
 
     return RETURN_SUCCESS;

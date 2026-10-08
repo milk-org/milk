@@ -82,8 +82,7 @@ errno_t CLIADDCMD_COREMOD_tools__fileutils()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
-    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+    INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }

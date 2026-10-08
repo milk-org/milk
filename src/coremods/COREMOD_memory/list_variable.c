@@ -224,16 +224,12 @@ errno_t CLIADDCMD_COREMOD_memory__list_variable()
 {
     {
         safe_fps_fill_farg_examples(farg_listvar, my_bindings_listvar, nb_bindings_listvar);
-
-        int cmdi                       = RegisterCLIcmd(CLIcmddata_listvar, CLIfunction_listvar);
-        CLIcmddata_listvar.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_listvar, CLIfunction_listvar);
     }
 
     {
         safe_fps_fill_farg_examples(farg, my_bindings2, nb_bindings2);
-
-        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction_listvarf);
-        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata, CLIfunction_listvarf);
     }
 
     return RETURN_SUCCESS;

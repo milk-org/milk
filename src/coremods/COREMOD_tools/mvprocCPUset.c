@@ -204,24 +204,19 @@ errno_t CLIADDCMD_COREMOD_tools__mvprocCPUset()
     safe_fps_fill_farg_examples(farg_tsete, bindings_tsete, nb_bindings_tsete);
 
     {
-        int cmdi                   = RegisterCLIcmd(CLIcmddata_rtp, CLIfunction_rtp);
-        CLIcmddata_rtp.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_rtp, CLIfunction_rtp);
     }
     {
-        int cmdi                    = RegisterCLIcmd(CLIcmddata_tset, CLIfunction_tset);
-        CLIcmddata_tset.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_tset, CLIfunction_tset);
     }
     {
-        int cmdi                     = RegisterCLIcmd(CLIcmddata_tsete, CLIfunction_tsete);
-        CLIcmddata_tsete.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_tsete, CLIfunction_tsete);
     }
     {
-        int cmdi                    = RegisterCLIcmd(CLIcmddata_cset, CLIfunction_cset);
-        CLIcmddata_cset.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_cset, CLIfunction_cset);
     }
     {
-        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC
     }
 
     return RETURN_SUCCESS;

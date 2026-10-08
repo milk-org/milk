@@ -155,8 +155,7 @@ static errno_t CLIfunction(void)
 
 errno_t CLIADDCMD_COREMOD_memory__fps_list()
 {
-    int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
-    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+    INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }

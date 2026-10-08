@@ -192,15 +192,13 @@ static errno_t init_module_CLI()
     /* putphnoise */
     {
         safe_fps_fill_farg_examples(farg, phn_bindings, phn_nb_bindings);
-        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC
     }
 
     /* putgaussnoise */
     {
         safe_fps_fill_farg_examples(gn_farg, gn_bindings, gn_nb_bindings);
-        int cmdi                  = RegisterCLIcmd(gn_CLIcmddata, gn_CLIfunction);
-        gn_CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(gn_CLIcmddata, gn_CLIfunction);
     }
 
     // add atexit functions here

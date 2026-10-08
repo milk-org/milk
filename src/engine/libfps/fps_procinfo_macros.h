@@ -156,6 +156,7 @@ typedef struct
  * version is in CLIcore_utils.h and
  * references CLI functions. */
 
+#define INSERT_STD_CLIREGISTERFUNC_NAMED(varCLIcmddata, varCLIfunction)
 #define INSERT_STD_CLIREGISTERFUNC
 
 /* Process info macros -- these are used by

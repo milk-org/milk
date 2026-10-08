@@ -167,12 +167,10 @@ errno_t CLIADDCMD_COREMOD_memory__stream_TCP()
     safe_fps_fill_farg_examples(farg_rx, bindings_rx, nb_bindings_rx);
 
     {
-        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC
     }
     {
-        int cmdi                  = RegisterCLIcmd(CLIcmddata_rx, CLIfunction_rx);
-        CLIcmddata_rx.cmdsettings = &data.cmd[cmdi].cmdsettings;
+        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_rx, CLIfunction_rx);
     }
 
     return RETURN_SUCCESS;
