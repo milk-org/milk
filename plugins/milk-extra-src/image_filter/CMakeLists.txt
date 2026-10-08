@@ -16,6 +16,7 @@ add_library(${LIBNAME} SHARED ${SOURCEFILES})
 target_include_directories(
   ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
 milk_apply_extensions(${LIBNAME})
+milk_add_static_lto(${LIBNAME})
 
 install(
   TARGETS ${LIBNAME}
@@ -32,6 +33,6 @@ get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 foreach(_t IN LISTS _stdalones)
   get_target_property(_type ${_t} TYPE)
   if(_type STREQUAL "EXECUTABLE")
-    target_link_libraries(${_t} PUBLIC ${LIBNAME})
+    milk_link_module(${_t} ${LIBNAME})
   endif()
 endforeach()

@@ -16,12 +16,7 @@ add_library(${LIBNAME} SHARED ${SOURCEFILES})
 target_include_directories(
   ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
 milk_apply_extensions(${LIBNAME})
-
-# CUSTOM ===========
-milk_add_static_lto(${LIBNAME}
-  LINK_LIBS milkCOREMODmemory_static
-  CFITSIO_LINK_LIBS milkCOREMODiofits_static)
-# ==================
+milk_add_static_lto(${LIBNAME})
 
 install(
   TARGETS ${LIBNAME}

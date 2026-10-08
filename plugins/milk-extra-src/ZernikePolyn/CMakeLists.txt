@@ -19,6 +19,8 @@ milk_apply_extensions(${LIBNAME})
 
 # CUSTOM ===========
 target_link_libraries(${LIBNAME} PUBLIC milkimagegen)
+
+milk_add_static_lto(${LIBNAME} LINK_LIBS milkimagegen_static)
 # ==================
 
 install(
@@ -35,6 +37,6 @@ get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 foreach(_t IN LISTS _stdalones)
   get_target_property(_type ${_t} TYPE)
   if(_type STREQUAL "EXECUTABLE")
-    target_link_libraries(${_t} PUBLIC ${LIBNAME})
+    milk_link_module(${_t} ${LIBNAME})
   endif()
 endforeach()

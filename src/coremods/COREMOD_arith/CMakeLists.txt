@@ -70,7 +70,7 @@ get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 foreach(_t IN LISTS _stdalones)
   get_target_property(_type ${_t} TYPE)
   if(_type STREQUAL "EXECUTABLE")
-    target_link_libraries(${_t} PUBLIC ${LIBNAME})
+    milk_link_module(${_t} ${LIBNAME})
   endif()
 endforeach()
 

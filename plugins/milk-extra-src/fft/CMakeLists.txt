@@ -29,6 +29,13 @@ set_target_properties(
   ${LIBNAME} PROPERTIES COMPILE_FLAGS
   "-DFFTCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\"")
 target_link_libraries(${LIBNAME} PUBLIC ${FFTW_LIBRARIES} ${FFTWF_LIBRARIES})
+
+milk_add_static_lto(${LIBNAME} LINK_LIBS ${FFTW_LIBRARIES} ${FFTWF_LIBRARIES})
+if(TARGET ${LIBNAME}_static)
+  set_target_properties(
+    ${LIBNAME}_static PROPERTIES COMPILE_FLAGS
+    "-DFFTCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\"")
+endif()
 # ==================
 
 install(
@@ -45,6 +52,6 @@ get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 foreach(_t IN LISTS _stdalones)
   get_target_property(_type ${_t} TYPE)
   if(_type STREQUAL "EXECUTABLE")
-    target_link_libraries(${_t} PUBLIC ${LIBNAME})
+    milk_link_module(${_t} ${LIBNAME})
   endif()
 endforeach()

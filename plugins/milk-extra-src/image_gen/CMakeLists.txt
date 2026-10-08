@@ -54,10 +54,12 @@ get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 foreach(_t IN LISTS _stdalones)
   get_target_property(_type ${_t} TYPE)
   if(_type STREQUAL "EXECUTABLE")
-    target_link_libraries(${_t} PUBLIC ${LIBNAME})
+    milk_link_module(${_t} ${LIBNAME})
   endif()
 endforeach()
 
 # CUSTOM ===========
-target_link_libraries(milk-fpsexec-imggen-mkrandom PUBLIC milkstatistic)
+if(NOT USE_STATIC_LTO)
+  target_link_libraries(milk-fpsexec-imggen-mkrandom PUBLIC milkstatistic)
+endif()
 # ==================
