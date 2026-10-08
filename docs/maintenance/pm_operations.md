@@ -26,6 +26,6 @@ page's front matter to use it.
 If the branch that carries the docs changes (e.g. at a release), update it in one
 place — `edit_uri` in `mkdocs.yml` — then regenerate the index:
 
-```
+```bash
 python3 scripts/generate_md_index.py
 ```

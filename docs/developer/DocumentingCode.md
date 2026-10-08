@@ -38,7 +38,8 @@ We use the following extensions to `mkdoc`:
 ### Links & macros
 
 A link is simply done [like that](./DocumentingCode.md/#links-macros).
-```
+
+```md
 [This links to the page](./DocumentingCode.md)
 [This links to the section with a permalink](./DocumentingCode.md/#links-macros)
 ```

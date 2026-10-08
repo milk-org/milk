@@ -123,7 +123,7 @@ Documentation files will link to this website, other files will link directly to
 - [cacao Hardware Simulation {{ "{" }}#page_cacao_Hardware_Simulation}]({{ github_blob_url }}/plugins/cacao-src/AOloopControl/doc/cacao_Hardware_Simulation.md) (cacao_Hardware_Simulation.md)
 - [cacao Initial Setup {{ "{" }}#page_cacao_Initial_Setup}]({{ github_blob_url }}/plugins/cacao-src/AOloopControl/doc/cacao_Initial_Setup.md) (cacao_Initial_Setup.md)
 - [cacao Software Overview {{ "{" }}#page_cacao_Software_Overview}]({{ github_blob_url }}/plugins/cacao-src/AOloopControl/doc/cacao_Software_Overview.md) (cacao_Software_Overview.md)
-- [Auxilliary processes {{ "{" }}#page_cacao_aux_processes}]({{ github_blob_url }}/plugins/cacao-src/AOloopControl/doc/cacao_aux_processes.md) (cacao_aux_processes.md)
+- [Auxiliary processes {{ "{" }}#page_cacao_aux_processes}]({{ github_blob_url }}/plugins/cacao-src/AOloopControl/doc/cacao_aux_processes.md) (cacao_aux_processes.md)
 - [Building control matrix {{ "{" }}#page_cacao_building_control_matrix}]({{ github_blob_url }}/plugins/cacao-src/AOloopControl/doc/cacao_building_control_matrix.md) (cacao_building_control_matrix.md)
 - [Calibration {{ "{" }}#page_cacao_calibration}]({{ github_blob_url }}/plugins/cacao-src/AOloopControl/doc/cacao_calibration.md) (cacao_calibration.md)
 - [CONF DIRECTORY CONTENT {{ "{" }}#page_cacao_conf_directory}]({{ github_blob_url }}/plugins/cacao-src/AOloopControl/doc/cacao_conf_directory.md) (cacao_conf_directory.md)

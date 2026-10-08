@@ -73,7 +73,7 @@ $ sudo make install
 
 <!-- prettier-ignore-start -->
 !!! info
-    __Quirks on the build variables:__
+    **Quirks on the build variables:**
     - `USE_CLI=ON` automatically enables `USE_COREMODS=ON`
     - Plugins are only built when `USE_COREMODS=ON`
     - `USE_CFITSIO=OFF` excludes `COREMOD_iofits` and compiles remaining modules without cfitsio linkage.
@@ -81,7 +81,7 @@ $ sudo make install
     ## Behavior When `cfitsio` Is Disabled
 
 !!! info
-    __when FITS capability is removed from -DUSE_CFITSIO=OFF__
+    **when FITS capability is removed from -DUSE_CFITSIO=OFF**
     FITS-dependent code paths are compiled out via `#ifdef USE_CFITSIO` guards:
 
     | Module           | Effect                                                                               |

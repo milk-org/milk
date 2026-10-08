@@ -39,7 +39,7 @@ mkdocs serve
 <your browser> http://127.0.0.1:8000/
 ```
 
-You can leave `mkdocs serve` running and the broswer open while modifying documentation source file.
+You can leave `mkdocs serve` running and the browser open while modifying documentation source file.
 The render will update continuously.
 
 ## 2. (Future) nox, pytest, coverage.
