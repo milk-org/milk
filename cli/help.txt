@@ -112,7 +112,7 @@ IMPORTANT COMMANDS
 	# creates a 2D image named <im>, size = <xs> x <ys> pixels
 
 -----------------------------------------------------------------------------------
-FITS FILES I/O (see also modules COREMOD_memory and COREMOD_iofits
+FITS FILES I/O (see also modules COREMOD_memory and COREMOD_iofits)
 
 FITSIO is used for FITS files I/O, see FITSIO documentation for more detailed instructions
 
