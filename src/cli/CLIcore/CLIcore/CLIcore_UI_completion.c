@@ -276,61 +276,65 @@ void rl_cb_linehandler(char *linein)
 
     /* Handle multi-line continuation:
      * both backslash continuation and tree-sitter syntactic continuation */
-    while (cli_ts_is_incomplete(multiline_buf))
+    if (cli_ts_is_incomplete(multiline_buf))
     {
-        size_t len = strlen(multiline_buf);
-        int is_bslash = (len > 0 && multiline_buf[len - 1] == '\\');
-        if (is_bslash)
-        {
-            multiline_buf[len - 1] = ' ';
-        }
-
-        const char *ps2 = cli_var_get("PS2");
-        if (ps2 == NULL || ps2[0] == '\0')
-        {
-            ps2 = "> ";
-        }
-
-        const char *saved_prompt = rl_prompt;
+        const char *saved_prompt = rl_prompt ? rl_prompt : "";
         rl_callback_handler_remove();
-        char *cont = readline(ps2);
-        rl_callback_handler_install(
-            saved_prompt ? saved_prompt : "", (rl_vcpfunc_t *) &rl_cb_linehandler);
-        if (cont == NULL)
+
+        while (cli_ts_is_incomplete(multiline_buf))
         {
-            /* Interrupted or EOF (Ctrl-C / Ctrl-D) */
-            multiline_buf[0] = '\0';
-            break;
+            size_t len = strlen(multiline_buf);
+            int is_bslash = (len > 0 && multiline_buf[len - 1] == '\\');
+            if (is_bslash)
+            {
+                multiline_buf[len - 1] = ' ';
+            }
+
+            const char *ps2 = cli_var_get("PS2");
+            if (ps2 == NULL || ps2[0] == '\0')
+            {
+                ps2 = "> ";
+            }
+
+            char *cont = readline(ps2);
+            if (cont == NULL)
+            {
+                /* Interrupted or EOF (Ctrl-C / Ctrl-D) */
+                multiline_buf[0] = '\0';
+                break;
+            }
+
+            size_t curlen = strlen(multiline_buf);
+            size_t contlen = strlen(cont);
+            if (curlen + 2 + contlen < sizeof(multiline_buf))
+            {
+                if (!is_bslash)
+                {
+                    /* Check if preceding non-space was pipe or logical op */
+                    size_t trimmed = curlen;
+                    while (trimmed > 0 && (multiline_buf[trimmed - 1] == ' ' ||
+                                           multiline_buf[trimmed - 1] == '\t'))
+                    {
+                        trimmed--;
+                    }
+                    int join_space = 0;
+                    if (trimmed > 0)
+                    {
+                        char lastc = multiline_buf[trimmed - 1];
+                        if (lastc == '|' || lastc == '&')
+                        {
+                            join_space = 1;
+                        }
+                    }
+                    multiline_buf[curlen++] = join_space ? ' ' : '\n';
+                    multiline_buf[curlen] = '\0';
+                }
+                strncat(multiline_buf, cont, sizeof(multiline_buf) - curlen - 1);
+            }
+            free(cont);
         }
 
-        size_t curlen = strlen(multiline_buf);
-        size_t contlen = strlen(cont);
-        if (curlen + 2 + contlen < sizeof(multiline_buf))
-        {
-            if (!is_bslash)
-            {
-                /* Check if preceding non-space was pipe or logical op */
-                size_t trimmed = curlen;
-                while (trimmed > 0 && (multiline_buf[trimmed - 1] == ' ' ||
-                                       multiline_buf[trimmed - 1] == '\t'))
-                {
-                    trimmed--;
-                }
-                int join_space = 0;
-                if (trimmed > 0)
-                {
-                    char lastc = multiline_buf[trimmed - 1];
-                    if (lastc == '|' || lastc == '&')
-                    {
-                        join_space = 1;
-                    }
-                }
-                multiline_buf[curlen++] = join_space ? ' ' : '\n';
-                multiline_buf[curlen] = '\0';
-            }
-            strncat(multiline_buf, cont, sizeof(multiline_buf) - curlen - 1);
-        }
-        free(cont);
+        rl_callback_handler_install(saved_prompt, (rl_vcpfunc_t *) &rl_cb_linehandler);
     }
 
     if (multiline_buf[0] == '\0')

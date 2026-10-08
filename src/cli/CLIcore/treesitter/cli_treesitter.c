@@ -312,6 +312,29 @@ static bool node_tree_has_missing(TSNode node)
         return true;
     }
 
+    const char *type = ts_node_type(node);
+    if (strcmp(type, "ERROR") == 0)
+    {
+        uint32_t count = ts_node_child_count(node);
+        for (uint32_t i = 0; i < count; i++)
+        {
+            TSNode child = ts_node_child(node, i);
+            const char *ctype = ts_node_type(child);
+            if (strcmp(ctype, "for") == 0 ||
+                strcmp(ctype, "if") == 0 ||
+                strcmp(ctype, "while") == 0 ||
+                strcmp(ctype, "until") == 0 ||
+                strcmp(ctype, "case") == 0 ||
+                strcmp(ctype, "do") == 0 ||
+                strcmp(ctype, "then") == 0 ||
+                strcmp(ctype, "elif") == 0 ||
+                strcmp(ctype, "else") == 0)
+            {
+                return true;
+            }
+        }
+    }
+
     uint32_t count = ts_node_child_count(node);
     for (uint32_t i = 0; i < count; i++)
     {
