@@ -33,6 +33,7 @@ RED='\033[0;31m'
 GRN='\033[0;32m'
 YLW='\033[0;33m'
 CYN='\033[0;36m'
+BLD='\033[1m'
 RST='\033[0m'
 
 TOTAL=0
@@ -244,6 +245,80 @@ EOF
 
 run_check "Interactive Ctrl+C cancels command safely" \
     "python3 $TMPDIR/test_sigint_recovery.py $MILK_BIN" "0"
+
+# ════════════════════════════════════════════════════════════════
+# Section 7: Tree-Sitter Block Folding & Indentation
+# ════════════════════════════════════════════════════════════════
+echo -e "\n${BLD}--- Section 7: Tree-Sitter Block Folding & Indentation ---${RST}"
+
+# 19. cliindent command toggle & argument setting
+cat << 'EOF' > "$TMPDIR/test_indent_toggle.milk"
+cliindent
+cliindent off
+cliindent on
+cliindent 2
+cliindent
+EOF
+run_check "cliindent toggle & argument setting" \
+    "$MILK_BIN -s $TMPDIR/test_indent_toggle.milk | grep -q 'Auto-indentation is ON (2 spaces)'" "0"
+
+# 20. clifold structural block outline
+run_check "clifold script block outline" \
+    "printf 'clifold scripts/makecircleofdisks.milk\nexit\n' | $MILK_BIN | \
+     grep -q 'Total blocks: 4'" "0"
+
+# 21. cliformat script re-indentation
+cat << 'EOF' > "$TMPDIR/test_unformatted_loop.milk"
+for i in 1 2; do
+echo $i
+done
+EOF
+run_check "cliformat script re-indentation" \
+    "printf 'cliformat $TMPDIR/test_unformatted_loop.milk\nexit\n' | $MILK_BIN | \
+     grep -q '    echo \$i'" "0"
+
+# 22. Interactive multi-line continuation auto-indentation in PTY
+cat << 'EOF' > "$TMPDIR/test_pty_auto_indent.py"
+import os, pty, sys, time
+
+master, slave = pty.openpty()
+pid = os.fork()
+if pid == 0:
+    os.close(master)
+    os.dup2(slave, 0)
+    os.dup2(slave, 1)
+    os.dup2(slave, 2)
+    os.close(slave)
+    os.environ['TERM'] = 'xterm-256color'
+    bin_path = sys.argv[1] if len(sys.argv) > 1 else './_build/milk-cli'
+    os.execl(bin_path, bin_path)
+else:
+    os.close(slave)
+    output = b''
+    time.sleep(1.0)
+    os.write(master, b'for i in 1 2; do\n')
+    time.sleep(0.5)
+    os.write(master, b'echo test\n')
+    time.sleep(0.5)
+    os.write(master, b'done\n')
+    time.sleep(0.5)
+    os.write(master, b'exit\n')
+    time.sleep(0.5)
+    while True:
+        try:
+            chunk = os.read(master, 1024)
+            if not chunk:
+                break
+            output += chunk
+        except OSError:
+            break
+    if b'>     ' in output and b'test\r\ntest\r\n' in output:
+        sys.exit(0)
+    sys.exit(1)
+EOF
+
+run_check "Interactive continuation auto-indentation in PTY" \
+    "python3 $TMPDIR/test_pty_auto_indent.py $MILK_BIN" "0"
 
 echo -e "\n${CYN}═════════════════════════════════════════════════════════════════${RST}"
 echo -e " Hardening Test Summary: ${GRN}$PASS passed${RST}, ${RED}$FAIL failed${RST} (total $TOTAL)"

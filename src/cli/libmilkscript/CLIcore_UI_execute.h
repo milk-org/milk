@@ -90,7 +90,12 @@ errno_t cli_timing_toggle(void);
 #ifdef USE_READLINE
 errno_t cli_syntax_highlight_toggle(void);
 errno_t cli_syntax_diag_toggle(void);
+errno_t cli_auto_indent_toggle(void);
 #endif
+
+/* Script formatting and block folding */
+errno_t cli_format_cmd(void);
+errno_t cli_fold_cmd(void);
 
 /* Persistent history */
 void cli_history_load(void);

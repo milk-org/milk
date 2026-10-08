@@ -423,6 +423,7 @@ typedef struct
     int         autocomplete_fuzzy;
     int         syntax_highlight;
     int         syntax_diagnostics;
+    int         auto_indent;
     int         print_cmd_timing;
     char        last_argument[200];
     long        cmdNBarg;

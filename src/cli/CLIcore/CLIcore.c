@@ -475,6 +475,7 @@ errno_t CLI_startup()
     data.autocomplete_arghint = 1; // argument hint line ON
     data.autocomplete_fuzzy   = 1; // fuzzy matching ON
     data.syntax_diagnostics   = 1; // syntax diagnostics ON
+    data.auto_indent          = 4; // auto-indentation spaces (4 spaces)
 
     // signal handling
 

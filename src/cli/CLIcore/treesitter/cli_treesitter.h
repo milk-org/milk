@@ -128,4 +128,51 @@ int cli_ts_get_diagnostic(
     const char      *line,
     CLI_SYNTAX_DIAG *diag);
 
+/**
+ * @brief Compute block nesting depth for auto-indentation
+ *
+ * Calculates the current block nesting depth (loops, conditionals, functions)
+ * of the buffer to determine how many indentation levels should be applied.
+ *
+ * @param buffer Input code buffer
+ * @return Nesting depth (>= 0)
+ */
+int cli_ts_compute_indent_depth(const char *buffer);
+
+/**
+ * @brief Format script code with semantic AST indentation
+ *
+ * Re-indents multi-line milk script code using Tree-sitter block scopes.
+ *
+ * @param code         Input script string
+ * @param indent_width Number of spaces per indentation level (typically 2 or 4)
+ * @return Dynamically allocated formatted string (caller must free), or NULL on error
+ */
+char *cli_ts_format_code(
+    const char *code,
+    int         indent_width);
+
+/**
+ * @brief Print structural outline of AST blocks in code
+ *
+ * Traverses compound statement blocks (for, while, if, case, functions)
+ * and prints line ranges, line counts, and header summaries to @p out.
+ *
+ * @param code  Input code buffer
+ * @param label Descriptive label or filename for header
+ * @param out   Output stream (typically stdout)
+ * @return Number of blocks found
+ */
+int cli_ts_print_block_folds(
+    const char *code,
+    const char *label,
+    FILE       *out);
+
+/**
+ * @brief Check if CLI is currently prompting for a multi-line continuation line
+ *
+ * @return 1 if inside continuation prompt (PS2), 0 otherwise
+ */
+int cli_is_continuation_prompt(void);
+
 #endif /* CLI_TREESITTER_H */
