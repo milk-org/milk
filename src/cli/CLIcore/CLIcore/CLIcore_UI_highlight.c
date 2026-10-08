@@ -108,7 +108,7 @@ int cli_is_command(const char *word)
  */
 void cli_highlight_redisplay(void)
 {
-    if (!data.syntax_highlight)
+    if (!data.syntax_highlight || strchr(rl_line_buffer, '\n') != NULL)
     {
         rl_redisplay();
         return;

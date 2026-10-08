@@ -77,13 +77,18 @@ void cli_exec_block_if(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
 
     /* First branch: the if line */
     int body_s = 1;
-    /* Skip standalone "then" */
+    /* Skip standalone "then" or strip inline "then" */
     if (body_s < nlines)
     {
         const char *ts = strip_ws(lines[body_s]);
         if (strcmp(ts, "then") == 0)
         {
             body_s++;
+        }
+        else if (strncmp(ts, "then ", 5) == 0 || strncmp(ts, "then\t", 5) == 0)
+        {
+            const char *after_then = strip_ws(ts + 4);
+            memmove(lines[body_s], after_then, strlen(after_then) + 1);
         }
     }
 
@@ -128,6 +133,11 @@ void cli_exec_block_if(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
                 {
                     bs++;
                 }
+                else if (strncmp(t2, "then ", 5) == 0 || strncmp(t2, "then\t", 5) == 0)
+                {
+                    const char *after_then = strip_ws(t2 + 4);
+                    memmove(lines[bs], after_then, strlen(after_then) + 1);
+                }
             }
             if (nbranch < 64)
             {
@@ -144,6 +154,20 @@ void cli_exec_block_if(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
             {
                 branches[nbranch].cond_idx   = -1; /* else */
                 branches[nbranch].body_start = i + 1;
+                branches[nbranch].body_end   = nlines;
+                nbranch++;
+            }
+            break;
+        }
+        else if (strncmp(ln, "else ", 5) == 0 || strncmp(ln, "else\t", 5) == 0)
+        {
+            branches[nbranch - 1].body_end = i;
+            const char *after_else         = strip_ws(ln + 4);
+            memmove(lines[i], after_else, strlen(after_else) + 1);
+            if (nbranch < 64)
+            {
+                branches[nbranch].cond_idx   = -1; /* else */
+                branches[nbranch].body_start = i;
                 branches[nbranch].body_end   = nlines;
                 nbranch++;
             }
@@ -206,14 +230,18 @@ void cli_exec_block_while(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
     int body_end   = nlines;
     int max_iter   = 100000;
 
-    /* Skip standalone 'do' line from
-     * semicolon-split */
+    /* Skip standalone 'do' line from semicolon-split or strip inline 'do' */
     if (body_start < body_end)
     {
         const char *ds = strip_ws(lines[body_start]);
         if (strcmp(ds, "do") == 0)
         {
             body_start++;
+        }
+        else if (strncmp(ds, "do ", 3) == 0 || strncmp(ds, "do\t", 3) == 0)
+        {
+            const char *after_do = strip_ws(ds + 2);
+            memmove(lines[body_start], after_do, strlen(after_do) + 1);
         }
     }
 
@@ -326,6 +354,11 @@ void cli_exec_block_until(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
         if (strcmp(ds, "do") == 0)
         {
             body_start++;
+        }
+        else if (strncmp(ds, "do ", 3) == 0 || strncmp(ds, "do\t", 3) == 0)
+        {
+            const char *after_do = strip_ws(ds + 2);
+            memmove(lines[body_start], after_do, strlen(after_do) + 1);
         }
     }
 
@@ -627,13 +660,18 @@ void cli_exec_block_for(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
     int body_start = 1;
     int body_end   = nlines;
 
-    /* Skip standalone 'do' line */
+    /* Skip standalone 'do' line or strip leading 'do' */
     if (body_start < body_end)
     {
         const char *ds = strip_ws(lines[body_start]);
         if (strcmp(ds, "do") == 0)
         {
             body_start++;
+        }
+        else if (strncmp(ds, "do ", 3) == 0 || strncmp(ds, "do\t", 3) == 0)
+        {
+            const char *after_do = strip_ws(ds + 2);
+            memmove(lines[body_start], after_do, strlen(after_do) + 1);
         }
     }
 

@@ -154,7 +154,8 @@ static int compare_spans(const void *a, const void *b)
     {
         return sa->start_byte - sb->start_byte;
     }
-    // If they start at the same place, earlier end_byte goes first so the outer spans enclose inner spans
+    // If they start at the same place, earlier end_byte goes first so outer spans
+    // enclose inner spans
     return sb->end_byte - sa->end_byte;
 }
 
@@ -305,10 +306,188 @@ static int has_unclosed_quotes(const char *s)
     return in_dquote || in_squote;
 }
 
-static bool node_tree_has_missing(TSNode node)
+/**
+ * @brief Checks if a statement boundary precedes the token at index i.
+ *
+ * A shell reserved word (such as done, fi, esac) can only appear at a
+ * statement boundary: start of line/buffer, newline, semicolon, pipe,
+ * ampersand, or block keywords (do, then, else, elif).
+ *
+ * @param s Input string
+ * @param i Index of token start
+ * @return true if preceded by statement boundary, false otherwise
+ */
+static bool is_statement_boundary_before(
+    const char *s,
+    size_t      i)
+{
+    while (i > 0 && (s[i - 1] == ' ' || s[i - 1] == '\t' || s[i - 1] == '\r'))
+    {
+        i--;
+    }
+    if (i == 0)
+    {
+        return true;
+    }
+    char prev = s[i - 1];
+    if (prev == '\n' || prev == ';' || prev == '|' || prev == '&' ||
+        prev == '(' || prev == '{')
+    {
+        return true;
+    }
+
+    if (i >= 2 && strncmp(&s[i - 2], "do", 2) == 0 &&
+        (i == 2 || s[i - 3] == ' ' || s[i - 3] == '\t' ||
+         s[i - 3] == '\n' || s[i - 3] == ';'))
+    {
+        return true;
+    }
+    if (i >= 4 && strncmp(&s[i - 4], "then", 4) == 0 &&
+        (i == 4 || s[i - 5] == ' ' || s[i - 5] == '\t' ||
+         s[i - 5] == '\n' || s[i - 5] == ';'))
+    {
+        return true;
+    }
+    if (i >= 4 && strncmp(&s[i - 4], "else", 4) == 0 &&
+        (i == 4 || s[i - 5] == ' ' || s[i - 5] == '\t' ||
+         s[i - 5] == '\n' || s[i - 5] == ';'))
+    {
+        return true;
+    }
+    if (i >= 4 && strncmp(&s[i - 4], "elif", 4) == 0 &&
+        (i == 4 || s[i - 5] == ' ' || s[i - 5] == '\t' ||
+         s[i - 5] == '\n' || s[i - 5] == ';'))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * @brief Count occurrences of a shell reserved word in buffer.
+ *
+ * Ignores occurrences inside single/double quotes and comments,
+ * and requires the keyword to appear at a statement boundary.
+ *
+ * @param s  Input buffer
+ * @param kw Reserved word to count
+ * @return Number of valid keyword occurrences
+ */
+static int count_shell_keyword(
+    const char *s,
+    const char *kw)
+{
+    size_t kwlen = strlen(kw);
+    int count = 0;
+    int in_dquote = 0;
+    int in_squote = 0;
+    int in_comment = 0;
+
+    for (size_t i = 0; s[i] != '\0'; i++)
+    {
+        if (s[i] == '\n')
+        {
+            in_comment = 0;
+        }
+        if (in_comment)
+        {
+            continue;
+        }
+        if (s[i] == '\\' && s[i + 1] != '\0' && !in_squote)
+        {
+            i++;
+            continue;
+        }
+        if (s[i] == '"' && !in_squote)
+        {
+            in_dquote = !in_dquote;
+            continue;
+        }
+        if (s[i] == '\'' && !in_dquote)
+        {
+            in_squote = !in_squote;
+            continue;
+        }
+        if (in_dquote || in_squote)
+        {
+            continue;
+        }
+        if (s[i] == '#')
+        {
+            if (is_statement_boundary_before(s, i))
+            {
+                in_comment = 1;
+                continue;
+            }
+        }
+
+        if (strncmp(&s[i], kw, kwlen) == 0)
+        {
+            char rc = s[i + kwlen];
+            bool right_ok = (rc == '\0' || rc == ' ' || rc == '\t' ||
+                             rc == '\n' || rc == '\r' || rc == ';' ||
+                             rc == ')' || rc == '}' || rc == '|' || rc == '&');
+            if (right_ok && is_statement_boundary_before(s, i))
+            {
+                count++;
+                i += kwlen - 1;
+            }
+        }
+    } // for (size_t i = 0; s[i] != '\0'; i++)
+
+    return count;
+}
+
+static bool node_tree_has_missing(
+    TSNode      node,
+    const char *buffer)
 {
     if (ts_node_is_missing(node))
     {
+        const char *mtype = ts_node_type(node);
+        if (strcmp(mtype, "done") == 0)
+        {
+            int starters = count_shell_keyword(buffer, "for") +
+                           count_shell_keyword(buffer, "while") +
+                           count_shell_keyword(buffer, "until");
+            int closers  = count_shell_keyword(buffer, "done");
+            if (starters <= closers)
+            {
+                return false;
+            }
+            return true;
+        }
+        if (strcmp(mtype, "fi") == 0)
+        {
+            int starters = count_shell_keyword(buffer, "if");
+            int closers  = count_shell_keyword(buffer, "fi");
+            if (starters <= closers)
+            {
+                return false;
+            }
+            return true;
+        }
+        if (strcmp(mtype, "esac") == 0)
+        {
+            int starters = count_shell_keyword(buffer, "case");
+            int closers  = count_shell_keyword(buffer, "esac");
+            if (starters <= closers)
+            {
+                return false;
+            }
+            return true;
+        }
+        if (strcmp(mtype, "}") == 0)
+        {
+            int o = count_shell_keyword(buffer, "{");
+            int c = count_shell_keyword(buffer, "}");
+            if (o <= c)
+            {
+                return false;
+            }
+            return true;
+        }
         return true;
     }
 
@@ -321,16 +500,39 @@ static bool node_tree_has_missing(TSNode node)
             TSNode child = ts_node_child(node, i);
             const char *ctype = ts_node_type(child);
             if (strcmp(ctype, "for") == 0 ||
-                strcmp(ctype, "if") == 0 ||
                 strcmp(ctype, "while") == 0 ||
                 strcmp(ctype, "until") == 0 ||
-                strcmp(ctype, "case") == 0 ||
-                strcmp(ctype, "do") == 0 ||
-                strcmp(ctype, "then") == 0 ||
-                strcmp(ctype, "elif") == 0 ||
-                strcmp(ctype, "else") == 0)
+                strcmp(ctype, "do") == 0)
             {
-                return true;
+                int starters = count_shell_keyword(buffer, "for") +
+                               count_shell_keyword(buffer, "while") +
+                               count_shell_keyword(buffer, "until");
+                int closers  = count_shell_keyword(buffer, "done");
+                if (starters > closers)
+                {
+                    return true;
+                }
+            }
+            else if (strcmp(ctype, "if") == 0 ||
+                     strcmp(ctype, "then") == 0 ||
+                     strcmp(ctype, "elif") == 0 ||
+                     strcmp(ctype, "else") == 0)
+            {
+                int starters = count_shell_keyword(buffer, "if");
+                int closers  = count_shell_keyword(buffer, "fi");
+                if (starters > closers)
+                {
+                    return true;
+                }
+            }
+            else if (strcmp(ctype, "case") == 0)
+            {
+                int starters = count_shell_keyword(buffer, "case");
+                int closers  = count_shell_keyword(buffer, "esac");
+                if (starters > closers)
+                {
+                    return true;
+                }
             }
         }
     }
@@ -338,7 +540,7 @@ static bool node_tree_has_missing(TSNode node)
     uint32_t count = ts_node_child_count(node);
     for (uint32_t i = 0; i < count; i++)
     {
-        if (node_tree_has_missing(ts_node_child(node, i)))
+        if (node_tree_has_missing(ts_node_child(node, i), buffer))
         {
             return true;
         }
@@ -404,7 +606,7 @@ int cli_ts_is_incomplete(const char *buffer)
     bool incomplete = false;
     if (ts_node_has_error(root))
     {
-        incomplete = node_tree_has_missing(root);
+        incomplete = node_tree_has_missing(root, buffer);
     }
     ts_tree_delete(tree);
 

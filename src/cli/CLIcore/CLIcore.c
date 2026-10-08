@@ -549,6 +549,7 @@ static void readline_lazy_init(const char *prompt, int *flag)
         sigaction(SIGWINCH, &sa_winch, NULL);
     }
     CLI_setup_hint_area();
+    cli_set_active_prompt(prompt);
     rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb_linehandler);
     CLI_configure_readline();
 #else

@@ -36,7 +36,9 @@ void CLI_cleanup_scroll_region(void);
 /* -- Cross-file helpers (CLIcore_UI_*.c) -- */
 
 /* CLIcore_UI_completion.c */
-void      *xmalloc(int size);
+void        cli_set_active_prompt(const char *prompt);
+const char *cli_get_active_prompt(void);
+void       *xmalloc(int size);
 char      *dupstr(char *s);
 extern int ghost_chars_on_line;
 
