@@ -246,8 +246,9 @@ When a new module's commands don't appear:
       exported (not `static`)
 - [ ] `initModule()` calls all `CLIADDCMD_*`
       functions
-- [ ] Each `CLIADDCMD_*` function calls
-      `RegisterCLIcmd` with valid `CLIcmddata`
+- [ ] Each `CLIADDCMD_*` function registers with
+      `INSERT_STD_CLIREGISTERFUNC[_NAMED]` (wraps
+      `RegisterCLIcmd`) on a valid `CLIcmddata`
 - [ ] `CLIcmddata.key` is non-empty and unique
 - [ ] The `.so` file is installed to the plugin
       directory

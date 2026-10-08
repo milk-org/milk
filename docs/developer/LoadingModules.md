@@ -165,7 +165,7 @@ The preferred way to add modules is to have them within the main source code dir
 default modules, following the same conventions and locations as the default modules. A new module
 should then have the following files in the `./src/<ModuleName>/` directory:
 
-- `CMakeLists.txt` file
+- `CMakeLists.txt` file (layout: [Programmer's Guide](../programmers_guide.md#6-cmakeliststxt-conventions))
 - source code files (.c and .h files)
 
 The `EXTRAMODULES` option is then used to add entry(ies) to the list of compiled modules. For

@@ -1,43 +1,59 @@
-# library name
 set(LIBNAME "milkCOREMODtools")
 set(SRCNAME "COREMOD_tools")
 
-message("")
-message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
+message("Module CMakeLists.txt ---- SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
-set(SOURCEFILES
-    ${SRCNAME}.c
-    fileutils.c
-    imdisplay3d.c
-    linregress.c
-    logfunc.c
-    mvprocCPUset.c
-    statusstat.c
-    stringutils.c)
+file(GLOB SOURCEFILES "*.c" "*.cpp")
+file(GLOB INCLUDEFILES "*.h" "*.hpp")
+file(GLOB SCRIPTS "scripts/*")
 
-set(INCLUDEFILES
-    ${SRCNAME}.h
-    fileutils.h
-    imdisplay3d.h
-    linregress.h
-    logfunc.h
-    mvprocCPUset.h
-    statusstat.h
-    stringutils.h)
+project(lib_${LIBNAME}_project)
 
-# TESTING
+include_directories("${PROJECT_SOURCE_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}/..")
 
+add_library(${LIBNAME} SHARED ${SOURCEFILES})
+# CLIcore does not exist at this tier: reuse the include dirs of libfps
+target_include_directories(
+  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:milkfps,INCLUDE_DIRECTORIES>)
+milk_apply_extensions(${LIBNAME})
+
+# CUSTOM ===========
+find_package(PkgConfig REQUIRED)
+if(USE_CFITSIO)
+  pkg_check_modules(CFITSIO cfitsio)
+endif()
+if(USE_CFITSIO AND ${CFITSIO_FOUND})
+  link_directories(${CFITSIO_LIBRARY_DIRS})
+  target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
+  target_include_directories(${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
+  target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
+endif()
+
+target_include_directories(
+  ${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+                    $<INSTALL_INTERFACE:include>)
+target_link_libraries(${LIBNAME} PUBLIC m milkfps)
+
+milk_add_static_lto(${LIBNAME})
+# ==================
+
+install(
+  TARGETS ${LIBNAME}
+  EXPORT milkTargets
+  DESTINATION lib)
+install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+install(PROGRAMS ${SCRIPTS} DESTINATION bin)
+
+# CUSTOM ===========
 include(CTest)
 
-# test module is loaded
 set(TESTNAME "CLIfunc-COREMOD_tools-module")
 add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "m?")
 set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLImodule")
 set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
 set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION
                                          "COREMOD_tools")
-
-# test that commands are registered
 
 list(
   APPEND
@@ -62,79 +78,7 @@ foreach(CLIcmdname IN LISTS commandlist)
 
 endforeach()
 
-# DEFAULT SETTINGS Do not change unless needed
-# =====================================================================
-
-project(lib_${LIBNAME}_project)
-
-# Library can be compiled from multiple source files Convention: the main souce
-# file is named <libname>.c
-#
-add_library(${LIBNAME} SHARED ${SOURCEFILES})
-
-find_package(PkgConfig REQUIRED)
-if(USE_CFITSIO)
-  pkg_check_modules(CFITSIO cfitsio)
-endif()
-if(USE_CFITSIO AND ${CFITSIO_FOUND})
-  link_directories(${CFITSIO_LIBRARY_DIRS})
-  target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
-  target_include_directories(
-    ${LIBNAME}
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           ${CFITSIO_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
-endif()
-
-target_include_directories(
-  ${LIBNAME}
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-         $<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME} PUBLIC m milkfps)
-
-install(
-  TARGETS ${LIBNAME}
-  EXPORT milkTargets
-  DESTINATION lib)
-install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
-
-# Static archive for USE_STATIC_LTO builds
-if(USE_STATIC_LTO)
-  set(LIBNAME_STATIC "${LIBNAME}_static")
-  add_library(${LIBNAME_STATIC} STATIC ${SOURCEFILES})
-  set_target_properties(${LIBNAME_STATIC} PROPERTIES OUTPUT_NAME ${LIBNAME})
-  target_compile_definitions(${LIBNAME_STATIC} PRIVATE MILK_NO_CLI)
-  target_include_directories(
-    ${LIBNAME_STATIC}
-    PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
-           $<INSTALL_INTERFACE:include>)
-  target_link_libraries(${LIBNAME_STATIC} PUBLIC m milkfps_static milkcommon)
-  # Not installed nor added to the milkTargets export set — see notes_for_future.md
-endif()
-
-# ==========================================
-# milk-makecsetandrt Move processes to cpusets and set RT priority. Installed
-# SUID root so unprivileged callers can raise scheduling priority.
-# ==========================================
-add_executable(milk-makecsetandrt milk-makecsetandrt.c)
+add_executable(milk-makecsetandrt bin/milk-makecsetandrt.c)
 target_include_directories(
   milk-makecsetandrt
   PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
@@ -151,3 +95,4 @@ install(
     WORLD_READ
     WORLD_EXECUTE
     SETUID)
+# ==================

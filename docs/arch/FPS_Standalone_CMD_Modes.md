@@ -24,7 +24,7 @@ See also: [FPS](../guide/fps.md) · [CLI Reference](../guide/CLIcore.md) ·
 
 CMD mode allows a function to be executed through the interactive `milk-cli` shell. It is
 implemented by registering a custom wrapper function with the CLI framework using
-`RegisterCLIcmd()`.
+`INSERT_STD_CLIREGISTERFUNC` (or `INSERT_STD_CLIREGISTERFUNC_NAMED`).
 
 In this mode, arguments are captured via the CLI parser (stored in `data.cmdargtoken`) rather than
 `argv`.

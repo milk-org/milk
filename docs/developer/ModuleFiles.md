@@ -16,7 +16,7 @@ Within each module directory:
 | ---------------- | ------------------------------------------------ |
 | `<modulename>.c` | Main C source and module registration            |
 | `<modulename>.h` | Module header and function prototypes            |
-| `CMakeLists.txt` | CMake build configuration                        |
+| `CMakeLists.txt` | CMake build configuration ([layout](../programmers_guide.md#6-cmakeliststxt-conventions)) |
 | `README.md`      | Module overview, source file list, dependencies  |
 | `scripts/`       | Shell scripts and utilities (optional)           |
 | `*.c` / `*.h`    | Additional source files for individual functions |

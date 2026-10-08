@@ -431,6 +431,8 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 <details markdown="1">
 <summary><b>Standalone CMake Functions</b></summary>
 
+Module `CMakeLists.txt` layout: [Programmer's Guide](programmers_guide.md#6-cmakeliststxt-conventions).
+
 | Function                         | Base link set                                                                                                                                            |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `add_milk_standalone()`          | milkfps, milkfpsStandalone, milkfpsseq, milkdata, milkprocessinfo, ImageStreamIO, COREMODmemory, COREMODtools, COREMODarith, COREMODiofits (USE_CFITSIO) |

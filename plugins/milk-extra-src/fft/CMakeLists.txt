@@ -2,65 +2,41 @@
 set(LIBNAME "milkfft")
 set(SRCNAME "fft")
 
-message("")
-message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
+message("Module CMakeLists.txt ---- SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
+# CUSTOM ===========
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FFTW REQUIRED fftw3)
 pkg_check_modules(FFTWF REQUIRED fftw3f)
+# ==================
 
-set(SOURCEFILES
-    ${SRCNAME}.c
-    DFT.c
-    dofft.c
-    dofft_1d.c
-    dofft_2d.c
-    fftcorrelation.c
-    ffttranslate.c
-    fftzoom.c
-    fft_autocorrelation.c
-    fft_structure_function.c
-    init_fftwplan.c
-    permut.c
-    pup2foc.c
-    testfftspeed.c
-    wisdom.c)
-
-set(INCLUDEFILES
-    ${SRCNAME}.h
-    DFT.h
-    dofft.h
-    dofft_internal.h
-    fftcorrelation.h
-    ffttranslate.h
-    fftzoom.h
-    fft_autocorrelation.h
-    fft_structure_function.h
-    init_fftwplan.h
-    permut.h
-    pup2foc.h
-    testfftspeed.h
-    wisdom.h)
-
-# DEFAULT SETTINGS Do not change unless needed
-# =====================================================================
+file(GLOB SOURCEFILES "*.c")
+file(GLOB INCLUDEFILES "*.h")
+file(GLOB SCRIPTS "scripts/*")
 
 project(lib_${LIBNAME}_project)
 
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
 
-# Library can be compiled from multiple source files Convention: the main souce
-# file is named <libname>.c
-#
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
+target_include_directories(
+  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
+milk_apply_extensions(${LIBNAME})
 
-target_link_libraries(${LIBNAME} PUBLIC ${FFTW_LIBRARIES} ${FFTWF_LIBRARIES}
-                                        CLIcore)
-
+# CUSTOM ===========
 set_target_properties(
   ${LIBNAME} PROPERTIES COMPILE_FLAGS
-                        "-DFFTCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\"")
+  "-DFFTCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\"")
+target_link_libraries(${LIBNAME} PUBLIC ${FFTW_LIBRARIES} ${FFTWF_LIBRARIES})
+
+milk_add_static_lto(${LIBNAME} LINK_LIBS ${FFTW_LIBRARIES} ${FFTWF_LIBRARIES})
+if(TARGET ${LIBNAME}_static)
+  set_target_properties(
+    ${LIBNAME}_static PROPERTIES COMPILE_FLAGS
+    "-DFFTCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\"")
+endif()
+# ==================
 
 install(
   TARGETS ${LIBNAME}
@@ -69,6 +45,13 @@ install(
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
 add_milk_standalone(fft-dofft dofft.c)
-target_link_libraries(milk-fpsexec-fft-dofft PUBLIC ${LIBNAME})
 add_milk_standalone(fft-pup2foc pup2foc.c)
-target_link_libraries(milk-fpsexec-fft-pup2foc PUBLIC ${LIBNAME})
+
+get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  PROPERTY BUILDSYSTEM_TARGETS)
+foreach(_t IN LISTS _stdalones)
+  get_target_property(_type ${_t} TYPE)
+  if(_type STREQUAL "EXECUTABLE")
+    milk_link_module(${_t} ${LIBNAME})
+  endif()
+endforeach()

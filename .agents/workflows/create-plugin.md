@@ -36,7 +36,7 @@ Following the guidelines in the `plugin-creator` skill, create the following fil
 
 1. `<pluginname>.c`
 2. `<pluginname>.h`
-3. `CMakeLists.txt`
+3. `CMakeLists.txt` (copy `src/milk_module_example/CMakeLists.txt`)
 4. `README.md`
 5. The `#ifdef MILK_NO_CLI` conditional include
    guard in the main `.c` file.

@@ -21,27 +21,18 @@ cd my_first_module
 
 ## 2. Configuring CMake
 
-Open `CMakeLists.txt` in your new directory. You need to identify your module and tell the build
-system which files to compile.
+Open `CMakeLists.txt` in your new directory (see the [Programmer's Guide](../programmers_guide.md#6-cmakeliststxt-conventions) for its layout).
 
-Change the `LIBNAME` to your module's name:
+Set `LIBNAME` and `SRCNAME` to your module's name:
 
 ```cmake title="CMakeLists.txt"
-# Change this:
-# set(LIBNAME milk_module_example)
-set(LIBNAME my_first_module)
+set(LIBNAME "my_first_module")
+set(SRCNAME "my_first_module")
 ```
 
-Define your source files and the standalone executables you want to build:
+Source files are picked up automatically. Declare the standalone executables you want to build, and update the matching `add_test` lines:
 
 ```cmake title="CMakeLists.txt"
-set(SOURCEFILES
-    examplefunc.c
-    examplefunc2_FPS.c
-    # Add your own source files here
-)
-
-# Register a standalone executable
 # add_milk_standalone(short_name source_file.c)
 add_milk_standalone(my-first-exec examplefunc2_FPS.c)
 ```

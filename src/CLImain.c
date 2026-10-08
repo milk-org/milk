@@ -99,8 +99,8 @@ int main(int argc, char *argv[])
 #endif
 
     char versionstring[STRINGMAXLEN_VERSIONSTRING];
-    snprintf(versionstring, STRINGMAXLEN_VERSIONSTRING, "%d.%02d.%02d%s", VERSION_MAJOR,
-             VERSION_MINOR, VERSION_PATCH, VERSION_OPTION);
+    snprintf(versionstring, STRINGMAXLEN_VERSIONSTRING, "%d.%02d.%02d%s", MILK_VERSION_MAJOR,
+             MILK_VERSION_MINOR, MILK_VERSION_PATCH, MILK_VERSION_OPTION);
 
     if (dcquiet == 0)
     {
@@ -117,18 +117,19 @@ int main(int argc, char *argv[])
         }
     }
 
+    // PACKAGE_NAME, CONFIGDIR, INSTALLDIR passed by CMake.
     strncpy(dcpkgname, PACKAGE_NAME, sizeof(dcpkgname) - 1);
     dcpkgname[sizeof(dcpkgname) - 1] = '\0';
 
-    dcpkgmajor = VERSION_MAJOR;
-    dcpkgminor = VERSION_MINOR;
-    dcpkgpatch = VERSION_PATCH;
+    dcpkgmajor = MILK_VERSION_MAJOR;
+    dcpkgminor = MILK_VERSION_MINOR;
+    dcpkgpatch = MILK_VERSION_PATCH;
 
     strncpy(dcpkgver, versionstring, sizeof(dcpkgver) - 1);
     dcpkgver[sizeof(dcpkgver) - 1] = '\0';
 
     // TODO This is clobbered in CLI_startup. What's the point of having it here?
-    strncpy(dcsourcedir, SOURCEDIR, sizeof(dcsourcedir) - 1);
+    strncpy(dcsourcedir, MILK_SOURCEDIR, sizeof(dcsourcedir) - 1);
     dcsourcedir[sizeof(dcsourcedir) - 1] = '\0';
     strncpy(dcconfigdir, CONFIGDIR, sizeof(dcconfigdir) - 1);
     dcconfigdir[sizeof(dcconfigdir) - 1] = '\0';

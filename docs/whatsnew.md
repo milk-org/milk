@@ -16,6 +16,8 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
+- **2026-10-07** — Unified module `CMakeLists.txt` template, `milk_link_module()` for static-LTO standalones, and
+  `INSERT_STD_CLIREGISTERFUNC_NAMED` for CLI registration `#build` `#api`
 - **2026-10-06** — Reorganized `docs/` into topic subfolders
   (`quickstart/`, `guide/`, `developer/`, `arch/`, `operations/`,
   `maintenance/`) matching the site navigation `#docs`

@@ -16,8 +16,6 @@ case "${1-}" in
         echo "Check milk-cli installation and configuration."
         echo ""
         echo "See Also:"
-        echo "  milk-check-standalone-deps" \
-            "  — verify standalone link deps"
         echo "  milk-debug" \
             "                  — run milk-cli under valgrind"
         exit 0 ;;

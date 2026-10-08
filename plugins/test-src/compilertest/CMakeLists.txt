@@ -1,13 +1,11 @@
-# library name
 set(LIBNAME "milkcompilertest")
 set(SRCNAME "compilertest")
 
-file(GLOB SOURCEFILES "*.c")
-file(GLOB INCLUDEFILES "*.h")
-file(GLOB SCRIPTS "scripts/*")
+message("Module CMakeLists.txt ---- SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
-# DEFAULT SETTINGS Do not change unless needed
-# =====================================================================
+file(GLOB SOURCEFILES "*.c" "*.cpp")
+file(GLOB INCLUDEFILES "*.h" "*.hpp")
+file(GLOB SCRIPTS "scripts/*")
 
 project(lib_${LIBNAME}_project)
 
@@ -17,13 +15,8 @@ include_directories("${PROJECT_SOURCE_DIR}/..")
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 target_include_directories(
   ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
-
 milk_apply_extensions(${LIBNAME})
-# Library can be compiled from multiple source files Convention: the main souce
-# file is named <libname>.c
-#
-
-message("---- module compilertest ------------------")
+milk_add_static_lto(${LIBNAME})
 
 install(
   TARGETS ${LIBNAME}
@@ -35,3 +28,12 @@ install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 add_milk_standalone(compilertest-requestcuda request_cuda.c)
 add_milk_standalone(compilertest-mandatecuda mandate_cuda.c)
 add_milk_standalone(compilertest-mandatelapacke mandate_lapacke.c)
+
+get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  PROPERTY BUILDSYSTEM_TARGETS)
+foreach(_t IN LISTS _stdalones)
+  get_target_property(_type ${_t} TYPE)
+  if(_type STREQUAL "EXECUTABLE")
+    milk_link_module(${_t} ${LIBNAME})
+  endif()
+endforeach()

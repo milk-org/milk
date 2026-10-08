@@ -172,19 +172,13 @@ static errno_t CLIfunction_1drfft(void)
 errno_t CLIADDCMD_milkfft__dofft()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
+    INSERT_STD_CLIREGISTERFUNC;
 
     safe_fps_fill_farg_examples(fa_1dfft, b_1dfft, sizeof(b_1dfft) / sizeof(FPS_CLI_BINDING));
-    {
-        int cmdi                     = RegisterCLIcmd(CLIcmddata_1dfft, CLIfunction_1dfft);
-        CLIcmddata_1dfft.cmdsettings = &data.cmd[cmdi].cmdsettings;
-    }
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_1dfft, CLIfunction_1dfft);
 
     safe_fps_fill_farg_examples(fa_1drfft, b_1drfft, sizeof(b_1drfft) / sizeof(FPS_CLI_BINDING));
-    {
-        int cmdi                      = RegisterCLIcmd(CLIcmddata_1drfft, CLIfunction_1drfft);
-        CLIcmddata_1drfft.cmdsettings = &data.cmd[cmdi].cmdsettings;
-    }
+    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_1drfft, CLIfunction_1drfft);
 
     return RETURN_SUCCESS;
 }

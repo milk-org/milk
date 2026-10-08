@@ -32,7 +32,7 @@
 #    include <string.h>
 #    include <sys/types.h>
 
-#    include "config.h"
+#    include "milk_config.h"
 
 /* Core data structure (MILK_DATA) and macros */
 #    include "libmilkdata/milkdata.h"
@@ -201,10 +201,10 @@ typedef struct
                                                 .shortname_default  = MODULE_SHORTNAME_DEFAULT, \
                                                 .description        = MODULE_DESCRIPTION,       \
                                                 .source_file        = __FILE__,                 \
-                                                .package            = PROJECT_NAME,             \
-                                                .version_major      = VERSION_MAJOR,            \
-                                                .version_minor      = VERSION_MINOR,            \
-                                                .version_patch      = VERSION_PATCH,            \
+                                                .package            = MILK_PROJECT_NAME,        \
+                                                .version_major      = MILK_VERSION_MAJOR,       \
+                                                .version_minor      = MILK_VERSION_MINOR,       \
+                                                .version_patch      = MILK_VERSION_PATCH,       \
                                                 .date_string        = __DATE__,                 \
                                                 .time_string        = __TIME__,                 \
                                                 .reg_call           = cli_reg_call,             \

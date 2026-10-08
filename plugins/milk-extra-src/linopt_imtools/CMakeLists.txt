@@ -1,18 +1,11 @@
-# library name
 set(LIBNAME "milklinoptimtools")
 set(SRCNAME "linopt_imtools")
 
-message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
+message("Module CMakeLists.txt ---- SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
-# This is only good so far as we're taking everything
-# And no mixing of CPP files
-file(GLOB SOURCEFILES "*.c")
-file(GLOB INCLUDEFILES "*.h")
-
+file(GLOB SOURCEFILES "*.c" "*.cpp")
+file(GLOB INCLUDEFILES "*.h" "*.hpp")
 file(GLOB SCRIPTS "scripts/*")
-
-# DEFAULT SETTINGS Do not change unless needed
-# =====================================================================
 
 project(lib_${LIBNAME}_project)
 
@@ -22,10 +15,8 @@ include_directories("${PROJECT_SOURCE_DIR}/..")
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 target_include_directories(
   ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
-
-message("---- module linalgebra ------------------")
-
 milk_apply_extensions(${LIBNAME})
+milk_add_static_lto(${LIBNAME})
 
 install(
   TARGETS ${LIBNAME}
@@ -46,3 +37,12 @@ add_milk_standalone(linopt-mkCPAmodes makeCPAmodes.c)
 add_milk_standalone(linopt-mkCosRadModes makeCosRadModes.c)
 add_milk_standalone(linopt-mask2pixtab mask_to_pixtable.c)
 add_milk_standalone(linopt-vec2Dimg vec_to_2Dimage.c)
+
+get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  PROPERTY BUILDSYSTEM_TARGETS)
+foreach(_t IN LISTS _stdalones)
+  get_target_property(_type ${_t} TYPE)
+  if(_type STREQUAL "EXECUTABLE")
+    milk_link_module(${_t} ${LIBNAME})
+  endif()
+endforeach()

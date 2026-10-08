@@ -58,37 +58,9 @@ CLIcmddata, FPS_app_info)` is present.
      `CLIADDCMD_milk_module_example__fpscli`
      to match your module/function.
 
-5. Update CMakeLists.txt:
-
-   a. **Add to SOURCEFILES**: append the new
-   `.c` file to the module's `SOURCEFILES`
-   list so it compiles into the shared lib.
-
-   b. **Add standalone target**: use the
-   standard helper:
-
-   ```cmake
-   # For milk modules:
-   add_milk_standalone(cmdkey source_file.c)
-
-   # For cacao modules:
-   add_cacao_standalone(cmdkey source_file.c)
-
-   # For cacao with plugin deps:
-   add_cacao_standalone_plugins(
-       cmdkey source_file.c)
-   ```
-
-   If extra link deps are needed:
-
-   ```cmake
-   add_cacao_standalone(my-func myfunction.c)
-   target_link_libraries(
-       cacao-fpsexec-my-func
-       PUBLIC milkstatistic)
-   ```
-
-   **DO NOT** use the old 4-line pattern.
+5. Update CMakeLists.txt: add one `add_milk_standalone(cmdkey source_file.c)` line
+   (or `add_cacao_standalone` / `add_cacao_standalone_plugins` for cacao), following
+   `src/milk_module_example/CMakeLists.txt`. Helpers: `docs/programmers_guide.md` §6.
 
 6. **Register**: add the `CLIADDCMD_*()` call
    in the module's `initModule()` function and
