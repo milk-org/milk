@@ -82,7 +82,7 @@ dependency requirements:
 | **Full** (default) | `cmake ..`                                  | cfitsio, readline, ncurses |
 
 For details on each tier, what gets built, and what is
-disabled, see [Build Tiers](docs/install/build_tiers.md).
+disabled, see [Build Tiers](docs/quickstart/build_tiers.md).
 
 ### CMake options
 

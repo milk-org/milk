@@ -62,7 +62,7 @@ requiring you to remember every checklist.
 | Performance practices     | [`performance-practices.md`]({{ github_blob_url }}/.agents/rules/performance-practices.md)                                 | SIMD, BLAS, pointer alignment, type dispatch, memory allocation, CPU pinning.        |
 | README updates            | [`readme-update.md`]({{ github_blob_url }}/.agents/rules/readme-update.md)                                                 | Update module README when source files are added/removed.                            |
 | Running commands          | [`run-milk-commands.md`]({{ github_blob_url }}/.agents/rules/run-milk-commands.md)                                         | Environment setup, SHM cleanup, tmux session management.                             |
-| Script documentation      | [`script-docs.md`]({{ github_blob_url }}/.agents/rules/script-docs.md)                                                     | Update `docs/scripts.md` and add `--help` when scripts change.                       |
+| Script documentation      | [`script-docs.md`]({{ github_blob_url }}/.agents/rules/script-docs.md)                                                     | Update `docs/guide/scripts.md` and add `--help` when scripts change.                       |
 | Script naming             | [`script-naming.md`]({{ github_blob_url }}/.agents/rules/script-naming.md)                                                 | `milk-*` for OS executables, `.milk` for CLI scripts.                                |
 | Shared memory safety      | [`shared-memory-safety.md`]({{ github_blob_url }}/.agents/rules/shared-memory-safety.md)                                   | SHM cleanup, stale detection, stream creation.                                       |
 | Testing practices         | [`testing-practices.md`]({{ github_blob_url }}/.agents/rules/testing-practices.md)                                         | Run tests after changes; add regression tests.                                       |
@@ -124,7 +124,7 @@ are step-by-step checklists for common tasks.
 | `/inspect-machine-code`     | [`inspect-machine-code.md`]({{ github_blob_url }}/.agents/workflows/inspect-machine-code.md)         | Assembly inspection for performance optimization.                                             |
 | `/sync-worktree`            | [`sync-worktree.md`]({{ github_blob_url }}/.agents/workflows/sync-worktree.md)                       | Sync worktree to latest framework-dev.                                                        |
 | `/update-docs-site`         | [`update-docs-site.md`]({{ github_blob_url }}/.agents/workflows/update-docs-site.md)                 | Add or update MkDocs pages.                                                                   |
-| `/update-scripts-docs`      | [`update-scripts-docs.md`]({{ github_blob_url }}/.agents/workflows/update-scripts-docs.md)           | Sync `docs/scripts.md` after script changes.                                                  |
+| `/update-scripts-docs`      | [`update-scripts-docs.md`]({{ github_blob_url }}/.agents/workflows/update-scripts-docs.md)           | Sync `docs/guide/scripts.md` after script changes.                                                  |
 
 ## Adding New Rules or Workflows
 

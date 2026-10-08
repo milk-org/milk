@@ -2,7 +2,7 @@
 
 <!-- prettier-ignore -->
 !!! note
-    Generated from CMakeLists.txt — 2026-05-30. See [Build Tiers](../quickstart/build_tiers.md) for cmake
+    Generated from CMakeLists.txt. See [Build Tiers](../quickstart/build_tiers.md) for cmake
     commands.
 
 ## Legend

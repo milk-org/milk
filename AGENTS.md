@@ -240,7 +240,7 @@ and enforced. Know what they require:
 | `performance-practices.md`                 | SIMD, BLAS, pointer alignment, type dispatch, CPU pinning                         |
 | `readme-update.md`                         | Update module README when files change                                            |
 | `run-milk-commands.md`                     | Environment setup, SHM cleanup, tmux guidance                                     |
-| `script-docs.md`                           | Update `docs/scripts.md` when scripts change                                      |
+| `script-docs.md`                           | Update `docs/guide/scripts.md` when scripts change                               |
 | `script-naming.md`                         | `milk-*` for OS executables, `.milk` for CLI scripts                              |
 | `shared-memory-safety.md`                  | SHM cleanup, stale detection, stream creation                                     |
 | `testing-practices.md`                     | Run tests after changes; add regression tests                                     |

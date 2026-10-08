@@ -39,8 +39,9 @@ The site uses top-level navigation tabs defined in the
 
 ## When Adding a New Documentation Page
 
-1. Create the `.md` file under `docs/` in the appropriate
-   subdirectory.
+1. Create the `.md` file under the `docs/` subfolder matching
+   its nav tab (`quickstart/`, `guide/`, `developer/`, `arch/`,
+   `operations/`, `maintenance/`).
 2. Add the page to the correct tab section in `mkdocs.yml`
    under `nav:`.
 3. Also add the page to `docs/index.md` in the appropriate
