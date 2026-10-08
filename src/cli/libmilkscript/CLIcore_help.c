@@ -25,18 +25,7 @@
 
 /* ImageStreamIO_config.h defines generic PROJECT_NAME and VERSION_* macros
  * that conflict with milk_config.h. Undefine before including, then restore milk_config.h. */
-#undef PROJECT_NAME
-#undef VERSION_MAJOR
-#undef VERSION_MINOR
-#undef VERSION_PATCH
-#undef VERSION_OPTION
 #include "ImageStreamIO/ImageStreamIO_config.h" // For IMAGESTRUCT_VERSION
-#undef PROJECT_NAME
-#undef VERSION_MAJOR
-#undef VERSION_MINOR
-#undef VERSION_PATCH
-#undef VERSION_OPTION
-#include "milk_config.h"
 
 #include "fps.h"
 #include "fps_connect.h"

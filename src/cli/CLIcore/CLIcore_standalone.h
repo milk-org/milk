@@ -26,7 +26,7 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "config.h"
+#include "milk_config.h"
 
 /* Core data structure (MILK_DATA) and macros */
 #include "libmilkdata/milkdata.h"

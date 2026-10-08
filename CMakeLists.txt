@@ -170,13 +170,8 @@ if(NOT MILK_GIT_COMMIT)
 endif()
 
 # Configure a header file to pass some of the CMake settings to the source code.
-# Generated into the build tree (not the source tree), which is shared across
-# out-of-source builds with differing options/install prefixes.
 configure_file("${PROJECT_SOURCE_DIR}/src/milk_config.h.in"
-  "${CMAKE_BINARY_DIR}/config/milk_config.h")
-
-configure_file("${PROJECT_SOURCE_DIR}/src/config.h.in"
-  "${CMAKE_BINARY_DIR}/config/config.h")
+               "${PROJECT_SOURCE_DIR}/src/milk_config.h")
 
 # select most recent version available
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
@@ -511,14 +506,6 @@ foreach(lsrcdir IN LISTS libsrcdir libextradir)
   endif()
 endforeach()
 
-if(TARGET ImageStreamIO_static)
-  # The submodule's static archive is built with -DHAVE_CUDA but links no CUDA runtime.
-  if(HAVE_CUDA)
-    # TODO not this, add this to ImageStreamIO directly...
-    target_link_libraries(ImageStreamIO_static PRIVATE CUDA::toolkit CUDA::cudart)
-  endif()
-endif()
-
 # example module and isio-tools depend on coremods
 if(USE_COREMODS)
   add_subdirectory(src/milk_module_example)
@@ -666,8 +653,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/milk.pc.in
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/milk.pc
   DESTINATION "${INSTALL_PKGCONFIG_DIR}")
 
-install(FILES ${CMAKE_BINARY_DIR}/config/milk_config.h
-  ${CMAKE_BINARY_DIR}/config/config.h DESTINATION include)
+install(FILES ${PROJECT_SOURCE_DIR}/src/milk_config.h DESTINATION include)
 
 if(build_python_module)
   add_subdirectory(python_module)
