@@ -170,8 +170,9 @@ if(NOT MILK_GIT_COMMIT)
 endif()
 
 # Configure a header file to pass some of the CMake settings to the source code.
+# USE THE BUILD TREE -- allows to preserve multiple builds with different configs.
 configure_file("${PROJECT_SOURCE_DIR}/src/milk_config.h.in"
-               "${PROJECT_SOURCE_DIR}/src/milk_config.h")
+               "${CMAKE_BINARY_DIR}/config/milk_config.h")
 
 # select most recent version available
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
@@ -653,7 +654,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/milk.pc.in
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/milk.pc
   DESTINATION "${INSTALL_PKGCONFIG_DIR}")
 
-install(FILES ${PROJECT_SOURCE_DIR}/src/milk_config.h DESTINATION include)
+install(FILES ${CMAKE_BINARY_DIR}/config/milk_config.h DESTINATION include)
 
 if(build_python_module)
   add_subdirectory(python_module)

@@ -149,7 +149,7 @@ class CLICommands:
         strip_ansi: bool = True,
         quiet: bool = True,
     ) -> None:
-        if MILK_CLI_EXEC is None:
+        if MILK_CLI_EXEC is None or not HAVE_CLI:
             raise MilkBuildException(
                 "MILK built without CLI support. Must build with -DUSE_CLI=ON."
             )
@@ -172,7 +172,7 @@ class CLICommands:
 
     def _enter_exception_unsafe(self) -> subprocess.CompletedProcess[str]:
 
-        assert MILK_CLI_EXEC is not None
+        assert MILK_CLI_EXEC is not None and HAVE_CLI
         env = dict(os.environ)
         # TODO MILK_QUIET is broken and disables stdout/stderr.
         # if self.quiet:

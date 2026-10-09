@@ -33,16 +33,6 @@ def _find_fpsexecs() -> list[pathlib.Path]:
 FPSEXECS = _find_fpsexecs()
 
 
-def _params(mark_exceptions: bool):
-    for exe in FPSEXECS:
-        marks = []
-        if mark_exceptions and exe.name in FPSEXEC_LINKS_CLICORE_EXCEPTIONS:
-            marks.append(
-                pytest.mark.xfail(reason="listed CLIcore dependency", strict=False)
-            )
-        yield pytest.param(exe, id=exe.name, marks=marks)
-
-
 @pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support")
 @pytest.mark.parametrize(
     "module_name",
@@ -104,8 +94,13 @@ def test_fpsexecs_found():
     assert FPSEXECS, "no fpsexec executables found in $MILK_INSTALLDIR/bin"
 
 
-@pytest.mark.parametrize("fpsexec", _params(mark_exceptions=True))
+@pytest.mark.parametrize("fpsexec", FPSEXECS)
 def test_no_clicore_link(fpsexec: pathlib.Path):
+    if fpsexec.name in FPSEXEC_LINKS_CLICORE_EXCEPTIONS:
+        pytest.xfail(
+            reason="listed exception to standalone-no-CLIcore dependency rule."
+        )
+
     proc = subprocess.run(
         ["ldd", "-d", str(fpsexec)], capture_output=True, text=True, timeout=TIMEOUT
     )
@@ -113,8 +108,13 @@ def test_no_clicore_link(fpsexec: pathlib.Path):
     assert "CLIcore" not in proc.stdout
 
 
-@pytest.mark.parametrize("fpsexec", _params(mark_exceptions=False))
+@pytest.mark.parametrize("fpsexec", FPSEXECS)
 def test_run_help(fpsexec: pathlib.Path):
+    if fpsexec.name in FPSEXEC_LINKS_CLICORE_EXCEPTIONS and not HAVE_CLI:
+        pytest.xfail(
+            reason="listed exception to standalone-no-CLIcore dependency rule."
+        )
+
     assert os.access(fpsexec, os.X_OK)
     proc = subprocess.run(
         [str(fpsexec), "-h"],
