@@ -305,7 +305,7 @@ add_test(NAME mymodule-myfunc-h1 COMMAND milk-fpsexec-myfunc -h1)
 - Extra executables with their own `main()` live in a `bin/` subfolder (not globbed) and are declared in the last `# CUSTOM` block.
 - Coremods cannot reference the `CLIcore` target (it links them); they use `$<TARGET_PROPERTY:milkfps,INCLUDE_DIRECTORIES>` instead.
 - `milk_add_static_lto(${LIBNAME} ...)` (`cmake/milk_static_lto.cmake`) builds the `_static` archive used by `USE_STATIC_LTO`.
-- Express optional dependencies with the `MILK_CMAKE_REQUEST_<X>` / `MILK_CMAKE_MANDATE_<X>` tags (see [Managing Dependencies](developer/dependency_system.md)); do not hand-write include or link rules.
+- Express optional dependencies with the `MILK_CMAKE_REQUEST_<X>` / `MILK_CMAKE_MANDATE_<X>` tags (see [Managing Dependencies](../developer/dependency_system.md)); do not hand-write include or link rules.
 - Each module installs only its own headers.
 - Keep lines ≤ 80 characters.
 

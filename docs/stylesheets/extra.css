@@ -124,6 +124,16 @@ html {
   border-left-color: rgba(0, 191, 165, 0.35);
 }
 
+/* ---------- Tables — compact cells ---------- */
+.md-typeset table:not([class]) {
+  font-size: 0.7rem;
+}
+
+.md-typeset table:not([class]) th,
+.md-typeset table:not([class]) td {
+  padding: 0.25em 0.8em;
+}
+
 /* ---------- Tables — zebra striping ---------- */
 .md-typeset table:not([class]) tbody tr:nth-child(even) {
   background-color: rgba(0, 191, 165, 0.04);
@@ -142,6 +152,21 @@ details {
 details summary {
   cursor: pointer;
   padding: 0.4em 0;
+}
+
+/* Plain grey collapsible: <details class="plain" markdown="1"> */
+.md-typeset details.plain {
+  border-color: var(--md-default-fg-color--lightest);
+  box-shadow: none;
+}
+
+.md-typeset details.plain > summary {
+  background-color: var(--md-default-fg-color--lightest);
+  padding-left: 0.8rem;
+}
+
+.md-typeset details.plain > summary::before {
+  display: none;
 }
 
 /* ---------- Announce banner ---------- */

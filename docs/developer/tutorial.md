@@ -21,7 +21,7 @@ cd my_first_module
 
 ## 2. Configuring CMake
 
-Open `CMakeLists.txt` in your new directory (see the [Programmer's Guide](../programmers_guide.md#6-cmakeliststxt-conventions) for its layout).
+Open `CMakeLists.txt` in your new directory (see the [Programmer's Guide](../arch/programmers_guide.md#6-cmakeliststxt-conventions) for its layout).
 
 Set `LIBNAME` and `SRCNAME` to your module's name:
 

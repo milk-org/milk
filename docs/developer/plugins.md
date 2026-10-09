@@ -37,7 +37,7 @@ When `milk` detects a `CMakeLists.txt` in your plugin's directory, it will autom
 via `add_subdirectory()`. The file is expected to define your module's shared library and register
 its standalone executables.
 
-Copy `src/milk_module_example/CMakeLists.txt`; its skeleton and rules are in the [Programmer's Guide](../programmers_guide.md#6-cmakeliststxt-conventions).
+Copy `src/milk_module_example/CMakeLists.txt`; its skeleton and rules are in the [Programmer's Guide](../arch/programmers_guide.md#6-cmakeliststxt-conventions).
 
 ## 3. Writing the Source Code
 
