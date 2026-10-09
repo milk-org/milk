@@ -171,6 +171,17 @@ errno_t CLI_execute_line()
     /* Dot-sourcing: ". file" → "source file" */
     cli_rewrite_dot_source();
 
+    /* Command chaining: ; && || */
+    {
+        errno_t ret;
+        if (cli_split_semicolon(&ret))
+        {
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return ret;
+        }
+    }
+
     /* Flow control: if/while/for/function
      * and user-defined function calls.
      * Must run BEFORE expansion so block
@@ -188,8 +199,11 @@ errno_t CLI_execute_line()
     cli_expand_fpsvar(data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);
 
     /* Expand milk variables ($VAR, $cam.xsize).
-     * Leaves other expansions $(...), $((...)) for wordexp. */
+     * Leaves command substitutions $(...) for wordexp. */
     cli_expand_env(data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);
+
+    /* Expand $((...)) arithmetic expressions */
+    cli_expand_arith(data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);
 
     /* Expand brace ranges {N..M} {N..M..S} (wordexp does not support) */
     cli_expand_braces(data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);
@@ -280,17 +294,6 @@ errno_t CLI_execute_line()
         }
     }
 
-    /* Command chaining: ; && || */
-    {
-        errno_t ret;
-        if (cli_split_semicolon(&ret))
-        {
-            free(thetime);
-            DEBUG_TRACE_FEXIT();
-            return ret;
-        }
-    }
-
     /* Check for array assignment: arr=(a b c) */
     if (cli_try_array_assign(data.CLIcmdline))
     {
@@ -316,6 +319,12 @@ errno_t CLI_execute_line()
             {
                 free(thetime);
                 return RETURN_SUCCESS;
+            }
+            if (data.parseerror != 0)
+            {
+                data.CMDexecuted = 1;
+                free(thetime);
+                return RETURN_FAILURE;
             }
         }
     }
@@ -344,9 +353,10 @@ errno_t CLI_execute_line()
             }
             cli_history_log_shell(data.CLIcmdline);
             cli_export_vars_to_env();
-            cli_run_external(data.CLIcmdline);
+            int ext_rc      = cli_run_external(data.CLIcmdline);
+            cli_last_retval = ext_rc;
             free(thetime);
-            return RETURN_SUCCESS;
+            return (ext_rc == 0) ? RETURN_SUCCESS : RETURN_FAILURE;
         }
     }
 
@@ -457,6 +467,14 @@ errno_t CLI_execute_line()
 
                 if (data.cmdNBarg > 0 && data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_COMMAND &&
                     (cmdargstring[0] == '-' || cmdargstring[0] == '/'))
+                {
+                    strncpy(data.cmdargtoken[data.cmdNBarg].val.string, cmdargstring,
+                            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                    data.cmdargtoken[data.cmdNBarg].val.string[STRINGMAXLEN_CMDARGTOKEN_VAL - 1] =
+                        '\0';
+                    data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
+                }
+                else if (strchr(cmdargstring, ' ') != NULL || strchr(cmdargstring, '\t') != NULL)
                 {
                     strncpy(data.cmdargtoken[data.cmdNBarg].val.string, cmdargstring,
                             STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
@@ -643,10 +661,14 @@ errno_t CLI_execute_line()
         int sys_ret      = cli_run_external(data.CLIcmdline);
         int os_not_found = (sys_ret == 127);
 
+        if (sys_ret != -1)
+        {
+            cli_last_retval = sys_ret;
+        }
+
         if (!os_not_found && sys_ret != -1)
         {
             printf(COLORDIMYELLOW "[shell] %s" COLORRST "\n", data.CLIcmdline);
-            cli_last_retval = sys_ret;
         }
 
         if (os_not_found)

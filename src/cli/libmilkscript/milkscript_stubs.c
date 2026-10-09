@@ -57,11 +57,6 @@ void cli_history_save(void)
  */
 __attribute__((weak)) DATA data;
 
-__attribute__((weak)) void cli_expand_braces(char *line, int maxlen)
-{
-    (void) line;
-    (void) maxlen;
-}
 
 __attribute__((weak)) int find_streams(void *streaminfo, int filter, const char *namefilter)
 {

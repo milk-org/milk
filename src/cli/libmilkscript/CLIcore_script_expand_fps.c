@@ -526,18 +526,18 @@ static int expand_fpsvar_stream(char *pname, char *out, int *opos, int maxlen)
     if (sret == IMAGESTREAMIO_SUCCESS && img.md != NULL)
     {
         int found = 0;
-        if (strcmp(prop, "xsize") == 0)
+        if (strcmp(prop, "xsize") == 0 || strcmp(prop, "size0") == 0)
         {
             snprintf(retbuf, sizeof(retbuf), "%u", img.md->size[0]);
             found = 1;
         }
-        else if (strcmp(prop, "ysize") == 0)
+        else if (strcmp(prop, "ysize") == 0 || strcmp(prop, "size1") == 0)
         {
             snprintf(retbuf, sizeof(retbuf), "%u",
                      (img.md->naxis > 1 && img.md->size[1] > 0) ? img.md->size[1] : 1U);
             found = 1;
         }
-        else if (strcmp(prop, "zsize") == 0)
+        else if (strcmp(prop, "zsize") == 0 || strcmp(prop, "size2") == 0)
         {
             snprintf(retbuf, sizeof(retbuf), "%u",
                      (img.md->naxis > 2 && img.md->size[2] > 0) ? img.md->size[2] : 1U);
@@ -553,7 +553,7 @@ static int expand_fpsvar_stream(char *pname, char *out, int *opos, int maxlen)
             snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) img.md->datatype);
             found = 1;
         }
-        else if (strcmp(prop, "typename") == 0)
+        else if (strcmp(prop, "typename") == 0 || strcmp(prop, "dtype") == 0)
         {
             const char *tn = ImageStreamIO_typename(img.md->datatype);
             if (tn != NULL)
@@ -597,7 +597,7 @@ static int expand_fpsvar_stream(char *pname, char *out, int *opos, int maxlen)
             snprintf(retbuf, sizeof(retbuf), "%d", (int) img.md->ownerPID);
             found = 1;
         }
-        else if (strcmp(prop, "nelement") == 0)
+        else if (strcmp(prop, "nelement") == 0 || strcmp(prop, "nelem") == 0)
         {
             snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long) img.md->nelement);
             found = 1;

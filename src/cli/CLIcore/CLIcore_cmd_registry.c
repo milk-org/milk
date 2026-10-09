@@ -278,7 +278,26 @@ void runCLI_cmd_init()
 #ifdef USE_READLINE
     RegisterCLIcommand("synhl", __FILE__, cli_syntax_highlight_toggle, "toggle syntax highlighting",
                        "[on|off]", "synhl off", "cli_syntax_highlight_toggle()");
+
+    RegisterCLIcommand("syndiag", __FILE__, cli_syntax_diag_toggle,
+                       "toggle real-time syntax diagnostics", "[on|off]", "syndiag off",
+                       "cli_syntax_diag_toggle()");
+
+    RegisterCLIcommand("cliindent", __FILE__, cli_auto_indent_toggle,
+                       "toggle multi-line auto-indentation", "[on|off|<spaces>]", "cliindent 4",
+                       "cli_auto_indent_toggle()");
+
+    RegisterCLIcommand("showmatch", __FILE__, cli_showmatch_toggle,
+                       "toggle structural delimiter and keyword matching", "[on|off]",
+                       "showmatch off", "cli_showmatch_toggle()");
 #endif
+
+    RegisterCLIcommand(
+        "cliformat", __FILE__, cli_format_cmd, "format script with semantic AST indentation",
+        "[-i] [-w <spaces>] <filename>", "cliformat myscript.milk", "cli_format_cmd()");
+
+    RegisterCLIcommand("clifold", __FILE__, cli_fold_cmd, "print AST block outline and line ranges",
+                       "[<filename>]", "clifold myscript.milk", "cli_fold_cmd()");
 
     RegisterCLIcommand("source", __FILE__, cli_source, "execute a milk script file", "<filename>",
                        "source myscript.milk", "cli_source()");

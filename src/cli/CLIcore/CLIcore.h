@@ -362,6 +362,17 @@ extern uint8_t TYPESIZE[32];
 #    define CLI_ALIAS_NAMELEN 64
 #    define CLI_ALIAS_CMDLEN 512
 
+/* Tab completion modes for data.CLImatchMode */
+#    define CLICOMPLETIONMODE_COMMANDS 0
+#    define CLICOMPLETIONMODE_IMAGES 1
+#    define CLICOMPLETIONMODE_CMDARGS 2
+#    define CLICOMPLETIONMODE_FILES 3
+#    define CLICOMPLETIONMODE_FPSPARAMS 4
+#    define CLICOMPLETIONMODE_VARS_FPS 5
+#    define CLICOMPLETIONMODE_VARS_SEQ 6
+#    define CLICOMPLETIONMODE_VARS_STREAM 7
+#    define CLICOMPLETIONMODE_VARS_ENV 8
+
 typedef struct
 {
     char name[CLI_ALIAS_NAMELEN];
@@ -411,6 +422,9 @@ typedef struct
     int         autocomplete_arghint;
     int         autocomplete_fuzzy;
     int         syntax_highlight;
+    int         syntax_diagnostics;
+    int         auto_indent;
+    int         show_match;
     int         print_cmd_timing;
     char        last_argument[200];
     long        cmdNBarg;

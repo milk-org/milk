@@ -36,9 +36,11 @@ void CLI_cleanup_scroll_region(void);
 /* -- Cross-file helpers (CLIcore_UI_*.c) -- */
 
 /* CLIcore_UI_completion.c */
-void      *xmalloc(int size);
-char      *dupstr(char *s);
-extern int ghost_chars_on_line;
+void        cli_set_active_prompt(const char *prompt);
+const char *cli_get_active_prompt(void);
+void       *xmalloc(int size);
+char       *dupstr(const char *s);
+extern int  ghost_chars_on_line;
 
 #ifdef USE_READLINE
 int   cli_accept_line(int count, int key);
@@ -87,7 +89,14 @@ errno_t cli_timing_toggle(void);
 /* Syntax highlighting toggle */
 #ifdef USE_READLINE
 errno_t cli_syntax_highlight_toggle(void);
+errno_t cli_syntax_diag_toggle(void);
+errno_t cli_auto_indent_toggle(void);
+errno_t cli_showmatch_toggle(void);
 #endif
+
+/* Script formatting and block folding */
+errno_t cli_format_cmd(void);
+errno_t cli_fold_cmd(void);
 
 /* Persistent history */
 void cli_history_load(void);

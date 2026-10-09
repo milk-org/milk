@@ -20,6 +20,7 @@
 #include <sys/wait.h>
 
 #include "timeutils.h"
+#include "treesitter/cli_treesitter.h"
 
 
 /**
@@ -346,7 +347,285 @@ errno_t cli_syntax_highlight_toggle(void)
     }
     return RETURN_SUCCESS;
 }
+
+/**
+ * @brief Toggle real-time inline syntax diagnostics
+ *
+ * Controls whether real-time syntax error and continuation
+ * diagnostics are displayed in the bottom hint area and highlighted
+ * in the input line.
+ * With an argument of "on" or "1", enables diagnostics.
+ * With an argument of "off" or "0", disables diagnostics.
+ * With no args, toggles the current state.
+ *
+ * @return RETURN_SUCCESS
+ */
+errno_t cli_syntax_diag_toggle(void)
+{
+    if (data.cmdNBarg >= 2)
+    {
+        const char *arg = data.cmdargtoken[1].val.string;
+        if (strcmp(arg, "on") == 0 || strcmp(arg, "1") == 0)
+        {
+            data.syntax_diagnostics = 1;
+            printf("Syntax diagnostics ON\n");
+        }
+        else if (strcmp(arg, "off") == 0 || strcmp(arg, "0") == 0)
+        {
+            data.syntax_diagnostics = 0;
+            printf("Syntax diagnostics OFF\n");
+        }
+        else
+        {
+            printf("Usage: syndiag [on|off]\n");
+        }
+    }
+    else
+    {
+        data.syntax_diagnostics = !data.syntax_diagnostics;
+        printf("Syntax diagnostics %s\n", data.syntax_diagnostics ? "ON" : "OFF");
+    }
+    return RETURN_SUCCESS;
+}
+
+/**
+ * @brief Toggle or set multi-line auto-indentation.
+ *
+ * Controls automatic indentation for multi-line continuation lines
+ * based on block nesting depth.
+ * Usage: cliindent [on|off|<spaces>]
+ *
+ * @return RETURN_SUCCESS
+ */
+errno_t cli_auto_indent_toggle(void)
+{
+    if (data.cmdNBarg >= 2)
+    {
+        const char *arg = data.cmdargtoken[1].val.string;
+        if (strcmp(arg, "on") == 0 || strcmp(arg, "1") == 0)
+        {
+            data.auto_indent = 4;
+            printf("Auto-indentation ON (4 spaces)\n");
+        }
+        else if (strcmp(arg, "off") == 0 || strcmp(arg, "0") == 0)
+        {
+            data.auto_indent = 0;
+            printf("Auto-indentation OFF\n");
+        }
+        else
+        {
+            int n = atoi(arg);
+            if (n >= 1 && n <= 16)
+            {
+                data.auto_indent = n;
+                printf("Auto-indentation set to %d spaces\n", n);
+            }
+            else
+            {
+                printf("Usage: cliindent [on|off|<spaces>]\n");
+            }
+        }
+    }
+    else
+    {
+        if (data.auto_indent > 0)
+        {
+            printf("Auto-indentation is ON (%d spaces)\n", data.auto_indent);
+        }
+        else
+        {
+            printf("Auto-indentation is OFF\n");
+        }
+    }
+    return RETURN_SUCCESS;
+}
+
+/**
+ * @brief Toggle structural delimiter & block keyword matching (showmatch).
+ *
+ * Controls whether matching parentheses, brackets, braces, expansions, and
+ * block keywords (if/fi, do/done, case/esac) are highlighted at cursor.
+ * Usage: showmatch [on|off]
+ *
+ * @return RETURN_SUCCESS
+ */
+errno_t cli_showmatch_toggle(void)
+{
+    if (data.cmdNBarg >= 2)
+    {
+        const char *arg = data.cmdargtoken[1].val.string;
+        if (strcmp(arg, "on") == 0 || strcmp(arg, "1") == 0)
+        {
+            data.show_match = 1;
+            printf("Showmatch ON\n");
+        }
+        else if (strcmp(arg, "off") == 0 || strcmp(arg, "0") == 0)
+        {
+            data.show_match = 0;
+            printf("Showmatch OFF\n");
+        }
+        else
+        {
+            printf("Usage: showmatch [on|off]\n");
+        }
+    }
+    else
+    {
+        data.show_match = !data.show_match;
+        printf("Showmatch %s\n", data.show_match ? "ON" : "OFF");
+    }
+    return RETURN_SUCCESS;
+}
 #endif
+
+
+/**
+ * @brief Format script file or code with semantic AST indentation.
+ *
+ * Usage: cliformat [-i] [-w <spaces>] <filename>
+ * Options:
+ *   -i            In-place format (overwrite file)
+ *   -w <spaces>   Number of spaces per indentation level (default: 4)
+ *
+ * @return RETURN_SUCCESS or RETURN_FAILURE
+ */
+errno_t cli_format_cmd(void)
+{
+    if (data.cmdNBarg < 2)
+    {
+        printf("Usage: cliformat [-i] [-w <spaces>] <filename>\n");
+        return RETURN_SUCCESS;
+    }
+
+    int         in_place     = 0;
+    int         indent_width = data.auto_indent > 0 ? data.auto_indent : 4;
+    const char *fname        = NULL;
+
+    for (int i = 1; i < data.cmdNBarg; i++)
+    {
+        const char *arg = data.cmdargtoken[i].val.string;
+        if (strcmp(arg, "-i") == 0)
+        {
+            in_place = 1;
+        }
+        else if (strcmp(arg, "-w") == 0 && i + 1 < data.cmdNBarg)
+        {
+            indent_width = atoi(data.cmdargtoken[++i].val.string);
+        }
+        else if (arg[0] != '-')
+        {
+            fname = arg;
+        }
+    }
+
+    if (!fname)
+    {
+        printf("Error: no input script file specified\n");
+        return RETURN_FAILURE;
+    }
+
+    FILE *f = fopen(fname, "rb");
+    if (!f)
+    {
+        printf("Error: cannot open file '%s'\n", fname);
+        return RETURN_FAILURE;
+    }
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    char *buf = (char *) malloc((size_t) sz + 1);
+    if (!buf)
+    {
+        fclose(f);
+        return RETURN_FAILURE;
+    }
+    size_t rd = fread(buf, 1, (size_t) sz, f);
+    buf[rd]   = '\0';
+    fclose(f);
+
+    char *formatted = cli_ts_format_code(buf, indent_width);
+    free(buf);
+
+    if (!formatted)
+    {
+        printf("Error: formatting failed\n");
+        return RETURN_FAILURE;
+    }
+
+    if (in_place)
+    {
+        FILE *outf = fopen(fname, "wb");
+        if (!outf)
+        {
+            printf("Error: cannot write to '%s'\n", fname);
+            free(formatted);
+            return RETURN_FAILURE;
+        }
+        fputs(formatted, outf);
+        fclose(outf);
+        printf("Formatted '%s' in-place (%d spaces indent)\n", fname, indent_width);
+    }
+    else
+    {
+        printf("%s", formatted);
+    }
+
+    free(formatted);
+    return RETURN_SUCCESS;
+}
+
+/**
+ * @brief Print structural outline of AST blocks in a script.
+ *
+ * Traverses compound statement blocks (for, while, if, case, functions)
+ * and prints line ranges, line counts, and header summaries.
+ * Usage: clifold [<filename>]
+ *
+ * @return RETURN_SUCCESS or RETURN_FAILURE
+ */
+errno_t cli_fold_cmd(void)
+{
+    if (data.cmdNBarg < 2)
+    {
+        printf("Usage: clifold <filename>\n");
+        return RETURN_SUCCESS;
+    }
+
+    const char *fname = data.cmdargtoken[1].val.string;
+    FILE       *f     = fopen(fname, "rb");
+    if (!f)
+    {
+        printf("Error: cannot open file '%s'\n", fname);
+        return RETURN_FAILURE;
+    }
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    char *buf = (char *) malloc((size_t) sz + 1);
+    if (!buf)
+    {
+        fclose(f);
+        return RETURN_FAILURE;
+    }
+    size_t rd = fread(buf, 1, (size_t) sz, f);
+    buf[rd]   = '\0';
+    fclose(f);
+
+    int count = cli_ts_print_block_folds(buf, fname, stdout);
+    if (count == 0)
+    {
+        printf("No multi-line blocks found in '%s'.\n", fname);
+    }
+    else
+    {
+        printf("Total blocks: %d\n", count);
+    }
+
+    free(buf);
+    return RETURN_SUCCESS;
+}
 
 
 /**
@@ -623,6 +902,20 @@ errno_t cli_cd(void)
  */
 errno_t cli_pwd(void)
 {
+    if (data.cmdNBarg > 1)
+    {
+        for (int i = 1; i < data.cmdNBarg; i++)
+        {
+            const char *arg = data.cmdargtoken[i].val.string;
+            if (arg != NULL && strcmp(arg, "-L") != 0 && strcmp(arg, "-P") != 0)
+            {
+                printf("pwd: invalid option '%s'\n", arg);
+                printf("Usage: pwd [-L | -P]\n");
+                return RETURN_FAILURE;
+            }
+        }
+    }
+
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) != NULL)
     {

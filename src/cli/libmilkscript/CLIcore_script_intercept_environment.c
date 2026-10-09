@@ -26,6 +26,7 @@ extern int processinfo_procdirname(char *procdirname);
 
 extern int cli_block_level;
 extern int cli_break_flag;
+extern int cli_continue_flag;
 extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
@@ -220,7 +221,8 @@ int cli_intercept_cmd_break(const char *p)
                 n = 1;
             }
         }
-        cli_last_retval = n;
+        cli_break_flag  = n;
+        cli_last_retval = 0;
         return 1;
     }
     return 0;
@@ -239,7 +241,8 @@ int cli_intercept_cmd_continue(const char *p)
                 n = 1;
             }
         }
-        cli_last_retval = n;
+        cli_continue_flag = n;
+        cli_last_retval   = 0;
         return 1;
     }
     return 0;
@@ -321,41 +324,75 @@ int cli_intercept_cmd_printf(const char *p)
             nargs++;
             p = strip_ws(p);
         }
-        /* Simple printf: scan fmt for %s/%d */
+        /* Format string scanner supporting width and precision */
         int         ai = 0;
         const char *f  = fmt;
         while (*f != '\0')
         {
             if (*f == '%' && f[1] != '\0')
             {
-                if (f[1] == 's')
-                {
-                    if (ai < nargs)
-                    {
-                        printf("%s", args[ai++]);
-                    }
-                    f += 2;
-                }
-                else if (f[1] == 'd')
-                {
-                    if (ai < nargs)
-                    {
-                        printf("%d", (int) strtol(args[ai++], NULL, 10));
-                    }
-                    f += 2;
-                }
-                else if (f[1] == 'f')
-                {
-                    if (ai < nargs)
-                    {
-                        printf("%f", strtod(args[ai++], NULL));
-                    }
-                    f += 2;
-                }
-                else if (f[1] == '%')
+                if (f[1] == '%')
                 {
                     putchar('%');
                     f += 2;
+                    continue;
+                }
+
+                char spec[32];
+                int  si       = 0;
+                spec[si++]    = '%';
+                const char *q = f + 1;
+                while (*q != '\0' && si < (int) sizeof(spec) - 2 &&
+                       (*q == '-' || *q == '+' || *q == ' ' || *q == '0' || *q == '#' ||
+                        (*q >= '0' && *q <= '9') || *q == '.'))
+                {
+                    spec[si++] = *q++;
+                }
+                if (*q != '\0' && si < (int) sizeof(spec) - 1 &&
+                    strchr("sdiuoxXfeEgGcp", *q) != NULL)
+                {
+                    char fc    = *q;
+                    spec[si++] = *q++;
+                    spec[si]   = '\0';
+                    if (ai < nargs)
+                    {
+                        const char *aval = args[ai++];
+                        char        outbuf[256];
+                        int         nw = -1;
+#if defined(__GNUC__) || defined(__clang__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#    pragma GCC diagnostic ignored "-Wformat-security"
+#endif
+                        if (fc == 's')
+                        {
+                            nw = snprintf(outbuf, sizeof(outbuf), spec, aval);
+                        }
+                        else if (fc == 'c')
+                        {
+                            nw = snprintf(outbuf, sizeof(outbuf), spec, (unsigned char) aval[0]);
+                        }
+                        else if (fc == 'd' || fc == 'i' || fc == 'o' || fc == 'u' || fc == 'x' ||
+                                 fc == 'X')
+                        {
+                            long lv = strtol(aval, NULL, 0);
+                            nw      = snprintf(outbuf, sizeof(outbuf), spec, lv);
+                        }
+                        else
+                        {
+                            double dv = strtod(aval, NULL);
+                            nw        = snprintf(outbuf, sizeof(outbuf), spec, dv);
+                        }
+#if defined(__GNUC__) || defined(__clang__)
+#    pragma GCC diagnostic pop
+#endif
+                        if (nw >= 0)
+                        {
+                            fputs(outbuf, stdout);
+                        }
+                    }
+                    f = q;
+                    continue;
                 }
                 else
                 {

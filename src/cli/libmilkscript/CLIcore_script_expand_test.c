@@ -354,6 +354,18 @@ int cli_eval_test(const char *expr)
         return 0;
     }
 
+    /* Strip enclosing quotes from tokens */
+    for (int i = 0; i < ntok; i++)
+    {
+        size_t tlen = strlen(tokens[i]);
+        if (tlen >= 2 && ((tokens[i][0] == '"' && tokens[i][tlen - 1] == '"') ||
+                          (tokens[i][0] == '\'' && tokens[i][tlen - 1] == '\'')))
+        {
+            tokens[i][tlen - 1] = '\0';
+            tokens[i]++;
+        }
+    }
+
     /* Logical OR */
     for (int i = 0; i < ntok; i++)
     {

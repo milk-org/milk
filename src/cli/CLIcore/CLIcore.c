@@ -482,6 +482,9 @@ errno_t CLI_startup()
     data.autocomplete_history = 1; // history suggestions ON
     data.autocomplete_arghint = 1; // argument hint line ON
     data.autocomplete_fuzzy   = 1; // fuzzy matching ON
+    data.syntax_diagnostics   = 1; // syntax diagnostics ON
+    data.auto_indent          = 4; // auto-indentation spaces (4 spaces)
+    data.show_match           = 1; // structural delimiter & keyword matching ON
 
     // signal handling
 
@@ -557,6 +560,7 @@ static void readline_lazy_init(const char *prompt, int *flag)
         sigaction(SIGWINCH, &sa_winch, NULL);
     }
     CLI_setup_hint_area();
+    cli_set_active_prompt(prompt);
     rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb_linehandler);
     CLI_configure_readline();
 #else

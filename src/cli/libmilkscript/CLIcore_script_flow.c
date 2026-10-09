@@ -33,6 +33,7 @@
  * checked after each cli_exec_lines() call.
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -77,13 +78,18 @@ void cli_exec_block_if(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
 
     /* First branch: the if line */
     int body_s = 1;
-    /* Skip standalone "then" */
+    /* Skip standalone "then" or strip inline "then" */
     if (body_s < nlines)
     {
         const char *ts = strip_ws(lines[body_s]);
         if (strcmp(ts, "then") == 0)
         {
             body_s++;
+        }
+        else if (strncmp(ts, "then ", 5) == 0 || strncmp(ts, "then\t", 5) == 0)
+        {
+            const char *after_then = strip_ws(ts + 4);
+            memmove(lines[body_s], after_then, strlen(after_then) + 1);
         }
     }
 
@@ -128,6 +134,11 @@ void cli_exec_block_if(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
                 {
                     bs++;
                 }
+                else if (strncmp(t2, "then ", 5) == 0 || strncmp(t2, "then\t", 5) == 0)
+                {
+                    const char *after_then = strip_ws(t2 + 4);
+                    memmove(lines[bs], after_then, strlen(after_then) + 1);
+                }
             }
             if (nbranch < 64)
             {
@@ -144,6 +155,20 @@ void cli_exec_block_if(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
             {
                 branches[nbranch].cond_idx   = -1; /* else */
                 branches[nbranch].body_start = i + 1;
+                branches[nbranch].body_end   = nlines;
+                nbranch++;
+            }
+            break;
+        }
+        else if (strncmp(ln, "else ", 5) == 0 || strncmp(ln, "else\t", 5) == 0)
+        {
+            branches[nbranch - 1].body_end = i;
+            const char *after_else         = strip_ws(ln + 4);
+            memmove(lines[i], after_else, strlen(after_else) + 1);
+            if (nbranch < 64)
+            {
+                branches[nbranch].cond_idx   = -1; /* else */
+                branches[nbranch].body_start = i;
                 branches[nbranch].body_end   = nlines;
                 nbranch++;
             }
@@ -206,14 +231,18 @@ void cli_exec_block_while(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
     int body_end   = nlines;
     int max_iter   = 100000;
 
-    /* Skip standalone 'do' line from
-     * semicolon-split */
+    /* Skip standalone 'do' line from semicolon-split or strip inline 'do' */
     if (body_start < body_end)
     {
         const char *ds = strip_ws(lines[body_start]);
         if (strcmp(ds, "do") == 0)
         {
             body_start++;
+        }
+        else if (strncmp(ds, "do ", 3) == 0 || strncmp(ds, "do\t", 3) == 0)
+        {
+            const char *after_do = strip_ws(ds + 2);
+            memmove(lines[body_start], after_do, strlen(after_do) + 1);
         }
     }
 
@@ -326,6 +355,11 @@ void cli_exec_block_until(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
         if (strcmp(ds, "do") == 0)
         {
             body_start++;
+        }
+        else if (strncmp(ds, "do ", 3) == 0 || strncmp(ds, "do\t", 3) == 0)
+        {
+            const char *after_do = strip_ws(ds + 2);
+            memmove(lines[body_start], after_do, strlen(after_do) + 1);
         }
     }
 
@@ -547,13 +581,31 @@ void cli_exec_block_for(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
                 }
                 /* Execute init */
                 {
-                    char einit[STRINGMAXLEN_CLICMDLINE];
-                    snprintf(einit, sizeof(einit), "$((%s))", ainit);
-                    cli_expand_arith(einit, STRINGMAXLEN_CLICMDLINE);
+                    CLI_execute_string(ainit);
                 }
+
+                int body_start = 1;
+                int body_end   = nlines;
+
+                /* Skip standalone 'do' line or strip leading 'do' */
+                if (body_start < body_end)
+                {
+                    const char *ds = strip_ws(lines[body_start]);
+                    if (strcmp(ds, "do") == 0)
+                    {
+                        body_start++;
+                    }
+                    else if (strncmp(ds, "do ", 3) == 0 || strncmp(ds, "do\t", 3) == 0)
+                    {
+                        const char *after_do = strip_ws(ds + 2);
+                        memmove(lines[body_start], after_do, strlen(after_do) + 1);
+                    }
+                }
+
                 /* Loop: eval cond,
                  * exec body, eval step */
-                for (;;)
+                int max_iter = 100000;
+                for (int iter = 0; iter < max_iter; iter++)
                 {
                     char econd[STRINGMAXLEN_CLICMDLINE];
                     snprintf(econd, sizeof(econd), "$((%s))", acond);
@@ -563,12 +615,106 @@ void cli_exec_block_for(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
                     {
                         break;
                     }
-                    cli_exec_lines(lines + 1, nlines - 1);
+                    cli_exec_lines(lines + body_start, body_end - body_start);
+                    if (cli_break_flag)
+                    {
+                        cli_break_flag = 0;
+                        break;
+                    }
+                    cli_continue_flag = 0;
                     /* step */
                     {
-                        char estep[STRINGMAXLEN_CLICMDLINE];
-                        snprintf(estep, sizeof(estep), "$((%s))", astep);
-                        cli_expand_arith(estep, STRINGMAXLEN_CLICMDLINE);
+                        const char *sp = strip_ws(astep);
+                        char        vname[CLI_VAR_NAMELEN];
+                        int         vn = 0;
+                        while (vn < CLI_VAR_NAMELEN - 1 &&
+                               (isalnum((unsigned char) sp[vn]) || sp[vn] == '_'))
+                        {
+                            vname[vn] = sp[vn];
+                            vn++;
+                        }
+                        vname[vn]          = '\0';
+                        const char *op_ptr = strip_ws(sp + vn);
+                        if (sp[0] == '+' && sp[1] == '+')
+                        {
+                            const char *vp  = strip_ws(sp + 2);
+                            int         pvn = 0;
+                            while (pvn < CLI_VAR_NAMELEN - 1 &&
+                                   (isalnum((unsigned char) vp[pvn]) || vp[pvn] == '_'))
+                            {
+                                vname[pvn] = vp[pvn];
+                                pvn++;
+                            }
+                            vname[pvn] = '\0';
+                            if (pvn > 0)
+                            {
+                                const char *cur = cli_var_get(vname);
+                                long        val = cur ? strtol(cur, NULL, 10) : 0;
+                                char        nval[64];
+                                snprintf(nval, sizeof(nval), "%ld", val + 1);
+                                cli_var_set(vname, nval);
+                            }
+                        }
+                        else if (sp[0] == '-' && sp[1] == '-')
+                        {
+                            const char *vp  = strip_ws(sp + 2);
+                            int         pvn = 0;
+                            while (pvn < CLI_VAR_NAMELEN - 1 &&
+                                   (isalnum((unsigned char) vp[pvn]) || vp[pvn] == '_'))
+                            {
+                                vname[pvn] = vp[pvn];
+                                pvn++;
+                            }
+                            vname[pvn] = '\0';
+                            if (pvn > 0)
+                            {
+                                const char *cur = cli_var_get(vname);
+                                long        val = cur ? strtol(cur, NULL, 10) : 0;
+                                char        nval[64];
+                                snprintf(nval, sizeof(nval), "%ld", val - 1);
+                                cli_var_set(vname, nval);
+                            }
+                        }
+                        else if (vn > 0 && strncmp(op_ptr, "++", 2) == 0)
+                        {
+                            const char *cur = cli_var_get(vname);
+                            long        val = cur ? strtol(cur, NULL, 10) : 0;
+                            char        nval[64];
+                            snprintf(nval, sizeof(nval), "%ld", val + 1);
+                            cli_var_set(vname, nval);
+                        }
+                        else if (vn > 0 && strncmp(op_ptr, "--", 2) == 0)
+                        {
+                            const char *cur = cli_var_get(vname);
+                            long        val = cur ? strtol(cur, NULL, 10) : 0;
+                            char        nval[64];
+                            snprintf(nval, sizeof(nval), "%ld", val - 1);
+                            cli_var_set(vname, nval);
+                        }
+                        else if (vn > 0 && strncmp(op_ptr, "+=", 2) == 0)
+                        {
+                            const char *rp    = strip_ws(op_ptr + 2);
+                            long        delta = strtol(rp, NULL, 10);
+                            const char *cur   = cli_var_get(vname);
+                            long        val   = cur ? strtol(cur, NULL, 10) : 0;
+                            char        nval[64];
+                            snprintf(nval, sizeof(nval), "%ld", val + delta);
+                            cli_var_set(vname, nval);
+                        }
+                        else if (vn > 0 && strncmp(op_ptr, "-=", 2) == 0)
+                        {
+                            const char *rp    = strip_ws(op_ptr + 2);
+                            long        delta = strtol(rp, NULL, 10);
+                            const char *cur   = cli_var_get(vname);
+                            long        val   = cur ? strtol(cur, NULL, 10) : 0;
+                            char        nval[64];
+                            snprintf(nval, sizeof(nval), "%ld", val - delta);
+                            cli_var_set(vname, nval);
+                        }
+                        else
+                        {
+                            CLI_execute_string(astep);
+                        }
                     }
                 }
                 return;
@@ -627,13 +773,18 @@ void cli_exec_block_for(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
     int body_start = 1;
     int body_end   = nlines;
 
-    /* Skip standalone 'do' line */
+    /* Skip standalone 'do' line or strip leading 'do' */
     if (body_start < body_end)
     {
         const char *ds = strip_ws(lines[body_start]);
         if (strcmp(ds, "do") == 0)
         {
             body_start++;
+        }
+        else if (strncmp(ds, "do ", 3) == 0 || strncmp(ds, "do\t", 3) == 0)
+        {
+            const char *after_do = strip_ws(ds + 2);
+            memmove(lines[body_start], after_do, strlen(after_do) + 1);
         }
     }
 
