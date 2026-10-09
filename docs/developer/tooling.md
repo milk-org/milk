@@ -299,8 +299,52 @@ pytest -k
     source $MILK_ROOT/python/tests/env.bash
     ```
 
-!!! tip "Using pytest for reproducible configurations"
-    The `tests/mains/
+!!! tip "Using pytest for reproducible testing / development configurations"
+    The `tests/mains/` folder is meant to contain **pytest-excluded files** (just omit `_test` in their name).
+
+    A test can be used to setup a reproducible debug environment, either directly or with a fixture:
+
+    === "Plain test"
+
+        ```python
+        def test_some_env():
+            deploy_something()
+
+            input('Test environment is ready')
+
+            undeploy_something()
+        ```
+
+    === "With a fixture"
+
+        ```python
+        @pytest.fixture
+        def my_fixture():
+            setup_something()
+            yield None # <-- this is what's passed to the test function.
+            teardown_something()
+
+        def test_some_env(my_fixture):
+            input('Test environment is ready')
+        ```
+
+    and run with
+    ```bash
+    pytest -s mains/some_file.py -k test_some_env
+    # -s provides stdin/stdout for the test and is needed to hold on at the input() call.
+    ```
+    and you just need to revisit this terminal and hit any key to proceed through `input()` and terminate the test.
+
+    This can be useful in many ways: debugging engineering TUIs behavior when underlying data is created or destroyed;
+    tracking a bug; deploying a piece of network code on machine A and experimenting with its sibling on machine B...
+
+    Any terminal can join the pytest milk environment with, as above:
+    ```bash
+    source $MILK_ROOT/python/tests/env.bash
+    ```
+
+    We also have fixtures that deploy, then cleanup an entire Cacao loop from scratch, so this allows deployment,
+    toying around with AO, and finally shutting down.
 
 ### 4.3 nox
 
