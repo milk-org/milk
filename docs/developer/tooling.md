@@ -137,7 +137,7 @@ Formatting is enforced by [pre-commit](https://pre-commit.com) hooks, configured
 what the formatting hooks outputs is the source of truth.
 
 <!-- prettier-ignore -->
-!!! warning "Prerequisites"
+!!! question "Prerequisites"
     - `git` and `pip` available; `pre-commit` itself downloads pinned versions of `clang-format`,
       `black` and `cmake-format` in its own virtualenv, so none of them needs a system install.
 
@@ -231,7 +231,7 @@ The execution versatility provided by `pytest` is convenient for checking regres
 in which we can build milk with different options, then run the tests; or use sessions to run completely different things, e.g. a coverage report, etc. The `nox` sessions are configured to be completely isolated from the production build on the same machine.
 
 <!-- prettier-ignore -->
-!!! warning "Prerequisites"
+!!! question "Prerequisites"
     - A Python environment (see the note at the top of this page).
     - `pytest`, `pytest-timeout`, `nox` and `uv` installed (`nox` sessions use the `uv` backend).
     - An installed `pyMilk` checkout (on the nanobind branch, properly fixed to the same ImageStreamIO version),
@@ -403,7 +403,7 @@ Coverage tells you which C code the Python test suite did not execute. It is a v
 the tests, not a pass/fail gate.
 
 <!-- prettier-ignore -->
-!!! warning "Prerequisites"
+!!! question "Prerequisites"
     - `gcc` with `gcov`, and `gcovr` (`pip install gcovr`).
     - Everything from [section 4](#4-python-tests-pytest-nox-and-pymilk).
     - `pyMilk` built with coverage too; otherwise its session-end hook prints
@@ -449,7 +449,7 @@ Building and testing never requires root: install into a staging directory under
 your environment at it.
 
 <!-- prettier-ignore -->
-!!! warning "Prerequisites"
+!!! question "Prerequisites"
     - A configured and built `_build` directory (`./compile.sh`, or `cmake` and `cmake --build`).
     - Do **not** run `make install` or `cmake --install` without `--prefix`: it targets the system
       prefix (`/usr/local`) and would need root.
@@ -503,7 +503,7 @@ For attaching to running processes, tmux log inspection and core dumps, see
 standalone executable (see [FPS standalone modes](../arch/FPS_Standalone_CMD_Modes.md)).
 
 <!-- prettier-ignore -->
-!!! warning "Prerequisites"
+!!! question "Prerequisites"
     - `gdb` and `valgrind` installed (`apt install gdb valgrind`).
     - A **Debug** build (`MILK_BUILD_TYPE=Debug ./compile.sh`, or `-DCMAKE_BUILD_TYPE=Debug`): in
       the default `Release` build (`-Ofast`) backtraces are missing frames and variables.
@@ -563,7 +563,7 @@ The project follows the [REUSE](https://reuse.software) specification: every fil
 copyright and license as SPDX tags, and the license texts are in `LICENSES/`.
 
 <!-- prettier-ignore -->
-!!! warning "Prerequisites"
+!!! question "Prerequisites"
     - `reuse` installed (`pip install reuse`).
     - The license text of every identifier you use must be in `LICENSES/` (currently
       `LGPL-3.0-or-later`, `GPL-3.0-or-later` and `MIT`). Fetch a missing one with
