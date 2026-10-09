@@ -21,8 +21,20 @@ def _find_build_tags() -> dict[str, str]:
     return tagdict
 
 
+def _clicore_has_treesitter() -> bool:
+    # CLIcore only links libtree-sitter when it was found at build time.
+    path = os.path.join(os.environ["MILK_INSTALLDIR"], "lib", "libCLIcore.so")
+    try:
+        with open(path, "rb") as f:
+            return b"libtree-sitter" in f.read()
+    except FileNotFoundError:
+        return False
+
+
 MILK_BUILD_TAGS = _find_build_tags()
 HAVE_CLI = bool(int(MILK_BUILD_TAGS["CLI"]))
+HAVE_TREESITTER = HAVE_CLI and _clicore_has_treesitter()
+
 
 MILK_CLI_EXEC = shutil.which("milk-cli") if HAVE_CLI else None
 
