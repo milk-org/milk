@@ -41,3 +41,13 @@ If we want to approach **out-of-tree plugin consumers linking against a previous
 We would also have to freeze the ABI for good, more so if we'd allow consumer LTO builds.
 
 And we'd have to review licensing implications of shipping static libs and what's in them.
+
+---
+
+## Follow-ups to the `MILK_RUNNABLE` API
+
+Context: `MILK_RUNNABLE` (see `src/engine/libfps/milk_runnable.h`, [Programmer's Guide](arch/programmers_guide.md)). Left undone on purpose.
+
+- **Clean up `IMGID.h`** (`src/engine/libfps/IMGID.h`). `COREMOD_memory/imageID.h` includes `CLIcore.h` and needs its own sibling headers (`read_shmim.h`, `create_image.h`, `delete_image.h`) included first, which is why new-style sources must include `milk_runnable.h` before `COREMOD_memory.h`.
+- **Drop the `CLIcore.h` / `CLIcore_standalone.h` dual mode for the new API.** New-style modules are compiled once with `-DMILK_NO_CLI` only to redirect `imageID.h` away from the full CLI headers. Making `imageID.h` engine-tier would remove the define, the stub `DATA data` layout hazard, the silently failing `CLI_checkarg*` stubs, and the `milk_runnable.h` include of `CLIcore_standalone.h`. The module include path should also stop depending on the `CLIcore` target.
+- **Decouple the runtime from `milkfps`.** `milkfps` mixes the FPS data structure (shared-memory parameters) with the runtime of CLI commands and fpsexecs (`milk_runnable.c`, `fps_lifecycle.c`, `main_impl` in `fps.h`, the `fps_cli_function_registry` bridge). Split the runtime into a `libcomputeunit`; `milk_runnable_main` currently lives in `milkfpsStandalone` for lack of one.
