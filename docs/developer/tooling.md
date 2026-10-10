@@ -59,7 +59,8 @@ pip install pymdown-extensions \
     mkdocs-material[plugins] \
     mkdocs-glightbox \
     mkdocs-git-revision-date-localized-plugin \
-    mkdocs-minify-plugin
+    mkdocs-minify-plugin \
+    mkdocs-macros-plugin
 ```
 
 ### 1.2 Build and serve the documentation
@@ -196,7 +197,7 @@ line: fix it by hand and commit again.
     ```bash
     git add .             # stage everything
     pre-commit run        # run the hooks on everything
-    git restore --stage . # unstage everything, now format-compliant.
+    git restore --staged . # unstage everything, now format-compliant.
     # Now cherry-pick your commit contents.
     ```
 
@@ -236,6 +237,7 @@ in which we can build milk with different options, then run the tests; or use se
     - `pytest`, `pytest-timeout`, `nox` and `uv` installed (`nox` sessions use the `uv` backend).
     - An installed `pyMilk` checkout (on the nanobind branch, properly fixed to the same ImageStreamIO version),
       with its path exported as `PYMILK_ROOT`. Some tests use `pyMilk` to interact with SHMs and FPSs.
+    - An installed `milk` python-package: `cd $MILK_ROOT/python && pip install -e .`. TODO: be better at naming
     - A built and locally installed `milk`, with `MILK_INSTALLDIR` pointing to it.
     - `tmux` and a writable `/tmp`: the tests spawn private tmux servers and shared-memory
       directories.
