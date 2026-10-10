@@ -154,7 +154,7 @@ errno_t setSHMdir()
 errno_t setInstallDir(void)
 {
     char *installdir_env = getenv("MILK_INSTALLDIR");
-    if (installdir_env != NULL)
+    if (installdir_env != NULL && installdir_env[0] != '\0')
     {
         milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, installdir_env);
     }
