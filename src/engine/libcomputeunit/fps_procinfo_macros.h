@@ -164,7 +164,10 @@ typedef struct
  * versions via CLIcore_utils.h-compatible
  * macros that reference CLIcmddata. */
 
-#define INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                                       \
+/* The body macros take the CLICMDDATA lvalue as parameter (named CLIcmddata so that the bodies stay
+ * unchanged). Legacy INSERT_STD_PROCINFO_COMPUTEFUNC_* pass the implicit file-scope CLIcmddata,
+ * MILK_PROCINFO_*(self) in milk_runnable.h pass the runnable's own. */
+#define _MILK_PROCINFO_INIT_IMPL(CLIcmddata)                                                       \
     int          processloopOK = 1;                                                                \
     PROCESSINFO *processinfo   = NULL;                                                             \
     /* set default timeout to 2 sec */                                                             \
@@ -248,7 +251,9 @@ typedef struct
     }
 
 
-#define INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART                                    \
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_INIT _MILK_PROCINFO_INIT_IMPL(CLIcmddata)
+
+#define _MILK_PROCINFO_LOOPSTART_IMPL(CLIcmddata)                                    \
     while (processloopOK == 1)                                                       \
     {                                                                                \
         if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                     \
@@ -280,13 +285,14 @@ typedef struct
             {                                                                        \
                 fpsresync_fps_to_modvar(dcfpsptr, dcfpsbindings, dcfpsnbindings, 0); \
             }
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART _MILK_PROCINFO_LOOPSTART_IMPL(CLIcmddata)
 
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_START \
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT      \
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
 
 
-#define INSERT_STD_PROCINFO_COMPUTEFUNC_END                                                  \
+#define _MILK_PROCINFO_END_IMPL(CLIcmddata)                                                  \
     }                                                                                        \
     if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                                 \
     {                                                                                        \
@@ -336,5 +342,7 @@ typedef struct
     {                                                                                        \
         dcfpsptr->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP;                   \
     }
+
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_END _MILK_PROCINFO_END_IMPL(CLIcmddata)
 
 #endif /* FPS_PROCINFO_MACROS_H */

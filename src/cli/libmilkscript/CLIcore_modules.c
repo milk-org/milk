@@ -16,6 +16,7 @@
 
 #include "CLIcore.h"
 #include "milkdata.h"
+#include "milk_runnable.h"
 
 #define KNRM "\x1B[0m"
 #define KRED "\x1B[31m"
@@ -95,6 +96,65 @@ errno_t load_sharedobj(const char *__restrict libname)
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief fp of every command registered from a MILK_RUNNABLE.
+ *
+ * The descriptor is found through data.cmdindex; FPS runnables go through the generic FPS CLI
+ * lifecycle, CLI runnables get their arguments parsed and linked here.
+ */
+static errno_t runnable_trampoline(void)
+{
+    const MILK_RUNNABLE *r = data.cmd[data.cmdindex].runnable;
+
+    if (r->kind == MILK_RUNNABLE_FPS)
+    {
+        return milk_runnable_cli_call(r);
+    }
+
+    errno_t retval = CLI_checkarg_array(r->farg, r->nbarg);
+    if (retval == RETURN_SUCCESS)
+    {
+        for (int argi = 0; argi < r->nbarg; argi++)
+        {
+            long  fpsi              = -1;
+            void *ptr               = get_farg_ptr(r->farg[argi].fpstag, &fpsi);
+            *(r->farg[argi].valptr) = ptr;
+            if (r->farg[argi].indexptr != NULL)
+            {
+                *(r->farg[argi].indexptr) = fpsi;
+            }
+        }
+        return r->cli_func();
+    }
+    if (retval == RETURN_CLICHECKARGARRAY_HELP || retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
+    {
+        return RETURN_SUCCESS;
+    }
+    return retval;
+}
+
+
+/** @brief Register one MILK_RUNNABLE as a CLI command of the module being loaded. */
+static void register_runnable(const MILK_RUNNABLE *r)
+{
+    milk_runnable_prepare(r);
+
+    if (r->kind == MILK_RUNNABLE_FPS)
+    {
+        safe_fps_fill_farg_examples(r->farg, r->bindings, r->nb_bindings);
+    }
+    if (getenv("MILK_FPSPROCINFO"))
+    {
+        r->rt->cmddata.flags |= CLICMDFLAG_PROCINFO;
+    }
+
+    uint32_t cmdi = RegisterCLIcmd(r->rt->cmddata, runnable_trampoline);
+
+    r->rt->cmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+    data.cmd[cmdi].runnable    = r;
+}
+
+
 errno_t newstyle_milk_module_registration(void *handle, const char *libname)
 {
     /* New-style modules export __milk_module_info.
@@ -135,6 +195,11 @@ errno_t newstyle_milk_module_registration(void *handle, const char *libname)
     if (info->reg_call)
     {
         (*(info->reg_call))();
+    }
+
+    for (int ri = 0; ri < info->n_runnables; ri++)
+    {
+        register_runnable(info->runnables[ri]);
     }
 
     strncpy(data.modulename, "", STRINGMAXLEN_MODULE_NAME - 1);

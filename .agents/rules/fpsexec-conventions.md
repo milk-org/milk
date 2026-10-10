@@ -4,6 +4,11 @@ trigger: always_on
 
 # FPS Executable (fpsexec) Conventions
 
+> **`MILK_RUNNABLE` units** (several units per file, compile-once, generated `main()`): see
+> [`docs/arch/programmers_guide.md`](../../docs/arch/programmers_guide.md) ("`MILK_RUNNABLE` units") and
+> `plugins/test-src/runnabletest`. The rules below describe the legacy 8-section layout; `-h1` is
+> required for both.
+
 ## Creating a new fpsexec standalone executable
 
 1. **Copy the template**: Use `src/milk_module_example/examplefunc_fps_cli_poc.c`

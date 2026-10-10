@@ -136,6 +136,28 @@ is `src/milk_module_example/examplefunc_fps_cli_poc.c`.
 8. **Standalone `main()`:** `FPS_MAIN_STANDALONE_V2` (or `_V2_CONFCHECK` if a `customCONFcheck` is
    needed) handles FPS lifecycle, `-h1`, `-tmux`.
 
+### `MILK_RUNNABLE` units (compile-once)
+
+The 8-section layout compiles each source twice (library + executable), allows one unit per file and
+relies on implicit names (`farg`, `CLIcmddata`, `compute_function`). The `MILK_RUNNABLE` path removes
+these limits:
+
+- A unit is one exported `const MILK_RUNNABLE` (see `src/engine/libcomputeunit/milk_runnable.h`): a
+  `MILK_RUNNABLE_FPS` unit is a CLI command and/or fpsexec, a `MILK_RUNNABLE_CLI` unit is a CLI-only
+  command with its own `cli_func`. Several units, each with its own `X(...)` parameter table
+  (`MILK_PARAMS_DEFINE(name, PARAMS)`), statics and `compute(const MILK_RUNNABLE *self)`, may share a file.
+- **CLI:** list the unit in the array given to `MILK_MODULE_RUNNABLES(name, deps, array)`. The CLI core
+  registers it after `dlopen()`; module code never calls `RegisterCLIcmd`.
+- **fpsexec:** `EXPORT_FPSEXEC(milk, "id", unit);` on its own line. CMake scans the module sources and
+  generates a minimal `main()` per id (`milk_runnable_main()`), built as `<prefix>-fpsexec-<id>`.
+- **CMake:** `milk_add_runnable_module()` compiles the sources once (`-DMILK_NO_CLI`, PIC) into an object
+  library feeding the shared library (and `_static` under `USE_STATIC_LTO`); `milk_add_fpsexec_stubs()`
+  creates the executables. PGO/LTO are therefore per module. See `cmake/milk_runnable.cmake`.
+- Processinfo loops use `MILK_PROCINFO_INIT/LOOPSTART/END(self)`.
+
+Working example and legacy baseline: `plugins/test-src/runnabletest` and
+`plugins/test-src/runnabletest_legacy`.
+
 ## 4. Directory Map
 
 - `src/engine/`: Core daemon logic, including `ImageStreamIO` (shared-memory data), `libfps` (FPS

@@ -460,6 +460,7 @@ include(CTest)
 
 include(${PROJECT_SOURCE_DIR}/cmake/milk_standalone.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/milk_static_lto.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/milk_runnable.cmake)
 
 # =======================================
 # INSTALL PATHS
