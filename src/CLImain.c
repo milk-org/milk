@@ -20,6 +20,7 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
+#include "CLIcore/CLIcore_setSHMdir.h"
 
 #include "CLIcore/CLIcore_UI_execute.h"
 
@@ -128,13 +129,9 @@ int main(int argc, char *argv[])
     strncpy(dcpkgver, versionstring, sizeof(dcpkgver) - 1);
     dcpkgver[sizeof(dcpkgver) - 1] = '\0';
 
-    // TODO This is clobbered in CLI_startup. What's the point of having it here?
-    strncpy(dcsourcedir, MILK_SOURCEDIR, sizeof(dcsourcedir) - 1);
-    dcsourcedir[sizeof(dcsourcedir) - 1] = '\0';
     strncpy(dcconfigdir, CONFIGDIR, sizeof(dcconfigdir) - 1);
     dcconfigdir[sizeof(dcconfigdir) - 1] = '\0';
-    strncpy(dcinstalldir, INSTALLDIR, sizeof(dcinstalldir) - 1);
-    dcinstalldir[sizeof(dcinstalldir) - 1] = '\0';
+    setInstallDir();
 
     if (dcquiet == 0)
     {
