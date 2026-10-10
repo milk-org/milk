@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "CLIcore.h"
+#include "milk_path.h"
 
 /** @brief Set shared memory directory
  *
@@ -137,6 +138,48 @@ errno_t setSHMdir()
     }
 
     snprintf(dcshmsemdir, STRINGMAXLEN_DIRNAME, "%s", shmdirname);
+
+    return RETURN_SUCCESS;
+}
+
+/**
+ * @brief Initialize installdir and sourcedir from environment or defaults
+ *
+ * Checks MILK_INSTALLDIR and MILK_SOURCEDIR environment variables. If set,
+ * resolves canonical paths; otherwise falls back to compile-time constants
+ * (INSTALLDIR, SOURCEDIR) or system defaults.
+ *
+ * @return RETURN_SUCCESS on success
+ */
+errno_t setInstallDir(void)
+{
+    char *installdir_env = getenv("MILK_INSTALLDIR");
+    if (installdir_env != NULL)
+    {
+        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, installdir_env);
+    }
+    else
+    {
+#ifdef INSTALLDIR
+        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, INSTALLDIR);
+#else
+        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, "/usr/local/milk");
+#endif
+    }
+
+    char *sourcedir_env = getenv("MILK_SOURCEDIR");
+    if (sourcedir_env != NULL)
+    {
+        strncpy(dcsourcedir, sourcedir_env, STRINGMAXLEN_DIRNAME - 1);
+    }
+    else
+    {
+#ifdef SOURCEDIR
+        strncpy(dcsourcedir, SOURCEDIR, STRINGMAXLEN_DIRNAME - 1);
+#else
+        strncpy(dcsourcedir, "", STRINGMAXLEN_DIRNAME - 1);
+#endif
+    }
 
     return RETURN_SUCCESS;
 }
