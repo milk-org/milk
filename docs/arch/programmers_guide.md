@@ -208,7 +208,7 @@ Each module builds a single regular library, shared by `milk-cli` and standalone
         └-> Automatic loading of <module>.so as a dependency.
         |   # init_module_CLI(), RegisterCLICommand() etc. may exist (-DUSE_CLI=ON) but are NOT invoked.
         └-> Invokes `main()`
-            └-> Invokes `main_impl()`
+            └-> Invokes `fpsexec_main_function()` (compiled in `milkfpsStandalone`, `libfps/core/fps_standalone_main.c`)
                 └-> prepares a statically defined calling context.
                 └-> compute_function() of <myfunc>, via a function pointer.
     ```

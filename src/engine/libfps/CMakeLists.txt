@@ -99,7 +99,11 @@ target_link_libraries(${LIBNAME} PUBLIC ImageStreamIO m rt milkprocessinfo
 
 set(SOURCEFILES_STANDALONE
     cli/fps_cli_sync.c cli/fps_cli_init.c core/fps_lifecycle.c
-    procinfo/fps_apply_process_settings.c)
+    core/fps_standalone_main.c procinfo/fps_apply_process_settings.c)
+
+# fps_standalone_main.c (fpsexec_main_function)
+set_source_files_properties(
+  core/fps_standalone_main.c core/milk_runnable_main.c PROPERTIES COMPILE_DEFINITIONS MILK_NO_CLI)
 
 add_library(milkfpsStandalone SHARED ${SOURCEFILES_STANDALONE})
 target_compile_definitions(milkfpsStandalone PRIVATE FPS_STANDALONE)

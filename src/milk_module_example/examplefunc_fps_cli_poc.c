@@ -193,7 +193,8 @@ static char param_string_not_stream[FUNCTION_PARAMETER_STRMAXLEN] = "not_a_strea
  *                     (maps FPS keywords to C vars)
  *   FPS_X_FARG     -> CLICMDARGDEF array
  *                     (CLI argument definitions)
- *   X_HELP_PRINT_V2 -> help text for standalone --help
+ *
+ * The standalone --help text is generated from the bindings by fpsexec_main_function().
  *
  * COLUMN REFERENCE:
  *   X(keyword, ptr, type, is_primary, flag, descr)

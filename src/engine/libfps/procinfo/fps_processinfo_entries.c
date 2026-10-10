@@ -95,7 +95,7 @@ errno_t fps_add_processinfo_entries(FPS *fps)
     FPFLAG &= ~FPFLAG_WRITERUN;
     // value = -1 indicates infinite loop
     // default: loop once
-    long loopcntMax_default[4] = { 1, -1, 1000000, 1 };
+    long loopcntMax_default[4] = { 1, -1, 1000000000, 1 };
 
     if (fps->cmdset.procinfo_loopcntMax != 0)
     {
