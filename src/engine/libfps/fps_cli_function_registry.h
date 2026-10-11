@@ -6,10 +6,7 @@
  * @file    fps_cli_function_registry.h
  * @brief   Function pointer registry for FPS-CLI
  *
- * Provides global function pointers that milkfpsCLI
- * fills at load time. Module libraries call through
- * these pointers instead of weak symbols, so there
- * is no link-time dependency on milkfpsCLI.
+ * Provides a global function pointer that the CLI fills via fps_cli_register().
  *
  * Lives in milkfps (no CLI dependency).
  *
@@ -26,19 +23,9 @@
  * @brief Global function pointer for
  *        fps_generic_CLIfunction.
  *
- * Set by milkfpsCLI constructor.
- * NULL when milkfpsCLI is not loaded.
+ * Set by fps_cli_register(). NULL until the CLI has called it.
  */
 extern void *fps_generic_CLIfunction_ptr;
-
-/**
- * @brief Global function pointer for
- *        fps_fill_farg_examples.
- *
- * Set by milkfpsCLI constructor.
- * NULL when milkfpsCLI is not loaded.
- */
-extern void *fps_fill_farg_examples_ptr;
 
 /**
  * @brief Name of the last FPS used by a CLI

@@ -96,6 +96,7 @@ target_link_libraries(
          milkCOREMODtools
          milkprocessinfo
          milkfps
+         milkfpsCLI
          milkfpsseq
          milkdata)
 

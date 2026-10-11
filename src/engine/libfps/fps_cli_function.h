@@ -6,21 +6,24 @@
  * @file    fps_cli_function.h
  * @brief   Generic CLIfunction and CLIADDCMD for FPS modules
  *
- * Modules include this header to get safe_fps_*
- * wrappers.  The underlying function pointers are
- * stored as void* in fps_cli_function_registry.h
- * (part of milkfps, no CLI dependency).  milkfpsCLI
- * registers its implementations at load time.
+ * Modules include this header to get the safe_fps_*
+ * wrappers.  The generic CLIfunction pointer is stored
+ * as void* in fps_cli_function_registry.h (part of
+ * milkfps, no CLI dependency) and set by the CLI via
+ * fps_cli_register().
  *
- * This header casts void* to proper function types.
+ * This header casts void* to the proper function type.
  */
 
 #ifndef FPS_CLI_FUNCTION_H
 #define FPS_CLI_FUNCTION_H
 
+#include <stdio.h>
+
 #include "fps.h"
 #include "fps_cli_binding.h"
 #include "fps_cli_function_registry.h"
+#include "fps_cli_init.h"
 #include "libmilkdata/milkdata_clicmd.h"
 
 /** Compute function signature */
@@ -38,16 +41,17 @@ typedef errno_t (*fps_generic_CLIfunction_fn)(FPS_APP_INFO    *app_info,
                                               fps_compute_fn   compute_fn);
 
 /**
- * @brief Typed function pointer for
- *        fps_fill_farg_examples.
+ * @brief Publish fps_generic_CLIfunction to modules.
+ *
+ * Defined in milkfpsCLI; called by the CLI startup.
  */
-typedef void (*fps_fill_farg_examples_fn)(CLICMDARGDEF *farg, FPS_CLI_BINDING *bindings, int nb_b);
+void fps_cli_register(void);
 
 
-/* ---- NULL-safe wrappers ---- */
+/* ---- Wrappers ---- */
 
 /**
- * @brief NULL-safe call to fps_generic_CLIfunction.
+ * @brief Call fps_generic_CLIfunction; fails loudly if fps_cli_register() was never called.
  */
 static inline errno_t safe_fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
                                                    CLICMDARGDEF    *farg,
@@ -61,21 +65,18 @@ static inline errno_t safe_fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
         fps_generic_CLIfunction_fn fn = (fps_generic_CLIfunction_fn) fps_generic_CLIfunction_ptr;
         return fn(app_info, farg, cd, bindings, nb_b, compute_fn);
     }
-    return 0;
+    fprintf(stderr, "ERROR: FPS CLI wrapper not registered (fps_cli_register() not called)\n");
+    return RETURN_FAILURE;
 }
 
 /**
- * @brief NULL-safe call to fps_fill_farg_examples.
+ * @brief Call fps_fill_farg_examples (kept for existing call sites).
  */
 static inline void safe_fps_fill_farg_examples(CLICMDARGDEF    *farg,
                                                FPS_CLI_BINDING *bindings,
                                                int              nb_b)
 {
-    if (fps_fill_farg_examples_ptr)
-    {
-        fps_fill_farg_examples_fn fn = (fps_fill_farg_examples_fn) fps_fill_farg_examples_ptr;
-        fn(farg, bindings, nb_b);
-    }
+    fps_fill_farg_examples(farg, bindings, nb_b);
 }
 
 

@@ -419,6 +419,7 @@ endif()
 option(USE_LTO "Enable Link-Time Optimization (-flto=auto)" ON)
 if(USE_LTO)
   add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto=auto>)
+  add_link_options(-flto=auto)
 endif()
 # NOTE: -fwhole-program is applied only to standalone executables (via
 # milk_standalone.cmake) where main() is the sole entry point.  Applying it

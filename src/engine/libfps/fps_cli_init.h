@@ -33,5 +33,15 @@ errno_t fps_init_from_bindings(FPS             *fps,
                                FPS_CLI_BINDING *bindings,
                                int              nb_b);
 
+/**
+ * @brief Fill CLI argument example strings from binding
+ *        default values.
+ *
+ * @param farg      CLI argument definitions (examples filled)
+ * @param bindings  Parameter bindings with current values
+ * @param nb_b      Number of bindings
+ */
+void fps_fill_farg_examples(CLICMDARGDEF *farg, FPS_CLI_BINDING *bindings, int nb_b);
+
 
 #endif /* FPS_CLI_INIT_H */
