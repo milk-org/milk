@@ -359,14 +359,14 @@ add_executable(
   ../overview/data/overview_scan.c
   ../overview/data/stream_graph.c
   ../overview/data/stream_graph_lineage.c
-  ../overview/data/stream_graph_tree.c
-  ../overview/overview_layout.c)
+  ../overview/data/stream_graph_tree.c)
 target_include_directories(
   milk-stream-graph
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
           ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
           ${CMAKE_SOURCE_DIR}/src/engine/libfps
           ${CMAKE_SOURCE_DIR}/src/cli/overview
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
           ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
 target_link_libraries(milk-stream-graph PUBLIC ImageStreamIO milkprocessinfo
                                                milkfps m rt pthread)
@@ -402,6 +402,7 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
           ${CMAKE_SOURCE_DIR}/src/engine/libfps
           ${CMAKE_SOURCE_DIR}/src/cli/overview
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
           ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
 target_link_libraries(milk-stream-info PUBLIC ImageStreamIO milkprocessinfo
                                               milkfps m rt pthread)
@@ -436,6 +437,7 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
           ${CMAKE_SOURCE_DIR}/src/engine/libfps
           ${CMAKE_SOURCE_DIR}/src/cli/overview
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
           ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
 target_link_libraries(milk-procinfo-info PUBLIC ImageStreamIO milkprocessinfo
                                                 milkfps m rt pthread)

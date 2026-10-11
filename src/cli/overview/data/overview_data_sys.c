@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "overview_data_internal.h"
-#include "overview_ansi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -96,41 +95,4 @@ double ov_sys_get_cpu_usage(void)
         last_time       = current_time;
     }
     return smoothed_cpu;
-}
-
-/**
- * ov_sys_get_bandwidth_usage - compute terminal delta rendering bandwidth.
- *
- * Return: Smoothed bandwidth in kB/s.
- */
-double ov_sys_get_bandwidth_usage(void)
-{
-    static struct timespec last_time;
-    static uint64_t        last_bytes  = 0;
-    static int             initialized = 0;
-    static double          smoothed_bw = 0.0;
-
-    struct timespec current_time;
-    clock_gettime(CLOCK_MONOTONIC, &current_time);
-
-    if (!initialized)
-    {
-        last_time   = current_time;
-        last_bytes  = ov__total_bytes_rendered;
-        initialized = 1;
-        return 0.0;
-    }
-
-    double dt =
-        (current_time.tv_sec - last_time.tv_sec) + (current_time.tv_nsec - last_time.tv_nsec) / 1e9;
-
-    if (dt >= 0.5) /* update every 0.5s */
-    {
-        uint64_t d_bytes = ov__total_bytes_rendered - last_bytes;
-        double   inst_bw = (double) d_bytes / 1024.0 / dt;
-        smoothed_bw      = inst_bw;
-        last_bytes       = ov__total_bytes_rendered;
-        last_time        = current_time;
-    }
-    return smoothed_bw;
 }
