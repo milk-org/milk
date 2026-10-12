@@ -440,99 +440,115 @@ void rl_cb_linehandler(char *linein)
         had_continuation = 1;
         rl_callback_handler_remove();
 
-        while (cli_ts_is_incomplete(multiline_buf))
+        cli_fault_isolation_arm();
+        if (sigsetjmp(*cli_get_repl_env(), 1) != 0)
         {
-            size_t len       = strlen(multiline_buf);
-            int    is_bslash = (len > 0 && multiline_buf[len - 1] == '\\');
-            if (is_bslash)
-            {
-                multiline_buf[len - 1] = ' ';
-            }
-
-            const char *ps2 = cli_var_get("PS2");
-            if (ps2 == NULL || ps2[0] == '\0')
-            {
-                ps2 = "> ";
-            }
-
-            int depth         = cli_ts_compute_indent_depth(multiline_buf);
-            int indent_spaces = (data.auto_indent > 0) ? (depth * data.auto_indent) : 0;
-
-            g_auto_indent_spaces     = indent_spaces;
-            g_in_continuation_prompt = 1;
-            rl_startup_hook          = cli_auto_indent_startup_hook;
-            char *cont               = readline(ps2);
-            rl_startup_hook          = NULL;
+            /* Interrupted by Ctrl-C during multi-line continuation prompt */
+            dcsigINT                 = 0;
             g_in_continuation_prompt = 0;
             g_auto_indent_spaces     = 0;
-
-            if (cont == NULL)
-            {
-                /* Interrupted or EOF (Ctrl-C / Ctrl-D) */
-                multiline_buf[0] = '\0';
-                break;
-            }
-
-            /* Adjust indentation for closing tokens typed by user */
-            char line_to_add[4096];
-            line_to_add[0] = '\0';
-
-            const char *cstart = cont;
-            while (*cstart == ' ' || *cstart == '\t')
-            {
-                cstart++;
-            }
-
-            if (data.auto_indent > 0 && depth > 0 &&
-                (strncmp(cstart, "done", 4) == 0 || strncmp(cstart, "fi", 2) == 0 ||
-                 strncmp(cstart, "esac", 4) == 0 || strncmp(cstart, "}", 1) == 0 ||
-                 strncmp(cstart, "else", 4) == 0 || strncmp(cstart, "elif", 4) == 0))
-            {
-                int closer_depth = (depth > 0) ? (depth - 1) : 0;
-                int nsp          = closer_depth * data.auto_indent;
-                for (int s = 0; s < nsp && s < 64; s++)
-                {
-                    line_to_add[s]     = ' ';
-                    line_to_add[s + 1] = '\0';
-                }
-                strncat(line_to_add, cstart, sizeof(line_to_add) - strlen(line_to_add) - 1);
-            }
-            else
-            {
-                strncpy(line_to_add, cont, sizeof(line_to_add) - 1);
-                line_to_add[sizeof(line_to_add) - 1] = '\0';
-            }
-
-            size_t curlen  = strlen(multiline_buf);
-            size_t contlen = strlen(line_to_add);
-            if (curlen + 2 + contlen < sizeof(multiline_buf))
-            {
-                if (!is_bslash)
-                {
-                    /* Check if preceding non-space was pipe or logical op */
-                    size_t trimmed = curlen;
-                    while (trimmed > 0 && (multiline_buf[trimmed - 1] == ' ' ||
-                                           multiline_buf[trimmed - 1] == '\t'))
-                    {
-                        trimmed--;
-                    }
-                    int join_space = 0;
-                    if (trimmed > 0)
-                    {
-                        char lastc = multiline_buf[trimmed - 1];
-                        if (lastc == '|' || lastc == '&')
-                        {
-                            join_space = 1;
-                        }
-                    }
-                    multiline_buf[curlen++] = join_space ? ' ' : '\n';
-                    multiline_buf[curlen]   = '\0';
-                }
-                strncat(multiline_buf, line_to_add, sizeof(multiline_buf) - curlen - 1);
-            }
-            free(cont);
+            rl_startup_hook          = NULL;
+            multiline_buf[0]         = '\0';
+            rl_on_new_line();
         }
+        else
+        {
+            while (cli_ts_is_incomplete(multiline_buf))
+            {
+                size_t len       = strlen(multiline_buf);
+                int    is_bslash = (len > 0 && multiline_buf[len - 1] == '\\');
+                if (is_bslash)
+                {
+                    multiline_buf[len - 1] = ' ';
+                }
+
+                const char *ps2 = cli_var_get("PS2");
+                if (ps2 == NULL || ps2[0] == '\0')
+                {
+                    ps2 = "> ";
+                }
+
+                int depth         = cli_ts_compute_indent_depth(multiline_buf);
+                int indent_spaces = (data.auto_indent > 0) ? (depth * data.auto_indent) : 0;
+
+                g_auto_indent_spaces     = indent_spaces;
+                g_in_continuation_prompt = 1;
+                rl_startup_hook          = cli_auto_indent_startup_hook;
+                char *cont               = readline(ps2);
+                rl_startup_hook          = NULL;
+                g_in_continuation_prompt = 0;
+                g_auto_indent_spaces     = 0;
+
+                if (cont == NULL)
+                {
+                    /* Interrupted or EOF (Ctrl-C / Ctrl-D) */
+                    multiline_buf[0] = '\0';
+                    break;
+                }
+
+                /* Adjust indentation for closing tokens typed by user */
+                char line_to_add[4096];
+                line_to_add[0] = '\0';
+
+                const char *cstart = cont;
+                while (*cstart == ' ' || *cstart == '\t')
+                {
+                    cstart++;
+                }
+
+                if (data.auto_indent > 0 && depth > 0 &&
+                    (strncmp(cstart, "done", 4) == 0 || strncmp(cstart, "fi", 2) == 0 ||
+                     strncmp(cstart, "esac", 4) == 0 || strncmp(cstart, "}", 1) == 0 ||
+                     strncmp(cstart, "else", 4) == 0 || strncmp(cstart, "elif", 4) == 0))
+                {
+                    int closer_depth = (depth > 0) ? (depth - 1) : 0;
+                    int nsp          = closer_depth * data.auto_indent;
+                    for (int s = 0; s < nsp && s < 64; s++)
+                    {
+                        line_to_add[s]     = ' ';
+                        line_to_add[s + 1] = '\0';
+                    }
+                    strncat(line_to_add, cstart, sizeof(line_to_add) - strlen(line_to_add) - 1);
+                }
+                else
+                {
+                    strncpy(line_to_add, cont, sizeof(line_to_add) - 1);
+                    line_to_add[sizeof(line_to_add) - 1] = '\0';
+                }
+
+                size_t curlen  = strlen(multiline_buf);
+                size_t contlen = strlen(line_to_add);
+                if (curlen + 2 + contlen < sizeof(multiline_buf))
+                {
+                    if (!is_bslash)
+                    {
+                        /* Check if preceding non-space was pipe or logical op */
+                        size_t trimmed = curlen;
+                        while (trimmed > 0 && (multiline_buf[trimmed - 1] == ' ' ||
+                                               multiline_buf[trimmed - 1] == '\t'))
+                        {
+                            trimmed--;
+                        }
+                        int join_space = 0;
+                        if (trimmed > 0)
+                        {
+                            char lastc = multiline_buf[trimmed - 1];
+                            if (lastc == '|' || lastc == '&')
+                            {
+                                join_space = 1;
+                            }
+                        }
+                        multiline_buf[curlen++] = join_space ? ' ' : '\n';
+                        multiline_buf[curlen]   = '\0';
+                    }
+                    strncat(multiline_buf, line_to_add, sizeof(multiline_buf) - curlen - 1);
+                }
+                free(cont);
+            }
+        }
+        cli_fault_isolation_disarm();
     }
+
 
     if (multiline_buf[0] == '\0')
     {

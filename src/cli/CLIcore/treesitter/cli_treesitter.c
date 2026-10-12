@@ -2272,9 +2272,8 @@ static bool find_first_error(TSNode node, const char *source, CLI_SYNTAX_DIAG *d
         }
         else
         {
-            diag->severity = CLI_DIAG_SEVERITY_INFO;
-            snprintf(diag->message, sizeof(diag->message), "syntax incomplete: expected '%s'",
-                     mtype);
+            diag->severity = CLI_DIAG_SEVERITY_ERROR;
+            snprintf(diag->message, sizeof(diag->message), "unexpected token");
         }
 
         diag->start_byte = ts_node_start_byte(node);
@@ -3102,8 +3101,19 @@ static bool node_tree_has_missing(TSNode node, const char *buffer)
             }
             return true;
         }
-        return true;
+        if (strcmp(mtype, ")") == 0)
+        {
+            int o = count_shell_keyword(buffer, "(");
+            int c = count_shell_keyword(buffer, ")");
+            if (o <= c)
+            {
+                return false;
+            }
+            return true;
+        }
+        return false;
     }
+
 
     const char *type = ts_node_type(node);
     if (strcmp(type, "ERROR") == 0)

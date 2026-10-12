@@ -384,3 +384,24 @@ def test_hyphenated_commands():
     assert "milk-cli: list-streams: not found" not in out
     assert "milk-cli: list-fps: not found" not in out
     assert "Command not found" not in out
+
+
+# --- Section 11: Standalone math expression and continuation escape ---------
+def test_math_expression_no_multiline():
+    rc, out = run_milk([], stdin_text="1-3\nexit\n")
+    assert rc == 0
+    assert "-2" in out
+    assert "\n> " not in out
+
+
+@needs_treesitter
+def test_pty_continuation_prompt_ctrl_c():
+    with milk_proc([], pty_mode=True) as m:
+        m.read_until(PROMPT, 5)
+        m.write(b"for i in 1 2; do\n")
+        m.read_until(b"> ", 5)
+        m.write(b"\x03")  # Ctrl-C
+        m.read_until(PROMPT, 5)
+        m.write(b"echo recovered\n")
+        m.read_until(b"recovered", 5)
+        m.write(b"exit\n")
