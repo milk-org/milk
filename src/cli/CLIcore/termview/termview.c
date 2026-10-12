@@ -767,7 +767,7 @@ static void termview_handle_mouse_event(tv_context_t *ctx)
             int dx = mx - ctx->last_mouse_x;
             int dy = my - ctx->last_mouse_y;
 
-            double dx_pixels = -dx * step;
+            double dx_pixels = dx * step;
             double dy_pixels = -dy * 2 * step;
 
             view_center_x += dx_pixels / xsize;
@@ -969,18 +969,18 @@ static void termview_handle_keyboard_event(tv_context_t *ctx, int ch)
         break;
     case TV_KEY_LEFT:
         force_redraw = 1;
-        view_center_x -= 0.1 / view_zoom;
-        if (view_center_x < 0.0)
-        {
-            view_center_x = 0.0;
-        }
-        break;
-    case TV_KEY_RIGHT:
-        force_redraw = 1;
         view_center_x += 0.1 / view_zoom;
         if (view_center_x > 1.0)
         {
             view_center_x = 1.0;
+        }
+        break;
+    case TV_KEY_RIGHT:
+        force_redraw = 1;
+        view_center_x -= 0.1 / view_zoom;
+        if (view_center_x < 0.0)
+        {
+            view_center_x = 0.0;
         }
         break;
     case TV_KEY_UP:
