@@ -157,11 +157,11 @@ static void expand_fpsvar_write(char       *line,
         const char *name = dot1 + 1;
         const char *prop = dot2 + 1;
 
-        if (strcmp(nsp, "fps") == 0)
+        if (strcmp(nsp, "fps") == 0 || strcmp(nsp, "f") == 0)
         {
             cli_fps_set_param(name, prop, valstr);
         }
-        else if (strcmp(nsp, "proc") == 0)
+        else if (strcmp(nsp, "proc") == 0 || strcmp(nsp, "procinfo") == 0 || strcmp(nsp, "p") == 0)
         {
             if (strcmp(prop, "ctrlval") == 0)
             {
@@ -866,7 +866,8 @@ void cli_expand_fpsvar(char *line, int maxlen)
                     continue;
                 }
             }
-            else if (strcmp(fpsname, "proc") == 0)
+            else if (strcmp(fpsname, "proc") == 0 || strcmp(fpsname, "procinfo") == 0 ||
+                     strcmp(fpsname, "p") == 0)
             {
                 if (expand_fpsvar_procinfo_strict(pname, out, &opos, maxlen) != 0)
                 {
@@ -879,8 +880,15 @@ void cli_expand_fpsvar(char *line, int maxlen)
                 {
                     continue;
                 }
+                if (strcmp(fpsname, "s") == 0)
+                {
+                    if (expand_fpsvar_seq(pname, out, &opos, maxlen) != 0)
+                    {
+                        continue;
+                    }
+                }
             }
-            else if (strcmp(fpsname, "fps") == 0)
+            else if (strcmp(fpsname, "fps") == 0 || strcmp(fpsname, "f") == 0)
             {
                 if (expand_fpsvar_fps_strict(pname, out, &opos, maxlen) != 0)
                 {

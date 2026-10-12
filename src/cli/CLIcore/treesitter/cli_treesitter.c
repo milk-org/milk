@@ -50,15 +50,28 @@ static int cli_determine_mode_lexical(const char *line,
     /* 1. Direct token prefix overrides */
     if (text)
     {
-        if (strncmp(text, "${s.", 4) == 0 || strncmp(text, "@s.", 3) == 0)
+        if (strncmp(text, "${s.", 4) == 0 || strncmp(text, "@s.", 3) == 0 ||
+            strncmp(text, "$s.", 3) == 0 || strncmp(text, "${stream.", 9) == 0 ||
+            strncmp(text, "@stream.", 8) == 0 || strncmp(text, "$stream.", 8) == 0)
         {
             return CLICOMPLETIONMODE_VARS_STREAM;
         }
-        if (strncmp(text, "@fps.", 5) == 0)
+        if (strncmp(text, "@fps.", 5) == 0 || strncmp(text, "${fps.", 6) == 0 ||
+            strncmp(text, "$fps.", 5) == 0 || strncmp(text, "@f.", 3) == 0 ||
+            strncmp(text, "${f.", 4) == 0 || strncmp(text, "$f.", 3) == 0)
         {
             return CLICOMPLETIONMODE_VARS_FPS;
         }
-        if (strncmp(text, "@seq.", 5) == 0)
+        if (strncmp(text, "@proc.", 6) == 0 || strncmp(text, "${proc.", 7) == 0 ||
+            strncmp(text, "$proc.", 6) == 0 || strncmp(text, "@procinfo.", 10) == 0 ||
+            strncmp(text, "${procinfo.", 11) == 0 || strncmp(text, "$procinfo.", 10) == 0 ||
+            strncmp(text, "@p.", 3) == 0 || strncmp(text, "${p.", 4) == 0 ||
+            strncmp(text, "$p.", 3) == 0)
+        {
+            return CLICOMPLETIONMODE_VARS_PROC;
+        }
+        if (strncmp(text, "@seq.", 5) == 0 || strncmp(text, "${seq.", 6) == 0 ||
+            strncmp(text, "$seq.", 5) == 0)
         {
             return CLICOMPLETIONMODE_VARS_SEQ;
         }
@@ -2371,6 +2384,16 @@ static bool find_first_error(TSNode node, const char *source, CLI_SYNTAX_DIAG *d
                          "unclosed arithmetic '$((': missing '))'");
                 return true;
             }
+            if (diag->token[0] == '@' || strncmp(diag->token, "${s.", 4) == 0 ||
+                strncmp(diag->token, "${stream.", 9) == 0 ||
+                strncmp(diag->token, "${fps.", 6) == 0 || strncmp(diag->token, "${f.", 4) == 0 ||
+                strncmp(diag->token, "${proc.", 7) == 0 ||
+                strncmp(diag->token, "${procinfo.", 11) == 0 ||
+                strncmp(diag->token, "${p.", 4) == 0 || strncmp(diag->token, "${seq.", 6) == 0)
+            {
+                /* Incomplete milk entity reference while typing (e.g. @fps., @s., @p.) */
+                return false;
+            }
         }
 
         diag->severity = CLI_DIAG_SEVERITY_ERROR;
@@ -3237,15 +3260,28 @@ int cli_ts_determine_completion_mode(const char *line,
     /* 1. Direct token prefix overrides */
     if (text)
     {
-        if (strncmp(text, "${s.", 4) == 0 || strncmp(text, "@s.", 3) == 0)
+        if (strncmp(text, "${s.", 4) == 0 || strncmp(text, "@s.", 3) == 0 ||
+            strncmp(text, "$s.", 3) == 0 || strncmp(text, "${stream.", 9) == 0 ||
+            strncmp(text, "@stream.", 8) == 0 || strncmp(text, "$stream.", 8) == 0)
         {
             return CLICOMPLETIONMODE_VARS_STREAM;
         }
-        if (strncmp(text, "@fps.", 5) == 0)
+        if (strncmp(text, "@fps.", 5) == 0 || strncmp(text, "${fps.", 6) == 0 ||
+            strncmp(text, "$fps.", 5) == 0 || strncmp(text, "@f.", 3) == 0 ||
+            strncmp(text, "${f.", 4) == 0 || strncmp(text, "$f.", 3) == 0)
         {
             return CLICOMPLETIONMODE_VARS_FPS;
         }
-        if (strncmp(text, "@seq.", 5) == 0)
+        if (strncmp(text, "@proc.", 6) == 0 || strncmp(text, "${proc.", 7) == 0 ||
+            strncmp(text, "$proc.", 6) == 0 || strncmp(text, "@procinfo.", 10) == 0 ||
+            strncmp(text, "${procinfo.", 11) == 0 || strncmp(text, "$procinfo.", 10) == 0 ||
+            strncmp(text, "@p.", 3) == 0 || strncmp(text, "${p.", 4) == 0 ||
+            strncmp(text, "$p.", 3) == 0)
+        {
+            return CLICOMPLETIONMODE_VARS_PROC;
+        }
+        if (strncmp(text, "@seq.", 5) == 0 || strncmp(text, "${seq.", 6) == 0 ||
+            strncmp(text, "$seq.", 5) == 0)
         {
             return CLICOMPLETIONMODE_VARS_SEQ;
         }

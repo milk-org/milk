@@ -550,8 +550,28 @@ static void readline_lazy_init(const char *prompt, int *flag)
     *flag = 1;
 #ifdef USE_READLINE
     DEBUG_TRACEPOINT("initialize readline");
-    rl_attempted_completion_function = CLI_completion;
-    rl_initialize();
+    rl_attempted_completion_function   = CLI_completion;
+    rl_completion_display_matches_hook = cli_menu_display_matches;
+    rl_getc_function                   = cli_custom_getc;
+
+    /* Isolate readline initialization from external ~/.inputrc */
+    {
+        char *saved_inputrc = getenv("INPUTRC");
+        char *saved_copy    = (saved_inputrc != NULL) ? strdup(saved_inputrc) : NULL;
+
+        setenv("INPUTRC", "/dev/null", 1);
+        rl_initialize();
+
+        if (saved_copy != NULL)
+        {
+            setenv("INPUTRC", saved_copy, 1);
+            free(saved_copy);
+        }
+        else
+        {
+            unsetenv("INPUTRC");
+        }
+    }
     {
         struct sigaction sa_winch;
         sa_winch.sa_handler = sighandler;

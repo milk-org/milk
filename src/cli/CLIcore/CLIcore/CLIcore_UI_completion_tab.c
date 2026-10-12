@@ -21,6 +21,9 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <unistd.h>
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <sys/select.h>
 
 #ifdef USE_READLINE
 #    include <readline/history.h>
@@ -33,12 +36,53 @@
 #include "CLIcore_script.h"
 #include "CLIcore_UI_execute.h"
 #include "fps_connect.h"
+#include "processinfo.h"
+#include "processinfo_shm_list_create.h"
 #include "treesitter/cli_treesitter.h"
 
 extern char **environ;
 
-
 #ifdef USE_READLINE
+
+static int g_comp_start         = 0;
+static int g_comp_end           = 0;
+static int g_menu_just_selected = 0;
+
+/**
+ * @brief Custom readline getc function to reset menu-completion state
+ *
+ * When the interactive menu finishes, g_menu_just_selected is set.
+ * On the next key read by readline, this hook resets rl_last_func to NULL,
+ * preventing rl_menu_complete from continuing to cycle previous matches.
+ */
+int cli_custom_getc(FILE *stream)
+{
+    if (g_menu_just_selected)
+    {
+        rl_last_func         = NULL;
+        g_menu_just_selected = 0;
+    }
+    return rl_getc(stream);
+}
+
+static int menu_readchar(void)
+{
+    unsigned char ch;
+    ssize_t       n = read(STDIN_FILENO, &ch, 1);
+    return (n == 1) ? (int) ch : -1;
+}
+
+static int menu_stdin_wait_ms(int ms)
+{
+    fd_set         fds;
+    struct timeval tv;
+
+    FD_ZERO(&fds);
+    FD_SET(STDIN_FILENO, &fds);
+    tv.tv_sec  = 0;
+    tv.tv_usec = ms * 1000;
+    return select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) > 0;
+}
 
 /* ---- Tab-completion generator ---- */
 
@@ -363,20 +407,16 @@ retry_fuzzy:
             struct dirent *ent;
             while ((ent = readdir(fps_dirp)) != NULL)
             {
-                if (strncmp(ent->d_name, "fps.", 4) != 0)
-                {
-                    continue;
-                }
-                char *ext = strstr(ent->d_name, ".datadir");
-                if (ext != NULL && strcmp(ext, ".datadir") == 0)
+                char *ext = strstr(ent->d_name, ".fps.shm");
+                if (ext != NULL && strcmp(ext, ".fps.shm") == 0)
                 {
                     char fpsname[256];
-                    int  namelen = ext - (ent->d_name + 4);
+                    int  namelen = ext - ent->d_name;
                     if (namelen > 255)
                     {
                         namelen = 255;
                     }
-                    strncpy(fpsname, ent->d_name + 4, namelen);
+                    strncpy(fpsname, ent->d_name, namelen);
                     fpsname[namelen] = '\0';
 
                     if (generator_fuzzy_pass == 0)
@@ -402,8 +442,9 @@ retry_fuzzy:
 
     if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_FPS)
     {
-        const char *dot1 = strchr(text, '.');
-        const char *dot2 = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
+        const char *dot1      = strchr(text, '.');
+        const char *dot2      = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
+        int         has_brace = (text[0] == '$' && text[1] == '{');
 
         if (dot2 != NULL)
         {
@@ -429,7 +470,7 @@ retry_fuzzy:
 
                 memset(&fps, 0, sizeof(FPS));
                 fps_connected =
-                    (fps_connect(fps_target, &fps, FPSCONNECT_SIMPLE) == 0 && fps.parray != NULL);
+                    (fps_connect(fps_target, &fps, FPSCONNECT_SIMPLE) != -1 && fps.parray != NULL);
             }
 
             if (fps_connected)
@@ -442,7 +483,12 @@ retry_fuzzy:
                         continue;
                     }
 
-                    const char *pname = fps.parray[pi].keyword[0];
+                    const char *pname      = fps.parray[pi].keywordfull;
+                    size_t      prefix_len = strlen(fps.md->name);
+                    if (strncmp(pname, fps.md->name, prefix_len) == 0 && pname[prefix_len] == '.')
+                    {
+                        pname += prefix_len + 1;
+                    }
                     if (pname == NULL || pname[0] == '\0')
                     {
                         continue;
@@ -464,7 +510,17 @@ retry_fuzzy:
                     if (match)
                     {
                         char buf[256];
-                        snprintf(buf, sizeof(buf), "@fps.%s.%s", fps_target, pname);
+                        int  nslen = (dot1 != NULL) ? (int) (dot1 - text) : 4;
+                        if (has_brace)
+                        {
+                            snprintf(buf, sizeof(buf), "%.*s.%s.%s}", nslen, text, fps_target,
+                                     pname);
+                        }
+                        else
+                        {
+                            snprintf(buf, sizeof(buf), "%.*s.%s.%s", nslen, text, fps_target,
+                                     pname);
+                        }
                         return GEN_DUPSTR(buf);
                     }
                 }
@@ -473,6 +529,9 @@ retry_fuzzy:
         else
         {
             static DIR *vfps_dirp = NULL;
+            static char prev_fps[256][64];
+            static int  nb_prev_fps = 0;
+
             if (!state)
             {
                 if (vfps_dirp != NULL)
@@ -480,38 +539,57 @@ retry_fuzzy:
                     closedir(vfps_dirp);
                     vfps_dirp = NULL;
                 }
-                vfps_dirp = opendir(dcshmdir);
+                vfps_dirp   = opendir(dcshmdir);
+                nb_prev_fps = 0;
             }
             if (vfps_dirp != NULL)
             {
                 struct dirent *ent;
                 while ((ent = readdir(vfps_dirp)) != NULL)
                 {
-                    if (strncmp(ent->d_name, "fps.", 4) == 0)
+                    char *ext = strstr(ent->d_name, ".fps.shm");
+                    if (ext != NULL && strcmp(ext, ".fps.shm") == 0)
                     {
-                        char *ext = strstr(ent->d_name, ".datadir");
-                        if (ext != NULL && strcmp(ext, ".datadir") == 0)
+                        char fpsname[256];
+                        int  namelen = ext - ent->d_name;
+                        if (namelen > 200)
                         {
-                            char fpsname[256];
-                            int  namelen = ext - (ent->d_name + 4);
-                            if (namelen > 240)
-                            {
-                                namelen = 240;
-                            }
-                            snprintf(fpsname, sizeof(fpsname), "@fps.%.*s.", namelen,
-                                     ent->d_name + 4);
+                            namelen = 200;
+                        }
+                        int nslen = (dot1 != NULL) ? (int) (dot1 - text) : 4;
+                        snprintf(fpsname, sizeof(fpsname), "%.*s.%.*s.", nslen, text, namelen,
+                                 ent->d_name);
 
-                            if (generator_fuzzy_pass == 0)
+                        int is_dup = 0;
+                        for (int pi = 0; pi < nb_prev_fps; pi++)
+                        {
+                            if (strcmp(prev_fps[pi], fpsname) == 0)
                             {
-                                if (strncmp(fpsname, text, len) == 0)
-                                {
-                                    return GEN_DUPSTR(fpsname);
-                                }
+                                is_dup = 1;
+                                break;
                             }
-                            else if (strstr(fpsname, text) != NULL)
+                        }
+                        if (is_dup)
+                        {
+                            continue;
+                        }
+                        if (nb_prev_fps < 256)
+                        {
+                            strncpy(prev_fps[nb_prev_fps], fpsname, sizeof(prev_fps[0]) - 1);
+                            prev_fps[nb_prev_fps][sizeof(prev_fps[0]) - 1] = '\0';
+                            nb_prev_fps++;
+                        }
+
+                        if (generator_fuzzy_pass == 0)
+                        {
+                            if (strncmp(fpsname, text, len) == 0)
                             {
                                 return GEN_DUPSTR(fpsname);
                             }
+                        }
+                        else if (strstr(fpsname, text) != NULL)
+                        {
+                            return GEN_DUPSTR(fpsname);
                         }
                     }
                 }
@@ -523,7 +601,11 @@ retry_fuzzy:
 
     if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_SEQ)
     {
+        const char *dot1      = strchr(text, '.');
         static DIR *vseq_dirp = NULL;
+        static char prev_seq[256][64];
+        static int  nb_prev_seq = 0;
+
         if (!state)
         {
             if (vseq_dirp != NULL)
@@ -531,7 +613,8 @@ retry_fuzzy:
                 closedir(vseq_dirp);
                 vseq_dirp = NULL;
             }
-            vseq_dirp = opendir(dcshmdir);
+            vseq_dirp   = opendir(dcshmdir);
+            nb_prev_seq = 0;
         }
         if (vseq_dirp != NULL)
         {
@@ -545,11 +628,33 @@ retry_fuzzy:
                     {
                         char seqname[256];
                         int  namelen = ext - (ent->d_name + 4);
-                        if (namelen > 240)
+                        if (namelen > 200)
                         {
-                            namelen = 240;
+                            namelen = 200;
                         }
-                        snprintf(seqname, sizeof(seqname), "@seq.%.*s.", namelen, ent->d_name + 4);
+                        int nslen = (dot1 != NULL) ? (int) (dot1 - text) : 4;
+                        snprintf(seqname, sizeof(seqname), "%.*s.%.*s.", nslen, text, namelen,
+                                 ent->d_name + 4);
+
+                        int is_dup = 0;
+                        for (int pi = 0; pi < nb_prev_seq; pi++)
+                        {
+                            if (strcmp(prev_seq[pi], seqname) == 0)
+                            {
+                                is_dup = 1;
+                                break;
+                            }
+                        }
+                        if (is_dup)
+                        {
+                            continue;
+                        }
+                        if (nb_prev_seq < 256)
+                        {
+                            strncpy(prev_seq[nb_prev_seq], seqname, sizeof(prev_seq[0]) - 1);
+                            prev_seq[nb_prev_seq][sizeof(prev_seq[0]) - 1] = '\0';
+                            nb_prev_seq++;
+                        }
 
                         if (generator_fuzzy_pass == 0)
                         {
@@ -619,13 +724,15 @@ retry_fuzzy:
                 if (match)
                 {
                     char buf[256];
+                    int  nslen = (dot1 != NULL) ? (int) (dot1 - text) : 2;
                     if (has_brace)
                     {
-                        snprintf(buf, sizeof(buf), "${s.%s.%s}", stream_target, sprop);
+                        snprintf(buf, sizeof(buf), "%.*s.%s.%s}", nslen, text, stream_target,
+                                 sprop);
                     }
                     else
                     {
-                        snprintf(buf, sizeof(buf), "@s.%s.%s", stream_target, sprop);
+                        snprintf(buf, sizeof(buf), "%.*s.%s.%s", nslen, text, stream_target, sprop);
                     }
                     return GEN_DUPSTR(buf);
                 }
@@ -634,6 +741,9 @@ retry_fuzzy:
         else
         {
             static DIR *vstream_dirp = NULL;
+            static char prev_streams[256][64];
+            static int  nb_prev_streams = 0;
+
             if (!state)
             {
                 if (vstream_dirp != NULL)
@@ -641,7 +751,8 @@ retry_fuzzy:
                     closedir(vstream_dirp);
                     vstream_dirp = NULL;
                 }
-                vstream_dirp = opendir(dcshmdir);
+                vstream_dirp    = opendir(dcshmdir);
+                nb_prev_streams = 0;
             }
             if (vstream_dirp != NULL)
             {
@@ -653,17 +764,33 @@ retry_fuzzy:
                     {
                         char sname[256];
                         int  namelen = ext - ent->d_name;
-                        if (namelen > 240)
+                        if (namelen > 200)
                         {
-                            namelen = 240;
+                            namelen = 200;
                         }
-                        if (has_brace)
+                        int nslen = (dot1 != NULL) ? (int) (dot1 - text) : 2;
+                        snprintf(sname, sizeof(sname), "%.*s.%.*s.", nslen, text, namelen,
+                                 ent->d_name);
+
+                        int is_dup = 0;
+                        for (int pi = 0; pi < nb_prev_streams; pi++)
                         {
-                            snprintf(sname, sizeof(sname), "${s.%.*s.", namelen, ent->d_name);
+                            if (strcmp(prev_streams[pi], sname) == 0)
+                            {
+                                is_dup = 1;
+                                break;
+                            }
                         }
-                        else
+                        if (is_dup)
                         {
-                            snprintf(sname, sizeof(sname), "@s.%.*s.", namelen, ent->d_name);
+                            continue;
+                        }
+                        if (nb_prev_streams < 256)
+                        {
+                            strncpy(prev_streams[nb_prev_streams], sname,
+                                    sizeof(prev_streams[0]) - 1);
+                            prev_streams[nb_prev_streams][sizeof(prev_streams[0]) - 1] = '\0';
+                            nb_prev_streams++;
                         }
 
                         if (generator_fuzzy_pass == 0)
@@ -681,6 +808,140 @@ retry_fuzzy:
                 }
                 closedir(vstream_dirp);
                 vstream_dirp = NULL;
+            }
+        }
+    }
+
+    if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_PROC)
+    {
+        const char *dot1      = strchr(text, '.');
+        const char *dot2      = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
+        int         has_brace = (text[0] == '$' && text[1] == '{');
+
+        if (dot2 != NULL)
+        {
+            static int         proc_prop_idx = 0;
+            static const char *proc_props[]  = { "pid",      "loopstat",    "loopcnt",
+                                                 "loopfreq", "exectime",    "rtprio",
+                                                 "ctrlval",  "trigmode",    "statusmsg",
+                                                 "tmux",     "description", "missedframes",
+                                                 NULL };
+            static char        proc_target[128];
+            static char        proc_prop_prefix[64];
+
+            if (!state)
+            {
+                proc_prop_idx = 0;
+                size_t pnlen  = (size_t) (dot2 - (dot1 + 1));
+                if (pnlen >= sizeof(proc_target))
+                {
+                    pnlen = sizeof(proc_target) - 1;
+                }
+                strncpy(proc_target, dot1 + 1, pnlen);
+                proc_target[pnlen] = '\0';
+
+                strncpy(proc_prop_prefix, dot2 + 1, sizeof(proc_prop_prefix) - 1);
+                proc_prop_prefix[sizeof(proc_prop_prefix) - 1] = '\0';
+            }
+
+            while (proc_props[proc_prop_idx] != NULL)
+            {
+                const char *pprop = proc_props[proc_prop_idx++];
+                int         match = 0;
+                if (generator_fuzzy_pass == 0)
+                {
+                    if (strncmp(pprop, proc_prop_prefix, strlen(proc_prop_prefix)) == 0)
+                    {
+                        match = 1;
+                    }
+                }
+                else if (strstr(pprop, proc_prop_prefix) != NULL)
+                {
+                    match = 1;
+                }
+
+                if (match)
+                {
+                    char buf[256];
+                    int  nslen = (dot1 != NULL) ? (int) (dot1 - text) : 4;
+                    if (has_brace)
+                    {
+                        snprintf(buf, sizeof(buf), "%.*s.%s.%s}", nslen, text, proc_target, pprop);
+                    }
+                    else
+                    {
+                        snprintf(buf, sizeof(buf), "%.*s.%s.%s", nslen, text, proc_target, pprop);
+                    }
+                    return GEN_DUPSTR(buf);
+                }
+            }
+        }
+        else
+        {
+            static int pinfo_idx = 0;
+            if (!state)
+            {
+                pinfo_idx = 0;
+                if (pinfolist == NULL)
+                {
+                    long pidx_unused = -1;
+                    processinfo_shm_list_create(&pidx_unused);
+                }
+            }
+
+            if (pinfolist != NULL)
+            {
+                while (pinfo_idx < PROCESSINFOLISTSIZE)
+                {
+                    int pi = pinfo_idx++;
+                    if (!pinfolist->active[pi])
+                    {
+                        continue;
+                    }
+
+                    const char *pname = pinfolist->pnamearray[pi];
+                    if (pname == NULL || pname[0] == '\0')
+                    {
+                        continue;
+                    }
+
+                    int duplicate = 0;
+                    for (int prev = 0; prev < pi; prev++)
+                    {
+                        if (pinfolist->active[prev] &&
+                            strcmp(pinfolist->pnamearray[prev], pname) == 0)
+                        {
+                            duplicate = 1;
+                            break;
+                        }
+                    }
+                    if (duplicate)
+                    {
+                        continue;
+                    }
+
+                    char procname[256];
+                    int  nslen = (dot1 != NULL) ? (int) (dot1 - text) : 4;
+                    snprintf(procname, sizeof(procname), "%.*s.%s.", nslen, text, pname);
+
+                    int match = 0;
+                    if (generator_fuzzy_pass == 0)
+                    {
+                        if (strncmp(procname, text, len) == 0)
+                        {
+                            match = 1;
+                        }
+                    }
+                    else if (strstr(procname, text) != NULL)
+                    {
+                        match = 1;
+                    }
+
+                    if (match)
+                    {
+                        return GEN_DUPSTR(procname);
+                    }
+                }
             }
         }
     }
@@ -959,8 +1220,11 @@ retry_fuzzy:
  * classification to determine completion mode based on cursor position
  * and the command/argument being typed.
  */
-char **CLI_completion(const char *text, int start, int __attribute__((unused)) end)
+char **CLI_completion(const char *text, int start, int end)
 {
+    g_comp_start = start;
+    g_comp_end   = end;
+
     char **matches      = NULL;
     char   cmdname[128] = "";
     int    argidx       = 0;
@@ -1073,13 +1337,9 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
     {
         rl_completion_append_character = '\0';
     }
-    else if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_FPS)
-    {
-        const char *d1                 = strchr(text, '.');
-        const char *d2                 = (d1 != NULL) ? strchr(d1 + 1, '.') : NULL;
-        rl_completion_append_character = (d2 != NULL) ? ' ' : '\0';
-    }
-    else if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_STREAM)
+    else if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_FPS ||
+             data.CLImatchMode == CLICOMPLETIONMODE_VARS_STREAM ||
+             data.CLImatchMode == CLICOMPLETIONMODE_VARS_PROC)
     {
         const char *d1                 = strchr(text, '.');
         const char *d2                 = (d1 != NULL) ? strchr(d1 + 1, '.') : NULL;
@@ -1095,5 +1355,402 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
     }
 
     return matches;
+}
+
+/**
+ * @brief Interactive Zsh-style menu completion display hook
+ *
+ * Intercepts terminal when multiple completion matches are available,
+ * displaying a live-highlighted interactive grid below the prompt.
+ *
+ * Navigation:
+ *  - Left / Right / Up / Down / Tab / Shift-Tab
+ *  - Enter: selects candidate and drops it into rl_line_buffer
+ *  - Esc / Ctrl-C: cancels menu without modifying line buffer
+ *
+ * @param matches     Array of matches (matches[0] = common prefix, matches[1..n] = candidates)
+ * @param num_matches Number of candidate matches
+ * @param max_length  Length of the longest match string
+ */
+void cli_menu_display_matches(char **matches, int num_matches, int max_length)
+{
+    if (matches == NULL || num_matches <= 0)
+    {
+        return;
+    }
+
+    /* Deduplicate candidate list in place */
+    int uniq_count = 0;
+    for (int i = 1; i <= num_matches; i++)
+    {
+        int is_dup = 0;
+        for (int j = 1; j <= uniq_count; j++)
+        {
+            if (strcmp(matches[i], matches[j]) == 0)
+            {
+                is_dup = 1;
+                break;
+            }
+        }
+        if (!is_dup)
+        {
+            uniq_count++;
+            if (uniq_count != i)
+            {
+                matches[uniq_count] = matches[i];
+            }
+        }
+        else
+        {
+            free(matches[i]);
+            matches[i] = NULL;
+        }
+    }
+    matches[uniq_count + 1] = NULL;
+    num_matches             = uniq_count;
+
+    if (num_matches <= 0)
+    {
+        return;
+    }
+
+    /* If only one unique candidate remains, accept it directly without menu */
+    if (num_matches == 1)
+    {
+        const char *cand     = matches[1];
+        int         del_from = g_comp_start;
+        int         del_to   = rl_point;
+        if (del_to < del_from)
+        {
+            del_to = del_from;
+        }
+        rl_delete_text(del_from, del_to);
+        rl_point = del_from;
+        rl_insert_text(cand);
+
+        size_t clen = strlen(cand);
+        if (clen > 0 && cand[clen - 1] != '.' && cand[clen - 1] != '/')
+        {
+            rl_insert_text(" ");
+        }
+
+        if (ghost_chars_on_line > 0)
+        {
+            printf("\033[K");
+            ghost_chars_on_line = 0;
+        }
+        set_pending_suggestion(NULL, 0);
+
+        g_menu_just_selected = 1;
+
+        rl_on_new_line();
+        rl_forced_update_display();
+        return;
+    }
+
+    /* Erase any active ghost text on the prompt line before menu opens */
+    if (ghost_chars_on_line > 0)
+    {
+        printf("\033[K");
+        ghost_chars_on_line = 0;
+    }
+    set_pending_suggestion(NULL, 0);
+    fflush(stdout);
+
+    struct winsize ws;
+    int            cols = 80;
+    int            rows = 24;
+    if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 0)
+    {
+        cols = ws.ws_col;
+        rows = ws.ws_row;
+    }
+
+    if (cols < 20 || rows < 5)
+    {
+        return;
+    }
+
+    int col_width = max_length + 2;
+    if (col_width > cols - 2)
+    {
+        col_width = cols - 2;
+    }
+    if (col_width < 4)
+    {
+        col_width = 4;
+    }
+
+    int ncols = cols / col_width;
+    if (ncols < 1)
+    {
+        ncols = 1;
+    }
+    int total_rows = (num_matches + ncols - 1) / ncols;
+
+    int max_visible_rows = 6;
+    if (max_visible_rows > rows - 4)
+    {
+        max_visible_rows = rows - 4;
+    }
+    if (max_visible_rows < 1)
+    {
+        max_visible_rows = 1;
+    }
+
+    int visible_rows = total_rows < max_visible_rows ? total_rows : max_visible_rows;
+
+    int selected          = 0;
+    int first_visible_row = 0;
+    int accepted          = 0;
+
+    struct termios orig_termios, raw_termios;
+    tcgetattr(STDIN_FILENO, &orig_termios);
+    raw_termios = orig_termios;
+    raw_termios.c_lflag &= ~(ICANON | ECHO | ISIG);
+    raw_termios.c_cc[VMIN]  = 1;
+    raw_termios.c_cc[VTIME] = 0;
+    tcsetattr(STDIN_FILENO, TCSANOW, &raw_termios);
+
+    /* Hide cursor */
+    printf("\033[?25l");
+    fflush(stdout);
+
+    /* Allocate menu lines below prompt */
+    printf("\n");
+    for (int r = 0; r < visible_rows; r++)
+    {
+        printf("\033[2K\n");
+    }
+    printf("\033[2K");
+    /* Move back up to row 0 of the menu */
+    printf("\033[%dA\r", visible_rows);
+    fflush(stdout);
+
+    int redraw = 1;
+    while (1)
+    {
+        if (redraw)
+        {
+            int sel_row = selected / ncols;
+            if (sel_row < first_visible_row)
+            {
+                first_visible_row = sel_row;
+            }
+            if (sel_row >= first_visible_row + visible_rows)
+            {
+                first_visible_row = sel_row - visible_rows + 1;
+            }
+
+            /* Draw candidate rows */
+            for (int vr = 0; vr < visible_rows; vr++)
+            {
+                int r = first_visible_row + vr;
+                printf("\033[2K\r");
+                if (r < total_rows)
+                {
+                    for (int c = 0; c < ncols; c++)
+                    {
+                        int idx = r * ncols + c;
+                        if (idx >= num_matches)
+                        {
+                            break;
+                        }
+                        const char *cand = matches[idx + 1];
+                        if (idx == selected)
+                        {
+                            /* Live highlight: Reverse bold cyan */
+                            printf("\033[7;1;36m %-*s\033[0m", col_width - 1, cand);
+                        }
+                        else
+                        {
+                            printf(" %-*s", col_width - 1, cand);
+                        }
+                    }
+                }
+                printf("\n");
+            }
+
+            /* Draw status line */
+            printf("\033[2K\r");
+            int has_more_above = (first_visible_row > 0);
+            int has_more_below = (first_visible_row + visible_rows < total_rows);
+            printf("\033[36m\xe2\x94\x80\xe2\x94\x80\033[0m \033[1m[%d/%d]\033[0m %s%s\033[2m"
+                   "\xe2\x97\x84\xe2\x96\xb2\xe2\x96\xbc\xe2\x96\xba/Tab: navigate "
+                   "\xe2\x80\xa2 Enter: select \xe2\x80\xa2 Esc: cancel\033[0m "
+                   "\033[36m\xe2\x94\x80\xe2\x94\x80\033[0m",
+                   selected + 1, num_matches, has_more_above ? "\xe2\x96\xb2 " : "",
+                   has_more_below ? "\xe2\x96\xbc " : "");
+            fflush(stdout);
+
+            /* Move cursor back up to row 0 of menu for next cycle */
+            printf("\033[%dA\r", visible_rows);
+            fflush(stdout);
+            redraw = 0;
+        }
+
+        int c = menu_readchar();
+        if (c == 27)
+        {
+            if (menu_stdin_wait_ms(50))
+            {
+                int b1 = menu_readchar();
+                if (b1 == '[' || b1 == 'O')
+                {
+                    int b2 = menu_readchar();
+                    if (b2 == 'A') /* Up */
+                    {
+                        selected -= ncols;
+                        if (selected < 0)
+                        {
+                            selected += total_rows * ncols;
+                            if (selected >= num_matches)
+                            {
+                                selected -= ncols;
+                            }
+                        }
+                        redraw = 1;
+                    }
+                    else if (b2 == 'B') /* Down */
+                    {
+                        selected += ncols;
+                        if (selected >= num_matches)
+                        {
+                            selected %= ncols;
+                        }
+                        redraw = 1;
+                    }
+                    else if (b2 == 'C') /* Right */
+                    {
+                        selected = (selected + 1) % num_matches;
+                        redraw   = 1;
+                    }
+                    else if (b2 == 'D') /* Left */
+                    {
+                        selected = (selected - 1 + num_matches) % num_matches;
+                        redraw   = 1;
+                    }
+                    else if (b2 == 'Z') /* Shift-Tab */
+                    {
+                        selected = (selected - 1 + num_matches) % num_matches;
+                        redraw   = 1;
+                    }
+                    else if (b2 == '5') /* PgUp */
+                    {
+                        menu_readchar(); /* consume '~' */
+                        selected -= (ncols * visible_rows);
+                        if (selected < 0)
+                        {
+                            selected = 0;
+                        }
+                        redraw = 1;
+                    }
+                    else if (b2 == '6') /* PgDn */
+                    {
+                        menu_readchar(); /* consume '~' */
+                        selected += (ncols * visible_rows);
+                        if (selected >= num_matches)
+                        {
+                            selected = num_matches - 1;
+                        }
+                        redraw = 1;
+                    }
+                }
+            }
+            else
+            {
+                /* Bare ESC: Cancel */
+                accepted = 0;
+                break;
+            }
+        }
+        else if (c == '\t')
+        {
+            selected = (selected + 1) % num_matches;
+            redraw   = 1;
+        }
+        else if (c == '\r' || c == '\n')
+        {
+            accepted = 1;
+            break;
+        }
+        else if (c == 3 || c == 4 || c == 7) /* Ctrl+C, Ctrl+D, Ctrl+G */
+        {
+            accepted = 0;
+            break;
+        }
+        else
+        {
+            /* Any other key cancels menu and passes character back to readline */
+            accepted = 0;
+            if (c > 0 && c != 27)
+            {
+                rl_stuff_char(c);
+            }
+            break;
+        }
+    }
+
+    /* Clean up menu display */
+    for (int vr = 0; vr < visible_rows; vr++)
+    {
+        printf("\033[2K\n");
+    }
+    printf("\033[2K");
+    /* Move back up to prompt line */
+    printf("\033[%dA\r", visible_rows + 1);
+    /* Clear prompt line cleanly so readline can redraw from column 0 */
+    printf("\033[2K\r");
+    fflush(stdout);
+
+    /* Restore terminal */
+    tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
+    printf("\033[?25h"); /* Show cursor */
+    fflush(stdout);
+
+    if (accepted && selected >= 0 && selected < num_matches)
+    {
+        const char *cand     = matches[selected + 1];
+        int         del_from = g_comp_start;
+        int         del_to   = rl_point;
+        if (del_to < del_from)
+        {
+            del_to = del_from;
+        }
+        rl_delete_text(del_from, del_to);
+        rl_point = del_from;
+        rl_insert_text(cand);
+
+        size_t clen = strlen(cand);
+        if (clen > 0 && cand[clen - 1] != '.' && cand[clen - 1] != '/')
+        {
+            rl_insert_text(" ");
+        }
+    }
+
+    if (ghost_chars_on_line > 0)
+    {
+        ghost_chars_on_line = 0;
+    }
+    set_pending_suggestion(NULL, 0);
+
+    g_menu_just_selected = 1;
+
+    rl_on_new_line();
+    rl_forced_update_display();
+}
+#endif
+
+#ifndef USE_READLINE
+void cli_menu_display_matches(char **matches, int num_matches, int max_length)
+{
+    (void) matches;
+    (void) num_matches;
+    (void) max_length;
+}
+
+int cli_custom_getc(FILE *stream)
+{
+    return fgetc(stream);
 }
 #endif

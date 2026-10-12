@@ -27,6 +27,7 @@
 #else /* full CLI mode */
 
 
+#    include <stdio.h>
 #    include <stdint.h>
 #    include <stdarg.h>
 #    include <string.h>
@@ -372,6 +373,10 @@ extern uint8_t TYPESIZE[32];
 #    define CLICOMPLETIONMODE_VARS_SEQ 6
 #    define CLICOMPLETIONMODE_VARS_STREAM 7
 #    define CLICOMPLETIONMODE_VARS_ENV 8
+#    define CLICOMPLETIONMODE_VARS_PROC 9
+
+void cli_menu_display_matches(char **matches, int num_matches, int max_length);
+int  cli_custom_getc(FILE *stream);
 
 typedef struct
 {

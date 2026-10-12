@@ -721,6 +721,7 @@ void CLI_redisplay(void)
 void CLI_configure_readline()
 {
     rl_redisplay_function = CLI_redisplay;
+    rl_getc_function      = cli_custom_getc;
 
     if (data.autocomplete_history)
     {
@@ -738,6 +739,12 @@ void CLI_configure_readline()
     /* Bind Enter to clear ghost text first */
     rl_bind_key('\r', cli_accept_line);
     rl_bind_key('\n', cli_accept_line);
+
+    /* Enforce milk-cli completion settings independent of external inputrc */
+    rl_bind_key('\t', rl_complete);
+    rl_variable_bind("show-all-if-ambiguous", "on");
+    rl_variable_bind("bell-style", "none");
+    rl_variable_bind("page-completions", "off");
 }
 #else
 /* Stubs when readline is not available */

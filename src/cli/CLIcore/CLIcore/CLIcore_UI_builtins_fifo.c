@@ -227,19 +227,16 @@ errno_t cli_list_fps(void)
     {
         while ((ent = readdir(dir)) != NULL)
         {
-            if (strncmp(ent->d_name, "fps.", 4) == 0)
+            char *ext = strstr(ent->d_name, ".fps.shm");
+            if (ext != NULL && strcmp(ext, ".fps.shm") == 0)
             {
-                char *ext = strstr(ent->d_name, ".datadir");
-                if (ext != NULL && strcmp(ext, ".datadir") == 0)
+                int namelen = ext - ent->d_name;
+                if (!first)
                 {
-                    int namelen = ext - (ent->d_name + 4);
-                    if (!first)
-                    {
-                        printf(" ");
-                    }
-                    printf("%.*s", namelen, ent->d_name + 4);
-                    first = 0;
+                    printf(" ");
                 }
+                printf("%.*s", namelen, ent->d_name);
+                first = 0;
             }
         }
         closedir(dir);
