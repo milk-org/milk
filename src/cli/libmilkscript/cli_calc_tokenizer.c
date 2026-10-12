@@ -24,6 +24,7 @@
 #include "COREMOD_arith/COREMOD_arith.h"
 
 #include "cli_calc_tokenizer.h"
+#include "cli_calc_internal.h"
 
 /**
  * @brief Built-in function table entry
@@ -169,6 +170,69 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
             p++;
             continue;
         }
+
+        /*
+         * Check for registered CLI command when parsing the first argument
+         * of a command line (data.cmdNBarg == 0 && parse_mode == 0 && nt == 0).
+         * This allows commands containing hyphens (e.g. list-streams, list-fps)
+         * to be recognized as a single command token rather than being split
+         * by the arithmetic minus operator.
+         */
+        if (data.cmdNBarg == 0 && parse_mode == 0 && nt == 0)
+        {
+            long   best_cmd    = -1;
+            size_t max_cmd_len = 0;
+
+            for (long i = 0; i < (long) data.NBcmd; i++)
+            {
+                size_t cmdlen = strlen(data.cmd[i].key);
+                if (strncmp(p, data.cmd[i].key, cmdlen) == 0 &&
+                    (p[cmdlen] == '\0' || p[cmdlen] == ' ' || p[cmdlen] == '\t' ||
+                     p[cmdlen] == '\n' || p[cmdlen] == ':' || p[cmdlen] == ';'))
+                {
+                    /* Ensure not immediately followed by assignment operator '=' */
+                    const char *after = p + cmdlen;
+                    while (*after == ' ' || *after == '\t')
+                    {
+                        after++;
+                    }
+                    if (*after == '=' || (*after == '+' && *(after + 1) == '=') ||
+                        (*after == '-' && *(after + 1) == '=') ||
+                        (*after == '*' && *(after + 1) == '=') ||
+                        (*after == '/' && *(after + 1) == '='))
+                    {
+                        continue;
+                    }
+
+                    if (cmdlen > max_cmd_len)
+                    {
+                        max_cmd_len = cmdlen;
+                        best_cmd    = i;
+                    }
+                }
+            }
+
+            if (best_cmd >= 0)
+            {
+                data.cmdindex   = best_cmd;
+                tokens[nt].type = TOK_COMMAND;
+                strncpy(tokens[nt].sval, data.cmd[best_cmd].key, sizeof(tokens[nt].sval) - 1);
+                tokens[nt].sval[sizeof(tokens[nt].sval) - 1] = '\0';
+                if (data.core.Debug > 0)
+                {
+                    printf("DEBUG: TOKENIZER: \"%s\" IS A COMMAND (cmd %ld)\n", tokens[nt].sval,
+                           best_cmd);
+                }
+                nt++;
+                p += max_cmd_len;
+                continue;
+            }
+            else
+            {
+                data.cmdindex = -1;
+            }
+        }
+
 
         /* operators and punctuation */
         {

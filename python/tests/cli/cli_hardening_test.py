@@ -375,3 +375,12 @@ def test_pty_syndiag_unclosed_quote():
         assert underline not in m.drain(), "underline still on after off"
 
         m.write(b"\nexit\n")
+
+
+# --- Section 10: Hyphenated CLI commands ------------------------------------
+def test_hyphenated_commands():
+    rc, out = run_milk([], stdin_text="list-streams\nlist-fps\nexit\n")
+    assert rc == 0
+    assert "milk-cli: list-streams: not found" not in out
+    assert "milk-cli: list-fps: not found" not in out
+    assert "Command not found" not in out

@@ -65,6 +65,10 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ["mem.mk2Dim _clitest_im1 32 32"],
     ["mem.listim"],
     ["mem.rm _clitest_im1"],
+    ["list-streams"],
+    ["list-fps"],
+    ["streamlist"],
+    ["fpslist"],
     # --- Section 4: Missing / wrong arguments (graceful) ---
     ["mem.mk2Dim"],
     ["mem.rm"],
