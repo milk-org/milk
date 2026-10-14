@@ -154,6 +154,8 @@ these limits:
   library feeding the shared library (and `_static` under `USE_STATIC_LTO`); `milk_add_fpsexec_stubs()`
   creates the executables. PGO/LTO are therefore per module. See `cmake/milk_runnable.cmake`.
 - Processinfo loops use `MILK_PROCINFO_INIT/LOOPSTART/END(self)`.
+- **Optional dependencies:** a file with an unmet `MILK_CMAKE_MANDATE_X` is dropped; see
+  [Managing Dependencies](../developer/dependency_system.md) for the registry rules.
 
 Working example and legacy baseline: `plugins/test-src/runnabletest` and
 `plugins/test-src/runnabletest_legacy`.

@@ -95,6 +95,23 @@ For `CMAKE_MANDATE`, it's more complicated in the case the mandated library `<X>
 - For standalone `milk-fpsexec` targets, the executable is removed from the compiled objects and
   will not exist.
 
+#### Mandates in `MILK_RUNNABLE` modules
+
+In a module built with `milk_add_runnable_module()` (see
+[Programmer's Guide](../arch/programmers_guide.md)), the same rule applies per source file, with
+no weak `CLIADDCMD` stubs:
+
+- All runnables of a dropped file disappear from the module library, and their
+  `EXPORT_FPSEXEC` executables are not built (CMake prints a `[SKIP]` line).
+- The module registry (the file with `MILK_MODULE_RUNNABLES`) declares mandated runnables with
+  `MILK_RUNNABLE_WEAK_DECL(name);` instead of including their header. The dropped entry is then
+  `NULL` and the CLI skips it silently.
+- The registry file itself cannot carry a mandate: CMake stops with an error.
+- Requests and mandates apply to the whole module (as they already do for the library), so keep
+  units with heavy optional dependencies in their own module.
+
+Example: `plugins/test-src/compilertest`.
+
 #### Headers
 
 This, however, has consequences on header files:

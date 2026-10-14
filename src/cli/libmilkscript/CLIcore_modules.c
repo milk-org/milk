@@ -199,7 +199,11 @@ errno_t newstyle_milk_module_registration(void *handle, const char *libname)
 
     for (int ri = 0; ri < info->n_runnables; ri++)
     {
-        register_runnable(info->runnables[ri]);
+        // NULL: weak runnable whose file was dropped by an unmet MILK_CMAKE_MANDATE_*
+        if (info->runnables[ri] != NULL)
+        {
+            register_runnable(info->runnables[ri]);
+        }
     }
 
     strncpy(data.modulename, "", STRINGMAXLEN_MODULE_NAME - 1);

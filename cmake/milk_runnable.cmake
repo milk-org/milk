@@ -18,8 +18,13 @@
 #       EXPORT_FPSEXEC(milk, "myunit", runnable_myunit);
 #   and, for each, generates a minimal main() in the build tree and builds the
 #   executable <prefix>-fpsexec-<id> (prefix: milk or cacao) linked to the module.
-#   The macro must be on a single line. Ids of sources excluded by a
-#   MILK_CMAKE_MANDATE_* directive are skipped.
+#   The macro must be on a single line. Ids of sources dropped by an unmet
+#   MILK_CMAKE_MANDATE_* directive get no executable (a [SKIP] line is printed).
+#
+# A source dropped by an unmet mandate also vanishes from <LIBNAME>: the module registry
+# (MILK_MODULE_RUNNABLES) must list its runnables through MILK_RUNNABLE_WEAK_DECL, and the file
+# holding the registry must not carry a mandate itself (FATAL_ERROR otherwise).
+# See docs/developer/dependency_system.md.
 #
 # Call both after milk_standalone.cmake and milk_static_lto.cmake are included.
 
@@ -69,6 +74,26 @@ function(milk_add_runnable_module LIBNAME)
   milk_apply_extensions(${_objs})
   milk_pgo_target(${_objs})
 
+  # The registry file cannot be dropped: it would leave an empty module
+  get_target_property(_srcdir ${_objs} SOURCE_DIR)
+  get_target_property(_objsrcs ${_objs} SOURCES)
+  foreach(_src IN LISTS _objsrcs)
+    if(NOT IS_ABSOLUTE "${_src}")
+      set(_src "${_srcdir}/${_src}")
+    endif()
+    if(NOT EXISTS "${_src}")
+      continue()
+    endif()
+    get_source_file_property(_hfo "${_src}" HEADER_FILE_ONLY)
+    if(_hfo)
+      file(STRINGS "${_src}" _reg REGEX "^[ \t]*MILK_MODULE(_RUNNABLES)?[ \t]*\\(")
+      if(_reg)
+        message(FATAL_ERROR "${_src} defines the module registry but is dropped by an unmet "
+                            "MILK_CMAKE_MANDATE_*; move the mandate to another file")
+      endif()
+    endif()
+  endforeach()
+
   add_library(${LIBNAME} SHARED $<TARGET_OBJECTS:${_objs}>)
   # Link requirements (including those added by milk_apply_extensions) of the objects
   get_target_property(_obj_libs ${_objs} LINK_LIBRARIES)
@@ -81,6 +106,17 @@ function(milk_add_runnable_module LIBNAME)
   milk_pgo_target(${LIBNAME})
 
   milk_add_static_lto(${LIBNAME} OBJECTS_FROM ${_objs})
+  if(USE_STATIC_LTO AND TARGET ${LIBNAME}_static)
+    # milk_apply_extensions() cannot scan an archive built from objects: forward the extension
+    # libraries (not the shared framework libs, the archive links the _static ones).
+    set(_ext_libs ${_obj_libs} ${_obj_ilibs})
+    list(REMOVE_ITEM _ext_libs ${_MILK_RUNNABLE_LIBS})
+    foreach(_l IN LISTS _ext_libs)
+      if(_l)
+        target_link_libraries(${LIBNAME}_static PUBLIC ${_l})
+      endif()
+    endforeach()
+  endif()
 
   install(TARGETS ${LIBNAME} DESTINATION lib)
 endfunction()
@@ -99,9 +135,6 @@ function(milk_add_fpsexec_stubs LIBNAME)
       continue()
     endif()
     get_source_file_property(_hfo "${_src}" HEADER_FILE_ONLY)
-    if(_hfo)
-      continue()
-    endif()
     # Re-run CMake when a source (and thus its EXPORT_FPSEXEC lines) changes
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_src}")
 
@@ -122,6 +155,11 @@ function(milk_add_fpsexec_stubs LIBNAME)
       endif()
 
       set(_exe ${_prefix}-fpsexec-${_id})
+      if(_hfo)
+        get_filename_component(_src_name "${_src}" NAME)
+        message(STATUS "[SKIP] fpsexec ${_exe}: ${_src_name} (unmet MANDATE_*)")
+        continue()
+      endif()
       if(TARGET ${_exe})
         message(FATAL_ERROR "Duplicate fpsexec target ${_exe} (${_src})")
       endif()

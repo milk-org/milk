@@ -91,7 +91,8 @@ typedef struct
 /**
  * @brief Define and export the descriptor of a module made of MILK_RUNNABLE units.
  *
- * The CLI core registers every runnable of @p runnables_array; no init function is needed.
+ * The CLI core registers every runnable of @p runnables_array, skipping NULL entries (see
+ * MILK_RUNNABLE_WEAK_DECL); no init function is needed.
  * Requires MODULE_SHORTNAME_DEFAULT and MODULE_DESCRIPTION to be defined before use.
  *
  * @param modname           Module name token (unquoted)

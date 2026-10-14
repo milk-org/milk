@@ -160,6 +160,14 @@ typedef struct MILK_RUNNABLE_
     _Static_assert(sizeof(id) > 1, "EXPORT_FPSEXEC: id must be a non-empty string"); \
     extern const MILK_RUNNABLE unit
 
+/**
+ * @brief Declare a runnable that may be missing from the module (its file dropped by an unmet
+ *        MILK_CMAKE_MANDATE_*); its address is NULL then, and the CLI core skips it.
+ *
+ * See docs/developer/dependency_system.md.
+ */
+#define MILK_RUNNABLE_WEAK_DECL(unit) extern const MILK_RUNNABLE unit __attribute__((weak))
+
 
 /** @brief Processinfo loop macros for a runnable's compute function, see INSERT_STD_PROCINFO_*. */
 #define MILK_PROCINFO_INIT(self) _MILK_PROCINFO_INIT_IMPL((self)->rt->cmddata)
