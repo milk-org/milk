@@ -12,9 +12,9 @@ trigger: always_on
 ## Creating a new fpsexec standalone executable
 
 1. **Copy the template**: Use `src/milk_module_example/examplefunc_fps_cli_poc.c`
-   as the starting point. It contains the standardized 8-section layout.
+   as the starting point. It is a `MILK_RUNNABLE` unit (see the note above).
 
-2. **Update identity** (section 1 — `FPS_APP_INFO`):
+2. **Update identity** (the `MILK_RUNNABLE` descriptor `.app`, section 7 of the template):
    - `.fps_name` — SHM name on disk (no spaces)
    - `.cmdkey` — milk CLI keyword
    - `.description` — one-line human-readable summary

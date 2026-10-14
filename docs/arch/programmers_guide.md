@@ -91,13 +91,13 @@ graph TD
 ## 3. Writing a Compute Unit
 
 When building a new compute task, `milk` enforces a standardized "V2" format. The canonical template
-is `src/milk_module_example/examplefunc_fps_cli_poc.c`.
+is `src/milk_module_example/examplefunc_fps_cli_poc.c`, a `MILK_RUNNABLE` unit.
 
 ### Step-by-Step
 
 1. **Copy the template**: Use `examplefunc_fps_cli_poc.c` as your starting point.
 
-2. **Update identity** (section 1 — `FPS_APP_INFO`):
+2. **Update identity** (the `MILK_RUNNABLE` descriptor `.app`, section 7 of the template):
    - `.fps_name` — SHM name on disk (no spaces)
    - `.cmdkey` — CLI keyword
    - `.description` — one-line summary (shown by `-h1`)

@@ -10,7 +10,8 @@
 #ifndef MILK_MODULE_EXAMPLE_FUNC1_H
 #define MILK_MODULE_EXAMPLE_FUNC1_H
 
-// This will be used to connect the milk CLI to the function.
-errno_t CLIADDCMD_milk_module_example__simplefunc();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_modex_imsum1;
 
 #endif

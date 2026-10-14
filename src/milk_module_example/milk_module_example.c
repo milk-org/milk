@@ -64,35 +64,18 @@
 #define MODULE_DESCRIPTION "Example module: template for creating new modules"
 
 
-#include "CLIcore.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#include "milk_runnable.h"
 
 //
-// Forward declarations are required to connect CLI calls to functions
-// If functions are in separate .c files, include here the corresponding .h files
+// Each header declares the runnable_modex_* units listed in the registry below
 //
-#include "examplefunc1.h"
-#include "examplefunc2_FPS.h"
-#include "examplefunc3_updatestreamloop.h"
-#include "examplefunc4_streamprocess.h"
-#include "fps_cli_poc.h"
+#include "milk_module_example.h"
 
 
-// Module initialization macro in CLIcore.h
-// macro argument defines module name for bindings
-//
-static errno_t init_module_CLI()
-{
-    CLIADDCMD_milk_module_example__simplefunc();
-    CLIADDCMD_milk_module_example__simplefunc_FPS();
-    CLIADDCMD_milk_module_example__updatestreamloop();
-    CLIADDCMD_milk_module_example__streamprocess();
-    CLIADDCMD_milk_module_example__fpscli();
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_modex_imsum1,        &runnable_modex_imsum2, &runnable_modex_streamupdate,
+    &runnable_modex_streamprocess, &runnable_modex_fpscli,
+};
 
-    // optional: add atexit functions here
-
-    return RETURN_SUCCESS;
-}
-
-
-MILK_MODULE(milk_module_example, init_module_CLI, NULL);
+MILK_MODULE_RUNNABLES(milk_module_example, NULL, runnables);

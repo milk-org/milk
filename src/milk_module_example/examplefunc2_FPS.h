@@ -10,6 +10,8 @@
 #ifndef MILK_MODULE_EXAMPLE_FUNC2_H
 #define MILK_MODULE_EXAMPLE_FUNC2_H
 
-errno_t CLIADDCMD_milk_module_example__simplefunc_FPS();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_modex_imsum2;
 
 #endif

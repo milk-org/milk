@@ -12,13 +12,9 @@
 
 #include <math.h> // for sqrt()
 
-#include "CLIcore.h"
-#include "computeunit.h"
+#include "milk_runnable.h"
+#include "examplefunc4_streamprocess.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "streamprocess",
-                                     .cmdkey      = "streamprocess",
-                                     .description = "process input stream to output stream" };
 
 // Local variables pointers
 
@@ -31,7 +27,7 @@ static uint32_t *cntindexmax;
 static int64_t *ex0mode;
 static int64_t *ex1mode;
 
-#define FPS_PARAMS(X)                                                                  \
+#define STREAMPROCESS_PARAMS(X)                                                        \
     X(".in_name", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
     X(".out_name", outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")  \
     X(".cntindex", &cntindex, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "counter index") \
@@ -41,9 +37,11 @@ static int64_t *ex1mode;
     X(".option.ex1mode", &ex1mode, FPTYPE_ONOFF, 1, FPFLAG_DEFAULT_INPUT,              \
       "toggle1 conditional on toggle0")
 
+MILK_PARAMS_DEFINE(streamprocess, STREAMPROCESS_PARAMS);
+
 
 // Optional custom configuration checks
-static MILK_COLD errno_t customCONFcheck()
+static MILK_COLD errno_t streamprocess_confcheck(void)
 {
     if (dcfpsptr != NULL)
     {
@@ -76,23 +74,6 @@ static MILK_COLD errno_t customCONFcheck()
 
     return RETURN_SUCCESS;
 }
-
-static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
-
-static const int __attribute__((unused)) nb_bindings =
-    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
-
-#ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata = {
-#else
-static CLICMDDATA CLIcmddata = {
-#endif
-    "", "", CLICMD_FIELDS_DEFAULTS
-};
-
-FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
 
 
 /**
@@ -137,7 +118,7 @@ static errno_t streamprocess(IMGID *inimg, IMGID *outimg)
 }
 
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t streamprocess_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -164,23 +145,23 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     // Allocate output image once, before the loop.
     imcreateIMGID(&outimg);
 
-    printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    printf(" COMPUTE Flags = %ld\n", self->rt->cmddata.cmdsettings->flags);
+    MILK_PROCINFO_INIT(self)
 
     // custom initialization
-    printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
-    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
+    printf(" COMPUTE Flags = %ld\n", self->rt->cmddata.cmdsettings->flags);
+    if (self->rt->cmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
     {
         // procinfo is accessible here
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         streamprocess(&inimg, &outimg);
 
         processinfo_update_output_stream(processinfo, outimg.im, inimg.im);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     imgid_free(&inimg);
     imgid_free(&outimg);
@@ -190,26 +171,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 }
 
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-// Register function in CLI
-errno_t CLIADDCMD_milk_module_example__streamprocess()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
-#endif
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2_CONFCHECK(FPS_app_info, FPS_PARAMS, compute_function, customCONFcheck)
-#endif
+const MILK_RUNNABLE runnable_modex_streamprocess = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "streamprocess",
+                 .cmdkey      = "streamprocess",
+                 .description = "process input stream to output stream" },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(streamprocess),
+    .compute   = streamprocess_compute,
+    .confcheck = streamprocess_confcheck,
+};
+EXPORT_FPSEXEC(milk, "streamprocess", runnable_modex_streamprocess);
