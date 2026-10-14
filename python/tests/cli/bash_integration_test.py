@@ -853,3 +853,121 @@ def test_adversarial_error_recovery_and_fault_isolation():
         """)
     assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
     assert "ADV_RECOVERY_OK" in res.stdout
+
+
+def test_interactive_syndiag_valid_milk_syntax(tmp_path):
+    """Verify Tree-sitter syndiag never flags valid Tier-1/Tier-2 milk syntax as syntax errors."""
+    import ctypes
+    import fcntl
+    import pty
+    import select
+    import struct
+    import termios
+    import time
+
+    # 1. Direct C API verification of cli_ts_get_diagnostic and cli_ts_is_incomplete
+    lib_path = _install_dir() / "lib" / "libCLIcore.so"
+    if lib_path.exists():
+        lib = ctypes.CDLL(str(lib_path))
+
+        class Diag(ctypes.Structure):
+            _fields_ = [
+                ("severity", ctypes.c_int),
+                ("start_byte", ctypes.c_uint32),
+                ("end_byte", ctypes.c_uint32),
+                ("message", ctypes.c_char * 128),
+                ("token", ctypes.c_char * 64),
+            ]
+
+        lib.cli_ts_init()
+        valid_lines = [
+            "mem.mk2Dim @S:im1 128 128",
+            "mem.mk2Dim @L:im1 128 128",
+            "mem.mk2Dim @STF64:im_dbl 64 64",
+            "mem.mk3Dim @STC100:cube 32 32 10",
+            "@ a = 2.5 + 3.5",
+            "@ im1[10:20, 10:20] = 500",
+            "im1[10:20, 10:20] = 500",
+            "im1 += 10",
+            "a = 2.5 + 3.5",
+            "val=@{im1[10, 10]}",
+            'echo "center=@{im1[64, 64]}"',
+            '@s.im1.kw.OBSERVER = "Subaru"',
+            "@f.testfps.gain = 0.25",
+            "im1 |> saveFITS out.fits",
+        ]
+        for line in valid_lines:
+            d = Diag()
+            lib.cli_ts_get_diagnostic(line.encode(), ctypes.byref(d))
+            assert (
+                d.severity == 0
+            ), f"False-positive diagnostic on {line!r}: sev={d.severity} msg={d.message.decode()!r}"
+            inc = lib.cli_ts_is_incomplete(line.encode())
+            assert inc == 0, f"False-positive incomplete on {line!r}"
+
+        invalid_lines = [
+            ('echo "unclosed', 1),
+            ("for i in 1 2; do echo $i", 1),
+            ("echo ) bad", 2),
+            ("val=@{im1[10, 10]", 1),
+        ]
+        for line, expected_sev in invalid_lines:
+            d = Diag()
+            lib.cli_ts_get_diagnostic(line.encode(), ctypes.byref(d))
+            assert (
+                d.severity == expected_sev
+            ), f"Expected severity {expected_sev} on {line!r}, got {d.severity} ({d.message.decode()!r})"
+
+    # 2. Interactive PTY verification: typing "mem.mk2Dim @S:im1 128 128" must not show "[syntax error"
+    env, shm_dir = _isolated_shm_env({"HOME": str(tmp_path)})
+    master_fd, slave_fd = pty.openpty()
+    winsize = struct.pack("HHHH", 24, 120, 0, 0)
+    fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, winsize)
+
+    cli_bin = MILK_CLI_EXEC or str(_install_dir() / "bin" / "milk-cli")
+    proc = subprocess.Popen(
+        [cli_bin],
+        stdin=slave_fd,
+        stdout=slave_fd,
+        stderr=slave_fd,
+        env=env,
+        close_fds=True,
+    )
+    os.close(slave_fd)
+
+    out_chunks: list[bytes] = []
+
+    def drain(duration: float = 0.25) -> None:
+        deadline = time.time() + duration
+        while time.time() < deadline:
+            r, _, _ = select.select([master_fd], [], [], 0.05)
+            if r:
+                try:
+                    data = os.read(master_fd, 4096)
+                    if data:
+                        out_chunks.append(data)
+                except OSError:
+                    break
+
+    try:
+        drain(0.6)
+        for cmd in [
+            "mem.mk2Dim @S:im1 128 128",
+            "@ im1[10:20, 10:20] = 500",
+            'echo "PIX=@{im1[15, 15]}"',
+            "exit",
+        ]:
+            os.write(master_fd, (cmd + "\n").encode())
+            drain(0.25)
+        proc.wait(timeout=5)
+    finally:
+        os.close(master_fd)
+        if proc.poll() is None:
+            proc.kill()
+        shutil.rmtree(shm_dir, ignore_errors=True)
+
+    full_out = b"".join(out_chunks).decode("utf-8", errors="replace")
+    assert (
+        "[syntax error" not in full_out
+    ), f"Unexpected syntax error in PTY output:\n{full_out}"
+    assert "PIX=500" in full_out, f"Expected PIX=500 in PTY output:\n{full_out}"

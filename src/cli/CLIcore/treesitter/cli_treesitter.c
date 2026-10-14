@@ -76,7 +76,7 @@ static int cli_determine_mode_lexical(const char *line,
         {
             return CLICOMPLETIONMODE_VARS_SEQ;
         }
-        if (start > 0 && strncmp(text, "@T", 2) == 0)
+        if (start > 0 && text[0] == '@' && strchr("SLFENT", text[1]) != NULL)
         {
             return CLICOMPLETIONMODE_IMAGES;
         }
@@ -1594,6 +1594,432 @@ static bool find_match_pair_ast(TSNode          root,
     return false;
 }
 
+/**
+ * @brief Normalize milk Tier-1 / Tier-2 syntax constructs into length-preserving
+ *        shell-compatible characters so the Tree-sitter parser AST has no false
+ *        ERROR nodes and all byte offsets remain 1-to-1 with @p line.
+ */
+static TSTree *parse_normalized_ts_tree(const char *line, size_t len)
+{
+    if (!ts_parser || !line)
+    {
+        return NULL;
+    }
+
+    char *norm = (char *) malloc(len + 1);
+    if (!norm)
+    {
+        return ts_parser_parse_string(ts_parser, NULL, line, (uint32_t) len);
+    }
+    memcpy(norm, line, len);
+    norm[len] = '\0';
+
+    int in_sq         = 0;
+    int in_dq         = 0;
+    int in_comment    = 0;
+    int at_stmt_start = 1;
+
+    for (size_t i = 0; i < len; i++)
+    {
+        char c = line[i];
+        if (in_comment)
+        {
+            if (c == '\n')
+            {
+                in_comment    = 0;
+                at_stmt_start = 1;
+            }
+            continue;
+        }
+        if (c == '\\' && !in_sq && i + 1 < len)
+        {
+            i++;
+            at_stmt_start = 0;
+            continue;
+        }
+        if (c == '\'' && !in_dq)
+        {
+            in_sq         = !in_sq;
+            at_stmt_start = 0;
+            continue;
+        }
+        if (c == '"' && !in_sq)
+        {
+            in_dq         = !in_dq;
+            at_stmt_start = 0;
+            continue;
+        }
+        if (in_sq)
+        {
+            continue;
+        }
+        if (in_dq)
+        {
+            if (c == '@' && i + 1 < len && line[i + 1] == '{')
+            {
+                size_t k     = i + 2;
+                int    depth = 1;
+                while (k < len && line[k] != '"' && depth > 0)
+                {
+                    if (line[k] == '{')
+                    {
+                        depth++;
+                    }
+                    else if (line[k] == '}')
+                    {
+                        depth--;
+                        if (depth == 0)
+                        {
+                            break;
+                        }
+                    }
+                    k++;
+                }
+                if (k < len && depth == 0)
+                {
+                    for (size_t m = i; m <= k; m++)
+                    {
+                        norm[m] = '_';
+                    }
+                    i = k;
+                }
+            }
+            continue;
+        }
+
+        if (c == ' ' || c == '\t' || c == '\r')
+        {
+            continue;
+        }
+        if (c == '|' && i + 1 < len && line[i + 1] == '>')
+        {
+            norm[i + 1] = ' ';
+            i += 1;
+            at_stmt_start = 1;
+            continue;
+        }
+        if (c == ';' || c == '\n' || c == '|' || c == '&' || c == '(' || c == '{')
+        {
+            at_stmt_start = 1;
+            continue;
+        }
+        if (c == '#' && (i == 0 || isspace((unsigned char) line[i - 1]) ||
+                         strchr(";|(&{", line[i - 1]) != NULL))
+        {
+            in_comment = 1;
+            continue;
+        }
+
+        /* 1. Statement-leading calculator expression: '@ <expr>' */
+        if (at_stmt_start && c == '@' && (i + 1 == len || isspace((unsigned char) line[i + 1])))
+        {
+            norm[i]   = ':';
+            size_t k  = i + 1;
+            int    sq = 0;
+            int    dq = 0;
+            int    pd = 0;
+            int    bd = 0;
+            while (k < len)
+            {
+                char kc = line[k];
+                if (kc == '\\' && !sq && k + 1 < len)
+                {
+                    k += 2;
+                    continue;
+                }
+                if (kc == '\'' && !dq)
+                {
+                    sq = !sq;
+                    k++;
+                    continue;
+                }
+                if (kc == '"' && !sq)
+                {
+                    dq = !dq;
+                    k++;
+                    continue;
+                }
+                if (!sq && !dq)
+                {
+                    if (kc == '(')
+                    {
+                        pd++;
+                    }
+                    else if (kc == ')' && pd > 0)
+                    {
+                        pd--;
+                    }
+                    else if (kc == '[')
+                    {
+                        bd++;
+                    }
+                    else if (kc == ']' && bd > 0)
+                    {
+                        bd--;
+                    }
+                    else if (pd == 0 && bd == 0 &&
+                             (kc == '\n' || kc == ';' ||
+                              (kc == '#' && isspace((unsigned char) line[k - 1]))))
+                    {
+                        break;
+                    }
+                    if (!isspace((unsigned char) kc))
+                    {
+                        norm[k] = '_';
+                    }
+                }
+                k++;
+            }
+            i             = k - 1;
+            at_stmt_start = 0;
+            continue;
+        }
+
+        /* 2. Inline calculator substitution: '@{<expr>}' */
+        if (c == '@' && i + 1 < len && line[i + 1] == '{')
+        {
+            size_t k     = i + 2;
+            int    depth = 1;
+            while (k < len && depth > 0)
+            {
+                if (line[k] == '{')
+                {
+                    depth++;
+                }
+                else if (line[k] == '}')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        break;
+                    }
+                }
+                k++;
+            }
+            if (k < len && depth == 0)
+            {
+                for (size_t m = i; m <= k; m++)
+                {
+                    norm[m] = '_';
+                }
+                i             = k;
+                at_stmt_start = 0;
+                continue;
+            }
+        }
+
+        /* 3. '@'-prefixed token: @S:im1, @STF64:im, @s.im.kw.K, @mem.mk2Dim, etc. */
+        if (c == '@' && (i == 0 || isspace((unsigned char) line[i - 1]) ||
+                         strchr(";|(&=", line[i - 1]) != NULL))
+        {
+            size_t k  = i;
+            int    bd = 0;
+            while (k < len)
+            {
+                char kc = line[k];
+                if (kc == '[')
+                {
+                    bd++;
+                }
+                else if (kc == ']' && bd > 0)
+                {
+                    bd--;
+                }
+                else if (bd == 0 && (isspace((unsigned char) kc) || strchr(";|&)\"'=", kc) != NULL))
+                {
+                    break;
+                }
+                k++;
+            }
+            for (size_t m = i; m < k; m++)
+            {
+                if (!isalnum((unsigned char) norm[m]))
+                {
+                    norm[m] = '_';
+                }
+            }
+            /* If statement starts with '@s.im.kw.KEY = ...', neutralize '=' and RHS math */
+            if (at_stmt_start)
+            {
+                size_t sp = k;
+                while (sp < len && (line[sp] == ' ' || line[sp] == '\t'))
+                {
+                    sp++;
+                }
+                if (sp < len && line[sp] == '=')
+                {
+                    norm[sp]  = '_';
+                    size_t r  = sp + 1;
+                    int    sq = 0;
+                    int    dq = 0;
+                    while (r < len)
+                    {
+                        char rc = line[r];
+                        if (rc == '\\' && !sq && r + 1 < len)
+                        {
+                            r += 2;
+                            continue;
+                        }
+                        if (rc == '\'' && !dq)
+                        {
+                            sq = !sq;
+                            r++;
+                            continue;
+                        }
+                        if (rc == '"' && !sq)
+                        {
+                            dq = !dq;
+                            r++;
+                            continue;
+                        }
+                        if (!sq && !dq)
+                        {
+                            if (rc == '\n' || rc == ';' ||
+                                (rc == '#' && isspace((unsigned char) line[r - 1])))
+                            {
+                                break;
+                            }
+                            if (!isspace((unsigned char) rc) && !isalnum((unsigned char) rc))
+                            {
+                                norm[r] = '_';
+                            }
+                        }
+                        r++;
+                    }
+                    k = r;
+                }
+            }
+            i             = (k > i) ? (k - 1) : i;
+            at_stmt_start = 0;
+            continue;
+        }
+
+        /* 4. Identifier with optional slice suffix im[...] or Tier-2 assignment */
+        if (isalnum((unsigned char) c) || c == '_')
+        {
+            size_t k = i;
+            while (k < len &&
+                   (isalnum((unsigned char) line[k]) || line[k] == '_' || line[k] == '.'))
+            {
+                k++;
+            }
+            size_t word_len = k - i;
+            if (at_stmt_start && ((word_len == 2 && (strncmp(line + i, "do", 2) == 0 ||
+                                                     strncmp(line + i, "if", 2) == 0)) ||
+                                  (word_len == 4 && (strncmp(line + i, "then", 4) == 0 ||
+                                                     strncmp(line + i, "else", 4) == 0 ||
+                                                     strncmp(line + i, "elif", 4) == 0))))
+            {
+                i = k - 1;
+                continue;
+            }
+            int has_lhs_slice = 0;
+            if (k < len && line[k] == '[')
+            {
+                size_t b  = k + 1;
+                int    bd = 1;
+                while (b < len && bd > 0)
+                {
+                    if (line[b] == '[')
+                    {
+                        bd++;
+                    }
+                    else if (line[b] == ']')
+                    {
+                        bd--;
+                        if (bd == 0)
+                        {
+                            break;
+                        }
+                    }
+                    b++;
+                }
+                if (b < len && bd == 0)
+                {
+                    for (size_t m = k; m <= b; m++)
+                    {
+                        norm[m] = '_';
+                    }
+                    k             = b + 1;
+                    has_lhs_slice = 1;
+                }
+            }
+            if (at_stmt_start)
+            {
+                size_t sp = k;
+                while (sp < len && (line[sp] == ' ' || line[sp] == '\t'))
+                {
+                    sp++;
+                }
+                int is_compound_op =
+                    (sp + 1 < len && line[sp + 1] == '=' && strchr("+-*/", line[sp]) != NULL);
+                int is_eq_op =
+                    (sp < len && line[sp] == '=' && (sp + 1 >= len || line[sp + 1] != '='));
+                int is_tier2_assign =
+                    is_compound_op || (is_eq_op && (has_lhs_slice || sp > k ||
+                                                    (sp + 1 < len && line[sp + 1] == '(')));
+                if (is_tier2_assign)
+                {
+                    size_t r  = sp;
+                    int    sq = 0;
+                    int    dq = 0;
+                    while (r < len)
+                    {
+                        char rc = line[r];
+                        if (rc == '\\' && !sq && r + 1 < len)
+                        {
+                            r += 2;
+                            continue;
+                        }
+                        if (rc == '\'' && !dq)
+                        {
+                            sq = !sq;
+                            r++;
+                            continue;
+                        }
+                        if (rc == '"' && !sq)
+                        {
+                            dq = !dq;
+                            r++;
+                            continue;
+                        }
+                        if (!sq && !dq)
+                        {
+                            if (rc == '\n' || rc == ';' ||
+                                (rc == '#' && isspace((unsigned char) line[r - 1])))
+                            {
+                                break;
+                            }
+                            if (!isspace((unsigned char) rc) && !isalnum((unsigned char) rc))
+                            {
+                                norm[r] = '_';
+                            }
+                        }
+                        r++;
+                    }
+                    k = r;
+                }
+                else if (is_eq_op && sp == k)
+                {
+                    /* Standard shell assignment VAR=val: advance past '=' and scan RHS */
+                    i             = k;
+                    at_stmt_start = 0;
+                    continue;
+                }
+            }
+            i             = (k > i) ? (k - 1) : i;
+            at_stmt_start = 0;
+            continue;
+        }
+
+        at_stmt_start = 0;
+    }
+
+    TSTree *tree = ts_parser_parse_string(ts_parser, NULL, norm, (uint32_t) len);
+    free(norm);
+    return tree;
+}
+
 void cli_ts_highlight_line(const char *line, int len, int cursor_pos, FILE *out)
 {
     if (!ts_parser || !ts_query || !line || len == 0)
@@ -1602,7 +2028,7 @@ void cli_ts_highlight_line(const char *line, int len, int cursor_pos, FILE *out)
         return;
     }
 
-    TSTree *tree = ts_parser_parse_string(ts_parser, NULL, line, len);
+    TSTree *tree = parse_normalized_ts_tree(line, (size_t) len);
     if (!tree)
     {
         fprintf(out, "%s", line);
@@ -1649,10 +2075,13 @@ void cli_ts_highlight_line(const char *line, int len, int cursor_pos, FILE *out)
 
     ts_query_cursor_delete(cursor);
 
-    /* Add lexical highlight spans for @<cmd>, @T<type>:, and @s./@f./@p./@q. */
+    /* Add lexical highlight spans for @<cmd>, @<mod>:, @{...}, @ <expr>, and @s./@f./@p./@q. */
     {
-        int in_sq = 0;
-        int in_dq = 0;
+        int         in_sq     = 0;
+        int         in_dq     = 0;
+        const char *mod_color = (color_level >= 2) ? "\033[38;5;214m" : "\033[33m";
+        const char *cmd_color = (color_level >= 2) ? "\033[1;38;5;39m" : "\033[1;36m";
+
         for (int i = 0; i < len && num_spans < 1024; i++)
         {
             if (line[i] == '\\' && !in_sq && i + 1 < len)
@@ -1671,36 +2100,91 @@ void cli_ts_highlight_line(const char *line, int len, int cursor_pos, FILE *out)
                 continue;
             }
             if (!in_sq && line[i] == '@' &&
-                (i == 0 || isspace((unsigned char) line[i - 1]) || line[i - 1] == ';' ||
-                 line[i - 1] == '(' || line[i - 1] == '|' || line[i - 1] == '&'))
+                (i == 0 || isspace((unsigned char) line[i - 1]) ||
+                 strchr(";|(&=", line[i - 1]) != NULL))
             {
-                int j = i + 1;
-                while (j < len && !isspace((unsigned char) line[j]) && line[j] != ';' &&
-                       line[j] != ')' && line[j] != '"' && line[j] != '\'')
+                /* Standalone '@ <expr>' calculator sigil */
+                if (!in_dq && (i + 1 == len || isspace((unsigned char) line[i + 1])))
                 {
-                    if (line[i + 1] == 'T' && line[j] == ':')
+                    spans[num_spans].start_byte = (uint32_t) i;
+                    spans[num_spans].end_byte   = (uint32_t) (i + 1);
+                    spans[num_spans].color      = cmd_color;
+                    spans[num_spans].priority   = 1;
+                    num_spans++;
+                    continue;
+                }
+                /* Inline '@{<expr>}' substitution */
+                if (i + 1 < len && line[i + 1] == '{')
+                {
+                    spans[num_spans].start_byte = (uint32_t) i;
+                    spans[num_spans].end_byte   = (uint32_t) (i + 2);
+                    spans[num_spans].color      = cmd_color;
+                    spans[num_spans].priority   = 1;
+                    num_spans++;
+                    int k     = i + 2;
+                    int depth = 1;
+                    while (k < len && depth > 0)
                     {
-                        j++;
-                        break;
+                        if (line[k] == '{')
+                        {
+                            depth++;
+                        }
+                        else if (line[k] == '}')
+                        {
+                            depth--;
+                            if (depth == 0)
+                            {
+                                break;
+                            }
+                        }
+                        k++;
+                    }
+                    if (k < len && depth == 0 && num_spans < 1024)
+                    {
+                        spans[num_spans].start_byte = (uint32_t) k;
+                        spans[num_spans].end_byte   = (uint32_t) (k + 1);
+                        spans[num_spans].color      = cmd_color;
+                        spans[num_spans].priority   = 1;
+                        num_spans++;
+                    }
+                    continue;
+                }
+                int j         = i + 1;
+                int colon_end = -1;
+                while (j < len && !isspace((unsigned char) line[j]) &&
+                       strchr(";|&)\"'=[", line[j]) == NULL)
+                {
+                    if (line[j] == ':')
+                    {
+                        colon_end = j + 1;
                     }
                     j++;
                 }
-                if (j > i + 1)
+                if (colon_end > i + 1)
                 {
-                    int is_ent_or_mod = (line[i + 1] == 'T' && line[j - 1] == ':') ||
-                                        (j > i + 2 && (strncmp(line + i + 1, "s.", 2) == 0 ||
-                                                       strncmp(line + i + 1, "f.", 2) == 0 ||
-                                                       strncmp(line + i + 1, "p.", 2) == 0 ||
-                                                       strncmp(line + i + 1, "q.", 2) == 0 ||
-                                                       strncmp(line + i + 1, "fps.", 4) == 0 ||
-                                                       strncmp(line + i + 1, "proc.", 5) == 0 ||
-                                                       strncmp(line + i + 1, "seq.", 4) == 0));
+                    /* Stream modifier prefix (@S:, @L:, @F:, @STU16:, @TF32:, etc.) */
+                    spans[num_spans].start_byte = (uint32_t) i;
+                    spans[num_spans].end_byte   = (uint32_t) colon_end;
+                    spans[num_spans].color      = mod_color;
+                    spans[num_spans].priority   = 1;
+                    num_spans++;
+                    i = colon_end - 1;
+                }
+                else if (j > i + 1)
+                {
+                    int is_ent = (j > i + 2 && (strncmp(line + i + 1, "s.", 2) == 0 ||
+                                                strncmp(line + i + 1, "f.", 2) == 0 ||
+                                                strncmp(line + i + 1, "p.", 2) == 0 ||
+                                                strncmp(line + i + 1, "q.", 2) == 0 ||
+                                                strncmp(line + i + 1, "stream.", 7) == 0 ||
+                                                strncmp(line + i + 1, "fps.", 4) == 0 ||
+                                                strncmp(line + i + 1, "proc.", 5) == 0 ||
+                                                strncmp(line + i + 1, "procinfo.", 9) == 0 ||
+                                                strncmp(line + i + 1, "seq.", 4) == 0));
                     spans[num_spans].start_byte = (uint32_t) i;
                     spans[num_spans].end_byte   = (uint32_t) j;
-                    spans[num_spans].color =
-                        is_ent_or_mod ? ((color_level >= 2) ? "\033[38;5;214m" : "\033[33m")
-                                      : ((color_level >= 2) ? "\033[1;38;5;39m" : "\033[1;36m");
-                    spans[num_spans].priority = 1;
+                    spans[num_spans].color      = is_ent ? mod_color : cmd_color;
+                    spans[num_spans].priority   = 1;
                     num_spans++;
                     i = j - 1;
                 }
@@ -1843,7 +2327,7 @@ bool cli_ts_find_match_pair(const char *line, int cursor_pos, CLI_MATCH_PAIR *pa
 
     if (ts_parser != NULL)
     {
-        TSTree *tree = ts_parser_parse_string(ts_parser, NULL, line, len);
+        TSTree *tree = parse_normalized_ts_tree(line, (size_t) len);
         if (tree != NULL)
         {
             TSNode root = ts_tree_root_node(tree);
@@ -2566,6 +3050,55 @@ int cli_ts_get_diagnostic(const char *line, CLI_SYNTAX_DIAG *diag)
         return 1;
     }
 
+    /* Check for unclosed '@{' inline calculator expression outside single quotes */
+    {
+        int sq       = 0;
+        int at_start = -1;
+        int at_depth = 0;
+        for (int i = 0; line[i] != '\0'; i++)
+        {
+            if (line[i] == '\\' && line[i + 1] != '\0' && !sq)
+            {
+                i++;
+                continue;
+            }
+            if (line[i] == '\'')
+            {
+                sq = !sq;
+                continue;
+            }
+            if (!sq)
+            {
+                if (at_depth == 0 && line[i] == '@' && line[i + 1] == '{')
+                {
+                    at_start = i;
+                    at_depth = 1;
+                    i++;
+                }
+                else if (at_depth > 0)
+                {
+                    if (line[i] == '{')
+                    {
+                        at_depth++;
+                    }
+                    else if (line[i] == '}')
+                    {
+                        at_depth--;
+                    }
+                }
+            }
+        }
+        if (at_depth > 0 && at_start >= 0)
+        {
+            diag->severity   = CLI_DIAG_SEVERITY_INFO;
+            diag->start_byte = (uint32_t) at_start;
+            diag->end_byte   = (uint32_t) strlen(line);
+            snprintf(diag->message, sizeof(diag->message), "unclosed '@{': missing '}'");
+            snprintf(diag->token, sizeof(diag->token), "@{");
+            return 1;
+        }
+    }
+
     /* 2. Trailing continuation operators */
     size_t len = strlen(line);
     while (len > 0 && isspace((unsigned char) line[len - 1]))
@@ -2636,7 +3169,7 @@ int cli_ts_get_diagnostic(const char *line, CLI_SYNTAX_DIAG *diag)
     }
 
     /* 3. Tree-sitter AST error detection */
-    TSTree *tree = ts_parser_parse_string(ts_parser, NULL, line, (uint32_t) strlen(line));
+    TSTree *tree = parse_normalized_ts_tree(line, strlen(line));
     if (!tree)
     {
         return 0;
@@ -2896,7 +3429,7 @@ char *cli_ts_format_code(const char *code, int indent_width)
     bool used_ast = false;
     if (ts_parser != NULL || cli_ts_init() == 0)
     {
-        TSTree *tree = ts_parser_parse_string(ts_parser, NULL, code, (uint32_t) strlen(code));
+        TSTree *tree = parse_normalized_ts_tree(code, strlen(code));
         if (tree)
         {
             compute_ast_line_depths(ts_tree_root_node(tree), line_depth, num_lines,
@@ -3103,7 +3636,7 @@ int cli_ts_print_block_folds(const char *code, const char *label, FILE *out)
         }
     }
 
-    TSTree *tree = ts_parser_parse_string(ts_parser, NULL, code, (uint32_t) strlen(code));
+    TSTree *tree = parse_normalized_ts_tree(code, strlen(code));
     if (!tree)
     {
         return 0;
@@ -3299,7 +3832,7 @@ int cli_ts_is_incomplete(const char *buffer)
         }
     }
 
-    TSTree *tree = ts_parser_parse_string(ts_parser, NULL, buffer, (uint32_t) strlen(buffer));
+    TSTree *tree = parse_normalized_ts_tree(buffer, strlen(buffer));
     if (!tree)
     {
         return 0;
@@ -3369,7 +3902,7 @@ int cli_ts_determine_completion_mode(const char *line,
         {
             return CLICOMPLETIONMODE_VARS_SEQ;
         }
-        if (start > 0 && strncmp(text, "@T", 2) == 0)
+        if (start > 0 && text[0] == '@' && strchr("SLFENT", text[1]) != NULL)
         {
             return CLICOMPLETIONMODE_IMAGES;
         }
@@ -3467,7 +4000,7 @@ int cli_ts_determine_completion_mode(const char *line,
     /* 3. Tree-sitter AST analysis */
     if (ts_parser != NULL)
     {
-        TSTree *tree = ts_parser_parse_string(ts_parser, NULL, line, (uint32_t) strlen(line));
+        TSTree *tree = parse_normalized_ts_tree(line, strlen(line));
         if (tree != NULL)
         {
             TSNode   root = ts_tree_root_node(tree);

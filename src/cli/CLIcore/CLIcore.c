@@ -1135,7 +1135,21 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                         if (milk_is_bash_engine_enabled())
                         {
                             int exit_req = 0;
-                            int rc       = milk_bash_engine_exec(data.CLIcmdline, &exit_req);
+                            int rc       = 0;
+                            cli_fault_isolation_arm();
+                            if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
+                            {
+                                rc = milk_bash_engine_exec(data.CLIcmdline, &exit_req);
+                            }
+                            else
+                            {
+                                dcsigINT  = 0;
+                                dcsigSEGV = 0;
+                                dcsigBUS  = 0;
+                                dcsigABRT = 0;
+                                milk_bash_engine_abort();
+                            }
+                            cli_fault_isolation_disarm();
                             if (exit_req || (dcerrorexit && rc != 0))
                             {
                                 data.CLIloopON = 0;

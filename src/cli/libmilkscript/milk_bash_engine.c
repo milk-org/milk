@@ -1590,18 +1590,28 @@ int milk_bash_engine_init(void)
 
         const char *loop_script =
             "shopt -s expand_aliases\n"
+            "trap ':' INT\n"
             "if [[ -n \"${MILK_INSTALLDIR:-}\" && -f \"${MILK_INSTALLDIR}/bin/milk.bash\" ]]; "
             "then\n"
             "    builtin source \"${MILK_INSTALLDIR}/bin/milk.bash\"\n"
             "fi\n"
             "unalias() { builtin unalias \"$@\" 2>/dev/null || true; }\n"
+            "__MILK_SOURCE_DEPTH=0\n"
             "source() {\n"
             "    if [[ $# -eq 0 ]]; then echo \"Usage: source <filename>\" >&2; return 1; fi\n"
             "    if [[ ! -f \"$1\" ]]; then echo \"Error: source: file not found: $1\" >&2; return "
             "1; fi\n"
+            "    if (( __MILK_SOURCE_DEPTH >= 32 )); then\n"
+            "        echo \"Error: maximum source recursion depth (32) exceeded\" >&2\n"
+            "        return 1\n"
+            "    fi\n"
             "    local __milk_f=\"$1\"; shift\n"
+            "    (( __MILK_SOURCE_DEPTH++ ))\n"
             "    builtin source <(\"${MILK_INSTALLDIR}/bin/milk-call\" translate --legacy "
             "\"${__milk_f}\") \"$@\"\n"
+            "    local __rc=$?\n"
+            "    (( __MILK_SOURCE_DEPTH-- ))\n"
+            "    return $__rc\n"
             "}\n"
             "declare -gA __MILK_INC_ONCE=()\n"
             "include_once() {\n"
@@ -1934,5 +1944,88 @@ void milk_bash_engine_shutdown(void)
     {
         close(g_listen_fd);
         g_listen_fd = -1;
+    }
+}
+
+void milk_bash_engine_abort(void)
+{
+    if (g_bash_pid <= 0)
+    {
+        return;
+    }
+
+    kill(-g_bash_pid, SIGINT);
+
+    /* Wait up to 150ms for the bash co-process to catch SIGINT and emit its NUL status packet */
+    int synced = 0;
+    if (g_status_pipe_r >= 0)
+    {
+        int shutdown_flag = 0;
+        for (int iter = 0; iter < 15; iter++)
+        {
+            struct pollfd pfds[2];
+            pfds[0].fd      = g_listen_fd;
+            pfds[0].events  = (g_listen_fd >= 0) ? POLLIN : 0;
+            pfds[0].revents = 0;
+            pfds[1].fd      = g_status_pipe_r;
+            pfds[1].events  = POLLIN | POLLHUP | POLLERR;
+            pfds[1].revents = 0;
+
+            int pr = poll(pfds, 2, 10);
+            if (pr <= 0)
+            {
+                continue;
+            }
+            if (pfds[0].revents & POLLIN)
+            {
+                milk_server_accept_and_handle(g_listen_fd, &shutdown_flag);
+            }
+            if (pfds[1].revents & (POLLIN | POLLHUP | POLLERR))
+            {
+                char    drain[512];
+                ssize_t r = read(g_status_pipe_r, drain, sizeof(drain));
+                if (r > 0)
+                {
+                    for (ssize_t k = 0; k < r; k++)
+                    {
+                        if (drain[k] == '\0')
+                        {
+                            synced = 1;
+                            break;
+                        }
+                    }
+                    if (synced)
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!synced)
+    {
+        kill(-g_bash_pid, SIGKILL);
+        waitpid(g_bash_pid, NULL, 0);
+        g_bash_pid = -1;
+        if (g_cmd_pipe_w >= 0)
+        {
+            close(g_cmd_pipe_w);
+            g_cmd_pipe_w = -1;
+        }
+        if (g_status_pipe_r >= 0)
+        {
+            close(g_status_pipe_r);
+            g_status_pipe_r = -1;
+        }
+        if (g_listen_fd >= 0)
+        {
+            close(g_listen_fd);
+            g_listen_fd = -1;
+        }
     }
 }

@@ -68,4 +68,10 @@ int milk_bash_engine_exec_file(const char *filename, int *out_exit_req);
  */
 void milk_bash_engine_shutdown(void);
 
+/**
+ * @brief Abort an in-flight bash co-process command after a signal interrupt
+ *        or fault-isolation siglongjmp.
+ */
+void milk_bash_engine_abort(void);
+
 #endif /* MILK_BASH_ENGINE_H */
