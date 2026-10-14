@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "CLIcore.h"
-#include "fps.h"
+#include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 // MILK_CMAKE_REQUEST_CUDA

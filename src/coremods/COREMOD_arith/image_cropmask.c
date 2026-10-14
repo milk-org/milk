@@ -13,7 +13,7 @@
 #else
 #    include "CLIcore.h"
 #endif
-#include "fps.h"
+#include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 static FPS_APP_INFO FPS_app_info = {

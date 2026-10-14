@@ -31,7 +31,7 @@
 #else
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
-#    include "fps.h"
+#    include "computeunit.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "timeutils.h"
@@ -147,7 +147,7 @@ static FPS_APP_INFO FPS_app_info_pi                     = {
     X(".svdeps", &pi_eps, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD eps")  \
     X(".nbmodes", &pi_nm, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "max modes")  \
     X(".vtmat", pi_vt, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "VT matrix")
-#include "fps.h"
+#include "computeunit.h"
 static FPS_CLI_BINDING                   pi_b[]     = { FPS_PARAMS_PI(FPS_X_BINDING) };
 static const int                         pi_nb      = sizeof(pi_b) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF                      farg[]     = { FPS_PARAMS_PI(FPS_X_FARG) };

@@ -17,7 +17,7 @@
 #else
 #    include "CLIcore.h"
 #endif
-#include "fps.h"
+#include "computeunit.h"
 
 #include "timeutils.h"
 #include "milk_rt.h"

@@ -19,7 +19,7 @@
 #    include "CLIcore.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "fps.h"
+#include "computeunit.h"
 #include "milk_rt.h"
 
 /* ================================================================

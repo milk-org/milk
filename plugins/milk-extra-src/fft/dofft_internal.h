@@ -30,13 +30,13 @@
 #else
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
-#    include "fps.h"
+#    include "computeunit.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "wisdom.h"
-#include "fps.h"
+#include "computeunit.h"
 #include "processinfo.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 

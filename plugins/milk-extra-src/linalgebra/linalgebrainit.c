@@ -26,7 +26,7 @@
 #else
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
-#    include "fps.h"
+#    include "computeunit.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -53,7 +53,7 @@ static FPS_APP_INFO FPS_app_info_li = {
                         "and GPU context if available."
 };
 #    define FPS_PARAMS_LI(X)
-#    include "fps.h"
+#    include "computeunit.h"
 static FPS_CLI_BINDING                   li_b[]     = { { 0 } };
 static const int                         li_nb      = 0;
 static CLICMDARGDEF                      farg[]     = { { 0 } };

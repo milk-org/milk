@@ -25,7 +25,7 @@
 #else
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
-#    include "fps.h"
+#    include "computeunit.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -58,7 +58,7 @@ static FPS_APP_INFO FPS_app_info_lt = {
     X(".nbmodes", &lt_nmod, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB modes") \
     X(".wfssize", &lt_wsz, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB pixels") \
     X(".gpucnt", &lt_gpu, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB GPU")
-#include "fps.h"
+#include "computeunit.h"
 static FPS_CLI_BINDING                   lt_b[]     = { FPS_PARAMS_LT(FPS_X_BINDING) };
 static const int                         lt_nb      = sizeof(lt_b) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF                      farg[]     = { FPS_PARAMS_LT(FPS_X_FARG) };

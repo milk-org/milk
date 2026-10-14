@@ -28,7 +28,7 @@
 #    include "milkDebugTools.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
-#include "fps.h"
+#include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "milk_rt.h"
 #include "timeutils.h"

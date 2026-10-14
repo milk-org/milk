@@ -12,7 +12,7 @@
 #    include "COREMOD_memory/COREMOD_memory.h"
 #else
 #    include "libmilkdata/milkdata.h"
-#    include <fps.h>
+#    include <computeunit.h>
 #endif
 
 /* ID number corresponding to a name */

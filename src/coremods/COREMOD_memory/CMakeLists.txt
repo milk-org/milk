@@ -38,7 +38,7 @@ target_include_directories(
 target_link_libraries(
   ${LIBNAME}
   PUBLIC
-    m ${CFITSIO_LIBRARIES} milkfps
+    m ${CFITSIO_LIBRARIES} milkfps milkcomputeunit
     $<$<AND:$<BOOL:${USE_CFITSIO}>,$<BOOL:${CFITSIO_FOUND}>>:milkCOREMODiofits>)
 
 set(SCRIPTS

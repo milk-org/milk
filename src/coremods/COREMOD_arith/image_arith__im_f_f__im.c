@@ -18,7 +18,7 @@
 #else
 #    include "CLIcore.h"
 #endif
-#include "fps.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 

@@ -17,7 +17,7 @@
 
 #include "CLIcore.h"
 #include "savefits.h"
-#include "fps.h"
+#include "computeunit.h"
 #include "processinfo.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "COREMOD_iofits_common.h"

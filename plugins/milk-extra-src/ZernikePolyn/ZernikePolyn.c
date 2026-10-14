@@ -86,7 +86,7 @@ static FPS_APP_INFO FPS_app_info_mkz = {
     X(".zerindex", &mkz_index, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "Zernike index") \
     X(".rpix", &mkz_rpix, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "radius in pixels")
 
-#include "fps.h"
+#include "computeunit.h"
 
 static FPS_CLI_BINDING mkz_bindings[]  = { FPS_PARAMS_MKZ(FPS_X_BINDING) };
 static const int       mkz_nb_bindings = sizeof(mkz_bindings) / sizeof(FPS_CLI_BINDING);

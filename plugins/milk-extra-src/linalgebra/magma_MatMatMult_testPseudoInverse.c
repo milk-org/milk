@@ -28,7 +28,7 @@ extern magma_queue_t magmaqueue;
 #else
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
-#    include "fps.h"
+#    include "computeunit.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -61,7 +61,7 @@ static FPS_APP_INFO FPS_app_info_tp                     = {
     X(".matA", tp_a, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "matA")        \
     X(".matAinv", tp_ai, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "matAinv") \
     X(".out_name", tp_o, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output")
-#include "fps.h"
+#include "computeunit.h"
 static FPS_CLI_BINDING                   tp_b[]     = { FPS_PARAMS_TP(FPS_X_BINDING) };
 static const int                         tp_nb      = sizeof(tp_b) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF                      farg[]     = { FPS_PARAMS_TP(FPS_X_FARG) };

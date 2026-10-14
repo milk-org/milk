@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 #include "CLIcore.h"
-#include "fps.h"
+#include "computeunit.h"
 #include "loadfits.h"
 
 #include "COREMOD_iofits_common.h"

@@ -68,7 +68,7 @@ static FPS_APP_INFO FPS_app_info_bpf = {
     X(".bp_name", bpf_bp, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "bad pixel map") \
     X(".out_name", bpf_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")
 
-#include "fps.h"
+#include "computeunit.h"
 
 static FPS_CLI_BINDING bpf_bindings[] = { FPS_PARAMS_BPF(FPS_X_BINDING) };
 static const int       bpf_nb         = sizeof(bpf_bindings) / sizeof(FPS_CLI_BINDING);

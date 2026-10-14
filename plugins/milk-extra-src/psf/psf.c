@@ -45,7 +45,7 @@ static FPS_APP_INFO FPS_app_info_psm = {
     X(".psfsize", &psm_size, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "estimated PSF size") \
     X(".out_name", psm_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output file")
 
-#include "fps.h"
+#include "computeunit.h"
 
 static FPS_CLI_BINDING psm_bindings[]  = { FPS_PARAMS_PSM(FPS_X_BINDING) };
 static const int       psm_nb_bindings = sizeof(psm_bindings) / sizeof(FPS_CLI_BINDING);

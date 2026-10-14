@@ -20,7 +20,7 @@
 #    include "CLIcore.h"
 #endif
 #include "imrotate.h"
-#include "fps.h"
+#include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 

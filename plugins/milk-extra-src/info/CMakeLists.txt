@@ -51,7 +51,7 @@ target_sources(milk-fpsexec-info-strmonproc PRIVATE stream_monproc_shm.c)
 if(USE_CLI)
   add_executable(stream-monproc-disp bin/stream-monproc-disp.c
                                      stream_monproc_shm.c)
-  target_link_libraries(stream-monproc-disp milkdata milkfps ImageStreamIO m)
+  target_link_libraries(stream-monproc-disp milkdata milkfps milkcomputeunit ImageStreamIO m)
   target_compile_definitions(stream-monproc-disp PRIVATE MILK_NO_CLI)
   target_include_directories(
     stream-monproc-disp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}

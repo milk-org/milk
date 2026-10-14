@@ -94,7 +94,7 @@ static FPS_APP_INFO FPS_app_info_phn = {
         X(".in_name", phn_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
         X(".out_name", phn_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")
 
-#    include "fps.h"
+#    include "computeunit.h"
 
 static FPS_CLI_BINDING phn_bindings[]  = { FPS_PARAMS_PHN(FPS_X_BINDING) };
 static const int       phn_nb_bindings = sizeof(phn_bindings) / sizeof(FPS_CLI_BINDING);

@@ -8,7 +8,7 @@
  */
 
 #include "CLIcore.h"
-#include "fps.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 

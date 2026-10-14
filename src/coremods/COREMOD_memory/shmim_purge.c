@@ -15,7 +15,7 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
-#include "fps.h"
+#include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #ifndef MILK_NO_CLI

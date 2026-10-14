@@ -34,7 +34,7 @@ target_include_directories(
   ${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
                     $<INSTALL_INTERFACE:include>)
 target_link_libraries(
-  ${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps
+  ${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps milkcomputeunit
                     $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits>)
 
 milk_add_static_lto(${LIBNAME} CFITSIO_LINK_LIBS milkCOREMODiofits_static)

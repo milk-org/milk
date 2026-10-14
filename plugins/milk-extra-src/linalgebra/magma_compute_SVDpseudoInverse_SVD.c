@@ -30,7 +30,7 @@
 #    else
 #        include "libmilkdata/milkdata.h"
 #        include "milkDebugTools.h"
-#        include "fps.h"
+#        include "computeunit.h"
 #        include "ImageStreamIO/ImageStreamIO.h"
 #    endif
 #    include "COREMOD_memory/COREMOD_memory.h"
@@ -73,7 +73,7 @@ static FPS_APP_INFO FPS_app_info_ps = { .fps_name    = "linalgebrapsinvSVD",
         X(".svdeps", &ps_eps, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD eps")  \
         X(".nbmodes", &ps_nm, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "max modes")  \
         X(".vtmat", ps_vt, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "VT matrix")
-#    include "fps.h"
+#    include "computeunit.h"
 static FPS_CLI_BINDING                   ps_b[]     = { FPS_PARAMS_PS(FPS_X_BINDING) };
 static const int                         ps_nb      = sizeof(ps_b) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF                      farg[]     = { FPS_PARAMS_PS(FPS_X_FARG) };

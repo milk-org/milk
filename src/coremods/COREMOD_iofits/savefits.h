@@ -13,7 +13,7 @@
 #ifndef COREMOD_IOFITS_SAVEFITS_H
 #define COREMOD_IOFITS_SAVEFITS_H
 
-#include "fps.h"
+#include "computeunit.h"
 #include "processinfo.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
