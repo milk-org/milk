@@ -18,7 +18,8 @@
 
 #include "cubecluster.h"
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
+#include "clustering.h"
 #include "clustering_defs.h"
 #include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -49,14 +50,6 @@
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "cubeclust",
-    .cmdkey           = "cubeclust",
-    .description      = "compute cube cluster",
-    .description_long = "Cluster image cube slices by similarity using k-means or hierarchical "
-                        "clustering. Groups similar frames together."
-};
 
 
 /* ================================================================
@@ -415,14 +408,14 @@ static errno_t imcube_makecluster_core(IMAGE *im, const char *__restrict outdnam
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(cubecluster, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t cubecluster_compute(__attribute__((unused)) const MILK_RUNNABLE *self)
 {
     IMGID img = imgid_make_from_name(farg_inimname);
     if (resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg) != 0)
@@ -438,26 +431,21 @@ static MILK_HOT errno_t compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_clustering__imcube_mkcluster()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
 
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_clustering_cubecluster = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "cubeclust",
+                 .cmdkey      = "cubeclust",
+                 .description = "compute cube cluster",
+                 .description_long =
+                     "Cluster image cube slices by similarity using k-means or hierarchical "
+                     "clustering. Groups similar frames together." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(cubecluster),
+    .compute = cubecluster_compute,
+};
+EXPORT_FPSEXEC(milk, "clustering-cubeclust", runnable_clustering_cubecluster);

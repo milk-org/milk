@@ -2,19 +2,14 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
+#include "fpstest.h"
 #include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include <assert.h>
 
 // 1.  FPS COMPONENT IDENTITY
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "fpssynctest",
-    .cmdkey           = "fpssynctest",
-    .description      = "Test parameter synchronization post-run",
-    .description_long = "Test CU -- check modification of parameters at run time"
-};
 
 // 2.  LOCAL PARAMETER VARIABLES
 static int32_t  p_int32   = 123;
@@ -71,40 +66,36 @@ static char p_string_not_stream[FUNCTION_PARAMETER_STRMAXLEN] = "not_a_stream";
 // 4.  COMPUTATION LOGIC
 
 // 5.  BINDINGS, FARG, AND CLI DATA
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(fps_sync_test, FPS_PARAMS);
 
 // 6.  COMPUTE WRAPPER
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t fps_sync_test_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
     {
         // Do nothing.
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 // 7.  MILK MODULE REGISTRATION
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t FPSTEST_CLIADDCMD_FPSSYNCTEST()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
 
 // 8.  STANDALONE ENTRY POINT
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+
+const MILK_RUNNABLE runnable_fpstest_fps_sync_test = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "fpssynctest",
+                 .cmdkey           = "fpssynctest",
+                 .description      = "Test parameter synchronization post-run",
+                 .description_long = "Test CU -- check modification of parameters at run time" },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(fps_sync_test),
+    .compute = fps_sync_test_compute,
+};
+EXPORT_FPSEXEC(milk, "fpstest-fpssynctest", runnable_fpstest_fps_sync_test);

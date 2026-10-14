@@ -34,11 +34,7 @@
 #    include <fitsio.h> /* required by every program that uses CFITSIO  */
 #endif
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #ifdef USE_CFITSIO
@@ -48,23 +44,16 @@
 
 #include "statistic/statistic.h"
 
-#ifndef MILK_NO_CLI
-#    include "image_gen/image_gen.h"
+#include "image_gen/image_gen.h"
 
-#    include "mkdisk.h"
-#    include "mkpolygon.h"
-#    include "mkrandomim.h"
-#    include "mkspdisk.h"
-#    include "voronoi.h"
+#define OMP_NELEMENT_LIMIT 1000000
 
-#    define OMP_NELEMENT_LIMIT 1000000
+#define SWAP(x, y) \
+    tmp = (x);     \
+    x   = (y);     \
+    y   = tmp;
 
-#    define SWAP(x, y) \
-        tmp = (x);     \
-        x   = (y);     \
-        y   = tmp;
-
-#    define PI 3.14159265358979323846264338328
+#define PI 3.14159265358979323846264338328
 
 /* ================================================================== */
 /* ================================================================== */
@@ -72,53 +61,26 @@
 /* ================================================================== */
 /* ================================================================== */
 
-// Module initialization macro in CLIcore.h
-// macro argument defines module name for bindings
-//
-/* ==================================================================
- * CLI Command Registrations
- * ================================================================== */
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_image_gen_imgen_segs2wfmodes,
+    &runnable_image_gen_imgen_mkrect,
+    &runnable_image_gen_imgen_mkgridpix,
+    &runnable_image_gen_imgen_mkline,
+    &runnable_image_gen_imgen_mkdist,
+    &runnable_image_gen_imgen_mkrndim,
+    &runnable_image_gen_imgen_mkhexsegpup,
+    &runnable_image_gen_imgen_mkrndgim,
+    &runnable_image_gen_imgen_mkslopexy,
+    &runnable_image_gen_imgen_mklincoord,
+    &runnable_image_gen_imgen_im2coord,
+    &runnable_image_gen_imgen_mkfiberclpoverlap,
+    &runnable_image_gen_imgen_mkgauss,
+    &runnable_image_gen_mkdisk,
+    &runnable_image_gen_mkpolygon,
+    &runnable_image_gen_mkspdisk,
+    &runnable_image_gen_voronoi,
+    &runnable_image_gen_mkrandomim,
+};
 
-// Wut?
-extern errno_t CLIADDCMD_image_gen__segs2wfmodes(void);
-extern errno_t CLIADDCMD_image_gen__mkrect(void);
-extern errno_t CLIADDCMD_image_gen__mkgridpix(void);
-extern errno_t CLIADDCMD_image_gen__mkline(void);
-extern errno_t CLIADDCMD_image_gen__mkdist(void);
-extern errno_t CLIADDCMD_image_gen__mkrndim(void);
-extern errno_t CLIADDCMD_image_gen__mkhexsegpup(void);
-extern errno_t CLIADDCMD_image_gen__mkrndgim(void);
-extern errno_t CLIADDCMD_image_gen__mkslopexy(void);
-extern errno_t CLIADDCMD_image_gen__mklincoord(void);
-extern errno_t CLIADDCMD_image_gen__im2coord(void);
-extern errno_t CLIADDCMD_image_gen__mkfiberclpoverlap(void);
-extern errno_t CLIADDCMD_image_gen__mkgauss(void);
-
-static errno_t init_module_CLI()
-{
-    CLIADDCMD_image_gen__segs2wfmodes();
-    CLIADDCMD_image_gen__mkrect();
-    CLIADDCMD_image_gen__mkgridpix();
-    CLIADDCMD_image_gen__mkline();
-    CLIADDCMD_image_gen__mkdist();
-    CLIADDCMD_image_gen__mkrndim();
-    CLIADDCMD_image_gen__mkhexsegpup();
-    CLIADDCMD_image_gen__mkrndgim();
-    CLIADDCMD_image_gen__mkslopexy();
-    CLIADDCMD_image_gen__mklincoord();
-    CLIADDCMD_image_gen__im2coord();
-    CLIADDCMD_image_gen__mkfiberclpoverlap();
-    CLIADDCMD_image_gen__mkgauss();
-    CLIADDCMD_image_gen__mkdisk();
-    CLIADDCMD_image_gen__mkpolygon();
-    CLIADDCMD_image_gen__mkspdisk();
-    CLIADDCMD_image_gen__voronoi();
-    CLIADDCMD_image_gen__mkrandomim();
-
-    // add atexit functions here
-
-    return RETURN_SUCCESS;
-}
-MILK_MODULE(image_gen, init_module_CLI, NULL);
-
-#endif /* MILK_NO_CLI */
+MILK_MODULE_RUNNABLES(image_gen, NULL, runnables);

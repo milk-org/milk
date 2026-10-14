@@ -10,4 +10,9 @@
 #ifndef CLUSTERING_H
 #define CLUSTERING_H
 
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_clustering_cubecluster;
+extern const MILK_RUNNABLE runnable_clustering_mindiffscan;
+
 #endif

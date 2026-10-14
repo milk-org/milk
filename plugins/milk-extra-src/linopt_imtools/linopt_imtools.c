@@ -40,7 +40,7 @@
 
 #include <fitsio.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
@@ -59,7 +59,6 @@
 #include "image_construct.h"
 #include "image_fitModes.h"
 #include "image_to_vec.h"
-#include "imcube_crossproduct.h"
 #include "lin1Dfit.h"
 #include "makeCPAmodes.h"
 #include "makeCosRadModes.h"
@@ -72,40 +71,24 @@
 /* ================================================================== */
 /* ================================================================== */
 
-// Module initialization macro in CLIcore.h
-// macro argument defines module name for bindings
-//
-#ifndef MILK_NO_CLI
-static errno_t init_module_CLI()
-{
-    // CONVERSION
-    CLIADDCMD_linopt_imtools__mask_to_pixtable();
-    CLIADDCMD_linopt_imtools__image_to_vec();
-    CLIADDCMD_linopt_imtools__vec_to_2DImage();
+// Mandated units are weak: NULL when their file is dropped by an unmet MILK_CMAKE_MANDATE_*.
+MILK_RUNNABLE_WEAK_DECL(runnable_linopt_imtools_image_fitModes);
+MILK_RUNNABLE_WEAK_DECL(runnable_linopt_imtools_compute_SVDdecomp);
+MILK_RUNNABLE_WEAK_DECL(runnable_linopt_imtools_compute_SVDpseudoInverse);
+MILK_RUNNABLE_WEAK_DECL(runnable_linopt_imtools_linRM_from_inout);
 
-    // CREATE MODES
-    CLIADDCMD_linopt_imtools__makeCosRadModes();
-    CLIADDCMD_linopt_imtools__makeCPAmodes();
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_linopt_imtools_mask_to_pixtable,  &runnable_linopt_imtools_image_to_vec,
+    &runnable_linopt_imtools_vec_to_2Dimage,    &runnable_linopt_imtools_makeCosRadModes,
+    &runnable_linopt_imtools_makeCPAmodes,      &runnable_linopt_imtools_imcube_crossproduct,
+    &runnable_linopt_imtools_image_fitModes,    &runnable_linopt_imtools_image_construct,
+    &runnable_linopt_imtools_compute_SVDdecomp, &runnable_linopt_imtools_compute_SVDpseudoInverse,
+    &runnable_linopt_imtools_lin1Dfit,          &runnable_linopt_imtools_linRM_from_inout,
+};
 
-    // LINEAR DECOMPOSITION
+MILK_MODULE_RUNNABLES(linopt_imtools, NULL, runnables);
 
-    CLIADDCMD_linopt_imtools__imcube_crossproduct();
-    CLIADDCMD_linopt_imtools__image_fitModes();
-    CLIADDCMD_linopt_imtools__image_construct();
-
-
-    CLIADDCMD_linopt_imtools__compute_SVDdecomp();
-    CLIADDCMD_linopt_imtools__compute_SVDpseudoinverse();
-    CLIADDCMD_linopt_imtools__lin1Dfits();
-
-    // OPTIMIZATION
-    CLIADDCMD_linopt_imtools__linRM_from_inout();
-
-    return RETURN_SUCCESS;
-}
-
-MILK_MODULE(linopt_imtools, init_module_CLI, NULL);
-#endif /* MILK_NO_CLI */
 
 /* =============================================================================================== */
 /* =============================================================================================== */

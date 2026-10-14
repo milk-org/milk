@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 ]=])
 
 function(milk_add_runnable_module LIBNAME)
-  cmake_parse_arguments(ARG "" "" "SOURCES" ${ARGN})
+  cmake_parse_arguments(ARG "" "" "SOURCES;LINK_LIBS" ${ARGN})
 
   set(_objs ${LIBNAME}_objs)
   add_library(${_objs} OBJECT ${ARG_SOURCES})
@@ -105,7 +105,7 @@ function(milk_add_runnable_module LIBNAME)
   endforeach()
   milk_pgo_target(${LIBNAME})
 
-  milk_add_static_lto(${LIBNAME} OBJECTS_FROM ${_objs})
+  milk_add_static_lto(${LIBNAME} OBJECTS_FROM ${_objs} LINK_LIBS ${ARG_LINK_LIBS})
   if(USE_STATIC_LTO AND TARGET ${LIBNAME}_static)
     # milk_apply_extensions() cannot scan an archive built from objects: forward the extension
     # libraries (not the shared framework libs, the archive links the _static ones).

@@ -23,24 +23,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "cubecluster.h"
-#include "mindiffscan.h"
+#include "clustering.h"
 
-// Module initialization macro in CLIcore.h
-// macro argument defines module name for bindings
-//
-static errno_t init_module_CLI()
-{
-    CLIADDCMD_clustering__imcube_mkcluster();
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_clustering_cubecluster,
+    &runnable_clustering_mindiffscan,
+};
 
-    CLIADDCMD_clustering__imcube_mindiffscan();
-
-    // add atexit functions here
-
-    return RETURN_SUCCESS;
-}
-
-MILK_MODULE(clustering, init_module_CLI, NULL);
+MILK_MODULE_RUNNABLES(clustering, NULL, runnables);

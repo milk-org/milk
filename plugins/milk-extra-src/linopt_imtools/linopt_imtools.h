@@ -32,4 +32,15 @@ imageID linopt_imtools_make1Dpolynomials(const char *IDout_name,
                                          long        MaxOrder,
                                          float       r0pix);
 
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_linopt_imtools_image_construct;
+extern const MILK_RUNNABLE runnable_linopt_imtools_image_to_vec;
+extern const MILK_RUNNABLE runnable_linopt_imtools_imcube_crossproduct;
+extern const MILK_RUNNABLE runnable_linopt_imtools_lin1Dfit;
+extern const MILK_RUNNABLE runnable_linopt_imtools_makeCPAmodes;
+extern const MILK_RUNNABLE runnable_linopt_imtools_makeCosRadModes;
+extern const MILK_RUNNABLE runnable_linopt_imtools_mask_to_pixtable;
+extern const MILK_RUNNABLE runnable_linopt_imtools_vec_to_2Dimage;
+
 #endif
