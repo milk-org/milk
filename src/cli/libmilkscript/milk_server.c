@@ -1894,6 +1894,14 @@ static int builtin_streamcat(int argc, char **argv)
         {
             printf("%u\n", (unsigned) im->array.UI8[i]);
         }
+        else if (dt == _DATATYPE_INT8)
+        {
+            printf("%d\n", (int) im->array.SI8[i]);
+        }
+        else if (dt == _DATATYPE_UINT64)
+        {
+            printf("%lu\n", (unsigned long) im->array.UI64[i]);
+        }
     }
     fflush(stdout);
     if (need_close)
@@ -1986,6 +1994,14 @@ static int builtin_streamwrite(int argc, char **argv)
                 {
                     im->array.UI8[idx] = (uint8_t) val;
                 }
+                else if (dt == _DATATYPE_INT8)
+                {
+                    im->array.SI8[idx] = (int8_t) val;
+                }
+                else if (dt == _DATATYPE_UINT64)
+                {
+                    im->array.UI64[idx] = (uint64_t) val;
+                }
                 idx++;
             }
         }
@@ -2030,6 +2046,14 @@ static int builtin_streamwrite(int argc, char **argv)
             else if (dt == _DATATYPE_UINT8)
             {
                 im->array.UI8[idx] = (uint8_t) val;
+            }
+            else if (dt == _DATATYPE_INT8)
+            {
+                im->array.SI8[idx] = (int8_t) val;
+            }
+            else if (dt == _DATATYPE_UINT64)
+            {
+                im->array.UI64[idx] = (uint64_t) val;
             }
         }
     }
@@ -2222,8 +2246,20 @@ static int dispatch_milk_argv(int argc, char **argv)
     {
         const char *arg    = argv[i];
         size_t      arglen = strlen(arg);
+        const char *brk    = strchr(arg, '[');
         int         is_slice =
-            (arg[0] != '@' && strchr(arg, '[') != NULL && arglen > 0 && arg[arglen - 1] == ']');
+            (arg[0] != '@' && brk != NULL && brk > arg && arglen > 0 && arg[arglen - 1] == ']');
+        if (is_slice)
+        {
+            for (const char *p = arg; p < brk; p++)
+            {
+                if (!isalnum((unsigned char) *p) && *p != '_' && *p != '.' && *p != '-')
+                {
+                    is_slice = 0;
+                    break;
+                }
+            }
+        }
         snprintf(data.cmdargtoken[data.cmdNBarg].val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s",
                  arg);
 
@@ -2260,6 +2296,11 @@ static int dispatch_milk_argv(int argc, char **argv)
             char tokstr[512];
             snprintf(tokstr, sizeof(tokstr), "%s\n", arg);
             cli_parse(tokstr);
+            if (is_slice && data.cmdargtoken[data.cmdNBarg].type == CMDARGTOKEN_TYPE_RAWSTRING)
+            {
+                data.CMDerrstatus = RETURN_FAILURE;
+                return 1;
+            }
         }
         data.cmdNBarg++;
     }

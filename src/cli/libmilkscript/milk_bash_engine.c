@@ -484,6 +484,7 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
         /* Inside double quotes (for non-@calc/@test/@waitfor stmts) or RHS of VAR=@s.im.prop:
          * @s.im.prop / @f.fps.param -> $(@get s.im.prop) */
         if ((in_dq || (i > 0 && in[i - 1] == '=')) &&
+            (i == 0 || (!isalnum((unsigned char) in[i - 1]) && in[i - 1] != '_')) &&
             (strncmp(in + i, sigil, siglen) == 0 || in[i] == '@'))
         {
             int skip_for_calc = in_dq && is_calc_or_test_stmt_prefix(in + stmt_start,

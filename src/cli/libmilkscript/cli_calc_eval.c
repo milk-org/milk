@@ -287,6 +287,31 @@ static int eval_slice_bounds(const char *btext,
     return 0;
 }
 
+static int validate_slice_neg_bounds(const IMGID_SLICE *slc, int snax, const uint32_t *ssz)
+{
+    for (int aa = 0; aa < slc->naxis && aa < snax; aa++)
+    {
+        int32_t sz = (int32_t) ssz[aa];
+        if (slc->start[aa] < 0 && sz + slc->start[aa] < 0)
+        {
+            char msg[128];
+            snprintf(msg, sizeof(msg), "axis %d start %d out of bounds for size %d", aa,
+                     slc->start[aa], sz);
+            parse_errmsg(msg);
+            return -1;
+        }
+        if (slc->end[aa] < 0 && sz + slc->end[aa] < 0)
+        {
+            char msg[128];
+            snprintf(msg, sizeof(msg), "axis %d end %d out of bounds for size %d", aa, slc->end[aa],
+                     sz);
+            parse_errmsg(msg);
+            return -1;
+        }
+    }
+    return 0;
+}
+
 
 /* --------------------------------------------------------
  * Operator precedence table
@@ -822,6 +847,10 @@ val_t parse_primary(void)
                 {
                     ssz[a] = srcim->md[0].size[a];
                 }
+                if (validate_slice_neg_bounds(&slc, snax, ssz) != 0)
+                {
+                    return mk_double(0);
+                }
                 if (imgid_slice_output_size(&slc, snax, ssz, outsz) != 0)
                 {
                     parse_errmsg(slc.errmsg[0] ? slc.errmsg : "Bad slice dims");
@@ -1060,6 +1089,10 @@ val_t parse_primary(void)
                 for (int a = 0; a < snax && a < 3; a++)
                 {
                     ssz[a] = srcim->md[0].size[a];
+                }
+                if (validate_slice_neg_bounds(&slc, snax, ssz) != 0)
+                {
+                    return mk_double(0);
                 }
                 if (imgid_slice_output_size(&slc, snax, ssz, outsz) != 0)
                 {

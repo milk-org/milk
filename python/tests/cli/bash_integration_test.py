@@ -561,3 +561,289 @@ def test_milk_script_upgrade(tmp_path: Path):
     upgraded_text = legacy_file.read_text()
     assert "@mem.mk2Dim im1 16 16" in upgraded_text
     assert '@calc "a = 2 + 3"' in upgraded_text
+
+
+def test_adversarial_slicing_1d_2d_3d_and_compound():
+    res = _run_bash("""
+        # 1. 1D-axis, 2D, and 3D slicing + single-voxel indexing
+        @mk2Dim "@S:s1d" 16 1
+        @calc "s1d = 1"
+        @calc "s1d[2:5] = 10"
+        @calc "s1d[0, 0] = 100"
+        @calc "s1d[-1, 0] = 200"
+        [[ "$(@calc 'itot(s1d)')" == "350" ]]
+        [[ "$(@calc 's1d[0, 0] + s1d[3, 0] + s1d[15, 0]')" == "310" ]]
+
+        @mk2Dim "@S:s2d" 8 8
+        @calc "s2d = 0"
+        @calc "x0 = 1"
+        @calc "x1 = 3"
+        @calc "cx = 2"
+        @calc "r = 1"
+        # Spaces and parentheses inside slice bounds
+        @calc "s2d[ x0 : x1 , (cx - r) : (cx + r) ] = 4"
+        [[ "$(@calc 'itot(s2d)')" == "36" ]]
+
+        # Compound slice scalar operations (+=, -=, *=, /=)
+        @calc "s2d[1:3, 1:3] += 6"
+        [[ "$(@calc 's2d[2, 2]')" == "10" ]]
+        @calc "s2d[1:3, 1:3] -= 2"
+        [[ "$(@calc 's2d[2, 2]')" == "8" ]]
+        @calc "s2d[1:3, 1:3] *= 3"
+        [[ "$(@calc 's2d[2, 2]')" == "24" ]]
+        @calc "s2d[1:3, 1:3] /= 4"
+        [[ "$(@calc 's2d[2, 2]')" == "6" ]]
+
+        # Slice-to-slice copy and compound image-to-slice +=
+        @calc "s2d[4:6, 4:6] = s2d[1:3, 1:3]"
+        @calc "s2d[4:6, 4:6] += s2d[1:3, 1:3]"
+        [[ "$(@calc 's2d[5, 5]')" == "12" ]]
+        [[ "$(@calc 'itot(s2d)')" == "162" ]]
+
+        # Negative indices and negative slices
+        @calc "s2d[-1, -1] = 50"
+        [[ "$(@calc 's2d[7, 7]')" == "50" ]]
+        [[ "$(@calc 's2d[-1, -1]')" == "50" ]]
+        @calc "s2d[-2:-1, -2:-1] = 7"
+        [[ "$(@calc 'itot(s2d[6:7, 6:7])')" == "28" ]]
+
+        # Strided and binned slices on RHS
+        @mk2Dim "@S:grid" 8 8
+        @calc "grid = 4"
+        @calc "strided = grid[0:7:2, 0:7:2]"
+        [[ "$(@get s.strided.xsize)" == "4" ]]
+        [[ "$(@get s.strided.ysize)" == "4" ]]
+        [[ "$(@calc 'itot(strided)')" == "64" ]]
+        @calc "binned = grid[0:7:2b, 0:7:2b]"
+        [[ "$(@get s.binned.xsize)" == "4" ]]
+        [[ "$(@get s.binned.ysize)" == "4" ]]
+
+        # 3D cube slicing and single-voxel indexing
+        @mk3Dim "@S:cube" 4 4 4
+        @calc "cube = 1"
+        @calc "cube[1:2, 1:2, 1:2] = 10"
+        @calc "cube[0, 0, 3] = 50"
+        # 64 voxels: 8 voxels at 10 (+9 each = +72), 1 voxel at 50 (+49), total = 64 + 72 + 49 = 185
+        [[ "$(@calc 'itot(cube)')" == "185" ]]
+        [[ "$(@calc 'cube[2, 2, 2] + cube[0, 0, 3]')" == "60" ]]
+        @calc "plane2 = cube[*, *, 2]"
+        [[ "$(@calc 'itot(plane2)')" == "52" ]]
+
+        # CLI command (@info.imgstat) with valid expression slice vs adversarial invalid slices
+        @info.imgstat 's2d[ x0 : x1 , (cx - r) : (cx + r) ]' >/dev/null
+
+        set +e
+        @calc "s2d[999, 0]" 2>/dev/null
+        rc_oob_pos=$?
+        @calc "s2d[-999, 0]" 2>/dev/null
+        rc_oob_neg=$?
+        @calc "s2d[6:2, 0:3]" 2>/dev/null
+        rc_inv=$?
+        @calc "s2d[0:2, 0:2] = grid" 2>/dev/null
+        rc_dim=$?
+        @calc "s2d[undef_var:3, 0:3]" 2>/dev/null
+        rc_undef=$?
+        @calc "s2d[0:3, 0:3" 2>/dev/null
+        rc_unclosed=$?
+        @info.imgstat 's2d[undef_var:3, 0:3]' >/dev/null 2>&1
+        rc_cmd_undef=$?
+        @info.imgstat 's2d[999:1000, 0:3]' >/dev/null 2>&1
+        rc_cmd_oob=$?
+        @info.imgstat 's2d[-999, 0]' >/dev/null 2>&1
+        rc_cmd_neg=$?
+        @info.imgstat 's2d[6:2, 0:3]' >/dev/null 2>&1
+        rc_cmd_inv=$?
+        set -e
+
+        [[ "$rc_oob_pos" -ne 0 ]]
+        [[ "$rc_oob_neg" -ne 0 ]]
+        [[ "$rc_inv" -ne 0 ]]
+        [[ "$rc_dim" -ne 0 ]]
+        [[ "$rc_undef" -ne 0 ]]
+        [[ "$rc_unclosed" -ne 0 ]]
+        [[ "$rc_cmd_undef" -ne 0 ]]
+        [[ "$rc_cmd_oob" -ne 0 ]]
+        [[ "$rc_cmd_neg" -ne 0 ]]
+        [[ "$rc_cmd_inv" -ne 0 ]]
+
+        echo "ADV_SLICE_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "ADV_SLICE_OK" in res.stdout
+
+
+def test_adversarial_multi_datatype_calc_and_streamio():
+    res = _run_bash("""
+        for spec in \\
+            "TF32:FLOAT:f32" \\
+            "TF64:DOUBLE:f64" \\
+            "TUI8:UINT8:ui8" \\
+            "TSI8:INT8:si8" \\
+            "TUI16:UINT16:ui16" \\
+            "TSI16:INT16:si16" \\
+            "TUI32:UINT32:ui32" \\
+            "TSI32:INT32:si32" \\
+            "TUI64:UINT64:ui64" \\
+            "TSI64:INT64:si64"; do
+            IFS=: read -r mod dt name <<< "$spec"
+            @mk2Dim "@S:@${mod}:${name}" 4 4
+            [[ "$(@get s.${name}.dtype)" == "$dt" ]]
+
+            # Scalar fill, compound +=, *=, single-pixel & slice writes
+            @calc "${name} = 3"
+            @calc "${name} += 2"
+            @calc "${name}[0:1, 0:1] *= 2"
+            @calc "${name}[3, 3] = 20"
+            # 16 pixels: 4 in [0:1,0:1] are 10, 1 at [3,3] is 20, remaining 11 are 5 -> 40 + 20 + 55 = 115
+            [[ "$(@calc "itot(${name})")" == "115" ]]
+            [[ "$(@calc "${name}[0, 0] + ${name}[3, 3]")" == "30" ]]
+            [[ "$(@calc "imedian(${name})")" == "5" ]]
+
+            # Round-trip via @streamcat | awk | @streamwrite
+            @streamcat "$name" | awk '{print $1 + 1}' | @streamwrite "$name"
+            # Adding 1 to all 16 pixels increases total by 16: 115 + 16 = 131
+            [[ "$(@calc "itot(${name})")" == "131" ]]
+        done
+        echo "ADV_DTYPE_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "ADV_DTYPE_OK" in res.stdout
+
+
+def test_adversarial_quoting_heredocs_and_bash_constructs(tmp_path: Path):
+    res = _run_milk_cli(
+        """
+        mem.mk2Dim @S:h_im 6 6
+        @ h_im = 5
+        @ x0 = 0
+        @ x1 = 3
+        @ h_im[ x0 + 1 : x1 - 1 , 0 : 1 ] = 15
+
+        # Unquoted slice with spaces inside [...] passed to Tier-2 command
+        info.imgstat h_im[ x0 + 1 : x1 - 1 , 0 : 1 ] >/dev/null
+
+        # Email addresses and literal strings containing @s. / @f. mid-word must not be mangled
+        email="contact@s.example.com"
+        fmail="admin@f.domain.org"
+        [[ "$email" == "contact@s.example.com" ]]
+        [[ "$fmail" == "admin@f.domain.org" ]]
+
+        # Bash arrays, ${#arr[@]}, associative arrays, and regex [[ =~ ]]
+        arr=(alpha beta gamma delta)
+        [[ "${#arr[@]}" == "4" ]]
+        declare -A map
+        map[key1]="val_@s.not_expanded"
+        [[ "${map[key1]}" == "val_@s.not_expanded" ]]
+        num_str="324"
+        [[ "$num_str" =~ ^[0-9]+$ ]]
+
+        # Multiple @{ ... } on a single line with nested parentheses
+        combo="@{(2 + 3) * 4}:@{itot(h_im) + (h_im[1, 0] * 2)}"
+        # 36 pixels at 5 = 180; 4 pixels in [1:2, 0:1] at 15 (+10 each = +40) -> itot = 220; + 30 = 250
+        [[ "$combo" == "20:250" ]]
+
+        # Single-quoted heredoc containing fake milk commands must not be translated
+        lit_doc=$(cat << 'EOF'
+mem.mk2Dim should_not_run 4 4
+@ a = 999
+@s.h_im.xsize
+EOF
+)
+        [[ ! -S should_not_run ]]
+        [[ "$lit_doc" == *"@s.h_im.xsize"* ]]
+
+        # Unquoted heredoc preserves literal lines without executing them as commands
+        exp_doc=$(cat << EOF
+size_is=@s.h_im.xsize
+EOF
+)
+        [[ "$exp_doc" == "size_is=6" ]]
+
+        # Bash function + case statement + subshell
+        run_step() {
+            local mode="$1"
+            case "$mode" in
+                add)
+                    @ h_im += 2
+                    ;;
+                *)
+                    return 1
+                    ;;
+            esac
+        }
+        run_step add
+        sub_tot=$(@calc "itot(h_im)")
+        # 220 + 36*2 = 292
+        [[ "$sub_tot" == "292" ]]
+        echo "ADV_BASH_OK"
+        """,
+        tmp_path,
+        mode="script",
+    )
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "ADV_BASH_OK" in res.stdout
+
+
+def test_adversarial_error_recovery_and_fault_isolation():
+    res = _run_bash("""
+        @mk2Dim "@S:ok_im" 4 4
+        @calc "ok_im = 10"
+        @mk2Dim "@S:zero_im" 4 4
+        @calc "zero_im = 0"
+        @calc "keep_var = 42"
+
+        set +e
+        # 1. Division by zero across all @calc paths
+        @calc "1 / 0" 2>/dev/null
+        rc_div1=$?
+        @calc "keep_var /= 0" 2>/dev/null
+        rc_div2=$?
+        @calc "ok_im /= 0" 2>/dev/null
+        rc_div3=$?
+        @calc "ok_im[0:1, 0:1] /= 0" 2>/dev/null
+        rc_div4=$?
+        @calc "ok_im[0, 0] /= 0" 2>/dev/null
+        rc_div5=$?
+        @calc "ok_im /= zero_im" 2>/dev/null
+        rc_div6=$?
+
+        # 2. Unknown commands, invalid stream modifiers, non-existent entities, waitfor timeout
+        @no_such_milk_cmd_xyz 2>/dev/null
+        rc_unk=$?
+        @mk2Dim "@TX99:bad_mod" 4 4 2>/dev/null
+        rc_mod1=$?
+        @mk2Dim "@EN:bad_mod2" 4 4 2>/dev/null
+        rc_mod2=$?
+        @get s.nonexistent_stream_xyz.xsize 2>/dev/null
+        rc_get=$?
+        @set s.nonexistent_stream_xyz.kw.KEY 1 2>/dev/null
+        rc_set=$?
+        @waitfor --timeout 0.05 s.ok_im.cnt0 "> 999999" 2>/dev/null
+        rc_wait=$?
+        set -e
+
+        [[ "$rc_div1" -ne 0 ]]
+        [[ "$rc_div2" -ne 0 ]]
+        [[ "$rc_div3" -ne 0 ]]
+        [[ "$rc_div4" -ne 0 ]]
+        [[ "$rc_div5" -ne 0 ]]
+        [[ "$rc_div6" -ne 0 ]]
+        [[ "$rc_unk" -eq 127 ]]
+        [[ "$rc_mod1" -ne 0 ]]
+        [[ "$rc_mod2" -ne 0 ]]
+        [[ "$rc_get" -ne 0 ]]
+        [[ "$rc_set" -ne 0 ]]
+        [[ "$rc_wait" -eq 124 ]]
+
+        # 3. Verify server survived all errors with state intact, then run 50 rapid calls
+        [[ "$(@calc 'keep_var')" == "42" ]]
+        [[ "$(@calc 'itot(ok_im)')" == "160" ]]
+        for ((i = 0; i < 50; i++)); do
+            @calc "ok_im += 1"
+        done
+        # 160 + 50 * 16 = 960
+        [[ "$(@calc 'itot(ok_im)')" == "960" ]]
+        echo "ADV_RECOVERY_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "ADV_RECOVERY_OK" in res.stdout
