@@ -126,12 +126,43 @@ void set_pending_suggestion(const char *text, int replace_len)
  */
 int find_command_match(const char *firstword)
 {
+    if (firstword == NULL || firstword[0] == '\0')
+    {
+        return -1;
+    }
+    const char *sigil = getenv("MILKCLI_SIGIL");
+    if (sigil == NULL || sigil[0] == '\0' || strlen(sigil) > 8)
+    {
+        sigil = "@";
+    }
+    size_t siglen = strlen(sigil);
+    if (strncmp(firstword, sigil, siglen) == 0)
+    {
+        firstword += siglen;
+    }
+    else if (firstword[0] == '@')
+    {
+        firstword++;
+    }
+
     for (uint32_t cmdi = 0; cmdi < data.NBcmd; cmdi++)
     {
         if (strcmp(firstword, data.cmd[cmdi].key) == 0)
         {
             data.cmdindex = cmdi;
             return (int) cmdi;
+        }
+        int midx = data.cmd[cmdi].moduleindex;
+        if (midx >= 0 && data.module[midx].shortname[0] != '\0')
+        {
+            char qname[256];
+            snprintf(qname, sizeof(qname), "%s.%s", data.module[midx].shortname,
+                     data.cmd[cmdi].key);
+            if (strcmp(firstword, qname) == 0)
+            {
+                data.cmdindex = cmdi;
+                return (int) cmdi;
+            }
         }
     }
     return -1;

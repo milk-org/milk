@@ -605,31 +605,17 @@ val_t parse_primary(void)
             }
             if (v.type == VAL_LONG)
             {
-                long vid = variable_ID(t->sval);
-                if (vid != -1)
-                {
-                    create_variable_long_ID(t->sval, v.lval);
-                }
-                if (parse_mode == 1 || vid == -1)
-                {
-                    char numv[64];
-                    snprintf(numv, 64, "%ld", v.lval);
-                    cli_var_set(t->sval, numv);
-                }
+                create_variable_long_ID(t->sval, v.lval);
+                char numv[64];
+                snprintf(numv, 64, "%ld", v.lval);
+                cli_var_set(t->sval, numv);
                 return mk_long(v.lval);
             }
             {
-                long vid = variable_ID(t->sval);
-                if (vid != -1)
-                {
-                    create_variable_ID(t->sval, to_double(v));
-                }
-                if (parse_mode == 1 || vid == -1)
-                {
-                    char numv[64];
-                    snprintf(numv, 64, "%.*g", cli_float_digits, to_double(v));
-                    cli_var_set(t->sval, numv);
-                }
+                create_variable_ID(t->sval, to_double(v));
+                char numv[64];
+                snprintf(numv, 64, "%.*g", cli_float_digits, to_double(v));
+                cli_var_set(t->sval, numv);
                 return mk_double(to_double(v));
             }
         }
@@ -665,6 +651,10 @@ val_t parse_primary(void)
         if (data.core.variable[vID].type == 1)
         {
             return mk_long(data.core.variable[vID].value.l);
+        }
+        if (data.core.variable[vID].type == 2)
+        {
+            return mk_string(data.core.variable[vID].value.s);
         }
         return mk_double(data.core.variable[vID].value.f);
     }

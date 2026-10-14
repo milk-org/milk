@@ -90,6 +90,7 @@
 #include "CLIcore_modules.h"
 #include "CLIcore_setSHMdir.h"
 #include "CLIcore_signals.h"
+#include "../libmilkscript/milk_bash_engine.h"
 #include "../libmilkscript/milk_server.h"
 #include "../libmilkscript/milkscript.h"
 #include "treesitter/cli_treesitter.h"
@@ -668,7 +669,19 @@ static int handle_fifo_input(const char *prompt)
             clock_gettime(CLOCK_MONOTONIC, &ft0);
 
             cli_history_log_prompt(data.CLIcmdline);
-            CLI_execute_line();
+            if (milk_is_bash_engine_enabled())
+            {
+                int exit_req = 0;
+                int rc       = milk_bash_engine_exec(data.CLIcmdline, &exit_req);
+                if (exit_req || (dcerrorexit && rc != 0))
+                {
+                    data.CLIloopON = 0;
+                }
+            }
+            else
+            {
+                CLI_execute_line();
+            }
 
             clock_gettime(CLOCK_MONOTONIC, &ft1);
             {
@@ -920,8 +933,16 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         {
             if (single_command_flag)
             {
-                strncpy(data.CLIcmdline, single_command_string, STRINGMAXLEN_CLICMDLINE - 1);
-                CLI_execute_line();
+                if (milk_is_bash_engine_enabled())
+                {
+                    int exit_req = 0;
+                    milk_bash_engine_exec(single_command_string, &exit_req);
+                }
+                else
+                {
+                    strncpy(data.CLIcmdline, single_command_string, STRINGMAXLEN_CLICMDLINE - 1);
+                    CLI_execute_line();
+                }
                 data.CLIloopON = 0;
                 break;
             }
@@ -947,18 +968,31 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 if (fp != NULL)
                 {
                     fclose(fp);
-                    strncpy(data.cmdargtoken[0].val.string, "source",
-                            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
-                    strncpy(data.cmdargtoken[1].val.string, CLIstartupfilename,
-                            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
-                    data.cmdNBarg = 2;
-                    cli_source();
-
-                    // Exit the interactive loop, as shebang scripts should terminate upon completion
-                    if (strcmp(CLIstartupfilename, "CLIstartup.txt") != 0)
+                    if (milk_is_bash_engine_enabled())
                     {
-                        data.CLIloopON = 0;
-                        break;
+                        int exit_req = 0;
+                        milk_bash_engine_exec_file(CLIstartupfilename, &exit_req);
+                        if (exit_req || strcmp(CLIstartupfilename, "CLIstartup.txt") != 0)
+                        {
+                            data.CLIloopON = 0;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        strncpy(data.cmdargtoken[0].val.string, "source",
+                                STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                        strncpy(data.cmdargtoken[1].val.string, CLIstartupfilename,
+                                STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                        data.cmdNBarg = 2;
+                        cli_source();
+
+                        // Exit the interactive loop, as shebang scripts should terminate upon completion
+                        if (strcmp(CLIstartupfilename, "CLIstartup.txt") != 0)
+                        {
+                            data.CLIloopON = 0;
+                            break;
+                        }
                     }
                 }
             }
@@ -1098,19 +1132,31 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     {
                         data.CLIcmdline[strcspn(data.CLIcmdline, "\n")] = 0; // strip newline
                         cli_history_log_prompt(data.CLIcmdline);
-                        cli_fault_isolation_arm();
-                        if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
+                        if (milk_is_bash_engine_enabled())
                         {
-                            CLI_execute_line();
+                            int exit_req = 0;
+                            int rc       = milk_bash_engine_exec(data.CLIcmdline, &exit_req);
+                            if (exit_req || (dcerrorexit && rc != 0))
+                            {
+                                data.CLIloopON = 0;
+                            }
                         }
                         else
                         {
-                            dcsigINT  = 0;
-                            dcsigSEGV = 0;
-                            dcsigBUS  = 0;
-                            dcsigABRT = 0;
+                            cli_fault_isolation_arm();
+                            if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
+                            {
+                                CLI_execute_line();
+                            }
+                            else
+                            {
+                                dcsigINT  = 0;
+                                dcsigSEGV = 0;
+                                dcsigBUS  = 0;
+                                dcsigABRT = 0;
+                            }
+                            cli_fault_isolation_disarm();
                         }
-                        cli_fault_isolation_disarm();
                     }
                     else
                     {
@@ -1132,6 +1178,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     cli_set_interactive_mode(0);
 
     cli_trap_run_exit();
+
+    if (milk_is_bash_engine_enabled())
+    {
+        milk_bash_engine_shutdown();
+    }
 
     cli_ts_cleanup();
 

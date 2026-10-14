@@ -66,6 +66,15 @@ extern int          processinfo_shm_list_create(void);
 #endif
 
 extern errno_t cli_fhelp(void);
+extern int     cli_handle_shell_builtins(void);
+extern void    handle_did_you_mean(const char *input_cmd);
+extern int     cli_intercept_cmd_procctl(const char *p);
+extern int     cli_intercept_cmd_procwait(const char *p);
+extern int     cli_intercept_cmd_procstat(const char *p);
+extern int     cli_intercept_cmd_assert(const char *p);
+extern int     cli_intercept_cmd_assigncheck(const char *p);
+extern int     cli_intercept_cmd_dpdigits(const char *p);
+extern int     cli_intercept_cmd_watch(const char *p);
 
 /* ============================================================
  *  OpenMP fork-safety hook
@@ -155,6 +164,10 @@ static void sync_bash_vars_into_dcvar(const uint8_t *buf,
         if (vval[0] != '\0' && endp != vval && *endp == '\0')
         {
             vid = create_variable_long_ID(vname, lval);
+            if (vid >= 0 && vid < DCVAR_CACHE_MAX)
+            {
+                snprintf(g_dcvar_cached_str[vid], sizeof(g_dcvar_cached_str[vid]), "%s", vval);
+            }
         }
         else
         {
@@ -162,15 +175,11 @@ static void sync_bash_vars_into_dcvar(const uint8_t *buf,
             if (vval[0] != '\0' && endp != vval && *endp == '\0')
             {
                 vid = create_variable_ID(vname, dval);
+                if (vid >= 0 && vid < DCVAR_CACHE_MAX)
+                {
+                    snprintf(g_dcvar_cached_str[vid], sizeof(g_dcvar_cached_str[vid]), "%s", vval);
+                }
             }
-            else
-            {
-                vid = create_variable_string_ID(vname, vval);
-            }
-        }
-        if (vid >= 0 && vid < DCVAR_CACHE_MAX)
-        {
-            snprintf(g_dcvar_cached_str[vid], sizeof(g_dcvar_cached_str[vid]), "%s", vval);
         }
         cli_var_set(vname, vval);
     }
@@ -180,36 +189,50 @@ static void sync_bash_vars_into_dcvar(const uint8_t *buf,
 static dcvar_snap_t *snapshot_dcvar(long *out_nmax)
 {
     long nmax = data.core.NB_MAX_VARIABLE;
-    if (nmax <= 0 || data.core.variable == NULL)
+    if (nmax < 0)
     {
-        *out_nmax = 0;
-        return NULL;
+        nmax = 0;
     }
-    dcvar_snap_t *snap = (dcvar_snap_t *) calloc((size_t) nmax, sizeof(dcvar_snap_t));
+    long          total = nmax + CLI_MAX_VARS;
+    dcvar_snap_t *snap  = (dcvar_snap_t *) calloc((size_t) total, sizeof(dcvar_snap_t));
     if (snap == NULL)
     {
         *out_nmax = 0;
         return NULL;
     }
-    for (long i = 0; i < nmax; i++)
+    if (data.core.variable != NULL)
     {
-        snap[i].used = data.core.variable[i].used;
-        if (snap[i].used)
+        for (long i = 0; i < nmax; i++)
         {
-            snap[i].type = data.core.variable[i].type;
-            snprintf(snap[i].name, sizeof(snap[i].name), "%s", data.core.variable[i].name);
-            if (snap[i].type == 0)
+            snap[i].used = data.core.variable[i].used;
+            if (snap[i].used)
             {
-                snap[i].f = data.core.variable[i].value.f;
+                snap[i].type = data.core.variable[i].type;
+                snprintf(snap[i].name, sizeof(snap[i].name), "%s", data.core.variable[i].name);
+                if (snap[i].type == 0)
+                {
+                    snap[i].f = data.core.variable[i].value.f;
+                }
+                else if (snap[i].type == 1)
+                {
+                    snap[i].l = data.core.variable[i].value.l;
+                }
+                else
+                {
+                    snprintf(snap[i].s, sizeof(snap[i].s), "%s", data.core.variable[i].value.s);
+                }
             }
-            else if (snap[i].type == 1)
-            {
-                snap[i].l = data.core.variable[i].value.l;
-            }
-            else
-            {
-                snprintf(snap[i].s, sizeof(snap[i].s), "%s", data.core.variable[i].value.s);
-            }
+        }
+    }
+    for (int j = 0; j < CLI_MAX_VARS; j++)
+    {
+        long idx       = nmax + j;
+        snap[idx].used = cli_vars[j].used;
+        if (cli_vars[j].used)
+        {
+            snap[idx].type = 2;
+            snprintf(snap[idx].name, sizeof(snap[idx].name), "%s", cli_vars[j].name);
+            snprintf(snap[idx].s, sizeof(snap[idx].s), "%s", cli_vars[j].val);
         }
     }
     *out_nmax = nmax;
@@ -219,74 +242,115 @@ static dcvar_snap_t *snapshot_dcvar(long *out_nmax)
 static void send_modified_dcvars(int client_fd, const dcvar_snap_t *snap, long snap_nmax)
 {
     long nmax = data.core.NB_MAX_VARIABLE;
-    if (data.core.variable == NULL)
+    if (data.core.variable != NULL)
     {
-        return;
+        for (long i = 0; i < nmax; i++)
+        {
+            if (!data.core.variable[i].used)
+            {
+                continue;
+            }
+            const char *vname = data.core.variable[i].name;
+            if (vname[0] == '\0' || is_builtin_const_var(vname))
+            {
+                continue;
+            }
+
+            int changed = 0;
+            if (snap == NULL || i >= snap_nmax || !snap[i].used ||
+                strcmp(snap[i].name, vname) != 0 || snap[i].type != data.core.variable[i].type)
+            {
+                changed = 1;
+            }
+            else if (data.core.variable[i].type == 0 && snap[i].f != data.core.variable[i].value.f)
+            {
+                changed = 1;
+            }
+            else if (data.core.variable[i].type == 1 && snap[i].l != data.core.variable[i].value.l)
+            {
+                changed = 1;
+            }
+            else if (data.core.variable[i].type == 2 &&
+                     strcmp(snap[i].s, data.core.variable[i].value.s) != 0)
+            {
+                changed = 1;
+            }
+
+            if (!changed)
+            {
+                continue;
+            }
+
+            char valstr[256];
+            if (data.core.variable[i].type == 1)
+            {
+                snprintf(valstr, sizeof(valstr), "%ld", data.core.variable[i].value.l);
+            }
+            else if (data.core.variable[i].type == 0)
+            {
+                snprintf(valstr, sizeof(valstr), "%.*g", cli_float_digits,
+                         data.core.variable[i].value.f);
+            }
+            else
+            {
+                snprintf(valstr, sizeof(valstr), "%s", data.core.variable[i].value.s);
+            }
+
+            if (i < DCVAR_CACHE_MAX)
+            {
+                snprintf(g_dcvar_cached_str[i], sizeof(g_dcvar_cached_str[i]), "%s", valstr);
+            }
+
+            char   pkt[512];
+            size_t n1 = strlen(vname) + 1;
+            size_t n2 = strlen(valstr) + 1;
+            if (n1 + n2 <= sizeof(pkt))
+            {
+                memcpy(pkt, vname, n1);
+                memcpy(pkt + n1, valstr, n2);
+                milk_proto_send(client_fd, MILK_MSG_SETVAR, 0, pkt, (uint32_t) (n1 + n2));
+            }
+        }
     }
-    for (long i = 0; i < nmax; i++)
+
+    /* Also send string variables assigned via cli_var_set (e.g. _su = "hello") */
+    for (int j = 0; j < CLI_MAX_VARS; j++)
     {
-        if (!data.core.variable[i].used)
+        if (!cli_vars[j].used)
         {
             continue;
         }
-        const char *vname = data.core.variable[i].name;
-        if (vname[0] == '\0' || is_builtin_const_var(vname))
+        const char *vname = cli_vars[j].name;
+        if (vname[0] == '\0' || is_builtin_const_var(vname) || strncmp(vname, "_tmpstr", 7) == 0 ||
+            strncmp(vname, "_tmpcalc", 8) == 0 || variable_ID(vname) != -1)
         {
             continue;
         }
-
         int changed = 0;
-        if (snap == NULL || i >= snap_nmax || !snap[i].used || strcmp(snap[i].name, vname) != 0 ||
-            snap[i].type != data.core.variable[i].type)
+        if (snap == NULL)
         {
             changed = 1;
         }
-        else if (data.core.variable[i].type == 0 && snap[i].f != data.core.variable[i].value.f)
+        else
         {
-            changed = 1;
+            long idx = snap_nmax + j;
+            if (!snap[idx].used || strcmp(snap[idx].name, vname) != 0 ||
+                strcmp(snap[idx].s, cli_vars[j].val) != 0)
+            {
+                changed = 1;
+            }
         }
-        else if (data.core.variable[i].type == 1 && snap[i].l != data.core.variable[i].value.l)
-        {
-            changed = 1;
-        }
-        else if (data.core.variable[i].type == 2 &&
-                 strcmp(snap[i].s, data.core.variable[i].value.s) != 0)
-        {
-            changed = 1;
-        }
-
         if (!changed)
         {
             continue;
         }
-
-        char valstr[256];
-        if (data.core.variable[i].type == 1)
-        {
-            snprintf(valstr, sizeof(valstr), "%ld", data.core.variable[i].value.l);
-        }
-        else if (data.core.variable[i].type == 0)
-        {
-            snprintf(valstr, sizeof(valstr), "%.*g", cli_float_digits,
-                     data.core.variable[i].value.f);
-        }
-        else
-        {
-            snprintf(valstr, sizeof(valstr), "%s", data.core.variable[i].value.s);
-        }
-
-        if (i < DCVAR_CACHE_MAX)
-        {
-            snprintf(g_dcvar_cached_str[i], sizeof(g_dcvar_cached_str[i]), "%s", valstr);
-        }
-
-        char   pkt[512];
+        char   pkt[600];
         size_t n1 = strlen(vname) + 1;
-        size_t n2 = strlen(valstr) + 1;
+        size_t n2 = strlen(cli_vars[j].val) + 1;
         if (n1 + n2 <= sizeof(pkt))
         {
             memcpy(pkt, vname, n1);
-            memcpy(pkt + n1, valstr, n2);
+            memcpy(pkt + n1, cli_vars[j].val, n2);
             milk_proto_send(client_fd, MILK_MSG_SETVAR, 0, pkt, (uint32_t) (n1 + n2));
         }
     }
@@ -1619,6 +1683,10 @@ static int resolve_milk_cmd_index(const char *name, int *out_ambig)
     {
         name = "imgen.mkrndim";
     }
+    else if (strcmp(name, "lm?") == 0)
+    {
+        name = "hm";
+    }
 
     /* 1. Exact match on registered command key */
     for (unsigned int i = 0; i < data.NBcmd; i++)
@@ -1866,6 +1934,84 @@ static int dispatch_milk_argv(int argc, char **argv)
         return builtin_streamwrite(argc, argv);
     }
 
+    /* Reconstruct data.CLIcmdline for commands and interceptors that inspect it */
+    {
+        size_t      pos = 0;
+        const char *k0  = (strcmp(cmdname, "mem.listim") == 0 && argc >= 2 &&
+                           (strchr(argv[1], '*') != NULL || strchr(argv[1], '?') != NULL))
+                              ? "listim"
+                              : cmdname;
+        pos += (size_t) snprintf(data.CLIcmdline + pos, sizeof(data.CLIcmdline) - pos, "%s", k0);
+        for (int i = 1; i < argc && pos + 2 < sizeof(data.CLIcmdline); i++)
+        {
+            pos += (size_t) snprintf(data.CLIcmdline + pos, sizeof(data.CLIcmdline) - pos, " %s",
+                                     argv[i]);
+        }
+    }
+
+    /* Intercept commands handled by libmilkscript interceptors / shell builtins */
+    if (strcmp(cmdname, "procctl") == 0)
+    {
+        cli_last_retval = 0;
+        cli_intercept_cmd_procctl(data.CLIcmdline);
+        return cli_last_retval;
+    }
+    if (strcmp(cmdname, "procwait") == 0)
+    {
+        cli_last_retval = 0;
+        cli_intercept_cmd_procwait(data.CLIcmdline);
+        return cli_last_retval;
+    }
+    if (strcmp(cmdname, "procstat") == 0)
+    {
+        cli_last_retval = 0;
+        cli_intercept_cmd_procstat(data.CLIcmdline);
+        return cli_last_retval;
+    }
+    if (strcmp(cmdname, "assert") == 0)
+    {
+        cli_last_retval = 0;
+        if (!cli_intercept_cmd_assert(data.CLIcmdline))
+        {
+            printf("\033[1;31m[ASSERT] syntax: assert expr=expected [~tol] or expr<val\033[0m\n");
+            return 1;
+        }
+        return cli_last_retval;
+    }
+    if (strcmp(cmdname, "assigncheck") == 0)
+    {
+        cli_last_retval = 0;
+        if (!cli_intercept_cmd_assigncheck(data.CLIcmdline))
+        {
+            printf(
+                "\033[1;31m[ASSIGNCHECK FAIL] Usage: assigncheck [-e] <var> <val> <tol>\033[0m\n");
+            return 1;
+        }
+        return cli_last_retval;
+    }
+    if (strcmp(cmdname, "dpdigits") == 0)
+    {
+        cli_intercept_cmd_dpdigits(data.CLIcmdline);
+        return 0;
+    }
+    if (strcmp(cmdname, "on_update") == 0 || strcmp(cmdname, "on_fpschange") == 0 ||
+        ((strcmp(cmdname, "listim") == 0 || strcmp(cmdname, "mem.listim") == 0) && argc >= 2 &&
+         argv[1][0] != '-' && (strchr(argv[1], '*') != NULL || strchr(argv[1], '?') != NULL)))
+    {
+        cli_last_retval = 0;
+        if (strcmp(cmdname, "on_fpschange") == 0 && argc < 2)
+        {
+            printf("Usage: on_fpschange [-l] [-n N] fpsname.param { command }\n");
+            return 1;
+        }
+        cli_handle_shell_builtins();
+        if (cli_last_retval != 0 && strcmp(cmdname, "on_fpschange") == 0)
+        {
+            printf("Error: on_fpschange failed\n");
+        }
+        return cli_last_retval;
+    }
+
     int ambig  = 0;
     int cmdidx = resolve_milk_cmd_index(cmdname, &ambig);
     if (cmdidx < 0)
@@ -1875,6 +2021,7 @@ static int dispatch_milk_argv(int argc, char **argv)
             return 2;
         }
         fprintf(stderr, "\033[1;31mmilk:\033[0m unknown command '@%s'\n", cmdname);
+        handle_did_you_mean(cmdname);
         return 127;
     }
 
@@ -1971,6 +2118,12 @@ static int dispatch_milk_argv(int argc, char **argv)
         return was_sigint ? 130 : 1;
     }
     cli_fault_isolation_disarm();
+
+    if (data.CMDerrstatus != RETURN_SUCCESS)
+    {
+        printf("\n%c[%d;%dm ERROR %c[%d;m CLI function %s returns %d\n", (char) 27, 1, 31,
+               (char) 27, 0, data.cmd[cmdidx].key, data.CMDerrstatus);
+    }
 
     /* Clean up temporary calc images */
     for (int i = 0; i < data.calctmp_imindex; i++)
@@ -2617,9 +2770,13 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
                                 memcpy(kname, kv, kn);
                                 kname[kn] = '\0';
                                 setenv(kname, eq + 1, 1);
-                                if (strcmp(kname, "MILK_SHM_DIR") == 0)
+                                if (strcmp(kname, "MILK_SHM_DIR") == 0 &&
+                                    strcmp(dcshmdir, eq + 1) != 0)
                                 {
+                                    int saved_q = dcquiet;
+                                    dcquiet     = 1;
                                     setSHMdir();
+                                    dcquiet = saved_q;
                                 }
                             }
                         }
@@ -2745,17 +2902,17 @@ cleanup:
 }
 
 /* ============================================================
- *  Main Server Loop
+ *  Main Server Loop & Listener Helpers
  * ============================================================ */
 
-int milk_server_run(const char *sockpath, int owner_fd, int ready_fd)
+int milk_server_create_listener(const char *sockpath)
 {
     pthread_once(&g_atfork_once, register_atfork_handler);
 
     if (sockpath == NULL || sockpath[0] == '\0')
     {
         fprintf(stderr, "ERROR: milk-cli --server requires a socket path\n");
-        return 1;
+        return -1;
     }
 
     struct sockaddr_un addr;
@@ -2763,7 +2920,7 @@ int milk_server_run(const char *sockpath, int owner_fd, int ready_fd)
     if (milk_sockaddr_init(sockpath, &addr, &addrlen) != 0)
     {
         fprintf(stderr, "ERROR: invalid socket path '%s'\n", sockpath);
-        return 1;
+        return -1;
     }
 
     if (sockpath[0] != '@')
@@ -2775,14 +2932,14 @@ int milk_server_run(const char *sockpath, int owner_fd, int ready_fd)
     if (listen_fd < 0)
     {
         perror("milk-cli --server: socket");
-        return 1;
+        return -1;
     }
 
     if (bind(listen_fd, (struct sockaddr *) &addr, addrlen) != 0)
     {
         perror("milk-cli --server: bind");
         close(listen_fd);
-        return 1;
+        return -1;
     }
 
     if (sockpath[0] != '@')
@@ -2794,19 +2951,10 @@ int milk_server_run(const char *sockpath, int owner_fd, int ready_fd)
     {
         perror("milk-cli --server: listen");
         close(listen_fd);
-        return 1;
+        return -1;
     }
 
     setenv("MILKCLI_SOCK", sockpath, 1);
-
-    /* Notify caller that server is ready to accept connections */
-    if (ready_fd >= 0)
-    {
-        if (write(ready_fd, "READY\n", 6) < 0)
-        {
-        }
-        close(ready_fd);
-    }
 
     /* Snapshot initial built-in dcvar entries into cache */
     if (data.core.variable != NULL)
@@ -2821,11 +2969,60 @@ int milk_server_run(const char *sockpath, int owner_fd, int ready_fd)
         }
     }
 
+    return listen_fd;
+}
+
+void milk_server_accept_and_handle(int listen_fd, int *shutdown_flag)
+{
+    while (waitpid(0, NULL, WNOHANG) > 0)
+    {
+    }
+
+    int client_fd = accept4(listen_fd, NULL, NULL, SOCK_CLOEXEC);
+    if (client_fd < 0)
+    {
+        return;
+    }
+
+    struct ucred cred;
+    socklen_t    clen = sizeof(cred);
+    if (getsockopt(client_fd, SOL_SOCKET, SO_PEERCRED, &cred, &clen) != 0 || cred.uid != getuid())
+    {
+        close(client_fd);
+        return;
+    }
+
+    int dummy = 0;
+    handle_client_connection(client_fd, listen_fd, shutdown_flag != NULL ? shutdown_flag : &dummy);
+    close(client_fd);
+
+    while (waitpid(0, NULL, WNOHANG) > 0)
+    {
+    }
+}
+
+int milk_server_run(const char *sockpath, int owner_fd, int ready_fd)
+{
+    int listen_fd = milk_server_create_listener(sockpath);
+    if (listen_fd < 0)
+    {
+        return 1;
+    }
+
+    /* Notify caller that server is ready to accept connections */
+    if (ready_fd >= 0)
+    {
+        if (write(ready_fd, "READY\n", 6) < 0)
+        {
+        }
+        close(ready_fd);
+    }
+
     int shutdown_flag = 0;
     while (!shutdown_flag)
     {
-        /* Reap any finished async/concurrent worker children */
-        while (waitpid(-1, NULL, WNOHANG) > 0)
+        /* Reap any finished async/concurrent worker children in our pgrp */
+        while (waitpid(0, NULL, WNOHANG) > 0)
         {
         }
 
@@ -2865,23 +3062,7 @@ int milk_server_run(const char *sockpath, int owner_fd, int ready_fd)
 
         if (pfds[0].revents & POLLIN)
         {
-            int client_fd = accept4(listen_fd, NULL, NULL, SOCK_CLOEXEC);
-            if (client_fd < 0)
-            {
-                continue;
-            }
-
-            struct ucred cred;
-            socklen_t    clen = sizeof(cred);
-            if (getsockopt(client_fd, SOL_SOCKET, SO_PEERCRED, &cred, &clen) != 0 ||
-                cred.uid != getuid())
-            {
-                close(client_fd);
-                continue;
-            }
-
-            handle_client_connection(client_fd, listen_fd, &shutdown_flag);
-            close(client_fd);
+            milk_server_accept_and_handle(listen_fd, &shutdown_flag);
         }
     }
 

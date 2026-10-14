@@ -620,6 +620,10 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
     if (parse_error || eval_error ||
         (cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE))
     {
+        if (!eval_error)
+        {
+            fprintf(stderr, "ERROR: syntax error in calculator expression: %s\n", input);
+        }
         if (out_rc != NULL)
         {
             *out_rc = 2;

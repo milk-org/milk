@@ -179,10 +179,32 @@ _milk_defer_add() {
     if [[ $# -eq 0 ]]; then
         return 0
     fi
+    if [[ ${#_MILK_DEFER_STACK[@]} -ge 32 ]]; then
+        echo "Error: defer stack full (max 32)" >&2
+        return 1
+    fi
     _MILK_DEFER_RAN=0
     _MILK_DEFER_STACK+=("$*")
     trap '_milk_run_defer_stack' EXIT
 }
+
+_milk_source_impl() {
+    if [[ $# -eq 0 ]]; then
+        echo "Usage: ${MILKCLI_SIGIL}source <filename> [args...]" >&2
+        return 1
+    fi
+    if [[ ! -f "$1" ]]; then
+        echo "Error: ${MILKCLI_SIGIL}source: file not found: $1" >&2
+        return 1
+    fi
+    local __milk_src_file="$1"
+    shift
+    # shellcheck disable=SC1090
+    builtin source <("${MILK_INSTALLDIR}/bin/milk-call" translate "${__milk_src_file}") "$@"
+}
+
+export PROCINFO_NCPU="${PROCINFO_NCPU:-$(nproc 2>/dev/null || echo 1)}"
+export PROCINFO_NPROC="${PROCINFO_NPROC:-0}"
 
 _milk_waitany_impl() {
     local timeout_sec="0"
@@ -308,7 +330,7 @@ ${MILKCLI_SIGIL}waitany()     { _milk_waitany_impl \"\$@\"; }
 ${MILKCLI_SIGIL}grab()        { milkgrab \"\$@\"; }
 ${MILKCLI_SIGIL}defer()       { _milk_defer_add \"\$@\"; }
 ${MILKCLI_SIGIL}on()          { _milk_on_impl \"\$@\"; }
-${MILKCLI_SIGIL}source()      { source \"\$@\"; }
+${MILKCLI_SIGIL}source()      { _milk_source_impl \"\$@\"; }
 ${MILKCLI_SIGIL}h()           { milkcall h \"\$@\"; }
 ${MILKCLI_SIGIL}hc()          { milkcall hc \"\$@\"; }
 ${MILKCLI_SIGIL}hm()          { milkcall hm \"\$@\"; }

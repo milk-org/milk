@@ -46,6 +46,7 @@
 
 #include "CLIcore.h"
 
+#include "../../libmilkscript/milk_bash_engine.h"
 #include "CLIcore_script.h"
 #include "CLIcore_signals.h"
 #include "CLIcore_UI_execute.h"
@@ -208,6 +209,17 @@ static void cli_execute_single_segment(const char *cmd)
 
 static void cli_execute_multiline(const char *buffer)
 {
+    if (milk_is_bash_engine_enabled())
+    {
+        int exit_req = 0;
+        int rc       = milk_bash_engine_exec(buffer, &exit_req);
+        if (exit_req || (dcerrorexit && rc != 0))
+        {
+            data.CLIloopON = 0;
+        }
+        return;
+    }
+
     char   line[STRINGMAXLEN_CLICMDLINE];
     size_t line_len    = 0;
     int    in_dquote   = 0;

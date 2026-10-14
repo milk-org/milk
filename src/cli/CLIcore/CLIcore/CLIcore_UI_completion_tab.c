@@ -192,29 +192,58 @@ retry_fuzzy:
                                                  "include_once",
                                                  "savescript",
                                                  "savehistory",
+                                                 "@h",
+                                                 "@hc",
+                                                 "@hm",
+                                                 "@hf",
+                                                 "@calc",
+                                                 "@get",
+                                                 "@set",
+                                                 "@test",
+                                                 "@exists",
+                                                 "@running",
+                                                 "@waitfor",
+                                                 "@waitany",
+                                                 "@grab",
+                                                 "@on",
+                                                 "@defer",
+                                                 "@source",
+                                                 "@streamcat",
+                                                 "@streamwrite",
                                                  NULL };
         static const unsigned int nbuiltins =
             sizeof(builtins) / sizeof(builtins[0]) - 1; /* exclude NULL */
+
+        int         has_at = (text[0] == '@');
+        const char *qtext  = has_at ? (text + 1) : text;
+        size_t      qlen   = has_at ? (len - 1) : len;
 
         /* Phase 1: registered commands */
         while (list_index < data.NBcmd)
         {
             name = data.cmd[list_index].key;
             list_index++;
+            int match = 0;
             if (generator_fuzzy_pass == 0)
             {
-                if (strncmp(name, text, len) == 0)
+                if (strncmp(name, qtext, qlen) == 0)
                 {
-                    return (GEN_DUPSTR(name));
+                    match = 1;
                 }
             }
-            else
+            else if (strstr(name, qtext) != NULL)
             {
-                /* Fuzzy: substring match */
-                if (strstr(name, text) != NULL)
+                match = 1;
+            }
+            if (match)
+            {
+                if (has_at)
                 {
-                    return (GEN_DUPSTR(name));
+                    char abuf[256];
+                    snprintf(abuf, sizeof(abuf), "@%s", name);
+                    return (GEN_DUPSTR(abuf));
                 }
+                return (GEN_DUPSTR(name));
             }
         }
 
@@ -244,6 +273,28 @@ retry_fuzzy:
 
     if (data.CLImatchMode == CLICOMPLETIONMODE_IMAGES)
     {
+        /* Support @T<type>:<stream> modifier completion */
+        if (strncmp(text, "@T", 2) == 0 && strchr(text, ':') == NULL)
+        {
+            static const char *const tmods[] = { "@TU8:",  "@TI8:",   "@TU16:", "@TI16:", "@TU32:",
+                                                 "@TI32:", "@TU64:",  "@TI64:", "@TF32:", "@TF64:",
+                                                 "@TC64:", "@TC128:", NULL };
+            while (tmods[list_index] != NULL)
+            {
+                const char *tm = tmods[list_index++];
+                if (strncmp(tm, text, len) == 0)
+                {
+                    return GEN_DUPSTR((char *) tm);
+                }
+            }
+            return NULL;
+        }
+
+        const char *colon    = (strncmp(text, "@T", 2) == 0) ? strchr(text, ':') : NULL;
+        const char *stext    = (colon != NULL) ? (colon + 1) : text;
+        size_t      slen     = strlen(stext);
+        int         tpreflen = (colon != NULL) ? (int) (colon - text + 1) : 0;
+
         static DIR *img_dirp = NULL;
 
         if (!state)
@@ -266,26 +317,34 @@ retry_fuzzy:
                 {
                     char imgname[256];
                     int  namelen = ext - ent->d_name;
-                    if (namelen > 255)
+                    if (namelen > 200)
                     {
-                        namelen = 255;
+                        namelen = 200;
                     }
                     strncpy(imgname, ent->d_name, namelen);
                     imgname[namelen] = '\0';
 
+                    int match = 0;
                     if (generator_fuzzy_pass == 0)
                     {
-                        if (strncmp(imgname, text, len) == 0)
+                        if (strncmp(imgname, stext, slen) == 0)
                         {
-                            return (GEN_DUPSTR(imgname));
+                            match = 1;
                         }
                     }
-                    else
+                    else if (strstr(imgname, stext) != NULL)
                     {
-                        if (strstr(imgname, text) != NULL)
+                        match = 1;
+                    }
+                    if (match)
+                    {
+                        if (tpreflen > 0)
                         {
-                            return (GEN_DUPSTR(imgname));
+                            char full[300];
+                            snprintf(full, sizeof(full), "%.*s%s", tpreflen, text, imgname);
+                            return (GEN_DUPSTR(full));
                         }
+                        return (GEN_DUPSTR(imgname));
                     }
                 }
             }
@@ -602,76 +661,125 @@ retry_fuzzy:
     if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_SEQ)
     {
         const char *dot1      = strchr(text, '.');
-        static DIR *vseq_dirp = NULL;
-        static char prev_seq[256][64];
-        static int  nb_prev_seq = 0;
+        const char *dot2      = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
+        int         has_brace = (text[0] == '$' && text[1] == '{');
 
-        if (!state)
+        if (dot2 != NULL)
         {
+            static int         seq_prop_idx = 0;
+            static const char *seq_props[]  = {
+                "status", "tasks", "errors", "pid", "completed", NULL
+            };
+            static char seq_target[128];
+            static char seq_prop_prefix[64];
+
+            if (!state)
+            {
+                seq_prop_idx = 0;
+                size_t snlen = (size_t) (dot2 - (dot1 + 1));
+                if (snlen >= sizeof(seq_target))
+                {
+                    snlen = sizeof(seq_target) - 1;
+                }
+                strncpy(seq_target, dot1 + 1, snlen);
+                seq_target[snlen] = '\0';
+
+                strncpy(seq_prop_prefix, dot2 + 1, sizeof(seq_prop_prefix) - 1);
+                seq_prop_prefix[sizeof(seq_prop_prefix) - 1] = '\0';
+            }
+
+            while (seq_props[seq_prop_idx] != NULL)
+            {
+                const char *sprop = seq_props[seq_prop_idx++];
+                if (strncmp(sprop, seq_prop_prefix, strlen(seq_prop_prefix)) == 0)
+                {
+                    char buf[256];
+                    int  nslen = (dot1 != NULL) ? (int) (dot1 - text) : 2;
+                    if (has_brace)
+                    {
+                        snprintf(buf, sizeof(buf), "%.*s.%s.%s}", nslen, text, seq_target, sprop);
+                    }
+                    else
+                    {
+                        snprintf(buf, sizeof(buf), "%.*s.%s.%s", nslen, text, seq_target, sprop);
+                    }
+                    return GEN_DUPSTR(buf);
+                }
+            }
+        }
+        else
+        {
+            static DIR *vseq_dirp = NULL;
+            static char prev_seq[256][64];
+            static int  nb_prev_seq = 0;
+
+            if (!state)
+            {
+                if (vseq_dirp != NULL)
+                {
+                    closedir(vseq_dirp);
+                    vseq_dirp = NULL;
+                }
+                vseq_dirp   = opendir(dcshmdir);
+                nb_prev_seq = 0;
+            }
             if (vseq_dirp != NULL)
             {
-                closedir(vseq_dirp);
-                vseq_dirp = NULL;
-            }
-            vseq_dirp   = opendir(dcshmdir);
-            nb_prev_seq = 0;
-        }
-        if (vseq_dirp != NULL)
-        {
-            struct dirent *ent;
-            while ((ent = readdir(vseq_dirp)) != NULL)
-            {
-                if (strncmp(ent->d_name, "seq.", 4) == 0)
+                struct dirent *ent;
+                while ((ent = readdir(vseq_dirp)) != NULL)
                 {
-                    char *ext = strstr(ent->d_name, ".shm");
-                    if (ext != NULL && strcmp(ext, ".shm") == 0)
+                    if (strncmp(ent->d_name, "seq.", 4) == 0)
                     {
-                        char seqname[256];
-                        int  namelen = ext - (ent->d_name + 4);
-                        if (namelen > 200)
+                        char *ext = strstr(ent->d_name, ".shm");
+                        if (ext != NULL && strcmp(ext, ".shm") == 0)
                         {
-                            namelen = 200;
-                        }
-                        int nslen = (dot1 != NULL) ? (int) (dot1 - text) : 4;
-                        snprintf(seqname, sizeof(seqname), "%.*s.%.*s.", nslen, text, namelen,
-                                 ent->d_name + 4);
-
-                        int is_dup = 0;
-                        for (int pi = 0; pi < nb_prev_seq; pi++)
-                        {
-                            if (strcmp(prev_seq[pi], seqname) == 0)
+                            char seqname[256];
+                            int  namelen = ext - (ent->d_name + 4);
+                            if (namelen > 200)
                             {
-                                is_dup = 1;
-                                break;
+                                namelen = 200;
                             }
-                        }
-                        if (is_dup)
-                        {
-                            continue;
-                        }
-                        if (nb_prev_seq < 256)
-                        {
-                            strncpy(prev_seq[nb_prev_seq], seqname, sizeof(prev_seq[0]) - 1);
-                            prev_seq[nb_prev_seq][sizeof(prev_seq[0]) - 1] = '\0';
-                            nb_prev_seq++;
-                        }
+                            int nslen = (dot1 != NULL) ? (int) (dot1 - text) : 4;
+                            snprintf(seqname, sizeof(seqname), "%.*s.%.*s.", nslen, text, namelen,
+                                     ent->d_name + 4);
 
-                        if (generator_fuzzy_pass == 0)
-                        {
-                            if (strncmp(seqname, text, len) == 0)
+                            int is_dup = 0;
+                            for (int pi = 0; pi < nb_prev_seq; pi++)
+                            {
+                                if (strcmp(prev_seq[pi], seqname) == 0)
+                                {
+                                    is_dup = 1;
+                                    break;
+                                }
+                            }
+                            if (is_dup)
+                            {
+                                continue;
+                            }
+                            if (nb_prev_seq < 256)
+                            {
+                                strncpy(prev_seq[nb_prev_seq], seqname, sizeof(prev_seq[0]) - 1);
+                                prev_seq[nb_prev_seq][sizeof(prev_seq[0]) - 1] = '\0';
+                                nb_prev_seq++;
+                            }
+
+                            if (generator_fuzzy_pass == 0)
+                            {
+                                if (strncmp(seqname, text, len) == 0)
+                                {
+                                    return GEN_DUPSTR(seqname);
+                                }
+                            }
+                            else if (strstr(seqname, text) != NULL)
                             {
                                 return GEN_DUPSTR(seqname);
                             }
                         }
-                        else if (strstr(seqname, text) != NULL)
-                        {
-                            return GEN_DUPSTR(seqname);
-                        }
                     }
                 }
+                closedir(vseq_dirp);
+                vseq_dirp = NULL;
             }
-            closedir(vseq_dirp);
-            vseq_dirp = NULL;
         }
     }
 
@@ -686,7 +794,7 @@ retry_fuzzy:
             static int         prop_idx       = 0;
             static const char *stream_props[] = { "xsize", "ysize",    "zsize", "naxis",
                                                   "type",  "typename", "nelem", "cnt0",
-                                                  "cnt1",  "sem",      NULL };
+                                                  "cnt1",  "sem",      "kw.",   NULL };
             static char        stream_target[128];
             static char        prop_prefix[64];
 
@@ -1238,37 +1346,43 @@ char **CLI_completion(const char *text, int start, int end)
     }
     else
     {
+        const char *barecmd = (cmdname[0] == '@') ? (cmdname + 1) : cmdname;
         /* A command was found (cmdname), and cursor is on argument argidx */
         if (text[0] == '.' && text[1] != '/' && text[1] != '.')
         {
             data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
         }
-        else if (strcmp(cmdname, "loadfits") == 0 || strcmp(cmdname, "savefits") == 0 ||
-                 strcmp(cmdname, "saveFITS") == 0 || strcmp(cmdname, "source") == 0 ||
-                 strcmp(cmdname, ".") == 0 || strcmp(cmdname, "cat") == 0 ||
-                 strcmp(cmdname, "cd") == 0 || strcmp(cmdname, "ls") == 0 ||
-                 strcmp(cmdname, "vi") == 0 || strcmp(cmdname, "vim") == 0 ||
-                 strcmp(cmdname, "nano") == 0 || strcmp(cmdname, "head") == 0 ||
-                 strcmp(cmdname, "tail") == 0 || strcmp(cmdname, "cp") == 0 ||
-                 strcmp(cmdname, "mv") == 0 || strcmp(cmdname, "rm") == 0 ||
-                 strcmp(cmdname, "less") == 0 || strcmp(cmdname, "more") == 0 ||
-                 strcmp(cmdname, "include_once") == 0 || strcmp(cmdname, "savescript") == 0 ||
-                 strcmp(cmdname, "savehistory") == 0 || strcmp(cmdname, "run") == 0)
+        else if (strcmp(barecmd, "loadfits") == 0 || strcmp(barecmd, "savefits") == 0 ||
+                 strcmp(barecmd, "saveFITS") == 0 || strcmp(barecmd, "source") == 0 ||
+                 strcmp(barecmd, ".") == 0 || strcmp(barecmd, "cat") == 0 ||
+                 strcmp(barecmd, "cd") == 0 || strcmp(barecmd, "ls") == 0 ||
+                 strcmp(barecmd, "vi") == 0 || strcmp(barecmd, "vim") == 0 ||
+                 strcmp(barecmd, "nano") == 0 || strcmp(barecmd, "head") == 0 ||
+                 strcmp(barecmd, "tail") == 0 || strcmp(barecmd, "cp") == 0 ||
+                 strcmp(barecmd, "mv") == 0 || strcmp(barecmd, "rm") == 0 ||
+                 strcmp(barecmd, "less") == 0 || strcmp(barecmd, "more") == 0 ||
+                 strcmp(barecmd, "include_once") == 0 || strcmp(barecmd, "savescript") == 0 ||
+                 strcmp(barecmd, "savehistory") == 0 || strcmp(barecmd, "run") == 0)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_FILES;
         }
-        else if (strcmp(cmdname, "fpsCTRL") == 0 || strcmp(cmdname, "fparam") == 0 ||
-                 strcmp(cmdname, "fpsload") == 0 || strcmp(cmdname, "dpsingle") == 0 ||
-                 strcmp(cmdname, "fpsconf") == 0 || strcmp(cmdname, "fpsrun") == 0 ||
-                 strcmp(cmdname, "fpsstop") == 0 || strcmp(cmdname, "waitfor_fps") == 0)
+        else if (strcmp(barecmd, "fpsCTRL") == 0 || strcmp(barecmd, "fparam") == 0 ||
+                 strcmp(barecmd, "fpsload") == 0 || strcmp(barecmd, "dpsingle") == 0 ||
+                 strcmp(barecmd, "fpsconf") == 0 || strcmp(barecmd, "fpsrun") == 0 ||
+                 strcmp(barecmd, "fpsstop") == 0 || strcmp(barecmd, "waitfor_fps") == 0)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
         }
-        else if (strcmp(cmdname, "export") == 0 || strcmp(cmdname, "readonly") == 0 ||
-                 strcmp(cmdname, "unset") == 0 || strcmp(cmdname, "local") == 0 ||
-                 strcmp(cmdname, "declare") == 0)
+        else if (strcmp(barecmd, "export") == 0 || strcmp(barecmd, "readonly") == 0 ||
+                 strcmp(barecmd, "unset") == 0 || strcmp(barecmd, "local") == 0 ||
+                 strcmp(barecmd, "declare") == 0)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_VARS_ENV;
+        }
+        else if (strcmp(barecmd, "grab") == 0 || strcmp(barecmd, "streamcat") == 0 ||
+                 strcmp(barecmd, "streamwrite") == 0)
+        {
+            data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
         }
         else
         {

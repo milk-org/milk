@@ -66,6 +66,25 @@ int milk_entity_exists(const char *spec, int check_running);
 void milk_server_dump_commands(FILE *fp);
 
 /**
+ * @brief Create, bind, and listen on the milk UNIX domain socket.
+ *
+ * Also sets MILKCLI_SOCK in the environment and snapshots initial dcvar
+ * entries into the server cache.
+ *
+ * @param sockpath Socket path ("@abstract" or "/path/to/sock")
+ * @return Listening socket fd (>= 0) on success, -1 on error
+ */
+int milk_server_create_listener(const char *sockpath);
+
+/**
+ * @brief Accept and service one pending connection on @listen_fd.
+ *
+ * @param listen_fd     Listening UNIX domain socket fd
+ * @param shutdown_flag Set to 1 if client requested server shutdown
+ */
+void milk_server_accept_and_handle(int listen_fd, int *shutdown_flag);
+
+/**
  * @brief Run the milk UNIX domain socket command server loop.
  *
  * @param sockpath Socket path ("@abstract" or "/path/to/sock")

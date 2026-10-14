@@ -71,9 +71,14 @@ static int cli_determine_mode_lexical(const char *line,
             return CLICOMPLETIONMODE_VARS_PROC;
         }
         if (strncmp(text, "@seq.", 5) == 0 || strncmp(text, "${seq.", 6) == 0 ||
-            strncmp(text, "$seq.", 5) == 0)
+            strncmp(text, "$seq.", 5) == 0 || strncmp(text, "@q.", 3) == 0 ||
+            strncmp(text, "${q.", 4) == 0 || strncmp(text, "$q.", 3) == 0)
         {
             return CLICOMPLETIONMODE_VARS_SEQ;
+        }
+        if (start > 0 && strncmp(text, "@T", 2) == 0)
+        {
+            return CLICOMPLETIONMODE_IMAGES;
         }
         if (text[0] == '$')
         {
@@ -1644,6 +1649,65 @@ void cli_ts_highlight_line(const char *line, int len, int cursor_pos, FILE *out)
 
     ts_query_cursor_delete(cursor);
 
+    /* Add lexical highlight spans for @<cmd>, @T<type>:, and @s./@f./@p./@q. */
+    {
+        int in_sq = 0;
+        int in_dq = 0;
+        for (int i = 0; i < len && num_spans < 1024; i++)
+        {
+            if (line[i] == '\\' && !in_sq && i + 1 < len)
+            {
+                i++;
+                continue;
+            }
+            if (line[i] == '\'' && !in_dq)
+            {
+                in_sq = !in_sq;
+                continue;
+            }
+            if (line[i] == '"' && !in_sq)
+            {
+                in_dq = !in_dq;
+                continue;
+            }
+            if (!in_sq && line[i] == '@' &&
+                (i == 0 || isspace((unsigned char) line[i - 1]) || line[i - 1] == ';' ||
+                 line[i - 1] == '(' || line[i - 1] == '|' || line[i - 1] == '&'))
+            {
+                int j = i + 1;
+                while (j < len && !isspace((unsigned char) line[j]) && line[j] != ';' &&
+                       line[j] != ')' && line[j] != '"' && line[j] != '\'')
+                {
+                    if (line[i + 1] == 'T' && line[j] == ':')
+                    {
+                        j++;
+                        break;
+                    }
+                    j++;
+                }
+                if (j > i + 1)
+                {
+                    int is_ent_or_mod = (line[i + 1] == 'T' && line[j - 1] == ':') ||
+                                        (j > i + 2 && (strncmp(line + i + 1, "s.", 2) == 0 ||
+                                                       strncmp(line + i + 1, "f.", 2) == 0 ||
+                                                       strncmp(line + i + 1, "p.", 2) == 0 ||
+                                                       strncmp(line + i + 1, "q.", 2) == 0 ||
+                                                       strncmp(line + i + 1, "fps.", 4) == 0 ||
+                                                       strncmp(line + i + 1, "proc.", 5) == 0 ||
+                                                       strncmp(line + i + 1, "seq.", 4) == 0));
+                    spans[num_spans].start_byte = (uint32_t) i;
+                    spans[num_spans].end_byte   = (uint32_t) j;
+                    spans[num_spans].color =
+                        is_ent_or_mod ? ((color_level >= 2) ? "\033[38;5;214m" : "\033[33m")
+                                      : ((color_level >= 2) ? "\033[1;38;5;39m" : "\033[1;36m");
+                    spans[num_spans].priority = 1;
+                    num_spans++;
+                    i = j - 1;
+                }
+            }
+        }
+    }
+
     if (data.syntax_diagnostics && ts_node_has_error(root_node))
     {
         collect_error_spans(root_node, line, (size_t) len, spans, &num_spans, 1024, color_level);
@@ -2153,6 +2217,10 @@ static void collect_error_spans(TSNode         node,
             uint32_t eb = ts_node_end_byte(node);
             if (eb > sb)
             {
+                if (source[sb] == '@')
+                {
+                    return;
+                }
                 spans[*num_spans].start_byte = sb;
                 spans[*num_spans].end_byte   = eb;
 
@@ -2359,6 +2427,11 @@ static bool find_first_error(TSNode node, const char *source, CLI_SYNTAX_DIAG *d
         else
         {
             diag->token[0] = '\0';
+        }
+
+        if (diag->token[0] == '@')
+        {
+            return false;
         }
 
         /* Check for incomplete constructs at end of line */
@@ -3291,9 +3364,14 @@ int cli_ts_determine_completion_mode(const char *line,
             return CLICOMPLETIONMODE_VARS_PROC;
         }
         if (strncmp(text, "@seq.", 5) == 0 || strncmp(text, "${seq.", 6) == 0 ||
-            strncmp(text, "$seq.", 5) == 0)
+            strncmp(text, "$seq.", 5) == 0 || strncmp(text, "@q.", 3) == 0 ||
+            strncmp(text, "${q.", 4) == 0 || strncmp(text, "$q.", 3) == 0)
         {
             return CLICOMPLETIONMODE_VARS_SEQ;
+        }
+        if (start > 0 && strncmp(text, "@T", 2) == 0)
+        {
+            return CLICOMPLETIONMODE_IMAGES;
         }
         if (text[0] == '$')
         {

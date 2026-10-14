@@ -69,6 +69,7 @@ set(MILKSCRIPT_SOURCES
     cli_calc_eval.c
     milk_server.c
     milk_client.c
+    milk_bash_engine.c
     milkscript_stubs.c
     milkscript_api.c)
 
@@ -133,6 +134,7 @@ install(
         milk_proto.h
         milk_server.h
         milk_client.h
+        milk_bash_engine.h
         standalone_dependencies.h
         script_includes.h
         milkscript.h

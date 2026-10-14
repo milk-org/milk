@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "milk_bash_engine.h"
 #include "milk_client.h"
 #include "milkdata.h"
 
@@ -43,6 +44,7 @@ static void print_usage(const char *prog)
     printf("  waitfor <target> [N] [-t <sec>]  Wait for stream frames or condition\n");
     printf("  grab <s_in> <N> <s_out> [-t <s>] Capture N consecutive frames into 3D cube\n");
     printf("  complete <prefix> [cmd|arg]      List completion candidates\n");
+    printf("  translate [--legacy] <file>      Translate Tier-2 shorthands to Tier-1 bash\n");
     printf("  shutdown                         Shut down session milk-cli --server\n");
 }
 
@@ -163,6 +165,73 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
         const char *prefix    = (argc >= 1) ? argv[0] : "";
         const char *comp_type = (argc >= 2) ? argv[1] : "arg";
         return milk_client_complete(prefix, comp_type, NULL);
+    }
+    if (strcmp(sub, "translate") == 0)
+    {
+        int         allow_legacy = 0;
+        const char *fname        = NULL;
+        for (int i = 0; i < argc; i++)
+        {
+            if (strcmp(argv[i], "--legacy") == 0 || strcmp(argv[i], "-l") == 0)
+            {
+                allow_legacy = 1;
+            }
+            else if (fname == NULL)
+            {
+                fname = argv[i];
+            }
+        }
+        FILE *fp = (fname == NULL || strcmp(fname, "-") == 0) ? stdin : fopen(fname, "r");
+        if (fp == NULL)
+        {
+            fprintf(stderr, "milk-call translate: cannot open '%s'\n", fname ? fname : "");
+            return 1;
+        }
+        size_t cap = 4096;
+        size_t len = 0;
+        char  *buf = (char *) malloc(cap);
+        if (buf == NULL)
+        {
+            if (fp != stdin)
+            {
+                fclose(fp);
+            }
+            return 1;
+        }
+        size_t nr;
+        while ((nr = fread(buf + len, 1, cap - 1 - len, fp)) > 0)
+        {
+            len += nr;
+            if (len + 1 >= cap)
+            {
+                cap *= 2;
+                char *nb = (char *) realloc(buf, cap);
+                if (nb == NULL)
+                {
+                    free(buf);
+                    if (fp != stdin)
+                    {
+                        fclose(fp);
+                    }
+                    return 1;
+                }
+                buf = nb;
+            }
+        }
+        buf[len] = '\0';
+        if (fp != stdin)
+        {
+            fclose(fp);
+        }
+        char *tr = milk_translate_tier2_to_tier1(buf, allow_legacy);
+        free(buf);
+        if (tr != NULL)
+        {
+            fputs(tr, stdout);
+            free(tr);
+            return 0;
+        }
+        return 1;
     }
     if (strcmp(sub, "shutdown") == 0 || strcmp(sub, "unload") == 0)
     {

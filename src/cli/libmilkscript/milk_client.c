@@ -376,7 +376,8 @@ static int is_numeric_literal(const char *s)
 
 static void try_add_packed_var(packed_vars_t             *pv,
                                const milk_client_hooks_t *hooks,
-                               const char                *ident)
+                               const char                *ident,
+                               int                        allow_any)
 {
     if (pv->count >= 256 || ident == NULL || ident[0] == '\0' || strlen(ident) >= 64)
     {
@@ -390,7 +391,7 @@ static void try_add_packed_var(packed_vars_t             *pv,
         }
     }
     const char *val = client_get_var(hooks, ident);
-    if (val != NULL && is_numeric_literal(val) && strlen(val) < 128)
+    if (val != NULL && (allow_any || is_numeric_literal(val)) && strlen(val) < 128)
     {
         snprintf(pv->names[pv->count], 64, "%s", ident);
         snprintf(pv->vals[pv->count], 128, "%s", val);
@@ -423,7 +424,7 @@ static void collect_identifiers_from_str(packed_vars_t             *pv,
                 char ident[64];
                 memcpy(ident, start, len);
                 ident[len] = '\0';
-                try_add_packed_var(pv, hooks, ident);
+                try_add_packed_var(pv, hooks, ident, 1);
             }
         }
         else
@@ -437,7 +438,7 @@ static void collect_PreviouslySyncedVars(packed_vars_t *pv, const milk_client_ho
 {
     for (int i = 0; i < g_nb_synced_vars; i++)
     {
-        try_add_packed_var(pv, hooks, g_synced_vars[i]);
+        try_add_packed_var(pv, hooks, g_synced_vars[i], 0);
     }
 }
 

@@ -692,6 +692,7 @@ if(USE_CLI)
     scripts/waitforfile
     scripts/milk-env.sh
     scripts/milk.bash
+    scripts/milk-script-upgrade
     DESTINATION bin)
 
   install(FILES scripts/milk.bash DESTINATION share/milk)

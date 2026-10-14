@@ -182,3 +182,88 @@ def test_defer_xargs_and_custom_sigil():
     )
     assert res_comma.returncode == 0, res_comma.stderr
     assert "COMMA_OK" in res_comma.stdout
+
+
+def test_milk_cli_tier2_and_native_fallback(tmp_path: Path):
+    install_dir = _find_milk_installdir()
+    milk_cli = install_dir / "bin" / "milk-cli"
+    shm_dir = tempfile.mkdtemp(prefix="milk_cli_t2_", dir="/dev/shm")
+    try:
+        env = os.environ.copy()
+        env["MILK_INSTALLDIR"] = str(install_dir)
+        env["PATH"] = f"{install_dir / 'bin'}:{env.get('PATH', '')}"
+        env["LD_LIBRARY_PATH"] = (
+            f"{install_dir / 'lib'}:{env.get('LD_LIBRARY_PATH', '')}"
+        )
+        env["MILK_SHM_DIR"] = shm_dir
+
+        script_file = tmp_path / "tier2_test.milk"
+        script_file.write_text(
+            "mem.mk2Dim @S:t2im 14 18\n"
+            "@ a = 2.5 + 3.5\n"
+            "@ t2im = a * 2.0\n"
+            "@ tot = itot(t2im)\n"
+            'echo "T2_RESULT=${a}:${tot}:$(@get s.t2im.ysize):@s.t2im.xsize"\n'
+        )
+        res = subprocess.run(
+            [str(milk_cli), "-s", str(script_file)],
+            env=env,
+            text=True,
+            capture_output=True,
+            timeout=20,
+        )
+        assert res.returncode == 0, res.stderr
+        assert "T2_RESULT=6:3024:18:14" in res.stdout
+
+        # Verify MILKCLI_ENGINE=native fallback still works
+        env_native = dict(env)
+        env_native["MILKCLI_ENGINE"] = "native"
+        native_script = tmp_path / "native_test.milk"
+        native_script.write_text("nv = 7 + 8\n" "echo NATIVE_OK=$nv\n")
+        res_nat = subprocess.run(
+            [str(milk_cli), "-s", str(native_script)],
+            env=env_native,
+            text=True,
+            capture_output=True,
+            timeout=20,
+        )
+        assert res_nat.returncode == 0, res_nat.stderr
+        assert "NATIVE_OK=15" in res_nat.stdout
+    finally:
+        shutil.rmtree(shm_dir, ignore_errors=True)
+
+
+def test_milk_script_upgrade(tmp_path: Path):
+    install_dir = _find_milk_installdir()
+    upgrader = install_dir / "bin" / "milk-script-upgrade"
+    env = os.environ.copy()
+    env["MILK_INSTALLDIR"] = str(install_dir)
+    env["PATH"] = f"{install_dir / 'bin'}:{env.get('PATH', '')}"
+    env["LD_LIBRARY_PATH"] = f"{install_dir / 'lib'}:{env.get('LD_LIBRARY_PATH', '')}"
+
+    legacy_file = tmp_path / "legacy_sample.milk"
+    legacy_file.write_text("mem.mk2Dim im1 16 16\n" "a = 2 + 3\n" "echo $a\n")
+
+    # --check returns non-zero when legacy constructs are present
+    res_chk = subprocess.run(
+        [str(upgrader), "--check", str(legacy_file)],
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=15,
+    )
+    assert res_chk.returncode == 1
+
+    # --write rewrites in-place and creates .bak
+    res_wr = subprocess.run(
+        [str(upgrader), "--write", str(legacy_file)],
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=15,
+    )
+    assert res_wr.returncode == 0, res_wr.stderr
+    assert (tmp_path / "legacy_sample.milk.bak").exists()
+    upgraded_text = legacy_file.read_text()
+    assert "@mem.mk2Dim im1 16 16" in upgraded_text
+    assert '@calc "a = 2 + 3"' in upgraded_text
