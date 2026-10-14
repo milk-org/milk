@@ -2268,7 +2268,13 @@ static int dispatch_milk_argv(int argc, char **argv)
         {
             data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
             /* If it is a modifier on an existing image, check if bare image exists */
-            if (arg[0] == '@')
+            int is_help_cmd = (strcmp(data.cmd[cmdidx].key, "h") == 0 ||
+                               strcmp(data.cmd[cmdidx].key, "help") == 0 ||
+                               strcmp(data.cmd[cmdidx].key, "hc") == 0 ||
+                               strcmp(data.cmd[cmdidx].key, "cmd?") == 0 ||
+                               strcmp(data.cmd[cmdidx].key, "hm") == 0 ||
+                               strcmp(data.cmd[cmdidx].key, "m?") == 0);
+            if (arg[0] == '@' && !is_help_cmd)
             {
                 IMGID tmpid = imgid_make_from_name(arg);
                 if (tmpid.stream_parse_error)
@@ -2435,11 +2441,11 @@ static void handle_complete_request(int client_fd, const char *prefix, const cha
         }
         size_t blen = strlen(bare);
 
-        static const char *const core_cmds[] = { "h",         "hc",          "hm",      "hf",
-                                                 "get",       "set",         "calc",    "test",
-                                                 "exists",    "running",     "waitfor", "waitany",
-                                                 "grab",      "defer",       "on",      "source",
-                                                 "streamcat", "streamwrite", "unload",  NULL };
+        static const char *const core_cmds[] = {
+            "h",     "hb",   "hc",     "hm",        "hf",          "get",     "set",
+            "calc",  "test", "exists", "running",   "waitfor",     "waitany", "grab",
+            "defer", "on",   "source", "streamcat", "streamwrite", "unload",  NULL
+        };
         for (int i = 0; core_cmds[i] != NULL; i++)
         {
             if (strncmp(core_cmds[i], bare, blen) == 0)

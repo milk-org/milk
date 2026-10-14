@@ -331,7 +331,8 @@ _milk_unload_impl() {
     complete -r "${MILKCLI_SIGIL}" "${MILKCLI_SIGIL}calc" \
         "${MILKCLI_SIGIL}test" "${MILKCLI_SIGIL}get" "${MILKCLI_SIGIL}set" \
         "${MILKCLI_SIGIL}exists" "${MILKCLI_SIGIL}running" "${MILKCLI_SIGIL}waitfor" \
-        "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hc" "${MILKCLI_SIGIL}hm" 2>/dev/null || true
+        "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hb" \
+        "${MILKCLI_SIGIL}hc" "${MILKCLI_SIGIL}hm" 2>/dev/null || true
     if declare -F __milk_prev_cnf_handle >/dev/null; then
         eval "$(declare -f __milk_prev_cnf_handle | sed '1s/__milk_prev_cnf_handle/command_not_found_handle/')"
         unset -f __milk_prev_cnf_handle
@@ -389,6 +390,7 @@ function ${MILKCLI_SIGIL}defer       { _milk_defer_add \"\$@\"; }
 function ${MILKCLI_SIGIL}on          { _milk_on_impl \"\$@\"; }
 function ${MILKCLI_SIGIL}source      { _milk_source_impl \"\$@\"; }
 function ${MILKCLI_SIGIL}h           { milkcall h \"\$@\"; }
+function ${MILKCLI_SIGIL}hb          { milkcall hb \"\$@\"; }
 function ${MILKCLI_SIGIL}hc          { milkcall hc \"\$@\"; }
 function ${MILKCLI_SIGIL}hm          { milkcall hm \"\$@\"; }
 function ${MILKCLI_SIGIL}hf          { milkcall hf \"\$@\"; }
@@ -400,7 +402,7 @@ function ${MILKCLI_SIGIL}unload      { _milk_unload_impl \"\$@\"; }
 # ---------------------------------------------------------------------------
 # 7. Pre-register all @<cmd> shims & external symlink farm (libexec/milk-bin)
 # ---------------------------------------------------------------------------
-_MILK_CMD_COUNT=20
+_MILK_CMD_COUNT=21
 __milk_setup_commands() {
     local cmd_list="${MILK_INSTALLDIR}/share/milk/milk-commands.list"
     if [[ ! -f "${cmd_list}" || "${MILK_INSTALLDIR}/bin/milk-cli" -nt "${cmd_list}" ]]; then
@@ -419,7 +421,7 @@ __milk_setup_commands() {
             [[ -z "${cmd}" ]] && continue
             # Skip names that conflict with core primitives defined above
             case "${cmd}" in
-                calc|test|get|set|exists|running|waitfor|waitany|grab|defer|on|source|h|hc|hm|hf|streamcat|streamwrite|unload)
+                calc|test|get|set|exists|running|waitfor|waitany|grab|defer|on|source|h|hb|hc|hm|hf|streamcat|streamwrite|unload)
                     continue
                     ;;
             esac
@@ -441,7 +443,7 @@ __milk_setup_commands() {
         if [[ ! -f "${marker}" || "${cmd_list}" -nt "${marker}" ]]; then
             local target_bin="${MILK_INSTALLDIR}/bin/milk-call"
             local core_c
-            for core_c in "" calc test get set exists running waitfor grab h hc hm hf streamcat streamwrite unload; do
+            for core_c in "" calc test get set exists running waitfor grab h hb hc hm hf streamcat streamwrite unload; do
                 ln -sf "${target_bin}" "${bin_farm}/${MILKCLI_SIGIL}${core_c}" 2>/dev/null || true
             done
             if [[ -f "${cmd_list}" ]]; then
@@ -501,7 +503,8 @@ _milk_complete() {
 complete -o default -F _milk_complete "${MILKCLI_SIGIL}" "${MILKCLI_SIGIL}calc" \
     "${MILKCLI_SIGIL}test" "${MILKCLI_SIGIL}get" "${MILKCLI_SIGIL}set" \
     "${MILKCLI_SIGIL}exists" "${MILKCLI_SIGIL}running" "${MILKCLI_SIGIL}waitfor" \
-    "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hc" "${MILKCLI_SIGIL}hm" 2>/dev/null || true
+    "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hb" \
+    "${MILKCLI_SIGIL}hc" "${MILKCLI_SIGIL}hm" 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # 9. Visible Prompt Label ([milk]) & Interactive Startup Status
@@ -546,6 +549,6 @@ if [[ ( $- == *i* && -z "${MILK_QUIET:-}" ) || -n "${MILK_BANNER:-}" ]]; then
         unset __milk_maj __milk_min __milk_pat
     fi
     echo -e "\033[1;36m[milk]\033[0m \033[1mmilk v${__milk_ver}\033[0m bash integration loaded (${_MILK_CMD_COUNT} ${MILKCLI_SIGIL}-commands)."
-    echo -e "\033[1;36m[milk]\033[0m Type \033[1;33m${MILKCLI_SIGIL}h\033[0m for help, \033[1;33m${MILKCLI_SIGIL}hm\033[0m for modules, \033[1;33m${MILKCLI_SIGIL}hc <cmd>\033[0m for command help, or \033[1;33m${MILKCLI_SIGIL}unload\033[0m to exit."
+    echo -e "\033[1;36m[milk]\033[0m Type \033[1;33m${MILKCLI_SIGIL}h\033[0m for help, \033[1;33m${MILKCLI_SIGIL}hb\033[0m for bash syntax, \033[1;33m${MILKCLI_SIGIL}hm\033[0m for modules, \033[1;33m${MILKCLI_SIGIL}hc <cmd>\033[0m for command help, or \033[1;33m${MILKCLI_SIGIL}unload\033[0m to exit."
     unset __milk_ver
 fi

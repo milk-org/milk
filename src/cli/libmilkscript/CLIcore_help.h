@@ -40,10 +40,14 @@ void print_milk_framework_help(void);
 extern int help_format_mode;
 void       print_milk_cli_help(void);
 
+/** @brief Print brief top-level help (@h / h / help) */
+void print_milk_top_help(void);
+
 /** @brief Print only the available-topics list */
 void print_help_topic_list(void);
 
 /* Per-topic help functions */
+void help_topic_bash(void);
 void help_topic_cmdopts(void);
 void help_topic_syntax(void);
 void help_topic_commands(void);

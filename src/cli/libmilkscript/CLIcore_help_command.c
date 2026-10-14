@@ -533,6 +533,10 @@ errno_t help()
 
     if (topic != NULL)
     {
+        if (topic[0] == '@' && topic[1] != '\0')
+        {
+            topic++;
+        }
         if (help_topic_dispatch(topic) != 0)
         {
             int matched = 0;
@@ -567,7 +571,7 @@ errno_t help()
     }
     else
     {
-        print_milk_cli_help();
+        print_milk_top_help();
     }
 
     return RETURN_SUCCESS;
@@ -601,7 +605,12 @@ errno_t help_cmd()
         (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND) ||
         (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
     {
-        help_command(data.cmdargtoken[1].val.string);
+        const char *cname = data.cmdargtoken[1].val.string;
+        if (cname[0] == '@' && cname[1] != '\0')
+        {
+            cname++;
+        }
+        help_command(cname);
     }
     else
     {

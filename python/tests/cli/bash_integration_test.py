@@ -107,7 +107,7 @@ def test_builtin_loaded_and_commands_registered():
         for b in milkcall milkget milkset milkcalc milktest milkexists milkwaitfor milkgrab milkcomplete milkshutdown; do
             [[ "$(type -t "$b")" == "builtin" ]]
         done
-        for f in @ @calc @test @get @set @exists @running @waitfor @waitany @grab @defer @on @source @h @hc @hm @hf @streamcat @streamwrite @unload; do
+        for f in @ @calc @test @get @set @exists @running @waitfor @waitany @grab @defer @on @source @h @hb @hc @hm @hf @streamcat @streamwrite @unload; do
             [[ "$(type -t "$f")" == "function" ]]
         done
         [[ "$(type -t @mk2Dim)" == "function" ]]
@@ -115,11 +115,18 @@ def test_builtin_loaded_and_commands_registered():
         [[ "$(type -t @imstats)" == "function" ]]
         [[ "$(type -t @info.imstats)" == "function" ]]
 
-        # Standard bash help must remain untouched, while @h / @hm / @hc invoke milk help
+        # Standard bash help must remain untouched, while @h / @hb / @hm / @hc invoke milk help
         help echo | grep -qi "echo"
-        @h >/dev/null
+        h_out="$(@h)"
+        [[ "${h_out}" == *"source milk.bash"* ]]
+        [[ "${h_out}" == *"@hb"* ]]
+        hb_out="$(@hb)"
+        [[ "${hb_out}" == *"BASH-ENHANCED MODE"* ]]
+        [[ "${hb_out}" == *"@waitfor"* ]]
+        @h bash | grep -q "BASH-ENHANCED MODE"
         @hm >/dev/null
         @hc mk2Dim >/dev/null
+        @hc @mk2Dim >/dev/null
 
         # Verify visible [milk] prompt label, startup banner, and complete @-command removal on @unload
         shopt -s extglob

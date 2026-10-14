@@ -125,6 +125,12 @@ static errno_t help_milk_cmd(void)
     return RETURN_SUCCESS;
 }
 
+static errno_t help_bash_cmd(void)
+{
+    help_topic_bash();
+    return RETURN_SUCCESS;
+}
+
 static errno_t help_fuzzy_or_search(void)
 {
     if (data.cmdNBarg >= 2 || !isatty(STDIN_FILENO))
@@ -158,6 +164,9 @@ void runCLI_cmd_init()
     RegisterCLIcommand("h", __FILE__, help, "show help (or help for topic/command/module)",
                        "[topic|cmd|module]", "h milk", "int help()");
 
+    RegisterCLIcommand("hb", __FILE__, help_bash_cmd, "help: bash-enhanced @ syntax and primitives",
+                       "no argument", "hb", "help_topic_bash()");
+
     RegisterCLIcommand("fhelp", __FILE__, help_fuzzy_or_search, "interactive fuzzy help search",
                        "[search pattern]", "fhelp", "int cli_fhelp()");
 
@@ -170,6 +179,10 @@ void runCLI_cmd_init()
                        "int help()");
 
     /* per-topic help commands --------------------------------------- */
+    RegisterCLIcommand("help-bash", __FILE__, help_bash_cmd,
+                       "help: bash-enhanced @ syntax and primitives", "no argument", "help-bash",
+                       "help_topic_bash()");
+
     RegisterCLIcommand("help-cmdopts", __FILE__, help_cmdopts_cmd, "help: command-line flags",
                        "no argument", "help-cmdopts", "help_topic_cmdopts()");
 
