@@ -156,8 +156,14 @@ typedef struct MILK_RUNNABLE_
  *
  * CMake scans module sources for this line at configure time (cmake/milk_runnable.cmake).
  */
-#define EXPORT_FPSEXEC(prefix, id, unit)                                             \
-    _Static_assert(sizeof(id) > 1, "EXPORT_FPSEXEC: id must be a non-empty string"); \
+#ifdef __cplusplus
+#    define MILK_STATIC_ASSERT(cond, msg) static_assert(cond, msg)
+#else
+#    define MILK_STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
+#endif
+
+#define EXPORT_FPSEXEC(prefix, id, unit)                                                 \
+    MILK_STATIC_ASSERT(sizeof(id) > 1, "EXPORT_FPSEXEC: id must be a non-empty string"); \
     extern const MILK_RUNNABLE unit
 
 /**

@@ -29,6 +29,7 @@
 #    include "computeunit.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #ifdef HAVE_CUDA
@@ -45,51 +46,26 @@ int LINALGEBRA_init();
 // Gen 4 V2 CLI command: linalgebrainit
 // ==========================================
 
-static FPS_APP_INFO FPS_app_info_li = {
-    .fps_name         = "linalgebrainit",
-    .cmdkey           = "linalgebrainit",
-    .description      = "init linalgebra",
-    .description_long = "Initialize linear algebra subsystem. Sets up BLAS/LAPACK configuration "
-                        "and GPU context if available."
-};
-#    define FPS_PARAMS_LI(X)
-#    include "computeunit.h"
-static FPS_CLI_BINDING                   li_b[]     = { { 0 } };
-static const int                         li_nb      = 0;
-static CLICMDARGDEF                      farg[]     = { { 0 } };
-static CLICMDDATA                        CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS                       li_cms     = { 0 };
-static __attribute__((constructor)) void init_li(void)
-{
-    strncpy(CLIcmddata.key, FPS_app_info_li.cmdkey, sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description, FPS_app_info_li.description,
-            sizeof(CLIcmddata.description) - 1);
-    CLIcmddata.nbarg         = 0;
-    CLIcmddata.funcfpscliarg = farg;
-    CLIcmddata.flags         = CLICMDFLAG_FPS;
-    if (!CLIcmddata.cmdsettings)
-    {
-        CLIcmddata.cmdsettings = &li_cms;
-    }
-}
-static errno_t li_compute(void)
+MILK_RUNNABLE_RT_DEFINE(li);
+
+static errno_t li_compute(__attribute__((unused)) const MILK_RUNNABLE *self)
 {
     LINALGEBRA_init();
     return RETURN_SUCCESS;
 }
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_li, farg, &CLIcmddata, li_b, li_nb,
-                                        li_compute);
-}
 
-errno_t linalgebrainit_addCLIcmd()
-{
-    safe_fps_fill_farg_examples(farg, li_b, li_nb);
-    INSERT_STD_CLIREGISTERFUNC;
+const MILK_RUNNABLE runnable_linalgebra_linalgebrainit = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "linalgebrainit",
+                 .cmdkey           = "linalgebrainit",
+                 .description      = "init linalgebra",
+                 .description_long = "Initialize linear algebra subsystem. Sets up BLAS/LAPACK "
+                                     "configuration and GPU context if available." },
+    .srcfile = __FILE__,
+    .compute = li_compute,
+    .rt      = &li_rt,
+};
 
-    return RETURN_SUCCESS;
-}
 
 /**
  * @brief Initialize CUDA and MAGMA

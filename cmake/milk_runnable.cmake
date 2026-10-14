@@ -118,7 +118,7 @@ function(milk_add_runnable_module LIBNAME)
     endforeach()
   endif()
 
-  install(TARGETS ${LIBNAME} DESTINATION lib)
+  install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 endfunction()
 
 

@@ -28,6 +28,7 @@
 #    include "computeunit.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "linalgebra.h"
@@ -42,59 +43,36 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact, long NBmodes, long WFSs
 // Gen 4 V2 CLI command: linalgebratest
 // ==========================================
 
-static int64_t      lt_nact         = 1000;
-static int64_t      lt_nmod         = 20;
-static int64_t      lt_wsz          = 1000;
-static int64_t      lt_gpu          = 1;
-static FPS_APP_INFO FPS_app_info_lt = {
-    .fps_name         = "linalgebratest",
-    .cmdkey           = "linalgebratest",
-    .description      = "test CUDA comp",
-    .description_long = "Test and benchmark cuBLAS linear algebra operations. Verifies GPU matrix "
-                        "multiply correctness and measures throughput."
-};
+static int64_t lt_nact = 1000;
+static int64_t lt_nmod = 20;
+static int64_t lt_wsz  = 1000;
+static int64_t lt_gpu  = 1;
 #define FPS_PARAMS_LT(X)                                                       \
     X(".nbact", &lt_nact, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB act")     \
     X(".nbmodes", &lt_nmod, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB modes") \
     X(".wfssize", &lt_wsz, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB pixels") \
     X(".gpucnt", &lt_gpu, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB GPU")
-#include "computeunit.h"
-static FPS_CLI_BINDING                   lt_b[]     = { FPS_PARAMS_LT(FPS_X_BINDING) };
-static const int                         lt_nb      = sizeof(lt_b) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF                      farg[]     = { FPS_PARAMS_LT(FPS_X_FARG) };
-static CLICMDDATA                        CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS                       lt_cms     = { 0 };
-static __attribute__((constructor)) void init_lt(void)
-{
-    strncpy(CLIcmddata.key, FPS_app_info_lt.cmdkey, sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description, FPS_app_info_lt.description,
-            sizeof(CLIcmddata.description) - 1);
-    CLIcmddata.nbarg         = sizeof(farg) / sizeof(CLICMDARGDEF);
-    CLIcmddata.funcfpscliarg = farg;
-    CLIcmddata.flags         = CLICMDFLAG_FPS;
-    if (!CLIcmddata.cmdsettings)
-    {
-        CLIcmddata.cmdsettings = &lt_cms;
-    }
-}
-static errno_t lt_compute(void)
+MILK_PARAMS_DEFINE(lt, FPS_PARAMS_LT);
+
+static errno_t lt_compute(__attribute__((unused)) const MILK_RUNNABLE *self)
 {
     GPUcomp_test((long) lt_nact, (long) lt_nmod, (long) lt_wsz, (long) lt_gpu);
     return RETURN_SUCCESS;
 }
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_lt, farg, &CLIcmddata, lt_b, lt_nb,
-                                        lt_compute);
-}
 
-errno_t linalgebratest_addCLIcmd()
-{
-    safe_fps_fill_farg_examples(farg, lt_b, lt_nb);
-    INSERT_STD_CLIREGISTERFUNC;
+const MILK_RUNNABLE runnable_linalgebra_linalgebratest = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "linalgebratest",
+                 .cmdkey           = "linalgebratest",
+                 .description      = "test CUDA comp",
+                 .description_long = "Test and benchmark cuBLAS linear algebra operations. "
+                                     "Verifies GPU matrix multiply correctness and measures "
+                                     "throughput." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(lt),
+    .compute = lt_compute,
+};
 
-    return RETURN_SUCCESS;
-}
 
 errno_t GPUcomp_test(__attribute__((unused)) long NBact, long NBmodes, long WFSsize, long GPUcnt)
 {

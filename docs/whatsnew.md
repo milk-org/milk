@@ -19,6 +19,7 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 - **2026-10-14** — `milk_module_example` migrated to `MILK_RUNNABLE`: the template units `imsum1`,
   `imsum2`, `streamupdate`, `streamprocess` and `fpscli` are listed in one module registry, and the
   template executables are generated from `EXPORT_FPSEXEC` `#api` `#build` `#docs`
+- **2026-10-14** — `linalgebra` migrated to `MILK_RUNNABLE`: its CLI commands are listed in one module registry, mandated (CUDA, MAGMA, LAPACKE) units are weak, and the 11 executables are generated from `EXPORT_FPSEXEC` `#api` `#build`
 - **2026-10-11** — New `libcomputeunit` engine library holds the FPS runtime (standalone `main`, tmux,
   conf/run, bindings, standalone macros); `libfps` is reduced to the FPS struct and no longer
   depends on `USE_CLI`. `milkfpsStandalone` and `milkfpsCLI` are removed, `fpsCTRL` and `procCTRL`
