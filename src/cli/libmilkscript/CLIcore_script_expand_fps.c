@@ -580,7 +580,7 @@ static int expand_fpsvar_stream(char *pname, char *out, int *opos, int maxlen)
             snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) imptr->md->datatype);
             found = 1;
         }
-        else if (strcmp(prop, "typename") == 0 || strcmp(prop, "dtype") == 0)
+        else if (strcmp(prop, "typename") == 0)
         {
             const char *tn = ImageStreamIO_typename(imptr->md->datatype);
             if (tn != NULL)
@@ -592,6 +592,56 @@ static int expand_fpsvar_stream(char *pname, char *out, int *opos, int maxlen)
             {
                 snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) imptr->md->datatype);
             }
+            found = 1;
+        }
+        else if (strcmp(prop, "dtype") == 0)
+        {
+            const char *dn = "UNKNOWN";
+            switch (imptr->md->datatype)
+            {
+            case _DATATYPE_UINT8:
+                dn = "UINT8";
+                break;
+            case _DATATYPE_INT8:
+                dn = "INT8";
+                break;
+            case _DATATYPE_UINT16:
+                dn = "UINT16";
+                break;
+            case _DATATYPE_INT16:
+                dn = "INT16";
+                break;
+            case _DATATYPE_UINT32:
+                dn = "UINT32";
+                break;
+            case _DATATYPE_INT32:
+                dn = "INT32";
+                break;
+            case _DATATYPE_UINT64:
+                dn = "UINT64";
+                break;
+            case _DATATYPE_INT64:
+                dn = "INT64";
+                break;
+            case _DATATYPE_HALF:
+                dn = "HALF";
+                break;
+            case _DATATYPE_FLOAT:
+                dn = "FLOAT";
+                break;
+            case _DATATYPE_DOUBLE:
+                dn = "DOUBLE";
+                break;
+            case _DATATYPE_COMPLEX_FLOAT:
+                dn = "COMPLEX_FLOAT";
+                break;
+            case _DATATYPE_COMPLEX_DOUBLE:
+                dn = "COMPLEX_DOUBLE";
+                break;
+            default:
+                break;
+            }
+            snprintf(retbuf, sizeof(retbuf), "%s", dn);
             found = 1;
         }
         else if (strcmp(prop, "typeid") == 0)
@@ -643,7 +693,7 @@ static int expand_fpsvar_stream(char *pname, char *out, int *opos, int maxlen)
                     }
                     else if (imptr->kw[k].type == 'D')
                     {
-                        snprintf(retbuf, sizeof(retbuf), "%.17g", imptr->kw[k].value.numf);
+                        snprintf(retbuf, sizeof(retbuf), "%.15g", imptr->kw[k].value.numf);
                     }
                     else
                     {

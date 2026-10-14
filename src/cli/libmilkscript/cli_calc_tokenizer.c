@@ -164,7 +164,21 @@ static imageID resolve_or_autoconnect_image(const char *name, int allow_autoconn
     if (ImageStreamIO_filename(shmpath, sizeof(shmpath), name) == IMAGESTREAMIO_SUCCESS &&
         access(shmpath, R_OK) == 0)
     {
-        id = read_sharedmem_image(name, data.core.image, data.core.NB_MAX_IMAGE);
+        IMAGE tmp_im;
+        memset(&tmp_im, 0, sizeof(tmp_im));
+        if (ImageStreamIO_read_sharedmem_image_toIMAGE(name, &tmp_im) == IMAGESTREAMIO_SUCCESS)
+        {
+            id = next_avail_image_ID(-1);
+            if (id != -1)
+            {
+                memcpy(&data.core.image[id], &tmp_im, sizeof(IMAGE));
+                data.core.image[id].used = 1;
+            }
+            else
+            {
+                ImageStreamIO_closeIm(&tmp_im);
+            }
+        }
     }
     return id;
 }

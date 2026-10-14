@@ -488,10 +488,60 @@ int milk_entity_get(const char *spec, char *out, size_t outsz)
             snprintf(out, outsz, "%u", (unsigned) im->md->datatype);
             found = 1;
         }
-        else if (strcmp(prop, "typename") == 0 || strcmp(prop, "dtype") == 0)
+        else if (strcmp(prop, "typename") == 0)
         {
             const char *tn = ImageStreamIO_typename(im->md->datatype);
             snprintf(out, outsz, "%s", tn ? tn : "UNKNOWN");
+            found = 1;
+        }
+        else if (strcmp(prop, "dtype") == 0)
+        {
+            const char *dn = "UNKNOWN";
+            switch (im->md->datatype)
+            {
+            case _DATATYPE_UINT8:
+                dn = "UINT8";
+                break;
+            case _DATATYPE_INT8:
+                dn = "INT8";
+                break;
+            case _DATATYPE_UINT16:
+                dn = "UINT16";
+                break;
+            case _DATATYPE_INT16:
+                dn = "INT16";
+                break;
+            case _DATATYPE_UINT32:
+                dn = "UINT32";
+                break;
+            case _DATATYPE_INT32:
+                dn = "INT32";
+                break;
+            case _DATATYPE_UINT64:
+                dn = "UINT64";
+                break;
+            case _DATATYPE_INT64:
+                dn = "INT64";
+                break;
+            case _DATATYPE_HALF:
+                dn = "HALF";
+                break;
+            case _DATATYPE_FLOAT:
+                dn = "FLOAT";
+                break;
+            case _DATATYPE_DOUBLE:
+                dn = "DOUBLE";
+                break;
+            case _DATATYPE_COMPLEX_FLOAT:
+                dn = "COMPLEX_FLOAT";
+                break;
+            case _DATATYPE_COMPLEX_DOUBLE:
+                dn = "COMPLEX_DOUBLE";
+                break;
+            default:
+                break;
+            }
+            snprintf(out, outsz, "%s", dn);
             found = 1;
         }
         else if (strcmp(prop, "cnt0") == 0)
@@ -568,7 +618,7 @@ int milk_entity_get(const char *spec, char *out, size_t outsz)
                         }
                         else if (im->kw[k].type == 'D')
                         {
-                            snprintf(out, outsz, "%.17g", im->kw[k].value.numf);
+                            snprintf(out, outsz, "%.15g", im->kw[k].value.numf);
                         }
                         else
                         {
@@ -603,8 +653,14 @@ int milk_entity_get(const char *spec, char *out, size_t outsz)
             {
                 if (fps.parray[pi].fpflag & FPFLAG_ACTIVE)
                 {
-                    int n = snprintf(out + pos, outsz - pos, "%s%s", (pos > 0) ? " " : "",
-                                     fps.parray[pi].keyword[0]);
+                    const char *kw = (fps.parray[pi].keywordfull[0] != '\0')
+                                         ? fps.parray[pi].keywordfull
+                                         : fps.parray[pi].keyword[0];
+                    if (kw[0] == '.')
+                    {
+                        kw++;
+                    }
+                    int n = snprintf(out + pos, outsz - pos, "%s%s", (pos > 0) ? " " : "", kw);
                     if (n > 0 && pos + (size_t) n < outsz)
                     {
                         pos += (size_t) n;
@@ -1176,72 +1232,82 @@ static double monotonic_sec(void)
     return (double) ts.tv_sec + 1.0e-9 * (double) ts.tv_nsec;
 }
 
+static int is_entity_ns_prefix(const char *s, size_t nslen)
+{
+    return ((nslen == 1 && (s[0] == 's' || s[0] == 'f' || s[0] == 'p' || s[0] == 'q')) ||
+            (nslen == 6 && strncmp(s, "stream", 6) == 0) ||
+            (nslen == 3 && (strncmp(s, "fps", 3) == 0 || strncmp(s, "seq", 3) == 0)) ||
+            (nslen == 4 && strncmp(s, "proc", 4) == 0) ||
+            (nslen == 8 && strncmp(s, "procinfo", 8) == 0));
+}
+
 static void expand_entities_in_expr(const char *in, char *out, size_t outsz)
 {
     if (outsz == 0)
     {
         return;
     }
-    char stage1[8192];
-    snprintf(stage1, sizeof(stage1), "%s", (in != NULL) ? in : "");
-    cli_expand_fpsvar(stage1, (int) sizeof(stage1));
-
-    size_t ip    = 0;
-    size_t op    = 0;
-    size_t len   = strlen(stage1);
-    int    in_sq = 0;
-    int    in_dq = 0;
+    const char *src   = (in != NULL) ? in : "";
+    size_t      ip    = 0;
+    size_t      op    = 0;
+    size_t      len   = strlen(src);
+    int         in_sq = 0;
+    int         in_dq = 0;
 
     while (ip < len && op + 1 < outsz)
     {
-        char c = stage1[ip];
+        char c = src[ip];
         if (c == '\'' && !in_dq)
         {
             in_sq     = !in_sq;
-            out[op++] = stage1[ip++];
+            out[op++] = src[ip++];
             continue;
         }
         if (c == '"' && !in_sq)
         {
             in_dq     = !in_dq;
-            out[op++] = stage1[ip++];
+            out[op++] = src[ip++];
             continue;
         }
         if (in_sq || in_dq)
         {
-            out[op++] = stage1[ip++];
+            out[op++] = src[ip++];
             continue;
         }
 
-        if ((isalpha((unsigned char) c) || c == '_') &&
-            (ip == 0 || (!isalnum((unsigned char) stage1[ip - 1]) && stage1[ip - 1] != '_' &&
-                         stage1[ip - 1] != '.' && stage1[ip - 1] != '@')))
+        int has_at = (c == '@' && ip + 1 < len &&
+                      (isalpha((unsigned char) src[ip + 1]) || src[ip + 1] == '_'));
+        if ((has_at || isalpha((unsigned char) c) || c == '_') &&
+            (ip == 0 || (!isalnum((unsigned char) src[ip - 1]) && src[ip - 1] != '_' &&
+                         src[ip - 1] != '.' && src[ip - 1] != '@')))
         {
-            size_t end   = ip;
-            int    ndots = 0;
-            while (end < len && (isalnum((unsigned char) stage1[end]) || stage1[end] == '_' ||
-                                 stage1[end] == '.' || stage1[end] == '-'))
+            size_t tstart = has_at ? (ip + 1) : ip;
+            size_t end    = tstart;
+            int    ndots  = 0;
+            while (end < len && (isalnum((unsigned char) src[end]) || src[end] == '_' ||
+                                 src[end] == '.' || src[end] == '-'))
             {
-                if (stage1[end] == '.')
+                if (src[end] == '.')
                 {
                     ndots++;
                 }
                 end++;
             }
-            size_t tlen = end - ip;
-            if (ndots >= 2 && tlen < 256)
+            while (end > tstart && src[end - 1] == '.')
+            {
+                end--;
+                ndots--;
+            }
+            size_t tlen = end - tstart;
+            if (((has_at && ndots >= 1 && (end >= len || src[end] != ':')) || ndots >= 2) &&
+                tlen < 256)
             {
                 char tok[256];
-                memcpy(tok, stage1 + ip, tlen);
+                memcpy(tok, src + tstart, tlen);
                 tok[tlen]         = '\0';
                 const char *dot1  = strchr(tok, '.');
-                size_t      nslen = (size_t) (dot1 - tok);
-                if ((nslen == 1 &&
-                     (tok[0] == 's' || tok[0] == 'f' || tok[0] == 'p' || tok[0] == 'q')) ||
-                    (nslen == 6 && strncmp(tok, "stream", 6) == 0) ||
-                    (nslen == 3 && (strncmp(tok, "fps", 3) == 0 || strncmp(tok, "seq", 3) == 0)) ||
-                    (nslen == 4 && strncmp(tok, "proc", 4) == 0) ||
-                    (nslen == 8 && strncmp(tok, "procinfo", 8) == 0))
+                size_t      nslen = (dot1 != NULL) ? (size_t) (dot1 - tok) : 0;
+                if (has_at || is_entity_ns_prefix(tok, nslen))
                 {
                     char val[512];
                     val[0] = '\0';
@@ -1273,9 +1339,10 @@ static void expand_entities_in_expr(const char *in, char *out, size_t outsz)
                 }
             }
         }
-        out[op++] = stage1[ip++];
+        out[op++] = src[ip++];
     }
     out[op] = '\0';
+    cli_expand_fpsvar(out, (int) outsz);
 }
 
 static int milk_server_waitfor(int         client_fd,
@@ -1863,44 +1930,107 @@ static int builtin_streamwrite(int argc, char **argv)
     uint64_t nel  = im->md->nelement;
     uint8_t  dt   = im->md->datatype;
     im->md->write = 1;
-    double val    = 0.0;
-    for (uint64_t i = 0; i < nel; i++)
+    uint64_t idx  = 0;
+
+    if (argc >= 3)
     {
-        if (scanf("%lf", &val) != 1)
+        for (int a = 2; a < argc && idx < nel; a++)
         {
-            break;
+            const char *p = argv[a];
+            while (*p != '\0' && idx < nel)
+            {
+                while (*p != '\0' && isspace((unsigned char) *p))
+                {
+                    p++;
+                }
+                if (*p == '\0')
+                {
+                    break;
+                }
+                char  *endp = NULL;
+                double val  = strtod(p, &endp);
+                if (endp == p)
+                {
+                    break;
+                }
+                p = endp;
+                if (dt == _DATATYPE_FLOAT)
+                {
+                    im->array.F[idx] = (float) val;
+                }
+                else if (dt == _DATATYPE_DOUBLE)
+                {
+                    im->array.D[idx] = val;
+                }
+                else if (dt == _DATATYPE_UINT16)
+                {
+                    im->array.UI16[idx] = (uint16_t) val;
+                }
+                else if (dt == _DATATYPE_INT16)
+                {
+                    im->array.SI16[idx] = (int16_t) val;
+                }
+                else if (dt == _DATATYPE_UINT32)
+                {
+                    im->array.UI32[idx] = (uint32_t) val;
+                }
+                else if (dt == _DATATYPE_INT32)
+                {
+                    im->array.SI32[idx] = (int32_t) val;
+                }
+                else if (dt == _DATATYPE_INT64)
+                {
+                    im->array.SI64[idx] = (int64_t) val;
+                }
+                else if (dt == _DATATYPE_UINT8)
+                {
+                    im->array.UI8[idx] = (uint8_t) val;
+                }
+                idx++;
+            }
         }
-        if (dt == _DATATYPE_FLOAT)
+    }
+    else
+    {
+        double val = 0.0;
+        for (; idx < nel; idx++)
         {
-            im->array.F[i] = (float) val;
-        }
-        else if (dt == _DATATYPE_DOUBLE)
-        {
-            im->array.D[i] = val;
-        }
-        else if (dt == _DATATYPE_UINT16)
-        {
-            im->array.UI16[i] = (uint16_t) val;
-        }
-        else if (dt == _DATATYPE_INT16)
-        {
-            im->array.SI16[i] = (int16_t) val;
-        }
-        else if (dt == _DATATYPE_UINT32)
-        {
-            im->array.UI32[i] = (uint32_t) val;
-        }
-        else if (dt == _DATATYPE_INT32)
-        {
-            im->array.SI32[i] = (int32_t) val;
-        }
-        else if (dt == _DATATYPE_INT64)
-        {
-            im->array.SI64[i] = (int64_t) val;
-        }
-        else if (dt == _DATATYPE_UINT8)
-        {
-            im->array.UI8[i] = (uint8_t) val;
+            if (scanf("%lf", &val) != 1)
+            {
+                break;
+            }
+            if (dt == _DATATYPE_FLOAT)
+            {
+                im->array.F[idx] = (float) val;
+            }
+            else if (dt == _DATATYPE_DOUBLE)
+            {
+                im->array.D[idx] = val;
+            }
+            else if (dt == _DATATYPE_UINT16)
+            {
+                im->array.UI16[idx] = (uint16_t) val;
+            }
+            else if (dt == _DATATYPE_INT16)
+            {
+                im->array.SI16[idx] = (int16_t) val;
+            }
+            else if (dt == _DATATYPE_UINT32)
+            {
+                im->array.UI32[idx] = (uint32_t) val;
+            }
+            else if (dt == _DATATYPE_INT32)
+            {
+                im->array.SI32[idx] = (int32_t) val;
+            }
+            else if (dt == _DATATYPE_INT64)
+            {
+                im->array.SI64[idx] = (int64_t) val;
+            }
+            else if (dt == _DATATYPE_UINT8)
+            {
+                im->array.UI8[idx] = (uint8_t) val;
+            }
         }
     }
     processinfo_update_output_stream(NULL, im, NULL);
@@ -1932,6 +2062,36 @@ static int dispatch_milk_argv(int argc, char **argv)
     if (strcmp(cmdname, "streamwrite") == 0)
     {
         return builtin_streamwrite(argc, argv);
+    }
+
+    /* Direct entity path invocation (@s.im.xsize, @s.im.kw.KEY=val, @f.fps.param=val) */
+    {
+        const char *dot1  = strchr(cmdname, '.');
+        size_t      nslen = (dot1 != NULL) ? (size_t) (dot1 - cmdname) : 0;
+        const char *dot2  = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
+        if (dot2 != NULL && is_entity_ns_prefix(cmdname, nslen))
+        {
+            const char *eq = strchr(cmdname, '=');
+            if (eq != NULL)
+            {
+                return (milk_entity_set(cmdname, NULL, (argc >= 2) ? argv[1] : NULL) == 0) ? 0 : 1;
+            }
+            if (argc >= 3 && strcmp(argv[1], "=") == 0)
+            {
+                return (milk_entity_set(cmdname, argv[2], (argc >= 4) ? argv[3] : NULL) == 0) ? 0
+                                                                                              : 1;
+            }
+            if (argc == 1)
+            {
+                char val[1024];
+                if (milk_entity_get(cmdname, val, sizeof(val)) == 0)
+                {
+                    printf("%s\n", val);
+                    return 0;
+                }
+                return 1;
+            }
+        }
     }
 
     /* Reconstruct data.CLIcmdline for commands and interceptors that inspect it */
@@ -2075,7 +2235,13 @@ static int dispatch_milk_argv(int argc, char **argv)
             if (arg[0] == '@')
             {
                 IMGID tmpid = imgid_make_from_name(arg);
-                if (!tmpid.stream_parse_error && tmpid.name[0] != '\0')
+                if (tmpid.stream_parse_error)
+                {
+                    imgid_free(&tmpid);
+                    data.CMDerrstatus = RETURN_FAILURE;
+                    return 1;
+                }
+                if (tmpid.name[0] != '\0')
                 {
                     if (image_ID(tmpid.name, data.core.image, data.core.NB_MAX_IMAGE) != -1)
                     {
@@ -2717,13 +2883,114 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
                 long          snap_nmax = 0;
                 dcvar_snap_t *snap      = snapshot_dcvar(&snap_nmax);
 
-                /* Expand inline @s./s., @f./f., @p./p., @q./q. entity references inside expr */
-                char expanded[8192];
-                expand_entities_in_expr(expr, expanded, sizeof(expanded));
+                /* Check if !is_test and expr is an entity LHS assignment:
+                 * [@](s|f|p|stream|fps|proc).<name>.<prop> = <rhs_expr> */
+                int         handled_entity_lhs = 0;
+                const char *p                  = expr;
+                while (*p == ' ' || *p == '\t')
+                {
+                    p++;
+                }
+                if (!is_test)
+                {
+                    const char *lstart = (*p == '@') ? (p + 1) : p;
+                    const char *le     = lstart;
+                    int         ndots  = 0;
+                    while (*le != '\0' &&
+                           (isalnum((unsigned char) *le) || *le == '_' || *le == '.' || *le == '-'))
+                    {
+                        if (*le == '.')
+                        {
+                            ndots++;
+                        }
+                        le++;
+                    }
+                    const char *dot1  = strchr(lstart, '.');
+                    size_t      nslen = (dot1 != NULL && dot1 < le) ? (size_t) (dot1 - lstart) : 0;
+                    if (ndots >= 2 && (size_t) (le - lstart) < 256 &&
+                        is_entity_ns_prefix(lstart, nslen))
+                    {
+                        const char *eq = le;
+                        while (*eq == ' ' || *eq == '\t')
+                        {
+                            eq++;
+                        }
+                        if (*eq == '=' && eq[1] != '=')
+                        {
+                            char lhs[256];
+                            memcpy(lhs, lstart, (size_t) (le - lstart));
+                            lhs[le - lstart] = '\0';
+                            const char *rhs  = eq + 1;
+                            while (*rhs == ' ' || *rhs == '\t')
+                            {
+                                rhs++;
+                            }
+                            char exp_rhs[4096];
+                            expand_entities_in_expr(rhs, exp_rhs, sizeof(exp_rhs));
+                            size_t rlen = strlen(exp_rhs);
+                            while (rlen > 0 &&
+                                   (exp_rhs[rlen - 1] == ' ' || exp_rhs[rlen - 1] == '\t'))
+                            {
+                                exp_rhs[--rlen] = '\0';
+                            }
+                            if (rlen >= 2 && ((exp_rhs[0] == '"' && exp_rhs[rlen - 1] == '"') ||
+                                              (exp_rhs[0] == '\'' && exp_rhs[rlen - 1] == '\'')))
+                            {
+                                exp_rhs[rlen - 1] = '\0';
+                                rc = (milk_entity_set(lhs, exp_rhs + 1, NULL) == 0) ? 0 : 1;
+                            }
+                            else
+                            {
+                                char assign_expr[4200];
+                                snprintf(assign_expr, sizeof(assign_expr), "_milk_ent_rhs = %s",
+                                         exp_rhs);
+                                int eval_rc = 2;
+                                int saved_q = dcquiet;
+                                dcquiet     = 1;
+                                cli_calc_eval_bash(assign_expr, 0, &eval_rc);
+                                dcquiet   = saved_q;
+                                long vidx = variable_ID("_milk_ent_rhs");
+                                if (eval_rc == 0 && vidx != -1)
+                                {
+                                    char vbuf[128];
+                                    if (data.core.variable[vidx].type == 1)
+                                    {
+                                        snprintf(vbuf, sizeof(vbuf), "%ld",
+                                                 data.core.variable[vidx].value.l);
+                                    }
+                                    else if (data.core.variable[vidx].type == 2)
+                                    {
+                                        snprintf(vbuf, sizeof(vbuf), "%s",
+                                                 data.core.variable[vidx].value.s);
+                                    }
+                                    else
+                                    {
+                                        snprintf(vbuf, sizeof(vbuf), "%.*g", cli_float_digits,
+                                                 data.core.variable[vidx].value.f);
+                                    }
+                                    data.core.variable[vidx].used = 0;
+                                    rc = (milk_entity_set(lhs, vbuf, NULL) == 0) ? 0 : 1;
+                                }
+                                else
+                                {
+                                    rc = (milk_entity_set(lhs, exp_rhs, NULL) == 0) ? 0 : 1;
+                                }
+                            }
+                            handled_entity_lhs = 1;
+                        }
+                    }
+                }
 
-                int eval_rc = 2;
-                cli_calc_eval_bash(expanded, is_test, &eval_rc);
-                rc = eval_rc;
+                if (!handled_entity_lhs)
+                {
+                    /* Expand inline @s./s., @f./f., @p./p., @q./q. entity references inside expr */
+                    char expanded[8192];
+                    expand_entities_in_expr(expr, expanded, sizeof(expanded));
+
+                    int eval_rc = 2;
+                    cli_calc_eval_bash(expanded, is_test, &eval_rc);
+                    rc = eval_rc;
+                }
 
                 send_modified_dcvars(client_fd, snap, snap_nmax);
                 free(snap);

@@ -615,10 +615,57 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
         return 0;
     }
 
+    /* If invoking streamwrite with no inline values, drain client stdin BEFORE
+     * connecting to the single-threaded server so pipelines (@streamcat | ... | @streamwrite)
+     * never deadlock waiting on the server socket. */
+    char  *stdin_data = NULL;
+    char  *sw_argv[4];
+    char **eff_argv = argv;
+    int    eff_argc = argc;
+    {
+        const char *c0 = argv[0];
+        if (c0[0] == '@' || c0[0] == ',')
+        {
+            c0++;
+        }
+        if (strcmp(c0, "streamwrite") == 0 && argc == 2)
+        {
+            size_t dcap = 4096;
+            size_t dlen = 0;
+            stdin_data  = (char *) malloc(dcap);
+            if (stdin_data != NULL)
+            {
+                ssize_t nr;
+                while ((nr = read(STDIN_FILENO, stdin_data + dlen, dcap - dlen - 1)) > 0)
+                {
+                    dlen += (size_t) nr;
+                    if (dlen + 1024 >= dcap)
+                    {
+                        dcap *= 2;
+                        char *nd = (char *) realloc(stdin_data, dcap);
+                        if (nd == NULL)
+                        {
+                            break;
+                        }
+                        stdin_data = nd;
+                    }
+                }
+                stdin_data[dlen] = '\0';
+                sw_argv[0]       = argv[0];
+                sw_argv[1]       = argv[1];
+                sw_argv[2]       = stdin_data;
+                sw_argv[3]       = NULL;
+                eff_argv         = sw_argv;
+                eff_argc         = 3;
+            }
+        }
+    }
+
     char sockpath[256];
     int  fd = milk_client_connect(hooks, sockpath, sizeof(sockpath));
     if (fd < 0)
     {
+        free(stdin_data);
         return 1;
     }
 
@@ -648,9 +695,9 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
 
     /* Compute payload size */
     size_t cap = sizeof(uint32_t) * 3 + 256;
-    for (int i = 0; i < argc; i++)
+    for (int i = 0; i < eff_argc; i++)
     {
-        cap += strlen(argv[i]) + 1;
+        cap += strlen(eff_argv[i]) + 1;
     }
     for (uint32_t i = 0; i < nenv; i++)
     {
@@ -664,20 +711,22 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
     uint8_t *buf = (uint8_t *) malloc(cap);
     if (buf == NULL)
     {
+        free(stdin_data);
         close(fd);
         return 1;
     }
 
     uint32_t off   = 0;
-    uint32_t uargc = (uint32_t) argc;
+    uint32_t uargc = (uint32_t) eff_argc;
     memcpy(buf + off, &uargc, sizeof(uargc));
     off += (uint32_t) sizeof(uargc);
-    for (int i = 0; i < argc; i++)
+    for (int i = 0; i < eff_argc; i++)
     {
-        size_t l = strlen(argv[i]) + 1;
-        memcpy(buf + off, argv[i], l);
+        size_t l = strlen(eff_argv[i]) + 1;
+        memcpy(buf + off, eff_argv[i], l);
         off += (uint32_t) l;
     }
+    free(stdin_data);
 
     memcpy(buf + off, &nenv, sizeof(nenv));
     off += (uint32_t) sizeof(nenv);

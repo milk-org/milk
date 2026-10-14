@@ -200,7 +200,7 @@ _milk_source_impl() {
     local __milk_src_file="$1"
     shift
     # shellcheck disable=SC1090
-    builtin source <("${MILK_INSTALLDIR}/bin/milk-call" translate "${__milk_src_file}") "$@"
+    builtin source <("${MILK_INSTALLDIR}/bin/milk-call" translate --legacy "${__milk_src_file}") "$@"
 }
 
 export PROCINFO_NCPU="${PROCINFO_NCPU:-$(nproc 2>/dev/null || echo 1)}"

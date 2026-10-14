@@ -185,6 +185,11 @@ static size_t scan_entity_path(const char *s, int *has_eq)
         }
         i++;
     }
+    while (i > plen && s[i - 1] == '.')
+    {
+        i--;
+        dots--;
+    }
     if (dots < 2)
     {
         return 0;
@@ -232,28 +237,14 @@ static int is_registered_milk_command(const char *w)
         return 0;
     }
 
-    static const char *const extra_cmds[] = { "help",
-                                              "imgstat",
-                                              "info.imgstat",
-                                              "mk2Drnd",
-                                              "imgen.mk2Drnd",
-                                              "procstat",
-                                              "procctl",
-                                              "procwait",
-                                              "dpdigits",
-                                              "assigncheck",
-                                              "assert",
-                                              "on_update",
-                                              "on_fpschange",
-                                              "lm?",
-                                              "m?",
-                                              "cmd?",
-                                              "f?",
-                                              "?",
-                                              "vars",
-                                              "savescript",
-                                              "savehistory",
-                                              NULL };
+    static const char *const extra_cmds[] = {
+        "help",         "imgstat",       "info.imgstat", "imstats",     "mk2Dim",   "mk3Dim",
+        "mk2Drnd",      "imgen.mk2Drnd", "mkrndim",      "readshmim",   "listim",   "deleteim",
+        "loadfits",     "savefits",      "fpslist",      "streamlist",  "proclist", "procstat",
+        "procctl",      "procwait",      "dpdigits",     "assigncheck", "assert",   "on_update",
+        "on_fpschange", "lm?",           "m?",           "cmd?",        "f?",       "?",
+        "vars",         "savescript",    "savehistory",  NULL
+    };
     for (int i = 0; extra_cmds[i] != NULL; i++)
     {
         if (strcmp(w, extra_cmds[i]) == 0)
@@ -339,12 +330,77 @@ static int is_registered_milk_command(const char *w)
  *  Inline Expansion Helpers (@{...} and [ -S/-F/-P ... ])
  * ============================================================ */
 
+static int is_calc_or_test_stmt_prefix(const char *s, size_t len, const char *sigil, size_t siglen)
+{
+    size_t i = 0;
+    while (i < len && (s[i] == ' ' || s[i] == '\t'))
+    {
+        i++;
+    }
+    for (;;)
+    {
+        static const char *const prefixes[] = { "then",  "do", "else", "elif", "while",
+                                                "until", "if", "!",    NULL };
+        int                      matched    = 0;
+        for (int p = 0; prefixes[p] != NULL; p++)
+        {
+            size_t plen = strlen(prefixes[p]);
+            if (i + plen < len && strncmp(s + i, prefixes[p], plen) == 0 &&
+                (s[i + plen] == ' ' || s[i + plen] == '\t'))
+            {
+                i += plen;
+                while (i < len && (s[i] == ' ' || s[i] == '\t'))
+                {
+                    i++;
+                }
+                matched = 1;
+                break;
+            }
+        }
+        if (!matched)
+        {
+            break;
+        }
+    }
+    if (i >= len)
+    {
+        return 0;
+    }
+    size_t adv = 0;
+    if (i + siglen <= len && strncmp(s + i, sigil, siglen) == 0)
+    {
+        adv = siglen;
+    }
+    else if (s[i] == '@')
+    {
+        adv = 1;
+    }
+    if (adv == 0)
+    {
+        return 0;
+    }
+    const char *rest = s + i + adv;
+    size_t      rlen = len - (i + adv);
+    if (rlen > 0 && (rest[0] == ' ' || rest[0] == '\t'))
+    {
+        return 1;
+    }
+    if ((rlen > 5 && strncmp(rest, "calc", 4) == 0 && (rest[4] == ' ' || rest[4] == '\t')) ||
+        (rlen > 5 && strncmp(rest, "test", 4) == 0 && (rest[4] == ' ' || rest[4] == '\t')) ||
+        (rlen > 8 && strncmp(rest, "waitfor", 7) == 0 && (rest[7] == ' ' || rest[7] == '\t')))
+    {
+        return 1;
+    }
+    return 0;
+}
+
 static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
 {
-    const char *sigil  = get_sigil();
-    size_t      siglen = strlen(sigil);
-    int         in_sq  = 0;
-    int         in_dq  = 0;
+    const char *sigil      = get_sigil();
+    size_t      siglen     = strlen(sigil);
+    int         in_sq      = 0;
+    int         in_dq      = 0;
+    size_t      stmt_start = 0;
 
     for (size_t i = 0; i < len;)
     {
@@ -374,6 +430,11 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
             sbuf_append_ch(out, c);
             i++;
             continue;
+        }
+
+        if (!in_dq && (c == ';' || c == '|' || c == '&'))
+        {
+            stmt_start = i + 1;
         }
 
         /* Comment start outside quotes */
@@ -420,32 +481,38 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
             }
         }
 
-        /* Inside double quotes: @s.im.prop / @f.fps.param -> $(@get s.im.prop) */
-        if (in_dq && (strncmp(in + i, sigil, siglen) == 0 || in[i] == '@'))
+        /* Inside double quotes (for non-@calc/@test/@waitfor stmts) or RHS of VAR=@s.im.prop:
+         * @s.im.prop / @f.fps.param -> $(@get s.im.prop) */
+        if ((in_dq || (i > 0 && in[i - 1] == '=')) &&
+            (strncmp(in + i, sigil, siglen) == 0 || in[i] == '@'))
         {
-            size_t adv    = (strncmp(in + i, sigil, siglen) == 0) ? siglen : 1;
-            int    has_eq = 0;
-            size_t elen   = scan_entity_path(in + i + adv, &has_eq);
-            if (elen > 0 && !has_eq)
+            int skip_for_calc = in_dq && is_calc_or_test_stmt_prefix(in + stmt_start,
+                                                                     i - stmt_start, sigil, siglen);
+            if (!skip_for_calc)
             {
-                /* Require at least 2 dots (e.g. s.im.prop) inside quotes */
-                int ndots = 0;
-                for (size_t d = 0; d < elen; d++)
+                size_t adv    = (strncmp(in + i, sigil, siglen) == 0) ? siglen : 1;
+                int    has_eq = 0;
+                size_t elen   = scan_entity_path(in + i + adv, &has_eq);
+                if (elen > 0 && !has_eq)
                 {
-                    if (in[i + adv + d] == '.')
+                    int ndots = 0;
+                    for (size_t d = 0; d < elen; d++)
                     {
-                        ndots++;
+                        if (in[i + adv + d] == '.')
+                        {
+                            ndots++;
+                        }
                     }
-                }
-                if (ndots >= 2)
-                {
-                    sbuf_append_str(out, "$(");
-                    sbuf_append_str(out, sigil);
-                    sbuf_append_str(out, "get ");
-                    sbuf_append_mem(out, in + i + adv, elen);
-                    sbuf_append_ch(out, ')');
-                    i += adv + elen;
-                    continue;
+                    if (ndots >= 2)
+                    {
+                        sbuf_append_str(out, "$(");
+                        sbuf_append_str(out, sigil);
+                        sbuf_append_str(out, "get ");
+                        sbuf_append_mem(out, in + i + adv, elen);
+                        sbuf_append_ch(out, ')');
+                        i += adv + elen;
+                        continue;
+                    }
                 }
             }
         }
@@ -948,9 +1015,19 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
         size_t elen   = scan_entity_path(s + adv, &has_eq);
         if (elen > 0)
         {
-            if (has_eq)
+            size_t eq_pos = adv + elen;
+            while (eq_pos < slen && (s[eq_pos] == ' ' || s[eq_pos] == '\t'))
             {
-                size_t vstart = adv + elen + 1;
+                eq_pos++;
+            }
+            if (has_eq ||
+                (eq_pos < slen && s[eq_pos] == '=' && (eq_pos + 1 >= slen || s[eq_pos + 1] != '=')))
+            {
+                size_t vstart = eq_pos + 1;
+                while (vstart < slen && (s[vstart] == ' ' || s[vstart] == '\t'))
+                {
+                    vstart++;
+                }
                 sbuf_append_str(out, sigil);
                 sbuf_append_str(out, "set ");
                 sbuf_append_mem(out, s + adv, elen);
