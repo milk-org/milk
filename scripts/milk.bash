@@ -334,26 +334,26 @@ _milk_unload_impl() {
 # 6. Define Tier-1 Core Primitives under ${MILKCLI_SIGIL}
 # ---------------------------------------------------------------------------
 eval "
-${MILKCLI_SIGIL}()            { milkcalc \"\$@\"; }
-${MILKCLI_SIGIL}calc()        { milkcalc \"\$@\"; }
-${MILKCLI_SIGIL}test()        { milktest \"\$@\"; }
-${MILKCLI_SIGIL}get()         { milkget \"\$@\"; }
-${MILKCLI_SIGIL}set()         { milkset \"\$@\"; }
-${MILKCLI_SIGIL}exists()      { milkexists \"\$@\"; }
-${MILKCLI_SIGIL}running()     { milkexists -r \"\$@\"; }
-${MILKCLI_SIGIL}waitfor()     { milkwaitfor \"\$@\"; }
-${MILKCLI_SIGIL}waitany()     { _milk_waitany_impl \"\$@\"; }
-${MILKCLI_SIGIL}grab()        { milkgrab \"\$@\"; }
-${MILKCLI_SIGIL}defer()       { _milk_defer_add \"\$@\"; }
-${MILKCLI_SIGIL}on()          { _milk_on_impl \"\$@\"; }
-${MILKCLI_SIGIL}source()      { _milk_source_impl \"\$@\"; }
-${MILKCLI_SIGIL}h()           { milkcall h \"\$@\"; }
-${MILKCLI_SIGIL}hc()          { milkcall hc \"\$@\"; }
-${MILKCLI_SIGIL}hm()          { milkcall hm \"\$@\"; }
-${MILKCLI_SIGIL}hf()          { milkcall hf \"\$@\"; }
-${MILKCLI_SIGIL}streamcat()   { milkcall streamcat \"\$@\"; }
-${MILKCLI_SIGIL}streamwrite() { milkcall streamwrite \"\$@\"; }
-${MILKCLI_SIGIL}unload()      { _milk_unload_impl \"\$@\"; }
+function ${MILKCLI_SIGIL}            { milkcalc \"\$@\"; }
+function ${MILKCLI_SIGIL}calc        { milkcalc \"\$@\"; }
+function ${MILKCLI_SIGIL}test        { milktest \"\$@\"; }
+function ${MILKCLI_SIGIL}get         { milkget \"\$@\"; }
+function ${MILKCLI_SIGIL}set         { milkset \"\$@\"; }
+function ${MILKCLI_SIGIL}exists      { milkexists \"\$@\"; }
+function ${MILKCLI_SIGIL}running     { milkexists -r \"\$@\"; }
+function ${MILKCLI_SIGIL}waitfor     { milkwaitfor \"\$@\"; }
+function ${MILKCLI_SIGIL}waitany     { _milk_waitany_impl \"\$@\"; }
+function ${MILKCLI_SIGIL}grab        { milkgrab \"\$@\"; }
+function ${MILKCLI_SIGIL}defer       { _milk_defer_add \"\$@\"; }
+function ${MILKCLI_SIGIL}on          { _milk_on_impl \"\$@\"; }
+function ${MILKCLI_SIGIL}source      { _milk_source_impl \"\$@\"; }
+function ${MILKCLI_SIGIL}h           { milkcall h \"\$@\"; }
+function ${MILKCLI_SIGIL}hc          { milkcall hc \"\$@\"; }
+function ${MILKCLI_SIGIL}hm          { milkcall hm \"\$@\"; }
+function ${MILKCLI_SIGIL}hf          { milkcall hf \"\$@\"; }
+function ${MILKCLI_SIGIL}streamcat   { milkcall streamcat \"\$@\"; }
+function ${MILKCLI_SIGIL}streamwrite { milkcall streamwrite \"\$@\"; }
+function ${MILKCLI_SIGIL}unload      { _milk_unload_impl \"\$@\"; }
 "
 
 # ---------------------------------------------------------------------------
@@ -381,7 +381,7 @@ __milk_setup_commands() {
                     continue
                     ;;
             esac
-            shim_code+="${MILKCLI_SIGIL}${cmd}() { milkcall \"${cmd}\" \"\$@\"; };"
+            shim_code+="function ${MILKCLI_SIGIL}${cmd} { milkcall \"${cmd}\" \"\$@\"; };"
         done < "${cmd_list}"
         eval "${shim_code}"
     fi

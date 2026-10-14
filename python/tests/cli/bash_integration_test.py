@@ -121,10 +121,12 @@ def test_builtin_loaded_and_commands_registered():
         @hm >/dev/null
         @hc mk2Dim >/dev/null
 
-        # Verify visible [milk] prompt label when sourced with PS1 set, and restoration on @unload
+        # Verify visible [milk] prompt label when sourced with PS1 and extglob set, and restoration on @unload
+        shopt -s extglob
         PS1='user@host:$ '
         unset _MILK_ORIG_PS1
         source "${MILK_INSTALLDIR}/bin/milk.bash"
+        [[ "$(type -t @)" == "function" ]]
         [[ "${PS1}" == *"[milk]"*"user@host:$ " ]]
         ps1_once="${PS1}"
         source "${MILK_INSTALLDIR}/bin/milk.bash"
