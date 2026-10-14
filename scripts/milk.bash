@@ -312,6 +312,22 @@ _milk_unload_impl() {
             milkwaitfor milkgrab milkcomplete milkshutdown 2>/dev/null || true
         _MILK_BUILTIN_LOADED=0
     fi
+    if [[ "$(declare -p PROMPT_COMMAND 2>/dev/null)" == "declare -a"* ]]; then
+        local -a __new_pc=()
+        local __pc_item
+        for __pc_item in "${PROMPT_COMMAND[@]}"; do
+            [[ "${__pc_item}" != "_milk_apply_ps1" ]] && __new_pc+=("${__pc_item}")
+        done
+        PROMPT_COMMAND=("${__new_pc[@]}")
+    elif [[ -n "${PROMPT_COMMAND:-}" ]]; then
+        PROMPT_COMMAND="${PROMPT_COMMAND//; _milk_apply_ps1/}"
+        PROMPT_COMMAND="${PROMPT_COMMAND//_milk_apply_ps1; /}"
+        PROMPT_COMMAND="${PROMPT_COMMAND//_milk_apply_ps1/}"
+    fi
+    if [[ -n "${_MILK_ORIG_PS1+x}" ]]; then
+        PS1="${_MILK_ORIG_PS1}"
+        unset _MILK_ORIG_PS1
+    fi
 }
 
 # ---------------------------------------------------------------------------
@@ -442,3 +458,34 @@ complete -o default -F _milk_complete "${MILKCLI_SIGIL}" "${MILKCLI_SIGIL}calc" 
     "${MILKCLI_SIGIL}test" "${MILKCLI_SIGIL}get" "${MILKCLI_SIGIL}set" \
     "${MILKCLI_SIGIL}exists" "${MILKCLI_SIGIL}running" "${MILKCLI_SIGIL}waitfor" \
     "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hc" "${MILKCLI_SIGIL}hm" 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
+# 9. Visible Prompt Label ([milk]) for milk-capable terminals
+# ---------------------------------------------------------------------------
+_MILK_PS1_PREFIX='\[\033[1;36m\][milk]\[\033[0m\] '
+
+_milk_apply_ps1() {
+    local __milk_last_rc=$?
+    if [[ -z "${MILK_NO_PROMPT:-}" ]]; then
+        if [[ -z "${_MILK_ORIG_PS1+x}" ]]; then
+            _MILK_ORIG_PS1="${PS1:-}"
+        fi
+        if [[ "${PS1:-}" != *"[milk]"* ]]; then
+            PS1="${_MILK_PS1_PREFIX}${PS1:-\\s-\\v\\\$ }"
+        fi
+    fi
+    return ${__milk_last_rc}
+}
+
+if [[ $- == *i* || -n "${PS1:-}" ]]; then
+    _milk_apply_ps1
+    if [[ "$(declare -p PROMPT_COMMAND 2>/dev/null)" == "declare -a"* ]]; then
+        if [[ " ${PROMPT_COMMAND[*]} " != *" _milk_apply_ps1 "* ]]; then
+            PROMPT_COMMAND+=("_milk_apply_ps1")
+        fi
+    else
+        if [[ "${PROMPT_COMMAND:-}" != *"_milk_apply_ps1"* ]]; then
+            PROMPT_COMMAND="${PROMPT_COMMAND:+${PROMPT_COMMAND%;}; }_milk_apply_ps1"
+        fi
+    fi
+fi

@@ -120,6 +120,17 @@ def test_builtin_loaded_and_commands_registered():
         @h >/dev/null
         @hm >/dev/null
         @hc mk2Dim >/dev/null
+
+        # Verify visible [milk] prompt label when sourced with PS1 set, and restoration on @unload
+        PS1='user@host:$ '
+        unset _MILK_ORIG_PS1
+        source "${MILK_INSTALLDIR}/bin/milk.bash"
+        [[ "${PS1}" == *"[milk]"*"user@host:$ " ]]
+        ps1_once="${PS1}"
+        source "${MILK_INSTALLDIR}/bin/milk.bash"
+        [[ "${PS1}" == "${ps1_once}" ]]
+        @unload
+        [[ "${PS1}" == 'user@host:$ ' ]]
         echo "OK"
         """)
     assert res.returncode == 0, res.stderr
