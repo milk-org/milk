@@ -240,6 +240,11 @@ typedef struct
         processinfo->CPUmask       = CLIcmddata.cmdsettings->CPUmask;                              \
         processinfo->MeasureTiming = CLIcmddata.cmdsettings->procinfo_MeasureTiming;               \
         processinfo_loopstart(processinfo);                                                        \
+    }                                                                                              \
+    if (dcfpsptr != NULL)                                                                          \
+    {                                                                                              \
+        /* proc.<name>.<pid>.shm exists past this point */                                         \
+        dcfpsptr->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP;                          \
     }
 
 
@@ -275,6 +280,7 @@ typedef struct
             {                                                                        \
                 fpsresync_fps_to_modvar(dcfpsptr, dcfpsbindings, dcfpsnbindings, 0); \
             }
+
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_START \
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT      \
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
@@ -325,6 +331,10 @@ typedef struct
     if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                                 \
     {                                                                                        \
         processinfo_cleanExit(processinfo);                                                  \
+    }                                                                                        \
+    if (dcfpsptr != NULL)                                                                    \
+    {                                                                                        \
+        dcfpsptr->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP;                   \
     }
 
 #endif /* FPS_PROCINFO_MACROS_H */
