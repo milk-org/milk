@@ -13,40 +13,44 @@ from pathlib import Path
 
 import pytest
 
-from milk.cliwrap import HAVE_CLI
+from milk.cliwrap import CLICommands, HAVE_CLI, MILK_CLI_EXEC
 
-pytestmark = pytest.mark.skipif(
-    not HAVE_CLI, reason="MILK compiled without CLI support"
-)
+pytestmark = [
+    pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
+    pytest.mark.timeout(25),
+]
 
 
-def _find_milk_installdir() -> Path:
-    env_dir = os.environ.get("MILK_INSTALLDIR")
-    if env_dir and (Path(env_dir) / "bin" / "milk.bash").exists():
-        return Path(env_dir)
-    repo_root = Path(__file__).resolve().parents[3]
-    for cand in sorted((repo_root / "_install").glob("milk-*"), reverse=True):
-        if (cand / "bin" / "milk.bash").exists():
-            return cand
-    return Path("/usr/local/milk")
+def _install_dir() -> Path:
+    return Path(os.environ["MILK_INSTALLDIR"]).resolve()
+
+
+def _isolated_shm_env(
+    extra_env: dict[str, str] | None = None,
+) -> tuple[dict[str, str], str]:
+    """Build a subprocess env rooted inside conftest's spoofed MILK_SHM_DIR."""
+    install_dir = _install_dir()
+    base_shm = os.environ.get("MILK_SHM_DIR", "/tmp")
+    os.makedirs(base_shm, exist_ok=True)
+    shm_dir = tempfile.mkdtemp(prefix="milk_bash_", dir=base_shm)
+
+    env = os.environ.copy()
+    env["MILK_INSTALLDIR"] = str(install_dir)
+    env["PATH"] = f"{install_dir / 'bin'}:{env.get('PATH', '')}"
+    env["LD_LIBRARY_PATH"] = f"{install_dir / 'lib'}:{env.get('LD_LIBRARY_PATH', '')}"
+    env["MILK_SHM_DIR"] = shm_dir
+    env["MILK_PROC_DIR"] = shm_dir
+    if extra_env:
+        env.update(extra_env)
+    return env, shm_dir
 
 
 def _run_bash(
     script: str, extra_env: dict[str, str] | None = None
 ) -> subprocess.CompletedProcess[str]:
-    install_dir = _find_milk_installdir()
-    shm_dir = tempfile.mkdtemp(prefix="milk_bash_test_", dir="/dev/shm")
+    install_dir = _install_dir()
+    env, shm_dir = _isolated_shm_env(extra_env)
     try:
-        env = os.environ.copy()
-        env["MILK_INSTALLDIR"] = str(install_dir)
-        env["PATH"] = f"{install_dir / 'bin'}:{env.get('PATH', '')}"
-        env["LD_LIBRARY_PATH"] = (
-            f"{install_dir / 'lib'}:{env.get('LD_LIBRARY_PATH', '')}"
-        )
-        env["MILK_SHM_DIR"] = shm_dir
-        if extra_env:
-            env.update(extra_env)
-
         full_script = f'source "{install_dir / "bin" / "milk.bash"}"\n{script}\n'
         return subprocess.run(
             ["/bin/bash", "-e", "-c", full_script],
@@ -65,28 +69,20 @@ def _run_milk_cli(
     mode: str = "script",
     extra_env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    install_dir = _find_milk_installdir()
-    milk_cli = install_dir / "bin" / "milk-cli"
-    shm_dir = tempfile.mkdtemp(prefix="milk_cli_test_", dir="/dev/shm")
+    assert MILK_CLI_EXEC is not None
+    env, shm_dir = _isolated_shm_env(extra_env)
     try:
-        env = os.environ.copy()
-        env["MILK_INSTALLDIR"] = str(install_dir)
-        env["PATH"] = f"{install_dir / 'bin'}:{env.get('PATH', '')}"
-        env["LD_LIBRARY_PATH"] = (
-            f"{install_dir / 'lib'}:{env.get('LD_LIBRARY_PATH', '')}"
-        )
-        env["MILK_SHM_DIR"] = shm_dir
-        if extra_env:
-            env.update(extra_env)
-
         if mode == "cmd":
-            cmd = [str(milk_cli), "-c", script]
             return subprocess.run(
-                cmd, env=env, text=True, capture_output=True, timeout=25
+                [MILK_CLI_EXEC, "-c", script],
+                env=env,
+                text=True,
+                capture_output=True,
+                timeout=25,
             )
         if mode == "stdin":
             return subprocess.run(
-                [str(milk_cli)],
+                [MILK_CLI_EXEC],
                 input=script + "\nexit\n",
                 env=env,
                 text=True,
@@ -96,7 +92,7 @@ def _run_milk_cli(
         script_file = tmp_path / "test_script.milk"
         script_file.write_text(script + "\n")
         return subprocess.run(
-            [str(milk_cli), "-s", str(script_file)],
+            [MILK_CLI_EXEC, "-s", str(script_file)],
             env=env,
             text=True,
             capture_output=True,
@@ -526,41 +522,51 @@ def test_milk_cli_tier2_comprehensive(tmp_path: Path):
     assert res_nat.returncode == 0, res_nat.stderr
     assert "NATIVE_OK=15" in res_nat.stdout
 
+    # Verify milk.cliwrap.CLICommands works with Tier-1 and Tier-2 syntax
+    with CLICommands(
+        [
+            "mem.mk2Dim @S:wrap_im 8 8",
+            "@ wrap_im = 6",
+            'echo "CLIWRAP_OK=@s.wrap_im.xsize:@{itot(wrap_im)}"',
+        ]
+    ) as res_wrap:
+        assert res_wrap.returncode == 0, res_wrap.stderr
+        assert "CLIWRAP_OK=8:384" in res_wrap.stdout
+
 
 def test_milk_script_upgrade(tmp_path: Path):
-    install_dir = _find_milk_installdir()
+    install_dir = _install_dir()
     upgrader = install_dir / "bin" / "milk-script-upgrade"
-    env = os.environ.copy()
-    env["MILK_INSTALLDIR"] = str(install_dir)
-    env["PATH"] = f"{install_dir / 'bin'}:{env.get('PATH', '')}"
-    env["LD_LIBRARY_PATH"] = f"{install_dir / 'lib'}:{env.get('LD_LIBRARY_PATH', '')}"
+    env, shm_dir = _isolated_shm_env()
+    try:
+        legacy_file = tmp_path / "legacy_sample.milk"
+        legacy_file.write_text("mem.mk2Dim im1 16 16\n" "a = 2 + 3\n" "echo $a\n")
 
-    legacy_file = tmp_path / "legacy_sample.milk"
-    legacy_file.write_text("mem.mk2Dim im1 16 16\n" "a = 2 + 3\n" "echo $a\n")
+        # --check returns non-zero when legacy constructs are present
+        res_chk = subprocess.run(
+            [str(upgrader), "--check", str(legacy_file)],
+            env=env,
+            text=True,
+            capture_output=True,
+            timeout=15,
+        )
+        assert res_chk.returncode == 1
 
-    # --check returns non-zero when legacy constructs are present
-    res_chk = subprocess.run(
-        [str(upgrader), "--check", str(legacy_file)],
-        env=env,
-        text=True,
-        capture_output=True,
-        timeout=15,
-    )
-    assert res_chk.returncode == 1
-
-    # --write rewrites in-place and creates .bak
-    res_wr = subprocess.run(
-        [str(upgrader), "--write", str(legacy_file)],
-        env=env,
-        text=True,
-        capture_output=True,
-        timeout=15,
-    )
-    assert res_wr.returncode == 0, res_wr.stderr
-    assert (tmp_path / "legacy_sample.milk.bak").exists()
-    upgraded_text = legacy_file.read_text()
-    assert "@mem.mk2Dim im1 16 16" in upgraded_text
-    assert '@calc "a = 2 + 3"' in upgraded_text
+        # --write rewrites in-place and creates .bak
+        res_wr = subprocess.run(
+            [str(upgrader), "--write", str(legacy_file)],
+            env=env,
+            text=True,
+            capture_output=True,
+            timeout=15,
+        )
+        assert res_wr.returncode == 0, res_wr.stderr
+        assert (tmp_path / "legacy_sample.milk.bak").exists()
+        upgraded_text = legacy_file.read_text()
+        assert "@mem.mk2Dim im1 16 16" in upgraded_text
+        assert '@calc "a = 2 + 3"' in upgraded_text
+    finally:
+        shutil.rmtree(shm_dir, ignore_errors=True)
 
 
 def test_adversarial_slicing_1d_2d_3d_and_compound():
