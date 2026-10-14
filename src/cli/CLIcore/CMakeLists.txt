@@ -132,6 +132,7 @@ target_link_libraries(
          milkCOREMODtools
          milkprocessinfo
          milkfps
+         milkcomputeunit
          milkfpsseq
          milkdata)
 
@@ -326,8 +327,8 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/src/cli/overview/input
           ${CMAKE_SOURCE_DIR}/src/cli/overview/render
           ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
-target_link_libraries(milk-CTRL PUBLIC ImageStreamIO milkprocessinfo milkfps m
-                                       rt pthread)
+target_link_libraries(milk-CTRL PUBLIC ImageStreamIO milkprocessinfo milkfps
+                                       milkcomputeunit m rt pthread)
 install(TARGETS milk-CTRL DESTINATION bin)
 install(PROGRAMS ../overview/milk-setup-caps DESTINATION bin)
 

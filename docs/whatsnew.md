@@ -16,6 +16,11 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
+- **2026-10-11** — New `libcomputeunit` engine library holds the FPS runtime (standalone `main`, tmux,
+  conf/run, bindings, standalone macros); `libfps` is reduced to the FPS struct and no longer
+  depends on `USE_CLI`. `milkfpsStandalone` and `milkfpsCLI` are removed, `fpsCTRL` and `procCTRL`
+  move to `src/tui/`, and the CLI wrapper now lives in `libmilkscript` with explicit registration.
+  Include `computeunit.h` instead of `fps.h` for the runtime API `#build` `#api` `#refactor` `#fps`
 - **2026-10-07** — Unified module `CMakeLists.txt` template, `milk_link_module()` for static-LTO standalones, and
   `INSERT_STD_CLIREGISTERFUNC_NAMED` for CLI registration `#build` `#api`
 - **2026-10-06** — Reorganized `docs/` into topic subfolders

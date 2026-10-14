@@ -29,6 +29,8 @@ set(MILKSCRIPT_SOURCES
     CLIcore_UI_alias.c
     CLIcore_checkargs.c
     CLIcore_checkargs_fps.c
+    CLIcore_fps_function.c
+    CLIcore_fps_query.c
     CLIcore_datainit.c
     CLIcore_help.c
     CLIcore_help_command.c
@@ -96,7 +98,7 @@ target_link_libraries(
          milkCOREMODtools
          milkprocessinfo
          milkfps
-         milkfpsCLI
+         milkcomputeunit
          milkfpsseq
          milkdata)
 

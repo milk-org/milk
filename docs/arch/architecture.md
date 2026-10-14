@@ -92,8 +92,8 @@ ones.
 │  COREMOD_tools · COREMOD_iofits          │
 ├──────────────────────────────────────────┤
 │            Framework                     │
-│  CLIcore · milkfpsCLI                    │
-│  milkfpsTUI · milkfpsStandalone          │
+│  CLIcore · milkscript                    │
+│  milkcomputeunit (FPS runtime)           │
 ├──────────────────────────────────────────┤
 │            Engine  (POSIX only)          │
 │  ImageStreamIO · milkfps                 │
@@ -123,8 +123,12 @@ milk/
 │   ├── engine/                        ← Engine tier
 │   │   ├── ImageStreamIO/             Zero-copy shared memory streams
 │   │   ├── libfps/                    FPS core (parameter management)
+│   │   ├── libcomputeunit/            FPS runtime: standalone main, tmux, conf/run
+│   │   ├── libfpsseq/                 FPS sequencer
 │   │   ├── libprocessinfo/            Heartbeat + process tracking
 │   │   └── libmilkdata/              IMGID struct, image utilities
+│   │
+│   ├── tui/                           ← Engine-tier TUIs (fpsCTRL, procCTRL)
 │   │
 │   ├── cli/                           ← User-facing tools
 │   │   ├── CLIcore/                   Interactive shell framework

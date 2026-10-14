@@ -34,7 +34,7 @@
 #    include "libmilkdata/milkdata_macros.h"
 #endif
 
-#include "fps.h"
+#include "computeunit.h"
 #include "COREMOD_memory/compute_image_memory.h"
 #include "COREMOD_memory/compute_nb_image.h"
 

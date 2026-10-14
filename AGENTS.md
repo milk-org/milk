@@ -78,10 +78,12 @@ milk/
 │   ├── engine/                    ← Core libraries (POSIX only, no CLI)
 │   │   ├── ImageStreamIO/         ← Zero-copy shared memory streams
 │   │   ├── libfps/                ← FPS core (parameter management)
+│   │   ├── libcomputeunit/        ← FPS runtime (standalone main, tmux, conf/run)
 │   │   ├── libfpsseq/             ← FPS sequencer library
 │   │   ├── libmilkcommon/         ← Common utilities, debug macros
 │   │   ├── libprocessinfo/        ← Heartbeat + process tracking
 │   │   └── libmilkdata/           ← IMGID struct, image utilities
+│   ├── tui/                       ← Engine-tier TUIs (fpsCTRL, procCTRL)
 │   ├── cli/                       ← User-facing tools
 │   │   ├── libmilkscript/         ← Standalone scripting engine
 │   │   ├── CLIcore/               ← Interactive shell framework

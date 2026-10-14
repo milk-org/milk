@@ -402,7 +402,7 @@ When `USE_STATIC_LTO=ON`, a `_static`-suffixed archive variant is built for each
 ```text
 libImageStreamIO.a
 libmilkfps.a
-libmilkfpsStandalone.a
+libmilkcomputeunit.a
 libmilkdata.a
 libmilkprocessinfo.a
 libCOREMODmemory_static.a

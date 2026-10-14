@@ -28,7 +28,6 @@ add_library(milkprocessinfo SHARED ${SOURCES})
 target_include_directories(
   milkprocessinfo
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
          $<INSTALL_INTERFACE:include>)
 
 # Link dependencies
@@ -48,7 +47,6 @@ if(USE_STATIC_LTO)
   target_include_directories(
     milkprocessinfo_static
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkcommon>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
@@ -73,7 +71,7 @@ target_link_libraries(milk-procinfo-rm PUBLIC milkprocessinfo ImageStreamIO
                                               pthread m)
 install(TARGETS milk-procinfo-rm DESTINATION bin)
 
-add_executable(milk-procinfo-list procCTRL/milk-procinfo-list.c)
+add_executable(milk-procinfo-list milk-procinfo-list.c)
 target_include_directories(
   milk-procinfo-list
   PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
@@ -101,36 +99,3 @@ install(
         quicksort.h
         timeutils.h
   DESTINATION include)
-
-# ==========================================
-# milk-procCTRL executable
-# ==========================================
-
-add_executable(
-  milk-procCTRL
-  procCTRL/milk-procCTRL.c
-  procCTRL/procCTRL_GetCPUloads.c
-  procCTRL/procCTRL_GetNumberCPUs.c
-  procCTRL/procCTRL_PIDcollectSystemInfo.c
-  procCTRL/procCTRL_processinfo_scan.c
-  procCTRL/procCTRL_TUI.c
-  procCTRL/procCTRL_TUI_render.c
-  procCTRL/procCTRL_TUI_input.c
-  procCTRL/procCTRL_TUI_sort.c
-  procCTRL/procCTRL_TUIcompat.c)
-target_link_libraries(milk-procCTRL PUBLIC milkprocessinfo ImageStreamIO
-                                           pthread m)
-target_include_directories(
-  milk-procCTRL
-  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
-
-add_executable(milk-procCTRL-scan procCTRL/milk-procCTRL-scan.c
-                                  procCTRL/procCTRL_PIDcollectSystemInfo.c)
-target_link_libraries(milk-procCTRL-scan PUBLIC milkprocessinfo ImageStreamIO
-                                                pthread m)
-target_include_directories(
-  milk-procCTRL-scan
-  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
-
-install(TARGETS milk-procCTRL DESTINATION bin)
-install(TARGETS milk-procCTRL-scan DESTINATION bin)

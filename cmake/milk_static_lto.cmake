@@ -44,9 +44,10 @@ function(milk_add_static_lto LIBNAME)
         PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
         $<TARGET_PROPERTY:milkfps_static,INTERFACE_INCLUDE_DIRECTORIES>
+        $<TARGET_PROPERTY:milkcomputeunit_static,INTERFACE_INCLUDE_DIRECTORIES>
         $<INSTALL_INTERFACE:include>)
-    target_link_libraries(${_static} PUBLIC m milkfps_static milkcommon
-        ${ARG_LINK_LIBS})
+    target_link_libraries(${_static} PUBLIC m milkfps_static milkcomputeunit_static
+        milkcommon ${ARG_LINK_LIBS})
     # Unresolved symbols are looked up in archives that follow this one.
     set(_core milkCOREMODmemory_static milkCOREMODtools_static
         milkCOREMODarith_static)

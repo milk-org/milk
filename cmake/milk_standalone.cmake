@@ -18,7 +18,7 @@
 # Common link set for all standalone executables
 set(_MILK_STANDALONE_LIBS
     milkfps
-    milkfpsStandalone
+    milkcomputeunit
     milkfpsseq
     milkdata
     milkprocessinfo
@@ -46,7 +46,7 @@ if(USE_STATIC_LTO)
       milkCOREMODmemory_static
       milkCOREMODtools_static
       milkCOREMODarith_static
-      milkfpsStandalone_static
+      milkcomputeunit_static
       milkfpsseq_static
       milkfps_static
       milkdata_static

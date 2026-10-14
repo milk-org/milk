@@ -14,8 +14,8 @@ The project's help content lives in these locations:
 | #   | Type                 | Path(s)                                             | Topic                         |
 | --- | -------------------- | --------------------------------------------------- | ----------------------------- |
 | 1   | Help executable (C)  | `src/cli/CLIcore/milk-cli-help.c`, `milk-help.c`    | CLI usage, startup, piping    |
-| 2   | Help executable (C)  | `src/engine/libfps/milk-fps-help.c`                 | FPS concepts & management     |
-| 3   | Help executable (C)  | `src/engine/libfps/milk-fpsexec-help.c`             | fpsexec standalone usage      |
+| 2   | Help executable (C)  | `src/engine/libfps/tools/milk-fps-help.c`                 | FPS concepts & management     |
+| 3   | Help executable (C)  | `src/engine/libfps/tools/milk-fpsexec-help.c`             | fpsexec standalone usage      |
 | 4   | Help executable (C)  | `src/engine/libprocessinfo/milk-procinfo-help.c`    | Processinfo & real-time       |
 | 5   | Help executable (C)  | `src/cli/CLIcore/milk-cli-help-synchro.c`           | Synchronization overview      |
 | 6   | Static help text     | `src/cli/CLIcore/doc/help.txt`                      | CLI options, syntax, FITS I/O |

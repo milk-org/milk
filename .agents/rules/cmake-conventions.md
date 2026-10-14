@@ -38,6 +38,7 @@ categories:
 
 - `libfps`: `fps.h` (public), `fps_internal.h`
   (internal), `fps_types.h` (types)
+- `libcomputeunit`: `computeunit.h` (public umbrella for the FPS runtime API and standalone macros)
 - `ImageStreamIO`: `ImageStreamIO.h` (public),
   `ImageStruct.h` (types)
 - `libprocessinfo`: `processinfo.h` (public),

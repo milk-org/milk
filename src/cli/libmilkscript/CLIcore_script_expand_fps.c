@@ -37,7 +37,7 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "fpsseq.h"
 
-#include "fps.h"
+#include "computeunit.h"
 #include "fps_GetParamIndex.h"
 #include "fps_connect.h"
 #include "fps_printparameter_valuestring.h"

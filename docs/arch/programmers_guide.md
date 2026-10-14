@@ -139,8 +139,11 @@ is `src/milk_module_example/examplefunc_fps_cli_poc.c`.
 ## 4. Directory Map
 
 - `src/engine/`: Core daemon logic, including `ImageStreamIO` (shared-memory data), `libfps` (FPS
-  core library), `libfpsseq` (FPS sequencer), `libmilkcommon` (common utilities, debug tools),
+  core library: struct, parameters, shared memory), `libcomputeunit` (FPS runtime: standalone
+  `main`, tmux, conf/run processes, bindings and standalone macros; depends on `libfps`, never the
+  reverse), `libfpsseq` (FPS sequencer), `libmilkcommon` (common utilities, debug tools),
   `libprocessinfo`, and `libmilkdata`.
+- `src/tui/`: Engine-tier terminal UIs (`fpsCTRL`, `procCTRL`) and the shared `milkTUI_compat.h`.
 - `src/cli/`: User interfaces and scripting layer, including `libmilkscript` (core interpreter),
   `CLIcore` (interactive shell), `overview` (system overview TUI), and `streamCTRL`.
 - `src/milk_module_example`: Compute unit templates (start here!).
@@ -208,7 +211,7 @@ Each module builds a single regular library, shared by `milk-cli` and standalone
         └-> Automatic loading of <module>.so as a dependency.
         |   # init_module_CLI(), RegisterCLICommand() etc. may exist (-DUSE_CLI=ON) but are NOT invoked.
         └-> Invokes `main()`
-            └-> Invokes `fpsexec_main_function()` (compiled in `milkfpsStandalone`, `libfps/core/fps_standalone_main.c`)
+            └-> Invokes `fpsexec_main_function()` (compiled in `milkcomputeunit`, `libcomputeunit/core/fps_standalone_main.c`)
                 └-> prepares a statically defined calling context.
                 └-> compute_function() of <myfunc>, via a function pointer.
     ```

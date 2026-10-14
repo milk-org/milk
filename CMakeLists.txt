@@ -268,9 +268,10 @@ else()
   # standalone stubs)
   include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tui/procCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libcomputeunit
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tui/fpsCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkcommon
@@ -299,9 +300,10 @@ else()
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/tui/procCTRL>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libcomputeunit>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/tui/fpsCTRL>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/ImageStreamIO>
@@ -475,6 +477,8 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # src/engine is needed globally so that all targets can resolve #include
 # "ImageStreamIO/ImageStreamIO.h"
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libcomputeunit)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/tui)
 # Generated config.h/milk_config.h live in the build tree; see configure_file() above.
 include_directories(${CMAKE_BINARY_DIR}/config)
 
@@ -518,6 +522,7 @@ endif()
 # add libfps (standalone fps library exploration)
 add_subdirectory(src/engine/libmilkcommon)
 add_subdirectory(src/engine/libfps)
+add_subdirectory(src/engine/libcomputeunit)
 add_subdirectory(src/engine/libfpsseq)
 
 # add libmilkdata (core data layer, no CLI dependency)
@@ -525,6 +530,9 @@ add_subdirectory(src/engine/libmilkdata)
 
 # add libprocessinfo
 add_subdirectory(src/engine/libprocessinfo)
+
+# engine-tier TUIs
+add_subdirectory(src/tui)
 
 # Package definitions (needed by both CLI and standalone)
 add_definitions(

@@ -32,8 +32,8 @@ When integrating an external package (`mypkg`) with Milk, follow these architect
      confined to a dedicated adapter directory (e.g. `src/mypkg-fps/` or `adapters/milk/`).
    - The adapter consumes the public C API of `libmypkg` as an ordinary client.
 
-3. **Lean Standalone FPS Daemons (`libmilkfpsStandalone`)**:
-   - Standalone binaries (`milk-fpsexec-<funcname>`) must link `milkfpsStandalone`,
+3. **Lean Standalone FPS Daemons (`libmilkcomputeunit`)**:
+   - Standalone binaries (`milk-fpsexec-<funcname>`) must link `milkcomputeunit`,
      `milkprocessinfo`, and `ImageStreamIO`.
    - Never link `CLIcore`, GNU Readline, or terminal libraries into standalone FPS binaries.
 
@@ -48,7 +48,7 @@ When integrating an external package (`mypkg`) with Milk, follow these architect
 
 ```text
 src/mypkg-fps/
-├── CMakeLists.txt         # Links libmypkg + milkfpsStandalone + ImageStreamIO
+├── CMakeLists.txt         # Links libmypkg + milkcomputeunit + ImageStreamIO
 ├── mypkg_fps_params.h     # Single source of truth: FPS_PARAMS(X) macro
 ├── mypkg_fps_common.h     # Adapter context, stream bridges, prototypes
 ├── mypkg_fps_common.c     # Stream setup, casting, output update, reset

@@ -2,8 +2,8 @@
 # CMakeLists.txt.template - Milk Adapter Build Rules
 # ==============================================================================
 # This template demonstrates how an external package builds:
-# 1. Standalone FPS executable: milk-fpsexec-<pkg> (linking milkfpsStandalone)
-# 2. Milk CLI module: libmilk<pkg>.so (linking CLIcore and milkfpsCLI)
+# 1. Standalone FPS executable: milk-fpsexec-<pkg> (linking milkcomputeunit)
+# 2. Milk CLI module: libmilk<pkg>.so (linking CLIcore and milkcomputeunit)
 # ==============================================================================
 
 cmake_minimum_required(VERSION 3.16)
@@ -13,7 +13,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(MILK REQUIRED milk)
 # ImageStreamIO headers and library are provided by the Milk installation.
 
-# Standalone FPS executable (links libmilkfpsStandalone, no CLIcore)
+# Standalone FPS executable (links libmilkcomputeunit, no CLIcore)
 add_executable(milk-fpsexec-@PKG_NAME@
     @PKG_NAME@_fps_main.c
     @PKG_NAME@_fps_common.c
@@ -41,7 +41,7 @@ target_link_directories(milk-fpsexec-@PKG_NAME@ PRIVATE
 target_link_libraries(milk-fpsexec-@PKG_NAME@ PRIVATE
     @PKG_LIB@
     milkfps
-    milkfpsStandalone
+    milkcomputeunit
     milkprocessinfo
     ImageStreamIO
     milkcommon
@@ -100,7 +100,7 @@ if (MILK_CLICORE_LIBRARY AND MILK_CLICORE_HEADER)
         @PKG_LIB@
         ${MILK_CLICORE_LIBRARY}
         milkfps
-        milkfpsCLI
+        milkcomputeunit
         milkprocessinfo
         ImageStreamIO
         milkcommon

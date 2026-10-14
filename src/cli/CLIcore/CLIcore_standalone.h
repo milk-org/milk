@@ -35,6 +35,7 @@
 #include "ImageStreamIO/ImageStruct.h"
 
 #include <fps.h>
+#include <computeunit.h>
 #include <processtools.h>
 #include "timeutils.h"
 
