@@ -301,17 +301,54 @@ _milk_on_impl() {
 _milk_unload_impl() {
     _milk_on_impl --clear
     milkshutdown 2>/dev/null || true
+
+    # 1. Unset all @<cmd> functions registered under ${MILKCLI_SIGIL}
     local fn
     while IFS= read -r fn; do
-        if [[ "${fn}" == "${MILKCLI_SIGIL}"* ]]; then
-            unset -f "${fn}" 2>/dev/null || true
+        [[ -n "${fn}" ]] && unset -f "${fn}" 2>/dev/null || true
+    done < <(compgen -A function "${MILKCLI_SIGIL}")
+
+    # 2. Remove milk-bin symlink farm from PATH and flush bash command hash table
+    local new_path=""
+    local p_entry
+    local old_ifs="${IFS}"
+    IFS=':'
+    for p_entry in ${PATH}; do
+        if [[ -n "${_MILK_BIN_FARM:-}" && "${p_entry}" == "${_MILK_BIN_FARM}" ]]; then
+            continue
         fi
-    done < <(declare -F | awk '{print $3}')
-    if [[ ${_MILK_BUILTIN_LOADED} -eq 1 ]]; then
+        if [[ "${p_entry}" == */libexec/milk-bin || "${p_entry}" == */milk-bin-* ]]; then
+            continue
+        fi
+        new_path="${new_path:+${new_path}:}${p_entry}"
+    done
+    IFS="${old_ifs}"
+    export PATH="${new_path}"
+    unset _MILK_BIN_FARM
+    hash -r 2>/dev/null || true
+
+    # 3. Remove tab-completion bindings and restore command_not_found_handle
+    complete -r "${MILKCLI_SIGIL}" "${MILKCLI_SIGIL}calc" \
+        "${MILKCLI_SIGIL}test" "${MILKCLI_SIGIL}get" "${MILKCLI_SIGIL}set" \
+        "${MILKCLI_SIGIL}exists" "${MILKCLI_SIGIL}running" "${MILKCLI_SIGIL}waitfor" \
+        "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hc" "${MILKCLI_SIGIL}hm" 2>/dev/null || true
+    if declare -F __milk_prev_cnf_handle >/dev/null; then
+        eval "$(declare -f __milk_prev_cnf_handle | sed '1s/__milk_prev_cnf_handle/command_not_found_handle/')"
+        unset -f __milk_prev_cnf_handle
+    else
+        unset -f command_not_found_handle 2>/dev/null || true
+    fi
+
+    # 4. Disable C builtins and unset fallback shims
+    if [[ ${_MILK_BUILTIN_LOADED:-0} -eq 1 ]]; then
         enable -d milkcall milkget milkset milkcalc milktest milkexists \
             milkwaitfor milkgrab milkcomplete milkshutdown 2>/dev/null || true
         _MILK_BUILTIN_LOADED=0
     fi
+    unset -f milkcall milkget milkset milkcalc milktest milkexists \
+        milkwaitfor milkgrab milkcomplete milkshutdown 2>/dev/null || true
+
+    # 5. Restore PROMPT_COMMAND and PS1
     if [[ "$(declare -p PROMPT_COMMAND 2>/dev/null)" == "declare -a"* ]]; then
         local -a __new_pc=()
         local __pc_item
@@ -327,6 +364,10 @@ _milk_unload_impl() {
     if [[ -n "${_MILK_ORIG_PS1+x}" ]]; then
         PS1="${_MILK_ORIG_PS1}"
         unset _MILK_ORIG_PS1
+    fi
+
+    if [[ ( $- == *i* && -z "${MILK_QUIET:-}" ) || -n "${MILK_BANNER:-}" ]]; then
+        echo -e "\033[1;36m[milk]\033[0m Unloaded milk bash integration."
     fi
 }
 
@@ -359,6 +400,7 @@ function ${MILKCLI_SIGIL}unload      { _milk_unload_impl \"\$@\"; }
 # ---------------------------------------------------------------------------
 # 7. Pre-register all @<cmd> shims & external symlink farm (libexec/milk-bin)
 # ---------------------------------------------------------------------------
+_MILK_CMD_COUNT=20
 __milk_setup_commands() {
     local cmd_list="${MILK_INSTALLDIR}/share/milk/milk-commands.list"
     if [[ ! -f "${cmd_list}" || "${MILK_INSTALLDIR}/bin/milk-cli" -nt "${cmd_list}" ]]; then
@@ -382,6 +424,7 @@ __milk_setup_commands() {
                     ;;
             esac
             shim_code+="function ${MILKCLI_SIGIL}${cmd} { milkcall \"${cmd}\" \"\$@\"; };"
+            (( _MILK_CMD_COUNT++ ))
         done < "${cmd_list}"
         eval "${shim_code}"
     fi
@@ -393,6 +436,7 @@ __milk_setup_commands() {
         mkdir -p "${bin_farm}" 2>/dev/null || true
     fi
     if [[ -d "${bin_farm}" && -w "${bin_farm}" ]]; then
+        _MILK_BIN_FARM="${bin_farm}"
         local marker="${bin_farm}/.sigil_${MILKCLI_SIGIL}"
         if [[ ! -f "${marker}" || "${cmd_list}" -nt "${marker}" ]]; then
             local target_bin="${MILK_INSTALLDIR}/bin/milk-call"
@@ -460,7 +504,7 @@ complete -o default -F _milk_complete "${MILKCLI_SIGIL}" "${MILKCLI_SIGIL}calc" 
     "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hc" "${MILKCLI_SIGIL}hm" 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# 9. Visible Prompt Label ([milk]) for milk-capable terminals
+# 9. Visible Prompt Label ([milk]) & Interactive Startup Status
 # ---------------------------------------------------------------------------
 _MILK_PS1_PREFIX='\[\033[1;36m\][milk]\[\033[0m\] '
 
@@ -488,4 +532,20 @@ if [[ $- == *i* || -n "${PS1:-}" ]]; then
             PROMPT_COMMAND="${PROMPT_COMMAND:+${PROMPT_COMMAND%;}; }_milk_apply_ps1"
         fi
     fi
+fi
+
+if [[ ( $- == *i* && -z "${MILK_QUIET:-}" ) || -n "${MILK_BANNER:-}" ]]; then
+    __milk_ver="1.03.00"
+    if [[ -f "${MILK_INSTALLDIR}/include/milk_config.h" ]]; then
+        __milk_maj="$(awk '/#define MILK_VERSION_MAJOR/ {print $3}' "${MILK_INSTALLDIR}/include/milk_config.h")"
+        __milk_min="$(awk '/#define MILK_VERSION_MINOR/ {print $3}' "${MILK_INSTALLDIR}/include/milk_config.h")"
+        __milk_pat="$(awk '/#define MILK_VERSION_PATCH/ {print $3}' "${MILK_INSTALLDIR}/include/milk_config.h")"
+        if [[ -n "${__milk_maj}" ]]; then
+            __milk_ver="${__milk_maj}.${__milk_min}.${__milk_pat}"
+        fi
+        unset __milk_maj __milk_min __milk_pat
+    fi
+    echo -e "\033[1;36m[milk]\033[0m \033[1mmilk v${__milk_ver}\033[0m bash integration loaded (${_MILK_CMD_COUNT} ${MILKCLI_SIGIL}-commands)."
+    echo -e "\033[1;36m[milk]\033[0m Type \033[1;33m${MILKCLI_SIGIL}h\033[0m for help, \033[1;33m${MILKCLI_SIGIL}hm\033[0m for modules, \033[1;33m${MILKCLI_SIGIL}hc <cmd>\033[0m for command help, or \033[1;33m${MILKCLI_SIGIL}unload\033[0m to exit."
+    unset __milk_ver
 fi

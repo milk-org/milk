@@ -121,10 +121,13 @@ def test_builtin_loaded_and_commands_registered():
         @hm >/dev/null
         @hc mk2Dim >/dev/null
 
-        # Verify visible [milk] prompt label when sourced with PS1 and extglob set, and restoration on @unload
+        # Verify visible [milk] prompt label, startup banner, and complete @-command removal on @unload
         shopt -s extglob
         PS1='user@host:$ '
         unset _MILK_ORIG_PS1
+        banner_out="$(MILK_BANNER=1 source "${MILK_INSTALLDIR}/bin/milk.bash")"
+        [[ "${banner_out}" == *"milk v"*"bash integration loaded"* ]]
+        [[ "${banner_out}" == *"for help"* ]]
         source "${MILK_INSTALLDIR}/bin/milk.bash"
         [[ "$(type -t @)" == "function" ]]
         [[ "${PS1}" == *"[milk]"*"user@host:$ " ]]
@@ -133,6 +136,13 @@ def test_builtin_loaded_and_commands_registered():
         [[ "${PS1}" == "${ps1_once}" ]]
         @unload
         [[ "${PS1}" == 'user@host:$ ' ]]
+        [[ -z "$(compgen -c "@")" ]]
+        [[ -z "$(type -t @mk2Dim)" ]]
+        set +e
+        @mk2Dim 2>/dev/null
+        rc_after_unload=$?
+        set -e
+        [[ "${rc_after_unload}" -eq 127 ]]
         echo "OK"
         """)
     assert res.returncode == 0, res.stderr
