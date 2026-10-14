@@ -555,3 +555,120 @@ int cli_calc_eval_math_to_val(const char *input, int *out_type, long *out_lval, 
 
     return success;
 }
+
+/**
+ * @brief Evaluate an expression for @calc or @test in bash mode.
+ */
+int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
+{
+    if (out_rc != NULL)
+    {
+        *out_rc = 2;
+    }
+    if (input == NULL)
+    {
+        return 0;
+    }
+
+    parse_mode = 1;
+    char tbuf[8192];
+    snprintf(tbuf, sizeof(tbuf), "%s\n", input);
+
+    eval_ntok       = cli_tokenize(tbuf, eval_tokens, CLI_CALC_MAX_TOKENS);
+    data.parseerror = 0;
+    parse_error     = 0;
+    eval_error      = 0;
+    eval_pos        = 0;
+
+    if (eval_ntok <= 0 || cur_eval()->type == TOK_NEWLINE || cur_eval()->type == TOK_EOF)
+    {
+        if (out_rc != NULL)
+        {
+            *out_rc = is_test ? 1 : 0;
+        }
+        return 1;
+    }
+
+    int is_assign_op = 0;
+    if (eval_ntok >= 2)
+    {
+        cli_token_type atype = eval_tokens[1].type;
+        if (atype == TOK_EQUAL || atype == TOK_OP_PLUS_EQ || atype == TOK_OP_MINUS_EQ ||
+            atype == TOK_OP_STAR_EQ || atype == TOK_OP_SLASH_EQ)
+        {
+            is_assign_op = 1;
+        }
+    }
+
+    val_t result = parse_expr(0);
+
+    /* Clean up temporary images */
+    {
+        char tmpn[200];
+        for (long i = 0; i < data.calctmp_imindex; i++)
+        {
+            snprintf(tmpn, sizeof(tmpn), "_tmpcalc%ld", i);
+            imageID tid = image_ID(tmpn, data.core.image, data.core.NB_MAX_IMAGE);
+            if (tid != -1)
+            {
+                delete_image_ID(tmpn, DELETE_IMAGE_ERRMODE_WARNING);
+            }
+        }
+        data.calctmp_imindex = 0;
+    }
+
+    if (parse_error || eval_error ||
+        (cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE))
+    {
+        if (out_rc != NULL)
+        {
+            *out_rc = 2;
+        }
+        return 0;
+    }
+
+    if (is_test)
+    {
+        int truthy = 0;
+        if (result.type == VAL_LONG)
+        {
+            truthy = (result.lval != 0);
+        }
+        else if (result.type == VAL_DOUBLE)
+        {
+            truthy = (result.dval != 0.0 && !isnan(result.dval));
+        }
+        else if (result.type == VAL_STRING)
+        {
+            truthy = (result.sval[0] != '\0' && strcmp(result.sval, "0") != 0);
+        }
+        if (out_rc != NULL)
+        {
+            *out_rc = truthy ? 0 : 1;
+        }
+        return 1;
+    }
+
+    if (!is_assign_op)
+    {
+        if (result.type == VAL_LONG)
+        {
+            printf("%ld\n", result.lval);
+        }
+        else if (result.type == VAL_DOUBLE)
+        {
+            printf("%.*g\n", cli_float_digits, result.dval);
+        }
+        else if (result.type == VAL_STRING)
+        {
+            printf("%s\n", result.sval);
+        }
+        fflush(stdout);
+    }
+
+    if (out_rc != NULL)
+    {
+        *out_rc = 0;
+    }
+    return 1;
+}

@@ -691,7 +691,10 @@ if(USE_CLI)
     scripts/tmuxsessionname
     scripts/waitforfile
     scripts/milk-env.sh
+    scripts/milk.bash
     DESTINATION bin)
+
+  install(FILES scripts/milk.bash DESTINATION share/milk)
 
 endif(USE_CLI)
 

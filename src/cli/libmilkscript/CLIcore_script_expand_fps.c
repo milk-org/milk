@@ -513,49 +513,76 @@ static int expand_fpsvar_stream(char *pname, char *out, int *opos, int maxlen)
     char retbuf[512];
     retbuf[0] = '\0';
 
-    char shmchkpath[STRINGMAXLEN_DIRNAME + 128 + 16];
-    snprintf(shmchkpath, sizeof(shmchkpath), "%s/%s.im.shm", dcshmdir, sname);
-    if (access(shmchkpath, F_OK) != 0)
+    IMAGE   img;
+    IMAGE  *imptr       = NULL;
+    int     need_close  = 0;
+    imageID local_imgid = -1;
+
+    if (data.core.image != NULL)
     {
-        return 0;
+        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        {
+            if (data.core.image[i].used == 1 && strcmp(data.core.image[i].name, sname) == 0)
+            {
+                local_imgid = i;
+                break;
+            }
+        }
     }
 
-    IMAGE img;
-    memset(&img, 0, sizeof(IMAGE));
-    errno_t sret = ImageStreamIO_openIm(&img, sname);
-    if (sret == IMAGESTREAMIO_SUCCESS && img.md != NULL)
+    if (local_imgid != -1)
+    {
+        imptr = &data.core.image[local_imgid];
+    }
+    else
+    {
+        char shmchkpath[STRINGMAXLEN_DIRNAME + 128 + 16];
+        snprintf(shmchkpath, sizeof(shmchkpath), "%s/%s.im.shm", dcshmdir, sname);
+        if (access(shmchkpath, F_OK) != 0)
+        {
+            return 0;
+        }
+        memset(&img, 0, sizeof(IMAGE));
+        if (ImageStreamIO_openIm(&img, sname) == IMAGESTREAMIO_SUCCESS && img.md != NULL)
+        {
+            imptr      = &img;
+            need_close = 1;
+        }
+    }
+
+    if (imptr != NULL && imptr->md != NULL)
     {
         int found = 0;
         if (strcmp(prop, "xsize") == 0 || strcmp(prop, "size0") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf), "%u", img.md->size[0]);
+            snprintf(retbuf, sizeof(retbuf), "%u", imptr->md->size[0]);
             found = 1;
         }
         else if (strcmp(prop, "ysize") == 0 || strcmp(prop, "size1") == 0)
         {
             snprintf(retbuf, sizeof(retbuf), "%u",
-                     (img.md->naxis > 1 && img.md->size[1] > 0) ? img.md->size[1] : 1U);
+                     (imptr->md->naxis > 1 && imptr->md->size[1] > 0) ? imptr->md->size[1] : 1U);
             found = 1;
         }
         else if (strcmp(prop, "zsize") == 0 || strcmp(prop, "size2") == 0)
         {
             snprintf(retbuf, sizeof(retbuf), "%u",
-                     (img.md->naxis > 2 && img.md->size[2] > 0) ? img.md->size[2] : 1U);
+                     (imptr->md->naxis > 2 && imptr->md->size[2] > 0) ? imptr->md->size[2] : 1U);
             found = 1;
         }
         else if (strcmp(prop, "naxis") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) img.md->naxis);
+            snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) imptr->md->naxis);
             found = 1;
         }
         else if (strcmp(prop, "type") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) img.md->datatype);
+            snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) imptr->md->datatype);
             found = 1;
         }
         else if (strcmp(prop, "typename") == 0 || strcmp(prop, "dtype") == 0)
         {
-            const char *tn = ImageStreamIO_typename(img.md->datatype);
+            const char *tn = ImageStreamIO_typename(imptr->md->datatype);
             if (tn != NULL)
             {
                 strncpy(retbuf, tn, sizeof(retbuf) - 1);
@@ -563,47 +590,75 @@ static int expand_fpsvar_stream(char *pname, char *out, int *opos, int maxlen)
             }
             else
             {
-                snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) img.md->datatype);
+                snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) imptr->md->datatype);
             }
             found = 1;
         }
         else if (strcmp(prop, "typeid") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) img.md->datatype);
+            snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) imptr->md->datatype);
             found = 1;
         }
         else if (strcmp(prop, "cnt0") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long) img.md->cnt0);
+            snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long) imptr->md->cnt0);
             found = 1;
         }
         else if (strcmp(prop, "cnt1") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long) img.md->cnt1);
+            snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long) imptr->md->cnt1);
             found = 1;
         }
         else if (strcmp(prop, "sem") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) img.md->sem);
+            snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) imptr->md->sem);
             found = 1;
         }
         else if (strcmp(prop, "pid") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf), "%d", (int) img.md->creatorPID);
+            snprintf(retbuf, sizeof(retbuf), "%d", (int) imptr->md->creatorPID);
             found = 1;
         }
         else if (strcmp(prop, "ownerPID") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf), "%d", (int) img.md->ownerPID);
+            snprintf(retbuf, sizeof(retbuf), "%d", (int) imptr->md->ownerPID);
             found = 1;
         }
         else if (strcmp(prop, "nelement") == 0 || strcmp(prop, "nelem") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long) img.md->nelement);
+            snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long) imptr->md->nelement);
             found = 1;
         }
+        else if (strncmp(prop, "kw.", 3) == 0 && imptr->kw != NULL)
+        {
+            const char *kname = prop + 3;
+            for (uint16_t k = 0; k < imptr->md->NBkw; k++)
+            {
+                if (imptr->kw[k].type != 'N' && imptr->kw[k].type != '\0' &&
+                    strcmp(imptr->kw[k].name, kname) == 0)
+                {
+                    if (imptr->kw[k].type == 'L')
+                    {
+                        snprintf(retbuf, sizeof(retbuf), "%ld", (long) imptr->kw[k].value.numl);
+                    }
+                    else if (imptr->kw[k].type == 'D')
+                    {
+                        snprintf(retbuf, sizeof(retbuf), "%.17g", imptr->kw[k].value.numf);
+                    }
+                    else
+                    {
+                        snprintf(retbuf, sizeof(retbuf), "%s", imptr->kw[k].value.valstr);
+                    }
+                    found = 1;
+                    break;
+                }
+            }
+        }
 
-        ImageStreamIO_closeIm(&img);
+        if (need_close)
+        {
+            ImageStreamIO_closeIm(&img);
+        }
 
         if (found)
         {

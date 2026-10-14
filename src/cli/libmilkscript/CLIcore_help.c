@@ -449,9 +449,11 @@ errno_t list_commands_module(const char *__restrict modulename)
     int moduleindex = -1;
     for (int m = 0; m < data.NBmodule; m++)
     {
-        if (strcmp(modulename, data.module[m].name) == 0)
+        if (strcmp(modulename, data.module[m].name) == 0 ||
+            strcmp(modulename, data.module[m].shortname) == 0)
         {
             moduleindex = m;
+            break;
         }
     }
     if (moduleindex == -1)
@@ -460,6 +462,7 @@ errno_t list_commands_module(const char *__restrict modulename)
     }
     else
     {
+        const char *mfull = data.module[moduleindex].name;
         printf("   name         %s\n", data.module[moduleindex].name);
         printf("   type         %d\n", data.module[moduleindex].type);
         printf("   short name   %s\n", data.module[moduleindex].shortname);
@@ -478,11 +481,11 @@ errno_t list_commands_module(const char *__restrict modulename)
             char cmpstring[cmdstrlen];
             snprintf(cmpstring, cmdstrlen, "%s", data.cmd[i].module);
 
-            if (strcmp(modulename, cmpstring) == 0)
+            if (strcmp(mfull, cmpstring) == 0)
             {
                 if (mOK == 0)
                 {
-                    printf("---- MODULE %s COMMANDS ---------\n", modulename);
+                    printf("---- MODULE %s COMMANDS ---------\n", mfull);
                 }
 
                 strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen - 1);

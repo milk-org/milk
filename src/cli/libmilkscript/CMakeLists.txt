@@ -67,6 +67,8 @@ set(MILKSCRIPT_SOURCES
     cli_calc_functions.c
     cli_calc_binops.c
     cli_calc_eval.c
+    milk_server.c
+    milk_client.c
     milkscript_stubs.c
     milkscript_api.c)
 
@@ -128,6 +130,9 @@ install(
         CLIcore_utils.h
         cli_calc_parser.h
         cli_calc_tokenizer.h
+        milk_proto.h
+        milk_server.h
+        milk_client.h
         standalone_dependencies.h
         script_includes.h
         milkscript.h
@@ -140,3 +145,21 @@ target_include_directories(
                      ${CMAKE_CURRENT_SOURCE_DIR}/../CLIcore)
 
 install(TARGETS milk-script DESTINATION bin)
+
+# Loadable GNU Bash builtin module (enable -f libmilkbash.so ...)
+add_library(milkbash SHARED milk_bash_builtins.c)
+target_link_libraries(milkbash PRIVATE milkscript dl)
+target_include_directories(
+  milkbash PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+                  ${CMAKE_CURRENT_SOURCE_DIR}/../CLIcore)
+set_target_properties(milkbash PROPERTIES INSTALL_RPATH "$ORIGIN")
+install(TARGETS milkbash DESTINATION lib)
+
+# Standalone helper executable (milk-call)
+add_executable(milk-call milk_call_main.c)
+target_link_libraries(milk-call PRIVATE milkscript milkprocessinfo milkdata)
+target_include_directories(
+  milk-call PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+                   ${CMAKE_CURRENT_SOURCE_DIR}/../CLIcore)
+set_target_properties(milk-call PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
+install(TARGETS milk-call DESTINATION bin)

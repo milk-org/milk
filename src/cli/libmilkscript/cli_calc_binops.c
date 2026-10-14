@@ -242,6 +242,25 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
     /* string (image) operands */
     if (left.type == VAL_STRING || right.type == VAL_STRING)
     {
+        if (left.type == VAL_STRING && right.type == VAL_STRING &&
+            (op == TOK_OP_EQ || op == TOK_OP_NEQ) &&
+            image_ID(left.sval, data.core.image, data.core.NB_MAX_IMAGE) == -1 &&
+            image_ID(right.sval, data.core.image, data.core.NB_MAX_IMAGE) == -1)
+        {
+            int eq = (strcmp(left.sval, right.sval) == 0);
+            if (!eq)
+            {
+                if ((strcmp(left.sval, "FLT32") == 0 && strcmp(right.sval, "FLOAT") == 0) ||
+                    (strcmp(left.sval, "FLOAT") == 0 && strcmp(right.sval, "FLT32") == 0) ||
+                    (strcmp(left.sval, "DBL64") == 0 && strcmp(right.sval, "DOUBLE") == 0) ||
+                    (strcmp(left.sval, "DOUBLE") == 0 && strcmp(right.sval, "DBL64") == 0))
+                {
+                    eq = 1;
+                }
+            }
+            return mk_long((op == TOK_OP_EQ) ? (eq ? 1 : 0) : (eq ? 0 : 1));
+        }
+
         const char *tmpn = alloc_tmpname();
 
         /* image OP image */

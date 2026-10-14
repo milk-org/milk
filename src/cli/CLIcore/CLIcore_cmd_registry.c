@@ -125,6 +125,15 @@ static errno_t help_milk_cmd(void)
     return RETURN_SUCCESS;
 }
 
+static errno_t help_fuzzy_or_search(void)
+{
+    if (data.cmdNBarg >= 2 || !isatty(STDIN_FILENO))
+    {
+        return cmdinfosearch();
+    }
+    return cli_fhelp();
+}
+
 void runCLI_cmd_init()
 {
     // ensure that commands below belong to root/MAIN module
@@ -143,10 +152,17 @@ void runCLI_cmd_init()
                        "print CLI session name (set by milk -n)", "no argument", "name",
                        "print_session_name()");
 
-    RegisterCLIcommand("help", __FILE__, help, "show help", "no argument", "help", "int help()");
+    RegisterCLIcommand("help", __FILE__, help, "show help", "[topic|cmd|module]", "help",
+                       "int help()");
 
-    RegisterCLIcommand("fhelp", __FILE__, cli_fhelp, "interactive fuzzy help search", "no argument",
-                       "fhelp", "int cli_fhelp()");
+    RegisterCLIcommand("h", __FILE__, help, "show help (or help for topic/command/module)",
+                       "[topic|cmd|module]", "h milk", "int help()");
+
+    RegisterCLIcommand("fhelp", __FILE__, help_fuzzy_or_search, "interactive fuzzy help search",
+                       "[search pattern]", "fhelp", "int cli_fhelp()");
+
+    RegisterCLIcommand("hf", __FILE__, help_fuzzy_or_search, "fuzzy/regex command help search",
+                       "[search pattern]", "hf image", "int cli_fhelp()");
 
     RegisterCLIcommand("?", __FILE__, help, "show help", "no argument", "?", "int help()");
 
@@ -184,6 +200,9 @@ void runCLI_cmd_init()
     RegisterCLIcommand("cmd?", __FILE__, help_cmd, "list/help command(s)",
                        "<command name>(optional)", "cmd?", "int help_cmd()");
 
+    RegisterCLIcommand("hc", __FILE__, help_cmd, "list/help command(s)", "<command name>(optional)",
+                       "hc mk2Drnd", "int help_cmd()");
+
     RegisterCLIcommand("cmdinfo?", __FILE__, cmdinfosearch,
                        "search for string/regex in command info", "<search expression>",
                        "cmdinfo? image", "int cmdinfosearch()");
@@ -191,6 +210,9 @@ void runCLI_cmd_init()
     RegisterCLIcommand("m?", __FILE__, help_module, "list/help module(s)",
                        "<module name>(optional)", "m? COREMOD_memory",
                        "errno_t list_commands_module()");
+
+    RegisterCLIcommand("hm", __FILE__, help_module, "list/help module(s)",
+                       "<module name>(optional)", "hm info", "errno_t list_commands_module()");
 
     RegisterCLIcommand("soload", __FILE__, load_so__cli, "load shared object",
                        "<shared object name>", "soload mysharedobj.so",

@@ -90,6 +90,7 @@
 #include "CLIcore_modules.h"
 #include "CLIcore_setSHMdir.h"
 #include "CLIcore_signals.h"
+#include "../libmilkscript/milk_server.h"
 #include "../libmilkscript/milkscript.h"
 #include "treesitter/cli_treesitter.h"
 
@@ -114,6 +115,11 @@ char CLIstartupfilename[STRINGMAXLEN_CLISTARTUPFILENAME] = "CLIstartup.txt";
 
 static int  single_command_flag = 0;
 static char single_command_string[STRINGMAXLEN_CLICMDLINE];
+
+static char server_sockpath[512] = "";
+static int  server_owner_fd      = -1;
+static int  server_ready_fd      = -1;
+static int  dump_commands_flag   = 0;
 
 // fifo input
 static fd_set cli_fdin_set;
@@ -771,28 +777,44 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     }
 
     dcprogstatus = 1;
-    printf("\n");
+    if (!dump_commands_flag && server_sockpath[0] == '\0')
+    {
+        printf("\n");
+    }
 
     // (Module loading is now handled centrally by milkscript_init)
 
     // load other libs specified by environment variable MILKCLI_ADD_LIBS
     {
-        char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
-        if (CLI_ADD_LIBS != NULL)
+        const char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
+        if (CLI_ADD_LIBS == NULL && (dump_commands_flag || server_sockpath[0] != '\0'))
+        {
+            CLI_ADD_LIBS =
+                "milklinalgebra,milkfft,milkimagebasic,milkimagefilter,milkimageformat,"
+                "milkimagegen,milkimgreduce,milkinfo,milkkdtree,milklinARfilterPred,"
+                "milklinoptimtools,milk_module_example,milkpsf,milkstatistic,milkZernikePolyn";
+        }
+        if (CLI_ADD_LIBS != NULL && CLI_ADD_LIBS[0] != '\0' && strcmp(CLI_ADD_LIBS, "none") != 0)
         {
             if (dcquiet == 0)
             {
                 printf("        MILKCLI_ADD_LIBS '%s'\n", CLI_ADD_LIBS);
             }
 
-            char *libname = strtok(CLI_ADD_LIBS, " ,;");
+            char  libs_copy[2048];
+            char *saveptr = NULL;
+            snprintf(libs_copy, sizeof(libs_copy), "%s", CLI_ADD_LIBS);
+            char *libname = strtok_r(libs_copy, " ,;", &saveptr);
             while (libname != NULL)
             {
                 DEBUG_TRACEPOINT("--- CLI Adding library: %s", libname);
                 load_module_shared(libname);
-                libname = strtok(NULL, " ,;");
+                libname = strtok_r(NULL, " ,;", &saveptr);
             }
-            printf("\n");
+            if (!dump_commands_flag && server_sockpath[0] == '\0')
+            {
+                printf("\n");
+            }
         }
         else
         {
@@ -812,6 +834,22 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     }
 
     runCLI_cmd_init();
+
+    if (dump_commands_flag)
+    {
+        milk_server_dump_commands(stdout);
+        cli_ts_cleanup();
+        DEBUG_TRACE_FEXIT();
+        return RETURN_SUCCESS;
+    }
+
+    if (server_sockpath[0] != '\0')
+    {
+        int srv_rc = milk_server_run(server_sockpath, server_owner_fd, server_ready_fd);
+        cli_ts_cleanup();
+        DEBUG_TRACE_FEXIT();
+        return srv_rc;
+    }
 
     // fifo
     fdmax = fileno(stdin);
@@ -1176,6 +1214,11 @@ static int command_line_process_options(int argc, char **argv)
                                             { "no-history-suggest", no_argument, 0, 0x101 },
                                             { "no-arg-hints", no_argument, 0, 0x102 },
                                             { "no-fuzzy", no_argument, 0, 0x103 },
+                                            { "server", required_argument, 0, 0x104 },
+                                            { "owner-fd", required_argument, 0, 0x105 },
+                                            { "ready-fd", required_argument, 0, 0x106 },
+                                            { "dump-commands", no_argument, 0, 0x107 },
+                                            { "quiet", no_argument, 0, 'q' },
                                             { "fifoflag", no_argument, 0, 'f' },
                                             { "command", required_argument, 0, 'c' },
                                             { "debug", required_argument, 0, 'd' },
@@ -1193,7 +1236,7 @@ static int command_line_process_options(int argc, char **argv)
     {
         int c;
 
-        c = getopt_long(argc, argv, "hvic:d:oen:p:fF:s:A", long_options, &option_index);
+        c = getopt_long(argc, argv, "hvic:d:oen:p:fF:s:Aq", long_options, &option_index);
 
         /* Detect the end of the options. */
         if (c == -1)
@@ -1245,6 +1288,10 @@ static int command_line_process_options(int argc, char **argv)
             dcerrorexit = 1;
             break;
 
+        case 'q':
+            dcquiet = 1;
+            break;
+
         case 'Z':
             printf("Idle mode: only runs process when X is idle (pid "
                    "%ld)\n",
@@ -1278,6 +1325,33 @@ static int command_line_process_options(int argc, char **argv)
 
         case 0x103:
             data.autocomplete_fuzzy = 0;
+            break;
+
+        case 0x104:
+            if (optarg != NULL)
+            {
+                snprintf(server_sockpath, sizeof(server_sockpath), "%s", optarg);
+                dcquiet = 1;
+            }
+            break;
+
+        case 0x105:
+            if (optarg != NULL)
+            {
+                server_owner_fd = atoi(optarg);
+            }
+            break;
+
+        case 0x106:
+            if (optarg != NULL)
+            {
+                server_ready_fd = atoi(optarg);
+            }
+            break;
+
+        case 0x107:
+            dump_commands_flag = 1;
+            dcquiet            = 1;
             break;
 
 

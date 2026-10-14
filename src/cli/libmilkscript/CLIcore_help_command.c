@@ -535,7 +535,30 @@ errno_t help()
     {
         if (help_topic_dispatch(topic) != 0)
         {
-            if (help_format_mode == 0)
+            int matched = 0;
+            for (unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
+            {
+                if (strcmp(topic, data.cmd[cmdi].key) == 0)
+                {
+                    help_command(topic);
+                    matched = 1;
+                    break;
+                }
+            }
+            if (!matched)
+            {
+                for (int m = 0; m < data.NBmodule; m++)
+                {
+                    if (strcmp(topic, data.module[m].name) == 0 ||
+                        strcmp(topic, data.module[m].shortname) == 0)
+                    {
+                        list_commands_module(topic);
+                        matched = 1;
+                        break;
+                    }
+                }
+            }
+            if (!matched && help_format_mode == 0)
             {
                 printf(C_ERR "Unknown help topic: \"%s\"" C_RST "\n\n", topic);
                 print_help_topic_list();
@@ -621,7 +644,10 @@ errno_t cmdinfosearch()
  */
 errno_t help_module()
 {
-    if (data.cmdargtoken[1].type == 3)
+    if ((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING) ||
+        (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE) ||
+        (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND) ||
+        (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
     {
         list_commands_module(data.cmdargtoken[1].val.string);
     }

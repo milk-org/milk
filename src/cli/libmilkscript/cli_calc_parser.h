@@ -47,4 +47,14 @@ int cli_calc_eval_line(const char *input);
  */
 int cli_calc_eval_math_to_val(const char *input, int *out_type, long *out_lval, double *out_dval);
 
+/**
+ * @brief Evaluate an expression for @calc or @test in bash mode.
+ *
+ * @param input   Expression string
+ * @param is_test 1 for @test (boolean exit status), 0 for @calc
+ * @param out_rc  Receives bash exit code (0=true/ok, 1=false, 2=error)
+ * @return 1 on valid evaluation, 0 on parse/eval error
+ */
+int cli_calc_eval_bash(const char *input, int is_test, int *out_rc);
+
 #endif /* CLI_CALC_PARSER_H */
