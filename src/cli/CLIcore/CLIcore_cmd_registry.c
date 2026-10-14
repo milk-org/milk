@@ -363,16 +363,16 @@ void runCLI_cmd_init()
                        "printf \"%s=%d\\n\" name 42", "cli_cmd_printf()");
 
     RegisterCLIcommand("fpslist", __FILE__, cli_cmd_fpslist, "list live FPS instances",
-                       "[--json] [pattern]", "fpslist --json dm*", "cli_cmd_fpslist()");
+                       "[-q] [--json] [pattern]", "fpslist --json dm*", "cli_cmd_fpslist()");
 
     RegisterCLIcommand("fpsdump", __FILE__, cli_cmd_fpsdump, "dump FPS parameters as key=value",
                        "[-t] [--json] <fpsname>", "fpsdump loopctrl", "cli_cmd_fpsdump()");
 
     RegisterCLIcommand("streamlist", __FILE__, cli_cmd_streamlist, "list live SHM streams",
-                       "[-l] [--json] [pattern]", "streamlist -l dm*", "cli_cmd_streamlist()");
+                       "[-q] [-l] [--json] [pattern]", "streamlist -l dm*", "cli_cmd_streamlist()");
 
     RegisterCLIcommand("proclist", __FILE__, cli_cmd_proclist, "list active processes",
-                       "[-l] [--json]", "proclist -l", "cli_cmd_proclist()");
+                       "[-q] [-l] [--json]", "proclist -l", "cli_cmd_proclist()");
 
     RegisterCLIcommand("milkquery", __FILE__, cli_cmd_milkquery, "unified JSON system snapshot",
                        "[--fps [pat]] [--streams [pat]]"

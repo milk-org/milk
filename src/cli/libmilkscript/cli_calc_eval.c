@@ -5,13 +5,288 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "CLIcore.h"
-#include "COREMOD_memory/COREMOD_memory.h"
-#include "COREMOD_arith/COREMOD_arith.h"
 #include "CLIcore_script.h"
+#include "COREMOD_arith/COREMOD_arith.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_memory/stream_slice.h"
 #include "cli_calc_internal.h"
+#include "cli_calc_parser.h"
+#include "libmilkdata/milk_type_dispatch.h"
+
+/**
+ * @brief Read pixel @p ii of @p im as a double.
+ */
+static double read_image_pixel_as_double(const IMAGE *im, uint64_t ii)
+{
+    uint8_t dt = im->md[0].datatype;
+#define READ_PIX_BODY(MBR) return (double) im->array.MBR[ii];
+    MILK_FOR_EACH_DATATYPE(dt, READ_PIX_BODY, READ_PIX_BODY(D))
+#undef READ_PIX_BODY
+    return 0.0;
+}
+
+/**
+ * @brief Write @p val to pixel @p ii of @p im.
+ */
+static void write_image_pixel_from_double(IMAGE *im, uint64_t ii, double val)
+{
+    uint8_t dt = im->md[0].datatype;
+#define WRITE_PIX_BODY(MBR)                                     \
+    {                                                           \
+        im->array.MBR[ii] = (__typeof__(im->array.MBR[0])) val; \
+        return;                                                 \
+    }
+    MILK_FOR_EACH_DATATYPE(dt, WRITE_PIX_BODY, WRITE_PIX_BODY(D))
+#undef WRITE_PIX_BODY
+}
+
+/**
+ * @brief Apply scalar assignment/compound op (=, +=, -=, *=, /=) to all pixels of @p im in-place.
+ */
+static int apply_scalar_to_image_inplace(IMAGE *im, cli_token_type aop, double val)
+{
+    if (aop == TOK_OP_SLASH_EQ && val == 0.0)
+    {
+        parse_errmsg("Division by zero");
+        return -1;
+    }
+    uint64_t nelement = im->md[0].nelement;
+    for (uint64_t ii = 0; ii < nelement; ii++)
+    {
+        double v = val;
+        if (aop != TOK_EQUAL)
+        {
+            double old = read_image_pixel_as_double(im, ii);
+            if (aop == TOK_OP_PLUS_EQ)
+            {
+                v = old + val;
+            }
+            else if (aop == TOK_OP_MINUS_EQ)
+            {
+                v = old - val;
+            }
+            else if (aop == TOK_OP_STAR_EQ)
+            {
+                v = old * val;
+            }
+            else if (aop == TOK_OP_SLASH_EQ)
+            {
+                v = old / val;
+            }
+        }
+        write_image_pixel_from_double(im, ii, v);
+    }
+    return 0;
+}
+
+/**
+ * @brief Apply image assignment/compound op (=, +=, -=, *=, /=) from @p srcim into @p dstim in-place.
+ */
+static int apply_image_to_image_inplace(IMAGE *dstim, const IMAGE *srcim, cli_token_type aop)
+{
+    uint64_t nelement = dstim->md[0].nelement;
+    if (aop == TOK_EQUAL && dstim->md[0].datatype == srcim->md[0].datatype)
+    {
+        int esize = ImageStreamIO_typesize(dstim->md[0].datatype);
+        if (esize > 0)
+        {
+            __builtin_memcpy(dstim->array.raw, srcim->array.raw, (size_t) esize * nelement);
+            return 0;
+        }
+    }
+    for (uint64_t ii = 0; ii < nelement; ii++)
+    {
+        double sv = read_image_pixel_as_double(srcim, ii);
+        double v  = sv;
+        if (aop != TOK_EQUAL)
+        {
+            double old = read_image_pixel_as_double(dstim, ii);
+            if (aop == TOK_OP_PLUS_EQ)
+            {
+                v = old + sv;
+            }
+            else if (aop == TOK_OP_MINUS_EQ)
+            {
+                v = old - sv;
+            }
+            else if (aop == TOK_OP_STAR_EQ)
+            {
+                v = old * sv;
+            }
+            else if (aop == TOK_OP_SLASH_EQ)
+            {
+                if (sv == 0.0)
+                {
+                    parse_errmsg("Division by zero");
+                    return -1;
+                }
+                v = old / sv;
+            }
+        }
+        write_image_pixel_from_double(dstim, ii, v);
+    }
+    return 0;
+}
+
+/**
+ * @brief Evaluate variable or arithmetic expression bounds inside a slice string.
+ *
+ * Converts e.g. "x0:x1, cx-r:cx+r" into resolved integer bounds "32:95,48:80".
+ * Sets @p *out_is_single_pixel to 1 if all axes are single indices without ':' or '*'.
+ *
+ * @return 0 on success, -1 on error
+ */
+static int eval_slice_bounds(const char *btext,
+                             char       *out_btext,
+                             size_t      out_sz,
+                             int        *out_is_single_pixel)
+{
+    *out_is_single_pixel = 1;
+    out_btext[0]         = '\0';
+    size_t out_len       = 0;
+
+    char buf[256];
+    strncpy(buf, btext, sizeof(buf) - 1);
+    buf[sizeof(buf) - 1] = '\0';
+
+    char *p    = buf;
+    int   axis = 0;
+    while (*p != '\0')
+    {
+        /* Find next comma at parenthesis depth 0 */
+        char *axis_start = p;
+        int   pdepth     = 0;
+        while (*p != '\0' && !(*p == ',' && pdepth == 0))
+        {
+            if (*p == '(')
+            {
+                pdepth++;
+            }
+            else if (*p == ')')
+            {
+                pdepth--;
+            }
+            p++;
+        }
+        if (*p == ',')
+        {
+            *p = '\0';
+            p++;
+        }
+
+        if (axis > 0)
+        {
+            out_len += (size_t) snprintf(out_btext + out_len, out_sz - out_len, ",");
+        }
+        axis++;
+
+        /* Split axis_start on ':' */
+        char *ap     = axis_start;
+        int   part_i = 0;
+        while (1)
+        {
+            char *part_start = ap;
+            int   sub_depth  = 0;
+            while (*ap != '\0' && !(*ap == ':' && sub_depth == 0))
+            {
+                if (*ap == '(')
+                {
+                    sub_depth++;
+                }
+                else if (*ap == ')')
+                {
+                    sub_depth--;
+                }
+                ap++;
+            }
+            int has_more_colon = (*ap == ':');
+            if (has_more_colon)
+            {
+                *ap = '\0';
+                ap++;
+                *out_is_single_pixel = 0;
+            }
+
+            if (part_i > 0)
+            {
+                out_len += (size_t) snprintf(out_btext + out_len, out_sz - out_len, ":");
+            }
+
+            /* Trim whitespace */
+            while (*part_start == ' ' || *part_start == '\t')
+            {
+                part_start++;
+            }
+            char *part_end = part_start + strlen(part_start);
+            while (part_end > part_start && (*(part_end - 1) == ' ' || *(part_end - 1) == '\t'))
+            {
+                *(--part_end) = '\0';
+            }
+
+            if (part_start[0] == '\0' || strcmp(part_start, "*") == 0 ||
+                strcmp(part_start, "-*") == 0)
+            {
+                if (part_i == 0 && !has_more_colon)
+                {
+                    *out_is_single_pixel = 0;
+                }
+                out_len +=
+                    (size_t) snprintf(out_btext + out_len, out_sz - out_len, "%s", part_start);
+            }
+            else
+            {
+                /* Check for trailing 'b'/'B' binning suffix on 3rd part (step) */
+                int    has_bin = 0;
+                size_t plen    = strlen(part_start);
+                if (part_i >= 2 && plen > 1 &&
+                    (part_start[plen - 1] == 'b' || part_start[plen - 1] == 'B') &&
+                    variable_ID(part_start) == -1 && cli_var_get(part_start) == NULL)
+                {
+                    has_bin              = 1;
+                    part_start[plen - 1] = '\0';
+                }
+
+                /* Check if pure integer literal */
+                char *endp = NULL;
+                long  ival = strtol(part_start, &endp, 10);
+                if (endp != part_start && *endp == '\0')
+                {
+                    out_len += (size_t) snprintf(out_btext + out_len, out_sz - out_len, "%ld%s",
+                                                 ival, has_bin ? "b" : "");
+                }
+                else
+                {
+                    int    mtype = 0;
+                    long   mlval = 0;
+                    double mdval = 0.0;
+                    if (!cli_calc_eval_math_to_val(part_start, &mtype, &mlval, &mdval))
+                    {
+                        char msg[256];
+                        snprintf(msg, sizeof(msg), "Invalid slice bound expression '%s'",
+                                 part_start);
+                        parse_errmsg(msg);
+                        return -1;
+                    }
+                    long resolved = (mtype == 1) ? mlval : (long) llround(mdval);
+                    out_len += (size_t) snprintf(out_btext + out_len, out_sz - out_len, "%ld%s",
+                                                 resolved, has_bin ? "b" : "");
+                }
+            }
+
+            part_i++;
+            if (!has_more_colon)
+            {
+                break;
+            }
+        }
+    }
+
+    return 0;
+}
+
 
 /* --------------------------------------------------------
  * Operator precedence table
@@ -212,8 +487,9 @@ val_t parse_primary(void)
     /* function calls */
     if (t->type == TOK_FUNC_D_D || t->type == TOK_FUNC_DD_D || t->type == TOK_FUNC_DDD_D ||
         t->type == TOK_FUNC_IM_D || t->type == TOK_FUNC_IMD_D || t->type == TOK_FUNC_WHERE ||
-        t->type == TOK_FUNC_IMIM_D || t->type == TOK_FUNC_S_D || t->type == TOK_FUNC_S_S ||
-        t->type == TOK_FUNC_SDD_S || t->type == TOK_FUNC_SSS_S || t->type == TOK_FUNC_D_S)
+        t->type == TOK_FUNC_IMIM_D || t->type == TOK_FUNC_IMIM_IM || t->type == TOK_FUNC_S_D ||
+        t->type == TOK_FUNC_S_S || t->type == TOK_FUNC_SDD_S || t->type == TOK_FUNC_SSS_S ||
+        t->type == TOK_FUNC_D_S)
     {
         advance_func();
         return parse_funccall(t);
@@ -242,6 +518,10 @@ val_t parse_primary(void)
                 if (vid == -1)
                 {
                     const char *cval = cli_var_get(t->sval);
+                    if (cval == NULL)
+                    {
+                        cval = getenv(t->sval);
+                    }
                     if (cval != NULL)
                     {
                         old = strtod(cval, NULL);
@@ -301,8 +581,14 @@ val_t parse_primary(void)
             {
                 if (image_ID(v.sval, data.core.image, data.core.NB_MAX_IMAGE) != -1)
                 {
-                    /* var = image -> rename */
-                    chname_image_ID(v.sval, t->sval);
+                    if (strncmp(v.sval, "_tmpcalc", 8) == 0)
+                    {
+                        chname_image_ID(v.sval, t->sval);
+                    }
+                    else
+                    {
+                        copy_image_ID(v.sval, t->sval, 0);
+                    }
                     if (data.core.Debug > 0)
                     {
                         printf("changing name\n");
@@ -352,6 +638,10 @@ val_t parse_primary(void)
         if (vID == -1)
         {
             const char *cval = cli_var_get(t->sval);
+            if (cval == NULL)
+            {
+                cval = getenv(t->sval);
+            }
             if (cval != NULL)
             {
                 char *endp = NULL;
@@ -396,7 +686,14 @@ val_t parse_primary(void)
             {
                 if (image_ID(v.sval, data.core.image, data.core.NB_MAX_IMAGE) != -1)
                 {
-                    chname_image_ID(v.sval, t->sval);
+                    if (strncmp(v.sval, "_tmpcalc", 8) == 0)
+                    {
+                        chname_image_ID(v.sval, t->sval);
+                    }
+                    else
+                    {
+                        copy_image_ID(v.sval, t->sval, 0);
+                    }
                     if (data.core.Debug > 0)
                     {
                         printf("changing name\n");
@@ -485,7 +782,9 @@ val_t parse_primary(void)
     if (t->type == TOK_IMAGE)
     {
         advance_func();
-        if (cur_func()->type == TOK_EQUAL)
+        cli_token_type aop = cur_func()->type;
+        if (aop == TOK_EQUAL || aop == TOK_OP_PLUS_EQ || aop == TOK_OP_MINUS_EQ ||
+            aop == TOK_OP_STAR_EQ || aop == TOK_OP_SLASH_EQ)
         {
             advance_func();
             val_t v = parse_expr(0);
@@ -493,23 +792,234 @@ val_t parse_primary(void)
             {
                 return v;
             }
-            if (v.type == VAL_STRING)
+
+            /* Case A: LHS slice/single-pixel assignment im[...] = rhs */
+            if (strchr(t->sval, '[') != NULL)
             {
-                if (image_ID(v.sval, data.core.image, data.core.NB_MAX_IMAGE) == -1)
+                char bare[200];
+                char btext[200];
+                char resolved_btext[256];
+                int  is_single_pixel = 0;
+
+                if (!imgid_slice_split_name(t->sval, bare, (int) sizeof(bare), btext,
+                                            (int) sizeof(btext)))
                 {
-                    parse_errmsg("Source image does not exist");
+                    parse_errmsg("Malformed slice: missing closing ']'");
                     return mk_double(0);
                 }
-                delete_image_ID(t->sval, 1);
-                chname_image_ID(v.sval, t->sval);
-                if (data.core.Debug > 0)
+                imageID srcid = image_ID(bare, data.core.image, data.core.NB_MAX_IMAGE);
+                if (srcid == -1)
                 {
-                    printf("changing name\n");
+                    parse_errmsg("Target image not found for slice assignment");
+                    return mk_double(0);
+                }
+                if (eval_slice_bounds(btext, resolved_btext, sizeof(resolved_btext),
+                                      &is_single_pixel) != 0)
+                {
+                    return mk_double(0);
+                }
+                IMAGE      *srcim = &data.core.image[srcid];
+                IMGID_SLICE slc   = imgid_slice_parse(resolved_btext);
+                if (slc.error)
+                {
+                    parse_errmsg(slc.errmsg);
+                    return mk_double(0);
+                }
+                uint32_t outsz[3] = { 0 };
+                int      snax     = srcim->md[0].naxis;
+                uint32_t ssz[3]   = { 1, 1, 1 };
+                for (int a = 0; a < snax && a < 3; a++)
+                {
+                    ssz[a] = srcim->md[0].size[a];
+                }
+                if (imgid_slice_output_size(&slc, snax, ssz, outsz) != 0)
+                {
+                    parse_errmsg(slc.errmsg[0] ? slc.errmsg : "Bad slice dims");
+                    return mk_double(0);
+                }
+
+                /* Fast path: single-pixel scalar assignment im[x, y] = val */
+                if (is_single_pixel && slc.naxis == snax && v.type != VAL_STRING)
+                {
+                    uint64_t ii = (uint64_t) slc.start[0];
+                    if (snax >= 2)
+                    {
+                        ii += (uint64_t) slc.start[1] * ssz[0];
+                    }
+                    if (snax >= 3)
+                    {
+                        ii += (uint64_t) slc.start[2] * ssz[0] * ssz[1];
+                    }
+                    double nv = to_double(v);
+                    if (aop != TOK_EQUAL)
+                    {
+                        double old = read_image_pixel_as_double(srcim, ii);
+                        if (aop == TOK_OP_PLUS_EQ)
+                        {
+                            nv = old + nv;
+                        }
+                        else if (aop == TOK_OP_MINUS_EQ)
+                        {
+                            nv = old - nv;
+                        }
+                        else if (aop == TOK_OP_STAR_EQ)
+                        {
+                            nv = old * nv;
+                        }
+                        else if (aop == TOK_OP_SLASH_EQ)
+                        {
+                            if (nv == 0.0)
+                            {
+                                parse_errmsg("Division by zero");
+                                return mk_double(0);
+                            }
+                            nv = old / nv;
+                        }
+                    }
+                    srcim->md[0].write = 1;
+                    write_image_pixel_from_double(srcim, ii, nv);
+                    processinfo_update_output_stream(NULL, srcim, NULL);
+                    return (v.type == VAL_LONG && aop == TOK_EQUAL) ? mk_long(v.lval)
+                                                                    : mk_double(nv);
+                }
+
+                /* General slice region assignment */
+                int onax = 0;
+                for (int a = 0; a < 3; a++)
+                {
+                    if (outsz[a] > 0)
+                    {
+                        onax = a + 1;
+                    }
+                }
+                if (onax == 0)
+                {
+                    onax = 1;
+                }
+                const char *tmpn = alloc_tmpname();
+                imageID     tid  = -1;
+                create_image_ID(tmpn, onax, outsz, srcim->md[0].datatype, 0, 10, 0, &tid);
+                if (tid == -1)
+                {
+                    parse_errmsg("Failed to allocate slice buffer");
+                    return mk_double(0);
+                }
+                IMGID simg;
+                memset(&simg, 0, sizeof(simg));
+                simg.ID       = srcid;
+                simg.im       = srcim;
+                simg.md       = srcim->md;
+                simg.slice    = slc;
+                simg.slice_im = &data.core.image[tid];
+                if (aop != TOK_EQUAL)
+                {
+                    imgid_slice_materialize(&simg);
+                }
+
+                if (v.type != VAL_STRING)
+                {
+                    if (apply_scalar_to_image_inplace(simg.slice_im, aop, to_double(v)) != 0)
+                    {
+                        return mk_double(0);
+                    }
+                }
+                else
+                {
+                    imageID rhsid = image_ID(v.sval, data.core.image, data.core.NB_MAX_IMAGE);
+                    if (rhsid == -1)
+                    {
+                        parse_errmsg("Source image does not exist");
+                        return mk_double(0);
+                    }
+                    IMAGE *rhsim = &data.core.image[rhsid];
+                    if (rhsim->md[0].nelement != simg.slice_im->md[0].nelement)
+                    {
+                        parse_errmsg("Dimension mismatch in slice assignment");
+                        return mk_double(0);
+                    }
+                    if (apply_image_to_image_inplace(simg.slice_im, rhsim, aop) != 0)
+                    {
+                        return mk_double(0);
+                    }
+                }
+
+                srcim->md[0].write = 1;
+                imgid_slice_writeback(&simg);
+                processinfo_update_output_stream(NULL, srcim, NULL);
+                return mk_string(bare);
+            }
+
+            /* Case B: Whole-image assignment im = rhs, +=, -=, *=, /= */
+            imageID dstid = image_ID(t->sval, data.core.image, data.core.NB_MAX_IMAGE);
+            if (dstid == -1)
+            {
+                parse_errmsg("Target image not found");
+                return mk_double(0);
+            }
+            IMAGE *dstim = &data.core.image[dstid];
+
+            if (v.type != VAL_STRING)
+            {
+                /* Scalar fill or compound scalar operation on whole image */
+                dstim->md[0].write = 1;
+                if (apply_scalar_to_image_inplace(dstim, aop, to_double(v)) != 0)
+                {
+                    dstim->md[0].write = 0;
+                    return mk_double(0);
+                }
+                processinfo_update_output_stream(NULL, dstim, NULL);
+                return mk_string(t->sval);
+            }
+
+            /* Image RHS */
+            imageID srcid = image_ID(v.sval, data.core.image, data.core.NB_MAX_IMAGE);
+            if (srcid == -1)
+            {
+                parse_errmsg("Source image does not exist");
+                return mk_double(0);
+            }
+            IMAGE *srcim = &data.core.image[srcid];
+
+            if (dstim->md[0].nelement == srcim->md[0].nelement &&
+                (dstim->md[0].shared == 1 || aop != TOK_EQUAL ||
+                 (dstim->md[0].naxis == srcim->md[0].naxis &&
+                  dstim->md[0].datatype == srcim->md[0].datatype)))
+            {
+                /* In-place SHM-safe copy/compound update */
+                if (dstid != srcid || aop != TOK_EQUAL)
+                {
+                    dstim->md[0].write = 1;
+                    if (apply_image_to_image_inplace(dstim, srcim, aop) != 0)
+                    {
+                        dstim->md[0].write = 0;
+                        return mk_double(0);
+                    }
+                    processinfo_update_output_stream(NULL, dstim, NULL);
                 }
                 return mk_string(t->sval);
             }
-            parse_errmsg("Cannot assign scalar to image");
-            return mk_double(0);
+
+            if (dstim->md[0].shared == 1 || aop != TOK_EQUAL)
+            {
+                parse_errmsg("Dimension mismatch in image assignment");
+                return mk_double(0);
+            }
+
+            /* Local image with different dimensions/datatype and aop == TOK_EQUAL */
+            delete_image_ID(t->sval, 1);
+            if (strncmp(v.sval, "_tmpcalc", 8) == 0)
+            {
+                chname_image_ID(v.sval, t->sval);
+            }
+            else
+            {
+                copy_image_ID(v.sval, t->sval, 0);
+            }
+            if (data.core.Debug > 0)
+            {
+                printf("changing name\n");
+            }
+            return mk_string(t->sval);
         }
         // This path is only for cli_parse, not cli_calc_eval_line
         if (!eval_error) // If not in eval_line context
@@ -524,13 +1034,15 @@ val_t parse_primary(void)
         /* Check for slice bracket syntax.
          * Materialize the sliced region into
          * a temporary image and return that
-         * name instead. */
+         * name instead (or scalar for 1x1 single-pixel index). */
         if (strchr(t->sval, '[') != NULL)
         {
             char bare[200];
             char btext[200];
-            int  has_brk = imgid_slice_split_name(t->sval, bare, (int) sizeof(bare), btext,
-                                                  (int) sizeof(btext));
+            char resolved_btext[256];
+            int  is_single_pixel = 0;
+            int  has_brk         = imgid_slice_split_name(t->sval, bare, (int) sizeof(bare), btext,
+                                                          (int) sizeof(btext));
             if (has_brk)
             {
                 imageID srcid = image_ID(bare, data.core.image, data.core.NB_MAX_IMAGE);
@@ -540,8 +1052,13 @@ val_t parse_primary(void)
                                  "not found");
                     return mk_double(0);
                 }
+                if (eval_slice_bounds(btext, resolved_btext, sizeof(resolved_btext),
+                                      &is_single_pixel) != 0)
+                {
+                    return mk_double(0);
+                }
                 IMAGE      *srcim = &data.core.image[srcid];
-                IMGID_SLICE slc   = imgid_slice_parse(btext);
+                IMGID_SLICE slc   = imgid_slice_parse(resolved_btext);
                 if (slc.error)
                 {
                     parse_errmsg(slc.errmsg);
@@ -549,15 +1066,29 @@ val_t parse_primary(void)
                 }
                 uint32_t outsz[3] = { 0 };
                 int      snax     = srcim->md[0].naxis;
-                uint32_t ssz[3];
+                uint32_t ssz[3]   = { 1, 1, 1 };
                 for (int a = 0; a < snax && a < 3; a++)
                 {
                     ssz[a] = srcim->md[0].size[a];
                 }
                 if (imgid_slice_output_size(&slc, snax, ssz, outsz) != 0)
                 {
-                    parse_errmsg("Bad slice dims");
+                    parse_errmsg(slc.errmsg[0] ? slc.errmsg : "Bad slice dims");
                     return mk_double(0);
+                }
+                /* Single-pixel index read in math expression: return scalar pixel value */
+                if (parse_mode != 0 && is_single_pixel && slc.naxis == snax)
+                {
+                    uint64_t ii = (uint64_t) slc.start[0];
+                    if (snax >= 2)
+                    {
+                        ii += (uint64_t) slc.start[1] * ssz[0];
+                    }
+                    if (snax >= 3)
+                    {
+                        ii += (uint64_t) slc.start[2] * ssz[0] * ssz[1];
+                    }
+                    return mk_double(read_image_pixel_as_double(srcim, ii));
                 }
                 /* Count output axes */
                 int onax = 0;
@@ -573,8 +1104,8 @@ val_t parse_primary(void)
                     onax = 1;
                 }
                 const char *tmpn = alloc_tmpname();
-                imageID     tid =
-                    create_image_ID(tmpn, onax, outsz, srcim->md[0].datatype, 0, 10, 0, NULL);
+                imageID     tid  = -1;
+                create_image_ID(tmpn, onax, outsz, srcim->md[0].datatype, 0, 10, 0, &tid);
                 if (tid != -1)
                 {
                     IMGID simg;
@@ -596,6 +1127,7 @@ val_t parse_primary(void)
         }
         return mk_string(t->sval);
     }
+
 
     /* command */
     if (t->type == TOK_COMMAND)

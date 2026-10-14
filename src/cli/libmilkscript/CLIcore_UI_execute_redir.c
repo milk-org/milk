@@ -197,6 +197,8 @@ int cli_run_external(const char *cmd)
     int   ret    = -1;
     int   status = 0;
 
+    fflush(stdout);
+
     if (needs_shell)
     {
         /* Shell metacharacters present:
@@ -1007,7 +1009,7 @@ int is_internal_cmd(const char *firstword, int check_assign)
     {
         size_t cmdlen = strlen(data.cmd[i].key);
         if (strncmp(firstword, data.cmd[i].key, cmdlen) == 0 &&
-            (firstword[cmdlen] == '\0' || firstword[cmdlen] == ':' || firstword[cmdlen] == ' '))
+            (firstword[cmdlen] == '\0' || firstword[cmdlen] == ' '))
         {
             return 1;
         }
@@ -1054,7 +1056,10 @@ void cli_pipe_setup(FILE **pipe_fp, int *saved_stdout_fd)
         return;
     }
 
-    printf(COLORDIMYELLOW "[shell pipe] %s" COLORRST "\n", rhs);
+    if (dcdebug > 0)
+    {
+        fprintf(stderr, COLORDIMYELLOW "[shell pipe] %s" COLORRST "\n", rhs);
+    }
     cli_export_vars_to_env();
     *pipe_fp = popen(rhs, "w");
     if (*pipe_fp != NULL)

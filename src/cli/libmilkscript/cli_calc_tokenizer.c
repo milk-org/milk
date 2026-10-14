@@ -14,17 +14,19 @@
 
 #include <ctype.h>
 #include <math.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "CLIcore.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#include "CLIcore_script.h"
 #include "COREMOD_arith/COREMOD_arith.h"
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 
-#include "cli_calc_tokenizer.h"
 #include "cli_calc_internal.h"
+#include "cli_calc_tokenizer.h"
 
 /**
  * @brief Built-in function table entry
@@ -81,6 +83,8 @@ static const builtin_func builtins[] = {
     { "imin(", (double (*)()) arith_image_min, TOK_FUNC_IM_D },
     { "imax(", (double (*)()) arith_image_max, TOK_FUNC_IM_D },
     { "imean(", (double (*)()) arith_image_mean, TOK_FUNC_IM_D },
+    { "irms(", (double (*)()) arith_image_rms, TOK_FUNC_IM_D },
+    { "imedian(", (double (*)()) arith_image_median, TOK_FUNC_IM_D },
 
     /* image, double -> double */
     { "perc(", (double (*)()) arith_image_percentile, TOK_FUNC_IMD_D },
@@ -89,6 +93,7 @@ static const builtin_func builtins[] = {
     { "where(", NULL, TOK_FUNC_WHERE },
     { "dot(", (double (*)()) arith_image_dot, TOK_FUNC_IMIM_D },
     { "norm(", (double (*)()) arith_image_norm, TOK_FUNC_IM_D },
+    { "matmul(", NULL, TOK_FUNC_IMIM_IM },
 
     /* string -> double */
     { "strlen(", NULL, TOK_FUNC_S_D },
@@ -128,6 +133,40 @@ static inline int is_ident_char(int c)
 static inline int is_ident_start(int c)
 {
     return isalpha(c) || c == '_' || c == '?' || c == '.';
+}
+
+/**
+ * @brief Check if an environment variable exists and holds a pure numeric value.
+ */
+static int is_numeric_env_var(const char *s)
+{
+    const char *ev = getenv(s);
+    if (ev == NULL || ev[0] == '\0')
+    {
+        return 0;
+    }
+    char *endp = NULL;
+    (void) strtod(ev, &endp);
+    return (endp != ev && *endp == '\0');
+}
+
+/**
+ * @brief Resolve an image by name, auto-connecting from /dev/shm/<name>.im.shm if allowed.
+ */
+static imageID resolve_or_autoconnect_image(const char *name, int allow_autoconnect)
+{
+    imageID id = image_ID(name, data.core.image, data.core.NB_MAX_IMAGE);
+    if (id != -1 || !allow_autoconnect)
+    {
+        return id;
+    }
+    char shmpath[512];
+    if (ImageStreamIO_filename(shmpath, sizeof(shmpath), name) == IMAGESTREAMIO_SUCCESS &&
+        access(shmpath, R_OK) == 0)
+    {
+        id = read_sharedmem_image(name, data.core.image, data.core.NB_MAX_IMAGE);
+    }
+    return id;
 }
 
 /**
@@ -188,7 +227,7 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
                 size_t cmdlen = strlen(data.cmd[i].key);
                 if (strncmp(p, data.cmd[i].key, cmdlen) == 0 &&
                     (p[cmdlen] == '\0' || p[cmdlen] == ' ' || p[cmdlen] == '\t' ||
-                     p[cmdlen] == '\n' || p[cmdlen] == ':' || p[cmdlen] == ';'))
+                     p[cmdlen] == '\n' || p[cmdlen] == ';'))
                 {
                     /* Ensure not immediately followed by assignment operator '=' */
                     const char *after = p + cmdlen;
@@ -614,6 +653,29 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
             /* classify the identifier */
             const char *s = tokens[nt].sval;
 
+            /* Determine whether auto-connecting /dev/shm/<name>.im.shm is safe here */
+            int allow_autoconnect = 0;
+            if (strchr(s, '[') != NULL || nt > 0 || parse_mode == 2)
+            {
+                allow_autoconnect = 1;
+            }
+            else if (parse_mode != 0 && nt == 0)
+            {
+                const char *after = p;
+                while (*after == ' ' || *after == '\t')
+                {
+                    after++;
+                }
+                /* Allow auto-connect at nt==0 if followed by an operator (not a CLI flag like -la) */
+                if (*after == '=' || *after == '+' || *after == '*' || *after == '/' ||
+                    *after == '^' || *after == '%' || *after == '<' || *after == '>' ||
+                    *after == '!' || *after == '&' || *after == '|' || *after == '?' ||
+                    (*after == '-' && !isalpha((unsigned char) *(after + 1))))
+                {
+                    allow_autoconnect = 1;
+                }
+            }
+
             if (variable_ID(s) != -1)
             {
                 tokens[nt].type = TOK_VAR;
@@ -624,7 +686,8 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
                            s);
                 }
             }
-            else if (image_ID(s, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+            else if (strchr(s, '[') == NULL &&
+                     resolve_or_autoconnect_image(s, allow_autoconnect) != -1)
             {
                 tokens[nt].type = TOK_IMAGE;
                 if (data.core.Debug > 0)
@@ -645,7 +708,7 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
                 {
                     memcpy(bare, s, bn);
                     bare[bn] = '\0';
-                    if (image_ID(bare, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+                    if (resolve_or_autoconnect_image(bare, 1) != -1)
                     {
                         tokens[nt].type = TOK_IMAGE;
                     }
@@ -659,6 +722,11 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
                     tokens[nt].type = TOK_NVAR;
                 }
             }
+            else if (parse_mode != 0 &&
+                     (cli_var_get(s) != NULL || (allow_autoconnect && is_numeric_env_var(s))))
+            {
+                tokens[nt].type = TOK_VAR;
+            }
             else if (data.cmdNBarg == 0)
             {
                 /* first argument: check commands */
@@ -670,7 +738,7 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
                     size_t cmdlen = strlen(data.cmd[i].key);
 
                     if (strncmp(s, data.cmd[i].key, cmdlen) == 0 &&
-                        (s[cmdlen] == '\0' || s[cmdlen] == ':' || s[cmdlen] == ' '))
+                        (s[cmdlen] == '\0' || s[cmdlen] == ' '))
                     {
                         data.cmdindex   = i;
                         tokens[nt].type = TOK_COMMAND;

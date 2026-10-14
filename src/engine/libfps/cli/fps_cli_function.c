@@ -109,19 +109,35 @@ errno_t fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
         }
     }
 
-    /* Print FPS name and type in color */
+    /* Print FPS name and type in color (interactive TTY only) */
+    int suppress_banner = (!isatty(STDOUT_FILENO) || dcquiet != 0);
+    for (int a = 1; a < data.cmdNBarg && !suppress_banner; a++)
+    {
+        const char *tok = data.cmdargtoken[a].val.string;
+        if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0 || strcmp(tok, "--json") == 0 ||
+            strcmp(tok, "--porcelain") == 0)
+        {
+            suppress_banner = 1;
+        }
+    }
     if (dcfpsname[0] == '_')
     {
-        printf("\033[36mFPS \033[1m%s\033[22m"
-               " \033[33m[LOCAL]\033[0m\n",
-               dcfpsname);
+        if (!suppress_banner)
+        {
+            printf("\033[36mFPS \033[1m%s\033[22m"
+                   " \033[33m[LOCAL]\033[0m\n",
+                   dcfpsname);
+        }
         fps_local_set_creator(dcfpsname, app_info->fps_name);
     }
     else
     {
-        printf("\033[36mFPS \033[1m%s\033[22m"
-               " \033[32m[SHARED]\033[0m\n",
-               dcfpsname);
+        if (!suppress_banner)
+        {
+            printf("\033[36mFPS \033[1m%s\033[22m"
+                   " \033[32m[SHARED]\033[0m\n",
+                   dcfpsname);
+        }
         fps_shared_record_usage(dcfpsname, app_info->fps_name);
     }
 

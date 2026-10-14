@@ -276,6 +276,12 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ["milkquery --streams"],
     ["milkquery --procs"],
     ["milkquery --fps --streams --procs"],
+    # --- Section 46: Quiet (-q) list modes and @TF32: type modifiers ---
+    ["fpslist -q"],
+    ["streamlist -q"],
+    ["listim -q"],
+    ["seq.list -q"],
+    ["mem.mk2Dim @TF32:_mod_f32 8 8", "mem.mk2Dim @TF64:_mod_f64 8 8", "mem.mk2Dim @TU16:_mod_u16 8 8", "mem.rm _mod_f32", "mem.rm _mod_f64", "mem.rm _mod_u16"],
 ]
 # fmt: on
 
@@ -352,6 +358,8 @@ TESTLIST_EXPECT_ERROR: list[list[str]] = [
     ["fpsdump --json _no_such_fps_"],
     ["fpsdump -t --json _no_such_fps_"],
     ["milkquery foo"],
+    # --- Section 46: invalid @X: modifier ---
+    ["mem.mk2Dim @BADMOD:_bad_mod_im 8 8"],
 ]
 # fmt: on
 
@@ -467,6 +475,12 @@ TESTLIST_EXPECT_GREP_WORKING: list[tuple[list[str], str]] = [
     # --- comment handling ---
     (["echo comment_ok # this is a comment and should not error"], "comment_ok"),
     (["echo indented_comment_ok   # indented comment"], "indented_comment_ok"),
+    # --- Section 46: Phase 0 calc & slice features ---
+    (["mem.mk2Dim _p0_im 4 4", "_p0_im = 5.0", "_p0_im += 2.0", "_p0_tot = itot(_p0_im)", "echo $_p0_tot", "mem.rm _p0_im"], "112"),
+    (["mem.mk2Dim _p0_sl 4 4", "_p0_sl = 0.0", "_p0_sl[1, 2] = 42.0", "_p0_v = _p0_sl[1, 2]", "echo $_p0_v", "mem.rm _p0_sl"], "42"),
+    (["mem.mk2Dim _p0_vb 8 8", "_p0_vb = 1.0", "x0=2", "r=1", "_p0_sub = _p0_vb[x0-r:x0+r, 0:1]", "_p0_st = itot(_p0_sub)", "echo $_p0_st", "mem.rm _p0_vb", "mem.rm _p0_sub"], "6"),
+    (["mem.mk2Dim _p0_st 4 4", "_p0_st = 7.0", "_p0_med = imedian(_p0_st)", "_p0_rms = irms(_p0_st)", "echo $_p0_med $_p0_rms", "mem.rm _p0_st"], "7"),
+    (["mem.mk2Dim _p0_mA 2 2", "mem.mk2Dim _p0_mB 2 2", "_p0_mA = 2.0", "_p0_mB = 3.0", "_p0_mC = matmul(_p0_mA, _p0_mB)", "_p0_mt = itot(_p0_mC)", "echo $_p0_mt", "mem.rm _p0_mA", "mem.rm _p0_mB", "mem.rm _p0_mC"], "48"),
 ]
 TESTLIST_EXPECT_GREP_XFAILING: list[tuple[list[str], str]] = []
 # fmt: on

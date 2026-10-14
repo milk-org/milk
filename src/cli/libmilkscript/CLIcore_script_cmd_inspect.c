@@ -218,19 +218,25 @@ static int emit_fps_json_body(const char *pat, int indent)
  * connects to each, and prints a summary table
  * showing name, status and description.
  *
- * Usage: fpslist [--json] [pattern]
+ * Usage: fpslist [-q] [--json] [pattern]
+ *   -q       quiet mode (names only, one per line)
  *   --json   JSON array of FPS metadata
  *   pattern  optional glob filter (e.g. "dm*")
  */
 errno_t cli_cmd_fpslist(void)
 {
-    int         jsonmode = 0;
-    const char *pat      = NULL;
+    int         quietmode = 0;
+    int         jsonmode  = 0;
+    const char *pat       = NULL;
 
     for (int a = 1; a < data.cmdNBarg; a++)
     {
         const char *tok = data.cmdargtoken[a].val.string;
-        if (strcmp(tok, "--json") == 0)
+        if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
+        {
+            quietmode = 1;
+        }
+        else if (strcmp(tok, "--json") == 0)
         {
             jsonmode = 1;
         }
@@ -248,21 +254,25 @@ errno_t cli_cmd_fpslist(void)
         return RETURN_SUCCESS;
     }
 
-    /* Table mode (default) */
+    /* Table or quiet mode */
     char shmdname[STRINGMAXLEN_SHMDIRNAME];
     function_parameter_struct_shmdirname(shmdname);
 
-    printf("%-24s %-12s %s\n", "FPS NAME", "STATUS", "DESCRIPTION");
-    printf("%-24s %-12s %s\n", "------------------------", "------------",
-           "--------------------"
-           "--------------------");
+    int is_tty = isatty(STDOUT_FILENO);
+    if (!quietmode && is_tty)
+    {
+        printf("%-24s %-12s %s\n", "FPS NAME", "STATUS", "DESCRIPTION");
+        printf("%-24s %-12s %s\n", "------------------------", "------------",
+               "--------------------"
+               "--------------------");
+    }
 
     DIR           *d;
     struct dirent *de;
     d = opendir(shmdname);
     if (d == NULL)
     {
-        printf("Cannot open SHM dir: %s\n", shmdname);
+        fprintf(stderr, "Cannot open SHM dir: %s\n", shmdname);
         return RETURN_FAILURE;
     }
 
@@ -285,6 +295,12 @@ errno_t cli_cmd_fpslist(void)
 
         if (pat != NULL && fnmatch(pat, fpsname, 0) != 0)
         {
+            continue;
+        }
+
+        if (quietmode)
+        {
+            printf("%s\n", fpsname);
             continue;
         }
 
@@ -659,6 +675,11 @@ errno_t cli_cmd_streamlist(void)
         if (strcmp(tok, "-l") == 0)
         {
             longmode = 1;
+            argpos   = a + 1;
+        }
+        else if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
+        {
+            longmode = 0;
             argpos   = a + 1;
         }
         else if (strcmp(tok, "--json") == 0)

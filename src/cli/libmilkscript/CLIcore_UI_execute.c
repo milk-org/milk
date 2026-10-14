@@ -347,9 +347,9 @@ errno_t CLI_execute_line()
         char firstword[2048];
         if (sscanf(data.CLIcmdline, " %2047s", firstword) == 1 && !is_internal_cmd(firstword, 1))
         {
-            if (dcquiet == 0)
+            if (dcdebug > 0)
             {
-                printf(COLORDIMYELLOW "[shell bypass] %s" COLORRST "\n", data.CLIcmdline);
+                fprintf(stderr, COLORDIMYELLOW "[shell bypass] %s" COLORRST "\n", data.CLIcmdline);
             }
             cli_history_log_shell(data.CLIcmdline);
             cli_export_vars_to_env();
@@ -474,7 +474,14 @@ errno_t CLI_execute_line()
                         '\0';
                     data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
                 }
-                else if (strchr(cmdargstring, ' ') != NULL || strchr(cmdargstring, '\t') != NULL)
+                else if ((strchr(cmdargstring, ' ') != NULL ||
+                          strchr(cmdargstring, '\t') != NULL) &&
+                         !(strchr(cmdargstring, '[') != NULL &&
+                           cmdargstring[strlen(cmdargstring) - 1] == ']' &&
+                           (strchr(cmdargstring, ' ') == NULL ||
+                            strchr(cmdargstring, '[') < strchr(cmdargstring, ' ')) &&
+                           (strchr(cmdargstring, '\t') == NULL ||
+                            strchr(cmdargstring, '[') < strchr(cmdargstring, '\t'))))
                 {
                     strncpy(data.cmdargtoken[data.cmdNBarg].val.string, cmdargstring,
                             STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
@@ -666,9 +673,9 @@ errno_t CLI_execute_line()
             cli_last_retval = sys_ret;
         }
 
-        if (!os_not_found && sys_ret != -1)
+        if (!os_not_found && sys_ret != -1 && dcdebug > 0)
         {
-            printf(COLORDIMYELLOW "[shell] %s" COLORRST "\n", data.CLIcmdline);
+            fprintf(stderr, COLORDIMYELLOW "[shell] %s" COLORRST "\n", data.CLIcmdline);
         }
 
         if (os_not_found)

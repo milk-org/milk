@@ -14,13 +14,20 @@
  *   F  Load from ./conf/shmim.<name>.fits
  *   E  Must exist (error if not found)
  *   N  Must not exist (error if found)
+ *   T<type>  Pixel data type:
+ *            TU8, TU16, TU32, TU64 (unsigned int)
+ *            TI8, TI16, TI32, TI64 (signed int)
+ *            TF16, TF32, TF64 (float16/32/64)
+ *            TC64, TC128 (complex float32/64)
  *
- * Letters are stackable: "@LE:myimg" means local +
- * must-exist.  E and N are mutually exclusive.
+ * Letters are stackable: "@LTF64:myimg" means local +
+ * float64.  E and N are mutually exclusive.
  */
 
 #ifndef FPS_STREAMNAME_PARSE_H
 #define FPS_STREAMNAME_PARSE_H
+
+#include <stdint.h>
 
 /**
  * @brief Parsed stream name with modifier flags.
@@ -33,9 +40,11 @@ typedef struct
     int must_exist;
     /** 1 if 'N' modifier present */
     int must_new;
+    /** Pixel datatype (_DATATYPE_*), or 0 if unspecified */
+    uint8_t datatype;
     /** Pointer to bare name (past prefix) */
     const char *name;
-    /** 1 if parse error (e.g. E+N conflict) */
+    /** 1 if parse error (e.g. unknown modifier or E+N conflict) */
     int error;
 } FPS_STREAMNAME_PARSED;
 
@@ -44,9 +53,8 @@ typedef struct
  *
  * If raw starts with '@' and contains ':', the
  * characters between '@' and ':' are scanned for
- * modifier letters.  Unknown letters cause the
- * entire string to be treated as a bare name with
- * no modifiers.
+ * modifier letters.  Unknown letters or conflicting
+ * modifiers set error = 1.
  *
  * @param raw  Raw stream name (possibly prefixed)
  * @return     Parsed result
@@ -56,11 +64,11 @@ FPS_STREAMNAME_PARSED fps_streamname_parse(const char *raw);
 /**
  * @brief Human-readable label for a modifier set.
  *
- * Writes a short tag like "[L]", "[SE]", or ""
+ * Writes a short tag like "[L]", "[SE]", "[TF32]", or ""
  * into the provided buffer.
  *
  * @param p      Parsed stream name
- * @param buf    Output buffer (>= 8 bytes)
+ * @param buf    Output buffer (>= 16 bytes)
  * @param bufsz  Size of buf
  */
 void fps_streamname_modifier_label(const FPS_STREAMNAME_PARSED *p, char *buf, int bufsz);

@@ -53,13 +53,72 @@
 errno_t create_image_ID_IMGID(IMGID *img)
 {
     DEBUG_TRACE_FSTART();
+    if (img->stream_parse_error)
+    {
+        img->ID = -1;
+        DEBUG_TRACE_FEXIT();
+        return RETURN_FAILURE;
+    }
+
+    if (img->name[0] == '@')
+    {
+        FPS_STREAMNAME_PARSED sp = fps_streamname_parse(img->name);
+        if (sp.error)
+        {
+            fprintf(stderr, "ERROR: invalid stream modifier prefix in \"%s\"\n", img->name);
+            img->stream_parse_error = 1;
+            img->ID                 = -1;
+            DEBUG_TRACE_FEXIT();
+            return RETURN_FAILURE;
+        }
+        img->stream_loc        = sp.loc;
+        img->stream_must_exist = sp.must_exist;
+        img->stream_must_new   = sp.must_new;
+        if (sp.datatype != 0)
+        {
+            img->stream_datatype = sp.datatype;
+        }
+        memmove(img->name, sp.name, strlen(sp.name) + 1);
+    }
+
+    if (img->name[0] == '\0' || strchr(img->name, '@') != NULL || strchr(img->name, ':') != NULL)
+    {
+        fprintf(stderr, "ERROR: invalid image name \"%s\"\n", img->name);
+        img->ID = -1;
+        DEBUG_TRACE_FEXIT();
+        return RETURN_FAILURE;
+    }
+
+    if (img->stream_loc == 'L')
+    {
+        img->mdt->shared = 0;
+    }
+    else if (img->stream_loc == 'S')
+    {
+        img->mdt->shared = 1;
+    }
+    if (img->stream_datatype != 0)
+    {
+        img->mdt->datatype = img->stream_datatype;
+    }
+
     DEBUG_TRACEPOINT("FARG %s %ld %d %d %d %d", img->name, (long) img->mdt->naxis,
                      (int) img->mdt->datatype, img->mdt->shared, img->mdt->NBkw, img->mdt->CBsize);
     IMGID exist_img = imgid_make_from_name(img->name);
     resolveIMGID(&exist_img, ERRMODE_NULL, dcimg, dcnimg);
 
+    if (img->stream_must_new && exist_img.ID != -1)
+    {
+        fprintf(stderr, "ERROR: @N modifier -- image \"%s\" already exists\n", img->name);
+        imgid_free(&exist_img);
+        img->ID = -1;
+        DEBUG_TRACE_FEXIT();
+        return RETURN_FAILURE;
+    }
+
     if (exist_img.ID == -1)
     {
+        imgid_free(&exist_img);
         img->ID     = next_avail_image_ID(img->ID);
         errno_t ret = ImageStreamIO_createIm(&dcimg[img->ID], img->name, img->mdt->naxis,
                                              img->mdt->size, img->mdt->datatype, img->mdt->shared,
@@ -76,6 +135,7 @@ errno_t create_image_ID_IMGID(IMGID *img)
     {
         // Image name already in use — check compatibility
         img->ID = exist_img.ID;
+        imgid_free(&exist_img);
 
         int mismatch = 0;
 

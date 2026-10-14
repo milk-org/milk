@@ -35,3 +35,6 @@ double arith_image_dot_IMGID(IMGID *imgin1, IMGID *imgin2);
 
 double arith_image_norm(const char *ID_name);
 double arith_image_norm_IMGID(IMGID *imgin);
+
+double arith_image_rms(const char *ID_name);
+double arith_image_rms_IMGID(IMGID *imgin);

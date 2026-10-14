@@ -46,18 +46,98 @@ static const char *get_shm_dir(void)
  */
 static errno_t cli_seq_list(void)
 {
+    int quiet_mode = 0;
+    int json_mode  = 0;
+
+    for (int a = 1; a < data.cmdNBarg; a++)
+    {
+        const char *tok = data.cmdargtoken[a].val.string;
+        if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
+        {
+            quiet_mode = 1;
+        }
+        else if (strcmp(tok, "--json") == 0)
+        {
+            json_mode = 1;
+        }
+    }
+
     char names[100][FPSSEQ_NAME_MAX];
     int  count = milkseq_list(names, 100);
 
-    if (count == 0)
+    if (quiet_mode)
     {
-        printf("No active sequencers found.\n");
+        for (int i = 0; i < count; i++)
+        {
+            printf("%s\n", names[i]);
+        }
         return RETURN_SUCCESS;
     }
 
-    printf("%-20s %-10s %-10s %-10s %-10s %s\n", "NAME", "PID", "STATUS", "TASKS", "ERRORS",
-           "FIFO PATH");
-    printf("--------------------------------------------------------------------------------\n");
+    if (json_mode)
+    {
+        printf("[\n");
+        int first = 1;
+        for (int i = 0; i < count; i++)
+        {
+            MILKSEQ_STATE *state = milkseq_connect(names[i]);
+            if (state)
+            {
+                const char *status_str = "UNKNOWN";
+                if (state->status & MILKSEQ_STATUS_IDLE)
+                {
+                    status_str = "IDLE";
+                }
+                if (state->status & MILKSEQ_STATUS_RUNNING)
+                {
+                    status_str = "RUNNING";
+                }
+                if (state->status & MILKSEQ_STATUS_ERROR)
+                {
+                    status_str = "ERROR";
+                }
+                if (state->status & MILKSEQ_STATUS_STOPPING)
+                {
+                    status_str = "STOPPING";
+                }
+                if (!first)
+                {
+                    printf(",\n");
+                }
+                first = 0;
+                printf("  {\n"
+                       "    \"name\": \"%s\",\n"
+                       "    \"pid\": %d,\n"
+                       "    \"status\": \"%s\",\n"
+                       "    \"tasks_active\": %u,\n"
+                       "    \"errors\": %u,\n"
+                       "    \"fifo_path\": \"%s\"\n"
+                       "  }",
+                       state->name, (int) state->pid, status_str, state->NBtasks_active,
+                       state->error_count, state->fifo_path);
+                milkseq_disconnect(state);
+            }
+        }
+        printf("\n]\n");
+        return RETURN_SUCCESS;
+    }
+
+    if (count == 0)
+    {
+        if (isatty(STDOUT_FILENO))
+        {
+            printf("No active sequencers found.\n");
+        }
+        return RETURN_SUCCESS;
+    }
+
+    if (isatty(STDOUT_FILENO))
+    {
+        printf("%-20s %-10s %-10s %-10s %-10s %s\n", "NAME", "PID", "STATUS", "TASKS", "ERRORS",
+               "FIFO PATH");
+        printf("----------------------------------------"
+               "----------------------------------------\n");
+    }
 
     for (int i = 0; i < count; i++)
     {

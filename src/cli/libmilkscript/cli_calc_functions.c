@@ -17,12 +17,14 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "CLIcore.h"
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_arith/COREMOD_arith.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_memory/stream_slice.h"
+#include "libmilkdata/milk_type_dispatch.h"
 
 #include "CLIcore_script.h"
 #include "cli_calc_internal.h"
@@ -485,6 +487,218 @@ val_t parse_funccall(cli_token *ftok)
     if (ftok->type == TOK_FUNC_WHERE)
     {
         return func_where(cur_func, advance_func);
+    }
+
+    if (ftok->type == TOK_FUNC_IMIM_IM)
+    {
+        val_t arg1 = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_COMMA)
+        {
+            parse_errmsg("Expected ','");
+            return mk_double(0);
+        }
+        advance_func();
+        val_t arg2 = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_RPAREN)
+        {
+            parse_errmsg("Expected ')'");
+            return mk_double(0);
+        }
+        advance_func();
+
+        if (arg1.type != VAL_STRING || arg2.type != VAL_STRING)
+        {
+            parse_errmsg("matmul: expected two image arguments");
+            return mk_string("");
+        }
+        if (!check_image(arg1.sval) || !check_image(arg2.sval))
+        {
+            return mk_string("");
+        }
+
+        imageID id1 = image_ID(arg1.sval, data.core.image, data.core.NB_MAX_IMAGE);
+        imageID id2 = image_ID(arg2.sval, data.core.image, data.core.NB_MAX_IMAGE);
+        IMAGE  *im1 = &data.core.image[id1];
+        IMAGE  *im2 = &data.core.image[id2];
+
+        uint64_t a0      = im1->md[0].size[0];
+        uint64_t a1      = 1;
+        int      is_3d_a = 0;
+        if (im1->md[0].naxis == 3)
+        {
+            a0      = (uint64_t) im1->md[0].size[0] * im1->md[0].size[1];
+            a1      = im1->md[0].size[2];
+            is_3d_a = 1;
+        }
+        else if (im1->md[0].naxis >= 2)
+        {
+            a1 = im1->md[0].size[1];
+        }
+
+        uint64_t b0 = im2->md[0].size[0];
+        uint64_t b1 = 1;
+        if (im2->md[0].naxis == 3)
+        {
+            b0 = (uint64_t) im2->md[0].size[0] * im2->md[0].size[1];
+            b1 = im2->md[0].size[2];
+        }
+        else if (im2->md[0].naxis >= 2 &&
+                 !(is_3d_a && a0 == (uint64_t) im2->md[0].size[0] * im2->md[0].size[1]))
+        {
+            b1 = im2->md[0].size[1];
+        }
+        else if (is_3d_a && im2->md[0].naxis == 2 &&
+                 a0 == (uint64_t) im2->md[0].size[0] * im2->md[0].size[1])
+        {
+            b0 = a0;
+            b1 = 1;
+        }
+
+        int mode   = 0; /* 1: col-major/synthesis (a1 == b0), 2: row-major/projection (a0 == b0) */
+        uint64_t M = 0;
+        uint64_t N = 0;
+        uint64_t K = 0;
+        if (a1 == b0)
+        {
+            mode = 1;
+            M    = a0;
+            K    = a1;
+            N    = b1;
+        }
+        else if (a0 == b0)
+        {
+            mode = 2;
+            M    = a1;
+            K    = a0;
+            N    = b1;
+        }
+        else
+        {
+            parse_errmsg("matmul: incompatible image dimensions");
+            return mk_string("");
+        }
+
+        uint32_t outsz[3] = { 1, 1, 1 };
+        long     onax     = 2;
+        if (mode == 1 && is_3d_a)
+        {
+            outsz[0] = im1->md[0].size[0];
+            outsz[1] = im1->md[0].size[1];
+            if (N == 1)
+            {
+                onax = 2;
+            }
+            else
+            {
+                onax     = 3;
+                outsz[2] = (uint32_t) N;
+            }
+        }
+        else if (N == 1 && (im2->md[0].naxis == 1 || mode == 2))
+        {
+            onax     = 1;
+            outsz[0] = (uint32_t) M;
+        }
+        else
+        {
+            onax     = 2;
+            outsz[0] = (uint32_t) M;
+            outsz[1] = (uint32_t) N;
+        }
+
+        uint8_t out_dt =
+            (im1->md[0].datatype == _DATATYPE_DOUBLE || im2->md[0].datatype == _DATATYPE_DOUBLE)
+                ? _DATATYPE_DOUBLE
+                : _DATATYPE_FLOAT;
+
+        const char *tmpn = alloc_tmpname();
+        imageID     tid  = -1;
+        create_image_ID(tmpn, onax, outsz, out_dt, 0, 10, 0, &tid);
+        if (tid == -1)
+        {
+            parse_errmsg("matmul: failed to allocate output image");
+            return mk_string("");
+        }
+        IMAGE *outim = &data.core.image[tid];
+
+        double *bufA = (double *) malloc(sizeof(double) * im1->md[0].nelement);
+        double *bufB = (double *) malloc(sizeof(double) * im2->md[0].nelement);
+        if (bufA == NULL || bufB == NULL)
+        {
+            free(bufA);
+            free(bufB);
+            parse_errmsg("matmul: memory allocation failed");
+            return mk_string("");
+        }
+
+#define COPY_TO_DBL(IM, DST)                                     \
+    do                                                           \
+    {                                                            \
+        uint64_t _nel = (IM)->md[0].nelement;                    \
+        uint8_t  _dt  = (IM)->md[0].datatype;                    \
+        if (_dt == _DATATYPE_FLOAT)                              \
+        {                                                        \
+            for (uint64_t _i = 0; _i < _nel; _i++)               \
+                (DST)[_i] = (double) (IM)->array.F[_i];          \
+        }                                                        \
+        else if (_dt == _DATATYPE_DOUBLE)                        \
+        {                                                        \
+            memcpy((DST), (IM)->array.D, sizeof(double) * _nel); \
+        }                                                        \
+        else                                                     \
+        {                                                        \
+            for (uint64_t _i = 0; _i < _nel; _i++)               \
+                (DST)[_i] = 0.0;                                 \
+        }                                                        \
+    } while (0)
+
+        COPY_TO_DBL(im1, bufA);
+        COPY_TO_DBL(im2, bufB);
+#undef COPY_TO_DBL
+
+        for (uint64_t n = 0; n < N; n++)
+        {
+            for (uint64_t m = 0; m < M; m++)
+            {
+                double acc = 0.0;
+                if (mode == 1)
+                {
+                    for (uint64_t k = 0; k < K; k++)
+                    {
+                        acc += bufA[k * M + m] * bufB[n * K + k];
+                    }
+                }
+                else
+                {
+                    const double *rowA = &bufA[m * K];
+                    const double *colB = &bufB[n * K];
+                    for (uint64_t k = 0; k < K; k++)
+                    {
+                        acc += rowA[k] * colB[k];
+                    }
+                }
+                if (out_dt == _DATATYPE_DOUBLE)
+                {
+                    outim->array.D[n * M + m] = acc;
+                }
+                else
+                {
+                    outim->array.F[n * M + m] = (float) acc;
+                }
+            }
+        }
+
+        free(bufA);
+        free(bufB);
+        return mk_string(tmpn);
     }
 
     if (ftok->type == TOK_FUNC_IMIM_D)

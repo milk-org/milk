@@ -30,6 +30,8 @@
 #include "compute_image_memory.h"
 #include "compute_nb_image.h"
 #include "image_ID.h"
+#include <fnmatch.h>
+#include <unistd.h>
 
 #define STYPESIZE 10
 
@@ -68,29 +70,54 @@ FPS_CMDSETTINGS_INIT(listim, CLIcmddata_listim, FPS_app_info_listim)
 
 static errno_t __attribute__((unused)) compute_listim()
 {
-    int json_mode      = 0;
-    int porcelain_mode = 0;
+    int         json_mode      = 0;
+    int         porcelain_mode = 0;
+    int         quiet_mode     = 0;
+    const char *pattern        = NULL;
 
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
     for (long arg = 1; arg < data.cmdNBarg; arg++)
     {
         if (data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_STRING ||
-            data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING)
+            data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING ||
+            data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE)
         {
-            if (strcmp(data.cmdargtoken[arg].val.string, "--json") == 0)
+            const char *tok = data.cmdargtoken[arg].val.string;
+            if (strcmp(tok, "--json") == 0)
             {
                 json_mode = 1;
             }
-            if (strcmp(data.cmdargtoken[arg].val.string, "--porcelain") == 0)
+            else if (strcmp(tok, "--porcelain") == 0)
             {
                 porcelain_mode = 1;
+            }
+            else if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
+            {
+                quiet_mode = 1;
+            }
+            else if (tok[0] != '-')
+            {
+                pattern = tok;
             }
         }
     }
 #endif
 
-    if (json_mode)
+    if (quiet_mode)
+    {
+        for (long i = 0; i < dcnimg; i++)
+        {
+            if (dcimg[i].used == 1)
+            {
+                if (pattern == NULL || fnmatch(pattern, dcimg[i].name, 0) == 0)
+                {
+                    printf("%s\n", dcimg[i].name);
+                }
+            }
+        }
+    }
+    else if (json_mode)
     {
         list_image_ID_ofp_json(stdout);
     }
@@ -127,7 +154,8 @@ errno_t CLIADDCMD_COREMOD_memory__list_image()
 
 errno_t list_image_ID_ofp(FILE *fo)
 {
-    unsigned long long sizeb = compute_image_memory();
+    unsigned long long sizeb     = compute_image_memory();
+    int                use_color = (fo != NULL && isatty(fileno(fo)) && getenv("NO_COLOR") == NULL);
 
     struct timespec timenow;
     clock_gettime(CLOCK_MILK, &timenow);
@@ -146,15 +174,15 @@ errno_t list_image_ID_ofp(FILE *fo)
             long long tmp_long =
                 ((long long) (dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
-            if (dcimg[i].md[0].shared == 1)
+            if (use_color)
             {
-                fprintf(fo, "%4ld %c[%d;%dm%14s%c[%d;m ", i, (char) 27, 1, 34, dcimg[i].name,
-                        (char) 27, 0);
+                int color_code = (dcimg[i].md[0].shared == 1) ? 34 : 33;
+                fprintf(fo, "%4ld %c[%d;%dm%14s%c[%d;m ", i, (char) 27, 1, color_code,
+                        dcimg[i].name, (char) 27, 0);
             }
             else
             {
-                fprintf(fo, "%4ld %c[%d;%dm%14s%c[%d;m ", i, (char) 27, 1, 33, dcimg[i].name,
-                        (char) 27, 0);
+                fprintf(fo, "%4ld %14s ", i, dcimg[i].name);
             }
             //fprintf(fo, "%s", str);
 

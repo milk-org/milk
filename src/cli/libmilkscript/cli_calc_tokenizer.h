@@ -30,19 +30,20 @@
 typedef enum
 {
     TOK_EOF = 0,
-    TOK_LONG,        /**< integer literal          */
-    TOK_DOUBLE,      /**< floating-point literal    */
-    TOK_FUNC_D_D,    /**< func(double)->double      */
-    TOK_FUNC_DD_D,   /**< func(d,d)->double         */
-    TOK_FUNC_DDD_D,  /**< func(d,d,d)->double       */
-    TOK_FUNC_IM_D,   /**< func(image)->double        */
-    TOK_FUNC_IMD_D,  /**< func(image,double)->double */
-    TOK_FUNC_IMIM_D, /**< func(im,im)->double        */
-    TOK_FUNC_WHERE,  /**< where(cond, a, b)          */
-    TOK_VAR,         /**< existing variable          */
-    TOK_IMAGE,       /**< existing image             */
-    TOK_COMMAND,     /**< registered CLI command     */
-    TOK_NVAR,        /**< new variable name          */
+    TOK_LONG,         /**< integer literal          */
+    TOK_DOUBLE,       /**< floating-point literal    */
+    TOK_FUNC_D_D,     /**< func(double)->double      */
+    TOK_FUNC_DD_D,    /**< func(d,d)->double         */
+    TOK_FUNC_DDD_D,   /**< func(d,d,d)->double       */
+    TOK_FUNC_IM_D,    /**< func(image)->double        */
+    TOK_FUNC_IMD_D,   /**< func(image,double)->double */
+    TOK_FUNC_IMIM_D,  /**< func(im,im)->double        */
+    TOK_FUNC_IMIM_IM, /**< func(im,im)->image        */
+    TOK_FUNC_WHERE,   /**< where(cond, a, b)          */
+    TOK_VAR,          /**< existing variable          */
+    TOK_IMAGE,        /**< existing image             */
+    TOK_COMMAND,      /**< registered CLI command     */
+    TOK_NVAR,         /**< new variable name          */
     TOK_OP_PLUS,
     TOK_OP_MINUS,
     TOK_OP_STAR,

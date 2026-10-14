@@ -9,6 +9,7 @@
  *
  */
 
+#include <ctype.h>
 #include <dirent.h>
 #include <dlfcn.h>
 #include <stdio.h>
@@ -599,6 +600,26 @@ errno_t RegisterModule(const char *__restrict FileName,
  *
  * @return New data.NBcmd count
  */
+/**
+ * @brief Validate that a CLI command key contains only allowed characters [A-Za-z0-9_.*?+-].
+ */
+static int is_valid_cli_cmd_key(const char *key)
+{
+    if (key == NULL || key[0] == '\0')
+    {
+        return 0;
+    }
+    for (const char *p = key; *p != '\0'; p++)
+    {
+        unsigned char c = (unsigned char) *p;
+        if (!isalnum(c) && c != '_' && c != '.' && c != '*' && c != '?' && c != '+' && c != '-')
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
                             const char *__restrict CLImodulesrc,
                             errno_t (*CLIfptr)(),
@@ -608,6 +629,14 @@ uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
                             const char *__restrict CLICcall)
 {
     DEBUG_TRACE_FSTART();
+
+    if (!is_valid_cli_cmd_key(CLIkey))
+    {
+        fprintf(stderr, "ERROR: Invalid CLI command name '%s' (must match [A-Za-z0-9_.*?+-])\n",
+                CLIkey ? CLIkey : "(null)");
+        DEBUG_TRACE_FEXIT();
+        return data.NBcmd;
+    }
 
     DEBUG_TRACEPOINT("FARG CLIkey %s -> command index %u / %d", CLIkey, data.NBcmd,
                      DATA_NB_MAX_COMMAND);
@@ -705,6 +734,15 @@ uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
         DEBUG_TRACE_FEXIT();
         return data.NBcmd;
     }
+
+    if (!is_valid_cli_cmd_key(CLIcmddata.key))
+    {
+        fprintf(stderr, "ERROR: Invalid CLI command name '%s' (must match [A-Za-z0-9_.*?+-])\n",
+                CLIcmddata.key);
+        DEBUG_TRACE_FEXIT();
+        return data.NBcmd;
+    }
+
 
     data.cmd[data.NBcmd].moduleindex = data.moduleindex;
     if (data.cmd[data.NBcmd].moduleindex == -1)

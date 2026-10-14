@@ -504,3 +504,58 @@ double arith_image_norm(const char *ID_name)
     IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_norm_IMGID(&imgin);
 }
+
+/**
+ * @brief Compute the RMS deviation around the mean of an image.
+ *
+ * Returns sqrt(mean((I - mean(I))^2)) across all pixels in @p imgin.
+ *
+ * @param[in,out] imgin  Target image descriptor.
+ * @return RMS standard deviation across pixels, or 0.0 on error.
+ */
+double MILK_HOT arith_image_rms_IMGID(IMGID *imgin)
+{
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgin->ID == -1)
+    {
+        return 0.0;
+    }
+
+    uint64_t nelement = imgin->md[0].nelement;
+    if (nelement == 0)
+    {
+        return 0.0;
+    }
+
+    double  mean     = arith_image_mean_IMGID(imgin);
+    double  sum2     = 0.0;
+    uint8_t datatype = imgin->md[0].datatype;
+
+#define RMS_BODY(MBR)                                            \
+    {                                                            \
+        __typeof__(imgin->im->array.MBR[0]) *MILK_RESTRICT ptr = \
+            MILK_ASSUME_ALIGNED(imgin->im->array.MBR);           \
+        for (uint64_t ii = 0; ii < nelement; ii++)               \
+        {                                                        \
+            double d = (double) ptr[ii] - mean;                  \
+            sum2 += d * d;                                       \
+        }                                                        \
+    }
+
+    MILK_FOR_EACH_DATATYPE(datatype, RMS_BODY, RMS_BODY(D))
+#undef RMS_BODY
+
+    return sqrt(sum2 / (double) nelement);
+}
+
+/**
+ * @brief Compute the RMS deviation around the mean of a named image.
+ *
+ * @param[in] ID_name  Image name (with optional slice/modifiers).
+ * @return RMS standard deviation across pixels.
+ */
+double arith_image_rms(const char *ID_name)
+{
+    IMGID imgin = imgid_make_from_name(ID_name);
+    return arith_image_rms_IMGID(&imgin);
+}

@@ -89,9 +89,11 @@ typedef struct
 
     // Stream name modifier (from @X: prefix)
     // Parsed by imgid_make_from_name()
-    char stream_loc;        // 'L','S','F', or '\0'
-    char stream_must_exist; // 1 if @E
-    char stream_must_new;   // 1 if @N
+    char    stream_loc;         // 'L','S','F', or '\0'
+    char    stream_must_exist;  // 1 if @E
+    char    stream_must_new;    // 1 if @N
+    uint8_t stream_datatype;    // _DATATYPE_* if @T...: specified, else 0
+    char    stream_parse_error; // 1 if @X: prefix was invalid
 
     // Array slice parsed from name[...]
     IMGID_SLICE slice;
@@ -136,9 +138,11 @@ static inline IMGID imgid_make()
     img.im = NULL;
     img.md = NULL;
 
-    img.stream_loc        = '\0';
-    img.stream_must_exist = 0;
-    img.stream_must_new   = 0;
+    img.stream_loc         = '\0';
+    img.stream_must_exist  = 0;
+    img.stream_must_new    = 0;
+    img.stream_datatype    = 0;
+    img.stream_parse_error = 0;
 
     memset(&img.slice, 0, sizeof(IMGID_SLICE));
     img.slice_im        = NULL;
@@ -181,15 +185,16 @@ static inline void imgid_free(IMGID *img)
  * string for convenience.
  *
  * @X: prefix modifiers (parsed first):
- *   @S:im1  shared memory (default)
- *   @L:im1  local memory only
- *   @E:im1  must already exist
- *   @N:im1  must not exist
+ *   @S:im1     shared memory (default)
+ *   @L:im1     local memory only
+ *   @F:im1     load from ./conf/shmim.im1.fits
+ *   @E:im1     must already exist
+ *   @N:im1     must not exist
+ *   @TF32:im1  datatype float32 (also TU8/TU16/TU32/TU64,
+ *              TI8/TI16/TI32/TI64, TF16/TF32/TF64, TC64/TC128)
  *
- * Legacy > prefixes (still supported):
+ * Legacy > prefixes (deprecated, still supported):
  *   "tf64>im1"  datatype double
- *   "k10>im1"   number of keywords = 10
- *   "c20>im1"   20-sized circular buffer
  *
  * The legacy "s>" prefix has been removed.
  * Use @S: instead (or omit -- shared is default).
@@ -211,17 +216,28 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
     const char *effective_name = name;
     {
         FPS_STREAMNAME_PARSED sp = fps_streamname_parse(name);
-        if (!sp.error)
+        if (sp.error)
         {
-            img.stream_loc        = sp.loc;
-            img.stream_must_exist = sp.must_exist;
-            img.stream_must_new   = sp.must_new;
-            effective_name        = sp.name;
+            fprintf(stderr, "ERROR: invalid stream modifier prefix in \"%s\"\n", name);
+            img.stream_parse_error = 1;
+            img.name[0]            = '\0';
+            img.ID                 = -1;
+            img.createcnt          = -1;
+            return img;
+        }
+        img.stream_loc        = sp.loc;
+        img.stream_must_exist = sp.must_exist;
+        img.stream_must_new   = sp.must_new;
+        img.stream_datatype   = sp.datatype;
+        effective_name        = sp.name;
 
-            if (sp.loc == 'L')
-            {
-                img.mdt->shared = 0;
-            }
+        if (sp.loc == 'L')
+        {
+            img.mdt->shared = 0;
+        }
+        if (sp.datatype != 0)
+        {
+            img.mdt->datatype = sp.datatype;
         }
     }
 
@@ -239,81 +255,65 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
         pch           = strtok_r(namestring, ">", &saveptr);
         while (pch != NULL)
         {
-            pch1 = pch;
-            //printf("[%2d] %s\n", nbword, pch);
-
-            /* "s>" prefix removed -- use @S:
-             * instead (shared is default).
-             */
+            pch1        = pch;
+            uint8_t ldt = 0;
 
             if (strcmp(pch, "tui8") == 0)
             {
-                printf("    data type unsigned 8-bit int\n");
-                img.mdt->datatype = _DATATYPE_UINT8;
+                ldt = _DATATYPE_UINT8;
             }
-            if (strcmp(pch, "tsi8") == 0)
+            else if (strcmp(pch, "tsi8") == 0)
             {
-                printf("    data type signed 8-bit int\n");
-                img.mdt->datatype = _DATATYPE_INT8;
+                ldt = _DATATYPE_INT8;
             }
-            if (strcmp(pch, "tui16") == 0)
+            else if (strcmp(pch, "tui16") == 0)
             {
-                printf("    data type unsigned 16-bit int\n");
-                img.mdt->datatype = _DATATYPE_UINT16;
+                ldt = _DATATYPE_UINT16;
             }
-            if (strcmp(pch, "tsi16") == 0)
+            else if (strcmp(pch, "tsi16") == 0)
             {
-                printf("    data type signed 16-bit int\n");
-                img.mdt->datatype = _DATATYPE_INT16;
+                ldt = _DATATYPE_INT16;
             }
-            if (strcmp(pch, "tui32") == 0)
+            else if (strcmp(pch, "tui32") == 0)
             {
-                printf("    data type unsigned 32-bit int\n");
-                img.mdt->datatype = _DATATYPE_UINT32;
+                ldt = _DATATYPE_UINT32;
             }
-            if (strcmp(pch, "tsi32") == 0)
+            else if (strcmp(pch, "tsi32") == 0)
             {
-                printf("    data type signed 32-bit int\n");
-                img.mdt->datatype = _DATATYPE_INT32;
+                ldt = _DATATYPE_INT32;
             }
-            if (strcmp(pch, "tui64") == 0)
+            else if (strcmp(pch, "tui64") == 0)
             {
-                printf("    data type unsigned 64-bit int\n");
-                img.mdt->datatype = _DATATYPE_UINT64;
+                ldt = _DATATYPE_UINT64;
             }
-            if (strcmp(pch, "tsi64") == 0)
+            else if (strcmp(pch, "tsi64") == 0)
             {
-                printf("    data type signed 64-bit int\n");
-                img.mdt->datatype = _DATATYPE_INT64;
+                ldt = _DATATYPE_INT64;
+            }
+            else if (strcmp(pch, "tf32") == 0)
+            {
+                ldt = _DATATYPE_FLOAT;
+            }
+            else if (strcmp(pch, "tf64") == 0)
+            {
+                ldt = _DATATYPE_DOUBLE;
             }
 
-            if (strcmp(pch, "tf32") == 0)
+            if (ldt != 0)
             {
-                printf("    data type double (32)\n");
-                img.mdt->datatype = _DATATYPE_FLOAT;
-            }
-            if (strcmp(pch, "tf64") == 0)
-            {
-                printf("    data type float (64)\n");
-                img.mdt->datatype = _DATATYPE_DOUBLE;
+                static int legacy_warned = 0;
+                if (!legacy_warned)
+                {
+                    fprintf(stderr,
+                            "WARNING: legacy '%s>' stream prefix is deprecated; "
+                            "use '@T...:' modifier instead\n",
+                            pch);
+                    legacy_warned = 1;
+                }
+                img.mdt->datatype   = ldt;
+                img.stream_datatype = ldt;
             }
 
-            /*            if(pch[0] == 'k')
-                        {
-                            int nbkw;
-                            sscanf(pch, "k%d", &nbkw);
-                            printf("    %d keywords\n", nbkw);
-                            img.NBkw = nbkw;
-                        }
-
-                        if(pch[0] == 'c')
-                        {
-                            int cbsize;
-                            sscanf(pch, "c%d", &cbsize);
-                            printf("    %d circular buffer size\n", cbsize);
-                            img.CBsize = cbsize;
-                        }
-            */
             pch = strtok_r(NULL, ">", &saveptr);
         }
     }

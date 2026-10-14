@@ -375,6 +375,16 @@ int cli_calc_eval_line(const char *input)
     if (parse_error || eval_error ||
         (cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE))
     {
+        char tmpn[200];
+        for (long i = 0; i < data.calctmp_imindex; i++)
+        {
+            snprintf(tmpn, sizeof(tmpn), "_tmpcalc%ld", i);
+            if (image_ID(tmpn, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+            {
+                delete_image_ID(tmpn, DELETE_IMAGE_ERRMODE_WARNING);
+            }
+        }
+        data.calctmp_imindex = 0;
         return 0; /* not a pure math expression */
     }
 

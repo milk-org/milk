@@ -57,7 +57,10 @@ int cli_handle_shell_builtins(void)
     if (data.CLIcmdline[0] == '!')
     {
         data.CLIcmdline[0] = ' ';
-        printf(COLORDIMYELLOW "[shell] %s" COLORRST "\n", data.CLIcmdline);
+        if (dcdebug > 0)
+        {
+            fprintf(stderr, COLORDIMYELLOW "[shell] %s" COLORRST "\n", data.CLIcmdline);
+        }
         cli_export_vars_to_env();
         if (cli_run_external(data.CLIcmdline) != 0)
         {
@@ -83,7 +86,7 @@ int cli_handle_shell_builtins(void)
         {
             pat++;
         }
-        if (strchr(pat, '*') != NULL || strchr(pat, '?') != NULL)
+        if (pat[0] != '-' && (strchr(pat, '*') != NULL || strchr(pat, '?') != NULL))
         {
             /* Build glob pattern for
              * /dev/shm matching */
