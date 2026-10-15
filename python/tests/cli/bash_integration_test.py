@@ -1343,3 +1343,48 @@ def test_zero_subshell_variable_and_array_binding(tmp_path: Path):
     )
     assert res_cli.returncode == 0, f"stdout={res_cli.stdout}\nstderr={res_cli.stderr}"
     assert "CLI_V=42" in res_cli.stdout
+
+
+def test_entity_discovery_globbing_and_json_export():
+    res = _run_bash("""
+        # 1. Create multiple streams and an FPS instance
+        seq 1 4 | @streamwrite --dtype F32 s.dm0 2 2
+        seq 1 9 | @streamwrite --dtype F32 s.dm1 3 3
+        @set s.dm0.kw.LOOP "aol0"
+        milk-fpsexec-imggen-mkrndim -n disc_fps fpsinit >/dev/null 2>&1
+        @set f.disc_fps.xsize 32
+
+        # 2. Top-level discovery: @get s.*, @get f.*, @get -a
+        s_all="$(@get 's.*')"
+        [[ "${s_all}" == *"dm0"* && "${s_all}" == *"dm1"* ]]
+        f_all="$(@get 'f.*')"
+        [[ "${f_all}" == *"disc_fps"* ]]
+        @get -a dm_list "s.dm*"
+        [[ "${#dm_list[@]}" -eq 2 ]]
+
+        # 3. Globbed multi-entity property reads (plain, -A associative array, and --json)
+        glob_x="$(@get 's.dm*.xsize')"
+        [[ "${glob_x}" == *"dm0=2"* && "${glob_x}" == *"dm1=3"* ]]
+        @get -A dm_xsizes "s.dm*.xsize"
+        [[ "${dm_xsizes[dm0]}" == "2" ]]
+        [[ "${dm_xsizes[dm1]}" == "3" ]]
+        glob_json="$(@get --json 's.dm*.xsize')"
+        [[ "${glob_json}" == *'"dm0":2'* && "${glob_json}" == *'"dm1":3'* ]]
+
+        # 4. JSON export on list queries and full entities (--json and .json)
+        arr_json="$(@get --json 's.dm*')"
+        [[ "${arr_json}" == *'"dm0"'* && "${arr_json}" == *'"dm1"'* && "${arr_json}" == "["*"]" ]]
+
+        im_json="$(@get --json s.dm0)"
+        [[ "${im_json}" == *'"xsize":2'* && "${im_json}" == *'"dtype":"FLOAT"'* ]]
+        [[ "${im_json}" == *'"kw":{"LOOP":"aol0"}'* ]]
+        im_json2="$(@get s.dm0.json)"
+        [[ "${im_json2}" == *'"xsize":2'* && "${im_json2}" == *'"kw":{"LOOP":"aol0"}'* ]]
+
+        fps_json="$(@get --json f.disc_fps)"
+        [[ "${fps_json}" == *'"status":"IDLE"'* && "${fps_json}" == *'"xsize":32'* ]]
+
+        echo "DISCOVERY_JSON_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "DISCOVERY_JSON_OK" in res.stdout

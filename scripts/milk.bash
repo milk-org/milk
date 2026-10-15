@@ -185,13 +185,23 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
                 *.\*)    _spec="${_spec%\*}.kv" ;;
                 *.list)  _spec="${_spec%.list}.kv" ;;
                 *.*.*)   ;;
+                *[\*\?]*) ;;
                 *.*)     _spec="${_spec}.kv" ;;
             esac
             local _val
             _val="$("${MILK_INSTALLDIR}/bin/milk-call" get "${_spec}")" || return $?
             declare -gA "${_Aname}=()"
-            local _k _v
-            while IFS=$'\t' read -r _k _v; do
+            local _line _k _v
+            while IFS= read -r _line; do
+                if [[ "${_line}" == *$'\t'* ]]; then
+                    _k="${_line%%$'\t'*}"
+                    _v="${_line#*$'\t'}"
+                elif [[ "${_line}" == *=* ]]; then
+                    _k="${_line%%=*}"
+                    _v="${_line#*=}"
+                else
+                    continue
+                fi
                 [[ -n "${_k}" ]] && printf -v "${_Aname}[${_k}]" '%s' "${_v}"
             done <<< "${_val}"
             return 0

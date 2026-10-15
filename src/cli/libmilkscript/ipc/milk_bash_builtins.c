@@ -290,12 +290,16 @@ static void bash_bind_assoc_array(const char *assocname, char *kv_text)
     for (char *line = strtok_r(kv_text, "\r\n", &saveptr); line != NULL;
          line       = strtok_r(NULL, "\r\n", &saveptr))
     {
-        char *tab = strchr(line, '\t');
-        if (tab == NULL)
+        char *sep = strchr(line, '\t');
+        if (sep == NULL)
+        {
+            sep = strchr(line, '=');
+        }
+        if (sep == NULL)
         {
             continue;
         }
-        *tab = '\0';
+        *sep = '\0';
         if (line[0] == '\0')
         {
             continue;
@@ -305,7 +309,7 @@ static void bash_bind_assoc_array(const char *assocname, char *kv_text)
         append_dyn_str(&script, &len, &cap, "[");
         append_sq_escaped(&script, &len, &cap, line);
         append_dyn_str(&script, &len, &cap, "]=");
-        append_sq_escaped(&script, &len, &cap, tab + 1);
+        append_sq_escaped(&script, &len, &cap, sep + 1);
     }
     if (script != NULL)
     {
@@ -341,7 +345,8 @@ static void normalize_assoc_spec(const char *spec, char *out, size_t outsz)
         return;
     }
     const char *dot1 = strchr(spec, '.');
-    if (dot1 != NULL && strchr(dot1 + 1, '.') == NULL)
+    if (dot1 != NULL && strchr(dot1 + 1, '.') == NULL && strchr(dot1 + 1, '*') == NULL &&
+        strchr(dot1 + 1, '?') == NULL)
     {
         snprintf(out, outsz, "%s.kv", spec);
         return;
@@ -451,7 +456,7 @@ static int milkget_builtin(WORD_LIST *list)
     if (argc == 0 || argv == NULL)
     {
         free(argv);
-        fprintf(stderr, "Usage: @get [-v var | -a arr | -A assoc] <entity>\n");
+        fprintf(stderr, "Usage: @get [--json|-j] [-v var | -a arr | -A assoc] <entity>\n");
         return EXECUTION_FAILURE;
     }
 
@@ -459,9 +464,14 @@ static int milkget_builtin(WORD_LIST *list)
     const char *arrname   = NULL;
     const char *assocname = NULL;
     const char *spec      = NULL;
+    int         json_mode = 0;
     for (int i = 0; i < argc; i++)
     {
-        if (strcmp(argv[i], "-v") == 0 && i + 1 < argc)
+        if (strcmp(argv[i], "--json") == 0 || strcmp(argv[i], "-j") == 0)
+        {
+            json_mode = 1;
+        }
+        else if (strcmp(argv[i], "-v") == 0 && i + 1 < argc)
         {
             varname = argv[++i];
         }
@@ -481,6 +491,13 @@ static int milkget_builtin(WORD_LIST *list)
 
     milk_client_hooks_t hooks;
     make_bash_hooks(&hooks);
+
+    char eff_spec[512];
+    if (spec != NULL && json_mode)
+    {
+        snprintf(eff_spec, sizeof(eff_spec), "json:%s", spec);
+        spec = eff_spec;
+    }
 
     if (arrname != NULL)
     {
