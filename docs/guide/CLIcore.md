@@ -138,9 +138,11 @@ As you type, a dim "ghost" suggestion appears inline based on your command histo
 
 ### Argument Hints
 
-When a known command is typed, the bottom line shows the command's syntax with `<angle bracket>`
-parameter tokens. The active argument position is highlighted in bold cyan, advancing as you type
-each argument.
+When a known command (or `@<cmd>`) is typed, the CLI displays its `CLICMDARGDEF` argument signature
+both as an inline ghost suffix after the cursor and in the bottom hint bar. The active argument
+position is highlighted in bold cyan (`<name:type>`), advancing automatically as you type each
+argument. You can also query a command's compact argument signature on demand via
+`@hc --sig <cmd> [arg_pos]`.
 
 ### Readline Editing
 
@@ -192,13 +194,15 @@ Several commands help you explore the available commands and modules.
 ```text
 milk-cli > ?                       # print help
 milk-cli > help                    # same as ?
+milk-cli > @hb                     # bash-enhanced @ syntax & primitives guide
 milk-cli > help --json             # print help index in JSON format
 milk-cli > help --porcelain        # print help index in TSV format
 milk-cli > helprl                  # readline quick reference
 milk-cli > lm?                     # list all loaded modules
 milk-cli > m? <module>             # list commands for a module
 milk-cli > m?                      # list commands for all modules
-milk-cli > cmd? <command>          # detailed command description
+milk-cli > cmd? <command>          # detailed command description (or @hc <command>)
+milk-cli > @hc --sig <cmd> [pos]   # compact CLICMDARGDEF signature hint
 milk-cli > cmd?                    # describe all commands
 milk-cli > cmdinfo? <pattern>      # search command info by regex
 ```

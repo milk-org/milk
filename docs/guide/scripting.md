@@ -279,6 +279,37 @@ For FPS compute units, you can check their allocation status:
 echo "Status: ${myfps.status}"     # 1 if exists, 0 if unconnected
 ```
 
+## First-Class GNU Bash Mode (`source milk.bash`)
+
+In addition to `.milk` scripts, any standard GNU Bash shell or script can load the `@` command
+primitives directly via `source milk.bash` (backed by the loadable `libmilkbash.so` builtins and
+persistent `milk-cli --server`):
+
+- **Zero-subshell variable & array bindings (`-v`, `-a`, `-A`)**:
+  - `@calc -v rms "irms(im1)"` or `@ -v rms "irms(im1)"` binds scalar expressions directly into a
+    Bash variable without forking `$(...)`.
+  - `@get -v nx s.cam0.xsize` binds a property into `nx`; `@get -a arr 's.*'` populates an indexed
+    Bash array; `@get -A map 's.dm*.xsize'` populates an associative Bash array (`declare -A map`).
+  - `@streamcat -a pix cam0` reads stream/image pixel values directly into an indexed Bash array.
+- **Entity discovery, globbing, and JSON export**:
+  - `@get 's.*'`, `@get 'f.*'`, `@get 'p.*'`, `@get 'q.*'` discover active entities in `/dev/shm`.
+  - `@get 's.dm*.xsize'` queries a property across all matching entities.
+  - `@get --json s.cam0` (or `@get s.cam0.json`, `@get f.loop.json`) emits structured JSON.
+- **Single-round-trip `@batch` and `@pipe` execution**:
+  - `@batch "mem.mk2Dim a 64 64; a = 5; b = a * 2"` (or via a heredoc) executes multiple commands in
+    a single client-server RPC round trip.
+  - `@pipe "mem.mk2Dim psrc 32 32 |> psrc = 4 |> pdst = _ * 3"` executes a `|>` pipeline in a single
+    round trip, automatically binding `_` to the output image of each stage.
+- **Throttled & multi-target reactive watchers (`@on`)**:
+  - `@on [--once|-1] [--max-hz <rate>] [--cooldown <sec>] <t1> [t2...] -- <cmd...>` triggers on one
+    or more streams/entities, exports `$MILK_TRIGGER`, and supports selective termination via
+    `@on --stop <id|pid|target>`.
+- **Ring-buffer recording & stream playback (`@grab` & `@replay`)**:
+  - `@grab --fits cube.fits --timestamps cube.txt cam0 100` captures 100 consecutive frames to a 3D
+    FITS cube alongside hardware/monotonic nanosecond timestamps.
+  - `@replay [--fps <hz>] [--count <N>] [--loop] cube.fits cam0_sim` replays a 2D/3D image or FITS
+    cube into a shared-memory stream with proper `cnt0`, `atime`, and semaphore posting.
+
 ## Scripting Showcase
 
 Here are several examples demonstrating how `milk-cli` native features combine with standard bash

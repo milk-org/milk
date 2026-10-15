@@ -18,22 +18,30 @@ After sourcing `milk.bash` (`source milk.bash`), Milk provides two complementary
 
 | Family | Where to Use | Primary Examples |
 | ------ | ------------ | ---------------- |
-| **`@...` Commands** | Inside an active `milk.bash` or `milk-cli` session (zero-fork RPC + direct `/dev/shm` access) | `@` (`@calc`), `@test`, `@get`, `@set`, `@exists`, `@running`, `@waitfor`, `@waitany`, `@grab`, `@defer`, `@on`, `@server`, `@log`, `@h`, `@hb`, `@hc`, `@hm`, `@hf`, and all C module functions (`@imgen.mk2Dim`, `@info.imstats`, `@fits.loadfits`, ...) |
+| **`@...` Commands** | Inside an active `milk.bash` or `milk-cli` session (zero-fork RPC + direct `/dev/shm` access) | `@` (`@calc`), `@test`, `@get`, `@set`, `@exists`, `@running`, `@waitfor`, `@waitany`, `@grab`, `@replay`, `@batch`, `@pipe`, `@defer`, `@on`, `@server`, `@log`, `@h`, `@hb`, `@hc`, `@hm`, `@hf`, and all C module functions (`@imgen.mk2Dim`, `@info.imstats`, `@fits.loadfits`, ...) |
 | **`milk-*` Executables** | Standalone OS programs (TUIs, background compute units, external shell tools) | `milk-CTRL`, `milk-fpsCTRL`, `milk-streamCTRL`, `milk-termview`, `milk-fpsexec-*`, `milk-commands`, `milk-help`, `milk-*-help` |
 
 ### Unified SHM & FPS Lifecycle Control via `@get` / `@set`
 
 Within a `milk.bash` session, `@get` and `@set` replace external `milk-fps-*` and `milk-stream-*`
-subprocess calls:
+subprocess calls, supporting zero-subshell variable/array binding (`-v`, `-a`, `-A`), globbed
+discovery (`s.*`, `f.*`, `p.*`, `q.*`), and JSON export (`--json`):
 
 ```bash
 $ source milk.bash
 $ @get -v nx s.cam0.xsize
+$ @get -a streams 's.*'
+$ @get -A widths 's.dm*.xsize'
+$ @get --json s.cam0
+$ @ -v rms 'irms(cam0)'
 $ @set f.loopctrl.gain = 0.25
 $ @set f.loopctrl.conf = start
 $ @set f.loopctrl.run  = start:tmux
-$ @hc set
-$ @h fps
+$ @batch "mem.mk2Dim a 64 64; a = 5; b = a * 2"
+$ @pipe "mem.mk2Dim p1 32 32 |> p1 = 4 |> p2 = _ * 3"
+$ @grab --fits telem.fits --timestamps telem.txt cam0 100
+$ @replay --fps 200 telem.fits cam0_sim
+$ @hc --sig mem.mk2Dim
 ```
 
 ## 2. Core Scripts (`scripts/`)

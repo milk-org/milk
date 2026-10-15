@@ -17,9 +17,11 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         -h|--help)
             echo "Usage: source milk.bash"
             echo ""
-            echo "Loads milk commands (@<cmd>), entity accessors (@get, @set, @exists, @running),"
-            echo "zero-fork math/slice evaluation (@calc, @test), stream synchronization (@waitfor, @grab),"
-            echo "and LIFO cleanup handlers (@defer) into the current GNU Bash session."
+            echo "Loads milk commands (@<cmd>, @batch, @pipe), entity discovery & accessors"
+            echo "(@get [-v|-a|-A|--json], @set, @exists, @running), zero-fork math/slice"
+            echo "evaluation (@calc [-v], @test), stream capture & playback (@waitfor, @waitany,"
+            echo "@grab [--fits|--timestamps], @replay, @on), and LIFO cleanup (@defer) into"
+            echo "the current GNU Bash session."
             exit 0
             ;;
         *)

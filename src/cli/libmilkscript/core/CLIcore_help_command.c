@@ -92,33 +92,43 @@ typedef struct
 } milk_bash_primitive_help_t;
 
 static const milk_bash_primitive_help_t g_milk_bash_help[] = {
-    { "calc", "=", "@ \"<expr>\"  |  @calc \"<expr>\"",
+    { "calc", "=", "@ [-v <var>] \"<expr>\"  |  @calc [-v <var>] \"<expr>\"",
       "Evaluate an image/tensor or scalar expression in the persistent Milk server",
+      "  - Options:\n"
+      "      -v <var>  Bind scalar result directly into Bash variable <var> (zero subshell)\n"
       "  - Automatically syncs referenced and assigned Bash scalar variables.\n"
       "  - Supports 2D/3D slicing (im[x0:x1,y0:y1]), reductions (sum, mean, rms,\n"
       "    min, max, median), element-wise math, and SHM entity attributes (@s., @f.).",
       "  @ \"out = im1 + 2.0 * im2\"\n"
-      "  @ \"rms_val = sqrt(mean(im1 * im1))\"" },
+      "  @ -v rms_val \"irms(im1)\"\n"
+      "  @calc -v ptv \"imax(im1) - imin(im1)\"" },
     { "test", NULL, "@test \"<boolean-expr>\"",
       "Evaluate a Milk boolean expression and return exit status 0 (true) or 1 (false)",
       "  - Designed for native Bash conditionals (if / while / &&).\n"
       "  - Supports image reductions and SHM entity comparisons without subshells.",
       "  if @test \"max(im1) > 100.0\"; then echo \"saturated\"; fi\n"
       "  while @test \"@s.cam0.cnt0 < 50\"; do sleep 0.01; done" },
-    { "get", NULL, "@get [-v <var>] <s.|f.|p.|q.><name>.<attr>",
-      "Read a shared-memory stream, FPS, processinfo, or sequencer attribute",
+    { "get", NULL, "@get [-v <var>|-a <arr>|-A <assoc>|-j|--json] <spec>",
+      "Read or discover shared-memory stream, FPS, processinfo, or sequencer attributes",
       "  - Options:\n"
-      "      -v <var>  Assign result directly into Bash variable <var> (zero subshell)\n"
+      "      -v <var>    Bind scalar output directly into Bash variable <var>\n"
+      "      -a <arr>    Bind multi-line output into indexed Bash array <arr>\n"
+      "      -A <assoc>  Bind 'key val' output into associative Bash array <assoc>\n"
+      "      -j, --json  Format output as JSON (also via '<entity>.json' suffix)\n"
+      "  - Discovery & Globbing:\n"
+      "      s.*, f.*, p.*, q.*   List active SHM entities matching glob pattern\n"
+      "      s.<glob>.<attr>      Query <attr> across all matching entities\n"
       "  - Stream (s.<name>.): xsize, ysize, zsize, naxis, cnt0, cnt1, dtype,\n"
       "                        location, shared, inode, fps, age, owner_pid,\n"
-      "                        summary, kw.<KEY>\n"
-      "  - FPS    (f.<name>.): <param>, status, conf, run, pid, nbparam, list\n"
+      "                        summary, json, kw.<KEY>\n"
+      "  - FPS    (f.<name>.): <param>, status, conf, run, pid, nbparam, list, json\n"
       "  - Proc   (p.<name>.): PID, loopcnt, loopcntMax, cnt0, status, ctrlval,\n"
       "                        triggermode, triggerstream, dt_median_ns, msg\n"
       "  - Seq    (q.<id>.):   state, active_step, progress, step_count, pid, name",
       "  @get -v nx s.cam0.xsize\n"
-      "  @get f.loopctrl.gain\n"
-      "  @s.cam0.summary" },
+      "  @get -a streams 's.*'\n"
+      "  @get -A widths 's.dm*.xsize'\n"
+      "  @get --json s.cam0" },
     { "set", NULL, "@set <s.|f.|p.|q.><name>.<attr> [=] <value> [comment]",
       "Modify a shared-memory stream keyword, FPS parameter/lifecycle, processinfo, or sequencer",
       "  - Stream (s.<name>.kw.<KEY>): create or update FITS keyword (auto-typed)\n"
@@ -151,20 +161,64 @@ static const milk_bash_primitive_help_t g_milk_bash_help[] = {
       "Wait until any of the specified streams updates and report the first triggered stream",
       "  - Prints the triggered stream name (or binds REPLY if declared). Returns 124 on timeout.",
       "  ready=$(@waitany cam0 cam1 --timeout 1.0)" },
-    { "grab", NULL, "@grab [-t|--timeout <sec>] <src_stream> <dst_local_img>",
-      "Wait for the next frame on a shared-memory stream and copy it into a local image",
-      "  - Atomically snapshots <src_stream> into session-local image <dst_local_img>.",
-      "  @grab --timeout 1.0 cam0 dark_frame" },
+    { "grab", NULL,
+      "@grab [-t <sec>] [--fits <out.fits>] [--timestamps <out.txt>] <stream> [N] [dst_img]",
+      "Capture 1 or N consecutive frames from a stream into a local image/cube or FITS file",
+      "  - Atomically snapshots <stream> (single frame or N-frame 3D cube) into <dst_img>.\n"
+      "  - With --fits <out.fits>, saves the captured 2D frame or 3D cube directly to FITS.\n"
+      "  - With --timestamps <out.txt>, writes per-frame cnt0, cnt1, atime_ns, and mono_ns.",
+      "  @grab --timeout 1.0 cam0 dark_frame\n"
+      "  @grab --fits telem.fits --timestamps telem.txt cam0 100" },
+    { "replay", NULL,
+      "@replay [--fps <hz>|--dt <sec>] [--count <N>] [--loop] <src_cube_or_fits> <dst_stream>",
+      "Replay a 2D/3D image, SHM stream, or FITS cube into a shared-memory stream at target rate",
+      "  - Publishes each slice to <dst_stream> with write flag, cnt0, atime, and semaphores.\n"
+      "  - Options:\n"
+      "      --fps <hz>     Target playback frame rate in Hz (default: 100)\n"
+      "      --dt <sec>     Target inter-frame interval in seconds\n"
+      "      --count <N>    Stop after publishing N total frames\n"
+      "      --loop         Repeat cube playback until --count is reached",
+      "  @replay --fps 200 telem.fits cam0_sim\n"
+      "  @replay --fps 500 --loop --count 1000 calib_cube wfs_sim" },
     { "defer", NULL, "@defer <command...>",
       "Register a cleanup command on the LIFO exit stack for the current Bash shell/script",
       "  - Executed automatically in reverse (LIFO) order on shell/script EXIT.",
       "  @defer @mem.rm tmp_im" },
-    { "on", NULL, "@on <stream> <command...>  |  @on --list  |  @on --clear",
-      "Run a background reactive command every time <stream> posts a new frame",
-      "  - Spawns a background watcher loop tied to the current session.\n"
-      "  - Use '--list' to list active watcher PIDs, or '--clear' to stop all watchers.",
-      "  @on cam0 '@info.imstats @S:cam0'\n"
-      "  @on --clear" },
+    { "on", NULL,
+      "@on [--once|-1] [--max-hz <hz>] [--cooldown <s>] <t1> [t2...] [--] <cmd...>  |  "
+      "@on --list|--stop <id>|--clear",
+      "Run a background reactive command when one or more streams/entities update",
+      "  - Options:\n"
+      "      -1, --once        Fire once on the next event and exit automatically\n"
+      "      --max-hz <rate>   Throttle execution to at most <rate> Hz\n"
+      "      --cooldown <sec>  Enforce minimum <sec> seconds between triggers\n"
+      "      --list            List active watchers with ID, PID, options, and targets\n"
+      "      -s, --stop <id>   Stop a specific watcher by ID, PID, or target name\n"
+      "      --clear           Stop all active watchers in this session\n"
+      "  - Exports MILK_TRIGGER with the name of the stream/entity that fired.",
+      "  @on --max-hz 10 cam0 '@info.imstats @S:cam0'\n"
+      "  @on --once cam0 cam1 -- 'echo \"Triggered by $MILK_TRIGGER\"'\n"
+      "  @on --stop 1" },
+    { "batch", NULL, "@batch \"<cmd1>; <cmd2>; ...\"  |  @batch << 'EOF' ... EOF",
+      "Execute multiple Milk commands in a single client-server IPC round trip",
+      "  - Eliminates per-command socket latency when running multi-step command blocks.\n"
+      "  - Accepts semicolon/newline-separated arguments or a standard input heredoc.",
+      "  @batch \"mem.mk2Dim b1 32 32; b1 = 5; b2 = b1 * 2\"\n"
+      "  @batch << 'EOF'\n"
+      "  mem.mk2Dim a 64 64\n"
+      "  a = 10\n"
+      "  EOF" },
+    { "pipe", NULL, "@pipe \"<cmd1> |> <cmd2> |> ...\"",
+      "Execute a |> pipeline in a single IPC round trip with automatic '_' image propagation",
+      "  - Chains stages separated by '|>' inside the persistent server.\n"
+      "  - Automatically binds '_' to the image produced or modified by the preceding stage.",
+      "  @pipe \"mem.mk2Dim psrc 32 32 |> psrc = 4 |> pdst = _ * 3\"" },
+    { "hc", NULL, "@hc [--sig|-s] <command> [arg_pos]",
+      "Display detailed command help or compact CLICMDARGDEF argument signature hint",
+      "  - Without --sig, prints full synopsis, argument types, and examples for <command>.\n"
+      "  - With --sig (or -s), prints a one-line argument signature highlighting [arg_pos].",
+      "  @hc mem.mk2Dim\n"
+      "  @hc --sig mem.mk2Dim 2" },
     { "source", NULL, "@source <script.milk> [args...]",
       "Translate and execute a legacy .milk script inside the current Bash session",
       "  - Converts legacy .milk syntax on the fly via 'milk-call translate --legacy'.",
@@ -196,10 +250,12 @@ static const milk_bash_primitive_help_t g_milk_bash_help[] = {
       "  - --json / --clear  Emit JSON Lines or clear the ring buffer",
       "  @log -n 20\n"
       "  @log -e --slow 5.0" },
-    { "streamcat", NULL, "@streamcat [--raw] <stream_or_img>",
-      "Write pixel data of a shared-memory stream or local image to stdout",
+    { "streamcat", NULL, "@streamcat [-a <arr>|--raw] <stream_or_img>",
+      "Read pixel data of a shared-memory stream or local image into an array or stdout",
+      "  - With -a <arr>, binds pixel values directly into Bash array <arr> (zero subshell).\n"
       "  - Without --raw, prints formatted text values.\n"
       "  - With --raw, writes raw binary pixel bytes for piping to external processes.",
+      "  @streamcat -a pix cam0\n"
       "  @streamcat cam0 | head -n 20\n"
       "  @streamcat --raw cam0 | python3 analyze.py" },
     { "streamwrite", NULL, "@streamwrite [--dtype <type>] <stream> <xsize> [ysize] [zsize]",

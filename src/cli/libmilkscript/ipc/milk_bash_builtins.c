@@ -779,9 +779,12 @@ static char *const milklog_doc[] = { "Inspect or search the milk server SHM log 
 struct builtin milkcall_struct = { "milkcall",   milkcall_builtin,           BUILTIN_ENABLED,
                                    milkcall_doc, "milkcall <cmd> [args...]", 0 };
 
-struct builtin milkget_struct = {
-    "milkget", milkget_builtin, BUILTIN_ENABLED, milkget_doc, "milkget [-v var] <entity>", 0
-};
+struct builtin milkget_struct = { "milkget",
+                                  milkget_builtin,
+                                  BUILTIN_ENABLED,
+                                  milkget_doc,
+                                  "milkget [-v var|-a arr|-A assoc|--json] <spec>",
+                                  0 };
 
 struct builtin milkset_struct = {
     "milkset", milkset_builtin, BUILTIN_ENABLED, milkset_doc, "milkset <entity> [val] [comment]", 0
@@ -810,12 +813,14 @@ struct builtin milkwaitany_struct = { "milkwaitany",
                                       "milkwaitany <s1> <s2> [...] [--timeout <sec>]",
                                       0 };
 
-struct builtin milkgrab_struct = { "milkgrab",
-                                   milkgrab_builtin,
-                                   BUILTIN_ENABLED,
-                                   milkgrab_doc,
-                                   "milkgrab <stream> [nframes] <out_img> [--timeout <sec>]",
-                                   0 };
+struct builtin milkgrab_struct = {
+    "milkgrab",
+    milkgrab_builtin,
+    BUILTIN_ENABLED,
+    milkgrab_doc,
+    "milkgrab [--fits <f>] [--timestamps <t>] <stream> [nframes] [out_img] [--timeout <sec>]",
+    0
+};
 
 struct builtin milkcomplete_struct = { "milkcomplete",
                                        milkcomplete_builtin,

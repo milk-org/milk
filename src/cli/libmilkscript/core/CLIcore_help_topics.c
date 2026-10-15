@@ -568,32 +568,38 @@ void help_topic_bash(void)
     printf("  " C_CMD "@unload                     " C_RST
            "Unload milk.bash, remove @-commands, restore PS1\n");
     printf("\n");
-    printf(C_HDR "2. Calling Milk Commands & Stream Modifiers:\n" C_RST);
+    printf(C_HDR "2. Calling Milk Commands, Batching & Stream Modifiers:\n" C_RST);
     printf("  " C_CMD "@<cmd> [args...]            " C_RST "Run any milk command (e.g. " C_CMD
            "@mk2Dim im1 128 128" C_RST ")\n");
     printf("  " C_CMD "@<mod>.<cmd> [args...]      " C_RST "Module-qualified call (e.g. " C_CMD
            "@mem.listim" C_RST ")\n");
     printf("  " C_CMD "@<cmd> --async [args...]    " C_RST
            "Dispatch command asynchronously in background\n");
+    printf("  " C_CMD "@batch \"c1; c2\"             " C_RST
+           "Run multi-command block or heredoc in 1 round trip\n");
+    printf("  " C_CMD "@pipe \"c1 |> c2\"            " C_RST
+           "Run |> pipeline in 1 round trip (chains '_' image)\n");
+    printf("  " C_CMD "@hc [--sig|-s] <cmd> [pos]  " C_RST
+           "Show command help or compact CLICMDARGDEF signature\n");
     printf("  " C_CMD "@S:<name>  /  @L:<name>     " C_RST
            "Force shared (/dev/shm) or local memory stream\n");
-    printf("  " C_CMD "@streamcat <s> | ...        " C_RST "Stream pixels to stdout (or " C_CMD
-           "| @streamwrite <s>" C_RST ")\n");
+    printf("  " C_CMD "@streamcat [-a arr] <s>     " C_RST
+           "Bind pixels to array or stdout (or " C_CMD "| @streamwrite" C_RST ")\n");
     printf("\n");
     printf(C_HDR "3. Core @ Primitives (milk.bash & milk-cli):\n" C_RST);
-    printf("  " C_CMD "@ '<expr>'                  " C_RST
+    printf("  " C_CMD "@ [-v var] '<expr>'         " C_RST
            "Vectorized image/scalar calculator (alias: " C_CMD "@calc" C_RST ")\n");
     printf("    " C_NOTE "Examples:" C_RST " " C_CMD "@ 'im1 = 10; im2 = sqrt(im1) + 2'" C_RST
            "\n");
     printf("              " C_CMD "@ 'im1[0:63, 0:63] = im2 * 0.5'" C_RST "\n");
-    printf("              " C_CMD "rms=$(@ 'irms(im1)')" C_RST "  or  " C_CMD
-           "@calc -v rms 'irms(im1)'" C_RST "\n");
-    printf("  " C_CMD "@get [-v var] <entity>      " C_RST
-           "Read stream (s.), FPS (f.), proc (p.), or seq (q.)\n");
-    printf("    " C_NOTE "Examples:" C_RST " " C_CMD "nx=$(@get s.im1.xsize)" C_RST "  |  " C_CMD
-           "@get -v nx s.im1.xsize" C_RST "\n");
-    printf("              " C_CMD "gain=$(@get f.ao.gain)" C_RST "  |  " C_CMD
-           "exp=$(@get s.im1.kw.EXPTIME)" C_RST "\n");
+    printf("              " C_CMD "@ -v rms 'irms(im1)'" C_RST "  |  " C_CMD
+           "@calc -v ptv 'imax(im1)-imin(im1)'" C_RST "\n");
+    printf("  " C_CMD "@get [-v|-a|-A|--json] <sp> " C_RST
+           "Read/discover stream (s.), FPS (f.), proc (p.), seq (q.)\n");
+    printf("    " C_NOTE "Examples:" C_RST " " C_CMD "@get -v nx s.im1.xsize" C_RST "  |  " C_CMD
+           "@get -a all 's.*'" C_RST "\n");
+    printf("              " C_CMD "@get -A map 's.dm*.xsize'" C_RST "  |  " C_CMD
+           "@get --json s.im1" C_RST "\n");
     printf("  " C_CMD "@set <entity> <val> [cmt]   " C_RST
            "Write FPS parameter or stream FITS keyword\n");
     printf("    " C_NOTE "Examples:" C_RST " " C_CMD "@set f.ao.gain 0.25" C_RST "  |  " C_CMD
@@ -606,13 +612,14 @@ void help_topic_bash(void)
            "if @test 'irms(im1) < 0.5'" C_RST ")\n");
     printf("  " C_CMD "@waitfor <tgt> [N] [-t sec] " C_RST
            "Wait for N new frames or condition (" C_CMD "@waitfor s.im1 5 -t 2" C_RST ")\n");
-    printf("  " C_CMD "@waitany <s1> <s2> [--timeout s]" C_RST
-           " Wait until any listed stream updates\n");
-    printf("  " C_CMD "@grab <in> <N> <out> [-t s] " C_RST
-           "Capture N consecutive 2D frames into 3D cube <out>\n");
-    printf("  " C_CMD "@on <stream> <cmd...>       " C_RST
-           "Run <cmd> on every stream update (" C_CMD "--list" C_RST " / " C_CMD "--clear" C_RST
-           ")\n");
+    printf("  " C_CMD "@waitany <s1> <s2> [-t sec] " C_RST
+           "Wait until any listed stream updates\n");
+    printf("  " C_CMD "@grab [--fits f] <s> [N] [o]" C_RST
+           "Capture 1/N frames to image/cube/FITS (" C_CMD "--timestamps" C_RST ")\n");
+    printf("  " C_CMD "@replay [--fps hz] <in> <s> " C_RST
+           "Replay 2D/3D cube or FITS file into SHM stream " C_CMD "<s>" C_RST "\n");
+    printf("  " C_CMD "@on [opts] <t...> -- <cmd>  " C_RST "Reactive watcher (" C_CMD
+           "--once|--max-hz|--cooldown|--stop" C_RST ")\n");
     printf("  " C_CMD "@defer <cmd...>             " C_RST
            "Register LIFO cleanup command on shell/script EXIT\n");
     printf("  " C_CMD "@source <file.milk> [args]  " C_RST
@@ -665,15 +672,21 @@ static void help_topic_streams(void)
     printf("  " C_CMD "@get s.<name>.<attr>   " C_RST
            "Read metadata: xsize, ysize, zsize, naxis,\n");
     printf("                         cnt0, cnt1, dtype, location, shared, inode,\n");
-    printf("                         fps, age, owner_pid, summary, kw.<KEY>\n");
+    printf("                         fps, age, owner_pid, summary, json, kw.<KEY>\n");
+    printf("  " C_CMD "@get 's.*' / 's.dm*.xsize'" C_RST
+           " Discover SHM streams or glob-query attributes\n");
     printf("  " C_CMD "@set s.<name>.kw.<K>=V " C_RST
            "Create/update FITS keyword (optional comment)\n");
     printf("  " C_CMD "@exists [-r] s.<name>  " C_RST
            "Check if stream exists (or writer is alive)\n");
     printf("  " C_CMD "@waitfor <name> [N]    " C_RST
            "Wait for N new frames (-t <sec>, --cnt <target>)\n");
-    printf("  " C_CMD "@grab <stream> <local> " C_RST "Snapshot next SHM frame into local image\n");
-    printf("  " C_CMD "@streamcat [--raw] <s> " C_RST "Pipe stream pixels to stdout\n");
+    printf("  " C_CMD "@grab [--fits f] <s> N " C_RST
+           "Capture 1/N frames to cube or FITS (--timestamps)\n");
+    printf("  " C_CMD "@replay [--fps hz] c s " C_RST
+           "Replay 3D cube or FITS file into SHM stream <s>\n");
+    printf("  " C_CMD "@streamcat [-a arr] <s>" C_RST
+           "Bind stream pixels to Bash array or pipe to stdout\n");
     printf("  " C_CMD "@streamwrite <s> W [H] " C_RST
            "Publish raw pixels from stdin to SHM stream\n");
     printf("\n");

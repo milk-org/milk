@@ -39,16 +39,18 @@ src/cli/libmilkscript/
 ### 1. `shm_prop/` — Shared-Memory Property & Action Access
 
 Single source of truth for reading and writing `stream`, `fps`, `seq`, and
-`proc` shared-memory attributes and control actions:
+`proc` shared-memory attributes, globbed entity discovery, and control actions:
 
 - `milk_shm_prop.h` — Public API (`milk_shm_prop_get`, `milk_shm_prop_set`,
   `milk_shm_prop_exists`, `milk_shm_prop_find_or_open_stream`).
 - `milk_shm_prop_internal.h` — Per-namespace handler declarations.
-- `milk_shm_prop.c` — Top-level `type.name.prop` parser and namespace router.
-- `milk_shm_prop_stream.c` — `stream.NAME.*` metadata queries, FITS keywords,
-  and stream existence checks.
-- `milk_shm_prop_fps.c` — `fps.NAME.*` parameter queries, mutations, and
-  existence/liveness checks.
+- `milk_shm_prop.c` — Top-level `type.name.prop` parser, top-level `/dev/shm`
+  entity discovery (`s.*`, `f.*`, `p.*`, `q.*`), globbed property queries
+  (`s.dm*.xsize`), and `--json` routing.
+- `milk_shm_prop_stream.c` — `stream.NAME.*` metadata queries, JSON serialization,
+  FITS keywords, and stream existence checks.
+- `milk_shm_prop_fps.c` — `fps.NAME.*` parameter queries, JSON serialization,
+  mutations, and existence/liveness checks.
 - `milk_shm_prop_proc_seq.c` — `proc.NAME.*` (`PROCESSINFO`) and `seq.NAME.*`
   (`fpsseq`) inspection and control.
 
@@ -63,8 +65,12 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
   auto-daemon spawning.
 - `milk_client_ops.c` — Client RPC operations (`EVAL`, `CALL`, `GET`, `SET`,
   `WAITFOR`, `WAITANY`, `GRAB`, `PING`, `SHUTDOWN`) and streaming response reader.
-- `milk_bash_builtins.c` — Loadable GNU Bash builtins (`libmilkbash.so`).
-- `milk_call_main.c` — Standalone `milk-call` binary entry point.
+- `milk_bash_builtins.c` — Loadable GNU Bash builtins (`libmilkbash.so`) with
+  zero-subshell scalar (`-v`), indexed array (`-a`), and associative array
+  (`-A`) variable binding.
+- `milk_call_main.c` — Standalone `milk-call` binary entry point (`call`, `batch`,
+  `pipe`, `get`, `set`, `calc`, `test`, `exists`, `waitfor`, `waitany`, `grab`,
+  `replay`, `complete`, `translate`, `server`, `log`, `shutdown`).
 - `milk_srvlog_shm.c` — `milk_srvlog.*` POSIX SHM creation, attachment,
   high-resolution timestamped entry recording, and log querying (`--log`).
 - `milk_srv_manager.c` — Server session discovery (`--list`), status dashboard
@@ -77,11 +83,14 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
 - `milk_server_internal.h` — Internal session state and handler prototypes.
 - `milk_server.c` — Accept loop, thread/blocking orchestration, and socket cleanup.
 - `milk_server_vars.c` — Server-side scalar variable and `IMGID` pool management.
-- `milk_server_stream.c` — Stream synchronization and I/O commands (`@waitfor`,
-  `@grab`, `@streamcat`, `@streamwrite`).
-- `milk_server_io.c` — Command catalog dumping and tab-completion handler.
+- `milk_server_stream.c` — Stream synchronization, ring-buffer capture, and
+  playback commands (`@waitfor`, `@waitany`, `@grab [--fits|--timestamps]`,
+  `@replay [--fps|--count|--loop]`, `@streamcat`, `@streamwrite`).
+- `milk_server_io.c` — Command catalog dumping, `CLICMDARGDEF` type-aware
+  argument tab-completion, and `@hc --sig` signature formatting.
 - `milk_server_dispatch.c` — Request line parser and RPC verb handlers (`PING`,
-  `SHUTDOWN`, `GET`, `SET`, `CALC`, `TEST`, `CALL`).
+  `SHUTDOWN`, `GET`, `SET`, `CALC`, `TEST`, `CALL`, including single-RPC
+  `@batch` and `@pipe` execution).
 
 ### 4. `bash/` — Bash Coprocess & Syntax Translation
 
