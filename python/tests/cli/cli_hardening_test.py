@@ -188,10 +188,10 @@ def test_source_recursion_bounded(tmp_path):
 
 # --- Sections 3-4: arithmetic edge cases & expansion buffers ----------------
 NOCRASH_CMDS = [
-    "calc -9223372036854775808 % -1",
-    "calc -9223372036854775808 / -1",
-    "calc 100 / 0",
-    "calc 100 % 0",
+    "@calc '-9223372036854775808 % -1'",
+    "@calc '-9223372036854775808 / -1'",
+    "@calc '100 / 0'",
+    "@calc '100 % 0'",
     'cat <<< "herestring test"',
 ]
 
@@ -377,18 +377,9 @@ def test_pty_syndiag_unclosed_quote():
         m.write(b"\nexit\n")
 
 
-# --- Section 10: Hyphenated CLI commands ------------------------------------
-def test_hyphenated_commands():
-    rc, out = run_milk([], stdin_text="list-streams\nlist-fps\nexit\n")
-    assert rc == 0
-    assert "milk-cli: list-streams: not found" not in out
-    assert "milk-cli: list-fps: not found" not in out
-    assert "Command not found" not in out
-
-
 # --- Section 11: Standalone math expression and continuation escape ---------
 def test_math_expression_no_multiline():
-    rc, out = run_milk([], stdin_text="1-3\nexit\n")
+    rc, out = run_milk([], stdin_text="@ 1-3\nexit\n")
     assert rc == 0
     assert "-2" in out
     assert "\n> " not in out

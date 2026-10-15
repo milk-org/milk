@@ -740,7 +740,7 @@ static char *gen_vars_env_match(const char *text, int state)
     {
         if (var_idx >= CLI_MAX_VARS)
         {
-            var_phase = 2;
+            var_phase = 3;
             var_idx   = 0;
             break;
         }
@@ -748,22 +748,6 @@ static char *gen_vars_env_match(const char *text, int state)
         if (cli_vars[i].used && match_prefix_or_fuzzy(cli_vars[i].name, vprefix, (size_t) vpreflen))
         {
             return format_env_var_candidate(cli_vars[i].name, has_dollar, has_brace, 0);
-        }
-    }
-
-    while (var_phase == 2)
-    {
-        if (var_idx >= CLI_MAX_ARRAYS)
-        {
-            var_phase = 3;
-            var_idx   = 0;
-            break;
-        }
-        int i = var_idx++;
-        if (cli_arrays[i].used &&
-            match_prefix_or_fuzzy(cli_arrays[i].name, vprefix, (size_t) vpreflen))
-        {
-            return format_env_var_candidate(cli_arrays[i].name, has_dollar, has_brace, 1);
         }
     }
 

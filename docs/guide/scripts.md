@@ -12,14 +12,37 @@ compiled executables.
 
 See also: [Streams](streams.md) · [FPS](fps.md) · [FAQ](../quickstart/faq.md)
 
-## 1. Core Scripts (`scripts/`)
+## 1. `@` Session Commands vs `milk-*` Executables
+
+After sourcing `milk.bash` (`source milk.bash`), Milk provides two complementary command families:
+
+| Family | Where to Use | Primary Examples |
+| ------ | ------------ | ---------------- |
+| **`@...` Commands** | Inside an active `milk.bash` or `milk-cli` session (zero-fork RPC + direct `/dev/shm` access) | `@` (`@calc`), `@test`, `@get`, `@set`, `@exists`, `@running`, `@waitfor`, `@waitany`, `@grab`, `@defer`, `@on`, `@server`, `@log`, `@h`, `@hb`, `@hc`, `@hm`, `@hf`, and all C module functions (`@imgen.mk2Dim`, `@info.imstats`, `@fits.loadfits`, ...) |
+| **`milk-*` Executables** | Standalone OS programs (TUIs, background compute units, external shell tools) | `milk-CTRL`, `milk-fpsCTRL`, `milk-streamCTRL`, `milk-termview`, `milk-fpsexec-*`, `milk-commands`, `milk-help`, `milk-*-help` |
+
+### Unified SHM & FPS Lifecycle Control via `@get` / `@set`
+
+Within a `milk.bash` session, `@get` and `@set` replace external `milk-fps-*` and `milk-stream-*`
+subprocess calls:
+
+```bash
+$ source milk.bash
+$ @get -v nx s.cam0.xsize
+$ @set f.loopctrl.gain = 0.25
+$ @set f.loopctrl.conf = start
+$ @set f.loopctrl.run  = start:tmux
+$ @hc set
+$ @h fps
+```
+
+## 2. Core Scripts (`scripts/`)
 
 Installed from the root `CMakeLists.txt` into `bin/`:
 
 | Script                       | Description                                        |
 | ---------------------------- | -------------------------------------------------- |
 | `milk.bash`                  | Sourceable GNU Bash integration layer (`@` commands, `@server`, `@log`, SHM streams, FPS) |
-| `milk-script-upgrade`        | Upgrade legacy `.milk` scripts to Tier-1 `milk.bash` scripts |
 | `milk-check`                 | Verify installation (libraries, paths, SHM)        |
 | `milk-argparse`              | Argument parsing helper for milk scripts           |
 | `milk-script-std-config`     | Standard configuration for milk scripts            |

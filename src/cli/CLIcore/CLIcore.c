@@ -669,7 +669,6 @@ static int handle_fifo_input(const char *prompt)
             clock_gettime(CLOCK_MONOTONIC, &ft0);
 
             cli_history_log_prompt(data.CLIcmdline);
-            if (milk_is_bash_engine_enabled())
             {
                 int exit_req = 0;
                 int rc       = milk_bash_engine_exec(data.CLIcmdline, &exit_req);
@@ -677,10 +676,6 @@ static int handle_fifo_input(const char *prompt)
                 {
                     data.CLIloopON = 0;
                 }
-            }
-            else
-            {
-                CLI_execute_line();
             }
 
             clock_gettime(CLOCK_MONOTONIC, &ft1);
@@ -748,9 +743,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     // CLI interactive overlay (signals, autocomplete)
     CLI_startup();
-
-    // Load persistent command aliases
-    cli_alias_load();
 
     // Initialize tree-sitter parser/query
     cli_ts_init();
@@ -933,16 +925,8 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         {
             if (single_command_flag)
             {
-                if (milk_is_bash_engine_enabled())
-                {
-                    int exit_req = 0;
-                    milk_bash_engine_exec(single_command_string, &exit_req);
-                }
-                else
-                {
-                    strncpy(data.CLIcmdline, single_command_string, STRINGMAXLEN_CLICMDLINE - 1);
-                    CLI_execute_line();
-                }
+                int exit_req = 0;
+                milk_bash_engine_exec(single_command_string, &exit_req);
                 data.CLIloopON = 0;
                 break;
             }
@@ -968,31 +952,12 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 if (fp != NULL)
                 {
                     fclose(fp);
-                    if (milk_is_bash_engine_enabled())
+                    int exit_req = 0;
+                    milk_bash_engine_exec_file(CLIstartupfilename, &exit_req);
+                    if (exit_req || strcmp(CLIstartupfilename, "CLIstartup.txt") != 0)
                     {
-                        int exit_req = 0;
-                        milk_bash_engine_exec_file(CLIstartupfilename, &exit_req);
-                        if (exit_req || strcmp(CLIstartupfilename, "CLIstartup.txt") != 0)
-                        {
-                            data.CLIloopON = 0;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        strncpy(data.cmdargtoken[0].val.string, "source",
-                                STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
-                        strncpy(data.cmdargtoken[1].val.string, CLIstartupfilename,
-                                STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
-                        data.cmdNBarg = 2;
-                        cli_source();
-
-                        // Exit the interactive loop, as shebang scripts should terminate upon completion
-                        if (strcmp(CLIstartupfilename, "CLIstartup.txt") != 0)
-                        {
-                            data.CLIloopON = 0;
-                            break;
-                        }
+                        data.CLIloopON = 0;
+                        break;
                     }
                 }
             }
@@ -1132,7 +1097,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     {
                         data.CLIcmdline[strcspn(data.CLIcmdline, "\n")] = 0; // strip newline
                         cli_history_log_prompt(data.CLIcmdline);
-                        if (milk_is_bash_engine_enabled())
                         {
                             int exit_req = 0;
                             int rc       = 0;
@@ -1155,22 +1119,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                                 data.CLIloopON = 0;
                             }
                         }
-                        else
-                        {
-                            cli_fault_isolation_arm();
-                            if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
-                            {
-                                CLI_execute_line();
-                            }
-                            else
-                            {
-                                dcsigINT  = 0;
-                                dcsigSEGV = 0;
-                                dcsigBUS  = 0;
-                                dcsigABRT = 0;
-                            }
-                            cli_fault_isolation_disarm();
-                        }
                     }
                     else
                     {
@@ -1191,12 +1139,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     cli_set_interactive_mode(0);
 
-    cli_trap_run_exit();
-
-    if (milk_is_bash_engine_enabled())
-    {
-        milk_bash_engine_shutdown();
-    }
+    milk_bash_engine_shutdown();
 
     cli_ts_cleanup();
 

@@ -4,13 +4,13 @@
 
 /**
  * @file milk_bash_engine.h
- * @brief Supervised bash co-process and Tier-2 shorthand translator for milk-cli.
+ * @brief Supervised bash co-process and milk-cli shorthand translator.
  *
  * Role & Goal:
  *   Provides the public interface for milk-cli's bash execution engine:
- *   1. `milk_translate_tier2_to_tier1()`: Translates `.milk` scripts and interactive
- *      REPL lines (Tier-2 `@` shorthands, `@{expr}`, `[ -S/-F/-P ]`, and legacy
- *      milk-cli syntax) into standard bash syntax while preserving 1:1 line numbers.
+ *   1. `milk_translate_shorthand_to_bash()`: Translates `.milk` scripts and interactive
+ *      REPL lines (`milk-cli` `@` shorthands, `@{expr}`, `@s.im.prop`, and interactive
+ *      REPL commands) into `milk.bash` syntax while preserving 1:1 line numbers.
  *   2. `milk_bash_engine_*()`: Manages the persistent supervised bash co-process
  *      and in-process UNIX domain socket server used by interactive `milk-cli`
  *      and `milk-cli <script.milk>`.
@@ -24,24 +24,21 @@
 /**
  * @brief Check whether the bash execution engine is enabled for milk-cli.
  *
- * Inspects `MILKCLI_ENGINE` (`"bash"` or `"native"`). Defaults to 1 (bash engine).
- *
- * @return 1 if bash engine is enabled, 0 if legacy native engine is requested
+ * @return Always 1 (the bash engine is the sole execution engine)
  */
 int milk_is_bash_engine_enabled(void);
 
 /**
- * @brief Translate Tier-2 milk-cli shorthands into Tier-1 plain-bash syntax.
+ * @brief Translate milk-cli shorthands into standard milk.bash syntax.
  *
  * Preserves 1:1 line numbering across multi-line scripts so bash `$LINENO`
  * matches the source file line numbers.
  *
  * @param src          Input script or command line
- * @param allow_legacy Non-zero to also translate un-sigiled milk-cli commands
- *                     and spaced calculator assignments
+ * @param allow_legacy Non-zero to also translate un-sigiled interactive milk-cli commands
  * @return Newly heap-allocated translated string (caller must `free()`), or NULL
  */
-char *milk_translate_tier2_to_tier1(const char *src, int allow_legacy);
+char *milk_translate_shorthand_to_bash(const char *src, int allow_legacy);
 
 /**
  * @brief Initialize the in-process milk socket server and supervised bash co-process.

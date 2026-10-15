@@ -81,6 +81,178 @@ static int checkFlag64(uint64_t flags, uint64_t testflag, char *flagdescription)
     return rval;
 }
 
+typedef struct
+{
+    const char *name;
+    const char *alias;
+    const char *synopsis;
+    const char *summary;
+    const char *details;
+    const char *examples;
+} milk_bash_primitive_help_t;
+
+static const milk_bash_primitive_help_t g_milk_bash_help[] = {
+    { "calc", "=", "@ \"<expr>\"  |  @calc \"<expr>\"",
+      "Evaluate an image/tensor or scalar expression in the persistent Milk server",
+      "  - Automatically syncs referenced and assigned Bash scalar variables.\n"
+      "  - Supports 2D/3D slicing (im[x0:x1,y0:y1]), reductions (sum, mean, rms,\n"
+      "    min, max, median), element-wise math, and SHM entity attributes (@s., @f.).",
+      "  @ \"out = im1 + 2.0 * im2\"\n"
+      "  @ \"rms_val = sqrt(mean(im1 * im1))\"" },
+    { "test", NULL, "@test \"<boolean-expr>\"",
+      "Evaluate a Milk boolean expression and return exit status 0 (true) or 1 (false)",
+      "  - Designed for native Bash conditionals (if / while / &&).\n"
+      "  - Supports image reductions and SHM entity comparisons without subshells.",
+      "  if @test \"max(im1) > 100.0\"; then echo \"saturated\"; fi\n"
+      "  while @test \"@s.cam0.cnt0 < 50\"; do sleep 0.01; done" },
+    { "get", NULL, "@get [-v <var>] <s.|f.|p.|q.><name>.<attr>",
+      "Read a shared-memory stream, FPS, processinfo, or sequencer attribute",
+      "  - Options:\n"
+      "      -v <var>  Assign result directly into Bash variable <var> (zero subshell)\n"
+      "  - Stream (s.<name>.): xsize, ysize, zsize, naxis, cnt0, cnt1, dtype,\n"
+      "                        location, shared, inode, fps, age, owner_pid,\n"
+      "                        summary, kw.<KEY>\n"
+      "  - FPS    (f.<name>.): <param>, status, conf, run, pid, nbparam, list\n"
+      "  - Proc   (p.<name>.): PID, loopcnt, loopcntMax, cnt0, status, ctrlval,\n"
+      "                        triggermode, triggerstream, dt_median_ns, msg\n"
+      "  - Seq    (q.<id>.):   state, active_step, progress, step_count, pid, name",
+      "  @get -v nx s.cam0.xsize\n"
+      "  @get f.loopctrl.gain\n"
+      "  @s.cam0.summary" },
+    { "set", NULL, "@set <s.|f.|p.|q.><name>.<attr> [=] <value> [comment]",
+      "Modify a shared-memory stream keyword, FPS parameter/lifecycle, processinfo, or sequencer",
+      "  - Stream (s.<name>.kw.<KEY>): create or update FITS keyword (auto-typed)\n"
+      "  - FPS    (f.<name>.<param>):  set any FPS parameter (all types incl. TIMESPEC)\n"
+      "  - FPS    (f.<name>.conf):     start | stop | step (or :tmux to dispatch via tmux)\n"
+      "  - FPS    (f.<name>.run):      start | stop (or :tmux to dispatch via tmux)\n"
+      "  - Proc   (p.<name>.ctrlval):  0 (run), 1 (pause), 2 (single step), 3 (exit)\n"
+      "  - Seq    (q.<id>.action):     pause | resume | abort",
+      "  @set f.loopctrl.gain = 0.25\n"
+      "  @set f.loopctrl.conf = start\n"
+      "  @set f.loopctrl.run = start:tmux\n"
+      "  @set s.cam0.kw.EXPTIME = 0.001 \"Exposure time (s)\"" },
+    { "exists", NULL, "@exists [-r] [s.|f.|p.|q.]<name>",
+      "Check whether a shared-memory stream, FPS, processinfo, or sequencer exists",
+      "  - Returns exit code 0 if present in MILK_SHM_DIR (/dev/shm), 1 otherwise.\n"
+      "  - With -r, also verifies that the owning process PID is currently alive.",
+      "  if @exists s.cam0; then @info.imstats @S:cam0; fi\n"
+      "  if @exists -r f.loopctrl; then echo \"active\"; fi" },
+    { "running", NULL, "@running [f.|p.|q.|s.]<name>",
+      "Check whether a shared-memory entity exists and its owner PID is alive",
+      "  - Equivalent to '@exists -r <name>'. Returns exit code 0 if running, 1 otherwise.",
+      "  if @running f.loopctrl; then @set f.loopctrl.gain = 0.1; fi" },
+    { "waitfor", NULL, "@waitfor <stream> [N] [-s <sem>] [-t|--timeout <sec>] [--cnt <target>]",
+      "Block until a shared-memory stream posts N new frames or reaches target cnt0",
+      "  - Uses ImageStreamIO semaphores for sub-microsecond wakeup latency.\n"
+      "  - Returns exit code 0 on wakeup, 124 on timeout.",
+      "  @waitfor cam0 10 --timeout 2.0\n"
+      "  @waitfor cam0 --cnt 1000 -t 5.0" },
+    { "waitany", NULL, "@waitany <s1> <s2> [...] [-t|--timeout <sec>]",
+      "Wait until any of the specified streams updates and report the first triggered stream",
+      "  - Prints the triggered stream name (or binds REPLY if declared). Returns 124 on timeout.",
+      "  ready=$(@waitany cam0 cam1 --timeout 1.0)" },
+    { "grab", NULL, "@grab [-t|--timeout <sec>] <src_stream> <dst_local_img>",
+      "Wait for the next frame on a shared-memory stream and copy it into a local image",
+      "  - Atomically snapshots <src_stream> into session-local image <dst_local_img>.",
+      "  @grab --timeout 1.0 cam0 dark_frame" },
+    { "defer", NULL, "@defer <command...>",
+      "Register a cleanup command on the LIFO exit stack for the current Bash shell/script",
+      "  - Executed automatically in reverse (LIFO) order on shell/script EXIT.",
+      "  @defer @mem.rm tmp_im" },
+    { "on", NULL, "@on <stream> <command...>  |  @on --list  |  @on --clear",
+      "Run a background reactive command every time <stream> posts a new frame",
+      "  - Spawns a background watcher loop tied to the current session.\n"
+      "  - Use '--list' to list active watcher PIDs, or '--clear' to stop all watchers.",
+      "  @on cam0 '@info.imstats @S:cam0'\n"
+      "  @on --clear" },
+    { "source", NULL, "@source <script.milk> [args...]",
+      "Translate and execute a legacy .milk script inside the current Bash session",
+      "  - Converts legacy .milk syntax on the fly via 'milk-call translate --legacy'.",
+      "  @source my_pipeline.milk" },
+    { "server", NULL,
+      "@server [status|list|start [name]|use <name>|local|detach|stop [name|--all]|log]",
+      "Manage persistent milk-cli --server daemons and switch active session attachment",
+      "  - status         Show current session server PID, socket, and SHM log path\n"
+      "  - list (or ls)   List all live milk-cli servers for the current user\n"
+      "  - start [name]   Start a persistent named server (default: 'default')\n"
+      "  - use <name>     Attach current Bash shell to named server (starts if needed)\n"
+      "  - local / detach Detach from shared server and use a shell-private server\n"
+      "  - stop [name]    Stop a named server (or '--all' to stop all servers)",
+      "  @server list\n"
+      "  @server use bench1\n"
+      "  @server stop bench1" },
+    { "log", NULL,
+      "@log [-n <N>|-a] [-g <pat>] [-e] [--slow <ms>] [--since <dur>] [-f] [-s <name>] [--json] "
+      "[--clear]",
+      "Inspect or follow the lock-free shared-memory command execution ring buffer",
+      "  - -n, --last <N>    Show last N entries (default: 25)\n"
+      "  - -a, --all         Show all buffered entries (up to 4096)\n"
+      "  - -g, --grep <pat>  Filter commands by substring\n"
+      "  - -e, --errors      Show only failed commands (rc != 0)\n"
+      "  - --slow <ms>       Show only commands slower than <ms> milliseconds\n"
+      "  - --since <dur>     Show entries within duration (e.g. 30s, 5m, 1h)\n"
+      "  - -f, --follow      Stream new log entries in real time\n"
+      "  - -s, --server <id> Inspect a specific named server's log\n"
+      "  - --json / --clear  Emit JSON Lines or clear the ring buffer",
+      "  @log -n 20\n"
+      "  @log -e --slow 5.0" },
+    { "streamcat", NULL, "@streamcat [--raw] <stream_or_img>",
+      "Write pixel data of a shared-memory stream or local image to stdout",
+      "  - Without --raw, prints formatted text values.\n"
+      "  - With --raw, writes raw binary pixel bytes for piping to external processes.",
+      "  @streamcat cam0 | head -n 20\n"
+      "  @streamcat --raw cam0 | python3 analyze.py" },
+    { "streamwrite", NULL, "@streamwrite [--dtype <type>] <stream> <xsize> [ysize] [zsize]",
+      "Read raw binary pixel bytes from stdin and publish to a shared-memory stream",
+      "  - Supported --dtype values: F32 (default), F64, U8, U16, U32, U64, I8, I16, I32, I64.\n"
+      "  - Properly sets write flag, increments cnt0, and posts ImageStreamIO semaphores.",
+      "  python3 gen_frame.py | @streamwrite --dtype F32 cam0 128 128" },
+    { "unload", NULL, "@unload",
+      "Shut down the local session server and remove all @ functions and PATH symlinks",
+      "  - Stops active '@on' watchers, restores PS1 and PATH, and unsets @ shims.", "  @unload" },
+    { NULL, NULL, NULL, NULL, NULL, NULL }
+};
+
+/**
+ * @brief Print detailed help if @cmdkey is a `milk.bash` `@` primitive.
+ *
+ * @param cmdkey Command name (with or without leading `@`)
+ * @return 0 if matched and printed, -1 otherwise
+ */
+static int help_milk_bash_primitive(const char *cmdkey)
+{
+    if (cmdkey == NULL)
+    {
+        return -1;
+    }
+    if (strcmp(cmdkey, "@") == 0)
+    {
+        cmdkey = "calc";
+    }
+    else if (cmdkey[0] == '@' && cmdkey[1] != '\0')
+    {
+        cmdkey++;
+    }
+
+    for (int i = 0; g_milk_bash_help[i].name != NULL; i++)
+    {
+        if (strcmp(cmdkey, g_milk_bash_help[i].name) == 0 ||
+            (g_milk_bash_help[i].alias != NULL && strcmp(cmdkey, g_milk_bash_help[i].alias) == 0))
+        {
+            printf("\n");
+            printf(COLORCMD "@%s" COLORRESET " [milk.bash Primitive]\n"
+                            "\t" COLORINFO "%s\n" COLORRESET,
+                   g_milk_bash_help[i].name, g_milk_bash_help[i].summary);
+            printf("\n  " C_BOLD "Synopsis:" C_RST "\n    %s\n", g_milk_bash_help[i].synopsis);
+            printf("\n  " C_BOLD "Details:" C_RST "\n%s\n", g_milk_bash_help[i].details);
+            printf("\n  " C_NOTE "Examples:" C_RST "\n" C_BOLD "%s" C_RST "\n\n",
+                   g_milk_bash_help[i].examples);
+            return 0;
+        }
+    }
+    return -1;
+}
+
 /**
  * @brief command help\n
  *
@@ -91,9 +263,22 @@ errno_t help_command(const char *__restrict cmdkey)
 {
     int cOK = 0;
 
+    if (cmdkey != NULL && cmdkey[0] == '@' && cmdkey[1] != '\0')
+    {
+        cmdkey++;
+    }
+
+    if (help_milk_bash_primitive(cmdkey) == 0)
+    {
+        return RETURN_SUCCESS;
+    }
+
     for (unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
     {
-        if (!strcmp(cmdkey, data.cmd[cmdi].key))
+        const char *dot = strchr(data.cmd[cmdi].key, '.');
+        int is_match    = (!strcmp(cmdkey, data.cmd[cmdi].key)) ||
+                          (strchr(cmdkey, '.') == NULL && dot != NULL && !strcmp(cmdkey, dot + 1));
+        if (is_match)
         {
             printf("\n");
             printf(COLORCMD "%s" COLORRESET " in %s [%s]\n"
@@ -540,9 +725,15 @@ errno_t help()
         if (help_topic_dispatch(topic) != 0)
         {
             int matched = 0;
-            for (unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
+            if (help_milk_bash_primitive(topic) == 0)
             {
-                if (strcmp(topic, data.cmd[cmdi].key) == 0)
+                matched = 1;
+            }
+            for (unsigned int cmdi = 0; !matched && cmdi < data.NBcmd; cmdi++)
+            {
+                const char *dot = strchr(data.cmd[cmdi].key, '.');
+                if (strcmp(topic, data.cmd[cmdi].key) == 0 ||
+                    (strchr(topic, '.') == NULL && dot != NULL && strcmp(topic, dot + 1) == 0))
                 {
                     help_command(topic);
                     matched = 1;

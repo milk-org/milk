@@ -456,5 +456,4 @@ void milk_server_expand_entities_in_expr(const char *in, char *out, size_t outsz
     } // while (ip < len && op + 1 < outsz)
 
     out[op] = '\0';
-    cli_expand_fpsvar(out, (int) outsz);
 }

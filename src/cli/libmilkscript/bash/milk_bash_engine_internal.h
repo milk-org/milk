@@ -7,7 +7,7 @@
  * @brief Internal declarations shared between milk_bash_translate.c and milk_bash_coproc.c.
  *
  * Role & Goal:
- *   Shares syntax-checking and translator helpers between the Tier-2 to Tier-1
+ *   Shares syntax-checking and translator helpers between the shorthand-to-bash
  *   translator (`milk_bash_translate.c`) and the supervised bash co-process
  *   manager (`milk_bash_coproc.c`).
  */

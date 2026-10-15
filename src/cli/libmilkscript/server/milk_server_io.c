@@ -30,6 +30,46 @@
 #include "milk_server_internal.h"
 
 /**
+ * @brief Return 1 if @key is a legacy shell builtin, REPL-only command,
+ *        internal help topic, or deprecated alias that should not be
+ *        exported as an `@<cmd>` in Bash.
+ *
+ * @param key Command key registered in `data.cmd[]`
+ * @return 1 if excluded from Bash export/completion, 0 otherwise
+ */
+static int is_bash_excluded_cmd(const char *key)
+{
+    static const char *const excluded[] = {
+        /* Shell builtins owned by Bash */
+        "cd", "pwd", "echo", "printf", "read", "shift", "export", "unset", "vars", "alias",
+        "unalias", "aliases", "time", "watch", "exit", "quit", "exitCLI",
+        /* Interactive milk-cli REPL / readline commands */
+        "history", "searchhist", "fhist", "ghistory", "lhistory", "savehistory", "savescript",
+        "setprompt", "bookmark", "sessionlog", "synhl", "syndiag", "cliindent", "showmatch",
+        "helprl", "fhelp", "fparam",
+        /* Internal help-topic keys (use @h <topic>, @hb, @hc, @hm, @hf) */
+        "help", "help-bash", "help-cmdopts", "help-syntax", "help-commands", "help-variables",
+        "help-flowcontrol", "help-scripting", "help-milk",
+        /* Deprecated / duplicate aliases */
+        "list-streams", "list-fps", "fpsset", NULL
+    };
+
+    if (key == NULL || key[0] == '\0')
+    {
+        return 1;
+    }
+
+    for (int i = 0; excluded[i] != NULL; i++)
+    {
+        if (strcmp(key, excluded[i]) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/**
  * @brief Dump all registered canonical and unambiguous short command names.
  *
  * @param fp Output stream
@@ -44,16 +84,7 @@ void milk_server_dump_commands(FILE *fp)
     for (unsigned int i = 0; i < data.NBcmd; i++)
     {
         const char *key = data.cmd[i].key;
-        if (key[0] == '\0' || strchr(key, '?') != NULL)
-        {
-            continue;
-        }
-        /* Skip shell builtins that belong to bash */
-        if (strcmp(key, "cd") == 0 || strcmp(key, "echo") == 0 || strcmp(key, "printf") == 0 ||
-            strcmp(key, "pwd") == 0 || strcmp(key, "read") == 0 || strcmp(key, "shift") == 0 ||
-            strcmp(key, "export") == 0 || strcmp(key, "alias") == 0 ||
-            strcmp(key, "unalias") == 0 || strcmp(key, "unset") == 0 || strcmp(key, "time") == 0 ||
-            strcmp(key, "help") == 0 || strcmp(key, "exit") == 0 || strcmp(key, "quit") == 0)
+        if (key[0] == '\0' || strchr(key, '?') != NULL || is_bash_excluded_cmd(key))
         {
             continue;
         }
@@ -69,7 +100,7 @@ void milk_server_dump_commands(FILE *fp)
 
         /* If key is "ns.short", also emit "short" if unambiguous across all commands */
         const char *dot = strchr(key, '.');
-        if (dot != NULL && dot[1] != '\0')
+        if (dot != NULL && dot[1] != '\0' && !is_bash_excluded_cmd(dot + 1))
         {
             const char *short_key = dot + 1;
             int         cnt       = 0;
@@ -89,7 +120,7 @@ void milk_server_dump_commands(FILE *fp)
         }
     }
 
-    fprintf(fp, "imgstat\ninfo.imgstat\nmk2Drnd\nimgen.mk2Drnd\n");
+    fprintf(fp, "imgstat\ninfo.imgstat\nmk2Drnd\nimgen.mk2Drnd\nprocstat\nprocctl\nprocwait\n");
 }
 
 /**
@@ -111,9 +142,10 @@ static size_t complete_commands(const char *prefix, const char *sigil, char *out
     size_t blen = strlen(bare);
 
     static const char *const core_cmds[] = {
-        "h",      "hb",     "hc",      "hm",        "hf",          "get",    "set",   "calc",
-        "test",   "exists", "running", "waitfor",   "waitany",     "grab",   "defer", "on",
-        "source", "server", "log",     "streamcat", "streamwrite", "unload", NULL
+        "h",      "hb",       "hc",      "hm",       "hf",      "get",       "set",
+        "calc",   "test",     "exists",  "running",  "waitfor", "waitany",   "grab",
+        "defer",  "on",       "source",  "server",   "log",     "streamcat", "streamwrite",
+        "unload", "procstat", "procctl", "procwait", NULL
     };
     for (int i = 0; core_cmds[i] != NULL; i++)
     {
@@ -129,7 +161,7 @@ static size_t complete_commands(const char *prefix, const char *sigil, char *out
     for (unsigned int i = 0; i < data.NBcmd; i++)
     {
         const char *k = data.cmd[i].key;
-        if (k[0] == '\0' || strchr(k, '?') != NULL)
+        if (k[0] == '\0' || strchr(k, '?') != NULL || is_bash_excluded_cmd(k))
         {
             continue;
         }
@@ -142,7 +174,7 @@ static size_t complete_commands(const char *prefix, const char *sigil, char *out
             }
         }
         const char *dot = strchr(k, '.');
-        if (dot != NULL && strncmp(dot + 1, bare, blen) == 0)
+        if (dot != NULL && !is_bash_excluded_cmd(dot + 1) && strncmp(dot + 1, bare, blen) == 0)
         {
             int n = snprintf(out + pos, outsz - pos, "%s%s\n", sigil, dot + 1);
             if (n > 0 && pos + (size_t) n < outsz)
@@ -197,8 +229,12 @@ static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
         }
     }
 
-    const char *shmdir = (dcshmdir[0] != '\0') ? dcshmdir : "/dev/shm";
-    DIR        *dp     = opendir(shmdir);
+    const char *shmdir = getenv("MILK_SHM_DIR");
+    if (shmdir == NULL || shmdir[0] == '\0')
+    {
+        shmdir = (dcshmdir[0] != '\0') ? dcshmdir : "/dev/shm";
+    }
+    DIR *dp = opendir(shmdir);
     if (dp != NULL)
     {
         struct dirent *de;
@@ -243,12 +279,33 @@ static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
                     fname[flen] = '\0';
                     char ent[280];
                     snprintf(ent, sizeof(ent), "f.%s", fname);
+                    size_t elen = strlen(ent);
                     if (strncmp(ent, prefix, plen) == 0)
                     {
                         int n = snprintf(out + pos, outsz - pos, "%s.\n", ent);
                         if (n > 0 && pos + (size_t) n < outsz)
                         {
                             pos += (size_t) n;
+                        }
+                    }
+                    else if (plen > elen && strncmp(ent, prefix, elen) == 0 && prefix[elen] == '.')
+                    {
+                        static const char *const fattrs[] = { "status",    "conf",     "run",
+                                                              "confstart", "confstop", "confstep",
+                                                              "runstart",  "runstop",  "pid",
+                                                              "nbparam",   "list",     NULL };
+                        const char              *sub      = prefix + elen + 1;
+                        size_t                   slen     = plen - elen - 1;
+                        for (int a = 0; fattrs[a] != NULL; a++)
+                        {
+                            if (strncmp(fattrs[a], sub, slen) == 0)
+                            {
+                                int n = snprintf(out + pos, outsz - pos, "%s.%s\n", ent, fattrs[a]);
+                                if (n > 0 && pos + (size_t) n < outsz)
+                                {
+                                    pos += (size_t) n;
+                                }
+                            }
                         }
                     }
                 }

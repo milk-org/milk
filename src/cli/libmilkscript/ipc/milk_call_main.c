@@ -16,10 +16,12 @@
 #    define _GNU_SOURCE
 #endif
 
+#include <dirent.h>
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "milk_bash_engine.h"
 #include "milk_client.h"
@@ -29,6 +31,79 @@ __attribute__((constructor(101))) static void milkcall_pre_quiet(void)
 {
     milk_data.quiet = 1;
     setenv("MILK_QUIET", "1", 0);
+}
+
+static int setup_bin_farm(const char *bin_farm,
+                          const char *sigil,
+                          const char *target_bin,
+                          const char *cmd_list)
+{
+    if (bin_farm == NULL || sigil == NULL || target_bin == NULL)
+    {
+        return 1;
+    }
+    size_t siglen = strlen(sigil);
+    DIR   *dir    = opendir(bin_farm);
+    if (dir != NULL)
+    {
+        struct dirent *de;
+        while ((de = readdir(dir)) != NULL)
+        {
+            if (de->d_name[0] != '.' && strncmp(de->d_name, sigil, siglen) == 0)
+            {
+                char pbuf[1024];
+                snprintf(pbuf, sizeof(pbuf), "%s/%s", bin_farm, de->d_name);
+                unlink(pbuf);
+            }
+        }
+        closedir(dir);
+    }
+
+    static const char *const core_cmds[] = { "",          "calc",        "test",    "get",
+                                             "set",       "exists",      "running", "waitfor",
+                                             "grab",      "server",      "log",     "h",
+                                             "hb",        "hc",          "hm",      "hf",
+                                             "streamcat", "streamwrite", "unload",  NULL };
+    for (int i = 0; core_cmds[i] != NULL; i++)
+    {
+        char lpath[1024];
+        snprintf(lpath, sizeof(lpath), "%s/%s%s", bin_farm, sigil, core_cmds[i]);
+        unlink(lpath);
+        if (symlink(target_bin, lpath) != 0)
+        {
+            /* ignore */
+        }
+    }
+
+    if (cmd_list != NULL && cmd_list[0] != '\0')
+    {
+        FILE *fp = fopen(cmd_list, "r");
+        if (fp != NULL)
+        {
+            char line[256];
+            while (fgets(line, sizeof(line), fp) != NULL)
+            {
+                size_t len = strlen(line);
+                while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
+                {
+                    line[--len] = '\0';
+                }
+                if (len == 0)
+                {
+                    continue;
+                }
+                char lpath[1024];
+                snprintf(lpath, sizeof(lpath), "%s/%s%s", bin_farm, sigil, line);
+                unlink(lpath);
+                if (symlink(target_bin, lpath) != 0)
+                {
+                    /* ignore */
+                }
+            }
+            fclose(fp);
+        }
+    }
+    return 0;
 }
 
 static void print_usage(const char *prog)
@@ -44,7 +119,7 @@ static void print_usage(const char *prog)
     printf("  waitfor <target> [N] [-t <sec>]  Wait for stream frames or condition\n");
     printf("  grab <s_in> <N> <s_out> [-t <s>] Capture N consecutive frames into 3D cube\n");
     printf("  complete <prefix> [cmd|arg]      List completion candidates\n");
-    printf("  translate [--legacy] <file>      Translate Tier-2 shorthands to Tier-1 bash\n");
+    printf("  translate [--legacy] <file>      Translate milk-cli shorthands to milk.bash\n");
     printf("  server [subcommand ...]          Manage milk-cli servers (@server)\n");
     printf("  log [options...]                 Inspect/search server SHM command log (@log)\n");
     printf("  shutdown                         Shut down session milk-cli --server\n");
@@ -108,8 +183,9 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
     if (strcmp(sub, "set") == 0)
     {
         const char *spec    = (argc >= 1) ? argv[0] : NULL;
-        const char *val     = (argc >= 2) ? argv[1] : NULL;
-        const char *comment = (argc >= 3) ? argv[2] : NULL;
+        int         v_idx   = (argc >= 3 && strcmp(argv[1], "=") == 0) ? 2 : 1;
+        const char *val     = (argc > v_idx) ? argv[v_idx] : NULL;
+        const char *comment = (argc > v_idx + 1) ? argv[v_idx + 1] : NULL;
         return milk_client_set(spec, val, comment, NULL);
     }
     if (strcmp(sub, "calc") == 0)
@@ -225,7 +301,7 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
         {
             fclose(fp);
         }
-        char *tr = milk_translate_tier2_to_tier1(buf, allow_legacy);
+        char *tr = milk_translate_shorthand_to_bash(buf, allow_legacy);
         free(buf);
         if (tr != NULL)
         {
@@ -242,6 +318,10 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
     if (strcmp(sub, "log") == 0)
     {
         return milk_client_log(argc, argv, NULL);
+    }
+    if (strcmp(sub, "setup-bin-farm") == 0 && argc >= 3)
+    {
+        return setup_bin_farm(argv[0], argv[1], argv[2], (argc >= 4) ? argv[3] : NULL);
     }
     if (strcmp(sub, "shutdown") == 0 || strcmp(sub, "unload") == 0)
     {

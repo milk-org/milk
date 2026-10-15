@@ -45,13 +45,10 @@
 #include "milk_server_internal.h"
 #include "milk_srvlog.h"
 
-extern int  cli_handle_shell_builtins(void);
 extern void handle_did_you_mean(const char *input_cmd);
 extern int  cli_intercept_cmd_procctl(const char *p);
 extern int  cli_intercept_cmd_procwait(const char *p);
 extern int  cli_intercept_cmd_procstat(const char *p);
-extern int  cli_intercept_cmd_assert(const char *p);
-extern int  cli_intercept_cmd_assigncheck(const char *p);
 extern int  cli_intercept_cmd_dpdigits(const char *p);
 
 typedef struct
@@ -282,31 +279,6 @@ static int try_dispatch_interceptor(const char *cmdname, int argc, char **argv, 
         *out_rc = cli_last_retval;
         return 1;
     }
-    if (strcmp(cmdname, "assert") == 0)
-    {
-        cli_last_retval = 0;
-        if (!cli_intercept_cmd_assert(data.CLIcmdline))
-        {
-            printf("\033[1;31m[ASSERT] syntax: assert expr=expected [~tol] or expr<val\033[0m\n");
-            *out_rc = 1;
-            return 1;
-        }
-        *out_rc = cli_last_retval;
-        return 1;
-    }
-    if (strcmp(cmdname, "assigncheck") == 0)
-    {
-        cli_last_retval = 0;
-        if (!cli_intercept_cmd_assigncheck(data.CLIcmdline))
-        {
-            printf(
-                "\033[1;31m[ASSIGNCHECK FAIL] Usage: assigncheck [-e] <var> <val> <tol>\033[0m\n");
-            *out_rc = 1;
-            return 1;
-        }
-        *out_rc = cli_last_retval;
-        return 1;
-    }
     if (strcmp(cmdname, "server") == 0)
     {
         *out_rc = milk_srvlog_cmd_server(argc - 1, argv + 1, NULL);
@@ -323,23 +295,11 @@ static int try_dispatch_interceptor(const char *cmdname, int argc, char **argv, 
         *out_rc = 0;
         return 1;
     }
-    if (strcmp(cmdname, "on_update") == 0 || strcmp(cmdname, "on_fpschange") == 0 ||
-        ((strcmp(cmdname, "listim") == 0 || strcmp(cmdname, "mem.listim") == 0) && argc >= 2 &&
-         argv[1][0] != '-' && (strchr(argv[1], '*') != NULL || strchr(argv[1], '?') != NULL)))
+    if ((strcmp(cmdname, "listim") == 0 || strcmp(cmdname, "mem.listim") == 0) && argc >= 2 &&
+        argv[1][0] != '-' && (strchr(argv[1], '*') != NULL || strchr(argv[1], '?') != NULL))
     {
-        cli_last_retval = 0;
-        if (strcmp(cmdname, "on_fpschange") == 0 && argc < 2)
-        {
-            printf("Usage: on_fpschange [-l] [-n N] fpsname.param { command }\n");
-            *out_rc = 1;
-            return 1;
-        }
-        cli_handle_shell_builtins();
-        if (cli_last_retval != 0 && strcmp(cmdname, "on_fpschange") == 0)
-        {
-            printf("Error: on_fpschange failed\n");
-        }
-        *out_rc = cli_last_retval;
+        cli_listim_glob(argv[1]);
+        *out_rc = 0;
         return 1;
     }
     return 0;
@@ -486,6 +446,14 @@ int milk_server_dispatch_argv(int argc, char **argv)
             }
             if (argc == 1)
             {
+                const char *prop = dot2 + 1;
+                if ((strcmp(prop, "confstart") == 0 || strcmp(prop, "confstop") == 0 ||
+                     strcmp(prop, "confstep") == 0 || strcmp(prop, "runstart") == 0 ||
+                     strcmp(prop, "runstop") == 0) &&
+                    (strncmp(cmdname, "f.", 2) == 0 || strncmp(cmdname, "fps.", 4) == 0))
+                {
+                    return (milk_shm_prop_set(cmdname, "1", NULL) == 0) ? 0 : 1;
+                }
                 char val[1024];
                 if (milk_shm_prop_get(cmdname, val, sizeof(val)) == 0)
                 {

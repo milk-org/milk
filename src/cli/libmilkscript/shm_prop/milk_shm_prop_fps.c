@@ -17,22 +17,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "CLIcore.h"
 #include "fps.h"
+#include "fps_CONFstop.h"
 #include "fps_GetParamIndex.h"
 #include "fps_connect.h"
+#include "fps_paramvalue.h"
 #include "fps_printparameter_valuestring.h"
+#include "fps_tmux.h"
 #include "milk_shm_prop.h"
 #include "milk_shm_prop_internal.h"
 
 /**
- * @brief Read an FPS parameter or enumerate all active parameters (`*`).
+ * @brief Read an FPS parameter, metadata attribute, or parameter list (`*` / `list`).
  *
  * @param name  FPS shared-memory name
- * @param prop  Parameter key (or "*" for space-separated parameter list)
+ * @param prop  Parameter key, metadata key (`status`, `conf`, `run`, `pid`, `nbparam`), or `*`/`list`
  * @param out   Output buffer
  * @param outsz Size of @out in bytes
  * @return 0 on success, -1 if FPS or parameter not found
@@ -45,7 +50,7 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
         return -1;
     }
 
-    if (strcmp(prop, "*") == 0)
+    if (strcmp(prop, "*") == 0 || strcmp(prop, "list") == 0)
     {
         size_t pos = 0;
         for (int pi = 0; pi < fps.md->NBparamMAX; pi++)
@@ -84,19 +89,219 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
         functionparameter_GetParamValueString(&fps.parray[pindex], out, (int) outsz);
         rc = 0;
     }
+    else if (fps.md != NULL)
+    {
+        if (strcmp(prop, "status") == 0)
+        {
+            if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
+            {
+                snprintf(out, outsz, "RUN");
+            }
+            else if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+            {
+                snprintf(out, outsz, "CONF");
+            }
+            else
+            {
+                snprintf(out, outsz, "IDLE");
+            }
+            rc = 0;
+        }
+        else if (strcmp(prop, "conf") == 0)
+        {
+            snprintf(out, outsz, "%s",
+                     (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF) ? "ON" : "OFF");
+            rc = 0;
+        }
+        else if (strcmp(prop, "run") == 0)
+        {
+            snprintf(out, outsz, "%s",
+                     (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN) ? "ON" : "OFF");
+            rc = 0;
+        }
+        else if (strcmp(prop, "pid") == 0)
+        {
+            pid_t pid = (fps.md->runpid > 0) ? fps.md->runpid : fps.md->confpid;
+            snprintf(out, outsz, "%ld", (long) pid);
+            rc = 0;
+        }
+        else if (strcmp(prop, "nbparam") == 0)
+        {
+            int cnt = 0;
+            for (int pi = 0; pi < fps.md->NBparamMAX; pi++)
+            {
+                if (fps.parray[pi].fpflag & FPFLAG_ACTIVE)
+                {
+                    cnt++;
+                }
+            }
+            snprintf(out, outsz, "%d", cnt);
+            rc = 0;
+        }
+    }
     fps_disconnect(&fps);
     return rc;
 }
 
 /**
- * @brief Write a value string to a named FPS parameter.
+ * @brief Parse and execute an FPS lifecycle command (`confstart`, `confstop`,
+ *        `confstep`, `runstart`, `runstop`) when addressed via `@set f.<name>.<prop>`.
  *
- * Connects to the named FPS, locates the parameter, writes the parsed
- * value according to its `FPTYPE_*` bitmask, increments `cnt0`, and
- * disconnects.
+ * @param fps      Connected FPS handle
+ * @param fpsname  FPS shared-memory name
+ * @param pname    Property name (`conf`, `run`, `confstart`, `confstop`, `confstep`, `runstart`, `runstop`)
+ * @param valstr   Value string (`start`, `stop`, `step`, `1`, `0`, `ON`, `OFF`, optionally with `:tmux` or `tmux`)
+ * @param out_rc   Receives 0 on success, -1 on error
+ * @return 1 if @pname matched a lifecycle action, 0 otherwise
+ */
+static int try_fps_lifecycle_action(FPS        *fps,
+                                    const char *fpsname,
+                                    const char *pname,
+                                    const char *valstr,
+                                    int        *out_rc)
+{
+    if (pname == NULL || valstr == NULL || fps->md == NULL)
+    {
+        return 0;
+    }
+
+    char vclean[128];
+    snprintf(vclean, sizeof(vclean), "%s", valstr);
+    int   use_tmux = 0;
+    char *colon    = strchr(vclean, ':');
+    if (colon != NULL &&
+        (strcasecmp(colon + 1, "tmux") == 0 || strcasecmp(colon + 1, "-tmux") == 0))
+    {
+        *colon   = '\0';
+        use_tmux = 1;
+    }
+    else if (strcasecmp(vclean, "tmux") == 0 || strcasecmp(vclean, "-tmux") == 0)
+    {
+        use_tmux = 1;
+        snprintf(vclean, sizeof(vclean), "1");
+    }
+
+    const char *command = NULL;
+    if (strcmp(pname, "conf") == 0)
+    {
+        if (strcasecmp(vclean, "start") == 0 || strcasecmp(vclean, "on") == 0 ||
+            strcmp(vclean, "1") == 0)
+        {
+            command = "confstart";
+        }
+        else if (strcasecmp(vclean, "stop") == 0 || strcasecmp(vclean, "off") == 0 ||
+                 strcmp(vclean, "0") == 0)
+        {
+            command = "confstop";
+        }
+        else if (strcasecmp(vclean, "step") == 0)
+        {
+            command = "confstep";
+        }
+        else
+        {
+            printf("Error: invalid value '%s' for f.%s.conf (expected start|stop|step)\n", valstr,
+                   fpsname);
+            *out_rc = -1;
+            return 1;
+        }
+    }
+    else if (strcmp(pname, "run") == 0)
+    {
+        if (strcasecmp(vclean, "start") == 0 || strcasecmp(vclean, "on") == 0 ||
+            strcmp(vclean, "1") == 0)
+        {
+            command = "runstart";
+        }
+        else if (strcasecmp(vclean, "stop") == 0 || strcasecmp(vclean, "off") == 0 ||
+                 strcmp(vclean, "0") == 0)
+        {
+            command = "runstop";
+        }
+        else
+        {
+            printf("Error: invalid value '%s' for f.%s.run (expected start|stop)\n", valstr,
+                   fpsname);
+            *out_rc = -1;
+            return 1;
+        }
+    }
+    else if (strcmp(pname, "confstart") == 0 || strcmp(pname, "confstop") == 0 ||
+             strcmp(pname, "confstep") == 0 || strcmp(pname, "runstart") == 0 ||
+             strcmp(pname, "runstop") == 0)
+    {
+        command = pname;
+    }
+    else
+    {
+        return 0;
+    }
+
+    int has_exec =
+        (fps->md->execfullpath[0] != '\0' && strcmp(fps->md->execfullpath, "unknown") != 0 &&
+         access(fps->md->execfullpath, X_OK) == 0);
+
+    if (use_tmux && has_exec)
+    {
+        functionparameter_FPS_tmux_ensure(fps);
+        char extra_args[256];
+        snprintf(extra_args, sizeof(extra_args), " %s:%s", fpsname, command);
+        if (functionparameter_FPS_tmux_send_dispatch(fpsname, command, fps->md->execfullpath,
+                                                     extra_args) == 0)
+        {
+            *out_rc = 0;
+            return 1;
+        }
+    }
+
+    if (has_exec)
+    {
+        char cmdline[1024];
+        snprintf(cmdline, sizeof(cmdline), "%s %s:%s", fps->md->execfullpath, fpsname, command);
+        int ret = system(cmdline);
+        *out_rc = (ret != -1 && WIFEXITED(ret) && WEXITSTATUS(ret) == 0) ? 0 : -1;
+        return 1;
+    }
+
+    /* Direct SHM state update when no external executable is bound */
+    if (strcmp(command, "confstart") == 0)
+    {
+        fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
+        fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
+    }
+    else if (strcmp(command, "confstop") == 0)
+    {
+        functionparameter_CONFstop(fps);
+        fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
+    }
+    else if (strcmp(command, "confstep") == 0)
+    {
+        fps->md->conferrcnt = 0;
+        fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+    }
+    else if (strcmp(command, "runstart") == 0)
+    {
+        fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
+    }
+    else if (strcmp(command, "runstop") == 0)
+    {
+        fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
+        fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+    }
+
+    *out_rc = 0;
+    return 1;
+}
+
+/**
+ * @brief Write a value string to a named FPS parameter or execute a lifecycle action.
+ *
+ * Connects to the named FPS, locates the parameter (or lifecycle property),
+ * writes the parsed value via `functionparameter_SetParamValue_fromString()`,
+ * and disconnects.
  *
  * @param fpsname  FPS shared-memory name
- * @param pname    Parameter key inside FPS
+ * @param pname    Parameter key or lifecycle property inside FPS
  * @param valstr   Value to write (as string)
  * @return 0 on success, -1 on error
  */
@@ -120,11 +325,30 @@ int cli_fps_set_param(const char *fpsname, const char *pname, const char *valstr
 
     if (pindex < 0)
     {
+        int lc_rc = -1;
+        if (try_fps_lifecycle_action(&fps, fpsname, pname, valstr, &lc_rc))
+        {
+            fps_disconnect(&fps);
+            return lc_rc;
+        }
         printf("Error: parameter '%s' not found in FPS '%s'\n", pname, fpsname);
         fps_disconnect(&fps);
         return -1;
     }
 
+    if (fps.parray[pindex].keywordfull[0] == '\0')
+    {
+        snprintf(fps.parray[pindex].keywordfull, FUNCTION_PARAMETER_KEYWORD_STRMAXLEN, ".%s",
+                 pname);
+    }
+
+    if (functionparameter_SetParamValue_fromString(&fps, pindex, valstr) == 0)
+    {
+        fps_disconnect(&fps);
+        return 0;
+    }
+
+    /* Fallback for hex/octal integer literals not accepted by base-10 strtol */
     uint32_t ptype = fps.parray[pindex].type;
     if (ptype & FPTYPE_INT32)
     {
@@ -146,42 +370,10 @@ int cli_fps_set_param(const char *fpsname, const char *pname, const char *valstr
         fps.parray[pindex].val.ui64[0] = (uint64_t) strtoull(valstr, NULL, 0);
         fps.parray[pindex].cnt0++;
     }
-    else if (ptype & FPTYPE_FLOAT64)
-    {
-        fps.parray[pindex].val.f64[0] = strtod(valstr, NULL);
-        fps.parray[pindex].cnt0++;
-    }
-    else if (ptype & FPTYPE_FLOAT32)
-    {
-        fps.parray[pindex].val.f32[0] = (float) strtod(valstr, NULL);
-        fps.parray[pindex].cnt0++;
-    }
-    else if (ptype & FPTYPE_ONOFF)
-    {
-        if (strcmp(valstr, "ON") == 0 || strcmp(valstr, "on") == 0 || strcmp(valstr, "1") == 0)
-        {
-            fps.parray[pindex].val.i64[0] = 1;
-        }
-        else
-        {
-            fps.parray[pindex].val.i64[0] = 0;
-        }
-        fps.parray[pindex].cnt0++;
-    }
-    else if (ptype & FPTYPE_PID)
-    {
-        fps.parray[pindex].val.pid[0] = (pid_t) strtol(valstr, NULL, 0);
-        fps.parray[pindex].cnt0++;
-    }
-    else if (FPTYPE_IS_STRING(ptype))
-    {
-        strncpy(fps.parray[pindex].val.string[0], valstr, FUNCTION_PARAMETER_STRMAXLEN - 1);
-        fps.parray[pindex].val.string[0][FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
-        fps.parray[pindex].cnt0++;
-    }
     else
     {
-        printf("Error: unsupported param type 0x%x for '%s' in FPS '%s'\n", ptype, pname, fpsname);
+        printf("Error: failed to set '%s' = '%s' (type 0x%x) in FPS '%s'\n", pname, valstr, ptype,
+               fpsname);
         fps_disconnect(&fps);
         return -1;
     }

@@ -146,7 +146,18 @@ int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
     }
     if (val == NULL)
     {
-        return -1;
+        const char *last_dot = strrchr(specbuf, '.');
+        if (last_dot != NULL &&
+            (strcmp(last_dot + 1, "confstart") == 0 || strcmp(last_dot + 1, "confstop") == 0 ||
+             strcmp(last_dot + 1, "confstep") == 0 || strcmp(last_dot + 1, "runstart") == 0 ||
+             strcmp(last_dot + 1, "runstop") == 0))
+        {
+            val = "1";
+        }
+        else
+        {
+            return -1;
+        }
     }
     if (strcmp(val, "-") == 0)
     {

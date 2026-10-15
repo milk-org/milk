@@ -280,15 +280,6 @@ void runCLI_cmd_init()
                        "|status] [path]",
                        "fifo create /tmp/myfifo", "cli_fifo()");
 
-    RegisterCLIcommand("alias", __FILE__, cli_alias_add, "create/update command alias",
-                       "<name> <command...>", "alias ld mem.listim", "cli_alias_add()");
-
-    RegisterCLIcommand("unalias", __FILE__, cli_alias_remove, "remove command alias", "<name>",
-                       "unalias ld", "cli_alias_remove()");
-
-    RegisterCLIcommand("aliases", __FILE__, cli_alias_list, "list all command aliases",
-                       "no argument", "aliases", "cli_alias_list()");
-
     RegisterCLIcommand("watch", __FILE__, cli_watch, "repeat command at interval",
                        "<interval_ms> <command...>", "watch 1000 mem.listim", "cli_watch()");
 
@@ -334,14 +325,6 @@ void runCLI_cmd_init()
     RegisterCLIcommand("clifold", __FILE__, cli_fold_cmd, "print AST block outline and line ranges",
                        "[<filename>]", "clifold myscript.milk", "cli_fold_cmd()");
 
-    RegisterCLIcommand("source", __FILE__, cli_source, "execute a milk script file", "<filename>",
-                       "source myscript.milk", "cli_source()");
-
-    RegisterCLIcommand("savescript", __FILE__, cli_savescript,
-                       "save variables and functions "
-                       "to a script file",
-                       "<filename>", "savescript state.milk", "cli_savescript()");
-
     RegisterCLIcommand("savehistory", __FILE__, cli_savehistory, "save command history to a file",
                        "<filename>", "savehistory cmds.milk", "cli_savehistory()");
 
@@ -373,30 +356,6 @@ void runCLI_cmd_init()
     RegisterCLIcommand("fparam", __FILE__, cli_fparam, "interactive FPS parameter editor",
                        "<fpsname>", "fparam cnt2push", "cli_fparam()");
 
-    RegisterCLIcommand("echo", __FILE__, cli_cmd_echo, "print arguments", "[-n] <args...>",
-                       "echo hello world", "cli_cmd_echo()");
-
-    RegisterCLIcommand("unset", __FILE__, cli_cmd_unset, "remove a CLI variable", "<varname>",
-                       "unset myvar", "cli_cmd_unset()");
-
-    RegisterCLIcommand("vars", __FILE__, cli_cmd_vars, "list all CLI variables", "", "vars",
-                       "cli_cmd_vars()");
-
-    RegisterCLIcommand("fpsset", __FILE__, cli_cmd_fpsset, "set FPS parameter value",
-                       "<fpsname.param> <value>", "fpsset loopctrl.gain 0.3", "cli_cmd_fpsset()");
-
-    RegisterCLIcommand("read", __FILE__, cli_cmd_read, "read a line into a variable",
-                       "[-p \"prompt\"] <varname>", "read -p \"Enter: \" x", "cli_cmd_read()");
-
-    RegisterCLIcommand("export", __FILE__, cli_cmd_export, "push CLI variable to environ",
-                       "<varname>[=value]", "export MYVAR", "cli_cmd_export()");
-
-    RegisterCLIcommand("shift", __FILE__, cli_cmd_shift, "shift positional parameters left", "[N]",
-                       "shift", "cli_cmd_shift()");
-
-    RegisterCLIcommand("printf", __FILE__, cli_cmd_printf, "formatted output", "<format> [args...]",
-                       "printf \"%s=%d\\n\" name 42", "cli_cmd_printf()");
-
     RegisterCLIcommand("fpslist", __FILE__, cli_cmd_fpslist, "list live FPS instances",
                        "[-q] [--json] [pattern]", "fpslist --json dm*", "cli_cmd_fpslist()");
 
@@ -413,9 +372,6 @@ void runCLI_cmd_init()
                        "[--fps [pat]] [--streams [pat]]"
                        " [--procs]",
                        "milkquery --fps dm*", "cli_cmd_milkquery()");
-
-    RegisterCLIcommand("defer", __FILE__, cli_cmd_defer, "register cleanup command (LIFO)",
-                       "<command...>", "defer mem.rm _tmp 0", "cli_cmd_defer()");
 
     //  init_modules();
 

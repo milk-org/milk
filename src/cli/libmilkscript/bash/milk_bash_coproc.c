@@ -48,16 +48,10 @@ static char  g_sockpath[128] = { '\0' };
 /**
  * @brief Check whether the bash execution engine is enabled for milk-cli.
  *
- * @return 1 if bash engine is enabled, 0 if legacy native engine is requested
+ * @return Always 1 (the bash engine is the sole execution engine)
  */
 int milk_is_bash_engine_enabled(void)
 {
-    const char *env = getenv("MILKCLI_ENGINE");
-    if (env != NULL &&
-        (strcmp(env, "native") == 0 || strcmp(env, "legacy") == 0 || strcmp(env, "0") == 0))
-    {
-        return 0;
-    }
     return 1;
 }
 
@@ -169,6 +163,16 @@ int milk_bash_engine_init(void)
             "    __MILK_INC_ONCE[$__rp]=1\n"
             "    source \"$@\"\n"
             "}\n"
+            "bookmark() {\n"
+            "    if [[ \"${1:-}\" == \"run\" && $# -ge 2 ]]; then\n"
+            "        local __bcmd\n"
+            "        __bcmd=\"$(milkcall bookmark get \"$2\")\" || { echo \"${__bcmd}\"; return 1; "
+            "}\n"
+            "        eval \"${__bcmd}\"\n"
+            "    else\n"
+            "        milkcall bookmark \"$@\"\n"
+            "    fi\n"
+            "}\n"
             "__MILK_EXIT_REQ=0\n"
             "__MILK_EXIT_CODE=0\n"
             "exit() { __MILK_EXIT_REQ=1; __MILK_EXIT_CODE=\"${1:-0}\"; return "
@@ -249,7 +253,7 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
         fflush(stderr);
     }
 
-    char *translated = milk_translate_tier2_to_tier1(cmdline, 1);
+    char *translated = milk_translate_shorthand_to_bash(cmdline, 1);
     if (translated == NULL)
     {
         return 1;

@@ -291,6 +291,12 @@ int milk_client_set(const char                *spec,
 {
     if (spec == NULL || spec[0] == '\0')
     {
+        fprintf(stderr, "Usage: @set <entity> [=] [value] [comment]\n");
+        return 1;
+    }
+    if (strchr(spec, '.') == NULL)
+    {
+        fprintf(stderr, "Error: @set: invalid entity path '%s' (expected <entity>.<prop>)\n", spec);
         return 1;
     }
     milk_ipc_sync_shm_env(hooks);

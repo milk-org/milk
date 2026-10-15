@@ -148,6 +148,6 @@ echo ""
 # cleanup
 
 tmux kill-session -t loopAB 2>/dev/null
-milk-shmim-rm imA > /dev/null 2>&1
-milk-shmim-rm imB > /dev/null 2>&1
+milk-stream-rm imA > /dev/null 2>&1 || rm -f "${MILK_SHM_DIR:-/milk/shm}/imA.im.shm"
+milk-stream-rm imB > /dev/null 2>&1 || rm -f "${MILK_SHM_DIR:-/milk/shm}/imB.im.shm"
 rm -f "${TMPOUT}"

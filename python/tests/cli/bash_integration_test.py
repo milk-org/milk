@@ -1,6 +1,6 @@
 """
 Comprehensive integration tests for the milk.bash GNU Bash integration layer
-and the milk-cli bash engine (Tier-1 and Tier-2 syntax).
+and the milk-cli bash engine (milk.bash primitives and milk-cli shorthands).
 """
 
 from __future__ import annotations
@@ -368,8 +368,8 @@ def test_at_test_and_exists():
 
 
 def test_waitfor_waitany_grab_on_and_source(tmp_path: Path):
-    tier2_lib = tmp_path / "helper_lib.milk"
-    tier2_lib.write_text(
+    shorthand_lib = tmp_path / "helper_lib.milk"
+    shorthand_lib.write_text(
         "mem.mk2Dim @S:src_im 6 8\n"
         "@ src_im = $1 * 3.0\n"
         "@ src_tot = itot(src_im)\n"
@@ -430,8 +430,8 @@ def test_waitfor_waitany_grab_on_and_source(tmp_path: Path):
         [[ -z "$(@on --list)" ]]
         [[ -f "$marker_file" ]]
 
-        # @source translates and sources a Tier-2 .milk script into plain bash
-        @source "{tier2_lib}" 5
+        # @source translates and sources a milk-cli shorthand (.milk) script into plain bash
+        @source "{shorthand_lib}" 5
         [[ "$(@get s.src_im.ysize)" == "8" ]]
         [[ "$src_tot" == "720" ]]
         echo "OK"
@@ -494,7 +494,7 @@ def test_pipelines_streamio_defer_xargs_and_sigil():
     assert "COMMA_OK" in res_comma.stdout
 
 
-def test_milk_cli_tier2_comprehensive(tmp_path: Path):
+def test_milk_cli_shorthands_comprehensive(tmp_path: Path):
     res_s = _run_milk_cli(
         """
         mem.mk2Dim @S:t2im 14 18
@@ -514,8 +514,8 @@ def test_milk_cli_tier2_comprehensive(tmp_path: Path):
         @test '@s.t2im.dtype == "FLOAT" && @s.t2im.kw.OBSERVER == "Subaru"'
         @test "@s.t2im.dtype == \\"FLOAT\\" && @s.t2im.kw.GAIN == 9"
 
-        # Test [ -S <stream> ] shorthand
-        if [ -S t2im ] && [ ! -S no_such_stream ]; then
+        # Test @exists s.<stream>
+        if @exists s.t2im && ! @exists s.no_such_stream; then
             echo "T2_OK=${a}:${tot}:${val}:${nx}:@s.t2im.ysize:@s.t2im.kw.OBSERVER.:@s.t2im.kw.EXPTIME:@s.t2im.kw.GAIN"
         fi
         """,
@@ -544,17 +544,7 @@ def test_milk_cli_tier2_comprehensive(tmp_path: Path):
     assert res_in.returncode == 0, res_in.stderr
     assert "STDIN_OK=6:210" in res_in.stdout
 
-    # Verify MILKCLI_ENGINE=native fallback still works
-    res_nat = _run_milk_cli(
-        "nv = 7 + 8\necho NATIVE_OK=$nv",
-        tmp_path,
-        mode="script",
-        extra_env={"MILKCLI_ENGINE": "native"},
-    )
-    assert res_nat.returncode == 0, res_nat.stderr
-    assert "NATIVE_OK=15" in res_nat.stdout
-
-    # Verify milk.cliwrap.CLICommands works with Tier-1 and Tier-2 syntax
+    # Verify milk.cliwrap.CLICommands works with milk.bash and milk-cli shorthand syntax
     with CLICommands(
         [
             "mem.mk2Dim @S:wrap_im 8 8",
@@ -564,41 +554,6 @@ def test_milk_cli_tier2_comprehensive(tmp_path: Path):
     ) as res_wrap:
         assert res_wrap.returncode == 0, res_wrap.stderr
         assert "CLIWRAP_OK=8:384" in res_wrap.stdout
-
-
-def test_milk_script_upgrade(tmp_path: Path):
-    install_dir = _install_dir()
-    upgrader = install_dir / "bin" / "milk-script-upgrade"
-    env, shm_dir = _isolated_shm_env()
-    try:
-        legacy_file = tmp_path / "legacy_sample.milk"
-        legacy_file.write_text("mem.mk2Dim im1 16 16\n" "a = 2 + 3\n" "echo $a\n")
-
-        # --check returns non-zero when legacy constructs are present
-        res_chk = subprocess.run(
-            [str(upgrader), "--check", str(legacy_file)],
-            env=env,
-            text=True,
-            capture_output=True,
-            timeout=15,
-        )
-        assert res_chk.returncode == 1
-
-        # --write rewrites in-place and creates .bak
-        res_wr = subprocess.run(
-            [str(upgrader), "--write", str(legacy_file)],
-            env=env,
-            text=True,
-            capture_output=True,
-            timeout=15,
-        )
-        assert res_wr.returncode == 0, res_wr.stderr
-        assert (tmp_path / "legacy_sample.milk.bak").exists()
-        upgraded_text = legacy_file.read_text()
-        assert "@mem.mk2Dim im1 16 16" in upgraded_text
-        assert '@calc "a = 2 + 3"' in upgraded_text
-    finally:
-        shutil.rmtree(shm_dir, ignore_errors=True)
 
 
 def test_adversarial_slicing_1d_2d_3d_and_compound():
@@ -757,7 +712,7 @@ def test_adversarial_quoting_heredocs_and_bash_constructs(tmp_path: Path):
         @ x1 = 3
         @ h_im[ x0 + 1 : x1 - 1 , 0 : 1 ] = 15
 
-        # Unquoted slice with spaces inside [...] passed to Tier-2 command
+        # Unquoted slice with spaces inside [...] passed to milk-cli shorthand command
         info.imgstat h_im[ x0 + 1 : x1 - 1 , 0 : 1 ] >/dev/null
 
         # Email addresses and literal strings containing @s. / @f. mid-word must not be mangled
@@ -888,7 +843,7 @@ def test_adversarial_error_recovery_and_fault_isolation():
 
 
 def test_interactive_syndiag_valid_milk_syntax(tmp_path):
-    """Verify Tree-sitter syndiag never flags valid Tier-1/Tier-2 milk syntax as syntax errors."""
+    """Verify Tree-sitter syndiag never flags valid milk.bash / milk-cli syntax as errors."""
     import ctypes
     import fcntl
     import pty
@@ -1128,7 +1083,7 @@ def test_server_command_and_output_ring_buffer_log(tmp_path):
     assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
     assert "SRVLOG_OK" in res.stdout
 
-    # Also verify @server and @log work inside native milk-cli Tier-2 mode
+    # Also verify @server and @log work inside native milk-cli shorthand mode
     res_cli = _run_milk_cli(
         """
         mem.mk2Dim @L:cli_im 8 8
@@ -1142,3 +1097,78 @@ def test_server_command_and_output_ring_buffer_log(tmp_path):
     assert res_cli.returncode == 0, f"stdout={res_cli.stdout}\nstderr={res_cli.stderr}"
     assert "in-process" in res_cli.stdout
     assert '"cmd":"@= cli_im = 9"' in res_cli.stdout
+
+
+def test_command_hygiene_help_topics_and_fps_lifecycle():
+    res = _run_bash("""
+        # Phase 1: Excluded shell builtins, REPL-only commands, internal help topics, and duplicate aliases
+        dump_out="$("${MILK_INSTALLDIR}/bin/milk-cli" --dump-commands)"
+        comp_out="$(milkcomplete "@" cmd)"
+        for excl in cd pwd echo printf read shift export unset vars alias unalias aliases \\
+                    time watch exit quit exitCLI history searchhist fhist ghistory lhistory \\
+                    savehistory savescript setprompt bookmark sessionlog synhl syndiag \\
+                    cliindent showmatch helprl fhelp fparam help help-readline \\
+                    list-streams list-fps fpsset; do
+            ! grep -qx "${excl}" <<< "${dump_out}"
+            ! grep -qx "@${excl}" <<< "${comp_out}"
+            [[ -z "$(type -t "@${excl}")" ]]
+        done
+
+        # Retained commands must still be present
+        for kept in mk2Dim imstats listim fpslist proclist procstat procctl procwait; do
+            grep -qx "${kept}" <<< "${dump_out}"
+            grep -qx "@${kept}" <<< "${comp_out}"
+            [[ "$(type -t "@${kept}")" == "function" ]]
+        done
+
+        # Phase 2: @hc and @h support milk.bash @ primitives, short command names, and pillar topics
+        for prim in waitfor waitany get set calc test exists running grab defer on source server log streamcat streamwrite unload; do
+            hc1="$(@hc "@${prim}")"
+            [[ "${hc1}" == *"@${prim}"* ]]
+            [[ "${hc1}" != *"No command matching"* ]]
+            hc2="$(@hc "${prim}")"
+            [[ "${hc2}" == *"@${prim}"* ]]
+        done
+        [[ "$(@hc mk2Dim)" == *"mk2Dim"* ]]
+        [[ "$(@hc imstats)" == *"imstats"* ]]
+        [[ "$(@h @waitfor)" == *"@waitfor"* ]]
+        [[ "$(@h streams)" == *"SHARED MEMORY STREAMS"* ]]
+        [[ "$(@h fps)" == *"FUNCTION PARAMETER STRUCTURE"* ]]
+        [[ "$(@h procinfo)" == *"PROCESSINFO TELEMETRY"* ]]
+        [[ "$(@h seq)" == *"FPS SEQUENCER"* ]]
+
+        # milk-help and milk-stream-help updated syntax
+        mhelp="$("${MILK_INSTALLDIR}/bin/milk-help")"
+        [[ "${mhelp}" == *"milk.bash"* ]]
+        shelp="$("${MILK_INSTALLDIR}/bin/milk-stream-help")"
+        [[ "${shelp}" == *"@S:mystream"* ]]
+        [[ "${shelp}" == *"mystream[0:10, 0:10]"* ]]
+        [[ "${shelp}" != *"mystream@S:0:10"* ]]
+
+        # Phase 3: FPS metadata reads, optional '=' in @set, and FPS lifecycle control
+        milk-fpsexec-imggen-mkrndim -n testfps_lc fpsinit >/dev/null 2>&1
+        [[ "$(@get f.testfps_lc.conf)" == "OFF" ]]
+        [[ "$(@get f.testfps_lc.run)" == "OFF" ]]
+        [[ "$(@get f.testfps_lc.status)" == "IDLE" ]]
+        (( $(@get f.testfps_lc.nbparam) > 0 ))
+        [[ "$(@get f.testfps_lc.list)" == *"xsize"* ]]
+
+        # Optional '=' separator in @set
+        @set f.testfps_lc.xsize = 64
+        [[ "$(@get f.testfps_lc.xsize)" == "64" ]]
+        @set f.testfps_lc.conf = stop
+        @set f.testfps_lc.run = stop
+        @set f.testfps_lc.confstop
+        @set f.testfps_lc.runstop
+
+        # Verify FPS attribute completion includes lifecycle & metadata attributes
+        fps_comp="$(milkcomplete "f.testfps_lc." arg)"
+        [[ "${fps_comp}" == *"f.testfps_lc.status"* ]]
+        [[ "${fps_comp}" == *"f.testfps_lc.conf"* ]]
+        [[ "${fps_comp}" == *"f.testfps_lc.run"* ]]
+        [[ "${fps_comp}" == *"f.testfps_lc.nbparam"* ]]
+
+        echo "HYGIENE_HELP_FPS_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "HYGIENE_HELP_FPS_OK" in res.stdout

@@ -5,13 +5,10 @@
 /**
  * @file CLIcore_UI_execute.h
  *
- * @brief User input
- *
- *
+ * @brief User input and interactive UI declarations
  */
 
 #ifndef CLICORE_UI_H
-
 #define CLICORE_UI_H
 
 #ifdef USE_READLINE
@@ -26,14 +23,13 @@ char **CLI_completion(const char *, int, int);
 
 errno_t CLI_execute_string(const char *cmd);
 errno_t CLI_execute_line();
+void    handle_did_you_mean(const char *input_cmd);
 
 errno_t write_tracedebugfile();
 
 void CLI_configure_readline();
 void CLI_setup_hint_area(void);
 void CLI_cleanup_scroll_region(void);
-
-/* -- Cross-file helpers (CLIcore_UI_*.c) -- */
 
 /* CLIcore_UI_completion.c */
 void        cli_set_active_prompt(const char *prompt);
@@ -60,19 +56,12 @@ int  find_command_match(const char *firstword);
 void set_pending_suggestion(const char *text, int replace_len);
 #endif
 
-/* Command aliases */
-void    cli_alias_load(void);
-errno_t cli_alias_add(void);
-errno_t cli_alias_remove(void);
-errno_t cli_alias_list(void);
-
 /* Watch command */
 errno_t cli_watch(void);
 
 /* List active shared memory structures */
 errno_t cli_list_streams(void);
 errno_t cli_list_fps(void);
-
 
 /* Startup script */
 void cli_milkrc_load(void);
@@ -99,16 +88,8 @@ errno_t cli_format_cmd(void);
 errno_t cli_fold_cmd(void);
 
 /* Persistent history */
-void cli_history_load(void);
-void cli_history_save(void);
-
-/* Script execution */
-errno_t cli_source(void);
-
-/* Script save */
-errno_t cli_savescript(void);
-
-/* History save */
+void    cli_history_load(void);
+void    cli_history_save(void);
 errno_t cli_savehistory(void);
 
 /* Configurable prompt */
@@ -143,14 +124,11 @@ errno_t cli_lhistory(void);
 #define BOOKMARK_CMDLEN 2000
 
 void        cli_history_expand(void);
-void        cli_alias_expand(void);
-void        cli_expand_braces(char *line, int maxlen);
 void        cli_session_log_cmd(const char *cmd);
 void        cli_history_log_cmd(const char *cmd);
 void        cli_history_log_prompt(const char *prompt);
 void        cli_history_log_shell(const char *cmd);
 const char *CLI_history_file(void);
 void        cli_save_last_argument(void);
-const char *strip_ws(const char *s);
 
 #endif /* CLICORE_UI_H */

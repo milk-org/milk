@@ -154,6 +154,26 @@ errno_t cli_bookmark(void)
         return RETURN_SUCCESS;
     }
 
+    if (strcmp(action, "get") == 0)
+    {
+        if (data.cmdNBarg < 3)
+        {
+            printf("Usage: bookmark get <name>\n");
+            return RETURN_FAILURE;
+        }
+        const char *name = data.cmdargtoken[2].val.string;
+        for (int i = 0; i < bookmark_count; i++)
+        {
+            if (strcmp(bookmarks[i].name, name) == 0)
+            {
+                printf("%s\n", bookmarks[i].cmd);
+                return RETURN_SUCCESS;
+            }
+        }
+        printf("Bookmark '%s' not found\n", name);
+        return RETURN_FAILURE;
+    }
+
     if (strcmp(action, "run") == 0)
     {
         if (data.cmdNBarg < 3)

@@ -8,7 +8,7 @@
  *
  * Role & Goal:
  *   Manages the Tree-sitter parser and highlight query (`cli_ts_init()`,
- *   `cli_ts_cleanup()`), normalizes milk Tier-1/Tier-2 `@` and slice constructs
+ *   `cli_ts_cleanup()`), normalizes `milk.bash` / `milk-cli` `@` and slice constructs
  *   into length-preserving shell tokens (`cli_ts_parse_normalized_tree()`),
  *   and renders ANSI-colored command lines (`cli_ts_highlight_line()`) with
  *   structural delimiter/keyword pair matching (`cli_ts_find_match_pair()`).
@@ -363,7 +363,7 @@ static size_t mask_rhs_statement(const char *line, char *norm, size_t len, size_
 }
 
 /**
- * @brief Normalize milk Tier-1 / Tier-2 syntax constructs into length-preserving
+ * @brief Normalize milk.bash / milk-cli shorthand constructs into length-preserving
  *        shell-compatible characters so the Tree-sitter parser AST has no false
  *        ERROR nodes and all byte offsets remain 1-to-1 with @line.
  */
@@ -610,7 +610,7 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
             continue;
         }
 
-        /* 4. Identifier with optional slice suffix im[...] or Tier-2 assignment */
+        /* 4. Identifier with optional slice suffix im[...] or shorthand assignment */
         if (isalnum((unsigned char) c) || c == '_')
         {
             size_t k = i;
@@ -664,10 +664,10 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
                     (sp + 1 < len && line[sp + 1] == '=' && strchr("+-*/", line[sp]) != NULL);
                 int is_eq_op =
                     (sp < len && line[sp] == '=' && (sp + 1 >= len || line[sp + 1] != '='));
-                int is_tier2_assign =
+                int is_shorthand_assign =
                     is_compound_op || (is_eq_op && (has_lhs_slice || sp > k ||
                                                     (sp + 1 < len && line[sp + 1] == '(')));
-                if (is_tier2_assign)
+                if (is_shorthand_assign)
                 {
                     k = mask_rhs_statement(line, norm, len, sp);
                 }

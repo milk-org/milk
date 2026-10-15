@@ -301,7 +301,11 @@ _milk_waitany_impl() {
 }
 
 _milk_on_impl() {
-    if [[ "${1:-}" == "--list" || $# -eq 0 ]]; then
+    if [[ $# -eq 0 ]]; then
+        echo "Usage: ${MILKCLI_SIGIL}on <target> \"<cmd>\" | --list | --clear" >&2
+        return 1
+    fi
+    if [[ "${1:-}" == "--list" ]]; then
         local pid
         for pid in "${_MILK_ON_PIDS[@]}"; do
             if kill -0 "${pid}" 2>/dev/null; then
@@ -317,6 +321,10 @@ _milk_on_impl() {
         done
         _MILK_ON_PIDS=()
         return 0
+    fi
+    if [[ $# -lt 2 ]]; then
+        echo "Usage: ${MILKCLI_SIGIL}on <target> \"<cmd>\" | --list | --clear" >&2
+        return 1
     fi
     local target="$1"
     shift
@@ -412,7 +420,7 @@ _milk_unload_impl() {
 }
 
 # ---------------------------------------------------------------------------
-# 6. Define Tier-1 Core Primitives under ${MILKCLI_SIGIL}
+# 6. Define Core milk.bash Primitives under ${MILKCLI_SIGIL}
 # ---------------------------------------------------------------------------
 eval "
 function ${MILKCLI_SIGIL}            { milkcalc \"\$@\"; }
@@ -446,7 +454,9 @@ function ${MILKCLI_SIGIL}unload      { _milk_unload_impl \"\$@\"; }
 _MILK_CMD_COUNT=23
 __milk_setup_commands() {
     local cmd_list="${MILK_INSTALLDIR}/share/milk/milk-commands.list"
-    if [[ ! -f "${cmd_list}" || "${MILK_INSTALLDIR}/bin/milk-cli" -nt "${cmd_list}" ]]; then
+    if [[ ! -f "${cmd_list}" \
+          || "${MILK_INSTALLDIR}/bin/milk-cli" -nt "${cmd_list}" \
+          || "${MILK_INSTALLDIR}/lib/libmilkscript.so" -nt "${cmd_list}" ]]; then
         mkdir -p "$(dirname "${cmd_list}")" 2>/dev/null || true
         if ! "${MILK_INSTALLDIR}/bin/milk-cli" --dump-commands > "${cmd_list}.tmp" 2>/dev/null; then
             cmd_list="${TMPDIR:-/tmp}/milk-commands-${UID:-$(id -u)}.list"
@@ -460,9 +470,12 @@ __milk_setup_commands() {
         local cmd
         while IFS= read -r cmd; do
             [[ -z "${cmd}" ]] && continue
-            # Skip names that conflict with core primitives defined above
+            # Skip core primitives, shell builtins, REPL-only commands, and internal help topics
             case "${cmd}" in
-                calc|test|get|set|exists|running|waitfor|waitany|grab|defer|on|source|server|log|h|hb|hc|hm|hf|streamcat|streamwrite|unload)
+                calc|test|get|set|exists|running|waitfor|waitany|grab|defer|on|source|server|log|h|hb|hc|hm|hf|streamcat|streamwrite|unload|\
+                cd|pwd|echo|printf|read|shift|export|unset|vars|alias|unalias|aliases|time|watch|exit|quit|exitCLI|\
+                history|searchhist|fhist|ghistory|lhistory|savehistory|savescript|setprompt|bookmark|sessionlog|synhl|syndiag|cliindent|showmatch|helprl|fhelp|fparam|\
+                help|help-*|list-streams|list-fps|fpsset)
                     continue
                     ;;
             esac
@@ -483,15 +496,8 @@ __milk_setup_commands() {
         local marker="${bin_farm}/.sigil_${MILKCLI_SIGIL}"
         if [[ ! -f "${marker}" || "${cmd_list}" -nt "${marker}" || "${BASH_SOURCE[0]}" -nt "${marker}" ]]; then
             local target_bin="${MILK_INSTALLDIR}/bin/milk-call"
-            local core_c
-            for core_c in "" calc test get set exists running waitfor grab server log h hb hc hm hf streamcat streamwrite unload; do
-                ln -sf "${target_bin}" "${bin_farm}/${MILKCLI_SIGIL}${core_c}" 2>/dev/null || true
-            done
-            if [[ -f "${cmd_list}" ]]; then
-                while IFS= read -r cmd; do
-                    [[ -z "${cmd}" ]] && continue
-                    ln -sf "${target_bin}" "${bin_farm}/${MILKCLI_SIGIL}${cmd}" 2>/dev/null || true
-                done < "${cmd_list}"
+            if [[ -x "${target_bin}" ]]; then
+                "${target_bin}" setup-bin-farm "${bin_farm}" "${MILKCLI_SIGIL}" "${target_bin}" "${cmd_list}" 2>/dev/null || true
             fi
             touch "${marker}" 2>/dev/null || true
         fi

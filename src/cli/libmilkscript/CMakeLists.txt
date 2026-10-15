@@ -24,44 +24,19 @@ endif()
 set(MILKSCRIPT_SOURCES
     core/CLIcore_UI_execute.c
     core/CLIcore_UI_execute_debug.c
-    core/CLIcore_UI_execute_preproc.c
-    core/CLIcore_UI_execute_redir.c
-    core/CLIcore_UI_alias.c
     core/CLIcore_checkargs.c
     core/CLIcore_checkargs_fps.c
     core/CLIcore_datainit.c
     core/CLIcore_help.c
     core/CLIcore_help_command.c
     core/CLIcore_help_topics.c
+    core/CLIcore_inspect.c
     core/CLIcore_memory.c
     core/CLIcore_modules.c
     core/CLIcore_setSHMdir.c
     core/CLIcore_signals.c
     core/CLIcore_utils.c
-    legacy_script/CLIcore_script.c
-    legacy_script/CLIcore_script_intercept.c
-    legacy_script/CLIcore_script_intercept_process.c
-    legacy_script/CLIcore_script_intercept_environment.c
-    legacy_script/CLIcore_script_intercept_env_trap.c
-    legacy_script/CLIcore_script_intercept_execution.c
-    legacy_script/CLIcore_script_intercept_exec_waitany.c
-    legacy_script/CLIcore_script_intercept_flow.c
-    legacy_script/CLIcore_script_intercept_utils.c
-    legacy_script/CLIcore_script_builtin.c
-    legacy_script/CLIcore_script_traps.c
-    legacy_script/CLIcore_script_cmd_builtins.c
-    legacy_script/CLIcore_script_cmd_io.c
-    legacy_script/CLIcore_script_cmd_inspect.c
-    legacy_script/CLIcore_script_cmd_defer.c
-    legacy_script/CLIcore_script_case.c
-    legacy_script/CLIcore_script_expand.c
-    legacy_script/CLIcore_script_expand_arith.c
-    legacy_script/CLIcore_script_expand_fps.c
-    legacy_script/CLIcore_script_expand_test.c
-    legacy_script/CLIcore_script_expand_env.c
-    legacy_script/CLIcore_script_flow.c
-    legacy_script/CLIcore_script_func.c
-    legacy_script/CLIcore_script_var.c
+    core/CLIcore_vars.c
     calc/cli_calc_tokenizer.c
     calc/cli_calc_parser.c
     calc/cli_calc_functions.c
@@ -120,7 +95,6 @@ target_include_directories(
   milkscript
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/core>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/legacy_script>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/calc>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shm_prop>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ipc>
@@ -150,7 +124,7 @@ install(
         core/CLIcore_memory.h
         core/CLIcore_modules.h
         core/CLIcore_setSHMdir.h
-        legacy_script/CLIcore_script.h
+        core/CLIcore_script.h
         core/CLIcore_signals.h
         core/CLIcore_utils.h
         calc/cli_calc_parser.h

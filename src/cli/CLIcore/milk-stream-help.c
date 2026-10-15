@@ -68,19 +68,26 @@ int main(int argc, char *argv[])
            "  semaphores, instantly waking up the waiting processes.\n"
            "\n");
 
-    printf(C_HDR "Interactive CLI Stream Access\n" C_RST);
-    printf("  Within the milk shell (milk-cli):\n"
-           "    " C_CMD "@s.name.xsize" C_RST "    Read stream width\n"
-           "    " C_CMD "@s.name.ysize" C_RST "    Read stream height\n"
-           "    " C_CMD "@s.name.cnt0" C_RST "     Read total frame counter\n"
-           "    " C_CMD "@s.name.sem" C_RST "      Read semaphore count\n"
+    printf(C_HDR "Interactive Session & Bash Stream Access\n" C_RST);
+    printf("  Within Bash (after 'source milk.bash') or milk-cli:\n"
+           "    " C_CMD "@get s.name.xsize" C_RST "        Read stream width (or " C_CMD
+           "@s.name.xsize" C_RST ")\n"
+           "    " C_CMD "@get s.name.cnt0" C_RST "         Read total frame counter\n"
+           "    " C_CMD "@get s.name.summary" C_RST "      Read compact dimensions/dtype summary\n"
+           "    " C_CMD "@set s.name.kw.KEY=val" C_RST "   Create or update a stream FITS keyword\n"
+           "    " C_CMD "@waitfor name [N]" C_RST "        Block for N new frames (-t <sec>)\n"
+           "    " C_CMD "@grab name local_im" C_RST
+           "      Snapshot next SHM frame to local memory\n"
            "\n");
 
-    printf(C_HDR "Stream Modifiers in CLI\n" C_RST);
-    printf("  Add prefixes/suffixes to target sub-regions, histories, or slices:\n"
-           "    " C_STRM "mystream@S:0:10" C_RST "    Subset slice (indices 0 to 9)\n"
-           "    " C_STRM "mystream@L:5" C_RST "       Recent frame history (5 frames back)\n"
-           "    " C_STRM "mystream@F:2" C_RST "       Specific circular buffer frame index 2\n"
+    printf(C_HDR "Stream Modifiers & Slicing in CLI\n" C_RST);
+    printf("  Use prefix modifiers and bracket slices on stream names:\n"
+           "    " C_STRM "@S:mystream" C_RST "          Force shared memory (/dev/shm)\n"
+           "    " C_STRM "@L:mystream" C_RST "          Force session-local memory\n"
+           "    " C_STRM "@E:mystream / @N:..." C_RST " Require existing / require new stream\n"
+           "    " C_STRM "@F:mystream" C_RST "          Auto-load mystream.fits from disk\n"
+           "    " C_STRM "@TF32:mystream" C_RST "       Explicit datatype (F32, F64, U16, etc.)\n"
+           "    " C_STRM "mystream[0:10, 0:10]" C_RST " Sub-region / slice view (axes 0 and 1)\n"
            "\n");
 
     printf(C_NOTE "Refer to docs/guide/streams.md in the milk source tree for full details.\n" C_RST

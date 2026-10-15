@@ -3,26 +3,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file CLIcore_script_cmd_inspect.c
+ * @file CLIcore_inspect.c
  *
- * @brief CLI commands for system inspection and
- *        JSON introspection.
- *
- * Implements commands that enumerate and expose the
- * milk runtime state as both human-readable tables
- * and machine-readable JSON:
- *
- *   fpslist    — list live FPS instances
- *   fpsdump    — dump all params of one FPS
- *   streamlist — enumerate SHM streams
- *   proclist   — enumerate active processes
- *   milkquery  — unified JSON snapshot
- *
- * JSON output helpers (json_escape_str,
- * emit_fps_json_body, emit_streams_json_body,
- * emit_procs_json_body) are file-static; the
- * command entry-points are declared in
- * CLIcore_script.h.
+ * @brief CLI commands for system inspection, JSON introspection, and process control.
  */
 
 #include <dirent.h>
@@ -31,7 +14,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/mman.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "CLIcore.h"
@@ -40,28 +25,31 @@
 
 #include "fps_connect.h"
 #include "fps_disconnect.h"
-#include "fps_shmdirname.h"
 #include "fps_printparameter_valuestring.h"
+#include "fps_shmdirname.h"
 
-/* processinfo functions — linked via milkprocessinfo */
 extern PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
 extern errno_t      processinfo_procdirname(char *procdname);
 
+static const char *strip_ws_local(const char *s)
+{
+    while (*s == ' ' || *s == '\t')
+    {
+        s++;
+    }
+    return s;
+}
 
-/* ============================================================
- *  JSON string helper
- * ============================================================
- */
+static int starts_with_local(const char *line, const char *prefix)
+{
+    return strncmp(line, prefix, strlen(prefix)) == 0;
+}
 
 /**
  * json_escape_str - write JSON-escaped string to buf
  * @buf:   destination buffer
  * @bufsz: size of @buf in bytes
  * @src:   NUL-terminated source string
- *
- * Escapes backslash, double-quote, and all ASCII
- * control characters so the result is safe to
- * embed inside a JSON string literal.
  */
 static void json_escape_str(char *buf, size_t bufsz, const char *src)
 {
@@ -105,25 +93,11 @@ static void json_escape_str(char *buf, size_t bufsz, const char *src)
     buf[bi] = '\0';
 }
 
-
 /* ============================================================
  *  fpslist
  * ============================================================
  */
 
-/**
- * emit_fps_json_body - emit FPS entries as JSON
- * @pat:    optional glob pattern (NULL = all)
- * @indent: number of spaces for indentation
- *
- * Scans the SHM directory for *.fps.shm files,
- * connecting to each to read status and description.
- * Emits the JSON array body (without outer [ ]) for
- * all matching FPS instances. Used by both fpslist
- * --json and milkquery.
- *
- * Returns the number of entries emitted.
- */
 static int emit_fps_json_body(const char *pat, int indent)
 {
     char shmdname[STRINGMAXLEN_SHMDIRNAME];
@@ -213,15 +187,6 @@ static int emit_fps_json_body(const char *pat, int indent)
 
 /**
  * @brief fpslist command — list live FPS instances
- *
- * Scans the SHM directory for *.fps.shm files,
- * connects to each, and prints a summary table
- * showing name, status and description.
- *
- * Usage: fpslist [-q] [--json] [pattern]
- *   -q       quiet mode (names only, one per line)
- *   --json   JSON array of FPS metadata
- *   pattern  optional glob filter (e.g. "dm*")
  */
 errno_t cli_cmd_fpslist(void)
 {
@@ -254,7 +219,6 @@ errno_t cli_cmd_fpslist(void)
         return RETURN_SUCCESS;
     }
 
-    /* Table or quiet mode */
     char shmdname[STRINGMAXLEN_SHMDIRNAME];
     function_parameter_struct_shmdirname(shmdname);
 
@@ -263,8 +227,7 @@ errno_t cli_cmd_fpslist(void)
     {
         printf("%-24s %-12s %s\n", "FPS NAME", "STATUS", "DESCRIPTION");
         printf("%-24s %-12s %s\n", "------------------------", "------------",
-               "--------------------"
-               "--------------------");
+               "----------------------------------------");
     }
 
     DIR           *d;
@@ -338,7 +301,6 @@ errno_t cli_cmd_fpslist(void)
     return RETURN_SUCCESS;
 }
 
-
 /* ============================================================
  *  fpsdump
  * ============================================================
@@ -346,14 +308,6 @@ errno_t cli_cmd_fpslist(void)
 
 /**
  * @brief fpsdump command — dump all FPS parameters
- *
- * Connects to the named FPS and prints every active
- * parameter in plain key=value, tab-separated, or
- * JSON format.
- *
- * Usage: fpsdump [-t] [--json] <fpsname>
- *   -t      tab-separated: key\tTYPE\tvalue
- *   --json  JSON object with raw typed values
  */
 errno_t cli_cmd_fpsdump(void)
 {
@@ -363,8 +317,7 @@ errno_t cli_cmd_fpsdump(void)
 
     if (data.cmdNBarg < 2)
     {
-        printf("Usage: fpsdump [-t] [--json] "
-               "<fpsname>\n");
+        printf("Usage: fpsdump [-t] [--json] <fpsname>\n");
         return RETURN_FAILURE;
     }
 
@@ -387,15 +340,13 @@ errno_t cli_cmd_fpsdump(void)
 
     if (tabmode && jsonmode)
     {
-        printf("fpsdump: -t and --json are "
-               "mutually exclusive\n");
+        printf("fpsdump: -t and --json are mutually exclusive\n");
         return RETURN_FAILURE;
     }
 
     if (arg_fpsname < 0)
     {
-        printf("Usage: fpsdump [-t] [--json] "
-               "<fpsname>\n");
+        printf("Usage: fpsdump [-t] [--json] <fpsname>\n");
         return RETURN_FAILURE;
     }
 
@@ -406,9 +357,7 @@ errno_t cli_cmd_fpsdump(void)
     int rc   = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     if (rc == -1 || fps.md == NULL || fps.parray == NULL)
     {
-        printf("fpsdump: cannot connect "
-               "to FPS '%s'\n",
-               fpsname);
+        printf("fpsdump: cannot connect to FPS '%s'\n", fpsname);
         return RETURN_FAILURE;
     }
 
@@ -541,23 +490,11 @@ errno_t cli_cmd_fpsdump(void)
     return RETURN_SUCCESS;
 }
 
-
 /* ============================================================
  *  streamlist
  * ============================================================
  */
 
-/**
- * emit_streams_json_body - emit stream entries
- * @pat:    optional glob pattern (NULL = all)
- * @indent: indentation spaces
- *
- * Scans dcshmdir for *.im.shm files, opens each,
- * and emits JSON objects with name, naxis, size,
- * type, and cnt0 fields. Used by milkquery.
- *
- * Returns number of entries emitted.
- */
 static int emit_streams_json_body(const char *pat, int indent)
 {
     char pad[32];
@@ -653,14 +590,6 @@ static int emit_streams_json_body(const char *pat, int indent)
 
 /**
  * @brief streamlist command — enumerate SHM streams
- *
- * Scans SHM directory for *.im.shm files and lists
- * them in plain, long-form, or JSON format.
- *
- * Usage: streamlist [-l] [--json] [pattern]
- *   -l       long format: name size type cnt0
- *   --json   JSON array of stream metadata
- *   pattern  optional glob filter (e.g. "dm*")
  */
 errno_t cli_cmd_streamlist(void)
 {
@@ -795,19 +724,14 @@ errno_t cli_cmd_streamlist(void)
                         snprintf(szstr, sizeof(szstr), "%ux%ux%u", img.md->size[0], img.md->size[1],
                                  img.md->size[2]);
                     }
-                    printf("%-24s %-12s %-7s "
-                           "cnt0=%lu\n",
-                           sname, szstr, ImageStreamIO_typename(img.md->datatype),
-                           (unsigned long) img.md->cnt0);
+                    printf("%-24s %-12s %-7s cnt0=%lu\n", sname, szstr,
+                           ImageStreamIO_typename(img.md->datatype), (unsigned long) img.md->cnt0);
                 }
                 ImageStreamIO_closeIm(&img);
             }
-            else
+            else if (!jsonmode)
             {
-                if (!jsonmode)
-                {
-                    printf("%-24s UNAVAIL\n", sname);
-                }
+                printf("%-24s UNAVAIL\n", sname);
             }
         }
     }
@@ -821,22 +745,11 @@ errno_t cli_cmd_streamlist(void)
     return RETURN_SUCCESS;
 }
 
-
 /* ============================================================
  *  proclist
  * ============================================================
  */
 
-/**
- * emit_procs_json_body - emit process entries
- * @indent: indentation spaces
- *
- * Iterates the processinfo list and emits JSON objects
- * with name, state, pid, and freq_hz fields for each
- * active process. Used by milkquery.
- *
- * Returns number of entries emitted.
- */
 static int emit_procs_json_body(int indent)
 {
     if (pinfolist == NULL)
@@ -927,13 +840,6 @@ static int emit_procs_json_body(int indent)
 
 /**
  * @brief proclist command — list active processes
- *
- * Iterates the processinfo list and prints active
- * process names in plain, long-form, or JSON format.
- *
- * Usage: proclist [-l] [--json]
- *   -l      long format: name  state  freq
- *   --json  JSON array of process metadata
  */
 errno_t cli_cmd_proclist(void)
 {
@@ -954,8 +860,7 @@ errno_t cli_cmd_proclist(void)
 
     if (pinfolist == NULL)
     {
-        printf("proclist: processinfo "
-               "not available\n");
+        printf("proclist: processinfo not available\n");
         return RETURN_FAILURE;
     }
 
@@ -1052,7 +957,6 @@ errno_t cli_cmd_proclist(void)
     return RETURN_SUCCESS;
 }
 
-
 /* ============================================================
  *  milkquery
  * ============================================================
@@ -1060,14 +964,6 @@ errno_t cli_cmd_proclist(void)
 
 /**
  * @brief milkquery — unified JSON snapshot
- *
- * Emits a single JSON object containing selected
- * subsections (fps, streams, processes). With no
- * flags, all three sections are emitted.
- *
- * Usage: milkquery [--fps [pat]]
- *                  [--streams [pat]]
- *                  [--procs]
  */
 errno_t cli_cmd_milkquery(void)
 {
@@ -1104,19 +1000,12 @@ errno_t cli_cmd_milkquery(void)
         }
         else
         {
-            fprintf(stderr,
-                    "milkquery: unknown argument "
-                    "'%s'\n",
-                    tok);
-            fprintf(stderr, "usage: milkquery "
-                            "[--fps [pattern]] "
-                            "[--streams [pattern]] "
-                            "[--procs]\n");
+            fprintf(stderr, "milkquery: unknown argument '%s'\n", tok);
+            fprintf(stderr, "usage: milkquery [--fps [pattern]] [--streams [pattern]] [--procs]\n");
             return RETURN_FAILURE;
         }
     }
 
-    /* Default: emit all sections */
     if (!do_fps && !do_streams && !do_procs)
     {
         do_fps     = 1;
@@ -1166,4 +1055,367 @@ errno_t cli_cmd_milkquery(void)
     (void) need_comma;
     printf("\n}\n");
     return RETURN_SUCCESS;
+}
+
+/* ============================================================
+ *  Process Control & Server Interceptors
+ * ============================================================
+ */
+
+int cli_intercept_cmd_procctl(const char *p)
+{
+    if (starts_with_local(p, "procctl ") || starts_with_local(p, "procctl\t"))
+    {
+        const char *ap = p + 7;
+        while (*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        char pname[256];
+        int  nlen = 0;
+        while (*ap && *ap != ' ' && *ap != '\t' && nlen < 255)
+        {
+            pname[nlen++] = *ap++;
+        }
+        pname[nlen] = '\0';
+        while (*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        int ctrlval = -1;
+        if (strncmp(ap, "run", 3) == 0)
+        {
+            ctrlval = PROCESSINFO_CTRLVAL_RUN;
+        }
+        else if (strncmp(ap, "pause", 5) == 0)
+        {
+            ctrlval = PROCESSINFO_CTRLVAL_PAUSE;
+        }
+        else if (strncmp(ap, "step", 4) == 0)
+        {
+            ctrlval = PROCESSINFO_CTRLVAL_INCR;
+        }
+        else if (strncmp(ap, "stop", 4) == 0 || strncmp(ap, "exit", 4) == 0)
+        {
+            ctrlval = PROCESSINFO_CTRLVAL_EXIT;
+        }
+        if (ctrlval < 0)
+        {
+            printf("procctl: unknown action '%s' (use run|pause|step|stop)\n", ap);
+            return 1;
+        }
+        if (pinfolist != NULL)
+        {
+            pid_t fpid = 0;
+            for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
+            {
+                if (pinfolist->active[pi] && strcmp(pinfolist->pnamearray[pi], pname) == 0)
+                {
+                    fpid = pinfolist->PIDarray[pi];
+                    break;
+                }
+            }
+            if (fpid > 0)
+            {
+                char pfn[512];
+                char pdname[256];
+                processinfo_procdirname(pdname);
+                snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
+                int          pfd = -1;
+                PROCESSINFO *pi  = processinfo_shm_link(pfn, &pfd);
+                if (pi != MAP_FAILED && pi != NULL)
+                {
+                    pi->CTRLval = ctrlval;
+                    munmap(pi, sizeof(PROCESSINFO));
+                    close(pfd);
+                }
+                else if (pfd >= 0)
+                {
+                    close(pfd);
+                }
+            }
+            else
+            {
+                printf("procctl: process '%s' not found\n", pname);
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
+
+int cli_intercept_cmd_procwait(const char *p)
+{
+    if (starts_with_local(p, "procwait ") || starts_with_local(p, "procwait\t"))
+    {
+        const char *ap = p + 8;
+        while (*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        char pname[256];
+        int  nlen = 0;
+        while (*ap && *ap != ' ' && *ap != '\t' && nlen < 255)
+        {
+            pname[nlen++] = *ap++;
+        }
+        pname[nlen] = '\0';
+        while (*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        int tgt = -1;
+        if (strncasecmp(ap, "INIT", 4) == 0)
+        {
+            tgt = PROCESSINFO_LOOPSTAT_INIT;
+        }
+        else if (strncasecmp(ap, "ACTIVE", 6) == 0)
+        {
+            tgt = PROCESSINFO_LOOPSTAT_ACTIVE;
+        }
+        else if (strncasecmp(ap, "PAUSE", 5) == 0)
+        {
+            tgt = PROCESSINFO_LOOPSTAT_PAUSE;
+        }
+        else if (strncasecmp(ap, "STOP", 4) == 0)
+        {
+            tgt = PROCESSINFO_LOOPSTAT_STOP;
+        }
+        else if (strncasecmp(ap, "ERROR", 5) == 0)
+        {
+            tgt = PROCESSINFO_LOOPSTAT_ERROR;
+        }
+        else
+        {
+            tgt = (int) strtol(ap, NULL, 0);
+        }
+        while (*ap && *ap != ' ' && *ap != '\t')
+        {
+            ap++;
+        }
+        while (*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        double timeout = 30.0;
+        if (*ap != '\0')
+        {
+            timeout = strtod(ap, NULL);
+        }
+        struct timespec slp;
+        slp.tv_sec      = 0;
+        slp.tv_nsec     = 100000000;
+        double elapsed  = 0.0;
+        cli_last_retval = 1;
+        while (elapsed < timeout)
+        {
+            if (pinfolist != NULL)
+            {
+                for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
+                {
+                    if (pinfolist->active[pi] && strcmp(pinfolist->pnamearray[pi], pname) == 0)
+                    {
+                        pid_t fpid = pinfolist->PIDarray[pi];
+                        char  pfn[512];
+                        char  pdname[256];
+                        processinfo_procdirname(pdname);
+                        snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
+                        int          pfd = -1;
+                        PROCESSINFO *pii = processinfo_shm_link(pfn, &pfd);
+                        if (pii != MAP_FAILED && pii != NULL)
+                        {
+                            if (pii->loopstat == tgt)
+                            {
+                                cli_last_retval = 0;
+                            }
+                            munmap(pii, sizeof(PROCESSINFO));
+                            close(pfd);
+                        }
+                        else if (pfd >= 0)
+                        {
+                            close(pfd);
+                        }
+                        break;
+                    }
+                }
+            }
+            if (cli_last_retval == 0)
+            {
+                break;
+            }
+            nanosleep(&slp, NULL);
+            elapsed += 0.1;
+        }
+        return 1;
+    }
+    return 0;
+}
+
+int cli_intercept_cmd_procstat(const char *p)
+{
+    if (strcmp(p, "procstat") == 0 || starts_with_local(p, "procstat ") ||
+        starts_with_local(p, "procstat\t"))
+    {
+        const char *ap = p + 8;
+        while (*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        char filter[256];
+        filter[0] = '\0';
+        if (*ap != '\0')
+        {
+            strncpy(filter, ap, sizeof(filter) - 1);
+            filter[sizeof(filter) - 1] = '\0';
+        }
+        if (pinfolist != NULL)
+        {
+            char pdname[256];
+            processinfo_procdirname(pdname);
+            for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
+            {
+                if (!pinfolist->active[pi])
+                {
+                    continue;
+                }
+                if (filter[0] != '\0' && strcmp(pinfolist->pnamearray[pi], filter) != 0)
+                {
+                    continue;
+                }
+                pid_t fpid = pinfolist->PIDarray[pi];
+                char  pfn[512];
+                snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
+                int          pfd = -1;
+                PROCESSINFO *pii = processinfo_shm_link(pfn, &pfd);
+                if (pii == MAP_FAILED || pii == NULL)
+                {
+                    if (pfd >= 0)
+                    {
+                        close(pfd);
+                    }
+                    continue;
+                }
+                const char *stname = "UNKNOWN";
+                switch (pii->loopstat)
+                {
+                case 0:
+                    stname = "INIT";
+                    break;
+                case 1:
+                    stname = "ACTIVE";
+                    break;
+                case 2:
+                    stname = "PAUSED";
+                    break;
+                case 3:
+                    stname = "STOPPED";
+                    break;
+                case 4:
+                    stname = "ERROR";
+                    break;
+                case 5:
+                    stname = "SPINNING";
+                    break;
+                case 6:
+                    stname = "CRASHED";
+                    break;
+                }
+                double hz = 0.0;
+                if (pii->dtmedian_iter_ns > 0)
+                {
+                    hz = 1.0e9 / (double) pii->dtmedian_iter_ns;
+                }
+                double us = (double) pii->dtmedian_exec_ns / 1000.0;
+                printf("name=%s\n"
+                       "pid=%d\n"
+                       "loopstat=%s\n"
+                       "loopcnt=%ld\n"
+                       "loopfreq_hz=%.1f\n"
+                       "exectime_us=%.1f\n"
+                       "rtprio=%d\n"
+                       "ctrlval=%d\n"
+                       "missedframes=%lu\n"
+                       "tmux=%s\n",
+                       pii->name, (int) pii->PID, stname, pii->loopcnt, hz, us, pii->RT_priority,
+                       pii->CTRLval, (unsigned long) pii->triggermissedframe_cumul, pii->tmuxname);
+                munmap(pii, sizeof(PROCESSINFO));
+                close(pfd);
+                if (filter[0] != '\0')
+                {
+                    break;
+                }
+                printf("---\n");
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
+
+int cli_intercept_cmd_dpdigits(const char *p)
+{
+    const char *sp = strip_ws_local(p);
+    if (strcmp(sp, "dpdigits") == 0)
+    {
+        printf("dpdigits = %d\n", cli_float_digits);
+        return 1;
+    }
+    if (starts_with_local(sp, "dpdigits ") || starts_with_local(sp, "dpdigits\t"))
+    {
+        const char *ap = sp + 9;
+        while (*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        int val = (int) strtol(ap, NULL, 10);
+        if (val < 1)
+        {
+            val = 1;
+        }
+        if (val > 17)
+        {
+            val = 17;
+        }
+        cli_float_digits = val;
+        printf("dpdigits = %d\n", cli_float_digits);
+        return 1;
+    }
+    return 0;
+}
+
+/**
+ * @brief List SHM streams matching a wildcard pattern (`listim <pat>`)
+ */
+void cli_listim_glob(const char *pat)
+{
+    if (pat == NULL || pat[0] == '\0')
+    {
+        return;
+    }
+    char shmglob[512];
+    snprintf(shmglob, sizeof(shmglob), "%s.im.shm", pat);
+    DIR *dp = opendir(dcshmdir[0] != '\0' ? dcshmdir : "/dev/shm");
+    if (dp != NULL)
+    {
+        struct dirent *de;
+        int            count = 0;
+        while ((de = readdir(dp)) != NULL)
+        {
+            if (fnmatch(shmglob, de->d_name, 0) == 0)
+            {
+                char nm[256];
+                strncpy(nm, de->d_name, sizeof(nm) - 1);
+                nm[sizeof(nm) - 1] = '\0';
+                char *sfx          = strstr(nm, ".im.shm");
+                if (sfx != NULL)
+                {
+                    *sfx = '\0';
+                }
+                printf("  %s\n", nm);
+                count++;
+            }
+        }
+        closedir(dp);
+        printf("%d stream(s) matched\n", count);
+    }
 }

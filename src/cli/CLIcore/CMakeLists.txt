@@ -185,7 +185,7 @@ install(
         ../libmilkscript/core/CLIcore_memory.h
         ../libmilkscript/core/CLIcore_modules.h
         ../libmilkscript/core/CLIcore_setSHMdir.h
-        ../libmilkscript/legacy_script/CLIcore_script.h
+        ../libmilkscript/core/CLIcore_script.h
         ../libmilkscript/core/CLIcore_signals.h
         ../libmilkscript/core/CLIcore_utils.h
   DESTINATION include/${SRCNAME}/CLIcore)
