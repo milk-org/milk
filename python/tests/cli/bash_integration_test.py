@@ -107,7 +107,7 @@ def test_builtin_loaded_and_commands_registered():
         for b in milkcall milkget milkset milkcalc milktest milkexists milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog; do
             [[ "$(type -t "$b")" == "builtin" ]]
         done
-        for f in @ @calc @test @get @set @exists @running @waitfor @waitany @grab @defer @on @source @server @log @h @hb @hc @hm @hf @streamcat @streamwrite @batch @pipe @unload; do
+        for f in @ @calc @test @get @set @exists @running @waitfor @waitany @grab @replay @defer @on @source @server @log @h @hb @hc @hm @hf @streamcat @streamwrite @batch @pipe @unload; do
             [[ "$(type -t "$f")" == "function" ]]
         done
         [[ "$(type -t @mk2Dim)" == "function" ]]
@@ -1532,3 +1532,55 @@ EOF
     )
     assert res_cli.returncode == 0, f"stdout={res_cli.stdout}\nstderr={res_cli.stderr}"
     assert "CLI_PIPE_TOT=160" in res_cli.stdout
+
+
+def test_grab_fits_timestamps_and_stream_replay(tmp_path: Path):
+    res = _run_bash(f"""
+        fits_out="{tmp_path}/rec_cube.fits"
+        ts_out="{tmp_path}/rec_cube.txt"
+
+        @mk2Dim "@S:rec_src" 4 4
+        @calc "rec_src = 0.0"
+
+        # Producer updates rec_src 3 times with distinct pixel values (1, 2, 3)
+        (
+            for k in 1 2 3; do
+                sleep 0.03
+                @calc "rec_src = ${{k}}.0"
+            done
+        ) &
+
+        # 1. @grab --fits and --timestamps captures 3 frames directly to FITS + timestamp log
+        @grab --fits "${{fits_out}}" --timestamps "${{ts_out}}" --timeout 2.0 s.rec_src 3
+        wait
+
+        [[ -s "${{fits_out}}" ]]
+        [[ -s "${{ts_out}}" ]]
+        [[ "$(wc -l < "${{ts_out}}")" -eq 3 ]]
+        # Frame indices 0, 1, 2 recorded in column 1
+        [[ "$(awk 'NR==1 {{print $1}}' "${{ts_out}}")" == "0" ]]
+        [[ "$(awk 'NR==3 {{print $1}}' "${{ts_out}}")" == "2" ]]
+
+        # 2. @replay streams the 3D FITS cube into a 2D shared-memory stream
+        @replay "${{fits_out}}" s.replayed
+        [[ "$(@get s.replayed.naxis)" == "2" ]]
+        [[ "$(@get s.replayed.xsize)" == "4" ]]
+        [[ "$(@get s.replayed.ysize)" == "4" ]]
+        # Final slice (z=2) had all 16 pixels = 3.0 -> sum = 48
+        [[ "$(@calc 'itot(replayed)')" == "48" ]]
+
+        # 3. Paced @replay --fps <hz> --count <n> in background feeding a concurrent @grab
+        @mk2Dim "@S:paced_out" 4 4
+        (
+            sleep 0.03
+            @replay --fps 40 --count 3 "${{fits_out}}" s.paced_out
+        ) &
+        @grab s.paced_out 3 "@S:paced_captured" --timeout 2.0
+        wait
+        [[ "$(@get s.paced_captured.zsize)" == "3" ]]
+        [[ "$(@calc 'itot(paced_captured)')" == "96" ]]
+
+        echo "GRAB_REPLAY_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "GRAB_REPLAY_OK" in res.stdout

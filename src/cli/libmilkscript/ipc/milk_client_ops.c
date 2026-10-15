@@ -26,6 +26,7 @@
 #    define _GNU_SOURCE
 #endif
 
+#include <ctype.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <stdint.h>
@@ -840,15 +841,42 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
     return rc;
 }
 
+static void resolve_client_path(const char *in, char *out, size_t outsz)
+{
+    if (in == NULL || in[0] == '\0')
+    {
+        out[0] = '\0';
+        return;
+    }
+    const char *p    = (in[0] == '!') ? (in + 1) : in;
+    const char *bang = (in[0] == '!') ? "!" : "";
+    if (p[0] == '/')
+    {
+        snprintf(out, outsz, "%s", in);
+        return;
+    }
+    char cwd[2048];
+    if (getcwd(cwd, sizeof(cwd)) != NULL)
+    {
+        snprintf(out, outsz, "%s%s/%s", bang, cwd, p);
+    }
+    else
+    {
+        snprintf(out, outsz, "%s", in);
+    }
+}
+
 /**
- * @brief Capture 1 or N consecutive frames from a stream into an image/3D cube (`@grab`).
+ * @brief Capture 1 or N consecutive frames from a stream into an image/3D cube or FITS file (`@grab`).
  */
 int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
-    const char *sname   = NULL;
-    const char *nframes = NULL;
-    const char *outname = NULL;
-    const char *timeout = "0";
+    const char *sname    = NULL;
+    const char *nframes  = NULL;
+    const char *outname  = NULL;
+    const char *timeout  = "0";
+    const char *fits_raw = NULL;
+    const char *ts_raw   = NULL;
 
     for (int i = 0; i < argc; i++)
     {
@@ -859,6 +887,23 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
         else if (strncmp(argv[i], "--timeout=", 10) == 0)
         {
             timeout = argv[i] + 10;
+        }
+        else if ((strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--fits") == 0) && i + 1 < argc)
+        {
+            fits_raw = argv[++i];
+        }
+        else if (strncmp(argv[i], "--fits=", 7) == 0)
+        {
+            fits_raw = argv[i] + 7;
+        }
+        else if ((strcmp(argv[i], "--timestamps") == 0 || strcmp(argv[i], "--ts") == 0) &&
+                 i + 1 < argc)
+        {
+            ts_raw = argv[++i];
+        }
+        else if (strncmp(argv[i], "--timestamps=", 13) == 0)
+        {
+            ts_raw = argv[i] + 13;
         }
         else if (sname == NULL)
         {
@@ -874,18 +919,58 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
         }
     }
 
-    /* Support 2-arg form: @grab <src_stream> <dst_img> [-t <sec>] */
-    if (sname != NULL && nframes != NULL && outname == NULL)
+    if (outname == NULL && sname != NULL)
     {
-        outname = nframes;
-        nframes = "1";
+        if (fits_raw != NULL)
+        {
+            if (nframes == NULL)
+            {
+                nframes = "1";
+                outname = "";
+            }
+            else
+            {
+                int all_digits = (nframes[0] != '\0');
+                for (const char *p = nframes; *p != '\0'; p++)
+                {
+                    if (!isdigit((unsigned char) *p))
+                    {
+                        all_digits = 0;
+                        break;
+                    }
+                }
+                if (all_digits)
+                {
+                    outname = "";
+                }
+                else
+                {
+                    outname = nframes;
+                    nframes = "1";
+                }
+            }
+        }
+        else if (nframes != NULL)
+        {
+            /* Support 2-arg form: @grab <src_stream> <dst_img> [-t <sec>] */
+            outname = nframes;
+            nframes = "1";
+        }
     }
 
-    if (sname == NULL || nframes == NULL || outname == NULL)
+    if (sname == NULL || nframes == NULL || outname == NULL ||
+        (outname[0] == '\0' && fits_raw == NULL))
     {
-        fprintf(stderr, "Usage: @grab [-t|--timeout <sec>] <stream> [nframes] <out_img>\n");
+        fprintf(stderr,
+                "Usage: @grab [-t|--timeout <sec>] [--fits <out.fits>] [--timestamps <out.txt>] "
+                "<stream> [nframes] [out_img]\n");
         return 1;
     }
+
+    char fits_abs[4096];
+    char ts_abs[4096];
+    resolve_client_path(fits_raw, fits_abs, sizeof(fits_abs));
+    resolve_client_path(ts_raw, ts_abs, sizeof(ts_abs));
 
     char sockpath[256];
     int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
@@ -898,7 +983,9 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
     size_t   l2  = strlen(nframes) + 1;
     size_t   l3  = strlen(outname) + 1;
     size_t   l4  = strlen(timeout) + 1;
-    uint32_t tot = (uint32_t) (l1 + l2 + l3 + l4);
+    size_t   l5  = strlen(fits_abs) + 1;
+    size_t   l6  = strlen(ts_abs) + 1;
+    uint32_t tot = (uint32_t) (l1 + l2 + l3 + l4 + l5 + l6);
 
     uint8_t *buf = (uint8_t *) malloc(tot);
     if (buf == NULL)
@@ -910,6 +997,8 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
     memcpy(buf + l1, nframes, l2);
     memcpy(buf + l1 + l2, outname, l3);
     memcpy(buf + l1 + l2 + l3, timeout, l4);
+    memcpy(buf + l1 + l2 + l3 + l4, fits_abs, l5);
+    memcpy(buf + l1 + l2 + l3 + l4 + l5, ts_abs, l6);
 
     int sret = milk_proto_send(fd, MILK_MSG_GRAB, 0, buf, tot);
     free(buf);

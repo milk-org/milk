@@ -542,6 +542,7 @@ function ${MILKCLI_SIGIL}running     { milkexists -r \"\$@\"; }
 function ${MILKCLI_SIGIL}waitfor     { milkwaitfor \"\$@\"; }
 function ${MILKCLI_SIGIL}waitany     { milkwaitany \"\$@\"; }
 function ${MILKCLI_SIGIL}grab        { milkgrab \"\$@\"; }
+function ${MILKCLI_SIGIL}replay      { milkcall replay \"\$@\"; }
 function ${MILKCLI_SIGIL}defer       { _milk_defer_add \"\$@\"; }
 function ${MILKCLI_SIGIL}on          { _milk_on_impl \"\$@\"; }
 function ${MILKCLI_SIGIL}source      { _milk_source_impl \"\$@\"; }
@@ -562,7 +563,7 @@ function ${MILKCLI_SIGIL}unload      { _milk_unload_impl \"\$@\"; }
 # ---------------------------------------------------------------------------
 # 7. Pre-register all @<cmd> shims & external symlink farm (libexec/milk-bin)
 # ---------------------------------------------------------------------------
-_MILK_CMD_COUNT=25
+_MILK_CMD_COUNT=26
 __milk_setup_commands() {
     local cmd_list="${MILK_INSTALLDIR}/share/milk/milk-commands.list"
     if [[ ! -f "${cmd_list}" \
@@ -583,7 +584,7 @@ __milk_setup_commands() {
             [[ -z "${cmd}" ]] && continue
             # Skip core primitives, shell builtins, REPL-only commands, and internal help topics
             case "${cmd}" in
-                calc|test|get|set|exists|running|waitfor|waitany|grab|defer|on|source|server|log|h|hb|hc|hm|hf|streamcat|streamwrite|batch|pipe|unload|\
+                calc|test|get|set|exists|running|waitfor|waitany|grab|replay|defer|on|source|server|log|h|hb|hc|hm|hf|streamcat|streamwrite|batch|pipe|unload|\
                 cd|pwd|echo|printf|read|shift|export|unset|vars|alias|unalias|aliases|time|watch|exit|quit|exitCLI|\
                 history|searchhist|fhist|ghistory|lhistory|savehistory|savescript|setprompt|bookmark|sessionlog|synhl|syndiag|cliindent|showmatch|helprl|fhelp|fparam|\
                 help|help-*|list-streams|list-fps|fpsset)
@@ -688,6 +689,14 @@ _milk_complete() {
     fi
     if [[ "${cmd}" == "${MILKCLI_SIGIL}on" && "${cur}" == -* ]]; then
         mapfile -t COMPREPLY < <(compgen -W "--once -1 --max-hz --cooldown --timeout -t --list --stop -s --clear" -- "${cur}")
+        return 0
+    fi
+    if [[ "${cmd}" == "${MILKCLI_SIGIL}grab" && "${cur}" == -* ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "--fits -f --timestamps --ts --timeout -t" -- "${cur}")
+        return 0
+    fi
+    if [[ "${cmd}" == "${MILKCLI_SIGIL}replay" && "${cur}" == -* ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "--fps -r --count -n --loop -l" -- "${cur}")
         return 0
     fi
     if [[ "${cmd}" == "${MILKCLI_SIGIL}"* ]]; then

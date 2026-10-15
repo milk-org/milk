@@ -424,11 +424,15 @@ static int handle_wait_or_grab_message(int                     client_fd,
             const char *outname = (o2 < hdr->len) ? (const char *) (payload + o2) : "";
             size_t      o3      = o2 + strlen(outname) + 1;
             const char *tstr    = (o3 < hdr->len) ? (const char *) (payload + o3) : "0";
+            size_t      o4      = o3 + strlen(tstr) + 1;
+            const char *fits_p  = (o4 < hdr->len) ? (const char *) (payload + o4) : "";
+            size_t      o5      = o4 + strlen(fits_p) + 1;
+            const char *ts_p    = (o5 < hdr->len) ? (const char *) (payload + o5) : "";
             long        nf      = strtol(nfstr, NULL, 10);
             double      tsec    = strtod(tstr, NULL);
             snprintf(log_cmd, sizeof(log_cmd), "@grab %s %ld%s%s", sname, nf, outname[0] ? " " : "",
                      outname);
-            rc = milk_server_grab(client_fd, sname, nf, outname, tsec);
+            rc = milk_server_grab(client_fd, sname, nf, outname, tsec, fits_p, ts_p);
         }
         else
         {
@@ -474,9 +478,23 @@ void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
         client_pid = cred.pid;
     }
 
+    int is_replay_call = 0;
+    if (hdr.type == MILK_MSG_CALL && payload != NULL && hdr.len > sizeof(uint32_t))
+    {
+        const char *cmd0 = (const char *) (payload + sizeof(uint32_t));
+        if (cmd0[0] == '@' || cmd0[0] == ',')
+        {
+            cmd0++;
+        }
+        if (strcmp(cmd0, "replay") == 0)
+        {
+            is_replay_call = 1;
+        }
+    }
+
     int is_forked_worker = 0;
     if (((hdr.flags & MILK_FLAG_ASYNC) || hdr.type == MILK_MSG_WAITFOR ||
-         hdr.type == MILK_MSG_GRAB) &&
+         hdr.type == MILK_MSG_GRAB || is_replay_call) &&
         listen_fd >= 0)
     {
         pid_t pid = fork();

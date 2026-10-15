@@ -64,7 +64,11 @@ int milk_server_grab(int         client_fd,
                      const char *sname_raw,
                      long        nframes,
                      const char *outname,
-                     double      timeout_sec);
+                     double      timeout_sec,
+                     const char *fits_path,
+                     const char *ts_path);
+
+int milk_server_replay(int argc, char **argv);
 
 int milk_server_streamcat(int argc, char **argv);
 

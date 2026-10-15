@@ -169,6 +169,10 @@ static int resolve_milk_cmd_index(const char *name, int *out_ambig)
     {
         name = "imgen.mkrndim";
     }
+    else if (strcmp(name, "savefits") == 0 || strcmp(name, "iofits.savefits") == 0)
+    {
+        name = "saveFITS";
+    }
     else if (strcmp(name, "lm?") == 0)
     {
         name = "hm";
@@ -368,7 +372,9 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
                 }
                 if (tmpid.name[0] != '\0')
                 {
-                    if (image_ID(tmpid.name, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+                    if (image_ID(tmpid.name, data.core.image, data.core.NB_MAX_IMAGE) != -1 ||
+                        read_sharedmem_image(tmpid.name, data.core.image, data.core.NB_MAX_IMAGE) !=
+                            -1)
                     {
                         data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_EXISTINGIMAGE;
                     }
@@ -385,6 +391,16 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
             char tokstr[512];
             snprintf(tokstr, sizeof(tokstr), "%s\n", arg);
             cli_parse(tokstr);
+            if (!is_slice && data.cmdargtoken[data.cmdNBarg].type == CMDARGTOKEN_TYPE_STRING)
+            {
+                char shmpath[512];
+                snprintf(shmpath, sizeof(shmpath), "%s/%s.im.shm", dcshmdir, arg);
+                if (access(shmpath, R_OK) == 0 &&
+                    read_sharedmem_image(arg, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+                {
+                    data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_EXISTINGIMAGE;
+                }
+            }
             if (is_slice && data.cmdargtoken[data.cmdNBarg].type == CMDARGTOKEN_TYPE_RAWSTRING)
             {
                 data.CMDerrstatus = RETURN_FAILURE;
@@ -426,6 +442,10 @@ int milk_server_dispatch_argv(int argc, char **argv)
     if (strcmp(cmdname, "streamwrite") == 0)
     {
         return milk_server_streamwrite(argc, argv);
+    }
+    if (strcmp(cmdname, "replay") == 0)
+    {
+        return milk_server_replay(argc, argv);
     }
     if (strcmp(cmdname, "batch") == 0 || strcmp(cmdname, "pipe") == 0)
     {

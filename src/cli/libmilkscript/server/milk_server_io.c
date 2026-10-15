@@ -123,7 +123,9 @@ void milk_server_dump_commands(FILE *fp)
         }
     }
 
-    fprintf(fp, "imgstat\ninfo.imgstat\nmk2Drnd\nimgen.mk2Drnd\nprocstat\nprocctl\nprocwait\n");
+    fprintf(
+        fp,
+        "imgstat\ninfo.imgstat\nmk2Drnd\nimgen.mk2Drnd\nsavefits\nprocstat\nprocctl\nprocwait\n");
 }
 
 /**
@@ -145,10 +147,10 @@ static size_t complete_commands(const char *prefix, const char *sigil, char *out
     size_t blen = strlen(bare);
 
     static const char *const core_cmds[] = {
-        "h",     "hb",   "hc",     "hm",       "hf",      "get",       "set",
-        "calc",  "test", "exists", "running",  "waitfor", "waitany",   "grab",
-        "defer", "on",   "source", "server",   "log",     "streamcat", "streamwrite",
-        "batch", "pipe", "unload", "procstat", "procctl", "procwait",  NULL
+        "h",      "hb",       "hc",      "hm",       "hf",        "get",         "set",    "calc",
+        "test",   "exists",   "running", "waitfor",  "waitany",   "grab",        "replay", "defer",
+        "on",     "source",   "server",  "log",      "streamcat", "streamwrite", "batch",  "pipe",
+        "unload", "procstat", "procctl", "procwait", NULL
     };
     for (int i = 0; core_cmds[i] != NULL; i++)
     {

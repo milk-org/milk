@@ -35,6 +35,9 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
+#ifdef USE_CFITSIO
+#    include "COREMOD_iofits/COREMOD_iofits.h"
+#endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "cli_calc_parser.h"
@@ -429,7 +432,9 @@ int milk_server_grab(int         client_fd,
                      const char *sname_raw,
                      long        nframes,
                      const char *outname,
-                     double      timeout_sec)
+                     double      timeout_sec,
+                     const char *fits_path,
+                     const char *ts_path)
 {
     if (sname_raw == NULL || outname == NULL || nframes < 1)
     {
@@ -464,8 +469,16 @@ int milk_server_grab(int         client_fd,
     uint8_t  in_dt   = in_im->md->datatype;
     size_t   in_elsz = ImageStreamIO_typesize(in_dt);
 
-    const char *out_spec = outname;
-    if (strncmp(out_spec, "@s.", 3) == 0)
+    char        tmp_cubename[64];
+    int         is_temp_cube = 0;
+    const char *out_spec     = outname;
+    if (out_spec[0] == '\0')
+    {
+        snprintf(tmp_cubename, sizeof(tmp_cubename), "@L:_grab_tmp_%d", (int) getpid());
+        out_spec     = tmp_cubename;
+        is_temp_cube = 1;
+    }
+    else if (strncmp(out_spec, "@s.", 3) == 0)
     {
         out_spec += 3;
     }
@@ -525,6 +538,25 @@ int milk_server_grab(int         client_fd,
     uint8_t out_dt   = cube->md->datatype;
     size_t  out_elsz = ImageStreamIO_typesize(out_dt);
     imgid_free(&out_img);
+
+    FILE *ts_fp = NULL;
+    if (ts_path != NULL && ts_path[0] != '\0')
+    {
+        ts_fp = fopen(ts_path, "w");
+        if (ts_fp == NULL)
+        {
+            fprintf(stderr, "ERROR: @grab: cannot open timestamps file '%s'\n", ts_path);
+            if (is_temp_cube)
+            {
+                delete_image_ID(cube->name, DELETE_IMAGE_ERRMODE_IGNORE);
+            }
+            if (need_close)
+            {
+                ImageStreamIO_closeIm(&tmp_in);
+            }
+            return 1;
+        }
+    }
 
     int wait_frames = (in_im->md->shared && (nframes > 1 || timeout_sec > 0.0)) ? 1 : 0;
     int semindex    = -1;
@@ -586,6 +618,18 @@ int milk_server_grab(int         client_fd,
             last_cnt = in_im->md->cnt0;
         }
 
+        if (ts_fp != NULL)
+        {
+            struct timespec ts_wall;
+            struct timespec ts_mono;
+            clock_gettime(CLOCK_REALTIME, &ts_wall);
+            clock_gettime(CLOCK_MONOTONIC, &ts_mono);
+            double wall_s = (double) ts_wall.tv_sec + 1.0e-9 * (double) ts_wall.tv_nsec;
+            double mono_s = (double) ts_mono.tv_sec + 1.0e-9 * (double) ts_mono.tv_nsec;
+            fprintf(ts_fp, "%ld %llu %.9f %.9f\n", f, (unsigned long long) in_im->md->cnt0, wall_s,
+                    mono_s);
+        }
+
         if (in_dt == out_dt)
         {
             __builtin_memcpy(((uint8_t *) cube->array.raw) + (size_t) f * npix2d * out_elsz,
@@ -601,7 +645,31 @@ int milk_server_grab(int         client_fd,
         }
     } // for (long f = 0; f < nframes; f++)
 
+    if (ts_fp != NULL)
+    {
+        fclose(ts_fp);
+    }
+
     processinfo_update_output_stream(NULL, cube, NULL);
+
+    if (rc == 0 && fits_path != NULL && fits_path[0] != '\0')
+    {
+#ifdef USE_CFITSIO
+        const char *clean_fits = (fits_path[0] == '!') ? (fits_path + 1) : fits_path;
+        if (save_fits(cube->name, clean_fits) != RETURN_SUCCESS)
+        {
+            rc = 1;
+        }
+#else
+        fprintf(stderr, "ERROR: @grab: FITS support not compiled in (USE_CFITSIO=OFF)\n");
+        rc = 1;
+#endif
+    }
+
+    if (is_temp_cube)
+    {
+        delete_image_ID(cube->name, DELETE_IMAGE_ERRMODE_IGNORE);
+    }
 
     if (semindex >= 0 && semindex < in_im->md->sem)
     {
@@ -1059,4 +1127,306 @@ int milk_server_streamwrite(int argc, char **argv)
         ImageStreamIO_closeIm(&tmp_im);
     }
     return 0;
+}
+
+/**
+ * @brief Built-in `@replay`: stream 2D slices from a 3D image cube or FITS file into a destination stream.
+ *
+ * Supports:
+ *   `@replay [--fps <hz>] [--count <n>] [--loop] <src_cube_or_fits> <dst_stream>`
+ *
+ * @param argc Argument count
+ * @param argv Argument vector
+ * @return 0 on success, 130 on interrupt, 1 on error
+ */
+int milk_server_replay(int argc, char **argv)
+{
+    double      fps_hz       = 0.0;
+    long        max_frames   = 0;
+    int         loop_forever = 0;
+    const char *src_raw      = NULL;
+    const char *dst_raw      = NULL;
+
+    for (int i = 1; i < argc; i++)
+    {
+        if ((strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--fps") == 0) && i + 1 < argc)
+        {
+            fps_hz = strtod(argv[++i], NULL);
+        }
+        else if (strncmp(argv[i], "--fps=", 6) == 0)
+        {
+            fps_hz = strtod(argv[i] + 6, NULL);
+        }
+        else if ((strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--count") == 0) && i + 1 < argc)
+        {
+            max_frames = strtol(argv[++i], NULL, 10);
+        }
+        else if (strncmp(argv[i], "--count=", 8) == 0)
+        {
+            max_frames = strtol(argv[i] + 8, NULL, 10);
+        }
+        else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--loop") == 0)
+        {
+            loop_forever = 1;
+        }
+        else if (src_raw == NULL)
+        {
+            src_raw = argv[i];
+        }
+        else if (dst_raw == NULL)
+        {
+            dst_raw = argv[i];
+        }
+    }
+
+    if (src_raw == NULL || dst_raw == NULL)
+    {
+        fprintf(stderr, "Usage: @replay [--fps <hz>] [--count <n>] [--loop] <src_cube_or_fits> "
+                        "<dst_stream>\n");
+        return 1;
+    }
+
+    const char *src_clean = src_raw;
+    while (*src_clean == '@')
+    {
+        src_clean++;
+    }
+    if (strncmp(src_clean, "s.", 2) == 0)
+    {
+        src_clean += 2;
+    }
+    else if (strncmp(src_clean, "stream.", 7) == 0)
+    {
+        src_clean += 7;
+    }
+
+    IMAGE  tmp_src;
+    int    need_close_src  = 0;
+    int    loaded_temp_src = 0;
+    IMGID  loaded_imgid    = { 0 };
+    IMAGE *src_im          = NULL;
+
+    /* Prefer loading from FITS file if src_raw exists as a regular file on disk */
+    struct stat st_src;
+    if (stat(src_raw, &st_src) == 0 && S_ISREG(st_src.st_mode))
+    {
+#ifdef USE_CFITSIO
+        char tmp_fits_im[64];
+        snprintf(tmp_fits_im, sizeof(tmp_fits_im), "@L:_replay_src_%d", (int) getpid());
+        loaded_imgid = imgid_make_from_name(tmp_fits_im);
+        int saved_q  = dcquiet;
+        dcquiet      = 1;
+        errno_t lret = load_fits_IMGID(src_raw, &loaded_imgid, 0);
+        dcquiet      = saved_q;
+        if (lret == RETURN_SUCCESS && loaded_imgid.im != NULL && loaded_imgid.im->md != NULL)
+        {
+            src_im          = loaded_imgid.im;
+            loaded_temp_src = 1;
+        }
+        else
+        {
+            imgid_free(&loaded_imgid);
+        }
+#endif
+    }
+
+    if (src_im == NULL)
+    {
+        src_im = milk_shm_prop_find_or_open_stream(src_clean, &tmp_src, &need_close_src);
+    }
+    if (src_im == NULL || src_im->md == NULL)
+    {
+        fprintf(stderr, "ERROR: @replay: source cube or FITS file '%s' not found\n", src_raw);
+        return 1;
+    }
+
+    uint32_t nx = src_im->md->size[0];
+    uint32_t ny = (src_im->md->naxis >= 2 && src_im->md->size[1] > 0) ? src_im->md->size[1] : 1U;
+    uint32_t nz = (src_im->md->naxis >= 3 && src_im->md->size[2] > 0) ? src_im->md->size[2] : 1U;
+    uint64_t npix2d      = (uint64_t) nx * ny;
+    uint8_t  src_dt      = src_im->md->datatype;
+    size_t   src_elsz    = ImageStreamIO_typesize(src_dt);
+    size_t   slice_bytes = (size_t) npix2d * src_elsz;
+
+    const char *dst_spec = dst_raw;
+    if (strncmp(dst_spec, "@s.", 3) == 0)
+    {
+        dst_spec += 3;
+    }
+    else if (strncmp(dst_spec, "@stream.", 8) == 0)
+    {
+        dst_spec += 8;
+    }
+    else if (strncmp(dst_spec, "s.", 2) == 0)
+    {
+        dst_spec += 2;
+    }
+    else if (strncmp(dst_spec, "stream.", 7) == 0)
+    {
+        dst_spec += 7;
+    }
+
+    /* Reuse existing shared-memory stream if dimensions already match, preserving open readers */
+    IMAGE  tmp_dst;
+    int    need_close_dst = 0;
+    IMAGE *dst_im         = NULL;
+    if (dst_spec[0] != '@')
+    {
+        IMAGE *cand = milk_shm_prop_find_or_open_stream(dst_spec, &tmp_dst, &need_close_dst);
+        if (cand != NULL && cand->md != NULL)
+        {
+            uint32_t c_ny =
+                (cand->md->naxis >= 2 && cand->md->size[1] > 0) ? cand->md->size[1] : 1U;
+            if (cand->md->size[0] == nx && c_ny == ny && cand->md->naxis <= 2)
+            {
+                dst_im = cand;
+            }
+            else if (need_close_dst)
+            {
+                ImageStreamIO_closeIm(&tmp_dst);
+                need_close_dst = 0;
+            }
+        }
+    }
+
+    if (dst_im == NULL)
+    {
+        IMGID dst_img = imgid_make_from_name(dst_spec);
+        if (dst_img.stream_parse_error)
+        {
+            imgid_free(&dst_img);
+            if (loaded_temp_src)
+            {
+                if (loaded_imgid.im != NULL)
+                {
+                    ImageStreamIO_destroyIm(loaded_imgid.im);
+                    free(loaded_imgid.im);
+                    loaded_imgid.im = NULL;
+                }
+                imgid_free(&loaded_imgid);
+            }
+            if (need_close_src)
+            {
+                ImageStreamIO_closeIm(&tmp_src);
+            }
+            return 1;
+        }
+        dst_img.mdt->naxis    = (src_im->md->naxis == 1) ? 1 : 2;
+        dst_img.mdt->size[0]  = nx;
+        dst_img.mdt->size[1]  = (dst_img.mdt->naxis >= 2) ? ny : 0;
+        dst_img.mdt->size[2]  = 0;
+        dst_img.mdt->datatype = (dst_img.stream_datatype != 0) ? dst_img.stream_datatype : src_dt;
+        dst_img.mdt->shared   = (dst_img.stream_loc == 2) ? 0 : 1;
+        dst_img.mdt->NBkw     = 10;
+        dst_img.mdt->CBsize   = 0;
+
+        if (create_image_ID_IMGID(&dst_img) != RETURN_SUCCESS || dst_img.ID == -1)
+        {
+            imgid_free(&dst_img);
+            if (loaded_temp_src)
+            {
+                if (loaded_imgid.im != NULL)
+                {
+                    ImageStreamIO_destroyIm(loaded_imgid.im);
+                    free(loaded_imgid.im);
+                    loaded_imgid.im = NULL;
+                }
+                imgid_free(&loaded_imgid);
+            }
+            if (need_close_src)
+            {
+                ImageStreamIO_closeIm(&tmp_src);
+            }
+            return 1;
+        }
+        dst_im = &data.core.image[dst_img.ID];
+        imgid_free(&dst_img);
+    }
+
+    if (max_frames <= 0 && !loop_forever)
+    {
+        max_frames = (long) nz;
+    }
+
+    double  period_sec = (fps_hz > 0.0) ? (1.0 / fps_hz) : 0.0;
+    uint8_t dst_dt     = dst_im->md->datatype;
+    int     rc         = 0;
+
+    for (long f = 0; loop_forever || f < max_frames; f++)
+    {
+        if (dcsigINT)
+        {
+            dcsigINT = 0;
+            rc       = 130;
+            break;
+        }
+        if (f > 0 && period_sec > 0.0)
+        {
+            double t0 = monotonic_sec();
+            while ((monotonic_sec() - t0) < period_sec)
+            {
+                if (dcsigINT)
+                {
+                    break;
+                }
+                double rem = period_sec - (monotonic_sec() - t0);
+                if (rem <= 0.0)
+                {
+                    break;
+                }
+                if (rem > 0.02)
+                {
+                    rem = 0.02;
+                }
+                struct timespec slp;
+                slp.tv_sec  = (time_t) rem;
+                slp.tv_nsec = (long) ((rem - (double) slp.tv_sec) * 1.0e9);
+                nanosleep(&slp, NULL);
+            }
+            if (dcsigINT)
+            {
+                dcsigINT = 0;
+                rc       = 130;
+                break;
+            }
+        }
+
+        uint32_t z        = (uint32_t) (f % (long) nz);
+        dst_im->md->write = 1;
+        if (dst_dt == src_dt)
+        {
+            __builtin_memcpy(dst_im->array.raw,
+                             ((const uint8_t *) src_im->array.raw) + (size_t) z * slice_bytes,
+                             slice_bytes);
+        }
+        else
+        {
+            uint64_t base = (uint64_t) z * npix2d;
+            for (uint64_t p = 0; p < npix2d; p++)
+            {
+                write_typed_elem(dst_im, dst_dt, p, read_typed_elem(src_im, src_dt, base + p));
+            }
+        }
+        processinfo_update_output_stream(NULL, dst_im, NULL);
+    } // for (long f = 0; loop_forever || f < max_frames; f++)
+
+    if (need_close_dst)
+    {
+        ImageStreamIO_closeIm(&tmp_dst);
+    }
+    if (loaded_temp_src)
+    {
+        if (loaded_imgid.im != NULL)
+        {
+            ImageStreamIO_destroyIm(loaded_imgid.im);
+            free(loaded_imgid.im);
+            loaded_imgid.im = NULL;
+        }
+        imgid_free(&loaded_imgid);
+    }
+    if (need_close_src)
+    {
+        ImageStreamIO_closeIm(&tmp_src);
+    }
+    return rc;
 }
