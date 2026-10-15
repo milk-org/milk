@@ -18,10 +18,11 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             echo "Usage: source milk.bash"
             echo ""
             echo "Loads milk commands (@<cmd>, @batch, @pipe), entity discovery & accessors"
-            echo "(@get [-v|-a|-A|--json], @set, @exists, @running), zero-fork math/slice"
-            echo "evaluation (@calc [-v], @test), stream capture & playback (@waitfor, @waitany,"
-            echo "@grab [--fits|--timestamps], @replay, @on), and LIFO cleanup (@defer) into"
-            echo "the current GNU Bash session."
+            echo "(@get [-v|-a|-A|--json], @set, @exists, @running), snapshots (@snapshot,"
+            echo "@diff, @restore), zero-fork math/slice evaluation (@calc [-v], @test, @assert),"
+            echo "stream capture & playback (@waitfor, @waitany, @grab [--fits|--timestamps],"
+            echo "@replay, @on), dynamic telemetry prompt (@prompt), and LIFO cleanup (@defer)"
+            echo "into the current GNU Bash session."
             exit 0
             ;;
         *)
@@ -508,6 +509,7 @@ _milk_unload_impl() {
         milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
 
     # 5. Restore PROMPT_COMMAND and PS1
+    unset _MILK_PROMPT_WATCH _MILK_PROMPT_PRESET _MILK_PROMPT_PLAIN 2>/dev/null || true
     if [[ "$(declare -p PROMPT_COMMAND 2>/dev/null)" == "declare -a"* ]]; then
         local -a __new_pc=()
         local __pc_item
@@ -549,6 +551,7 @@ function ${MILKCLI_SIGIL}snapshot    { milkcall snapshot \"\$@\"; }
 function ${MILKCLI_SIGIL}diff        { milkcall diff \"\$@\"; }
 function ${MILKCLI_SIGIL}restore     { milkcall restore \"\$@\"; }
 function ${MILKCLI_SIGIL}assert      { milkcall assert \"\$@\"; }
+function ${MILKCLI_SIGIL}prompt      { _milk_prompt_impl \"\$@\"; }
 function ${MILKCLI_SIGIL}defer       { _milk_defer_add \"\$@\"; }
 function ${MILKCLI_SIGIL}on          { _milk_on_impl \"\$@\"; }
 function ${MILKCLI_SIGIL}source      { _milk_source_impl \"\$@\"; }
@@ -569,7 +572,7 @@ function ${MILKCLI_SIGIL}unload      { _milk_unload_impl \"\$@\"; }
 # ---------------------------------------------------------------------------
 # 7. Pre-register all @<cmd> shims & external symlink farm (libexec/milk-bin)
 # ---------------------------------------------------------------------------
-_MILK_CMD_COUNT=30
+_MILK_CMD_COUNT=31
 __milk_setup_commands() {
     local cmd_list="${MILK_INSTALLDIR}/share/milk/milk-commands.list"
     if [[ ! -f "${cmd_list}" \
@@ -590,7 +593,7 @@ __milk_setup_commands() {
             [[ -z "${cmd}" ]] && continue
             # Skip core primitives, shell builtins, REPL-only commands, and internal help topics
             case "${cmd}" in
-                calc|test|get|set|exists|running|waitfor|waitany|grab|replay|snapshot|diff|restore|assert|defer|on|source|server|log|h|hb|hc|hm|hf|streamcat|streamwrite|batch|pipe|unload|\
+                calc|test|get|set|exists|running|waitfor|waitany|grab|replay|snapshot|diff|restore|assert|prompt|defer|on|source|server|log|h|hb|hc|hm|hf|streamcat|streamwrite|batch|pipe|unload|\
                 cd|pwd|echo|printf|read|shift|export|unset|vars|alias|unalias|aliases|time|watch|exit|quit|exitCLI|\
                 history|searchhist|fhist|ghistory|lhistory|savehistory|savescript|setprompt|bookmark|sessionlog|synhl|syndiag|cliindent|showmatch|helprl|fhelp|fparam|\
                 help|help-*|list-streams|list-fps|fpsset)
@@ -685,6 +688,14 @@ _milk_complete() {
         mapfile -t COMPREPLY < <(compgen -W "status list ls start use local detach stop attach log" -- "${cur}")
         return 0
     fi
+    if [[ "${cmd}" == "${MILKCLI_SIGIL}prompt" && ${COMP_CWORD} -eq 1 ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "status watch unwatch clear preset on off render" -- "${cur}")
+        return 0
+    fi
+    if [[ "${cmd}" == "${MILKCLI_SIGIL}prompt" && ${COMP_CWORD} -eq 2 && "${COMP_WORDS[1]}" == "preset" ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "minimal std ao" -- "${cur}")
+        return 0
+    fi
     if [[ "${cmd}" == "${MILKCLI_SIGIL}log" ]]; then
         mapfile -t COMPREPLY < <(compgen -W "-n --last -a --all -g --grep -e --errors --slow --since -f --follow -s --server --json --clear -h --help" -- "${cur}")
         return 0
@@ -729,9 +740,87 @@ fi
 unset __milk_all_fns
 
 # ---------------------------------------------------------------------------
-# 9. Visible Prompt Label ([milk] / [milk:<name>]) & Interactive Startup Status
+# 9. Dynamic Telemetry Prompt (@prompt) & Interactive Startup Status
 # ---------------------------------------------------------------------------
+declare -ga _MILK_PROMPT_WATCH=()
+declare -g  _MILK_PROMPT_PRESET="${_MILK_PROMPT_PRESET:-std}"
+declare -g  _MILK_PROMPT_PLAIN="[milk]"
 _MILK_PS1_PREFIX='\[\033[1;36m\][milk]\[\033[0m\] '
+
+_milk_build_prompt_strings() {
+    local head="milk"
+    if [[ -n "${_MILK_SERVER_NAME:-}" ]]; then
+        head="milk:${_MILK_SERVER_NAME}"
+    fi
+
+    local plain="[${head}"
+    local ps1_items=""
+
+    if [[ "${_MILK_PROMPT_PRESET:-std}" == "ao" && -n "${MILK_SHM_DIR:-}" && "${MILK_SHM_DIR}" != "/dev/shm" ]]; then
+        local shmb="${MILK_SHM_DIR%/}"
+        shmb="${shmb##*/}"
+        plain+=" | shm:${shmb}"
+        ps1_items+=" \[\033[0;90m\]|\[\033[0m\] \[\033[0;35m\]shm:${shmb}\[\033[0m\]"
+    fi
+
+    if [[ "${_MILK_PROMPT_PRESET:-std}" != "minimal" && ${#_MILK_PROMPT_WATCH[@]} -gt 0 ]]; then
+        local entry lbl spec has_lbl val tmp clr
+        for entry in "${_MILK_PROMPT_WATCH[@]}"; do
+            [[ -z "${entry}" ]] && continue
+            lbl=""
+            spec="${entry}"
+            has_lbl=0
+            if [[ "${entry}" == *=* ]]; then
+                lbl="${entry%%=*}"
+                spec="${entry#*=}"
+                has_lbl=1
+            fi
+            spec="${spec#@}"
+            val=""
+            if ! milkget -v val "${spec}" 2>/dev/null; then
+                val="?"
+            fi
+
+            if [[ "${spec}" == f.*.run || "${spec}" == fps.*.run || "${spec}" == f.*.status || "${spec}" == fps.*.status ]]; then
+                if [[ ${has_lbl} -eq 0 ]]; then
+                    tmp="${spec#*.}"
+                    lbl="${tmp%%.*}"
+                fi
+                case "${val}" in
+                    ON|RUN|RUNNING) clr="1;32" ;;
+                    CONF)           clr="1;33" ;;
+                    *)              clr="0;33" ;;
+                esac
+                plain+=" | ${lbl}:${val}"
+                ps1_items+=" \[\033[0;90m\]|\[\033[0m\] \[\033[${clr}m\]${lbl}:${val}\[\033[0m\]"
+            elif [[ "${spec}" == *.fps || "${spec}" == *.fps_hz ]]; then
+                if [[ ${has_lbl} -eq 0 ]]; then
+                    tmp="${spec#*.}"
+                    lbl="${tmp%%.*}"
+                fi
+                if [[ "${val}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+                    printf -v val '%.0f' "${val}" 2>/dev/null || true
+                fi
+                plain+=" | ${lbl}:${val}Hz"
+                ps1_items+=" \[\033[0;90m\]|\[\033[0m\] \[\033[0;36m\]${lbl}:${val}Hz\[\033[0m\]"
+            else
+                if [[ ${has_lbl} -eq 0 ]]; then
+                    lbl="${spec##*.}"
+                fi
+                plain+=" | ${lbl}=${val}"
+                ps1_items+=" \[\033[0;90m\]|\[\033[0m\] \[\033[0;37m\]${lbl}=${val}\[\033[0m\]"
+            fi
+        done
+    fi
+
+    plain+="]"
+    _MILK_PROMPT_PLAIN="${plain}"
+    if [[ -z "${ps1_items}" ]]; then
+        _MILK_PS1_PREFIX="\[\033[1;36m\][${head}]\[\033[0m\] "
+    else
+        _MILK_PS1_PREFIX="\[\033[1;36m\][${head}\[\033[0m\]${ps1_items}\[\033[1;36m\]]\[\033[0m\] "
+    fi
+}
 
 _milk_apply_ps1() {
     local __milk_last_rc=$?
@@ -740,20 +829,124 @@ _milk_apply_ps1() {
         export MILKCLI_SOCK="$(<"${__ov}")"
         export _MILK_SERVER_NAME="${MILKCLI_SOCK#@milk-cli-*-}"
     fi
-    if [[ -z "${MILK_NO_PROMPT:-}" ]]; then
-        if [[ -z "${_MILK_ORIG_PS1+x}" ]]; then
-            _MILK_ORIG_PS1="${PS1:-}"
+    if [[ -n "${MILK_NO_PROMPT:-}" ]]; then
+        if [[ -n "${_MILK_ORIG_PS1+x}" ]]; then
+            PS1="${_MILK_ORIG_PS1}"
         fi
-        local __tag="[milk]"
-        if [[ -n "${_MILK_SERVER_NAME:-}" ]]; then
-            __tag="[milk:${_MILK_SERVER_NAME}]"
-        fi
-        _MILK_PS1_PREFIX="\[\033[1;36m\]${__tag}\[\033[0m\] "
-        if [[ "${PS1:-}" != *"${__tag}"* ]]; then
-            PS1="${_MILK_PS1_PREFIX}${_MILK_ORIG_PS1:-\\s-\\v\\\$ }"
-        fi
+        return ${__milk_last_rc}
     fi
+    if [[ -z "${_MILK_ORIG_PS1+x}" ]] || [[ -n "${PS1:-}" && "${PS1}" != *"[milk"* ]]; then
+        _MILK_ORIG_PS1="${PS1:-}"
+    fi
+    _milk_build_prompt_strings
+    PS1="${_MILK_PS1_PREFIX}${_MILK_ORIG_PS1:-\\s-\\v\\\$ }"
     return ${__milk_last_rc}
+}
+
+_milk_prompt_impl() {
+    local sub="${1:-status}"
+    case "${sub}" in
+        status|--status|-s)
+            _milk_build_prompt_strings
+            local st="ENABLED"
+            [[ -n "${MILK_NO_PROMPT:-}" ]] && st="DISABLED"
+            echo "Prompt:   ${st}"
+            echo "Preset:   ${_MILK_PROMPT_PRESET:-std}"
+            echo "Server:   ${_MILK_SERVER_NAME:-local (private)}"
+            if [[ ${#_MILK_PROMPT_WATCH[@]} -eq 0 ]]; then
+                echo "Watched:  (none)"
+            else
+                echo "Watched:  ${_MILK_PROMPT_WATCH[*]}"
+            fi
+            echo "Preview:  ${_MILK_PROMPT_PLAIN}"
+            return 0
+            ;;
+        render|--render)
+            _milk_build_prompt_strings
+            echo "${_MILK_PROMPT_PLAIN}"
+            return 0
+            ;;
+        watch|add|--watch|-w)
+            shift
+            if [[ $# -eq 0 ]]; then
+                echo "Usage: ${MILKCLI_SIGIL}prompt watch [label=]<entity.attr> [...]" >&2
+                return 1
+            fi
+            local item existing found
+            for item in "$@"; do
+                found=0
+                for existing in "${_MILK_PROMPT_WATCH[@]}"; do
+                    if [[ "${existing}" == "${item}" ]]; then
+                        found=1
+                        break
+                    fi
+                done
+                [[ ${found} -eq 0 ]] && _MILK_PROMPT_WATCH+=("${item}")
+            done
+            _milk_apply_ps1
+            return 0
+            ;;
+        unwatch|rm|remove|--unwatch|-u)
+            shift
+            if [[ $# -eq 0 ]]; then
+                echo "Usage: ${MILKCLI_SIGIL}prompt unwatch <label|entity.attr> [...]" >&2
+                return 1
+            fi
+            local target existing elbl espec
+            local -a kept=()
+            for existing in "${_MILK_PROMPT_WATCH[@]}"; do
+                elbl=""
+                espec="${existing}"
+                if [[ "${existing}" == *=* ]]; then
+                    elbl="${existing%%=*}"
+                    espec="${existing#*=}"
+                else
+                    espec="${existing#@}"
+                    elbl="${espec##*.}"
+                fi
+                local drop=0
+                for target in "$@"; do
+                    if [[ "${existing}" == "${target}" || "${elbl}" == "${target}" || "${espec}" == "${target#@}" ]]; then
+                        drop=1
+                        break
+                    fi
+                done
+                [[ ${drop} -eq 0 ]] && kept+=("${existing}")
+            done
+            _MILK_PROMPT_WATCH=("${kept[@]}")
+            _milk_apply_ps1
+            return 0
+            ;;
+        clear|--clear|-c)
+            _MILK_PROMPT_WATCH=()
+            _milk_apply_ps1
+            return 0
+            ;;
+        preset|--preset)
+            local p="${2:-}"
+            if [[ "${p}" != "minimal" && "${p}" != "std" && "${p}" != "ao" ]]; then
+                echo "Usage: ${MILKCLI_SIGIL}prompt preset <minimal|std|ao>" >&2
+                return 1
+            fi
+            _MILK_PROMPT_PRESET="${p}"
+            _milk_apply_ps1
+            return 0
+            ;;
+        on|enable|--on)
+            unset MILK_NO_PROMPT
+            _milk_apply_ps1
+            return 0
+            ;;
+        off|disable|--off)
+            export MILK_NO_PROMPT=1
+            _milk_apply_ps1
+            return 0
+            ;;
+        *)
+            echo "Usage: ${MILKCLI_SIGIL}prompt [status | watch [lbl=]<entity.attr>... | unwatch <target>... | clear | preset <minimal|std|ao> | on | off | render]" >&2
+            return 1
+            ;;
+    esac
 }
 
 if [[ $- == *i* || -n "${PS1:-}" ]]; then

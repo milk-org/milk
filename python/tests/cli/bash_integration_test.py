@@ -1696,3 +1696,55 @@ def test_assert_expressions_and_stream_loop_health():
         """)
     assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
     assert "ASSERT_OK" in res.stdout
+
+
+def test_dynamic_telemetry_prompt():
+    res = _run_bash("""
+        PS1='user@host:$ '
+        _milk_apply_ps1
+        @mk2Dim "@S:wfs_cam" 8 8
+        @set s.wfs_cam.kw.MODE "closed"
+        milk-fpsexec-imggen-mkrndim -n prm_fps fpsinit >/dev/null 2>&1
+        @set f.prm_fps.xsize = 64
+
+        # 1. Default prompt badge and status
+        st0="$(@prompt status)"
+        [[ "${st0}" == *"Prompt:   ENABLED"* ]]
+        [[ "${st0}" == *"Preset:   std"* ]]
+        [[ "$(@prompt render)" == "[milk]" ]]
+        [[ "${PS1}" == *"[milk]"*"user@host:$ " ]]
+
+        # 2. Watch live FPS status, scalar param (with custom label), and stream keyword
+        @prompt watch f.prm_fps.run xsz=f.prm_fps.xsize s.wfs_cam.kw.MODE
+        [[ "$(@prompt render)" == "[milk | prm_fps:OFF | xsz=64 | MODE=closed]" ]]
+        [[ "${PS1}" == *"prm_fps:OFF"* && "${PS1}" == *"xsz=64"* && "${PS1}" == *"MODE=closed"* ]]
+
+        # 3. Live /dev/shm updates are reflected immediately on _milk_apply_ps1 without subshells
+        @set f.prm_fps.xsize = 128 s.wfs_cam.kw.MODE = "open"
+        _milk_apply_ps1
+        [[ "$(@prompt render)" == "[milk | prm_fps:OFF | xsz=128 | MODE=open]" ]]
+        [[ "${PS1}" == *"xsz=128"* && "${PS1}" == *"MODE=open"* ]]
+
+        # 4. Preset switching: 'ao' (shows isolated SHM dir) and 'minimal' (hides watched items)
+        @prompt preset ao
+        [[ "$(@prompt render)" == "[milk | shm:"*" | prm_fps:OFF | xsz=128 | MODE=open]" ]]
+        @prompt preset minimal
+        [[ "$(@prompt render)" == "[milk]" ]]
+        @prompt preset std
+        [[ "$(@prompt render)" == "[milk | prm_fps:OFF | xsz=128 | MODE=open]" ]]
+
+        # 5. Unwatch by label or entity path, clear, and off/on toggle
+        @prompt unwatch xsz
+        [[ "$(@prompt render)" == "[milk | prm_fps:OFF | MODE=open]" ]]
+        @prompt clear
+        [[ "$(@prompt render)" == "[milk]" ]]
+
+        @prompt off
+        [[ "${PS1}" == "user@host:$ " ]]
+        @prompt on
+        [[ "${PS1}" == *"[milk]"*"user@host:$ " ]]
+
+        echo "PROMPT_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "PROMPT_OK" in res.stdout
