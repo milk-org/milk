@@ -251,6 +251,8 @@ fi
 declare -ga _MILK_DEFER_STACK=()
 declare -gi _MILK_DEFER_RAN=0
 declare -ga _MILK_ON_PIDS=()
+declare -ga _MILK_ON_TARGETS=()
+declare -ga _MILK_ON_CMDS=()
 
 _milk_run_defer_stack() {
     local exit_rc=$?
@@ -299,14 +301,15 @@ export PROCINFO_NPROC="${PROCINFO_NPROC:-0}"
 
 _milk_on_impl() {
     if [[ $# -eq 0 ]]; then
-        echo "Usage: ${MILKCLI_SIGIL}on <target> \"<cmd>\" | --list | --clear" >&2
+        echo "Usage: ${MILKCLI_SIGIL}on [--once|-1] [--max-hz <hz>] [--cooldown <sec>] [-t|--timeout <sec>] <target[,target2...]> \"<cmd>\" | --list | --stop <id|pid|target> | --clear" >&2
         return 1
     fi
     if [[ "${1:-}" == "--list" ]]; then
-        local pid
-        for pid in "${_MILK_ON_PIDS[@]}"; do
-            if kill -0 "${pid}" 2>/dev/null; then
-                echo "${pid}"
+        local idx
+        for idx in "${!_MILK_ON_PIDS[@]}"; do
+            local pid="${_MILK_ON_PIDS[$idx]}"
+            if [[ -n "${pid}" ]] && kill -0 "${pid}" 2>/dev/null; then
+                echo "$((idx + 1)) ${pid} ${_MILK_ON_TARGETS[$idx]} ${_MILK_ON_CMDS[$idx]}"
             fi
         done
         return 0
@@ -314,24 +317,136 @@ _milk_on_impl() {
     if [[ "${1:-}" == "--clear" ]]; then
         local pid
         for pid in "${_MILK_ON_PIDS[@]}"; do
-            kill "${pid}" 2>/dev/null || true
+            if [[ -n "${pid}" ]]; then
+                pkill -P "${pid}" 2>/dev/null || true
+                kill "${pid}" 2>/dev/null || true
+            fi
         done
         _MILK_ON_PIDS=()
+        _MILK_ON_TARGETS=()
+        _MILK_ON_CMDS=()
         return 0
     fi
+    if [[ "${1:-}" == "--stop" || "${1:-}" == "-s" ]]; then
+        local sel="${2:-}"
+        if [[ -z "${sel}" ]]; then
+            echo "Usage: ${MILKCLI_SIGIL}on --stop <id|pid|target>" >&2
+            return 1
+        fi
+        local idx stopped=0
+        for idx in "${!_MILK_ON_PIDS[@]}"; do
+            local pid="${_MILK_ON_PIDS[$idx]}"
+            local tgt="${_MILK_ON_TARGETS[$idx]}"
+            if [[ -n "${pid}" ]] && ( [[ "$((idx + 1))" == "${sel}" || "${pid}" == "${sel}" || "${tgt}" == "${sel}" || "s.${tgt}" == "${sel}" || "${tgt#s.}" == "${sel}" ]] ); then
+                pkill -P "${pid}" 2>/dev/null || true
+                kill "${pid}" 2>/dev/null || true
+                unset '_MILK_ON_PIDS[idx]' '_MILK_ON_TARGETS[idx]' '_MILK_ON_CMDS[idx]'
+                stopped=1
+            fi
+        done
+        return $(( stopped ? 0 : 1 ))
+    fi
+
+    local once=0
+    local cooldown=""
+    local timeout_sec=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --once|-1)
+                once=1
+                shift
+                ;;
+            --cooldown)
+                cooldown="${2:-}"
+                shift 2
+                ;;
+            --cooldown=*)
+                cooldown="${1#*=}"
+                shift
+                ;;
+            --max-hz)
+                if [[ -n "${2:-}" ]]; then
+                    cooldown="$(awk -v hz="${2}" 'BEGIN { if (hz > 0) printf "%.6f", 1.0 / hz; else print "0" }')"
+                fi
+                shift 2
+                ;;
+            --max-hz=*)
+                local hz="${1#*=}"
+                cooldown="$(awk -v hz="${hz}" 'BEGIN { if (hz > 0) printf "%.6f", 1.0 / hz; else print "0" }')"
+                shift
+                ;;
+            -t|--timeout)
+                timeout_sec="${2:-}"
+                shift 2
+                ;;
+            --timeout=*)
+                timeout_sec="${1#*=}"
+                shift
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
     if [[ $# -lt 2 ]]; then
-        echo "Usage: ${MILKCLI_SIGIL}on <target> \"<cmd>\" | --list | --clear" >&2
+        echo "Usage: ${MILKCLI_SIGIL}on [--once|-1] [--max-hz <hz>] [--cooldown <sec>] [-t|--timeout <sec>] <target[,target2...]> \"<cmd>\" | --list | --stop <id|pid|target> | --clear" >&2
         return 1
     fi
-    local target="$1"
-    shift
-    local action="$*"
-    (
-        while milkwaitfor "${target}" >/dev/null 2>&1; do
-            eval "${action}" || true
+
+    local -a targets=()
+    if [[ "$1" == *,* ]]; then
+        local old_ifs="${IFS}"
+        IFS=',' read -r -a targets <<< "$1"
+        IFS="${old_ifs}"
+        shift
+    else
+        targets+=("$1")
+        shift
+        while [[ $# -ge 2 && ( "$1" == s.* || "$1" == stream.* ) ]]; do
+            targets+=("$1")
+            shift
         done
+    fi
+
+    local action="$*"
+    local tgt_label
+    tgt_label="$(IFS=','; echo "${targets[*]}")"
+
+    (
+        local -a wait_opts=()
+        if [[ -n "${timeout_sec}" ]]; then
+            wait_opts+=(--timeout "${timeout_sec}")
+        fi
+        if [[ ${#targets[@]} -gt 1 ]]; then
+            while milkwaitany "${wait_opts[@]}" "${targets[@]}" >/dev/null 2>&1; do
+                export MILK_TRIGGER
+                eval "${action}" || true
+                if [[ ${once} -eq 1 ]]; then
+                    break
+                fi
+                if [[ -n "${cooldown}" && "${cooldown}" != "0" ]]; then
+                    sleep "${cooldown}"
+                fi
+            done
+        else
+            local single_t="${targets[0]}"
+            while milkwaitfor "${wait_opts[@]}" "${single_t}" >/dev/null 2>&1; do
+                export MILK_TRIGGER="${single_t#s.}"
+                MILK_TRIGGER="${MILK_TRIGGER#stream.}"
+                eval "${action}" || true
+                if [[ ${once} -eq 1 ]]; then
+                    break
+                fi
+                if [[ -n "${cooldown}" && "${cooldown}" != "0" ]]; then
+                    sleep "${cooldown}"
+                fi
+            done
+        fi
     ) &
     _MILK_ON_PIDS+=("$!")
+    _MILK_ON_TARGETS+=("${tgt_label}")
+    _MILK_ON_CMDS+=("${action}")
     return 0
 }
 
@@ -567,6 +682,10 @@ _milk_complete() {
     fi
     if [[ "${cmd}" == "${MILKCLI_SIGIL}get" && "${cur}" == -* ]]; then
         mapfile -t COMPREPLY < <(compgen -W "--json -j -v -a -A" -- "${cur}")
+        return 0
+    fi
+    if [[ "${cmd}" == "${MILKCLI_SIGIL}on" && "${cur}" == -* ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "--once -1 --max-hz --cooldown --timeout -t --list --stop -s --clear" -- "${cur}")
         return 0
     fi
     if [[ "${cmd}" == "${MILKCLI_SIGIL}"* ]]; then

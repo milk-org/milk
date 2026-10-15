@@ -759,6 +759,8 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
                                 ImageStreamIO_closeIm(&imgs[j]);
                             }
                         }
+                        milk_ipc_set_var(hooks, "MILK_TRIGGER", streams[i], 0);
+                        setenv("MILK_TRIGGER", streams[i], 1);
                         printf("%s\n", streams[i]);
                         fflush(stdout);
                         return 0;
@@ -776,6 +778,8 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
                             ImageStreamIO_closeIm(&imgs[j]);
                         }
                     }
+                    milk_ipc_set_var(hooks, "MILK_TRIGGER", streams[i], 0);
+                    setenv("MILK_TRIGGER", streams[i], 1);
                     printf("%s\n", streams[i]);
                     fflush(stdout);
                     return 0;
@@ -798,6 +802,8 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
                                 ImageStreamIO_closeIm(&imgs[j]);
                             }
                         }
+                        milk_ipc_set_var(hooks, "MILK_TRIGGER", streams[i], 0);
+                        setenv("MILK_TRIGGER", streams[i], 1);
                         printf("%s\n", streams[i]);
                         fflush(stdout);
                         return 0;

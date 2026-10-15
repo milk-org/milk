@@ -1439,3 +1439,57 @@ def test_type_aware_completion_and_signatures(tmp_path: Path):
         """)
     assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
     assert "COMP_SIG_OK" in res.stdout
+
+
+def test_on_reactive_watchers_once_throttle_multitarget_stop(tmp_path: Path):
+    res = _run_bash(f"""
+        @mk2Dim "@S:w_a" 4 4
+        @mk2Dim "@S:w_b" 4 4
+
+        # 1. --once watcher fires exactly once and sets MILK_TRIGGER
+        once_log="{tmp_path}/once.log"
+        @on --once s.w_a "echo \\"ONCE:\\$MILK_TRIGGER\\" >> $once_log"
+        sleep 0.03
+        @calc "w_a += 1.0"
+        sleep 0.04
+        @calc "w_a += 1.0"
+        sleep 0.04
+        [[ "$(wc -l < "$once_log")" -eq 1 ]]
+        [[ "$(cat "$once_log")" == "ONCE:w_a" ]]
+
+        # 2. Multi-target watcher via comma-list with MILK_TRIGGER
+        multi_log="{tmp_path}/multi.log"
+        @on "s.w_a,s.w_b" "echo \\"MULTI:\\$MILK_TRIGGER\\" >> $multi_log"
+        sleep 0.03
+        @calc "w_b += 1.0"
+        sleep 0.04
+        @calc "w_a += 1.0"
+        sleep 0.04
+        @on --stop "s.w_a,s.w_b"
+        grep -q "MULTI:w_b" "$multi_log"
+        grep -q "MULTI:w_a" "$multi_log"
+
+        # 3. --max-hz / --cooldown throttling + selective --stop by target name
+        throt_log="{tmp_path}/throt.log"
+        @on --max-hz 10 s.w_a "echo tick >> $throt_log"
+        @on s.w_b "echo b_tick >> $throt_log"
+        lst="$(@on --list)"
+        [[ "${{lst}}" == *"s.w_a"* && "${{lst}}" == *"s.w_b"* ]]
+        sleep 0.03
+        # Fire 5 rapid updates within ~20ms; 10 Hz throttle (100ms cooldown) caps w_a triggers
+        for _ in 1 2 3 4 5; do
+            @calc "w_a += 1.0"
+        done
+        sleep 0.04
+        @on --stop s.w_a
+        lst_after="$(@on --list)"
+        [[ "${{lst_after}}" != *"s.w_a"* && "${{lst_after}}" == *"s.w_b"* ]]
+        @on --clear
+        [[ -z "$(@on --list)" ]]
+        nticks="$(grep -c '^tick$' "$throt_log")"
+        (( nticks >= 1 && nticks <= 2 ))
+
+        echo "ON_WATCHERS_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "ON_WATCHERS_OK" in res.stdout
