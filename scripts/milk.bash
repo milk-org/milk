@@ -108,10 +108,16 @@ fi
 # 4. Load C builtins (libmilkbash.so) or install milk-call fallback shims
 # ---------------------------------------------------------------------------
 _MILK_BUILTIN_LOADED=0
+enable -d milkcall milkget milkset milkcalc milktest milkexists \
+    milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
 if [[ -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" ]]; then
     if MILK_QUIET=1 enable -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" \
         milkcall milkget milkset milkcalc milktest milkexists \
         milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null; then
+        _MILK_BUILTIN_LOADED=1
+    elif MILK_QUIET=1 enable -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" \
+        milkcall milkget milkset milkcalc milktest milkexists \
+        milkwaitfor milkgrab milkcomplete milkshutdown 2>/dev/null; then
         _MILK_BUILTIN_LOADED=1
     fi
 fi
@@ -161,6 +167,9 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
     milkgrab()     { "${MILK_INSTALLDIR}/bin/milk-call" grab "$@"; }
     milkcomplete() { "${MILK_INSTALLDIR}/bin/milk-call" complete "$@"; }
     milkshutdown() { "${MILK_INSTALLDIR}/bin/milk-call" shutdown "$@"; }
+fi
+
+if [[ "$(type -t milkserver 2>/dev/null)" != "builtin" ]]; then
     milkserver() {
         local eval_file="${TMPDIR:-/tmp}/.milk_eval_$$_${BASHPID}"
         local rc=0
@@ -174,6 +183,8 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
         rm -f "${eval_file}"
         return ${rc}
     }
+fi
+if [[ "$(type -t milklog 2>/dev/null)" != "builtin" ]]; then
     milklog()      { "${MILK_INSTALLDIR}/bin/milk-call" log "$@"; }
 fi
 
