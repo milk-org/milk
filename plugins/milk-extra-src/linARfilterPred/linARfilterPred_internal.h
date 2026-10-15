@@ -49,8 +49,6 @@
 #include "statistic/statistic.h"
 
 #include "linARfilterPred/linARfilterPred.h"
-#include "build_linPF.h"
-#include "applyPF.h"
 
 #ifdef HAVE_CUDA
 #    include "linalgebra/linalgebra.h"

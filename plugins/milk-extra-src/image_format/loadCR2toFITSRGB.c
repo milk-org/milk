@@ -7,7 +7,10 @@
  * @brief Load CR2 file into R G B images
  */
 
-#include "CLIcore.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "milk_runnable.h"
 #include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -30,37 +33,18 @@ static char p_r[FUNCTION_PARAMETER_STRMAXLEN]   = "imR";
 static char p_g[FUNCTION_PARAMETER_STRMAXLEN]   = "imG";
 static char p_b[FUNCTION_PARAMETER_STRMAXLEN]   = "imB";
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "loadcr2torgb",
-    .cmdkey           = "loadcr2torgb",
-    .description      = "load CR2 file into R G B images",
-    .description_long = "Load a Canon CR2 file and demosaic it into separate R, G, B FITS images."
-};
-
 #define FPS_PARAMS(X)                                                                   \
     X(".in_name", p_cr2, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input CR2 image") \
     X(".out_r", p_r, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output red")              \
     X(".out_g", p_g, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output green")            \
     X(".out_b", p_b, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output blue")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(loadCR2toFITSRGB, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t loadCR2toFITSRGB_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     loadCR2toFITSRGB(p_cr2, p_r, p_g, p_b);
-    return RETURN_SUCCESS;
-}
-
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_format__loadCR2toFITSRGB()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -173,3 +157,19 @@ errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
 
     return RETURN_SUCCESS;
 }
+
+/* ================================================================
+ * RUNNABLE DESCRIPTOR
+ * ============================================================= */
+
+const MILK_RUNNABLE runnable_image_format_loadCR2toFITSRGB = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "loadcr2torgb",
+                 .cmdkey      = "loadcr2torgb",
+                 .description = "load CR2 file into R G B images",
+                 .description_long =
+                     "Load a Canon CR2 file and demosaic it into separate R, G, B FITS images." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(loadCR2toFITSRGB),
+    .compute = loadCR2toFITSRGB_compute,
+};

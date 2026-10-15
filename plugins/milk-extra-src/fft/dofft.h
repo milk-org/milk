@@ -10,9 +10,11 @@
 #ifndef FFT_DOFFT_H
 #define FFT_DOFFT_H
 
-#include "CLIcore.h"
-
-errno_t CLIADDCMD_milkfft__dofft();
+#ifdef MILK_NO_CLI
+#    include "CLIcore_standalone.h"
+#else
+#    include "CLIcore.h"
+#endif
 
 imageID do1dfft(const char *in_name, const char *out_name);
 

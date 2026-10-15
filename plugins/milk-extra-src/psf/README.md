@@ -12,6 +12,6 @@ energy computation, and PSF sequence analysis.
 
 ## Dependencies
 
-- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
+- `milk_runnable.h` (`libcomputeunit`), which provides the FPS and processinfo macros
 - `COREMOD_arith`, `COREMOD_iofits`, `COREMOD_memory`, `COREMOD_tools`
 - `fft`, `image_basic`, `image_filter`, `image_gen`

@@ -13,7 +13,7 @@
 #ifndef _STATISTIC_H
 #define _STATISTIC_H
 
-void __attribute__((constructor)) libinit_statistic();
+#include "milk_runnable.h"
 
 /** @brief Uniform distribution from 0 to 1
  */
@@ -48,5 +48,8 @@ long put_poisson_noise(const char *ID_in_name, const char *ID_out_name);
 /** @brief Apply Gaussian noise to image
  */
 long put_gauss_noise(const char *ID_in_name, const char *ID_out_name, double ampl);
+
+extern const MILK_RUNNABLE runnable_statistic_putphnoise;
+extern const MILK_RUNNABLE runnable_statistic_putgaussnoise;
 
 #endif

@@ -7,11 +7,7 @@
  * @brief Image binning
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
 #include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -28,40 +24,20 @@ static char      pc1_out[FUNCTION_PARAMETER_STRMAXLEN] = "outim";
 static long long pc1_bx                                = 4;
 static long long pc1_by                                = 4;
 
-static FPS_APP_INFO FPS_app_info_1 = {
-    .fps_name         = "imcontract",
-    .cmdkey           = "imcontract",
-    .description      = "image binning",
-    .description_long = "Bin (downsample) a 2D or 3D image by integer factors. Each output pixel "
-                        "is the sum or average of a block of input pixels."
-};
-
 #define FPS_PARAMS_1(X)                                                              \
     X(".in_name", pc1_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
     X(".out_name", pc1_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")  \
     X(".binx", &pc1_bx, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "x bin factor")       \
     X(".biny", &pc1_by, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "y bin factor")
 
-static FPS_CLI_BINDING my_bindings_1[] = { FPS_PARAMS_1(FPS_X_BINDING) };
-static const int       nb_bindings_1   = sizeof(my_bindings_1) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg_1[]        = { FPS_PARAMS_1(FPS_X_FARG) };
-static CLICMDDATA      CLIcmddata_1    = {
-    "",   "",   __FILE__, sizeof(farg_1) / sizeof(CLICMDARGDEF), farg_1, CLICMDFLAG_FPS,
-    NULL, NULL, NULL
-};
-FPS_CMDSETTINGS_INIT(1, CLIcmddata_1, FPS_app_info_1)
+MILK_PARAMS_DEFINE(imcontract, FPS_PARAMS_1);
 
 
-static MILK_HOT errno_t compute_function_1()
+static MILK_HOT errno_t imcontract_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     basic_contract(pc1_in, pc1_out, (int) pc1_bx, (int) pc1_by);
     return RETURN_SUCCESS;
-}
-
-static errno_t CLIfunction_1(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_1, farg_1, &CLIcmddata_1, my_bindings_1,
-                                        nb_bindings_1, compute_function_1);
 }
 
 /* ---- Command 2: imcontract3D ---- */
@@ -72,14 +48,6 @@ static long long pc2_bx                                = 4;
 static long long pc2_by                                = 4;
 static long long pc2_bz                                = 1;
 
-static FPS_APP_INFO FPS_app_info_2 = {
-    .fps_name         = "imcontract3D",
-    .cmdkey           = "imcontract3D",
-    .description      = "image binning (3D)",
-    .description_long = "Bin (downsample) a 2D or 3D image by integer factors. Each output pixel "
-                        "is the sum or average of a block of input pixels."
-};
-
 #define FPS_PARAMS_2(X)                                                              \
     X(".in_name", pc2_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
     X(".out_name", pc2_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")  \
@@ -87,40 +55,15 @@ static FPS_APP_INFO FPS_app_info_2 = {
     X(".biny", &pc2_by, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "y bin factor")       \
     X(".binz", &pc2_bz, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "z bin factor")
 
-static FPS_CLI_BINDING my_bindings_2[] = { FPS_PARAMS_2(FPS_X_BINDING) };
-static const int       nb_bindings_2   = sizeof(my_bindings_2) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg_2[]        = { FPS_PARAMS_2(FPS_X_FARG) };
-static CLICMDDATA      CLIcmddata_2    = {
-    "",   "",   __FILE__, sizeof(farg_2) / sizeof(CLICMDARGDEF), farg_2, CLICMDFLAG_FPS,
-    NULL, NULL, NULL
-};
-FPS_CMDSETTINGS_INIT(2, CLIcmddata_2, FPS_app_info_2)
+MILK_PARAMS_DEFINE(imcontract3D, FPS_PARAMS_2);
 
 
-static MILK_HOT errno_t compute_function_2()
+static MILK_HOT errno_t imcontract3D_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     basic_contract3D(pc2_in, pc2_out, (int) pc2_bx, (int) pc2_by, (int) pc2_bz);
     return RETURN_SUCCESS;
 }
-
-static errno_t CLIfunction_2(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_2, farg_2, &CLIcmddata_2, my_bindings_2,
-                                        nb_bindings_2, compute_function_2);
-}
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-errno_t CLIADDCMD_image_basic__imcontract()
-{
-    safe_fps_fill_farg_examples(farg_1, my_bindings_1, nb_bindings_1);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_1, CLIfunction_1);
-
-    safe_fps_fill_farg_examples(farg_2, my_bindings_2, nb_bindings_2);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_2, CLIfunction_2);
-
-    return RETURN_SUCCESS;
-}
-#endif // #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
 imageID basic_contract(const char *ID_name, const char *ID_name_out, int n1, int n2)
 {
@@ -300,3 +243,29 @@ imageID basic_contract3D(const char *ID_name, const char *ID_name_out, int n1, i
 
     return imgout.ID;
 }
+
+const MILK_RUNNABLE runnable_image_basic_imcontract = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "imcontract",
+                 .cmdkey           = "imcontract",
+                 .description      = "image binning",
+                 .description_long = "Bin (downsample) a 2D or 3D image by integer factors. Each "
+                                     "output pixel is the sum or average of a block of input "
+                                     "pixels." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imcontract),
+    .compute = imcontract_compute,
+};
+
+const MILK_RUNNABLE runnable_image_basic_imcontract3D = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "imcontract3D",
+                 .cmdkey           = "imcontract3D",
+                 .description      = "image binning (3D)",
+                 .description_long = "Bin (downsample) a 2D or 3D image by integer factors. Each "
+                                     "output pixel is the sum or average of a block of input "
+                                     "pixels." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imcontract3D),
+    .compute = imcontract3D_compute,
+};

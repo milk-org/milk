@@ -12,41 +12,33 @@ project(lib_${LIBNAME}_project)
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
 
-add_library(${LIBNAME} SHARED ${SOURCEFILES})
-target_include_directories(
-  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
-milk_apply_extensions(${LIBNAME})
+# CUSTOM ===========
+# NCURSES libs also feed the static LTO archive, which is built from the objects.
+# CLIcore is the only other place that resolves NCURSES, and it is skipped with USE_CLI=OFF.
+if(USE_NCURSES AND NOT NCURSES_LIBRARIES)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(NCURSES REQUIRED ncurses)
+endif()
+
+set(_info_link_libs)
+if(USE_NCURSES)
+  set(_info_link_libs ${NCURSES_LIBRARIES})
+endif()
+# ==================
+
+milk_add_runnable_module(${LIBNAME} SOURCES ${SOURCEFILES} LINK_LIBS ${_info_link_libs})
+milk_add_fpsexec_stubs(${LIBNAME})
 
 # CUSTOM ===========
 if(USE_NCURSES)
-  target_compile_definitions(${LIBNAME} PRIVATE USE_NCURSES)
-  target_include_directories(${LIBNAME} PRIVATE ${NCURSES_INCLUDE_DIR})
+  target_compile_definitions(${LIBNAME}_objs PRIVATE USE_NCURSES)
+  target_include_directories(${LIBNAME}_objs PRIVATE ${NCURSES_INCLUDE_DIR})
   target_link_libraries(${LIBNAME} PRIVATE ${NCURSES_LIBRARIES})
 endif()
-
-milk_add_static_lto(${LIBNAME})
 # ==================
 
-install(
-  TARGETS ${LIBNAME}
-  EXPORT milkTargets
-  DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
-
-add_milk_standalone(info-strmonproc stream_monproc.c)
-
-get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  PROPERTY BUILDSYSTEM_TARGETS)
-foreach(_t IN LISTS _stdalones)
-  get_target_property(_type ${_t} TYPE)
-  if(_type STREQUAL "EXECUTABLE")
-    milk_link_module(${_t} ${LIBNAME})
-  endif()
-endforeach()
-
-# CUSTOM ===========
-target_sources(milk-fpsexec-info-strmonproc PRIVATE stream_monproc_shm.c)
 
 if(USE_CLI)
   add_executable(stream-monproc-disp bin/stream-monproc-disp.c

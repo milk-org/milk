@@ -9,11 +9,7 @@
 
 #include <fftw3.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
 #include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -26,38 +22,29 @@ errno_t init_fftw_plans0();
  *  V2 PARAMS (no params)
  * ======================================= */
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "initfft",
-    .cmdkey           = "initfft",
-    .description      = "init FFTW",
-    .description_long = "Initialize and cache FFTW plans for a given image size. Pre-computing "
-                        "plans avoids repeated FFTW planning overhead in real-time loops."
-};
-
 #define FPS_PARAMS(X)
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(init_fftwplan, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t init_fftwplan_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     init_fftw_plans0();
     return RETURN_SUCCESS;
 }
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_milkfft__init_fftwplan()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_fft_init_fftwplan = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "initfft",
+                 .cmdkey      = "initfft",
+                 .description = "init FFTW",
+                 .description_long =
+                     "Initialize and cache FFTW plans for a given image size. Pre-computing "
+                     "plans avoids repeated FFTW planning overhead in real-time loops." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(init_fftwplan),
+    .compute = init_fftwplan_compute,
+};
 
 
 errno_t init_fftw_plans(int mode)

@@ -7,9 +7,16 @@
  * @brief Write float binary with file locking
  */
 
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/file.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -25,35 +32,16 @@ imageID IMAGE_FORMAT_FITS_to_floatbin_lock(const char *__restrict IDname,
 static char p_in[FUNCTION_PARAMETER_STRMAXLEN]    = "im";
 static char p_fname[FUNCTION_PARAMETER_STRMAXLEN] = "im.bin";
 
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "writefloatlock",
-                                     .cmdkey      = "writefloatlock",
-                                     .description = "write float with file locking",
-                                     .description_long =
-                                         "Write a FITS image as a raw 32-bit float binary file "
-                                         "with file locking for safe concurrent access." };
-
 #define FPS_PARAMS(X)                                                              \
     X(".in_name", p_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
     X(".out_name", p_fname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output binary file")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(FITS_to_floatbin_lock, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t FITS_to_floatbin_lock_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     IMAGE_FORMAT_FITS_to_floatbin_lock(p_in, p_fname);
-    return RETURN_SUCCESS;
-}
-
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_format__floatbin_lock()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -118,3 +106,20 @@ imageID IMAGE_FORMAT_FITS_to_floatbin_lock(const char *__restrict IDname,
 
     return ID;
 }
+
+/* ================================================================
+ * RUNNABLE DESCRIPTOR
+ * ============================================================= */
+
+const MILK_RUNNABLE runnable_image_format_FITS_to_floatbin_lock = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "writefloatlock",
+                 .cmdkey      = "writefloatlock",
+                 .description = "write float with file locking",
+                 .description_long =
+                     "Write a FITS image as a raw 32-bit float binary file with file locking for "
+                     "safe concurrent access." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(FITS_to_floatbin_lock),
+    .compute = FITS_to_floatbin_lock_compute,
+};

@@ -7,11 +7,7 @@
  * @brief Add 2D/3D images with offsets
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
 #include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -38,14 +34,6 @@ static char      p1_out[FUNCTION_PARAMETER_STRMAXLEN] = "outim";
 static long long p1_ox                                = 23;
 static long long p1_oy                                = 201;
 
-static FPS_APP_INFO FPS_app_info_1 = {
-    .fps_name         = "addim",
-    .cmdkey           = "addim",
-    .description      = "add two 2D images with offset",
-    .description_long = "Add two 3D image cubes with a configurable spatial offset. Supports "
-                        "sub-pixel alignment via interpolation."
-};
-
 #define FPS_PARAMS_1(X)                                                            \
     X(".in1", p1_in1, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image 1") \
     X(".in2", p1_in2, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image 2") \
@@ -53,26 +41,14 @@ static FPS_APP_INFO FPS_app_info_1 = {
     X(".offx", &p1_ox, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "x offset")          \
     X(".offy", &p1_oy, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "y offset")
 
-static FPS_CLI_BINDING my_bindings_1[] = { FPS_PARAMS_1(FPS_X_BINDING) };
-static const int       nb_bindings_1   = sizeof(my_bindings_1) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg_1[]        = { FPS_PARAMS_1(FPS_X_FARG) };
-static CLICMDDATA      CLIcmddata_1    = {
-    "",   "",   __FILE__, sizeof(farg_1) / sizeof(CLICMDARGDEF), farg_1, CLICMDFLAG_FPS,
-    NULL, NULL, NULL
-};
-FPS_CMDSETTINGS_INIT(1, CLIcmddata_1, FPS_app_info_1)
+MILK_PARAMS_DEFINE(addim, FPS_PARAMS_1);
 
 
-static MILK_HOT errno_t compute_function_1()
+static MILK_HOT errno_t addim_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     basic_add(p1_in1, p1_in2, p1_out, (long) p1_ox, (long) p1_oy);
     return RETURN_SUCCESS;
-}
-
-static errno_t CLIfunction_1(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_1, farg_1, &CLIcmddata_1, my_bindings_1,
-                                        nb_bindings_1, compute_function_1);
 }
 
 /* ---- Command 2: addim3D ---- */
@@ -84,14 +60,6 @@ static long long p2_ox                                = 23;
 static long long p2_oy                                = 201;
 static long long p2_oz                                = 0;
 
-static FPS_APP_INFO FPS_app_info_2 = {
-    .fps_name         = "addim3D",
-    .cmdkey           = "addim3D",
-    .description      = "add two 3D images with offset",
-    .description_long = "Add two 3D image cubes with a configurable spatial offset. Supports "
-                        "sub-pixel alignment via interpolation."
-};
-
 #define FPS_PARAMS_2(X)                                                            \
     X(".in1", p2_in1, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image 1") \
     X(".in2", p2_in2, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image 2") \
@@ -100,39 +68,15 @@ static FPS_APP_INFO FPS_app_info_2 = {
     X(".offy", &p2_oy, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "y offset")          \
     X(".offz", &p2_oz, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "z offset")
 
-static FPS_CLI_BINDING my_bindings_2[] = { FPS_PARAMS_2(FPS_X_BINDING) };
-static const int       nb_bindings_2   = sizeof(my_bindings_2) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg_2[]        = { FPS_PARAMS_2(FPS_X_FARG) };
-static CLICMDDATA      CLIcmddata_2    = {
-    "",   "",   __FILE__, sizeof(farg_2) / sizeof(CLICMDARGDEF), farg_2, CLICMDFLAG_FPS,
-    NULL, NULL, NULL
-};
-FPS_CMDSETTINGS_INIT(2, CLIcmddata_2, FPS_app_info_2)
+MILK_PARAMS_DEFINE(addim3D, FPS_PARAMS_2);
 
-static MILK_HOT errno_t compute_function_2()
+
+static MILK_HOT errno_t addim3D_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     basic_add3D(p2_in1, p2_in2, p2_out, (long) p2_ox, (long) p2_oy, (long) p2_oz);
     return RETURN_SUCCESS;
 }
-
-static errno_t CLIfunction_2(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_2, farg_2, &CLIcmddata_2, my_bindings_2,
-                                        nb_bindings_2, compute_function_2);
-}
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-errno_t CLIADDCMD_image_basic__image_add()
-{
-    safe_fps_fill_farg_examples(farg_1, my_bindings_1, nb_bindings_1);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_1, CLIfunction_1);
-
-    safe_fps_fill_farg_examples(farg_2, my_bindings_2, nb_bindings_2);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_2, CLIfunction_2);
-
-    return RETURN_SUCCESS;
-}
-#endif // #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
 imageID basic_add(const char *__restrict ID_name1,
                   const char *__restrict ID_name2,
@@ -464,3 +408,27 @@ imageID basic_add3D(const char *__restrict ID_name1,
 
     return (ID_out);
 }
+
+const MILK_RUNNABLE runnable_image_basic_addim3D = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "addim3D",
+                 .cmdkey           = "addim3D",
+                 .description      = "add two 3D images with offset",
+                 .description_long = "Add two 3D image cubes with a configurable spatial offset. "
+                                     "Supports sub-pixel alignment via interpolation." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(addim3D),
+    .compute = addim3D_compute,
+};
+
+const MILK_RUNNABLE runnable_image_basic_addim = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "addim",
+                 .cmdkey           = "addim",
+                 .description      = "add two 2D images with offset",
+                 .description_long = "Add two 3D image cubes with a configurable spatial offset. "
+                                     "Supports sub-pixel alignment via interpolation." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(addim),
+    .compute = addim_compute,
+};

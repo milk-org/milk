@@ -5,21 +5,9 @@
 /** @file extract_RGGBchan.c
  */
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "extractRGGBchan",
-                                     .cmdkey      = "extractRGGBchan",
-                                     .description = "extract RGGB channels from color image",
-                                     .description_long =
-                                         "Extract individual RGGB Bayer channels from a raw color "
-                                         "camera image into separate monochrome images." };
 
 
 /* ================================================================
@@ -49,7 +37,7 @@ static char outimB[FUNCTION_PARAMETER_STRMAXLEN]  = "";
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(extract_RGGBchan, FPS_PARAMS);
 
 /*
     IMGID imgoutR,
@@ -198,11 +186,11 @@ errno_t image_format_extract_RGGBchan(IMGID *imgin,
 
 
 /**
- * @brief Wrapper function, used by all CLI calls
+ * @brief Compute wrapper of the runnable descriptor
  *
- * INSERT_STD_PROCINFO statements enable processinfo support
+ * MILK_PROCINFO statements enable processinfo support
  */
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t extract_RGGBchan_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -214,15 +202,15 @@ static MILK_HOT errno_t compute_function()
     IMGID img_outG2 = imgid_make_from_name(outimG2);
     IMGID img_outB  = imgid_make_from_name(outimB);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         image_format_extract_RGGBchan(&img_in, &img_outR, &img_outG1, &img_outG2, &img_outB);
 
         processinfo_update_output_stream(processinfo, img_outR.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     imgid_free(&img_in);
     imgid_free(&img_outR);
@@ -236,29 +224,19 @@ static MILK_HOT errno_t compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_format__extractRGGBchan()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_image_format_extract_RGGBchan = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "extractRGGBchan",
+                 .cmdkey      = "extractRGGBchan",
+                 .description = "extract RGGB channels from color image",
+                 .description_long =
+                     "Extract individual RGGB Bayer channels from a raw color camera image into "
+                     "separate monochrome images." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(extract_RGGBchan),
+    .compute = extract_RGGBchan_compute,
+};
+EXPORT_FPSEXEC(milk, "imgfmt-extractRGGB", runnable_image_format_extract_RGGBchan);

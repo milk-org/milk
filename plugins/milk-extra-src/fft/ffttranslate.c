@@ -9,11 +9,7 @@
 
 #include <math.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
 #include "computeunit.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
@@ -34,43 +30,34 @@ static char   p_out[FUNCTION_PARAMETER_STRMAXLEN] = "im2";
 static double p_xtransl                           = 2.3;
 static double p_ytransl                           = -2.1;
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "transl",
-    .cmdkey      = "transl",
-    .description = "translate image via FFT",
-    .description_long =
-        "Translate (shift) an image by a sub-pixel offset using FFT phase multiplication. Applies "
-        "a linear phase ramp in Fourier space for exact sub-pixel shifts."
-};
-
 #define FPS_PARAMS(X)                                                                   \
     X(".in_name", p_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")      \
     X(".out_name", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")       \
     X(".xtransl", &p_xtransl, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "x translation") \
     X(".ytransl", &p_ytransl, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "y translation")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(ffttranslate, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t ffttranslate_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     fft_image_translate(p_in, p_out, p_xtransl, p_ytransl);
     return RETURN_SUCCESS;
 }
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_milkfft__ffttranslate()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_fft_ffttranslate = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "transl",
+                 .cmdkey      = "transl",
+                 .description = "translate image via FFT",
+                 .description_long =
+                     "Translate (shift) an image by a sub-pixel offset using FFT phase "
+                     "multiplication. Applies a linear phase ramp in Fourier space for exact "
+                     "sub-pixel shifts." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(ffttranslate),
+    .compute = ffttranslate_compute,
+};
 
 
 /*^-----------------------------------------------------------------------------

@@ -21,23 +21,11 @@
  */
 
 #include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "extract_utr.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "cred_cds_utr",
-    .cmdkey           = "cred_cds_utr",
-    .description      = "RT compute of CDS/UTR for camera streams",
-    .description_long = "Compute up-the-ramp (UTR) or correlated double sampling (CDS) readout "
-                        "from IR detector frame sequences in real-time."
-};
 
 
 /* ================================================================
@@ -64,7 +52,7 @@ static float *ptr_sat_value = NULL;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(extract_utr, FPS_PARAMS);
 
 /*
 THE IMPORTANT, CUSTOM PART
@@ -297,7 +285,7 @@ static errno_t simple_desat_finalize(float *last_valid,
 BOILERPLATE
 */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t extract_utr_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -305,8 +293,8 @@ static MILK_HOT errno_t compute_function()
     resolveIMGID(&in_img, ERRMODE_WARN, dcimg, dcnimg);
 
     // Set in_img to be the trigger
-    snprintf(CLIcmddata.cmdsettings->triggerstreamname,
-             sizeof(CLIcmddata.cmdsettings->triggerstreamname), "%s", in_imname);
+    snprintf(self->rt->cmddata.cmdsettings->triggerstreamname,
+             sizeof(self->rt->cmddata.cmdsettings->triggerstreamname), "%s", in_imname);
     if (in_img.ID == -1)
     {
         return RETURN_FAILURE;
@@ -426,14 +414,14 @@ static MILK_HOT errno_t compute_function()
     /*
     PROCESSINFO INIT
     */
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
     // PROCESSINFO* processinfo now available
 
     /*
     LOOP
     */
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
 
     {
         old_ndr_value = ndr_value;
@@ -698,7 +686,7 @@ static MILK_HOT errno_t compute_function()
         }
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     /*
     TEARDOWN
@@ -725,34 +713,20 @@ static MILK_HOT errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-/*
-CLI boilerplate
-*/
-
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_format__cred_cds_utr()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_image_format_extract_utr = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "cred_cds_utr",
+              .cmdkey      = "cred_cds_utr",
+              .description = "RT compute of CDS/UTR for camera streams",
+              .description_long =
+                  "Compute up-the-ramp (UTR) or correlated double sampling (CDS) readout from IR "
+                  "detector frame sequences in real-time." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(extract_utr),
+    .compute = extract_utr_compute,
+};
+EXPORT_FPSEXEC(milk, "imgfmt-extractutr", runnable_image_format_extract_utr);

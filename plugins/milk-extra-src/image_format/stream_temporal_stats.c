@@ -19,23 +19,13 @@
  */
 
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
 #include "milk_type_dispatch.h"
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "stream_av_std",
-                                     .cmdkey      = "stream_av_std",
-                                     .description = "RT compute of ave/std of image streams",
-                                     .description_long =
-                                         "Compute running temporal statistics (mean, standard "
-                                         "deviation) of a shared memory stream in real-time." };
-
 
 /* ================================================================
  * 2.  LOCAL PARAMETER VARIABLES
@@ -61,7 +51,7 @@ static double  *ptr_timeout  = NULL;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(stream_temporal_stats, FPS_PARAMS);
 
 /*
 THE IMPORTANT, CUSTOM PART
@@ -210,7 +200,7 @@ errno_t std_finalize(IMGID out_std_img, void *sum_x, void *sum_xx, int n_frames_
 BOILERPLATE
 */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t stream_temporal_stats_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -218,8 +208,8 @@ static MILK_HOT errno_t compute_function()
     resolveIMGID(&in_img, ERRMODE_WARN, dcimg, dcnimg);
 
     // Set in_img to be the trigger
-    snprintf(CLIcmddata.cmdsettings->triggerstreamname,
-             sizeof(CLIcmddata.cmdsettings->triggerstreamname), "%s", in_name);
+    snprintf(self->rt->cmddata.cmdsettings->triggerstreamname,
+             sizeof(self->rt->cmddata.cmdsettings->triggerstreamname), "%s", in_name);
     if (in_img.ID == -1)
     {
         return RETURN_FAILURE;
@@ -314,14 +304,14 @@ static MILK_HOT errno_t compute_function()
     /*
     PROCESSINFO INIT
     */
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
     // PROCESSINFO* processinfo now available
 
     /*
     LOOP
     */
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
 
     {
         /*
@@ -368,7 +358,7 @@ static MILK_HOT errno_t compute_function()
         }
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     /*
     TEARDOWN
@@ -385,34 +375,20 @@ static MILK_HOT errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-/*
-CLI boilerplate
-*/
-
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_format__temporal_stats()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_image_format_stream_temporal_stats = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "stream_av_std",
+                 .cmdkey      = "stream_av_std",
+                 .description = "RT compute of ave/std of image streams",
+                 .description_long =
+                     "Compute running temporal statistics (mean, standard deviation) of a shared "
+                     "memory stream in real-time." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(stream_temporal_stats),
+    .compute = stream_temporal_stats_compute,
+};
+EXPORT_FPSEXEC(milk, "imgfmt-strmtempstat", runnable_image_format_stream_temporal_stats);

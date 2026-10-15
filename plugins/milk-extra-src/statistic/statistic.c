@@ -31,7 +31,7 @@
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -63,149 +63,13 @@ typedef struct
     long *children_index;
 } BIRCHCF;
 
-#ifndef MILK_NO_CLI // TODO WHY IS THIS GUARD HERE ?????
-
-/* ================================================================== */
-/* ================================================================== */
-/*            COMMAND LINE INTERFACE (CLI) FUNCTIONS                  */
-/* ================================================================== */
-/* ================================================================== */
-
-/** @name CLI bindings */
-
-/* ============================================
- * Command: putphnoise
- * ============================================ */
-
-long put_poisson_noise(const char *ID_in_name, const char *ID_out_name);
-
-static char phn_in[FUNCTION_PARAMETER_STRMAXLEN]  = "im0";
-static char phn_out[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
-
-static FPS_APP_INFO FPS_app_info_phn = {
-    .fps_name         = "putphnoise",
-    .cmdkey           = "putphnoise",
-    .description      = "add photon noise to image",
-    .description_long = "Statistical tools for image processing: add Gaussian noise, compute "
-                        "histograms, and generate statistical test images."
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_statistic_putphnoise,
+    &runnable_statistic_putgaussnoise,
 };
 
-#    define FPS_PARAMS_PHN(X)                                                            \
-        X(".in_name", phn_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
-        X(".out_name", phn_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")
-
-#    include "computeunit.h"
-
-static FPS_CLI_BINDING phn_bindings[]  = { FPS_PARAMS_PHN(FPS_X_BINDING) };
-static const int       phn_nb_bindings = sizeof(phn_bindings) / sizeof(FPS_CLI_BINDING);
-
-/* use standard names for INSERT_STD macro */
-static CLICMDARGDEF farg[]     = { FPS_PARAMS_PHN(FPS_X_FARG) };
-static CLICMDDATA   CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS  phn_cms    = { 0 };
-
-static __attribute__((constructor)) void init_phn_cms(void)
-{
-    strncpy(CLIcmddata.key, FPS_app_info_phn.cmdkey, sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description, FPS_app_info_phn.description,
-            sizeof(CLIcmddata.description) - 1);
-    CLIcmddata.nbarg         = sizeof(farg) / sizeof(CLICMDARGDEF);
-    CLIcmddata.funcfpscliarg = farg;
-    CLIcmddata.flags         = CLICMDFLAG_FPS;
-    if (CLIcmddata.cmdsettings == NULL)
-    {
-        CLIcmddata.cmdsettings = &phn_cms;
-    }
-}
-
-static errno_t phn_compute(void)
-{
-    put_poisson_noise(phn_in, phn_out);
-    return RETURN_SUCCESS;
-}
-
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_phn, farg, &CLIcmddata, phn_bindings,
-                                        phn_nb_bindings, phn_compute);
-}
-
-/* ============================================
- * Command: putgaussnoise
- * ============================================ */
-
-long put_gauss_noise(const char *ID_in_name, const char *ID_out_name, double ampl);
-
-static char   gn_in[FUNCTION_PARAMETER_STRMAXLEN]  = "im0";
-static char   gn_out[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
-static double gn_ampl                              = 0.2;
-
-static FPS_APP_INFO FPS_app_info_gn = {
-    .fps_name         = "putgaussnoise",
-    .cmdkey           = "putgaussnoise",
-    .description      = "add gaussian noise to image",
-    .description_long = "Statistical tools for image processing: add Gaussian noise, compute "
-                        "histograms, and generate statistical test images."
-};
-
-#    define FPS_PARAMS_GN(X)                                                            \
-        X(".in_name", gn_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
-        X(".out_name", gn_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")  \
-        X(".ampl", &gn_ampl, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "noise amplitude")
-
-static FPS_CLI_BINDING gn_bindings[]  = { FPS_PARAMS_GN(FPS_X_BINDING) };
-static const int       gn_nb_bindings = sizeof(gn_bindings) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    gn_farg[]      = { FPS_PARAMS_GN(FPS_X_FARG) };
-static CLICMDDATA      gn_CLIcmddata  = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS     gn_cms         = { 0 };
-
-static __attribute__((constructor)) void init_gn_cms(void)
-{
-    strncpy(gn_CLIcmddata.key, FPS_app_info_gn.cmdkey, sizeof(gn_CLIcmddata.key) - 1);
-    strncpy(gn_CLIcmddata.description, FPS_app_info_gn.description,
-            sizeof(gn_CLIcmddata.description) - 1);
-    gn_CLIcmddata.nbarg         = sizeof(gn_farg) / sizeof(CLICMDARGDEF);
-    gn_CLIcmddata.funcfpscliarg = gn_farg;
-    gn_CLIcmddata.flags         = CLICMDFLAG_FPS;
-    if (gn_CLIcmddata.cmdsettings == NULL)
-    {
-        gn_CLIcmddata.cmdsettings = &gn_cms;
-    }
-}
-
-static errno_t gn_compute(void)
-{
-    put_gauss_noise(gn_in, gn_out, gn_ampl);
-    return RETURN_SUCCESS;
-}
-
-static errno_t gn_CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_gn, gn_farg, &gn_CLIcmddata, gn_bindings,
-                                        gn_nb_bindings, gn_compute);
-}
-
-/* Module init */
-
-static errno_t init_module_CLI()
-{
-    /* putphnoise */
-    safe_fps_fill_farg_examples(farg, phn_bindings, phn_nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC;
-
-    /* putgaussnoise */
-    safe_fps_fill_farg_examples(gn_farg, gn_bindings, gn_nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(gn_CLIcmddata, gn_CLIfunction);
-
-    // add atexit functions here
-
-    return RETURN_SUCCESS;
-}
-
-// INITIALIZE MILK IMPORTABLE MODULE
-MILK_MODULE(statistic, init_module_CLI, NULL);
-
-#endif /* MILK_NO_CLI */
+MILK_MODULE_RUNNABLES(statistic, NULL, runnables);
 
 /* =============================================================================================== */
 /* =============================================================================================== */

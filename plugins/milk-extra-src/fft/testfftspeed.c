@@ -7,11 +7,7 @@
 
 #include <fftw3.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
 #include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -27,38 +23,29 @@ int test_fftspeed(int nmax);
 
 static long long p_nmax = 10;
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "testfftspeed",
-    .cmdkey           = "testfftspeed",
-    .description      = "test FFTW speed",
-    .description_long = "Benchmark FFTW performance for a given image size and transform type. "
-                        "Measures throughput in megapixels/s and reports optimal plan wisdom."
-};
-
 #define FPS_PARAMS(X) X(".nmax", &p_nmax, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "max power of 2")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(testfftspeed, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t testfftspeed_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     test_fftspeed((int) p_nmax);
     return RETURN_SUCCESS;
 }
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_milkfft__testfftspeed()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_fft_testfftspeed = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "testfftspeed",
+                 .cmdkey      = "testfftspeed",
+                 .description = "test FFTW speed",
+                 .description_long =
+                     "Benchmark FFTW performance for a given image size and transform type. "
+                     "Measures throughput in megapixels/s and reports optimal plan wisdom." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(testfftspeed),
+    .compute = testfftspeed_compute,
+};
 
 
 /** @brief Test FFT speed (fftw)

@@ -9,11 +9,7 @@
 
 #include <math.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
 #include "computeunit.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
@@ -33,42 +29,32 @@ static char p_in1[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 static char p_in2[FUNCTION_PARAMETER_STRMAXLEN] = "im2";
 static char p_out[FUNCTION_PARAMETER_STRMAXLEN] = "outim";
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "fcorrel",
-    .cmdkey      = "fcorrel",
-    .description = "correlate two images",
-    .description_long =
-        "Compute the cross-correlation of two images via FFT. Multiplies the Fourier transforms "
-        "and applies the inverse FFT to produce the correlation map."
-};
-
 #define FPS_PARAMS(X)                                                             \
     X(".in1", p_in1, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image 1") \
     X(".in2", p_in2, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image 2") \
     X(".out", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output correlation")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(fftcorrelation, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t fftcorrelation_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     fft_correlation(p_in1, p_in2, p_out);
     return RETURN_SUCCESS;
 }
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_milkfft__fftcorrelation()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_fft_fftcorrelation = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "fcorrel",
+                 .cmdkey      = "fcorrel",
+                 .description = "correlate two images",
+                 .description_long =
+                     "Compute the cross-correlation of two images via FFT. Multiplies the Fourier "
+                     "transforms and applies the inverse FFT to produce the correlation map." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(fftcorrelation),
+    .compute = fftcorrelation_compute,
+};
 
 
 imageID fft_correlation(const char *ID_name1, const char *ID_name2, const char *ID_nameout)

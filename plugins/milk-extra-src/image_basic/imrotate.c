@@ -14,28 +14,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
 #include "imrotate.h"
 #include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "ImageStreamIO/ImageStreamIO.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "rotateim",
-    .cmdkey           = "rotateim",
-    .description      = "rotate 2D image",
-    .description_long = "Rotate a 2D image by an arbitrary angle using bilinear interpolation. "
-                        "Rotation center and angle are configurable."
-};
 
 
 /* ================================================================
@@ -91,7 +74,6 @@ static void imrotate_step(IMAGE *imgin, IMAGE *imgout, float angle)
  * Public convenience function
  * ========================================= */
 
-#ifndef FPS_STANDALONE
 imageID basic_rotate(const char *ID_name, const char *IDout_name, float angle)
 {
     IMGID in = imgid_make_from_name(ID_name);
@@ -101,61 +83,50 @@ imageID basic_rotate(const char *ID_name, const char *IDout_name, float angle)
     ImageStreamIO_UpdateIm(out.im);
     return out.ID;
 }
-#endif
 
 
 /* ================================================================
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(imrotate, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t imrotate_compute(const MILK_RUNNABLE *self)
 {
     IMGID in = imgid_make_from_name(imrotate_inimname);
     resolveIMGID(&in, ERRMODE_ABORT, dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(imrotate_outimname, in.md->size[0], in.md->size[1]);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     imrotate_step(in.im, out.im, imrotate_angle);
     processinfo_update_output_stream(processinfo, out.im, in.im);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_basic__imrotate()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_image_basic_imrotate = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "rotateim",
+                 .cmdkey           = "rotateim",
+                 .description      = "rotate 2D image",
+                 .description_long = "Rotate a 2D image by an arbitrary angle using bilinear "
+                                     "interpolation. Rotation center and angle are configurable." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imrotate),
+    .compute = imrotate_compute,
+};
+EXPORT_FPSEXEC(milk, "imgbasic-rotateim", runnable_image_basic_imrotate);

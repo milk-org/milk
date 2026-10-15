@@ -12,12 +12,8 @@
 
 #include <stdint.h>
 #include <time.h>
-#ifndef MILK_NO_CLI
-#    include "CLIcore.h"
-#else
-#    ifndef __STDC_WANT_LIB_EXT1__
+#ifndef __STDC_WANT_LIB_EXT1__
 typedef int errno_t;
-#    endif
 #endif
 
 // Maximum number of frames in the history circular buffer
@@ -56,9 +52,6 @@ typedef struct
 } STREAM_MON_STRUCT;
 
 
-// CLI Registration
-errno_t CLIADDCMD_info__stream_monproc();
-
 // Shared Memory Access Functions
 
 /**
@@ -76,22 +69,6 @@ STREAM_MON_STRUCT *stream_monitor_connect(const char *streamname, int create);
  * @param smon Pointer to the struct
  */
 void stream_monitor_detach(STREAM_MON_STRUCT *smon);
-
-/**
- * @brief Run the stream monitor loop
- *
- * @param inimname_arg Name of the input stream
- * @param tbinflag_arg Time binning flag
- * @param cbbuffersize_arg Circular buffer size
- * @param procinfo_flag 1 to enable processinfo, 0 otherwise
- * @param fps_flag 1 to enable FPS (Function Parameter Structure) support
- * @return errno_t RETURN_SUCCESS or error code
- */
-errno_t stream_monitor_run(const char *inimname_arg,
-                           uint64_t    tbinflag_arg,
-                           uint32_t    cbbuffersize_arg,
-                           int         procinfo_flag,
-                           int         fps_flag);
 
 /**
  * @brief Print help text for the stream monitor

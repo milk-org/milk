@@ -21,7 +21,4 @@ errno_t pup2foc_fft(const char *__restrict ID_name_ampl,
                     const char *__restrict ID_name_pha_out,
                     const char *__restrict options);
 
-
-errno_t CLIADDCMD_milk_fft__pup2foc();
-
 #endif

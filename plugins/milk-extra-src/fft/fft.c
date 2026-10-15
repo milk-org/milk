@@ -15,47 +15,28 @@
 
 #include <fftw3.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#    include "COREMOD_memory/COREMOD_memory.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
+#include "fft.h"
 #include "wisdom.h"
 
-#ifndef MILK_NO_CLI
-#    include "dofft.h"
-#    include "fftcorrelation.h"
-#    include "ffttranslate.h"
-#    include "init_fftwplan.h"
-#    include "permut.h"
-#    include "testfftspeed.h"
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_fft_init_fftwplan, &runnable_fft_permut,         &runnable_fft_dofft,
+    &runnable_fft_dofft_1dfft,   &runnable_fft_dofft_1drfft,   &runnable_fft_testfftspeed,
+    &runnable_fft_ffttranslate,  &runnable_fft_fftcorrelation, &runnable_fft_pup2foc,
+};
 
-#    include "pup2foc.h"
-
-static errno_t init_module_CLI()
-{
-    CLIADDCMD_milkfft__init_fftwplan();
-    CLIADDCMD_milkfft__permut();
-    CLIADDCMD_milkfft__dofft();
-    CLIADDCMD_milkfft__testfftspeed();
-    CLIADDCMD_milkfft__ffttranslate();
-    CLIADDCMD_milkfft__fftcorrelation();
-
-    CLIADDCMD_milk_fft__pup2foc();
-    return RETURN_SUCCESS;
-}
-
-MILK_MODULE(fft, init_module_CLI, NULL);
+MILK_MODULE_RUNNABLES(fft, NULL, runnables);
 
 static void __attribute__((constructor)) fftw_init()
 {
-#    ifdef FFTWMT
+#ifdef FFTWMT
     printf("Multi-threaded fft enabled, max threads = %d\n", omp_get_max_threads());
     fftwf_init_threads();
     fftwf_plan_with_nthreads(omp_get_max_threads());
-#    endif
+#endif
     // load fftw wisdom
     import_wisdom();
 
@@ -70,17 +51,15 @@ static void __attribute__((destructor)) close_fftwlib()
         fftw_forget_wisdom();
         fftwf_forget_wisdom();
 
-#    ifdef FFTWMT
+#ifdef FFTWMT
         fftw_cleanup_threads();
         fftwf_cleanup_threads();
-#    else
+#else
         fftw_cleanup();
         fftwf_cleanup();
-#    endif
+#endif
     }
 }
-#endif /* MILK_NO_CLI */
-
 int fft_setNthreads(__attribute__((unused)) int nt)
 {
 //   printf("set number of thread to %d (FFTWMT)\n",nt);

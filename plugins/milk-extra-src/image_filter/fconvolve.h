@@ -11,8 +11,6 @@
  *
  */
 
-errno_t CLIADDCMD_image_filter__fconvolve();
-
 imageID fconvolve(const char *__restrict name_in,
                   const char *__restrict name_ke,
                   const char *__restrict name_out);
