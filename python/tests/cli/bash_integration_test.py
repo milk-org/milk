@@ -1584,3 +1584,71 @@ def test_grab_fits_timestamps_and_stream_replay(tmp_path: Path):
         """)
     assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
     assert "GRAB_REPLAY_OK" in res.stdout
+
+
+def test_glob_multi_set_and_snapshot_diff_restore(tmp_path: Path):
+    snap_file = tmp_path / "bench_state.json"
+    res = _run_bash(f"""
+        # 1. Create two streams and two FPS instances
+        @mk2Dim "@S:cam0" 8 8
+        @mk2Dim "@S:cam1" 8 8
+        milk-fpsexec-imggen-mkrndim -n loop0 fpsinit >/dev/null 2>&1
+        milk-fpsexec-imggen-mkrndim -n loop1 fpsinit >/dev/null 2>&1
+
+        # 2. Multi-assignment @set (both 'a=1 b=2' and 'a = 1 b = 2' forms)
+        @set s.cam0.kw.GAIN=2.5 s.cam1.kw.GAIN=5.0
+        [[ "$(@get s.cam0.kw.GAIN)" == "2.5" ]]
+        [[ "$(@get s.cam1.kw.GAIN)" == "5" ]]
+
+        @set f.loop0.xsize = 32 f.loop1.xsize = 64
+        [[ "$(@get f.loop0.xsize)" == "32" ]]
+        [[ "$(@get f.loop1.xsize)" == "64" ]]
+
+        # 3. Globbed @set across multiple streams and FPS instances + wildcard parameter names
+        @set 's.cam*.kw.OBSERVER' = "Subaru"
+        [[ "$(@get s.cam0.kw.OBSERVER)" == "Subaru" ]]
+        [[ "$(@get s.cam1.kw.OBSERVER)" == "Subaru" ]]
+
+        @set 'f.loop*.ysize' = 128
+        [[ "$(@get f.loop0.ysize)" == "128" ]]
+        [[ "$(@get f.loop1.ysize)" == "128" ]]
+
+        @set 'f.loop0.*size' = 96
+        [[ "$(@get f.loop0.xsize)" == "96" ]]
+        [[ "$(@get f.loop0.ysize)" == "96" ]]
+
+        # 4. @snapshot to JSON file (with optional glob filters)
+        @snapshot "{snap_file}" 'f.loop*' 's.cam*'
+        [[ -s "{snap_file}" ]]
+        grep -q '"f.loop0.xsize": 96' "{snap_file}"
+        grep -q '"s.cam0.kw.OBSERVER": "Subaru"' "{snap_file}"
+
+        # 5. @diff exits 0 when state matches snapshot
+        diff_clean="$(@diff "{snap_file}")"
+        [[ -z "${{diff_clean}}" ]]
+
+        # 6. Perturb state, verify @diff exits 1 and reports exact changes
+        @set f.loop0.xsize = 256 s.cam0.kw.GAIN = 10.0
+        set +e
+        diff_out="$(@diff "{snap_file}")"
+        diff_rc=$?
+        set -e
+        [[ "${{diff_rc}}" -eq 1 ]]
+        [[ "${{diff_out}}" == *"f.loop0.xsize: 96 -> 256"* ]]
+        [[ "${{diff_out}}" == *"s.cam0.kw.GAIN: 2.5 -> 10"* ]]
+
+        # 7. @restore --dry-run previews commands without modifying state
+        dry_out="$(@restore --dry-run "{snap_file}" 'f.loop0*')"
+        [[ "${{dry_out}}" == *"@set f.loop0.xsize = 96"* ]]
+        [[ "$(@get f.loop0.xsize)" == "256" ]]
+
+        # 8. @restore brings state back to snapshot and @diff returns 0
+        @restore "{snap_file}"
+        [[ "$(@get f.loop0.xsize)" == "96" ]]
+        [[ "$(@get s.cam0.kw.GAIN)" == "2.5" ]]
+        @diff "{snap_file}"
+
+        echo "SNAP_RESTORE_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "SNAP_RESTORE_OK" in res.stdout

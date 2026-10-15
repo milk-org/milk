@@ -97,4 +97,19 @@ int milk_shm_prop_exists(const char *spec, int check_running);
  */
 int cli_fps_set_param(const char *fpsname, const char *pname, const char *valstr);
 
+/**
+ * @brief Export FPS parameters and stream FITS keywords to JSON (`@snapshot`).
+ */
+int milk_shm_prop_snapshot(int argc, char **argv);
+
+/**
+ * @brief Compare live FPS/stream state against a saved JSON snapshot (`@diff`).
+ */
+int milk_shm_prop_diff(int argc, char **argv);
+
+/**
+ * @brief Restore FPS parameters and stream FITS keywords from a JSON snapshot (`@restore`).
+ */
+int milk_shm_prop_restore(int argc, char **argv);
+
 #endif /* MILK_SHM_PROP_H */

@@ -16,6 +16,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <fnmatch.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -598,6 +599,31 @@ int milk_shm_prop_get(const char *spec, char *out, size_t outsz)
     return milk_shm_prop_get_proc(buf, rest, out, outsz);
 }
 
+static int dispatch_ns_set(const char *nsp,
+                           const char *name,
+                           const char *prop,
+                           const char *val,
+                           const char *comment)
+{
+    if (strcmp(nsp, "f") == 0 || strcmp(nsp, "fps") == 0)
+    {
+        return milk_shm_prop_set_fps(name, prop, val);
+    }
+    if (strcmp(nsp, "s") == 0 || strcmp(nsp, "stream") == 0)
+    {
+        return milk_shm_prop_set_stream(name, prop, val, comment);
+    }
+    if (strcmp(nsp, "p") == 0 || strcmp(nsp, "proc") == 0 || strcmp(nsp, "procinfo") == 0)
+    {
+        return milk_shm_prop_set_proc(name, prop, val);
+    }
+    if (strcmp(nsp, "q") == 0 || strcmp(nsp, "seq") == 0 || strcmp(nsp, "fpsseq") == 0)
+    {
+        return milk_shm_prop_set_seq(name, prop, val);
+    }
+    return -1;
+}
+
 /**
  * @brief Write a live milk entity property or FITS keyword.
  *
@@ -671,23 +697,24 @@ int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
         const char *name = rest;
         const char *prop = dot2 + 1;
 
-        if (strcmp(nsp, "f") == 0 || strcmp(nsp, "fps") == 0)
+        if (has_glob_chars(name))
         {
-            return milk_shm_prop_set_fps(name, prop, val);
+            char lbuf[8192];
+            list_entities_in_namespace(nsp, name, lbuf, sizeof(lbuf));
+            int   matched = 0;
+            char *saveptr = NULL;
+            for (char *ent = strtok_r(lbuf, " \t\r\n", &saveptr); ent != NULL;
+                 ent       = strtok_r(NULL, " \t\r\n", &saveptr))
+            {
+                if (dispatch_ns_set(nsp, ent, prop, val, comment) == 0)
+                {
+                    matched = 1;
+                }
+            }
+            return matched ? 0 : -1;
         }
-        if (strcmp(nsp, "s") == 0 || strcmp(nsp, "stream") == 0)
-        {
-            return milk_shm_prop_set_stream(name, prop, val, comment);
-        }
-        if (strcmp(nsp, "p") == 0 || strcmp(nsp, "proc") == 0 || strcmp(nsp, "procinfo") == 0)
-        {
-            return milk_shm_prop_set_proc(name, prop, val);
-        }
-        if (strcmp(nsp, "q") == 0 || strcmp(nsp, "seq") == 0 || strcmp(nsp, "fpsseq") == 0)
-        {
-            return milk_shm_prop_set_seq(name, prop, val);
-        }
-        return -1;
+
+        return dispatch_ns_set(nsp, name, prop, val, comment);
     }
 
     /* Legacy fallback: @<fpsname>.<param>=<val> */
@@ -740,4 +767,526 @@ int milk_shm_prop_exists(const char *spec, int check_running)
         return milk_shm_prop_exists_seq(name, check_running);
     }
     return 0;
+}
+
+static int is_fps_readonly_meta_key(const char *k)
+{
+    static const char *const ro[] = { "status",     "conf",        "run",     "confrunning",
+                                      "runrunning", "pid",         "confpid", "runpid",
+                                      "nbparam",    "description", NULL };
+    for (int i = 0; ro[i] != NULL; i++)
+    {
+        if (strcmp(k, ro[i]) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int is_snapshot_filter_arg(const char *arg)
+{
+    if (arg == NULL || arg[0] == '\0' || strchr(arg, '/') != NULL)
+    {
+        return 0;
+    }
+    size_t alen = strlen(arg);
+    if (alen > 5 && strcmp(arg + alen - 5, ".json") == 0)
+    {
+        return 0;
+    }
+    while (*arg == '@')
+    {
+        arg++;
+    }
+    return (strncmp(arg, "s.", 2) == 0 || strncmp(arg, "stream.", 7) == 0 ||
+            strncmp(arg, "f.", 2) == 0 || strncmp(arg, "fps.", 4) == 0 || strcmp(arg, "*") == 0);
+}
+
+static int snapshot_key_matches(const char *key, int nfilters, char **filters)
+{
+    if (nfilters <= 0)
+    {
+        return 1;
+    }
+    for (int i = 0; i < nfilters; i++)
+    {
+        const char *pat = filters[i];
+        while (*pat == '@')
+        {
+            pat++;
+        }
+        char norm[256];
+        if (strncmp(pat, "stream.", 7) == 0)
+        {
+            snprintf(norm, sizeof(norm), "s.%s", pat + 7);
+        }
+        else if (strncmp(pat, "fps.", 4) == 0)
+        {
+            snprintf(norm, sizeof(norm), "f.%s", pat + 4);
+        }
+        else
+        {
+            snprintf(norm, sizeof(norm), "%s", pat);
+        }
+
+        if (fnmatch(norm, key, 0) == 0)
+        {
+            return 1;
+        }
+        char sub[280];
+        snprintf(sub, sizeof(sub), "%s.*", norm);
+        if (fnmatch(sub, key, 0) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void emit_snapshot_json_entry(FILE *fp, int *first, const char *key, const char *val)
+{
+    if (!(*first))
+    {
+        fprintf(fp, ",\n");
+    }
+    *first = 0;
+    char   ebuf[2048];
+    size_t pos = 0;
+    ebuf[0]    = '\0';
+    if (is_json_number(val))
+    {
+        snprintf(ebuf, sizeof(ebuf), "%s", val);
+    }
+    else
+    {
+        append_json_escaped_str(ebuf, sizeof(ebuf), &pos, val);
+    }
+    fprintf(fp, "  \"%s\": %s", key, ebuf);
+}
+
+/**
+ * @brief Export FPS parameters and stream FITS keywords to JSON (`@snapshot`).
+ */
+int milk_shm_prop_snapshot(int argc, char **argv)
+{
+    const char *out_file = NULL;
+    char       *filters[64];
+    int         nfilters = 0;
+
+    for (int i = 1; i < argc; i++)
+    {
+        if ((strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) && i + 1 < argc)
+        {
+            out_file = argv[++i];
+        }
+        else if (is_snapshot_filter_arg(argv[i]))
+        {
+            if (nfilters < 64)
+            {
+                filters[nfilters++] = argv[i];
+            }
+        }
+        else if (out_file == NULL && argv[i][0] != '-')
+        {
+            out_file = argv[i];
+        }
+    }
+
+    if (out_file != NULL && strcmp(out_file, "-") == 0)
+    {
+        out_file = NULL;
+    }
+
+    FILE *fp = (out_file != NULL) ? fopen(out_file, "w") : stdout;
+    if (fp == NULL)
+    {
+        fprintf(stderr, "Error: @snapshot: cannot open '%s' for writing\n", out_file);
+        return 1;
+    }
+
+    fprintf(fp, "{\n");
+    int  first = 1;
+    char lbuf[8192];
+
+    /* 1. Active FPS parameters */
+    list_entities_in_namespace("f", "*", lbuf, sizeof(lbuf));
+    char *save_ent = NULL;
+    for (char *ent = strtok_r(lbuf, " \t\r\n", &save_ent); ent != NULL;
+         ent       = strtok_r(NULL, " \t\r\n", &save_ent))
+    {
+        char kv[16384];
+        kv[0] = '\0';
+        if (milk_shm_prop_get_fps(ent, "kv", kv, sizeof(kv)) == 0 && kv[0] != '\0')
+        {
+            char *save_ln = NULL;
+            for (char *ln = strtok_r(kv, "\r\n", &save_ln); ln != NULL;
+                 ln       = strtok_r(NULL, "\r\n", &save_ln))
+            {
+                char *tab = strchr(ln, '\t');
+                if (tab == NULL)
+                {
+                    continue;
+                }
+                *tab          = '\0';
+                const char *k = ln;
+                const char *v = tab + 1;
+                if (k[0] == '\0' || is_fps_readonly_meta_key(k))
+                {
+                    continue;
+                }
+                char fullkey[512];
+                snprintf(fullkey, sizeof(fullkey), "f.%s.%s", ent, k);
+                if (snapshot_key_matches(fullkey, nfilters, filters))
+                {
+                    emit_snapshot_json_entry(fp, &first, fullkey, v);
+                }
+            }
+        }
+    }
+
+    /* 2. Active Stream FITS keywords */
+    list_entities_in_namespace("s", "*", lbuf, sizeof(lbuf));
+    save_ent = NULL;
+    for (char *ent = strtok_r(lbuf, " \t\r\n", &save_ent); ent != NULL;
+         ent       = strtok_r(NULL, " \t\r\n", &save_ent))
+    {
+        char kv[8192];
+        kv[0] = '\0';
+        if (milk_shm_prop_get_stream(ent, "kw.kv", kv, sizeof(kv)) == 0 && kv[0] != '\0')
+        {
+            char *save_ln = NULL;
+            for (char *ln = strtok_r(kv, "\r\n", &save_ln); ln != NULL;
+                 ln       = strtok_r(NULL, "\r\n", &save_ln))
+            {
+                char *tab = strchr(ln, '\t');
+                if (tab == NULL)
+                {
+                    continue;
+                }
+                *tab          = '\0';
+                const char *k = ln;
+                const char *v = tab + 1;
+                if (k[0] == '\0')
+                {
+                    continue;
+                }
+                char fullkey[512];
+                snprintf(fullkey, sizeof(fullkey), "s.%s.kw.%s", ent, k);
+                if (snapshot_key_matches(fullkey, nfilters, filters))
+                {
+                    emit_snapshot_json_entry(fp, &first, fullkey, v);
+                }
+            }
+        }
+    }
+
+    fprintf(fp, "\n}\n");
+    if (fp != stdout)
+    {
+        fclose(fp);
+    }
+    return 0;
+}
+
+static char *read_file_all(const char *path)
+{
+    FILE *fp = (strcmp(path, "-") == 0) ? stdin : fopen(path, "r");
+    if (fp == NULL)
+    {
+        return NULL;
+    }
+    size_t cap = 8192;
+    size_t len = 0;
+    char  *buf = (char *) malloc(cap);
+    if (buf == NULL)
+    {
+        if (fp != stdin)
+        {
+            fclose(fp);
+        }
+        return NULL;
+    }
+    size_t nr;
+    while ((nr = fread(buf + len, 1, cap - len - 1, fp)) > 0)
+    {
+        len += nr;
+        if (len + 1024 >= cap)
+        {
+            cap *= 2;
+            char *nb = (char *) realloc(buf, cap);
+            if (nb == NULL)
+            {
+                free(buf);
+                if (fp != stdin)
+                {
+                    fclose(fp);
+                }
+                return NULL;
+            }
+            buf = nb;
+        }
+    }
+    buf[len] = '\0';
+    if (fp != stdin)
+    {
+        fclose(fp);
+    }
+    return buf;
+}
+
+static int scan_next_json_kv(const char **cursor, char *key, size_t keysz, char *val, size_t valsz)
+{
+    const char *p = *cursor;
+    while (*p != '\0')
+    {
+        while (*p != '\0' && *p != '"')
+        {
+            p++;
+        }
+        if (*p != '"')
+        {
+            *cursor = p;
+            return 0;
+        }
+        p++;
+        size_t ki = 0;
+        while (*p != '\0' && *p != '"')
+        {
+            if (*p == '\\' && p[1] != '\0')
+            {
+                p++;
+            }
+            if (ki + 1 < keysz)
+            {
+                key[ki++] = *p;
+            }
+            p++;
+        }
+        key[ki] = '\0';
+        if (*p == '"')
+        {
+            p++;
+        }
+        while (*p != '\0' && isspace((unsigned char) *p))
+        {
+            p++;
+        }
+        if (*p != ':')
+        {
+            continue;
+        }
+        p++;
+        while (*p != '\0' && isspace((unsigned char) *p))
+        {
+            p++;
+        }
+
+        size_t vi = 0;
+        if (*p == '"')
+        {
+            p++;
+            while (*p != '\0' && *p != '"')
+            {
+                if (*p == '\\' && p[1] != '\0')
+                {
+                    p++;
+                    char c = *p;
+                    if (c == 'n')
+                    {
+                        c = '\n';
+                    }
+                    else if (c == 'r')
+                    {
+                        c = '\r';
+                    }
+                    else if (c == 't')
+                    {
+                        c = '\t';
+                    }
+                    if (vi + 1 < valsz)
+                    {
+                        val[vi++] = c;
+                    }
+                    p++;
+                    continue;
+                }
+                if (vi + 1 < valsz)
+                {
+                    val[vi++] = *p;
+                }
+                p++;
+            }
+            if (*p == '"')
+            {
+                p++;
+            }
+        }
+        else
+        {
+            while (*p != '\0' && *p != ',' && *p != '}' && !isspace((unsigned char) *p))
+            {
+                if (vi + 1 < valsz)
+                {
+                    val[vi++] = *p;
+                }
+                p++;
+            }
+        }
+        val[vi] = '\0';
+        *cursor = p;
+        return 1;
+    }
+    *cursor = p;
+    return 0;
+}
+
+static int snapshot_values_equal(const char *a, const char *b)
+{
+    if (strcmp(a, b) == 0)
+    {
+        return 1;
+    }
+    char  *ea = NULL;
+    char  *eb = NULL;
+    double da = strtod(a, &ea);
+    double db = strtod(b, &eb);
+    if (a[0] != '\0' && b[0] != '\0' && ea != a && *ea == '\0' && eb != b && *eb == '\0')
+    {
+        double scale = fmax(1.0, fmax(fabs(da), fabs(db)));
+        return (fabs(da - db) <= 1.0e-9 * scale) ? 1 : 0;
+    }
+    return 0;
+}
+
+/**
+ * @brief Compare live FPS/stream state against a saved JSON snapshot (`@diff`).
+ */
+int milk_shm_prop_diff(int argc, char **argv)
+{
+    const char *in_file = NULL;
+    char       *filters[64];
+    int         nfilters = 0;
+
+    for (int i = 1; i < argc; i++)
+    {
+        if (is_snapshot_filter_arg(argv[i]))
+        {
+            if (nfilters < 64)
+            {
+                filters[nfilters++] = argv[i];
+            }
+        }
+        else if (in_file == NULL && argv[i][0] != '-')
+        {
+            in_file = argv[i];
+        }
+    }
+
+    if (in_file == NULL)
+    {
+        fprintf(stderr, "Usage: @diff <snapshot.json> [glob_filter...]\n");
+        return 2;
+    }
+
+    char *content = read_file_all(in_file);
+    if (content == NULL)
+    {
+        fprintf(stderr, "Error: @diff: cannot read '%s'\n", in_file);
+        return 2;
+    }
+
+    const char *cur = content;
+    char        key[512];
+    char        sval[1024];
+    int         diff_count = 0;
+
+    while (scan_next_json_kv(&cur, key, sizeof(key), sval, sizeof(sval)))
+    {
+        if (!snapshot_key_matches(key, nfilters, filters))
+        {
+            continue;
+        }
+        char lval[1024];
+        if (milk_shm_prop_get(key, lval, sizeof(lval)) != 0)
+        {
+            printf("%s: %s -> <MISSING>\n", key, sval);
+            diff_count++;
+        }
+        else if (!snapshot_values_equal(sval, lval))
+        {
+            printf("%s: %s -> %s\n", key, sval, lval);
+            diff_count++;
+        }
+    }
+
+    free(content);
+    return (diff_count == 0) ? 0 : 1;
+}
+
+/**
+ * @brief Restore FPS parameters and stream FITS keywords from a JSON snapshot (`@restore`).
+ */
+int milk_shm_prop_restore(int argc, char **argv)
+{
+    const char *in_file = NULL;
+    char       *filters[64];
+    int         nfilters = 0;
+    int         dry_run  = 0;
+
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "--dry-run") == 0 || strcmp(argv[i], "-n") == 0)
+        {
+            dry_run = 1;
+        }
+        else if (is_snapshot_filter_arg(argv[i]))
+        {
+            if (nfilters < 64)
+            {
+                filters[nfilters++] = argv[i];
+            }
+        }
+        else if (in_file == NULL && argv[i][0] != '-')
+        {
+            in_file = argv[i];
+        }
+    }
+
+    if (in_file == NULL)
+    {
+        fprintf(stderr, "Usage: @restore [--dry-run|-n] <snapshot.json> [glob_filter...]\n");
+        return 1;
+    }
+
+    char *content = read_file_all(in_file);
+    if (content == NULL)
+    {
+        fprintf(stderr, "Error: @restore: cannot read '%s'\n", in_file);
+        return 1;
+    }
+
+    const char *cur = content;
+    char        key[512];
+    char        sval[1024];
+    int         rc = 0;
+
+    while (scan_next_json_kv(&cur, key, sizeof(key), sval, sizeof(sval)))
+    {
+        if (!snapshot_key_matches(key, nfilters, filters))
+        {
+            continue;
+        }
+        if (dry_run)
+        {
+            printf("@set %s = %s\n", key, sval);
+        }
+        else if (milk_shm_prop_set(key, sval, NULL) != 0)
+        {
+            rc = 1;
+        }
+    }
+
+    free(content);
+    return rc;
 }

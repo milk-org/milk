@@ -542,18 +542,13 @@ static int milkset_builtin(WORD_LIST *list)
     if (argc < 1 || argv == NULL)
     {
         free(argv);
-        fprintf(stderr, "Usage: @set <entity> [=] [value] [comment]\n");
+        fprintf(stderr, "Usage: @set <entity> [=] [value] [comment] [...]\n");
         return EXECUTION_FAILURE;
     }
 
-    const char *spec    = argv[0];
-    int         v_idx   = (argc >= 3 && strcmp(argv[1], "=") == 0) ? 2 : 1;
-    const char *val     = (argc > v_idx) ? argv[v_idx] : NULL;
-    const char *comment = (argc > v_idx + 1) ? argv[v_idx + 1] : NULL;
-
     milk_client_hooks_t hooks;
     make_bash_hooks(&hooks);
-    int rc = milk_client_set(spec, val, comment, &hooks);
+    int rc = milk_client_set_argv(argc, argv, &hooks);
     free(argv);
     return rc;
 }

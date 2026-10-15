@@ -415,6 +415,77 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
 
 static int milk_server_batch_or_pipe(int argc, char **argv);
 
+static int is_server_entity_spec_token(const char *s)
+{
+    if (s == NULL)
+    {
+        return 0;
+    }
+    while (*s == '@')
+    {
+        s++;
+    }
+    static const char *const pfx[] = { "s.",   "f.",      "p.",    "q.", "fps.",
+                                       "seq.", "stream.", "proc.", NULL };
+    for (int k = 0; pfx[k] != NULL; k++)
+    {
+        size_t plen = strlen(pfx[k]);
+        if (strncmp(s, pfx[k], plen) == 0 && strchr(s + plen, '.') != NULL)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int milk_server_set_argv(int argc, char **argv)
+{
+    if (argc < 2)
+    {
+        fprintf(stderr, "Usage: @set <entity> [=] [value] [comment] [...]\n");
+        return 1;
+    }
+    int rc = 0;
+    int i  = 1;
+    while (i < argc)
+    {
+        const char *spec    = argv[i++];
+        const char *val     = NULL;
+        const char *comment = NULL;
+        if (strchr(spec, '=') != NULL)
+        {
+            if (i < argc && !is_server_entity_spec_token(argv[i]))
+            {
+                comment = argv[i++];
+            }
+        }
+        else
+        {
+            if (i < argc && strcmp(argv[i], "=") == 0)
+            {
+                i++;
+                if (i < argc)
+                {
+                    val = argv[i++];
+                }
+            }
+            else if (i < argc && !is_server_entity_spec_token(argv[i]))
+            {
+                val = argv[i++];
+            }
+            if (i < argc && !is_server_entity_spec_token(argv[i]))
+            {
+                comment = argv[i++];
+            }
+        }
+        if (milk_shm_prop_set(spec, val, comment) != 0)
+        {
+            rc = 1;
+        }
+    }
+    return rc;
+}
+
 /**
  * @brief Dispatch a parsed `argv[]` command vector to built-ins, entities, or `data.cmd[]`.
  *
@@ -446,6 +517,22 @@ int milk_server_dispatch_argv(int argc, char **argv)
     if (strcmp(cmdname, "replay") == 0)
     {
         return milk_server_replay(argc, argv);
+    }
+    if (strcmp(cmdname, "snapshot") == 0)
+    {
+        return milk_shm_prop_snapshot(argc, argv);
+    }
+    if (strcmp(cmdname, "diff") == 0)
+    {
+        return milk_shm_prop_diff(argc, argv);
+    }
+    if (strcmp(cmdname, "restore") == 0)
+    {
+        return milk_shm_prop_restore(argc, argv);
+    }
+    if (strcmp(cmdname, "set") == 0)
+    {
+        return milk_server_set_argv(argc, argv);
     }
     if (strcmp(cmdname, "batch") == 0 || strcmp(cmdname, "pipe") == 0)
     {
@@ -914,10 +1001,7 @@ static int exec_single_batch_step(const char *raw_step, char *last_img, size_t l
 
     if (strcmp(w0, "set") == 0 && s_argc >= 2)
     {
-        return (milk_shm_prop_set(s_argv[1], (s_argc >= 3) ? s_argv[2] : NULL,
-                                  (s_argc >= 4) ? s_argv[3] : NULL) == 0)
-                   ? 0
-                   : 1;
+        return milk_server_set_argv(s_argc, s_argv);
     }
     if (strcmp(w0, "get") == 0 && s_argc >= 2)
     {

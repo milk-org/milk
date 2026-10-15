@@ -13,6 +13,7 @@
  *   structures in `/dev/shm`.
  */
 
+#include <fnmatch.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -437,6 +438,39 @@ int cli_fps_set_param(const char *fpsname, const char *pname, const char *valstr
     {
         printf("Error: cannot connect to FPS '%s'\n", fpsname);
         return -1;
+    }
+
+    if (strchr(pname, '*') != NULL || strchr(pname, '?') != NULL)
+    {
+        int    matched = 0;
+        size_t nlen    = strlen(fpsname);
+        for (int pi = 0; pi < fps.md->NBparamMAX; pi++)
+        {
+            if (fps.parray[pi].fpflag & FPFLAG_ACTIVE)
+            {
+                const char *kw = (fps.parray[pi].keywordfull[0] != '\0')
+                                     ? fps.parray[pi].keywordfull
+                                     : fps.parray[pi].keyword[0];
+                while (*kw == '.')
+                {
+                    kw++;
+                }
+                if (strncmp(kw, fpsname, nlen) == 0 && kw[nlen] == '.')
+                {
+                    kw += nlen + 1;
+                }
+                if (fnmatch(pname, kw, 0) == 0 ||
+                    fnmatch(pname, fps.parray[pi].keywordfull, 0) == 0)
+                {
+                    if (functionparameter_SetParamValue_fromString(&fps, pi, valstr) == 0)
+                    {
+                        matched = 1;
+                    }
+                }
+            }
+        }
+        fps_disconnect(&fps);
+        return matched ? 0 : -1;
     }
 
     int pindex = functionparameter_GetParamIndex(&fps, pname);

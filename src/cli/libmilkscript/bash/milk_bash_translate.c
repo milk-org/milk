@@ -137,7 +137,8 @@ static int is_entity_prefix(const char *s, size_t *out_len)
     for (int i = 0; pfx[i] != NULL; i++)
     {
         size_t plen = strlen(pfx[i]);
-        if (strncmp(s, pfx[i], plen) == 0 && (isalnum((unsigned char) s[plen]) || s[plen] == '_'))
+        if (strncmp(s, pfx[i], plen) == 0 && (isalnum((unsigned char) s[plen]) || s[plen] == '_' ||
+                                              s[plen] == '*' || s[plen] == '?'))
         {
             if (out_len != NULL)
             {
@@ -160,7 +161,7 @@ static size_t scan_entity_path(const char *s, int *has_eq)
     size_t i    = plen;
     int    dots = 1;
     while (s[i] != '\0' && (isalnum((unsigned char) s[i]) || s[i] == '_' || s[i] == '-' ||
-                            s[i] == '.' || s[i] == '*'))
+                            s[i] == '.' || s[i] == '*' || s[i] == '?'))
     {
         if (s[i] == '.')
         {
@@ -557,8 +558,10 @@ static int is_entity_taking_cmd(const char *cmd, const char *sigil)
     }
     return (strcmp(cmd, "get") == 0 || strcmp(cmd, "set") == 0 || strcmp(cmd, "exists") == 0 ||
             strcmp(cmd, "running") == 0 || strcmp(cmd, "waitfor") == 0 ||
-            strcmp(cmd, "waitany") == 0 || strcmp(cmd, "on") == 0 ||
-            strcmp(cmd, "streamcat") == 0 || strcmp(cmd, "streamwrite") == 0);
+            strcmp(cmd, "waitany") == 0 || strcmp(cmd, "on") == 0 || strcmp(cmd, "snapshot") == 0 ||
+            strcmp(cmd, "diff") == 0 || strcmp(cmd, "restore") == 0 || strcmp(cmd, "assert") == 0 ||
+            strcmp(cmd, "prompt") == 0 || strcmp(cmd, "streamcat") == 0 ||
+            strcmp(cmd, "streamwrite") == 0);
 }
 
 static void append_args_with_quoting(const char *args,
@@ -959,7 +962,7 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
                 }
                 sbuf_append_str(out, sigil);
                 sbuf_append_str(out, "set ");
-                sbuf_append_mem(out, s + adv, elen);
+                append_args_with_quoting(s + adv, elen, 1, 1, out);
                 sbuf_append_ch(out, ' ');
                 sbuf_append_mem(out, s + vstart, slen - vstart);
                 sbuf_append_mem(out, stmt + end, len - end);
@@ -984,7 +987,7 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
                 }
                 sbuf_append_str(out, sigil);
                 sbuf_append_str(out, is_set_act ? "set " : "get ");
-                sbuf_append_mem(out, s + adv, elen);
+                append_args_with_quoting(s + adv, elen, 1, 1, out);
                 sbuf_append_mem(out, stmt + end, len - end);
                 return;
             }

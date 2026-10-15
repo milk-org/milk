@@ -313,10 +313,18 @@ int milk_client_set(const char                *spec,
     }
     milk_ipc_sync_shm_env(hooks);
 
+    const char *s_clean = spec;
+    while (*s_clean == '@')
+    {
+        s_clean++;
+    }
+    int is_stream_glob = ((strncmp(s_clean, "s.", 2) == 0 || strncmp(s_clean, "stream.", 7) == 0) &&
+                          (strchr(s_clean, '*') != NULL || strchr(s_clean, '?') != NULL));
+
     struct timespec ts0;
     clock_gettime(CLOCK_REALTIME, &ts0);
 
-    if (milk_shm_prop_set(spec, val, comment) == 0)
+    if (!is_stream_glob && milk_shm_prop_set(spec, val, comment) == 0)
     {
         struct timespec ts1;
         clock_gettime(CLOCK_REALTIME, &ts1);
@@ -377,6 +385,83 @@ int milk_client_set(const char                *spec,
 
     int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
     close(fd);
+    return rc;
+}
+
+static int is_entity_spec_token(const char *s)
+{
+    if (s == NULL)
+    {
+        return 0;
+    }
+    while (*s == '@')
+    {
+        s++;
+    }
+    static const char *const pfx[] = { "s.",   "f.",      "p.",    "q.", "fps.",
+                                       "seq.", "stream.", "proc.", NULL };
+    for (int k = 0; pfx[k] != NULL; k++)
+    {
+        size_t plen = strlen(pfx[k]);
+        if (strncmp(s, pfx[k], plen) == 0 && strchr(s + plen, '.') != NULL)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * @brief Parse and execute one or more `@set` assignments from `argv`.
+ */
+int milk_client_set_argv(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    if (argc < 1 || argv == NULL || argv[0] == NULL)
+    {
+        fprintf(stderr, "Usage: @set <entity> [=] [value] [comment] [...]\n");
+        return 1;
+    }
+
+    int rc = 0;
+    int i  = 0;
+    while (i < argc)
+    {
+        const char *spec    = argv[i++];
+        const char *val     = NULL;
+        const char *comment = NULL;
+
+        if (strchr(spec, '=') != NULL)
+        {
+            if (i < argc && !is_entity_spec_token(argv[i]))
+            {
+                comment = argv[i++];
+            }
+        }
+        else
+        {
+            if (i < argc && strcmp(argv[i], "=") == 0)
+            {
+                i++;
+                if (i < argc)
+                {
+                    val = argv[i++];
+                }
+            }
+            else if (i < argc && !is_entity_spec_token(argv[i]))
+            {
+                val = argv[i++];
+            }
+            if (i < argc && !is_entity_spec_token(argv[i]))
+            {
+                comment = argv[i++];
+            }
+        }
+
+        if (milk_client_set(spec, val, comment, hooks) != 0)
+        {
+            rc = 1;
+        }
+    }
     return rc;
 }
 

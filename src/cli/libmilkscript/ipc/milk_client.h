@@ -54,6 +54,11 @@ int milk_client_set(const char                *spec,
                     const milk_client_hooks_t *hooks);
 
 /**
+     * @brief Set one or more milk FPS parameters or stream FITS keywords (`@set`).
+     */
+int milk_client_set_argv(int argc, char **argv, const milk_client_hooks_t *hooks);
+
+/**
      * @brief Evaluate a `@calc` expression on the persistent server.
      *
      * If @p varname is non-NULL, captures any printed scalar result into

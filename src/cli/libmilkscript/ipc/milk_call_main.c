@@ -60,9 +60,10 @@ static int setup_bin_farm(const char *bin_farm,
     }
 
     static const char *const core_cmds[] = {
-        "",        "calc",    "test", "get",       "set",         "exists", "running",
-        "waitfor", "waitany", "grab", "server",    "log",         "h",      "hb",
-        "hc",      "hm",      "hf",   "streamcat", "streamwrite", "unload", NULL
+        "",        "calc",      "test",        "get",      "set",  "exists",  "running", "waitfor",
+        "waitany", "grab",      "replay",      "snapshot", "diff", "restore", "assert",  "prompt",
+        "batch",   "pipe",      "server",      "log",      "h",    "hb",      "hc",      "hm",
+        "hf",      "streamcat", "streamwrite", "unload",   NULL
     };
     for (int i = 0; core_cmds[i] != NULL; i++)
     {
@@ -114,7 +115,11 @@ static void print_usage(const char *prog)
     printf("  batch <cmd1; cmd2; ...>          Execute multi-command block in 1 round trip\n");
     printf("  pipe <cmd1 |> cmd2 |> ...>       Execute |> pipeline in 1 round trip\n");
     printf("  get [--json] <spec>              Query/discover stream/FPS/procinfo/seq property\n");
-    printf("  set <entity> [val] [comment]     Set FPS parameter or stream FITS keyword\n");
+    printf("  set <entity> [val] [comment]     Set FPS parameter(s) or stream FITS keyword(s)\n");
+    printf("  snapshot [-o <f>] [<f>] [glob]   Export FPS params & stream keywords to JSON\n");
+    printf("  diff <f.json> [glob...]          Diff live state against snapshot JSON\n");
+    printf("  restore [-n] <f.json> [glob...]  Restore state from snapshot JSON\n");
+    printf("  assert [flags] <expr|entity>     Assert mathematical or stream/FPS condition\n");
     printf("  calc <expr...>                   Evaluate a @calc expression\n");
     printf("  test <expr...>                   Evaluate a @test boolean condition\n");
     printf("  exists [-r] <entity>             Check if entity exists (or -r is running)\n");
@@ -197,11 +202,7 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
     }
     if (strcmp(sub, "set") == 0)
     {
-        const char *spec    = (argc >= 1) ? argv[0] : NULL;
-        int         v_idx   = (argc >= 3 && strcmp(argv[1], "=") == 0) ? 2 : 1;
-        const char *val     = (argc > v_idx) ? argv[v_idx] : NULL;
-        const char *comment = (argc > v_idx + 1) ? argv[v_idx + 1] : NULL;
-        return milk_client_set(spec, val, comment, NULL);
+        return milk_client_set_argv(argc, argv, NULL);
     }
     if (strcmp(sub, "calc") == 0)
     {
