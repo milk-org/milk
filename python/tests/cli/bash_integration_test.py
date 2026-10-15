@@ -1652,3 +1652,47 @@ def test_glob_multi_set_and_snapshot_diff_restore(tmp_path: Path):
         """)
     assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
     assert "SNAP_RESTORE_OK" in res.stdout
+
+
+def test_assert_expressions_and_stream_loop_health():
+    res = _run_bash("""
+        @mk2Dim "@S:asrt_im" 8 8
+        @calc "asrt_im = 4.0"
+        milk-fpsexec-imggen-mkrndim -n asrt_fps fpsinit >/dev/null 2>&1
+
+        # 1. Passing expression and entity health assertions exit 0 silently
+        @assert "itot(asrt_im) == 256" "Sum should be 256"
+        @assert "asrt_im[0, 0] <= 5.0"
+        @assert s.asrt_im
+        @assert --exists --dim 8x8 --cnt-min 1 --max-age 10.0 s.asrt_im
+        @assert --exists f.asrt_fps
+
+        # 2. Failing relational expression prints actual LHS vs RHS and custom message to stderr
+        set +e
+        err_rel="$(@assert "itot(asrt_im) < 100" "Residual diverged" 2>&1)"
+        rc_rel=$?
+        err_dim="$(@assert --dim 16x16 s.asrt_im "Wrong camera geometry" 2>&1)"
+        rc_dim=$?
+        err_run="$(@assert --running f.asrt_fps "Loop is not running" 2>&1)"
+        rc_run=$?
+        err_cnt="$(@assert --cnt-min 999999 s.asrt_im 2>&1)"
+        rc_cnt=$?
+        err_mis="$(@assert --exists s.no_such_stream_xyz "Missing telemetry" 2>&1)"
+        rc_mis=$?
+        set -e
+
+        [[ "${rc_rel}" -eq 1 ]]
+        [[ "${err_rel}" == *"ASSERT FAILED: itot(asrt_im) < 100 (actual: 256 vs 100) -- Residual diverged"* ]]
+        [[ "${rc_dim}" -eq 1 ]]
+        [[ "${err_dim}" == *"ASSERT FAILED: s.asrt_im --dim 16x16 (actual: 8x8) -- Wrong camera geometry"* ]]
+        [[ "${rc_run}" -eq 1 ]]
+        [[ "${err_run}" == *"ASSERT FAILED: f.asrt_fps --running (actual: not running) -- Loop is not running"* ]]
+        [[ "${rc_cnt}" -eq 1 ]]
+        [[ "${err_cnt}" == *"ASSERT FAILED: s.asrt_im --cnt-min 999999"* ]]
+        [[ "${rc_mis}" -eq 1 ]]
+        [[ "${err_mis}" == *"ASSERT FAILED: s.no_such_stream_xyz --exists (actual: missing) -- Missing telemetry"* ]]
+
+        echo "ASSERT_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "ASSERT_OK" in res.stdout

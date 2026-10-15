@@ -407,6 +407,7 @@ static int is_calc_or_test_stmt_prefix(const char *s, size_t len, const char *si
     }
     if ((rlen > 5 && strncmp(rest, "calc", 4) == 0 && (rest[4] == ' ' || rest[4] == '\t')) ||
         (rlen > 5 && strncmp(rest, "test", 4) == 0 && (rest[4] == ' ' || rest[4] == '\t')) ||
+        (rlen > 7 && strncmp(rest, "assert", 6) == 0 && (rest[6] == ' ' || rest[6] == '\t')) ||
         (rlen > 8 && strncmp(rest, "waitfor", 7) == 0 && (rest[7] == ' ' || rest[7] == '\t')))
     {
         return 1;
