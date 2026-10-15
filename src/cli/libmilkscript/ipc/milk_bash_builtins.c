@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 #include "milk_client.h"
 #include "milkdata.h"
@@ -203,6 +205,150 @@ static int wordlist_to_argv(WORD_LIST *list, char ***out_argv)
     return count;
 }
 
+static void append_dyn_str(char **buf, size_t *len, size_t *cap, const char *s)
+{
+    size_t slen = strlen(s);
+    if (*len + slen + 1 > *cap)
+    {
+        size_t ncap = (*cap == 0) ? 1024 : (*cap * 2);
+        while (ncap < *len + slen + 1)
+        {
+            ncap *= 2;
+        }
+        char *nb = (char *) realloc(*buf, ncap);
+        if (nb == NULL)
+        {
+            return;
+        }
+        *buf = nb;
+        *cap = ncap;
+    }
+    memcpy(*buf + *len, s, slen);
+    *len += slen;
+    (*buf)[*len] = '\0';
+}
+
+static void append_sq_escaped(char **buf, size_t *len, size_t *cap, const char *s)
+{
+    append_dyn_str(buf, len, cap, "'");
+    for (const char *p = s; *p != '\0'; p++)
+    {
+        if (*p == '\'')
+        {
+            append_dyn_str(buf, len, cap, "'\"'\"'");
+        }
+        else
+        {
+            char ch[2] = { *p, '\0' };
+            append_dyn_str(buf, len, cap, ch);
+        }
+    }
+    append_dyn_str(buf, len, cap, "'");
+}
+
+static void bash_bind_indexed_array(const char *arrname, char *text)
+{
+    resolve_bash_symbols();
+    if (fn_parse_and_execute == NULL || arrname == NULL || arrname[0] == '\0')
+    {
+        return;
+    }
+    char  *script = NULL;
+    size_t len    = 0;
+    size_t cap    = 0;
+    append_dyn_str(&script, &len, &cap, arrname);
+    append_dyn_str(&script, &len, &cap, "=(");
+    char *saveptr = NULL;
+    for (char *tok = strtok_r(text, " \t\r\n", &saveptr); tok != NULL;
+         tok       = strtok_r(NULL, " \t\r\n", &saveptr))
+    {
+        append_sq_escaped(&script, &len, &cap, tok);
+        append_dyn_str(&script, &len, &cap, " ");
+    }
+    append_dyn_str(&script, &len, &cap, ")");
+    if (script != NULL)
+    {
+        fn_parse_and_execute(script, "milk_bind_arr", 0x05);
+    }
+}
+
+static void bash_bind_assoc_array(const char *assocname, char *kv_text)
+{
+    resolve_bash_symbols();
+    if (fn_parse_and_execute == NULL || assocname == NULL || assocname[0] == '\0')
+    {
+        return;
+    }
+    char  *script = NULL;
+    size_t len    = 0;
+    size_t cap    = 0;
+    append_dyn_str(&script, &len, &cap, "declare -gA ");
+    append_dyn_str(&script, &len, &cap, assocname);
+    append_dyn_str(&script, &len, &cap, "=()");
+
+    char *saveptr = NULL;
+    for (char *line = strtok_r(kv_text, "\r\n", &saveptr); line != NULL;
+         line       = strtok_r(NULL, "\r\n", &saveptr))
+    {
+        char *tab = strchr(line, '\t');
+        if (tab == NULL)
+        {
+            continue;
+        }
+        *tab = '\0';
+        if (line[0] == '\0')
+        {
+            continue;
+        }
+        append_dyn_str(&script, &len, &cap, "; ");
+        append_dyn_str(&script, &len, &cap, assocname);
+        append_dyn_str(&script, &len, &cap, "[");
+        append_sq_escaped(&script, &len, &cap, line);
+        append_dyn_str(&script, &len, &cap, "]=");
+        append_sq_escaped(&script, &len, &cap, tab + 1);
+    }
+    if (script != NULL)
+    {
+        fn_parse_and_execute(script, "milk_bind_assoc", 0x05);
+    }
+}
+
+static void normalize_assoc_spec(const char *spec, char *out, size_t outsz)
+{
+    while (*spec == '@')
+    {
+        spec++;
+    }
+    size_t slen = strlen(spec);
+    if (slen > 5 && strcmp(spec + slen - 5, ".kw.*") == 0)
+    {
+        snprintf(out, outsz, "%.*s.kw.kv", (int) (slen - 5), spec);
+        return;
+    }
+    if (slen > 3 && strcmp(spec + slen - 3, ".kw") == 0)
+    {
+        snprintf(out, outsz, "%s.kv", spec);
+        return;
+    }
+    if (slen > 2 && strcmp(spec + slen - 2, ".*") == 0)
+    {
+        snprintf(out, outsz, "%.*s.kv", (int) (slen - 2), spec);
+        return;
+    }
+    if (slen > 5 && strcmp(spec + slen - 5, ".list") == 0)
+    {
+        snprintf(out, outsz, "%.*s.kv", (int) (slen - 5), spec);
+        return;
+    }
+    const char *dot1 = strchr(spec, '.');
+    if (dot1 != NULL && strchr(dot1 + 1, '.') == NULL)
+    {
+        snprintf(out, outsz, "%s.kv", spec);
+        return;
+    }
+    snprintf(out, outsz, "%s", spec);
+}
+
 /* ============================================================
  *  Builtin Entry Points
  * ============================================================ */
@@ -232,6 +378,67 @@ static int milkcall_builtin(WORD_LIST *list)
 
     milk_client_hooks_t hooks;
     make_bash_hooks(&hooks);
+
+    /* Support '@streamcat -a <arr_var> <stream>' zero-subshell indexed array binding */
+    if (strcmp(argv[start_idx], "streamcat") == 0)
+    {
+        const char *arrname = NULL;
+        char      **fargv   = (char **) calloc((size_t) argc + 1, sizeof(char *));
+        int         fargc   = 0;
+        if (fargv != NULL)
+        {
+            for (int i = start_idx; i < argc; i++)
+            {
+                if (strcmp(argv[i], "-a") == 0 && i + 1 < argc)
+                {
+                    arrname = argv[++i];
+                }
+                else
+                {
+                    fargv[fargc++] = argv[i];
+                }
+            }
+            if (arrname != NULL)
+            {
+                int mfd       = memfd_create("milk_sc_arr", MFD_CLOEXEC);
+                int saved_out = (mfd >= 0) ? dup(STDOUT_FILENO) : -1;
+                if (mfd >= 0 && saved_out >= 0)
+                {
+                    fflush(stdout);
+                    dup2(mfd, STDOUT_FILENO);
+                }
+                int rc = milk_client_call(fargc, fargv, 0, &hooks);
+                if (saved_out >= 0)
+                {
+                    fflush(stdout);
+                    dup2(saved_out, STDOUT_FILENO);
+                    close(saved_out);
+                }
+                if (mfd >= 0)
+                {
+                    off_t sz = lseek(mfd, 0, SEEK_END);
+                    lseek(mfd, 0, SEEK_SET);
+                    if (rc == 0 && sz >= 0)
+                    {
+                        char *obuf = (char *) malloc((size_t) sz + 1);
+                        if (obuf != NULL)
+                        {
+                            ssize_t nr              = read(mfd, obuf, (size_t) sz);
+                            obuf[(nr > 0) ? nr : 0] = '\0';
+                            bash_bind_indexed_array(arrname, obuf);
+                            free(obuf);
+                        }
+                    }
+                    close(mfd);
+                }
+                free(fargv);
+                free(argv);
+                return rc;
+            }
+            free(fargv);
+        }
+    }
+
     int rc = milk_client_call(argc - start_idx, argv + start_idx, async_flag, &hooks);
     free(argv);
     return rc;
@@ -244,17 +451,27 @@ static int milkget_builtin(WORD_LIST *list)
     if (argc == 0 || argv == NULL)
     {
         free(argv);
-        fprintf(stderr, "Usage: @get [-v var] <entity>\n");
+        fprintf(stderr, "Usage: @get [-v var | -a arr | -A assoc] <entity>\n");
         return EXECUTION_FAILURE;
     }
 
-    const char *varname = NULL;
-    const char *spec    = NULL;
+    const char *varname   = NULL;
+    const char *arrname   = NULL;
+    const char *assocname = NULL;
+    const char *spec      = NULL;
     for (int i = 0; i < argc; i++)
     {
         if (strcmp(argv[i], "-v") == 0 && i + 1 < argc)
         {
             varname = argv[++i];
+        }
+        else if (strcmp(argv[i], "-a") == 0 && i + 1 < argc)
+        {
+            arrname = argv[++i];
+        }
+        else if (strcmp(argv[i], "-A") == 0 && i + 1 < argc)
+        {
+            assocname = argv[++i];
         }
         else if (spec == NULL)
         {
@@ -262,13 +479,40 @@ static int milkget_builtin(WORD_LIST *list)
         }
     }
 
+    milk_client_hooks_t hooks;
+    make_bash_hooks(&hooks);
+
+    if (arrname != NULL)
+    {
+        char val[16384];
+        int  rc = milk_client_get_buf(spec, val, sizeof(val), &hooks);
+        if (rc == 0)
+        {
+            bash_bind_indexed_array(arrname, val);
+        }
+        free(argv);
+        return rc;
+    }
+
+    if (assocname != NULL && spec != NULL)
+    {
+        char kv_spec[512];
+        char val[16384];
+        normalize_assoc_spec(spec, kv_spec, sizeof(kv_spec));
+        int rc = milk_client_get_buf(kv_spec, val, sizeof(val), &hooks);
+        if (rc == 0)
+        {
+            bash_bind_assoc_array(assocname, val);
+        }
+        free(argv);
+        return rc;
+    }
+
     if (varname == NULL && in_bash_funsub())
     {
         varname = "REPLY";
     }
 
-    milk_client_hooks_t hooks;
-    make_bash_hooks(&hooks);
     int rc = milk_client_get(spec, varname, &hooks);
     free(argv);
     return rc;

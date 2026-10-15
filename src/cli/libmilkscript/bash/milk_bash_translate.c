@@ -806,7 +806,7 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
     size_t      slen = end - i;
     const char *s    = stmt + i;
 
-    /* 1. Shorthand '@ <expr>' calculator statement */
+    /* 1. Shorthand '@ [-v <var>] <expr>' calculator statement */
     if ((slen > siglen && strncmp(s, sigil, siglen) == 0 &&
          (s[siglen] == ' ' || s[siglen] == '\t')) ||
         (slen > 1 && s[0] == '@' && (s[1] == ' ' || s[1] == '\t')))
@@ -819,7 +819,33 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
             adv++;
         }
         sbuf_append_str(out, sigil);
-        sbuf_append_str(out, "calc \"");
+        sbuf_append_str(out, "calc ");
+        if (adv + 3 < slen && strncmp(s + adv, "-v", 2) == 0 &&
+            (s[adv + 2] == ' ' || s[adv + 2] == '\t'))
+        {
+            size_t vs = adv + 2;
+            while (vs < slen && (s[vs] == ' ' || s[vs] == '\t'))
+            {
+                vs++;
+            }
+            size_t ve = vs;
+            while (ve < slen && !isspace((unsigned char) s[ve]))
+            {
+                ve++;
+            }
+            if (ve > vs && ve < slen)
+            {
+                sbuf_append_str(out, "-v ");
+                sbuf_append_mem(out, s + vs, ve - vs);
+                sbuf_append_ch(out, ' ');
+                adv = ve;
+                while (adv < slen && (s[adv] == ' ' || s[adv] == '\t'))
+                {
+                    adv++;
+                }
+            }
+        }
+        sbuf_append_ch(out, '"');
         sbuf_append_dq_escaped(out, s + adv, slen - adv);
         sbuf_append_ch(out, '"');
         sbuf_append_mem(out, stmt + end, len - end);

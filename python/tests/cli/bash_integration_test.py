@@ -1283,3 +1283,63 @@ def test_reconciled_help_contract_and_exit_codes(tmp_path: Path):
         """)
     assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
     assert "RECONCILED_OK" in res.stdout
+
+
+def test_zero_subshell_variable_and_array_binding(tmp_path: Path):
+    res = _run_bash("""
+        # 1. @calc -v <var> binds directly without subshell
+        @calc -v cval "2.5 * 8 + 2"
+        [[ "${cval}" == "22" ]]
+
+        # 2. Create stream and FITS keywords, bind via -v, -a, and -A
+        seq 10 15 | @streamwrite --dtype F32 s.bind_im 6 1
+        @set s.bind_im.kw.INST "SCExAO"
+        @set s.bind_im.kw.GAIN 4.5
+
+        @get -v xsz s.bind_im.xsize
+        [[ "${xsz}" == "6" ]]
+
+        @get -a kw_names s.bind_im.kw.*
+        [[ "${#kw_names[@]}" -eq 2 ]]
+
+        @get -A im_meta s.bind_im
+        [[ "${im_meta[xsize]}" == "6" ]]
+        [[ "${im_meta[ysize]}" == "1" ]]
+        [[ "${im_meta[dtype]}" == "FLOAT" ]]
+        [[ "${im_meta[location]}" == "-1" ]]
+
+        @get -A im_kw s.bind_im.kw.*
+        [[ "${im_kw[INST]}" == "SCExAO" ]]
+        [[ "${im_kw[GAIN]}" == "4.5" ]]
+
+        # 3. @streamcat -a <arr_var> binds 1D stream pixels directly into Bash array
+        @streamcat -a pix s.bind_im
+        [[ "${#pix[@]}" -eq 6 ]]
+        [[ "${pix[0]}" == "10" ]]
+        [[ "${pix[5]}" == "15" ]]
+
+        # 4. FPS parameter list (-a) and associative array (-A)
+        milk-fpsexec-imggen-mkrndim -n bind_fps fpsinit >/dev/null 2>&1
+        @set f.bind_fps.xsize 256
+        @get -a fp_list f.bind_fps.list
+        (( ${#fp_list[@]} >= 3 ))
+        @get -A fp_map f.bind_fps
+        [[ "${fp_map[status]}" == "IDLE" ]]
+        [[ "${fp_map[xsize]}" == "256" ]]
+
+        echo "BIND_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "BIND_OK" in res.stdout
+
+    # Also verify shorthand '@ -v <var> <expr>' inside milk-cli
+    res_cli = _run_milk_cli(
+        """
+        @ -v res_v 7 * 6
+        echo "CLI_V=${res_v}"
+        """,
+        tmp_path,
+        mode="script",
+    )
+    assert res_cli.returncode == 0, f"stdout={res_cli.stdout}\nstderr={res_cli.stderr}"
+    assert "CLI_V=42" in res_cli.stdout

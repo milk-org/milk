@@ -143,6 +143,37 @@ static int read_stream_keyword(const IMAGE *im, const char *kname, char *out, si
         return 1;
     }
 
+    if (strcmp(kname, "kv") == 0)
+    {
+        size_t pos = 0;
+        for (uint16_t k = 0; k < im->md->NBkw; k++)
+        {
+            if (im->kw[k].type != 'N' && im->kw[k].type != '\0' && im->kw[k].name[0] != '\0')
+            {
+                char vbuf[128];
+                if (im->kw[k].type == 'L')
+                {
+                    snprintf(vbuf, sizeof(vbuf), "%ld", (long) im->kw[k].value.numl);
+                }
+                else if (im->kw[k].type == 'D')
+                {
+                    snprintf(vbuf, sizeof(vbuf), "%.15g", im->kw[k].value.numf);
+                }
+                else
+                {
+                    snprintf(vbuf, sizeof(vbuf), "%s", im->kw[k].value.valstr);
+                }
+                int n = snprintf(out + pos, outsz - pos, "%s%s\t%s", (pos > 0) ? "\n" : "",
+                                 im->kw[k].name, vbuf);
+                if (n > 0 && pos + (size_t) n < outsz)
+                {
+                    pos += (size_t) n;
+                }
+            }
+        }
+        return 1;
+    }
+
     for (uint16_t k = 0; k < im->md->NBkw; k++)
     {
         if (im->kw[k].type != 'N' && im->kw[k].type != '\0' && strcmp(im->kw[k].name, kname) == 0)
@@ -313,6 +344,67 @@ int milk_shm_prop_get_stream(const char *name, const char *prop, char *out, size
         snprintf(out, outsz,
                  "xsize ysize zsize naxis dtype typename type cnt0 cnt1 nelem sem pid ownerPID "
                  "shared NBkw location inode age fps summary");
+    }
+    else if (strcmp(prop, "kv") == 0)
+    {
+        uint32_t    ysize = (im->md->naxis > 1 && im->md->size[1] > 0) ? im->md->size[1] : 1U;
+        uint32_t    zsize = (im->md->naxis > 2 && im->md->size[2] > 0) ? im->md->size[2] : 1U;
+        const char *tn    = ImageStreamIO_typename(im->md->datatype);
+        const char *dt    = stream_dtype_name(im->md->datatype);
+
+        struct timespec now;
+        clock_gettime(CLOCK_REALTIME, &now);
+        struct timespec ref =
+            (im->md->writetime.tv_sec > 0) ? im->md->writetime : im->md->creationtime;
+        double age = 0.0;
+        if (ref.tv_sec > 0)
+        {
+            age =
+                (double) (now.tv_sec - ref.tv_sec) + 1.0e-9 * (double) (now.tv_nsec - ref.tv_nsec);
+            if (age < 0.0)
+            {
+                age = 0.0;
+            }
+        }
+        double fps_val = 0.0;
+        if (im->md->writetime.tv_sec > 0 && im->md->creationtime.tv_sec > 0 && im->md->cnt0 > 0)
+        {
+            double dts =
+                (double) (im->md->writetime.tv_sec - im->md->creationtime.tv_sec) +
+                1.0e-9 * (double) (im->md->writetime.tv_nsec - im->md->creationtime.tv_nsec);
+            if (dts > 1.0e-6)
+            {
+                fps_val = (double) im->md->cnt0 / dts;
+            }
+        }
+        char sum_buf[256];
+        if (im->md->naxis <= 1)
+        {
+            snprintf(sum_buf, sizeof(sum_buf), "%s [%u] %s cnt0=%lu", name, im->md->size[0], dt,
+                     (unsigned long) im->md->cnt0);
+        }
+        else if (im->md->naxis == 2)
+        {
+            snprintf(sum_buf, sizeof(sum_buf), "%s [%ux%u] %s cnt0=%lu", name, im->md->size[0],
+                     im->md->size[1], dt, (unsigned long) im->md->cnt0);
+        }
+        else
+        {
+            snprintf(sum_buf, sizeof(sum_buf), "%s [%ux%ux%u] %s cnt0=%lu", name, im->md->size[0],
+                     im->md->size[1], im->md->size[2], dt, (unsigned long) im->md->cnt0);
+        }
+
+        snprintf(out, outsz,
+                 "xsize\t%u\nysize\t%u\nzsize\t%u\nnaxis\t%u\nnelement\t%lu\ndtype\t%s\n"
+                 "typename\t%s\ntype\t%u\ncnt0\t%lu\ncnt1\t%lu\nsem\t%u\npid\t%d\n"
+                 "owner_pid\t%d\nshared\t%u\nNBkw\t%u\nlocation\t%d\ninode\t%lu\n"
+                 "age\t%.3f\nfps\t%.1f\nsummary\t%s",
+                 im->md->size[0], ysize, zsize, (unsigned) im->md->naxis,
+                 (unsigned long) im->md->nelement, dt, tn ? tn : "UNKNOWN",
+                 (unsigned) im->md->datatype, (unsigned long) im->md->cnt0,
+                 (unsigned long) im->md->cnt1, (unsigned) im->md->sem, (int) im->md->creatorPID,
+                 (int) im->md->ownerPID, (unsigned) im->md->shared, (unsigned) im->md->NBkw,
+                 (int) im->md->location, (unsigned long) im->md->inode, age, fps_val, sum_buf);
     }
     else if (strncmp(prop, "kw.", 3) == 0)
     {

@@ -52,7 +52,8 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
 
     if (strcmp(prop, "*") == 0 || strcmp(prop, "list") == 0)
     {
-        size_t pos = 0;
+        size_t pos  = 0;
+        size_t nlen = strlen(name);
         for (int pi = 0; pi < fps.md->NBparamMAX; pi++)
         {
             if (fps.parray[pi].fpflag & FPFLAG_ACTIVE)
@@ -60,11 +61,86 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
                 const char *kw = (fps.parray[pi].keywordfull[0] != '\0')
                                      ? fps.parray[pi].keywordfull
                                      : fps.parray[pi].keyword[0];
-                if (kw[0] == '.')
+                while (*kw == '.')
                 {
                     kw++;
                 }
+                if (strncmp(kw, name, nlen) == 0 && kw[nlen] == '.')
+                {
+                    kw += nlen + 1;
+                }
                 int n = snprintf(out + pos, outsz - pos, "%s%s", (pos > 0) ? " " : "", kw);
+                if (n > 0 && pos + (size_t) n < outsz)
+                {
+                    pos += (size_t) n;
+                }
+            }
+        }
+        fps_disconnect(&fps);
+        return 0;
+    }
+
+    if (strcmp(prop, "kv") == 0 && fps.md != NULL)
+    {
+        const char *st = "IDLE";
+        if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
+        {
+            st = "RUN";
+        }
+        else if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+        {
+            st = "CONF";
+        }
+        int confrun = (fps.md->status & (FUNCTION_PARAMETER_STRUCT_STATUS_CONF |
+                                         FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF))
+                          ? 1
+                          : 0;
+        int runrun  = (fps.md->status & (FUNCTION_PARAMETER_STRUCT_STATUS_RUN |
+                                         FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN))
+                          ? 1
+                          : 0;
+        int cnt     = 0;
+        for (int pi = 0; pi < fps.md->NBparamMAX; pi++)
+        {
+            if (fps.parray[pi].fpflag & FPFLAG_ACTIVE)
+            {
+                cnt++;
+            }
+        }
+        pid_t  pid  = (fps.md->runpid > 0) ? fps.md->runpid : fps.md->confpid;
+        size_t pos  = 0;
+        size_t nlen = strlen(name);
+        int    n0 =
+            snprintf(out, outsz,
+                     "status\t%s\nconf\t%s\nrun\t%s\nconfrunning\t%d\nrunrunning\t%d\n"
+                     "pid\t%ld\nconfpid\t%ld\nrunpid\t%ld\nnbparam\t%d\ndescription\t%s",
+                     st, (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF) ? "ON" : "OFF",
+                     (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN) ? "ON" : "OFF",
+                     confrun, runrun, (long) pid, (long) fps.md->confpid, (long) fps.md->runpid,
+                     cnt, fps.md->description);
+        if (n0 > 0 && (size_t) n0 < outsz)
+        {
+            pos = (size_t) n0;
+        }
+        for (int pi = 0; pi < fps.md->NBparamMAX; pi++)
+        {
+            if (fps.parray[pi].fpflag & FPFLAG_ACTIVE)
+            {
+                const char *kw = (fps.parray[pi].keywordfull[0] != '\0')
+                                     ? fps.parray[pi].keywordfull
+                                     : fps.parray[pi].keyword[0];
+                while (*kw == '.')
+                {
+                    kw++;
+                }
+                if (strncmp(kw, name, nlen) == 0 && kw[nlen] == '.')
+                {
+                    kw += nlen + 1;
+                }
+                char vbuf[256];
+                vbuf[0] = '\0';
+                functionparameter_GetParamValueString(&fps.parray[pi], vbuf, (int) sizeof(vbuf));
+                int n = snprintf(out + pos, outsz - pos, "\n%s\t%s", kw, vbuf);
                 if (n > 0 && pos + (size_t) n < outsz)
                 {
                     pos += (size_t) n;

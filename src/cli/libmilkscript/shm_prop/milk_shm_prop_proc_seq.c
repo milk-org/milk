@@ -206,6 +206,47 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
                  "pid status loopstat loopcnt loopcntMax loopfreq dt_median_ns exectime rtprio "
                  "ctrlval trigmode triggerstream statusmsg tmux description missedframes");
     }
+    else if (strcmp(prop, "kv") == 0)
+    {
+        const char *st = "OTHER";
+        switch (pi->loopstat)
+        {
+        case PROCESSINFO_LOOPSTAT_INIT:
+            st = "INIT";
+            break;
+        case PROCESSINFO_LOOPSTAT_ACTIVE:
+            st = "ACTIVE";
+            break;
+        case PROCESSINFO_LOOPSTAT_PAUSE:
+            st = "PAUSED";
+            break;
+        case PROCESSINFO_LOOPSTAT_STOP:
+            st = "STOPPED";
+            break;
+        case PROCESSINFO_LOOPSTAT_ERROR:
+            st = "ERROR";
+            break;
+        case PROCESSINFO_LOOPSTAT_SPIN:
+            st = "SPINNING";
+            break;
+        case PROCESSINFO_LOOPSTAT_CRASHED:
+            st = "CRASHED";
+            break;
+        default:
+            break;
+        }
+        double hz = (pi->dtmedian_iter_ns > 0) ? (1.0e9 / (double) pi->dtmedian_iter_ns) : 0.0;
+        snprintf(out, outsz,
+                 "pid\t%d\nPID\t%d\nstatus\t%s\nloopstat\t%d\nloopcnt\t%ld\ncnt0\t%ld\n"
+                 "loopcntMax\t%ld\nloopfreq\t%.1f\ndt_median_ns\t%ld\nexectime\t%.1f\n"
+                 "rtprio\t%d\nctrlval\t%d\ntrigmode\t%d\ntriggerstream\t%s\nstatusmsg\t%s\n"
+                 "msg\t%s\ntmux\t%s\ndescription\t%s\nmissedframes\t%lu",
+                 (int) pi->PID, (int) pi->PID, st, pi->loopstat, pi->loopcnt, pi->loopcnt,
+                 pi->loopcntMax, hz, pi->dtmedian_iter_ns, (double) pi->dtmedian_exec_ns / 1000.0,
+                 pi->RT_priority, pi->CTRLval, pi->triggermode, pi->triggerstreamname,
+                 pi->statusmsg, pi->statusmsg, pi->tmuxname, pi->description,
+                 (unsigned long) pi->triggermissedframe_cumul);
+    }
     else
     {
         found = 0;
@@ -372,6 +413,31 @@ int milk_shm_prop_get_seq(const char *name, const char *prop, char *out, size_t 
         snprintf(out, outsz,
                  "status state tasks active_step completed step_count progress errors last_error "
                  "pid name script");
+    }
+    else if (strcmp(prop, "kv") == 0)
+    {
+        const char *s  = "IDLE";
+        uint32_t    st = seqst->status;
+        if (st & MILKSEQ_STATUS_ERROR)
+        {
+            s = "ERROR";
+        }
+        else if (st & MILKSEQ_STATUS_STOPPING)
+        {
+            s = "STOPPING";
+        }
+        else if (st & MILKSEQ_STATUS_RUNNING)
+        {
+            s = "RUNNING";
+        }
+        uint32_t tot = seqst->NBtasks_active + seqst->NBtasks_completed;
+        snprintf(out, outsz,
+                 "status\t%s\nstate\t%s\ntasks\t%u\nactive_step\t%u\ncompleted\t%u\n"
+                 "step_count\t%u\nprogress\t%u/%u\nerrors\t%u\nlast_error\t%s\n"
+                 "pid\t%d\nPID\t%d\nname\t%s\nscript\t%s",
+                 s, s, seqst->NBtasks_active, seqst->NBtasks_active, seqst->NBtasks_completed, tot,
+                 seqst->NBtasks_completed, tot, seqst->error_count, seqst->last_error,
+                 (int) seqst->pid, (int) seqst->pid, seqst->name, seqst->script_path);
     }
     else
     {

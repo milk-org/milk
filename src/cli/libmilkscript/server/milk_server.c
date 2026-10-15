@@ -337,7 +337,7 @@ static int handle_fast_message(int                     client_fd,
 
     if (hdr->type == MILK_MSG_GET)
     {
-        char val[1024];
+        char val[16384];
         if (payload != NULL && milk_shm_prop_get((const char *) payload, val, sizeof(val)) == 0)
         {
             milk_proto_send(client_fd, MILK_MSG_VALUE, 0, val, (uint32_t) (strlen(val) + 1));

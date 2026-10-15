@@ -230,30 +230,19 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
 }
 
 /**
- * @brief Read a live entity property (`@get`), using `/dev/shm` fast path first.
+ * @brief Read a live entity property (`@get`) into @out, using `/dev/shm` fast path first.
  */
-int milk_client_get(const char *spec, const char *varname, const milk_client_hooks_t *hooks)
+int milk_client_get_buf(const char *spec, char *out, size_t outsz, const milk_client_hooks_t *hooks)
 {
-    if (spec == NULL || spec[0] == '\0')
+    if (spec == NULL || spec[0] == '\0' || out == NULL || outsz == 0)
     {
         return 1;
     }
+    out[0] = '\0';
     milk_ipc_sync_shm_env(hooks);
 
-    char val[1024];
-    val[0] = '\0';
-
-    if (milk_shm_prop_get(spec, val, sizeof(val)) == 0)
+    if (milk_shm_prop_get(spec, out, outsz) == 0)
     {
-        if (varname != NULL && varname[0] != '\0')
-        {
-            milk_ipc_set_var(hooks, varname, val, 0);
-        }
-        else
-        {
-            printf("%s\n", val);
-            fflush(stdout);
-        }
         return 0;
     }
 
@@ -272,10 +261,19 @@ int milk_client_get(const char *spec, const char *varname, const milk_client_hoo
     }
 
     int got_val = 0;
-    int rc      = milk_client_await_response(fd, sockpath, hooks, val, sizeof(val), &got_val);
+    int rc      = milk_client_await_response(fd, sockpath, hooks, out, outsz, &got_val);
     close(fd);
+    return (rc == 0 && got_val) ? 0 : 1;
+}
 
-    if (rc == 0 && got_val)
+/**
+ * @brief Read a live entity property (`@get`), using `/dev/shm` fast path first.
+ */
+int milk_client_get(const char *spec, const char *varname, const milk_client_hooks_t *hooks)
+{
+    char val[16384];
+    int  rc = milk_client_get_buf(spec, val, sizeof(val), hooks);
+    if (rc == 0)
     {
         if (varname != NULL && varname[0] != '\0')
         {

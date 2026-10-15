@@ -38,6 +38,11 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
      * If @p varname is non-NULL, binds the result directly to @p varname via
      * `hooks->set_var` instead of printing to stdout.
      */
+int milk_client_get_buf(const char                *spec,
+                        char                      *out,
+                        size_t                     outsz,
+                        const milk_client_hooks_t *hooks);
+
 int milk_client_get(const char *spec, const char *varname, const milk_client_hooks_t *hooks);
 
 /**

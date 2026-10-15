@@ -127,6 +127,26 @@ fi
 
 if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
     milkcall() {
+        if [[ "${1:-}" == "streamcat" ]]; then
+            local _aname=""
+            local -a _fargs=()
+            while [[ $# -gt 0 ]]; do
+                if [[ "$1" == "-a" && $# -ge 2 ]]; then
+                    _aname="$2"
+                    shift 2
+                else
+                    _fargs+=("$1")
+                    shift
+                fi
+            done
+            if [[ -n "${_aname}" ]]; then
+                local _out
+                _out="$("${MILK_INSTALLDIR}/bin/milk-call" call "${_fargs[@]}")" || return $?
+                read -r -a "${_aname}" <<< "${_out//$'\n'/ }"
+                return 0
+            fi
+            set -- "${_fargs[@]}"
+        fi
         local eval_file="${TMPDIR:-/tmp}/.milk_eval_$$_${BASHPID}"
         local rc=0
         exec {__milk_efd}>"${eval_file}"
@@ -146,6 +166,34 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
             local _val
             _val="$("${MILK_INSTALLDIR}/bin/milk-call" get "$@")" || return $?
             printf -v "${_vname}" '%s' "${_val}"
+            return 0
+        fi
+        if [[ "${1:-}" == "-a" && -n "${2:-}" ]]; then
+            local _aname="$2"
+            shift 2
+            local _val
+            _val="$("${MILK_INSTALLDIR}/bin/milk-call" get "$@")" || return $?
+            read -r -a "${_aname}" <<< "${_val//$'\n'/ }"
+            return 0
+        fi
+        if [[ "${1:-}" == "-A" && -n "${2:-}" && -n "${3:-}" ]]; then
+            local _Aname="$2"
+            local _spec="${3#@}"
+            case "${_spec}" in
+                *.kw.\*) _spec="${_spec%\*}.kv" ;;
+                *.kw)    _spec="${_spec}.kv" ;;
+                *.\*)    _spec="${_spec%\*}.kv" ;;
+                *.list)  _spec="${_spec%.list}.kv" ;;
+                *.*.*)   ;;
+                *.*)     _spec="${_spec}.kv" ;;
+            esac
+            local _val
+            _val="$("${MILK_INSTALLDIR}/bin/milk-call" get "${_spec}")" || return $?
+            declare -gA "${_Aname}=()"
+            local _k _v
+            while IFS=$'\t' read -r _k _v; do
+                [[ -n "${_k}" ]] && printf -v "${_Aname}[${_k}]" '%s' "${_v}"
+            done <<< "${_val}"
             return 0
         fi
         "${MILK_INSTALLDIR}/bin/milk-call" get "$@"
