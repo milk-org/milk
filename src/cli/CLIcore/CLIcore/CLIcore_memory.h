@@ -2,4 +2,4 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include "../../libmilkscript/CLIcore_memory.h"
+#include "../../libmilkscript/core/CLIcore_memory.h"

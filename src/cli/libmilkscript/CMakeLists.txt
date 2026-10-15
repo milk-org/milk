@@ -22,55 +22,68 @@ endif()
 # -------------------------------------------------------
 
 set(MILKSCRIPT_SOURCES
-    CLIcore_UI_execute.c
-    CLIcore_UI_execute_debug.c
-    CLIcore_UI_execute_preproc.c
-    CLIcore_UI_execute_redir.c
-    CLIcore_UI_alias.c
-    CLIcore_checkargs.c
-    CLIcore_checkargs_fps.c
-    CLIcore_datainit.c
-    CLIcore_help.c
-    CLIcore_help_command.c
-    CLIcore_help_topics.c
-    CLIcore_memory.c
-    CLIcore_modules.c
-    CLIcore_setSHMdir.c
-    CLIcore_script.c
-    CLIcore_script_intercept.c
-    CLIcore_script_intercept_process.c
-    CLIcore_script_intercept_environment.c
-    CLIcore_script_intercept_env_trap.c
-    CLIcore_script_intercept_execution.c
-    CLIcore_script_intercept_exec_waitany.c
-    CLIcore_script_intercept_flow.c
-    CLIcore_script_intercept_utils.c
-    CLIcore_script_builtin.c
-    CLIcore_script_traps.c
-    CLIcore_script_cmd_builtins.c
-    CLIcore_script_cmd_io.c
-    CLIcore_script_cmd_inspect.c
-    CLIcore_script_cmd_defer.c
-    CLIcore_script_case.c
-    CLIcore_script_expand.c
-    CLIcore_script_expand_arith.c
-    CLIcore_script_expand_fps.c
-    CLIcore_script_expand_test.c
-    CLIcore_script_expand_env.c
-    CLIcore_script_flow.c
-    CLIcore_script_func.c
-    CLIcore_script_var.c
-    CLIcore_signals.c
-    CLIcore_utils.c
-    cli_calc_tokenizer.c
-    cli_calc_parser.c
-    cli_calc_functions.c
-    cli_calc_binops.c
-    cli_calc_eval.c
-    milk_server.c
-    milk_srvlog.c
-    milk_client.c
-    milk_bash_engine.c
+    core/CLIcore_UI_execute.c
+    core/CLIcore_UI_execute_debug.c
+    core/CLIcore_UI_execute_preproc.c
+    core/CLIcore_UI_execute_redir.c
+    core/CLIcore_UI_alias.c
+    core/CLIcore_checkargs.c
+    core/CLIcore_checkargs_fps.c
+    core/CLIcore_datainit.c
+    core/CLIcore_help.c
+    core/CLIcore_help_command.c
+    core/CLIcore_help_topics.c
+    core/CLIcore_memory.c
+    core/CLIcore_modules.c
+    core/CLIcore_setSHMdir.c
+    core/CLIcore_signals.c
+    core/CLIcore_utils.c
+    legacy_script/CLIcore_script.c
+    legacy_script/CLIcore_script_intercept.c
+    legacy_script/CLIcore_script_intercept_process.c
+    legacy_script/CLIcore_script_intercept_environment.c
+    legacy_script/CLIcore_script_intercept_env_trap.c
+    legacy_script/CLIcore_script_intercept_execution.c
+    legacy_script/CLIcore_script_intercept_exec_waitany.c
+    legacy_script/CLIcore_script_intercept_flow.c
+    legacy_script/CLIcore_script_intercept_utils.c
+    legacy_script/CLIcore_script_builtin.c
+    legacy_script/CLIcore_script_traps.c
+    legacy_script/CLIcore_script_cmd_builtins.c
+    legacy_script/CLIcore_script_cmd_io.c
+    legacy_script/CLIcore_script_cmd_inspect.c
+    legacy_script/CLIcore_script_cmd_defer.c
+    legacy_script/CLIcore_script_case.c
+    legacy_script/CLIcore_script_expand.c
+    legacy_script/CLIcore_script_expand_arith.c
+    legacy_script/CLIcore_script_expand_fps.c
+    legacy_script/CLIcore_script_expand_test.c
+    legacy_script/CLIcore_script_expand_env.c
+    legacy_script/CLIcore_script_flow.c
+    legacy_script/CLIcore_script_func.c
+    legacy_script/CLIcore_script_var.c
+    calc/cli_calc_tokenizer.c
+    calc/cli_calc_parser.c
+    calc/cli_calc_functions.c
+    calc/cli_calc_binops.c
+    calc/cli_calc_eval.c
+    calc/cli_calc_slice.c
+    shm_prop/milk_shm_prop.c
+    shm_prop/milk_shm_prop_stream.c
+    shm_prop/milk_shm_prop_fps.c
+    shm_prop/milk_shm_prop_proc_seq.c
+    ipc/milk_ipc_common.c
+    ipc/milk_client_conn.c
+    ipc/milk_client_ops.c
+    ipc/milk_srvlog_shm.c
+    ipc/milk_srv_manager.c
+    server/milk_server.c
+    server/milk_server_vars.c
+    server/milk_server_stream.c
+    server/milk_server_io.c
+    server/milk_server_dispatch.c
+    bash/milk_bash_translate.c
+    bash/milk_bash_coproc.c
     milkscript_stubs.c
     milkscript_api.c)
 
@@ -106,6 +119,13 @@ target_link_libraries(
 target_include_directories(
   milkscript
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/core>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/legacy_script>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/calc>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shm_prop>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ipc>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/server>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/bash>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
@@ -123,23 +143,24 @@ install(
 
 # Install public headers
 install(
-  FILES CLIcore_UI_execute.h
-        CLIcore_checkargs.h
-        CLIcore_datainit.h
-        CLIcore_help.h
-        CLIcore_memory.h
-        CLIcore_modules.h
-        CLIcore_setSHMdir.h
-        CLIcore_script.h
-        CLIcore_signals.h
-        CLIcore_utils.h
-        cli_calc_parser.h
-        cli_calc_tokenizer.h
-        milk_proto.h
-        milk_server.h
-        milk_srvlog.h
-        milk_client.h
-        milk_bash_engine.h
+  FILES core/CLIcore_UI_execute.h
+        core/CLIcore_checkargs.h
+        core/CLIcore_datainit.h
+        core/CLIcore_help.h
+        core/CLIcore_memory.h
+        core/CLIcore_modules.h
+        core/CLIcore_setSHMdir.h
+        legacy_script/CLIcore_script.h
+        core/CLIcore_signals.h
+        core/CLIcore_utils.h
+        calc/cli_calc_parser.h
+        calc/cli_calc_tokenizer.h
+        shm_prop/milk_shm_prop.h
+        ipc/milk_proto.h
+        ipc/milk_srvlog.h
+        ipc/milk_client.h
+        server/milk_server.h
+        bash/milk_bash_engine.h
         standalone_dependencies.h
         script_includes.h
         milkscript.h
@@ -154,7 +175,7 @@ target_include_directories(
 install(TARGETS milk-script DESTINATION bin)
 
 # Loadable GNU Bash builtin module (enable -f libmilkbash.so ...)
-add_library(milkbash SHARED milk_bash_builtins.c)
+add_library(milkbash SHARED ipc/milk_bash_builtins.c)
 target_link_libraries(milkbash PRIVATE milkscript dl)
 target_include_directories(
   milkbash PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
@@ -164,7 +185,7 @@ target_link_options(milkbash PRIVATE "-Wl,--disable-new-dtags")
 install(TARGETS milkbash DESTINATION lib)
 
 # Standalone helper executable (milk-call)
-add_executable(milk-call milk_call_main.c)
+add_executable(milk-call ipc/milk_call_main.c)
 target_link_libraries(milk-call PRIVATE milkscript milkprocessinfo milkdata)
 target_include_directories(
   milk-call PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

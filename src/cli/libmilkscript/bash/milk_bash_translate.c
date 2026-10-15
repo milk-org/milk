@@ -3,8 +3,19 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_bash_engine.c
- * @brief Supervised bash co-process and Tier-2 shorthand translator for milk-cli.
+ * @file milk_bash_translate.c
+ * @brief Line-preserving translator from Tier-2 / legacy `.milk` syntax to Tier-1 bash.
+ *
+ * Role & Goal:
+ *   Translates interactive milk-cli input and `.milk` script files into valid
+ *   bash code while preserving 1:1 line numbering (`$LINENO`):
+ *   - Inline `@{<expr>}` -> `$(@calc "<expr>")`
+ *   - Inline `@s.<stream>.<prop>` / `@f.<fps>.<param>` -> `$(@get ...)`
+ *   - `[ -S name ]`, `[ -F name ]`, `[ -P name ]` -> `@exists s.name` / `f.name` / `p.name`
+ *   - `@ <expr>` -> `@calc "<expr>"`
+ *   - `@<entity>.<name>.<field>=<val>` -> `@set ...`
+ *   - Legacy `.milk` shorthands (`!cmd`, `stream |> cmd`, `a = b + c`, un-sigiled
+ *     milk commands, `?`, `m?`, `cmd?`, `f?`, `assert`, `assigncheck`, `defer`).
  */
 
 #ifndef _GNU_SOURCE
@@ -12,25 +23,12 @@
 #endif
 
 #include <ctype.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
 
 #include "CLIcore.h"
-#include "CLIcore_script.h"
-#include "CLIcore_signals.h"
-#include "COREMOD_memory/COREMOD_memory.h"
-#include "milk_bash_engine.h"
-#include "milk_server.h"
-#include "milk_srvlog.h"
+#include "milk_bash_engine_internal.h"
 
 /* ============================================================
  *  Dynamic String Buffer Helper
@@ -117,21 +115,6 @@ static void sbuf_append_dq_escaped(sbuf_t *b, const char *s, size_t n)
         }
         sbuf_append_ch(b, s[i]);
     }
-}
-
-/* ============================================================
- *  Engine Mode Selection
- * ============================================================ */
-
-int milk_is_bash_engine_enabled(void)
-{
-    const char *env = getenv("MILKCLI_ENGINE");
-    if (env != NULL &&
-        (strcmp(env, "native") == 0 || strcmp(env, "legacy") == 0 || strcmp(env, "0") == 0))
-    {
-        return 0;
-    }
-    return 1;
 }
 
 static const char *get_sigil(void)
@@ -286,8 +269,6 @@ static int is_registered_milk_command(const char *w)
         }
     }
 
-    /* Also treat <known_module>.<anything> (e.g. mem.lisim typo) as a milk command
-     * so milk-cli reports unknown command + Did you mean */
     const char *wdot = strchr(w, '.');
     if (wdot != NULL && wdot > w && strchr(w, '/') == NULL)
     {
@@ -395,6 +376,112 @@ static int is_calc_or_test_stmt_prefix(const char *s, size_t len, const char *si
     return 0;
 }
 
+/**
+ * @brief Try expanding `[ -S/-F/-P name ]` or `[ ... =~ ... ]` starting at `in[*io_idx]`.
+ *
+ * @return 1 if expanded (`*io_idx` advanced), 0 otherwise
+ */
+static int try_expand_inline_bracket(const char *in,
+                                     size_t      len,
+                                     size_t     *io_idx,
+                                     const char *sigil,
+                                     sbuf_t     *out)
+{
+    size_t i = *io_idx;
+    size_t j = i + 1;
+    while (j < len && isspace((unsigned char) in[j]))
+    {
+        j++;
+    }
+    int neg = 0;
+    if (j + 1 < len && in[j] == '!' && isspace((unsigned char) in[j + 1]))
+    {
+        neg = 1;
+        j++;
+        while (j < len && isspace((unsigned char) in[j]))
+        {
+            j++;
+        }
+    }
+    if (j + 2 < len && in[j] == '-' && (in[j + 1] == 'S' || in[j + 1] == 'F' || in[j + 1] == 'P') &&
+        isspace((unsigned char) in[j + 2]))
+    {
+        char   flag = in[j + 1];
+        size_t k    = j + 2;
+        while (k < len && isspace((unsigned char) in[k]))
+        {
+            k++;
+        }
+        size_t nstart = k;
+        while (k < len && !isspace((unsigned char) in[k]) && in[k] != ']')
+        {
+            k++;
+        }
+        size_t nend = k;
+        while (k < len && isspace((unsigned char) in[k]))
+        {
+            k++;
+        }
+        if (nend > nstart && k < len && in[k] == ']')
+        {
+            if (neg)
+            {
+                sbuf_append_str(out, "! ");
+            }
+            sbuf_append_str(out, sigil);
+            sbuf_append_str(out, "exists ");
+            sbuf_append_ch(out, (flag == 'S') ? 's' : ((flag == 'F') ? 'f' : 'p'));
+            sbuf_append_ch(out, '.');
+            sbuf_append_mem(out, in + nstart, nend - nstart);
+            *io_idx = k + 1;
+            return 1;
+        }
+    }
+
+    /* Rewrite single-bracket [ ... =~ ... ] to [[ ... =~ ... ]] */
+    size_t k        = i + 1;
+    int    sq_inner = 0;
+    int    dq_inner = 0;
+    int    has_re   = 0;
+    while (k < len)
+    {
+        if (in[k] == '\'' && !dq_inner)
+        {
+            sq_inner = !sq_inner;
+        }
+        else if (in[k] == '"' && !sq_inner)
+        {
+            dq_inner = !dq_inner;
+        }
+        else if (!sq_inner && !dq_inner)
+        {
+            if (in[k] == ';')
+            {
+                break;
+            }
+            if (k + 3 < len && isspace((unsigned char) in[k]) && in[k + 1] == '=' &&
+                in[k + 2] == '~' && isspace((unsigned char) in[k + 3]))
+            {
+                has_re = 1;
+            }
+            if (in[k] == ']' && isspace((unsigned char) in[k - 1]))
+            {
+                if (has_re)
+                {
+                    sbuf_append_str(out, "[[");
+                    sbuf_append_mem(out, in + i + 1, k - (i + 1));
+                    sbuf_append_str(out, "]]");
+                    *io_idx = k + 1;
+                    return 1;
+                }
+                break;
+            }
+        }
+        k++;
+    }
+    return 0;
+}
+
 static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
 {
     const char *sigil      = get_sigil();
@@ -438,7 +525,6 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
             stmt_start = i + 1;
         }
 
-        /* Comment start outside quotes */
         if (!in_dq && c == '#' && (i == 0 || isspace((unsigned char) in[i - 1])))
         {
             sbuf_append_mem(out, in + i, len - i);
@@ -482,8 +568,7 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
             }
         }
 
-        /* Inside double quotes (for non-@calc/@test/@waitfor stmts) or RHS of VAR=@s.im.prop:
-         * @s.im.prop / @f.fps.param -> $(@get s.im.prop) */
+        /* Inside double quotes or RHS of VAR=@s.im.prop: @s.im.prop -> $(@get s.im.prop) */
         if ((in_dq || (i > 0 && in[i - 1] == '=')) &&
             (i == 0 || (!isalnum((unsigned char) in[i - 1]) && in[i - 1] != '_')) &&
             (strncmp(in + i, sigil, siglen) == 0 || in[i] == '@'))
@@ -519,109 +604,19 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
             }
         }
 
-        /* [ -S name ] / [ ! -S name ] / [ -F name ] / [ -P name ] outside quotes */
+        /* [ -S/-F/-P name ] or [ ... =~ ... ] outside quotes */
         if (!in_dq && c == '[' &&
             (i == 0 || isspace((unsigned char) in[i - 1]) || in[i - 1] == ';') && i + 1 < len &&
             isspace((unsigned char) in[i + 1]))
         {
-            size_t j = i + 1;
-            while (j < len && isspace((unsigned char) in[j]))
+            if (try_expand_inline_bracket(in, len, &i, sigil, out))
             {
-                j++;
-            }
-            int neg = 0;
-            if (j + 1 < len && in[j] == '!' && isspace((unsigned char) in[j + 1]))
-            {
-                neg = 1;
-                j++;
-                while (j < len && isspace((unsigned char) in[j]))
-                {
-                    j++;
-                }
-            }
-            if (j + 2 < len && in[j] == '-' &&
-                (in[j + 1] == 'S' || in[j + 1] == 'F' || in[j + 1] == 'P') &&
-                isspace((unsigned char) in[j + 2]))
-            {
-                char   flag = in[j + 1];
-                size_t k    = j + 2;
-                while (k < len && isspace((unsigned char) in[k]))
-                {
-                    k++;
-                }
-                size_t nstart = k;
-                while (k < len && !isspace((unsigned char) in[k]) && in[k] != ']')
-                {
-                    k++;
-                }
-                size_t nend = k;
-                while (k < len && isspace((unsigned char) in[k]))
-                {
-                    k++;
-                }
-                if (nend > nstart && k < len && in[k] == ']')
-                {
-                    if (neg)
-                    {
-                        sbuf_append_str(out, "! ");
-                    }
-                    sbuf_append_str(out, sigil);
-                    sbuf_append_str(out, "exists ");
-                    sbuf_append_ch(out, (flag == 'S') ? 's' : ((flag == 'F') ? 'f' : 'p'));
-                    sbuf_append_ch(out, '.');
-                    sbuf_append_mem(out, in + nstart, nend - nstart);
-                    i = k + 1;
-                    continue;
-                }
-            }
-            /* Rewrite single-bracket [ ... =~ ... ] to [[ ... =~ ... ]] */
-            {
-                size_t k        = i + 1;
-                int    sq_inner = 0;
-                int    dq_inner = 0;
-                int    has_re   = 0;
-                while (k < len)
-                {
-                    if (in[k] == '\'' && !dq_inner)
-                    {
-                        sq_inner = !sq_inner;
-                    }
-                    else if (in[k] == '"' && !sq_inner)
-                    {
-                        dq_inner = !dq_inner;
-                    }
-                    else if (!sq_inner && !dq_inner)
-                    {
-                        if (in[k] == ';')
-                        {
-                            break;
-                        }
-                        if (k + 3 < len && isspace((unsigned char) in[k]) && in[k + 1] == '=' &&
-                            in[k + 2] == '~' && isspace((unsigned char) in[k + 3]))
-                        {
-                            has_re = 1;
-                        }
-                        if (in[k] == ']' && isspace((unsigned char) in[k - 1]))
-                        {
-                            if (has_re)
-                            {
-                                sbuf_append_str(out, "[[");
-                                sbuf_append_mem(out, in + i + 1, k - (i + 1));
-                                sbuf_append_str(out, "]]");
-                                i = k + 1;
-                                goto next_inline_char;
-                            }
-                            break;
-                        }
-                    }
-                    k++;
-                }
+                continue;
             }
         }
 
         sbuf_append_ch(out, c);
         i++;
-    next_inline_char:;
     }
 }
 
@@ -670,7 +665,6 @@ static void append_args_with_quoting(const char *args,
             break;
         }
 
-        /* Scan one argument token */
         size_t tstart     = i;
         int    in_sq      = 0;
         int    in_dq      = 0;
@@ -723,7 +717,6 @@ static void append_args_with_quoting(const char *args,
         size_t tlen = i - tstart;
         if (!has_quotes && !preserve_entity_arg)
         {
-            /* Check for inline @s.im.prop / @f.fps.param */
             const char *tok  = args + tstart;
             size_t      toff = 0;
             if (tlen > siglen && strncmp(tok, sigil, siglen) == 0)
@@ -792,7 +785,6 @@ static int is_calc_assignment_stmt(const char *s, size_t len, int *out_simple_ar
         }
         if (i >= len || s[i] != ']')
         {
-            /* Unclosed bracket before '=' -> only treat as calc if space before '=' earlier */
             return 0;
         }
         i++;
@@ -828,7 +820,6 @@ static int is_calc_assignment_stmt(const char *s, size_t len, int *out_simple_ar
         rhs++;
     }
 
-    /* Check if RHS is pure $(( ... )) so we can emit native bash var=$(( ... )) */
     if (!has_slice && op_len == 1 && rhs + 3 <= len && strncmp(s + rhs, "$((", 3) == 0)
     {
         *out_simple_arith = 1;
@@ -840,7 +831,6 @@ static int is_calc_assignment_stmt(const char *s, size_t len, int *out_simple_ar
         return 1;
     }
 
-    /* Check for unspaced _bv=(437.06+58.47)/5 where '(' is followed after ')' by math op */
     if (!has_slice && op_len == 1 && !ws_after && rhs < len && s[rhs] == '(')
     {
         size_t k     = rhs + 1;
@@ -871,12 +861,143 @@ static int is_calc_assignment_stmt(const char *s, size_t len, int *out_simple_ar
     return 0;
 }
 
+static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy, sbuf_t *out);
+
+/**
+ * @brief Try translating legacy un-sigiled milk-cli commands (`?`, `m?`, `assert`, `defer`, `alias`, etc.).
+ *
+ * @return 1 if handled, 0 otherwise
+ */
+static int try_translate_legacy_word(const char *firstword,
+                                     const char *s,
+                                     size_t      slen,
+                                     size_t      wlen,
+                                     const char *tail,
+                                     size_t      tail_len,
+                                     int         allow_legacy,
+                                     const char *sigil,
+                                     sbuf_t     *out)
+{
+    size_t full_rem = slen + tail_len - wlen;
+
+    if (strcmp(firstword, "?") == 0)
+    {
+        sbuf_append_str(out, sigil);
+        sbuf_append_str(out, "h");
+        append_args_with_quoting(s + wlen, full_rem, 1, 0, out);
+        return 1;
+    }
+    if (strcmp(firstword, "m?") == 0 || strcmp(firstword, "lm?") == 0)
+    {
+        sbuf_append_str(out, sigil);
+        sbuf_append_str(out, "hm");
+        append_args_with_quoting(s + wlen, full_rem, 1, 0, out);
+        return 1;
+    }
+    if (strcmp(firstword, "cmd?") == 0)
+    {
+        sbuf_append_str(out, sigil);
+        sbuf_append_str(out, "hc");
+        append_args_with_quoting(s + wlen, full_rem, 1, 0, out);
+        return 1;
+    }
+    if (strcmp(firstword, "f?") == 0)
+    {
+        sbuf_append_str(out, sigil);
+        sbuf_append_str(out, "hf");
+        append_args_with_quoting(s + wlen, full_rem, 1, 0, out);
+        return 1;
+    }
+    if (strcmp(firstword, "assert") == 0 || strcmp(firstword, "on_update") == 0 ||
+        strcmp(firstword, "on_fpschange") == 0)
+    {
+        sbuf_append_str(out, "milkcall ");
+        sbuf_append_str(out, firstword);
+        size_t astart = wlen;
+        while (astart < slen && (s[astart] == ' ' || s[astart] == '\t'))
+        {
+            astart++;
+        }
+        if (astart < slen)
+        {
+            sbuf_append_str(out, " \"");
+            sbuf_append_dq_escaped(out, s + astart, slen - astart);
+            sbuf_append_ch(out, '"');
+        }
+        sbuf_append_mem(out, tail, tail_len);
+        return 1;
+    }
+    if (strcmp(firstword, "assigncheck") == 0 || strcmp(firstword, "dpdigits") == 0 ||
+        strcmp(firstword, "procstat") == 0 || strcmp(firstword, "procctl") == 0 ||
+        strcmp(firstword, "procwait") == 0)
+    {
+        sbuf_append_str(out, "milkcall ");
+        sbuf_append_str(out, firstword);
+        append_args_with_quoting(s + wlen, full_rem, 1, 0, out);
+        return 1;
+    }
+    if (strcmp(firstword, "time") == 0 && wlen == slen)
+    {
+        sbuf_append_str(out, "milkcall time");
+        sbuf_append_mem(out, tail, tail_len);
+        return 1;
+    }
+    if (strcmp(firstword, "defer") == 0)
+    {
+        sbuf_append_str(out, sigil);
+        sbuf_append_str(out, "defer ");
+        size_t astart = wlen;
+        while (astart < slen && (s[astart] == ' ' || s[astart] == '\t'))
+        {
+            astart++;
+        }
+        translate_single_stmt(s + astart, slen + tail_len - astart, allow_legacy, out);
+        return 1;
+    }
+    if (strcmp(firstword, "alias") == 0 && wlen < slen)
+    {
+        size_t k = wlen;
+        while (k < slen && (s[k] == ' ' || s[k] == '\t'))
+        {
+            k++;
+        }
+        size_t nstart = k;
+        while (k < slen && (isalnum((unsigned char) s[k]) || s[k] == '_'))
+        {
+            k++;
+        }
+        size_t nend = k;
+        if (nend > nstart && k < slen && (s[k] == ' ' || s[k] == '\t'))
+        {
+            while (k < slen && (s[k] == ' ' || s[k] == '\t'))
+            {
+                k++;
+            }
+            if (k < slen)
+            {
+                sbuf_append_str(out, "alias ");
+                sbuf_append_mem(out, s + nstart, nend - nstart);
+                sbuf_append_ch(out, '=');
+                sbuf_append_mem(out, s + k, slen + tail_len - k);
+                return 1;
+            }
+        }
+    }
+    if (is_registered_milk_command(firstword))
+    {
+        sbuf_append_str(out, sigil);
+        sbuf_append_str(out, firstword);
+        append_args_with_quoting(s + wlen, full_rem, 1, 0, out);
+        return 1;
+    }
+    return 0;
+}
+
 static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy, sbuf_t *out)
 {
     const char *sigil  = get_sigil();
     size_t      siglen = strlen(sigil);
 
-    /* Preserve leading whitespace */
     size_t i = 0;
     while (i < len && (stmt[i] == ' ' || stmt[i] == '\t'))
     {
@@ -889,7 +1010,7 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
         return;
     }
 
-    /* 1. Legacy '! cmd' shell bypass at statement start (before flow-control keywords) */
+    /* 1. Legacy '! cmd' shell bypass at statement start */
     if (allow_legacy && stmt[i] == '!' && (len - i) > 1)
     {
         size_t k = i + 1;
@@ -904,7 +1025,7 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
         }
     }
 
-    /* Peel off leading shell flow-control prefixes (then, do, else, elif, if, while, until, !) */
+    /* Peel off leading shell flow-control prefixes */
     for (;;)
     {
         static const char *const prefixes[] = { "then",  "do", "else", "elif", "while",
@@ -939,7 +1060,6 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
         return;
     }
 
-    /* Trim trailing whitespace Length for statement analysis */
     size_t end = len;
     while (end > i && (stmt[end - 1] == ' ' || stmt[end - 1] == '\t'))
     {
@@ -1049,7 +1169,7 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
         }
     }
 
-    /* 5. Legacy spaced calculator assignment: 'a = 2 + 3', 'a += 5', 'im[1,2] = 42' */
+    /* 5. Legacy spaced calculator assignment */
     if (allow_legacy)
     {
         int simple_arith = 0;
@@ -1057,7 +1177,6 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
         {
             if (simple_arith)
             {
-                /* Rewrite '_uc = $(( ... ))' -> '_uc=$(( ... ))' */
                 size_t k = 0;
                 while (k < slen && (isalnum((unsigned char) s[k]) || s[k] == '_'))
                 {
@@ -1090,7 +1209,6 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
         }
     }
 
-    /* Extract first word of statement */
     size_t wlen = 0;
     while (wlen < slen && !isspace((unsigned char) s[wlen]))
     {
@@ -1115,122 +1233,13 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
     }
 
     /* 7. Legacy milk-cli shorthands when allow_legacy != 0 */
-    if (allow_legacy)
+    if (allow_legacy && try_translate_legacy_word(firstword, s, slen, wlen, stmt + end, len - end,
+                                                  allow_legacy, sigil, out))
     {
-        if (strcmp(firstword, "?") == 0)
-        {
-            sbuf_append_str(out, sigil);
-            sbuf_append_str(out, "h");
-            append_args_with_quoting(s + wlen, len - (i + wlen), 1, 0, out);
-            return;
-        }
-        if (strcmp(firstword, "m?") == 0 || strcmp(firstword, "lm?") == 0)
-        {
-            sbuf_append_str(out, sigil);
-            sbuf_append_str(out, "hm");
-            append_args_with_quoting(s + wlen, len - (i + wlen), 1, 0, out);
-            return;
-        }
-        if (strcmp(firstword, "cmd?") == 0)
-        {
-            sbuf_append_str(out, sigil);
-            sbuf_append_str(out, "hc");
-            append_args_with_quoting(s + wlen, len - (i + wlen), 1, 0, out);
-            return;
-        }
-        if (strcmp(firstword, "f?") == 0)
-        {
-            sbuf_append_str(out, sigil);
-            sbuf_append_str(out, "hf");
-            append_args_with_quoting(s + wlen, len - (i + wlen), 1, 0, out);
-            return;
-        }
-        if (strcmp(firstword, "assert") == 0 || strcmp(firstword, "on_update") == 0 ||
-            strcmp(firstword, "on_fpschange") == 0)
-        {
-            sbuf_append_str(out, "milkcall ");
-            sbuf_append_str(out, firstword);
-            size_t astart = wlen;
-            while (astart < slen && (s[astart] == ' ' || s[astart] == '\t'))
-            {
-                astart++;
-            }
-            if (astart < slen)
-            {
-                sbuf_append_str(out, " \"");
-                sbuf_append_dq_escaped(out, s + astart, slen - astart);
-                sbuf_append_ch(out, '"');
-            }
-            sbuf_append_mem(out, stmt + end, len - end);
-            return;
-        }
-        if (strcmp(firstword, "assigncheck") == 0 || strcmp(firstword, "dpdigits") == 0 ||
-            strcmp(firstword, "procstat") == 0 || strcmp(firstword, "procctl") == 0 ||
-            strcmp(firstword, "procwait") == 0)
-        {
-            sbuf_append_str(out, "milkcall ");
-            sbuf_append_str(out, firstword);
-            append_args_with_quoting(s + wlen, len - (i + wlen), 1, 0, out);
-            return;
-        }
-        if (strcmp(firstword, "time") == 0 && wlen == slen)
-        {
-            sbuf_append_str(out, "milkcall time");
-            sbuf_append_mem(out, stmt + end, len - end);
-            return;
-        }
-        if (strcmp(firstword, "defer") == 0)
-        {
-            sbuf_append_str(out, sigil);
-            sbuf_append_str(out, "defer ");
-            size_t astart = wlen;
-            while (astart < slen && (s[astart] == ' ' || s[astart] == '\t'))
-            {
-                astart++;
-            }
-            translate_single_stmt(s + astart, len - (i + astart), allow_legacy, out);
-            return;
-        }
-        if (strcmp(firstword, "alias") == 0 && wlen < slen)
-        {
-            /* Rewrite 2-arg 'alias name "cmd"' -> 'alias name="cmd"' */
-            size_t k = wlen;
-            while (k < slen && (s[k] == ' ' || s[k] == '\t'))
-            {
-                k++;
-            }
-            size_t nstart = k;
-            while (k < slen && (isalnum((unsigned char) s[k]) || s[k] == '_'))
-            {
-                k++;
-            }
-            size_t nend = k;
-            if (nend > nstart && k < slen && (s[k] == ' ' || s[k] == '\t'))
-            {
-                while (k < slen && (s[k] == ' ' || s[k] == '\t'))
-                {
-                    k++;
-                }
-                if (k < slen)
-                {
-                    sbuf_append_str(out, "alias ");
-                    sbuf_append_mem(out, s + nstart, nend - nstart);
-                    sbuf_append_ch(out, '=');
-                    sbuf_append_mem(out, s + k, len - (i + k));
-                    return;
-                }
-            }
-        }
-        if (is_registered_milk_command(firstword))
-        {
-            sbuf_append_str(out, sigil);
-            sbuf_append_str(out, firstword);
-            append_args_with_quoting(s + wlen, len - (i + wlen), 1, 0, out);
-            return;
-        }
+        return;
     }
 
-    /* Default: standard bash command, still expand inline @s.im.prop in args */
+    /* Default: standard bash command */
     sbuf_append_mem(out, s, wlen);
     append_args_with_quoting(s + wlen, len - (i + wlen), 0, 0, out);
 }
@@ -1296,19 +1305,10 @@ static void translate_line(const char *line, size_t len, int allow_legacy, sbuf_
             continue;
         }
 
-        /* Statement separators: ';', '&&', '||', '|', '{' */
         int sep_len = 0;
         if (c == ';')
         {
-            /* Ignore ';;' in case statements */
-            if (i + 1 < n && s[i + 1] == ';')
-            {
-                sep_len = 2;
-            }
-            else
-            {
-                sep_len = 1;
-            }
+            sep_len = (i + 1 < n && s[i + 1] == ';') ? 2 : 1;
         }
         else if (c == '&' && i + 1 < n && s[i + 1] == '&')
         {
@@ -1410,6 +1410,65 @@ static int detect_heredoc_delim(const char *line, size_t len, char *delim, size_
     return 0;
 }
 
+/**
+ * @brief Check whether @s contains unclosed quotes or `$()` command substitutions.
+ *
+ * @param s Input command or script string
+ * @return 1 if unclosed syntax is detected, 0 otherwise
+ */
+int milk_bash_has_unclosed_syntax(const char *s)
+{
+    int sq  = 0;
+    int dq  = 0;
+    int sub = 0;
+    for (size_t i = 0; s[i] != '\0'; i++)
+    {
+        char c = s[i];
+        if (c == '\\' && !sq && s[i + 1] != '\0')
+        {
+            i++;
+            continue;
+        }
+        if (!sq && !dq && c == '#')
+        {
+            while (s[i] != '\0' && s[i] != '\n')
+            {
+                i++;
+            }
+            if (s[i] == '\0')
+            {
+                break;
+            }
+            continue;
+        }
+        if (c == '\'' && !dq)
+        {
+            sq = !sq;
+        }
+        else if (c == '"' && !sq)
+        {
+            dq = !dq;
+        }
+        else if (!sq && c == '$' && s[i + 1] == '(')
+        {
+            sub++;
+            i++;
+        }
+        else if (!sq && c == ')' && sub > 0)
+        {
+            sub--;
+        }
+    }
+    return (sq || dq || sub > 0) ? 1 : 0;
+}
+
+/**
+ * @brief Translate Tier-2 milk-cli shorthands into Tier-1 plain-bash syntax.
+ *
+ * @param src          Input script or command line
+ * @param allow_legacy Non-zero to also translate un-sigiled milk-cli commands
+ * @return Newly heap-allocated translated string (caller must `free()`), or NULL
+ */
 char *milk_translate_tier2_to_tier1(const char *src, int allow_legacy)
 {
     if (src == NULL)
@@ -1465,570 +1524,4 @@ char *milk_translate_tier2_to_tier1(const char *src, int allow_legacy)
     }
 
     return out.data;
-}
-
-/* ============================================================
- *  Supervised Bash Co-Process & In-Process Socket Server
- * ============================================================ */
-
-static int   g_listen_fd     = -1;
-static int   g_cmd_pipe_w    = -1;
-static int   g_status_pipe_r = -1;
-static pid_t g_bash_pid      = -1;
-static char  g_sockpath[128] = { '\0' };
-
-static int has_unclosed_syntax(const char *s)
-{
-    int sq  = 0;
-    int dq  = 0;
-    int sub = 0;
-    for (size_t i = 0; s[i] != '\0'; i++)
-    {
-        char c = s[i];
-        if (c == '\\' && !sq && s[i + 1] != '\0')
-        {
-            i++;
-            continue;
-        }
-        if (!sq && !dq && c == '#')
-        {
-            while (s[i] != '\0' && s[i] != '\n')
-            {
-                i++;
-            }
-            if (s[i] == '\0')
-            {
-                break;
-            }
-            continue;
-        }
-        if (c == '\'' && !dq)
-        {
-            sq = !sq;
-        }
-        else if (c == '"' && !sq)
-        {
-            dq = !dq;
-        }
-        else if (!sq && c == '$' && s[i + 1] == '(')
-        {
-            sub++;
-            i++;
-        }
-        else if (!sq && c == ')' && sub > 0)
-        {
-            sub--;
-        }
-    }
-    return (sq || dq || sub > 0) ? 1 : 0;
-}
-
-int milk_bash_engine_init(void)
-{
-    if (g_listen_fd >= 0 && g_bash_pid > 0)
-    {
-        return 0;
-    }
-
-    snprintf(g_sockpath, sizeof(g_sockpath), "@milk-cli-%d-%d", (int) getuid(), (int) getpid());
-    g_listen_fd = milk_server_create_listener(g_sockpath);
-    if (g_listen_fd < 0)
-    {
-        return -1;
-    }
-    milk_server_set_log_flags(MILK_SRVFLAG_INPROC);
-    setenv("MILKCLI_SOCK", g_sockpath, 1);
-
-    int cmd_pipe[2]    = { -1, -1 };
-    int status_pipe[2] = { -1, -1 };
-    if (pipe2(cmd_pipe, O_CLOEXEC) != 0 || pipe2(status_pipe, O_CLOEXEC) != 0)
-    {
-        if (cmd_pipe[0] >= 0)
-        {
-            close(cmd_pipe[0]);
-            close(cmd_pipe[1]);
-        }
-        close(g_listen_fd);
-        g_listen_fd = -1;
-        return -1;
-    }
-
-    cli_export_vars_to_env();
-    fflush(stdout);
-    fflush(stderr);
-
-    pid_t pid = fork();
-    if (pid < 0)
-    {
-        close(cmd_pipe[0]);
-        close(cmd_pipe[1]);
-        close(status_pipe[0]);
-        close(status_pipe[1]);
-        close(g_listen_fd);
-        g_listen_fd = -1;
-        return -1;
-    }
-
-    if (pid == 0)
-    {
-        /* Child: supervised bash co-process */
-        setpgid(0, 0);
-        close(g_listen_fd);
-        close(cmd_pipe[1]);
-        close(status_pipe[0]);
-
-        dup2(cmd_pipe[0], 198);
-        dup2(status_pipe[1], 199);
-        if (cmd_pipe[0] != 198)
-        {
-            close(cmd_pipe[0]);
-        }
-        if (status_pipe[1] != 199)
-        {
-            close(status_pipe[1]);
-        }
-        fcntl(198, F_SETFD, 0);
-        fcntl(199, F_SETFD, 0);
-
-        const char *loop_script =
-            "shopt -s expand_aliases\n"
-            "trap ':' INT\n"
-            "if [[ -n \"${MILK_INSTALLDIR:-}\" && -f \"${MILK_INSTALLDIR}/bin/milk.bash\" ]]; "
-            "then\n"
-            "    builtin source \"${MILK_INSTALLDIR}/bin/milk.bash\"\n"
-            "fi\n"
-            "unalias() { builtin unalias \"$@\" 2>/dev/null || true; }\n"
-            "__MILK_SOURCE_DEPTH=0\n"
-            "source() {\n"
-            "    if [[ $# -eq 0 ]]; then echo \"Usage: source <filename>\" >&2; return 1; fi\n"
-            "    if [[ ! -f \"$1\" ]]; then echo \"Error: source: file not found: $1\" >&2; return "
-            "1; fi\n"
-            "    if (( __MILK_SOURCE_DEPTH >= 32 )); then\n"
-            "        echo \"Error: maximum source recursion depth (32) exceeded\" >&2\n"
-            "        return 1\n"
-            "    fi\n"
-            "    local __milk_f=\"$1\"; shift\n"
-            "    (( __MILK_SOURCE_DEPTH++ ))\n"
-            "    builtin source <(\"${MILK_INSTALLDIR}/bin/milk-call\" translate --legacy "
-            "\"${__milk_f}\") \"$@\"\n"
-            "    local __rc=$?\n"
-            "    (( __MILK_SOURCE_DEPTH-- ))\n"
-            "    return $__rc\n"
-            "}\n"
-            "declare -gA __MILK_INC_ONCE=()\n"
-            "include_once() {\n"
-            "    if [[ $# -eq 0 ]]; then echo \"Usage: include_once <filename>\" >&2; return 1; "
-            "fi\n"
-            "    if [[ ! -f \"$1\" ]]; then echo \"Error: include_once: file not found: $1\" >&2; "
-            "return 1; fi\n"
-            "    local __rp; __rp=\"$(realpath \"$1\" 2>/dev/null || echo \"$1\")\"\n"
-            "    [[ -n \"${__MILK_INC_ONCE[$__rp]:-}\" ]] && return 0\n"
-            "    __MILK_INC_ONCE[$__rp]=1\n"
-            "    source \"$@\"\n"
-            "}\n"
-            "__MILK_EXIT_REQ=0\n"
-            "__MILK_EXIT_CODE=0\n"
-            "exit() { __MILK_EXIT_REQ=1; __MILK_EXIT_CODE=\"${1:-0}\"; return "
-            "\"${__MILK_EXIT_CODE}\"; }\n"
-            "quit() { exit \"$@\"; }\n"
-            "exitCLI() { exit \"$@\"; }\n"
-            "while IFS= read -r -d '' __milk_cmd <&198; do\n"
-            "    eval \"${__milk_cmd}\" 198<&- 199>&-\n"
-            "    __milk_rc=$?\n"
-            "    printf '%d\\t%d\\t%s\\0' \"${__milk_rc}\" \"${__MILK_EXIT_REQ}\" \"${PWD}\" "
-            ">&199\n"
-            "    if [[ ${__MILK_EXIT_REQ} -eq 1 ]]; then\n"
-            "        builtin exit \"${__MILK_EXIT_CODE}\"\n"
-            "    fi\n"
-            "done\n";
-
-        execl("/bin/bash", "bash", "--norc", "--noprofile", "-c", loop_script, (char *) NULL);
-        _exit(127);
-    }
-
-    close(cmd_pipe[0]);
-    close(status_pipe[1]);
-    g_cmd_pipe_w    = cmd_pipe[1];
-    g_status_pipe_r = status_pipe[0];
-    g_bash_pid      = pid;
-
-    /* Run an empty warmup command so milk.bash initialization completes now */
-    int dummy_exit = 0;
-    milk_bash_engine_exec(":", &dummy_exit);
-    return 0;
-}
-
-int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
-{
-    if (out_exit_req != NULL)
-    {
-        *out_exit_req = 0;
-    }
-    if (cmdline == NULL)
-    {
-        return 0;
-    }
-    fflush(stdout);
-    fflush(stderr);
-    if (g_listen_fd < 0 || g_bash_pid <= 0)
-    {
-        if (milk_bash_engine_init() != 0)
-        {
-            return 1;
-        }
-    }
-
-    /* Check if bash co-process died unexpectedly; respawn if needed */
-    int wstatus = 0;
-    if (waitpid(g_bash_pid, &wstatus, WNOHANG) == g_bash_pid)
-    {
-        close(g_cmd_pipe_w);
-        close(g_status_pipe_r);
-        close(g_listen_fd);
-        g_cmd_pipe_w    = -1;
-        g_status_pipe_r = -1;
-        g_listen_fd     = -1;
-        g_bash_pid      = -1;
-        if (milk_bash_engine_init() != 0)
-        {
-            return 1;
-        }
-    }
-
-    if (has_unclosed_syntax(cmdline))
-    {
-        fprintf(stderr, "Syntax error: unexpected end of input\n");
-        fflush(stderr);
-    }
-
-    char *translated = milk_translate_tier2_to_tier1(cmdline, 1);
-    if (translated == NULL)
-    {
-        return 1;
-    }
-
-    size_t tlen = strlen(translated) + 1;
-    size_t sent = 0;
-    while (sent < tlen)
-    {
-        ssize_t n = write(g_cmd_pipe_w, translated + sent, tlen - sent);
-        if (n < 0)
-        {
-            if (errno == EINTR)
-            {
-                continue;
-            }
-            free(translated);
-            return 1;
-        }
-        sent += (size_t) n;
-    }
-    free(translated);
-
-    /* Poll listen_fd (servicing milk commands in-process) and status_pipe_r */
-    char   sbuf[4096];
-    size_t spos          = 0;
-    int    shutdown_flag = 0;
-    dcsigINT             = 0;
-
-    while (spos < sizeof(sbuf) - 1)
-    {
-        if (dcsigINT)
-        {
-            dcsigINT = 0;
-            if (g_bash_pid > 0)
-            {
-                kill(-g_bash_pid, SIGINT);
-            }
-        }
-
-        struct pollfd pfds[2];
-        pfds[0].fd      = g_listen_fd;
-        pfds[0].events  = POLLIN;
-        pfds[0].revents = 0;
-        pfds[1].fd      = g_status_pipe_r;
-        pfds[1].events  = POLLIN | POLLHUP | POLLERR;
-        pfds[1].revents = 0;
-
-        int pr = poll(pfds, 2, 50);
-        if (pr < 0)
-        {
-            if (errno == EINTR)
-            {
-                continue;
-            }
-            break;
-        }
-
-        if (pfds[0].revents & POLLIN)
-        {
-            milk_server_accept_and_handle(g_listen_fd, &shutdown_flag);
-        }
-
-        if (pfds[1].revents & (POLLIN | POLLHUP | POLLERR))
-        {
-            ssize_t r = read(g_status_pipe_r, sbuf + spos, sizeof(sbuf) - 1 - spos);
-            if (r > 0)
-            {
-                int found_nul = 0;
-                for (ssize_t k = 0; k < r; k++)
-                {
-                    if (sbuf[spos + (size_t) k] == '\0')
-                    {
-                        found_nul = 1;
-                        break;
-                    }
-                }
-                spos += (size_t) r;
-                if (found_nul)
-                {
-                    break;
-                }
-            }
-            else if (r == 0 || (r < 0 && errno != EINTR && errno != EAGAIN))
-            {
-                /* Co-process exited unexpectedly (e.g. fatal bash parameter expansion ${:?}) */
-                int st = 0;
-                if (waitpid(g_bash_pid, &st, 0) == g_bash_pid)
-                {
-                    g_bash_pid = -1;
-                }
-                close(g_cmd_pipe_w);
-                close(g_status_pipe_r);
-                close(g_listen_fd);
-                g_cmd_pipe_w    = -1;
-                g_status_pipe_r = -1;
-                g_listen_fd     = -1;
-                int rc_err      = WIFEXITED(st) ? WEXITSTATUS(st) : 1;
-                cli_last_retval = (rc_err != 0) ? rc_err : 1;
-                return cli_last_retval;
-            }
-        }
-    }
-
-    sbuf[spos]  = '\0';
-    int   rc    = 0;
-    int   exreq = 0;
-    char *tab1  = strchr(sbuf, '\t');
-    if (tab1 != NULL)
-    {
-        *tab1      = '\0';
-        rc         = (int) strtol(sbuf, NULL, 10);
-        char *tab2 = strchr(tab1 + 1, '\t');
-        if (tab2 != NULL)
-        {
-            *tab2            = '\0';
-            exreq            = (int) strtol(tab1 + 1, NULL, 10);
-            const char *npwd = tab2 + 1;
-            if (npwd[0] != '\0')
-            {
-                if (chdir(npwd) == 0)
-                {
-                    setenv("PWD", npwd, 1);
-                }
-            }
-        }
-    }
-
-    if (out_exit_req != NULL)
-    {
-        *out_exit_req = exreq;
-    }
-    cli_last_retval = rc;
-    return rc;
-}
-
-int milk_bash_engine_exec_file(const char *filename, int *out_exit_req)
-{
-    if (filename == NULL || filename[0] == '\0')
-    {
-        fprintf(stderr, "Usage: source <filename>\n");
-        return 1;
-    }
-    FILE *fp = fopen(filename, "r");
-    if (fp == NULL)
-    {
-        fprintf(stderr, "source: %s: %s\n", filename, strerror(errno));
-        return 1;
-    }
-    if (fseek(fp, 0, SEEK_END) != 0)
-    {
-        fclose(fp);
-        return 1;
-    }
-    long fsz = ftell(fp);
-    if (fsz < 0)
-    {
-        fclose(fp);
-        return 1;
-    }
-    rewind(fp);
-
-    char *buf = (char *) malloc((size_t) fsz + 1);
-    if (buf == NULL)
-    {
-        fclose(fp);
-        return 1;
-    }
-    size_t nread = fread(buf, 1, (size_t) fsz, fp);
-    buf[nread]   = '\0';
-    fclose(fp);
-
-    int rc = milk_bash_engine_exec(buf, out_exit_req);
-    free(buf);
-    return rc;
-}
-
-void milk_bash_engine_shutdown(void)
-{
-    if (g_cmd_pipe_w >= 0)
-    {
-        close(g_cmd_pipe_w);
-        g_cmd_pipe_w = -1;
-    }
-
-    /* Service any final socket calls triggered by EXIT / @defer traps in bash */
-    if (g_bash_pid > 0 && g_listen_fd >= 0 && g_status_pipe_r >= 0)
-    {
-        int shutdown_flag = 0;
-        for (int iter = 0; iter < 200; iter++)
-        {
-            struct pollfd pfds[2];
-            pfds[0].fd      = g_listen_fd;
-            pfds[0].events  = POLLIN;
-            pfds[0].revents = 0;
-            pfds[1].fd      = g_status_pipe_r;
-            pfds[1].events  = POLLIN | POLLHUP | POLLERR;
-            pfds[1].revents = 0;
-
-            int pr = poll(pfds, 2, 25);
-            if (pr <= 0)
-            {
-                if (waitpid(g_bash_pid, NULL, WNOHANG) == g_bash_pid)
-                {
-                    g_bash_pid = -1;
-                    break;
-                }
-                continue;
-            }
-            if (pfds[0].revents & POLLIN)
-            {
-                milk_server_accept_and_handle(g_listen_fd, &shutdown_flag);
-            }
-            if (pfds[1].revents & (POLLIN | POLLHUP | POLLERR))
-            {
-                char drain[256];
-                if (read(g_status_pipe_r, drain, sizeof(drain)) <= 0)
-                {
-                    /* Drain any final pending client connection */
-                    struct pollfd dpfd = { g_listen_fd, POLLIN, 0 };
-                    while (poll(&dpfd, 1, 10) > 0 && (dpfd.revents & POLLIN))
-                    {
-                        milk_server_accept_and_handle(g_listen_fd, &shutdown_flag);
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
-    if (g_status_pipe_r >= 0)
-    {
-        close(g_status_pipe_r);
-        g_status_pipe_r = -1;
-    }
-    if (g_bash_pid > 0)
-    {
-        waitpid(g_bash_pid, NULL, 0);
-        g_bash_pid = -1;
-    }
-    milk_server_close_log(1);
-    if (g_listen_fd >= 0)
-    {
-        close(g_listen_fd);
-        g_listen_fd = -1;
-    }
-}
-
-void milk_bash_engine_abort(void)
-{
-    if (g_bash_pid <= 0)
-    {
-        return;
-    }
-
-    kill(-g_bash_pid, SIGINT);
-
-    /* Wait up to 150ms for the bash co-process to catch SIGINT and emit its NUL status packet */
-    int synced = 0;
-    if (g_status_pipe_r >= 0)
-    {
-        int shutdown_flag = 0;
-        for (int iter = 0; iter < 15; iter++)
-        {
-            struct pollfd pfds[2];
-            pfds[0].fd      = g_listen_fd;
-            pfds[0].events  = (g_listen_fd >= 0) ? POLLIN : 0;
-            pfds[0].revents = 0;
-            pfds[1].fd      = g_status_pipe_r;
-            pfds[1].events  = POLLIN | POLLHUP | POLLERR;
-            pfds[1].revents = 0;
-
-            int pr = poll(pfds, 2, 10);
-            if (pr <= 0)
-            {
-                continue;
-            }
-            if (pfds[0].revents & POLLIN)
-            {
-                milk_server_accept_and_handle(g_listen_fd, &shutdown_flag);
-            }
-            if (pfds[1].revents & (POLLIN | POLLHUP | POLLERR))
-            {
-                char    drain[512];
-                ssize_t r = read(g_status_pipe_r, drain, sizeof(drain));
-                if (r > 0)
-                {
-                    for (ssize_t k = 0; k < r; k++)
-                    {
-                        if (drain[k] == '\0')
-                        {
-                            synced = 1;
-                            break;
-                        }
-                    }
-                    if (synced)
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
-    }
-
-    if (!synced)
-    {
-        kill(-g_bash_pid, SIGKILL);
-        waitpid(g_bash_pid, NULL, 0);
-        g_bash_pid = -1;
-        if (g_cmd_pipe_w >= 0)
-        {
-            close(g_cmd_pipe_w);
-            g_cmd_pipe_w = -1;
-        }
-        if (g_status_pipe_r >= 0)
-        {
-            close(g_status_pipe_r);
-            g_status_pipe_r = -1;
-        }
-        if (g_listen_fd >= 0)
-        {
-            close(g_listen_fd);
-            g_listen_fd = -1;
-        }
-    }
 }

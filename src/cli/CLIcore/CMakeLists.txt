@@ -50,13 +50,17 @@ set(CORE_FILES
     CLIcore/CLIcore_UI_builtins_fifo.c
     CLIcore/CLIcore_UI_completion.c
     CLIcore/CLIcore_UI_completion_tab.c
+    CLIcore/CLIcore_UI_completion_menu.c
     CLIcore/CLIcore_UI_highlight.c
     CLIcore/CLIcore_UI_hintarea.c
     CLIcore/CLIcore_UI_history.c
     CLIcore/CLIcore_UI_history_display.c
     CLIcore/CLIcore_UI_history_cmds.c
     CLIcore/CLIcore_UI_prompt.c
-    treesitter/cli_treesitter.c)
+    treesitter/cli_treesitter.c
+    treesitter/cli_treesitter_lexical.c
+    treesitter/cli_treesitter_diag.c
+    treesitter/cli_treesitter_format.c)
 
 # Add vendored parser when tree-sitter is available
 if(TREESITTER_FOUND)
@@ -165,8 +169,8 @@ install(
 
 install(
   FILES CLIcore.h
-        ../libmilkscript/cli_calc_parser.h
-        ../libmilkscript/cli_calc_tokenizer.h
+        ../libmilkscript/calc/cli_calc_parser.h
+        ../libmilkscript/calc/cli_calc_tokenizer.h
         cmdsettings.h
         ../../engine/libmilkcommon/milkDebugTools.h
         ../libmilkscript/standalone_dependencies.h
@@ -174,16 +178,16 @@ install(
   DESTINATION include/${SRCNAME})
 
 install(
-  FILES ../libmilkscript/CLIcore_UI_execute.h
-        ../libmilkscript/CLIcore_checkargs.h
-        ../libmilkscript/CLIcore_datainit.h
-        ../libmilkscript/CLIcore_help.h
-        ../libmilkscript/CLIcore_memory.h
-        ../libmilkscript/CLIcore_modules.h
-        ../libmilkscript/CLIcore_setSHMdir.h
-        ../libmilkscript/CLIcore_script.h
-        ../libmilkscript/CLIcore_signals.h
-        ../libmilkscript/CLIcore_utils.h
+  FILES ../libmilkscript/core/CLIcore_UI_execute.h
+        ../libmilkscript/core/CLIcore_checkargs.h
+        ../libmilkscript/core/CLIcore_datainit.h
+        ../libmilkscript/core/CLIcore_help.h
+        ../libmilkscript/core/CLIcore_memory.h
+        ../libmilkscript/core/CLIcore_modules.h
+        ../libmilkscript/core/CLIcore_setSHMdir.h
+        ../libmilkscript/legacy_script/CLIcore_script.h
+        ../libmilkscript/core/CLIcore_signals.h
+        ../libmilkscript/core/CLIcore_utils.h
   DESTINATION include/${SRCNAME}/CLIcore)
 
 add_executable(

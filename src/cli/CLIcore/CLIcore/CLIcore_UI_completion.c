@@ -46,7 +46,7 @@
 
 #include "CLIcore.h"
 
-#include "../../libmilkscript/milk_bash_engine.h"
+#include "milk_bash_engine.h"
 #include "CLIcore_script.h"
 #include "CLIcore_signals.h"
 #include "CLIcore_UI_execute.h"

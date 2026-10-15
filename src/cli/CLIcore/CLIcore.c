@@ -90,9 +90,9 @@
 #include "CLIcore_modules.h"
 #include "CLIcore_setSHMdir.h"
 #include "CLIcore_signals.h"
-#include "../libmilkscript/milk_bash_engine.h"
-#include "../libmilkscript/milk_server.h"
-#include "../libmilkscript/milkscript.h"
+#include "milk_bash_engine.h"
+#include "milk_server.h"
+#include "milkscript.h"
 #include "treesitter/cli_treesitter.h"
 
 #include "milk_path.h"

@@ -2,4 +2,4 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include "../../libmilkscript/CLIcore_script.h"
+#include "../../libmilkscript/legacy_script/CLIcore_script.h"

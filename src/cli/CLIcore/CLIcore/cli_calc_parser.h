@@ -2,4 +2,4 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include "../../libmilkscript/cli_calc_parser.h"
+#include "../../libmilkscript/calc/cli_calc_parser.h"
