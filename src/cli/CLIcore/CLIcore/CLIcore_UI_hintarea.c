@@ -477,6 +477,40 @@ void update_hint_area(void)
                             tidx++;
                         }
                     }
+
+                    /* Append live CLICMDARGDEF metadata for active argument */
+                    if (data.cmd[cmi].argdata != NULL && col < cached_term_cols - 8)
+                    {
+                        int cli_ai = 0;
+                        for (int ai = 0; ai < data.cmd[cmi].nbparam; ai++)
+                        {
+                            if (data.cmd[cmi].argdata[ai].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+                            {
+                                if (cli_ai == argidx)
+                                {
+                                    const CLICMDARGDATA *ad  = &data.cmd[cmi].argdata[ai];
+                                    const char          *tag = ad->fpstag;
+                                    while (*tag == '.')
+                                    {
+                                        tag++;
+                                    }
+                                    char meta_buf[192];
+                                    int  mlen =
+                                        snprintf(meta_buf, sizeof(meta_buf), "  [%s%s%s: %s]", tag,
+                                                 ad->example[0] ? "=" : "", ad->example, ad->descr);
+                                    int avail = cached_term_cols - 1 - col;
+                                    int plen  = mlen < avail ? mlen : avail;
+                                    if (plen > 0)
+                                    {
+                                        printf("\033[36m%.*s\033[0m", plen, meta_buf);
+                                        col += plen;
+                                    }
+                                    break;
+                                }
+                                cli_ai++;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -618,6 +652,69 @@ void CLI_redisplay(void)
     int  mode         = cli_ts_determine_completion_mode(rl_line_buffer, start, text, cmdname,
                                                          sizeof(cmdname), &argidx);
 
+    int cmdimatch = (cmdname[0] != '\0') ? find_command_match(cmdname) : -1;
+
+    /* When cursor is at an empty argument slot of a command with CLICMDARGDEF metadata,
+     * render inline ghost signature hints for remaining arguments and offer the default
+     * (.example) on Right Arrow. */
+    if (text[0] == '\0' && cmdimatch >= 0 && data.cmd[cmdimatch].argdata != NULL)
+    {
+        char        sig_ghost[256];
+        size_t      spos        = 0;
+        const char *cur_example = NULL;
+        int         cli_ai      = 0;
+
+        for (int ai = 0; ai < data.cmd[cmdimatch].nbparam; ai++)
+        {
+            if (!(data.cmd[cmdimatch].argdata[ai].fpflag & FPFLAG_PRIMARY_CLI_INPUT))
+            {
+                continue;
+            }
+            if (cli_ai >= argidx)
+            {
+                const CLICMDARGDATA *ad  = &data.cmd[cmdimatch].argdata[ai];
+                const char          *tag = ad->fpstag;
+                while (*tag == '.')
+                {
+                    tag++;
+                }
+                if (cli_ai == argidx && ad->example[0] != '\0')
+                {
+                    cur_example = ad->example;
+                }
+                int n =
+                    snprintf(sig_ghost + spos, sizeof(sig_ghost) - spos, "%s<%s%s%s>",
+                             (spos > 0) ? " " : "", tag, ad->example[0] ? "=" : "", ad->example);
+                if (n > 0 && spos + (size_t) n < sizeof(sig_ghost))
+                {
+                    spos += (size_t) n;
+                }
+            }
+            cli_ai++;
+        }
+
+        if (spos > 0)
+        {
+            int n = print_ghost("\033[38;5;245m", sig_ghost, budget);
+            if (n > 0)
+            {
+                total_ghost += n;
+                if (cur_example != NULL)
+                {
+                    set_pending_suggestion(cur_example, 0);
+                }
+            }
+            if (total_ghost > 0)
+            {
+                printf("\033[K");
+                printf("\033[%dD", total_ghost);
+                fflush(stdout);
+            }
+            update_hint_area();
+            return;
+        }
+    }
+
     if (mode >= 0)
     {
         data.CLImatchMode = mode;
@@ -657,7 +754,6 @@ void CLI_redisplay(void)
         }
         else
         {
-            int cmdimatch    = find_command_match(cmdname);
             int matched_mode = -1;
 
             if (cmdimatch >= 0 && data.cmd[cmdimatch].argdata != NULL)

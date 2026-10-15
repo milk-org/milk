@@ -1388,3 +1388,54 @@ def test_entity_discovery_globbing_and_json_export():
         """)
     assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
     assert "DISCOVERY_JSON_OK" in res.stdout
+
+
+def test_type_aware_completion_and_signatures(tmp_path: Path):
+    fits_file = tmp_path / "sample_frame.fits"
+    fits_file.write_text("dummy")
+    other_file = tmp_path / "readme.txt"
+    other_file.write_text("notes")
+
+    res = _run_bash(f"""
+        cd "{tmp_path}"
+        @mk2Dim "@S:comp_im" 8 8
+        milk-fpsexec-imggen-mkrndim -n comp_fps fpsinit >/dev/null 2>&1
+
+        # 1. @savefits arg 1 (CLIARG_IMG) completes streams, NOT FITS files
+        COMP_WORDS=(@savefits "")
+        COMP_CWORD=1
+        _milk_complete
+        reply1="${{COMPREPLY[*]}}"
+        [[ "${{reply1}}" == *"comp_im"* ]]
+        [[ "${{reply1}}" != *"sample_frame.fits"* ]]
+
+        # 2. @savefits arg 2 / @loadfits arg 1 (CLIARG_FITSFILENAME) completes FITS files, NOT streams
+        COMP_WORDS=(@savefits comp_im "")
+        COMP_CWORD=2
+        _milk_complete
+        reply2="${{COMPREPLY[*]}}"
+        [[ "${{reply2}}" == *"sample_frame.fits"* ]]
+        [[ "${{reply2}}" != *"comp_im"* ]]
+
+        # 3. Dot-tag parameter completion (.xsize, .ysize) from CLICMDARGDEF
+        COMP_WORDS=(@mk2Dim ".x")
+        COMP_CWORD=1
+        _milk_complete
+        [[ "${{COMPREPLY[*]}}" == *".xsize"* ]]
+
+        # 4. @hc arg 1 completes command names
+        COMP_WORDS=(@hc "mk2D")
+        COMP_CWORD=1
+        _milk_complete
+        [[ "${{COMPREPLY[*]}}" == *"mk2Dim"* ]]
+
+        # 5. Live CLICMDARGDEF signature inspection via @hc --sig <cmd> [arg_pos]
+        sig_all="$(@hc --sig mk2Dim)"
+        [[ "${{sig_all}}" == *"mk2Dim"* && "${{sig_all}}" == *"<xsize:"* ]]
+        sig_arg2="$(@hc --sig mk2Dim 2)"
+        [[ "${{sig_arg2}}" == *"*<xsize:"* && "${{sig_arg2}}" == *"[arg 2] xsize"* ]]
+
+        echo "COMP_SIG_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "COMP_SIG_OK" in res.stdout

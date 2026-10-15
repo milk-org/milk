@@ -434,7 +434,7 @@ function ${MILKCLI_SIGIL}server      { milkserver \"\$@\"; local __rc=\$?; expor
 function ${MILKCLI_SIGIL}log         { milklog \"\$@\"; }
 function ${MILKCLI_SIGIL}h           { milkcall h \"\$@\"; }
 function ${MILKCLI_SIGIL}hb          { milkcall hb \"\$@\"; }
-function ${MILKCLI_SIGIL}hc          { milkcall hc \"\$@\"; }
+function ${MILKCLI_SIGIL}hc          { if [[ \"\${1:-}\" == \"--sig\" || \"\${1:-}\" == \"-s\" ]]; then milkcomplete \"\${3:-}\" \"sig:\${2:-}\"; else milkcall hc \"\$@\"; fi; }
 function ${MILKCLI_SIGIL}hm          { milkcall hm \"\$@\"; }
 function ${MILKCLI_SIGIL}hf          { milkcall hf \"\$@\"; }
 function ${MILKCLI_SIGIL}streamcat   { milkcall streamcat \"\$@\"; }
@@ -565,8 +565,12 @@ _milk_complete() {
         mapfile -t COMPREPLY < <(compgen -W "-n --last -a --all -g --grep -e --errors --slow --since -f --follow -s --server --json --clear -h --help" -- "${cur}")
         return 0
     fi
+    if [[ "${cmd}" == "${MILKCLI_SIGIL}get" && "${cur}" == -* ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "--json -j -v -a -A" -- "${cur}")
+        return 0
+    fi
     if [[ "${cmd}" == "${MILKCLI_SIGIL}"* ]]; then
-        mapfile -t COMPREPLY < <(milkcomplete "${cur}" arg 2>/dev/null)
+        mapfile -t COMPREPLY < <(milkcomplete "${cur}" "arg:${cmd}:${COMP_CWORD}" 2>/dev/null)
     fi
 }
 

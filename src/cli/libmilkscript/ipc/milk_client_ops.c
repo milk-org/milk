@@ -26,12 +26,14 @@
 #    define _GNU_SOURCE
 #endif
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -914,6 +916,75 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
     return rc;
 }
 
+static void complete_local_files(const char *prefix, int fits_only)
+{
+    char        dirpart[512];
+    const char *base     = prefix;
+    const char *last_sep = strrchr(prefix, '/');
+    if (last_sep != NULL)
+    {
+        size_t dlen = (size_t) (last_sep - prefix + 1);
+        if (dlen >= sizeof(dirpart))
+        {
+            dlen = sizeof(dirpart) - 1;
+        }
+        memcpy(dirpart, prefix, dlen);
+        dirpart[dlen] = '\0';
+        base          = last_sep + 1;
+    }
+    else
+    {
+        dirpart[0] = '\0';
+    }
+
+    size_t blen    = strlen(base);
+    DIR   *dp      = opendir(dirpart[0] ? dirpart : ".");
+    int    emitted = 0;
+    if (dp != NULL)
+    {
+        struct dirent *de;
+        while ((de = readdir(dp)) != NULL)
+        {
+            if (de->d_name[0] == '.' && base[0] != '.')
+            {
+                continue;
+            }
+            if (strncmp(de->d_name, base, blen) != 0)
+            {
+                continue;
+            }
+            char fullpath[1024];
+            snprintf(fullpath, sizeof(fullpath), "%s%s", dirpart, de->d_name);
+            struct stat st;
+            int         is_dir = (stat(fullpath, &st) == 0 && S_ISDIR(st.st_mode));
+            if (fits_only && !is_dir)
+            {
+                size_t nlen = strlen(de->d_name);
+                int    ok   = 0;
+                if ((nlen > 5 && strcasecmp(de->d_name + nlen - 5, ".fits") == 0) ||
+                    (nlen > 4 && strcasecmp(de->d_name + nlen - 4, ".fit") == 0) ||
+                    (nlen > 4 && strcasecmp(de->d_name + nlen - 4, ".fts") == 0) ||
+                    (nlen > 8 && strcasecmp(de->d_name + nlen - 8, ".fits.gz") == 0))
+                {
+                    ok = 1;
+                }
+                if (!ok)
+                {
+                    continue;
+                }
+            }
+            printf("%s%s%s\n", dirpart, de->d_name, is_dir ? "/" : "");
+            emitted++;
+        }
+        closedir(dp);
+    }
+    if (fits_only && emitted == 0)
+    {
+        complete_local_files(prefix, 0);
+    }
+    fflush(stdout);
+}
+
 /**
  * @brief Query completion candidates from the server (`@complete`).
  */
@@ -958,8 +1029,31 @@ int milk_client_complete(const char                *prefix,
         return 1;
     }
 
-    int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
+    char out[32768];
+    int  got_val = 0;
+    int  rc      = milk_client_await_response(fd, sockpath, hooks, out, sizeof(out), &got_val);
     close(fd);
+    if (rc == 0 && got_val)
+    {
+        if (strncmp(out, "__MILK_COMPLETE_FITS__", 22) == 0)
+        {
+            complete_local_files(prefix, 1);
+        }
+        else if (strncmp(out, "__MILK_COMPLETE_FILES__", 23) == 0)
+        {
+            complete_local_files(prefix, 0);
+        }
+        else if (out[0] != '\0')
+        {
+            fputs(out, stdout);
+            size_t olen = strlen(out);
+            if (olen > 0 && out[olen - 1] != '\n')
+            {
+                fputc('\n', stdout);
+            }
+            fflush(stdout);
+        }
+    }
     return rc;
 }
 

@@ -540,11 +540,402 @@ static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
 }
 
 /**
+ * @brief Resolve a command name (ignoring leading sigil) to its index in `data.cmd[]`.
+ */
+static int find_server_cmd(const char *cmdname)
+{
+    if (cmdname == NULL || cmdname[0] == '\0')
+    {
+        return -1;
+    }
+    const char *sigil = getenv("MILKCLI_SIGIL");
+    if (sigil != NULL && sigil[0] != '\0' && strncmp(cmdname, sigil, strlen(sigil)) == 0)
+    {
+        cmdname += strlen(sigil);
+    }
+    else if (cmdname[0] == '@' || cmdname[0] == ',')
+    {
+        cmdname++;
+    }
+    if (cmdname[0] == '\0')
+    {
+        return -1;
+    }
+
+    /* Common built-in aliases */
+    if (strcmp(cmdname, "imstats") == 0 || strcmp(cmdname, "imgstat") == 0)
+    {
+        cmdname = "info.imgstat";
+    }
+    else if (strcmp(cmdname, "mk2Drnd") == 0)
+    {
+        cmdname = "imgen.mk2Drnd";
+    }
+
+    for (unsigned int i = 0; i < data.NBcmd; i++)
+    {
+        if (strcmp(data.cmd[i].key, cmdname) == 0)
+        {
+            return (int) i;
+        }
+        int midx = data.cmd[i].moduleindex;
+        if (midx >= 0 && data.module[midx].shortname[0] != '\0')
+        {
+            char qname[256];
+            snprintf(qname, sizeof(qname), "%s.%s", data.module[midx].shortname, data.cmd[i].key);
+            if (strcmp(qname, cmdname) == 0)
+            {
+                return (int) i;
+            }
+        }
+    }
+
+    int match = -1;
+    int count = 0;
+    for (unsigned int i = 0; i < data.NBcmd; i++)
+    {
+        const char *dot = strchr(data.cmd[i].key, '.');
+        if (dot != NULL && strcmp(dot + 1, cmdname) == 0)
+        {
+            match = (int) i;
+            count++;
+        }
+    }
+    return (count == 1) ? match : -1;
+}
+
+static const char *argtype_label(uint64_t type)
+{
+    if (type == CLIARG_FITSFILENAME)
+    {
+        return "FITS";
+    }
+    if (type == CLIARG_FILENAME)
+    {
+        return "FILE";
+    }
+    if (type == CLIARG_IMG || type == CLIARG_STREAM)
+    {
+        return "IMG";
+    }
+    if (type == CLIARG_FPSNAME)
+    {
+        return "FPS";
+    }
+    if (type == CLIARG_ONOFF)
+    {
+        return "ONOFF";
+    }
+    if (type == CLIARG_FLOAT || type == CLIARG_FLOAT32)
+    {
+        return "FLOAT";
+    }
+    if (type == CLIARG_LONG || type == CLIARG_INT32 || type == CLIARG_INT64)
+    {
+        return "INT";
+    }
+    if (type == CLIARG_UINT32 || type == CLIARG_UINT64)
+    {
+        return "UINT";
+    }
+    if (type == CLIARG_STR || type == CLIARG_STR_NOT_IMG)
+    {
+        return "STR";
+    }
+    return "ARG";
+}
+
+static const CLICMDARGDATA *find_cmd_cli_arg(int cmdidx, int argidx)
+{
+    if (cmdidx < 0 || argidx < 0 || data.cmd[cmdidx].argdata == NULL)
+    {
+        return NULL;
+    }
+    int cli_ai      = 0;
+    int any_primary = 0;
+    for (int ai = 0; ai < data.cmd[cmdidx].nbparam; ai++)
+    {
+        if (data.cmd[cmdidx].argdata[ai].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+        {
+            any_primary = 1;
+            if (cli_ai == argidx)
+            {
+                return &data.cmd[cmdidx].argdata[ai];
+            }
+            cli_ai++;
+        }
+    }
+    if (!any_primary && argidx < data.cmd[cmdidx].nbarg && argidx < data.cmd[cmdidx].nbparam)
+    {
+        return &data.cmd[cmdidx].argdata[argidx];
+    }
+    return NULL;
+}
+
+static size_t format_cmd_signature(const char *cmdname, int active_argidx, char *out, size_t outsz)
+{
+    int cmdidx = find_server_cmd(cmdname);
+    if (cmdidx < 0)
+    {
+        return 0;
+    }
+
+    size_t               pos         = 0;
+    const CMD           *cmd         = &data.cmd[cmdidx];
+    const CLICMDARGDATA *active_argd = NULL;
+    int                  nprinted    = 0;
+
+    int n = snprintf(out + pos, outsz - pos, "%s", cmd->key);
+    if (n > 0 && pos + (size_t) n < outsz)
+    {
+        pos += (size_t) n;
+    }
+
+    if (cmd->argdata != NULL && cmd->nbparam > 0)
+    {
+        int cli_ai = 0;
+        for (int ai = 0; ai < cmd->nbparam; ai++)
+        {
+            if (!(cmd->argdata[ai].fpflag & FPFLAG_PRIMARY_CLI_INPUT))
+            {
+                continue;
+            }
+            const CLICMDARGDATA *ad  = &cmd->argdata[ai];
+            const char          *tag = ad->fpstag;
+            while (*tag == '.')
+            {
+                tag++;
+            }
+            int is_active = (cli_ai == active_argidx);
+            if (is_active)
+            {
+                active_argd = ad;
+            }
+            if (ad->example[0] != '\0')
+            {
+                n = snprintf(out + pos, outsz - pos, " %s<%s:%s=%s>%s", is_active ? "*" : "", tag,
+                             argtype_label(ad->type), ad->example, is_active ? "*" : "");
+            }
+            else
+            {
+                n = snprintf(out + pos, outsz - pos, " %s<%s:%s>%s", is_active ? "*" : "", tag,
+                             argtype_label(ad->type), is_active ? "*" : "");
+            }
+            if (n > 0 && pos + (size_t) n < outsz)
+            {
+                pos += (size_t) n;
+            }
+            cli_ai++;
+            nprinted++;
+        }
+    }
+
+    if (nprinted == 0 && cmd->syntax[0] != '\0')
+    {
+        n = snprintf(out + pos, outsz - pos, " %s", cmd->syntax);
+        if (n > 0 && pos + (size_t) n < outsz)
+        {
+            pos += (size_t) n;
+        }
+    }
+
+    if (cmd->info[0] != '\0')
+    {
+        n = snprintf(out + pos, outsz - pos, " -- %s", cmd->info);
+        if (n > 0 && pos + (size_t) n < outsz)
+        {
+            pos += (size_t) n;
+        }
+    }
+
+    if (active_argd != NULL)
+    {
+        const char *tag = active_argd->fpstag;
+        while (*tag == '.')
+        {
+            tag++;
+        }
+        n = snprintf(out + pos, outsz - pos, "\n[arg %d] %s (%s%s%s): %s", active_argidx + 1, tag,
+                     argtype_label(active_argd->type), active_argd->example[0] ? ", default=" : "",
+                     active_argd->example[0] ? active_argd->example : "", active_argd->descr);
+        if (n > 0 && pos + (size_t) n < outsz)
+        {
+            pos += (size_t) n;
+        }
+    }
+
+    if (pos + 1 < outsz)
+    {
+        out[pos++] = '\n';
+        out[pos]   = '\0';
+    }
+    return pos;
+}
+
+static size_t complete_cmd_dot_tags(int cmdidx, const char *prefix, char *out, size_t outsz)
+{
+    size_t pos  = 0;
+    size_t plen = strlen(prefix);
+    if (cmdidx < 0 || data.cmd[cmdidx].argdata == NULL)
+    {
+        return 0;
+    }
+    for (int ai = 0; ai < data.cmd[cmdidx].nbparam; ai++)
+    {
+        const char *tag = data.cmd[cmdidx].argdata[ai].fpstag;
+        if (tag[0] == '\0')
+        {
+            continue;
+        }
+        char dtag[128];
+        if (tag[0] == '.')
+        {
+            snprintf(dtag, sizeof(dtag), "%s", tag);
+        }
+        else
+        {
+            snprintf(dtag, sizeof(dtag), ".%s", tag);
+        }
+        if (strncmp(dtag, prefix, plen) == 0)
+        {
+            int n = snprintf(out + pos, outsz - pos, "%s\n", dtag);
+            if (n > 0 && pos + (size_t) n < outsz)
+            {
+                pos += (size_t) n;
+            }
+        }
+    }
+    return pos;
+}
+
+static size_t complete_fps_only(const char *prefix, char *out, size_t outsz)
+{
+    size_t      pos    = 0;
+    size_t      plen   = strlen(prefix);
+    const char *shmdir = getenv("MILK_SHM_DIR");
+    if (shmdir == NULL || shmdir[0] == '\0')
+    {
+        shmdir = (dcshmdir[0] != '\0') ? dcshmdir : "/dev/shm";
+    }
+    DIR *dp = opendir(shmdir);
+    if (dp != NULL)
+    {
+        struct dirent *de;
+        while ((de = readdir(dp)) != NULL)
+        {
+            size_t dlen = strlen(de->d_name);
+            if (dlen > 8 && strcmp(de->d_name + dlen - 8, ".fps.shm") == 0)
+            {
+                char   fname[256];
+                size_t flen = dlen - 8;
+                if (flen < sizeof(fname))
+                {
+                    memcpy(fname, de->d_name, flen);
+                    fname[flen] = '\0';
+                    if (strncmp(fname, prefix, plen) == 0)
+                    {
+                        int n = snprintf(out + pos, outsz - pos, "%s\n", fname);
+                        if (n > 0 && pos + (size_t) n < outsz)
+                        {
+                            pos += (size_t) n;
+                        }
+                    }
+                }
+            }
+        }
+        closedir(dp);
+    }
+    return pos;
+}
+
+static size_t complete_images_only(const char *prefix, char *out, size_t outsz)
+{
+    size_t pos  = 0;
+    size_t plen = strlen(prefix);
+
+    if (prefix[0] == '@')
+    {
+        static const char *const mods[] = {
+            "@TF32:", "@TF64:", "@TF16:", "@TU8:",  "@TU16:",  "@TU32:",  "@TU64:",
+            "@TI8:",  "@TI16:", "@TI32:", "@TI64:", "@TC64:",  "@TC128:", "@L:",
+            "@S:",    "@N:",    "@E:",    "@F:",    "@LTF32:", "@STF32:", NULL
+        };
+        for (int i = 0; mods[i] != NULL; i++)
+        {
+            if (strncmp(mods[i], prefix, plen) == 0)
+            {
+                int n = snprintf(out + pos, outsz - pos, "%s\n", mods[i]);
+                if (n > 0 && pos + (size_t) n < outsz)
+                {
+                    pos += (size_t) n;
+                }
+            }
+        }
+        return pos;
+    }
+
+    if (data.core.image != NULL)
+    {
+        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        {
+            if (data.core.image[i].used != 1)
+            {
+                continue;
+            }
+            const char *iname = data.core.image[i].name;
+            if (strncmp(iname, prefix, plen) == 0)
+            {
+                int n = snprintf(out + pos, outsz - pos, "%s\n", iname);
+                if (n > 0 && pos + (size_t) n < outsz)
+                {
+                    pos += (size_t) n;
+                }
+            }
+        }
+    }
+
+    const char *shmdir = getenv("MILK_SHM_DIR");
+    if (shmdir == NULL || shmdir[0] == '\0')
+    {
+        shmdir = (dcshmdir[0] != '\0') ? dcshmdir : "/dev/shm";
+    }
+    DIR *dp = opendir(shmdir);
+    if (dp != NULL)
+    {
+        struct dirent *de;
+        while ((de = readdir(dp)) != NULL)
+        {
+            size_t dlen = strlen(de->d_name);
+            if (dlen > 7 && strcmp(de->d_name + dlen - 7, ".im.shm") == 0)
+            {
+                char   sname[256];
+                size_t slen = dlen - 7;
+                if (slen < sizeof(sname))
+                {
+                    memcpy(sname, de->d_name, slen);
+                    sname[slen] = '\0';
+                    if (strncmp(sname, prefix, plen) == 0)
+                    {
+                        int n = snprintf(out + pos, outsz - pos, "%s\n", sname);
+                        if (n > 0 && pos + (size_t) n < outsz)
+                        {
+                            pos += (size_t) n;
+                        }
+                    }
+                }
+            }
+        }
+        closedir(dp);
+    }
+    return pos;
+}
+
+/**
  * @brief Handle a `MILK_MSG_COMPLETE` request and send candidates back to @client_fd.
  *
  * @param client_fd Connected client socket fd
  * @param prefix    Token prefix to complete
- * @param comp_type `"cmd"` for command completion, `"arg"` for argument completion
+ * @param comp_type `"cmd"`, `"sig[:<cmd>[:<argidx>]]"`, or `"arg[:<cmd>:<cword>]"`
  */
 void milk_server_handle_complete(int client_fd, const char *prefix, const char *comp_type)
 {
@@ -561,6 +952,164 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
     if (comp_type != NULL && strcmp(comp_type, "cmd") == 0)
     {
         pos = complete_commands(prefix, sigil, out, sizeof(out));
+    }
+    else if (comp_type != NULL && strcmp(comp_type, "sig") == 0)
+    {
+        pos = format_cmd_signature(prefix, -1, out, sizeof(out));
+    }
+    else if (comp_type != NULL && strncmp(comp_type, "sig:", 4) == 0)
+    {
+        char cbuf[256];
+        snprintf(cbuf, sizeof(cbuf), "%s", comp_type + 4);
+        int   argidx = -1;
+        char *colon  = strrchr(cbuf, ':');
+        if (colon != NULL && colon[1] >= '0' && colon[1] <= '9')
+        {
+            *colon = '\0';
+            argidx = atoi(colon + 1) - 1;
+        }
+        else if (prefix != NULL && prefix[0] >= '0' && prefix[0] <= '9')
+        {
+            argidx = atoi(prefix) - 1;
+        }
+        pos = format_cmd_signature(cbuf, argidx, out, sizeof(out));
+    }
+    else if (comp_type != NULL && strncmp(comp_type, "arg:", 4) == 0)
+    {
+        char cbuf[256];
+        snprintf(cbuf, sizeof(cbuf), "%s", comp_type + 4);
+        int   cword = 1;
+        char *colon = strrchr(cbuf, ':');
+        if (colon != NULL)
+        {
+            *colon = '\0';
+            cword  = atoi(colon + 1);
+            if (cword < 1)
+            {
+                cword = 1;
+            }
+        }
+        int         argidx = cword - 1;
+        const char *bcmd   = cbuf;
+        if (strncmp(bcmd, sigil, strlen(sigil)) == 0)
+        {
+            bcmd += strlen(sigil);
+        }
+        else if (bcmd[0] == '@' || bcmd[0] == ',')
+        {
+            bcmd++;
+        }
+
+        const char *bpref  = (prefix[0] == '@') ? (prefix + 1) : prefix;
+        int is_entity_pref = (strncmp(bpref, "s.", 2) == 0 || strncmp(bpref, "f.", 2) == 0 ||
+                              strncmp(bpref, "p.", 2) == 0 || strncmp(bpref, "q.", 2) == 0 ||
+                              strncmp(bpref, "stream.", 7) == 0 || strncmp(bpref, "fps.", 4) == 0 ||
+                              strncmp(bpref, "proc.", 5) == 0 || strncmp(bpref, "seq.", 4) == 0);
+
+        int cmdidx = find_server_cmd(bcmd);
+
+        if (strcmp(bcmd, "hc") == 0 && argidx == 0)
+        {
+            pos = complete_commands(prefix, "", out, sizeof(out));
+        }
+        else if (prefix[0] == '.' && prefix[1] != '/' && prefix[1] != '.' && cmdidx >= 0)
+        {
+            pos = complete_cmd_dot_tags(cmdidx, prefix, out, sizeof(out));
+        }
+        else if (is_entity_pref)
+        {
+            pos = complete_arguments(prefix, out, sizeof(out));
+        }
+        else if (((strcmp(bcmd, "loadfits") == 0 || strcmp(bcmd, "iofits.loadfits") == 0) &&
+                  argidx == 0) ||
+                 ((strcmp(bcmd, "savefits") == 0 || strcmp(bcmd, "saveFITS") == 0 ||
+                   strcmp(bcmd, "iofits.savefits") == 0) &&
+                  argidx == 1))
+        {
+            pos = (size_t) snprintf(out, sizeof(out), "__MILK_COMPLETE_FITS__\n");
+        }
+        else if ((strcmp(bcmd, "loadfits") == 0 || strcmp(bcmd, "iofits.loadfits") == 0) &&
+                 argidx == 1)
+        {
+            pos = complete_images_only(prefix, out, sizeof(out));
+        }
+        else if ((strcmp(bcmd, "savefits") == 0 || strcmp(bcmd, "saveFITS") == 0 ||
+                  strcmp(bcmd, "iofits.savefits") == 0) &&
+                 argidx == 0)
+        {
+            pos = complete_images_only(prefix, out, sizeof(out));
+        }
+        else if (strcmp(bcmd, "source") == 0 || strcmp(bcmd, "include_once") == 0)
+        {
+            pos = (size_t) snprintf(out, sizeof(out), "__MILK_COMPLETE_FILES__\n");
+        }
+        else if (strcmp(bcmd, "fpsCTRL") == 0 || strcmp(bcmd, "fpsconf") == 0 ||
+                 strcmp(bcmd, "fpsrun") == 0 || strcmp(bcmd, "fpsstop") == 0 ||
+                 strcmp(bcmd, "waitfor_fps") == 0)
+        {
+            pos = complete_fps_only(prefix, out, sizeof(out));
+        }
+        else if (cmdidx >= 0)
+        {
+            const CLICMDARGDATA *argd = find_cmd_cli_arg(cmdidx, argidx);
+            if (argd != NULL)
+            {
+                if (argd->type == CLIARG_FITSFILENAME)
+                {
+                    pos = (size_t) snprintf(out, sizeof(out), "__MILK_COMPLETE_FITS__\n");
+                }
+                else if (argd->type == CLIARG_FILENAME)
+                {
+                    pos = (size_t) snprintf(out, sizeof(out), "__MILK_COMPLETE_FILES__\n");
+                }
+                else if (argd->type == CLIARG_FPSNAME)
+                {
+                    pos = complete_fps_only(prefix, out, sizeof(out));
+                }
+                else if (argd->type == CLIARG_IMG || argd->type == CLIARG_STREAM)
+                {
+                    pos = complete_images_only(prefix, out, sizeof(out));
+                }
+                else if (argd->type == CLIARG_ONOFF)
+                {
+                    static const char *const onoff[] = { "ON", "OFF", "1", "0", NULL };
+                    for (int i = 0; onoff[i] != NULL; i++)
+                    {
+                        if (strncmp(onoff[i], prefix, strlen(prefix)) == 0)
+                        {
+                            int n = snprintf(out + pos, sizeof(out) - pos, "%s\n", onoff[i]);
+                            if (n > 0 && pos + (size_t) n < sizeof(out))
+                            {
+                                pos += (size_t) n;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (prefix[0] == '\0' && argd->example[0] != '\0')
+                    {
+                        int n = snprintf(out + pos, sizeof(out) - pos, "%s\n", argd->example);
+                        if (n > 0 && pos + (size_t) n < sizeof(out))
+                        {
+                            pos += (size_t) n;
+                        }
+                    }
+                    else
+                    {
+                        pos = complete_arguments(prefix, out, sizeof(out));
+                    }
+                }
+            }
+            else
+            {
+                pos = complete_arguments(prefix, out, sizeof(out));
+            }
+        }
+        else
+        {
+            pos = complete_arguments(prefix, out, sizeof(out));
+        }
     }
     else
     {
