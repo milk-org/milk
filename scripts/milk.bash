@@ -92,17 +92,24 @@ unset -f __milk_validate_sigil
 # 3. Session socket address (server starts lazily on first command)
 # ---------------------------------------------------------------------------
 export _MILK_LOCAL_SOCK="@milk-cli-${UID:-$(id -u)}-$$"
+_milk_ov_file="${TMPDIR:-/tmp}/.milk_active_sock_${UID:-$(id -u)}_$$"
 if [[ "${1:-}" == "--server" || "${1:-}" == "-s" ]] && [[ -n "${2:-}" ]]; then
     export _MILK_SERVER_NAME="$2"
     export MILKCLI_SOCK="@milk-cli-${UID:-$(id -u)}-$2"
+    printf '%s' "${MILKCLI_SOCK}" > "${_milk_ov_file}" 2>/dev/null || true
     shift 2
 elif [[ "${1:-}" == --server=* ]]; then
     export _MILK_SERVER_NAME="${1#--server=}"
     export MILKCLI_SOCK="@milk-cli-${UID:-$(id -u)}-${_MILK_SERVER_NAME}"
+    printf '%s' "${MILKCLI_SOCK}" > "${_milk_ov_file}" 2>/dev/null || true
     shift
+elif [[ -f "${_milk_ov_file}" ]]; then
+    export MILKCLI_SOCK="$(<"${_milk_ov_file}")"
+    export _MILK_SERVER_NAME="${MILKCLI_SOCK#@milk-cli-*-}"
 elif [[ -z "${MILKCLI_SOCK:-}" ]]; then
     export MILKCLI_SOCK="${_MILK_LOCAL_SOCK}"
 fi
+unset _milk_ov_file
 
 # ---------------------------------------------------------------------------
 # 4. Load C builtins (libmilkbash.so) or install milk-call fallback shims
@@ -110,14 +117,10 @@ fi
 _MILK_BUILTIN_LOADED=0
 enable -d milkcall milkget milkset milkcalc milktest milkexists \
     milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
-if [[ -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" ]]; then
+if [[ -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" ]] && ! grep -q "libmilk.*(deleted)" "/proc/$$/maps" 2>/dev/null; then
     if MILK_QUIET=1 enable -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" \
         milkcall milkget milkset milkcalc milktest milkexists \
         milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null; then
-        _MILK_BUILTIN_LOADED=1
-    elif MILK_QUIET=1 enable -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" \
-        milkcall milkget milkset milkcalc milktest milkexists \
-        milkwaitfor milkgrab milkcomplete milkshutdown 2>/dev/null; then
         _MILK_BUILTIN_LOADED=1
     fi
 fi
@@ -167,9 +170,6 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
     milkgrab()     { "${MILK_INSTALLDIR}/bin/milk-call" grab "$@"; }
     milkcomplete() { "${MILK_INSTALLDIR}/bin/milk-call" complete "$@"; }
     milkshutdown() { "${MILK_INSTALLDIR}/bin/milk-call" shutdown "$@"; }
-fi
-
-if [[ "$(type -t milkserver 2>/dev/null)" != "builtin" ]]; then
     milkserver() {
         local eval_file="${TMPDIR:-/tmp}/.milk_eval_$$_${BASHPID}"
         local rc=0
@@ -183,8 +183,6 @@ if [[ "$(type -t milkserver 2>/dev/null)" != "builtin" ]]; then
         rm -f "${eval_file}"
         return ${rc}
     }
-fi
-if [[ "$(type -t milklog 2>/dev/null)" != "builtin" ]]; then
     milklog()      { "${MILK_INSTALLDIR}/bin/milk-call" log "$@"; }
 fi
 
@@ -334,6 +332,7 @@ _milk_on_impl() {
 
 _milk_unload_impl() {
     _milk_on_impl --clear
+    rm -f "${TMPDIR:-/tmp}/.milk_active_sock_${UID:-$(id -u)}_$$" 2>/dev/null || true
     if [[ -n "${_MILK_LOCAL_SOCK:-}" ]]; then
         MILKCLI_SOCK="${_MILK_LOCAL_SOCK}" milkshutdown 2>/dev/null || true
     else
@@ -564,6 +563,11 @@ _MILK_PS1_PREFIX='\[\033[1;36m\][milk]\[\033[0m\] '
 
 _milk_apply_ps1() {
     local __milk_last_rc=$?
+    local __ov="${TMPDIR:-/tmp}/.milk_active_sock_${UID:-$(id -u)}_$$"
+    if [[ -f "${__ov}" ]]; then
+        export MILKCLI_SOCK="$(<"${__ov}")"
+        export _MILK_SERVER_NAME="${MILKCLI_SOCK#@milk-cli-*-}"
+    fi
     if [[ -z "${MILK_NO_PROMPT:-}" ]]; then
         if [[ -z "${_MILK_ORIG_PS1+x}" ]]; then
             _MILK_ORIG_PS1="${PS1:-}"

@@ -54,6 +54,30 @@ const char *milk_ipc_get_var(const milk_client_hooks_t *hooks, const char *name)
     return getenv(name);
 }
 
+static void get_shell_override_file(const milk_client_hooks_t *hooks, char *out, size_t outsz)
+{
+    int         shell_pid  = 0;
+    const char *local_sock = milk_ipc_get_var(hooks, "_MILK_LOCAL_SOCK");
+    if (local_sock != NULL && local_sock[0] != '\0')
+    {
+        const char *last_dash = strrchr(local_sock, '-');
+        if (last_dash != NULL && isdigit((unsigned char) last_dash[1]))
+        {
+            shell_pid = atoi(last_dash + 1);
+        }
+    }
+    if (shell_pid <= 0)
+    {
+        shell_pid = (hooks != NULL && hooks->get_var != NULL) ? (int) getpid() : (int) getppid();
+    }
+    const char *tmpdir = getenv("TMPDIR");
+    if (tmpdir == NULL || tmpdir[0] == '\0')
+    {
+        tmpdir = "/tmp";
+    }
+    snprintf(out, outsz, "%s/.milk_active_sock_%u_%d", tmpdir, (unsigned) getuid(), shell_pid);
+}
+
 /**
  * @brief Set a variable in the calling shell, process environment, and eval FD.
  *
@@ -68,6 +92,33 @@ void milk_ipc_set_var(const milk_client_hooks_t *hooks,
                       int                        export_in_eval_fd)
 {
     const char *safe_val = (val != NULL) ? val : "";
+    if (name != NULL && strcmp(name, "MILKCLI_SOCK") == 0)
+    {
+        char ovfile[512];
+        char def_local[128];
+        int  shell_pid =
+            (hooks != NULL && hooks->get_var != NULL) ? (int) getpid() : (int) getppid();
+        const char *local_sock = milk_ipc_get_var(hooks, "_MILK_LOCAL_SOCK");
+        snprintf(def_local, sizeof(def_local), "@milk-cli-%u-%d", (unsigned) getuid(), shell_pid);
+        get_shell_override_file(hooks, ovfile, sizeof(ovfile));
+        if (safe_val[0] == '\0' || strcmp(safe_val, def_local) == 0 ||
+            (local_sock != NULL && strcmp(safe_val, local_sock) == 0))
+        {
+            unlink(ovfile);
+        }
+        else
+        {
+            int fd = open(ovfile, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+            if (fd >= 0)
+            {
+                if (write(fd, safe_val, strlen(safe_val)) < 0)
+                {
+                }
+                close(fd);
+            }
+        }
+    }
+
     if (hooks != NULL && hooks->set_var != NULL)
     {
         hooks->set_var(name, safe_val, hooks->ctx);
@@ -128,6 +179,34 @@ void milk_ipc_resolve_sockpath(const milk_client_hooks_t *hooks,
                                size_t                     outsz,
                                int                        persist_if_unset)
 {
+    char ovfile[512];
+    get_shell_override_file(hooks, ovfile, sizeof(ovfile));
+    int fd = open(ovfile, O_RDONLY | O_CLOEXEC);
+    if (fd >= 0)
+    {
+        char    buf[256];
+        ssize_t n = read(fd, buf, sizeof(buf) - 1);
+        close(fd);
+        if (n > 0)
+        {
+            buf[n] = '\0';
+            while (n > 0 && (buf[n - 1] == '\n' || buf[n - 1] == '\r'))
+            {
+                buf[--n] = '\0';
+            }
+            if (buf[0] != '\0')
+            {
+                snprintf(out, outsz, "%s", buf);
+                if (hooks != NULL && hooks->set_var != NULL)
+                {
+                    hooks->set_var("MILKCLI_SOCK", out, hooks->ctx);
+                }
+                setenv("MILKCLI_SOCK", out, 1);
+                return;
+            }
+        }
+    }
+
     const char *s = milk_ipc_get_var(hooks, "MILKCLI_SOCK");
     if (s != NULL && s[0] != '\0')
     {
