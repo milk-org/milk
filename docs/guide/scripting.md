@@ -295,6 +295,19 @@ persistent `milk-cli --server`):
   - `@get 's.*'`, `@get 'f.*'`, `@get 'p.*'`, `@get 'q.*'` discover active entities in `/dev/shm`.
   - `@get 's.dm*.xsize'` queries a property across all matching entities.
   - `@get --json s.cam0` (or `@get s.cam0.json`, `@get f.loop.json`) emits structured JSON.
+- **Globbed & multi-assignment `@set` and state snapshots (`@snapshot`, `@diff`, `@restore`)**:
+  - `@set f.loop.gain=0.25 f.loop.mult=0.99` updates multiple parameters/keywords in one call.
+  - `@set 'f.loop*.xsize' = 128` and `@set 's.cam*.kw.OBSERVER' = "Subaru"` broadcast updates
+    across wildcard-matched FPS instances, FPS parameters (`f.loop0.*size`), or streams.
+  - `@snapshot -o base.snap ['f.loop*' 's.cam*']`, `@diff base.snap [other.snap]`, and
+    `@restore [--dry-run|-n] base.snap [pattern...]` save, compare, and restore `/dev/shm` state.
+- **Real-time assertions (`@assert`) & dynamic telemetry prompt (`@prompt`)**:
+  - `@assert "irms(wfs) < 0.5" "Residual diverged"` evaluates boolean expressions and automatically
+    prints actual LHS vs RHS values to `stderr` on relational failure.
+  - `@assert --running --fps-min 500 --max-age 0.1 --dim 128x128 s.wfs_cam "Camera degraded"`
+    verifies live stream/FPS/process health invariants in a single command.
+  - `@prompt watch f.loop.run gain=f.loop.gain s.wfs_cam.kw.MODE` and `@prompt preset <minimal|std|ao>`
+    render live `/dev/shm` telemetry in `PS1` using zero-subshell C builtin reads.
 - **Single-round-trip `@batch` and `@pipe` execution**:
   - `@batch "mem.mk2Dim a 64 64; a = 5; b = a * 2"` (or via a heredoc) executes multiple commands in
     a single client-server RPC round trip.

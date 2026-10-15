@@ -600,10 +600,20 @@ void help_topic_bash(void)
            "@get -a all 's.*'" C_RST "\n");
     printf("              " C_CMD "@get -A map 's.dm*.xsize'" C_RST "  |  " C_CMD
            "@get --json s.im1" C_RST "\n");
-    printf("  " C_CMD "@set <entity> <val> [cmt]   " C_RST
-           "Write FPS parameter or stream FITS keyword\n");
-    printf("    " C_NOTE "Examples:" C_RST " " C_CMD "@set f.ao.gain 0.25" C_RST "  |  " C_CMD
-           "@set s.im1.kw.EXPTIME 0.01 'Exp (s)'" C_RST "\n");
+    printf("  " C_CMD "@set <s1>=<v1> [<s2>=<v2>]" C_RST
+           "  Write 1 or more FPS params/stream keywords (supports globs)\n");
+    printf("    " C_NOTE "Examples:" C_RST " " C_CMD "@set f.ao.gain=0.25 f.ao.mult=0.99" C_RST
+           "  |  " C_CMD "@set 'f.dm*.xsize' = 128" C_RST "\n");
+    printf("  " C_CMD "@snapshot [-o f] [pat...]   " C_RST
+           "Save FPS parameter & stream keyword state snapshot\n");
+    printf("  " C_CMD "@diff <snap1> [snap2]       " C_RST
+           "Diff saved snapshot against live /dev/shm or 2nd snapshot\n");
+    printf("  " C_CMD "@restore [-n] <snap> [pat]  " C_RST
+           "Restore FPS/stream state from snapshot (" C_CMD "-n" C_RST " = dry-run)\n");
+    printf("  " C_CMD "@assert <expr|flags> [msg]  " C_RST
+           "Assert math relation or stream/loop health (" C_CMD "--running|--fps-min" C_RST ")\n");
+    printf("  " C_CMD "@prompt [watch|preset|...]  " C_RST
+           "Configure zero-subshell live telemetry prompt (PS1)\n");
     printf("  " C_CMD "@exists <entity>            " C_RST
            "Exit 0 if stream/FPS/proc exists (" C_CMD "s.im1" C_RST ", " C_CMD "f.ao" C_RST ")\n");
     printf("  " C_CMD "@running <entity>           " C_RST
@@ -675,8 +685,10 @@ static void help_topic_streams(void)
     printf("                         fps, age, owner_pid, summary, json, kw.<KEY>\n");
     printf("  " C_CMD "@get 's.*' / 's.dm*.xsize'" C_RST
            " Discover SHM streams or glob-query attributes\n");
-    printf("  " C_CMD "@set s.<name>.kw.<K>=V " C_RST
-           "Create/update FITS keyword (optional comment)\n");
+    printf("  " C_CMD "@set s.<glob>.kw.<K>=V " C_RST
+           "Create/update FITS keyword (supports entity globs)\n");
+    printf("  " C_CMD "@assert [flags] s.<n>  " C_RST
+           "Assert stream health (--running, --fps-min, --max-age, --dim)\n");
     printf("  " C_CMD "@exists [-r] s.<name>  " C_RST
            "Check if stream exists (or writer is alive)\n");
     printf("  " C_CMD "@waitfor <name> [N]    " C_RST
@@ -714,12 +726,14 @@ static void help_topic_fps(void)
            "Read any parameter value from /dev/shm/<name>.fps.shm\n");
     printf("  " C_CMD "@get f.<name>.<attr>   " C_RST
            "Read metadata: status, conf, run, pid, nbparam, list\n");
-    printf("  " C_CMD "@set f.<name>.<p> = V  " C_RST
-           "Set parameter value (all types incl. TIMESPEC seconds)\n");
+    printf("  " C_CMD "@set f.<glob>.<p> = V  " C_RST
+           "Set parameter(s) (supports globs & multi-assignment)\n");
     printf("  " C_CMD "@set f.<name>.conf = X " C_RST
            "Control CONF process: start | stop | step (or :tmux)\n");
     printf("  " C_CMD "@set f.<name>.run  = X " C_RST
            "Control RUN process:  start | stop (or :tmux)\n");
+    printf("  " C_CMD "@snapshot / @diff / @restore" C_RST
+           " Save, compare, or restore FPS/stream state snapshots\n");
     printf("  " C_CMD "@exists [-r] f.<name>  " C_RST
            "Check if FPS SHM exists (or run process is alive)\n");
     printf("\n");

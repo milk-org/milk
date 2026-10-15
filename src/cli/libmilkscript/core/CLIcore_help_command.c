@@ -129,18 +129,19 @@ static const milk_bash_primitive_help_t g_milk_bash_help[] = {
       "  @get -a streams 's.*'\n"
       "  @get -A widths 's.dm*.xsize'\n"
       "  @get --json s.cam0" },
-    { "set", NULL, "@set <s.|f.|p.|q.><name>.<attr> [=] <value> [comment]",
-      "Modify a shared-memory stream keyword, FPS parameter/lifecycle, processinfo, or sequencer",
-      "  - Stream (s.<name>.kw.<KEY>): create or update FITS keyword (auto-typed)\n"
-      "  - FPS    (f.<name>.<param>):  set any FPS parameter (all types incl. TIMESPEC)\n"
+    { "set", NULL, "@set <spec1> [=] <val1> [<spec2> [=] <val2> ...] [comment]",
+      "Modify shared-memory stream keywords, FPS parameters/lifecycle, processinfo, or sequencers",
+      "  - Supports multi-assignment in one call and globbed entity/parameter matching.\n"
+      "  - Stream (s.<glob>.kw.<KEY>): create or update FITS keyword (auto-typed)\n"
+      "  - FPS    (f.<glob>.<pglob>):  set any FPS parameter (all types incl. TIMESPEC)\n"
       "  - FPS    (f.<name>.conf):     start | stop | step (or :tmux to dispatch via tmux)\n"
       "  - FPS    (f.<name>.run):      start | stop (or :tmux to dispatch via tmux)\n"
       "  - Proc   (p.<name>.ctrlval):  0 (run), 1 (pause), 2 (single step), 3 (exit)\n"
       "  - Seq    (q.<id>.action):     pause | resume | abort",
-      "  @set f.loopctrl.gain = 0.25\n"
+      "  @set f.loopctrl.gain = 0.25 f.loopctrl.mult = 0.99\n"
+      "  @set 'f.loop*.xsize' = 128 's.cam*.kw.OBSERVER' = \"Subaru\"\n"
       "  @set f.loopctrl.conf = start\n"
-      "  @set f.loopctrl.run = start:tmux\n"
-      "  @set s.cam0.kw.EXPTIME = 0.001 \"Exposure time (s)\"" },
+      "  @set f.loopctrl.run = start:tmux" },
     { "exists", NULL, "@exists [-r] [s.|f.|p.|q.]<name>",
       "Check whether a shared-memory stream, FPS, processinfo, or sequencer exists",
       "  - Returns exit code 0 if present in MILK_SHM_DIR (/dev/shm), 1 otherwise.\n"
@@ -180,6 +181,46 @@ static const milk_bash_primitive_help_t g_milk_bash_help[] = {
       "      --loop         Repeat cube playback until --count is reached",
       "  @replay --fps 200 telem.fits cam0_sim\n"
       "  @replay --fps 500 --loop --count 1000 calib_cube wfs_sim" },
+    { "snapshot", NULL, "@snapshot [-o <file>] [<pattern...>]",
+      "Save a human-readable snapshot of FPS parameters and stream FITS keywords",
+      "  - Captures writable FPS parameters (f.<glob>) and stream keywords (s.<glob>).\n"
+      "  - Writes to <file> when -o/--output is specified, or stdout otherwise.",
+      "  @snapshot -o baseline.snap\n"
+      "  @snapshot -o ao_loop.snap 'f.loop*' 's.cam*'" },
+    { "diff", NULL, "@diff <snap_a> [snap_b]",
+      "Compare a saved snapshot against live /dev/shm state or a second snapshot file",
+      "  - Prints modified (~ key: old -> new), added (+ key: val), and removed (- key: val) "
+      "items.\n"
+      "  - Returns exit code 0 when identical, 1 when differences exist.",
+      "  @diff baseline.snap\n"
+      "  @diff before.snap after.snap" },
+    { "restore", NULL, "@restore [--dry-run|-n] <snap_file> [<pattern...>]",
+      "Restore FPS parameters and stream FITS keywords from a saved snapshot file",
+      "  - Applies saved values back to live /dev/shm entities (optionally filtered by "
+      "<pattern>).\n"
+      "  - With -n / --dry-run, prints the @set operations that would be applied without writing.",
+      "  @restore --dry-run baseline.snap\n"
+      "  @restore baseline.snap 'f.loop*'" },
+    { "assert", NULL,
+      "@assert [<expr> | [--exists|-e] [--running|-r] [--fps-min <hz>] [--max-age <s>] "
+      "[--cnt-min <N>] [--dim <WxH[xD]>] <entity>] [\"message\"]",
+      "Assert a Milk boolean expression or real-time stream/FPS/process health invariant",
+      "  - Expression mode: evaluates <expr>; on top-level relational failure (<, <=, >, >=, ==, "
+      "!=)\n"
+      "    automatically prints actual LHS vs RHS values to stderr and returns exit code 1.\n"
+      "  - Entity mode: verifies existence, running owner PID, frame rate, age, cnt0, or geometry.",
+      "  @assert \"irms(wfs_im) < 0.5\" \"WFS residual diverged\"\n"
+      "  @assert --running --fps-min 500 --dim 128x128 s.wfs_cam \"Camera degraded\"" },
+    { "prompt", NULL,
+      "@prompt [status | watch [lbl=]<spec>... | unwatch <tgt>... | clear | "
+      "preset <minimal|std|ao> | on | off | render]",
+      "Configure the zero-subshell dynamic telemetry Bash prompt (PS1)",
+      "  - Reads watched /dev/shm properties via in-process C builtins (zero subshells per "
+      "prompt).\n"
+      "  - Color-codes FPS status/run badges (green=ON/RUN, yellow=CONF, amber=OFF/IDLE).",
+      "  @prompt watch f.loopctrl.run gain=f.loopctrl.gain s.wfs_cam.kw.MODE\n"
+      "  @prompt preset ao\n"
+      "  @prompt status" },
     { "defer", NULL, "@defer <command...>",
       "Register a cleanup command on the LIFO exit stack for the current Bash shell/script",
       "  - Executed automatically in reverse (LIFO) order on shell/script EXIT.",

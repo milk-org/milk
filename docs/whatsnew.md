@@ -17,10 +17,12 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 ### 2026-10
 
 - **2026-10-15** — Enhanced `milk.bash` & `milk-cli`: zero-subshell `-v`/`-a`/`-A` variable & array
-  bindings, `/dev/shm` entity globbing & `--json` export, `CLICMDARGDEF` type-aware tab completion
-  & `@hc --sig` / inline ghost argument hints, throttled/multi-target `@on` watchers, single-RPC
-  `@batch` & `@pipe` execution, and `@grab --fits/--timestamps` + `@replay` stream playback `#cli`
-  `#streams` `#fps` `#performance`
+  bindings, `/dev/shm` entity globbing & `--json` export, globbed/multi-assignment `@set`,
+  `@snapshot`/`@diff`/`@restore` state management, `@assert` expression & stream/loop health
+  assertions, `@prompt` zero-subshell live telemetry prompt, `CLICMDARGDEF` type-aware tab
+  completion & `@hc --sig`, throttled/multi-target `@on` watchers, single-RPC `@batch` & `@pipe`
+  execution, and `@grab --fits/--timestamps` + `@replay` stream playback `#cli` `#streams` `#fps`
+  `#performance`
 - **2026-10-14** — First-class GNU Bash integration (`source milk.bash`, `libmilkbash.so` loadable
   builtins, in-process `milk-cli` bash co-process, `@`-sigil command namespace, `@server`
   multi-server lifecycle/tmux management, `@log` `/dev/shm` command & output ring buffer,

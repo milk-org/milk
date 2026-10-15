@@ -1122,7 +1122,7 @@ def test_command_hygiene_help_topics_and_fps_lifecycle():
         done
 
         # Phase 2: @hc and @h support milk.bash @ primitives, short command names, and pillar topics
-        for prim in waitfor waitany get set calc test exists running grab defer on source server log streamcat streamwrite unload; do
+        for prim in waitfor waitany get set calc test exists running grab replay snapshot diff restore assert prompt batch pipe defer on source server log streamcat streamwrite unload; do
             hc1="$(@hc "@${prim}")"
             [[ "${hc1}" == *"@${prim}"* ]]
             [[ "${hc1}" != *"No command matching"* ]]

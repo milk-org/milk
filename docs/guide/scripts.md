@@ -18,14 +18,15 @@ After sourcing `milk.bash` (`source milk.bash`), Milk provides two complementary
 
 | Family | Where to Use | Primary Examples |
 | ------ | ------------ | ---------------- |
-| **`@...` Commands** | Inside an active `milk.bash` or `milk-cli` session (zero-fork RPC + direct `/dev/shm` access) | `@` (`@calc`), `@test`, `@get`, `@set`, `@exists`, `@running`, `@waitfor`, `@waitany`, `@grab`, `@replay`, `@batch`, `@pipe`, `@defer`, `@on`, `@server`, `@log`, `@h`, `@hb`, `@hc`, `@hm`, `@hf`, and all C module functions (`@imgen.mk2Dim`, `@info.imstats`, `@fits.loadfits`, ...) |
+| **`@...` Commands** | Inside an active `milk.bash` or `milk-cli` session (zero-fork RPC + direct `/dev/shm` access) | `@` (`@calc`), `@test`, `@assert`, `@get`, `@set`, `@snapshot`, `@diff`, `@restore`, `@exists`, `@running`, `@waitfor`, `@waitany`, `@grab`, `@replay`, `@batch`, `@pipe`, `@defer`, `@on`, `@prompt`, `@server`, `@log`, `@h`, `@hb`, `@hc`, `@hm`, `@hf`, and all C module functions (`@imgen.mk2Dim`, `@info.imstats`, `@fits.loadfits`, ...) |
 | **`milk-*` Executables** | Standalone OS programs (TUIs, background compute units, external shell tools) | `milk-CTRL`, `milk-fpsCTRL`, `milk-streamCTRL`, `milk-termview`, `milk-fpsexec-*`, `milk-commands`, `milk-help`, `milk-*-help` |
 
 ### Unified SHM & FPS Lifecycle Control via `@get` / `@set`
 
 Within a `milk.bash` session, `@get` and `@set` replace external `milk-fps-*` and `milk-stream-*`
 subprocess calls, supporting zero-subshell variable/array binding (`-v`, `-a`, `-A`), globbed
-discovery (`s.*`, `f.*`, `p.*`, `q.*`), and JSON export (`--json`):
+discovery and updates (`s.*`, `f.*`, `p.*`, `q.*`), multi-assignment, snapshots (`@snapshot`,
+`@diff`, `@restore`), assertions (`@assert`), and JSON export (`--json`):
 
 ```bash
 $ source milk.bash
@@ -34,9 +35,16 @@ $ @get -a streams 's.*'
 $ @get -A widths 's.dm*.xsize'
 $ @get --json s.cam0
 $ @ -v rms 'irms(cam0)'
-$ @set f.loopctrl.gain = 0.25
+$ @set f.loopctrl.gain = 0.25 f.loopctrl.mult = 0.99
+$ @set 'f.loop*.xsize' = 128 's.cam*.kw.OBSERVER' = "Subaru"
 $ @set f.loopctrl.conf = start
 $ @set f.loopctrl.run  = start:tmux
+$ @snapshot -o baseline.snap 'f.loop*' 's.cam*'
+$ @diff baseline.snap
+$ @restore --dry-run baseline.snap
+$ @assert --running --fps-min 500 --dim 128x128 s.cam0 "Camera stream degraded"
+$ @assert "irms(cam0) < 0.5" "Residual diverged"
+$ @prompt watch f.loopctrl.run gain=f.loopctrl.gain s.cam0.kw.OBSERVER
 $ @batch "mem.mk2Dim a 64 64; a = 5; b = a * 2"
 $ @pipe "mem.mk2Dim p1 32 32 |> p1 = 4 |> p2 = _ * 3"
 $ @grab --fits telem.fits --timestamps telem.txt cam0 100
