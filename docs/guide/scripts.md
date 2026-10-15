@@ -18,7 +18,7 @@ Installed from the root `CMakeLists.txt` into `bin/`:
 
 | Script                       | Description                                        |
 | ---------------------------- | -------------------------------------------------- |
-| `milk.bash`                  | Sourceable GNU Bash integration layer (`@` commands, SHM streams, FPS) |
+| `milk.bash`                  | Sourceable GNU Bash integration layer (`@` commands, `@server`, `@log`, SHM streams, FPS) |
 | `milk-script-upgrade`        | Upgrade legacy `.milk` scripts to Tier-1 `milk.bash` scripts |
 | `milk-check`                 | Verify installation (libraries, paths, SHM)        |
 | `milk-argparse`              | Argument parsing helper for milk scripts           |

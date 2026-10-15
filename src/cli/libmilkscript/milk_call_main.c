@@ -45,6 +45,8 @@ static void print_usage(const char *prog)
     printf("  grab <s_in> <N> <s_out> [-t <s>] Capture N consecutive frames into 3D cube\n");
     printf("  complete <prefix> [cmd|arg]      List completion candidates\n");
     printf("  translate [--legacy] <file>      Translate Tier-2 shorthands to Tier-1 bash\n");
+    printf("  server [subcommand ...]          Manage milk-cli servers (@server)\n");
+    printf("  log [options...]                 Inspect/search server SHM command log (@log)\n");
     printf("  shutdown                         Shut down session milk-cli --server\n");
 }
 
@@ -232,6 +234,14 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
             return 0;
         }
         return 1;
+    }
+    if (strcmp(sub, "server") == 0)
+    {
+        return milk_client_server(argc, argv, NULL);
+    }
+    if (strcmp(sub, "log") == 0)
+    {
+        return milk_client_log(argc, argv, NULL);
     }
     if (strcmp(sub, "shutdown") == 0 || strcmp(sub, "unload") == 0)
     {

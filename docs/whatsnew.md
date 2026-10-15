@@ -17,9 +17,10 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 ### 2026-10
 
 - **2026-10-14** — First-class GNU Bash integration (`source milk.bash`, `libmilkbash.so` loadable
-  builtins, in-process `milk-cli` bash co-process, `@`-sigil command namespace, `@calc` / `@test` /
-  `@waitfor` / `@grab` / `@defer`, `@T<type>:` stream datatype modifiers, and `milk-script-upgrade`)
-  `#cli` `#streams` `#fps`
+  builtins, in-process `milk-cli` bash co-process, `@`-sigil command namespace, `@server`
+  multi-server lifecycle/tmux management, `@log` `/dev/shm` command & output ring buffer,
+  `@calc` / `@test` / `@waitfor` / `@grab` / `@defer`, `@T<type>:` stream datatype modifiers,
+  and `milk-script-upgrade`) `#cli` `#streams` `#fps`
 - **2026-10-07** — Unified module `CMakeLists.txt` template, `milk_link_module()` for static-LTO standalones, and
   `INSERT_STD_CLIREGISTERFUNC_NAMED` for CLI registration `#build` `#api`
 - **2026-10-06** — Reorganized `docs/` into topic subfolders

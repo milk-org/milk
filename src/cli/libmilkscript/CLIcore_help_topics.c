@@ -607,6 +607,12 @@ void help_topic_bash(void)
            "Register LIFO cleanup command on shell/script EXIT\n");
     printf("  " C_CMD "@source <file.milk> [args]  " C_RST
            "Translate Tier-2 .milk script and source in bash\n");
+    printf("  " C_CMD "@server [subcommand ...]    " C_RST
+           "Inspect, start, switch, or stop milk servers (" C_CMD "status|list|use|stop" C_RST
+           ")\n");
+    printf("  " C_CMD "@log [pattern|options]      " C_RST
+           "Inspect/search timestamped server command & output log (" C_CMD "-e|--slow|-f" C_RST
+           ")\n");
     printf("\n");
     printf(C_HDR "4. Tier-2 Shorthands (Interactive milk-cli & @source <file.milk>):\n" C_RST);
     printf("  " C_CMD "@s.im1.xsize / @f.ao.gain   " C_RST "Inline property expansion (e.g. " C_CMD

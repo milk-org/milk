@@ -68,6 +68,7 @@ set(MILKSCRIPT_SOURCES
     cli_calc_binops.c
     cli_calc_eval.c
     milk_server.c
+    milk_srvlog.c
     milk_client.c
     milk_bash_engine.c
     milkscript_stubs.c
@@ -112,6 +113,9 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
          $<INSTALL_INTERFACE:include/${SRCNAME}>)
 
+set_target_properties(milkscript PROPERTIES INSTALL_RPATH "$ORIGIN")
+target_link_options(milkscript PRIVATE "-Wl,--disable-new-dtags")
+
 install(
   TARGETS milkscript
   EXPORT milkTargets
@@ -133,6 +137,7 @@ install(
         cli_calc_tokenizer.h
         milk_proto.h
         milk_server.h
+        milk_srvlog.h
         milk_client.h
         milk_bash_engine.h
         standalone_dependencies.h
@@ -155,6 +160,7 @@ target_include_directories(
   milkbash PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
                   ${CMAKE_CURRENT_SOURCE_DIR}/../CLIcore)
 set_target_properties(milkbash PROPERTIES INSTALL_RPATH "$ORIGIN")
+target_link_options(milkbash PRIVATE "-Wl,--disable-new-dtags")
 install(TARGETS milkbash DESTINATION lib)
 
 # Standalone helper executable (milk-call)

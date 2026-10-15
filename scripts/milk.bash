@@ -91,8 +91,17 @@ unset -f __milk_validate_sigil
 # ---------------------------------------------------------------------------
 # 3. Session socket address (server starts lazily on first command)
 # ---------------------------------------------------------------------------
-if [[ -z "${MILKCLI_SOCK:-}" ]]; then
-    export MILKCLI_SOCK="@milk-cli-${UID:-$(id -u)}-$$"
+export _MILK_LOCAL_SOCK="@milk-cli-${UID:-$(id -u)}-$$"
+if [[ "${1:-}" == "--server" || "${1:-}" == "-s" ]] && [[ -n "${2:-}" ]]; then
+    export _MILK_SERVER_NAME="$2"
+    export MILKCLI_SOCK="@milk-cli-${UID:-$(id -u)}-$2"
+    shift 2
+elif [[ "${1:-}" == --server=* ]]; then
+    export _MILK_SERVER_NAME="${1#--server=}"
+    export MILKCLI_SOCK="@milk-cli-${UID:-$(id -u)}-${_MILK_SERVER_NAME}"
+    shift
+elif [[ -z "${MILKCLI_SOCK:-}" ]]; then
+    export MILKCLI_SOCK="${_MILK_LOCAL_SOCK}"
 fi
 
 # ---------------------------------------------------------------------------
@@ -102,7 +111,7 @@ _MILK_BUILTIN_LOADED=0
 if [[ -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" ]]; then
     if MILK_QUIET=1 enable -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" \
         milkcall milkget milkset milkcalc milktest milkexists \
-        milkwaitfor milkgrab milkcomplete milkshutdown 2>/dev/null; then
+        milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null; then
         _MILK_BUILTIN_LOADED=1
     fi
 fi
@@ -152,6 +161,20 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
     milkgrab()     { "${MILK_INSTALLDIR}/bin/milk-call" grab "$@"; }
     milkcomplete() { "${MILK_INSTALLDIR}/bin/milk-call" complete "$@"; }
     milkshutdown() { "${MILK_INSTALLDIR}/bin/milk-call" shutdown "$@"; }
+    milkserver() {
+        local eval_file="${TMPDIR:-/tmp}/.milk_eval_$$_${BASHPID}"
+        local rc=0
+        exec {__milk_efd}>"${eval_file}"
+        MILK_CALL_EVAL_FD="${__milk_efd}" "${MILK_INSTALLDIR}/bin/milk-call" server "$@" || rc=$?
+        exec {__milk_efd}>&-
+        if [[ -s "${eval_file}" ]]; then
+            # shellcheck disable=SC1090
+            source "${eval_file}"
+        fi
+        rm -f "${eval_file}"
+        return ${rc}
+    }
+    milklog()      { "${MILK_INSTALLDIR}/bin/milk-call" log "$@"; }
 fi
 
 # ---------------------------------------------------------------------------
@@ -300,7 +323,12 @@ _milk_on_impl() {
 
 _milk_unload_impl() {
     _milk_on_impl --clear
-    milkshutdown 2>/dev/null || true
+    if [[ -n "${_MILK_LOCAL_SOCK:-}" ]]; then
+        MILKCLI_SOCK="${_MILK_LOCAL_SOCK}" milkshutdown 2>/dev/null || true
+    else
+        milkshutdown 2>/dev/null || true
+    fi
+    unset _MILK_SERVER_NAME _MILK_LOCAL_SOCK
 
     # 1. Unset all @<cmd> functions registered under ${MILKCLI_SIGIL}
     local fn
@@ -331,7 +359,8 @@ _milk_unload_impl() {
     complete -r "${MILKCLI_SIGIL}" "${MILKCLI_SIGIL}calc" \
         "${MILKCLI_SIGIL}test" "${MILKCLI_SIGIL}get" "${MILKCLI_SIGIL}set" \
         "${MILKCLI_SIGIL}exists" "${MILKCLI_SIGIL}running" "${MILKCLI_SIGIL}waitfor" \
-        "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hb" \
+        "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}server" "${MILKCLI_SIGIL}log" \
+        "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hb" \
         "${MILKCLI_SIGIL}hc" "${MILKCLI_SIGIL}hm" 2>/dev/null || true
     if declare -F __milk_prev_cnf_handle >/dev/null; then
         eval "$(declare -f __milk_prev_cnf_handle | sed '1s/__milk_prev_cnf_handle/command_not_found_handle/')"
@@ -343,11 +372,11 @@ _milk_unload_impl() {
     # 4. Disable C builtins and unset fallback shims
     if [[ ${_MILK_BUILTIN_LOADED:-0} -eq 1 ]]; then
         enable -d milkcall milkget milkset milkcalc milktest milkexists \
-            milkwaitfor milkgrab milkcomplete milkshutdown 2>/dev/null || true
+            milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
         _MILK_BUILTIN_LOADED=0
     fi
     unset -f milkcall milkget milkset milkcalc milktest milkexists \
-        milkwaitfor milkgrab milkcomplete milkshutdown 2>/dev/null || true
+        milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
 
     # 5. Restore PROMPT_COMMAND and PS1
     if [[ "$(declare -p PROMPT_COMMAND 2>/dev/null)" == "declare -a"* ]]; then
@@ -389,6 +418,8 @@ function ${MILKCLI_SIGIL}grab        { milkgrab \"\$@\"; }
 function ${MILKCLI_SIGIL}defer       { _milk_defer_add \"\$@\"; }
 function ${MILKCLI_SIGIL}on          { _milk_on_impl \"\$@\"; }
 function ${MILKCLI_SIGIL}source      { _milk_source_impl \"\$@\"; }
+function ${MILKCLI_SIGIL}server      { milkserver \"\$@\"; local __rc=\$?; export MILKCLI_SOCK _MILK_SERVER_NAME; _milk_apply_ps1; return \${__rc}; }
+function ${MILKCLI_SIGIL}log         { milklog \"\$@\"; }
 function ${MILKCLI_SIGIL}h           { milkcall h \"\$@\"; }
 function ${MILKCLI_SIGIL}hb          { milkcall hb \"\$@\"; }
 function ${MILKCLI_SIGIL}hc          { milkcall hc \"\$@\"; }
@@ -402,7 +433,7 @@ function ${MILKCLI_SIGIL}unload      { _milk_unload_impl \"\$@\"; }
 # ---------------------------------------------------------------------------
 # 7. Pre-register all @<cmd> shims & external symlink farm (libexec/milk-bin)
 # ---------------------------------------------------------------------------
-_MILK_CMD_COUNT=21
+_MILK_CMD_COUNT=23
 __milk_setup_commands() {
     local cmd_list="${MILK_INSTALLDIR}/share/milk/milk-commands.list"
     if [[ ! -f "${cmd_list}" || "${MILK_INSTALLDIR}/bin/milk-cli" -nt "${cmd_list}" ]]; then
@@ -421,7 +452,7 @@ __milk_setup_commands() {
             [[ -z "${cmd}" ]] && continue
             # Skip names that conflict with core primitives defined above
             case "${cmd}" in
-                calc|test|get|set|exists|running|waitfor|waitany|grab|defer|on|source|h|hb|hc|hm|hf|streamcat|streamwrite|unload)
+                calc|test|get|set|exists|running|waitfor|waitany|grab|defer|on|source|server|log|h|hb|hc|hm|hf|streamcat|streamwrite|unload)
                     continue
                     ;;
             esac
@@ -440,10 +471,10 @@ __milk_setup_commands() {
     if [[ -d "${bin_farm}" && -w "${bin_farm}" ]]; then
         _MILK_BIN_FARM="${bin_farm}"
         local marker="${bin_farm}/.sigil_${MILKCLI_SIGIL}"
-        if [[ ! -f "${marker}" || "${cmd_list}" -nt "${marker}" ]]; then
+        if [[ ! -f "${marker}" || "${cmd_list}" -nt "${marker}" || "${BASH_SOURCE[0]}" -nt "${marker}" ]]; then
             local target_bin="${MILK_INSTALLDIR}/bin/milk-call"
             local core_c
-            for core_c in "" calc test get set exists running waitfor grab h hb hc hm hf streamcat streamwrite unload; do
+            for core_c in "" calc test get set exists running waitfor grab server log h hb hc hm hf streamcat streamwrite unload; do
                 ln -sf "${target_bin}" "${bin_farm}/${MILKCLI_SIGIL}${core_c}" 2>/dev/null || true
             done
             if [[ -f "${cmd_list}" ]]; then
@@ -495,6 +526,14 @@ _milk_complete() {
         return 0
     fi
     local cmd="${COMP_WORDS[0]}"
+    if [[ "${cmd}" == "${MILKCLI_SIGIL}server" && ${COMP_CWORD} -eq 1 ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "status list ls start use local detach stop attach log" -- "${cur}")
+        return 0
+    fi
+    if [[ "${cmd}" == "${MILKCLI_SIGIL}log" ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "-n --last -a --all -g --grep -e --errors --slow --since -f --follow -s --server --json --clear -h --help" -- "${cur}")
+        return 0
+    fi
     if [[ "${cmd}" == "${MILKCLI_SIGIL}"* ]]; then
         mapfile -t COMPREPLY < <(milkcomplete "${cur}" arg 2>/dev/null)
     fi
@@ -503,11 +542,12 @@ _milk_complete() {
 complete -o default -F _milk_complete "${MILKCLI_SIGIL}" "${MILKCLI_SIGIL}calc" \
     "${MILKCLI_SIGIL}test" "${MILKCLI_SIGIL}get" "${MILKCLI_SIGIL}set" \
     "${MILKCLI_SIGIL}exists" "${MILKCLI_SIGIL}running" "${MILKCLI_SIGIL}waitfor" \
-    "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hb" \
+    "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}server" "${MILKCLI_SIGIL}log" \
+    "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hb" \
     "${MILKCLI_SIGIL}hc" "${MILKCLI_SIGIL}hm" 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# 9. Visible Prompt Label ([milk]) & Interactive Startup Status
+# 9. Visible Prompt Label ([milk] / [milk:<name>]) & Interactive Startup Status
 # ---------------------------------------------------------------------------
 _MILK_PS1_PREFIX='\[\033[1;36m\][milk]\[\033[0m\] '
 
@@ -517,8 +557,13 @@ _milk_apply_ps1() {
         if [[ -z "${_MILK_ORIG_PS1+x}" ]]; then
             _MILK_ORIG_PS1="${PS1:-}"
         fi
-        if [[ "${PS1:-}" != *"[milk]"* ]]; then
-            PS1="${_MILK_PS1_PREFIX}${PS1:-\\s-\\v\\\$ }"
+        local __tag="[milk]"
+        if [[ -n "${_MILK_SERVER_NAME:-}" ]]; then
+            __tag="[milk:${_MILK_SERVER_NAME}]"
+        fi
+        _MILK_PS1_PREFIX="\[\033[1;36m\]${__tag}\[\033[0m\] "
+        if [[ "${PS1:-}" != *"${__tag}"* ]]; then
+            PS1="${_MILK_PS1_PREFIX}${_MILK_ORIG_PS1:-\\s-\\v\\\$ }"
         fi
     fi
     return ${__milk_last_rc}

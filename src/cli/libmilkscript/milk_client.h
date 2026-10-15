@@ -88,6 +88,16 @@ int milk_client_complete(const char                *prefix,
      */
 int milk_client_shutdown(const milk_client_hooks_t *hooks);
 
+/**
+     * @brief Manage milk servers (`@server status|list|start|use|local|stop|attach|log`).
+     */
+int milk_client_server(int argc, char **argv, const milk_client_hooks_t *hooks);
+
+/**
+     * @brief Inspect or search the server SHM command & output log (`@log`).
+     */
+int milk_client_log(int argc, char **argv, const milk_client_hooks_t *hooks);
+
 #ifdef __cplusplus
 }
 #endif

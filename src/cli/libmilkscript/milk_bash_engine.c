@@ -30,6 +30,7 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "milk_bash_engine.h"
 #include "milk_server.h"
+#include "milk_srvlog.h"
 
 /* ============================================================
  *  Dynamic String Buffer Helper
@@ -204,21 +205,21 @@ static size_t scan_entity_path(const char *s, int *has_eq)
 static int is_bash_reserved_or_builtin(const char *w)
 {
     static const char *const kw[] = {
-        "if",         "then",     "elif",     "else",     "fi",       "for",      "in",
-        "while",      "until",    "do",       "done",     "case",     "esac",     "select",
-        "function",   "time",     "coproc",   "{",        "}",        "!",        "[[",
-        "]]",         "[",        "]",        "echo",     "printf",   "cd",       "pwd",
-        "read",       "export",   "unset",    "shift",    "alias",    "unalias",  "source",
-        ".",          "exit",     "quit",     "return",   "break",    "continue", "local",
-        "declare",    "typeset",  "readonly", "let",      "eval",     "exec",     "set",
-        "shopt",      "trap",     "type",     "command",  "builtin",  "enable",   "wait",
-        "kill",       "jobs",     "bg",       "fg",       "true",     "false",    "test",
-        "sleep",      "rm",       "ls",       "cat",      "grep",     "awk",      "sed",
-        "find",       "xargs",    "sort",     "head",     "tail",     "wc",       "cut",
-        "tr",         "mkdir",    "rmdir",    "cp",       "mv",       "ln",       "chmod",
-        "touch",      "date",     "uname",    "hostname", "whoami",   "id",       "env",
-        "milkcall",   "milkcalc", "milkget",  "milkset",  "milktest", "milkgrab", "milkwaitfor",
-        "milkexists", NULL
+        "if",         "then",       "elif",     "else",     "fi",       "for",      "in",
+        "while",      "until",      "do",       "done",     "case",     "esac",     "select",
+        "function",   "time",       "coproc",   "{",        "}",        "!",        "[[",
+        "]]",         "[",          "]",        "echo",     "printf",   "cd",       "pwd",
+        "read",       "export",     "unset",    "shift",    "alias",    "unalias",  "source",
+        ".",          "exit",       "quit",     "return",   "break",    "continue", "local",
+        "declare",    "typeset",    "readonly", "let",      "eval",     "exec",     "set",
+        "shopt",      "trap",       "type",     "command",  "builtin",  "enable",   "wait",
+        "kill",       "jobs",       "bg",       "fg",       "true",     "false",    "test",
+        "sleep",      "rm",         "ls",       "cat",      "grep",     "awk",      "sed",
+        "find",       "xargs",      "sort",     "head",     "tail",     "wc",       "cut",
+        "tr",         "mkdir",      "rmdir",    "cp",       "mv",       "ln",       "chmod",
+        "touch",      "date",       "uname",    "hostname", "whoami",   "id",       "env",
+        "milkcall",   "milkcalc",   "milkget",  "milkset",  "milktest", "milkgrab", "milkwaitfor",
+        "milkexists", "milkserver", "milklog",  NULL
     };
     for (int i = 0; kw[i] != NULL; i++)
     {
@@ -1535,6 +1536,7 @@ int milk_bash_engine_init(void)
     {
         return -1;
     }
+    milk_server_set_log_flags(MILK_SRVFLAG_INPROC);
     setenv("MILKCLI_SOCK", g_sockpath, 1);
 
     int cmd_pipe[2]    = { -1, -1 };
@@ -1940,6 +1942,7 @@ void milk_bash_engine_shutdown(void)
         waitpid(g_bash_pid, NULL, 0);
         g_bash_pid = -1;
     }
+    milk_server_close_log(1);
     if (g_listen_fd >= 0)
     {
         close(g_listen_fd);

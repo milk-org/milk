@@ -55,6 +55,7 @@
 #include "fpsseq.h"
 #include "milk_proto.h"
 #include "milk_server.h"
+#include "milk_srvlog.h"
 #include "processinfo.h"
 
 extern PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
@@ -2173,6 +2174,14 @@ static int dispatch_milk_argv(int argc, char **argv)
         }
         return cli_last_retval;
     }
+    if (strcmp(cmdname, "server") == 0)
+    {
+        return milk_srvlog_cmd_server(argc - 1, argv + 1, NULL);
+    }
+    if (strcmp(cmdname, "log") == 0)
+    {
+        return milk_srvlog_cmd_log(getenv("MILKCLI_SOCK"), argc - 1, argv + 1, NULL);
+    }
     if (strcmp(cmdname, "dpdigits") == 0)
     {
         cli_intercept_cmd_dpdigits(data.CLIcmdline);
@@ -2442,9 +2451,9 @@ static void handle_complete_request(int client_fd, const char *prefix, const cha
         size_t blen = strlen(bare);
 
         static const char *const core_cmds[] = {
-            "h",     "hb",   "hc",     "hm",        "hf",          "get",     "set",
-            "calc",  "test", "exists", "running",   "waitfor",     "waitany", "grab",
-            "defer", "on",   "source", "streamcat", "streamwrite", "unload",  NULL
+            "h",      "hb",     "hc",      "hm",        "hf",          "get",    "set",   "calc",
+            "test",   "exists", "running", "waitfor",   "waitany",     "grab",   "defer", "on",
+            "source", "server", "log",     "streamcat", "streamwrite", "unload", NULL
         };
         for (int i = 0; core_cmds[i] != NULL; i++)
         {
@@ -2691,6 +2700,211 @@ static void *call_watcher_thread(void *arg)
 }
 
 /* ============================================================
+ *  Server SHM Log & Output Tee Helpers
+ * ============================================================ */
+
+static milk_srvlog_shm_t *g_srvlog_shm           = NULL;
+static char               g_srvlog_sockpath[256] = "";
+
+static void milk_server_refresh_log_stats(void)
+{
+    if (g_srvlog_shm == NULL)
+    {
+        return;
+    }
+
+    uint32_t nb_images = 0;
+    if (data.core.image != NULL)
+    {
+        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        {
+            if (data.core.image[i].used)
+            {
+                nb_images++;
+            }
+        }
+    }
+
+    uint32_t nb_vars = 0;
+    if (data.core.variable != NULL)
+    {
+        for (long i = 0; i < data.core.NB_MAX_VARIABLE; i++)
+        {
+            if (data.core.variable[i].used)
+            {
+                nb_vars++;
+            }
+        }
+    }
+
+    char cwd[256] = "";
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+    {
+        cwd[0] = '\0';
+    }
+
+    milk_srvlog_server_update_stats(g_srvlog_shm, (uint32_t) data.NBmodule, nb_images, nb_vars,
+                                    cwd);
+}
+
+void milk_server_set_log_flags(uint32_t flags)
+{
+    if (g_srvlog_shm != NULL)
+    {
+        g_srvlog_shm->flags |= flags;
+    }
+}
+
+void milk_server_close_log(int unlink_shm)
+{
+    if (g_srvlog_shm != NULL)
+    {
+        milk_srvlog_server_close(g_srvlog_shm, unlink_shm);
+        g_srvlog_shm = NULL;
+    }
+}
+
+typedef struct
+{
+    int    out_r;
+    int    err_r;
+    int    stop_r;
+    int    client_out;
+    int    client_err;
+    char   cap_buf[MILK_SRVLOG_OUT_MAX];
+    size_t cap_len;
+} tee_pump_ctx_t;
+
+static void tee_drain_fd(int rfd, int wfd, tee_pump_ctx_t *ctx, int *open_flag)
+{
+    char buf[4096];
+    for (;;)
+    {
+        ssize_t n = read(rfd, buf, sizeof(buf));
+        if (n > 0)
+        {
+            if (wfd >= 0)
+            {
+                ssize_t off = 0;
+                while (off < n)
+                {
+                    ssize_t w = write(wfd, buf + off, (size_t) (n - off));
+                    if (w < 0)
+                    {
+                        if (errno == EINTR)
+                        {
+                            continue;
+                        }
+                        break;
+                    }
+                    off += w;
+                }
+            }
+            if (ctx->cap_len + 1 < sizeof(ctx->cap_buf))
+            {
+                size_t avail = sizeof(ctx->cap_buf) - 1 - ctx->cap_len;
+                size_t to_cp = ((size_t) n < avail) ? (size_t) n : avail;
+                memcpy(ctx->cap_buf + ctx->cap_len, buf, to_cp);
+                ctx->cap_len += to_cp;
+                ctx->cap_buf[ctx->cap_len] = '\0';
+            }
+        }
+        else if (n == 0)
+        {
+            *open_flag = 0;
+            break;
+        }
+        else
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            break;
+        }
+    }
+}
+
+static void *tee_pump_thread(void *arg)
+{
+    tee_pump_ctx_t *ctx      = (tee_pump_ctx_t *) arg;
+    int             out_open = (ctx->out_r >= 0) ? 1 : 0;
+    int             err_open = (ctx->err_r >= 0) ? 1 : 0;
+
+    while (out_open || err_open)
+    {
+        struct pollfd pfds[3];
+        int           npfds   = 0;
+        int           out_idx = -1;
+        int           err_idx = -1;
+        int           stp_idx = -1;
+
+        if (out_open)
+        {
+            out_idx               = npfds++;
+            pfds[out_idx].fd      = ctx->out_r;
+            pfds[out_idx].events  = POLLIN;
+            pfds[out_idx].revents = 0;
+        }
+        if (err_open)
+        {
+            err_idx               = npfds++;
+            pfds[err_idx].fd      = ctx->err_r;
+            pfds[err_idx].events  = POLLIN;
+            pfds[err_idx].revents = 0;
+        }
+        if (ctx->stop_r >= 0)
+        {
+            stp_idx               = npfds++;
+            pfds[stp_idx].fd      = ctx->stop_r;
+            pfds[stp_idx].events  = POLLIN | POLLHUP;
+            pfds[stp_idx].revents = 0;
+        }
+
+        int pr = poll(pfds, (nfds_t) npfds, -1);
+        if (pr < 0)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            break;
+        }
+
+        if (out_idx >= 0 && (pfds[out_idx].revents & (POLLIN | POLLHUP | POLLERR)))
+        {
+            tee_drain_fd(ctx->out_r, ctx->client_out, ctx, &out_open);
+        }
+        if (err_idx >= 0 && (pfds[err_idx].revents & (POLLIN | POLLHUP | POLLERR)))
+        {
+            tee_drain_fd(ctx->err_r, ctx->client_err, ctx, &err_open);
+        }
+        if (stp_idx >= 0 && (pfds[stp_idx].revents & (POLLIN | POLLHUP | POLLERR)))
+        {
+            if (out_open)
+            {
+                tee_drain_fd(ctx->out_r, ctx->client_out, ctx, &out_open);
+            }
+            if (err_open)
+            {
+                tee_drain_fd(ctx->err_r, ctx->client_err, ctx, &err_open);
+            }
+            break;
+        }
+    }
+
+    return NULL;
+}
+
+static uint64_t diff_timespec_ns(const struct timespec *t0, const struct timespec *t1)
+{
+    int64_t ds  = (int64_t) t1->tv_sec - (int64_t) t0->tv_sec;
+    int64_t dns = (int64_t) t1->tv_nsec - (int64_t) t0->tv_nsec;
+    int64_t tot = ds * 1000000000LL + dns;
+    return (tot > 0) ? (uint64_t) tot : 0;
+}
+
+/* ============================================================
  *  Client Connection Handler
  * ============================================================ */
 
@@ -2703,6 +2917,14 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
     if (milk_proto_recv(client_fd, &hdr, &payload, recv_fds) != 0)
     {
         return;
+    }
+
+    pid_t        client_pid = getpid();
+    struct ucred cred;
+    socklen_t    clen = sizeof(cred);
+    if (getsockopt(client_fd, SOL_SOCKET, SO_PEERCRED, &cred, &clen) == 0 && cred.pid > 0)
+    {
+        client_pid = cred.pid;
     }
 
     /* If async flag is set, or if this is a blocking WAITFOR/GRAB request,
@@ -2810,8 +3032,12 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
         goto cleanup;
     }
 
+    struct timespec ts_start;
+    clock_gettime(CLOCK_REALTIME, &ts_start);
+
     if (hdr.type == MILK_MSG_WAITFOR)
     {
+        char log_cmd[MILK_SRVLOG_CMD_MAX] = "@waitfor";
         if (payload != NULL && hdr.len > 0)
         {
             const char *target = (const char *) payload;
@@ -2820,11 +3046,19 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
             size_t      o2     = o1 + strlen(arg2) + 1;
             const char *tstr   = (o2 < hdr.len) ? (const char *) (payload + o2) : "0";
             double      tsec   = strtod(tstr, NULL);
-            rc                 = milk_server_waitfor(client_fd, target, arg2, tsec);
+            snprintf(log_cmd, sizeof(log_cmd), "@waitfor %s%s%s", target, arg2[0] ? " " : "", arg2);
+            rc = milk_server_waitfor(client_fd, target, arg2, tsec);
         }
         else
         {
             rc = 1;
+        }
+        if (g_srvlog_shm != NULL)
+        {
+            struct timespec ts_end;
+            clock_gettime(CLOCK_REALTIME, &ts_end);
+            milk_srvlog_record(g_srvlog_shm, &ts_start, diff_timespec_ns(&ts_start, &ts_end),
+                               client_pid, hdr.type, rc, log_cmd, "");
         }
         milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
         goto cleanup;
@@ -2832,6 +3066,7 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
 
     if (hdr.type == MILK_MSG_GRAB)
     {
+        char log_cmd[MILK_SRVLOG_CMD_MAX] = "@grab";
         if (payload != NULL && hdr.len > 0)
         {
             const char *sname   = (const char *) payload;
@@ -2843,11 +3078,20 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
             const char *tstr    = (o3 < hdr.len) ? (const char *) (payload + o3) : "0";
             long        nf      = strtol(nfstr, NULL, 10);
             double      tsec    = strtod(tstr, NULL);
-            rc                  = milk_server_grab(client_fd, sname, nf, outname, tsec);
+            snprintf(log_cmd, sizeof(log_cmd), "@grab %s %ld%s%s", sname, nf, outname[0] ? " " : "",
+                     outname);
+            rc = milk_server_grab(client_fd, sname, nf, outname, tsec);
         }
         else
         {
             rc = 1;
+        }
+        if (g_srvlog_shm != NULL)
+        {
+            struct timespec ts_end;
+            clock_gettime(CLOCK_REALTIME, &ts_end);
+            milk_srvlog_record(g_srvlog_shm, &ts_start, diff_timespec_ns(&ts_start, &ts_end),
+                               client_pid, hdr.type, rc, log_cmd, "");
         }
         milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
         goto cleanup;
@@ -2860,6 +3104,32 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
         int saved_stderr = -1;
         int saved_cwd    = -1;
 
+        /* Peek command name if MILK_MSG_CALL so we can skip teeing binary streamcat */
+        int is_streamcat = 0;
+        if (hdr.type == MILK_MSG_CALL && payload != NULL && hdr.len > sizeof(uint32_t))
+        {
+            const char *first_arg = (const char *) (payload + sizeof(uint32_t));
+            if (strcmp(first_arg, "streamcat") == 0 || strcmp(first_arg, "@streamcat") == 0)
+            {
+                is_streamcat = 1;
+            }
+        }
+
+        int            use_tee      = (g_srvlog_shm != NULL && !is_streamcat) ? 1 : 0;
+        int            out_pipe[2]  = { -1, -1 };
+        int            err_pipe[2]  = { -1, -1 };
+        int            stop_pipe[2] = { -1, -1 };
+        tee_pump_ctx_t tee_ctx;
+        pthread_t      tee_tid;
+        int            tee_running = 0;
+
+        memset(&tee_ctx, 0, sizeof(tee_ctx));
+        tee_ctx.out_r      = -1;
+        tee_ctx.err_r      = -1;
+        tee_ctx.stop_r     = -1;
+        tee_ctx.client_out = -1;
+        tee_ctx.client_err = -1;
+
         if (recv_fds[0] >= 0)
         {
             saved_stdin = fcntl(STDIN_FILENO, F_DUPFD_CLOEXEC, 3);
@@ -2867,25 +3137,82 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
             close(recv_fds[0]);
             recv_fds[0] = -1;
         }
-        if (recv_fds[1] >= 0)
+
+        if (use_tee && recv_fds[1] >= 0 && recv_fds[2] >= 0 &&
+            pipe2(out_pipe, O_CLOEXEC | O_NONBLOCK) == 0 &&
+            pipe2(err_pipe, O_CLOEXEC | O_NONBLOCK) == 0 &&
+            pipe2(stop_pipe, O_CLOEXEC | O_NONBLOCK) == 0)
         {
+            /* Keep write ends blocking for server stdio, read ends non-blocking for pump */
+            fcntl(out_pipe[1], F_SETFL, 0);
+            fcntl(err_pipe[1], F_SETFL, 0);
+
             struct stat st;
             if (fstat(recv_fds[1], &st) == 0 && S_ISFIFO(st.st_mode))
             {
                 fcntl(recv_fds[1], F_SETPIPE_SZ, 1048576);
             }
+
+            tee_ctx.out_r      = out_pipe[0];
+            tee_ctx.err_r      = err_pipe[0];
+            tee_ctx.stop_r     = stop_pipe[0];
+            tee_ctx.client_out = recv_fds[1];
+            tee_ctx.client_err = recv_fds[2];
+            recv_fds[1]        = -1;
+            recv_fds[2]        = -1;
+
             saved_stdout = fcntl(STDOUT_FILENO, F_DUPFD_CLOEXEC, 3);
-            dup2(recv_fds[1], STDOUT_FILENO);
-            close(recv_fds[1]);
-            recv_fds[1] = -1;
-        }
-        if (recv_fds[2] >= 0)
-        {
             saved_stderr = fcntl(STDERR_FILENO, F_DUPFD_CLOEXEC, 3);
-            dup2(recv_fds[2], STDERR_FILENO);
-            close(recv_fds[2]);
-            recv_fds[2] = -1;
+            dup2(out_pipe[1], STDOUT_FILENO);
+            dup2(err_pipe[1], STDERR_FILENO);
+            close(out_pipe[1]);
+            close(err_pipe[1]);
+            out_pipe[1] = -1;
+            err_pipe[1] = -1;
+
+            if (pthread_create(&tee_tid, NULL, tee_pump_thread, &tee_ctx) == 0)
+            {
+                tee_running = 1;
+            }
         }
+        else
+        {
+            if (out_pipe[0] >= 0)
+            {
+                close(out_pipe[0]);
+                close(out_pipe[1]);
+            }
+            if (err_pipe[0] >= 0)
+            {
+                close(err_pipe[0]);
+                close(err_pipe[1]);
+            }
+            if (stop_pipe[0] >= 0)
+            {
+                close(stop_pipe[0]);
+                close(stop_pipe[1]);
+            }
+            if (recv_fds[1] >= 0)
+            {
+                struct stat st;
+                if (fstat(recv_fds[1], &st) == 0 && S_ISFIFO(st.st_mode))
+                {
+                    fcntl(recv_fds[1], F_SETPIPE_SZ, 1048576);
+                }
+                saved_stdout = fcntl(STDOUT_FILENO, F_DUPFD_CLOEXEC, 3);
+                dup2(recv_fds[1], STDOUT_FILENO);
+                close(recv_fds[1]);
+                recv_fds[1] = -1;
+            }
+            if (recv_fds[2] >= 0)
+            {
+                saved_stderr = fcntl(STDERR_FILENO, F_DUPFD_CLOEXEC, 3);
+                dup2(recv_fds[2], STDERR_FILENO);
+                close(recv_fds[2]);
+                recv_fds[2] = -1;
+            }
+        }
+
         if (recv_fds[3] >= 0)
         {
             saved_cwd = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
@@ -2896,6 +3223,8 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
             recv_fds[3] = -1;
         }
 
+        char log_cmd[MILK_SRVLOG_CMD_MAX] = "";
+
         if (hdr.type == MILK_MSG_SET)
         {
             if (payload != NULL && hdr.len > 0)
@@ -2905,7 +3234,8 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
                 const char *val     = (o1 < hdr.len) ? (const char *) (payload + o1) : NULL;
                 size_t      o2      = (val != NULL) ? (o1 + strlen(val) + 1) : hdr.len;
                 const char *comment = (o2 < hdr.len) ? (const char *) (payload + o2) : NULL;
-                rc                  = (milk_entity_set(spec, val, comment) == 0) ? 0 : 1;
+                snprintf(log_cmd, sizeof(log_cmd), "@set %s = %s", spec, val ? val : "");
+                rc = (milk_entity_set(spec, val, comment) == 0) ? 0 : 1;
             }
             else
             {
@@ -2918,7 +3248,8 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
             if (payload != NULL && hdr.len > 0)
             {
                 const char *expr = (const char *) payload;
-                uint32_t    off  = (uint32_t) (strlen(expr) + 1);
+                snprintf(log_cmd, sizeof(log_cmd), "%s %s", is_test ? "@test" : "@=", expr);
+                uint32_t off = (uint32_t) (strlen(expr) + 1);
                 if (off + sizeof(uint32_t) <= hdr.len)
                 {
                     uint32_t nvars = 0;
@@ -3030,7 +3361,7 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
 
                 if (!handled_entity_lhs)
                 {
-                    /* Expand inline @s./s., @f./f., @p./p., @q./q. entity references inside expr */
+                    /* Expand inline @s./s., @f./f., @p./f., @q./q. entity references inside expr */
                     char expanded[8192];
                     expand_entities_in_expr(expr, expanded, sizeof(expanded));
 
@@ -3057,10 +3388,24 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
                 off += (uint32_t) sizeof(uint32_t);
 
                 char **argv = (char **) calloc(argc + 1, sizeof(char *));
+                size_t lpos = 0;
                 for (uint32_t i = 0; i < argc && off < hdr.len; i++)
                 {
                     argv[i] = (char *) (payload + off);
                     off += (uint32_t) (strnlen(argv[i], hdr.len - off) + 1);
+                    if (lpos + 2 < sizeof(log_cmd))
+                    {
+                        if (i > 0)
+                        {
+                            log_cmd[lpos++] = ' ';
+                        }
+                        size_t alen = strlen(argv[i]);
+                        size_t rem  = sizeof(log_cmd) - 1 - lpos;
+                        size_t cp   = (alen < rem) ? alen : rem;
+                        memcpy(log_cmd + lpos, argv[i], cp);
+                        lpos += cp;
+                        log_cmd[lpos] = '\0';
+                    }
                 }
 
                 /* Unpack environment updates */
@@ -3091,6 +3436,14 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
                                     dcquiet     = 1;
                                     setSHMdir();
                                     dcquiet = saved_q;
+                                    if (g_srvlog_shm != NULL && g_srvlog_sockpath[0] != '\0')
+                                    {
+                                        uint32_t old_flags = g_srvlog_shm->flags;
+                                        milk_srvlog_server_close(g_srvlog_shm, 0);
+                                        g_srvlog_shm = milk_srvlog_server_init(g_srvlog_sockpath, 0,
+                                                                               old_flags);
+                                        milk_server_refresh_log_stats();
+                                    }
                                 }
                             }
                         }
@@ -3187,12 +3540,38 @@ static void handle_client_connection(int client_fd, int listen_fd, int *shutdown
             dup2(saved_stderr, STDERR_FILENO);
             close(saved_stderr);
         }
+
+        if (tee_running)
+        {
+            close(stop_pipe[1]);
+            stop_pipe[1] = -1;
+            pthread_join(tee_tid, NULL);
+            close(out_pipe[0]);
+            close(err_pipe[0]);
+            close(stop_pipe[0]);
+            close(tee_ctx.client_out);
+            close(tee_ctx.client_err);
+        }
+
+        /* Update server stats (including cwd before restoring saved_cwd if server changed dir) */
+        milk_server_refresh_log_stats();
+
         if (saved_cwd >= 0)
         {
             if (fchdir(saved_cwd) != 0)
             {
             }
             close(saved_cwd);
+        }
+
+        if (g_srvlog_shm != NULL && log_cmd[0] != '\0' && strcmp(log_cmd, "log") != 0 &&
+            strncmp(log_cmd, "log ", 4) != 0 && strcmp(log_cmd, "server") != 0 &&
+            strncmp(log_cmd, "server ", 7) != 0)
+        {
+            struct timespec ts_end;
+            clock_gettime(CLOCK_REALTIME, &ts_end);
+            milk_srvlog_record(g_srvlog_shm, &ts_start, diff_timespec_ns(&ts_start, &ts_end),
+                               client_pid, hdr.type, rc, log_cmd, tee_ctx.cap_buf);
         }
 
         milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
@@ -3269,6 +3648,23 @@ int milk_server_create_listener(const char *sockpath)
     }
 
     setenv("MILKCLI_SOCK", sockpath, 1);
+
+    snprintf(g_srvlog_sockpath, sizeof(g_srvlog_sockpath), "%s", sockpath);
+    uint32_t srv_flags = 0;
+    if (getenv("MILK_SRV_NAMED") != NULL)
+    {
+        srv_flags |= MILK_SRVFLAG_NAMED;
+    }
+    if (getenv("MILK_SRV_TMUX") != NULL || getenv("TMUX") != NULL)
+    {
+        srv_flags |= MILK_SRVFLAG_TMUX;
+    }
+    if (g_srvlog_shm != NULL)
+    {
+        milk_srvlog_server_close(g_srvlog_shm, 0);
+    }
+    g_srvlog_shm = milk_srvlog_server_init(sockpath, 0, srv_flags);
+    milk_server_refresh_log_stats();
 
     /* Snapshot initial built-in dcvar entries into cache */
     if (data.core.variable != NULL)
@@ -3379,6 +3775,8 @@ int milk_server_run(const char *sockpath, int owner_fd, int ready_fd)
             milk_server_accept_and_handle(listen_fd, &shutdown_flag);
         }
     }
+
+    milk_server_close_log(0);
 
     close(listen_fd);
     if (sockpath[0] != '@')

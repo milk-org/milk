@@ -104,10 +104,10 @@ def _run_milk_cli(
 
 def test_builtin_loaded_and_commands_registered():
     res = _run_bash("""
-        for b in milkcall milkget milkset milkcalc milktest milkexists milkwaitfor milkgrab milkcomplete milkshutdown; do
+        for b in milkcall milkget milkset milkcalc milktest milkexists milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog; do
             [[ "$(type -t "$b")" == "builtin" ]]
         done
-        for f in @ @calc @test @get @set @exists @running @waitfor @waitany @grab @defer @on @source @h @hb @hc @hm @hf @streamcat @streamwrite @unload; do
+        for f in @ @calc @test @get @set @exists @running @waitfor @waitany @grab @defer @on @source @server @log @h @hb @hc @hm @hf @streamcat @streamwrite @unload; do
             [[ "$(type -t "$f")" == "function" ]]
         done
         [[ "$(type -t @mk2Dim)" == "function" ]]
@@ -123,6 +123,8 @@ def test_builtin_loaded_and_commands_registered():
         hb_out="$(@hb)"
         [[ "${hb_out}" == *"BASH-ENHANCED MODE"* ]]
         [[ "${hb_out}" == *"@waitfor"* ]]
+        [[ "${hb_out}" == *"@server"* ]]
+        [[ "${hb_out}" == *"@log"* ]]
         @h bash | grep -q "BASH-ENHANCED MODE"
         @hm >/dev/null
         @hc mk2Dim >/dev/null
@@ -1001,3 +1003,142 @@ def test_interactive_syndiag_valid_milk_syntax(tmp_path):
         "[syntax error" not in full_out
     ), f"Unexpected syntax error in PTY output:\n{full_out}"
     assert "PIX=500" in full_out, f"Expected PIX=500 in PTY output:\n{full_out}"
+
+
+def test_server_management_and_multi_shell_sharing():
+    res = _run_bash("""
+        trap '@server stop --all 2>/dev/null || true' EXIT
+
+        # 1. Before any milk command runs, @server status shows IDLE without starting the server
+        st0="$(@server status)"
+        [[ "${st0}" == *"IDLE"* ]]
+        [[ "${st0}" == *"private (per-shell)"* ]]
+
+        # 2. Running a command starts the private per-shell server
+        @mk2Dim "@L:loc_priv" 8 8
+        @calc "loc_priv = 2"
+        st1="$(@server status)"
+        [[ "${st1}" == *"RUNNING"* ]]
+        [[ "${st1}" == *"1 local images"* ]]
+
+        # 3. Start and switch to a persistent named server 'ao_test_srv'
+        PS1='user@host:$ '
+        @server start ao_test_srv
+        [[ "${_MILK_SERVER_NAME}" == "ao_test_srv" ]]
+        [[ "${PS1}" == *"[milk:ao_test_srv]"* ]]
+
+        # Verify local image from private server is isolated from 'ao_test_srv'
+        st_ao0="$(@server status)"
+        [[ "${st_ao0}" == *"0 local images"* ]]
+
+        # Create state inside 'ao_test_srv'
+        @mk2Dim "@L:ao_priv_im" 6 6
+        @calc "ao_priv_im = 5"
+        @calc "shared_ao_var = 777"
+
+        # 4. Spawn a second independent bash shell connected via 'source milk.bash --server ao_test_srv'
+        sub_out="$(bash -e -c '
+            PS1="sub$ "
+            source "${MILK_INSTALLDIR}/bin/milk.bash" --server ao_test_srv
+            [[ "${PS1}" == *"[milk:ao_test_srv]"* ]]
+            echo "VAR=$(@calc shared_ao_var)"
+            echo "TOT=$(@calc \"itot(ao_priv_im)\")"
+            # Unloading in a client shell must NOT kill the shared named server
+            @unload
+        ')"
+        [[ "${sub_out}" == *"VAR=777"* ]]
+        [[ "${sub_out}" == *"TOT=180"* ]]
+
+        # 5. Verify 'ao_test_srv' is still alive after client shell unloaded & exited
+        [[ "$(@calc 'shared_ao_var')" == "777" ]]
+        ls_json="$(@server list --json)"
+        [[ "${ls_json}" == *'"name":"ao_test_srv"'* ]]
+        [[ "${ls_json}" == *'"mode":"named"'* ]]
+
+        # 6. Switch back to local private server and verify original local image is preserved
+        @server local
+        [[ -z "${_MILK_SERVER_NAME:-}" ]]
+        [[ "${PS1}" == *"[milk]"*"user@host:$ " ]]
+        [[ "$(@calc 'itot(loc_priv)')" == "128" ]]
+
+        # 7. Stop named server
+        @server stop ao_test_srv
+        st_stopped="$(@server status ao_test_srv)"
+        [[ "${st_stopped}" == *"IDLE"* ]]
+
+        # 8. Optional tmux-backed server test if tmux is available
+        if command -v tmux >/dev/null 2>&1; then
+            @server start ao_tmux_srv --tmux -d
+            st_tmux="$(@server status ao_tmux_srv)"
+            [[ "${st_tmux}" == *"RUNNING"* ]]
+            [[ "${st_tmux}" == *"named (tmux)"* ]]
+            [[ "${st_tmux}" == *"milk_srv_ao_tmux_srv"* ]]
+            @server stop ao_tmux_srv
+        fi
+
+        echo "SERVER_MGMT_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "SERVER_MGMT_OK" in res.stdout
+
+
+def test_server_command_and_output_ring_buffer_log(tmp_path):
+    res = _run_bash("""
+        @mk2Dim "@S:log_im" 8 8
+        @calc "log_im = 3"
+        @imstats log_im >/dev/null
+        @set s.log_im.kw.CAM "SCExAO" "Camera name"
+
+        # Trigger a deliberate error to test error logging
+        set +e
+        @calc "1 / 0" 2>/dev/null
+        set -e
+
+        # 1. Default @log includes command text, durations, and captured stdout/stderr
+        log_out="$(@log)"
+        [[ "${log_out}" == *"mk2Dim @S:log_im 8 8"* ]]
+        [[ "${log_out}" == *"@= log_im = 3"* ]]
+        [[ "${log_out}" == *"imstats log_im"* ]]
+        [[ "${log_out}" == *"Image size (->imsize0...)"* ]]
+        [[ "${log_out}" == *"@set s.log_im.kw.CAM = SCExAO"* ]]
+        [[ "${log_out}" == *"@= 1 / 0"* ]]
+
+        # 2. Regex search across command and output (--grep)
+        grep_out="$(@log --grep 'rms per pixel')"
+        [[ "${grep_out}" == *"imstats log_im"* ]]
+        [[ "${grep_out}" != *"mk2Dim @S:log_im"* ]]
+
+        # 3. Error filter (--errors)
+        err_out="$(@log --errors)"
+        [[ "${err_out}" == *"@= 1 / 0"* ]]
+        [[ "${err_out}" != *"@= log_im = 3"* ]]
+
+        # 4. JSON output (--json -n 2)
+        json_out="$(@log -n 2 --json)"
+        [[ "${json_out}" == *'"cmd":"@set s.log_im.kw.CAM = SCExAO"'* ]]
+        [[ "${json_out}" == *'"cmd":"@= 1 / 0"'* ]]
+        [[ "${json_out}" == *'"rc":2'* ]]
+
+        # 5. Clear log (--clear)
+        @log --clear
+        empty_json="$(@log --json)"
+        [[ -z "${empty_json}" ]]
+        echo "SRVLOG_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "SRVLOG_OK" in res.stdout
+
+    # Also verify @server and @log work inside native milk-cli Tier-2 mode
+    res_cli = _run_milk_cli(
+        """
+        mem.mk2Dim @L:cli_im 8 8
+        @ cli_im = 9
+        @server status
+        @log --json
+        """,
+        tmp_path,
+        mode="script",
+    )
+    assert res_cli.returncode == 0, f"stdout={res_cli.stdout}\nstderr={res_cli.stderr}"
+    assert "in-process" in res_cli.stdout
+    assert '"cmd":"@= cli_im = 9"' in res_cli.stdout

@@ -463,6 +463,28 @@ static int milkshutdown_builtin(WORD_LIST *list)
     return milk_client_shutdown(&hooks);
 }
 
+static int milkserver_builtin(WORD_LIST *list)
+{
+    char              **argv = NULL;
+    int                 argc = wordlist_to_argv(list, &argv);
+    milk_client_hooks_t hooks;
+    make_bash_hooks(&hooks);
+    int rc = milk_client_server(argc, argv, &hooks);
+    free(argv);
+    return rc;
+}
+
+static int milklog_builtin(WORD_LIST *list)
+{
+    char              **argv = NULL;
+    int                 argc = wordlist_to_argv(list, &argv);
+    milk_client_hooks_t hooks;
+    make_bash_hooks(&hooks);
+    int rc = milk_client_log(argc, argv, &hooks);
+    free(argv);
+    return rc;
+}
+
 /* ============================================================
  *  Builtin Registration Structs for `enable -f`
  * ============================================================ */
@@ -477,6 +499,8 @@ static char *const milkwaitfor_doc[] = { "Wait for stream frames or an entity co
 static char *const milkgrab_doc[] = { "Capture consecutive stream frames into a 3D cube.", NULL };
 static char *const milkcomplete_doc[] = { "Query milk tab-completion candidates.", NULL };
 static char *const milkshutdown_doc[] = { "Shut down the session milk-cli --server.", NULL };
+static char *const milkserver_doc[]   = { "Manage milk-cli servers (@server).", NULL };
+static char *const milklog_doc[] = { "Inspect or search the milk server SHM log (@log).", NULL };
 
 struct builtin milkcall_struct = { "milkcall",   milkcall_builtin,           BUILTIN_ENABLED,
                                    milkcall_doc, "milkcall <cmd> [args...]", 0 };
@@ -521,3 +545,13 @@ struct builtin milkcomplete_struct = { "milkcomplete",
 
 struct builtin milkshutdown_struct = { "milkshutdown",   milkshutdown_builtin, BUILTIN_ENABLED,
                                        milkshutdown_doc, "milkshutdown",       0 };
+
+struct builtin milkserver_struct = { "milkserver",
+                                     milkserver_builtin,
+                                     BUILTIN_ENABLED,
+                                     milkserver_doc,
+                                     "milkserver [subcommand ...]",
+                                     0 };
+
+struct builtin milklog_struct = { "milklog",   milklog_builtin,        BUILTIN_ENABLED,
+                                  milklog_doc, "milklog [options...]", 0 };

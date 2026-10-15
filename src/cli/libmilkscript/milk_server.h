@@ -94,4 +94,20 @@ void milk_server_accept_and_handle(int listen_fd, int *shutdown_flag);
  */
 int milk_server_run(const char *sockpath, int owner_fd, int ready_fd);
 
+#include <stdint.h>
+
+/**
+ * @brief Set additional flags on the active server SHM log header.
+ *
+ * @param flags Bitmask of MILK_SRVFLAG_* flags to OR into shm->flags
+ */
+void milk_server_set_log_flags(uint32_t flags);
+
+/**
+ * @brief Close (and optionally unlink) the active server SHM log.
+ *
+ * @param unlink_shm If non-zero, unlink the SHM file from /dev/shm
+ */
+void milk_server_close_log(int unlink_shm);
+
 #endif /* MILK_SERVER_H */

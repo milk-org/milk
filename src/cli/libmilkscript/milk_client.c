@@ -25,11 +25,13 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "milk_client.h"
 #include "milk_proto.h"
 #include "milk_server.h"
+#include "milk_srvlog.h"
 
 /* ============================================================
  *  Synced variable name registry & signal state
@@ -201,9 +203,24 @@ static int autostart_server(const milk_client_hooks_t *hooks, const char *sockpa
     }
     fcntl(ready_pipe[0], F_SETFD, FD_CLOEXEC);
 
+    char sname[64]  = "";
+    int  is_private = 1;
+    milk_srvlog_parse_sock(sockpath, NULL, sname, sizeof(sname));
+    if (sname[0] != '\0')
+    {
+        for (size_t i = 0; sname[i] != '\0'; i++)
+        {
+            if (!isdigit((unsigned char) sname[i]))
+            {
+                is_private = 0;
+                break;
+            }
+        }
+    }
+
     int owner_rfd = -1;
-    /* If running inside the main bash process via libmilkbash.so, bind server lifetime to shell */
-    if (hooks != NULL && hooks->get_var != NULL)
+    /* If running inside the main bash process via libmilkbash.so, bind private server lifetime to shell */
+    if (is_private && hooks != NULL && hooks->get_var != NULL)
     {
         if (g_owner_shell_pid == 0)
         {
@@ -275,10 +292,16 @@ static int autostart_server(const milk_client_hooks_t *hooks, const char *sockpa
         {
             dup2(devnull, STDIN_FILENO);
             dup2(devnull, STDOUT_FILENO);
+            dup2(devnull, STDERR_FILENO);
             if (devnull > 2)
             {
                 close(devnull);
             }
+        }
+
+        if (!is_private)
+        {
+            setenv("MILK_SRV_NAMED", "1", 1);
         }
 
         char rfd_str[32];
@@ -858,9 +881,29 @@ int milk_client_set(const char                *spec,
 
     sync_shm_env(hooks);
 
+    struct timespec ts0;
+    clock_gettime(CLOCK_REALTIME, &ts0);
+
     /* Fast path: if setting FPS param or existing /dev/shm stream keyword */
     if (milk_entity_set(spec, val, comment) == 0)
     {
+        struct timespec ts1;
+        clock_gettime(CLOCK_REALTIME, &ts1);
+        int64_t dur = ((int64_t) ts1.tv_sec - (int64_t) ts0.tv_sec) * 1000000000LL +
+                      ((int64_t) ts1.tv_nsec - (int64_t) ts0.tv_nsec);
+        char    sockpath[256];
+        resolve_sockpath(hooks, sockpath, sizeof(sockpath));
+        char lcmd[256];
+        if (val != NULL)
+        {
+            snprintf(lcmd, sizeof(lcmd), "@set %s = %s", spec, val);
+        }
+        else
+        {
+            snprintf(lcmd, sizeof(lcmd), "@set %s", spec);
+        }
+        milk_srvlog_client_record(sockpath, &ts0, (dur > 0) ? (uint64_t) dur : 0, MILK_MSG_SET, 0,
+                                  lcmd, "");
         return 0;
     }
 
@@ -1292,4 +1335,18 @@ int milk_client_shutdown(const milk_client_hooks_t *hooks)
         g_owner_pipe_wfd = -1;
     }
     return rc;
+}
+
+int milk_client_server(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    sync_shm_env(hooks);
+    return milk_srvlog_cmd_server(argc, argv, hooks);
+}
+
+int milk_client_log(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    sync_shm_env(hooks);
+    char sockpath[256];
+    resolve_sockpath(hooks, sockpath, sizeof(sockpath));
+    return milk_srvlog_cmd_log(sockpath, argc, argv, hooks);
 }
