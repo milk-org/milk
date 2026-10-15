@@ -12,11 +12,13 @@
  *   and `MILKSEQ_STATE` (`milkseq.*.shm`) structures.
  */
 
+#include <fcntl.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -106,7 +108,7 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
     }
 
     int found = 1;
-    if (strcmp(prop, "pid") == 0)
+    if (strcmp(prop, "pid") == 0 || strcmp(prop, "PID") == 0)
     {
         snprintf(out, outsz, "%d", (int) pi->PID);
     }
@@ -114,14 +116,53 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
     {
         snprintf(out, outsz, "%d", pi->loopstat);
     }
-    else if (strcmp(prop, "loopcnt") == 0)
+    else if (strcmp(prop, "status") == 0)
+    {
+        const char *st = "OTHER";
+        switch (pi->loopstat)
+        {
+        case PROCESSINFO_LOOPSTAT_INIT:
+            st = "INIT";
+            break;
+        case PROCESSINFO_LOOPSTAT_ACTIVE:
+            st = "ACTIVE";
+            break;
+        case PROCESSINFO_LOOPSTAT_PAUSE:
+            st = "PAUSED";
+            break;
+        case PROCESSINFO_LOOPSTAT_STOP:
+            st = "STOPPED";
+            break;
+        case PROCESSINFO_LOOPSTAT_ERROR:
+            st = "ERROR";
+            break;
+        case PROCESSINFO_LOOPSTAT_SPIN:
+            st = "SPINNING";
+            break;
+        case PROCESSINFO_LOOPSTAT_CRASHED:
+            st = "CRASHED";
+            break;
+        default:
+            break;
+        }
+        snprintf(out, outsz, "%s", st);
+    }
+    else if (strcmp(prop, "loopcnt") == 0 || strcmp(prop, "cnt0") == 0)
     {
         snprintf(out, outsz, "%ld", pi->loopcnt);
+    }
+    else if (strcmp(prop, "loopcntMax") == 0)
+    {
+        snprintf(out, outsz, "%ld", pi->loopcntMax);
     }
     else if (strcmp(prop, "loopfreq") == 0)
     {
         double hz = (pi->dtmedian_iter_ns > 0) ? (1.0e9 / (double) pi->dtmedian_iter_ns) : 0.0;
         snprintf(out, outsz, "%.1f", hz);
+    }
+    else if (strcmp(prop, "dt_median_ns") == 0 || strcmp(prop, "dtmedian_iter_ns") == 0)
+    {
+        snprintf(out, outsz, "%ld", pi->dtmedian_iter_ns);
     }
     else if (strcmp(prop, "exectime") == 0)
     {
@@ -139,11 +180,15 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
     {
         snprintf(out, outsz, "%d", pi->triggermode);
     }
-    else if (strcmp(prop, "statusmsg") == 0)
+    else if (strcmp(prop, "triggerstream") == 0 || strcmp(prop, "triggerstreamname") == 0)
+    {
+        snprintf(out, outsz, "%s", pi->triggerstreamname);
+    }
+    else if (strcmp(prop, "statusmsg") == 0 || strcmp(prop, "msg") == 0)
     {
         snprintf(out, outsz, "%s", pi->statusmsg);
     }
-    else if (strcmp(prop, "tmux") == 0)
+    else if (strcmp(prop, "tmux") == 0 || strcmp(prop, "tmuxname") == 0)
     {
         snprintf(out, outsz, "%s", pi->tmuxname);
     }
@@ -154,6 +199,12 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
     else if (strcmp(prop, "missedframes") == 0)
     {
         snprintf(out, outsz, "%lu", (unsigned long) pi->triggermissedframe_cumul);
+    }
+    else if (strcmp(prop, "list") == 0 || strcmp(prop, "*") == 0)
+    {
+        snprintf(out, outsz,
+                 "pid status loopstat loopcnt loopcntMax loopfreq dt_median_ns exectime rtprio "
+                 "ctrlval trigmode triggerstream statusmsg tmux description missedframes");
     }
     else
     {
@@ -178,24 +229,24 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
  */
 int milk_shm_prop_set_proc(const char *name, const char *prop, const char *val)
 {
-    if (strcmp(prop, "ctrlval") != 0)
+    if (strcmp(prop, "ctrlval") != 0 && strcmp(prop, "CTRLval") != 0)
     {
         return -1;
     }
     int ctrlval_int = atoi(val);
-    if (strcmp(val, "run") == 0)
+    if (strcasecmp(val, "run") == 0)
     {
         ctrlval_int = PROCESSINFO_CTRLVAL_RUN;
     }
-    else if (strcmp(val, "pause") == 0)
+    else if (strcasecmp(val, "pause") == 0)
     {
         ctrlval_int = PROCESSINFO_CTRLVAL_PAUSE;
     }
-    else if (strcmp(val, "step") == 0)
+    else if (strcasecmp(val, "step") == 0 || strcasecmp(val, "incr") == 0)
     {
         ctrlval_int = PROCESSINFO_CTRLVAL_INCR;
     }
-    else if (strcmp(val, "stop") == 0 || strcmp(val, "exit") == 0)
+    else if (strcasecmp(val, "stop") == 0 || strcasecmp(val, "exit") == 0)
     {
         ctrlval_int = PROCESSINFO_CTRLVAL_EXIT;
     }
@@ -247,7 +298,7 @@ int milk_shm_prop_exists_proc(const char *name, int check_running)
  * @brief Read an FPS sequencer property (`@q.<name>.<prop>`).
  *
  * @param name  Sequencer name
- * @param prop  Property key (status, tasks, errors, pid, completed)
+ * @param prop  Property key (status, state, tasks, active_step, completed, step_count, progress, errors, pid, name)
  * @param out   Output buffer
  * @param outsz Size of @out in bytes
  * @return 0 on success, -1 if sequencer or property not found
@@ -261,7 +312,7 @@ int milk_shm_prop_get_seq(const char *name, const char *prop, char *out, size_t 
     }
 
     int found = 1;
-    if (strcmp(prop, "status") == 0)
+    if (strcmp(prop, "status") == 0 || strcmp(prop, "state") == 0)
     {
         const char *s  = "IDLE";
         uint32_t    st = seqst->status;
@@ -279,21 +330,48 @@ int milk_shm_prop_get_seq(const char *name, const char *prop, char *out, size_t 
         }
         snprintf(out, outsz, "%s", s);
     }
-    else if (strcmp(prop, "tasks") == 0)
+    else if (strcmp(prop, "tasks") == 0 || strcmp(prop, "active_step") == 0)
     {
         snprintf(out, outsz, "%u", seqst->NBtasks_active);
+    }
+    else if (strcmp(prop, "step_count") == 0)
+    {
+        snprintf(out, outsz, "%u", seqst->NBtasks_active + seqst->NBtasks_completed);
+    }
+    else if (strcmp(prop, "progress") == 0)
+    {
+        uint32_t tot = seqst->NBtasks_active + seqst->NBtasks_completed;
+        snprintf(out, outsz, "%u/%u", seqst->NBtasks_completed, tot);
     }
     else if (strcmp(prop, "errors") == 0)
     {
         snprintf(out, outsz, "%u", seqst->error_count);
     }
-    else if (strcmp(prop, "pid") == 0)
+    else if (strcmp(prop, "last_error") == 0)
+    {
+        snprintf(out, outsz, "%s", seqst->last_error);
+    }
+    else if (strcmp(prop, "pid") == 0 || strcmp(prop, "PID") == 0)
     {
         snprintf(out, outsz, "%d", (int) seqst->pid);
     }
     else if (strcmp(prop, "completed") == 0)
     {
         snprintf(out, outsz, "%u", seqst->NBtasks_completed);
+    }
+    else if (strcmp(prop, "name") == 0)
+    {
+        snprintf(out, outsz, "%s", seqst->name);
+    }
+    else if (strcmp(prop, "script") == 0 || strcmp(prop, "script_path") == 0)
+    {
+        snprintf(out, outsz, "%s", seqst->script_path);
+    }
+    else if (strcmp(prop, "list") == 0 || strcmp(prop, "*") == 0)
+    {
+        snprintf(out, outsz,
+                 "status state tasks active_step completed step_count progress errors last_error "
+                 "pid name script");
     }
     else
     {
@@ -302,6 +380,91 @@ int milk_shm_prop_get_seq(const char *name, const char *prop, char *out, size_t 
 
     milkseq_disconnect(seqst);
     return found ? 0 : -1;
+}
+
+/**
+ * @brief Control or submit commands to an active FPS sequencer (`@q.<name>.<prop>`).
+ *
+ * Supports:
+ * - `action` / `status` / `state`: `pause`, `resume` (`run`), `abort` (`stop`, `exit`)
+ * - `submit` / `fifo`: write a sequencer command line directly to its FIFO
+ *
+ * @param name Sequencer name
+ * @param prop Property key (`action`, `status`, `state`, `submit`, `fifo`)
+ * @param val  Action or command string
+ * @return 0 on success, -1 on error
+ */
+int milk_shm_prop_set_seq(const char *name, const char *prop, const char *val)
+{
+    if (name == NULL || prop == NULL || val == NULL)
+    {
+        return -1;
+    }
+    MILKSEQ_STATE *seqst = milkseq_connect(name);
+    if (seqst == NULL)
+    {
+        return -1;
+    }
+
+    int rc = -1;
+    if (strcmp(prop, "action") == 0 || strcmp(prop, "status") == 0 || strcmp(prop, "state") == 0)
+    {
+        if (strcasecmp(val, "pause") == 0 || strcasecmp(val, "idle") == 0)
+        {
+            if (seqst->pid > 0 && seqst->pid != getpid())
+            {
+                kill(seqst->pid, SIGSTOP);
+            }
+            seqst->status = MILKSEQ_STATUS_IDLE;
+            rc            = 0;
+        }
+        else if (strcasecmp(val, "resume") == 0 || strcasecmp(val, "run") == 0 ||
+                 strcasecmp(val, "running") == 0)
+        {
+            if (seqst->pid > 0 && seqst->pid != getpid())
+            {
+                kill(seqst->pid, SIGCONT);
+            }
+            seqst->status = MILKSEQ_STATUS_RUNNING;
+            rc            = 0;
+        }
+        else if (strcasecmp(val, "abort") == 0 || strcasecmp(val, "stop") == 0 ||
+                 strcasecmp(val, "exit") == 0)
+        {
+            seqst->status = MILKSEQ_STATUS_STOPPING;
+            if (seqst->fifo_path[0] != '\0')
+            {
+                int fd = open(seqst->fifo_path, O_WRONLY | O_NONBLOCK);
+                if (fd >= 0)
+                {
+                    ssize_t _ = write(fd, "exit\n", 5);
+                    (void) _;
+                    close(fd);
+                }
+            }
+            rc = 0;
+        }
+    }
+    else if (strcmp(prop, "submit") == 0 || strcmp(prop, "fifo") == 0)
+    {
+        if (seqst->fifo_path[0] != '\0')
+        {
+            int fd = open(seqst->fifo_path, O_WRONLY | O_NONBLOCK);
+            if (fd >= 0)
+            {
+                char line[512];
+                int  n = snprintf(line, sizeof(line), "%s\n", val);
+                if (n > 0 && write(fd, line, (size_t) n) > 0)
+                {
+                    rc = 0;
+                }
+                close(fd);
+            }
+        }
+    }
+
+    milkseq_disconnect(seqst);
+    return rc;
 }
 
 /**

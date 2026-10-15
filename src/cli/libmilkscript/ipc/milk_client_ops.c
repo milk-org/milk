@@ -31,9 +31,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <time.h>
 #include <unistd.h>
 
+#include "ImageStreamIO/ImageStreamIO.h"
 #include "milk_client.h"
 #include "milk_client_internal.h"
 #include "milk_shm_prop.h"
@@ -42,59 +44,59 @@
 #include "milk_srvlog.h"
 
 /**
- * @brief Drain client stdin into a heap buffer for `@streamwrite <stream>` pipelines.
+ * @brief Drain client stdin into an anonymous memfd for `@streamwrite` pipelines.
  *
  * Reading stdin before connecting to the single-threaded server prevents deadlocks
- * in pipelines such as `@streamcat im1 | ... | @streamwrite im2`.
+ * in pipelines such as `@streamcat im1 | ... | @streamwrite im2`, while supporting
+ * both text and binary (`--raw`) streams of any size.
  */
-static char *drain_stdin_for_streamwrite(int     argc,
-                                         char  **argv,
-                                         char   *sw_argv[4],
-                                         char ***eff_argv,
-                                         int    *eff_argc)
+static int drain_stdin_to_memfd(int argc, char **argv)
 {
-    *eff_argv      = argv;
-    *eff_argc      = argc;
+    if (argc < 2 || isatty(STDIN_FILENO))
+    {
+        return -1;
+    }
     const char *c0 = argv[0];
     if (c0[0] == '@' || c0[0] == ',')
     {
         c0++;
     }
-    if (strcmp(c0, "streamwrite") != 0 || argc != 2)
+    if (strcmp(c0, "streamwrite") != 0)
     {
-        return NULL;
+        return -1;
     }
 
-    size_t dcap       = 4096;
-    size_t dlen       = 0;
-    char  *stdin_data = (char *) malloc(dcap);
-    if (stdin_data == NULL)
+    int mfd = memfd_create("milk_sw_stdin", MFD_CLOEXEC);
+    if (mfd < 0)
     {
-        return NULL;
+        return -1;
     }
+
+    uint8_t buf[8192];
+    size_t  total = 0;
     ssize_t nr;
-    while ((nr = read(STDIN_FILENO, stdin_data + dlen, dcap - dlen - 1)) > 0)
+    while ((nr = read(STDIN_FILENO, buf, sizeof(buf))) > 0)
     {
-        dlen += (size_t) nr;
-        if (dlen + 1024 >= dcap)
+        ssize_t off = 0;
+        while (off < nr)
         {
-            dcap *= 2;
-            char *nd = (char *) realloc(stdin_data, dcap);
-            if (nd == NULL)
+            ssize_t nw = write(mfd, buf + off, (size_t) (nr - off));
+            if (nw <= 0)
             {
                 break;
             }
-            stdin_data = nd;
+            off += nw;
         }
+        total += (size_t) nr;
     }
-    stdin_data[dlen] = '\0';
-    sw_argv[0]       = argv[0];
-    sw_argv[1]       = argv[1];
-    sw_argv[2]       = stdin_data;
-    sw_argv[3]       = NULL;
-    *eff_argv        = sw_argv;
-    *eff_argc        = 3;
-    return stdin_data;
+
+    if (total == 0)
+    {
+        close(mfd);
+        return -1;
+    }
+    lseek(mfd, 0, SEEK_SET);
+    return mfd;
 }
 
 /**
@@ -107,16 +109,16 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
         return 0;
     }
 
-    char  *sw_argv[4];
-    char **eff_argv   = argv;
-    int    eff_argc   = argc;
-    char  *stdin_data = drain_stdin_for_streamwrite(argc, argv, sw_argv, &eff_argv, &eff_argc);
+    int sw_stdin_fd = drain_stdin_to_memfd(argc, argv);
 
     char sockpath[256];
     int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
     if (fd < 0)
     {
-        free(stdin_data);
+        if (sw_stdin_fd >= 0)
+        {
+            close(sw_stdin_fd);
+        }
         return 1;
     }
 
@@ -143,9 +145,9 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
     }
 
     size_t cap = sizeof(uint32_t) * 3 + 256;
-    for (int i = 0; i < eff_argc; i++)
+    for (int i = 0; i < argc; i++)
     {
-        cap += strlen(eff_argv[i]) + 1;
+        cap += strlen(argv[i]) + 1;
     }
     for (uint32_t i = 0; i < nenv; i++)
     {
@@ -159,22 +161,24 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
     uint8_t *buf = (uint8_t *) malloc(cap);
     if (buf == NULL)
     {
-        free(stdin_data);
+        if (sw_stdin_fd >= 0)
+        {
+            close(sw_stdin_fd);
+        }
         close(fd);
         return 1;
     }
 
     uint32_t off   = 0;
-    uint32_t uargc = (uint32_t) eff_argc;
+    uint32_t uargc = (uint32_t) argc;
     memcpy(buf + off, &uargc, sizeof(uargc));
     off += (uint32_t) sizeof(uargc);
-    for (int i = 0; i < eff_argc; i++)
+    for (int i = 0; i < argc; i++)
     {
-        size_t l = strlen(eff_argv[i]) + 1;
-        memcpy(buf + off, eff_argv[i], l);
+        size_t l = strlen(argv[i]) + 1;
+        memcpy(buf + off, argv[i], l);
         off += (uint32_t) l;
     }
-    free(stdin_data);
 
     memcpy(buf + off, &nenv, sizeof(nenv));
     off += (uint32_t) sizeof(nenv);
@@ -198,11 +202,16 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
         off += (uint32_t) vl;
     }
 
-    int     cwd_fd = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-    int     fds[4] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, cwd_fd };
-    uint8_t flags  = async_flag ? MILK_FLAG_ASYNC : 0;
+    int cwd_fd    = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    int fds[4]    = { (sw_stdin_fd >= 0) ? sw_stdin_fd : STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO,
+                      cwd_fd };
+    uint8_t flags = async_flag ? MILK_FLAG_ASYNC : 0;
     int     sret =
         milk_proto_send_with_fds(fd, MILK_MSG_CALL, flags, buf, off, fds, (cwd_fd >= 0) ? 4 : 3);
+    if (sw_stdin_fd >= 0)
+    {
+        close(sw_stdin_fd);
+    }
     if (cwd_fd >= 0)
     {
         close(cwd_fd);
@@ -547,6 +556,8 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
     const char *target  = NULL;
     const char *arg2    = "1";
     const char *timeout = "0";
+    const char *sem_str = NULL;
+    const char *cnt_str = NULL;
 
     for (int i = 0; i < argc; i++)
     {
@@ -557,6 +568,22 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
         else if (strncmp(argv[i], "--timeout=", 10) == 0)
         {
             timeout = argv[i] + 10;
+        }
+        else if ((strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--sem") == 0) && i + 1 < argc)
+        {
+            sem_str = argv[++i];
+        }
+        else if (strncmp(argv[i], "--sem=", 6) == 0)
+        {
+            sem_str = argv[i] + 6;
+        }
+        else if (strcmp(argv[i], "--cnt") == 0 && i + 1 < argc)
+        {
+            cnt_str = argv[++i];
+        }
+        else if (strncmp(argv[i], "--cnt=", 6) == 0)
+        {
+            cnt_str = argv[i] + 6;
         }
         else if (target == NULL)
         {
@@ -570,9 +597,22 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
 
     if (target == NULL || target[0] == '\0')
     {
-        fprintf(stderr,
-                "Usage: @waitfor <stream|condition> [nframes|poll_sec] [--timeout <sec>]\n");
+        fprintf(stderr, "Usage: @waitfor [-t|--timeout <sec>] [-s <sem>] [--cnt <target>] "
+                        "<stream|condition> [nframes]\n");
         return 1;
+    }
+
+    char arg2_buf[128];
+    snprintf(arg2_buf, sizeof(arg2_buf), "%s", arg2);
+    if (sem_str != NULL && sem_str[0] != '\0')
+    {
+        size_t cur = strlen(arg2_buf);
+        snprintf(arg2_buf + cur, sizeof(arg2_buf) - cur, ";sem=%s", sem_str);
+    }
+    if (cnt_str != NULL && cnt_str[0] != '\0')
+    {
+        size_t cur = strlen(arg2_buf);
+        snprintf(arg2_buf + cur, sizeof(arg2_buf) - cur, ";cnt=%s", cnt_str);
     }
 
     char sockpath[256];
@@ -583,7 +623,7 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
     }
 
     size_t   l1  = strlen(target) + 1;
-    size_t   l2  = strlen(arg2) + 1;
+    size_t   l2  = strlen(arg2_buf) + 1;
     size_t   l3  = strlen(timeout) + 1;
     uint32_t tot = (uint32_t) (l1 + l2 + l3);
 
@@ -594,7 +634,7 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
         return 1;
     }
     memcpy(buf, target, l1);
-    memcpy(buf + l1, arg2, l2);
+    memcpy(buf + l1, arg2_buf, l2);
     memcpy(buf + l1 + l2, timeout, l3);
 
     int sret = milk_proto_send(fd, MILK_MSG_WAITFOR, 0, buf, tot);
@@ -611,7 +651,189 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
 }
 
 /**
- * @brief Capture N consecutive frames from a stream into a 3D cube (`@grab`).
+ * @brief Wait for any of the given streams to advance its `cnt0` counter (`@waitany`).
+ *
+ * Uses zero-fork `/dev/shm` inspection (with `ImageStreamIO_openIm`) so waiting
+ * on multiple streams has sub-millisecond latency without spawning subshells.
+ */
+int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    milk_ipc_sync_shm_env(hooks);
+
+    const char *streams[64];
+    int         nstreams    = 0;
+    double      timeout_sec = 0.0;
+
+    for (int i = 0; i < argc; i++)
+    {
+        if ((strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--timeout") == 0) && i + 1 < argc)
+        {
+            timeout_sec = strtod(argv[++i], NULL);
+        }
+        else if (strncmp(argv[i], "--timeout=", 10) == 0)
+        {
+            timeout_sec = strtod(argv[i] + 10, NULL);
+        }
+        else if (nstreams < 64)
+        {
+            const char *s = argv[i];
+            while (*s == '@')
+            {
+                s++;
+            }
+            if (strncmp(s, "s.", 2) == 0)
+            {
+                s += 2;
+            }
+            else if (strncmp(s, "stream.", 7) == 0)
+            {
+                s += 7;
+            }
+            if (s[0] != '\0')
+            {
+                streams[nstreams++] = s;
+            }
+        }
+    }
+
+    if (nstreams == 0)
+    {
+        fprintf(stderr, "Usage: @waitany <stream1> <stream2> ... [--timeout <sec>]\n");
+        return 1;
+    }
+
+    IMAGE    imgs[64];
+    int      opened[64];
+    uint64_t init_cnt[64];
+    int      has_init[64];
+    memset(imgs, 0, sizeof(imgs));
+    memset(opened, 0, sizeof(opened));
+    memset(init_cnt, 0, sizeof(init_cnt));
+    memset(has_init, 0, sizeof(has_init));
+
+    for (int i = 0; i < nstreams; i++)
+    {
+        if (ImageStreamIO_openIm(&imgs[i], streams[i]) == IMAGESTREAMIO_SUCCESS &&
+            imgs[i].md != NULL)
+        {
+            opened[i]   = 1;
+            init_cnt[i] = imgs[i].md->cnt0;
+            has_init[i] = 1;
+        }
+        else
+        {
+            char spec[280];
+            char val[64];
+            snprintf(spec, sizeof(spec), "s.%s.cnt0", streams[i]);
+            if (milk_shm_prop_get(spec, val, sizeof(val)) == 0)
+            {
+                init_cnt[i] = (uint64_t) strtoull(val, NULL, 10);
+                has_init[i] = 1;
+            }
+        }
+    }
+
+    struct timespec ts0;
+    clock_gettime(CLOCK_MONOTONIC, &ts0);
+    double t_start  = (double) ts0.tv_sec + 1.0e-9 * (double) ts0.tv_nsec;
+    int    has_timo = (timeout_sec > 0.0);
+    int    rc       = 124;
+
+    for (;;)
+    {
+        for (int i = 0; i < nstreams; i++)
+        {
+            if (!opened[i])
+            {
+                if (ImageStreamIO_openIm(&imgs[i], streams[i]) == IMAGESTREAMIO_SUCCESS &&
+                    imgs[i].md != NULL)
+                {
+                    opened[i] = 1;
+                    if (!has_init[i])
+                    {
+                        /* Newly created stream counts as updated */
+                        for (int j = 0; j < nstreams; j++)
+                        {
+                            if (opened[j])
+                            {
+                                ImageStreamIO_closeIm(&imgs[j]);
+                            }
+                        }
+                        printf("%s\n", streams[i]);
+                        fflush(stdout);
+                        return 0;
+                    }
+                }
+            }
+            if (opened[i] && imgs[i].md != NULL)
+            {
+                if (imgs[i].md->cnt0 != init_cnt[i])
+                {
+                    for (int j = 0; j < nstreams; j++)
+                    {
+                        if (opened[j])
+                        {
+                            ImageStreamIO_closeIm(&imgs[j]);
+                        }
+                    }
+                    printf("%s\n", streams[i]);
+                    fflush(stdout);
+                    return 0;
+                }
+            }
+            else
+            {
+                char spec[280];
+                char val[64];
+                snprintf(spec, sizeof(spec), "s.%s.cnt0", streams[i]);
+                if (milk_shm_prop_get(spec, val, sizeof(val)) == 0)
+                {
+                    uint64_t c = (uint64_t) strtoull(val, NULL, 10);
+                    if (!has_init[i] || c != init_cnt[i])
+                    {
+                        for (int j = 0; j < nstreams; j++)
+                        {
+                            if (opened[j])
+                            {
+                                ImageStreamIO_closeIm(&imgs[j]);
+                            }
+                        }
+                        printf("%s\n", streams[i]);
+                        fflush(stdout);
+                        return 0;
+                    }
+                }
+            }
+        }
+
+        if (has_timo)
+        {
+            struct timespec ts_now;
+            clock_gettime(CLOCK_MONOTONIC, &ts_now);
+            double now = (double) ts_now.tv_sec + 1.0e-9 * (double) ts_now.tv_nsec;
+            if ((now - t_start) >= timeout_sec)
+            {
+                rc = 124;
+                break;
+            }
+        }
+
+        struct timespec slp = { 0, 1000000L }; /* 1 ms */
+        nanosleep(&slp, NULL);
+    }
+
+    for (int j = 0; j < nstreams; j++)
+    {
+        if (opened[j])
+        {
+            ImageStreamIO_closeIm(&imgs[j]);
+        }
+    }
+    return rc;
+}
+
+/**
+ * @brief Capture 1 or N consecutive frames from a stream into an image/3D cube (`@grab`).
  */
 int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
@@ -644,9 +866,16 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
         }
     }
 
+    /* Support 2-arg form: @grab <src_stream> <dst_img> [-t <sec>] */
+    if (sname != NULL && nframes != NULL && outname == NULL)
+    {
+        outname = nframes;
+        nframes = "1";
+    }
+
     if (sname == NULL || nframes == NULL || outname == NULL)
     {
-        fprintf(stderr, "Usage: @grab <stream> <nframes> <out_cube> [--timeout <sec>]\n");
+        fprintf(stderr, "Usage: @grab [-t|--timeout <sec>] <stream> [nframes] <out_img>\n");
         return 1;
     }
 

@@ -29,7 +29,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -181,7 +184,7 @@ static int waitfor_eq_cond(int         client_fd,
  *
  * @param client_fd   Client socket fd (polled for cancellation)
  * @param target      Stream name, `entity=val`, or boolean expression
- * @param arg2        Optional frame count string when @target is a stream
+ * @param arg2        Optional frame count / `;sem=N;cnt=M` string when @target is a stream
  * @param timeout_sec Timeout in seconds (<= 0 for infinite)
  * @return 0 on success, 124 on timeout, 130 on Ctrl-C cancel, 1 on error
  */
@@ -209,7 +212,7 @@ int milk_server_waitfor(int client_fd, const char *target, const char *arg2, dou
         return waitfor_eq_cond(client_fd, target, eq, t_start, timeout_sec);
     }
 
-    /* Case 2: Stream frame wait: s.cam [nframes] */
+    /* Case 2: Stream frame wait: s.cam [nframes] [-s sem] [--cnt target] */
     const char *sname = target;
     if (strncmp(sname, "s.", 2) == 0)
     {
@@ -220,10 +223,31 @@ int milk_server_waitfor(int client_fd, const char *target, const char *arg2, dou
         sname += 7;
     }
 
-    long nframes = (arg2 != NULL && arg2[0] != '\0') ? strtol(arg2, NULL, 10) : 1;
-    if (nframes < 1)
+    long     nframes     = 1;
+    int      req_sem     = -1;
+    uint64_t abs_cnt     = 0;
+    int      has_abs_cnt = 0;
+    if (arg2 != NULL && arg2[0] != '\0')
     {
-        nframes = 1;
+        if (arg2[0] != ';')
+        {
+            nframes = strtol(arg2, NULL, 10);
+            if (nframes < 1)
+            {
+                nframes = 1;
+            }
+        }
+        const char *sp = strstr(arg2, ";sem=");
+        if (sp != NULL)
+        {
+            req_sem = (int) strtol(sp + 5, NULL, 10);
+        }
+        const char *cp = strstr(arg2, ";cnt=");
+        if (cp != NULL)
+        {
+            abs_cnt     = (uint64_t) strtoull(cp + 5, NULL, 10);
+            has_abs_cnt = 1;
+        }
     }
 
     IMAGE img;
@@ -243,8 +267,8 @@ int milk_server_waitfor(int client_fd, const char *target, const char *arg2, dou
     }
 
     uint64_t start_cnt0 = img.md->cnt0;
-    uint64_t target_cnt = start_cnt0 + (uint64_t) nframes;
-    int      semindex   = ImageStreamIO_getsemwaitindex(&img, -1);
+    uint64_t target_cnt = has_abs_cnt ? abs_cnt : (start_cnt0 + (uint64_t) nframes);
+    int      semindex   = (req_sem >= 0) ? req_sem : ImageStreamIO_getsemwaitindex(&img, -1);
 
     if (semindex >= 0 && semindex < img.md->sem)
     {
@@ -285,7 +309,7 @@ int milk_server_waitfor(int client_fd, const char *target, const char *arg2, dou
         }
     }
 
-    if (semindex >= 0 && semindex < img.md->sem)
+    if (req_sem < 0 && semindex >= 0 && semindex < img.md->sem)
     {
         img.semReadPID[semindex] = 0;
     }
@@ -389,13 +413,16 @@ static inline void write_typed_elem(IMAGE *im, uint8_t dt, uint64_t idx, double 
 }
 
 /**
- * @brief Execute `@grab`: capture @nframes consecutive frames from @sname_raw into 3D cube @outname.
+ * @brief Execute `@grab`: capture @nframes consecutive frames from @sname_raw into @outname.
+ *
+ * When @nframes == 1 and input stream has naxis <= 2, @outname is created with matching
+ * 1D/2D dimensions. When @nframes > 1, @outname is a 3D cube (`nx x ny x nframes`).
  *
  * @param client_fd   Client socket fd (polled for cancellation)
  * @param sname_raw   Input stream name (with optional `@` / `s.` prefix)
  * @param nframes     Number of frames to capture (>= 1)
  * @param outname     Destination image/stream name (supports `@L:` / `@T*:` modifiers)
- * @param timeout_sec Timeout in seconds (<= 0 for infinite)
+ * @param timeout_sec Timeout in seconds (<= 0 for infinite; for nframes==1 without timeout, snapshots current frame)
  * @return 0 on success, 124 on timeout, 130 on Ctrl-C cancel, 1 on error
  */
 int milk_server_grab(int         client_fd,
@@ -437,7 +464,25 @@ int milk_server_grab(int         client_fd,
     uint8_t  in_dt   = in_im->md->datatype;
     size_t   in_elsz = ImageStreamIO_typesize(in_dt);
 
-    IMGID out_img = imgid_make_from_name(outname);
+    const char *out_spec = outname;
+    if (strncmp(out_spec, "@s.", 3) == 0)
+    {
+        out_spec += 3;
+    }
+    else if (strncmp(out_spec, "@stream.", 8) == 0)
+    {
+        out_spec += 8;
+    }
+    else if (strncmp(out_spec, "s.", 2) == 0)
+    {
+        out_spec += 2;
+    }
+    else if (strncmp(out_spec, "stream.", 7) == 0)
+    {
+        out_spec += 7;
+    }
+
+    IMGID out_img = imgid_make_from_name(out_spec);
     if (out_img.stream_parse_error)
     {
         imgid_free(&out_img);
@@ -447,10 +492,20 @@ int milk_server_grab(int         client_fd,
         }
         return 1;
     }
-    out_img.mdt->naxis    = 3;
-    out_img.mdt->size[0]  = nx;
-    out_img.mdt->size[1]  = ny;
-    out_img.mdt->size[2]  = (uint32_t) nframes;
+    if (nframes == 1 && in_im->md->naxis <= 2)
+    {
+        out_img.mdt->naxis   = (in_im->md->naxis >= 1) ? in_im->md->naxis : 2;
+        out_img.mdt->size[0] = nx;
+        out_img.mdt->size[1] = (out_img.mdt->naxis >= 2) ? ny : 0;
+        out_img.mdt->size[2] = 0;
+    }
+    else
+    {
+        out_img.mdt->naxis   = 3;
+        out_img.mdt->size[0] = nx;
+        out_img.mdt->size[1] = ny;
+        out_img.mdt->size[2] = (uint32_t) nframes;
+    }
     out_img.mdt->datatype = (out_img.stream_datatype != 0) ? out_img.stream_datatype : in_dt;
     out_img.mdt->shared   = (out_img.stream_loc == 2) ? 0 : 1;
     out_img.mdt->NBkw     = 10;
@@ -471,8 +526,9 @@ int milk_server_grab(int         client_fd,
     size_t  out_elsz = ImageStreamIO_typesize(out_dt);
     imgid_free(&out_img);
 
-    int semindex = -1;
-    if (in_im->md->shared && in_im->md->sem > 0)
+    int wait_frames = (in_im->md->shared && (nframes > 1 || timeout_sec > 0.0)) ? 1 : 0;
+    int semindex    = -1;
+    if (wait_frames && in_im->md->sem > 0)
     {
         semindex = ImageStreamIO_getsemwaitindex(in_im, -1);
         if (semindex >= 0 && semindex < in_im->md->sem)
@@ -491,7 +547,7 @@ int milk_server_grab(int         client_fd,
     cube->md->write = 1;
     for (long f = 0; f < nframes; f++)
     {
-        if (in_im->md->shared)
+        if (wait_frames)
         {
             while (in_im->md->cnt0 == last_cnt)
             {
@@ -559,20 +615,102 @@ int milk_server_grab(int         client_fd,
 }
 
 /**
- * @brief Built-in `@streamcat`: print all elements of a stream to stdout.
+ * @brief Parse a datatype name (`F32`, `FLOAT`, `U16`, `UINT16`, etc.) into `_DATATYPE_*`.
+ */
+static uint8_t parse_dtype_name(const char *s)
+{
+    if (s == NULL || s[0] == '\0')
+    {
+        return _DATATYPE_FLOAT;
+    }
+    while (*s == '@' || *s == 'T')
+    {
+        s++;
+    }
+    if (strcasecmp(s, "F32") == 0 || strcasecmp(s, "FLT32") == 0 || strcasecmp(s, "FLOAT") == 0)
+    {
+        return _DATATYPE_FLOAT;
+    }
+    if (strcasecmp(s, "F64") == 0 || strcasecmp(s, "FLT64") == 0 || strcasecmp(s, "DOUBLE") == 0)
+    {
+        return _DATATYPE_DOUBLE;
+    }
+    if (strcasecmp(s, "F16") == 0 || strcasecmp(s, "FLT16") == 0 || strcasecmp(s, "HALF") == 0)
+    {
+        return _DATATYPE_HALF;
+    }
+    if (strcasecmp(s, "U8") == 0 || strcasecmp(s, "UI8") == 0 || strcasecmp(s, "UINT8") == 0)
+    {
+        return _DATATYPE_UINT8;
+    }
+    if (strcasecmp(s, "I8") == 0 || strcasecmp(s, "SI8") == 0 || strcasecmp(s, "INT8") == 0)
+    {
+        return _DATATYPE_INT8;
+    }
+    if (strcasecmp(s, "U16") == 0 || strcasecmp(s, "UI16") == 0 || strcasecmp(s, "UINT16") == 0)
+    {
+        return _DATATYPE_UINT16;
+    }
+    if (strcasecmp(s, "I16") == 0 || strcasecmp(s, "SI16") == 0 || strcasecmp(s, "INT16") == 0)
+    {
+        return _DATATYPE_INT16;
+    }
+    if (strcasecmp(s, "U32") == 0 || strcasecmp(s, "UI32") == 0 || strcasecmp(s, "UINT32") == 0)
+    {
+        return _DATATYPE_UINT32;
+    }
+    if (strcasecmp(s, "I32") == 0 || strcasecmp(s, "SI32") == 0 || strcasecmp(s, "INT32") == 0)
+    {
+        return _DATATYPE_INT32;
+    }
+    if (strcasecmp(s, "U64") == 0 || strcasecmp(s, "UI64") == 0 || strcasecmp(s, "UINT64") == 0)
+    {
+        return _DATATYPE_UINT64;
+    }
+    if (strcasecmp(s, "I64") == 0 || strcasecmp(s, "SI64") == 0 || strcasecmp(s, "INT64") == 0)
+    {
+        return _DATATYPE_INT64;
+    }
+    if (strcasecmp(s, "C64") == 0 || strcasecmp(s, "CPLX32") == 0 ||
+        strcasecmp(s, "COMPLEX_FLOAT") == 0)
+    {
+        return _DATATYPE_COMPLEX_FLOAT;
+    }
+    if (strcasecmp(s, "C128") == 0 || strcasecmp(s, "CPLX64") == 0 ||
+        strcasecmp(s, "COMPLEX_DOUBLE") == 0)
+    {
+        return _DATATYPE_COMPLEX_DOUBLE;
+    }
+    return 0;
+}
+
+/**
+ * @brief Built-in `@streamcat`: print all elements of a stream to stdout (text or `--raw` binary).
  *
  * @param argc Argument count
- * @param argv Argument vector (`argv[1]` = stream name)
+ * @param argv Argument vector (`[--raw] <stream>`)
  * @return 0 on success, 1 on error
  */
 int milk_server_streamcat(int argc, char **argv)
 {
-    if (argc < 2)
+    int         raw_mode = 0;
+    const char *sname    = NULL;
+    for (int i = 1; i < argc; i++)
     {
-        fprintf(stderr, "Usage: @streamcat <stream>\n");
+        if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--raw") == 0)
+        {
+            raw_mode = 1;
+        }
+        else if (sname == NULL)
+        {
+            sname = argv[i];
+        }
+    }
+    if (sname == NULL)
+    {
+        fprintf(stderr, "Usage: @streamcat [--raw] <stream>\n");
         return 1;
     }
-    const char *sname = argv[1];
     while (*sname == '@')
     {
         sname++;
@@ -581,6 +719,11 @@ int milk_server_streamcat(int argc, char **argv)
     {
         sname += 2;
     }
+    else if (strncmp(sname, "stream.", 7) == 0)
+    {
+        sname += 7;
+    }
+
     IMAGE  tmp_im;
     int    need_close = 0;
     IMAGE *im         = milk_shm_prop_find_or_open_stream(sname, &tmp_im, &need_close);
@@ -591,47 +734,59 @@ int milk_server_streamcat(int argc, char **argv)
     }
     uint64_t nel = im->md->nelement;
     uint8_t  dt  = im->md->datatype;
-    for (uint64_t i = 0; i < nel; i++)
+
+    if (raw_mode)
     {
-        if (dt == _DATATYPE_FLOAT)
+        size_t elsz = ImageStreamIO_typesize(dt);
+        if (elsz > 0 && im->array.raw != NULL)
         {
-            printf("%.9g\n", (double) im->array.F[i]);
+            fwrite(im->array.raw, elsz, (size_t) nel, stdout);
         }
-        else if (dt == _DATATYPE_DOUBLE)
+    }
+    else
+    {
+        for (uint64_t i = 0; i < nel; i++)
         {
-            printf("%.17g\n", im->array.D[i]);
-        }
-        else if (dt == _DATATYPE_UINT16)
-        {
-            printf("%u\n", (unsigned) im->array.UI16[i]);
-        }
-        else if (dt == _DATATYPE_INT16)
-        {
-            printf("%d\n", (int) im->array.SI16[i]);
-        }
-        else if (dt == _DATATYPE_UINT32)
-        {
-            printf("%u\n", im->array.UI32[i]);
-        }
-        else if (dt == _DATATYPE_INT32)
-        {
-            printf("%d\n", im->array.SI32[i]);
-        }
-        else if (dt == _DATATYPE_INT64)
-        {
-            printf("%ld\n", (long) im->array.SI64[i]);
-        }
-        else if (dt == _DATATYPE_UINT8)
-        {
-            printf("%u\n", (unsigned) im->array.UI8[i]);
-        }
-        else if (dt == _DATATYPE_INT8)
-        {
-            printf("%d\n", (int) im->array.SI8[i]);
-        }
-        else if (dt == _DATATYPE_UINT64)
-        {
-            printf("%lu\n", (unsigned long) im->array.UI64[i]);
+            if (dt == _DATATYPE_FLOAT)
+            {
+                printf("%.9g\n", (double) im->array.F[i]);
+            }
+            else if (dt == _DATATYPE_DOUBLE)
+            {
+                printf("%.17g\n", im->array.D[i]);
+            }
+            else if (dt == _DATATYPE_UINT16)
+            {
+                printf("%u\n", (unsigned) im->array.UI16[i]);
+            }
+            else if (dt == _DATATYPE_INT16)
+            {
+                printf("%d\n", (int) im->array.SI16[i]);
+            }
+            else if (dt == _DATATYPE_UINT32)
+            {
+                printf("%u\n", im->array.UI32[i]);
+            }
+            else if (dt == _DATATYPE_INT32)
+            {
+                printf("%d\n", im->array.SI32[i]);
+            }
+            else if (dt == _DATATYPE_INT64)
+            {
+                printf("%ld\n", (long) im->array.SI64[i]);
+            }
+            else if (dt == _DATATYPE_UINT8)
+            {
+                printf("%u\n", (unsigned) im->array.UI8[i]);
+            }
+            else if (dt == _DATATYPE_INT8)
+            {
+                printf("%d\n", (int) im->array.SI8[i]);
+            }
+            else if (dt == _DATATYPE_UINT64)
+            {
+                printf("%lu\n", (unsigned long) im->array.UI64[i]);
+            }
         }
     }
     fflush(stdout);
@@ -643,46 +798,214 @@ int milk_server_streamcat(int argc, char **argv)
 }
 
 /**
- * @brief Built-in `@streamwrite`: write elements into a stream from `argv[2..]` or `stdin`.
+ * @brief Return 1 if `STDIN_FILENO` has readable data (from `memfd` or pipe).
+ */
+static int stdin_has_data(void)
+{
+    if (isatty(STDIN_FILENO))
+    {
+        return 0;
+    }
+    struct stat st;
+    if (fstat(STDIN_FILENO, &st) == 0 && S_ISREG(st.st_mode))
+    {
+        off_t cur = lseek(STDIN_FILENO, 0, SEEK_CUR);
+        return (cur >= 0 && st.st_size > cur) ? 1 : 0;
+    }
+    struct pollfd pfd;
+    pfd.fd      = STDIN_FILENO;
+    pfd.events  = POLLIN;
+    pfd.revents = 0;
+    if (poll(&pfd, 1, 0) > 0 && (pfd.revents & POLLIN))
+    {
+        return 1;
+    }
+    return 0;
+}
+
+/**
+ * @brief Built-in `@streamwrite`: write elements into a stream from `stdin` or `argv`.
+ *
+ * Supports:
+ *   `... | @streamwrite [--raw] <stream>`
+ *   `... | @streamwrite [--raw] [--dtype <type>] <stream> <xsize> [ysize] [zsize]`
+ *   `@streamwrite <stream> <val1> <val2> ...`
  *
  * @param argc Argument count
- * @param argv Argument vector (`argv[1]` = stream name, optional `argv[2..]` = values)
+ * @param argv Argument vector
  * @return 0 on success, 1 on error
  */
 int milk_server_streamwrite(int argc, char **argv)
 {
-    if (argc < 2)
+    int         raw_mode  = 0;
+    int         has_dtype = 0;
+    const char *dtype_str = NULL;
+    const char *sname_raw = NULL;
+    const char *pos[64];
+    int         npos = 0;
+
+    for (int i = 1; i < argc; i++)
     {
-        fprintf(stderr, "Usage: @streamwrite <stream>\n");
+        if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--raw") == 0)
+        {
+            raw_mode = 1;
+        }
+        else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--dtype") == 0) && i + 1 < argc)
+        {
+            has_dtype = 1;
+            dtype_str = argv[++i];
+        }
+        else if (strncmp(argv[i], "--dtype=", 8) == 0)
+        {
+            has_dtype = 1;
+            dtype_str = argv[i] + 8;
+        }
+        else if (sname_raw == NULL)
+        {
+            sname_raw = argv[i];
+        }
+        else if (npos < 64)
+        {
+            pos[npos++] = argv[i];
+        }
+    }
+
+    if (sname_raw == NULL)
+    {
+        fprintf(stderr,
+                "Usage: @streamwrite [--raw] [--dtype <type>] <stream> [xsize [ysize [zsize]]]\n");
         return 1;
     }
-    const char *sname = argv[1];
-    while (*sname == '@')
+
+    const char *sname = sname_raw;
+    if (strncmp(sname, "@s.", 3) == 0)
     {
-        sname++;
+        sname += 3;
     }
-    if (strncmp(sname, "s.", 2) == 0)
+    else if (strncmp(sname, "@stream.", 8) == 0)
+    {
+        sname += 8;
+    }
+    else if (strncmp(sname, "s.", 2) == 0)
     {
         sname += 2;
     }
+    else if (strncmp(sname, "stream.", 7) == 0)
+    {
+        sname += 7;
+    }
+    else if (sname[0] == '@' && strchr(sname, ':') == NULL)
+    {
+        sname++;
+    }
+
+    int    has_stdin = stdin_has_data();
     IMAGE  tmp_im;
     int    need_close = 0;
-    IMAGE *im         = milk_shm_prop_find_or_open_stream(sname, &tmp_im, &need_close);
+    IMAGE *im         = NULL;
+
+    /* Determine if pos[] are stream creation dimensions (<xsize> [ysize] [zsize]) */
+    int pos_are_dims = 0;
+    if (has_dtype && npos >= 1 && npos <= 3)
+    {
+        pos_are_dims = 1;
+    }
+    else
+    {
+        im = milk_shm_prop_find_or_open_stream(sname, &tmp_im, &need_close);
+        if ((im == NULL || im->md == NULL) && npos >= 1 && npos <= 3)
+        {
+            pos_are_dims = 1;
+        }
+        else if (has_stdin && npos >= 1 && npos <= 3)
+        {
+            pos_are_dims = 1;
+        }
+    }
+
+    if (pos_are_dims)
+    {
+        if (need_close)
+        {
+            ImageStreamIO_closeIm(&tmp_im);
+            need_close = 0;
+        }
+        uint8_t req_dt = _DATATYPE_FLOAT;
+        if (has_dtype)
+        {
+            req_dt = parse_dtype_name(dtype_str);
+            if (req_dt == 0)
+            {
+                fprintf(stderr, "ERROR: @streamwrite: invalid datatype '%s'\n", dtype_str);
+                return 1;
+            }
+        }
+        uint32_t nx = (uint32_t) strtoul(pos[0], NULL, 10);
+        uint32_t ny = (npos >= 2) ? (uint32_t) strtoul(pos[1], NULL, 10) : 0;
+        uint32_t nz = (npos >= 3) ? (uint32_t) strtoul(pos[2], NULL, 10) : 0;
+        if (nx == 0)
+        {
+            fprintf(stderr, "ERROR: @streamwrite: invalid xsize '%s'\n", pos[0]);
+            return 1;
+        }
+
+        IMGID out_img = imgid_make_from_name(sname);
+        if (out_img.stream_parse_error)
+        {
+            imgid_free(&out_img);
+            return 1;
+        }
+        out_img.mdt->naxis    = (nz > 0) ? 3 : ((ny > 0) ? 2 : 1);
+        out_img.mdt->size[0]  = nx;
+        out_img.mdt->size[1]  = ny;
+        out_img.mdt->size[2]  = nz;
+        out_img.mdt->datatype = (out_img.stream_datatype != 0) ? out_img.stream_datatype : req_dt;
+        out_img.mdt->shared   = (out_img.stream_loc == 2) ? 0 : 1;
+        out_img.mdt->NBkw     = 10;
+        out_img.mdt->CBsize   = 0;
+
+        if (create_image_ID_IMGID(&out_img) != RETURN_SUCCESS || out_img.ID == -1)
+        {
+            imgid_free(&out_img);
+            return 1;
+        }
+        im = &data.core.image[out_img.ID];
+        imgid_free(&out_img);
+        npos = 0;
+    }
+
     if (im == NULL || im->md == NULL)
     {
         fprintf(stderr, "ERROR: @streamwrite: stream '%s' not found\n", sname);
         return 1;
     }
+
     uint64_t nel  = im->md->nelement;
     uint8_t  dt   = im->md->datatype;
     im->md->write = 1;
     uint64_t idx  = 0;
 
-    if (argc >= 3)
+    if (raw_mode)
     {
-        for (int a = 2; a < argc && idx < nel; a++)
+        size_t   elsz        = ImageStreamIO_typesize(dt);
+        size_t   total_bytes = (size_t) nel * elsz;
+        size_t   off         = 0;
+        uint8_t *dst         = (uint8_t *) im->array.raw;
+        while (off < total_bytes)
         {
-            const char *p = argv[a];
+            ssize_t nr = read(STDIN_FILENO, dst + off, total_bytes - off);
+            if (nr <= 0)
+            {
+                break;
+            }
+            off += (size_t) nr;
+        }
+    }
+    else if (npos > 0)
+    {
+        for (int a = 0; a < npos && idx < nel; a++)
+        {
+            const char *p = pos[a];
             while (*p != '\0' && idx < nel)
             {
                 while (*p != '\0' && isspace((unsigned char) *p))
@@ -706,16 +1029,30 @@ int milk_server_streamwrite(int argc, char **argv)
     }
     else
     {
-        double val = 0.0;
-        for (; idx < nel; idx++)
+        int dup_fd = dup(STDIN_FILENO);
+        if (dup_fd >= 0)
         {
-            if (scanf("%lf", &val) != 1)
+            FILE *fp = fdopen(dup_fd, "r");
+            if (fp != NULL)
             {
-                break;
+                double val = 0.0;
+                for (; idx < nel; idx++)
+                {
+                    if (fscanf(fp, "%lf", &val) != 1)
+                    {
+                        break;
+                    }
+                    write_typed_elem(im, dt, idx, val);
+                }
+                fclose(fp);
             }
-            write_typed_elem(im, dt, idx, val);
+            else
+            {
+                close(dup_fd);
+            }
         }
     }
+
     processinfo_update_output_stream(NULL, im, NULL);
     if (need_close)
     {

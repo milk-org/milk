@@ -119,10 +119,43 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
                      (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN) ? "ON" : "OFF");
             rc = 0;
         }
+        else if (strcmp(prop, "confrunning") == 0)
+        {
+            snprintf(out, outsz, "%d",
+                     (fps.md->status & (FUNCTION_PARAMETER_STRUCT_STATUS_CONF |
+                                        FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF))
+                         ? 1
+                         : 0);
+            rc = 0;
+        }
+        else if (strcmp(prop, "runrunning") == 0)
+        {
+            snprintf(out, outsz, "%d",
+                     (fps.md->status & (FUNCTION_PARAMETER_STRUCT_STATUS_RUN |
+                                        FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN))
+                         ? 1
+                         : 0);
+            rc = 0;
+        }
         else if (strcmp(prop, "pid") == 0)
         {
             pid_t pid = (fps.md->runpid > 0) ? fps.md->runpid : fps.md->confpid;
             snprintf(out, outsz, "%ld", (long) pid);
+            rc = 0;
+        }
+        else if (strcmp(prop, "confpid") == 0)
+        {
+            snprintf(out, outsz, "%ld", (long) fps.md->confpid);
+            rc = 0;
+        }
+        else if (strcmp(prop, "runpid") == 0)
+        {
+            snprintf(out, outsz, "%ld", (long) fps.md->runpid);
+            rc = 0;
+        }
+        else if (strcmp(prop, "description") == 0)
+        {
+            snprintf(out, outsz, "%s", fps.md->description);
             rc = 0;
         }
         else if (strcmp(prop, "nbparam") == 0)
@@ -145,12 +178,12 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
 
 /**
  * @brief Parse and execute an FPS lifecycle command (`confstart`, `confstop`,
- *        `confstep`, `runstart`, `runstop`) when addressed via `@set f.<name>.<prop>`.
+ *        `confstep`, `runstart`, `runstop`, `reset`) when addressed via `@set f.<name>.<prop>`.
  *
  * @param fps      Connected FPS handle
  * @param fpsname  FPS shared-memory name
- * @param pname    Property name (`conf`, `run`, `confstart`, `confstop`, `confstep`, `runstart`, `runstop`)
- * @param valstr   Value string (`start`, `stop`, `step`, `1`, `0`, `ON`, `OFF`, optionally with `:tmux` or `tmux`)
+ * @param pname    Property name (`conf`, `run`, `confstart`, `confstop`, `confstep`, `runstart`, `runstop`, `reset`)
+ * @param valstr   Value string (`start`, `stop`, `step`, `reset`, `1`, `0`, `ON`, `OFF`, optionally with `:tmux` or `tmux`)
  * @param out_rc   Receives 0 on success, -1 on error
  * @return 1 if @pname matched a lifecycle action, 0 otherwise
  */
@@ -198,10 +231,14 @@ static int try_fps_lifecycle_action(FPS        *fps,
         {
             command = "confstep";
         }
+        else if (strcasecmp(vclean, "reset") == 0)
+        {
+            command = "reset";
+        }
         else
         {
-            printf("Error: invalid value '%s' for f.%s.conf (expected start|stop|step)\n", valstr,
-                   fpsname);
+            printf("Error: invalid value '%s' for f.%s.conf (expected start|stop|step|reset)\n",
+                   valstr, fpsname);
             *out_rc = -1;
             return 1;
         }
@@ -228,13 +265,24 @@ static int try_fps_lifecycle_action(FPS        *fps,
     }
     else if (strcmp(pname, "confstart") == 0 || strcmp(pname, "confstop") == 0 ||
              strcmp(pname, "confstep") == 0 || strcmp(pname, "runstart") == 0 ||
-             strcmp(pname, "runstop") == 0)
+             strcmp(pname, "runstop") == 0 || strcmp(pname, "reset") == 0)
     {
         command = pname;
     }
     else
     {
         return 0;
+    }
+
+    if (strcmp(command, "reset") == 0)
+    {
+        functionparameter_CONFstop(fps);
+        fps->md->status &=
+            ~(FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF | FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN);
+        fps->md->conferrcnt = 0;
+        fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+        *out_rc = 0;
+        return 1;
     }
 
     int has_exec =

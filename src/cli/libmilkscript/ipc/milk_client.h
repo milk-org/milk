@@ -72,6 +72,11 @@ int milk_client_exists(const char *spec, int check_running, const milk_client_ho
 int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks);
 
 /**
+     * @brief Wait for any of the given streams to advance its frame counter (`@waitany`).
+     */
+int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks);
+
+/**
      * @brief Synchronously capture N consecutive stream frames into a 3D cube (`@grab`).
      */
 int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks);

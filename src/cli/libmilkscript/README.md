@@ -32,12 +32,8 @@ src/cli/libmilkscript/
 ├── bash/            ← Bash coprocess lifecycle & @cmd / @shm_prop preprocessor
 ├── calc/            ← Mathematical expression & image-slice evaluator
 ├── core/            ← Core CLI execution pipeline, module loader & help
-├── legacy_script/   ← Native .milk script interpreter & shell built-ins
 ├── milkscript.h     ← Public embedding API header
-├── milkscript_api.c ← Public embedding API implementation
-├── milkscript_main.c← Standalone `milk-script` binary entry point
-├── milk_call_main.c ← Standalone `milk-call` binary entry point
-└── milkbash_builtin.c ← Loadable Bash builtin (`enable -f libmilkbash.so milk`)
+└── milkscript_api.c ← Public embedding API implementation
 ```
 
 ### 1. `shm_prop/` — Shared-Memory Property & Action Access
@@ -66,7 +62,9 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
 - `milk_client_conn.c` — Socket connection, `MILK_SERVER` resolution, and
   auto-daemon spawning.
 - `milk_client_ops.c` — Client RPC operations (`EVAL`, `CALL`, `GET`, `SET`,
-  `EXPORT`, `PING`, `SHUTDOWN`) and streaming response reader.
+  `WAITFOR`, `WAITANY`, `GRAB`, `PING`, `SHUTDOWN`) and streaming response reader.
+- `milk_bash_builtins.c` — Loadable GNU Bash builtins (`libmilkbash.so`).
+- `milk_call_main.c` — Standalone `milk-call` binary entry point.
 - `milk_srvlog_shm.c` — `milk_srvlog.*` POSIX SHM creation, attachment,
   high-resolution timestamped entry recording, and log querying (`--log`).
 - `milk_srv_manager.c` — Server session discovery (`--list`), status dashboard
@@ -75,16 +73,15 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
 ### 3. `server/` — Daemon Server & RPC Dispatch
 
 - `milk_server.h` — Server lifecycle API (`milk_server_start`, `milk_server_stop`,
-  `milk_server_run_blocking`).
+  `milk_server_run`).
 - `milk_server_internal.h` — Internal session state and handler prototypes.
 - `milk_server.c` — Accept loop, thread/blocking orchestration, and socket cleanup.
 - `milk_server_vars.c` — Server-side scalar variable and `IMGID` pool management.
-- `milk_server_stream.c` — Persistent `ImageStreamIO` cache for zero-reattach
-  high-frequency stream access.
-- `milk_server_io.c` — Thread-safe `stdout`/`stderr` capture and `SAVESTREAM`
-  binary frame framing over the client socket.
+- `milk_server_stream.c` — Stream synchronization and I/O commands (`@waitfor`,
+  `@grab`, `@streamcat`, `@streamwrite`).
+- `milk_server_io.c` — Command catalog dumping and tab-completion handler.
 - `milk_server_dispatch.c` — Request line parser and RPC verb handlers (`PING`,
-  `SHUTDOWN`, `GET`, `SET`, `EXPORT`, `EVAL`, `CALL`).
+  `SHUTDOWN`, `GET`, `SET`, `CALC`, `TEST`, `CALL`).
 
 ### 4. `bash/` — Bash Coprocess & Syntax Translation
 
@@ -94,7 +91,7 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
   scripts into `milk` builtin / `milk-call` invocations while respecting quotes
   and comments.
 - `milk_bash_coproc.c` — Persistent `bash` coprocess lifecycle, variable/CWD
-  synchronization, and `MILK_IPC_FD` reverse command channel servicing.
+  synchronization, and `milk-cli --server` IPC servicing.
 
 ### 5. `calc/` — Expression & Image Calculator
 
@@ -129,25 +126,8 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
 - `CLIcore_setSHMdir.h` / `CLIcore_setSHMdir.c` — Shared-memory directory setup.
 - `CLIcore_signals.h` / `CLIcore_signals.c` — Signal handling and fault recovery.
 - `CLIcore_utils.h` / `CLIcore_utils.c` — CLI utility and argument helpers.
-
-### 7. `legacy_script/` — Native `.milk` Script Interpreter
-
-- `CLIcore_script.h` / `CLIcore_script.c` — `.milk` script runner entry point.
-- `CLIcore_script_flow.c` — Control flow (`if`/`elif`/`else`/`fi`, `for`, `while`,
-  `until`).
-- `CLIcore_script_case.c` — `case` / `esac` pattern matching.
-- `CLIcore_script_func.c` — User-defined script functions.
-- `CLIcore_script_var.c` — Script scalar and array variables.
-- `CLIcore_script_traps.c` — Signal and `EXIT`/`ERR` traps.
-- `CLIcore_script_expand_fps.c` — `{fps.*}`, `{stream.*}`, `{seq.*}`, `{proc.*}`
-  brace expansion (delegates to `shm_prop/`).
-- `CLIcore_script_expand_arith.c` — `$((...))` arithmetic expansion.
-- `CLIcore_script_expand_env.c` — `$VAR` and `${VAR}` expansion.
-- `CLIcore_script_expand_test.c` — `[ ... ]` and `[[ ... ]]` conditional tests.
-- `CLIcore_script_intercept*.c` — Built-in command interception (`procctl`,
-  `waitfor_stream`, `waitfor_fps`, `watch`, `timeout`, environment control).
-- `CLIcore_script_cmd_*.c` — Shell built-ins (`cd`, `echo`, `printf`, `grab`,
-  `streamwrite`, `defer`, inspection commands).
+- `CLIcore_script_intercept_proc.c` — Processinfo CLI interceptors (`procctl`,
+  `procwait`, `procstat`, `dpdigits`).
 
 ## Build Tier
 

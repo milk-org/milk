@@ -175,12 +175,17 @@ int milk_bash_engine_init(void)
             "}\n"
             "__MILK_EXIT_REQ=0\n"
             "__MILK_EXIT_CODE=0\n"
-            "exit() { __MILK_EXIT_REQ=1; __MILK_EXIT_CODE=\"${1:-0}\"; return "
-            "\"${__MILK_EXIT_CODE}\"; }\n"
+            "exit() {\n"
+            "    __MILK_EXIT_REQ=1\n"
+            "    __MILK_EXIT_CODE=\"${1:-0}\"\n"
+            "    printf '%d\\t1\\t%s\\0' \"${__MILK_EXIT_CODE}\" \"${PWD}\" >&199 2>/dev/null || "
+            "true\n"
+            "    builtin exit \"${__MILK_EXIT_CODE}\"\n"
+            "}\n"
             "quit() { exit \"$@\"; }\n"
             "exitCLI() { exit \"$@\"; }\n"
             "while IFS= read -r -d '' __milk_cmd <&198; do\n"
-            "    eval \"${__milk_cmd}\" 198<&- 199>&-\n"
+            "    eval \"${__milk_cmd}\" 198<&-\n"
             "    __milk_rc=$?\n"
             "    printf '%d\\t%d\\t%s\\0' \"${__milk_rc}\" \"${__MILK_EXIT_REQ}\" \"${PWD}\" "
             ">&199\n"
@@ -257,6 +262,18 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
     if (translated == NULL)
     {
         return 1;
+    }
+
+    if (dcerrorexit && strcmp(cmdline, ":") != 0)
+    {
+        size_t old_len = strlen(translated);
+        char  *with_e  = (char *) malloc(old_len + 16);
+        if (with_e != NULL)
+        {
+            snprintf(with_e, old_len + 16, "set -e\n%s", translated);
+            free(translated);
+            translated = with_e;
+        }
     }
 
     size_t tlen = strlen(translated) + 1;
@@ -350,7 +367,12 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
                 g_status_pipe_r = -1;
                 g_listen_fd     = -1;
                 int rc_err      = WIFEXITED(st) ? WEXITSTATUS(st) : 1;
+                if (out_exit_req != NULL)
+                {
+                    *out_exit_req = 1;
+                }
                 cli_last_retval = (rc_err != 0) ? rc_err : 1;
+                dcexitcode      = cli_last_retval;
                 return cli_last_retval;
             }
         }
@@ -383,6 +405,10 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
     if (out_exit_req != NULL)
     {
         *out_exit_req = exreq;
+    }
+    if (exreq != 0 || (dcerrorexit && rc != 0))
+    {
+        dcexitcode = rc;
     }
     cli_last_retval = rc;
     return rc;

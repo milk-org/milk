@@ -150,7 +150,7 @@ int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
         if (last_dot != NULL &&
             (strcmp(last_dot + 1, "confstart") == 0 || strcmp(last_dot + 1, "confstop") == 0 ||
              strcmp(last_dot + 1, "confstep") == 0 || strcmp(last_dot + 1, "runstart") == 0 ||
-             strcmp(last_dot + 1, "runstop") == 0))
+             strcmp(last_dot + 1, "runstop") == 0 || strcmp(last_dot + 1, "reset") == 0))
         {
             val = "1";
         }
@@ -196,6 +196,10 @@ int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
         if (strcmp(nsp, "p") == 0 || strcmp(nsp, "proc") == 0 || strcmp(nsp, "procinfo") == 0)
         {
             return milk_shm_prop_set_proc(name, prop, val);
+        }
+        if (strcmp(nsp, "q") == 0 || strcmp(nsp, "seq") == 0 || strcmp(nsp, "fpsseq") == 0)
+        {
+            return milk_shm_prop_set_seq(name, prop, val);
         }
         return -1;
     }

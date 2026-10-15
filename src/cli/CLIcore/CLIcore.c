@@ -925,8 +925,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         {
             if (single_command_flag)
             {
-                int exit_req = 0;
-                milk_bash_engine_exec(single_command_string, &exit_req);
+                int exit_req   = 0;
+                int rc         = milk_bash_engine_exec(single_command_string, &exit_req);
+                dcexitcode     = rc;
                 data.CLIloopON = 0;
                 break;
             }
@@ -953,9 +954,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 {
                     fclose(fp);
                     int exit_req = 0;
-                    milk_bash_engine_exec_file(CLIstartupfilename, &exit_req);
-                    if (exit_req || strcmp(CLIstartupfilename, "CLIstartup.txt") != 0)
+                    int rc       = milk_bash_engine_exec_file(CLIstartupfilename, &exit_req);
+                    if (exit_req || strcmp(CLIstartupfilename, "CLIstartup.txt") != 0 ||
+                        (dcerrorexit && rc != 0))
                     {
+                        dcexitcode     = rc;
                         data.CLIloopON = 0;
                         break;
                     }

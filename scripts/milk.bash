@@ -116,11 +116,11 @@ unset _milk_ov_file
 # ---------------------------------------------------------------------------
 _MILK_BUILTIN_LOADED=0
 enable -d milkcall milkget milkset milkcalc milktest milkexists \
-    milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
+    milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
 if [[ -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" ]] && ! grep -q "libmilk.*(deleted)" "/proc/$$/maps" 2>/dev/null; then
     if MILK_QUIET=1 enable -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" \
         milkcall milkget milkset milkcalc milktest milkexists \
-        milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null; then
+        milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null; then
         _MILK_BUILTIN_LOADED=1
     fi
 fi
@@ -167,6 +167,7 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
     milktest()     { "${MILK_INSTALLDIR}/bin/milk-call" test "$@"; }
     milkexists()   { "${MILK_INSTALLDIR}/bin/milk-call" exists "$@"; }
     milkwaitfor()  { "${MILK_INSTALLDIR}/bin/milk-call" waitfor "$@"; }
+    milkwaitany()  { "${MILK_INSTALLDIR}/bin/milk-call" waitany "$@"; }
     milkgrab()     { "${MILK_INSTALLDIR}/bin/milk-call" grab "$@"; }
     milkcomplete() { "${MILK_INSTALLDIR}/bin/milk-call" complete "$@"; }
     milkshutdown() { "${MILK_INSTALLDIR}/bin/milk-call" shutdown "$@"; }
@@ -238,68 +239,6 @@ _milk_source_impl() {
 export PROCINFO_NCPU="${PROCINFO_NCPU:-$(nproc 2>/dev/null || echo 1)}"
 export PROCINFO_NPROC="${PROCINFO_NPROC:-0}"
 
-_milk_waitany_impl() {
-    local timeout_sec="0"
-    local -a streams=()
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            -t|--timeout)
-                timeout_sec="${2:-0}"
-                shift 2
-                ;;
-            --timeout=*)
-                timeout_sec="${1#--timeout=}"
-                shift
-                ;;
-            *)
-                streams+=("$1")
-                shift
-                ;;
-        esac
-    done
-    if [[ ${#streams[@]} -eq 0 ]]; then
-        echo "Usage: ${MILKCLI_SIGIL}waitany <s1> <s2> [...] [--timeout <sec>]" >&2
-        return 1
-    fi
-    local s
-    local -a cnts=()
-    for s in "${streams[@]}"; do
-        local c
-        c="$(milkget "s.${s#@s.}.cnt0" 2>/dev/null)" || c="-1"
-        cnts+=("${c}")
-    done
-    local start_ns
-    start_ns="$(date +%s%N)"
-    local timeout_ns=0
-    if [[ "${timeout_sec}" != "0" ]]; then
-        timeout_ns="$(awk -v t="${timeout_sec}" 'BEGIN { printf "%.0f", t * 1e9 }')"
-    fi
-    while true; do
-        local idx
-        for (( idx=0; idx<${#streams[@]}; idx++ )); do
-            s="${streams[$idx]}"
-            local c_now
-            c_now="$(milkget "s.${s#@s.}.cnt0" 2>/dev/null)" || c_now="-1"
-            if [[ "${c_now}" != "-1" && "${c_now}" != "${cnts[$idx]}" ]]; then
-                if declare -p REPLY &>/dev/null && [[ -z "${REPLY+x}" ]]; then
-                    REPLY="${s}"
-                else
-                    echo "${s}"
-                fi
-                return 0
-            fi
-        done
-        if [[ ${timeout_ns} -gt 0 ]]; then
-            local now_ns
-            now_ns="$(date +%s%N)"
-            if (( now_ns - start_ns >= timeout_ns )); then
-                return 124
-            fi
-        fi
-        sleep 0.002
-    done
-}
-
 _milk_on_impl() {
     if [[ $# -eq 0 ]]; then
         echo "Usage: ${MILKCLI_SIGIL}on <target> \"<cmd>\" | --list | --clear" >&2
@@ -348,10 +287,13 @@ _milk_unload_impl() {
     fi
     unset _MILK_SERVER_NAME _MILK_LOCAL_SOCK
 
-    # 1. Unset all @<cmd> functions registered under ${MILKCLI_SIGIL}
+    # 1. Remove completion bindings and unset all @<cmd> functions registered under ${MILKCLI_SIGIL}
     local fn
     while IFS= read -r fn; do
-        [[ -n "${fn}" ]] && unset -f "${fn}" 2>/dev/null || true
+        if [[ -n "${fn}" ]]; then
+            complete -r "${fn}" 2>/dev/null || true
+            unset -f "${fn}" 2>/dev/null || true
+        fi
     done < <(compgen -A function "${MILKCLI_SIGIL}")
 
     # 2. Remove milk-bin symlink farm from PATH and flush bash command hash table
@@ -373,13 +315,7 @@ _milk_unload_impl() {
     unset _MILK_BIN_FARM
     hash -r 2>/dev/null || true
 
-    # 3. Remove tab-completion bindings and restore command_not_found_handle
-    complete -r "${MILKCLI_SIGIL}" "${MILKCLI_SIGIL}calc" \
-        "${MILKCLI_SIGIL}test" "${MILKCLI_SIGIL}get" "${MILKCLI_SIGIL}set" \
-        "${MILKCLI_SIGIL}exists" "${MILKCLI_SIGIL}running" "${MILKCLI_SIGIL}waitfor" \
-        "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}server" "${MILKCLI_SIGIL}log" \
-        "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hb" \
-        "${MILKCLI_SIGIL}hc" "${MILKCLI_SIGIL}hm" 2>/dev/null || true
+    # 3. Restore command_not_found_handle
     if declare -F __milk_prev_cnf_handle >/dev/null; then
         eval "$(declare -f __milk_prev_cnf_handle | sed '1s/__milk_prev_cnf_handle/command_not_found_handle/')"
         unset -f __milk_prev_cnf_handle
@@ -390,11 +326,11 @@ _milk_unload_impl() {
     # 4. Disable C builtins and unset fallback shims
     if [[ ${_MILK_BUILTIN_LOADED:-0} -eq 1 ]]; then
         enable -d milkcall milkget milkset milkcalc milktest milkexists \
-            milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
+            milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
         _MILK_BUILTIN_LOADED=0
     fi
     unset -f milkcall milkget milkset milkcalc milktest milkexists \
-        milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
+        milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
 
     # 5. Restore PROMPT_COMMAND and PS1
     if [[ "$(declare -p PROMPT_COMMAND 2>/dev/null)" == "declare -a"* ]]; then
@@ -431,7 +367,7 @@ function ${MILKCLI_SIGIL}set         { milkset \"\$@\"; }
 function ${MILKCLI_SIGIL}exists      { milkexists \"\$@\"; }
 function ${MILKCLI_SIGIL}running     { milkexists -r \"\$@\"; }
 function ${MILKCLI_SIGIL}waitfor     { milkwaitfor \"\$@\"; }
-function ${MILKCLI_SIGIL}waitany     { _milk_waitany_impl \"\$@\"; }
+function ${MILKCLI_SIGIL}waitany     { milkwaitany \"\$@\"; }
 function ${MILKCLI_SIGIL}grab        { milkgrab \"\$@\"; }
 function ${MILKCLI_SIGIL}defer       { _milk_defer_add \"\$@\"; }
 function ${MILKCLI_SIGIL}on          { _milk_on_impl \"\$@\"; }
@@ -509,7 +445,7 @@ __milk_setup_commands() {
 __milk_setup_commands
 unset -f __milk_setup_commands
 
-# Dynamic fallback for newly loaded modules or commands via command_not_found_handle
+# Dynamic fallback for newly loaded modules, commands, or entity shorthands via command_not_found_handle
 if declare -F command_not_found_handle >/dev/null && ! declare -F __milk_prev_cnf_handle >/dev/null; then
     eval "$(declare -f command_not_found_handle | sed '1s/command_not_found_handle/__milk_prev_cnf_handle/')"
 fi
@@ -519,6 +455,27 @@ command_not_found_handle() {
     if [[ "${cmd}" == "${MILKCLI_SIGIL}"* ]]; then
         shift
         local bare="${cmd#"${MILKCLI_SIGIL}"}"
+        case "${bare}" in
+            s.*.*|stream.*.*|f.*.*|fps.*.*|p.*.*|proc.*.*|q.*.*|seq.*.*)
+                if [[ "${bare}" == *=* || "${1:-}" == "=" ]]; then
+                    milkset "${bare}" "$@"
+                    return $?
+                fi
+                case "${bare}" in
+                    f.*.confstart|f.*.confstop|f.*.confstep|f.*.runstart|f.*.runstop|f.*.reset|\
+                    fps.*.confstart|fps.*.confstop|fps.*.confstep|fps.*.runstart|fps.*.runstop|fps.*.reset)
+                        milkset "${bare}" 1
+                        return $?
+                        ;;
+                esac
+                if [[ $# -eq 0 ]]; then
+                    milkget "${bare}"
+                    return $?
+                fi
+                milkset "${bare}" "$@"
+                return $?
+                ;;
+        esac
         milkcall "${bare}" "$@"
         return $?
     fi
@@ -555,12 +512,11 @@ _milk_complete() {
     fi
 }
 
-complete -o default -F _milk_complete "${MILKCLI_SIGIL}" "${MILKCLI_SIGIL}calc" \
-    "${MILKCLI_SIGIL}test" "${MILKCLI_SIGIL}get" "${MILKCLI_SIGIL}set" \
-    "${MILKCLI_SIGIL}exists" "${MILKCLI_SIGIL}running" "${MILKCLI_SIGIL}waitfor" \
-    "${MILKCLI_SIGIL}grab" "${MILKCLI_SIGIL}server" "${MILKCLI_SIGIL}log" \
-    "${MILKCLI_SIGIL}h" "${MILKCLI_SIGIL}hb" \
-    "${MILKCLI_SIGIL}hc" "${MILKCLI_SIGIL}hm" 2>/dev/null || true
+mapfile -t __milk_all_fns < <(compgen -A function "${MILKCLI_SIGIL}")
+if [[ ${#__milk_all_fns[@]} -gt 0 ]]; then
+    complete -o default -F _milk_complete "${__milk_all_fns[@]}" 2>/dev/null || true
+fi
+unset __milk_all_fns
 
 # ---------------------------------------------------------------------------
 # 9. Visible Prompt Label ([milk] / [milk:<name>]) & Interactive Startup Status

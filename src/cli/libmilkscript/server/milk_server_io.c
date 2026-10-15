@@ -26,8 +26,11 @@
 #include <string.h>
 
 #include "CLIcore.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+#include "fps.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
+#include "milk_shm_prop.h"
 
 /**
  * @brief Return 1 if @key is a legacy shell builtin, REPL-only command,
@@ -187,7 +190,70 @@ static size_t complete_commands(const char *prefix, const char *sigil, char *out
 }
 
 /**
- * @brief Append argument completions (modifiers, local images, SHM streams/FPS) matching @prefix.
+ * @brief Complete stream attributes (`s.<sname>.<attr>`) and FITS keywords (`s.<sname>.kw.<KEY>`).
+ */
+static void complete_stream_attrs(const char *lead,
+                                  const char *sname,
+                                  const char *sub,
+                                  size_t      slen,
+                                  char       *out,
+                                  size_t      outsz,
+                                  size_t     *pos_io)
+{
+    static const char *const sattrs[] = { "xsize", "ysize",     "zsize",    "naxis", "nelement",
+                                          "dtype", "typename",  "cnt0",     "cnt1",  "shared",
+                                          "sem",   "owner_pid", "location", "inode", "age",
+                                          "fps",   "summary",   "list",     "kw.",   NULL };
+    size_t                   pos      = *pos_io;
+
+    if (strncmp(sub, "kw.", 3) == 0)
+    {
+        const char *ksub = sub + 3;
+        size_t      klen = slen - 3;
+        IMAGE       tmp_im;
+        int         need_close = 0;
+        IMAGE      *im         = milk_shm_prop_find_or_open_stream(sname, &tmp_im, &need_close);
+        if (im != NULL && im->md != NULL && im->kw != NULL)
+        {
+            uint16_t nkw = im->md->NBkw;
+            for (uint16_t k = 0; k < nkw; k++)
+            {
+                if (im->kw[k].type != 'N' && im->kw[k].name[0] != '\0' &&
+                    strncmp(im->kw[k].name, ksub, klen) == 0)
+                {
+                    int n = snprintf(out + pos, outsz - pos, "%ss.%s.kw.%s\n", lead, sname,
+                                     im->kw[k].name);
+                    if (n > 0 && pos + (size_t) n < outsz)
+                    {
+                        pos += (size_t) n;
+                    }
+                }
+            }
+        }
+        if (need_close)
+        {
+            ImageStreamIO_closeIm(&tmp_im);
+        }
+        *pos_io = pos;
+        return;
+    }
+
+    for (int a = 0; sattrs[a] != NULL; a++)
+    {
+        if (strncmp(sattrs[a], sub, slen) == 0)
+        {
+            int n = snprintf(out + pos, outsz - pos, "%ss.%s.%s\n", lead, sname, sattrs[a]);
+            if (n > 0 && pos + (size_t) n < outsz)
+            {
+                pos += (size_t) n;
+            }
+        }
+    }
+    *pos_io = pos;
+}
+
+/**
+ * @brief Append argument completions (modifiers, local images, SHM streams/FPS/proc/seq) matching @prefix.
  */
 static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
 {
@@ -214,17 +280,42 @@ static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
         }
     }
 
+    const char *lead  = (prefix[0] == '@') ? "@" : "";
+    const char *bpref = (prefix[0] == '@') ? (prefix + 1) : prefix;
+    size_t      blen  = strlen(bpref);
+
     if (data.core.image != NULL)
     {
         for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
         {
-            if (data.core.image[i].used == 1 && strncmp(data.core.image[i].name, prefix, plen) == 0)
+            if (data.core.image[i].used != 1)
             {
-                int n = snprintf(out + pos, outsz - pos, "%s\n", data.core.image[i].name);
+                continue;
+            }
+            const char *iname = data.core.image[i].name;
+            if (prefix[0] != '@' && strncmp(iname, prefix, plen) == 0)
+            {
+                int n = snprintf(out + pos, outsz - pos, "%s\n", iname);
                 if (n > 0 && pos + (size_t) n < outsz)
                 {
                     pos += (size_t) n;
                 }
+            }
+            char ent[280];
+            snprintf(ent, sizeof(ent), "s.%s", iname);
+            size_t elen = strlen(ent);
+            if (strncmp(ent, bpref, blen) == 0)
+            {
+                int n = snprintf(out + pos, outsz - pos, "%s%s.\n", lead, ent);
+                if (n > 0 && pos + (size_t) n < outsz)
+                {
+                    pos += (size_t) n;
+                }
+            }
+            else if (blen > elen && strncmp(ent, bpref, elen) == 0 && bpref[elen] == '.')
+            {
+                complete_stream_attrs(lead, iname, bpref + elen + 1, blen - elen - 1, out, outsz,
+                                      &pos);
             }
         }
     }
@@ -249,7 +340,7 @@ static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
                 {
                     memcpy(sname, de->d_name, slen);
                     sname[slen] = '\0';
-                    if (strncmp(sname, prefix, plen) == 0)
+                    if (prefix[0] != '@' && strncmp(sname, prefix, plen) == 0)
                     {
                         int n = snprintf(out + pos, outsz - pos, "%s\n", sname);
                         if (n > 0 && pos + (size_t) n < outsz)
@@ -259,13 +350,19 @@ static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
                     }
                     char ent[280];
                     snprintf(ent, sizeof(ent), "s.%s", sname);
-                    if (strncmp(ent, prefix, plen) == 0)
+                    size_t elen = strlen(ent);
+                    if (strncmp(ent, bpref, blen) == 0)
                     {
-                        int n = snprintf(out + pos, outsz - pos, "%s.\n", ent);
+                        int n = snprintf(out + pos, outsz - pos, "%s%s.\n", lead, ent);
                         if (n > 0 && pos + (size_t) n < outsz)
                         {
                             pos += (size_t) n;
                         }
+                    }
+                    else if (blen > elen && strncmp(ent, bpref, elen) == 0 && bpref[elen] == '.')
+                    {
+                        complete_stream_attrs(lead, sname, bpref + elen + 1, blen - elen - 1, out,
+                                              outsz, &pos);
                     }
                 }
             }
@@ -280,27 +377,152 @@ static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
                     char ent[280];
                     snprintf(ent, sizeof(ent), "f.%s", fname);
                     size_t elen = strlen(ent);
-                    if (strncmp(ent, prefix, plen) == 0)
+                    if (strncmp(ent, bpref, blen) == 0)
                     {
-                        int n = snprintf(out + pos, outsz - pos, "%s.\n", ent);
+                        int n = snprintf(out + pos, outsz - pos, "%s%s.\n", lead, ent);
                         if (n > 0 && pos + (size_t) n < outsz)
                         {
                             pos += (size_t) n;
                         }
                     }
-                    else if (plen > elen && strncmp(ent, prefix, elen) == 0 && prefix[elen] == '.')
+                    else if (blen > elen && strncmp(ent, bpref, elen) == 0 && bpref[elen] == '.')
                     {
-                        static const char *const fattrs[] = { "status",    "conf",     "run",
-                                                              "confstart", "confstop", "confstep",
-                                                              "runstart",  "runstop",  "pid",
-                                                              "nbparam",   "list",     NULL };
-                        const char              *sub      = prefix + elen + 1;
-                        size_t                   slen     = plen - elen - 1;
+                        static const char *const fattrs[] = {
+                            "status",      "conf",     "run",      "confrunning", "runrunning",
+                            "confstart",   "confstop", "confstep", "runstart",    "runstop",
+                            "reset",       "pid",      "confpid",  "runpid",      "nbparam",
+                            "description", "list",     NULL
+                        };
+                        const char *sub  = bpref + elen + 1;
+                        size_t      slen = blen - elen - 1;
                         for (int a = 0; fattrs[a] != NULL; a++)
                         {
                             if (strncmp(fattrs[a], sub, slen) == 0)
                             {
-                                int n = snprintf(out + pos, outsz - pos, "%s.%s\n", ent, fattrs[a]);
+                                int n = snprintf(out + pos, outsz - pos, "%s%s.%s\n", lead, ent,
+                                                 fattrs[a]);
+                                if (n > 0 && pos + (size_t) n < outsz)
+                                {
+                                    pos += (size_t) n;
+                                }
+                            }
+                        }
+
+                        char lspec[300];
+                        char pbuf[4096];
+                        snprintf(lspec, sizeof(lspec), "f.%s.*", fname);
+                        if (milk_shm_prop_get(lspec, pbuf, sizeof(pbuf)) == 0)
+                        {
+                            char *saveptr = NULL;
+                            for (char *tok = strtok_r(pbuf, " \t\n", &saveptr); tok != NULL;
+                                 tok       = strtok_r(NULL, " \t\n", &saveptr))
+                            {
+                                const char *pname = tok;
+                                while (*pname == '.')
+                                {
+                                    pname++;
+                                }
+                                if (strncmp(pname, fname, flen) == 0 && pname[flen] == '.')
+                                {
+                                    pname += flen + 1;
+                                }
+                                if (pname[0] != '\0' && strncmp(pname, sub, slen) == 0)
+                                {
+                                    int n = snprintf(out + pos, outsz - pos, "%s%s.%s\n", lead, ent,
+                                                     pname);
+                                    if (n > 0 && pos + (size_t) n < outsz)
+                                    {
+                                        pos += (size_t) n;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (dlen > 9 && strcmp(de->d_name + dlen - 9, ".procinfo") == 0)
+            {
+                char   pname[256];
+                size_t nlen = dlen - 9;
+                if (nlen < sizeof(pname))
+                {
+                    memcpy(pname, de->d_name, nlen);
+                    pname[nlen] = '\0';
+                    char *dot   = strrchr(pname, '.');
+                    if (dot != NULL)
+                    {
+                        *dot = '\0';
+                    }
+                    char ent[280];
+                    snprintf(ent, sizeof(ent), "p.%s", pname);
+                    size_t elen = strlen(ent);
+                    if (strncmp(ent, bpref, blen) == 0)
+                    {
+                        int n = snprintf(out + pos, outsz - pos, "%s%s.\n", lead, ent);
+                        if (n > 0 && pos + (size_t) n < outsz)
+                        {
+                            pos += (size_t) n;
+                        }
+                    }
+                    else if (blen > elen && strncmp(ent, bpref, elen) == 0 && bpref[elen] == '.')
+                    {
+                        static const char *const pattrs[] = {
+                            "PID",        "status",   "loopcnt",       "cnt0",
+                            "loopcntMax", "loopstat", "dt_ns",         "dt_median_ns",
+                            "fps_hz",     "tmuxname", "triggerstream", "description",
+                            "msg",        "ctrlval",  "list",          NULL
+                        };
+                        const char *sub  = bpref + elen + 1;
+                        size_t      slen = blen - elen - 1;
+                        for (int a = 0; pattrs[a] != NULL; a++)
+                        {
+                            if (strncmp(pattrs[a], sub, slen) == 0)
+                            {
+                                int n = snprintf(out + pos, outsz - pos, "%s%s.%s\n", lead, ent,
+                                                 pattrs[a]);
+                                if (n > 0 && pos + (size_t) n < outsz)
+                                {
+                                    pos += (size_t) n;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (dlen > 12 && strncmp(de->d_name, "milkseq.", 8) == 0 &&
+                     strcmp(de->d_name + dlen - 4, ".shm") == 0)
+            {
+                char   qname[256];
+                size_t qlen = dlen - 12;
+                if (qlen < sizeof(qname))
+                {
+                    memcpy(qname, de->d_name + 8, qlen);
+                    qname[qlen] = '\0';
+                    char ent[280];
+                    snprintf(ent, sizeof(ent), "q.%s", qname);
+                    size_t elen = strlen(ent);
+                    if (strncmp(ent, bpref, blen) == 0)
+                    {
+                        int n = snprintf(out + pos, outsz - pos, "%s%s.\n", lead, ent);
+                        if (n > 0 && pos + (size_t) n < outsz)
+                        {
+                            pos += (size_t) n;
+                        }
+                    }
+                    else if (blen > elen && strncmp(ent, bpref, elen) == 0 && bpref[elen] == '.')
+                    {
+                        static const char *const qattrs[] = {
+                            "state",      "active_step", "progress", "step_count", "PID",  "name",
+                            "last_error", "script",      "action",   "submit",     "list", NULL
+                        };
+                        const char *sub  = bpref + elen + 1;
+                        size_t      slen = blen - elen - 1;
+                        for (int a = 0; qattrs[a] != NULL; a++)
+                        {
+                            if (strncmp(qattrs[a], sub, slen) == 0)
+                            {
+                                int n = snprintf(out + pos, outsz - pos, "%s%s.%s\n", lead, ent,
+                                                 qattrs[a]);
                                 if (n > 0 && pos + (size_t) n < outsz)
                                 {
                                     pos += (size_t) n;

@@ -45,6 +45,8 @@ int milk_shm_prop_exists_proc(const char *name, int check_running);
 /* FPS Sequencer namespace (@q., @seq., @fpsseq.) */
 int milk_shm_prop_get_seq(const char *name, const char *prop, char *out, size_t outsz);
 
+int milk_shm_prop_set_seq(const char *name, const char *prop, const char *val);
+
 int milk_shm_prop_exists_seq(const char *name, int check_running);
 
 #endif /* MILK_SHM_PROP_INTERNAL_H */

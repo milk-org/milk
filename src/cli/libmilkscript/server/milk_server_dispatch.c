@@ -449,7 +449,7 @@ int milk_server_dispatch_argv(int argc, char **argv)
                 const char *prop = dot2 + 1;
                 if ((strcmp(prop, "confstart") == 0 || strcmp(prop, "confstop") == 0 ||
                      strcmp(prop, "confstep") == 0 || strcmp(prop, "runstart") == 0 ||
-                     strcmp(prop, "runstop") == 0) &&
+                     strcmp(prop, "runstop") == 0 || strcmp(prop, "reset") == 0) &&
                     (strncmp(cmdname, "f.", 2) == 0 || strncmp(cmdname, "fps.", 4) == 0))
                 {
                     return (milk_shm_prop_set(cmdname, "1", NULL) == 0) ? 0 : 1;

@@ -431,6 +431,17 @@ static int milkwaitfor_builtin(WORD_LIST *list)
     return rc;
 }
 
+static int milkwaitany_builtin(WORD_LIST *list)
+{
+    char              **argv = NULL;
+    int                 argc = wordlist_to_argv(list, &argv);
+    milk_client_hooks_t hooks;
+    make_bash_hooks(&hooks);
+    int rc = milk_client_waitany(argc, argv, &hooks);
+    free(argv);
+    return rc;
+}
+
 static int milkgrab_builtin(WORD_LIST *list)
 {
     char              **argv = NULL;
@@ -497,6 +508,7 @@ static char *const milkcalc_doc[]    = { "Evaluate a milk @calc expression.", NU
 static char *const milktest_doc[]    = { "Evaluate a milk @test boolean expression.", NULL };
 static char *const milkexists_doc[]  = { "Check if a milk entity exists or is running.", NULL };
 static char *const milkwaitfor_doc[] = { "Wait for stream frames or an entity condition.", NULL };
+static char *const milkwaitany_doc[] = { "Wait for any listed stream to update.", NULL };
 static char *const milkgrab_doc[] = { "Capture consecutive stream frames into a 3D cube.", NULL };
 static char *const milkcomplete_doc[] = { "Query milk tab-completion candidates.", NULL };
 static char *const milkshutdown_doc[] = { "Shut down the session milk-cli --server.", NULL };
@@ -530,11 +542,18 @@ struct builtin milkwaitfor_struct = { "milkwaitfor",
                                       "milkwaitfor <target> [nframes] [--timeout <sec>]",
                                       0 };
 
+struct builtin milkwaitany_struct = { "milkwaitany",
+                                      milkwaitany_builtin,
+                                      BUILTIN_ENABLED,
+                                      milkwaitany_doc,
+                                      "milkwaitany <s1> <s2> [...] [--timeout <sec>]",
+                                      0 };
+
 struct builtin milkgrab_struct = { "milkgrab",
                                    milkgrab_builtin,
                                    BUILTIN_ENABLED,
                                    milkgrab_doc,
-                                   "milkgrab <stream> <nframes> <out_cube> [--timeout <sec>]",
+                                   "milkgrab <stream> [nframes] <out_img> [--timeout <sec>]",
                                    0 };
 
 struct builtin milkcomplete_struct = { "milkcomplete",

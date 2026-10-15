@@ -59,11 +59,11 @@ static int setup_bin_farm(const char *bin_farm,
         closedir(dir);
     }
 
-    static const char *const core_cmds[] = { "",          "calc",        "test",    "get",
-                                             "set",       "exists",      "running", "waitfor",
-                                             "grab",      "server",      "log",     "h",
-                                             "hb",        "hc",          "hm",      "hf",
-                                             "streamcat", "streamwrite", "unload",  NULL };
+    static const char *const core_cmds[] = {
+        "",        "calc",    "test", "get",       "set",         "exists", "running",
+        "waitfor", "waitany", "grab", "server",    "log",         "h",      "hb",
+        "hc",      "hm",      "hf",   "streamcat", "streamwrite", "unload", NULL
+    };
     for (int i = 0; core_cmds[i] != NULL; i++)
     {
         char lpath[1024];
@@ -117,7 +117,8 @@ static void print_usage(const char *prog)
     printf("  test <expr...>                   Evaluate a @test boolean condition\n");
     printf("  exists [-r] <entity>             Check if entity exists (or -r is running)\n");
     printf("  waitfor <target> [N] [-t <sec>]  Wait for stream frames or condition\n");
-    printf("  grab <s_in> <N> <s_out> [-t <s>] Capture N consecutive frames into 3D cube\n");
+    printf("  waitany <s1> <s2> ... [-t <sec>] Wait for any listed stream to update\n");
+    printf("  grab <s_in> [N] <s_out> [-t <s>] Capture 1 or N frames into image/cube\n");
     printf("  complete <prefix> [cmd|arg]      List completion candidates\n");
     printf("  translate [--legacy] <file>      Translate milk-cli shorthands to milk.bash\n");
     printf("  server [subcommand ...]          Manage milk-cli servers (@server)\n");
@@ -233,6 +234,10 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
     if (strcmp(sub, "waitfor") == 0)
     {
         return milk_client_waitfor(argc, argv, NULL);
+    }
+    if (strcmp(sub, "waitany") == 0)
+    {
+        return milk_client_waitany(argc, argv, NULL);
     }
     if (strcmp(sub, "grab") == 0)
     {

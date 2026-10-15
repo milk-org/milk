@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "CLIcore.h"
@@ -231,7 +232,7 @@ int milk_shm_prop_get_stream(const char *name, const char *prop, char *out, size
     {
         snprintf(out, outsz, "%d", (int) im->md->creatorPID);
     }
-    else if (strcmp(prop, "ownerPID") == 0)
+    else if (strcmp(prop, "ownerPID") == 0 || strcmp(prop, "owner_pid") == 0)
     {
         snprintf(out, outsz, "%d", (int) im->md->ownerPID);
     }
@@ -246,6 +247,72 @@ int milk_shm_prop_get_stream(const char *name, const char *prop, char *out, size
     else if (strcmp(prop, "NBkw") == 0)
     {
         snprintf(out, outsz, "%u", (unsigned) im->md->NBkw);
+    }
+    else if (strcmp(prop, "location") == 0)
+    {
+        snprintf(out, outsz, "%d", (int) im->md->location);
+    }
+    else if (strcmp(prop, "inode") == 0)
+    {
+        snprintf(out, outsz, "%lu", (unsigned long) im->md->inode);
+    }
+    else if (strcmp(prop, "age") == 0)
+    {
+        struct timespec now;
+        clock_gettime(CLOCK_REALTIME, &now);
+        struct timespec ref =
+            (im->md->writetime.tv_sec > 0) ? im->md->writetime : im->md->creationtime;
+        double age = 0.0;
+        if (ref.tv_sec > 0)
+        {
+            age =
+                (double) (now.tv_sec - ref.tv_sec) + 1.0e-9 * (double) (now.tv_nsec - ref.tv_nsec);
+            if (age < 0.0)
+            {
+                age = 0.0;
+            }
+        }
+        snprintf(out, outsz, "%.3f", age);
+    }
+    else if (strcmp(prop, "fps") == 0)
+    {
+        double fps_val = 0.0;
+        if (im->md->writetime.tv_sec > 0 && im->md->creationtime.tv_sec > 0 && im->md->cnt0 > 0)
+        {
+            double dt =
+                (double) (im->md->writetime.tv_sec - im->md->creationtime.tv_sec) +
+                1.0e-9 * (double) (im->md->writetime.tv_nsec - im->md->creationtime.tv_nsec);
+            if (dt > 1.0e-6)
+            {
+                fps_val = (double) im->md->cnt0 / dt;
+            }
+        }
+        snprintf(out, outsz, "%.1f", fps_val);
+    }
+    else if (strcmp(prop, "summary") == 0)
+    {
+        if (im->md->naxis <= 1)
+        {
+            snprintf(out, outsz, "%s [%u] %s cnt0=%lu", name, im->md->size[0],
+                     stream_dtype_name(im->md->datatype), (unsigned long) im->md->cnt0);
+        }
+        else if (im->md->naxis == 2)
+        {
+            snprintf(out, outsz, "%s [%ux%u] %s cnt0=%lu", name, im->md->size[0], im->md->size[1],
+                     stream_dtype_name(im->md->datatype), (unsigned long) im->md->cnt0);
+        }
+        else
+        {
+            snprintf(out, outsz, "%s [%ux%ux%u] %s cnt0=%lu", name, im->md->size[0],
+                     im->md->size[1], im->md->size[2], stream_dtype_name(im->md->datatype),
+                     (unsigned long) im->md->cnt0);
+        }
+    }
+    else if (strcmp(prop, "list") == 0 || strcmp(prop, "*") == 0)
+    {
+        snprintf(out, outsz,
+                 "xsize ysize zsize naxis dtype typename type cnt0 cnt1 nelem sem pid ownerPID "
+                 "shared NBkw location inode age fps summary");
     }
     else if (strncmp(prop, "kw.", 3) == 0)
     {

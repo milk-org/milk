@@ -1161,14 +1161,125 @@ def test_command_hygiene_help_topics_and_fps_lifecycle():
         @set f.testfps_lc.confstop
         @set f.testfps_lc.runstop
 
-        # Verify FPS attribute completion includes lifecycle & metadata attributes
+        # Verify FPS attribute completion includes lifecycle, metadata, and actual FPS parameters
         fps_comp="$(milkcomplete "f.testfps_lc." arg)"
         [[ "${fps_comp}" == *"f.testfps_lc.status"* ]]
         [[ "${fps_comp}" == *"f.testfps_lc.conf"* ]]
         [[ "${fps_comp}" == *"f.testfps_lc.run"* ]]
         [[ "${fps_comp}" == *"f.testfps_lc.nbparam"* ]]
+        [[ "${fps_comp}" == *"f.testfps_lc.xsize"* ]]
+        [[ "${fps_comp}" == *"f.testfps_lc.ysize"* ]]
 
         echo "HYGIENE_HELP_FPS_OK"
         """)
     assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
     assert "HYGIENE_HELP_FPS_OK" in res.stdout
+
+
+def test_reconciled_help_contract_and_exit_codes(tmp_path: Path):
+    # 1. Exit code propagation in milk-cli -c, -s, and -e
+    res_c_exit = _run_milk_cli("exit 42", tmp_path, mode="cmd")
+    assert res_c_exit.returncode == 42
+
+    res_c_fail = _run_milk_cli("false", tmp_path, mode="cmd")
+    assert res_c_fail.returncode == 1
+
+    res_s_exit = _run_milk_cli(
+        "a=1\nexit 17\necho UNREACHABLE", tmp_path, mode="script"
+    )
+    assert res_s_exit.returncode == 17
+    assert "UNREACHABLE" not in res_s_exit.stdout
+
+    assert MILK_CLI_EXEC is not None
+    env, shm_dir = _isolated_shm_env()
+    try:
+        err_script = tmp_path / "err_exit.milk"
+        err_script.write_text("false\necho SHOULD_NOT_PRINT\n")
+        res_e = subprocess.run(
+            [MILK_CLI_EXEC, "-e", "-s", str(err_script)],
+            env=env,
+            text=True,
+            capture_output=True,
+            timeout=25,
+        )
+        assert res_e.returncode != 0
+        assert "SHOULD_NOT_PRINT" not in res_e.stdout
+    finally:
+        shutil.rmtree(shm_dir, ignore_errors=True)
+
+    # 2. Reconciled @get/@set attributes, @streamwrite --dtype/--raw, @streamcat --raw,
+    #    2-arg @grab, @waitfor -s/--cnt, milkwaitany builtin, and tab completion
+    res = _run_bash("""
+        # milkwaitany is a C loadable builtin
+        [[ "$(type -t milkwaitany)" == "builtin" ]]
+
+        # Tab-completion is registered on all @-commands, not just core primitives
+        complete -p @mk2Dim | grep -q "_milk_complete"
+        complete -p @imstats | grep -q "_milk_complete"
+
+        # Zero-fork /dev/shm fast path for @f.<fps>.<param> before server starts
+        milk-fpsexec-imggen-mkrndim -n fastfps fpsinit >/dev/null 2>&1
+        @f.fastfps.xsize=128
+        [[ "$(@f.fastfps.xsize)" == "128" ]]
+        [[ "$(@get f.fastfps.confrunning)" == "0" ]]
+        [[ "$(@get f.fastfps.runrunning)" == "0" ]]
+        [[ "$(@get f.fastfps.confpid)" =~ ^[0-9]+$ ]]
+        [[ "$(@get f.fastfps.runpid)" =~ ^[0-9]+$ ]]
+        [[ -n "$(@get f.fastfps.description)" ]]
+        @f.fastfps.reset
+        [[ "$(@server status)" == *"IDLE"* ]]
+
+        # On-the-fly stream creation via @streamwrite --dtype F32 <stream> <xsize> <ysize>
+        seq 1 16 | @streamwrite --dtype F32 s.ramp 4 4
+        [[ "$(@get s.ramp.xsize)" == "4" ]]
+        [[ "$(@get s.ramp.ysize)" == "4" ]]
+        [[ "$(@get s.ramp.dtype)" == "FLOAT" ]]
+        [[ "$(@calc 'itot(ramp)')" == "136" ]]
+
+        # Binary round-trip via @streamcat --raw | @streamwrite --raw --dtype F32
+        @streamcat --raw s.ramp | @streamwrite --raw --dtype F32 s.ramp_raw 4 4
+        [[ "$(@calc 'itot(ramp_raw)')" == "136" ]]
+        [[ "$(@calc 'ramp_raw[3, 3]')" == "16" ]]
+
+        # 2-arg @grab <src_stream> <dst_img> preserves 2D shape
+        @grab s.ramp snap2d
+        [[ "$(@get s.snap2d.naxis)" == "2" ]]
+        [[ "$(@get s.snap2d.xsize)" == "4" ]]
+        [[ "$(@get s.snap2d.ysize)" == "4" ]]
+        [[ "$(@calc 'itot(snap2d)')" == "136" ]]
+
+        # Reconciled stream metadata attributes (owner_pid, location, inode, age, fps, summary, list)
+        [[ "$(@get s.ramp.owner_pid)" =~ ^[0-9]+$ ]]
+        [[ "$(@get s.ramp.location)" == "-1" ]]
+        [[ "$(@get s.ramp.inode)" =~ ^[0-9]+$ ]]
+        [[ -n "$(@get s.ramp.age)" ]]
+        [[ -n "$(@get s.ramp.fps)" ]]
+        [[ "$(@get s.ramp.summary)" == *"4x4"* && "$(@get s.ramp.summary)" == *"FLOAT"* ]]
+        [[ "$(@get s.ramp.list)" == *"xsize"* && "$(@get s.ramp.list)" == *"summary"* ]]
+
+        # Stream attribute & FITS keyword tab completion
+        @set s.ramp.kw.CAMERA "IRDIS"
+        s_comp="$(milkcomplete "s.ramp." arg)"
+        [[ "${s_comp}" == *"s.ramp.xsize"* ]]
+        [[ "${s_comp}" == *"s.ramp.summary"* ]]
+        [[ "${s_comp}" == *"s.ramp.kw."* ]]
+        kw_comp="$(milkcomplete "s.ramp.kw." arg)"
+        [[ "${kw_comp}" == *"s.ramp.kw.CAMERA"* ]]
+
+        # @waitfor with -s|--sem and --cnt
+        cur_cnt="$(@get s.ramp.cnt0)"
+        target_cnt=$(( cur_cnt + 2 ))
+        (
+            sleep 0.03
+            @calc "ramp += 1"
+            sleep 0.03
+            @calc "ramp += 1"
+        ) &
+        @waitfor s.ramp -s 0 --cnt "${target_cnt}" --timeout 2.0
+        wait
+        (( $(@get s.ramp.cnt0) >= target_cnt ))
+
+        echo "RECONCILED_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "RECONCILED_OK" in res.stdout

@@ -186,26 +186,59 @@ static size_t scan_entity_path(const char *s, int *has_eq)
 
 static int is_bash_reserved_or_builtin(const char *w)
 {
-    static const char *const kw[] = {
-        "if",         "then",    "elif",     "else",         "fi",          "for",
-        "in",         "while",   "until",    "do",           "done",        "case",
-        "esac",       "select",  "function", "time",         "coproc",      "{",
-        "}",          "!",       "[[",       "]]",           "[",           "]",
-        "echo",       "printf",  "cd",       "pwd",          "read",        "export",
-        "unset",      "shift",   "alias",    "unalias",      "source",      ".",
-        "exit",       "quit",    "exitCLI",  "return",       "break",       "continue",
-        "local",      "declare", "typeset",  "readonly",     "let",         "eval",
-        "exec",       "set",     "shopt",    "trap",         "type",        "command",
-        "builtin",    "enable",  "wait",     "kill",         "jobs",        "bg",
-        "fg",         "true",    "false",    "test",         "sleep",       "rm",
-        "ls",         "cat",     "grep",     "awk",          "sed",         "find",
-        "xargs",      "sort",    "head",     "tail",         "wc",          "cut",
-        "tr",         "mkdir",   "rmdir",    "cp",           "mv",          "ln",
-        "chmod",      "touch",   "date",     "uname",        "hostname",    "whoami",
-        "id",         "env",     "bookmark", "include_once", "milkcall",    "milkcalc",
-        "milkget",    "milkset", "milktest", "milkgrab",     "milkwaitfor", "milkexists",
-        "milkserver", "milklog", NULL
-    };
+    static const char *const kw[] = { "if",          "then",
+                                      "elif",        "else",
+                                      "fi",          "for",
+                                      "in",          "while",
+                                      "until",       "do",
+                                      "done",        "case",
+                                      "esac",        "select",
+                                      "function",    "time",
+                                      "coproc",      "{",
+                                      "}",           "!",
+                                      "[[",          "]]",
+                                      "[",           "]",
+                                      "echo",        "printf",
+                                      "cd",          "pwd",
+                                      "read",        "export",
+                                      "unset",       "shift",
+                                      "alias",       "unalias",
+                                      "source",      ".",
+                                      "exit",        "quit",
+                                      "exitCLI",     "return",
+                                      "break",       "continue",
+                                      "local",       "declare",
+                                      "typeset",     "readonly",
+                                      "let",         "eval",
+                                      "exec",        "set",
+                                      "shopt",       "trap",
+                                      "type",        "command",
+                                      "builtin",     "enable",
+                                      "wait",        "kill",
+                                      "jobs",        "bg",
+                                      "fg",          "true",
+                                      "false",       "test",
+                                      "sleep",       "rm",
+                                      "ls",          "cat",
+                                      "grep",        "awk",
+                                      "sed",         "find",
+                                      "xargs",       "sort",
+                                      "head",        "tail",
+                                      "wc",          "cut",
+                                      "tr",          "mkdir",
+                                      "rmdir",       "cp",
+                                      "mv",          "ln",
+                                      "chmod",       "touch",
+                                      "date",        "uname",
+                                      "hostname",    "whoami",
+                                      "id",          "env",
+                                      "bookmark",    "include_once",
+                                      "milkcall",    "milkcalc",
+                                      "milkget",     "milkset",
+                                      "milktest",    "milkgrab",
+                                      "milkwaitfor", "milkwaitany",
+                                      "milkexists",  "milkserver",
+                                      "milklog",     NULL };
     for (int i = 0; kw[i] != NULL; i++)
     {
         if (strcmp(w, kw[i]) == 0)
@@ -793,10 +826,22 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
         return;
     }
 
-    /* 2. Shorthand '@<entity>.<name>.<field>=<val>' or bare '@<entity>.<name>.<field>' */
-    if ((slen > siglen && strncmp(s, sigil, siglen) == 0) || (slen > 1 && s[0] == '@'))
+    /* 2. Shorthand '[@]<entity>.<name>.<field>=<val>' or bare '[@]<entity>.<name>.<field>' */
+    if ((slen > siglen && strncmp(s, sigil, siglen) == 0) || (slen > 1 && s[0] == '@') ||
+        (allow_legacy &&
+         (strncmp(s, "s.", 2) == 0 || strncmp(s, "f.", 2) == 0 || strncmp(s, "p.", 2) == 0 ||
+          strncmp(s, "q.", 2) == 0 || strncmp(s, "stream.", 7) == 0 || strncmp(s, "fps.", 4) == 0 ||
+          strncmp(s, "proc.", 5) == 0 || strncmp(s, "seq.", 4) == 0)))
     {
-        size_t adv    = (strncmp(s, sigil, siglen) == 0) ? siglen : 1;
+        size_t adv = 0;
+        if (slen > siglen && strncmp(s, sigil, siglen) == 0)
+        {
+            adv = siglen;
+        }
+        else if (slen > 1 && s[0] == '@')
+        {
+            adv = 1;
+        }
         int    has_eq = 0;
         size_t elen   = scan_entity_path(s + adv, &has_eq);
         if (elen > 0)
@@ -824,8 +869,23 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
             }
             if (adv + elen == slen)
             {
+                char ent_tmp[256];
+                int  is_set_act = 0;
+                if (elen < sizeof(ent_tmp))
+                {
+                    memcpy(ent_tmp, s + adv, elen);
+                    ent_tmp[elen]    = '\0';
+                    const char *ldot = strrchr(ent_tmp, '.');
+                    if (ldot != NULL &&
+                        (strcmp(ldot + 1, "confstart") == 0 || strcmp(ldot + 1, "confstop") == 0 ||
+                         strcmp(ldot + 1, "confstep") == 0 || strcmp(ldot + 1, "runstart") == 0 ||
+                         strcmp(ldot + 1, "runstop") == 0 || strcmp(ldot + 1, "reset") == 0))
+                    {
+                        is_set_act = 1;
+                    }
+                }
                 sbuf_append_str(out, sigil);
-                sbuf_append_str(out, "get ");
+                sbuf_append_str(out, is_set_act ? "set " : "get ");
                 sbuf_append_mem(out, s + adv, elen);
                 sbuf_append_mem(out, stmt + end, len - end);
                 return;
