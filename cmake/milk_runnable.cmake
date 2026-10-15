@@ -52,70 +52,24 @@ int main(int argc, char *argv[])
 }
 ]=])
 
+# ── Public API ───────────────────────────────────────────────────────────────
+
 function(milk_add_runnable_module LIBNAME)
   cmake_parse_arguments(ARG "" "" "SOURCES;LINK_LIBS" ${ARGN})
-
   set(_objs ${LIBNAME}_objs)
-  add_library(${_objs} OBJECT ${ARG_SOURCES})
-  set_target_properties(${_objs} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-  target_compile_definitions(${_objs} PRIVATE MILK_NO_CLI)
-  target_include_directories(
-    ${_objs}
-    PRIVATE ${CMAKE_SOURCE_DIR}/src
-            ${CMAKE_SOURCE_DIR}/src/cli/CLIcore
-            ${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore
-            ${CMAKE_CURRENT_SOURCE_DIR}
-            ${CMAKE_CURRENT_SOURCE_DIR}/..)
-  if(TARGET CLIcore)
-    target_include_directories(
-      ${_objs} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
-  endif()
-  target_link_libraries(${_objs} PUBLIC ${_MILK_RUNNABLE_LIBS})
-  milk_apply_extensions(${_objs})
-  milk_pgo_target(${_objs})
 
-  # The registry file cannot be dropped: it would leave an empty module
-  get_target_property(_srcdir ${_objs} SOURCE_DIR)
-  get_target_property(_objsrcs ${_objs} SOURCES)
-  foreach(_src IN LISTS _objsrcs)
-    if(NOT IS_ABSOLUTE "${_src}")
-      set(_src "${_srcdir}/${_src}")
-    endif()
-    if(NOT EXISTS "${_src}")
-      continue()
-    endif()
-    get_source_file_property(_hfo "${_src}" HEADER_FILE_ONLY)
-    if(_hfo)
-      file(STRINGS "${_src}" _reg REGEX "^[ \t]*MILK_MODULE(_RUNNABLES)?[ \t]*\\(")
-      if(_reg)
-        message(FATAL_ERROR "${_src} defines the module registry but is dropped by an unmet "
-                            "MILK_CMAKE_MANDATE_*; move the mandate to another file")
-      endif()
-    endif()
-  endforeach()
+  _milk_runnable_make_objects(${_objs} ${ARG_SOURCES})
+  _milk_runnable_check_registry(${_objs})
 
   add_library(${LIBNAME} SHARED $<TARGET_OBJECTS:${_objs}>)
-  # Link requirements (including those added by milk_apply_extensions) of the objects
-  get_target_property(_obj_libs ${_objs} LINK_LIBRARIES)
-  get_target_property(_obj_ilibs ${_objs} INTERFACE_LINK_LIBRARIES)
-  foreach(_l IN LISTS _obj_libs _obj_ilibs)
-    if(_l)
-      target_link_libraries(${LIBNAME} PUBLIC ${_l})
-    endif()
-  endforeach()
+  set_target_properties(${LIBNAME} PROPERTIES MILK_OBJECTS_TARGET ${_objs})
+  _milk_forward_link_libs(${_objs} ${LIBNAME})
   milk_pgo_target(${LIBNAME})
 
   milk_add_static_lto(${LIBNAME} OBJECTS_FROM ${_objs} LINK_LIBS ${ARG_LINK_LIBS})
   if(USE_STATIC_LTO AND TARGET ${LIBNAME}_static)
-    # milk_apply_extensions() cannot scan an archive built from objects: forward the extension
-    # libraries (not the shared framework libs, the archive links the _static ones).
-    set(_ext_libs ${_obj_libs} ${_obj_ilibs})
-    list(REMOVE_ITEM _ext_libs ${_MILK_RUNNABLE_LIBS})
-    foreach(_l IN LISTS _ext_libs)
-      if(_l)
-        target_link_libraries(${LIBNAME}_static PUBLIC ${_l})
-      endif()
-    endforeach()
+    # The archive links the _static framework libs, not the shared ones
+    _milk_forward_link_libs(${_objs} ${LIBNAME}_static EXCLUDE ${_MILK_RUNNABLE_LIBS})
   endif()
 
   install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
@@ -123,67 +77,139 @@ endfunction()
 
 
 function(milk_add_fpsexec_stubs LIBNAME)
-  set(_objs ${LIBNAME}_objs)
-  get_target_property(_sources ${_objs} SOURCES)
-  get_target_property(_srcdir ${_objs} SOURCE_DIR)
+  get_target_property(_objs ${LIBNAME} MILK_OBJECTS_TARGET)
+  _milk_target_source_files(${_objs} _sources)
 
   foreach(_src IN LISTS _sources)
+    # Re-run CMake when a source (and thus its EXPORT_FPSEXEC lines) changes
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_src}")
+    get_source_file_property(_dropped "${_src}" HEADER_FILE_ONLY)
+
+    _milk_parse_fpsexec_exports("${_src}" _exports)
+    foreach(_export IN LISTS _exports)
+      string(REPLACE "|" ";" _export "${_export}")
+      list(GET _export 0 _prefix)
+      list(GET _export 1 _id)
+      list(GET _export 2 _unit)
+      if(_dropped)
+        get_filename_component(_src_name "${_src}" NAME)
+        message(STATUS "[SKIP] fpsexec ${_prefix}-fpsexec-${_id}: ${_src_name} (unmet MANDATE_*)")
+        continue()
+      endif()
+      _milk_add_fpsexec_stub(${LIBNAME} ${_prefix} ${_id} ${_unit} "${_src}")
+    endforeach()
+  endforeach()
+endfunction()
+
+
+# ── Private helpers ──────────────────────────────────────────────────────────
+
+# Existing sources of <target> as absolute paths
+function(_milk_target_source_files target out)
+  get_target_property(_srcdir ${target} SOURCE_DIR)
+  get_target_property(_srcs ${target} SOURCES)
+  set(_files "")
+  foreach(_src IN LISTS _srcs)
     if(NOT IS_ABSOLUTE "${_src}")
       set(_src "${_srcdir}/${_src}")
     endif()
-    if(NOT EXISTS "${_src}")
+    if(EXISTS "${_src}")
+      list(APPEND _files "${_src}")
+    endif()
+  endforeach()
+  set(${out} "${_files}" PARENT_SCOPE)
+endfunction()
+
+
+# OBJECT library <objs>: PIC, -DMILK_NO_CLI, framework libs, extensions, PGO
+function(_milk_runnable_make_objects objs)
+  add_library(${objs} OBJECT ${ARGN})
+  set_target_properties(${objs} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  target_compile_definitions(${objs} PRIVATE MILK_NO_CLI)
+  target_include_directories(
+    ${objs}
+    PRIVATE ${CMAKE_SOURCE_DIR}/src
+            ${CMAKE_SOURCE_DIR}/src/cli/CLIcore
+            ${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/..)
+  if(TARGET CLIcore)
+    target_include_directories(
+      ${objs} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
+  endif()
+  target_link_libraries(${objs} PUBLIC ${_MILK_RUNNABLE_LIBS})
+  milk_apply_extensions(${objs})
+  milk_pgo_target(${objs})
+endfunction()
+
+
+# The registry file cannot be dropped by an unmet mandate: it would leave an empty module
+function(_milk_runnable_check_registry objs)
+  _milk_target_source_files(${objs} _sources)
+  foreach(_src IN LISTS _sources)
+    get_source_file_property(_dropped "${_src}" HEADER_FILE_ONLY)
+    if(NOT _dropped)
       continue()
     endif()
-    get_source_file_property(_hfo "${_src}" HEADER_FILE_ONLY)
-    # Re-run CMake when a source (and thus its EXPORT_FPSEXEC lines) changes
-    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_src}")
-
-    # file(READ) + MATCHALL: file(STRINGS) would split lines at the ';' ending the macro
-    file(READ "${_src}" _text)
-    string(REGEX MATCHALL "(^|\n)[ \t]*EXPORT_FPSEXEC[ \t]*\\([^\n]*\\)" _hits "${_text}")
-    foreach(_line IN LISTS _hits)
-      if(NOT _line MATCHES
-         "EXPORT_FPSEXEC[ \t]*\\([ \t]*([A-Za-z0-9_]+)[ \t]*,[ \t]*\"([^\"]+)\"[ \t]*,[ \t]*([A-Za-z_][A-Za-z0-9_]*)[ \t]*\\)"
-      )
-        message(FATAL_ERROR "Malformed EXPORT_FPSEXEC in ${_src}: ${_line}")
-      endif()
-      set(_prefix ${CMAKE_MATCH_1})
-      set(_id ${CMAKE_MATCH_2})
-      set(_unit ${CMAKE_MATCH_3})
-      if(NOT _prefix STREQUAL "milk" AND NOT _prefix STREQUAL "cacao")
-        message(FATAL_ERROR "EXPORT_FPSEXEC prefix must be milk or cacao: ${_line}")
-      endif()
-
-      set(_exe ${_prefix}-fpsexec-${_id})
-      if(_hfo)
-        get_filename_component(_src_name "${_src}" NAME)
-        message(STATUS "[SKIP] fpsexec ${_exe}: ${_src_name} (unmet MANDATE_*)")
-        continue()
-      endif()
-      if(TARGET ${_exe})
-        message(FATAL_ERROR "Duplicate fpsexec target ${_exe} (${_src})")
-      endif()
-
-      string(REPLACE "@UNIT@" "${_unit}" _content "${_MILK_FPSEXEC_STUB_TEMPLATE}")
-      set(_stub ${CMAKE_CURRENT_BINARY_DIR}/fpsexec_stubs/${_exe}.c)
-      file(GENERATE OUTPUT ${_stub} CONTENT "${_content}")
-
-      add_executable(${_exe} ${_stub})
-      target_include_directories(${_exe} PRIVATE ${CMAKE_SOURCE_DIR}/src)
-      if(_prefix STREQUAL "cacao")
-        target_include_directories(
-          ${_exe} PRIVATE ${CMAKE_SOURCE_DIR}/plugins/milk-extra-src)
-      endif()
-      if(USE_STATIC_LTO)
-        target_link_libraries(${_exe} PUBLIC ${_MILK_STANDALONE_STATIC_LIBS})
-      else()
-        target_link_libraries(${_exe} PUBLIC ${_MILK_STANDALONE_LIBS})
-      endif()
-      milk_link_module(${_exe} ${LIBNAME})
-      milk_pgo_target(${_exe})
-      milk_lto_target(${_exe})
-      milk_build_tag_target(${_exe})
-      install(TARGETS ${_exe} DESTINATION bin)
-    endforeach()
+    file(STRINGS "${_src}" _reg REGEX "^[ \t]*MILK_MODULE(_RUNNABLES)?[ \t]*\\(")
+    if(_reg)
+      message(FATAL_ERROR "${_src} defines the module registry but is dropped by an unmet "
+                          "MILK_CMAKE_MANDATE_*; move the mandate to another file")
+    endif()
   endforeach()
+endfunction()
+
+
+# Link requirements of <from> (including those added by milk_apply_extensions) applied to <to>;
+# an archive built from objects cannot be scanned by milk_apply_extensions itself.
+function(_milk_forward_link_libs from to)
+  cmake_parse_arguments(ARG "" "" "EXCLUDE" ${ARGN})
+  get_target_property(_libs ${from} LINK_LIBRARIES)
+  get_target_property(_ilibs ${from} INTERFACE_LINK_LIBRARIES)
+  set(_all ${_libs} ${_ilibs})
+  if(ARG_EXCLUDE)
+    list(REMOVE_ITEM _all ${ARG_EXCLUDE})
+  endif()
+  foreach(_l IN LISTS _all)
+    if(_l)
+      target_link_libraries(${to} PUBLIC ${_l})
+    endif()
+  endforeach()
+endfunction()
+
+
+# Lists "<prefix>|<id>|<unit>" for each EXPORT_FPSEXEC line of <src>
+function(_milk_parse_fpsexec_exports src out)
+  # file(READ) + MATCHALL: file(STRINGS) would split lines at the ';' ending the macro
+  file(READ "${src}" _text)
+  string(REGEX MATCHALL "(^|\n)[ \t]*EXPORT_FPSEXEC[ \t]*\\([^\n]*\\)" _hits "${_text}")
+  set(_exports "")
+  foreach(_line IN LISTS _hits)
+    if(NOT _line MATCHES
+       "EXPORT_FPSEXEC[ \t]*\\([ \t]*([A-Za-z0-9_]+)[ \t]*,[ \t]*\"([^\"]+)\"[ \t]*,[ \t]*([A-Za-z_][A-Za-z0-9_]*)[ \t]*\\)"
+    )
+      message(FATAL_ERROR "Malformed EXPORT_FPSEXEC in ${src}: ${_line}")
+    endif()
+    if(NOT CMAKE_MATCH_1 STREQUAL "milk" AND NOT CMAKE_MATCH_1 STREQUAL "cacao")
+      message(FATAL_ERROR "EXPORT_FPSEXEC prefix must be milk or cacao: ${_line}")
+    endif()
+    list(APPEND _exports "${CMAKE_MATCH_1}|${CMAKE_MATCH_2}|${CMAKE_MATCH_3}")
+  endforeach()
+  set(${out} "${_exports}" PARENT_SCOPE)
+endfunction()
+
+
+# Generates the main() stub of <unit> and builds <prefix>-fpsexec-<id> linked to <LIBNAME>
+function(_milk_add_fpsexec_stub LIBNAME prefix id unit src)
+  set(_exe ${prefix}-fpsexec-${id})
+  if(TARGET ${_exe})
+    message(FATAL_ERROR "Duplicate fpsexec target ${_exe} (${src})")
+  endif()
+
+  string(REPLACE "@UNIT@" "${unit}" _content "${_MILK_FPSEXEC_STUB_TEMPLATE}")
+  set(_stub ${CMAKE_CURRENT_BINARY_DIR}/fpsexec_stubs/${_exe}.c)
+  file(GENERATE OUTPUT ${_stub} CONTENT "${_content}")
+
+  add_executable(${_exe} ${_stub})
+  milk_configure_fpsexec(${_exe} PREFIX ${prefix} MODULE ${LIBNAME})
 endfunction()

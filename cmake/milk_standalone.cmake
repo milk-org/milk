@@ -66,6 +66,13 @@ if(USE_STATIC_LTO)
   endif()
 endif()
 
+# Link set of every fpsexec: static archives in USE_STATIC_LTO builds, shared libs otherwise
+if(USE_STATIC_LTO)
+  set(_MILK_FPSEXEC_LIBS ${_MILK_STANDALONE_STATIC_LIBS})
+else()
+  set(_MILK_FPSEXEC_LIBS ${_MILK_STANDALONE_LIBS})
+endif()
+
 # ── milk_scan_standalone ────────────────────────
 # TODO
 # Take a list of source files
@@ -161,25 +168,29 @@ function(milk_lto_target EXE_NAME)
   endif()
 endfunction()
 
-# ── add_milk_standalone ─────────────────────────
+# ── milk_configure_fpsexec ──────────────────────
 #
-# Creates a milk-fpsexec-<name> standalone binary.
+# Common setup of an fpsexec executable: include paths, framework libs, PGO/LTO,
+# build tag, install (unless EXCLUDE_FROM_ALL).
 #
-# Usage: add_milk_standalone(myfunction myfunction.c)
+# milk_configure_fpsexec(<exe> PREFIX milk|cacao [MODULE <lib>])
 #
-function(add_milk_standalone FUNC_NAME SRC_FILE)
-  set(EXE_NAME "milk-fpsexec-${FUNC_NAME}")
-  add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}")
-  target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE MILK_NO_CLI)
+# MODULE links the module library (its _static archive in USE_STATIC_LTO builds).
+#
+function(milk_configure_fpsexec EXE_NAME)
+  cmake_parse_arguments(ARG "" "PREFIX;MODULE" "" ${ARGN})
+
   # CMAKE_SOURCE_DIR (not PROJECT_SOURCE_DIR): each plugin subdirectory calls
   # its own project(), which would otherwise re-root this path locally.
   target_include_directories(${EXE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
-  if(USE_STATIC_LTO)
-    target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_STATIC_LIBS})
-  else()
-    target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_LIBS})
+  if(ARG_PREFIX STREQUAL "cacao")
+    target_include_directories(
+      ${EXE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/plugins/milk-extra-src)
   endif()
-  milk_apply_extensions(${EXE_NAME})
+  target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_FPSEXEC_LIBS})
+  if(ARG_MODULE)
+    milk_link_module(${EXE_NAME} ${ARG_MODULE})
+  endif()
   milk_pgo_target(${EXE_NAME})
   milk_lto_target(${EXE_NAME})
   milk_build_tag_target(${EXE_NAME})
@@ -189,35 +200,36 @@ function(add_milk_standalone FUNC_NAME SRC_FILE)
   endif()
 endfunction()
 
+# Legacy path shared by add_milk_standalone / add_cacao_standalone
+function(_milk_add_legacy_standalone PREFIX FUNC_NAME SRC_FILE)
+  set(EXE_NAME "${PREFIX}-fpsexec-${FUNC_NAME}")
+  add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}")
+  target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE MILK_NO_CLI)
+  milk_configure_fpsexec(${EXE_NAME} PREFIX ${PREFIX})
+  milk_apply_extensions(${EXE_NAME})
+endfunction()
+
+# ── add_milk_standalone ─────────────────────────
+#
+# Creates a milk-fpsexec-<name> standalone binary.
+# Legacy, kept for compatibility: new modules use milk_add_runnable_module().
+#
+# Usage: add_milk_standalone(myfunction myfunction.c)
+#
+function(add_milk_standalone FUNC_NAME SRC_FILE)
+  _milk_add_legacy_standalone(milk ${FUNC_NAME} ${SRC_FILE})
+endfunction()
+
 # ── add_cacao_standalone ────────────────────────
 #
 # Creates a cacao-fpsexec-<name> standalone binary. Includes plugin header paths
 # (milk-extra-src/).
+# Legacy, kept for compatibility: new modules use milk_add_runnable_module().
 #
 # Usage: add_cacao_standalone(myfunction myfunction.c)
 #
 function(add_cacao_standalone FUNC_NAME SRC_FILE)
-  set(EXE_NAME "cacao-fpsexec-${FUNC_NAME}")
-  add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}")
-  target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE MILK_NO_CLI)
-  # CMAKE_SOURCE_DIR (not PROJECT_SOURCE_DIR): each plugin subdirectory calls
-  # its own project(), which would otherwise re-root this path locally.
-  target_include_directories(
-    ${EXE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src
-                        ${CMAKE_SOURCE_DIR}/plugins/milk-extra-src)
-  if(USE_STATIC_LTO)
-    target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_STATIC_LIBS})
-  else()
-    target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_LIBS})
-  endif()
-  milk_apply_extensions(${EXE_NAME})
-  milk_pgo_target(${EXE_NAME})
-  milk_lto_target(${EXE_NAME})
-  milk_build_tag_target(${EXE_NAME})
-  get_target_property(_excl ${EXE_NAME} EXCLUDE_FROM_ALL)
-  if(NOT _excl)
-    install(TARGETS ${EXE_NAME} DESTINATION bin)
-  endif()
+  _milk_add_legacy_standalone(cacao ${FUNC_NAME} ${SRC_FILE})
 endfunction()
 
 # ── add_cacao_standalone_plugins ────────────────
@@ -235,23 +247,14 @@ function(add_cacao_standalone_plugins FUNC_NAME SRC_FILE)
   add_cacao_standalone(${FUNC_NAME} ${SRC_FILE})
   set(EXE_NAME "cacao-fpsexec-${FUNC_NAME}")
 
-  set(_all_plugins fft imagegen imagefilter imagebasic)
   set(_requested ${ARGN})
   if(NOT _requested)
-    set(_requested ${_all_plugins})
+    set(_requested fft imagegen imagefilter imagebasic)
   endif()
 
   foreach(_p IN LISTS _requested)
-    if(_p STREQUAL "fft")
-      target_link_libraries(${EXE_NAME} PUBLIC milkfft)
-    elseif(_p STREQUAL "imagegen")
-      target_link_libraries(${EXE_NAME} PUBLIC milkimagegen)
-    elseif(_p STREQUAL "imagefilter")
-      target_link_libraries(${EXE_NAME} PUBLIC milkimagefilter)
-    elseif(_p STREQUAL "imagebasic")
-      target_link_libraries(${EXE_NAME} PUBLIC milkimagebasic)
-    elseif(_p STREQUAL "statistic")
-      target_link_libraries(${EXE_NAME} PUBLIC milkstatistic)
+    if(_p MATCHES "^(fft|imagegen|imagefilter|imagebasic|statistic)$")
+      target_link_libraries(${EXE_NAME} PUBLIC milk${_p})
     else()
       message(WARNING "Unknown plugin '${_p}' in "
                       "add_cacao_standalone_plugins()")
