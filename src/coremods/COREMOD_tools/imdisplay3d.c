@@ -9,12 +9,7 @@
  * Uses FPS V2 framework.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include "milk_runnable.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -30,40 +25,31 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step);
 static char      p_imname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 static long long p_step                                 = 5;
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "dispim3d",
-    .cmdkey           = "dispim3d",
-    .description      = "display 2D image as 3D surface "
-                        "using gnuplot",
-    .description_long = "Display slices of a 3D image cube interactively. Provides a TUI-based "
-                        "viewer for browsing through cube frames."
-};
-
 #define FPS_PARAMS(X)                                                                \
     X(".imname", p_imname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "image name") \
     X(".step", &p_step, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "pixel step")
 
-FPS_V2_SECTION5(FPS_PARAMS)
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+MILK_PARAMS_DEFINE(imdisplay3d, FPS_PARAMS);
+
+static MILK_HOT errno_t imdisplay3d_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     COREMOD_TOOLS_imgdisplay3D(p_imname, p_step);
     return RETURN_SUCCESS;
 }
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_tools__imdisplay3d()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_COREMOD_tools_imdisplay3d = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "dispim3d",
+                 .cmdkey      = "dispim3d",
+                 .description = "display 2D image as 3D surface using gnuplot",
+                 .description_long =
+                     "Display slices of a 3D image cube interactively. Provides a TUI-based "
+                     "viewer for browsing through cube frames." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imdisplay3d),
+    .compute = imdisplay3d_compute,
+};
 
 // displays 2D image in 3D using gnuplot
 //

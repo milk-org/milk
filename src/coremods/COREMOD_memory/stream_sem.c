@@ -22,13 +22,11 @@
  */
 
 #include <pthread.h>
+#include <semaphore.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_ID.h"
@@ -71,84 +69,64 @@ static long long p_semindex                             = 0;
 #define FPS_PARAMS_IMSEM_INFO(X) \
     X(".imname", p_imname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "image name")
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static FPS_CLI_BINDING bindings_imsem_info[] = { FPS_PARAMS_IMSEM_INFO(FPS_X_BINDING) };
-static const int    nb_bindings_imsem_info = sizeof(bindings_imsem_info) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF farg_imsem_info[]      = { FPS_PARAMS_IMSEM_INFO(FPS_X_FARG) };
-#    define CLICMD_FIELDS_IMSEM_INFO                                                               \
-        __FILE__, sizeof(farg_imsem_info) / sizeof(CLICMDARGDEF), farg_imsem_info, CLICMDFLAG_FPS, \
-            NULL, NULL, NULL
-
-static FPS_CLI_BINDING bindings_imsem[]  = { FPS_PARAMS_IMSEM(FPS_X_BINDING) };
-static const int       nb_bindings_imsem = sizeof(bindings_imsem) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg_imsem[]      = { FPS_PARAMS_IMSEM(FPS_X_FARG) };
-#    define CLICMD_FIELDS_IMSEM                                                                \
-        __FILE__, sizeof(farg_imsem) / sizeof(CLICMDARGDEF), farg_imsem, CLICMDFLAG_FPS, NULL, \
-            NULL, NULL
-#else
-#    define CLICMD_FIELDS_IMSEM_INFO __FILE__, 0, NULL, 0, NULL, NULL, NULL
-#    define CLICMD_FIELDS_IMSEM __FILE__, 0, NULL, 0, NULL, NULL, NULL
-#endif
-
 
 /* ================================================================
  *  CMD 1: imseminfo (1 arg)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_seminfo = {
-    .fps_name    = "imseminfo",
-    .cmdkey      = "imseminfo",
-    .description = "display semaphore info",
-    .description_long =
-        "Manage semaphores on shared memory image streams. Supports posting, waiting, flushing, "
-        "and monitoring semaphore state for inter-process synchronization."
-};
+MILK_PARAMS_DEFINE(imseminfo, FPS_PARAMS_IMSEM_INFO);
 
-static CLICMDDATA CLIcmddata_seminfo = { "", "", CLICMD_FIELDS_IMSEM_INFO };
-FPS_CMDSETTINGS_INIT(cms1, CLIcmddata_seminfo, FPS_app_info_seminfo)
-
-static errno_t __attribute__((unused)) compute_seminfo()
+static MILK_HOT errno_t imseminfo_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     COREMOD_MEMORY_image_seminfo(p_imname);
     return RETURN_SUCCESS;
 }
+
+const MILK_RUNNABLE runnable_COREMOD_memory_imseminfo = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "imseminfo",
+              .cmdkey      = "imseminfo",
+              .description = "display semaphore info",
+              .description_long =
+                  "Manage semaphores on shared memory image streams. Supports posting, waiting, "
+                  "flushing, and monitoring semaphore state for inter-process synchronization." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imseminfo),
+    .compute = imseminfo_compute,
+};
 
 
 /* ================================================================
  *  CMD 2: imsetsempost (2 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_sempost = {
-    .fps_name    = "imsetsempost",
-    .cmdkey      = "imsetsempost",
-    .description = "post image semaphore",
-    .description_long =
-        "Manage semaphores on shared memory image streams. Supports posting, waiting, flushing, "
-        "and monitoring semaphore state for inter-process synchronization."
-};
+MILK_PARAMS_DEFINE(imsetsempost, FPS_PARAMS_IMSEM);
 
-static CLICMDDATA CLIcmddata_sempost = { "", "", CLICMD_FIELDS_IMSEM };
-FPS_CMDSETTINGS_INIT(cms2, CLIcmddata_sempost, FPS_app_info_sempost)
-
-static errno_t __attribute__((unused)) compute_sempost()
+static MILK_HOT errno_t imsetsempost_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     COREMOD_MEMORY_image_set_sempost(p_imname, p_semindex);
     return RETURN_SUCCESS;
 }
+
+const MILK_RUNNABLE runnable_COREMOD_memory_imsetsempost = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "imsetsempost",
+              .cmdkey      = "imsetsempost",
+              .description = "post image semaphore",
+              .description_long =
+                  "Manage semaphores on shared memory image streams. Supports posting, waiting, "
+                  "flushing, and monitoring semaphore state for inter-process synchronization." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imsetsempost),
+    .compute = imsetsempost_compute,
+};
 
 
 /* ================================================================
  *  CMD 3: imsetsempostl (3 args, primary)
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "imsetsempostl",
-    .cmdkey      = "imsetsempostl",
-    .description = "post image semaphore loop",
-    .description_long =
-        "Manage semaphores on shared memory image streams. Supports posting, waiting, flushing, "
-        "and monitoring semaphore state for inter-process synchronization."
-};
 
 static long long p_dtus = 1000;
 
@@ -156,114 +134,86 @@ static long long p_dtus = 1000;
     FPS_PARAMS_IMSEM(X) \
     X(".dtus", &p_dtus, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "time interval [us]")
 
-FPS_V2_SECTION5(FPS_PARAMS)
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+MILK_PARAMS_DEFINE(imsetsempostl, FPS_PARAMS);
+
+static MILK_HOT errno_t imsetsempostl_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
     COREMOD_MEMORY_image_set_sempost_loop(p_imname, p_semindex, p_dtus);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
+const MILK_RUNNABLE runnable_COREMOD_memory_imsetsempostl = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "imsetsempostl",
+              .cmdkey      = "imsetsempostl",
+              .description = "post image semaphore loop",
+              .description_long =
+                  "Manage semaphores on shared memory image streams. Supports posting, waiting, "
+                  "flushing, and monitoring semaphore state for inter-process synchronization." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imsetsempostl),
+    .compute = imsetsempostl_compute,
+};
 
 
 /* ================================================================
  *  CMD 4: imsetsemwait (2 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_semwait = {
-    .fps_name    = "imsetsemwait",
-    .cmdkey      = "imsetsemwait",
-    .description = "wait image semaphore",
-    .description_long =
-        "Manage semaphores on shared memory image streams. Supports posting, waiting, flushing, "
-        "and monitoring semaphore state for inter-process synchronization."
-};
+MILK_PARAMS_DEFINE(imsetsemwait, FPS_PARAMS_IMSEM);
 
-static CLICMDDATA CLIcmddata_semwait = { "", "", CLICMD_FIELDS_IMSEM };
-FPS_CMDSETTINGS_INIT(cms4, CLIcmddata_semwait, FPS_app_info_semwait)
-
-static errno_t __attribute__((unused)) compute_semwait()
+static MILK_HOT errno_t imsetsemwait_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     COREMOD_MEMORY_image_set_semwait(p_imname, p_semindex);
     return RETURN_SUCCESS;
 }
+
+const MILK_RUNNABLE runnable_COREMOD_memory_imsetsemwait = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "imsetsemwait",
+              .cmdkey      = "imsetsemwait",
+              .description = "wait image semaphore",
+              .description_long =
+                  "Manage semaphores on shared memory image streams. Supports posting, waiting, "
+                  "flushing, and monitoring semaphore state for inter-process synchronization." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imsetsemwait),
+    .compute = imsetsemwait_compute,
+};
 
 
 /* ================================================================
  *  CMD 5: imsetsemflush (2 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_semflush = {
-    .fps_name    = "imsetsemflush",
-    .cmdkey      = "imsetsemflush",
-    .description = "flush image semaphore",
-    .description_long =
-        "Manage semaphores on shared memory image streams. Supports posting, waiting, flushing, "
-        "and monitoring semaphore state for inter-process synchronization."
-};
+MILK_PARAMS_DEFINE(imsetsemflush, FPS_PARAMS_IMSEM);
 
-static CLICMDDATA CLIcmddata_semflush = { "", "", CLICMD_FIELDS_IMSEM };
-FPS_CMDSETTINGS_INIT(cms5, CLIcmddata_semflush, FPS_app_info_semflush)
-
-static errno_t __attribute__((unused)) compute_semflush()
+static MILK_HOT errno_t imsetsemflush_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     COREMOD_MEMORY_image_set_semflush(p_imname, p_semindex);
     return RETURN_SUCCESS;
 }
 
+const MILK_RUNNABLE runnable_COREMOD_memory_imsetsemflush = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "imsetsemflush",
+              .cmdkey      = "imsetsemflush",
+              .description = "flush image semaphore",
+              .description_long =
+                  "Manage semaphores on shared memory image streams. Supports posting, waiting, "
+                  "flushing, and monitoring semaphore state for inter-process synchronization." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imsetsemflush),
+    .compute = imsetsemflush_compute,
+};
 
-/* ================================================================
- *  REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-
-static errno_t CLIfunction_seminfo(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_seminfo, farg_imsem_info, &CLIcmddata_seminfo,
-                                        bindings_imsem_info, nb_bindings_imsem_info,
-                                        compute_seminfo);
-}
-
-static errno_t CLIfunction_sempost(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_sempost, farg_imsem, &CLIcmddata_sempost,
-                                        bindings_imsem, nb_bindings_imsem, compute_sempost);
-}
-
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-static errno_t CLIfunction_semwait(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_semwait, farg_imsem, &CLIcmddata_semwait,
-                                        bindings_imsem, nb_bindings_imsem, compute_semwait);
-}
-
-static errno_t CLIfunction_semflush(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_semflush, farg_imsem, &CLIcmddata_semflush,
-                                        bindings_imsem, nb_bindings_imsem, compute_semflush);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__stream_sem()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    safe_fps_fill_farg_examples(farg_imsem, bindings_imsem, nb_bindings_imsem);
-
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_seminfo, CLIfunction_seminfo);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_sempost, CLIfunction_sempost);
-    INSERT_STD_CLIREGISTERFUNC;
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_semwait, CLIfunction_semwait);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_semflush, CLIfunction_semflush);
-
-    return RETURN_SUCCESS;
-}
-#endif
 
 /**
  * @brief Print semaphore status for an image

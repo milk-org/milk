@@ -11,26 +11,11 @@
  * from examplefunc_fps_cli_poc.c.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include <stdint.h>
+#include <string.h>
+
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "imzero",
-    .cmdkey           = "imzero",
-    .description      = "set all image pixels to zero",
-    .description_long = "Zero-fill all pixel values in the target image stream. Operates in-place "
-                        "on the existing shared memory buffer, setting every element to 0."
-};
 
 
 /* ================================================================
@@ -70,12 +55,9 @@ static errno_t imsetzero_computation(IMAGE *inimg)
 
 /* ================================================================
  * 5.  BINDINGS, FARG, AND CLI DATA
- *
- * Must appear before compute_function() because the
- * INSERT_STD_PROCINFO macros reference CLIcmddata.
  * ============================================================= */
 
-FPS_V2_SECTION5(IMSETZERO_PARAMS)
+MILK_PARAMS_DEFINE(image_setzero, IMSETZERO_PARAMS);
 
 
 /* ================================================================
@@ -90,51 +72,35 @@ FPS_V2_SECTION5(IMSETZERO_PARAMS)
  * calls the computation and updates the output stream
  * on each iteration.
  */
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_setzero_compute(const MILK_RUNNABLE *self)
 {
     IMGID in = imgid_make_from_name(imsetzero_imname);
     resolveIMGID(&in, ERRMODE_ABORT, dcimg, dcnimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START imsetzero_computation(in.im);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    imsetzero_computation(in.im);
     processinfo_update_output_stream(processinfo, in.im, NULL);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END return RETURN_SUCCESS;
+    MILK_PROCINFO_END(self)
+    return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-/**
- * @brief Unified milk CLI entry point.
- */
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-/**
- * @brief Module registration function.
- */
-errno_t CLIADDCMD_COREMOD_arith__imsetzero()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- *
- * FPS_MAIN_STANDALONE_V2 generates main() using
- * the generic library lifecycle functions.
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, IMSETZERO_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_arith_image_setzero = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "imzero",
+              .cmdkey           = "imzero",
+              .description      = "set all image pixels to zero",
+              .description_long = "Zero-fill all pixel values in the target image stream. Operates "
+                                  "in-place on the existing shared memory buffer, setting every "
+                                  "element to 0." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_setzero),
+    .compute = image_setzero_compute,
+};
+EXPORT_FPSEXEC(milk, "arith-imsetzero", runnable_COREMOD_arith_image_setzero);

@@ -15,7 +15,9 @@
 #define DELETE_IMAGE_ERRMODE_ERROR 2
 #define DELETE_IMAGE_ERRMODE_EXIT 3
 
-errno_t CLIADDCMD_COREMOD_memory__delete_image();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_delete_image;
 
 errno_t delete_image_IMGID(IMGID *img, int errmode);
 

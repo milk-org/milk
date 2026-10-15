@@ -7,24 +7,10 @@
  * @brief   multiply image by vector
  *
  */
-#include "ImageStreamIO/ImageStruct.h"
+#include <stdint.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "imvecmult",
-    .cmdkey           = "imvecmult",
-    .description      = "multiply image by vector",
-    .description_long = "Multiply each slice of a 3D image cube by the corresponding element of a "
-                        "1D vector. Applies element-wise scaling across the z-axis. Useful for "
-                        "applying modal coefficients to a mode cube."
-};
 
 static char     iminname[FUNCTION_PARAMETER_STRMAXLEN];
 static char     vecname[FUNCTION_PARAMETER_STRMAXLEN];
@@ -38,7 +24,7 @@ static uint32_t multaxis = 0;
     X(".imoutname", imoutname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image name")  \
     X(".axis", &multaxis, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "multiplication axis")
 
-static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
+static MILK_COLD errno_t customCONFcheck()
 {
     if (dcfpsptr != NULL)
     {
@@ -53,7 +39,7 @@ static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
 }
 
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(image_vecmult, FPS_PARAMS);
 
 
 errno_t image_vect_multiply(IMGID imgin, IMGID imgvec, IMGID *imgout, uint32_t multaxis)
@@ -159,7 +145,7 @@ errno_t image_vect_multiply(IMGID imgin, IMGID imgvec, IMGID *imgout, uint32_t m
     return RETURN_SUCCESS;
 }
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_vecmult_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -183,35 +169,30 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         return RETURN_FAILURE;
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         image_vect_multiply(imgimin, imgvec, &imgout, multaxis);
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-// Register function in CLI
-errno_t CLIADDCMD_COREMODE_arith__image_vecmult()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2_CONFCHECK(FPS_app_info, FPS_PARAMS, compute_function, customCONFcheck)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_arith_image_vecmult = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "imvecmult",
+                 .cmdkey           = "imvecmult",
+                 .description      = "multiply image by vector",
+                 .description_long = "Multiply each slice of a 3D image cube by the corresponding "
+                                     "element of a 1D vector. Applies element-wise scaling across "
+                                     "the z-axis. Useful for applying modal coefficients to a mode "
+                                     "cube." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_vecmult),
+    .compute   = image_vecmult_compute,
+    .confcheck = customCONFcheck,
+};
+EXPORT_FPSEXEC(milk, "arith-vecmult", runnable_COREMOD_arith_image_vecmult);

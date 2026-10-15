@@ -7,7 +7,11 @@
  * @brief Set image flags / counters
  */
 
-errno_t CLIADDCMD_COREMOD_memory__image_set_counters();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imsetcnt0;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imsetstatus;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imsetcnt1;
 
 errno_t COREMOD_MEMORY_image_set_status(const char *IDname, int status);
 

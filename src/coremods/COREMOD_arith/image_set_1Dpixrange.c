@@ -9,28 +9,11 @@
  * Uses FPS V2 framework.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include <stdint.h>
+
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "libmilkcommon/pixel_dispatch.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "setpix1D",
-    .cmdkey      = "setpix1Drange",
-    .description = "set image pixel value over range",
-    .description_long =
-        "Set a contiguous range of pixels in a 1D image or along the linear memory layout of a "
-        "multi-dimensional image. Specify start index, end index, and the value to assign."
-};
 
 
 /* ================================================================
@@ -96,48 +79,43 @@ static MILK_HOT errno_t fpsexec(IMAGE *inimg)
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(image_set_1Dpixrange, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_set_1Dpixrange_compute(const MILK_RUNNABLE *self)
 {
     IMGID in = imgid_make_from_name(setpix1d_inimname);
     resolveIMGID(&in, ERRMODE_ABORT, dcimg, dcnimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START fpsexec(in.im);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    fpsexec(in.im);
     processinfo_update_output_stream(processinfo, in.im, NULL);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END return RETURN_SUCCESS;
+    MILK_PROCINFO_END(self)
+    return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_arith__imset_1Dpixrange()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_arith_image_set_1Dpixrange = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "setpix1D",
+                 .cmdkey      = "setpix1Drange",
+                 .description = "set image pixel value over range",
+                 .description_long =
+                     "Set a contiguous range of pixels in a 1D image or along the linear memory "
+                     "layout of a multi-dimensional image. Specify start index, end index, and the "
+                     "value to assign." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_set_1Dpixrange),
+    .compute = image_set_1Dpixrange_compute,
+};
+EXPORT_FPSEXEC(milk, "arith-setpix1Drange", runnable_COREMOD_arith_image_set_1Dpixrange);

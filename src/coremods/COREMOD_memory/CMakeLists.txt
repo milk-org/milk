@@ -12,33 +12,37 @@ project(lib_${LIBNAME}_project)
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
 
-add_library(${LIBNAME} SHARED ${SOURCEFILES})
-# CLIcore does not exist at this tier: reuse the include dirs of libfps
-target_include_directories(
-  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:milkfps,INCLUDE_DIRECTORIES>)
-milk_apply_extensions(${LIBNAME})
+milk_add_runnable_module(${LIBNAME} SOURCES ${SOURCEFILES} COREMOD)
+milk_add_fpsexec_stubs(${LIBNAME})
 
 # CUSTOM ===========
+# CLIcore does not exist at this tier: reuse the include dirs of libfps
+target_include_directories(
+  ${LIBNAME}_objs PRIVATE $<TARGET_PROPERTY:milkfps,INCLUDE_DIRECTORIES>)
+
 find_package(PkgConfig REQUIRED)
 if(USE_CFITSIO)
   pkg_check_modules(CFITSIO cfitsio)
   if(${CFITSIO_FOUND})
     link_directories(${CFITSIO_LIBRARY_DIRS})
-    target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
-    target_include_directories(${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
-    target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
+    milk_runnable_module_usage(
+      ${LIBNAME}
+      DEFINITIONS USE_CFITSIO=1
+      INCLUDES ${CFITSIO_INCLUDE_DIRS}
+      LINK_DIRS ${CFITSIO_LIBRARY_DIRS})
   endif()
 endif()
 
-target_include_directories(
+milk_runnable_module_usage(
   ${LIBNAME}
-  PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
-         $<INSTALL_INTERFACE:include>)
+  INCLUDES
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
+    $<INSTALL_INTERFACE:include>)
 target_link_libraries(
   ${LIBNAME}
   PUBLIC
-    m ${CFITSIO_LIBRARIES} milkfps milkcomputeunit
+    ${CFITSIO_LIBRARIES}
     $<$<AND:$<BOOL:${USE_CFITSIO}>,$<BOOL:${CFITSIO_FOUND}>>:milkCOREMODiofits>)
 
 set(SCRIPTS
@@ -49,31 +53,10 @@ set(SCRIPTS
     scripts/milk-shmimpoke-semtrig
     scripts/milk-semloopspeed
     scripts/milk-streamFITSlog)
-
-milk_add_static_lto(${LIBNAME} CFITSIO_LINK_LIBS milkCOREMODiofits_static)
 # ==================
 
-install(
-  TARGETS ${LIBNAME}
-  EXPORT milkTargets
-  DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
-
-add_milk_standalone(mem-streamave stream_ave.c)
-add_milk_standalone(mem-streampoke stream_poke.c)
-add_milk_standalone(mem-streamcopy stream_copy.c)
-add_milk_standalone(mem-streamdelay stream_delay.c)
-add_milk_standalone(imkwadd image_keyword_add.c)
-
-get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  PROPERTY BUILDSYSTEM_TARGETS)
-foreach(_t IN LISTS _stdalones)
-  get_target_property(_type ${_t} TYPE)
-  if(_type STREQUAL "EXECUTABLE")
-    milk_link_module(${_t} ${LIBNAME})
-  endif()
-endforeach()
 
 # CUSTOM ===========
 include(CTest)

@@ -10,41 +10,11 @@
  */
 
 #include <dirent.h>
+#include <stdio.h>
+#include <string.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "fpslist",
-    .cmdkey           = "fpslist",
-    .description      = "list function parameter structures",
-    .description_long = "List all FPS (Function Parameter Structure) instances currently active in "
-                        "shared memory. Shows FPS name, status, and associated process."
-};
-
-
-/* ================================================================
- * 2.  LOCAL PARAMETER VARIABLES
- * ============================================================= */
-
-/* (none — zero-arg command) */
-
-
-/* ================================================================
- * 3.  UNIFIED PARAMETER TABLE (X-Macro)
- * ============================================================= */
-
-#define FPS_PARAMS(X) /* empty */
 
 
 /* ================================================================
@@ -113,26 +83,14 @@ errno_t fps_list()
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  RUNNABLE (no FPS parameter)
  * ============================================================= */
 
-#ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata = {
-#else
-static CLICMDDATA CLIcmddata = {
-#endif
-    "", "", CLICMD_FIELDS_NOPARAM
-};
+MILK_RUNNABLE_RT_DEFINE(fps_list);
 
-FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
-
-
-/* ================================================================
- * 6.  COMPUTE WRAPPER
- * ============================================================= */
-
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t fps_list_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     DEBUG_TRACE_FSTART();
 
     FUNC_CHECK_RETURN(fps_list());
@@ -141,22 +99,15 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- * 7.  MILK MODULE REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, NULL, &CLIcmddata, NULL, 0,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__fps_list()
-{
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_fps_list = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "fpslist",
+                 .cmdkey           = "fpslist",
+                 .description      = "list function parameter structures",
+                 .description_long = "List all FPS (Function Parameter Structure) instances "
+                                     "currently active in shared memory. Shows FPS name, status, "
+                                     "and associated process." },
+    .srcfile = __FILE__,
+    .compute = fps_list_compute,
+    .rt      = &fps_list_rt,
+};

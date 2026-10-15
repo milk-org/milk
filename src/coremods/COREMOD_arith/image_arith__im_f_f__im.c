@@ -13,33 +13,15 @@
  */
 
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include <stdint.h>
+
+#include "milk_runnable.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "imfunctions.h"
 #include "mathfuncs.h"
 #include "image_arith__im_f_f__im.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "imtrunc",
-    .cmdkey      = "imtrunc",
-    .description = "truncate pixel values between min and max",
-    .description_long =
-        "Truncate pixel values in an image stream by clamping them to a specified range [min, "
-        "max]. Pixels below min are set to min, pixels above max are set to max. Useful for "
-        "filtering outliers or enforcing dynamic range limits in real-time streams."
-};
 
 
 /* ================================================================
@@ -95,14 +77,14 @@ int arith_image_trunc_inplace(const char *ID_name, double f1, double f2)
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(image_arith__im_f_f__im, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_arith__im_f_f__im_compute(const MILK_RUNNABLE *self)
 {
     IMGID imgin = imgid_make_from_name(inimname);
     resolveIMGID(&imgin, ERRMODE_NULL, dcimg, dcnimg);
@@ -124,9 +106,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     uint64_t nelement = imgin.md->nelement;
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         if (imgin.md->datatype == _DATATYPE_FLOAT && imgout.mdt->datatype == _DATATYPE_FLOAT)
         {
@@ -179,7 +161,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
         processinfo_update_output_stream(processinfo, imgout.im, imgin.im);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END imgid_free(&imgin);
+    MILK_PROCINFO_END(self)
+    imgid_free(&imgin);
     imgid_free(&imgout);
 
     return RETURN_SUCCESS;
@@ -187,29 +170,21 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t image_arith__im_f_f__im_addCLIcmd()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_arith_image_arith__im_f_f__im = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "imtrunc",
+              .cmdkey      = "imtrunc",
+              .description = "truncate pixel values between min and max",
+              .description_long =
+                  "Truncate pixel values in an image stream by clamping them to a specified range "
+                  "[min, max]. Pixels below min are set to min, pixels above max are set to max. "
+                  "Useful for filtering outliers or enforcing dynamic range limits in real-time "
+                  "streams." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_arith__im_f_f__im),
+    .compute = image_arith__im_f_f__im_compute,
+};
+EXPORT_FPSEXEC(milk, "arith-imtrunc", runnable_COREMOD_arith_image_arith__im_f_f__im);

@@ -10,7 +10,9 @@
 #ifndef COREMOD_MEMORY_READ_SHMIM_SIZE_H
 #define COREMOD_MEMORY_READ_SHMIM_SIZE_H
 
-errno_t CLIADDCMD_COREMOD_memory__read_sharedmem_image_size();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_readshmimsize;
 
 imageID read_sharedmem_image_size(const char *name, const char *fname);
 

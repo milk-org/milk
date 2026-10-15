@@ -17,6 +17,8 @@ errno_t mk_amph_from_complex(const char *in_name,
 
 errno_t mk_amph_from_complex_IMGID(IMGID *imgin, IMGID *imgamp, IMGID *imgpha);
 
-errno_t CLIADDCMD_COREMOD__mk_amph_from_complex();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_image_mk_amph_from_complex;
 
 #endif

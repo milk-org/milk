@@ -9,12 +9,11 @@
  * Uses FPS V2 framework.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "milk_runnable.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -66,15 +65,6 @@ static int64_t p_zstart                                = 0;
  *  CMD 1: extractim (6 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_2d = {
-    .fps_name    = "extractim",
-    .cmdkey      = "extractim",
-    .description = "crop 2D image",
-    .description_long =
-        "Extract a rectangular sub-region from a 2D or 3D image. Legacy implementation supporting "
-        "both 2D crop (extractim) and 3D crop (extract3Dim) in a single file."
-};
-
 #define FPS_PARAMS_2D(X)                                                              \
     X(".inname", p_inname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
     X(".outname", p_outname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")  \
@@ -83,28 +73,33 @@ static FPS_APP_INFO FPS_app_info_2d = {
     X(".xstart", &p_xstart, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "X start")         \
     X(".ystart", &p_ystart, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "Y start")
 
-static CLICMDDATA CLIcmddata_2d = { "", "", CLICMD_FIELDS_NOPARAM };
-FPS_CMDSETTINGS_INIT(2d, CLIcmddata_2d, FPS_app_info_2d)
+MILK_PARAMS_DEFINE(image_crop_2d, FPS_PARAMS_2D);
 
-static errno_t __attribute__((unused)) compute_2d()
+static errno_t image_crop_2d_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     arith_image_extract2D(p_inname, p_outname, p_sizex, p_sizey, p_xstart, p_ystart);
     return RETURN_SUCCESS;
 }
+
+const MILK_RUNNABLE runnable_COREMOD_arith_extractim = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "extractim",
+              .cmdkey      = "extractim",
+              .description = "crop 2D image",
+              .description_long =
+                  "Extract a rectangular sub-region from a 2D or 3D image. Legacy implementation "
+                  "supporting both 2D crop (extractim) and 3D crop (extract3Dim) in a single "
+                  "file." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_crop_2d),
+    .compute = image_crop_2d_compute,
+};
 
 
 /* ================================================================
  *  CMD 2: extract3Dim (8 args, primary)
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "extract3Dim",
-    .cmdkey      = "extract3Dim",
-    .description = "crop 3D image",
-    .description_long =
-        "Extract a rectangular sub-region from a 2D or 3D image. Legacy implementation supporting "
-        "both 2D crop (extractim) and 3D crop (extract3Dim) in a single file."
-};
 
 #define FPS_PARAMS(X)                                                                 \
     X(".inname", p_inname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
@@ -116,57 +111,29 @@ static FPS_APP_INFO FPS_app_info = {
     X(".ystart", &p_ystart, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "Y start")         \
     X(".zstart", &p_zstart, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "Z start")
 
-static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
+MILK_PARAMS_DEFINE(image_crop_3d, FPS_PARAMS);
 
-static const int __attribute__((unused)) nb_bindings =
-    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
-
-static CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-
-FPS_CMDSETTINGS_INIT(main, CLIcmddata, FPS_app_info)
-
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_crop_3d_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     arith_image_extract3D(p_inname, p_outname, p_sizex, p_sizey, p_sizez, p_xstart, p_ystart,
                           p_zstart);
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- *  REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-
-static FPS_CLI_BINDING bindings_2d[]  = { FPS_PARAMS_2D(FPS_X_BINDING) };
-static const int       nb_bindings_2d = sizeof(bindings_2d) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg_2d[]      = { FPS_PARAMS_2D(FPS_X_FARG) };
-
-static errno_t CLIfunction_2d(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_2d, farg_2d, &CLIcmddata_2d, bindings_2d,
-                                        nb_bindings_2d, compute_2d);
-}
-
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_arith__image_crop()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    safe_fps_fill_farg_examples(farg_2d, bindings_2d, nb_bindings_2d);
-
-    INSERT_STD_CLIREGISTERFUNC;
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_2d, CLIfunction_2d);
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_COREMOD_arith_extract3Dim = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "extract3Dim",
+              .cmdkey      = "extract3Dim",
+              .description = "crop 3D image",
+              .description_long =
+                  "Extract a rectangular sub-region from a 2D or 3D image. Legacy implementation "
+                  "supporting both 2D crop (extractim) and 3D crop (extract3Dim) in a single "
+                  "file." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_crop_3d),
+    .compute = image_crop_3d_compute,
+};
 
 /**
  * @brief Crop an image to a rectangular sub-region.

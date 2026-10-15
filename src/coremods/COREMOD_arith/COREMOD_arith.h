@@ -35,7 +35,13 @@
 #include "COREMOD_arith/image_set_row.h"
 #include "COREMOD_arith/image_set_1Dpixrange.h"
 #include "COREMOD_arith/image_set_2Dpix.h"
+#include "COREMOD_arith/image_set_3Daxes.h"
 #include "COREMOD_arith/image_vecmult.h"
+#include "COREMOD_arith/image_norm.h"
+#include "COREMOD_arith/image_slicenormalize.h"
+#include "COREMOD_arith/image_unfold.h"
+#include "COREMOD_arith/image_pixremap.h"
+#include "COREMOD_arith/image_pixunmap.h"
 
 
 //imageID arith_make_slopexy(const char *ID_name, uint32_t l1,uint32_t l2, double sx, double sy);

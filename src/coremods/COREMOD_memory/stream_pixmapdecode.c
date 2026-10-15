@@ -9,14 +9,16 @@
  * Uses FPS V2 framework.
  */
 
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+
+#include "milk_runnable.h"
 #include "ImageStreamIO/ImageStruct.h"
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "create_image.h"
@@ -27,19 +29,6 @@
 #ifdef USE_CFITSIO
 #    include "COREMOD_iofits/COREMOD_iofits.h"
 #endif
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "impixdecodeU",
-    .cmdkey           = "impixdecodeU",
-    .description      = "decode image stream",
-    .description_long = "Decode a pixel map to reconstruct a 2D image from a 1D encoded stream. "
-                        "The pixel map specifies the mapping from linear to 2D coordinates."
-};
 
 
 /* ================================================================
@@ -486,46 +475,38 @@ fail_cleanup:
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(impixdecodeU, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t impixdecodeU_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     COREMOD_MEMORY_PixMapDecode_U(p_instream, p_xsizeim, p_ysizeim, p_nbpix_fname, p_mapname,
                                   p_outname, p_outslice, p_reverse);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- * 7.  MILK MODULE REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__stream_pixmapdecode()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_impixdecodeU = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "impixdecodeU",
+                 .cmdkey      = "impixdecodeU",
+                 .description = "decode image stream",
+                 .description_long =
+                     "Decode a pixel map to reconstruct a 2D image from a 1D encoded stream. "
+                     "The pixel map specifies the mapping from linear to 2D coordinates." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(impixdecodeU),
+    .compute = impixdecodeU_compute,
+};

@@ -9,27 +9,8 @@
  * Uses FPS V2 framework.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "im3Dto2D",
-    .cmdkey      = "im3D_to_stream2D",
-    .description = "convert 3D image to 2D stream",
-    .description_long =
-        "Convert a static 3D image cube into a 2D shared memory stream by sequentially playing "
-        "back each slice as a frame. Useful for testing stream consumers with pre-recorded data."
-};
 
 
 /* ================================================================
@@ -99,14 +80,14 @@ static errno_t extract_slice_to_2D(IMGID *inimg, IMGID *outimg, long slice_idx)
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(im3D_to_stream2D, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t im3D_to_stream2D_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -121,9 +102,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     // Allocate output image once before the loop.
     imcreateIMGID(&outimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         if (loop_mode == 0)
         {
@@ -137,7 +118,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END imgid_free(&inimg);
+    MILK_PROCINFO_END(self)
+    imgid_free(&inimg);
     imgid_free(&outimg);
 
     DEBUG_TRACE_FEXIT();
@@ -146,28 +128,19 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__im3D_to_stream2D()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_im3D_to_stream2D = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "im3Dto2D",
+              .cmdkey      = "im3D_to_stream2D",
+              .description = "convert 3D image to 2D stream",
+              .description_long =
+                  "Convert a static 3D image cube into a 2D shared memory stream by sequentially "
+                  "playing back each slice as a frame. Useful for testing stream consumers with "
+                  "pre-recorded data." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(im3D_to_stream2D),
+    .compute = im3D_to_stream2D_compute,
+};

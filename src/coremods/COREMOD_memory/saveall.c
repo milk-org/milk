@@ -9,12 +9,11 @@
  * Uses FPS V2 framework.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "create_image.h"
@@ -22,6 +21,7 @@
 #include "image_ID.h"
 #include "image_copy.h"
 #include "list_image.h"
+#include "saveall.h"
 
 #ifdef USE_CFITSIO
 #    include "COREMOD_iofits/COREMOD_iofits.h"
@@ -40,48 +40,37 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
  *  CMD 1: imsaveallsnap (1 arg)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_snap = {
-    .fps_name         = "imsaveallsnap",
-    .cmdkey           = "imsaveallsnap",
-    .description      = "save all images in directory",
-    .description_long = "Save all images in the current process memory to FITS files on disk. Each "
-                        "image is written as a separate file."
-};
-
 static char p_dirname_snap[FUNCTION_PARAMETER_STRMAXLEN] = "dir1";
 
 #define FPS_PARAMS_snap(X) \
     X(".dirname", p_dirname_snap, FPTYPE_DIRNAME, 1, FPFLAG_DEFAULT_INPUT, "output directory")
 
-static FPS_CLI_BINDING bindings_snap[] = { FPS_PARAMS_snap(FPS_X_BINDING) };
+MILK_PARAMS_DEFINE(snap, FPS_PARAMS_snap);
 
-static const int __attribute__((unused)) nb_bindings_snap =
-    sizeof(bindings_snap) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF __attribute__((unused)) farg_snap[] = { FPS_PARAMS_snap(FPS_X_FARG) };
-
-static CLICMDDATA CLIcmddata_snap = { "", "", CLICMD_FIELDS_NOPARAM };
-
-FPS_CMDSETTINGS_INIT(snap, CLIcmddata_snap, FPS_app_info_snap)
-
-static errno_t __attribute__((unused)) compute_snap()
+static MILK_HOT errno_t snap_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     COREMOD_MEMORY_SaveAll_snapshot(p_dirname_snap);
     return RETURN_SUCCESS;
 }
+
+const MILK_RUNNABLE runnable_COREMOD_memory_imsaveallsnap = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "imsaveallsnap",
+                 .cmdkey      = "imsaveallsnap",
+                 .description = "save all images in directory",
+                 .description_long =
+                     "Save all images in the current process memory to FITS files on disk. Each "
+                     "image is written as a separate file." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(snap),
+    .compute = snap_compute,
+};
 
 
 /* ================================================================
  *  CMD 2: imsaveallseq (4 args, primary)
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "imsaveallseq",
-    .cmdkey           = "imsaveallseq",
-    .description      = "save all images, sequence",
-    .description_long = "Save all images in the current process memory to FITS files on disk. Each "
-                        "image is written as a separate file."
-};
 
 static char      p_dirname[FUNCTION_PARAMETER_STRMAXLEN]  = "dir1";
 static char      p_trigname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
@@ -94,52 +83,31 @@ static long long p_nbframes                               = 20;
     X(".semtrig", &p_semtrig, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "trigger semaphore")   \
     X(".nbframes", &p_nbframes, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "number of frames")
 
-FPS_V2_SECTION5(FPS_PARAMS)
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+MILK_PARAMS_DEFINE(sequ, FPS_PARAMS);
+
+static MILK_HOT errno_t sequ_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
     COREMOD_MEMORY_SaveAll_sequ(p_dirname, p_trigname, p_semtrig, p_nbframes);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- *  REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-
-static errno_t CLIfunction_snap(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_snap, farg_snap, &CLIcmddata_snap,
-                                        bindings_snap, nb_bindings_snap, compute_snap);
-}
-
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__saveall()
-{
-    {
-        safe_fps_fill_farg_examples(farg_snap, bindings_snap, nb_bindings_snap);
-
-        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_snap, CLIfunction_snap);
-    }
-
-    {
-        safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-        INSERT_STD_CLIREGISTERFUNC
-    }
-
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_imsaveallseq = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "imsaveallseq",
+                 .cmdkey      = "imsaveallseq",
+                 .description = "save all images, sequence",
+                 .description_long =
+                     "Save all images in the current process memory to FITS files on disk. Each "
+                     "image is written as a separate file." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(sequ),
+    .compute = sequ_compute,
+};
 
 
 /* ================================================================

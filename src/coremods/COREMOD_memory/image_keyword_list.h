@@ -12,6 +12,8 @@
 
 errno_t image_keywords_list(IMGID img);
 
-errno_t CLIADDCMD_COREMOD_memory__image_keyword_list();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_image_keyword_list;
 
 #endif

@@ -10,7 +10,9 @@
 #ifndef COREMOD_MEMORY_SHMIM_PURGE_H
 #define COREMOD_MEMORY_SHMIM_PURGE_H
 
-errno_t CLIADDCMD_COREMOD_memory__shmim_purge();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_shmimpurge;
 
 errno_t shmim_purge(const char *strfilter);
 

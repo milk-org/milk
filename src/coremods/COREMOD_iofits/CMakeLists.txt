@@ -12,40 +12,21 @@ project(lib_${LIBNAME}_project)
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
 
-add_library(${LIBNAME} SHARED ${SOURCEFILES})
-# CLIcore does not exist at this tier: reuse the include dirs of libfps
-target_include_directories(
-  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:milkfps,INCLUDE_DIRECTORIES>)
-milk_apply_extensions(${LIBNAME})
+milk_add_runnable_module(${LIBNAME} SOURCES ${SOURCEFILES} COREMOD)
+milk_add_fpsexec_stubs(${LIBNAME})
 
 # CUSTOM ===========
+# CLIcore does not exist at this tier: reuse the include dirs of libfps
 target_include_directories(
-  ${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-                    $<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME} PUBLIC m milkcomputeunit)
+  ${LIBNAME}_objs PRIVATE $<TARGET_PROPERTY:milkfps,INCLUDE_DIRECTORIES>)
 
-milk_add_static_lto(${LIBNAME})
+milk_runnable_module_usage(
+  ${LIBNAME} INCLUDES $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+  $<INSTALL_INTERFACE:include>)
 # ==================
 
-install(
-  TARGETS ${LIBNAME}
-  EXPORT milkTargets
-  DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
-
-add_milk_standalone(iofits-saveFITS savefits.c)
-add_milk_standalone(iofits-loadfits loadfits.c)
-add_milk_standalone(iofits-imgs2cube images2cube.c)
-
-get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  PROPERTY BUILDSYSTEM_TARGETS)
-foreach(_t IN LISTS _stdalones)
-  get_target_property(_type ${_t} TYPE)
-  if(_type STREQUAL "EXECUTABLE")
-    milk_link_module(${_t} ${LIBNAME})
-  endif()
-endforeach()
 
 # CUSTOM ===========
 include(CTest)

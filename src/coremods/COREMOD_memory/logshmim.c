@@ -14,21 +14,20 @@
 
 #include "ImageStreamIO/ImageStruct.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
 
@@ -45,22 +44,9 @@
 #include "stream_sem.h"
 
 #include "shmimlog_types.h"
+#include "logshmim.h"
 
 /* LIKELY/UNLIKELY macros from milk_compiler.h */
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "streamFITSlog",
-    .cmdkey      = "streamFITSlog",
-    .description = "log stream to FITS file(s)",
-    .description_long =
-        "Log shared memory image stream frames to disk as FITS files. Records every new frame "
-        "triggered by semaphore posting, with configurable logging duration and file naming."
-};
 
 
 /* ================================================================
@@ -116,7 +102,7 @@ static uint32_t writerRTprio                              = 0;
  * 4.  CUSTOM CONF SETUP / CHECK
  * ============================================================= */
 
-static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
+static MILK_COLD errno_t customCONFcheck(void)
 {
     if (dcfpsptr != NULL)
     {
@@ -164,10 +150,10 @@ static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  BINDINGS AND FARG
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(logshmim, FPS_PARAMS);
 
 
 /* save_telemetry_fits_function() is in
@@ -179,7 +165,7 @@ extern void *save_telemetry_fits_function(void *ptr);
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t logshmim_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -250,9 +236,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         printf("[%5d] aqtimekwi = %d\n", __LINE__, aqtimekwi);
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
-    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
+    if (self->rt->cmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
     {
     }
 
@@ -319,7 +305,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
             fflush(stdout);
         }
 
-        INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+        MILK_PROCINFO_LOOPSTART(self)
         {
             if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
             {
@@ -702,7 +688,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
             saveON_last = saveON;
         }
 
-        INSERT_STD_PROCINFO_COMPUTEFUNC_END
+        MILK_PROCINFO_END(self)
 
         free(array_time);
         free(array_aqtime);
@@ -718,30 +704,20 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_MEMORY__logshmim()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2_CONFCHECK(FPS_app_info, FPS_PARAMS, compute_function, customCONFcheck)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_logshmim = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "streamFITSlog",
+                 .cmdkey      = "streamFITSlog",
+                 .description = "log stream to FITS file(s)",
+                 .description_long =
+                     "Log shared memory image stream frames to disk as FITS files. Records every "
+                     "new frame triggered by semaphore posting, with configurable logging duration "
+                     "and file naming." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(logshmim),
+    .compute   = logshmim_compute,
+    .confcheck = customCONFcheck,
+};

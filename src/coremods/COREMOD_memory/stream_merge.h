@@ -14,6 +14,8 @@
 #ifndef MILK_COREMOD_MEMORY_STREAM_MERGE_H
 #define MILK_COREMOD_MEMORY_STREAM_MERGE_H
 
-errno_t CLIADDCMD_COREMOD_memory__stream_merge();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_shmimmerge;
 
 #endif // MILK_COREMOD_MEMORY_STREAM_MERGE_H

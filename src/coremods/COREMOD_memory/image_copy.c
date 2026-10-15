@@ -18,12 +18,7 @@
  * is a mismatch.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "create_image.h"
@@ -64,108 +59,89 @@ static char p_dstname[FUNCTION_PARAMETER_STRMAXLEN] = "im4";
  *  CMD 1: cp
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_cp = {
-    .fps_name    = "cp",
-    .cmdkey      = "cp",
-    .description = "copy image",
-    .description_long =
-        "Copy an image stream to a new name or location. Creates a deep copy of all pixel data and "
-        "metadata. Can also rename an existing image in the process table."
-};
+MILK_PARAMS_DEFINE(cp, FPS_PARAMS_2STR);
 
-static CLICMDDATA CLIcmddata_cp = { "", "", CLICMD_FIELDS_NOPARAM };
-
-FPS_CMDSETTINGS_INIT(cp, CLIcmddata_cp, FPS_app_info_cp)
-
-static errno_t __attribute__((unused)) compute_cp()
+static MILK_HOT errno_t cp_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     copy_image_ID(p_srcname, p_dstname, 0);
     return RETURN_SUCCESS;
 }
+
+const MILK_RUNNABLE runnable_COREMOD_memory_cp = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "cp",
+                 .cmdkey      = "cp",
+                 .description = "copy image",
+                 .description_long =
+                     "Copy an image stream to a new name or location. Creates a deep copy of all "
+                     "pixel data and metadata. Can also rename an existing image in the process "
+                     "table." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(cp),
+    .compute = cp_compute,
+};
 
 
 /* ================================================================
  *  CMD 2: mv
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_mv = {
-    .fps_name    = "mv",
-    .cmdkey      = "mv",
-    .description = "change image name",
-    .description_long =
-        "Copy an image stream to a new name or location. Creates a deep copy of all pixel data and "
-        "metadata. Can also rename an existing image in the process table."
-};
+MILK_PARAMS_DEFINE(mv, FPS_PARAMS_2STR);
 
-static CLICMDDATA CLIcmddata_mv = { "", "", CLICMD_FIELDS_NOPARAM };
-
-FPS_CMDSETTINGS_INIT(mv, CLIcmddata_mv, FPS_app_info_mv)
-
-static errno_t __attribute__((unused)) compute_mv()
+static MILK_HOT errno_t mv_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     chname_image_ID(p_srcname, p_dstname);
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- *  CMD 3: imcp2shm (primary)
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "imcp2shm",
-    .cmdkey      = "imcp2shm",
-    .description = "copy image to shared memory",
-    .description_long =
-        "Copy an image stream to a new name or location. Creates a deep copy of all pixel data and "
-        "metadata. Can also rename an existing image in the process table."
+const MILK_RUNNABLE runnable_COREMOD_memory_mv = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "mv",
+                 .cmdkey      = "mv",
+                 .description = "change image name",
+                 .description_long =
+                     "Copy an image stream to a new name or location. Creates a deep copy of all "
+                     "pixel data and metadata. Can also rename an existing image in the process "
+                     "table." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(mv),
+    .compute = mv_compute,
 };
 
-FPS_V2_SECTION5(FPS_PARAMS_2STR)
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
-{
-    DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START COREMOD_MEMORY_cp2shm(p_srcname, p_dstname);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END   DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
-}
-
 
 /* ================================================================
- *  REGISTRATION
+ *  CMD 3: imcp2shm
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+MILK_PARAMS_DEFINE(imcp2shm, FPS_PARAMS_2STR);
 
-static errno_t CLIfunction_cp(void)
+static MILK_HOT errno_t imcp2shm_compute(const MILK_RUNNABLE *self)
 {
-    return safe_fps_generic_CLIfunction(&FPS_app_info_cp, farg, &CLIcmddata_cp, my_bindings,
-                                        nb_bindings, compute_cp);
-}
-
-static errno_t CLIfunction_mv(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_mv, farg, &CLIcmddata_mv, my_bindings,
-                                        nb_bindings, compute_mv);
-}
-
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__image_copy()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC;
-
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_cp, CLIfunction_cp);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_mv, CLIfunction_mv);
-
+    DEBUG_TRACE_FSTART();
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    COREMOD_MEMORY_cp2shm(p_srcname, p_dstname);
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-#endif
+
+const MILK_RUNNABLE runnable_COREMOD_memory_imcp2shm = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "imcp2shm",
+                 .cmdkey      = "imcp2shm",
+                 .description = "copy image to shared memory",
+                 .description_long =
+                     "Copy an image stream to a new name or location. Creates a deep copy of all "
+                     "pixel data and metadata. Can also rename an existing image in the process "
+                     "table." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imcp2shm),
+    .compute = imcp2shm_compute,
+};
+
 /**
  * @brief Copy image data to a new or existing image
  *

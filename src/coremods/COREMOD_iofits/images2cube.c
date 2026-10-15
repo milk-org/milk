@@ -11,7 +11,10 @@
  * @file    images2cube.c
  */
 
-#include "CLIcore.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "milk_runnable.h"
 #include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -33,14 +36,6 @@ errno_t images_to_cube(const char *restrict img_name,
 // FPS V2
 // ==========================================
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "imgs2cube",
-    .cmdkey           = "imgs2cube",
-    .description      = "combine individual images into cube",
-    .description_long = "Assemble multiple 2D FITS files into a single 3D cube. Input files must "
-                        "have identical dimensions. The z-axis corresponds to the file sequence."
-};
-
 static char    *imgname;
 static int64_t *nbframes;
 static char    *cubename;
@@ -50,36 +45,29 @@ static char    *cubename;
     X(".nbframes", &nbframes, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "number of frames")       \
     X(".cubename", &cubename, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output cube name")
 
+MILK_PARAMS_DEFINE(images2cube, FPS_PARAMS);
 
-FPS_V2_SECTION5(FPS_PARAMS)
 
-
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t images2cube_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     return images_to_cube(imgname, *nbframes, cubename);
 }
 
+const MILK_RUNNABLE runnable_COREMOD_iofits_images2cube = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "imgs2cube",
+                 .cmdkey           = "imgs2cube",
+                 .description      = "combine individual images into cube",
+                 .description_long = "Assemble multiple 2D FITS files into a single 3D cube. Input "
+                                     "files must have identical dimensions. The z-axis corresponds "
+                                     "to the file sequence." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(images2cube),
+    .compute = images2cube_compute,
+};
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-// Register CLI command(s)
-errno_t CLIADDCMD_COREMOD_iofits__images2cube()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+EXPORT_FPSEXEC(milk, "iofits-imgs2cube", runnable_COREMOD_iofits_images2cube);
 
 
 // ==========================================

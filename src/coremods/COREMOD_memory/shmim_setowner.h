@@ -7,7 +7,11 @@
  * @brief Set stream owner PID
  */
 
-errno_t CLIADDCMD_COREMOD_memory__shmim_setowner();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_shmimsetowncreator;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_shmimsetowncurrent;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_shmimsetowninit;
 
 imageID shmim_setowner_creator(const char *name);
 

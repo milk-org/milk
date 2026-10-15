@@ -10,12 +10,7 @@
  */
 
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "create_image.h"
@@ -25,20 +20,6 @@
 
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "timeutils.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "streamdelay",
-    .cmdkey      = "streamdelay",
-    .description = "delay input stream to output stream",
-    .description_long =
-        "Introduce a configurable frame delay on an image stream. Buffers incoming frames in a "
-        "circular buffer and outputs frames from N steps earlier. Useful for simulating latency."
-};
 
 
 /* ================================================================
@@ -84,7 +65,7 @@ static uint64_t statuskkout                             = 0;
  * 4.  COMPUTATION LOGIC
  * ============================================================= */
 
-static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
+static MILK_COLD errno_t customCONFcheck()
 {
     if (dcfpsptr != NULL)
     {
@@ -204,17 +185,12 @@ static errno_t streamdelay(IMGID            inimg,
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  RUNNABLE
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(streamdelay_fps, FPS_PARAMS);
 
-
-/* ================================================================
- * 6.  COMPUTE WRAPPER
- * ============================================================= */
-
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t streamdelay_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -250,8 +226,8 @@ static MILK_HOT errno_t compute_function()
     list_image_ID();
     int status = 0;
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     streamdelay(inimg, outimg, bufferimg, timeinarray, warray, &status);
     if (status != 0)
@@ -259,7 +235,7 @@ static MILK_HOT errno_t compute_function()
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     free(timeinarray);
     free(warray);
@@ -271,32 +247,18 @@ static MILK_HOT errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- * 7.  MILK MODULE REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__streamdelay()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2_CONFCHECK(FPS_app_info, FPS_PARAMS, compute_function, customCONFcheck)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_streamdelay = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "streamdelay",
+                 .cmdkey      = "streamdelay",
+                 .description = "delay input stream to output stream",
+                 .description_long =
+                     "Introduce a configurable frame delay on an image stream. Buffers incoming "
+                     "frames in a circular buffer and outputs frames from N steps earlier. Useful "
+                     "for simulating latency." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(streamdelay_fps),
+    .compute   = streamdelay_compute,
+    .confcheck = customCONFcheck,
+};
+EXPORT_FPSEXEC(milk, "mem-streamdelay", runnable_COREMOD_memory_streamdelay);

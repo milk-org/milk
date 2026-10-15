@@ -12,12 +12,7 @@
 #include <malloc.h>
 #include <sys/mman.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_ID.h"
@@ -31,19 +26,6 @@
  * Removes SHM file if applicable.
  */
 errno_t delete_image_ID(const char *__restrict imname, int errmode);
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "rmimg",
-    .cmdkey           = "rm",
-    .description      = "remove image",
-    .description_long = "Remove a single image from the current process memory. Frees the local "
-                        "buffer. If the image is shared, only the local mapping is removed."
-};
 
 
 /* ================================================================
@@ -75,54 +57,44 @@ static int64_t errmode_ptr                          = 0;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(delete_image, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t delete_image_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START IMGID img = imgid_make_from_name(imname);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    IMGID img = imgid_make_from_name(imname);
     FUNC_CHECK_RETURN(delete_image_IMGID(&img, (int) errmode_ptr));
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__delete_image()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_delete_image = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "rmimg",
+                 .cmdkey           = "rm",
+                 .description      = "remove image",
+                 .description_long = "Remove a single image from the current process memory. Frees "
+                                     "the local buffer. If the image is shared, only the local "
+                                     "mapping is removed." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(delete_image),
+    .compute = delete_image_compute,
+};
 
 
 /* ================================================================

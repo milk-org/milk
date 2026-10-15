@@ -7,7 +7,9 @@
  * @brief Paste two 2D streams
  */
 
-errno_t CLIADDCMD_COREMOD_memory__stream_paste();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_streampaste;
 
 imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                                    const char *IDstream1_name,

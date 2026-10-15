@@ -7,26 +7,13 @@
  * @brief Image slicenormalize module
  */
 
-#include "ImageStreamIO/ImageStruct.h"
 #include <math.h>
+#include <stdint.h>
+#include <stdlib.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "libmilkcommon/pixel_dispatch.h"
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "slicenorm",
-    .cmdkey           = "normalizeslice",
-    .description      = "image normalize over mask by slice",
-    .description_long = "Normalize each slice of a 3D image cube using a mask. For each slice, "
-                        "compute the weighted mean over the mask region and divide. Produces a "
-                        "cube where each slice has unit mean within the mask."
-};
 
 // input image names
 static char     inimname[FUNCTION_PARAMETER_STRMAXLEN];
@@ -299,10 +286,10 @@ errno_t image_slicenormalize(IMGID   inimg,
 }
 
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(image_slicenormalize, FPS_PARAMS);
 
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_slicenormalize_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -330,9 +317,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     double *__restrict avarray      = NULL;
     double *__restrict maskcntarray = NULL;
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
         if (inimg.ID != -1)
@@ -380,7 +367,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END if (normarray) free(normarray);
+    MILK_PROCINFO_END(self)
+    if (normarray)
+    {
+        free(normarray);
+    }
     if (avarray)
     {
         free(avarray);
@@ -399,22 +390,17 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     return RETURN_SUCCESS;
 }
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-// Register function in CLI
-errno_t CLIADDCMD_COREMOD_arith__image_slicenormalize()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_arith_image_slicenormalize = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "slicenorm",
+              .cmdkey           = "normalizeslice",
+              .description      = "image normalize over mask by slice",
+              .description_long = "Normalize each slice of a 3D image cube using a mask. For each "
+                                  "slice, compute the weighted mean over the mask region and "
+                                  "divide. Produces a cube where each slice has unit mean within "
+                                  "the mask." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_slicenormalize),
+    .compute = image_slicenormalize_compute,
+};
+EXPORT_FPSEXEC(milk, "arith-slicenormalize", runnable_COREMOD_arith_image_slicenormalize);

@@ -13,27 +13,12 @@
  * Uses FPS V2 framework.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "shmimmerge",
-    .cmdkey           = "shmimmerge",
-    .description      = "Merge N in stream into out stream",
-    .description_long = "Merge multiple 2D image streams into a single output stream by tiling "
-                        "them side-by-side or stacking them into a 3D cube."
-};
 
 
 /* ================================================================
@@ -56,17 +41,12 @@ static int32_t ptr_n_input                                   = 2;
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  RUNNABLE
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(shmimmerge, FPS_PARAMS);
 
-
-/* ================================================================
- * 6.  COMPUTE WRAPPER
- * ============================================================= */
-
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t shmimmerge_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -126,11 +106,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         }
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
     processinfo->triggermode = PROCESSINFO_TRIGGERMODE_IMMEDIATE;
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         struct timespec t_spec1;
         struct timespec t_spec2;
@@ -153,7 +133,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
         processinfo_update_output_stream(processinfo, img_out.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     for (int ii = 0; ii < n_input; ++ii)
     {
@@ -169,30 +149,15 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- * 7.  MILK MODULE REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__stream_merge()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_shmimmerge = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "shmimmerge",
+                 .cmdkey      = "shmimmerge",
+                 .description = "Merge N in stream into out stream",
+                 .description_long =
+                     "Merge multiple 2D image streams into a single output stream by tiling "
+                     "them side-by-side or stacking them into a 3D cube." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(shmimmerge),
+    .compute = shmimmerge_compute,
+};

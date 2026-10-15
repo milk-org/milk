@@ -17,6 +17,8 @@ errno_t mk_reim_from_complex(const char *in_name,
 
 errno_t mk_reim_from_complex_IMGID(IMGID *imgin, IMGID *imgre, IMGID *imgim);
 
-errno_t CLIADDCMD_COREMOD__mk_reim_from_complex();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_image_mk_reim_from_complex;
 
 #endif

@@ -19,12 +19,7 @@
  */
 
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "compute_image_memory.h"
@@ -54,41 +49,15 @@ errno_t list_variable_ID_file(const char *fname);
  *  CMD 2: listim (0 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_listim = {
-    .fps_name         = "listim",
-    .cmdkey           = "listim",
-    .description      = "list images in memory",
-    .description_long = "List all images currently loaded in the process memory space, showing "
-                        "name, dimensions, data type, and shared memory status."
-};
+MILK_RUNNABLE_RT_DEFINE(listim);
 
-static CLICMDDATA CLIcmddata_listim = { "", "", CLICMD_FIELDS_NOPARAM };
-
-FPS_CMDSETTINGS_INIT(listim, CLIcmddata_listim, FPS_app_info_listim)
-
-static errno_t __attribute__((unused)) compute_listim()
+static MILK_HOT errno_t listim_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
+
+    // No CLI option sets these yet
     int json_mode      = 0;
     int porcelain_mode = 0;
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-
-    for (long arg = 1; arg < data.cmdNBarg; arg++)
-    {
-        if (data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_STRING ||
-            data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING)
-        {
-            if (strcmp(data.cmdargtoken[arg].val.string, "--json") == 0)
-            {
-                json_mode = 1;
-            }
-            if (strcmp(data.cmdargtoken[arg].val.string, "--porcelain") == 0)
-            {
-                porcelain_mode = 1;
-            }
-        }
-    }
-#endif
 
     if (json_mode)
     {
@@ -105,25 +74,18 @@ static errno_t __attribute__((unused)) compute_listim()
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- *  REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-
-static errno_t CLIfunction_listim(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_listim, NULL, &CLIcmddata_listim, NULL, 0,
-                                        compute_listim);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__list_image()
-{
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_listim, CLIfunction_listim);
-    return RETURN_SUCCESS;
-}
-#endif /* MILK_NO_CLI */
+const MILK_RUNNABLE runnable_COREMOD_memory_listim = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "listim",
+                 .cmdkey      = "listim",
+                 .description = "list images in memory",
+                 .description_long =
+                     "List all images currently loaded in the process memory space, showing "
+                     "name, dimensions, data type, and shared memory status." },
+    .srcfile = __FILE__,
+    .compute = listim_compute,
+    .rt      = &listim_rt,
+};
 
 errno_t list_image_ID_ofp(FILE *fo)
 {

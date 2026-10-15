@@ -12,29 +12,11 @@
 #include <malloc.h>
 #include <sys/mman.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "computeunit.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_ID.h"
 #include "list_image.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "rmshmim",
-    .cmdkey           = "rmshmim",
-    .description      = "remove shared image and files",
-    .description_long = "Destroy a shared memory image stream and its associated files in "
-                        "/dev/shm. Removes the stream from all connected processes."
-};
 
 
 /* ================================================================
@@ -81,50 +63,39 @@ errno_t destroy_shared_image_ID(const char *__restrict imname)
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(delete_sharedmem_image, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t delete_sharedmem_image_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START FUNC_CHECK_RETURN(destroy_shared_image_ID(imname));
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    FUNC_CHECK_RETURN(destroy_shared_image_ID(imname));
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__delete_sharedmem_image()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_delete_sharedmem_image = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app = { .fps_name         = "rmshmim",
+             .cmdkey           = "rmshmim",
+             .description      = "remove shared image and files",
+             .description_long = "Destroy a shared memory image stream and its associated files in "
+                                 "/dev/shm. Removes the stream from all connected processes." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(delete_sharedmem_image),
+    .compute = delete_sharedmem_image_compute,
+};
