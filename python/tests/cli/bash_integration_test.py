@@ -107,7 +107,7 @@ def test_builtin_loaded_and_commands_registered():
         for b in milkcall milkget milkset milkcalc milktest milkexists milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog; do
             [[ "$(type -t "$b")" == "builtin" ]]
         done
-        for f in @ @calc @test @get @set @exists @running @waitfor @waitany @grab @defer @on @source @server @log @h @hb @hc @hm @hf @streamcat @streamwrite @unload; do
+        for f in @ @calc @test @get @set @exists @running @waitfor @waitany @grab @defer @on @source @server @log @h @hb @hc @hm @hf @streamcat @streamwrite @batch @pipe @unload; do
             [[ "$(type -t "$f")" == "function" ]]
         done
         [[ "$(type -t @mk2Dim)" == "function" ]]
@@ -1493,3 +1493,42 @@ def test_on_reactive_watchers_once_throttle_multitarget_stop(tmp_path: Path):
         """)
     assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
     assert "ON_WATCHERS_OK" in res.stdout
+
+
+def test_batch_and_pipe_single_roundtrip(tmp_path: Path):
+    res = _run_bash("""
+        # 1. @batch with semicolon-separated commands and expressions in a single IPC call
+        @batch "mk2Dim @S:b_im 4 4; b_im = 5.0; b_im += 3.0"
+        [[ "$(@calc 'itot(b_im)')" == "128" ]]
+
+        # 2. @batch reading multi-line script from heredoc (stdin) with _ propagation
+        @batch <<'EOF'
+mk2Dim @S:b_im2 4 4
+_ = 2.0
+_ *= 6.0
+EOF
+        [[ "$(@calc 'itot(b_im2)')" == "192" ]]
+
+        # 3. @pipe chaining stages with |> and automatic _ propagation + dcvar sync
+        @pipe "mk2Dim @S:p_im 4 4 |> _ = 4.0 |> _ *= 2.5 |> imstats _" >/dev/null
+        [[ "${imsize0}" == "4" ]]
+        [[ "$(@calc 'itot(p_im)')" == "160" ]]
+        p_out="$(@pipe "p_im += 1.0 |> itot(_)")"
+        [[ "${p_out}" == "176" ]]
+
+        echo "BATCH_PIPE_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "BATCH_PIPE_OK" in res.stdout
+
+    # 4. Native unquoted |> pipeline operator inside milk-cli / .milk script
+    res_cli = _run_milk_cli(
+        """
+        mk2Dim @S:cli_pim 4 4 |> _ = 3.0 |> _ += 7.0
+        echo "CLI_PIPE_TOT=$(@calc 'itot(cli_pim)')"
+        """,
+        tmp_path,
+        mode="script",
+    )
+    assert res_cli.returncode == 0, f"stdout={res_cli.stdout}\nstderr={res_cli.stderr}"
+    assert "CLI_PIPE_TOT=160" in res_cli.stdout

@@ -397,6 +397,8 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
     return 0;
 }
 
+static int milk_server_batch_or_pipe(int argc, char **argv);
+
 /**
  * @brief Dispatch a parsed `argv[]` command vector to built-ins, entities, or `data.cmd[]`.
  *
@@ -424,6 +426,10 @@ int milk_server_dispatch_argv(int argc, char **argv)
     if (strcmp(cmdname, "streamwrite") == 0)
     {
         return milk_server_streamwrite(argc, argv);
+    }
+    if (strcmp(cmdname, "batch") == 0 || strcmp(cmdname, "pipe") == 0)
+    {
+        return milk_server_batch_or_pipe(argc, argv);
     }
 
     /* Direct entity path invocation (@s.im.xsize, @s.im.kw.KEY=val, @f.fps.param=val) */
@@ -673,6 +679,442 @@ static int try_exec_entity_lhs_assignment(const char *expr, int *out_rc)
         *out_rc = (milk_shm_prop_set(lhs, exp_rhs, NULL) == 0) ? 0 : 1;
     }
     return 1;
+}
+
+static void substitute_underscore_token(const char *in,
+                                        const char *last_img,
+                                        char       *out,
+                                        size_t      outsz)
+{
+    if (last_img == NULL || last_img[0] == '\0')
+    {
+        snprintf(out, outsz, "%s", in);
+        return;
+    }
+    size_t pos   = 0;
+    size_t ilen  = strlen(in);
+    size_t llen  = strlen(last_img);
+    int    in_sq = 0;
+
+    for (size_t i = 0; i < ilen && pos + 1 < outsz;)
+    {
+        if (in[i] == '\'')
+        {
+            in_sq = !in_sq;
+        }
+        if (!in_sq && in[i] == '_')
+        {
+            int prev_ok = (i == 0) || (!isalnum((unsigned char) in[i - 1]) && in[i - 1] != '_' &&
+                                       in[i - 1] != '.');
+            int next_ok = (i + 1 >= ilen) || (!isalnum((unsigned char) in[i + 1]) &&
+                                              in[i + 1] != '_' && in[i + 1] != '.');
+            if (prev_ok && next_ok && pos + llen < outsz)
+            {
+                memcpy(out + pos, last_img, llen);
+                pos += llen;
+                i++;
+                continue;
+            }
+        }
+        out[pos++] = in[i++];
+    }
+    out[pos] = '\0';
+}
+
+static int exec_batch_calc_expr(const char *expr, int is_test, char *last_img, size_t last_img_sz)
+{
+    int rc = 0;
+    if (is_test || !try_exec_entity_lhs_assignment(expr, &rc))
+    {
+        char expanded[8192];
+        milk_server_expand_entities_in_expr(expr, expanded, sizeof(expanded));
+        int eval_rc = 2;
+        cli_calc_eval_bash(expanded, is_test, &eval_rc);
+        rc = eval_rc;
+        if (rc == 0 && !is_test)
+        {
+            const char *p = expanded;
+            while (*p == ' ' || *p == '\t')
+            {
+                p++;
+            }
+            char   lhs[128];
+            size_t l = 0;
+            while (p[l] != '\0' && (isalnum((unsigned char) p[l]) || p[l] == '_') &&
+                   l + 1 < sizeof(lhs))
+            {
+                lhs[l] = p[l];
+                l++;
+            }
+            lhs[l] = '\0';
+            if (l > 0 && image_ID(lhs, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+            {
+                snprintf(last_img, last_img_sz, "%s", lhs);
+            }
+        }
+    }
+    return rc;
+}
+
+static int tokenize_step_line(const char *step,
+                              char      **argv_out,
+                              int         max_args,
+                              char       *arena,
+                              size_t      arena_sz)
+{
+    int         argc = 0;
+    size_t      apos = 0;
+    const char *p    = step;
+
+    while (*p != '\0' && argc < max_args)
+    {
+        while (*p == ' ' || *p == '\t')
+        {
+            p++;
+        }
+        if (*p == '\0' || *p == '#')
+        {
+            break;
+        }
+        argv_out[argc++] = arena + apos;
+        int in_sq        = 0;
+        int in_dq        = 0;
+        int br_depth     = 0;
+        while (*p != '\0' && apos + 1 < arena_sz)
+        {
+            if (!in_sq && !in_dq && br_depth == 0 && (*p == ' ' || *p == '\t'))
+            {
+                break;
+            }
+            if (*p == '\\' && !in_sq && p[1] != '\0')
+            {
+                p++;
+                arena[apos++] = *p++;
+                continue;
+            }
+            if (*p == '\'' && !in_dq)
+            {
+                in_sq = !in_sq;
+                p++;
+                continue;
+            }
+            if (*p == '"' && !in_sq)
+            {
+                in_dq = !in_dq;
+                p++;
+                continue;
+            }
+            if (!in_sq && !in_dq)
+            {
+                if (*p == '[')
+                {
+                    br_depth++;
+                }
+                else if (*p == ']' && br_depth > 0)
+                {
+                    br_depth--;
+                }
+            }
+            arena[apos++] = *p++;
+        }
+        arena[apos++] = '\0';
+    }
+    return argc;
+}
+
+static int exec_single_batch_step(const char *raw_step, char *last_img, size_t last_img_sz)
+{
+    while (*raw_step == ' ' || *raw_step == '\t' || *raw_step == '\r' || *raw_step == '\n')
+    {
+        raw_step++;
+    }
+    if (*raw_step == '\0' || *raw_step == '#')
+    {
+        return 0;
+    }
+
+    char step_buf[4096];
+    substitute_underscore_token(raw_step, last_img, step_buf, sizeof(step_buf));
+    size_t slen = strlen(step_buf);
+    while (slen > 0 && (step_buf[slen - 1] == ' ' || step_buf[slen - 1] == '\t' ||
+                        step_buf[slen - 1] == '\r' || step_buf[slen - 1] == '\n'))
+    {
+        step_buf[--slen] = '\0';
+    }
+    if (slen == 0)
+    {
+        return 0;
+    }
+
+    const char *s = step_buf;
+    if (s[0] == '@' || s[0] == ',')
+    {
+        s++;
+    }
+    if (s[0] == ' ' || s[0] == '\t')
+    {
+        while (*s == ' ' || *s == '\t')
+        {
+            s++;
+        }
+        return exec_batch_calc_expr(s, 0, last_img, last_img_sz);
+    }
+    if (strncmp(s, "calc", 4) == 0 && (s[4] == ' ' || s[4] == '\t'))
+    {
+        s += 4;
+        while (*s == ' ' || *s == '\t')
+        {
+            s++;
+        }
+        return exec_batch_calc_expr(s, 0, last_img, last_img_sz);
+    }
+    if (strncmp(s, "test", 4) == 0 && (s[4] == ' ' || s[4] == '\t'))
+    {
+        s += 4;
+        while (*s == ' ' || *s == '\t')
+        {
+            s++;
+        }
+        return exec_batch_calc_expr(s, 1, last_img, last_img_sz);
+    }
+
+    char *s_argv[64];
+    char  arena[4096];
+    int   s_argc = tokenize_step_line(step_buf, s_argv, 64, arena, sizeof(arena));
+    if (s_argc <= 0)
+    {
+        return 0;
+    }
+
+    const char *w0 = s_argv[0];
+    if (w0[0] == '@' || w0[0] == ',')
+    {
+        w0++;
+    }
+
+    if (strcmp(w0, "set") == 0 && s_argc >= 2)
+    {
+        return (milk_shm_prop_set(s_argv[1], (s_argc >= 3) ? s_argv[2] : NULL,
+                                  (s_argc >= 4) ? s_argv[3] : NULL) == 0)
+                   ? 0
+                   : 1;
+    }
+    if (strcmp(w0, "get") == 0 && s_argc >= 2)
+    {
+        char val[16384];
+        if (milk_shm_prop_get(s_argv[1], val, sizeof(val)) == 0)
+        {
+            printf("%s\n", val);
+            return 0;
+        }
+        return 1;
+    }
+
+    int ambig  = 0;
+    int cmdidx = resolve_milk_cmd_index(w0, &ambig);
+    if (cmdidx < 0 && !ambig && strcmp(w0, "streamcat") != 0 && strcmp(w0, "streamwrite") != 0 &&
+        (strchr(step_buf, '=') != NULL || strchr(step_buf, '(') != NULL ||
+         strchr(step_buf, '+') != NULL || strchr(step_buf, '-') != NULL ||
+         strchr(step_buf, '*') != NULL || strchr(step_buf, '/') != NULL))
+    {
+        return exec_batch_calc_expr(s, 0, last_img, last_img_sz);
+    }
+
+    int rc = milk_server_dispatch_argv(s_argc, s_argv);
+    if (rc == 0)
+    {
+        for (int k = 1; k < s_argc; k++)
+        {
+            IMGID tmpid = imgid_make_from_name(s_argv[k]);
+            if (!tmpid.stream_parse_error && tmpid.name[0] != '\0' &&
+                image_ID(tmpid.name, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+            {
+                snprintf(last_img, last_img_sz, "%s", tmpid.name);
+            }
+            imgid_free(&tmpid);
+        }
+    }
+    return rc;
+}
+
+static int milk_server_batch_or_pipe(int argc, char **argv)
+{
+    char  *script = NULL;
+    size_t slen   = 0;
+
+    if (argc <= 1)
+    {
+        if (isatty(STDIN_FILENO))
+        {
+            return 0;
+        }
+        size_t cap = 4096;
+        script     = (char *) malloc(cap);
+        if (script == NULL)
+        {
+            return 1;
+        }
+        ssize_t nr;
+        while ((nr = read(STDIN_FILENO, script + slen, cap - slen - 1)) > 0)
+        {
+            slen += (size_t) nr;
+            if (slen + 1024 >= cap)
+            {
+                cap *= 2;
+                char *ns = (char *) realloc(script, cap);
+                if (ns == NULL)
+                {
+                    free(script);
+                    return 1;
+                }
+                script = ns;
+            }
+        }
+        script[slen] = '\0';
+    }
+    else if (argc == 2)
+    {
+        script = strdup(argv[1]);
+        slen   = (script != NULL) ? strlen(script) : 0;
+    }
+    else
+    {
+        int    has_sep_tok = 0;
+        size_t cap         = 64;
+        for (int i = 1; i < argc; i++)
+        {
+            cap += strlen(argv[i]) + 4;
+            if (strcmp(argv[i], "|>") == 0 || strcmp(argv[i], ";") == 0)
+            {
+                has_sep_tok = 1;
+            }
+        }
+        script = (char *) malloc(cap);
+        if (script == NULL)
+        {
+            return 1;
+        }
+        int multi_stage_args =
+            (!has_sep_tok && (strchr(argv[1], ' ') != NULL || strchr(argv[1], '=') != NULL));
+        for (int i = 1; i < argc; i++)
+        {
+            if (has_sep_tok && (strcmp(argv[i], "|>") == 0 || strcmp(argv[i], ";") == 0))
+            {
+                memcpy(script + slen, "; ", 2);
+                slen += 2;
+            }
+            else
+            {
+                if (i > 1)
+                {
+                    if (multi_stage_args)
+                    {
+                        memcpy(script + slen, "; ", 2);
+                        slen += 2;
+                    }
+                    else
+                    {
+                        script[slen++] = ' ';
+                    }
+                }
+                size_t l = strlen(argv[i]);
+                memcpy(script + slen, argv[i], l);
+                slen += l;
+            }
+        }
+        script[slen] = '\0';
+    }
+
+    if (script == NULL)
+    {
+        return 1;
+    }
+
+    char last_img[256] = "";
+    long vidx_last     = variable_ID("_last_img");
+    if (vidx_last != -1 && data.core.variable[vidx_last].type == 2)
+    {
+        snprintf(last_img, sizeof(last_img), "%s", data.core.variable[vidx_last].value.s);
+    }
+
+    int    rc       = 0;
+    int    in_sq    = 0;
+    int    in_dq    = 0;
+    int    br_depth = 0;
+    size_t seg_st   = 0;
+
+    for (size_t i = 0; i <= slen; i++)
+    {
+        char c       = script[i];
+        int  sep_len = 0;
+
+        if (c == '\0')
+        {
+            sep_len = 1;
+        }
+        else if (c == '\\' && !in_sq && i + 1 < slen)
+        {
+            i++;
+            continue;
+        }
+        else if (c == '\'' && !in_dq)
+        {
+            in_sq = !in_sq;
+        }
+        else if (c == '"' && !in_sq)
+        {
+            in_dq = !in_dq;
+        }
+        else if (!in_sq && !in_dq)
+        {
+            if (c == '[')
+            {
+                br_depth++;
+            }
+            else if (c == ']' && br_depth > 0)
+            {
+                br_depth--;
+            }
+            else if (br_depth == 0)
+            {
+                if (c == '\n' || c == ';')
+                {
+                    sep_len = 1;
+                }
+                else if (c == '|' && script[i + 1] == '>')
+                {
+                    sep_len = 2;
+                }
+            }
+        }
+
+        if (sep_len > 0)
+        {
+            size_t seglen = i - seg_st;
+            char  *seg    = (char *) malloc(seglen + 1);
+            if (seg != NULL)
+            {
+                memcpy(seg, script + seg_st, seglen);
+                seg[seglen] = '\0';
+                rc          = exec_single_batch_step(seg, last_img, sizeof(last_img));
+                free(seg);
+            }
+            if (rc != 0 || c == '\0')
+            {
+                break;
+            }
+            i += (size_t) (sep_len - 1);
+            seg_st = i + 1;
+        }
+    }
+
+    if (last_img[0] != '\0')
+    {
+        create_variable_string_ID("_last_img", last_img);
+    }
+
+    free(script);
+    return rc;
 }
 
 /**

@@ -54,7 +54,7 @@
  */
 static int drain_stdin_to_memfd(int argc, char **argv)
 {
-    if (argc < 2 || isatty(STDIN_FILENO))
+    if (argc < 1 || isatty(STDIN_FILENO))
     {
         return -1;
     }
@@ -63,7 +63,9 @@ static int drain_stdin_to_memfd(int argc, char **argv)
     {
         c0++;
     }
-    if (strcmp(c0, "streamwrite") != 0)
+    int is_sw    = (strcmp(c0, "streamwrite") == 0 && argc >= 2);
+    int is_batch = ((strcmp(c0, "batch") == 0 || strcmp(c0, "pipe") == 0) && argc == 1);
+    if (!is_sw && !is_batch)
     {
         return -1;
     }

@@ -746,6 +746,51 @@ static int try_translate_interactive_word(const char *firstword,
     return 0;
 }
 
+static int has_unquoted_pipe_op(const char *s, size_t len)
+{
+    int in_sq  = 0;
+    int in_dq  = 0;
+    int pdepth = 0;
+    for (size_t i = 0; i + 1 < len; i++)
+    {
+        char c = s[i];
+        if (c == '\\' && !in_sq)
+        {
+            i++;
+            continue;
+        }
+        if (c == '\'' && !in_dq)
+        {
+            in_sq = !in_sq;
+            continue;
+        }
+        if (c == '"' && !in_sq)
+        {
+            in_dq = !in_dq;
+            continue;
+        }
+        if (in_sq || in_dq)
+        {
+            continue;
+        }
+        if (c == '(' && i > 0 && s[i - 1] == '$')
+        {
+            pdepth++;
+            continue;
+        }
+        if (c == ')' && pdepth > 0)
+        {
+            pdepth--;
+            continue;
+        }
+        if (pdepth == 0 && c == '|' && s[i + 1] == '>')
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy, sbuf_t *out)
 {
     const char *sigil  = get_sigil();
@@ -805,6 +850,33 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
     }
     size_t      slen = end - i;
     const char *s    = stmt + i;
+
+    /* 0. Unquoted '|>' pipeline operator -> single-round-trip '@pipe "..."' */
+    if (has_unquoted_pipe_op(s, slen))
+    {
+        size_t      poff = 0;
+        const char *ps   = s;
+        if (slen > siglen + 5 && strncmp(s, sigil, siglen) == 0 &&
+            strncmp(s + siglen, "pipe", 4) == 0 && isspace((unsigned char) s[siglen + 4]))
+        {
+            poff = siglen + 4;
+        }
+        else if (slen > 6 && strncmp(s, "@pipe", 5) == 0 && isspace((unsigned char) s[5]))
+        {
+            poff = 5;
+        }
+        while (poff < slen && (s[poff] == ' ' || s[poff] == '\t'))
+        {
+            poff++;
+        }
+        ps = s + poff;
+        sbuf_append_str(out, sigil);
+        sbuf_append_str(out, "pipe \"");
+        sbuf_append_dq_escaped(out, ps, slen - poff);
+        sbuf_append_ch(out, '"');
+        sbuf_append_mem(out, stmt + end, len - end);
+        return;
+    }
 
     /* 1. Shorthand '@ [-v <var>] <expr>' calculator statement */
     if ((slen > siglen && strncmp(s, sigil, siglen) == 0 &&
@@ -1027,6 +1099,11 @@ static void translate_line(const char *line, size_t len, int allow_legacy, sbuf_
         else if (c == '|' && i + 1 < n && s[i + 1] == '|')
         {
             sep_len = 2;
+        }
+        else if (c == '|' && i + 1 < n && s[i + 1] == '>')
+        {
+            i++;
+            continue;
         }
         else if (c == '|')
         {

@@ -554,13 +554,15 @@ function ${MILKCLI_SIGIL}hm          { milkcall hm \"\$@\"; }
 function ${MILKCLI_SIGIL}hf          { milkcall hf \"\$@\"; }
 function ${MILKCLI_SIGIL}streamcat   { milkcall streamcat \"\$@\"; }
 function ${MILKCLI_SIGIL}streamwrite { milkcall streamwrite \"\$@\"; }
+function ${MILKCLI_SIGIL}batch       { milkcall batch \"\$@\"; }
+function ${MILKCLI_SIGIL}pipe        { milkcall pipe \"\$@\"; }
 function ${MILKCLI_SIGIL}unload      { _milk_unload_impl \"\$@\"; }
 "
 
 # ---------------------------------------------------------------------------
 # 7. Pre-register all @<cmd> shims & external symlink farm (libexec/milk-bin)
 # ---------------------------------------------------------------------------
-_MILK_CMD_COUNT=23
+_MILK_CMD_COUNT=25
 __milk_setup_commands() {
     local cmd_list="${MILK_INSTALLDIR}/share/milk/milk-commands.list"
     if [[ ! -f "${cmd_list}" \
@@ -581,7 +583,7 @@ __milk_setup_commands() {
             [[ -z "${cmd}" ]] && continue
             # Skip core primitives, shell builtins, REPL-only commands, and internal help topics
             case "${cmd}" in
-                calc|test|get|set|exists|running|waitfor|waitany|grab|defer|on|source|server|log|h|hb|hc|hm|hf|streamcat|streamwrite|unload|\
+                calc|test|get|set|exists|running|waitfor|waitany|grab|defer|on|source|server|log|h|hb|hc|hm|hf|streamcat|streamwrite|batch|pipe|unload|\
                 cd|pwd|echo|printf|read|shift|export|unset|vars|alias|unalias|aliases|time|watch|exit|quit|exitCLI|\
                 history|searchhist|fhist|ghistory|lhistory|savehistory|savescript|setprompt|bookmark|sessionlog|synhl|syndiag|cliindent|showmatch|helprl|fhelp|fparam|\
                 help|help-*|list-streams|list-fps|fpsset)

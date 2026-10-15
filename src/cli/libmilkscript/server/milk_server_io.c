@@ -145,10 +145,10 @@ static size_t complete_commands(const char *prefix, const char *sigil, char *out
     size_t blen = strlen(bare);
 
     static const char *const core_cmds[] = {
-        "h",      "hb",       "hc",      "hm",       "hf",      "get",       "set",
-        "calc",   "test",     "exists",  "running",  "waitfor", "waitany",   "grab",
-        "defer",  "on",       "source",  "server",   "log",     "streamcat", "streamwrite",
-        "unload", "procstat", "procctl", "procwait", NULL
+        "h",     "hb",   "hc",     "hm",       "hf",      "get",       "set",
+        "calc",  "test", "exists", "running",  "waitfor", "waitany",   "grab",
+        "defer", "on",   "source", "server",   "log",     "streamcat", "streamwrite",
+        "batch", "pipe", "unload", "procstat", "procctl", "procwait",  NULL
     };
     for (int i = 0; core_cmds[i] != NULL; i++)
     {
