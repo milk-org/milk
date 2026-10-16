@@ -148,10 +148,8 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ["mem.mk2Dim _slicetest 64 64", "mem.listim _slicetest"],
     ["mem.mk2Dim _slicetest 64 64", "@ _sliceout = _slicetest[0:9,0:9] + 0.0"],
     ["mem.mk2Dim _slicetest 64 64", "@ _sliceout2 = _slicetest[*,*] + 0.0"],
-    pytest.param(["mem.mk2Dim _slicetest 64 64", "@ _sliceout3 = _slicetest[*,-*] + 0.0"],
-                 marks=pytest.mark.xfail(strict=True, reason="calc: documented axis flip [*,-*] rejected")),
-    pytest.param(["mem.mk2Dim _slicetest 64 64", "@ _sliceout4 = _slicetest[0:63::2,*] + 0.0"],
-                 marks=pytest.mark.xfail(strict=True, reason="calc: documented stride [a:b::s] rejected")),
+    ["mem.mk2Dim _slicetest 64 64", "@ _sliceout3 = _slicetest[*,-*] + 0.0"],
+    ["mem.mk2Dim _slicetest 64 64", "@ _sliceout4 = _slicetest[0:63::2,*] + 0.0"],
     # --- Section 33: Alias system (standard bash alias name=val) ---
     ['alias _testalias="echo alias_works"', "_testalias", "unalias _testalias"],
     ["unalias _no_such_alias_xyz"],

@@ -26,8 +26,8 @@
  *   "*"          full axis, step +1
  *   "-*"         full axis, step -1 (flip)
  *   "start:end"  inclusive range, step +1
- *   "start:end:step"   with stride
- *   "start:end:stepb"  with binning
+ *   "start:end:step"   with stride (also "start:end::step")
+ *   "start:end:stepb"  with binning (also "start:end::stepb")
  *   ""           empty = full axis
  *
  * Negative start/end values are kept as-is;
@@ -114,13 +114,21 @@ static int parse_one_axis(const char *spec, IMGID_SLICE *s, int axis)
         return 0;
     }
 
-    if (ncolon == 2)
+    if (ncolon == 2 || ncolon == 3)
     {
-        /* "start:end:step[b]" */
+        /* "start:end:step[b]" or documented "start:end::step[b]" */
         char *c1 = strchr(buf, ':');
         *c1      = '\0';
         char *c2 = strchr(c1 + 1, ':');
         *c2      = '\0';
+        if (ncolon == 3)
+        {
+            if (c2[1] != ':')
+            {
+                return 1;
+            }
+            c2++;
+        }
 
         const char *sstart = buf;
         const char *send   = c1 + 1;
@@ -202,19 +210,33 @@ IMGID_SLICE imgid_slice_parse(const char *bracket_str)
     char *axes[IMGID_SLICE_MAXAXIS];
     int   naxis = 0;
 
-    char *tok = strtok(buf, ",");
-    while (tok != NULL && naxis < IMGID_SLICE_MAXAXIS)
+    /* Not strtok: an empty axis spec ("[,5]") means full axis and must keep its slot. */
+    char *tok = buf;
+    while (1)
     {
-        axes[naxis] = tok;
-        naxis++;
-        tok = strtok(NULL, ",");
-    }
-
-    if (naxis == 0)
-    {
-        s.error = 1;
-        snprintf(s.errmsg, sizeof(s.errmsg), "empty slice specification");
-        return s;
+        if (naxis == IMGID_SLICE_MAXAXIS)
+        {
+            s.error = 1;
+            snprintf(s.errmsg, sizeof(s.errmsg), "more than %d axes in slice", IMGID_SLICE_MAXAXIS);
+            return s;
+        }
+        while (*tok == ' ' || *tok == '\t')
+        {
+            tok++;
+        }
+        axes[naxis++] = tok;
+        char *comma   = strchr(tok, ',');
+        char *tend    = (comma != NULL) ? comma : tok + strlen(tok);
+        while (tend > tok && (tend[-1] == ' ' || tend[-1] == '\t'))
+        {
+            tend--;
+        }
+        *tend = '\0';
+        if (comma == NULL)
+        {
+            break;
+        }
+        tok = comma + 1;
     }
 
     s.naxis = (uint8_t) naxis;
@@ -317,6 +339,14 @@ int imgid_slice_output_size(IMGID_SLICE    *s,
         if (s->end[aa] < 0)
         {
             s->end[aa] = 0;
+        }
+
+        /* Negative step walks high -> low: keep start as the high index ("-*", "0:9:-1", "9:0:-1") */
+        if (s->step[aa] < 0 && s->start[aa] < s->end[aa])
+        {
+            int32_t tmp  = s->start[aa];
+            s->start[aa] = s->end[aa];
+            s->end[aa]   = tmp;
         }
 
         /* Compute axis output length */

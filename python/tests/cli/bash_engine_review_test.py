@@ -649,6 +649,39 @@ def test_P13_user_tmpcalc_image_survives(tmp_path):
     assert value(res.stdout, "kept") == "0"
 
 
+def test_calc_slice_flip_stride_bin_values(tmp_path):
+    """Every docs/guide/slicing.md form reads (and writes) the documented pixels, not just parses."""
+    res = milk_cli_script(
+        "@mk2Dim sl 8 8\n"
+        '@calc "sl[1,2] = 7"\n@calc "sl[2,2] = 4"\n@calc "sl[3,2] = 8"\n'
+        '@calc "fl = sl[*,-*] + 0.0"\n@calc -v flip "fl[1,5]"\n@calc -v flip0 "fl[1,2]"\n'
+        '@calc "sd = sl[0:7::2,*] + 0.0"\n@calc -v stride "sd[1,2]"\n'
+        '@calc "bn = sl[0:7::2b,*] + 0.0"\n@calc -v bin "bn[1,2]"\n'
+        '@calc "rv = sl[-1:0:-2,*] + 0.0"\n@calc -v rev "rv[2,2]"\n'
+        "@mk3Dim cb 4 4 3\n"
+        '@calc "cb[1,1,0] = 5"\n@calc "cf = cb[*,*,-*] + 0.0"\n@calc -v cube "cf[1,1,2]"\n'
+        '@calc "sl[*,-*] = sl"\n@calc -v lhs "sl[1,5]"\n'
+        'echo "flip=$flip flip0=$flip0 stride=$stride bin=$bin rev=$rev cube=$cube lhs=$lhs"\n'
+        'echo "xs=$(@get s.sd.xsize),$(@get s.bn.xsize),$(@get s.rv.xsize)"',
+        tmp_path,
+    )
+    out = res.stdout
+    line = next((ln for ln in out.splitlines() if ln.startswith("flip=")), "")
+    got = dict(kv.split("=", 1) for kv in line.split())
+    assert got == {
+        "flip": "7",
+        "flip0": "0",
+        "stride": "4",
+        "bin": "6",
+        "rev": "8",
+        "cube": "5",
+        "lhs": "7",
+    }, (
+        out + res.stderr
+    )
+    assert value(out, "xs") == "4,4,4"
+
+
 def test_P5_string_functions(tmp_path):
     res = milk_cli_script('@calc -v u \'toupper("abc")\'\necho "u=$u"', tmp_path)
     assert value(res.stdout, "u") == "ABC"
