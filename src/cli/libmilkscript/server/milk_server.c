@@ -56,11 +56,73 @@
 milk_srvlog_shm_t *g_srvlog_shm           = NULL;
 char               g_srvlog_sockpath[256] = "";
 
+volatile sig_atomic_t g_milk_server_stop = 0;
+
+static pthread_mutex_t g_cmd_mutex;
+static pthread_once_t  g_cmd_mutex_once = PTHREAD_ONCE_INIT;
+
+static void cmd_mutex_init(void)
+{
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&g_cmd_mutex, &attr);
+    pthread_mutexattr_destroy(&attr);
+}
+
+void milk_server_cmd_lock(void)
+{
+    pthread_once(&g_cmd_mutex_once, cmd_mutex_init);
+    pthread_mutex_lock(&g_cmd_mutex);
+}
+
+void milk_server_cmd_unlock(void)
+{
+    pthread_mutex_unlock(&g_cmd_mutex);
+}
+
 static void milk_child_reset_omp(void)
 {
 #ifdef _OPENMP
     omp_set_num_threads(1);
 #endif
+    cmd_mutex_init(); /* the forking thread may not be the one holding it: start unlocked */
+}
+
+/** stream_worker() - serve one WAITFOR/GRAB request inline, then close its connection. */
+static void *stream_worker(void *arg)
+{
+    int fd    = (int) (intptr_t) arg;
+    int dummy = 0;
+    milk_server_handle_client(fd, -1, &dummy);
+    close(fd);
+    return NULL;
+}
+
+int milk_server_spawn_stream_worker(int client_fd)
+{
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    sigset_t all, old; /* signals belong to the main thread (sig_handler may siglongjmp) */
+    sigfillset(&all);
+    pthread_sigmask(SIG_BLOCK, &all, &old);
+    pthread_t tid;
+    int       rc = pthread_create(&tid, &attr, stream_worker, (void *) (intptr_t) client_fd);
+    pthread_sigmask(SIG_SETMASK, &old, NULL);
+    pthread_attr_destroy(&attr);
+    return (rc == 0) ? 0 : -1;
+}
+
+/** peek_request_type() - type of the request frame waiting on @fd, without consuming it (-1 if none). */
+static int peek_request_type(int fd)
+{
+    milk_frame_hdr_t ph;
+    if (recv(fd, &ph, sizeof(ph), MSG_PEEK | MSG_WAITALL) != (ssize_t) sizeof(ph))
+    {
+        return -1;
+    }
+    return ph.type;
 }
 
 static pthread_once_t g_atfork_once = PTHREAD_ONCE_INIT;
@@ -459,10 +521,11 @@ static int handle_wait_or_grab_message(int                     client_fd,
  * @brief Service a single client connection on @client_fd.
  *
  * @param client_fd     Connected client socket fd
- * @param listen_fd     Server listening socket fd (or -1 if already in forked worker)
+ * @param listen_fd     Server listening socket fd (or -1 to handle everything inline)
  * @param shutdown_flag Set to 1 if client requested server shutdown
+ * @return 1 if @client_fd now belongs to a worker thread (the caller must not close it), else 0
  */
-void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
+int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
 {
     milk_frame_hdr_t hdr;
     uint8_t         *payload     = NULL;
@@ -472,6 +535,16 @@ void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
     struct timeval req_to = { MILK_SERVER_REQ_TIMEOUT_MS / 1000,
                               (MILK_SERVER_REQ_TIMEOUT_MS % 1000) * 1000 };
     setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &req_to, sizeof(req_to));
+    if (listen_fd >= 0)
+    {
+        /* long waits run in a thread of this process: they see (and may create) live state */
+        int ptype = peek_request_type(client_fd);
+        if ((ptype == MILK_MSG_WAITFOR || ptype == MILK_MSG_GRAB) &&
+            milk_server_spawn_stream_worker(client_fd) == 0)
+        {
+            return 1;
+        }
+    }
     int rr = milk_proto_recv(client_fd, &hdr, &payload, recv_fds);
     if (rr == -2)
     {
@@ -480,7 +553,7 @@ void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
     }
     if (rr != 0)
     {
-        return;
+        return 0;
     }
     struct timeval no_to = { 0, 0 };
     setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &no_to, sizeof(no_to));
@@ -507,10 +580,10 @@ void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
         }
     }
 
+    /* --async and @replay need their own stdio while the server goes on: they run in a fork, on a
+     * snapshot of the state (images and variables they create are not kept) */
     int is_forked_worker = 0;
-    if (((hdr.flags & MILK_FLAG_ASYNC) || hdr.type == MILK_MSG_WAITFOR ||
-         hdr.type == MILK_MSG_GRAB || is_replay_call) &&
-        listen_fd >= 0)
+    if (((hdr.flags & MILK_FLAG_ASYNC) || is_replay_call) && listen_fd >= 0)
     {
         pid_t pid = fork();
         if (pid > 0)
@@ -523,7 +596,7 @@ void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
                 }
             }
             free(payload);
-            return;
+            return 0;
         }
         else if (pid == 0)
         {
@@ -533,7 +606,10 @@ void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
         }
     }
 
-    if (handle_fast_message(client_fd, &hdr, payload, shutdown_flag))
+    milk_server_cmd_lock();
+    int fast = handle_fast_message(client_fd, &hdr, payload, shutdown_flag);
+    milk_server_cmd_unlock();
+    if (fast)
     {
         goto cleanup;
     }
@@ -548,6 +624,7 @@ void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
 
     /* Commands that may read/write stdio or cwd: SET, CALC, TEST, CALL */
     {
+        milk_server_cmd_lock(); /* stdio/cwd are swapped process-wide: one command at a time */
         int saved_stdin  = -1;
         int saved_stdout = -1;
         int saved_stderr = -1;
@@ -618,10 +695,14 @@ void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
             out_pipe[1] = -1;
             err_pipe[1] = -1;
 
+            sigset_t all, old; /* signals stay with the main thread (sig_handler may siglongjmp) */
+            sigfillset(&all);
+            pthread_sigmask(SIG_BLOCK, &all, &old);
             if (pthread_create(&tee_tid, NULL, tee_pump_thread, &tee_ctx) == 0)
             {
                 tee_running = 1;
             }
+            pthread_sigmask(SIG_SETMASK, &old, NULL);
         }
         else
         {
@@ -739,6 +820,7 @@ void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
             milk_srvlog_record(g_srvlog_shm, &ts_start, diff_timespec_ns(&ts_start, &ts_end),
                                client_pid, hdr.type, rc, log_cmd, tee_ctx.cap_buf);
         }
+        milk_server_cmd_unlock();
 
         milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
     } // SET / CALC / TEST / CALL block
@@ -758,6 +840,7 @@ cleanup:
         close(client_fd);
         _exit(0);
     }
+    return 0;
 }
 
 /**
@@ -863,8 +946,11 @@ void milk_server_accept_and_handle(int listen_fd, int *shutdown_flag)
     }
 
     int dummy = 0;
-    milk_server_handle_client(client_fd, listen_fd, shutdown_flag != NULL ? shutdown_flag : &dummy);
-    close(client_fd);
+    if (!milk_server_handle_client(client_fd, listen_fd,
+                                   shutdown_flag != NULL ? shutdown_flag : &dummy))
+    {
+        close(client_fd);
+    }
 
     while (waitpid(0, NULL, WNOHANG) > 0)
     {
@@ -896,7 +982,7 @@ int milk_server_run(const char *sockpath, int owner_fd, int ready_fd)
     }
 
     int shutdown_flag = 0;
-    while (!shutdown_flag)
+    while (!shutdown_flag && !g_milk_server_stop)
     {
         while (waitpid(0, NULL, WNOHANG) > 0)
         {

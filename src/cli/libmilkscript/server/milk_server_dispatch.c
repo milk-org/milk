@@ -72,11 +72,58 @@ typedef struct
 } call_watcher_ctx_t;
 
 /**
+ * watcher_take_client() - serve a connection that arrives while a CALL runs; 1 if a thread took @cfd.
+ */
+static int watcher_take_client(const call_watcher_ctx_t *ctx, int cfd)
+{
+    struct timeval to = { 2, 0 };
+    setsockopt(cfd, SOL_SOCKET, SO_RCVTIMEO, &to, sizeof(to));
+    milk_frame_hdr_t ph;
+    if (recv(cfd, &ph, sizeof(ph), MSG_PEEK | MSG_WAITALL) != (ssize_t) sizeof(ph))
+    {
+        return 0;
+    }
+    if (ph.type == MILK_MSG_SHUTDOWN)
+    {
+        milk_frame_hdr_t hdr;
+        uint8_t         *pl = NULL;
+        if (milk_proto_recv(cfd, &hdr, &pl, NULL) == 0)
+        {
+            int32_t rc         = 0;
+            g_milk_server_stop = 1; /* the main loop stops once the CALL returns */
+            milk_proto_send(cfd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
+        }
+        free(pl);
+        return 0;
+    }
+    if ((ph.type == MILK_MSG_WAITFOR || ph.type == MILK_MSG_GRAB) &&
+        milk_server_spawn_stream_worker(cfd) == 0)
+    {
+        return 1;
+    }
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        sigset_t none; /* this thread blocks all signals; the child must not */
+        sigemptyset(&none);
+        pthread_sigmask(SIG_SETMASK, &none, NULL);
+        close(ctx->listen_fd);
+        int dummy_shutdown = 0;
+        milk_server_handle_client(cfd, -1, &dummy_shutdown);
+        close(cfd);
+        _exit(0);
+    }
+    return 0;
+}
+
+/**
  * @brief Background watcher thread active during `MILK_MSG_CALL` execution.
  *
  * Monitors @ctx->client_fd for `MILK_MSG_CANCEL` / `MILK_MSG_WINCH` / hangup
  * (forwarding `SIGINT` / `SIGWINCH` to the main server thread) and accepts
- * concurrent pipeline stage connections on @ctx->listen_fd in forked children.
+ * concurrent connections on @ctx->listen_fd: SHUTDOWN is recorded for the main loop,
+ * WAITFOR/GRAB get a worker thread, anything else (e.g. a pipeline stage that needs
+ * its own stdio) runs in a forked child.
  */
 static void *call_watcher_thread(void *arg)
 {
@@ -141,17 +188,9 @@ static void *call_watcher_thread(void *arg)
             int cfd = accept4(ctx->listen_fd, NULL, NULL, SOCK_CLOEXEC);
             if (cfd >= 0)
             {
-                if (milk_ipc_peer_is_self(cfd))
+                if (milk_ipc_peer_is_self(cfd) && watcher_take_client(ctx, cfd))
                 {
-                    pid_t pid = fork();
-                    if (pid == 0)
-                    {
-                        close(ctx->listen_fd);
-                        int dummy_shutdown = 0;
-                        milk_server_handle_client(cfd, -1, &dummy_shutdown);
-                        close(cfd);
-                        _exit(0);
-                    }
+                    continue; /* a worker thread owns cfd now */
                 }
                 close(cfd);
             }
@@ -2045,6 +2084,9 @@ int milk_server_exec_call(int            client_fd,
         wctx.wake_fd   = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
         wctx.main_tid  = pthread_self();
         wctx.active    = 1;
+        sigset_t all, old; /* signals stay with the main thread (sig_handler may siglongjmp) */
+        sigfillset(&all);
+        pthread_sigmask(SIG_BLOCK, &all, &old);
         if (pthread_create(&wtid, NULL, call_watcher_thread, &wctx) == 0)
         {
             has_watcher = 1;
@@ -2054,6 +2096,7 @@ int milk_server_exec_call(int            client_fd,
             close(wctx.wake_fd);
             wctx.wake_fd = -1;
         }
+        pthread_sigmask(SIG_SETMASK, &old, NULL);
     }
 
     int rc = milk_server_dispatch_argv((int) argc, argv);

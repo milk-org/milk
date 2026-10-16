@@ -52,6 +52,18 @@ command.
   milk-cli says so. A script stops there; at the prompt, the next command starts a new bash, without
   the previous shell state.
 
+### Concurrent Commands
+
+milk commands run one at a time in the milk-cli process. `@waitfor` and `@grab` wait in the
+background, so other commands keep running meanwhile, and they see live state: a local image that
+another command changes, or the cube that `@grab` fills. A `SHUTDOWN` request is honoured even while
+a command is running.
+
+A command that has to run alongside another one with its own input and output runs in a copy of the
+process: a later stage of a pipeline such as `@streamcat s.cam | @streamwrite out`, a
+`milk-call call --async` command, and `@replay`. Shared-memory streams it writes are visible to
+everyone, but local images and variables it creates are not kept.
+
 See also: [CLI Syntax](CLIcore.md) · [FPS](fps.md) · [Streams](streams.md)
 
 ## Script Files

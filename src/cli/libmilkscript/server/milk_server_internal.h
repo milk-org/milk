@@ -17,6 +17,7 @@
 #ifndef MILK_SERVER_INTERNAL_H
 #define MILK_SERVER_INTERNAL_H
 
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -102,6 +103,16 @@ int milk_server_exec_call(int            client_fd,
 
 void milk_server_refresh_log_stats(void);
 
-void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag);
+int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag);
+
+/** Serializes everything that touches milk state (data.*, calc, stdio/cwd swaps); recursive. */
+void milk_server_cmd_lock(void);
+void milk_server_cmd_unlock(void);
+
+/** Run WAITFOR/GRAB on @client_fd in a detached thread that then owns the fd; 0 on success. */
+int milk_server_spawn_stream_worker(int client_fd);
+
+/** Set when SHUTDOWN arrives outside the main loop (e.g. during a CALL); the main loop stops on it. */
+extern volatile sig_atomic_t g_milk_server_stop;
 
 #endif /* MILK_SERVER_INTERNAL_H */

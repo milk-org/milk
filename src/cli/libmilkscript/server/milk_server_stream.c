@@ -114,9 +114,11 @@ static int waitfor_expr_cond(int client_fd, const char *target, double t_start, 
             return 130;
         }
         char expanded[8192];
+        int  eval_rc = 2;
+        milk_server_cmd_lock(); /* may run in a worker thread */
         milk_server_expand_entities_in_expr(target, expanded, sizeof(expanded));
-        int eval_rc = 2;
         cli_calc_eval_bash(expanded, 1, &eval_rc);
+        milk_server_cmd_unlock();
         if (eval_rc == 0)
         {
             return 0;
@@ -157,7 +159,10 @@ static int waitfor_eq_cond(int         client_fd,
             return 130;
         }
         char val[256];
-        if (milk_shm_prop_get(lhs, val, sizeof(val)) == 0)
+        milk_server_cmd_lock(); /* may run in a worker thread */
+        int got = milk_shm_prop_get(lhs, val, sizeof(val));
+        milk_server_cmd_unlock();
+        if (got == 0)
         {
             if (strcmp(val, expect) == 0)
             {
@@ -415,6 +420,13 @@ static inline void write_typed_elem(IMAGE *im, uint8_t dt, uint64_t idx, double 
     }
 }
 
+/** grab_image_alive() - index of the image @im was copied from, or -1 if it was deleted (lock held). */
+static imageID grab_image_alive(const IMAGE *im)
+{
+    imageID id = image_ID(im->name, data.core.image, data.core.NB_MAX_IMAGE);
+    return (id >= 0 && data.core.image[id].md == im->md) ? id : -1;
+}
+
 /**
  * @brief Execute `@grab`: capture @nframes consecutive frames from @sname_raw into @outname.
  *
@@ -449,11 +461,16 @@ int milk_server_grab(int         client_fd,
     const char           *sname =
         (!sp_in.error && sp_in.name != NULL && sp_in.name[0] != '\0') ? sp_in.name : sname_raw;
 
+    /* Runs in a worker thread: milk state is touched only under the command lock. Between frames the
+     * lock is released, so IMAGE structs (which may move) are re-checked by name; their md/array/sem
+     * buffers do not move while the image exists. */
+    milk_server_cmd_lock();
     IMAGE  tmp_in;
     int    need_close = 0;
     IMAGE *in_im      = milk_shm_prop_find_or_open_stream(sname, &tmp_in, &need_close);
     if (in_im == NULL || in_im->md == NULL)
     {
+        milk_server_cmd_unlock();
         fprintf(stderr, "ERROR: @grab: stream '%s' not found\n", sname);
         return 1;
     }
@@ -482,6 +499,7 @@ int milk_server_grab(int         client_fd,
         {
             ImageStreamIO_closeIm(&tmp_in);
         }
+        milk_server_cmd_unlock();
         return 1;
     }
     if (nframes == 1 && in_im->md->naxis <= 2)
@@ -510,11 +528,14 @@ int milk_server_grab(int         client_fd,
         {
             ImageStreamIO_closeIm(&tmp_in);
         }
+        milk_server_cmd_unlock();
         return 1;
     }
 
-    IMAGE  *cube     = &data.core.image[out_img.ID];
-    uint8_t out_dt   = cube->md->datatype;
+    IMAGE   cube     = data.core.image[out_img.ID]; /* shallow copies: see above */
+    IMAGE   in       = *in_im;
+    int     in_local = !need_close; /* in_im is an entry of data.core.image */
+    uint8_t out_dt   = cube.md->datatype;
     size_t  out_elsz = ImageStreamIO_typesize(out_dt);
     imgid_free(&out_img);
 
@@ -527,24 +548,25 @@ int milk_server_grab(int         client_fd,
             fprintf(stderr, "ERROR: @grab: cannot open timestamps file '%s'\n", ts_path);
             if (is_temp_cube)
             {
-                delete_image_ID(cube->name, DELETE_IMAGE_ERRMODE_IGNORE);
+                delete_image_ID(cube.name, DELETE_IMAGE_ERRMODE_IGNORE);
             }
             if (need_close)
             {
                 ImageStreamIO_closeIm(&tmp_in);
             }
+            milk_server_cmd_unlock();
             return 1;
         }
     }
 
-    int wait_frames = (in_im->md->shared && (nframes > 1 || timeout_sec > 0.0)) ? 1 : 0;
+    int wait_frames = (in.md->shared && (nframes > 1 || timeout_sec > 0.0)) ? 1 : 0;
     int semindex    = -1;
-    if (wait_frames && in_im->md->sem > 0)
+    if (wait_frames && in.md->sem > 0)
     {
         semindex = ImageStreamIO_getsemwaitindex(in_im, -1);
-        if (semindex >= 0 && semindex < in_im->md->sem)
+        if (semindex >= 0 && semindex < in.md->sem)
         {
-            while (sem_trywait(in_im->semptr[semindex]) == 0)
+            while (sem_trywait(in.semptr[semindex]) == 0)
             {
             }
         }
@@ -552,15 +574,16 @@ int milk_server_grab(int         client_fd,
 
     double   t_start  = monotonic_sec();
     int      has_timo = (timeout_sec > 0.0);
-    uint64_t last_cnt = in_im->md->cnt0;
+    uint64_t last_cnt = in.md->cnt0;
     int      rc       = 0;
 
-    cube->md->write = 1;
+    cube.md->write = 1;
+    milk_server_cmd_unlock();
     for (long f = 0; f < nframes; f++)
     {
         if (wait_frames)
         {
-            while (in_im->md->cnt0 == last_cnt)
+            while (in.md->cnt0 == last_cnt)
             {
                 if (check_client_cancelled(client_fd))
                 {
@@ -572,7 +595,7 @@ int milk_server_grab(int         client_fd,
                     rc = 124;
                     break;
                 }
-                if (semindex >= 0 && semindex < in_im->md->sem)
+                if (semindex >= 0 && semindex < in.md->sem)
                 {
                     struct timespec ts;
                     clock_gettime(CLOCK_REALTIME, &ts);
@@ -582,7 +605,7 @@ int milk_server_grab(int         client_fd,
                         ts.tv_sec += 1;
                         ts.tv_nsec -= 1000000000L;
                     }
-                    sem_timedwait(in_im->semptr[semindex], &ts);
+                    sem_timedwait(in.semptr[semindex], &ts);
                 }
                 else
                 {
@@ -594,7 +617,16 @@ int milk_server_grab(int         client_fd,
             {
                 break;
             }
-            last_cnt = in_im->md->cnt0;
+            last_cnt = in.md->cnt0;
+        }
+
+        milk_server_cmd_lock();
+        if (grab_image_alive(&cube) < 0 || (in_local && grab_image_alive(&in) < 0))
+        {
+            milk_server_cmd_unlock();
+            fprintf(stderr, "ERROR: @grab: image deleted during the grab\n");
+            rc = 1;
+            break;
         }
 
         if (ts_fp != NULL)
@@ -605,33 +637,34 @@ int milk_server_grab(int         client_fd,
             clock_gettime(CLOCK_MONOTONIC, &ts_mono);
             double wall_s = (double) ts_wall.tv_sec + 1.0e-9 * (double) ts_wall.tv_nsec;
             double mono_s = (double) ts_mono.tv_sec + 1.0e-9 * (double) ts_mono.tv_nsec;
-            fprintf(ts_fp, "%ld %llu %.9f %.9f\n", f, (unsigned long long) in_im->md->cnt0, wall_s,
+            fprintf(ts_fp, "%ld %llu %.9f %.9f\n", f, (unsigned long long) in.md->cnt0, wall_s,
                     mono_s);
         }
 
         /* recopy if the writer touched the frame while we copied it (torn frame) */
         for (int tries = 0; tries < 3; tries++)
         {
-            uint64_t c0 = in_im->md->cnt0;
+            uint64_t c0 = in.md->cnt0;
             if (in_dt == out_dt)
             {
-                __builtin_memcpy(((uint8_t *) cube->array.raw) + (size_t) f * npix2d * out_elsz,
-                                 in_im->array.raw, npix2d * in_elsz);
+                __builtin_memcpy(((uint8_t *) cube.array.raw) + (size_t) f * npix2d * out_elsz,
+                                 in.array.raw, npix2d * in_elsz);
             }
             else
             {
                 uint64_t base = (uint64_t) f * npix2d;
                 for (uint64_t p = 0; p < npix2d; p++)
                 {
-                    write_typed_elem(cube, out_dt, base + p, read_typed_elem(in_im, in_dt, p));
+                    write_typed_elem(&cube, out_dt, base + p, read_typed_elem(&in, in_dt, p));
                 }
             }
-            if (in_im->md->cnt0 == c0 && in_im->md->write == 0)
+            if (in.md->cnt0 == c0 && in.md->write == 0)
             {
                 break;
             }
         }
-        last_cnt = in_im->md->cnt0;
+        milk_server_cmd_unlock();
+        last_cnt = in.md->cnt0;
     } // for (long f = 0; f < nframes; f++)
 
     if (ts_fp != NULL)
@@ -639,13 +672,18 @@ int milk_server_grab(int         client_fd,
         fclose(ts_fp);
     }
 
-    processinfo_update_output_stream(NULL, cube, NULL);
+    milk_server_cmd_lock();
+    imageID cid = grab_image_alive(&cube);
+    if (cid >= 0)
+    {
+        processinfo_update_output_stream(NULL, &data.core.image[cid], NULL);
+    }
 
-    if (rc == 0 && fits_path != NULL && fits_path[0] != '\0')
+    if (rc == 0 && cid >= 0 && fits_path != NULL && fits_path[0] != '\0')
     {
 #ifdef USE_CFITSIO
         const char *clean_fits = (fits_path[0] == '!') ? (fits_path + 1) : fits_path;
-        if (save_fits(cube->name, clean_fits) != RETURN_SUCCESS)
+        if (save_fits(cube.name, clean_fits) != RETURN_SUCCESS)
         {
             rc = 1;
         }
@@ -655,19 +693,20 @@ int milk_server_grab(int         client_fd,
 #endif
     }
 
-    if (is_temp_cube)
+    if (is_temp_cube && cid >= 0)
     {
-        delete_image_ID(cube->name, DELETE_IMAGE_ERRMODE_IGNORE);
+        delete_image_ID(cube.name, DELETE_IMAGE_ERRMODE_IGNORE);
     }
 
-    if (semindex >= 0 && semindex < in_im->md->sem)
+    if (semindex >= 0 && semindex < in.md->sem && (!in_local || grab_image_alive(&in) >= 0))
     {
-        in_im->semReadPID[semindex] = 0;
+        in.semReadPID[semindex] = 0;
     }
     if (need_close)
     {
         ImageStreamIO_closeIm(&tmp_in);
     }
+    milk_server_cmd_unlock();
     return rc;
 }
 

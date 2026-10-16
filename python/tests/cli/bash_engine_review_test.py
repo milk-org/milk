@@ -924,7 +924,6 @@ def test_S2_stalled_client_does_not_block(server):
     assert res.returncode != 124
 
 
-@bug("S3", "server-forked handlers lose state: grab into a local image creates nothing")
 def test_S3_grab_into_local_image(server):
     server.call("call", "mk2Dim", "@S:s3src", "4", "4")
     writer = subprocess.Popen(
@@ -945,11 +944,6 @@ def test_S3_grab_into_local_image(server):
     assert server.call("exists", "l.s3cube").returncode == 0
 
 
-@bug(
-    "S3",
-    "SHUTDOWN handled in a forked child does not stop the server (racy: ~25% pass)",
-    strict=False,
-)
 def test_S3_server_stop(server):
     busy = subprocess.Popen(
         [str(_install_dir() / "bin" / "milk-call"), "call", "usleep", "2000000"],
@@ -964,6 +958,30 @@ def test_S3_server_stop(server):
     busy.wait(timeout=10)
     time.sleep(1.0)
     assert not server.alive()
+
+
+def test_WP12_waitfor_sees_live_local_image(server):
+    server.call("call", "mk2Dim", "@L:w12", "4", "4")
+    waiter = subprocess.Popen(
+        [
+            str(_install_dir() / "bin" / "milk-call"),
+            "waitfor",
+            "imean(w12) > 1",
+            "--timeout",
+            "5",
+        ],
+        env=server.env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        time.sleep(0.5)
+        server.call("calc", "w12 = 5")
+        rc = waiter.wait(timeout=8)
+    finally:
+        if waiter.poll() is None:
+            waiter.kill()
+    assert rc == 0  # a forked waiter would only see the old image and time out (124)
 
 
 def test_S4_streamwrite_devnull(server):
