@@ -299,11 +299,13 @@ static const milk_bash_primitive_help_t g_milk_bash_help[] = {
       "  @streamcat -a pix cam0\n"
       "  @streamcat cam0 | head -n 20\n"
       "  @streamcat --raw cam0 | python3 analyze.py" },
-    { "streamwrite", NULL, "@streamwrite [--dtype <type>] <stream> <xsize> [ysize] [zsize]",
-      "Read raw binary pixel bytes from stdin and publish to a shared-memory stream",
+    { "streamwrite", NULL,
+      "@streamwrite [--raw] [--dtype <type>] <stream> [xsize [ysize [zsize]]] [-|values...]",
+      "Write values (or stdin with '-') into a shared-memory stream, creating it if needed",
       "  - Supported --dtype values: F32 (default), F64, U8, U16, U32, U64, I8, I16, I32, I64.\n"
       "  - Properly sets write flag, increments cnt0, and posts ImageStreamIO semaphores.",
-      "  python3 gen_frame.py | @streamwrite --dtype F32 cam0 128 128" },
+      "  python3 gen_frame.py | @streamwrite --dtype F32 cam0 128 128 -\n"
+      "  @streamwrite cam0 1 2 3 4" },
     { "unload", NULL, "@unload",
       "Shut down the local session server and remove all @ functions and PATH symlinks",
       "  - Stops active '@on' watchers, restores PS1 and PATH, and unsets @ shims.", "  @unload" },

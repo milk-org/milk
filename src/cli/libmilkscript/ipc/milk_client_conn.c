@@ -106,14 +106,23 @@ static int autostart_server(const milk_client_hooks_t *hooks, const char *sockpa
     milk_srvlog_parse_sock(sockpath, NULL, sname, sizeof(sname));
     int is_private = (sname[0] == '\0' || milk_ipc_is_numeric_str(sname));
 
-    int owner_rfd = -1;
+    int   owner_rfd = -1;
+    pid_t owner_pid = 0; // daemon lifetime tied to this pid when no owner pipe can be held
     if (is_private && hooks != NULL && hooks->get_var != NULL)
     {
         if (g_owner_shell_pid == 0)
         {
-            g_owner_shell_pid = getpid();
+            // the main shell (pid in _MILK_LOCAL_SOCK) owns it, not a $(...) subshell that runs first
+            const char *ls    = milk_ipc_get_var(hooks, "_MILK_LOCAL_SOCK");
+            const char *dash  = (ls != NULL) ? strrchr(ls, '-') : NULL;
+            pid_t       sp    = (dash != NULL) ? (pid_t) atol(dash + 1) : 0;
+            g_owner_shell_pid = (sp > 0) ? sp : getpid();
         }
-        if (getpid() == g_owner_shell_pid)
+        if (getpid() != g_owner_shell_pid)
+        {
+            owner_pid = g_owner_shell_pid;
+        }
+        else
         {
             int owner_pipe[2] = { -1, -1 };
             if (pipe(owner_pipe) == 0)
@@ -140,7 +149,12 @@ static int autostart_server(const milk_client_hooks_t *hooks, const char *sockpa
     char binpath[512];
     milk_ipc_resolve_cli_bin(hooks, binpath, sizeof(binpath));
 
-    int rc = milk_ipc_spawn_daemon(binpath, sockpath, owner_rfd, g_owner_pipe_wfd, !is_private);
+    if (is_private && (hooks == NULL || hooks->get_var == NULL))
+    {
+        owner_pid = getppid(); // plain milk-call: live as long as the calling shell
+    }
+    int rc = milk_ipc_spawn_daemon(binpath, sockpath, owner_rfd, g_owner_pipe_wfd, !is_private,
+                                   owner_pid);
     if (owner_rfd >= 0)
     {
         close(owner_rfd);
@@ -322,7 +336,7 @@ int milk_client_await_response(int                        fd,
     sigaction(SIGINT, &sa_int, &old_int);
     sigaction(SIGWINCH, &sa_winch, &old_winch);
 
-    int32_t final_rc = 1;
+    int32_t final_rc = 255; // until DONE arrives, the transport failed
 
     for (;;)
     {
@@ -351,8 +365,13 @@ int milk_client_await_response(int                        fd,
 
         milk_frame_hdr_t hdr;
         uint8_t         *pl = NULL;
-        if (milk_proto_recv(fd, &hdr, &pl, NULL) != 0)
+        int              rr = milk_proto_recv(fd, &hdr, &pl, NULL);
+        if (rr != 0)
         {
+            fprintf(stderr, (rr == -2)
+                                ? "milk: server speaks another protocol version; restart it\n"
+                                : "milk: lost connection to server\n");
+            final_rc = 255;
             break;
         }
 
@@ -415,7 +434,7 @@ int milk_client_await_response(int                        fd,
         {
             hooks->on_sigint(hooks->ctx);
         }
-        if (final_rc == 0)
+        if (final_rc == 0 || final_rc == 255) // cancelled, possibly before DONE was sent
         {
             final_rc = 130;
         }

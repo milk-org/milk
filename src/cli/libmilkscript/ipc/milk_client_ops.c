@@ -68,7 +68,11 @@ static int drain_stdin_to_memfd(int argc, char **argv)
     {
         c0++;
     }
-    int is_sw    = (strcmp(c0, "streamwrite") == 0 && argc >= 2);
+    int is_sw = 0; // @streamwrite reads stdin only when told to with a '-' argument
+    for (int i = 1; strcmp(c0, "streamwrite") == 0 && i < argc; i++)
+    {
+        is_sw |= (strcmp(argv[i], "-") == 0);
+    }
     int is_batch = ((strcmp(c0, "batch") == 0 || strcmp(c0, "pipe") == 0) && argc == 1);
     if (!is_sw && !is_batch)
     {
@@ -390,9 +394,10 @@ int milk_client_set(const char                *spec,
         return 1;
     }
 
-    size_t   l1  = strlen(spec) + 1;
-    size_t   l2  = (val != NULL) ? (strlen(val) + 1) : 0;
-    size_t   l3  = (comment != NULL) ? (strlen(comment) + 1) : 0;
+    size_t l1 = strlen(spec) + 1;
+    size_t l3 = (comment != NULL) ? (strlen(comment) + 1) : 0;
+    size_t l2 =
+        (val != NULL) ? (strlen(val) + 1) : (l3 > 0 ? 1 : 0); // empty slot keeps comment in place
     uint32_t tot = (uint32_t) (l1 + l2 + l3);
 
     uint8_t *buf = (uint8_t *) malloc(tot);
@@ -404,7 +409,7 @@ int milk_client_set(const char                *spec,
     memcpy(buf, spec, l1);
     if (l2 > 0)
     {
-        memcpy(buf + l1, val, l2);
+        memcpy(buf + l1, (val != NULL) ? val : "", l2);
     }
     if (l3 > 0)
     {
@@ -595,18 +600,35 @@ static int client_calc_or_test(const char                *expr,
 
     if (cap_pipe[0] >= 0)
     {
-        char    cbuf[512];
-        ssize_t cn = read(cap_pipe[0], cbuf, sizeof(cbuf) - 1);
-        close(cap_pipe[0]);
-        if (cn > 0)
+        size_t  cap = 512;
+        size_t  cn  = 0;
+        char   *cb  = (char *) malloc(cap);
+        ssize_t nr;
+        while (cb != NULL && (nr = read(cap_pipe[0], cb + cn, cap - cn - 1)) > 0) // whole value
         {
-            cbuf[cn] = '\0';
-            while (cn > 0 && (cbuf[cn - 1] == '\n' || cbuf[cn - 1] == '\r'))
+            cn += (size_t) nr;
+            if (cn + 1 == cap)
             {
-                cbuf[--cn] = '\0';
+                char *nb = (char *) realloc(cb, cap * 2);
+                if (nb == NULL)
+                {
+                    break;
+                }
+                cb = nb;
+                cap *= 2;
             }
-            milk_ipc_set_var(hooks, varname, cbuf, 0);
         }
+        close(cap_pipe[0]);
+        if (cb != NULL && cn > 0)
+        {
+            cb[cn] = '\0';
+            while (cn > 0 && (cb[cn - 1] == '\n' || cb[cn - 1] == '\r'))
+            {
+                cb[--cn] = '\0';
+            }
+            milk_ipc_set_var(hooks, varname, cb, 0);
+        }
+        free(cb);
     }
     return rc;
 }

@@ -712,7 +712,6 @@ def _connect(name: str) -> socket.socket:
     return s
 
 
-@bug("S1", "CALL argc not validated against payload -> server crash")
 def test_S1_malformed_call_frame(server):
     s = _connect(server.name)
     s.sendall(_frame(3, struct.pack("<I", 5) + b"listim\0"))
@@ -726,7 +725,6 @@ def test_S1_malformed_call_frame(server):
     assert server.alive()
 
 
-@bug("S2", "one stalled client blocks every other client")
 def test_S2_stalled_client_does_not_block(server):
     s = _connect(server.name)
     s.sendall(b"MI")
@@ -779,7 +777,6 @@ def test_S3_server_stop(server):
     assert not server.alive()
 
 
-@bug("S4", "@streamwrite treats /dev/null stdin as data and re-creates the stream")
 def test_S4_streamwrite_devnull(server):
     server.call("call", "mk2Dim", "@S:s4", "4", "4")
     server.call("call", "streamwrite", "s4", "7", "8", "9")  # stdin = /dev/null
@@ -787,7 +784,75 @@ def test_S4_streamwrite_devnull(server):
     assert res.stdout.strip() == "4"
 
 
-@bug("S6", "SET comment shifts into the value slot when no value given")
+def test_S4_streamwrite_in_read_loop_keeps_loop_input():
+    res = _run_bash("""
+        @mk2Dim "@S:s4l" 4 4 >/dev/null
+        n=0
+        printf "10\\n20\\n30\\n" | while read v; do @streamwrite s4l $v; n=$((n+1)); echo "it=$n"; done
+        """)
+    assert "it=3" in res.stdout, res.stdout + res.stderr
+
+
+def test_S5_replay_cancel_stops_worker(server):
+    server.call("call", "mk2Dim", "@S:s5src", "4", "4")
+
+    def nproc() -> int:
+        return len(
+            [
+                p
+                for p in os.listdir("/proc")
+                if p.isdigit() and server.name in _cmdline(int(p))
+            ]
+        )
+
+    before = nproc()
+    _milk_call(
+        server.env,
+        "call",
+        "replay",
+        "--loop",
+        "--fps",
+        "20",
+        "s.s5src",
+        "s5dst",
+        timeout=1,
+    )
+    time.sleep(1.5)
+    assert nproc() == before
+
+
+def _cmdline(pid: int) -> str:
+    try:
+        return (
+            Path(f"/proc/{pid}/cmdline")
+            .read_bytes()
+            .replace(b"\0", b" ")
+            .decode(errors="replace")
+        )
+    except OSError:
+        return ""
+
+
+def test_S10_subshell_first_call_does_not_own_server():
+    res = _run_bash("""
+        x=$(@mk2Dim "@L:s10im" 2 2 >/dev/null; echo made)
+        sleep 0.5
+        @exists l.s10im; echo "rc=$?"
+        """)
+    assert "rc=0" in res.stdout, res.stdout + res.stderr
+
+
+def test_S10_daemon_does_not_inherit_caller_fds(tmp_path):
+    hold = tmp_path / "holdme.txt"
+    res = _run_bash(f"""
+        exec 9>"{hold}"
+        @calc -v z 1+1 >/dev/null
+        spid=$(pgrep -f -- "--server ${{_MILK_LOCAL_SOCK}}" | head -1)
+        echo "held=$(ls -l /proc/$spid/fd 2>/dev/null | grep -c holdme)"
+        """)
+    assert "held=0" in res.stdout, res.stdout + res.stderr
+
+
 def test_S6_set_kw_with_comment(server):
     server.call("call", "mk2Dim", "@L:s6", "4", "4")
     assert server.call("exists", "l.s6").returncode == 0
@@ -796,7 +861,6 @@ def test_S6_set_kw_with_comment(server):
     assert res.stdout.strip() == "3"
 
 
-@bug("S7", "SCM_RIGHTS fds leak on oversize frames")
 def test_S7_fd_leak_on_bad_frames(server):
     import array
 
@@ -845,7 +909,6 @@ c.close()
     return p
 
 
-@bug("S8", "lost connection reported as rc 1 (= false) with no message")
 def test_S8_transport_error_distinct_rc(tmp_path):
     env, name = _server_env(tmp_path)
     fake = _fake_server(name, "close")

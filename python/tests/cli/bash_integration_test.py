@@ -446,7 +446,7 @@ def test_pipelines_streamio_defer_xargs_and_sigil():
         @mk2Dim "@S:s1" 4 4
         @mk2Dim "@S:s2" 4 4
         @calc "s1 = 3.0"
-        @streamcat s1 | awk '{print $1 * 4}' | @streamwrite s2
+        @streamcat s1 | awk '{print $1 * 4}' | @streamwrite s2 -
         [[ "$(@calc "s2[0,0]")" == "12" ]]
         [[ "$(@calc "itot(s2)")" == "192" ]]
 
@@ -693,7 +693,7 @@ def test_adversarial_multi_datatype_calc_and_streamio():
             [[ "$(@calc "imedian(${name})")" == "5" ]]
 
             # Round-trip via @streamcat | awk | @streamwrite
-            @streamcat "$name" | awk '{print $1 + 1}' | @streamwrite "$name"
+            @streamcat "$name" | awk '{print $1 + 1}' | @streamwrite "$name" -
             # Adding 1 to all 16 pixels increases total by 16: 115 + 16 = 131
             [[ "$(@calc "itot(${name})")" == "131" ]]
         done
@@ -1229,15 +1229,15 @@ def test_reconciled_help_contract_and_exit_codes(tmp_path: Path):
         @f.fastfps.reset
         [[ "$(@server status)" == *"IDLE"* ]]
 
-        # On-the-fly stream creation via @streamwrite --dtype F32 <stream> <xsize> <ysize>
-        seq 1 16 | @streamwrite --dtype F32 s.ramp 4 4
+        # On-the-fly stream creation via @streamwrite --dtype F32 <stream> <xsize> <ysize> -
+        seq 1 16 | @streamwrite --dtype F32 s.ramp 4 4 -
         [[ "$(@get s.ramp.xsize)" == "4" ]]
         [[ "$(@get s.ramp.ysize)" == "4" ]]
         [[ "$(@get s.ramp.dtype)" == "FLOAT" ]]
         [[ "$(@calc 'itot(ramp)')" == "136" ]]
 
         # Binary round-trip via @streamcat --raw | @streamwrite --raw --dtype F32
-        @streamcat --raw s.ramp | @streamwrite --raw --dtype F32 s.ramp_raw 4 4
+        @streamcat --raw s.ramp | @streamwrite --raw --dtype F32 s.ramp_raw 4 4 -
         [[ "$(@calc 'itot(ramp_raw)')" == "136" ]]
         [[ "$(@calc 'ramp_raw[3, 3]')" == "16" ]]
 
@@ -1292,7 +1292,7 @@ def test_zero_subshell_variable_and_array_binding(tmp_path: Path):
         [[ "${cval}" == "22" ]]
 
         # 2. Create stream and FITS keywords, bind via -v, -a, and -A
-        seq 10 15 | @streamwrite --dtype F32 s.bind_im 6 1
+        seq 10 15 | @streamwrite --dtype F32 s.bind_im 6 1 -
         @set s.bind_im.kw.INST "SCExAO"
         @set s.bind_im.kw.GAIN 4.5
 
@@ -1348,8 +1348,8 @@ def test_zero_subshell_variable_and_array_binding(tmp_path: Path):
 def test_entity_discovery_globbing_and_json_export():
     res = _run_bash("""
         # 1. Create multiple streams and an FPS instance
-        seq 1 4 | @streamwrite --dtype F32 s.dm0 2 2
-        seq 1 9 | @streamwrite --dtype F32 s.dm1 3 3
+        seq 1 4 | @streamwrite --dtype F32 s.dm0 2 2 -
+        seq 1 9 | @streamwrite --dtype F32 s.dm1 3 3 -
         @set s.dm0.kw.LOOP "aol0"
         milk-fpsexec-imggen-mkrndim -n disc_fps fpsinit >/dev/null 2>&1
         @set f.disc_fps.xsize 32

@@ -205,6 +205,22 @@ dcvar_snap_t *milk_server_snapshot_dcvar(long *out_nmax)
     return snap;
 }
 
+/** send_setvar() - send one SETVAR frame (`name\0value\0`), whatever the value length. */
+static void send_setvar(int client_fd, const char *vname, const char *val)
+{
+    size_t   n1  = strlen(vname) + 1;
+    size_t   n2  = strlen(val) + 1;
+    uint8_t *pkt = (uint8_t *) malloc(n1 + n2);
+    if (pkt == NULL)
+    {
+        return;
+    }
+    memcpy(pkt, vname, n1);
+    memcpy(pkt + n1, val, n2);
+    milk_proto_send(client_fd, MILK_MSG_SETVAR, 0, pkt, (uint32_t) (n1 + n2));
+    free(pkt);
+}
+
 /**
  * @brief Compare current `dcvar` and `cli_vars` against @snap and emit `MILK_MSG_SETVAR` frames.
  *
@@ -274,15 +290,7 @@ void milk_server_send_modified_dcvars(int client_fd, const dcvar_snap_t *snap, l
                 snprintf(g_dcvar_cached_str[i], sizeof(g_dcvar_cached_str[i]), "%s", valstr);
             }
 
-            char   pkt[512];
-            size_t n1 = strlen(vname) + 1;
-            size_t n2 = strlen(valstr) + 1;
-            if (n1 + n2 <= sizeof(pkt))
-            {
-                memcpy(pkt, vname, n1);
-                memcpy(pkt + n1, valstr, n2);
-                milk_proto_send(client_fd, MILK_MSG_SETVAR, 0, pkt, (uint32_t) (n1 + n2));
-            }
+            send_setvar(client_fd, vname, valstr);
         }
     }
 
@@ -317,15 +325,7 @@ void milk_server_send_modified_dcvars(int client_fd, const dcvar_snap_t *snap, l
         {
             continue;
         }
-        char   pkt[600];
-        size_t n1 = strlen(vname) + 1;
-        size_t n2 = strlen(cli_vars[j].val) + 1;
-        if (n1 + n2 <= sizeof(pkt))
-        {
-            memcpy(pkt, vname, n1);
-            memcpy(pkt + n1, cli_vars[j].val, n2);
-            milk_proto_send(client_fd, MILK_MSG_SETVAR, 0, pkt, (uint32_t) (n1 + n2));
-        }
+        send_setvar(client_fd, vname, cli_vars[j].val);
     }
 }
 

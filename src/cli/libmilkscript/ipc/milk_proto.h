@@ -265,11 +265,29 @@ static inline int milk_proto_send_with_fds(int         fd,
  *
  * Caller must free(*payload_out) if *payload_out != NULL.
  */
+/** milk_proto_close_fds() - close and reset received fds (error paths must never leak them). */
+static inline void milk_proto_close_fds(int fds[4])
+{
+    for (int i = 0; fds != NULL && i < 4; i++)
+    {
+        if (fds[i] >= 0)
+        {
+            close(fds[i]);
+            fds[i] = -1;
+        }
+    }
+}
+
+/**
+ * milk_proto_recv() - read one frame; fds passed with it land in @recv_fds (or are closed).
+ * Returns 0, -1 on I/O or framing error, or -2 if the peer speaks another protocol version.
+ */
 static inline int milk_proto_recv(int               fd,
                                   milk_frame_hdr_t *hdr_out,
                                   uint8_t         **payload_out,
                                   int               recv_fds[4])
 {
+    int got_fds[4] = { -1, -1, -1, -1 };
     if (recv_fds != NULL)
     {
         for (int i = 0; i < 4; i++)
@@ -286,7 +304,7 @@ static inline int milk_proto_recv(int               fd,
     union
     {
         struct cmsghdr cm;
-        char           control[CMSG_SPACE(sizeof(int) * 4)];
+        char           control[CMSG_SPACE(sizeof(int) * 8)];
     } cmsg_un;
 
     memset(&cmsg_un, 0, sizeof(cmsg_un));
@@ -312,90 +330,75 @@ static inline int milk_proto_recv(int               fd,
     {
         return -1;
     }
-    if ((size_t) n < sizeof(*hdr_out))
-    {
-        if (milk_read_all(fd, ((uint8_t *) hdr_out) + n, sizeof(*hdr_out) - (size_t) n) != 0)
-        {
-            return -1;
-        }
-    }
 
-    if (recv_fds != NULL)
+    /* take ownership of passed fds first, so every error path below can close them */
+    for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL; cmsg = CMSG_NXTHDR(&msg, cmsg))
     {
-        for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
-             cmsg                 = CMSG_NXTHDR(&msg, cmsg))
+        if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS)
         {
-            if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS)
+            size_t nfds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
+            int    tmp[8];
+            if (nfds > 8)
             {
-                size_t nfds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
-                if (nfds > 4)
-                {
-                    nfds = 4;
-                }
-                memcpy(recv_fds, CMSG_DATA(cmsg), nfds * sizeof(int));
+                nfds = 8;
             }
-        }
-    }
-    else
-    {
-        /* Close any unexpected fds so they never leak */
-        for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
-             cmsg                 = CMSG_NXTHDR(&msg, cmsg))
-        {
-            if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS)
+            memcpy(tmp, CMSG_DATA(cmsg), nfds * sizeof(int));
+            for (size_t i = 0; i < nfds; i++)
             {
-                size_t nfds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
-                int    tmpfds[8];
-                if (nfds > 8)
+                if (recv_fds != NULL && i < 4)
                 {
-                    nfds = 8;
+                    got_fds[i] = tmp[i];
                 }
-                memcpy(tmpfds, CMSG_DATA(cmsg), nfds * sizeof(int));
-                for (size_t i = 0; i < nfds; i++)
+                else if (tmp[i] >= 0)
                 {
-                    if (tmpfds[i] >= 0)
-                    {
-                        close(tmpfds[i]);
-                    }
+                    close(tmp[i]);
                 }
             }
         }
     }
 
-    if (hdr_out->magic != MILK_PROTO_MAGIC || hdr_out->version != MILK_PROTO_VERSION)
+    if ((size_t) n < sizeof(*hdr_out) &&
+        milk_read_all(fd, ((uint8_t *) hdr_out) + n, sizeof(*hdr_out) - (size_t) n) != 0)
     {
-        if (recv_fds != NULL)
-        {
-            for (int i = 0; i < 4; i++)
-            {
-                if (recv_fds[i] >= 0)
-                {
-                    close(recv_fds[i]);
-                    recv_fds[i] = -1;
-                }
-            }
-        }
+        milk_proto_close_fds(got_fds);
         return -1;
+    }
+    if (hdr_out->magic != MILK_PROTO_MAGIC)
+    {
+        milk_proto_close_fds(got_fds);
+        return -1;
+    }
+    if (hdr_out->version != MILK_PROTO_VERSION)
+    {
+        milk_proto_close_fds(got_fds);
+        return -2;
     }
 
     if (hdr_out->len > 0)
     {
         if (hdr_out->len > (64U * 1024U * 1024U))
         {
+            milk_proto_close_fds(got_fds);
             return -1;
         }
         uint8_t *buf = (uint8_t *) malloc(hdr_out->len + 1);
         if (buf == NULL)
         {
+            milk_proto_close_fds(got_fds);
             return -1;
         }
         if (milk_read_all(fd, buf, hdr_out->len) != 0)
         {
             free(buf);
+            milk_proto_close_fds(got_fds);
             return -1;
         }
         buf[hdr_out->len] = '\0';
         *payload_out      = buf;
+    }
+    if (recv_fds != NULL)
+    {
+        memcpy(recv_fds, got_fds, sizeof(got_fds));
     }
     return 0;
 }

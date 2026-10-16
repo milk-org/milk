@@ -1192,6 +1192,10 @@ int milk_server_exec_set(const uint8_t *payload, uint32_t len, char *log_cmd, si
     const char *val     = (o1 < len) ? (const char *) (payload + o1) : NULL;
     size_t      o2      = (val != NULL) ? (o1 + strlen(val) + 1) : len;
     const char *comment = (o2 < len) ? (const char *) (payload + o2) : NULL;
+    if (val != NULL && val[0] == '\0' && strchr(spec, '=') != NULL)
+    {
+        val = NULL; // empty value slot: the value is in "spec=value"
+    }
     snprintf(log_cmd, log_cmd_sz, "@set %s = %s", spec, val ? val : "");
     return (milk_shm_prop_set(spec, val, comment) == 0) ? 0 : 1;
 }
@@ -1449,6 +1453,12 @@ static int exec_single_batch_step(const char *raw_step, char *last_img, size_t l
     char step_buf[4096];
     substitute_underscore_token(raw_step, last_img, step_buf, sizeof(step_buf));
     size_t slen = strlen(step_buf);
+    if (slen >= sizeof(step_buf) - 1)
+    {
+        fprintf(stderr, "ERROR: @batch/@pipe step too long (max %zu chars)\n",
+                sizeof(step_buf) - 2);
+        return 1;
+    }
     while (slen > 0 && (step_buf[slen - 1] == ' ' || step_buf[slen - 1] == '\t' ||
                         step_buf[slen - 1] == '\r' || step_buf[slen - 1] == '\n'))
     {
@@ -1829,12 +1839,49 @@ int milk_server_exec_calc_or_test(int            client_fd,
     return rc;
 }
 
+/* Environment overrides sent with a CALL apply to that request only (restored afterwards). */
+#define CALL_ENV_MAX 8
+typedef struct
+{
+    char  name[128];
+    char *old; // NULL: was unset
+} call_env_saved_t;
+static call_env_saved_t g_call_env[CALL_ENV_MAX];
+static int              g_call_env_n       = 0;
+static int              g_call_shm_changed = 0;
+
+/**
+ * apply_shm_dir_env() - re-resolve the SHM dir and reopen the server log if MILK_SHM_DIR moved
+ * (@force: re-resolve even when MILK_SHM_DIR is unset). Returns 1 if it re-resolved.
+ */
+static int apply_shm_dir_env(int force)
+{
+    const char *sd = getenv("MILK_SHM_DIR");
+    if (!force && (sd == NULL || strcmp(dcshmdir, sd) == 0))
+    {
+        return 0;
+    }
+    int saved_q = dcquiet;
+    dcquiet     = 1;
+    setSHMdir();
+    dcquiet = saved_q;
+    if (g_srvlog_shm != NULL && g_srvlog_sockpath[0] != '\0')
+    {
+        uint32_t old_flags = g_srvlog_shm->flags;
+        milk_srvlog_server_close(g_srvlog_shm, 0);
+        g_srvlog_shm = milk_srvlog_server_init(g_srvlog_sockpath, 0, old_flags);
+        milk_server_refresh_log_stats();
+    }
+    return 1;
+}
+
 /**
  * @brief Unpack environment updates from `MILK_MSG_CALL` payload and re-init SHM dir if changed.
  */
 static void unpack_call_env(const uint8_t *payload, uint32_t len, uint32_t *offset_io)
 {
     uint32_t off = *offset_io;
+    g_call_env_n = 0;
     if (off + sizeof(uint32_t) > len)
     {
         return;
@@ -1848,33 +1895,45 @@ static void unpack_call_env(const uint8_t *payload, uint32_t len, uint32_t *offs
         size_t      kl = strnlen(kv, len - off);
         off += (uint32_t) (kl + 1);
         const char *eq = strchr(kv, '=');
-        if (eq != NULL)
+        size_t      kn = (eq != NULL) ? (size_t) (eq - kv) : 0;
+        if (eq == NULL || kn == 0 || kn >= sizeof(g_call_env[0].name) ||
+            g_call_env_n >= CALL_ENV_MAX)
         {
-            char   kname[128];
-            size_t kn = (size_t) (eq - kv);
-            if (kn < sizeof(kname))
-            {
-                memcpy(kname, kv, kn);
-                kname[kn] = '\0';
-                setenv(kname, eq + 1, 1);
-                if (strcmp(kname, "MILK_SHM_DIR") == 0 && strcmp(dcshmdir, eq + 1) != 0)
-                {
-                    int saved_q = dcquiet;
-                    dcquiet     = 1;
-                    setSHMdir();
-                    dcquiet = saved_q;
-                    if (g_srvlog_shm != NULL && g_srvlog_sockpath[0] != '\0')
-                    {
-                        uint32_t old_flags = g_srvlog_shm->flags;
-                        milk_srvlog_server_close(g_srvlog_shm, 0);
-                        g_srvlog_shm = milk_srvlog_server_init(g_srvlog_sockpath, 0, old_flags);
-                        milk_server_refresh_log_stats();
-                    }
-                }
-            }
+            continue;
+        }
+        call_env_saved_t *e = &g_call_env[g_call_env_n++];
+        memcpy(e->name, kv, kn);
+        e->name[kn]     = '\0';
+        const char *cur = getenv(e->name);
+        e->old          = (cur != NULL) ? strdup(cur) : NULL;
+        setenv(e->name, eq + 1, 1);
+    }
+    g_call_shm_changed = apply_shm_dir_env(0);
+    *offset_io         = off;
+}
+
+/** restore_call_env() - undo unpack_call_env() so one client's environment never leaks to the next. */
+static void restore_call_env(void)
+{
+    while (g_call_env_n > 0)
+    {
+        call_env_saved_t *e = &g_call_env[--g_call_env_n];
+        if (e->old != NULL)
+        {
+            setenv(e->name, e->old, 1);
+            free(e->old);
+            e->old = NULL;
+        }
+        else
+        {
+            unsetenv(e->name);
         }
     }
-    *offset_io = off;
+    if (g_call_shm_changed)
+    {
+        apply_shm_dir_env(1);
+        g_call_shm_changed = 0;
+    }
 }
 
 /**
@@ -1897,9 +1956,19 @@ int milk_server_exec_call(int            client_fd,
     memcpy(&argc, payload + off, sizeof(uint32_t));
     off += (uint32_t) sizeof(uint32_t);
 
-    char **argv = (char **) calloc(argc + 1, sizeof(char *));
-    size_t lpos = 0;
-    for (uint32_t i = 0; i < argc && off < len; i++)
+    if (argc == 0 || argc > len - off) // every argument needs at least its NUL byte
+    {
+        fprintf(stderr, "milk: malformed CALL request (argc %u)\n", argc);
+        return 1;
+    }
+    char **argv = (char **) calloc((size_t) argc + 1, sizeof(char *));
+    if (argv == NULL)
+    {
+        return 1;
+    }
+    size_t   lpos  = 0;
+    uint32_t nargs = 0;
+    for (uint32_t i = 0; i < argc && off < len; i++, nargs++)
     {
         argv[i] = (char *) (payload + off);
         off += (uint32_t) (strnlen(argv[i], len - off) + 1);
@@ -1916,6 +1985,12 @@ int milk_server_exec_call(int            client_fd,
             lpos += cp;
             log_cmd[lpos] = '\0';
         }
+    }
+    if (nargs < argc)
+    {
+        fprintf(stderr, "milk: malformed CALL request (%u of %u arguments)\n", nargs, argc);
+        free(argv);
+        return 1;
     }
 
     unpack_call_env(payload, len, &off);
@@ -1935,8 +2010,8 @@ int milk_server_exec_call(int            client_fd,
     call_watcher_ctx_t wctx;
     pthread_t          wtid;
     int                has_watcher = 0;
-    if (listen_fd >= 0)
     {
+        // also in forked workers (listen_fd < 0, ignored by poll): CANCEL/hang-up must stop them
         wctx.client_fd = client_fd;
         wctx.listen_fd = listen_fd;
         wctx.wake_fd   = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
@@ -1995,5 +2070,6 @@ int milk_server_exec_call(int            client_fd,
     }
 
     free(argv);
+    restore_call_env();
     return rc;
 }

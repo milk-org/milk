@@ -715,8 +715,8 @@ static void help_topic_streams(void)
            "Replay 3D cube or FITS file into SHM stream <s>\n");
     printf("  " C_CMD "@streamcat [-a arr] <s>" C_RST
            "Bind stream pixels to Bash array or pipe to stdout\n");
-    printf("  " C_CMD "@streamwrite <s> W [H] " C_RST
-           "Publish raw pixels from stdin to SHM stream\n");
+    printf("  " C_CMD "@streamwrite <s> [W [H]] -" C_RST
+           "Publish pixels from stdin ('-') or arguments to SHM stream\n");
     printf("\n");
     printf(C_HDR "3. Standalone OS Tools:\n" C_RST);
     printf("  " C_CMD "milk-streamCTRL        " C_RST "Interactive TUI stream monitor\n");

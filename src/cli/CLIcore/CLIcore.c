@@ -46,6 +46,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/prctl.h>
+#include <sys/syscall.h>
 #include <sys/ioctl.h>
 #include <sched.h>
 #include <signal.h>
@@ -1148,6 +1149,7 @@ static int command_line_process_options(int argc, char **argv)
                                             { "owner-fd", required_argument, 0, 0x105 },
                                             { "ready-fd", required_argument, 0, 0x106 },
                                             { "dump-commands", no_argument, 0, 0x107 },
+                                            { "owner-pid", required_argument, 0, 0x108 },
                                             { "quiet", no_argument, 0, 'q' },
                                             { "fifoflag", no_argument, 0, 'f' },
                                             { "command", required_argument, 0, 'c' },
@@ -1269,6 +1271,22 @@ static int command_line_process_options(int argc, char **argv)
             if (optarg != NULL)
             {
                 server_owner_fd = atoi(optarg);
+            }
+            break;
+
+        case 0x108: // exit when that process exits (pidfd polled like the owner pipe)
+            if (optarg != NULL)
+            {
+                int pfd = (int) syscall(SYS_pidfd_open, (pid_t) atol(optarg), 0);
+                if (pfd < 0 && errno == ESRCH)
+                {
+                    exit(0);
+                }
+                if (pfd >= 0)
+                {
+                    fcntl(pfd, F_SETFD, FD_CLOEXEC);
+                    server_owner_fd = pfd;
+                }
             }
             break;
 

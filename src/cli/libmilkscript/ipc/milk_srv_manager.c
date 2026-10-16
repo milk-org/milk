@@ -154,7 +154,7 @@ static int start_named_server(const char *srv_name, int use_tmux, const milk_cli
         return 1;
     }
 
-    return (milk_ipc_spawn_daemon(binpath, sockpath, -1, -1, 1) == 0) ? 0 : 1;
+    return (milk_ipc_spawn_daemon(binpath, sockpath, -1, -1, 1, 0) == 0) ? 0 : 1;
 }
 
 static void format_uptime(time_t start_sec, char *out, size_t outsz)

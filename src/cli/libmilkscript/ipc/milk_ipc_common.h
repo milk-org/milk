@@ -124,12 +124,14 @@ int milk_ipc_shutdown_socket(const char *sockpath);
  * @param owner_rfd    Read end of owner lifetime pipe (-1 if none)
  * @param close_in_chd Optional extra fd to close in child (-1 if none)
  * @param is_named     If non-zero, set `MILK_SRV_NAMED=1` in daemon environment
+ * @param owner_pid    If > 0 (and no @owner_rfd), the daemon exits when this process exits
  * @return 0 once daemon signals readiness, -1 on error or timeout
  */
 int milk_ipc_spawn_daemon(const char *binpath,
                           const char *sockpath,
                           int         owner_rfd,
                           int         close_in_chd,
-                          int         is_named);
+                          int         is_named,
+                          pid_t       owner_pid);
 
 #endif /* MILK_IPC_COMMON_H */

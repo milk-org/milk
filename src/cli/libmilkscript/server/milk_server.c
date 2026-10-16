@@ -47,6 +47,8 @@
 #include "milk_server_internal.h"
 #include "milk_srvlog.h"
 
+#define MILK_SERVER_REQ_TIMEOUT_MS 2000 // max time to receive a request frame
+
 #ifndef F_SETPIPE_SZ
 #    define F_SETPIPE_SZ 1031
 #endif
@@ -466,10 +468,22 @@ void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
     uint8_t         *payload     = NULL;
     int              recv_fds[4] = { -1, -1, -1, -1 };
 
-    if (milk_proto_recv(client_fd, &hdr, &payload, recv_fds) != 0)
+    /* the request frame must arrive promptly: a stalled client must not block the server */
+    struct timeval req_to = { MILK_SERVER_REQ_TIMEOUT_MS / 1000,
+                              (MILK_SERVER_REQ_TIMEOUT_MS % 1000) * 1000 };
+    setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &req_to, sizeof(req_to));
+    int rr = milk_proto_recv(client_fd, &hdr, &payload, recv_fds);
+    if (rr == -2)
+    {
+        int32_t vrc = 255; // our version in the reply header tells the client what we speak
+        milk_proto_send(client_fd, MILK_MSG_DONE, 0, &vrc, sizeof(vrc));
+    }
+    if (rr != 0)
     {
         return;
     }
+    struct timeval no_to = { 0, 0 };
+    setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &no_to, sizeof(no_to));
 
     pid_t        client_pid = getpid();
     struct ucred cred;
@@ -549,10 +563,11 @@ void milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
             }
         }
 
-        int            use_tee      = (g_srvlog_shm != NULL && !is_streamcat) ? 1 : 0;
-        int            out_pipe[2]  = { -1, -1 };
-        int            err_pipe[2]  = { -1, -1 };
-        int            stop_pipe[2] = { -1, -1 };
+        // a terminal stays a terminal (TUIs, isatty checks): only capture output going elsewhere
+        int use_tee      = (g_srvlog_shm != NULL && !is_streamcat && !isatty(recv_fds[1])) ? 1 : 0;
+        int out_pipe[2]  = { -1, -1 };
+        int err_pipe[2]  = { -1, -1 };
+        int stop_pipe[2] = { -1, -1 };
         tee_pump_ctx_t tee_ctx;
         pthread_t      tee_tid;
         int            tee_running = 0;

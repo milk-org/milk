@@ -19,6 +19,7 @@
 #endif
 
 #include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -469,6 +470,33 @@ int milk_ipc_shutdown_socket(const char *sockpath)
     return 1;
 }
 
+/** close_fds_except() - close every fd >= 3 except @keep1 and @keep2 (listed from /proc/self/fd). */
+static void close_fds_except(int keep1, int keep2)
+{
+    int  fds[1024];
+    int  nfd = 0;
+    DIR *d   = opendir("/proc/self/fd");
+    if (d == NULL)
+    {
+        return;
+    }
+    int            dfd = dirfd(d);
+    struct dirent *de;
+    while ((de = readdir(d)) != NULL && nfd < 1024)
+    {
+        int fd = atoi(de->d_name);
+        if (de->d_name[0] != '.' && fd > 2 && fd != dfd && fd != keep1 && fd != keep2)
+        {
+            fds[nfd++] = fd;
+        }
+    }
+    closedir(d);
+    for (int i = 0; i < nfd; i++)
+    {
+        close(fds[i]);
+    }
+}
+
 /**
  * @brief Double-fork and `execlp` a background `milk-cli -q --server` daemon.
  *
@@ -477,13 +505,15 @@ int milk_ipc_shutdown_socket(const char *sockpath)
  * @param owner_rfd    Read end of owner lifetime pipe (-1 if none)
  * @param close_in_chd Optional extra fd to close in child (-1 if none)
  * @param is_named     If non-zero, set `MILK_SRV_NAMED=1` in daemon environment
+ * @param owner_pid    If > 0 (and no @owner_rfd), the daemon exits when this process exits
  * @return 0 once daemon signals readiness, -1 on error or timeout
  */
 int milk_ipc_spawn_daemon(const char *binpath,
                           const char *sockpath,
                           int         owner_rfd,
                           int         close_in_chd,
-                          int         is_named)
+                          int         is_named,
+                          pid_t       owner_pid)
 {
     int ready_pipe[2] = { -1, -1 };
     if (pipe(ready_pipe) != 0)
@@ -538,10 +568,19 @@ int milk_ipc_spawn_daemon(const char *binpath,
             setenv("MILK_SRV_NAMED", "1", 1);
         }
 
+        close_fds_except(ready_pipe[1], owner_rfd); // the daemon must not pin the caller's pipes
+
         char rfd_str[32];
         snprintf(rfd_str, sizeof(rfd_str), "%d", ready_pipe[1]);
 
-        if (owner_rfd >= 0)
+        if (owner_rfd < 0 && owner_pid > 0)
+        {
+            char opid_str[32];
+            snprintf(opid_str, sizeof(opid_str), "%ld", (long) owner_pid);
+            execlp(binpath, binpath, "-q", "--server", sockpath, "--ready-fd", rfd_str,
+                   "--owner-pid", opid_str, (char *) NULL);
+        }
+        else if (owner_rfd >= 0)
         {
             char ofd_str[32];
             snprintf(ofd_str, sizeof(ofd_str), "%d", owner_rfd);

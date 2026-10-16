@@ -440,6 +440,11 @@ int milk_server_grab(int         client_fd,
     {
         return 1;
     }
+    if ((unsigned long) nframes > UINT32_MAX) // cube depth is a 32-bit axis
+    {
+        fprintf(stderr, "ERROR: @grab: too many frames (%ld)\n", nframes);
+        return 1;
+    }
     FPS_STREAMNAME_PARSED sp_in = fps_streamname_parse(sname_raw);
     const char           *sname =
         (!sp_in.error && sp_in.name != NULL && sp_in.name[0] != '\0') ? sp_in.name : sname_raw;
@@ -604,19 +609,29 @@ int milk_server_grab(int         client_fd,
                     mono_s);
         }
 
-        if (in_dt == out_dt)
+        /* recopy if the writer touched the frame while we copied it (torn frame) */
+        for (int tries = 0; tries < 3; tries++)
         {
-            __builtin_memcpy(((uint8_t *) cube->array.raw) + (size_t) f * npix2d * out_elsz,
-                             in_im->array.raw, npix2d * in_elsz);
-        }
-        else
-        {
-            uint64_t base = (uint64_t) f * npix2d;
-            for (uint64_t p = 0; p < npix2d; p++)
+            uint64_t c0 = in_im->md->cnt0;
+            if (in_dt == out_dt)
             {
-                write_typed_elem(cube, out_dt, base + p, read_typed_elem(in_im, in_dt, p));
+                __builtin_memcpy(((uint8_t *) cube->array.raw) + (size_t) f * npix2d * out_elsz,
+                                 in_im->array.raw, npix2d * in_elsz);
+            }
+            else
+            {
+                uint64_t base = (uint64_t) f * npix2d;
+                for (uint64_t p = 0; p < npix2d; p++)
+                {
+                    write_typed_elem(cube, out_dt, base + p, read_typed_elem(in_im, in_dt, p));
+                }
+            }
+            if (in_im->md->cnt0 == c0 && in_im->md->write == 0)
+            {
+                break;
             }
         }
+        last_cnt = in_im->md->cnt0;
     } // for (long f = 0; f < nframes; f++)
 
     if (ts_fp != NULL)
@@ -861,10 +876,11 @@ static int stdin_has_data(void)
 /**
  * @brief Built-in `@streamwrite`: write elements into a stream from `stdin` or `argv`.
  *
- * Supports:
- *   `... | @streamwrite [--raw] <stream>`
- *   `... | @streamwrite [--raw] [--dtype <type>] <stream> <xsize> [ysize] [zsize]`
+ * Supports (stdin is read only when '-' is given):
+ *   `... | @streamwrite [--raw] <stream> -`
+ *   `... | @streamwrite [--raw] [--dtype <type>] <stream> <xsize> [ysize] [zsize] -`
  *   `@streamwrite <stream> <val1> <val2> ...`
+ *   `@streamwrite [--dtype <type>] <new_stream> <xsize> [ysize] [zsize]`
  *
  * @param argc Argument count
  * @param argv Argument vector
@@ -877,7 +893,8 @@ int milk_server_streamwrite(int argc, char **argv)
     const char *dtype_str = NULL;
     const char *sname_raw = NULL;
     const char *pos[64];
-    int         npos = 0;
+    int         npos      = 0;
+    int         use_stdin = 0;
 
     for (int i = 1; i < argc; i++)
     {
@@ -895,6 +912,10 @@ int milk_server_streamwrite(int argc, char **argv)
             has_dtype = 1;
             dtype_str = argv[i] + 8;
         }
+        else if (strcmp(argv[i], "-") == 0)
+        {
+            use_stdin = 1;
+        }
         else if (sname_raw == NULL)
         {
             sname_raw = argv[i];
@@ -907,8 +928,9 @@ int milk_server_streamwrite(int argc, char **argv)
 
     if (sname_raw == NULL)
     {
-        fprintf(stderr,
-                "Usage: @streamwrite [--raw] [--dtype <type>] <stream> [xsize [ysize [zsize]]]\n");
+        fprintf(
+            stderr,
+            "Usage: @streamwrite [--raw] [--dtype <type>] <stream> [xsize [ysize [zsize]]] [-]\n");
         return 1;
     }
 
@@ -917,7 +939,17 @@ int milk_server_streamwrite(int argc, char **argv)
     const char           *sw_bare =
         (!sp_sw.error && sp_sw.name != NULL && sp_sw.name[0] != '\0') ? sp_sw.name : sname_raw;
 
-    int    has_stdin = stdin_has_data();
+    if (raw_mode && !use_stdin)
+    {
+        fprintf(stderr, "ERROR: @streamwrite: --raw reads stdin; add '-'\n");
+        return 1;
+    }
+    int has_stdin = use_stdin && stdin_has_data();
+    if (use_stdin && !has_stdin)
+    {
+        fprintf(stderr, "ERROR: @streamwrite: '-' given but stdin has no data\n");
+        return 1;
+    }
     IMAGE  tmp_im;
     int    need_close = 0;
     IMAGE *im         = NULL;
@@ -1003,6 +1035,18 @@ int milk_server_streamwrite(int argc, char **argv)
     im->md->write = 1;
     uint64_t idx  = 0;
 
+    if (npos == 0 && !use_stdin && !pos_are_dims)
+    {
+        im->md->write = 0;
+        if (need_close)
+        {
+            ImageStreamIO_closeIm(&tmp_im);
+        }
+        fprintf(stderr,
+                "ERROR: @streamwrite: nothing to write (give values, or '-' to read stdin)\n");
+        return 1;
+    }
+
     if (raw_mode)
     {
         size_t   elsz        = ImageStreamIO_typesize(dt);
@@ -1045,7 +1089,7 @@ int milk_server_streamwrite(int argc, char **argv)
             }
         }
     }
-    else
+    else if (use_stdin)
     {
         int dup_fd = dup(STDIN_FILENO);
         if (dup_fd >= 0)
