@@ -1811,6 +1811,27 @@ int milk_ls_exec(int argc, char **argv)
  * ============================================================
  */
 
+static const char *strip_proc_prefix_local(const char *s)
+{
+    while (*s == '@')
+    {
+        s++;
+    }
+    if (strncmp(s, "p.", 2) == 0)
+    {
+        return s + 2;
+    }
+    if (strncmp(s, "proc.", 5) == 0)
+    {
+        return s + 5;
+    }
+    if (strncmp(s, "procinfo.", 9) == 0)
+    {
+        return s + 9;
+    }
+    return s;
+}
+
 int cli_intercept_cmd_procctl(const char *p)
 {
     if (starts_with_local(p, "procctl ") || starts_with_local(p, "procctl\t"))
@@ -1820,32 +1841,35 @@ int cli_intercept_cmd_procctl(const char *p)
         {
             ap++;
         }
-        char pname[256];
+        char raw_pname[256];
         int  nlen = 0;
         while (*ap && *ap != ' ' && *ap != '\t' && nlen < 255)
         {
-            pname[nlen++] = *ap++;
+            raw_pname[nlen++] = *ap++;
         }
-        pname[nlen] = '\0';
+        raw_pname[nlen]   = '\0';
+        const char *pname = strip_proc_prefix_local(raw_pname);
         while (*ap == ' ' || *ap == '\t')
         {
             ap++;
         }
         int ctrlval = -1;
-        if (strncmp(ap, "run", 3) == 0 || strncmp(ap, "resume", 6) == 0)
+        if (strncasecmp(ap, "run", 3) == 0 || strncasecmp(ap, "resume", 6) == 0 ||
+            strcmp(ap, "0") == 0)
         {
             ctrlval = PROCESSINFO_CTRLVAL_RUN;
         }
-        else if (strncmp(ap, "pause", 5) == 0)
+        else if (strncasecmp(ap, "pause", 5) == 0 || strcmp(ap, "1") == 0)
         {
             ctrlval = PROCESSINFO_CTRLVAL_PAUSE;
         }
-        else if (strncmp(ap, "step", 4) == 0 || strncmp(ap, "incr", 4) == 0)
+        else if (strncasecmp(ap, "step", 4) == 0 || strncasecmp(ap, "incr", 4) == 0 ||
+                 strcmp(ap, "2") == 0)
         {
             ctrlval = PROCESSINFO_CTRLVAL_INCR;
         }
-        else if (strncmp(ap, "stop", 4) == 0 || strncmp(ap, "exit", 4) == 0 ||
-                 strncmp(ap, "kill", 4) == 0)
+        else if (strncasecmp(ap, "stop", 4) == 0 || strncasecmp(ap, "exit", 4) == 0 ||
+                 strncasecmp(ap, "kill", 4) == 0 || strcmp(ap, "3") == 0)
         {
             ctrlval = PROCESSINFO_CTRLVAL_EXIT;
         }
@@ -1854,35 +1878,36 @@ int cli_intercept_cmd_procctl(const char *p)
             printf("procctl: unknown action '%s' (use run|pause|step|stop)\n", ap);
             return 1;
         }
-        PROCESSINFOLIST *plist = get_pinfolist_local();
+        PROCESSINFOLIST *plist   = get_pinfolist_local();
+        int              matched = 0;
         if (plist != NULL)
         {
-            pid_t fpid = 0;
+            char pdname[256];
+            get_procdir_local(pdname, sizeof(pdname));
             for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
             {
-                if (plist->active[pi] && strcmp(plist->pnamearray[pi], pname) == 0)
+                if (plist->active[pi] && fnmatch(pname, plist->pnamearray[pi], 0) == 0)
                 {
-                    fpid = plist->PIDarray[pi];
-                    break;
+                    pid_t fpid = plist->PIDarray[pi];
+                    if (fpid > 0)
+                    {
+                        int          pfd = -1;
+                        PROCESSINFO *pii =
+                            open_proc_shm_local(pdname, plist->pnamearray[pi], fpid, &pfd);
+                        if (pii != NULL)
+                        {
+                            pii->CTRLval = ctrlval;
+                            munmap(pii, sizeof(PROCESSINFO));
+                            close(pfd);
+                            matched = 1;
+                        }
+                    }
                 }
             }
-            if (fpid > 0)
-            {
-                char pdname[256];
-                get_procdir_local(pdname, sizeof(pdname));
-                int          pfd = -1;
-                PROCESSINFO *pi  = open_proc_shm_local(pdname, pname, fpid, &pfd);
-                if (pi != NULL)
-                {
-                    pi->CTRLval = ctrlval;
-                    munmap(pi, sizeof(PROCESSINFO));
-                    close(pfd);
-                }
-            }
-            else
-            {
-                printf("procctl: process '%s' not found\n", pname);
-            }
+        }
+        if (!matched)
+        {
+            printf("procctl: process '%s' not found\n", pname);
         }
         return 1;
     }
@@ -1898,13 +1923,14 @@ int cli_intercept_cmd_procwait(const char *p)
         {
             ap++;
         }
-        char pname[256];
+        char raw_pname[256];
         int  nlen = 0;
         while (*ap && *ap != ' ' && *ap != '\t' && nlen < 255)
         {
-            pname[nlen++] = *ap++;
+            raw_pname[nlen++] = *ap++;
         }
-        pname[nlen] = '\0';
+        raw_pname[nlen]   = '\0';
+        const char *pname = strip_proc_prefix_local(raw_pname);
         while (*ap == ' ' || *ap == '\t')
         {
             ap++;
@@ -1952,7 +1978,7 @@ int cli_intercept_cmd_procwait(const char *p)
         }
         struct timespec slp;
         slp.tv_sec      = 0;
-        slp.tv_nsec     = 20000000;
+        slp.tv_nsec     = 2000000;
         double elapsed  = 0.0;
         cli_last_retval = 1;
         while (elapsed < timeout)
@@ -1975,7 +2001,8 @@ int cli_intercept_cmd_procwait(const char *p)
                                 (tgt == PROCESSINFO_LOOPSTAT_PAUSE &&
                                  pii->CTRLval == PROCESSINFO_CTRLVAL_PAUSE) ||
                                 (tgt == PROCESSINFO_LOOPSTAT_STOP &&
-                                 pii->CTRLval == PROCESSINFO_CTRLVAL_EXIT))
+                                 (pii->CTRLval == PROCESSINFO_CTRLVAL_EXIT ||
+                                  (fpid > 0 && kill(fpid, 0) != 0))))
                             {
                                 cli_last_retval = 0;
                             }
@@ -1991,7 +2018,7 @@ int cli_intercept_cmd_procwait(const char *p)
                 break;
             }
             nanosleep(&slp, NULL);
-            elapsed += 0.02;
+            elapsed += 0.002;
         }
         return 1;
     }
@@ -2008,14 +2035,15 @@ int cli_intercept_cmd_procstat(const char *p)
         {
             ap++;
         }
-        char filter[256];
-        filter[0] = '\0';
+        char raw_filter[256];
+        raw_filter[0] = '\0';
         if (*ap != '\0')
         {
-            strncpy(filter, ap, sizeof(filter) - 1);
-            filter[sizeof(filter) - 1] = '\0';
+            strncpy(raw_filter, ap, sizeof(raw_filter) - 1);
+            raw_filter[sizeof(raw_filter) - 1] = '\0';
         }
-        PROCESSINFOLIST *plist = get_pinfolist_local();
+        const char      *filter = strip_proc_prefix_local(raw_filter);
+        PROCESSINFOLIST *plist  = get_pinfolist_local();
         if (plist != NULL)
         {
             char pdname[256];
@@ -2027,7 +2055,7 @@ int cli_intercept_cmd_procstat(const char *p)
                     continue;
                 }
                 const char *pname = plist->pnamearray[pi];
-                if (filter[0] != '\0' && strcmp(pname, filter) != 0)
+                if (filter[0] != '\0' && fnmatch(filter, pname, 0) != 0)
                 {
                     continue;
                 }
@@ -2059,7 +2087,7 @@ int cli_intercept_cmd_procstat(const char *p)
                        pii->CTRLval, (unsigned long) pii->triggermissedframe_cumul, pii->tmuxname);
                 munmap(pii, sizeof(PROCESSINFO));
                 close(pfd);
-                if (filter[0] != '\0')
+                if (filter[0] != '\0' && strchr(filter, '*') == NULL && strchr(filter, '?') == NULL)
                 {
                     break;
                 }

@@ -118,6 +118,40 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
         return 0;
     }
 
+    const char *c0 = argv[0];
+    if (c0[0] == '@' || c0[0] == ',')
+    {
+        c0++;
+    }
+    if (!async_flag && strcmp(c0, "procwait") == 0 && argc >= 2)
+    {
+        char        ptarget[280];
+        const char *raw_p = argv[1];
+        while (*raw_p == '@')
+        {
+            raw_p++;
+        }
+        if (strncmp(raw_p, "p.", 2) == 0 || strncmp(raw_p, "proc.", 5) == 0 ||
+            strncmp(raw_p, "procinfo.", 9) == 0)
+        {
+            snprintf(ptarget, sizeof(ptarget), "%s", raw_p);
+        }
+        else
+        {
+            snprintf(ptarget, sizeof(ptarget), "p.%s", raw_p);
+        }
+        const char *st   = (argc >= 3) ? argv[2] : "STOPPED";
+        const char *timo = (argc >= 4) ? argv[3] : "30";
+        char       *wargv[5];
+        wargv[0] = (char *) "-t";
+        wargv[1] = (char *) timo;
+        wargv[2] = ptarget;
+        wargv[3] = (char *) st;
+        wargv[4] = NULL;
+        int wrc  = milk_client_waitfor(4, wargv, hooks);
+        return (wrc == 0) ? 0 : 1;
+    }
+
     int sw_stdin_fd = drain_stdin_to_memfd(argc, argv);
 
     char sockpath[256];
@@ -680,11 +714,12 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     milk_ipc_sync_shm_env(hooks);
 
-    const char *target  = NULL;
-    const char *arg2    = "1";
-    const char *timeout = "0";
-    const char *sem_str = NULL;
-    const char *cnt_str = NULL;
+    const char *target   = NULL;
+    const char *arg2     = "1";
+    int         has_arg2 = 0;
+    const char *timeout  = "0";
+    const char *sem_str  = NULL;
+    const char *cnt_str  = NULL;
 
     for (int i = 0; i < argc; i++)
     {
@@ -718,7 +753,8 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
         }
         else
         {
-            arg2 = argv[i];
+            arg2     = argv[i];
+            has_arg2 = 1;
         }
     }
 
@@ -741,8 +777,48 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
                            strstr(tclean, "==") != NULL || strstr(tclean, "!=") != NULL ||
                            strstr(tclean, "&&") != NULL || strstr(tclean, "||") != NULL);
 
-    /* Fast Path 1: Client-side equality condition wait (e.g. f.name.param=val, p.name.status=STOPPED) */
+    /* Fast Path 0: Client-side process state wait (@waitfor p.<name> [state]) */
     const char *eq = (!is_complex_expr) ? strchr(tclean, '=') : NULL;
+    char        proc_eq_buf[320];
+    if (!is_complex_expr && eq == NULL &&
+        (strncmp(tclean, "p.", 2) == 0 || strncmp(tclean, "proc.", 5) == 0 ||
+         strncmp(tclean, "procinfo.", 9) == 0))
+    {
+        const char *dot1 = strchr(tclean, '.');
+        if (dot1 != NULL && dot1[1] != '\0' && strchr(dot1 + 1, '.') == NULL)
+        {
+            const char *st      = has_arg2 ? arg2 : "STOPPED";
+            const char *norm_st = st;
+            if (strcasecmp(st, "ACTIVE") == 0 || strcasecmp(st, "RUN") == 0 ||
+                strcasecmp(st, "RUNNING") == 0 || strcmp(st, "1") == 0)
+            {
+                norm_st = "ACTIVE";
+            }
+            else if (strcasecmp(st, "PAUSE") == 0 || strcasecmp(st, "PAUSED") == 0 ||
+                     strcmp(st, "2") == 0)
+            {
+                norm_st = "PAUSED";
+            }
+            else if (strcasecmp(st, "STOP") == 0 || strcasecmp(st, "STOPPED") == 0 ||
+                     strcasecmp(st, "EXIT") == 0 || strcmp(st, "3") == 0)
+            {
+                norm_st = "STOPPED";
+            }
+            else if (strcasecmp(st, "INIT") == 0 || strcmp(st, "0") == 0)
+            {
+                norm_st = "INIT";
+            }
+            else if (strcasecmp(st, "ERROR") == 0 || strcmp(st, "4") == 0)
+            {
+                norm_st = "ERROR";
+            }
+            snprintf(proc_eq_buf, sizeof(proc_eq_buf), "p.%s.status=%s", dot1 + 1, norm_st);
+            tclean = proc_eq_buf;
+            eq     = strchr(tclean, '=');
+        }
+    }
+
+    /* Fast Path 1: Client-side equality condition wait (e.g. f.name.param=val, p.name.status=STOPPED) */
     if (eq != NULL)
     {
         char   lhs[256];
@@ -753,9 +829,11 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
             lhs[lhslen]        = '\0';
             const char *expect = eq + 1;
             char        val[256];
-            if (milk_shm_prop_get(lhs, val, sizeof(val)) == 0)
+            int         is_shm_ent = (is_entity_spec_token(lhs) && strncmp(lhs, "l.", 2) != 0 &&
+                                      strncmp(lhs, "local.", 6) != 0);
+            if (milk_shm_prop_get(lhs, val, sizeof(val)) == 0 || is_shm_ent)
             {
-                if (client_status_matches(val, expect))
+                if (val[0] != '\0' && client_status_matches(val, expect))
                 {
                     return 0;
                 }

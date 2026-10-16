@@ -430,6 +430,14 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
         }
         data.cmdNBarg++;
     }
+    if ((strcmp(data.cmd[cmdidx].key, "rm") == 0 || strcmp(data.cmd[cmdidx].key, "mem.rm") == 0) &&
+        data.cmdNBarg == 2)
+    {
+        snprintf(data.cmdargtoken[2].val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "0");
+        data.cmdargtoken[2].val.numl = 0;
+        data.cmdargtoken[2].type     = CMDARGTOKEN_TYPE_LONG;
+        data.cmdNBarg                = 3;
+    }
     data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
     return 0;
 }
@@ -1032,10 +1040,15 @@ int milk_server_dispatch_argv(int argc, char **argv)
             if (argc == 1)
             {
                 const char *prop = dot2 + 1;
-                if ((strcmp(prop, "confstart") == 0 || strcmp(prop, "confstop") == 0 ||
-                     strcmp(prop, "confstep") == 0 || strcmp(prop, "runstart") == 0 ||
-                     strcmp(prop, "runstop") == 0 || strcmp(prop, "reset") == 0) &&
-                    (strncmp(cmdname, "f.", 2) == 0 || strncmp(cmdname, "fps.", 4) == 0))
+                if (((strcmp(prop, "confstart") == 0 || strcmp(prop, "confstop") == 0 ||
+                      strcmp(prop, "confstep") == 0 || strcmp(prop, "runstart") == 0 ||
+                      strcmp(prop, "runstop") == 0 || strcmp(prop, "reset") == 0) &&
+                     (strncmp(cmdname, "f.", 2) == 0 || strncmp(cmdname, "fps.", 4) == 0)) ||
+                    ((strcmp(prop, "pause") == 0 || strcmp(prop, "resume") == 0 ||
+                      strcmp(prop, "run") == 0 || strcmp(prop, "step") == 0 ||
+                      strcmp(prop, "incr") == 0 || strcmp(prop, "stop") == 0 ||
+                      strcmp(prop, "exit") == 0 || strcmp(prop, "kill") == 0) &&
+                     (strncmp(cmdname, "p.", 2) == 0 || strncmp(cmdname, "proc.", 5) == 0)))
                 {
                     return (milk_shm_prop_set(cmdname, "1", NULL) == 0) ? 0 : 1;
                 }

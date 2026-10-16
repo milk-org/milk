@@ -661,7 +661,9 @@ command_not_found_handle() {
                 fi
                 case "${bare}" in
                     f.*.confstart|f.*.confstop|f.*.confstep|f.*.runstart|f.*.runstop|f.*.reset|\
-                    fps.*.confstart|fps.*.confstop|fps.*.confstep|fps.*.runstart|fps.*.runstop|fps.*.reset)
+                    fps.*.confstart|fps.*.confstop|fps.*.confstep|fps.*.runstart|fps.*.runstop|fps.*.reset|\
+                    p.*.run|p.*.resume|p.*.pause|p.*.step|p.*.incr|p.*.stop|p.*.exit|p.*.kill|\
+                    proc.*.run|proc.*.resume|proc.*.pause|proc.*.step|proc.*.incr|proc.*.stop|proc.*.exit|proc.*.kill)
                         milkset "${bare}" 1
                         return $?
                         ;;

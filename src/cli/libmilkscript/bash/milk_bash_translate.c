@@ -985,10 +985,17 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
                     memcpy(ent_tmp, s + adv, elen);
                     ent_tmp[elen]    = '\0';
                     const char *ldot = strrchr(ent_tmp, '.');
+                    int         isp =
+                        (strncmp(ent_tmp, "p.", 2) == 0 || strncmp(ent_tmp, "proc.", 5) == 0 ||
+                         strncmp(ent_tmp, "procinfo.", 9) == 0);
                     if (ldot != NULL &&
                         (strcmp(ldot + 1, "confstart") == 0 || strcmp(ldot + 1, "confstop") == 0 ||
                          strcmp(ldot + 1, "confstep") == 0 || strcmp(ldot + 1, "runstart") == 0 ||
-                         strcmp(ldot + 1, "runstop") == 0 || strcmp(ldot + 1, "reset") == 0))
+                         strcmp(ldot + 1, "runstop") == 0 || strcmp(ldot + 1, "reset") == 0 ||
+                         strcmp(ldot + 1, "pause") == 0 || strcmp(ldot + 1, "resume") == 0 ||
+                         strcmp(ldot + 1, "step") == 0 || strcmp(ldot + 1, "incr") == 0 ||
+                         strcmp(ldot + 1, "stop") == 0 || strcmp(ldot + 1, "exit") == 0 ||
+                         strcmp(ldot + 1, "kill") == 0 || (isp && strcmp(ldot + 1, "run") == 0)))
                     {
                         is_set_act = 1;
                     }

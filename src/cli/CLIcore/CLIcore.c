@@ -958,7 +958,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     if (exit_req || strcmp(CLIstartupfilename, "CLIstartup.txt") != 0 ||
                         (dcerrorexit && rc != 0))
                     {
-                        dcexitcode     = rc;
                         data.CLIloopON = 0;
                         break;
                     }

@@ -12,6 +12,8 @@
  *   and `MILKSEQ_STATE` (`milkseq.*.shm`) structures.
  */
 
+#include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdint.h>
@@ -29,70 +31,279 @@
 
 extern PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
 extern errno_t      processinfo_procdirname(char *procdname);
-extern int          processinfo_shm_list_create(void);
+
+static void get_procdir_local(char *pdname, size_t pdsz)
+{
+    const char *pdir = getenv("MILK_PROC_DIR");
+    const char *sdir = getenv("MILK_SHM_DIR");
+    if (sdir != NULL && sdir[0] != '\0')
+    {
+        if (pdir == NULL || pdir[0] == '\0' || strncmp(pdir, "/milk/shm", 9) == 0 ||
+            strcmp(pdir, "/dev/shm") == 0)
+        {
+            snprintf(pdname, pdsz, "%s", sdir);
+            return;
+        }
+    }
+    if (pdir != NULL && pdir[0] != '\0')
+    {
+        snprintf(pdname, pdsz, "%s", pdir);
+        return;
+    }
+    if (dcshmdir[0] != '\0')
+    {
+        snprintf(pdname, pdsz, "%s", dcshmdir);
+        return;
+    }
+    processinfo_procdirname(pdname);
+}
+
+static char s_pinfolist_dir[256] = "";
+static int  s_pinfolist_fd       = -1;
+
+static PROCESSINFOLIST *get_pinfolist_local(void)
+{
+    char pdname[256];
+    get_procdir_local(pdname, sizeof(pdname));
+    if (pinfolist != NULL && pinfolist != MAP_FAILED && strcmp(s_pinfolist_dir, pdname) == 0)
+    {
+        return pinfolist;
+    }
+    if (pinfolist != NULL && pinfolist != MAP_FAILED)
+    {
+        munmap(pinfolist, sizeof(PROCESSINFOLIST));
+        pinfolist = NULL;
+    }
+    if (s_pinfolist_fd >= 0)
+    {
+        close(s_pinfolist_fd);
+        s_pinfolist_fd = -1;
+    }
+    snprintf(s_pinfolist_dir, sizeof(s_pinfolist_dir), "%s", pdname);
+    char lfn[512];
+    snprintf(lfn, sizeof(lfn), "%s/processinfo.list.shm", pdname);
+    if (access(lfn, R_OK) == 0)
+    {
+        int lfd   = -1;
+        pinfolist = (PROCESSINFOLIST *) processinfo_shm_link(lfn, &lfd);
+        if (pinfolist == MAP_FAILED)
+        {
+            if (lfd >= 0)
+            {
+                close(lfd);
+            }
+            pinfolist = NULL;
+        }
+        else
+        {
+            s_pinfolist_fd = lfd;
+        }
+    }
+    return pinfolist;
+}
 
 /**
- * @brief Look up an active process PID by name in `pinfolist`.
+ * @brief Look up an active process PID by name in `pinfolist` or SHM directory.
  *
  * @param name Process name in `pinfolist->pnamearray`
  * @return Positive `pid_t` if found, 0 otherwise
  */
 static pid_t find_active_proc_pid(const char *name)
 {
-    if (pinfolist == NULL)
-    {
-        processinfo_shm_list_create();
-    }
-    if (pinfolist == NULL)
+    if (name == NULL || name[0] == '\0')
     {
         return 0;
     }
-    for (int pidx = 0; pidx < PROCESSINFOLISTSIZE; pidx++)
+    PROCESSINFOLIST *plist = get_pinfolist_local();
+    pid_t            any_p = 0;
+    if (plist != NULL)
     {
-        if (pinfolist->active[pidx] && strcmp(pinfolist->pnamearray[pidx], name) == 0)
+        for (int pidx = 0; pidx < PROCESSINFOLISTSIZE; pidx++)
         {
-            return pinfolist->PIDarray[pidx];
+            if (plist->active[pidx] && strcmp(plist->pnamearray[pidx], name) == 0 &&
+                plist->PIDarray[pidx] > 0)
+            {
+                pid_t p = plist->PIDarray[pidx];
+                if (kill(p, 0) == 0)
+                {
+                    return p;
+                }
+                if (any_p == 0)
+                {
+                    any_p = p;
+                }
+            }
         }
     }
-    return 0;
+    if (any_p > 0)
+    {
+        return any_p;
+    }
+
+    char pdname[256];
+    get_procdir_local(pdname, sizeof(pdname));
+    DIR *dp = opendir(pdname);
+    if (dp != NULL)
+    {
+        size_t         nlen = strlen(name);
+        struct dirent *de;
+        while ((de = readdir(dp)) != NULL)
+        {
+            size_t dlen = strlen(de->d_name);
+            if (dlen > nlen + 9 && strncmp(de->d_name, "proc.", 5) == 0 &&
+                strncmp(de->d_name + 5, name, nlen) == 0 && de->d_name[5 + nlen] == '.' &&
+                strcmp(de->d_name + dlen - 4, ".shm") == 0)
+            {
+                pid_t p = (pid_t) strtol(de->d_name + 6 + nlen, NULL, 10);
+                if (p > 0)
+                {
+                    if (kill(p, 0) == 0)
+                    {
+                        closedir(dp);
+                        return p;
+                    }
+                    if (any_p == 0)
+                    {
+                        any_p = p;
+                    }
+                }
+            }
+        }
+        closedir(dp);
+    }
+    return any_p;
 }
 
 /**
- * @brief Map the `PROCESSINFO` SHM segment for a given PID.
+ * @brief Map the `PROCESSINFO` SHM segment for a given name and PID.
  *
+ * @param name   Process name (may be NULL)
  * @param pid    Target process ID
  * @param fd_out Receives the open file descriptor (must be closed after unmap)
  * @return Mapped `PROCESSINFO *`, or NULL on failure
  */
-static PROCESSINFO *map_proc_shm_by_pid(pid_t pid, int *fd_out)
+static PROCESSINFO *map_proc_shm(const char *name, pid_t pid, int *fd_out)
 {
     *fd_out = -1;
     if (pid <= 0)
     {
         return NULL;
     }
-    char pfname[STRINGMAXLEN_FULLFILENAME];
-    char procdname[STRINGMAXLEN_DIRNAME];
-    processinfo_procdirname(procdname);
-    snprintf(pfname, sizeof(pfname), "%s/proc.%d.shm", procdname, (int) pid);
-    PROCESSINFO *pi = processinfo_shm_link(pfname, fd_out);
-    if (pi == MAP_FAILED || pi == NULL)
+    char pdname[256];
+    get_procdir_local(pdname, sizeof(pdname));
+
+    char pfname[512];
+    if (name != NULL && name[0] != '\0')
     {
+        snprintf(pfname, sizeof(pfname), "%s/proc.%s.%06d.shm", pdname, name, (int) pid);
+        if (access(pfname, R_OK) == 0)
+        {
+            PROCESSINFO *pi = processinfo_shm_link(pfname, fd_out);
+            if (pi != MAP_FAILED && pi != NULL)
+            {
+                return pi;
+            }
+            if (*fd_out >= 0)
+            {
+                close(*fd_out);
+                *fd_out = -1;
+            }
+        }
+        snprintf(pfname, sizeof(pfname), "%s/proc.%s.%d.shm", pdname, name, (int) pid);
+        if (access(pfname, R_OK) == 0)
+        {
+            PROCESSINFO *pi = processinfo_shm_link(pfname, fd_out);
+            if (pi != MAP_FAILED && pi != NULL)
+            {
+                return pi;
+            }
+            if (*fd_out >= 0)
+            {
+                close(*fd_out);
+                *fd_out = -1;
+            }
+        }
+    }
+
+    snprintf(pfname, sizeof(pfname), "%s/proc.%d.shm", pdname, (int) pid);
+    if (access(pfname, R_OK) == 0)
+    {
+        PROCESSINFO *pi = processinfo_shm_link(pfname, fd_out);
+        if (pi != MAP_FAILED && pi != NULL)
+        {
+            return pi;
+        }
         if (*fd_out >= 0)
         {
             close(*fd_out);
             *fd_out = -1;
         }
-        return NULL;
     }
-    return pi;
+    return NULL;
+}
+
+static const char *proc_status_str(const PROCESSINFO *pi, pid_t pid)
+{
+    pid_t check_pid = (pi->PID > 0) ? pi->PID : pid;
+    if (check_pid > 0 && kill(check_pid, 0) != 0 && errno == ESRCH)
+    {
+        if (pi->loopstat == PROCESSINFO_LOOPSTAT_STOP || pi->CTRLval == PROCESSINFO_CTRLVAL_EXIT)
+        {
+            return "STOPPED";
+        }
+        return "CRASHED";
+    }
+    if (pi->loopstat == PROCESSINFO_LOOPSTAT_STOP || pi->CTRLval == PROCESSINFO_CTRLVAL_EXIT)
+    {
+        return "STOPPED";
+    }
+    if (pi->loopstat == PROCESSINFO_LOOPSTAT_PAUSE || pi->CTRLval == PROCESSINFO_CTRLVAL_PAUSE)
+    {
+        return "PAUSED";
+    }
+    switch (pi->loopstat)
+    {
+    case PROCESSINFO_LOOPSTAT_INIT:
+        return "INIT";
+    case PROCESSINFO_LOOPSTAT_ACTIVE:
+        return "ACTIVE";
+    case PROCESSINFO_LOOPSTAT_PAUSE:
+        return "PAUSED";
+    case PROCESSINFO_LOOPSTAT_STOP:
+        return "STOPPED";
+    case PROCESSINFO_LOOPSTAT_ERROR:
+        return "ERROR";
+    case PROCESSINFO_LOOPSTAT_SPIN:
+        return "SPINNING";
+    case PROCESSINFO_LOOPSTAT_CRASHED:
+        return "CRASHED";
+    default:
+        return "OTHER";
+    }
+}
+
+static const char *proc_ctrl_str(int ctrlval)
+{
+    switch (ctrlval)
+    {
+    case PROCESSINFO_CTRLVAL_RUN:
+        return "run";
+    case PROCESSINFO_CTRLVAL_PAUSE:
+        return "pause";
+    case PROCESSINFO_CTRLVAL_INCR:
+        return "step";
+    case PROCESSINFO_CTRLVAL_EXIT:
+        return "stop";
+    default:
+        return "unknown";
+    }
 }
 
 /**
  * @brief Read a processinfo telemetry property into @out.
  *
  * @param name  Process name in `pinfolist`
- * @param prop  Property key (pid, loopstat, loopcnt, loopfreq, exectime, etc.)
+ * @param prop  Property key (pid, status, state, ctrl, loopstat, loopcnt, loopfreq, etc.)
  * @param out   Output buffer
  * @param outsz Size of @out in bytes
  * @return 0 on success, -1 if process or property not found
@@ -101,7 +312,7 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
 {
     pid_t        found_pid = find_active_proc_pid(name);
     int          pfd       = -1;
-    PROCESSINFO *pi        = map_proc_shm_by_pid(found_pid, &pfd);
+    PROCESSINFO *pi        = map_proc_shm(name, found_pid, &pfd);
     if (pi == NULL)
     {
         return -1;
@@ -116,36 +327,13 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
     {
         snprintf(out, outsz, "%d", pi->loopstat);
     }
-    else if (strcmp(prop, "status") == 0)
+    else if (strcmp(prop, "status") == 0 || strcmp(prop, "state") == 0)
     {
-        const char *st = "OTHER";
-        switch (pi->loopstat)
-        {
-        case PROCESSINFO_LOOPSTAT_INIT:
-            st = "INIT";
-            break;
-        case PROCESSINFO_LOOPSTAT_ACTIVE:
-            st = "ACTIVE";
-            break;
-        case PROCESSINFO_LOOPSTAT_PAUSE:
-            st = "PAUSED";
-            break;
-        case PROCESSINFO_LOOPSTAT_STOP:
-            st = "STOPPED";
-            break;
-        case PROCESSINFO_LOOPSTAT_ERROR:
-            st = "ERROR";
-            break;
-        case PROCESSINFO_LOOPSTAT_SPIN:
-            st = "SPINNING";
-            break;
-        case PROCESSINFO_LOOPSTAT_CRASHED:
-            st = "CRASHED";
-            break;
-        default:
-            break;
-        }
-        snprintf(out, outsz, "%s", st);
+        snprintf(out, outsz, "%s", proc_status_str(pi, found_pid));
+    }
+    else if (strcmp(prop, "ctrl") == 0)
+    {
+        snprintf(out, outsz, "%s", proc_ctrl_str(pi->CTRLval));
     }
     else if (strcmp(prop, "loopcnt") == 0 || strcmp(prop, "cnt0") == 0)
     {
@@ -172,7 +360,7 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
     {
         snprintf(out, outsz, "%d", pi->RT_priority);
     }
-    else if (strcmp(prop, "ctrlval") == 0)
+    else if (strcmp(prop, "ctrlval") == 0 || strcmp(prop, "CTRLval") == 0)
     {
         snprintf(out, outsz, "%d", pi->CTRLval);
     }
@@ -203,45 +391,22 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
     else if (strcmp(prop, "list") == 0 || strcmp(prop, "*") == 0)
     {
         snprintf(out, outsz,
-                 "pid status loopstat loopcnt loopcntMax loopfreq dt_median_ns exectime rtprio "
-                 "ctrlval trigmode triggerstream statusmsg tmux description missedframes");
+                 "pid status state ctrl ctrlval loopstat loopcnt loopcntMax loopfreq "
+                 "dt_median_ns exectime rtprio trigmode triggerstream statusmsg tmux "
+                 "description missedframes");
     }
     else if (strcmp(prop, "kv") == 0)
     {
-        const char *st = "OTHER";
-        switch (pi->loopstat)
-        {
-        case PROCESSINFO_LOOPSTAT_INIT:
-            st = "INIT";
-            break;
-        case PROCESSINFO_LOOPSTAT_ACTIVE:
-            st = "ACTIVE";
-            break;
-        case PROCESSINFO_LOOPSTAT_PAUSE:
-            st = "PAUSED";
-            break;
-        case PROCESSINFO_LOOPSTAT_STOP:
-            st = "STOPPED";
-            break;
-        case PROCESSINFO_LOOPSTAT_ERROR:
-            st = "ERROR";
-            break;
-        case PROCESSINFO_LOOPSTAT_SPIN:
-            st = "SPINNING";
-            break;
-        case PROCESSINFO_LOOPSTAT_CRASHED:
-            st = "CRASHED";
-            break;
-        default:
-            break;
-        }
-        double hz = (pi->dtmedian_iter_ns > 0) ? (1.0e9 / (double) pi->dtmedian_iter_ns) : 0.0;
+        const char *st = proc_status_str(pi, found_pid);
+        const char *ct = proc_ctrl_str(pi->CTRLval);
+        double      hz = (pi->dtmedian_iter_ns > 0) ? (1.0e9 / (double) pi->dtmedian_iter_ns) : 0.0;
         snprintf(out, outsz,
-                 "pid\t%d\nPID\t%d\nstatus\t%s\nloopstat\t%d\nloopcnt\t%ld\ncnt0\t%ld\n"
-                 "loopcntMax\t%ld\nloopfreq\t%.1f\ndt_median_ns\t%ld\nexectime\t%.1f\n"
-                 "rtprio\t%d\nctrlval\t%d\ntrigmode\t%d\ntriggerstream\t%s\nstatusmsg\t%s\n"
-                 "msg\t%s\ntmux\t%s\ndescription\t%s\nmissedframes\t%lu",
-                 (int) pi->PID, (int) pi->PID, st, pi->loopstat, pi->loopcnt, pi->loopcnt,
+                 "pid\t%d\nPID\t%d\nstatus\t%s\nstate\t%s\nctrl\t%s\nloopstat\t%d\n"
+                 "loopcnt\t%ld\ncnt0\t%ld\nloopcntMax\t%ld\nloopfreq\t%.1f\n"
+                 "dt_median_ns\t%ld\nexectime\t%.1f\nrtprio\t%d\nctrlval\t%d\n"
+                 "trigmode\t%d\ntriggerstream\t%s\nstatusmsg\t%s\nmsg\t%s\ntmux\t%s\n"
+                 "description\t%s\nmissedframes\t%lu",
+                 (int) pi->PID, (int) pi->PID, st, st, ct, pi->loopstat, pi->loopcnt, pi->loopcnt,
                  pi->loopcntMax, hz, pi->dtmedian_iter_ns, (double) pi->dtmedian_exec_ns / 1000.0,
                  pi->RT_priority, pi->CTRLval, pi->triggermode, pi->triggerstreamname,
                  pi->statusmsg, pi->statusmsg, pi->tmuxname, pi->description,
@@ -258,43 +423,84 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
 }
 
 /**
- * @brief Write `ctrlval` on an active processinfo entry (`@p.<name>.ctrlval`).
+ * @brief Write process control state on an active processinfo entry (`@p.<name>.<prop>`).
  *
- * Accepts symbolic names ("run", "pause", "step", "stop", "exit") or integer
- * control codes.
+ * Accepts:
+ * - `prop` in `{"ctrl", "ctrlval", "CTRLval", "action", "status", "state"}` with
+ *   symbolic values (`"run"`, `"resume"`, `"pause"`, `"step"`, `"incr"`, `"stop"`,
+ *   `"exit"`, `"kill"`) or integer control codes (`0..3`).
+ * - Action-property shorthands: `prop` in `{"run", "resume", "pause", "step",
+ *   "incr", "stop", "exit", "kill"}`.
  *
  * @param name Process name in `pinfolist`
- * @param prop Property key (must be "ctrlval")
+ * @param prop Property key
  * @param val  Control value string
  * @return 0 on success, -1 on error
  */
 int milk_shm_prop_set_proc(const char *name, const char *prop, const char *val)
 {
-    if (strcmp(prop, "ctrlval") != 0 && strcmp(prop, "CTRLval") != 0)
+    if (name == NULL || prop == NULL)
     {
         return -1;
     }
-    int ctrlval_int = atoi(val);
-    if (strcasecmp(val, "run") == 0)
+
+    int ctrlval_int = -1;
+    if (strcasecmp(prop, "run") == 0 || strcasecmp(prop, "resume") == 0)
     {
         ctrlval_int = PROCESSINFO_CTRLVAL_RUN;
     }
-    else if (strcasecmp(val, "pause") == 0)
+    else if (strcasecmp(prop, "pause") == 0)
     {
         ctrlval_int = PROCESSINFO_CTRLVAL_PAUSE;
     }
-    else if (strcasecmp(val, "step") == 0 || strcasecmp(val, "incr") == 0)
+    else if (strcasecmp(prop, "step") == 0 || strcasecmp(prop, "incr") == 0)
     {
         ctrlval_int = PROCESSINFO_CTRLVAL_INCR;
     }
-    else if (strcasecmp(val, "stop") == 0 || strcasecmp(val, "exit") == 0)
+    else if (strcasecmp(prop, "stop") == 0 || strcasecmp(prop, "exit") == 0 ||
+             strcasecmp(prop, "kill") == 0)
     {
         ctrlval_int = PROCESSINFO_CTRLVAL_EXIT;
+    }
+    else if (strcmp(prop, "ctrl") == 0 || strcmp(prop, "ctrlval") == 0 ||
+             strcmp(prop, "CTRLval") == 0 || strcmp(prop, "action") == 0 ||
+             strcmp(prop, "status") == 0 || strcmp(prop, "state") == 0)
+    {
+        if (val == NULL || val[0] == '\0')
+        {
+            return -1;
+        }
+        if (strcasecmp(val, "run") == 0 || strcasecmp(val, "resume") == 0 ||
+            strcasecmp(val, "active") == 0 || strcmp(val, "0") == 0)
+        {
+            ctrlval_int = PROCESSINFO_CTRLVAL_RUN;
+        }
+        else if (strcasecmp(val, "pause") == 0 || strcasecmp(val, "paused") == 0 ||
+                 strcmp(val, "1") == 0)
+        {
+            ctrlval_int = PROCESSINFO_CTRLVAL_PAUSE;
+        }
+        else if (strcasecmp(val, "step") == 0 || strcasecmp(val, "incr") == 0 ||
+                 strcmp(val, "2") == 0)
+        {
+            ctrlval_int = PROCESSINFO_CTRLVAL_INCR;
+        }
+        else if (strcasecmp(val, "stop") == 0 || strcasecmp(val, "stopped") == 0 ||
+                 strcasecmp(val, "exit") == 0 || strcasecmp(val, "kill") == 0 ||
+                 strcmp(val, "3") == 0)
+        {
+            ctrlval_int = PROCESSINFO_CTRLVAL_EXIT;
+        }
+    }
+
+    if (ctrlval_int < 0)
+    {
+        return -1;
     }
 
     pid_t        found_pid = find_active_proc_pid(name);
     int          pfd       = -1;
-    PROCESSINFO *pi_shm    = map_proc_shm_by_pid(found_pid, &pfd);
+    PROCESSINFO *pi_shm    = map_proc_shm(name, found_pid, &pfd);
     if (pi_shm == NULL)
     {
         return -1;
@@ -308,12 +514,17 @@ int milk_shm_prop_set_proc(const char *name, const char *prop, const char *val)
 /**
  * @brief Check whether a named processinfo entry exists (and is running).
  *
- * @param name          Process name in `pinfolist`
+ * @param name          Process name in `pinfolist` (if empty, ensures `pinfolist` is mapped)
  * @param check_running If non-zero, check `loopstat == 1 && CTRLval == 0`
  * @return 1 if exists/running, 0 otherwise
  */
 int milk_shm_prop_exists_proc(const char *name, int check_running)
 {
+    if (name == NULL || name[0] == '\0')
+    {
+        (void) get_pinfolist_local();
+        return 0;
+    }
     pid_t found_pid = find_active_proc_pid(name);
     if (found_pid <= 0 || kill(found_pid, 0) != 0)
     {
@@ -324,12 +535,15 @@ int milk_shm_prop_exists_proc(const char *name, int check_running)
         return 1;
     }
     int          pfd    = -1;
-    PROCESSINFO *pi_shm = map_proc_shm_by_pid(found_pid, &pfd);
+    PROCESSINFO *pi_shm = map_proc_shm(name, found_pid, &pfd);
     if (pi_shm == NULL)
     {
         return 0;
     }
-    int running = (pi_shm->loopstat == 1 && pi_shm->CTRLval == 0) ? 1 : 0;
+    int running = (pi_shm->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE &&
+                   pi_shm->CTRLval == PROCESSINFO_CTRLVAL_RUN)
+                      ? 1
+                      : 0;
     munmap(pi_shm, sizeof(PROCESSINFO));
     close(pfd);
     return running;

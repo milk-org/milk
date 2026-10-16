@@ -200,20 +200,25 @@ static int list_entities_in_namespace(const char *nsp, const char *pattern, char
     }
     closedir(dp);
 
-    if ((strcmp(nsp, "p") == 0 || strcmp(nsp, "proc") == 0 || strcmp(nsp, "procinfo") == 0) &&
-        pinfolist != NULL && pinfolist != (void *) -1)
+    if (strcmp(nsp, "p") == 0 || strcmp(nsp, "proc") == 0 || strcmp(nsp, "procinfo") == 0)
     {
-        for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
+        (void) milk_shm_prop_exists_proc("", 0);
+        if (pinfolist != NULL && pinfolist != (void *) -1)
         {
-            if (pinfolist->active[pi] && pinfolist->pnamearray[pi][0] != '\0')
+            for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
             {
-                const char *pname = pinfolist->pnamearray[pi];
-                if (fnmatch(pat, pname, 0) == 0 && !token_in_space_list(out, pname))
+                if (pinfolist->active[pi] && pinfolist->pnamearray[pi][0] != '\0')
                 {
-                    int n = snprintf(out + pos, outsz - pos, "%s%s", (pos > 0) ? " " : "", pname);
-                    if (n > 0 && pos + (size_t) n < outsz)
+                    const char *pname = pinfolist->pnamearray[pi];
+                    if (fnmatch(pat, pname, 0) == 0 && milk_shm_prop_exists_proc(pname, 0) &&
+                        !token_in_space_list(out, pname))
                     {
-                        pos += (size_t) n;
+                        int n =
+                            snprintf(out + pos, outsz - pos, "%s%s", (pos > 0) ? " " : "", pname);
+                        if (n > 0 && pos + (size_t) n < outsz)
+                        {
+                            pos += (size_t) n;
+                        }
                     }
                 }
             }
@@ -729,10 +734,16 @@ int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
     if (val == NULL)
     {
         const char *last_dot = strrchr(specbuf, '.');
+        int is_proc = (strncmp(specbuf, "p.", 2) == 0 || strncmp(specbuf, "proc.", 5) == 0 ||
+                       strncmp(specbuf, "procinfo.", 9) == 0);
         if (last_dot != NULL &&
             (strcmp(last_dot + 1, "confstart") == 0 || strcmp(last_dot + 1, "confstop") == 0 ||
              strcmp(last_dot + 1, "confstep") == 0 || strcmp(last_dot + 1, "runstart") == 0 ||
-             strcmp(last_dot + 1, "runstop") == 0 || strcmp(last_dot + 1, "reset") == 0))
+             strcmp(last_dot + 1, "runstop") == 0 || strcmp(last_dot + 1, "reset") == 0 ||
+             strcmp(last_dot + 1, "pause") == 0 || strcmp(last_dot + 1, "resume") == 0 ||
+             strcmp(last_dot + 1, "step") == 0 || strcmp(last_dot + 1, "incr") == 0 ||
+             strcmp(last_dot + 1, "stop") == 0 || strcmp(last_dot + 1, "exit") == 0 ||
+             strcmp(last_dot + 1, "kill") == 0 || (is_proc && strcmp(last_dot + 1, "run") == 0)))
         {
             val = "1";
         }
