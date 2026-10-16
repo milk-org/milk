@@ -46,7 +46,51 @@ static int       eval_ntok;
 int              eval_error;
 
 
-static char calctmpimname[200];
+/*
+ * Temporary images (_tmpcalcN) created while evaluating. Each evaluation deletes only the
+ * temps it created; the outermost one also reaps any left by command-argument parsing.
+ */
+#define CALC_TMPNAME_RING 16
+static char   tmpname_ring[CALC_TMPNAME_RING][32];
+static int    tmpname_next = 0;
+static long  *tmp_ids      = NULL;
+static size_t tmp_n        = 0;
+static size_t tmp_cap      = 0;
+static int    eval_depth   = 0;
+
+static size_t tmp_begin(void)
+{
+    eval_depth++;
+    return tmp_n;
+}
+
+static void tmp_delete_to(size_t mark)
+{
+    while (tmp_n > mark)
+    {
+        char name[32];
+        snprintf(name, sizeof(name), "_tmpcalc%ld", tmp_ids[--tmp_n]);
+        if (image_ID(name, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+        {
+            delete_image_ID(name, DELETE_IMAGE_ERRMODE_WARNING);
+        }
+    }
+    if (tmp_n == 0)
+    {
+        data.calctmp_imindex = 0;
+    }
+}
+
+static void tmp_end(size_t mark)
+{
+    eval_depth--;
+    tmp_delete_to(eval_depth == 0 ? 0 : mark);
+}
+
+void cli_calc_tmp_cleanup(void)
+{
+    tmp_delete_to(0);
+}
 
 /* --------------------------------------------------------
  * Token stream helpers
@@ -188,9 +232,26 @@ int check_image(const char *name)
  */
 const char *alloc_tmpname(void)
 {
-    snprintf(calctmpimname, 200, "_tmpcalc%ld", data.calctmp_imindex);
-    data.calctmp_imindex++;
-    return calctmpimname;
+    char *name = tmpname_ring[tmpname_next++ % CALC_TMPNAME_RING];
+    long  id;
+    do // never hand out the name of a live image (e.g. a user image called _tmpcalc0)
+    {
+        id = data.calctmp_imindex++;
+        snprintf(name, 32, "_tmpcalc%ld", id);
+    } while (image_ID(name, data.core.image, data.core.NB_MAX_IMAGE) != -1);
+    if (tmp_n == tmp_cap)
+    {
+        size_t ncap = tmp_cap ? 2 * tmp_cap : 32;
+        long  *nids = (long *) realloc(tmp_ids, ncap * sizeof(long));
+        if (nids == NULL)
+        {
+            return name; // untracked: reaped by the next full cleanup at worst
+        }
+        tmp_ids = nids;
+        tmp_cap = ncap;
+    }
+    tmp_ids[tmp_n++] = id;
+    return name;
 }
 
 /* --------------------------------------------------------
@@ -369,22 +430,14 @@ int cli_calc_eval_line(const char *input)
         }
     }
 
-    val_t result = parse_expr(0);
+    size_t tmark  = tmp_begin();
+    val_t  result = parse_expr(0);
 
     /* if there is any parse error or trailing garbage */
     if (parse_error || eval_error ||
         (cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE))
     {
-        char tmpn[200];
-        for (long i = 0; i < data.calctmp_imindex; i++)
-        {
-            snprintf(tmpn, sizeof(tmpn), "_tmpcalc%ld", i);
-            if (image_ID(tmpn, data.core.image, data.core.NB_MAX_IMAGE) != -1)
-            {
-                delete_image_ID(tmpn, DELETE_IMAGE_ERRMODE_WARNING);
-            }
-        }
-        data.calctmp_imindex = 0;
+        tmp_end(tmark);
         return 0; /* not a pure math expression */
     }
 
@@ -446,6 +499,7 @@ int cli_calc_eval_line(const char *input)
         }
         else
         {
+            tmp_end(tmark);
             return 0; /* It was probably a generic 1-word shell command like `ls` */
         }
     }
@@ -455,24 +509,7 @@ int cli_calc_eval_line(const char *input)
         //printf("    generic\n");
     }
 
-    /* Clean up temporary images created
-     * during expression evaluation (e.g.
-     * intermediate arithmetic results and
-     * slice materialization buffers). */
-    {
-        char tmpn[200];
-        for (long i = 0; i < data.calctmp_imindex; i++)
-        {
-            snprintf(tmpn, sizeof(tmpn), "_tmpcalc%ld", i);
-            imageID tid = image_ID(tmpn, data.core.image, data.core.NB_MAX_IMAGE);
-            if (tid != -1)
-            {
-                delete_image_ID(tmpn, DELETE_IMAGE_ERRMODE_WARNING);
-            }
-        }
-        data.calctmp_imindex = 0;
-    }
-
+    tmp_end(tmark); // intermediate results and slice buffers
     return 1;
 }
 
@@ -511,7 +548,9 @@ int cli_calc_eval_math_to_val(const char *input, int *out_type, long *out_lval, 
 
     if (eval_ntok > 0 && cur_eval()->type != TOK_NEWLINE && cur_eval()->type != TOK_EOF)
     {
-        val_t result = parse_expr(0);
+        size_t tmark  = tmp_begin();
+        val_t  result = parse_expr(0);
+        tmp_end(tmark);
 
         if (!parse_error && !eval_error &&
             (cur_eval()->type == TOK_EOF || cur_eval()->type == TOK_NEWLINE) &&
@@ -580,7 +619,11 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
     eval_error      = 0;
     eval_pos        = 0;
 
-    if (eval_ntok <= 0 || cur_eval()->type == TOK_NEWLINE || cur_eval()->type == TOK_EOF)
+    if (eval_ntok < 0)
+    {
+        return 0; // tokenizer already reported the error; *out_rc stays 2
+    }
+    if (eval_ntok == 0 || cur_eval()->type == TOK_NEWLINE || cur_eval()->type == TOK_EOF)
     {
         if (out_rc != NULL)
         {
@@ -600,22 +643,9 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
         }
     }
 
-    val_t result = parse_expr(0);
-
-    /* Clean up temporary images */
-    {
-        char tmpn[200];
-        for (long i = 0; i < data.calctmp_imindex; i++)
-        {
-            snprintf(tmpn, sizeof(tmpn), "_tmpcalc%ld", i);
-            imageID tid = image_ID(tmpn, data.core.image, data.core.NB_MAX_IMAGE);
-            if (tid != -1)
-            {
-                delete_image_ID(tmpn, DELETE_IMAGE_ERRMODE_WARNING);
-            }
-        }
-        data.calctmp_imindex = 0;
-    }
+    size_t tmark  = tmp_begin();
+    val_t  result = parse_expr(0);
+    tmp_end(tmark);
 
     if (parse_error || eval_error ||
         (cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE))

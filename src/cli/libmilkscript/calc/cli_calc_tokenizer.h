@@ -17,7 +17,7 @@
 /**
  * @brief Maximum number of tokens per input line
  */
-#define CLI_CALC_MAX_TOKENS 64
+#define CLI_CALC_MAX_TOKENS 256
 
 /**
  * @brief Maximum length of a token string value

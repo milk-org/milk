@@ -119,12 +119,26 @@ static const builtin_func builtins[] = {
 /**
  * @brief Check if character is valid in an identifier
  *
- * Identifiers may contain alphanumerics and the
- * characters _ . $ : ?
+ * Identifiers may contain alphanumerics and _ . $ ; command-argument parsing (parse_mode 0)
+ * also keeps ':' and '?' inside words. In expressions they are the ternary operator, except
+ * for the ':' of an S:/L: location prefix (see ident_len()).
  */
 static inline int is_ident_char(int c)
 {
-    return isalnum(c) || c == '_' || c == '.' || c == '$' || c == ':' || c == '?';
+    return isalnum(c) || c == '_' || c == '.' || c == '$' ||
+           (parse_mode == 0 && (c == ':' || c == '?'));
+}
+
+/** ident_len() - length of the identifier starting at @start. */
+static size_t ident_len(const char *start)
+{
+    const char *p = start;
+    while (is_ident_char((unsigned char) *p) ||
+           (*p == ':' && p - start == 1 && (start[0] == 'S' || start[0] == 'L')))
+    {
+        p++;
+    }
+    return (size_t) (p - start);
 }
 
 /**
@@ -611,10 +625,7 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
 
             /* read identifier string */
             const char *start = p;
-            while (is_ident_char((unsigned char) *p))
-            {
-                p++;
-            }
+            p += ident_len(p);
 
             /* Consume trailing bracket block
              * for stream slicing syntax
@@ -824,6 +835,17 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
                    " [hex %02X] length 1\n",
                    (unsigned char) *p);
         }
+        return -1;
+    }
+
+    /* token array full: expressions must not be silently truncated */
+    while (*p == ' ' || *p == '\t' || *p == '\n')
+    {
+        p++;
+    }
+    if (*p != '\0' && parse_mode != 0)
+    {
+        fprintf(stderr, "ERROR: expression too long (max %d tokens)\n", max_tok - 1);
         return -1;
     }
 

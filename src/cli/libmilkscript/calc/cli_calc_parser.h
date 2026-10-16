@@ -57,4 +57,10 @@ int cli_calc_eval_math_to_val(const char *input, int *out_type, long *out_lval, 
  */
 int cli_calc_eval_bash(const char *input, int is_test, int *out_rc);
 
+/**
+ * @brief Delete every temporary `_tmpcalcN` image still tracked (e.g. after a command whose
+ *        arguments were evaluated as expressions).
+ */
+void cli_calc_tmp_cleanup(void);
+
 #endif /* CLI_CALC_PARSER_H */

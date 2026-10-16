@@ -41,7 +41,7 @@ static inline int get_prec(cli_token_type t)
     switch (t)
     {
     case TOK_OP_QUESTION:
-        return -1;
+        return 0; // below ||, reachable from a top-level parse_expr(0)
     case TOK_OP_OR:
         return 1;
     case TOK_OP_AND:
@@ -543,7 +543,7 @@ static val_t eval_ternary_op(val_t left,
                              cli_token *(*cur_func)(void),
                              cli_token *(*advance_func)(void) )
 {
-    val_t true_val = parse_expr(-1);
+    val_t true_val = parse_expr(0);
     if (parse_error || eval_error)
     {
         return left;
@@ -554,7 +554,7 @@ static val_t eval_ternary_op(val_t left,
         return mk_double(0);
     }
     advance_func();
-    val_t false_val = parse_expr(-1);
+    val_t false_val = parse_expr(0);
     if (parse_error || eval_error)
     {
         return left;

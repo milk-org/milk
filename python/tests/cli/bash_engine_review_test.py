@@ -503,7 +503,6 @@ def test_C16_mload_failure_status(tmp_path):
 # ------------------------------------------------ P*: calc and shm_prop
 
 
-@bug("P1", "calc silently truncates expressions at 63 tokens")
 def test_P1_long_expression(tmp_path):
     expr = "+".join(["1"] * 36)
     res = milk_cli_script(f'@calc -v r "{expr}"\necho "rc=$? r=$r"', tmp_path)
@@ -537,7 +536,6 @@ def test_P3_calc_sees_recreated_stream(tmp_path):
     assert "b=5" in res.stdout
 
 
-@bug("P4", "ternary ?: can never parse")
 def test_P4_ternary(tmp_path):
     res = milk_cli_script(
         '@calc -v r "1 ? 2 : 3"\necho "r=$r"\n@calc -v s "0?2:3"\necho "s=$s"', tmp_path
@@ -546,7 +544,26 @@ def test_P4_ternary(tmp_path):
     assert value(res.stdout, "s") == "3"
 
 
-@bug("P5", "string functions return the temp variable name")
+def test_P4_image_ternary(tmp_path):
+    res = milk_cli_script(
+        '@mk2Dim p4i 4 4\n@calc "p4i = 5"\n@calc -v k "imean(p4i > 1 ? p4i : 0)"\necho "k=$k"',
+        tmp_path,
+    )
+    assert value(res.stdout, "k") == "5"
+
+
+def test_P13_user_tmpcalc_image_survives(tmp_path):
+    """Temp cleanup deletes only temps it created, never a user image that happens to be named _tmpcalcN."""
+    res = milk_cli_script(
+        "@mk2Dim _tmpcalc0 2 2\n@mk2Dim p13 2 2\n"
+        '@calc -v r "imean(p13 + 1)"\necho "r=$r"\n'
+        '@exists s._tmpcalc0; echo "kept=$?"',
+        tmp_path,
+    )
+    assert value(res.stdout, "r") == "1"
+    assert value(res.stdout, "kept") == "0"
+
+
 def test_P5_string_functions(tmp_path):
     res = milk_cli_script('@calc -v u \'toupper("abc")\'\necho "u=$u"', tmp_path)
     assert value(res.stdout, "u") == "ABC"
@@ -562,7 +579,6 @@ def test_P8_long_keyword_single_slot(tmp_path):
     assert res.stdout.count('"VERYLONGKEYWORD') == 1
 
 
-@bug("P9", "integer power uses (long)pow: 2^-1 = 0, 2^63 overflows")
 def test_P9_integer_power(tmp_path):
     res = milk_cli_script(
         '@calc -v a "2^-1"\necho "a=$a"\n@calc -v b "2^63"\necho "b=$b"', tmp_path
@@ -571,7 +587,6 @@ def test_P9_integer_power(tmp_path):
     assert not (value(res.stdout, "b") or "-").startswith("-")
 
 
-@bug("P10", "2/3-arg functions only take an image as first argument")
 def test_P10_image_in_second_argument(tmp_path):
     res = milk_cli_script(
         '@mk2Dim p10 4 4\n@calc "p10 = 5"\n@calc -v r "imean(min(3, p10))"\necho "r=$r"\n'
@@ -582,7 +597,6 @@ def test_P10_image_in_second_argument(tmp_path):
     assert value(res.stdout, "r") == "3"
 
 
-@bug("P10", "unknown identifier in a function argument silently becomes 0")
 def test_P10_unknown_identifier_is_error(tmp_path):
     res = milk_cli_script(
         '@calc -v r "max(3, nosuchimage)"\necho "rc=$? r=$r"', tmp_path
@@ -590,7 +604,6 @@ def test_P10_unknown_identifier_is_error(tmp_path):
     assert "rc=0" not in res.stdout
 
 
-@bug("P14", "string == treats RUN and RUNNING as equal")
 def test_P14_plain_string_equality(tmp_path):
     res = milk_cli_script('@calc -v r \'"RUN" == "RUNNING"\'\necho "r=$r"', tmp_path)
     assert value(res.stdout, "r") == "0"

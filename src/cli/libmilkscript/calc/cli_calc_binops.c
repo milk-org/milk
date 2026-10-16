@@ -237,6 +237,28 @@ static int binop_scalar_img(cli_token_type op, double lv, const char *iname, con
  * @param right Right operand value (can be long, double, or string/image-name)
  * @return val_t Result of the binary operation
  */
+/**
+ * ipow_checked() - @b^@e for @e >= 0; returns 0 and sets *@out, or -1 on overflow.
+ */
+static int ipow_checked(long b, long e, long *out)
+{
+    long r = 1;
+    while (e > 0)
+    {
+        if ((e & 1) && __builtin_mul_overflow(r, b, &r))
+        {
+            return -1;
+        }
+        e >>= 1;
+        if (e > 0 && __builtin_mul_overflow(b, b, &b))
+        {
+            return -1;
+        }
+    }
+    *out = r;
+    return 0;
+}
+
 val_t eval_binop(cli_token_type op, val_t left, val_t right)
 {
     /* string (image) operands */
@@ -248,18 +270,6 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
             image_ID(right.sval, data.core.image, data.core.NB_MAX_IMAGE) == -1)
         {
             int eq = (strcmp(left.sval, right.sval) == 0);
-            if (!eq)
-            {
-                if ((strcmp(left.sval, "FLT32") == 0 && strcmp(right.sval, "FLOAT") == 0) ||
-                    (strcmp(left.sval, "FLOAT") == 0 && strcmp(right.sval, "FLT32") == 0) ||
-                    (strcmp(left.sval, "DBL64") == 0 && strcmp(right.sval, "DOUBLE") == 0) ||
-                    (strcmp(left.sval, "DOUBLE") == 0 && strcmp(right.sval, "DBL64") == 0) ||
-                    (strcmp(left.sval, "RUN") == 0 && strcmp(right.sval, "RUNNING") == 0) ||
-                    (strcmp(left.sval, "RUNNING") == 0 && strcmp(right.sval, "RUN") == 0))
-                {
-                    eq = 1;
-                }
-            }
             return mk_long((op == TOK_OP_EQ) ? (eq ? 1 : 0) : (eq ? 0 : 1));
         }
 
@@ -318,14 +328,21 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
     /* long OP long -> long (except / -> double) */
     if (left.type == VAL_LONG && right.type == VAL_LONG && op != TOK_OP_SLASH)
     {
-        switch (op)
+        long r;
+        switch (op) // overflowing integer results fall back to double
         {
         case TOK_OP_PLUS:
-            return mk_long(left.lval + right.lval);
+            return __builtin_add_overflow(left.lval, right.lval, &r)
+                       ? mk_double((double) left.lval + (double) right.lval)
+                       : mk_long(r);
         case TOK_OP_MINUS:
-            return mk_long(left.lval - right.lval);
+            return __builtin_sub_overflow(left.lval, right.lval, &r)
+                       ? mk_double((double) left.lval - (double) right.lval)
+                       : mk_long(r);
         case TOK_OP_STAR:
-            return mk_long(left.lval * right.lval);
+            return __builtin_mul_overflow(left.lval, right.lval, &r)
+                       ? mk_double((double) left.lval * (double) right.lval)
+                       : mk_long(r);
         case TOK_OP_MOD:
             if (right.lval == 0)
             {
@@ -338,7 +355,11 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
             }
             return mk_long(left.lval % right.lval);
         case TOK_OP_CARET:
-            return mk_long((long) pow(left.lval, right.lval));
+            if (right.lval < 0 || ipow_checked(left.lval, right.lval, &r) != 0)
+            {
+                return mk_double(pow((double) left.lval, (double) right.lval));
+            }
+            return mk_long(r);
         case TOK_OP_LT:
             return mk_long(left.lval < right.lval ? 1 : 0);
         case TOK_OP_LE:

@@ -192,9 +192,7 @@ static val_t func_replace(void)
         *w = '\0';
     }
 
-    const char *tmpn = alloc_tmpname();
-    cli_var_set(tmpn, result);
-    return mk_string(tmpn);
+    return mk_string(result);
 }
 
 /**
@@ -285,6 +283,36 @@ static val_t func_eval_dd_d(const cli_token *ftok)
         return mk_string(tmpn);
     }
 
+    if (args[1].type == VAL_STRING) // (scalar, image)
+    {
+        if (!check_image(args[1].sval))
+        {
+            return mk_string("");
+        }
+        const char *tmpn = alloc_tmpname();
+        if (ftok->fnctptr == fmin || ftok->fnctptr == fmax) // commutative
+        {
+            arith_image_function_imd_im__dd_d(args[1].sval, to_double(args[0]), tmpn,
+                                              ftok->fnctptr);
+        }
+        else if (ftok->fnctptr == fmod)
+        {
+            char cst[32];
+            snprintf(cst, sizeof(cst), "%s", alloc_tmpname()); // constant image shaped like arg 2
+            char zero[32];
+            snprintf(zero, sizeof(zero), "%s", alloc_tmpname());
+            arith_image_cstmult(args[1].sval, 0.0, zero);
+            arith_image_cstadd(zero, to_double(args[0]), cst);
+            arith_image_fmod(cst, args[1].sval, tmpn);
+        }
+        else
+        {
+            parse_errmsg("Unsupported (scalar, image) function");
+            return mk_string("");
+        }
+        return mk_string(tmpn);
+    }
+
     double d1 = to_double(args[0]);
     double d2 = to_double(args[1]);
     return mk_double(((double (*)(double, double)) ftok->fnctptr)(d1, d2));
@@ -311,6 +339,11 @@ static val_t func_eval_ddd_d(const cli_token *ftok)
         arith_image_function_imdd_im__ddd_d(args[0].sval, to_double(args[1]), to_double(args[2]),
                                             tmpn, ftok->fnctptr);
         return mk_string(tmpn);
+    }
+    if (args[1].type == VAL_STRING || args[2].type == VAL_STRING)
+    {
+        parse_errmsg("Only the first argument may be an image");
+        return mk_double(0);
     }
 
     double d1 = to_double(args[0]);
@@ -635,9 +668,7 @@ static val_t func_eval_string_or_format(const cli_token *ftok)
             result[i] = is_upper ? (char) toupper((unsigned char) result[i])
                                  : (char) tolower((unsigned char) result[i]);
         }
-        const char *tmpn = alloc_tmpname();
-        cli_var_set(tmpn, result);
-        return mk_string(tmpn);
+        return mk_string(result);
     }
 
     if (ftok->type == TOK_FUNC_SDD_S)
@@ -675,10 +706,8 @@ static val_t func_eval_string_or_format(const cli_token *ftok)
         }
         char result[CLI_CALC_TOKEN_MAXLEN];
         memcpy(result, sv + off, (size_t) len);
-        result[len]      = '\0';
-        const char *tmpn = alloc_tmpname();
-        cli_var_set(tmpn, result);
-        return mk_string(tmpn);
+        result[len] = '\0';
+        return mk_string(result);
     }
 
     /* TOK_FUNC_D_S: hex(n), oct(n), bin(n) */
@@ -709,9 +738,9 @@ static val_t func_eval_string_or_format(const cli_token *ftok)
         }
         else
         {
-            long v = iv;
-            char bits[65];
-            int  bi = 0;
+            unsigned long v = (unsigned long) iv; // two's complement for negative values
+            char          bits[65];
+            int           bi = 0;
             while (v > 0 && bi < 64)
             {
                 bits[bi++] = (v & 1) ? '1' : '0';
@@ -724,9 +753,7 @@ static val_t func_eval_string_or_format(const cli_token *ftok)
         }
         *w = '\0';
     }
-    const char *tmpn = alloc_tmpname();
-    cli_var_set(tmpn, result);
-    return mk_string(tmpn);
+    return mk_string(result);
 }
 
 /**

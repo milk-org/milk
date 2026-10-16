@@ -321,8 +321,8 @@ static int try_dispatch_interceptor(const char *cmdname, int argc, char **argv, 
  */
 static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
 {
-    data.parseerror      = 0;
-    data.calctmp_imindex = 0;
+    data.parseerror = 0;
+    cli_calc_tmp_cleanup();
     for (int i = 0; i < NB_ARG_MAX; i++)
     {
         data.cmdargtoken[i].type          = CMDARGTOKEN_TYPE_UNSOLVED;
@@ -1173,16 +1173,7 @@ int milk_server_dispatch_argv(int argc, char **argv)
                (char) 27, 0, data.cmd[cmdidx].key, data.CMDerrstatus);
     }
 
-    for (int i = 0; i < data.calctmp_imindex; i++)
-    {
-        char calctmpimname[STRINGMAXLEN_IMGNAME];
-        CREATE_IMAGENAME(calctmpimname, "_tmpcalc%d", i);
-        if (image_ID(calctmpimname, dcimg, dcnimg) != -1)
-        {
-            delete_image_ID(calctmpimname, DELETE_IMAGE_ERRMODE_WARNING);
-        }
-    }
-    data.calctmp_imindex = 0;
+    cli_calc_tmp_cleanup();
 
     return (data.CMDerrstatus == RETURN_SUCCESS) ? 0 : 1;
 }
