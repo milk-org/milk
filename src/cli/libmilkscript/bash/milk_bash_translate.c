@@ -464,7 +464,7 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
             break;
         }
 
-        /* @{<expr>} -> $(@calc "<expr>") */
+        /* @{<expr>} -> ${| @calc -v REPLY "<expr>"; } */
         if ((strncmp(in + i, sigil, siglen) == 0 && i + siglen < len && in[i + siglen] == '{') ||
             (in[i] == '@' && i + 1 < len && in[i + 1] == '{'))
         {
@@ -491,17 +491,30 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
             }
             if (j < len && depth == 0)
             {
-                sbuf_append_str(out, "$(");
-                sbuf_append_str(out, sigil);
-                sbuf_append_str(out, "calc \"");
-                sbuf_append_dq_escaped(out, in + start, j - start);
-                sbuf_append_str(out, "\")");
+                const char *nf     = getenv("MILK_BASH_NO_FUNSUB");
+                int         no_sub = (nf != NULL && nf[0] != '\0' && strcmp(nf, "0") != 0);
+                if (!no_sub)
+                {
+                    sbuf_append_str(out, "${| ");
+                    sbuf_append_str(out, sigil);
+                    sbuf_append_str(out, "calc -v REPLY \"");
+                    sbuf_append_dq_escaped(out, in + start, j - start);
+                    sbuf_append_str(out, "\"; }");
+                }
+                else
+                {
+                    sbuf_append_str(out, "$(");
+                    sbuf_append_str(out, sigil);
+                    sbuf_append_str(out, "calc \"");
+                    sbuf_append_dq_escaped(out, in + start, j - start);
+                    sbuf_append_str(out, "\")");
+                }
                 i = j + 1;
                 continue;
             }
         }
 
-        /* Inside double quotes or RHS of VAR=@s.im.prop: @s.im.prop -> $(@get s.im.prop) */
+        /* Inside double quotes or RHS of VAR=@s.im.prop: @s.im.prop -> ${| @get -v REPLY s.im.prop; } */
         if ((in_dq || (i > 0 && in[i - 1] == '=')) &&
             (i == 0 || (!isalnum((unsigned char) in[i - 1]) && in[i - 1] != '_')) &&
             (strncmp(in + i, sigil, siglen) == 0 || in[i] == '@'))
@@ -525,11 +538,24 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
                     }
                     if (ndots >= 2)
                     {
-                        sbuf_append_str(out, "$(");
-                        sbuf_append_str(out, sigil);
-                        sbuf_append_str(out, "get ");
-                        sbuf_append_mem(out, in + i + adv, elen);
-                        sbuf_append_ch(out, ')');
+                        const char *nf     = getenv("MILK_BASH_NO_FUNSUB");
+                        int         no_sub = (nf != NULL && nf[0] != '\0' && strcmp(nf, "0") != 0);
+                        if (!no_sub)
+                        {
+                            sbuf_append_str(out, "${| ");
+                            sbuf_append_str(out, sigil);
+                            sbuf_append_str(out, "get -v REPLY ");
+                            sbuf_append_mem(out, in + i + adv, elen);
+                            sbuf_append_str(out, "; }");
+                        }
+                        else
+                        {
+                            sbuf_append_str(out, "$(");
+                            sbuf_append_str(out, sigil);
+                            sbuf_append_str(out, "get ");
+                            sbuf_append_mem(out, in + i + adv, elen);
+                            sbuf_append_ch(out, ')');
+                        }
                         i += adv + elen;
                         continue;
                     }
@@ -657,11 +683,24 @@ static void append_args_with_quoting(const char *args,
                 size_t elen   = scan_entity_path(tok + toff, &has_eq);
                 if (elen == tlen - toff && !has_eq)
                 {
-                    sbuf_append_str(out, "$(");
-                    sbuf_append_str(out, sigil);
-                    sbuf_append_str(out, "get ");
-                    sbuf_append_mem(out, tok + toff, elen);
-                    sbuf_append_ch(out, ')');
+                    const char *nf     = getenv("MILK_BASH_NO_FUNSUB");
+                    int         no_sub = (nf != NULL && nf[0] != '\0' && strcmp(nf, "0") != 0);
+                    if (!no_sub)
+                    {
+                        sbuf_append_str(out, "${| ");
+                        sbuf_append_str(out, sigil);
+                        sbuf_append_str(out, "get -v REPLY ");
+                        sbuf_append_mem(out, tok + toff, elen);
+                        sbuf_append_str(out, "; }");
+                    }
+                    else
+                    {
+                        sbuf_append_str(out, "$(");
+                        sbuf_append_str(out, sigil);
+                        sbuf_append_str(out, "get ");
+                        sbuf_append_mem(out, tok + toff, elen);
+                        sbuf_append_ch(out, ')');
+                    }
                     continue;
                 }
             }

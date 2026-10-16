@@ -213,10 +213,21 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
     }
     milkset()      { "${MILK_INSTALLDIR}/bin/milk-call" set "$@"; }
     milkcalc() {
+        local _vname=""
+        if [[ "${1:-}" == "-v" && -n "${2:-}" ]]; then
+            _vname="$2"
+            shift 2
+        fi
         local eval_file="${TMPDIR:-/tmp}/.milk_eval_$$_${BASHPID}"
         local rc=0
         exec {__milk_efd}>"${eval_file}"
-        MILK_CALL_EVAL_FD="${__milk_efd}" "${MILK_INSTALLDIR}/bin/milk-call" calc "$@" || rc=$?
+        if [[ -n "${_vname}" ]]; then
+            local _val
+            _val="$(MILK_CALL_EVAL_FD="${__milk_efd}" "${MILK_INSTALLDIR}/bin/milk-call" calc "$@")" || rc=$?
+            printf -v "${_vname}" '%s' "${_val}"
+        else
+            MILK_CALL_EVAL_FD="${__milk_efd}" "${MILK_INSTALLDIR}/bin/milk-call" calc "$@" || rc=$?
+        fi
         exec {__milk_efd}>&-
         if [[ -s "${eval_file}" ]]; then
             # shellcheck disable=SC1090

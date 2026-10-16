@@ -29,6 +29,9 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <math.h>
+#include <semaphore.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -636,11 +639,51 @@ int milk_client_exists(const char *spec, int check_running, const milk_client_ho
     return 1;
 }
 
+static volatile sig_atomic_t g_wait_sigint = 0;
+
+static void client_wait_sigint_handler(int sig)
+{
+    (void) sig;
+    g_wait_sigint = 1;
+}
+
+static double client_monotonic_sec(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double) ts.tv_sec + 1.0e-9 * (double) ts.tv_nsec;
+}
+
+static int client_status_matches(const char *val, const char *expect)
+{
+    if (strcmp(val, expect) == 0)
+    {
+        return 1;
+    }
+    if ((strcmp(val, "RUN") == 0 && strcmp(expect, "RUNNING") == 0) ||
+        (strcmp(val, "RUNNING") == 0 && strcmp(expect, "RUN") == 0))
+    {
+        return 1;
+    }
+    char  *e1 = NULL;
+    char  *e2 = NULL;
+    double d1 = strtod(val, &e1);
+    double d2 = strtod(expect, &e2);
+    if (val[0] != '\0' && expect[0] != '\0' && *e1 == '\0' && *e2 == '\0' &&
+        fabs(d1 - d2) <= 1.0e-9 * (1.0 + fabs(d2)))
+    {
+        return 1;
+    }
+    return 0;
+}
+
 /**
  * @brief Wait for stream frames or a boolean condition (`@waitfor`).
  */
 int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
+    milk_ipc_sync_shm_env(hooks);
+
     const char *target  = NULL;
     const char *arg2    = "1";
     const char *timeout = "0";
@@ -688,6 +731,186 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
         fprintf(stderr, "Usage: @waitfor [-t|--timeout <sec>] [-s <sem>] [--cnt <target>] "
                         "<stream|condition> [nframes]\n");
         return 1;
+    }
+
+    const char *tclean = target;
+    while (*tclean == '@')
+    {
+        tclean++;
+    }
+    double timeout_sec = strtod(timeout, NULL);
+    int    has_timo    = (timeout_sec > 0.0);
+
+    int is_complex_expr = (strchr(tclean, '<') != NULL || strchr(tclean, '>') != NULL ||
+                           strstr(tclean, "==") != NULL || strstr(tclean, "!=") != NULL ||
+                           strstr(tclean, "&&") != NULL || strstr(tclean, "||") != NULL);
+
+    /* Fast Path 1: Client-side equality condition wait (e.g. f.name.param=val, p.name.status=STOPPED) */
+    const char *eq = (!is_complex_expr) ? strchr(tclean, '=') : NULL;
+    if (eq != NULL)
+    {
+        char   lhs[256];
+        size_t lhslen = (size_t) (eq - tclean);
+        if (lhslen > 0 && lhslen < sizeof(lhs))
+        {
+            memcpy(lhs, tclean, lhslen);
+            lhs[lhslen]        = '\0';
+            const char *expect = eq + 1;
+            char        val[256];
+            if (milk_shm_prop_get(lhs, val, sizeof(val)) == 0)
+            {
+                if (client_status_matches(val, expect))
+                {
+                    return 0;
+                }
+                struct sigaction sa_int, old_int;
+                memset(&sa_int, 0, sizeof(sa_int));
+                sa_int.sa_handler = client_wait_sigint_handler;
+                sigemptyset(&sa_int.sa_mask);
+                g_wait_sigint = 0;
+                sigaction(SIGINT, &sa_int, &old_int);
+
+                double t_start = client_monotonic_sec();
+                int    rc      = 0;
+                int    iter    = 0;
+                for (;;)
+                {
+                    if (g_wait_sigint)
+                    {
+                        if (hooks && hooks->on_sigint)
+                        {
+                            hooks->on_sigint(hooks->ctx);
+                        }
+                        rc = 130;
+                        break;
+                    }
+                    if (milk_shm_prop_get(lhs, val, sizeof(val)) == 0 &&
+                        client_status_matches(val, expect))
+                    {
+                        rc = 0;
+                        break;
+                    }
+                    if (has_timo && (client_monotonic_sec() - t_start) >= timeout_sec)
+                    {
+                        rc = 124;
+                        break;
+                    }
+                    long            ns  = (iter++ < 20) ? 1000000L : 5000000L;
+                    struct timespec slp = { 0, ns };
+                    nanosleep(&slp, NULL);
+                }
+                sigaction(SIGINT, &old_int, NULL);
+                return rc;
+            }
+        }
+    }
+
+    /* Fast Path 2: Client-side /dev/shm semaphore wait (no server fork) */
+    if (!is_complex_expr && eq == NULL)
+    {
+        const char *sname = tclean;
+        if (strncmp(sname, "S:", 2) == 0)
+        {
+            sname += 2;
+        }
+        else if (strncmp(sname, "s.", 2) == 0)
+        {
+            sname += 2;
+        }
+        else if (strncmp(sname, "stream.", 7) == 0)
+        {
+            sname += 7;
+        }
+
+        IMAGE img;
+        memset(&img, 0, sizeof(img));
+        if (sname[0] != '\0' && strncmp(tclean, "L:", 2) != 0 && strncmp(tclean, "l.", 2) != 0 &&
+            ImageStreamIO_openIm(&img, sname) == IMAGESTREAMIO_SUCCESS && img.md != NULL)
+        {
+            long nframes = strtol(arg2, NULL, 10);
+            if (nframes < 1)
+            {
+                nframes = 1;
+            }
+            int      req_sem     = (sem_str && sem_str[0]) ? (int) strtol(sem_str, NULL, 10) : -1;
+            int      has_abs_cnt = (cnt_str && cnt_str[0]) ? 1 : 0;
+            uint64_t abs_cnt     = has_abs_cnt ? (uint64_t) strtoull(cnt_str, NULL, 10) : 0;
+
+            uint64_t start_cnt0 = img.md->cnt0;
+            uint64_t target_cnt = has_abs_cnt ? abs_cnt : (start_cnt0 + (uint64_t) nframes);
+            int      semindex = (req_sem >= 0) ? req_sem : ImageStreamIO_getsemwaitindex(&img, -1);
+
+            if (semindex >= 0 && semindex < img.md->sem)
+            {
+                while (sem_trywait(img.semptr[semindex]) == 0)
+                {
+                }
+            }
+
+            struct sigaction sa_int, old_int;
+            memset(&sa_int, 0, sizeof(sa_int));
+            sa_int.sa_handler = client_wait_sigint_handler;
+            sigemptyset(&sa_int.sa_mask);
+            g_wait_sigint = 0;
+            sigaction(SIGINT, &sa_int, &old_int);
+
+            double t_start = client_monotonic_sec();
+            int    rc      = 0;
+            while (img.md->cnt0 < target_cnt)
+            {
+                if (g_wait_sigint)
+                {
+                    if (hooks && hooks->on_sigint)
+                    {
+                        hooks->on_sigint(hooks->ctx);
+                    }
+                    rc = 130;
+                    break;
+                }
+                double elapsed = client_monotonic_sec() - t_start;
+                if (has_timo && elapsed >= timeout_sec)
+                {
+                    rc = 124;
+                    break;
+                }
+                if (semindex >= 0 && semindex < img.md->sem)
+                {
+                    double rem_sec = has_timo ? (timeout_sec - elapsed) : 0.05;
+                    if (rem_sec > 0.05)
+                    {
+                        rem_sec = 0.05;
+                    }
+                    if (rem_sec < 0.0001)
+                    {
+                        rem_sec = 0.0001;
+                    }
+                    struct timespec ts;
+                    clock_gettime(CLOCK_REALTIME, &ts);
+                    long add_ns = (long) (rem_sec * 1.0e9);
+                    ts.tv_sec += add_ns / 1000000000L;
+                    ts.tv_nsec += add_ns % 1000000000L;
+                    if (ts.tv_nsec >= 1000000000L)
+                    {
+                        ts.tv_sec += 1;
+                        ts.tv_nsec -= 1000000000L;
+                    }
+                    sem_timedwait(img.semptr[semindex], &ts);
+                }
+                else
+                {
+                    struct timespec slp = { 0, 1000000L };
+                    nanosleep(&slp, NULL);
+                }
+            }
+
+            sigaction(SIGINT, &old_int, NULL);
+            if (req_sem < 0 && semindex >= 0 && semindex < img.md->sem)
+            {
+                img.semReadPID[semindex] = 0;
+            }
+            ImageStreamIO_closeIm(&img);
+            return rc;
+        }
     }
 
     char arg2_buf[128];
@@ -769,7 +992,8 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
             {
                 s++;
             }
-            if (strncmp(s, "s.", 2) == 0)
+            if (strncmp(s, "S:", 2) == 0 || strncmp(s, "L:", 2) == 0 || strncmp(s, "s.", 2) == 0 ||
+                strncmp(s, "l.", 2) == 0)
             {
                 s += 2;
             }
@@ -821,14 +1045,30 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
         }
     }
 
-    struct timespec ts0;
-    clock_gettime(CLOCK_MONOTONIC, &ts0);
-    double t_start  = (double) ts0.tv_sec + 1.0e-9 * (double) ts0.tv_nsec;
+    struct sigaction sa_int, old_int;
+    memset(&sa_int, 0, sizeof(sa_int));
+    sa_int.sa_handler = client_wait_sigint_handler;
+    sigemptyset(&sa_int.sa_mask);
+    g_wait_sigint = 0;
+    sigaction(SIGINT, &sa_int, &old_int);
+
+    double t_start  = client_monotonic_sec();
     int    has_timo = (timeout_sec > 0.0);
     int    rc       = 124;
+    int    iter     = 0;
 
     for (;;)
     {
+        if (g_wait_sigint)
+        {
+            if (hooks && hooks->on_sigint)
+            {
+                hooks->on_sigint(hooks->ctx);
+            }
+            rc = 130;
+            break;
+        }
+
         for (int i = 0; i < nstreams; i++)
         {
             if (!opened[i])
@@ -839,7 +1079,7 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
                     opened[i] = 1;
                     if (!has_init[i])
                     {
-                        /* Newly created stream counts as updated */
+                        sigaction(SIGINT, &old_int, NULL);
                         for (int j = 0; j < nstreams; j++)
                         {
                             if (opened[j])
@@ -859,6 +1099,7 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
             {
                 if (imgs[i].md->cnt0 != init_cnt[i])
                 {
+                    sigaction(SIGINT, &old_int, NULL);
                     for (int j = 0; j < nstreams; j++)
                     {
                         if (opened[j])
@@ -883,6 +1124,7 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
                     uint64_t c = (uint64_t) strtoull(val, NULL, 10);
                     if (!has_init[i] || c != init_cnt[i])
                     {
+                        sigaction(SIGINT, &old_int, NULL);
                         for (int j = 0; j < nstreams; j++)
                         {
                             if (opened[j])
@@ -900,22 +1142,18 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
             }
         }
 
-        if (has_timo)
+        if (has_timo && (client_monotonic_sec() - t_start) >= timeout_sec)
         {
-            struct timespec ts_now;
-            clock_gettime(CLOCK_MONOTONIC, &ts_now);
-            double now = (double) ts_now.tv_sec + 1.0e-9 * (double) ts_now.tv_nsec;
-            if ((now - t_start) >= timeout_sec)
-            {
-                rc = 124;
-                break;
-            }
+            rc = 124;
+            break;
         }
 
-        struct timespec slp = { 0, 1000000L }; /* 1 ms */
+        long            ns  = (iter++ < 40) ? 50000L : 200000L; /* 50 us then 200 us */
+        struct timespec slp = { 0, ns };
         nanosleep(&slp, NULL);
     }
 
+    sigaction(SIGINT, &old_int, NULL);
     for (int j = 0; j < nstreams; j++)
     {
         if (opened[j])
