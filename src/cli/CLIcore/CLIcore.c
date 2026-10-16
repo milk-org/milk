@@ -575,7 +575,28 @@ static int handle_fifo_input(const char *prompt)
             {
                 buf1[total_bytes] = '\0';
             }
-            strncpy(data.CLIcmdline, buf1, STRINGMAXLEN_CLICMDLINE - 1);
+
+            /* a multi-line construct (here-document, if/for, open quote) waits for the rest */
+            static char  *acc     = NULL;
+            static size_t acc_len = 0;
+            size_t        ll      = strlen(buf1);
+            char         *na      = (char *) realloc(acc, acc_len + ll + 2);
+            if (na == NULL)
+            {
+                break;
+            }
+            acc = na;
+            memcpy(acc + acc_len, buf1, ll);
+            acc_len += ll;
+            acc[acc_len++] = '\n';
+            acc[acc_len]   = '\0';
+            if (milk_shell_incomplete(acc))
+            {
+                break;
+            }
+            acc[--acc_len] = '\0';
+
+            strncpy(data.CLIcmdline, acc, STRINGMAXLEN_CLICMDLINE - 1);
             data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
             printf("\033[36m[fifo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
@@ -586,12 +607,15 @@ static int handle_fifo_input(const char *prompt)
             cli_history_log_prompt(data.CLIcmdline);
             {
                 int exit_req = 0;
-                int rc       = milk_bash_engine_exec(data.CLIcmdline, &exit_req);
+                int rc       = milk_bash_engine_exec(acc, &exit_req);
                 if (exit_req || (dcerrorexit && rc != 0))
                 {
                     data.CLIloopON = 0;
                 }
             }
+            free(acc);
+            acc     = NULL;
+            acc_len = 0;
 
             clock_gettime(CLOCK_MONOTONIC, &ft1);
             {

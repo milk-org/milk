@@ -235,19 +235,16 @@ def pty_session(
 # ------------------------------------------------- T*: translator (bash/milk_bash_translate.c)
 
 
-@bug("T1", "`<<` inside $((..)) taken as heredoc; rest of file untranslated")
 def test_T1_shift_in_arith_is_not_heredoc():
     out = translate("echo $((1<<2))\necho @{1+2}\n")
     assert "@calc" in out.splitlines()[1]
 
 
-@bug("T2", "quote state reset per line; text inside multi-line strings rewritten")
 def test_T2_multiline_string_untouched():
     src = 'echo "x\n@ 1+2 in string\nmk2Dim a 1 1\n"\n'
     assert translate(src) == src
 
 
-@bug("T2", "backslash continuation lines translated as new statements")
 def test_T2_continuation_not_new_statement():
     out = translate("echo a \\\n  mk2Dim b 1 1\n")
     assert "@mk2Dim" not in out
@@ -267,7 +264,6 @@ def test_T3_at_v_error_on_unknown_image(tmp_path):
     assert "rc=0" not in res.stdout
 
 
-@bug("T4", "unquoted `@ expr` split at && / | / ;")
 def test_T4_at_expr_not_split_on_operators(tmp_path):
     res = milk_cli_script('@ x = (2 > 1) && (2 < 1)\n@ -v r x\necho "r=$r"', tmp_path)
     assert value(res.stdout, "r") == "0"
@@ -314,29 +310,53 @@ def test_T9_multiword_value_not_truncated(tmp_path):
     assert value(res.stdout, "setrc") != "0" or value(res.stdout, "v") == "Sub aru"
 
 
-@bug("T10", "`#` in ${#arr[@]} treated as comment by the unclosed-syntax check")
 def test_T10_hash_in_param_length(tmp_path):
     res = milk_cli_script('arr=(a b c)\nn=$(echo ${#arr[@]})\necho "n=$n"', tmp_path)
     assert value(res.stdout, "n") == "3"
     assert "unexpected end" not in res.stdout + res.stderr
 
 
-@bug("T11", "$'..\\'..' flips single-quote state for the rest of the line")
 def test_T11_dollar_single_quote_escape():
     out = translate("echo $'it\\'s' @s.a.b\n")
     assert "@get" in out
 
 
-@bug("T12", "only the first heredoc per line is tracked")
 def test_T12_second_heredoc_body_untouched():
     src = "cat <<A <<B\na\nA\nhelp\nB\n"
     assert translate(src) == src
 
 
-@bug("T13", "$LINENO offset by the coprocess eval")
 def test_T13_lineno_matches_source(tmp_path):
     res = milk_cli_script('echo "l=$LINENO"', tmp_path)
     assert value(res.stdout, "l") == "1"
+
+
+@pytest.mark.parametrize(
+    "src, must_have, must_not_have",
+    [
+        ("xs=@s.${cam}.xsize\n", "@get -v REPLY s.${cam}.xsize", None),
+        ('echo "${@s.c.xsize}"\n', "@get -v REPLY s.c.xsize", "${${"),
+        ('echo "\\@{lit}"\n', 'echo "@{lit}"', "@calc"),
+        ("echo foo@{a,b}\n", "foo@{a,b}", "@calc"),
+        ('echo "$@f.x.y" user@s.ex.org\n', '"$@f.x.y" user@s.ex.org', "@get"),
+        ("val=@{a * 10 + b[2, 3]}\n", '@calc -v REPLY "a * 10 + b[2, 3]"', None),
+        ("echo @{a && b}; ls\n", '@calc -v REPLY "a && b"', None),
+        ("x=$(listim)\ny=`listim`\n", "x=$(@listim)\ny=`@listim`", None),
+    ],
+)
+def test_WP7_translation_cases(src, must_have, must_not_have):
+    out = translate(src)
+    assert must_have in out, out
+    if must_not_have is not None:
+        assert must_not_have not in out, out
+
+
+def test_WP7_lineno_with_errexit(tmp_path):
+    env, _ = _env()
+    f = tmp_path / "l.milk"
+    f.write_text('true\necho "l=$LINENO"\n')
+    res = _run([MILK_CLI_EXEC, "-e", "-s", str(f)], env, 20, cwd=str(tmp_path))
+    assert value(res.stdout, "l") == "2"
 
 
 # --------------------------------------- C*: coprocess, REPL, milk-script (bash/milk_bash_coproc.c ...)
@@ -442,7 +462,6 @@ def test_C9_milk_script_errexit(tmp_path):
     assert res.returncode != 0
 
 
-@bug("C10", "heredoc header sent alone in REPL/piped mode; body runs as commands")
 def test_C10_heredoc_in_piped_repl(tmp_path):
     res = milk_cli_stdin("cat <<EOF\nhello_c10\nEOF\necho after", tmp_path)
     assert "hello_c10" in res.stdout
@@ -675,10 +694,14 @@ class _Server:
             stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
-        for _ in range(100):
-            if _milk_call(self.env, "call", "pwd", timeout=2).returncode == 0:
+        for _ in range(
+            200
+        ):  # raw connect: a milk-call probe could auto-start a rival server
+            try:
+                _connect(self.name).close()
                 break
-            time.sleep(0.05)
+            except OSError:
+                time.sleep(0.025)
 
     def call(self, *args: str, **kw) -> subprocess.CompletedProcess[str]:
         return _milk_call(self.env, *args, **kw)

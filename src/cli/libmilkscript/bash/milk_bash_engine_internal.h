@@ -17,14 +17,6 @@
 
 #include "milk_bash_engine.h"
 
-/**
- * @brief Check whether @s contains unclosed quotes or `$()` command substitutions.
- *
- * @param s Input command or script string
- * @return 1 if unclosed syntax is detected, 0 otherwise
- */
-int milk_bash_has_unclosed_syntax(const char *s);
-
 int milk_bash_funsub_disabled(void);
 
 #endif /* MILK_BASH_ENGINE_INTERNAL_H */

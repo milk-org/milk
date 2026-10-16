@@ -87,4 +87,10 @@ void milk_bash_engine_shutdown(void);
  */
 void milk_bash_engine_abort(void);
 
+/**
+ * @brief Return 1 if @src needs more input to be a complete bash construct (open quote,
+ *        substitution, here-document, compound command, trailing `\`, `|`, `&&`, `||`).
+ */
+int milk_shell_incomplete(const char *src);
+
 #endif /* MILK_BASH_ENGINE_H */

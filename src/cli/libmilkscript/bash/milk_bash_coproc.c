@@ -21,6 +21,7 @@
 #endif
 
 #include <errno.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <signal.h>
@@ -36,6 +37,7 @@
 #include "CLIcore_signals.h"
 #include "milk_bash_engine.h"
 #include "milk_bash_engine_internal.h"
+#include "milk_shell_lex.h"
 #include "milk_server.h"
 #include "milk_srvlog.h"
 
@@ -45,6 +47,96 @@ static int   g_cmd_pipe_w    = -1;
 static int   g_status_pipe_r = -1;
 static pid_t g_bash_pid      = -1;
 static char  g_sockpath[128] = { '\0' };
+static char  g_cmddir[256]   = { '\0' }; /* private dir holding the command files */
+static char  g_cmdfile[300]  = { '\0' }; /* translated command, `source`d by bash (keeps $LINENO) */
+static char  g_label[64]     = "milk";   /* command-file name: bash error messages show it */
+static pid_t g_cmddir_owner  = 0;        /* forked children must not remove the parent's dir */
+
+/** rm_dir_files() - remove the files in directory @dir, then the directory. */
+static void rm_dir_files(const char *dir)
+{
+    DIR *dd = opendir(dir);
+    if (dd != NULL)
+    {
+        struct dirent *de;
+        while ((de = readdir(dd)) != NULL)
+        {
+            if (de->d_name[0] != '.')
+            {
+                unlinkat(dirfd(dd), de->d_name, 0);
+            }
+        }
+        closedir(dd);
+    }
+    rmdir(dir);
+}
+
+/** sweep_stale_cmddirs() - remove milk-engine-<pid>-* directories of processes that are gone. */
+static void sweep_stale_cmddirs(const char *base)
+{
+    DIR *bd = opendir(base);
+    if (bd == NULL)
+    {
+        return;
+    }
+    struct dirent *de;
+    while ((de = readdir(bd)) != NULL)
+    {
+        long pid = 0;
+        if (sscanf(de->d_name, "milk-engine-%ld-", &pid) == 1 && pid > 0 &&
+            kill((pid_t) pid, 0) != 0 && errno == ESRCH)
+        {
+            char path[512];
+            snprintf(path, sizeof(path), "%s/%s", base, de->d_name);
+            rm_dir_files(path);
+        }
+    }
+    closedir(bd);
+}
+
+/** cmddir_atexit() - remove the command directory when the process exits without shutdown. */
+static void cmddir_atexit(void)
+{
+    if (g_cmddir[0] != '\0' && getpid() == g_cmddir_owner)
+    {
+        rm_dir_files(g_cmddir);
+        g_cmddir[0] = '\0';
+    }
+}
+
+/** make_cmdfile() - create the private directory and command-file path (once per process). */
+static int make_cmdfile(void)
+{
+    static int atexit_done = 0;
+    if (g_cmdfile[0] != '\0')
+    {
+        return 0;
+    }
+    const char *base = getenv("XDG_RUNTIME_DIR");
+    if (base == NULL || access(base, W_OK) != 0)
+    {
+        base = (access("/dev/shm", W_OK) == 0) ? "/dev/shm" : getenv("TMPDIR");
+    }
+    if (base == NULL || base[0] == '\0')
+    {
+        base = "/tmp";
+    }
+    sweep_stale_cmddirs(base);
+    snprintf(g_cmddir, sizeof(g_cmddir), "%s/milk-engine-%ld-XXXXXX", base, (long) getpid());
+    if (mkdtemp(g_cmddir) == NULL)
+    {
+        g_cmddir[0] = '\0';
+        return -1;
+    }
+    g_cmddir_owner = getpid();
+    if (!atexit_done)
+    {
+        atexit(cmddir_atexit);
+        atexit_done = 1;
+    }
+    snprintf(g_cmdfile, sizeof(g_cmdfile), "%s/%s", g_cmddir, g_label);
+    return 0;
+}
 
 /**
  * @brief Check whether the bash execution engine is enabled for milk-cli.
@@ -71,6 +163,10 @@ int milk_bash_engine_init(void)
     }
 
     milk_bash_funsub_disabled(); // probe bash once; result is exported to the coprocess env
+    if (make_cmdfile() != 0)
+    {
+        return -1;
+    }
 
     snprintf(g_sockpath, sizeof(g_sockpath), "@milk-cli-%d-%d", (int) getuid(), (int) getpid());
     g_listen_fd = milk_server_create_listener(g_sockpath);
@@ -194,7 +290,7 @@ int milk_bash_engine_init(void)
             "quit() { exit \"$@\"; }\n"
             "exitCLI() { exit \"$@\"; }\n"
             "while IFS= read -r -d '' __milk_cmd <&198; do\n"
-            "    eval \"${__milk_cmd}\" 198<&-\n"
+            "    builtin source \"$__milk_cmd\" 198<&-\n"
             "    __milk_rc=$?\n"
             "    printf '%d\\t%d\\t%s\\0' \"${__milk_rc}\" \"${__MILK_EXIT_REQ}\" \"${PWD}\" "
             ">&199\n"
@@ -261,10 +357,16 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
         }
     }
 
-    if (milk_bash_has_unclosed_syntax(cmdline))
+    msl_map_t chk;
+    if (msl_scan(cmdline, strlen(cmdline), &chk) == 0)
     {
-        fprintf(stderr, "Syntax error: unexpected end of input\n");
-        fflush(stderr);
+        int unterminated = chk.unterminated;
+        msl_free(&chk);
+        if (unterminated)
+        {
+            fprintf(stderr, "milk: syntax error: unterminated quote or substitution\n");
+            return 2;
+        }
     }
 
     char *translated = milk_translate_shorthand_to_bash(cmdline, 1);
@@ -279,29 +381,57 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
         char  *with_e  = (char *) malloc(old_len + 16);
         if (with_e != NULL)
         {
-            snprintf(with_e, old_len + 16, "set -e\n%s", translated);
+            snprintf(with_e, old_len + 16, "set -e; %s",
+                     translated); // same line: $LINENO unchanged
             free(translated);
             translated = with_e;
         }
     }
 
-    size_t tlen = strlen(translated) + 1;
+    /* the text goes to a command file named after the script; the pipe carries its path */
+    snprintf(g_cmdfile, sizeof(g_cmdfile), "%s/%s", g_cmddir, g_label);
+    int    cfd  = open(g_cmdfile, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+    size_t tlen = strlen(translated);
     size_t sent = 0;
-    while (sent < tlen)
+    while (cfd >= 0 && sent < tlen)
     {
-        ssize_t n = write(g_cmd_pipe_w, translated + sent, tlen - sent);
-        if (n < 0)
+        ssize_t n = write(cfd, translated + sent, tlen - sent);
+        if (n < 0 && errno == EINTR)
         {
-            if (errno == EINTR)
-            {
-                continue;
-            }
-            free(translated);
-            return 1;
+            continue;
+        }
+        if (n <= 0)
+        {
+            break;
         }
         sent += (size_t) n;
     }
+    if (cfd >= 0)
+    {
+        close(cfd);
+    }
     free(translated);
+    if (cfd < 0 || sent < tlen)
+    {
+        fprintf(stderr, "milk: cannot write command file %s\n", g_cmdfile);
+        return 1;
+    }
+    size_t plen  = strlen(g_cmdfile) + 1;
+    size_t psent = 0;
+    while (psent < plen)
+    {
+        ssize_t n = write(g_cmd_pipe_w, g_cmdfile + psent, plen - psent);
+        if (n < 0 && errno == EINTR)
+        {
+            continue;
+        }
+        if (n <= 0)
+        {
+            unlink(g_cmdfile);
+            return 1;
+        }
+        psent += (size_t) n;
+    }
 
     char   sbuf[4096];
     size_t spos          = 0;
@@ -420,6 +550,7 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
         dcexitcode = rc;
     }
     cli_last_retval = rc;
+    unlink(g_cmdfile); /* bash has read it (source reads the whole file) */
     return rc;
 }
 
@@ -490,7 +621,10 @@ int milk_bash_engine_exec_file(const char *filename, int *out_exit_req)
     buf[nread]   = '\0';
     fclose(fp);
 
+    const char *base = strrchr(filename, '/'); /* bash error messages name the script */
+    snprintf(g_label, sizeof(g_label), "%s", (base != NULL) ? base + 1 : filename);
     int rc = milk_bash_engine_exec(buf, out_exit_req);
+    snprintf(g_label, sizeof(g_label), "milk");
     free(buf);
     return rc;
 }
@@ -505,6 +639,12 @@ void milk_bash_engine_shutdown(void)
     {
         close(g_cmd_pipe_w);
         g_cmd_pipe_w = -1;
+    }
+    if (g_cmddir[0] != '\0')
+    {
+        rm_dir_files(g_cmddir); /* includes files left by aborted commands */
+        g_cmdfile[0] = '\0';
+        g_cmddir[0]  = '\0';
     }
 
     if (g_bash_pid > 0 && g_listen_fd >= 0 && g_status_pipe_r >= 0)

@@ -324,9 +324,9 @@ void rl_cb_linehandler(char *linein)
 
     int had_continuation = 0;
 
-    /* Handle multi-line continuation:
-     * both backslash continuation and tree-sitter syntactic continuation */
-    if (cli_ts_is_incomplete(multiline_buf))
+    /* Handle multi-line continuation (quotes, here-documents, compound commands, trailing
+     * operators and backslashes): milk_shell_incomplete() is the bash-aware check */
+    if (milk_shell_incomplete(multiline_buf))
     {
         had_continuation = 1;
         rl_callback_handler_remove();
@@ -344,7 +344,7 @@ void rl_cb_linehandler(char *linein)
         }
         else
         {
-            while (cli_ts_is_incomplete(multiline_buf))
+            while (milk_shell_incomplete(multiline_buf))
             {
                 size_t len       = strlen(multiline_buf);
                 int    is_bslash = (len > 0 && multiline_buf[len - 1] == '\\');

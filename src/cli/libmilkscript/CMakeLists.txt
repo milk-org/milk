@@ -58,6 +58,7 @@ set(MILKSCRIPT_SOURCES
     server/milk_server_io.c
     server/milk_server_dispatch.c
     bash/milk_bash_translate.c
+    bash/milk_shell_lex.c
     bash/milk_bash_coproc.c
     milkscript_stubs.c
     milkscript_api.c)
