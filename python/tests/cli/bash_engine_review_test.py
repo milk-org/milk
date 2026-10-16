@@ -253,7 +253,6 @@ def test_T2_continuation_not_new_statement():
     assert "@mk2Dim" not in out
 
 
-@bug("T3", '@ -v var "expr" double-quotes the user\'s quotes -> literal string')
 def test_T3_at_v_quoted_expression(tmp_path):
     res = milk_cli_script(
         '@ -v r "1+2"\necho "r=$r"\n@ -v s \'2*3\'\necho "s=$s"', tmp_path
@@ -262,7 +261,6 @@ def test_T3_at_v_quoted_expression(tmp_path):
     assert value(res.stdout, "s") == "6"
 
 
-@bug("T3", "@ -v on a nonexistent image succeeds with the literal text")
 def test_T3_at_v_error_on_unknown_image(tmp_path):
     res = milk_cli_script('@ -v r "imean(nosuchimage)"\necho "rc=$? r=$r"', tmp_path)
     assert "r=imean(nosuchimage)" not in res.stdout
@@ -287,7 +285,6 @@ def test_T5_top_level_and_sourced_agree(tmp_path):
     assert value(res.stdout, "top") == value(res.stdout, "sub")
 
 
-@bug("T6", "inline expansion result is word-split and globbed")
 def test_T6_inline_result_not_globbed(tmp_path):
     (tmp_path / "a.zz").touch()
     (tmp_path / "b.zz").touch()
@@ -298,19 +295,16 @@ def test_T6_inline_result_not_globbed(tmp_path):
     assert "a.zz" not in res.stdout
 
 
-@bug("T7", "action suffix (step/stop/...) applied to stream keywords")
 def test_T7_action_suffix_only_for_fps_proc():
     out = translate("@s.cam.kw.step\n")
     assert "@set" not in out
 
 
-@bug("T8", "`==` treated as assignment")
 def test_T8_double_equals_is_not_assignment():
     out = translate("@f.ao.gain==3\n")
     assert "@set" not in out
 
 
-@bug("T9", "unquoted multi-word value silently truncated")
 def test_T9_multiword_value_not_truncated(tmp_path):
     res = milk_cli_script(
         '@mk2Dim t9 4 4\n@s.t9.kw.OBS=Sub aru\necho "setrc=$?"\n'

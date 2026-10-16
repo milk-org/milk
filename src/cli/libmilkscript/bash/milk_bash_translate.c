@@ -214,7 +214,7 @@ static size_t scan_entity_path(const char *s, int *has_eq)
     {
         return 0;
     }
-    if (s[i] == '=')
+    if (s[i] == '=' && s[i + 1] != '=')
     {
         *has_eq = 1;
     }
@@ -415,6 +415,111 @@ static int is_calc_or_test_stmt_prefix(const char *s, size_t len, const char *si
     return 0;
 }
 
+/**
+ * emit_inline() - emit an @get/@calc substitution (funsub, or $() on old bash); @dq wraps it in "..."
+ * so the result is neither word-split nor globbed.
+ */
+static void emit_inline(sbuf_t     *out,
+                        const char *sigil,
+                        int         is_calc,
+                        const char *body,
+                        size_t      n,
+                        int         dq)
+{
+    int funsub = !milk_bash_funsub_disabled();
+    if (dq)
+    {
+        sbuf_append_ch(out, '"');
+    }
+    sbuf_append_str(out, funsub ? "${| " : "$(");
+    sbuf_append_str(out, sigil);
+    if (is_calc)
+    {
+        sbuf_append_str(out, funsub ? "calc -v REPLY \"" : "calc \"");
+        sbuf_append_dq_escaped(out, body, n);
+        sbuf_append_ch(out, '"');
+    }
+    else
+    {
+        sbuf_append_str(out, funsub ? "get -v REPLY " : "get ");
+        sbuf_append_mem(out, body, n);
+    }
+    sbuf_append_str(out, funsub ? "; }" : ")");
+    if (dq)
+    {
+        sbuf_append_ch(out, '"');
+    }
+}
+
+/** is_one_quoted_word() - 1 if @p[0..n) is exactly one '...' or "..." string. */
+static int is_one_quoted_word(const char *p, size_t n)
+{
+    if (n < 2 || (p[0] != '\'' && p[0] != '"'))
+    {
+        return 0;
+    }
+    for (size_t i = 1; i < n; i++)
+    {
+        if (p[0] == '"' && p[i] == '\\')
+        {
+            i++;
+        }
+        else if (p[i] == p[0])
+        {
+            return i == n - 1;
+        }
+    }
+    return 0;
+}
+
+/** has_unquoted_space() - 1 if @p[0..n) holds whitespace outside quotes, $(..), ${..} and backticks. */
+static int has_unquoted_space(const char *p, size_t n)
+{
+    char q     = 0;
+    int  depth = 0;
+    int  bt    = 0;
+    for (size_t i = 0; i < n; i++)
+    {
+        char c = p[i];
+        if (q == '\'')
+        {
+            q = (c == '\'') ? 0 : q;
+            continue;
+        }
+        if (c == '\\')
+        {
+            i++;
+            continue;
+        }
+        if (c == '$' && i + 1 < n && (p[i + 1] == '(' || p[i + 1] == '{'))
+        {
+            depth++;
+            i++;
+        }
+        else if (depth > 0 && (c == '(' || c == '{'))
+        {
+            depth++;
+        }
+        else if (depth > 0 && (c == ')' || c == '}'))
+        {
+            depth--;
+        }
+        else if (c == '`')
+        {
+            bt = !bt;
+        }
+        else if (c == '"' || (c == '\'' && q == 0))
+        {
+            q = (q == c) ? 0 : c;
+        }
+        else if (q == 0 && depth == 0 && !bt && isspace((unsigned char) c))
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
 {
     const char *sigil      = get_sigil();
@@ -491,23 +596,7 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
             }
             if (j < len && depth == 0)
             {
-                int no_sub = milk_bash_funsub_disabled();
-                if (!no_sub)
-                {
-                    sbuf_append_str(out, "${| ");
-                    sbuf_append_str(out, sigil);
-                    sbuf_append_str(out, "calc -v REPLY \"");
-                    sbuf_append_dq_escaped(out, in + start, j - start);
-                    sbuf_append_str(out, "\"; }");
-                }
-                else
-                {
-                    sbuf_append_str(out, "$(");
-                    sbuf_append_str(out, sigil);
-                    sbuf_append_str(out, "calc \"");
-                    sbuf_append_dq_escaped(out, in + start, j - start);
-                    sbuf_append_str(out, "\")");
-                }
+                emit_inline(out, sigil, 1, in + start, j - start, !in_dq);
                 i = j + 1;
                 continue;
             }
@@ -537,23 +626,7 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
                     }
                     if (ndots >= 2)
                     {
-                        int no_sub = milk_bash_funsub_disabled();
-                        if (!no_sub)
-                        {
-                            sbuf_append_str(out, "${| ");
-                            sbuf_append_str(out, sigil);
-                            sbuf_append_str(out, "get -v REPLY ");
-                            sbuf_append_mem(out, in + i + adv, elen);
-                            sbuf_append_str(out, "; }");
-                        }
-                        else
-                        {
-                            sbuf_append_str(out, "$(");
-                            sbuf_append_str(out, sigil);
-                            sbuf_append_str(out, "get ");
-                            sbuf_append_mem(out, in + i + adv, elen);
-                            sbuf_append_ch(out, ')');
-                        }
+                        emit_inline(out, sigil, 0, in + i + adv, elen, !in_dq);
                         i += adv + elen;
                         continue;
                     }
@@ -682,23 +755,7 @@ static void append_args_with_quoting(const char *args,
                 size_t elen   = scan_entity_path(tok + toff, &has_eq);
                 if (elen == tlen - toff && !has_eq)
                 {
-                    int no_sub = milk_bash_funsub_disabled();
-                    if (!no_sub)
-                    {
-                        sbuf_append_str(out, "${| ");
-                        sbuf_append_str(out, sigil);
-                        sbuf_append_str(out, "get -v REPLY ");
-                        sbuf_append_mem(out, tok + toff, elen);
-                        sbuf_append_str(out, "; }");
-                    }
-                    else
-                    {
-                        sbuf_append_str(out, "$(");
-                        sbuf_append_str(out, sigil);
-                        sbuf_append_str(out, "get ");
-                        sbuf_append_mem(out, tok + toff, elen);
-                        sbuf_append_ch(out, ')');
-                    }
+                    emit_inline(out, sigil, 0, tok + toff, elen, 1);
                     continue;
                 }
             }
@@ -958,9 +1015,16 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
                 }
             }
         }
-        sbuf_append_ch(out, '"');
-        sbuf_append_dq_escaped(out, s + adv, slen - adv);
-        sbuf_append_ch(out, '"');
+        if (is_one_quoted_word(s + adv, slen - adv))
+        {
+            sbuf_append_mem(out, s + adv, slen - adv);
+        }
+        else
+        {
+            sbuf_append_ch(out, '"');
+            sbuf_append_dq_escaped(out, s + adv, slen - adv);
+            sbuf_append_ch(out, '"');
+        }
         sbuf_append_mem(out, stmt + end, len - end);
         return;
     }
@@ -998,6 +1062,14 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
                 {
                     vstart++;
                 }
+                if (has_unquoted_space(s + vstart, slen - vstart))
+                {
+                    sbuf_append_str(out, "{ echo 'milk: ");
+                    sbuf_append_mem(out, s + adv, elen);
+                    sbuf_append_str(out, "=: quote multi-word values' >&2; false; }");
+                    sbuf_append_mem(out, stmt + end, len - end);
+                    return;
+                }
                 sbuf_append_str(out, sigil);
                 sbuf_append_str(out, "set ");
                 append_args_with_quoting(s + adv, elen, 1, 1, out);
@@ -1013,21 +1085,25 @@ static void translate_single_stmt(const char *stmt, size_t len, int allow_legacy
                 if (elen < sizeof(ent_tmp))
                 {
                     memcpy(ent_tmp, s + adv, elen);
-                    ent_tmp[elen]    = '\0';
-                    const char *ldot = strrchr(ent_tmp, '.');
-                    int         isp =
+                    ent_tmp[elen]                       = '\0';
+                    static const char *const fps_act[]  = { "confstart", "confstop", "confstep",
+                                                            "runstart",  "runstop",  "reset",
+                                                            NULL };
+                    static const char *const proc_act[] = { "run",  "resume", "pause",
+                                                            "step", "incr",   "stop",
+                                                            "exit", "kill",   NULL };
+                    const char              *ldot       = strrchr(ent_tmp, '.');
+                    int isf = (strncmp(ent_tmp, "f.", 2) == 0 || strncmp(ent_tmp, "fps.", 4) == 0);
+                    int isp =
                         (strncmp(ent_tmp, "p.", 2) == 0 || strncmp(ent_tmp, "proc.", 5) == 0 ||
                          strncmp(ent_tmp, "procinfo.", 9) == 0);
-                    if (ldot != NULL &&
-                        (strcmp(ldot + 1, "confstart") == 0 || strcmp(ldot + 1, "confstop") == 0 ||
-                         strcmp(ldot + 1, "confstep") == 0 || strcmp(ldot + 1, "runstart") == 0 ||
-                         strcmp(ldot + 1, "runstop") == 0 || strcmp(ldot + 1, "reset") == 0 ||
-                         strcmp(ldot + 1, "pause") == 0 || strcmp(ldot + 1, "resume") == 0 ||
-                         strcmp(ldot + 1, "step") == 0 || strcmp(ldot + 1, "incr") == 0 ||
-                         strcmp(ldot + 1, "stop") == 0 || strcmp(ldot + 1, "exit") == 0 ||
-                         strcmp(ldot + 1, "kill") == 0 || (isp && strcmp(ldot + 1, "run") == 0)))
+                    const char *const *acts = isf ? fps_act : (isp ? proc_act : NULL);
+                    for (int a = 0; ldot != NULL && acts != NULL && acts[a] != NULL; a++)
                     {
-                        is_set_act = 1;
+                        if (strcmp(ldot + 1, acts[a]) == 0)
+                        {
+                            is_set_act = 1;
+                        }
                     }
                 }
                 sbuf_append_str(out, sigil);
