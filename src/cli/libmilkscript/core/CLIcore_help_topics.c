@@ -175,7 +175,7 @@ void help_topic_syntax(void)
     printf("  Subsequent: Match images, then files.\n");
     printf("  " C_NOTE "History:" C_RST " Commands saved across sessions (Up/Down).\n");
     printf("  " C_NOTE "Autocorrection:" C_RST " Mistyped commands suggest closest match.\n");
-    printf("  " C_NOTE "Fuzzy finding:" C_RST " " C_CMD "fhelp" C_RST " filters interactively.\n");
+    printf("  " C_NOTE "Fuzzy finding:" C_RST " " C_CMD "@fhelp" C_RST " filters interactively.\n");
     printf("  " C_NOTE "Bash completion:" C_RST " Source scripts/milk-completion.sh.\n");
     printf("\n");
     printf(C_HDR "Piping Commands:\n" C_RST);
@@ -206,16 +206,16 @@ void help_topic_commands(void)
     printf(C_TITLE "========================================================\n" C_RST);
     printf("\n");
     printf(C_HDR "Help & Discovery:\n" C_RST);
-    printf(C_CMD "  help              " C_RST "Show help topic index\n");
-    printf(C_CMD "  help-<topic>      " C_RST "Show help for a specific topic\n");
-    printf(C_CMD "  cmd? [cmd]        " C_RST "Help for a specific command\n");
-    printf(C_CMD "  m? [module]       " C_RST "List commands in a module\n");
+    printf(C_CMD "  @help             " C_RST "Show help topic index\n");
+    printf(C_CMD "  @help-<topic>     " C_RST "Show help for a specific topic\n");
+    printf(C_CMD "  @cmd? [cmd]       " C_RST "Help for a specific command\n");
+    printf(C_CMD "  @m? [module]      " C_RST "List commands in a module\n");
     printf(C_CMD "  h? [string]       " C_RST "Search command descriptions\n");
-    printf(C_CMD "  fhelp             " C_RST "Interactive fuzzy command search\n");
-    printf(C_CMD "  fhist             " C_RST "Interactive fuzzy history search\n");
+    printf(C_CMD "  @fhelp            " C_RST "Interactive fuzzy command search\n");
+    printf(C_CMD "  @fhist            " C_RST "Interactive fuzzy history search\n");
     printf("\n");
     printf(C_HDR "System Info:\n" C_RST);
-    printf(C_CMD "  ci                " C_RST "System info and memory usage\n");
+    printf(C_CMD "  @ci               " C_RST "System info and memory usage\n");
     printf(C_CMD "  mem.listim        " C_RST "List images in memory\n");
     printf("\n");
     printf(C_HDR "File I/O:\n" C_RST);
@@ -286,7 +286,7 @@ void help_topic_variables(void)
            "@f.fps.param" C_RST ")\n");
     printf("  " C_CMD "@get q.NAME.prop" C_RST "  Read Sequencer property\n");
     printf("  " C_CMD "@set f.fps.p=val" C_RST "  Write FPS parameter (alias: " C_CMD
-           "fpsset fps p v" C_RST ")\n");
+           "@fpsset fps p v" C_RST ")\n");
     printf("\n");
     printf(C_HDR "Milk Stream Metadata (@s.<name> shared / @l.<name> local):\n" C_RST);
     printf("  " C_CMD "@s.name.xsize" C_RST "      Stream width  (size[0])\n");
@@ -413,7 +413,7 @@ void help_topic_scripting(void)
     printf(C_CMD "  . <file>           " C_RST "Same (dot-source)\n");
     printf(C_CMD "  include_once <f>   " C_RST "Source only once per session\n");
     printf(C_CMD "  savescript <file>  " C_RST "Save variables & functions\n");
-    printf(C_CMD "  savehistory <file> " C_RST "Save command history\n");
+    printf(C_CMD "  @savehistory <file> " C_RST "Save command history\n");
     printf("  Startup: " C_CMD "milk-cli -s <file>" C_RST "  run on launch\n");
     printf("  Startup: " C_CMD "milk-script <file>" C_RST "  standalone runner\n");
     printf("  Auto-load: " C_CMD "~/.milkrc" C_RST " sourced at startup\n");
@@ -523,16 +523,16 @@ void help_topic_milk(void)
            "  List streams (s.), local (l.), FPS (f.),\n");
     printf("                           "
            "  processes (p.), and sequencers (q.)\n");
-    printf("  " C_CMD "fpslist [--json] [pat]   " C_RST "  List FPS instances\n");
-    printf("  " C_CMD "streamlist [--json] [pat]" C_RST "  List shared-memory streams\n");
-    printf("  " C_CMD "proclist [--json]        " C_RST "  List active processes\n");
+    printf("  " C_CMD "@fpslist [--json] [pat]   " C_RST "  List FPS instances\n");
+    printf("  " C_CMD "@streamlist [--json] [pat]" C_RST "  List shared-memory streams\n");
+    printf("  " C_CMD "@proclist [--json]        " C_RST "  List active processes\n");
     printf("\n");
     printf(C_HDR "FPS Parameters:\n" C_RST);
     printf("  " C_CMD "@get f.fps.param " C_RST "Read FPS parameter value (or " C_CMD
            "@f.fps.param" C_RST ")\n");
     printf("  " C_CMD "@set f.fps.p=val " C_RST "Write FPS parameter (alias: " C_CMD
-           "fpsset fps p v" C_RST ")\n");
-    printf("  " C_CMD "fparam <fpsname> " C_RST "Interactive FPS parameter editor\n");
+           "@fpsset fps p v" C_RST ")\n");
+    printf("  " C_CMD "@fparam <fpsname>" C_RST "Interactive FPS parameter editor\n");
     printf("\n");
     printf(C_HDR "Stream Management:\n" C_RST);
     printf("  " C_CMD "milk-FITS2shm f.fits s " C_RST "Load FITS into SHM stream\n");

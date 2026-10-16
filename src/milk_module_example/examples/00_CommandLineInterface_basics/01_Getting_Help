@@ -2,8 +2,8 @@ examplestring="Getting help"
 
 exampleDescription="
 This first example demonstrates how to:
-- Print help for module (m?)
-- Print help for command (cmd?)
+- Print help for module (@m?)
+- Print help for command (@cmd?)
 "
 
 CLIinput="
@@ -12,19 +12,19 @@ CLIinput="
 MILK_QUIET="1" milk
 
 # List loaded modules
-m?
+@m?
 
 # get module info
-m? COREMOD_iofits
+@m? COREMOD_iofits
 
 # Get function help
-cmd? loadfits
+@cmd? loadfits
 
 # Looking for function partially matching string
-cmd? im
+@cmd? im
 
 # Regular expression search
-cmd? \"imset.*0\"
+@cmd? \"imset.*0\"
 
 # Alternate help syntax (same result as above)
 loadfits ?

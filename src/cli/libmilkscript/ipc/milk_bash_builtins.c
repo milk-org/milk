@@ -26,6 +26,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "milk_bash_engine.h"
 #include "milk_client.h"
 #include "milkdata.h"
 
@@ -722,6 +723,90 @@ static int milklog_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milktranslate_builtin() - `milktranslate -v VAR FILE`: translate a milk script into a private
+ * command file and bind its path to VAR (no fork); `milktranslate --done PATH` removes it.
+ */
+static int milktranslate_builtin(WORD_LIST *list)
+{
+    char **argv = NULL;
+    int    argc = wordlist_to_argv(list, &argv);
+    int    rc   = EXECUTION_FAILURE;
+    if (argc == 2 && strcmp(argv[0], "--done") == 0)
+    {
+        if (milk_bash_cmdfile_owned(argv[1]))
+        {
+            unlink(argv[1]);
+        }
+        free(argv);
+        return EXECUTION_SUCCESS;
+    }
+    if (argc != 3 || strcmp(argv[0], "-v") != 0)
+    {
+        fprintf(stderr, "Usage: milktranslate -v VAR FILE | milktranslate --done PATH\n");
+        free(argv);
+        return 2;
+    }
+    FILE *fp = fopen(argv[2], "r");
+    if (fp == NULL)
+    {
+        fprintf(stderr, "milktranslate: cannot open '%s'\n", argv[2]);
+        free(argv);
+        return EXECUTION_FAILURE;
+    }
+    size_t cap = 4096;
+    size_t len = 0;
+    char  *src = (char *) malloc(cap);
+    size_t nr;
+    while (src != NULL && (nr = fread(src + len, 1, cap - len - 1, fp)) > 0)
+    {
+        len += nr;
+        if (len + 1 == cap)
+        {
+            char *ns = (char *) realloc(src, cap * 2);
+            if (ns == NULL)
+            {
+                break;
+            }
+            src = ns;
+            cap *= 2;
+        }
+    }
+    fclose(fp);
+    if (src == NULL)
+    {
+        free(argv);
+        return EXECUTION_FAILURE;
+    }
+    src[len] = '\0';
+
+    char *out = milk_translate_shorthand_to_bash(src, 1);
+    free(src);
+    const char *base = strrchr(argv[2], '/'); /* bash error messages name the script */
+    char        path[512];
+    if (out != NULL &&
+        milk_bash_cmdfile_path((base != NULL) ? base + 1 : argv[2], path, sizeof(path)) == 0)
+    {
+        FILE *wf = fopen(path, "w");
+        if (wf != NULL && fputs(out, wf) >= 0 && fclose(wf) == 0)
+        {
+            bash_hook_set_var(argv[1], path, NULL);
+            rc = EXECUTION_SUCCESS;
+        }
+        else if (wf != NULL)
+        {
+            fclose(wf);
+        }
+    }
+    if (rc != EXECUTION_SUCCESS)
+    {
+        fprintf(stderr, "milktranslate: cannot translate '%s'\n", argv[2]);
+    }
+    free(out);
+    free(argv);
+    return rc;
+}
+
 static int milkls_builtin(WORD_LIST *list)
 {
     char              **argv = NULL;
@@ -809,6 +894,8 @@ static char *const milkshutdown_doc[] = { "Shut down the session milk-cli --serv
 static char *const milkserver_doc[]   = { "Manage milk-cli servers (@server).", NULL };
 static char *const milklog_doc[] = { "Inspect or search the milk server SHM log (@log).", NULL };
 static char *const milkls_doc[]  = { "List active milk entities (@ls).", NULL };
+static char *const milktranslate_doc[] = { "Translate a milk script into a private file to source.",
+                                           NULL };
 
 struct builtin milkcall_struct = { "milkcall",   milkcall_builtin,           BUILTIN_ENABLED,
                                    milkcall_doc, "milkcall <cmd> [args...]", 0 };
@@ -879,3 +966,10 @@ struct builtin milklog_struct = { "milklog",   milklog_builtin,        BUILTIN_E
 struct builtin milkls_struct = {
     "milkls", milkls_builtin, BUILTIN_ENABLED, milkls_doc, "milkls [-l|-q|--json|--local] [pat]", 0
 };
+
+struct builtin milktranslate_struct = { "milktranslate",
+                                        milktranslate_builtin,
+                                        BUILTIN_ENABLED,
+                                        milktranslate_doc,
+                                        "milktranslate -v VAR FILE | --done PATH",
+                                        0 };

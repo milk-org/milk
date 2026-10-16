@@ -463,7 +463,7 @@ cmd1 || cmd2             # OR
    optional. `mem.rm imgname` and even `mem.rm` (no
    args) are accepted; when arguments are omitted,
    the command uses its default image selection and
-   error-handling behavior (see `cmd? mem.rm`).
+   error-handling behavior (see `@cmd? mem.rm`).
 
 3. **Calc temp images leak**: The calculator
    creates `_tmpcalcN` images in SHM for
@@ -492,9 +492,9 @@ cmd1 || cmd2             # OR
 When the user needs a command you don't know:
 
 ```bash
-m?                       # List all commands
-m? modulename            # Commands in module
-cmd? commandname         # Help for command
+@m?                      # List all commands
+@m? modulename           # Commands in module
+@cmd? commandname        # Help for command
 h? searchterm            # Search descriptions
 fhelp                    # Fuzzy search
 ```

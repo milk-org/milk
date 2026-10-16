@@ -29,7 +29,7 @@ modex.imsum1 .scaling 0.31
 
 # Get function help to print value of non-CLI argument(s)
 # This shows the updated scaling value
-cmd? modex.imsum1
+@cmd? modex.imsum1
 
 # Run function
 modex.imsum1 imd1

@@ -78,7 +78,7 @@ endforeach()
 include(CTest)
 
 set(TESTNAME "CLIfunc-COREMOD_arith-module")
-add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "m?")
+add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "@m?")
 set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLImodule")
 set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
 set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION
@@ -101,7 +101,7 @@ foreach(CLIcmdname IN LISTS commandlist)
 
   set(TESTCLIFUNC "${CLIcmdname}")
   set(TESTNAME "CLIfunc-COREMOD_arith-${TESTCLIFUNC}")
-  add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "cmd? arith.${CLIcmdname}")
+  add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "@cmd? arith.${CLIcmdname}")
   set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLIfunc")
   set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
   set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "src:")

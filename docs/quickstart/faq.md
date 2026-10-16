@@ -179,7 +179,7 @@ See also: [CLI Reference](../guide/CLIcore.md)
     **Solution:** Check that the module is loaded:
 
     ```text
-    milk-cli > m?                      # (1)!
+    milk-cli > @m?                     # (1)!
     milk-cli > h? mycommand            # (2)!
     ```
 
@@ -218,9 +218,9 @@ See also: [CLI Reference](../guide/CLIcore.md)
 
 ## 6. Getting Help
 
-- **CLI help:** Type `?` or `help` at the `milk-cli >` prompt
-- **Command help:** `cmd? <command>` for detailed usage
-- **Module list:** `m?` to list all loaded modules
+- **CLI help:** Type `@?` or `@help` at the `milk-cli >` prompt
+- **Command help:** `@cmd? <command>` for detailed usage
+- **Module list:** `@m?` to list all loaded modules
 - **Documentation:** See [docs/index.md](../index.md)
 - **Issues:** Report on [GitHub Issues](https://github.com/milk-org/milk/issues)
 

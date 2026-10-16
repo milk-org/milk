@@ -71,15 +71,15 @@ skipped.
 ```bash
 # Example ~/.milkrc
 alias li mem.listim
-synhl on
+@synhl on
 ```
 
 ### Configurable Prompt
 
-Customize the prompt format using `setprompt`:
+Customize the prompt format using `@setprompt`:
 
 ```text
-milk-cli > setprompt "%u@%h %d > "
+milk-cli > @setprompt "%u@%h %d > "
 user@host src >
 ```
 
@@ -96,8 +96,8 @@ user@host src >
 Load shared library modules at runtime:
 
 ```text
-milk-cli > soload mylib.so         # load shared object
-milk-cli > mload COREMOD_arith     # load module by name
+milk-cli > @soload mylib.so        # load shared object
+milk-cli > @mload COREMOD_arith    # load module by name
 ```
 
 ---
@@ -146,7 +146,7 @@ argument. You can also query a command's compact argument signature on demand vi
 
 ### Readline Editing
 
-GNU readline is used for line editing. Type `helprl` at the prompt for a quick reference. See
+GNU readline is used for line editing. Type `@helprl` at the prompt for a quick reference. See
 [GNU readline documentation](http://tiswww.case.edu/php/chet/readline/rltop.html).
 
 Key bindings include `Ctrl+A` (start of line), `Ctrl+E` (end of line), `Ctrl+R` (reverse history
@@ -166,13 +166,13 @@ milk-cli > arith.imfunc \
 The first word is colored **green** (valid command) or **red** (unknown). Toggle with:
 
 ```text
-milk-cli > synhl off             # disable
-milk-cli > synhl on              # enable (default)
+milk-cli > @synhl off            # disable
+milk-cli > @synhl on             # enable (default)
 ```
 
 <!-- prettier-ignore -->
 !!! tip
-    If you encounter rendering issues with syntax highlighting, disable it with `synhl off`.
+    If you encounter rendering issues with syntax highlighting, disable it with `@synhl off`.
 
 ### Auto-Correction
 
@@ -192,18 +192,18 @@ Several commands help you explore the available commands and modules.
 ### Help Commands
 
 ```text
-milk-cli > ?                       # print help
-milk-cli > help                    # same as ?
+milk-cli > @?                      # print help
+milk-cli > @help                   # same as @?
 milk-cli > @hb                     # bash-enhanced @ syntax & primitives guide
-milk-cli > help --json             # print help index in JSON format
-milk-cli > help --porcelain        # print help index in TSV format
-milk-cli > helprl                  # readline quick reference
-milk-cli > lm?                     # list all loaded modules
-milk-cli > m? <module>             # list commands for a module
-milk-cli > m?                      # list commands for all modules
-milk-cli > cmd? <command>          # detailed command description (or @hc <command>)
+milk-cli > @help --json            # print help index in JSON format
+milk-cli > @help --porcelain       # print help index in TSV format
+milk-cli > @helprl                 # readline quick reference
+milk-cli > @lm?                    # list all loaded modules
+milk-cli > @m? <module>            # list commands for a module
+milk-cli > @m?                     # list commands for all modules
+milk-cli > @cmd? <command>         # detailed command description (or @hc <command>)
 milk-cli > @hc --sig <cmd> [pos]   # compact CLICMDARGDEF signature hint
-milk-cli > cmd?                    # describe all commands
+milk-cli > @cmd?                   # describe all commands
 milk-cli > cmdinfo? <pattern>      # search command info by regex
 ```
 
@@ -213,7 +213,7 @@ yellow for examples, dim for source file paths.
 ### Important Commands
 
 ```text
-milk-cli > ci                      # compilation info & memory usage
+milk-cli > @ci                     # compilation info & memory usage
 milk-cli > mem.listim              # list all images in memory
 milk-cli > mem.listim --json       # list all images in JSON format
 milk-cli > mem.listim --porcelain  # list all images in TSV format
@@ -221,9 +221,9 @@ milk-cli > listimf <file>          # list images, write to file
 milk-cli > !<syscmd>               # execute system command
 milk-cli > quit                    # exit (or: exit, exitCLI)
 milk-cli > mem.mk2Dim <im> <xs> <ys>   # create 2D image
-milk-cli > usleep <usec>           # sleep for <usec> microseconds
-milk-cli > dpsingle                # set default precision to float
-milk-cli > dpdouble                # set default precision to double
+milk-cli > @usleep <usec>          # sleep for <usec> microseconds
+milk-cli > @dpsingle               # set default precision to float
+milk-cli > @dpdouble               # set default precision to double
 milk-cli > cd <dir>                # change current working directory
 milk-cli > pwd                     # print current working directory
 ```
@@ -241,9 +241,9 @@ Command history is saved to `~/.milk_history` and loaded at startup. Up to 1000 
 between sessions.
 
 ```text
-milk-cli > ghistory              # show last 20 entries (all sessions)
-milk-cli > ghistory 50           # show last 50 entries
-milk-cli > lhistory              # show entries from current session
+milk-cli > @ghistory             # show last 20 entries (all sessions)
+milk-cli > @ghistory 50          # show last 50 entries
+milk-cli > @lhistory             # show entries from current session
 ```
 
 Use `Ctrl+R` for interactive reverse search through history.
@@ -268,7 +268,7 @@ milk-cli > iofits.save_fl !$    # expands to: iofits.save_fl im1
 ### Fuzzy History Search
 
 ```text
-milk-cli > searchhist mem.listim
+milk-cli > @searchhist mem.listim
 ```
 
 Finds all history entries containing "mem.listim" (case- insensitive) and highlights the matching
@@ -277,7 +277,7 @@ substring in yellow. Shows match count at the end.
 ### Command Statistics
 
 ```text
-milk-cli > cmdstats              # top 20 most-used commands
+milk-cli > @cmdstats             # top 20 most-used commands
 ```
 
 Shows command name and call count for the current session.
@@ -287,9 +287,9 @@ Shows command name and call count for the current session.
 Log all executed commands with timestamps:
 
 ```text
-milk-cli > sessionlog on          # log to ~/.milk_session.log
-milk-cli > sessionlog mylog.txt   # log to custom file
-milk-cli > sessionlog off         # stop logging
+milk-cli > @sessionlog on         # log to ~/.milk_session.log
+milk-cli > @sessionlog mylog.txt  # log to custom file
+milk-cli > @sessionlog off        # stop logging
 ```
 
 Each entry includes a timestamp and elapsed time since the session started.
@@ -314,12 +314,12 @@ The CLI supports bash-like scripting constructs including variables, arithmetic,
 (`if`/`while`/`for`), and user-defined functions. See the [Scripting](scripting.md) page for full
 documentation.
 
-| Command              | Description                          |
-| -------------------- | ------------------------------------ |
-| `source <file>`      | Execute a script file                |
-| `. <file>`           | Same as `source` (dot-source)        |
-| `savescript <file>`  | Save variables and functions to file |
-| `savehistory <file>` | Save command history to file         |
+| Command               | Description                          |
+| --------------------- | ------------------------------------ |
+| `source <file>`       | Execute a script file                |
+| `. <file>`            | Same as `source` (dot-source)        |
+| `savescript <file>`   | Save variables and functions to file |
+| `@savehistory <file>` | Save command history to file         |
 
 ### Command Timing
 
@@ -347,7 +347,7 @@ Pipe a CLI command's output to a standard shell command:
 
 ```text
 milk-cli > mem.listim | grep wfs     # filter image list
-milk-cli > cmd? | head -5            # show first 5 help lines
+milk-cli > @cmd? | head -5           # show first 5 help lines
 ```
 
 ### Output Redirect

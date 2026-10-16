@@ -269,9 +269,6 @@ def test_T4_at_expr_not_split_on_operators(tmp_path):
     assert value(res.stdout, "r") == "0"
 
 
-@bug(
-    "T5", "un-sigiled command classified differently at top level vs in a sourced file"
-)
 def test_T5_top_level_and_sourced_agree(tmp_path):
     (tmp_path / "sub.milk").write_text('listvar >/dev/null 2>&1; echo "sub=$?"\n')
     res = milk_cli_script(
@@ -279,6 +276,14 @@ def test_T5_top_level_and_sourced_agree(tmp_path):
     )
     assert value(res.stdout, "top") is not None
     assert value(res.stdout, "top") == value(res.stdout, "sub")
+
+
+def test_WP8_qualified_names_only(tmp_path):
+    body = 'mem.listvar >/dev/null 2>&1; echo "{0}q=$?"\nlistvar >/dev/null 2>&1; echo "{0}b=$?"\n'
+    (tmp_path / "sub.milk").write_text(body.format("s"))
+    res = milk_cli_script(body.format("t") + "source sub.milk", tmp_path)
+    for k, v in (("tq", "0"), ("tb", "127"), ("sq", "0"), ("sb", "127")):
+        assert value(res.stdout, k) == v, res.stdout
 
 
 def test_T6_inline_result_not_globbed(tmp_path):
@@ -341,7 +346,12 @@ def test_T13_lineno_matches_source(tmp_path):
         ('echo "$@f.x.y" user@s.ex.org\n', '"$@f.x.y" user@s.ex.org', "@get"),
         ("val=@{a * 10 + b[2, 3]}\n", '@calc -v REPLY "a * 10 + b[2, 3]"', None),
         ("echo @{a && b}; ls\n", '@calc -v REPLY "a && b"', None),
-        ("x=$(listim)\ny=`listim`\n", "x=$(@listim)\ny=`@listim`", None),
+        (
+            "x=$(mem.listim)\ny=`mem.listim`\n",
+            "x=$(@mem.listim)\ny=`@mem.listim`",
+            None,
+        ),
+        ("x=$(listim)\n", "x=$(listim)", "@listim"),
     ],
 )
 def test_WP7_translation_cases(src, must_have, must_not_have):

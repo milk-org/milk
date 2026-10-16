@@ -35,7 +35,7 @@ int milk_is_bash_engine_enabled(void);
  * matches the source file line numbers.
  *
  * @param src          Input script or command line
- * @param allow_legacy Non-zero to also translate un-sigiled interactive milk-cli commands
+ * @param allow_legacy Non-zero to also translate un-sigiled `module.command` names
  * @return Newly heap-allocated translated string (caller must `free()`), or NULL
  */
 char *milk_translate_shorthand_to_bash(const char *src, int allow_legacy);
@@ -86,6 +86,19 @@ void milk_bash_engine_shutdown(void);
  *        or fault-isolation `siglongjmp`.
  */
 void milk_bash_engine_abort(void);
+
+/**
+ * @brief Build the path of a private command file named @label in this process's own
+ *        directory (created on first use, removed at exit).
+ *
+ * @return 0 on success, -1 if the directory cannot be created
+ */
+int milk_bash_cmdfile_path(const char *label, char *out, size_t outsz);
+
+/**
+ * @brief Return 1 if @path is a file inside this process's private command directory.
+ */
+int milk_bash_cmdfile_owned(const char *path);
 
 /**
  * @brief Return 1 if @src needs more input to be a complete bash construct (open quote,

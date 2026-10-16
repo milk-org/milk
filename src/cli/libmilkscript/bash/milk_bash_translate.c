@@ -249,31 +249,51 @@ static size_t scan_entity_path(const char *s, int *has_eq)
     return i;
 }
 
-static int is_bash_reserved_or_builtin(const char *w)
+/** qualified_in_cmd_list() - @w is a `module.command` entry of share/milk/milk-commands.list. */
+static int qualified_in_cmd_list(const char *w)
 {
-    static const char *const kw[] = {
-        "if",         "then",    "elif",       "else",         "fi",          "for",
-        "in",         "while",   "until",      "do",           "done",        "case",
-        "esac",       "select",  "function",   "time",         "coproc",      "{",
-        "}",          "!",       "[[",         "]]",           "[",           "]",
-        "echo",       "printf",  "cd",         "pwd",          "read",        "export",
-        "unset",      "shift",   "alias",      "unalias",      "source",      ".",
-        "exit",       "quit",    "exitCLI",    "return",       "break",       "continue",
-        "local",      "declare", "typeset",    "readonly",     "let",         "eval",
-        "exec",       "set",     "shopt",      "trap",         "type",        "command",
-        "builtin",    "enable",  "wait",       "kill",         "jobs",        "bg",
-        "fg",         "true",    "false",      "test",         "sleep",       "rm",
-        "ls",         "cat",     "grep",       "awk",          "sed",         "find",
-        "xargs",      "sort",    "head",       "tail",         "wc",          "cut",
-        "tr",         "mkdir",   "rmdir",      "cp",           "mv",          "ln",
-        "chmod",      "touch",   "date",       "uname",        "hostname",    "whoami",
-        "id",         "env",     "bookmark",   "include_once", "milkcall",    "milkcalc",
-        "milkget",    "milkset", "milktest",   "milkgrab",     "milkwaitfor", "milkwaitany",
-        "milkexists", "milkls",  "milkserver", "milklog",      NULL
-    };
-    for (int i = 0; kw[i] != NULL; i++)
+    static char **names  = NULL;
+    static size_t nnames = 0;
+    static int    loaded = 0;
+    if (!loaded)
     {
-        if (strcmp(w, kw[i]) == 0)
+        loaded           = 1;
+        const char *inst = getenv("MILK_INSTALLDIR");
+        char        path[1024];
+        snprintf(path, sizeof(path), "%s/share/milk/milk-commands.list",
+                 (inst != NULL) ? inst : "");
+        FILE *fp = fopen(path, "r");
+        if (fp == NULL)
+        {
+            const char *td = getenv("TMPDIR");
+            snprintf(path, sizeof(path), "%s/milk-commands-%u.list",
+                     (td != NULL && td[0]) ? td : "/tmp", (unsigned) getuid());
+            fp = fopen(path, "r");
+        }
+        char line[256];
+        while (fp != NULL && fgets(line, sizeof(line), fp) != NULL)
+        {
+            line[strcspn(line, "\r\n")] = '\0';
+            if (strchr(line, '.') == NULL)
+            {
+                continue;
+            }
+            char **nn = (char **) realloc(names, (nnames + 1) * sizeof(char *));
+            if (nn == NULL)
+            {
+                break;
+            }
+            names           = nn;
+            names[nnames++] = strdup(line);
+        }
+        if (fp != NULL)
+        {
+            fclose(fp);
+        }
+    }
+    for (size_t i = 0; i < nnames; i++)
+    {
+        if (names[i] != NULL && strcmp(names[i], w) == 0)
         {
             return 1;
         }
@@ -281,96 +301,41 @@ static int is_bash_reserved_or_builtin(const char *w)
     return 0;
 }
 
-static int is_registered_milk_command(const char *w)
+/**
+ * is_qualified_milk_command() - 1 if @w is an exact registered `module.command` name: the only
+ * milk commands recognised without the sigil (bare names, help shorthands and REPL words need it).
+ */
+static int is_qualified_milk_command(const char *w)
 {
-    if (w == NULL || w[0] == '\0' || is_bash_reserved_or_builtin(w))
+    const char *dot = (w != NULL) ? strchr(w, '.') : NULL;
+    if (dot == NULL || dot == w || dot[1] == '\0')
     {
         return 0;
     }
-
-    static const char *const extra_cmds[] = {
-        "help",          "imgstat", "info.imgstat", "imstats",  "mk2Dim",   "mk3Dim",   "mk2Drnd",
-        "imgen.mk2Drnd", "mkrndim", "readshmim",    "listim",   "deleteim", "loadfits", "savefits",
-        "fpslist",       "fpsset",  "streamlist",   "proclist", "procstat", "procctl",  "procwait",
-        "dpdigits",      "lm?",     "m?",           "cmd?",     "f?",       "?",        "vars",
-        "savehistory",   NULL
-    };
-    for (int i = 0; extra_cmds[i] != NULL; i++)
+    if (data.NBcmd == 0) /* outside milk-cli (milk-call, bash builtins): use the cached list */
     {
-        if (strcmp(w, extra_cmds[i]) == 0)
-        {
-            return 1;
-        }
+        return qualified_in_cmd_list(w);
     }
-
+    size_t mlen = (size_t) (dot - w);
     for (unsigned int i = 0; i < data.NBcmd; i++)
     {
-        const char *k = data.cmd[i].key;
-        if (k[0] == '\0')
-        {
-            continue;
-        }
-        if (strcmp(k, w) == 0)
-        {
-            return 1;
-        }
-        const char *dot = strchr(k, '.');
-        if (dot != NULL && strcmp(dot + 1, w) == 0)
+        if (strcmp(data.cmd[i].key, w) == 0) /* key registered with its namespace: "mem.listvar" */
         {
             return 1;
         }
         int midx = data.cmd[i].moduleindex;
-        if (midx >= 0 && strchr(w, '.') != NULL)
+        if (midx < 0 || strcmp(data.cmd[i].key, dot + 1) != 0)
         {
-            const char *wdot = strchr(w, '.');
-            size_t      mlen = (size_t) (wdot - w);
-            const char *ms   = data.module[midx].shortname;
-            const char *mn   = data.module[midx].name;
-            if (((strlen(ms) == mlen && strncmp(ms, w, mlen) == 0) ||
-                 (strlen(mn) == mlen && strncmp(mn, w, mlen) == 0)) &&
-                strcmp(k, wdot + 1) == 0)
-            {
-                return 1;
-            }
+            continue;
+        }
+        const char *ms = data.module[midx].shortname;
+        const char *mn = data.module[midx].name;
+        if ((strlen(ms) == mlen && strncmp(ms, w, mlen) == 0) ||
+            (strlen(mn) == mlen && strncmp(mn, w, mlen) == 0))
+        {
+            return 1;
         }
     }
-
-    const char *wdot = strchr(w, '.');
-    if (wdot != NULL && wdot > w && strchr(w, '/') == NULL)
-    {
-        size_t                   mlen       = (size_t) (wdot - w);
-        static const char *const std_mods[] = { "mem",    "info",   "imgen",  "imfilt", "imfmt",
-                                                "fft",    "linalg", "stat",   "psf",    "zern",
-                                                "kdtree", "linopt", "linAR",  "fps",    "seq",
-                                                "cacao",  "arith",  "iofits", "tools",  NULL };
-        for (int m = 0; std_mods[m] != NULL; m++)
-        {
-            if (strlen(std_mods[m]) == mlen && strncmp(std_mods[m], w, mlen) == 0)
-            {
-                return 1;
-            }
-        }
-        for (int m = 0; m < data.NBmodule; m++)
-        {
-            const char *ms = data.module[m].shortname;
-            const char *mn = data.module[m].name;
-            if ((ms[0] != '\0' && strlen(ms) == mlen && strncmp(ms, w, mlen) == 0) ||
-                (mn[0] != '\0' && strlen(mn) == mlen && strncmp(mn, w, mlen) == 0))
-            {
-                return 1;
-            }
-        }
-        for (unsigned int i = 0; i < data.NBcmd; i++)
-        {
-            const char *kdot = strchr(data.cmd[i].key, '.');
-            if (kdot != NULL && (size_t) (kdot - data.cmd[i].key) == mlen &&
-                strncmp(data.cmd[i].key, w, mlen) == 0)
-            {
-                return 1;
-            }
-        }
-    }
-
     return 0;
 }
 
@@ -872,58 +837,25 @@ static void append_args(const char *args,
 }
 
 /**
- * @brief Translate interactive REPL shorthands (`?`, `m?`, `cmd?`, `f?`, and un-sigiled milk commands).
+ * try_translate_qualified_word() - un-sigiled `module.command` -> `@module.command`.
  *
  * @return 1 if handled, 0 otherwise
  */
-static int try_translate_interactive_word(const char *firstword,
-                                          const char *s,
-                                          size_t      rem_len,
-                                          size_t      wlen,
-                                          int         d,
-                                          sbuf_t     *out)
+static int try_translate_qualified_word(const char *firstword,
+                                        const char *s,
+                                        size_t      rem_len,
+                                        size_t      wlen,
+                                        int         d,
+                                        sbuf_t     *out)
 {
-    const char *sigil = get_sigil();
-    static const struct
+    if (!is_qualified_milk_command(firstword))
     {
-        const char *word;
-        const char *cmd;
-    } help_alias[] = { { "?", "h" },     { "m?", "hm" }, { "lm?", "hm" },
-                       { "cmd?", "hc" }, { "f?", "hf" }, { NULL, NULL } };
-    for (int k = 0; help_alias[k].word != NULL; k++)
-    {
-        if (strcmp(firstword, help_alias[k].word) == 0)
-        {
-            sbuf_append_str(out, sigil);
-            sbuf_append_str(out, help_alias[k].cmd);
-            append_args(s + wlen, rem_len - wlen, 1, 0, d, out);
-            return 1;
-        }
+        return 0;
     }
-    static const char *const callwords[] = { "dpdigits",   "procstat", "procctl",     "procwait",
-                                             "vars",       "history",  "searchhist",  "fhist",
-                                             "ghistory",   "lhistory", "savehistory", "setprompt",
-                                             "sessionlog", "synhl",    "syndiag",     "cliindent",
-                                             "showmatch",  "helprl",   "fhelp",       "fparam",
-                                             "help",       NULL };
-    for (int k = 0; callwords[k] != NULL; k++)
-    {
-        if (strcmp(firstword, callwords[k]) == 0)
-        {
-            sbuf_append_str(out, "milkcall ");
-            sbuf_append_str(out, firstword);
-            append_args(s + wlen, rem_len - wlen, 1, 0, d, out);
-            return 1;
-        }
-    }
-    if (is_registered_milk_command(firstword))
-    {
-        sbuf_append_str(out, sigil);
-        sbuf_append_str(out, firstword);
-        append_args(s + wlen, rem_len - wlen, 1, 0, d, out);
-        return 1;
-    }
-    return 0;
+    sbuf_append_str(out, get_sigil());
+    sbuf_append_str(out, firstword);
+    append_args(s + wlen, rem_len - wlen, 1, 0, d, out);
+    return 1;
 }
 
 /** is_assignment_word() - 1 if the word at @s is NAME=... */
@@ -1061,14 +993,9 @@ static void translate_stmt_body(const char *stmt, size_t len, int d, sbuf_t *out
     }
 
     /* 2. Shorthand '@<entity>.<name>.<field>=<val>' or bare '@<entity>.<name>.<field>' */
-    int legacy_ent =
-        g_allow_legacy &&
-        (strncmp(s, "s.", 2) == 0 || strncmp(s, "f.", 2) == 0 || strncmp(s, "p.", 2) == 0 ||
-         strncmp(s, "q.", 2) == 0 || strncmp(s, "stream.", 7) == 0 || strncmp(s, "fps.", 4) == 0 ||
-         strncmp(s, "proc.", 5) == 0 || strncmp(s, "seq.", 4) == 0);
-    if ((slen > siglen && sig_len(s, slen)) || legacy_ent)
+    if (slen > siglen && sig_len(s, slen))
     {
-        size_t adv    = legacy_ent ? 0 : siglen;
+        size_t adv    = siglen;
         int    has_eq = 0;
         size_t elen   = scan_entity_path(s + adv, &has_eq);
         if (elen > 0 && adv + elen <= slen)
@@ -1157,8 +1084,8 @@ static void translate_stmt_body(const char *stmt, size_t len, int d, sbuf_t *out
         return;
     }
 
-    /* 4. Interactive milk-cli shorthands when legacy translation is on */
-    if (g_allow_legacy && try_translate_interactive_word(firstword, s, len - i, wlen, d, out))
+    /* 4. Un-sigiled module-qualified command (`mem.listim`) */
+    if (g_allow_legacy && try_translate_qualified_word(firstword, s, len - i, wlen, d, out))
     {
         return;
     }
@@ -1311,7 +1238,7 @@ static void translate_code(const char *p, size_t n, int d, sbuf_t *out)
  * @brief Translate milk-cli shorthands into standard milk.bash syntax.
  *
  * @param src          Input script or command line
- * @param allow_legacy Non-zero to also translate un-sigiled interactive milk-cli commands
+ * @param allow_legacy Non-zero to also translate un-sigiled `module.command` names
  * @return Newly heap-allocated translated string (caller must `free()`), or NULL
  */
 char *milk_translate_shorthand_to_bash(const char *src, int allow_legacy)

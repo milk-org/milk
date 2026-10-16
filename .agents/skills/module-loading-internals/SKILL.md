@@ -15,7 +15,7 @@ metadata corruption, and load-order issues.
 ## When to Use
 
 - Commands appear empty or with wrong metadata
-- Module `m?` output shows ghost entries
+- Module `@m?` output shows ghost entries
 - `sofilename` or `loadname` is wrong in module
   info
 - Commands from one module appear under another
@@ -173,7 +173,7 @@ initModule()
    sets `key = ""`. If `RegisterCLIcmd` is called
    before the real key is set, an empty command is
    registered. This manifests as blank entries in
-   `m?` output.
+   `@m?` output.
 
 ## Command Dispatch
 
@@ -206,25 +206,25 @@ segfault during argument parsing.
 ### List loaded modules
 
 ```bash
-echo "m?" | milk-cli 2>&1
+echo "@m?" | milk-cli 2>&1
 ```
 
 ### Check specific module
 
 ```bash
-echo "m? modulename" | milk-cli 2>&1
+echo "@m? modulename" | milk-cli 2>&1
 ```
 
 ### Verify command registration
 
 ```bash
-echo "cmd? cmdkey" | milk-cli 2>&1
+echo "@cmd? cmdkey" | milk-cli 2>&1
 ```
 
 ### Find duplicate registrations
 
 ```bash
-echo "m?" | milk-cli 2>&1 | \
+echo "@m?" | milk-cli 2>&1 | \
   awk '{print $1}' | sort | uniq -d
 ```
 

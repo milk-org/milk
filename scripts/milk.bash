@@ -119,11 +119,11 @@ unset _milk_ov_file
 # ---------------------------------------------------------------------------
 _MILK_BUILTIN_LOADED=0
 enable -d milkcall milkget milkset milkcalc milktest milkexists milkls \
-    milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
+    milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog milktranslate 2>/dev/null || true
 if [[ -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" ]] && ! grep -q "libmilk.*(deleted)" "/proc/$$/maps" 2>/dev/null; then
     if MILK_QUIET=1 enable -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" \
         milkcall milkget milkset milkcalc milktest milkexists milkls \
-        milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null; then
+        milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog milktranslate 2>/dev/null; then
         _MILK_BUILTIN_LOADED=1
     fi
 fi
@@ -304,19 +304,57 @@ _milk_defer_add() {
     trap '_milk_run_defer_stack' EXIT
 }
 
+declare -gi __MILK_SOURCE_DEPTH=0
+declare -gA __MILK_INC_ONCE=()
+
+# Translate a .milk file and source it: in-process with the milktranslate builtin (no fork),
+# else through milk-call. Positional arguments are passed on, $LINENO matches the file.
 _milk_source_impl() {
     if [[ $# -eq 0 ]]; then
         echo "Usage: ${MILKCLI_SIGIL}source <filename> [args...]" >&2
         return 1
     fi
     if [[ ! -f "$1" ]]; then
-        echo "Error: ${MILKCLI_SIGIL}source: file not found: $1" >&2
+        echo "Error: source: file not found: $1" >&2
         return 1
     fi
-    local __milk_src_file="$1"
+    if (( __MILK_SOURCE_DEPTH >= 32 )); then
+        echo "Error: maximum source recursion depth (32) exceeded" >&2
+        return 1
+    fi
+    local __milk_src_file="$1" __milk_p __milk_rc
     shift
-    # shellcheck disable=SC1090
-    builtin source <("${MILK_INSTALLDIR}/bin/milk-call" translate --legacy "${__milk_src_file}") "$@"
+    : $(( __MILK_SOURCE_DEPTH += 1 ))
+    if [[ ${_MILK_BUILTIN_LOADED} -eq 1 ]]; then
+        milktranslate -v __milk_p "${__milk_src_file}" || { : $(( __MILK_SOURCE_DEPTH -= 1 )); return 1; }
+        # shellcheck disable=SC1090
+        builtin source "${__milk_p}" "$@"
+        __milk_rc=$?
+        milktranslate --done "${__milk_p}"
+    else
+        # shellcheck disable=SC1090
+        builtin source <("${MILK_INSTALLDIR}/bin/milk-call" translate --legacy "${__milk_src_file}") "$@"
+        __milk_rc=$?
+    fi
+    : $(( __MILK_SOURCE_DEPTH -= 1 ))
+    return ${__milk_rc}
+}
+
+# Source a file only once per session (by real path)
+include_once() {
+    if [[ $# -eq 0 ]]; then
+        echo "Usage: include_once <filename>" >&2
+        return 1
+    fi
+    if [[ ! -f "$1" ]]; then
+        echo "Error: include_once: file not found: $1" >&2
+        return 1
+    fi
+    local __rp
+    __rp="$(realpath "$1" 2>/dev/null || echo "$1")"
+    [[ -n "${__MILK_INC_ONCE[$__rp]:-}" ]] && return 0
+    __MILK_INC_ONCE[$__rp]=1
+    _milk_source_impl "$@"
 }
 
 export PROCINFO_NCPU="${PROCINFO_NCPU:-$(nproc 2>/dev/null || echo 1)}"

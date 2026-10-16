@@ -95,7 +95,7 @@ wait_any -t 5.0 S:wfs F:${LOOPNAME}.gain=0.5
 imgen.mkdisk dm0ref 128 128 |> saveFITS
 
 # ---- Process control ----
-procctl ${LOOPNAME} run
+@procctl ${LOOPNAME} run
 
 # ---- on_update trigger ----
 on_update wfs echo "WFS frame received"
@@ -114,18 +114,18 @@ local TEMPVAL=0
 # ---- Traps ----
 trap 'echo cleanup' EXIT
 
-# ---- dpdigits: display precision ----
-dpdigits 6
+# ---- @dpdigits: display precision ----
+@dpdigits 6
 
 # ---- Pipeline with external commands ----
-listim | grep "dm" | wc -l
+mem.listim | grep "dm" | wc -l
 
 # ---- Redirection ----
 echo "log entry" >> ./logfile.txt
-saveFITS dm0ref > /dev/null 2>&1
+iofits.saveFITS dm0ref > /dev/null 2>&1
 
 # ---- Background execution ----
-procstat ${LOOPNAME} &
+@procstat ${LOOPNAME} &
 
 # ---- Logical operators ----
 [ -f ./config.txt ] && source ./config.txt

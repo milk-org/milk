@@ -12,10 +12,10 @@ CLIinput="
 MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample\" milk
 
 # get module info
-m? milk_module_example
+@m? milk_module_example
 
 # Get function help
-cmd? modex.imsum1
+@cmd? modex.imsum1
 
 # Alternate help syntax (same result as above)
 modex.imsum1 ?
@@ -31,7 +31,7 @@ clear
 MILK_QUIET="1" milk
 
 # load module from CLI
-mload milkmoduleexample
+@mload milkmoduleexample
 
 # exit milk CLI
 exitCLI

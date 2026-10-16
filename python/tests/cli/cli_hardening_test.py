@@ -207,7 +207,7 @@ OK_CMDS = [
     ("echo $(( 1 >> 100 ))", None),
     ("echo {1..100000}", None),
     ("(echo sub1) && (echo sub2)", "sub2"),
-    ("showmatch; showmatch off; showmatch on", "Showmatch ON"),
+    ("@showmatch; @showmatch off; @showmatch on", "Showmatch ON"),
 ]
 
 
@@ -282,7 +282,7 @@ def test_pty_ctrl_c_cancels_command():
 def test_cliindent_toggle(tmp_path):
     script = tmp_path / "indent_toggle.milk"
     script.write_text(
-        "cliindent\ncliindent off\ncliindent on\ncliindent 2\ncliindent\n"
+        "@cliindent\n@cliindent off\n@cliindent on\n@cliindent 2\n@cliindent\n"
     )
     _, out = run_milk(["-s", str(script)])
     assert "Auto-indentation is ON (2 spaces)" in out
@@ -291,7 +291,7 @@ def test_cliindent_toggle(tmp_path):
 @needs_treesitter
 def test_clifold_block_outline():
     script = REPO_ROOT / "scripts" / "makecircleofdisks.milk"
-    _, out = run_milk([], stdin_text=f"clifold {script}\nexit\n")
+    _, out = run_milk([], stdin_text=f"@clifold {script}\nexit\n")
     assert "Total blocks: 4" in out
 
 
@@ -299,7 +299,7 @@ def test_clifold_block_outline():
 def test_cliformat_reindents(tmp_path):
     script = tmp_path / "unformatted_loop.milk"
     script.write_text("for i in 1 2; do\necho $i\ndone\n")
-    _, out = run_milk([], stdin_text=f"cliformat {script}\nexit\n")
+    _, out = run_milk([], stdin_text=f"@cliformat {script}\nexit\n")
     assert "    echo $i" in out
 
 
@@ -335,7 +335,7 @@ def test_pty_showmatch_highlights():
         m.write(b"\n")
         m.drain()
 
-        m.write(b"showmatch off\n")
+        m.write(b"@showmatch off\n")
         m.read_until(b"Showmatch OFF")
         m.drain()
         m.write(b"(1)")
@@ -346,7 +346,7 @@ def test_pty_showmatch_highlights():
 
 # --- Section 9: real-time syntax diagnostics (syndiag) ----------------------
 def test_syndiag_toggle():
-    rc, _ = run_milk([], stdin_text="syndiag\nsyndiag off\nsyndiag on\nexit\n")
+    rc, _ = run_milk([], stdin_text="@syndiag\n@syndiag off\n@syndiag on\nexit\n")
     assert rc == 0
 
 
@@ -368,7 +368,7 @@ def test_pty_syndiag_unclosed_quote():
 
         m.write(b"\n")
         m.drain()
-        m.write(b"syndiag off\n")
+        m.write(b"@syndiag off\n")
         m.read_until(b"Syntax diagnostics OFF")
         m.drain()
         m.write(b'echo "uncl sfr')

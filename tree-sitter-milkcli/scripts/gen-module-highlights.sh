@@ -52,20 +52,20 @@ fi
 # ---- Extract command list from milk-cli ----
 info "Extracting registered commands from milk-cli..."
 
-# Run milk with cmd? to list all commands, extract
+# Run milk with @cmd? to list all commands, extract
 # the first column (command name). Filter out:
 #  - empty lines
 #  - header lines (starting with -)
 #  - help/internal commands (already in grammar)
 CMDS=$(milk << 'MILKEOF' 2>/dev/null
-cmd?
+@cmd?
 exitCLI
 MILKEOF
 )
 
 # Parse out just command names (first word of each
 # non-header line).
-# The cmd? output format is:
+# The @cmd? output format is:
 #   cmdname   arginfo   description
 CMD_LIST=$(echo "$CMDS" \
     | grep -v '^\s*$' \

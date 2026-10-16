@@ -21,6 +21,18 @@ including:
 This page documents the **native `milk-cli` extensions** and how to use them alongside standard bash
 in your scripts.
 
+### Calling milk Commands
+
+The same rule applies at the prompt, with `-c`, on piped input, in scripts and in sourced files:
+
+- `module.command args`: a module-qualified name (`mem.listim`, `iofits.saveFITS`) needs no sigil.
+- `@command args`: the sigil form works for every command, including short names (`@listim`),
+  commands without a module (`@streamlist`, `@ci`), prompt built-ins (`@synhl off`, `@help`) and help
+  shorthands (`@?`, `@m?`, `@cmd? mem.listim`).
+
+Any other word goes to bash unchanged: `listim` without `@` is an ordinary (usually unknown) shell
+command.
+
 See also: [CLI Syntax](CLIcore.md) · [FPS](fps.md) · [Streams](streams.md)
 
 ## Script Files
@@ -77,7 +89,7 @@ Similarly, write your interactive Readline command history to a replayable scrip
 
 ```bash
 #!/usr/bin/env milk-script
-savehistory replay.milk
+@savehistory replay.milk
 ```
 
 ## `milk-cli` Native Features
@@ -195,16 +207,16 @@ fires.
 **Supported events**: Same event types as `wait_any`, using the engine-trap forms `STREAM:name`,
 `FPS:fps.param<op>val`, and `PROC:name:STATE`.
 
-### System Snapshot (`milkquery`)
+### System Snapshot (`@milkquery`)
 
-The `milkquery` command emits a unified JSON object containing FPS instances, shared-memory streams,
+The `@milkquery` command emits a unified JSON object containing FPS instances, shared-memory streams,
 and active processes in one call:
 
 ```bash
-milkquery                     # Full snapshot
-milkquery --fps [pattern]     # FPS instances only
-milkquery --streams [pattern] # Streams only
-milkquery --procs             # Active processes only
+@milkquery                    # Full snapshot
+@milkquery --fps [pattern]    # FPS instances only
+@milkquery --streams [pattern] # Streams only
+@milkquery --procs            # Active processes only
 ```
 
 Output is a JSON object with top-level keys `"fps"`, `"streams"`, and `"processes"`, each containing
@@ -213,9 +225,9 @@ an array of entries. When a filter flag is used, only the requested section(s) a
 Individual list commands also support `--json`:
 
 ```bash
-fpslist --json [pattern]      # Same as milkquery --fps
-streamlist --json [pattern]   # Same as milkquery --streams
-proclist --json               # Same as milkquery --procs
+@fpslist --json [pattern]     # Same as @milkquery --fps
+@streamlist --json [pattern]  # Same as @milkquery --streams
+@proclist --json              # Same as @milkquery --procs
 ```
 
 ### FPS Parameter Expansion
@@ -231,14 +243,14 @@ echo "The current gain is: @f.myloop.loopgain"
 @get -v g f.myloop.loopgain
 ```
 
-To write FPS parameters programmatically, use `@set f.<fps>.<param>=<val>` (or the `fpsset`
+To write FPS parameters programmatically, use `@set f.<fps>.<param>=<val>` (or the `@fpsset`
 compatibility alias):
 
 ```bash
 #!/usr/bin/env milk-script
 @set f.myloop.loopgain=0.5
 # Or legacy form:
-fpsset myloop loopgain 0.5
+@fpsset myloop loopgain 0.5
 ```
 
 ### Advanced Variable Expansion and Arrays
@@ -429,12 +441,12 @@ utilities to form powerful automation scripts.
     echo "DM combiner gain was: $gain"
 
     # Set the loop gain on the DM combiner FPS native memory
-    fpsset dmcomb loopgain 1.0
+    @fpsset dmcomb loopgain 1.0
 
     # Apply identical gain to all modal channels using a bash loop
     nmodes=50
     for m in $(seq 0 $(( nmodes - 1 ))); do
-        fpsset dmcomb modesgain[$m] 0.1
+        @fpsset dmcomb modesgain[$m] 0.1
     done
 
     echo "Set $nmodes modal gains to 0.1"
@@ -515,10 +527,10 @@ utilities to form powerful automation scripts.
     echo "=== 4. Configuring loop gains ==="
     nmodes=100
     for m in $(seq 0 $(( nmodes - 1 ))); do
-        fpsset dmcomb modesgain[$m] 0.05
+        @fpsset dmcomb modesgain[$m] 0.05
     done
-    fpsset dmcomb loopgain 1.0
-    fpsset dmcomb loopON 1
+    @fpsset dmcomb loopgain 1.0
+    @fpsset dmcomb loopON 1
 
     # ---------- 5. confirm loop is running ----------
     echo "=== 5. Loop status ==="
@@ -541,11 +553,11 @@ utilities to form powerful automation scripts.
     sleep 1
 
     # 2. Configure it to be triggered by a stream (Mode 3 = SEMAPHORE)
-    fpsset examplefunc2_FPS procinfo.triggermode 3
-    fpsset examplefunc2_FPS procinfo.triggersname wfs_cam
+    @fpsset examplefunc2_FPS procinfo.triggermode 3
+    @fpsset examplefunc2_FPS procinfo.triggersname wfs_cam
 
     # 3. Enable the background loop
-    fpsset examplefunc2_FPS procinfo.enabled 1
+    @fpsset examplefunc2_FPS procinfo.enabled 1
 
     # 4. Monitor its execution natively
     for i in {1..5}; do

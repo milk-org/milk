@@ -150,6 +150,23 @@ int milk_is_bash_engine_enabled(void)
 
 static int engine_exec(const char *cmdline, int *out_exit_req);
 
+int milk_bash_cmdfile_path(const char *label, char *out, size_t outsz)
+{
+    if (make_cmdfile() != 0)
+    {
+        return -1;
+    }
+    snprintf(out, outsz, "%s/%s", g_cmddir, label);
+    return 0;
+}
+
+int milk_bash_cmdfile_owned(const char *path)
+{
+    size_t n = strlen(g_cmddir);
+    return n > 0 && strncmp(path, g_cmddir, n) == 0 && path[n] == '/' &&
+           strstr(path + n, "/..") == NULL;
+}
+
 /**
  * @brief Initialize the in-process milk socket server and supervised bash co-process.
  *
@@ -236,34 +253,7 @@ int milk_bash_engine_init(void)
             "    builtin source \"${MILK_INSTALLDIR}/bin/milk.bash\"\n"
             "fi\n"
             "unalias() { builtin unalias \"$@\" 2>/dev/null || true; }\n"
-            "__MILK_SOURCE_DEPTH=0\n"
-            "source() {\n"
-            "    if [[ $# -eq 0 ]]; then echo \"Usage: source <filename>\" >&2; return 1; fi\n"
-            "    if [[ ! -f \"$1\" ]]; then echo \"Error: source: file not found: $1\" >&2; return "
-            "1; fi\n"
-            "    if (( __MILK_SOURCE_DEPTH >= 32 )); then\n"
-            "        echo \"Error: maximum source recursion depth (32) exceeded\" >&2\n"
-            "        return 1\n"
-            "    fi\n"
-            "    local __milk_f=\"$1\"; shift\n"
-            "    (( __MILK_SOURCE_DEPTH++ ))\n"
-            "    builtin source <(\"${MILK_INSTALLDIR}/bin/milk-call\" translate --legacy "
-            "\"${__milk_f}\") \"$@\"\n"
-            "    local __rc=$?\n"
-            "    (( __MILK_SOURCE_DEPTH-- ))\n"
-            "    return $__rc\n"
-            "}\n"
-            "declare -gA __MILK_INC_ONCE=()\n"
-            "include_once() {\n"
-            "    if [[ $# -eq 0 ]]; then echo \"Usage: include_once <filename>\" >&2; return 1; "
-            "fi\n"
-            "    if [[ ! -f \"$1\" ]]; then echo \"Error: include_once: file not found: $1\" >&2; "
-            "return 1; fi\n"
-            "    local __rp; __rp=\"$(realpath \"$1\" 2>/dev/null || echo \"$1\")\"\n"
-            "    [[ -n \"${__MILK_INC_ONCE[$__rp]:-}\" ]] && return 0\n"
-            "    __MILK_INC_ONCE[$__rp]=1\n"
-            "    source \"$@\"\n"
-            "}\n"
+            "source() { _milk_source_impl \"$@\"; }\n"
             "bookmark() {\n"
             "    if [[ \"${1:-}\" == \"run\" && $# -ge 2 ]]; then\n"
             "        local __bcmd\n"
@@ -287,6 +277,14 @@ int milk_bash_engine_init(void)
             "    builtin exit \"${__MILK_EXIT_CODE}\"\n"
             "}\n"
             "eval \"function ${MILKCLI_SIGIL:-@}time { time \\\"\\$@\\\"; }\"\n"
+            "for __milk_w in history searchhist fhist ghistory lhistory savehistory \\\n"
+            "    setprompt sessionlog synhl syndiag cliindent showmatch helprl fhelp \\\n"
+            "    fparam help dpdigits fpsset; do\n"
+            "    declare -F \"${MILKCLI_SIGIL:-@}${__milk_w}\" >/dev/null ||\\\n"
+            "        eval \"function ${MILKCLI_SIGIL:-@}${__milk_w} \\\n"
+            "            { milkcall ${__milk_w} \\\"\\$@\\\"; }\"\n"
+            "done\n"
+            "unset __milk_w\n"
             "quit() { exit \"$@\"; }\n"
             "exitCLI() { exit \"$@\"; }\n"
             "while IFS= read -r -d '' __milk_cmd <&198; do\n"

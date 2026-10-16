@@ -82,31 +82,31 @@ Tab completion is provided and behaves as follows:
 INPUT
 
 GNU readline used to read input. See GNU readline documentation on http://tiswww.case.edu/php/chet/readline/rltop.html. For a quick help on readline input, type:
-> helprl
+> @helprl
 
 The CLI can also receive commands from external processes via a named pipe (FIFO). Start milk-cli with the -f flag to enable FIFO input. See FIFO INPUT section below for details.
 
 -----------------------------------------------------------------------------------
 HELP COMMANDS
 
-> ?
-> help
+> @?
+> @help
 	# print this help file
-> help --json
+> @help --json
 	# print help index in JSON format
-> help --porcelain
+> @help --porcelain
 	# print help index in TSV format
-> helprl
+> @helprl
 	# print readline quick help
-> lm?
+> @lm?
 	# list all modules loaded
-> m? <module>
+> @m? <module>
 	# list all commands for a module
-> m?
-	# perform m? on all modules loaded
-> cmd? <command>
+> @m?
+	# perform @m? on all modules loaded
+> @cmd? <command>
 	# command description for <command>
-> cmd?
+> @cmd?
 	# command description for all commands
 > h? str
 	# search for string <str> in all commands and their descriptions
@@ -114,7 +114,7 @@ HELP COMMANDS
 -----------------------------------------------------------------------------------
 IMPORTANT COMMANDS
 
-> ci
+> @ci
 	# compilation time and memory usage
 > mem.listim
 	# list all images in memory
@@ -140,28 +140,28 @@ FITSIO is used for FITS files I/O, see FITSIO documentation for more detailed in
 
 LOADING FILES
 
-> loadfits <fname> <imname>
+> iofits.loadfits <fname> <imname>
 	# load FITS file <fname> into image <imname>
-> loadfits im1.fits imf1
+> iofits.loadfits im1.fits imf1
 	# load file im1.fits in memory with name imf1
-> loadfits im1.fits
+> iofits.loadfits im1.fits
 	# load file im1.fits in memory with name im1 (default name is composed of all chars before first ".")
-> loadfits im1.fits.gz im1
+> iofits.loadfits im1.fits.gz im1
 	# load compressed file
 
 SAVING FILES
 
-> savefits  <imname> <fname>
+> iofits.saveFITS  <imname> <fname>
 	# save image <imname> into FITS file <fname>
-> savefits im1 imf1.fits
+> iofits.saveFITS im1 imf1.fits
 	# write image im1 to disk file imf1.fits
-> savefits im1
+> iofits.saveFITS im1
 	# write image im1 to disk file im1.fits (default file name = image name + ".fits")
-> savefits im1 "!im1.fits"
+> iofits.saveFITS im1 "!im1.fits"
 	# overwrite file im1.fits if it exists
-> savefits im1 "../dir2/im1.fits"
+> iofits.saveFITS im1 "../dir2/im1.fits"
 	# specify full path
-> savefits im1 im1.fits.gz
+> iofits.saveFITS im1 im1.fits.gz
 	# save compressed image
 
 -----------------------------------------------------------------------------------
@@ -186,7 +186,7 @@ Other programs can write to the FIFO to issue commands to the running session:
 More complex commands can be issued within the executable using the FIFO.
 For example, to load all im*.fits files in memory, you can type within the executable (replace the fifo path with the actual path for your session):
 
-> !ls im*.fits | xargs -I {} echo loadfits {} >> /dev/shm/.myctl.fifo.0012345
+> !ls im*.fits | xargs -I {} echo iofits.loadfits {} >> /dev/shm/.myctl.fifo.0012345
 
 
 USING "imlist.txt"
@@ -218,7 +218,7 @@ SCRIPTING — VARIABLES & ARITHMETIC
 	# integer arithmetic: + - * / %
 > echo @fpsname.param
 	# read FPS parameter value
-> fpsset fpsname param value
+> @fpsset fpsname param value
 	# write FPS parameter
 
 -----------------------------------------------------------------------------------
@@ -260,7 +260,7 @@ SCRIPT FILES
 	# same as source (dot-sourcing)
 > savescript state.milk
 	# export variables and functions to file
-> savehistory replay.milk
+> @savehistory replay.milk
 	# save command history to file
 
 Startup script:
@@ -290,15 +290,15 @@ STREAM METADATA & INTROSPECTION
 
 > echo @s.mystream.naxis
 	# read stream dimension count via @s.<name>.<prop> namespace
-> milkquery myobj
+> @milkquery myobj
 	# query comprehensive state of any milk object (stream, fps, proc)
-> fpslist --json
+> @fpslist --json
 	# output list of FPS units in machine-readable JSON format
-> fpsdump myfps --json
+> @fpsdump myfps --json
 	# dump full state of an FPS unit as a JSON object
-> streamlist --json
+> @streamlist --json
 	# output list of active streams in JSON format
-> proclist --json
+> @proclist --json
 	# output list of tracked processes in JSON format
 
 -----------------------------------------------------------------------------------

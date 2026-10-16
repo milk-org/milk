@@ -43,25 +43,25 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ["# This is a comment"],
     ["echo"],
     # --- Section 2: Help and discovery ---
-    ["?"],
-    ["help"],
-    ["lm?"],
-    ["m?"],
-    ["ci"],
-    ["cmd? mem.listim"],
+    ["@?"],
+    ["@help"],
+    ["@lm?"],
+    ["@m?"],
+    ["@ci"],
+    ["@cmd? mem.listim"],
     # --- Section 3: Built-in commands ---
     ["mem.listim"],
     ["pwd"],
     ["cd /tmp"],
     ["cd"],
-    ["usleep 1000"],
-    ["dpsingle"],
-    ["dpdouble"],
+    ["@usleep 1000"],
+    ["@dpsingle"],
+    ["@dpdouble"],
     ["mem.mk2Dim _clitest_im1 32 32"],
     ["mem.listim"],
     ["mem.rm _clitest_im1"],
-    ["streamlist"],
-    ["fpslist"],
+    ["@streamlist"],
+    ["mem.fpslist"],
     # --- Section 4: Missing / wrong arguments (graceful) ---
     ["mem.mk2Dim"],
     ["mem.rm"],
@@ -74,7 +74,6 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ["unset _testvar1"],
     ["echo $_testvar1"],
     ["echo $?"],
-    ["vars"],
     ["echo ${_teststr:0:3}"],
     ["echo ${_teststr^^}"],
     ["unset _testvar2", "unset _teststr", "unset _TESTUP", "unset _defvar"],
@@ -102,7 +101,7 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ['read _hs_val <<< "here_string_test"', "echo $_hs_val"],
     ["unset _subst_val", "unset _hs_val"],
     # --- Section 11: Error conditions (graceful toggles) ---
-    ["synhl off", "synhl on"],
+    ["@synhl off", "@synhl on"],
     # --- Section 12: Set flags ---
     ["set -x"],
     ["set +x"],
@@ -143,11 +142,11 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     # --- Section 28: Array length (relies on prior array) ---
     ["echo ${#_test_arr[@]}"],
     # --- Section 30: Listim glob ---
-    ["listim _nonexist_*"],
-    ["mem.mk2Dim _globtest_a 4 4", "mem.mk2Dim _globtest_b 4 4", "listim _globtest_*", "mem.rm _globtest_a", "mem.rm _globtest_b"],
-    ["listim _nonexist_?"],
+    ["mem.listim _nonexist_*"],
+    ["mem.mk2Dim _globtest_a 4 4", "mem.mk2Dim _globtest_b 4 4", "mem.listim _globtest_*", "mem.rm _globtest_a", "mem.rm _globtest_b"],
+    ["mem.listim _nonexist_?"],
     # --- Section 32: Stream slicing ---
-    ["mem.mk2Dim _slicetest 64 64", "listim _slicetest"],
+    ["mem.mk2Dim _slicetest 64 64", "mem.listim _slicetest"],
     ["@ _sliceout = _slicetest[0:9,0:9] + 0.0"],
     ["@ _sliceout2 = _slicetest[*,*] + 0.0"],
     ["@ _sliceout3 = _slicetest[*,-*] + 0.0"],
@@ -170,19 +169,19 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ['trap "echo trap_set" EXIT'],
     ["trap -l"],
     # --- Section 38: savehistory ---
-    ["savehistory /tmp/_clitest_hist.txt"],
+    ["@savehistory /tmp/_clitest_hist.txt"],
     ["rm -f /tmp/_clitest_hist.txt"],
     # --- Section 39: History commands ---
-    ["lhistory"],
-    ["ghistory"],
-    ["ghistory 5"],
-    ["lhistory -t cmd"],
+    ["@lhistory"],
+    ["@ghistory"],
+    ["@ghistory 5"],
+    ["@lhistory -t cmd"],
     # --- Section 43: include_once idempotency ---
     ['echo "echo sourced_once" > /tmp/_clitest_inc.milk', "include_once /tmp/_clitest_inc.milk", "include_once /tmp/_clitest_inc.milk", "rm -f /tmp/_clitest_inc.milk"],
     # --- Section 44: Edge cases ---
     ["while [ 0 -eq 1 ]; do echo never; done"],
     ["@ _neg = -5 + 3", "echo $_neg"],
-    ["dpdouble", "mem.mk2Dim _dbl_test 4 4", "@ _dbl_test = _dbl_test * 0.0 + 1.5", "mem.rm _dbl_test", "dpsingle"],
+    ["@dpdouble", "mem.mk2Dim _dbl_test 4 4", "@ _dbl_test = _dbl_test * 0.0 + 1.5", "mem.rm _dbl_test", "@dpsingle"],
     # --- Compound assignment (@calc engine) ---
     ["@ _ca = 10", "@ _ca += 5", "echo $_ca"],
     ["@ _cs = 20", "@ _cs -= 3", "echo $_cs"],
@@ -211,41 +210,41 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ["@ _of = oct(255)", "echo $_of"],
     ["@ _bf = bin(10)", "echo $_bf"],
     # --- dpdigits ---
-    ["dpdigits"],
-    ["dpdigits 6"],
-    ["dpdigits 3"],
-    ["dpdigits 0"],
-    ["dpdigits 99"],
-    ["dpdigits 15"],
+    ["@dpdigits"],
+    ["@dpdigits 6"],
+    ["@dpdigits 3"],
+    ["@dpdigits 0"],
+    ["@dpdigits 99"],
+    ["@dpdigits 15"],
     # --- trap ERR ---
     ["trap 'echo error_caught' ERR"],
     # --- Processinfo integration ---
     ["echo $PROCINFO_NCPU"],
     ["echo $PROCINFO_NPROC"],
-    ["procstat"],
-    ["procctl _nonexistent_proc_ stop"],
+    ["@procstat"],
+    ["@procctl _nonexistent_proc_ stop"],
     # --- Issue verifications (FITS round trip) ---
     ["mem.mk2Dim im2D 256 256", 'iofits.saveFITS im2D "im2D.fits"', 'rm "im2D.fits"'],
     ["mem.mk2Dim im2D_lf 128 128", 'iofits.saveFITS im2D_lf "im2D_lf.fits"', 'iofits.loadfits "im2D_lf.fits" im2D_lf_loaded 2', 'rm "im2D_lf.fits"', 'mem.rm "im2D_lf_loaded"'],
     # --- Section 45: JSON output modes ---
-    ["streamlist --json"],
-    ["streamlist --json _nonexist_*"],
-    ["streamlist -l --json"],
-    ["streamlist --json _nonexist_*"],
-    ["proclist --json"],
-    ["proclist -l --json"],
-    ["fpslist --json"],
-    ["fpslist --json _nonexist_*"],
-    ["milkquery"],
-    ["milkquery --fps"],
-    ["milkquery --fps _nonexist_*"],
-    ["milkquery --streams"],
-    ["milkquery --procs"],
-    ["milkquery --fps --streams --procs"],
+    ["@streamlist --json"],
+    ["@streamlist --json _nonexist_*"],
+    ["@streamlist -l --json"],
+    ["@streamlist --json _nonexist_*"],
+    ["@proclist --json"],
+    ["@proclist -l --json"],
+    ["mem.fpslist --json"],
+    ["mem.fpslist --json _nonexist_*"],
+    ["@milkquery"],
+    ["@milkquery --fps"],
+    ["@milkquery --fps _nonexist_*"],
+    ["@milkquery --streams"],
+    ["@milkquery --procs"],
+    ["@milkquery --fps --streams --procs"],
     # --- Section 46: Quiet (-q) list modes and @TF32: type modifiers ---
-    ["fpslist -q"],
-    ["streamlist -q"],
-    ["listim -q"],
+    ["mem.fpslist -q"],
+    ["@streamlist -q"],
+    ["mem.listim -q"],
     ["seq.list -q"],
     ["mem.mk2Dim @TF32:_mod_f32 8 8", "mem.mk2Dim @TF64:_mod_f64 8 8", "mem.mk2Dim @TU16:_mod_u16 8 8", "mem.rm _mod_f32", "mem.rm _mod_f64", "mem.rm _mod_u16"],
 ]
@@ -257,7 +256,7 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
 # fmt: off
 TESTLIST_EXPECT_ERROR: list[list[str]] = [
     # --- Section 2/3: unknown command / bad cd ---
-    ["cmd? nonexistent_command_xyz"],
+    ["@cmd? nonexistent_command_xyz"],
     ["cd /nonexistent_directory_xyz_123"],
     # --- Section 4: missing / wrong arguments ---
     ["mem.mk2Dim _clitest_partial"],
@@ -297,7 +296,7 @@ TESTLIST_EXPECT_ERROR: list[list[str]] = [
     # --- Section 36: sleep usage ---
     ["sleep"],
     # --- Section 38: savehistory usage ---
-    ["savehistory"],
+    ["@savehistory"],
     # --- Section 40: @set error paths ---
     ["@set"],
     ["@set nodotparam 42"],
@@ -305,11 +304,11 @@ TESTLIST_EXPECT_ERROR: list[list[str]] = [
     # --- Section 41: @on error paths ---
     ["@on"],
     # --- Section 45: fpsdump error paths ---
-    ["fpsdump"],
-    ["fpsdump _no_such_fps_"],
-    ["fpsdump --json _no_such_fps_"],
-    ["fpsdump -t --json _no_such_fps_"],
-    ["milkquery foo"],
+    ["@fpsdump"],
+    ["@fpsdump _no_such_fps_"],
+    ["@fpsdump --json _no_such_fps_"],
+    ["@fpsdump -t --json _no_such_fps_"],
+    ["@milkquery foo"],
     # --- Section 46: invalid @X: modifier ---
     ["mem.mk2Dim @BADMOD:_bad_mod_im 8 8"],
 ]
