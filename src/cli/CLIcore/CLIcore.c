@@ -112,7 +112,7 @@ int Verbose    = 0;
 int Listimfile = 0;
 
 
-char CLIstartupfilename[STRINGMAXLEN_CLISTARTUPFILENAME] = "CLIstartup.txt";
+char CLIstartupfilename[STRINGMAXLEN_CLISTARTUPFILENAME] = ""; // set by -s
 
 static int  single_command_flag = 0;
 static char single_command_string[STRINGMAXLEN_CLICMDLINE];
@@ -207,16 +207,16 @@ errno_t exitCLI()
 
 errno_t load_so__cli()
 {
-    load_sharedobj(data.cmdargtoken[1].val.string);
-    return CLICMD_SUCCESS;
+    return load_sharedobj(data.cmdargtoken[1].val.string) == RETURN_SUCCESS ? CLICMD_SUCCESS
+                                                                            : CLICMD_ERROR;
 }
 
 errno_t load_module__cli()
 {
     if (data.cmdargtoken[1].type == 3)
     {
-        load_module_shared(data.cmdargtoken[1].val.string);
-        return CLICMD_SUCCESS;
+        return load_module_shared(data.cmdargtoken[1].val.string) == RETURN_SUCCESS ? CLICMD_SUCCESS
+                                                                                    : CLICMD_ERROR;
     }
     else
     {
@@ -231,8 +231,8 @@ errno_t CLIcore__load_module_as__cli()
     {
         strncpy(data.moduleshortname, data.cmdargtoken[2].val.string,
                 STRINGMAXLEN_MODULE_SHORTNAME - 1);
-        load_module_shared(data.cmdargtoken[1].val.string);
-        return CLICMD_SUCCESS;
+        return load_module_shared(data.cmdargtoken[1].val.string) == RETURN_SUCCESS ? CLICMD_SUCCESS
+                                                                                    : CLICMD_ERROR;
     }
     else
     {
@@ -429,62 +429,8 @@ errno_t CLI_startup()
     }
 #endif
 
-    // to take advantage of kernel priority:
-    // owner=root mode=4755
-    getresuid(&dcruid, &dceuid, &dcsuid);
+    CLI_runtime_init();
 
-    // Initialize random-number generator
-    // Pure-C xorshift64* (replaces GSL)
-    milk_rng_init((uint64_t) time(NULL));
-
-    // warm up
-    //for(i=0; i<10; i++)
-    //    v1 = gsl_rng_uniform (dcrndgen);
-
-    dcprogstatus = 0;
-
-    // Initialize installdir
-    char *installdir_env = getenv("MILK_INSTALLDIR");
-    if (installdir_env != NULL)
-    {
-        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, installdir_env);
-    }
-    else
-    {
-#ifdef INSTALLDIR
-        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, INSTALLDIR);
-#else
-        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, "/usr/local/milk");
-#endif
-    }
-
-    // Initialize sourcedir
-    char *sourcedir_env = getenv("MILK_SOURCEDIR");
-    if (sourcedir_env != NULL)
-    {
-        strncpy(dcsourcedir, sourcedir_env, STRINGMAXLEN_DIRNAME - 1);
-    }
-    else
-    {
-#ifdef SOURCEDIR
-        strncpy(dcsourcedir, SOURCEDIR, STRINGMAXLEN_DIRNAME - 1);
-#else
-        strncpy(dcsourcedir, "", STRINGMAXLEN_DIRNAME - 1);
-#endif
-    }
-
-
-    dcdebug     = 0;
-    dcoverwrite = 0;
-    dcprecision = 0; // float is default precision
-    dcshareddft = 0; // do not allocate shared memory for images
-    snprintf(dcsavedir, STRINGMAXLEN_DIRNAME, ".");
-
-    data.CLIlogON             = 0; // log every command
-    data.fifoON               = 0;
-    data.fifofd               = -1;
-    dcprocinfo                = 1; // process info for intensive processes
-    dcprocinfoact             = 0; // toggles to 1 when process is logged
     data.autocomplete         = 1; // autocomplete preview ON by default
     data.autocomplete_history = 1; // history suggestions ON
     data.autocomplete_arghint = 1; // argument hint line ON
@@ -492,38 +438,6 @@ errno_t CLI_startup()
     data.syntax_diagnostics   = 1; // syntax diagnostics ON
     data.auto_indent          = 4; // auto-indentation spaces (4 spaces)
     data.show_match           = 1; // structural delimiter & keyword matching ON
-
-    // signal handling
-
-    dcsigact.sa_handler = sig_handler;
-    sigemptyset(&dcsigact.sa_mask);
-    dcsigact.sa_flags = 0;
-
-    // Request the kernel for a sigint if parent dies
-    // This is useful if stdin is a pipe from the parent process
-    // and the parent dies suddenly. This confuses libreadline.
-    prctl(PR_SET_PDEATHSIG, SIGINT);
-
-    dcsigUSR1 = 0;
-    dcsigUSR2 = 0;
-    dcsigTERM = 0;
-    dcsigINT  = 0;
-    dcsigBUS  = 0;
-    dcsigSEGV = 0;
-    dcsigABRT = 0;
-    dcsigHUP  = 0;
-    dcsigPIPE = 0;
-
-    if (sigaction(SIGUSR1, &dcsigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGUSR1\n");
-    }
-    if (sigaction(SIGUSR2, &dcsigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGUSR2\n");
-    }
-
-    set_signal_catch();
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -920,7 +834,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         compute_image_memory();
         compute_nb_image();
 
-        // If fifo is on and file CLIstatup.txt exists, load it
+        // Run the -s startup file (fed through the fifo when fifo input is on)
         if (initstartup == 0)
         {
             if (single_command_flag)
@@ -931,12 +845,12 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 data.CLIloopON = 0;
                 break;
             }
+            else if (CLIstartupfilename[0] == '\0')
+            {
+                // no startup file
+            }
             else if (data.fifoON == 1)
             {
-                EXECUTE_SYSTEM_COMMAND_NOCHECK("file %s",
-                                               CLIstartupfilename); //TEST
-                EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s",
-                                               CLIstartupfilename); //TEST
                 EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s > %s 2> /dev/null", CLIstartupfilename,
                                                data.fifoname);
 
@@ -953,15 +867,16 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 if (fp != NULL)
                 {
                     fclose(fp);
-                    int exit_req = 0;
-                    int rc       = milk_bash_engine_exec_file(CLIstartupfilename, &exit_req);
-                    if (exit_req || strcmp(CLIstartupfilename, "CLIstartup.txt") != 0 ||
-                        (dcerrorexit && rc != 0))
-                    {
-                        data.CLIloopON = 0;
-                        break;
-                    }
+                    milk_bash_engine_exec_file(CLIstartupfilename, NULL);
                 }
+                else
+                {
+                    fprintf(stderr, "milk-cli: cannot open '%s': %s\n", CLIstartupfilename,
+                            strerror(errno));
+                    dcexitcode = 1;
+                }
+                data.CLIloopON = 0; // -s runs the file and exits
+                break;
             }
         }
         initstartup = 1;

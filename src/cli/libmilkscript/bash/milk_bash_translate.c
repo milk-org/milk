@@ -116,6 +116,42 @@ static void sbuf_append_dq_escaped(sbuf_t *b, const char *s, size_t n)
     }
 }
 
+/**
+ * milk_bash_funsub_disabled() - 1 if `${| ...; }` must not be emitted (MILK_BASH_NO_FUNSUB, or bash < 5.3).
+ *
+ * The probe result is exported so child translators (milk-call translate) inherit it.
+ */
+int milk_bash_funsub_disabled(void)
+{
+    const char *nf = getenv("MILK_BASH_NO_FUNSUB");
+    if (nf != NULL && nf[0] != '\0')
+    {
+        return strcmp(nf, "0") != 0;
+    }
+    int   major = 0;
+    int   minor = 0;
+    FILE *pp =
+        popen("/bin/bash -c 'echo ${BASH_VERSINFO[0]} ${BASH_VERSINFO[1]}' 2>/dev/null", "r");
+    if (pp != NULL)
+    {
+        if (fscanf(pp, "%d %d", &major, &minor) != 2)
+        {
+            major = 0;
+        }
+        pclose(pp);
+    }
+    int disabled = (major < 5 || (major == 5 && minor < 3));
+    if (disabled)
+    {
+        fprintf(stderr,
+                "milk: /bin/bash %d.%d lacks ${| ...; } (needs >= 5.3); inline @ expansions will "
+                "fork\n",
+                major, minor);
+    }
+    setenv("MILK_BASH_NO_FUNSUB", disabled ? "1" : "0", 1);
+    return disabled;
+}
+
 static const char *get_sigil(void)
 {
     const char *s = getenv("MILKCLI_SIGIL");
@@ -455,8 +491,7 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
             }
             if (j < len && depth == 0)
             {
-                const char *nf     = getenv("MILK_BASH_NO_FUNSUB");
-                int         no_sub = (nf != NULL && nf[0] != '\0' && strcmp(nf, "0") != 0);
+                int no_sub = milk_bash_funsub_disabled();
                 if (!no_sub)
                 {
                     sbuf_append_str(out, "${| ");
@@ -502,8 +537,7 @@ static void expand_inline_constructs(const char *in, size_t len, sbuf_t *out)
                     }
                     if (ndots >= 2)
                     {
-                        const char *nf     = getenv("MILK_BASH_NO_FUNSUB");
-                        int         no_sub = (nf != NULL && nf[0] != '\0' && strcmp(nf, "0") != 0);
+                        int no_sub = milk_bash_funsub_disabled();
                         if (!no_sub)
                         {
                             sbuf_append_str(out, "${| ");
@@ -648,8 +682,7 @@ static void append_args_with_quoting(const char *args,
                 size_t elen   = scan_entity_path(tok + toff, &has_eq);
                 if (elen == tlen - toff && !has_eq)
                 {
-                    const char *nf     = getenv("MILK_BASH_NO_FUNSUB");
-                    int         no_sub = (nf != NULL && nf[0] != '\0' && strcmp(nf, "0") != 0);
+                    int no_sub = milk_bash_funsub_disabled();
                     if (!no_sub)
                     {
                         sbuf_append_str(out, "${| ");

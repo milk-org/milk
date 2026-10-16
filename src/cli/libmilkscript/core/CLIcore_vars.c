@@ -19,8 +19,6 @@
 
 CLI_VAR cli_vars[CLI_MAX_VARS];
 int     cli_last_retval  = 0;
-int     cli_flag_errexit = 0;
-int     cli_flag_xtrace  = 0;
 int     cli_float_digits = 15;
 
 /**

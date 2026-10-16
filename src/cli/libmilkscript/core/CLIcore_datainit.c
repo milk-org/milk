@@ -12,10 +12,20 @@
  * the same image/variable/FPS arrays.
  */
 
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#endif
+
 #include <math.h>
+#include <signal.h>
+#include <sys/prctl.h>
 #include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "CLIcore.h"
+#include "CLIcore_signals.h"
+#include "milk_path.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -58,5 +68,93 @@ errno_t CLI_data_init()
     srand(t1.tv_usec * t1.tv_sec);
 
     DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+/**
+ * CLI_runtime_init() - process-level setup shared by milk-cli and milk-script:
+ * install/source dirs, RNG, default flags and signal handlers.
+ */
+errno_t CLI_runtime_init(void)
+{
+    // to take advantage of kernel priority:
+    // owner=root mode=4755
+    getresuid(&dcruid, &dceuid, &dcsuid);
+
+    // Pure-C xorshift64* (replaces GSL)
+    milk_rng_init((uint64_t) time(NULL));
+
+    dcprogstatus = 0;
+
+    char *installdir_env = getenv("MILK_INSTALLDIR");
+    if (installdir_env != NULL)
+    {
+        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, installdir_env);
+    }
+    else
+    {
+#ifdef INSTALLDIR
+        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, INSTALLDIR);
+#else
+        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, "/usr/local/milk");
+#endif
+    }
+
+    char *sourcedir_env = getenv("MILK_SOURCEDIR");
+    if (sourcedir_env != NULL)
+    {
+        strncpy(dcsourcedir, sourcedir_env, STRINGMAXLEN_DIRNAME - 1);
+    }
+    else
+    {
+#ifdef SOURCEDIR
+        strncpy(dcsourcedir, SOURCEDIR, STRINGMAXLEN_DIRNAME - 1);
+#else
+        strncpy(dcsourcedir, "", STRINGMAXLEN_DIRNAME - 1);
+#endif
+    }
+
+    dcdebug     = 0;
+    dcoverwrite = 0;
+    dcprecision = 0; // float is default precision
+    dcshareddft = 0; // do not allocate shared memory for images
+    snprintf(dcsavedir, STRINGMAXLEN_DIRNAME, ".");
+
+    data.CLIlogON = 0; // log every command
+    data.fifoON   = 0;
+    data.fifofd   = -1;
+    dcprocinfo    = 1; // process info for intensive processes
+    dcprocinfoact = 0; // toggles to 1 when process is logged
+
+    dcsigact.sa_handler = sig_handler;
+    sigemptyset(&dcsigact.sa_mask);
+    dcsigact.sa_flags = 0;
+
+    // Request the kernel for a sigint if parent dies
+    // This is useful if stdin is a pipe from the parent process
+    // and the parent dies suddenly. This confuses libreadline.
+    prctl(PR_SET_PDEATHSIG, SIGINT);
+
+    dcsigUSR1 = 0;
+    dcsigUSR2 = 0;
+    dcsigTERM = 0;
+    dcsigINT  = 0;
+    dcsigBUS  = 0;
+    dcsigSEGV = 0;
+    dcsigABRT = 0;
+    dcsigHUP  = 0;
+    dcsigPIPE = 0;
+
+    if (sigaction(SIGUSR1, &dcsigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGUSR1\n");
+    }
+    if (sigaction(SIGUSR2, &dcsigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGUSR2\n");
+    }
+
+    set_signal_catch();
+
     return RETURN_SUCCESS;
 }

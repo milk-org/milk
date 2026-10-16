@@ -15,4 +15,6 @@
 
 void CLI_data_init();
 
+errno_t CLI_runtime_init(void);
+
 #endif

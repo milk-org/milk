@@ -67,6 +67,8 @@ int milk_bash_engine_init(void)
         return 0;
     }
 
+    milk_bash_funsub_disabled(); // probe bash once; result is exported to the coprocess env
+
     snprintf(g_sockpath, sizeof(g_sockpath), "@milk-cli-%d-%d", (int) getuid(), (int) getpid());
     g_listen_fd = milk_server_create_listener(g_sockpath);
     if (g_listen_fd < 0)

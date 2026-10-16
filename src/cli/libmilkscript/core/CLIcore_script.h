@@ -37,8 +37,6 @@ typedef struct
 
 extern CLI_VAR cli_vars[CLI_MAX_VARS];
 extern int     cli_last_retval;
-extern int     cli_flag_errexit;
-extern int     cli_flag_xtrace;
 extern int     cli_float_digits;
 
 const char *cli_var_get(const char *name);

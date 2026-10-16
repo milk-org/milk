@@ -1094,7 +1094,7 @@ void print_milk_cli_help(void)
            "              Enable milk @-commands in current bash shell\n");
     printf("  " C_CMD "milk-cli" C_RST "                      Start interactive shell\n");
     printf("  " C_CMD "milk-cli -c <cmd>" C_RST "          Execute one command and exit\n");
-    printf("  " C_CMD "milk-cli -s <file>" C_RST "         Run startup script, then enter shell\n");
+    printf("  " C_CMD "milk-cli -s <file>" C_RST "         Run a script file, then exit\n");
     printf("  " C_CMD "echo cmds | milk-cli" C_RST "       Read commands from stdin\n");
     printf("  " C_CMD "milk-script <file>" C_RST "         Run a script non-interactively\n");
     printf("\n");
@@ -1111,7 +1111,8 @@ void print_milk_cli_help(void)
     printf(C_CMD "  -v, --version        " C_RST "Print version and exit\n");
     printf(C_CMD "  -i, --info           " C_RST "Print version, paths, and build info\n");
     printf(C_CMD "  -c <cmd>             " C_RST "Execute single command and exit\n");
-    printf(C_CMD "  -s <file>            " C_RST "Execute startup script on launch\n");
+    printf(C_CMD "  -s <file>            " C_RST
+                 "Run a script file, then exit (fed via fifo with -f/-F)\n");
     printf(C_CMD "  -n <name>            " C_RST "Set process name\n");
     printf(C_CMD "  -p <priority>        " C_RST "Set real-time priority (0"
                  "\xe2\x80\x93"

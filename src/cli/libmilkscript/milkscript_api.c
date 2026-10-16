@@ -40,22 +40,12 @@ errno_t milkscript_init(int argc, char **argv)
         strncpy(data.processname, "milk-script", STRINGMAXLEN_PROCESSNAME - 1);
     }
 
-    data.CLIlogON             = 0;
-    data.fifoON               = 0;
-    data.fifofd               = -1;
+    CLI_runtime_init();
+
     data.autocomplete         = 0;
     data.autocomplete_history = 0;
     data.autocomplete_arghint = 0;
     data.autocomplete_fuzzy   = 0;
-
-    dcdebug     = 0;
-    dcoverwrite = 0;
-    dcprecision = 0;
-    dcshareddft = 0;
-    snprintf(dcsavedir, STRINGMAXLEN_DIRNAME, ".");
-
-    dcprocinfo    = 1;
-    dcprocinfoact = 0;
 
     setSHMdir();
     CLI_data_init();

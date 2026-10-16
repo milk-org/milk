@@ -218,13 +218,15 @@ errno_t load_module_shared(const char *__restrict modulename)
     strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
 
 
-    if (load_sharedobj(libname) == RETURN_SUCCESS)
+    if (load_sharedobj(libname) != RETURN_SUCCESS)
     {
-        // We inherit DLib_index AFTER INCREMENT from load_sharedobj (which has no recursive calls)
-        // Now, WARNING, this function may recurse into other calls to load_module_shared
-        newstyle_milk_module_registration(DLib_handle[DLib_index - 1], libname);
-        // TODO fix load_module_shared_local to do the same new-style init
+        DEBUG_TRACE_FEXIT();
+        return RETURN_FAILURE;
     }
+    // We inherit DLib_index AFTER INCREMENT from load_sharedobj (which has no recursive calls)
+    // Now, WARNING, this function may recurse into other calls to load_module_shared
+    newstyle_milk_module_registration(DLib_handle[DLib_index - 1], libname);
+    // TODO fix load_module_shared_local to do the same new-style init
 
     // Find the correct module slot for metadata.
     //

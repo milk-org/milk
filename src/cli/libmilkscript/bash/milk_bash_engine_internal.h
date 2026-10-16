@@ -25,4 +25,6 @@
  */
 int milk_bash_has_unclosed_syntax(const char *s);
 
+int milk_bash_funsub_disabled(void);
+
 #endif /* MILK_BASH_ENGINE_INTERNAL_H */
