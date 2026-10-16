@@ -118,11 +118,11 @@ unset _milk_ov_file
 # 4. Load C builtins (libmilkbash.so) or install milk-call fallback shims
 # ---------------------------------------------------------------------------
 _MILK_BUILTIN_LOADED=0
-enable -d milkcall milkget milkset milkcalc milktest milkexists \
+enable -d milkcall milkget milkset milkcalc milktest milkexists milkls \
     milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
 if [[ -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" ]] && ! grep -q "libmilk.*(deleted)" "/proc/$$/maps" 2>/dev/null; then
     if MILK_QUIET=1 enable -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" \
-        milkcall milkget milkset milkcalc milktest milkexists \
+        milkcall milkget milkset milkcalc milktest milkexists milkls \
         milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null; then
         _MILK_BUILTIN_LOADED=1
     fi
@@ -238,6 +238,7 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
     }
     milktest()     { "${MILK_INSTALLDIR}/bin/milk-call" test "$@"; }
     milkexists()   { "${MILK_INSTALLDIR}/bin/milk-call" exists "$@"; }
+    milkls()       { "${MILK_INSTALLDIR}/bin/milk-call" ls "$@"; }
     milkwaitfor()  { "${MILK_INSTALLDIR}/bin/milk-call" waitfor "$@"; }
     milkwaitany()  { "${MILK_INSTALLDIR}/bin/milk-call" waitany "$@"; }
     milkgrab()     { "${MILK_INSTALLDIR}/bin/milk-call" grab "$@"; }
@@ -512,11 +513,11 @@ _milk_unload_impl() {
 
     # 4. Disable C builtins and unset fallback shims
     if [[ ${_MILK_BUILTIN_LOADED:-0} -eq 1 ]]; then
-        enable -d milkcall milkget milkset milkcalc milktest milkexists \
+        enable -d milkcall milkget milkset milkcalc milktest milkexists milkls \
             milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
         _MILK_BUILTIN_LOADED=0
     fi
-    unset -f milkcall milkget milkset milkcalc milktest milkexists \
+    unset -f milkcall milkget milkset milkcalc milktest milkexists milkls \
         milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog 2>/dev/null || true
 
     # 5. Restore PROMPT_COMMAND and PS1
@@ -550,6 +551,7 @@ eval "
 function ${MILKCLI_SIGIL}            { milkcalc \"\$@\"; }
 function ${MILKCLI_SIGIL}calc        { milkcalc \"\$@\"; }
 function ${MILKCLI_SIGIL}test        { milktest \"\$@\"; }
+function ${MILKCLI_SIGIL}ls          { milkls \"\$@\"; }
 function ${MILKCLI_SIGIL}get         { milkget \"\$@\"; }
 function ${MILKCLI_SIGIL}set         { milkset \"\$@\"; }
 function ${MILKCLI_SIGIL}exists      { milkexists \"\$@\"; }
@@ -583,7 +585,7 @@ function ${MILKCLI_SIGIL}unload      { _milk_unload_impl \"\$@\"; }
 # ---------------------------------------------------------------------------
 # 7. Pre-register all @<cmd> shims & external symlink farm (libexec/milk-bin)
 # ---------------------------------------------------------------------------
-_MILK_CMD_COUNT=31
+_MILK_CMD_COUNT=32
 __milk_setup_commands() {
     local cmd_list="${MILK_INSTALLDIR}/share/milk/milk-commands.list"
     if [[ ! -f "${cmd_list}" \
@@ -604,7 +606,7 @@ __milk_setup_commands() {
             [[ -z "${cmd}" ]] && continue
             # Skip core primitives, shell builtins, REPL-only commands, and internal help topics
             case "${cmd}" in
-                calc|test|get|set|exists|running|waitfor|waitany|grab|replay|snapshot|diff|restore|assert|prompt|defer|on|source|server|log|h|hb|hc|hm|hf|streamcat|streamwrite|batch|pipe|unload|\
+                calc|test|ls|get|set|exists|running|waitfor|waitany|grab|replay|snapshot|diff|restore|assert|prompt|defer|on|source|server|log|h|hb|hc|hm|hf|streamcat|streamwrite|batch|pipe|unload|\
                 cd|pwd|echo|printf|read|shift|export|unset|vars|alias|unalias|aliases|time|watch|exit|quit|exitCLI|\
                 history|searchhist|fhist|ghistory|lhistory|savehistory|savescript|setprompt|bookmark|sessionlog|synhl|syndiag|cliindent|showmatch|helprl|fhelp|fparam|\
                 help|help-*|list-streams|list-fps|fpsset)
@@ -652,7 +654,7 @@ command_not_found_handle() {
         shift
         local bare="${cmd#"${MILKCLI_SIGIL}"}"
         case "${bare}" in
-            s.*.*|stream.*.*|f.*.*|fps.*.*|p.*.*|proc.*.*|q.*.*|seq.*.*)
+            s.*.*|stream.*.*|l.*.*|local.*.*|f.*.*|fps.*.*|p.*.*|proc.*.*|q.*.*|seq.*.*)
                 if [[ "${bare}" == *=* || "${1:-}" == "=" ]]; then
                     milkset "${bare}" "$@"
                     return $?
@@ -709,6 +711,10 @@ _milk_complete() {
     fi
     if [[ "${cmd}" == "${MILKCLI_SIGIL}log" ]]; then
         mapfile -t COMPREPLY < <(compgen -W "-n --last -a --all -g --grep -e --errors --slow --since -f --follow -s --server --json --clear -h --help" -- "${cur}")
+        return 0
+    fi
+    if [[ "${cmd}" == "${MILKCLI_SIGIL}ls" && "${cur}" == -* ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "-l --long -q --quiet --json --local -h --help" -- "${cur}")
         return 0
     fi
     if [[ "${cmd}" == "${MILKCLI_SIGIL}get" && "${cur}" == -* ]]; then

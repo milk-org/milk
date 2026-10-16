@@ -1500,10 +1500,47 @@ int milk_client_server(int argc, char **argv, const milk_client_hooks_t *hooks)
     return milk_srvlog_cmd_server(argc, argv, hooks);
 }
 
+extern int milk_ls_exec(int argc, char **argv);
+
 int milk_client_log(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     milk_ipc_sync_shm_env(hooks);
     char sockpath[256];
     milk_ipc_resolve_sockpath(hooks, sockpath, sizeof(sockpath), 1);
     return milk_srvlog_cmd_log(sockpath, argc, argv, hooks);
+}
+
+int milk_client_ls(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    milk_ipc_sync_shm_env(hooks);
+    for (int i = 0; i < argc; i++)
+    {
+        const char *a = argv[i];
+        if (a == NULL)
+        {
+            continue;
+        }
+        while (*a == '@')
+        {
+            a++;
+        }
+        if (strcmp(a, "--local") == 0 || strcmp(a, "l") == 0 || strcmp(a, "local") == 0 ||
+            strncmp(a, "l.", 2) == 0 || strncmp(a, "local.", 6) == 0 || strncmp(a, "L:", 2) == 0)
+        {
+            char **cargv = (char **) calloc((size_t) argc + 2, sizeof(char *));
+            if (cargv == NULL)
+            {
+                return 1;
+            }
+            cargv[0] = (char *) "ls";
+            for (int j = 0; j < argc; j++)
+            {
+                cargv[j + 1] = argv[j];
+            }
+            int rc = milk_client_call(argc + 1, cargv, 0, hooks);
+            free(cargv);
+            return rc;
+        }
+    }
+    return milk_ls_exec(argc, argv);
 }

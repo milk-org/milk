@@ -187,59 +187,26 @@ static size_t scan_entity_path(const char *s, int *has_eq)
 
 static int is_bash_reserved_or_builtin(const char *w)
 {
-    static const char *const kw[] = { "if",          "then",
-                                      "elif",        "else",
-                                      "fi",          "for",
-                                      "in",          "while",
-                                      "until",       "do",
-                                      "done",        "case",
-                                      "esac",        "select",
-                                      "function",    "time",
-                                      "coproc",      "{",
-                                      "}",           "!",
-                                      "[[",          "]]",
-                                      "[",           "]",
-                                      "echo",        "printf",
-                                      "cd",          "pwd",
-                                      "read",        "export",
-                                      "unset",       "shift",
-                                      "alias",       "unalias",
-                                      "source",      ".",
-                                      "exit",        "quit",
-                                      "exitCLI",     "return",
-                                      "break",       "continue",
-                                      "local",       "declare",
-                                      "typeset",     "readonly",
-                                      "let",         "eval",
-                                      "exec",        "set",
-                                      "shopt",       "trap",
-                                      "type",        "command",
-                                      "builtin",     "enable",
-                                      "wait",        "kill",
-                                      "jobs",        "bg",
-                                      "fg",          "true",
-                                      "false",       "test",
-                                      "sleep",       "rm",
-                                      "ls",          "cat",
-                                      "grep",        "awk",
-                                      "sed",         "find",
-                                      "xargs",       "sort",
-                                      "head",        "tail",
-                                      "wc",          "cut",
-                                      "tr",          "mkdir",
-                                      "rmdir",       "cp",
-                                      "mv",          "ln",
-                                      "chmod",       "touch",
-                                      "date",        "uname",
-                                      "hostname",    "whoami",
-                                      "id",          "env",
-                                      "bookmark",    "include_once",
-                                      "milkcall",    "milkcalc",
-                                      "milkget",     "milkset",
-                                      "milktest",    "milkgrab",
-                                      "milkwaitfor", "milkwaitany",
-                                      "milkexists",  "milkserver",
-                                      "milklog",     NULL };
+    static const char *const kw[] = {
+        "if",         "then",    "elif",       "else",         "fi",          "for",
+        "in",         "while",   "until",      "do",           "done",        "case",
+        "esac",       "select",  "function",   "time",         "coproc",      "{",
+        "}",          "!",       "[[",         "]]",           "[",           "]",
+        "echo",       "printf",  "cd",         "pwd",          "read",        "export",
+        "unset",      "shift",   "alias",      "unalias",      "source",      ".",
+        "exit",       "quit",    "exitCLI",    "return",       "break",       "continue",
+        "local",      "declare", "typeset",    "readonly",     "let",         "eval",
+        "exec",       "set",     "shopt",      "trap",         "type",        "command",
+        "builtin",    "enable",  "wait",       "kill",         "jobs",        "bg",
+        "fg",         "true",    "false",      "test",         "sleep",       "rm",
+        "ls",         "cat",     "grep",       "awk",          "sed",         "find",
+        "xargs",      "sort",    "head",       "tail",         "wc",          "cut",
+        "tr",         "mkdir",   "rmdir",      "cp",           "mv",          "ln",
+        "chmod",      "touch",   "date",       "uname",        "hostname",    "whoami",
+        "id",         "env",     "bookmark",   "include_once", "milkcall",    "milkcalc",
+        "milkget",    "milkset", "milktest",   "milkgrab",     "milkwaitfor", "milkwaitany",
+        "milkexists", "milkls",  "milkserver", "milklog",      NULL
+    };
     for (int i = 0; kw[i] != NULL; i++)
     {
         if (strcmp(w, kw[i]) == 0)
@@ -583,10 +550,11 @@ static int is_entity_taking_cmd(const char *cmd, const char *sigil)
     {
         cmd++;
     }
-    return (strcmp(cmd, "get") == 0 || strcmp(cmd, "set") == 0 || strcmp(cmd, "exists") == 0 ||
-            strcmp(cmd, "running") == 0 || strcmp(cmd, "waitfor") == 0 ||
-            strcmp(cmd, "waitany") == 0 || strcmp(cmd, "on") == 0 || strcmp(cmd, "snapshot") == 0 ||
-            strcmp(cmd, "diff") == 0 || strcmp(cmd, "restore") == 0 || strcmp(cmd, "assert") == 0 ||
+    return (strcmp(cmd, "ls") == 0 || strcmp(cmd, "get") == 0 || strcmp(cmd, "set") == 0 ||
+            strcmp(cmd, "exists") == 0 || strcmp(cmd, "running") == 0 ||
+            strcmp(cmd, "waitfor") == 0 || strcmp(cmd, "waitany") == 0 || strcmp(cmd, "on") == 0 ||
+            strcmp(cmd, "snapshot") == 0 || strcmp(cmd, "diff") == 0 ||
+            strcmp(cmd, "restore") == 0 || strcmp(cmd, "assert") == 0 ||
             strcmp(cmd, "prompt") == 0 || strcmp(cmd, "streamcat") == 0 ||
             strcmp(cmd, "streamwrite") == 0);
 }

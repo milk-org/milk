@@ -970,6 +970,10 @@ int milk_server_dispatch_argv(int argc, char **argv)
         cmdname++;
     }
 
+    if (strcmp(cmdname, "ls") == 0)
+    {
+        return milk_ls_exec(argc - 1, argv + 1);
+    }
     if (strcmp(cmdname, "streamcat") == 0)
     {
         return milk_server_streamcat(argc, argv);

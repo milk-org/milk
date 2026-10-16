@@ -67,5 +67,6 @@ int  cli_intercept_cmd_procwait(const char *p);
 int  cli_intercept_cmd_procstat(const char *p);
 int  cli_intercept_cmd_dpdigits(const char *p);
 void cli_listim_glob(const char *pat);
+int  milk_ls_exec(int argc, char **argv);
 
 #endif /* CLICORE_SCRIPT_H */

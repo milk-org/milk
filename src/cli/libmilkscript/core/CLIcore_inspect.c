@@ -9,8 +9,10 @@
  */
 
 #include <dirent.h>
+#include <errno.h>
 #include <fnmatch.h>
 #include <math.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,9 +29,197 @@
 #include "fps_disconnect.h"
 #include "fps_printparameter_valuestring.h"
 #include "fps_shmdirname.h"
+#include "fpsseq.h"
 
 extern PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
 extern errno_t      processinfo_procdirname(char *procdname);
+
+static const char *get_shmdir_local(void)
+{
+    const char *env = getenv("MILK_SHM_DIR");
+    if (env != NULL && env[0] != '\0')
+    {
+        return env;
+    }
+    if (dcshmdir[0] != '\0')
+    {
+        return dcshmdir;
+    }
+    return "/dev/shm";
+}
+
+static void get_procdir_local(char *pdname, size_t pdsz)
+{
+    const char *pdir = getenv("MILK_PROC_DIR");
+    const char *sdir = getenv("MILK_SHM_DIR");
+    if (sdir != NULL && sdir[0] != '\0')
+    {
+        if (pdir == NULL || pdir[0] == '\0' || strncmp(pdir, "/milk/shm", 9) == 0 ||
+            strcmp(pdir, "/dev/shm") == 0)
+        {
+            snprintf(pdname, pdsz, "%s", sdir);
+            return;
+        }
+    }
+    if (pdir != NULL && pdir[0] != '\0')
+    {
+        snprintf(pdname, pdsz, "%s", pdir);
+        return;
+    }
+    if (dcshmdir[0] != '\0')
+    {
+        snprintf(pdname, pdsz, "%s", dcshmdir);
+        return;
+    }
+    processinfo_procdirname(pdname);
+}
+
+static char s_pinfolist_dir[256] = "";
+static int  s_pinfolist_fd       = -1;
+
+static PROCESSINFOLIST *get_pinfolist_local(void)
+{
+    char pdname[256];
+    get_procdir_local(pdname, sizeof(pdname));
+    if (pinfolist != NULL && pinfolist != MAP_FAILED && strcmp(s_pinfolist_dir, pdname) == 0)
+    {
+        return pinfolist;
+    }
+    if (pinfolist != NULL && pinfolist != MAP_FAILED)
+    {
+        munmap(pinfolist, sizeof(PROCESSINFOLIST));
+        pinfolist = NULL;
+    }
+    if (s_pinfolist_fd >= 0)
+    {
+        close(s_pinfolist_fd);
+        s_pinfolist_fd = -1;
+    }
+    snprintf(s_pinfolist_dir, sizeof(s_pinfolist_dir), "%s", pdname);
+    char lfn[512];
+    snprintf(lfn, sizeof(lfn), "%s/processinfo.list.shm", pdname);
+    if (access(lfn, R_OK) == 0)
+    {
+        int lfd   = -1;
+        pinfolist = (PROCESSINFOLIST *) processinfo_shm_link(lfn, &lfd);
+        if (pinfolist == MAP_FAILED)
+        {
+            if (lfd >= 0)
+            {
+                close(lfd);
+            }
+            pinfolist = NULL;
+        }
+        else
+        {
+            s_pinfolist_fd = lfd;
+        }
+    }
+    return pinfolist;
+}
+
+static PROCESSINFO *open_proc_shm_local(const char *pdname,
+                                        const char *pname,
+                                        pid_t       fpid,
+                                        int        *pfd_out)
+{
+    *pfd_out = -1;
+    if (fpid <= 0)
+    {
+        return NULL;
+    }
+    char pfn[512];
+    if (pname != NULL && pname[0] != '\0')
+    {
+        snprintf(pfn, sizeof(pfn), "%s/proc.%s.%06d.shm", pdname, pname, (int) fpid);
+        if (access(pfn, R_OK) == 0)
+        {
+            PROCESSINFO *pi = processinfo_shm_link(pfn, pfd_out);
+            if (pi != MAP_FAILED && pi != NULL)
+            {
+                return pi;
+            }
+            if (*pfd_out >= 0)
+            {
+                close(*pfd_out);
+                *pfd_out = -1;
+            }
+        }
+    }
+    snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
+    if (access(pfn, R_OK) == 0)
+    {
+        PROCESSINFO *pi = processinfo_shm_link(pfn, pfd_out);
+        if (pi != MAP_FAILED && pi != NULL)
+        {
+            return pi;
+        }
+        if (*pfd_out >= 0)
+        {
+            close(*pfd_out);
+            *pfd_out = -1;
+        }
+    }
+    return NULL;
+}
+
+static const char *fps_status_str(uint32_t st)
+{
+    if (st & (FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN | FUNCTION_PARAMETER_STRUCT_STATUS_RUN |
+              FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP))
+    {
+        return "RUN";
+    }
+    if (st & (FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF | FUNCTION_PARAMETER_STRUCT_STATUS_CONF))
+    {
+        return "CONF";
+    }
+    return "IDLE";
+}
+
+static const char *proc_status_str(const PROCESSINFO *pi, pid_t pid)
+{
+    if (pi == NULL)
+    {
+        return (pid > 0 && kill(pid, 0) != 0 && errno == ESRCH) ? "CRASHED" : "UNKNOWN";
+    }
+    pid_t check_pid = (pi->PID > 0) ? pi->PID : pid;
+    if (check_pid > 0 && kill(check_pid, 0) != 0 && errno == ESRCH)
+    {
+        if (pi->loopstat == PROCESSINFO_LOOPSTAT_STOP || pi->CTRLval == PROCESSINFO_CTRLVAL_EXIT)
+        {
+            return "STOPPED";
+        }
+        return "CRASHED";
+    }
+    if (pi->loopstat == PROCESSINFO_LOOPSTAT_STOP || pi->CTRLval == PROCESSINFO_CTRLVAL_EXIT)
+    {
+        return "STOPPED";
+    }
+    if (pi->loopstat == PROCESSINFO_LOOPSTAT_PAUSE || pi->CTRLval == PROCESSINFO_CTRLVAL_PAUSE)
+    {
+        return "PAUSED";
+    }
+    switch (pi->loopstat)
+    {
+    case PROCESSINFO_LOOPSTAT_INIT:
+        return "INIT";
+    case PROCESSINFO_LOOPSTAT_ACTIVE:
+        return "ACTIVE";
+    case PROCESSINFO_LOOPSTAT_PAUSE:
+        return "PAUSED";
+    case PROCESSINFO_LOOPSTAT_STOP:
+        return "STOPPED";
+    case PROCESSINFO_LOOPSTAT_ERROR:
+        return "ERROR";
+    case PROCESSINFO_LOOPSTAT_SPIN:
+        return "SPINNING";
+    case PROCESSINFO_LOOPSTAT_CRASHED:
+        return "CRASHED";
+    default:
+        return "OTHER";
+    }
+}
 
 static const char *strip_ws_local(const char *s)
 {
@@ -152,16 +342,7 @@ static int emit_fps_json_body(const char *pat, int indent)
             continue;
         }
 
-        uint32_t    st    = fps.md->status;
-        const char *ststr = "IDLE";
-        if (st & FUNCTION_PARAMETER_STRUCT_STATUS_CONF)
-        {
-            ststr = "CONF_ON";
-        }
-        else if (st & FUNCTION_PARAMETER_STRUCT_STATUS_RUN)
-        {
-            ststr = "RUN";
-        }
+        const char *ststr = fps_status_str(fps.md->status);
 
         char nesc[STRINGMAXLEN_FPS_NAME];
         char desc_esc[512];
@@ -201,7 +382,11 @@ errno_t cli_cmd_fpslist(void)
         {
             quietmode = 1;
         }
-        else if (strcmp(tok, "--json") == 0)
+        else if (strcmp(tok, "-l") == 0 || strcmp(tok, "--long") == 0)
+        {
+            quietmode = 0;
+        }
+        else if (strcmp(tok, "--json") == 0 || strcmp(tok, "-j") == 0)
         {
             jsonmode = 1;
         }
@@ -276,22 +461,7 @@ errno_t cli_cmd_fpslist(void)
             continue;
         }
 
-        uint32_t st = fps.md->status;
-        char     ststr[16];
-        if (st & FUNCTION_PARAMETER_STRUCT_STATUS_RUN)
-        {
-            strncpy(ststr, "RUN", sizeof(ststr) - 1);
-        }
-        else if (st & FUNCTION_PARAMETER_STRUCT_STATUS_CONF)
-        {
-            strncpy(ststr, "CONF_ON", sizeof(ststr) - 1);
-        }
-        else
-        {
-            strncpy(ststr, "IDLE", sizeof(ststr) - 1);
-        }
-        ststr[sizeof(ststr) - 1] = '\0';
-
+        const char *ststr = fps_status_str(fps.md->status);
         printf("%-24s %-12s %s\n", fpsname, ststr, fps.md->description);
 
         fps_disconnect(&fps);
@@ -495,6 +665,22 @@ errno_t cli_cmd_fpsdump(void)
  * ============================================================
  */
 
+static void format_img_dims(uint8_t naxis, const uint32_t *size, char *szstr, size_t szlen)
+{
+    if (naxis <= 1)
+    {
+        snprintf(szstr, szlen, "%u", (naxis == 1) ? size[0] : 0U);
+    }
+    else if (naxis == 2)
+    {
+        snprintf(szstr, szlen, "%ux%u", size[0], size[1]);
+    }
+    else
+    {
+        snprintf(szstr, szlen, "%ux%ux%u", size[0], size[1], size[2]);
+    }
+}
+
 static int emit_streams_json_body(const char *pat, int indent)
 {
     char pad[32];
@@ -508,7 +694,7 @@ static int emit_streams_json_body(const char *pat, int indent)
         pad[n] = '\0';
     }
 
-    DIR *d = opendir(dcshmdir);
+    DIR *d = opendir(get_shmdir_local());
     if (d == NULL)
     {
         return 0;
@@ -519,11 +705,7 @@ static int emit_streams_json_body(const char *pat, int indent)
     while ((de = readdir(d)) != NULL)
     {
         char *sfx = strstr(de->d_name, ".im.shm");
-        if (sfx == NULL)
-        {
-            continue;
-        }
-        if (strstr(de->d_name, ".fps.shm") != NULL)
+        if (sfx == NULL || strstr(de->d_name, ".fps.shm") != NULL)
         {
             continue;
         }
@@ -537,6 +719,10 @@ static int emit_streams_json_body(const char *pat, int indent)
         strncpy(sname, de->d_name, nlen);
         sname[nlen] = '\0';
 
+        if (strncmp(sname, "_tmpcalc", 8) == 0)
+        {
+            continue;
+        }
         if (pat != NULL && fnmatch(pat, sname, 0) != 0)
         {
             continue;
@@ -596,55 +782,49 @@ errno_t cli_cmd_streamlist(void)
     int         longmode = 0;
     int         jsonmode = 0;
     const char *pat      = NULL;
-    int         argpos   = 1;
 
     for (int a = 1; a < data.cmdNBarg; a++)
     {
         const char *tok = data.cmdargtoken[a].val.string;
-        if (strcmp(tok, "-l") == 0)
+        if (strcmp(tok, "-l") == 0 || strcmp(tok, "--long") == 0)
         {
             longmode = 1;
-            argpos   = a + 1;
         }
         else if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
         {
             longmode = 0;
-            argpos   = a + 1;
         }
-        else if (strcmp(tok, "--json") == 0)
+        else if (strcmp(tok, "--json") == 0 || strcmp(tok, "-j") == 0)
         {
             jsonmode = 1;
-            argpos   = a + 1;
         }
-    }
-    if (argpos < data.cmdNBarg)
-    {
-        pat = data.cmdargtoken[argpos].val.string;
-    }
-
-    DIR           *d;
-    struct dirent *de;
-    d = opendir(dcshmdir);
-    if (d == NULL)
-    {
-        printf("Cannot open SHM dir: %s\n", dcshmdir);
-        return RETURN_FAILURE;
+        else
+        {
+            pat = tok;
+        }
     }
 
     if (jsonmode)
     {
         printf("[\n");
+        emit_streams_json_body(pat, 2);
+        printf("\n]\n");
+        return RETURN_SUCCESS;
     }
-    int first_json_item = 1;
+
+    const char    *shmdir = get_shmdir_local();
+    DIR           *d      = opendir(shmdir);
+    struct dirent *de;
+    if (d == NULL)
+    {
+        printf("Cannot open SHM dir: %s\n", shmdir);
+        return RETURN_FAILURE;
+    }
 
     while ((de = readdir(d)) != NULL)
     {
         char *sfx = strstr(de->d_name, ".im.shm");
-        if (sfx == NULL)
-        {
-            continue;
-        }
-        if (strstr(de->d_name, ".fps.shm") != NULL)
+        if (sfx == NULL || strstr(de->d_name, ".fps.shm") != NULL)
         {
             continue;
         }
@@ -658,12 +838,16 @@ errno_t cli_cmd_streamlist(void)
         strncpy(sname, de->d_name, nlen);
         sname[nlen] = '\0';
 
+        if (strncmp(sname, "_tmpcalc", 8) == 0)
+        {
+            continue;
+        }
         if (pat != NULL && fnmatch(pat, sname, 0) != 0)
         {
             continue;
         }
 
-        if (!longmode && !jsonmode)
+        if (!longmode)
         {
             printf("%s\n", sname);
         }
@@ -674,71 +858,17 @@ errno_t cli_cmd_streamlist(void)
             errno_t sret = ImageStreamIO_openIm(&img, sname);
             if (sret == IMAGESTREAMIO_SUCCESS && img.md != NULL)
             {
-                if (jsonmode)
-                {
-                    char        nesc[256];
-                    char        tesc[64];
-                    const char *dtype_name = ImageStreamIO_typename(img.md->datatype);
-                    if (dtype_name == NULL)
-                    {
-                        dtype_name = "?";
-                    }
-                    json_escape_str(nesc, sizeof(nesc), sname);
-                    json_escape_str(tesc, sizeof(tesc), dtype_name);
-                    if (!first_json_item)
-                    {
-                        printf(",\n");
-                    }
-                    first_json_item = 0;
-
-                    printf("  {\n");
-                    printf("    \"name\": \"%s\",\n", nesc);
-                    printf("    \"naxis\": %u,\n", img.md->naxis);
-                    printf("    \"size\": [");
-                    for (int ax = 0; ax < img.md->naxis; ax++)
-                    {
-                        if (ax > 0)
-                        {
-                            printf(", ");
-                        }
-                        printf("%u", img.md->size[ax]);
-                    }
-                    printf("],\n");
-                    printf("    \"type\": \"%s\",\n", tesc);
-                    printf("    \"cnt0\": %lu\n", (unsigned long) img.md->cnt0);
-                    printf("  }");
-                }
-                else
-                {
-                    char szstr[64];
-                    if (img.md->naxis == 1)
-                    {
-                        snprintf(szstr, sizeof(szstr), "%u", img.md->size[0]);
-                    }
-                    else if (img.md->naxis == 2)
-                    {
-                        snprintf(szstr, sizeof(szstr), "%ux%u", img.md->size[0], img.md->size[1]);
-                    }
-                    else
-                    {
-                        snprintf(szstr, sizeof(szstr), "%ux%ux%u", img.md->size[0], img.md->size[1],
-                                 img.md->size[2]);
-                    }
-                    printf("%-24s %-12s %-7s cnt0=%lu\n", sname, szstr,
-                           ImageStreamIO_typename(img.md->datatype), (unsigned long) img.md->cnt0);
-                }
+                char szstr[64];
+                format_img_dims(img.md->naxis, img.md->size, szstr, sizeof(szstr));
+                printf("%-24s %-12s %-7s cnt0=%lu\n", sname, szstr,
+                       ImageStreamIO_typename(img.md->datatype), (unsigned long) img.md->cnt0);
                 ImageStreamIO_closeIm(&img);
             }
-            else if (!jsonmode)
+            else
             {
                 printf("%-24s UNAVAIL\n", sname);
             }
         }
-    }
-
-    if (jsonmode)
-    {
-        printf("\n]\n");
     }
     closedir(d);
 
@@ -750,9 +880,262 @@ errno_t cli_cmd_streamlist(void)
  * ============================================================
  */
 
-static int emit_procs_json_body(int indent)
+static int emit_procs_json_body(const char *pat, int indent)
 {
-    if (pinfolist == NULL)
+    PROCESSINFOLIST *plist = get_pinfolist_local();
+    if (plist == NULL)
+    {
+        return 0;
+    }
+
+    char pad[32];
+    {
+        int n = indent;
+        if (n >= (int) sizeof(pad))
+        {
+            n = (int) sizeof(pad) - 1;
+        }
+        memset(pad, ' ', (size_t) n);
+        pad[n] = '\0';
+    }
+
+    char pdname[256];
+    get_procdir_local(pdname, sizeof(pdname));
+
+    int count = 0;
+    for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
+    {
+        if (!plist->active[pi])
+        {
+            continue;
+        }
+        const char *pname = plist->pnamearray[pi];
+        if (pat != NULL && fnmatch(pat, pname, 0) != 0)
+        {
+            continue;
+        }
+
+        pid_t        fpid   = plist->PIDarray[pi];
+        int          pfd    = -1;
+        PROCESSINFO *pi_shm = (fpid > 0) ? open_proc_shm_local(pdname, pname, fpid, &pfd) : NULL;
+        if (pi_shm == NULL && (fpid <= 0 || (kill(fpid, 0) != 0 && errno == ESRCH)))
+        {
+            continue;
+        }
+        const char *state = proc_status_str(pi_shm, fpid);
+        double      freq  = 0.0;
+
+        if (pi_shm != NULL)
+        {
+            if (pi_shm->dtmedian_iter_ns > 0)
+            {
+                freq = 1.0e9 / (double) pi_shm->dtmedian_iter_ns;
+            }
+            munmap(pi_shm, sizeof(PROCESSINFO));
+            close(pfd);
+        }
+
+        char nesc[256];
+        char sesc[64];
+        json_escape_str(nesc, sizeof(nesc), pname);
+        json_escape_str(sesc, sizeof(sesc), state);
+
+        if (count > 0)
+        {
+            printf(",\n");
+        }
+        printf("%s{\n", pad);
+        printf("%s  \"name\": \"%s\",\n", pad, nesc);
+        printf("%s  \"state\": \"%s\",\n", pad, sesc);
+        printf("%s  \"status\": \"%s\",\n", pad, sesc);
+        printf("%s  \"pid\": %d,\n", pad, (int) fpid);
+        printf("%s  \"freq_hz\": %g\n", pad, freq);
+        printf("%s}", pad);
+        count++;
+    }
+    return count;
+}
+
+/**
+ * @brief proclist command — list active processes
+ */
+errno_t cli_cmd_proclist(void)
+{
+    int         longmode = 0;
+    int         jsonmode = 0;
+    const char *pat      = NULL;
+    for (int a = 1; a < data.cmdNBarg; a++)
+    {
+        const char *tok = data.cmdargtoken[a].val.string;
+        if (strcmp(tok, "-l") == 0 || strcmp(tok, "--long") == 0)
+        {
+            longmode = 1;
+        }
+        else if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
+        {
+            longmode = 0;
+        }
+        else if (strcmp(tok, "--json") == 0 || strcmp(tok, "-j") == 0)
+        {
+            jsonmode = 1;
+        }
+        else
+        {
+            pat = tok;
+        }
+    }
+
+    if (jsonmode)
+    {
+        printf("[\n");
+        emit_procs_json_body(pat, 2);
+        printf("\n]\n");
+        return RETURN_SUCCESS;
+    }
+
+    PROCESSINFOLIST *plist = get_pinfolist_local();
+    if (plist == NULL)
+    {
+        return RETURN_SUCCESS;
+    }
+
+    char pdname[256];
+    get_procdir_local(pdname, sizeof(pdname));
+
+    for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
+    {
+        if (!plist->active[pi])
+        {
+            continue;
+        }
+        const char *pname = plist->pnamearray[pi];
+        if (pat != NULL && fnmatch(pat, pname, 0) != 0)
+        {
+            continue;
+        }
+
+        pid_t        fpid   = plist->PIDarray[pi];
+        int          pfd    = -1;
+        PROCESSINFO *pi_shm = (fpid > 0) ? open_proc_shm_local(pdname, pname, fpid, &pfd) : NULL;
+        if (pi_shm == NULL && (fpid <= 0 || (kill(fpid, 0) != 0 && errno == ESRCH)))
+        {
+            continue;
+        }
+
+        if (!longmode)
+        {
+            if (pi_shm != NULL)
+            {
+                munmap(pi_shm, sizeof(PROCESSINFO));
+                close(pfd);
+            }
+            printf("%s\n", pname);
+        }
+        else
+        {
+            const char *state = proc_status_str(pi_shm, fpid);
+            double      freq  = 0.0;
+            if (pi_shm != NULL)
+            {
+                if (pi_shm->dtmedian_iter_ns > 0)
+                {
+                    freq = 1.0e9 / (double) pi_shm->dtmedian_iter_ns;
+                }
+                munmap(pi_shm, sizeof(PROCESSINFO));
+                close(pfd);
+            }
+
+            printf("%-24s %-8s %8.1f Hz\n", pname, state, freq);
+        }
+    }
+
+    return RETURN_SUCCESS;
+}
+
+/* ============================================================
+ *  milkquery & @ls
+ * ============================================================
+ */
+
+static int emit_seqs_json_body(const char *pat, int indent)
+{
+    char pad[32];
+    {
+        int n = indent;
+        if (n >= (int) sizeof(pad))
+        {
+            n = (int) sizeof(pad) - 1;
+        }
+        memset(pad, ' ', (size_t) n);
+        pad[n] = '\0';
+    }
+
+    DIR *d = opendir(get_shmdir_local());
+    if (d == NULL)
+    {
+        return 0;
+    }
+
+    int            count = 0;
+    struct dirent *de;
+    while ((de = readdir(d)) != NULL)
+    {
+        size_t dlen = strlen(de->d_name);
+        if (dlen <= 12 || strncmp(de->d_name, "milkseq.", 8) != 0 ||
+            strcmp(de->d_name + dlen - 4, ".shm") != 0 || (dlen - 12) >= 256)
+        {
+            continue;
+        }
+        char qname[256];
+        memcpy(qname, de->d_name + 8, dlen - 12);
+        qname[dlen - 12] = '\0';
+
+        if (pat != NULL && fnmatch(pat, qname, 0) != 0)
+        {
+            continue;
+        }
+
+        MILKSEQ_STATE *seqst = milkseq_connect(qname);
+        if (seqst == NULL)
+        {
+            continue;
+        }
+
+        const char *st = "IDLE";
+        if (seqst->status & MILKSEQ_STATUS_ERROR)
+        {
+            st = "ERROR";
+        }
+        else if (seqst->status & MILKSEQ_STATUS_STOPPING)
+        {
+            st = "STOPPING";
+        }
+        else if (seqst->status & MILKSEQ_STATUS_RUNNING)
+        {
+            st = "RUNNING";
+        }
+
+        char nesc[256];
+        json_escape_str(nesc, sizeof(nesc), qname);
+        if (count > 0)
+        {
+            printf(",\n");
+        }
+        printf("%s{\n", pad);
+        printf("%s  \"name\": \"%s\",\n", pad, nesc);
+        printf("%s  \"status\": \"%s\",\n", pad, st);
+        printf("%s  \"pid\": %d\n", pad, (int) seqst->pid);
+        printf("%s}", pad);
+        count++;
+        milkseq_disconnect(seqst);
+    }
+    closedir(d);
+    return count;
+}
+
+static int emit_local_json_body(const char *pat, int indent)
+{
+    if (data.core.image == NULL)
     {
         return 0;
     }
@@ -769,59 +1152,30 @@ static int emit_procs_json_body(int indent)
     }
 
     int count = 0;
-    for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
+    for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
     {
-        if (!pinfolist->active[pi])
+        if (data.core.image[i].used != 1 || data.core.image[i].name[0] == '\0' ||
+            strncmp(data.core.image[i].name, "_tmpcalc", 8) == 0 || data.core.image[i].md == NULL ||
+            data.core.image[i].md->shared)
+        {
+            continue;
+        }
+        const char *iname = data.core.image[i].name;
+        if (pat != NULL && fnmatch(pat, iname, 0) != 0)
         {
             continue;
         }
 
-        pid_t       fpid  = pinfolist->PIDarray[pi];
-        const char *state = "UNKNOWN";
-        double      freq  = 0.0;
-
-        if (fpid > 0)
+        IMAGE_METADATA *md         = data.core.image[i].md;
+        const char     *dtype_name = ImageStreamIO_typename(md->datatype);
+        if (dtype_name == NULL)
         {
-            char pfn[512];
-            char pdname[256];
-            processinfo_procdirname(pdname);
-            snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
-            int          pfd    = -1;
-            PROCESSINFO *pi_shm = processinfo_shm_link(pfn, &pfd);
-            if (pi_shm != MAP_FAILED && pi_shm != NULL)
-            {
-                switch (pi_shm->CTRLval)
-                {
-                case PROCESSINFO_CTRLVAL_RUN:
-                    state = "ACTIVE";
-                    break;
-                case PROCESSINFO_CTRLVAL_PAUSE:
-                    state = "PAUSED";
-                    break;
-                case PROCESSINFO_CTRLVAL_EXIT:
-                    state = "STOPPED";
-                    break;
-                default:
-                    state = "OTHER";
-                    break;
-                }
-                if (pi_shm->dtmedian_iter_ns > 0)
-                {
-                    freq = 1.0e9 / (double) pi_shm->dtmedian_iter_ns;
-                }
-                munmap(pi_shm, sizeof(PROCESSINFO));
-                close(pfd);
-            }
-            else if (pfd >= 0)
-            {
-                close(pfd);
-            }
+            dtype_name = "?";
         }
-
         char nesc[256];
-        char sesc[64];
-        json_escape_str(nesc, sizeof(nesc), pinfolist->pnamearray[pi]);
-        json_escape_str(sesc, sizeof(sesc), state);
+        char tesc[64];
+        json_escape_str(nesc, sizeof(nesc), iname);
+        json_escape_str(tesc, sizeof(tesc), dtype_name);
 
         if (count > 0)
         {
@@ -829,138 +1183,24 @@ static int emit_procs_json_body(int indent)
         }
         printf("%s{\n", pad);
         printf("%s  \"name\": \"%s\",\n", pad, nesc);
-        printf("%s  \"state\": \"%s\",\n", pad, sesc);
-        printf("%s  \"pid\": %d,\n", pad, (int) fpid);
-        printf("%s  \"freq_hz\": %g\n", pad, freq);
+        printf("%s  \"naxis\": %u,\n", pad, md->naxis);
+        printf("%s  \"size\": [", pad);
+        for (int ax = 0; ax < md->naxis; ax++)
+        {
+            if (ax > 0)
+            {
+                printf(", ");
+            }
+            printf("%u", md->size[ax]);
+        }
+        printf("],\n");
+        printf("%s  \"type\": \"%s\",\n", pad, tesc);
+        printf("%s  \"loc\": \"RAM\"\n", pad);
         printf("%s}", pad);
         count++;
     }
     return count;
 }
-
-/**
- * @brief proclist command — list active processes
- */
-errno_t cli_cmd_proclist(void)
-{
-    int longmode = 0;
-    int jsonmode = 0;
-    for (int a = 1; a < data.cmdNBarg; a++)
-    {
-        const char *tok = data.cmdargtoken[a].val.string;
-        if (strcmp(tok, "-l") == 0)
-        {
-            longmode = 1;
-        }
-        else if (strcmp(tok, "--json") == 0)
-        {
-            jsonmode = 1;
-        }
-    }
-
-    if (pinfolist == NULL)
-    {
-        printf("proclist: processinfo not available\n");
-        return RETURN_FAILURE;
-    }
-
-    if (jsonmode)
-    {
-        printf("[\n");
-    }
-    int first_json_item = 1;
-
-    for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
-    {
-        if (!pinfolist->active[pi])
-        {
-            continue;
-        }
-
-        if (!longmode && !jsonmode)
-        {
-            printf("%s\n", pinfolist->pnamearray[pi]);
-        }
-        else
-        {
-            pid_t       fpid  = pinfolist->PIDarray[pi];
-            const char *state = "UNKNOWN";
-            double      freq  = 0.0;
-
-            if (fpid > 0)
-            {
-                char pfn[512];
-                char pdname[256];
-                processinfo_procdirname(pdname);
-                snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
-                int          pfd    = -1;
-                PROCESSINFO *pi_shm = processinfo_shm_link(pfn, &pfd);
-                if (pi_shm != MAP_FAILED && pi_shm != NULL)
-                {
-                    switch (pi_shm->CTRLval)
-                    {
-                    case PROCESSINFO_CTRLVAL_RUN:
-                        state = "ACTIVE";
-                        break;
-                    case PROCESSINFO_CTRLVAL_PAUSE:
-                        state = "PAUSED";
-                        break;
-                    case PROCESSINFO_CTRLVAL_EXIT:
-                        state = "STOPPED";
-                        break;
-                    default:
-                        state = "OTHER";
-                        break;
-                    }
-                    if (pi_shm->dtmedian_iter_ns > 0)
-                    {
-                        freq = 1.0e9 / (double) pi_shm->dtmedian_iter_ns;
-                    }
-                    munmap(pi_shm, sizeof(PROCESSINFO));
-                    close(pfd);
-                }
-                else if (pfd >= 0)
-                {
-                    close(pfd);
-                }
-            }
-
-            if (jsonmode)
-            {
-                char nesc[256];
-                char sesc[64];
-                json_escape_str(nesc, sizeof(nesc), pinfolist->pnamearray[pi]);
-                json_escape_str(sesc, sizeof(sesc), state);
-                if (!first_json_item)
-                {
-                    printf(",\n");
-                }
-                first_json_item = 0;
-                printf("  {\n");
-                printf("    \"name\": \"%s\",\n", nesc);
-                printf("    \"state\": \"%s\",\n", sesc);
-                printf("    \"pid\": %d,\n", (int) fpid);
-                printf("    \"freq_hz\": %g\n", freq);
-                printf("  }");
-            }
-            else
-            {
-                printf("%-24s %-8s %8.1f Hz\n", pinfolist->pnamearray[pi], state, freq);
-            }
-        }
-    }
-
-    if (jsonmode)
-    {
-        printf("\n]\n");
-    }
-    return RETURN_SUCCESS;
-}
-
-/* ============================================================
- *  milkquery
- * ============================================================
- */
 
 /**
  * @brief milkquery — unified JSON snapshot
@@ -972,6 +1212,7 @@ errno_t cli_cmd_milkquery(void)
     int         do_procs   = 0;
     const char *fps_pat    = NULL;
     const char *stream_pat = NULL;
+    const char *proc_pat   = NULL;
 
     for (int a = 1; a < data.cmdNBarg; a++)
     {
@@ -997,11 +1238,18 @@ errno_t cli_cmd_milkquery(void)
         else if (strcmp(tok, "--procs") == 0)
         {
             do_procs = 1;
+            if (a + 1 < data.cmdNBarg && data.cmdargtoken[a + 1].val.string[0] != '-')
+            {
+                proc_pat = data.cmdargtoken[a + 1].val.string;
+                a++;
+            }
         }
         else
         {
             fprintf(stderr, "milkquery: unknown argument '%s'\n", tok);
-            fprintf(stderr, "usage: milkquery [--fps [pattern]] [--streams [pattern]] [--procs]\n");
+            fprintf(
+                stderr,
+                "usage: milkquery [--fps [pattern]] [--streams [pattern]] [--procs [pattern]]\n");
             return RETURN_FAILURE;
         }
     }
@@ -1047,7 +1295,7 @@ errno_t cli_cmd_milkquery(void)
             printf(",\n");
         }
         printf("  \"processes\": [\n");
-        emit_procs_json_body(4);
+        emit_procs_json_body(proc_pat, 4);
         printf("\n  ]");
         need_comma = 1;
     }
@@ -1055,6 +1303,507 @@ errno_t cli_cmd_milkquery(void)
     (void) need_comma;
     printf("\n}\n");
     return RETURN_SUCCESS;
+}
+
+/**
+ * @brief Unified entity discovery command (`@ls`).
+ *
+ * Supports:
+ *   `@ls`                        (all active entities across s.*, f.*, p.*, q.*)
+ *   `@ls s.*` / `@ls f.*` / `@ls p.*` / `@ls q.*` / `@ls l.*`
+ *   `@ls [-l] [-q] [--json] [--local] [pattern]`
+ */
+int milk_ls_exec(int argc, char **argv)
+{
+    int         longmode   = 0;
+    int         quietmode  = 0;
+    int         jsonmode   = 0;
+    int         want_local = 0;
+    const char *raw_pat    = NULL;
+
+    for (int i = 0; i < argc; i++)
+    {
+        const char *tok = argv[i];
+        if (tok == NULL)
+        {
+            continue;
+        }
+        if (strcmp(tok, "-l") == 0 || strcmp(tok, "--long") == 0)
+        {
+            longmode = 1;
+        }
+        else if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
+        {
+            quietmode = 1;
+        }
+        else if (strcmp(tok, "--json") == 0 || strcmp(tok, "-j") == 0)
+        {
+            jsonmode = 1;
+        }
+        else if (strcmp(tok, "--local") == 0)
+        {
+            want_local = 1;
+        }
+        else if (strcmp(tok, "-h") == 0 || strcmp(tok, "--help") == 0)
+        {
+            printf("Usage: @ls [-l] [-q] [--json] [--local] "
+                   "[s.<pat>|f.<pat>|p.<pat>|q.<pat>|l.<pat>|<pat>]\n");
+            return 0;
+        }
+        else if (raw_pat == NULL)
+        {
+            raw_pat = tok;
+        }
+    }
+
+    int         do_streams = 0;
+    int         do_fps     = 0;
+    int         do_procs   = 0;
+    int         do_seqs    = 0;
+    int         do_local   = 0;
+    int         multi_ns   = 0;
+    const char *pat        = "*";
+
+    if (raw_pat == NULL)
+    {
+        if (want_local)
+        {
+            do_local = 1;
+        }
+        else
+        {
+            do_streams = 1;
+            do_fps     = 1;
+            do_procs   = 1;
+            do_seqs    = 1;
+            multi_ns   = 1;
+        }
+    }
+    else
+    {
+        const char *p = raw_pat;
+        while (*p == '@')
+        {
+            p++;
+        }
+        if (strncmp(p, "S:", 2) == 0)
+        {
+            do_streams = 1;
+            pat        = (p[2] != '\0') ? (p + 2) : "*";
+        }
+        else if (strncmp(p, "L:", 2) == 0)
+        {
+            do_local = 1;
+            pat      = (p[2] != '\0') ? (p + 2) : "*";
+        }
+        else if (strcmp(p, "s") == 0 || strcmp(p, "stream") == 0 || strcmp(p, "streams") == 0)
+        {
+            do_streams = 1;
+        }
+        else if (strncmp(p, "s.", 2) == 0)
+        {
+            do_streams = 1;
+            pat        = (p[2] != '\0') ? (p + 2) : "*";
+        }
+        else if (strncmp(p, "stream.", 7) == 0)
+        {
+            do_streams = 1;
+            pat        = (p[7] != '\0') ? (p + 7) : "*";
+        }
+        else if (strcmp(p, "l") == 0 || strcmp(p, "local") == 0)
+        {
+            do_local = 1;
+        }
+        else if (strncmp(p, "l.", 2) == 0)
+        {
+            do_local = 1;
+            pat      = (p[2] != '\0') ? (p + 2) : "*";
+        }
+        else if (strncmp(p, "local.", 6) == 0)
+        {
+            do_local = 1;
+            pat      = (p[6] != '\0') ? (p + 6) : "*";
+        }
+        else if (strcmp(p, "f") == 0 || strcmp(p, "fps") == 0)
+        {
+            do_fps = 1;
+        }
+        else if (strncmp(p, "f.", 2) == 0)
+        {
+            do_fps = 1;
+            pat    = (p[2] != '\0') ? (p + 2) : "*";
+        }
+        else if (strncmp(p, "fps.", 4) == 0)
+        {
+            do_fps = 1;
+            pat    = (p[4] != '\0') ? (p + 4) : "*";
+        }
+        else if (strcmp(p, "p") == 0 || strcmp(p, "proc") == 0 || strcmp(p, "procinfo") == 0 ||
+                 strcmp(p, "procs") == 0)
+        {
+            do_procs = 1;
+        }
+        else if (strncmp(p, "p.", 2) == 0)
+        {
+            do_procs = 1;
+            pat      = (p[2] != '\0') ? (p + 2) : "*";
+        }
+        else if (strncmp(p, "proc.", 5) == 0)
+        {
+            do_procs = 1;
+            pat      = (p[5] != '\0') ? (p + 5) : "*";
+        }
+        else if (strncmp(p, "procinfo.", 9) == 0)
+        {
+            do_procs = 1;
+            pat      = (p[9] != '\0') ? (p + 9) : "*";
+        }
+        else if (strcmp(p, "q") == 0 || strcmp(p, "seq") == 0 || strcmp(p, "fpsseq") == 0)
+        {
+            do_seqs = 1;
+        }
+        else if (strncmp(p, "q.", 2) == 0)
+        {
+            do_seqs = 1;
+            pat     = (p[2] != '\0') ? (p + 2) : "*";
+        }
+        else if (strncmp(p, "seq.", 4) == 0)
+        {
+            do_seqs = 1;
+            pat     = (p[4] != '\0') ? (p + 4) : "*";
+        }
+        else if (strncmp(p, "fpsseq.", 7) == 0)
+        {
+            do_seqs = 1;
+            pat     = (p[7] != '\0') ? (p + 7) : "*";
+        }
+        else if (want_local)
+        {
+            do_local = 1;
+            pat      = p;
+        }
+        else
+        {
+            do_streams = 1;
+            do_fps     = 1;
+            do_procs   = 1;
+            do_seqs    = 1;
+            multi_ns   = 1;
+            pat        = p;
+        }
+    }
+
+    if (jsonmode)
+    {
+        if (multi_ns)
+        {
+            printf("{\n");
+            printf("  \"fps\": [\n");
+            emit_fps_json_body(pat, 4);
+            printf("\n  ],\n");
+            printf("  \"streams\": [\n");
+            emit_streams_json_body(pat, 4);
+            printf("\n  ],\n");
+            printf("  \"processes\": [\n");
+            emit_procs_json_body(pat, 4);
+            printf("\n  ]\n");
+            printf("}\n");
+        }
+        else if (do_streams)
+        {
+            printf("[\n");
+            emit_streams_json_body(pat, 2);
+            printf("\n]\n");
+        }
+        else if (do_fps)
+        {
+            printf("[\n");
+            emit_fps_json_body(pat, 2);
+            printf("\n]\n");
+        }
+        else if (do_procs)
+        {
+            printf("[\n");
+            emit_procs_json_body(pat, 2);
+            printf("\n]\n");
+        }
+        else if (do_seqs)
+        {
+            printf("[\n");
+            emit_seqs_json_body(pat, 2);
+            printf("\n]\n");
+        }
+        else if (do_local)
+        {
+            printf("[\n");
+            emit_local_json_body(pat, 2);
+            printf("\n]\n");
+        }
+        fflush(stdout);
+        return 0;
+    }
+
+    int show_prefix = (multi_ns && !quietmode);
+
+    if (do_streams)
+    {
+        const char *shmdir = get_shmdir_local();
+        DIR        *d      = opendir(shmdir);
+        if (d != NULL)
+        {
+            struct dirent *de;
+            while ((de = readdir(d)) != NULL)
+            {
+                char *sfx = strstr(de->d_name, ".im.shm");
+                if (sfx == NULL || strstr(de->d_name, ".fps.shm") != NULL)
+                {
+                    continue;
+                }
+                char   sname[256];
+                size_t nlen = (size_t) (sfx - de->d_name);
+                if (nlen >= sizeof(sname))
+                {
+                    continue;
+                }
+                memcpy(sname, de->d_name, nlen);
+                sname[nlen] = '\0';
+                if (strncmp(sname, "_tmpcalc", 8) == 0 || fnmatch(pat, sname, 0) != 0)
+                {
+                    continue;
+                }
+                char dname[280];
+                snprintf(dname, sizeof(dname), "%s%s", show_prefix ? "s." : "", sname);
+                if (!longmode)
+                {
+                    printf("%s\n", dname);
+                }
+                else
+                {
+                    IMAGE img;
+                    memset(&img, 0, sizeof(IMAGE));
+                    if (ImageStreamIO_openIm(&img, sname) == IMAGESTREAMIO_SUCCESS &&
+                        img.md != NULL)
+                    {
+                        char szstr[64];
+                        format_img_dims(img.md->naxis, img.md->size, szstr, sizeof(szstr));
+                        printf("%-24s %-12s %-7s cnt0=%lu\n", dname, szstr,
+                               ImageStreamIO_typename(img.md->datatype),
+                               (unsigned long) img.md->cnt0);
+                        ImageStreamIO_closeIm(&img);
+                    }
+                    else
+                    {
+                        printf("%-24s UNAVAIL\n", dname);
+                    }
+                }
+            }
+            closedir(d);
+        }
+    }
+
+    if (do_local && data.core.image != NULL)
+    {
+        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        {
+            if (data.core.image[i].used != 1 || data.core.image[i].name[0] == '\0' ||
+                strncmp(data.core.image[i].name, "_tmpcalc", 8) == 0 ||
+                data.core.image[i].md == NULL || data.core.image[i].md->shared)
+            {
+                continue;
+            }
+            const char *iname = data.core.image[i].name;
+            if (fnmatch(pat, iname, 0) != 0)
+            {
+                continue;
+            }
+            char dname[280];
+            snprintf(dname, sizeof(dname), "%s%s", show_prefix ? "l." : "", iname);
+            if (!longmode)
+            {
+                printf("%s\n", dname);
+            }
+            else
+            {
+                IMAGE_METADATA *md = data.core.image[i].md;
+                char            szstr[64];
+                format_img_dims(md->naxis, md->size, szstr, sizeof(szstr));
+                printf("%-24s %-12s %-7s RAM\n", dname, szstr,
+                       ImageStreamIO_typename(md->datatype));
+            }
+        }
+    }
+
+    if (do_fps)
+    {
+        char shmdname[STRINGMAXLEN_SHMDIRNAME];
+        function_parameter_struct_shmdirname(shmdname);
+        DIR *d = opendir(shmdname);
+        if (d != NULL)
+        {
+            struct dirent *de;
+            while ((de = readdir(d)) != NULL)
+            {
+                char *sfx = strstr(de->d_name, ".fps.shm");
+                if (sfx == NULL)
+                {
+                    continue;
+                }
+                char   fpsname[STRINGMAXLEN_FPS_NAME];
+                size_t nlen = (size_t) (sfx - de->d_name);
+                if (nlen >= sizeof(fpsname))
+                {
+                    continue;
+                }
+                memcpy(fpsname, de->d_name, nlen);
+                fpsname[nlen] = '\0';
+                if (fnmatch(pat, fpsname, 0) != 0)
+                {
+                    continue;
+                }
+                char dname[280];
+                snprintf(dname, sizeof(dname), "%s%s", show_prefix ? "f." : "", fpsname);
+                if (!longmode)
+                {
+                    printf("%s\n", dname);
+                }
+                else
+                {
+                    FPS fps;
+                    fps.SMfd = -1;
+                    if (fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE) != -1 && fps.md != NULL)
+                    {
+                        printf("%-24s %-12s %s\n", dname, fps_status_str(fps.md->status),
+                               fps.md->description);
+                        fps_disconnect(&fps);
+                    }
+                    else
+                    {
+                        printf("%-24s %-12s\n", dname, "UNAVAIL");
+                    }
+                }
+            }
+            closedir(d);
+        }
+    }
+
+    if (do_procs)
+    {
+        PROCESSINFOLIST *plist = get_pinfolist_local();
+        if (plist != NULL)
+        {
+            char pdname[256];
+            get_procdir_local(pdname, sizeof(pdname));
+            for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
+            {
+                if (!plist->active[pi])
+                {
+                    continue;
+                }
+                const char *pname = plist->pnamearray[pi];
+                if (fnmatch(pat, pname, 0) != 0)
+                {
+                    continue;
+                }
+                pid_t        fpid = plist->PIDarray[pi];
+                int          pfd  = -1;
+                PROCESSINFO *pi_shm =
+                    (fpid > 0) ? open_proc_shm_local(pdname, pname, fpid, &pfd) : NULL;
+                if (pi_shm == NULL && (fpid <= 0 || (kill(fpid, 0) != 0 && errno == ESRCH)))
+                {
+                    continue;
+                }
+                char dname[280];
+                snprintf(dname, sizeof(dname), "%s%s", show_prefix ? "p." : "", pname);
+                if (!longmode)
+                {
+                    if (pi_shm != NULL)
+                    {
+                        munmap(pi_shm, sizeof(PROCESSINFO));
+                        close(pfd);
+                    }
+                    printf("%s\n", dname);
+                }
+                else
+                {
+                    const char *state = proc_status_str(pi_shm, fpid);
+                    double      freq  = 0.0;
+                    if (pi_shm != NULL)
+                    {
+                        if (pi_shm->dtmedian_iter_ns > 0)
+                        {
+                            freq = 1.0e9 / (double) pi_shm->dtmedian_iter_ns;
+                        }
+                        munmap(pi_shm, sizeof(PROCESSINFO));
+                        close(pfd);
+                    }
+                    printf("%-24s %-8s %8.1f Hz  pid=%d\n", dname, state, freq, (int) fpid);
+                }
+            }
+        }
+    }
+
+    if (do_seqs)
+    {
+        DIR *d = opendir(get_shmdir_local());
+        if (d != NULL)
+        {
+            struct dirent *de;
+            while ((de = readdir(d)) != NULL)
+            {
+                size_t dlen = strlen(de->d_name);
+                if (dlen <= 12 || strncmp(de->d_name, "milkseq.", 8) != 0 ||
+                    strcmp(de->d_name + dlen - 4, ".shm") != 0 || (dlen - 12) >= 256)
+                {
+                    continue;
+                }
+                char qname[256];
+                memcpy(qname, de->d_name + 8, dlen - 12);
+                qname[dlen - 12] = '\0';
+                if (fnmatch(pat, qname, 0) != 0)
+                {
+                    continue;
+                }
+                char dname[280];
+                snprintf(dname, sizeof(dname), "%s%s", show_prefix ? "q." : "", qname);
+                if (!longmode)
+                {
+                    printf("%s\n", dname);
+                }
+                else
+                {
+                    MILKSEQ_STATE *seqst = milkseq_connect(qname);
+                    if (seqst != NULL)
+                    {
+                        const char *st = "IDLE";
+                        if (seqst->status & MILKSEQ_STATUS_ERROR)
+                        {
+                            st = "ERROR";
+                        }
+                        else if (seqst->status & MILKSEQ_STATUS_STOPPING)
+                        {
+                            st = "STOPPING";
+                        }
+                        else if (seqst->status & MILKSEQ_STATUS_RUNNING)
+                        {
+                            st = "RUNNING";
+                        }
+                        uint32_t tot = seqst->NBtasks_active + seqst->NBtasks_completed;
+                        printf("%-24s %-10s %u/%u  pid=%d\n", dname, st, seqst->NBtasks_completed,
+                               tot, (int) seqst->pid);
+                        milkseq_disconnect(seqst);
+                    }
+                    else
+                    {
+                        printf("%-24s UNAVAIL\n", dname);
+                    }
+                }
+            }
+            closedir(d);
+        }
+    }
+
+    fflush(stdout);
+    return 0;
 }
 
 /* ============================================================
@@ -1083,7 +1832,7 @@ int cli_intercept_cmd_procctl(const char *p)
             ap++;
         }
         int ctrlval = -1;
-        if (strncmp(ap, "run", 3) == 0)
+        if (strncmp(ap, "run", 3) == 0 || strncmp(ap, "resume", 6) == 0)
         {
             ctrlval = PROCESSINFO_CTRLVAL_RUN;
         }
@@ -1091,11 +1840,12 @@ int cli_intercept_cmd_procctl(const char *p)
         {
             ctrlval = PROCESSINFO_CTRLVAL_PAUSE;
         }
-        else if (strncmp(ap, "step", 4) == 0)
+        else if (strncmp(ap, "step", 4) == 0 || strncmp(ap, "incr", 4) == 0)
         {
             ctrlval = PROCESSINFO_CTRLVAL_INCR;
         }
-        else if (strncmp(ap, "stop", 4) == 0 || strncmp(ap, "exit", 4) == 0)
+        else if (strncmp(ap, "stop", 4) == 0 || strncmp(ap, "exit", 4) == 0 ||
+                 strncmp(ap, "kill", 4) == 0)
         {
             ctrlval = PROCESSINFO_CTRLVAL_EXIT;
         }
@@ -1104,33 +1854,28 @@ int cli_intercept_cmd_procctl(const char *p)
             printf("procctl: unknown action '%s' (use run|pause|step|stop)\n", ap);
             return 1;
         }
-        if (pinfolist != NULL)
+        PROCESSINFOLIST *plist = get_pinfolist_local();
+        if (plist != NULL)
         {
             pid_t fpid = 0;
             for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
             {
-                if (pinfolist->active[pi] && strcmp(pinfolist->pnamearray[pi], pname) == 0)
+                if (plist->active[pi] && strcmp(plist->pnamearray[pi], pname) == 0)
                 {
-                    fpid = pinfolist->PIDarray[pi];
+                    fpid = plist->PIDarray[pi];
                     break;
                 }
             }
             if (fpid > 0)
             {
-                char pfn[512];
                 char pdname[256];
-                processinfo_procdirname(pdname);
-                snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
+                get_procdir_local(pdname, sizeof(pdname));
                 int          pfd = -1;
-                PROCESSINFO *pi  = processinfo_shm_link(pfn, &pfd);
-                if (pi != MAP_FAILED && pi != NULL)
+                PROCESSINFO *pi  = open_proc_shm_local(pdname, pname, fpid, &pfd);
+                if (pi != NULL)
                 {
                     pi->CTRLval = ctrlval;
                     munmap(pi, sizeof(PROCESSINFO));
-                    close(pfd);
-                }
-                else if (pfd >= 0)
-                {
                     close(pfd);
                 }
             }
@@ -1164,38 +1909,41 @@ int cli_intercept_cmd_procwait(const char *p)
         {
             ap++;
         }
-        int tgt = -1;
-        if (strncasecmp(ap, "INIT", 4) == 0)
+        int tgt = PROCESSINFO_LOOPSTAT_STOP;
+        if (*ap != '\0')
         {
-            tgt = PROCESSINFO_LOOPSTAT_INIT;
-        }
-        else if (strncasecmp(ap, "ACTIVE", 6) == 0)
-        {
-            tgt = PROCESSINFO_LOOPSTAT_ACTIVE;
-        }
-        else if (strncasecmp(ap, "PAUSE", 5) == 0)
-        {
-            tgt = PROCESSINFO_LOOPSTAT_PAUSE;
-        }
-        else if (strncasecmp(ap, "STOP", 4) == 0)
-        {
-            tgt = PROCESSINFO_LOOPSTAT_STOP;
-        }
-        else if (strncasecmp(ap, "ERROR", 5) == 0)
-        {
-            tgt = PROCESSINFO_LOOPSTAT_ERROR;
-        }
-        else
-        {
-            tgt = (int) strtol(ap, NULL, 0);
-        }
-        while (*ap && *ap != ' ' && *ap != '\t')
-        {
-            ap++;
-        }
-        while (*ap == ' ' || *ap == '\t')
-        {
-            ap++;
+            if (strncasecmp(ap, "INIT", 4) == 0)
+            {
+                tgt = PROCESSINFO_LOOPSTAT_INIT;
+            }
+            else if (strncasecmp(ap, "ACTIVE", 6) == 0 || strncasecmp(ap, "RUN", 3) == 0)
+            {
+                tgt = PROCESSINFO_LOOPSTAT_ACTIVE;
+            }
+            else if (strncasecmp(ap, "PAUSE", 5) == 0)
+            {
+                tgt = PROCESSINFO_LOOPSTAT_PAUSE;
+            }
+            else if (strncasecmp(ap, "STOP", 4) == 0 || strncasecmp(ap, "EXIT", 4) == 0)
+            {
+                tgt = PROCESSINFO_LOOPSTAT_STOP;
+            }
+            else if (strncasecmp(ap, "ERROR", 5) == 0)
+            {
+                tgt = PROCESSINFO_LOOPSTAT_ERROR;
+            }
+            else
+            {
+                tgt = (int) strtol(ap, NULL, 0);
+            }
+            while (*ap && *ap != ' ' && *ap != '\t')
+            {
+                ap++;
+            }
+            while (*ap == ' ' || *ap == '\t')
+            {
+                ap++;
+            }
         }
         double timeout = 30.0;
         if (*ap != '\0')
@@ -1204,35 +1952,34 @@ int cli_intercept_cmd_procwait(const char *p)
         }
         struct timespec slp;
         slp.tv_sec      = 0;
-        slp.tv_nsec     = 100000000;
+        slp.tv_nsec     = 20000000;
         double elapsed  = 0.0;
         cli_last_retval = 1;
         while (elapsed < timeout)
         {
-            if (pinfolist != NULL)
+            PROCESSINFOLIST *plist = get_pinfolist_local();
+            if (plist != NULL)
             {
                 for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
                 {
-                    if (pinfolist->active[pi] && strcmp(pinfolist->pnamearray[pi], pname) == 0)
+                    if (plist->active[pi] && strcmp(plist->pnamearray[pi], pname) == 0)
                     {
-                        pid_t fpid = pinfolist->PIDarray[pi];
-                        char  pfn[512];
+                        pid_t fpid = plist->PIDarray[pi];
                         char  pdname[256];
-                        processinfo_procdirname(pdname);
-                        snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
+                        get_procdir_local(pdname, sizeof(pdname));
                         int          pfd = -1;
-                        PROCESSINFO *pii = processinfo_shm_link(pfn, &pfd);
-                        if (pii != MAP_FAILED && pii != NULL)
+                        PROCESSINFO *pii = open_proc_shm_local(pdname, pname, fpid, &pfd);
+                        if (pii != NULL)
                         {
-                            if (pii->loopstat == tgt)
+                            if (pii->loopstat == tgt ||
+                                (tgt == PROCESSINFO_LOOPSTAT_PAUSE &&
+                                 pii->CTRLval == PROCESSINFO_CTRLVAL_PAUSE) ||
+                                (tgt == PROCESSINFO_LOOPSTAT_STOP &&
+                                 pii->CTRLval == PROCESSINFO_CTRLVAL_EXIT))
                             {
                                 cli_last_retval = 0;
                             }
                             munmap(pii, sizeof(PROCESSINFO));
-                            close(pfd);
-                        }
-                        else if (pfd >= 0)
-                        {
                             close(pfd);
                         }
                         break;
@@ -1244,7 +1991,7 @@ int cli_intercept_cmd_procwait(const char *p)
                 break;
             }
             nanosleep(&slp, NULL);
-            elapsed += 0.1;
+            elapsed += 0.02;
         }
         return 1;
     }
@@ -1268,59 +2015,31 @@ int cli_intercept_cmd_procstat(const char *p)
             strncpy(filter, ap, sizeof(filter) - 1);
             filter[sizeof(filter) - 1] = '\0';
         }
-        if (pinfolist != NULL)
+        PROCESSINFOLIST *plist = get_pinfolist_local();
+        if (plist != NULL)
         {
             char pdname[256];
-            processinfo_procdirname(pdname);
+            get_procdir_local(pdname, sizeof(pdname));
             for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
             {
-                if (!pinfolist->active[pi])
+                if (!plist->active[pi])
                 {
                     continue;
                 }
-                if (filter[0] != '\0' && strcmp(pinfolist->pnamearray[pi], filter) != 0)
+                const char *pname = plist->pnamearray[pi];
+                if (filter[0] != '\0' && strcmp(pname, filter) != 0)
                 {
                     continue;
                 }
-                pid_t fpid = pinfolist->PIDarray[pi];
-                char  pfn[512];
-                snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
-                int          pfd = -1;
-                PROCESSINFO *pii = processinfo_shm_link(pfn, &pfd);
-                if (pii == MAP_FAILED || pii == NULL)
+                pid_t        fpid = plist->PIDarray[pi];
+                int          pfd  = -1;
+                PROCESSINFO *pii  = open_proc_shm_local(pdname, pname, fpid, &pfd);
+                if (pii == NULL)
                 {
-                    if (pfd >= 0)
-                    {
-                        close(pfd);
-                    }
                     continue;
                 }
-                const char *stname = "UNKNOWN";
-                switch (pii->loopstat)
-                {
-                case 0:
-                    stname = "INIT";
-                    break;
-                case 1:
-                    stname = "ACTIVE";
-                    break;
-                case 2:
-                    stname = "PAUSED";
-                    break;
-                case 3:
-                    stname = "STOPPED";
-                    break;
-                case 4:
-                    stname = "ERROR";
-                    break;
-                case 5:
-                    stname = "SPINNING";
-                    break;
-                case 6:
-                    stname = "CRASHED";
-                    break;
-                }
-                double hz = 0.0;
+                const char *stname = proc_status_str(pii, fpid);
+                double      hz     = 0.0;
                 if (pii->dtmedian_iter_ns > 0)
                 {
                     hz = 1.0e9 / (double) pii->dtmedian_iter_ns;
@@ -1394,7 +2113,7 @@ void cli_listim_glob(const char *pat)
     }
     char shmglob[512];
     snprintf(shmglob, sizeof(shmglob), "%s.im.shm", pat);
-    DIR *dp = opendir(dcshmdir[0] != '\0' ? dcshmdir : "/dev/shm");
+    DIR *dp = opendir(get_shmdir_local());
     if (dp != NULL)
     {
         struct dirent *de;
@@ -1410,6 +2129,10 @@ void cli_listim_glob(const char *pat)
                 if (sfx != NULL)
                 {
                     *sfx = '\0';
+                }
+                if (strncmp(nm, "_tmpcalc", 8) == 0)
+                {
+                    continue;
                 }
                 printf("  %s\n", nm);
                 count++;

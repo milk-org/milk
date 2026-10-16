@@ -60,10 +60,10 @@ static int setup_bin_farm(const char *bin_farm,
     }
 
     static const char *const core_cmds[] = {
-        "",        "calc",      "test",        "get",      "set",  "exists",  "running", "waitfor",
-        "waitany", "grab",      "replay",      "snapshot", "diff", "restore", "assert",  "prompt",
-        "batch",   "pipe",      "server",      "log",      "h",    "hb",      "hc",      "hm",
-        "hf",      "streamcat", "streamwrite", "unload",   NULL
+        "",        "calc",    "test",      "get",         "set",      "ls",   "exists",  "running",
+        "waitfor", "waitany", "grab",      "replay",      "snapshot", "diff", "restore", "assert",
+        "prompt",  "batch",   "pipe",      "server",      "log",      "h",    "hb",      "hc",
+        "hm",      "hf",      "streamcat", "streamwrite", "unload",   NULL
     };
     for (int i = 0; core_cmds[i] != NULL; i++)
     {
@@ -114,6 +114,7 @@ static void print_usage(const char *prog)
     printf("  call [--async] <cmd> [args...]   Execute a registered milk command\n");
     printf("  batch <cmd1; cmd2; ...>          Execute multi-command block in 1 round trip\n");
     printf("  pipe <cmd1 |> cmd2 |> ...>       Execute |> pipeline in 1 round trip\n");
+    printf("  ls [-l|-q|--json|--local] [pat]  List active streams, FPS, procs, sequencers\n");
     printf("  get [--json] <spec>              Query/discover stream/FPS/procinfo/seq property\n");
     printf("  set <entity> [val] [comment]     Set FPS parameter(s) or stream FITS keyword(s)\n");
     printf("  snapshot [-o <f>] [<f>] [glob]   Export FPS params & stream keywords to JSON\n");
@@ -338,6 +339,10 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
     if (strcmp(sub, "log") == 0)
     {
         return milk_client_log(argc, argv, NULL);
+    }
+    if (strcmp(sub, "ls") == 0)
+    {
+        return milk_client_ls(argc, argv, NULL);
     }
     if (strcmp(sub, "setup-bin-farm") == 0 && argc >= 3)
     {

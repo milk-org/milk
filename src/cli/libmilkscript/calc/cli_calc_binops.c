@@ -253,7 +253,9 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
                 if ((strcmp(left.sval, "FLT32") == 0 && strcmp(right.sval, "FLOAT") == 0) ||
                     (strcmp(left.sval, "FLOAT") == 0 && strcmp(right.sval, "FLT32") == 0) ||
                     (strcmp(left.sval, "DBL64") == 0 && strcmp(right.sval, "DOUBLE") == 0) ||
-                    (strcmp(left.sval, "DOUBLE") == 0 && strcmp(right.sval, "DBL64") == 0))
+                    (strcmp(left.sval, "DOUBLE") == 0 && strcmp(right.sval, "DBL64") == 0) ||
+                    (strcmp(left.sval, "RUN") == 0 && strcmp(right.sval, "RUNNING") == 0) ||
+                    (strcmp(left.sval, "RUNNING") == 0 && strcmp(right.sval, "RUN") == 0))
                 {
                     eq = 1;
                 }

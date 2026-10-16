@@ -148,18 +148,35 @@ static int list_entities_in_namespace(const char *nsp, const char *pattern, char
             ename[dlen - 8] = '\0';
         }
         else if ((strcmp(nsp, "p") == 0 || strcmp(nsp, "proc") == 0 ||
-                  strcmp(nsp, "procinfo") == 0) &&
-                 dlen > 9 && strcmp(de->d_name + dlen - 9, ".procinfo") == 0 &&
-                 (dlen - 9) < sizeof(ename))
+                  strcmp(nsp, "procinfo") == 0))
         {
-            memcpy(ename, de->d_name, dlen - 9);
-            ename[dlen - 9] = '\0';
-            char *dot       = strrchr(ename, '.');
-            if (dot != NULL)
+            if (dlen > 9 && strcmp(de->d_name + dlen - 9, ".procinfo") == 0 &&
+                (dlen - 9) < sizeof(ename))
             {
-                *dot = '\0';
+                memcpy(ename, de->d_name, dlen - 9);
+                ename[dlen - 9] = '\0';
+                char *dot       = strrchr(ename, '.');
+                if (dot != NULL)
+                {
+                    *dot = '\0';
+                }
             }
-            if (!milk_shm_prop_exists_proc(ename, 0))
+            else if (dlen > 9 && strncmp(de->d_name, "proc.", 5) == 0 &&
+                     strcmp(de->d_name + dlen - 4, ".shm") == 0 && (dlen - 9) < sizeof(ename))
+            {
+                memcpy(ename, de->d_name + 5, dlen - 9);
+                ename[dlen - 9] = '\0';
+                char *dot       = strrchr(ename, '.');
+                if (dot != NULL)
+                {
+                    *dot = '\0';
+                }
+                else
+                {
+                    ename[0] = '\0';
+                }
+            }
+            if (ename[0] != '\0' && !milk_shm_prop_exists_proc(ename, 0))
             {
                 ename[0] = '\0';
             }
@@ -182,6 +199,26 @@ static int list_entities_in_namespace(const char *nsp, const char *pattern, char
         }
     }
     closedir(dp);
+
+    if ((strcmp(nsp, "p") == 0 || strcmp(nsp, "proc") == 0 || strcmp(nsp, "procinfo") == 0) &&
+        pinfolist != NULL && pinfolist != (void *) -1)
+    {
+        for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
+        {
+            if (pinfolist->active[pi] && pinfolist->pnamearray[pi][0] != '\0')
+            {
+                const char *pname = pinfolist->pnamearray[pi];
+                if (fnmatch(pat, pname, 0) == 0 && !token_in_space_list(out, pname))
+                {
+                    int n = snprintf(out + pos, outsz - pos, "%s%s", (pos > 0) ? " " : "", pname);
+                    if (n > 0 && pos + (size_t) n < outsz)
+                    {
+                        pos += (size_t) n;
+                    }
+                }
+            }
+        }
+    }
     return 0;
 }
 

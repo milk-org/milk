@@ -162,6 +162,11 @@ void milk_ipc_sync_shm_env(const milk_client_hooks_t *hooks)
         {
             setenv("MILK_SHM_DIR", sd, 1);
         }
+        const char *pd = hooks->get_var("MILK_PROC_DIR", hooks->ctx);
+        if (pd != NULL && pd[0] != '\0')
+        {
+            setenv("MILK_PROC_DIR", pd, 1);
+        }
     }
 }
 

@@ -84,11 +84,14 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
     if (strcmp(prop, "kv") == 0 && fps.md != NULL)
     {
         const char *st = "IDLE";
-        if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
+        if (fps.md->status &
+            (FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN | FUNCTION_PARAMETER_STRUCT_STATUS_RUN |
+             FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP))
         {
             st = "RUN";
         }
-        else if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+        else if (fps.md->status &
+                 (FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF | FUNCTION_PARAMETER_STRUCT_STATUS_CONF))
         {
             st = "CONF";
         }
@@ -97,7 +100,8 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
                           ? 1
                           : 0;
         int runrun  = (fps.md->status & (FUNCTION_PARAMETER_STRUCT_STATUS_RUN |
-                                         FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN))
+                                         FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN |
+                                         FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP))
                           ? 1
                           : 0;
         int cnt     = 0;
@@ -115,10 +119,8 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
             snprintf(out, outsz,
                      "status\t%s\nconf\t%s\nrun\t%s\nconfrunning\t%d\nrunrunning\t%d\n"
                      "pid\t%ld\nconfpid\t%ld\nrunpid\t%ld\nnbparam\t%d\ndescription\t%s",
-                     st, (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF) ? "ON" : "OFF",
-                     (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN) ? "ON" : "OFF",
-                     confrun, runrun, (long) pid, (long) fps.md->confpid, (long) fps.md->runpid,
-                     cnt, fps.md->description);
+                     st, confrun ? "ON" : "OFF", runrun ? "ON" : "OFF", confrun, runrun, (long) pid,
+                     (long) fps.md->confpid, (long) fps.md->runpid, cnt, fps.md->description);
         if (n0 > 0 && (size_t) n0 < outsz)
         {
             pos = (size_t) n0;
@@ -168,13 +170,16 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
     }
     else if (fps.md != NULL)
     {
-        if (strcmp(prop, "status") == 0)
+        if (strcmp(prop, "status") == 0 || strcmp(prop, "state") == 0)
         {
-            if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
+            if (fps.md->status &
+                (FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN | FUNCTION_PARAMETER_STRUCT_STATUS_RUN |
+                 FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP))
             {
                 snprintf(out, outsz, "RUN");
             }
-            else if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+            else if (fps.md->status & (FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF |
+                                       FUNCTION_PARAMETER_STRUCT_STATUS_CONF))
             {
                 snprintf(out, outsz, "CONF");
             }

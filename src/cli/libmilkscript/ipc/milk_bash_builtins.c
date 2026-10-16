@@ -753,6 +753,17 @@ static int milklog_builtin(WORD_LIST *list)
     return rc;
 }
 
+static int milkls_builtin(WORD_LIST *list)
+{
+    char              **argv = NULL;
+    int                 argc = wordlist_to_argv(list, &argv);
+    milk_client_hooks_t hooks;
+    make_bash_hooks(&hooks);
+    int rc = milk_client_ls(argc, argv, &hooks);
+    free(argv);
+    return rc;
+}
+
 /* ============================================================
  *  Builtin Registration Structs for `enable -f`
  * ============================================================ */
@@ -770,6 +781,7 @@ static char *const milkcomplete_doc[] = { "Query milk tab-completion candidates.
 static char *const milkshutdown_doc[] = { "Shut down the session milk-cli --server.", NULL };
 static char *const milkserver_doc[]   = { "Manage milk-cli servers (@server).", NULL };
 static char *const milklog_doc[] = { "Inspect or search the milk server SHM log (@log).", NULL };
+static char *const milkls_doc[]  = { "List active milk entities (@ls).", NULL };
 
 struct builtin milkcall_struct = { "milkcall",   milkcall_builtin,           BUILTIN_ENABLED,
                                    milkcall_doc, "milkcall <cmd> [args...]", 0 };
@@ -836,3 +848,7 @@ struct builtin milkserver_struct = { "milkserver",
 
 struct builtin milklog_struct = { "milklog",   milklog_builtin,        BUILTIN_ENABLED,
                                   milklog_doc, "milklog [options...]", 0 };
+
+struct builtin milkls_struct = {
+    "milkls", milkls_builtin, BUILTIN_ENABLED, milkls_doc, "milkls [-l|-q|--json|--local] [pat]", 0
+};

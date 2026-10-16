@@ -113,6 +113,11 @@ int milk_client_server(int argc, char **argv, const milk_client_hooks_t *hooks);
      */
 int milk_client_log(int argc, char **argv, const milk_client_hooks_t *hooks);
 
+/**
+     * @brief Unified entity discovery (`@ls`).
+     */
+int milk_client_ls(int argc, char **argv, const milk_client_hooks_t *hooks);
+
 #ifdef __cplusplus
 }
 #endif
