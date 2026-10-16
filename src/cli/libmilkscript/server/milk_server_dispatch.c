@@ -1014,6 +1014,38 @@ int milk_server_dispatch_argv(int argc, char **argv)
     {
         return milk_server_set_argv(argc, argv);
     }
+    if (strcmp(cmdname, "fpsset") == 0)
+    {
+        char spec[512];
+        if (argc >= 4)
+        {
+            const char *f = argv[1];
+            if (strncmp(f, "f.", 2) == 0)
+            {
+                f += 2;
+            }
+            else if (strncmp(f, "fps.", 4) == 0)
+            {
+                f += 4;
+            }
+            snprintf(spec, sizeof(spec), "f.%s.%s", f, argv[2]);
+            return (milk_shm_prop_set(spec, argv[3], (argc >= 5) ? argv[4] : NULL) == 0) ? 0 : 1;
+        }
+        if (argc == 3)
+        {
+            if (strncmp(argv[1], "f.", 2) == 0 || strncmp(argv[1], "fps.", 4) == 0)
+            {
+                snprintf(spec, sizeof(spec), "%s", argv[1]);
+            }
+            else
+            {
+                snprintf(spec, sizeof(spec), "f.%s", argv[1]);
+            }
+            return (milk_shm_prop_set(spec, argv[2], NULL) == 0) ? 0 : 1;
+        }
+        fprintf(stderr, "Usage: fpsset <fps> <param> <value>  (or @set f.<fps>.<param>=<value>)\n");
+        return 1;
+    }
     if (strcmp(cmdname, "batch") == 0 || strcmp(cmdname, "pipe") == 0)
     {
         return milk_server_batch_or_pipe(argc, argv);
@@ -1736,13 +1768,71 @@ int milk_server_exec_calc_or_test(int            client_fd,
     dcvar_snap_t *snap      = milk_server_snapshot_dcvar(&snap_nmax);
     int           rc        = 0;
 
-    if (is_test || !try_exec_entity_lhs_assignment(expr, &rc))
+    size_t elen     = strlen(expr);
+    int    in_sq    = 0;
+    int    in_dq    = 0;
+    int    br_depth = 0;
+    size_t seg_st   = 0;
+
+    for (size_t i = 0; i <= elen; i++)
     {
-        char expanded[8192];
-        milk_server_expand_entities_in_expr(expr, expanded, sizeof(expanded));
-        int eval_rc = 2;
-        cli_calc_eval_bash(expanded, is_test, &eval_rc);
-        rc = eval_rc;
+        char c = expr[i];
+        if (c == '\'' && !in_dq)
+        {
+            in_sq = !in_sq;
+        }
+        else if (c == '"' && !in_sq)
+        {
+            in_dq = !in_dq;
+        }
+        else if (!in_sq && !in_dq)
+        {
+            if (c == '[' || c == '(')
+            {
+                br_depth++;
+            }
+            else if ((c == ']' || c == ')') && br_depth > 0)
+            {
+                br_depth--;
+            }
+        }
+        if (c == '\0' || (!in_sq && !in_dq && br_depth == 0 && (c == ';' || c == '\n')))
+        {
+            size_t seglen = i - seg_st;
+            while (seglen > 0 && (expr[seg_st] == ' ' || expr[seg_st] == '\t'))
+            {
+                seg_st++;
+                seglen--;
+            }
+            while (seglen > 0 &&
+                   (expr[seg_st + seglen - 1] == ' ' || expr[seg_st + seglen - 1] == '\t'))
+            {
+                seglen--;
+            }
+            if (seglen > 0)
+            {
+                char sub[4096];
+                if (seglen >= sizeof(sub))
+                {
+                    seglen = sizeof(sub) - 1;
+                }
+                memcpy(sub, expr + seg_st, seglen);
+                sub[seglen] = '\0';
+                if (is_test || !try_exec_entity_lhs_assignment(sub, &rc))
+                {
+                    char expanded[8192];
+                    milk_server_expand_entities_in_expr(sub, expanded, sizeof(expanded));
+                    int eval_rc = 2;
+                    cli_calc_eval_bash(expanded, is_test, &eval_rc);
+                    rc = eval_rc;
+                }
+                if (rc != 0)
+                {
+                    break;
+                }
+            }
+            seg_st = i + 1;
+        }
     }
 
     milk_server_send_modified_dcvars(client_fd, snap, snap_nmax);

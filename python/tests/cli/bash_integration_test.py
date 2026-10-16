@@ -1748,3 +1748,75 @@ def test_dynamic_telemetry_prompt():
         """)
     assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
     assert "PROMPT_OK" in res.stdout
+
+
+def test_unified_syntax_latency_ls_and_proc_ctrl(tmp_path: Path):
+    res = _run_bash("""
+        # 1. Phase 1: Sub-millisecond RPC call latency (no 20ms poll stall)
+        t0=$(date +%s%N)
+        for _ in 1 2 3 4 5 6 7 8 9 10; do
+            @mk2Dim l.lat_im 4 4 >/dev/null
+        done
+        t1=$(date +%s%N)
+        elapsed_ms=$(( (t1 - t0) / 1000000 ))
+        (( elapsed_ms < 150 ))
+
+        # 2. Phase 1: Module error propagation (non-zero return code on module failure)
+        set +e
+        @iofits.loadfits /nonexistent/path/no_such_file.fits bad_im >/dev/null 2>&1
+        load_rc=$?
+        set -e
+        [[ "${load_rc}" -ne 0 ]]
+
+        # 3. Phase 1 & 3: s.<name> / l.<name> symmetry & _tmpcalc scratch images stay local
+        @mk2Dim s.sym_shm 6 6
+        @mk2Dim l.sym_loc 6 6
+        [[ "$(@get s.sym_shm.shared)" == "1" ]]
+        [[ "$(@get l.sym_loc.shared)" == "0" ]]
+        [[ "$(@get s.sym_shm.loc)" == "SHM" ]]
+        [[ "$(@get l.sym_loc.loc)" == "RAM" ]]
+
+        @calc "s.sym_shm = 3.0; l.sym_loc = (s.sym_shm * 2.0) + 1.0"
+        # Scratch _tmpcalc images must NOT leak into /dev/shm
+        [[ -z "$(@ls -1 's._tmpcalc*')" ]]
+
+        @get -v sh_nx s.sym_shm.xsize
+        @get -v lc_nx l.sym_loc.xsize
+        [[ "${sh_nx}" == "6" && "${lc_nx}" == "6" ]]
+        [[ "$(@calc 'itot(l.sym_loc)')" == "252" ]]
+
+        @set l.sym_loc.kw.STAGE="calibrated"
+        [[ "$(@get l.sym_loc.kw.STAGE)" == "calibrated" ]]
+        @exists s.sym_shm
+        @exists l.sym_loc
+
+        # 4. Phase 2: Client-side @waitfor does not block milk_server for concurrent commands
+        (
+            sleep 0.04
+            @calc "s.sym_shm += 1.0"
+        ) &
+        @waitfor s.sym_shm 1 -t 2.0
+        wait
+        [[ "$(@calc 'itot(s.sym_shm)')" == "144" ]]
+
+        # 5. Phase 4 & 6: Unified @ls discovery across s., l., f., and fpsset alias
+        milk-fpsexec-imggen-mkrndim -n u_fps fpsinit >/dev/null 2>&1
+        @fpsset u_fps xsize 48
+        [[ "$(@get f.u_fps.xsize)" == "48" ]]
+        [[ "$(@get f.u_fps.status)" == "IDLE" ]]
+
+        @ls -a ls_sh "s.sym_*"
+        [[ "${#ls_sh[@]}" -eq 1 && "${ls_sh[0]}" == "sym_shm" ]]
+        @ls -a ls_lc "l.sym_*"
+        [[ "${#ls_lc[@]}" -eq 1 && "${ls_lc[0]}" == "sym_loc" ]]
+        @ls -a ls_fp "f.u_*"
+        [[ "${#ls_fp[@]}" -eq 1 && "${ls_fp[0]}" == "u_fps" ]]
+
+        ls_json="$(@ls --json)"
+        [[ "${ls_json}" == *'"name": "sym_shm"'* ]]
+        [[ "${ls_json}" == *'"name": "u_fps"'* ]]
+
+        echo "UNIFIED_SYNTAX_OK"
+        """)
+    assert res.returncode == 0, f"stdout={res.stdout}\nstderr={res.stderr}"
+    assert "UNIFIED_SYNTAX_OK" in res.stdout

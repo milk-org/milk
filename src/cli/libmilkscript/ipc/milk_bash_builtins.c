@@ -759,6 +759,64 @@ static int milkls_builtin(WORD_LIST *list)
     int                 argc = wordlist_to_argv(list, &argv);
     milk_client_hooks_t hooks;
     make_bash_hooks(&hooks);
+
+    const char *arrname = NULL;
+    char      **fargv   = (char **) calloc((size_t) argc + 2, sizeof(char *));
+    int         fargc   = 0;
+    if (fargv != NULL)
+    {
+        for (int i = 0; i < argc; i++)
+        {
+            if (strcmp(argv[i], "-a") == 0 && i + 1 < argc)
+            {
+                arrname = argv[++i];
+            }
+            else
+            {
+                fargv[fargc++] = argv[i];
+            }
+        }
+        if (arrname != NULL)
+        {
+            fargv[fargc++] = (char *) "-1";
+            int mfd        = memfd_create("milk_ls_arr", MFD_CLOEXEC);
+            int saved_out  = (mfd >= 0) ? dup(STDOUT_FILENO) : -1;
+            if (mfd >= 0 && saved_out >= 0)
+            {
+                fflush(stdout);
+                dup2(mfd, STDOUT_FILENO);
+            }
+            int rc = milk_client_ls(fargc, fargv, &hooks);
+            if (saved_out >= 0)
+            {
+                fflush(stdout);
+                dup2(saved_out, STDOUT_FILENO);
+                close(saved_out);
+            }
+            if (mfd >= 0)
+            {
+                off_t sz = lseek(mfd, 0, SEEK_END);
+                lseek(mfd, 0, SEEK_SET);
+                if (rc == 0 && sz >= 0)
+                {
+                    char *obuf = (char *) malloc((size_t) sz + 1);
+                    if (obuf != NULL)
+                    {
+                        ssize_t nr              = read(mfd, obuf, (size_t) sz);
+                        obuf[(nr > 0) ? nr : 0] = '\0';
+                        bash_bind_indexed_array(arrname, obuf);
+                        free(obuf);
+                    }
+                }
+                close(mfd);
+            }
+            free(fargv);
+            free(argv);
+            return rc;
+        }
+        free(fargv);
+    }
+
     int rc = milk_client_ls(argc, argv, &hooks);
     free(argv);
     return rc;

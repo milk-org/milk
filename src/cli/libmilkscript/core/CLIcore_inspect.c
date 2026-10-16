@@ -1332,6 +1332,10 @@ int milk_ls_exec(int argc, char **argv)
         {
             longmode = 1;
         }
+        else if (strcmp(tok, "-1") == 0)
+        {
+            longmode = 0;
+        }
         else if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
         {
             quietmode = 1;

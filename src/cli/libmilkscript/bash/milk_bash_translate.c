@@ -132,8 +132,8 @@ static const char *get_sigil(void)
 
 static int is_entity_prefix(const char *s, size_t *out_len)
 {
-    static const char *const pfx[] = { "s.",   "f.",      "p.",    "q.", "fps.",
-                                       "seq.", "stream.", "proc.", NULL };
+    static const char *const pfx[] = { "s.",   "l.",      "f.",   "p.",     "q.",    "fps.",
+                                       "seq.", "stream.", "loc.", "local.", "proc.", NULL };
     for (int i = 0; pfx[i] != NULL; i++)
     {
         size_t plen = strlen(pfx[i]);
@@ -225,14 +225,11 @@ static int is_registered_milk_command(const char *w)
     }
 
     static const char *const extra_cmds[] = {
-        "help",     "imgstat",   "info.imgstat", "imstats",
-        "mk2Dim",   "mk3Dim",    "mk2Drnd",      "imgen.mk2Drnd",
-        "mkrndim",  "readshmim", "listim",       "deleteim",
-        "loadfits", "savefits",  "fpslist",      "streamlist",
-        "proclist", "procstat",  "procctl",      "procwait",
-        "dpdigits", "lm?",       "m?",           "cmd?",
-        "f?",       "?",         "vars",         "savehistory",
-        NULL
+        "help",          "imgstat", "info.imgstat", "imstats",  "mk2Dim",   "mk3Dim",   "mk2Drnd",
+        "imgen.mk2Drnd", "mkrndim", "readshmim",    "listim",   "deleteim", "loadfits", "savefits",
+        "fpslist",       "fpsset",  "streamlist",   "proclist", "procstat", "procctl",  "procwait",
+        "dpdigits",      "lm?",     "m?",           "cmd?",     "f?",       "?",        "vars",
+        "savehistory",   NULL
     };
     for (int i = 0; extra_cmds[i] != NULL; i++)
     {

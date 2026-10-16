@@ -710,12 +710,17 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
             else if (strchr(s, '[') == NULL &&
                      resolve_or_autoconnect_image(s, allow_autoconnect) != -1)
             {
-                tokens[nt].type = TOK_IMAGE;
+                tokens[nt].type          = TOK_IMAGE;
+                FPS_STREAMNAME_PARSED sp = fps_streamname_parse(s);
+                if (!sp.error && sp.name != NULL && sp.name[0] != '\0' && strcmp(sp.name, s) != 0)
+                {
+                    snprintf(tokens[nt].sval, CLI_CALC_TOKEN_MAXLEN, "%s", sp.name);
+                }
                 if (data.core.Debug > 0)
                 {
                     printf("DEBUG: TOKENIZER: \"%s\""
                            " IS AN IMAGE\n",
-                           s);
+                           tokens[nt].sval);
                 }
             }
             /* Bracket token: try bare name
@@ -731,7 +736,16 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
                     bare[bn] = '\0';
                     if (resolve_or_autoconnect_image(bare, 1) != -1)
                     {
-                        tokens[nt].type = TOK_IMAGE;
+                        tokens[nt].type          = TOK_IMAGE;
+                        FPS_STREAMNAME_PARSED sp = fps_streamname_parse(bare);
+                        if (!sp.error && sp.name != NULL && sp.name[0] != '\0' &&
+                            strcmp(sp.name, bare) != 0)
+                        {
+                            char slice_tail[CLI_CALC_TOKEN_MAXLEN];
+                            snprintf(slice_tail, sizeof(slice_tail), "%s", bk);
+                            snprintf(tokens[nt].sval, CLI_CALC_TOKEN_MAXLEN, "%s%s", sp.name,
+                                     slice_tail);
+                        }
                     }
                     else
                     {

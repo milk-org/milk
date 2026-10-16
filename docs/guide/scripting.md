@@ -221,21 +221,23 @@ proclist --json               # Same as milkquery --procs
 ### FPS Parameter Expansion
 
 You can effortlessly read FPS (Function Processing System) parameters directly into bash variables
-using the native `@fpsname.param` syntax:
+using `@get f.<fpsname>.<param>` or the inline `@f.<fpsname>.<param>` syntax:
 
 ```bash
 #!/usr/bin/env milk-script
-echo "The current gain is: @myloop.loopgain"
+echo "The current gain is: @f.myloop.loopgain"
 
-# Store in a variable
-g=@myloop.loopgain
+# Bind directly into a variable without subshell fork
+@get -v g f.myloop.loopgain
 ```
 
-To write FPS parameters programmatically, natively use the `fpsset` command:
+To write FPS parameters programmatically, use `@set f.<fps>.<param>=<val>` (or the `fpsset`
+compatibility alias):
 
 ```bash
 #!/usr/bin/env milk-script
-# Note: Do not use the '@' prefix when writing
+@set f.myloop.loopgain=0.5
+# Or legacy form:
 fpsset myloop loopgain 0.5
 ```
 
@@ -259,24 +261,27 @@ fpsset myloop loopgain 0.5
 - Bitwise operators: `&  |  ^  <<  >>  ~`
 - Comparisons: `==  !=  <  >  <=  >=`
 
-### Stream & FPS Metadata Expansion
+### Stream, Local Image & FPS Metadata Expansion
 
-Similar to FPS parameters, you can access properties of shared memory streams via the `@s.`
-namespace expansion:
+You can access properties of shared memory streams (`s.<name>`) and session-local images
+(`l.<name>`) via `@get` or inline `@s.` / `@l.` expansion, and pass `s.<name>` / `l.<name>`
+interchangeably with `@S:<name>` / `@L:<name>` to commands and calculator expressions:
 
 ```bash
 #!/usr/bin/env milk-script
-echo "Geometry: ${@s.mystream.xsize}x${@s.mystream.ysize}x${@s.mystream.zsize}"
-echo "Datatype Code: ${@s.mystream.type}"
-echo "Frame Counter: ${@s.mystream.cnt0}"
-echo "Number of axes: ${@s.mystream.naxis}"
+echo "Geometry: @s.mystream.xsize x @s.mystream.ysize x @s.mystream.zsize"
+echo "Datatype Code: @s.mystream.type"
+echo "Frame Counter: @s.mystream.cnt0"
+echo "Local Image Width: @l.mybuf.xsize"
 ```
 
-For FPS compute units, you can check their allocation status:
+For FPS compute units and `processinfo` loops, you can query or control their status symbolically:
 
 ```bash
 #!/usr/bin/env milk-script
-echo "Status: ${myfps.status}"     # 1 if exists, 0 if unconnected
+echo "FPS Status: @f.myfps.status"      # IDLE, CONF, RUN, or CONF+RUN
+echo "Proc Status: @p.myloop.status"    # RUNNING, PAUSED, STEPPING, STOPPED, CRASHED
+@set p.myloop.ctrl=pause                # or @p.myloop.pause / @p.myloop.resume / @p.myloop.step
 ```
 
 ## First-Class GNU Bash Mode (`source milk.bash`)
@@ -285,20 +290,27 @@ In addition to `.milk` scripts, any standard GNU Bash shell or script can load t
 primitives directly via `source milk.bash` (backed by the loadable `libmilkbash.so` builtins and
 persistent `milk-cli --server`):
 
-- **Zero-subshell variable & array bindings (`-v`, `-a`, `-A`)**:
+- **Zero-subshell variable & array bindings (`-v`, `-a`, `-A`) and Bash 5.3 `${ ...; }` funsub**:
   - `@calc -v rms "irms(im1)"` or `@ -v rms "irms(im1)"` binds scalar expressions directly into a
     Bash variable without forking `$(...)`.
   - `@get -v nx s.cam0.xsize` binds a property into `nx`; `@get -a arr 's.*'` populates an indexed
     Bash array; `@get -A map 's.dm*.xsize'` populates an associative Bash array (`declare -A map`).
+  - On Bash 5.3+, inline `@s.cam0.xsize` and `@{irms(cam0)}` translate to non-forking
+    `${ _milk_get ...; }` and `${ _milk_calc ...; }` command substitutions.
   - `@streamcat -a pix cam0` reads stream/image pixel values directly into an indexed Bash array.
-- **Entity discovery, globbing, and JSON export**:
-  - `@get 's.*'`, `@get 'f.*'`, `@get 'p.*'`, `@get 'q.*'` discover active entities in `/dev/shm`.
-  - `@get 's.dm*.xsize'` queries a property across all matching entities.
+- **Unified entity discovery (`@ls`), globbing, and JSON export**:
+  - `@ls` (or `@ls s.*`, `@ls l.*`, `@ls f.*`, `@ls p.*`, `@ls q.*`, `@ls --json`, `@ls -1`,
+    `@ls -a arr`) lists shared streams, session-local images, FPS instances, processes, and
+    sequencers with glob filtering.
+  - `@get 's.*'`, `@get 'l.*'`, `@get 'f.*'`, `@get 'p.*'`, `@get 'q.*'` discover active entities;
+    `@get 's.dm*.xsize'` queries a property across all matching entities.
   - `@get --json s.cam0` (or `@get s.cam0.json`, `@get f.loop.json`) emits structured JSON.
 - **Globbed & multi-assignment `@set` and state snapshots (`@snapshot`, `@diff`, `@restore`)**:
   - `@set f.loop.gain=0.25 f.loop.mult=0.99` updates multiple parameters/keywords in one call.
   - `@set 'f.loop*.xsize' = 128` and `@set 's.cam*.kw.OBSERVER' = "Subaru"` broadcast updates
     across wildcard-matched FPS instances, FPS parameters (`f.loop0.*size`), or streams.
+  - `@set p.loop.ctrl=pause|run|step|stop` (or `@p.loop.pause`, `@p.loop.resume`, `@p.loop.step`)
+    controls `processinfo` loops directly in shared memory.
   - `@snapshot -o base.snap ['f.loop*' 's.cam*']`, `@diff base.snap [other.snap]`, and
     `@restore [--dry-run|-n] base.snap [pattern...]` save, compare, and restore `/dev/shm` state.
 - **Real-time assertions (`@assert`) & dynamic telemetry prompt (`@prompt`)**:
@@ -306,14 +318,18 @@ persistent `milk-cli --server`):
     prints actual LHS vs RHS values to `stderr` on relational failure.
   - `@assert --running --fps-min 500 --max-age 0.1 --dim 128x128 s.wfs_cam "Camera degraded"`
     verifies live stream/FPS/process health invariants in a single command.
-  - `@prompt watch f.loop.run gain=f.loop.gain s.wfs_cam.kw.MODE` and `@prompt preset <minimal|std|ao>`
-    render live `/dev/shm` telemetry in `PS1` using zero-subshell C builtin reads.
+  - `@prompt watch f.loop.run gain=f.loop.gain s.wfs_cam.kw.MODE` and
+    `@prompt preset <minimal|std|ao>` render live `/dev/shm` telemetry in `PS1` using zero-subshell
+    C builtin reads.
 - **Single-round-trip `@batch` and `@pipe` execution**:
   - `@batch "mem.mk2Dim a 64 64; a = 5; b = a * 2"` (or via a heredoc) executes multiple commands in
     a single client-server RPC round trip.
   - `@pipe "mem.mk2Dim psrc 32 32 |> psrc = 4 |> pdst = _ * 3"` executes a `|>` pipeline in a single
     round trip, automatically binding `_` to the output image of each stage.
-- **Throttled & multi-target reactive watchers (`@on`)**:
+- **Client-side semaphore `@waitfor` & reactive watchers (`@on`)**:
+  - `@waitfor s.cam0 5 -t 2` waits directly on the stream's POSIX semaphore in the caller process
+    without blocking `milk_server`; `@waitfor p.loop PAUSED -t 2` (or `procwait loop PAUSED 2`)
+    waits for a process state transition.
   - `@on [--once|-1] [--max-hz <rate>] [--cooldown <sec>] <t1> [t2...] -- <cmd...>` triggers on one
     or more streams/entities, exports `$MILK_TRIGGER`, and supports selective termination via
     `@on --stop <id|pid|target>`.

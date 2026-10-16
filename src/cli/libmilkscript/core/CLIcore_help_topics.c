@@ -282,11 +282,13 @@ void help_topic_variables(void)
     printf("  " C_CMD "((expr))" C_RST "        Arithmetic conditional\n");
     printf("\n");
     printf(C_HDR "FPS Parameter Access:\n" C_RST);
-    printf("  " C_CMD "@fpsname.param" C_RST "    Read FPS parameter\n");
-    printf("  " C_CMD "@seq.NAME.prop" C_RST "    Read Sequencer property\n");
-    printf("  " C_CMD "fpsset fps p v" C_RST "    Write FPS parameter\n");
+    printf("  " C_CMD "@get f.fps.param" C_RST "  Read FPS parameter (or " C_CMD
+           "@f.fps.param" C_RST ")\n");
+    printf("  " C_CMD "@get q.NAME.prop" C_RST "  Read Sequencer property\n");
+    printf("  " C_CMD "@set f.fps.p=val" C_RST "  Write FPS parameter (alias: " C_CMD
+           "fpsset fps p v" C_RST ")\n");
     printf("\n");
-    printf(C_HDR "Milk Stream Metadata (@ Namespace):\n" C_RST);
+    printf(C_HDR "Milk Stream Metadata (@s.<name> shared / @l.<name> local):\n" C_RST);
     printf("  " C_CMD "@s.name.xsize" C_RST "      Stream width  (size[0])\n");
     printf("  " C_CMD "@s.name.ysize" C_RST "      Stream height (size[1])\n");
     printf("  " C_CMD "@s.name.zsize" C_RST "      Stream depth  (size[2])\n");
@@ -300,6 +302,7 @@ void help_topic_variables(void)
     printf("  " C_CMD "@s.name.pid" C_RST "        Creator PID\n");
     printf("  " C_CMD "@s.name.ownerPID" C_RST "   Owner PID\n");
     printf("  " C_CMD "@s.name.nelement" C_RST "   Total elements\n");
+    printf("  " C_CMD "@l.name.<attr>" C_RST "     Session-local image metadata\n");
     printf("\n");
 }
 
@@ -362,18 +365,18 @@ void help_topic_flowcontrol(void)
     printf("  " C_CMD "  echo $x" C_RST "\n");
     printf("  " C_CMD "done" C_RST "  interactive numbered menu\n");
     printf("\n");
-    printf(C_HDR "Stream Event:\n" C_RST);
-    printf("  " C_CMD "on_update <stream> { cmd }" C_RST "\n");
-    printf("  Waits for stream update then runs cmd\n");
+    printf(C_HDR "Stream & Process Events:\n" C_RST);
+    printf("  " C_CMD "@waitfor s.<name> [N] [-t sec]" C_RST
+           "  Wait for N new frames via SHM semaphore\n");
+    printf("  " C_CMD "@waitfor p.<name> [STATE] [-t]" C_RST
+           "  Wait for process state (IDLE/PAUSED/RUNNING)\n");
+    printf("  " C_CMD "@on [opts] <t...> -- <cmd>" C_RST
+           "      Reactive watcher (--once|--max-hz|--cooldown)\n");
     printf("\n");
     printf(C_HDR "Unified Event Wait:\n" C_RST);
-    printf("  " C_CMD "wait_any [-t T] "
-           "S:s F:f.p=v P:n:STATE" C_RST "\n");
-    printf("  Block until any event fires; "
-           "returns index as $?\n");
-    printf("  " C_NOTE "S:" C_RST "stream  " C_NOTE "F:" C_RST "fps.param  " C_NOTE "P:" C_RST
-           "proc:state\n");
-    printf("  Comparisons: " C_CMD "= != >= <=" C_RST " (e.g. F:dmcomb.gain>=0.5)\n");
+    printf("  " C_CMD "@waitany [-t T] s.<s1> s.<s2>" C_RST
+           "   Block until any listed stream updates\n");
+    printf("  " C_CMD "wait_any [-t T] S:s F:f.p=v P:n:STATE" C_RST "\n");
     printf("\n");
     printf(C_HDR "Engine Event Traps:\n" C_RST);
     printf("  " C_CMD "trap 'cmd' "
@@ -492,7 +495,7 @@ void help_topic_milk(void)
     printf(C_TITLE "          MILK-SPECIFIC FEATURES  (milk)\n" C_RST);
     printf(C_TITLE "========================================================\n" C_RST);
     printf("\n");
-    printf(C_HDR "Stream Metadata @s.<name>.<prop> namespace:\n" C_RST);
+    printf(C_HDR "Stream & Image Metadata (@s.<name> shared / @l.<name> local):\n" C_RST);
     printf("  " C_CMD "@s.name.xsize" C_RST "      Stream width  (size[0])\n");
     printf("  " C_CMD "@s.name.ysize" C_RST "      Stream height (size[1])\n");
     printf("  " C_CMD "@s.name.zsize" C_RST "      Stream depth  (size[2])\n");
@@ -506,23 +509,29 @@ void help_topic_milk(void)
     printf("  " C_CMD "@s.name.pid" C_RST "        Creator PID\n");
     printf("  " C_CMD "@s.name.ownerPID" C_RST "   Owner PID\n");
     printf("  " C_CMD "@s.name.nelement" C_RST "   Total elements\n");
+    printf("  " C_CMD "@l.name.<attr>" C_RST "     Session-local image metadata\n");
     printf("\n");
     printf(C_HDR "Waiting for Resources:\n" C_RST);
-    printf("  " C_CMD "waitfor_stream s T" C_RST "  Block up to T sec for SHM stream\n");
-    printf("  " C_CMD "waitfor_fps f T   " C_RST "  Block up to T sec for FPS\n");
-    printf("  " C_CMD "on_update <name> { cmd }" C_RST "  Trigger on stream write\n");
-    printf("  " C_CMD "wait_any [-t T] events" C_RST "  Multiplex S:/F:/P: events\n");
+    printf("  " C_CMD "@waitfor s.<s> [N] [-t T]" C_RST "  Wait for N new frames or stream init\n");
+    printf("  " C_CMD "@waitfor f.<f> [-t T]    " C_RST "  Wait for FPS SHM initialization\n");
+    printf("  " C_CMD "@waitfor p.<p> [ST] [-t] " C_RST "  Wait for process state (IDLE/PAUSED)\n");
+    printf("  " C_CMD "@waitany [-t T] s.<s1>..." C_RST "  Wait until any listed stream updates\n");
+    printf("  " C_CMD "@on [opts] <t...> -- cmd " C_RST "  Reactive watcher on stream/FPS/proc\n");
     printf("\n");
-    printf(C_HDR "Introspection (JSON):\n" C_RST);
-    printf("  " C_CMD "fpsdump --json <fps>" C_RST "  FPS params as JSON\n");
-    printf("  " C_CMD "fpslist --json      " C_RST "  FPS instances as JSON\n");
-    printf("  " C_CMD "streamlist --json   " C_RST "  Streams as JSON\n");
-    printf("  " C_CMD "proclist --json     " C_RST "  Processes as JSON\n");
-    printf("  " C_CMD "milkquery           " C_RST "  Unified system snapshot\n");
+    printf(C_HDR "Unified Entity Discovery & Introspection:\n" C_RST);
+    printf("  " C_CMD "@ls [--json|-1] [pat...] " C_RST
+           "  List streams (s.), local (l.), FPS (f.),\n");
+    printf("                           "
+           "  processes (p.), and sequencers (q.)\n");
+    printf("  " C_CMD "fpslist [--json] [pat]   " C_RST "  List FPS instances\n");
+    printf("  " C_CMD "streamlist [--json] [pat]" C_RST "  List shared-memory streams\n");
+    printf("  " C_CMD "proclist [--json]        " C_RST "  List active processes\n");
     printf("\n");
     printf(C_HDR "FPS Parameters:\n" C_RST);
-    printf("  " C_CMD "@fpsname.param   " C_RST "Read FPS parameter value\n");
-    printf("  " C_CMD "fpsset fps p v   " C_RST "Write FPS parameter\n");
+    printf("  " C_CMD "@get f.fps.param " C_RST "Read FPS parameter value (or " C_CMD
+           "@f.fps.param" C_RST ")\n");
+    printf("  " C_CMD "@set f.fps.p=val " C_RST "Write FPS parameter (alias: " C_CMD
+           "fpsset fps p v" C_RST ")\n");
     printf("  " C_CMD "fparam <fpsname> " C_RST "Interactive FPS parameter editor\n");
     printf("\n");
     printf(C_HDR "Stream Management:\n" C_RST);
@@ -570,7 +579,7 @@ void help_topic_bash(void)
     printf("\n");
     printf(C_HDR "2. Calling Milk Commands, Batching & Stream Modifiers:\n" C_RST);
     printf("  " C_CMD "@<cmd> [args...]            " C_RST "Run any milk command (e.g. " C_CMD
-           "@mk2Dim im1 128 128" C_RST ")\n");
+           "@mk2Dim s.im1 128 128" C_RST ")\n");
     printf("  " C_CMD "@<mod>.<cmd> [args...]      " C_RST "Module-qualified call (e.g. " C_CMD
            "@mem.listim" C_RST ")\n");
     printf("  " C_CMD "@<cmd> --async [args...]    " C_RST
@@ -581,8 +590,8 @@ void help_topic_bash(void)
            "Run |> pipeline in 1 round trip (chains '_' image)\n");
     printf("  " C_CMD "@hc [--sig|-s] <cmd> [pos]  " C_RST
            "Show command help or compact CLICMDARGDEF signature\n");
-    printf("  " C_CMD "@S:<name>  /  @L:<name>     " C_RST
-           "Force shared (/dev/shm) or local memory stream\n");
+    printf("  " C_CMD "s.<name>  /  l.<name>       " C_RST
+           "Force shared (/dev/shm) or local memory (also " C_CMD "@S: / @L:" C_RST ")\n");
     printf("  " C_CMD "@streamcat [-a arr] <s>     " C_RST
            "Bind pixels to array or stdout (or " C_CMD "| @streamwrite" C_RST ")\n");
     printf("\n");
@@ -594,14 +603,16 @@ void help_topic_bash(void)
     printf("              " C_CMD "@ 'im1[0:63, 0:63] = im2 * 0.5'" C_RST "\n");
     printf("              " C_CMD "@ -v rms 'irms(im1)'" C_RST "  |  " C_CMD
            "@calc -v ptv 'imax(im1)-imin(im1)'" C_RST "\n");
+    printf("  " C_CMD "@ls [-a arr|--json|-1] [pat]" C_RST
+           "Unified table/discovery across s., l., f., p., q.\n");
     printf("  " C_CMD "@get [-v|-a|-A|--json] <sp> " C_RST
-           "Read/discover stream (s.), FPS (f.), proc (p.), seq (q.)\n");
+           "Read/discover stream (s.), local (l.), FPS (f.), proc (p.), seq (q.)\n");
     printf("    " C_NOTE "Examples:" C_RST " " C_CMD "@get -v nx s.im1.xsize" C_RST "  |  " C_CMD
            "@get -a all 's.*'" C_RST "\n");
     printf("              " C_CMD "@get -A map 's.dm*.xsize'" C_RST "  |  " C_CMD
            "@get --json s.im1" C_RST "\n");
     printf("  " C_CMD "@set <s1>=<v1> [<s2>=<v2>]" C_RST
-           "  Write 1 or more FPS params/stream keywords (supports globs)\n");
+           "  Write 1 or more FPS params/stream keywords/proc ctrl (globs)\n");
     printf("    " C_NOTE "Examples:" C_RST " " C_CMD "@set f.ao.gain=0.25 f.ao.mult=0.99" C_RST
            "  |  " C_CMD "@set 'f.dm*.xsize' = 128" C_RST "\n");
     printf("  " C_CMD "@snapshot [-o f] [pat...]   " C_RST
@@ -615,13 +626,13 @@ void help_topic_bash(void)
     printf("  " C_CMD "@prompt [watch|preset|...]  " C_RST
            "Configure zero-subshell live telemetry prompt (PS1)\n");
     printf("  " C_CMD "@exists <entity>            " C_RST
-           "Exit 0 if stream/FPS/proc exists (" C_CMD "s.im1" C_RST ", " C_CMD "f.ao" C_RST ")\n");
+           "Exit 0 if stream/local/FPS/proc exists (" C_CMD "s.im1, l.im2, f.ao" C_RST ")\n");
     printf("  " C_CMD "@running <entity>           " C_RST
            "Exit 0 if FPS/proc is actively running\n");
     printf("  " C_CMD "@test '<expr>'              " C_RST "Boolean math/entity test (e.g. " C_CMD
            "if @test 'irms(im1) < 0.5'" C_RST ")\n");
     printf("  " C_CMD "@waitfor <tgt> [N] [-t sec] " C_RST
-           "Wait for N new frames or condition (" C_CMD "@waitfor s.im1 5 -t 2" C_RST ")\n");
+           "Wait for N new frames or proc state (" C_CMD "@waitfor s.im1 5 -t 2" C_RST ")\n");
     printf("  " C_CMD "@waitany <s1> <s2> [-t sec] " C_RST
            "Wait until any listed stream updates\n");
     printf("  " C_CMD "@grab [--fits f] <s> [N] [o]" C_RST
@@ -645,7 +656,10 @@ void help_topic_bash(void)
     printf("  " C_CMD "@s.im1.xsize / @f.ao.gain   " C_RST "Inline property expansion (e.g. " C_CMD
            "echo \"nx=@s.im1.xsize\"" C_RST ")\n");
     printf("  " C_CMD "@f.ao.gain=0.25             " C_RST "Direct parameter/keyword assignment\n");
-    printf("  " C_CMD "@{irms(im1) * 2}            " C_RST "Inline calculator substitution\n");
+    printf("  " C_CMD "@f.ao.runstart / @p.ao.pause" C_RST
+           "Direct FPS / processinfo action invocation\n");
+    printf("  " C_CMD "${ _milk_get s.im1.xsize; } " C_RST
+           "Bash 5.3 zero-fork funsub (translated from @{s.im1.xsize})\n");
     printf("  " C_CMD "@ im1[0:9, 0:9] = 10        " C_RST
            "Unquoted calculator expression statement\n");
     printf("\n");
@@ -666,11 +680,11 @@ static void help_topic_streams(void)
     printf(C_TITLE "       IMAGESTREAMIO SHARED MEMORY STREAMS (streams)\n" C_RST);
     printf(C_TITLE "========================================================\n" C_RST);
     printf("\n");
-    printf(C_HDR "1. Stream Modifiers & Slicing (IMGID Prefix Syntax):\n" C_RST);
-    printf("  " C_CMD "@S:<name>              " C_RST
+    printf(C_HDR "1. Stream Namespaces, Modifiers & Slicing:\n" C_RST);
+    printf("  " C_CMD "s.<name>  /  @S:<name> " C_RST
            "Force shared memory (/dev/shm/<name>.im.shm)\n");
-    printf("  " C_CMD "@L:<name>              " C_RST "Force session-local memory\n");
-    printf("  " C_CMD "@E:<name>  /  @N:<name>" C_RST
+    printf("  " C_CMD "l.<name>  /  @L:<name> " C_RST "Force session-local memory\n");
+    printf("  " C_CMD "@E:<name> /  @N:<name> " C_RST
            "Require existing stream / require new stream\n");
     printf("  " C_CMD "@F:<name>              " C_RST "Auto-load <name>.fits on demand\n");
     printf("  " C_CMD "@TF32:<name> / @TU16:.." C_RST
@@ -678,20 +692,22 @@ static void help_topic_streams(void)
     printf("  " C_CMD "<name>[x0:x1, y0:y1]   " C_RST
            "Sub-region / slice view in expressions & commands\n");
     printf("\n");
-    printf(C_HDR "2. Session @ Primitives for Streams:\n" C_RST);
+    printf(C_HDR "2. Session @ Primitives for Streams & Local Images:\n" C_RST);
+    printf("  " C_CMD "@ls s.*  /  @ls l.*    " C_RST
+           "List shared-memory streams or session-local images\n");
     printf("  " C_CMD "@get s.<name>.<attr>   " C_RST
            "Read metadata: xsize, ysize, zsize, naxis,\n");
     printf("                         cnt0, cnt1, dtype, location, shared, inode,\n");
     printf("                         fps, age, owner_pid, summary, json, kw.<KEY>\n");
-    printf("  " C_CMD "@get 's.*' / 's.dm*.xsize'" C_RST
-           " Discover SHM streams or glob-query attributes\n");
+    printf("  " C_CMD "@get l.<name>.<attr>   " C_RST
+           "Read session-local image metadata or keywords\n");
     printf("  " C_CMD "@set s.<glob>.kw.<K>=V " C_RST
-           "Create/update FITS keyword (supports entity globs)\n");
+           "Create/update FITS keyword (supports s. and l. globs)\n");
     printf("  " C_CMD "@assert [flags] s.<n>  " C_RST
            "Assert stream health (--running, --fps-min, --max-age, --dim)\n");
     printf("  " C_CMD "@exists [-r] s.<name>  " C_RST
-           "Check if stream exists (or writer is alive)\n");
-    printf("  " C_CMD "@waitfor <name> [N]    " C_RST
+           "Check if stream/image exists (or writer is alive)\n");
+    printf("  " C_CMD "@waitfor s.<name> [N]  " C_RST
            "Wait for N new frames (-t <sec>, --cnt <target>)\n");
     printf("  " C_CMD "@grab [--fits f] <s> N " C_RST
            "Capture 1/N frames to cube or FITS (--timestamps)\n");
@@ -722,16 +738,18 @@ static void help_topic_fps(void)
     printf(C_TITLE "========================================================\n" C_RST);
     printf("\n");
     printf(C_HDR "1. Session @ Primitives for FPS:\n" C_RST);
+    printf("  " C_CMD "@ls f.*                " C_RST
+           "List active FPS instances with status, PIDs, and param counts\n");
     printf("  " C_CMD "@get f.<name>.<param>  " C_RST
            "Read any parameter value from /dev/shm/<name>.fps.shm\n");
     printf("  " C_CMD "@get f.<name>.<attr>   " C_RST
-           "Read metadata: status, conf, run, pid, nbparam, list\n");
+           "Read metadata: status (IDLE/CONF/RUN), conf, run, pid, nbparam, list\n");
     printf("  " C_CMD "@set f.<glob>.<p> = V  " C_RST
            "Set parameter(s) (supports globs & multi-assignment)\n");
     printf("  " C_CMD "@set f.<name>.conf = X " C_RST
-           "Control CONF process: start | stop | step (or :tmux)\n");
+           "Control CONF process: start | stop | step (or @f.<name>.confstart)\n");
     printf("  " C_CMD "@set f.<name>.run  = X " C_RST
-           "Control RUN process:  start | stop (or :tmux)\n");
+           "Control RUN process:  start | stop (or @f.<name>.runstart)\n");
     printf("  " C_CMD "@snapshot / @diff / @restore" C_RST
            " Save, compare, or restore FPS/stream state snapshots\n");
     printf("  " C_CMD "@exists [-r] f.<name>  " C_RST
@@ -759,14 +777,21 @@ static void help_topic_procinfo(void)
     printf(C_TITLE "========================================================\n" C_RST);
     printf("\n");
     printf(C_HDR "1. Session @ Primitives for Processinfo:\n" C_RST);
+    printf("  " C_CMD "@ls p.*                " C_RST
+           "List active processes with PID, status, loopcnt, and rate\n");
     printf("  " C_CMD "@get p.<name>.<attr>   " C_RST
            "Read telemetry: PID, loopcnt, loopcntMax, cnt0,\n");
-    printf("                         status, ctrlval, triggermode, triggerstream,\n");
-    printf("                         dt_median_ns, msg\n");
-    printf("  " C_CMD "@set p.<name>.ctrlval=N" C_RST
-           "Control loop: 0=run, 1=pause, 2=step, 3=exit\n");
+    printf("                         status (RUNNING/PAUSED/STEPPING/STOPPED/CRASHED),\n");
+    printf("                         ctrl, ctrlval, triggermode, triggerstream,\n");
+    printf("                         dt_median_ns, fps_hz, msg\n");
+    printf("  " C_CMD "@set p.<name>.ctrl = X " C_RST
+           "Control loop: run | pause | step | stop (or 0..3)\n");
+    printf("  " C_CMD "@p.<name>.pause|.resume|.step|.stop" C_RST
+           " Action-property shorthand for loop control\n");
     printf("  " C_CMD "@set p.<name>.triggermode=M" C_RST
            " Set trigger mode (IMMEDIATE, SEMAPHORE, CNT0, DELAY...)\n");
+    printf("  " C_CMD "@waitfor p.<name> [ST] " C_RST
+           "Wait until process reaches state (IDLE, PAUSED, RUNNING)\n");
     printf("  " C_CMD "@running p.<name>      " C_RST
            "Exit 0 if processinfo exists and PID is alive\n");
     printf("\n");
