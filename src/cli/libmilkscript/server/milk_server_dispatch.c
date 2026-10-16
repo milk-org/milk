@@ -42,6 +42,7 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "cli_calc_parser.h"
 #include "milk_shm_prop.h"
+#include "milk_ipc_common.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
 #include "milk_srvlog.h"
@@ -131,10 +132,7 @@ static void *call_watcher_thread(void *arg)
             int cfd = accept4(ctx->listen_fd, NULL, NULL, SOCK_CLOEXEC);
             if (cfd >= 0)
             {
-                struct ucred cred;
-                socklen_t    clen = sizeof(cred);
-                if (getsockopt(cfd, SOL_SOCKET, SO_PEERCRED, &cred, &clen) == 0 &&
-                    cred.uid == getuid())
+                if (milk_ipc_peer_is_self(cfd))
                 {
                     pid_t pid = fork();
                     if (pid == 0)

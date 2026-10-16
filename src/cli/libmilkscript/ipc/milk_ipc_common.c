@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
@@ -78,6 +79,87 @@ static void get_shell_override_file(const milk_client_hooks_t *hooks, char *out,
     snprintf(out, outsz, "%s/.milk_active_sock_%u_%d", tmpdir, (unsigned) getuid(), shell_pid);
 }
 
+/** is_identifier() - 1 if @name matches [A-Za-z_][A-Za-z0-9_]*. */
+static int is_identifier(const char *name)
+{
+    if (name == NULL || !(isalpha((unsigned char) name[0]) || name[0] == '_'))
+    {
+        return 0;
+    }
+    for (const char *c = name; *c; c++)
+    {
+        if (!(isalnum((unsigned char) *c) || *c == '_'))
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/**
+ * settable_var_name() - 1 if @name is a plain identifier that does not steer the shell itself.
+ */
+static int settable_var_name(const char *name)
+{
+    static const char *const deny[] = {
+        "PATH", "PROMPT_COMMAND", "IFS",      "ENV", "PS0", "PS1", "PS2", "PS3",
+        "PS4",  "SHELLOPTS",      "BASHOPTS", NULL
+    };
+    static const char *const deny_pfx[] = { "BASH_", "LD_", NULL };
+
+    if (!is_identifier(name))
+    {
+        return 0;
+    }
+    for (int i = 0; deny[i] != NULL; i++)
+    {
+        if (strcmp(name, deny[i]) == 0)
+        {
+            return 0;
+        }
+    }
+    for (int i = 0; deny_pfx[i] != NULL; i++)
+    {
+        if (strncmp(name, deny_pfx[i], strlen(deny_pfx[i])) == 0)
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/**
+ * write_eval_assignment() - write `[export ]name='val'` to @fd, single-quote escaping @val.
+ */
+static void write_eval_assignment(int fd, const char *name, const char *val, int do_export)
+{
+    size_t cap  = strlen(name) + 4 * strlen(val) + 16;
+    char  *line = (char *) malloc(cap);
+    if (line == NULL)
+    {
+        return;
+    }
+    size_t n = (size_t) snprintf(line, cap, "%s%s='", do_export ? "export " : "", name);
+    for (const char *c = val; *c; c++)
+    {
+        if (*c == '\'')
+        {
+            memcpy(line + n, "'\\''", 4);
+            n += 4;
+        }
+        else
+        {
+            line[n++] = *c;
+        }
+    }
+    memcpy(line + n, "'\n", 2);
+    n += 2;
+    if (write(fd, line, n) < 0)
+    {
+    }
+    free(line);
+}
+
 /**
  * @brief Set a variable in the calling shell, process environment, and eval FD.
  *
@@ -92,7 +174,13 @@ void milk_ipc_set_var(const milk_client_hooks_t *hooks,
                       int                        export_in_eval_fd)
 {
     const char *safe_val = (val != NULL) ? val : "";
-    if (name != NULL && strcmp(name, "MILKCLI_SOCK") == 0)
+    if (!settable_var_name(name))
+    {
+        fprintf(stderr, "milk: refusing to set shell variable %s\n",
+                is_identifier(name) ? name : "(invalid name)");
+        return;
+    }
+    if (strcmp(name, "MILKCLI_SOCK") == 0)
     {
         char ovfile[512];
         char def_local[128];
@@ -108,7 +196,7 @@ void milk_ipc_set_var(const milk_client_hooks_t *hooks,
         }
         else
         {
-            int fd = open(ovfile, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+            int fd = open(ovfile, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC | O_NOFOLLOW, 0600);
             if (fd >= 0)
             {
                 if (write(fd, safe_val, strlen(safe_val)) < 0)
@@ -134,15 +222,7 @@ void milk_ipc_set_var(const milk_client_hooks_t *hooks,
         int efd = atoi(eval_fd_str);
         if (efd > 2)
         {
-            char line[512];
-            int  n = snprintf(line, sizeof(line), "%s%s='%s'\n", export_in_eval_fd ? "export " : "",
-                              name, safe_val);
-            if (n > 0 && n < (int) sizeof(line))
-            {
-                if (write(efd, line, (size_t) n) < 0)
-                {
-                }
-            }
+            write_eval_assignment(efd, name, safe_val, export_in_eval_fd);
         }
     }
     setenv(name, safe_val, 1);
@@ -186,7 +266,13 @@ void milk_ipc_resolve_sockpath(const milk_client_hooks_t *hooks,
 {
     char ovfile[512];
     get_shell_override_file(hooks, ovfile, sizeof(ovfile));
-    int fd = open(ovfile, O_RDONLY | O_CLOEXEC);
+    int         fd = open(ovfile, O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+    struct stat st;
+    if (fd >= 0 && (fstat(fd, &st) != 0 || st.st_uid != getuid() || (st.st_mode & 022) != 0))
+    {
+        close(fd); // not ours, or writable by others: never trust it
+        fd = -1;
+    }
     if (fd >= 0)
     {
         char    buf[256];
@@ -292,6 +378,13 @@ int milk_ipc_is_numeric_str(const char *s)
     return 1;
 }
 
+int milk_ipc_peer_is_self(int fd)
+{
+    struct ucred cred;
+    socklen_t    clen = sizeof(cred);
+    return getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &clen) == 0 && cred.uid == getuid();
+}
+
 /**
  * @brief Attempt a single non-retrying UNIX domain socket `connect()`.
  *
@@ -313,6 +406,13 @@ int milk_ipc_connect_once(const char *sockpath)
     }
     if (connect(fd, (struct sockaddr *) &addr, addrlen) != 0)
     {
+        close(fd);
+        return -1;
+    }
+    if (!milk_ipc_peer_is_self(fd))
+    {
+        // abstract socket names are global: another user may have claimed ours
+        fprintf(stderr, "milk: ignoring server at %s: it runs as another user\n", sockpath);
         close(fd);
         return -1;
     }

@@ -41,6 +41,7 @@
 
 #include "CLIcore.h"
 #include "milk_shm_prop.h"
+#include "milk_ipc_common.h"
 #include "milk_proto.h"
 #include "milk_server.h"
 #include "milk_server_internal.h"
@@ -840,9 +841,7 @@ void milk_server_accept_and_handle(int listen_fd, int *shutdown_flag)
         return;
     }
 
-    struct ucred cred;
-    socklen_t    clen = sizeof(cred);
-    if (getsockopt(client_fd, SOL_SOCKET, SO_PEERCRED, &cred, &clen) != 0 || cred.uid != getuid())
+    if (!milk_ipc_peer_is_self(client_fd))
     {
         close(client_fd);
         return;

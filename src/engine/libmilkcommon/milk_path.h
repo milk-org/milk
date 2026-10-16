@@ -9,4 +9,6 @@
 
 void milkpath_resolve_realpath(char *dest, size_t destsize, const char *path);
 
+int milkpath_shell_quote(char *dest, size_t destsize, const char *src);
+
 #endif

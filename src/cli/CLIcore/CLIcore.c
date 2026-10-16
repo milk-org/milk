@@ -851,8 +851,13 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             }
             else if (data.fifoON == 1)
             {
-                EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s > %s 2> /dev/null", CLIstartupfilename,
-                                               data.fifoname);
+                char qfile[2 * STRINGMAXLEN_CLISTARTUPFILENAME + 8];
+                char qfifo[4 * STRINGMAXLEN_FULLFILENAME + 8];
+                if (milkpath_shell_quote(qfile, sizeof(qfile), CLIstartupfilename) == 0 &&
+                    milkpath_shell_quote(qfifo, sizeof(qfifo), data.fifoname) == 0)
+                {
+                    EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s > %s 2> /dev/null", qfile, qfifo);
+                }
 
                 if (dcquiet == 0)
                 {

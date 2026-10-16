@@ -129,6 +129,20 @@ if [[ -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" ]] && ! grep -q "libmilk.*(dele
 fi
 
 if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
+    # run milk-call with an eval fd and source the variable assignments it writes back
+    _milk_call_eval() {
+        local eval_file rc=0
+        eval_file="$(mktemp "${TMPDIR:-/tmp}/.milk_eval.XXXXXX")" || return 1
+        exec {__milk_efd}>"${eval_file}"
+        MILK_CALL_EVAL_FD="${__milk_efd}" "${MILK_INSTALLDIR}/bin/milk-call" "$@" || rc=$?
+        exec {__milk_efd}>&-
+        if [[ -s "${eval_file}" ]]; then
+            # shellcheck disable=SC1090
+            source "${eval_file}"
+        fi
+        rm -f "${eval_file}"
+        return ${rc}
+    }
     milkcall() {
         if [[ "${1:-}" == "streamcat" ]]; then
             local _aname=""
@@ -150,17 +164,7 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
             fi
             set -- "${_fargs[@]}"
         fi
-        local eval_file="${TMPDIR:-/tmp}/.milk_eval_$$_${BASHPID}"
-        local rc=0
-        exec {__milk_efd}>"${eval_file}"
-        MILK_CALL_EVAL_FD="${__milk_efd}" "${MILK_INSTALLDIR}/bin/milk-call" call "$@" || rc=$?
-        exec {__milk_efd}>&-
-        if [[ -s "${eval_file}" ]]; then
-            # shellcheck disable=SC1090
-            source "${eval_file}"
-        fi
-        rm -f "${eval_file}"
-        return ${rc}
+        _milk_call_eval call "$@"
     }
     milkget() {
         if [[ "${1:-}" == "-v" && -n "${2:-}" ]]; then
@@ -218,8 +222,8 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
             _vname="$2"
             shift 2
         fi
-        local eval_file="${TMPDIR:-/tmp}/.milk_eval_$$_${BASHPID}"
-        local rc=0
+        local eval_file rc=0
+        eval_file="$(mktemp "${TMPDIR:-/tmp}/.milk_eval.XXXXXX")" || return 1
         exec {__milk_efd}>"${eval_file}"
         if [[ -n "${_vname}" ]]; then
             local _val
@@ -244,19 +248,7 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
     milkgrab()     { "${MILK_INSTALLDIR}/bin/milk-call" grab "$@"; }
     milkcomplete() { "${MILK_INSTALLDIR}/bin/milk-call" complete "$@"; }
     milkshutdown() { "${MILK_INSTALLDIR}/bin/milk-call" shutdown "$@"; }
-    milkserver() {
-        local eval_file="${TMPDIR:-/tmp}/.milk_eval_$$_${BASHPID}"
-        local rc=0
-        exec {__milk_efd}>"${eval_file}"
-        MILK_CALL_EVAL_FD="${__milk_efd}" "${MILK_INSTALLDIR}/bin/milk-call" server "$@" || rc=$?
-        exec {__milk_efd}>&-
-        if [[ -s "${eval_file}" ]]; then
-            # shellcheck disable=SC1090
-            source "${eval_file}"
-        fi
-        rm -f "${eval_file}"
-        return ${rc}
-    }
+    milkserver() { _milk_call_eval server "$@"; }
     milklog()      { "${MILK_INSTALLDIR}/bin/milk-call" log "$@"; }
 fi
 

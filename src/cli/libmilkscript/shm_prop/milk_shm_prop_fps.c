@@ -33,6 +33,7 @@
 #include "fps_tmux.h"
 #include "milk_shm_prop.h"
 #include "milk_shm_prop_internal.h"
+#include "milk_path.h"
 
 /**
  * @brief Read an FPS parameter, metadata attribute, or parameter list (`*` / `list`).
@@ -386,8 +387,18 @@ static int try_fps_lifecycle_action(FPS        *fps,
 
     if (has_exec)
     {
-        char cmdline[1024];
-        snprintf(cmdline, sizeof(cmdline), "%s %s:%s", fps->md->execfullpath, fpsname, command);
+        char arg[512];
+        char qexec[1024];
+        char qarg[1024];
+        char cmdline[2100];
+        snprintf(arg, sizeof(arg), "%s:%s", fpsname, command);
+        if (milkpath_shell_quote(qexec, sizeof(qexec), fps->md->execfullpath) != 0 ||
+            milkpath_shell_quote(qarg, sizeof(qarg), arg) != 0)
+        {
+            *out_rc = -1;
+            return 1;
+        }
+        snprintf(cmdline, sizeof(cmdline), "%s %s", qexec, qarg);
         int ret = system(cmdline);
         *out_rc = (ret != -1 && WIFEXITED(ret) && WEXITSTATUS(ret) == 0) ? 0 : -1;
         return 1;

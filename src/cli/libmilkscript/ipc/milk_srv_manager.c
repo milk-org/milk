@@ -33,6 +33,7 @@
 
 #include "milk_ipc_common.h"
 #include "milk_srvlog.h"
+#include "milk_path.h"
 
 extern void milk_srvlog_get_dir(char *out, size_t outsz);
 
@@ -107,12 +108,33 @@ static int start_named_server(const char *srv_name, int use_tmux, const milk_cli
         char shmdir[256];
         milk_srvlog_get_dir(shmdir, sizeof(shmdir));
 
-        char cmd[2048];
+        // every value is quoted once for the shell tmux runs, then the whole command once more
+        char qsess[300];
+        char qshm[1100];
+        char qbin[2100];
+        char qsock[600];
+        char inner[4200];
+        char qinner[17000];
+        char cmd[17700];
+        if (milkpath_shell_quote(qsess, sizeof(qsess), tmux_sess) != 0 ||
+            milkpath_shell_quote(qshm, sizeof(qshm), shmdir) != 0 ||
+            milkpath_shell_quote(qbin, sizeof(qbin), binpath) != 0 ||
+            milkpath_shell_quote(qsock, sizeof(qsock), sockpath) != 0)
+        {
+            fprintf(stderr, "ERROR: @server: tmux launch arguments too long\n");
+            return 1;
+        }
+        snprintf(inner, sizeof(inner),
+                 "MILK_SHM_DIR=%s MILK_SRV_NAMED=1 MILK_SRV_TMUX=%s %s -q --server %s", qshm, qsess,
+                 qbin, qsock);
+        if (milkpath_shell_quote(qinner, sizeof(qinner), inner) != 0)
+        {
+            fprintf(stderr, "ERROR: @server: tmux launch arguments too long\n");
+            return 1;
+        }
         snprintf(cmd, sizeof(cmd),
-                 "tmux kill-session -t %s 2>/dev/null || true; "
-                 "tmux new-session -d -s %s \"MILK_SHM_DIR='%s' MILK_SRV_NAMED=1 "
-                 "MILK_SRV_TMUX='%s' '%s' -q --server '%s'\"",
-                 tmux_sess, tmux_sess, shmdir, tmux_sess, binpath, sockpath);
+                 "tmux kill-session -t %s 2>/dev/null || true; tmux new-session -d -s %s %s", qsess,
+                 qsess, qinner);
         if (system(cmd) != 0)
         {
             fprintf(stderr, "ERROR: @server: failed to launch tmux session '%s'\n", tmux_sess);

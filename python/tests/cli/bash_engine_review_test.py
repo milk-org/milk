@@ -642,7 +642,7 @@ class _Server:
             start_new_session=True,
         )
         for _ in range(100):
-            if _milk_call(self.env, "ping", timeout=2).returncode == 0:
+            if _milk_call(self.env, "call", "pwd", timeout=2).returncode == 0:
                 break
             time.sleep(0.05)
 
@@ -824,10 +824,6 @@ def test_S8_transport_error_distinct_rc(tmp_path):
     assert res.stderr.strip() != ""
 
 
-@bug(
-    "Sec1",
-    "client accepts SETVAR of arbitrary variables from an unauthenticated server",
-)
 def test_Sec1_setvar_not_trusted(tmp_path):
     env, name = _server_env(tmp_path)
     fake = _fake_server(name, "setvar")
@@ -848,9 +844,37 @@ def test_Sec1_setvar_not_trusted(tmp_path):
     assert "path=/evil" not in res.stdout
 
 
-@bug(
-    "Sec2", "eval-fd values written without escaping -> command injection when sourced"
-)
+def test_Sec1_override_file_must_be_private(server, tmp_path):
+    """The per-shell socket override file is honoured only if it is ours, private and not a symlink."""
+    server.call("call", "mk2Dim", "@L:wp6mark", "2", "2")
+    fake = f"@milk-cli-{os.getuid()}-wp6fake-{os.getpid()}"
+    env = dict(
+        server.env, MILKCLI_SOCK=fake
+    )  # the override file points at the real server
+    script = r"""
+ov="$TMPDIR/.milk_active_sock_$(id -u)_$$"
+printf %s "$1" > "$ov.real"
+case "$2" in
+    private) mv "$ov.real" "$ov"; chmod 600 "$ov" ;;
+    shared)  mv "$ov.real" "$ov"; chmod 666 "$ov" ;;
+    link)    ln -s "$ov.real" "$ov" ;;
+esac
+milk-call exists l.wp6mark >/dev/null 2>&1
+echo "rc=$?"
+rm -f "$ov" "$ov.real"
+"""
+    rcs = {}
+    try:
+        for mode in ("private", "shared", "link"):
+            res = _run(["bash", "-c", script, "_", server.name, mode], env, 15)
+            rcs[mode] = value(res.stdout, "rc")
+    finally:
+        _kill_by_cmdline(fake)
+    assert rcs["private"] == "0"  # honoured -> real server, which has the marker image
+    assert rcs["shared"] not in (None, "0")  # world-writable -> ignored
+    assert rcs["link"] not in (None, "0")  # symlink -> ignored
+
+
 def test_Sec2_eval_fd_escaping(server, tmp_path):
     evf = tmp_path / "eval.out"
     payload = "s3 = \"a'$(echo PWNED >&2)'b\""

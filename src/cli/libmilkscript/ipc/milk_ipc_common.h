@@ -85,6 +85,11 @@ void milk_ipc_resolve_cli_bin(const milk_client_hooks_t *hooks, char *out, size_
 int milk_ipc_is_numeric_str(const char *s);
 
 /**
+ * @brief Return 1 if the process at the other end of UNIX socket @fd runs under our uid.
+ */
+int milk_ipc_peer_is_self(int fd);
+
+/**
  * @brief Attempt a single non-retrying UNIX domain socket `connect()`.
  *
  * @param sockpath Abstract (`@name`) or filesystem UNIX socket path
