@@ -175,8 +175,9 @@ def test_unknown_option_errors_cleanly():
 def test_function_recursion_bounded(tmp_path):
     script = tmp_path / "rec_func.milk"
     script.write_text("function rec {\n    rec\n}\nrec\n")
-    _, out = run_milk(["-s", str(script)])
-    assert "recursion" in out.lower()
+    rc, out = run_milk(["-s", str(script)])
+    assert "maximum function nesting level exceeded" in out
+    assert rc == 1
 
 
 def test_source_recursion_bounded(tmp_path):

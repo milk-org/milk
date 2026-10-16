@@ -390,7 +390,6 @@ def test_C2_time_does_not_deadlock(tmp_path):
     assert "after" in res.stdout
 
 
-@bug("C3", "Ctrl-C SIGKILLs the process group and silently respawns bash")
 def test_C3_ctrl_c_keeps_shell_state(tmp_path):
     out = pty_session(
         [
@@ -404,7 +403,6 @@ def test_C3_ctrl_c_keeps_shell_state(tmp_path):
     assert "x=[5]" in out
 
 
-@bug("C4", "in-process CALL clobbers REPL fault isolation; later ^C ignored")
 def test_C4_ctrl_c_after_milk_call(tmp_path):
     out = pty_session(
         [
@@ -422,7 +420,6 @@ def test_C4_ctrl_c_after_milk_call(tmp_path):
     assert "done=1" in out
 
 
-@bug("C5", "bash coproc in background pgrp: `read` from tty stops it (SIGTTIN)")
 def test_C5_read_from_tty(tmp_path):
     out = pty_session(
         [("line", 'read v; echo "got=[$v]"', 0.5), ("line", "hello", 1.0)], tmp_path
@@ -430,17 +427,29 @@ def test_C5_read_from_tty(tmp_path):
     assert "got=[hello]" in out
 
 
-@bug("C6", "bash death detected only by EOF on inherited fd 199")
 def test_C6_bash_death_detected_promptly(tmp_path):
+    """milk-cli itself exits at once (a background child keeps the output pipes open, so time the process)."""
+    env, _ = _env()
+    (tmp_path / "s.milk").write_text("sleep 8 &\nkill -9 $$\n")
     t0 = time.time()
-    milk_cli_script("sleep 8 &\nkill -9 $$", tmp_path, timeout=15)
-    assert time.time() - t0 < 4
+    p = subprocess.Popen(
+        [MILK_CLI_EXEC, "-s", str(tmp_path / "s.milk")],
+        env=env,
+        cwd=tmp_path,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        rc = p.wait(timeout=15)
+        assert time.time() - t0 < 4
+        assert rc == 137
+    finally:
+        _kill_session(p.pid)
+    assert "killed by signal 9" in p.stderr.read()
 
 
-@bug(
-    "C7",
-    "shutdown stops servicing the socket after 5 s -> milk calls from EXIT traps deadlock",
-)
 def test_C7_slow_exit_trap_can_call_milk(tmp_path):
     res = milk_cli_script(
         "trap 'sleep 6; @calc -v z 1+1; echo \"deferdone=$z\"' EXIT\necho start",
@@ -451,10 +460,59 @@ def test_C7_slow_exit_trap_can_call_milk(tmp_path):
     assert value(res.stdout, "deferdone") == "2"
 
 
-@bug("C8", "REPL idle select() does not service the server socket")
 def test_C8_background_job_served_while_idle(tmp_path):
     out = pty_session([("line", '(@calc -v q 1+1; echo "bg=$q") &', 2.5)], tmp_path)
     assert "bg=2" in out
+
+
+def test_WP10_ctrl_c_during_milk_command(tmp_path):
+    out = pty_session(
+        [
+            ("line", "@usleep 5000000; echo after=$((0+1))", 1.0),
+            ("raw", "\x03", 1.0),
+            ("line", 'echo "next=$((6*7))"', 1.0),
+        ],
+        tmp_path,
+    )
+    assert "after=1" not in out
+    assert "next=42" in out
+
+
+def test_WP10_ctrl_c_spares_background_jobs(tmp_path):
+    out = pty_session(
+        [
+            ("line", "sleep 30 & bgp=$!", 0.5),
+            ("line", "sleep 5", 0.5),
+            ("raw", "\x03", 1.0),
+            ("line", 'kill -0 $bgp && echo "bgalive=1"; kill $bgp', 1.0),
+        ],
+        tmp_path,
+    )
+    assert "bgalive=1" in out
+
+
+def test_WP10_milk_script_sigint_does_not_orphan_bash(tmp_path):
+    env, _ = _env()
+    (tmp_path / "ms.milk").write_text("sleep 20\necho after\n")
+    p = subprocess.Popen(
+        [str(_install_dir() / "bin" / "milk-script"), "-q", str(tmp_path / "ms.milk")],
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        time.sleep(1.5)
+        os.kill(p.pid, signal.SIGINT)
+        rc = p.wait(timeout=5)
+        time.sleep(0.3)
+        left = _session_pids(p.pid)
+    finally:
+        _kill_session(p.pid)
+    assert rc == 130
+    assert "after" not in p.stdout.read()
+    assert left == []
 
 
 def test_C9_milk_script_runs_milk_commands(tmp_path):

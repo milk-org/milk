@@ -20,6 +20,8 @@
 #endif
 
 #include <dlfcn.h>
+#include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -78,7 +80,6 @@ typedef int (*bash_parse_and_execute_fn)(char *, const char *, int);
 static bash_bind_variable_fn     fn_bind_variable     = NULL;
 static bash_get_string_value_fn  fn_get_string_value  = NULL;
 static bash_parse_and_execute_fn fn_parse_and_execute = NULL;
-static volatile int             *ptr_interrupt_state  = NULL;
 static int                       g_syms_resolved      = 0;
 
 static void resolve_bash_symbols(void)
@@ -91,7 +92,6 @@ static void resolve_bash_symbols(void)
     fn_bind_variable     = (bash_bind_variable_fn) dlsym(RTLD_DEFAULT, "bind_variable");
     fn_get_string_value  = (bash_get_string_value_fn) dlsym(RTLD_DEFAULT, "get_string_value");
     fn_parse_and_execute = (bash_parse_and_execute_fn) dlsym(RTLD_DEFAULT, "parse_and_execute");
-    ptr_interrupt_state  = (volatile int *) dlsym(RTLD_DEFAULT, "interrupt_state");
 }
 
 static const char *bash_hook_get_var(const char *name, void *ctx)
@@ -141,14 +141,12 @@ static void bash_hook_def_cmd(const char *cmdname, void *ctx)
     }
 }
 
+static volatile sig_atomic_t g_sigint_pending = 0; /* SIGINT taken by the client, owed to bash */
+
 static void bash_hook_on_sigint(void *ctx)
 {
     (void) ctx;
-    resolve_bash_symbols();
-    if (ptr_interrupt_state != NULL)
-    {
-        (*ptr_interrupt_state)++;
-    }
+    g_sigint_pending = 1;
 }
 
 static void make_bash_hooks(milk_client_hooks_t *hooks)
@@ -727,6 +725,23 @@ static int milklog_builtin(WORD_LIST *list)
  * milktranslate_builtin() - `milktranslate -v VAR FILE`: translate a milk script into a private
  * command file and bind its path to VAR (no fork); `milktranslate --done PATH` removes it.
  */
+/** milkcloexec FD... - mark the engine's pipe fds close-on-exec so bash's children do not inherit them. */
+static int milkcloexec_builtin(WORD_LIST *list)
+{
+    int rc = 0;
+    for (WORD_LIST *w = list; w != NULL; w = w->next)
+    {
+        char *end = NULL;
+        long  fd  = strtol(w->word->word, &end, 10);
+        int fl = (end != w->word->word && *end == '\0' && fd >= 0) ? fcntl((int) fd, F_GETFD) : -1;
+        if (fl < 0 || fcntl((int) fd, F_SETFD, fl | FD_CLOEXEC) != 0)
+        {
+            rc = 1;
+        }
+    }
+    return rc;
+}
+
 static int milktranslate_builtin(WORD_LIST *list)
 {
     char **argv = NULL;
@@ -894,41 +909,73 @@ static char *const milkshutdown_doc[] = { "Shut down the session milk-cli --serv
 static char *const milkserver_doc[]   = { "Manage milk-cli servers (@server).", NULL };
 static char *const milklog_doc[] = { "Inspect or search the milk server SHM log (@log).", NULL };
 static char *const milkls_doc[]  = { "List active milk entities (@ls).", NULL };
+static char *const milkcloexec_doc[]   = { "Mark file descriptors close-on-exec.", NULL };
 static char *const milktranslate_doc[] = { "Translate a milk script into a private file to source.",
                                            NULL };
 
-struct builtin milkcall_struct = { "milkcall",   milkcall_builtin,           BUILTIN_ENABLED,
+/* Builtin entry points: a SIGINT the client caught is re-raised once bash's handler is back, so bash
+ * reacts to it (INT trap, or aborting the command line) as if it had received it. */
+#define MILK_BUILTIN_ENTRY(fn)             \
+    static int fn##_entry(WORD_LIST *list) \
+    {                                      \
+        int rc = fn(list);                 \
+        if (g_sigint_pending)              \
+        {                                  \
+            g_sigint_pending = 0;          \
+            raise(SIGINT);                 \
+        }                                  \
+        return rc;                         \
+    }
+MILK_BUILTIN_ENTRY(milkcall_builtin)
+MILK_BUILTIN_ENTRY(milkget_builtin)
+MILK_BUILTIN_ENTRY(milkset_builtin)
+MILK_BUILTIN_ENTRY(milkcalc_builtin)
+MILK_BUILTIN_ENTRY(milktest_builtin)
+MILK_BUILTIN_ENTRY(milkexists_builtin)
+MILK_BUILTIN_ENTRY(milkwaitfor_builtin)
+MILK_BUILTIN_ENTRY(milkwaitany_builtin)
+MILK_BUILTIN_ENTRY(milkgrab_builtin)
+MILK_BUILTIN_ENTRY(milkcomplete_builtin)
+MILK_BUILTIN_ENTRY(milkshutdown_builtin)
+MILK_BUILTIN_ENTRY(milkserver_builtin)
+MILK_BUILTIN_ENTRY(milklog_builtin)
+MILK_BUILTIN_ENTRY(milkls_builtin)
+
+struct builtin milkcall_struct = { "milkcall",   milkcall_builtin_entry,     BUILTIN_ENABLED,
                                    milkcall_doc, "milkcall <cmd> [args...]", 0 };
 
 struct builtin milkget_struct = { "milkget",
-                                  milkget_builtin,
+                                  milkget_builtin_entry,
                                   BUILTIN_ENABLED,
                                   milkget_doc,
                                   "milkget [-v var|-a arr|-A assoc|--json] <spec>",
                                   0 };
 
-struct builtin milkset_struct = {
-    "milkset", milkset_builtin, BUILTIN_ENABLED, milkset_doc, "milkset <entity> [val] [comment]", 0
-};
+struct builtin milkset_struct = { "milkset",
+                                  milkset_builtin_entry,
+                                  BUILTIN_ENABLED,
+                                  milkset_doc,
+                                  "milkset <entity> [val] [comment]",
+                                  0 };
 
-struct builtin milkcalc_struct = { "milkcalc",   milkcalc_builtin,           BUILTIN_ENABLED,
+struct builtin milkcalc_struct = { "milkcalc",   milkcalc_builtin_entry,     BUILTIN_ENABLED,
                                    milkcalc_doc, "milkcalc [-v var] <expr>", 0 };
 
-struct builtin milktest_struct = { "milktest",   milktest_builtin,  BUILTIN_ENABLED,
-                                   milktest_doc, "milktest <expr>", 0 };
+struct builtin milktest_struct = { "milktest",   milktest_builtin_entry, BUILTIN_ENABLED,
+                                   milktest_doc, "milktest <expr>",      0 };
 
-struct builtin milkexists_struct = { "milkexists",   milkexists_builtin,         BUILTIN_ENABLED,
+struct builtin milkexists_struct = { "milkexists",   milkexists_builtin_entry,   BUILTIN_ENABLED,
                                      milkexists_doc, "milkexists [-r] <entity>", 0 };
 
 struct builtin milkwaitfor_struct = { "milkwaitfor",
-                                      milkwaitfor_builtin,
+                                      milkwaitfor_builtin_entry,
                                       BUILTIN_ENABLED,
                                       milkwaitfor_doc,
                                       "milkwaitfor <target> [nframes] [--timeout <sec>]",
                                       0 };
 
 struct builtin milkwaitany_struct = { "milkwaitany",
-                                      milkwaitany_builtin,
+                                      milkwaitany_builtin_entry,
                                       BUILTIN_ENABLED,
                                       milkwaitany_doc,
                                       "milkwaitany <s1> <s2> [...] [--timeout <sec>]",
@@ -936,36 +983,37 @@ struct builtin milkwaitany_struct = { "milkwaitany",
 
 struct builtin milkgrab_struct = {
     "milkgrab",
-    milkgrab_builtin,
+    milkgrab_builtin_entry,
     BUILTIN_ENABLED,
     milkgrab_doc,
     "milkgrab [--fits <f>] [--timestamps <t>] <stream> [nframes] [out_img] [--timeout <sec>]",
     0
 };
 
-struct builtin milkcomplete_struct = { "milkcomplete",
-                                       milkcomplete_builtin,
-                                       BUILTIN_ENABLED,
-                                       milkcomplete_doc,
-                                       "milkcomplete <prefix> [cmd|arg]",
-                                       0 };
+struct builtin milkcomplete_struct = {
+    "milkcomplete",   milkcomplete_builtin_entry,        BUILTIN_ENABLED,
+    milkcomplete_doc, "milkcomplete <prefix> [cmd|arg]", 0
+};
 
-struct builtin milkshutdown_struct = { "milkshutdown",   milkshutdown_builtin, BUILTIN_ENABLED,
-                                       milkshutdown_doc, "milkshutdown",       0 };
+struct builtin milkshutdown_struct = { "milkshutdown",  milkshutdown_builtin_entry,
+                                       BUILTIN_ENABLED, milkshutdown_doc,
+                                       "milkshutdown",  0 };
 
-struct builtin milkserver_struct = { "milkserver",
-                                     milkserver_builtin,
-                                     BUILTIN_ENABLED,
-                                     milkserver_doc,
-                                     "milkserver [subcommand ...]",
-                                     0 };
+struct builtin milkserver_struct = { "milkserver",   milkserver_builtin_entry,      BUILTIN_ENABLED,
+                                     milkserver_doc, "milkserver [subcommand ...]", 0 };
 
-struct builtin milklog_struct = { "milklog",   milklog_builtin,        BUILTIN_ENABLED,
+struct builtin milklog_struct = { "milklog",   milklog_builtin_entry,  BUILTIN_ENABLED,
                                   milklog_doc, "milklog [options...]", 0 };
 
-struct builtin milkls_struct = {
-    "milkls", milkls_builtin, BUILTIN_ENABLED, milkls_doc, "milkls [-l|-q|--json|--local] [pat]", 0
-};
+struct builtin milkls_struct = { "milkls",
+                                 milkls_builtin_entry,
+                                 BUILTIN_ENABLED,
+                                 milkls_doc,
+                                 "milkls [-l|-q|--json|--local] [pat]",
+                                 0 };
+
+struct builtin milkcloexec_struct = { "milkcloexec",   milkcloexec_builtin, BUILTIN_ENABLED,
+                                      milkcloexec_doc, "milkcloexec FD...", 0 };
 
 struct builtin milktranslate_struct = { "milktranslate",
                                         milktranslate_builtin,

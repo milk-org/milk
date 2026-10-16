@@ -45,6 +45,12 @@ command.
   undefined name is an error: quote string literals (`@calc 'strlen("abc")'`).
 - When the server cannot be reached or speaks another protocol version, milk commands print a
   message and return 255, so `@test` never reads a lost connection as "false".
+- Ctrl-C interrupts the running command line, including a milk command executing inside milk-cli,
+  and returns status 130. Shell variables, functions and background jobs survive. A script that sets
+  its own `trap ... INT` handles Ctrl-C itself.
+- If the bash process dies (killed, or recursion deeper than `FUNCNEST`, 5000 by default),
+  milk-cli says so. A script stops there; at the prompt, the next command starts a new bash, without
+  the previous shell state.
 
 See also: [CLI Syntax](CLIcore.md) · [FPS](fps.md) · [Streams](streams.md)
 

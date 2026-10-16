@@ -75,6 +75,12 @@ int milk_bash_engine_exec_file(const char *filename, int *out_exit_req);
  */
 int milk_bash_engine_busy(void);
 
+/** Listening socket of the in-process server (-1 before the engine starts), for the REPL's idle select(). */
+int milk_bash_engine_listen_fd(void);
+
+/** Serve one pending request on the in-process server socket (background jobs calling milk while idle). */
+void milk_bash_engine_serve(void);
+
 /**
  * @brief Shut down the supervised bash co-process (running EXIT/defer traps)
  *        and close the in-process socket server.

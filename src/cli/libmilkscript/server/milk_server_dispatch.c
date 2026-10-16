@@ -47,6 +47,15 @@
 #include "milk_server_internal.h"
 #include "milk_srvlog.h"
 
+static volatile sig_atomic_t g_call_interrupted = 0; /* a CALL was aborted by SIGINT */
+
+int milk_server_take_call_interrupt(void)
+{
+    int r              = g_call_interrupted;
+    g_call_interrupted = 0;
+    return r;
+}
+
 extern void handle_did_you_mean(const char *input_cmd);
 extern int  cli_intercept_cmd_procctl(const char *p);
 extern int  cli_intercept_cmd_procwait(const char *p);
@@ -1150,6 +1159,13 @@ int milk_server_dispatch_argv(int argc, char **argv)
     data.cmd[cmdidx].callcount++;
     data.CMDerrstatus = RETURN_FAILURE;
 
+    /* the command gets its own fault-isolation frame; the caller's (REPL) frame is restored after */
+    sigjmp_buf outer_env;
+    memcpy(outer_env, *cli_get_repl_env(), sizeof(sigjmp_buf));
+    int outer_armed = cli_is_fault_isolation_armed();
+    int outer_fwd   = cli_get_sigint_forward();
+    int aborted     = 0;
+    cli_set_sigint_forward(0);
     cli_fault_isolation_arm();
     if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
     {
@@ -1157,15 +1173,27 @@ int milk_server_dispatch_argv(int argc, char **argv)
     }
     else
     {
-        int was_sigint = dcsigINT;
-        dcsigINT       = 0;
-        dcsigSEGV      = 0;
-        dcsigBUS       = 0;
-        dcsigABRT      = 0;
-        cli_fault_isolation_disarm();
-        return was_sigint ? 130 : 1;
+        aborted            = dcsigINT ? 130 : 1;
+        g_call_interrupted = g_call_interrupted || dcsigINT;
+        dcsigINT           = 0;
+        dcsigSEGV          = 0;
+        dcsigBUS           = 0;
+        dcsigABRT          = 0;
     }
-    cli_fault_isolation_disarm();
+    memcpy(*cli_get_repl_env(), outer_env, sizeof(sigjmp_buf));
+    if (outer_armed)
+    {
+        cli_fault_isolation_arm();
+    }
+    else
+    {
+        cli_fault_isolation_disarm();
+    }
+    cli_set_sigint_forward(outer_fwd);
+    if (aborted)
+    {
+        return aborted;
+    }
 
     if (data.CMDerrstatus != RETURN_SUCCESS)
     {

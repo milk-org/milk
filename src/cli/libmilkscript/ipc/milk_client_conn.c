@@ -428,6 +428,9 @@ int milk_client_await_response(int                        fd,
 
     sigaction(SIGINT, &old_int, NULL);
     sigaction(SIGWINCH, &old_winch, NULL);
+    had_sigint =
+        had_sigint || g_client_sigint; /* arrived after the last check (e.g. right after DONE) */
+    g_client_sigint = 0;
 
     if (had_sigint)
     {

@@ -28,8 +28,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include "CLIcore.h"
@@ -51,6 +53,11 @@ static char  g_cmddir[256]   = { '\0' }; /* private dir holding the command file
 static char  g_cmdfile[300]  = { '\0' }; /* translated command, `source`d by bash (keeps $LINENO) */
 static char  g_label[64]     = "milk";   /* command-file name: bash error messages show it */
 static pid_t g_cmddir_owner  = 0;        /* forked children must not remove the parent's dir */
+static int   g_bash_pidfd    = -1;       /* readable once bash exits (-1: poll waitpid instead) */
+static pid_t g_engine_owner  = 0;        /* process that started bash (atexit guard) */
+static int   g_inflight      = 0;        /* a command was sent and its status is not back yet */
+static int   g_tty_handoff   = 0;        /* bash's process group owns the terminal */
+static struct termios g_tty_modes;       /* terminal modes saved before the handoff */
 
 /** rm_dir_files() - remove the files in directory @dir, then the directory. */
 static void rm_dir_files(const char *dir)
@@ -102,6 +109,125 @@ static void cmddir_atexit(void)
         rm_dir_files(g_cmddir);
         g_cmddir[0] = '\0';
     }
+}
+
+/** tty_owner() - make @pgrp the terminal's foreground group (SIGTTOU blocked: we may be in the background). */
+static void tty_owner(pid_t pgrp)
+{
+    sigset_t blk, old;
+    sigemptyset(&blk);
+    sigaddset(&blk, SIGTTOU);
+    sigprocmask(SIG_BLOCK, &blk, &old);
+    tcsetpgrp(STDIN_FILENO, pgrp);
+    sigprocmask(SIG_SETMASK, &old, NULL);
+}
+
+/** tty_give() - hand the terminal to bash while a command runs, so Ctrl-C and `read` reach it. */
+static void tty_give(void)
+{
+    if (g_tty_handoff || g_bash_pid <= 0 || !isatty(STDIN_FILENO) ||
+        tcgetpgrp(STDIN_FILENO) != getpgrp())
+    {
+        return;
+    }
+    tcgetattr(STDIN_FILENO, &g_tty_modes);
+    g_tty_handoff = 1;
+    tty_owner(g_bash_pid);
+}
+
+/** tty_take() - take the terminal back from bash and restore its modes. */
+static void tty_take(void)
+{
+    if (!g_tty_handoff)
+    {
+        return;
+    }
+    tty_owner(getpgrp());
+    tcsetattr(STDIN_FILENO, TCSADRAIN, &g_tty_modes);
+    g_tty_handoff = 0;
+}
+
+/** serve_one() - service one client request; milk-cli owns the terminal for its duration. */
+static void serve_one(int *shutdown_flag)
+{
+    if (g_tty_handoff)
+    {
+        tty_owner(getpgrp());
+    }
+    milk_server_accept_and_handle(g_listen_fd, shutdown_flag);
+    if (milk_server_take_call_interrupt() && g_bash_pid > 0)
+    {
+        kill(-g_bash_pid, SIGINT); /* Ctrl-C aborted the milk command: abort the command line too */
+    }
+    if (g_tty_handoff && g_bash_pid > 0)
+    {
+        tty_owner(g_bash_pid);
+    }
+}
+
+/** close_engine_fds() - close the pipes, pidfd and listener of a bash that is gone. */
+static void close_engine_fds(void)
+{
+    int *fds[] = { &g_cmd_pipe_w, &g_status_pipe_r, &g_listen_fd, &g_bash_pidfd };
+    for (size_t i = 0; i < sizeof(fds) / sizeof(fds[0]); i++)
+    {
+        if (*fds[i] >= 0)
+        {
+            close(*fds[i]);
+            *fds[i] = -1;
+        }
+    }
+}
+
+/** bash_exited() - 1 if bash has exited (without reaping it). */
+static int bash_exited(void)
+{
+    if (g_bash_pid <= 0)
+    {
+        return 1;
+    }
+    if (g_bash_pidfd >= 0)
+    {
+        struct pollfd p = { g_bash_pidfd, POLLIN, 0 };
+        return poll(&p, 1, 0) > 0;
+    }
+    siginfo_t si;
+    si.si_pid = 0;
+    return waitid(P_PID, (id_t) g_bash_pid, &si, WEXITED | WNOHANG | WNOWAIT) == 0 &&
+           si.si_pid != 0;
+}
+
+/** bash_lost() - reap a bash that died during a command, report it, and return its status (128+sig if killed). */
+static int bash_lost(void)
+{
+    int st = 0;
+    waitpid(g_bash_pid, &st, 0);
+    g_bash_pid = -1;
+    g_inflight = 0;
+    tty_take();
+    close_engine_fds();
+    int rc = WIFEXITED(st) ? WEXITSTATUS(st) : 128 + WTERMSIG(st);
+    if (WIFSIGNALED(st))
+    {
+        fprintf(stderr, "milk: bash co-process killed by signal %d (%s); shell state is lost\n",
+                WTERMSIG(st), strsignal(WTERMSIG(st)));
+    }
+    else
+    {
+        fprintf(stderr, "milk: bash co-process exited with status %d; shell state is lost\n", rc);
+    }
+    return (rc != 0) ? rc : 1;
+}
+
+/** engine_atexit() - do not leave bash behind if the process exits without milk_bash_engine_shutdown(). */
+static void engine_atexit(void)
+{
+    if (getpid() != g_engine_owner || g_bash_pid <= 0)
+    {
+        return;
+    }
+    tty_take();
+    kill(g_bash_pid, SIGHUP);
 }
 
 /** make_cmdfile() - create the private directory and command-file path (once per process). */
@@ -247,7 +373,7 @@ int milk_bash_engine_init(void)
 
         const char *loop_script =
             "shopt -s expand_aliases\n"
-            "trap ':' INT\n"
+            ": \"${FUNCNEST:=5000}\"\n" /* runaway recursion ends bash with a message, not a stack overflow */
             "if [[ -n \"${MILK_INSTALLDIR:-}\" && -f \"${MILK_INSTALLDIR}/bin/milk.bash\" ]]; "
             "then\n"
             "    builtin source \"${MILK_INSTALLDIR}/bin/milk.bash\"\n"
@@ -285,18 +411,47 @@ int milk_bash_engine_init(void)
             "            { milkcall ${__milk_w} \\\"\\$@\\\"; }\"\n"
             "done\n"
             "unset __milk_w\n"
+            /* Ctrl-C: abort the running command (simulated returns out of every function and sourced
+             * file, via an extdebug DEBUG trap) but keep the shell and its state */
+            "__milk_abort_dbg() {\n"
+            "    local __f\n"
+            "    for __f in \"${FUNCNAME[@]:1}\"; do [[ \"${__f}\" == source ]] && return 2; done\n"
+            "    return 0\n"
+            "}\n"
+            "__milk_on_int() {\n"
+            "    (( __MILK_INTR )) && return\n"
+            "    __MILK_INTR=1\n"
+            "    __MILK_DBGTRAP=$(trap -p DEBUG)\n"
+            "    if shopt -q extdebug; then __MILK_XDBG=1; else __MILK_XDBG=0; fi\n"
+            "    shopt -s extdebug\n"
+            "    trap '__milk_abort_dbg' DEBUG\n"
+            "}\n"
+            "__milk_intr_reset() {\n"
+            "    trap - DEBUG\n"
+            "    [[ -n \"${__MILK_DBGTRAP}\" ]] && eval \"${__MILK_DBGTRAP}\"\n"
+            "    (( __MILK_XDBG )) || shopt -u extdebug\n"
+            "    __MILK_INTR=0\n"
+            "}\n"
+            "__MILK_INTR=0\n"
+            "trap '__milk_on_int' INT\n"
+            "milkcloexec 198 199 2>/dev/null\n" /* children of bash do not inherit the engine pipes */
             "quit() { exit \"$@\"; }\n"
             "exitCLI() { exit \"$@\"; }\n"
             "__milk_ret() { return \"$1\"; }\n"
             "__milk_rc=0\n"
-            "while IFS= read -r -d '' __milk_cmd <&198 &&\\\n"
-            "    IFS= read -r -d '' __MILK_INTERACTIVE <&198; do\n"
+            "while :; do\n"
+            "    __milk_rd=0\n"
+            "    IFS= read -r -d '' __milk_cmd <&198 || __milk_rd=$?\n" /* no errexit if the user set -e */
+            "    (( __MILK_INTR )) && __milk_intr_reset\n" /* a late Ctrl-C must not hit the next command */
+            "    (( __milk_rd > 128 )) && continue\n"
+            "    (( __milk_rd == 0 )) && IFS= read -r -d '' __MILK_INTERACTIVE <&198 || break\n"
             "    if __milk_ret \"${__milk_rc}\"; then\n" /* each command starts with the previous $? */
             "        builtin source \"$__milk_cmd\" 198<&-\n"
             "    else\n"
             "        builtin source \"$__milk_cmd\" 198<&-\n"
             "    fi\n"
             "    __milk_rc=$?\n"
+            "    if (( __MILK_INTR )); then __milk_intr_reset; __milk_rc=130; fi\n"
             "    printf '%d\\t%d\\t%s\\0' \"${__milk_rc}\" \"${__MILK_EXIT_REQ}\" \"${PWD}\" "
             ">&199\n"
             "    if [[ ${__MILK_EXIT_REQ} -eq 1 ]]; then\n"
@@ -310,9 +465,18 @@ int milk_bash_engine_init(void)
 
     close(cmd_pipe[0]);
     close(status_pipe[1]);
+    setpgid(pid, pid); /* also in the child: either may run first */
     g_cmd_pipe_w    = cmd_pipe[1];
     g_status_pipe_r = status_pipe[0];
     g_bash_pid      = pid;
+#ifdef SYS_pidfd_open
+    g_bash_pidfd = (int) syscall(SYS_pidfd_open, pid, 0);
+#endif
+    if (g_engine_owner != getpid())
+    {
+        g_engine_owner = getpid();
+        atexit(engine_atexit);
+    }
 
     int dummy_exit = 0;
     engine_exec(":", &dummy_exit); // internal: init may run inside an exec (lazy start / respawn)
@@ -346,16 +510,14 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
         }
     }
 
-    int wstatus = 0;
-    if (waitpid(g_bash_pid, &wstatus, WNOHANG) == g_bash_pid)
+    if (bash_exited()) /* died between commands (e.g. killed from outside) */
     {
-        close(g_cmd_pipe_w);
-        close(g_status_pipe_r);
-        close(g_listen_fd);
-        g_cmd_pipe_w    = -1;
-        g_status_pipe_r = -1;
-        g_listen_fd     = -1;
-        g_bash_pid      = -1;
+        waitpid(g_bash_pid, NULL, 0);
+        g_bash_pid = -1;
+        close_engine_fds();
+        fprintf(
+            stderr,
+            "milk: bash co-process had exited; starting a new one (shell variables are lost)\n");
         if (milk_bash_engine_init() != 0)
         {
             return 1;
@@ -446,28 +608,26 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
     char   sbuf[4096];
     size_t spos          = 0;
     int    shutdown_flag = 0;
+    int    lost          = 0;
     dcsigINT             = 0;
+    g_inflight           = 1;
+    tty_give();
+    cli_set_sigint_forward(1); /* SIGINT to milk-cli is passed on to bash, never a longjmp */
 
     while (spos < sizeof(sbuf) - 1)
     {
         if (dcsigINT)
         {
             dcsigINT = 0;
-            if (g_bash_pid > 0)
-            {
-                kill(-g_bash_pid, SIGINT);
-            }
+            kill(-g_bash_pid, SIGINT);
         }
 
-        struct pollfd pfds[2];
-        pfds[0].fd      = g_listen_fd;
-        pfds[0].events  = POLLIN;
-        pfds[0].revents = 0;
-        pfds[1].fd      = g_status_pipe_r;
-        pfds[1].events  = POLLIN | POLLHUP | POLLERR;
-        pfds[1].revents = 0;
-
-        int pr = poll(pfds, 2, 50);
+        struct pollfd pfds[3] = {
+            { g_listen_fd, POLLIN, 0 },
+            { g_status_pipe_r, POLLIN | POLLHUP | POLLERR, 0 },
+            { g_bash_pidfd, POLLIN, 0 },
+        };
+        int pr = poll(pfds, (g_bash_pidfd >= 0) ? 3 : 2, 50);
         if (pr < 0)
         {
             if (errno == EINTR)
@@ -479,7 +639,7 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
 
         if (pfds[0].revents & POLLIN)
         {
-            milk_server_accept_and_handle(g_listen_fd, &shutdown_flag);
+            serve_one(&shutdown_flag);
         }
 
         if (pfds[1].revents & (POLLIN | POLLHUP | POLLERR))
@@ -487,45 +647,35 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
             ssize_t r = read(g_status_pipe_r, sbuf + spos, sizeof(sbuf) - 1 - spos);
             if (r > 0)
             {
-                int found_nul = 0;
-                for (ssize_t k = 0; k < r; k++)
-                {
-                    if (sbuf[spos + (size_t) k] == '\0')
-                    {
-                        found_nul = 1;
-                        break;
-                    }
-                }
                 spos += (size_t) r;
-                if (found_nul)
+                if (memchr(sbuf + spos - (size_t) r, '\0', (size_t) r) != NULL)
                 {
                     break;
                 }
+                continue;
             }
-            else if (r == 0 || (r < 0 && errno != EINTR && errno != EAGAIN))
+            if (r == 0 || (errno != EINTR && errno != EAGAIN))
             {
-                int st = 0;
-                if (waitpid(g_bash_pid, &st, 0) == g_bash_pid)
-                {
-                    g_bash_pid = -1;
-                }
-                close(g_cmd_pipe_w);
-                close(g_status_pipe_r);
-                close(g_listen_fd);
-                g_cmd_pipe_w    = -1;
-                g_status_pipe_r = -1;
-                g_listen_fd     = -1;
-                int rc_err      = WIFEXITED(st) ? WEXITSTATUS(st) : 1;
-                if (out_exit_req != NULL)
-                {
-                    *out_exit_req = 1;
-                }
-                cli_last_retval = (rc_err != 0) ? rc_err : 1;
-                dcexitcode      = cli_last_retval;
-                return cli_last_retval;
+                lost = 1; /* EOF: bash is gone */
             }
         }
+
+        if (lost || (pfds[2].revents & POLLIN) || (pr == 0 && g_bash_pidfd < 0 && bash_exited()))
+        {
+            cli_set_sigint_forward(0);
+            int rc_lost = bash_lost();
+            if (out_exit_req != NULL)
+            {
+                *out_exit_req =
+                    !cli_is_interactive_mode(); /* a script stops; the prompt carries on */
+            }
+            cli_last_retval = rc_lost;
+            return rc_lost;
+        }
     }
+    cli_set_sigint_forward(0);
+    tty_take();
+    g_inflight = 0;
 
     sbuf[spos]  = '\0';
     int   rc    = 0;
@@ -563,6 +713,20 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
 int milk_bash_engine_busy(void)
 {
     return g_exec_depth > 0;
+}
+
+int milk_bash_engine_listen_fd(void)
+{
+    return g_listen_fd;
+}
+
+void milk_bash_engine_serve(void)
+{
+    int shutdown_flag = 0;
+    if (g_listen_fd >= 0)
+    {
+        serve_one(&shutdown_flag);
+    }
 }
 
 int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
@@ -644,8 +808,58 @@ void milk_bash_engine_shutdown(void)
 {
     if (g_cmd_pipe_w >= 0)
     {
-        close(g_cmd_pipe_w);
+        close(g_cmd_pipe_w); /* bash's read loop ends, then its EXIT trap runs */
         g_cmd_pipe_w = -1;
+    }
+
+    if (g_bash_pid > 0)
+    {
+        /* serve EXIT-trap milk calls for as long as bash runs; the trap may also read the terminal */
+        int shutdown_flag = 0;
+        tty_give();
+        cli_set_sigint_forward(1);
+        while (g_bash_pid > 0)
+        {
+            if (dcsigINT)
+            {
+                dcsigINT = 0;
+                kill(-g_bash_pid, SIGINT);
+            }
+            struct pollfd pfds[3] = {
+                { g_listen_fd, POLLIN, 0 },
+                { g_status_pipe_r, POLLIN | POLLHUP | POLLERR, 0 },
+                { g_bash_pidfd, POLLIN, 0 },
+            };
+            int pr = poll(pfds, 3, 50); /* negative fds are ignored */
+            if (pr < 0 && errno != EINTR)
+            {
+                break;
+            }
+            if (pfds[0].revents & POLLIN)
+            {
+                serve_one(&shutdown_flag);
+            }
+            if (pfds[1].revents & (POLLIN | POLLHUP | POLLERR))
+            {
+                char drain[256];
+                if (read(g_status_pipe_r, drain, sizeof(drain)) <= 0)
+                {
+                    close(g_status_pipe_r);
+                    g_status_pipe_r = -1;
+                }
+            }
+            if (waitpid(g_bash_pid, NULL, WNOHANG) == g_bash_pid)
+            {
+                g_bash_pid = -1;
+            }
+        }
+        cli_set_sigint_forward(0);
+        tty_take();
+    }
+    if (g_bash_pid > 0)
+    {
+        waitpid(g_bash_pid, NULL, 0);
+        g_bash_pid = -1;
     }
     if (g_cmddir[0] != '\0')
     {
@@ -653,66 +867,8 @@ void milk_bash_engine_shutdown(void)
         g_cmdfile[0] = '\0';
         g_cmddir[0]  = '\0';
     }
-
-    if (g_bash_pid > 0 && g_listen_fd >= 0 && g_status_pipe_r >= 0)
-    {
-        int shutdown_flag = 0;
-        for (int iter = 0; iter < 200; iter++)
-        {
-            struct pollfd pfds[2];
-            pfds[0].fd      = g_listen_fd;
-            pfds[0].events  = POLLIN;
-            pfds[0].revents = 0;
-            pfds[1].fd      = g_status_pipe_r;
-            pfds[1].events  = POLLIN | POLLHUP | POLLERR;
-            pfds[1].revents = 0;
-
-            int pr = poll(pfds, 2, 25);
-            if (pr <= 0)
-            {
-                if (waitpid(g_bash_pid, NULL, WNOHANG) == g_bash_pid)
-                {
-                    g_bash_pid = -1;
-                    break;
-                }
-                continue;
-            }
-            if (pfds[0].revents & POLLIN)
-            {
-                milk_server_accept_and_handle(g_listen_fd, &shutdown_flag);
-            }
-            if (pfds[1].revents & (POLLIN | POLLHUP | POLLERR))
-            {
-                char drain[256];
-                if (read(g_status_pipe_r, drain, sizeof(drain)) <= 0)
-                {
-                    struct pollfd dpfd = { g_listen_fd, POLLIN, 0 };
-                    while (poll(&dpfd, 1, 10) > 0 && (dpfd.revents & POLLIN))
-                    {
-                        milk_server_accept_and_handle(g_listen_fd, &shutdown_flag);
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
-    if (g_status_pipe_r >= 0)
-    {
-        close(g_status_pipe_r);
-        g_status_pipe_r = -1;
-    }
-    if (g_bash_pid > 0)
-    {
-        waitpid(g_bash_pid, NULL, 0);
-        g_bash_pid = -1;
-    }
     milk_server_close_log(1);
-    if (g_listen_fd >= 0)
-    {
-        close(g_listen_fd);
-        g_listen_fd = -1;
-    }
+    close_engine_fds();
 }
 
 /**
@@ -722,82 +878,51 @@ void milk_bash_engine_shutdown(void)
 void milk_bash_engine_abort(void)
 {
     g_exec_depth = 0; // the aborted exec was left via siglongjmp
-    if (g_bash_pid <= 0)
+    cli_set_sigint_forward(0);
+    tty_take();
+    if (g_bash_pid <= 0 || !g_inflight)
     {
         return;
     }
 
+    /* interrupt the command and wait for bash to report it; only a bash that ignores that is killed */
     kill(-g_bash_pid, SIGINT);
-
-    int synced = 0;
-    if (g_status_pipe_r >= 0)
+    int synced        = 0;
+    int shutdown_flag = 0;
+    for (int iter = 0; iter < 200 && !synced; iter++)
     {
-        int shutdown_flag = 0;
-        for (int iter = 0; iter < 15; iter++)
+        struct pollfd pfds[2] = { { g_listen_fd, POLLIN, 0 },
+                                  { g_status_pipe_r, POLLIN | POLLHUP | POLLERR, 0 } };
+        if (poll(pfds, 2, 10) <= 0)
         {
-            struct pollfd pfds[2];
-            pfds[0].fd      = g_listen_fd;
-            pfds[0].events  = (g_listen_fd >= 0) ? POLLIN : 0;
-            pfds[0].revents = 0;
-            pfds[1].fd      = g_status_pipe_r;
-            pfds[1].events  = POLLIN | POLLHUP | POLLERR;
-            pfds[1].revents = 0;
-
-            int pr = poll(pfds, 2, 10);
-            if (pr <= 0)
+            if (bash_exited())
             {
-                continue;
+                bash_lost();
+                return;
             }
-            if (pfds[0].revents & POLLIN)
+            continue;
+        }
+        if (pfds[0].revents & POLLIN)
+        {
+            serve_one(&shutdown_flag);
+        }
+        if (pfds[1].revents & (POLLIN | POLLHUP | POLLERR))
+        {
+            char    drain[512];
+            ssize_t r = read(g_status_pipe_r, drain, sizeof(drain));
+            if (r <= 0)
             {
-                milk_server_accept_and_handle(g_listen_fd, &shutdown_flag);
+                bash_lost();
+                return;
             }
-            if (pfds[1].revents & (POLLIN | POLLHUP | POLLERR))
-            {
-                char    drain[512];
-                ssize_t r = read(g_status_pipe_r, drain, sizeof(drain));
-                if (r > 0)
-                {
-                    for (ssize_t k = 0; k < r; k++)
-                    {
-                        if (drain[k] == '\0')
-                        {
-                            synced = 1;
-                            break;
-                        }
-                    }
-                    if (synced)
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    break;
-                }
-            }
+            synced = (memchr(drain, '\0', (size_t) r) != NULL);
         }
     }
-
+    g_inflight = 0;
     if (!synced)
     {
-        kill(-g_bash_pid, SIGKILL);
-        waitpid(g_bash_pid, NULL, 0);
-        g_bash_pid = -1;
-        if (g_cmd_pipe_w >= 0)
-        {
-            close(g_cmd_pipe_w);
-            g_cmd_pipe_w = -1;
-        }
-        if (g_status_pipe_r >= 0)
-        {
-            close(g_status_pipe_r);
-            g_status_pipe_r = -1;
-        }
-        if (g_listen_fd >= 0)
-        {
-            close(g_listen_fd);
-            g_listen_fd = -1;
-        }
+        fprintf(stderr, "milk: bash co-process does not respond to Ctrl-C; killing it\n");
+        kill(g_bash_pid, SIGKILL);
+        bash_lost();
     }
 }

@@ -931,6 +931,10 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         FD_SET(
             fileno(stdin),
             &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+        if (milk_bash_engine_listen_fd() >= 0)
+        {
+            FD_SET(milk_bash_engine_listen_fd(), &cli_fdin_set); // background jobs calling milk
+        }
 
         if (data.fifoON == 0)
         {
@@ -976,6 +980,10 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             {
                 fdmax = data.fifofd;
             }
+            if (milk_bash_engine_listen_fd() > fdmax)
+            {
+                fdmax = milk_bash_engine_listen_fd();
+            }
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
 
             if (n == 0) // nothing received, need to re-init and go back to select call
@@ -989,7 +997,28 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     FD_SET(data.fifofd, &cli_fdin_set);
                 }
                 FD_SET(fileno(stdin), &cli_fdin_set);
+                if (milk_bash_engine_listen_fd() >= 0)
+                {
+                    FD_SET(milk_bash_engine_listen_fd(), &cli_fdin_set);
+                }
                 continue;
+            }
+            if (n > 0 && milk_bash_engine_listen_fd() >= 0 &&
+                FD_ISSET(milk_bash_engine_listen_fd(), &cli_fdin_set))
+            {
+                milk_bash_engine_serve();
+                if (!FD_ISSET(fileno(stdin), &cli_fdin_set) &&
+                    !(data.fifoON == 1 && data.fifofd >= 0 && FD_ISSET(data.fifofd, &cli_fdin_set)))
+                {
+                    FD_ZERO(&cli_fdin_set);
+                    if (data.fifoON == 1 && data.fifofd >= 0)
+                    {
+                        FD_SET(data.fifofd, &cli_fdin_set);
+                    }
+                    FD_SET(fileno(stdin), &cli_fdin_set);
+                    FD_SET(milk_bash_engine_listen_fd(), &cli_fdin_set);
+                    continue;
+                }
             }
             if (n == -1)
             {

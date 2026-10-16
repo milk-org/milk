@@ -288,6 +288,7 @@ errno_t write_process_exit_report(const char *__restrict errortypestring)
 static sigjmp_buf            cli_repl_env;
 static volatile sig_atomic_t cli_fault_isolation_active = 0;
 static volatile sig_atomic_t cli_interactive_mode       = 0;
+static volatile sig_atomic_t cli_sigint_forward         = 0;
 
 void cli_set_interactive_mode(int mode)
 {
@@ -319,6 +320,17 @@ int cli_is_fault_isolation_armed(void)
     return cli_fault_isolation_active;
 }
 
+/** cli_set_sigint_forward() - while on, SIGINT only sets dcsigINT; the bash engine passes it on to bash. */
+void cli_set_sigint_forward(int on)
+{
+    cli_sigint_forward = on;
+}
+
+int cli_get_sigint_forward(void)
+{
+    return cli_sigint_forward;
+}
+
 /**
  * @brief Signal handler with interactive fault isolation
  */
@@ -327,6 +339,11 @@ void sig_handler(int signo)
     switch (signo)
     {
     case SIGINT:
+        if (cli_sigint_forward)
+        {
+            dcsigINT = 1;
+            break;
+        }
         set_terminal_echo_on();
         if (cli_fault_isolation_active)
         {

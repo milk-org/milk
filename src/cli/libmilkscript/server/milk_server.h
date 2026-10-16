@@ -49,6 +49,9 @@ int milk_server_create_listener(const char *sockpath);
  */
 void milk_server_accept_and_handle(int listen_fd, int *shutdown_flag);
 
+/** Return 1 (once) if a CALL was aborted by SIGINT since the last query. */
+int milk_server_take_call_interrupt(void);
+
 /**
  * @brief Run the milk UNIX domain socket command server loop.
  *

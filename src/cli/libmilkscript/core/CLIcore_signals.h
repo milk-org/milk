@@ -29,5 +29,7 @@ sigjmp_buf *cli_get_repl_env(void);
 void        cli_fault_isolation_arm(void);
 void        cli_fault_isolation_disarm(void);
 int         cli_is_fault_isolation_armed(void);
+void        cli_set_sigint_forward(int on);
+int         cli_get_sigint_forward(void);
 
 #endif
