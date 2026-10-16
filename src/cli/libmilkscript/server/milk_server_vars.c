@@ -146,63 +146,95 @@ void milk_server_sync_bash_vars(const uint8_t *buf,
     *offset_io = off;
 }
 
-/**
- * @brief Capture a snapshot of all current `dcvar` and `cli_vars` entries.
- *
- * @param out_nmax Receives `data.core.NB_MAX_VARIABLE` at snapshot time
- * @return Newly allocated snapshot array (caller must `free()`), or NULL
- */
-dcvar_snap_t *milk_server_snapshot_dcvar(long *out_nmax)
+/* Change detection for SETVAR: one mark per variable slot, written only for slots in use. A slot
+ * whose mark has an old epoch was unused at snapshot time. */
+typedef struct
 {
-    long nmax = data.core.NB_MAX_VARIABLE;
-    if (nmax < 0)
+    uint64_t h;     /* hash of name, type and value */
+    uint32_t epoch; /* snapshot that recorded @h */
+} var_mark_t;
+
+static var_mark_t  g_cli_mark[CLI_MAX_VARS];
+static var_mark_t *g_dc_mark    = NULL;
+static long        g_dc_mark_n  = 0;
+static uint32_t    g_mark_epoch = 0;
+
+/** fnv1a() - continue a 64-bit FNV-1a hash over @n bytes. */
+static uint64_t fnv1a(uint64_t h, const void *p, size_t n)
+{
+    const uint8_t *b = (const uint8_t *) p;
+    for (size_t i = 0; i < n; i++)
     {
-        nmax = 0;
+        h = (h ^ b[i]) * 1099511628211ULL;
     }
-    long          total = nmax + CLI_MAX_VARS;
-    dcvar_snap_t *snap  = (dcvar_snap_t *) calloc((size_t) total, sizeof(dcvar_snap_t));
-    if (snap == NULL)
+    return h;
+}
+
+static uint64_t dcvar_hash(const VARIABLE *v)
+{
+    uint64_t h = fnv1a(14695981039346656037ULL, v->name, strlen(v->name) + 1);
+    h          = fnv1a(h, &v->type, sizeof(v->type));
+    if (v->type == 0)
     {
-        *out_nmax = 0;
-        return NULL;
+        return fnv1a(h, &v->value.f, sizeof(v->value.f));
     }
-    if (data.core.variable != NULL)
+    if (v->type == 1)
     {
-        for (long i = 0; i < nmax; i++)
+        return fnv1a(h, &v->value.l, sizeof(v->value.l));
+    }
+    return fnv1a(h, v->value.s, strnlen(v->value.s, sizeof(v->value.s)));
+}
+
+static uint64_t clivar_hash(const CLI_VAR *v)
+{
+    uint64_t h = fnv1a(14695981039346656037ULL, v->name, strlen(v->name) + 1);
+    return fnv1a(h, v->val, strlen(v->val));
+}
+
+/**
+ * @brief Record the current `dcvar` and `cli_vars` values, to report changes after a command.
+ */
+void milk_server_snapshot_dcvar(void)
+{
+    long nmax = (data.core.variable != NULL && data.core.NB_MAX_VARIABLE > 0)
+                    ? data.core.NB_MAX_VARIABLE
+                    : 0;
+    if (nmax > g_dc_mark_n)
+    {
+        var_mark_t *m = (var_mark_t *) realloc(g_dc_mark, (size_t) nmax * sizeof(var_mark_t));
+        if (m == NULL)
         {
-            snap[i].used = data.core.variable[i].used;
-            if (snap[i].used)
-            {
-                snap[i].type = data.core.variable[i].type;
-                snprintf(snap[i].name, sizeof(snap[i].name), "%s", data.core.variable[i].name);
-                if (snap[i].type == 0)
-                {
-                    snap[i].f = data.core.variable[i].value.f;
-                }
-                else if (snap[i].type == 1)
-                {
-                    snap[i].l = data.core.variable[i].value.l;
-                }
-                else
-                {
-                    snprintf(snap[i].s, sizeof(snap[i].s), "%s", data.core.variable[i].value.s);
-                }
-            }
+            nmax = g_dc_mark_n;
+        }
+        else
+        {
+            memset(m + g_dc_mark_n, 0, (size_t) (nmax - g_dc_mark_n) * sizeof(var_mark_t));
+            g_dc_mark   = m;
+            g_dc_mark_n = nmax;
+        }
+    }
+    if (++g_mark_epoch == 0) /* wrapped: forget every mark */
+    {
+        memset(g_dc_mark, 0, (size_t) g_dc_mark_n * sizeof(var_mark_t));
+        memset(g_cli_mark, 0, sizeof(g_cli_mark));
+        g_mark_epoch = 1;
+    }
+    for (long i = 0; i < nmax; i++)
+    {
+        if (data.core.variable[i].used)
+        {
+            g_dc_mark[i].h     = dcvar_hash(&data.core.variable[i]);
+            g_dc_mark[i].epoch = g_mark_epoch;
         }
     }
     for (int j = 0; j < CLI_MAX_VARS; j++)
     {
-        long idx       = nmax + j;
-        snap[idx].used = cli_vars[j].used;
         if (cli_vars[j].used)
         {
-            snap[idx].type = 2;
-            snprintf(snap[idx].name, sizeof(snap[idx].name), "%s", cli_vars[j].name);
-            snprintf(snap[idx].s, sizeof(snap[idx].s), "%s", cli_vars[j].val);
+            g_cli_mark[j].h     = clivar_hash(&cli_vars[j]);
+            g_cli_mark[j].epoch = g_mark_epoch;
         }
     }
-    *out_nmax = nmax;
-    return snap;
 }
 
 /** send_setvar() - send one SETVAR frame (`name\0value\0`), whatever the value length. */
@@ -222,13 +254,11 @@ static void send_setvar(int client_fd, const char *vname, const char *val)
 }
 
 /**
- * @brief Compare current `dcvar` and `cli_vars` against @snap and emit `MILK_MSG_SETVAR` frames.
+ * @brief Send a `MILK_MSG_SETVAR` frame for every variable changed since milk_server_snapshot_dcvar().
  *
  * @param client_fd Connected client socket fd
- * @param snap      Snapshot taken before command execution
- * @param snap_nmax `NB_MAX_VARIABLE` recorded in @snap
  */
-void milk_server_send_modified_dcvars(int client_fd, const dcvar_snap_t *snap, long snap_nmax)
+void milk_server_send_modified_dcvars(int client_fd)
 {
     long nmax = data.core.NB_MAX_VARIABLE;
     if (data.core.variable != NULL)
@@ -245,26 +275,8 @@ void milk_server_send_modified_dcvars(int client_fd, const dcvar_snap_t *snap, l
                 continue;
             }
 
-            int changed = 0;
-            if (snap == NULL || i >= snap_nmax || !snap[i].used ||
-                strcmp(snap[i].name, vname) != 0 || snap[i].type != data.core.variable[i].type)
-            {
-                changed = 1;
-            }
-            else if (data.core.variable[i].type == 0 && snap[i].f != data.core.variable[i].value.f)
-            {
-                changed = 1;
-            }
-            else if (data.core.variable[i].type == 1 && snap[i].l != data.core.variable[i].value.l)
-            {
-                changed = 1;
-            }
-            else if (data.core.variable[i].type == 2 &&
-                     strcmp(snap[i].s, data.core.variable[i].value.s) != 0)
-            {
-                changed = 1;
-            }
-
+            int changed = (i >= g_dc_mark_n || g_dc_mark[i].epoch != g_mark_epoch ||
+                           g_dc_mark[i].h != dcvar_hash(&data.core.variable[i]));
             if (!changed)
             {
                 continue;
@@ -307,20 +319,8 @@ void milk_server_send_modified_dcvars(int client_fd, const dcvar_snap_t *snap, l
         {
             continue;
         }
-        int changed = 0;
-        if (snap == NULL)
-        {
-            changed = 1;
-        }
-        else
-        {
-            long idx = snap_nmax + j;
-            if (!snap[idx].used || strcmp(snap[idx].name, vname) != 0 ||
-                strcmp(snap[idx].s, cli_vars[j].val) != 0)
-            {
-                changed = 1;
-            }
-        }
+        int changed =
+            (g_cli_mark[j].epoch != g_mark_epoch || g_cli_mark[j].h != clivar_hash(&cli_vars[j]));
         if (!changed)
         {
             continue;

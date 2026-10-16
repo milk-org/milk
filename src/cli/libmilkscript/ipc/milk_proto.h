@@ -164,6 +164,42 @@ static inline int milk_read_all(int fd, void *buf, size_t len)
 /**
  * @brief Send a framed message without file descriptors.
  */
+/**
+ * milk_sendmsg_all() - send header + payload in one sendmsg (more only on a short write); @msg's
+ * control data (fds) goes with the first chunk. 0 on success.
+ */
+static inline int milk_sendmsg_all(int fd, struct msghdr *msg, size_t total)
+{
+    size_t sent = 0;
+    while (sent < total)
+    {
+        ssize_t n = sendmsg(fd, msg, MSG_NOSIGNAL);
+        if (n < 0 && errno == EINTR)
+        {
+            continue;
+        }
+        if (n <= 0)
+        {
+            return -1;
+        }
+        sent += (size_t) n;
+        msg->msg_control    = NULL;
+        msg->msg_controllen = 0;
+        while (msg->msg_iovlen > 0 && (size_t) n >= msg->msg_iov[0].iov_len)
+        {
+            n -= (ssize_t) msg->msg_iov[0].iov_len;
+            msg->msg_iov++;
+            msg->msg_iovlen--;
+        }
+        if (msg->msg_iovlen > 0)
+        {
+            msg->msg_iov[0].iov_base = (uint8_t *) msg->msg_iov[0].iov_base + n;
+            msg->msg_iov[0].iov_len -= (size_t) n;
+        }
+    }
+    return 0;
+}
+
 static inline int milk_proto_send(int         fd,
                                   uint8_t     type,
                                   uint8_t     flags,
@@ -177,18 +213,12 @@ static inline int milk_proto_send(int         fd,
     hdr.flags   = flags;
     hdr.len     = len;
 
-    if (milk_write_all(fd, &hdr, sizeof(hdr)) != 0)
-    {
-        return -1;
-    }
-    if (len > 0 && payload != NULL)
-    {
-        if (milk_write_all(fd, payload, len) != 0)
-        {
-            return -1;
-        }
-    }
-    return 0;
+    struct iovec  iov[2] = { { &hdr, sizeof(hdr) }, { (void *) payload, len } };
+    struct msghdr msg;
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_iov    = iov;
+    msg.msg_iovlen = (len > 0 && payload != NULL) ? 2 : 1;
+    return milk_sendmsg_all(fd, &msg, sizeof(hdr) + ((msg.msg_iovlen == 2) ? len : 0));
 }
 
 /**
@@ -214,9 +244,7 @@ static inline int milk_proto_send_with_fds(int         fd,
     hdr.flags   = flags;
     hdr.len     = len;
 
-    struct iovec iov;
-    iov.iov_base = &hdr;
-    iov.iov_len  = sizeof(hdr);
+    struct iovec iov[2] = { { &hdr, sizeof(hdr) }, { (void *) payload, len } };
 
     union
     {
@@ -228,8 +256,8 @@ static inline int milk_proto_send_with_fds(int         fd,
 
     struct msghdr msg;
     memset(&msg, 0, sizeof(msg));
-    msg.msg_iov        = &iov;
-    msg.msg_iovlen     = 1;
+    msg.msg_iov        = iov;
+    msg.msg_iovlen     = (len > 0 && payload != NULL) ? 2 : 1;
     msg.msg_control    = cmsg_un.control;
     msg.msg_controllen = CMSG_SPACE(sizeof(int) * (size_t) nfds);
 
@@ -239,25 +267,7 @@ static inline int milk_proto_send_with_fds(int         fd,
     cmsg->cmsg_len       = CMSG_LEN(sizeof(int) * (size_t) nfds);
     memcpy(CMSG_DATA(cmsg), pass_fds, sizeof(int) * (size_t) nfds);
 
-    ssize_t n;
-    do
-    {
-        n = sendmsg(fd, &msg, MSG_NOSIGNAL);
-    } while (n < 0 && errno == EINTR);
-
-    if (n != (ssize_t) sizeof(hdr))
-    {
-        return -1;
-    }
-
-    if (len > 0 && payload != NULL)
-    {
-        if (milk_write_all(fd, payload, len) != 0)
-        {
-            return -1;
-        }
-    }
-    return 0;
+    return milk_sendmsg_all(fd, &msg, sizeof(hdr) + ((msg.msg_iovlen == 2) ? len : 0));
 }
 
 /**

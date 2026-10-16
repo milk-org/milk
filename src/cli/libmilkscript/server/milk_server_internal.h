@@ -24,18 +24,6 @@
 #include "milk_server.h"
 #include "milk_srvlog.h"
 
-/**
- * @brief Snapshot of a single server variable (`dcvar` or `cli_vars`) before command execution.
- */
-typedef struct
-{
-    int    used;
-    int    type;
-    double f;
-    long   l;
-    char   s[80];
-    char   name[80];
-} dcvar_snap_t;
 
 extern milk_srvlog_shm_t *g_srvlog_shm;
 extern char               g_srvlog_sockpath[256];
@@ -49,9 +37,9 @@ void milk_server_sync_bash_vars(const uint8_t *buf,
                                 uint32_t       nvars,
                                 uint32_t      *offset_io);
 
-dcvar_snap_t *milk_server_snapshot_dcvar(long *out_nmax);
+void milk_server_snapshot_dcvar(void);
 
-void milk_server_send_modified_dcvars(int client_fd, const dcvar_snap_t *snap, long snap_nmax);
+void milk_server_send_modified_dcvars(int client_fd);
 
 int milk_server_is_entity_ns_prefix(const char *s, size_t nslen);
 
@@ -114,5 +102,11 @@ int milk_server_spawn_stream_worker(int client_fd);
 
 /** Set when SHUTDOWN arrives outside the main loop (e.g. during a CALL); the main loop stops on it. */
 extern volatile sig_atomic_t g_milk_server_stop;
+
+/** Reset the CALL watcher in a forked child (its thread is not copied). */
+void milk_server_watcher_atfork_child(void);
+
+/** Set after forking a worker; the server then reaps exited children. */
+extern volatile sig_atomic_t g_srv_children;
 
 #endif /* MILK_SERVER_INTERNAL_H */

@@ -87,6 +87,7 @@ static void milk_child_reset_omp(void)
     omp_set_num_threads(1);
 #endif
     cmd_mutex_init(); /* the forking thread may not be the one holding it: start unlocked */
+    milk_server_watcher_atfork_child();
 }
 
 /** stream_worker() - serve one WAITFOR/GRAB request inline, then close its connection. */
@@ -346,6 +347,39 @@ static uint64_t diff_timespec_ns(const struct timespec *t0, const struct timespe
     return (tot > 0) ? (uint64_t) tot : 0;
 }
 
+/** refresh_log_stats_soon() - refresh the SHM log header at most every 100 ms (per-request path). */
+static void refresh_log_stats_soon(void)
+{
+    static struct timespec last = { 0, 0 };
+    struct timespec        now;
+    clock_gettime(CLOCK_MONOTONIC_COARSE, &now);
+    if ((now.tv_sec - last.tv_sec) * 1000000000L + (now.tv_nsec - last.tv_nsec) >= 100000000L)
+    {
+        last = now;
+        milk_server_refresh_log_stats();
+    }
+}
+
+volatile sig_atomic_t g_srv_children = 0; /* a worker was forked and may need reaping */
+
+/** reap_children() - collect exited workers; also every 64 requests for children of commands. */
+static void reap_children(void)
+{
+    static unsigned int nreq = 0;
+    if (!g_srv_children && (++nreq & 63U) != 0)
+    {
+        return;
+    }
+    pid_t r;
+    while ((r = waitpid(0, NULL, WNOHANG)) > 0)
+    {
+    }
+    if (r < 0 && errno == ECHILD)
+    {
+        g_srv_children = 0;
+    }
+}
+
 /**
  * @brief Handle a fast, non-stdio protocol message (`PING`, `SHUTDOWN`, `LISTCMDS`, `COMPLETE`, `GET`, `EXISTS`).
  *
@@ -588,6 +622,7 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
         pid_t pid = fork();
         if (pid > 0)
         {
+            g_srv_children = 1;
             for (int i = 0; i < 4; i++)
             {
                 if (recv_fds[i] >= 0)
@@ -641,7 +676,11 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
         }
 
         // a terminal stays a terminal (TUIs, isatty checks): only capture output going elsewhere
-        int use_tee      = (g_srvlog_shm != NULL && !is_streamcat && !isatty(recv_fds[1])) ? 1 : 0;
+        // only CALLs are captured for the log (calc/test/set output is small and on the hot path)
+        int use_tee      = (g_srvlog_shm != NULL && hdr.type == MILK_MSG_CALL && !is_streamcat &&
+                            !isatty(recv_fds[1]))
+                               ? 1
+                               : 0;
         int out_pipe[2]  = { -1, -1 };
         int err_pipe[2]  = { -1, -1 };
         int stop_pipe[2] = { -1, -1 };
@@ -744,9 +783,14 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
 
         if (recv_fds[3] >= 0)
         {
-            saved_cwd = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-            if (fchdir(recv_fds[3]) != 0)
+            struct stat cst, ost;
+            if (fstat(recv_fds[3], &cst) != 0 || stat(".", &ost) != 0 || cst.st_dev != ost.st_dev ||
+                cst.st_ino != ost.st_ino) /* usually the client is in our directory already */
             {
+                saved_cwd = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+                if (fchdir(recv_fds[3]) != 0)
+                {
+                }
             }
             close(recv_fds[3]);
             recv_fds[3] = -1;
@@ -801,7 +845,7 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
             close(tee_ctx.client_err);
         }
 
-        milk_server_refresh_log_stats();
+        refresh_log_stats_soon();
 
         if (saved_cwd >= 0)
         {
@@ -929,9 +973,7 @@ int milk_server_create_listener(const char *sockpath)
  */
 void milk_server_accept_and_handle(int listen_fd, int *shutdown_flag)
 {
-    while (waitpid(0, NULL, WNOHANG) > 0)
-    {
-    }
+    reap_children();
 
     int client_fd = accept4(listen_fd, NULL, NULL, SOCK_CLOEXEC);
     if (client_fd < 0)
@@ -950,10 +992,6 @@ void milk_server_accept_and_handle(int listen_fd, int *shutdown_flag)
                                    shutdown_flag != NULL ? shutdown_flag : &dummy))
     {
         close(client_fd);
-    }
-
-    while (waitpid(0, NULL, WNOHANG) > 0)
-    {
     }
 }
 
@@ -984,10 +1022,6 @@ int milk_server_run(const char *sockpath, int owner_fd, int ready_fd)
     int shutdown_flag = 0;
     while (!shutdown_flag && !g_milk_server_stop)
     {
-        while (waitpid(0, NULL, WNOHANG) > 0)
-        {
-        }
-
         struct pollfd pfds[2];
         int           npfds = 1;
         pfds[0].fd          = listen_fd;

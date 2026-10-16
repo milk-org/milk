@@ -102,6 +102,10 @@ static int watcher_take_client(const call_watcher_ctx_t *ctx, int cfd)
         return 1;
     }
     pid_t pid = fork();
+    if (pid > 0)
+    {
+        g_srv_children = 1;
+    }
     if (pid == 0)
     {
         sigset_t none; /* this thread blocks all signals; the child must not */
@@ -144,7 +148,14 @@ static void *call_watcher_thread(void *arg)
         int nfds = (ctx->wake_fd >= 0) ? 3 : 2;
         int tms  = (ctx->wake_fd >= 0) ? 200 : 20;
         int pr   = poll(pfds, (nfds_t) nfds, tms);
-        if (pr <= 0 || !ctx->active || (nfds == 3 && (pfds[2].revents & POLLIN)))
+        if (nfds == 3 && (pfds[2].revents & POLLIN))
+        {
+            uint64_t v;
+            ssize_t rret = read(ctx->wake_fd, &v, sizeof(v)); /* the thread is reused: consume it */
+            (void) rret;
+            continue;
+        }
+        if (pr <= 0 || !ctx->active)
         {
             continue;
         }
@@ -197,6 +208,96 @@ static void *call_watcher_thread(void *arg)
         }
     }
     return NULL;
+}
+
+/* One watcher thread serves every CALL in turn (no thread creation per CALL). */
+static call_watcher_ctx_t g_wctx    = { -1, -1, -1, 0, 0 };
+static pthread_mutex_t    g_wmu     = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t     g_wcv     = PTHREAD_COND_INITIALIZER;
+static unsigned long      g_wgen    = 0; /* CALLs handed to the watcher */
+static int                g_wbusy   = 0; /* the watcher is watching a CALL */
+static int                g_wthread = 0; /* the watcher thread runs in this process */
+
+static void *watcher_main(void *arg)
+{
+    (void) arg;
+    unsigned long served = 0;
+    pthread_mutex_lock(&g_wmu);
+    for (;;)
+    {
+        while (!g_wctx.active || g_wgen == served)
+        {
+            pthread_cond_wait(&g_wcv, &g_wmu);
+        }
+        served  = g_wgen;
+        g_wbusy = 1;
+        pthread_mutex_unlock(&g_wmu);
+        call_watcher_thread(&g_wctx); /* until the CALL ends or the client hangs up */
+        pthread_mutex_lock(&g_wmu);
+        g_wbusy = 0;
+        pthread_cond_broadcast(&g_wcv);
+    }
+    return NULL;
+}
+
+/** watcher_begin() - watch @client_fd (and accept on @listen_fd) while this CALL runs; 0 if unavailable. */
+static int watcher_begin(int client_fd, int listen_fd)
+{
+    pthread_mutex_lock(&g_wmu);
+    if (!g_wthread)
+    {
+        g_wctx.wake_fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+        sigset_t all, old; /* signals stay with the main thread (sig_handler may siglongjmp) */
+        sigfillset(&all);
+        pthread_sigmask(SIG_BLOCK, &all, &old);
+        pthread_t tid;
+        g_wthread = (g_wctx.wake_fd >= 0 && pthread_create(&tid, &attr, watcher_main, NULL) == 0);
+        pthread_sigmask(SIG_SETMASK, &old, NULL);
+        pthread_attr_destroy(&attr);
+    }
+    if (g_wthread)
+    {
+        g_wctx.client_fd = client_fd;
+        g_wctx.listen_fd = listen_fd;
+        g_wctx.main_tid  = pthread_self();
+        g_wctx.active    = 1;
+        g_wgen++;
+        pthread_cond_signal(&g_wcv);
+    }
+    pthread_mutex_unlock(&g_wmu);
+    return g_wthread;
+}
+
+/** watcher_end() - stop watching the CALL; returns once the watcher no longer uses its fds. */
+static void watcher_end(void)
+{
+    pthread_mutex_lock(&g_wmu);
+    g_wctx.active = 0;
+    uint64_t one  = 1;
+    ssize_t  wret = write(g_wctx.wake_fd, &one, sizeof(one));
+    (void) wret;
+    while (g_wbusy)
+    {
+        pthread_cond_wait(&g_wcv, &g_wmu);
+    }
+    pthread_mutex_unlock(&g_wmu);
+}
+
+void milk_server_watcher_atfork_child(void)
+{
+    pthread_mutex_init(&g_wmu, NULL); /* the watcher thread is not copied into the child */
+    pthread_cond_init(&g_wcv, NULL);
+    if (g_wctx.wake_fd >= 0)
+    {
+        close(g_wctx.wake_fd);
+    }
+    g_wctx.wake_fd = -1;
+    g_wctx.active  = 0;
+    g_wbusy        = 0;
+    g_wthread      = 0;
 }
 
 /**
@@ -1175,9 +1276,12 @@ int milk_server_dispatch_argv(int argc, char **argv)
         return 127;
     }
 
-    memory_re_alloc();
-    compute_image_memory();
-    compute_nb_image();
+    static unsigned int ncall = 0;
+    if ((ncall++ & 15U) ==
+        0) /* it keeps 500 image / 100 variable slots spare: no need on every call */
+    {
+        memory_re_alloc();
+    }
 
     {
         size_t pos = 0;
@@ -1830,9 +1934,8 @@ int milk_server_exec_calc_or_test(int            client_fd,
         milk_server_sync_bash_vars(payload, len, nvars, &off);
     }
 
-    long          snap_nmax = 0;
-    dcvar_snap_t *snap      = milk_server_snapshot_dcvar(&snap_nmax);
-    int           rc        = 0;
+    milk_server_snapshot_dcvar();
+    int rc = 0;
 
     size_t elen     = strlen(expr);
     int    in_sq    = 0;
@@ -1901,8 +2004,7 @@ int milk_server_exec_calc_or_test(int            client_fd,
         }
     }
 
-    milk_server_send_modified_dcvars(client_fd, snap, snap_nmax);
-    free(snap);
+    milk_server_send_modified_dcvars(client_fd);
     return rc;
 }
 
@@ -2070,58 +2172,23 @@ int milk_server_exec_call(int            client_fd,
         milk_server_sync_bash_vars(payload, len, nvars, &off);
     }
 
-    long          snap_nmax    = 0;
-    dcvar_snap_t *snap         = milk_server_snapshot_dcvar(&snap_nmax);
-    unsigned int  nbcmd_before = data.NBcmd;
+    milk_server_snapshot_dcvar();
+    unsigned int nbcmd_before = data.NBcmd;
 
-    call_watcher_ctx_t wctx;
-    pthread_t          wtid;
-    int                has_watcher = 0;
-    {
-        // also in forked workers (listen_fd < 0, ignored by poll): CANCEL/hang-up must stop them
-        wctx.client_fd = client_fd;
-        wctx.listen_fd = listen_fd;
-        wctx.wake_fd   = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
-        wctx.main_tid  = pthread_self();
-        wctx.active    = 1;
-        sigset_t all, old; /* signals stay with the main thread (sig_handler may siglongjmp) */
-        sigfillset(&all);
-        pthread_sigmask(SIG_BLOCK, &all, &old);
-        if (pthread_create(&wtid, NULL, call_watcher_thread, &wctx) == 0)
-        {
-            has_watcher = 1;
-        }
-        else if (wctx.wake_fd >= 0)
-        {
-            close(wctx.wake_fd);
-            wctx.wake_fd = -1;
-        }
-        pthread_sigmask(SIG_SETMASK, &old, NULL);
-    }
+    // also in forked workers (listen_fd < 0, ignored by poll): CANCEL/hang-up must stop them
+    int has_watcher = watcher_begin(client_fd, listen_fd);
 
     int rc = milk_server_dispatch_argv((int) argc, argv);
 
     if (has_watcher)
     {
-        wctx.active = 0;
-        if (wctx.wake_fd >= 0)
-        {
-            uint64_t one  = 1;
-            ssize_t  wret = write(wctx.wake_fd, &one, sizeof(one));
-            (void) wret;
-        }
-        pthread_join(wtid, NULL);
-        if (wctx.wake_fd >= 0)
-        {
-            close(wctx.wake_fd);
-        }
+        watcher_end();
     }
 
     fflush(stdout);
     fflush(stderr);
 
-    milk_server_send_modified_dcvars(client_fd, snap, snap_nmax);
-    free(snap);
+    milk_server_send_modified_dcvars(client_fd);
 
     /* If a module was dynamically loaded (@mload / @soload), send DEFCMD */
     for (unsigned int ci = nbcmd_before; ci < data.NBcmd; ci++)
