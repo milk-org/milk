@@ -13,6 +13,7 @@
  *   structures in `/dev/shm`.
  */
 
+#include <errno.h>
 #include <fnmatch.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -34,6 +35,42 @@
 #include "milk_shm_prop.h"
 #include "milk_shm_prop_internal.h"
 #include "milk_path.h"
+
+/** fmt_float_roundtrip() - shortest %g form of @v that strtof() maps back to @v. */
+static void fmt_float_roundtrip(char *out, size_t outsz, float v)
+{
+    for (int prec = 6; prec <= 9; prec++)
+    {
+        snprintf(out, outsz, "%.*g", prec, (double) v);
+        if (strtof(out, NULL) == v)
+        {
+            return;
+        }
+    }
+}
+
+/**
+ * fps_param_value_str() - parameter value for scripts: exact floats and bare stream names
+ * (functionparameter_GetParamValueString() is the decorated, rounded display form).
+ */
+static void fps_param_value_str(FPS_PARAM *p, char *out, size_t outsz)
+{
+    switch (p->type)
+    {
+    case FPTYPE_FLOAT64:
+        milk_shm_prop_fmt_double(out, outsz, p->val.f64[0]);
+        break;
+    case FPTYPE_FLOAT32:
+        fmt_float_roundtrip(out, outsz, p->val.f32[0]);
+        break;
+    case FPTYPE_STREAMNAME:
+        snprintf(out, outsz, "%s", p->val.string[0]);
+        break;
+    default:
+        functionparameter_GetParamValueString(p, out, (int) outsz);
+        break;
+    }
+}
 
 /**
  * @brief Read an FPS parameter, metadata attribute, or parameter list (`*` / `list`).
@@ -115,6 +152,7 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
         }
         pid_t  pid  = (fps.md->runpid > 0) ? fps.md->runpid : fps.md->confpid;
         size_t pos  = 0;
+        int    full = 0;
         size_t nlen = strlen(name);
         int    n0 =
             snprintf(out, outsz,
@@ -143,16 +181,21 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
                 }
                 char vbuf[256];
                 vbuf[0] = '\0';
-                functionparameter_GetParamValueString(&fps.parray[pi], vbuf, (int) sizeof(vbuf));
+                fps_param_value_str(&fps.parray[pi], vbuf, sizeof(vbuf));
                 int n = snprintf(out + pos, outsz - pos, "\n%s\t%s", kw, vbuf);
                 if (n > 0 && pos + (size_t) n < outsz)
                 {
                     pos += (size_t) n;
                 }
+                else
+                {
+                    out[pos] = '\0';
+                    full     = 1;
+                }
             }
         }
         fps_disconnect(&fps);
-        return 0;
+        return full ? -2 : 0; // -2: buffer too small
     }
 
     int pindex = functionparameter_GetParamIndex(&fps, prop);
@@ -166,7 +209,7 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
     int rc = -1;
     if (pindex >= 0)
     {
-        functionparameter_GetParamValueString(&fps.parray[pindex], out, (int) outsz);
+        fps_param_value_str(&fps.parray[pindex], out, outsz);
         rc = 0;
     }
     else if (fps.md != NULL)
@@ -522,38 +565,52 @@ int cli_fps_set_param(const char *fpsname, const char *pname, const char *valstr
         return 0;
     }
 
-    /* Fallback for hex/octal integer literals not accepted by base-10 strtol */
-    uint32_t ptype = fps.parray[pindex].type;
-    if (ptype & FPTYPE_INT32)
+    /* Fallback for hex/octal integer literals not accepted by the base-10 setter:
+     * the whole string must parse and fit, otherwise the parameter is left unchanged. */
+    uint32_t    ptype = fps.parray[pindex].type;
+    const char *kw    = fps.parray[pindex].keywordfull;
+    char       *endp  = NULL;
+    int         rc    = -1;
+    errno             = 0;
+    if (ptype & (FPTYPE_INT32 | FPTYPE_INT64))
     {
-        fps.parray[pindex].val.i32[0] = (int32_t) strtol(valstr, NULL, 0);
-        fps.parray[pindex].cnt0++;
+        long long v  = strtoll(valstr, &endp, 0);
+        int       ok = (endp != valstr && *endp == '\0' && errno == 0);
+        if (ok && (ptype & FPTYPE_INT32) && v >= INT32_MIN && v <= INT32_MAX)
+        {
+            rc = functionparameter_SetParamValue_INT32(&fps, kw, (int32_t) v) == EXIT_SUCCESS ? 0
+                                                                                              : -1;
+        }
+        else if (ok && (ptype & FPTYPE_INT64))
+        {
+            rc = functionparameter_SetParamValue_INT64(&fps, kw, (int64_t) v) == EXIT_SUCCESS ? 0
+                                                                                              : -1;
+        }
     }
-    else if (ptype & FPTYPE_UINT32)
+    else if ((ptype & (FPTYPE_UINT32 | FPTYPE_UINT64)) && valstr[0] != '-')
     {
-        fps.parray[pindex].val.ui32[0] = (uint32_t) strtoul(valstr, NULL, 0);
-        fps.parray[pindex].cnt0++;
+        unsigned long long v  = strtoull(valstr, &endp, 0);
+        int                ok = (endp != valstr && *endp == '\0' && errno == 0);
+        if (ok && (ptype & FPTYPE_UINT32) && v <= UINT32_MAX)
+        {
+            rc = functionparameter_SetParamValue_UINT32(&fps, kw, (uint32_t) v) == EXIT_SUCCESS
+                     ? 0
+                     : -1;
+        }
+        else if (ok && (ptype & FPTYPE_UINT64))
+        {
+            rc = functionparameter_SetParamValue_UINT64(&fps, kw, (uint64_t) v) == EXIT_SUCCESS
+                     ? 0
+                     : -1;
+        }
     }
-    else if (ptype & FPTYPE_INT64)
+    if (rc != 0)
     {
-        fps.parray[pindex].val.i64[0] = (int64_t) strtoll(valstr, NULL, 0);
-        fps.parray[pindex].cnt0++;
+        fprintf(stderr, "Error: invalid value '%s' for '%s' (type 0x%x) in FPS '%s'\n", valstr,
+                pname, ptype, fpsname);
     }
-    else if (ptype & FPTYPE_UINT64)
-    {
-        fps.parray[pindex].val.ui64[0] = (uint64_t) strtoull(valstr, NULL, 0);
-        fps.parray[pindex].cnt0++;
-    }
-    else
-    {
-        printf("Error: failed to set '%s' = '%s' (type 0x%x) in FPS '%s'\n", pname, valstr, ptype,
-               fpsname);
-        fps_disconnect(&fps);
-        return -1;
-    }
-
     fps_disconnect(&fps);
-    return 0;
+    return rc;
 }
 
 /**
@@ -578,13 +635,8 @@ int milk_shm_prop_set_fps(const char *name, const char *prop, const char *val)
  */
 int milk_shm_prop_exists_fps(const char *name, int check_running)
 {
-    const char *shmdir = (dcshmdir[0] != '\0') ? dcshmdir : getenv("MILK_SHM_DIR");
-    if (shmdir == NULL || shmdir[0] == '\0')
-    {
-        shmdir = "/dev/shm";
-    }
     char shmpath[STRINGMAXLEN_DIRNAME + 256];
-    snprintf(shmpath, sizeof(shmpath), "%s/%s.fps.shm", shmdir, name);
+    snprintf(shmpath, sizeof(shmpath), "%s/%s.fps.shm", milk_shm_prop_shmdir(), name);
     if (access(shmpath, F_OK) != 0)
     {
         return 0;

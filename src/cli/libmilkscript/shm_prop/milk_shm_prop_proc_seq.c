@@ -437,11 +437,51 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
  * @param val  Control value string
  * @return 0 on success, -1 on error
  */
+/** parse_bool() - 1 for 1/on/true/yes/empty, 0 for 0/off/false/no, -1 otherwise. */
+static int parse_bool(const char *v)
+{
+    if (v == NULL || v[0] == '\0' || strcmp(v, "1") == 0 || strcasecmp(v, "on") == 0 ||
+        strcasecmp(v, "true") == 0 || strcasecmp(v, "yes") == 0)
+    {
+        return 1;
+    }
+    if (strcmp(v, "0") == 0 || strcasecmp(v, "off") == 0 || strcasecmp(v, "false") == 0 ||
+        strcasecmp(v, "no") == 0)
+    {
+        return 0;
+    }
+    return -1;
+}
+
 int milk_shm_prop_set_proc(const char *name, const char *prop, const char *val)
 {
     if (name == NULL || prop == NULL)
     {
         return -1;
+    }
+
+    /* action shorthands take a boolean: pause=0 resumes, run=0 pauses, step/stop=0 do nothing */
+    int is_run   = (strcasecmp(prop, "run") == 0 || strcasecmp(prop, "resume") == 0);
+    int is_pause = (strcasecmp(prop, "pause") == 0);
+    int is_other = (strcasecmp(prop, "step") == 0 || strcasecmp(prop, "incr") == 0 ||
+                    strcasecmp(prop, "stop") == 0 || strcasecmp(prop, "exit") == 0 ||
+                    strcasecmp(prop, "kill") == 0);
+    if (is_run || is_pause || is_other)
+    {
+        int on = parse_bool(val);
+        if (on < 0)
+        {
+            fprintf(stderr, "ERROR: p.%s.%s expects 1/0 (got '%s')\n", name, prop, val);
+            return -1;
+        }
+        if (on == 0)
+        {
+            if (is_other)
+            {
+                return 0;
+            }
+            prop = is_pause ? "run" : "pause";
+        }
     }
 
     int ctrlval_int = -1;
@@ -695,8 +735,9 @@ int milk_shm_prop_set_seq(const char *name, const char *prop, const char *val)
             {
                 kill(seqst->pid, SIGSTOP);
             }
-            seqst->status = MILKSEQ_STATUS_IDLE;
-            rc            = 0;
+            seqst->status =
+                (seqst->status & ~MILKSEQ_STATUS_RUNNING) | MILKSEQ_STATUS_IDLE; // keep ERROR
+            rc = 0;
         }
         else if (strcasecmp(val, "resume") == 0 || strcasecmp(val, "run") == 0 ||
                  strcasecmp(val, "running") == 0)
@@ -705,13 +746,13 @@ int milk_shm_prop_set_seq(const char *name, const char *prop, const char *val)
             {
                 kill(seqst->pid, SIGCONT);
             }
-            seqst->status = MILKSEQ_STATUS_RUNNING;
+            seqst->status = (seqst->status & ~MILKSEQ_STATUS_IDLE) | MILKSEQ_STATUS_RUNNING;
             rc            = 0;
         }
         else if (strcasecmp(val, "abort") == 0 || strcasecmp(val, "stop") == 0 ||
                  strcasecmp(val, "exit") == 0)
         {
-            seqst->status = MILKSEQ_STATUS_STOPPING;
+            seqst->status |= MILKSEQ_STATUS_STOPPING;
             if (seqst->fifo_path[0] != '\0')
             {
                 int fd = open(seqst->fifo_path, O_WRONLY | O_NONBLOCK);

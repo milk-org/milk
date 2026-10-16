@@ -49,11 +49,7 @@ IMAGE *milk_shm_prop_find_or_open_stream(const char *sname, IMAGE *tmp_img, int 
     }
 
     char        shmpath[STRINGMAXLEN_DIRNAME + 256];
-    const char *shmdir = (dcshmdir[0] != '\0') ? dcshmdir : getenv("MILK_SHM_DIR");
-    if (shmdir == NULL || shmdir[0] == '\0')
-    {
-        shmdir = "/dev/shm";
-    }
+    const char *shmdir = milk_shm_prop_shmdir();
     snprintf(shmpath, sizeof(shmpath), "%s/%s.im.shm", shmdir, sname);
     if (access(shmpath, F_OK) != 0)
     {
@@ -157,7 +153,7 @@ static int read_stream_keyword(const IMAGE *im, const char *kname, char *out, si
                 }
                 else if (im->kw[k].type == 'D')
                 {
-                    snprintf(vbuf, sizeof(vbuf), "%.15g", im->kw[k].value.numf);
+                    milk_shm_prop_fmt_double(vbuf, sizeof(vbuf), im->kw[k].value.numf);
                 }
                 else
                 {
@@ -184,7 +180,7 @@ static int read_stream_keyword(const IMAGE *im, const char *kname, char *out, si
             }
             else if (im->kw[k].type == 'D')
             {
-                snprintf(out, outsz, "%.15g", im->kw[k].value.numf);
+                milk_shm_prop_fmt_double(out, outsz, im->kw[k].value.numf);
             }
             else
             {
@@ -455,10 +451,15 @@ int milk_shm_prop_set_stream(const char *name,
         fprintf(stderr, "ERROR: only s.<name>.kw.<KEY> is writable on streams\n");
         return -1;
     }
-    const char *kname = prop + 3;
-    if (kname[0] == '\0')
+    if (prop[3] == '\0')
     {
         return -1;
+    }
+    char kname[KEYWORD_MAX_STRING]; // stored width: look up by the name as it will be stored
+    snprintf(kname, sizeof(kname), "%s", prop + 3);
+    if (strlen(prop + 3) >= sizeof(kname))
+    {
+        fprintf(stderr, "WARNING: keyword name '%s' truncated to '%s'\n", prop + 3, kname);
     }
 
     IMAGE  tmp_img;
@@ -553,12 +554,8 @@ int milk_shm_prop_exists_stream(const char *name)
             }
         }
     }
-    const char *shmdir = (dcshmdir[0] != '\0') ? dcshmdir : getenv("MILK_SHM_DIR");
-    if (shmdir == NULL || shmdir[0] == '\0')
-    {
-        shmdir = "/dev/shm";
-    }
-    char shmpath[STRINGMAXLEN_DIRNAME + 256];
+    const char *shmdir = milk_shm_prop_shmdir();
+    char        shmpath[STRINGMAXLEN_DIRNAME + 256];
     snprintf(shmpath, sizeof(shmpath), "%s/%s.im.shm", shmdir, name);
     return (access(shmpath, F_OK) == 0) ? 1 : 0;
 }

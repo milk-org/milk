@@ -32,6 +32,30 @@
  * @param prefix Token before the first dot
  * @return 1 if @prefix is a recognized namespace, 0 otherwise
  */
+/** fmt_double_roundtrip() - shortest %g form of @v that strtod() maps back to @v. */
+void milk_shm_prop_fmt_double(char *out, size_t outsz, double v)
+{
+    for (int prec = 15; prec <= 17; prec++)
+    {
+        snprintf(out, outsz, "%.*g", prec, v);
+        if (strtod(out, NULL) == v)
+        {
+            return;
+        }
+    }
+}
+
+/** milk_shm_prop_shmdir() - stream/FPS directory, resolved like ImageStreamIO (MILK_SHM_DIR first). */
+const char *milk_shm_prop_shmdir(void)
+{
+    const char *d = getenv("MILK_SHM_DIR");
+    if (d != NULL && d[0] != '\0')
+    {
+        return d;
+    }
+    return (dcshmdir[0] != '\0') ? dcshmdir : "/dev/shm";
+}
+
 static int is_known_namespace(const char *prefix)
 {
     return milk_is_known_namespace(prefix);
@@ -65,11 +89,25 @@ static int token_in_space_list(const char *list, const char *tok)
     return 0;
 }
 
+/** append_word() - append " @w" (no leading space at pos 0); returns 1, leaving @out intact, if it does not fit. */
+static int append_word(char *out, size_t outsz, size_t *pos, const char *w)
+{
+    int n = snprintf(out + *pos, outsz - *pos, "%s%s", (*pos > 0) ? " " : "", w);
+    if (n < 0 || *pos + (size_t) n >= outsz)
+    {
+        out[*pos] = '\0';
+        return 1;
+    }
+    *pos += (size_t) n;
+    return 0;
+}
+
 static int list_entities_in_namespace(const char *nsp, const char *pattern, char *out, size_t outsz)
 {
-    const char *pat = (pattern == NULL || strcmp(pattern, "list") == 0) ? "*" : pattern;
-    size_t      pos = 0;
-    out[0]          = '\0';
+    const char *pat  = (pattern == NULL || strcmp(pattern, "list") == 0) ? "*" : pattern;
+    size_t      pos  = 0;
+    int         full = 0;
+    out[0]           = '\0';
 
     if ((strcmp(nsp, "l") == 0 || strcmp(nsp, "local") == 0))
     {
@@ -86,15 +124,11 @@ static int list_entities_in_namespace(const char *nsp, const char *pattern, char
                 const char *iname = data.core.image[i].name;
                 if (fnmatch(pat, iname, 0) == 0 && !token_in_space_list(out, iname))
                 {
-                    int n = snprintf(out + pos, outsz - pos, "%s%s", (pos > 0) ? " " : "", iname);
-                    if (n > 0 && pos + (size_t) n < outsz)
-                    {
-                        pos += (size_t) n;
-                    }
+                    full |= append_word(out, outsz, &pos, iname);
                 }
             }
         }
-        return 0;
+        return full ? -2 : 0;
     }
 
     if ((strcmp(nsp, "s") == 0 || strcmp(nsp, "stream") == 0) && data.core.image != NULL)
@@ -107,25 +141,16 @@ static int list_entities_in_namespace(const char *nsp, const char *pattern, char
                 const char *iname = data.core.image[i].name;
                 if (fnmatch(pat, iname, 0) == 0 && !token_in_space_list(out, iname))
                 {
-                    int n = snprintf(out + pos, outsz - pos, "%s%s", (pos > 0) ? " " : "", iname);
-                    if (n > 0 && pos + (size_t) n < outsz)
-                    {
-                        pos += (size_t) n;
-                    }
+                    full |= append_word(out, outsz, &pos, iname);
                 }
             }
         }
     }
 
-    const char *shmdir = getenv("MILK_SHM_DIR");
-    if (shmdir == NULL || shmdir[0] == '\0')
-    {
-        shmdir = (dcshmdir[0] != '\0') ? dcshmdir : "/dev/shm";
-    }
-    DIR *dp = opendir(shmdir);
+    DIR *dp = opendir(milk_shm_prop_shmdir());
     if (dp == NULL)
     {
-        return 0;
+        return full ? -2 : 0;
     }
 
     struct dirent *de;
@@ -191,11 +216,7 @@ static int list_entities_in_namespace(const char *nsp, const char *pattern, char
 
         if (ename[0] != '\0' && fnmatch(pat, ename, 0) == 0 && !token_in_space_list(out, ename))
         {
-            int n = snprintf(out + pos, outsz - pos, "%s%s", (pos > 0) ? " " : "", ename);
-            if (n > 0 && pos + (size_t) n < outsz)
-            {
-                pos += (size_t) n;
-            }
+            full |= append_word(out, outsz, &pos, ename);
         }
     }
     closedir(dp);
@@ -213,18 +234,13 @@ static int list_entities_in_namespace(const char *nsp, const char *pattern, char
                     if (fnmatch(pat, pname, 0) == 0 && milk_shm_prop_exists_proc(pname, 0) &&
                         !token_in_space_list(out, pname))
                     {
-                        int n =
-                            snprintf(out + pos, outsz - pos, "%s%s", (pos > 0) ? " " : "", pname);
-                        if (n > 0 && pos + (size_t) n < outsz)
-                        {
-                            pos += (size_t) n;
-                        }
+                        full |= append_word(out, outsz, &pos, pname);
                     }
                 }
             }
         }
     }
-    return 0;
+    return full ? -2 : 0; // -2: some entries did not fit
 }
 
 static int is_json_number(const char *s)
@@ -490,15 +506,7 @@ static int dispatch_ns_get(const char *nsp,
 
     if (strcmp(nsp, "s") == 0 || strcmp(nsp, "stream") == 0)
     {
-        if (milk_shm_prop_get_stream(name, prop, out, outsz) == 0)
-        {
-            return 0;
-        }
-        if (strcmp(nsp, "s") == 0)
-        {
-            return milk_shm_prop_get_seq(name, prop, out, outsz);
-        }
-        return -1;
+        return milk_shm_prop_get_stream(name, prop, out, outsz);
     }
     if (strcmp(nsp, "l") == 0 || strcmp(nsp, "local") == 0)
     {
@@ -711,7 +719,10 @@ static int dispatch_ns_set(const char *nsp,
  * @param comment  Optional FITS keyword comment (may be NULL)
  * @return 0 on success, -1 on error
  */
-int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
+static int shm_prop_set_impl(const char *spec,
+                             const char *val,
+                             const char *comment,
+                             int         allow_stdin)
 {
     if (spec == NULL)
     {
@@ -752,7 +763,7 @@ int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
             return -1;
         }
     }
-    if (strcmp(val, "-") == 0)
+    if (allow_stdin && strcmp(val, "-") == 0)
     {
         if (fgets(stdin_buf, sizeof(stdin_buf), stdin) == NULL)
         {
@@ -803,6 +814,11 @@ int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
 
     /* Legacy fallback: @<fpsname>.<param>=<val> */
     return milk_shm_prop_set_fps(specbuf, rest, val);
+}
+
+int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
+{
+    return shm_prop_set_impl(spec, val, comment, 1);
 }
 
 /**
@@ -939,9 +955,13 @@ static void emit_snapshot_json_entry(FILE *fp, int *first, const char *key, cons
         fprintf(fp, ",\n");
     }
     *first = 0;
+    char   kbuf[1100];
     char   ebuf[2048];
-    size_t pos = 0;
-    ebuf[0]    = '\0';
+    size_t kpos = 0;
+    size_t pos  = 0;
+    kbuf[0]     = '\0';
+    ebuf[0]     = '\0';
+    append_json_escaped_str(kbuf, sizeof(kbuf), &kpos, key);
     if (is_json_number(val))
     {
         snprintf(ebuf, sizeof(ebuf), "%s", val);
@@ -950,7 +970,37 @@ static void emit_snapshot_json_entry(FILE *fp, int *first, const char *key, cons
     {
         append_json_escaped_str(ebuf, sizeof(ebuf), &pos, val);
     }
-    fprintf(fp, "  \"%s\": %s", key, ebuf);
+    fprintf(fp, "  %s: %s", kbuf, ebuf);
+}
+
+/**
+ * get_alloc() - run getter @fn(@a, @b, buf, size) with a growing heap buffer until nothing
+ * was dropped (-2). Returns the buffer (caller frees) or NULL on error.
+ */
+static char *get_alloc(int (*fn)(const char *, const char *, char *, size_t),
+                       const char *a,
+                       const char *b)
+{
+    for (size_t sz = 16384; sz <= ((size_t) 64 << 20); sz *= 4)
+    {
+        char *buf = (char *) malloc(sz);
+        if (buf == NULL)
+        {
+            return NULL;
+        }
+        buf[0] = '\0';
+        int rc = fn(a, b, buf, sz);
+        if (rc == 0)
+        {
+            return buf;
+        }
+        free(buf);
+        if (rc != -2)
+        {
+            return NULL;
+        }
+    }
+    return NULL;
 }
 
 /**
@@ -994,18 +1044,27 @@ int milk_shm_prop_snapshot(int argc, char **argv)
     }
 
     fprintf(fp, "{\n");
-    int  first = 1;
-    char lbuf[8192];
+    int   first = 1;
+    int   rc    = 0;
+    char *lbuf  = get_alloc(list_entities_in_namespace, "f", "*");
+    if (lbuf == NULL)
+    {
+        fprintf(stderr, "Error: @snapshot: cannot list FPS instances\n");
+        rc = 1;
+    }
 
     /* 1. Active FPS parameters */
-    list_entities_in_namespace("f", "*", lbuf, sizeof(lbuf));
     char *save_ent = NULL;
-    for (char *ent = strtok_r(lbuf, " \t\r\n", &save_ent); ent != NULL;
+    for (char *ent = (lbuf != NULL) ? strtok_r(lbuf, " \t\r\n", &save_ent) : NULL; ent != NULL;
          ent       = strtok_r(NULL, " \t\r\n", &save_ent))
     {
-        char kv[16384];
-        kv[0] = '\0';
-        if (milk_shm_prop_get_fps(ent, "kv", kv, sizeof(kv)) == 0 && kv[0] != '\0')
+        char *kv = get_alloc(milk_shm_prop_get_fps, ent, "kv");
+        if (kv == NULL)
+        {
+            fprintf(stderr, "Error: @snapshot: cannot read FPS '%s'\n", ent);
+            rc = 1;
+        }
+        else if (kv[0] != '\0')
         {
             char *save_ln = NULL;
             for (char *ln = strtok_r(kv, "\r\n", &save_ln); ln != NULL;
@@ -1031,12 +1090,19 @@ int milk_shm_prop_snapshot(int argc, char **argv)
                 }
             }
         }
+        free(kv);
     }
+    free(lbuf);
 
     /* 2. Active Stream FITS keywords */
-    list_entities_in_namespace("s", "*", lbuf, sizeof(lbuf));
+    lbuf = get_alloc(list_entities_in_namespace, "s", "*");
+    if (lbuf == NULL)
+    {
+        fprintf(stderr, "Error: @snapshot: cannot list streams\n");
+        rc = 1;
+    }
     save_ent = NULL;
-    for (char *ent = strtok_r(lbuf, " \t\r\n", &save_ent); ent != NULL;
+    for (char *ent = (lbuf != NULL) ? strtok_r(lbuf, " \t\r\n", &save_ent) : NULL; ent != NULL;
          ent       = strtok_r(NULL, " \t\r\n", &save_ent))
     {
         char kv[8192];
@@ -1069,12 +1135,14 @@ int milk_shm_prop_snapshot(int argc, char **argv)
         }
     }
 
+    free(lbuf);
+
     fprintf(fp, "\n}\n");
     if (fp != stdout)
     {
         fclose(fp);
     }
-    return 0;
+    return rc;
 }
 
 static char *read_file_all(const char *path)
@@ -1369,7 +1437,7 @@ int milk_shm_prop_restore(int argc, char **argv)
         {
             printf("@set %s = %s\n", key, sval);
         }
-        else if (milk_shm_prop_set(key, sval, NULL) != 0)
+        else if (shm_prop_set_impl(key, sval, NULL, 0) != 0) // stored "-" is a value, not stdin
         {
             rc = 1;
         }

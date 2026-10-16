@@ -19,6 +19,10 @@
 #include <stddef.h>
 
 /* Stream / local image namespace (@s., @stream., @l., @local.) */
+const char *milk_shm_prop_shmdir(void);
+
+void milk_shm_prop_fmt_double(char *out, size_t outsz, double v);
+
 int milk_shm_prop_get_stream(const char *name, const char *prop, char *out, size_t outsz);
 
 int milk_shm_prop_set_stream(const char *name,

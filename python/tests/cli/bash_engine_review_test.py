@@ -509,7 +509,6 @@ def test_P1_long_expression(tmp_path):
     assert "r=36" in res.stdout or "rc=0" not in res.stdout
 
 
-@bug("P2", "@set f.X.param=<garbage> writes strtol() junk and reports success")
 def test_P2_fps_set_rejects_garbage():
     res = _run_bash("""
         milk-fpsexec-imggen-mkrndim -n p2fps fpsinit >/dev/null 2>&1
@@ -569,7 +568,6 @@ def test_P5_string_functions(tmp_path):
     assert value(res.stdout, "u") == "ABC"
 
 
-@bug("P8", "long keyword names duplicated on every write")
 def test_P8_long_keyword_single_slot(tmp_path):
     res = milk_cli_script(
         "@mk2Dim p8 4 4\n@set s.p8.kw.VERYLONGKEYWORDNAME_X 1\n"
@@ -577,6 +575,29 @@ def test_P8_long_keyword_single_slot(tmp_path):
         tmp_path,
     )
     assert res.stdout.count('"VERYLONGKEYWORD') == 1
+
+
+def test_P7_keyword_double_roundtrip():
+    res = _run_bash("""
+        @mk2Dim "@S:p7" 2 2 >/dev/null
+        @set s.p7.kw.A 0.1
+        @set s.p7.kw.B 3.141592653589793
+        @set s.p7.kw.C 1e-7
+        echo "A=$(@get s.p7.kw.A) B=$(@get s.p7.kw.B) C=$(@get s.p7.kw.C)"
+        """)
+    assert "A=0.1 B=3.141592653589793 C=1e-07" in res.stdout, res.stdout + res.stderr
+
+
+def test_P15_restore_dash_is_literal(tmp_path):
+    snap = tmp_path / "s.json"
+    snap.write_text('{\n  "s.p15.kw.D": "-"\n}\n')
+    res = _run_bash(f"""
+        @mk2Dim "@S:p15" 2 2 >/dev/null
+        @set s.p15.kw.D before
+        echo evil | @restore "{snap}" >/dev/null 2>&1
+        echo "D=$(@get s.p15.kw.D)"
+        """)
+    assert "D=-" in res.stdout, res.stdout + res.stderr
 
 
 def test_P9_integer_power(tmp_path):
