@@ -17,6 +17,7 @@ import socket
 import struct
 import subprocess
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -478,13 +479,11 @@ def test_C10_heredoc_in_piped_repl(tmp_path):
     assert "command not found" not in res.stdout + res.stderr
 
 
-@bug("C11", "milk-cli -s exits 0 when the last command failed")
 def test_C11_script_exit_status(tmp_path):
     res = milk_cli_script("echo x\nfalse", tmp_path)
     assert res.returncode == 1
 
 
-@bug("C11", "$? reset to 0 between piped REPL lines")
 def test_C11_status_preserved_between_lines(tmp_path):
     res = milk_cli_stdin('false\necho "st=$?"', tmp_path)
     assert value(res.stdout, "st") == "1"
@@ -659,7 +658,6 @@ def test_P14_plain_string_equality(tmp_path):
     assert value(res.stdout, "r") == "0"
 
 
-@bug("WP9", "undefined calc identifier evaluates to its own name")
 def test_WP9_undefined_identifier_is_error(tmp_path):
     res = milk_cli_script(
         '@calc -v r "strlen(foobar_undefined)"\necho "rc=$?"', tmp_path
@@ -667,10 +665,77 @@ def test_WP9_undefined_identifier_is_error(tmp_path):
     assert value(res.stdout, "rc") != "0"
 
 
-@bug("WP9", "failed inline expansion is silent")
 def test_WP9_failed_inline_expansion_reports(tmp_path):
     res = milk_cli_script('echo "[@l.nosuchimage.xsize]"', tmp_path)
-    assert res.stderr.strip() != "" or res.returncode != 0
+    assert "@l.nosuchimage.xsize: inline expansion failed" in res.stderr
+
+
+def test_WP9_strict_inline_failure_is_fatal(tmp_path):
+    res = milk_cli_script(
+        'export MILK_STRICT=1\necho "[@l.nosuchimage.xsize]"\necho reached', tmp_path
+    )
+    assert res.returncode == 1
+    assert "reached" not in res.stdout
+
+
+def test_WP9_strict_only_reports_at_prompt(tmp_path):
+    out = pty_session(
+        [
+            ("line", "export MILK_STRICT=1", 0.3),
+            ("line", 'echo "[@l.nosuchimage.xsize]"; echo "still=$((40+2))"', 1.0),
+        ],
+        tmp_path,
+    )
+    assert "inline expansion failed" in out
+    assert "still=42" in out
+
+
+def test_WP9_calc_error_shown_in_quiet_mode(tmp_path):
+    res = milk_cli_script(
+        '@calc -v r "1+"\necho "rc=$?"', tmp_path
+    )  # _env() sets MILK_QUIET
+    assert value(res.stdout, "rc") == "2"
+    assert "calc error" in res.stderr and "'1+'" in res.stderr
+
+
+def test_WP9_quoted_string_is_not_undefined(tmp_path):
+    res = milk_cli_script('@calc -v r \'strlen("abc")\'\necho "r=$r"', tmp_path)
+    assert value(res.stdout, "r") == "3"
+
+
+def test_WP9_command_loaded_mid_script(tmp_path):
+    res = milk_cli_script('@mload milksequencer\nseq.list -q\necho "rc=$?"', tmp_path)
+    assert value(res.stdout, "rc") == "0"
+
+
+@pytest.mark.parametrize(
+    "reply, msg",
+    [
+        (b"", "lost connection"),
+        (struct.pack("<IHBBI", 0x4D494C4B, 99, 1, 0, 0), "protocol"),
+    ],
+)
+def test_WP9_transport_failure_is_255(tmp_path, reply, msg):
+    env, name = _server_env(tmp_path)
+    lsock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    lsock.bind("\0" + name[1:])
+    lsock.listen(1)
+
+    def serve():
+        conn, _ = lsock.accept()
+        conn.recv(4096)
+        conn.sendall(reply)
+        conn.close()
+
+    t = threading.Thread(target=serve, daemon=True)
+    t.start()
+    try:
+        res = _milk_call(env, "test", "1 == 1")
+    finally:
+        t.join(timeout=5)
+        lsock.close()
+    assert res.returncode == 255
+    assert msg in res.stderr
 
 
 # ------------------------------------------------ S*/Sec*: server and IPC

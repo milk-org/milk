@@ -341,6 +341,7 @@ static val_t eval_existing_var_ref(const char *varname)
  * @brief Handle a `TOK_NVAR` token (new variable assignment or standalone string/image argument).
  */
 static val_t eval_nvar_token(const char *varname,
+                             int         literal,
                              cli_token *(*cur_func)(void),
                              cli_token *(*advance_func)(void) )
 {
@@ -371,6 +372,13 @@ static val_t eval_nvar_token(const char *varname,
             imgid_slice_split_name(varname, bare, (int) sizeof(bare), btext, (int) sizeof(btext));
         parse_errmsg(has_brk ? "Source image not found for slice"
                              : "Malformed slice: missing closing ']'");
+        return mk_double(0);
+    }
+    else if (!literal)
+    {
+        char msg[CLI_CALC_TOKEN_MAXLEN + 32];
+        snprintf(msg, sizeof(msg), "undefined identifier '%s'", varname);
+        parse_errmsg(msg);
         return mk_double(0);
     }
     return mk_string(varname);
@@ -509,7 +517,7 @@ val_t parse_primary(void)
     if (t->type == TOK_NVAR)
     {
         advance_func();
-        return eval_nvar_token(t->sval, cur_func, advance_func);
+        return eval_nvar_token(t->sval, t->literal, cur_func, advance_func);
     }
 
     if (t->type == TOK_IMAGE)

@@ -18,6 +18,9 @@ extern "C"
 {
 #endif
 
+/** Exit status of a client call that could not reach the server or lost it (distinct from "false"). */
+#define MILK_CLIENT_RC_TRANSPORT 255
+
 typedef struct
 {
     const char *(*get_var)(const char *name, void *ctx);

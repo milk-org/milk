@@ -33,6 +33,19 @@ The same rule applies at the prompt, with `-c`, on piped input, in scripts and i
 Any other word goes to bash unchanged: `listim` without `@` is an ordinary (usually unknown) shell
 command.
 
+### Errors and Exit Status
+
+- `milk-cli -s`, `milk-cli -c` and piped input exit with the status of the last command, and `$?`
+  carries over from one input line to the next.
+- A failed inline expansion (`@s.cam.xsize` for a missing stream) prints
+  `milk: @s.cam.xsize: inline expansion failed` and expands to an empty string. An assignment such
+  as `x=@s.cam.xsize` also returns its non-zero status. With `MILK_STRICT=1` the failure is fatal: the
+  script exits with that status, as with `set -u`. At the interactive prompt it is only reported.
+- Calculator errors are printed even in quiet mode (`milk: calc error: ... in '<expr>'`). An
+  undefined name is an error: quote string literals (`@calc 'strlen("abc")'`).
+- When the server cannot be reached or speaks another protocol version, milk commands print a
+  message and return 255, so `@test` never reads a lost connection as "false".
+
 See also: [CLI Syntax](CLIcore.md) · [FPS](fps.md) · [Streams](streams.md)
 
 ## Script Files

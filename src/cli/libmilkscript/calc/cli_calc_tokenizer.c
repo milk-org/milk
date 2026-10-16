@@ -225,6 +225,7 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
 
     while (*p != '\0' && nt < max_tok - 1)
     {
+        tokens[nt].literal = 0;
         /* skip whitespace (not newline) */
         while (*p == ' ' || *p == '\t')
         {
@@ -574,6 +575,7 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
             memcpy(tokens[nt].sval, start, slen);
             tokens[nt].sval[slen] = '\0';
             tokens[nt].type       = TOK_NVAR;
+            tokens[nt].literal    = 1;
             if (*p == '"')
             {
                 p++;

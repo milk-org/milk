@@ -166,7 +166,7 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
         {
             close(sw_stdin_fd);
         }
-        return 1;
+        return MILK_CLIENT_RC_TRANSPORT;
     }
 
     milk_packed_vars_t pv;
@@ -297,7 +297,7 @@ int milk_client_get_buf(const char *spec, char *out, size_t outsz, const milk_cl
     int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
     if (fd < 0)
     {
-        return 1;
+        return MILK_CLIENT_RC_TRANSPORT;
     }
 
     uint32_t slen = (uint32_t) (strlen(spec) + 1);
@@ -391,7 +391,7 @@ int milk_client_set(const char                *spec,
     int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
     if (fd < 0)
     {
-        return 1;
+        return MILK_CLIENT_RC_TRANSPORT;
     }
 
     size_t l1 = strlen(spec) + 1;
@@ -522,7 +522,7 @@ static int client_calc_or_test(const char                *expr,
     int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
     if (fd < 0)
     {
-        return 2;
+        return MILK_CLIENT_RC_TRANSPORT;
     }
 
     milk_packed_vars_t pv;
@@ -1026,7 +1026,7 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
     int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
     if (fd < 0)
     {
-        return 1;
+        return MILK_CLIENT_RC_TRANSPORT;
     }
 
     size_t   l1  = strlen(target) + 1;
@@ -1395,7 +1395,7 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
     int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
     if (fd < 0)
     {
-        return 1;
+        return MILK_CLIENT_RC_TRANSPORT;
     }
 
     size_t   l1  = strlen(sname) + 1;
@@ -1521,7 +1521,7 @@ int milk_client_complete(const char                *prefix,
     int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
     if (fd < 0)
     {
-        return 1;
+        return MILK_CLIENT_RC_TRANSPORT;
     }
 
     size_t   l1  = strlen(prefix) + 1;

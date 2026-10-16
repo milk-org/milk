@@ -304,6 +304,18 @@ _milk_defer_add() {
     trap '_milk_run_defer_stack' EXIT
 }
 
+# Report a failed inline expansion (status $1, source text $2 if any) and pass the status on.
+# MILK_STRICT=1 makes it fatal like `set -u`, except at an interactive prompt.
+__milk_inline_err() {
+    if [[ -n "${2:-}" ]]; then
+        printf 'milk: %s: inline expansion failed\n' "$2" >&2
+    fi
+    if [[ "${MILK_STRICT:-0}" == 1 && $- != *i* && "${__MILK_INTERACTIVE:-0}" != 1 ]]; then
+        exit "$1"
+    fi
+    return "$1"
+}
+
 declare -gi __MILK_SOURCE_DEPTH=0
 declare -gA __MILK_INC_ONCE=()
 
@@ -724,6 +736,16 @@ command_not_found_handle() {
         esac
         milkcall "${bare}" "$@"
         return $?
+    fi
+    # module.command registered after this text was translated (e.g. by @mload in the same script)
+    if [[ "${cmd}" =~ ^[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+        local __milk_c
+        __milk_c="$(milkcomplete "${MILKCLI_SIGIL}${cmd}" cmd 2>/dev/null)"
+        if [[ $'\n'"${__milk_c}"$'\n' == *$'\n'"${MILKCLI_SIGIL}${cmd}"$'\n'* ]]; then
+            shift
+            milkcall "${cmd}" "$@"
+            return $?
+        fi
     fi
     if declare -F __milk_prev_cnf_handle >/dev/null; then
         __milk_prev_cnf_handle "$@"

@@ -287,8 +287,15 @@ int milk_bash_engine_init(void)
             "unset __milk_w\n"
             "quit() { exit \"$@\"; }\n"
             "exitCLI() { exit \"$@\"; }\n"
-            "while IFS= read -r -d '' __milk_cmd <&198; do\n"
-            "    builtin source \"$__milk_cmd\" 198<&-\n"
+            "__milk_ret() { return \"$1\"; }\n"
+            "__milk_rc=0\n"
+            "while IFS= read -r -d '' __milk_cmd <&198 &&\\\n"
+            "    IFS= read -r -d '' __MILK_INTERACTIVE <&198; do\n"
+            "    if __milk_ret \"${__milk_rc}\"; then\n" /* each command starts with the previous $? */
+            "        builtin source \"$__milk_cmd\" 198<&-\n"
+            "    else\n"
+            "        builtin source \"$__milk_cmd\" 198<&-\n"
+            "    fi\n"
             "    __milk_rc=$?\n"
             "    printf '%d\\t%d\\t%s\\0' \"${__milk_rc}\" \"${__MILK_EXIT_REQ}\" \"${PWD}\" "
             ">&199\n"
@@ -414,11 +421,16 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
         fprintf(stderr, "milk: cannot write command file %s\n", g_cmdfile);
         return 1;
     }
-    size_t plen  = strlen(g_cmdfile) + 1;
+    /* message: command-file path, then the interactive flag (bash reads it into __MILK_INTERACTIVE) */
+    char   msg[sizeof(g_cmdfile) + 4];
+    size_t plen = strlen(g_cmdfile) + 1;
+    memcpy(msg, g_cmdfile, plen);
+    msg[plen++]  = cli_is_interactive_mode() ? '1' : '0';
+    msg[plen++]  = '\0';
     size_t psent = 0;
     while (psent < plen)
     {
-        ssize_t n = write(g_cmd_pipe_w, g_cmdfile + psent, plen - psent);
+        ssize_t n = write(g_cmd_pipe_w, msg + psent, plen - psent);
         if (n < 0 && errno == EINTR)
         {
             continue;
@@ -543,10 +555,6 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
     {
         *out_exit_req = exreq;
     }
-    if (exreq != 0 || (dcerrorexit && rc != 0))
-    {
-        dcexitcode = rc;
-    }
     cli_last_retval = rc;
     unlink(g_cmdfile); /* bash has read it (source reads the whole file) */
     return rc;
@@ -573,6 +581,7 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
     g_exec_depth++;
     int rc = engine_exec(cmdline, out_exit_req);
     g_exec_depth--;
+    dcexitcode = rc; /* milk-cli exits with the status of the last command */
     return rc;
 }
 

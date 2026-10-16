@@ -96,7 +96,8 @@ typedef struct
     long           val_l;
     double         val_d;
     double (*fnctptr)();
-    char sval[CLI_CALC_TOKEN_MAXLEN];
+    char          sval[CLI_CALC_TOKEN_MAXLEN];
+    unsigned char literal; /**< 1 for a quoted "string" (never an undefined identifier) */
 } cli_token;
 
 /**

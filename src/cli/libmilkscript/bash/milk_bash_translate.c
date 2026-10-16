@@ -376,7 +376,7 @@ static void translate_code(const char *p, size_t n, int d, sbuf_t *out);
 
 /**
  * emit_inline() - emit an @get/@calc substitution (funsub, or $() on old bash); @dq wraps it in "..."
- * so the result is neither word-split nor globbed.
+ * so the result is neither word-split nor globbed. A failure calls __milk_inline_err (milk.bash).
  */
 static void emit_inline(sbuf_t *out, int is_calc, const char *body, size_t n, int dq)
 {
@@ -397,6 +397,24 @@ static void emit_inline(sbuf_t *out, int is_calc, const char *body, size_t n, in
     {
         sbuf_append_str(out, funsub ? "get -v REPLY " : "get ");
         sbuf_append_mem(out, body, n);
+    }
+    sbuf_append_str(out, " || __milk_inline_err $?");
+    if (!is_calc) /* calc reports its own errors */
+    {
+        sbuf_append_str(out, " '");
+        sbuf_append_str(out, get_sigil());
+        for (size_t k = 0; k < n; k++)
+        {
+            if (body[k] == '\'')
+            {
+                sbuf_append_str(out, "'\\''");
+            }
+            else
+            {
+                sbuf_append_ch(out, body[k]);
+            }
+        }
+        sbuf_append_ch(out, '\'');
     }
     sbuf_append_str(out, funsub ? "; }" : ")");
     if (dq)

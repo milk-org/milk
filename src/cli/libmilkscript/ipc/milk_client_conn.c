@@ -336,7 +336,7 @@ int milk_client_await_response(int                        fd,
     sigaction(SIGINT, &sa_int, &old_int);
     sigaction(SIGWINCH, &sa_winch, &old_winch);
 
-    int32_t final_rc = 255; // until DONE arrives, the transport failed
+    int32_t final_rc = MILK_CLIENT_RC_TRANSPORT; // until DONE arrives, the transport failed
 
     for (;;)
     {
@@ -360,6 +360,7 @@ int milk_client_await_response(int                        fd,
             {
                 continue;
             }
+            fprintf(stderr, "milk: lost connection to server: %s\n", strerror(errno));
             break;
         }
 
@@ -371,7 +372,7 @@ int milk_client_await_response(int                        fd,
             fprintf(stderr, (rr == -2)
                                 ? "milk: server speaks another protocol version; restart it\n"
                                 : "milk: lost connection to server\n");
-            final_rc = 255;
+            final_rc = MILK_CLIENT_RC_TRANSPORT;
             break;
         }
 
@@ -434,7 +435,8 @@ int milk_client_await_response(int                        fd,
         {
             hooks->on_sigint(hooks->ctx);
         }
-        if (final_rc == 0 || final_rc == 255) // cancelled, possibly before DONE was sent
+        if (final_rc == 0 ||
+            final_rc == MILK_CLIENT_RC_TRANSPORT) // cancelled, possibly before DONE was sent
         {
             final_rc = 130;
         }

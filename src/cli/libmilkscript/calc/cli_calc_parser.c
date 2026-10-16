@@ -98,6 +98,9 @@ void cli_calc_tmp_cleanup(void)
 
 int parse_mode = 0; // 0 for cli_parse, 1 for cli_calc_eval_line
 
+static const char *calc_src =
+    NULL; /* expression being evaluated by cli_calc_eval_bash, for messages */
+
 // Helper functions for cli_parse
 cli_token *cur_parse(void)
 {
@@ -136,9 +139,17 @@ cli_token *advance_eval(void)
  */
 void parse_errmsg(const char *msg)
 {
-    if ((parse_mode == 1 || data.core.Debug > 0) && parse_mode != 2 && dcquiet == 0)
+    if ((parse_mode == 1 || data.core.Debug > 0) &&
+        parse_mode != 2) /* quiet hides banners, not errors */
     {
-        PRINT_ERROR("   [CALC_PARSER_ERROR] %s", msg);
+        if (calc_src != NULL)
+        {
+            fprintf(stderr, "milk: calc error: %s in '%s'\n", msg, calc_src);
+        }
+        else
+        {
+            fprintf(stderr, "milk: calc error: %s\n", msg);
+        }
     }
     if (parse_mode != 2)
     {
@@ -643,8 +654,10 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
         }
     }
 
-    size_t tmark  = tmp_begin();
-    val_t  result = parse_expr(0);
+    size_t tmark = tmp_begin();
+    calc_src     = input;
+    val_t result = parse_expr(0);
+    calc_src     = NULL;
     tmp_end(tmark);
 
     if (parse_error || eval_error ||
@@ -652,7 +665,7 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
     {
         if (!eval_error)
         {
-            fprintf(stderr, "ERROR: syntax error in calculator expression: %s\n", input);
+            fprintf(stderr, "milk: calc error: syntax error in '%s'\n", input);
         }
         if (out_rc != NULL)
         {
