@@ -18,7 +18,7 @@
 
 #include <stddef.h>
 
-/* Stream / local image namespace (@s., @stream.) */
+/* Stream / local image namespace (@s., @stream., @l., @local.) */
 int milk_shm_prop_get_stream(const char *name, const char *prop, char *out, size_t outsz);
 
 int milk_shm_prop_set_stream(const char *name,
@@ -27,6 +27,15 @@ int milk_shm_prop_set_stream(const char *name,
                              const char *comment);
 
 int milk_shm_prop_exists_stream(const char *name);
+
+int milk_shm_prop_get_local_stream(const char *name, const char *prop, char *out, size_t outsz);
+
+int milk_shm_prop_set_local_stream(const char *name,
+                                   const char *prop,
+                                   const char *val,
+                                   const char *comment);
+
+int milk_shm_prop_exists_local_stream(const char *name);
 
 /* Function Parameter Structure namespace (@f., @fps.) */
 int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t outsz);

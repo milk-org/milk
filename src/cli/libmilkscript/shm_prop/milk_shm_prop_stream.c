@@ -562,3 +562,41 @@ int milk_shm_prop_exists_stream(const char *name)
     snprintf(shmpath, sizeof(shmpath), "%s/%s.im.shm", shmdir, name);
     return (access(shmpath, F_OK) == 0) ? 1 : 0;
 }
+
+int milk_shm_prop_exists_local_stream(const char *name)
+{
+    if (data.core.image == NULL)
+    {
+        return 0;
+    }
+    for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+    {
+        if (data.core.image[i].used == 1 && strcmp(data.core.image[i].name, name) == 0 &&
+            (data.core.image[i].md == NULL || !data.core.image[i].md->shared))
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int milk_shm_prop_get_local_stream(const char *name, const char *prop, char *out, size_t outsz)
+{
+    if (!milk_shm_prop_exists_local_stream(name))
+    {
+        return -1;
+    }
+    return milk_shm_prop_get_stream(name, prop, out, outsz);
+}
+
+int milk_shm_prop_set_local_stream(const char *name,
+                                   const char *prop,
+                                   const char *val,
+                                   const char *comment)
+{
+    if (!milk_shm_prop_exists_local_stream(name))
+    {
+        return -1;
+    }
+    return milk_shm_prop_set_stream(name, prop, val, comment);
+}

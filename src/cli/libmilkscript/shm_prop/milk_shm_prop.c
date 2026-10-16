@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "CLIcore.h"
+#include "milk_entity_ns.h"
 #include "milk_shm_prop.h"
 #include "milk_shm_prop_internal.h"
 
@@ -33,10 +34,7 @@
  */
 static int is_known_namespace(const char *prefix)
 {
-    return (strcmp(prefix, "s") == 0 || strcmp(prefix, "stream") == 0 || strcmp(prefix, "f") == 0 ||
-            strcmp(prefix, "fps") == 0 || strcmp(prefix, "p") == 0 || strcmp(prefix, "proc") == 0 ||
-            strcmp(prefix, "procinfo") == 0 || strcmp(prefix, "q") == 0 ||
-            strcmp(prefix, "seq") == 0 || strcmp(prefix, "fpsseq") == 0);
+    return milk_is_known_namespace(prefix);
 }
 
 static int has_glob_chars(const char *s)
@@ -73,11 +71,38 @@ static int list_entities_in_namespace(const char *nsp, const char *pattern, char
     size_t      pos = 0;
     out[0]          = '\0';
 
+    if ((strcmp(nsp, "l") == 0 || strcmp(nsp, "local") == 0))
+    {
+        if (data.core.image == NULL)
+        {
+            return -1;
+        }
+        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        {
+            if (data.core.image[i].used == 1 && data.core.image[i].name[0] != '\0' &&
+                strncmp(data.core.image[i].name, "_tmpcalc", 8) != 0 &&
+                (data.core.image[i].md == NULL || !data.core.image[i].md->shared))
+            {
+                const char *iname = data.core.image[i].name;
+                if (fnmatch(pat, iname, 0) == 0 && !token_in_space_list(out, iname))
+                {
+                    int n = snprintf(out + pos, outsz - pos, "%s%s", (pos > 0) ? " " : "", iname);
+                    if (n > 0 && pos + (size_t) n < outsz)
+                    {
+                        pos += (size_t) n;
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
     if ((strcmp(nsp, "s") == 0 || strcmp(nsp, "stream") == 0) && data.core.image != NULL)
     {
         for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
         {
-            if (data.core.image[i].used == 1 && data.core.image[i].name[0] != '\0')
+            if (data.core.image[i].used == 1 && data.core.image[i].name[0] != '\0' &&
+                strncmp(data.core.image[i].name, "_tmpcalc", 8) != 0)
             {
                 const char *iname = data.core.image[i].name;
                 if (fnmatch(pat, iname, 0) == 0 && !token_in_space_list(out, iname))
@@ -400,18 +425,20 @@ static int dispatch_ns_get(const char *nsp,
         }
         char kw_kv[4096];
         kw_kv[0] = '\0';
-        if (strcmp(nsp, "s") == 0 || strcmp(nsp, "stream") == 0)
+        if (strcmp(nsp, "s") == 0 || strcmp(nsp, "stream") == 0 || strcmp(nsp, "l") == 0 ||
+            strcmp(nsp, "local") == 0)
         {
             dispatch_ns_get(nsp, name, "kw.kv", kw_kv, sizeof(kw_kv));
         }
         kv_to_json_obj(kv, kw_kv[0] ? kw_kv : NULL, out, outsz);
         return 0;
     }
-    if (strcmp(prop, "kw.json") == 0 && (strcmp(nsp, "s") == 0 || strcmp(nsp, "stream") == 0))
+    if (strcmp(prop, "kw.json") == 0 && (strcmp(nsp, "s") == 0 || strcmp(nsp, "stream") == 0 ||
+                                         strcmp(nsp, "l") == 0 || strcmp(nsp, "local") == 0))
     {
         char kw_kv[8192];
         kw_kv[0] = '\0';
-        if (milk_shm_prop_get_stream(name, "kw.kv", kw_kv, sizeof(kw_kv)) != 0)
+        if (dispatch_ns_get(nsp, name, "kw.kv", kw_kv, sizeof(kw_kv)) != 0)
         {
             return -1;
         }
@@ -430,6 +457,10 @@ static int dispatch_ns_get(const char *nsp,
             return milk_shm_prop_get_seq(name, prop, out, outsz);
         }
         return -1;
+    }
+    if (strcmp(nsp, "l") == 0 || strcmp(nsp, "local") == 0)
+    {
+        return milk_shm_prop_get_local_stream(name, prop, out, outsz);
     }
     if (strcmp(nsp, "f") == 0 || strcmp(nsp, "fps") == 0)
     {
@@ -468,13 +499,9 @@ int milk_shm_prop_get(const char *spec, char *out, size_t outsz)
         want_json = 1;
         spec += 5;
     }
-    while (*spec == '@')
-    {
-        spec++;
-    }
 
     char buf[512];
-    snprintf(buf, sizeof(buf), "%s", spec);
+    milk_normalize_entity_spec(spec, buf, sizeof(buf));
 
     char *dot1 = strchr(buf, '.');
     if (dot1 == NULL)
@@ -485,13 +512,16 @@ int milk_shm_prop_get(const char *spec, char *out, size_t outsz)
     char *rest = dot1 + 1;
     char *dot2 = strchr(rest, '.');
 
-    /* 1-dot namespace queries: s.*, f.*, p.*, q.*, s.dm*, or --json s.im1 */
+    /* 1-dot namespace queries: s.*, l.*, f.*, p.*, q.*, s.dm*, or --json s.im1 */
     if (dot2 == NULL && is_known_namespace(buf))
     {
         if (strcmp(rest, "*") == 0 || strcmp(rest, "list") == 0 || has_glob_chars(rest))
         {
             char lbuf[8192];
-            list_entities_in_namespace(buf, rest, lbuf, sizeof(lbuf));
+            if (list_entities_in_namespace(buf, rest, lbuf, sizeof(lbuf)) != 0)
+            {
+                return -1;
+            }
             if (want_json)
             {
                 list_to_json_arr(lbuf, out, outsz);
@@ -518,7 +548,10 @@ int milk_shm_prop_get(const char *spec, char *out, size_t outsz)
         if (has_glob_chars(name))
         {
             char lbuf[8192];
-            list_entities_in_namespace(nsp, name, lbuf, sizeof(lbuf));
+            if (list_entities_in_namespace(nsp, name, lbuf, sizeof(lbuf)) != 0)
+            {
+                return -1;
+            }
             size_t pos     = 0;
             int    matched = 0;
             char  *saveptr = NULL;
@@ -613,6 +646,10 @@ static int dispatch_ns_set(const char *nsp,
     {
         return milk_shm_prop_set_stream(name, prop, val, comment);
     }
+    if (strcmp(nsp, "l") == 0 || strcmp(nsp, "local") == 0)
+    {
+        return milk_shm_prop_set_local_stream(name, prop, val, comment);
+    }
     if (strcmp(nsp, "p") == 0 || strcmp(nsp, "proc") == 0 || strcmp(nsp, "procinfo") == 0)
     {
         return milk_shm_prop_set_proc(name, prop, val);
@@ -638,13 +675,9 @@ int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
     {
         return -1;
     }
-    while (*spec == '@')
-    {
-        spec++;
-    }
 
     char specbuf[512];
-    snprintf(specbuf, sizeof(specbuf), "%s", spec);
+    milk_normalize_entity_spec(spec, specbuf, sizeof(specbuf));
 
     char stdin_buf[512];
     if (val == NULL)
@@ -700,7 +733,10 @@ int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
         if (has_glob_chars(name))
         {
             char lbuf[8192];
-            list_entities_in_namespace(nsp, name, lbuf, sizeof(lbuf));
+            if (list_entities_in_namespace(nsp, name, lbuf, sizeof(lbuf)) != 0)
+            {
+                return -1;
+            }
             int   matched = 0;
             char *saveptr = NULL;
             for (char *ent = strtok_r(lbuf, " \t\r\n", &saveptr); ent != NULL;
@@ -724,7 +760,7 @@ int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
 /**
  * @brief Check whether a milk entity exists (or is actively running).
  *
- * @param spec          Entity specification (e.g. "s.cam", "f.dm", "p.loop")
+ * @param spec          Entity specification (e.g. "s.cam", "l.loc", "f.dm", "p.loop")
  * @param check_running If non-zero, verify that the entity is actively running
  * @return 1 if exists/running, 0 otherwise
  */
@@ -734,13 +770,9 @@ int milk_shm_prop_exists(const char *spec, int check_running)
     {
         return 0;
     }
-    while (*spec == '@')
-    {
-        spec++;
-    }
 
     char buf[256];
-    snprintf(buf, sizeof(buf), "%s", spec);
+    milk_normalize_entity_spec(spec, buf, sizeof(buf));
     char *dot = strchr(buf, '.');
     if (dot == NULL)
     {
@@ -753,6 +785,10 @@ int milk_shm_prop_exists(const char *spec, int check_running)
     if (strcmp(nsp, "s") == 0 || strcmp(nsp, "stream") == 0)
     {
         return milk_shm_prop_exists_stream(name);
+    }
+    if (strcmp(nsp, "l") == 0 || strcmp(nsp, "local") == 0)
+    {
+        return milk_shm_prop_exists_local_stream(name);
     }
     if (strcmp(nsp, "f") == 0 || strcmp(nsp, "fps") == 0)
     {
@@ -795,12 +831,11 @@ static int is_snapshot_filter_arg(const char *arg)
     {
         return 0;
     }
-    while (*arg == '@')
-    {
-        arg++;
-    }
-    return (strncmp(arg, "s.", 2) == 0 || strncmp(arg, "stream.", 7) == 0 ||
-            strncmp(arg, "f.", 2) == 0 || strncmp(arg, "fps.", 4) == 0 || strcmp(arg, "*") == 0);
+    char norm[256];
+    milk_normalize_entity_spec(arg, norm, sizeof(norm));
+    return (strncmp(norm, "s.", 2) == 0 || strncmp(norm, "stream.", 7) == 0 ||
+            strncmp(norm, "l.", 2) == 0 || strncmp(norm, "local.", 6) == 0 ||
+            strncmp(norm, "f.", 2) == 0 || strncmp(norm, "fps.", 4) == 0 || strcmp(norm, "*") == 0);
 }
 
 static int snapshot_key_matches(const char *key, int nfilters, char **filters)
@@ -811,15 +846,20 @@ static int snapshot_key_matches(const char *key, int nfilters, char **filters)
     }
     for (int i = 0; i < nfilters; i++)
     {
-        const char *pat = filters[i];
-        while (*pat == '@')
-        {
-            pat++;
-        }
+        char pat[256];
+        milk_normalize_entity_spec(filters[i], pat, sizeof(pat));
         char norm[256];
         if (strncmp(pat, "stream.", 7) == 0)
         {
             snprintf(norm, sizeof(norm), "s.%s", pat + 7);
+        }
+        else if (strncmp(pat, "local.", 6) == 0)
+        {
+            snprintf(norm, sizeof(norm), "s.%s", pat + 6);
+        }
+        else if (strncmp(pat, "l.", 2) == 0)
+        {
+            snprintf(norm, sizeof(norm), "s.%s", pat + 2);
         }
         else if (strncmp(pat, "fps.", 4) == 0)
         {

@@ -155,18 +155,25 @@ static int is_numeric_env_var(const char *s)
  */
 static imageID resolve_or_autoconnect_image(const char *name, int allow_autoconnect)
 {
-    imageID id = image_ID(name, data.core.image, data.core.NB_MAX_IMAGE);
-    if (id != -1 || !allow_autoconnect)
+    FPS_STREAMNAME_PARSED sp = fps_streamname_parse(name);
+    if (sp.error)
+    {
+        return -1;
+    }
+    const char *bare = (sp.name != NULL && sp.name[0] != '\0') ? sp.name : name;
+
+    imageID id = image_ID(bare, data.core.image, data.core.NB_MAX_IMAGE);
+    if (id != -1 || !allow_autoconnect || sp.loc == 'L')
     {
         return id;
     }
     char shmpath[512];
-    if (ImageStreamIO_filename(shmpath, sizeof(shmpath), name) == IMAGESTREAMIO_SUCCESS &&
+    if (ImageStreamIO_filename(shmpath, sizeof(shmpath), bare) == IMAGESTREAMIO_SUCCESS &&
         access(shmpath, R_OK) == 0)
     {
         IMAGE tmp_im;
         memset(&tmp_im, 0, sizeof(tmp_im));
-        if (ImageStreamIO_read_sharedmem_image_toIMAGE(name, &tmp_im) == IMAGESTREAMIO_SUCCESS)
+        if (ImageStreamIO_read_sharedmem_image_toIMAGE(bare, &tmp_im) == IMAGESTREAMIO_SUCCESS)
         {
             id = next_avail_image_ID(-1);
             if (id != -1)

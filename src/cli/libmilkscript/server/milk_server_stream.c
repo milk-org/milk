@@ -217,7 +217,7 @@ int milk_server_waitfor(int client_fd, const char *target, const char *arg2, dou
 
     /* Case 2: Stream frame wait: s.cam [nframes] [-s sem] [--cnt target] */
     const char *sname = target;
-    if (strncmp(sname, "s.", 2) == 0)
+    if (strncmp(sname, "s.", 2) == 0 || strncmp(sname, "S:", 2) == 0)
     {
         sname += 2;
     }
@@ -440,19 +440,9 @@ int milk_server_grab(int         client_fd,
     {
         return 1;
     }
-    const char *sname = sname_raw;
-    while (*sname == '@')
-    {
-        sname++;
-    }
-    if (strncmp(sname, "s.", 2) == 0)
-    {
-        sname += 2;
-    }
-    else if (strncmp(sname, "stream.", 7) == 0)
-    {
-        sname += 7;
-    }
+    FPS_STREAMNAME_PARSED sp_in = fps_streamname_parse(sname_raw);
+    const char           *sname =
+        (!sp_in.error && sp_in.name != NULL && sp_in.name[0] != '\0') ? sp_in.name : sname_raw;
 
     IMAGE  tmp_in;
     int    need_close = 0;
@@ -477,22 +467,6 @@ int milk_server_grab(int         client_fd,
         snprintf(tmp_cubename, sizeof(tmp_cubename), "@L:_grab_tmp_%d", (int) getpid());
         out_spec     = tmp_cubename;
         is_temp_cube = 1;
-    }
-    else if (strncmp(out_spec, "@s.", 3) == 0)
-    {
-        out_spec += 3;
-    }
-    else if (strncmp(out_spec, "@stream.", 8) == 0)
-    {
-        out_spec += 8;
-    }
-    else if (strncmp(out_spec, "s.", 2) == 0)
-    {
-        out_spec += 2;
-    }
-    else if (strncmp(out_spec, "stream.", 7) == 0)
-    {
-        out_spec += 7;
     }
 
     IMGID out_img = imgid_make_from_name(out_spec);
@@ -520,7 +494,7 @@ int milk_server_grab(int         client_fd,
         out_img.mdt->size[2] = (uint32_t) nframes;
     }
     out_img.mdt->datatype = (out_img.stream_datatype != 0) ? out_img.stream_datatype : in_dt;
-    out_img.mdt->shared   = (out_img.stream_loc == 2) ? 0 : 1;
+    out_img.mdt->shared   = (out_img.stream_loc == 'L') ? 0 : 1;
     out_img.mdt->NBkw     = 10;
     out_img.mdt->CBsize   = 0;
 
@@ -779,17 +753,10 @@ int milk_server_streamcat(int argc, char **argv)
         fprintf(stderr, "Usage: @streamcat [--raw] <stream>\n");
         return 1;
     }
-    while (*sname == '@')
+    FPS_STREAMNAME_PARSED sp_cat = fps_streamname_parse(sname);
+    if (!sp_cat.error && sp_cat.name != NULL && sp_cat.name[0] != '\0')
     {
-        sname++;
-    }
-    if (strncmp(sname, "s.", 2) == 0)
-    {
-        sname += 2;
-    }
-    else if (strncmp(sname, "stream.", 7) == 0)
-    {
-        sname += 7;
+        sname = sp_cat.name;
     }
 
     IMAGE  tmp_im;
@@ -837,7 +804,7 @@ int milk_server_streamcat(int argc, char **argv)
             }
             else if (dt == _DATATYPE_INT32)
             {
-                printf("%d\n", im->array.SI32[i]);
+                printf("%d\n", (int) im->array.SI32[i]);
             }
             else if (dt == _DATATYPE_INT64)
             {
@@ -945,27 +912,10 @@ int milk_server_streamwrite(int argc, char **argv)
         return 1;
     }
 
-    const char *sname = sname_raw;
-    if (strncmp(sname, "@s.", 3) == 0)
-    {
-        sname += 3;
-    }
-    else if (strncmp(sname, "@stream.", 8) == 0)
-    {
-        sname += 8;
-    }
-    else if (strncmp(sname, "s.", 2) == 0)
-    {
-        sname += 2;
-    }
-    else if (strncmp(sname, "stream.", 7) == 0)
-    {
-        sname += 7;
-    }
-    else if (sname[0] == '@' && strchr(sname, ':') == NULL)
-    {
-        sname++;
-    }
+    const char           *sname = sname_raw;
+    FPS_STREAMNAME_PARSED sp_sw = fps_streamname_parse(sname_raw);
+    const char           *sw_bare =
+        (!sp_sw.error && sp_sw.name != NULL && sp_sw.name[0] != '\0') ? sp_sw.name : sname_raw;
 
     int    has_stdin = stdin_has_data();
     IMAGE  tmp_im;
@@ -980,7 +930,7 @@ int milk_server_streamwrite(int argc, char **argv)
     }
     else
     {
-        im = milk_shm_prop_find_or_open_stream(sname, &tmp_im, &need_close);
+        im = milk_shm_prop_find_or_open_stream(sw_bare, &tmp_im, &need_close);
         if ((im == NULL || im->md == NULL) && npos >= 1 && npos <= 3)
         {
             pos_are_dims = 1;
@@ -1028,7 +978,7 @@ int milk_server_streamwrite(int argc, char **argv)
         out_img.mdt->size[1]  = ny;
         out_img.mdt->size[2]  = nz;
         out_img.mdt->datatype = (out_img.stream_datatype != 0) ? out_img.stream_datatype : req_dt;
-        out_img.mdt->shared   = (out_img.stream_loc == 2) ? 0 : 1;
+        out_img.mdt->shared   = (out_img.stream_loc == 'L') ? 0 : 1;
         out_img.mdt->NBkw     = 10;
         out_img.mdt->CBsize   = 0;
 
@@ -1044,7 +994,7 @@ int milk_server_streamwrite(int argc, char **argv)
 
     if (im == NULL || im->md == NULL)
     {
-        fprintf(stderr, "ERROR: @streamwrite: stream '%s' not found\n", sname);
+        fprintf(stderr, "ERROR: @streamwrite: stream '%s' not found\n", sw_bare);
         return 1;
     }
 
@@ -1186,19 +1136,9 @@ int milk_server_replay(int argc, char **argv)
         return 1;
     }
 
-    const char *src_clean = src_raw;
-    while (*src_clean == '@')
-    {
-        src_clean++;
-    }
-    if (strncmp(src_clean, "s.", 2) == 0)
-    {
-        src_clean += 2;
-    }
-    else if (strncmp(src_clean, "stream.", 7) == 0)
-    {
-        src_clean += 7;
-    }
+    FPS_STREAMNAME_PARSED sp_src = fps_streamname_parse(src_raw);
+    const char           *src_clean =
+        (!sp_src.error && sp_src.name != NULL && sp_src.name[0] != '\0') ? sp_src.name : src_raw;
 
     IMAGE  tmp_src;
     int    need_close_src  = 0;
@@ -1248,31 +1188,18 @@ int milk_server_replay(int argc, char **argv)
     size_t   src_elsz    = ImageStreamIO_typesize(src_dt);
     size_t   slice_bytes = (size_t) npix2d * src_elsz;
 
-    const char *dst_spec = dst_raw;
-    if (strncmp(dst_spec, "@s.", 3) == 0)
-    {
-        dst_spec += 3;
-    }
-    else if (strncmp(dst_spec, "@stream.", 8) == 0)
-    {
-        dst_spec += 8;
-    }
-    else if (strncmp(dst_spec, "s.", 2) == 0)
-    {
-        dst_spec += 2;
-    }
-    else if (strncmp(dst_spec, "stream.", 7) == 0)
-    {
-        dst_spec += 7;
-    }
+    const char           *dst_spec = dst_raw;
+    FPS_STREAMNAME_PARSED sp_dst   = fps_streamname_parse(dst_raw);
+    const char           *dst_bare =
+        (!sp_dst.error && sp_dst.name != NULL && sp_dst.name[0] != '\0') ? sp_dst.name : dst_raw;
 
     /* Reuse existing shared-memory stream if dimensions already match, preserving open readers */
     IMAGE  tmp_dst;
     int    need_close_dst = 0;
     IMAGE *dst_im         = NULL;
-    if (dst_spec[0] != '@')
+    if (sp_dst.loc != 'L')
     {
-        IMAGE *cand = milk_shm_prop_find_or_open_stream(dst_spec, &tmp_dst, &need_close_dst);
+        IMAGE *cand = milk_shm_prop_find_or_open_stream(dst_bare, &tmp_dst, &need_close_dst);
         if (cand != NULL && cand->md != NULL)
         {
             uint32_t c_ny =
@@ -1316,7 +1243,7 @@ int milk_server_replay(int argc, char **argv)
         dst_img.mdt->size[1]  = (dst_img.mdt->naxis >= 2) ? ny : 0;
         dst_img.mdt->size[2]  = 0;
         dst_img.mdt->datatype = (dst_img.stream_datatype != 0) ? dst_img.stream_datatype : src_dt;
-        dst_img.mdt->shared   = (dst_img.stream_loc == 2) ? 0 : 1;
+        dst_img.mdt->shared   = (dst_img.stream_loc == 'L') ? 0 : 1;
         dst_img.mdt->NBkw     = 10;
         dst_img.mdt->CBsize   = 0;
 

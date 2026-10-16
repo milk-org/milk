@@ -161,19 +161,24 @@ static val_t store_variable_or_image_value(const char *varname, val_t v, int syn
     {
         if (image_ID(v.sval, data.core.image, data.core.NB_MAX_IMAGE) != -1)
         {
-            if (strncmp(v.sval, "_tmpcalc", 8) == 0)
+            FPS_STREAMNAME_PARSED sp = fps_streamname_parse(varname);
+            const char           *dst_bare =
+                (!sp.error && sp.name != NULL && sp.name[0] != '\0') ? sp.name : varname;
+            int want_shm = (sp.loc == 'S') ? 1 : 0;
+
+            if (strncmp(v.sval, "_tmpcalc", 8) == 0 && !want_shm)
             {
-                chname_image_ID(v.sval, varname);
+                chname_image_ID(v.sval, dst_bare);
             }
             else
             {
-                copy_image_ID(v.sval, varname, 0);
+                copy_image_ID(v.sval, dst_bare, want_shm);
             }
             if (data.core.Debug > 0)
             {
                 printf("changing name\n");
             }
-            return mk_string(varname);
+            return mk_string(dst_bare);
         }
         const char *strval = cli_var_get(v.sval);
         if (strval == NULL)

@@ -30,6 +30,7 @@
 #include "CLIcore.h"
 #include "CLIcore_script.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "milk_entity_ns.h"
 #include "milk_shm_prop.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
@@ -337,11 +338,7 @@ void milk_server_send_modified_dcvars(int client_fd, const dcvar_snap_t *snap, l
  */
 int milk_server_is_entity_ns_prefix(const char *s, size_t nslen)
 {
-    return ((nslen == 1 && (s[0] == 's' || s[0] == 'f' || s[0] == 'p' || s[0] == 'q')) ||
-            (nslen == 6 && strncmp(s, "stream", 6) == 0) ||
-            (nslen == 3 && (strncmp(s, "fps", 3) == 0 || strncmp(s, "seq", 3) == 0)) ||
-            (nslen == 4 && strncmp(s, "proc", 4) == 0) ||
-            (nslen == 8 && strncmp(s, "procinfo", 8) == 0));
+    return milk_is_entity_ns_prefix(s, nslen);
 }
 
 /**
@@ -394,9 +391,16 @@ void milk_server_expand_entities_in_expr(const char *in, char *out, size_t outsz
             (ip == 0 || (!isalnum((unsigned char) src[ip - 1]) && src[ip - 1] != '_' &&
                          src[ip - 1] != '.' && src[ip - 1] != '@')))
         {
-            size_t tstart = has_at ? (ip + 1) : ip;
-            size_t end    = tstart;
-            int    ndots  = 0;
+            size_t tstart    = has_at ? (ip + 1) : ip;
+            size_t end       = tstart;
+            int    ndots     = 0;
+            int    has_colon = 0;
+            if (has_at && end + 1 < len && (src[end] == 'S' || src[end] == 'L') &&
+                src[end + 1] == ':')
+            {
+                has_colon = 1;
+                end += 2;
+            }
             while (end < len && (isalnum((unsigned char) src[end]) || src[end] == '_' ||
                                  src[end] == '.' || src[end] == '-'))
             {
@@ -412,7 +416,8 @@ void milk_server_expand_entities_in_expr(const char *in, char *out, size_t outsz
                 ndots--;
             }
             size_t tlen = end - tstart;
-            if (((has_at && ndots >= 1 && (end >= len || src[end] != ':')) || ndots >= 2) &&
+            if (((has_at && ndots >= 1 && (has_colon || end >= len || src[end] != ':')) ||
+                 ndots >= 2) &&
                 tlen < 256)
             {
                 char tok[256];

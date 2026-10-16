@@ -358,8 +358,19 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
         snprintf(data.cmdargtoken[data.cmdNBarg].val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s",
                  arg);
 
+        int is_ns_stream_arg = 0;
+        if (!is_slice && (strncmp(arg, "s.", 2) == 0 || strncmp(arg, "stream.", 7) == 0 ||
+                          strncmp(arg, "l.", 2) == 0 || strncmp(arg, "local.", 6) == 0))
+        {
+            FPS_STREAMNAME_PARSED sp = fps_streamname_parse(arg);
+            if (!sp.error && sp.loc != '\0')
+            {
+                is_ns_stream_arg = 1;
+            }
+        }
+
         if (!is_slice && (arg[0] == '-' || arg[0] == '/' || strchr(arg, ' ') != NULL ||
-                          strchr(arg, '\t') != NULL || arg[0] == '@'))
+                          strchr(arg, '\t') != NULL || arg[0] == '@' || is_ns_stream_arg))
         {
             data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
             int is_help_cmd                      = (strcmp(data.cmd[cmdidx].key, "h") == 0 ||
@@ -368,7 +379,7 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
                                                     strcmp(data.cmd[cmdidx].key, "cmd?") == 0 ||
                                                     strcmp(data.cmd[cmdidx].key, "hm") == 0 ||
                                                     strcmp(data.cmd[cmdidx].key, "m?") == 0);
-            if (arg[0] == '@' && !is_help_cmd)
+            if ((arg[0] == '@' || is_ns_stream_arg) && !is_help_cmd)
             {
                 IMGID tmpid = imgid_make_from_name(arg);
                 if (tmpid.stream_parse_error)
@@ -435,8 +446,12 @@ static int is_server_entity_spec_token(const char *s)
     {
         s++;
     }
-    static const char *const pfx[] = { "s.",   "f.",      "p.",    "q.", "fps.",
-                                       "seq.", "stream.", "proc.", NULL };
+    if ((strncmp(s, "S:", 2) == 0 || strncmp(s, "L:", 2) == 0) && strchr(s + 2, '.') != NULL)
+    {
+        return 1;
+    }
+    static const char *const pfx[] = { "s.",   "l.",      "f.",   "p.",     "q.",    "fps.",
+                                       "seq.", "stream.", "loc.", "local.", "proc.", NULL };
     for (int k = 0; pfx[k] != NULL; k++)
     {
         size_t plen = strlen(pfx[k]);

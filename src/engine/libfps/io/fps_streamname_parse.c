@@ -15,6 +15,7 @@
  * original string for the bare name.
  */
 
+#include <ctype.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -59,6 +60,51 @@ static const char *datatype_mod_token(uint8_t dt)
     }
 }
 
+static const char *match_ns_stream_prefix(const char *s, char *out_loc)
+{
+    size_t plen = 0;
+    char   loc  = '\0';
+    if (strncmp(s, "s.", 2) == 0)
+    {
+        plen = 2;
+        loc  = 'S';
+    }
+    else if (strncmp(s, "stream.", 7) == 0)
+    {
+        plen = 7;
+        loc  = 'S';
+    }
+    else if (strncmp(s, "l.", 2) == 0)
+    {
+        plen = 2;
+        loc  = 'L';
+    }
+    else if (strncmp(s, "local.", 6) == 0)
+    {
+        plen = 6;
+        loc  = 'L';
+    }
+    else
+    {
+        return NULL;
+    }
+
+    const char *rest = s + plen;
+    if (rest[0] == '\0' || (!isalnum((unsigned char) rest[0]) && rest[0] != '_'))
+    {
+        return NULL;
+    }
+    for (const char *q = rest; *q != '\0' && *q != '['; q++)
+    {
+        if (*q == '.' || *q == ':' || *q == '/')
+        {
+            return NULL;
+        }
+    }
+    *out_loc = loc;
+    return rest;
+}
+
 /**
  * @brief Parse a raw stream name for @X: modifiers.
  *
@@ -83,6 +129,19 @@ FPS_STREAMNAME_PARSED fps_streamname_parse(const char *raw)
     if (raw == NULL || raw[0] == '\0')
     {
         return p;
+    }
+
+    const char *s_nolead = (raw[0] == '@') ? (raw + 1) : raw;
+    if (strchr(s_nolead, ':') == NULL)
+    {
+        char        ns_loc  = '\0';
+        const char *ns_name = match_ns_stream_prefix(s_nolead, &ns_loc);
+        if (ns_name != NULL)
+        {
+            p.loc  = ns_loc;
+            p.name = ns_name;
+            return p;
+        }
     }
 
     /* Must start with '@' */

@@ -567,20 +567,25 @@ val_t cli_calc_eval_image_whole_assign(const char *tok_sval, cli_token_type aop,
         return mk_double(0);
     }
 
-    delete_image_ID(tok_sval, 1);
-    if (strncmp(rhs.sval, "_tmpcalc", 8) == 0)
+    FPS_STREAMNAME_PARSED sp = fps_streamname_parse(tok_sval);
+    const char           *dst_bare =
+        (!sp.error && sp.name != NULL && sp.name[0] != '\0') ? sp.name : tok_sval;
+    int want_shm = (sp.loc == 'S') ? 1 : 0;
+
+    delete_image_ID(dst_bare, 1);
+    if (strncmp(rhs.sval, "_tmpcalc", 8) == 0 && !want_shm)
     {
-        chname_image_ID(rhs.sval, tok_sval);
+        chname_image_ID(rhs.sval, dst_bare);
     }
     else
     {
-        copy_image_ID(rhs.sval, tok_sval, 0);
+        copy_image_ID(rhs.sval, dst_bare, want_shm);
     }
     if (data.core.Debug > 0)
     {
         printf("changing name\n");
     }
-    return mk_string(tok_sval);
+    return mk_string(dst_bare);
 }
 
 /**

@@ -60,7 +60,9 @@ errno_t create_image_ID_IMGID(IMGID *img)
         return RETURN_FAILURE;
     }
 
-    if (img->name[0] == '@')
+    if (img->name[0] == '@' || strncmp(img->name, "s.", 2) == 0 ||
+        strncmp(img->name, "stream.", 7) == 0 || strncmp(img->name, "l.", 2) == 0 ||
+        strncmp(img->name, "local.", 6) == 0)
     {
         FPS_STREAMNAME_PARSED sp = fps_streamname_parse(img->name);
         if (sp.error)
@@ -71,7 +73,10 @@ errno_t create_image_ID_IMGID(IMGID *img)
             DEBUG_TRACE_FEXIT();
             return RETURN_FAILURE;
         }
-        img->stream_loc        = sp.loc;
+        if (sp.loc != '\0')
+        {
+            img->stream_loc = sp.loc;
+        }
         img->stream_must_exist = sp.must_exist;
         img->stream_must_new   = sp.must_new;
         if (sp.datatype != 0)

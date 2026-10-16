@@ -44,6 +44,7 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "milk_client.h"
 #include "milk_client_internal.h"
+#include "milk_entity_ns.h"
 #include "milk_shm_prop.h"
 #include "milk_ipc_common.h"
 #include "milk_proto.h"
@@ -316,18 +317,17 @@ int milk_client_set(const char                *spec,
     }
     milk_ipc_sync_shm_env(hooks);
 
-    const char *s_clean = spec;
-    while (*s_clean == '@')
-    {
-        s_clean++;
-    }
-    int is_stream_glob = ((strncmp(s_clean, "s.", 2) == 0 || strncmp(s_clean, "stream.", 7) == 0) &&
-                          (strchr(s_clean, '*') != NULL || strchr(s_clean, '?') != NULL));
+    char s_norm[512];
+    milk_normalize_entity_spec(spec, s_norm, sizeof(s_norm));
+    int is_local_or_glob =
+        ((strncmp(s_norm, "l.", 2) == 0 || strncmp(s_norm, "local.", 6) == 0) ||
+         ((strncmp(s_norm, "s.", 2) == 0 || strncmp(s_norm, "stream.", 7) == 0) &&
+          (strchr(s_norm, '*') != NULL || strchr(s_norm, '?') != NULL)));
 
     struct timespec ts0;
     clock_gettime(CLOCK_REALTIME, &ts0);
 
-    if (!is_stream_glob && milk_shm_prop_set(spec, val, comment) == 0)
+    if (!is_local_or_glob && milk_shm_prop_set(spec, val, comment) == 0)
     {
         struct timespec ts1;
         clock_gettime(CLOCK_REALTIME, &ts1);
@@ -397,16 +397,14 @@ static int is_entity_spec_token(const char *s)
     {
         return 0;
     }
-    while (*s == '@')
-    {
-        s++;
-    }
-    static const char *const pfx[] = { "s.",   "f.",      "p.",    "q.", "fps.",
-                                       "seq.", "stream.", "proc.", NULL };
+    char norm[256];
+    milk_normalize_entity_spec(s, norm, sizeof(norm));
+    static const char *const pfx[] = { "s.",   "l.",      "f.",     "p.",    "q.", "fps.",
+                                       "seq.", "stream.", "local.", "proc.", NULL };
     for (int k = 0; pfx[k] != NULL; k++)
     {
         size_t plen = strlen(pfx[k]);
-        if (strncmp(s, pfx[k], plen) == 0 && strchr(s + plen, '.') != NULL)
+        if (strncmp(norm, pfx[k], plen) == 0 && strchr(norm + plen, '.') != NULL)
         {
             return 1;
         }
@@ -605,25 +603,23 @@ int milk_client_exists(const char *spec, int check_running, const milk_client_ho
         return 0;
     }
 
-    const char *s = spec;
-    while (*s == '@')
-    {
-        s++;
-    }
-    if (!check_running &&
-        (strncmp(s, "s.", 2) == 0 || strncmp(s, "stream.", 7) == 0 || strchr(s, '.') == NULL))
+    char s_norm[256];
+    milk_normalize_entity_spec(spec, s_norm, sizeof(s_norm));
+    if (!check_running && (strncmp(s_norm, "s.", 2) == 0 || strncmp(s_norm, "stream.", 7) == 0 ||
+                           strncmp(s_norm, "l.", 2) == 0 || strncmp(s_norm, "local.", 6) == 0 ||
+                           strchr(s_norm, '.') == NULL))
     {
         char sockpath[256];
         milk_ipc_resolve_sockpath(hooks, sockpath, sizeof(sockpath), 1);
         int fd = milk_ipc_connect_once(sockpath);
         if (fd >= 0)
         {
-            size_t   slen = strlen(spec) + 1;
+            size_t   slen = strlen(s_norm) + 1;
             uint8_t *pl   = (uint8_t *) malloc(slen + 1);
             if (pl != NULL)
             {
                 pl[0] = check_running ? 'R' : 'E';
-                memcpy(pl + 1, spec, slen);
+                memcpy(pl + 1, s_norm, slen);
                 if (milk_proto_send(fd, MILK_MSG_EXISTS, 0, pl, (uint32_t) (slen + 1)) == 0)
                 {
                     int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
