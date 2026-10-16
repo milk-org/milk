@@ -342,19 +342,17 @@ def test_T13_lineno_matches_source(tmp_path):
 # --------------------------------------- C*: coprocess, REPL, milk-script (bash/milk_bash_coproc.c ...)
 
 
-@bug("C1", "exit inside a subshell ends the whole session")
 def test_C1_subshell_exit_does_not_end_session(tmp_path):
     res = milk_cli_stdin("y=$(exit 3)\n( exit 0 )\necho two", tmp_path)
     assert "two" in res.stdout
 
 
-@bug("C1", "bare `exit` uses 0 instead of $?")
 def test_C1_bare_exit_uses_last_status(tmp_path):
-    res = milk_cli_script("false\nexit", tmp_path)
+    # milk-script surfaces the exit code; milk-cli -s does not yet (C11)
+    res = milk_script("false\nexit", tmp_path)
     assert res.returncode == 1
 
 
-@bug("C2", "@time / watch / bookmark run deadlock (re-entrant CLI_execute_line)")
 def test_C2_time_does_not_deadlock(tmp_path):
     res = milk_cli_script("@time echo hi\necho after", tmp_path, timeout=10)
     assert res.returncode != 124
@@ -469,13 +467,11 @@ def test_C12_string_var_not_evaluated(tmp_path):
     assert value(res.stdout, "r") != "5"
 
 
-@bug("C13", "@defer loses argument quoting")
 def test_C13_defer_preserves_quoting(tmp_path):
     res = milk_cli_script("@defer printf '<%s>\\n' \"a b\"\necho start", tmp_path)
     assert "<a b>" in res.stdout
 
 
-@bug("C13", "@defer replaces the user's EXIT trap")
 def test_C13_defer_keeps_user_exit_trap(tmp_path):
     res = milk_cli_script(
         "trap 'echo usertrap' EXIT\n@defer echo deferred\necho start", tmp_path
@@ -483,7 +479,6 @@ def test_C13_defer_keeps_user_exit_trap(tmp_path):
     assert "usertrap" in res.stdout and "deferred" in res.stdout
 
 
-@bug("C14", "funsub detection misfires on `local REPLY`")
 def test_C14_local_reply_prints(tmp_path):
     res = milk_cli_script(
         'f(){ local REPLY; @calc 1+2; }\nout=$(f)\necho "out=$out"', tmp_path

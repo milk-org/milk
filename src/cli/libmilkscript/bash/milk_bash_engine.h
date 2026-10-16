@@ -70,6 +70,12 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req);
 int milk_bash_engine_exec_file(const char *filename, int *out_exit_req);
 
 /**
+ * @brief Return 1 while a command is executing in the bash co-process (milk commands called back
+ *        from bash run in this state and must not re-enter the engine).
+ */
+int milk_bash_engine_busy(void);
+
+/**
  * @brief Shut down the supervised bash co-process (running EXIT/defer traps)
  *        and close the in-process socket server.
  */

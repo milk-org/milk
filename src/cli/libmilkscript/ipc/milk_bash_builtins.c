@@ -72,12 +72,10 @@ struct builtin
 
 typedef void *(*bash_bind_variable_fn)(const char *, char *, int);
 typedef const char *(*bash_get_string_value_fn)(const char *);
-typedef void *(*bash_find_variable_fn)(const char *);
 typedef int (*bash_parse_and_execute_fn)(char *, const char *, int);
 
 static bash_bind_variable_fn     fn_bind_variable     = NULL;
 static bash_get_string_value_fn  fn_get_string_value  = NULL;
-static bash_find_variable_fn     fn_find_variable     = NULL;
 static bash_parse_and_execute_fn fn_parse_and_execute = NULL;
 static volatile int             *ptr_interrupt_state  = NULL;
 static int                       g_syms_resolved      = 0;
@@ -91,28 +89,8 @@ static void resolve_bash_symbols(void)
     g_syms_resolved      = 1;
     fn_bind_variable     = (bash_bind_variable_fn) dlsym(RTLD_DEFAULT, "bind_variable");
     fn_get_string_value  = (bash_get_string_value_fn) dlsym(RTLD_DEFAULT, "get_string_value");
-    fn_find_variable     = (bash_find_variable_fn) dlsym(RTLD_DEFAULT, "find_variable");
     fn_parse_and_execute = (bash_parse_and_execute_fn) dlsym(RTLD_DEFAULT, "parse_and_execute");
     ptr_interrupt_state  = (volatile int *) dlsym(RTLD_DEFAULT, "interrupt_state");
-}
-
-/**
- * @brief Detect whether we are executing inside a Bash 5.3+ `${| ...; }` funsub.
- *
- * Inside `${| ...; }`, Bash creates a local placeholder variable `REPLY` with a NULL
- * value (`find_variable("REPLY") != NULL && get_string_value("REPLY") == NULL`).
- */
-static int in_bash_funsub(void)
-{
-    resolve_bash_symbols();
-    if (fn_find_variable != NULL && fn_get_string_value != NULL)
-    {
-        if (fn_find_variable("REPLY") != NULL && fn_get_string_value("REPLY") == NULL)
-        {
-            return 1;
-        }
-    }
-    return 0;
 }
 
 static const char *bash_hook_get_var(const char *name, void *ctx)
@@ -525,11 +503,6 @@ static int milkget_builtin(WORD_LIST *list)
         return rc;
     }
 
-    if (varname == NULL && in_bash_funsub())
-    {
-        varname = "REPLY";
-    }
-
     int rc = milk_client_get(spec, varname, &hooks);
     free(argv);
     return rc;
@@ -569,10 +542,6 @@ static int milkcalc_builtin(WORD_LIST *list)
     {
         varname   = argv[1];
         start_idx = 2;
-    }
-    else if (in_bash_funsub())
-    {
-        varname = "REPLY";
     }
 
     size_t tot = 1;

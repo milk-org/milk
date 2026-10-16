@@ -15,6 +15,7 @@
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
 #include "CLIcore_script.h"
+#include "milk_bash_engine.h"
 #include "CLIcore/cli_calc_parser.h"
 #include <glob.h>
 #include <sys/wait.h>
@@ -35,6 +36,13 @@ errno_t cli_watch(void)
     {
         printf("Usage: watch <interval_ms>"
                " <command...>\n");
+        return RETURN_FAILURE;
+    }
+    if (milk_bash_engine_busy())
+    {
+        // bash is blocked on this call; re-entering it would deadlock
+        fprintf(stderr, "watch: not available from a script or the bash engine; "
+                        "use: while :; do <cmd>; sleep <s>; done\n");
         return RETURN_FAILURE;
     }
 

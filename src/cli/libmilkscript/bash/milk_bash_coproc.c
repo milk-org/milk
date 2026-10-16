@@ -40,6 +40,7 @@
 #include "milk_srvlog.h"
 
 static int   g_listen_fd     = -1;
+static int   g_exec_depth    = 0; // >0 while a command runs in bash (re-entrancy guard)
 static int   g_cmd_pipe_w    = -1;
 static int   g_status_pipe_r = -1;
 static pid_t g_bash_pid      = -1;
@@ -54,6 +55,8 @@ int milk_is_bash_engine_enabled(void)
 {
     return 1;
 }
+
+static int engine_exec(const char *cmdline, int *out_exit_req);
 
 /**
  * @brief Initialize the in-process milk socket server and supervised bash co-process.
@@ -177,13 +180,17 @@ int milk_bash_engine_init(void)
             "}\n"
             "__MILK_EXIT_REQ=0\n"
             "__MILK_EXIT_CODE=0\n"
+            "__MILK_MAIN_PID=$BASHPID\n"
             "exit() {\n"
+            "    local __rc=$?\n"
+            "    if [[ $BASHPID != \"$__MILK_MAIN_PID\" ]]; then builtin exit \"${1:-$__rc}\"; fi\n"
             "    __MILK_EXIT_REQ=1\n"
-            "    __MILK_EXIT_CODE=\"${1:-0}\"\n"
+            "    __MILK_EXIT_CODE=\"${1:-$__rc}\"\n"
             "    printf '%d\\t1\\t%s\\0' \"${__MILK_EXIT_CODE}\" \"${PWD}\" >&199 2>/dev/null || "
             "true\n"
             "    builtin exit \"${__MILK_EXIT_CODE}\"\n"
             "}\n"
+            "eval \"function ${MILKCLI_SIGIL:-@}time { time \\\"\\$@\\\"; }\"\n"
             "quit() { exit \"$@\"; }\n"
             "exitCLI() { exit \"$@\"; }\n"
             "while IFS= read -r -d '' __milk_cmd <&198; do\n"
@@ -207,7 +214,7 @@ int milk_bash_engine_init(void)
     g_bash_pid      = pid;
 
     int dummy_exit = 0;
-    milk_bash_engine_exec(":", &dummy_exit);
+    engine_exec(":", &dummy_exit); // internal: init may run inside an exec (lazy start / respawn)
     return 0;
 }
 
@@ -218,7 +225,7 @@ int milk_bash_engine_init(void)
  * @param out_exit_req Optional: set to 1 if script invoked `exit`/`quit`
  * @return Exit status of the bash command (0 = success)
  */
-int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
+static int engine_exec(const char *cmdline, int *out_exit_req)
 {
     if (out_exit_req != NULL)
     {
@@ -416,6 +423,30 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
     return rc;
 }
 
+int milk_bash_engine_busy(void)
+{
+    return g_exec_depth > 0;
+}
+
+int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
+{
+    if (g_exec_depth > 0)
+    {
+        // a milk command called from bash tried to run shell code: bash is blocked on our reply
+        fprintf(stderr, "milk: cannot run a shell command from inside a milk command "
+                        "(use bash constructs, e.g. 'time cmd' or a while loop)\n");
+        if (out_exit_req != NULL)
+        {
+            *out_exit_req = 0;
+        }
+        return 1;
+    }
+    g_exec_depth++;
+    int rc = engine_exec(cmdline, out_exit_req);
+    g_exec_depth--;
+    return rc;
+}
+
 /**
  * @brief Read, translate, and execute a script file in the bash co-process.
  *
@@ -543,6 +574,7 @@ void milk_bash_engine_shutdown(void)
  */
 void milk_bash_engine_abort(void)
 {
+    g_exec_depth = 0; // the aborted exec was left via siglongjmp
     if (g_bash_pid <= 0)
     {
         return;

@@ -265,6 +265,7 @@ fi
 # ---------------------------------------------------------------------------
 declare -ga _MILK_DEFER_STACK=()
 declare -gi _MILK_DEFER_RAN=0
+declare -g _MILK_USER_EXIT_TRAP=""
 declare -ga _MILK_ON_PIDS=()
 declare -ga _MILK_ON_TARGETS=()
 declare -ga _MILK_ON_CMDS=()
@@ -280,6 +281,10 @@ _milk_run_defer_stack() {
         eval "${_MILK_DEFER_STACK[$i]}" || true
     done
     _MILK_DEFER_STACK=()
+    # the user's own EXIT trap was registered before any @defer: run it last
+    if [[ -n "${_MILK_USER_EXIT_TRAP}" ]]; then
+        eval "${_MILK_USER_EXIT_TRAP}" || true
+    fi
     return ${exit_rc}
 }
 
@@ -292,7 +297,18 @@ _milk_defer_add() {
         return 1
     fi
     _MILK_DEFER_RAN=0
-    _MILK_DEFER_STACK+=("$*")
+    # one argument is a command string (like trap); several are kept as quoted words
+    if [[ $# -eq 1 ]]; then
+        _MILK_DEFER_STACK+=("$1")
+    else
+        _MILK_DEFER_STACK+=("$(printf '%q ' "$@")")
+    fi
+    local cur
+    cur="$(trap -p EXIT)"
+    if [[ -n "${cur}" && "${cur}" != *_milk_run_defer_stack* ]]; then
+        eval "set -- ${cur}"   # trap -- '<cmd>' EXIT
+        _MILK_USER_EXIT_TRAP="$3"
+    fi
     trap '_milk_run_defer_stack' EXIT
 }
 
