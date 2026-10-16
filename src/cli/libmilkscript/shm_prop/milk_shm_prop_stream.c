@@ -283,6 +283,17 @@ int milk_shm_prop_get_stream(const char *name, const char *prop, char *out, size
     {
         snprintf(out, outsz, "%d", (int) im->md->location);
     }
+    else if (strcmp(prop, "loc") == 0 || strcmp(prop, "storage") == 0)
+    {
+        if (im->md->location >= 0)
+        {
+            snprintf(out, outsz, "GPU%d", (int) im->md->location);
+        }
+        else
+        {
+            snprintf(out, outsz, "%s", im->md->shared ? "SHM" : "RAM");
+        }
+    }
     else if (strcmp(prop, "inode") == 0)
     {
         snprintf(out, outsz, "%lu", (unsigned long) im->md->inode);

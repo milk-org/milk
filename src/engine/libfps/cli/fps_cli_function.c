@@ -180,8 +180,7 @@ errno_t fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
             fps_add_processinfo_entries(&fps);
         }
 
-        compute_fn();
-        retval = RETURN_SUCCESS;
+        retval = compute_fn();
     }
     else if (retval == RETURN_CLICHECKARGARRAY_HELP)
     {

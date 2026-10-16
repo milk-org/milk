@@ -335,6 +335,12 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
 
         strncpy(img.name, bare, STRINGMAXLEN_IMAGE_NAME - 1);
 
+        if (strncmp(img.name, "_tmpcalc", 8) == 0)
+        {
+            img.mdt->shared = 0;
+            img.stream_loc  = 'L';
+        }
+
         if (has_bracket)
         {
             img.slice = imgid_slice_parse(slicebuf);
@@ -740,6 +746,14 @@ static inline uint64_t imgid_compare_md(IMGID img, IMGID imgtemplate)
  */
 static inline void imgid_mkimage(IMGID *img)
 {
+    if (img->stream_loc == 'L' || strncmp(img->name, "_tmpcalc", 8) == 0)
+    {
+        img->mdt->shared = 0;
+    }
+    else if (img->stream_loc == 'S')
+    {
+        img->mdt->shared = 1;
+    }
     ImageStreamIO_createIm(img->im, img->name, img->mdt->naxis, img->mdt->size, img->mdt->datatype,
                            img->mdt->shared, img->mdt->NBkw, img->mdt->CBsize);
     img->md = img->im->md;

@@ -46,8 +46,7 @@ FPS_CMDSETTINGS_INIT(1, CLIcmddata_1, FPS_app_info_1)
 
 static MILK_HOT errno_t compute_function_1()
 {
-    info_image_stats(p1_in, "");
-    return RETURN_SUCCESS;
+    return info_image_stats(p1_in, "");
 }
 
 static errno_t CLIfunction_1(void)
@@ -84,8 +83,7 @@ FPS_CMDSETTINGS_INIT(2, CLIcmddata_2, FPS_app_info_2)
 
 static MILK_HOT errno_t compute_function_2()
 {
-    info_image_stats(p2_in, "fileout");
-    return RETURN_SUCCESS;
+    return info_image_stats(p2_in, "fileout");
 }
 
 static errno_t CLIfunction_2(void)
@@ -432,6 +430,15 @@ errno_t info_image_stats(const char *ID_name, const char *options)
             printf("\n");
             free(array);
         }
+    }
+    else
+    {
+        if (mode == 1 && fp != NULL)
+        {
+            fclose(fp);
+        }
+        fprintf(stderr, "ERROR: image \"%s\" not found\n", ID_name);
+        return RETURN_FAILURE;
     }
 
     if (mode == 1)

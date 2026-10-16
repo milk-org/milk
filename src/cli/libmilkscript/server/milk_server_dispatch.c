@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/eventfd.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -55,6 +56,7 @@ typedef struct
 {
     int          client_fd;
     int          listen_fd;
+    int          wake_fd;
     pthread_t    main_tid;
     volatile int active;
 } call_watcher_ctx_t;
@@ -71,16 +73,21 @@ static void *call_watcher_thread(void *arg)
     call_watcher_ctx_t *ctx = (call_watcher_ctx_t *) arg;
     while (ctx->active)
     {
-        struct pollfd pfds[2];
+        struct pollfd pfds[3];
         pfds[0].fd      = ctx->client_fd;
         pfds[0].events  = POLLIN | POLLHUP | POLLERR;
         pfds[0].revents = 0;
         pfds[1].fd      = ctx->listen_fd;
         pfds[1].events  = POLLIN;
         pfds[1].revents = 0;
+        pfds[2].fd      = ctx->wake_fd;
+        pfds[2].events  = POLLIN;
+        pfds[2].revents = 0;
 
-        int pr = poll(pfds, 2, 20);
-        if (pr <= 0 || !ctx->active)
+        int nfds = (ctx->wake_fd >= 0) ? 3 : 2;
+        int tms  = (ctx->wake_fd >= 0) ? 200 : 20;
+        int pr   = poll(pfds, (nfds_t) nfds, tms);
+        if (pr <= 0 || !ctx->active || (nfds == 3 && (pfds[2].revents & POLLIN)))
         {
             continue;
         }
@@ -372,9 +379,12 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
                 }
                 if (tmpid.name[0] != '\0')
                 {
+                    char shmpath[512];
+                    snprintf(shmpath, sizeof(shmpath), "%s/%s.im.shm", dcshmdir, tmpid.name);
                     if (image_ID(tmpid.name, data.core.image, data.core.NB_MAX_IMAGE) != -1 ||
-                        read_sharedmem_image(tmpid.name, data.core.image, data.core.NB_MAX_IMAGE) !=
-                            -1)
+                        (tmpid.stream_loc != 'L' && access(shmpath, R_OK) == 0 &&
+                         read_sharedmem_image(tmpid.name, data.core.image,
+                                              data.core.NB_MAX_IMAGE) != -1))
                     {
                         data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_EXISTINGIMAGE;
                     }
@@ -1818,11 +1828,17 @@ int milk_server_exec_call(int            client_fd,
     {
         wctx.client_fd = client_fd;
         wctx.listen_fd = listen_fd;
+        wctx.wake_fd   = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
         wctx.main_tid  = pthread_self();
         wctx.active    = 1;
         if (pthread_create(&wtid, NULL, call_watcher_thread, &wctx) == 0)
         {
             has_watcher = 1;
+        }
+        else if (wctx.wake_fd >= 0)
+        {
+            close(wctx.wake_fd);
+            wctx.wake_fd = -1;
         }
     }
 
@@ -1831,7 +1847,17 @@ int milk_server_exec_call(int            client_fd,
     if (has_watcher)
     {
         wctx.active = 0;
+        if (wctx.wake_fd >= 0)
+        {
+            uint64_t one  = 1;
+            ssize_t  wret = write(wctx.wake_fd, &one, sizeof(one));
+            (void) wret;
+        }
         pthread_join(wtid, NULL);
+        if (wctx.wake_fd >= 0)
+        {
+            close(wctx.wake_fd);
+        }
     }
 
     fflush(stdout);

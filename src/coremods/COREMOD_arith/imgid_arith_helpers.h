@@ -33,7 +33,9 @@ static inline void imgid_ensure_output(IMGID *src, IMGID *dst)
 {
     if (dst->im == NULL)
     {
+        uint8_t saved_shared = dst->mdt->shared;
         imgid_copy(src, dst);
+        dst->mdt->shared = saved_shared;
     }
     if (dst->im == NULL)
     {
