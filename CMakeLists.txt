@@ -705,3 +705,16 @@ install(FILES docs/cli/help.txt DESTINATION doc)
 
 # milk-cli script payloads (.milk files) – installed as data, not executables
 install(FILES scripts/makecircleofdisks.milk DESTINATION share/milk/scripts)
+
+# Command catalog, last: the commands of every installed module (share/milk/catalog.d, catalog.bash and
+# the libexec/milk/bin links for external tools). Plugins installed into the prefix later re-run it.
+if(USE_CLI)
+  install(CODE "
+    set(_milk_prefix \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}\")
+    execute_process(COMMAND \${CMAKE_COMMAND} -E env MILK_INSTALLDIR=\${_milk_prefix}
+                            \${_milk_prefix}/bin/milk-cli --catalog
+                    RESULT_VARIABLE _milk_rc)
+    if(NOT _milk_rc EQUAL 0)
+      message(WARNING \"milk: no command catalog (milk-cli --catalog returned \${_milk_rc})\")
+    endif()")
+endif()

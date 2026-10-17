@@ -9,8 +9,8 @@
  * Role & Goal:
  *   Manages UNIX domain socket connections from bash builtins (`libmilkbash.so`)
  *   and `milk-call` to `milk-cli --server`. Handles lazy on-demand spawning of
- *   the per-shell server daemon with lifetime pipe binding, tracks synced shell
- *   variables across invocations, and runs the response frame loop with `SIGINT`
+ *   the per-shell server daemon with lifetime pipe binding, packs the shell variables
+ *   a calc expression names, and runs the response frame loop with `SIGINT`
  *   and `SIGWINCH` forwarding.
  */
 
@@ -34,15 +34,14 @@
 #include "milk_proto.h"
 #include "milk_srvlog.h"
 
-#define MAX_SYNCED_VARS 256
-static char g_synced_vars[MAX_SYNCED_VARS][64];
-static int  g_nb_synced_vars = 0;
 
 static pid_t g_owner_shell_pid = 0;
 static int   g_owner_pipe_wfd  = -1;
 
 static volatile sig_atomic_t g_client_sigint   = 0;
 static volatile sig_atomic_t g_client_sigwinch = 0;
+
+static uint32_t g_seen_gen = 0; /* registry generation of the server's last CALL reply */
 
 static void client_sigint_handler(int sig)
 {
@@ -54,31 +53,6 @@ static void client_sigwinch_handler(int sig)
 {
     (void) sig;
     g_client_sigwinch = 1;
-}
-
-/**
- * @brief Record a variable name returned by the server via `MILK_MSG_SETVAR`.
- *
- * @param name Variable name
- */
-static void record_synced_var(const char *name)
-{
-    if (name == NULL || name[0] == '\0' || strlen(name) >= 64)
-    {
-        return;
-    }
-    for (int i = 0; i < g_nb_synced_vars; i++)
-    {
-        if (strcmp(g_synced_vars[i], name) == 0)
-        {
-            return;
-        }
-    }
-    if (g_nb_synced_vars < MAX_SYNCED_VARS)
-    {
-        snprintf(g_synced_vars[g_nb_synced_vars], 64, "%s", name);
-        g_nb_synced_vars++;
-    }
 }
 
 /**
@@ -194,25 +168,9 @@ int milk_client_connect_or_start(const milk_client_hooks_t *hooks,
     return -1;
 }
 
-/**
- * @brief Check whether a string is a valid floating-point numeric literal.
- */
-static int is_numeric_literal(const char *s)
-{
-    if (s == NULL || s[0] == '\0')
-    {
-        return 0;
-    }
-    char *end = NULL;
-    errno     = 0;
-    (void) strtod(s, &end);
-    return (errno == 0 && end != s && *end == '\0') ? 1 : 0;
-}
-
 static void try_add_packed_var(milk_packed_vars_t        *pv,
                                const milk_client_hooks_t *hooks,
-                               const char                *ident,
-                               int                        allow_any)
+                               const char                *ident)
 {
     if (pv->count >= 256 || ident == NULL || ident[0] == '\0' || strlen(ident) >= 64)
     {
@@ -226,7 +184,7 @@ static void try_add_packed_var(milk_packed_vars_t        *pv,
         }
     }
     const char *val = milk_ipc_get_var(hooks, ident);
-    if (val != NULL && (allow_any || is_numeric_literal(val)) && strlen(val) < 128)
+    if (val != NULL && strlen(val) < 128)
     {
         snprintf(pv->names[pv->count], 64, "%s", ident);
         snprintf(pv->vals[pv->count], 128, "%s", val);
@@ -265,7 +223,7 @@ void milk_client_collect_identifiers(milk_packed_vars_t        *pv,
                 char ident[64];
                 memcpy(ident, start, len);
                 ident[len] = '\0';
-                try_add_packed_var(pv, hooks, ident, 1);
+                try_add_packed_var(pv, hooks, ident);
             }
         }
         else
@@ -276,17 +234,32 @@ void milk_client_collect_identifiers(milk_packed_vars_t        *pv,
 }
 
 /**
- * @brief Pack numeric values of any variables previously synced from the server.
- *
- * @param pv    Packed variable accumulator
- * @param hooks Optional shell callback hooks
+ * resync_commands() - define a function for every module command of the server: it loaded commands
+ * the catalog lacks (registry generation changed).
  */
-void milk_client_collect_synced_vars(milk_packed_vars_t *pv, const milk_client_hooks_t *hooks)
+static void resync_commands(const milk_client_hooks_t *hooks)
 {
-    for (int i = 0; i < g_nb_synced_vars; i++)
+    static const char req[] = "\0cmd"; /* COMPLETE: prefix "", type "cmd" */
+    char              sockpath[256];
+    char              out[32768];
+    int               got = 0;
+    int               fd;
+
+    if (hooks == NULL || hooks->def_cmd == NULL ||
+        (fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath))) < 0)
     {
-        try_add_packed_var(pv, hooks, g_synced_vars[i], 0);
+        return;
     }
+    if (milk_proto_send(fd, MILK_MSG_COMPLETE, 0, req, sizeof(req)) == 0 &&
+        milk_client_await_response(fd, sockpath, hooks, out, sizeof(out), &got) == 0 && got)
+    {
+        for (char *save = NULL, *k = strtok_r(out, "\n", &save); k != NULL;
+             k = strtok_r(NULL, "\n", &save))
+        {
+            hooks->def_cmd(k, hooks->ctx);
+        }
+    }
+    close(fd);
 }
 
 /**
@@ -337,6 +310,7 @@ int milk_client_await_response(int                        fd,
     sigaction(SIGWINCH, &sa_winch, &old_winch);
 
     int32_t final_rc = MILK_CLIENT_RC_TRANSPORT; // until DONE arrives, the transport failed
+    int     resync   = 0;
 
     for (;;)
     {
@@ -403,7 +377,6 @@ int milk_client_await_response(int                        fd,
             size_t      o1    = strlen(vname) + 1;
             const char *vval  = (o1 < hdr.len) ? (const char *) (pl + o1) : "";
             milk_ipc_set_var(hooks, vname, vval, 0);
-            record_synced_var(vname);
         }
         else if (hdr.type == MILK_MSG_DEFCMD && pl != NULL && hdr.len > 0 && hooks != NULL &&
                  hooks->def_cmd != NULL)
@@ -419,6 +392,13 @@ int milk_client_await_response(int                        fd,
             else
             {
                 final_rc = 0;
+            }
+            if (pl != NULL && hdr.len >= 2 * sizeof(int32_t)) /* a CALL: registry generation */
+            {
+                uint32_t gen;
+                memcpy(&gen, pl + sizeof(int32_t), sizeof(gen));
+                resync     = (gen != g_seen_gen);
+                g_seen_gen = gen;
             }
             free(pl);
             break;
@@ -443,6 +423,10 @@ int milk_client_await_response(int                        fd,
         {
             final_rc = 130;
         }
+    }
+    if (resync)
+    {
+        resync_commands(hooks);
     }
     return (int) final_rc;
 }

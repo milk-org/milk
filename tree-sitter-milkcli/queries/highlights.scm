@@ -34,20 +34,18 @@
 
 
 ; ---- milk: entity paths ----
-; @s.cam.xsize, @f.${LOOP}.gain  → property color
+; s.cam.xsize, f.${LOOP}.gain (arguments)  → property color
 (entity_path) @property
 
 
-; ---- milk: calculator ----
-; @{expr} inline, @ expr statement
+; ---- milk: inline expansion ----
+; @{expr}
 (inline_calc
   ["@{" "}"] @punctuation.special)
-(calc_statement
-  "@" @function.macro)
 
 
 ; ---- Operators ----
-["=" "==" "!=" "=~" "!" "|" "|&" "|>" "&&" "||"
+["=" "==" "!=" "=~" "!" "|" "|&" "&&" "||"
  ">" ">>" "<" "<<<" "2>" "2>>" "&>" "&>>"
  "2>&1" ">&2" "1>&2"
  ";" ";;" ";&" ";;&" "&"] @operator
@@ -98,12 +96,10 @@
   "test" "kill" "sleep"))
 
 
-; ---- milk commands ----
-; @calc, @waitfor, include_once, milksleep:
-; a distinct color so users immediately see
-; milk extensions.
+; ---- milk keywords ----
+; @calc, @waitfor: a distinct color so users
+; immediately see the milk language words.
 (sigil_command) @function.macro
-(milk_command) @function.macro
 
 
 ; ---- Module-qualified commands ----

@@ -130,10 +130,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "calc_statement"
-        },
-        {
-          "type": "SYMBOL",
           "name": "test_bracket"
         },
         {
@@ -358,7 +354,7 @@
               "value": 2,
               "content": {
                 "type": "PATTERN",
-                "value": "@(s|stream|l|local|f|fps|p|proc|procinfo|q|seq|fpsseq)\\."
+                "value": "(s|stream|l|local|f|fps|p|proc|q|fpsseq)\\."
               }
             }
           },
@@ -442,35 +438,6 @@
         }
       ]
     },
-    "calc_statement": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "@"
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "expression",
-              "content": {
-                "type": "SYMBOL",
-                "name": "calc_expression"
-              }
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        }
-      ]
-    },
-    "calc_expression": {
-      "type": "PATTERN",
-      "value": "[^\\s;#][^\\n;#]*"
-    },
     "sigil_command": {
       "type": "TOKEN",
       "content": {
@@ -478,7 +445,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "@[a-zA-Z_?][a-zA-Z0-9_.?:+-]*"
+          "value": "@[a-zA-Z_][a-zA-Z0-9_]*"
         }
       }
     },
@@ -588,10 +555,6 @@
               {
                 "type": "SYMBOL",
                 "name": "expansion"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "entity_path"
               },
               {
                 "type": "SYMBOL",
@@ -1425,15 +1388,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "milk_command"
-        },
-        {
-          "type": "SYMBOL",
           "name": "sigil_command"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "entity_path"
         },
         {
           "type": "SYMBOL",
@@ -1454,19 +1409,6 @@
         {
           "type": "SYMBOL",
           "name": "expansion"
-        }
-      ]
-    },
-    "milk_command": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "include_once"
-        },
-        {
-          "type": "STRING",
-          "value": "milksleep"
         }
       ]
     },
@@ -1507,10 +1449,6 @@
               {
                 "type": "STRING",
                 "value": "|&"
-              },
-              {
-                "type": "STRING",
-                "value": "|>"
               }
             ]
           },

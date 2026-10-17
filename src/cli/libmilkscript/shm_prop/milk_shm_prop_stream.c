@@ -38,13 +38,13 @@
 IMAGE *milk_shm_prop_find_or_open_stream(const char *sname, IMAGE *tmp_img, int *need_close)
 {
     *need_close = 0;
-    if (data.core.image != NULL)
+    if (MILK_LOCAL_IMAGES != NULL)
     {
-        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        for (long i = 0; i < MILK_NB_LOCAL_IMAGES; i++)
         {
-            if (data.core.image[i].used == 1 && strcmp(data.core.image[i].name, sname) == 0)
+            if (MILK_LOCAL_IMAGES[i].used == 1 && strcmp(MILK_LOCAL_IMAGES[i].name, sname) == 0)
             {
-                return &data.core.image[i];
+                return &MILK_LOCAL_IMAGES[i];
             }
         }
     }
@@ -78,13 +78,13 @@ IMAGE *milk_shm_prop_find_or_open_stream(const char *sname, IMAGE *tmp_img, int 
  */
 IMAGE *milk_shm_prop_find_stream(const char *sname)
 {
-    if (data.core.image != NULL)
+    if (MILK_LOCAL_IMAGES != NULL)
     {
-        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        for (long i = 0; i < MILK_NB_LOCAL_IMAGES; i++)
         {
-            if (data.core.image[i].used == 1 && strcmp(data.core.image[i].name, sname) == 0)
+            if (MILK_LOCAL_IMAGES[i].used == 1 && strcmp(MILK_LOCAL_IMAGES[i].name, sname) == 0)
             {
-                return &data.core.image[i];
+                return &MILK_LOCAL_IMAGES[i];
             }
         }
     }
@@ -554,11 +554,11 @@ int milk_shm_prop_set_stream(const char *name,
  */
 int milk_shm_prop_exists_stream(const char *name)
 {
-    if (data.core.image != NULL)
+    if (MILK_LOCAL_IMAGES != NULL)
     {
-        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        for (long i = 0; i < MILK_NB_LOCAL_IMAGES; i++)
         {
-            if (data.core.image[i].used == 1 && strcmp(data.core.image[i].name, name) == 0)
+            if (MILK_LOCAL_IMAGES[i].used == 1 && strcmp(MILK_LOCAL_IMAGES[i].name, name) == 0)
             {
                 return 1;
             }
@@ -572,14 +572,14 @@ int milk_shm_prop_exists_stream(const char *name)
 
 int milk_shm_prop_exists_local_stream(const char *name)
 {
-    if (data.core.image == NULL)
+    if (MILK_LOCAL_IMAGES == NULL)
     {
         return 0;
     }
-    for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+    for (long i = 0; i < MILK_NB_LOCAL_IMAGES; i++)
     {
-        if (data.core.image[i].used == 1 && strcmp(data.core.image[i].name, name) == 0 &&
-            (data.core.image[i].md == NULL || !data.core.image[i].md->shared))
+        if (MILK_LOCAL_IMAGES[i].used == 1 && strcmp(MILK_LOCAL_IMAGES[i].name, name) == 0 &&
+            (MILK_LOCAL_IMAGES[i].md == NULL || !MILK_LOCAL_IMAGES[i].md->shared))
         {
             return 1;
         }

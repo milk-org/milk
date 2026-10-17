@@ -23,12 +23,6 @@
 
 #include "milk_shm_prop.h"
 
-/**
- * @brief Dump all registered canonical and unambiguous short command names.
- *
- * @param fp Output stream
- */
-void milk_server_dump_commands(FILE *fp);
 
 /**
  * @brief Create, bind, and listen on the milk UNIX domain socket.

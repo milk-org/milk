@@ -112,7 +112,7 @@ HELP COMMANDS
 -----------------------------------------------------------------------------------
 IMPORTANT COMMANDS
 
-> @ci
+> milk.ci
 	# compilation time and memory usage
 > mem.listim
 	# list all images in memory
@@ -122,10 +122,10 @@ IMPORTANT COMMANDS
 	# list all images in memory in TSV format
 > mem.listim > <filename>
 	# list all images in memory into file <filename>
-> @ghistory
-	# history of all sessions (@lhistory: this session)
+> @history --global
+	# history of all sessions (@history --local: this session)
 > quit
-	# exit (exit and exitCLI also work)
+	# exit (exit and exit also work)
 > mem.mk2Dim <im> <xs> <ys>
 	# creates a 2D image named <im>, size = <xs> x <ys> pixels
 
@@ -212,9 +212,9 @@ SCRIPTING — VARIABLES & ARITHMETIC
 	# list all bash variables
 > y=$(( x + 5 ))
 	# integer arithmetic: + - * / %
-> echo @f.fpsname.param
+> echo @{f.fpsname.param}
 	# read FPS parameter value
-> @fpsset fpsname param value
+> @set f.fpsname.param=value
 	# write FPS parameter
 
 -----------------------------------------------------------------------------------
@@ -254,7 +254,7 @@ SCRIPT FILES
 	# execute commands from a script file
 > . myscript.milk
 	# same as source (dot-sourcing)
-> @savehistory replay.milk
+> @history save replay.milk
 	# save command history to file
 
 Startup script:
@@ -267,7 +267,7 @@ Shebang for executable scripts:
 -----------------------------------------------------------------------------------
 ARITHMETIC OPERATIONS
 
-> @ im1 = sqrt(im + 2.0)
+> @calc "im1 = sqrt(im + 2.0)"
 	# arithmetic on image im, result in image im1 (also: @calc 'im1 = sqrt(im + 2.0)')
 
 -----------------------------------------------------------------------------------
@@ -283,13 +283,13 @@ WAITING & EVENTS
 -----------------------------------------------------------------------------------
 STREAM METADATA & INTROSPECTION
 
-> echo @s.mystream.naxis
+> echo @{s.mystream.naxis}
 	# read stream dimension count via @s.<name>.<prop> namespace
 > @milkquery --fps
 	# JSON state of FPS units (also --streams, --procs; no option: everything)
 > @fpslist --json
 	# output list of FPS units in machine-readable JSON format
-> @fpsdump myfps --json
+> milk.fpsdump myfps --json
 	# dump full state of an FPS unit as a JSON object
 > @streamlist --json
 	# output list of active streams in JSON format

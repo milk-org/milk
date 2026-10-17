@@ -22,6 +22,11 @@ errno_t info_image_stats(const char *ID_name, const char *options);
  *  Command 1: imstats
  * ======================================= */
 
+/* the calculator variables info_image_stats() sets for the caller */
+#define IMSTATS_OUTVARS                                                                           \
+    "imsize0 imsize1 imsize2 vmin vmax vtot vrms vrmsp vrmsdp vmean vbx vby vp01 vp05 vp10 vp20 " \
+    "vp50 vp80 vp90 vp95 vp99 vp995 vp998 vp999"
+
 static char p1_in[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 
 static FPS_APP_INFO FPS_app_info_1 = { .fps_name    = "imstats",
@@ -29,7 +34,8 @@ static FPS_APP_INFO FPS_app_info_1 = { .fps_name    = "imstats",
                                        .description = "image stats",
                                        .description_long =
                                            "Compute detailed statistics of a 2D image (mean, rms, "
-                                           "min, max, percentiles) and write results to a file." };
+                                           "min, max, percentiles) and write results to a file.",
+                                       .outvars = IMSTATS_OUTVARS };
 
 #define FPS_PARAMS_1(X) \
     X(".in_name", p1_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")
@@ -66,7 +72,8 @@ static FPS_APP_INFO FPS_app_info_2 = { .fps_name    = "imstatsf",
                                        .description = "image stats with file output",
                                        .description_long =
                                            "Compute detailed statistics of a 2D image (mean, rms, "
-                                           "min, max, percentiles) and write results to a file." };
+                                           "min, max, percentiles) and write results to a file.",
+                                       .outvars = IMSTATS_OUTVARS };
 
 #define FPS_PARAMS_2(X) \
     X(".in_name", p2_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")

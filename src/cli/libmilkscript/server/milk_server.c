@@ -43,6 +43,8 @@
 #include "milk_shm_prop.h"
 #include "milk_ipc_common.h"
 #include "milk_proto.h"
+#include "milk_catalog.h"
+#include "milk_cmd_index.h"
 #include "milk_server.h"
 #include "milk_server_internal.h"
 #include "milk_srvlog.h"
@@ -381,7 +383,7 @@ static void reap_children(void)
 }
 
 /**
- * @brief Handle a fast, non-stdio protocol message (`PING`, `SHUTDOWN`, `LISTCMDS`, `COMPLETE`, `GET`, `EXISTS`).
+ * @brief Handle a fast, non-stdio protocol message (`PING`, `SHUTDOWN`, `COMPLETE`, `GET`, `EXISTS`).
  *
  * @return 1 if message was handled, 0 otherwise
  */
@@ -401,25 +403,6 @@ static int handle_fast_message(int                     client_fd,
     if (hdr->type == MILK_MSG_SHUTDOWN)
     {
         *shutdown_flag = 1;
-        milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
-        return 1;
-    }
-
-    if (hdr->type == MILK_MSG_LISTCMDS)
-    {
-        char  *cmdbuf = NULL;
-        size_t cmdlen = 0;
-        FILE  *mfp    = open_memstream(&cmdbuf, &cmdlen);
-        if (mfp != NULL)
-        {
-            milk_server_dump_commands(mfp);
-            fclose(mfp);
-            if (cmdbuf != NULL)
-            {
-                milk_proto_send(client_fd, MILK_MSG_VALUE, 0, cmdbuf, (uint32_t) (cmdlen + 1));
-                free(cmdbuf);
-            }
-        }
         milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
         return 1;
     }
@@ -604,7 +587,7 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
     if (hdr.type == MILK_MSG_CALL && payload != NULL && hdr.len > sizeof(uint32_t))
     {
         const char *cmd0 = (const char *) (payload + sizeof(uint32_t));
-        if (cmd0[0] == '@' || cmd0[0] == ',')
+        if (cmd0[0] == '@')
         {
             cmd0++;
         }
@@ -615,8 +598,21 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
     }
 
     /* --async and @replay need their own stdio while the server goes on: they run in a fork, on a
-     * snapshot of the state (images and variables they create are not kept) */
+     * snapshot of the state (images and variables they create are not kept); a module loaded on
+     * first use is loaded here, before the fork, so that the server keeps it */
     int is_forked_worker = 0;
+    if ((hdr.flags & MILK_FLAG_ASYNC) && hdr.type == MILK_MSG_CALL && payload != NULL &&
+        hdr.len > sizeof(uint32_t) && listen_fd >= 0)
+    {
+        const char *cmd0 = (const char *) (payload + sizeof(uint32_t));
+        cmd0 += (cmd0[0] == '@');
+        milk_server_cmd_lock();
+        if (milk_cmd_lookup(cmd0) < 0)
+        {
+            milk_catalog_autoload(cmd0);
+        }
+        milk_server_cmd_unlock();
+    }
     if (((hdr.flags & MILK_FLAG_ASYNC) || is_replay_call) && listen_fd >= 0)
     {
         pid_t pid = fork();
@@ -866,7 +862,10 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
         }
         milk_server_cmd_unlock();
 
-        milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
+        /* a CALL also reports the registry generation: shells resync their functions on change */
+        int32_t done[2] = { rc, (int32_t) milk_registry_gen() };
+        milk_proto_send(client_fd, MILK_MSG_DONE, 0, done,
+                        (hdr.type == MILK_MSG_CALL) ? sizeof(done) : sizeof(rc));
     } // SET / CALC / TEST / CALL block
 
 cleanup:

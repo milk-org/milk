@@ -187,11 +187,13 @@ void milk_ipc_set_var(const milk_client_hooks_t *hooks,
         char def_local[128];
         int  shell_pid =
             (hooks != NULL && hooks->get_var != NULL) ? (int) getpid() : (int) getppid();
-        const char *local_sock = milk_ipc_get_var(hooks, "_MILK_LOCAL_SOCK");
+        const char *local_sock  = milk_ipc_get_var(hooks, "_MILK_LOCAL_SOCK");
+        const char *engine_sock = milk_ipc_get_var(hooks, "_MILK_ENGINE_SOCK");
         snprintf(def_local, sizeof(def_local), "@milk-cli-%u-%d", (unsigned) getuid(), shell_pid);
         get_shell_override_file(hooks, ovfile, sizeof(ovfile));
         if (safe_val[0] == '\0' || strcmp(safe_val, def_local) == 0 ||
-            (local_sock != NULL && strcmp(safe_val, local_sock) == 0))
+            (local_sock != NULL && strcmp(safe_val, local_sock) == 0) ||
+            (engine_sock != NULL && strcmp(safe_val, engine_sock) == 0))
         {
             unlink(ovfile);
         }

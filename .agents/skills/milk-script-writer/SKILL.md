@@ -6,24 +6,26 @@ description: Generate correct milk-cli scripts from
 
 # milk-script-writer
 
-Write `.milk` scripts (bash plus the milk `@` syntax) for milk-cli, milk-script or `milk.bash`.
+Write `.milk` scripts (bash plus module commands, `@` keywords and `@{…}`) for milk-cli, milk-script
+or `milk.bash`.
 
 ## Read First
 
-- [docs/guide/scripting.md](../../../docs/guide/scripting.md) — the reference: calling commands,
-  entities (`s.`, `l.`, `f.`, `p.`, `q.`), `@get`/`@set`, the calculator, waits and events, errors,
-  cost model, examples. Every form there is tested.
+- [docs/guide/scripting.md](../../../docs/guide/scripting.md) — the language reference: keywords,
+  module commands and their arguments, entities (`s.`, `l.`, `f.`, `p.`, `q.`), the calculator and
+  its variable rules, waits and events, exit status, cost model, migration, examples.
 - [docs/guide/slicing.md](../../../docs/guide/slicing.md) — image slices in calculator expressions.
-- [docs/whatsnew.md](../../../docs/whatsnew.md) — migration table from the old syntax.
 
 ## Output Rules
 
 Generated scripts MUST:
 
 1. Start with `#!/usr/bin/env milk-script`.
-2. Call milk commands as `module.command` (`mem.listim`) or `@name` (`@mk2Dim`, `@calc`); a bare
-   `listim` is just a shell word.
-3. Bind values with `-v` / inline `@…` rather than `$(…)` inside loops (see the cost model).
-4. Quote calculator expressions, and string literals inside them (`@calc 'strlen("abc")'`).
-5. Clean up with `@defer` and use `@L:` for scratch images.
-6. Keep lines ≤ 100 characters and use descriptive variable names.
+2. Call module commands as `module.command` (`mem.listim`, `mem.mk2Dim`); `@` marks only the
+   keywords (`@calc`, `@get`) and the `@{…}` expansion.
+3. Get values into bash with `-v` (`@calc -v`, `@get -v`) or `@{…}`, never `$(…)` in loops; a
+   calculator assignment does not set a bash variable.
+4. Pass bash values to module commands as `$var`; quote calculator expressions and the string
+   literals inside them (`@calc 'strlen("abc")'`).
+5. Clean up with `@defer`, use `"@L:name"` for scratch images and `@sleep` for short waits.
+6. Pass `milk-script --check` (no removed spelling), with lines ≤ 100 characters.

@@ -12,14 +12,14 @@ compiled executables.
 
 See also: [Streams](streams.md) · [FPS](fps.md) · [FAQ](../quickstart/faq.md)
 
-## 1. `@` Session Commands vs `milk-*` Executables
+## 1. Session Commands vs `milk-*` Programs
 
-| Family              | Where to use                                               | Examples                                                   |
-| ------------------- | ---------------------------------------------------------- | ---------------------------------------------------------- |
-| **`@...` commands** | in `milk-cli`, `milk-script`, or bash after `source milk.bash` | `@get`, `@set`, `@calc`, `@waitfor`, `@grab`, `mem.mk2Dim`, `iofits.loadfits` |
-| **`milk-*` programs** | standalone programs: TUIs, compute units, shell tools    | `milk-fpsCTRL`, `milk-streamCTRL`, `milk-fpsexec-*`, `milk-commands` |
+| Family                             | Where to use                                                   | Examples                                                    |
+| ---------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------- |
+| **module commands, `@` keywords**  | in `milk-cli`, `milk-script`, or bash after `source milk.bash` | `mem.mk2Dim`, `iofits.loadfits`, `@get`, `@set`, `@calc`, `@waitfor` |
+| **`milk-*` programs**              | standalone programs: TUIs, compute units, shell tools          | `milk-fpsCTRL`, `milk-streamCTRL`, `milk-fpsexec-*`, `milk-commands` |
 
-The `@` commands, entity paths and calculator are documented in one place:
+The module commands, keywords, entity paths and calculator are documented in one place:
 [Scripting](scripting.md).
 
 ## 2. Core Scripts (`scripts/`)
@@ -28,7 +28,7 @@ Installed from the root `CMakeLists.txt` into `bin/`:
 
 | Script                       | Description                                        |
 | ---------------------------- | -------------------------------------------------- |
-| `milk.bash`                  | Sourceable GNU Bash integration layer (`@` commands, `@server`, `@log`, SHM streams, FPS) |
+| `milk.bash`                  | Sourceable GNU Bash integration layer (module commands, `@` keywords, entities, calculator) |
 | `milk-check`                 | Verify installation (libraries, paths, SHM)        |
 | `milk-argparse`              | Argument parsing helper for milk scripts           |
 | `milk-script-std-config`     | Standard configuration for milk scripts            |
@@ -36,7 +36,7 @@ Installed from the root `CMakeLists.txt` into `bin/`:
 | `milk-script-advanced`       | Advanced template combining bash & native milk-cli |
 | `milk-exec`                  | Execute a milk CLI command non-interactively       |
 | `milk-cli-all`               | Launch milk-cli on all accessible instances        |
-| `milk-commands`              | List all available milk CLI commands               |
+| `milk-commands`              | List the `milk-*` programs, one line each          |
 | `milk-completion.sh`         | Bash tab-completion for milk commands              |
 | `milk-fpsinit`               | Initialize FPS instances from configuration        |
 | `milk-fpslist-addentry`      | Add an entry to `fpslist.txt`                      |

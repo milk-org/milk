@@ -158,7 +158,7 @@ saveFITS TMBAm "${WORKDIR}/mapTMBAm.fits"
 
 listim
 # linalg.Mremap
-exitCLI
+exit
 EOF
 
 fi
@@ -192,7 +192,7 @@ linalg.sgemm imUB imCcoeffB imB
 saveFITS imB "${immB}"
 
 listim
-exitCLI
+exit
 EOF
 
 fi

@@ -74,7 +74,7 @@ def fixt_fpsinit_nopinfo():
 # ADD AFTER THIS LINE
 
 
-def test_fps_lifecycle(fixt_fpsinit_pinfo, tmux: bool = False):
+def test_fps_lifecycle(fixt_fpsinit_pinfo, tmux: bool = True):
     session: StreamDelayComputeSession = fixt_fpsinit_pinfo
     fps = session.fps
     assert fps

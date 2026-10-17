@@ -69,7 +69,7 @@ void print_milk_framework_help(void)
     printf("Fast, low-latency shared-memory data streams designed to\n");
     printf("pass images and multi-dimensional arrays between distinct\n");
     printf("processes with zero-copy overhead.\n");
-    printf("  " C_NOTE "Detailed guide:" C_RST " " C_CMD "@h streams" C_RST " or " C_CMD
+    printf("  " C_NOTE "Detailed guide:" C_RST " " C_CMD "@help streams" C_RST " or " C_CMD
            "milk-stream-help\n" C_RST);
     printf("\n");
 
@@ -77,21 +77,21 @@ void print_milk_framework_help(void)
     printf("A shared memory architecture providing a unified namespace\n");
     printf("to manage configurations, parameters, and telemetry for\n");
     printf("applications seamlessly across the CLI and API.\n");
-    printf("  " C_NOTE "Detailed guide:" C_RST " " C_CMD "@h fps" C_RST "     or " C_CMD
+    printf("  " C_NOTE "Detailed guide:" C_RST " " C_CMD "@help fps" C_RST "     or " C_CMD
            "milk-fps-help\n" C_RST);
     printf("\n");
 
     printf(C_HDR "3. Processinfo (procinfo API)\n" C_RST);
     printf("Advanced real-time execution management, CPU affinity,\n");
     printf("scheduling policies, and stream-based process triggering.\n");
-    printf("  " C_NOTE "Detailed guide:" C_RST " " C_CMD "@h procinfo" C_RST " or " C_CMD
+    printf("  " C_NOTE "Detailed guide:" C_RST " " C_CMD "@help procinfo" C_RST " or " C_CMD
            "milk-procinfo-help\n" C_RST);
     printf("\n");
 
     printf(C_HDR "4. Sequencer (seq API)\n" C_RST);
     printf("Deterministic real-time scheduling and execution engine\n");
     printf("for hardware calibration loops and automated routines.\n");
-    printf("  " C_NOTE "Detailed guide:" C_RST " " C_CMD "@h seq" C_RST "     or " C_CMD
+    printf("  " C_NOTE "Detailed guide:" C_RST " " C_CMD "@help seq" C_RST "     or " C_CMD
            "milk-seq-help\n" C_RST);
     printf("\n");
 
@@ -99,8 +99,8 @@ void print_milk_framework_help(void)
     printf(C_HDR "Interactive & Scripting Workflows (@-commands vs milk-*)\n" C_RST);
     printf("  " C_CMD "source milk.bash" C_RST "   Enable zero-fork " C_CMD "@..." C_RST
            " commands in your current Bash shell.\n");
-    printf("                     Use " C_CMD "@h" C_RST ", " C_CMD "@hb" C_RST ", " C_CMD
-           "@hc <cmd>" C_RST ", " C_CMD "@get" C_RST ", " C_CMD "@set" C_RST ", and " C_CMD
+    printf("                     Use " C_CMD "@help" C_RST ", " C_CMD "<cmd> -h" C_RST ", " C_CMD
+           "@help bash" C_RST ", " C_CMD "@get" C_RST ", " C_CMD "@set" C_RST ", and " C_CMD
            "@<mod>.<cmd>" C_RST ".\n");
     printf("  " C_CMD "milk-cli" C_RST "           Launch the standalone interactive milk REPL.\n");
     printf("  " C_CMD "milk-*" C_RST "             Standalone OS executables: TUI monitors (" C_CMD
@@ -175,7 +175,8 @@ void help_topic_syntax(void)
     printf("  Subsequent: Match images, then files.\n");
     printf("  " C_NOTE "History:" C_RST " Commands saved across sessions (Up/Down).\n");
     printf("  " C_NOTE "Autocorrection:" C_RST " Mistyped commands suggest closest match.\n");
-    printf("  " C_NOTE "Fuzzy finding:" C_RST " " C_CMD "@fhelp" C_RST " filters interactively.\n");
+    printf("  " C_NOTE "Fuzzy finding:" C_RST " " C_CMD "@help --tui" C_RST
+           " filters interactively.\n");
     printf("  " C_NOTE "Bash completion:" C_RST " Source scripts/milk-completion.sh.\n");
     printf("\n");
     printf(C_HDR "Piping Commands:\n" C_RST);
@@ -206,15 +207,15 @@ void help_topic_commands(void)
     printf(C_TITLE "========================================================\n" C_RST);
     printf("\n");
     printf(C_HDR "Help & Discovery:\n" C_RST);
-    printf(C_CMD "  @help             " C_RST "Show help topic index\n");
-    printf(C_CMD "  @help-<topic>     " C_RST "Show help for a specific topic\n");
-    printf(C_CMD "  @cmd? [cmd]       " C_RST "Help for a specific command\n");
-    printf(C_CMD "  @m? [module]      " C_RST "List commands in a module\n");
-    printf(C_CMD "  @fhelp            " C_RST "Interactive fuzzy command search\n");
-    printf(C_CMD "  @fhist            " C_RST "Interactive fuzzy history search\n");
+    printf(C_CMD "  @help             " C_RST "Show the help index\n");
+    printf(C_CMD "  @help <topic>     " C_RST "Show a topic, keyword, module or command\n");
+    printf(C_CMD "  <cmd> -h          " C_RST "Help for a specific command (--help also works)\n");
+    printf(C_CMD "  @help -k <regex>  " C_RST "Search keywords and command descriptions\n");
+    printf(C_CMD "  @help --tui       " C_RST "Interactive fuzzy command search\n");
+    printf(C_CMD "  @history --tui    " C_RST "Interactive fuzzy history search\n");
     printf("\n");
     printf(C_HDR "System Info:\n" C_RST);
-    printf(C_CMD "  @ci               " C_RST "System info and memory usage\n");
+    printf(C_CMD "  milk.ci           " C_RST "System info and memory usage\n");
     printf(C_CMD "  mem.listim        " C_RST "List images in memory\n");
     printf("\n");
     printf(C_HDR "File I/O:\n" C_RST);
@@ -224,8 +225,8 @@ void help_topic_commands(void)
                  "(requires CFITSIO)\n" C_RST);
     printf("\n");
     printf(C_HDR "Session Control:\n" C_RST);
-    printf(C_CMD "  quit / exit       " C_RST "Exit the milk shell\n");
-    printf(C_CMD "  @sessionlog on|off" C_RST "Enable/disable session log\n");
+    printf(C_CMD "  exit              " C_RST "Exit the milk shell\n");
+    printf(C_CMD "  @config sessionlog on|off" C_RST " Enable/disable the session log\n");
     printf("\n");
 }
 
@@ -280,27 +281,26 @@ void help_topic_variables(void)
     printf("  " C_CMD "((expr))" C_RST "        Arithmetic conditional\n");
     printf("\n");
     printf(C_HDR "FPS Parameter Access:\n" C_RST);
-    printf("  " C_CMD "@get f.fps.param" C_RST "  Read FPS parameter (or " C_CMD
-           "@f.fps.param" C_RST ")\n");
+    printf("  " C_CMD "@get f.fps.param" C_RST "  Read FPS parameter (inline: " C_CMD
+           "@{f.fps.param}" C_RST ")\n");
     printf("  " C_CMD "@get q.NAME.prop" C_RST "  Read Sequencer property\n");
-    printf("  " C_CMD "@set f.fps.p=val" C_RST "  Write FPS parameter (alias: " C_CMD
-           "@fpsset fps p v" C_RST ")\n");
+    printf("  " C_CMD "@set f.fps.p=val" C_RST "  Write FPS parameter\n");
     printf("\n");
-    printf(C_HDR "Milk Stream Metadata (@s.<name> shared / @l.<name> local):\n" C_RST);
-    printf("  " C_CMD "@s.name.xsize" C_RST "      Stream width  (size[0])\n");
-    printf("  " C_CMD "@s.name.ysize" C_RST "      Stream height (size[1])\n");
-    printf("  " C_CMD "@s.name.zsize" C_RST "      Stream depth  (size[2])\n");
-    printf("  " C_CMD "@s.name.naxis" C_RST "      Number of axes\n");
-    printf("  " C_CMD "@s.name.type" C_RST "       Datatype code\n");
-    printf("  " C_CMD "@s.name.typename" C_RST "   Datatype name\n");
-    printf("  " C_CMD "@s.name.typeid" C_RST "     Datatype code (alias)\n");
-    printf("  " C_CMD "@s.name.cnt0" C_RST "       Frame counter (total)\n");
-    printf("  " C_CMD "@s.name.cnt1" C_RST "       Frame counter (recent)\n");
-    printf("  " C_CMD "@s.name.sem" C_RST "        Semaphore count\n");
-    printf("  " C_CMD "@s.name.pid" C_RST "        Creator PID\n");
-    printf("  " C_CMD "@s.name.ownerPID" C_RST "   Owner PID\n");
-    printf("  " C_CMD "@s.name.nelement" C_RST "   Total elements\n");
-    printf("  " C_CMD "@l.name.<attr>" C_RST "     Session-local image metadata\n");
+    printf(C_HDR "Stream Metadata (s.<name> shared / l.<name> local; @get or @{...}):\n" C_RST);
+    printf("  " C_CMD "s.name.xsize" C_RST "       Stream width  (size[0])\n");
+    printf("  " C_CMD "s.name.ysize" C_RST "       Stream height (size[1])\n");
+    printf("  " C_CMD "s.name.zsize" C_RST "       Stream depth  (size[2])\n");
+    printf("  " C_CMD "s.name.naxis" C_RST "       Number of axes\n");
+    printf("  " C_CMD "s.name.type" C_RST "        Datatype code\n");
+    printf("  " C_CMD "s.name.typename" C_RST "    Datatype name\n");
+    printf("  " C_CMD "s.name.typeid" C_RST "      Datatype code (alias)\n");
+    printf("  " C_CMD "s.name.cnt0" C_RST "        Frame counter (total)\n");
+    printf("  " C_CMD "s.name.cnt1" C_RST "        Frame counter (recent)\n");
+    printf("  " C_CMD "s.name.sem" C_RST "         Semaphore count\n");
+    printf("  " C_CMD "s.name.pid" C_RST "         Creator PID\n");
+    printf("  " C_CMD "s.name.ownerPID" C_RST "    Owner PID\n");
+    printf("  " C_CMD "s.name.nelement" C_RST "    Total elements\n");
+    printf("  " C_CMD "l.name.<attr>" C_RST "      Session-local image metadata\n");
     printf("\n");
 }
 
@@ -398,8 +398,8 @@ void help_topic_scripting(void)
     printf(C_HDR "Script Files:\n" C_RST);
     printf(C_CMD "  source <file>      " C_RST "Execute a script file\n");
     printf(C_CMD "  . <file>           " C_RST "Same (dot-source)\n");
-    printf(C_CMD "  include_once <f>   " C_RST "Source only once per session\n");
-    printf(C_CMD "  @savehistory <file> " C_RST "Save command history\n");
+    printf(C_CMD "  @source --once <f> " C_RST "Source only once per session\n");
+    printf(C_CMD "  @history save <f>  " C_RST "Save command history\n");
     printf("  Startup: " C_CMD "milk-cli -s <file>" C_RST "  run on launch\n");
     printf("  Startup: " C_CMD "milk-script <file>" C_RST "  standalone runner\n");
     printf("  Auto-load: " C_CMD "~/.milkrc" C_RST " sourced at startup\n");
@@ -481,21 +481,22 @@ void help_topic_milk(void)
     printf(C_TITLE "          MILK-SPECIFIC FEATURES  (milk)\n" C_RST);
     printf(C_TITLE "========================================================\n" C_RST);
     printf("\n");
-    printf(C_HDR "Stream & Image Metadata (@s.<name> shared / @l.<name> local):\n" C_RST);
-    printf("  " C_CMD "@s.name.xsize" C_RST "      Stream width  (size[0])\n");
-    printf("  " C_CMD "@s.name.ysize" C_RST "      Stream height (size[1])\n");
-    printf("  " C_CMD "@s.name.zsize" C_RST "      Stream depth  (size[2])\n");
-    printf("  " C_CMD "@s.name.naxis" C_RST "      Number of axes\n");
-    printf("  " C_CMD "@s.name.type" C_RST "       Datatype code\n");
-    printf("  " C_CMD "@s.name.typename" C_RST "   Datatype name\n");
-    printf("  " C_CMD "@s.name.typeid" C_RST "     Datatype code (alias)\n");
-    printf("  " C_CMD "@s.name.cnt0" C_RST "       Frame counter (total)\n");
-    printf("  " C_CMD "@s.name.cnt1" C_RST "       Frame counter (recent)\n");
-    printf("  " C_CMD "@s.name.sem" C_RST "        Semaphore count\n");
-    printf("  " C_CMD "@s.name.pid" C_RST "        Creator PID\n");
-    printf("  " C_CMD "@s.name.ownerPID" C_RST "   Owner PID\n");
-    printf("  " C_CMD "@s.name.nelement" C_RST "   Total elements\n");
-    printf("  " C_CMD "@l.name.<attr>" C_RST "     Session-local image metadata\n");
+    printf(C_HDR
+           "Stream & Image Metadata (s.<name> shared / l.<name> local; @get or @{...}):\n" C_RST);
+    printf("  " C_CMD "s.name.xsize" C_RST "       Stream width  (size[0])\n");
+    printf("  " C_CMD "s.name.ysize" C_RST "       Stream height (size[1])\n");
+    printf("  " C_CMD "s.name.zsize" C_RST "       Stream depth  (size[2])\n");
+    printf("  " C_CMD "s.name.naxis" C_RST "       Number of axes\n");
+    printf("  " C_CMD "s.name.type" C_RST "        Datatype code\n");
+    printf("  " C_CMD "s.name.typename" C_RST "    Datatype name\n");
+    printf("  " C_CMD "s.name.typeid" C_RST "      Datatype code (alias)\n");
+    printf("  " C_CMD "s.name.cnt0" C_RST "        Frame counter (total)\n");
+    printf("  " C_CMD "s.name.cnt1" C_RST "        Frame counter (recent)\n");
+    printf("  " C_CMD "s.name.sem" C_RST "         Semaphore count\n");
+    printf("  " C_CMD "s.name.pid" C_RST "         Creator PID\n");
+    printf("  " C_CMD "s.name.ownerPID" C_RST "    Owner PID\n");
+    printf("  " C_CMD "s.name.nelement" C_RST "    Total elements\n");
+    printf("  " C_CMD "l.name.<attr>" C_RST "      Session-local image metadata\n");
     printf("\n");
     printf(C_HDR "Waiting for Resources:\n" C_RST);
     printf("  " C_CMD "@waitfor s.<s> [N] [-t T]" C_RST "  Wait for N new frames or stream init\n");
@@ -509,16 +510,14 @@ void help_topic_milk(void)
            "  List streams (s.), local (l.), FPS (f.),\n");
     printf("                           "
            "  processes (p.), and sequencers (q.)\n");
-    printf("  " C_CMD "@fpslist [--json] [pat]   " C_RST "  List FPS instances\n");
-    printf("  " C_CMD "@streamlist [--json] [pat]" C_RST "  List shared-memory streams\n");
-    printf("  " C_CMD "@proclist [--json]        " C_RST "  List active processes\n");
+    printf("  " C_CMD "@ls 'f.*' / 's.*' / 'p.*'" C_RST
+           "  One kind only: FPS, streams, processes\n");
     printf("\n");
     printf(C_HDR "FPS Parameters:\n" C_RST);
-    printf("  " C_CMD "@get f.fps.param " C_RST "Read FPS parameter value (or " C_CMD
-           "@f.fps.param" C_RST ")\n");
-    printf("  " C_CMD "@set f.fps.p=val " C_RST "Write FPS parameter (alias: " C_CMD
-           "@fpsset fps p v" C_RST ")\n");
-    printf("  " C_CMD "@fparam <fpsname>" C_RST "Interactive FPS parameter editor\n");
+    printf("  " C_CMD "@get f.fps.param " C_RST "Read FPS parameter value (inline: " C_CMD
+           "@{f.fps.param}" C_RST ")\n");
+    printf("  " C_CMD "@set f.fps.p=val " C_RST "Write FPS parameter\n");
+    printf("  " C_CMD "@set --tui <fps> " C_RST "Interactive FPS parameter editor (milk-cli)\n");
     printf("\n");
     printf(C_HDR "Stream Management:\n" C_RST);
     printf("  " C_CMD "milk-FITS2shm f.fits s " C_RST "Load FITS into SHM stream\n");
@@ -544,13 +543,13 @@ void help_topic_milk(void)
 /* ------------------------------------------------------------------ */
 
 /**
- * @brief Print detailed help for bash-enhanced syntax (@hb / help bash).
+ * @brief Print detailed help for bash-enhanced syntax (@help bash).
  */
 void help_topic_bash(void)
 {
     printf("\n");
     printf(C_TITLE "========================================================\n" C_RST);
-    printf(C_TITLE "        BASH-ENHANCED MODE & @ SYNTAX  (@hb / bash)\n" C_RST);
+    printf(C_TITLE "        BASH-ENHANCED MODE & @ SYNTAX  (@help bash)\n" C_RST);
     printf(C_TITLE "========================================================\n" C_RST);
     printf("\n");
     printf(C_HDR "1. Activation & Session Control (Standard Bash Shell):\n" C_RST);
@@ -558,28 +557,24 @@ void help_topic_bash(void)
            "Enable milk in current bash shell ([milk] prompt)\n");
     printf("  " C_CMD "MILK_QUIET=1 source milk.bash" C_RST
            " Load silently (e.g. in ~/.bashrc or scripts)\n");
-    printf("  " C_CMD "MILKCLI_SIGIL=, source ...  " C_RST
-           "Use custom sigil instead of '@' (default: @)\n");
     printf("  " C_CMD "@unload                     " C_RST
            "Unload milk.bash, remove @-commands, restore PS1\n");
     printf("\n");
     printf(C_HDR "2. Calling Milk Commands, Batching & Stream Modifiers:\n" C_RST);
-    printf("  " C_CMD "@<cmd> [args...]            " C_RST "Run any milk command (e.g. " C_CMD
-           "@mk2Dim s.im1 128 128" C_RST ")\n");
-    printf("  " C_CMD "@<mod>.<cmd> [args...]      " C_RST "Module-qualified call (e.g. " C_CMD
-           "@mem.listim" C_RST ")\n");
-    printf("  " C_CMD "@<cmd> --async [args...]    " C_RST
+    printf("  " C_CMD "<module>.<cmd> [args...]    " C_RST "Run a module command (e.g. " C_CMD
+           "mem.mk2Dim s.im1 128 128" C_RST ")\n");
+    printf("  " C_CMD "milkcall --async <cmd> ...  " C_RST
            "Dispatch command asynchronously in background\n");
-    printf("  " C_CMD "@batch \"c1; c2\"             " C_RST
-           "Run multi-command block or heredoc in 1 round trip\n");
+    printf("  " C_CMD "@pipe \"c1; c2\"              " C_RST
+           "Run several commands in 1 round trip (also a heredoc on stdin)\n");
     printf("  " C_CMD "@pipe \"c1 |> c2\"            " C_RST
            "Run |> pipeline in 1 round trip (chains '_' image)\n");
-    printf("  " C_CMD "@hc [--sig|-s] <cmd> [pos]  " C_RST
-           "Show command help or compact CLICMDARGDEF signature\n");
+    printf("  " C_CMD "<cmd> -h  |  @help <cmd>    " C_RST
+           "Show a command's arguments, types and defaults\n");
     printf("  " C_CMD "s.<name>  /  l.<name>       " C_RST
            "Force shared (/dev/shm) or local memory (also " C_CMD "@S: / @L:" C_RST ")\n");
-    printf("  " C_CMD "@streamcat [-a arr] <s>     " C_RST
-           "Bind pixels to array or stdout (or " C_CMD "| @streamwrite" C_RST ")\n");
+    printf("  " C_CMD "@grab --stdout [-a arr] <s> " C_RST
+           "Bind pixels to array or stdout (or " C_CMD "| @replay --stdin" C_RST ")\n");
     printf("\n");
     printf(C_HDR "3. Core @ Primitives (milk.bash & milk-cli):\n" C_RST);
     printf("  " C_CMD "@ [-v var] '<expr>'         " C_RST
@@ -611,7 +606,7 @@ void help_topic_bash(void)
            "Restore FPS/stream state from snapshot (" C_CMD "-n" C_RST " = dry-run)\n");
     printf("  " C_CMD "@assert <expr|flags> [msg]  " C_RST
            "Assert math relation or stream/loop health (" C_CMD "--running|--fps-min" C_RST ")\n");
-    printf("  " C_CMD "@prompt [watch|preset|...]  " C_RST
+    printf("  " C_CMD "@config prompt [watch|...]  " C_RST
            "Configure zero-subshell live telemetry prompt (PS1)\n");
     printf("  " C_CMD "@exists <entity>            " C_RST
            "Exit 0 if stream/local/FPS/proc exists (" C_CMD "s.im1, l.im2, f.ao" C_RST ")\n");
@@ -640,16 +635,12 @@ void help_topic_bash(void)
            "Inspect/search timestamped server command & output log (" C_CMD "-e|--slow|-f" C_RST
            ")\n");
     printf("\n");
-    printf(C_HDR "4. milk-cli Shorthands (Interactive REPL & @source <file.milk>):\n" C_RST);
-    printf("  " C_CMD "@s.im1.xsize / @f.ao.gain   " C_RST "Inline property expansion (e.g. " C_CMD
-           "echo \"nx=@s.im1.xsize\"" C_RST ")\n");
-    printf("  " C_CMD "@f.ao.gain=0.25             " C_RST "Direct parameter/keyword assignment\n");
-    printf("  " C_CMD "@f.ao.runstart / @p.ao.pause" C_RST
-           "Direct FPS / processinfo action invocation\n");
+    printf(C_HDR "4. The @{...} Expansion (milk-cli, @source, @config inline on):\n" C_RST);
+    printf("  " C_CMD "@{s.im1.xsize} @{f.ao.gain} " C_RST
+           "Entity property, in any word (e.g. " C_CMD "echo \"nx=@{s.im1.xsize}\"" C_RST ")\n");
     printf("  " C_CMD "@{imean(im1)}               " C_RST
-           "Inline calculator (bash 5.3: no fork; older bash: $(...))\n");
-    printf("  " C_CMD "@ im1[0:9, 0:9] = 10        " C_RST
-           "Unquoted calculator expression statement\n");
+           "Calculator (bash 5.3: no fork; older bash: $(...))\n");
+    printf("  " C_CMD "\\@{...}                     " C_RST "A literal @{...}\n");
     printf("\n");
     printf("Full reference: docs/guide/scripting.md (installed docs or the milk repository)\n\n");
 }
@@ -660,7 +651,7 @@ void help_topic_bash(void)
 /* ------------------------------------------------------------------ */
 
 /**
- * @brief Print help for ImageStreamIO streams (@h streams / @h stream).
+ * @brief Print help for ImageStreamIO streams (@help streams).
  */
 static void help_topic_streams(void)
 {
@@ -702,10 +693,10 @@ static void help_topic_streams(void)
            "Capture 1/N frames to cube or FITS (--timestamps)\n");
     printf("  " C_CMD "@replay [--fps hz] c s " C_RST
            "Replay 3D cube or FITS file into SHM stream <s>\n");
-    printf("  " C_CMD "@streamcat [-a arr] <s>" C_RST
-           "Bind stream pixels to Bash array or pipe to stdout\n");
-    printf("  " C_CMD "@streamwrite <s> [W [H]] -" C_RST
-           "Publish pixels from stdin ('-') or arguments to SHM stream\n");
+    printf("  " C_CMD "@grab --stdout [-a arr] <s>" C_RST
+           " Bind stream pixels to Bash array or pipe to stdout\n");
+    printf("  " C_CMD "@replay --stdin <s> [W [H]]" C_RST
+           " Publish pixels from stdin to SHM stream\n");
     printf("\n");
     printf(C_HDR "3. Standalone OS Tools:\n" C_RST);
     printf("  " C_CMD "milk-streamCTRL        " C_RST "Interactive TUI stream monitor\n");
@@ -717,7 +708,7 @@ static void help_topic_streams(void)
 }
 
 /**
- * @brief Print help for Function Parameter Structure (@h fps).
+ * @brief Print help for Function Parameter Structure (@help fps).
  */
 static void help_topic_fps(void)
 {
@@ -736,9 +727,8 @@ static void help_topic_fps(void)
     printf("  " C_CMD "@set f.<glob>.<p> = V  " C_RST
            "Set parameter(s) (supports globs & multi-assignment)\n");
     printf("  " C_CMD "@set f.<name>.conf = X " C_RST
-           "Control CONF process: start | stop | step (or @f.<name>.confstart)\n");
-    printf("  " C_CMD "@set f.<name>.run  = X " C_RST
-           "Control RUN process:  start | stop (or @f.<name>.runstart)\n");
+           "Control CONF process: start | stop | step\n");
+    printf("  " C_CMD "@set f.<name>.run  = X " C_RST "Control RUN process:  start | stop\n");
     printf("  " C_CMD "@snapshot / @diff / @restore" C_RST
            " Save, compare, or restore FPS/stream state snapshots\n");
     printf("  " C_CMD "@exists [-r] f.<name>  " C_RST
@@ -756,7 +746,7 @@ static void help_topic_fps(void)
 }
 
 /**
- * @brief Print help for Processinfo (@h procinfo / @h proc).
+ * @brief Print help for Processinfo (@help procinfo).
  */
 static void help_topic_procinfo(void)
 {
@@ -775,8 +765,8 @@ static void help_topic_procinfo(void)
     printf("                         dt_median_ns, fps_hz, msg\n");
     printf("  " C_CMD "@set p.<name>.ctrl = X " C_RST
            "Control loop: run | pause | step | stop (or 0..3)\n");
-    printf("  " C_CMD "@p.<name>.pause|.resume|.step|.stop" C_RST
-           " Action-property shorthand for loop control\n");
+    printf("  " C_CMD "@set p.<name>.pause    " C_RST
+           "Action shorthand for loop control: pause | resume | step | stop\n");
     printf("  " C_CMD "@set p.<name>.triggermode=M" C_RST
            " Set trigger mode (IMMEDIATE, SEMAPHORE, CNT0, DELAY...)\n");
     printf("  " C_CMD "@waitfor p.<name> [ST] " C_RST
@@ -795,7 +785,7 @@ static void help_topic_procinfo(void)
 }
 
 /**
- * @brief Print help for Sequencer (@h seq).
+ * @brief Print help for Sequencer (@help seq).
  */
 static void help_topic_seq(void)
 {
@@ -838,7 +828,7 @@ int help_topic_dispatch(const char *topic)
         return 1; /* caller should print the index */
     }
 
-    if (strcmp(topic, "bash") == 0 || strcmp(topic, "hb") == 0)
+    if (strcmp(topic, "bash") == 0)
     {
         help_topic_bash();
     }
@@ -886,6 +876,15 @@ int help_topic_dispatch(const char *topic)
     {
         help_topic_milk();
     }
+    else if (strcmp(topic, "readline") == 0)
+    {
+        printf("\n" C_HDR "milk-cli prompt keys (GNU readline):\n" C_RST);
+        printf("  " C_CMD "TAB" C_RST "        complete commands, images, files, entity paths\n");
+        printf("  " C_CMD "Right arrow" C_RST " accept the grey history suggestion\n");
+        printf("  " C_CMD "Ctrl-R" C_RST "     reverse history search\n");
+        printf("  " C_CMD "Ctrl-A/E" C_RST "   start/end of line;  " C_CMD "Ctrl-W" C_RST
+               " delete word;  " C_CMD "Ctrl-C" C_RST " interrupt\n\n");
+    }
     else
     {
         return 1; /* unknown topic */
@@ -898,6 +897,26 @@ int help_topic_dispatch(const char *topic)
 /* Main help index (replaces the old monolithic function)             */
 /* ------------------------------------------------------------------ */
 
+/* The help topics, in index order: name, description (also the JSON and porcelain indexes) */
+static const struct
+{
+    const char *name;
+    const char *descr;
+} help_topics[] = { { "bash", "Bash-enhanced mode (source milk.bash) and the @ syntax" },
+                    { "streams", "ImageStreamIO shared-memory streams, s./l., slicing" },
+                    { "fps", "Function Parameter Structures (@get/@set f.<name>.*)" },
+                    { "procinfo", "Processinfo telemetry and loop control (@get/@set p.*)" },
+                    { "seq", "FPS sequencer scheduling and control (@get/@set q.*)" },
+                    { "milk", "Overview of streams, FPS, procinfo and TUI monitors" },
+                    { "variables", "Variables, arrays, arithmetic, entity properties" },
+                    { "flowcontrol", "if/while/for/case/functions and event triggers" },
+                    { "scripting", "Script files, I/O, pipes, builtins" },
+                    { "commands", "Engine commands (milk.ci, mem.listim, iofits.loadfits ...)" },
+                    { "syntax", "Interactive REPL features, tab completion, piping" },
+                    { "cmdopts", "milk-cli command-line flags (-h, -s, -n ...)" },
+                    { "readline", "Key bindings of the milk-cli prompt" },
+                    { NULL, NULL } };
+
 /**
  * @brief Print only the available-topics list.
  *
@@ -906,94 +925,52 @@ int help_topic_dispatch(const char *topic)
  */
 void print_help_topic_list(void)
 {
-    printf(C_HDR "Available help topics (@h <topic>):\n" C_RST);
-    printf("  " C_CMD "bash        " C_RST "Bash-enhanced mode (source milk.bash) & @ syntax "
-           "(" C_CMD "@hb" C_RST ")\n");
-    printf("  " C_CMD "streams     " C_RST
-           "ImageStreamIO shared-memory streams, @S:/@L:, slicing\n");
-    printf("  " C_CMD "fps         " C_RST "Function Parameter Structure (@get/@set f.<name>.*)\n");
-    printf("  " C_CMD "procinfo    " C_RST
-           "Processinfo telemetry & loop control (@get/@set p.*)\n");
-    printf("  " C_CMD "seq         " C_RST "FPS Sequencer scheduling & control (@get/@set q.*)\n");
-    printf("  " C_CMD "milk        " C_RST
-           "Overview of streams, FPS, procinfo, and TUI monitors\n");
-    printf("  " C_CMD "variables   " C_RST "Variables, arrays, arithmetic, @s./@f. properties\n");
-    printf("  " C_CMD "flowcontrol " C_RST "if/while/for/case/functions and event triggers\n");
-    printf("  " C_CMD "scripting   " C_RST "Script files, I/O, pipes, builtins\n");
-    printf("  " C_CMD "commands    " C_RST "Built-in CLI commands (ci, listim, loadfits...)\n");
-    printf("  " C_CMD "syntax      " C_RST "Interactive REPL features, tab completion, piping\n");
-    printf("  " C_CMD "cmdopts     " C_RST "milk-cli command-line flags (-h, -s, -n...)\n");
+    printf(C_HDR "Available help topics (@help <topic>):\n" C_RST);
+    for (int i = 0; help_topics[i].name != NULL; i++)
+    {
+        printf("  " C_CMD "%-12s" C_RST "%s\n", help_topics[i].name, help_topics[i].descr);
+    }
     printf("\n");
 }
 
-/**
- * @brief Emit help index as JSON for machine parsing.
- *
- * Outputs a JSON object with "topics" and
- * "quick_reference" arrays for integration with
- * external tooling.
- */
+/** print_milk_cli_help_json() - the help index as JSON: topics and the quick reference. */
 void print_milk_cli_help_json(void)
 {
-    printf("{\n");
-    printf("  \"topics\": [\n");
-    printf("    {\"name\": \"bash\", \"description\": \"Bash-enhanced mode (source milk.bash) & @ "
-           "syntax (@hb)\"},\n");
-    printf(
-        "    {\"name\": \"cmdopts\", \"description\": \"Command-line flags (-h, -s, -n...)\"},\n");
-    printf("    {\"name\": \"syntax\", \"description\": \"Syntax, tab completion, piping\"},\n");
-    printf(
-        "    {\"name\": \"commands\", \"description\": \"Built-in CLI commands (?, cmd?...)\"},\n");
-    printf("    {\"name\": \"variables\", \"description\": \"Variables, arrays, arithmetic\"},\n");
-    printf("    {\"name\": \"flowcontrol\", \"description\": \"if/while/for/case/function\"},\n");
-    printf("    {\"name\": \"scripting\", \"description\": \"Script files, I/O, builtins\"},\n");
-    printf("    {\"name\": \"milk\", \"description\": \"Streams, FPS, milk-specific\"}\n");
-    printf("  ],\n");
-    printf("  \"quick_reference\": [\n");
-    printf("    {\"command\": \"@h / h\", \"args\": \"[topic|cmd|mod]\", \"description\": \"Brief "
-           "top-level help or topic/command help\"},\n");
-    printf("    {\"command\": \"@hb / hb\", \"args\": \"\", \"description\": \"Detailed help for "
-           "bash-enhanced @ syntax\"},\n");
-    printf("    {\"command\": \"@hc / cmd?\", \"args\": \"[name]\", \"description\": \"Help for a "
-           "specific command\"},\n");
-    printf("    {\"command\": \"@hm / m?\", \"args\": \"[module]\", \"description\": \"List "
-           "commands in a module\"},\n");
-    printf("    {\"command\": \"@hf / fhelp\", \"args\": \"[pattern]\", \"description\": "
-           "\"Interactive fuzzy command search\"},\n");
+    printf("{\n  \"topics\": [\n");
+    for (int i = 0; help_topics[i].name != NULL; i++)
+    {
+        printf("    {\"name\": \"%s\", \"description\": \"%s\"}%s\n", help_topics[i].name,
+               help_topics[i].descr, (help_topics[i + 1].name != NULL) ? "," : "");
+    }
+    printf("  ],\n  \"quick_reference\": [\n");
+    printf("    {\"command\": \"@help\", \"args\": \"[topic|keyword|module|module.cmd]\", "
+           "\"description\": \"Help index, or help on one subject\"},\n");
+    printf("    {\"command\": \"<cmd> -h\", \"args\": \"\", \"description\": \"Help for a command "
+           "or keyword\"},\n");
+    printf("    {\"command\": \"@help -k\", \"args\": \"<regex>\", \"description\": \"Search "
+           "keywords and command descriptions\"},\n");
     printf("    {\"command\": \"@unload / exit\", \"args\": \"\", \"description\": \"Unload "
            "milk.bash or exit milk-cli\"}\n");
-    printf("  ]\n");
-    printf("}\n");
+    printf("  ]\n}\n");
 }
 
-/**
- * @brief Emit help index in tab-separated format.
- *
- * Outputs TYPE, NAME, ARGS, DESCRIPTION columns
- * for easy parsing by scripts and completion
- * generators.
- */
+/** print_milk_cli_help_porcelain() - the help index as TSV: TYPE, NAME, ARGS, DESCRIPTION. */
 void print_milk_cli_help_porcelain(void)
 {
     printf("TYPE\tNAME\tARGS\tDESCRIPTION\n");
-    printf("TOPIC\tbash\t\tBash-enhanced mode (source milk.bash) & @ syntax (@hb)\n");
-    printf("TOPIC\tcmdopts\t\tCommand-line flags (-h, -s, -n...)\n");
-    printf("TOPIC\tsyntax\t\tSyntax, tab completion, piping\n");
-    printf("TOPIC\tcommands\t\tBuilt-in CLI commands (?, cmd?...)\n");
-    printf("TOPIC\tvariables\t\tVariables, arrays, arithmetic\n");
-    printf("TOPIC\tflowcontrol\t\tif/while/for/case/function\n");
-    printf("TOPIC\tscripting\t\tScript files, I/O, builtins\n");
-    printf("TOPIC\tmilk\t\tStreams, FPS, milk-specific\n");
-    printf("QUICKREF\t@h\t[topic|cmd|mod]\tBrief top-level help\n");
-    printf("QUICKREF\t@hb\t\tDetailed help for bash-enhanced @ syntax\n");
-    printf("QUICKREF\t@hc / cmd?\t[name]\tHelp for a specific command\n");
-    printf("QUICKREF\t@hm / m?\t[module]\tList commands in a module\n");
-    printf("QUICKREF\t@hf / fhelp\t[pattern]\tInteractive fuzzy command search\n");
+    for (int i = 0; help_topics[i].name != NULL; i++)
+    {
+        printf("TOPIC\t%s\t\t%s\n", help_topics[i].name, help_topics[i].descr);
+    }
+    printf(
+        "QUICKREF\t@help\t[topic|keyword|module|module.cmd]\tHelp index, or help on one subject\n");
+    printf("QUICKREF\t<cmd> -h\t\tHelp for a command or keyword\n");
+    printf("QUICKREF\t@help -k\t<regex>\tSearch keywords and command descriptions\n");
     printf("QUICKREF\t@unload / exit\t\tUnload milk.bash or exit the milk shell\n");
 }
 
 /**
- * @brief Print brief top-level help (@h / h / help).
+ * @brief Print brief top-level help (@help).
  *
  * Concise overview of milk interactive modes (milk-cli and bash-enhanced
  * mode via `source milk.bash`), essential @-commands, and help topics.
@@ -1025,16 +1002,12 @@ void print_milk_top_help(void)
            "           Launch standalone interactive milk REPL & script engine.\n");
     printf("\n");
     printf(C_HDR "Essential Help & Discovery Commands:\n" C_RST);
-    printf("  " C_CMD "@h [topic|cmd|mod]" C_RST
-           " Show this help, or help for a topic, command, or module\n");
-    printf("  " C_CMD "@hb               " C_RST " Detailed help for bash-enhanced " C_CMD "@" C_RST
-           " syntax & primitives\n");
-    printf("  " C_CMD "@hm [module]      " C_RST
-           " List loaded modules, or list commands in <module>\n");
-    printf("  " C_CMD "@hc <command>     " C_RST
-           " Show syntax and argument details for <command>\n");
-    printf("  " C_CMD "@hf [pattern]     " C_RST
-           " Interactive fuzzy search (or regex search) over commands\n");
+    printf("  " C_CMD "@help [topic]     " C_RST
+           " This index, or a topic, keyword, module or module.cmd\n");
+    printf("  " C_CMD "<cmd> -h          " C_RST
+           " Arguments, types and defaults of a command or keyword\n");
+    printf("  " C_CMD "@help -k <regex>  " C_RST " Search keywords and command descriptions\n");
+    printf("  " C_CMD "@help --tui       " C_RST " Interactive fuzzy search (milk-cli REPL)\n");
     printf("  " C_CMD "@unload           " C_RST
            " Unload milk.bash integration from current bash terminal\n");
     printf("\n");
@@ -1122,6 +1095,12 @@ void print_milk_cli_help(void)
     printf(C_CMD "  --no-arg-hints       " C_RST "Disable argument hint line\n");
     printf(C_CMD "  --no-fuzzy           " C_RST "Disable fuzzy/substring matching\n");
     printf(C_CMD "  --verbose            " C_RST "Be verbose\n");
+    printf(C_CMD "  --format <file>      " C_RST
+                 "Print a script re-indented (--format-in-place: rewrite it)\n");
+    printf(C_CMD "  --outline <file>     " C_RST
+                 "Print the multi-line block outline of a script\n");
+    printf(C_CMD "  --catalog            " C_RST
+                 "Write the command catalog of the installed modules (install step)\n");
     printf("\n");
 
     /* ── Section 2: help available inside the running shell ─── */
@@ -1136,13 +1115,14 @@ void print_milk_cli_help(void)
     printf(C_NOTE "From the OS shell:\n" C_RST);
     printf("  $ " C_CMD "milk-cli-help <topic>\n" C_RST);
     printf(C_NOTE "From within milk-cli or bash-enhanced mode:\n" C_RST);
-    printf("  > " C_CMD "@h <topic>" C_RST "   (or " C_CMD "@hb" C_RST " for bash syntax)\n");
+    printf("  > " C_CMD "@help <topic>" C_RST "   (or " C_CMD "@help bash" C_RST
+           " for bash syntax)\n");
     printf("\n");
     printf(C_HDR "Quick reference (inside milk-cli / bash):\n" C_RST);
-    printf("  " C_CMD "@hb / hb      " C_RST "Detailed help for bash-enhanced @ syntax\n");
-    printf("  " C_CMD "@hc / cmd?    " C_RST "Help for a specific command\n");
-    printf("  " C_CMD "@hm / m?      " C_RST "List commands in a module\n");
-    printf("  " C_CMD "@hf / fhelp   " C_RST "Interactive fuzzy command search\n");
+    printf("  " C_CMD "@help bash    " C_RST "Detailed help for bash-enhanced @ syntax\n");
+    printf("  " C_CMD "<cmd> -h      " C_RST "Help for a specific command or keyword\n");
+    printf("  " C_CMD "@help <module>" C_RST "List commands in a module\n");
+    printf("  " C_CMD "@help -k <re> " C_RST "Search keywords and command descriptions\n");
     printf("  " C_CMD "@unload / exit" C_RST "Unload milk.bash / exit the milk shell\n");
     printf("\n");
 }

@@ -25,6 +25,7 @@
 #include "CLIcore_setSHMdir.h"
 #include "milk_bash_engine.h"
 #include "milkscript.h"
+#include "milk_session.h"
 
 /**
  * @brief Initialize the milk scripting engine.
@@ -54,14 +55,8 @@ errno_t milkscript_init(int argc, char **argv)
         load_sharedobj("libmilkfpsCLI.so");
     }
 
-    load_module_shared("milkCOREMODmemory");
-#ifdef USE_CFITSIO
-    load_module_shared("milkCOREMODiofits");
-#endif
-    load_module_shared("milkCOREMODarith");
-    load_module_shared("milkCOREMODtools");
-
-    load_module_shared_local();
+    milk_session_register_engine(); /* the reserved module `milk` comes first */
+    milk_session_load_modules();
 
     return RETURN_SUCCESS;
 }

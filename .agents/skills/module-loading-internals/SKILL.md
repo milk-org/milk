@@ -234,7 +234,7 @@ Set `MILK_QUIET=0` and look for module load
 messages in stderr:
 
 ```bash
-MILK_QUIET=0 echo "exitCLI" | milk-cli 2>&1 | \
+MILK_QUIET=0 echo "exit" | milk-cli 2>&1 | \
   grep -i "module\|load"
 ```
 

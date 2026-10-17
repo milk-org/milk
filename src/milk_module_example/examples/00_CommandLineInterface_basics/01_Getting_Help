@@ -30,5 +30,5 @@ MILK_QUIET="1" milk
 loadfits ?
 
 # exit milk CLI
-exitCLI
+exit
 "

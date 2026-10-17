@@ -46,5 +46,5 @@ modex.imsum1 .in_name imd2
 modex.imsum1 .
 
 # Exit CLI
-exitCLI
+exit
 "

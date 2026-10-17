@@ -42,7 +42,7 @@ interface as follows:
     $ milk-cli
 
     # load module from command line interface
-    milk-cli > @mload NewModuleName
+    milk-cli > @module load NewModuleName
 
     # check list of modules. NewModuleName should appear
     milk-cli > @m?
@@ -79,7 +79,7 @@ Lets run it :
     $ milk-cli
 
     # load module as "mex" (short for module example)
-    milk-cli > @mloadas milk_module_example mex
+    milk-cli > @module load milk_module_example --as mex
 
     # check we have it
     milk-cli > @m?
@@ -101,9 +101,9 @@ Any shared object in the `./lib/` subdirectory of source code will be loaded upo
 
 ## 2.2. Linking module from within CLI with soload
 
-Pre-compiled modules can be linked with the `@soload` command within the CLI:
+Pre-compiled modules can be linked with the `@module load` command within the CLI:
 
-    milk-cli > @soload <fullsoname>
+    milk-cli > @module load <fullsoname>
 
 The `fullsoname` is the shared object file name, path relative to current directory. For example
 "../mylib/myodule.so".
@@ -118,13 +118,13 @@ functions to the CLI. This can be checked by probing the module functions:
 
 By default, modules shared objects are installed in `/usr/local/lib`, and are named
 `lib<ModuleName>.so`. With these assumptions satisfied, modules can be linked from within the CLI
-with the `@mload` command:
+with the `@module load` command:
 
-    milk-cli > @mload <modulename>
+    milk-cli > @module load <modulename>
 
 Alternatively, a short name can be specified
 
-    milk-cli > @mloadas <modulename> <shortname>
+    milk-cli > @module load <modulename> --as <shortname>
 
 Module functions are called from the command line interface prompt:
 
@@ -240,7 +240,7 @@ directory:
 
 Alternatively, you can load it from the CLI at anytime:
 
-    milk-cli > @soload "<pathtomilk>/src/exampleModule/libexamplemodule.so"
+    milk-cli > @module load "<pathtomilk>/src/exampleModule/libexamplemodule.so"
 
 ---
 

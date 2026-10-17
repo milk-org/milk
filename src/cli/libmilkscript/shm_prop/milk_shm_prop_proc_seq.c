@@ -535,6 +535,8 @@ int milk_shm_prop_set_proc(const char *name, const char *prop, const char *val)
 
     if (ctrlval_int < 0)
     {
+        fprintf(stderr, "ERROR: p.%s.%s: invalid value '%s' (run, pause, step, stop)\n", name, prop,
+                (val != NULL) ? val : "");
         return -1;
     }
 
@@ -543,6 +545,7 @@ int milk_shm_prop_set_proc(const char *name, const char *prop, const char *val)
     PROCESSINFO *pi_shm    = map_proc_shm(name, found_pid, &pfd);
     if (pi_shm == NULL)
     {
+        fprintf(stderr, "ERROR: p.%s: no such process\n", name);
         return -1;
     }
     pi_shm->CTRLval = ctrlval_int;

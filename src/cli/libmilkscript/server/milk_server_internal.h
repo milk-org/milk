@@ -37,9 +37,18 @@ void milk_server_sync_bash_vars(const uint8_t *buf,
                                 uint32_t       nvars,
                                 uint32_t      *offset_io);
 
-void milk_server_snapshot_dcvar(void);
+#define MILK_OUTVARS_MAX 32 /* declared outputs tracked per command */
 
-void milk_server_send_modified_dcvars(int client_fd);
+/** milk_server_outvars_snap() - fingerprint the declared outputs @outvars (CLICMDDATA.outvars) before
+ * their command runs, into @h[MILK_OUTVARS_MAX]; returns how many. */
+int milk_server_outvars_snap(const char *outvars, uint64_t *h);
+
+/** milk_server_outvars_diff() - after the command: queue the outputs whose fingerprint changed. */
+void milk_server_outvars_diff(const char *outvars, const uint64_t *h, int n);
+
+/** milk_server_outvars_send() - send the queued outputs to the caller as SETVAR (none if @client_fd < 0)
+ * and forget them. */
+void milk_server_outvars_send(int client_fd);
 
 
 void milk_server_expand_entities_in_expr(const char *in, char *out, size_t outsz);
@@ -69,6 +78,13 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
 /* --- milk_server_dispatch.c --- */
 
 int milk_server_dispatch_argv(int argc, char **argv);
+
+/** milk_server_module() - `@module`; milk_server_config() - `@config` (its server settings). */
+int milk_server_module(int argc, char **argv);
+int milk_server_config(int argc, char **argv);
+
+/** milk_server_history() - run `@history <sub>` (*@handled set), or leave plain `@history` to the caller. */
+int milk_server_history(int argc, char **argv, int *handled);
 
 int milk_server_exec_set(const uint8_t *payload, uint32_t len, char *log_cmd, size_t log_cmd_sz);
 

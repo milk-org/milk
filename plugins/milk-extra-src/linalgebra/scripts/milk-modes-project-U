@@ -65,5 +65,5 @@ linalg.sgemm modesB mcoeff imrec
 saveFITS imrec "$outimrec"
 imres=modesA-imrec
 saveFITS imres "$outimres"
-exitCLI
+exit
 EOF

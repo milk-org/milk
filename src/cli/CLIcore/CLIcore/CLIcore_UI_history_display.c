@@ -648,7 +648,7 @@ errno_t cli_ghistory(void)
             printf("ghistory: unknown "
                    "option '%s'\n",
                    a);
-            printf("Usage: ghistory [N]\n"
+            printf("Usage: @history --global [N]\n"
                    "  -n N       last N\n"
                    "  -s SID     session\n"
                    "  -t TYPE    prompt/cmd/"
@@ -780,7 +780,7 @@ errno_t cli_lhistory(void)
             printf("lhistory: unknown "
                    "option '%s'\n",
                    a);
-            printf("Usage: lhistory [N]\n"
+            printf("Usage: @history --local [N]\n"
                    "  -n N       last N\n"
                    "  -t TYPE    prompt/cmd/"
                    "shell\n"

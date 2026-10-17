@@ -27,6 +27,7 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 
 #include "cli_calc_internal.h"
+#include "cli_calc_scalar.h"
 #include "cli_calc_tokenizer.h"
 
 /**
@@ -51,33 +52,7 @@ typedef struct
  * indicating the function signature.
  */
 static const builtin_func builtins[] = {
-    /* double -> double */
-    { "sin(", (double (*)()) sin, TOK_FUNC_D_D },
-    { "cos(", (double (*)()) cos, TOK_FUNC_D_D },
-    { "exp(", (double (*)()) exp, TOK_FUNC_D_D },
-    { "ln(", (double (*)()) log, TOK_FUNC_D_D },
-    { "log(", (double (*)()) log10, TOK_FUNC_D_D },
-    { "tan(", (double (*)()) tan, TOK_FUNC_D_D },
-    { "atan(", (double (*)()) atan, TOK_FUNC_D_D },
-    { "sqrt(", (double (*)()) sqrt, TOK_FUNC_D_D },
-    { "cbrt(", (double (*)()) cbrt, TOK_FUNC_D_D },
-    { "ceil(", (double (*)()) ceil, TOK_FUNC_D_D },
-    { "floor(", (double (*)()) floor, TOK_FUNC_D_D },
-    { "asin(", (double (*)()) asin, TOK_FUNC_D_D },
-    { "acos(", (double (*)()) acos, TOK_FUNC_D_D },
-    { "posi(", (double (*)()) Ppositive, TOK_FUNC_D_D },
-    { "abs(", (double (*)()) fabs, TOK_FUNC_D_D },
-    { "fabs(", (double (*)()) fabs, TOK_FUNC_D_D },
-    { "round(", (double (*)()) round, TOK_FUNC_D_D },
-
-    /* double, double -> double */
-    { "atan2(", (double (*)()) atan2, TOK_FUNC_DD_D },
-    { "fmod(", (double (*)()) fmod, TOK_FUNC_DD_D },
-    { "min(", (double (*)()) fmin, TOK_FUNC_DD_D },
-    { "max(", (double (*)()) fmax, TOK_FUNC_DD_D },
-
-    /* double, double, double -> double */
-    { "trunc(", (double (*)()) Ptrunc, TOK_FUNC_DDD_D },
+    /* the scalar math functions (sin, min, trunc, ...) are cli_calc_scalar_fn()'s */
 
     /* image -> double */
     { "itot(", (double (*)()) arith_image_total, TOK_FUNC_IM_D },
@@ -162,67 +137,6 @@ static size_t ident_len(const char *start)
 static inline int is_ident_start(int c)
 {
     return isalpha(c) || c == '_' || c == '?' || c == '.';
-}
-
-/**
- * cli_calc_is_scalar_expr() - 1 if @s holds only numbers, operators and scalar math functions, so it
- * can be evaluated anywhere without milk state (no names, strings, slices or assignments).
- */
-int cli_calc_is_scalar_expr(const char *s)
-{
-    if (s == NULL)
-    {
-        return 0;
-    }
-    const char *p = s;
-    while (*p != '\0')
-    {
-        unsigned char c = (unsigned char) *p;
-        if (isdigit(c) || (c == '.' && isdigit((unsigned char) p[1])))
-        {
-            p++;
-            while (isdigit((unsigned char) *p) || *p == '.' ||
-                   ((*p == 'e' || *p == 'E') &&
-                    (isdigit((unsigned char) p[1]) || p[1] == '+' || p[1] == '-')))
-            {
-                p += (*p == 'e' || *p == 'E') ? 2 : 1;
-            }
-            if (isalpha((unsigned char) *p) || *p == '_')
-            {
-                return 0; /* 2x, 0x10: let the full parser decide */
-            }
-            continue;
-        }
-        if (isalpha(c) || c == '_')
-        {
-            int fn = 0;
-            for (int i = 0; builtins[i].name != NULL && !fn; i++)
-            {
-                size_t blen = strlen(builtins[i].name); /* includes the '(' */
-                fn = (strncmp(p, builtins[i].name, blen) == 0 &&
-                      (builtins[i].ttype == TOK_FUNC_D_D || builtins[i].ttype == TOK_FUNC_DD_D ||
-                       builtins[i].ttype == TOK_FUNC_DDD_D))
-                         ? (int) blen
-                         : 0;
-            }
-            if (!fn)
-            {
-                return 0;
-            }
-            p += fn;
-            continue;
-        }
-        if (c == '=' && !(p > s && strchr("<>=!", p[-1]) != NULL) && p[1] != '=')
-        {
-            return 0; /* assignment */
-        }
-        if (strchr(" \t+-*/%^()<>=!&|?:,", c) == NULL)
-        {
-            return 0;
-        }
-        p++;
-    }
-    return 1;
 }
 
 /**
@@ -405,137 +319,8 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
 
         /* operators and punctuation */
         {
-            cli_token_type optype = TOK_EOF;
             int            oplen  = 1;
-
-            if (*p == '<' && *(p + 1) == '=')
-            {
-                optype = TOK_OP_LE;
-                oplen  = 2;
-            }
-            else if (*p == '>' && *(p + 1) == '=')
-            {
-                optype = TOK_OP_GE;
-                oplen  = 2;
-            }
-            else if (*p == '=' && *(p + 1) == '=')
-            {
-                optype = TOK_OP_EQ;
-                oplen  = 2;
-            }
-            else if (*p == '!' && *(p + 1) == '=')
-            {
-                optype = TOK_OP_NEQ;
-                oplen  = 2;
-            }
-            else if (*p == '&' && *(p + 1) == '&')
-            {
-                optype = TOK_OP_AND;
-                oplen  = 2;
-            }
-            else if (*p == '|' && *(p + 1) == '|')
-            {
-                optype = TOK_OP_OR;
-                oplen  = 2;
-            }
-            else if (*p == '+' && *(p + 1) == '=')
-            {
-                optype = TOK_OP_PLUS_EQ;
-                oplen  = 2;
-            }
-            else if (*p == '-' && *(p + 1) == '=')
-            {
-                optype = TOK_OP_MINUS_EQ;
-                oplen  = 2;
-            }
-            else if (*p == '*' && *(p + 1) == '=')
-            {
-                optype = TOK_OP_STAR_EQ;
-                oplen  = 2;
-            }
-            else if (*p == '/' && *(p + 1) == '=')
-            {
-                optype = TOK_OP_SLASH_EQ;
-                oplen  = 2;
-            }
-            else if (*p == '<' && *(p + 1) == '<')
-            {
-                optype = TOK_OP_LSHIFT;
-                oplen  = 2;
-            }
-            else if (*p == '>' && *(p + 1) == '>')
-            {
-                optype = TOK_OP_RSHIFT;
-                oplen  = 2;
-            }
-            else if (*p == '^' && *(p + 1) == '^')
-            {
-                optype = TOK_OP_BXOR;
-                oplen  = 2;
-            }
-            else
-            {
-                switch (*p)
-                {
-                case '+':
-                    optype = TOK_OP_PLUS;
-                    break;
-                case '-':
-                    optype = TOK_OP_MINUS;
-                    break;
-                case '*':
-                    optype = TOK_OP_STAR;
-                    break;
-                case '/':
-                    optype = TOK_OP_SLASH;
-                    break;
-                case '^':
-                    optype = TOK_OP_CARET;
-                    break;
-                case '%':
-                    optype = TOK_OP_MOD;
-                    break;
-                case '<':
-                    optype = TOK_OP_LT;
-                    break;
-                case '>':
-                    optype = TOK_OP_GT;
-                    break;
-                case '!':
-                    optype = TOK_OP_NOT;
-                    break;
-                case '(':
-                    optype = TOK_LPAREN;
-                    break;
-                case ')':
-                    optype = TOK_RPAREN;
-                    break;
-                case '|':
-                    optype = TOK_OP_BOR;
-                    break;
-                case '&':
-                    optype = TOK_OP_BAND;
-                    break;
-                case '~':
-                    optype = TOK_OP_BNOT;
-                    break;
-                case ',':
-                    optype = TOK_COMMA;
-                    break;
-                case '=':
-                    optype = TOK_EQUAL;
-                    break;
-                case '?':
-                    optype = TOK_OP_QUESTION;
-                    break;
-                case ':':
-                    optype = TOK_OP_COLON;
-                    break;
-                default:
-                    break;
-                }
-            }
-
+            cli_token_type optype = cli_calc_scan_op(p, &oplen);
             if (optype != TOK_EOF)
             {
                 if (data.core.Debug > 0)
@@ -551,105 +336,20 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
             }
         }
 
-        /*
-         * Number: integer or floating-point
-         *
-         * We try to parse a double first to detect
-         * decimal points and exponents.  If none are
-         * found, treat as long.
-         */
-        if (isdigit((unsigned char) *p) || (*p == '.' && isdigit((unsigned char) *(p + 1))))
+        /* Number: decimal (a '.' or an exponent makes it a double), 0x, 0o or 0b */
         {
-            const char *start    = p;
-            int         is_float = 0;
-
-            /* Hex (0x/0X), octal (0o/0O),
-             * binary (0b/0B) prefixes */
-            if (*p == '0' && *(p + 1) != '\0' && !isdigit((unsigned char) *(p + 1)) &&
-                *(p + 1) != '.')
+            size_t nlen =
+                cli_calc_scan_number(p, &tokens[nt].type, &tokens[nt].val_l, &tokens[nt].val_d);
+            if (nlen > 0)
             {
-                char pfx = *(p + 1);
-                if (pfx == 'x' || pfx == 'X')
-                {
-                    tokens[nt].type  = TOK_LONG;
-                    tokens[nt].val_l = strtol(start, (char **) &p, 16);
-                    nt++;
-                    continue;
-                }
-                if (pfx == 'o' || pfx == 'O')
-                {
-                    p += 2;
-                    tokens[nt].type  = TOK_LONG;
-                    tokens[nt].val_l = strtol(p, (char **) &p, 8);
-                    nt++;
-                    continue;
-                }
-                if (pfx == 'b' || pfx == 'B')
-                {
-                    p += 2;
-                    tokens[nt].type  = TOK_LONG;
-                    tokens[nt].val_l = strtol(p, (char **) &p, 2);
-                    nt++;
-                    continue;
-                }
-            }
-
-            /* integer part */
-            while (isdigit((unsigned char) *p))
-            {
-                p++;
-            }
-
-            /* fractional part */
-            if (*p == '.')
-            {
-                is_float = 1;
-                p++;
-                while (isdigit((unsigned char) *p))
-                {
-                    p++;
-                }
-            }
-
-            /* exponent */
-            if (*p == 'e' || *p == 'E')
-            {
-                is_float = 1;
-                p++;
-                if (*p == '+' || *p == '-')
-                {
-                    p++;
-                }
-                while (isdigit((unsigned char) *p))
-                {
-                    p++;
-                }
-            }
-
-            if (is_float)
-            {
-                tokens[nt].type  = TOK_DOUBLE;
-                tokens[nt].val_d = strtod(start, NULL);
                 if (data.core.Debug > 0)
                 {
-                    printf("DEBUG: TOKENIZER: \"%.*s\""
-                           " is a float -> %f\n",
-                           (int) (p - start), start, tokens[nt].val_d);
+                    printf("DEBUG: TOKENIZER: \"%.*s\" is a number\n", (int) nlen, p);
                 }
+                nt++;
+                p += nlen;
+                continue;
             }
-            else
-            {
-                tokens[nt].type  = TOK_LONG;
-                tokens[nt].val_l = strtol(start, NULL, 10);
-                if (data.core.Debug > 0)
-                {
-                    printf("DEBUG: TOKENIZER: \"%.*s\""
-                           " is a long -> %ld\n",
-                           (int) (p - start), start, tokens[nt].val_l);
-                }
-            }
-            nt++;
-            continue;
         }
 
         /* Quoted string literal: "hello" */
@@ -689,7 +389,19 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
         {
             /* try built-in function match */
             {
-                int matched = 0;
+                int                         matched = 0;
+                const cli_calc_scalar_fn_t *sf      = cli_calc_scalar_fn(p);
+                if (sf != NULL)
+                {
+                    tokens[nt].type    = (sf->nargs == 1)   ? TOK_FUNC_D_D
+                                         : (sf->nargs == 2) ? TOK_FUNC_DD_D
+                                                            : TOK_FUNC_DDD_D;
+                    tokens[nt].fnctptr = sf->fn;
+                    snprintf(tokens[nt].sval, sizeof(tokens[nt].sval), "%s", sf->name);
+                    nt++;
+                    p += strlen(sf->name);
+                    continue;
+                }
                 for (int i = 0; builtins[i].name != NULL; i++)
                 {
                     size_t blen = strlen(builtins[i].name);

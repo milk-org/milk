@@ -7,14 +7,13 @@
  * @brief Lossless bash <-> dcvar variable synchronization and inline entity expansion.
  *
  * Role & Goal:
- *   1. Synchronizes scalar variables between the calling bash environment and
- *      milk's internal variable table (`data.core.variable[]` and `cli_vars[]`).
- *      Maintains a string cache (`g_dcvar_cached_str`) of the formatted representation
- *      last sent to bash so that 64-bit IEEE-754 floating-point values are not
- *      degraded by decimal string round-tripping unless bash actually modified them.
- *   2. Expands inline `@s.<stream>.<prop>`, `@f.<fps>.<param>`, `@p.<proc>.<field>`,
- *      and `@q.<seq>.<field>` references inside arithmetic (`@=`) and boolean (`@test`)
- *      expressions prior to evaluation by `cli_calc_eval_bash()`.
+ *   1. Moves scalar variables between the calling bash environment and milk's variable table
+ *      (`data.core.variable[]` and `cli_vars[]`): the bash variables a calc expression names come in
+ *      with the request; a command's declared outputs (CLICMDDATA.outvars) that it changed go back.
+ *      A string cache (`g_dcvar_cached_str`) of the text last sent to bash keeps 64-bit values exact
+ *      when bash sends that text back unchanged.
+ *   2. Expands the entity references (`s.<stream>.<prop>`, `f.<fps>.<param>`, `p.<proc>.<field>`,
+ *      `q.<seq>.<field>`) inside calc and test expressions before `cli_calc_eval_bash()` runs them.
  */
 
 #ifndef _GNU_SOURCE
@@ -141,23 +140,32 @@ void milk_server_sync_bash_vars(const uint8_t *buf,
                 }
             }
         }
-        cli_var_set(vname, vval);
+        cli_var_set_text(vname, vval); /* a bash value is data, never a calc expression */
     }
     *offset_io = off;
 }
 
-/* Change detection for SETVAR: one mark per variable slot, written only for slots in use. A slot
- * whose mark has an old epoch was unused at snapshot time. */
-typedef struct
-{
-    uint64_t h;     /* hash of name, type and value */
-    uint32_t epoch; /* snapshot that recorded @h */
-} var_mark_t;
+/* Declared outputs the commands of the current request changed, sent back by milk_server_outvars_send() */
+static char g_outq[MILK_OUTVARS_MAX][80];
+static int  g_noutq = 0;
 
-static var_mark_t  g_cli_mark[CLI_MAX_VARS];
-static var_mark_t *g_dc_mark    = NULL;
-static long        g_dc_mark_n  = 0;
-static uint32_t    g_mark_epoch = 0;
+/** next_outvar() - copy the next name of space-separated list *@p into @name; 0 at the end. */
+static int next_outvar(const char **p, char *name, size_t sz)
+{
+    size_t n = 0;
+
+    *p += strspn(*p, " ");
+    while (**p != '\0' && **p != ' ')
+    {
+        if (n + 1 < sz)
+        {
+            name[n++] = **p;
+        }
+        (*p)++;
+    }
+    name[n] = '\0';
+    return n > 0;
+}
 
 /** fnv1a() - continue a 64-bit FNV-1a hash over @n bytes. */
 static uint64_t fnv1a(uint64_t h, const void *p, size_t n)
@@ -170,69 +178,57 @@ static uint64_t fnv1a(uint64_t h, const void *p, size_t n)
     return h;
 }
 
-static uint64_t dcvar_hash(const VARIABLE *v)
+/** outvar_hash() - fingerprint of variable @name's type and value; 0 if it does not exist. */
+static uint64_t outvar_hash(const char *name)
 {
-    uint64_t h = fnv1a(14695981039346656037ULL, v->name, strlen(v->name) + 1);
-    h          = fnv1a(h, &v->type, sizeof(v->type));
+    long vid = variable_ID(name);
+    if (vid < 0)
+    {
+        return 0;
+    }
+    const VARIABLE *v = &data.core.variable[vid];
+    uint64_t        h = fnv1a(14695981039346656037ULL, &v->type, sizeof(v->type));
     if (v->type == 0)
     {
-        return fnv1a(h, &v->value.f, sizeof(v->value.f));
+        h = fnv1a(h, &v->value.f, sizeof(v->value.f));
     }
-    if (v->type == 1)
+    else if (v->type == 1)
     {
-        return fnv1a(h, &v->value.l, sizeof(v->value.l));
+        h = fnv1a(h, &v->value.l, sizeof(v->value.l));
     }
-    return fnv1a(h, v->value.s, strnlen(v->value.s, sizeof(v->value.s)));
+    else
+    {
+        h = fnv1a(h, v->value.s, strnlen(v->value.s, sizeof(v->value.s)));
+    }
+    return h | 1;
 }
 
-static uint64_t clivar_hash(const CLI_VAR *v)
+int milk_server_outvars_snap(const char *outvars, uint64_t *h)
 {
-    uint64_t h = fnv1a(14695981039346656037ULL, v->name, strlen(v->name) + 1);
-    return fnv1a(h, v->val, strlen(v->val));
+    char name[80];
+    int  n = 0;
+
+    while (n < MILK_OUTVARS_MAX && next_outvar(&outvars, name, sizeof(name)))
+    {
+        h[n++] = outvar_hash(name);
+    }
+    return n;
 }
 
-/**
- * @brief Record the current `dcvar` and `cli_vars` values, to report changes after a command.
- */
-void milk_server_snapshot_dcvar(void)
+void milk_server_outvars_diff(const char *outvars, const uint64_t *h, int n)
 {
-    long nmax = (data.core.variable != NULL && data.core.NB_MAX_VARIABLE > 0)
-                    ? data.core.NB_MAX_VARIABLE
-                    : 0;
-    if (nmax > g_dc_mark_n)
+    char name[80];
+
+    for (int i = 0; i < n && next_outvar(&outvars, name, sizeof(name)); i++)
     {
-        var_mark_t *m = (var_mark_t *) realloc(g_dc_mark, (size_t) nmax * sizeof(var_mark_t));
-        if (m == NULL)
+        int queued = (h[i] == outvar_hash(name)); /* unchanged: nothing to send */
+        for (int j = 0; j < g_noutq && !queued; j++)
         {
-            nmax = g_dc_mark_n;
+            queued = (strcmp(g_outq[j], name) == 0);
         }
-        else
+        if (!queued && g_noutq < MILK_OUTVARS_MAX)
         {
-            memset(m + g_dc_mark_n, 0, (size_t) (nmax - g_dc_mark_n) * sizeof(var_mark_t));
-            g_dc_mark   = m;
-            g_dc_mark_n = nmax;
-        }
-    }
-    if (++g_mark_epoch == 0) /* wrapped: forget every mark */
-    {
-        memset(g_dc_mark, 0, (size_t) g_dc_mark_n * sizeof(var_mark_t));
-        memset(g_cli_mark, 0, sizeof(g_cli_mark));
-        g_mark_epoch = 1;
-    }
-    for (long i = 0; i < nmax; i++)
-    {
-        if (data.core.variable[i].used)
-        {
-            g_dc_mark[i].h     = dcvar_hash(&data.core.variable[i]);
-            g_dc_mark[i].epoch = g_mark_epoch;
-        }
-    }
-    for (int j = 0; j < CLI_MAX_VARS; j++)
-    {
-        if (cli_vars[j].used)
-        {
-            g_cli_mark[j].h     = clivar_hash(&cli_vars[j]);
-            g_cli_mark[j].epoch = g_mark_epoch;
+            snprintf(g_outq[g_noutq++], sizeof(g_outq[0]), "%s", name);
         }
     }
 }
@@ -253,84 +249,40 @@ static void send_setvar(int client_fd, const char *vname, const char *val)
     free(pkt);
 }
 
-/**
- * @brief Send a `MILK_MSG_SETVAR` frame for every variable changed since milk_server_snapshot_dcvar().
- *
- * @param client_fd Connected client socket fd
- */
-void milk_server_send_modified_dcvars(int client_fd)
+void milk_server_outvars_send(int client_fd)
 {
-    long nmax = data.core.NB_MAX_VARIABLE;
-    if (data.core.variable != NULL)
+    for (int j = 0; j < g_noutq && client_fd >= 0; j++)
     {
-        for (long i = 0; i < nmax; i++)
+        long vid = variable_ID(g_outq[j]);
+        char valstr[256];
+        if (vid < 0)
         {
-            if (!data.core.variable[i].used)
-            {
-                continue;
-            }
-            const char *vname = data.core.variable[i].name;
-            if (vname[0] == '\0' || is_builtin_const_var(vname))
-            {
-                continue;
-            }
-
-            int changed = (i >= g_dc_mark_n || g_dc_mark[i].epoch != g_mark_epoch ||
-                           g_dc_mark[i].h != dcvar_hash(&data.core.variable[i]));
-            if (!changed)
-            {
-                continue;
-            }
-
-            char valstr[256];
-            if (data.core.variable[i].type == 1)
-            {
-                snprintf(valstr, sizeof(valstr), "%ld", data.core.variable[i].value.l);
-            }
-            else if (data.core.variable[i].type == 0)
-            {
-                snprintf(valstr, sizeof(valstr), "%.*g", cli_float_digits,
-                         data.core.variable[i].value.f);
-            }
-            else
-            {
-                snprintf(valstr, sizeof(valstr), "%s", data.core.variable[i].value.s);
-            }
-
-            if (i < DCVAR_CACHE_MAX)
-            {
-                snprintf(g_dcvar_cached_str[i], sizeof(g_dcvar_cached_str[i]), "%s", valstr);
-            }
-
-            send_setvar(client_fd, vname, valstr);
+            continue;
         }
+        if (data.core.variable[vid].type == 1)
+        {
+            snprintf(valstr, sizeof(valstr), "%ld", data.core.variable[vid].value.l);
+        }
+        else if (data.core.variable[vid].type == 0)
+        {
+            snprintf(valstr, sizeof(valstr), "%.*g", cli_float_digits,
+                     data.core.variable[vid].value.f);
+        }
+        else
+        {
+            snprintf(valstr, sizeof(valstr), "%s", data.core.variable[vid].value.s);
+        }
+        if (vid < DCVAR_CACHE_MAX)
+        {
+            snprintf(g_dcvar_cached_str[vid], sizeof(g_dcvar_cached_str[vid]), "%s", valstr);
+        }
+        send_setvar(client_fd, g_outq[j], valstr);
     }
-
-    /* Also send string variables assigned via cli_var_set (e.g. _su = "hello") */
-    for (int j = 0; j < CLI_MAX_VARS; j++)
-    {
-        if (!cli_vars[j].used)
-        {
-            continue;
-        }
-        const char *vname = cli_vars[j].name;
-        if (vname[0] == '\0' || is_builtin_const_var(vname) || strncmp(vname, "_tmpstr", 7) == 0 ||
-            strncmp(vname, "_tmpcalc", 8) == 0 || variable_ID(vname) != -1)
-        {
-            continue;
-        }
-        int changed =
-            (g_cli_mark[j].epoch != g_mark_epoch || g_cli_mark[j].h != clivar_hash(&cli_vars[j]));
-        if (!changed)
-        {
-            continue;
-        }
-        send_setvar(client_fd, vname, cli_vars[j].val);
-    }
+    g_noutq = 0;
 }
 
 /**
- * @brief Expand inline entity references (`@s.im.xsize`, `f.fps.param`, etc.) inside an expression.
+ * @brief Expand the entity references (`s.im.xsize`, `f.fps.param`, ...) inside an expression.
  *
  * Numeric values are substituted bare; string values are enclosed in double quotes.
  * Also runs `cli_expand_fpsvar()` for legacy `${fps...}` / `${stream...}` tokens.
@@ -373,22 +325,13 @@ void milk_server_expand_entities_in_expr(const char *in, char *out, size_t outsz
             continue;
         }
 
-        int has_at = (c == '@' && ip + 1 < len &&
-                      (isalpha((unsigned char) src[ip + 1]) || src[ip + 1] == '_'));
-        if ((has_at || isalpha((unsigned char) c) || c == '_') &&
+        if ((isalpha((unsigned char) c) || c == '_') &&
             (ip == 0 || (!isalnum((unsigned char) src[ip - 1]) && src[ip - 1] != '_' &&
                          src[ip - 1] != '.' && src[ip - 1] != '@')))
         {
-            size_t tstart    = has_at ? (ip + 1) : ip;
-            size_t end       = tstart;
-            int    ndots     = 0;
-            int    has_colon = 0;
-            if (has_at && end + 1 < len && (src[end] == 'S' || src[end] == 'L') &&
-                src[end + 1] == ':')
-            {
-                has_colon = 1;
-                end += 2;
-            }
+            size_t tstart = ip;
+            size_t end    = tstart;
+            int    ndots  = 0;
             while (end < len && (isalnum((unsigned char) src[end]) || src[end] == '_' ||
                                  src[end] == '.' || src[end] == '-'))
             {
@@ -404,16 +347,14 @@ void milk_server_expand_entities_in_expr(const char *in, char *out, size_t outsz
                 ndots--;
             }
             size_t tlen = end - tstart;
-            if (((has_at && ndots >= 1 && (has_colon || end >= len || src[end] != ':')) ||
-                 ndots >= 2) &&
-                tlen < 256)
+            if (ndots >= 2 && tlen < 256)
             {
                 char tok[256];
                 memcpy(tok, src + tstart, tlen);
                 tok[tlen]         = '\0';
                 const char *dot1  = strchr(tok, '.');
                 size_t      nslen = (dot1 != NULL) ? (size_t) (dot1 - tok) : 0;
-                if (has_at || milk_is_entity_ns_prefix(tok, nslen))
+                if (milk_is_entity_ns_prefix(tok, nslen))
                 {
                     char val[512];
                     val[0] = '\0';

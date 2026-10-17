@@ -37,7 +37,13 @@ set(MILKSCRIPT_SOURCES
     core/CLIcore_signals.c
     core/CLIcore_utils.c
     core/CLIcore_vars.c
+    core/milk_catalog.c
+    core/milk_catalog_build.c
+    core/milk_cmd_args.c
+    core/milk_cmd_index.c
     core/milk_lexicon.c
+    core/milk_renames.c
+    core/milk_session.c
     calc/cli_calc_tokenizer.c
     calc/cli_calc_parser.c
     calc/cli_calc_functions.c
@@ -46,6 +52,7 @@ set(MILKSCRIPT_SOURCES
     calc/cli_calc_slice.c
     calc/cli_calc_fuse.c
     calc/cli_calc_complex.c
+    calc/cli_calc_scalar.c
     shm_prop/milk_shm_prop.c
     shm_prop/milk_shm_prop_stream.c
     shm_prop/milk_shm_prop_fps.c
@@ -62,9 +69,11 @@ set(MILKSCRIPT_SOURCES
     server/milk_server_stream.c
     server/milk_server_io.c
     server/milk_server_dispatch.c
+    server/milk_server_session.c
     bash/milk_bash_translate.c
     bash/milk_shell_lex.c
     bash/milk_bash_coproc.c
+    bash/milk_bash_cmdfile.c
     milkscript_stubs.c
     milkscript_api.c)
 
@@ -154,14 +163,39 @@ target_include_directories(
 
 install(TARGETS milk-script DESTINATION bin)
 
-# Loadable GNU Bash builtin module (enable -f libmilkbash.so ...)
-add_library(milkbash SHARED ipc/milk_bash_builtins.c)
-target_link_libraries(milkbash PRIVATE milkscript dl)
+# Loadable GNU Bash builtin module (enable -f libmilkbash.so ...): the thin client every user shell
+# loads. IPC, shm properties, @{...} translation and the in-shell scalar calculator, without the engine
+# (no cfitsio, OpenMP or module code); it exports only the builtins.
+add_library(
+  milkbash SHARED
+  ipc/milk_bash_builtins.c
+  ipc/milk_client_conn.c
+  ipc/milk_client_ops.c
+  ipc/milk_ipc_common.c
+  ipc/milk_waitfor.c
+  ipc/milk_srvlog_shm.c
+  ipc/milk_srv_manager.c
+  shm_prop/milk_shm_prop.c
+  shm_prop/milk_shm_prop_stream.c
+  shm_prop/milk_shm_prop_fps.c
+  shm_prop/milk_shm_prop_proc_seq.c
+  shm_prop/milk_shm_cache.c
+  bash/milk_bash_translate.c
+  bash/milk_shell_lex.c
+  bash/milk_bash_cmdfile.c
+  core/milk_lexicon.c
+  core/milk_renames.c
+  core/milk_catalog.c
+  core/CLIcore_inspect.c
+  calc/cli_calc_scalar.c)
 target_include_directories(
-  milkbash PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-                  ${CMAKE_CURRENT_SOURCE_DIR}/../CLIcore)
-set_target_properties(milkbash PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_options(milkbash PRIVATE "-Wl,--disable-new-dtags")
+  milkbash PRIVATE $<TARGET_PROPERTY:milkscript,INTERFACE_INCLUDE_DIRECTORIES>)
+target_compile_definitions(milkbash PRIVATE MILK_BASH_CLIENT)
+target_link_libraries(
+  milkbash PRIVATE milkfpsseq milkfps milkprocessinfo milkdata m dl rt
+                   ${CMAKE_THREAD_LIBS_INIT})
+set_target_properties(milkbash PROPERTIES C_VISIBILITY_PRESET hidden INSTALL_RPATH "$ORIGIN")
+target_link_options(milkbash PRIVATE "-Wl,--disable-new-dtags" "-Wl,--no-undefined")
 install(TARGETS milkbash DESTINATION lib)
 
 # Standalone helper executable (milk-call)

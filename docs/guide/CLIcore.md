@@ -70,15 +70,15 @@ $ milk-cli -F /tmp/myfifo -s init.milk  # fifo + startup script
 ```bash
 # Example ~/.milkrc
 alias li=mem.listim
-@synhl on
+@config synhl on
 ```
 
 ### Configurable Prompt
 
-Customize the prompt format using `@setprompt`:
+Customize the prompt format using `@config prompt`:
 
 ```text
-milk-cli > @setprompt "%u@%h %d > "
+milk-cli > @config prompt "%u@%h %d > "
 user@host src >
 ```
 
@@ -95,8 +95,8 @@ user@host src >
 Load shared library modules at runtime:
 
 ```text
-milk-cli > @soload mylib.so        # load shared object
-milk-cli > @mload milkimagegen     # load module by library name (libmilkimagegen.so)
+milk-cli > @module load mylib.so        # load shared object
+milk-cli > @module load milkimagegen     # load module by library name (libmilkimagegen.so)
 ```
 
 ---
@@ -165,13 +165,13 @@ milk-cli > arith.imfunc \
 The first word is colored **green** (valid command) or **red** (unknown). Toggle with:
 
 ```text
-milk-cli > @synhl off            # disable
-milk-cli > @synhl on             # enable (default)
+milk-cli > @config synhl off            # disable
+milk-cli > @config synhl on             # enable (default)
 ```
 
 <!-- prettier-ignore -->
 !!! tip
-    If you encounter rendering issues with syntax highlighting, disable it with `@synhl off`.
+    If you encounter rendering issues with syntax highlighting, disable it with `@config synhl off`.
 
 ### Auto-Correction
 
@@ -217,11 +217,11 @@ milk-cli > mem.listim              # list all images in memory
 milk-cli > mem.listim --json       # list all images in JSON format
 milk-cli > mem.listim --porcelain  # list all images in TSV format
 milk-cli > mem.listim > list.txt    # list images into a file
-milk-cli > quit                    # exit (or: exit, exitCLI)
+milk-cli > exit                    # leave the shell
 milk-cli > mem.mk2Dim <im> <xs> <ys>   # create 2D image
 milk-cli > @usleep <usec>          # sleep for <usec> microseconds
-milk-cli > @dpsingle               # set default precision to float
-milk-cli > @dpdouble               # set default precision to double
+milk-cli > @config precision single               # set default precision to float
+milk-cli > @config precision double               # set default precision to double
 milk-cli > cd <dir>                # change current working directory
 milk-cli > pwd                     # print current working directory
 ```
@@ -239,9 +239,9 @@ Command history is saved to `~/.milk_history` and loaded at startup. Up to 1000 
 between sessions.
 
 ```text
-milk-cli > @ghistory             # show last 20 entries (all sessions)
-milk-cli > @ghistory 50          # show last 50 entries
-milk-cli > @lhistory             # show entries from current session
+milk-cli > @history --global             # show last 20 entries (all sessions)
+milk-cli > @history --global 50          # show last 50 entries
+milk-cli > @history --local             # show entries from current session
 ```
 
 Use `Ctrl+R` for interactive reverse search through history.
@@ -249,7 +249,7 @@ Use `Ctrl+R` for interactive reverse search through history.
 ### Fuzzy History Search
 
 ```text
-milk-cli > @searchhist mem.listim
+milk-cli > @history search mem.listim
 ```
 
 Finds all history entries containing "mem.listim" (case- insensitive) and highlights the matching
@@ -258,7 +258,7 @@ substring in yellow. Shows match count at the end.
 ### Command Statistics
 
 ```text
-milk-cli > @cmdstats             # top 20 most-used commands
+milk-cli > @history --stats             # top 20 most-used commands
 ```
 
 Shows command name and call count for the current session.
@@ -268,9 +268,9 @@ Shows command name and call count for the current session.
 Log all executed commands with timestamps:
 
 ```text
-milk-cli > @sessionlog on         # log to ~/.milk_session.log
-milk-cli > @sessionlog mylog.txt  # log to custom file
-milk-cli > @sessionlog off        # stop logging
+milk-cli > @config sessionlog on         # log to ~/.milk_session.log
+milk-cli > @config sessionlog mylog.txt  # log to custom file
+milk-cli > @config sessionlog off        # stop logging
 ```
 
 Each entry includes a timestamp and elapsed time since the session started.
@@ -299,7 +299,7 @@ documentation.
 | --------------------- | ------------------------------------ |
 | `source <file>`       | Execute a script file                |
 | `. <file>`            | Same as `source` (dot-source)        |
-| `@savehistory <file>` | Save command history to file         |
+| `@history save <file>` | Save command history to file         |
 
 ### Command Timing
 

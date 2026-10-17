@@ -130,20 +130,7 @@ int find_command_match(const char *firstword)
     {
         return -1;
     }
-    const char *sigil = getenv("MILKCLI_SIGIL");
-    if (sigil == NULL || sigil[0] == '\0' || strlen(sigil) > 8)
-    {
-        sigil = "@";
-    }
-    size_t siglen = strlen(sigil);
-    if (strncmp(firstword, sigil, siglen) == 0)
-    {
-        firstword += siglen;
-    }
-    else if (firstword[0] == '@')
-    {
-        firstword++;
-    }
+    firstword += (firstword[0] == '@');
 
     for (uint32_t cmdi = 0; cmdi < data.NBcmd; cmdi++)
     {
@@ -734,13 +721,11 @@ void CLI_redisplay(void)
                  strcmp(cmdname, "tail") == 0 || strcmp(cmdname, "cp") == 0 ||
                  strcmp(cmdname, "mv") == 0 || strcmp(cmdname, "rm") == 0 ||
                  strcmp(cmdname, "less") == 0 || strcmp(cmdname, "more") == 0 ||
-                 strcmp(cmdname, "include_once") == 0 || strcmp(cmdname, "savescript") == 0 ||
-                 strcmp(cmdname, "savehistory") == 0 || strcmp(cmdname, "run") == 0)
+                 strcmp(cmdname, "savescript") == 0 || strcmp(cmdname, "run") == 0)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_FILES;
         }
-        else if (strcmp(cmdname, "fpsCTRL") == 0 || strcmp(cmdname, "fparam") == 0 ||
-                 strcmp(cmdname, "fpsload") == 0 || strcmp(cmdname, "dpsingle") == 0 ||
+        else if (strcmp(cmdname, "fpsCTRL") == 0 || strcmp(cmdname, "fpsload") == 0 ||
                  strcmp(cmdname, "fpsconf") == 0 || strcmp(cmdname, "fpsrun") == 0 ||
                  strcmp(cmdname, "fpsstop") == 0 || strcmp(cmdname, "waitfor_fps") == 0)
         {

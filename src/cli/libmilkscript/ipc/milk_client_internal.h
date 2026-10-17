@@ -20,7 +20,7 @@
 #include "milk_client.h"
 
 /**
- * @brief Packed scalar shell variables forwarded with CALL / CALC / TEST requests.
+ * @brief The shell variables a calc expression names, sent with its request (CALC, TEST, `@assert`, `@pipe`).
  */
 typedef struct
 {
@@ -38,8 +38,6 @@ void milk_client_close_owner_pipe(void);
 void milk_client_collect_identifiers(milk_packed_vars_t        *pv,
                                      const milk_client_hooks_t *hooks,
                                      const char                *s);
-
-void milk_client_collect_synced_vars(milk_packed_vars_t *pv, const milk_client_hooks_t *hooks);
 
 int milk_client_await_response(int                        fd,
                                const char                *sockpath,

@@ -111,17 +111,17 @@ static int list_entities_in_namespace(const char *nsp, const char *pattern, char
 
     if ((strcmp(nsp, "l") == 0 || strcmp(nsp, "local") == 0))
     {
-        if (data.core.image == NULL)
+        if (MILK_LOCAL_IMAGES == NULL)
         {
             return -1;
         }
-        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        for (long i = 0; i < MILK_NB_LOCAL_IMAGES; i++)
         {
-            if (data.core.image[i].used == 1 && data.core.image[i].name[0] != '\0' &&
-                strncmp(data.core.image[i].name, "_tmpcalc", 8) != 0 &&
-                (data.core.image[i].md == NULL || !data.core.image[i].md->shared))
+            if (MILK_LOCAL_IMAGES[i].used == 1 && MILK_LOCAL_IMAGES[i].name[0] != '\0' &&
+                strncmp(MILK_LOCAL_IMAGES[i].name, "_tmpcalc", 8) != 0 &&
+                (MILK_LOCAL_IMAGES[i].md == NULL || !MILK_LOCAL_IMAGES[i].md->shared))
             {
-                const char *iname = data.core.image[i].name;
+                const char *iname = MILK_LOCAL_IMAGES[i].name;
                 if (fnmatch(pat, iname, 0) == 0 && !token_in_space_list(out, iname))
                 {
                     full |= append_word(out, outsz, &pos, iname);
@@ -131,14 +131,14 @@ static int list_entities_in_namespace(const char *nsp, const char *pattern, char
         return full ? -2 : 0;
     }
 
-    if ((strcmp(nsp, "s") == 0 || strcmp(nsp, "stream") == 0) && data.core.image != NULL)
+    if ((strcmp(nsp, "s") == 0 || strcmp(nsp, "stream") == 0) && MILK_LOCAL_IMAGES != NULL)
     {
-        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        for (long i = 0; i < MILK_NB_LOCAL_IMAGES; i++)
         {
-            if (data.core.image[i].used == 1 && data.core.image[i].name[0] != '\0' &&
-                strncmp(data.core.image[i].name, "_tmpcalc", 8) != 0)
+            if (MILK_LOCAL_IMAGES[i].used == 1 && MILK_LOCAL_IMAGES[i].name[0] != '\0' &&
+                strncmp(MILK_LOCAL_IMAGES[i].name, "_tmpcalc", 8) != 0)
             {
-                const char *iname = data.core.image[i].name;
+                const char *iname = MILK_LOCAL_IMAGES[i].name;
                 if (fnmatch(pat, iname, 0) == 0 && !token_in_space_list(out, iname))
                 {
                     full |= append_word(out, outsz, &pos, iname);

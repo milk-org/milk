@@ -46,6 +46,9 @@
 #include "milk_entity_ns.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
+#include "milk_catalog.h"
+#include "milk_cmd_args.h"
+#include "milk_cmd_index.h"
 #include "milk_shell_lex.h"
 #include "milk_srvlog.h"
 
@@ -59,10 +62,6 @@ int milk_server_take_call_interrupt(void)
 }
 
 extern void handle_did_you_mean(const char *input_cmd);
-extern int  cli_intercept_cmd_procctl(const char *p);
-extern int  cli_intercept_cmd_procwait(const char *p);
-extern int  cli_intercept_cmd_procstat(const char *p);
-extern int  cli_intercept_cmd_dpdigits(const char *p);
 
 typedef struct
 {
@@ -303,7 +302,7 @@ void milk_server_watcher_atfork_child(void)
 }
 
 /**
- * @brief Resolve a command name (canonical `ns.cmd` or unambiguous short `cmd`).
+ * @brief Resolve a command name: exact `ns.cmd`, or an unambiguous short `cmd` (bare @cmd shims).
  *
  * @param name      Command name without leading sigil
  * @param out_ambig Set to 1 if multiple modules define the same short name
@@ -317,30 +316,11 @@ static int resolve_milk_cmd_index(const char *name, int *out_ambig)
         return -1;
     }
 
-    if (strcmp(name, "imgstat") == 0 || strcmp(name, "info.imgstat") == 0)
+    /* 1. Exact registered key (hash index) */
+    int exact = milk_cmd_lookup(name);
+    if (exact >= 0)
     {
-        name = "info.imstats";
-    }
-    else if (strcmp(name, "mk2Drnd") == 0 || strcmp(name, "imgen.mk2Drnd") == 0)
-    {
-        name = "imgen.mkrndim";
-    }
-    else if (strcmp(name, "savefits") == 0 || strcmp(name, "iofits.savefits") == 0)
-    {
-        name = "saveFITS";
-    }
-    else if (strcmp(name, "lm?") == 0)
-    {
-        name = "hm";
-    }
-
-    /* 1. Exact match on registered command key */
-    for (unsigned int i = 0; i < data.NBcmd; i++)
-    {
-        if (strcmp(data.cmd[i].key, name) == 0)
-        {
-            return (int) i;
-        }
+        return exact;
     }
 
     /* 2. If no dot in name, search for unambiguous "<ns>.<name>" */
@@ -385,29 +365,6 @@ static int resolve_milk_cmd_index(const char *name, int *out_ambig)
         }
     }
 
-    /* 3. If name is "<shortmod>.<cmd>", check module shortname + key */
-    const char *dot = strchr(name, '.');
-    if (dot != NULL)
-    {
-        size_t      mlen = (size_t) (dot - name);
-        const char *sub  = dot + 1;
-        for (unsigned int i = 0; i < data.NBcmd; i++)
-        {
-            int midx = data.cmd[i].moduleindex;
-            if (midx >= 0)
-            {
-                const char *ms = data.module[midx].shortname;
-                const char *mn = data.module[midx].name;
-                if (((strlen(ms) == mlen && strncmp(ms, name, mlen) == 0) ||
-                     (strlen(mn) == mlen && strncmp(mn, name, mlen) == 0)) &&
-                    strcmp(data.cmd[i].key, sub) == 0)
-                {
-                    return (int) i;
-                }
-            }
-        }
-    }
-
     return -1;
 }
 
@@ -418,27 +375,6 @@ static int resolve_milk_cmd_index(const char *name, int *out_ambig)
  */
 static int try_dispatch_interceptor(const char *cmdname, int argc, char **argv, int *out_rc)
 {
-    if (strcmp(cmdname, "procctl") == 0)
-    {
-        cli_last_retval = 0;
-        cli_intercept_cmd_procctl(data.CLIcmdline);
-        *out_rc = cli_last_retval;
-        return 1;
-    }
-    if (strcmp(cmdname, "procwait") == 0)
-    {
-        cli_last_retval = 0;
-        cli_intercept_cmd_procwait(data.CLIcmdline);
-        *out_rc = cli_last_retval;
-        return 1;
-    }
-    if (strcmp(cmdname, "procstat") == 0)
-    {
-        cli_last_retval = 0;
-        cli_intercept_cmd_procstat(data.CLIcmdline);
-        *out_rc = cli_last_retval;
-        return 1;
-    }
     if (strcmp(cmdname, "server") == 0)
     {
         *out_rc = milk_srvlog_cmd_server(argc - 1, argv + 1, NULL);
@@ -447,12 +383,6 @@ static int try_dispatch_interceptor(const char *cmdname, int argc, char **argv, 
     if (strcmp(cmdname, "log") == 0)
     {
         *out_rc = milk_srvlog_cmd_log(getenv("MILKCLI_SOCK"), argc - 1, argv + 1, NULL);
-        return 1;
-    }
-    if (strcmp(cmdname, "dpdigits") == 0)
-    {
-        cli_intercept_cmd_dpdigits(data.CLIcmdline);
-        *out_rc = 0;
         return 1;
     }
     if ((strcmp(cmdname, "listim") == 0 || strcmp(cmdname, "mem.listim") == 0) && argc >= 2 &&
@@ -518,16 +448,13 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
             }
         }
 
+        /* `=` too: the expression parser would run `a=b` as an assignment */
         if (!is_slice && (arg[0] == '-' || arg[0] == '/' || strchr(arg, ' ') != NULL ||
-                          strchr(arg, '\t') != NULL || arg[0] == '@' || is_ns_stream_arg))
+                          strchr(arg, '\t') != NULL || strchr(arg, '=') != NULL || arg[0] == '@' ||
+                          is_ns_stream_arg))
         {
             data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
-            int is_help_cmd                      = (strcmp(data.cmd[cmdidx].key, "h") == 0 ||
-                                                    strcmp(data.cmd[cmdidx].key, "help") == 0 ||
-                                                    strcmp(data.cmd[cmdidx].key, "hc") == 0 ||
-                                                    strcmp(data.cmd[cmdidx].key, "cmd?") == 0 ||
-                                                    strcmp(data.cmd[cmdidx].key, "hm") == 0 ||
-                                                    strcmp(data.cmd[cmdidx].key, "m?") == 0);
+            int is_help_cmd                      = (strcmp(data.cmd[cmdidx].key, "help") == 0);
             if ((arg[0] == '@' || is_ns_stream_arg) && !is_help_cmd)
             {
                 IMGID tmpid = imgid_make_from_name(arg);
@@ -1180,7 +1107,7 @@ int milk_server_dispatch_argv(int argc, char **argv)
     }
 
     const char *cmdname = argv[0];
-    if (cmdname[0] == '@' || cmdname[0] == ',')
+    if (cmdname[0] == '@')
     {
         cmdname++;
     }
@@ -1188,6 +1115,23 @@ int milk_server_dispatch_argv(int argc, char **argv)
     if (strcmp(cmdname, "ls") == 0)
     {
         return milk_ls_exec(argc - 1, argv + 1);
+    }
+    if (strcmp(cmdname, "module") == 0)
+    {
+        return milk_server_module(argc, argv);
+    }
+    if (strcmp(cmdname, "config") == 0)
+    {
+        return milk_server_config(argc, argv);
+    }
+    if (strcmp(cmdname, "history") == 0)
+    {
+        int handled = 0;
+        int hrc     = milk_server_history(argc, argv, &handled); /* @history <sub>; else below */
+        if (handled)
+        {
+            return hrc;
+        }
     }
     if (strcmp(cmdname, "streamcat") == 0)
     {
@@ -1221,35 +1165,7 @@ int milk_server_dispatch_argv(int argc, char **argv)
     {
         return milk_server_set_argv(argc, argv);
     }
-    if (strcmp(cmdname, "fpsset") == 0)
-    {
-        char spec[512];
-        if (argc >= 4)
-        {
-            const char *f = argv[1];
-            if (milk_entity_ns_kind(argv[1], &f) != MILK_NS_FPS)
-            {
-                f = argv[1];
-            }
-            snprintf(spec, sizeof(spec), "f.%s.%s", f, argv[2]);
-            return (milk_shm_prop_set(spec, argv[3], (argc >= 5) ? argv[4] : NULL) == 0) ? 0 : 1;
-        }
-        if (argc == 3)
-        {
-            if (strncmp(argv[1], "f.", 2) == 0 || strncmp(argv[1], "fps.", 4) == 0)
-            {
-                snprintf(spec, sizeof(spec), "%s", argv[1]);
-            }
-            else
-            {
-                snprintf(spec, sizeof(spec), "f.%s", argv[1]);
-            }
-            return (milk_shm_prop_set(spec, argv[2], NULL) == 0) ? 0 : 1;
-        }
-        fprintf(stderr, "Usage: fpsset <fps> <param> <value>  (or @set f.<fps>.<param>=<value>)\n");
-        return 1;
-    }
-    if (strcmp(cmdname, "batch") == 0 || strcmp(cmdname, "pipe") == 0)
+    if (strcmp(cmdname, "pipe") == 0)
     {
         return milk_server_batch_or_pipe(argc, argv);
     }
@@ -1321,6 +1237,10 @@ int milk_server_dispatch_argv(int argc, char **argv)
 
     int ambig  = 0;
     int cmdidx = resolve_milk_cmd_index(cmdname, &ambig);
+    if (cmdidx < 0 && !ambig && milk_catalog_autoload(cmdname)) /* first use of its module */
+    {
+        cmdidx = resolve_milk_cmd_index(cmdname, &ambig);
+    }
     if (cmdidx < 0)
     {
         if (ambig)
@@ -1330,6 +1250,15 @@ int milk_server_dispatch_argv(int argc, char **argv)
         fprintf(stderr, "\033[1;31mmilk:\033[0m unknown command '@%s'\n", cmdname);
         handle_did_you_mean(cmdname);
         return 127;
+    }
+    if (argc >= 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0))
+    {
+        return (help_command(data.cmd[cmdidx].key) == RETURN_SUCCESS) ? 0 : 1; /* nothing runs */
+    }
+    int argrc = milk_args_begin(cmdidx, &argc, argv); /* --save= --load= --default --no-run -- */
+    if (argrc != 0)
+    {
+        return argrc;
     }
 
     static unsigned int ncall = 0;
@@ -1352,11 +1281,16 @@ int milk_server_dispatch_argv(int argc, char **argv)
 
     if (populate_cmdargtokens(cmdidx, argc, argv) != 0)
     {
+        milk_args_end();
         return 1;
     }
 
     data.cmd[cmdidx].callcount++;
     data.CMDerrstatus = RETURN_FAILURE;
+
+    const char *outvars = data.cmd[cmdidx].outvars; /* the variables it sets for its caller */
+    uint64_t    outh[MILK_OUTVARS_MAX];
+    int         nout = (outvars != NULL) ? milk_server_outvars_snap(outvars, outh) : 0;
 
     /* the command gets its own fault-isolation frame; the caller's (REPL) frame is restored after */
     sigjmp_buf outer_env;
@@ -1389,9 +1323,16 @@ int milk_server_dispatch_argv(int argc, char **argv)
         cli_fault_isolation_disarm();
     }
     cli_set_sigint_forward(outer_fwd);
+    milk_server_outvars_diff(outvars, outh, nout);
+    int usage = milk_args_end();
     if (aborted)
     {
         return aborted;
+    }
+    if (usage)
+    {
+        cli_calc_tmp_cleanup();
+        return 2;
     }
 
     if (data.CMDerrstatus != RETURN_SUCCESS)
@@ -1661,8 +1602,7 @@ static int exec_single_batch_step(const char *raw_step, char *last_img, size_t l
     size_t slen = strlen(step_buf);
     if (slen >= sizeof(step_buf) - 1)
     {
-        fprintf(stderr, "ERROR: @batch/@pipe step too long (max %zu chars)\n",
-                sizeof(step_buf) - 2);
+        fprintf(stderr, "ERROR: @pipe step too long (max %zu chars)\n", sizeof(step_buf) - 2);
         return 1;
     }
     while (slen > 0 && (step_buf[slen - 1] == ' ' || step_buf[slen - 1] == '\t' ||
@@ -1676,7 +1616,7 @@ static int exec_single_batch_step(const char *raw_step, char *last_img, size_t l
     }
 
     const char *s = step_buf;
-    if (s[0] == '@' || s[0] == ',')
+    if (s[0] == '@')
     {
         s++;
     }
@@ -1716,7 +1656,7 @@ static int exec_single_batch_step(const char *raw_step, char *last_img, size_t l
     }
 
     const char *w0 = s_argv[0];
-    if (w0[0] == '@' || w0[0] == ',')
+    if (w0[0] == '@')
     {
         w0++;
     }
@@ -1763,7 +1703,7 @@ static int exec_single_batch_step(const char *raw_step, char *last_img, size_t l
     return rc;
 }
 
-/** batch_step_cb() - split_top_level() callback: run one @batch/@pipe step; @ctx is the `_` image name buffer. */
+/** batch_step_cb() - split_top_level() callback: run one @pipe step; @ctx is the `_` image name buffer. */
 static int batch_step_cb(char *seg, void *ctx)
 {
     return exec_single_batch_step(seg, (char *) ctx, 256);
@@ -1936,11 +1876,8 @@ int milk_server_exec_calc_or_test(int            client_fd,
         milk_server_sync_bash_vars(payload, len, nvars, &off);
     }
 
-    milk_server_snapshot_dcvar();
-    int rc = split_top_level(expr, 1, 0, calc_stmt_cb, &is_test);
-
-    milk_server_send_modified_dcvars(client_fd);
-    return rc;
+    (void) client_fd; /* calc variables reach bash only through -v (its output) */
+    return split_top_level(expr, 1, 0, calc_stmt_cb, &is_test);
 }
 
 /* Environment overrides sent with a CALL apply to that request only (restored afterwards). */
@@ -2107,7 +2044,7 @@ int milk_server_exec_call(int            client_fd,
         milk_server_sync_bash_vars(payload, len, nvars, &off);
     }
 
-    milk_server_snapshot_dcvar();
+    milk_server_outvars_send(-1); /* nothing queued by an earlier request survives */
     unsigned int nbcmd_before  = data.NBcmd;
     int          digits_before = cli_float_digits;
 
@@ -2124,7 +2061,7 @@ int milk_server_exec_call(int            client_fd,
     fflush(stdout);
     fflush(stderr);
 
-    milk_server_send_modified_dcvars(client_fd);
+    milk_server_outvars_send(client_fd);
     if (cli_float_digits != digits_before) /* the builtin formats scalar results itself */
     {
         char pkt[32];
@@ -2132,7 +2069,7 @@ int milk_server_exec_call(int            client_fd,
         milk_proto_send(client_fd, MILK_MSG_SETVAR, 0, pkt, (uint32_t) n + 1);
     }
 
-    /* If a module was dynamically loaded (@mload / @soload), send DEFCMD */
+    /* If a module was dynamically loaded (@module load), send DEFCMD */
     for (unsigned int ci = nbcmd_before; ci < data.NBcmd; ci++)
     {
         const char *ck = data.cmd[ci].key;

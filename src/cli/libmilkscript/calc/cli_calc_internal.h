@@ -17,25 +17,9 @@
 #define CLI_CALC_INTERNAL_H
 
 #include "ImageStreamIO/ImageStruct.h"
+#include "cli_calc_scalar.h"
 #include "cli_calc_tokenizer.h"
 
-/** Expression result type tag */
-typedef enum
-{
-    VAL_LONG,
-    VAL_DOUBLE,
-    VAL_STRING,
-    VAL_GENERIC /**< For functions that don't return a specific value type */
-} val_type;
-
-/** Expression result value */
-typedef struct
-{
-    val_type type;
-    long     lval;
-    double   dval;
-    char     sval[CLI_CALC_TOKEN_MAXLEN];
-} val_t;
 
 extern int parse_mode;
 extern int parse_error;
@@ -83,7 +67,6 @@ val_t mk_string(const char *s);
 
 int check_image(const char *name);
 
-int   cli_calc_op_prec(cli_token_type t);
 int   cli_calc_tok_pos(void);
 void  cli_calc_tok_seek(int pos);
 int   cli_calc_tokens_have_image(void);

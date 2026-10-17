@@ -109,7 +109,7 @@ ctest --output-on-failure
 
 ```bash
 echo "m?" | milk-cli 2>/dev/null
-echo "exitCLI" | milk-cli 2>/dev/null
+echo "exit" | milk-cli 2>/dev/null
 ```
 
 ## 9. Set Up Git Worktrees (Optional)

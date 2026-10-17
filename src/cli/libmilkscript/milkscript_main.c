@@ -149,7 +149,9 @@ static void milkscript_main_usage(const char *prog)
     printf("  -E, --echo      Echo each input line verbatim\n");
     printf("  -d N            Set debug level to N\n");
     printf("  -n NAME         Set process name\n");
-    printf("  -q, --quiet     Suppress startup banner\n\n");
+    printf("  -q, --quiet     Suppress startup banner\n");
+    printf("  --check FILE..  Report removed spellings (status 1 if any); does not run\n");
+    printf("  --modernize FILE..  Rewrite removed spellings in place ('-': stdin to stdout)\n\n");
     printf("Script arguments are available as $1, $2, ... inside the script.\n");
     printf("\nShebang usage:\n");
     printf("  #!/usr/bin/env milk-script\n");
@@ -221,6 +223,90 @@ static int script_prologue(int argc, char **argv, int xtrace)
     return rc;
 }
 
+/** read_all() - contents of @path ("-": stdin) as a heap string, or NULL. */
+static char *read_all(const char *path)
+{
+    FILE *fp = (strcmp(path, "-") == 0) ? stdin : fopen(path, "r");
+    if (fp == NULL)
+    {
+        fprintf(stderr, "milk-script: cannot open '%s'\n", path);
+        return NULL;
+    }
+    size_t cap = 4096;
+    size_t len = 0;
+    char  *buf = malloc(cap);
+    size_t nr;
+    while (buf != NULL && (nr = fread(buf + len, 1, cap - len - 1, fp)) > 0)
+    {
+        len += nr;
+        if (len + 1 == cap)
+        {
+            char *nb = realloc(buf, cap * 2);
+            if (nb == NULL)
+            {
+                free(buf);
+                buf = NULL;
+                break;
+            }
+            buf = nb;
+            cap *= 2;
+        }
+    }
+    if (fp != stdin)
+    {
+        fclose(fp);
+    }
+    if (buf != NULL)
+    {
+        buf[len] = '\0';
+    }
+    return buf;
+}
+
+/**
+ * modernize_files() - `--check`: report the removed spellings of each file (status 1 if any);
+ * `--modernize` (@rewrite): rewrite them in place ("-": stdin to stdout), reporting to stderr.
+ */
+static int modernize_files(int nf, char **files, int rewrite)
+{
+    int total = 0;
+    int err   = 0;
+    for (int f = 0; f < nf; f++)
+    {
+        char *src = read_all(files[f]);
+        int   n   = 0;
+        char *out = (src != NULL)
+                        ? milk_bash_modernize(src, files[f], rewrite ? stderr : stdout, &n)
+                        : NULL;
+        if (out == NULL)
+        {
+            err = 1;
+        }
+        else if (rewrite && strcmp(files[f], "-") == 0)
+        {
+            fputs(out, stdout);
+        }
+        else if (rewrite && n > 0)
+        {
+            FILE *wf = fopen(files[f], "w");
+            if (wf == NULL || fputs(out, wf) < 0 || fclose(wf) != 0)
+            {
+                fprintf(stderr, "milk-script: cannot write '%s'\n", files[f]);
+                err = 1;
+            }
+        }
+        total += n;
+        free(out);
+        free(src);
+    }
+    if (nf == 0)
+    {
+        fprintf(stderr, "milk-script: --check/--modernize need files ('-' for stdin)\n");
+        return 2;
+    }
+    return err ? 2 : ((!rewrite && total > 0) ? 1 : 0);
+}
+
 int main(int argc, char **argv)
 {
     /* Handle -h1/--help-oneline before getopt so "-h1" is not
@@ -232,18 +318,23 @@ int main(int argc, char **argv)
     }
 
 
-    int         opt_errexit = 0;
-    int         opt_xtrace  = 0;
-    int         opt_echo    = 0;
-    int         opt_quiet   = 0;
-    int         opt_debug   = 0;
-    const char *opt_name    = NULL;
+    setenv("_MILK_ENGINE", "script", 1); /* front-end of the bash engine: picks the keyword set */
+
+    int         opt_check     = 0;
+    int         opt_modernize = 0;
+    int         opt_errexit   = 0;
+    int         opt_xtrace    = 0;
+    int         opt_echo      = 0;
+    int         opt_quiet     = 0;
+    int         opt_debug     = 0;
+    const char *opt_name      = NULL;
 
     {
         static const struct option long_options[] = {
-            { "help", no_argument, NULL, 'h' },   { "errexit", no_argument, NULL, 'e' },
-            { "xtrace", no_argument, NULL, 'x' }, { "echo", no_argument, NULL, 'E' },
-            { "quiet", no_argument, NULL, 'q' },  { NULL, 0, NULL, 0 }
+            { "help", no_argument, NULL, 'h' },      { "errexit", no_argument, NULL, 'e' },
+            { "xtrace", no_argument, NULL, 'x' },    { "echo", no_argument, NULL, 'E' },
+            { "quiet", no_argument, NULL, 'q' },     { "check", no_argument, NULL, 'C' },
+            { "modernize", no_argument, NULL, 'M' }, { NULL, 0, NULL, 0 }
         };
 
         int option_index = 0;
@@ -280,11 +371,24 @@ int main(int argc, char **argv)
                 opt_name = optarg;
                 break;
 
+            case 'C':
+                opt_check = 1;
+                break;
+
+            case 'M':
+                opt_modernize = 1;
+                break;
+
             default:
                 /* getopt already printed an error */
                 return 1;
             }
         } // while options
+    }
+
+    if (opt_check || opt_modernize) /* no engine needed */
+    {
+        return modernize_files(argc - optind, argv + optind, opt_modernize);
     }
 
     /* Apply quiet flag before milkscript_init so the banner,

@@ -33,6 +33,7 @@ typedef struct FPS_APP_INFO_
     const char *cmdkey;
     const char *description;
     const char *description_long;
+    const char *outvars; /* calculator variables set for the caller, space-separated (NULL: none) */
 } FPS_APP_INFO;
 
 
@@ -115,6 +116,7 @@ typedef struct FPS_CLI_BINDING_
     {                                                                                             \
         strncpy((cmddata).key, (appinfo).cmdkey, sizeof((cmddata).key) - 1);                      \
         strncpy((cmddata).description, (appinfo).description, sizeof((cmddata).description) - 1); \
+        (cmddata).outvars = (appinfo).outvars;                                                    \
         if ((cmddata).cmdsettings == NULL)                                                        \
         {                                                                                         \
             (cmddata).cmdsettings = &fps_cms_##suffix;                                            \

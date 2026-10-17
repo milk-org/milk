@@ -583,16 +583,10 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[], int nbarg, char *outargstri
             }
 
             char tmpstr1[STRINGMAXLEN_CMD_SYNTAX];
-            if (CLIargcnt == 0)
-            {
-                snprintf(tmpstr1, STRINGMAXLEN_CMD_SYNTAX, "<%s [%s]>", fpscliarg[arg].descr,
-                         typestring);
-            }
-            else
-            {
-                snprintf(tmpstr1, STRINGMAXLEN_CMD_SYNTAX - 1, " <%s [%s]>", fpscliarg[arg].descr,
-                         typestring);
-            }
+            int  opt = (fpscliarg[arg].fpflag & FPFLAG_CLI_OPTIONAL) != 0;
+            snprintf(tmpstr1, STRINGMAXLEN_CMD_SYNTAX - 1, "%s%s<%s [%s]>%s",
+                     (CLIargcnt == 0) ? "" : " ", opt ? "[" : "", fpscliarg[arg].descr, typestring,
+                     opt ? "]" : "");
 
             // max number of chars we can write
             int n = STRINGMAXLEN_CMD_SYNTAX - strlen(tmpstr);

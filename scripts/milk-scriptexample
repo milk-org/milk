@@ -122,7 +122,7 @@ infile="${inputMSargARRAY[0]}"
 
 milk-cli << EOF
 m?
-exitCLI
+exit
 EOF
 
 tput init

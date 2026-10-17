@@ -6,15 +6,12 @@
  * @file grammar.js
  * @brief Tree-sitter grammar for milk-cli scripting
  *
- * A milk script is a bash script with `@` additions
+ * A milk script is a bash script with two additions
  * (see docs/guide/scripting.md):
- *  - @s.cam.xsize       entity path (namespaces: ENTITY_NS),
- *                       also @s.${cam}.xsize and inside "..."
- *  - @{expr}            inline calculator
- *  - @ expr             calculator statement
- *  - @name args         sigil command (@calc, @waitfor, @?)
- *  - mod.command args   module-qualified command
- *  - |>                 stream pipe operator
+ *  - @keyword args      language keyword (@calc, @get, @waitfor)
+ *  - @{expr}            inline expansion, also inside "..."
+ * plus module commands (mem.listim) and entity paths
+ * (s.cam.xsize, namespaces: ENTITY_NS) as arguments.
  *
  * Statements end at a newline, ';' or '&', as in bash.
  * Not covered: heredocs (need an external scanner),
@@ -27,7 +24,7 @@
 /* Entity namespaces, as in src/cli/libmilkscript/shm_prop/milk_entity_ns.h */
 const ENTITY_NS = [
     "s", "stream", "l", "local", "f", "fps",
-    "p", "proc", "procinfo", "q", "seq", "fpsseq",
+    "p", "proc", "q", "fpsseq",
 ];
 
 module.exports = grammar({
@@ -64,7 +61,6 @@ module.exports = grammar({
             $.case_statement,
             $.function_definition,
             $.compound_statement,
-            $.calc_statement,
             $.test_bracket,
             $.double_bracket,
             $.pipeline,
@@ -132,10 +128,10 @@ module.exports = grammar({
             token.immediate("$"), $.identifier,
         ),
 
-        /** @s.cam.xsize, @f.${LOOP}.gain, @q.myseq.status */
+        /** s.cam.xsize, f.${LOOP}.gain, q.myseq.status (an argument) */
         entity_path: $ => prec.right(seq(
             token(prec(2, new RegExp(
-                "@(" + ENTITY_NS.join("|") + ")\\."))),
+                "(" + ENTITY_NS.join("|") + ")\\."))),
             repeat1(choice(
                 alias($._immediate_expansion,
                       $.expansion),
@@ -157,18 +153,9 @@ module.exports = grammar({
             "}",
         ),
 
-        /** @ x = 2 * 21  (statement form of @calc) */
-        calc_statement: $ => seq(
-            "@",
-            optional(field("expression",
-                $.calc_expression)),
-        ),
-
-        calc_expression: $ => /[^\s;#][^\n;#]*/,
-
-        /** @calc, @waitfor, @mk2Dim, @?, @cmd? */
+        /** @calc, @waitfor: the language keywords */
         sigil_command: $ => token(prec(1,
-            /@[a-zA-Z_?][a-zA-Z0-9_.?:+-]*/)),
+            /@[a-zA-Z_][a-zA-Z0-9_]*/)),
 
         /** mem.listim, iofits.saveFITS */
         module_command: $ =>
@@ -201,7 +188,6 @@ module.exports = grammar({
             repeat(choice(
                 $.simple_expansion,
                 $.expansion,
-                $.entity_path,
                 $.inline_calc,
                 $.arithmetic_expansion,
                 $.command_substitution,
@@ -373,20 +359,12 @@ module.exports = grammar({
         )),
 
         _command_name: $ => choice(
-            $.milk_command,
             $.sigil_command,
-            $.entity_path,
             $.module_command,
             $.identifier,
             $.file_path,
             $.simple_expansion,
             $.expansion,
-        ),
-
-        /** bare-word milk commands defined by milk.bash */
-        milk_command: $ => choice(
-            "include_once",
-            "milksleep",
         ),
 
         negated_command: $ => prec.right(seq(
@@ -397,7 +375,7 @@ module.exports = grammar({
 
         pipeline: $ => prec.left(1, seq(
             $._statement,
-            choice("|", "|&", "|>"),
+            choice("|", "|&"),
             $._statement,
         )),
 

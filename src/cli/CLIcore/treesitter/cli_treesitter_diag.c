@@ -713,10 +713,10 @@ int cli_ts_is_incomplete(const char *buffer)
 }
 
 #ifdef USE_TREESITTER
-/** entity_completion_mode() - completion mode for the entity path at @at ("@s.cam.x", "@f.loop.gain"). */
+/** entity_completion_mode() - completion mode for the entity path at @at ("s.cam.x", "f.loop.gain"). */
 static int entity_completion_mode(const char *at)
 {
-    switch (milk_entity_ns_kind(at + 1, NULL))
+    switch (milk_entity_ns_kind(at, NULL))
     {
     case MILK_NS_FPS:
         return CLICOMPLETIONMODE_VARS_FPS;

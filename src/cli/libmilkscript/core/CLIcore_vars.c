@@ -131,6 +131,10 @@ const char *cli_var_lookup(const char *name)
     return getenv(name);
 }
 
+/* var_set() - set CLI variable @name to @val: a number if it reads as one, else (@eval) the value of
+ * the math expression it holds, else text */
+static void var_set(const char *name, const char *val, int eval);
+
 /**
  * @brief Set a CLI variable (create or update)
  *
@@ -138,6 +142,16 @@ const char *cli_var_lookup(const char *name)
  * @param val   Value string
  */
 void cli_var_set(const char *name, const char *val)
+{
+    var_set(name, val, 1);
+}
+
+void cli_var_set_text(const char *name, const char *val)
+{
+    var_set(name, val, 0);
+}
+
+static void var_set(const char *name, const char *val, int eval)
 {
     int    type = 2;
     long   numl = 0;
@@ -176,7 +190,7 @@ void cli_var_set(const char *name, const char *val)
                 int    mtype;
                 long   mlval;
                 double mdval;
-                if (cli_calc_eval_math_to_val(valbuf, &mtype, &mlval, &mdval))
+                if (eval && cli_calc_eval_math_to_val(valbuf, &mtype, &mlval, &mdval))
                 {
                     if (mtype == 1)
                     {

@@ -35,6 +35,7 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
+#include "milk_session.h"
 #include "CLIcore_script.h"
 #include "CLIcore_help.h"
 #include "CLIcore_modules.h"
@@ -44,18 +45,8 @@
  * that are registered as CLI command callbacks.
  * These are not in a public header because they
  * are only called via the command registry. */
-extern errno_t exitCLI(void);
-extern errno_t set_processinfoON(void);
-extern errno_t set_processinfoOFF(void);
-extern errno_t set_default_precision_single(void);
-extern errno_t set_default_precision_double(void);
-extern errno_t milk_usleep__cli(void);
-extern errno_t load_so__cli(void);
-extern errno_t load_module__cli(void);
-extern errno_t CLIcore__load_module_as__cli(void);
 extern errno_t function_parameter_structure_load__cli(void);
 extern errno_t cli_fifo(void);
-
 
 /* ============================================================
  *  Help topic callback wrappers
@@ -73,233 +64,31 @@ static errno_t print_session_name()
     return RETURN_SUCCESS;
 }
 
-/* Thin wrappers for per-topic help CLI commands -------------------- */
-static errno_t help_cmdopts_cmd(void)
-{
-    help_topic_cmdopts();
-    return RETURN_SUCCESS;
-}
-
-/**
- * @brief CLI handler: display command syntax help.
- */
-static errno_t help_syntax_cmd(void)
-{
-    help_topic_syntax();
-    return RETURN_SUCCESS;
-}
-
-/**
- * @brief CLI handler: list all available commands.
- */
-static errno_t help_commands_cmd(void)
-{
-    help_topic_commands();
-    return RETURN_SUCCESS;
-}
-
-/**
- * @brief CLI handler: list all active variables.
- */
-static errno_t help_variables_cmd(void)
-{
-    help_topic_variables();
-    return RETURN_SUCCESS;
-}
-
-static errno_t help_flowcontrol_cmd(void)
-{
-    help_topic_flowcontrol();
-    return RETURN_SUCCESS;
-}
-
-static errno_t help_scripting_cmd(void)
-{
-    help_topic_scripting();
-    return RETURN_SUCCESS;
-}
-
-static errno_t help_milk_cmd(void)
-{
-    help_topic_milk();
-    return RETURN_SUCCESS;
-}
-
-static errno_t help_bash_cmd(void)
-{
-    help_topic_bash();
-    return RETURN_SUCCESS;
-}
-
-static errno_t help_fuzzy_or_search(void)
-{
-    if (data.cmdNBarg >= 2 || !isatty(STDIN_FILENO))
-    {
-        return cmdinfosearch();
-    }
-    return cli_fhelp();
-}
-
 void runCLI_cmd_init()
 {
     // ensure that commands below belong to root/MAIN module
-    data.moduleindex = -1;
+    data.moduleindex   = -1;
+    milk_help_tui_hook = cli_fhelp; /* @help --tui */
 
-    RegisterCLIcommand("exit", __FILE__, exitCLI, "exit program (same as quit command)",
-                       "no argument", "exit", "exitCLI");
-
-    RegisterCLIcommand("quit", __FILE__, exitCLI, "exit program (same as exit command)",
-                       "no argument", "quit", "exitCLI");
-
-    RegisterCLIcommand("exitCLI", __FILE__, exitCLI, "exit program (same as quit command)",
-                       "no argument", "exitCLI", "exitCLI");
-
+    milk_module_begin(); /* milk.<name>: engine utilities of the milk-cli front-end */
     RegisterCLIcommand("name", __FILE__, print_session_name,
-                       "print CLI session name (set by milk -n)", "no argument", "name",
+                       "print CLI session name (set by milk -n)", "no argument", "milk.name",
                        "print_session_name()");
-
-    RegisterCLIcommand("help", __FILE__, help, "show help", "[topic|cmd|module]", "help",
-                       "int help()");
-
-    RegisterCLIcommand("h", __FILE__, help, "show help (or help for topic/command/module)",
-                       "[topic|cmd|module]", "h milk", "int help()");
-
-    RegisterCLIcommand("hb", __FILE__, help_bash_cmd, "help: bash-enhanced @ syntax and primitives",
-                       "no argument", "hb", "help_topic_bash()");
-
-    RegisterCLIcommand("fhelp", __FILE__, help_fuzzy_or_search, "interactive fuzzy help search",
-                       "[search pattern]", "fhelp", "int cli_fhelp()");
-
-    RegisterCLIcommand("hf", __FILE__, help_fuzzy_or_search, "fuzzy/regex command help search",
-                       "[search pattern]", "hf image", "int cli_fhelp()");
-
-    RegisterCLIcommand("?", __FILE__, help, "show help", "no argument", "?", "int help()");
-
-    RegisterCLIcommand("helprl", __FILE__, help, "show readline help", "no argument", "helprl",
-                       "int help()");
-
-    /* per-topic help commands --------------------------------------- */
-    RegisterCLIcommand("help-bash", __FILE__, help_bash_cmd,
-                       "help: bash-enhanced @ syntax and primitives", "no argument", "help-bash",
-                       "help_topic_bash()");
-
-    RegisterCLIcommand("help-cmdopts", __FILE__, help_cmdopts_cmd, "help: command-line flags",
-                       "no argument", "help-cmdopts", "help_topic_cmdopts()");
-
-    RegisterCLIcommand("help-syntax", __FILE__, help_syntax_cmd,
-                       "help: syntax & interactive features", "no argument", "help-syntax",
-                       "help_topic_syntax()");
-
-    RegisterCLIcommand("help-commands", __FILE__, help_commands_cmd, "help: built-in CLI commands",
-                       "no argument", "help-commands", "help_topic_commands()");
-
-    RegisterCLIcommand("help-variables", __FILE__, help_variables_cmd,
-                       "help: variables, arrays and arithmetic", "no argument", "help-variables",
-                       "help_topic_variables()");
-
-    RegisterCLIcommand("help-flowcontrol", __FILE__, help_flowcontrol_cmd,
-                       "help: if/for/while/case/functions", "no argument", "help-flowcontrol",
-                       "help_topic_flowcontrol()");
-
-    RegisterCLIcommand("help-scripting", __FILE__, help_scripting_cmd,
-                       "help: script files, I/O, builtins, traps", "no argument", "help-scripting",
-                       "help_topic_scripting()");
-
-    RegisterCLIcommand("help-milk", __FILE__, help_milk_cmd,
-                       "help: milk streams, FPS, and milk-specific", "no argument", "help-milk",
-                       "help_topic_milk()");
-
-
-    RegisterCLIcommand("cmd?", __FILE__, help_cmd, "list/help command(s)",
-                       "<command name>(optional)", "cmd?", "int help_cmd()");
-
-    RegisterCLIcommand("hc", __FILE__, help_cmd, "list/help command(s)", "<command name>(optional)",
-                       "hc mk2Drnd", "int help_cmd()");
-
-    RegisterCLIcommand("cmdinfo?", __FILE__, cmdinfosearch,
-                       "search for string/regex in command info", "<search expression>",
-                       "cmdinfo? image", "int cmdinfosearch()");
-
-    RegisterCLIcommand("m?", __FILE__, help_module, "list/help module(s)",
-                       "<module name>(optional)", "m? COREMOD_memory",
-                       "errno_t list_commands_module()");
-
-    RegisterCLIcommand("hm", __FILE__, help_module, "list/help module(s)",
-                       "<module name>(optional)", "hm info", "errno_t list_commands_module()");
-
-    RegisterCLIcommand("soload", __FILE__, load_so__cli, "load shared object",
-                       "<shared object name>", "soload mysharedobj.so",
-                       "int load_sharedobj(char *libname)");
-
-    RegisterCLIcommand("mload", __FILE__, load_module__cli, "load module from shared object",
-                       "<module name>", "mload mymodule",
-                       "errno_t load_module_shared(char *modulename)");
-
-    RegisterCLIcommand("mloadas", __FILE__, CLIcore__load_module_as__cli,
-                       "load module from shared object, use short name binding",
-                       "<module name> <shortname>", "mloadas mymodule mymod",
-                       "errno_t load_module_shared(char *modulename)");
-
-    RegisterCLIcommand("ci", __FILE__, printInfo, "Print version, settings, info and exit",
-                       "no argument", "ci", "int printInfo()");
-
-    RegisterCLIcommand("dpsingle", __FILE__, set_default_precision_single,
-                       "Set default precision to single", "no argument", "dpsingle",
-                       "dcprecision = 0");
-
-    RegisterCLIcommand("dpdouble", __FILE__, set_default_precision_double,
-                       "Set default precision to double", "no argument", "dpdouble",
-                       "dcprecision = 1");
-
-    // process info
-
-    RegisterCLIcommand("setprocinfoON", __FILE__, set_processinfoON, "Set processes info ON",
-                       "no argument", "setprocinfoON", "set_processinfoON()");
-
-    RegisterCLIcommand("setprocinfoOFF", __FILE__, set_processinfoOFF, "Set processes info OFF",
-                       "no argument", "setprocinfoOFF", "set_processinfoOFF()");
-
-
-    // FPS
     RegisterCLIcommand("fpsload", __FILE__, function_parameter_structure_load__cli,
-                       "Load function parameter struct (FPS)", "<fpsname>", "fpsload imanalyze",
+                       "Load function parameter struct (FPS)", "<fpsname>",
+                       "milk.fpsload imanalyze",
                        "long function_parameter_structure_load(char *fpsname)");
-
-
-    RegisterCLIcommand("usleep", __FILE__, milk_usleep__cli, "usleep", "<us>", "usleep 1000",
-                       "usleep(long tus)");
-
-    RegisterCLIcommand("cd", __FILE__, cli_cd, "change current directory", "<dir>", "cd /tmp",
-                       "cli_cd()");
-
-    RegisterCLIcommand("pwd", __FILE__, cli_pwd, "print current directory", "no argument", "pwd",
-                       "cli_pwd()");
-
     RegisterCLIcommand("fifo", __FILE__, cli_fifo, "manage command FIFO input",
                        "[create|open|close|on|off"
                        "|status] [path]",
-                       "fifo create /tmp/myfifo", "cli_fifo()");
-
-    RegisterCLIcommand("watch", __FILE__, cli_watch, "repeat command at interval",
-                       "<interval_ms> <command...>", "watch 1000 mem.listim", "cli_watch()");
-
-    RegisterCLIcommand("list-streams", __FILE__, cli_list_streams,
-                       "list available ImageStreamIO streams", "no argument", "list-streams",
-                       "cli_list_streams()");
-
-    RegisterCLIcommand("list-fps", __FILE__, cli_list_fps, "list available FPS instances",
-                       "no argument", "list-fps", "cli_list_fps()");
-
-
-    RegisterCLIcommand("time", __FILE__, cli_time, "measure command execution time", "<command...>",
-                       "time mem.listim", "cli_time()");
+                       "milk.fifo create /tmp/myfifo", "cli_fifo()");
+    RegisterCLIcommand("timing", __FILE__, cli_timing_toggle,
+                       "toggle display of command execution timing", "[on|off]", "milk.timing on",
+                       "cli_timing_toggle()");
+    milk_module_end();
 
     RegisterCLIcommand("cmdstats", __FILE__, cli_cmdstats, "show command usage statistics",
                        "no argument", "cmdstats", "cli_cmdstats()");
-
-    RegisterCLIcommand("cli.timing", __FILE__, cli_timing_toggle,
-                       "toggle display of command execution timing", "[on|off]", "cli.timing on",
-                       "cli_timing_toggle()");
 
 #ifdef USE_READLINE
     RegisterCLIcommand("synhl", __FILE__, cli_syntax_highlight_toggle, "toggle syntax highlighting",
@@ -318,22 +107,11 @@ void runCLI_cmd_init()
                        "showmatch off", "cli_showmatch_toggle()");
 #endif
 
-    RegisterCLIcommand(
-        "cliformat", __FILE__, cli_format_cmd, "format script with semantic AST indentation",
-        "[-i] [-w <spaces>] <filename>", "cliformat myscript.milk", "cli_format_cmd()");
-
-    RegisterCLIcommand("clifold", __FILE__, cli_fold_cmd, "print AST block outline and line ranges",
-                       "[<filename>]", "clifold myscript.milk", "cli_fold_cmd()");
-
     RegisterCLIcommand("savehistory", __FILE__, cli_savehistory, "save command history to a file",
                        "<filename>", "savehistory cmds.milk", "cli_savehistory()");
 
     RegisterCLIcommand("setprompt", __FILE__, cli_setprompt, "set custom prompt format",
                        "[<format>]", "setprompt \"%u@%h %d > \"", "cli_setprompt()");
-
-    RegisterCLIcommand("bookmark", __FILE__, cli_bookmark, "manage command bookmarks",
-                       "save|run|list|rm <name> [cmd]", "bookmark save myjob \"cmd1 ; cmd2\"",
-                       "cli_bookmark()");
 
     RegisterCLIcommand("sessionlog", __FILE__, cli_sessionlog, "enable session command logging",
                        "[on|off|<filename>]", "sessionlog on", "cli_sessionlog()");
@@ -355,23 +133,6 @@ void runCLI_cmd_init()
 
     RegisterCLIcommand("fparam", __FILE__, cli_fparam, "interactive FPS parameter editor",
                        "<fpsname>", "fparam cnt2push", "cli_fparam()");
-
-    RegisterCLIcommand("fpslist", __FILE__, cli_cmd_fpslist, "list live FPS instances",
-                       "[-q] [--json] [pattern]", "fpslist --json dm*", "cli_cmd_fpslist()");
-
-    RegisterCLIcommand("fpsdump", __FILE__, cli_cmd_fpsdump, "dump FPS parameters as key=value",
-                       "[-t] [--json] <fpsname>", "fpsdump loopctrl", "cli_cmd_fpsdump()");
-
-    RegisterCLIcommand("streamlist", __FILE__, cli_cmd_streamlist, "list live SHM streams",
-                       "[-q] [-l] [--json] [pattern]", "streamlist -l dm*", "cli_cmd_streamlist()");
-
-    RegisterCLIcommand("proclist", __FILE__, cli_cmd_proclist, "list active processes",
-                       "[-q] [-l] [--json]", "proclist -l", "cli_cmd_proclist()");
-
-    RegisterCLIcommand("milkquery", __FILE__, cli_cmd_milkquery, "unified JSON system snapshot",
-                       "[--fps [pat]] [--streams [pat]]"
-                       " [--procs]",
-                       "milkquery --fps dm*", "cli_cmd_milkquery()");
 
     //  init_modules();
 

@@ -82,14 +82,14 @@ static char *gen_commands_match(const char *text, size_t len, unsigned int *list
         }
     }
 
-    /* then the bash words, then the @ primitives (milk_lexicon.h) */
+    /* then the bash words, then the @ keywords (milk_lexicon.h) */
     unsigned int nwords = 0;
     while (milk_lexicon_bash_words()[nwords] != NULL)
     {
         nwords++;
     }
     unsigned int bi = *list_index - data.NBcmd;
-    while (bi < nwords || milk_lexicon_primitives()[bi - nwords].name != NULL)
+    while (bi < nwords || milk_lexicon_keywords()[bi - nwords].name != NULL)
     {
         char name[64];
         if (bi < nwords)
@@ -98,7 +98,7 @@ static char *gen_commands_match(const char *text, size_t len, unsigned int *list
         }
         else
         {
-            snprintf(name, sizeof(name), "@%s", milk_lexicon_primitives()[bi - nwords].name);
+            snprintf(name, sizeof(name), "@%s", milk_lexicon_keywords()[bi - nwords].name);
         }
         (*list_index)++;
         bi++;
@@ -872,9 +872,9 @@ static int resolve_cmd_arg_completion_mode(const char *text, const char *cmdname
     }
 
     static const char *const file_cmds[] = {
-        "loadfits", "savefits", "saveFITS",     "source",     ".",           "cat", "cd", "ls",
-        "vi",       "vim",      "nano",         "head",       "tail",        "cp",  "mv", "rm",
-        "less",     "more",     "include_once", "savescript", "savehistory", "run", NULL
+        "loadfits", "savefits", "saveFITS", "source", ".",          "cat",  "cd",
+        "ls",       "vi",       "vim",      "nano",   "head",       "tail", "cp",
+        "mv",       "rm",       "less",     "more",   "savescript", "run",  NULL
     };
     for (int i = 0; file_cmds[i] != NULL; i++)
     {
@@ -906,8 +906,7 @@ static int resolve_cmd_arg_completion_mode(const char *text, const char *cmdname
         }
     }
 
-    if (strcmp(barecmd, "grab") == 0 || strcmp(barecmd, "streamcat") == 0 ||
-        strcmp(barecmd, "streamwrite") == 0)
+    if (strcmp(barecmd, "grab") == 0 || strcmp(barecmd, "replay") == 0)
     {
         return CLICOMPLETIONMODE_IMAGES;
     }

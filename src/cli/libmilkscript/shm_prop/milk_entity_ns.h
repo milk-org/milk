@@ -8,8 +8,7 @@
  *
  * Role & Goal:
  *   Provides a single source of truth for recognizing milk entity namespaces
- *   (`s`/`stream`, `l`/`local`, `f`/`fps`, `p`/`proc`/`procinfo`,
- *   `q`/`seq`/`fpsseq`) and normalizing `@S:<name>` / `@L:<name>` modifiers
+ *   (`s`/`stream`, `l`/`local`, `f`/`fps`, `p`/`proc`, `q`/`fpsseq`) and normalizing `@S:<name>` / `@L:<name>` modifiers
  *   into canonical `s.<name>` / `l.<name>` entity paths.
  */
 
@@ -28,8 +27,8 @@ typedef enum
     MILK_NS_STREAM, /* s.  stream.            shared-memory stream */
     MILK_NS_LOCAL,  /* l.  local.             image local to the milk-cli process */
     MILK_NS_FPS,    /* f.  fps.               function parameter structure */
-    MILK_NS_PROC,   /* p.  proc.  procinfo.   processinfo loop */
-    MILK_NS_SEQ     /* q.  seq.   fpsseq.     FPS sequencer */
+    MILK_NS_PROC,   /* p.  proc.              processinfo loop */
+    MILK_NS_SEQ     /* q.  fpsseq.            FPS sequencer */
 } milk_ns_kind_t;
 
 /** The single list of namespace names (milk.bash gets it from `milkls --namespaces`). */
@@ -37,12 +36,11 @@ static const struct
 {
     const char    *name;
     milk_ns_kind_t kind;
-} milk_entity_ns_table[] = { { "s", MILK_NS_STREAM },      { "stream", MILK_NS_STREAM },
-                             { "l", MILK_NS_LOCAL },       { "local", MILK_NS_LOCAL },
-                             { "f", MILK_NS_FPS },         { "fps", MILK_NS_FPS },
-                             { "p", MILK_NS_PROC },        { "proc", MILK_NS_PROC },
-                             { "procinfo", MILK_NS_PROC }, { "q", MILK_NS_SEQ },
-                             { "seq", MILK_NS_SEQ },       { "fpsseq", MILK_NS_SEQ },
+} milk_entity_ns_table[] = { { "s", MILK_NS_STREAM }, { "stream", MILK_NS_STREAM },
+                             { "l", MILK_NS_LOCAL },  { "local", MILK_NS_LOCAL },
+                             { "f", MILK_NS_FPS },    { "fps", MILK_NS_FPS },
+                             { "p", MILK_NS_PROC },   { "proc", MILK_NS_PROC },
+                             { "q", MILK_NS_SEQ },    { "fpsseq", MILK_NS_SEQ },
                              { NULL, MILK_NS_NONE } };
 
 /** Kind names, indexed by milk_ns_kind_t (as printed by `milkls --namespaces`). */

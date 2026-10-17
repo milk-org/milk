@@ -70,8 +70,8 @@ int main(int argc, char *argv[])
 
     printf(C_HDR "Interactive Session & Bash Stream Access\n" C_RST);
     printf("  Within Bash (after 'source milk.bash') or milk-cli:\n"
-           "    " C_CMD "@get s.name.xsize" C_RST "        Read stream width (or " C_CMD
-           "@s.name.xsize" C_RST ")\n"
+           "    " C_CMD "@get s.name.xsize" C_RST "        Read stream width (inline: " C_CMD
+           "@{s.name.xsize}" C_RST ")\n"
            "    " C_CMD "@get s.name.cnt0" C_RST "         Read total frame counter\n"
            "    " C_CMD "@get s.name.summary" C_RST "      Read compact dimensions/dtype summary\n"
            "    " C_CMD "@set s.name.kw.KEY=val" C_RST "   Create or update a stream FITS keyword\n"

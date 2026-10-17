@@ -57,7 +57,9 @@ __attribute__((constructor(101))) static void climain_pre_quiet(void)
     {
         const char *tok = buf + i;
         if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0 || strcmp(tok, "--server") == 0 ||
-            strncmp(tok, "--server=", 9) == 0 || strcmp(tok, "--dump-commands") == 0)
+            strncmp(tok, "--server=", 9) == 0 || strcmp(tok, "--catalog") == 0 ||
+            strcmp(tok, "--format") == 0 || strcmp(tok, "--format-in-place") == 0 ||
+            strcmp(tok, "--outline") == 0)
         {
             milk_data.quiet = 1;
             setenv("MILK_QUIET", "1", 0);
@@ -89,12 +91,15 @@ int main(int argc, char *argv[])
         }
 
         if (strcmp(argv[i], "--server") == 0 || strncmp(argv[i], "--server=", 9) == 0 ||
-            strcmp(argv[i], "--dump-commands") == 0)
+            strcmp(argv[i], "--catalog") == 0 || strcmp(argv[i], "--format") == 0 ||
+            strcmp(argv[i], "--format-in-place") == 0 || strcmp(argv[i], "--outline") == 0)
         {
             is_server_or_dump = 1;
             setenv("MILK_QUIET", "1", 1);
         }
     }
+
+    setenv("_MILK_ENGINE", "cli", 1); /* front-end of the bash engine: picks the keyword set */
 
     char AppName[STRINGMAXLEN_APPNAME] = { 0 };
 

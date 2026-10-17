@@ -134,7 +134,7 @@ cat "$FPSlistfilename" | while read LINE; do
                         echo "cacao -n \${pname} ${redirect} << EOF" >> $fname
 
                         echo "$CLIcmdstring" >> $fname
-                        echo "exitCLI" >> $fname
+                        echo "exit" >> $fname
                         echo "EOF" >> $fname
 
                         chmod +x $fname

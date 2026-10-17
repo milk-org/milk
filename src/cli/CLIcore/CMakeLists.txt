@@ -45,7 +45,6 @@ set(CORE_FILES
     CLIcore.c
     CLIcore_cmd_registry.c
     CLIcore/CLIcore_help_tui.c
-    CLIcore/CLIcore_UI_bookmark.c
     CLIcore/CLIcore_UI_builtins.c
     CLIcore/CLIcore_UI_builtins_fifo.c
     CLIcore/CLIcore_UI_completion.c

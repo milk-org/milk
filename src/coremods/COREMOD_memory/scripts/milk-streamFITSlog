@@ -298,7 +298,7 @@ streamFITSlog .maxfilecnt ${nbcube}
 streamFITSlog .writerRTprio ${writerrealtimeprio}
 streamFITSlog _FPSINIT_ "${STREAMNAME}"
 streamFITSlog _TMUXSTART_ "${STREAMNAME}"
-exitCLI
+exit
 EOF
 
 	tmux send-keys -t ${TMUXNAME} "s"

@@ -49,7 +49,7 @@ install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 include(CTest)
 
 set(TESTNAME "CLIfunc-COREMOD_tools-module")
-add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "@m?")
+add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "@help tools")
 set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLImodule")
 set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
 set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION
@@ -71,7 +71,7 @@ foreach(CLIcmdname IN LISTS commandlist)
 
   set(TESTCLIFUNC "${CLIcmdname}")
   set(TESTNAME "CLIfunc-COREMOD_tools-${TESTCLIFUNC}")
-  add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "@cmd? tools.${CLIcmdname}")
+  add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "@help tools.${CLIcmdname}")
   set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLIfunc")
   set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
   set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "src:")

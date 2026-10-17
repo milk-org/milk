@@ -46,9 +46,10 @@
 
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "CLIcore_script.h"
-#include "cli_calc_parser.h"
-#include "cli_calc_tokenizer.h"
+#include "cli_calc_scalar.h"
 #include "milk_client.h"
+#include "milk_lexicon.h"
+#include "milk_renames.h"
 #include "milk_client_internal.h"
 #include "milk_entity_ns.h"
 #include "milk_shm_prop.h"
@@ -58,10 +59,10 @@
 #include "milk_waitfor.h"
 
 /**
- * @brief Drain client stdin into an anonymous memfd for `@streamwrite` pipelines.
+ * @brief Drain client stdin into an anonymous memfd for `@replay --stdin` pipelines.
  *
  * Reading stdin before connecting to the single-threaded server prevents deadlocks
- * in pipelines such as `@streamcat im1 | ... | @streamwrite im2`, while supporting
+ * in pipelines such as `@grab --stdout im1 | ... | @replay --stdin im2`, while supporting
  * both text and binary (`--raw`) streams of any size.
  */
 static int drain_stdin_to_memfd(int argc, char **argv)
@@ -71,16 +72,17 @@ static int drain_stdin_to_memfd(int argc, char **argv)
         return -1;
     }
     const char *c0 = argv[0];
-    if (c0[0] == '@' || c0[0] == ',')
+    if (c0[0] == '@')
     {
         c0++;
     }
-    int is_sw = 0; // @streamwrite reads stdin only when told to with a '-' argument
+    // streamwrite (@replay --stdin) reads stdin only when told to with a '-' argument
+    int is_sw = 0;
     for (int i = 1; strcmp(c0, "streamwrite") == 0 && i < argc; i++)
     {
         is_sw |= (strcmp(argv[i], "-") == 0);
     }
-    int is_batch = ((strcmp(c0, "batch") == 0 || strcmp(c0, "pipe") == 0) && argc == 1);
+    int is_batch = (strcmp(c0, "pipe") == 0 && argc == 1);
     if (!is_sw && !is_batch)
     {
         return -1;
@@ -120,7 +122,7 @@ static int drain_stdin_to_memfd(int argc, char **argv)
 }
 
 /**
- * @brief Dispatch a milk command to `milk-cli --server` with fds and synced vars.
+ * @brief Dispatch a milk command to `milk-cli --server` with the caller's fds.
  */
 static int client_call_sync(int argc, char **argv, const milk_client_hooks_t *hooks);
 static int client_capture_array(int (*fn)(int, char **, const milk_client_hooks_t *),
@@ -128,6 +130,55 @@ static int client_capture_array(int (*fn)(int, char **, const milk_client_hooks_
                                 char                     **argv,
                                 const char                *extra,
                                 const milk_client_hooks_t *hooks);
+
+/**
+ * call_as() - run `@cmd args` without the option @opt, as engine command @as (`@grab --stdout` is
+ * streamcat, `@replay --stdin` streamwrite reading '-', `@set --tui` the fparam editor).
+ */
+static int call_as(const char                *as,
+                   int                        argc,
+                   char                     **argv,
+                   const char                *opt,
+                   const char                *last,
+                   int                        async_flag,
+                   const milk_client_hooks_t *hooks)
+{
+    char **av = calloc((size_t) argc + 3, sizeof(char *));
+    int    n  = 0;
+    int    rc;
+
+    if (av == NULL)
+    {
+        return 1;
+    }
+    av[n++] = (char *) as;
+    for (int i = 0; i < argc; i++)
+    {
+        if (strcmp(argv[i], opt) != 0)
+        {
+            av[n++] = argv[i];
+        }
+    }
+    if (last != NULL && strcmp(av[n - 1], last) != 0)
+    {
+        av[n++] = (char *) last;
+    }
+    rc = milk_client_call(n, av, async_flag, hooks);
+    free(av);
+    return rc;
+}
+
+static int has_arg(int argc, char **argv, const char *opt)
+{
+    for (int i = 0; i < argc; i++)
+    {
+        if (strcmp(argv[i], opt) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 int milk_client_call(int argc, char **argv, int async_flag, const milk_client_hooks_t *hooks)
 {
@@ -137,38 +188,14 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
     }
 
     const char *c0 = argv[0];
-    if (c0[0] == '@' || c0[0] == ',')
+    if (c0[0] == '@')
     {
         c0++;
     }
-    if (!async_flag && strcmp(c0, "procwait") == 0 && argc >= 2)
+    if (strcmp(c0, "replay") == 0 && has_arg(argc - 1, argv + 1, "--stdin"))
     {
-        char        ptarget[280];
-        const char *raw_p = argv[1];
-        while (*raw_p == '@')
-        {
-            raw_p++;
-        }
-        if (milk_entity_ns_kind(raw_p, NULL) == MILK_NS_PROC)
-        {
-            snprintf(ptarget, sizeof(ptarget), "%s", raw_p);
-        }
-        else
-        {
-            snprintf(ptarget, sizeof(ptarget), "p.%s", raw_p);
-        }
-        const char *st   = (argc >= 3) ? argv[2] : "STOPPED";
-        const char *timo = (argc >= 4) ? argv[3] : "30";
-        char       *wargv[5];
-        wargv[0] = (char *) "-t";
-        wargv[1] = (char *) timo;
-        wargv[2] = ptarget;
-        wargv[3] = (char *) st;
-        wargv[4] = NULL;
-        int wrc  = milk_client_waitfor(4, wargv, hooks);
-        return (wrc == 0) ? 0 : 1;
+        return call_as("streamwrite", argc - 1, argv + 1, "--stdin", "-", async_flag, hooks);
     }
-
     int arc;
     if (!async_flag && strcmp(c0, "streamcat") == 0 &&
         (arc = client_capture_array(client_call_sync, argc, argv, NULL, hooks)) >= 0)
@@ -189,16 +216,16 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
         return MILK_CLIENT_RC_TRANSPORT;
     }
 
+    /* only calc text reads shell variables: `n` in `mem.mk2Dim im n 4` is no variable */
     milk_packed_vars_t pv;
     pv.count = 0;
-    for (int i = 1; i < argc; i++)
+    for (int i = 1; i < argc && (strcmp(c0, "assert") == 0 || strcmp(c0, "pipe") == 0); i++)
     {
         milk_client_collect_identifiers(&pv, hooks, argv[i]);
     }
-    milk_client_collect_synced_vars(&pv, hooks);
 
-    static const char *const env_keys[] = { "MILK_SHM_DIR",      "MILK_QUIET",    "NO_COLOR",
-                                            "MILK_FLOAT_DIGITS", "MILKCLI_SIGIL", NULL };
+    static const char *const env_keys[] = { "MILK_SHM_DIR", "MILK_QUIET", "NO_COLOR",
+                                            "MILK_FLOAT_DIGITS", NULL };
     char                     env_kv[8][256];
     uint32_t                 nenv = 0;
     for (int i = 0; env_keys[i] != NULL && nenv < 8; i++)
@@ -571,7 +598,7 @@ static int client_call_sync(int argc, char **argv, const milk_client_hooks_t *ho
 }
 
 /**
- * client_capture_array() - `-a <arr>` of @streamcat and @ls: run @fn on @argv without the option (plus @extra,
+ * client_capture_array() - `-a <arr>` of @grab --stdout and @ls: run @fn on @argv without the option (plus @extra,
  * may be NULL) with stdout captured, then bind the output words to array @arrname. -1 if @argv has no `-a`.
  */
 static int client_capture_array(int (*fn)(int, char **, const milk_client_hooks_t *),
@@ -658,6 +685,10 @@ int milk_client_set_argv(int argc, char **argv, const milk_client_hooks_t *hooks
         fprintf(stderr, "Usage: @set <entity> [=] [value] [comment] [...]\n");
         return 1;
     }
+    if (strcmp(argv[0], "--tui") == 0)
+    {
+        return call_as("fparam", argc, argv, "--tui", NULL, 0, hooks);
+    }
 
     int rc = 0;
     int i  = 0;
@@ -715,27 +746,26 @@ static int client_calc_or_test(const char                *expr,
         return is_test ? 1 : 0;
     }
 
-    if (cli_calc_is_scalar_expr(expr)) /* nothing to look up on the server: evaluate here */
+    const char *dp = milk_ipc_get_var(hooks, "MILK_DPDIGITS"); /* sent back by @config digits */
+    long        nd = (dp != NULL) ? strtol(dp, NULL, 10) : 0;
+    char        res[256];
+    int         truth = 0;
+    if (cli_calc_local(expr, (nd >= 1 && nd <= 17) ? (int) nd : 15, res, sizeof(res), &truth))
     {
-        const char *dp   = milk_ipc_get_var(hooks, "MILK_DPDIGITS"); /* sent back by @dpdigits */
-        long        nd   = (dp != NULL) ? strtol(dp, NULL, 10) : 0;
-        cli_float_digits = (nd >= 1 && nd <= 17) ? (int) nd : 15;
-        char res[256];
-        int  rc = 2;
-        cli_calc_eval_str(expr, is_test, &rc, res, sizeof(res));
-        if (!is_test && rc == 0 && res[0] != '\0')
+        if (is_test) /* nothing to look up on the server: evaluated here */
         {
-            if (varname != NULL && varname[0] != '\0')
-            {
-                milk_ipc_set_var(hooks, varname, res, 0);
-            }
-            else
-            {
-                printf("%s\n", res);
-                fflush(stdout);
-            }
+            return truth ? 0 : 1;
         }
-        return rc;
+        if (varname != NULL && varname[0] != '\0')
+        {
+            milk_ipc_set_var(hooks, varname, res, 0);
+        }
+        else
+        {
+            printf("%s\n", res);
+            fflush(stdout);
+        }
+        return 0;
     }
 
     char sockpath[256];
@@ -748,7 +778,6 @@ static int client_calc_or_test(const char                *expr,
     milk_packed_vars_t pv;
     pv.count = 0;
     milk_client_collect_identifiers(&pv, hooks, expr);
-    milk_client_collect_synced_vars(&pv, hooks);
 
     size_t elen = strlen(expr) + 1;
     size_t cap  = elen + sizeof(uint32_t);
@@ -839,7 +868,8 @@ static int client_calc_or_test(const char                *expr,
             }
         }
         close(cap_pipe[0]);
-        if (cb != NULL && cn > 0)
+        if (cb != NULL &&
+            (cn > 0 || rc == 0)) /* nothing printed (an assignment): empty, like @{...} */
         {
             cb[cn] = '\0';
             while (cn > 0 && (cb[cn - 1] == '\n' || cb[cn - 1] == '\r'))
@@ -1423,6 +1453,11 @@ static void resolve_client_path(const char *in, char *out, size_t outsz)
  */
 int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
+    if (has_arg(argc, argv, "--stdout"))
+    {
+        return call_as("streamcat", argc, argv, "--stdout", NULL, 0, hooks);
+    }
+
     const char *sname    = NULL;
     const char *nframes  = NULL;
     const char *outname  = NULL;
@@ -1743,9 +1778,113 @@ int milk_client_log(int argc, char **argv, const milk_client_hooks_t *hooks)
     return milk_srvlog_cmd_log(sockpath, argc, argv, hooks);
 }
 
+/** kw_where() - human description of the front-ends in @avail (MILK_KW_* bits). */
+static const char *kw_where(unsigned avail)
+{
+    if (avail == MILK_KW_CLI)
+    {
+        return "only in the milk-cli REPL";
+    }
+    if (avail == MILK_KW_BASH)
+    {
+        return "only in a bash shell that sourced milk.bash";
+    }
+    return "in milk-cli and in milk.bash shells";
+}
+
+/**
+ * print_keywords() - write the keyword table to @fp as "name impl avail" lines or, with @bash, as the `@`
+ * function definitions of the running front-end ($_MILK_ENGINE); unavailable keywords fail with status 2.
+ */
+static void print_keywords(FILE *fp, int bash, const milk_client_hooks_t *hooks)
+{
+    static const char *const impl_names[] = { "builtin", "shell", "server" };
+    unsigned                 fe = milk_lexicon_frontend(milk_ipc_get_var(hooks, "_MILK_ENGINE"));
+
+    for (const milk_keyword_t *k = milk_lexicon_keywords(); k->name != NULL; k++)
+    {
+        if (!bash)
+        {
+            fprintf(fp, "%s %s %s%s%s\n", k->name, impl_names[k->impl],
+                    (k->avail & MILK_KW_CLI) ? "c" : "", (k->avail & MILK_KW_SCRIPT) ? "s" : "",
+                    (k->avail & MILK_KW_BASH) ? "b" : "");
+        }
+        else if (!(k->avail & fe))
+        {
+            fprintf(fp, "function @%s { echo \"@%s: not available here (%s)\" >&2; return 2; }\n",
+                    k->name, k->name, kw_where(k->avail));
+        }
+        else
+        {
+            const char *pre  = (k->impl == MILK_KW_BUILTIN) ? "milk"
+                               : (k->impl == MILK_KW_SHELL) ? "_milk_"
+                                                            : "milkcall ";
+            const char *post = (k->impl == MILK_KW_SHELL) ? "_impl" : "";
+            /* `case` costs less than [[ ]] on every call; with libmilkbash loaded, milk.bash replaces the
+             * functions of the builtin keywords by the @<name> builtins */
+            fprintf(
+                fp,
+                "function @%s { case ${1-} in --help%s) milkls --help-keyword %s; return ;; esac; "
+                "%s%s%s \"$@\"; }\n",
+                k->name, milk_lexicon_help_arg(k, "-h") ? " | -h" : "", k->name, pre, k->name,
+                post);
+        }
+    }
+}
+
+/** define_keywords() - define the `@` keyword functions and the __MILK_KWSET name set in the calling shell. */
+static int define_keywords(const milk_client_hooks_t *hooks)
+{
+    char  *buf = NULL;
+    size_t len = 0;
+    FILE  *fp  = open_memstream(&buf, &len);
+    if (fp == NULL)
+    {
+        return 1;
+    }
+    print_keywords(fp, 1, hooks);
+    fprintf(fp, "declare -gA __MILK_KWSET=(");
+    for (const milk_keyword_t *k = milk_lexicon_keywords(); k->name != NULL; k++)
+    {
+        fprintf(fp, "[%s]=1 ", k->name);
+    }
+    fprintf(fp, ")\n");
+    fclose(fp);
+    milk_ipc_eval(hooks, buf);
+    free(buf);
+    return 0;
+}
+
+/** define_namespaces() - fill __MILK_NS_KIND (entity namespace -> kind) in the calling shell. */
+static int define_namespaces(const milk_client_hooks_t *hooks)
+{
+    char  *buf = NULL;
+    size_t len = 0;
+    FILE  *fp  = open_memstream(&buf, &len);
+    if (fp == NULL)
+    {
+        return 1;
+    }
+    fprintf(fp, "declare -gA __MILK_NS_KIND=(");
+    for (int i = 0; milk_entity_ns_table[i].name != NULL; i++)
+    {
+        fprintf(fp, "[%s]=%s ", milk_entity_ns_table[i].name,
+                milk_ns_kind_names[milk_entity_ns_table[i].kind]);
+    }
+    fprintf(fp, ")\n");
+    fclose(fp);
+    milk_ipc_eval(hooks, buf);
+    free(buf);
+    return 0;
+}
+
 int milk_client_ls(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
-    if (argc == 1 && strcmp(argv[0], "--namespaces") == 0) /* "name kind" lines, for milk.bash */
+    if (argc == 2 && strcmp(argv[0], "--namespaces") == 0 && strcmp(argv[1], "--define") == 0)
+    {
+        return define_namespaces(hooks); /* milk.bash, without a fork */
+    }
+    if (argc == 1 && strcmp(argv[0], "--namespaces") == 0) /* "name kind" lines */
     {
         for (int i = 0; milk_entity_ns_table[i].name != NULL; i++)
         {
@@ -1758,6 +1897,44 @@ int milk_client_ls(int argc, char **argv, const milk_client_hooks_t *hooks)
     if (arc >= 0)
     {
         return arc;
+    }
+    if (argc >= 2 && strcmp(argv[0], "--rename") == 0) /* removed spelling -> replacement (hints) */
+    {
+        const char *nw = milk_rename_cmd(argv[1], NULL);
+        if (nw != NULL)
+        {
+            printf("%s\n", nw);
+        }
+        return (nw != NULL) ? 0 : 1;
+    }
+    if (argc >= 2 && strcmp(argv[0], "--help-keyword") == 0)
+    {
+        const milk_keyword_t *k = milk_lexicon_keyword(argv[1]);
+        if (k != NULL)
+        {
+            milk_lexicon_print_help(k, stdout);
+        }
+        return (k != NULL) ? 0 : 1;
+    }
+    for (int i = 0; i < argc; i++)
+    {
+        if (strcmp(argv[i], "--keywords") ==
+            0) /* --bash: definitions; --define: evaluate them (milk.bash) */
+        {
+            int bash   = 0;
+            int define = 0;
+            for (int j = 0; j < argc; j++)
+            {
+                bash |= (strcmp(argv[j], "--bash") == 0);
+                define |= (strcmp(argv[j], "--define") == 0);
+            }
+            if (define)
+            {
+                return define_keywords(hooks);
+            }
+            print_keywords(stdout, bash, hooks);
+            return 0;
+        }
     }
     milk_ipc_sync_shm_env(hooks);
     for (int i = 0; i < argc; i++)

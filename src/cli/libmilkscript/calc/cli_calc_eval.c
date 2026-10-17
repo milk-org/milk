@@ -28,75 +28,7 @@
 #include "cli_calc_internal.h"
 #include "cli_calc_parser.h"
 
-/* --------------------------------------------------------
- * Operator precedence table
- *
- * Higher number = tighter binding.
- * Right-associative operators use prec for the
- * right-hand parse.
- * -------------------------------------------------------- */
-
-static int get_prec(cli_token_type t)
-{
-    switch (t)
-    {
-    case TOK_OP_QUESTION:
-        return 0; // below ||, reachable from a top-level parse_expr(0)
-    case TOK_OP_OR:
-        return 1;
-    case TOK_OP_AND:
-        return 2;
-    case TOK_OP_BOR:
-        return 3;
-    case TOK_OP_BXOR:
-        return 4;
-    case TOK_OP_BAND:
-        return 5;
-    case TOK_OP_EQ:
-    case TOK_OP_NEQ:
-        return 6;
-    case TOK_OP_LT:
-    case TOK_OP_LE:
-    case TOK_OP_GT:
-    case TOK_OP_GE:
-        return 7;
-    case TOK_OP_LSHIFT:
-    case TOK_OP_RSHIFT:
-        return 8;
-    case TOK_OP_PLUS:
-    case TOK_OP_MINUS:
-        return 9;
-    case TOK_OP_STAR:
-    case TOK_OP_SLASH:
-    case TOK_OP_MOD:
-        return 10;
-    case TOK_OP_CARET:
-        return 11;
-    case TOK_EQUAL:
-    case TOK_OP_PLUS_EQ:
-    case TOK_OP_MINUS_EQ:
-    case TOK_OP_STAR_EQ:
-    case TOK_OP_SLASH_EQ:
-        return 0;
-    default:
-        return -1;
-    }
-}
-
-int cli_calc_op_prec(cli_token_type t)
-{
-    return get_prec(t);
-}
-
-/**
- * @brief Check if an operator is right-associative.
- */
-static inline int is_right_assoc(cli_token_type t)
-{
-    return (t == TOK_OP_CARET) || (t == TOK_EQUAL) || (t == TOK_OP_PLUS_EQ) ||
-           (t == TOK_OP_MINUS_EQ) || (t == TOK_OP_STAR_EQ) || (t == TOK_OP_SLASH_EQ) ||
-           (t == TOK_OP_QUESTION);
-}
+/* Operator precedence and associativity: cli_calc_scalar.c (shared with the in-shell evaluator) */
 
 static inline int is_assign_op(cli_token_type t)
 {
@@ -185,7 +117,7 @@ static int skip_expr(int min_prec)
     for (;;)
     {
         cli_token_type op   = cur_func()->type;
-        int            prec = get_prec(op);
+        int            prec = cli_calc_op_prec(op);
         if (prec < min_prec)
         {
             return 0;
@@ -204,7 +136,9 @@ static int skip_expr(int min_prec)
             }
             advance_func();
         }
-        if (skip_expr((op == TOK_OP_QUESTION) ? 0 : is_right_assoc(op) ? prec : prec + 1) != 0)
+        if (skip_expr((op == TOK_OP_QUESTION)       ? 0
+                      : cli_calc_op_right_assoc(op) ? prec
+                                                    : prec + 1) != 0)
         {
             return -1;
         }
@@ -794,7 +728,7 @@ val_t parse_expr(int min_prec)
     for (;;)
     {
         cli_token_type op   = cur_func()->type;
-        int            prec = get_prec(op);
+        int            prec = cli_calc_op_prec(op);
         if (prec < min_prec)
         {
             break;
@@ -811,7 +745,7 @@ val_t parse_expr(int min_prec)
             continue;
         }
 
-        int next_min = is_right_assoc(op) ? prec : prec + 1;
+        int next_min = cli_calc_op_right_assoc(op) ? prec : prec + 1;
         if ((op == TOK_OP_AND || op == TOK_OP_OR) && left.type != VAL_STRING &&
             (to_double(left) != 0.0) == (op == TOK_OP_OR)) // result already known: skip the RHS
         {

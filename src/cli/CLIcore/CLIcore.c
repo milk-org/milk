@@ -92,6 +92,7 @@
 #include "CLIcore_setSHMdir.h"
 #include "CLIcore_signals.h"
 #include "milk_bash_engine.h"
+#include "milk_catalog.h"
 #include "milk_server.h"
 #include "milkscript.h"
 #include "treesitter/cli_treesitter.h"
@@ -121,7 +122,9 @@ static char single_command_string[STRINGMAXLEN_CLICMDLINE];
 static char server_sockpath[512] = "";
 static int  server_owner_fd      = -1;
 static int  server_ready_fd      = -1;
-static int  dump_commands_flag   = 0;
+static int  catalog_flag         = 0; /* --catalog: write the install-time command catalog */
+static int  script_tool = 0; /* --format (1), --format-in-place (2), --outline (3) <file> */
+static char script_tool_file[1024];
 
 // fifo input
 static fd_set cli_fdin_set;
@@ -205,83 +208,6 @@ errno_t exitCLI()
 
     return RETURN_SUCCESS;
 }
-
-errno_t load_so__cli()
-{
-    return load_sharedobj(data.cmdargtoken[1].val.string) == RETURN_SUCCESS ? CLICMD_SUCCESS
-                                                                            : CLICMD_ERROR;
-}
-
-errno_t load_module__cli()
-{
-    if (data.cmdargtoken[1].type == 3)
-    {
-        return load_module_shared(data.cmdargtoken[1].val.string) == RETURN_SUCCESS ? CLICMD_SUCCESS
-                                                                                    : CLICMD_ERROR;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
-
-errno_t CLIcore__load_module_as__cli()
-{
-    DEBUG_TRACEPOINT("calling CLI_checkarg");
-    if (0 + CLI_checkarg(1, CLIARG_STR) + CLI_checkarg(2, CLIARG_STR) == 0)
-    {
-        strncpy(data.moduleshortname, data.cmdargtoken[2].val.string,
-                STRINGMAXLEN_MODULE_SHORTNAME - 1);
-        return load_module_shared(data.cmdargtoken[1].val.string) == RETURN_SUCCESS ? CLICMD_SUCCESS
-                                                                                    : CLICMD_ERROR;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
-
-errno_t set_processinfoON()
-{
-    dcprocinfo = 1;
-
-    return RETURN_SUCCESS;
-}
-
-errno_t set_processinfoOFF()
-{
-    dcprocinfo = 0;
-
-    return RETURN_SUCCESS;
-}
-
-errno_t set_default_precision_single()
-{
-    dcprecision = 0;
-
-    return RETURN_SUCCESS;
-}
-
-errno_t set_default_precision_double()
-{
-    dcprecision = 1;
-
-    return RETURN_SUCCESS;
-}
-
-errno_t milk_usleep__cli()
-{
-    if (data.cmdargtoken[1].type == 2)
-    {
-        usleep(data.cmdargtoken[1].val.numl);
-        return RETURN_SUCCESS;
-    }
-    else
-    {
-        return RETURN_FAILURE;
-    }
-}
-
 
 errno_t function_parameter_structure_load__cli()
 {
@@ -693,17 +619,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // Disable command timing by default
     data.print_cmd_timing = 0;
 
-    // Load startup script (~/.milkrc)
-    cli_milkrc_load();
-
     // Load persistent command history
     cli_history_load();
 
     // Initialize structured history log
     cli_history_log_init();
-
-    // Load persistent bookmarks
-    cli_bookmark_load();
 
     // (SHM directory setup is handled by milkscript_init)
 
@@ -720,54 +640,21 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         return EXIT_FAILURE;
     }
 
+    if (script_tool != 0) /* script tools: no session */
+    {
+        int trc = (script_tool == 3) ? cli_outline_file(script_tool_file)
+                                     : cli_format_file(script_tool_file, script_tool == 2, 4);
+        DEBUG_TRACE_FEXIT();
+        return (trc == 0) ? RETURN_SUCCESS : RETURN_FAILURE;
+    }
+
     dcprogstatus = 1;
-    if (!dump_commands_flag && server_sockpath[0] == '\0')
+    if (!catalog_flag && server_sockpath[0] == '\0')
     {
         printf("\n");
     }
 
-    // (Module loading is now handled centrally by milkscript_init)
-
-    // load other libs specified by environment variable MILKCLI_ADD_LIBS
-    {
-        const char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
-        if (CLI_ADD_LIBS == NULL && (dump_commands_flag || server_sockpath[0] != '\0'))
-        {
-            CLI_ADD_LIBS =
-                "milklinalgebra,milkfft,milkimagebasic,milkimagefilter,milkimageformat,"
-                "milkimagegen,milkimgreduce,milkinfo,milkkdtree,milklinARfilterPred,"
-                "milklinoptimtools,milk_module_example,milkpsf,milkstatistic,milkZernikePolyn";
-        }
-        if (CLI_ADD_LIBS != NULL && CLI_ADD_LIBS[0] != '\0' && strcmp(CLI_ADD_LIBS, "none") != 0)
-        {
-            if (dcquiet == 0)
-            {
-                printf("        MILKCLI_ADD_LIBS '%s'\n", CLI_ADD_LIBS);
-            }
-
-            char  libs_copy[2048];
-            char *saveptr = NULL;
-            snprintf(libs_copy, sizeof(libs_copy), "%s", CLI_ADD_LIBS);
-            char *libname = strtok_r(libs_copy, " ,;", &saveptr);
-            while (libname != NULL)
-            {
-                DEBUG_TRACEPOINT("--- CLI Adding library: %s", libname);
-                load_module_shared(libname);
-                libname = strtok_r(NULL, " ,;", &saveptr);
-            }
-            if (!dump_commands_flag && server_sockpath[0] == '\0')
-            {
-                printf("\n");
-            }
-        }
-        else
-        {
-            if (dcquiet == 0)
-            {
-                printf("        MILKCLI_ADD_LIBS not set -> no additional module loaded\n");
-            }
-        }
-    }
+    // (modules, the milk module and the help commands are registered by milkscript_init)
 
     DEBUG_TRACEPOINT("Initialize data control block");
     CLI_data_init();
@@ -779,12 +666,12 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     runCLI_cmd_init();
 
-    if (dump_commands_flag)
+    if (catalog_flag)
     {
-        milk_server_dump_commands(stdout);
+        int cat_rc = milk_catalog_build(dcinstalldir);
         cli_ts_cleanup();
         DEBUG_TRACE_FEXIT();
-        return RETURN_SUCCESS;
+        return (cat_rc == 0) ? RETURN_SUCCESS : RETURN_FAILURE;
     }
 
     if (server_sockpath[0] != '\0')
@@ -793,6 +680,12 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         cli_ts_cleanup();
         DEBUG_TRACE_FEXIT();
         return srv_rc;
+    }
+
+    // ~/.milkrc: interactive sessions only, once every module and command is registered
+    if (!single_command_flag && CLIstartupfilename[0] == '\0' && isatty(fileno(stdin)))
+    {
+        cli_milkrc_load();
     }
 
     // fifo
@@ -1201,7 +1094,10 @@ static int command_line_process_options(int argc, char **argv)
                                             { "server", required_argument, 0, 0x104 },
                                             { "owner-fd", required_argument, 0, 0x105 },
                                             { "ready-fd", required_argument, 0, 0x106 },
-                                            { "dump-commands", no_argument, 0, 0x107 },
+                                            { "catalog", no_argument, 0, 0x107 },
+                                            { "format", required_argument, 0, 0x109 },
+                                            { "format-in-place", required_argument, 0, 0x10a },
+                                            { "outline", required_argument, 0, 0x10b },
                                             { "owner-pid", required_argument, 0, 0x108 },
                                             { "quiet", no_argument, 0, 'q' },
                                             { "fifoflag", no_argument, 0, 'f' },
@@ -1351,8 +1247,15 @@ static int command_line_process_options(int argc, char **argv)
             break;
 
         case 0x107:
-            dump_commands_flag = 1;
-            dcquiet            = 1;
+            catalog_flag = 1;
+            dcquiet      = 1;
+            break;
+
+        case 0x109:
+        case 0x10a:
+        case 0x10b:
+            script_tool = c - 0x108;
+            snprintf(script_tool_file, sizeof(script_tool_file), "%s", optarg);
             break;
 
 

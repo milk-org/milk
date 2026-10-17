@@ -4,15 +4,12 @@
 
 /**
  * @file milk_server_io.c
- * @brief Command catalog dumping and tab-completion handler for milk-cli server.
+ * @brief Tab-completion handler for the milk-cli server.
  *
  * Role & Goal:
- *   1. `milk_server_dump_commands()`: Emits all canonical and unambiguous short
- *      command names registered in `data.cmd[]` (excluding shell builtins owned
- *      by bash) so `milk-bash-init` can define `@<cmd>` shell wrapper functions.
- *   2. `milk_server_handle_complete()`: Services `MILK_MSG_COMPLETE` requests
- *      for both command names (`comp_type == "cmd"`) and command arguments
- *      (modifiers `@T*:`, local images, SHM streams, `s.<stream>.`, `f.<fps>.`).
+ *   `milk_server_handle_complete()` services `MILK_MSG_COMPLETE` requests for command names
+ *   (`comp_type == "cmd"`: `@keywords` and `module.command`s) and command arguments (modifiers
+ *   `@T*:`, local images, SHM streams, `s.<stream>.`, `f.<fps>.`).
  */
 
 #ifndef _GNU_SOURCE
@@ -26,6 +23,7 @@
 #include <string.h>
 
 #include "milk_lexicon.h"
+#include "milk_cmd_index.h"
 #include "CLIcore.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "fps.h"
@@ -35,160 +33,36 @@
 #include "milk_shm_prop.h"
 
 /**
- * @brief Return 1 if @key is a legacy shell builtin, REPL-only command,
- *        internal help topic, or deprecated alias that should not be
- *        exported as an `@<cmd>` in Bash.
- *
- * @param key Command key registered in `data.cmd[]`
- * @return 1 if excluded from Bash export/completion, 0 otherwise
+ * @brief Append command-name completions of @prefix into @out: `@keywords`, or `module.command`s.
  */
-static int is_bash_excluded_cmd(const char *key)
+static size_t complete_commands(const char *prefix, char *out, size_t outsz)
 {
-    static const char *const excluded[] = {
-        /* Shell builtins owned by Bash */
-        "cd", "pwd", "echo", "printf", "read", "shift", "export", "unset", "vars", "alias",
-        "unalias", "aliases", "time", "watch", "exit", "quit", "exitCLI",
-        /* Interactive milk-cli commands not in milk_lexicon_repl_commands() */
-        "savescript", "bookmark",
-        /* Internal help-topic keys (use @h <topic>, @hb, @hc, @hm, @hf) */
-        "help-bash", "help-cmdopts", "help-syntax", "help-commands", "help-variables",
-        "help-flowcontrol", "help-scripting", "help-milk",
-        /* Deprecated / duplicate aliases */
-        "list-streams", "list-fps", NULL
-    };
+    size_t pos  = 0;
+    int    kw   = (prefix[0] == '@');
+    size_t blen = strlen(prefix + kw);
 
-    if (key == NULL || key[0] == '\0')
+    for (int i = 0; kw && milk_lexicon_keywords()[i].name != NULL; i++) /* milk.bash keywords */
     {
-        return 1;
-    }
-    for (int i = 0; milk_lexicon_repl_commands()[i] != NULL;
-         i++) /* prompt-only: reached as @name (engine) */
-    {
-        if (strcmp(key, milk_lexicon_repl_commands()[i]) == 0)
+        const milk_keyword_t *k = &milk_lexicon_keywords()[i];
+        int                   n;
+
+        if ((k->avail & MILK_KW_BASH) && strncmp(k->name, prefix + 1, blen) == 0 &&
+            (n = snprintf(out + pos, outsz - pos, "@%s\n", k->name)) > 0 &&
+            pos + (size_t) n < outsz)
         {
-            return 1;
+            pos += (size_t) n;
         }
     }
-
-    for (int i = 0; excluded[i] != NULL; i++)
+    for (unsigned int i = 0; !kw && i < data.NBcmd; i++) /* by key or by command name ("mk2D") */
     {
-        if (strcmp(key, excluded[i]) == 0)
-        {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-/**
- * @brief Dump all registered canonical and unambiguous short command names.
- *
- * @param fp Output stream
- */
-void milk_server_dump_commands(FILE *fp)
-{
-    if (fp == NULL)
-    {
-        return;
-    }
-
-    for (unsigned int i = 0; i < data.NBcmd; i++)
-    {
-        const char *key = data.cmd[i].key;
-        if (key[0] == '\0' || strchr(key, '?') != NULL || is_bash_excluded_cmd(key))
-        {
-            continue;
-        }
-
-        fprintf(fp, "%s\n", key);
-
-        /* Also emit module-qualified name if command has a module shortname and no dot */
-        int midx = data.cmd[i].moduleindex;
-        if (strchr(key, '.') == NULL && midx >= 0 && data.module[midx].shortname[0] != '\0')
-        {
-            fprintf(fp, "%s.%s\n", data.module[midx].shortname, key);
-        }
-
-        /* If key is "ns.short", also emit "short" if unambiguous across all commands */
-        const char *dot = strchr(key, '.');
-        if (dot != NULL && dot[1] != '\0' && !is_bash_excluded_cmd(dot + 1))
-        {
-            const char *short_key = dot + 1;
-            int         cnt       = 0;
-            for (unsigned int j = 0; j < data.NBcmd; j++)
-            {
-                const char *d2 = strchr(data.cmd[j].key, '.');
-                if ((d2 != NULL && strcmp(d2 + 1, short_key) == 0) ||
-                    strcmp(data.cmd[j].key, short_key) == 0)
-                {
-                    cnt++;
-                }
-            }
-            if (cnt == 1)
-            {
-                fprintf(fp, "%s\n", short_key);
-            }
-        }
-    }
-
-    fprintf(
-        fp,
-        "imgstat\ninfo.imgstat\nmk2Drnd\nimgen.mk2Drnd\nsavefits\nprocstat\nprocctl\nprocwait\n");
-}
-
-/**
- * @brief Append command-name completions matching @prefix into @out.
- */
-static size_t complete_commands(const char *prefix, const char *sigil, char *out, size_t outsz)
-{
-    size_t      pos    = 0;
-    size_t      siglen = strlen(sigil);
-    const char *bare   = prefix;
-    if (strncmp(bare, sigil, siglen) == 0)
-    {
-        bare += siglen;
-    }
-    else if (bare[0] == '@')
-    {
-        bare++;
-    }
-    size_t blen = strlen(bare);
-
-    for (int i = 0; milk_lexicon_primitives()[i].name != NULL; i++)
-    {
-        if (strncmp(milk_lexicon_primitives()[i].name, bare, blen) == 0)
-        {
-            int n = snprintf(out + pos, outsz - pos, "%s%s\n", sigil,
-                             milk_lexicon_primitives()[i].name);
-            if (n > 0 && pos + (size_t) n < outsz)
-            {
-                pos += (size_t) n;
-            }
-        }
-    }
-    for (unsigned int i = 0; i < data.NBcmd; i++)
-    {
-        const char *k = data.cmd[i].key;
-        if (k[0] == '\0' || strchr(k, '?') != NULL || is_bash_excluded_cmd(k))
-        {
-            continue;
-        }
-        if (strncmp(k, bare, blen) == 0)
-        {
-            int n = snprintf(out + pos, outsz - pos, "%s%s\n", sigil, k);
-            if (n > 0 && pos + (size_t) n < outsz)
-            {
-                pos += (size_t) n;
-            }
-        }
+        const char *k   = data.cmd[i].key;
         const char *dot = strchr(k, '.');
-        if (dot != NULL && !is_bash_excluded_cmd(dot + 1) && strncmp(dot + 1, bare, blen) == 0)
+        int         n;
+
+        if (dot != NULL && (strncmp(k, prefix, blen) == 0 || strncmp(dot + 1, prefix, blen) == 0) &&
+            (n = snprintf(out + pos, outsz - pos, "%s\n", k)) > 0 && pos + (size_t) n < outsz)
         {
-            int n = snprintf(out + pos, outsz - pos, "%s%s\n", sigil, dot + 1);
-            if (n > 0 && pos + (size_t) n < outsz)
-            {
-                pos += (size_t) n;
-            }
+            pos += (size_t) n;
         }
     }
     return pos;
@@ -577,7 +451,7 @@ static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
 }
 
 /**
- * @brief Resolve a command name (ignoring leading sigil) to its index in `data.cmd[]`.
+ * @brief Resolve a command name (ignoring a leading @) to its index in `data.cmd[]`.
  */
 static int find_server_cmd(const char *cmdname)
 {
@@ -585,46 +459,16 @@ static int find_server_cmd(const char *cmdname)
     {
         return -1;
     }
-    const char *sigil = getenv("MILKCLI_SIGIL");
-    if (sigil != NULL && sigil[0] != '\0' && strncmp(cmdname, sigil, strlen(sigil)) == 0)
-    {
-        cmdname += strlen(sigil);
-    }
-    else if (cmdname[0] == '@' || cmdname[0] == ',')
-    {
-        cmdname++;
-    }
+    cmdname += (cmdname[0] == '@');
     if (cmdname[0] == '\0')
     {
         return -1;
     }
 
-    /* Common built-in aliases */
-    if (strcmp(cmdname, "imstats") == 0 || strcmp(cmdname, "imgstat") == 0)
+    int exact = milk_cmd_lookup(cmdname);
+    if (exact >= 0)
     {
-        cmdname = "info.imgstat";
-    }
-    else if (strcmp(cmdname, "mk2Drnd") == 0)
-    {
-        cmdname = "imgen.mk2Drnd";
-    }
-
-    for (unsigned int i = 0; i < data.NBcmd; i++)
-    {
-        if (strcmp(data.cmd[i].key, cmdname) == 0)
-        {
-            return (int) i;
-        }
-        int midx = data.cmd[i].moduleindex;
-        if (midx >= 0 && data.module[midx].shortname[0] != '\0')
-        {
-            char qname[256];
-            snprintf(qname, sizeof(qname), "%s.%s", data.module[midx].shortname, data.cmd[i].key);
-            if (strcmp(qname, cmdname) == 0)
-            {
-                return (int) i;
-            }
-        }
+        return exact;
     }
 
     int match = -1;
@@ -980,15 +824,9 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
     size_t pos = 0;
     out[0]     = '\0';
 
-    const char *sigil = getenv("MILKCLI_SIGIL");
-    if (sigil == NULL || sigil[0] == '\0')
-    {
-        sigil = "@";
-    }
-
     if (comp_type != NULL && strcmp(comp_type, "cmd") == 0)
     {
-        pos = complete_commands(prefix, sigil, out, sizeof(out));
+        pos = complete_commands(prefix, out, sizeof(out));
     }
     else if (comp_type != NULL && strcmp(comp_type, "sig") == 0)
     {
@@ -1027,24 +865,16 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
             }
         }
         int         argidx = cword - 1;
-        const char *bcmd   = cbuf;
-        if (strncmp(bcmd, sigil, strlen(sigil)) == 0)
-        {
-            bcmd += strlen(sigil);
-        }
-        else if (bcmd[0] == '@' || bcmd[0] == ',')
-        {
-            bcmd++;
-        }
+        const char *bcmd   = cbuf + (cbuf[0] == '@');
 
         const char *bpref          = (prefix[0] == '@') ? (prefix + 1) : prefix;
         int         is_entity_pref = (milk_entity_ns_kind(bpref, NULL) != MILK_NS_NONE);
 
         int cmdidx = find_server_cmd(bcmd);
 
-        if (strcmp(bcmd, "hc") == 0 && argidx == 0)
+        if (strcmp(bcmd, "help") == 0 && argidx == 0)
         {
-            pos = complete_commands(prefix, "", out, sizeof(out));
+            pos = complete_commands(prefix, out, sizeof(out));
         }
         else if (prefix[0] == '.' && prefix[1] != '/' && prefix[1] != '.' && cmdidx >= 0)
         {
@@ -1056,8 +886,7 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
         }
         else if (((strcmp(bcmd, "loadfits") == 0 || strcmp(bcmd, "iofits.loadfits") == 0) &&
                   argidx == 0) ||
-                 ((strcmp(bcmd, "savefits") == 0 || strcmp(bcmd, "saveFITS") == 0 ||
-                   strcmp(bcmd, "iofits.savefits") == 0) &&
+                 ((strcmp(bcmd, "saveFITS") == 0 || strcmp(bcmd, "iofits.saveFITS") == 0) &&
                   argidx == 1))
         {
             pos = (size_t) snprintf(out, sizeof(out), "__MILK_COMPLETE_FITS__\n");
@@ -1067,13 +896,12 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
         {
             pos = complete_images_only(prefix, out, sizeof(out));
         }
-        else if ((strcmp(bcmd, "savefits") == 0 || strcmp(bcmd, "saveFITS") == 0 ||
-                  strcmp(bcmd, "iofits.savefits") == 0) &&
+        else if ((strcmp(bcmd, "saveFITS") == 0 || strcmp(bcmd, "iofits.saveFITS") == 0) &&
                  argidx == 0)
         {
             pos = complete_images_only(prefix, out, sizeof(out));
         }
-        else if (strcmp(bcmd, "source") == 0 || strcmp(bcmd, "include_once") == 0)
+        else if (strcmp(bcmd, "source") == 0)
         {
             pos = (size_t) snprintf(out, sizeof(out), "__MILK_COMPLETE_FILES__\n");
         }

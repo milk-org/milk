@@ -367,116 +367,12 @@ static int emit_fps_json_body(const char *pat, int indent)
     return count;
 }
 
-/**
- * @brief fpslist command — list live FPS instances
- */
-errno_t cli_cmd_fpslist(void)
-{
-    int         quietmode = 0;
-    int         jsonmode  = 0;
-    const char *pat       = NULL;
-
-    for (int a = 1; a < data.cmdNBarg; a++)
-    {
-        const char *tok = data.cmdargtoken[a].val.string;
-        if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
-        {
-            quietmode = 1;
-        }
-        else if (strcmp(tok, "-l") == 0 || strcmp(tok, "--long") == 0)
-        {
-            quietmode = 0;
-        }
-        else if (strcmp(tok, "--json") == 0 || strcmp(tok, "-j") == 0)
-        {
-            jsonmode = 1;
-        }
-        else
-        {
-            pat = tok;
-        }
-    }
-
-    if (jsonmode)
-    {
-        printf("[\n");
-        emit_fps_json_body(pat, 2);
-        printf("\n]\n");
-        return RETURN_SUCCESS;
-    }
-
-    char shmdname[STRINGMAXLEN_SHMDIRNAME];
-    function_parameter_struct_shmdirname(shmdname);
-
-    int is_tty = isatty(STDOUT_FILENO);
-    if (!quietmode && is_tty)
-    {
-        printf("%-24s %-12s %s\n", "FPS NAME", "STATUS", "DESCRIPTION");
-        printf("%-24s %-12s %s\n", "------------------------", "------------",
-               "----------------------------------------");
-    }
-
-    DIR           *d;
-    struct dirent *de;
-    d = opendir(shmdname);
-    if (d == NULL)
-    {
-        fprintf(stderr, "Cannot open SHM dir: %s\n", shmdname);
-        return RETURN_FAILURE;
-    }
-
-    while ((de = readdir(d)) != NULL)
-    {
-        char *sfx = strstr(de->d_name, ".fps.shm");
-        if (sfx == NULL)
-        {
-            continue;
-        }
-
-        char   fpsname[STRINGMAXLEN_FPS_NAME];
-        size_t nlen = (size_t) (sfx - de->d_name);
-        if (nlen >= sizeof(fpsname))
-        {
-            continue;
-        }
-        strncpy(fpsname, de->d_name, nlen);
-        fpsname[nlen] = '\0';
-
-        if (pat != NULL && fnmatch(pat, fpsname, 0) != 0)
-        {
-            continue;
-        }
-
-        if (quietmode)
-        {
-            printf("%s\n", fpsname);
-            continue;
-        }
-
-        FPS fps;
-        fps.SMfd = -1;
-        int rc   = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
-        if (rc == -1 || fps.md == NULL)
-        {
-            printf("%-24s %-12s %s\n", fpsname, "UNAVAIL", "");
-            continue;
-        }
-
-        const char *ststr = fps_status_str(fps.md->status);
-        printf("%-24s %-12s %s\n", fpsname, ststr, fps.md->description);
-
-        fps_disconnect(&fps);
-    }
-    closedir(d);
-
-    return RETURN_SUCCESS;
-}
-
 /* ============================================================
  *  fpsdump
  * ============================================================
  */
 
+#ifndef MILK_BASH_CLIENT /* an engine command: reads its arguments from the engine */
 /**
  * @brief fpsdump command — dump all FPS parameters
  */
@@ -660,6 +556,7 @@ errno_t cli_cmd_fpsdump(void)
     fps_disconnect(&fps);
     return RETURN_SUCCESS;
 }
+#endif
 
 /* ============================================================
  *  streamlist
@@ -775,107 +672,6 @@ static int emit_streams_json_body(const char *pat, int indent)
     return count;
 }
 
-/**
- * @brief streamlist command — enumerate SHM streams
- */
-errno_t cli_cmd_streamlist(void)
-{
-    int         longmode = 0;
-    int         jsonmode = 0;
-    const char *pat      = NULL;
-
-    for (int a = 1; a < data.cmdNBarg; a++)
-    {
-        const char *tok = data.cmdargtoken[a].val.string;
-        if (strcmp(tok, "-l") == 0 || strcmp(tok, "--long") == 0)
-        {
-            longmode = 1;
-        }
-        else if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
-        {
-            longmode = 0;
-        }
-        else if (strcmp(tok, "--json") == 0 || strcmp(tok, "-j") == 0)
-        {
-            jsonmode = 1;
-        }
-        else
-        {
-            pat = tok;
-        }
-    }
-
-    if (jsonmode)
-    {
-        printf("[\n");
-        emit_streams_json_body(pat, 2);
-        printf("\n]\n");
-        return RETURN_SUCCESS;
-    }
-
-    const char    *shmdir = get_shmdir_local();
-    DIR           *d      = opendir(shmdir);
-    struct dirent *de;
-    if (d == NULL)
-    {
-        printf("Cannot open SHM dir: %s\n", shmdir);
-        return RETURN_FAILURE;
-    }
-
-    while ((de = readdir(d)) != NULL)
-    {
-        char *sfx = strstr(de->d_name, ".im.shm");
-        if (sfx == NULL || strstr(de->d_name, ".fps.shm") != NULL)
-        {
-            continue;
-        }
-
-        char   sname[256];
-        size_t nlen = (size_t) (sfx - de->d_name);
-        if (nlen >= sizeof(sname))
-        {
-            continue;
-        }
-        strncpy(sname, de->d_name, nlen);
-        sname[nlen] = '\0';
-
-        if (strncmp(sname, "_tmpcalc", 8) == 0)
-        {
-            continue;
-        }
-        if (pat != NULL && fnmatch(pat, sname, 0) != 0)
-        {
-            continue;
-        }
-
-        if (!longmode)
-        {
-            printf("%s\n", sname);
-        }
-        else
-        {
-            IMAGE img;
-            memset(&img, 0, sizeof(IMAGE));
-            errno_t sret = ImageStreamIO_openIm(&img, sname);
-            if (sret == IMAGESTREAMIO_SUCCESS && img.md != NULL)
-            {
-                char szstr[64];
-                format_img_dims(img.md->naxis, img.md->size, szstr, sizeof(szstr));
-                printf("%-24s %-12s %-7s cnt0=%lu\n", sname, szstr,
-                       ImageStreamIO_typename(img.md->datatype), (unsigned long) img.md->cnt0);
-                ImageStreamIO_closeIm(&img);
-            }
-            else
-            {
-                printf("%-24s UNAVAIL\n", sname);
-            }
-        }
-    }
-    closedir(d);
-
-    return RETURN_SUCCESS;
-}
-
 /* ============================================================
  *  proclist
  * ============================================================
@@ -955,102 +751,6 @@ static int emit_procs_json_body(const char *pat, int indent)
         count++;
     }
     return count;
-}
-
-/**
- * @brief proclist command — list active processes
- */
-errno_t cli_cmd_proclist(void)
-{
-    int         longmode = 0;
-    int         jsonmode = 0;
-    const char *pat      = NULL;
-    for (int a = 1; a < data.cmdNBarg; a++)
-    {
-        const char *tok = data.cmdargtoken[a].val.string;
-        if (strcmp(tok, "-l") == 0 || strcmp(tok, "--long") == 0)
-        {
-            longmode = 1;
-        }
-        else if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
-        {
-            longmode = 0;
-        }
-        else if (strcmp(tok, "--json") == 0 || strcmp(tok, "-j") == 0)
-        {
-            jsonmode = 1;
-        }
-        else
-        {
-            pat = tok;
-        }
-    }
-
-    if (jsonmode)
-    {
-        printf("[\n");
-        emit_procs_json_body(pat, 2);
-        printf("\n]\n");
-        return RETURN_SUCCESS;
-    }
-
-    PROCESSINFOLIST *plist = get_pinfolist_local();
-    if (plist == NULL)
-    {
-        return RETURN_SUCCESS;
-    }
-
-    char pdname[256];
-    get_procdir_local(pdname, sizeof(pdname));
-
-    for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
-    {
-        if (!plist->active[pi])
-        {
-            continue;
-        }
-        const char *pname = plist->pnamearray[pi];
-        if (pat != NULL && fnmatch(pat, pname, 0) != 0)
-        {
-            continue;
-        }
-
-        pid_t        fpid   = plist->PIDarray[pi];
-        int          pfd    = -1;
-        PROCESSINFO *pi_shm = (fpid > 0) ? open_proc_shm_local(pdname, pname, fpid, &pfd) : NULL;
-        if (pi_shm == NULL && (fpid <= 0 || (kill(fpid, 0) != 0 && errno == ESRCH)))
-        {
-            continue;
-        }
-
-        if (!longmode)
-        {
-            if (pi_shm != NULL)
-            {
-                munmap(pi_shm, sizeof(PROCESSINFO));
-                close(pfd);
-            }
-            printf("%s\n", pname);
-        }
-        else
-        {
-            const char *state = proc_status_str(pi_shm, fpid);
-            double      freq  = 0.0;
-            if (pi_shm != NULL)
-            {
-                if (pi_shm->dtmedian_iter_ns > 0)
-                {
-                    freq = 1.0e9 / (double) pi_shm->dtmedian_iter_ns;
-                }
-                munmap(pi_shm, sizeof(PROCESSINFO));
-                close(pfd);
-            }
-
-            printf("%-24s %-8s %8.1f Hz\n", pname, state, freq);
-        }
-    }
-
-    return RETURN_SUCCESS;
 }
 
 /* ============================================================
@@ -1136,7 +836,7 @@ static int emit_seqs_json_body(const char *pat, int indent)
 
 static int emit_local_json_body(const char *pat, int indent)
 {
-    if (data.core.image == NULL)
+    if (MILK_LOCAL_IMAGES == NULL)
     {
         return 0;
     }
@@ -1153,21 +853,21 @@ static int emit_local_json_body(const char *pat, int indent)
     }
 
     int count = 0;
-    for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+    for (long i = 0; i < MILK_NB_LOCAL_IMAGES; i++)
     {
-        if (data.core.image[i].used != 1 || data.core.image[i].name[0] == '\0' ||
-            strncmp(data.core.image[i].name, "_tmpcalc", 8) == 0 || data.core.image[i].md == NULL ||
-            data.core.image[i].md->shared)
+        if (MILK_LOCAL_IMAGES[i].used != 1 || MILK_LOCAL_IMAGES[i].name[0] == '\0' ||
+            strncmp(MILK_LOCAL_IMAGES[i].name, "_tmpcalc", 8) == 0 ||
+            MILK_LOCAL_IMAGES[i].md == NULL || MILK_LOCAL_IMAGES[i].md->shared)
         {
             continue;
         }
-        const char *iname = data.core.image[i].name;
+        const char *iname = MILK_LOCAL_IMAGES[i].name;
         if (pat != NULL && fnmatch(pat, iname, 0) != 0)
         {
             continue;
         }
 
-        IMAGE_METADATA *md         = data.core.image[i].md;
+        IMAGE_METADATA *md         = MILK_LOCAL_IMAGES[i].md;
         const char     *dtype_name = ImageStreamIO_typename(md->datatype);
         if (dtype_name == NULL)
         {
@@ -1201,109 +901,6 @@ static int emit_local_json_body(const char *pat, int indent)
         count++;
     }
     return count;
-}
-
-/**
- * @brief milkquery — unified JSON snapshot
- */
-errno_t cli_cmd_milkquery(void)
-{
-    int         do_fps     = 0;
-    int         do_streams = 0;
-    int         do_procs   = 0;
-    const char *fps_pat    = NULL;
-    const char *stream_pat = NULL;
-    const char *proc_pat   = NULL;
-
-    for (int a = 1; a < data.cmdNBarg; a++)
-    {
-        const char *tok = data.cmdargtoken[a].val.string;
-        if (strcmp(tok, "--fps") == 0)
-        {
-            do_fps = 1;
-            if (a + 1 < data.cmdNBarg && data.cmdargtoken[a + 1].val.string[0] != '-')
-            {
-                fps_pat = data.cmdargtoken[a + 1].val.string;
-                a++;
-            }
-        }
-        else if (strcmp(tok, "--streams") == 0)
-        {
-            do_streams = 1;
-            if (a + 1 < data.cmdNBarg && data.cmdargtoken[a + 1].val.string[0] != '-')
-            {
-                stream_pat = data.cmdargtoken[a + 1].val.string;
-                a++;
-            }
-        }
-        else if (strcmp(tok, "--procs") == 0)
-        {
-            do_procs = 1;
-            if (a + 1 < data.cmdNBarg && data.cmdargtoken[a + 1].val.string[0] != '-')
-            {
-                proc_pat = data.cmdargtoken[a + 1].val.string;
-                a++;
-            }
-        }
-        else
-        {
-            fprintf(stderr, "milkquery: unknown argument '%s'\n", tok);
-            fprintf(
-                stderr,
-                "usage: milkquery [--fps [pattern]] [--streams [pattern]] [--procs [pattern]]\n");
-            return RETURN_FAILURE;
-        }
-    }
-
-    if (!do_fps && !do_streams && !do_procs)
-    {
-        do_fps     = 1;
-        do_streams = 1;
-        do_procs   = 1;
-    }
-
-    printf("{\n");
-    int need_comma = 0;
-
-    if (do_fps)
-    {
-        if (need_comma)
-        {
-            printf(",\n");
-        }
-        printf("  \"fps\": [\n");
-        emit_fps_json_body(fps_pat, 4);
-        printf("\n  ]");
-        need_comma = 1;
-    }
-
-    if (do_streams)
-    {
-        if (need_comma)
-        {
-            printf(",\n");
-        }
-        printf("  \"streams\": [\n");
-        emit_streams_json_body(stream_pat, 4);
-        printf("\n  ]");
-        need_comma = 1;
-    }
-
-    if (do_procs)
-    {
-        if (need_comma)
-        {
-            printf(",\n");
-        }
-        printf("  \"processes\": [\n");
-        emit_procs_json_body(proc_pat, 4);
-        printf("\n  ]");
-        need_comma = 1;
-    }
-
-    (void) need_comma;
-    printf("\n}\n");
-    return RETURN_SUCCESS;
 }
 
 /** ls_ns_arg() - namespace named by an `@ls` argument ("s", "streams", "s.cam*"); its pattern in *@pat. */
@@ -1565,17 +1162,17 @@ int milk_ls_exec(int argc, char **argv)
         }
     }
 
-    if (do_local && data.core.image != NULL)
+    if (do_local && MILK_LOCAL_IMAGES != NULL)
     {
-        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        for (long i = 0; i < MILK_NB_LOCAL_IMAGES; i++)
         {
-            if (data.core.image[i].used != 1 || data.core.image[i].name[0] == '\0' ||
-                strncmp(data.core.image[i].name, "_tmpcalc", 8) == 0 ||
-                data.core.image[i].md == NULL || data.core.image[i].md->shared)
+            if (MILK_LOCAL_IMAGES[i].used != 1 || MILK_LOCAL_IMAGES[i].name[0] == '\0' ||
+                strncmp(MILK_LOCAL_IMAGES[i].name, "_tmpcalc", 8) == 0 ||
+                MILK_LOCAL_IMAGES[i].md == NULL || MILK_LOCAL_IMAGES[i].md->shared)
             {
                 continue;
             }
-            const char *iname = data.core.image[i].name;
+            const char *iname = MILK_LOCAL_IMAGES[i].name;
             if (fnmatch(pat, iname, 0) != 0)
             {
                 continue;
@@ -1588,7 +1185,7 @@ int milk_ls_exec(int argc, char **argv)
             }
             else
             {
-                IMAGE_METADATA *md = data.core.image[i].md;
+                IMAGE_METADATA *md = MILK_LOCAL_IMAGES[i].md;
                 char            szstr[64];
                 format_img_dims(md->naxis, md->size, szstr, sizeof(szstr));
                 printf("%-24s %-12s %-7s RAM\n", dname, szstr,
@@ -1774,314 +1371,6 @@ int milk_ls_exec(int argc, char **argv)
  *  Process Control & Server Interceptors
  * ============================================================
  */
-
-static const char *strip_proc_prefix_local(const char *s)
-{
-    while (*s == '@')
-    {
-        s++;
-    }
-    const char *rest = s;
-    return (milk_entity_ns_kind(s, &rest) == MILK_NS_PROC) ? rest : s;
-}
-
-int cli_intercept_cmd_procctl(const char *p)
-{
-    if (starts_with_local(p, "procctl ") || starts_with_local(p, "procctl\t"))
-    {
-        const char *ap = p + 7;
-        while (*ap == ' ' || *ap == '\t')
-        {
-            ap++;
-        }
-        char raw_pname[256];
-        int  nlen = 0;
-        while (*ap && *ap != ' ' && *ap != '\t' && nlen < 255)
-        {
-            raw_pname[nlen++] = *ap++;
-        }
-        raw_pname[nlen]   = '\0';
-        const char *pname = strip_proc_prefix_local(raw_pname);
-        while (*ap == ' ' || *ap == '\t')
-        {
-            ap++;
-        }
-        int ctrlval = -1;
-        if (strncasecmp(ap, "run", 3) == 0 || strncasecmp(ap, "resume", 6) == 0 ||
-            strcmp(ap, "0") == 0)
-        {
-            ctrlval = PROCESSINFO_CTRLVAL_RUN;
-        }
-        else if (strncasecmp(ap, "pause", 5) == 0 || strcmp(ap, "1") == 0)
-        {
-            ctrlval = PROCESSINFO_CTRLVAL_PAUSE;
-        }
-        else if (strncasecmp(ap, "step", 4) == 0 || strncasecmp(ap, "incr", 4) == 0 ||
-                 strcmp(ap, "2") == 0)
-        {
-            ctrlval = PROCESSINFO_CTRLVAL_INCR;
-        }
-        else if (strncasecmp(ap, "stop", 4) == 0 || strncasecmp(ap, "exit", 4) == 0 ||
-                 strncasecmp(ap, "kill", 4) == 0 || strcmp(ap, "3") == 0)
-        {
-            ctrlval = PROCESSINFO_CTRLVAL_EXIT;
-        }
-        if (ctrlval < 0)
-        {
-            printf("procctl: unknown action '%s' (use run|pause|step|stop)\n", ap);
-            return 1;
-        }
-        PROCESSINFOLIST *plist   = get_pinfolist_local();
-        int              matched = 0;
-        if (plist != NULL)
-        {
-            char pdname[256];
-            get_procdir_local(pdname, sizeof(pdname));
-            for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
-            {
-                if (plist->active[pi] && fnmatch(pname, plist->pnamearray[pi], 0) == 0)
-                {
-                    pid_t fpid = plist->PIDarray[pi];
-                    if (fpid > 0)
-                    {
-                        int          pfd = -1;
-                        PROCESSINFO *pii =
-                            open_proc_shm_local(pdname, plist->pnamearray[pi], fpid, &pfd);
-                        if (pii != NULL)
-                        {
-                            pii->CTRLval = ctrlval;
-                            munmap(pii, sizeof(PROCESSINFO));
-                            close(pfd);
-                            matched = 1;
-                        }
-                    }
-                }
-            }
-        }
-        if (!matched)
-        {
-            printf("procctl: process '%s' not found\n", pname);
-        }
-        return 1;
-    }
-    return 0;
-}
-
-int cli_intercept_cmd_procwait(const char *p)
-{
-    if (starts_with_local(p, "procwait ") || starts_with_local(p, "procwait\t"))
-    {
-        const char *ap = p + 8;
-        while (*ap == ' ' || *ap == '\t')
-        {
-            ap++;
-        }
-        char raw_pname[256];
-        int  nlen = 0;
-        while (*ap && *ap != ' ' && *ap != '\t' && nlen < 255)
-        {
-            raw_pname[nlen++] = *ap++;
-        }
-        raw_pname[nlen]   = '\0';
-        const char *pname = strip_proc_prefix_local(raw_pname);
-        while (*ap == ' ' || *ap == '\t')
-        {
-            ap++;
-        }
-        int tgt = PROCESSINFO_LOOPSTAT_STOP;
-        if (*ap != '\0')
-        {
-            if (strncasecmp(ap, "INIT", 4) == 0)
-            {
-                tgt = PROCESSINFO_LOOPSTAT_INIT;
-            }
-            else if (strncasecmp(ap, "ACTIVE", 6) == 0 || strncasecmp(ap, "RUN", 3) == 0)
-            {
-                tgt = PROCESSINFO_LOOPSTAT_ACTIVE;
-            }
-            else if (strncasecmp(ap, "PAUSE", 5) == 0)
-            {
-                tgt = PROCESSINFO_LOOPSTAT_PAUSE;
-            }
-            else if (strncasecmp(ap, "STOP", 4) == 0 || strncasecmp(ap, "EXIT", 4) == 0)
-            {
-                tgt = PROCESSINFO_LOOPSTAT_STOP;
-            }
-            else if (strncasecmp(ap, "ERROR", 5) == 0)
-            {
-                tgt = PROCESSINFO_LOOPSTAT_ERROR;
-            }
-            else
-            {
-                tgt = (int) strtol(ap, NULL, 0);
-            }
-            while (*ap && *ap != ' ' && *ap != '\t')
-            {
-                ap++;
-            }
-            while (*ap == ' ' || *ap == '\t')
-            {
-                ap++;
-            }
-        }
-        double timeout = 30.0;
-        if (*ap != '\0')
-        {
-            timeout = strtod(ap, NULL);
-        }
-        struct timespec slp;
-        slp.tv_sec      = 0;
-        slp.tv_nsec     = 2000000;
-        double elapsed  = 0.0;
-        cli_last_retval = 1;
-        while (elapsed < timeout)
-        {
-            PROCESSINFOLIST *plist = get_pinfolist_local();
-            if (plist != NULL)
-            {
-                for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
-                {
-                    if (plist->active[pi] && strcmp(plist->pnamearray[pi], pname) == 0)
-                    {
-                        pid_t fpid = plist->PIDarray[pi];
-                        char  pdname[256];
-                        get_procdir_local(pdname, sizeof(pdname));
-                        int          pfd = -1;
-                        PROCESSINFO *pii = open_proc_shm_local(pdname, pname, fpid, &pfd);
-                        if (pii != NULL)
-                        {
-                            if (pii->loopstat == tgt ||
-                                (tgt == PROCESSINFO_LOOPSTAT_PAUSE &&
-                                 pii->CTRLval == PROCESSINFO_CTRLVAL_PAUSE) ||
-                                (tgt == PROCESSINFO_LOOPSTAT_STOP &&
-                                 (pii->CTRLval == PROCESSINFO_CTRLVAL_EXIT ||
-                                  (fpid > 0 && kill(fpid, 0) != 0))))
-                            {
-                                cli_last_retval = 0;
-                            }
-                            munmap(pii, sizeof(PROCESSINFO));
-                            close(pfd);
-                        }
-                        break;
-                    }
-                }
-            }
-            if (cli_last_retval == 0)
-            {
-                break;
-            }
-            nanosleep(&slp, NULL);
-            elapsed += 0.002;
-        }
-        return 1;
-    }
-    return 0;
-}
-
-int cli_intercept_cmd_procstat(const char *p)
-{
-    if (strcmp(p, "procstat") == 0 || starts_with_local(p, "procstat ") ||
-        starts_with_local(p, "procstat\t"))
-    {
-        const char *ap = p + 8;
-        while (*ap == ' ' || *ap == '\t')
-        {
-            ap++;
-        }
-        char raw_filter[256];
-        raw_filter[0] = '\0';
-        if (*ap != '\0')
-        {
-            strncpy(raw_filter, ap, sizeof(raw_filter) - 1);
-            raw_filter[sizeof(raw_filter) - 1] = '\0';
-        }
-        const char      *filter = strip_proc_prefix_local(raw_filter);
-        PROCESSINFOLIST *plist  = get_pinfolist_local();
-        if (plist != NULL)
-        {
-            char pdname[256];
-            get_procdir_local(pdname, sizeof(pdname));
-            for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
-            {
-                if (!plist->active[pi])
-                {
-                    continue;
-                }
-                const char *pname = plist->pnamearray[pi];
-                if (filter[0] != '\0' && fnmatch(filter, pname, 0) != 0)
-                {
-                    continue;
-                }
-                pid_t        fpid = plist->PIDarray[pi];
-                int          pfd  = -1;
-                PROCESSINFO *pii  = open_proc_shm_local(pdname, pname, fpid, &pfd);
-                if (pii == NULL)
-                {
-                    continue;
-                }
-                const char *stname = proc_status_str(pii, fpid);
-                double      hz     = 0.0;
-                if (pii->dtmedian_iter_ns > 0)
-                {
-                    hz = 1.0e9 / (double) pii->dtmedian_iter_ns;
-                }
-                double us = (double) pii->dtmedian_exec_ns / 1000.0;
-                printf("name=%s\n"
-                       "pid=%d\n"
-                       "loopstat=%s\n"
-                       "loopcnt=%ld\n"
-                       "loopfreq_hz=%.1f\n"
-                       "exectime_us=%.1f\n"
-                       "rtprio=%d\n"
-                       "ctrlval=%d\n"
-                       "missedframes=%lu\n"
-                       "tmux=%s\n",
-                       pii->name, (int) pii->PID, stname, pii->loopcnt, hz, us, pii->RT_priority,
-                       pii->CTRLval, (unsigned long) pii->triggermissedframe_cumul, pii->tmuxname);
-                munmap(pii, sizeof(PROCESSINFO));
-                close(pfd);
-                if (filter[0] != '\0' && strchr(filter, '*') == NULL && strchr(filter, '?') == NULL)
-                {
-                    break;
-                }
-                printf("---\n");
-            }
-        }
-        return 1;
-    }
-    return 0;
-}
-
-int cli_intercept_cmd_dpdigits(const char *p)
-{
-    const char *sp = strip_ws_local(p);
-    if (strcmp(sp, "dpdigits") == 0)
-    {
-        printf("dpdigits = %d\n", cli_float_digits);
-        return 1;
-    }
-    if (starts_with_local(sp, "dpdigits ") || starts_with_local(sp, "dpdigits\t"))
-    {
-        const char *ap = sp + 9;
-        while (*ap == ' ' || *ap == '\t')
-        {
-            ap++;
-        }
-        int val = (int) strtol(ap, NULL, 10);
-        if (val < 1)
-        {
-            val = 1;
-        }
-        if (val > 17)
-        {
-            val = 17;
-        }
-        cli_float_digits = val;
-        printf("dpdigits = %d\n", cli_float_digits);
-        return 1;
-    }
-    return 0;
-}
 
 /**
  * @brief List SHM streams matching a wildcard pattern (`listim <pat>`)

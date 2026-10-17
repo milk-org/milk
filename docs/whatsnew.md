@@ -16,6 +16,11 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
+- **2026-10-16** — Fixes: extra commands of multi-command files (`mem.cp`, `mem.mv`, `extractim`,
+  `imsetcnt1`, ...) read their arguments again, and images created by commands (`loadfits`,
+  `breakcube`, `imexpand`, ...) are in the image table again; both broke in the 2026-03 IMGID
+  migration `#cli` `#api`
+
 - **2026-10-16** — Calculator kernels: element-wise image expressions run in one pass with no
   intermediate images (6-operator chain on 1024×1024: 10.9 → 0.2 ms; `a += 1`: 1.6 → 0.2 ms);
   in-place and slice updates are typed and OpenMP-parallel, slice copies go row by row; complex
@@ -38,7 +43,7 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   | Old form                                     | Now                                                       |
   | -------------------------------------------- | --------------------------------------------------------- |
   | `listim`, `mk2Dim im 8 8`                    | `mem.listim`, `@mk2Dim im 8 8` (bare names need `@`)      |
-  | `?`, `m?`, `cmd? x`, `synhl off`             | `@?`, `@m?`, `@cmd? x`, `@synhl off`                      |
+  | `?`, `m?`, `cmd? x`, `synhl off`             | `@?`, `@m?`, `@cmd? x`, `@config synhl off`                      |
   | `a = 2 + 3`, `im = im * 2`                   | `@ a = 2 + 3`, `@calc "im = im * 2"`                      |
   | `s.cam.xsize` as a command                   | `@get s.cam.xsize`                                        |
   | `${s.cam.xsize}`, `${@s.cam.xsize}`          | `@s.cam.xsize` (also inside `"..."`)                      |
@@ -53,8 +58,8 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 - **2026-10-15** — Enhanced `milk.bash` & `milk-cli`: zero-subshell `-v`/`-a`/`-A` variable & array
   bindings, `/dev/shm` entity globbing & `--json` export, globbed/multi-assignment `@set`,
   `@snapshot`/`@diff`/`@restore` state management, `@assert` expression & stream/loop health
-  assertions, `@prompt` zero-subshell live telemetry prompt, `CLICMDARGDEF` type-aware tab
-  completion & `@hc --sig`, throttled/multi-target `@on` watchers, single-RPC `@batch` & `@pipe`
+  assertions, `@config prompt` zero-subshell live telemetry prompt, `CLICMDARGDEF` type-aware tab
+  completion & `@hc --sig`, throttled/multi-target `@on` watchers, single-RPC `@pipe` & `@pipe`
   execution, and `@grab --fits/--timestamps` + `@replay` stream playback `#cli` `#streams` `#fps`
   `#performance`
 - **2026-10-14** — First-class GNU Bash integration (`source milk.bash`, `libmilkbash.so` loadable

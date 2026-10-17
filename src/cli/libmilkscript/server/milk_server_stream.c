@@ -4,7 +4,7 @@
 
 /**
  * @file milk_server_stream.c
- * @brief Server-side stream synchronization and I/O commands (@waitfor, @grab, @streamcat, @streamwrite).
+ * @brief Server-side stream synchronization and I/O commands (@waitfor, @grab [--stdout], @replay --stdin).
  *
  * Role & Goal:
  *   Implements the blocking and streaming primitives exposed to bash and
@@ -12,8 +12,8 @@
  *   - `@waitfor`: Wait for N stream frames (via semaphore) or for an shm_prop/boolean
  *     condition to become true, with timeout and client Ctrl-C cancellation support.
  *   - `@grab`: Capture N consecutive frames from a stream into a 3D image cube.
- *   - `@streamcat`: Print all elements of a stream to stdout (one per line).
- *   - `@streamwrite`: Populate stream elements from command arguments or stdin
+ *   - `@grab --stdout`: Print all elements of a stream to stdout (one per line).
+ *   - `@replay --stdin`: Populate stream elements from command arguments or stdin
  *     and post output stream semaphores.
  */
 
@@ -641,7 +641,7 @@ static uint8_t parse_dtype_name(const char *s)
 }
 
 /**
- * @brief Built-in `@streamcat`: print all elements of a stream to stdout (text or `--raw` binary).
+ * @brief Built-in `@grab --stdout`: print all elements of a stream to stdout (text or `--raw` binary).
  *
  * @param argc Argument count
  * @param argv Argument vector (`[--raw] <stream>`)
@@ -664,7 +664,7 @@ int milk_server_streamcat(int argc, char **argv)
     }
     if (sname == NULL)
     {
-        fprintf(stderr, "Usage: @streamcat [--raw] <stream>\n");
+        fprintf(stderr, "Usage: @grab --stdout [--raw] <stream>\n");
         return 1;
     }
     FPS_STREAMNAME_PARSED sp_cat = fps_streamname_parse(sname);
@@ -678,7 +678,7 @@ int milk_server_streamcat(int argc, char **argv)
     IMAGE *im         = milk_shm_prop_find_or_open_stream(sname, &tmp_im, &need_close);
     if (im == NULL || im->md == NULL)
     {
-        fprintf(stderr, "ERROR: @streamcat: stream '%s' not found\n", sname);
+        fprintf(stderr, "ERROR: @grab --stdout: stream '%s' not found\n", sname);
         return 1;
     }
     uint64_t nel = im->md->nelement;
@@ -773,13 +773,13 @@ static int stdin_has_data(void)
 }
 
 /**
- * @brief Built-in `@streamwrite`: write elements into a stream from `stdin` or `argv`.
+ * @brief Built-in `@replay --stdin`: write elements into a stream from `stdin` or `argv`.
  *
  * Supports (stdin is read only when '-' is given):
- *   `... | @streamwrite [--raw] <stream> -`
- *   `... | @streamwrite [--raw] [--dtype <type>] <stream> <xsize> [ysize] [zsize] -`
- *   `@streamwrite <stream> <val1> <val2> ...`
- *   `@streamwrite [--dtype <type>] <new_stream> <xsize> [ysize] [zsize]`
+ *   `... | @replay --stdin [--raw] <stream> -`
+ *   `... | @replay --stdin [--raw] [--dtype <type>] <stream> <xsize> [ysize] [zsize] -`
+ *   `@replay --stdin <stream> <val1> <val2> ...`
+ *   `@replay --stdin [--dtype <type>] <new_stream> <xsize> [ysize] [zsize]`
  *
  * @param argc Argument count
  * @param argv Argument vector
@@ -827,9 +827,8 @@ int milk_server_streamwrite(int argc, char **argv)
 
     if (sname_raw == NULL)
     {
-        fprintf(
-            stderr,
-            "Usage: @streamwrite [--raw] [--dtype <type>] <stream> [xsize [ysize [zsize]]] [-]\n");
+        fprintf(stderr, "Usage: @replay --stdin [--raw] [--dtype <type>] <stream> [xsize [ysize "
+                        "[zsize]]] [-]\n");
         return 1;
     }
 
@@ -840,13 +839,13 @@ int milk_server_streamwrite(int argc, char **argv)
 
     if (raw_mode && !use_stdin)
     {
-        fprintf(stderr, "ERROR: @streamwrite: --raw reads stdin; add '-'\n");
+        fprintf(stderr, "ERROR: @replay --stdin: --raw reads stdin; add '-'\n");
         return 1;
     }
     int has_stdin = use_stdin && stdin_has_data();
     if (use_stdin && !has_stdin)
     {
-        fprintf(stderr, "ERROR: @streamwrite: '-' given but stdin has no data\n");
+        fprintf(stderr, "ERROR: @replay --stdin: '-' given but stdin has no data\n");
         return 1;
     }
     IMAGE  tmp_im;
@@ -885,7 +884,7 @@ int milk_server_streamwrite(int argc, char **argv)
             req_dt = parse_dtype_name(dtype_str);
             if (req_dt == 0)
             {
-                fprintf(stderr, "ERROR: @streamwrite: invalid datatype '%s'\n", dtype_str);
+                fprintf(stderr, "ERROR: @replay --stdin: invalid datatype '%s'\n", dtype_str);
                 return 1;
             }
         }
@@ -894,7 +893,7 @@ int milk_server_streamwrite(int argc, char **argv)
         uint32_t nz = (npos >= 3) ? (uint32_t) strtoul(pos[2], NULL, 10) : 0;
         if (nx == 0)
         {
-            fprintf(stderr, "ERROR: @streamwrite: invalid xsize '%s'\n", pos[0]);
+            fprintf(stderr, "ERROR: @replay --stdin: invalid xsize '%s'\n", pos[0]);
             return 1;
         }
 
@@ -925,7 +924,7 @@ int milk_server_streamwrite(int argc, char **argv)
 
     if (im == NULL || im->md == NULL)
     {
-        fprintf(stderr, "ERROR: @streamwrite: stream '%s' not found\n", sw_bare);
+        fprintf(stderr, "ERROR: @replay --stdin: stream '%s' not found\n", sw_bare);
         return 1;
     }
 
@@ -942,7 +941,7 @@ int milk_server_streamwrite(int argc, char **argv)
             ImageStreamIO_closeIm(&tmp_im);
         }
         fprintf(stderr,
-                "ERROR: @streamwrite: nothing to write (give values, or '-' to read stdin)\n");
+                "ERROR: @replay --stdin: nothing to write (give values, or '-' to read stdin)\n");
         return 1;
     }
 

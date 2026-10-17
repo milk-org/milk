@@ -24,6 +24,7 @@
 
 #include "CLIcore.h"
 #include "cli_treesitter_internal.h"
+#include "milk_entity_ns.h"
 
 static bool is_word_char(char c)
 {
@@ -72,7 +73,7 @@ static bool ends_with_sep_keyword(const char *line, int prev_idx, const char *kw
 }
 
 /**
- * @brief Check direct token prefixes (`@s.`, `$fps.`, paths) and statement boundaries before @start.
+ * @brief Check direct token prefixes (entity paths, `@S:`, `$`, paths) and statement boundaries before @start.
  *
  * @return A `CLICOMPLETIONMODE_*` constant (>= 0) if resolved immediately, or -1 to continue.
  */
@@ -85,31 +86,20 @@ int cli_ts_check_prefix_or_boundary_mode(const char *line, int start, const char
 
     if (text)
     {
-        if (strncmp(text, "${s.", 4) == 0 || strncmp(text, "@s.", 3) == 0 ||
-            strncmp(text, "$s.", 3) == 0 || strncmp(text, "${stream.", 9) == 0 ||
-            strncmp(text, "@stream.", 8) == 0 || strncmp(text, "$stream.", 8) == 0)
+        const char *ent = text + ((strncmp(text, "@{", 2) == 0) ? 2 : 0); /* s.cam.x, @{s.cam.x */
+        switch (milk_entity_ns_kind(ent, NULL))
         {
+        case MILK_NS_STREAM:
+        case MILK_NS_LOCAL:
             return CLICOMPLETIONMODE_VARS_STREAM;
-        }
-        if (strncmp(text, "@fps.", 5) == 0 || strncmp(text, "${fps.", 6) == 0 ||
-            strncmp(text, "$fps.", 5) == 0 || strncmp(text, "@f.", 3) == 0 ||
-            strncmp(text, "${f.", 4) == 0 || strncmp(text, "$f.", 3) == 0)
-        {
+        case MILK_NS_FPS:
             return CLICOMPLETIONMODE_VARS_FPS;
-        }
-        if (strncmp(text, "@proc.", 6) == 0 || strncmp(text, "${proc.", 7) == 0 ||
-            strncmp(text, "$proc.", 6) == 0 || strncmp(text, "@procinfo.", 10) == 0 ||
-            strncmp(text, "${procinfo.", 11) == 0 || strncmp(text, "$procinfo.", 10) == 0 ||
-            strncmp(text, "@p.", 3) == 0 || strncmp(text, "${p.", 4) == 0 ||
-            strncmp(text, "$p.", 3) == 0)
-        {
+        case MILK_NS_PROC:
             return CLICOMPLETIONMODE_VARS_PROC;
-        }
-        if (strncmp(text, "@seq.", 5) == 0 || strncmp(text, "${seq.", 6) == 0 ||
-            strncmp(text, "$seq.", 5) == 0 || strncmp(text, "@q.", 3) == 0 ||
-            strncmp(text, "${q.", 4) == 0 || strncmp(text, "$q.", 3) == 0)
-        {
+        case MILK_NS_SEQ:
             return CLICOMPLETIONMODE_VARS_SEQ;
+        default:
+            break;
         }
         if (start > 0 && text[0] == '@' && strchr("SLFENT", text[1]) != NULL)
         {

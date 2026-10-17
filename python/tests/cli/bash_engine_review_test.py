@@ -238,7 +238,7 @@ def pty_session(
 
 def test_T1_shift_in_arith_is_not_heredoc():
     out = translate("echo $((1<<2))\necho @{1+2}\n")
-    assert "@calc" in out.splitlines()[1]
+    assert "milkcalc" in out.splitlines()[1]
 
 
 def test_T2_multiline_string_untouched():
@@ -248,32 +248,36 @@ def test_T2_multiline_string_untouched():
 
 def test_T2_continuation_not_new_statement():
     out = translate("echo a \\\n  mk2Dim b 1 1\n")
-    assert "@mk2Dim" not in out
+    assert "mem.mk2Dim" not in out
 
 
 def test_T3_at_v_quoted_expression(tmp_path):
     res = milk_cli_script(
-        '@ -v r "1+2"\necho "r=$r"\n@ -v s \'2*3\'\necho "s=$s"', tmp_path
+        '@calc -v r "1+2"\necho "r=$r"\n@calc -v s \'2*3\'\necho "s=$s"', tmp_path
     )
     assert value(res.stdout, "r") == "3"
     assert value(res.stdout, "s") == "6"
 
 
 def test_T3_at_v_error_on_unknown_image(tmp_path):
-    res = milk_cli_script('@ -v r "imean(nosuchimage)"\necho "rc=$? r=$r"', tmp_path)
+    res = milk_cli_script(
+        '@calc -v r "imean(nosuchimage)"\necho "rc=$? r=$r"', tmp_path
+    )
     assert "r=imean(nosuchimage)" not in res.stdout
     assert "rc=0" not in res.stdout
 
 
 def test_T4_at_expr_not_split_on_operators(tmp_path):
-    res = milk_cli_script('@ x = (2 > 1) && (2 < 1)\n@ -v r x\necho "r=$r"', tmp_path)
+    res = milk_cli_script(
+        '@calc "x = (2 > 1) && (2 < 1)"\n@calc -v r "x"\necho "r=$r"', tmp_path
+    )
     assert value(res.stdout, "r") == "0"
 
 
 def test_T5_top_level_and_sourced_agree(tmp_path):
     (tmp_path / "sub.milk").write_text('listvar >/dev/null 2>&1; echo "sub=$?"\n')
     res = milk_cli_script(
-        'listvar >/dev/null 2>&1; echo "top=$?"\nsource sub.milk', tmp_path
+        'listvar >/dev/null 2>&1; echo "top=$?"\n@source sub.milk', tmp_path
     )
     assert value(res.stdout, "top") is not None
     assert value(res.stdout, "top") == value(res.stdout, "sub")
@@ -282,7 +286,7 @@ def test_T5_top_level_and_sourced_agree(tmp_path):
 def test_WP8_qualified_names_only(tmp_path):
     body = 'mem.listvar >/dev/null 2>&1; echo "{0}q=$?"\nlistvar >/dev/null 2>&1; echo "{0}b=$?"\n'
     (tmp_path / "sub.milk").write_text(body.format("s"))
-    res = milk_cli_script(body.format("t") + "source sub.milk", tmp_path)
+    res = milk_cli_script(body.format("t") + "@source sub.milk", tmp_path)
     for k, v in (("tq", "0"), ("tb", "127"), ("sq", "0"), ("sb", "127")):
         assert value(res.stdout, k) == v, res.stdout
 
@@ -291,29 +295,20 @@ def test_T6_inline_result_not_globbed(tmp_path):
     (tmp_path / "a.zz").touch()
     (tmp_path / "b.zz").touch()
     res = milk_cli_script(
-        "@mk2Dim t6 4 4\n@set s.t6.kw.OBS '*.zz'\necho @s.t6.kw.OBS", tmp_path
+        "mem.mk2Dim t6 4 4\n@set s.t6.kw.OBS '*.zz'\necho @{s.t6.kw.OBS}", tmp_path
     )
     assert "*.zz" in res.stdout
     assert "a.zz" not in res.stdout
 
 
-def test_T7_action_suffix_only_for_fps_proc():
-    out = translate("@s.cam.kw.step\n")
-    assert "@set" not in out
-
-
-def test_T8_double_equals_is_not_assignment():
-    out = translate("@f.ao.gain==3\n")
-    assert "@set" not in out
-
-
 def test_T9_multiword_value_not_truncated(tmp_path):
     res = milk_cli_script(
-        '@mk2Dim t9 4 4\n@s.t9.kw.OBS=Sub aru\necho "setrc=$?"\n'
-        '@get -v v s.t9.kw.OBS\necho "v=$v"',
+        'mem.mk2Dim t9 4 4\n@set s.t9.kw.OBS="Sub aru"\necho "setrc=$?"\n@get -v v s.t9.kw.OBS\necho "v=$v"',
         tmp_path,
     )
-    assert value(res.stdout, "setrc") != "0" or value(res.stdout, "v") == "Sub aru"
+    assert value(res.stdout, "setrc") == "0" and value(res.stdout, "v") == "Sub aru", (
+        res.stdout + res.stderr
+    )
 
 
 def test_T10_hash_in_param_length(tmp_path):
@@ -323,8 +318,8 @@ def test_T10_hash_in_param_length(tmp_path):
 
 
 def test_T11_dollar_single_quote_escape():
-    out = translate("echo $'it\\'s' @s.a.b\n")
-    assert "@get" in out
+    out = translate("echo $'it\\'s' @{s.a.b}\n")
+    assert "milkget" in out
 
 
 def test_T12_second_heredoc_body_untouched():
@@ -340,19 +335,28 @@ def test_T13_lineno_matches_source(tmp_path):
 @pytest.mark.parametrize(
     "src, must_have, must_not_have",
     [
-        ("xs=@s.${cam}.xsize\n", "@get -v REPLY s.${cam}.xsize", None),
-        ('echo "${@s.c.xsize}"\n', "@get -v REPLY s.c.xsize", "${${"),
-        ('echo "\\@{lit}"\n', 'echo "@{lit}"', "@calc"),
-        ("echo foo@{a,b}\n", "foo@{a,b}", "@calc"),
-        ('echo "$@f.x.y" user@s.ex.org\n', '"$@f.x.y" user@s.ex.org', "@get"),
-        ("val=@{a * 10 + b[2, 3]}\n", '@calc -v REPLY "a * 10 + b[2, 3]"', None),
-        ("echo @{a && b}; ls\n", '@calc -v REPLY "a && b"', None),
+        ("xs=@{s.${cam}.xsize}\n", "{ milkget -v xs s.${cam}.xsize ||", "calc"),
+        ("x=@{s.c.xsize}\n", "{ milkget -v x s.c.xsize ||", "calc"),
+        ('x="@{s.c.xsize}"\n', "{ milkget -v x s.c.xsize ||", "REPLY"),
+        ("a && y=@{1+2} || b\n", 'a && { milkcalc -v y "1+2" ||', None),
+        ("w=@{s.c.xsize} cmd\n", "${| milkget -v REPLY s.c.xsize", None),
+        ("export z=@{s.c.xsize}\n", "${| milkget -v REPLY s.c.xsize", None),
+        (
+            'echo "${@s.c.xsize}" @s.c.xsize\n',
+            'echo "${@s.c.xsize}" @s.c.xsize',
+            "milkget",
+        ),
+        ('echo "\\@{lit}"\n', 'echo "@{lit}"', "milkcalc"),
+        ("echo foo@{a,b}\n", "foo@{a,b}", "milkcalc"),
+        ('echo "$@f.x.y" user@s.ex.org\n', '"$@f.x.y" user@s.ex.org', "milkget"),
+        ("val=@{a * 10 + b[2, 3]}\n", '{ milkcalc -v val "a * 10 + b[2, 3]" ||', None),
+        ("echo @{a && b}; ls\n", 'milkcalc -v REPLY "a && b"', None),
         (
             "x=$(mem.listim)\ny=`mem.listim`\n",
-            "x=$(@mem.listim)\ny=`@mem.listim`",
+            "x=$(mem.listim)\ny=`mem.listim`",
             None,
         ),
-        ("x=$(listim)\n", "x=$(listim)", "@listim"),
+        ("x=$(listim)\n", "x=$(listim)", "mem.listim"),
     ],
 )
 def test_WP7_translation_cases(src, must_have, must_not_have):
@@ -408,7 +412,7 @@ def test_C4_ctrl_c_after_milk_call(tmp_path):
         [
             (
                 "line",
-                '@listim >/dev/null; s=$EPOCHSECONDS; sleep 6; echo "el=$((EPOCHSECONDS-s))"',
+                'mem.listim >/dev/null; s=$EPOCHSECONDS; sleep 6; echo "el=$((EPOCHSECONDS-s))"',
                 1.0,
             ),
             ("raw", "\x03", 1.0),
@@ -468,7 +472,7 @@ def test_C8_background_job_served_while_idle(tmp_path):
 def test_WP10_ctrl_c_during_milk_command(tmp_path):
     out = pty_session(
         [
-            ("line", "@usleep 5000000; echo after=$((0+1))", 1.0),
+            ("line", "@sleep 5; echo after=$((0+1))", 1.0),
             ("raw", "\x03", 1.0),
             ("line", 'echo "next=$((6*7))"', 1.0),
         ],
@@ -516,7 +520,7 @@ def test_WP10_milk_script_sigint_does_not_orphan_bash(tmp_path):
 
 
 def test_C9_milk_script_runs_milk_commands(tmp_path):
-    res = milk_script('@mk2Dim c9 4 4\necho "rc=$?"', tmp_path)
+    res = milk_script('mem.mk2Dim c9 4 4\necho "rc=$?"', tmp_path)
     assert value(res.stdout, "rc") == "0"
 
 
@@ -547,9 +551,8 @@ def test_C11_status_preserved_between_lines(tmp_path):
     assert value(res.stdout, "st") == "1"
 
 
-@bug("C12", "cli_var_set evaluates synced string values as math")
 def test_C12_string_var_not_evaluated(tmp_path):
-    res = milk_cli_script('s="sqrt(16)"\n@ -v r s+1\necho "r=$r"', tmp_path)
+    res = milk_cli_script('s="sqrt(16)"\n@calc -v r "s+1"\necho "r=$r"', tmp_path)
     assert value(res.stdout, "r") != "5"
 
 
@@ -581,7 +584,7 @@ def test_C15_cwd_startup_file_not_executed(tmp_path):
 
 def test_C16_mload_failure_status(tmp_path):
     res = milk_cli_script(
-        '@mload NoSuchModuleXYZ >/dev/null 2>&1\necho "rc=$?"', tmp_path
+        '@module load NoSuchModuleXYZ >/dev/null 2>&1\necho "rc=$?"', tmp_path
     )
     assert value(res.stdout, "rc") not in (None, "0")
 
@@ -607,9 +610,9 @@ def test_P2_fps_set_rejects_garbage():
 
 
 def test_P3_calc_sees_recreated_stream(tmp_path):
-    (tmp_path / "mk8.milk").write_text('@mk2Dim "@S:p3" 8 8\n@calc "p3 = 5"\n')
+    (tmp_path / "mk8.milk").write_text('mem.mk2Dim "@S:p3" 8 8\n@calc "p3 = 5"\n')
     res = _run_bash(f"""
-        @mk2Dim "@S:p3" 4 4 >/dev/null
+        mem.mk2Dim "@S:p3" 4 4 >/dev/null
         @calc "p3 = 1"
         @calc -v a "imean(p3)"
         env -u MILKCLI_SOCK HOME="{tmp_path}" milk-cli -s "{tmp_path}/mk8.milk" >/dev/null 2>&1
@@ -622,9 +625,9 @@ def test_P3_calc_sees_recreated_stream(tmp_path):
 
 def test_WP15_scalar_calc_in_builtin(tmp_path):
     res = milk_cli_script(
-        '@calc -v a "7/2"\n@calc -v b "sqrt(2)"\n@dpdigits 4\n@calc -v c "sqrt(2)"\n'
+        '@calc -v a "7/2"\n@calc -v b "sqrt(2)"\n@config digits 4\n@calc -v c "sqrt(2)"\n'
         '@calc -v d "1/0"; echo "d_rc=$?"\n'
-        '@mk2Dim w15 2 2\n@calc "w15 = 3"\n@calc -v e "itot(w15)"\n'
+        'mem.mk2Dim w15 2 2\n@calc "w15 = 3"\n@calc -v e "itot(w15)"\n'
         'echo "a=$a b=$b c=$c e=$e"',
         tmp_path,
     )
@@ -635,7 +638,7 @@ def test_WP15_scalar_calc_in_builtin(tmp_path):
 def test_WP18_on_double_dash_form(tmp_path):
     """`@on [opts] <t1> [t2...] -- <cmd words>` as documented (the `--` used to reach eval)."""
     res = milk_cli_script(
-        '@mk2Dim "@S:on18a" 4 4 >/dev/null\n@mk2Dim "@S:on18b" 4 4 >/dev/null\n'
+        'mem.mk2Dim "@S:on18a" 4 4 >/dev/null\nmem.mk2Dim "@S:on18b" 4 4 >/dev/null\n'
         f'@on --once s.on18a s.on18b -- touch "{tmp_path}/fired"\n'
         'milksleep 0.1; @calc "on18b = 1"; milksleep 0.4\n@on --clear\n',
         tmp_path,
@@ -647,16 +650,16 @@ def test_WP18_on_double_dash_form(tmp_path):
 def test_WP19_short_circuit_and_not(tmp_path):
     """`&&`, `||` and a scalar `?:` skip the operand they don't need; `!` is logical not."""
     res = milk_cli_script(
-        '@calc "0 && (z19 = 5)"\n@calc "1 || (z19 = 6)"\n@calc "0 ? (z19 = 7) : 1"\n'
-        'echo "skipped=[$z19]"\n'
-        '@calc "1 && (z19 = 8)"\necho "taken=$z19"\n'
+        '@calc "z19 = 0"\n@calc "0 && (z19 = 5)"\n@calc "1 || (z19 = 6)"\n@calc "0 ? (z19 = 7) : 1"\n'
+        'echo "skipped=[@{z19}]"\n'
+        '@calc "1 && (z19 = 8)"\necho "taken=@{z19}"\n'
         '@calc -v r "0 && nosuchname"\necho "r=$r rc=$?"\n'
         '@calc -v n "!0 + !3 + !(1 && 0)"\necho "n=$n"\n'
         '@calc -v t "0 ? 2 : 0 ? 4 : 5"\necho "t=$t"',
         tmp_path,
     )
     out = res.stdout + res.stderr
-    assert "skipped=[]" in res.stdout, out
+    assert "skipped=[0]" in res.stdout, out
     assert "taken=8" in res.stdout, out
     assert "r=0 rc=0" in res.stdout, out
     assert "n=2" in res.stdout, out
@@ -676,7 +679,7 @@ def test_WP19_string_concat(tmp_path):
 def test_WP19_reductions(tmp_path):
     """New reductions and `f(im, axis)`; `>` on images is strict (it used to be `>=`)."""
     res = milk_cli_script(
-        '@mk2Dim "@L:r19" 3 2\n'
+        'mem.mk2Dim "@L:r19" 3 2\n'
         "@calc 'r19[0,0] = 1; r19[1,0] = 2; r19[2,0] = 3; r19[0,1] = 4; r19[1,1] = 9; r19[2,1] = 6'\n"
         '@calc -v same "istd(r19) == irms(r19)"\n@calc -v var "ivar(r19) == istd(r19)^2"\n'
         '@calc -v cnt "icount(r19 > 3) + 10 * icount(3 < r19)"\n@calc -v amax "iargmax(r19)"\n@calc -v amin "iargmin(r19)"\n'
@@ -695,7 +698,7 @@ def test_WP19_reductions(tmp_path):
 def test_WP19_integer_pixels(tmp_path):
     """Integer images read and write pixels as integers (no double round trip)."""
     res = milk_cli_script(
-        '@mk2Dim "@L:@TI64:i19" 2 2\n@calc "i19[1,1] = 9007199254740993"\n'
+        'mem.mk2Dim "@L:@TI64:i19" 2 2\n@calc "i19[1,1] = 9007199254740993"\n'
         '@calc -v p "i19[1,1]"\n@calc -v m "i19[1,1] % 10"\n@calc -v b "i19[1,1] & 0xff"\n'
         'echo "p=$p m=$m b=$b"',
         tmp_path,
@@ -706,8 +709,8 @@ def test_WP19_integer_pixels(tmp_path):
 def test_WP16_fused_expressions(tmp_path):
     """One-pass element-wise expressions keep the old values and type rule (DOUBLE if any, else FLOAT)."""
     res = milk_cli_script(
-        '@mk2Dim "@L:f6" 4 4\n@mk2Dim "@L:g6" 4 4\n@mk2Dim "@L:@TF64:d6" 4 4\n'
-        '@mk2Dim "@L:@TI32:n6" 4 4\n@mk2Dim "@L:@TI32:m6" 4 4\n'
+        'mem.mk2Dim "@L:f6" 4 4\nmem.mk2Dim "@L:g6" 4 4\nmem.mk2Dim "@L:@TF64:d6" 4 4\n'
+        'mem.mk2Dim "@L:@TI32:n6" 4 4\nmem.mk2Dim "@L:@TI32:m6" 4 4\n'
         "@calc 'f6 = 1.5; g6 = 2; d6 = 2.5; n6 = 7; m6 = 7'\n"
         "@calc 'r1 = (f6 * 2 + g6 * 3 - 1) / 2 + sqrt(g6) * 0'\n"
         "@calc 'r2 = n6 * 2 + d6'\n@calc 'r3 = !(f6 > 1) + min(1, f6) + trunc(f6 * 4, 0, 5)'\n"
@@ -727,7 +730,7 @@ def test_WP16_fused_expressions(tmp_path):
 def test_WP16_shape_mismatch_and_copy(tmp_path):
     """Mismatched image sizes are an error (it used to abort the server); `q = im` makes a new image."""
     res = milk_cli_script(
-        '@mk2Dim "@L:a16" 4 4\n@mk2Dim "@L:b16" 2 2\n@calc "a16 = 1; b16 = 2"\n'
+        'mem.mk2Dim "@L:a16" 4 4\nmem.mk2Dim "@L:b16" 2 2\n@calc "a16 = 1; b16 = 2"\n'
         '@calc "r16 = a16 + b16"; echo "mm_rc=$?"\n'
         '@calc "q16 = b16"; echo "q16=$(@calc \'itot(q16)\')"\n'
         '@calc "a16[*, -*] = a16 * 0 + 3"; @calc "a16[0:1, 0:1] += 1"\n'
@@ -743,7 +746,7 @@ def test_WP16_shape_mismatch_and_copy(tmp_path):
 
 def test_WP16_complex_images(tmp_path):
     res = milk_cli_script(
-        '@mk2Dim "@L:re16" 2 2\n@mk2Dim "@L:im16" 2 2\n@calc "re16 = 3; im16 = 4"\n'
+        'mem.mk2Dim "@L:re16" 2 2\nmem.mk2Dim "@L:im16" 2 2\n@calc "re16 = 3; im16 = 4"\n'
         '@calc "z16 = cplx(re16, im16)"\n@calc "w16 = z16 * z16"\n@calc "v16 = conj(z16) * 2 - re16"\n'
         '@calc "z16[1,1] = 7"\n@calc "u16 = -z16"\n'
         "echo \"dt=$(@get l.z16.dtype) abs=$(@calc 'abs(z16[0,0])') arg=$(@calc 'arg(z16[0,0])')\"\n"
@@ -765,11 +768,11 @@ def test_WP16_complex_images(tmp_path):
 def test_secondary_commands_take_their_arguments(tmp_path):
     """Extra commands of a multi-command file (mem.cp, mem.mv, ...) used to ignore their arguments."""
     res = milk_cli_script(
-        '@mk2Dim "@L:c1" 2 2\n@calc "c1 = 3"\n'
+        'mem.mk2Dim "@L:c1" 2 2\n@calc "c1 = 3"\n'
         "mem.cp c1 c2; echo \"cp=$(@calc 'itot(c2)')\"\n"
         "mem.mv c2 c3; echo \"mv=$(@calc 'itot(c3)') old=$(@exists l.c2 && echo yes || echo no)\"\n"
         'mem.imsetcnt1 c1 5; echo "cnt1=$(@get l.c1.cnt1)"\n'
-        '@mk2Dim "@L:big" 8 8\n@calc "big = 1"\n@calc "big[2, 3] = 9"\n'
+        'mem.mk2Dim "@L:big" 8 8\n@calc "big = 1"\n@calc "big[2, 3] = 9"\n'
         "arith.extractim big sub 4 3 1 2 >/dev/null; echo \"crop=$(@get l.sub.xsize)x$(@get l.sub.ysize) $(@calc 'itot(sub)')\"\n"
         'mem.cp c1; echo "missing_rc=$?"',
         tmp_path,
@@ -786,10 +789,10 @@ def test_created_images_are_registered(tmp_path):
     """Images made by commands (loadfits, breakcube) are in the image table, so later commands find them."""
     fits = tmp_path / "e1.fits"
     res = milk_cli_script(
-        '@mk2Dim "@L:e1" 3 2\n@calc "e1 = 2"\n@calc "e1[2,1] = 5"\n'
-        f'@savefits e1 "{fits}" >/dev/null\n'
+        'mem.mk2Dim "@L:e1" 3 2\n@calc "e1 = 2"\n@calc "e1[2,1] = 5"\n'
+        f'iofits.saveFITS e1 "{fits}" >/dev/null\n'
         f'iofits.loadfits "{fits}" e2 2 >/dev/null; echo "load=$(@calc \'itot(e2)\')"\n'
-        '@mk3Dim "@L:cb" 2 2 3\n@calc "cb = 1"\n@calc "cb[*,*,2] = 4"\n'
+        'mem.mk3Dim "@L:cb" 2 2 3\n@calc "cb = 1"\n@calc "cb[*,*,2] = 4"\n'
         "iofits.breakcube cb >/dev/null; echo \"frame2=$(@calc 'itot(cb_00002)')\"",
         tmp_path,
     )
@@ -824,7 +827,7 @@ def test_WP15_milksleep_ctrl_c(tmp_path):
 
 def test_WP15_waitfor_stream_created_later():
     res = _run_bash("""
-        ( sleep 0.3; @mk2Dim "@S:wf15" 4 4 >/dev/null; sleep 0.1; @calc "wf15 = 1" ) &
+        ( sleep 0.3; mem.mk2Dim "@S:wf15" 4 4 >/dev/null; sleep 0.1; @calc "wf15 = 1" ) &
         t0=$EPOCHREALTIME
         rc=0; @waitfor s.wf15 --timeout 5 || rc=$?
         t1=$EPOCHREALTIME
@@ -837,7 +840,7 @@ def test_WP15_waitfor_stream_created_later():
 
 def test_WP14_get_after_stream_removed(tmp_path):
     """The cached mapping is dropped once the stream file is gone (stream owned by another process)."""
-    (tmp_path / "mk.milk").write_text('@mk2Dim "@S:c14d" 2 2\n')
+    (tmp_path / "mk.milk").write_text('mem.mk2Dim "@S:c14d" 2 2\n')
     res = _run_bash(f"""
         env -u MILKCLI_SOCK HOME="{tmp_path}" milk-cli -s "{tmp_path}/mk.milk" >/dev/null 2>&1
         @get -v a s.c14d.xsize
@@ -859,7 +862,7 @@ def test_P4_ternary(tmp_path):
 
 def test_P4_image_ternary(tmp_path):
     res = milk_cli_script(
-        '@mk2Dim p4i 4 4\n@calc "p4i = 5"\n@calc -v k "imean(p4i > 1 ? p4i : 0)"\necho "k=$k"',
+        'mem.mk2Dim p4i 4 4\n@calc "p4i = 5"\n@calc -v k "imean(p4i > 1 ? p4i : 0)"\necho "k=$k"',
         tmp_path,
     )
     assert value(res.stdout, "k") == "5"
@@ -868,7 +871,7 @@ def test_P4_image_ternary(tmp_path):
 def test_P13_user_tmpcalc_image_survives(tmp_path):
     """Temp cleanup deletes only temps it created, never a user image that happens to be named _tmpcalcN."""
     res = milk_cli_script(
-        "@mk2Dim _tmpcalc0 2 2\n@mk2Dim p13 2 2\n"
+        "mem.mk2Dim _tmpcalc0 2 2\nmem.mk2Dim p13 2 2\n"
         '@calc -v r "imean(p13 + 1)"\necho "r=$r"\n'
         '@exists s._tmpcalc0; echo "kept=$?"',
         tmp_path,
@@ -880,13 +883,13 @@ def test_P13_user_tmpcalc_image_survives(tmp_path):
 def test_calc_slice_flip_stride_bin_values(tmp_path):
     """Every docs/guide/slicing.md form reads (and writes) the documented pixels, not just parses."""
     res = milk_cli_script(
-        "@mk2Dim sl 8 8\n"
+        "mem.mk2Dim sl 8 8\n"
         '@calc "sl[1,2] = 7"\n@calc "sl[2,2] = 4"\n@calc "sl[3,2] = 8"\n'
         '@calc "fl = sl[*,-*] + 0.0"\n@calc -v flip "fl[1,5]"\n@calc -v flip0 "fl[1,2]"\n'
         '@calc "sd = sl[0:7::2,*] + 0.0"\n@calc -v stride "sd[1,2]"\n'
         '@calc "bn = sl[0:7::2b,*] + 0.0"\n@calc -v bin "bn[1,2]"\n'
         '@calc "rv = sl[-1:0:-2,*] + 0.0"\n@calc -v rev "rv[2,2]"\n'
-        "@mk3Dim cb 4 4 3\n"
+        "mem.mk3Dim cb 4 4 3\n"
         '@calc "cb[1,1,0] = 5"\n@calc "cf = cb[*,*,-*] + 0.0"\n@calc -v cube "cf[1,1,2]"\n'
         '@calc "sl[*,-*] = sl"\n@calc -v lhs "sl[1,5]"\n'
         'echo "flip=$flip flip0=$flip0 stride=$stride bin=$bin rev=$rev cube=$cube lhs=$lhs"\n'
@@ -917,7 +920,7 @@ def test_P5_string_functions(tmp_path):
 
 def test_P8_long_keyword_single_slot(tmp_path):
     res = milk_cli_script(
-        "@mk2Dim p8 4 4\n@set s.p8.kw.VERYLONGKEYWORDNAME_X 1\n"
+        "mem.mk2Dim p8 4 4\n@set s.p8.kw.VERYLONGKEYWORDNAME_X 1\n"
         "@set s.p8.kw.VERYLONGKEYWORDNAME_X 2\n@get -j s.p8",
         tmp_path,
     )
@@ -926,7 +929,7 @@ def test_P8_long_keyword_single_slot(tmp_path):
 
 def test_P7_keyword_double_roundtrip():
     res = _run_bash("""
-        @mk2Dim "@S:p7" 2 2 >/dev/null
+        mem.mk2Dim "@S:p7" 2 2 >/dev/null
         @set s.p7.kw.A 0.1
         @set s.p7.kw.B 3.141592653589793
         @set s.p7.kw.C 1e-7
@@ -939,7 +942,7 @@ def test_P15_restore_dash_is_literal(tmp_path):
     snap = tmp_path / "s.json"
     snap.write_text('{\n  "s.p15.kw.D": "-"\n}\n')
     res = _run_bash(f"""
-        @mk2Dim "@S:p15" 2 2 >/dev/null
+        mem.mk2Dim "@S:p15" 2 2 >/dev/null
         @set s.p15.kw.D before
         echo evil | @restore "{snap}" >/dev/null 2>&1
         echo "D=$(@get s.p15.kw.D)"
@@ -957,7 +960,7 @@ def test_P9_integer_power(tmp_path):
 
 def test_P10_image_in_second_argument(tmp_path):
     res = milk_cli_script(
-        '@mk2Dim p10 4 4\n@calc "p10 = 5"\n@calc -v r "imean(min(3, p10))"\necho "r=$r"\n'
+        'mem.mk2Dim p10 4 4\n@calc "p10 = 5"\n@calc -v r "imean(min(3, p10))"\necho "r=$r"\n'
         '@calc -v ok "imean(min(p10, 3))"\necho "ok=$ok"',
         tmp_path,
     )
@@ -985,13 +988,13 @@ def test_WP9_undefined_identifier_is_error(tmp_path):
 
 
 def test_WP9_failed_inline_expansion_reports(tmp_path):
-    res = milk_cli_script('echo "[@l.nosuchimage.xsize]"', tmp_path)
-    assert "@l.nosuchimage.xsize: inline expansion failed" in res.stderr
+    res = milk_cli_script('echo "[@{l.nosuchimage.xsize}]"', tmp_path)
+    assert "@{l.nosuchimage.xsize}: inline expansion failed" in res.stderr
 
 
 def test_WP9_strict_inline_failure_is_fatal(tmp_path):
     res = milk_cli_script(
-        'export MILK_STRICT=1\necho "[@l.nosuchimage.xsize]"\necho reached', tmp_path
+        'export MILK_STRICT=1\necho "[@{l.nosuchimage.xsize}]"\necho reached', tmp_path
     )
     assert res.returncode == 1
     assert "reached" not in res.stdout
@@ -1001,7 +1004,7 @@ def test_WP9_strict_only_reports_at_prompt(tmp_path):
     out = pty_session(
         [
             ("line", "export MILK_STRICT=1", 0.3),
-            ("line", 'echo "[@l.nosuchimage.xsize]"; echo "still=$((40+2))"', 1.0),
+            ("line", 'echo "[@{l.nosuchimage.xsize}]"; echo "still=$((40+2))"', 1.0),
         ],
         tmp_path,
     )
@@ -1023,7 +1026,9 @@ def test_WP9_quoted_string_is_not_undefined(tmp_path):
 
 
 def test_WP9_command_loaded_mid_script(tmp_path):
-    res = milk_cli_script('@mload milksequencer\nseq.list -q\necho "rc=$?"', tmp_path)
+    res = milk_cli_script(
+        '@module load milksequencer\nseq.list -q\necho "rc=$?"', tmp_path
+    )
     assert value(res.stdout, "rc") == "0"
 
 
@@ -1221,9 +1226,9 @@ def test_S4_streamwrite_devnull(server):
 
 def test_S4_streamwrite_in_read_loop_keeps_loop_input():
     res = _run_bash("""
-        @mk2Dim "@S:s4l" 4 4 >/dev/null
+        mem.mk2Dim "@S:s4l" 4 4 >/dev/null
         n=0
-        printf "10\\n20\\n30\\n" | while read v; do @streamwrite s4l $v; n=$((n+1)); echo "it=$n"; done
+        printf "10\\n20\\n30\\n" | while read v; do @calc "s4l[0,0] = $v"; n=$((n+1)); echo "it=$n"; done
         """)
     assert "it=3" in res.stdout, res.stdout + res.stderr
 
@@ -1270,7 +1275,7 @@ def _cmdline(pid: int) -> str:
 
 def test_S10_subshell_first_call_does_not_own_server():
     res = _run_bash("""
-        x=$(@mk2Dim "@L:s10im" 2 2 >/dev/null; echo made)
+        x=$(mem.mk2Dim "@L:s10im" 2 2 >/dev/null; echo made)
         sleep 0.5
         @exists l.s10im; echo "rc=$?"
         """)
@@ -1365,7 +1370,7 @@ def test_Sec1_setvar_not_trusted(tmp_path):
                 "bash",
                 "-c",
                 f'source "{_install_dir()}/bin/milk.bash"; MILKCLI_SOCK={name}; '
-                '@listim >/dev/null 2>&1; echo "path=$PATH"',
+                'mem.listim >/dev/null 2>&1; echo "path=$PATH"',
             ],
             env,
             10,
@@ -1426,18 +1431,19 @@ BENCH_OPS = [
     (300, "y=$((1+2))"),
     (300, "@get -v x s.bim.xsize"),
     (300, "@get -v x s.bsh.xsize"),
-    (300, "x=@s.bim.xsize"),
+    (300, "x=@{s.bim.xsize}"),
+    (300, ': "@{s.bim.xsize}"'),
     (300, "@set s.bim.kw.FOO=1"),
     (300, "@calc -v y 1+2"),
     (300, "y=@{1+2}"),
-    (100, "@listim >/dev/null"),
+    (100, "mem.listim >/dev/null"),
     (50, "y=$(@calc 1+2)"),
 ]
 
 
 def _bench_script() -> str:
     """One literal loop per op (no eval: the translator must see each op as script text)."""
-    lines = ["@mk2Dim bim 64 64 >/dev/null", '@mk2Dim "@S:bsh" 64 64 >/dev/null']
+    lines = ["mem.mk2Dim bim 64 64 >/dev/null", 'mem.mk2Dim "@S:bsh" 64 64 >/dev/null']
     for n, op in BENCH_OPS:
         lines.append(
             f"t0=$EPOCHREALTIME; for ((i=0;i<{n};i++)); do {op}; done; t1=$EPOCHREALTIME"

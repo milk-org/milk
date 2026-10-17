@@ -107,28 +107,29 @@ def test_builtin_loaded_and_commands_registered():
         for b in milkcall milkget milkset milkcalc milktest milkexists milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog; do
             [[ "$(type -t "$b")" == "builtin" ]]
         done
-        for f in @ @calc @test @get @set @exists @running @waitfor @waitany @grab @replay @defer @on @source @server @log @h @hb @hc @hm @hf @streamcat @streamwrite @batch @pipe @unload; do
+        for f in @calc @test @get @set @exists @ls @waitfor @waitany @sleep @grab @log; do
+            [[ "$(type -t "$f")" == "builtin" ]]
+        done
+        for f in @running @replay @defer @on @source @server @help @pipe @module @config @unload; do
             [[ "$(type -t "$f")" == "function" ]]
         done
-        [[ "$(type -t @mk2Dim)" == "function" ]]
-        [[ "$(type -t @mem.mk2Dim)" == "function" ]]
-        [[ "$(type -t @imstats)" == "function" ]]
-        [[ "$(type -t @info.imstats)" == "function" ]]
+        [[ "$(type -t mem.mk2Dim)" == "function" ]]
+        [[ "$(type -t info.imstats)" == "function" ]]
 
-        # Standard bash help must remain untouched, while @h / @hb / @hm / @hc invoke milk help
+        # Standard bash help must remain untouched, while @help and <cmd> -h invoke milk help
         help echo | grep -qi "echo"
-        h_out="$(@h)"
+        h_out="$(@help)"
         [[ "${h_out}" == *"source milk.bash"* ]]
-        [[ "${h_out}" == *"@hb"* ]]
-        hb_out="$(@hb)"
+        [[ "${h_out}" == *"@help <topic>"* ]]
+        hb_out="$(@help bash)"
         [[ "${hb_out}" == *"BASH-ENHANCED MODE"* ]]
         [[ "${hb_out}" == *"@waitfor"* ]]
         [[ "${hb_out}" == *"@server"* ]]
         [[ "${hb_out}" == *"@log"* ]]
-        @h bash | grep -q "BASH-ENHANCED MODE"
-        @hm >/dev/null
-        @hc mk2Dim >/dev/null
-        @hc @mk2Dim >/dev/null
+        @help bash | grep -q "BASH-ENHANCED MODE"
+        @help mem >/dev/null
+        @help mem.mk2Dim >/dev/null
+        mem.mk2Dim -h >/dev/null
 
         # Verify visible [milk] prompt label, startup banner, and complete @-command removal on @unload
         shopt -s extglob
@@ -138,7 +139,7 @@ def test_builtin_loaded_and_commands_registered():
         [[ "${banner_out}" == *"milk v"*"bash integration loaded"* ]]
         [[ "${banner_out}" == *"for help"* ]]
         source "${MILK_INSTALLDIR}/bin/milk.bash"
-        [[ "$(type -t @)" == "function" ]]
+        [[ "$(type -t @calc)" == "builtin" && "$(type -t @running)" == "function" && -z "$(type -t @)" ]]
         [[ "${PS1}" == *"[milk]"*"user@host:$ " ]]
         ps1_once="${PS1}"
         source "${MILK_INSTALLDIR}/bin/milk.bash"
@@ -146,9 +147,9 @@ def test_builtin_loaded_and_commands_registered():
         @unload
         [[ "${PS1}" == 'user@host:$ ' ]]
         [[ -z "$(compgen -c "@")" ]]
-        [[ -z "$(type -t @mk2Dim)" ]]
+        [[ -z "$(type -t mem.mk2Dim)" ]]
         set +e
-        @mk2Dim 2>/dev/null
+        mem.mk2Dim 2>/dev/null
         rc_after_unload=$?
         set -e
         [[ "${rc_after_unload}" -eq 127 ]]
@@ -161,25 +162,25 @@ def test_builtin_loaded_and_commands_registered():
 def test_stream_modifiers_all_types():
     res = _run_bash("""
         # Location modifiers: @S: (shared) and @L: (local)
-        @mk2Dim "@S:sh_im" 8 8
-        @mk2Dim "@L:loc_im" 8 8
+        mem.mk2Dim "@S:sh_im" 8 8
+        mem.mk2Dim "@L:loc_im" 8 8
         [[ "$(@get s.sh_im.shared)" == "1" ]]
         [[ "$(@get s.loc_im.shared)" == "0" ]]
 
         # Explicit @T<type>: datatype modifiers
-        @mk2Dim "@TF32:im_f32" 8 8
-        @mk2Dim "@TF64:im_f64" 8 8
-        @mk2Dim "@TF16:im_f16" 8 8
-        @mk2Dim "@TU8:im_u8" 8 8
-        @mk2Dim "@TU16:im_u16" 8 8
-        @mk2Dim "@TU32:im_u32" 8 8
-        @mk2Dim "@TU64:im_u64" 8 8
-        @mk2Dim "@TI8:im_i8" 8 8
-        @mk2Dim "@TI16:im_i16" 8 8
-        @mk2Dim "@TI32:im_i32" 8 8
-        @mk2Dim "@TI64:im_i64" 8 8
-        @mk2Dim "@TC64:im_c64" 8 8
-        @mk2Dim "@TC128:im_c128" 8 8
+        mem.mk2Dim "@TF32:im_f32" 8 8
+        mem.mk2Dim "@TF64:im_f64" 8 8
+        mem.mk2Dim "@TF16:im_f16" 8 8
+        mem.mk2Dim "@TU8:im_u8" 8 8
+        mem.mk2Dim "@TU16:im_u16" 8 8
+        mem.mk2Dim "@TU32:im_u32" 8 8
+        mem.mk2Dim "@TU64:im_u64" 8 8
+        mem.mk2Dim "@TI8:im_i8" 8 8
+        mem.mk2Dim "@TI16:im_i16" 8 8
+        mem.mk2Dim "@TI32:im_i32" 8 8
+        mem.mk2Dim "@TI64:im_i64" 8 8
+        mem.mk2Dim "@TC64:im_c64" 8 8
+        mem.mk2Dim "@TC128:im_c128" 8 8
 
         [[ "$(@get s.im_f32.dtype)" == "FLOAT" ]]
         [[ "$(@get s.im_f32.typename)" == "FLT32" ]]
@@ -201,15 +202,15 @@ def test_stream_modifiers_all_types():
         [[ "$(@get s.im_c128.typename)" == "CPLX64" ]]
 
         # Combined location + datatype modifiers
-        @mk2Dim "@STF64:sh_f64" 10 12
-        @mk2Dim "@LTU16:loc_u16" 10 12
+        mem.mk2Dim "@STF64:sh_f64" 10 12
+        mem.mk2Dim "@LTU16:loc_u16" 10 12
         [[ "$(@get s.sh_f64.shared)" == "1" ]]
         [[ "$(@get s.sh_f64.dtype)" == "DOUBLE" ]]
         [[ "$(@get s.loc_u16.shared)" == "0" ]]
         [[ "$(@get s.loc_u16.dtype)" == "UINT16" ]]
 
         # Invalid datatype modifier must fail cleanly
-        ! @mk2Dim "@TX99:bad_im" 8 8 2>/dev/null
+        ! mem.mk2Dim "@TX99:bad_im" 8 8 2>/dev/null
         echo "OK"
         """)
     assert res.returncode == 0, res.stderr
@@ -218,7 +219,7 @@ def test_stream_modifiers_all_types():
 
 def test_get_set_fps_kw_and_dcvar_sync():
     res = _run_bash("""
-        @mk2Drnd "@S:im1" 32 48
+        imgen.mkrndim "@S:im1" 32 48
         [[ "$(@get s.im1.xsize)" == "32" ]]
         [[ "$(@get s.im1.size0)" == "32" ]]
         [[ "$(@get s.im1.ysize)" == "48" ]]
@@ -234,10 +235,10 @@ def test_get_set_fps_kw_and_dcvar_sync():
         [[ "$ys" == "48" ]]
 
         # Direct entity invocation via command fallback
-        [[ "$(@s.im1.xsize)" == "32" ]]
+        [[ "$(@get s.im1.xsize)" == "32" ]]
 
-        # dcvar sync back into bash variables after @imstats
-        @imstats im1 >/dev/null
+        # dcvar sync back into bash variables after info.imstats
+        info.imstats im1 >/dev/null
         [[ "$imsize0" == "32" ]]
         [[ "$imsize1" == "48" ]]
         [[ -n "$vp50" ]]
@@ -264,7 +265,7 @@ def test_get_set_fps_kw_and_dcvar_sync():
         [[ "$fps_params" == *"xsize"* ]]
         @set f.testfps.xsize 256
         [[ "$(@get f.testfps.xsize)" == "256" ]]
-        @f.testfps.ysize=512
+        @set f.testfps.ysize=512
         [[ "$(@get f.testfps.ysize)" == "512" ]]
         echo "OK"
         """)
@@ -274,7 +275,7 @@ def test_get_set_fps_kw_and_dcvar_sync():
 
 def test_calc_inplace_slices_and_functions():
     res = _run_bash("""
-        @mk2Dim "@S:im1" 16 16
+        mem.mk2Dim "@S:im1" 16 16
         c0=$(@get s.im1.cnt0)
         @calc "im1 = 5.0"
         c1=$(@get s.im1.cnt0)
@@ -306,24 +307,24 @@ def test_calc_inplace_slices_and_functions():
         [[ "$(@calc "itot(sub)")" == "500" ]]
         [[ "$(@calc "itot(im1[x0:x1, cx-r:cx+r])")" == "500" ]]
 
-        # Passing variable slice bounds to CLI commands (@info.imgstat / @imstats)
+        # Passing variable slice bounds to CLI commands (info.imstats)
         # 1) Double quotes (bash expands variables)
-        @info.imgstat "im1[${x0}:${x1},${x0}:${x1}]" >/dev/null
+        info.imstats "im1[${x0}:${x1},${x0}:${x1}]" >/dev/null
         [[ "$imsize0" == "5" && "$imsize1" == "5" ]]
-        # 2) Single quotes (milk expression parser evaluates synced bash variables & math)
-        @info.imgstat 'im1[x0:x1, cx-r:cx+r]' >/dev/null
+        # 2) Single quotes: the expression parser reads calc variables (the @calc above named x0 x1 cx r)
+        info.imstats 'im1[x0:x1, cx-r:cx+r]' >/dev/null
         [[ "$imsize0" == "5" && "$imsize1" == "5" ]]
         [[ "$vmin" == "20" && "$vmax" == "20" ]]
 
         # Entity reads and writes inside @calc
-        @calc "area = s.im1.xsize * @s.im1.ysize"
+        @calc -v area "s.im1.xsize * s.im1.ysize"
         [[ "$area" == "256" ]]
         @calc "s.im1.kw.GAIN = 2.5 * 4"
         [[ "$(@get s.im1.kw.GAIN)" == "10" ]]
 
         # Matrix multiplication (2D x 2D and 2D x 1D)
-        @mk2Dim "@S:mA" 2 2
-        @mk2Dim "@S:mB" 2 2
+        mem.mk2Dim "@S:mA" 2 2
+        mem.mk2Dim "@S:mB" 2 2
         @calc "mA = 2.0"
         @calc "mB = 4.0"
         @calc "mC = matmul(mA, mB)"
@@ -337,7 +338,7 @@ def test_calc_inplace_slices_and_functions():
 
 def test_at_test_and_exists():
     res = _run_bash("""
-        @mk2Drnd "@S:im1" 32 32
+        imgen.mkrndim "@S:im1" 32 32
         @calc "im1 = im1 * 10.0"
         @set s.im1.kw.FILTER "H-band"
         @set s.im1.kw.EXPTIME 0.02
@@ -349,7 +350,7 @@ def test_at_test_and_exists():
 
         # Test both bare s. and @s. entity syntax, numeric & string comparisons
         @test 'irms(im1) > 0.5 && s.im1.xsize == 32 && s.im1.dtype == "FLOAT"'
-        @test '@s.im1.xsize == 32 && @s.im1.dtype == "FLOAT" && @s.im1.kw.FILTER == "H-band"'
+        @test 's.im1.xsize == 32 && s.im1.dtype == "FLOAT" && s.im1.kw.FILTER == "H-band"'
         @test 's.im1.kw.EXPTIME > 0.01 && s.im1.kw.EXPTIME < 0.05'
 
         # False condition returns exit code 1
@@ -370,14 +371,12 @@ def test_at_test_and_exists():
 def test_waitfor_waitany_grab_on_and_source(tmp_path: Path):
     shorthand_lib = tmp_path / "helper_lib.milk"
     shorthand_lib.write_text(
-        "mem.mk2Dim @S:src_im 6 8\n"
-        "@ src_im = $1 * 3.0\n"
-        "@ src_tot = itot(src_im)\n"
+        'mem.mk2Dim @S:src_im 6 8\n@calc "src_im = $1 * 3.0"\n@calc -v src_tot "itot(src_im)"\n'
     )
 
     res = _run_bash(f"""
-        @mk2Dim "@S:live" 8 8
-        @mk2Dim "@S:live2" 8 8
+        mem.mk2Dim "@S:live" 8 8
+        mem.mk2Dim "@S:live2" 8 8
 
         # Timeout returns 124
         rc=0
@@ -440,22 +439,22 @@ def test_waitfor_waitany_grab_on_and_source(tmp_path: Path):
     assert "OK" in res.stdout
 
 
-def test_pipelines_streamio_defer_xargs_and_sigil():
+def test_pipelines_streamio_defer_and_xargs():
     res = _run_bash("""
-        # Concurrent milk commands in a pipeline: @streamcat | awk | @streamwrite
-        @mk2Dim "@S:s1" 4 4
-        @mk2Dim "@S:s2" 4 4
+        # Concurrent milk commands in a pipeline: @grab --stdout | awk | @replay --stdin
+        mem.mk2Dim "@S:s1" 4 4
+        mem.mk2Dim "@S:s2" 4 4
         @calc "s1 = 3.0"
-        @streamcat s1 | awk '{print $1 * 4}' | @streamwrite s2 -
+        @grab --stdout s1 | awk '{print $1 * 4}' | @replay --stdin s2 -
         [[ "$(@calc "s2[0,0]")" == "12" ]]
         [[ "$(@calc "itot(s2)")" == "192" ]]
 
-        # Pipe-clean @listim (one stream name per line when stdout is not a tty)
-        names="$(@listim | sort)"
+        # Pipe-clean mem.listim (one stream name per line when stdout is not a tty)
+        names="$(mem.listim | sort)"
         [[ "$names" == *"s1"* && "$names" == *"s2"* ]]
 
-        # External tool invocation via libexec/milk-bin/@<cmd> symlinks
-        printf "s1\\ns2\\n" | xargs -n1 @imstats >/dev/null
+        # External tool invocation via the libexec/milk/bin/<module.cmd> links
+        printf "s1\\ns2\\n" | xargs -n1 info.imstats >/dev/null
 
         # Bash arrays and associative arrays with milk commands
         declare -a streams=(s1 s2)
@@ -479,44 +478,30 @@ def test_pipelines_streamio_defer_xargs_and_sigil():
     ]
     assert lines == ["main_body", "cleanup_2", "cleanup_1"]
 
-    # Custom sigil MILKCLI_SIGIL=,
-    res_comma = _run_bash(
-        """
-        ,mk2Dim "@S:im_c" 10 12
-        ,calc "im_c = 7.0"
-        [[ "$(,get s.im_c.ysize)" == "12" ]]
-        ,test "itot(im_c) == 840 && s.im_c.xsize == 10"
-        echo "COMMA_OK"
-        """,
-        extra_env={"MILKCLI_SIGIL": ","},
-    )
-    assert res_comma.returncode == 0, res_comma.stderr
-    assert "COMMA_OK" in res_comma.stdout
-
 
 def test_milk_cli_shorthands_comprehensive(tmp_path: Path):
     res_s = _run_milk_cli(
         """
         mem.mk2Dim @S:t2im 14 18
-        @ a = 2.5 + 3.5
-        @ t2im = a * 2.0
-        @ t2im[1:3, 2:4] = 20.0
-        @ tot = itot(t2im)
+        @calc -v a "2.5 + 3.5"
+        @calc "t2im = a * 2.0"
+        @calc "t2im[1:3, 2:4] = 20.0"
+        @calc -v tot "itot(t2im)"
 
         # Inline @{<expr>} and unquoted/quoted @s.<name>.<prop>
         val=@{a * 10 + t2im[2, 3]}
-        nx=@s.t2im.xsize
-        @s.t2im.kw.OBSERVER="Subaru"
-        @s.t2im.kw.EXPTIME = 0.05
-        @ s.t2im.kw.GAIN = a * 1.5
+        nx=@{s.t2im.xsize}
+        @set s.t2im.kw.OBSERVER="Subaru"
+        @set s.t2im.kw.EXPTIME=0.05
+        @calc "s.t2im.kw.GAIN = a * 1.5"
 
         # Test @test with @s. inside both single and double quotes
-        @test '@s.t2im.dtype == "FLOAT" && @s.t2im.kw.OBSERVER == "Subaru"'
-        @test "@s.t2im.dtype == \\"FLOAT\\" && @s.t2im.kw.GAIN == 9"
+        @test 's.t2im.dtype == "FLOAT" && s.t2im.kw.OBSERVER == "Subaru"'
+        @test "s.t2im.dtype == \\"FLOAT\\" && s.t2im.kw.GAIN == 9"
 
         # Test @exists s.<stream>
         if @exists s.t2im && ! @exists s.no_such_stream; then
-            echo "T2_OK=${a}:${tot}:${val}:${nx}:@s.t2im.ysize:@s.t2im.kw.OBSERVER.:@s.t2im.kw.EXPTIME:@s.t2im.kw.GAIN"
+            echo "T2_OK=${a}:${tot}:${val}:${nx}:@{s.t2im.ysize}:@{s.t2im.kw.OBSERVER}.:@{s.t2im.kw.EXPTIME}:@{s.t2im.kw.GAIN}"
         fi
         """,
         tmp_path,
@@ -528,7 +513,7 @@ def test_milk_cli_shorthands_comprehensive(tmp_path: Path):
 
     # Test milk-cli -c one-liner mode
     res_c = _run_milk_cli(
-        'mem.mk2Dim @S:cim 10 20; @ cim = 4; echo "CMD_OK=@s.cim.ysize:@{itot(cim)}"',
+        'mem.mk2Dim @S:cim 10 20; @calc "cim = 4"; echo "CMD_OK=@{s.cim.ysize}:@{itot(cim)}"',
         tmp_path,
         mode="cmd",
     )
@@ -537,7 +522,7 @@ def test_milk_cli_shorthands_comprehensive(tmp_path: Path):
 
     # Test milk-cli stdin mode
     res_in = _run_milk_cli(
-        'mem.mk2Dim @S:inim 6 7\n@ inim = 5\necho "STDIN_OK=@s.inim.xsize:@{itot(inim)}"',
+        'mem.mk2Dim @S:inim 6 7\n@calc "inim = 5"\necho "STDIN_OK=@{s.inim.xsize}:@{itot(inim)}"',
         tmp_path,
         mode="stdin",
     )
@@ -548,8 +533,8 @@ def test_milk_cli_shorthands_comprehensive(tmp_path: Path):
     with CLICommands(
         [
             "mem.mk2Dim @S:wrap_im 8 8",
-            "@ wrap_im = 6",
-            'echo "CLIWRAP_OK=@s.wrap_im.xsize:@{itot(wrap_im)}"',
+            '@calc "wrap_im = 6"',
+            'echo "CLIWRAP_OK=@{s.wrap_im.xsize}:@{itot(wrap_im)}"',
         ]
     ) as res_wrap:
         assert res_wrap.returncode == 0, res_wrap.stderr
@@ -559,7 +544,7 @@ def test_milk_cli_shorthands_comprehensive(tmp_path: Path):
 def test_adversarial_slicing_1d_2d_3d_and_compound():
     res = _run_bash("""
         # 1. 1D-axis, 2D, and 3D slicing + single-voxel indexing
-        @mk2Dim "@S:s1d" 16 1
+        mem.mk2Dim "@S:s1d" 16 1
         @calc "s1d = 1"
         @calc "s1d[2:5] = 10"
         @calc "s1d[0, 0] = 100"
@@ -567,7 +552,7 @@ def test_adversarial_slicing_1d_2d_3d_and_compound():
         [[ "$(@calc 'itot(s1d)')" == "350" ]]
         [[ "$(@calc 's1d[0, 0] + s1d[3, 0] + s1d[15, 0]')" == "310" ]]
 
-        @mk2Dim "@S:s2d" 8 8
+        mem.mk2Dim "@S:s2d" 8 8
         @calc "s2d = 0"
         @calc "x0 = 1"
         @calc "x1 = 3"
@@ -601,7 +586,7 @@ def test_adversarial_slicing_1d_2d_3d_and_compound():
         [[ "$(@calc 'itot(s2d[6:7, 6:7])')" == "28" ]]
 
         # Strided and binned slices on RHS
-        @mk2Dim "@S:grid" 8 8
+        mem.mk2Dim "@S:grid" 8 8
         @calc "grid = 4"
         @calc "strided = grid[0:7:2, 0:7:2]"
         [[ "$(@get s.strided.xsize)" == "4" ]]
@@ -612,7 +597,7 @@ def test_adversarial_slicing_1d_2d_3d_and_compound():
         [[ "$(@get s.binned.ysize)" == "4" ]]
 
         # 3D cube slicing and single-voxel indexing
-        @mk3Dim "@S:cube" 4 4 4
+        mem.mk3Dim "@S:cube" 4 4 4
         @calc "cube = 1"
         @calc "cube[1:2, 1:2, 1:2] = 10"
         @calc "cube[0, 0, 3] = 50"
@@ -622,8 +607,8 @@ def test_adversarial_slicing_1d_2d_3d_and_compound():
         @calc "plane2 = cube[*, *, 2]"
         [[ "$(@calc 'itot(plane2)')" == "52" ]]
 
-        # CLI command (@info.imgstat) with valid expression slice vs adversarial invalid slices
-        @info.imgstat 's2d[ x0 : x1 , (cx - r) : (cx + r) ]' >/dev/null
+        # CLI command (info.imstats) with valid expression slice vs adversarial invalid slices
+        info.imstats 's2d[ x0 : x1 , (cx - r) : (cx + r) ]' >/dev/null
 
         set +e
         @calc "s2d[999, 0]" 2>/dev/null
@@ -638,13 +623,13 @@ def test_adversarial_slicing_1d_2d_3d_and_compound():
         rc_undef=$?
         @calc "s2d[0:3, 0:3" 2>/dev/null
         rc_unclosed=$?
-        @info.imgstat 's2d[undef_var:3, 0:3]' >/dev/null 2>&1
+        info.imstats 's2d[undef_var:3, 0:3]' >/dev/null 2>&1
         rc_cmd_undef=$?
-        @info.imgstat 's2d[999:1000, 0:3]' >/dev/null 2>&1
+        info.imstats 's2d[999:1000, 0:3]' >/dev/null 2>&1
         rc_cmd_oob=$?
-        @info.imgstat 's2d[-999, 0]' >/dev/null 2>&1
+        info.imstats 's2d[-999, 0]' >/dev/null 2>&1
         rc_cmd_neg=$?
-        @info.imgstat 's2d[6:2, 0:3]' >/dev/null 2>&1
+        info.imstats 's2d[6:2, 0:3]' >/dev/null 2>&1
         rc_cmd_inv=$?
         set -e
 
@@ -679,7 +664,7 @@ def test_adversarial_multi_datatype_calc_and_streamio():
             "TUI64:UINT64:ui64" \\
             "TSI64:INT64:si64"; do
             IFS=: read -r mod dt name <<< "$spec"
-            @mk2Dim "@S:@${mod}:${name}" 4 4
+            mem.mk2Dim "@S:@${mod}:${name}" 4 4
             [[ "$(@get s.${name}.dtype)" == "$dt" ]]
 
             # Scalar fill, compound +=, *=, single-pixel & slice writes
@@ -692,8 +677,8 @@ def test_adversarial_multi_datatype_calc_and_streamio():
             [[ "$(@calc "${name}[0, 0] + ${name}[3, 3]")" == "30" ]]
             [[ "$(@calc "imedian(${name})")" == "5" ]]
 
-            # Round-trip via @streamcat | awk | @streamwrite
-            @streamcat "$name" | awk '{print $1 + 1}' | @streamwrite "$name" -
+            # Round-trip via @grab --stdout | awk | @replay --stdin
+            @grab --stdout "$name" | awk '{print $1 + 1}' | @replay --stdin "$name" -
             # Adding 1 to all 16 pixels increases total by 16: 115 + 16 = 131
             [[ "$(@calc "itot(${name})")" == "131" ]]
         done
@@ -707,13 +692,13 @@ def test_adversarial_quoting_heredocs_and_bash_constructs(tmp_path: Path):
     res = _run_milk_cli(
         """
         mem.mk2Dim @S:h_im 6 6
-        @ h_im = 5
-        @ x0 = 0
-        @ x1 = 3
-        @ h_im[ x0 + 1 : x1 - 1 , 0 : 1 ] = 15
+        @calc "h_im = 5"
+        @calc "x0 = 0"
+        @calc "x1 = 3"
+        @calc "h_im[ x0 + 1 : x1 - 1 , 0 : 1 ] = 15"
 
         # Unquoted slice with spaces inside [...] passed to milk-cli shorthand command
-        info.imgstat h_im[ x0 + 1 : x1 - 1 , 0 : 1 ] >/dev/null
+        info.imstats "h_im[ x0 + 1 : x1 - 1 , 0 : 1 ]" >/dev/null
 
         # Email addresses and literal strings containing @s. / @f. mid-word must not be mangled
         email="contact@s.example.com"
@@ -747,7 +732,7 @@ EOF
 
         # Unquoted heredoc preserves literal lines without executing them as commands
         exp_doc=$(cat << EOF
-size_is=@s.h_im.xsize
+size_is=@{s.h_im.xsize}
 EOF
 )
         [[ "$exp_doc" == "size_is=6" ]]
@@ -757,7 +742,7 @@ EOF
             local mode="$1"
             case "$mode" in
                 add)
-                    @ h_im += 2
+                    @calc "h_im += 2"
                     ;;
                 *)
                     return 1
@@ -779,9 +764,9 @@ EOF
 
 def test_adversarial_error_recovery_and_fault_isolation():
     res = _run_bash("""
-        @mk2Dim "@S:ok_im" 4 4
+        mem.mk2Dim "@S:ok_im" 4 4
         @calc "ok_im = 10"
-        @mk2Dim "@S:zero_im" 4 4
+        mem.mk2Dim "@S:zero_im" 4 4
         @calc "zero_im = 0"
         @calc "keep_var = 42"
 
@@ -803,9 +788,9 @@ def test_adversarial_error_recovery_and_fault_isolation():
         # 2. Unknown commands, invalid stream modifiers, non-existent entities, waitfor timeout
         @no_such_milk_cmd_xyz 2>/dev/null
         rc_unk=$?
-        @mk2Dim "@TX99:bad_mod" 4 4 2>/dev/null
+        mem.mk2Dim "@TX99:bad_mod" 4 4 2>/dev/null
         rc_mod1=$?
-        @mk2Dim "@EN:bad_mod2" 4 4 2>/dev/null
+        mem.mk2Dim "@EN:bad_mod2" 4 4 2>/dev/null
         rc_mod2=$?
         @get s.nonexistent_stream_xyz.xsize 2>/dev/null
         rc_get=$?
@@ -872,16 +857,16 @@ def test_interactive_syndiag_valid_milk_syntax(tmp_path):
             "mem.mk2Dim @L:im1 128 128",
             "mem.mk2Dim @STF64:im_dbl 64 64",
             "mem.mk3Dim @STC100:cube 32 32 10",
-            "@ a = 2.5 + 3.5",
-            "@ im1[10:20, 10:20] = 500",
+            '@calc "a = 2.5 + 3.5"',
+            '@calc "im1[10:20, 10:20] = 500"',
             "im1[10:20, 10:20] = 500",
             "im1 += 10",
             "a = 2.5 + 3.5",
             "val=@{im1[10, 10]}",
             'echo "center=@{im1[64, 64]}"',
-            '@s.im1.kw.OBSERVER = "Subaru"',
-            "@f.testfps.gain = 0.25",
-            "im1 |> saveFITS out.fits",
+            '@set s.im1.kw.OBSERVER="Subaru"',
+            "@set f.testfps.gain=0.25",
+            '@pipe "im1 |> saveFITS out.fits"',
         ]
         for line in valid_lines:
             d = Diag()
@@ -940,7 +925,7 @@ def test_interactive_syndiag_valid_milk_syntax(tmp_path):
         drain(0.6)
         for cmd in [
             "mem.mk2Dim @S:im1 128 128",
-            "@ im1[10:20, 10:20] = 500",
+            '@calc "im1[10:20, 10:20] = 500"',
             'echo "PIX=@{im1[15, 15]}"',
             "exit",
         ]:
@@ -970,7 +955,7 @@ def test_server_management_and_multi_shell_sharing():
         [[ "${st0}" == *"private (per-shell)"* ]]
 
         # 2. Running a command starts the private per-shell server
-        @mk2Dim "@L:loc_priv" 8 8
+        mem.mk2Dim "@L:loc_priv" 8 8
         @calc "loc_priv = 2"
         st1="$(@server status)"
         [[ "${st1}" == *"RUNNING"* ]]
@@ -987,7 +972,7 @@ def test_server_management_and_multi_shell_sharing():
         [[ "${st_ao0}" == *"0 local images"* ]]
 
         # Create state inside 'ao_test_srv'
-        @mk2Dim "@L:ao_priv_im" 6 6
+        mem.mk2Dim "@L:ao_priv_im" 6 6
         @calc "ao_priv_im = 5"
         @calc "shared_ao_var = 777"
 
@@ -1039,9 +1024,9 @@ def test_server_management_and_multi_shell_sharing():
 
 def test_server_command_and_output_ring_buffer_log(tmp_path):
     res = _run_bash("""
-        @mk2Dim "@S:log_im" 8 8
+        mem.mk2Dim "@S:log_im" 8 8
         @calc "log_im = 3"
-        @imstats log_im >/dev/null
+        info.imstats log_im >/dev/null
         @set s.log_im.kw.CAM "SCExAO" "Camera name"
 
         # Trigger a deliberate error to test error logging
@@ -1087,7 +1072,7 @@ def test_server_command_and_output_ring_buffer_log(tmp_path):
     res_cli = _run_milk_cli(
         """
         mem.mk2Dim @L:cli_im 8 8
-        @ cli_im = 9
+        @calc "cli_im = 9"
         @server status
         @log --json
         """,
@@ -1101,41 +1086,59 @@ def test_server_command_and_output_ring_buffer_log(tmp_path):
 
 def test_command_hygiene_help_topics_and_fps_lifecycle():
     res = _run_bash("""
-        # Phase 1: Excluded shell builtins, REPL-only commands, internal help topics, and duplicate aliases
-        dump_out="$("${MILK_INSTALLDIR}/bin/milk-cli" --dump-commands)"
+        # Phase 1: bash words, internal help topics and duplicate aliases are not milk commands
+        cat_out="$(printf '%s\n' "${__MILK_CATALOG[@]}")"
         comp_out="$(milkcomplete "@" cmd)"
         for excl in cd pwd echo printf read shift export unset vars alias unalias aliases \\
-                    time watch exit quit exitCLI history searchhist fhist ghistory lhistory \\
-                    savehistory savescript setprompt bookmark sessionlog synhl syndiag \\
-                    cliindent showmatch helprl fhelp fparam help help-readline \\
-                    list-streams list-fps fpsset; do
-            ! grep -qx "${excl}" <<< "${dump_out}"
+                    time watch exit quit exit savescript bookmark help-readline \\
+                    list-streams list-fps; do
+            ! grep -qx "${excl}" <<< "${cat_out}"
             ! grep -qx "@${excl}" <<< "${comp_out}"
             [[ -z "$(type -t "@${excl}")" ]]
         done
-
-        # Retained commands must still be present
-        for kept in mk2Dim imstats listim fpslist proclist procstat procctl procwait; do
-            grep -qx "${kept}" <<< "${dump_out}"
-            grep -qx "@${kept}" <<< "${comp_out}"
-            [[ "$(type -t "@${kept}")" == "function" ]]
+        # REPL-only keywords: no command, not offered here, and they fail clearly (status 2)
+        for kw in history; do
+            ! grep -qx "${kw}" <<< "${cat_out}"
+            ! grep -qx "@${kw}" <<< "${comp_out}"
+            rc=0; "@${kw}" 2>/dev/null || rc=$?
+            [[ ${rc} -eq 2 ]]
+        done
+        # Removed help words fail with a hint naming the replacement
+        for old in @helprl @fhelp @hc @hm @hb @hf; do
+            rc=0; hint="$("${old}" 2>&1)" || rc=$?
+            [[ ${rc} -eq 127 && "${hint}" == *"@help"* ]]
         done
 
-        # Phase 2: @hc and @h support milk.bash @ primitives, short command names, and pillar topics
-        for prim in waitfor waitany get set calc test exists running grab replay snapshot diff restore assert prompt batch pipe defer on source server log streamcat streamwrite unload; do
-            hc1="$(@hc "@${prim}")"
+        # Module commands: catalogued, offered by completion, defined as functions (no @ twin)
+        mcomp="$(milkcomplete "mem." cmd)"
+        for kept in mem.mk2Dim info.imstats mem.listim mem.rm; do
+            grep -qx "${kept}" <<< "${cat_out}"
+            [[ "$(type -t "${kept}")" == "function" ]]
+            [[ -z "$(type -t "@${kept}")" && -z "$(type -t "@${kept#*.}")" ]]
+        done
+        grep -qx "mem.mk2Dim" <<< "${mcomp}"
+        # Keywords are not commands: they come from the keyword table
+        for kw in sleep module config; do
+            ! grep -qx "${kw}" <<< "${cat_out}"
+            grep -qx "@${kw}" <<< "${comp_out}"
+            [[ "$(type -t "@${kw}")" == @(function|builtin) ]]
+        done
+
+        # Phase 2: @help and --help cover every keyword, commands and the topics
+        for prim in waitfor waitany sleep get set calc test exists running grab replay snapshot diff restore assert pipe defer on source module config server log unload; do
+            hc1="$(@help "@${prim}")"
             [[ "${hc1}" == *"@${prim}"* ]]
-            [[ "${hc1}" != *"No command matching"* ]]
-            hc2="$(@hc "${prim}")"
+            hc2="$("@${prim}" --help)"
             [[ "${hc2}" == *"@${prim}"* ]]
         done
-        [[ "$(@hc mk2Dim)" == *"mk2Dim"* ]]
-        [[ "$(@hc imstats)" == *"imstats"* ]]
-        [[ "$(@h @waitfor)" == *"@waitfor"* ]]
-        [[ "$(@h streams)" == *"SHARED MEMORY STREAMS"* ]]
-        [[ "$(@h fps)" == *"FUNCTION PARAMETER STRUCTURE"* ]]
-        [[ "$(@h procinfo)" == *"PROCESSINFO TELEMETRY"* ]]
-        [[ "$(@h seq)" == *"FPS SEQUENCER"* ]]
+        [[ "$(@help mem.mk2Dim)" == *"mk2Dim"* ]]
+        [[ "$(@help info.imstats)" == *"imstats"* ]]
+        [[ "$(@help @waitfor)" == *"@waitfor"* ]]
+        [[ "$(@help streams)" == *"SHARED MEMORY STREAMS"* ]]
+        [[ "$(@help s)" == *"SHARED MEMORY STREAMS"* ]]
+        [[ "$(@help fps)" == *"FUNCTION PARAMETER STRUCTURE"* ]]
+        [[ "$(@help procinfo)" == *"PROCESSINFO TELEMETRY"* ]]
+        [[ "$(@help seq)" == *"FPS SEQUENCER"* ]]
 
         # milk-help and milk-stream-help updated syntax
         mhelp="$("${MILK_INSTALLDIR}/bin/milk-help")"
@@ -1207,37 +1210,37 @@ def test_reconciled_help_contract_and_exit_codes(tmp_path: Path):
     finally:
         shutil.rmtree(shm_dir, ignore_errors=True)
 
-    # 2. Reconciled @get/@set attributes, @streamwrite --dtype/--raw, @streamcat --raw,
+    # 2. Reconciled @get/@set attributes, @replay --stdin --dtype/--raw, @grab --stdout --raw,
     #    2-arg @grab, @waitfor -s/--cnt, milkwaitany builtin, and tab completion
     res = _run_bash("""
         # milkwaitany is a C loadable builtin
         [[ "$(type -t milkwaitany)" == "builtin" ]]
 
         # Tab-completion is registered on all @-commands, not just core primitives
-        complete -p @mk2Dim | grep -q "_milk_complete"
-        complete -p @imstats | grep -q "_milk_complete"
+        complete -p mem.mk2Dim | grep -q "_milk_complete"
+        complete -p info.imstats | grep -q "_milk_complete"
 
         # Zero-fork /dev/shm fast path for @f.<fps>.<param> before server starts
         milk-fpsexec-imggen-mkrndim -n fastfps fpsinit >/dev/null 2>&1
-        @f.fastfps.xsize=128
-        [[ "$(@f.fastfps.xsize)" == "128" ]]
+        @set f.fastfps.xsize=128
+        [[ "$(@get f.fastfps.xsize)" == "128" ]]
         [[ "$(@get f.fastfps.confrunning)" == "0" ]]
         [[ "$(@get f.fastfps.runrunning)" == "0" ]]
         [[ "$(@get f.fastfps.confpid)" =~ ^[0-9]+$ ]]
         [[ "$(@get f.fastfps.runpid)" =~ ^[0-9]+$ ]]
         [[ -n "$(@get f.fastfps.description)" ]]
-        @f.fastfps.reset
+        @set f.fastfps.reset
         [[ "$(@server status)" == *"IDLE"* ]]
 
-        # On-the-fly stream creation via @streamwrite --dtype F32 <stream> <xsize> <ysize> -
-        seq 1 16 | @streamwrite --dtype F32 s.ramp 4 4 -
+        # On-the-fly stream creation via @replay --stdin --dtype F32 <stream> <xsize> <ysize> -
+        seq 1 16 | @replay --stdin --dtype F32 s.ramp 4 4 -
         [[ "$(@get s.ramp.xsize)" == "4" ]]
         [[ "$(@get s.ramp.ysize)" == "4" ]]
         [[ "$(@get s.ramp.dtype)" == "FLOAT" ]]
         [[ "$(@calc 'itot(ramp)')" == "136" ]]
 
-        # Binary round-trip via @streamcat --raw | @streamwrite --raw --dtype F32
-        @streamcat --raw s.ramp | @streamwrite --raw --dtype F32 s.ramp_raw 4 4 -
+        # Binary round-trip via @grab --stdout --raw | @replay --stdin --raw --dtype F32
+        @grab --stdout --raw s.ramp | @replay --stdin --raw --dtype F32 s.ramp_raw 4 4 -
         [[ "$(@calc 'itot(ramp_raw)')" == "136" ]]
         [[ "$(@calc 'ramp_raw[3, 3]')" == "16" ]]
 
@@ -1292,7 +1295,7 @@ def test_zero_subshell_variable_and_array_binding(tmp_path: Path):
         [[ "${cval}" == "22" ]]
 
         # 2. Create stream and FITS keywords, bind via -v, -a, and -A
-        seq 10 15 | @streamwrite --dtype F32 s.bind_im 6 1 -
+        seq 10 15 | @replay --stdin --dtype F32 s.bind_im 6 1 -
         @set s.bind_im.kw.INST "SCExAO"
         @set s.bind_im.kw.GAIN 4.5
 
@@ -1312,8 +1315,8 @@ def test_zero_subshell_variable_and_array_binding(tmp_path: Path):
         [[ "${im_kw[INST]}" == "SCExAO" ]]
         [[ "${im_kw[GAIN]}" == "4.5" ]]
 
-        # 3. @streamcat -a <arr_var> binds 1D stream pixels directly into Bash array
-        @streamcat -a pix s.bind_im
+        # 3. @grab --stdout -a <arr_var> binds 1D stream pixels directly into Bash array
+        @grab --stdout -a pix s.bind_im
         [[ "${#pix[@]}" -eq 6 ]]
         [[ "${pix[0]}" == "10" ]]
         [[ "${pix[5]}" == "15" ]]
@@ -1335,7 +1338,7 @@ def test_zero_subshell_variable_and_array_binding(tmp_path: Path):
     # Also verify shorthand '@ -v <var> <expr>' inside milk-cli
     res_cli = _run_milk_cli(
         """
-        @ -v res_v 7 * 6
+        @calc -v res_v "7 * 6"
         echo "CLI_V=${res_v}"
         """,
         tmp_path,
@@ -1346,7 +1349,7 @@ def test_zero_subshell_variable_and_array_binding(tmp_path: Path):
 
 
 _BIND_CASES = """
-    seq 10 15 | @streamwrite --dtype F32 s.bind_eq 6 1 -
+    seq 10 15 | @replay --stdin --dtype F32 s.bind_eq 6 1 -
     @set s.bind_eq.kw.INST "SCExAO"
     @set s.bind_eq.kw.NOTE "it's  a b"
     @get -v xsz s.bind_eq.xsize
@@ -1356,7 +1359,7 @@ _BIND_CASES = """
     @get -a note_words s.bind_eq.kw.NOTE
     @get -A sizes "s.bind*.xsize"
     @get -A im_kw s.bind_eq.kw.*
-    @streamcat -a pix s.bind_eq
+    @grab --stdout -a pix s.bind_eq
     @ls -a streams s.bind*
     @calc -v cval "2.5 * 8 + 2"
     echo "builtins=${_MILK_BUILTIN_LOADED}"
@@ -1382,8 +1385,8 @@ def test_variable_binding_same_with_and_without_builtins():
 def test_entity_discovery_globbing_and_json_export():
     res = _run_bash("""
         # 1. Create multiple streams and an FPS instance
-        seq 1 4 | @streamwrite --dtype F32 s.dm0 2 2 -
-        seq 1 9 | @streamwrite --dtype F32 s.dm1 3 3 -
+        seq 1 4 | @replay --stdin --dtype F32 s.dm0 2 2 -
+        seq 1 9 | @replay --stdin --dtype F32 s.dm1 3 3 -
         @set s.dm0.kw.LOOP "aol0"
         milk-fpsexec-imggen-mkrndim -n disc_fps fpsinit >/dev/null 2>&1
         @set f.disc_fps.xsize 32
@@ -1432,19 +1435,19 @@ def test_type_aware_completion_and_signatures(tmp_path: Path):
 
     res = _run_bash(f"""
         cd "{tmp_path}"
-        @mk2Dim "@S:comp_im" 8 8
+        mem.mk2Dim "@S:comp_im" 8 8
         milk-fpsexec-imggen-mkrndim -n comp_fps fpsinit >/dev/null 2>&1
 
-        # 1. @savefits arg 1 (CLIARG_IMG) completes streams, NOT FITS files
-        COMP_WORDS=(@savefits "")
+        # 1. iofits.saveFITS arg 1 (CLIARG_IMG) completes streams, NOT FITS files
+        COMP_WORDS=(iofits.saveFITS "")
         COMP_CWORD=1
         _milk_complete
         reply1="${{COMPREPLY[*]}}"
         [[ "${{reply1}}" == *"comp_im"* ]]
         [[ "${{reply1}}" != *"sample_frame.fits"* ]]
 
-        # 2. @savefits arg 2 / @loadfits arg 1 (CLIARG_FITSFILENAME) completes FITS files, NOT streams
-        COMP_WORDS=(@savefits comp_im "")
+        # 2. iofits.saveFITS arg 2 / iofits.loadfits arg 1 (CLIARG_FITSFILENAME) completes FITS files, NOT streams
+        COMP_WORDS=(iofits.saveFITS comp_im "")
         COMP_CWORD=2
         _milk_complete
         reply2="${{COMPREPLY[*]}}"
@@ -1452,21 +1455,21 @@ def test_type_aware_completion_and_signatures(tmp_path: Path):
         [[ "${{reply2}}" != *"comp_im"* ]]
 
         # 3. Dot-tag parameter completion (.xsize, .ysize) from CLICMDARGDEF
-        COMP_WORDS=(@mk2Dim ".x")
+        COMP_WORDS=(mem.mk2Dim ".x")
         COMP_CWORD=1
         _milk_complete
         [[ "${{COMPREPLY[*]}}" == *".xsize"* ]]
 
-        # 4. @hc arg 1 completes command names
-        COMP_WORDS=(@hc "mk2D")
+        # 4. @help arg 1 completes command names
+        COMP_WORDS=(@help "mk2D")
         COMP_CWORD=1
         _milk_complete
         [[ "${{COMPREPLY[*]}}" == *"mk2Dim"* ]]
 
-        # 5. Live CLICMDARGDEF signature inspection via @hc --sig <cmd> [arg_pos]
-        sig_all="$(@hc --sig mk2Dim)"
+        # 5. Live CLICMDARGDEF signature inspection (completion tooling: milkcomplete sig:<cmd>[:<pos>])
+        sig_all="$(milkcomplete "" sig:mk2Dim)"
         [[ "${{sig_all}}" == *"mk2Dim"* && "${{sig_all}}" == *"<xsize:"* ]]
-        sig_arg2="$(@hc --sig mk2Dim 2)"
+        sig_arg2="$(milkcomplete "" sig:mk2Dim:2)"
         [[ "${{sig_arg2}}" == *"*<xsize:"* && "${{sig_arg2}}" == *"[arg 2] xsize"* ]]
 
         echo "COMP_SIG_OK"
@@ -1477,8 +1480,8 @@ def test_type_aware_completion_and_signatures(tmp_path: Path):
 
 def test_on_reactive_watchers_once_throttle_multitarget_stop(tmp_path: Path):
     res = _run_bash(f"""
-        @mk2Dim "@S:w_a" 4 4
-        @mk2Dim "@S:w_b" 4 4
+        mem.mk2Dim "@S:w_a" 4 4
+        mem.mk2Dim "@S:w_b" 4 4
 
         # 1. --once watcher fires exactly once and sets MILK_TRIGGER
         once_log="{tmp_path}/once.log"
@@ -1531,12 +1534,12 @@ def test_on_reactive_watchers_once_throttle_multitarget_stop(tmp_path: Path):
 
 def test_batch_and_pipe_single_roundtrip(tmp_path: Path):
     res = _run_bash("""
-        # 1. @batch with semicolon-separated commands and expressions in a single IPC call
-        @batch "mk2Dim @S:b_im 4 4; b_im = 5.0; b_im += 3.0"
+        # 1. @pipe with semicolon-separated commands and expressions in a single IPC call
+        @pipe "mk2Dim @S:b_im 4 4; b_im = 5.0; b_im += 3.0"
         [[ "$(@calc 'itot(b_im)')" == "128" ]]
 
-        # 2. @batch reading multi-line script from heredoc (stdin) with _ propagation
-        @batch <<'EOF'
+        # 2. @pipe reading multi-line script from heredoc (stdin) with _ propagation
+        @pipe <<'EOF'
 mk2Dim @S:b_im2 4 4
 _ = 2.0
 _ *= 6.0
@@ -1558,7 +1561,7 @@ EOF
     # 4. Native unquoted |> pipeline operator inside milk-cli / .milk script
     res_cli = _run_milk_cli(
         """
-        mk2Dim @S:cli_pim 4 4 |> _ = 3.0 |> _ += 7.0
+        @pipe "mk2Dim @S:cli_pim 4 4 |> _ = 3.0 |> _ += 7.0"
         echo "CLI_PIPE_TOT=$(@calc 'itot(cli_pim)')"
         """,
         tmp_path,
@@ -1573,7 +1576,7 @@ def test_grab_fits_timestamps_and_stream_replay(tmp_path: Path):
         fits_out="{tmp_path}/rec_cube.fits"
         ts_out="{tmp_path}/rec_cube.txt"
 
-        @mk2Dim "@S:rec_src" 4 4
+        mem.mk2Dim "@S:rec_src" 4 4
         @calc "rec_src = 0.0"
 
         # Producer updates rec_src 3 times with distinct pixel values (1, 2, 3)
@@ -1604,7 +1607,7 @@ def test_grab_fits_timestamps_and_stream_replay(tmp_path: Path):
         [[ "$(@calc 'itot(replayed)')" == "48" ]]
 
         # 3. Paced @replay --fps <hz> --count <n> in background feeding a concurrent @grab
-        @mk2Dim "@S:paced_out" 4 4
+        mem.mk2Dim "@S:paced_out" 4 4
         (
             sleep 0.03
             @replay --fps 40 --count 3 "${{fits_out}}" s.paced_out
@@ -1624,8 +1627,8 @@ def test_glob_multi_set_and_snapshot_diff_restore(tmp_path: Path):
     snap_file = tmp_path / "bench_state.json"
     res = _run_bash(f"""
         # 1. Create two streams and two FPS instances
-        @mk2Dim "@S:cam0" 8 8
-        @mk2Dim "@S:cam1" 8 8
+        mem.mk2Dim "@S:cam0" 8 8
+        mem.mk2Dim "@S:cam1" 8 8
         milk-fpsexec-imggen-mkrndim -n loop0 fpsinit >/dev/null 2>&1
         milk-fpsexec-imggen-mkrndim -n loop1 fpsinit >/dev/null 2>&1
 
@@ -1690,7 +1693,7 @@ def test_glob_multi_set_and_snapshot_diff_restore(tmp_path: Path):
 
 def test_assert_expressions_and_stream_loop_health():
     res = _run_bash("""
-        @mk2Dim "@S:asrt_im" 8 8
+        mem.mk2Dim "@S:asrt_im" 8 8
         @calc "asrt_im = 4.0"
         milk-fpsexec-imggen-mkrndim -n asrt_fps fpsinit >/dev/null 2>&1
 
@@ -1736,46 +1739,46 @@ def test_dynamic_telemetry_prompt():
     res = _run_bash("""
         PS1='user@host:$ '
         _milk_apply_ps1
-        @mk2Dim "@S:wfs_cam" 8 8
+        mem.mk2Dim "@S:wfs_cam" 8 8
         @set s.wfs_cam.kw.MODE "closed"
         milk-fpsexec-imggen-mkrndim -n prm_fps fpsinit >/dev/null 2>&1
         @set f.prm_fps.xsize = 64
 
         # 1. Default prompt badge and status
-        st0="$(@prompt status)"
+        st0="$(@config prompt status)"
         [[ "${st0}" == *"Prompt:   ENABLED"* ]]
         [[ "${st0}" == *"Preset:   std"* ]]
-        [[ "$(@prompt render)" == "[milk]" ]]
+        [[ "$(@config prompt render)" == "[milk]" ]]
         [[ "${PS1}" == *"[milk]"*"user@host:$ " ]]
 
         # 2. Watch live FPS status, scalar param (with custom label), and stream keyword
-        @prompt watch f.prm_fps.run xsz=f.prm_fps.xsize s.wfs_cam.kw.MODE
-        [[ "$(@prompt render)" == "[milk | prm_fps:OFF | xsz=64 | MODE=closed]" ]]
+        @config prompt watch f.prm_fps.run xsz=f.prm_fps.xsize s.wfs_cam.kw.MODE
+        [[ "$(@config prompt render)" == "[milk | prm_fps:OFF | xsz=64 | MODE=closed]" ]]
         [[ "${PS1}" == *"prm_fps:OFF"* && "${PS1}" == *"xsz=64"* && "${PS1}" == *"MODE=closed"* ]]
 
         # 3. Live /dev/shm updates are reflected immediately on _milk_apply_ps1 without subshells
         @set f.prm_fps.xsize = 128 s.wfs_cam.kw.MODE = "open"
         _milk_apply_ps1
-        [[ "$(@prompt render)" == "[milk | prm_fps:OFF | xsz=128 | MODE=open]" ]]
+        [[ "$(@config prompt render)" == "[milk | prm_fps:OFF | xsz=128 | MODE=open]" ]]
         [[ "${PS1}" == *"xsz=128"* && "${PS1}" == *"MODE=open"* ]]
 
         # 4. Preset switching: 'ao' (shows isolated SHM dir) and 'minimal' (hides watched items)
-        @prompt preset ao
-        [[ "$(@prompt render)" == "[milk | shm:"*" | prm_fps:OFF | xsz=128 | MODE=open]" ]]
-        @prompt preset minimal
-        [[ "$(@prompt render)" == "[milk]" ]]
-        @prompt preset std
-        [[ "$(@prompt render)" == "[milk | prm_fps:OFF | xsz=128 | MODE=open]" ]]
+        @config prompt preset ao
+        [[ "$(@config prompt render)" == "[milk | shm:"*" | prm_fps:OFF | xsz=128 | MODE=open]" ]]
+        @config prompt preset minimal
+        [[ "$(@config prompt render)" == "[milk]" ]]
+        @config prompt preset std
+        [[ "$(@config prompt render)" == "[milk | prm_fps:OFF | xsz=128 | MODE=open]" ]]
 
         # 5. Unwatch by label or entity path, clear, and off/on toggle
-        @prompt unwatch xsz
-        [[ "$(@prompt render)" == "[milk | prm_fps:OFF | MODE=open]" ]]
-        @prompt clear
-        [[ "$(@prompt render)" == "[milk]" ]]
+        @config prompt unwatch xsz
+        [[ "$(@config prompt render)" == "[milk | prm_fps:OFF | MODE=open]" ]]
+        @config prompt clear
+        [[ "$(@config prompt render)" == "[milk]" ]]
 
-        @prompt off
+        @config prompt off
         [[ "${PS1}" == "user@host:$ " ]]
-        @prompt on
+        @config prompt on
         [[ "${PS1}" == *"[milk]"*"user@host:$ " ]]
 
         echo "PROMPT_OK"
@@ -1789,7 +1792,7 @@ def test_unified_syntax_latency_ls_and_proc_ctrl(tmp_path: Path):
         # 1. Phase 1: Sub-millisecond RPC call latency (no 20ms poll stall)
         t0=$(date +%s%N)
         for _ in 1 2 3 4 5 6 7 8 9 10; do
-            @mk2Dim l.lat_im 4 4 >/dev/null
+            mem.mk2Dim l.lat_im 4 4 >/dev/null
         done
         t1=$(date +%s%N)
         elapsed_ms=$(( (t1 - t0) / 1000000 ))
@@ -1797,14 +1800,14 @@ def test_unified_syntax_latency_ls_and_proc_ctrl(tmp_path: Path):
 
         # 2. Phase 1: Module error propagation (non-zero return code on module failure)
         set +e
-        @iofits.loadfits /nonexistent/path/no_such_file.fits bad_im >/dev/null 2>&1
+        iofits.loadfits /nonexistent/path/no_such_file.fits bad_im >/dev/null 2>&1
         load_rc=$?
         set -e
         [[ "${load_rc}" -ne 0 ]]
 
         # 3. Phase 1 & 3: s.<name> / l.<name> symmetry & _tmpcalc scratch images stay local
-        @mk2Dim s.sym_shm 6 6
-        @mk2Dim l.sym_loc 6 6
+        mem.mk2Dim s.sym_shm 6 6
+        mem.mk2Dim l.sym_loc 6 6
         [[ "$(@get s.sym_shm.shared)" == "1" ]]
         [[ "$(@get l.sym_loc.shared)" == "0" ]]
         [[ "$(@get s.sym_shm.loc)" == "SHM" ]]
@@ -1835,7 +1838,7 @@ def test_unified_syntax_latency_ls_and_proc_ctrl(tmp_path: Path):
 
         # 5. Phase 4 & 6: Unified @ls discovery across s., l., f., and fpsset alias
         milk-fpsexec-imggen-mkrndim -n u_fps fpsinit >/dev/null 2>&1
-        @fpsset u_fps xsize 48
+        @set f.u_fps.xsize=48
         [[ "$(@get f.u_fps.xsize)" == "48" ]]
         [[ "$(@get f.u_fps.status)" == "IDLE" ]]
 

@@ -550,6 +550,20 @@ static int handle_server_start_or_use(const char                *sub,
     return 0;
 }
 
+/** engine_sock() - socket of the milk-cli session server when running in its bash coprocess, else NULL. */
+static const char *engine_sock(const milk_client_hooks_t *hooks)
+{
+    const char *s = milk_ipc_get_var(hooks, "_MILK_ENGINE_SOCK");
+    return (s != NULL && s[0] != '\0') ? s : NULL;
+}
+
+/** home_sock() - the server a shell returns to: milk-cli's own one, else the shell's private one. */
+static const char *home_sock(const milk_client_hooks_t *hooks)
+{
+    const char *s = engine_sock(hooks);
+    return (s != NULL) ? s : milk_ipc_get_var(hooks, "_MILK_LOCAL_SOCK");
+}
+
 static int handle_server_stop(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     if (argc >= 2 && strcmp(argv[1], "--all") == 0)
@@ -607,11 +621,18 @@ static int handle_server_stop(int argc, char **argv, const milk_client_hooks_t *
     {
         snprintf(target_sock, sizeof(target_sock), "%s", cur_sock);
     }
+    const char *esock = engine_sock(hooks);
+    if (esock != NULL && strcmp(target_sock, esock) == 0)
+    {
+        fprintf(stderr,
+                "@server stop: the milk-cli session server stops with milk-cli (use exit)\n");
+        return 1;
+    }
     stop_one_server(target_sock);
 
     if (strcmp(target_sock, cur_sock) == 0)
     {
-        const char *orig_sock = milk_ipc_get_var(hooks, "_MILK_LOCAL_SOCK");
+        const char *orig_sock = home_sock(hooks);
         if (orig_sock != NULL && orig_sock[0] != '\0')
         {
             milk_ipc_set_var(hooks, "MILKCLI_SOCK", orig_sock, 1);
@@ -698,7 +719,7 @@ int milk_srvlog_cmd_server(int argc, char **argv, const milk_client_hooks_t *hoo
     }
     if (strcmp(sub, "local") == 0 || strcmp(sub, "detach") == 0)
     {
-        const char *orig_sock = milk_ipc_get_var(hooks, "_MILK_LOCAL_SOCK");
+        const char *orig_sock = home_sock(hooks);
         char        local_sock[256];
         if (orig_sock != NULL && orig_sock[0] != '\0')
         {
@@ -712,7 +733,8 @@ int milk_srvlog_cmd_server(int argc, char **argv, const milk_client_hooks_t *hoo
         }
         milk_ipc_set_var(hooks, "MILKCLI_SOCK", local_sock, 1);
         milk_ipc_set_var(hooks, "_MILK_SERVER_NAME", "", 1);
-        printf("Switched to local shell server (%s).\n", local_sock);
+        printf("Switched to the %s server (%s).\n",
+               (engine_sock(hooks) != NULL) ? "milk-cli session" : "local shell", local_sock);
         return 0;
     }
     if (strcmp(sub, "stop") == 0)

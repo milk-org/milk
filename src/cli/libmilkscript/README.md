@@ -94,12 +94,12 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
 - `milk_server_vars.c` — Server-side scalar variable and `IMGID` pool management.
 - `milk_server_stream.c` — Stream synchronization, ring-buffer capture, and
   playback commands (`@waitfor`, `@waitany`, `@grab [--fits|--timestamps]`,
-  `@replay [--fps|--count|--loop]`, `@streamcat`, `@streamwrite`).
+  `@replay [--fps|--count|--loop]`, `@grab --stdout`, `@replay --stdin`).
 - `milk_server_io.c` — Command catalog dumping, `CLICMDARGDEF` type-aware
   argument tab-completion, and `@hc --sig` signature formatting.
 - `milk_server_dispatch.c` — Request line parser and RPC verb handlers (`PING`,
   `SHUTDOWN`, `GET`, `SET`, `CALC`, `TEST`, `CALL`, including single-RPC
-  `@batch` and `@pipe` execution).
+  `@pipe` and `@pipe` execution).
 
 ### 4. `bash/` — Bash Coprocess & Syntax Translation
 

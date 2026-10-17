@@ -39,7 +39,6 @@
 #include "CLIcore_signals.h"
 #include "milk_bash_engine.h"
 #include "milk_bash_engine_internal.h"
-#include "milk_lexicon.h"
 #include "milk_shell_lex.h"
 #include "milk_server.h"
 #include "milk_srvlog.h"
@@ -50,67 +49,13 @@ static int   g_cmd_pipe_w    = -1;
 static int   g_status_pipe_r = -1;
 static pid_t g_bash_pid      = -1;
 static char  g_sockpath[128] = { '\0' };
-static char  g_cmddir[256]   = { '\0' }; /* private dir holding the command files */
 static char  g_cmdfile[300]  = { '\0' }; /* translated command, `source`d by bash (keeps $LINENO) */
 static char  g_label[64]     = "milk";   /* command-file name: bash error messages show it */
-static pid_t g_cmddir_owner  = 0;        /* forked children must not remove the parent's dir */
 static int   g_bash_pidfd    = -1;       /* readable once bash exits (-1: poll waitpid instead) */
 static pid_t g_engine_owner  = 0;        /* process that started bash (atexit guard) */
 static int   g_inflight      = 0;        /* a command was sent and its status is not back yet */
 static int   g_tty_handoff   = 0;        /* bash's process group owns the terminal */
 static struct termios g_tty_modes;       /* terminal modes saved before the handoff */
-
-/** rm_dir_files() - remove the files in directory @dir, then the directory. */
-static void rm_dir_files(const char *dir)
-{
-    DIR *dd = opendir(dir);
-    if (dd != NULL)
-    {
-        struct dirent *de;
-        while ((de = readdir(dd)) != NULL)
-        {
-            if (de->d_name[0] != '.')
-            {
-                unlinkat(dirfd(dd), de->d_name, 0);
-            }
-        }
-        closedir(dd);
-    }
-    rmdir(dir);
-}
-
-/** sweep_stale_cmddirs() - remove milk-engine-<pid>-* directories of processes that are gone. */
-static void sweep_stale_cmddirs(const char *base)
-{
-    DIR *bd = opendir(base);
-    if (bd == NULL)
-    {
-        return;
-    }
-    struct dirent *de;
-    while ((de = readdir(bd)) != NULL)
-    {
-        long pid = 0;
-        if (sscanf(de->d_name, "milk-engine-%ld-", &pid) == 1 && pid > 0 &&
-            kill((pid_t) pid, 0) != 0 && errno == ESRCH)
-        {
-            char path[512];
-            snprintf(path, sizeof(path), "%s/%s", base, de->d_name);
-            rm_dir_files(path);
-        }
-    }
-    closedir(bd);
-}
-
-/** cmddir_atexit() - remove the command directory when the process exits without shutdown. */
-static void cmddir_atexit(void)
-{
-    if (g_cmddir[0] != '\0' && getpid() == g_cmddir_owner)
-    {
-        rm_dir_files(g_cmddir);
-        g_cmddir[0] = '\0';
-    }
-}
 
 /** tty_owner() - make @pgrp the terminal's foreground group (SIGTTOU blocked: we may be in the background). */
 static void tty_owner(pid_t pgrp)
@@ -231,40 +176,6 @@ static void engine_atexit(void)
     kill(g_bash_pid, SIGHUP);
 }
 
-/** make_cmdfile() - create the private directory and command-file path (once per process). */
-static int make_cmdfile(void)
-{
-    static int atexit_done = 0;
-    if (g_cmdfile[0] != '\0')
-    {
-        return 0;
-    }
-    const char *base = getenv("XDG_RUNTIME_DIR");
-    if (base == NULL || access(base, W_OK) != 0)
-    {
-        base = (access("/dev/shm", W_OK) == 0) ? "/dev/shm" : getenv("TMPDIR");
-    }
-    if (base == NULL || base[0] == '\0')
-    {
-        base = "/tmp";
-    }
-    sweep_stale_cmddirs(base);
-    snprintf(g_cmddir, sizeof(g_cmddir), "%s/milk-engine-%ld-XXXXXX", base, (long) getpid());
-    if (mkdtemp(g_cmddir) == NULL)
-    {
-        g_cmddir[0] = '\0';
-        return -1;
-    }
-    g_cmddir_owner = getpid();
-    if (!atexit_done)
-    {
-        atexit(cmddir_atexit);
-        atexit_done = 1;
-    }
-    snprintf(g_cmdfile, sizeof(g_cmdfile), "%s/%s", g_cmddir, g_label);
-    return 0;
-}
-
 /**
  * @brief Check whether the bash execution engine is enabled for milk-cli.
  *
@@ -276,23 +187,6 @@ int milk_is_bash_engine_enabled(void)
 }
 
 static int engine_exec(const char *cmdline, int *out_exit_req);
-
-int milk_bash_cmdfile_path(const char *label, char *out, size_t outsz)
-{
-    if (make_cmdfile() != 0)
-    {
-        return -1;
-    }
-    snprintf(out, outsz, "%s/%s", g_cmddir, label);
-    return 0;
-}
-
-int milk_bash_cmdfile_owned(const char *path)
-{
-    size_t n = strlen(g_cmddir);
-    return n > 0 && strncmp(path, g_cmddir, n) == 0 && path[n] == '/' &&
-           strstr(path + n, "/..") == NULL;
-}
 
 /**
  * @brief Initialize the in-process milk socket server and supervised bash co-process.
@@ -307,7 +201,7 @@ int milk_bash_engine_init(void)
     }
 
     milk_bash_funsub_disabled(); // probe bash once; result is exported to the coprocess env
-    if (make_cmdfile() != 0)
+    if (milk_bash_cmdfile_path(g_label, g_cmdfile, sizeof(g_cmdfile)) != 0)
     {
         return -1;
     }
@@ -320,6 +214,7 @@ int milk_bash_engine_init(void)
     }
     milk_server_set_log_flags(MILK_SRVFLAG_INPROC);
     setenv("MILKCLI_SOCK", g_sockpath, 1);
+    setenv("_MILK_ENGINE_SOCK", g_sockpath, 1); // `@server local` returns here
 
     int cmd_pipe[2]    = { -1, -1 };
     int status_pipe[2] = { -1, -1 };
@@ -380,17 +275,6 @@ int milk_bash_engine_init(void)
             "    builtin source \"${MILK_INSTALLDIR}/bin/milk.bash\"\n"
             "fi\n"
             "unalias() { builtin unalias \"$@\" 2>/dev/null || true; }\n"
-            "source() { _milk_source_impl \"$@\"; }\n"
-            "bookmark() {\n"
-            "    if [[ \"${1:-}\" == \"run\" && $# -ge 2 ]]; then\n"
-            "        local __bcmd\n"
-            "        __bcmd=\"$(milkcall bookmark get \"$2\")\" || { echo \"${__bcmd}\"; return 1; "
-            "}\n"
-            "        eval \"${__bcmd}\"\n"
-            "    else\n"
-            "        milkcall bookmark \"$@\"\n"
-            "    fi\n"
-            "}\n"
             "__MILK_EXIT_REQ=0\n"
             "__MILK_EXIT_CODE=0\n"
             "__MILK_MAIN_PID=$BASHPID\n"
@@ -403,13 +287,6 @@ int milk_bash_engine_init(void)
             "true\n"
             "    builtin exit \"${__MILK_EXIT_CODE}\"\n"
             "}\n"
-            "eval \"function ${MILKCLI_SIGIL:-@}time { time \\\"\\$@\\\"; }\"\n"
-            "for __milk_w in ${__MILK_REPL_WORDS}; do\n" /* milk_lexicon_repl_commands(), set before exec */
-            "    declare -F \"${MILKCLI_SIGIL:-@}${__milk_w}\" >/dev/null ||\\\n"
-            "        eval \"function ${MILKCLI_SIGIL:-@}${__milk_w} \\\n"
-            "            { milkcall ${__milk_w} \\\"\\$@\\\"; }\"\n"
-            "done\n"
-            "unset __milk_w __MILK_REPL_WORDS\n"
             /* Ctrl-C: abort the running command (simulated returns out of every function and sourced
              * file, via an extdebug DEBUG trap) but keep the shell and its state */
             "__milk_abort_dbg() {\n"
@@ -434,8 +311,6 @@ int milk_bash_engine_init(void)
             "__MILK_INTR=0\n"
             "trap '__milk_on_int' INT\n"
             "milkcloexec 198 199 2>/dev/null\n" /* children of bash do not inherit the engine pipes */
-            "quit() { exit \"$@\"; }\n"
-            "exitCLI() { exit \"$@\"; }\n"
             "__milk_ret() { return \"$1\"; }\n"
             "__milk_rc=0\n"
             "while :; do\n"
@@ -458,14 +333,6 @@ int milk_bash_engine_init(void)
             "    fi\n"
             "done\n";
 
-        char replw[512] = "";
-        for (int i = 0; milk_lexicon_repl_commands()[i] != NULL; i++)
-        {
-            size_t rl = strlen(replw);
-            snprintf(replw + rl, sizeof(replw) - rl, "%s%s", (rl > 0) ? " " : "",
-                     milk_lexicon_repl_commands()[i]);
-        }
-        setenv("__MILK_REPL_WORDS", replw, 1);
         execl("/bin/bash", "bash", "--norc", "--noprofile", "-c", loop_script, (char *) NULL);
         _exit(127);
     }
@@ -563,7 +430,7 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
     }
 
     /* the text goes to a command file named after the script; the pipe carries its path */
-    snprintf(g_cmdfile, sizeof(g_cmdfile), "%s/%s", g_cmddir, g_label);
+    milk_bash_cmdfile_path(g_label, g_cmdfile, sizeof(g_cmdfile));
     int    cfd  = open(g_cmdfile, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
     size_t tlen = strlen(translated);
     size_t sent = 0;
@@ -868,12 +735,8 @@ void milk_bash_engine_shutdown(void)
         waitpid(g_bash_pid, NULL, 0);
         g_bash_pid = -1;
     }
-    if (g_cmddir[0] != '\0')
-    {
-        rm_dir_files(g_cmddir); /* includes files left by aborted commands */
-        g_cmdfile[0] = '\0';
-        g_cmddir[0]  = '\0';
-    }
+    milk_bash_cmdfile_cleanup(); /* includes files left by aborted commands */
+    g_cmdfile[0] = '\0';
     milk_server_close_log(1);
     close_engine_fds();
 }

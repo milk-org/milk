@@ -16,6 +16,9 @@ typedef const char *__restrict CONST_WORD;
 
 errno_t help();
 
+/** milk_help_tui_hook - the `@help --tui` fuzzy finder (set by milk-cli), or NULL. */
+extern errno_t (*milk_help_tui_hook)(void);
+
 errno_t helpreadline();
 
 int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[], int nbarg, char *outargstring);

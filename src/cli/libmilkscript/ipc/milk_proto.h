@@ -42,9 +42,9 @@ enum milk_msg_type
     MILK_MSG_WAITFOR  = 9,
     MILK_MSG_GRAB     = 10,
     MILK_MSG_COMPLETE = 11,
-    MILK_MSG_LISTCMDS = 12,
-    MILK_MSG_CANCEL   = 13,
-    MILK_MSG_WINCH    = 14,
+    /* 12: LISTCMDS, removed (the install-time catalog lists the commands) */
+    MILK_MSG_CANCEL = 13,
+    MILK_MSG_WINCH  = 14,
 
     /* Server -> Client message opcodes */
     MILK_MSG_VALUE  = 101,

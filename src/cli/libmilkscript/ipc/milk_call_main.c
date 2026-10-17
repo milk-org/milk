@@ -7,9 +7,9 @@
  * @brief Standalone client executable (`milk-call`) for milk-cli --server
  *
  * Used both as a fallback when `enable -f libmilkbash.so` is unavailable
- * and as the target of `$MILK_INSTALLDIR/libexec/milk-bin/@<cmd>` symlinks
- * so external tools (`xargs`, `find -exec`, `timeout`, `parallel`) can
- * invoke `@<cmd>` directly.
+ * and as the target of the `$MILK_INSTALLDIR/libexec/milk/bin/<module.cmd>` and `@<keyword>` links
+ * (`milk-cli --catalog`) so external tools (`xargs`, `find -exec`, `timeout`, `parallel`) can
+ * run milk commands directly.
  */
 
 #ifndef _GNU_SOURCE
@@ -60,16 +60,15 @@ static int setup_bin_farm(const char *bin_farm,
         closedir(dir);
     }
 
-    for (int i = -1; i < 0 || milk_lexicon_primitives()[i].name != NULL;
-         i++) /* -1: the bare sigil */
+    for (int i = -1; i < 0 || milk_lexicon_keywords()[i].name != NULL; i++) /* -1: the bare sigil */
     {
-        if (i >= 0 && !(milk_lexicon_primitives()[i].flags & MILK_PRIM_CALL))
+        if (i >= 0 && !milk_lexicon_keywords()[i].callable)
         {
             continue;
         }
         char lpath[1024];
         snprintf(lpath, sizeof(lpath), "%s/%s%s", bin_farm, sigil,
-                 (i < 0) ? "" : milk_lexicon_primitives()[i].name);
+                 (i < 0) ? "" : milk_lexicon_keywords()[i].name);
         unlink(lpath);
         if (symlink(target_bin, lpath) != 0)
         {
@@ -339,18 +338,10 @@ int main(int argc, char **argv)
     snprintf(progbuf, sizeof(progbuf), "%s", (argc > 0 && argv[0]) ? argv[0] : "milk-call");
     const char *bname = basename(progbuf);
 
-    /* If invoked via a symlink such as @imstats, @waitfor, @get, etc. */
+    /* Invoked through a link: mem.listim, @waitfor, @get, ... */
     if (strcmp(bname, "milk-call") != 0)
     {
-        const char *sigil = getenv("MILKCLI_SIGIL");
-        if (sigil != NULL && sigil[0] != '\0' && strncmp(bname, sigil, strlen(sigil)) == 0)
-        {
-            bname += strlen(sigil);
-        }
-        else if (bname[0] == '@' || bname[0] == ',')
-        {
-            bname++;
-        }
+        bname += (bname[0] == '@'); /* @keyword links; module commands are linked by name */
 
         if (bname[0] == '\0')
         {

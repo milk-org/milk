@@ -13,7 +13,7 @@
  *     - Streams / local images : @s.<name>.<prop> / @stream.<name>.<prop>
  *     - Function Parameter Sys : @f.<name>.<param> / @fps.<name>.<param>
  *     - Processinfo telemetry  : @p.<name>.<prop> / @proc.<name>.<prop>
- *     - FPS Sequencers         : @q.<name>.<prop> / @seq.<name>.<prop>
+ *     - FPS Sequencers         : q.<name>.<prop> / fpsseq.<name>.<prop>
  *
  *   Used by:
  *     - The bash engine's in-process C builtins (`milk_get`, `milk_set`,

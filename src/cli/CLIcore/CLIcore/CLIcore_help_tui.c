@@ -542,7 +542,7 @@ int cli_fparam(void)
 {
     if (data.cmdargtoken[1].type != CMDARGTOKEN_TYPE_STRING)
     {
-        printf("Usage: fparam <fpsname>\n");
+        printf("Usage: @set --tui <fpsname>\n");
         return RETURN_SUCCESS;
     }
 

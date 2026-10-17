@@ -43,6 +43,9 @@ const char *cli_var_get(const char *name);
 
 void cli_var_set(const char *name, const char *val);
 
+/** cli_var_set_text() - like cli_var_set(), but a value that is not a number stays text. */
+void cli_var_set_text(const char *name, const char *val);
+
 void cli_var_unset(const char *name);
 
 const char *cli_var_lookup(const char *name);
@@ -54,16 +57,8 @@ void cli_export_vars_to_env(void);
  * ============================================================
  */
 
-errno_t cli_cmd_fpslist(void);
 errno_t cli_cmd_fpsdump(void);
-errno_t cli_cmd_streamlist(void);
-errno_t cli_cmd_proclist(void);
-errno_t cli_cmd_milkquery(void);
 
-int  cli_intercept_cmd_procctl(const char *p);
-int  cli_intercept_cmd_procwait(const char *p);
-int  cli_intercept_cmd_procstat(const char *p);
-int  cli_intercept_cmd_dpdigits(const char *p);
 void cli_listim_glob(const char *pat);
 int  milk_ls_exec(int argc, char **argv);
 

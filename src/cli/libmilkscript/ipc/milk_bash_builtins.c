@@ -31,6 +31,7 @@
 #include <unistd.h>
 
 #include "milk_bash_engine.h"
+#include "milk_lexicon.h"
 #include "milk_client.h"
 #include "milkdata.h"
 
@@ -129,15 +130,14 @@ static void bash_hook_def_cmd(const char *cmdname, void *ctx)
     {
         return;
     }
-    const char *sigil = bash_hook_get_var("MILKCLI_SIGIL", NULL);
-    if (sigil == NULL || sigil[0] == '\0')
+    if (strchr(cmdname, '.') == NULL) /* module commands only: module.command */
     {
-        sigil = "@";
+        return;
     }
     char *script = (char *) malloc(512);
     if (script != NULL)
     {
-        snprintf(script, 512, "%s%s() { milkcall \"%s\" \"$@\"; }", sigil, cmdname, cmdname);
+        snprintf(script, 512, "function %s { milkcall %s \"$@\"; }", cmdname, cmdname);
         /* SEVAL_NONINT (0x01) | SEVAL_NOHIST (0x04) = 0x05 */
         fn_parse_and_execute(script, "milk_defcmd", 0x05);
     }
@@ -513,6 +513,24 @@ static int milkcloexec_builtin(WORD_LIST *list)
     return rc;
 }
 
+/** sync_funsub_env() - set MILK_BASH_NO_FUNSUB from the running shell's version (a value the user set wins). */
+static void sync_funsub_env(void)
+{
+    const char *forced = bash_hook_get_var("MILK_BASH_NO_FUNSUB", NULL);
+    const char *ver    = bash_hook_get_var("BASH_VERSION", NULL);
+    int         major  = 0;
+    int         minor  = 0;
+
+    if (forced != NULL && forced[0] != '\0')
+    {
+        setenv("MILK_BASH_NO_FUNSUB", forced, 1);
+    }
+    else if (ver != NULL && sscanf(ver, "%d.%d", &major, &minor) == 2)
+    {
+        setenv("MILK_BASH_NO_FUNSUB", (major > 5 || (major == 5 && minor >= 3)) ? "0" : "1", 1);
+    }
+}
+
 static int milktranslate_builtin(WORD_LIST *list)
 {
     char **argv = NULL;
@@ -527,9 +545,20 @@ static int milktranslate_builtin(WORD_LIST *list)
         free(argv);
         return EXECUTION_SUCCESS;
     }
+    if (argc == 3 && strcmp(argv[0], "-s") == 0)
+    {
+        /* a line typed at the prompt (@config inline), left as is while it is incomplete */
+        sync_funsub_env();
+        char *out =
+            milk_shell_incomplete(argv[2]) ? NULL : milk_translate_shorthand_to_bash(argv[2], 1);
+        bash_hook_set_var(argv[1], (out != NULL) ? out : argv[2], NULL);
+        free(out);
+        free(argv);
+        return EXECUTION_SUCCESS;
+    }
     if (argc != 3 || strcmp(argv[0], "-v") != 0)
     {
-        fprintf(stderr, "Usage: milktranslate -v VAR FILE | milktranslate --done PATH\n");
+        fprintf(stderr, "Usage: milktranslate -v VAR FILE | -s VAR TEXT | --done PATH\n");
         free(argv);
         return 2;
     }
@@ -566,6 +595,7 @@ static int milktranslate_builtin(WORD_LIST *list)
     }
     src[len] = '\0';
 
+    sync_funsub_env();
     char *out = milk_translate_shorthand_to_bash(src, 1);
     free(src);
     const char *base = strrchr(argv[2], '/'); /* bash error messages name the script */
@@ -624,7 +654,7 @@ static char *const milklog_doc[] = { "Inspect or search the milk server SHM log 
 static char *const milkls_doc[]  = { "List active milk entities (@ls).", NULL };
 static char *const milkcloexec_doc[] = { "Mark file descriptors close-on-exec.", NULL };
 static char *const milksleep_doc[]   = { "Sleep for SECONDS (fractional) without forking.", NULL };
-static char *const milktranslate_doc[] = { "Translate a milk script into a private file to source.",
+static char *const milktranslate_doc[] = { "Translate a milk script to source, or a typed line.",
                                            NULL };
 
 /* Builtin entry points: a SIGINT the client caught is re-raised once bash's handler is back, so bash
@@ -655,6 +685,44 @@ MILK_BUILTIN_ENTRY(milkserver_builtin)
 MILK_BUILTIN_ENTRY(milklog_builtin)
 MILK_BUILTIN_ENTRY(milkls_builtin)
 
+/**
+ * keyword_builtin() - `@<kw> args`: the keyword's help (milk_lexicon_help_arg()), else builtin @fn.
+ *
+ * The keywords that a builtin implements are builtins named `@<kw>` themselves, loaded as `kw<kw>`
+ * (`enable -f libmilkbash.so kwget` defines `@get`): a call then costs no shell function.
+ */
+static int keyword_builtin(const char *kw, sh_builtin_func_t *fn, WORD_LIST *list)
+{
+    const milk_keyword_t *k = NULL;
+    if (list != NULL && list->word->word[0] == '-' && (k = milk_lexicon_keyword(kw)) != NULL &&
+        milk_lexicon_help_arg(k, list->word->word))
+    {
+        milk_lexicon_print_help(k, stdout);
+        fflush(stdout);
+        return EXECUTION_SUCCESS;
+    }
+    return fn(list);
+}
+
+#define MILK_KEYWORD_BUILTIN(kw, fn)                 \
+    static int kw##_keyword_builtin(WORD_LIST *list) \
+    {                                                \
+        return keyword_builtin(#kw, fn, list);       \
+    }
+MILK_KEYWORD_BUILTIN(calc, milkcalc_builtin_entry)
+MILK_KEYWORD_BUILTIN(test, milktest_builtin_entry)
+MILK_KEYWORD_BUILTIN(get, milkget_builtin_entry)
+MILK_KEYWORD_BUILTIN(set, milkset_builtin_entry)
+MILK_KEYWORD_BUILTIN(exists, milkexists_builtin_entry)
+MILK_KEYWORD_BUILTIN(ls, milkls_builtin_entry)
+MILK_KEYWORD_BUILTIN(waitfor, milkwaitfor_builtin_entry)
+MILK_KEYWORD_BUILTIN(waitany, milkwaitany_builtin_entry)
+MILK_KEYWORD_BUILTIN(sleep, milksleep_builtin)
+MILK_KEYWORD_BUILTIN(grab, milkgrab_builtin_entry)
+MILK_KEYWORD_BUILTIN(log, milklog_builtin_entry)
+
+/* The library is built with hidden visibility: bash finds each builtin by its `<name>_struct` symbol */
+#pragma GCC visibility push(default)
 struct builtin milkcall_struct = { "milkcall",   milkcall_builtin_entry,     BUILTIN_ENABLED,
                                    milkcall_doc, "milkcall <cmd> [args...]", 0 };
 
@@ -736,5 +804,26 @@ struct builtin milktranslate_struct = { "milktranslate",
                                         milktranslate_builtin,
                                         BUILTIN_ENABLED,
                                         milktranslate_doc,
-                                        "milktranslate -v VAR FILE | --done PATH",
+                                        "milktranslate -v VAR FILE | -s VAR TEXT | --done PATH",
                                         0 };
+
+/* the keyword builtins: `@<kw>`, loaded as kw<kw> (bash takes the name from the struct) */
+#define MILK_KEYWORD_STRUCT(name, doc)                                     \
+    struct builtin kw##name##_struct = { "@" #name,                        \
+                                         name##_keyword_builtin,           \
+                                         BUILTIN_ENABLED,                  \
+                                         doc,                              \
+                                         "@" #name " (@" #name " --help)", \
+                                         0 }
+MILK_KEYWORD_STRUCT(calc, milkcalc_doc);
+MILK_KEYWORD_STRUCT(test, milktest_doc);
+MILK_KEYWORD_STRUCT(get, milkget_doc);
+MILK_KEYWORD_STRUCT(set, milkset_doc);
+MILK_KEYWORD_STRUCT(exists, milkexists_doc);
+MILK_KEYWORD_STRUCT(ls, milkls_doc);
+MILK_KEYWORD_STRUCT(waitfor, milkwaitfor_doc);
+MILK_KEYWORD_STRUCT(waitany, milkwaitany_doc);
+MILK_KEYWORD_STRUCT(sleep, milksleep_doc);
+MILK_KEYWORD_STRUCT(grab, milkgrab_doc);
+MILK_KEYWORD_STRUCT(log, milklog_doc);
+#pragma GCC visibility pop

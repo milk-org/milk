@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "milk_entity_ns.h"
 #include "CLIcore.h"
 #include "cli_treesitter.h"
 #include "cli_treesitter_internal.h"
@@ -453,13 +452,6 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
         {
             continue;
         }
-        if (c == '|' && i + 1 < len && line[i + 1] == '>')
-        {
-            norm[i + 1] = ' ';
-            i += 1;
-            at_stmt_start = 1;
-            continue;
-        }
         if (c == ';' || c == '\n' || c == '|' || c == '&' || c == '(' || c == '{')
         {
             at_stmt_start = 1;
@@ -472,71 +464,7 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
             continue;
         }
 
-        /* 1. Statement-leading calculator expression: '@ <expr>' (calc_statement; mask the expression) */
-        if (at_stmt_start && c == '@' && (i + 1 == len || isspace((unsigned char) line[i + 1])))
-        {
-            size_t k  = i + 1;
-            int    sq = 0;
-            int    dq = 0;
-            int    pd = 0;
-            int    bd = 0;
-            while (k < len)
-            {
-                char kc = line[k];
-                if (kc == '\\' && !sq && k + 1 < len)
-                {
-                    k += 2;
-                    continue;
-                }
-                if (kc == '\'' && !dq)
-                {
-                    sq = !sq;
-                    k++;
-                    continue;
-                }
-                if (kc == '"' && !sq)
-                {
-                    dq = !dq;
-                    k++;
-                    continue;
-                }
-                if (!sq && !dq)
-                {
-                    if (kc == '(')
-                    {
-                        pd++;
-                    }
-                    else if (kc == ')' && pd > 0)
-                    {
-                        pd--;
-                    }
-                    else if (kc == '[')
-                    {
-                        bd++;
-                    }
-                    else if (kc == ']' && bd > 0)
-                    {
-                        bd--;
-                    }
-                    else if (pd == 0 && bd == 0 &&
-                             (kc == '\n' || kc == ';' ||
-                              (kc == '#' && isspace((unsigned char) line[k - 1]))))
-                    {
-                        break;
-                    }
-                    if (!isspace((unsigned char) kc))
-                    {
-                        norm[k] = '_';
-                    }
-                }
-                k++;
-            }
-            i             = k - 1;
-            at_stmt_start = 0;
-            continue;
-        }
-
-        /* 2. Inline calculator substitution: '@{<expr>}' */
+        /* 1. Inline expansion: '@{<expr>}' */
         if (c == '@' && i + 1 < len && line[i + 1] == '{')
         {
             size_t k     = i + 2;
@@ -562,7 +490,7 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
             }
         }
 
-        /* 3. '@'-prefixed token: @S:im1, @STF64:im, @s.im.kw.K, @mem.mk2Dim, etc. */
+        /* 2. '@'-prefixed token: @calc, @S:im1, @TF64:im */
         if (c == '@' && (i == 0 || isspace((unsigned char) line[i - 1]) ||
                          strchr(";|(&=", line[i - 1]) != NULL))
         {
@@ -610,7 +538,7 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
             continue;
         }
 
-        /* 4. Identifier with optional slice suffix im[...] or shorthand assignment */
+        /* 3. Identifier with optional slice suffix im[...] or shorthand assignment */
         if (isalnum((unsigned char) c) || c == '_')
         {
             size_t k = i;
@@ -692,7 +620,7 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
 }
 
 /**
- * @brief Append lexical highlight spans for `@<cmd>`, `@<mod>:`, `@{...}`, `@ <expr>`, and `@s.`.
+ * @brief Append lexical highlight spans for `@<keyword>`, `@<mod>:` and `@{...}`.
  */
 static void collect_at_token_spans(const char    *line,
                                    int            len,
@@ -729,15 +657,6 @@ static void collect_at_token_spans(const char    *line,
             continue;
         }
 
-        if (!in_dq && (i + 1 == len || isspace((unsigned char) line[i + 1])))
-        {
-            spans[*num_spans].start_byte = (uint32_t) i;
-            spans[*num_spans].end_byte   = (uint32_t) (i + 1);
-            spans[*num_spans].color      = cmd_color;
-            spans[*num_spans].priority   = 1;
-            (*num_spans)++;
-            continue;
-        }
         if (i + 1 < len && line[i + 1] == '{')
         {
             spans[*num_spans].start_byte = (uint32_t) i;
@@ -791,10 +710,9 @@ static void collect_at_token_spans(const char    *line,
         }
         else if (j > i + 1)
         {
-            int is_ent = (j > i + 2 && milk_entity_ns_kind(line + i + 1, NULL) != MILK_NS_NONE);
             spans[*num_spans].start_byte = (uint32_t) i;
             spans[*num_spans].end_byte   = (uint32_t) j;
-            spans[*num_spans].color      = is_ent ? mod_color : cmd_color;
+            spans[*num_spans].color      = cmd_color;
             spans[*num_spans].priority   = 1;
             (*num_spans)++;
             i = j - 1;

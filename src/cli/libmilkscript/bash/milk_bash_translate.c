@@ -26,10 +26,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "CLIcore.h"
 #include "milk_bash_engine_internal.h"
+#include "milk_catalog.h"
 #include "milk_entity_ns.h"
+#include "milk_lexicon.h"
 #include "milk_shell_lex.h"
+#include "milk_renames.h"
 
 /* ============================================================
  *  Dynamic String Buffer Helper
@@ -156,12 +158,7 @@ int milk_bash_funsub_disabled(void)
 
 static const char *get_sigil(void)
 {
-    const char *s = getenv("MILKCLI_SIGIL");
-    if (s == NULL || s[0] == '\0')
-    {
-        return "@";
-    }
-    return s;
+    return "@";
 }
 
 /* ============================================================
@@ -246,62 +243,7 @@ static size_t scan_entity_path(const char *s, int *has_eq)
     return i;
 }
 
-/** qualified_in_cmd_list() - @w is a `module.command` entry of share/milk/milk-commands.list. */
-static int qualified_in_cmd_list(const char *w)
-{
-    static char **names  = NULL;
-    static size_t nnames = 0;
-    static int    loaded = 0;
-    if (!loaded)
-    {
-        loaded           = 1;
-        const char *inst = getenv("MILK_INSTALLDIR");
-        char        path[1024];
-        snprintf(path, sizeof(path), "%s/share/milk/milk-commands.list",
-                 (inst != NULL) ? inst : "");
-        FILE *fp = fopen(path, "r");
-        if (fp == NULL)
-        {
-            const char *td = getenv("TMPDIR");
-            snprintf(path, sizeof(path), "%s/milk-commands-%u.list",
-                     (td != NULL && td[0]) ? td : "/tmp", (unsigned) getuid());
-            fp = fopen(path, "r");
-        }
-        char line[256];
-        while (fp != NULL && fgets(line, sizeof(line), fp) != NULL)
-        {
-            line[strcspn(line, "\r\n")] = '\0';
-            if (strchr(line, '.') == NULL)
-            {
-                continue;
-            }
-            char **nn = (char **) realloc(names, (nnames + 1) * sizeof(char *));
-            if (nn == NULL)
-            {
-                break;
-            }
-            names           = nn;
-            names[nnames++] = strdup(line);
-        }
-        if (fp != NULL)
-        {
-            fclose(fp);
-        }
-    }
-    for (size_t i = 0; i < nnames; i++)
-    {
-        if (names[i] != NULL && strcmp(names[i], w) == 0)
-        {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-/**
- * is_qualified_milk_command() - 1 if @w is an exact registered `module.command` name: the only
- * milk commands recognised without the sigil (bare names, help shorthands and REPL words need it).
- */
+/** is_qualified_milk_command() - 1 if @w is a catalogued `module.command` (the installed modules). */
 static int is_qualified_milk_command(const char *w)
 {
     const char *dot = (w != NULL) ? strchr(w, '.') : NULL;
@@ -309,31 +251,7 @@ static int is_qualified_milk_command(const char *w)
     {
         return 0;
     }
-    if (data.NBcmd == 0) /* outside milk-cli (milk-call, bash builtins): use the cached list */
-    {
-        return qualified_in_cmd_list(w);
-    }
-    size_t mlen = (size_t) (dot - w);
-    for (unsigned int i = 0; i < data.NBcmd; i++)
-    {
-        if (strcmp(data.cmd[i].key, w) == 0) /* key registered with its namespace: "mem.listvar" */
-        {
-            return 1;
-        }
-        int midx = data.cmd[i].moduleindex;
-        if (midx < 0 || strcmp(data.cmd[i].key, dot + 1) != 0)
-        {
-            continue;
-        }
-        const char *ms = data.module[midx].shortname;
-        const char *mn = data.module[midx].name;
-        if ((strlen(ms) == mlen && strncmp(ms, w, mlen) == 0) ||
-            (strlen(mn) == mlen && strncmp(mn, w, mlen) == 0))
-        {
-            return 1;
-        }
-    }
-    return 0;
+    return milk_catalog_has(w);
 }
 
 /* ============================================================
@@ -343,7 +261,11 @@ static int is_qualified_milk_command(const char *w)
 static const char *g_src = NULL; /* text being translated */
 static msl_map_t   g_map;        /* context of every byte of g_src */
 static int         g_allow_legacy = 0;
-static int g_skip_dq_ent = 0; /* current statement is @calc/@test/...: calc reads "@s.x.y" */
+static int   g_skip_dq_ent    = 0; /* current statement is @calc/@test/...: calc reads "@s.x.y" */
+static int   g_modernize      = 0; /* translate_code() rewrites removed spellings instead */
+static FILE *g_report         = NULL; /* where the modernize pass reports changes */
+static const char *g_fname    = "-";
+static int         g_nchanges = 0;
 
 static inline int cx(const char *p)
 {
@@ -370,48 +292,61 @@ static size_t sig_len(const char *p, size_t n)
 }
 
 static void translate_code(const char *p, size_t n, int d, sbuf_t *out);
+static void report_note(const char *at, const char *word, const char *why);
+
+/** append_inline_label() - the label a failed @{@body} reports: ` '@{body}'`, single-quoted for the shell. */
+static void append_inline_label(sbuf_t *out, const char *body, size_t n)
+{
+    sbuf_append_str(out, " '@{");
+    for (size_t k = 0; k < n; k++)
+    {
+        if (body[k] == '\'')
+        {
+            sbuf_append_str(out, "'\\''");
+        }
+        else
+        {
+            sbuf_append_ch(out, body[k]);
+        }
+    }
+    sbuf_append_str(out, "}'");
+}
 
 /**
- * emit_inline() - emit an @get/@calc substitution (funsub, or $() on old bash); @dq wraps it in "..."
- * so the result is neither word-split nor globbed. A failure calls __milk_inline_err (milk.bash).
+ * emit_inline() - emit a milkget/milkcalc substitution (funsub, or $() on old bash); @dq wraps it in
+ * "..." so the result is neither word-split nor globbed. A failure calls __milk_inline_err (milk.bash).
+ * The builtins are called directly: the @get/@calc functions add a few µs to every expansion.
  */
 static void emit_inline(sbuf_t *out, int is_calc, const char *body, size_t n, int dq)
 {
+    if (g_modernize) /* the removed inline forms (@s.x.y, ${@s.x.y}) become @{...} */
+    {
+        sbuf_append_str(out, "@{");
+        sbuf_append_mem(out, body, n);
+        sbuf_append_ch(out, '}');
+        return;
+    }
     int funsub = !milk_bash_funsub_disabled();
     if (dq)
     {
         sbuf_append_ch(out, '"');
     }
     sbuf_append_str(out, funsub ? "${| " : "$(");
-    sbuf_append_str(out, get_sigil());
     if (is_calc)
     {
-        sbuf_append_str(out, funsub ? "calc -v REPLY \"" : "calc \"");
+        sbuf_append_str(out, funsub ? "milkcalc -v REPLY \"" : "milkcalc \"");
         sbuf_append_dq_escaped(out, body, n);
         sbuf_append_ch(out, '"');
     }
     else
     {
-        sbuf_append_str(out, funsub ? "get -v REPLY " : "get ");
+        sbuf_append_str(out, funsub ? "milkget -v REPLY " : "milkget ");
         sbuf_append_mem(out, body, n);
     }
     sbuf_append_str(out, " || __milk_inline_err $?");
     if (!is_calc) /* calc reports its own errors */
     {
-        sbuf_append_str(out, " '");
-        sbuf_append_str(out, get_sigil());
-        for (size_t k = 0; k < n; k++)
-        {
-            if (body[k] == '\'')
-            {
-                sbuf_append_str(out, "'\\''");
-            }
-            else
-            {
-                sbuf_append_ch(out, body[k]);
-            }
-        }
-        sbuf_append_ch(out, '\'');
+        append_inline_label(out, body, n);
     }
     sbuf_append_str(out, funsub ? "; }" : ")");
     if (dq)
@@ -437,6 +372,22 @@ static size_t entity_ref_len(const char *p)
     return (ndots >= 2) ? elen : 0;
 }
 
+/** inline_close() - index in @p of the `}` closing the `{` at @p[@i] (counted in that brace's context and
+ * depth @d), or 0. */
+static size_t inline_close(const char *p, size_t n, size_t i, int d)
+{
+    int c     = cx(p + i);
+    int depth = 1;
+    for (size_t j = i + 1; j < n; j++)
+    {
+        if (cx(p + j) == c && dp(p + j) == d && (depth += (p[j] == '{') - (p[j] == '}')) == 0)
+        {
+            return j;
+        }
+    }
+    return 0;
+}
+
 /**
  * try_inline() - expand the construct starting at @p[i], if any: `\@` escape, `@{expr}`, `@s.x.y`,
  * `${@s.x.y}`. Returns the number of source bytes consumed (0 if nothing to expand).
@@ -449,9 +400,11 @@ static size_t try_inline(const char *p, size_t n, size_t i, int d, int ent, sbuf
 
     if ((c == MSL_CODE || c == MSL_DQ) && q[0] == '\\' && i + 1 < n)
     {
-        sl = sig_len(q + 1, n - i - 1);
-        if (c == MSL_DQ && sl > 0) /* "\@{..}" is a literal @{..} */
+        sl        = sig_len(q + 1, n - i - 1);
+        int brace = (sl > 0 && i + 1 + sl < n && q[1 + sl] == '{');
+        if (c == MSL_DQ && sl > 0 && (brace ? !g_modernize : g_modernize))
         {
+            /* "\@{..}" is a literal @{..}; modernizing, the old "\@s.x" escape is no longer needed */
             sbuf_append_mem(out, q + 1, sl);
             return 1 + sl;
         }
@@ -459,7 +412,7 @@ static size_t try_inline(const char *p, size_t n, size_t i, int d, int ent, sbuf
         return 2;
     }
 
-    if (c == MSL_PARAM && q[0] == '$' && i + 2 < n && q[1] == '{' &&
+    if (g_modernize && c == MSL_PARAM && q[0] == '$' && i + 2 < n && q[1] == '{' &&
         (sl = sig_len(q + 2, n - i - 2)) > 0)
     {
         size_t elen = entity_ref_len(q + 2 + sl);
@@ -484,30 +437,28 @@ static size_t try_inline(const char *p, size_t n, size_t i, int d, int ent, sbuf
     char prev = (q > g_src) ? q[-1] : ' ';
     if (i + sl < n && q[sl] == '{') /* @{expr}: braces counted in the opener's context only */
     {
-        if (c == MSL_CODE && (isalnum((unsigned char) prev) || prev == '_'))
+        if (isalnum((unsigned char) prev) || prev == '_')
         {
-            return 0; /* foo@{a,b} is bash brace expansion */
+            return 0; /* foo@{a,b} is bash brace expansion, "HEAD@{1}" is text */
         }
-        int depth = 1;
-        for (size_t j = i + sl + 1; j < n; j++)
+        size_t j = inline_close(p, n, i + sl, d);
+        if (j == 0)
         {
-            const char *r = p + j;
-            if (cx(r) != c || dp(r) != d)
-            {
-                continue;
-            }
-            depth += (*r == '{') - (*r == '}');
-            if (depth == 0)
-            {
-                emit_inline(out, 1, q + sl + 1, j - (i + sl + 1), c != MSL_DQ);
-                return j + 1 - i;
-            }
+            return 0;
         }
-        return 0;
+        const char *b  = q + sl + 1;
+        size_t      bn = j - (i + sl + 1);
+        if (g_modernize) /* already the modern form */
+        {
+            sbuf_append_mem(out, q, j + 1 - i);
+            return j + 1 - i;
+        }
+        emit_inline(out, entity_ref_len(b) != bn, b, bn, c != MSL_DQ); /* @{s.x.y}: milkget */
+        return j + 1 - i;
     }
 
-    if (!ent || c == MSL_ARITH || (c == MSL_DQ && g_skip_dq_ent) || isalnum((unsigned char) prev) ||
-        prev == '_' || prev == '.' || prev == '$')
+    if (!ent || !g_modernize || c == MSL_ARITH || (c == MSL_DQ && g_skip_dq_ent) ||
+        isalnum((unsigned char) prev) || prev == '_' || prev == '.' || prev == '$')
     {
         return 0;
     }
@@ -769,8 +720,7 @@ static int is_entity_taking_cmd(const char *cmd)
             strcmp(cmd, "waitfor") == 0 || strcmp(cmd, "waitany") == 0 || strcmp(cmd, "on") == 0 ||
             strcmp(cmd, "snapshot") == 0 || strcmp(cmd, "diff") == 0 ||
             strcmp(cmd, "restore") == 0 || strcmp(cmd, "assert") == 0 ||
-            strcmp(cmd, "prompt") == 0 || strcmp(cmd, "streamcat") == 0 ||
-            strcmp(cmd, "streamwrite") == 0);
+            strcmp(cmd, "config") == 0 || strcmp(cmd, "grab") == 0 || strcmp(cmd, "replay") == 0);
 }
 
 /**
@@ -852,22 +802,22 @@ static void append_args(const char *args,
 }
 
 /**
- * try_translate_qualified_word() - un-sigiled `module.command` -> `@module.command`.
+ * try_translate_module_cmd() - `module.command args`: a function of the catalog; its arguments get the
+ * milk-command treatment (unquoted globs and slices quoted).
  *
  * @return 1 if handled, 0 otherwise
  */
-static int try_translate_qualified_word(const char *firstword,
-                                        const char *s,
-                                        size_t      rem_len,
-                                        size_t      wlen,
-                                        int         d,
-                                        sbuf_t     *out)
+static int try_translate_module_cmd(const char *firstword,
+                                    const char *s,
+                                    size_t      rem_len,
+                                    size_t      wlen,
+                                    int         d,
+                                    sbuf_t     *out)
 {
     if (!is_qualified_milk_command(firstword))
     {
         return 0;
     }
-    sbuf_append_str(out, get_sigil());
     sbuf_append_str(out, firstword);
     append_args(s + wlen, rem_len - wlen, 1, 0, d, out);
     return 1;
@@ -894,7 +844,12 @@ static int is_assignment_word(const char *s, size_t n)
     return 0;
 }
 
-static void translate_stmt_body(const char *stmt, size_t len, int d, sbuf_t *out)
+/**
+ * modernize_legacy_stmt() - second modernize pass: rewrite the removed statement forms (`@ expr`,
+ * `@s.x.y`, `@f.x.p=v`, `a |> b`) and inline entities (`@s.x.y`, `${@s.x.y}`) into their keywords and
+ * `@{...}`, and quote the globs and slices that milk commands used to receive unexpanded.
+ */
+static void modernize_legacy_stmt(const char *stmt, size_t len, int d, sbuf_t *out)
 {
     const char *sigil  = get_sigil();
     size_t      siglen = strlen(sigil);
@@ -1030,16 +985,15 @@ static void translate_stmt_body(const char *stmt, size_t len, int d, sbuf_t *out
                 }
                 if (has_unquoted_space(s + vstart, slen - vstart, d))
                 {
-                    sbuf_append_str(out, "{ echo 'milk: ");
-                    sbuf_append_mem(out, s + adv, elen);
-                    sbuf_append_str(out, "=: quote multi-word values' >&2; false; }");
-                    sbuf_append_mem(out, stmt + end, len - end);
+                    report_note(stmt + i, "@<entity>=<words>",
+                                "has an unquoted multi-word value: quote it");
+                    sbuf_append_mem(out, stmt + i, len - i);
                     return;
                 }
                 sbuf_append_str(out, sigil);
                 sbuf_append_str(out, "set ");
                 append_args(s + adv, elen, 1, 1, d, out);
-                sbuf_append_ch(out, ' ');
+                sbuf_append_ch(out, '=');
                 emit_src(s + vstart, slen - vstart, d, 1, out);
                 sbuf_append_mem(out, stmt + end, len - end);
                 return;
@@ -1090,6 +1044,23 @@ static void translate_stmt_body(const char *stmt, size_t len, int d, sbuf_t *out
     memcpy(firstword, s, wlen);
     firstword[wlen] = '\0';
 
+    /* `source f.milk` / `. f.milk`: plain bash now; milk scripts are sourced with @source */
+    if ((strcmp(firstword, "source") == 0 || strcmp(firstword, ".") == 0) && wlen < slen)
+    {
+        size_t a = wlen;
+        while (a < slen && (s[a] == ' ' || s[a] == '\t'))
+        {
+            a++;
+        }
+        size_t fl = word_len(s + a, slen - a, d);
+        if (fl > 5 && strncmp(s + a + fl - 5, ".milk", 5) == 0)
+        {
+            sbuf_append_str(out, "@source");
+            emit_src(s + wlen, len - (i + wlen), d, 1, out);
+            return;
+        }
+    }
+
     /* 3. Already sigiled '@<cmd> ...': the command word itself is never expanded */
     if (sig_len(firstword, wlen) > 0)
     {
@@ -1098,8 +1069,8 @@ static void translate_stmt_body(const char *stmt, size_t len, int d, sbuf_t *out
         return;
     }
 
-    /* 4. Un-sigiled module-qualified command (`mem.listim`) */
-    if (g_allow_legacy && try_translate_qualified_word(firstword, s, len - i, wlen, d, out))
+    /* 4. Module command (`mem.listim`) */
+    if (g_allow_legacy && try_translate_module_cmd(firstword, s, len - i, wlen, d, out))
     {
         return;
     }
@@ -1109,16 +1080,603 @@ static void translate_stmt_body(const char *stmt, size_t len, int d, sbuf_t *out
     append_args(s + wlen, len - (i + wlen), 0, 0, d, out);
 }
 
+/** report_change() - report the rewrite of @old (found at @at in the source) into @new_. */
+static void report_change(const char *at, const char *old, size_t oldn, const char *new_)
+{
+    int line = 1;
+    for (const char *q = g_src; q < at; q++)
+    {
+        line += (*q == '\n');
+    }
+    if (g_report != NULL)
+    {
+        fprintf(g_report, "%s:%d: '%.*s' -> '%s'\n", g_fname, line, (int) oldn, old, new_);
+    }
+    g_nchanges++;
+}
+
+/** is_module_cmd_word() - 1 if @w is `[@]module.cmd` (one dot). */
+static int is_module_cmd_word(const char *w)
+{
+    w += (*w == '@');
+    if (!islower((unsigned char) *w))
+    {
+        return 0;
+    }
+    const char *dot = strchr(w, '.');
+    if (dot == NULL || dot[1] == '\0' || strchr(dot + 1, '.') != NULL)
+    {
+        return 0;
+    }
+    for (const char *q = w; *q != '\0'; q++)
+    {
+        if (!isalnum((unsigned char) *q) && *q != '_' && *q != '.')
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/** is_tag_word() - 1 if @p[0..n) is a parameter tag `.name` (no value). */
+static int is_tag_word(const char *p, size_t n)
+{
+    if (n < 2 || p[0] != '.' || !(isalpha((unsigned char) p[1]) || p[1] == '_'))
+    {
+        return 0;
+    }
+    for (size_t k = 2; k < n; k++)
+    {
+        if (!isalnum((unsigned char) p[k]) && p[k] != '_' && p[k] != '.')
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/** report_note() - report @word (at @at in the source) that the modernize pass cannot rewrite. */
+static void report_note(const char *at, const char *word, const char *why)
+{
+    int line = 1;
+    for (const char *q = g_src; q < at; q++)
+    {
+        line += (*q == '\n');
+    }
+    if (g_report != NULL)
+    {
+        fprintf(g_report, "%s:%d: '%s' %s\n", g_fname, line, word, why);
+    }
+    g_nchanges++;
+}
+
+/* plain_word() - 1 if @p[0..n) is a literal shell word: no quote, expansion or glob */
+static int plain_word(const char *p, size_t n)
+{
+    for (size_t k = 0; k < n; k++)
+    {
+        if (strchr("'\"$`\\*?[]{}()<>|&;", p[k]) != NULL)
+        {
+            return 0;
+        }
+    }
+    return n > 0;
+}
+
+/**
+ * modernize_args() - rewrite statement `@old args` whose arguments move (milk_renames.c MILK_REN_ARGS)
+ * into @out, from the arguments at @a; 0 if they are not literal words (the user rewrites it).
+ */
+static int modernize_args(const char *old,
+                          const char *stmt,
+                          size_t      a,
+                          size_t      len,
+                          int         d,
+                          sbuf_t     *out)
+{
+    char   arg[4][256];
+    int    n = 0;
+    char   rep[1100];
+    size_t end = len;
+
+    while (end > a && (stmt[end - 1] == ' ' || stmt[end - 1] == '\t' || stmt[end - 1] == '\n'))
+    {
+        end--;
+    }
+    while (a < end)
+    {
+        while (a < end && (stmt[a] == ' ' || stmt[a] == '\t'))
+        {
+            a++;
+        }
+        size_t wl = word_len(stmt + a, end - a, d);
+        if (wl == 0 || n == 4 || wl >= sizeof(arg[0]) || !plain_word(stmt + a, wl))
+        {
+            return 0;
+        }
+        memcpy(arg[n], stmt + a, wl);
+        arg[n++][wl] = '\0';
+        a += wl;
+    }
+
+    const char *x0 = (n > 0) ? arg[0] : "";
+    if (strcmp(old, "@usleep") == 0 && n == 1)
+    {
+        char *e;
+        long  us = strtol(x0, &e, 10);
+        if (*e != '\0' || us < 0)
+        {
+            return 0;
+        }
+        snprintf(rep, sizeof(rep), "@sleep %g", (double) us * 1e-6);
+    }
+    else if (strcmp(old, "@mloadas") == 0 && n == 2)
+    {
+        snprintf(rep, sizeof(rep), "@module load %s --as %s", x0, arg[1]);
+    }
+    else if (strcmp(old, "@fpsset") == 0 && (n == 3 || n == 4))
+    {
+        const char *f = (strncmp(x0, "f.", 2) == 0) ? x0 + 2 : x0;
+        snprintf(rep, sizeof(rep), "@set f.%s.%s=%s%s%s", f, arg[1], arg[2], (n == 4) ? " " : "",
+                 (n == 4) ? arg[3] : "");
+    }
+    else if (strcmp(old, "@fpsset") == 0 && n == 2)
+    {
+        snprintf(rep, sizeof(rep), "@set %s%s=%s", (strncmp(x0, "f.", 2) == 0) ? "" : "f.", x0,
+                 arg[1]);
+    }
+    else if (strcmp(old, "@procctl") == 0 && n == 2)
+    {
+        snprintf(rep, sizeof(rep), "@set p.%s.ctrl=%s", (strncmp(x0, "p.", 2) == 0) ? x0 + 2 : x0,
+                 arg[1]);
+    }
+    else if (strcmp(old, "@procwait") == 0 && n >= 1 && n <= 3)
+    {
+        snprintf(rep, sizeof(rep), "@waitfor p.%s.status=%s -t %s",
+                 (strncmp(x0, "p.", 2) == 0) ? x0 + 2 : x0, (n >= 2) ? arg[1] : "STOPPED",
+                 (n == 3) ? arg[2] : "30");
+    }
+    else if (strcmp(old, "@procstat") == 0 && n <= 1)
+    {
+        if (n == 0)
+        {
+            snprintf(rep, sizeof(rep), "@ls -l 'p.*'");
+        }
+        else
+        {
+            snprintf(rep, sizeof(rep), "@get p.%s.list", (strncmp(x0, "p.", 2) == 0) ? x0 + 2 : x0);
+        }
+    }
+    else
+    {
+        return 0;
+    }
+    sbuf_append_str(out, rep);
+    sbuf_append_mem(out, stmt + end, len - end);
+    return 1;
+}
+
+/**
+ * tag_value_args() - 1 if the arguments [@i, @len) of @stmt are the removed sticky setting `.tag value`;
+ * @tag and @val get the offsets of its two words, @vend the end of the value.
+ */
+static int tag_value_args(const char *stmt,
+                          size_t      i,
+                          size_t      len,
+                          int         d,
+                          size_t     *tag,
+                          size_t     *val,
+                          size_t     *vend)
+{
+    size_t a = i;
+    while (a < len && (stmt[a] == ' ' || stmt[a] == '\t'))
+    {
+        a++;
+    }
+    size_t w1 = word_len(stmt + a, len - a, d);
+    size_t b  = a + w1;
+    while (b < len && (stmt[b] == ' ' || stmt[b] == '\t'))
+    {
+        b++;
+    }
+    size_t w2 = (b > a + w1) ? word_len(stmt + b, len - b, d) : 0;
+    size_t e  = b + w2;
+    while (e < len && (stmt[e] == ' ' || stmt[e] == '\t'))
+    {
+        e++;
+    }
+    *tag  = a;
+    *val  = b;
+    *vend = b + w2;
+    return a > i && w2 > 0 && e == len && is_tag_word(stmt + a, w1);
+}
+
+/**
+ * modernize_stmt() - copy statement @stmt, rewriting the removed spellings of milk_renames.h: the
+ * command word, `@<old ns>.` paths anywhere, and bare `<old ns>.` paths in entity-taking arguments.
+ */
+static void modernize_stmt(const char *stmt, size_t len, int d, sbuf_t *out)
+{
+    size_t i = 0;
+    while (i < len && (stmt[i] == ' ' || stmt[i] == '\t'))
+    {
+        sbuf_append_ch(out, stmt[i++]);
+    }
+    for (size_t k; i < len && (k = skip_flow_prefix(stmt + i, len - i)) > 0; i += k)
+    {
+        sbuf_append_mem(out, stmt + i, k);
+    }
+    char   word[256] = "";
+    size_t wstart    = i;
+    size_t w         = (i < len) ? word_len(stmt + i, len - i, d) : 0;
+    if (w > 0 && w < sizeof(word))
+    {
+        memcpy(word, stmt + i, w);
+        word[w]            = '\0';
+        milk_ren_how_t how = MILK_REN_WORD;
+        const char *nw = (strcmp(word, "@") != 0) ? milk_rename_cmd(word, &how) : NULL; /* pass 2 */
+        if (nw != NULL && how == MILK_REN_ARGS &&
+            modernize_args(word, stmt, wstart + w, len, d, out))
+        {
+            report_change(stmt + i, stmt + i, len - i, "(rewritten)");
+            return;
+        }
+        if (nw != NULL && how != MILK_REN_WORD)
+        {
+            char why[256];
+            snprintf(why, sizeof(why), "was removed: rewrite it as %s", nw);
+            report_note(stmt + i, word, why);
+            nw = NULL;
+        }
+        else if (nw == NULL && word[0] == '@' && word[1] != '\0' &&
+                 milk_lexicon_keyword(word + 1) == NULL)
+        {
+            nw = (strchr(word + 1, '.') == NULL)       ? milk_catalog_short(word + 1) /* @short */
+                 : is_qualified_milk_command(word + 1) ? word + 1 /* @module.cmd */
+                                                       : NULL;
+            if (nw != NULL && strcmp(nw, "?") == 0)
+            {
+                report_note(stmt + i, word, "names several module commands: qualify it");
+                nw = NULL;
+            }
+        }
+        if (nw != NULL)
+        {
+            report_change(stmt + i, stmt + i, w, nw);
+            sbuf_append_str(out, nw);
+            i += w;
+            memmove(word, nw, strlen(nw) + 1); /* nw may point into word (`@module.cmd`) */
+        }
+    }
+    size_t tg, vl, ve;
+    if (w > 0 && is_module_cmd_word(word) &&
+        tag_value_args(stmt, wstart + w, len, d, &tg, &vl, &ve))
+    {
+        char   rep[1024];
+        size_t tl = word_len(stmt + tg, len - tg, d);
+        snprintf(rep, sizeof(rep), "--default %.*s=%.*s", (int) tl, stmt + tg, (int) (ve - vl),
+                 stmt + vl);
+        report_change(stmt + tg, stmt + tg, ve - tg, rep);
+        sbuf_append_mem(out, stmt + i, tg - i); /* the command word unless renamed, the blanks */
+        sbuf_append_str(out, rep);
+        sbuf_append_mem(out, stmt + ve, len - ve);
+        return;
+    }
+    int ent_args = is_entity_taking_cmd(word) || is_calc_or_test_stmt_prefix(stmt, len);
+    while (i < len)
+    {
+        if (dp(stmt + i) == d + 1 &&
+            cx(stmt + i) == MSL_OPEN) /* $(...), `...`: modernize the body */
+        {
+            size_t j = i;
+            while (j < len && cx(stmt + j) == MSL_OPEN && dp(stmt + j) == d + 1)
+            {
+                j++;
+            }
+            size_t k = j;
+            while (k < len && !(cx(stmt + k) == MSL_CLOSE && dp(stmt + k) == d + 1))
+            {
+                k++;
+            }
+            sbuf_append_mem(out, stmt + i, j - i);
+            translate_code(stmt + j, k - j, d + 1, out);
+            i = k;
+            continue;
+        }
+        const char *p      = stmt + i;
+        int         c      = cx(p);
+        size_t      at     = (*p == '@') ? 1 : 0;
+        size_t      oldlen = 0;
+        const char *nn     = NULL;
+        int         bound  = (p == g_src) || !(isalnum((unsigned char) p[-1]) || p[-1] == '_' ||
+                                               p[-1] == '.' || p[-1] == '$' || p[-1] == '@');
+        if (bound && (c == MSL_CODE || c == MSL_DQ || c == MSL_SQ) && (at || ent_args))
+        {
+            nn = milk_rename_ns(p + at, &oldlen);
+        }
+        if (nn != NULL && (isalnum((unsigned char) p[at + oldlen]) || p[at + oldlen] == '_' ||
+                           p[at + oldlen] == '*' || p[at + oldlen] == '$'))
+        {
+            char rep[64];
+            snprintf(rep, sizeof(rep), "%s%s", at ? "@" : "", nn);
+            report_change(p, p, at + oldlen, rep);
+            sbuf_append_str(out, rep);
+            i += at + oldlen;
+            continue;
+        }
+        sbuf_append_ch(out, *p);
+        i++;
+    }
+}
+
+/** reads_var() - 1 if the script expands shell variable @name[0..@n) ($name, ${name...}). */
+static int reads_var(const char *name, size_t n)
+{
+    for (const char *q = strchr(g_src, '$'); q != NULL; q = strchr(q + 1, '$'))
+    {
+        const char *v = q + 1 + (q[1] == '{');
+        if (strncmp(v, name, n) == 0 && !isalnum((unsigned char) v[n]) && v[n] != '_')
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/** calc_target() - length of the variable that calc statement @s[0..@n) assigns (`T = e`, `T op= e`), or
+ * 0; *@op gets the operator ('=' or one of + - * /) and *@rhs the offset of e. */
+static size_t calc_target(const char *s, size_t n, size_t *t0, char *op, size_t *rhs)
+{
+    size_t t = 0;
+    while (t < n && (s[t] == ' ' || s[t] == '\t'))
+    {
+        t++;
+    }
+    *t0 = t;
+    if (t >= n || !(isalpha((unsigned char) s[t]) || s[t] == '_'))
+    {
+        return 0;
+    }
+    while (t < n && (isalnum((unsigned char) s[t]) || s[t] == '_'))
+    {
+        t++;
+    }
+    size_t tn = t - *t0;
+    while (t < n && (s[t] == ' ' || s[t] == '\t'))
+    {
+        t++;
+    }
+    if (t + 1 < n && strchr("+-*/", s[t]) != NULL && s[t + 1] == '=')
+    {
+        *op = s[t];
+        t += 2;
+    }
+    else if (t < n && s[t] == '=' && (t + 1 >= n || s[t + 1] != '='))
+    {
+        *op = '=';
+        t++;
+    }
+    else
+    {
+        return 0;
+    }
+    while (t < n && (s[t] == ' ' || s[t] == '\t'))
+    {
+        t++;
+    }
+    *rhs = t;
+    return (t < n) ? tn : 0;
+}
+
+/**
+ * modernize_calc_bind() - calc variables no longer come back to bash by themselves: the statement in @out
+ * from @at, `@calc "T = e"` (or `T op= e`) whose T the script reads as $T, becomes `@calc -v T "e"`.
+ * Reported at @stmt when it cannot be rewritten.
+ */
+static void modernize_calc_bind(const char *stmt, sbuf_t *out, size_t at)
+{
+    char  *s = strndup(out->data + at, out->len - at);
+    size_t n = (s != NULL) ? strlen(s) : 0;
+    size_t i = 0, k, t0, rhs;
+    char   op;
+
+    while (i < n && (s[i] == ' ' || s[i] == '\t'))
+    {
+        i++;
+    }
+    while (i < n && (k = skip_flow_prefix(s + i, n - i)) > 0)
+    {
+        i += k;
+    }
+    size_t a = i + 5;
+    size_t e = n;
+    while (e > a && isspace((unsigned char) s[e - 1]))
+    {
+        e--;
+    }
+    if (s == NULL || n < i + 8 || strncmp(s + i, "@calc", 5) != 0 || (s[a] != ' ' && s[a] != '\t'))
+    {
+        free(s);
+        return;
+    }
+    while (a < e && (s[a] == ' ' || s[a] == '\t'))
+    {
+        a++;
+    }
+    char        q    = s[a];
+    const char *body = s + a + 1;
+    size_t      bl   = (e - a >= 2) ? e - a - 2 : 0;
+    if ((q != '"' && q != '\'') || e - a < 2 || s[e - 1] != q || memchr(body, q, bl) != NULL)
+    {
+        free(s);
+        return;
+    }
+    size_t tn = calc_target(body, bl, &t0, &op, &rhs);
+    if (tn > 0 && memchr(body, ';', bl) == NULL && memchr(body, '\\', bl) == NULL &&
+        reads_var(body + t0, tn))
+    {
+        sbuf_t r;
+        sbuf_init(&r);
+        sbuf_append_mem(&r, s, i);
+        sbuf_append_str(&r, "@calc -v ");
+        sbuf_append_mem(&r, body + t0, tn);
+        sbuf_append_ch(&r, ' ');
+        sbuf_append_ch(&r, q);
+        if (op != '=') /* T op= e: T op (e) */
+        {
+            sbuf_append_mem(&r, body + t0, tn);
+            sbuf_append_ch(&r, ' ');
+            sbuf_append_ch(&r, op);
+            sbuf_append_str(&r, " (");
+        }
+        sbuf_append_mem(&r, body + rhs, bl - rhs);
+        sbuf_append_str(&r, (op != '=') ? ")" : "");
+        sbuf_append_ch(&r, q);
+        sbuf_append_mem(&r, s + e, n - e);
+        out->len = at;
+        sbuf_append_mem(out, r.data, r.len);
+        free(r.data);
+        free(s);
+        return;
+    }
+    for (size_t b = 0; b < bl;) /* the statements of a list, or one with a quote or backslash */
+    {
+        size_t sl = b;
+        while (sl < bl && body[sl] != ';')
+        {
+            sl++;
+        }
+        if ((tn = calc_target(body + b, sl - b, &t0, &op, &rhs)) > 0 &&
+            reads_var(body + b + t0, tn))
+        {
+            char word[128];
+            snprintf(word, sizeof(word), "%.*s", (int) tn, body + b + t0);
+            report_note(stmt, word, "is set in calc only now: bind it with @calc -v");
+        }
+        b = sl + 1;
+    }
+    free(s);
+}
+
+/**
+ * emit_assign_inline() - a statement that is only `NAME=@{...}` or `NAME="@{...}"` binds NAME with
+ * `milkget -v` / `milkcalc -v`, without a substitution: a few µs instead of ~11 (or a fork on old bash).
+ * Grouped, so `a && x=@{...} || b` keeps its meaning; on failure NAME is emptied, as the substitution
+ * would leave it. 1 if @out got the statement.
+ */
+static int emit_assign_inline(const char *s, size_t n, int d, sbuf_t *out)
+{
+    size_t i = 0;
+    size_t k;
+    while (i < n && (s[i] == ' ' || s[i] == '\t'))
+    {
+        i++;
+    }
+    while (i < n && (k = skip_flow_prefix(s + i, n - i)) > 0)
+    {
+        i += k;
+    }
+    size_t e = n;
+    while (e > i && (s[e - 1] == ' ' || s[e - 1] == '\t'))
+    {
+        e--;
+    }
+    size_t a = i;
+    if (a >= e || !code_at(s + a, d) || !(isalpha((unsigned char) s[a]) || s[a] == '_'))
+    {
+        return 0;
+    }
+    while (a < e && (isalnum((unsigned char) s[a]) || s[a] == '_'))
+    {
+        a++;
+    }
+    size_t v  = a + 1; /* the value: @{...} or "@{...}" */
+    int    dq = (v < e && s[v] == '"');
+    size_t o  = v + dq; /* the sigil */
+    if (v >= e || s[a] != '=' || !code_at(s + a, d) ||
+        (dq ? cx(s + o) != MSL_DQ : !code_at(s + o, d)))
+    {
+        return 0;
+    }
+    size_t sl = sig_len(s + o, e - o);
+    size_t j  = (sl > 0 && o + sl < e && s[o + sl] == '{') ? inline_close(s, e, o + sl, d) : 0;
+    if (j == 0 || j + 1 + dq != e || (dq && s[j + 1] != '"'))
+    {
+        return 0;
+    }
+    const char *b       = s + o + sl + 1;
+    size_t      bn      = j - (o + sl + 1);
+    int         is_calc = (entity_ref_len(b) != bn);
+
+    sbuf_append_mem(out, s, i); /* blanks and flow keywords */
+    sbuf_append_str(out, is_calc ? "{ milkcalc -v " : "{ milkget -v ");
+    sbuf_append_mem(out, s + i, a - i);
+    if (is_calc)
+    {
+        sbuf_append_str(out, " \"");
+        sbuf_append_dq_escaped(out, b, bn);
+        sbuf_append_str(out, "\" || __milk_inline_err $? ''");
+    }
+    else
+    {
+        sbuf_append_ch(out, ' ');
+        sbuf_append_mem(out, b, bn);
+        sbuf_append_str(out, " || __milk_inline_err $?");
+        append_inline_label(out, b, bn);
+    }
+    sbuf_append_ch(out, ' ');
+    sbuf_append_mem(out, s + i, a - i);
+    sbuf_append_str(out, "; }");
+    sbuf_append_mem(out, s + e, n - e);
+    return 1;
+}
+
 static void translate_stmt(const char *stmt, size_t len, int d, sbuf_t *out)
 {
     if (len == 0)
     {
         return;
     }
-    int saved     = g_skip_dq_ent;
-    g_skip_dq_ent = is_calc_or_test_stmt_prefix(stmt, len);
-    translate_stmt_body(stmt, len, d, out);
-    g_skip_dq_ent = saved;
+    if (g_modernize == 1)
+    {
+        modernize_stmt(stmt, len, d, out);
+        return;
+    }
+    if (g_modernize == 2)
+    {
+        size_t at     = out->len;
+        int    saved  = g_skip_dq_ent;
+        g_skip_dq_ent = is_calc_or_test_stmt_prefix(stmt, len);
+        modernize_legacy_stmt(stmt, len, d, out);
+        if (g_skip_dq_ent) /* calc text names entities without @: "@s.x.y * 2" -> "s.x.y * 2" */
+        {
+            size_t w = at;
+            for (size_t r = at; r < out->len; r++)
+            {
+                char pc = (r > at) ? out->data[r - 1] : ' ';
+                if (!(out->data[r] == '@' && entity_ref_len(out->data + r + 1) > 0 &&
+                      !isalnum((unsigned char) pc) && pc != '_' && pc != '.' && pc != '$'))
+                {
+                    out->data[w++] = out->data[r];
+                }
+            }
+            out->len     = w;
+            out->data[w] = '\0';
+        }
+        g_skip_dq_ent = saved;
+        modernize_calc_bind(stmt, out, at);
+        if (out->len - at != len || memcmp(out->data + at, stmt, len) != 0)
+        {
+            char *nw = strndup(out->data + at, out->len - at);
+            report_change(stmt, stmt, len, (nw != NULL) ? nw : "");
+            free(nw);
+        }
+        return;
+    }
+    if (!emit_assign_inline(stmt, len, d, out))
+    {
+        emit_src(stmt, len, d, 0, out); /* only @{...} (and \@) is milk syntax */
+    }
 }
 
 /** blank_or_fn_head() - 1 if @s[0..n) is blanks, or ends with `)` / starts with `function `. */
@@ -1266,8 +1824,9 @@ char *milk_translate_shorthand_to_bash(const char *src, int allow_legacy)
     {
         return NULL;
     }
+    (void) allow_legacy; /* the removed forms are no longer translated (milk-script --modernize) */
     g_src          = src;
-    g_allow_legacy = allow_legacy;
+    g_allow_legacy = 0;
     g_skip_dq_ent  = 0;
 
     sbuf_t out;
@@ -1277,4 +1836,50 @@ char *milk_translate_shorthand_to_bash(const char *src, int allow_legacy)
     msl_free(&g_map);
     g_src = NULL;
     return out.data;
+}
+
+/* modernize_pass() - run modernize pass @pass (1: words, 2: statement forms) over @src */
+static char *modernize_pass(const char *src,
+                            int         pass,
+                            const char *fname,
+                            FILE       *report,
+                            int        *nchanges)
+{
+    size_t n = strlen(src);
+    if (msl_scan(src, n, &g_map) != 0)
+    {
+        return NULL;
+    }
+    g_src          = src;
+    g_allow_legacy = 1;
+    g_skip_dq_ent  = 0;
+    g_modernize    = pass;
+    g_report       = report;
+    g_fname        = (fname != NULL) ? fname : "-";
+    g_nchanges     = 0;
+
+    sbuf_t out;
+    sbuf_init(&out);
+    translate_code(src, n, 0, &out);
+
+    g_modernize    = 0;
+    g_allow_legacy = 0;
+    msl_free(&g_map);
+    g_src = NULL;
+    *nchanges += g_nchanges;
+    return out.data;
+}
+
+char *milk_bash_modernize(const char *src, const char *fname, FILE *report, int *nchanges)
+{
+    int   n  = 0;
+    char *s1 = (src != NULL) ? modernize_pass(src, 1, fname, report, &n) : NULL;
+    char *s2 = (s1 != NULL) ? modernize_pass(s1, 2, fname, report, &n) : NULL;
+
+    free(s1);
+    if (nchanges != NULL)
+    {
+        *nchanges = n;
+    }
+    return s2;
 }

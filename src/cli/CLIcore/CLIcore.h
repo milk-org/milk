@@ -314,6 +314,8 @@ typedef struct
 
     CLICMDARGDATA *argdata; // arguments and parameters to function
 
+    const char *outvars; // calculator variables it sets for the caller (CLICMDDATA.outvars)
+
     // defines static function capabilities and behavior
     //uint64_t flags;
 
@@ -477,8 +479,15 @@ typedef struct
 
 } DATA;
 
+#    ifdef MILK_BASH_CLIENT /* libmilkbash, the bash client: no engine state, no images of its own */
+extern DATA data;
+#        define MILK_LOCAL_IMAGES ((IMAGE *) NULL)
+#        define MILK_NB_LOCAL_IMAGES 0L
+#    else
 __attribute__((weak)) DATA data = { .core = { 0 } };
-//extern DATA data;
+#        define MILK_LOCAL_IMAGES (data.core.image)
+#        define MILK_NB_LOCAL_IMAGES (data.core.NB_MAX_IMAGE)
+#    endif
 
 #    include "CLIcore_utils.h"
 

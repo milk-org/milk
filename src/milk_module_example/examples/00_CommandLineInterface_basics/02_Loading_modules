@@ -21,7 +21,7 @@ MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample\" milk
 modex.imsum1 ?
 
 # exit milk CLI
-exitCLI
+exit
 
 # clear screen
 clear
@@ -31,8 +31,8 @@ clear
 MILK_QUIET="1" milk
 
 # load module from CLI
-@mload milkmoduleexample
+@module load milkmoduleexample
 
 # exit milk CLI
-exitCLI
+exit
 "

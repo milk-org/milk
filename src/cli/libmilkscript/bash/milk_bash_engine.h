@@ -19,6 +19,8 @@
 #ifndef MILK_BASH_ENGINE_H
 #define MILK_BASH_ENGINE_H
 
+#include <stdio.h>
+
 #include <stddef.h>
 
 /**
@@ -39,6 +41,10 @@ int milk_is_bash_engine_enabled(void);
  * @return Newly heap-allocated translated string (caller must `free()`), or NULL
  */
 char *milk_translate_shorthand_to_bash(const char *src, int allow_legacy);
+
+/** milk_bash_modernize() - @src with removed spellings rewritten (milk_renames.h); each change is
+ * reported to @report as "<fname>:<line>: 'old' -> 'new'", their count goes to *@nchanges. */
+char *milk_bash_modernize(const char *src, const char *fname, FILE *report, int *nchanges);
 
 /**
  * @brief Initialize the in-process milk socket server and supervised bash co-process.
@@ -105,6 +111,9 @@ int milk_bash_cmdfile_path(const char *label, char *out, size_t outsz);
  * @brief Return 1 if @path is a file inside this process's private command directory.
  */
 int milk_bash_cmdfile_owned(const char *path);
+
+/** milk_bash_cmdfile_cleanup() - remove the private command directory and the files in it. */
+void milk_bash_cmdfile_cleanup(void);
 
 /**
  * @brief Return 1 if @src needs more input to be a complete bash construct (open quote,

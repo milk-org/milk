@@ -5,22 +5,6 @@
     "fields": {}
   },
   {
-    "type": "calc_statement",
-    "named": true,
-    "fields": {
-      "expression": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "calc_expression",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "case_item",
     "named": true,
     "fields": {
@@ -83,10 +67,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "calc_statement",
-          "named": true
-        },
         {
           "type": "case_statement",
           "named": true
@@ -283,10 +263,6 @@
         "required": true,
         "types": [
           {
-            "type": "entity_path",
-            "named": true
-          },
-          {
             "type": "expansion",
             "named": true
           },
@@ -296,10 +272,6 @@
           },
           {
             "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "milk_command",
             "named": true
           },
           {
@@ -336,10 +308,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "calc_statement",
-          "named": true
-        },
         {
           "type": "case_statement",
           "named": true
@@ -412,10 +380,6 @@
       "required": false,
       "types": [
         {
-          "type": "calc_statement",
-          "named": true
-        },
-        {
           "type": "case_statement",
           "named": true
         },
@@ -486,10 +450,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "calc_statement",
-          "named": true
-        },
         {
           "type": "case_statement",
           "named": true
@@ -629,10 +589,6 @@
           "named": true
         },
         {
-          "type": "entity_path",
-          "named": true
-        },
-        {
           "type": "expansion",
           "named": true
         },
@@ -666,10 +622,6 @@
           {
             "type": ";",
             "named": false
-          },
-          {
-            "type": "calc_statement",
-            "named": true
           },
           {
             "type": "case_statement",
@@ -738,10 +690,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "calc_statement",
-          "named": true
-        },
         {
           "type": "case_statement",
           "named": true
@@ -813,10 +761,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "calc_statement",
-          "named": true
-        },
         {
           "type": "case_statement",
           "named": true
@@ -939,10 +883,6 @@
       "types": [
         {
           "type": "arithmetic_expansion",
-          "named": true
-        },
-        {
-          "type": "calc_statement",
           "named": true
         },
         {
@@ -1072,10 +1012,6 @@
       "required": false,
       "types": [
         {
-          "type": "calc_statement",
-          "named": true
-        },
-        {
           "type": "case_statement",
           "named": true
         },
@@ -1159,10 +1095,6 @@
             "named": false
           },
           {
-            "type": "calc_statement",
-            "named": true
-          },
-          {
             "type": "case_statement",
             "named": true
           },
@@ -1229,10 +1161,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "calc_statement",
-          "named": true
-        },
         {
           "type": "case_statement",
           "named": true
@@ -1383,11 +1311,6 @@
     }
   },
   {
-    "type": "milk_command",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "negated_command",
     "named": true,
     "fields": {},
@@ -1395,10 +1318,6 @@
       "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "calc_statement",
-          "named": true
-        },
         {
           "type": "case_statement",
           "named": true
@@ -1471,10 +1390,6 @@
       "required": true,
       "types": [
         {
-          "type": "calc_statement",
-          "named": true
-        },
-        {
           "type": "case_statement",
           "named": true
         },
@@ -1546,10 +1461,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "calc_statement",
-          "named": true
-        },
         {
           "type": "case_statement",
           "named": true
@@ -1636,10 +1547,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "calc_statement",
-          "named": true
-        },
         {
           "type": "case_statement",
           "named": true
@@ -1783,10 +1690,6 @@
             "named": false
           },
           {
-            "type": "calc_statement",
-            "named": true
-          },
-          {
             "type": "case_statement",
             "named": true
           },
@@ -1853,10 +1756,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "calc_statement",
-          "named": true
-        },
         {
           "type": "case_statement",
           "named": true
@@ -2011,10 +1910,6 @@
             "named": false
           },
           {
-            "type": "calc_statement",
-            "named": true
-          },
-          {
             "type": "case_statement",
             "named": true
           },
@@ -2081,10 +1976,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "calc_statement",
-          "named": true
-        },
         {
           "type": "case_statement",
           "named": true
@@ -2297,10 +2188,6 @@
     "named": false
   },
   {
-    "type": "calc_expression",
-    "named": true
-  },
-  {
     "type": "case",
     "named": false
   },
@@ -2357,16 +2244,8 @@
     "named": false
   },
   {
-    "type": "include_once",
-    "named": false
-  },
-  {
     "type": "line_continuation",
     "named": true
-  },
-  {
-    "type": "milksleep",
-    "named": false
   },
   {
     "type": "module_command",
@@ -2414,10 +2293,6 @@
   },
   {
     "type": "|&",
-    "named": false
-  },
-  {
-    "type": "|>",
     "named": false
   },
   {

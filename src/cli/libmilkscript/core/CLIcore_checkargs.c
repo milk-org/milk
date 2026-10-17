@@ -15,19 +15,22 @@
  * C function is invoked.
  */
 
+#include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "fps_globals.h"
+#include "milk_cmd_args.h"
 
 // keep processing if 1
 static int argcheck_process_flag = 1;
 
 
 // toggles to 1 if function help called
-static int functionhelp_called = 0;
 
 
 /**
@@ -105,6 +108,22 @@ static const char *CMDARGTOKEN_type_to_string(uint32_t type)
 }
 
 
+/* raw_number() - read raw-string token @i strictly as a @type number; 0, or 2 if it is not one */
+static int raw_number(int i, uint64_t type)
+{
+    CLICMDARGDATA v;
+
+    v.type = type;
+    if (milk_argval_parse(type, data.cmdargtoken[i].val.string, &v) != 0)
+    {
+        return 2;
+    }
+    data.cmdargtoken[i].val.numf = (type == FPTYPE_FLOAT64) ? v.val.f64 : (double) v.val.i64;
+    data.cmdargtoken[i].val.numl = (type == FPTYPE_FLOAT64) ? (long) v.val.f64 : (long) v.val.i64;
+    return 0;
+}
+
+
 /**
  * @brief check that input CLI argument matches required function argument type
  *
@@ -120,17 +139,6 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
     int      rval  = 2; // Default to 'wrong type'
     uint32_t ftype = funcargtype;
     int      ttype = data.cmdargtoken[CLIargnum].type;
-
-    if (strcmp(data.cmdargtoken[CLIargnum].val.string, "?") == 0)
-    {
-        argcheck_process_flag = 0; // stop processing arguments, will call help
-        help_command(data.cmdargtoken[0].val.string);
-        snprintf(data.cmdargtoken[CLIargnum].val.string, STRINGMAXLEN_CMDARGTOKEN_VAL,
-                 " "); // avoid re-running help
-        functionhelp_called = 1;
-        DEBUG_TRACE_FEXIT();
-        return 1;
-    }
 
     // Normalization and conversion
     if (ttype == CMDARGTOKEN_TYPE_FLOAT)
@@ -168,14 +176,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
                 ttype == CMDARGTOKEN_TYPE_LONG || ttype == (CLIARG_INT64 & 0x0000FFFF) ||
                 ttype == 6)
             {
-                if (ttype == 6)
-                {
-                    data.cmdargtoken[CLIargnum].val.numf =
-                        atof(data.cmdargtoken[CLIargnum].val.string);
-                    data.cmdargtoken[CLIargnum].val.numl =
-                        (long) data.cmdargtoken[CLIargnum].val.numf;
-                }
-                rval = 0;
+                rval = (ttype == 6) ? raw_number(CLIargnum, FPTYPE_FLOAT64) : 0;
             }
         }
         else if (ftype == FPTYPE_INT32 || ftype == FPTYPE_INT64 || ftype == FPTYPE_UINT32 ||
@@ -186,14 +187,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
                 ttype == CMDARGTOKEN_TYPE_FLOAT || ttype == (CLIARG_FLOAT32 & 0x0000FFFF) ||
                 ttype == 6)
             {
-                if (ttype == 6)
-                {
-                    data.cmdargtoken[CLIargnum].val.numl =
-                        atol(data.cmdargtoken[CLIargnum].val.string);
-                    data.cmdargtoken[CLIargnum].val.numf =
-                        (double) data.cmdargtoken[CLIargnum].val.numl;
-                }
-                rval = 0;
+                rval = (ttype == 6) ? raw_number(CLIargnum, FPTYPE_INT64) : 0;
             }
         }
         else if (ftype == FPTYPE_STREAMNAME)
@@ -324,25 +318,7 @@ int CLI_checkarg_noerrmsg(int CLIargnum, uint32_t funcargtype)
 }
 
 
-/** @brief Check array of command line (CLI) arguments
- *
- * Use list of arguments in fpscliarg[].
- * Skip arguments that have CLICMDARG_FLAG_NOCLI flag.
- *
- * CLIarg keep count of argument position in CLI call
- *
- */
-/**
- * @brief Read one FPS parameter value into argdata.
- *
- * Dispatches on FPS parameter type and copies the
- * value from the FPS shared memory into the
- * corresponding argdata field.
- *
- * @param ptype  FPS parameter type
- * @param fp     Pointer to the FPS parameter entry
- * @param ad     Pointer to the argdata slot
- */
+/* sync_fps_to_argdata() - read FPS parameter @fp (type @ptype) into argument @ad. */
 static void sync_fps_to_argdata(uint32_t ptype, FPS_PARAM *fp, CLICMDARGDATA *ad)
 {
     switch (ptype)
@@ -388,544 +364,288 @@ static void sync_fps_to_argdata(uint32_t ptype, FPS_PARAM *fp, CLICMDARGDATA *ad
     }
 }
 
-
-/**
- * @brief Write a CLI token value into an FPS parameter.
- *
- * Dispatches on FPS parameter type and calls the
- * appropriate functionparameter_SetParamValue_*
- * function using the numeric or string value from
- * the CLI token.
- *
- * @param fps     Pointer to the FPS struct
- * @param fpstag  Parameter tag/key
- * @param ptype   FPS parameter type
- * @param numl    Integer value from CLI token
- * @param numf    Float value from CLI token
- * @param str     String value from CLI token
- */
-static void set_fps_from_clitoken(FPS        *fps,
-                                  const char *fpstag,
-                                  uint32_t    ptype,
-                                  long        numl,
-                                  double      numf,
-                                  const char *str)
+static const char *raw_arg(const milk_call_t *call, int t)
 {
-    switch (ptype)
+    return (call->raw != NULL && t < call->nraw) ? call->raw[t] : data.cmdargtoken[t].val.string;
+}
+
+/* is_expression() - @s has an operator or a call (the CLI parser evaluated it: `2*3`, `sqrt(2)`) */
+static int is_expression(const char *s)
+{
+    if (s[0] == '(')
     {
-    case FPTYPE_INT64:
-        functionparameter_SetParamValue_INT64(fps, fpstag, numl);
-        break;
-    case FPTYPE_UINT64:
-        functionparameter_SetParamValue_UINT64(fps, fpstag, numl);
-        break;
-    case FPTYPE_INT32:
-        functionparameter_SetParamValue_INT32(fps, fpstag, numl);
-        break;
-    case FPTYPE_UINT32:
-        functionparameter_SetParamValue_UINT32(fps, fpstag, numl);
-        break;
-    case FPTYPE_FLOAT64:
-        functionparameter_SetParamValue_FLOAT64(fps, fpstag, numf);
-        break;
-    case FPTYPE_FLOAT32:
-        functionparameter_SetParamValue_FLOAT32(fps, fpstag, (float) numf);
-        break;
-    case FPTYPE_PID:
-        functionparameter_SetParamValue_INT64(fps, fpstag, (int64_t) numl);
-        break;
-    case FPTYPE_TIMESPEC:
-    {
-        struct timespec _t = { .tv_sec = numf, .tv_nsec = 0 };
-        _t.tv_nsec         = 1e9 * (numf - _t.tv_sec);
-        functionparameter_SetParamValue_TIMESPEC(fps, fpstag, _t);
-        break;
+        return 1;
     }
-    case FPTYPE_STRING:
-    case FPTYPE_STREAMNAME:
-    case FPTYPE_DIRNAME:
-    case FPTYPE_FILENAME:
-    case FPTYPE_FITSFILENAME:
-    case FPTYPE_EXECFILENAME:
-    case FPTYPE_FPSNAME:
-    case FPTYPE_PROCESS:
-    case FPTYPE_STRING_NOT_STREAM:
-        functionparameter_SetParamValue_STRING(fps, fpstag, str);
-        break;
-    case FPTYPE_ONOFF:
-        functionparameter_SetParamValue_ONOFF(fps, fpstag, (int) numl);
-        break;
+    for (const char *p = s + 1; *p != '\0'; p++)
+    {
+        if (strchr("+-*/^%()", *p) != NULL)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* token_value() - store positional token @t (@raw as typed) in @ad: a literal, an evaluated
+ * expression or a milk variable. 0, or -1 if it is none of them. */
+static int token_value(int t, const char *raw, CLICMDARGDATA *ad)
+{
+    const CMDARGTOKEN *tok = &data.cmdargtoken[t];
+
+    if (!milk_argval_is_numeric(ad->type))
+    {
+        return milk_argval_parse(ad->type, tok->val.string,
+                                 ad); /* a slice may name a temporary image */
+    }
+    if (milk_argval_parse(ad->type, raw, ad) == 0)
+    {
+        return 0;
+    }
+    if (tok->type == CMDARGTOKEN_TYPE_FLOAT && is_expression(raw))
+    {
+        return milk_argval_set_number(ad->type, tok->val.numf, ad);
+    }
+    if (tok->type == CMDARGTOKEN_TYPE_LONG && is_expression(raw))
+    {
+        return milk_argval_set_number(ad->type, (double) tok->val.numl, ad);
+    }
+
+    imageID IDv = variable_ID(raw);
+    if (IDv != -1 && dcvar[IDv].type != 2)
+    {
+        return milk_argval_set_number(
+            ad->type, (dcvar[IDv].type == 0) ? dcvar[IDv].value.f : (double) dcvar[IDv].value.l,
+            ad);
+    }
+    return -1;
+}
+
+static errno_t usage_error(milk_call_t *call, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+
+static errno_t usage_error(milk_call_t *call, const char *fmt, ...)
+{
+    const CMD *c = &data.cmd[call->cmdi];
+    va_list    ap;
+
+    fprintf(stderr, "milk: %s: ", c->key);
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    fprintf(stderr, "\nusage: %s %s  (%s -h for help)\n", c->key, c->syntax, c->key);
+    call->usage_error = 1;
+    return RETURN_CLICHECKARGARRAY_FAILURE;
+}
+
+/* store_session_defaults() - `--default`: the values given become session defaults, `.` clears */
+static void store_session_defaults(milk_call_t *call, int n)
+{
+    CLICMDARGDATA *ad  = data.cmd[call->cmdi].argdata;
+    int            any = 0;
+    char           v[STRINGMAXLEN_CLICMDARG + 32];
+
+    for (int i = 0; i < n; i++)
+    {
+        int s = call->src[i] & ~MILK_ARGSRC_NAMED;
+
+        if (s == MILK_ARGSRC_DOT)
+        {
+            milk_args_session_set(call->cmdi, i, NULL);
+            any = 1;
+        }
+        else if (s == MILK_ARGSRC_ARG || s == MILK_ARGSRC_TAG || s == MILK_ARGSRC_PRESET)
+        {
+            milk_argval_format(&ad[i], v, sizeof(v));
+            milk_args_session_set(call->cmdi, i, v);
+            any = 1;
+        }
+    }
+    if (!any)
+    {
+        milk_args_print_call(call->cmdi, 1, stdout);
     }
 }
 
+static errno_t resolve_args(milk_call_t *call, CLICMDARGDEF fa[], int n)
+{
+    CLICMDARGDATA *ad  = data.cmd[call->cmdi].argdata;
+    unsigned char *src = call->src;
+    int            pos[NB_ARG_MAX];
+    int            npos = 0;
+
+    for (int i = 0; i < n; i++)
+    {
+        src[i] =
+            (milk_args_session_get(call->cmdi, i) != NULL) ? MILK_ARGSRC_SESSION : MILK_ARGSRC_DECL;
+    }
+
+    /* a call on a shared FPS (cmd:fpsname) starts from the instance's current values */
+    if (dcfpsptr != NULL && dcfpsname[0] != '\0' && dcfpsname[0] != '_')
+    {
+        for (int i = 0; i < n; i++)
+        {
+            long pindex = functionparameter_GetParamIndex(dcfpsptr, fa[i].fpstag);
+            if (pindex != -1)
+            {
+                sync_fps_to_argdata(dcfpsptr->parray[pindex].type, &dcfpsptr->parray[pindex],
+                                    &ad[i]);
+                src[i] = MILK_ARGSRC_FPS;
+            }
+        }
+    }
+
+    if (call->load[0] != '\0' && milk_args_preset_load(call) != 0)
+    {
+        call->usage_error = 1;
+        return RETURN_CLICHECKARGARRAY_FAILURE;
+    }
+
+    /* .tag=value anywhere before "--"; the other tokens are positional */
+    for (int t = 1; t < data.cmdNBarg; t++)
+    {
+        const char *r = raw_arg(call, t);
+
+        if (t < call->posonly && milk_args_named(r))
+        {
+            const char *eq = strchr(r, '=');
+            int         i  = milk_args_find(call->cmdi, r + 1, (size_t) (eq - r - 1));
+
+            if (i < 0 || i >= n)
+            {
+                return usage_error(call, "unknown parameter %.*s", (int) (eq - r), r);
+            }
+            if (src[i] & MILK_ARGSRC_NAMED)
+            {
+                return usage_error(call, "parameter %.*s given twice", (int) (eq - r), r);
+            }
+            if (strcmp(eq + 1, ".") == 0)
+            {
+                src[i] = MILK_ARGSRC_DOT | MILK_ARGSRC_NAMED;
+            }
+            else if (milk_argval_parse(ad[i].type, eq + 1, &ad[i]) == 0)
+            {
+                src[i] = MILK_ARGSRC_TAG | MILK_ARGSRC_NAMED;
+            }
+            else
+            {
+                return usage_error(call, "invalid %s value '%s' for %.*s",
+                                   CLIargtype_to_string(ad[i].type), eq + 1, (int) (eq - r), r);
+            }
+            continue;
+        }
+        if (t < call->posonly && r[0] == '.' && r[1] != '\0' &&
+            milk_args_find(call->cmdi, r + 1, strlen(r + 1)) >= 0)
+        {
+            return usage_error(
+                call, "'%s VALUE' was removed: use %s=VALUE (this call) or --default %s=VALUE", r,
+                r, r);
+        }
+        if (npos < NB_ARG_MAX)
+        {
+            pos[npos++] = t;
+        }
+    }
+
+    /* positional values fill the primary parameters not given by name, in order */
+    int k     = 0;
+    int iprim = 0;
+    for (int i = 0; i < n; i++)
+    {
+        if (!(fa[i].fpflag & FPFLAG_PRIMARY_CLI_INPUT))
+        {
+            continue;
+        }
+        iprim++;
+        if (src[i] & MILK_ARGSRC_NAMED)
+        {
+            continue;
+        }
+        if (k < npos)
+        {
+            int         t = pos[k++];
+            const char *r = raw_arg(call, t);
+
+            if (strcmp(r, ".") == 0)
+            {
+                src[i] = MILK_ARGSRC_DOT;
+            }
+            else if (token_value(t, r, &ad[i]) == 0)
+            {
+                src[i] = MILK_ARGSRC_ARG;
+            }
+            else
+            {
+                return usage_error(call, "argument %d (.%s): invalid %s value '%s'", iprim,
+                                   milk_args_tag(fa[i].fpstag), CLIargtype_to_string(ad[i].type),
+                                   r);
+            }
+        }
+        else if (src[i] == MILK_ARGSRC_DECL && !call->set_default &&
+                 !(fa[i].fpflag & FPFLAG_CLI_OPTIONAL))
+        {
+            return usage_error(call, "missing argument %d (.%s: %s)", iprim,
+                               milk_args_tag(fa[i].fpstag), fa[i].descr);
+        }
+    }
+    if (k < npos)
+    {
+        return usage_error(call, "unexpected argument '%s'", raw_arg(call, pos[k]));
+    }
+
+    if (call->set_default)
+    {
+        store_session_defaults(call, n);
+        return RETURN_CLICHECKARGARRAY_HELP; /* nothing runs */
+    }
+    if (call->save[0] != '\0' && milk_args_preset_save(call->cmdi, call->save) != 0)
+    {
+        return RETURN_CLICHECKARGARRAY_FAILURE;
+    }
+    if (call->no_run)
+    {
+        milk_args_print_call(call->cmdi, 0, stdout);
+        return RETURN_CLICHECKARGARRAY_HELP;
+    }
+    return RETURN_CLICHECKARGARRAY_SUCCESS;
+}
 
 /**
- * @brief Validate an array of CLI arguments.
+ * CLI_checkarg_array() - resolve the parameters of the command being called from its tokens.
  *
- * Checks that each argument matches its expected
- * type and range.
+ * Each parameter takes the first value found among: the call (`.tag=value` anywhere before `--`,
+ * then the positional values in order for the primary parameters; `.` stands for the default),
+ * the `--load` preset, the current value of a shared FPS (`cmd:fpsname`), the session default and
+ * the declared default. A missing, invalid or extra value is a usage error (exit status 2).
  */
 errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
 {
     DEBUG_TRACE_FSTART();
 
-    // initialize arg check
+    int cmdi = (int) data.cmdindex;
+    int n    = (nbarg < data.cmd[cmdi].nbparam) ? nbarg : data.cmd[cmdi].nbparam;
+
     argcheck_process_flag = 1;
-
-    // Sync current values from FPS to CLI argdata BEFORE processing
-    if (dcfpsptr != NULL)
+    if (n <= 0 || data.cmd[cmdi].argdata == NULL)
     {
-        for (int arg = 0; arg < nbarg; arg++)
-        {
-            long pindex = functionparameter_GetParamIndex(dcfpsptr, fpscliarg[arg].fpstag);
-            if (pindex != -1)
-            {
-                uint32_t ptype = dcfpsptr->parray[pindex].type;
-                sync_fps_to_argdata(ptype, &dcfpsptr->parray[pindex],
-                                    &data.cmd[data.cmdindex].argdata[arg]);
-            }
-        }
+        DEBUG_TRACE_FEXIT();
+        return RETURN_CLICHECKARGARRAY_SUCCESS; /* no declared parameters: it reads its tokens */
     }
 
-    int argindexmatch = -1;
-    // check if CLI argument 1 is one of the function parameters keys
-    // if it is, set argindexmatch to the function parameter index
-    for (int arg = 0; arg < nbarg; arg++)
+    milk_call_t  dflt = { .cmdi = cmdi, .posonly = data.cmdNBarg };
+    milk_call_t *call = milk_args_call(cmdi);
+    if (call == NULL)
     {
-        if (strcmp(data.cmdargtoken[1].val.string, fpscliarg[arg].fpstag) == 0)
+        dflt.src = calloc((size_t) n, 1);
+        if (dflt.src == NULL)
         {
-            argindexmatch = arg;
-        }
-    }
-
-    // if CLI arg 1 is not in the static list, check if it's a tag in the FPS
-    if (argindexmatch == -1 && dcfpsptr != NULL)
-    {
-        if (data.cmdargtoken[1].val.string[0] == '.')
-        {
-            char *fpstag = data.cmdargtoken[1].val.string;
-            if (fpstag[1] == '.') // Handle ".." prefix
-            {
-                fpstag++;
-            }
-
-            long pindex = functionparameter_GetParamIndex(dcfpsptr, fpstag);
-            if (pindex != -1)
-            {
-                if (data.cmdargtoken[2].type == CLIARG_MISSING)
-                {
-                    printf("\n\033[1;31mERROR\033[0m"
-                           " Setting parameter %s :"
-                           " input missing\n",
-                           data.cmdargtoken[1].val.string);
-                    help_command(data.cmd[data.cmdindex].key);
-                    DEBUG_TRACE_FEXIT();
-                    return RETURN_CLICHECKARGARRAY_FAILURE;
-                }
-
-                // Update the parameter in FPS
-                uint32_t ptype = dcfpsptr->parray[pindex].type;
-                set_fps_from_clitoken(dcfpsptr, fpstag, ptype, data.cmdargtoken[2].val.numl,
-                                      data.cmdargtoken[2].val.numf, data.cmdargtoken[2].val.string);
-
-                char valstr[STRINGMAXLEN_FPSCLIARG_TAG];
-                functionparameter_GetParamValueString(&dcfpsptr->parray[pindex], valstr,
-                                                      STRINGMAXLEN_FPSCLIARG_TAG);
-
-                printf("Parameter %s value updated to %s in FPS\n", data.cmdargtoken[1].val.string,
-                       valstr);
-                DEBUG_TRACE_FEXIT();
-                return RETURN_CLICHECKARGARRAY_FUNCPARAMSET;
-            }
-        }
-    }
-
-    // if CLI arg 1 is a function parameter, set function parameter to value entered in CLI arg 2
-    if (argindexmatch != -1)
-    {
-        if (data.cmdargtoken[2].type == CLIARG_MISSING)
-        {
-            printf("\n\033[1;31mERROR\033[0m"
-                   " Setting arg %s :"
-                   " input missing\n",
-                   fpscliarg[argindexmatch].fpstag);
-            help_command(data.cmd[data.cmdindex].key);
             DEBUG_TRACE_FEXIT();
             return RETURN_CLICHECKARGARRAY_FAILURE;
         }
-        //printf("match to arg %s\n", fpscliarg[argindexmatch].fpstag); //TEST
-
-        DEBUG_TRACEPOINT("calling CLI_checkarg");
-        if (CLI_checkarg(2, fpscliarg[argindexmatch].type) == 0)
-        {
-            int cmdi = data.cmdindex;
-            switch (fpscliarg[argindexmatch].type) // & 0x0000FFFF)
-            {
-            case CLIARG_FLOAT32:
-                data.cmd[cmdi].argdata[argindexmatch].val.f32 = data.cmdargtoken[2].val.numf;
-                break;
-            case CLIARG_FLOAT64:
-                data.cmd[cmdi].argdata[argindexmatch].val.f64 = data.cmdargtoken[2].val.numf;
-                break;
-            case CLIARG_INT32:
-                data.cmd[cmdi].argdata[argindexmatch].val.i32 = data.cmdargtoken[2].val.numl;
-                break;
-            case CLIARG_INT64:
-                data.cmd[cmdi].argdata[argindexmatch].val.i64 = data.cmdargtoken[2].val.numl;
-                break;
-            case CLIARG_UINT32:
-                data.cmd[cmdi].argdata[argindexmatch].val.ui32 = data.cmdargtoken[2].val.numl;
-                break;
-            case CLIARG_UINT64:
-                data.cmd[cmdi].argdata[argindexmatch].val.ui64 = data.cmdargtoken[2].val.numl;
-                break;
-            case CLIARG_ONOFF:
-                data.cmd[cmdi].argdata[argindexmatch].val.i64 = data.cmdargtoken[2].val.numl;
-                break;
-            case CLIARG_STR_NOT_IMG:
-            case CLIARG_IMG:
-            case CLIARG_STR:
-            case FPTYPE_FILENAME:
-            case FPTYPE_FITSFILENAME:
-            case FPTYPE_FPSNAME:
-            case FPTYPE_DIRNAME:
-            case FPTYPE_EXECFILENAME:
-            case FPTYPE_PROCESS:
-                strncpy(data.cmd[cmdi].argdata[argindexmatch].val.s, data.cmdargtoken[2].val.string,
-                        STRINGMAXLEN_CLICMDARG - 1);
-                break;
-            case FPTYPE_PID:
-                data.cmd[cmdi].argdata[argindexmatch].val.i64 = data.cmdargtoken[2].val.numl;
-                break;
-            case FPTYPE_TIMESPEC:
-                data.cmd[cmdi].argdata[argindexmatch].val.f64 = data.cmdargtoken[2].val.numf;
-                break;
-            }
-
-            // Sync updated value back to FPS
-            if (dcfpsptr != NULL)
-            {
-                long pindex =
-                    functionparameter_GetParamIndex(dcfpsptr, fpscliarg[argindexmatch].fpstag);
-                if (pindex != -1)
-                {
-                    set_fps_from_clitoken(
-                        dcfpsptr, fpscliarg[argindexmatch].fpstag, dcfpsptr->parray[pindex].type,
-                        data.cmdargtoken[2].val.numl, data.cmdargtoken[2].val.numf,
-                        data.cmdargtoken[2].val.string);
-                }
-            }
-        }
-        else
-        {
-            printf("\n\033[1;31mERROR\033[0m"
-                   " Setting arg %s :"
-                   " wrong type\n",
-                   fpscliarg[argindexmatch].fpstag);
-            help_command(data.cmd[data.cmdindex].key);
-            DEBUG_TRACE_FEXIT();
-            return RETURN_CLICHECKARGARRAY_FAILURE;
-        }
-
-        if ((dcfpsptr != NULL) && (dcfpsptr->parray != NULL))
-        {
-            char valstr[STRINGMAXLEN_FPSCLIARG_TAG];
-            long fpsi = -1;
-            if (fpscliarg[argindexmatch].indexptr != NULL)
-            {
-                fpsi = *fpscliarg[argindexmatch].indexptr;
-            }
-            if (fpsi == -1) // If index not yet known, look it up
-            {
-                fpsi = functionparameter_GetParamIndex(dcfpsptr, fpscliarg[argindexmatch].fpstag);
-            }
-
-            if ((fpsi >= 0) && (fpsi < dcfpsptr->md->NBparamMAX))
-            {
-                functionparameter_GetParamValueString(&dcfpsptr->parray[fpsi], valstr,
-                                                      STRINGMAXLEN_FPSCLIARG_TAG);
-                printf("Argument %s value updated to %s\n", fpscliarg[argindexmatch].fpstag,
-                       valstr);
-            }
-            else
-            {
-                printf("Argument %s value updated to %s\n", fpscliarg[argindexmatch].fpstag,
-                       data.cmdargtoken[2].val.string);
-            }
-        }
-        else
-        {
-            printf("Argument %s value updated to %s\n", fpscliarg[argindexmatch].fpstag,
-                   data.cmdargtoken[2].val.string);
-        }
-
-        //printf("arg 1: [%d] %s %f %ld\n", data.cmdargtoken[2].type, data.cmdargtoken[2].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[2].val.numl);
-        DEBUG_TRACE_FEXIT();
-        return RETURN_CLICHECKARGARRAY_FUNCPARAMSET;
+        call = &dflt;
     }
 
-    //printf("arg 1: %s %f %ld\n", data.cmdargtoken[2].val.string);
-
-    int nberr                   = 0;
-    int CLIarg                  = 0; // index of argument in CLI call
-    int printed_default_warning = 0;
-
-    for (int arg = 0; arg < nbarg; arg++)
-    {
-        char argtypestring[16];
-        switch (fpscliarg[arg].type)
-        {
-        case CLIARG_FLOAT32:
-            snprintf(argtypestring, sizeof(argtypestring), "FLT32");
-            break;
-        case CLIARG_FLOAT64:
-            snprintf(argtypestring, sizeof(argtypestring), "FLT64");
-            break;
-        case CLIARG_ONOFF:
-            snprintf(argtypestring, sizeof(argtypestring), "ONOFF");
-            break;
-        case CLIARG_INT32:
-            snprintf(argtypestring, sizeof(argtypestring), "INT32");
-            break;
-        case CLIARG_UINT32:
-            snprintf(argtypestring, sizeof(argtypestring), "UINT32");
-            break;
-        case CLIARG_INT64:
-            snprintf(argtypestring, sizeof(argtypestring), "INT64");
-            break;
-        case CLIARG_UINT64:
-            snprintf(argtypestring, sizeof(argtypestring), "UINT64");
-            break;
-        case CLIARG_STR_NOT_IMG:
-            snprintf(argtypestring, sizeof(argtypestring), "STRnIMG");
-            break;
-        case CLIARG_IMG:
-            snprintf(argtypestring, sizeof(argtypestring), "STREAM");
-            break;
-        case CLIARG_STR:
-            snprintf(argtypestring, sizeof(argtypestring), "STRING");
-            break;
-        }
-
-        if (fpscliarg[arg].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
-        {
-            int cmdi = data.cmdindex;
-
-            DEBUG_TRACEPOINT("  arg %d  CLI %2d  [%7s]  %s", arg, CLIarg, argtypestring,
-                             fpscliarg[arg].fpstag);
-
-            if (CLIarg + 1 >= data.cmdNBarg) // Missing mandatory argument
-            {
-                if ((data.cmdNBarg == 1) && (dcfpsptr != NULL))
-                {
-                    // Allow no argument call if FPS is connected
-                    if (printed_default_warning == 0)
-                    {
-                        printf("\033[36mCommand entered without arguments. Adopting current "
-                               "values:\033[0m\n");
-                        printed_default_warning = 1;
-                    }
-
-                    printf("  %-15s = ", fpscliarg[arg].fpstag);
-                    switch (fpscliarg[arg].type)
-                    {
-                    case CLIARG_FLOAT32:
-                        printf("%f\n", data.cmd[cmdi].argdata[arg].val.f32);
-                        break;
-                    case CLIARG_FLOAT64:
-                        printf("%lf\n", data.cmd[cmdi].argdata[arg].val.f64);
-                        break;
-                    case CLIARG_INT32:
-                        printf("%d\n", data.cmd[cmdi].argdata[arg].val.i32);
-                        break;
-                    case CLIARG_INT64:
-                    case CLIARG_ONOFF:
-                    case FPTYPE_PID:
-                        printf("%ld\n", data.cmd[cmdi].argdata[arg].val.i64);
-                        break;
-                    case CLIARG_UINT32:
-                        printf("%u\n", data.cmd[cmdi].argdata[arg].val.ui32);
-                        break;
-                    case CLIARG_UINT64:
-                        printf("%lu\n", data.cmd[cmdi].argdata[arg].val.ui64);
-                        break;
-                    case FPTYPE_TIMESPEC:
-                        printf("%lf\n", data.cmd[cmdi].argdata[arg].val.f64);
-                        break;
-                    case CLIARG_STR_NOT_IMG:
-                    case CLIARG_IMG:
-                    case CLIARG_STR:
-                    case FPTYPE_FILENAME:
-                    case FPTYPE_FITSFILENAME:
-                    case FPTYPE_FPSNAME:
-                    case FPTYPE_DIRNAME:
-                    case FPTYPE_EXECFILENAME:
-                    case FPTYPE_PROCESS:
-                        printf("\"%s\"\n", data.cmd[cmdi].argdata[arg].val.s);
-                        break;
-                    default:
-                        printf("?\n");
-                        break;
-                    }
-
-                    continue;
-                }
-                else
-                {
-                    printf("\n\033[1;31mERROR\033[0m"
-                           " Missing mandatory"
-                           " argument %d (%s: %s)\n",
-                           CLIarg, fpscliarg[arg].fpstag, fpscliarg[arg].descr);
-                    help_command(data.cmd[data.cmdindex].key);
-                    argcheck_process_flag = 0;
-                    DEBUG_TRACE_FEXIT();
-                    return RETURN_CLICHECKARGARRAY_FAILURE;
-                }
-            }
-
-            if (strcmp(data.cmdargtoken[CLIarg + 1].val.string, ".") == 0)
-            {
-                // if arg token starts with "."
-                DEBUG_TRACEPOINT("ADOPTING DEFAULT/LAST VALUE");
-                switch (fpscliarg[arg].type) // & 0x0000FFFF)
-                {
-                case CLIARG_FLOAT32: // if desired type is float single precision
-                    data.cmdargtoken[CLIarg + 1].val.numf = data.cmd[cmdi].argdata[arg].val.f32;
-                    data.cmdargtoken[CLIarg + 1].type     = CLIARG_FLOAT32;
-                    break;
-
-                case CLIARG_FLOAT64: // if desired type is float double precision
-                    data.cmdargtoken[CLIarg + 1].val.numf = data.cmd[cmdi].argdata[arg].val.f64;
-                    data.cmdargtoken[CLIarg + 1].type     = CLIARG_FLOAT64;
-                    break;
-
-                case CLIARG_INT32:
-                    data.cmdargtoken[CLIarg + 1].val.numl = data.cmd[cmdi].argdata[arg].val.i32;
-                    data.cmdargtoken[CLIarg + 1].type     = CLIARG_INT32;
-                    break;
-
-                case CLIARG_INT64:
-                    data.cmdargtoken[CLIarg + 1].val.numl = data.cmd[cmdi].argdata[arg].val.i64;
-                    data.cmdargtoken[CLIarg + 1].type     = CLIARG_INT64;
-                    break;
-
-                case CLIARG_UINT32:
-                    data.cmdargtoken[CLIarg + 1].val.numl = data.cmd[cmdi].argdata[arg].val.ui32;
-                    data.cmdargtoken[CLIarg + 1].type     = CLIARG_UINT32;
-                    break;
-
-                case CLIARG_UINT64:
-                    data.cmdargtoken[CLIarg + 1].val.numl = data.cmd[cmdi].argdata[arg].val.ui64;
-                    data.cmdargtoken[CLIarg + 1].type     = CLIARG_UINT64;
-                    break;
-
-                case CLIARG_STR_NOT_IMG: // if desired is string not image
-                    strncpy(data.cmdargtoken[CLIarg + 1].val.string,
-                            data.cmd[cmdi].argdata[arg].val.s, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
-                    data.cmdargtoken[CLIarg + 1].type = CLIARG_STR_NOT_IMG;
-                    break;
-
-                case CLIARG_IMG: // should be image
-                    strncpy(data.cmdargtoken[CLIarg + 1].val.string,
-                            data.cmd[cmdi].argdata[arg].val.s, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
-                    if (image_ID(data.cmd[cmdi].argdata[arg].val.s, dcimg, dcnimg) != -1)
-                    {
-                        // if image exists
-                        data.cmdargtoken[CLIarg + 1].type = CLIARG_IMG;
-                    }
-                    else
-                    {
-                        data.cmdargtoken[CLIarg + 1].type = CLIARG_STR_NOT_IMG;
-                    }
-                    //printf("arg %d IMG        : %s\n", CLIarg+1, data.cmdargtoken[CLIarg+1].val.string);
-                    break;
-
-                case CLIARG_STR:
-                    strncpy(data.cmdargtoken[CLIarg + 1].val.string,
-                            data.cmd[cmdi].argdata[arg].val.s, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
-                    data.cmdargtoken[CLIarg + 1].type = CLIARG_STR;
-                    break;
-                }
-            }
-
-            DEBUG_TRACEPOINT("calling CLI_checkarg");
-            if (CLI_checkarg(CLIarg + 1, fpscliarg[arg].type) == 0)
-            {
-                DEBUG_TRACEPOINT("successful parsing, update default to last");
-                switch (fpscliarg[arg].type) // & 0x0000FFFF)
-                {
-                case CLIARG_FLOAT32:
-                    data.cmd[cmdi].argdata[arg].val.f32 = data.cmdargtoken[CLIarg + 1].val.numf;
-                    break;
-                case CLIARG_FLOAT64:
-                    data.cmd[cmdi].argdata[arg].val.f64 = data.cmdargtoken[CLIarg + 1].val.numf;
-                    break;
-                case CLIARG_INT32:
-                    data.cmd[cmdi].argdata[arg].val.i32 = data.cmdargtoken[CLIarg + 1].val.numl;
-                    break;
-                case CLIARG_INT64:
-                    data.cmd[cmdi].argdata[arg].val.i64 = data.cmdargtoken[CLIarg + 1].val.numl;
-                    break;
-                case CLIARG_UINT32:
-                    data.cmd[cmdi].argdata[arg].val.ui32 = data.cmdargtoken[CLIarg + 1].val.numl;
-                    break;
-                case CLIARG_UINT64:
-                    data.cmd[cmdi].argdata[arg].val.ui64 = data.cmdargtoken[CLIarg + 1].val.numl;
-                    break;
-                case FPTYPE_PID:
-                    data.cmd[cmdi].argdata[arg].val.i64 = data.cmdargtoken[CLIarg + 1].val.numl;
-                    break;
-                case FPTYPE_TIMESPEC:
-                    data.cmd[cmdi].argdata[arg].val.f64 = data.cmdargtoken[CLIarg + 1].val.numf;
-                    break;
-                case CLIARG_STR_NOT_IMG:
-                case CLIARG_IMG:
-                case CLIARG_STR:
-                case FPTYPE_FILENAME:
-                case FPTYPE_FITSFILENAME:
-                case FPTYPE_FPSNAME:
-                case FPTYPE_DIRNAME:
-                case FPTYPE_EXECFILENAME:
-                case FPTYPE_PROCESS:
-                    strncpy(data.cmd[cmdi].argdata[arg].val.s,
-                            data.cmdargtoken[CLIarg + 1].val.string, STRINGMAXLEN_CLICMDARG - 1);
-                    break;
-                }
-            }
-            else
-            {
-                if (functionhelp_called == 1)
-                {
-                    DEBUG_TRACE_FEXIT();
-                    return RETURN_CLICHECKARGARRAY_HELP;
-                }
-                nberr++;
-            }
-            CLIarg++;
-        }
-        else
-        {
-            DEBUG_TRACEPOINT("argument not part of CLI");
-            DEBUG_TRACEPOINT("  arg %d  IGNORED [%7s]  %s", arg, argtypestring,
-                             fpscliarg[arg].fpstag);
-        }
-    }
-
-    DEBUG_TRACEPOINT("Number of arg error(s): %d / %d", nberr, CLIarg);
-
-    if (nberr == 0)
-    {
-        DEBUG_TRACE_FEXIT();
-        return RETURN_CLICHECKARGARRAY_SUCCESS;
-    }
-    else
-    {
-        printf("\n\033[1;31mERROR\033[0m"
-               " %d argument(s) have wrong"
-               " type\n",
-               nberr);
-        help_command(data.cmd[data.cmdindex].key);
-        DEBUG_TRACE_FEXIT();
-        return RETURN_CLICHECKARGARRAY_FAILURE;
-    }
+    errno_t rc = resolve_args(call, fpscliarg, n);
+    free(dflt.src);
+    DEBUG_TRACE_FEXIT();
+    return rc;
 }

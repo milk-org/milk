@@ -108,7 +108,7 @@ errno_t cli_savehistory(void)
 {
     if (data.cmdNBarg < 2)
     {
-        printf("Usage: savehistory "
+        printf("Usage: @history save "
                "<filename>\n");
         return RETURN_FAILURE;
     }
@@ -187,7 +187,7 @@ errno_t cli_searchhist(void)
 #ifdef USE_READLINE
     if (data.cmdNBarg < 2)
     {
-        printf("Usage: searchhist <pattern>\n");
+        printf("Usage: @history search <pattern>\n");
         return RETURN_SUCCESS;
     }
     const char *pattern = data.cmdargtoken[1].val.string;

@@ -57,17 +57,13 @@ void set_pending_suggestion(const char *text, int replace_len);
 #endif
 
 /* Watch command */
-errno_t cli_watch(void);
 
 /* List active shared memory structures */
-errno_t cli_list_streams(void);
-errno_t cli_list_fps(void);
 
 /* Startup script */
 void cli_milkrc_load(void);
 
 /* Command timing */
-errno_t cli_time(void);
 
 /* Command statistics */
 errno_t cli_cmdstats(void);
@@ -84,8 +80,11 @@ errno_t cli_showmatch_toggle(void);
 #endif
 
 /* Script formatting and block folding */
-errno_t cli_format_cmd(void);
-errno_t cli_fold_cmd(void);
+/** cli_format_file() - print @fname re-indented by its syntax tree (@in_place: rewrite it); 0 or 1. */
+int cli_format_file(const char *fname, int in_place, int width);
+
+/** cli_outline_file() - print the multi-line block outline of @fname; 0 or 1. */
+int cli_outline_file(const char *fname);
 
 /* Persistent history */
 void    cli_history_load(void);
@@ -95,10 +94,6 @@ errno_t cli_savehistory(void);
 /* Configurable prompt */
 errno_t cli_setprompt(void);
 void    cli_build_prompt(const char *fmt, char *out, int maxlen);
-
-/* Command bookmarks */
-errno_t cli_bookmark(void);
-void    cli_bookmark_load(void);
 
 /* Session logging */
 errno_t cli_sessionlog(void);
@@ -111,8 +106,6 @@ errno_t cli_searchhist(void);
 errno_t cli_fhist(void);
 
 /* Built-in cd and pwd */
-errno_t cli_cd(void);
-errno_t cli_pwd(void);
 
 /* Structured history log */
 void    cli_history_log_init(void);

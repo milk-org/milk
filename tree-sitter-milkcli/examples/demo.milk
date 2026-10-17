@@ -12,22 +12,22 @@ DMINDEX=0
 NBMODES=100
 GAIN=0.3
 
-# ---- Entity paths: @<namespace>.<name>.<property> ----
-XSIZE=@s.dm${DMINDEX}disp.xsize
-YSIZE=@stream.dm${DMINDEX}disp.ysize
-FRAMECNT=@s.wfs.cnt0
-CURGAIN=@f.${LOOPNAME}.gain
-LOOPSTAT=@p.${LOOPNAME}.status
-SEQSTEP=@q.mysequence.active_step
-echo "frame @s.wfs.cnt0 of @s.wfs.xsize x @s.wfs.ysize"
-echo "escaped: \@s.wfs.xsize"
+# ---- Entity values: @{<namespace>.<name>.<property>} ----
+XSIZE=@{s.dm${DMINDEX}disp.xsize}
+YSIZE=@{stream.dm${DMINDEX}disp.ysize}
+FRAMECNT=@{s.wfs.cnt0}
+CURGAIN=@{f.${LOOPNAME}.gain}
+LOOPSTAT=@{p.${LOOPNAME}.status}
+SEQSTEP=@{q.mysequence.active_step}
+echo "frame @{s.wfs.cnt0} of @{s.wfs.xsize} x @{s.wfs.ysize}"
+echo "escaped: \@{s.wfs.xsize}"
 
-# ---- milk commands: module.command or @command ----
+# ---- Module commands (module.command) and keywords (@keyword) ----
 mem.mk2Dim dm0ref 128 128
-@mk2Dim "@L:buf" 64 64
-@listim
-@cmd? mem.listim
-@?
+mem.mk2Dim "@L:buf" 64 64
+mem.listim
+@help mem.listim
+@help
 
 # ---- Reading and writing entities ----
 @get -v nx s.wfs.xsize
@@ -35,17 +35,17 @@ mem.mk2Dim dm0ref 128 128
 @set f.${LOOPNAME}.gain=0.25
 @set f.${LOOPNAME}.gain = 0.25
 @set s.wfs.kw.OBS=night "comment"
-@f.${LOOPNAME}.runstart
+@set f.${LOOPNAME}.runstart
 @exists s.wfs && echo "wfs exists"
 
 # ---- Calculator ----
 @calc "dm0ref = dm0ref * 0 + 5"
 @calc -v m "imean(dm0ref)"
-@ x = 2 * 21
+@calc "x = 2 * 21"
 echo "mean=@{imean(dm0ref)}"
 HALF=@{${NBMODES} / 2}
-@dpdigits 6
-@batch "mem.mk2Dim a 64 64; a = 5; a *= 2"
+@config digits 6
+@pipe "mem.mk2Dim a 64 64; a = 5; a *= 2"
 @pipe "mem.mk2Dim p 32 32 |> _ = 4 |> _ *= 2.5"
 
 # ---- Arithmetic ----
@@ -113,12 +113,12 @@ wait_frames() {
 @defer rm -f /tmp/work.fits
 milksleep 0.05
 
-# ---- Stream pipe operator ----
-mem.mk2Dim tmp 32 32 |> iofits.saveFITS _ ./tmp.fits
+# ---- Pipelines in one request (@pipe) ----
+@pipe "mem.mk2Dim tmp 32 32 |> iofits.saveFITS _ ./tmp.fits"
 
 # ---- Source another script ----
-source ./common_setup.milk
-include_once ./hardware_init.milk
+@source ./common_setup.milk
+@source --once ./hardware_init.milk
 
 # ---- Export and declare ----
 export MILK_SHM_DIR="/dev/shm"
@@ -141,7 +141,7 @@ iofits.saveFITS dm0ref ./dm0ref.fits > /dev/null 2>&1
 # ---- Logical operators ----
 [ -f ./config.txt ] && source ./config.txt
 [ -z "$GAIN" ] || echo "GAIN is set"
-! @running f.${LOOPNAME} && @f.${LOOPNAME}.runstart
+! @running f.${LOOPNAME} && @set f.${LOOPNAME}.runstart
 
 echo "Script complete" # trailing comment
 exit 0

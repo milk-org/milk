@@ -225,28 +225,6 @@ static int binop_scalar_img(cli_token_type op, double lv, const char *iname, con
 
 
 /**
- * ipow_checked() - @b^@e for @e >= 0; returns 0 and sets *@out, or -1 on overflow.
- */
-static int ipow_checked(long b, long e, long *out)
-{
-    long r = 1;
-    while (e > 0)
-    {
-        if ((e & 1) && __builtin_mul_overflow(r, b, &r))
-        {
-            return -1;
-        }
-        e >>= 1;
-        if (e > 0 && __builtin_mul_overflow(b, b, &b))
-        {
-            return -1;
-        }
-    }
-    *out = r;
-    return 0;
-}
-
-/**
  * images_broadcastable() - 1 if images @a and @b can be combined pixel by pixel: every axis the
  * same size or 1 in one of them (the rule of arith_image_function_2_1_IMGID(), which aborts otherwise).
  */
@@ -396,155 +374,11 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
     }
 
     /* Both numeric (no string) */
-
-    /* long OP long -> long (except / -> double) */
-    if (left.type == VAL_LONG && right.type == VAL_LONG && op != TOK_OP_SLASH)
+    val_t       res;
+    const char *err = cli_calc_scalar_binop(op, &left, &right, &res);
+    if (err != NULL)
     {
-        long r;
-        switch (op) // overflowing integer results fall back to double
-        {
-        case TOK_OP_PLUS:
-            return __builtin_add_overflow(left.lval, right.lval, &r)
-                       ? mk_double((double) left.lval + (double) right.lval)
-                       : mk_long(r);
-        case TOK_OP_MINUS:
-            return __builtin_sub_overflow(left.lval, right.lval, &r)
-                       ? mk_double((double) left.lval - (double) right.lval)
-                       : mk_long(r);
-        case TOK_OP_STAR:
-            return __builtin_mul_overflow(left.lval, right.lval, &r)
-                       ? mk_double((double) left.lval * (double) right.lval)
-                       : mk_long(r);
-        case TOK_OP_MOD:
-            if (right.lval == 0)
-            {
-                parse_errmsg("Modulo by zero");
-                return mk_long(0);
-            }
-            if (left.lval == LONG_MIN && right.lval == -1)
-            {
-                return mk_long(0);
-            }
-            return mk_long(left.lval % right.lval);
-        case TOK_OP_CARET:
-            if (right.lval < 0 || ipow_checked(left.lval, right.lval, &r) != 0)
-            {
-                return mk_double(pow((double) left.lval, (double) right.lval));
-            }
-            return mk_long(r);
-        case TOK_OP_LT:
-            return mk_long(left.lval < right.lval ? 1 : 0);
-        case TOK_OP_LE:
-            return mk_long(left.lval <= right.lval ? 1 : 0);
-        case TOK_OP_GT:
-            return mk_long(left.lval > right.lval ? 1 : 0);
-        case TOK_OP_GE:
-            return mk_long(left.lval >= right.lval ? 1 : 0);
-        case TOK_OP_EQ:
-            return mk_long(left.lval == right.lval ? 1 : 0);
-        case TOK_OP_NEQ:
-            return mk_long(left.lval != right.lval ? 1 : 0);
-        case TOK_OP_AND:
-            return mk_long((left.lval && right.lval) ? 1 : 0);
-        case TOK_OP_OR:
-            return mk_long((left.lval || right.lval) ? 1 : 0);
-        case TOK_OP_BAND:
-            return mk_long(left.lval & right.lval);
-        case TOK_OP_BOR:
-            return mk_long(left.lval | right.lval);
-        case TOK_OP_BXOR:
-            return mk_long(left.lval ^ right.lval);
-        case TOK_OP_LSHIFT:
-            if (right.lval < 0 || right.lval >= 64)
-            {
-                return mk_long(0);
-            }
-            return mk_long(left.lval << right.lval);
-        case TOK_OP_RSHIFT:
-            if (right.lval < 0 || right.lval >= 64)
-            {
-                return mk_long(0);
-            }
-            return mk_long(left.lval >> right.lval);
-        default:
-            break;
-        }
+        parse_errmsg(err);
     }
-
-    /* any numeric mix -> double */
-    {
-        double lv = to_double(left);
-        double rv = to_double(right);
-
-        switch (op)
-        {
-        case TOK_OP_PLUS:
-            return mk_double(lv + rv);
-        case TOK_OP_MINUS:
-            return mk_double(lv - rv);
-        case TOK_OP_STAR:
-            return mk_double(lv * rv);
-        case TOK_OP_SLASH:
-            if (rv == 0.0)
-            {
-                parse_errmsg("Division by zero");
-                return mk_double(0);
-            }
-            return mk_double(lv / rv);
-        case TOK_OP_MOD:
-            if (rv == 0.0)
-            {
-                parse_errmsg("Modulo by zero");
-                return mk_double(0);
-            }
-            return mk_double(fmod(lv, rv));
-        case TOK_OP_CARET:
-            return mk_double(pow(lv, rv));
-        case TOK_OP_LT:
-            return mk_long(lv < rv ? 1 : 0);
-        case TOK_OP_LE:
-            return mk_long(lv <= rv ? 1 : 0);
-        case TOK_OP_GT:
-            return mk_long(lv > rv ? 1 : 0);
-        case TOK_OP_GE:
-            return mk_long(lv >= rv ? 1 : 0);
-        case TOK_OP_EQ:
-            return mk_long(lv == rv ? 1 : 0);
-        case TOK_OP_NEQ:
-            return mk_long(lv != rv ? 1 : 0);
-        case TOK_OP_AND:
-            return mk_long((lv != 0 && rv != 0) ? 1 : 0);
-        case TOK_OP_OR:
-            return mk_long((lv != 0 || rv != 0) ? 1 : 0);
-        case TOK_OP_BAND:
-            return mk_long((long) lv & (long) rv);
-        case TOK_OP_BOR:
-            return mk_long((long) lv | (long) rv);
-        case TOK_OP_BXOR:
-            return mk_long((long) lv ^ (long) rv);
-        case TOK_OP_LSHIFT:
-        {
-            long s = (long) rv;
-            if (s < 0 || s >= 64)
-            {
-                return mk_long(0);
-            }
-            return mk_long((long) lv << s);
-        }
-        case TOK_OP_RSHIFT:
-        {
-            long s = (long) rv;
-            if (s < 0 || s >= 64)
-            {
-                return mk_long(0);
-            }
-            return mk_long((long) lv >> s);
-        }
-        default:
-            break;
-        }
-    }
-
-    parse_errmsg("Unknown operator");
-    return mk_long(0);
+    return res;
 }

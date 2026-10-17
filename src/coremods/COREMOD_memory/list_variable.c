@@ -141,8 +141,9 @@ static FPS_APP_INFO FPS_app_info_listvar = {
 
 static char p_regex[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
-#define FPS_PARAMS_listvar(X) \
-    X(".regex", p_regex, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "regex filter (empty = all)")
+#define FPS_PARAMS_listvar(X)                                                          \
+    X(".regex", p_regex, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_OPTIONAL, \
+      "regex filter (empty = all)")
 
 static FPS_CLI_BINDING my_bindings_listvar[] = { FPS_PARAMS_listvar(FPS_X_BINDING) };
 

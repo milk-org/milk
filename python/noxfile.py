@@ -58,7 +58,10 @@ def milk_build(
     session.chdir(tmp_dir)
 
     if not os.path.islink("./pyMilk"):
-        session.run(*("ln -sf /home/vdeo/src/pyMilk ./pyMilk").split(), external=True)
+        session.run(
+            *("ln -sf /home/oguyon/src-frameworkdev/pyMilk ./pyMilk").split(),
+            external=True,
+        )
     session.run(*("uv pip install ./pyMilk").split())  # install pyMilk
 
     os.makedirs("./build", exist_ok=True)
