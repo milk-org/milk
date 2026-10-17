@@ -1046,7 +1046,7 @@ def test_server_command_and_output_ring_buffer_log(tmp_path):
 
         # Trigger a deliberate error to test error logging
         set +e
-        @calc "1 / 0" 2>/dev/null
+        @calc "log_im + nosuch_v" 2>/dev/null  # scalar-only errors never reach the server
         set -e
 
         # 1. Default @log includes command text, durations, and captured stdout/stderr
@@ -1056,7 +1056,7 @@ def test_server_command_and_output_ring_buffer_log(tmp_path):
         [[ "${log_out}" == *"imstats log_im"* ]]
         [[ "${log_out}" == *"Image size (->imsize0...)"* ]]
         [[ "${log_out}" == *"@set s.log_im.kw.CAM = SCExAO"* ]]
-        [[ "${log_out}" == *"@= 1 / 0"* ]]
+        [[ "${log_out}" == *"@= log_im + nosuch_v"* ]]
 
         # 2. Regex search across command and output (--grep)
         grep_out="$(@log --grep 'rms per pixel')"
@@ -1065,13 +1065,13 @@ def test_server_command_and_output_ring_buffer_log(tmp_path):
 
         # 3. Error filter (--errors)
         err_out="$(@log --errors)"
-        [[ "${err_out}" == *"@= 1 / 0"* ]]
+        [[ "${err_out}" == *"@= log_im + nosuch_v"* ]]
         [[ "${err_out}" != *"@= log_im = 3"* ]]
 
         # 4. JSON output (--json -n 2)
         json_out="$(@log -n 2 --json)"
         [[ "${json_out}" == *'"cmd":"@set s.log_im.kw.CAM = SCExAO"'* ]]
-        [[ "${json_out}" == *'"cmd":"@= 1 / 0"'* ]]
+        [[ "${json_out}" == *'"cmd":"@= log_im + nosuch_v"'* ]]
         [[ "${json_out}" == *'"rc":2'* ]]
 
         # 5. Clear log (--clear)

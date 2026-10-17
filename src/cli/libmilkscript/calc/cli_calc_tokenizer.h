@@ -110,4 +110,6 @@ typedef struct
  */
 int cli_tokenize(const char *input, cli_token *tokens, int max_tok);
 
+int cli_calc_is_scalar_expr(const char *s);
+
 #endif /* CLI_CALC_TOKENIZER_H */

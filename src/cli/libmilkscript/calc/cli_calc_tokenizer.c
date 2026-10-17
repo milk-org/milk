@@ -151,6 +151,67 @@ static inline int is_ident_start(int c)
 }
 
 /**
+ * cli_calc_is_scalar_expr() - 1 if @s holds only numbers, operators and scalar math functions, so it
+ * can be evaluated anywhere without milk state (no names, strings, slices or assignments).
+ */
+int cli_calc_is_scalar_expr(const char *s)
+{
+    if (s == NULL)
+    {
+        return 0;
+    }
+    const char *p = s;
+    while (*p != '\0')
+    {
+        unsigned char c = (unsigned char) *p;
+        if (isdigit(c) || (c == '.' && isdigit((unsigned char) p[1])))
+        {
+            p++;
+            while (isdigit((unsigned char) *p) || *p == '.' ||
+                   ((*p == 'e' || *p == 'E') &&
+                    (isdigit((unsigned char) p[1]) || p[1] == '+' || p[1] == '-')))
+            {
+                p += (*p == 'e' || *p == 'E') ? 2 : 1;
+            }
+            if (isalpha((unsigned char) *p) || *p == '_')
+            {
+                return 0; /* 2x, 0x10: let the full parser decide */
+            }
+            continue;
+        }
+        if (isalpha(c) || c == '_')
+        {
+            int fn = 0;
+            for (int i = 0; builtins[i].name != NULL && !fn; i++)
+            {
+                size_t blen = strlen(builtins[i].name); /* includes the '(' */
+                fn = (strncmp(p, builtins[i].name, blen) == 0 &&
+                      (builtins[i].ttype == TOK_FUNC_D_D || builtins[i].ttype == TOK_FUNC_DD_D ||
+                       builtins[i].ttype == TOK_FUNC_DDD_D))
+                         ? (int) blen
+                         : 0;
+            }
+            if (!fn)
+            {
+                return 0;
+            }
+            p += fn;
+            continue;
+        }
+        if (c == '=' && !(p > s && strchr("<>=!", p[-1]) != NULL) && p[1] != '=')
+        {
+            return 0; /* assignment */
+        }
+        if (strchr(" \t+-*/%^()<>=!&|?:,", c) == NULL)
+        {
+            return 0;
+        }
+        p++;
+    }
+    return 1;
+}
+
+/**
  * @brief Check if an environment variable exists and holds a pure numeric value.
  */
 static int is_numeric_env_var(const char *s)

@@ -620,6 +620,55 @@ def test_P3_calc_sees_recreated_stream(tmp_path):
     assert "b=5" in res.stdout
 
 
+def test_WP15_scalar_calc_in_builtin(tmp_path):
+    res = milk_cli_script(
+        '@calc -v a "7/2"\n@calc -v b "sqrt(2)"\n@dpdigits 4\n@calc -v c "sqrt(2)"\n'
+        '@calc -v d "1/0"; echo "d_rc=$?"\n'
+        '@mk2Dim w15 2 2\n@calc "w15 = 3"\n@calc -v e "itot(w15)"\n'
+        'echo "a=$a b=$b c=$c e=$e"',
+        tmp_path,
+    )
+    assert "a=3.5 b=1.4142135623731 c=1.414 e=12" in res.stdout, res.stdout + res.stderr
+    assert value(res.stdout, "d_rc") == "2"
+
+
+def test_WP15_milksleep(tmp_path):
+    res = milk_cli_script(
+        "t0=$EPOCHREALTIME; milksleep 0.25; t1=$EPOCHREALTIME\n"
+        'echo "ms=$(( (${t1/./}-${t0/./})/1000 ))"\n'
+        'milksleep abc 2>/dev/null; echo "bad=$?"',
+        tmp_path,
+    )
+    assert 250 <= int(value(res.stdout, "ms") or 0) < 600, res.stdout + res.stderr
+    assert value(res.stdout, "bad") == "2"
+
+
+def test_WP15_milksleep_ctrl_c(tmp_path):
+    out = pty_session(
+        [
+            ("line", "milksleep 5; echo after=$((0+1))", 1.0),
+            ("raw", "\x03", 1.0),
+            ("line", 'echo "next=$((6*7))"', 1.0),
+        ],
+        tmp_path,
+    )
+    assert "after=1" not in out
+    assert "next=42" in out
+
+
+def test_WP15_waitfor_stream_created_later():
+    res = _run_bash("""
+        ( sleep 0.3; @mk2Dim "@S:wf15" 4 4 >/dev/null; sleep 0.1; @calc "wf15 = 1" ) &
+        t0=$EPOCHREALTIME
+        rc=0; @waitfor s.wf15 --timeout 5 || rc=$?
+        t1=$EPOCHREALTIME
+        wait
+        echo "rc=$rc"; echo "ms=$(( (${t1/./}-${t0/./})/1000 ))"
+        """)
+    assert "rc=0" in res.stdout, res.stdout + res.stderr
+    assert int(value(res.stdout, "ms") or 9999) < 2000
+
+
 def test_WP14_get_after_stream_removed(tmp_path):
     """The cached mapping is dropped once the stream file is gone (stream owned by another process)."""
     (tmp_path / "mk.milk").write_text('@mk2Dim "@S:c14d" 2 2\n')
@@ -834,7 +883,7 @@ def test_WP9_transport_failure_is_255(tmp_path, reply, msg):
     t = threading.Thread(target=serve, daemon=True)
     t.start()
     try:
-        res = _milk_call(env, "test", "1 == 1")
+        res = _milk_call(env, "test", "x == 1")  # names go to the server
     finally:
         t.join(timeout=5)
         lsock.close()
@@ -1133,7 +1182,7 @@ def test_S8_transport_error_distinct_rc(tmp_path):
     env, name = _server_env(tmp_path)
     fake = _fake_server(name, "close")
     try:
-        res = _milk_call(env, "test", "1 < 2", timeout=5)
+        res = _milk_call(env, "test", "x < 2", timeout=5)
     finally:
         _kill_session(fake.pid)
         _kill_by_cmdline(name)

@@ -2173,7 +2173,8 @@ int milk_server_exec_call(int            client_fd,
     }
 
     milk_server_snapshot_dcvar();
-    unsigned int nbcmd_before = data.NBcmd;
+    unsigned int nbcmd_before  = data.NBcmd;
+    int          digits_before = cli_float_digits;
 
     // also in forked workers (listen_fd < 0, ignored by poll): CANCEL/hang-up must stop them
     int has_watcher = watcher_begin(client_fd, listen_fd);
@@ -2189,6 +2190,12 @@ int milk_server_exec_call(int            client_fd,
     fflush(stderr);
 
     milk_server_send_modified_dcvars(client_fd);
+    if (cli_float_digits != digits_before) /* the builtin formats scalar results itself */
+    {
+        char pkt[32];
+        int  n = snprintf(pkt, sizeof(pkt), "MILK_DPDIGITS%c%d", '\0', cli_float_digits);
+        milk_proto_send(client_fd, MILK_MSG_SETVAR, 0, pkt, (uint32_t) n + 1);
+    }
 
     /* If a module was dynamically loaded (@mload / @soload), send DEFCMD */
     for (unsigned int ci = nbcmd_before; ci < data.NBcmd; ci++)

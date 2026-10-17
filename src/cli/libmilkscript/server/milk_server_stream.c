@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/inotify.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
@@ -42,6 +43,7 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "cli_calc_parser.h"
 #include "milk_shm_prop.h"
+#include "milk_shm_prop_internal.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
 #include "processinfo.h"
@@ -260,18 +262,50 @@ int milk_server_waitfor(int client_fd, const char *target, const char *arg2, dou
 
     IMAGE img;
     memset(&img, 0, sizeof(img));
+    int ifd = -1; /* inotify on the shm directory while the stream does not exist yet */
     while (ImageStreamIO_openIm(&img, sname) != IMAGESTREAMIO_SUCCESS || img.md == NULL)
     {
         if (check_client_cancelled(client_fd))
         {
+            if (ifd >= 0)
+            {
+                close(ifd);
+            }
             return 130;
         }
         if (has_timo && (monotonic_sec() - t_start) >= timeout_sec)
         {
+            if (ifd >= 0)
+            {
+                close(ifd);
+            }
             return 124;
         }
-        struct timespec slp = { 0, 10000000L };
-        nanosleep(&slp, NULL);
+        if (ifd < 0 && (ifd = inotify_init1(IN_CLOEXEC | IN_NONBLOCK)) >= 0 &&
+            inotify_add_watch(ifd, milk_shm_prop_shmdir(), IN_CREATE | IN_MOVED_TO) < 0)
+        {
+            close(ifd);
+            ifd = -2; /* no inotify: poll the file every 10 ms */
+        }
+        if (ifd >= 0)
+        {
+            struct pollfd pfd = { ifd, POLLIN, 0 };
+            if (poll(&pfd, 1, 200) > 0) /* 200 ms bounds the cancel/timeout checks */
+            {
+                char    evbuf[4096];
+                ssize_t rr = read(ifd, evbuf, sizeof(evbuf));
+                (void) rr;
+            }
+        }
+        else
+        {
+            struct timespec slp = { 0, 10000000L };
+            nanosleep(&slp, NULL);
+        }
+    }
+    if (ifd >= 0)
+    {
+        close(ifd);
     }
 
     uint64_t start_cnt0 = img.md->cnt0;

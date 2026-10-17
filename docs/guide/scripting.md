@@ -59,6 +59,11 @@ background, so other commands keep running meanwhile, and they see live state: a
 another command changes, or the cube that `@grab` fills. A `SHUTDOWN` request is honoured even while
 a command is running.
 
+An expression made only of numbers, operators and math functions (`@calc -v y "2*sin(0.5)"`,
+`@test "3 > 2"`, `@{1+2}`) is evaluated in the shell itself, without a request to milk-cli, so it does
+not appear in `@log`. `@dpdigits` applies to these results too. Use `milksleep 0.05` for short sleeps
+in loops: it does not start a process, and Ctrl-C still interrupts it.
+
 A command that has to run alongside another one with its own input and output runs in a copy of the
 process: a later stage of a pipeline such as `@streamcat s.cam | @streamwrite out`, a
 `milk-call call --async` command, and `@replay`. Shared-memory streams it writes are visible to

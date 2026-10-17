@@ -119,11 +119,11 @@ unset _milk_ov_file
 # ---------------------------------------------------------------------------
 _MILK_BUILTIN_LOADED=0
 enable -d milkcall milkget milkset milkcalc milktest milkexists milkls \
-    milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog milktranslate milkcloexec 2>/dev/null || true
+    milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog milktranslate milkcloexec milksleep 2>/dev/null || true
 if [[ -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" ]] && ! grep -q "libmilk.*(deleted)" "/proc/$$/maps" 2>/dev/null; then
     if MILK_QUIET=1 enable -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" \
         milkcall milkget milkset milkcalc milktest milkexists milkls \
-        milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog milktranslate milkcloexec 2>/dev/null; then
+        milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog milktranslate milkcloexec milksleep 2>/dev/null; then
         _MILK_BUILTIN_LOADED=1
     fi
 fi

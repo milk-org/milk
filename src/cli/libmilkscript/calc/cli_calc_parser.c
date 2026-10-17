@@ -100,6 +100,8 @@ int parse_mode = 0; // 0 for cli_parse, 1 for cli_calc_eval_line
 
 static const char *calc_src =
     NULL; /* expression being evaluated by cli_calc_eval_bash, for messages */
+static char  *calc_out    = NULL; /* when set, the result goes here instead of stdout */
+static size_t calc_out_sz = 0;
 
 // Helper functions for cli_parse
 cli_token *cur_parse(void)
@@ -698,19 +700,28 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
 
     if (!is_assign_op)
     {
+        char buf[CLI_CALC_TOKEN_MAXLEN + 32] = "";
         if (result.type == VAL_LONG)
         {
-            printf("%ld\n", result.lval);
+            snprintf(buf, sizeof(buf), "%ld", result.lval);
         }
         else if (result.type == VAL_DOUBLE)
         {
-            printf("%.*g\n", cli_float_digits, result.dval);
+            snprintf(buf, sizeof(buf), "%.*g", cli_float_digits, result.dval);
         }
         else if (result.type == VAL_STRING)
         {
-            printf("%s\n", result.sval);
+            snprintf(buf, sizeof(buf), "%s", result.sval);
         }
-        fflush(stdout);
+        if (calc_out != NULL)
+        {
+            snprintf(calc_out, calc_out_sz, "%s", buf);
+        }
+        else if (result.type == VAL_LONG || result.type == VAL_DOUBLE || result.type == VAL_STRING)
+        {
+            printf("%s\n", buf);
+            fflush(stdout);
+        }
     }
 
     if (out_rc != NULL)
@@ -718,4 +729,22 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
         *out_rc = 0;
     }
     return 1;
+}
+
+/**
+ * cli_calc_eval_str() - cli_calc_eval_bash() with the result written to @out (empty for assignments)
+ * instead of stdout.
+ */
+int cli_calc_eval_str(const char *input, int is_test, int *out_rc, char *out, size_t outsz)
+{
+    if (out != NULL && outsz > 0)
+    {
+        out[0] = '\0';
+    }
+    calc_out    = out;
+    calc_out_sz = outsz;
+    int r       = cli_calc_eval_bash(input, is_test, out_rc);
+    calc_out    = NULL;
+    calc_out_sz = 0;
+    return r;
 }

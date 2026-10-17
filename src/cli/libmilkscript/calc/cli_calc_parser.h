@@ -14,6 +14,8 @@
 #ifndef CLI_CALC_PARSER_H
 #define CLI_CALC_PARSER_H
 
+#include <stddef.h>
+
 /**
  * @brief Parse a single CLI token string
  *
@@ -56,6 +58,8 @@ int cli_calc_eval_math_to_val(const char *input, int *out_type, long *out_lval, 
  * @return 1 on valid evaluation, 0 on parse/eval error
  */
 int cli_calc_eval_bash(const char *input, int is_test, int *out_rc);
+
+int cli_calc_eval_str(const char *input, int is_test, int *out_rc, char *out, size_t outsz);
 
 /**
  * @brief Delete every temporary `_tmpcalcN` image still tracked (e.g. after a command whose

@@ -377,13 +377,31 @@ void milk_srvlog_client_record(const char            *sockpath,
         return;
     }
 
+    /* the mapping is kept between calls; one stat() tells whether the server re-created the log */
+    static char               cl_path[512] = "";
+    static milk_srvlog_shm_t *cl_shm       = NULL;
+    static ino_t              cl_ino       = 0;
+    struct stat               pst;
+    if (cl_shm != NULL && strcmp(path, cl_path) == 0 && stat(path, &pst) == 0 &&
+        pst.st_ino == cl_ino)
+    {
+        milk_srvlog_record(cl_shm, ts_start, duration_ns, getpid(), msg_type, rc, cmd, output);
+        return;
+    }
+    if (cl_shm != NULL)
+    {
+        munmap(cl_shm, sizeof(milk_srvlog_shm_t));
+        cl_shm = NULL;
+    }
+
     int fd = open(path, O_CREAT | O_RDWR | O_CLOEXEC, 0600);
     if (fd < 0)
     {
         return;
     }
     struct stat st;
-    if (fstat(fd, &st) != 0 || (size_t) st.st_size < sizeof(milk_srvlog_shm_t))
+    int         have_st = (fstat(fd, &st) == 0);
+    if (!have_st || (size_t) st.st_size < sizeof(milk_srvlog_shm_t))
     {
         if (ftruncate(fd, (off_t) sizeof(milk_srvlog_shm_t)) != 0)
         {
@@ -426,7 +444,14 @@ void milk_srvlog_client_record(const char            *sockpath,
     }
 
     milk_srvlog_record(shm, ts_start, duration_ns, getpid(), msg_type, rc, cmd, output);
-    munmap(shm, sizeof(milk_srvlog_shm_t));
+    if (!have_st)
+    {
+        munmap(shm, sizeof(milk_srvlog_shm_t)); /* unknown inode: cannot check it next time */
+        return;
+    }
+    cl_shm = shm;
+    cl_ino = st.st_ino;
+    snprintf(cl_path, sizeof(cl_path), "%s", path);
 }
 
 /**

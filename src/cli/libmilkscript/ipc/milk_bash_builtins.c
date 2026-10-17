@@ -20,12 +20,14 @@
 #endif
 
 #include <dlfcn.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "milk_bash_engine.h"
@@ -725,6 +727,43 @@ static int milklog_builtin(WORD_LIST *list)
  * milktranslate_builtin() - `milktranslate -v VAR FILE`: translate a milk script into a private
  * command file and bind its path to VAR (no fork); `milktranslate --done PATH` removes it.
  */
+static volatile sig_atomic_t g_sleep_sigint = 0;
+
+static void sleep_on_sigint(int signo)
+{
+    (void) signo;
+    g_sleep_sigint = 1;
+}
+
+/** milksleep SECONDS - sleep in-process (no fork of sleep(1)); Ctrl-C ends it and reaches bash. */
+static int milksleep_builtin(WORD_LIST *list)
+{
+    char  *end = NULL;
+    double sec = (list != NULL && list->next == NULL) ? strtod(list->word->word, &end) : -1.0;
+    if (end == NULL || end == list->word->word || *end != '\0' || !(sec >= 0.0 && sec < 1.0e9))
+    {
+        fprintf(stderr, "usage: milksleep SECONDS\n");
+        return 2;
+    }
+    struct timespec  req = { (time_t) sec, (long) ((sec - (double) (time_t) sec) * 1.0e9) };
+    struct sigaction sa, old;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = sleep_on_sigint;
+    sigemptyset(&sa.sa_mask);
+    g_sleep_sigint = 0;
+    sigaction(SIGINT, &sa, &old);
+    while (nanosleep(&req, &req) != 0 && errno == EINTR && !g_sleep_sigint)
+    {
+    }
+    sigaction(SIGINT, &old, NULL);
+    if (g_sleep_sigint)
+    {
+        raise(SIGINT);
+        return 130;
+    }
+    return 0;
+}
+
 /** milkcloexec FD... - mark the engine's pipe fds close-on-exec so bash's children do not inherit them. */
 static int milkcloexec_builtin(WORD_LIST *list)
 {
@@ -909,7 +948,8 @@ static char *const milkshutdown_doc[] = { "Shut down the session milk-cli --serv
 static char *const milkserver_doc[]   = { "Manage milk-cli servers (@server).", NULL };
 static char *const milklog_doc[] = { "Inspect or search the milk server SHM log (@log).", NULL };
 static char *const milkls_doc[]  = { "List active milk entities (@ls).", NULL };
-static char *const milkcloexec_doc[]   = { "Mark file descriptors close-on-exec.", NULL };
+static char *const milkcloexec_doc[] = { "Mark file descriptors close-on-exec.", NULL };
+static char *const milksleep_doc[]   = { "Sleep for SECONDS (fractional) without forking.", NULL };
 static char *const milktranslate_doc[] = { "Translate a milk script into a private file to source.",
                                            NULL };
 
@@ -1011,6 +1051,9 @@ struct builtin milkls_struct = { "milkls",
                                  milkls_doc,
                                  "milkls [-l|-q|--json|--local] [pat]",
                                  0 };
+
+struct builtin milksleep_struct = { "milksleep",   milksleep_builtin,   BUILTIN_ENABLED,
+                                    milksleep_doc, "milksleep SECONDS", 0 };
 
 struct builtin milkcloexec_struct = { "milkcloexec",   milkcloexec_builtin, BUILTIN_ENABLED,
                                       milkcloexec_doc, "milkcloexec FD...", 0 };

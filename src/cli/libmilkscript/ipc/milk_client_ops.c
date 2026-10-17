@@ -31,6 +31,9 @@
 #include <fcntl.h>
 #include <math.h>
 #include <semaphore.h>
+#include <sys/eventfd.h>
+#include <poll.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -42,6 +45,9 @@
 #include <unistd.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "CLIcore_script.h"
+#include "cli_calc_parser.h"
+#include "cli_calc_tokenizer.h"
 #include "milk_client.h"
 #include "milk_client_internal.h"
 #include "milk_entity_ns.h"
@@ -516,6 +522,29 @@ static int client_calc_or_test(const char                *expr,
     if (expr == NULL || expr[0] == '\0')
     {
         return is_test ? 1 : 0;
+    }
+
+    if (cli_calc_is_scalar_expr(expr)) /* nothing to look up on the server: evaluate here */
+    {
+        const char *dp   = milk_ipc_get_var(hooks, "MILK_DPDIGITS"); /* sent back by @dpdigits */
+        long        nd   = (dp != NULL) ? strtol(dp, NULL, 10) : 0;
+        cli_float_digits = (nd >= 1 && nd <= 17) ? (int) nd : 15;
+        char res[256];
+        int  rc = 2;
+        cli_calc_eval_str(expr, is_test, &rc, res, sizeof(res));
+        if (!is_test && rc == 0 && res[0] != '\0')
+        {
+            if (varname != NULL && varname[0] != '\0')
+            {
+                milk_ipc_set_var(hooks, varname, res, 0);
+            }
+            else
+            {
+                printf("%s\n", res);
+                fflush(stdout);
+            }
+        }
+        return rc;
     }
 
     char sockpath[256];
@@ -1063,6 +1092,108 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
  * Uses zero-fork `/dev/shm` inspection (with `ImageStreamIO_openIm`) so waiting
  * on multiple streams has sub-millisecond latency without spawning subshells.
  */
+/* @waitany: one thread per stream blocks on that stream's semaphore and signals an eventfd. */
+typedef struct
+{
+    IMAGE                 *im;
+    uint64_t               init_cnt;
+    int                    semindex;
+    int                    efd;
+    volatile sig_atomic_t *stop;
+} sem_waiter_arg_t;
+
+typedef struct
+{
+    int                   efd;
+    volatile sig_atomic_t stop;
+    int                   n;
+    int                   active[64];
+    int                   semindex[64];
+    pthread_t             tid[64];
+    sem_waiter_arg_t      arg[64];
+} sem_waiters_t;
+
+static void *sem_waiter_main(void *p)
+{
+    sem_waiter_arg_t *a = (sem_waiter_arg_t *) p;
+    while (!*a->stop)
+    {
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ts.tv_sec += 1; /* only bounds how long a stop request can wait */
+        sem_timedwait(a->im->semptr[a->semindex], &ts);
+        if (!*a->stop && a->im->md->cnt0 != a->init_cnt)
+        {
+            uint64_t one = 1;
+            ssize_t  wr  = write(a->efd, &one, sizeof(one));
+            (void) wr;
+            break;
+        }
+    }
+    return NULL;
+}
+
+/** sem_waiters_start() - start a waiter for each open stream that has semaphores (sw->efd < 0: none). */
+static void sem_waiters_start(sem_waiters_t  *sw,
+                              IMAGE          *imgs,
+                              const int      *opened,
+                              const uint64_t *init_cnt,
+                              int             n)
+{
+    memset(sw, 0, sizeof(*sw));
+    sw->n   = n;
+    sw->efd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+    if (sw->efd < 0)
+    {
+        return;
+    }
+    sigset_t all, old;
+    sigfillset(&all);
+    pthread_sigmask(SIG_BLOCK, &all, &old); /* signals stay with bash's main thread */
+    for (int i = 0; i < n; i++)
+    {
+        if (!opened[i] || imgs[i].md == NULL || imgs[i].md->sem <= 0)
+        {
+            continue;
+        }
+        int si = ImageStreamIO_getsemwaitindex(&imgs[i], -1);
+        if (si < 0 || si >= imgs[i].md->sem)
+        {
+            continue;
+        }
+        while (sem_trywait(imgs[i].semptr[si]) == 0)
+        {
+        }
+        sw->semindex[i] = si;
+        sw->arg[i]      = (sem_waiter_arg_t) { &imgs[i], init_cnt[i], si, sw->efd, &sw->stop };
+        sw->active[i]   = (pthread_create(&sw->tid[i], NULL, sem_waiter_main, &sw->arg[i]) == 0);
+        if (!sw->active[i])
+        {
+            imgs[i].semReadPID[si] = 0;
+        }
+    }
+    pthread_sigmask(SIG_SETMASK, &old, NULL);
+}
+
+/** sem_waiters_stop() - wake and join the waiters, release their semaphores. */
+static void sem_waiters_stop(sem_waiters_t *sw, IMAGE *imgs)
+{
+    sw->stop = 1;
+    for (int i = 0; i < sw->n; i++)
+    {
+        if (sw->active[i])
+        {
+            sem_post(imgs[i].semptr[sw->semindex[i]]); /* our own semaphore: nobody else reads it */
+            pthread_join(sw->tid[i], NULL);
+            imgs[i].semReadPID[sw->semindex[i]] = 0;
+        }
+    }
+    if (sw->efd >= 0)
+    {
+        close(sw->efd);
+    }
+}
+
 int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     milk_ipc_sync_shm_env(hooks);
@@ -1148,12 +1279,16 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
     g_wait_sigint = 0;
     sigaction(SIGINT, &sa_int, &old_int);
 
+    sem_waiters_t sw;
+    sem_waiters_start(&sw, imgs, opened, init_cnt, nstreams);
+
     double t_start  = client_monotonic_sec();
     int    has_timo = (timeout_sec > 0.0);
     int    rc       = 124;
     int    iter     = 0;
+    int    hit      = -1;
 
-    for (;;)
+    while (hit < 0)
     {
         if (g_wait_sigint)
         {
@@ -1165,90 +1300,73 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
             break;
         }
 
-        for (int i = 0; i < nstreams; i++)
+        int need_poll =
+            0; /* a stream not yet created, without semaphores, or local (server-side) */
+        for (int i = 0; i < nstreams && hit < 0; i++)
         {
-            if (!opened[i])
+            if (!opened[i] && ImageStreamIO_openIm(&imgs[i], streams[i]) == IMAGESTREAMIO_SUCCESS &&
+                imgs[i].md != NULL)
             {
-                if (ImageStreamIO_openIm(&imgs[i], streams[i]) == IMAGESTREAMIO_SUCCESS &&
-                    imgs[i].md != NULL)
+                opened[i] = 1;
+                if (!has_init[i])
                 {
-                    opened[i] = 1;
-                    if (!has_init[i])
-                    {
-                        sigaction(SIGINT, &old_int, NULL);
-                        for (int j = 0; j < nstreams; j++)
-                        {
-                            if (opened[j])
-                            {
-                                ImageStreamIO_closeIm(&imgs[j]);
-                            }
-                        }
-                        milk_ipc_set_var(hooks, "MILK_TRIGGER", streams[i], 0);
-                        setenv("MILK_TRIGGER", streams[i], 1);
-                        printf("%s\n", streams[i]);
-                        fflush(stdout);
-                        return 0;
-                    }
+                    hit = i; /* created while we waited */
+                    break;
                 }
             }
             if (opened[i] && imgs[i].md != NULL)
             {
                 if (imgs[i].md->cnt0 != init_cnt[i])
                 {
-                    sigaction(SIGINT, &old_int, NULL);
-                    for (int j = 0; j < nstreams; j++)
-                    {
-                        if (opened[j])
-                        {
-                            ImageStreamIO_closeIm(&imgs[j]);
-                        }
-                    }
-                    milk_ipc_set_var(hooks, "MILK_TRIGGER", streams[i], 0);
-                    setenv("MILK_TRIGGER", streams[i], 1);
-                    printf("%s\n", streams[i]);
-                    fflush(stdout);
-                    return 0;
+                    hit = i;
                 }
+                need_poll |= (sw.efd < 0 || !sw.active[i]);
+                continue;
             }
-            else
+            need_poll = 1;
+            char spec[280];
+            char val[64];
+            snprintf(spec, sizeof(spec), "s.%s.cnt0", streams[i]);
+            if (milk_shm_prop_get(spec, val, sizeof(val)) == 0)
             {
-                char spec[280];
-                char val[64];
-                snprintf(spec, sizeof(spec), "s.%s.cnt0", streams[i]);
-                if (milk_shm_prop_get(spec, val, sizeof(val)) == 0)
+                uint64_t c = (uint64_t) strtoull(val, NULL, 10);
+                if (!has_init[i] || c != init_cnt[i])
                 {
-                    uint64_t c = (uint64_t) strtoull(val, NULL, 10);
-                    if (!has_init[i] || c != init_cnt[i])
-                    {
-                        sigaction(SIGINT, &old_int, NULL);
-                        for (int j = 0; j < nstreams; j++)
-                        {
-                            if (opened[j])
-                            {
-                                ImageStreamIO_closeIm(&imgs[j]);
-                            }
-                        }
-                        milk_ipc_set_var(hooks, "MILK_TRIGGER", streams[i], 0);
-                        setenv("MILK_TRIGGER", streams[i], 1);
-                        printf("%s\n", streams[i]);
-                        fflush(stdout);
-                        return 0;
-                    }
+                    hit = i;
                 }
             }
         }
+        if (hit >= 0)
+        {
+            rc = 0;
+            break;
+        }
 
-        if (has_timo && (client_monotonic_sec() - t_start) >= timeout_sec)
+        double left = has_timo ? timeout_sec - (client_monotonic_sec() - t_start) : 1.0;
+        if (left <= 0.0)
         {
             rc = 124;
             break;
         }
-
+        if (!need_poll)
+        {
+            /* every stream has a semaphore waiter: sleep until one fires (or a signal, or the timeout) */
+            struct pollfd pfd = { sw.efd, POLLIN, 0 };
+            int           tms = (left < 1.0) ? (int) (left * 1000.0) + 1 : 1000;
+            if (poll(&pfd, 1, tms) > 0)
+            {
+                uint64_t v;
+                ssize_t  rr = read(sw.efd, &v, sizeof(v));
+                (void) rr;
+            }
+            continue;
+        }
         long            ns  = (iter++ < 40) ? 50000L : 200000L; /* 50 us then 200 us */
         struct timespec slp = { 0, ns };
         nanosleep(&slp, NULL);
     }
 
+    sem_waiters_stop(&sw, imgs);
     sigaction(SIGINT, &old_int, NULL);
     for (int j = 0; j < nstreams; j++)
     {
@@ -1256,6 +1374,13 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
         {
             ImageStreamIO_closeIm(&imgs[j]);
         }
+    }
+    if (hit >= 0)
+    {
+        milk_ipc_set_var(hooks, "MILK_TRIGGER", streams[hit], 0);
+        setenv("MILK_TRIGGER", streams[hit], 1);
+        printf("%s\n", streams[hit]);
+        fflush(stdout);
     }
     return rc;
 }
