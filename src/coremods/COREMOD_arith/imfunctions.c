@@ -721,9 +721,13 @@ errno_t arith_image_function_2_1_IMGID(IMGID *inimg1,
     {
         outimg->im = (IMAGE *) calloc(1, sizeof(IMAGE));
     }
-    else
+    else if (outimg->im->md && outimg->im->md->shared == 1)
     {
         ImageStreamIO_closeIm(outimg->im);
+    }
+    else
+    {
+        ImageStreamIO_destroyIm(outimg->im); // local image: closeIm would munmap malloc'd memory
     }
     imgid_mkimage(outimg);
 

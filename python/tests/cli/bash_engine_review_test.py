@@ -703,6 +703,65 @@ def test_WP19_integer_pixels(tmp_path):
     assert "p=9007199254740993 m=3 b=1" in res.stdout, res.stdout + res.stderr
 
 
+def test_WP16_fused_expressions(tmp_path):
+    """One-pass element-wise expressions keep the old values and type rule (DOUBLE if any, else FLOAT)."""
+    res = milk_cli_script(
+        '@mk2Dim "@L:f6" 4 4\n@mk2Dim "@L:g6" 4 4\n@mk2Dim "@L:@TF64:d6" 4 4\n'
+        '@mk2Dim "@L:@TI32:n6" 4 4\n@mk2Dim "@L:@TI32:m6" 4 4\n'
+        "@calc 'f6 = 1.5; g6 = 2; d6 = 2.5; n6 = 7; m6 = 7'\n"
+        "@calc 'r1 = (f6 * 2 + g6 * 3 - 1) / 2 + sqrt(g6) * 0'\n"
+        "@calc 'r2 = n6 * 2 + d6'\n@calc 'r3 = !(f6 > 1) + min(1, f6) + trunc(f6 * 4, 0, 5)'\n"
+        "@calc 'm6 += f6 * 2'\n@calc 'f6 = f6 * 2 + f6'\n"
+        "echo \"r1=$(@calc 'r1[1,1]') $(@get l.r1.dtype) r2=$(@calc 'r2[0,0]') $(@get l.r2.dtype)\"\n"
+        "echo \"r3=$(@calc 'r3[2,2]') m6=$(@calc 'm6[0,0]') $(@get l.m6.dtype) f6=$(@calc 'f6[3,3]')\"\n"
+        "@calc 'r4 = f6 / 0 + 1'; echo \"div_rc=$?\"",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert "r1=4 FLOAT r2=16.5 DOUBLE" in res.stdout, out
+    assert "r3=6 m6=10 INT32 f6=4.5" in res.stdout, out
+    assert value(res.stdout, "div_rc") == "2", out
+    assert out.count("Division by zero") == 1, out
+
+
+def test_WP16_shape_mismatch_and_copy(tmp_path):
+    """Mismatched image sizes are an error (it used to abort the server); `q = im` makes a new image."""
+    res = milk_cli_script(
+        '@mk2Dim "@L:a16" 4 4\n@mk2Dim "@L:b16" 2 2\n@calc "a16 = 1; b16 = 2"\n'
+        '@calc "r16 = a16 + b16"; echo "mm_rc=$?"\n'
+        '@calc "q16 = b16"; echo "q16=$(@calc \'itot(q16)\')"\n'
+        '@calc "a16[*, -*] = a16 * 0 + 3"; @calc "a16[0:1, 0:1] += 1"\n'
+        "echo \"alive=$(@calc 'itot(a16)')\"",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "mm_rc") == "2", out
+    assert "Image sizes do not match" in res.stderr, out
+    assert "q16=8" in res.stdout, out
+    assert "alive=52" in res.stdout, out
+
+
+def test_WP16_complex_images(tmp_path):
+    res = milk_cli_script(
+        '@mk2Dim "@L:re16" 2 2\n@mk2Dim "@L:im16" 2 2\n@calc "re16 = 3; im16 = 4"\n'
+        '@calc "z16 = cplx(re16, im16)"\n@calc "w16 = z16 * z16"\n@calc "v16 = conj(z16) * 2 - re16"\n'
+        '@calc "z16[1,1] = 7"\n@calc "u16 = -z16"\n'
+        "echo \"dt=$(@get l.z16.dtype) abs=$(@calc 'abs(z16[0,0])') arg=$(@calc 'arg(z16[0,0])')\"\n"
+        "echo \"w=$(@calc 'real(w16[0,0])'),$(@calc 'imag(w16[0,0])') v=$(@calc 'real(v16[0,0])'),$(@calc 'imag(v16[0,0])')\"\n"
+        "echo \"p=$(@calc 'real(z16[1,1])'),$(@calc 'imag(z16[1,1])') u=$(@calc 'imag(u16[0,0])') tot=$(@calc 'itot(abs(z16))')\"\n"
+        '@calc "z16 *= 2"; echo "s=$(@calc \'imag(z16[0,0])\')"\n'
+        '@calc "itot(z16)"; echo "red_rc=$?"\n@calc "z16 > 1"; echo "cmp_rc=$?"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert "dt=COMPLEX_FLOAT abs=5 arg=0.927295218001612" in res.stdout, out
+    assert "w=-7,24 v=3,-8" in res.stdout, out
+    assert "p=7,0 u=-4 tot=22" in res.stdout, out
+    assert "s=8" in res.stdout, out
+    assert value(res.stdout, "red_rc") == "2", out
+    assert value(res.stdout, "cmp_rc") == "2", out
+
+
 def test_WP15_milksleep(tmp_path):
     res = milk_cli_script(
         "t0=$EPOCHREALTIME; milksleep 0.25; t1=$EPOCHREALTIME\n"

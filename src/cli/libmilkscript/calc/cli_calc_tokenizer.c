@@ -103,6 +103,13 @@ static const builtin_func builtins[] = {
     { "norm(", (double (*)()) arith_image_norm, TOK_FUNC_IM_D },
     { "matmul(", NULL, TOK_FUNC_IMIM_IM },
 
+    /* complex images */
+    { "real(", NULL, TOK_FUNC_CPLX },
+    { "imag(", NULL, TOK_FUNC_CPLX },
+    { "arg(", NULL, TOK_FUNC_CPLX },
+    { "conj(", NULL, TOK_FUNC_CPLX },
+    { "cplx(", NULL, TOK_FUNC_CPLX },
+
     /* string -> double */
     { "strlen(", NULL, TOK_FUNC_S_D },
 

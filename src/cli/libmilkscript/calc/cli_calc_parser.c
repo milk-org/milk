@@ -125,6 +125,37 @@ cli_token *cur_eval(void)
     return &eval_tokens[eval_pos];
 }
 
+/** cli_calc_tok_pos() / cli_calc_tok_seek() - position in the active token stream, to rewind a lookahead. */
+int cli_calc_tok_pos(void)
+{
+    return (parse_mode == 0) ? parse_pos : eval_pos;
+}
+
+void cli_calc_tok_seek(int pos)
+{
+    if (parse_mode == 0)
+    {
+        parse_pos = pos;
+    }
+    else
+    {
+        eval_pos = pos;
+    }
+}
+
+/** cli_calc_tokens_have_image() - 1 if an image name follows in the expression being evaluated. */
+int cli_calc_tokens_have_image(void)
+{
+    for (int i = eval_pos; i < eval_ntok; i++)
+    {
+        if (eval_tokens[i].type == TOK_IMAGE)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 cli_token *advance_eval(void)
 {
     cli_token *t = &eval_tokens[eval_pos];

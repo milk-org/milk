@@ -36,7 +36,7 @@
  * right-hand parse.
  * -------------------------------------------------------- */
 
-static inline int get_prec(cli_token_type t)
+static int get_prec(cli_token_type t)
 {
     switch (t)
     {
@@ -83,6 +83,11 @@ static inline int get_prec(cli_token_type t)
     }
 }
 
+int cli_calc_op_prec(cli_token_type t)
+{
+    return get_prec(t);
+}
+
 /**
  * @brief Check if an operator is right-associative.
  */
@@ -105,7 +110,7 @@ static inline int is_func_token(cli_token_type t)
            (t == TOK_FUNC_IM_D) || (t == TOK_FUNC_IMD_D) || (t == TOK_FUNC_WHERE) ||
            (t == TOK_FUNC_IMIM_D) || (t == TOK_FUNC_IMIM_IM) || (t == TOK_FUNC_S_D) ||
            (t == TOK_FUNC_S_S) || (t == TOK_FUNC_SDD_S) || (t == TOK_FUNC_SSS_S) ||
-           (t == TOK_FUNC_D_S) || (t == TOK_FUNC_IM_L);
+           (t == TOK_FUNC_D_S) || (t == TOK_FUNC_IM_L) || (t == TOK_FUNC_CPLX);
 }
 
 static int skip_expr(int min_prec);
@@ -241,6 +246,11 @@ static val_t eval_unary_minus(void)
         if (!check_image(v.sval))
         {
             return mk_double(0);
+        }
+        const IMAGE *z = cli_calc_complex_image(&v);
+        if (z != NULL)
+        {
+            return cli_calc_complex_neg(z);
         }
         const char *tmpn = alloc_tmpname();
         arith_image_cstsubm(v.sval, 0.0, tmpn);
@@ -393,7 +403,7 @@ static val_t eval_existing_var_assign(const char *varname, cli_token_type aop, v
 /**
  * @brief Resolve an existing variable read reference `TOK_VAR`.
  */
-static val_t eval_existing_var_ref(const char *varname)
+val_t eval_existing_var_ref(const char *varname)
 {
     long vID = variable_ID(varname);
     if (vID == -1)
@@ -493,6 +503,14 @@ static val_t eval_image_token(const char *imname,
     if (is_assign_op(aop))
     {
         advance_func();
+        imageID id = (strchr(imname, '[') == NULL)
+                         ? image_ID(imname, data.core.image, data.core.NB_MAX_IMAGE)
+                         : -1;
+        int     fr = (id != -1) ? cli_calc_fuse_assign(&data.core.image[id], aop) : 0;
+        if (fr != 0)
+        {
+            return (fr > 0) ? mk_string(imname) : mk_double(0);
+        }
         val_t v = parse_expr(0);
         if (parse_error || eval_error)
         {
@@ -759,6 +777,13 @@ val_t parse_expr(int min_prec)
 
     cli_token *(*cur_func)(void)     = cli_calc_cur_func();
     cli_token *(*advance_func)(void) = cli_calc_advance_func();
+
+    val_t fused;
+    int   fr = cli_calc_fuse_expr(min_prec, &fused);
+    if (fr != 0)
+    {
+        return (fr > 0) ? fused : mk_long(0);
+    }
 
     val_t left = parse_primary();
     if (parse_error || eval_error)

@@ -67,13 +67,57 @@ static int parse_func_args(int nargs, val_t *args, const char *comma_msg)
     return 0;
 }
 
+/** reject_complex() - 1 (with an error) if one of the @n values is a complex image. */
+static int reject_complex(const val_t *v, int n)
+{
+    for (int i = 0; i < n; i++)
+    {
+        if (cli_calc_complex_image(&v[i]) != NULL)
+        {
+            parse_errmsg("Function of real pixels applied to a complex image; use real(), imag() "
+                         "or abs() first");
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/** func_eval_cplx() - real(z), imag(z), arg(z), conj(z), cplx(re, im). */
+static val_t func_eval_cplx(const cli_token *ftok)
+{
+    cli_token *(*cur_func)(void)     = cli_calc_cur_func();
+    cli_token *(*advance_func)(void) = cli_calc_advance_func();
+    val_t args[2];
+    int   n = 0;
+    do
+    {
+        if (n == 2)
+        {
+            parse_errmsg("Too many arguments");
+            return mk_double(0);
+        }
+        args[n++] = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+    } while (cur_func()->type == TOK_COMMA && advance_func());
+    if (cur_func()->type != TOK_RPAREN)
+    {
+        parse_errmsg("Expected ')'");
+        return mk_double(0);
+    }
+    advance_func();
+    return cli_calc_complex_func(ftok->sval, args, n);
+}
+
 /**
  * @brief Evaluate `where(cond, T, F)` for scalar or image condition.
  */
 static val_t func_where(void)
 {
     val_t args[3];
-    if (parse_func_args(3, args, "Expected ','") != 0)
+    if (parse_func_args(3, args, "Expected ','") != 0 || reject_complex(args, 3))
     {
         return mk_double(0);
     }
@@ -206,6 +250,16 @@ static val_t func_eval_d_d(const cli_token *ftok)
         return mk_double(0);
     }
 
+    const IMAGE *z = cli_calc_complex_image(&arg);
+    if (z != NULL && ftok->fnctptr == (double (*)()) fabs)
+    {
+        return cli_calc_complex_part(z, 2); /* |z| */
+    }
+    if (reject_complex(&arg, 1))
+    {
+        return mk_double(0);
+    }
+
     if (arg.type == VAL_STRING)
     {
         if (!check_image(arg.sval))
@@ -236,7 +290,7 @@ static val_t func_eval_d_d(const cli_token *ftok)
 static val_t func_eval_dd_d(const cli_token *ftok)
 {
     val_t args[2];
-    if (parse_func_args(2, args, "Expected ','") != 0)
+    if (parse_func_args(2, args, "Expected ','") != 0 || reject_complex(args, 2))
     {
         return mk_double(0);
     }
@@ -324,7 +378,7 @@ static val_t func_eval_dd_d(const cli_token *ftok)
 static val_t func_eval_ddd_d(const cli_token *ftok)
 {
     val_t args[3];
-    if (parse_func_args(3, args, "Expected ','") != 0)
+    if (parse_func_args(3, args, "Expected ','") != 0 || reject_complex(args, 3))
     {
         return mk_double(0);
     }
@@ -379,6 +433,10 @@ static val_t func_eval_matmul(void)
     if (parse_func_args(2, args, "Expected ','") != 0)
     {
         return mk_double(0);
+    }
+    if (reject_complex(args, 2))
+    {
+        return mk_string("");
     }
     if (args[0].type != VAL_STRING || args[1].type != VAL_STRING)
     {
@@ -723,7 +781,7 @@ static val_t func_eval_image_reduction(const cli_token *ftok)
             parse_errmsg("Expected image argument");
             return mk_double(0);
         }
-        if (!check_image(arg.sval))
+        if (!check_image(arg.sval) || reject_complex(&arg, 1))
         {
             return mk_double(0);
         }
@@ -743,7 +801,7 @@ static val_t func_eval_image_reduction(const cli_token *ftok)
     }
 
     val_t args[2];
-    if (parse_func_args(2, args, "Expected ','") != 0)
+    if (parse_func_args(2, args, "Expected ','") != 0 || reject_complex(args, 2))
     {
         return mk_double(0);
     }
@@ -963,6 +1021,8 @@ val_t parse_funccall(cli_token *ftok)
         return func_eval_string_or_format(ftok);
     case TOK_FUNC_SSS_S:
         return func_replace();
+    case TOK_FUNC_CPLX:
+        return func_eval_cplx(ftok);
     default:
         parse_errmsg("Unknown function type");
         return mk_double(0);

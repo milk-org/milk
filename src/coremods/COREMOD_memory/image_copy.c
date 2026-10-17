@@ -239,6 +239,11 @@ imageID copy_image_ID_IMGID(IMGID *imgin, IMGID *imgout, int shared)
         imgout->mdt->NBkw     = NB_KEYWNODE_MAX;
         imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
+        if (RegisterIMGID(imgout, dcimg, dcnimg) ==
+            -1) // a new image must be in the table to be found
+        {
+            return RETURN_FAILURE;
+        }
     }
 
     imgout->md[0].write = 1;
@@ -385,6 +390,11 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(IMGID *imgin, IMGID *imgout)
         imgout->mdt->shared   = 1;
         imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
+        if (RegisterIMGID(imgout, dcimg, dcnimg) ==
+            -1) // a new image must be in the table to be found
+        {
+            return RETURN_FAILURE;
+        }
     }
 
     imgout->md[0].write = 1;

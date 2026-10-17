@@ -16,6 +16,13 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
+- **2026-10-16** — Calculator kernels: element-wise image expressions run in one pass with no
+  intermediate images (6-operator chain on 1024×1024: 10.9 → 0.2 ms; `a += 1`: 1.6 → 0.2 ms);
+  in-place and slice updates are typed and OpenMP-parallel, slice copies go row by row; complex
+  images work with `cplx real imag abs arg conj` and `+ - * /`. Fixes: `q = im` now creates `q`,
+  mismatched image sizes are an error instead of aborting milk-cli, install paths over 100
+  characters load modules `#cli` `#performance`
+
 - **2026-10-16** — Calculator: `&&`, `||` and a scalar `?:` skip the operand they don't need; `!` is
   logical not; `+` concatenates strings; new `istd` (`irms` kept as an alias), `ivar`, `icount`,
   `iargmax`, `iargmin`, and axis reductions such as `imean(cube, 2)`; integer images read and write

@@ -122,63 +122,26 @@ static inline int apply_compound_scalar(cli_token_type aop, double old, double r
     }
 }
 
-/**
- * @brief Apply scalar assignment/compound op (`=`, `+=`, `-=`, `*=`, `/=`) to all pixels of @im.
- */
+/** apply_scalar_to_image_inplace() - `im aop val` on every pixel. */
 static int apply_scalar_to_image_inplace(IMAGE *im, cli_token_type aop, double val)
 {
-    if (aop == TOK_OP_SLASH_EQ && val == 0.0)
-    {
-        parse_errmsg("Division by zero");
-        return -1;
-    }
-    uint64_t nelement = im->md[0].nelement;
-    for (uint64_t ii = 0; ii < nelement; ii++)
-    {
-        double v = val;
-        if (aop != TOK_EQUAL)
-        {
-            double old = read_image_pixel_as_double(im, ii);
-            if (apply_compound_scalar(aop, old, val, &v) != 0)
-            {
-                return -1;
-            }
-        }
-        write_image_pixel_from_double(im, ii, v);
-    }
-    return 0;
+    return cli_calc_inplace(im, aop, NULL, val);
 }
 
-/**
- * @brief Apply image assignment/compound op (`=`, `+=`, `-=`, `*=`, `/=`) from @srcim into @dstim.
- */
+/** apply_image_to_image_inplace() - `dstim aop srcim` pixel by pixel (same number of pixels). */
 static int apply_image_to_image_inplace(IMAGE *dstim, const IMAGE *srcim, cli_token_type aop)
 {
-    uint64_t nelement = dstim->md[0].nelement;
     if (aop == TOK_EQUAL && dstim->md[0].datatype == srcim->md[0].datatype)
     {
         int esize = ImageStreamIO_typesize(dstim->md[0].datatype);
         if (esize > 0)
         {
-            __builtin_memcpy(dstim->array.raw, srcim->array.raw, (size_t) esize * nelement);
+            __builtin_memcpy(dstim->array.raw, srcim->array.raw,
+                             (size_t) esize * dstim->md[0].nelement);
             return 0;
         }
     }
-    for (uint64_t ii = 0; ii < nelement; ii++)
-    {
-        double sv = read_image_pixel_as_double(srcim, ii);
-        double v  = sv;
-        if (aop != TOK_EQUAL)
-        {
-            double old = read_image_pixel_as_double(dstim, ii);
-            if (apply_compound_scalar(aop, old, sv, &v) != 0)
-            {
-                return -1;
-            }
-        }
-        write_image_pixel_from_double(dstim, ii, v);
-    }
-    return 0;
+    return cli_calc_inplace(dstim, aop, srcim, 0.0);
 }
 
 /**
@@ -473,7 +436,8 @@ val_t cli_calc_eval_image_slice_assign(const char *tok_sval, cli_token_type aop,
         return mk_double(0);
     }
 
-    if (rs.is_single_pixel && rs.slc.naxis == rs.snax && rhs.type != VAL_STRING)
+    if (rs.is_single_pixel && rs.slc.naxis == rs.snax && rhs.type != VAL_STRING &&
+        !cli_calc_is_complex_dt(rs.srcim->md[0].datatype))
     {
         uint64_t ii = single_pixel_flat_index(&rs);
         double   nv = to_double(rhs);
@@ -641,7 +605,9 @@ val_t cli_calc_eval_image_slice_read(const char *tok_sval)
         return mk_double(0);
     }
 
-    if (parse_mode != 0 && rs.is_single_pixel && rs.slc.naxis == rs.snax)
+    if (parse_mode != 0 && rs.is_single_pixel && rs.slc.naxis == rs.snax &&
+        !cli_calc_is_complex_dt(
+            rs.srcim->md[0].datatype)) /* a complex pixel stays a 1-pixel image */
     {
         uint64_t ii = single_pixel_flat_index(&rs);
         return read_image_pixel(rs.srcim, ii);

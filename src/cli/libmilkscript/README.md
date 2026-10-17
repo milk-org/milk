@@ -125,7 +125,10 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
   and subarray extraction/assignment.
 - `cli_calc_functions.c` — Built-in scalar and image mathematical functions
   (`sin`, `cos`, `fft`, `stats`, reductions, etc.).
-- `cli_calc_binops.c` — Element-wise and scalar-image binary operators.
+- `cli_calc_binops.c` — Element-wise and scalar-image binary operators, string `+`.
+- `cli_calc_fuse.c` — One-pass evaluation of element-wise image expressions, and the typed,
+  OpenMP-parallel in-place updates (`im op= x`) used by whole-image and slice assignment.
+- `cli_calc_complex.c` — Complex images: `cplx real imag abs arg conj`, `+ - * /`, in-place writes.
 
 ### 6. `core/` — Core CLI Execution Pipeline, Modules & Help
 

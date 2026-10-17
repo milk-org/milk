@@ -246,6 +246,30 @@ static int ipow_checked(long b, long e, long *out)
     return 0;
 }
 
+/**
+ * images_broadcastable() - 1 if images @a and @b can be combined pixel by pixel: every axis the
+ * same size or 1 in one of them (the rule of arith_image_function_2_1_IMGID(), which aborts otherwise).
+ */
+static int images_broadcastable(const char *a, const char *b)
+{
+    const IMAGE *ia = &data.core.image[image_ID(a, data.core.image, data.core.NB_MAX_IMAGE)];
+    const IMAGE *ib = &data.core.image[image_ID(b, data.core.image, data.core.NB_MAX_IMAGE)];
+    for (int ax = 0; ax < 3; ax++)
+    {
+        uint32_t sa = (ax < ia->md[0].naxis) ? ia->md[0].size[ax] : 1;
+        uint32_t sb = (ax < ib->md[0].naxis) ? ib->md[0].size[ax] : 1;
+        if (sa != sb && sa != 1 && sb != 1)
+        {
+            char msg[160];
+            snprintf(msg, sizeof(msg), "Image sizes do not match on axis %d (%u vs %u)", ax, sa,
+                     sb);
+            parse_errmsg(msg);
+            return 0;
+        }
+    }
+    return 1;
+}
+
 /** is_text() - 1 if @v is a string that names no image. */
 static int is_text(const val_t *v)
 {
@@ -294,6 +318,10 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
         {
             return eval_concat(&left, &right);
         }
+        if (cli_calc_complex_image(&left) != NULL || cli_calc_complex_image(&right) != NULL)
+        {
+            return cli_calc_complex_binop(op, left, right);
+        }
 
         if (left.type == VAL_STRING && right.type == VAL_STRING &&
             (op == TOK_OP_EQ || op == TOK_OP_NEQ) &&
@@ -313,9 +341,16 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
             {
                 return mk_string("");
             }
+            if (!images_broadcastable(left.sval, right.sval))
+            {
+                return mk_string("");
+            }
             if (!binop_img_img(op, left.sval, right.sval, tmpn))
             {
-                parse_errmsg("Unsupported image op");
+                if (!parse_error)
+                {
+                    parse_errmsg("Unsupported image op");
+                }
                 return mk_string("");
             }
             return mk_string(tmpn);
@@ -331,7 +366,10 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
             double rv = to_double(right);
             if (!binop_img_scalar(op, left.sval, rv, tmpn))
             {
-                parse_errmsg("Unsupported image op");
+                if (!parse_error)
+                {
+                    parse_errmsg("Unsupported image op");
+                }
                 return mk_string("");
             }
             return mk_string(tmpn);
@@ -347,7 +385,10 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
             double lv = to_double(left);
             if (!binop_scalar_img(op, lv, right.sval, tmpn))
             {
-                parse_errmsg("Unsupported image op");
+                if (!parse_error)
+                {
+                    parse_errmsg("Unsupported image op");
+                }
                 return mk_string("");
             }
             return mk_string(tmpn);

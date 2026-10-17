@@ -164,6 +164,11 @@ Functions (the math ones also apply per pixel to an image):
 | Along one axis   | `itot imin imax imean istd ivar` plus an axis: `imean(cube, 2)` is the mean frame        |
 | Image to image   | `where(c,a,b)`, `matmul(a,b)`                                                            |
 | Strings          | `strlen toupper tolower`, `substr(s,start,len)`, `replace(s,old,new)`, `hex oct bin`     |
+| Complex images   | `cplx(re,im)`, `real imag abs arg conj`; `+ - * /` and `-z` work on them                 |
+
+Pixels of complex images go through those functions (`abs(z[3,4])` is a number); the other
+functions and operators reject complex images. Images combined pixel by pixel must have the same
+size on each axis, or size 1 (a 2-D image applies to every frame of a cube).
 
 ## Waiting, Events and Cleanup
 
@@ -251,6 +256,12 @@ Measured on a recent desktop machine (see `test_latency_benchmark` in the regres
 | `@calc "cam = cam * 2"` (images)      | ~30 µs        | one request to milk-cli                  |
 | `@listim`, other milk commands        | ~70 µs        | one request to milk-cli                  |
 | `y=$(@calc 1+2)`                      | ~2 ms         | `$( )` forks a subshell: avoid in loops  |
+
+An expression made of same-size images, numbers, arithmetic, comparisons and the per-pixel math
+functions runs in one pass, however many operators it has (1024×1024 floats:
+`x = (b*2 + c*3 - a) / 4` ~0.2 ms, `a += 1` ~0.2 ms), and assigning it to an existing image of
+the same size and type writes in place. Slices, broadcasting, reductions and complex images take
+one pass per operator.
 
 Prefer `-v`, `-a`, `-A` and inline `@…` over `$(…)`, group work with `@batch` / `@pipe`, and use
 `milksleep` rather than `sleep` for short waits. On bash older than 5.3, inline forms fall back to

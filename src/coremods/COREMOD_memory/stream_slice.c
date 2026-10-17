@@ -223,6 +223,14 @@ static void copy_general(const char *restrict src,
         {
             int32_t sy = astart[1] + (int32_t) oy * astep[1];
 
+            if (astep[0] == 1) /* contiguous along x: one memcpy per row */
+            {
+                uint64_t si = (uint64_t) astart[0] + (uint64_t) sy * src_stride[1] +
+                              (uint64_t) sz * src_stride[2];
+                uint64_t di = (uint64_t) oy * dst_stride[1] + (uint64_t) oz * dst_stride[2];
+                __builtin_memcpy(dst + di * esize, src + si * esize, (size_t) cnt[0] * esize);
+                continue;
+            }
             for (uint32_t ox = 0; ox < cnt[0]; ox++)
             {
                 int32_t sx = astart[0] + (int32_t) ox * astep[0];
@@ -302,6 +310,15 @@ static void writeback_general(char *restrict dst_src,
         {
             int32_t sy = astart[1] + (int32_t) oy * astep[1];
 
+            if (astep[0] == 1) /* contiguous along x: one memcpy per row */
+            {
+                uint64_t si = (uint64_t) astart[0] + (uint64_t) sy * src_stride[1] +
+                              (uint64_t) sz * src_stride[2];
+                uint64_t di = (uint64_t) oy * dst_stride[1] + (uint64_t) oz * dst_stride[2];
+                __builtin_memcpy(dst_src + si * esize, src_slice + di * esize,
+                                 (size_t) cnt[0] * esize);
+                continue;
+            }
             for (uint32_t ox = 0; ox < cnt[0]; ox++)
             {
                 int32_t sx = astart[0] + (int32_t) ox * astep[0];

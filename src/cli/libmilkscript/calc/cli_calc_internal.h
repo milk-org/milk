@@ -16,6 +16,7 @@
 #ifndef CLI_CALC_INTERNAL_H
 #define CLI_CALC_INTERNAL_H
 
+#include "ImageStreamIO/ImageStruct.h"
 #include "cli_calc_tokenizer.h"
 
 /** Expression result type tag */
@@ -81,6 +82,29 @@ val_t mk_double(double v);
 val_t mk_string(const char *s);
 
 int check_image(const char *name);
+
+int   cli_calc_op_prec(cli_token_type t);
+int   cli_calc_tok_pos(void);
+void  cli_calc_tok_seek(int pos);
+int   cli_calc_tokens_have_image(void);
+val_t eval_existing_var_ref(const char *varname);
+
+/** cli_calc_fuse_expr() - evaluate the element-wise expression here in one pass: 1 done, 0 not fusible, -1 error. */
+int cli_calc_fuse_expr(int min_prec, val_t *out);
+
+/** cli_calc_fuse_assign() - `dst aop <expr>` written straight into @dst when possible (same returns). */
+int cli_calc_fuse_assign(IMAGE *dst, cli_token_type aop);
+
+/** cli_calc_inplace() - `dst aop src` (image @src, or number @val if @src is NULL), any datatypes. */
+int cli_calc_inplace(IMAGE *dst, cli_token_type aop, const IMAGE *src, double val);
+
+int          cli_calc_inplace_complex(IMAGE *dst, cli_token_type aop, const IMAGE *src, double val);
+int          cli_calc_is_complex_dt(uint8_t dt);
+const IMAGE *cli_calc_complex_image(const val_t *v);
+val_t        cli_calc_complex_binop(cli_token_type op, val_t left, val_t right);
+val_t        cli_calc_complex_neg(const IMAGE *z);
+val_t        cli_calc_complex_part(const IMAGE *z, int which);
+val_t        cli_calc_complex_func(const char *fname, const val_t *args, int nargs);
 
 const char *alloc_tmpname(void);
 

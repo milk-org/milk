@@ -194,7 +194,7 @@ errno_t load_module_shared(const char *__restrict modulename)
                          dcinstalldir);
 
         {
-            int slen = snprintf(libname, STRINGMAXLEN_MODULE_SOFILENAME, "%.100s/lib/lib%.50s.so",
+            int slen = snprintf(libname, STRINGMAXLEN_MODULE_SOFILENAME, "%s/lib/lib%s.so",
                                 dcinstalldir, modulenameLC);
             if (slen < 1)
             {

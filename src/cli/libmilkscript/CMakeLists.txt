@@ -44,6 +44,8 @@ set(MILKSCRIPT_SOURCES
     calc/cli_calc_binops.c
     calc/cli_calc_eval.c
     calc/cli_calc_slice.c
+    calc/cli_calc_fuse.c
+    calc/cli_calc_complex.c
     shm_prop/milk_shm_prop.c
     shm_prop/milk_shm_prop_stream.c
     shm_prop/milk_shm_prop_fps.c

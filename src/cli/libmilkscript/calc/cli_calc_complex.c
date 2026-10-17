@@ -1,0 +1,402 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * @file cli_calc_complex.c
+ * @brief Complex images in calculator expressions.
+ *
+ * Role & Goal:
+ *   Calculator values are real, so complex images (CF/CD) enter and leave expressions through
+ *   `real()`, `imag()`, `abs()`, `arg()`, `conj()` and `cplx(re, im)`. Between them, `+ - * /` and
+ *   unary `-` work element-wise with real images and numbers (taken as `x + 0i`), and in-place
+ *   assignment writes complex pixels. Results are COMPLEX_DOUBLE if any operand is double, else
+ *   COMPLEX_FLOAT. Other operators and real-only functions on a complex image are errors.
+ */
+
+#include <math.h>
+#include <stdint.h>
+#include <string.h>
+
+#include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "cli_calc_internal.h"
+#include "libmilkdata/milk_type_dispatch.h"
+
+#define CPLX_HINT "use real(), imag() or abs() first"
+
+int cli_calc_is_complex_dt(uint8_t dt)
+{
+    return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
+}
+
+const IMAGE *cli_calc_complex_image(const val_t *v)
+{
+    if (v->type != VAL_STRING)
+    {
+        return NULL;
+    }
+    imageID id = image_ID(v->sval, data.core.image, data.core.NB_MAX_IMAGE);
+    return (id != -1 && cli_calc_is_complex_dt(data.core.image[id].md[0].datatype))
+               ? &data.core.image[id]
+               : NULL;
+}
+
+/** pix() - pixel @i of any image as (re, im); real pixels have im = 0. */
+static inline void pix(const IMAGE *im, uint64_t i, double *re, double *imv)
+{
+    uint8_t dt = im->md[0].datatype;
+    *imv       = 0.0;
+    if (dt == _DATATYPE_COMPLEX_FLOAT)
+    {
+        *re  = im->array.CF[i].re;
+        *imv = im->array.CF[i].im;
+        return;
+    }
+    if (dt == _DATATYPE_COMPLEX_DOUBLE)
+    {
+        *re  = im->array.CD[i].re;
+        *imv = im->array.CD[i].im;
+        return;
+    }
+#define PIX_BODY(MBR)                    \
+    {                                    \
+        *re = (double) im->array.MBR[i]; \
+        return;                          \
+    }
+    MILK_FOR_EACH_DATATYPE(dt, PIX_BODY, PIX_BODY(D))
+#undef PIX_BODY
+    *re = 0.0;
+}
+
+static inline void set_pix(IMAGE *im, uint64_t i, double re, double imv)
+{
+    if (im->md[0].datatype == _DATATYPE_COMPLEX_FLOAT)
+    {
+        im->array.CF[i].re = (float) re;
+        im->array.CF[i].im = (float) imv;
+    }
+    else
+    {
+        im->array.CD[i].re = re;
+        im->array.CD[i].im = imv;
+    }
+}
+
+/** cop() - (ar + i ai) op (br + i bi) for + - * /. */
+static inline void
+cop(cli_token_type op, double ar, double ai, double br, double bi, double *r, double *i)
+{
+    switch (op)
+    {
+    case TOK_OP_PLUS:
+        *r = ar + br;
+        *i = ai + bi;
+        break;
+    case TOK_OP_MINUS:
+        *r = ar - br;
+        *i = ai - bi;
+        break;
+    case TOK_OP_STAR:
+        *r = ar * br - ai * bi;
+        *i = ar * bi + ai * br;
+        break;
+    default:
+    {
+        double d = br * br + bi * bi;
+        *r       = (ar * br + ai * bi) / d;
+        *i       = (ai * br - ar * bi) / d;
+        break;
+    }
+    }
+}
+
+static int is_double_dt(uint8_t dt)
+{
+    return dt == _DATATYPE_DOUBLE || dt == _DATATYPE_COMPLEX_DOUBLE;
+}
+
+/** new_image() - temporary image shaped like @like, of type @dt; NULL on failure. */
+static IMAGE *new_image(const IMAGE *like, uint8_t dt, const char **name)
+{
+    uint32_t sz[3] = { like->md[0].size[0], like->md[0].size[1], like->md[0].size[2] };
+    imageID  tid   = -1;
+    *name          = alloc_tmpname();
+    create_image_ID(*name, like->md[0].naxis, sz, dt, 0, 10, 0, &tid);
+    if (tid == -1)
+    {
+        parse_errmsg("Failed to allocate output image");
+        return NULL;
+    }
+    return &data.core.image[tid];
+}
+
+static const IMAGE *val_image(const val_t *v)
+{
+    if (v->type != VAL_STRING)
+    {
+        return NULL;
+    }
+    imageID id = image_ID(v->sval, data.core.image, data.core.NB_MAX_IMAGE);
+    return (id == -1) ? NULL : &data.core.image[id];
+}
+
+val_t cli_calc_complex_binop(cli_token_type op, val_t left, val_t right)
+{
+    if (op != TOK_OP_PLUS && op != TOK_OP_MINUS && op != TOK_OP_STAR && op != TOK_OP_SLASH)
+    {
+        parse_errmsg("Operator not supported for complex images; " CPLX_HINT);
+        return mk_string("");
+    }
+    const IMAGE *li = val_image(&left);
+    const IMAGE *ri = val_image(&right);
+    if ((left.type == VAL_STRING && li == NULL) || (right.type == VAL_STRING && ri == NULL))
+    {
+        check_image(li == NULL ? left.sval : right.sval);
+        return mk_string("");
+    }
+    if (li != NULL && ri != NULL && li->md[0].nelement != ri->md[0].nelement)
+    {
+        parse_errmsg("Complex image operands must have the same size");
+        return mk_string("");
+    }
+    if (ri == NULL && op == TOK_OP_SLASH && to_double(right) == 0.0)
+    {
+        parse_errmsg("Division by zero");
+        return mk_string("");
+    }
+    const IMAGE *like = (li != NULL && cli_calc_is_complex_dt(li->md[0].datatype)) ? li : ri;
+    int          dbl  = (li != NULL && is_double_dt(li->md[0].datatype)) ||
+                        (ri != NULL && is_double_dt(ri->md[0].datatype));
+    const char  *tmpn;
+    IMAGE *out = new_image(like, dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT, &tmpn);
+    if (out == NULL)
+    {
+        return mk_string("");
+    }
+    double   lc  = (li == NULL) ? to_double(left) : 0.0;
+    double   rc  = (ri == NULL) ? to_double(right) : 0.0;
+    uint64_t nel = out->md[0].nelement;
+#pragma omp parallel for schedule(static) if (nel >= 131072)
+    for (uint64_t i = 0; i < nel; i++)
+    {
+        double ar = lc, ai = 0.0, br = rc, bi = 0.0, r, im;
+        if (li != NULL)
+        {
+            pix(li, i, &ar, &ai);
+        }
+        if (ri != NULL)
+        {
+            pix(ri, i, &br, &bi);
+        }
+        cop(op, ar, ai, br, bi, &r, &im);
+        set_pix(out, i, r, im);
+    }
+    return mk_string(tmpn);
+}
+
+val_t cli_calc_complex_neg(const IMAGE *z)
+{
+    const char *tmpn;
+    IMAGE      *out = new_image(z, z->md[0].datatype, &tmpn);
+    if (out == NULL)
+    {
+        return mk_string("");
+    }
+    for (uint64_t i = 0; i < z->md[0].nelement; i++)
+    {
+        double re, im;
+        pix(z, i, &re, &im);
+        set_pix(out, i, 0.0 - re, 0.0 - im);
+    }
+    return mk_string(tmpn);
+}
+
+int cli_calc_inplace_complex(IMAGE *dst, cli_token_type aop, const IMAGE *src, double val)
+{
+    if (!cli_calc_is_complex_dt(dst->md[0].datatype))
+    {
+        parse_errmsg((src != NULL && cli_calc_is_complex_dt(src->md[0].datatype))
+                         ? "Cannot store a complex image in a real one; " CPLX_HINT
+                         : "Unsupported image datatype");
+        return -1;
+    }
+    if (src != NULL && !cli_calc_is_complex_dt(src->md[0].datatype) &&
+        ImageStreamIO_typesize(src->md[0].datatype) <= 0)
+    {
+        parse_errmsg("Unsupported image datatype");
+        return -1;
+    }
+    uint64_t       nel = dst->md[0].nelement;
+    cli_token_type op  = (aop == TOK_OP_PLUS_EQ)    ? TOK_OP_PLUS
+                         : (aop == TOK_OP_MINUS_EQ) ? TOK_OP_MINUS
+                         : (aop == TOK_OP_STAR_EQ)  ? TOK_OP_STAR
+                                                    : TOK_OP_SLASH;
+    if (src != NULL && aop == TOK_OP_SLASH_EQ)
+    {
+        for (uint64_t i = 0; i < nel; i++)
+        {
+            double re, im;
+            pix(src, i, &re, &im);
+            if (re == 0.0 && im == 0.0)
+            {
+                parse_errmsg("Division by zero");
+                return -1;
+            }
+        }
+    }
+    for (uint64_t i = 0; i < nel; i++)
+    {
+        double br = val, bi = 0.0, ar, ai, r, im;
+        if (src != NULL)
+        {
+            pix(src, i, &br, &bi);
+        }
+        if (aop == TOK_EQUAL)
+        {
+            set_pix(dst, i, br, bi);
+            continue;
+        }
+        pix(dst, i, &ar, &ai);
+        cop(op, ar, ai, br, bi, &r, &im);
+        set_pix(dst, i, r, im);
+    }
+    return 0;
+}
+
+/** cli_calc_complex_part() - real(), imag(), abs(), arg() of @z: a real image, or a number if @z has one pixel. */
+val_t cli_calc_complex_part(const IMAGE *z, int which)
+{
+    uint64_t nel = z->md[0].nelement;
+    if (nel == 1)
+    {
+        double re, im;
+        pix(z, 0, &re, &im);
+        double v = (which == 0)   ? re
+                   : (which == 1) ? im
+                   : (which == 2) ? hypot(re, im)
+                                  : atan2(im, re);
+        return mk_double(v);
+    }
+    const char *tmpn;
+    int         dbl = is_double_dt(z->md[0].datatype);
+    IMAGE      *out = new_image(z, dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT, &tmpn);
+    if (out == NULL)
+    {
+        return mk_string("");
+    }
+    for (uint64_t i = 0; i < nel; i++)
+    {
+        double re, im;
+        pix(z, i, &re, &im);
+        double v = (which == 0)   ? re
+                   : (which == 1) ? im
+                   : (which == 2) ? hypot(re, im)
+                                  : atan2(im, re);
+        if (dbl)
+        {
+            out->array.D[i] = v;
+        }
+        else
+        {
+            out->array.F[i] = (float) v;
+        }
+    }
+    return mk_string(tmpn);
+}
+
+/** cli_calc_complex_func() - real/imag/arg/conj/cplx(...) once its arguments are evaluated. */
+val_t cli_calc_complex_func(const char *fname, const val_t *args, int nargs)
+{
+    int which = (strncmp(fname, "real(", 5) == 0) ? 0 : (strncmp(fname, "imag(", 5) == 0) ? 1 : 3;
+    if (strncmp(fname, "cplx(", 5) == 0)
+    {
+        if (nargs != 2)
+        {
+            parse_errmsg("cplx: need 2 arguments (real part, imaginary part)");
+            return mk_double(0);
+        }
+        const IMAGE *a = val_image(&args[0]);
+        const IMAGE *b = val_image(&args[1]);
+        if ((args[0].type == VAL_STRING && a == NULL) ||
+            (args[1].type == VAL_STRING && b == NULL) || (a == NULL && b == NULL))
+        {
+            parse_errmsg("cplx: needs at least one image (there are no complex numbers)");
+            return mk_double(0);
+        }
+        if ((a != NULL && cli_calc_is_complex_dt(a->md[0].datatype)) ||
+            (b != NULL && cli_calc_is_complex_dt(b->md[0].datatype)) ||
+            (a != NULL && b != NULL && a->md[0].nelement != b->md[0].nelement))
+        {
+            parse_errmsg("cplx: needs two real operands of the same size");
+            return mk_double(0);
+        }
+        int          dbl  = (a != NULL && is_double_dt(a->md[0].datatype)) ||
+                            (b != NULL && is_double_dt(b->md[0].datatype));
+        const IMAGE *like = (a != NULL) ? a : b;
+        const char  *tmpn;
+        IMAGE       *out =
+            new_image(like, dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT, &tmpn);
+        if (out == NULL)
+        {
+            return mk_double(0);
+        }
+        double ac = (a == NULL) ? to_double(args[0]) : 0.0;
+        double bc = (b == NULL) ? to_double(args[1]) : 0.0;
+        for (uint64_t i = 0; i < out->md[0].nelement; i++)
+        {
+            double re = ac, im = bc, unused;
+            if (a != NULL)
+            {
+                pix(a, i, &re, &unused);
+            }
+            if (b != NULL)
+            {
+                pix(b, i, &im, &unused);
+            }
+            set_pix(out, i, re, im);
+        }
+        return mk_string(tmpn);
+    }
+
+    if (nargs != 1)
+    {
+        parse_errmsg("Expected one argument");
+        return mk_double(0);
+    }
+    const IMAGE *z = val_image(&args[0]);
+    if (args[0].type == VAL_STRING && z == NULL)
+    {
+        check_image(args[0].sval);
+        return mk_double(0);
+    }
+    if (z == NULL || !cli_calc_is_complex_dt(z->md[0].datatype)) /* a real value: x + 0i */
+    {
+        if (strncmp(fname, "conj(", 5) == 0 || which == 0)
+        {
+            return args[0];
+        }
+        if (z == NULL)
+        {
+            double x = to_double(args[0]);
+            return mk_double((which == 1) ? 0.0 : atan2(0.0, x));
+        }
+    }
+    if (strncmp(fname, "conj(", 5) == 0)
+    {
+        const char *tmpn;
+        IMAGE      *out = new_image(z, z->md[0].datatype, &tmpn);
+        if (out == NULL)
+        {
+            return mk_double(0);
+        }
+        for (uint64_t i = 0; i < z->md[0].nelement; i++)
+        {
+            double re, im;
+            pix(z, i, &re, &im);
+            set_pix(out, i, re, 0.0 - im);
+        }
+        return mk_string(tmpn);
+    }
+    return cli_calc_complex_part(z, which);
+}

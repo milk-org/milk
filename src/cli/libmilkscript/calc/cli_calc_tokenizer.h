@@ -85,6 +85,7 @@ typedef enum
     /* Format conversions */
     TOK_FUNC_D_S,  /**< func(double)->string */
     TOK_FUNC_IM_L, /**< func(image)->long (count, index) */
+    TOK_FUNC_CPLX, /**< real/imag/arg/conj/cplx: complex images */
     TOK_NEWLINE
 } cli_token_type;
 
