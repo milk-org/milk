@@ -1345,6 +1345,40 @@ def test_zero_subshell_variable_and_array_binding(tmp_path: Path):
     assert "CLI_V=42" in res_cli.stdout
 
 
+_BIND_CASES = """
+    seq 10 15 | @streamwrite --dtype F32 s.bind_eq 6 1 -
+    @set s.bind_eq.kw.INST "SCExAO"
+    @set s.bind_eq.kw.NOTE "it's  a b"
+    @get -v xsz s.bind_eq.xsize
+    @get -v note s.bind_eq.kw.NOTE
+    @get s.bind_eq.ysize -v late
+    @get -a kw_names s.bind_eq.kw.*
+    @get -a note_words s.bind_eq.kw.NOTE
+    @get -A sizes "s.bind*.xsize"
+    @get -A im_kw s.bind_eq.kw.*
+    @streamcat -a pix s.bind_eq
+    @ls -a streams s.bind*
+    @calc -v cval "2.5 * 8 + 2"
+    echo "builtins=${_MILK_BUILTIN_LOADED}"
+    declare -p xsz note late kw_names note_words sizes im_kw pix streams cval
+"""
+
+
+def test_variable_binding_same_with_and_without_builtins():
+    """-v/-a/-A bind identically through the C builtins and the milk-call shims (MILK_NO_BUILTINS=1)."""
+    with_b = _run_bash(_BIND_CASES)
+    without = _run_bash(_BIND_CASES, {"MILK_NO_BUILTINS": "1"})
+    assert with_b.returncode == 0, f"stdout={with_b.stdout}\nstderr={with_b.stderr}"
+    assert without.returncode == 0, f"stdout={without.stdout}\nstderr={without.stderr}"
+    assert "builtins=1" in with_b.stdout
+    assert "builtins=0" in without.stdout
+    assert "declare -A im_kw=" in with_b.stdout
+    assert """declare -- note="it's  a b\"""" in with_b.stdout
+    assert with_b.stdout.replace("builtins=1", "") == without.stdout.replace(
+        "builtins=0", ""
+    )
+
+
 def test_entity_discovery_globbing_and_json_export():
     res = _run_bash("""
         # 1. Create multiple streams and an FPS instance

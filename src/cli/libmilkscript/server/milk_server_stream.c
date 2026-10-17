@@ -30,7 +30,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <sys/inotify.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
@@ -47,6 +46,7 @@
 #include "milk_entity_ns.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
+#include "milk_waitfor.h"
 #include "processinfo.h"
 
 /**
@@ -92,101 +92,52 @@ static int check_client_cancelled(int client_fd)
     return 0;
 }
 
-/**
- * @brief Return current `CLOCK_MONOTONIC` timestamp in seconds.
- *
- * @return Monotonic time in seconds
- */
-static double monotonic_sec(void)
+/** wait_cancelled() - milk_wait_ops_t callback: client fd in @ctx sent CANCEL or hung up. */
+static int wait_cancelled(void *ctx)
 {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (double) ts.tv_sec + 1.0e-9 * (double) ts.tv_nsec;
+    return check_client_cancelled(*(const int *) ctx);
+}
+
+static void wait_lock(void *ctx)
+{
+    (void) ctx;
+    milk_server_cmd_lock(); /* may run in a worker thread */
+}
+
+static void wait_unlock(void *ctx)
+{
+    (void) ctx;
+    milk_server_cmd_unlock();
 }
 
 /**
  * @brief Wait for a general boolean expression condition (`<`, `>`, `==`, `!=`, `&&`, `||`).
  */
-static int waitfor_expr_cond(int client_fd, const char *target, double t_start, double timeout_sec)
+static int waitfor_expr_cond(const char            *target,
+                             double                 t_start,
+                             double                 timeout_sec,
+                             const milk_wait_ops_t *ops)
 {
-    int has_timo = (timeout_sec > 0.0);
-    while (1)
+    for (int iter = 0;; milk_wait_backoff(&iter))
     {
-        if (check_client_cancelled(client_fd))
+        if (ops->cancelled(ops->ctx))
         {
-            return 130;
+            return MILK_WAIT_CANCEL;
         }
         char expanded[8192];
         int  eval_rc = 2;
-        milk_server_cmd_lock(); /* may run in a worker thread */
+        ops->lock(ops->ctx);
         milk_server_expand_entities_in_expr(target, expanded, sizeof(expanded));
         cli_calc_eval_bash(expanded, 1, &eval_rc);
-        milk_server_cmd_unlock();
+        ops->unlock(ops->ctx);
         if (eval_rc == 0)
         {
             return 0;
         }
-        if (has_timo && (monotonic_sec() - t_start) >= timeout_sec)
+        if (timeout_sec > 0.0 && milk_wait_now() - t_start >= timeout_sec)
         {
-            return 124;
+            return MILK_WAIT_TIMEOUT;
         }
-        struct timespec slp = { 0, 10000000L }; /* 10 ms */
-        nanosleep(&slp, NULL);
-    }
-}
-
-/**
- * @brief Wait for a simple equality condition `entity=expected`.
- */
-static int waitfor_eq_cond(int         client_fd,
-                           const char *target,
-                           const char *eq,
-                           double      t_start,
-                           double      timeout_sec)
-{
-    char   lhs[256];
-    size_t lhslen = (size_t) (eq - target);
-    if (lhslen >= sizeof(lhs))
-    {
-        return 1;
-    }
-    memcpy(lhs, target, lhslen);
-    lhs[lhslen]          = '\0';
-    const char *expect   = eq + 1;
-    int         has_timo = (timeout_sec > 0.0);
-
-    while (1)
-    {
-        if (check_client_cancelled(client_fd))
-        {
-            return 130;
-        }
-        char val[256];
-        milk_server_cmd_lock(); /* may run in a worker thread */
-        int got = milk_shm_prop_get(lhs, val, sizeof(val));
-        milk_server_cmd_unlock();
-        if (got == 0)
-        {
-            if (strcmp(val, expect) == 0)
-            {
-                return 0;
-            }
-            char  *e1 = NULL;
-            char  *e2 = NULL;
-            double d1 = strtod(val, &e1);
-            double d2 = strtod(expect, &e2);
-            if (val[0] != '\0' && expect[0] != '\0' && *e1 == '\0' && *e2 == '\0' &&
-                fabs(d1 - d2) <= 1.0e-9 * (1.0 + fabs(d2)))
-            {
-                return 0;
-            }
-        }
-        if (has_timo && (monotonic_sec() - t_start) >= timeout_sec)
-        {
-            return 124;
-        }
-        struct timespec slp = { 0, 10000000L }; /* 10 ms */
-        nanosleep(&slp, NULL);
     }
 }
 
@@ -194,170 +145,44 @@ static int waitfor_eq_cond(int         client_fd,
  * @brief Execute `@waitfor`: wait on a boolean expression, entity equality, or stream frame count.
  *
  * @param client_fd   Client socket fd (polled for cancellation)
- * @param target      Stream name, `entity=val`, or boolean expression
- * @param arg2        Optional frame count / `;sem=N;cnt=M` string when @target is a stream
+ * @param target      Stream name, `entity=val`, `p.<name>`, or boolean expression
+ * @param arg2        Frame count or process state, then optional `;sem=N;cnt=M`
  * @param timeout_sec Timeout in seconds (<= 0 for infinite)
  * @return 0 on success, 124 on timeout, 130 on Ctrl-C cancel, 1 on error
  */
 int milk_server_waitfor(int client_fd, const char *target, const char *arg2, double timeout_sec)
 {
-    while (*target == '@')
-    {
-        target++;
-    }
-    double t_start  = monotonic_sec();
-    int    has_timo = (timeout_sec > 0.0);
+    double          t_start = milk_wait_now();
+    milk_wait_ops_t ops     = { wait_cancelled, wait_lock, wait_unlock, &client_fd };
 
-    /* Case 1a: General boolean expression condition */
-    if (strchr(target, '<') != NULL || strchr(target, '>') != NULL ||
-        strstr(target, "==") != NULL || strstr(target, "!=") != NULL ||
-        strstr(target, "&&") != NULL || strstr(target, "||") != NULL)
+    char state[64] = "";
+    if (arg2 != NULL)
     {
-        return waitfor_expr_cond(client_fd, target, t_start, timeout_sec);
+        snprintf(state, sizeof(state), "%.*s", (int) strcspn(arg2, ";"), arg2);
     }
-
-    /* Case 1b: Condition wait f.name.param=val or s.name.prop=val */
-    const char *eq = strchr(target, '=');
-    if (eq != NULL)
+    milk_wait_target_t wt;
+    switch (milk_waitfor_parse(target, state[0] ? state : NULL, &wt))
     {
-        return waitfor_eq_cond(client_fd, target, eq, t_start, timeout_sec);
-    }
-
-    /* Case 2: Stream frame wait: s.cam [nframes] [-s sem] [--cnt target] */
-    const char *sname = target;
-    if (strncmp(sname, "S:", 2) == 0)
-    {
-        sname += 2;
-    }
-    else if (milk_entity_ns_kind(target, &sname) != MILK_NS_STREAM)
-    {
-        sname = target;
+    case MILK_WAIT_EXPR:
+        while (*target == '@')
+        {
+            target++;
+        }
+        return waitfor_expr_cond(target, t_start, timeout_sec, &ops);
+    case MILK_WAIT_EQ:
+        return milk_waitfor_eq(wt.lhs, wt.expect, t_start, timeout_sec, &ops);
+    case MILK_WAIT_STREAM:
+        break;
+    default:
+        return 1;
     }
 
-    long     nframes     = 1;
-    int      req_sem     = -1;
-    uint64_t abs_cnt     = 0;
-    int      has_abs_cnt = 0;
-    if (arg2 != NULL && arg2[0] != '\0')
-    {
-        if (arg2[0] != ';')
-        {
-            nframes = strtol(arg2, NULL, 10);
-            if (nframes < 1)
-            {
-                nframes = 1;
-            }
-        }
-        const char *sp = strstr(arg2, ";sem=");
-        if (sp != NULL)
-        {
-            req_sem = (int) strtol(sp + 5, NULL, 10);
-        }
-        const char *cp = strstr(arg2, ";cnt=");
-        if (cp != NULL)
-        {
-            abs_cnt     = (uint64_t) strtoull(cp + 5, NULL, 10);
-            has_abs_cnt = 1;
-        }
-    }
-
-    IMAGE img;
-    memset(&img, 0, sizeof(img));
-    int ifd = -1; /* inotify on the shm directory while the stream does not exist yet */
-    while (ImageStreamIO_openIm(&img, sname) != IMAGESTREAMIO_SUCCESS || img.md == NULL)
-    {
-        if (check_client_cancelled(client_fd))
-        {
-            if (ifd >= 0)
-            {
-                close(ifd);
-            }
-            return 130;
-        }
-        if (has_timo && (monotonic_sec() - t_start) >= timeout_sec)
-        {
-            if (ifd >= 0)
-            {
-                close(ifd);
-            }
-            return 124;
-        }
-        if (ifd < 0 && (ifd = inotify_init1(IN_CLOEXEC | IN_NONBLOCK)) >= 0 &&
-            inotify_add_watch(ifd, milk_shm_prop_shmdir(), IN_CREATE | IN_MOVED_TO) < 0)
-        {
-            close(ifd);
-            ifd = -2; /* no inotify: poll the file every 10 ms */
-        }
-        if (ifd >= 0)
-        {
-            struct pollfd pfd = { ifd, POLLIN, 0 };
-            if (poll(&pfd, 1, 200) > 0) /* 200 ms bounds the cancel/timeout checks */
-            {
-                char    evbuf[4096];
-                ssize_t rr = read(ifd, evbuf, sizeof(evbuf));
-                (void) rr;
-            }
-        }
-        else
-        {
-            struct timespec slp = { 0, 10000000L };
-            nanosleep(&slp, NULL);
-        }
-    }
-    if (ifd >= 0)
-    {
-        close(ifd);
-    }
-
-    uint64_t start_cnt0 = img.md->cnt0;
-    uint64_t target_cnt = has_abs_cnt ? abs_cnt : (start_cnt0 + (uint64_t) nframes);
-    int      semindex   = (req_sem >= 0) ? req_sem : ImageStreamIO_getsemwaitindex(&img, -1);
-
-    if (semindex >= 0 && semindex < img.md->sem)
-    {
-        while (sem_trywait(img.semptr[semindex]) == 0)
-        {
-        }
-    }
-
-    int rc = 0;
-    while (img.md->cnt0 < target_cnt)
-    {
-        if (check_client_cancelled(client_fd))
-        {
-            rc = 130;
-            break;
-        }
-        if (has_timo && (monotonic_sec() - t_start) >= timeout_sec)
-        {
-            rc = 124;
-            break;
-        }
-        if (semindex >= 0 && semindex < img.md->sem)
-        {
-            struct timespec ts;
-            clock_gettime(CLOCK_REALTIME, &ts);
-            ts.tv_nsec += 20000000L; /* 20 ms step */
-            if (ts.tv_nsec >= 1000000000L)
-            {
-                ts.tv_sec += 1;
-                ts.tv_nsec -= 1000000000L;
-            }
-            sem_timedwait(img.semptr[semindex], &ts);
-        }
-        else
-        {
-            struct timespec slp = { 0, 5000000L };
-            nanosleep(&slp, NULL);
-        }
-    }
-
-    if (req_sem < 0 && semindex >= 0 && semindex < img.md->sem)
-    {
-        img.semReadPID[semindex] = 0;
-    }
-    ImageStreamIO_closeIm(&img);
-    return rc;
+    const char *sp      = (arg2 != NULL) ? strstr(arg2, ";sem=") : NULL;
+    const char *cp      = (arg2 != NULL) ? strstr(arg2, ";cnt=") : NULL;
+    uint64_t    abs_cnt = (cp != NULL) ? (uint64_t) strtoull(cp + 5, NULL, 10) : 0;
+    return milk_waitfor_stream(wt.stream, (arg2 != NULL) ? strtol(arg2, NULL, 10) : 1,
+                               (sp != NULL) ? (int) strtol(sp + 5, NULL, 10) : -1,
+                               (cp != NULL) ? &abs_cnt : NULL, 1, t_start, timeout_sec, &ops);
 }
 
 /**
@@ -607,7 +432,7 @@ int milk_server_grab(int         client_fd,
         }
     }
 
-    double   t_start  = monotonic_sec();
+    double   t_start  = milk_wait_now();
     int      has_timo = (timeout_sec > 0.0);
     uint64_t last_cnt = in.md->cnt0;
     int      rc       = 0;
@@ -625,7 +450,7 @@ int milk_server_grab(int         client_fd,
                     rc = 130;
                     break;
                 }
-                if (has_timo && (monotonic_sec() - t_start) >= timeout_sec)
+                if (has_timo && (milk_wait_now() - t_start) >= timeout_sec)
                 {
                     rc = 124;
                     break;
@@ -1407,14 +1232,14 @@ int milk_server_replay(int argc, char **argv)
         }
         if (f > 0 && period_sec > 0.0)
         {
-            double t0 = monotonic_sec();
-            while ((monotonic_sec() - t0) < period_sec)
+            double t0 = milk_wait_now();
+            while ((milk_wait_now() - t0) < period_sec)
             {
                 if (dcsigINT)
                 {
                     break;
                 }
-                double rem = period_sec - (monotonic_sec() - t0);
+                double rem = period_sec - (milk_wait_now() - t0);
                 if (rem <= 0.0)
                 {
                     break;

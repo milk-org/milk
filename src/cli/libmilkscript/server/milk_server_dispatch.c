@@ -46,6 +46,7 @@
 #include "milk_entity_ns.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
+#include "milk_shell_lex.h"
 #include "milk_srvlog.h"
 
 static volatile sig_atomic_t g_call_interrupted = 0; /* a CALL was aborted by SIGINT */
@@ -690,64 +691,134 @@ static int eval_scalar_subexpr(const char *subexpr, char *out, size_t outsz)
     return -1;
 }
 
+/* Per-byte classes from top_level_mask(), for the splitters and tokenizers below */
+enum
+{
+    TL_LIT = 0, /* quoted, escaped, `${...}` or here-doc text */
+    TL_NEST,    /* unquoted, inside ( ) or [ ] (the brackets themselves too) */
+    TL_TOP,     /* unquoted, outside brackets */
+    TL_QUOTE,   /* quote character or escaping backslash, removed when words are built */
+    TL_COMMENT  /* # comment */
+};
+
+/**
+ * top_level_mask() - classify each byte of @s (TL_*) from msl_scan()'s quoting contexts plus [ ] nesting
+ * (and ( ) when @parens). Caller frees; NULL on allocation failure.
+ */
+static unsigned char *top_level_mask(const char *s, size_t n, int parens)
+{
+    msl_map_t m;
+    if (msl_scan(s, n, &m) != 0)
+    {
+        return NULL;
+    }
+    unsigned char *tl = (unsigned char *) calloc(n + 1, 1);
+    int            bd = 0;
+    int            pd = 0;
+    for (size_t i = 0; tl != NULL && i < n; i++)
+    {
+        char c   = s[i];
+        int  ctx = m.ctx[i];
+        if (ctx == MSL_SQ || ctx == MSL_ANSI)
+        {
+            tl[i] = (c == '\'') ? TL_QUOTE : TL_LIT;
+        }
+        else if (ctx == MSL_COMMENT)
+        {
+            tl[i] = TL_COMMENT;
+        }
+        else if (ctx == MSL_PARAM || ctx == MSL_HEREDOC)
+        {
+            tl[i] = TL_LIT;
+        }
+        else if (c == '\\' && i + 1 < n)
+        {
+            tl[i]   = TL_QUOTE;
+            tl[++i] = TL_LIT;
+        }
+        else if (ctx == MSL_DQ)
+        {
+            tl[i] = (c == '"') ? TL_QUOTE : TL_LIT;
+        }
+        else
+        {
+            if (c == '[' || (parens && c == '('))
+            {
+                *(c == '[' ? &bd : &pd) += 1;
+            }
+            int top = (bd == 0 && pd == 0);
+            if ((c == ']' && bd > 0) || (parens && c == ')' && pd > 0))
+            {
+                *(c == ']' ? &bd : &pd) -= 1;
+                top = 0;
+            }
+            tl[i] = top ? TL_TOP : TL_NEST;
+        }
+    }
+    msl_free(&m);
+    return tl;
+}
+
+/**
+ * split_top_level() - call @fn on each segment of @s ended by a top-level `;`, newline, or `|>` (when @pipe);
+ * see top_level_mask() for @parens. Stops at, and returns, the first non-zero result.
+ */
+static int split_top_level(const char *s,
+                           int         parens,
+                           int         pipe,
+                           int (*fn)(char *seg, void *ctx),
+                           void *ctx)
+{
+    size_t         n  = strlen(s);
+    unsigned char *tl = top_level_mask(s, n, parens);
+    if (tl == NULL)
+    {
+        return 1;
+    }
+    int    rc = 0;
+    size_t st = 0;
+    for (size_t i = 0; i <= n && rc == 0; i++)
+    {
+        int top = (i < n && tl[i] == TL_TOP);
+        int sep = (i == n || (top && (s[i] == ';' || s[i] == '\n'))) ? 1
+                  : (pipe && top && !strncmp(s + i, "|>", 2))        ? 2
+                                                                     : 0;
+        if (sep == 0)
+        {
+            continue;
+        }
+        char *seg = strndup(s + st, i - st);
+        rc        = (seg != NULL) ? fn(seg, ctx) : 1;
+        free(seg);
+        i += (size_t) sep - 1;
+        st = i + 1;
+    }
+    free(tl);
+    return rc;
+}
+
 static int split_top_level_relop(const char *expr, char *lhs, size_t lhssz, char *rhs, size_t rhssz)
 {
-    int         in_sq    = 0;
-    int         in_dq    = 0;
-    int         pdepth   = 0;
-    int         bdepth   = 0;
-    const char *op_pos   = NULL;
-    size_t      op_len   = 0;
-    int         op_count = 0;
+    const char    *op_pos   = NULL;
+    size_t         op_len   = 0;
+    int            op_count = 0;
+    size_t         n        = strlen(expr);
+    unsigned char *tl       = top_level_mask(expr, n, 1);
+    if (tl == NULL)
+    {
+        return 0;
+    }
 
-    for (size_t i = 0; expr[i] != '\0'; i++)
+    for (size_t i = 0; i < n; i++)
     {
         char c = expr[i];
-        if (c == '\\' && !in_sq && expr[i + 1] != '\0')
-        {
-            i++;
-            continue;
-        }
-        if (c == '\'' && !in_dq)
-        {
-            in_sq = !in_sq;
-            continue;
-        }
-        if (c == '"' && !in_sq)
-        {
-            in_dq = !in_dq;
-            continue;
-        }
-        if (in_sq || in_dq)
-        {
-            continue;
-        }
-        if (c == '(')
-        {
-            pdepth++;
-            continue;
-        }
-        if (c == ')' && pdepth > 0)
-        {
-            pdepth--;
-            continue;
-        }
-        if (c == '[')
-        {
-            bdepth++;
-            continue;
-        }
-        if (c == ']' && bdepth > 0)
-        {
-            bdepth--;
-            continue;
-        }
-        if (pdepth != 0 || bdepth != 0)
+        if (tl[i] != TL_TOP)
         {
             continue;
         }
         if ((c == '&' && expr[i + 1] == '&') || (c == '|' && expr[i + 1] == '|'))
         {
+            free(tl);
             return 0;
         }
         if (strncmp(expr + i, "<=", 2) == 0 || strncmp(expr + i, ">=", 2) == 0 ||
@@ -765,6 +836,7 @@ static int split_top_level_relop(const char *expr, char *lhs, size_t lhssz, char
             op_count++;
         }
     }
+    free(tl);
 
     if (op_count != 1 || op_pos == NULL)
     {
@@ -1457,23 +1529,20 @@ static void substitute_underscore_token(const char *in,
                                         char       *out,
                                         size_t      outsz)
 {
-    if (last_img == NULL || last_img[0] == '\0')
+    size_t         ilen = strlen(in);
+    unsigned char *tl =
+        (last_img != NULL && last_img[0] != '\0') ? top_level_mask(in, ilen, 0) : NULL;
+    if (tl == NULL)
     {
         snprintf(out, outsz, "%s", in);
         return;
     }
-    size_t pos   = 0;
-    size_t ilen  = strlen(in);
-    size_t llen  = strlen(last_img);
-    int    in_sq = 0;
+    size_t pos  = 0;
+    size_t llen = strlen(last_img);
 
     for (size_t i = 0; i < ilen && pos + 1 < outsz;)
     {
-        if (in[i] == '\'')
-        {
-            in_sq = !in_sq;
-        }
-        if (!in_sq && in[i] == '_')
+        if ((tl[i] == TL_TOP || tl[i] == TL_NEST) && in[i] == '_')
         {
             int prev_ok = (i == 0) || (!isalnum((unsigned char) in[i - 1]) && in[i - 1] != '_' &&
                                        in[i - 1] != '.');
@@ -1490,6 +1559,7 @@ static void substitute_underscore_token(const char *in,
         out[pos++] = in[i++];
     }
     out[pos] = '\0';
+    free(tl);
 }
 
 static int exec_batch_calc_expr(const char *expr, int is_test, char *last_img, size_t last_img_sz)
@@ -1533,63 +1603,45 @@ static int tokenize_step_line(const char *step,
                               char       *arena,
                               size_t      arena_sz)
 {
-    int         argc = 0;
-    size_t      apos = 0;
-    const char *p    = step;
-
-    while (*p != '\0' && argc < max_args)
+    size_t         n  = strlen(step);
+    unsigned char *tl = top_level_mask(step, n, 0);
+    if (tl == NULL)
     {
-        while (*p == ' ' || *p == '\t')
+        return 0;
+    }
+    int    argc    = 0;
+    size_t apos    = 0;
+    int    in_word = 0;
+    for (size_t i = 0; i < n && tl[i] != TL_COMMENT && apos + 1 < arena_sz; i++)
+    {
+        if (tl[i] == TL_TOP && (step[i] == ' ' || step[i] == '\t'))
         {
-            p++;
+            if (in_word)
+            {
+                arena[apos++] = '\0';
+                in_word       = 0;
+            }
+            continue;
         }
-        if (*p == '\0' || *p == '#')
+        if (!in_word)
         {
-            break;
-        }
-        argv_out[argc++] = arena + apos;
-        int in_sq        = 0;
-        int in_dq        = 0;
-        int br_depth     = 0;
-        while (*p != '\0' && apos + 1 < arena_sz)
-        {
-            if (!in_sq && !in_dq && br_depth == 0 && (*p == ' ' || *p == '\t'))
+            if (argc >= max_args)
             {
                 break;
             }
-            if (*p == '\\' && !in_sq && p[1] != '\0')
-            {
-                p++;
-                arena[apos++] = *p++;
-                continue;
-            }
-            if (*p == '\'' && !in_dq)
-            {
-                in_sq = !in_sq;
-                p++;
-                continue;
-            }
-            if (*p == '"' && !in_sq)
-            {
-                in_dq = !in_dq;
-                p++;
-                continue;
-            }
-            if (!in_sq && !in_dq)
-            {
-                if (*p == '[')
-                {
-                    br_depth++;
-                }
-                else if (*p == ']' && br_depth > 0)
-                {
-                    br_depth--;
-                }
-            }
-            arena[apos++] = *p++;
+            argv_out[argc++] = arena + apos;
+            in_word          = 1;
         }
-        arena[apos++] = '\0';
+        if (tl[i] != TL_QUOTE)
+        {
+            arena[apos++] = step[i];
+        }
     }
+    if (in_word)
+    {
+        arena[apos] = '\0';
+    }
+    free(tl);
     return argc;
 }
 
@@ -1711,6 +1763,12 @@ static int exec_single_batch_step(const char *raw_step, char *last_img, size_t l
     return rc;
 }
 
+/** batch_step_cb() - split_top_level() callback: run one @batch/@pipe step; @ctx is the `_` image name buffer. */
+static int batch_step_cb(char *seg, void *ctx)
+{
+    return exec_single_batch_step(seg, (char *) ctx, 256);
+}
+
 static int milk_server_batch_or_pipe(int argc, char **argv)
 {
     char  *script = NULL;
@@ -1811,76 +1869,7 @@ static int milk_server_batch_or_pipe(int argc, char **argv)
         snprintf(last_img, sizeof(last_img), "%s", data.core.variable[vidx_last].value.s);
     }
 
-    int    rc       = 0;
-    int    in_sq    = 0;
-    int    in_dq    = 0;
-    int    br_depth = 0;
-    size_t seg_st   = 0;
-
-    for (size_t i = 0; i <= slen; i++)
-    {
-        char c       = script[i];
-        int  sep_len = 0;
-
-        if (c == '\0')
-        {
-            sep_len = 1;
-        }
-        else if (c == '\\' && !in_sq && i + 1 < slen)
-        {
-            i++;
-            continue;
-        }
-        else if (c == '\'' && !in_dq)
-        {
-            in_sq = !in_sq;
-        }
-        else if (c == '"' && !in_sq)
-        {
-            in_dq = !in_dq;
-        }
-        else if (!in_sq && !in_dq)
-        {
-            if (c == '[')
-            {
-                br_depth++;
-            }
-            else if (c == ']' && br_depth > 0)
-            {
-                br_depth--;
-            }
-            else if (br_depth == 0)
-            {
-                if (c == '\n' || c == ';')
-                {
-                    sep_len = 1;
-                }
-                else if (c == '|' && script[i + 1] == '>')
-                {
-                    sep_len = 2;
-                }
-            }
-        }
-
-        if (sep_len > 0)
-        {
-            size_t seglen = i - seg_st;
-            char  *seg    = (char *) malloc(seglen + 1);
-            if (seg != NULL)
-            {
-                memcpy(seg, script + seg_st, seglen);
-                seg[seglen] = '\0';
-                rc          = exec_single_batch_step(seg, last_img, sizeof(last_img));
-                free(seg);
-            }
-            if (rc != 0 || c == '\0')
-            {
-                break;
-            }
-            i += (size_t) (sep_len - 1);
-            seg_st = i + 1;
-        }
-    }
+    int rc = split_top_level(script, 0, 1, batch_step_cb, last_img);
 
     if (last_img[0] != '\0')
     {
@@ -1888,6 +1877,36 @@ static int milk_server_batch_or_pipe(int argc, char **argv)
     }
 
     free(script);
+    return rc;
+}
+
+/** calc_stmt_cb() - split_top_level() callback: run one `@=`/`@test` statement; *@ctx is is_test. */
+static int calc_stmt_cb(char *seg, void *ctx)
+{
+    int    is_test = *(const int *) ctx;
+    int    rc      = 0;
+    size_t len     = strlen(seg);
+    while (len > 0 && (seg[len - 1] == ' ' || seg[len - 1] == '\t'))
+    {
+        seg[--len] = '\0';
+    }
+    seg += strspn(seg, " \t");
+    if (seg[0] == '\0')
+    {
+        return 0;
+    }
+    if (strlen(seg) >= 4096)
+    {
+        seg[4095] = '\0';
+    }
+    if (is_test || !try_exec_entity_lhs_assignment(seg, &rc))
+    {
+        char expanded[8192];
+        milk_server_expand_entities_in_expr(seg, expanded, sizeof(expanded));
+        int eval_rc = 2;
+        cli_calc_eval_bash(expanded, is_test, &eval_rc);
+        rc = eval_rc;
+    }
     return rc;
 }
 
@@ -1918,74 +1937,7 @@ int milk_server_exec_calc_or_test(int            client_fd,
     }
 
     milk_server_snapshot_dcvar();
-    int rc = 0;
-
-    size_t elen     = strlen(expr);
-    int    in_sq    = 0;
-    int    in_dq    = 0;
-    int    br_depth = 0;
-    size_t seg_st   = 0;
-
-    for (size_t i = 0; i <= elen; i++)
-    {
-        char c = expr[i];
-        if (c == '\'' && !in_dq)
-        {
-            in_sq = !in_sq;
-        }
-        else if (c == '"' && !in_sq)
-        {
-            in_dq = !in_dq;
-        }
-        else if (!in_sq && !in_dq)
-        {
-            if (c == '[' || c == '(')
-            {
-                br_depth++;
-            }
-            else if ((c == ']' || c == ')') && br_depth > 0)
-            {
-                br_depth--;
-            }
-        }
-        if (c == '\0' || (!in_sq && !in_dq && br_depth == 0 && (c == ';' || c == '\n')))
-        {
-            size_t seglen = i - seg_st;
-            while (seglen > 0 && (expr[seg_st] == ' ' || expr[seg_st] == '\t'))
-            {
-                seg_st++;
-                seglen--;
-            }
-            while (seglen > 0 &&
-                   (expr[seg_st + seglen - 1] == ' ' || expr[seg_st + seglen - 1] == '\t'))
-            {
-                seglen--;
-            }
-            if (seglen > 0)
-            {
-                char sub[4096];
-                if (seglen >= sizeof(sub))
-                {
-                    seglen = sizeof(sub) - 1;
-                }
-                memcpy(sub, expr + seg_st, seglen);
-                sub[seglen] = '\0';
-                if (is_test || !try_exec_entity_lhs_assignment(sub, &rc))
-                {
-                    char expanded[8192];
-                    milk_server_expand_entities_in_expr(sub, expanded, sizeof(expanded));
-                    int eval_rc = 2;
-                    cli_calc_eval_bash(expanded, is_test, &eval_rc);
-                    rc = eval_rc;
-                }
-                if (rc != 0)
-                {
-                    break;
-                }
-            }
-            seg_st = i + 1;
-        }
-    }
+    int rc = split_top_level(expr, 1, 0, calc_stmt_cb, &is_test);
 
     milk_server_send_modified_dcvars(client_fd);
     return rc;

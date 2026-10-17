@@ -52,6 +52,7 @@ set(MILKSCRIPT_SOURCES
     ipc/milk_ipc_common.c
     ipc/milk_client_conn.c
     ipc/milk_client_ops.c
+    ipc/milk_waitfor.c
     ipc/milk_srvlog_shm.c
     ipc/milk_srv_manager.c
     server/milk_server.c

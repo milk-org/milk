@@ -46,6 +46,10 @@ void milk_ipc_set_var(const milk_client_hooks_t *hooks,
                       const char                *val,
                       int                        export_in_eval_fd);
 
+char *milk_ipc_bind_script(const char *name, int assoc, char *text);
+
+void milk_ipc_eval(const milk_client_hooks_t *hooks, char *script);
+
 /**
  * @brief Synchronize `MILK_SHM_DIR` from shell hooks into `setenv()`.
  *

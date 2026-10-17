@@ -176,31 +176,7 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
     }
     if (strcmp(sub, "get") == 0)
     {
-        const char *varname   = NULL;
-        const char *spec      = NULL;
-        int         json_mode = 0;
-        for (int i = 0; i < argc; i++)
-        {
-            if (strcmp(argv[i], "--json") == 0 || strcmp(argv[i], "-j") == 0)
-            {
-                json_mode = 1;
-            }
-            else if (strcmp(argv[i], "-v") == 0 && i + 1 < argc)
-            {
-                varname = argv[++i];
-            }
-            else if (spec == NULL)
-            {
-                spec = argv[i];
-            }
-        }
-        char eff_spec[512];
-        if (spec != NULL && json_mode)
-        {
-            snprintf(eff_spec, sizeof(eff_spec), "json:%s", spec);
-            spec = eff_spec;
-        }
-        return milk_client_get(spec, varname, NULL);
+        return milk_client_get_argv(argc, argv, NULL);
     }
     if (strcmp(sub, "set") == 0)
     {

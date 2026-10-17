@@ -55,6 +55,7 @@
 #include "milk_ipc_common.h"
 #include "milk_proto.h"
 #include "milk_srvlog.h"
+#include "milk_waitfor.h"
 
 /**
  * @brief Drain client stdin into an anonymous memfd for `@streamwrite` pipelines.
@@ -121,6 +122,13 @@ static int drain_stdin_to_memfd(int argc, char **argv)
 /**
  * @brief Dispatch a milk command to `milk-cli --server` with fds and synced vars.
  */
+static int client_call_sync(int argc, char **argv, const milk_client_hooks_t *hooks);
+static int client_capture_array(int (*fn)(int, char **, const milk_client_hooks_t *),
+                                int                        argc,
+                                char                     **argv,
+                                const char                *extra,
+                                const milk_client_hooks_t *hooks);
+
 int milk_client_call(int argc, char **argv, int async_flag, const milk_client_hooks_t *hooks)
 {
     if (argc <= 0 || argv == NULL || argv[0] == NULL)
@@ -159,6 +167,13 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
         wargv[4] = NULL;
         int wrc  = milk_client_waitfor(4, wargv, hooks);
         return (wrc == 0) ? 0 : 1;
+    }
+
+    int arc;
+    if (!async_flag && strcmp(c0, "streamcat") == 0 &&
+        (arc = client_capture_array(client_call_sync, argc, argv, NULL, hooks)) >= 0)
+    {
+        return arc;
     }
 
     int sw_stdin_fd = drain_stdin_to_memfd(argc, argv);
@@ -432,6 +447,192 @@ int milk_client_set(const char                *spec,
 
     int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
     close(fd);
+    return rc;
+}
+
+/** assoc_spec() - the `.kv` listing behind an `@get -A` spec (`s.cam`, `s.cam.kw`, `f.x.*`, `f.x.list`, ...). */
+static void assoc_spec(const char *spec, char *out, size_t outsz)
+{
+    while (*spec == '@')
+    {
+        spec++;
+    }
+    size_t      slen = strlen(spec);
+    const char *dot1 = strchr(spec, '.');
+    if (slen > 5 && strcmp(spec + slen - 5, ".kw.*") == 0)
+    {
+        snprintf(out, outsz, "%.*s.kw.kv", (int) (slen - 5), spec);
+    }
+    else if (slen > 3 && strcmp(spec + slen - 3, ".kw") == 0)
+    {
+        snprintf(out, outsz, "%s.kv", spec);
+    }
+    else if (slen > 2 && strcmp(spec + slen - 2, ".*") == 0)
+    {
+        snprintf(out, outsz, "%.*s.kv", (int) (slen - 2), spec);
+    }
+    else if (slen > 5 && strcmp(spec + slen - 5, ".list") == 0)
+    {
+        snprintf(out, outsz, "%.*s.kv", (int) (slen - 5), spec);
+    }
+    else if (dot1 != NULL && strpbrk(dot1 + 1, ".*?") == NULL)
+    {
+        snprintf(out, outsz, "%s.kv", spec);
+    }
+    else
+    {
+        snprintf(out, outsz, "%s", spec);
+    }
+}
+
+/** client_bind_array() - bind @text to shell array @name (indexed, or associative when @assoc). */
+static void client_bind_array(const milk_client_hooks_t *hooks,
+                              const char                *name,
+                              int                        assoc,
+                              char                      *text)
+{
+    char *script = milk_ipc_bind_script(name, assoc, text);
+    if (script != NULL)
+    {
+        milk_ipc_eval(hooks, script);
+        free(script);
+    }
+}
+
+int milk_client_get_argv(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    const char *varname   = NULL;
+    const char *arrname   = NULL;
+    const char *assocname = NULL;
+    const char *spec      = NULL;
+    int         json_mode = 0;
+    for (int i = 0; i < argc; i++)
+    {
+        if (strcmp(argv[i], "--json") == 0 || strcmp(argv[i], "-j") == 0)
+        {
+            json_mode = 1;
+        }
+        else if (strcmp(argv[i], "-v") == 0 && i + 1 < argc)
+        {
+            varname = argv[++i];
+        }
+        else if (strcmp(argv[i], "-a") == 0 && i + 1 < argc)
+        {
+            arrname = argv[++i];
+        }
+        else if (strcmp(argv[i], "-A") == 0 && i + 1 < argc)
+        {
+            assocname = argv[++i];
+        }
+        else if (spec == NULL)
+        {
+            spec = argv[i];
+        }
+    }
+    if (spec == NULL)
+    {
+        fprintf(stderr, "Usage: @get [--json|-j] [-v var | -a arr | -A assoc] <entity>\n");
+        return 1;
+    }
+
+    char eff_spec[512];
+    if (assocname != NULL)
+    {
+        assoc_spec(spec, eff_spec, sizeof(eff_spec));
+        spec = eff_spec;
+    }
+    else if (json_mode)
+    {
+        snprintf(eff_spec, sizeof(eff_spec), "json:%s", spec);
+        spec = eff_spec;
+    }
+    if (arrname == NULL && assocname == NULL)
+    {
+        return milk_client_get(spec, varname, hooks);
+    }
+
+    char *val = (char *) malloc(16384);
+    if (val == NULL)
+    {
+        return 1;
+    }
+    int rc = milk_client_get_buf(spec, val, 16384, hooks);
+    if (rc == 0)
+    {
+        client_bind_array(hooks, arrname != NULL ? arrname : assocname, arrname == NULL, val);
+    }
+    free(val);
+    return rc;
+}
+
+static int client_call_sync(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    return milk_client_call(argc, argv, 0, hooks);
+}
+
+/**
+ * client_capture_array() - `-a <arr>` of @streamcat and @ls: run @fn on @argv without the option (plus @extra,
+ * may be NULL) with stdout captured, then bind the output words to array @arrname. -1 if @argv has no `-a`.
+ */
+static int client_capture_array(int (*fn)(int, char **, const milk_client_hooks_t *),
+                                int                        argc,
+                                char                     **argv,
+                                const char                *extra,
+                                const milk_client_hooks_t *hooks)
+{
+    const char *arrname = NULL;
+    char       *fargv[argc + 2];
+    int         fargc = 0;
+    for (int i = 0; i < argc; i++)
+    {
+        if (arrname == NULL && strcmp(argv[i], "-a") == 0 && i + 1 < argc)
+        {
+            arrname = argv[++i];
+        }
+        else
+        {
+            fargv[fargc++] = argv[i];
+        }
+    }
+    if (arrname == NULL)
+    {
+        return -1;
+    }
+    if (extra != NULL)
+    {
+        fargv[fargc++] = (char *) extra;
+    }
+    fargv[fargc] = NULL;
+
+    int mfd       = memfd_create("milk_arr", MFD_CLOEXEC);
+    int saved_out = (mfd >= 0) ? dup(STDOUT_FILENO) : -1;
+    if (mfd >= 0 && saved_out >= 0)
+    {
+        fflush(stdout);
+        dup2(mfd, STDOUT_FILENO);
+    }
+    int rc = fn(fargc, fargv, hooks);
+    if (saved_out >= 0)
+    {
+        fflush(stdout);
+        dup2(saved_out, STDOUT_FILENO);
+        close(saved_out);
+    }
+    if (mfd < 0)
+    {
+        return rc;
+    }
+    off_t sz = lseek(mfd, 0, SEEK_END);
+    lseek(mfd, 0, SEEK_SET);
+    char *obuf = (rc == 0 && sz >= 0) ? (char *) malloc((size_t) sz + 1) : NULL;
+    if (obuf != NULL)
+    {
+        ssize_t nr              = read(mfd, obuf, (size_t) sz);
+        obuf[(nr > 0) ? nr : 0] = '\0';
+        client_bind_array(hooks, arrname, 0, obuf);
+        free(obuf);
+    }
+    close(mfd);
     return rc;
 }
 
@@ -718,34 +919,48 @@ static void client_wait_sigint_handler(int sig)
     g_wait_sigint = 1;
 }
 
-static double client_monotonic_sec(void)
+static int client_wait_cancelled(void *ctx)
 {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (double) ts.tv_sec + 1.0e-9 * (double) ts.tv_nsec;
+    (void) ctx;
+    return g_wait_sigint;
 }
 
-static int client_status_matches(const char *val, const char *expect)
+/** client_wait_local() - run a `@waitfor` stream/entity wait in this process; MILK_WAIT_ABSENT: ask the server. */
+static int client_wait_local(const milk_wait_target_t  *wt,
+                             const char                *arg2,
+                             const char                *sem_str,
+                             const char                *cnt_str,
+                             double                     timeout_sec,
+                             const milk_client_hooks_t *hooks)
 {
-    if (strcmp(val, expect) == 0)
+    struct sigaction sa_int, old_int;
+    memset(&sa_int, 0, sizeof(sa_int));
+    sa_int.sa_handler = client_wait_sigint_handler;
+    sigemptyset(&sa_int.sa_mask);
+    g_wait_sigint = 0;
+    sigaction(SIGINT, &sa_int, &old_int);
+
+    milk_wait_ops_t ops = { .cancelled = client_wait_cancelled };
+    double          t0  = milk_wait_now();
+    int             rc;
+    if (wt->kind == MILK_WAIT_EQ)
     {
-        return 1;
+        rc = milk_waitfor_eq(wt->lhs, wt->expect, t0, timeout_sec, &ops);
     }
-    if ((strcmp(val, "RUN") == 0 && strcmp(expect, "RUNNING") == 0) ||
-        (strcmp(val, "RUNNING") == 0 && strcmp(expect, "RUN") == 0))
+    else
     {
-        return 1;
+        int      req_sem = (sem_str && sem_str[0]) ? (int) strtol(sem_str, NULL, 10) : -1;
+        uint64_t abs_cnt = (cnt_str && cnt_str[0]) ? (uint64_t) strtoull(cnt_str, NULL, 10) : 0;
+        rc = milk_waitfor_stream(wt->stream, strtol(arg2, NULL, 10), req_sem,
+                                 (cnt_str && cnt_str[0]) ? &abs_cnt : NULL, 0, t0, timeout_sec,
+                                 &ops);
     }
-    char  *e1 = NULL;
-    char  *e2 = NULL;
-    double d1 = strtod(val, &e1);
-    double d2 = strtod(expect, &e2);
-    if (val[0] != '\0' && expect[0] != '\0' && *e1 == '\0' && *e2 == '\0' &&
-        fabs(d1 - d2) <= 1.0e-9 * (1.0 + fabs(d2)))
+    sigaction(SIGINT, &old_int, NULL);
+    if (rc == MILK_WAIT_CANCEL && hooks && hooks->on_sigint)
     {
-        return 1;
+        hooks->on_sigint(hooks->ctx);
     }
-    return 0;
+    return rc;
 }
 
 /**
@@ -806,219 +1021,26 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
         return 1;
     }
 
-    const char *tclean = target;
-    while (*tclean == '@')
+    milk_wait_target_t wt;
+    if (milk_waitfor_parse(target, has_arg2 ? arg2 : NULL, &wt) == MILK_WAIT_BAD)
     {
-        tclean++;
-    }
-    double timeout_sec = strtod(timeout, NULL);
-    int    has_timo    = (timeout_sec > 0.0);
-
-    int is_complex_expr = (strchr(tclean, '<') != NULL || strchr(tclean, '>') != NULL ||
-                           strstr(tclean, "==") != NULL || strstr(tclean, "!=") != NULL ||
-                           strstr(tclean, "&&") != NULL || strstr(tclean, "||") != NULL);
-
-    /* Fast Path 0: Client-side process state wait (@waitfor p.<name> [state]) */
-    const char *eq = (!is_complex_expr) ? strchr(tclean, '=') : NULL;
-    char        proc_eq_buf[320];
-    if (!is_complex_expr && eq == NULL && milk_entity_ns_kind(tclean, NULL) == MILK_NS_PROC)
-    {
-        const char *dot1 = strchr(tclean, '.');
-        if (dot1 != NULL && dot1[1] != '\0' && strchr(dot1 + 1, '.') == NULL)
-        {
-            const char *st      = has_arg2 ? arg2 : "STOPPED";
-            const char *norm_st = st;
-            if (strcasecmp(st, "ACTIVE") == 0 || strcasecmp(st, "RUN") == 0 ||
-                strcasecmp(st, "RUNNING") == 0 || strcmp(st, "1") == 0)
-            {
-                norm_st = "ACTIVE";
-            }
-            else if (strcasecmp(st, "PAUSE") == 0 || strcasecmp(st, "PAUSED") == 0 ||
-                     strcmp(st, "2") == 0)
-            {
-                norm_st = "PAUSED";
-            }
-            else if (strcasecmp(st, "STOP") == 0 || strcasecmp(st, "STOPPED") == 0 ||
-                     strcasecmp(st, "EXIT") == 0 || strcmp(st, "3") == 0)
-            {
-                norm_st = "STOPPED";
-            }
-            else if (strcasecmp(st, "INIT") == 0 || strcmp(st, "0") == 0)
-            {
-                norm_st = "INIT";
-            }
-            else if (strcasecmp(st, "ERROR") == 0 || strcmp(st, "4") == 0)
-            {
-                norm_st = "ERROR";
-            }
-            snprintf(proc_eq_buf, sizeof(proc_eq_buf), "p.%s.status=%s", dot1 + 1, norm_st);
-            tclean = proc_eq_buf;
-            eq     = strchr(tclean, '=');
-        }
+        fprintf(stderr, "@waitfor: invalid target '%s'\n", target);
+        return 1;
     }
 
-    /* Fast Path 1: Client-side equality condition wait (e.g. f.name.param=val, p.name.status=STOPPED) */
-    if (eq != NULL)
+    /* No RPC for shm entities and existing streams; local images, variables and expressions need the server */
+    int here = (wt.kind == MILK_WAIT_STREAM && !wt.local);
+    if (wt.kind == MILK_WAIT_EQ)
     {
-        char   lhs[256];
-        size_t lhslen = (size_t) (eq - tclean);
-        if (lhslen > 0 && lhslen < sizeof(lhs))
-        {
-            memcpy(lhs, tclean, lhslen);
-            lhs[lhslen]        = '\0';
-            const char *expect = eq + 1;
-            char        val[256];
-            int         is_shm_ent =
-                (is_entity_spec_token(lhs) && milk_entity_ns_kind(lhs, NULL) != MILK_NS_LOCAL);
-            if (milk_shm_prop_get(lhs, val, sizeof(val)) == 0 || is_shm_ent)
-            {
-                if (val[0] != '\0' && client_status_matches(val, expect))
-                {
-                    return 0;
-                }
-                struct sigaction sa_int, old_int;
-                memset(&sa_int, 0, sizeof(sa_int));
-                sa_int.sa_handler = client_wait_sigint_handler;
-                sigemptyset(&sa_int.sa_mask);
-                g_wait_sigint = 0;
-                sigaction(SIGINT, &sa_int, &old_int);
-
-                double t_start = client_monotonic_sec();
-                int    rc      = 0;
-                int    iter    = 0;
-                for (;;)
-                {
-                    if (g_wait_sigint)
-                    {
-                        if (hooks && hooks->on_sigint)
-                        {
-                            hooks->on_sigint(hooks->ctx);
-                        }
-                        rc = 130;
-                        break;
-                    }
-                    if (milk_shm_prop_get(lhs, val, sizeof(val)) == 0 &&
-                        client_status_matches(val, expect))
-                    {
-                        rc = 0;
-                        break;
-                    }
-                    if (has_timo && (client_monotonic_sec() - t_start) >= timeout_sec)
-                    {
-                        rc = 124;
-                        break;
-                    }
-                    long            ns  = (iter++ < 20) ? 1000000L : 5000000L;
-                    struct timespec slp = { 0, ns };
-                    nanosleep(&slp, NULL);
-                }
-                sigaction(SIGINT, &old_int, NULL);
-                return rc;
-            }
-        }
+        char val[256];
+        here = (milk_shm_prop_get(wt.lhs, val, sizeof(val)) == 0) ||
+               (is_entity_spec_token(wt.lhs) && milk_entity_ns_kind(wt.lhs, NULL) != MILK_NS_LOCAL);
     }
-
-    /* Fast Path 2: Client-side /dev/shm semaphore wait (no server fork) */
-    if (!is_complex_expr && eq == NULL)
+    if (here)
     {
-        const char    *sname = tclean;
-        milk_ns_kind_t tk    = milk_entity_ns_kind(tclean, &sname);
-        if (strncmp(tclean, "S:", 2) == 0)
+        int rc = client_wait_local(&wt, arg2, sem_str, cnt_str, strtod(timeout, NULL), hooks);
+        if (rc != MILK_WAIT_ABSENT)
         {
-            sname = tclean + 2;
-        }
-        else if (tk != MILK_NS_STREAM)
-        {
-            sname = tclean;
-        }
-
-        IMAGE img;
-        memset(&img, 0, sizeof(img));
-        if (sname[0] != '\0' && strncmp(tclean, "L:", 2) != 0 && tk != MILK_NS_LOCAL &&
-            ImageStreamIO_openIm(&img, sname) == IMAGESTREAMIO_SUCCESS && img.md != NULL)
-        {
-            long nframes = strtol(arg2, NULL, 10);
-            if (nframes < 1)
-            {
-                nframes = 1;
-            }
-            int      req_sem     = (sem_str && sem_str[0]) ? (int) strtol(sem_str, NULL, 10) : -1;
-            int      has_abs_cnt = (cnt_str && cnt_str[0]) ? 1 : 0;
-            uint64_t abs_cnt     = has_abs_cnt ? (uint64_t) strtoull(cnt_str, NULL, 10) : 0;
-
-            uint64_t start_cnt0 = img.md->cnt0;
-            uint64_t target_cnt = has_abs_cnt ? abs_cnt : (start_cnt0 + (uint64_t) nframes);
-            int      semindex = (req_sem >= 0) ? req_sem : ImageStreamIO_getsemwaitindex(&img, -1);
-
-            if (semindex >= 0 && semindex < img.md->sem)
-            {
-                while (sem_trywait(img.semptr[semindex]) == 0)
-                {
-                }
-            }
-
-            struct sigaction sa_int, old_int;
-            memset(&sa_int, 0, sizeof(sa_int));
-            sa_int.sa_handler = client_wait_sigint_handler;
-            sigemptyset(&sa_int.sa_mask);
-            g_wait_sigint = 0;
-            sigaction(SIGINT, &sa_int, &old_int);
-
-            double t_start = client_monotonic_sec();
-            int    rc      = 0;
-            while (img.md->cnt0 < target_cnt)
-            {
-                if (g_wait_sigint)
-                {
-                    if (hooks && hooks->on_sigint)
-                    {
-                        hooks->on_sigint(hooks->ctx);
-                    }
-                    rc = 130;
-                    break;
-                }
-                double elapsed = client_monotonic_sec() - t_start;
-                if (has_timo && elapsed >= timeout_sec)
-                {
-                    rc = 124;
-                    break;
-                }
-                if (semindex >= 0 && semindex < img.md->sem)
-                {
-                    double rem_sec = has_timo ? (timeout_sec - elapsed) : 0.05;
-                    if (rem_sec > 0.05)
-                    {
-                        rem_sec = 0.05;
-                    }
-                    if (rem_sec < 0.0001)
-                    {
-                        rem_sec = 0.0001;
-                    }
-                    struct timespec ts;
-                    clock_gettime(CLOCK_REALTIME, &ts);
-                    long add_ns = (long) (rem_sec * 1.0e9);
-                    ts.tv_sec += add_ns / 1000000000L;
-                    ts.tv_nsec += add_ns % 1000000000L;
-                    if (ts.tv_nsec >= 1000000000L)
-                    {
-                        ts.tv_sec += 1;
-                        ts.tv_nsec -= 1000000000L;
-                    }
-                    sem_timedwait(img.semptr[semindex], &ts);
-                }
-                else
-                {
-                    struct timespec slp = { 0, 1000000L };
-                    nanosleep(&slp, NULL);
-                }
-            }
-
-            sigaction(SIGINT, &old_int, NULL);
-            if (req_sem < 0 && semindex >= 0 && semindex < img.md->sem)
-            {
-                img.semReadPID[semindex] = 0;
-            }
-            ImageStreamIO_closeIm(&img);
             return rc;
         }
     }
@@ -1268,7 +1290,7 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
     sem_waiters_t sw;
     sem_waiters_start(&sw, imgs, opened, init_cnt, nstreams);
 
-    double t_start  = client_monotonic_sec();
+    double t_start  = milk_wait_now();
     int    has_timo = (timeout_sec > 0.0);
     int    rc       = 124;
     int    iter     = 0;
@@ -1328,7 +1350,7 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
             break;
         }
 
-        double left = has_timo ? timeout_sec - (client_monotonic_sec() - t_start) : 1.0;
+        double left = has_timo ? timeout_sec - (milk_wait_now() - t_start) : 1.0;
         if (left <= 0.0)
         {
             rc = 124;
@@ -1731,6 +1753,11 @@ int milk_client_ls(int argc, char **argv, const milk_client_hooks_t *hooks)
                    milk_ns_kind_names[milk_entity_ns_table[i].kind]);
         }
         return 0;
+    }
+    int arc = client_capture_array(milk_client_ls, argc, argv, "-1", hooks);
+    if (arc >= 0)
+    {
+        return arc;
     }
     milk_ipc_sync_shm_env(hooks);
     for (int i = 0; i < argc; i++)

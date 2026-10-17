@@ -27,6 +27,8 @@ typedef struct
     void (*set_var)(const char *name, const char *val, void *ctx);
     void (*def_cmd)(const char *cmdname, void *ctx);
     void (*on_sigint)(void *ctx);
+    /* run shell code in the caller (NULL: written to MILK_CALL_EVAL_FD) */
+    void (*eval)(char *script, void *ctx);
     void *ctx;
 } milk_client_hooks_t;
 
@@ -47,6 +49,11 @@ int milk_client_get_buf(const char                *spec,
                         const milk_client_hooks_t *hooks);
 
 int milk_client_get(const char *spec, const char *varname, const milk_client_hooks_t *hooks);
+
+/**
+     * @brief `@get [--json|-j] [-v var | -a arr | -A assoc] <entity>`: print, or bind to a shell variable/array.
+     */
+int milk_client_get_argv(int argc, char **argv, const milk_client_hooks_t *hooks);
 
 /**
      * @brief Set a milk FPS parameter or stream FITS keyword.

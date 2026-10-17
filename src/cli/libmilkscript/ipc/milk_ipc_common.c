@@ -229,6 +229,114 @@ void milk_ipc_set_var(const milk_client_hooks_t *hooks,
     setenv(name, safe_val, 1);
 }
 
+/** sq_append() - append @s to the @len/@cap buffer *@buf, single-quoted for the shell when @quote. */
+static void sq_append(char **buf, size_t *len, size_t *cap, const char *s, int quote)
+{
+    size_t need = *len + 4 * strlen(s) + 3;
+    if (*buf == NULL || need > *cap)
+    {
+        size_t ncap = (*cap < 1024) ? 1024 : *cap;
+        while (ncap < need)
+        {
+            ncap *= 2;
+        }
+        char *nb = (char *) realloc(*buf, ncap);
+        if (nb == NULL)
+        {
+            return;
+        }
+        *buf = nb;
+        *cap = ncap;
+    }
+    char *o = *buf + *len;
+    if (quote)
+    {
+        *o++ = '\'';
+    }
+    for (; *s != '\0'; s++)
+    {
+        if (quote && *s == '\'')
+        {
+            memcpy(o, "'\\''", 4);
+            o += 4;
+        }
+        else
+        {
+            *o++ = *s;
+        }
+    }
+    if (quote)
+    {
+        *o++ = '\'';
+    }
+    *o   = '\0';
+    *len = (size_t) (o - *buf);
+}
+
+/**
+ * milk_ipc_bind_script() - shell code binding @text to array @name: words (split on blanks) for an indexed
+ * array, `key<TAB|=>value` lines for an associative one (@assoc). Caller frees; NULL if @name is refused.
+ */
+char *milk_ipc_bind_script(const char *name, int assoc, char *text)
+{
+    if (!settable_var_name(name))
+    {
+        fprintf(stderr, "milk: refusing to set shell variable %s\n",
+                is_identifier(name) ? name : "(invalid name)");
+        return NULL;
+    }
+    char  *out = NULL;
+    size_t len = 0;
+    size_t cap = 0;
+    char  *sp  = NULL;
+    sq_append(&out, &len, &cap, assoc ? "declare -gA " : "", 0);
+    sq_append(&out, &len, &cap, name, 0);
+    sq_append(&out, &len, &cap, assoc ? "=()" : "=(", 0);
+    for (char *tok = strtok_r(text, assoc ? "\r\n" : " \t\r\n", &sp); tok != NULL;
+         tok       = strtok_r(NULL, assoc ? "\r\n" : " \t\r\n", &sp))
+    {
+        if (!assoc)
+        {
+            sq_append(&out, &len, &cap, tok, 1);
+            sq_append(&out, &len, &cap, " ", 0);
+            continue;
+        }
+        char *sep = strchr(tok, '\t');
+        if (sep == NULL)
+        {
+            sep = strchr(tok, '=');
+        }
+        if (sep == NULL || sep == tok)
+        {
+            continue;
+        }
+        *sep = '\0';
+        sq_append(&out, &len, &cap, "; ", 0);
+        sq_append(&out, &len, &cap, name, 0);
+        sq_append(&out, &len, &cap, "[", 0);
+        sq_append(&out, &len, &cap, tok, 1);
+        sq_append(&out, &len, &cap, "]=", 0);
+        sq_append(&out, &len, &cap, sep + 1, 1);
+    }
+    sq_append(&out, &len, &cap, assoc ? "" : ")", 0);
+    return out;
+}
+
+/** milk_ipc_eval() - run shell code @script in the calling shell: hooks->eval, else write it to MILK_CALL_EVAL_FD. */
+void milk_ipc_eval(const milk_client_hooks_t *hooks, char *script)
+{
+    if (hooks != NULL && hooks->eval != NULL)
+    {
+        hooks->eval(script, hooks->ctx);
+        return;
+    }
+    const char *e   = getenv("MILK_CALL_EVAL_FD");
+    int         efd = (e != NULL && e[0] != '\0') ? atoi(e) : -1;
+    if (efd > 2 && write(efd, script, strlen(script)) >= 0 && write(efd, "\n", 1) < 0)
+    {
+    }
+}
+
 /**
  * @brief Synchronize `MILK_SHM_DIR` from shell hooks into `setenv()`.
  *
