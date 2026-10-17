@@ -94,6 +94,7 @@ ARITH_OPTIMIZED_FUNCTION_EXPR(teste, (p1[i] == p2[i]) ? 1.0f : 0.0f, (p1[i] == p
 ARITH_OPTIMIZED_FUNCTION_EXPR(testne, (p1[i] != p2[i]) ? 1.0f : 0.0f, (p1[i] != p2[i]) ? 1.0 : 0.0)
 ARITH_OPTIMIZED_FUNCTION_EXPR(testle, (p1[i] <= p2[i]) ? 1.0f : 0.0f, (p1[i] <= p2[i]) ? 1.0 : 0.0)
 ARITH_OPTIMIZED_FUNCTION_EXPR(testge, (p1[i] >= p2[i]) ? 1.0f : 0.0f, (p1[i] >= p2[i]) ? 1.0 : 0.0)
+ARITH_OPTIMIZED_FUNCTION_EXPR(testgt, (p1[i] > p2[i]) ? 1.0f : 0.0f, (p1[i] > p2[i]) ? 1.0 : 0.0)
 ARITH_OPTIMIZED_FUNCTION_EXPR(and,
                               ((p1[i] != 0.0f) && (p2[i] != 0.0f)) ? 1.0f : 0.0f,
                               ((p1[i] != 0.0) && (p2[i] != 0.0)) ? 1.0 : 0.0)
@@ -154,6 +155,7 @@ ARITH_CST_OPTIMIZED_FUNCTION_EXPR(teste, (p1[i] == cf1) ? 1.0f : 0.0f, (p1[i] ==
 ARITH_CST_OPTIMIZED_FUNCTION_EXPR(testne, (p1[i] != cf1) ? 1.0f : 0.0f, (p1[i] != f1) ? 1.0 : 0.0)
 ARITH_CST_OPTIMIZED_FUNCTION_EXPR(testle, (p1[i] <= cf1) ? 1.0f : 0.0f, (p1[i] <= f1) ? 1.0 : 0.0)
 ARITH_CST_OPTIMIZED_FUNCTION_EXPR(testge, (p1[i] >= cf1) ? 1.0f : 0.0f, (p1[i] >= f1) ? 1.0 : 0.0)
+ARITH_CST_OPTIMIZED_FUNCTION_EXPR(testgt, (p1[i] > cf1) ? 1.0f : 0.0f, (p1[i] > f1) ? 1.0 : 0.0)
 ARITH_CST_OPTIMIZED_FUNCTION_EXPR(and,
                                   ((p1[i] != 0.0f) && (cf1 != 0.0f)) ? 1.0f : 0.0f,
                                   ((p1[i] != 0.0) && (f1 != 0.0)) ? 1.0 : 0.0)

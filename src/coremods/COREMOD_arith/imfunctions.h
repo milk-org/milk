@@ -64,6 +64,7 @@ errno_t arith_image_teste_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *i
 errno_t arith_image_testne_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
 errno_t arith_image_testle_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
 errno_t arith_image_testge_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+errno_t arith_image_testgt_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
 errno_t arith_image_and_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
 errno_t arith_image_or_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
 
@@ -73,6 +74,7 @@ errno_t arith_image_cstteste_optimized_IMGID(IMGID *imgin, double f1, IMGID *img
 errno_t arith_image_csttestne_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout);
 errno_t arith_image_csttestle_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout);
 errno_t arith_image_csttestge_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+errno_t arith_image_csttestgt_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout);
 errno_t arith_image_cstand_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout);
 errno_t arith_image_cstor_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout);
 

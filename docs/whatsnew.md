@@ -16,6 +16,12 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
+- **2026-10-16** — Calculator: `&&`, `||` and a scalar `?:` skip the operand they don't need; `!` is
+  logical not; `+` concatenates strings; new `istd` (`irms` kept as an alias), `ivar`, `icount`,
+  `iargmax`, `iargmin`, and axis reductions such as `imean(cube, 2)`; integer images read and write
+  pixels as integers; string variables evaluate to their value; `>` on images is now strict (it
+  was `>=`). Operator and function tables in [Scripting](guide/scripting.md#calculator) `#cli`
+
 - **2026-10-16** — Scripting engine rework (`feat/bash-engine`): bash-aware translator, one
   command rule everywhere (`module.command` or `@name`), in-process `source`, loud errors and
   real exit status, Ctrl-C that keeps the shell, threaded `@waitfor`/`@grab`, and per-call cost

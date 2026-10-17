@@ -42,6 +42,41 @@ static double read_image_pixel_as_double(const IMAGE *im, uint64_t ii)
     return 0.0;
 }
 
+/** is_int_datatype() - 1 for the signed and unsigned integer datatypes. */
+static inline int is_int_datatype(uint8_t dt)
+{
+    return dt == _DATATYPE_UINT8 || dt == _DATATYPE_INT8 || dt == _DATATYPE_UINT16 ||
+           dt == _DATATYPE_INT16 || dt == _DATATYPE_UINT32 || dt == _DATATYPE_INT32 ||
+           dt == _DATATYPE_UINT64 || dt == _DATATYPE_INT64;
+}
+
+/** read_image_pixel() - pixel @ii of @im: a long for integer images, so it prints and computes exactly. */
+static val_t read_image_pixel(const IMAGE *im, uint64_t ii)
+{
+    uint8_t dt = im->md[0].datatype;
+    if (!is_int_datatype(dt))
+    {
+        return mk_double(read_image_pixel_as_double(im, ii));
+    }
+#define READ_INT_BODY(MBR) return mk_long((long) im->array.MBR[ii]);
+    MILK_FOR_EACH_DATATYPE(dt, READ_INT_BODY, READ_INT_BODY(D))
+#undef READ_INT_BODY
+    return mk_long(0);
+}
+
+/** write_image_pixel_from_long() - store integer @val in pixel @ii of integer image @im without a double. */
+static void write_image_pixel_from_long(IMAGE *im, uint64_t ii, long val)
+{
+    uint8_t dt = im->md[0].datatype;
+#define WRITE_INT_BODY(MBR)                                     \
+    {                                                           \
+        im->array.MBR[ii] = (__typeof__(im->array.MBR[0])) val; \
+        return;                                                 \
+    }
+    MILK_FOR_EACH_DATATYPE(dt, WRITE_INT_BODY, WRITE_INT_BODY(D))
+#undef WRITE_INT_BODY
+}
+
 /**
  * @brief Write @val to pixel @ii of @im.
  */
@@ -451,7 +486,14 @@ val_t cli_calc_eval_image_slice_assign(const char *tok_sval, cli_token_type aop,
             }
         }
         rs.srcim->md[0].write = 1;
-        write_image_pixel_from_double(rs.srcim, ii, nv);
+        if (rhs.type == VAL_LONG && aop == TOK_EQUAL && is_int_datatype(rs.srcim->md[0].datatype))
+        {
+            write_image_pixel_from_long(rs.srcim, ii, rhs.lval);
+        }
+        else
+        {
+            write_image_pixel_from_double(rs.srcim, ii, nv);
+        }
         processinfo_update_output_stream(NULL, rs.srcim, NULL);
         return (rhs.type == VAL_LONG && aop == TOK_EQUAL) ? mk_long(rhs.lval) : mk_double(nv);
     }
@@ -602,7 +644,7 @@ val_t cli_calc_eval_image_slice_read(const char *tok_sval)
     if (parse_mode != 0 && rs.is_single_pixel && rs.slc.naxis == rs.snax)
     {
         uint64_t ii = single_pixel_flat_index(&rs);
-        return mk_double(read_image_pixel_as_double(rs.srcim, ii));
+        return read_image_pixel(rs.srcim, ii);
     }
 
     const char *tmpn = alloc_tmpname();

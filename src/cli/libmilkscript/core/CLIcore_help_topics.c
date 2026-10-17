@@ -587,8 +587,10 @@ void help_topic_bash(void)
     printf("    " C_NOTE "Examples:" C_RST " " C_CMD "@ 'im1 = 10; im2 = sqrt(im1) + 2'" C_RST
            "\n");
     printf("              " C_CMD "@ 'im1[0:63, 0:63] = im2 * 0.5'" C_RST "\n");
-    printf("              " C_CMD "@ -v rms 'irms(im1)'" C_RST "  |  " C_CMD
+    printf("              " C_CMD "@ -v rms 'istd(im1)'" C_RST "  |  " C_CMD
            "@calc -v ptv 'imax(im1)-imin(im1)'" C_RST "\n");
+    printf("              " C_CMD "@ -v n 'icount(im1 > 3)'" C_RST "  |  " C_CMD
+           "@ 'mf = imean(cube, 2)'" C_RST "  |  " C_CMD "@ 'name = \"f\" + 3'" C_RST "\n");
     printf("  " C_CMD "@ls [-a arr|--json|-1] [pat]" C_RST
            "Unified table/discovery across s., l., f., p., q.\n");
     printf("  " C_CMD "@get [-v|-a|-A|--json] <sp> " C_RST
@@ -616,7 +618,7 @@ void help_topic_bash(void)
     printf("  " C_CMD "@running <entity>           " C_RST
            "Exit 0 if FPS/proc is actively running\n");
     printf("  " C_CMD "@test '<expr>'              " C_RST "Boolean math/entity test (e.g. " C_CMD
-           "if @test 'irms(im1) < 0.5'" C_RST ")\n");
+           "if @test 'istd(im1) < 0.5'" C_RST ")\n");
     printf("  " C_CMD "@waitfor <tgt> [N] [-t sec] " C_RST
            "Wait for N new frames or proc state (" C_CMD "@waitfor s.im1 5 -t 2" C_RST ")\n");
     printf("  " C_CMD "@waitany <s1> <s2> [-t sec] " C_RST

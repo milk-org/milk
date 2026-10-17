@@ -292,6 +292,12 @@ double Ptestge(double a, double b)
     }
 }
 
+/** @brief a > b → 1.0 (strict; testmt is >=) */
+double Ptestgt(double a, double b)
+{
+    return (a > b) ? 1.0 : 0.0;
+}
+
 /* ============================================================
  * Logical ops (double,double → 1.0 or 0.0)
  * ========================================================== */

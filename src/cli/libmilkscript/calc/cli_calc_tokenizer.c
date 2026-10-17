@@ -84,8 +84,15 @@ static const builtin_func builtins[] = {
     { "imin(", (double (*)()) arith_image_min, TOK_FUNC_IM_D },
     { "imax(", (double (*)()) arith_image_max, TOK_FUNC_IM_D },
     { "imean(", (double (*)()) arith_image_mean, TOK_FUNC_IM_D },
-    { "irms(", (double (*)()) arith_image_rms, TOK_FUNC_IM_D },
+    { "istd(", (double (*)()) arith_image_rms, TOK_FUNC_IM_D },
+    { "irms(", (double (*)()) arith_image_rms, TOK_FUNC_IM_D }, /* old name of istd */
+    { "ivar(", (double (*)()) arith_image_var, TOK_FUNC_IM_D },
     { "imedian(", (double (*)()) arith_image_median, TOK_FUNC_IM_D },
+
+    /* image -> long */
+    { "icount(", (double (*)()) arith_image_count, TOK_FUNC_IM_L },
+    { "iargmax(", (double (*)()) arith_image_argmax, TOK_FUNC_IM_L },
+    { "iargmin(", (double (*)()) arith_image_argmin, TOK_FUNC_IM_L },
 
     /* image, double -> double */
     { "perc(", (double (*)()) arith_image_percentile, TOK_FUNC_IMD_D },

@@ -105,7 +105,105 @@ static inline int is_func_token(cli_token_type t)
            (t == TOK_FUNC_IM_D) || (t == TOK_FUNC_IMD_D) || (t == TOK_FUNC_WHERE) ||
            (t == TOK_FUNC_IMIM_D) || (t == TOK_FUNC_IMIM_IM) || (t == TOK_FUNC_S_D) ||
            (t == TOK_FUNC_S_S) || (t == TOK_FUNC_SDD_S) || (t == TOK_FUNC_SSS_S) ||
-           (t == TOK_FUNC_D_S);
+           (t == TOK_FUNC_D_S) || (t == TOK_FUNC_IM_L);
+}
+
+static int skip_expr(int min_prec);
+
+/** skip_primary() - consume one atom like parse_primary(), evaluating nothing; 0 or -1 on syntax error. */
+static int skip_primary(void)
+{
+    cli_token *(*cur_func)(void)     = cli_calc_cur_func();
+    cli_token *(*advance_func)(void) = cli_calc_advance_func();
+    cli_token_type t                 = cur_func()->type;
+
+    advance_func();
+    switch (t)
+    {
+    case TOK_LONG:
+    case TOK_DOUBLE:
+    case TOK_COMMAND:
+        return 0;
+    case TOK_OP_MINUS:
+    case TOK_OP_BNOT:
+    case TOK_OP_NOT:
+        return skip_primary();
+    case TOK_VAR:
+    case TOK_NVAR:
+    case TOK_IMAGE:
+        if (is_assign_op(cur_func()->type))
+        {
+            advance_func();
+            return skip_expr(0);
+        }
+        return 0;
+    case TOK_LPAREN:
+        if (skip_expr(0) != 0)
+        {
+            return -1;
+        }
+        break;
+    default:
+        if (!is_func_token(t))
+        {
+            parse_errmsg("Unexpected token");
+            return -1;
+        }
+        do // function tokens include their '('
+        {
+            if (skip_expr(0) != 0)
+            {
+                return -1;
+            }
+        } while (cur_func()->type == TOK_COMMA && advance_func());
+        break;
+    }
+    if (cur_func()->type != TOK_RPAREN)
+    {
+        parse_errmsg("Expected ')'");
+        return -1;
+    }
+    advance_func();
+    return 0;
+}
+
+/** skip_expr() - consume an expression like parse_expr(@min_prec) without side effects (lazy operands). */
+static int skip_expr(int min_prec)
+{
+    cli_token *(*cur_func)(void)     = cli_calc_cur_func();
+    cli_token *(*advance_func)(void) = cli_calc_advance_func();
+
+    if (skip_primary() != 0)
+    {
+        return -1;
+    }
+    for (;;)
+    {
+        cli_token_type op   = cur_func()->type;
+        int            prec = get_prec(op);
+        if (prec < min_prec)
+        {
+            return 0;
+        }
+        advance_func();
+        if (op == TOK_OP_QUESTION)
+        {
+            if (skip_expr(0) != 0)
+            {
+                return -1;
+            }
+            if (cur_func()->type != TOK_OP_COLON)
+            {
+                parse_errmsg("Expected ':' in ternary");
+                return -1;
+            }
+            advance_func();
+        }
+        if (skip_expr((op == TOK_OP_QUESTION) ? 0 : is_right_assoc(op) ? prec : prec + 1) != 0)
+        {
+            return -1;
+        }
+    }
 }
 
 /**
@@ -318,7 +416,7 @@ static val_t eval_existing_var_ref(const char *varname)
             {
                 return mk_double(dval);
             }
-            return mk_string(varname);
+            return mk_string(cval);
         }
         char msg[2048];
         snprintf(msg, sizeof(msg), "Variable '%s' not found", varname);
@@ -474,6 +572,27 @@ val_t parse_primary(void)
         return mk_long(~iv);
     }
 
+    if (t->type == TOK_OP_NOT)
+    {
+        advance_func();
+        val_t v = parse_primary();
+        if (parse_error || eval_error)
+        {
+            return mk_long(0);
+        }
+        if (v.type != VAL_STRING)
+        {
+            return mk_long(to_double(v) == 0.0);
+        }
+        if (!check_image(v.sval))
+        {
+            return mk_long(0);
+        }
+        const char *tmpn = alloc_tmpname();
+        arith_image_cstteste(v.sval, 0.0, tmpn);
+        return mk_string(tmpn);
+    }
+
     if (t->type == TOK_LPAREN)
     {
         advance_func();
@@ -551,6 +670,27 @@ static val_t eval_ternary_op(val_t left,
                              cli_token *(*cur_func)(void),
                              cli_token *(*advance_func)(void) )
 {
+    if (left.type != VAL_STRING) // scalar condition: evaluate only the chosen branch
+    {
+        int   c = (to_double(left) != 0.0);
+        val_t r = c ? parse_expr(0) : mk_long(0);
+        if (parse_error || eval_error || (!c && skip_expr(0) != 0))
+        {
+            return left;
+        }
+        if (cur_func()->type != TOK_OP_COLON)
+        {
+            parse_errmsg("Expected ':' in ternary");
+            return mk_double(0);
+        }
+        advance_func();
+        if (c)
+        {
+            return (skip_expr(0) != 0) ? left : r;
+        }
+        return parse_expr(0);
+    }
+
     val_t true_val = parse_expr(0);
     if (parse_error || eval_error)
     {
@@ -566,12 +706,6 @@ static val_t eval_ternary_op(val_t left,
     if (parse_error || eval_error)
     {
         return left;
-    }
-
-    if (left.type != VAL_STRING)
-    {
-        double c = to_double(left);
-        return (c != 0.0) ? true_val : false_val;
     }
 
     if (!check_image(left.sval))
@@ -652,8 +786,19 @@ val_t parse_expr(int min_prec)
             continue;
         }
 
-        int   next_min = is_right_assoc(op) ? prec : prec + 1;
-        val_t right    = parse_expr(next_min);
+        int next_min = is_right_assoc(op) ? prec : prec + 1;
+        if ((op == TOK_OP_AND || op == TOK_OP_OR) && left.type != VAL_STRING &&
+            (to_double(left) != 0.0) == (op == TOK_OP_OR)) // result already known: skip the RHS
+        {
+            if (skip_expr(next_min) != 0)
+            {
+                return left;
+            }
+            left = mk_long(op == TOK_OP_OR);
+            continue;
+        }
+
+        val_t right = parse_expr(next_min);
         if (parse_error || eval_error)
         {
             return left;

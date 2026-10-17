@@ -100,7 +100,7 @@ static const milk_bash_primitive_help_t g_milk_bash_help[] = {
       "  - Supports 2D/3D slicing (im[x0:x1,y0:y1]), reductions (sum, mean, rms,\n"
       "    min, max, median), element-wise math, and SHM entity attributes (@s., @f.).",
       "  @ \"out = im1 + 2.0 * im2\"\n"
-      "  @ -v rms_val \"irms(im1)\"\n"
+      "  @ -v rms_val \"istd(im1)\"\n"
       "  @calc -v ptv \"imax(im1) - imin(im1)\"" },
     { "test", NULL, "@test \"<boolean-expr>\"",
       "Evaluate a Milk boolean expression and return exit status 0 (true) or 1 (false)",
@@ -209,7 +209,7 @@ static const milk_bash_primitive_help_t g_milk_bash_help[] = {
       "!=)\n"
       "    automatically prints actual LHS vs RHS values to stderr and returns exit code 1.\n"
       "  - Entity mode: verifies existence, running owner PID, frame rate, age, cnt0, or geometry.",
-      "  @assert \"irms(wfs_im) < 0.5\" \"WFS residual diverged\"\n"
+      "  @assert \"istd(wfs_im) < 0.5\" \"WFS residual diverged\"\n"
       "  @assert --running --fps-min 500 --dim 128x128 s.wfs_cam \"Camera degraded\"" },
     { "prompt", NULL,
       "@prompt [status | watch [lbl=]<spec>... | unwatch <tgt>... | clear | "

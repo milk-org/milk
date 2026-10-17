@@ -72,7 +72,7 @@ static int binop_img_img(cli_token_type op, const char *lname, const char *rname
         arith_image_testle(lname, rname, tmpn);
         break;
     case TOK_OP_GT:
-        arith_image_testmt(lname, rname, tmpn);
+        arith_image_testgt(lname, rname, tmpn);
         break;
     case TOK_OP_GE:
         arith_image_testge(lname, rname, tmpn);
@@ -144,7 +144,7 @@ static int binop_img_scalar(cli_token_type op, const char *iname, double rv, con
         arith_image_csttestle(iname, rv, tmpn);
         break;
     case TOK_OP_GT:
-        arith_image_csttestmt(iname, rv, tmpn);
+        arith_image_csttestgt(iname, rv, tmpn);
         break;
     case TOK_OP_GE:
         arith_image_csttestge(iname, rv, tmpn);
@@ -194,7 +194,7 @@ static int binop_scalar_img(cli_token_type op, double lv, const char *iname, con
         arith_image_cstdiv1(iname, lv, tmpn);
         break;
     case TOK_OP_LT:
-        arith_image_csttestmt(iname, lv, tmpn);
+        arith_image_csttestgt(iname, lv, tmpn);
         break;
     case TOK_OP_LE:
         arith_image_csttestge(iname, lv, tmpn);
@@ -225,19 +225,6 @@ static int binop_scalar_img(cli_token_type op, double lv, const char *iname, con
 
 
 /**
- * @brief Dispatch binary operations during expression parsing
- *
- * Evaluates binary operators (+, -, *, /, ^, %, <, <=, ==, !=, &&, ||).
- * Dispatches to specialized arithmetic routines based on operand types:
- * scalar-scalar (int/float), image-scalar (modifying a stream by a constant),
- * scalar-image, or image-image (element-wise operations).
- *
- * @param op    The token representing the binary operator
- * @param left  Left operand value (can be long, double, or string/image-name)
- * @param right Right operand value (can be long, double, or string/image-name)
- * @return val_t Result of the binary operation
- */
-/**
  * ipow_checked() - @b^@e for @e >= 0; returns 0 and sets *@out, or -1 on overflow.
  */
 static int ipow_checked(long b, long e, long *out)
@@ -259,11 +246,55 @@ static int ipow_checked(long b, long e, long *out)
     return 0;
 }
 
+/** is_text() - 1 if @v is a string that names no image. */
+static int is_text(const val_t *v)
+{
+    return v->type == VAL_STRING &&
+           image_ID(v->sval, data.core.image, data.core.NB_MAX_IMAGE) == -1;
+}
+
+/** eval_concat() - @left + @right as one string, numbers formatted as @calc prints them. */
+static val_t eval_concat(const val_t *left, const val_t *right)
+{
+    char         part[2][CLI_CALC_TOKEN_MAXLEN];
+    const val_t *v[2] = { left, right };
+    for (int i = 0; i < 2; i++)
+    {
+        if (v[i]->type == VAL_STRING)
+        {
+            snprintf(part[i], sizeof(part[i]), "%s", v[i]->sval);
+        }
+        else if (v[i]->type == VAL_LONG)
+        {
+            snprintf(part[i], sizeof(part[i]), "%ld", v[i]->lval);
+        }
+        else
+        {
+            snprintf(part[i], sizeof(part[i]), "%.*g", cli_float_digits, v[i]->dval);
+        }
+    }
+    char out[2 * CLI_CALC_TOKEN_MAXLEN];
+    if (snprintf(out, sizeof(out), "%s%s", part[0], part[1]) >= CLI_CALC_TOKEN_MAXLEN)
+    {
+        parse_errmsg("String too long");
+        return mk_string("");
+    }
+    return mk_string(out);
+}
+
+/** eval_binop() - apply binary operator @op to scalars, images (element-wise) or strings (`+` concatenates). */
 val_t eval_binop(cli_token_type op, val_t left, val_t right)
 {
     /* string (image) operands */
     if (left.type == VAL_STRING || right.type == VAL_STRING)
     {
+        if (op == TOK_OP_PLUS && (is_text(&left) || is_text(&right)) &&
+            (left.type != VAL_STRING || is_text(&left)) &&
+            (right.type != VAL_STRING || is_text(&right)))
+        {
+            return eval_concat(&left, &right);
+        }
+
         if (left.type == VAL_STRING && right.type == VAL_STRING &&
             (op == TOK_OP_EQ || op == TOK_OP_NEQ) &&
             image_ID(left.sval, data.core.image, data.core.NB_MAX_IMAGE) == -1 &&

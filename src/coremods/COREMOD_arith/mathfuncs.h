@@ -78,6 +78,7 @@ double Pteste(double a, double b);
 double Ptestne(double a, double b);
 double Ptestle(double a, double b);
 double Ptestge(double a, double b);
+double Ptestgt(double a, double b);
 double Pand(double a, double b);
 double Por(double a, double b);
 

@@ -120,7 +120,7 @@ error and expands to nothing (see [Errors and Exit Status](#errors-and-exit-stat
 ```bash
 @calc "cam = cam * 0 + 5"          # image arithmetic, in place
 @calc -v m "imean(cam)"            # bind the result to a bash variable
-@calc 'rms = irms(cam); ptv = imax(cam) - imin(cam)'   # several statements
+@calc 'rms = istd(cam); ptv = imax(cam) - imin(cam)'   # several statements
 @calc "cam[0:31, 0:31] = 0"        # slices: see slicing.md
 echo "mean=@{imean(cam)}"          # inline calculator
 @ x = 2 * 21                       # statement form (alias of @calc)
@@ -132,6 +132,7 @@ if @test "imean(cam) > 1"; then echo bright; fi        # status 0 if true, 1 if 
 - An expression made only of numbers, operators and math functions is evaluated in the shell itself
   (a few microseconds).
 - `@dpdigits N` sets the number of significant digits of printed results.
+- A pixel of an integer image reads and writes as an integer (`im[3,4] % 10`, `im[0,0] & 0xff`).
 - `@batch "c1; c2"` runs several commands and expressions in one request; `@pipe "c1 |> c2"` also
   chains the image each stage makes as `_`:
 
@@ -139,6 +140,30 @@ if @test "imean(cam) > 1"; then echo bright; fi        # status 0 if true, 1 if 
 @batch "mem.mk2Dim a 64 64; a = 5; a *= 2"
 @pipe "mem.mk2Dim p 32 32 |> _ = 4 |> _ *= 2.5"
 ```
+
+Operators, loosest first:
+
+| Operators                       | Notes                                                            |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `=` `+=` `-=` `*=` `/=`, `?:`   | `c ? a : b` with a scalar `c` evaluates only the branch it takes |
+| `\|\|`, `&&`                    | skip the right side once the result is known: `0 && (x = 1)`     |
+| `\|`, `^^`, `&`                 | bitwise or, xor, and                                             |
+| `==` `!=`, `<` `<=` `>` `>=`    | 1 or 0; on images, a 0/1 mask per pixel                          |
+| `<<` `>>`, `+` `-`, `*` `/` `%` | `"a" + "b"` and `"frame" + 3` concatenate strings                |
+| `^`                             | power, right-associative                                         |
+| unary `-` `~` `!`               | bind tighter than `^`: `-2^2` is 4                               |
+
+Functions (the math ones also apply per pixel to an image):
+
+| Kind             | Functions                                                                                |
+| ---------------- | ---------------------------------------------------------------------------------------- |
+| Math             | `sin cos tan asin acos atan exp ln log sqrt cbrt ceil floor round abs posi`              |
+| Math, 2-3 args   | `atan2(y,x)`, `fmod(a,b)`, `min(a,b)`, `max(a,b)`, `trunc(x,lo,hi)` (clamp)              |
+| Image to number  | `itot imin imax imean istd ivar imedian norm`, `perc(im,f)`, `dot(a,b)`; `irms` = `istd` |
+| Image to integer | `icount(im)` (non-zero pixels), `iargmax(im)`, `iargmin(im)` (index `x + y*xsize`)       |
+| Along one axis   | `itot imin imax imean istd ivar` plus an axis: `imean(cube, 2)` is the mean frame        |
+| Image to image   | `where(c,a,b)`, `matmul(a,b)`                                                            |
+| Strings          | `strlen toupper tolower`, `substr(s,start,len)`, `replace(s,old,new)`, `hex oct bin`     |
 
 ## Waiting, Events and Cleanup
 
@@ -169,7 +194,7 @@ milksleep 0.05                     # sleep without starting a process
 @snapshot -o base.json 'f.loop*' 's.cam*'     # FPS parameters and stream keywords to JSON
 @diff base.json                               # compare with the live state
 @restore -n base.json                         # dry run, then without -n to apply
-@assert "irms(wfs) < 0.5" "residual diverged" # fails with the values of both sides
+@assert "istd(wfs) < 0.5" "residual diverged" # fails with the values of both sides
 @assert --running --fps-min 500 s.cam "camera stalled"
 @log -n 20                                    # recent milk commands, timing and output
 @log --errors
@@ -264,7 +289,7 @@ Capture a cube from a live stream and save statistics:
 @defer echo "done"
 @waitfor s.wfs -t 5 || { echo "no frames"; exit 1; }
 @grab s.wfs 50 "@L:wfs_cube"
-@calc -v rms "irms(wfs_cube)"
+@calc -v rms "istd(wfs_cube)"
 @set s.wfs.kw.RMS="$rms" "rms of the last 50 frames"
 echo "rms=$rms over @l.wfs_cube.zsize frames"
 ```
@@ -277,7 +302,7 @@ Tune an FPS gain until a stream settles:
 for g in 0.1 0.2 0.3 0.4; do
     @set f.loop.gain="$g"
     @waitfor s.dmdisp 20 -t 2
-    if @test "irms(dmdisp) < 0.05"; then
+    if @test "istd(dmdisp) < 0.05"; then
         echo "gain $g is stable"
         break
     fi

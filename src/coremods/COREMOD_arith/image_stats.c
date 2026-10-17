@@ -559,3 +559,108 @@ double arith_image_rms(const char *ID_name)
     IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_rms_IMGID(&imgin);
 }
+
+/** arith_image_var_IMGID() - population variance of the pixels (square of arith_image_rms_IMGID()). */
+double arith_image_var_IMGID(IMGID *imgin)
+{
+    double s = arith_image_rms_IMGID(imgin);
+    return s * s;
+}
+
+double arith_image_var(const char *ID_name)
+{
+    IMGID imgin = imgid_make_from_name(ID_name);
+    return arith_image_var_IMGID(&imgin);
+}
+
+/** arith_image_count_IMGID() - number of non-zero pixels (e.g. of a mask). */
+double MILK_HOT arith_image_count_IMGID(IMGID *imgin)
+{
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgin->ID == -1)
+    {
+        return 0.0;
+    }
+
+    uint64_t nelement = imgin->md[0].nelement;
+    uint64_t n        = 0;
+    uint8_t  datatype = imgin->md[0].datatype;
+
+#define COUNT_BODY(MBR)                                          \
+    {                                                            \
+        __typeof__(imgin->im->array.MBR[0]) *MILK_RESTRICT ptr = \
+            MILK_ASSUME_ALIGNED(imgin->im->array.MBR);           \
+        for (uint64_t ii = 0; ii < nelement; ii++)               \
+        {                                                        \
+            n += (ptr[ii] != 0);                                 \
+        }                                                        \
+    }
+
+    MILK_FOR_EACH_DATATYPE(datatype, COUNT_BODY, COUNT_BODY(D))
+#undef COUNT_BODY
+
+    return (double) n;
+}
+
+double arith_image_count(const char *ID_name)
+{
+    IMGID imgin = imgid_make_from_name(ID_name);
+    return arith_image_count_IMGID(&imgin);
+}
+
+/** argext() - linear index of the first largest (@sign 1) or smallest (@sign -1) pixel, NaNs skipped; -1 if none. */
+static double argext(IMGID *imgin, double sign)
+{
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgin->ID == -1)
+    {
+        return -1.0;
+    }
+
+    uint64_t nelement = imgin->md[0].nelement;
+    uint8_t  datatype = imgin->md[0].datatype;
+    int64_t  best     = -1;
+    double   bestv    = 0.0;
+
+#define ARGEXT_BODY(MBR)                                         \
+    {                                                            \
+        __typeof__(imgin->im->array.MBR[0]) *MILK_RESTRICT ptr = \
+            MILK_ASSUME_ALIGNED(imgin->im->array.MBR);           \
+        for (uint64_t ii = 0; ii < nelement; ii++)               \
+        {                                                        \
+            double v = sign * (double) ptr[ii];                  \
+            if (v == v && (best < 0 || v > bestv))               \
+            {                                                    \
+                bestv = v;                                       \
+                best  = (int64_t) ii;                            \
+            }                                                    \
+        }                                                        \
+    }
+
+    MILK_FOR_EACH_DATATYPE(datatype, ARGEXT_BODY, ARGEXT_BODY(D))
+#undef ARGEXT_BODY
+
+    return (double) best;
+}
+
+double arith_image_argmax_IMGID(IMGID *imgin)
+{
+    return argext(imgin, 1.0);
+}
+
+double arith_image_argmax(const char *ID_name)
+{
+    IMGID imgin = imgid_make_from_name(ID_name);
+    return argext(&imgin, 1.0);
+}
+
+double arith_image_argmin_IMGID(IMGID *imgin)
+{
+    return argext(imgin, -1.0);
+}
+
+double arith_image_argmin(const char *ID_name)
+{
+    IMGID imgin = imgid_make_from_name(ID_name);
+    return argext(&imgin, -1.0);
+}

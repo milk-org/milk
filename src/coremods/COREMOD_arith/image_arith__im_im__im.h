@@ -55,6 +55,7 @@ double Ptrunc(double a, double b, double c);
     X(testne, Ptestne)          \
     X(testle, Ptestle)          \
     X(testge, Ptestge)          \
+    X(testgt, Ptestgt)          \
     X(and, Pand)                \
     X(or, Por)
 

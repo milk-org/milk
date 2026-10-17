@@ -352,25 +352,22 @@ static val_t func_eval_ddd_d(const cli_token *ftok)
     return mk_double(((double (*)(double, double, double)) ftok->fnctptr)(d1, d2, d3));
 }
 
+/** copy_im_to_double_buf() - every pixel of @im as a double into @dst (zeros for complex or half). */
 static void copy_im_to_double_buf(const IMAGE *im, double *dst)
 {
     uint64_t nel = im->md[0].nelement;
     uint8_t  dt  = im->md[0].datatype;
-    if (dt == _DATATYPE_FLOAT)
-    {
-        for (uint64_t i = 0; i < nel; i++)
-        {
-            dst[i] = (double) im->array.F[i];
-        }
+#define COPY_BODY(MBR)                      \
+    for (uint64_t i = 0; i < nel; i++)      \
+    {                                       \
+        dst[i] = (double) im->array.MBR[i]; \
     }
-    else if (dt == _DATATYPE_DOUBLE)
-    {
-        memcpy(dst, im->array.D, sizeof(double) * nel);
-    }
+    MILK_FOR_EACH_DATATYPE(dt, COPY_BODY, memcpy(dst, im->array.D, sizeof(double) * nel);)
     else
     {
         memset(dst, 0, sizeof(double) * nel);
     }
+#undef COPY_BODY
 }
 
 /**
@@ -540,18 +537,187 @@ static val_t func_eval_matmul(void)
     return mk_string(tmpn);
 }
 
+typedef enum
+{
+    RED_SUM,
+    RED_MEAN,
+    RED_MIN,
+    RED_MAX,
+    RED_STD,
+    RED_VAR
+} reduce_op;
+
+/** reduce_lane() - reduce the @n values @p[0], @p[stride], ... with @op. */
+static double reduce_lane(const double *p, uint64_t n, uint64_t stride, reduce_op op)
+{
+    double acc = (op == RED_MIN) ? INFINITY : (op == RED_MAX) ? -INFINITY : 0.0;
+    for (uint64_t k = 0; k < n; k++)
+    {
+        double v = p[k * stride];
+        acc      = (op == RED_MIN) ? fmin(acc, v) : (op == RED_MAX) ? fmax(acc, v) : acc + v;
+    }
+    if (op == RED_SUM || op == RED_MIN || op == RED_MAX)
+    {
+        return acc;
+    }
+    double mean = acc / (double) n;
+    if (op == RED_MEAN)
+    {
+        return mean;
+    }
+    double s2 = 0.0;
+    for (uint64_t k = 0; k < n; k++)
+    {
+        double d = p[k * stride] - mean;
+        s2 += d * d;
+    }
+    return (op == RED_VAR) ? s2 / (double) n : sqrt(s2 / (double) n);
+}
+
+/** reduce_axis() - reduce image @name along @axis into a temporary image with that axis removed. */
+static val_t reduce_axis(const char *name, long axis, reduce_op op)
+{
+    IMAGE   *im  = &data.core.image[image_ID(name, data.core.image, data.core.NB_MAX_IMAGE)];
+    int      nax = im->md[0].naxis;
+    uint8_t  dt  = im->md[0].datatype;
+    uint64_t nel = im->md[0].nelement;
+    if (axis < 0 || axis >= nax)
+    {
+        parse_errmsg("Axis out of range");
+        return mk_double(0);
+    }
+    if (dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE)
+    {
+        parse_errmsg("Axis reduction of a complex image is not supported");
+        return mk_double(0);
+    }
+
+    uint64_t inner = 1;
+    uint64_t outer = 1;
+    uint64_t n     = im->md[0].size[axis];
+    uint32_t osz[3];
+    int      onax = 0;
+    for (int a = 0; a < nax; a++)
+    {
+        if (a < axis)
+        {
+            inner *= im->md[0].size[a];
+        }
+        else if (a > axis)
+        {
+            outer *= im->md[0].size[a];
+        }
+        if (a != axis)
+        {
+            osz[onax++] = im->md[0].size[a];
+        }
+    }
+
+    double *buf = (double *) malloc(sizeof(double) * nel);
+    if (buf == NULL)
+    {
+        parse_errmsg("Memory allocation failed");
+        return mk_double(0);
+    }
+    copy_im_to_double_buf(im, buf);
+    if (onax == 0) // 1-D input: the result is a scalar
+    {
+        double r = reduce_lane(buf, n, 1, op);
+        free(buf);
+        return mk_double(r);
+    }
+
+    int         out_d = !(dt == _DATATYPE_FLOAT || dt == _DATATYPE_HALF || dt == _DATATYPE_UINT8 ||
+                          dt == _DATATYPE_INT8 || dt == _DATATYPE_UINT16 || dt == _DATATYPE_INT16);
+    const char *tmpn  = alloc_tmpname();
+    imageID     tid   = -1;
+    create_image_ID(tmpn, onax, osz, out_d ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT, 0, 10, 0, &tid);
+    if (tid == -1)
+    {
+        free(buf);
+        parse_errmsg("Failed to allocate output image");
+        return mk_string("");
+    }
+    IMAGE *oim = &data.core.image[tid];
+    for (uint64_t o = 0; o < outer; o++)
+    {
+        for (uint64_t i = 0; i < inner; i++)
+        {
+            double r = reduce_lane(buf + o * n * inner + i, n, inner, op);
+            if (out_d)
+            {
+                oim->array.D[o * inner + i] = r;
+            }
+            else
+            {
+                oim->array.F[o * inner + i] = (float) r;
+            }
+        }
+    }
+    free(buf);
+    return mk_string(tmpn);
+}
+
+/** axis_reduce_op() - the reduce_op of reduction @fn, or -1 if it has no axis form. */
+static int axis_reduce_op(double (*fn)())
+{
+    if (fn == (double (*)()) arith_image_total)
+    {
+        return RED_SUM;
+    }
+    if (fn == (double (*)()) arith_image_mean)
+    {
+        return RED_MEAN;
+    }
+    if (fn == (double (*)()) arith_image_min)
+    {
+        return RED_MIN;
+    }
+    if (fn == (double (*)()) arith_image_max)
+    {
+        return RED_MAX;
+    }
+    if (fn == (double (*)()) arith_image_rms)
+    {
+        return RED_STD;
+    }
+    if (fn == (double (*)()) arith_image_var)
+    {
+        return RED_VAR;
+    }
+    return -1;
+}
+
 /**
- * @brief Evaluate image-to-scalar reduction functions (`TOK_FUNC_IM_D`, `TOK_FUNC_IMD_D`, `TOK_FUNC_IMIM_D`).
+ * func_eval_image_reduction() - image-to-scalar reductions (`TOK_FUNC_IM_D`, `_IM_L`, `_IMD_D`, `_IMIM_D`);
+ * `f(im, axis)` reduces along one axis instead and returns an image.
  */
 static val_t func_eval_image_reduction(const cli_token *ftok)
 {
-    if (ftok->type == TOK_FUNC_IM_D)
+    if (ftok->type == TOK_FUNC_IM_D || ftok->type == TOK_FUNC_IM_L)
     {
-        val_t arg;
-        if (parse_func_args(1, &arg, NULL) != 0)
+        cli_token *(*cur_func)(void)     = cli_calc_cur_func();
+        cli_token *(*advance_func)(void) = cli_calc_advance_func();
+
+        val_t arg      = parse_expr(0);
+        val_t axisv    = mk_long(-1);
+        int   has_axis = 0;
+        if (!parse_error && !eval_error && cur_func()->type == TOK_COMMA)
+        {
+            advance_func();
+            axisv    = parse_expr(0);
+            has_axis = 1;
+        }
+        if (parse_error || eval_error)
         {
             return mk_double(0);
         }
+        if (cur_func()->type != TOK_RPAREN)
+        {
+            parse_errmsg("Expected ')'");
+            return mk_double(0);
+        }
+        advance_func();
         if (arg.type != VAL_STRING)
         {
             parse_errmsg("Expected image argument");
@@ -561,12 +727,19 @@ static val_t func_eval_image_reduction(const cli_token *ftok)
         {
             return mk_double(0);
         }
-        double res = ((double (*)(const char *)) ftok->fnctptr)(arg.sval);
-        if (data.core.Debug > 0)
+        if (has_axis)
         {
-            printf("double=func(image)\n");
+            int op = (ftok->type == TOK_FUNC_IM_D) ? axis_reduce_op(ftok->fnctptr) : -1;
+            if (op < 0 || axisv.type == VAL_STRING)
+            {
+                parse_errmsg(op < 0 ? "This function takes no axis argument"
+                                    : "Axis must be a number");
+                return mk_double(0);
+            }
+            return reduce_axis(arg.sval, (long) to_double(axisv), (reduce_op) op);
         }
-        return mk_double(res);
+        double res = ((double (*)(const char *)) ftok->fnctptr)(arg.sval);
+        return (ftok->type == TOK_FUNC_IM_L) ? mk_long((long) res) : mk_double(res);
     }
 
     val_t args[2];
@@ -779,6 +952,7 @@ val_t parse_funccall(cli_token *ftok)
     case TOK_FUNC_IMIM_IM:
         return func_eval_matmul();
     case TOK_FUNC_IM_D:
+    case TOK_FUNC_IM_L:
     case TOK_FUNC_IMD_D:
     case TOK_FUNC_IMIM_D:
         return func_eval_image_reduction(ftok);

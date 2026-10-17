@@ -644,6 +644,65 @@ def test_WP18_on_double_dash_form(tmp_path):
     assert (tmp_path / "fired").exists()
 
 
+def test_WP19_short_circuit_and_not(tmp_path):
+    """`&&`, `||` and a scalar `?:` skip the operand they don't need; `!` is logical not."""
+    res = milk_cli_script(
+        '@calc "0 && (z19 = 5)"\n@calc "1 || (z19 = 6)"\n@calc "0 ? (z19 = 7) : 1"\n'
+        'echo "skipped=[$z19]"\n'
+        '@calc "1 && (z19 = 8)"\necho "taken=$z19"\n'
+        '@calc -v r "0 && nosuchname"\necho "r=$r rc=$?"\n'
+        '@calc -v n "!0 + !3 + !(1 && 0)"\necho "n=$n"\n'
+        '@calc -v t "0 ? 2 : 0 ? 4 : 5"\necho "t=$t"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert "skipped=[]" in res.stdout, out
+    assert "taken=8" in res.stdout, out
+    assert "r=0 rc=0" in res.stdout, out
+    assert "n=2" in res.stdout, out
+    assert "t=5" in res.stdout, out
+
+
+def test_WP19_string_concat(tmp_path):
+    res = milk_cli_script(
+        "@calc 's19 = \"ab\"'\n@calc -v v 's19'\n@calc -v c 's19 + \"cd\" + 1'\n"
+        '@calc -v f \'"f" + 2.5 + "_" + 3\'\n'
+        'echo "v=$v c=$c f=$f"',
+        tmp_path,
+    )
+    assert "v=ab c=abcd1 f=f2.5_3" in res.stdout, res.stdout + res.stderr
+
+
+def test_WP19_reductions(tmp_path):
+    """New reductions and `f(im, axis)`; `>` on images is strict (it used to be `>=`)."""
+    res = milk_cli_script(
+        '@mk2Dim "@L:r19" 3 2\n'
+        "@calc 'r19[0,0] = 1; r19[1,0] = 2; r19[2,0] = 3; r19[0,1] = 4; r19[1,1] = 9; r19[2,1] = 6'\n"
+        '@calc -v same "istd(r19) == irms(r19)"\n@calc -v var "ivar(r19) == istd(r19)^2"\n'
+        '@calc -v cnt "icount(r19 > 3) + 10 * icount(3 < r19)"\n@calc -v amax "iargmax(r19)"\n@calc -v amin "iargmin(r19)"\n'
+        '@calc "c19 = itot(r19, 0)"\n@calc -v c0 "c19[0]"\n@calc -v c1 "c19[1]"\n'
+        '@calc "m19 = imax(r19, 1)"\n@calc -v mx "m19[0] + m19[1]*10 + m19[2]*100"\n'
+        '@calc "itot(r19, 2)"; echo "axis_rc=$?"\n@calc "imedian(r19, 0)"; echo "noaxis_rc=$?"\n'
+        'echo "same=$same var=$var cnt=$cnt amax=$amax amin=$amin c0=$c0 c1=$c1 mx=$mx"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert "same=1 var=1 cnt=33 amax=4 amin=0 c0=6 c1=19 mx=694" in res.stdout, out
+    assert value(res.stdout, "axis_rc") == "2", out
+    assert value(res.stdout, "noaxis_rc") == "2", out
+
+
+def test_WP19_integer_pixels(tmp_path):
+    """Integer images read and write pixels as integers (no double round trip)."""
+    res = milk_cli_script(
+        '@mk2Dim "@L:@TI64:i19" 2 2\n@calc "i19[1,1] = 9007199254740993"\n'
+        '@calc -v p "i19[1,1]"\n@calc -v m "i19[1,1] % 10"\n@calc -v b "i19[1,1] & 0xff"\n'
+        'echo "p=$p m=$m b=$b"',
+        tmp_path,
+    )
+    assert "p=9007199254740993 m=3 b=1" in res.stdout, res.stdout + res.stderr
+
+
 def test_WP15_milksleep(tmp_path):
     res = milk_cli_script(
         "t0=$EPOCHREALTIME; milksleep 0.25; t1=$EPOCHREALTIME\n"
