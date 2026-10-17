@@ -120,7 +120,9 @@ unset _milk_ov_file
 _MILK_BUILTIN_LOADED=0
 enable -d milkcall milkget milkset milkcalc milktest milkexists milkls \
     milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog milktranslate milkcloexec milksleep 2>/dev/null || true
-if [[ -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" ]] && ! grep -q "libmilk.*(deleted)" "/proc/$$/maps" 2>/dev/null; then
+# MILK_NO_BUILTINS=1 forces the milk-call shims (used by the tests to compare both paths)
+if [[ "${MILK_NO_BUILTINS:-0}" != 1 && -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" ]] &&
+    ! grep -q "libmilk.*(deleted)" "/proc/$$/maps" 2>/dev/null; then
     if MILK_QUIET=1 enable -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" \
         milkcall milkget milkset milkcalc milktest milkexists milkls \
         milkwaitfor milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog milktranslate milkcloexec milksleep 2>/dev/null; then
@@ -129,120 +131,28 @@ if [[ -f "${MILK_INSTALLDIR}/lib/libmilkbash.so" ]] && ! grep -q "libmilk.*(dele
 fi
 
 if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
-    # run milk-call with an eval fd and source the variable assignments it writes back
+    # run milk-call with an eval fd and source the variable assignments it writes back; milk-call binds
+    # -v/-a/-A results exactly like the builtins (same C code), so the shims only forward their arguments
     _milk_call_eval() {
-        local eval_file rc=0
-        eval_file="$(mktemp "${TMPDIR:-/tmp}/.milk_eval.XXXXXX")" || return 1
-        exec {__milk_efd}>"${eval_file}"
-        MILK_CALL_EVAL_FD="${__milk_efd}" "${MILK_INSTALLDIR}/bin/milk-call" "$@" || rc=$?
+        local __milk_ef __milk_rc=0
+        __milk_ef="$(mktemp "${TMPDIR:-/tmp}/.milk_eval.XXXXXX")" || return 1
+        exec {__milk_efd}>"${__milk_ef}"
+        MILK_CALL_EVAL_FD="${__milk_efd}" "${MILK_INSTALLDIR}/bin/milk-call" "$@" || __milk_rc=$?
         exec {__milk_efd}>&-
-        if [[ -s "${eval_file}" ]]; then
+        if [[ -s "${__milk_ef}" ]]; then
             # shellcheck disable=SC1090
-            source "${eval_file}"
+            source "${__milk_ef}"
         fi
-        rm -f "${eval_file}"
-        return ${rc}
+        rm -f "${__milk_ef}"
+        return ${__milk_rc}
     }
-    milkcall() {
-        if [[ "${1:-}" == "streamcat" ]]; then
-            local _aname=""
-            local -a _fargs=()
-            while [[ $# -gt 0 ]]; do
-                if [[ "$1" == "-a" && $# -ge 2 ]]; then
-                    _aname="$2"
-                    shift 2
-                else
-                    _fargs+=("$1")
-                    shift
-                fi
-            done
-            if [[ -n "${_aname}" ]]; then
-                local _out
-                _out="$("${MILK_INSTALLDIR}/bin/milk-call" call "${_fargs[@]}")" || return $?
-                read -r -a "${_aname}" <<< "${_out//$'\n'/ }"
-                return 0
-            fi
-            set -- "${_fargs[@]}"
-        fi
-        _milk_call_eval call "$@"
-    }
-    milkget() {
-        if [[ "${1:-}" == "-v" && -n "${2:-}" ]]; then
-            local _vname="$2"
-            shift 2
-            local _val
-            _val="$("${MILK_INSTALLDIR}/bin/milk-call" get "$@")" || return $?
-            printf -v "${_vname}" '%s' "${_val}"
-            return 0
-        fi
-        if [[ "${1:-}" == "-a" && -n "${2:-}" ]]; then
-            local _aname="$2"
-            shift 2
-            local _val
-            _val="$("${MILK_INSTALLDIR}/bin/milk-call" get "$@")" || return $?
-            read -r -a "${_aname}" <<< "${_val//$'\n'/ }"
-            return 0
-        fi
-        if [[ "${1:-}" == "-A" && -n "${2:-}" && -n "${3:-}" ]]; then
-            local _Aname="$2"
-            local _spec="${3#@}"
-            case "${_spec}" in
-                *.kw.\*) _spec="${_spec%\*}.kv" ;;
-                *.kw)    _spec="${_spec}.kv" ;;
-                *.\*)    _spec="${_spec%\*}.kv" ;;
-                *.list)  _spec="${_spec%.list}.kv" ;;
-                *.*.*)   ;;
-                *[\*\?]*) ;;
-                *.*)     _spec="${_spec}.kv" ;;
-            esac
-            local _val
-            _val="$("${MILK_INSTALLDIR}/bin/milk-call" get "${_spec}")" || return $?
-            declare -gA "${_Aname}=()"
-            local _line _k _v
-            while IFS= read -r _line; do
-                if [[ "${_line}" == *$'\t'* ]]; then
-                    _k="${_line%%$'\t'*}"
-                    _v="${_line#*$'\t'}"
-                elif [[ "${_line}" == *=* ]]; then
-                    _k="${_line%%=*}"
-                    _v="${_line#*=}"
-                else
-                    continue
-                fi
-                [[ -n "${_k}" ]] && printf -v "${_Aname}[${_k}]" '%s' "${_v}"
-            done <<< "${_val}"
-            return 0
-        fi
-        "${MILK_INSTALLDIR}/bin/milk-call" get "$@"
-    }
+    milkcall()     { _milk_call_eval call "$@"; }
+    milkget()      { _milk_call_eval get "$@"; }
     milkset()      { "${MILK_INSTALLDIR}/bin/milk-call" set "$@"; }
-    milkcalc() {
-        local _vname=""
-        if [[ "${1:-}" == "-v" && -n "${2:-}" ]]; then
-            _vname="$2"
-            shift 2
-        fi
-        local eval_file rc=0
-        eval_file="$(mktemp "${TMPDIR:-/tmp}/.milk_eval.XXXXXX")" || return 1
-        exec {__milk_efd}>"${eval_file}"
-        if [[ -n "${_vname}" ]]; then
-            local _val
-            _val="$(MILK_CALL_EVAL_FD="${__milk_efd}" "${MILK_INSTALLDIR}/bin/milk-call" calc "$@")" || rc=$?
-            printf -v "${_vname}" '%s' "${_val}"
-        else
-            MILK_CALL_EVAL_FD="${__milk_efd}" "${MILK_INSTALLDIR}/bin/milk-call" calc "$@" || rc=$?
-        fi
-        exec {__milk_efd}>&-
-        if [[ -s "${eval_file}" ]]; then
-            # shellcheck disable=SC1090
-            source "${eval_file}"
-        fi
-        rm -f "${eval_file}"
-        return ${rc}
-    }
+    milkcalc()     { _milk_call_eval calc "$@"; }
     milktest()     { "${MILK_INSTALLDIR}/bin/milk-call" test "$@"; }
     milkexists()   { "${MILK_INSTALLDIR}/bin/milk-call" exists "$@"; }
-    milkls()       { "${MILK_INSTALLDIR}/bin/milk-call" ls "$@"; }
+    milkls()       { _milk_call_eval ls "$@"; }
     milkwaitfor()  { "${MILK_INSTALLDIR}/bin/milk-call" waitfor "$@"; }
     milkwaitany()  { "${MILK_INSTALLDIR}/bin/milk-call" waitany "$@"; }
     milkgrab()     { "${MILK_INSTALLDIR}/bin/milk-call" grab "$@"; }
@@ -475,7 +385,19 @@ _milk_on_impl() {
     fi
 
     local -a targets=()
-    if [[ "$1" == *,* ]]; then
+    local __milk_a
+    for __milk_a in "$@"; do
+        [[ "${__milk_a}" == "--" ]] && break
+    done
+    if [[ "${__milk_a:-}" == "--" ]]; then # <t1> [t2...] -- <cmd words...>
+        while [[ "$1" != "--" ]]; do
+            targets+=("$1")
+            shift
+        done
+        shift
+        local action
+        action="$(printf '%q ' "$@")"
+    elif [[ "$1" == *,* ]]; then
         local old_ifs="${IFS}"
         IFS=',' read -r -a targets <<< "$1"
         IFS="${old_ifs}"
@@ -489,7 +411,9 @@ _milk_on_impl() {
         done
     fi
 
-    local action="$*"
+    if [[ "${__milk_a:-}" != "--" ]]; then
+        local action="$*"
+    fi
     local tgt_label
     tgt_label="$(IFS=','; echo "${targets[*]}")"
 

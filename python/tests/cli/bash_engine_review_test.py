@@ -632,6 +632,18 @@ def test_WP15_scalar_calc_in_builtin(tmp_path):
     assert value(res.stdout, "d_rc") == "2"
 
 
+def test_WP18_on_double_dash_form(tmp_path):
+    """`@on [opts] <t1> [t2...] -- <cmd words>` as documented (the `--` used to reach eval)."""
+    res = milk_cli_script(
+        '@mk2Dim "@S:on18a" 4 4 >/dev/null\n@mk2Dim "@S:on18b" 4 4 >/dev/null\n'
+        f'@on --once s.on18a s.on18b -- touch "{tmp_path}/fired"\n'
+        'milksleep 0.1; @calc "on18b = 1"; milksleep 0.4\n@on --clear\n',
+        tmp_path,
+    )
+    assert "invalid option" not in res.stderr, res.stderr
+    assert (tmp_path / "fired").exists()
+
+
 def test_WP15_milksleep(tmp_path):
     res = milk_cli_script(
         "t0=$EPOCHREALTIME; milksleep 0.25; t1=$EPOCHREALTIME\n"

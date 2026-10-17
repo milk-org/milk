@@ -108,8 +108,6 @@ HELP COMMANDS
 	# command description for <command>
 > @cmd?
 	# command description for all commands
-> h? str
-	# search for string <str> in all commands and their descriptions
 
 -----------------------------------------------------------------------------------
 IMPORTANT COMMANDS
@@ -122,12 +120,10 @@ IMPORTANT COMMANDS
 	# list all images in memory in JSON format
 > mem.listim --porcelain
 	# list all images in memory in TSV format
-> listimf <filename>
-	# list all images in memory and write output to file <filename>
-> !<syscommand>
-	# execute system command
-> showhist
-	# prints history of all commands
+> mem.listim > <filename>
+	# list all images in memory into file <filename>
+> @ghistory
+	# history of all sessions (@lhistory: this session)
 > quit
 	# exit (exit and exitCLI also work)
 > mem.mk2Dim <im> <xs> <ys>
@@ -191,7 +187,7 @@ For example, to load all im*.fits files in memory, you can type within the execu
 
 USING "imlist.txt"
 
-Start milk-cli with -l (or --listimf) to maintain "imlist.txt" -- an ASCII table of all images currently in memory. Standard unix tools can filter this list and generate commands.
+Start milk-cli with --listimf to maintain "imlist.txt" -- an ASCII table of all images currently in memory. Standard unix tools can filter this list and generate commands.
 
 The -l flag works independently of FIFO mode. You can feed the generated commands back into the CLI via a named pipe (FIFO).
 
@@ -212,11 +208,11 @@ SCRIPTING — VARIABLES & ARITHMETIC
 	# braced variable form
 > unset x
 	# remove variable
-> vars
-	# list all defined variables
+> declare -p
+	# list all bash variables
 > y=$(( x + 5 ))
 	# integer arithmetic: + - * / %
-> echo @fpsname.param
+> echo @f.fpsname.param
 	# read FPS parameter value
 > @fpsset fpsname param value
 	# write FPS parameter
@@ -258,8 +254,6 @@ SCRIPT FILES
 	# execute commands from a script file
 > . myscript.milk
 	# same as source (dot-sourcing)
-> savescript state.milk
-	# export variables and functions to file
 > @savehistory replay.milk
 	# save command history to file
 
@@ -273,25 +267,26 @@ Shebang for executable scripts:
 -----------------------------------------------------------------------------------
 ARITHMETIC OPERATIONS
 
-> im1=sqrt(im+2.0)
-	# will perform an arithmetic operation on image im and store the result in image im1
+> @ im1 = sqrt(im + 2.0)
+	# arithmetic on image im, result in image im1 (also: @calc 'im1 = sqrt(im + 2.0)')
 
 -----------------------------------------------------------------------------------
-UNIFIED EVENT WAIT & TRAPS
+WAITING & EVENTS
 
-> wait_any [streams...] [P:fps_name] [F:fps_name] [T:timeout_ms]
-	# block until ANY specified event occurs.
-	# returns the name of the object that triggered, or "" on timeout.
-> trap "echo triggered" S:mystream P:myfps
-	# execute command asynchronously when event occurs
+> @waitfor s.mystream 10 -t 2
+	# wait for 10 new frames, timeout 2 s (status 124 on timeout)
+> @waitany s.cam s.wfs -t 1
+	# wait for whichever stream updates first; its name is in $MILK_TRIGGER
+> @on s.mystream 'echo "frame on $MILK_TRIGGER"'
+	# run a command on every update, in the background (@on --clear stops all)
 
 -----------------------------------------------------------------------------------
 STREAM METADATA & INTROSPECTION
 
 > echo @s.mystream.naxis
 	# read stream dimension count via @s.<name>.<prop> namespace
-> @milkquery myobj
-	# query comprehensive state of any milk object (stream, fps, proc)
+> @milkquery --fps
+	# JSON state of FPS units (also --streams, --procs; no option: everything)
 > @fpslist --json
 	# output list of FPS units in machine-readable JSON format
 > @fpsdump myfps --json

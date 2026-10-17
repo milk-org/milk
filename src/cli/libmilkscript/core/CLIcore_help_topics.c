@@ -210,7 +210,6 @@ void help_topic_commands(void)
     printf(C_CMD "  @help-<topic>     " C_RST "Show help for a specific topic\n");
     printf(C_CMD "  @cmd? [cmd]       " C_RST "Help for a specific command\n");
     printf(C_CMD "  @m? [module]      " C_RST "List commands in a module\n");
-    printf(C_CMD "  h? [string]       " C_RST "Search command descriptions\n");
     printf(C_CMD "  @fhelp            " C_RST "Interactive fuzzy command search\n");
     printf(C_CMD "  @fhist            " C_RST "Interactive fuzzy history search\n");
     printf("\n");
@@ -226,8 +225,7 @@ void help_topic_commands(void)
     printf("\n");
     printf(C_HDR "Session Control:\n" C_RST);
     printf(C_CMD "  quit / exit       " C_RST "Exit the milk shell\n");
-    printf(C_CMD "  !<syscommand>     " C_RST "Execute OS shell command\n");
-    printf(C_CMD "  logon / logoff    " C_RST "Enable/disable session log\n");
+    printf(C_CMD "  @sessionlog on|off" C_RST "Enable/disable session log\n");
     printf("\n");
 }
 
@@ -251,7 +249,7 @@ void help_topic_variables(void)
     printf("  " C_CMD "echo $x" C_RST "           Print variable\n");
     printf("  " C_CMD "echo ${x}" C_RST "         Braced form\n");
     printf("  " C_CMD "unset x" C_RST "           Remove variable\n");
-    printf("  " C_CMD "vars" C_RST "              List all variables\n");
+    printf("  " C_CMD "declare -p" C_RST "        List all bash variables\n");
     printf("\n");
     printf(C_HDR "String Operations:\n" C_RST);
     printf("  " C_CMD "${#var}" C_RST "           String length\n");
@@ -376,20 +374,9 @@ void help_topic_flowcontrol(void)
     printf(C_HDR "Unified Event Wait:\n" C_RST);
     printf("  " C_CMD "@waitany [-t T] s.<s1> s.<s2>" C_RST
            "   Block until any listed stream updates\n");
-    printf("  " C_CMD "wait_any [-t T] S:s F:f.p=v P:n:STATE" C_RST "\n");
     printf("\n");
-    printf(C_HDR "Engine Event Traps:\n" C_RST);
-    printf("  " C_CMD "trap 'cmd' "
-           "STREAM:name" C_RST "  fire on stream update\n");
-    printf("  " C_CMD "trap 'cmd' "
-           "FPS:f.p=v" C_RST "    fire on FPS match\n");
-    printf("  " C_CMD "trap 'cmd' "
-           "PROC:n:STATE" C_RST "  fire on state\n");
-    printf("  " C_CMD "trap '' "
-           "STREAM:name" C_RST "    clear trap\n");
-    printf("  " C_CMD "trap -l" C_RST "              list traps\n");
-    printf("  Flags: " C_CMD "-i ms" C_RST " throttle interval (def 100ms)"
-           "  " C_CMD "-n N" C_RST " fire count limit\n");
+    printf(C_HDR "Cleanup:\n" C_RST);
+    printf("  " C_CMD "@defer <cmd...>" C_RST "     run at exit, last registered first\n");
     printf("\n");
 }
 
@@ -412,7 +399,6 @@ void help_topic_scripting(void)
     printf(C_CMD "  source <file>      " C_RST "Execute a script file\n");
     printf(C_CMD "  . <file>           " C_RST "Same (dot-source)\n");
     printf(C_CMD "  include_once <f>   " C_RST "Source only once per session\n");
-    printf(C_CMD "  savescript <file>  " C_RST "Save variables & functions\n");
     printf(C_CMD "  @savehistory <file> " C_RST "Save command history\n");
     printf("  Startup: " C_CMD "milk-cli -s <file>" C_RST "  run on launch\n");
     printf("  Startup: " C_CMD "milk-script <file>" C_RST "  standalone runner\n");
@@ -658,11 +644,12 @@ void help_topic_bash(void)
     printf("  " C_CMD "@f.ao.gain=0.25             " C_RST "Direct parameter/keyword assignment\n");
     printf("  " C_CMD "@f.ao.runstart / @p.ao.pause" C_RST
            "Direct FPS / processinfo action invocation\n");
-    printf("  " C_CMD "${ _milk_get s.im1.xsize; } " C_RST
-           "Bash 5.3 zero-fork funsub (translated from @{s.im1.xsize})\n");
+    printf("  " C_CMD "@{imean(im1)}               " C_RST
+           "Inline calculator (bash 5.3: no fork; older bash: $(...))\n");
     printf("  " C_CMD "@ im1[0:9, 0:9] = 10        " C_RST
            "Unquoted calculator expression statement\n");
     printf("\n");
+    printf("Full reference: docs/guide/scripting.md (installed docs or the milk repository)\n\n");
 }
 
 

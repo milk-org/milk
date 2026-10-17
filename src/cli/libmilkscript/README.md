@@ -33,7 +33,11 @@ src/cli/libmilkscript/
 ├── calc/            ← Mathematical expression & image-slice evaluator
 ├── core/            ← Core CLI execution pipeline, module loader & help
 ├── milkscript.h     ← Public embedding API header
-└── milkscript_api.c ← Public embedding API implementation
+├── milkscript_api.c ← Public embedding API implementation
+├── milkscript_main.c ← `milk-script` standalone runner
+├── milkscript_stubs.c ← Weak stubs for interactive-only functions (non-REPL builds)
+├── script_includes.h ← Common includes for the script sources
+└── standalone_dependencies.{c,h} ← Declarations shared with the no-CLI build
 ```
 
 ### 1. `shm_prop/` — Shared-Memory Property & Action Access
@@ -53,6 +57,10 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
   mutations, and existence/liveness checks.
 - `milk_shm_prop_proc_seq.c` — `proc.NAME.*` (`PROCESSINFO`) and `seq.NAME.*`
   (`fpsseq`) inspection and control.
+- `milk_entity_ns.h` — The one table of entity namespaces (`s`, `stream`, `l`, ...) and their kind;
+  everything else (C code, `milk.bash` via `milkls --namespaces`) derives from it.
+- `milk_shm_cache.h` / `milk_shm_cache.c` — Cache of mapped streams and FPS, checked against the
+  file's inode on each lookup.
 
 ### 2. `ipc/` — Client IPC, Server Discovery & Shared-Memory Log
 
@@ -60,6 +68,7 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
 - `milk_srvlog.h` — Shared-memory ring-buffer command/output log layout and API.
 - `milk_ipc_common.h` / `milk_ipc_common.c` — Shared socket path formatting,
   PID liveness probing, and bounded `read_all` / `write_all` I/O helpers.
+- `milk_proto.h` — Wire format: frame header, message types, `sendmsg`/`recvmsg` with fd passing.
 - `milk_client_internal.h` — Internal declarations shared across client files.
 - `milk_client_conn.c` — Socket connection, `MILK_SERVER` resolution, and
   auto-daemon spawning.
@@ -67,7 +76,7 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
   `WAITFOR`, `WAITANY`, `GRAB`, `PING`, `SHUTDOWN`) and streaming response reader.
 - `milk_bash_builtins.c` — Loadable GNU Bash builtins (`libmilkbash.so`) with
   zero-subshell scalar (`-v`), indexed array (`-a`), and associative array
-  (`-A`) variable binding.
+  (`-A`) variable binding; also `milktranslate`, `milksleep` and `milkcloexec`.
 - `milk_call_main.c` — Standalone `milk-call` binary entry point (`call`, `batch`,
   `pipe`, `get`, `set`, `calc`, `test`, `exists`, `waitfor`, `waitany`, `grab`,
   `replay`, `complete`, `translate`, `server`, `log`, `shutdown`).
@@ -96,9 +105,10 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
 
 - `milk_bash_engine.h` — Public API for Bash coprocess execution and translation.
 - `milk_bash_engine_internal.h` — Shared internal declarations.
-- `milk_bash_translate.c` — Rewrites `@cmd` and `@entity.prop` tokens in Bash
-  scripts into `milk` builtin / `milk-call` invocations while respecting quotes
-  and comments.
+- `milk_shell_lex.h` / `milk_shell_lex.c` — Bash-aware scanner: the context (code, quotes, here-doc,
+  substitution, ...) of every byte, and whether input is incomplete.
+- `milk_bash_translate.c` — Rewrites `@cmd`, `module.command` and `@entity.prop` forms into calls
+  of the milk builtins, using the scanner so quotes, comments and here-docs are left alone.
 - `milk_bash_coproc.c` — Persistent `bash` coprocess lifecycle, variable/CWD
   synchronization, and `milk-cli --server` IPC servicing.
 
@@ -121,8 +131,6 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
 
 - `CLIcore_UI_execute.h` / `CLIcore_UI_execute.c` — Top-level `CLI_execute_line()`
   pipeline.
-- `CLIcore_UI_execute_preproc.c` — Command-line preprocessing and token splitting.
-- `CLIcore_UI_execute_redir.c` — Standard I/O redirection and piping.
 - `CLIcore_UI_execute_debug.c` — Execution tracing and timing diagnostics.
 - `CLIcore_checkargs.h` / `CLIcore_checkargs.c` — CLI argument type validation.
 - `CLIcore_checkargs_fps.c` — FPS-backed CLI argument binding.
@@ -135,8 +143,11 @@ Single source of truth for reading and writing `stream`, `fps`, `seq`, and
 - `CLIcore_setSHMdir.h` / `CLIcore_setSHMdir.c` — Shared-memory directory setup.
 - `CLIcore_signals.h` / `CLIcore_signals.c` — Signal handling and fault recovery.
 - `CLIcore_utils.h` / `CLIcore_utils.c` — CLI utility and argument helpers.
-- `CLIcore_script_intercept_proc.c` — Processinfo CLI interceptors (`procctl`,
-  `procwait`, `procstat`, `dpdigits`).
+- `CLIcore_inspect.c` — Inspection and process-control commands (`@ls`, `procctl`, `procwait`,
+  `procstat`, `dpdigits`, JSON introspection).
+- `CLIcore_script.h` / `CLIcore_vars.c` — CLI variable table and its sync with the environment.
+- `milk_lexicon.h` / `milk_lexicon.c` — The one list of `@` primitives, prompt-only commands and
+  bash words, for completion, highlighting and the `milk-call` symlinks.
 
 ## Build Tier
 
