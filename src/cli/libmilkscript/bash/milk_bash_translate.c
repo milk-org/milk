@@ -28,6 +28,7 @@
 
 #include "CLIcore.h"
 #include "milk_bash_engine_internal.h"
+#include "milk_entity_ns.h"
 #include "milk_shell_lex.h"
 
 /* ============================================================
@@ -169,22 +170,18 @@ static const char *get_sigil(void)
 
 static int is_entity_prefix(const char *s, size_t *out_len)
 {
-    static const char *const pfx[] = { "s.",   "l.",      "f.",   "p.",     "q.",    "fps.",
-                                       "seq.", "stream.", "loc.", "local.", "proc.", NULL };
-    for (int i = 0; pfx[i] != NULL; i++)
+    const char *rest = s;
+    if (milk_entity_ns_kind(s, &rest) == MILK_NS_NONE ||
+        !(isalnum((unsigned char) *rest) || *rest == '_' || *rest == '*' || *rest == '?' ||
+          *rest == '$'))
     {
-        size_t plen = strlen(pfx[i]);
-        if (strncmp(s, pfx[i], plen) == 0 && (isalnum((unsigned char) s[plen]) || s[plen] == '_' ||
-                                              s[plen] == '*' || s[plen] == '?' || s[plen] == '$'))
-        {
-            if (out_len != NULL)
-            {
-                *out_len = plen;
-            }
-            return 1;
-        }
+        return 0;
     }
-    return 0;
+    if (out_len != NULL)
+    {
+        *out_len = (size_t) (rest - s);
+    }
+    return 1;
 }
 
 static size_t scan_entity_path(const char *s, int *has_eq)
@@ -1062,11 +1059,10 @@ static void translate_stmt_body(const char *stmt, size_t len, int d, sbuf_t *out
                                                             "step", "incr",   "stop",
                                                             "exit", "kill",   NULL };
                     const char              *ldot       = strrchr(ent_tmp, '.');
-                    int isf = (strncmp(ent_tmp, "f.", 2) == 0 || strncmp(ent_tmp, "fps.", 4) == 0);
-                    int isp =
-                        (strncmp(ent_tmp, "p.", 2) == 0 || strncmp(ent_tmp, "proc.", 5) == 0 ||
-                         strncmp(ent_tmp, "procinfo.", 9) == 0);
-                    const char *const *acts = isf ? fps_act : (isp ? proc_act : NULL);
+                    milk_ns_kind_t           ek         = milk_entity_ns_kind(ent_tmp, NULL);
+                    int                      isf        = (ek == MILK_NS_FPS);
+                    int                      isp        = (ek == MILK_NS_PROC);
+                    const char *const       *acts       = isf ? fps_act : (isp ? proc_act : NULL);
                     for (int a = 0; ldot != NULL && acts != NULL && acts[a] != NULL; a++)
                     {
                         if (strcmp(ldot + 1, acts[a]) == 0)

@@ -25,9 +25,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "milk_lexicon.h"
 #include "CLIcore.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "fps.h"
+#include "milk_entity_ns.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
 #include "milk_shm_prop.h"
@@ -46,20 +48,26 @@ static int is_bash_excluded_cmd(const char *key)
         /* Shell builtins owned by Bash */
         "cd", "pwd", "echo", "printf", "read", "shift", "export", "unset", "vars", "alias",
         "unalias", "aliases", "time", "watch", "exit", "quit", "exitCLI",
-        /* Interactive milk-cli REPL / readline commands */
-        "history", "searchhist", "fhist", "ghistory", "lhistory", "savehistory", "savescript",
-        "setprompt", "bookmark", "sessionlog", "synhl", "syndiag", "cliindent", "showmatch",
-        "helprl", "fhelp", "fparam",
+        /* Interactive milk-cli commands not in milk_lexicon_repl_commands() */
+        "savescript", "bookmark",
         /* Internal help-topic keys (use @h <topic>, @hb, @hc, @hm, @hf) */
-        "help", "help-bash", "help-cmdopts", "help-syntax", "help-commands", "help-variables",
+        "help-bash", "help-cmdopts", "help-syntax", "help-commands", "help-variables",
         "help-flowcontrol", "help-scripting", "help-milk",
         /* Deprecated / duplicate aliases */
-        "list-streams", "list-fps", "fpsset", NULL
+        "list-streams", "list-fps", NULL
     };
 
     if (key == NULL || key[0] == '\0')
     {
         return 1;
+    }
+    for (int i = 0; milk_lexicon_repl_commands()[i] != NULL;
+         i++) /* prompt-only: reached as @name (engine) */
+    {
+        if (strcmp(key, milk_lexicon_repl_commands()[i]) == 0)
+        {
+            return 1;
+        }
     }
 
     for (int i = 0; excluded[i] != NULL; i++)
@@ -146,18 +154,12 @@ static size_t complete_commands(const char *prefix, const char *sigil, char *out
     }
     size_t blen = strlen(bare);
 
-    static const char *const core_cmds[] = {
-        "h",     "hb",     "hc",       "hm",       "hf",      "ls",        "get",
-        "set",   "calc",   "test",     "exists",   "running", "waitfor",   "waitany",
-        "grab",  "replay", "snapshot", "diff",     "restore", "assert",    "prompt",
-        "defer", "on",     "source",   "server",   "log",     "streamcat", "streamwrite",
-        "batch", "pipe",   "unload",   "procstat", "procctl", "procwait",  NULL
-    };
-    for (int i = 0; core_cmds[i] != NULL; i++)
+    for (int i = 0; milk_lexicon_primitives()[i].name != NULL; i++)
     {
-        if (strncmp(core_cmds[i], bare, blen) == 0)
+        if (strncmp(milk_lexicon_primitives()[i].name, bare, blen) == 0)
         {
-            int n = snprintf(out + pos, outsz - pos, "%s%s\n", sigil, core_cmds[i]);
+            int n = snprintf(out + pos, outsz - pos, "%s%s\n", sigil,
+                             milk_lexicon_primitives()[i].name);
             if (n > 0 && pos + (size_t) n < outsz)
             {
                 pos += (size_t) n;
@@ -1035,12 +1037,8 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
             bcmd++;
         }
 
-        const char *bpref  = (prefix[0] == '@') ? (prefix + 1) : prefix;
-        int is_entity_pref = (strncmp(bpref, "s.", 2) == 0 || strncmp(bpref, "l.", 2) == 0 ||
-                              strncmp(bpref, "f.", 2) == 0 || strncmp(bpref, "p.", 2) == 0 ||
-                              strncmp(bpref, "q.", 2) == 0 || strncmp(bpref, "stream.", 7) == 0 ||
-                              strncmp(bpref, "local.", 6) == 0 || strncmp(bpref, "fps.", 4) == 0 ||
-                              strncmp(bpref, "proc.", 5) == 0 || strncmp(bpref, "seq.", 4) == 0);
+        const char *bpref          = (prefix[0] == '@') ? (prefix + 1) : prefix;
+        int         is_entity_pref = (milk_entity_ns_kind(bpref, NULL) != MILK_NS_NONE);
 
         int cmdidx = find_server_cmd(bcmd);
 

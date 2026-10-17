@@ -44,6 +44,7 @@
 #include "cli_calc_parser.h"
 #include "milk_shm_prop.h"
 #include "milk_shm_prop_internal.h"
+#include "milk_entity_ns.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
 #include "processinfo.h"
@@ -224,13 +225,13 @@ int milk_server_waitfor(int client_fd, const char *target, const char *arg2, dou
 
     /* Case 2: Stream frame wait: s.cam [nframes] [-s sem] [--cnt target] */
     const char *sname = target;
-    if (strncmp(sname, "s.", 2) == 0 || strncmp(sname, "S:", 2) == 0)
+    if (strncmp(sname, "S:", 2) == 0)
     {
         sname += 2;
     }
-    else if (strncmp(sname, "stream.", 7) == 0)
+    else if (milk_entity_ns_kind(target, &sname) != MILK_NS_STREAM)
     {
-        sname += 7;
+        sname = target;
     }
 
     long     nframes     = 1;

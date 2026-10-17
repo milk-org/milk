@@ -21,6 +21,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "milk_entity_ns.h"
 #include "CLIcore.h"
 #include "CLIcore_script.h"
 #include "ImageStreamIO/ImageStreamIO.h"
@@ -1305,6 +1306,32 @@ errno_t cli_cmd_milkquery(void)
     return RETURN_SUCCESS;
 }
 
+/** ls_ns_arg() - namespace named by an `@ls` argument ("s", "streams", "s.cam*"); its pattern in *@pat. */
+static milk_ns_kind_t ls_ns_arg(const char *p, const char **pat)
+{
+    *pat = NULL;
+    if (strcmp(p, "streams") == 0)
+    {
+        return MILK_NS_STREAM;
+    }
+    if (strcmp(p, "procs") == 0)
+    {
+        return MILK_NS_PROC;
+    }
+    milk_ns_kind_t k = milk_entity_ns_lookup(p, strlen(p));
+    if (k != MILK_NS_NONE)
+    {
+        return k;
+    }
+    const char *rest = p;
+    k                = milk_entity_ns_kind(p, &rest);
+    if (k != MILK_NS_NONE)
+    {
+        *pat = (*rest != '\0') ? rest : "*";
+    }
+    return k;
+}
+
 /**
  * @brief Unified entity discovery command (`@ls`).
  *
@@ -1385,7 +1412,9 @@ int milk_ls_exec(int argc, char **argv)
     }
     else
     {
-        const char *p = raw_pat;
+        const char    *p     = raw_pat;
+        const char    *nspat = NULL;
+        milk_ns_kind_t nsk   = MILK_NS_NONE;
         while (*p == '@')
         {
             p++;
@@ -1400,86 +1429,17 @@ int milk_ls_exec(int argc, char **argv)
             do_local = 1;
             pat      = (p[2] != '\0') ? (p + 2) : "*";
         }
-        else if (strcmp(p, "s") == 0 || strcmp(p, "stream") == 0 || strcmp(p, "streams") == 0)
+        else if ((nsk = ls_ns_arg(p, &nspat)) != MILK_NS_NONE)
         {
-            do_streams = 1;
-        }
-        else if (strncmp(p, "s.", 2) == 0)
-        {
-            do_streams = 1;
-            pat        = (p[2] != '\0') ? (p + 2) : "*";
-        }
-        else if (strncmp(p, "stream.", 7) == 0)
-        {
-            do_streams = 1;
-            pat        = (p[7] != '\0') ? (p + 7) : "*";
-        }
-        else if (strcmp(p, "l") == 0 || strcmp(p, "local") == 0)
-        {
-            do_local = 1;
-        }
-        else if (strncmp(p, "l.", 2) == 0)
-        {
-            do_local = 1;
-            pat      = (p[2] != '\0') ? (p + 2) : "*";
-        }
-        else if (strncmp(p, "local.", 6) == 0)
-        {
-            do_local = 1;
-            pat      = (p[6] != '\0') ? (p + 6) : "*";
-        }
-        else if (strcmp(p, "f") == 0 || strcmp(p, "fps") == 0)
-        {
-            do_fps = 1;
-        }
-        else if (strncmp(p, "f.", 2) == 0)
-        {
-            do_fps = 1;
-            pat    = (p[2] != '\0') ? (p + 2) : "*";
-        }
-        else if (strncmp(p, "fps.", 4) == 0)
-        {
-            do_fps = 1;
-            pat    = (p[4] != '\0') ? (p + 4) : "*";
-        }
-        else if (strcmp(p, "p") == 0 || strcmp(p, "proc") == 0 || strcmp(p, "procinfo") == 0 ||
-                 strcmp(p, "procs") == 0)
-        {
-            do_procs = 1;
-        }
-        else if (strncmp(p, "p.", 2) == 0)
-        {
-            do_procs = 1;
-            pat      = (p[2] != '\0') ? (p + 2) : "*";
-        }
-        else if (strncmp(p, "proc.", 5) == 0)
-        {
-            do_procs = 1;
-            pat      = (p[5] != '\0') ? (p + 5) : "*";
-        }
-        else if (strncmp(p, "procinfo.", 9) == 0)
-        {
-            do_procs = 1;
-            pat      = (p[9] != '\0') ? (p + 9) : "*";
-        }
-        else if (strcmp(p, "q") == 0 || strcmp(p, "seq") == 0 || strcmp(p, "fpsseq") == 0)
-        {
-            do_seqs = 1;
-        }
-        else if (strncmp(p, "q.", 2) == 0)
-        {
-            do_seqs = 1;
-            pat     = (p[2] != '\0') ? (p + 2) : "*";
-        }
-        else if (strncmp(p, "seq.", 4) == 0)
-        {
-            do_seqs = 1;
-            pat     = (p[4] != '\0') ? (p + 4) : "*";
-        }
-        else if (strncmp(p, "fpsseq.", 7) == 0)
-        {
-            do_seqs = 1;
-            pat     = (p[7] != '\0') ? (p + 7) : "*";
+            do_streams |= (nsk == MILK_NS_STREAM);
+            do_local |= (nsk == MILK_NS_LOCAL);
+            do_fps |= (nsk == MILK_NS_FPS);
+            do_procs |= (nsk == MILK_NS_PROC);
+            do_seqs |= (nsk == MILK_NS_SEQ);
+            if (nspat != NULL)
+            {
+                pat = nspat;
+            }
         }
         else if (want_local)
         {
@@ -1821,19 +1781,8 @@ static const char *strip_proc_prefix_local(const char *s)
     {
         s++;
     }
-    if (strncmp(s, "p.", 2) == 0)
-    {
-        return s + 2;
-    }
-    if (strncmp(s, "proc.", 5) == 0)
-    {
-        return s + 5;
-    }
-    if (strncmp(s, "procinfo.", 9) == 0)
-    {
-        return s + 9;
-    }
-    return s;
+    const char *rest = s;
+    return (milk_entity_ns_kind(s, &rest) == MILK_NS_PROC) ? rest : s;
 }
 
 int cli_intercept_cmd_procctl(const char *p)

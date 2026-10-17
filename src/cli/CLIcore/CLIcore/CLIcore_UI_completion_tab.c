@@ -28,6 +28,7 @@
 #    include <readline/readline.h>
 #endif
 
+#include "milk_lexicon.h"
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
 #include "CLIcore_script.h"
@@ -61,24 +62,6 @@ static inline int match_prefix_or_fuzzy(const char *candidate, const char *query
  */
 static char *gen_commands_match(const char *text, size_t len, unsigned int *list_index)
 {
-    static const char *const builtins[] = {
-        "if",           "elif",       "else",           "fi",           "for",       "while",
-        "until",        "do",         "done",           "case",         "esac",      "select",
-        "function",     ".",          "source",         "break",        "continue",  "return",
-        "true",         "false",      "exit",           "shift",        "assert",    "assigncheck",
-        "dpdigits",     "set",        "export",         "readonly",     "local",     "declare",
-        "let",          "eval",       "type",           "command",      "trap",      "watch",
-        "time",         "timeout",    "wait",           "wait_any",     "printf",    "echo",
-        "getopts",      "mapfile",    "alias",          "unalias",      "basename",  "dirname",
-        "pushd",        "popd",       "dirs",           "seq",          "[[",        "procctl",
-        "procwait",     "procstat",   "waitfor_stream", "waitfor_fps",  "on_update", "on_fpschange",
-        "include_once", "savescript", "savehistory",    "@h",           "@hb",       "@hc",
-        "@hm",          "@hf",        "@calc",          "@get",         "@set",      "@test",
-        "@exists",      "@running",   "@waitfor",       "@waitany",     "@grab",     "@on",
-        "@defer",       "@source",    "@streamcat",     "@streamwrite", NULL
-    };
-    static const unsigned int nbuiltins = sizeof(builtins) / sizeof(builtins[0]) - 1;
-
     int         has_at = (text[0] == '@');
     const char *qtext  = has_at ? (text + 1) : text;
     size_t      qlen   = has_at ? (len - 1) : len;
@@ -99,15 +82,29 @@ static char *gen_commands_match(const char *text, size_t len, unsigned int *list
         }
     }
 
-    unsigned int bi = *list_index - data.NBcmd;
-    while (bi < nbuiltins)
+    /* then the bash words, then the @ primitives (milk_lexicon.h) */
+    unsigned int nwords = 0;
+    while (milk_lexicon_bash_words()[nwords] != NULL)
     {
-        const char *name = builtins[bi];
+        nwords++;
+    }
+    unsigned int bi = *list_index - data.NBcmd;
+    while (bi < nwords || milk_lexicon_primitives()[bi - nwords].name != NULL)
+    {
+        char name[64];
+        if (bi < nwords)
+        {
+            snprintf(name, sizeof(name), "%s", milk_lexicon_bash_words()[bi]);
+        }
+        else
+        {
+            snprintf(name, sizeof(name), "@%s", milk_lexicon_primitives()[bi - nwords].name);
+        }
         (*list_index)++;
         bi++;
         if (match_prefix_or_fuzzy(name, text, len))
         {
-            return dupstr((char *) name);
+            return dupstr(name);
         }
     }
     return NULL;

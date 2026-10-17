@@ -16,7 +16,7 @@
 #include "CLIcore_UI_execute.h"
 #include "CLIcore_script.h"
 #include "milk_bash_engine.h"
-#include "CLIcore/cli_calc_parser.h"
+#include "cli_calc_parser.h"
 #include <glob.h>
 #include <sys/wait.h>
 

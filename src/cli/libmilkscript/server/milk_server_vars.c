@@ -330,18 +330,6 @@ void milk_server_send_modified_dcvars(int client_fd)
 }
 
 /**
- * @brief Check whether a namespace prefix of length @nslen is a valid entity namespace.
- *
- * @param s     Pointer to start of namespace token
- * @param nslen Length of namespace token before the first `.`
- * @return 1 if valid entity namespace (`s`, `stream`, `f`, `fps`, `p`, `proc`, `procinfo`, `q`, `seq`), 0 otherwise
- */
-int milk_server_is_entity_ns_prefix(const char *s, size_t nslen)
-{
-    return milk_is_entity_ns_prefix(s, nslen);
-}
-
-/**
  * @brief Expand inline entity references (`@s.im.xsize`, `f.fps.param`, etc.) inside an expression.
  *
  * Numeric values are substituted bare; string values are enclosed in double quotes.
@@ -425,7 +413,7 @@ void milk_server_expand_entities_in_expr(const char *in, char *out, size_t outsz
                 tok[tlen]         = '\0';
                 const char *dot1  = strchr(tok, '.');
                 size_t      nslen = (dot1 != NULL) ? (size_t) (dot1 - tok) : 0;
-                if (has_at || milk_server_is_entity_ns_prefix(tok, nslen))
+                if (has_at || milk_is_entity_ns_prefix(tok, nslen))
                 {
                     char val[512];
                     val[0] = '\0';

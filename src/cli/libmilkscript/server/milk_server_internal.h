@@ -41,7 +41,6 @@ void milk_server_snapshot_dcvar(void);
 
 void milk_server_send_modified_dcvars(int client_fd);
 
-int milk_server_is_entity_ns_prefix(const char *s, size_t nslen);
 
 void milk_server_expand_entities_in_expr(const char *in, char *out, size_t outsz);
 

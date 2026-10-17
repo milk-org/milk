@@ -43,6 +43,7 @@
 #include "cli_calc_parser.h"
 #include "milk_shm_prop.h"
 #include "milk_ipc_common.h"
+#include "milk_entity_ns.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
 #include "milk_srvlog.h"
@@ -505,9 +506,9 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
         snprintf(data.cmdargtoken[data.cmdNBarg].val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s",
                  arg);
 
-        int is_ns_stream_arg = 0;
-        if (!is_slice && (strncmp(arg, "s.", 2) == 0 || strncmp(arg, "stream.", 7) == 0 ||
-                          strncmp(arg, "l.", 2) == 0 || strncmp(arg, "local.", 6) == 0))
+        int            is_ns_stream_arg = 0;
+        milk_ns_kind_t ak               = milk_entity_ns_kind(arg, NULL);
+        if (!is_slice && (ak == MILK_NS_STREAM || ak == MILK_NS_LOCAL))
         {
             FPS_STREAMNAME_PARSED sp = fps_streamname_parse(arg);
             if (!sp.error && sp.loc != '\0')
@@ -605,17 +606,8 @@ static int is_server_entity_spec_token(const char *s)
     {
         return 1;
     }
-    static const char *const pfx[] = { "s.",   "l.",      "f.",   "p.",     "q.",    "fps.",
-                                       "seq.", "stream.", "loc.", "local.", "proc.", NULL };
-    for (int k = 0; pfx[k] != NULL; k++)
-    {
-        size_t plen = strlen(pfx[k]);
-        if (strncmp(s, pfx[k], plen) == 0 && strchr(s + plen, '.') != NULL)
-        {
-            return 1;
-        }
-    }
-    return 0;
+    const char *rest = s;
+    return milk_entity_ns_kind(s, &rest) != MILK_NS_NONE && strchr(rest, '.') != NULL;
 }
 
 static int milk_server_set_argv(int argc, char **argv)
@@ -802,7 +794,7 @@ static int is_bare_entity_arg(const char *s)
     }
     const char *dot1  = strchr(s, '.');
     size_t      nslen = (dot1 != NULL) ? (size_t) (dot1 - s) : 0;
-    if (dot1 == NULL || !milk_server_is_entity_ns_prefix(s, nslen) || strchr(dot1 + 1, '.') != NULL)
+    if (dot1 == NULL || !milk_is_entity_ns_prefix(s, nslen) || strchr(dot1 + 1, '.') != NULL)
     {
         return 0;
     }
@@ -940,19 +932,15 @@ static int milk_server_assert(int argc, char **argv)
         {
             clean++;
         }
-        const char *sname = clean;
-        if (strncmp(sname, "s.", 2) == 0)
+        const char    *sname = clean;
+        milk_ns_kind_t ck    = milk_entity_ns_kind(clean, &sname);
+        if (ck != MILK_NS_STREAM)
         {
-            sname += 2;
-        }
-        else if (strncmp(sname, "stream.", 7) == 0)
-        {
-            sname += 7;
+            sname = clean;
         }
 
         int exists = milk_shm_prop_exists(clean, 0);
-        if (!exists && (strncmp(clean, "s.", 2) == 0 || strncmp(clean, "stream.", 7) == 0 ||
-                        strchr(clean, '.') == NULL))
+        if (!exists && (ck == MILK_NS_STREAM || strchr(clean, '.') == NULL))
         {
             if (image_ID(sname, data.core.image, data.core.NB_MAX_IMAGE) != -1)
             {
@@ -1006,7 +994,7 @@ static int milk_server_assert(int argc, char **argv)
         {
             char cbuf[64] = "0";
             char qspec[280];
-            if (strncmp(clean, "p.", 2) == 0 || strncmp(clean, "proc.", 5) == 0)
+            if (milk_entity_ns_kind(clean, NULL) == MILK_NS_PROC)
             {
                 snprintf(qspec, sizeof(qspec), "%s.loopcnt", clean);
             }
@@ -1027,7 +1015,7 @@ static int milk_server_assert(int argc, char **argv)
         {
             char fbuf[64] = "0";
             char qspec[280];
-            if (strncmp(clean, "p.", 2) == 0 || strncmp(clean, "proc.", 5) == 0)
+            if (milk_entity_ns_kind(clean, NULL) == MILK_NS_PROC)
             {
                 snprintf(qspec, sizeof(qspec), "%s.fps_hz", clean);
             }
@@ -1167,13 +1155,9 @@ int milk_server_dispatch_argv(int argc, char **argv)
         if (argc >= 4)
         {
             const char *f = argv[1];
-            if (strncmp(f, "f.", 2) == 0)
+            if (milk_entity_ns_kind(argv[1], &f) != MILK_NS_FPS)
             {
-                f += 2;
-            }
-            else if (strncmp(f, "fps.", 4) == 0)
-            {
-                f += 4;
+                f = argv[1];
             }
             snprintf(spec, sizeof(spec), "f.%s.%s", f, argv[2]);
             return (milk_shm_prop_set(spec, argv[3], (argc >= 5) ? argv[4] : NULL) == 0) ? 0 : 1;
@@ -1203,7 +1187,7 @@ int milk_server_dispatch_argv(int argc, char **argv)
         const char *dot1  = strchr(cmdname, '.');
         size_t      nslen = (dot1 != NULL) ? (size_t) (dot1 - cmdname) : 0;
         const char *dot2  = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
-        if (dot2 != NULL && milk_server_is_entity_ns_prefix(cmdname, nslen))
+        if (dot2 != NULL && milk_is_entity_ns_prefix(cmdname, nslen))
         {
             const char *eq = strchr(cmdname, '=');
             if (eq != NULL)
@@ -1222,12 +1206,12 @@ int milk_server_dispatch_argv(int argc, char **argv)
                 if (((strcmp(prop, "confstart") == 0 || strcmp(prop, "confstop") == 0 ||
                       strcmp(prop, "confstep") == 0 || strcmp(prop, "runstart") == 0 ||
                       strcmp(prop, "runstop") == 0 || strcmp(prop, "reset") == 0) &&
-                     (strncmp(cmdname, "f.", 2) == 0 || strncmp(cmdname, "fps.", 4) == 0)) ||
+                     milk_entity_ns_kind(cmdname, NULL) == MILK_NS_FPS) ||
                     ((strcmp(prop, "pause") == 0 || strcmp(prop, "resume") == 0 ||
                       strcmp(prop, "run") == 0 || strcmp(prop, "step") == 0 ||
                       strcmp(prop, "incr") == 0 || strcmp(prop, "stop") == 0 ||
                       strcmp(prop, "exit") == 0 || strcmp(prop, "kill") == 0) &&
-                     (strncmp(cmdname, "p.", 2) == 0 || strncmp(cmdname, "proc.", 5) == 0)))
+                     milk_entity_ns_kind(cmdname, NULL) == MILK_NS_PROC))
                 {
                     return (milk_shm_prop_set(cmdname, "1", NULL) == 0) ? 0 : 1;
                 }
@@ -1396,8 +1380,7 @@ static int try_exec_entity_lhs_assignment(const char *expr, int *out_rc)
     }
     const char *dot1  = strchr(lstart, '.');
     size_t      nslen = (dot1 != NULL && dot1 < le) ? (size_t) (dot1 - lstart) : 0;
-    if (ndots < 2 || (size_t) (le - lstart) >= 256 ||
-        !milk_server_is_entity_ns_prefix(lstart, nslen))
+    if (ndots < 2 || (size_t) (le - lstart) >= 256 || !milk_is_entity_ns_prefix(lstart, nslen))
     {
         return 0;
     }

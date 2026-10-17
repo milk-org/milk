@@ -39,6 +39,7 @@
 #include "CLIcore_signals.h"
 #include "milk_bash_engine.h"
 #include "milk_bash_engine_internal.h"
+#include "milk_lexicon.h"
 #include "milk_shell_lex.h"
 #include "milk_server.h"
 #include "milk_srvlog.h"
@@ -403,14 +404,12 @@ int milk_bash_engine_init(void)
             "    builtin exit \"${__MILK_EXIT_CODE}\"\n"
             "}\n"
             "eval \"function ${MILKCLI_SIGIL:-@}time { time \\\"\\$@\\\"; }\"\n"
-            "for __milk_w in history searchhist fhist ghistory lhistory savehistory \\\n"
-            "    setprompt sessionlog synhl syndiag cliindent showmatch helprl fhelp \\\n"
-            "    fparam help dpdigits fpsset; do\n"
+            "for __milk_w in ${__MILK_REPL_WORDS}; do\n" /* milk_lexicon_repl_commands(), set before exec */
             "    declare -F \"${MILKCLI_SIGIL:-@}${__milk_w}\" >/dev/null ||\\\n"
             "        eval \"function ${MILKCLI_SIGIL:-@}${__milk_w} \\\n"
             "            { milkcall ${__milk_w} \\\"\\$@\\\"; }\"\n"
             "done\n"
-            "unset __milk_w\n"
+            "unset __milk_w __MILK_REPL_WORDS\n"
             /* Ctrl-C: abort the running command (simulated returns out of every function and sourced
              * file, via an extdebug DEBUG trap) but keep the shell and its state */
             "__milk_abort_dbg() {\n"
@@ -459,6 +458,14 @@ int milk_bash_engine_init(void)
             "    fi\n"
             "done\n";
 
+        char replw[512] = "";
+        for (int i = 0; milk_lexicon_repl_commands()[i] != NULL; i++)
+        {
+            size_t rl = strlen(replw);
+            snprintf(replw + rl, sizeof(replw) - rl, "%s%s", (rl > 0) ? " " : "",
+                     milk_lexicon_repl_commands()[i]);
+        }
+        setenv("__MILK_REPL_WORDS", replw, 1);
         execl("/bin/bash", "bash", "--norc", "--noprofile", "-c", loop_script, (char *) NULL);
         _exit(127);
     }

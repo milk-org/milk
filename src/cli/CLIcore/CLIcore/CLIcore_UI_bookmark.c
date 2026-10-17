@@ -23,7 +23,7 @@ struct bookmark_entry
 };
 
 struct bookmark_entry bookmarks[BOOKMARK_MAX];
-#include "CLIcore/cli_calc_parser.h"
+#include "cli_calc_parser.h"
 #include <glob.h>
 #include <sys/wait.h>
 #include "COREMOD_memory/COREMOD_memory.h"

@@ -21,21 +21,73 @@
 #include <stdio.h>
 #include <string.h>
 
+/** Entity namespaces: what the prefix before the first '.' of an entity path refers to. */
+typedef enum
+{
+    MILK_NS_NONE = 0,
+    MILK_NS_STREAM, /* s.  stream.            shared-memory stream */
+    MILK_NS_LOCAL,  /* l.  local.             image local to the milk-cli process */
+    MILK_NS_FPS,    /* f.  fps.               function parameter structure */
+    MILK_NS_PROC,   /* p.  proc.  procinfo.   processinfo loop */
+    MILK_NS_SEQ     /* q.  seq.   fpsseq.     FPS sequencer */
+} milk_ns_kind_t;
+
+/** The single list of namespace names (milk.bash gets it from `milkls --namespaces`). */
+static const struct
+{
+    const char    *name;
+    milk_ns_kind_t kind;
+} milk_entity_ns_table[] = { { "s", MILK_NS_STREAM },      { "stream", MILK_NS_STREAM },
+                             { "l", MILK_NS_LOCAL },       { "local", MILK_NS_LOCAL },
+                             { "f", MILK_NS_FPS },         { "fps", MILK_NS_FPS },
+                             { "p", MILK_NS_PROC },        { "proc", MILK_NS_PROC },
+                             { "procinfo", MILK_NS_PROC }, { "q", MILK_NS_SEQ },
+                             { "seq", MILK_NS_SEQ },       { "fpsseq", MILK_NS_SEQ },
+                             { NULL, MILK_NS_NONE } };
+
+/** Kind names, indexed by milk_ns_kind_t (as printed by `milkls --namespaces`). */
+static const char *const milk_ns_kind_names[] = { "none", "stream", "local", "fps", "proc", "seq" };
+
+/** milk_entity_ns_lookup() - namespace kind of the @nslen-byte name @s (MILK_NS_NONE if unknown). */
+static inline milk_ns_kind_t milk_entity_ns_lookup(const char *s, size_t nslen)
+{
+    if (s == NULL || nslen == 0)
+    {
+        return MILK_NS_NONE;
+    }
+    for (int i = 0; milk_entity_ns_table[i].name != NULL; i++)
+    {
+        if (strlen(milk_entity_ns_table[i].name) == nslen &&
+            strncmp(s, milk_entity_ns_table[i].name, nslen) == 0)
+        {
+            return milk_entity_ns_table[i].kind;
+        }
+    }
+    return MILK_NS_NONE;
+}
+
+/**
+ * milk_entity_ns_kind() - namespace of entity path @spec ("s.cam.xsize"), skipping the namespace
+ * and its '.' in *@rest if given; MILK_NS_NONE (and *@rest = @spec) when @spec has no known prefix.
+ */
+static inline milk_ns_kind_t milk_entity_ns_kind(const char *spec, const char **rest)
+{
+    const char    *dot = (spec != NULL) ? strchr(spec, '.') : NULL;
+    milk_ns_kind_t kind =
+        (dot != NULL) ? milk_entity_ns_lookup(spec, (size_t) (dot - spec)) : MILK_NS_NONE;
+    if (rest != NULL)
+    {
+        *rest = (kind != MILK_NS_NONE) ? dot + 1 : spec;
+    }
+    return kind;
+}
+
 /**
  * @brief Return 1 if @s of length @nslen is a known entity namespace prefix.
  */
 static inline int milk_is_entity_ns_prefix(const char *s, size_t nslen)
 {
-    if (s == NULL || nslen == 0)
-    {
-        return 0;
-    }
-    return (
-        (nslen == 1 && (s[0] == 's' || s[0] == 'l' || s[0] == 'f' || s[0] == 'p' || s[0] == 'q')) ||
-        (nslen == 3 && (strncmp(s, "fps", 3) == 0 || strncmp(s, "seq", 3) == 0)) ||
-        (nslen == 4 && strncmp(s, "proc", 4) == 0) || (nslen == 5 && strncmp(s, "local", 5) == 0) ||
-        (nslen == 6 && (strncmp(s, "stream", 6) == 0 || strncmp(s, "fpsseq", 6) == 0)) ||
-        (nslen == 8 && strncmp(s, "procinfo", 8) == 0));
+    return milk_entity_ns_lookup(s, nslen) != MILK_NS_NONE;
 }
 
 /**

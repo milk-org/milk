@@ -745,8 +745,7 @@ static int shm_prop_set_impl(const char *spec,
     if (val == NULL)
     {
         const char *last_dot = strrchr(specbuf, '.');
-        int is_proc = (strncmp(specbuf, "p.", 2) == 0 || strncmp(specbuf, "proc.", 5) == 0 ||
-                       strncmp(specbuf, "procinfo.", 9) == 0);
+        int         is_proc  = (milk_entity_ns_kind(specbuf, NULL) == MILK_NS_PROC);
         if (last_dot != NULL &&
             (strcmp(last_dot + 1, "confstart") == 0 || strcmp(last_dot + 1, "confstop") == 0 ||
              strcmp(last_dot + 1, "confstep") == 0 || strcmp(last_dot + 1, "runstart") == 0 ||
@@ -897,9 +896,9 @@ static int is_snapshot_filter_arg(const char *arg)
     }
     char norm[256];
     milk_normalize_entity_spec(arg, norm, sizeof(norm));
-    return (strncmp(norm, "s.", 2) == 0 || strncmp(norm, "stream.", 7) == 0 ||
-            strncmp(norm, "l.", 2) == 0 || strncmp(norm, "local.", 6) == 0 ||
-            strncmp(norm, "f.", 2) == 0 || strncmp(norm, "fps.", 4) == 0 || strcmp(norm, "*") == 0);
+    milk_ns_kind_t k = milk_entity_ns_kind(norm, NULL);
+    return (k == MILK_NS_STREAM || k == MILK_NS_LOCAL || k == MILK_NS_FPS ||
+            strcmp(norm, "*") == 0);
 }
 
 static int snapshot_key_matches(const char *key, int nfilters, char **filters)
@@ -912,22 +911,16 @@ static int snapshot_key_matches(const char *key, int nfilters, char **filters)
     {
         char pat[256];
         milk_normalize_entity_spec(filters[i], pat, sizeof(pat));
-        char norm[256];
-        if (strncmp(pat, "stream.", 7) == 0)
+        char           norm[256];
+        const char    *rest = pat;
+        milk_ns_kind_t k    = milk_entity_ns_kind(pat, &rest);
+        if (k == MILK_NS_STREAM || k == MILK_NS_LOCAL) /* snapshot keys use s. for both */
         {
-            snprintf(norm, sizeof(norm), "s.%s", pat + 7);
+            snprintf(norm, sizeof(norm), "s.%s", rest);
         }
-        else if (strncmp(pat, "local.", 6) == 0)
+        else if (k == MILK_NS_FPS)
         {
-            snprintf(norm, sizeof(norm), "s.%s", pat + 6);
-        }
-        else if (strncmp(pat, "l.", 2) == 0)
-        {
-            snprintf(norm, sizeof(norm), "s.%s", pat + 2);
-        }
-        else if (strncmp(pat, "fps.", 4) == 0)
-        {
-            snprintf(norm, sizeof(norm), "f.%s", pat + 4);
+            snprintf(norm, sizeof(norm), "f.%s", rest);
         }
         else
         {

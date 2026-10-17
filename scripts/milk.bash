@@ -316,6 +316,13 @@ __milk_inline_err() {
     return "$1"
 }
 
+# Entity namespaces (s, stream, l, ...) and their kind, from the C table (milk_entity_ns.h)
+declare -gA __MILK_NS_KIND=()
+while read -r __milk_ns __milk_kind; do
+    [[ -n "${__milk_ns}" ]] && __MILK_NS_KIND["${__milk_ns}"]="${__milk_kind}"
+done < <(milkls --namespaces 2>/dev/null)
+unset __milk_ns __milk_kind
+
 declare -gi __MILK_SOURCE_DEPTH=0
 declare -gA __MILK_INC_ONCE=()
 
@@ -476,7 +483,7 @@ _milk_on_impl() {
     else
         targets+=("$1")
         shift
-        while [[ $# -ge 2 && ( "$1" == s.* || "$1" == stream.* ) ]]; do
+        while [[ $# -ge 2 && "${__MILK_NS_KIND[${1%%.*}]:-}" == stream && "$1" == *.* ]]; do
             targets+=("$1")
             shift
         done
@@ -688,10 +695,10 @@ __milk_setup_commands() {
         local marker="${bin_farm}/.sigil_${MILKCLI_SIGIL}"
         if [[ ! -f "${marker}" || "${cmd_list}" -nt "${marker}" || "${BASH_SOURCE[0]}" -nt "${marker}" ]]; then
             local target_bin="${MILK_INSTALLDIR}/bin/milk-call"
-            if [[ -x "${target_bin}" ]]; then
-                "${target_bin}" setup-bin-farm "${bin_farm}" "${MILKCLI_SIGIL}" "${target_bin}" "${cmd_list}" 2>/dev/null || true
+            if [[ -x "${target_bin}" ]] &&
+                "${target_bin}" setup-bin-farm "${bin_farm}" "${MILKCLI_SIGIL}" "${target_bin}" "${cmd_list}" 2>/dev/null; then
+                touch "${marker}" 2>/dev/null || true # a failed setup is retried next time
             fi
-            touch "${marker}" 2>/dev/null || true
         fi
         if [[ ":${PATH}:" != *":${bin_farm}:"* ]]; then
             export PATH="${bin_farm}:${PATH}"
@@ -711,29 +718,25 @@ command_not_found_handle() {
     if [[ "${cmd}" == "${MILKCLI_SIGIL}"* ]]; then
         shift
         local bare="${cmd#"${MILKCLI_SIGIL}"}"
-        case "${bare}" in
-            s.*.*|stream.*.*|l.*.*|local.*.*|f.*.*|fps.*.*|p.*.*|proc.*.*|q.*.*|seq.*.*)
-                if [[ "${bare}" == *=* || "${1:-}" == "=" ]]; then
-                    milkset "${bare}" "$@"
-                    return $?
-                fi
-                case "${bare}" in
-                    f.*.confstart|f.*.confstop|f.*.confstep|f.*.runstart|f.*.runstop|f.*.reset|\
-                    fps.*.confstart|fps.*.confstop|fps.*.confstep|fps.*.runstart|fps.*.runstop|fps.*.reset|\
-                    p.*.run|p.*.resume|p.*.pause|p.*.step|p.*.incr|p.*.stop|p.*.exit|p.*.kill|\
-                    proc.*.run|proc.*.resume|proc.*.pause|proc.*.step|proc.*.incr|proc.*.stop|proc.*.exit|proc.*.kill)
-                        milkset "${bare}" 1
-                        return $?
-                        ;;
-                esac
-                if [[ $# -eq 0 ]]; then
-                    milkget "${bare}"
-                    return $?
-                fi
+        local nskind="${__MILK_NS_KIND[${bare%%.*}]:-}"
+        if [[ -n "${nskind}" && "${bare#*.}" == ?*.?* ]]; then
+            if [[ "${bare}" == *=* || "${1:-}" == "=" ]]; then
                 milkset "${bare}" "$@"
                 return $?
-                ;;
-        esac
+            fi
+            local act="${bare##*.}"
+            if [[ ( "${nskind}" == fps && " confstart confstop confstep runstart runstop reset " == *" ${act} "* ) ||
+                  ( "${nskind}" == proc && " run resume pause step incr stop exit kill " == *" ${act} "* ) ]]; then
+                milkset "${bare}" 1
+                return $?
+            fi
+            if [[ $# -eq 0 ]]; then
+                milkget "${bare}"
+                return $?
+            fi
+            milkset "${bare}" "$@"
+            return $?
+        fi
         milkcall "${bare}" "$@"
         return $?
     fi
@@ -868,7 +871,7 @@ _milk_build_prompt_strings() {
                 val="?"
             fi
 
-            if [[ "${spec}" == f.*.run || "${spec}" == fps.*.run || "${spec}" == f.*.status || "${spec}" == fps.*.status ]]; then
+            if [[ "${__MILK_NS_KIND[${spec%%.*}]:-}" == fps && ( "${spec##*.}" == run || "${spec##*.}" == status ) ]]; then
                 if [[ ${has_lbl} -eq 0 ]]; then
                     tmp="${spec#*.}"
                     lbl="${tmp%%.*}"

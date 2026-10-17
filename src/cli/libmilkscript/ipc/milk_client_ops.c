@@ -141,8 +141,7 @@ int milk_client_call(int argc, char **argv, int async_flag, const milk_client_ho
         {
             raw_p++;
         }
-        if (strncmp(raw_p, "p.", 2) == 0 || strncmp(raw_p, "proc.", 5) == 0 ||
-            strncmp(raw_p, "procinfo.", 9) == 0)
+        if (milk_entity_ns_kind(raw_p, NULL) == MILK_NS_PROC)
         {
             snprintf(ptarget, sizeof(ptarget), "%s", raw_p);
         }
@@ -363,10 +362,10 @@ int milk_client_set(const char                *spec,
 
     char s_norm[512];
     milk_normalize_entity_spec(spec, s_norm, sizeof(s_norm));
-    int is_local_or_glob =
-        ((strncmp(s_norm, "l.", 2) == 0 || strncmp(s_norm, "local.", 6) == 0) ||
-         ((strncmp(s_norm, "s.", 2) == 0 || strncmp(s_norm, "stream.", 7) == 0) &&
-          (strchr(s_norm, '*') != NULL || strchr(s_norm, '?') != NULL)));
+    milk_ns_kind_t nk = milk_entity_ns_kind(s_norm, NULL);
+    int            is_local_or_glob =
+        (nk == MILK_NS_LOCAL ||
+         (nk == MILK_NS_STREAM && (strchr(s_norm, '*') != NULL || strchr(s_norm, '?') != NULL)));
 
     struct timespec ts0;
     clock_gettime(CLOCK_REALTIME, &ts0);
@@ -444,17 +443,8 @@ static int is_entity_spec_token(const char *s)
     }
     char norm[256];
     milk_normalize_entity_spec(s, norm, sizeof(norm));
-    static const char *const pfx[] = { "s.",   "l.",      "f.",     "p.",    "q.", "fps.",
-                                       "seq.", "stream.", "local.", "proc.", NULL };
-    for (int k = 0; pfx[k] != NULL; k++)
-    {
-        size_t plen = strlen(pfx[k]);
-        if (strncmp(norm, pfx[k], plen) == 0 && strchr(norm + plen, '.') != NULL)
-        {
-            return 1;
-        }
-    }
-    return 0;
+    const char *rest = norm;
+    return milk_entity_ns_kind(norm, &rest) != MILK_NS_NONE && strchr(rest, '.') != NULL;
 }
 
 /**
@@ -690,9 +680,9 @@ int milk_client_exists(const char *spec, int check_running, const milk_client_ho
 
     char s_norm[256];
     milk_normalize_entity_spec(spec, s_norm, sizeof(s_norm));
-    if (!check_running && (strncmp(s_norm, "s.", 2) == 0 || strncmp(s_norm, "stream.", 7) == 0 ||
-                           strncmp(s_norm, "l.", 2) == 0 || strncmp(s_norm, "local.", 6) == 0 ||
-                           strchr(s_norm, '.') == NULL))
+    milk_ns_kind_t ek = milk_entity_ns_kind(s_norm, NULL);
+    if (!check_running &&
+        (ek == MILK_NS_STREAM || ek == MILK_NS_LOCAL || strchr(s_norm, '.') == NULL))
     {
         char sockpath[256];
         milk_ipc_resolve_sockpath(hooks, sockpath, sizeof(sockpath), 1);
@@ -831,9 +821,7 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
     /* Fast Path 0: Client-side process state wait (@waitfor p.<name> [state]) */
     const char *eq = (!is_complex_expr) ? strchr(tclean, '=') : NULL;
     char        proc_eq_buf[320];
-    if (!is_complex_expr && eq == NULL &&
-        (strncmp(tclean, "p.", 2) == 0 || strncmp(tclean, "proc.", 5) == 0 ||
-         strncmp(tclean, "procinfo.", 9) == 0))
+    if (!is_complex_expr && eq == NULL && milk_entity_ns_kind(tclean, NULL) == MILK_NS_PROC)
     {
         const char *dot1 = strchr(tclean, '.');
         if (dot1 != NULL && dot1[1] != '\0' && strchr(dot1 + 1, '.') == NULL)
@@ -880,8 +868,8 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
             lhs[lhslen]        = '\0';
             const char *expect = eq + 1;
             char        val[256];
-            int         is_shm_ent = (is_entity_spec_token(lhs) && strncmp(lhs, "l.", 2) != 0 &&
-                                      strncmp(lhs, "local.", 6) != 0);
+            int         is_shm_ent =
+                (is_entity_spec_token(lhs) && milk_entity_ns_kind(lhs, NULL) != MILK_NS_LOCAL);
             if (milk_shm_prop_get(lhs, val, sizeof(val)) == 0 || is_shm_ent)
             {
                 if (val[0] != '\0' && client_status_matches(val, expect))
@@ -933,23 +921,20 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
     /* Fast Path 2: Client-side /dev/shm semaphore wait (no server fork) */
     if (!is_complex_expr && eq == NULL)
     {
-        const char *sname = tclean;
-        if (strncmp(sname, "S:", 2) == 0)
+        const char    *sname = tclean;
+        milk_ns_kind_t tk    = milk_entity_ns_kind(tclean, &sname);
+        if (strncmp(tclean, "S:", 2) == 0)
         {
-            sname += 2;
+            sname = tclean + 2;
         }
-        else if (strncmp(sname, "s.", 2) == 0)
+        else if (tk != MILK_NS_STREAM)
         {
-            sname += 2;
-        }
-        else if (strncmp(sname, "stream.", 7) == 0)
-        {
-            sname += 7;
+            sname = tclean;
         }
 
         IMAGE img;
         memset(&img, 0, sizeof(img));
-        if (sname[0] != '\0' && strncmp(tclean, "L:", 2) != 0 && strncmp(tclean, "l.", 2) != 0 &&
+        if (sname[0] != '\0' && strncmp(tclean, "L:", 2) != 0 && tk != MILK_NS_LOCAL &&
             ImageStreamIO_openIm(&img, sname) == IMAGESTREAMIO_SUCCESS && img.md != NULL)
         {
             long nframes = strtol(arg2, NULL, 10);
@@ -1219,14 +1204,15 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
             {
                 s++;
             }
-            if (strncmp(s, "S:", 2) == 0 || strncmp(s, "L:", 2) == 0 || strncmp(s, "s.", 2) == 0 ||
-                strncmp(s, "l.", 2) == 0)
+            const char    *rest = s;
+            milk_ns_kind_t k    = milk_entity_ns_kind(s, &rest);
+            if (strncmp(s, "S:", 2) == 0 || strncmp(s, "L:", 2) == 0)
             {
                 s += 2;
             }
-            else if (strncmp(s, "stream.", 7) == 0)
+            else if (k == MILK_NS_STREAM || k == MILK_NS_LOCAL)
             {
-                s += 7;
+                s = rest;
             }
             if (s[0] != '\0')
             {
@@ -1737,6 +1723,15 @@ int milk_client_log(int argc, char **argv, const milk_client_hooks_t *hooks)
 
 int milk_client_ls(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
+    if (argc == 1 && strcmp(argv[0], "--namespaces") == 0) /* "name kind" lines, for milk.bash */
+    {
+        for (int i = 0; milk_entity_ns_table[i].name != NULL; i++)
+        {
+            printf("%s %s\n", milk_entity_ns_table[i].name,
+                   milk_ns_kind_names[milk_entity_ns_table[i].kind]);
+        }
+        return 0;
+    }
     milk_ipc_sync_shm_env(hooks);
     for (int i = 0; i < argc; i++)
     {
@@ -1749,8 +1744,8 @@ int milk_client_ls(int argc, char **argv, const milk_client_hooks_t *hooks)
         {
             a++;
         }
-        if (strcmp(a, "--local") == 0 || strcmp(a, "l") == 0 || strcmp(a, "local") == 0 ||
-            strncmp(a, "l.", 2) == 0 || strncmp(a, "local.", 6) == 0 || strncmp(a, "L:", 2) == 0)
+        if (strcmp(a, "--local") == 0 || milk_entity_ns_lookup(a, strlen(a)) == MILK_NS_LOCAL ||
+            milk_entity_ns_kind(a, NULL) == MILK_NS_LOCAL || strncmp(a, "L:", 2) == 0)
         {
             char **cargv = (char **) calloc((size_t) argc + 2, sizeof(char *));
             if (cargv == NULL)

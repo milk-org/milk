@@ -21,7 +21,7 @@
 
 #include "CLIcore.h"
 
-#include "CLIcore/CLIcore_UI_execute.h"
+#include "CLIcore_UI_execute.h"
 
 #define STYLE_BOLD "\033[1m"
 #define STYLE_NO_BOLD "\033[22m"

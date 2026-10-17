@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "milk_entity_ns.h"
 #include "CLIcore.h"
 #include "cli_treesitter.h"
 #include "cli_treesitter_internal.h"
@@ -791,14 +792,7 @@ static void collect_at_token_spans(const char    *line,
         }
         else if (j > i + 1)
         {
-            int is_ent =
-                (j > i + 2 &&
-                 (strncmp(line + i + 1, "s.", 2) == 0 || strncmp(line + i + 1, "f.", 2) == 0 ||
-                  strncmp(line + i + 1, "p.", 2) == 0 || strncmp(line + i + 1, "q.", 2) == 0 ||
-                  strncmp(line + i + 1, "stream.", 7) == 0 ||
-                  strncmp(line + i + 1, "fps.", 4) == 0 || strncmp(line + i + 1, "proc.", 5) == 0 ||
-                  strncmp(line + i + 1, "procinfo.", 9) == 0 ||
-                  strncmp(line + i + 1, "seq.", 4) == 0));
+            int is_ent = (j > i + 2 && milk_entity_ns_kind(line + i + 1, NULL) != MILK_NS_NONE);
             spans[*num_spans].start_byte = (uint32_t) i;
             spans[*num_spans].end_byte   = (uint32_t) j;
             spans[*num_spans].color      = is_ent ? mod_color : cmd_color;

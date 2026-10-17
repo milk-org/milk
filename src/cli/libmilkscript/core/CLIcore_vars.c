@@ -13,7 +13,7 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
-#include "CLIcore/cli_calc_parser.h"
+#include "cli_calc_parser.h"
 #include "CLIcore_script.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 

@@ -23,6 +23,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "milk_lexicon.h"
 #include "milk_bash_engine.h"
 #include "milk_client.h"
 #include "milkdata.h"
@@ -59,16 +60,16 @@ static int setup_bin_farm(const char *bin_farm,
         closedir(dir);
     }
 
-    static const char *const core_cmds[] = {
-        "",        "calc",    "test",      "get",         "set",      "ls",   "exists",  "running",
-        "waitfor", "waitany", "grab",      "replay",      "snapshot", "diff", "restore", "assert",
-        "prompt",  "batch",   "pipe",      "server",      "log",      "h",    "hb",      "hc",
-        "hm",      "hf",      "streamcat", "streamwrite", "unload",   NULL
-    };
-    for (int i = 0; core_cmds[i] != NULL; i++)
+    for (int i = -1; i < 0 || milk_lexicon_primitives()[i].name != NULL;
+         i++) /* -1: the bare sigil */
     {
+        if (i >= 0 && !(milk_lexicon_primitives()[i].flags & MILK_PRIM_CALL))
+        {
+            continue;
+        }
         char lpath[1024];
-        snprintf(lpath, sizeof(lpath), "%s/%s%s", bin_farm, sigil, core_cmds[i]);
+        snprintf(lpath, sizeof(lpath), "%s/%s%s", bin_farm, sigil,
+                 (i < 0) ? "" : milk_lexicon_primitives()[i].name);
         unlink(lpath);
         if (symlink(target_bin, lpath) != 0)
         {

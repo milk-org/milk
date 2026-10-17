@@ -37,6 +37,7 @@ set(MILKSCRIPT_SOURCES
     core/CLIcore_signals.c
     core/CLIcore_utils.c
     core/CLIcore_vars.c
+    core/milk_lexicon.c
     calc/cli_calc_tokenizer.c
     calc/cli_calc_parser.c
     calc/cli_calc_functions.c
