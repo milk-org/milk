@@ -204,10 +204,10 @@ errno_t CLIADDCMD_COREMOD_tools__mvprocCPUset()
     safe_fps_fill_farg_examples(farg_tsete, bindings_tsete, nb_bindings_tsete);
 
     INSERT_STD_CLIREGISTERFUNC;
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_rtp, CLIfunction_rtp);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_tset, CLIfunction_tset);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_tsete, CLIfunction_tsete);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_cset, CLIfunction_cset);
+    INSERT_STD_CLIREGISTERFUNC_ARGS(CLIcmddata_rtp, CLIfunction_rtp, farg_rtp);
+    INSERT_STD_CLIREGISTERFUNC_ARGS(CLIcmddata_tset, CLIfunction_tset, farg_tset);
+    INSERT_STD_CLIREGISTERFUNC_ARGS(CLIcmddata_tsete, CLIfunction_tsete, farg_tsete);
+    INSERT_STD_CLIREGISTERFUNC_ARGS(CLIcmddata_cset, CLIfunction_cset, farg_tset);
 
     return RETURN_SUCCESS;
 }

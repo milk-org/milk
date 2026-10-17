@@ -762,6 +762,26 @@ def test_WP16_complex_images(tmp_path):
     assert value(res.stdout, "cmp_rc") == "2", out
 
 
+def test_secondary_commands_take_their_arguments(tmp_path):
+    """Extra commands of a multi-command file (mem.cp, mem.mv, ...) used to ignore their arguments."""
+    res = milk_cli_script(
+        '@mk2Dim "@L:c1" 2 2\n@calc "c1 = 3"\n'
+        "mem.cp c1 c2; echo \"cp=$(@calc 'itot(c2)')\"\n"
+        "mem.mv c2 c3; echo \"mv=$(@calc 'itot(c3)') old=$(@exists l.c2 && echo yes || echo no)\"\n"
+        'mem.imsetcnt1 c1 5; echo "cnt1=$(@get l.c1.cnt1)"\n'
+        '@mk2Dim "@L:big" 8 8\n@calc "big = 1"\n@calc "big[2, 3] = 9"\n'
+        "arith.extractim big sub 4 3 1 2 >/dev/null; echo \"crop=$(@get l.sub.xsize)x$(@get l.sub.ysize) $(@calc 'itot(sub)')\"\n"
+        'mem.cp c1; echo "missing_rc=$?"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert "cp=12" in res.stdout, out
+    assert "mv=12 old=no" in res.stdout, out
+    assert "cnt1=5" in res.stdout, out
+    assert "crop=4x3 20" in res.stdout, out
+    assert value(res.stdout, "missing_rc") != "0", out
+
+
 def test_WP15_milksleep(tmp_path):
     res = milk_cli_script(
         "t0=$EPOCHREALTIME; milksleep 0.25; t1=$EPOCHREALTIME\n"

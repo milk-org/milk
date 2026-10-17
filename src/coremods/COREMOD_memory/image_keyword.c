@@ -125,7 +125,7 @@ static errno_t CLIfunction(void)
 errno_t CLIADDCMD_COREMOD_memory__image_keyword()
 {
     safe_fps_fill_farg_examples(farg_listkw, bindings_listkw, nb_bindings_listkw);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_listkw, CLIfunction_listkw);
+    INSERT_STD_CLIREGISTERFUNC_ARGS(CLIcmddata_listkw, CLIfunction_listkw, farg_listkw);
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC;
 

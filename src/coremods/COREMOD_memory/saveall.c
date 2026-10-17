@@ -128,7 +128,7 @@ errno_t CLIADDCMD_COREMOD_memory__saveall()
     {
         safe_fps_fill_farg_examples(farg_snap, bindings_snap, nb_bindings_snap);
 
-        INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_snap, CLIfunction_snap);
+        INSERT_STD_CLIREGISTERFUNC_ARGS(CLIcmddata_snap, CLIfunction_snap, farg_snap);
     }
 
     {

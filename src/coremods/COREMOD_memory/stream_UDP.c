@@ -143,7 +143,7 @@ errno_t CLIADDCMD_COREMOD_memory__stream_UDP()
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC;
     safe_fps_fill_farg_examples(farg_rx, bindings_rx, nb_bindings_rx);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_rx, CLIfunction_rx);
+    INSERT_STD_CLIREGISTERFUNC_ARGS(CLIcmddata_rx, CLIfunction_rx, farg_rx);
 
     return RETURN_SUCCESS;
 }

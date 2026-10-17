@@ -157,6 +157,7 @@ typedef struct
  * references CLI functions. */
 
 #define INSERT_STD_CLIREGISTERFUNC_NAMED(varCLIcmddata, varCLIfunction)
+#define INSERT_STD_CLIREGISTERFUNC_ARGS(varCLIcmddata, varCLIfunction, varfarg)
 #define INSERT_STD_CLIREGISTERFUNC
 
 /* Process info macros -- these are used by
