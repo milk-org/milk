@@ -142,24 +142,6 @@ static inline errno_t TUI_exit()
 /* MODULE_DEPS, MILK_MODULE_INFO and MILK_MODULE_RUNNABLES (engine tier) */
 #    include "milk_module_info.h"
 
-/** @brief CLI registration function type. */
-typedef errno_t (*module_cli_reg_fn)(void);
-
-/**
- * @brief Define and export the module descriptor.
- *
- * Use in a module's main .c.  load_sharedobj() reads the descriptor after dlopen() and calls the module's
- * init_module_CLI(); no __attribute__((constructor)) is emitted.
- * Deprecates INIT_MODULE_LIB().
- *
- * @param modname       Module name token (unquoted)
- * @param cli_reg_call  init_module_CLI function pointer
- * @param _deps         NULL-sentinel dep array, or NULL
- */
-#    define MILK_MODULE(modname, cli_reg_call, _deps) \
-        MILK_MODULE_INFO __milk_module_info =         \
-            MILK_MODULE_INFO_INIT_(modname, cli_reg_call, _deps, NULL, 0)
-
 #    define MAX_NB_FRAMENAME_CHAR 500
 #    define MAX_NB_EXCLUSIONS 40
 

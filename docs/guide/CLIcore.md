@@ -12,7 +12,7 @@ code is in `src/cli/CLIcore/`.
 <!-- prettier-ignore -->
 !!! note
     Standalone executables (`milk-fpsexec-*`) have their own command-line interfaces. See
-    [FPS Standalone Modes](../arch/FPS_Standalone_CMD_Modes.md).
+    [FPS](fps.md#6-standalone-executables-fpsexec).
 
 See also: [FPS](fps.md) · [Streams](streams.md) · [FAQ](../quickstart/faq.md) ·
 [Build Tiers](../quickstart/build_tiers.md)
@@ -93,11 +93,22 @@ user@host src >
 
 ### Module Loading
 
-Load shared library modules at runtime:
+Modules are shared objects (`lib<ModuleName>.so`) installed in `$MILK_INSTALLDIR/lib`. Commands of a
+loaded module are called as `<shortname>.<command>`:
 
 ```text
-milk-cli > soload mylib.so         # load shared object
-milk-cli > mload COREMOD_arith     # load module by name
+milk-cli > mload milkfft           # load module by name
+milk-cli > mloadas milkfft ft      # load module with a custom short name
+milk-cli > soload ../mylib/mymod.so  # load a shared object by path
+milk-cli > m?                      # list loaded modules
+milk-cli > m? <modulename>         # list the commands of a module
+```
+
+Modules can also be loaded at startup with the `MILKCLI_ADD_LIBS` environment variable (shared
+object paths separated by space, comma or semicolon):
+
+```bash
+MILKCLI_ADD_LIBS="/path/libMyFirstModule.so /path/libMySecondModule.so" milk-cli
 ```
 
 ---

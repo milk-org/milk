@@ -24,7 +24,6 @@
 #include <sys/types.h>
 
 #include "CLIcore.h"
-#include "fps_cli_function.h"
 #include "milkscript.h"
 
 #include "CLIcore_UI_execute.h"
@@ -73,8 +72,6 @@ errno_t milkscript_init(int argc, char **argv)
 
     // Initialize Data Arrays (Variables, FPS, etc) and RNG
     CLI_data_init();
-
-    fps_cli_register();
 
     // Explicitly call constructors of core dependencies
     load_module_shared("milkCOREMODmemory");

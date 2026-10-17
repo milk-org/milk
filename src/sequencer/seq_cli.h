@@ -10,14 +10,13 @@
 #ifndef _SEQ_CLI_H
 #define _SEQ_CLI_H
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
 
-#ifndef MILK_NO_CLI
-errno_t CLIADDCMD_sequencer__seq_cli(void);
-#endif
+extern const MILK_RUNNABLE runnable_sequencer_list;
+extern const MILK_RUNNABLE runnable_sequencer_submit;
+extern const MILK_RUNNABLE runnable_sequencer_status;
+extern const MILK_RUNNABLE runnable_sequencer_start;
+extern const MILK_RUNNABLE runnable_sequencer_stop;
+extern const MILK_RUNNABLE runnable_sequencer_log;
 
 #endif

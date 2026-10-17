@@ -99,9 +99,6 @@ nav:
     - Tutorial: developer/tutorial.md
     - Coding Standards: developer/coding_standards.md
     - Adding Plugins: developer/plugins.md
-    - Template Source Code: developer/TemplateSourceCode.md
-    - Module Files: developer/ModuleFiles.md
-    - Loading Modules: developer/LoadingModules.md
     - Managing Dependencies: developer/dependency_system.md
     - Documenting Code: developer/DocumentingCode.md
     - Tooling: developer/tooling.md
@@ -111,7 +108,6 @@ nav:
     - Overview: arch/architecture.md
     - "Programmer's Guide": arch/programmers_guide.md
     - Dependency Graph: arch/dependency_graph.md
-    - FPS Standalone Modes: arch/FPS_Standalone_CMD_Modes.md
   - Operations:
     - Performance Tuning: operations/performance.md
     - PGO & LTO: operations/pgo.md

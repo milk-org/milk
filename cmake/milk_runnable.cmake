@@ -46,7 +46,7 @@ set(_MILK_RUNNABLE_LIBS ${_MILK_RUNNABLE_ENGINE_LIBS} milkCOREMODmemory milkCORE
                         milkCOREMODarith)
 
 set(_MILK_FPSEXEC_STUB_TEMPLATE [=[
-#include "milk_runnable.h"
+#include "milk_skinny_runnable.h"
 
 extern const MILK_RUNNABLE @UNIT@;
 
@@ -180,7 +180,7 @@ function(_milk_runnable_check_registry objs)
     if(NOT _dropped)
       continue()
     endif()
-    file(STRINGS "${_src}" _reg REGEX "^[ \t]*MILK_MODULE(_RUNNABLES)?[ \t]*\\(")
+    file(STRINGS "${_src}" _reg REGEX "^[ \t]*MILK_MODULE_RUNNABLES[ \t]*\\(")
     if(_reg)
       message(FATAL_ERROR "${_src} defines the module registry but is dropped by an unmet "
                           "MILK_CMAKE_MANDATE_*; move the mandate to another file")

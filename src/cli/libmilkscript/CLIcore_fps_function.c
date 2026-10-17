@@ -12,6 +12,7 @@
 
 
 #include "CLIcore.h"
+#include "CLIcore_fps_function.h"
 #include "CLIcore_fps_getFPSargs.h"
 #include "CLIcore_fps_query.h"
 
@@ -198,15 +199,4 @@ errno_t fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
         fps_disconnect(&fps);
     }
     return retval;
-}
-
-
-/**
- * @brief Publish fps_generic_CLIfunction to modules.
- *
- * Must be called once by the CLI startup, before any FPS command runs. Idempotent.
- */
-void fps_cli_register(void)
-{
-    fps_generic_CLIfunction_ptr = fps_generic_CLIfunction;
 }

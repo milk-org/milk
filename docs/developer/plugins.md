@@ -7,8 +7,7 @@ configuration.
 This guide outlines exactly how to create, structure, and link a custom plugin.
 
 See also: [Programmer's Guide](../arch/programmers_guide.md) · [Code Assist Tools](code_assist.md) ·
-[Developer Tutorial](tutorial.md) · [Build Tiers](../quickstart/build_tiers.md) ·
-[Loading Modules](LoadingModules.md)
+[Developer Tutorial](tutorial.md) · [Build Tiers](../quickstart/build_tiers.md)
 
 ## 1. Where do plugins go?
 
@@ -31,52 +30,42 @@ links.
 
 When a plugin registers a standalone executable (e.g., `milk-fpsexec-myplugin`), it is its own executable that interacts with the core engine (encompasses it and communicates via shared memory). The plugin's calculation logic should never depend on internal GUI/CLI tooling or code headers (from `CLIcore`).
 
-## 2. Setting up CMakeLists.txt
+## 2. Module layout
 
-When `milk` detects a `CMakeLists.txt` in your plugin's directory, it will automatically process it
-via `add_subdirectory()`. The file is expected to define your module's shared library and register
-its standalone executables.
+| Path             | Content                                                       |
+| ---------------- | ------------------------------------------------------------- |
+| `<modulename>.c` | Module registry (`MILK_MODULE_RUNNABLES`)                     |
+| `<modulename>.h` | Module header and `extern` declarations of its runnables      |
+| `CMakeLists.txt` | CMake build configuration (see below)                         |
+| `README.md`      | Module overview, source file table, dependencies              |
+| `scripts/`       | Shell scripts and utilities (optional)                        |
+| `*.c` / `*.h`    | Source files, each holding one or several runnables           |
 
-Copy `src/milk_module_example/CMakeLists.txt`; its skeleton and rules are in the [Programmer's Guide](../programmers_guide.md#6-cmakeliststxt-conventions).
+Examples: core module `src/coremods/COREMOD_memory/`, plugin `plugins/milk-extra-src/fft/`, template
+`src/milk_module_example/`.
 
-## 3. Writing the Source Code
+New plugins go in `plugins/<plugin>/` (or `plugins/<group>/<plugin>/`), never under
+`milk-extra-src/`, which is reserved for the plugins shipped in the `milk` repository. Everything
+under `plugins/` except `milk-extra-src/` is git-ignored: a new plugin is its own repository, and must
+never be committed to `milk`. Plugins are discovered automatically, no parent `CMakeLists.txt` needs
+editing.
 
-From a source code standpoint, a plugin operates exactly like any standard core `milk` module.
+## 3. Setting up CMakeLists.txt
 
-Specifically, it should be written as a "compute unit" implementing the V2 FPS standard
-architecture. You must use the canonical template
-`src/milk_module_example/examplefunc_fps_cli_poc.c` as your starting point.
+The module's `CMakeLists.txt` builds the shared library with `milk_add_runnable_module()` and the
+executables with `milk_add_fpsexec_stubs()`. Copy `src/milk_module_example/CMakeLists.txt`; the
+conventions are in the [Programmer's Guide](../arch/programmers_guide.md#6-cmakeliststxt-conventions).
 
-### Dual-Mode Headers Requirement
+## 4. Writing the Source Code
 
-Plugins are often compiled twice: once for the shared library (CLI) and once for the standalone
-executable. To stay compliant and not violate dependency chains (i.e. to ensure standalones do not
-depend on graphical/TUI CLI elements), your C code must use conditional includes:
+A plugin is written like any core module, as a set of `MILK_RUNNABLE` units (see the
+[Programmer's Guide](../arch/programmers_guide.md#3-writing-a-compute-unit)), starting from
+`src/milk_module_example/examplefunc_fps_cli_poc.c`. Source files include `milk_runnable.h` and do
+not include `CLIcore.h`. Declare the module dependencies with `MODULE_DEPS("milkfft", ...)` before
+`MILK_MODULE_RUNNABLES`, see [Managing Dependencies](dependency_system.md).
 
-```c
-#ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"   /* Stub types for standalone mode */
-#else
-#include "CLIcore.h"              /* Full CLI types for shared lib mode */
-#endif
-#include "fps.h"                  /* Always required for FPS structures */
-```
-
-## 4. Specialized Cacao Plugins
-
-If you are writing a plugin specifically for the `cacao` AO loop, your standalone executable target
-is configured slightly differently.
-
-Instead of `add_milk_standalone`, use `add_cacao_standalone`. This tells the build system to prefix
-your executable properly (e.g. `cacao-fpsexec-myfunc`).
-
-```cmake
-# Minimal cacao standalone
-add_cacao_standalone(my_cacao_func my_cacao_func.c)
-
-# If your cacao standalone depends on code from other plugins (like fft or imagegen)
-add_cacao_standalone_plugins(my_cacao_func my_cacao_func.c fft imagegen)
-```
+For `cacao` plugins, mark the units with `EXPORT_FPSEXEC(cacao, "id", unit);`, which builds
+`cacao-fpsexec-<id>`.
 
 ## 5. Reviewing the Build
 

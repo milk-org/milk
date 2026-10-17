@@ -243,16 +243,17 @@ input streams, applies computation, and writes output streams.
     /dev/shm/*.im.shm   /dev/shm/*.im.shm
 ```
 
-Compute units follow the **V2 8-section layout** documented in the template
+Compute units are `MILK_RUNNABLE` descriptors, described in the
+[Programmer's Guide](programmers_guide.md#3-writing-a-compute-unit); template:
 `src/milk_module_example/examplefunc_fps_cli_poc.c`.
 
 They can run in two modes:
 
 - **CLI mode**: loaded as a shared library inside `milk-cli`
-- **Standalone mode**: independent binary (`milk-fpsexec-*`, `cacao-fpsexec-*`)
+- **Standalone mode**: independent binary (`milk-fpsexec-*`, `cacao-fpsexec-*`), see
+  [FPS](../guide/fps.md#6-standalone-executables-fpsexec)
 
-→ Details: [Programmer's Guide](programmers_guide.md) ·
-[FPS Standalone Modes](FPS_Standalone_CMD_Modes.md)
+→ Details: [Programmer's Guide](programmers_guide.md)
 
 ---
 
@@ -361,8 +362,7 @@ Host A  ←──►  Valkey Server  ←──►  Host B
 | [Programmer's Guide](programmers_guide.md)          | Writing compute units, C API, CMake conventions     |
 | [Dependency Graph](dependency_graph.md)             | Library-level build dependencies (mermaid diagrams) |
 | [Streams](../guide/streams.md)                      | ImageStreamIO API, IMGID, semaphore model           |
-| [FPS](../guide/fps.md)                              | Parameter types, fpsCTRL, fpslist.txt workflow      |
-| [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md) | CMD vs standalone execution contexts                |
+| [FPS](../guide/fps.md)                              | Parameter types, fpsCTRL, fpsexec command line      |
 | [Process Info](../guide/procinfo.md)                | Heartbeat API, loop profiling                       |
 | [Performance Tuning](../operations/performance.md)  | CPU pinning, RT scheduling, GPU, network            |
 | [Debugging](../operations/debugging.md)             | GDB, tmux logs, common failures                     |

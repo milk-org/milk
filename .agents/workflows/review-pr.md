@@ -31,8 +31,9 @@ For each modified `.c` and `.h` file, verify:
 
 - [ ] No new cross-module dependencies violating
       `docs/arch/dependency_graph.md`
-- [ ] Dual-mode files use `#ifdef MILK_NO_CLI`
-      pattern
+- [ ] Runnable sources include `milk_runnable.h`, not
+      `CLIcore.h`; CLI exposure only via
+      `MILK_MODULE_RUNNABLES`
 - [ ] New modules follow
       `milk_module_example` patterns
 
@@ -54,7 +55,7 @@ For compute-function changes:
 - [ ] Kernel-Doc on new/modified functions
 - [ ] `docs/arch/programmers_guide.md` updated if
       architecture changed
-- [ ] FPS_APP_INFO `.description` is descriptive
+- [ ] Runnable `.app.description` is descriptive
 - [ ] Help sources consistent (run
       `/audit-help-consistency` if help changed)
 

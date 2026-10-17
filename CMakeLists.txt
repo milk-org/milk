@@ -453,10 +453,10 @@ message("EXTRAMODULES             = ${EXTRAMODULES}")
 include(CTest)
 
 # =======================================
-# STANDALONE EXECUTABLE HELPERS
+# FPSEXEC HELPERS
 # =======================================
-# Functions: add_milk_standalone, add_cacao_standalone,
-# add_cacao_standalone_plugins See cmake/milk_standalone.cmake for docs.
+# fpsexec link sets / PGO / LTO helpers (milk_standalone.cmake) and the
+# MILK_RUNNABLE module helpers (milk_runnable.cmake).
 
 include(${PROJECT_SOURCE_DIR}/cmake/milk_standalone.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/milk_static_lto.cmake)
@@ -704,8 +704,6 @@ if(USE_CLI)
     DESTINATION bin)
 
 endif(USE_CLI)
-
-install(FILES docs/cli/help.txt DESTINATION doc)
 
 # milk-cli script payloads (.milk files) – installed as data, not executables
 install(FILES scripts/makecircleofdisks.milk DESTINATION share/milk/scripts)

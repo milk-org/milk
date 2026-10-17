@@ -4,7 +4,7 @@
 
 /**
  * @file    rt_kernels.h
- * @brief   Compute kernels shared by the runnabletest and runnabletest_legacy modules
+ * @brief   Compute kernels of the runnabletest module
  *
  * Pure computation on IMGID. Include after the milk headers providing IMGID / resolveIMGID.
  */

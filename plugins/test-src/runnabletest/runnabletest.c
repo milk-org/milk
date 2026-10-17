@@ -15,8 +15,6 @@
  * | negate   | runtest.negate | -                            | rt_affine.c |
  * | passthru | -              | milk-fpsexec-runnabletest-passthru | rt_affine.c |
  * | total    | runtest.total  | - (CLI-only command)         | rt_total.c |
- *
- * Counterpart on the legacy macro-based implementation: plugins/test-src/runnabletest_legacy.
  */
 
 #define MODULE_SHORTNAME_DEFAULT "runtest"

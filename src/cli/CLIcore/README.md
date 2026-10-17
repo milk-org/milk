@@ -10,7 +10,7 @@ for expression evaluation and command dispatch.
 CLIcore provides:
 
 - The interactive `milk` CLI prompt (REPL)
-- Module/command registration (`CLIADDCMD`)
+- Module/command registration (`MILK_MODULE_RUNNABLES`, `RegisterCLIcmd`)
 - Argument parsing and type-checked function dispatch
 - Startup scripts and configuration loading
 

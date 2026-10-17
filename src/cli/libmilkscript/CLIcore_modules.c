@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "CLIcore.h"
+#include "CLIcore_fps_function.h"
 #include "milkdata.h"
 #include "milk_runnable.h"
 
@@ -108,7 +109,14 @@ static errno_t runnable_trampoline(void)
 
     if (r->kind == MILK_RUNNABLE_FPS)
     {
-        return milk_runnable_cli_call(r);
+        const MILK_RUNNABLE *prev = milk_runnable_set_current(r);
+
+        errno_t retval =
+            fps_generic_CLIfunction((FPS_APP_INFO *) &r->app, r->farg, &r->rt->cmddata, r->bindings,
+                                    r->nb_bindings, milk_runnable_compute_thunk);
+
+        milk_runnable_set_current(prev);
+        return retval;
     }
 
     errno_t retval = CLI_checkarg_array(r->farg, r->nbarg);
@@ -141,7 +149,7 @@ static void register_runnable(const MILK_RUNNABLE *r)
 
     if (r->kind == MILK_RUNNABLE_FPS)
     {
-        safe_fps_fill_farg_examples(r->farg, r->bindings, r->nb_bindings);
+        fps_fill_farg_examples(r->farg, r->bindings, r->nb_bindings);
     }
     if (getenv("MILK_FPSPROCINFO"))
     {
@@ -191,11 +199,6 @@ errno_t newstyle_milk_module_registration(void *handle, const char *libname)
     /* Stamp sofilename so load_module_shared
                  * can find this slot by Case-1 match. */
     strncpy(data.module[data.moduleindex].sofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
-
-    if (info->reg_call)
-    {
-        (*(info->reg_call))();
-    }
 
     for (int ri = 0; ri < info->n_runnables; ri++)
     {
@@ -443,14 +446,9 @@ errno_t load_module_shared_local()
  * @brief Register a module in the global module
  *        table.
  *
- * Called from each module's __attribute__((constructor))
- * init function during dlopen. Records the module
+ * Called by the CLI core when a module is loaded. Records the module
  * name, package, version, short name, and build
  * timestamps in data.module[].
- *
- * If the module exports a NULL-sentinel function-pointer
- * array named @c __reg_calls, each entry is invoked to
- * register the module's CLI commands.
  *
  * @param FileName      Source filename of the module
  * @param PackageName   Package the module belongs to

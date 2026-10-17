@@ -43,15 +43,3 @@ errno_t milk_runnable_compute_thunk(void)
 {
     return current_runnable->compute(current_runnable);
 }
-
-errno_t milk_runnable_cli_call(const MILK_RUNNABLE *r)
-{
-    const MILK_RUNNABLE *prev = milk_runnable_set_current(r);
-
-    errno_t retval =
-        safe_fps_generic_CLIfunction((FPS_APP_INFO *) &r->app, r->farg, &r->rt->cmddata,
-                                     r->bindings, r->nb_bindings, milk_runnable_compute_thunk);
-
-    milk_runnable_set_current(prev);
-    return retval;
-}

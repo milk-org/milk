@@ -13,9 +13,7 @@
  *
  * Modules compiled with this header can provide
  * computation functions that standalone fpsexec
- * programs call, but CLI registration code
- * (MILK_MODULE, RegisterCLIcommand, etc.)
- * becomes no-op stubs.
+ * programs call; the CLI-only API is reduced to stubs.
  */
 
 #ifndef CLICORE_STANDALONE_H
@@ -76,10 +74,6 @@ static uid_t   suid __attribute__((unused));
 static uint8_t TYPESIZE[32] __attribute__((unused));
 
 #define NB_ARG_MAX 100
-
-typedef errno_t (*module_cli_reg_fn)(void);
-
-#define MILK_MODULE(modname, _cli_reg_call, _deps) /* standalone: no descriptor table */
 
 /* =====================================
  * Type definitions

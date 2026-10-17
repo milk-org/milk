@@ -45,7 +45,7 @@ A link is simply done [like that](./DocumentingCode.md/#links-macros).
 ```
 
 For internal linkage, use relative links to `.md` files within the `docs/` folder.
-To link to repository files _outside_ of the docs folder, a macro can be used to create a path to the github repository with the correct branch subbed in. TODO.
+To link to repository files _outside_ of the docs folder, use the `{{ github_blob_url }}` macro (add `render_macros: true` to the page front matter), see [Project management operations](../maintenance/pm_operations.md).
 
 
 ### Admonitions
@@ -80,8 +80,6 @@ To link to repository files _outside_ of the docs folder, a macro can be used to
 
 More info [at this link](https://squidfunk.github.io/mkdocs-material/reference/admonitions/#inline-blocks-inline-end).
 
-
-### Other interesting plugins / TODO
 
 ---
 

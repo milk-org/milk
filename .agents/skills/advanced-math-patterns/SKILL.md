@@ -84,7 +84,7 @@ Mathematical function calls like `sinf()`, `cosf()`, `pow()`, and `sqrtf()` insi
 
 - **`pow()` vs `powf()`:** Never use `pow()` or `sin()` on `float` data! It promotes the float to double, does expensive double-precision math, and truncates back to float. Always use `powf()`, `sinf()`, `sqrtf()`.
 - **Integer Powers:** Never use `powf(x, 2)`. Use `x * x`. Never use `pow(2, n)` for bitshifts; use `1 << n`.
-- **Precomputation (Look-Up Tables):** If calculating phase angles, pre-compute `sinf()` and `cosf()` arrays in `INSERT_STD_PROCINFO_COMPUTEFUNC_INIT` and do an array lookup in the main loop.
+- **Precomputation (Look-Up Tables):** If calculating phase angles, pre-compute `sinf()` and `cosf()` arrays before `MILK_PROCINFO_LOOPSTART(self)` and do an array lookup in the main loop.
 - **Complex Arithmetic:** Replace expensive polar coordinate conversions (`sqrt()` + `atan2()`) with direct algebraic alternatives (e.g., conjugate multiplication for division).
 
 ## 5. Datatype Fast-Paths and Memory Movement

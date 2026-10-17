@@ -133,7 +133,7 @@ Order by impact:
 
 ```c
 /**
- * CLIADDCMD_module__funcname - Register CLI cmd
+ * <module>__funcname - one-line summary
  *
  * Registers the "module.funcname" command with
  * the CLI framework. Called from initModule()

@@ -88,95 +88,28 @@ features are still available
 
 #### Mandates
 
-For `CMAKE_MANDATE`, it's more complicated in the case the mandated library `<X>` is missing.
+For `MILK_CMAKE_MANDATE`, the effect depends on the library `<X>` being missing. The rule applies per
+source file of a module built with `milk_add_runnable_module()` (see
+[Programmer's Guide](../arch/programmers_guide.md)):
 
-- For library compilations, the C files is _excluded_, and the defined function is not available.
-  The library will still exist.
-- For standalone `milk-fpsexec` targets, the executable is removed from the compiled objects and
-  will not exist.
-
-#### Mandates in `MILK_RUNNABLE` modules
-
-In a module built with `milk_add_runnable_module()` (see
-[Programmer's Guide](../arch/programmers_guide.md)), the same rule applies per source file, with
-no weak `CLIADDCMD` stubs:
-
-- All runnables of a dropped file disappear from the module library, and their
-  `EXPORT_FPSEXEC` executables are not built (CMake prints a `[SKIP]` line).
+- The C file is _excluded_ from the module library, and the functions it defines are not available.
+  The library still exists.
+- All runnables of a dropped file disappear from the module library, and their `EXPORT_FPSEXEC`
+  executables are not built (CMake prints a `[SKIP]` line).
 - The module registry (the file with `MILK_MODULE_RUNNABLES`) declares mandated runnables with
-  `MILK_RUNNABLE_WEAK_DECL(name);` instead of including their header. The dropped entry is then
-  `NULL` and the CLI skips it silently.
+  `MILK_RUNNABLE_WEAK_DECL(name);` instead of including their header. The dropped entry is then `NULL`
+  and the CLI skips it silently.
 - The registry file itself cannot carry a mandate: CMake stops with an error.
-- Requests and mandates apply to the whole module (as they already do for the library), so keep
-  units with heavy optional dependencies in their own module.
+- Requests and mandates apply to the whole module (as they already do for the library), so keep units
+  with heavy optional dependencies in their own module.
 
 Example: `plugins/test-src/compilertest`.
 
-#### Headers
+#### Helper functions of a mandated file
 
-This, however, has consequences on header files:
-
-```c
-// C file export a function, defines a FPS standalone executable, and exports a computation function
-// MILK_CMAKE_MANDATE_<X>
-
-int some_useful_computation() {
-    LIB_X_some_function();
-    // ...
-}
-
-/* All the FPS V2 boilerplate */
-
-errno_t CLIADDCMD_the_useful_computation_that_uses_x_under_the_hood() {
-// ...
-
-
-// H file
-int some_useful_computation();
-errno_t CLIADDCMD_the_useful_computation_that_uses_x_under_the_hood();
-```
-
-!!! danger
-
-    Now the problem is, when the mandate fails, the function definitions above will simply not
-    exist.
-
-    1. The module file `module.c` above will still try to execute the `CLIADDCMD` upon initializing
-       the module into the CLI.
-    2. Other C files may try to use `some_useful_computation()`
-
-#### Recommended way to sort declarations and missed-MANDATE definitions
-
-- Use one or few headers for an entire module (not mandatory)
-- In the `module.h` header file, add normal function prototypes for exportable functions:
-
-```C
-int some_useful_computation();
-```
-
-- C files, internally and externally, can include computation functions normally:
-
-```C
-// Internally
-#include "module.h"
-// Externally
-#include "module/module.h"
-```
-
-The `module.c` file _must not_ include the `module.h` file ! Instead, it should contain weak
-prototypes for:
-
-- The `CLIADDCMD` functions for the compute sessions:
-
-```C
-// Declaration is enough if the command can never miss a MILK_CMAKE_MANDATE
-errno_t CLIADDCMD_the_useful_computation_that_is_always_there();
-// Declaration is enough if the command can never miss a MILK_CMAKE_MANDATE
-MILK_WEAK errno_t CLIADDCMD_the_useful_computation_that_uses_x_under_the_hood() {};
-```
-
-- Weak definitions for the exported helper functions (or only for those that may miss a
-  `MILK_CMAKE_MANDATE`)
+When a mandated file also exports plain helper functions, other C files may still call them while the
+file is dropped. Declare the helpers in the module header as usual, and give the _registry_ file weak
+definitions instead of including that header:
 
 ```C
 MILK_WEAK int some_useful_computation() MILK_WEAK_FUNCDEF;
@@ -184,11 +117,9 @@ MILK_WEAK int some_useful_computation() MILK_WEAK_FUNCDEF;
 
 ??? info "MILK_WEAK and MILK_WEAK_FUNCDEF"
 
-    `MILK_WEAK` is just `__attribute__((weak))`. Which means this function will be replaced by its
-    proper implementation when the MANDATE is respected and the C file actually included.
+    `MILK_WEAK` is just `__attribute__((weak))`: the function is replaced by its proper
+    implementation when the MANDATE is respected and the C file is included.
 
-    The `CLIADDCMD` can still be invoked by `module.c`. It does nothing.
-
-    `MILK_WEAK_FUNCDEF` prints a meaningful error message and calls `abort()`. It avoid propagating
-    the `MILK_CMAKE_MANDATE_<X>` to all the callers, but reports meaningful info that the feature is
-    not available. `MILK_WEAK` and `MILK_WEAK_FUNCDEF` are defined in `libmilkcommon`.
+    `MILK_WEAK_FUNCDEF` prints a meaningful error message and calls `abort()`. It avoids propagating
+    the `MILK_CMAKE_MANDATE_<X>` to all the callers, but reports that the feature is not available.
+    `MILK_WEAK` and `MILK_WEAK_FUNCDEF` are defined in `libmilkcommon`.

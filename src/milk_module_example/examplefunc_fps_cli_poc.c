@@ -4,12 +4,12 @@
 
 /**
  * @file    examplefunc_fps_cli_poc.c
- * @brief   Template for FPS V2 Compute Units
+ * @brief   Template for MILK_RUNNABLE FPS compute units
  *
  * This file is a TEMPLATE for writing compute units
  * (functions that can run as standalone executables
  * or as milk CLI commands) using the unified FPS-CLI
- * V2 architecture.
+ * MILK_RUNNABLE architecture.
  *
  * ARCHITECTURE OVERVIEW
  * ---------------------
@@ -292,7 +292,7 @@ static MILK_HOT errno_t fpsexec()
  * It is set as .confcheck in the descriptor (section 7)
  * and called by the framework during confstart / confstep.
  *
- * In V2 compute units, parameter indices are NOT
+ * In compute units, parameter indices are NOT
  * known at compile time (no fpi_* variables).
  * Use functionparameter_GetParamIndex() to look up
  * the parray[] index by keyword string.

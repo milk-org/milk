@@ -18,7 +18,6 @@
 #include "fps_cli_sync.h"
 #include "fps_modulevars_resync.h"
 #include "fps_lifecycle.h"
-#include "fps_cli_function.h"
 
 #include "fps_FPCONFsetup.h"
 #include "fps_FPCONFloopstep.h"
@@ -35,46 +34,6 @@
 #include "fps_processinfo_entries.h"
 
 /**
- * @brief Stamp out V2 section 5 boilerplate.
- *
- * Produces: my_bindings[], nb_bindings, farg[],
- * CLIcmddata, default_cmdsettings, and init_cmdsettings().
- *
- * Requires: FPS_app_info to be declared before this macro.
- */
-#define FPS_V2_SECTION5(PARAMS_MACRO)                                                            \
-    static                                                                                       \
-        __attribute__((unused)) FPS_CLI_BINDING my_bindings[] = { PARAMS_MACRO(FPS_X_BINDING) }; \
-    static const int __attribute__((unused))    nb_bindings =                                    \
-        (int) (sizeof(my_bindings) / sizeof(FPS_CLI_BINDING));                                   \
-    static __attribute__((unused)) CLICMDARGDEF farg[] = { PARAMS_MACRO(FPS_X_FARG) };           \
-    FPS_V2_CLICMDDATA_DECL_                                                                      \
-    static CMDSETTINGS                       default_cmdsettings_ = { 0 };                       \
-    static __attribute__((constructor)) void init_cmdsettings_(void)                             \
-    {                                                                                            \
-        strncpy(CLIcmddata.key, FPS_app_info.cmdkey, sizeof(CLIcmddata.key) - 1);                \
-        strncpy(CLIcmddata.description, FPS_app_info.description,                                \
-                sizeof(CLIcmddata.description) - 1);                                             \
-        if (CLIcmddata.cmdsettings == NULL)                                                      \
-        {                                                                                        \
-            CLIcmddata.cmdsettings = &default_cmdsettings_;                                      \
-        }                                                                                        \
-    }
-
-/**
- * @brief Helper: CLIcmddata declaration
- */
-#define FPS_V2_CLICMDDATA_DECL_ static CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-
-#define _FPS_MAIN_STANDALONE_V2_IMPL(APP_INFO, PARAMS_MACRO, COMPUTE_FN, CONFCHECK_FN)      \
-    int main(int argc, char *argv[])                                                        \
-    {                                                                                       \
-        MILK_EMBED_BUILD_TAG();                                                             \
-        return fpsexec_main_function(argc, argv, &APP_INFO, my_bindings, nb_bindings, farg, \
-                                     (COMPUTE_FN), (CONFCHECK_FN));                         \
-    }
-
-/**
  * @brief Command-line driver of every fpsexec; implemented in core/fps_standalone_main.c.
  *
  * @return process exit code
@@ -88,24 +47,6 @@ int fpsexec_main_function(int              argc,
                           fps_compute_fn   COMPUTE_FN,
                           fps_confcheck_fn CONFCHECK_FN);
 
-
-/**
- * @brief V2 standalone macro with confcheck.
- *
- * Usage:
- *   FPS_MAIN_STANDALONE_V2_CONFCHECK(
- *       app_info, PARAMS, compute_fn,
- *       customCONFcheck)
- */
-#define FPS_MAIN_STANDALONE_V2_CONFCHECK(APP_INFO, PARAMS_MACRO, COMPUTE_FN, CONFCHECK_FN) \
-    _FPS_MAIN_STANDALONE_V2_IMPL(APP_INFO, PARAMS_MACRO, COMPUTE_FN, CONFCHECK_FN)
-
-
-/**
- * @brief V2 standalone macro (no confcheck).
- */
-#define FPS_MAIN_STANDALONE_V2(APP_INFO, PARAMS_MACRO, COMPUTE_FN) \
-    _FPS_MAIN_STANDALONE_V2_IMPL(APP_INFO, PARAMS_MACRO, COMPUTE_FN, NULL)
 
 /**
  * @brief Standard initialization preamble for FPSINIT function

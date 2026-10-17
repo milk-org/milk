@@ -224,7 +224,7 @@ graph TD
 
 ## 3. Standalone Build (USE_CLI=OFF)
 
-> `MILK_NO_CLI` is applied to the executable targets.
+> The fpsexec executables do not link `CLIcore`.
 
 ```mermaid
 graph TD
@@ -432,26 +432,15 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 </details>
 
 <details markdown="1">
-<summary><b>Standalone CMake Functions</b></summary>
+<summary><b>fpsexec CMake Functions</b></summary>
 
 Module `CMakeLists.txt` layout: [Programmer's Guide](programmers_guide.md#6-cmakeliststxt-conventions).
 
-| Function                         | Base link set                                                                                                                                            |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `add_milk_standalone()`          | milkfps, milkcomputeunit, milkfpsseq, milkdata, milkprocessinfo, ImageStreamIO, COREMODmemory, COREMODtools, COREMODarith, COREMODiofits (USE_CFITSIO) |
-| `add_cacao_standalone()`         | same as above                                                                                                                                            |
-| `add_cacao_standalone_plugins()` | above + selected plugin libs                                                                                                                             |
-
-```cmake
-add_cacao_standalone_plugins(name src.c)               # all 4 plugins
-add_cacao_standalone_plugins(name src.c fft imagegen)   # selective
-```
-
-Valid plugin names: `fft`, `imagegen`, `imagefilter`, `imagebasic`.
-
-**Note:** `add_milk_standalone()` / `add_cacao_standalone()`
-apply `-DMILK_NO_CLI` to the standalone executable target,
-redirecting `CLIcore.h` to the `CLIcore_standalone.h` stub for that target, which does some placeholding.
+`milk_add_fpsexec_stubs()` (`cmake/milk_runnable.cmake`) generates one `<prefix>-fpsexec-<id>` per
+`EXPORT_FPSEXEC` line of the module sources, linked to the module library and to the base link set:
+milkfps, milkcomputeunit, milkfpsseq, milkdata, milkprocessinfo, ImageStreamIO, COREMODmemory,
+COREMODtools, COREMODarith, COREMODiofits (USE_CFITSIO). Plugin libraries needed by a unit are linked
+by the module itself.
 
 When `USE_STATIC_LTO=ON`, `_static`-suffixed static archives (e.g. `milkCOREMODmemory_static`) of these libraries are linked instead, enabling cross-module Link-Time Optimization. See [PGO & LTO](../operations/pgo.md).
 

@@ -261,6 +261,6 @@ int FPSRUN_processor(const char *fps_name)
 }
 
 // Generate the standard main function for standalone build
-#ifndef MILK_MODULE
+#ifndef EXAMPLE03_MODULE_BUILD
 FPS_MAIN_STANDALONE("processor03", processor, PROCESSOR_HELPTEXT, PROCESSOR_PARAMS)
 #endif

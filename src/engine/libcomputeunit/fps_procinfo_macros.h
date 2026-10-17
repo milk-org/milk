@@ -4,9 +4,9 @@
 
 /**
  * @file    fps_procinfo_macros.h
- * @brief   Standard compute loop and CLI-like argument macros for standalone
+ * @brief   Processinfo loop bodies and image-argument helper macros
  *
- * Provides INSERT_STD_PROCINFO_COMPUTEFUNC_* macros natively to the engine.
+ * The _MILK_PROCINFO_*_IMPL bodies are instantiated by MILK_PROCINFO_*(self) in milk_runnable.h.
  */
 
 #ifndef FPS_PROCINFO_MACROS_H
@@ -18,26 +18,6 @@
 imageID image_ID(const char *apzname, IMAGE *dcimage_array, long dcnbimg);
 
 typedef const char *__restrict CONST_WORD;
-
-#define CLICMD_FIELDS_FPSPROC                                                                  \
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, CLICMDFLAG_FPS | CLICMDFLAG_PROCINFO, \
-        NULL, NULL, NULL
-
-#define CLICMD_FIELDS_DEFAULTS \
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, CLICMDFLAG_FPS, NULL, NULL, NULL
-
-#define CLICMD_FIELDS_NOFPS __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, 0, NULL, NULL, NULL
-
-#define CLICMD_FIELDS_FPSPROC_W_ARG(farg)                                                      \
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, CLICMDFLAG_FPS | CLICMDFLAG_PROCINFO, \
-        NULL, NULL, NULL
-#define CLICMD_FIELDS_DEFAULTS_W_ARG(farg) \
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, CLICMDFLAG_FPS, NULL, NULL, NULL
-#define CLICMD_FIELDS_NOFPS_W_ARG(farg) \
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, 0, NULL, NULL, NULL
-
-
-#define CLICMD_FIELDS_NOPARAM __FILE__, 0, NULL, CLICMDFLAG_FPS, NULL, NULL, NULL
 
 #define RETURN_CLICHECKARGARRAY_SUCCESS 0
 #define RETURN_CLICHECKARGARRAY_FAILURE 1
@@ -138,35 +118,8 @@ typedef struct
     imcreateIMGID(&img);
 
 
-#define STD_FARG_LINKfunction                                                      \
-    for (int argi = 0; argi < (int) (sizeof(farg) / sizeof(CLICMDARGDEF)); argi++) \
-    {                                                                              \
-        long  fpsi           = -1;                                                 \
-        void *ptr            = get_farg_ptr(farg[argi].fpstag, &fpsi);             \
-        *(farg[argi].valptr) = ptr;                                                \
-        if (farg[argi].indexptr != NULL)                                           \
-        {                                                                          \
-            *(farg[argi].indexptr) = fpsi;                                         \
-        }                                                                          \
-    }
-
-
-/* INSERT_STD_CLIREGISTERFUNC -- stub version
- * for standalone compilation. The real
- * version is in CLIcore_utils.h and
- * references CLI functions. */
-
-#define INSERT_STD_CLIREGISTERFUNC_NAMED(varCLIcmddata, varCLIfunction)
-#define INSERT_STD_CLIREGISTERFUNC
-
-/* Process info macros -- these are used by
- * standalone code so we provide the real
- * versions via CLIcore_utils.h-compatible
- * macros that reference CLIcmddata. */
-
 /* The body macros take the CLICMDDATA lvalue as parameter (named CLIcmddata so that the bodies stay
- * unchanged). Legacy INSERT_STD_PROCINFO_COMPUTEFUNC_* pass the implicit file-scope CLIcmddata,
- * MILK_PROCINFO_*(self) in milk_runnable.h pass the runnable's own. */
+ * unchanged); MILK_PROCINFO_*(self) in milk_runnable.h pass the runnable's own. */
 #define _MILK_PROCINFO_INIT_IMPL(CLIcmddata)                                                       \
     int          processloopOK = 1;                                                                \
     PROCESSINFO *processinfo   = NULL;                                                             \
@@ -250,9 +203,6 @@ typedef struct
         dcfpsptr->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP;                          \
     }
 
-
-#define INSERT_STD_PROCINFO_COMPUTEFUNC_INIT _MILK_PROCINFO_INIT_IMPL(CLIcmddata)
-
 #define _MILK_PROCINFO_LOOPSTART_IMPL(CLIcmddata)                                    \
     while (processloopOK == 1)                                                       \
     {                                                                                \
@@ -285,11 +235,6 @@ typedef struct
             {                                                                        \
                 fpsresync_fps_to_modvar(dcfpsptr, dcfpsbindings, dcfpsnbindings, 0); \
             }
-#define INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART _MILK_PROCINFO_LOOPSTART_IMPL(CLIcmddata)
-
-#define INSERT_STD_PROCINFO_COMPUTEFUNC_START \
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT      \
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
 
 
 #define _MILK_PROCINFO_END_IMPL(CLIcmddata)                                                  \
@@ -342,7 +287,5 @@ typedef struct
     {                                                                                        \
         dcfpsptr->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP;                   \
     }
-
-#define INSERT_STD_PROCINFO_COMPUTEFUNC_END _MILK_PROCINFO_END_IMPL(CLIcmddata)
 
 #endif /* FPS_PROCINFO_MACROS_H */

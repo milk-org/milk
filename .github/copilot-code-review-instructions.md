@@ -35,11 +35,11 @@
 - Flag **`pow(2, n)`** for integer n — use `1 << n`
 - Suggest **`restrict`** on array pointer parameters
 
-## FPS — `.agents/rules/fpsexec-conventions.md`
+## Compute units — `.agents/rules/runnable-conventions.md`
 
-- V2 template: 8-section layout from
+- `MILK_RUNNABLE` unit, template:
   `src/milk_module_example/examplefunc_fps_cli_poc.c`
-- Must have `.description` in `FPS_APP_INFO` for `-h1`
+- Must have `.app.description` for `-h1`
 - CMake: follow `src/milk_module_example/CMakeLists.txt`
 
 ## Git — `.agents/rules/git-workflow.md`

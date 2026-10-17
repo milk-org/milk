@@ -38,7 +38,7 @@ Determine the scope by answering these questions:
 | **Build tier**        | Engine / Core / Full?                                                     |
 | **New or extension?** | New module, new file in existing module, or modification?                 |
 | **Scope**             | Single module / cross-module / framework-level?                           |
-| **Template**          | V2 compute unit / stream processor / plain function / CLI builtin / none? |
+| **Template**          | MILK_RUNNABLE unit / stream processor / plain function / CLI builtin / none? |
 
 If the feature spans multiple tiers or modules,
 flag this early — it likely needs phased delivery.
@@ -98,9 +98,8 @@ Check which documentation rules will fire:
 | `readme-update`              | Module files added/removed? | Update module README        |
 | `help-consistency`           | CLI commands changed?       | Cross-check help sources    |
 | `whatsnew-update`            | Significant feature?        | Add entry to docs/whatsnew.md         |
-| `maintain-programmers-guide` | Architecture changed?       | Update docs/arch/programmers_guide.md |
 | `script-docs`                | Scripts changed?            | Update docs/guide/scripts.md          |
-| `documentation-site`         | New doc page needed?        | Add to mkdocs.yml nav       |
+| `documentation`              | New doc page needed?        | Add to mkdocs.yml nav       |
 
 ### 3.3 Test Touchpoints
 
@@ -153,7 +152,7 @@ Flag any of these if they apply:
 | Cross-module dependency added | Verify with `docs/arch/dependency_graph.md`                      |
 | Performance-sensitive path    | Consult `performance-practices.md`; plan benchmarking  |
 | Breaking API change           | Document migration path; consider deprecation period   |
-| Standalone linkage            | Verify with `add_milk_standalone()`                    |
+| fpsexec linkage               | Verify with `EXPORT_FPSEXEC` + `milk_add_fpsexec_stubs()` |
 | Large refactor                | Use `refactor-c-source` skill; split into multiple PRs |
 | Concurrency / shared memory   | Consult `concurrency-practices.md`                     |
 
@@ -176,6 +175,5 @@ Key rules to consult during planning:
 - `architecture-principles.md` — dependency
   direction
 - `cmake-conventions.md` — build target setup
-- `fpsexec-conventions.md` — V2 template layout
-- `module-deps-declaration.md` — MODULE_DEPS
+- `runnable-conventions.md` — compute unit layout
 - `performance-practices.md` — hot path design

@@ -12,7 +12,6 @@ dependency. Umbrella header: `computeunit.h`.
 | `core/fps_lifecycle.c`                 | generic init / conf / run / stop                          |
 | `cli/fps_cli_init.c`                   | create FPS entries from bindings; fill CLI examples       |
 | `cli/fps_cli_sync.c`                   | standalone argv to FPS to module variables                |
-| `cli/fps_cli_function_registry.c`      | pointer through which modules reach the milk-cli wrapper  |
 | `params/fps_modulevars_resync.c`       | FPS to module-local variable sync via bindings            |
 | `cmd/fps_tmux.c`                       | tmux session management                                   |
 | `cmd/fps_execFPScmd.c`                 | execute FPS command                                       |
