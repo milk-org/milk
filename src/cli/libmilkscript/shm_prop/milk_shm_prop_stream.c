@@ -24,6 +24,7 @@
 #include "CLIcore.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "milk_shm_prop.h"
+#include "milk_shm_cache.h"
 #include "milk_shm_prop_internal.h"
 
 /**
@@ -63,6 +64,31 @@ IMAGE *milk_shm_prop_find_or_open_stream(const char *sname, IMAGE *tmp_img, int 
         return tmp_img;
     }
     return NULL;
+}
+
+/**
+ * @brief Locate an active local image, or the cached mapping of a shared-memory stream.
+ *
+ * For short accesses under the command lock (or in the single-threaded client): the pointer is not
+ * to be kept across another lookup. Long-lived users take their own mapping with
+ * milk_shm_prop_find_or_open_stream().
+ *
+ * @param sname Stream or image name
+ * @return Pointer to IMAGE struct, or NULL if not found
+ */
+IMAGE *milk_shm_prop_find_stream(const char *sname)
+{
+    if (data.core.image != NULL)
+    {
+        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        {
+            if (data.core.image[i].used == 1 && strcmp(data.core.image[i].name, sname) == 0)
+            {
+                return &data.core.image[i];
+            }
+        }
+    }
+    return milk_shm_cache_stream(sname);
 }
 
 /**
@@ -203,9 +229,7 @@ static int read_stream_keyword(const IMAGE *im, const char *kname, char *out, si
  */
 int milk_shm_prop_get_stream(const char *name, const char *prop, char *out, size_t outsz)
 {
-    IMAGE  tmp_img;
-    int    need_close = 0;
-    IMAGE *im         = milk_shm_prop_find_or_open_stream(name, &tmp_img, &need_close);
+    IMAGE *im = milk_shm_prop_find_stream(name); /* cached mapping: never closed here */
     if (im == NULL || im->md == NULL)
     {
         return -1;
@@ -422,10 +446,6 @@ int milk_shm_prop_get_stream(const char *name, const char *prop, char *out, size
         found = 0;
     }
 
-    if (need_close)
-    {
-        ImageStreamIO_closeIm(&tmp_img);
-    }
     return found ? 0 : -1;
 }
 
@@ -462,9 +482,7 @@ int milk_shm_prop_set_stream(const char *name,
         fprintf(stderr, "WARNING: keyword name '%s' truncated to '%s'\n", prop + 3, kname);
     }
 
-    IMAGE  tmp_img;
-    int    need_close = 0;
-    IMAGE *im         = milk_shm_prop_find_or_open_stream(name, &tmp_img, &need_close);
+    IMAGE *im = milk_shm_prop_find_stream(name); /* cached mapping: never closed here */
     if (im == NULL || im->md == NULL || im->kw == NULL)
     {
         fprintf(stderr, "ERROR: stream '%s' not found or has no keyword table\n", name);
@@ -493,10 +511,6 @@ int milk_shm_prop_set_stream(const char *name,
     }
     if (slot == -1)
     {
-        if (need_close)
-        {
-            ImageStreamIO_closeIm(&tmp_img);
-        }
         fprintf(stderr, "ERROR: keyword table full on stream '%s'\n", name);
         return -1;
     }
@@ -529,10 +543,6 @@ int milk_shm_prop_set_stream(const char *name,
     }
     im->kw[slot].cnt++;
 
-    if (need_close)
-    {
-        ImageStreamIO_closeIm(&tmp_img);
-    }
     return 0;
 }
 

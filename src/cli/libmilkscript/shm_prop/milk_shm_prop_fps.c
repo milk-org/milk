@@ -32,6 +32,7 @@
 #include "fps_paramvalue.h"
 #include "fps_printparameter_valuestring.h"
 #include "fps_tmux.h"
+#include "milk_shm_cache.h"
 #include "milk_shm_prop.h"
 #include "milk_shm_prop_internal.h"
 #include "milk_path.h"
@@ -83,11 +84,12 @@ static void fps_param_value_str(FPS_PARAM *p, char *out, size_t outsz)
  */
 int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t outsz)
 {
-    FPS fps;
-    if (fps_connect(name, &fps, FPSCONNECT_SIMPLE) == -1 || fps.parray == NULL)
+    FPS *cfps = milk_shm_cache_fps(name); /* cached connection: never disconnected here */
+    if (cfps == NULL)
     {
         return -1;
     }
+    FPS fps = *cfps; /* md/parray still point into the shared mapping */
 
     if (strcmp(prop, "*") == 0 || strcmp(prop, "list") == 0)
     {
@@ -115,7 +117,6 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
                 }
             }
         }
-        fps_disconnect(&fps);
         return 0;
     }
 
@@ -194,7 +195,6 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
                 }
             }
         }
-        fps_disconnect(&fps);
         return full ? -2 : 0; // -2: buffer too small
     }
 
@@ -298,7 +298,6 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
             rc = 0;
         }
     }
-    fps_disconnect(&fps);
     return rc;
 }
 
@@ -491,13 +490,13 @@ static int try_fps_lifecycle_action(FPS        *fps,
  */
 int cli_fps_set_param(const char *fpsname, const char *pname, const char *valstr)
 {
-    FPS fps;
-    int fpsconn = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
-    if (fpsconn == -1 || fps.parray == NULL)
+    FPS *cfps = milk_shm_cache_fps(fpsname); /* cached connection: never disconnected here */
+    if (cfps == NULL)
     {
         printf("Error: cannot connect to FPS '%s'\n", fpsname);
         return -1;
     }
+    FPS fps = *cfps; /* md/parray still point into the shared mapping */
 
     if (strchr(pname, '*') != NULL || strchr(pname, '?') != NULL)
     {
@@ -528,7 +527,6 @@ int cli_fps_set_param(const char *fpsname, const char *pname, const char *valstr
                 }
             }
         }
-        fps_disconnect(&fps);
         return matched ? 0 : -1;
     }
 
@@ -545,11 +543,9 @@ int cli_fps_set_param(const char *fpsname, const char *pname, const char *valstr
         int lc_rc = -1;
         if (try_fps_lifecycle_action(&fps, fpsname, pname, valstr, &lc_rc))
         {
-            fps_disconnect(&fps);
             return lc_rc;
         }
         printf("Error: parameter '%s' not found in FPS '%s'\n", pname, fpsname);
-        fps_disconnect(&fps);
         return -1;
     }
 
@@ -561,7 +557,6 @@ int cli_fps_set_param(const char *fpsname, const char *pname, const char *valstr
 
     if (functionparameter_SetParamValue_fromString(&fps, pindex, valstr) == 0)
     {
-        fps_disconnect(&fps);
         return 0;
     }
 
@@ -609,7 +604,6 @@ int cli_fps_set_param(const char *fpsname, const char *pname, const char *valstr
         fprintf(stderr, "Error: invalid value '%s' for '%s' (type 0x%x) in FPS '%s'\n", valstr,
                 pname, ptype, fpsname);
     }
-    fps_disconnect(&fps);
     return rc;
 }
 
@@ -645,12 +639,6 @@ int milk_shm_prop_exists_fps(const char *name, int check_running)
     {
         return 1;
     }
-    FPS fps;
-    if (fps_connect(name, &fps, FPSCONNECT_SIMPLE) == -1 || fps.md == NULL)
-    {
-        return 0;
-    }
-    int running = (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN) ? 1 : 0;
-    fps_disconnect(&fps);
-    return running;
+    FPS *cfps = milk_shm_cache_fps(name);
+    return (cfps != NULL && (cfps->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)) ? 1 : 0;
 }

@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "CLIcore.h"
@@ -177,6 +178,24 @@ static imageID resolve_or_autoconnect_image(const char *name, int allow_autoconn
     const char *bare = (sp.name != NULL && sp.name[0] != '\0') ? sp.name : name;
 
     imageID id = image_ID(bare, data.core.image, data.core.NB_MAX_IMAGE);
+    if (id != -1 && data.core.image[id].md != NULL && data.core.image[id].md->shared == 1)
+    {
+        /* a stream re-created by another process has a new file: map that one, not the old one */
+        char        shmpath[512];
+        struct stat st;
+        if (ImageStreamIO_filename(shmpath, sizeof(shmpath), bare) == IMAGESTREAMIO_SUCCESS &&
+            stat(shmpath, &st) == 0 && st.st_ino != data.core.image[id].md->inode)
+        {
+            IMAGE fresh;
+            memset(&fresh, 0, sizeof(fresh));
+            if (ImageStreamIO_read_sharedmem_image_toIMAGE(bare, &fresh) == IMAGESTREAMIO_SUCCESS)
+            {
+                ImageStreamIO_closeIm(&data.core.image[id]);
+                memcpy(&data.core.image[id], &fresh, sizeof(IMAGE));
+                data.core.image[id].used = 1;
+            }
+        }
+    }
     if (id != -1 || !allow_autoconnect || sp.loc == 'L')
     {
         return id;

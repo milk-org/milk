@@ -39,6 +39,8 @@
  */
 IMAGE *milk_shm_prop_find_or_open_stream(const char *sname, IMAGE *tmp_img, int *need_close);
 
+IMAGE *milk_shm_prop_find_stream(const char *sname);
+
 /**
  * @brief Read a live milk entity property or FITS keyword into @out.
  *

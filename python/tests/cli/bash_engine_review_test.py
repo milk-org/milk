@@ -606,7 +606,6 @@ def test_P2_fps_set_rejects_garbage():
     assert "rc=0" not in res.stdout
 
 
-@bug("P3", "calc keeps a stale mapping after the stream is re-created")
 def test_P3_calc_sees_recreated_stream(tmp_path):
     (tmp_path / "mk8.milk").write_text('@mk2Dim "@S:p3" 8 8\n@calc "p3 = 5"\n')
     res = _run_bash(f"""
@@ -619,6 +618,20 @@ def test_P3_calc_sees_recreated_stream(tmp_path):
         """)
     assert "xs=8" in res.stdout, res.stdout + res.stderr
     assert "b=5" in res.stdout
+
+
+def test_WP14_get_after_stream_removed(tmp_path):
+    """The cached mapping is dropped once the stream file is gone (stream owned by another process)."""
+    (tmp_path / "mk.milk").write_text('@mk2Dim "@S:c14d" 2 2\n')
+    res = _run_bash(f"""
+        env -u MILKCLI_SOCK HOME="{tmp_path}" milk-cli -s "{tmp_path}/mk.milk" >/dev/null 2>&1
+        @get -v a s.c14d.xsize
+        rm -f "${{MILK_SHM_DIR}}/c14d.im.shm"
+        rc=0; @get -v b s.c14d.xsize 2>/dev/null || rc=$?
+        echo "a=$a b=[${{b:-}}] rc=$rc"
+        """)
+    assert "a=2 b=[] rc=" in res.stdout, res.stdout + res.stderr
+    assert "rc=0" not in res.stdout
 
 
 def test_P4_ternary(tmp_path):
@@ -1197,6 +1210,7 @@ BENCH_OPS = [
     (300, ":"),
     (300, "y=$((1+2))"),
     (300, "@get -v x s.bim.xsize"),
+    (300, "@get -v x s.bsh.xsize"),
     (300, "x=@s.bim.xsize"),
     (300, "@set s.bim.kw.FOO=1"),
     (300, "@calc -v y 1+2"),
@@ -1208,7 +1222,7 @@ BENCH_OPS = [
 
 def _bench_script() -> str:
     """One literal loop per op (no eval: the translator must see each op as script text)."""
-    lines = ["@mk2Dim bim 64 64 >/dev/null"]
+    lines = ["@mk2Dim bim 64 64 >/dev/null", '@mk2Dim "@S:bsh" 64 64 >/dev/null']
     for n, op in BENCH_OPS:
         lines.append(
             f"t0=$EPOCHREALTIME; for ((i=0;i<{n};i++)); do {op}; done; t1=$EPOCHREALTIME"

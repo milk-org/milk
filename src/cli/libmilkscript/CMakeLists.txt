@@ -47,6 +47,7 @@ set(MILKSCRIPT_SOURCES
     shm_prop/milk_shm_prop_stream.c
     shm_prop/milk_shm_prop_fps.c
     shm_prop/milk_shm_prop_proc_seq.c
+    shm_prop/milk_shm_cache.c
     ipc/milk_ipc_common.c
     ipc/milk_client_conn.c
     ipc/milk_client_ops.c
