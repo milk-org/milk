@@ -312,15 +312,20 @@ Lua config snippet at `~/.config/nvim/plugin/milkcli-treesitter.lua`.
 
 ### What Gets Highlighted
 
-| Syntax Element  | Highlight Group     | Example                    |
-| --------------- | ------------------- | -------------------------- |
-| Flow control    | `@keyword`          | `if`, `for`, `while`, `fi` |
-| Shell builtins  | `@function.builtin` | `echo`, `export`, `source` |
-| milk commands   | `@function.macro`   | `include_once`, module commands (see below) |
-| Variables       | `@variable.builtin` | `$VAR`, `${VAR}`           |
-| Strings         | `@string`           | `"hello"`, `'literal'`     |
-| Numbers         | `@number`           | `42`, `3.14`               |
-| Comments        | `@comment`          | `# comment`                |
+| Syntax Element  | Highlight Group     | Example                                  |
+| --------------- | ------------------- | ---------------------------------------- |
+| Flow control    | `@keyword`          | `if`, `for`, `while`, `fi`               |
+| Shell builtins  | `@function.builtin` | `echo`, `export`, `source`               |
+| milk commands   | `@function.macro`   | `@calc`, `@waitfor`, `include_once`      |
+| Module commands | `@function.call`    | `mem.listim` (builtin color, see below)  |
+| Entity paths    | `@property`         | `@s.cam.xsize`, `"@f.${loop}.gain"`      |
+| Calculator      | `@punctuation.special` | `@{imean(cam)}`, `@ x = 2 * 21`       |
+| Variables       | `@variable.builtin` | `$VAR`, `${VAR}`                         |
+| Strings         | `@string`           | `"hello"`, `'literal'`                   |
+| Numbers         | `@number`           | `42`, `3.14`                             |
+| Comments        | `@comment`          | `# comment`                              |
+
+Heredocs are not parsed by the grammar: their body is highlighted as ordinary commands.
 
 ### Dynamic Module Commands
 

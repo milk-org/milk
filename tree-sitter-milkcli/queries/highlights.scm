@@ -33,25 +33,24 @@
 (expansion) @variable.builtin
 
 
-; ---- milk: FPS variable references ----
-; @fps.loopname.gain  → special property color
-(fps_variable) @property
+; ---- milk: entity paths ----
+; @s.cam.xsize, @f.${LOOP}.gain  → property color
+(entity_path) @property
 
 
-; ---- milk: Sequencer variable references ----
-; @seq.myseq.status  → special property color
-(seq_variable) @property
-
-
-; ---- milk: Stream metadata ----
-; ${s.dmcomb.cnt0}  → type color
-(stream_metadata) @type
+; ---- milk: calculator ----
+; @{expr} inline, @ expr statement
+(inline_calc
+  ["@{" "}"] @punctuation.special)
+(calc_statement
+  "@" @function.macro)
 
 
 ; ---- Operators ----
-["=" "|" "|>" "&&" "||"
- ">" ">>" "<" "<<<" "2>&1" "2>"
- ";" ";;"] @operator
+["=" "==" "!=" "=~" "!" "|" "|&" "|>" "&&" "||"
+ ">" ">>" "<" "<<<" "2>" "2>>" "&>" "&>>"
+ "2>&1" ">&2" "1>&2"
+ ";" ";;" ";&" ";;&" "&"] @operator
 
 
 ; ---- Punctuation ----
@@ -99,10 +98,19 @@
   "test" "kill" "sleep"))
 
 
-; ---- milk-specific commands ----
-; These get a distinct color so users
-; immediately see milk extensions.
+; ---- milk commands ----
+; @calc, @waitfor, include_once, milksleep:
+; a distinct color so users immediately see
+; milk extensions.
+(sigil_command) @function.macro
 (milk_command) @function.macro
+
+
+; ---- Module-qualified commands ----
+; mem.listim, iofits.saveFITS; known ones are
+; upgraded to @function.builtin by modules.scm
+; (scripts/gen-module-highlights.sh).
+(module_command) @function.call
 
 
 ; ---- Generic command names ----

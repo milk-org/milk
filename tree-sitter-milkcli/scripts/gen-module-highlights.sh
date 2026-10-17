@@ -13,7 +13,7 @@
 #   ./scripts/gen-module-highlights.sh --stdout
 #
 # Runs milk-cli to discover all registered module
-# commands (listim, saveFITS, imcrop, etc.) and
+# commands (mem.listim, iofits.saveFITS, etc.) and
 # generates tree-sitter highlight predicates so
 # they appear as @function.builtin in Neovim.
 #
@@ -42,8 +42,8 @@ ok()    { echo -e "${GREEN}[OK]${NC}    $*" >&2; }
 err()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 
 # ---- Check milk is available ----
-if ! command -v milk &>/dev/null; then
-    err "milk not found in PATH."
+if ! command -v milk-cli &>/dev/null; then
+    err "milk-cli not found in PATH."
     err "Make sure milk is installed and sourced."
     err "  source /usr/local/milk/bin/milk-setup.sh"
     exit 1
@@ -52,29 +52,14 @@ fi
 # ---- Extract command list from milk-cli ----
 info "Extracting registered commands from milk-cli..."
 
-# Run milk with @cmd? to list all commands, extract
-# the first column (command name). Filter out:
-#  - empty lines
-#  - header lines (starting with -)
-#  - help/internal commands (already in grammar)
-CMDS=$(milk << 'MILKEOF' 2>/dev/null
-@cmd?
-exitCLI
-MILKEOF
-)
-
-# Parse out just command names (first word of each
-# non-header line).
-# The @cmd? output format is:
-#   cmdname   arginfo   description
-CMD_LIST=$(echo "$CMDS" \
-    | grep -v '^\s*$' \
-    | grep -v '^\s*-' \
-    | grep -v '^milk' \
-    | grep -v '^$' \
-    | awk '{print $1}' \
-    | grep -v '^cmd' \
-    | grep -E '^[a-zA-Z_][a-zA-Z0-9_.]*$' \
+# @cmd? prints one row per command:
+#   <index> > <module.command> <module> <description> <usage>
+# Keep the module-qualified names (third column),
+# after stripping color codes.
+CMD_LIST=$(milk-cli -c '@cmd?' 2>/dev/null \
+    | sed 's/\x1b\[[0-9;]*m//g' \
+    | awk '$2 == ">" && $1 ~ /^[0-9]+$/ {print $3}' \
+    | grep -E '^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_.]*$' \
     | sort -u)
 
 COUNT=$(echo "$CMD_LIST" | wc -l)
@@ -92,7 +77,7 @@ generate_queries() {
     echo ";   ./scripts/gen-module-highlights.sh"
     echo ""
     echo "; Match registered module commands as builtins"
-    echo "((identifier) @function.builtin"
+    echo "((module_command) @function.builtin"
     echo " (#any-of? @function.builtin"
 
     echo "$CMD_LIST" | while read -r cmd; do

@@ -1,6 +1,6 @@
-#!/usr/bin/env milk
+#!/usr/bin/env milk-script
 #
-# Example milk-cli script demonstrating syntax
+# Example milk script demonstrating syntax
 # highlighting with tree-sitter
 #
 # This script shows all major language constructs
@@ -12,40 +12,57 @@ DMINDEX=0
 NBMODES=100
 GAIN=0.3
 
-# ---- FPS parameter access ----
-# Read FPS parameter value with @ syntax
+# ---- Entity paths: @<namespace>.<name>.<property> ----
+XSIZE=@s.dm${DMINDEX}disp.xsize
+YSIZE=@stream.dm${DMINDEX}disp.ysize
+FRAMECNT=@s.wfs.cnt0
+CURGAIN=@f.${LOOPNAME}.gain
+LOOPSTAT=@p.${LOOPNAME}.status
+SEQSTEP=@q.mysequence.active_step
+echo "frame @s.wfs.cnt0 of @s.wfs.xsize x @s.wfs.ysize"
+echo "escaped: \@s.wfs.xsize"
 
-CURGAIN=@fps.${LOOPNAME}.gain
-LOOPSTAT=@fps.${LOOPNAME}.option.loopON
+# ---- milk commands: module.command or @command ----
+mem.mk2Dim dm0ref 128 128
+@mk2Dim "@L:buf" 64 64
+@listim
+@cmd? mem.listim
+@?
 
-# ---- Sequencer variable access ----
-SEQSTEP=@seq.mysequence.step
+# ---- Reading and writing entities ----
+@get -v nx s.wfs.xsize
+@get -A sizes 's.dm*.xsize'
+@set f.${LOOPNAME}.gain=0.25
+@set f.${LOOPNAME}.gain = 0.25
+@set s.wfs.kw.OBS=night "comment"
+@f.${LOOPNAME}.runstart
+@exists s.wfs && echo "wfs exists"
 
-# ---- Stream metadata access ----
-XSIZE=${s.dm${DMINDEX}disp.xsize}
-YSIZE=${s.dm${DMINDEX}disp.ysize}
-FRAMECNT=${s.wfs.cnt0}
+# ---- Calculator ----
+@calc "dm0ref = dm0ref * 0 + 5"
+@calc -v m "imean(dm0ref)"
+@ x = 2 * 21
+echo "mean=@{imean(dm0ref)}"
+HALF=@{${NBMODES} / 2}
+@dpdigits 6
+@batch "mem.mk2Dim a 64 64; a = 5; a *= 2"
+@pipe "mem.mk2Dim p 32 32 |> _ = 4 |> _ *= 2.5"
 
 # ---- Arithmetic ----
 NUMPIX=$(( XSIZE * YSIZE ))
-HALF=$(( NBMODES / 2 ))
 
 # ---- Conditional flow control ----
-if [ $LOOPSTAT -eq 1 ]; then
+if [ "$LOOPSTAT" = "RUNNING" ]; then
     echo "Loop is running"
     echo "Current gain: $CURGAIN"
-elif [ $LOOPSTAT -eq 0 ]; then
-    echo "Loop is stopped"
+elif @test "imean(dm0ref) > 1"; then
+    echo "bright"
 else
     echo "Unknown state: $LOOPSTAT"
 fi
 
-# ---- assigncheck: milk-specific test ----
-assigncheck XSIZE 128
-assigncheck -e GAIN 0.3
-
-# ---- assert: test with error ----
-assert [ $NUMPIX -gt 0 ]
+# ---- Assertions ----
+@assert "irms(dm0ref) < 0.5" "residual diverged"
 
 # ---- For loop ----
 for mode in $(seq 0 $NBMODES); do
@@ -54,7 +71,7 @@ done
 
 # ---- While loop ----
 CNT=0
-while [ $CNT -lt 10 ]; do
+while [[ $CNT -lt 10 && -n "$GAIN" ]]; do
     CNT=$(( CNT + 1 ))
 done
 
@@ -65,10 +82,10 @@ done
 
 # ---- Case statement ----
 case $LOOPSTAT in
-    0)
+    STOPPED)
         echo "stopped"
         ;;
-    1)
+    RUN | RUNNING)
         echo "running"
         ;;
     *)
@@ -76,30 +93,28 @@ case $LOOPSTAT in
         ;;
 esac
 
-# ---- Function definition ----
+# ---- Function definitions ----
 function set_loop_gain {
     local lname=$1
     local gval=$2
-    milk-fps-set fps.${lname}.gain $gval
+    @set f.${lname}.gain="$gval"
     echo "Set gain to $gval"
 }
 
-# ---- Wait for stream/FPS events ----
-waitfor_stream dm0disp
-waitfor_fps ${LOOPNAME}
+wait_frames() {
+    @waitfor s.wfs "$1" -t 2 || { echo "no frames"; return 1; }
+}
 
-# ---- Multi-event wait ----
-wait_any -t 5.0 S:wfs F:${LOOPNAME}.gain=0.5
+# ---- Waiting and events ----
+@waitfor s.wfs 10 -t 2
+@waitfor f.${LOOPNAME}.status=RUN -t 5
+@waitany s.wfs s.dm0disp -t 1
+@on --once --max-hz 10 s.wfs -- echo "new frame"
+@defer rm -f /tmp/work.fits
+milksleep 0.05
 
 # ---- Stream pipe operator ----
-imgen.mkdisk dm0ref 128 128 |> saveFITS
-
-# ---- Process control ----
-@procctl ${LOOPNAME} run
-
-# ---- on_update trigger ----
-on_update wfs echo "WFS frame received"
-
+mem.mk2Dim tmp 32 32 |> iofits.saveFITS _ ./tmp.fits
 
 # ---- Source another script ----
 source ./common_setup.milk
@@ -109,33 +124,24 @@ include_once ./hardware_init.milk
 export MILK_SHM_DIR="/dev/shm"
 readonly PI=3.14159
 declare -i COUNTER=0
-local TEMPVAL=0
 
 # ---- Traps ----
 trap 'echo cleanup' EXIT
-
-# ---- @dpdigits: display precision ----
-@dpdigits 6
 
 # ---- Pipeline with external commands ----
 mem.listim | grep "dm" | wc -l
 
 # ---- Redirection ----
 echo "log entry" >> ./logfile.txt
-iofits.saveFITS dm0ref > /dev/null 2>&1
+iofits.saveFITS dm0ref ./dm0ref.fits > /dev/null 2>&1
 
 # ---- Background execution ----
-@procstat ${LOOPNAME} &
+@grab s.wfs 100 "@L:cube" &
 
 # ---- Logical operators ----
 [ -f ./config.txt ] && source ./config.txt
 [ -z "$GAIN" ] || echo "GAIN is set"
+! @running f.${LOOPNAME} && @f.${LOOPNAME}.runstart
 
-# ---- Here-doc ----
-NOTES=<<EOF
-This is a multi-line
-heredoc assignment
-EOF
-
-echo "Script complete"
+echo "Script complete" # trailing comment
 exit 0

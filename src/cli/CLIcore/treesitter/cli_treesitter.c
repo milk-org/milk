@@ -472,10 +472,9 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
             continue;
         }
 
-        /* 1. Statement-leading calculator expression: '@ <expr>' */
+        /* 1. Statement-leading calculator expression: '@ <expr>' (calc_statement; mask the expression) */
         if (at_stmt_start && c == '@' && (i + 1 == len || isspace((unsigned char) line[i + 1])))
         {
-            norm[i]   = ':';
             size_t k  = i + 1;
             int    sq = 0;
             int    dq = 0;

@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "milk_entity_ns.h"
 #include "CLIcore.h"
 #include "cli_treesitter.h"
 #include "cli_treesitter_internal.h"
@@ -92,6 +93,26 @@ static bool is_unclosed_block_keyword(const char *ctype,
         }
     }
     return false;
+}
+
+/**
+ * @brief True if @mtype is a statement terminator; recovery inserts one before the missing closer of
+ *        `for i in 1; do cmd` (no `;` after the last command), so it stands for that closer.
+ */
+static bool is_terminator_type(const char *mtype)
+{
+    return strcmp(mtype, ";") == 0 || strcmp(mtype, "\n") == 0 || strcmp(mtype, "&") == 0;
+}
+
+/**
+ * @brief Check whether any loop, if, case or `{` block of @source is unclosed (message as for one block).
+ */
+static bool has_unclosed_block(const char *source, char *out_msg, size_t msg_sz)
+{
+    return is_unclosed_block_keyword("for", source, out_msg, msg_sz) ||
+           is_unclosed_block_keyword("if", source, out_msg, msg_sz) ||
+           is_unclosed_block_keyword("case", source, out_msg, msg_sz) ||
+           is_unclosed_block_keyword("{", source, out_msg, msg_sz);
 }
 
 static bool is_open_block_error(TSNode node, const char *source)
@@ -193,6 +214,14 @@ static bool handle_missing_node_diag(TSNode node, const char *source, CLI_SYNTAX
     else if (strcmp(mtype, "esac") == 0)
     {
         if (!is_unclosed_block_keyword("case", source, diag->message, sizeof(diag->message)))
+        {
+            return false;
+        }
+        diag->severity = CLI_DIAG_SEVERITY_INFO;
+    }
+    else if (is_terminator_type(mtype))
+    {
+        if (!has_unclosed_block(source, diag->message, sizeof(diag->message)))
         {
             return false;
         }
@@ -390,6 +419,10 @@ static bool node_tree_has_missing(TSNode node, const char *buffer)
             int o = cli_ts_count_shell_keyword(buffer, "(");
             int c = cli_ts_count_shell_keyword(buffer, ")");
             return (o > c);
+        }
+        if (is_terminator_type(mtype))
+        {
+            return has_unclosed_block(buffer, NULL, 0);
         }
         return false;
     }
@@ -679,6 +712,24 @@ int cli_ts_is_incomplete(const char *buffer)
 #endif
 }
 
+#ifdef USE_TREESITTER
+/** entity_completion_mode() - completion mode for the entity path at @at ("@s.cam.x", "@f.loop.gain"). */
+static int entity_completion_mode(const char *at)
+{
+    switch (milk_entity_ns_kind(at + 1, NULL))
+    {
+    case MILK_NS_FPS:
+        return CLICOMPLETIONMODE_VARS_FPS;
+    case MILK_NS_SEQ:
+        return CLICOMPLETIONMODE_VARS_SEQ;
+    case MILK_NS_PROC:
+        return CLICOMPLETIONMODE_VARS_PROC;
+    default:
+        return CLICOMPLETIONMODE_VARS_STREAM;
+    }
+}
+#endif
+
 int cli_ts_determine_completion_mode(const char *line,
                                      int         start,
                                      const char *text,
@@ -725,20 +776,11 @@ int cli_ts_determine_completion_mode(const char *line,
                     in_expansion = true;
                     break;
                 }
-                if (strcmp(ntype, "fps_variable") == 0)
+                if (strcmp(ntype, "entity_path") == 0)
                 {
+                    int mode = entity_completion_mode(line + ts_node_start_byte(curr));
                     ts_tree_delete(tree);
-                    return CLICOMPLETIONMODE_VARS_FPS;
-                }
-                if (strcmp(ntype, "seq_variable") == 0)
-                {
-                    ts_tree_delete(tree);
-                    return CLICOMPLETIONMODE_VARS_SEQ;
-                }
-                if (strcmp(ntype, "stream_metadata") == 0)
-                {
-                    ts_tree_delete(tree);
-                    return CLICOMPLETIONMODE_VARS_STREAM;
+                    return mode;
                 }
                 if (strcmp(ntype, "file_path") == 0 || strcmp(ntype, "io_redirect") == 0)
                 {

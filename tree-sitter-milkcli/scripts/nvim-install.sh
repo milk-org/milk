@@ -273,8 +273,8 @@ local hl = {
     },
 
     -- *** milk commands: bright gold, bold ***
-    -- assigncheck, procctl, waitfor_stream,
-    -- on_update, dpdigits, etc.
+    -- @calc, @waitfor, @set, include_once,
+    -- milksleep, etc.
     ["@function.macro.milkcli"] = {
         fg = "#ffcb6b", bold = true,
     },
