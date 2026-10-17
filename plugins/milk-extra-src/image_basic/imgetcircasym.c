@@ -173,8 +173,7 @@ imageID IMAGE_BASIC_get_circasym_component_byID(imageID ID,
 
     IMGID imgout       = imgid_make_from_name_2D(ID_out_name, naxes[0], naxes[1]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     for (uint32_t jj = 0; jj < naxes[1]; jj++)
     {

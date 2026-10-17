@@ -782,6 +782,22 @@ def test_secondary_commands_take_their_arguments(tmp_path):
     assert value(res.stdout, "missing_rc") != "0", out
 
 
+def test_created_images_are_registered(tmp_path):
+    """Images made by commands (loadfits, breakcube) are in the image table, so later commands find them."""
+    fits = tmp_path / "e1.fits"
+    res = milk_cli_script(
+        '@mk2Dim "@L:e1" 3 2\n@calc "e1 = 2"\n@calc "e1[2,1] = 5"\n'
+        f'@savefits e1 "{fits}" >/dev/null\n'
+        f'iofits.loadfits "{fits}" e2 2 >/dev/null; echo "load=$(@calc \'itot(e2)\')"\n'
+        '@mk3Dim "@L:cb" 2 2 3\n@calc "cb = 1"\n@calc "cb[*,*,2] = 4"\n'
+        "iofits.breakcube cb >/dev/null; echo \"frame2=$(@calc 'itot(cb_00002)')\"",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert "load=15" in res.stdout, out
+    assert "frame2=16" in res.stdout, out
+
+
 def test_WP15_milksleep(tmp_path):
     res = milk_cli_script(
         "t0=$EPOCHREALTIME; milksleep 0.25; t1=$EPOCHREALTIME\n"

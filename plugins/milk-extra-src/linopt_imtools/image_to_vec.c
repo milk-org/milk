@@ -98,8 +98,7 @@ errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
     {
         imgvec             = imgid_make_from_name_2D(IDvec_name, NBpix, 1);
         imgvec.mdt->shared = 0;
-        imgvec.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgvec);
+        imgid_create_registered(&imgvec);
 
         for (long k = 0; k < NBpix; k++)
         {
@@ -115,8 +114,7 @@ errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
         {
             imgvec             = imgid_make_from_name_2D(IDvec_name, NBpix, imgin.md->size[2]);
             imgvec.mdt->shared = 0;
-            imgvec.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgvec);
+            imgid_create_registered(&imgvec);
 
             for (uint32_t kk = 0; kk < imgin.md->size[2]; kk++)
             {
@@ -132,8 +130,7 @@ errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
         {
             imgvec             = imgid_make_from_name_2D(IDvec_name, NBpix * 2, imgin.md->size[2]);
             imgvec.mdt->shared = 0;
-            imgvec.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgvec);
+            imgid_create_registered(&imgvec);
 
             for (uint32_t kk = 0; kk < imgin.md->size[2]; kk++)
             {

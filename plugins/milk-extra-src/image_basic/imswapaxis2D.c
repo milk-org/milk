@@ -71,8 +71,7 @@ imageID image_basic_SwapAxis2D_byID(imageID IDin, const char *__restrict IDout_n
 
     IMGID imgout       = imgid_make_from_name_2D(IDout_name, ysize, xsize);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     for (uint32_t ii = 0; ii < xsize; ii++)
     {

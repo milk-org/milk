@@ -125,8 +125,7 @@ errno_t linopt_imtools_image_fitModes(const char *ID_name,
 
     IMGID imgcoeff       = imgid_make_from_name_2D(IDcoeff_name, m, 1);
     imgcoeff.mdt->shared = 0;
-    imgcoeff.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgcoeff);
+    imgid_create_registered(&imgcoeff);
 
     cblas_sgemv(CblasRowMajor, CblasNoTrans, m, n, 1.0, imgrecm.im->array.F, n, imgmvec.im->array.F,
                 1, 0.0, imgcoeff.im->array.F, 1);

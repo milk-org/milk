@@ -84,8 +84,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
     imgout.mdt->size[1]  = 1;
     imgout.mdt->datatype = _DATATYPE_INT64;
     imgout.mdt->shared   = 0;
-    imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     for (unsigned short st = 0; st < indexmax; st++)
     {

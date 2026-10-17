@@ -168,8 +168,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
         imgparam.mdt->size[1]  = imsize[1];
         imgparam.mdt->datatype = _DATATYPE_FLOAT;
         imgparam.mdt->shared   = 1;
-        imgparam.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgparam);
+        imgid_create_registered(&imgparam);
         IDPFparam = imgparam.ID;
     }
     free(imsize);
@@ -680,8 +679,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
                     imgpf.mdt->datatype = _DATATYPE_FLOAT;
                     imgpf.mdt->shared   = 1;
                     imgpf.mdt->NBkw     = 1;
-                    imgpf.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-                    imgid_mkimage(&imgpf);
+                    imgid_create_registered(&imgpf);
                     IDoutPF2D = imgpf.ID;
                 }
                 {
@@ -692,8 +690,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
                     imgpfr.mdt->datatype = _DATATYPE_FLOAT;
                     imgpfr.mdt->shared   = 1;
                     imgpfr.mdt->NBkw     = 1;
-                    imgpfr.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-                    imgid_mkimage(&imgpfr);
+                    imgid_create_registered(&imgpfr);
                     IDoutPF2Draw = imgpfr.ID;
                 }
                 free(imsizearray);

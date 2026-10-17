@@ -182,8 +182,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     {
         IMGID imgAtA       = imgid_make_from_name_2D("AtA", m, m);
         imgAtA.mdt->shared = 0;
-        imgAtA.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgAtA);
+        imgid_create_registered(&imgAtA);
 
         for (long ii = 0; ii < m; ii++)
         {
@@ -279,8 +278,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     IMGID imgVT         = imgid_make_from_name_2D(ID_VTmatrix_name, m, m);
     imgVT.mdt->datatype = datatype;
     imgVT.mdt->shared   = 0;
-    imgVT.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgVT);
+    imgid_create_registered(&imgVT);
 
     if (datatype == _DATATYPE_FLOAT)
     {
@@ -339,8 +337,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     {
         IMGID imgM2       = imgid_make_from_name_2D("M2", m, m);
         imgM2.mdt->shared = 0;
-        imgM2.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgM2);
+        imgid_create_registered(&imgM2);
 
         for (long ii = 0; ii < m; ii++)
         {
@@ -372,8 +369,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     }
     imgC.mdt->datatype = datatype;
     imgC.mdt->shared   = 0;
-    imgC.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgC);
+    imgid_create_registered(&imgC);
 
     if (timing == 1)
     {

@@ -244,8 +244,7 @@ static imageID image_PCAdecomp(IMGID *img)
         imgpca.mdt->size[2]  = imPCAsize[2];
         imgpca.mdt->datatype = _DATATYPE_DOUBLE;
         imgpca.mdt->NBkw     = 10;
-        imgpca.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgpca);
+        imgid_create_registered(&imgpca);
         outPCAID = imgpca.ID;
     }
     for (uint32_t jj = 0; jj < lmax; jj++)

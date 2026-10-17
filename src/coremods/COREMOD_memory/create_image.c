@@ -31,6 +31,7 @@
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
 #endif
+#include <string.h>
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"
@@ -605,4 +606,21 @@ errno_t create_3DCimage_ID(const char *__restrict ID_name,
     }
     imgid_free(&img);
     return retval;
+}
+
+errno_t imgid_create_registered(IMGID *img)
+{
+    if (create_image_ID_IMGID(img) != RETURN_SUCCESS || img->ID == -1)
+    {
+        img->im = NULL;
+        img->md = NULL;
+        return RETURN_FAILURE;
+    }
+    img->im        = &dcimg[img->ID];
+    img->md        = img->im->md;
+    img->createcnt = img->im->createcnt;
+    /* a compatible image of the same name is reused: clear it like a new one */
+    memset(img->im->array.raw, 0,
+           (size_t) ImageStreamIO_typesize(img->md->datatype) * img->md->nelement);
+    return RETURN_SUCCESS;
 }

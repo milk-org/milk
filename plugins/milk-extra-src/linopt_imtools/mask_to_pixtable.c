@@ -84,8 +84,7 @@ errno_t linopt_imtools_mask_to_pixtable(const char *IDmask_name,
     imgpixi.mdt->size[1]  = 1;
     imgpixi.mdt->datatype = _DATATYPE_INT64;
     imgpixi.mdt->shared   = 0;
-    imgpixi.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgpixi);
+    imgid_create_registered(&imgpixi);
 
     /* Create FLOAT multiplier table */
     IMGID imgpixm         = imgid_make_from_name(IDpixmult_name);
@@ -94,8 +93,7 @@ errno_t linopt_imtools_mask_to_pixtable(const char *IDmask_name,
     imgpixm.mdt->size[1]  = 1;
     imgpixm.mdt->datatype = _DATATYPE_FLOAT;
     imgpixm.mdt->shared   = 0;
-    imgpixm.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgpixm);
+    imgid_create_registered(&imgpixm);
 
     long k = 0;
     for (long ii = 0; ii < size; ii++)

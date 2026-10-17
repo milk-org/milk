@@ -364,8 +364,7 @@ static MILK_HOT errno_t compute_function()
             imgpf.mdt->datatype = _DATATYPE_FLOAT;
             imgpf.mdt->shared   = 1;
             imgpf.mdt->NBkw     = 1;
-            imgpf.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgpf);
+            imgid_create_registered(&imgpf);
             IDoutPF2D = imgpf.ID;
         }
         {
@@ -376,8 +375,7 @@ static MILK_HOT errno_t compute_function()
             imgpfraw.mdt->datatype = _DATATYPE_FLOAT;
             imgpfraw.mdt->shared   = 1;
             imgpfraw.mdt->NBkw     = 1;
-            imgpfraw.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgpfraw);
+            imgid_create_registered(&imgpfraw);
             IDoutPF2Draw = imgpfraw.ID;
         }
         free(imsizearray);

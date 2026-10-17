@@ -241,8 +241,7 @@ errno_t profile2im(const char   *profile_name,
 
     IMGID imgout       = imgid_make_from_name_2D(out, size, size);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     double *profile_array = (double *) malloc(sizeof(double) * nbpoints);
     if (profile_array == NULL)
