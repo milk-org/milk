@@ -87,6 +87,7 @@ int tv_image_geom(tv_image_t        *im,
         tv_grow_buf((void **) &im->row_in, &im->rowin_cap, (size_t) nr, 1) ||
         tv_grow_buf((void **) &im->samp, &im->samp_cap, ns, sizeof(float)) ||
         tv_grow_buf((void **) &im->prev, &im->prev_cap, ns, sizeof(float)) ||
+        tv_grow_buf((void **) &im->shown, &im->shown_cap, ns, sizeof(uint16_t)) ||
         tv_grow_buf((void **) &im->cells, &im->cells_cap, (size_t) nc * l->img_rows,
                     sizeof(tv_cell_t)))
     {
@@ -107,9 +108,10 @@ int tv_image_geom(tv_image_t        *im,
         im->row_off[i] = in ? (int64_t) iy * xsize : -1;
         im->row_in[i]  = (uint8_t) in;
     }
-    im->ncols     = nc;
-    im->nrows     = nr;
-    im->have_prev = 0;
+    im->ncols      = nc;
+    im->nrows      = nr;
+    im->have_prev  = 0;
+    im->have_shown = 0;
     return 0;
 }
 
@@ -432,7 +434,31 @@ static inline int tv_near(const tv_image_t *im, int j, int r)
            tv_inb(im, j, r + 1);
 }
 
-void tv_image_render(tv_image_t *im, const tv_rgb_t *lut)
+/**
+ * tv_shown_idx() - LUT index to draw for sample @k. With @hold, a colour change of at most
+ * TV_LOWBW_DIST2 keeps what is on screen; the error stays bounded since @idx is always exact.
+ */
+static inline int tv_shown_idx(tv_image_t *im, const tv_rgb_t *lut, size_t k, int idx, int hold)
+{
+    if (hold)
+    {
+        int was = im->shown[k];
+        if (idx < TV_LUT_N && was < TV_LUT_N)
+        {
+            int dr = lut[idx].r - lut[was].r, dg = lut[idx].g - lut[was].g;
+            int db = lut[idx].b - lut[was].b;
+            if (dr * dr + dg * dg + db * db <= TV_LOWBW_DIST2)
+            {
+                im->held += (was != idx);
+                return was;
+            }
+        }
+    }
+    im->shown[k] = (uint16_t) idx;
+    return idx;
+}
+
+void tv_image_render(tv_image_t *im, const tv_rgb_t *lut, int lowbw)
 {
     static const uint32_t border = TV_RGB(64, 64, 64);
 
@@ -445,6 +471,8 @@ void tv_image_render(tv_image_t *im, const tv_rgb_t *lut)
     }
     tv_cell_t blank = tv_cell(TV_RGB(0, 0, 0), TV_RGB(255, 255, 255), ' ');
     int       nc    = im->ncols;
+    lowbw           = lowbw && im->have_shown;
+    im->held        = 0;
 
     for (int i = 0; i < im->nrows / 2; i++)
     {
@@ -453,6 +481,7 @@ void tv_image_render(tv_image_t *im, const tv_rgb_t *lut)
         const float *top  = im->samp + (size_t) rt * nc;
         const float *bot  = im->samp + (size_t) rb * nc;
         tv_cell_t   *cell = im->cells + (size_t) i * nc;
+        int          hold = lowbw && (i % TV_LOWBW_CYCLE != im->phase); /* round-robin refresh */
         for (int j = 0; j < nc; j++)
         {
             int      it = tv_inb(im, j, rt);
@@ -460,7 +489,9 @@ void tv_image_render(tv_image_t *im, const tv_rgb_t *lut)
             uint32_t ct, cb;
             if (it)
             {
-                ct = tv_rgb(lut[tv_lut_idx(top[j], lo_rel, scale)]);
+                int k = tv_shown_idx(im, lut, (size_t) rt * nc + j,
+                                     tv_lut_idx(top[j], lo_rel, scale), hold);
+                ct    = tv_rgb(lut[k]);
             }
             else
             {
@@ -468,7 +499,9 @@ void tv_image_render(tv_image_t *im, const tv_rgb_t *lut)
             }
             if (ib)
             {
-                cb = tv_rgb(lut[tv_lut_idx(bot[j], lo_rel, scale)]);
+                int k = tv_shown_idx(im, lut, (size_t) rb * nc + j,
+                                     tv_lut_idx(bot[j], lo_rel, scale), hold);
+                cb    = tv_rgb(lut[k]);
             }
             else
             {
@@ -477,6 +510,8 @@ void tv_image_render(tv_image_t *im, const tv_rgb_t *lut)
             cell[j] = (!it && !ib && ct == 0 && cb == 0) ? blank : tv_cell(ct, cb, TV_G_LOWER_HALF);
         }
     }
+    im->phase      = (im->phase + 1) % TV_LOWBW_CYCLE;
+    im->have_shown = 1;
 }
 
 void tv_image_free(tv_image_t *im)
@@ -487,6 +522,7 @@ void tv_image_free(tv_image_t *im)
     free(im->row_in);
     free(im->samp);
     free(im->prev);
+    free(im->shown);
     free(im->cells);
     memset(im, 0, sizeof(*im));
 }

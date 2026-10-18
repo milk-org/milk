@@ -27,6 +27,13 @@
 
 #define TV_STALE_MIN_US 1000000 /* no new frame for this long (or 5 periods): STALE */
 
+/* A slow terminal gets per flush what it drains in one frame period, within these bounds */
+#define TV_FLUSH_SLICE_MIN_US 40000
+#define TV_FLUSH_SLICE_MAX_US 50000
+#define TV_FLUSH_BLOCKED_US 2000      /* a write that took longer met a terminal slower than us */
+#define TV_FLUSH_MIN_BYTES 16384      /* the budget is never less than this */
+#define TV_FLUSH_MAX_BYTES (4u << 20) /* above this the budget is dropped */
+
 /* -----------------------------------------------------------------------
  * Main Screen Loop
  * ----------------------------------------------------------------------- */
@@ -91,6 +98,13 @@ static int tv_note_cnt0(tv_state_t *ctx, uint64_t cnt0, int64_t now_us)
     ctx->last_cnt0      = cnt0;
     ctx->last_change_us = now_us;
     return 1;
+}
+
+/** tv_quiet_us() - Rest time: 1.5 frame periods, 1 s while the period is unknown, at most 5 s. */
+static double tv_quiet_us(const tv_state_t *ctx)
+{
+    double q = (ctx->period_us > 0.0) ? 1.5 * ctx->period_us : 1e6;
+    return (q < 5e6) ? q : 5e6;
 }
 
 /** tv_layout_ok() - True when the image area is drawable; also guards every geometry divisor. */
@@ -251,6 +265,10 @@ void tv_do(tv_state_t *ctx, tv_action_t a, int arg)
             ctx->dirty |= TV_D_CHROME;
         }
         break;
+    case TV_ACT_LOWBW:
+        ctx->opt.lowbw = !ctx->opt.lowbw;
+        ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        break;
     case TV_ACT_POPUP_CLOSE:
         if (ctx->popup_type > 0)
         {
@@ -311,6 +329,9 @@ void tv_handle_key(tv_state_t *ctx, const tv_event_t *ev)
         break;
     case 'h':
         tv_do(ctx, TV_ACT_FLIP_H, 0);
+        break;
+    case 'b':
+        tv_do(ctx, TV_ACT_LOWBW, 0);
         break;
     case 'v':
         tv_do(ctx, TV_ACT_FLIP_V, 0);
@@ -759,9 +780,11 @@ static void termview_render_infobar(tv_state_t *ctx,
 
         const char *h_str = ctx->opt.flip_h ? "h:FLIPH" : "h:fliph";
         const char *v_str = ctx->opt.flip_v ? "v:FLIPV" : "v:flipv";
+        const char *b_str = ctx->opt.lowbw ? "b:LOWBW" : "b:lowbw";
 
-        len = snprintf(info, sizeof(info), "%s%s %s q:Quit)", info2, h_str, v_str);
-        len = tv_fmt_len(len, sizeof(info));
+        len      = snprintf(info, sizeof(info), "%s%s %s %s q:Quit)", info2, h_str, v_str, b_str);
+        len      = tv_fmt_len(len, sizeof(info));
+        int len3 = len2 + (int) strlen(h_str) + 1 + (int) strlen(v_str) + 1;
 
         for (int k = 0; k < len && k < ctx->cols; k++)
         {
@@ -779,6 +802,10 @@ static void termview_render_infobar(tv_state_t *ctx,
             }
             if (ctx->opt.flip_v && k >= len2 + (int) strlen(h_str) + 1 &&
                 k < len2 + (int) strlen(h_str) + 1 + (int) strlen(v_str))
+            {
+                *c = tv_cell_with_fg(*c, TV_RGB(255, 255, 0)); // Yellow
+            }
+            if (ctx->opt.lowbw && k >= len3 && k < len3 + (int) strlen(b_str))
             {
                 *c = tv_cell_with_fg(*c, TV_RGB(255, 255, 0)); // Yellow
             }
@@ -890,7 +917,7 @@ static void termview_render_popup(tv_state_t *ctx, int disp_char_rows, int disp_
                     glyph          = ' ';
                 }
             }
-            ctx->screen[r * ctx->cols + c] = tv_cell(bg, fg, glyph);
+            ctx->screen[r * ctx->cols + c] = tv_cell(bg, fg, glyph) | TV_ATTR_CHROME;
         }
     }
 }
@@ -901,11 +928,46 @@ static void termview_flush_ansi(tv_state_t *ctx)
     {
         return; /* stopped while rendering: the screen is not ours until re-entered */
     }
-    size_t n =
-        tv_flush_diff(ctx->frame_buffer, ctx->screen, ctx->prev_screen, ctx->rows, ctx->cols);
-    if (n > 0 && tv_write_all(ctx->frame_buffer, n) != 0)
+    size_t n = tv_flush_diff(&ctx->emit, ctx->frame_buffer, ctx->screen, ctx->prev_screen,
+                             ctx->rows, ctx->cols);
+    if (n == 0)
+    {
+        return;
+    }
+    int64_t t0 = tv_now_us();
+    if (tv_write_all(ctx->frame_buffer, n) != 0)
     {
         tv_invalidate(ctx); /* partial frame on screen: repaint everything next time */
+    }
+    int64_t dt = tv_now_us() - t0;
+
+    /* Image bytes per flush. Once a write blocks, a flush carries what the terminal drains in
+     * a frame period, so a key never waits longer behind image bytes. A large write that goes
+     * through at once means the terminal caught up: the budget doubles until it is dropped. */
+    tv_emit_t *e = &ctx->emit;
+    if (dt > TV_FLUSH_BLOCKED_US)
+    {
+        /* a slower link is believed at once, a faster one halfway: a short write that kernel
+         * buffers absorbed overstates the rate */
+        double rate     = (double) n / (double) dt;
+        ctx->drain_rate = (rate > ctx->drain_rate && ctx->drain_rate > 0.0)
+                              ? 0.5 * (ctx->drain_rate + rate)
+                              : rate;
+        int64_t slice   = 1000000 / ctx->target_fps;
+        slice           = (slice < TV_FLUSH_SLICE_MIN_US)   ? TV_FLUSH_SLICE_MIN_US
+                          : (slice > TV_FLUSH_SLICE_MAX_US) ? TV_FLUSH_SLICE_MAX_US
+                                                            : slice;
+        double b        = ctx->drain_rate * (double) slice;
+        b               = (b > 2.0 * (double) n) ? 2.0 * (double) n : b; /* same reason */
+        e->budget       = (b < TV_FLUSH_MIN_BYTES) ? TV_FLUSH_MIN_BYTES : (size_t) b;
+    }
+    else if (e->budget > 0 && n >= e->budget / 2)
+    {
+        e->budget = (e->budget > TV_FLUSH_MAX_BYTES / 2) ? 0 : 2 * e->budget;
+        if (e->budget == 0)
+        {
+            ctx->drain_rate = 0.0;
+        }
     }
 }
 
@@ -963,7 +1025,7 @@ static inline uint32_t tv_dim(uint32_t c)
     return (c >> 1) & 0x7F7F7F;
 }
 
-/** tv_draw_roi() - Box-zoom selection: yellow outline, dimmed inside. */
+/** tv_draw_roi() - Box-zoom selection: yellow outline (interface), dimmed inside. */
 static void tv_draw_roi(tv_state_t *ctx)
 {
     const tv_layout_t *l  = &ctx->lay;
@@ -979,10 +1041,11 @@ static void tv_draw_roi(tv_state_t *ctx)
             tv_cell_t *cell = &ctx->screen[(r - 1) * ctx->cols + (c - 1)];
             if (r == y0 || r == y1 || c == x0 || c == x1)
             {
-                *cell = tv_cell(yellow, yellow, TV_G_LOWER_HALF);
+                *cell = tv_cell(yellow, yellow, TV_G_LOWER_HALF) | TV_ATTR_CHROME;
             }
             else
             {
+                /* still image cells: on a slow link the dimming follows the byte budget */
                 *cell = tv_cell(tv_dim(tv_cell_bg(*cell)), tv_dim(tv_cell_fg(*cell)),
                                 tv_cell_glyph(*cell));
             }
@@ -1015,6 +1078,15 @@ static void tv_compose(tv_state_t *ctx, int64_t now_us)
     termview_render_infobar(ctx, ctx->st->xsize, ctx->st->ysize, xf.step, ctx->cur_min,
                             ctx->cur_max, now_us);
     termview_render_popup(ctx, l->img_rows, l->img_cols);
+
+    /* everything outside the image area is interface: sent ahead of image cells */
+    for (int r = 0; r < ctx->rows; r++)
+    {
+        for (int c = (r < l->img_rows) ? l->img_cols : 0; c < ctx->cols; c++)
+        {
+            ctx->screen[r * ctx->cols + c] |= TV_ATTR_CHROME;
+        }
+    }
 }
 
 void termview_options_init(termview_options_t *opt)
@@ -1074,6 +1146,8 @@ int termview_run(const char *name, const termview_options_t *opt)
 
     ctx->stats_time_us = tv_now_us();
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ctx->stats_cpu);
+    tv_emit_init(&ctx->emit,
+                 (opt->colors >= 1 && opt->colors <= 3) ? opt->colors : tv_term_color_level());
 
     /* age of the newest frame at startup, from the stream's own write time */
     struct timespec wall;
@@ -1123,7 +1197,8 @@ int termview_run(const char *name, const termview_options_t *opt)
             tv_invalidate(ctx);
         }
 
-        /* sleep until the earliest of: next data poll, frame cap, ESC timeout, tick, popup */
+        /* sleep until the earliest of: next data poll, frame cap (dirty, or image cells left
+         * over by the last flush), ESC timeout, tick, popup */
         int64_t now    = tv_now_us();
         int64_t period = 1000000 / ctx->target_fps;
         if (next_data > now + period)
@@ -1131,7 +1206,7 @@ int termview_run(const char *name, const termview_options_t *opt)
             next_data = now + period; /* the rate was raised: do not wait out the old period */
         }
         int64_t dl = next_data;
-        if (ctx->dirty && last_render + TV_INTERACTIVE_US < dl)
+        if ((ctx->dirty || ctx->emit.pending) && last_render + TV_INTERACTIVE_US < dl)
         {
             dl = last_render + TV_INTERACTIVE_US;
         }
@@ -1202,12 +1277,21 @@ int termview_run(const char *name, const termview_options_t *opt)
             ctx->popup_type = 0;
             ctx->dirty |= TV_D_CHROME;
         }
+        if (ctx->emit.pending)
+        {
+            ctx->dirty |= TV_D_CHROME; /* send the image cells the last flush had no room for */
+        }
         if (now >= next_data)
         {
             next_data = (next_data + period > now) ? next_data + period : now + period;
             if (tv_note_cnt0(ctx, st.img.md->cnt0, now))
             {
                 ctx->dirty |= TV_D_DATA;
+            }
+            else if (ctx->im.held &&
+                     (ctx->resting || (double) (now - ctx->last_change_us) > tv_quiet_us(ctx)))
+            {
+                ctx->dirty |= TV_D_HELD; /* the stream rests: redraw the held rows exactly */
             }
         }
 
@@ -1217,10 +1301,12 @@ int termview_run(const char *name, const termview_options_t *opt)
             continue;
         }
         last_render = now;
-        if (tv_note_cnt0(ctx, st.img.md->cnt0, now))
+        /* a user change shows a frame that arrived since the poll; other renders (the tick, a
+         * flush continuation) leave new frames to the data poll and its rate */
+        if ((ctx->dirty & (TV_D_GEOM | TV_D_MAP | TV_D_FULL)) &&
+            tv_note_cnt0(ctx, st.img.md->cnt0, now))
         {
-            ctx->dirty |=
-                TV_D_DATA; /* a frame arrived since the poll: sample it with this render */
+            ctx->dirty |= TV_D_DATA;
         }
         int dirty  = ctx->dirty;
         ctx->dirty = 0;
@@ -1248,9 +1334,14 @@ int termview_run(const char *name, const termview_options_t *opt)
             snprintf(msg, sizeof(msg), "terminal too small (%dx%d)", ctx->cols, ctx->rows);
             int len = (int) strlen(msg);
             tv_draw_text(ctx, ctx->rows / 2, (len < ctx->cols) ? (ctx->cols - len) / 2 : 0, msg);
+            for (int i = 0; i < ctx->rows * ctx->cols; i++)
+            {
+                ctx->screen[i] |= TV_ATTR_CHROME;
+            }
             ctx->mouse_is_dragging = 0;
             ctx->roi_is_dragging   = 0;
             ctx->im.have_range     = 0;
+            ctx->im.held           = 0;
             ctx->lay.rows          = 0; /* rebuild the tables once the size is usable again */
             termview_flush_ansi(ctx);
             continue;
@@ -1272,14 +1363,20 @@ int termview_run(const char *name, const termview_options_t *opt)
         }
         if (dirty & (TV_D_GEOM | TV_D_FULL | TV_D_DATA))
         {
-            sampled = tv_image_sample(&ctx->im, st.img.array.raw, st.datatype);
-            if (!sampled && dirty == TV_D_DATA && ctx->im.settled)
+            sampled      = tv_image_sample(&ctx->im, st.img.array.raw, st.datatype);
+            ctx->resting = !sampled && (dirty & TV_D_DATA);
+            if (!sampled && ctx->im.held)
+            {
+                dirty |= TV_D_HELD; /* same samples: go on refreshing the held rows */
+            }
+            else if (!sampled && dirty == TV_D_DATA && ctx->im.settled)
             {
                 continue; /* new frame, same picture: nothing to do */
             }
         }
         /* a range still converging finishes on unchanged samples (and on the 1 Hz tick) */
-        if (sampled || (dirty & TV_D_MAP) || !ctx->im.settled)
+        int user = dirty & (TV_D_GEOM | TV_D_MAP | TV_D_FULL);
+        if (sampled || user || (dirty & TV_D_HELD) || !ctx->im.settled)
         {
             if ((int) ctx->opt.colormap != ctx->lut_cmap || (int) ctx->opt.scale != ctx->lut_scale)
             {
@@ -1287,13 +1384,16 @@ int termview_run(const char *name, const termview_options_t *opt)
                 ctx->lut_cmap  = ctx->opt.colormap;
                 ctx->lut_scale = ctx->opt.scale;
             }
-            /* a user change shows its result at once; only stream updates are smoothed */
-            tv_image_range(&ctx->im, &ctx->opt,
-                           !ctx->im.have_range || !sampled ||
-                               (dirty & (TV_D_GEOM | TV_D_MAP | TV_D_FULL)));
-            ctx->cur_min = ctx->im.lo;
-            ctx->cur_max = ctx->im.hi;
-            tv_image_render(&ctx->im, ctx->lut);
+            /* a user change shows its result at once; only stream updates are smoothed, and
+             * redrawing held rows leaves the range alone */
+            if (sampled || user || !ctx->im.settled)
+            {
+                tv_image_range(&ctx->im, &ctx->opt, !ctx->im.have_range || !sampled || user);
+                ctx->cur_min = ctx->im.lo;
+                ctx->cur_max = ctx->im.hi;
+            }
+            /* small changes are held only on stream updates, never on the user's own changes */
+            tv_image_render(&ctx->im, ctx->lut, ctx->opt.lowbw && !user);
         }
         tv_compose(ctx, now);
         termview_flush_ansi(ctx);

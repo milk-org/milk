@@ -32,12 +32,15 @@ static void on_signal(int sig)
 
 static void usage(void)
 {
-    fprintf(stderr,
-            "usage: tv-test-mkstream -n NAME [-t u8|i16|u16|i32|f32|f64] [-s WxH[xZ]]\n"
-            "         [-p ramp|noise|nan|inf|const|spike] [-r RATE_HZ] [-d SECONDS] [-x] [-u]\n"
-            "  -r 0 writes one frame; -d 0 runs until SIGTERM; -x deletes the stream at exit\n"
-            "  -u writes into the existing stream instead of creating it\n"
-            "  spike: a ramp with hot (5000) pixels in frame 1 only\n");
+    fprintf(
+        stderr,
+        "usage: tv-test-mkstream -n NAME [-t u8|i16|u16|i32|f32|f64] [-s WxH[xZ]]\n"
+        "         [-p ramp|noise|jitter|nan|inf|const|spike|repost] [-r RATE_HZ] [-d SECONDS]\n"
+        "         [-x] [-u]\n"
+        "  -r 0 writes one frame; -d 0 runs until SIGTERM; -x deletes the stream at exit\n"
+        "  -u writes into the existing stream instead of creating it\n"
+        "  spike: a ramp with hot (5000) pixels in frame 1 only\n"
+        "  repost: posts new frames without changing the data (with -u: the last frame again)\n");
 }
 
 static int parse_type(const char *s, uint8_t *dt)
@@ -85,6 +88,12 @@ static double pixel_value(const char *pattern,
     if (strcmp(pattern, "const") == 0)
     {
         return 42.0;
+    }
+    if (strcmp(pattern, "jitter") == 0)
+    {
+        /* a fixed ramp plus 1% noise: a steady scene seen through sensor noise */
+        return (double) (i % n) / (double) n * 1000.0 +
+               (double) (xorshift(rng) >> 11) * (10.0 / 9007199254740992.0);
     }
     if (strcmp(pattern, "spike") == 0 && frame == 1 && i % 37 == 0)
     {
@@ -234,18 +243,18 @@ int main(int argc, char **argv)
     do
     {
         img.md->write = 1;
-        fill(&img, pattern, frame++, &rng);
+        if (strcmp(pattern, "repost") != 0)
+        {
+            fill(&img, pattern, frame, &rng);
+        }
+        frame++;
         ImageStreamIO_UpdateIm(&img);
         if (rate <= 0.0)
         {
             break;
         }
-        struct timespec ts = { .tv_sec = 0, .tv_nsec = (long) (1e9 / rate) };
-        if (rate < 1.0)
-        {
-            ts.tv_sec  = (time_t) (1.0 / rate);
-            ts.tv_nsec = 0;
-        }
+        double          p  = 1.0 / rate;
+        struct timespec ts = { .tv_sec = (time_t) p, .tv_nsec = (long) ((p - floor(p)) * 1e9) };
         nanosleep(&ts, NULL);
         clock_gettime(CLOCK_MONOTONIC, &now);
     } while (!stop_flag &&

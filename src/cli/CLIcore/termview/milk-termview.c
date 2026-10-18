@@ -61,6 +61,9 @@ static void print_help(const char *progname, int mh_color)
            "Lock the display range to [min, max]");
     printf("  " MH_PAD_FMT " %s %s(20)%s\n", MH_PAD(MH_OPT, "-f, --fps N", 22),
            "UI refresh rate, 1-120", mh_color ? MH_DFLT : "", mh_color ? MH_RST : "");
+    printf("  " MH_PAD_FMT " %s %s(auto)%s\n", MH_PAD(MH_OPT, "--colors MODE", 22),
+           "Colour depth: auto, truecolor, 256, 16", mh_color ? MH_DFLT : "",
+           mh_color ? MH_RST : "");
     printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_OPT, "-h, --help", 22), "Show this help and exit");
     printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_OPT, "-h1, --help-oneline", 22),
            "One-line description and exit");
@@ -83,6 +86,7 @@ static void print_help(const char *progname, int mh_color)
         { "l", "Lock or unlock the current range" },
         { "m / M", "Type a manual min / max (locks the range)" },
         { "h / v", "Flip horizontally / vertically" },
+        { "b", "Low-bandwidth mode: hold small changes on noisy images" },
         { "< , / > .", "Decrease / increase the UI refresh rate" },
         { "Ctrl-L", "Repaint the screen" },
         { "Ctrl-Z", "Suspend" },
@@ -106,8 +110,12 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
 
     milk_help_section("Environment", mh_color);
-    printf("  " MH_PAD_FMT " %s\n\n", MH_PAD(MH_OPT, "MILK_SHM_DIR", 22),
+    printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_OPT, "MILK_SHM_DIR", 22),
            "Directory holding the .im.shm stream files");
+    printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_OPT, "COLORTERM", 22),
+           "truecolor or 24bit: 24-bit colour (--colors auto)");
+    printf("  " MH_PAD_FMT " %s\n\n", MH_PAD(MH_OPT, "TERM", 22),
+           "Otherwise: 24-bit for kitty, foot, ...; 256 for xterm-like; else 16");
 
     const char *see_also[] = { "milk-streamCTRL:stream monitor and control",
                                "milk-stream-help:stream tools overview" };
@@ -168,7 +176,8 @@ int main(int argc, char **argv)
     enum
     {
         OPT_MIN = 0x100,
-        OPT_MAX
+        OPT_MAX,
+        OPT_COLORS
     };
     static const struct option longopts[] = {
         { "cmap", required_argument, NULL, 'c' },
@@ -177,6 +186,7 @@ int main(int argc, char **argv)
         { "fps", required_argument, NULL, 'f' },
         { "min", required_argument, NULL, OPT_MIN },
         { "max", required_argument, NULL, OPT_MAX },
+        { "colors", required_argument, NULL, OPT_COLORS },
         { NULL, 0, NULL, 0 },
     };
 
@@ -236,6 +246,18 @@ int main(int argc, char **argv)
                 have_max       = 1;
             }
             break;
+        case OPT_COLORS:
+        {
+            static const char *const depths[] = { "auto", "16", "256", "truecolor", "24bit" };
+            idx                               = tv_lookup_name(depths, 5, optarg);
+            if (idx < 0)
+            {
+                return arg_error(progname, "--colors expects auto, truecolor, 256 or 16, got",
+                                 optarg);
+            }
+            opt.colors = (idx == 4) ? 3 : idx;
+            break;
+        }
         case ':':
             return arg_error(progname, "missing value for option", argv[optind - 1]);
         default:

@@ -13,6 +13,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -250,6 +251,58 @@ int tv_write_all(const char *buf, size_t n)
         return -1;
     }
     return 0;
+}
+
+int tv_term_color_level(void)
+{
+    /* ssh forwards TERM but not COLORTERM: known 24-bit terminals are recognised by name, and
+     * xterm-like emulators have the 256-colour palette unless TERM says fewer */
+    static const char *const direct[]  = { "-direct", "kitty",   "alacritty", "foot",
+                                           "wezterm", "ghostty", "contour" };
+    static const char *const fewer[]   = { "16color", "88color", "mono" };
+    static const char *const xterms[]  = { "xterm", "screen", "tmux",  "rxvt",  "konsole",
+                                           "gnome", "vte",    "putty", "iterm", "mlterm" };
+    const char              *colorterm = getenv("COLORTERM");
+    const char              *term      = getenv("TERM");
+    if (colorterm && (strstr(colorterm, "truecolor") || strstr(colorterm, "24bit")))
+    {
+        return 3;
+    }
+    if (term == NULL)
+    {
+        return 1;
+    }
+    for (size_t k = 0; k < sizeof(direct) / sizeof(direct[0]); k++)
+    {
+        if (strstr(term, direct[k]))
+        {
+            return 3;
+        }
+    }
+    if (strstr(term, "256color"))
+    {
+        return 2;
+    }
+    /* 88 colours (rxvt-unicode's default) have no 16..255 cube either */
+    if (strcmp(term, "rxvt-unicode") == 0)
+    {
+        return 1;
+    }
+    for (size_t k = 0; k < sizeof(fewer) / sizeof(fewer[0]); k++)
+    {
+        if (strstr(term, fewer[k]))
+        {
+            return 1;
+        }
+    }
+    for (size_t k = 0; k < sizeof(xterms) / sizeof(xterms[0]); k++)
+    {
+        if (strncasecmp(term, xterms[k], strlen(xterms[k])) == 0)
+        {
+            return 2;
+        }
+    }
+    return (strcmp(term, "st") == 0 || strncmp(term, "st-", 3) == 0) ? 2 : 1;
 }
 
 void tv_term_reraise(int sig)

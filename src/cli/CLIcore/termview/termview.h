@@ -84,6 +84,8 @@ typedef struct
     bool                flip_v;       /**< Flip image vertically         */
     int                 fps;          /**< UI refresh rate [Hz], 1..120   */
     bool                range_smooth; /**< steady auto range (hysteresis) */
+    bool                lowbw;        /**< hold sub-threshold changes to cut output */
+    int                 colors;       /**< colour depth: 0 auto, 1 = 16, 2 = 256, 3 = 24-bit */
 } termview_options_t;
 
 /** termview_options_init() - Default options: greyscale, linear, min-max, 20 fps, no flips. */

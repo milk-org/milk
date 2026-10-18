@@ -186,14 +186,48 @@ static inline tv_cell_t tv_cell_with_glyph(tv_cell_t c, uint8_t glyph)
     return (c & ~((uint64_t) 0xFF << 48)) | ((uint64_t) glyph << 48);
 }
 
+/** Attribute bit: drawn by the user interface, not the image; sent ahead of image cells. */
+#define TV_ATTR_CHROME ((uint64_t) 1 << 56)
+
+static inline int tv_cell_is_chrome(tv_cell_t c)
+{
+    return (c & TV_ATTR_CHROME) != 0;
+}
+
 /** tv_framebuf_size() - Worst-case bytes tv_flush_diff() can emit for a rows x cols grid. */
 size_t tv_framebuf_size(int rows, int cols);
 
+#define TV_QCACHE_BITS 12
+#define TV_QCACHE (1 << TV_QCACHE_BITS)
+
+/** Output state: colour depth, RGB -> palette memo, and the byte budget for slow terminals. */
+typedef struct
+{
+    int      level; /**< 3 truecolor, 2 xterm-256, 1 sixteen colours */
+    uint32_t qkey[TV_QCACHE];
+    uint8_t  qval[TV_QCACHE];
+    size_t   budget;     /**< image bytes per flush, 0 = unlimited */
+    int      resume_row; /**< where the next budgeted flush starts */
+    int      pending;    /**< the last flush left image cells unsent */
+} tv_emit_t;
+
+void tv_emit_init(tv_emit_t *e, int level);
+
+/** tv_emit_code() - @rgb as sent at @e's depth: the RGB itself, or the palette index. */
+uint32_t tv_emit_code(tv_emit_t *e, uint32_t rgb);
+
 /**
  * tv_flush_diff() - Escape sequences turning @prev into @cur, written to @out; @prev is updated.
- * Returns 0 when no cell changed (nothing to write).
+ * Cells whose appearance at @e's colour depth did not change are not sent. Interface cells go
+ * first; image cells follow within e->budget, rows rotating so that none starves, and the rest
+ * waits for the next call (e->pending). Returns 0 when nothing needs to be written.
  */
-size_t tv_flush_diff(char *out, const tv_cell_t *cur, tv_cell_t *prev, int rows, int cols);
+size_t tv_flush_diff(tv_emit_t       *e,
+                     char            *out,
+                     const tv_cell_t *cur,
+                     tv_cell_t       *prev,
+                     int              rows,
+                     int              cols);
 
 /* -----------------------------------------------------------------------
  * Colormaps (tv_cmap.c)
@@ -230,6 +264,9 @@ void tv_term_restore(void);
 void tv_term_suspend(void);
 void tv_term_size(int *rows, int *cols);
 int  tv_write_all(const char *buf, size_t n);
+
+/** tv_term_color_level() - 3, 2 or 1 from COLORTERM, else TERM (24-bit names, then 256-colour). */
+int  tv_term_color_level(void);
 void tv_term_reraise(int sig);
 
 /* -----------------------------------------------------------------------
@@ -414,7 +451,8 @@ typedef struct
     float     *samp;  /**< value - offset; NaN outside the image or not finite */
     float     *prev;  /**< previous frame's samples */
     tv_cell_t *cells; /**< img_rows x img_cols */
-    size_t     col_cap, colin_cap, row_cap, rowin_cap, samp_cap, prev_cap, cells_cap;
+    uint16_t  *shown; /**< LUT index on screen per sample (low-bandwidth mode) */
+    size_t     col_cap, colin_cap, row_cap, rowin_cap, samp_cap, prev_cap, shown_cap, cells_cap;
     int        have_prev;
     double     offset, prev_offset; /**< subtracted before the float conversion */
     float      vmin, vmax;          /**< finite in-image samples, relative */
@@ -422,7 +460,10 @@ typedef struct
     uint32_t   hist[4096];
     double     lo, hi; /**< display range, raw units */
     int        have_range;
-    int        settled; /**< smoothing has reached the measured range */
+    int        settled;    /**< smoothing has reached the measured range */
+    int        have_shown; /**< shown[] matches the current tables */
+    int        phase;      /**< low-bandwidth refresh row (mod TV_LOWBW_CYCLE) */
+    long       held;       /**< samples the last render left at a stale colour */
 } tv_image_t;
 
 void   tv_layout_compute(tv_layout_t *l, int rows, int cols);
@@ -448,8 +489,15 @@ int tv_image_sample(tv_image_t *im, const void *data, uint8_t datatype);
 /** tv_image_range() - Display range for @opt from the samples; @snap skips the smoothing. */
 void tv_image_range(tv_image_t *im, const termview_options_t *opt, int snap);
 
-/** tv_image_render() - Colour the samples into im->cells with @lut. */
-void tv_image_render(tv_image_t *im, const tv_rgb_t *lut);
+/* Low-bandwidth mode: a sample keeps the colour on screen while the exact one is within
+ * TV_LOWBW_DIST2 (squared RGB distance, about 4 levels per channel). One cell row in
+ * TV_LOWBW_CYCLE is redrawn exactly each render; once the stream rests or repeats a frame, the
+ * viewer renders until nothing is held. */
+#define TV_LOWBW_DIST2 48
+#define TV_LOWBW_CYCLE 8
+
+/** tv_image_render() - Colour the samples into im->cells with @lut; @lowbw holds small changes. */
+void tv_image_render(tv_image_t *im, const tv_rgb_t *lut, int lowbw);
 
 void tv_image_free(tv_image_t *im);
 
@@ -463,7 +511,8 @@ enum
     TV_D_GEOM   = 0x02, /**< zoom, pan, flip or size changed: resample */
     TV_D_MAP    = 0x04, /**< colormap, scale or range changed: recolour */
     TV_D_CHROME = 0x08, /**< info bar, popup or prompt only */
-    TV_D_FULL   = 0x10  /**< terminal content unknown: repaint every cell */
+    TV_D_FULL   = 0x10, /**< terminal content unknown: repaint every cell */
+    TV_D_HELD   = 0x20  /**< low-bandwidth: redraw rows still showing held colours */
 };
 
 /** Input-driven frames are spaced at least this far apart (about 60 Hz). */
@@ -484,11 +533,12 @@ typedef enum
     TV_ACT_FLIP_V,
     TV_ACT_ZOOM, /**< arg: notches, > 0 zooms in */
     TV_ACT_VIEW_RESET,
-    TV_ACT_PAN_X,      /**< arg: +1 right, -1 left, in screen space */
-    TV_ACT_PAN_Y,      /**< arg: +1 down, -1 up, in screen space */
-    TV_ACT_FPS,        /**< arg: step */
-    TV_ACT_ESCAPE,     /**< cancel drags and close the popup */
-    TV_ACT_POPUP_CLOSE /**< close the popup only */
+    TV_ACT_PAN_X,       /**< arg: +1 right, -1 left, in screen space */
+    TV_ACT_PAN_Y,       /**< arg: +1 down, -1 up, in screen space */
+    TV_ACT_FPS,         /**< arg: step */
+    TV_ACT_ESCAPE,      /**< cancel drags and close the popup */
+    TV_ACT_POPUP_CLOSE, /**< close the popup only */
+    TV_ACT_LOWBW        /**< toggle low-bandwidth mode */
 } tv_action_t;
 
 typedef struct
@@ -498,6 +548,9 @@ typedef struct
     tv_view_t          view;
     tv_layout_t        lay; /**< layout of the last frame */
     tv_image_t         im;
+    tv_emit_t          emit;
+    double             drain_rate; /**< terminal bytes/us measured on blocked writes, 0 if fast */
+    int                resting;    /**< the last new frame repeated the previous one */
     int                rows, cols; /**< terminal size */
     int                running;
     int                dirty; /**< TV_D_* bits */

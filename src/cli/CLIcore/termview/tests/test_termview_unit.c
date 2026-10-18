@@ -180,13 +180,56 @@ static void test_lut(void)
     }
 }
 
-/* ---- tiny terminal model: just what tv_flush_diff() emits ---- */
+/* ---- tiny terminal model: just what tv_flush_diff() emits, with DECAWM off ---- */
 typedef struct
 {
-    int        rows, cols, r, c, sync, moves, errors;
-    uint32_t   bg, fg;
-    tv_cell_t *grid;
+    int        rows, cols, r, c, sync, moves, cufs, errors;
+    uint32_t   bg, fg; /* codes as sent: RGB at depth 3, palette index otherwise */
+    int        set;    /* 1 bg, 2 fg: set since the last SGR 0 (else the terminal's default) */
+    tv_cell_t *grid;   /* what is on screen: (bg code, fg code, glyph) */
+    uint8_t   *dflt;   /* optional, per cell: drawn in the default bg (1) or fg (2) */
 } tv_vt_t;
+
+/** vt_sgr() - Apply SGR parameters @par[0..np). */
+static void vt_sgr(tv_vt_t *vt, const int *par, int np)
+{
+    for (int k = 0; k < np; k++)
+    {
+        int p = par[k];
+        if (p == 0)
+        {
+            vt->bg = vt->fg = 0;
+            vt->set         = 0;
+        }
+        else if ((p == 48 || p == 38) && k + 4 < np + 0 && par[k + 1] == 2)
+        {
+            uint32_t rgb                   = TV_RGB(par[k + 2], par[k + 3], par[k + 4]);
+            *(p == 48 ? &vt->bg : &vt->fg) = rgb;
+            vt->set |= (p == 48) ? 1 : 2;
+            k += 4;
+        }
+        else if ((p == 48 || p == 38) && k + 2 < np && par[k + 1] == 5)
+        {
+            *(p == 48 ? &vt->bg : &vt->fg) = (uint32_t) par[k + 2];
+            vt->set |= (p == 48) ? 1 : 2;
+            k += 2;
+        }
+        else if ((p >= 40 && p <= 47) || (p >= 100 && p <= 107))
+        {
+            vt->bg = (uint32_t) ((p >= 100) ? p - 100 + 8 : p - 40);
+            vt->set |= 1;
+        }
+        else if ((p >= 30 && p <= 37) || (p >= 90 && p <= 97))
+        {
+            vt->fg = (uint32_t) ((p >= 90) ? p - 90 + 8 : p - 30);
+            vt->set |= 2;
+        }
+        else
+        {
+            vt->errors++;
+        }
+    }
+}
 
 static void vt_feed(tv_vt_t *vt, const char *buf, size_t n)
 {
@@ -197,7 +240,7 @@ static void vt_feed(tv_vt_t *vt, const char *buf, size_t n)
         if (b == 0x1B)
         {
             size_t j    = i + 2;
-            int    priv = 0, np = 0, v = 0, par[8];
+            int    priv = 0, np = 0, v = 0, par[16];
             if (i + 1 >= n || buf[i + 1] != '[')
             {
                 vt->errors++;
@@ -212,16 +255,16 @@ static void vt_feed(tv_vt_t *vt, const char *buf, size_t n)
             {
                 if (buf[j] == ';')
                 {
-                    par[np < 7 ? np++ : np] = v;
-                    v                       = 0;
+                    par[np < 15 ? np++ : np] = v;
+                    v                        = 0;
                 }
                 else
                 {
                     v = v * 10 + (buf[j] - '0');
                 }
             }
-            par[np < 7 ? np++ : np] = v;
-            char fin                = (j < n) ? buf[j] : 0;
+            par[np < 15 ? np++ : np] = v;
+            char fin                 = (j < n) ? buf[j] : 0;
             if (priv)
             {
                 vt->sync += (par[0] == 2026 && fin == 'h')   ? 1
@@ -231,19 +274,22 @@ static void vt_feed(tv_vt_t *vt, const char *buf, size_t n)
             }
             else if (fin == 'H')
             {
-                vt->r = par[0] - 1;
-                vt->c = (np > 1 ? par[1] : 1) - 1;
+                int r = (par[0] > 0) ? par[0] : 1, c = (np > 1 && par[1] > 0) ? par[1] : 1;
+                vt->r = ((r < vt->rows) ? r : vt->rows) - 1; /* clamped to the screen */
+                vt->c = ((c < vt->cols) ? c : vt->cols) - 1;
                 vt->moves++;
             }
-            else if (fin == 'm' && np == 5 && par[0] == 48 && par[1] == 2)
+            else if (fin == 'C')
             {
-                vt->bg = TV_RGB(par[2], par[3], par[4]);
+                vt->c += (par[0] > 0) ? par[0] : 1;
+                vt->c = (vt->c < vt->cols) ? vt->c : vt->cols - 1; /* stops at the margin */
+                vt->cufs++;
             }
-            else if (fin == 'm' && np == 5 && par[0] == 38 && par[1] == 2)
+            else if (fin == 'm')
             {
-                vt->fg = TV_RGB(par[2], par[3], par[4]);
+                vt_sgr(vt, par, np);
             }
-            else if (!(fin == 'm' && np == 1 && par[0] == 0))
+            else
             {
                 vt->errors++;
             }
@@ -263,17 +309,73 @@ static void vt_feed(tv_vt_t *vt, const char *buf, size_t n)
             g = (b >= 0x20 && b < 0x7F) ? b : 0;
             i++;
         }
-        if (g == 0 || vt->r < 0 || vt->r >= vt->rows || vt->c < 0 || vt->c >= vt->cols)
+        if (g == 0)
         {
             vt->errors++;
             continue;
         }
         vt->grid[vt->r * vt->cols + vt->c] = tv_cell(vt->bg, vt->fg, g);
-        vt->c++;
+        if (vt->dflt)
+        {
+            vt->dflt[vt->r * vt->cols + vt->c] = (uint8_t) (~vt->set & 3);
+        }
+        if (vt->c < vt->cols - 1)
+        {
+            vt->c++; /* no autowrap: the last column is overwritten */
+        }
     }
 }
 
+/**
+ * vt_matches() - Every cell of @cur looks as drawn on @vt (undrawn colours ignored, unknown cells
+ * skipped); a drawn colour must not be the terminal's default.
+ */
+static int vt_matches(tv_emit_t *e, const tv_vt_t *vt, const tv_cell_t *cur)
+{
+    for (int i = 0; i < vt->rows * vt->cols; i++)
+    {
+        if (cur[i] == TV_CELL_UNKNOWN)
+        {
+            continue;
+        }
+        uint32_t bg = tv_emit_code(e, tv_cell_bg(cur[i]));
+        uint32_t fg = tv_emit_code(e, tv_cell_fg(cur[i]));
+        uint8_t  g  = tv_cell_glyph(cur[i]);
+        if (g == TV_G_LOWER_HALF && bg == fg)
+        {
+            g = ' ';
+        }
+        tv_cell_t on = vt->grid[i];
+        if (tv_cell_glyph(on) != g)
+        {
+            return 0;
+        }
+        if (g != TV_G_FULL_BLOCK && tv_cell_bg(on) != (bg & 0xFFFFFF))
+        {
+            return 0;
+        }
+        if (g != ' ' && tv_cell_fg(on) != (fg & 0xFFFFFF))
+        {
+            return 0;
+        }
+        int d = vt->dflt ? vt->dflt[i] : 0;
+        if ((g != TV_G_FULL_BLOCK && (d & 1)) || (g != ' ' && (d & 2)))
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 static uint64_t tv_rng = 0x2545F4914F6CDD1DULL;
+
+static int tv_test_dist2(uint32_t a, uint32_t b)
+{
+    int dr = (int) ((a >> 16) & 255) - (int) ((b >> 16) & 255);
+    int dg = (int) ((a >> 8) & 255) - (int) ((b >> 8) & 255);
+    int db = (int) (a & 255) - (int) (b & 255);
+    return dr * dr + dg * dg + db * db;
+}
 
 static uint32_t rnd(void)
 {
@@ -286,7 +388,9 @@ static uint32_t rnd(void)
 static tv_cell_t random_cell(void)
 {
     static const uint8_t glyphs[] = { TV_G_LOWER_HALF, TV_G_FULL_BLOCK, 'a', 'Z', ' ', '9', '%' };
-    return tv_cell(rnd() & 0xFFFFFF, rnd() & 0xFFFFFF, glyphs[rnd() % sizeof(glyphs)]);
+    uint32_t             bg       = rnd() & 0xFFFFFF;
+    uint32_t             fg       = (rnd() % 4 == 0) ? bg : rnd() & 0xFFFFFF;
+    return tv_cell(bg, fg, glyphs[rnd() % sizeof(glyphs)]);
 }
 
 static void test_flush_roundtrip(void)
@@ -297,62 +401,476 @@ static void test_flush_roundtrip(void)
         C = 137
     };
     static tv_cell_t cur[R * C], prev[R * C], screen[R * C];
+    static uint8_t   dflt[R * C];
+    static tv_emit_t e;
     size_t           cap = tv_framebuf_size(R, C);
     char            *out = malloc(cap);
-    tv_vt_t          vt  = { .rows = R, .cols = C, .grid = screen };
 
+    for (int level = 3; level >= 1; level--)
+    {
+        tv_emit_init(&e, level);
+        tv_vt_t vt = { .rows = R, .cols = C, .grid = screen, .dflt = dflt };
+        for (int i = 0; i < R * C; i++)
+        {
+            cur[i]    = random_cell();
+            prev[i]   = TV_CELL_UNKNOWN;
+            screen[i] = 0;
+        }
+        size_t n = tv_flush_diff(&e, out, cur, prev, R, C);
+        TV_CHECK(n > 0 && n <= cap);
+        vt_feed(&vt, out, n);
+        TV_CHECK(vt.errors == 0 && vt.sync == 0);
+        TV_CHECK(vt_matches(&e, &vt, cur));
+        TV_CHECK(memcmp(prev, cur, sizeof(cur)) == 0);
+
+        /* nothing changed: nothing to write */
+        TV_CHECK(tv_flush_diff(&e, out, cur, prev, R, C) == 0);
+
+        /* scattered changes, same row and across rows: still reproduced exactly */
+        for (int k = 0; k < 200; k++)
+        {
+            cur[rnd() % (R * C)] = random_cell();
+        }
+        n = tv_flush_diff(&e, out, cur, prev, R, C);
+        vt_feed(&vt, out, n);
+        TV_CHECK(vt.errors == 0 && vt_matches(&e, &vt, cur));
+
+        /* one changed cell: one cursor move */
+        cur[7 * C + 100] = tv_cell(0x123456, 0x654321, 'x');
+        vt.moves         = 0;
+        n                = tv_flush_diff(&e, out, cur, prev, R, C);
+        vt_feed(&vt, out, n);
+        TV_CHECK(vt.errors == 0 && vt.moves == 1 && vt_matches(&e, &vt, cur));
+
+        /* white text after the reset that ends a flush: white is sent, not the default colour */
+        cur[3 * C + 5] = tv_cell(0x000000, 0xFFFFFF, 'w');
+        n              = tv_flush_diff(&e, out, cur, prev, R, C);
+        vt_feed(&vt, out, n);
+        cur[3 * C + 6] = tv_cell(0x000000, 0xFFFFFF, 'y');
+        n              = tv_flush_diff(&e, out, cur, prev, R, C);
+        vt_feed(&vt, out, n);
+        TV_CHECK(vt.errors == 0 && vt_matches(&e, &vt, cur));
+
+        /* the last column, with autowrap off: drawn in place */
+        cur[4 * C + C - 1] = tv_cell(0x445566, 0x112233, TV_G_LOWER_HALF);
+        cur[5 * C]         = tv_cell(0x665544, 0x332211, TV_G_LOWER_HALF);
+        n                  = tv_flush_diff(&e, out, cur, prev, R, C);
+        vt_feed(&vt, out, n);
+        TV_CHECK(vt.errors == 0 && vt_matches(&e, &vt, cur));
+    }
+
+    /* a different colour that looks the same at this depth: nothing to send */
+    tv_emit_init(&e, 2);
     for (int i = 0; i < R * C; i++)
     {
-        cur[i]    = random_cell();
-        prev[i]   = TV_CELL_UNKNOWN;
-        screen[i] = 0;
+        cur[i] = prev[i] = tv_cell(TV_RGB(0, 0, 200), TV_RGB(0, 0, 200), ' ');
     }
-    size_t n = tv_flush_diff(out, cur, prev, R, C);
-    TV_CHECK(n > 0 && n <= cap);
-    vt_feed(&vt, out, n);
-    TV_CHECK(vt.errors == 0 && vt.sync == 0);
-    TV_CHECK(memcmp(screen, cur, sizeof(cur)) == 0);
-    TV_CHECK(memcmp(prev, cur, sizeof(cur)) == 0);
+    cur[5] = tv_cell(TV_RGB(0, 0, 201), TV_RGB(255, 0, 0), ' '); /* same blue, fg not drawn */
+    TV_CHECK(tv_flush_diff(&e, out, cur, prev, R, C) == 0);
 
-    /* nothing changed: nothing to write */
-    TV_CHECK(tv_flush_diff(out, cur, prev, R, C) == 0);
-
-    /* one changed cell: one cursor move */
-    cur[7 * C + 100] = tv_cell(0x123456, 0x654321, 'x');
-    vt.moves         = 0;
-    n                = tv_flush_diff(out, cur, prev, R, C);
+    /* short gaps whose cells need no colour change are re-sent instead of a cursor move */
+    tv_emit_init(&e, 3);
+    tv_vt_t vt = { .rows = R, .cols = C, .grid = screen };
+    for (int i = 0; i < R * C; i++)
+    {
+        cur[i] = prev[i] = screen[i] = tv_cell(0x101010, 0x202020, TV_G_LOWER_HALF);
+    }
+    cur[10]  = tv_cell(0x101010, 0x202020, 'a');
+    cur[12]  = tv_cell(0x101010, 0x202020, 'b');
+    cur[40]  = tv_cell(0x303030, 0x202020, 'c');
+    size_t n = tv_flush_diff(&e, out, cur, prev, R, C);
     vt_feed(&vt, out, n);
-    TV_CHECK(vt.errors == 0 && vt.moves == 1);
-    TV_CHECK(memcmp(screen, cur, sizeof(cur)) == 0);
+    TV_CHECK(vt.errors == 0 && vt_matches(&e, &vt, cur) && vt.moves == 1 && vt.cufs == 1);
+
+    /* a 2-cell gap: re-sent when both cells are free to draw, skipped when the second is not */
+    for (int pass = 0; pass < 2; pass++)
+    {
+        cur[C + 12] = prev[C + 12] = screen[C + 12] =
+            tv_cell(pass ? 0x505050 : 0x101010, 0x202020, TV_G_LOWER_HALF);
+        cur[C + 10] = tv_cell(0x101010, 0x202020, 'd' + pass);
+        cur[C + 13] = tv_cell(0x101010, 0x202020, 'f' + pass);
+        vt.moves = vt.cufs = 0;
+        n                  = tv_flush_diff(&e, out, cur, prev, R, C);
+        vt_feed(&vt, out, n);
+        TV_CHECK(vt.errors == 0 && vt_matches(&e, &vt, cur) && vt.moves == 1);
+        TV_CHECK(vt.cufs == pass);
+    }
+    free(out);
+}
+
+/** A gap re-sent by the interface pass leaves @prev equal to the screen, even under a budget. */
+static void test_flush_gap_budget(void)
+{
+    enum
+    {
+        R = 2,
+        C = 4
+    };
+    static tv_cell_t cur[R * C], prev[R * C], screen[R * C];
+    static tv_emit_t e;
+    char            *out = malloc(tv_framebuf_size(R, C));
+    tv_emit_init(&e, 3);
+    tv_vt_t        vt  = { .rows = R, .cols = C, .grid = screen };
+    const uint32_t red = 0xFF0000, green = 0x00FF00, blue = 0x0000FF;
+    for (int c = 0; c < C; c++)
+    {
+        cur[c]  = tv_cell(0x111111 * (uint32_t) (c + 1), 0, TV_G_LOWER_HALF);
+        prev[c] = prev[C + c] = TV_CELL_UNKNOWN;
+    }
+    cur[C + 0] = tv_cell(red, red, ' ') | TV_ATTR_CHROME;
+    cur[C + 1] = tv_cell(green, green, ' ');
+    cur[C + 2] = tv_cell(red, red, ' ') | TV_ATTR_CHROME;
+    cur[C + 3] = tv_cell(green, green, ' ');
+    vt_feed(&vt, out, tv_flush_diff(&e, out, cur, prev, R, C));
+
+    /* row 0 uses up the budget; in row 1 the image cell between two interface cells changes */
+    for (int c = 0; c < C; c++)
+    {
+        cur[c] = tv_cell(0x0F0F0F * (uint32_t) (c + 3), 0x123456, TV_G_LOWER_HALF);
+    }
+    cur[C + 0] = tv_cell(blue, blue, ' ') | TV_ATTR_CHROME;
+    cur[C + 1] = tv_cell(blue, blue, ' ');
+    cur[C + 2] = tv_cell(blue, blue, ' ') | TV_ATTR_CHROME;
+    e.budget   = 16;
+    vt_feed(&vt, out, tv_flush_diff(&e, out, cur, prev, R, C));
+    TV_CHECK(e.pending && vt.errors == 0 && vt_matches(&e, &vt, prev));
+
+    /* ... and changes back before the image pass reaches it */
+    cur[C + 1] = tv_cell(green, green, ' ');
+    e.budget   = 0;
+    vt_feed(&vt, out, tv_flush_diff(&e, out, cur, prev, R, C));
+    TV_CHECK(!e.pending && vt.errors == 0 && vt_matches(&e, &vt, cur));
+    free(out);
+}
+
+/** Random interface/image changes, reverts, forgotten cells and budgets: the screen is @prev. */
+static void test_flush_fuzz(void)
+{
+    enum
+    {
+        R = 12,
+        C = 40
+    };
+    static tv_cell_t      cur[R * C], prev[R * C], screen[R * C];
+    static uint8_t        dflt[R * C];
+    static tv_emit_t      e;
+    static const uint32_t pal[4]    = { 0x000000, 0xFF0000, 0x00FF00, 0x0000FF };
+    static const uint8_t  glyphs[4] = { TV_G_LOWER_HALF, TV_G_FULL_BLOCK, ' ', 'x' };
+    char                 *out       = malloc(tv_framebuf_size(R, C));
+    for (int level = 3; level >= 1; level--)
+    {
+        tv_emit_init(&e, level);
+        tv_vt_t vt = { .rows = R, .cols = C, .grid = screen, .dflt = dflt };
+        for (int i = 0; i < R * C; i++)
+        {
+            cur[i]  = tv_cell(pal[rnd() % 4], pal[rnd() % 4], glyphs[rnd() % 4]);
+            prev[i] = TV_CELL_UNKNOWN;
+        }
+        int ok = 1;
+        for (int it = 0; it < 2000; it++)
+        {
+            for (int k = rnd() % 24; k > 0; k--)
+            {
+                size_t i = rnd() % (R * C);
+                if (rnd() % 3 == 0 && prev[i] != TV_CELL_UNKNOWN)
+                {
+                    cur[i] = prev[i]; /* back to what was sent */
+                    continue;
+                }
+                cur[i] = tv_cell(pal[rnd() % 4], pal[rnd() % 4], glyphs[rnd() % 4]) |
+                         ((rnd() % 3 == 0) ? TV_ATTR_CHROME : 0);
+            }
+            if (rnd() % 16 == 0)
+            {
+                size_t i  = rnd() % (R * C);
+                prev[i]   = TV_CELL_UNKNOWN; /* the terminal lost it */
+                screen[i] = tv_cell(0x123456, 0x654321, '?');
+            }
+            e.budget = (rnd() % 3 == 0) ? 0 : 40 + rnd() % 400;
+            size_t n = tv_flush_diff(&e, out, cur, prev, R, C);
+            vt_feed(&vt, out, n);
+            ok &= vt.errors == 0 && vt.sync == 0 && vt_matches(&e, &vt, prev);
+            ok &= e.pending || memcmp(prev, cur, sizeof(cur)) == 0;
+        }
+        e.budget = 0;
+        vt_feed(&vt, out, tv_flush_diff(&e, out, cur, prev, R, C));
+        TV_CHECK(ok && vt.errors == 0 && vt_matches(&e, &vt, cur));
+    }
+    free(out);
+}
+
+/** The 256- and 16-colour codes are the nearest colours of xterm's palette (brute force). */
+static void test_quantiser(void)
+{
+    static const uint32_t pal16[16] = {
+        0x000000, 0xCD0000, 0x00CD00, 0xCDCD00, 0x0000EE, 0xCD00CD, 0x00CDCD, 0xE5E5E5,
+        0x7F7F7F, 0xFF0000, 0x00FF00, 0xFFFF00, 0x5C5CFF, 0xFF00FF, 0x00FFFF, 0xFFFFFF,
+    };
+    static const int lv[6] = { 0, 95, 135, 175, 215, 255 };
+    uint32_t         pal256[256];
+    for (int k = 16; k < 232; k++)
+    {
+        pal256[k] = TV_RGB(lv[(k - 16) / 36], lv[(k - 16) / 6 % 6], lv[(k - 16) % 6]);
+    }
+    for (int k = 232; k < 256; k++)
+    {
+        pal256[k] = TV_RGB(8 + 10 * (k - 232), 8 + 10 * (k - 232), 8 + 10 * (k - 232));
+    }
+    static tv_emit_t e2, e1;
+    tv_emit_init(&e2, 2);
+    tv_emit_init(&e1, 1);
+    TV_CHECK(tv_emit_code(&e2, 0xFFFFFF) == 231 && tv_emit_code(&e2, 0x080808) == 232);
+    TV_CHECK(tv_emit_code(&e2, 0xEEEEEE) == 255 && tv_emit_code(&e2, 0x000000) == 16);
+    TV_CHECK(tv_emit_code(&e1, 0xFFFFFF) == 15 && tv_emit_code(&e1, 0xCD0000) == 1);
+
+    /* all greys and more random colours than the memo holds, twice: collisions and hits */
+    enum
+    {
+        N = 256 + 4 * TV_QCACHE
+    };
+    static uint32_t rgb[N];
+    for (int i = 0; i < N; i++)
+    {
+        rgb[i] = (i < 256) ? (uint32_t) i * 0x010101u : rnd() & 0xFFFFFF;
+    }
+    int bad = 0;
+    for (int pass = 0; pass < 2; pass++)
+    {
+        for (int i = 0; i < N; i++)
+        {
+            int best2 = INT32_MAX, best1 = INT32_MAX;
+            for (int k = 16; k < 256; k++)
+            {
+                int d = tv_test_dist2(rgb[i], pal256[k]);
+                best2 = (d < best2) ? d : best2;
+            }
+            for (int k = 0; k < 16; k++)
+            {
+                int d = tv_test_dist2(rgb[i], pal16[k]);
+                best1 = (d < best1) ? d : best1;
+            }
+            uint32_t c2 = tv_emit_code(&e2, rgb[i]), c1 = tv_emit_code(&e1, rgb[i]);
+            bad += (c2 < 16 || c2 > 255 || tv_test_dist2(rgb[i], pal256[c2]) != best2);
+            bad += (c1 > 15 || tv_test_dist2(rgb[i], pal16[c1]) != best1);
+        }
+    }
+    TV_CHECK(bad == 0);
+}
+
+/** Colour depth from the environment: COLORTERM, then 24-bit and xterm-like TERM names. */
+static void test_color_level(void)
+{
+    static const struct
+    {
+        const char *colorterm, *term;
+        int         level;
+    } cases[] = {
+        { "truecolor", "xterm", 3 },
+        { "24bit", NULL, 3 },
+        { NULL, "xterm-256color", 2 },
+        { NULL, "xterm-kitty", 3 },
+        { NULL, "foot", 3 },
+        { NULL, "xterm-direct", 3 },
+        { NULL, "tmux-256color", 2 },
+        { NULL, "screen", 2 },
+        { NULL, "xterm", 2 },
+        { NULL, "rxvt-unicode", 1 },
+        { NULL, "rxvt-unicode-256color", 2 },
+        { NULL, "linux", 1 },
+        { NULL, "vt100", 1 },
+        { NULL, NULL, 1 },
+        { "yes", "xterm-256color", 2 },
+        { NULL, "dumb", 1 },
+        { NULL, "xterm-16color", 1 },
+        { NULL, "rxvt-88color", 1 },
+        { NULL, "xterm-mono", 1 },
+        { NULL, "iTerm2.app", 2 },
+        { NULL, "st", 2 },
+        { NULL, "mlterm", 2 },
+        { NULL, "sun", 1 },
+    };
+    char *saved_ct = getenv("COLORTERM") ? strdup(getenv("COLORTERM")) : NULL;
+    char *saved_t  = getenv("TERM") ? strdup(getenv("TERM")) : NULL;
+    for (size_t k = 0; k < sizeof(cases) / sizeof(cases[0]); k++)
+    {
+        cases[k].colorterm ? setenv("COLORTERM", cases[k].colorterm, 1) : unsetenv("COLORTERM");
+        cases[k].term ? setenv("TERM", cases[k].term, 1) : unsetenv("TERM");
+        int got = tv_term_color_level();
+        if (got != cases[k].level)
+        {
+            fprintf(stderr, "color level %s/%s: %d\n",
+                    cases[k].colorterm ? cases[k].colorterm : "-",
+                    cases[k].term ? cases[k].term : "-", got);
+        }
+        TV_CHECK(got == cases[k].level);
+    }
+    saved_ct ? setenv("COLORTERM", saved_ct, 1) : unsetenv("COLORTERM");
+    saved_t ? setenv("TERM", saved_t, 1) : unsetenv("TERM");
+    free(saved_ct);
+    free(saved_t);
+}
+
+static void test_flush_cost(void)
+{
+    enum
+    {
+        R = 40,
+        C = 120
+    };
+    static tv_cell_t cur[R * C], prev[R * C];
+    static tv_emit_t e;
+    char            *out = malloc(tv_framebuf_size(R, C));
+
+    /* noisy image, every cell new: combined colour escape, about 37 bytes per cell or less */
+    tv_emit_init(&e, 3);
+    for (int i = 0; i < R * C; i++)
+    {
+        cur[i]  = tv_cell(rnd() & 0xFFFFFF, rnd() & 0xFFFFFF, TV_G_LOWER_HALF);
+        prev[i] = TV_CELL_UNKNOWN;
+    }
+    double per_cell = (double) tv_flush_diff(&e, out, cur, prev, R, C) / (R * C);
+    TV_CHECK(per_cell <= 37.5);
+
+    /* the same at 256 colours: about 23 bytes per cell */
+    tv_emit_init(&e, 2);
+    for (int i = 0; i < R * C; i++)
+    {
+        prev[i] = TV_CELL_UNKNOWN;
+    }
+    TV_CHECK((double) tv_flush_diff(&e, out, cur, prev, R, C) / (R * C) < 0.7 * per_cell);
+
+    /* flat regions (both halves alike) cost a space and the occasional background change */
+    tv_emit_init(&e, 3);
+    for (int i = 0; i < R * C; i++)
+    {
+        uint32_t v = (i / 8) * 0x010101u & 0xFFFFFF;
+        cur[i]     = tv_cell(v, v, TV_G_LOWER_HALF);
+        prev[i]    = TV_CELL_UNKNOWN;
+    }
+    TV_CHECK((double) tv_flush_diff(&e, out, cur, prev, R, C) / (R * C) < 4.0);
+    free(out);
+}
+
+/** A byte budget: interface first, image over several calls, no row starved. */
+static void test_flush_budget(void)
+{
+    enum
+    {
+        R = 30,
+        C = 100
+    };
+    static tv_cell_t cur[R * C], prev[R * C], screen[R * C];
+    static tv_emit_t e;
+    char            *out = malloc(tv_framebuf_size(R, C));
+    tv_emit_init(&e, 3);
+    tv_vt_t vt = { .rows = R, .cols = C, .grid = screen };
+    for (int i = 0; i < R * C; i++)
+    {
+        cur[i]  = tv_cell(rnd() & 0xFFFFFF, rnd() & 0xFFFFFF, TV_G_LOWER_HALF);
+        prev[i] = TV_CELL_UNKNOWN;
+    }
+    for (int c = 0; c < C; c++)
+    {
+        cur[(R - 1) * C + c] =
+            tv_cell(0x141620, 0xC8CDD6, (uint8_t) ('a' + c % 26)) | TV_ATTR_CHROME;
+    }
+    e.budget = 4000;
+    size_t n = tv_flush_diff(&e, out, cur, prev, R, C);
+    vt_feed(&vt, out, n);
+    TV_CHECK(e.pending && n < 4000 + 6000);
+    int chrome_ok = 1;
+    for (int c = 0; c < C; c++)
+    {
+        chrome_ok &= (tv_cell_glyph(screen[(R - 1) * C + c]) == 'a' + c % 26);
+    }
+    TV_CHECK(chrome_ok); /* the whole status row went out with the first budgeted flush */
+
+    int calls = 1;
+    while (e.pending && calls < 100)
+    {
+        n = tv_flush_diff(&e, out, cur, prev, R, C);
+        vt_feed(&vt, out, n);
+        calls++;
+    }
+    TV_CHECK(!e.pending && calls > 5 && vt.errors == 0 && vt_matches(&e, &vt, cur));
+
+    /* the top rows change before every call: the bottom rows still get their turn */
+    for (int i = 0; i < R * C; i++)
+    {
+        cur[i] = tv_cell(rnd() & 0xFFFFFF, rnd() & 0xFFFFFF, TV_G_LOWER_HALF);
+    }
+    for (calls = 0; calls < 200; calls++)
+    {
+        for (int i = 0; i < 3 * C; i++)
+        {
+            cur[i] = tv_cell(rnd() & 0xFFFFFF, rnd() & 0xFFFFFF, TV_G_LOWER_HALF);
+        }
+        n = tv_flush_diff(&e, out, cur, prev, R, C);
+        vt_feed(&vt, out, n);
+    }
+    int bottom_ok = 1;
+    for (int i = 3 * C; i < R * C; i++)
+    {
+        bottom_ok &= (prev[i] == cur[i]);
+    }
+    TV_CHECK(bottom_ok);
+
+    /* a popup closes while the whole image changes: it is gone after the next budgeted flush */
+    e.budget = 0;
+    for (int i = 0; i < R * C; i++)
+    {
+        int in = (i / C >= 5 && i / C < 10 && i % C >= 10 && i % C < 50);
+        cur[i] = in ? (tv_cell(0x1E2028, 0xC8CDD6, 'p') | TV_ATTR_CHROME) : cur[i];
+    }
+    vt_feed(&vt, out, tv_flush_diff(&e, out, cur, prev, R, C));
+    for (int i = 0; i < R * C; i++)
+    {
+        cur[i] = tv_cell(rnd() & 0xFFFFFF, rnd() & 0xFFFFFF, TV_G_LOWER_HALF);
+    }
+    e.budget = 4000;
+    vt_feed(&vt, out, tv_flush_diff(&e, out, cur, prev, R, C));
+    int closed = 1;
+    for (int i = 0; i < R * C; i++)
+    {
+        int in = (i / C >= 5 && i / C < 10 && i % C >= 10 && i % C < 50);
+        closed &= !in || prev[i] == cur[i];
+    }
+    TV_CHECK(e.pending && closed && vt.errors == 0 && vt_matches(&e, &vt, prev));
     free(out);
 }
 
 static void test_flush_worst_case(void)
 {
-    const int  rows = 120, cols = 1500;
-    size_t     cells = (size_t) rows * cols;
-    tv_cell_t *cur   = malloc(cells * sizeof(tv_cell_t));
-    tv_cell_t *prev  = malloc(cells * sizeof(tv_cell_t));
-    size_t     cap   = tv_framebuf_size(rows, cols);
-    char      *out   = malloc(cap);
+    const int        rows = 120, cols = 1500;
+    size_t           cells = (size_t) rows * cols;
+    tv_cell_t       *cur   = malloc(cells * sizeof(tv_cell_t));
+    tv_cell_t       *prev  = malloc(cells * sizeof(tv_cell_t));
+    size_t           cap   = tv_framebuf_size(rows, cols);
+    char            *out   = malloc(cap);
+    static tv_emit_t e;
 
-    /* every cell new, all colours distinct and 3-digit */
-    for (size_t i = 0; i < cells; i++)
+    for (int level = 3; level >= 1; level--)
     {
-        cur[i] =
-            tv_cell(0xC8C8C8 + (uint32_t) (i & 1), 0xFAFAFA - (uint32_t) (i & 1), TV_G_FULL_BLOCK);
-        prev[i] = TV_CELL_UNKNOWN;
-    }
-    size_t n = tv_flush_diff(out, cur, prev, rows, cols);
-    TV_CHECK(n > 0 && n <= cap);
+        tv_emit_init(&e, level);
+        /* every cell new, both colours changing from cell to cell */
+        for (size_t i = 0; i < cells; i++)
+        {
+            cur[i]  = tv_cell(0xC8C8C8 + (uint32_t) (i & 1), 0xFAFAFA - (uint32_t) (i & 1),
+                              TV_G_LOWER_HALF);
+            prev[i] = TV_CELL_UNKNOWN;
+        }
+        size_t n = tv_flush_diff(&e, out, cur, prev, rows, cols);
+        TV_CHECK(n > 0 && n <= cap);
 
-    /* checkerboard of changes: a cursor move before every changed cell */
-    for (size_t i = 0; i < cells; i += 2)
-    {
-        cur[i] = tv_cell(0xFFFFFF - (uint32_t) i % 7, 0xC8C8C8 + (uint32_t) i % 5, TV_G_LOWER_HALF);
+        /* checkerboard of changes: a cursor move before every changed cell */
+        for (size_t i = 0; i < cells; i += 2)
+        {
+            cur[i] =
+                tv_cell(0xFFFFFF - (uint32_t) i % 7, 0xC8C8C8 + (uint32_t) i % 5, TV_G_LOWER_HALF);
+        }
+        n = tv_flush_diff(&e, out, cur, prev, rows, cols);
+        TV_CHECK(n > 0 && n <= cap);
     }
-    n = tv_flush_diff(out, cur, prev, rows, cols);
-    TV_CHECK(n > 0 && n <= cap);
     free(cur);
     free(prev);
     free(out);
@@ -1370,7 +1888,7 @@ static void test_render(void)
     termview_options_t opt;
     termview_options_init(&opt);
     tv_image_range(&im, &opt, 1);
-    tv_image_render(&im, lut);
+    tv_image_render(&im, lut, 0);
     double    scale = (TV_LUT_N - 1) / 34.0;
     tv_cell_t c00   = im.cells[0];
     TV_CHECK(tv_cell_glyph(c00) == TV_G_LOWER_HALF);
@@ -1393,9 +1911,129 @@ static void test_render(void)
     static float big[256];
     tv_image_sample(&im, big, _DATATYPE_FLOAT);
     tv_image_range(&im, &opt, 1);
-    tv_image_render(&im, lut);
+    tv_image_render(&im, lut, 0);
     TV_CHECK(tv_cell_glyph(im.cells[0]) == ' ' && tv_cell_bg(im.cells[0]) == 0);
     tv_image_free(&im);
+}
+
+/** cells_close() - Both halves of every cell within @d2 (squared RGB distance) of @ref. */
+static int cells_close(const tv_cell_t *a, const tv_cell_t *ref, int n, int d2)
+{
+    for (int i = 0; i < n; i++)
+    {
+        if (tv_test_dist2(tv_cell_bg(a[i]), tv_cell_bg(ref[i])) > d2 ||
+            tv_test_dist2(tv_cell_fg(a[i]), tv_cell_fg(ref[i])) > d2)
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/** lb_frame() - Sample @data into both images and render @lb held, @ex exact. */
+static void lb_frame(tv_image_t               *lb,
+                     tv_image_t               *ex,
+                     const float              *data,
+                     const tv_rgb_t           *lut,
+                     const termview_options_t *opt)
+{
+    tv_image_t *im[2] = { lb, ex };
+    for (int k = 0; k < 2; k++)
+    {
+        tv_image_sample(im[k], data, _DATATYPE_FLOAT);
+        tv_image_range(im[k], opt, 1);
+        tv_image_render(im[k], lut, k == 0);
+    }
+}
+
+/** Low-bandwidth rendering: held colours stay close, rows converge in a cycle, big changes show. */
+static void test_render_lowbw(void)
+{
+    enum
+    {
+        W = 32,
+        H = 40
+    };
+    static tv_rgb_t lut[TV_LUT_N + 1];
+    static float    ramp[W * H], data[W * H];
+    for (int k = 0; k < W * H; k++)
+    {
+        ramp[k] = (float) k * 1000.0f / (W * H);
+    }
+    termview_options_t opt;
+    termview_options_init(&opt);
+    opt.range_locked = true;
+    opt.manual_min   = 0.0;
+    opt.manual_max   = 1000.0;
+    tv_layout_t l;
+    tv_layout_compute(&l, H / 2 + TV_INFO_ROWS, W + TV_BAR_WIDTH + 1);
+    tv_view_t  v = { .zoom = 1.0, .cx = 0.5, .cy = 0.5 };
+    tv_xform_t x;
+    tv_xform_compute(&x, &l, &v, W, H, false, false);
+
+    static const termview_scale_t scales[] = { SCALE_LINEAR, SCALE_LOG_EXTREME, SCALE_ASINH };
+    for (size_t sc = 0; sc < sizeof(scales) / sizeof(scales[0]); sc++)
+    {
+        tv_lut_build(lut, COLORMAP_GREYSCALE, scales[sc]);
+        tv_image_t lb, ex;
+        memset(&lb, 0, sizeof(lb));
+        memset(&ex, 0, sizeof(ex));
+        TV_CHECK(tv_image_geom(&lb, &l, &x, W, H) == 0 && tv_image_geom(&ex, &l, &x, W, H) == 0);
+        int    n  = lb.ncols * (lb.nrows / 2);
+        size_t sz = (size_t) n * sizeof(tv_cell_t);
+
+        /* the first render on new tables is exact */
+        lb_frame(&lb, &ex, ramp, lut, &opt);
+        TV_CHECK(memcmp(lb.cells, ex.cells, sz) == 0 && lb.held == 0);
+
+        /* sensor noise: colours are held, never further than the hold limit from exact */
+        int close = 1, held = 0;
+        for (int f = 0; f < 12; f++)
+        {
+            for (int k = 0; k < W * H; k++)
+            {
+                data[k] = ramp[k] + (float) ((int) (rnd() % 17) - 8);
+            }
+            lb_frame(&lb, &ex, data, lut, &opt);
+            close &= cells_close(lb.cells, ex.cells, n, TV_LOWBW_DIST2);
+            held += (lb.held > 0);
+        }
+        TV_CHECK(close && held == 12);
+
+        /* the scene settles: each row is redrawn exactly within one cycle, then nothing is held */
+        lb_frame(&lb, &ex, ramp, lut, &opt);
+        TV_CHECK(lb.held > 0);
+        for (int k = 1; k < TV_LOWBW_CYCLE; k++)
+        {
+            tv_image_render(&lb, lut, 1);
+        }
+        TV_CHECK(memcmp(lb.cells, ex.cells, sz) == 0 && lb.held == 0);
+
+        /* new tables: exact again whatever was on screen */
+        lb_frame(&lb, &ex, data, lut, &opt);
+        TV_CHECK(tv_image_geom(&lb, &l, &x, W, H) == 0);
+        lb_frame(&lb, &ex, ramp, lut, &opt);
+        TV_CHECK(memcmp(lb.cells, ex.cells, sz) == 0);
+        tv_image_free(&lb);
+        tv_image_free(&ex);
+    }
+
+    /* linear: a change well beyond the hold limit shows on every row at once */
+    tv_lut_build(lut, COLORMAP_GREYSCALE, SCALE_LINEAR);
+    tv_image_t lb, ex;
+    memset(&lb, 0, sizeof(lb));
+    memset(&ex, 0, sizeof(ex));
+    TV_CHECK(tv_image_geom(&lb, &l, &x, W, H) == 0 && tv_image_geom(&ex, &l, &x, W, H) == 0);
+    lb_frame(&lb, &ex, ramp, lut, &opt);
+    for (int k = 0; k < W * H; k++)
+    {
+        data[k] = fmodf(ramp[k] + 500.0f, 1000.0f);
+    }
+    lb_frame(&lb, &ex, data, lut, &opt);
+    TV_CHECK(memcmp(lb.cells, ex.cells, (size_t) lb.ncols * (lb.nrows / 2) * sizeof(tv_cell_t)) ==
+             0);
+    tv_image_free(&lb);
+    tv_image_free(&ex);
 }
 
 static int cmp_float(const void *a, const void *b)
@@ -1567,6 +2205,12 @@ int main(void)
     test_names_unique();
     test_lut();
     test_flush_roundtrip();
+    test_flush_gap_budget();
+    test_flush_fuzz();
+    test_quantiser();
+    test_color_level();
+    test_flush_cost();
+    test_flush_budget();
     test_flush_worst_case();
     test_input_vectors();
     test_input_timing();
@@ -1581,6 +2225,7 @@ int main(void)
     test_range_smoothing();
     test_tables();
     test_render();
+    test_render_lowbw();
     if (tv_failures > 0)
     {
         fprintf(stderr, "%d check(s) failed\n", tv_failures);

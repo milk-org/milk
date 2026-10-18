@@ -30,24 +30,59 @@ LEAVE = b"\x1b[?1049l"
 
 
 class Screen:
-    """Minimal VT model of what milk-termview emits: CUP, CUF, ED, SGR, private modes, text."""
+    """Minimal VT model of what milk-termview emits: CUP, CUF, ED, SGR, private modes, text.
+    With @colour, SGR colours are kept per cell too (slower)."""
 
-    def __init__(self, rows, cols):
+    def __init__(self, rows, cols, colour=False):
+        self.colour = colour
+        self.bg = self.fg = None
         self.rows, self.cols = rows, cols
-        self.grid = [[" "] * cols for _ in range(rows)]
-        self.r = self.c = 0
+        self.resize(rows, cols)
         self.pending = b""
 
     def resize(self, rows, cols):
         self.rows, self.cols = rows, cols
         self.grid = [[" "] * cols for _ in range(rows)]
+        self.attr = [[(None, None)] * cols for _ in range(rows)]
         self.r = self.c = 0
 
     def _put(self, ch):
         if 0 <= self.r < self.rows and 0 <= self.c < self.cols:
             self.grid[self.r][self.c] = ch
+            if self.colour:
+                self.attr[self.r][self.c] = (self.bg, self.fg)
         if self.c < self.cols - 1:
             self.c += 1
+
+    def _sgr(self, nums):
+        k = 0
+        while k < len(nums):
+            p = nums[k]
+            if p == 0:
+                self.bg = self.fg = None
+            elif p in (38, 48) and k + 1 < len(nums):
+                n = 5 if nums[k + 1] == 2 else 3
+                val = tuple(nums[k + 2 : k + n])
+                if p == 48:
+                    self.bg = val
+                else:
+                    self.fg = val
+                k += n - 1
+            elif 40 <= p <= 47 or 100 <= p <= 107:
+                self.bg = (p,)
+            elif 30 <= p <= 37 or 90 <= p <= 97:
+                self.fg = (p,)
+            k += 1
+
+    def looks(self, rows):
+        """What rows @rows look like: glyph plus the colours it shows."""
+        out = []
+        for r in rows:
+            for ch, (bg, fg) in zip(self.grid[r], self.attr[r]):
+                out.append(
+                    (ch, None if ch == "\u2588" else bg, None if ch == " " else fg)
+                )
+        return out
 
     def feed(self, data):
         data = self.pending + data
@@ -98,6 +133,8 @@ class Screen:
             self.c = min(self.cols - 1, self.c + (nums[0] if nums and nums[0] else 1))
         elif final == "J" and nums and nums[0] == 2:
             self.resize(self.rows, self.cols)
+        elif final == "m" and self.colour:
+            self._sgr(nums or [0])
 
     def text(self):
         return "\n".join("".join(row) for row in self.grid)
@@ -106,7 +143,9 @@ class Screen:
 class Viewer:
     """milk-termview running on its own pty, with the slave side kept for termios checks."""
 
-    def __init__(self, exe, args, env, rows=40, cols=120, block_hup=False):
+    def __init__(
+        self, exe, args, env, rows=40, cols=120, block_hup=False, colour=False
+    ):
         self.master, self.slave = os.openpty()
         fcntl.ioctl(
             self.master, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0)
@@ -127,7 +166,7 @@ class Viewer:
         self.pid = pid
         os.set_blocking(self.master, False)
         self.out = bytearray()
-        self.screen = Screen(rows, cols)
+        self.screen = Screen(rows, cols, colour)
         self.status = None
         self.rusage = None
         self.master_open = True
@@ -304,8 +343,10 @@ def check(cond, msg):
         raise AssertionError(msg)
 
 
-def start(cfg, shm, stream, *opts, rows=40, cols=120, block_hup=False):
-    v = Viewer(cfg.termview, list(opts) + [stream], shm.env, rows, cols, block_hup)
+def start(cfg, shm, stream, *opts, rows=40, cols=120, block_hup=False, colour=False):
+    v = Viewer(
+        cfg.termview, list(opts) + [stream], shm.env, rows, cols, block_hup, colour
+    )
     check(
         v.wait_for(ENTER, 3.0), f"viewer did not start (output {bytes(v.out[:200])!r})"
     )
@@ -354,6 +395,7 @@ def test_bad_options(cfg):
         ["--min", "1"],
         ["--min", "nan", "--max", "1"],
         ["--min", "2", "--max", "1"],
+        ["--colors", "88"],
     ):
         r = subprocess.run(
             [cfg.termview] + opts + ["x"], capture_output=True, text=True, timeout=10
@@ -740,6 +782,107 @@ def test_frame_between_polls_is_shown(cfg):
             v.close()
 
 
+def lowbw_diff(v):
+    """Cells of the image area that differ from an exact (Ctrl-L) repaint."""
+    rows = range(v.screen.rows - 4)  # the image and colorbar; not the status rows
+    held = v.screen.looks(rows)
+    v.send(b"\x0c")
+    v.pump(0.5)
+    return sum(a != b for a, b in zip(held, v.screen.looks(rows)))
+
+
+def test_lowbw_converges_when_stream_stops(cfg):
+    """Low-bandwidth mode holds small changes; once the stream stops (at 50, 3 or 0.5 Hz) or
+    keeps posting the same frame (at 50 or 2 Hz), the image becomes exact."""
+    for rate, repost, run, wait in (
+        ("50", False, 1.5, 1.0),
+        ("3", False, 1.5, 2.0),
+        ("0.5", False, 6.0, 4.0),  # 6 s: the frame period must be known
+        ("50", True, 1.5, 1.0),
+        ("2", True, 1.5, 1.5),
+    ):
+        with ShmDir(cfg.mkstream) as shm:
+            s = shm.stream("jitter", "-s", "128x128", "-p", "jitter", "-r", rate)
+            gen = shm.procs[-1]
+            v = start(cfg, shm, s, "--min", "0", "--max", "1010", colour=True)
+            try:
+                v.send(b"b")
+                check(v.screen_has("b:LOWBW"), "low-bandwidth mode did not turn on")
+                v.pump(run)
+                if (
+                    repost
+                ):  # the same frame again and again: cnt0 moves, the data does not
+                    shm.stream("jitter", "-u", "-p", "repost", "-r", rate)
+                    v.pump(0.2)
+                gen.terminate()
+                gen.wait(3)
+                v.pump(wait)
+                diff = lowbw_diff(v)
+                what = f"{rate} Hz " + ("reposts" if repost else "stream stops")
+                check(
+                    diff == 0,
+                    f"{diff} cells differ from an exact repaint {wait} s after {what}",
+                )
+                quit_clean(v)
+            finally:
+                v.close()
+
+
+def test_lowbw_keeps_the_range(cfg):
+    """Redrawing held rows does not move the smoothed auto range: not between frames, and not
+    when the stream stops."""
+    import re
+
+    def ranges(v, dt):
+        seen = set()
+        end = time.monotonic() + dt
+        while time.monotonic() < end:
+            v.pump(0.05)
+            m = re.search(r"Val: \[[^]]*\]", v.screen.text())
+            if m:
+                seen.add(m.group(0))
+        return seen
+
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("jitter", "-s", "8x8", "-p", "jitter", "-r", "5")
+        gen = shm.procs[-1]
+        v = start(cfg, shm, s)
+        try:
+            v.send(b"b")
+            v.pump(1.5)
+            seen = ranges(v, 3.0)
+            check(len(seen) == 1, f"the range moved in 3 s: {sorted(seen)[:4]}")
+            gen.terminate()
+            gen.wait(3)
+            after = ranges(v, 1.5)
+            check(
+                after == seen,
+                f"the range moved when the stream stopped: {sorted(after)[:4]}",
+            )
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_colors_option(cfg):
+    """--colors picks the depth whatever the environment says."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("ramp", "-s", "128x96")
+        for depth, want, avoid in (
+            ("16", b"m", (b"8;5;", b"8;2;")),
+            ("256", b"8;5;", (b"8;2;",)),
+            ("truecolor", b"8;2;", (b"8;5;",)),
+        ):
+            v = start(cfg, shm, s, "--colors", depth)
+            try:
+                v.pump(0.5)
+                bad = [a for a in avoid if a in v.out]
+                check(want in v.out and not bad, f"--colors {depth}: codes {bad} sent")
+                quit_clean(v)
+            finally:
+                v.close()
+
+
 TESTS = [
     test_help_oneline,
     test_missing_stream,
@@ -761,6 +904,9 @@ TESTS = [
     test_range_settles_after_transient,
     test_stale_seeded_from_write_time,
     test_frame_between_polls_is_shown,
+    test_lowbw_converges_when_stream_stops,
+    test_lowbw_keeps_the_range,
+    test_colors_option,
 ]
 
 
@@ -819,7 +965,292 @@ def perf_key_latency(cfg):
             v.close()
 
 
-PERF = [perf_idle_static_stream, perf_key_latency]
+def drain_at(v, rate, dt, feed=True):
+    """Read the viewer's output at @rate bytes/s for @dt seconds, like a slow link.
+    Returns (time, bytes) of each read."""
+    reads = []
+    end = time.monotonic() + dt
+    while time.monotonic() < end:
+        slot = time.monotonic() + 0.02
+        quota = int(rate * 0.02)
+        while quota > 0:
+            left = slot - time.monotonic()
+            if left <= 0:
+                break
+            r, _, _ = select.select([v.master], [], [], left)
+            if not r:
+                break
+            try:
+                data = os.read(v.master, min(quota, 1 << 16))
+            except OSError:
+                data = b""
+            if not data:
+                break
+            quota -= len(data)
+            reads.append((time.monotonic(), len(data)))
+            v.out += data
+            if feed:
+                v.screen.feed(data)
+        time.sleep(max(0.0, slot - time.monotonic()))
+    return reads
+
+
+def drain_fast(v, dt):
+    """Read the viewer's output as fast as it comes for @dt seconds (no screen model).
+    Returns the bytes read."""
+    n = 0
+    end = time.monotonic() + dt
+    while time.monotonic() < end:
+        r, _, _ = select.select([v.master], [], [], 0.005)
+        if r:
+            try:
+                data = os.read(v.master, 1 << 16)
+            except OSError:
+                data = b""
+            n += len(data)
+            v.out += data
+    return n
+
+
+def key_latency(v, key, txt, rate, timeout=10):
+    """Seconds from sending @key until @txt is on screen, reading at @rate."""
+    t0 = time.monotonic()
+    v.send(key)
+    while txt not in v.screen.text() and time.monotonic() - t0 < timeout:
+        drain_at(v, rate, 0.01)
+    return time.monotonic() - t0
+
+
+def flush_sizes(data):
+    """Bytes of each synchronized update in @data."""
+    return [len(c) for c in data.split(SYNC_ON)[1:]]
+
+
+def runq_wait(pid):
+    """Seconds @pid ("self" for this process) has waited for a CPU; 0 if unknown."""
+    try:
+        with open(f"/proc/{pid}/schedstat") as f:
+            return int(f.read().split()[1]) / 1e9
+    except (OSError, IndexError, ValueError):
+        return 0.0
+
+
+def quit_slow(v, rate):
+    v.send(b"q")
+    drain_at(v, rate, 0.5)
+    check(v.wait_exit(3.0), "viewer did not quit")
+
+
+def perf_slow_terminal(cfg):
+    """Over a 1 MB/s link a noisy 300x90 image cannot be sent whole: keys must still show fast."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "256x256", "-p", "noise", "-r", "200")
+        v = start(cfg, shm, s, rows=90, cols=300)
+        try:
+            drain_at(v, 1_000_000, 2.0)
+            lat = []
+            for key, txt in ((b"h", "h:FLIPH"), (b"h", "h:fliph")) * 4:
+                lat.append(key_latency(v, key, txt, 1_000_000))
+                drain_at(v, 1_000_000, 0.3)
+            lat.sort()
+            med = lat[len(lat) // 2]
+            print(
+                f"     slow link: key latency median {med * 1000:.0f} ms,",
+                f"max {lat[-1] * 1000:.0f} ms",
+            )
+            check(med < 0.15, f"median key latency {med:.2f} s over a 1 MB/s link")
+            check(lat[-1] < 0.4, f"max key latency {lat[-1]:.2f} s over a 1 MB/s link")
+
+            # the link gets fast again: whole frames go out again, one per flush (not checked
+            # when the viewer or this reader waited for a CPU: then cut frames are right)
+            n0, w0 = len(v.out), runq_wait(v.pid) + runq_wait("self")
+            mbs = drain_fast(v, 2.0) / 2.0 / 1e6
+            busy = (runq_wait(v.pid) + runq_wait("self") - w0) / 2.0
+            sizes = sorted(flush_sizes(bytes(v.out[n0:]))[-20:])
+            med = sizes[len(sizes) // 2] if sizes else 0
+            print(
+                f"     fast again: {mbs:.1f} MB/s, median flush {med / 1024:.0f} KB,"
+                f" CPU wait {busy * 1000:.0f} ms/s"
+            )
+            if busy < 0.02:
+                check(
+                    med > 400 * 1024,
+                    f"median flush {med / 1024:.0f} KB: the budget stayed on",
+                )
+            else:
+                print("     (not checked: the viewer or the reader waited for a CPU)")
+
+            # ... and slow again: the first write that blocks sets the budget
+            drain_at(v, 1_000_000, 1.5, feed=False)
+            n0 = len(v.out)
+            drain_at(v, 1_000_000, 1.5, feed=False)
+            big = max(flush_sizes(bytes(v.out[n0:])) or [0])
+            print(f"     slow again: largest flush {big / 1024:.0f} KB")
+            check(
+                big < 200 * 1024,
+                f"{big / 1024:.0f} KB flush 1.5 s after the link slowed",
+            )
+            quit_slow(v, 1_000_000)
+        finally:
+            v.close()
+
+
+def perf_static_repaint_slow_link(cfg):
+    """A static image over a 1 MB/s link: after a quiet spell a repaint must not stall keys."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("still", "-s", "256x256", "-p", "noise")
+        v = start(cfg, shm, s, rows=90, cols=300)
+        try:
+            drain_at(v, 1_000_000, 4.0)  # first paint, then only the 1 Hz status
+            t0 = time.monotonic()
+            v.send(b"h")  # flips the whole image: about 540 KB to send
+            drain_at(v, 1_000_000, 0.1)
+            lat = key_latency(v, b"v", "v:FLIPV", 1_000_000)
+            n0 = len(v.out)
+            reads = drain_at(v, 1_000_000, 3.0)
+            big = [t for t, n in reads if n > 1024]
+            done = (big[-1] if big else time.monotonic()) - t0
+            kb = (len(v.out) - n0) / 1024
+            print(
+                f"     static repaint: key latency {lat * 1000:.0f} ms, {kb:.0f} KB in {done:.2f} s"
+            )
+            check(
+                lat < 0.2,
+                f"key latency {lat:.2f} s behind a repaint over a 1 MB/s link",
+            )
+            check(kb > 400, f"only {kb:.0f} KB of the repaint arrived")
+            check(
+                done < 2.6, f"two repaints of about 540 KB took {done:.2f} s at 1 MB/s"
+            )
+            quit_slow(v, 1_000_000)
+        finally:
+            v.close()
+
+
+def perf_box_select_slow_link(cfg):
+    """Holding a box-zoom selection over a slow link: the dimmed image stays within the budget."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "256x256", "-p", "noise", "-r", "200")
+        v = start(cfg, shm, s, rows=90, cols=300)
+        try:
+            drain_at(v, 1_000_000, 2.0)
+            v.send(b"\x1b[<2;10;10M\x1b[<34;250;80M")
+            drain_at(v, 1_000_000, 0.5)
+            n0 = len(v.out)
+            drain_at(v, 1_000_000, 2.0)
+            big = max(flush_sizes(bytes(v.out[n0:])) or [0])
+            print(f"     box selection: largest flush {big / 1024:.0f} KB")
+            check(
+                big < 200 * 1024,
+                f"{big / 1024:.0f} KB flush while a box selection is held",
+            )
+            v.send(b"\x1b")
+            drain_at(v, 1_000_000, 0.2)  # past the Esc timeout: 'q' is not Alt+q
+            quit_slow(v, 1_000_000)
+        finally:
+            v.close()
+
+
+def perf_low_fps_slow_link(cfg):
+    """-f 2 on a link slower than the frames: about 2 frames/s are sent, not the link's worth."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "256x256", "-p", "noise", "-r", "200")
+        got = {}
+        for fps in ("20", "2"):
+            v = start(cfg, shm, s, "-f", fps, rows=90, cols=300)
+            try:
+                drain_at(v, 4_000_000, 1.5, feed=False)
+                n0 = len(v.out)
+                drain_at(v, 4_000_000, 3.0, feed=False)
+                got[fps] = (len(v.out) - n0) / 3.0 / 1e6
+                print(f"     -f {fps} at 4 MB/s: {got[fps]:.2f} MB/s sent")
+                quit_slow(v, 4_000_000)
+            finally:
+                v.close()
+        # two frames of about 0.53 MB are all there is to send, however busy the machine
+        check(
+            got["2"] < 1.6, f"{got['2']:.2f} MB/s at -f 2: frames are not limited to -f"
+        )
+        if got["20"] >= 3.5:
+            ratio = got["2"] / got["20"]
+            check(
+                ratio < 0.45,
+                f"-f 2 sends {ratio:.2f} of -f 20: frames are not limited to -f",
+            )
+
+
+def first_paint(cfg, shm, stream, env):
+    """Bytes of the first full paint of a static image at 300x90 (no budget: one flush)."""
+    v = Viewer(cfg.termview, [stream], env, 90, 300)
+    try:
+        check(v.wait_for(ENTER, 3.0), "viewer did not start")
+        drain_fast(v, 1.5)
+        paint = max(flush_sizes(bytes(v.out)) or [0])
+        quit_clean(v)
+        return paint, bytes(v.out)
+    finally:
+        v.close()
+
+
+def lowbw_rate(cfg, shm, stream, keys, warmup=1.5, window=4.0):
+    """Bytes/s the viewer writes for @stream at 300x90 after @keys, read as fast as it comes,
+    and the size of its first (whole, unbudgeted) paint."""
+    v = Viewer(cfg.termview, [stream], shm.env, 90, 300)
+    try:
+        check(v.wait_for(ENTER, 3.0), "viewer did not start")
+        v.send(keys)
+        drain_fast(v, warmup)
+        paint = (flush_sizes(bytes(v.out)) or [0])[0]
+        rate = drain_fast(v, window) / window
+        quit_clean(v)
+        return rate, paint
+    finally:
+        v.close()
+
+
+def perf_output_volume(cfg):
+    """Output at 300x90: a noise paint in truecolor and at 256 colours; what low-bandwidth mode
+    sends on a steady scene, for fast and slow streams, against a whole frame per frame.
+    """
+    with ShmDir(cfg.mkstream) as shm:
+        still = shm.stream("still", "-s", "256x256", "-p", "noise")
+        env256 = dict(shm.env)
+        env256.pop("COLORTERM")
+        tc, _ = first_paint(cfg, shm, still, shm.env)
+        c256, out256 = first_paint(cfg, shm, still, env256)
+        print(
+            f"     noise paint: {tc / 1024:.0f} KB truecolor, {c256 / 1024:.0f} KB at 256 colours"
+        )
+        check(tc <= 560 * 1024, f"truecolor paint {tc / 1024:.0f} KB")
+        check(
+            b"8;5;" in out256 and b"8;2;" not in out256,
+            "256 colours: 24-bit codes sent",
+        )
+        check(0.4 <= c256 / tc <= 0.75, f"256 colours: {c256 / tc:.2f} of truecolor")
+        for hz, warmup, window in ((200, 1.5, 4.0), (3, 1.5, 4.0), (0.5, 6.0, 10.0)):
+            s = shm.stream(f"jitter{hz}", "-s", "256x256", "-p", "jitter", "-r", hz)
+            on, paint = lowbw_rate(cfg, shm, s, b"b", warmup, window)
+            ratio = on / (
+                paint * min(hz, 20)
+            )  # normal mode redraws nearly every cell per frame
+            print(
+                f"     jitter {hz} Hz, low-bandwidth: {on / 1024:.0f} KB/s, {ratio:.2f} of a frame"
+            )
+            check(
+                0.03 <= ratio <= 0.3,
+                f"{hz} Hz: low-bandwidth sends {ratio:.2f} of a frame",
+            )
+
+
+PERF = [
+    perf_idle_static_stream,
+    perf_key_latency,
+    perf_slow_terminal,
+    perf_static_repaint_slow_link,
+    perf_box_select_slow_link,
+    perf_low_fps_slow_link,
+    perf_output_volume,
+]
 
 
 # ------------------------------------------------------------------ benchmark
@@ -830,7 +1261,7 @@ def bench(cfg):
     tck = os.sysconf("SC_CLK_TCK")
     win = cfg.window
     print(
-        "| terminal | content | range | CPU % | KB/s | KB/frame | frames/s | wakeups/s |"
+        "| terminal | content | mode | CPU % | KB/s | KB/frame | frames/s | wakeups/s |"
     )
     print("|---|---|---|---|---|---|---|---|")
     with ShmDir(cfg.mkstream) as shm:
@@ -839,11 +1270,19 @@ def bench(cfg):
             "noise 200 Hz": shm.stream(
                 "bnoise", "-s", "256x256", "-p", "noise", "-r", "200"
             ),
+            "jitter 200 Hz": shm.stream(
+                "bjitter", "-s", "256x256", "-p", "jitter", "-r", "200"
+            ),
         }
+        env256 = dict(shm.env)
+        env256.pop("COLORTERM", None)
+        modes = [("minmax", b"", shm.env), ("1-99%", b"rrr", shm.env)]
+        if not cfg.bench_basic:
+            modes += [("minmax lowbw", b"b", shm.env), ("minmax 256 col", b"", env256)]
         for rows, cols in ((40, 120), (60, 200), (90, 300)):
             for cname, s in contents.items():
-                for rname, keys in (("minmax", b""), ("1-99%", b"rrr")):
-                    v = Viewer(cfg.termview, [s], shm.env, rows, cols)
+                for mname, keys, env in modes:
+                    v = Viewer(cfg.termview, [s], env, rows, cols)
                     try:
                         v.wait_for(ENTER, 3.0)
                         v.send(keys)
@@ -858,7 +1297,7 @@ def bench(cfg):
                         kbf = kbs / frames if frames else 0.0
                         wk = (w1 - w0) / win
                         print(
-                            f"| {cols}x{rows} | {cname} | {rname} | {cpu:.1f} | {kbs:.0f} | "
+                            f"| {cols}x{rows} | {cname} | {mname} | {cpu:.1f} | {kbs:.0f} | "
                             f"{kbf:.1f} | {frames:.1f} | {wk:.0f} |",
                             flush=True,
                         )
@@ -878,6 +1317,9 @@ def main():
         "--perf", action="store_true", help="run the CPU/latency checks instead"
     )
     ap.add_argument("--window", type=float, default=3.0)
+    ap.add_argument(
+        "--bench-basic", action="store_true", help="bench: only the two basic modes"
+    )
     cfg = ap.parse_args()
 
     if cfg.bench:
