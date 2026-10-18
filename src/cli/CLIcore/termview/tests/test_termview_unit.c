@@ -994,6 +994,568 @@ static void test_actions(void)
     TV_CHECK(s.target_fps == 1);
 }
 
+/* ---- image pipeline ---- */
+
+static void test_view_transform(void)
+{
+    tv_layout_t l;
+    tv_layout_compute(&l, 40, 120);
+    TV_CHECK(l.valid && l.img_cols == 107 && l.img_rows == 36);
+    double zooms[5] = { 0.3, 1.0, 2.5, 17.0, 400.0 };
+    for (int f = 0; f < 4; f++)
+    {
+        for (int z = 0; z < 5; z++)
+        {
+            tv_view_t  v = { .zoom = zooms[z], .cx = 0.3, .cy = 0.7 };
+            tv_xform_t x;
+            tv_xform_compute(&x, &l, &v, 640, 480, f & 1, f & 2);
+            for (double d = -3.0; d < 120.0; d += 7.25)
+            {
+                TV_CHECK(fabs(tv_xf_disp_x(&x, tv_xf_img_x(&x, d)) - d) < 1e-9);
+                TV_CHECK(fabs(tv_xf_disp_y(&x, tv_xf_img_y(&x, d)) - d) < 1e-9);
+            }
+            /* absolute values: step from the layout, edges from the centre */
+            double step = fmax(640.0 / 107, 480.0 / 72) / zooms[z];
+            TV_CHECK(fabs(x.step - step) < 1e-12 && x.cdx == 53.5 && x.cdy == 36.0);
+            TV_CHECK(fabs(tv_xf_img_x(&x, 0.0) - (0.3 * 640 - x.sx * 53.5 * step)) < 1e-9);
+            TV_CHECK(fabs(tv_xf_img_y(&x, 0.0) - (0.7 * 480 - x.sy * 36.0 * step)) < 1e-9);
+            /* the display centre shows the view centre */
+            TV_CHECK(fabs(tv_xf_img_x(&x, x.cdx) - 0.3 * 640) < 1e-9);
+            TV_CHECK(fabs(tv_xf_img_y(&x, x.cdy) - 0.7 * 480) < 1e-9);
+        }
+    }
+}
+
+/** img_point_at() - Image point under 1-based cell (@cx, @cy) for state @s. */
+static void img_point_at(const tv_state_t *s, int cx, int cy, double *px, double *py)
+{
+    tv_layout_t l;
+    tv_xform_t  x;
+    tv_layout_compute(&l, s->rows, s->cols);
+    tv_xform_compute(&x, &l, &s->view, s->st->xsize, s->st->ysize, s->opt.flip_h, s->opt.flip_v);
+    *px = tv_xf_img_x(&x, cx - 0.5);
+    *py = tv_xf_img_y(&x, 2.0 * (cy - 1) + 1);
+}
+
+static void test_zoom_and_box(void)
+{
+    tv_state_t s;
+    for (int f = 0; f < 4; f++)
+    {
+        /* drag grabs: the image point under the pointer follows it, on both axes */
+        state_init(&s);
+        s.opt.flip_h = f & 1;
+        s.opt.flip_v = f & 2;
+        s.view.zoom  = 4.0;
+        double gx0, gy0, gx1, gy1;
+        img_point_at(&s, 40, 15, &gx0, &gy0);
+        mouse(&s, TV_MB_LEFT, TV_MA_PRESS, 40, 15);
+        mouse(&s, TV_MB_LEFT, TV_MA_DRAG, 47, 18);
+        img_point_at(&s, 47, 18, &gx1, &gy1);
+        TV_CHECK(fabs(gx1 - gx0) < 1e-9 && fabs(gy1 - gy0) < 1e-9);
+    }
+
+    /* box zoom: the box fills the screen exactly */
+    state_init(&s);
+    mouse(&s, TV_MB_RIGHT, TV_MA_PRESS, 70, 10);
+    mouse(&s, TV_MB_RIGHT, TV_MA_RELEASE, 100, 30);
+    TV_CHECK(fabs(s.view.zoom - fmin(107.0 / 31, 72.0 / 42)) < 1e-9);
+
+    /* the wheel stops at the zoom limit and keeps anchoring there */
+    state_init(&s);
+    tv_layout_t l;
+    tv_layout_compute(&l, s.rows, s.cols);
+    double zmax = 64.0 * tv_view_base(&l, 200, 100);
+    s.view.zoom = zmax / 1.1;
+    double ax0, ay0, ax1, ay1;
+    img_point_at(&s, 30, 12, &ax0, &ay0);
+    mouse(&s, TV_MB_WHEEL_UP, TV_MA_PRESS, 30, 12);
+    mouse(&s, TV_MB_WHEEL_UP, TV_MA_PRESS, 30, 12);
+    img_point_at(&s, 30, 12, &ax1, &ay1);
+    TV_CHECK(fabs(s.view.zoom - zmax) < 1e-9 && fabs(ax1 - ax0) < 1e-9 && fabs(ay1 - ay0) < 1e-9);
+
+    /* a 1x1 image: the wheel never zooms out below 1 */
+    state_init(&s);
+    tv_fake_stream.xsize = 1;
+    tv_fake_stream.ysize = 1;
+    mouse(&s, TV_MB_WHEEL_UP, TV_MA_PRESS, 30, 12);
+    TV_CHECK(s.view.zoom >= 1.0);
+    for (int f = 0; f < 4; f++)
+    {
+        /* wheel zoom keeps the image point under the pointer */
+        state_init(&s);
+        s.opt.flip_h = f & 1;
+        s.opt.flip_v = f & 2;
+        s.view.zoom  = 2.0;
+        double px0, py0, px1, py1;
+        img_point_at(&s, 30, 12, &px0, &py0);
+        mouse(&s, TV_MB_WHEEL_UP, TV_MA_PRESS, 30, 12);
+        mouse(&s, TV_MB_WHEEL_UP, TV_MA_PRESS, 30, 12);
+        img_point_at(&s, 30, 12, &px1, &py1);
+        TV_CHECK(fabs(s.view.zoom - 2.88) < 1e-9);
+        TV_CHECK(fabs(px1 - px0) < 1e-6 && fabs(py1 - py0) < 1e-6);
+
+        /* box zoom: the box centre becomes the view centre, under every flip */
+        state_init(&s);
+        s.opt.flip_h = f & 1;
+        s.opt.flip_v = f & 2;
+        double bx0, by0, bx1, by1;
+        img_point_at(&s, 70, 10, &bx0, &by0);
+        img_point_at(&s, 100, 30, &bx1, &by1);
+        mouse(&s, TV_MB_RIGHT, TV_MA_PRESS, 70, 10);
+        mouse(&s, TV_MB_RIGHT, TV_MA_DRAG, 100, 30);
+        mouse(&s, TV_MB_RIGHT, TV_MA_RELEASE, 100, 30);
+        double cx = s.view.cx * 200, cy = s.view.cy * 100;
+        TV_CHECK(s.view.zoom > 1.0);
+        TV_CHECK(fabs(cx - 0.5 * (bx0 + bx1)) < 1.0 && fabs(cy - 0.5 * (by0 + by1)) < 1.0);
+    }
+}
+
+/** tables_identity() - Tables mapping a 7x5 image one-to-one onto 7x6 samples (row 5 outside). */
+static void tables_identity(tv_image_t *im)
+{
+    tv_layout_t l;
+    tv_layout_compute(&l, 3 + TV_INFO_ROWS, 7 + TV_BAR_WIDTH + 1);
+    tv_view_t  v = { .zoom = 1.0, .cx = 0.5, .cy = 0.5 };
+    tv_xform_t x;
+    tv_xform_compute(&x, &l, &v, 7, 5, false, false);
+    TV_CHECK(tv_image_geom(im, &l, &x, 7, 5) == 0);
+}
+
+static void test_samplers(void)
+{
+    static const uint8_t types[] = { _DATATYPE_UINT8,  _DATATYPE_INT8,   _DATATYPE_UINT16,
+                                     _DATATYPE_INT16,  _DATATYPE_UINT32, _DATATYPE_INT32,
+                                     _DATATYPE_UINT64, _DATATYPE_INT64,  _DATATYPE_FLOAT,
+                                     _DATATYPE_DOUBLE };
+    for (size_t t = 0; t < sizeof(types); t++)
+    {
+        union
+        {
+            uint8_t  u8[35];
+            int8_t   i8[35];
+            uint16_t u16[35];
+            int16_t  i16[35];
+            uint32_t u32[35];
+            int32_t  i32[35];
+            uint64_t u64[35];
+            int64_t  i64[35];
+            float    f[35];
+            double   d[35];
+        } a;
+        double base = 0.0;
+        switch (types[t])
+        {
+        case _DATATYPE_UINT32:
+            base = 4.0e9;
+            break;
+        case _DATATYPE_INT32:
+            base = -2.0e9;
+            break;
+        case _DATATYPE_UINT64:
+        case _DATATYPE_INT64:
+            base = 1.0e15; /* far beyond float precision: needs the offset */
+            break;
+        case _DATATYPE_DOUBLE:
+            base = 1.0e12 + 0.25;
+            break;
+        case _DATATYPE_INT8:
+        case _DATATYPE_INT16:
+            base = -20.0;
+            break;
+        default:
+            break;
+        }
+        for (int k = 0; k < 35; k++)
+        {
+            double v = base + k;
+            switch (types[t])
+            {
+            case _DATATYPE_UINT8:
+                a.u8[k] = (uint8_t) v;
+                break;
+            case _DATATYPE_INT8:
+                a.i8[k] = (int8_t) v;
+                break;
+            case _DATATYPE_UINT16:
+                a.u16[k] = (uint16_t) v;
+                break;
+            case _DATATYPE_INT16:
+                a.i16[k] = (int16_t) v;
+                break;
+            case _DATATYPE_UINT32:
+                a.u32[k] = (uint32_t) v;
+                break;
+            case _DATATYPE_INT32:
+                a.i32[k] = (int32_t) v;
+                break;
+            case _DATATYPE_UINT64:
+                a.u64[k] = (uint64_t) v;
+                break;
+            case _DATATYPE_INT64:
+                a.i64[k] = (int64_t) v;
+                break;
+            case _DATATYPE_FLOAT:
+                a.f[k] = (float) v;
+                break;
+            default:
+                a.d[k] = v;
+                break;
+            }
+        }
+        tv_image_t im;
+        memset(&im, 0, sizeof(im));
+        tables_identity(&im);
+        TV_CHECK(tv_image_sample(&im, &a, types[t]) == 1);
+        int ok = (im.nvalid == 35);
+        for (int i = 0; i < 6; i++)
+        {
+            for (int j = 0; j < 7; j++)
+            {
+                float  sv   = im.samp[i * 7 + j];
+                double want = base + i * 7 + j;
+                ok &= (i == 5) ? !tv_finite(sv) : ((double) sv + im.offset == want);
+            }
+        }
+        if (!ok)
+        {
+            fprintf(stderr, "sampler for datatype %d: wrong values\n", types[t]);
+            tv_failures++;
+        }
+        /* same data again: reported unchanged; one changed element: reported changed */
+        TV_CHECK(tv_image_sample(&im, &a, types[t]) == 0);
+        switch (types[t])
+        {
+        case _DATATYPE_FLOAT:
+            a.f[34] += 1.0f;
+            break;
+        case _DATATYPE_DOUBLE:
+            a.d[34] += 1.0;
+            break;
+        default:
+            a.u8[0] ^= 1; /* low byte of element 0 for every integer width */
+            break;
+        }
+        TV_CHECK(tv_image_sample(&im, &a, types[t]) == 1);
+
+        termview_options_t opt;
+        termview_options_init(&opt);
+        tv_image_range(&im, &opt, 1);
+        TV_CHECK(tv_finite(im.lo) && tv_finite(im.hi) && im.hi > im.lo);
+        tv_image_free(&im);
+    }
+
+    /* NaN and Inf in float and double data: excluded from the statistics, not from the image */
+    double nan_v = tv_zero / tv_zero, inf_v = 1.0 / tv_zero;
+    float  f[35];
+    double d[35];
+    for (int k = 0; k < 35; k++)
+    {
+        f[k] = (float) k;
+        d[k] = 1e12 + k;
+    }
+    f[3]  = (float) nan_v;
+    f[20] = (float) inf_v;
+    d[3]  = nan_v;
+    d[20] = -inf_v;
+    for (int pass = 0; pass < 2; pass++)
+    {
+        tv_image_t im;
+        memset(&im, 0, sizeof(im));
+        tables_identity(&im);
+        tv_image_sample(&im, pass ? (void *) d : (void *) f,
+                        pass ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
+        double base = pass ? 1e12 : 0.0;
+        TV_CHECK(im.nvalid == 33);
+        TV_CHECK(im.vmin + im.offset == base && im.vmax + im.offset == base + 34);
+        tv_image_free(&im);
+    }
+
+    /* wide types: an atypical first pixel must not cost the rest of the image its precision */
+    uint32_t u[35];
+    for (int k = 0; k < 35; k++)
+    {
+        u[k] = 4000000000u + (uint32_t) k;
+        d[k] = 1e12 + 1e-3 * k;
+    }
+    u[0] = 0;
+    d[0] = nan_v;
+    u[8] = 0; /* also on a point of the offset grid (row 1, column 1) */
+    d[8] = 1e30;
+    for (int pass = 0; pass < 2; pass++)
+    {
+        tv_image_t im;
+        memset(&im, 0, sizeof(im));
+        tables_identity(&im);
+        tv_image_sample(&im, pass ? (void *) d : (void *) u,
+                        pass ? _DATATYPE_DOUBLE : _DATATYPE_UINT32);
+        int distinct = 1;
+        for (int k = 2; k < 35; k++)
+        {
+            if (k != 8 && k != 9)
+            {
+                distinct &= (im.samp[k] > im.samp[k - 1]);
+            }
+        }
+        TV_CHECK(distinct);
+        tv_image_free(&im);
+    }
+}
+
+/** Sampling tables: exact mirrors under flips, -1 outside the image on both sides. */
+static void test_tables(void)
+{
+    tv_image_t  im;
+    tv_layout_t l;
+    tv_layout_compute(&l, 3 + TV_INFO_ROWS, 7 + TV_BAR_WIDTH + 1);
+    for (int f = 0; f < 4; f++)
+    {
+        memset(&im, 0, sizeof(im));
+        tv_view_t  v = { .zoom = 1.0, .cx = 0.5, .cy = 0.5 };
+        tv_xform_t x;
+        tv_xform_compute(&x, &l, &v, 7, 5, f & 1, f & 2);
+        TV_CHECK(tv_image_geom(&im, &l, &x, 7, 5) == 0);
+        for (int j = 0; j < 7; j++)
+        {
+            TV_CHECK(im.col_src[j] == ((f & 1) ? 6 - j : j));
+        }
+        for (int i = 0; i < 6; i++)
+        {
+            int64_t want =
+                (f & 2) ? ((i == 0) ? -1 : (int64_t) (5 - i) * 7) : ((i == 5) ? -1 : i * 7);
+            TV_CHECK(im.row_off[i] == want);
+        }
+        tv_image_free(&im);
+    }
+
+    /* zoomed out on a wide layout: columns outside on both sides, swapped by a horizontal flip */
+    tv_layout_compute(&l, 40, 120);
+    int left[2], right[2];
+    for (int f = 0; f < 2; f++)
+    {
+        memset(&im, 0, sizeof(im));
+        tv_view_t  v = { .zoom = 0.5, .cx = 0.3, .cy = 0.5 };
+        tv_xform_t x;
+        tv_xform_compute(&x, &l, &v, 64, 64, f, false);
+        TV_CHECK(tv_image_geom(&im, &l, &x, 64, 64) == 0);
+        left[f] = right[f] = 0;
+        for (int j = 0; j < im.ncols && im.col_src[j] < 0; j++)
+        {
+            left[f]++;
+        }
+        for (int j = im.ncols - 1; j >= 0 && im.col_src[j] < 0; j--)
+        {
+            right[f]++;
+        }
+        tv_image_free(&im);
+    }
+    TV_CHECK(left[0] > 0 && right[0] > 0 && left[0] != right[0]);
+    TV_CHECK(left[0] == right[1] && right[0] == left[1]);
+}
+
+/** Image layer: top sample on the background, bottom on the foreground, border, blank. */
+static void test_render(void)
+{
+    static tv_rgb_t lut[TV_LUT_N + 1];
+    tv_lut_build(lut, COLORMAP_GREYSCALE, SCALE_LINEAR);
+    float data[35];
+    for (int k = 0; k < 35; k++)
+    {
+        data[k] = (float) k;
+    }
+    tv_image_t im;
+    memset(&im, 0, sizeof(im));
+    tables_identity(&im);
+    tv_image_sample(&im, data, _DATATYPE_FLOAT);
+    termview_options_t opt;
+    termview_options_init(&opt);
+    tv_image_range(&im, &opt, 1);
+    tv_image_render(&im, lut);
+    double    scale = (TV_LUT_N - 1) / 34.0;
+    tv_cell_t c00   = im.cells[0];
+    TV_CHECK(tv_cell_glyph(c00) == TV_G_LOWER_HALF);
+    TV_CHECK(tv_cell_bg(c00) == tv_rgb(lut[tv_lut_idx(0.0, 0.0, scale)]));
+    TV_CHECK(tv_cell_fg(c00) == tv_rgb(lut[tv_lut_idx(7.0, 0.0, scale)]));
+    /* character row 2 shows image row 4 on top and the border row below it */
+    tv_cell_t c20 = im.cells[2 * 7 + 3];
+    TV_CHECK(tv_cell_bg(c20) == tv_rgb(lut[tv_lut_idx(31.0, 0.0, scale)]));
+    TV_CHECK(tv_cell_fg(c20) == TV_RGB(64, 64, 64));
+    tv_image_free(&im);
+
+    /* far outside the image: a blank space */
+    tv_layout_t l;
+    tv_layout_compute(&l, 40, 120);
+    tv_view_t  v = { .zoom = 0.5, .cx = 0.5, .cy = 0.5 };
+    tv_xform_t x;
+    tv_xform_compute(&x, &l, &v, 16, 16, false, false);
+    memset(&im, 0, sizeof(im));
+    TV_CHECK(tv_image_geom(&im, &l, &x, 16, 16) == 0);
+    static float big[256];
+    tv_image_sample(&im, big, _DATATYPE_FLOAT);
+    tv_image_range(&im, &opt, 1);
+    tv_image_render(&im, lut);
+    TV_CHECK(tv_cell_glyph(im.cells[0]) == ' ' && tv_cell_bg(im.cells[0]) == 0);
+    tv_image_free(&im);
+}
+
+static int cmp_float(const void *a, const void *b)
+{
+    float x = *(const float *) a, y = *(const float *) b;
+    return (x > y) - (x < y);
+}
+
+/** fill_samples() - Image state holding @n samples @v (NaN allowed) on a 1-row grid. */
+static void fill_samples(tv_image_t *im, const float *v, int n)
+{
+    memset(im, 0, sizeof(*im));
+    im->samp  = malloc((size_t) n * sizeof(float));
+    im->ncols = n;
+    im->nrows = 1;
+    im->vmin  = 3.4e38f;
+    im->vmax  = -3.4e38f;
+    for (int k = 0; k < n; k++)
+    {
+        im->samp[k] = v[k];
+        if (tv_finite(v[k]))
+        {
+            im->vmin = (v[k] < im->vmin) ? v[k] : im->vmin;
+            im->vmax = (v[k] > im->vmax) ? v[k] : im->vmax;
+            im->nvalid++;
+        }
+    }
+}
+
+static void test_percentiles(void)
+{
+    enum
+    {
+        N = 5000
+    };
+    static float v[N], sorted[N];
+    double       nan_v = tv_zero / tv_zero;
+    int          nv    = 0;
+    for (int k = 0; k < N; k++)
+    {
+        v[k] = (k % 50 == 0) ? (float) nan_v : (float) ((rnd() % 100000) / 7.0 + (k % 7) * 3.0);
+        if (tv_finite(v[k]))
+        {
+            sorted[nv++] = v[k];
+        }
+    }
+    qsort(sorted, (size_t) nv, sizeof(float), cmp_float);
+    termview_options_t opt;
+    termview_options_init(&opt);
+    for (int r = 1; r < RANGE_NB; r++)
+    {
+        static const double plo[RANGE_NB] = { 0, 0.001, 0.005, 0.01, 0.05, 0.10, 0.15, 0.20 };
+        tv_image_t          im;
+        fill_samples(&im, v, N);
+        opt.range = (termview_range_t) r;
+        tv_image_range(&im, &opt, 1);
+        /* exact: the same samples a full sort would pick */
+        TV_CHECK(im.lo == sorted[(long) (plo[r] * (nv - 1))]);
+        TV_CHECK(im.hi == sorted[(long) ((1.0 - plo[r]) * (nv - 1))]);
+        free(im.samp);
+    }
+
+    /* all equal, a single sample, nothing valid: always a finite range with lo < hi */
+    float      same[10] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
+    float      one[3]   = { (float) nan_v, 7.0f, (float) nan_v };
+    float      none[3]  = { (float) nan_v, (float) nan_v, (float) nan_v };
+    tv_image_t im;
+    for (int r = 0; r < RANGE_NB; r++)
+    {
+        opt.range = (termview_range_t) r;
+        fill_samples(&im, same, 10);
+        tv_image_range(&im, &opt, 1);
+        TV_CHECK(im.lo < 5.0 && im.hi > 5.0);
+        free(im.samp);
+        fill_samples(&im, one, 3);
+        tv_image_range(&im, &opt, 1);
+        TV_CHECK(im.lo < 7.0 && im.hi > 7.0);
+        free(im.samp);
+        fill_samples(&im, none, 3);
+        tv_image_range(&im, &opt, 1);
+        TV_CHECK(im.lo == 0.0 && im.hi == 1.0);
+        free(im.samp);
+    }
+}
+
+/** Outliers far from the bulk (hot pixels, sentinels) must not move the percentile range. */
+static void test_percentile_outliers(void)
+{
+    enum
+    {
+        N = 10001
+    };
+    static float       v[N], sorted[N];
+    static const float outliers[4] = { 1e9f, -1e30f, 65535.0f, 3.0e38f };
+    termview_options_t opt;
+    termview_options_init(&opt);
+    opt.range = RANGE_01_99;
+    for (int o = 0; o < 4; o++)
+    {
+        for (int k = 0; k < N - 1; k++)
+        {
+            v[k] = (float) ((rnd() % 1000000) / 10000.0); /* 0..100 */
+        }
+        v[N - 1] = outliers[o];
+        memcpy(sorted, v, sizeof(v));
+        qsort(sorted, N, sizeof(float), cmp_float);
+        tv_image_t im;
+        fill_samples(&im, v, N);
+        tv_image_range(&im, &opt, 1);
+        TV_CHECK(im.lo == sorted[(long) (0.01 * (N - 1))]);
+        TV_CHECK(im.hi == sorted[(long) (0.99 * (N - 1))]);
+        TV_CHECK(im.lo >= 0.0 && im.hi <= 100.0);
+        free(im.samp);
+    }
+}
+
+static void test_range_smoothing(void)
+{
+    termview_options_t opt;
+    termview_options_init(&opt);
+    tv_image_t im;
+    float      v[2] = { 0.0f, 1000.0f };
+    fill_samples(&im, v, 2);
+    tv_image_range(&im, &opt, 1);
+    TV_CHECK(im.lo == 0.0 && im.hi == 1000.0);
+
+    /* noise in the extremes (below span/64) does not move the range at all */
+    im.vmin = 3.0f;
+    im.vmax = 990.0f;
+    tv_image_range(&im, &opt, 0);
+    TV_CHECK(im.lo == 0.0 && im.hi == 1000.0);
+
+    /* a brighter frame widens at once, a dimmer one narrows halfway */
+    im.vmax = 2000.0f;
+    tv_image_range(&im, &opt, 0);
+    TV_CHECK(im.hi == 2000.0);
+    im.vmax = 1000.0f;
+    tv_image_range(&im, &opt, 0);
+    TV_CHECK(im.hi == 1500.0);
+
+    TV_CHECK(!im.settled); /* still on its way down */
+
+    /* a darker minimum widens at once too; a small dip does nothing */
+    im.vmin = -500.0f;
+    tv_image_range(&im, &opt, 0);
+    TV_CHECK(im.lo == -500.0);
+    im.vmin = -490.0f;
+    tv_image_range(&im, &opt, 0);
+    TV_CHECK(im.lo == -500.0);
+
+    /* a user action snaps; smoothing off follows every frame */
+    tv_image_range(&im, &opt, 1);
+    TV_CHECK(im.hi == 1000.0 && im.settled);
+    opt.range_smooth = false;
+    im.vmax          = 1010.0f;
+    tv_image_range(&im, &opt, 0);
+    TV_CHECK(im.hi == 1010.0);
+    free(im.samp);
+}
+
 int main(void)
 {
     test_finite();
@@ -1011,6 +1573,14 @@ int main(void)
     test_input_splits();
     test_input_fuzz();
     test_actions();
+    test_view_transform();
+    test_zoom_and_box();
+    test_samplers();
+    test_percentiles();
+    test_percentile_outliers();
+    test_range_smoothing();
+    test_tables();
+    test_render();
     if (tv_failures > 0)
     {
         fprintf(stderr, "%d check(s) failed\n", tv_failures);

@@ -347,6 +347,113 @@ int  tv_stream_open(tv_stream_t *s, const char *arg, char *err, size_t errsz);
 void tv_stream_close(tv_stream_t *s);
 
 /* -----------------------------------------------------------------------
+ * Image pipeline (tv_image.c)
+ * ----------------------------------------------------------------------- */
+/** Image-to-display mapping parameters; flips live in the options. */
+typedef struct
+{
+    double zoom;
+    double cx; /**< view centre, fraction of the image width */
+    double cy; /**< view centre, fraction of the image height */
+} tv_view_t;
+#define TV_BAR_WIDTH 12 /* colorbar + labels */
+#define TV_INFO_ROWS 4  /* rows below the image */
+
+/** Screen areas, from the terminal size. */
+typedef struct
+{
+    int rows, cols;
+    int img_rows; /**< character rows of image; each shows 2 sample rows */
+    int img_cols;
+    int bar_col; /**< first colorbar column */
+    int info_row;
+    int valid; /**< large enough to draw the image */
+} tv_layout_t;
+
+/** Display sample <-> image pixel mapping; samples are square, 2 per character row. */
+typedef struct
+{
+    double step;     /**< image pixels per display sample */
+    double cx, cy;   /**< view centre in image pixels */
+    double sx, sy;   /**< +1, or -1 when flipped */
+    double cdx, cdy; /**< display centre in samples */
+} tv_xform_t;
+
+/** tv_xf_img_x() - Image x at display sample coordinate @dj (columns, 0 = left edge). */
+static inline double tv_xf_img_x(const tv_xform_t *x, double dj)
+{
+    return x->cx + x->sx * (dj - x->cdx) * x->step;
+}
+
+/** tv_xf_img_y() - Image y at display sample coordinate @di (sample rows, 0 = top edge). */
+static inline double tv_xf_img_y(const tv_xform_t *x, double di)
+{
+    return x->cy + x->sy * (di - x->cdy) * x->step;
+}
+
+/** tv_xf_disp_x() - Inverse of tv_xf_img_x(). */
+static inline double tv_xf_disp_x(const tv_xform_t *x, double ix)
+{
+    return x->cdx + x->sx * (ix - x->cx) / x->step;
+}
+
+/** tv_xf_disp_y() - Inverse of tv_xf_img_y(). */
+static inline double tv_xf_disp_y(const tv_xform_t *x, double iy)
+{
+    return x->cdy + x->sy * (iy - x->cy) / x->step;
+}
+
+/** Sampling tables, samples, display range and the image layer, reused across frames. */
+typedef struct
+{
+    int        ncols, nrows; /**< samples: img_cols x (2 * img_rows) */
+    int32_t   *col_src;      /**< image column per display column, -1 outside */
+    uint8_t   *col_in;
+    int64_t   *row_off; /**< element offset of the image row per sample row, -1 outside */
+    uint8_t   *row_in;
+    float     *samp;  /**< value - offset; NaN outside the image or not finite */
+    float     *prev;  /**< previous frame's samples */
+    tv_cell_t *cells; /**< img_rows x img_cols */
+    size_t     col_cap, colin_cap, row_cap, rowin_cap, samp_cap, prev_cap, cells_cap;
+    int        have_prev;
+    double     offset, prev_offset; /**< subtracted before the float conversion */
+    float      vmin, vmax;          /**< finite in-image samples, relative */
+    long       nvalid;
+    uint32_t   hist[4096];
+    double     lo, hi; /**< display range, raw units */
+    int        have_range;
+    int        settled; /**< smoothing has reached the measured range */
+} tv_image_t;
+
+void   tv_layout_compute(tv_layout_t *l, int rows, int cols);
+double tv_view_base(const tv_layout_t *l, uint32_t xsize, uint32_t ysize);
+void   tv_xform_compute(tv_xform_t        *x,
+                        const tv_layout_t *l,
+                        const tv_view_t   *v,
+                        uint32_t           xsize,
+                        uint32_t           ysize,
+                        bool               flip_h,
+                        bool               flip_v);
+
+/** tv_image_geom() - Rebuild the sampling tables for a new layout or view; -1 on alloc failure. */
+int tv_image_geom(tv_image_t        *im,
+                  const tv_layout_t *l,
+                  const tv_xform_t  *x,
+                  uint32_t           xsize,
+                  uint32_t           ysize);
+
+/** tv_image_sample() - Sample @data through the tables; returns 0 if identical to last frame. */
+int tv_image_sample(tv_image_t *im, const void *data, uint8_t datatype);
+
+/** tv_image_range() - Display range for @opt from the samples; @snap skips the smoothing. */
+void tv_image_range(tv_image_t *im, const termview_options_t *opt, int snap);
+
+/** tv_image_render() - Colour the samples into im->cells with @lut. */
+void tv_image_render(tv_image_t *im, const tv_rgb_t *lut);
+
+void tv_image_free(tv_image_t *im);
+
+/* -----------------------------------------------------------------------
  * Viewer state (termview.c)
  * ----------------------------------------------------------------------- */
 /** Dirty bits: what must be redone for the next frame. */
@@ -384,19 +491,13 @@ typedef enum
     TV_ACT_POPUP_CLOSE /**< close the popup only */
 } tv_action_t;
 
-/** Image-to-display mapping parameters; flips live in the options. */
-typedef struct
-{
-    double zoom;
-    double cx; /**< view centre, fraction of the image width */
-    double cy; /**< view centre, fraction of the image height */
-} tv_view_t;
-
 typedef struct
 {
     tv_stream_t       *st;
     termview_options_t opt;
     tv_view_t          view;
+    tv_layout_t        lay; /**< layout of the last frame */
+    tv_image_t         im;
     int                rows, cols; /**< terminal size */
     int                running;
     int                dirty; /**< TV_D_* bits */
@@ -412,6 +513,9 @@ typedef struct
     double          current_stream_fps;
     uint64_t        last_cnt0_for_fps;
     uint64_t        last_cnt0;
+    int64_t         last_change_us; /**< when cnt0 last moved */
+    double          rate_hz;        /**< last non-zero stream rate (display) */
+    double          period_us;      /**< smoothed interval between new frames, 0 if unknown */
     int64_t         stats_time_us;
     struct timespec stats_cpu;
 
@@ -426,21 +530,19 @@ typedef struct
     int roi_start_y;
     int roi_end_x;
     int roi_end_y;
+    int wheel_x; /**< pointer position of the last wheel notch */
+    int wheel_y;
 
     int         input_mode;
     char        input_buf[64];
     int         input_len;
     const char *input_err; /**< validation message shown in the prompt line */
 
-    double    *display_buffer;
-    int        buffer_size;
     tv_cell_t *screen;
     tv_cell_t *prev_screen;
     int        screen_size;
     char      *frame_buffer;
     size_t     frame_buffer_size;
-    double    *sort_buffer; /**< percentile scratch, grown on demand */
-    int        sort_size;
 } tv_state_t;
 
 /*

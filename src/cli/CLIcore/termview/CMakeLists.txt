@@ -12,8 +12,15 @@ if(USE_SANITIZERS)
                       -fno-sanitize-recover=all)
 endif()
 
-add_library(termview_core OBJECT termview.c tv_cmap.c tv_flush.c tv_input.c
-                                 tv_stream.c tv_term.c)
+add_library(
+  termview_core OBJECT
+  termview.c
+  tv_cmap.c
+  tv_flush.c
+  tv_image.c
+  tv_input.c
+  tv_stream.c
+  tv_term.c)
 target_link_libraries(termview_core PUBLIC termview_flags ImageStreamIO m)
 target_include_directories(
   termview_core PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

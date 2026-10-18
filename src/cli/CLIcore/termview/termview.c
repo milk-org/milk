@@ -25,41 +25,7 @@
 #define TV_CTRL(c) ((c) & 0x1F)
 #define TV_POPUP_US 2000000 /* quick-pick popups close after 2 s */
 
-#define TV_BAR_WIDTH 12 /* colorbar + labels */
-#define TV_INFO_ROWS 4  /* rows below the image */
-
-
-/** get_pixel_value() - Element @idx of the data array as double; caller checks bounds. */
-static inline double get_pixel_value(const IMAGE *img, uint8_t datatype, size_t idx)
-{
-#define GET_PIXEL_CASE(DT, ACC, CTYPE) \
-    case DT:                           \
-        return (double) img->array.ACC[idx];
-
-    switch (datatype)
-    {
-        FOREACH_REAL_DATATYPE(GET_PIXEL_CASE)
-    default:
-        return 0.0;
-    }
-#undef GET_PIXEL_CASE
-}
-
-
-static inline int compare_doubles(const void *a, const void *b)
-{
-    double arg1 = *(const double *) a;
-    double arg2 = *(const double *) b;
-    if (arg1 < arg2)
-    {
-        return -1;
-    }
-    if (arg1 > arg2)
-    {
-        return 1;
-    }
-    return 0;
-}
+#define TV_STALE_MIN_US 1000000 /* no new frame for this long (or 5 periods): STALE */
 
 /* -----------------------------------------------------------------------
  * Main Screen Loop
@@ -84,15 +50,63 @@ static void tv_update_stats(tv_state_t *ctx, int64_t now_us)
     ctx->current_stream_fps = (cnt0 >= ctx->last_cnt0_for_fps)
                                   ? (double) (cnt0 - ctx->last_cnt0_for_fps) / real_diff
                                   : 0.0;
-    ctx->last_cnt0_for_fps  = cnt0;
-    ctx->stats_time_us      = now_us;
-    ctx->stats_cpu          = now_cpu;
+    if (ctx->current_stream_fps > 0.0)
+    {
+        ctx->rate_hz = ctx->current_stream_fps;
+    }
+    ctx->last_cnt0_for_fps = cnt0;
+    ctx->stats_time_us     = now_us;
+    ctx->stats_cpu         = now_cpu;
+}
+
+/** tv_stale_age_us() - How long the stream has gone without a new frame, 0 while it is live. */
+static int64_t tv_stale_age_us(const tv_state_t *ctx, int64_t now_us)
+{
+    int64_t age   = now_us - ctx->last_change_us;
+    int64_t limit = TV_STALE_MIN_US;
+    if (5.0 * ctx->period_us > (double) limit)
+    {
+        limit = (int64_t) (5.0 * ctx->period_us);
+    }
+    return (age > limit) ? age : 0;
+}
+
+/** tv_note_cnt0() - Record a cnt0 value seen at @now_us; true if it is a new frame. */
+static int tv_note_cnt0(tv_state_t *ctx, uint64_t cnt0, int64_t now_us)
+{
+    if (cnt0 == ctx->last_cnt0)
+    {
+        return 0;
+    }
+    if (cnt0 > ctx->last_cnt0 && ctx->period_us >= 0.0)
+    {
+        /* frame interval, smoothed: sets how long the stream may be quiet before STALE */
+        double obs     = (double) (now_us - ctx->last_change_us) / (double) (cnt0 - ctx->last_cnt0);
+        ctx->period_us = (ctx->period_us > 0.0) ? 0.75 * ctx->period_us + 0.25 * obs : obs;
+    }
+    else if (ctx->period_us < 0.0)
+    {
+        ctx->period_us = 0.0; /* first change seen: the previous one is not ours to time */
+    }
+    ctx->last_cnt0      = cnt0;
+    ctx->last_change_us = now_us;
+    return 1;
 }
 
 /** tv_layout_ok() - True when the image area is drawable; also guards every geometry divisor. */
 static int tv_layout_ok(const tv_state_t *ctx)
 {
-    return (ctx->rows - TV_INFO_ROWS) >= 2 && (ctx->cols - TV_BAR_WIDTH - 1) >= 4;
+    tv_layout_t l;
+    tv_layout_compute(&l, ctx->rows, ctx->cols);
+    return l.valid;
+}
+
+/** tv_xform_now() - The current view transform, as the renderer uses it. */
+static void tv_xform_now(const tv_state_t *ctx, tv_layout_t *l, tv_xform_t *x)
+{
+    tv_layout_compute(l, ctx->rows, ctx->cols);
+    tv_xform_compute(x, l, &ctx->view, ctx->st->xsize, ctx->st->ysize, ctx->opt.flip_h,
+                     ctx->opt.flip_v);
 }
 
 /** tv_invalidate() - Forget what the terminal shows so the next frame repaints every cell. */
@@ -122,10 +136,9 @@ static double tv_zmax(const tv_state_t *ctx)
     {
         return 1.0;
     }
-    int disp_cols     = ctx->cols - TV_BAR_WIDTH - 1;
-    int disp_img_rows = (ctx->rows - TV_INFO_ROWS) * 2;
-    return 64.0 *
-           fmax((double) ctx->st->xsize / disp_cols, (double) ctx->st->ysize / disp_img_rows);
+    tv_layout_t l;
+    tv_layout_compute(&l, ctx->rows, ctx->cols);
+    return fmax(1.0, 64.0 * tv_view_base(&l, ctx->st->xsize, ctx->st->ysize));
 }
 
 void tv_set_view(tv_state_t *ctx, double cx, double cy, double zoom)
@@ -346,7 +359,34 @@ void tv_handle_key(tv_state_t *ctx, const tv_event_t *ev)
     }
 }
 
-/** tv_handle_mouse() - Pan (left drag), box zoom (right drag) and wheel zoom. */
+/**
+ * tv_zoom_at() - Zoom by 1.2^@notches keeping the image point under cell (@x, @y) in place;
+ * about the view centre when the pointer is outside the image.
+ */
+static void tv_zoom_at(tv_state_t *ctx, int notches, int x, int y)
+{
+    tv_layout_t l;
+    tv_xform_t  xf;
+    tv_xform_now(ctx, &l, &xf);
+    double dj = x - 0.5;           /* centre of column x (1-based) in samples */
+    double di = 2.0 * (y - 1) + 1; /* between the cell's two sample rows */
+    if (x < 1 || x > l.img_cols || y < 1 || y > l.img_rows)
+    {
+        tv_do(ctx, TV_ACT_ZOOM, notches);
+        return;
+    }
+    double px   = tv_xf_img_x(&xf, dj);
+    double py   = tv_xf_img_y(&xf, di);
+    double zoom = ctx->view.zoom * pow(1.2, notches);
+    double zmax = tv_zmax(ctx);
+    zoom        = (zoom > zmax) ? zmax : (zoom < 0.1) ? 0.1 : zoom;
+    double step = tv_view_base(&l, ctx->st->xsize, ctx->st->ysize) / zoom;
+    double cx   = px - xf.sx * (dj - xf.cdx) * step;
+    double cy   = py - xf.sy * (di - xf.cdy) * step;
+    tv_set_view(ctx, cx / ctx->st->xsize, cy / ctx->st->ysize, zoom);
+}
+
+/** tv_handle_mouse() - Pan (left drag), box zoom (right drag) and wheel zoom at the pointer. */
 void tv_handle_mouse(tv_state_t *ctx, const tv_event_t *ev)
 {
     if (!tv_layout_ok(ctx))
@@ -357,19 +397,20 @@ void tv_handle_mouse(tv_state_t *ctx, const tv_event_t *ev)
     }
     if (ev->button == TV_MB_WHEEL_UP || ev->button == TV_MB_WHEEL_DOWN)
     {
-        tv_do(ctx, TV_ACT_ZOOM, (ev->button == TV_MB_WHEEL_UP) ? 1 : -1);
+        tv_zoom_at(ctx, (ev->button == TV_MB_WHEEL_UP) ? 1 : -1, ev->x, ev->y);
         return;
     }
 
-    int    mx            = ev->x;
-    int    my            = ev->y;
-    double sign_x        = ctx->opt.flip_h ? -1.0 : 1.0;
-    double sign_y        = ctx->opt.flip_v ? -1.0 : 1.0;
-    double xsize         = ctx->st->xsize;
-    double ysize         = ctx->st->ysize;
-    int    disp_cols     = ctx->cols - TV_BAR_WIDTH - 1;
-    int    disp_img_rows = (ctx->rows - TV_INFO_ROWS) * 2;
-    double step = fmax(xsize / ctx->view.zoom / disp_cols, ysize / ctx->view.zoom / disp_img_rows);
+    tv_layout_t l;
+    tv_xform_t  xf;
+    tv_xform_now(ctx, &l, &xf);
+    int    mx    = ev->x;
+    int    my    = ev->y;
+    double xsize = ctx->st->xsize;
+    /* a box zoom selection stays inside the image area, so outline and result agree */
+    int    bx    = (mx < 1) ? 1 : (mx > l.img_cols) ? l.img_cols : mx;
+    int    by    = (my < 1) ? 1 : (my > l.img_rows) ? l.img_rows : my;
+    double ysize = ctx->st->ysize;
 
     if (ev->button == TV_MB_LEFT)
     {
@@ -381,11 +422,11 @@ void tv_handle_mouse(tv_state_t *ctx, const tv_event_t *ev)
         }
         else if (ev->action == TV_MA_DRAG && ctx->mouse_is_dragging)
         {
-            /* grab: the image follows the pointer on both axes, whatever the flips */
+            /* grab: the image point under the pointer follows it, whatever the flips */
             int dx = mx - ctx->last_mouse_x;
             int dy = my - ctx->last_mouse_y;
-            tv_set_view(ctx, ctx->view.cx - sign_x * dx * step / xsize,
-                        ctx->view.cy - sign_y * dy * 2.0 * step / ysize, ctx->view.zoom);
+            tv_set_view(ctx, (xf.cx - xf.sx * dx * xf.step) / xsize,
+                        (xf.cy - xf.sy * 2.0 * dy * xf.step) / ysize, ctx->view.zoom);
             ctx->last_mouse_x = mx;
             ctx->last_mouse_y = my;
         }
@@ -399,22 +440,22 @@ void tv_handle_mouse(tv_state_t *ctx, const tv_event_t *ev)
         if (ev->action == TV_MA_PRESS)
         {
             ctx->roi_is_dragging = 1;
-            ctx->roi_start_x     = mx;
-            ctx->roi_start_y     = my;
-            ctx->roi_end_x       = mx;
-            ctx->roi_end_y       = my;
+            ctx->roi_start_x     = bx;
+            ctx->roi_start_y     = by;
+            ctx->roi_end_x       = bx;
+            ctx->roi_end_y       = by;
             ctx->dirty |= TV_D_CHROME;
         }
         else if (ev->action == TV_MA_DRAG && ctx->roi_is_dragging)
         {
-            ctx->roi_end_x = mx;
-            ctx->roi_end_y = my;
+            ctx->roi_end_x = bx;
+            ctx->roi_end_y = by;
             ctx->dirty |= TV_D_CHROME;
         }
         else if (ev->action == TV_MA_RELEASE && ctx->roi_is_dragging)
         {
-            ctx->roi_end_x       = mx;
-            ctx->roi_end_y       = my;
+            ctx->roi_end_x       = bx;
+            ctx->roi_end_y       = by;
             ctx->roi_is_dragging = 0;
             ctx->dirty |= TV_D_CHROME;
 
@@ -425,24 +466,12 @@ void tv_handle_mouse(tv_state_t *ctx, const tv_event_t *ev)
 
             if (max_x - min_x >= 2 && max_y - min_y >= 2)
             {
-                double center_disp_x = disp_cols / 2.0;
-                double center_disp_y = disp_img_rows / 2.0;
-                double roi_center_mx = (min_x + max_x) / 2.0;
-                double roi_center_my = (min_y + max_y) / 2.0;
-                double roi_row       = (roi_center_my - 1.0) * 2.0 + 0.5;
-
-                double new_cx =
-                    ctx->view.cx * xsize + sign_x * (roi_center_mx - 1.0 - center_disp_x) * step;
-                double new_cy = ctx->view.cy * ysize + sign_y * (roi_row - center_disp_y) * step;
-
-                double roi_w_char = max_x - min_x + 1;
-                double roi_h_char = max_y - min_y + 1;
-                double new_step_x = (roi_w_char * step) / disp_cols;
-                double new_step_y = (roi_h_char * 2 * step) / disp_img_rows;
-                double new_step   = fmax(new_step_x, new_step_y);
-
-                tv_set_view(ctx, new_cx / xsize, new_cy / ysize,
-                            ctx->view.zoom * (step / new_step));
+                /* box edges in samples, mapped through the same transform as the image */
+                double x0 = tv_xf_img_x(&xf, min_x - 1.0), x1 = tv_xf_img_x(&xf, max_x);
+                double y0 = tv_xf_img_y(&xf, 2.0 * (min_y - 1)), y1 = tv_xf_img_y(&xf, 2.0 * max_y);
+                double step = fmax(fabs(x1 - x0) / l.img_cols, fabs(y1 - y0) / (2.0 * l.img_rows));
+                double base = tv_view_base(&l, ctx->st->xsize, ctx->st->ysize);
+                tv_set_view(ctx, 0.5 * (x0 + x1) / xsize, 0.5 * (y0 + y1) / ysize, base / step);
             }
         }
     }
@@ -526,12 +555,12 @@ static int tv_handle_input_key(tv_state_t *ctx, const tv_event_t *ev)
     return 1;
 }
 
-/** tv_flush_wheel() - Apply @notches of accumulated wheel motion as one zoom step. */
+/** tv_flush_wheel() - Apply @notches of accumulated wheel motion as one zoom at the pointer. */
 static void tv_flush_wheel(tv_state_t *ctx, int *notches)
 {
     if (*notches != 0 && tv_layout_ok(ctx))
     {
-        tv_do(ctx, TV_ACT_ZOOM, *notches);
+        tv_zoom_at(ctx, *notches, ctx->wheel_x, ctx->wheel_y);
     }
     *notches = 0;
 }
@@ -570,6 +599,8 @@ void tv_dispatch_input(tv_state_t *ctx, tv_input_t *in, int64_t now_us, int budg
         else if (is_wheel)
         {
             wheel += (ev.button == TV_MB_WHEEL_UP) ? 1 : -1;
+            ctx->wheel_x = ev.x;
+            ctx->wheel_y = ev.y;
         }
         else if (is_mouse)
         {
@@ -585,128 +616,6 @@ void tv_dispatch_input(tv_state_t *ctx, tv_input_t *in, int64_t now_us, int budg
         tv_handle_mouse(ctx, &drag);
     }
     tv_flush_wheel(ctx, &wheel);
-}
-
-static void termview_render_image(tv_state_t *ctx,
-                                  int         disp_char_rows,
-                                  int         disp_cols,
-                                  double      center_img_x,
-                                  double      center_img_y,
-                                  double      sign_x,
-                                  double      sign_y,
-                                  double      step,
-                                  uint32_t    xsize,
-                                  uint32_t    ysize,
-                                  double      min_val,
-                                  double      lut_scale)
-{
-#define IS_IN_BOUNDS(jj, yy)                                                          \
-    (((int) (center_img_x + sign_x * ((jj) - center_disp_x) * step) >= 0) &&          \
-     ((int) (center_img_x + sign_x * ((jj) - center_disp_x) * step) < (int) xsize) && \
-     ((int) (center_img_y + sign_y * ((yy) - center_disp_y) * step) >= 0) &&          \
-     ((int) (center_img_y + sign_y * ((yy) - center_disp_y) * step) < (int) ysize))
-
-    double center_disp_x = disp_cols / 2.0;
-    double center_disp_y = (disp_char_rows * 2) / 2.0;
-
-    for (int i = 0; i < disp_char_rows; i++)
-    {
-        for (int j = 0; j < disp_cols; j++)
-        {
-            int  img_y_top     = (int) (center_img_y + sign_y * ((i * 2) - center_disp_y) * step);
-            int  img_x_top     = (int) (center_img_x + sign_x * (j - center_disp_x) * step);
-            bool in_bounds_top = (img_x_top >= 0 && img_x_top < (int) xsize && img_y_top >= 0 &&
-                                  img_y_top < (int) ysize);
-
-            int  img_y_bot = (int) (center_img_y + sign_y * ((i * 2 + 1) - center_disp_y) * step);
-            int  img_x_bot = (int) (center_img_x + sign_x * (j - center_disp_x) * step);
-            bool in_bounds_bot = (img_x_bot >= 0 && img_x_bot < (int) xsize && img_y_bot >= 0 &&
-                                  img_y_bot < (int) ysize);
-
-            if (!in_bounds_top && !in_bounds_bot)
-            {
-                bool near_top = IS_IN_BOUNDS(j - 1, i * 2) || IS_IN_BOUNDS(j + 1, i * 2) ||
-                                IS_IN_BOUNDS(j, i * 2 - 1) || IS_IN_BOUNDS(j, i * 2 + 1);
-                bool near_bot = IS_IN_BOUNDS(j - 1, i * 2 + 1) || IS_IN_BOUNDS(j + 1, i * 2 + 1) ||
-                                IS_IN_BOUNDS(j, i * 2) || IS_IN_BOUNDS(j, i * 2 + 2);
-                if (!near_top && !near_bot)
-                {
-                    continue; // left as space
-                }
-            }
-
-            double val_top = in_bounds_top ? ctx->display_buffer[(i * 2) * disp_cols + j] : 0.0;
-            double val_bot = in_bounds_bot ? ctx->display_buffer[(i * 2 + 1) * disp_cols + j] : 0.0;
-
-            tv_rgb_t rgb_top = ctx->lut[tv_lut_idx(val_top, min_val, lut_scale)];
-            tv_rgb_t rgb_bot = ctx->lut[tv_lut_idx(val_bot, min_val, lut_scale)];
-
-            if (!in_bounds_top)
-            {
-                if (IS_IN_BOUNDS(j - 1, i * 2) || IS_IN_BOUNDS(j + 1, i * 2) ||
-                    IS_IN_BOUNDS(j, i * 2 - 1) || IS_IN_BOUNDS(j, i * 2 + 1))
-                {
-                    rgb_top = (tv_rgb_t) { 64, 64, 64 }; // Dark gray border
-                }
-                else
-                {
-                    rgb_top = (tv_rgb_t) { 0, 0, 0 };
-                }
-            }
-
-            if (!in_bounds_bot)
-            {
-                if (IS_IN_BOUNDS(j - 1, i * 2 + 1) || IS_IN_BOUNDS(j + 1, i * 2 + 1) ||
-                    IS_IN_BOUNDS(j, i * 2) || IS_IN_BOUNDS(j, i * 2 + 2))
-                {
-                    rgb_bot = (tv_rgb_t) { 64, 64, 64 }; // Dark gray border
-                }
-                else
-                {
-                    rgb_bot = (tv_rgb_t) { 0, 0, 0 };
-                }
-            }
-
-            if (ctx->roi_is_dragging)
-            {
-                int rx_min =
-                    (ctx->roi_start_x < ctx->roi_end_x) ? ctx->roi_start_x : ctx->roi_end_x;
-                int rx_max =
-                    (ctx->roi_start_x > ctx->roi_end_x) ? ctx->roi_start_x : ctx->roi_end_x;
-                int ry_min =
-                    (ctx->roi_start_y < ctx->roi_end_y) ? ctx->roi_start_y : ctx->roi_end_y;
-                int ry_max =
-                    (ctx->roi_start_y > ctx->roi_end_y) ? ctx->roi_start_y : ctx->roi_end_y;
-
-                int term_x = j + 1;
-                int term_y = i + 1;
-
-                if (term_x >= rx_min && term_x <= rx_max && term_y >= ry_min && term_y <= ry_max)
-                {
-                    if (term_x == rx_min || term_x == rx_max || term_y == ry_min ||
-                        term_y == ry_max)
-                    {
-                        rgb_top = (tv_rgb_t) { 255, 255, 0 }; // Yellow border
-                        rgb_bot = (tv_rgb_t) { 255, 255, 0 };
-                    }
-                    else
-                    {
-                        // Dim the inside of the ROI
-                        rgb_top.r /= 2;
-                        rgb_top.g /= 2;
-                        rgb_top.b /= 2;
-                        rgb_bot.r /= 2;
-                        rgb_bot.g /= 2;
-                        rgb_bot.b /= 2;
-                    }
-                }
-            }
-
-            ctx->screen[i * ctx->cols + j] =
-                tv_cell(tv_rgb(rgb_top), tv_rgb(rgb_bot), TV_G_LOWER_HALF);
-        }
-    }
-#undef IS_IN_BOUNDS
 }
 
 static void termview_render_colorbar(tv_state_t *ctx,
@@ -756,7 +665,8 @@ static void termview_render_infobar(tv_state_t *ctx,
                                     uint32_t    ysize,
                                     double      step,
                                     double      min_val,
-                                    double      max_val)
+                                    double      max_val,
+                                    int64_t     now_us)
 {
     int info_row = ctx->rows - 3;
 
@@ -767,12 +677,33 @@ static void termview_render_infobar(tv_state_t *ctx,
     char info[256];
     int  len;
 
+    /* LIVE while frames keep coming, STALE with the age of the last one otherwise */
+    char    state[32];
+    int64_t age = tv_stale_age_us(ctx, now_us) / 1000000;
+    if (age == 0)
+    {
+        snprintf(state, sizeof(state), "LIVE");
+    }
+    else
+    {
+        snprintf(state, sizeof(state), "STALE %lld%s",
+                 (long long) ((age < 60)     ? age
+                              : (age < 3600) ? age / 60
+                                             : age / 3600),
+                 (age < 60)     ? "s"
+                 : (age < 3600) ? "m"
+                                : "h");
+    }
+
     int name_len = (int) strlen(ctx->st->name);
     len = snprintf(info, sizeof(info),
-                   "Image: %s [%u x %u] Type: %d  |  CPU: %5.1f%%  UI: %3d FPS  Stream: %5.1f Hz",
+                   "Image: %s [%u x %u] Type: %d  |  CPU: %5.1f%%  UI: %3d FPS  Stream: %5.1f Hz  ",
                    ctx->st->name, xsize, ysize, ctx->st->datatype, ctx->current_cpu_usage,
                    ctx->target_fps, ctx->current_stream_fps);
     len = tv_fmt_len(len, sizeof(info));
+    int state_pos = len;
+    len += tv_fmt_len(snprintf(info + len, sizeof(info) - (size_t) len, "%s", state),
+                      sizeof(info) - (size_t) len);
     for (int k = 0; k < len && k < ctx->cols; k++)
     {
         tv_cell_t *c = &ctx->screen[info_row * ctx->cols + k];
@@ -780,6 +711,10 @@ static void termview_render_infobar(tv_state_t *ctx,
         if (k >= 7 && k < 7 + name_len)
         {
             *c = tv_cell_with_fg(*c, TV_RGB(0, 255, 255)); // Cyan
+        }
+        if (k >= state_pos)
+        {
+            *c = tv_cell_with_fg(*c, (age == 0) ? TV_RGB(80, 220, 80) : TV_RGB(255, 180, 0));
         }
     }
     len = snprintf(info, sizeof(info),
@@ -987,138 +922,8 @@ static void tv_draw_text(tv_state_t *ctx, int row, int col, const char *text)
     }
 }
 
-static const double tv_range_lo[RANGE_NB] = { 0.0, 0.001, 0.005, 0.01, 0.05, 0.10, 0.15, 0.20 };
-static const double tv_range_hi[RANGE_NB] = { 1.0, 0.999, 0.995, 0.99, 0.95, 0.90, 0.85, 0.80 };
-
-/**
- * tv_compute_range() - Display range from the finite samples (out-of-image samples are NaN).
- * Returns -1 on allocation failure. The result is always finite with min < max.
- */
-static int tv_compute_range(tv_state_t *ctx, int num_pixels, double *pmin, double *pmax)
-{
-    double min_val = 0.0, max_val = 1.0;
-
-    if (ctx->opt.range_locked)
-    {
-        min_val = ctx->opt.manual_min;
-        max_val = ctx->opt.manual_max;
-    }
-    else if (ctx->opt.range == RANGE_MINMAX)
-    {
-        int nvalid = 0;
-        for (int k = 0; k < num_pixels; k++)
-        {
-            double v = ctx->display_buffer[k];
-            if (!tv_finite(v))
-            {
-                continue;
-            }
-            if (nvalid++ == 0)
-            {
-                min_val = max_val = v;
-            }
-            else if (v < min_val)
-            {
-                min_val = v;
-            }
-            else if (v > max_val)
-            {
-                max_val = v;
-            }
-        }
-    }
-    else
-    {
-        if (num_pixels > ctx->sort_size)
-        {
-            double *tmp =
-                (double *) realloc(ctx->sort_buffer, (size_t) num_pixels * sizeof(double));
-            if (tmp == NULL)
-            {
-                return -1;
-            }
-            ctx->sort_buffer = tmp;
-            ctx->sort_size   = num_pixels;
-        }
-        int nvalid = 0;
-        for (int k = 0; k < num_pixels; k++)
-        {
-            if (tv_finite(ctx->display_buffer[k]))
-            {
-                ctx->sort_buffer[nvalid++] = ctx->display_buffer[k];
-            }
-        }
-        if (nvalid > 0)
-        {
-            qsort(ctx->sort_buffer, (size_t) nvalid, sizeof(double), compare_doubles);
-            min_val = ctx->sort_buffer[(int) (tv_range_lo[ctx->opt.range] * (nvalid - 1))];
-            max_val = ctx->sort_buffer[(int) (tv_range_hi[ctx->opt.range] * (nvalid - 1))];
-        }
-    }
-
-    if (!tv_finite(min_val) || !tv_finite(max_val))
-    {
-        min_val = 0.0;
-        max_val = 1.0;
-    }
-    if (!(max_val > min_val))
-    {
-        double w = fmax(fabs(min_val) * 1e-6, 0.5);
-        min_val -= w;
-        max_val += w;
-    }
-    *pmin = min_val;
-    *pmax = max_val;
-    return 0;
-}
-
-/** tv_sample() - Nearest-neighbour samples of the view; NaN marks out-of-image samples. */
-static void tv_sample(tv_state_t *ctx,
-                      int         disp_img_rows,
-                      int         disp_cols,
-                      double      center_img_x,
-                      double      center_img_y,
-                      double      sign_x,
-                      double      sign_y,
-                      double      step)
-{
-    const tv_stream_t *st            = ctx->st;
-    int                xsize         = (int) st->xsize;
-    int                ysize         = (int) st->ysize;
-    double             center_disp_x = disp_cols / 2.0;
-    double             center_disp_y = disp_img_rows / 2.0;
-    int                buf_idx       = 0;
-
-    for (int i = 0; i < disp_img_rows; i++)
-    {
-        int img_y = (int) (center_img_y + sign_y * (i - center_disp_y) * step);
-        for (int j = 0; j < disp_cols; j++)
-        {
-            int img_x = (int) (center_img_x + sign_x * (j - center_disp_x) * step);
-            if (img_x < 0 || img_x >= xsize || img_y < 0 || img_y >= ysize)
-            {
-                ctx->display_buffer[buf_idx++] = NAN;
-                continue;
-            }
-            size_t idx = (size_t) img_y * (size_t) xsize + (size_t) img_x;
-            if (st->datatype == _DATATYPE_FLOAT)
-            {
-                ctx->display_buffer[buf_idx++] = st->img.array.F[idx];
-            }
-            else if (st->datatype == _DATATYPE_UINT16)
-            {
-                ctx->display_buffer[buf_idx++] = st->img.array.UI16[idx];
-            }
-            else
-            {
-                ctx->display_buffer[buf_idx++] = get_pixel_value(&st->img, st->datatype, idx);
-            }
-        }
-    }
-}
-
-/** tv_grow() - Make sure the grids, sample and frame buffers fit the terminal; -1 on failure. */
-static int tv_grow(tv_state_t *ctx, int disp_samples)
+/** tv_grow() - Make sure the screen grids and the frame buffer fit the terminal. */
+static int tv_grow(tv_state_t *ctx)
 {
     if (ctx->rows * ctx->cols > ctx->screen_size)
     {
@@ -1138,17 +943,6 @@ static int tv_grow(tv_state_t *ctx, int disp_samples)
         ctx->screen_size = (int) n;
         tv_invalidate(ctx);
     }
-    if (disp_samples > ctx->buffer_size)
-    {
-        double *tmp =
-            (double *) realloc(ctx->display_buffer, (size_t) disp_samples * sizeof(double));
-        if (tmp == NULL)
-        {
-            return -1;
-        }
-        ctx->display_buffer = tmp;
-        ctx->buffer_size    = disp_samples;
-    }
     size_t needed_fb = tv_framebuf_size(ctx->rows, ctx->cols);
     if (needed_fb > ctx->frame_buffer_size)
     {
@@ -1163,6 +957,66 @@ static int tv_grow(tv_state_t *ctx, int disp_samples)
     return 0;
 }
 
+/** tv_dim() - Half-brightness version of a packed colour. */
+static inline uint32_t tv_dim(uint32_t c)
+{
+    return (c >> 1) & 0x7F7F7F;
+}
+
+/** tv_draw_roi() - Box-zoom selection: yellow outline, dimmed inside. */
+static void tv_draw_roi(tv_state_t *ctx)
+{
+    const tv_layout_t *l  = &ctx->lay;
+    int                x0 = (ctx->roi_start_x < ctx->roi_end_x) ? ctx->roi_start_x : ctx->roi_end_x;
+    int                x1 = (ctx->roi_start_x > ctx->roi_end_x) ? ctx->roi_start_x : ctx->roi_end_x;
+    int                y0 = (ctx->roi_start_y < ctx->roi_end_y) ? ctx->roi_start_y : ctx->roi_end_y;
+    int                y1 = (ctx->roi_start_y > ctx->roi_end_y) ? ctx->roi_start_y : ctx->roi_end_y;
+    uint32_t           yellow = TV_RGB(255, 255, 0);
+    for (int r = y0; r <= y1 && r <= l->img_rows; r++)
+    {
+        for (int c = x0; c <= x1 && c <= l->img_cols; c++)
+        {
+            tv_cell_t *cell = &ctx->screen[(r - 1) * ctx->cols + (c - 1)];
+            if (r == y0 || r == y1 || c == x0 || c == x1)
+            {
+                *cell = tv_cell(yellow, yellow, TV_G_LOWER_HALF);
+            }
+            else
+            {
+                *cell = tv_cell(tv_dim(tv_cell_bg(*cell)), tv_dim(tv_cell_fg(*cell)),
+                                tv_cell_glyph(*cell));
+            }
+        }
+    }
+}
+
+/** tv_compose() - Screen = cached image layer + colorbar + info bar + overlays. */
+static void tv_compose(tv_state_t *ctx, int64_t now_us)
+{
+    const tv_layout_t *l     = &ctx->lay;
+    tv_cell_t          blank = tv_cell(TV_RGB(0, 0, 0), TV_RGB(255, 255, 255), ' ');
+    for (int i = 0; i < ctx->rows * ctx->cols; i++)
+    {
+        ctx->screen[i] = blank;
+    }
+    for (int r = 0; r < l->img_rows; r++)
+    {
+        memcpy(&ctx->screen[r * ctx->cols], &ctx->im.cells[(size_t) r * l->img_cols],
+               (size_t) l->img_cols * sizeof(tv_cell_t));
+    }
+    if (ctx->roi_is_dragging)
+    {
+        tv_draw_roi(ctx);
+    }
+    tv_xform_t xf;
+    tv_xform_compute(&xf, l, &ctx->view, ctx->st->xsize, ctx->st->ysize, ctx->opt.flip_h,
+                     ctx->opt.flip_v);
+    termview_render_colorbar(ctx, l->img_rows, l->bar_col, ctx->cur_min, ctx->cur_max);
+    termview_render_infobar(ctx, ctx->st->xsize, ctx->st->ysize, xf.step, ctx->cur_min,
+                            ctx->cur_max, now_us);
+    termview_render_popup(ctx, l->img_rows, l->img_cols);
+}
+
 void termview_options_init(termview_options_t *opt)
 {
     memset(opt, 0, sizeof(*opt));
@@ -1175,6 +1029,7 @@ void termview_options_init(termview_options_t *opt)
     opt->flip_h       = false;
     opt->flip_v       = false;
     opt->fps          = 20;
+    opt->range_smooth = true;
 }
 
 int termview_run(const char *name, const termview_options_t *opt)
@@ -1212,12 +1067,24 @@ int termview_run(const char *name, const termview_options_t *opt)
     ctx->lut_scale         = -1;
     ctx->cur_max           = 1.0;
     ctx->target_fps        = (opt->fps >= 1 && opt->fps <= 120) ? opt->fps : 20;
-    ctx->last_cnt0         = (uint64_t) -1;
+    ctx->last_cnt0         = st.img.md->cnt0; /* the first frame is drawn by the TV_D_FULL above */
+    ctx->period_us         = -1.0;            /* no frame interval observed yet */
     ctx->last_cnt0_for_fps = st.img.md->cnt0;
     int alloc_failed       = 0;
 
     ctx->stats_time_us = tv_now_us();
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ctx->stats_cpu);
+
+    /* age of the newest frame at startup, from the stream's own write time */
+    struct timespec wall;
+    clock_gettime(CLOCK_ISIO, &wall);
+    double age          = (wall.tv_sec - st.img.md->writetime.tv_sec) +
+                          (wall.tv_nsec - st.img.md->writetime.tv_nsec) / 1e9;
+    ctx->last_change_us = ctx->stats_time_us;
+    if (st.img.md->writetime.tv_sec > 0 && tv_finite(age) && age > 0.0 && age < 1e9)
+    {
+        ctx->last_change_us -= (int64_t) (age * 1e6);
+    }
 
     if (tv_term_enter() != 0)
     {
@@ -1338,7 +1205,7 @@ int termview_run(const char *name, const termview_options_t *opt)
         if (now >= next_data)
         {
             next_data = (next_data + period > now) ? next_data + period : now + period;
-            if (st.img.md->cnt0 != ctx->last_cnt0)
+            if (tv_note_cnt0(ctx, st.img.md->cnt0, now))
             {
                 ctx->dirty |= TV_D_DATA;
             }
@@ -1349,91 +1216,92 @@ int termview_run(const char *name, const termview_options_t *opt)
         {
             continue;
         }
-        last_render    = now;
-        ctx->last_cnt0 = st.img.md->cnt0;
-        ctx->dirty     = 0;
+        last_render = now;
+        if (tv_note_cnt0(ctx, st.img.md->cnt0, now))
+        {
+            ctx->dirty |=
+                TV_D_DATA; /* a frame arrived since the poll: sample it with this render */
+        }
+        int dirty  = ctx->dirty;
+        ctx->dirty = 0;
 
-        uint32_t xsize = st.xsize;
-        uint32_t ysize = st.ysize;
-
-        int disp_char_rows = ctx->rows - TV_INFO_ROWS;
-        int disp_cols      = ctx->cols - TV_BAR_WIDTH - 1;
-        int bar_col_start  = ctx->cols - TV_BAR_WIDTH;
-        int disp_img_rows  = disp_char_rows * 2;
-
-        if (tv_grow(ctx, tv_layout_ok(ctx) ? disp_img_rows * disp_cols : 0) != 0)
+        tv_layout_t lay;
+        tv_layout_compute(&lay, ctx->rows, ctx->cols);
+        if (lay.rows != ctx->lay.rows || lay.cols != ctx->lay.cols)
+        {
+            dirty |= TV_D_GEOM;
+        }
+        ctx->lay = lay;
+        if (tv_grow(ctx) != 0)
         {
             alloc_failed = 1;
             break;
         }
-
-        tv_cell_t blank = tv_cell(TV_RGB(0, 0, 0), TV_RGB(255, 255, 255), ' ');
-        for (int i = 0; i < ctx->rows * ctx->cols; i++)
+        if (!lay.valid)
         {
-            ctx->screen[i] = blank;
-        }
-
-        if (!tv_layout_ok(ctx))
-        {
+            tv_cell_t blank = tv_cell(TV_RGB(0, 0, 0), TV_RGB(255, 255, 255), ' ');
+            for (int i = 0; i < ctx->rows * ctx->cols; i++)
+            {
+                ctx->screen[i] = blank;
+            }
             char msg[64];
             snprintf(msg, sizeof(msg), "terminal too small (%dx%d)", ctx->cols, ctx->rows);
             int len = (int) strlen(msg);
             tv_draw_text(ctx, ctx->rows / 2, (len < ctx->cols) ? (ctx->cols - len) / 2 : 0, msg);
             ctx->mouse_is_dragging = 0;
             ctx->roi_is_dragging   = 0;
+            ctx->im.have_range     = 0;
+            ctx->lay.rows          = 0; /* rebuild the tables once the size is usable again */
             termview_flush_ansi(ctx);
             continue;
         }
 
-        double zmax = 64.0 * fmax((double) xsize / disp_cols, (double) ysize / disp_img_rows);
-        tv_view_sanitize(&ctx->view.zoom, &ctx->view.cx, &ctx->view.cy, zmax);
-
-        double view_w_img = (double) xsize / ctx->view.zoom;
-        double view_h_img = (double) ysize / ctx->view.zoom;
-        double step       = fmax(view_w_img / disp_cols, view_h_img / disp_img_rows);
-
-        double center_img_x = ctx->view.cx * xsize;
-        double center_img_y = ctx->view.cy * ysize;
-
-        double sign_y = ctx->opt.flip_v ? -1.0 : 1.0;
-        double sign_x = ctx->opt.flip_h ? -1.0 : 1.0;
-
-        tv_sample(ctx, disp_img_rows, disp_cols, center_img_x, center_img_y, sign_x, sign_y, step);
-
-        double min_val, max_val;
-        if (tv_compute_range(ctx, disp_img_rows * disp_cols, &min_val, &max_val) != 0)
+        /* geometry -> tables; data or geometry -> samples; anything but chrome -> recolour */
+        int sampled = 0;
+        if (dirty & (TV_D_GEOM | TV_D_FULL))
         {
-            alloc_failed = 1;
-            break;
+            tv_view_sanitize(&ctx->view.zoom, &ctx->view.cx, &ctx->view.cy, tv_zmax(ctx));
+            tv_xform_t xf;
+            tv_xform_compute(&xf, &lay, &ctx->view, st.xsize, st.ysize, ctx->opt.flip_h,
+                             ctx->opt.flip_v);
+            if (tv_image_geom(&ctx->im, &lay, &xf, st.xsize, st.ysize) != 0)
+            {
+                alloc_failed = 1;
+                break;
+            }
         }
-        ctx->cur_min = min_val;
-        ctx->cur_max = max_val;
-
-        double lut_scale = (TV_LUT_N - 1) / (max_val - min_val);
-        if (!tv_finite(lut_scale))
+        if (dirty & (TV_D_GEOM | TV_D_FULL | TV_D_DATA))
         {
-            lut_scale = 0.0;
+            sampled = tv_image_sample(&ctx->im, st.img.array.raw, st.datatype);
+            if (!sampled && dirty == TV_D_DATA && ctx->im.settled)
+            {
+                continue; /* new frame, same picture: nothing to do */
+            }
         }
-
-        if ((int) ctx->opt.colormap != ctx->lut_cmap || (int) ctx->opt.scale != ctx->lut_scale)
+        /* a range still converging finishes on unchanged samples (and on the 1 Hz tick) */
+        if (sampled || (dirty & TV_D_MAP) || !ctx->im.settled)
         {
-            tv_lut_build(ctx->lut, ctx->opt.colormap, ctx->opt.scale);
-            ctx->lut_cmap  = ctx->opt.colormap;
-            ctx->lut_scale = ctx->opt.scale;
+            if ((int) ctx->opt.colormap != ctx->lut_cmap || (int) ctx->opt.scale != ctx->lut_scale)
+            {
+                tv_lut_build(ctx->lut, ctx->opt.colormap, ctx->opt.scale);
+                ctx->lut_cmap  = ctx->opt.colormap;
+                ctx->lut_scale = ctx->opt.scale;
+            }
+            /* a user change shows its result at once; only stream updates are smoothed */
+            tv_image_range(&ctx->im, &ctx->opt,
+                           !ctx->im.have_range || !sampled ||
+                               (dirty & (TV_D_GEOM | TV_D_MAP | TV_D_FULL)));
+            ctx->cur_min = ctx->im.lo;
+            ctx->cur_max = ctx->im.hi;
+            tv_image_render(&ctx->im, ctx->lut);
         }
-
-        termview_render_image(ctx, disp_char_rows, disp_cols, center_img_x, center_img_y, sign_x,
-                              sign_y, step, xsize, ysize, min_val, lut_scale);
-        termview_render_colorbar(ctx, disp_char_rows, bar_col_start, min_val, max_val);
-        termview_render_infobar(ctx, xsize, ysize, step, min_val, max_val);
-        termview_render_popup(ctx, disp_char_rows, disp_cols);
+        tv_compose(ctx, now);
         termview_flush_ansi(ctx);
     }
 
     tv_term_restore();
 
-    free(ctx->display_buffer);
-    free(ctx->sort_buffer);
+    tv_image_free(&ctx->im);
     free(ctx->screen);
     free(ctx->prev_screen);
     free(ctx->frame_buffer);

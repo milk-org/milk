@@ -629,6 +629,117 @@ def test_input_does_not_wait_for_data_frames(cfg):
             v.close()
 
 
+def test_live_and_stale_indicator(cfg):
+    with ShmDir(cfg.mkstream) as shm:
+        live = shm.stream("live", "-s", "64x64", "-p", "noise", "-r", "50")
+        static = shm.stream("static", "-s", "64x64")
+        v = start(cfg, shm, live)
+        try:
+            v.pump(1.5)
+            check(v.screen_has("LIVE"), "a 50 Hz stream is not shown LIVE")
+            quit_clean(v)
+        finally:
+            v.close()
+        v = start(cfg, shm, static)
+        try:
+            check(v.screen_has("STALE", 3.0), "a stream written once never turns STALE")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def val_range(v):
+    """The 'Val: [lo : hi]' range shown in the info bar, or None."""
+    import re
+
+    m = re.search(r"Val: \[([-+0-9.eE]+) : ([-+0-9.eE]+)\]", v.screen.text())
+    return (float(m.group(1)), float(m.group(2))) if m else None
+
+
+def wait_range(v, ok, timeout):
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
+        r = val_range(v)
+        if r and ok(r):
+            return r
+        v.pump(0.05)
+    return val_range(v)
+
+
+def test_range_mode_on_static_stream(cfg):
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("ramp", "-s", "256x256")
+        v = start(cfg, shm, s)
+        try:
+            v.pump(0.3)
+            v.send(b"rrrrrrr")  # 20-80%
+            r = wait_range(
+                v, lambda r: abs(r[0] - 200) < 3 and abs(r[1] - 800) < 3, 1.5
+            )
+            check(r and abs(r[0] - 200) < 3 and abs(r[1] - 800) < 3, f"20-80% gave {r}")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_range_settles_after_transient(cfg):
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("ramp", "-s", "128x128")
+        v = start(cfg, shm, s)
+        try:
+            v.pump(0.5)
+            gen = subprocess.Popen(
+                [cfg.mkstream, "-n", s, "-u", "-p", "spike", "-r", "10", "-d", "0.35"],
+                env=shm.env,
+            )
+            peak = wait_range(v, lambda r: r[1] > 4000, 1.0)
+            gen.wait(5)
+            check(peak and peak[1] > 4000, f"the hot frame was not shown: {peak}")
+            r = wait_range(v, lambda r: r[1] < 1100, 2.0)
+            check(r and r[1] < 1100, f"range stuck at {r} after the transient frame")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_stale_seeded_from_write_time(cfg):
+    import re
+
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("old", "-s", "64x64")
+        time.sleep(2.2)
+        v = start(cfg, shm, s)
+        try:
+            check(
+                v.screen_has("STALE", 0.6),
+                "a 2 s old stream is not shown STALE at startup",
+            )
+            m = re.search(r"STALE (\d+)s", v.screen.text())
+            check(m and int(m.group(1)) >= 2, f"wrong age: {m.group(0) if m else None}")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_frame_between_polls_is_shown(cfg):
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("ramp", "-s", "64x64")
+        v = start(cfg, shm, s, "-f", "1")
+        try:
+            v.pump(1.2)
+            subprocess.run(
+                [cfg.mkstream, "-n", s, "-u", "-p", "const"], env=shm.env, check=True
+            )
+            v.send(b"m")  # an input-driven frame right after the new data
+            r = wait_range(v, lambda r: r[0] > 40 and r[1] < 44, 2.5)
+            check(r and r[0] > 40 and r[1] < 44, f"new frame never shown: range {r}")
+            v.send(b"\x1b")
+            v.pump(0.2)
+            quit_clean(v)
+        finally:
+            v.close()
+
+
 TESTS = [
     test_help_oneline,
     test_missing_stream,
@@ -645,6 +756,11 @@ TESTS = [
     test_split_and_legacy_mouse,
     test_drag_and_wheel_storms_are_capped,
     test_input_does_not_wait_for_data_frames,
+    test_live_and_stale_indicator,
+    test_range_mode_on_static_stream,
+    test_range_settles_after_transient,
+    test_stale_seeded_from_write_time,
+    test_frame_between_polls_is_shown,
 ]
 
 

@@ -80,9 +80,10 @@ typedef struct
     bool                range_locked; /**< Freeze min/max when true      */
     double              manual_min;
     double              manual_max;
-    bool                flip_h; /**< Flip image horizontally       */
-    bool                flip_v; /**< Flip image vertically         */
-    int                 fps;    /**< UI refresh rate [Hz], 1..120   */
+    bool                flip_h;       /**< Flip image horizontally       */
+    bool                flip_v;       /**< Flip image vertically         */
+    int                 fps;          /**< UI refresh rate [Hz], 1..120   */
+    bool                range_smooth; /**< steady auto range (hysteresis) */
 } termview_options_t;
 
 /** termview_options_init() - Default options: greyscale, linear, min-max, 20 fps, no flips. */

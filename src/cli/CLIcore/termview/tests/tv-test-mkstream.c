@@ -34,8 +34,10 @@ static void usage(void)
 {
     fprintf(stderr,
             "usage: tv-test-mkstream -n NAME [-t u8|i16|u16|i32|f32|f64] [-s WxH[xZ]]\n"
-            "         [-p ramp|noise|nan|inf|const] [-r RATE_HZ] [-d SECONDS] [-x]\n"
-            "  -r 0 writes one frame; -d 0 runs until SIGTERM; -x deletes the stream at exit\n");
+            "         [-p ramp|noise|nan|inf|const|spike] [-r RATE_HZ] [-d SECONDS] [-x] [-u]\n"
+            "  -r 0 writes one frame; -d 0 runs until SIGTERM; -x deletes the stream at exit\n"
+            "  -u writes into the existing stream instead of creating it\n"
+            "  spike: a ramp with hot (5000) pixels in frame 1 only\n");
 }
 
 static int parse_type(const char *s, uint8_t *dt)
@@ -83,6 +85,10 @@ static double pixel_value(const char *pattern,
     if (strcmp(pattern, "const") == 0)
     {
         return 42.0;
+    }
+    if (strcmp(pattern, "spike") == 0 && frame == 1 && i % 37 == 0)
+    {
+        return 5000.0;
     }
     if (strcmp(pattern, "nan") == 0 && i % 7 == 0)
     {
@@ -135,9 +141,10 @@ int main(int argc, char **argv)
     double      rate    = 0.0;
     double      dur     = 0.0;
     int         del     = 0;
+    int         update  = 0;
     int         c;
 
-    while ((c = getopt(argc, argv, "n:t:s:p:r:d:x")) != -1)
+    while ((c = getopt(argc, argv, "n:t:s:p:r:d:xu")) != -1)
     {
         switch (c)
         {
@@ -178,6 +185,9 @@ int main(int argc, char **argv)
         case 'x':
             del = 1;
             break;
+        case 'u':
+            update = 1;
+            break;
         default:
             usage();
             return 2;
@@ -209,9 +219,11 @@ int main(int argc, char **argv)
 
     IMAGE img;
     memset(&img, 0, sizeof(img));
-    if (ImageStreamIO_createIm(&img, name, naxis, size, dt, 1, 0, 0) != IMAGESTREAMIO_SUCCESS)
+    if (update
+            ? ImageStreamIO_openIm(&img, name) != IMAGESTREAMIO_SUCCESS
+            : ImageStreamIO_createIm(&img, name, naxis, size, dt, 1, 0, 0) != IMAGESTREAMIO_SUCCESS)
     {
-        fprintf(stderr, "tv-test-mkstream: cannot create %s\n", path);
+        fprintf(stderr, "tv-test-mkstream: cannot %s %s\n", update ? "open" : "create", path);
         return 1;
     }
 
