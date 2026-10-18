@@ -209,15 +209,4 @@ static inline void tv_newline(char *buf, size_t *pos)
     buf[(*pos)++] = '\n';
 }
 
-/* -----------------------------------------------------------------------
- * Compute required frame-buffer size for a given terminal size.
- *
- * A changed cell emits at most tv_move (14) + tv_bg (19) + tv_fg (19) + glyph (3) = 55 bytes,
- * plus the per-frame sync markers and reset.
- * ----------------------------------------------------------------------- */
-static inline size_t tv_framebuf_size(int rows, int cols)
-{
-    return (size_t) rows * (size_t) cols * 56 + (size_t) rows * 16 + 4096;
-}
-
 #endif /* TERMVIEW_ANSI_H */

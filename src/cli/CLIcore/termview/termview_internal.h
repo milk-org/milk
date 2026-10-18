@@ -11,11 +11,13 @@
 #define TERMVIEW_INTERNAL_H
 
 #include <signal.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include "ImageStreamIO/ImageStruct.h"
 #include "termview.h"
@@ -124,6 +126,86 @@ static inline int tv_fmt_len(int n, size_t cap)
 }
 
 /* -----------------------------------------------------------------------
+ * Screen cells: one 64-bit word per terminal cell, compared as an integer
+ * ----------------------------------------------------------------------- */
+typedef struct
+{
+    uint8_t r, g, b;
+} tv_rgb_t;
+
+/** Packed cell: bits 0-23 background RGB, 24-47 foreground RGB, 48-55 glyph, 56-63 attributes. */
+typedef uint64_t tv_cell_t;
+
+/** Glyph codes below 0x80 are ASCII; codes from 0x80 index the UTF-8 table in tv_flush.c. */
+enum
+{
+    TV_G_LOWER_HALF = 0x80, /**< U+2584, top half shows bg, bottom half fg */
+    TV_G_FULL_BLOCK,        /**< U+2588 */
+    TV_G_COUNT
+};
+
+/** Value never produced by tv_cell(): marks a cell whose on-screen content is unknown. */
+#define TV_CELL_UNKNOWN UINT64_MAX
+
+/** Packed 24-bit colour, as stored in a cell. */
+#define TV_RGB(r, g, b) (((uint32_t) (r) << 16) | ((uint32_t) (g) << 8) | (uint32_t) (b))
+
+static inline uint32_t tv_rgb(tv_rgb_t c)
+{
+    return ((uint32_t) c.r << 16) | ((uint32_t) c.g << 8) | c.b;
+}
+
+static inline tv_cell_t tv_cell(uint32_t bg, uint32_t fg, uint8_t glyph)
+{
+    return (uint64_t) (bg & 0xFFFFFF) | ((uint64_t) (fg & 0xFFFFFF) << 24) |
+           ((uint64_t) glyph << 48);
+}
+
+static inline uint32_t tv_cell_bg(tv_cell_t c)
+{
+    return (uint32_t) (c & 0xFFFFFF);
+}
+
+static inline uint32_t tv_cell_fg(tv_cell_t c)
+{
+    return (uint32_t) ((c >> 24) & 0xFFFFFF);
+}
+
+static inline uint8_t tv_cell_glyph(tv_cell_t c)
+{
+    return (uint8_t) (c >> 48);
+}
+
+static inline tv_cell_t tv_cell_with_fg(tv_cell_t c, uint32_t fg)
+{
+    return (c & ~((uint64_t) 0xFFFFFF << 24)) | ((uint64_t) (fg & 0xFFFFFF) << 24);
+}
+
+static inline tv_cell_t tv_cell_with_glyph(tv_cell_t c, uint8_t glyph)
+{
+    return (c & ~((uint64_t) 0xFF << 48)) | ((uint64_t) glyph << 48);
+}
+
+/** tv_framebuf_size() - Worst-case bytes tv_flush_diff() can emit for a rows x cols grid. */
+size_t tv_framebuf_size(int rows, int cols);
+
+/**
+ * tv_flush_diff() - Escape sequences turning @prev into @cur, written to @out; @prev is updated.
+ * Returns 0 when no cell changed (nothing to write).
+ */
+size_t tv_flush_diff(char *out, const tv_cell_t *cur, tv_cell_t *prev, int rows, int cols);
+
+/* -----------------------------------------------------------------------
+ * Colormaps (tv_cmap.c)
+ * ----------------------------------------------------------------------- */
+
+/** tv_cmap_color() - Colour of @cmap at @v in [0, 1] (clamped). */
+tv_rgb_t tv_cmap_color(termview_colormap_t cmap, double v);
+
+/** tv_lut_build() - Fill @lut[TV_LUT_N + 1] for @cmap and @scale; last entry: NaN colour. */
+void tv_lut_build(tv_rgb_t *lut, termview_colormap_t cmap, termview_scale_t scale);
+
+/* -----------------------------------------------------------------------
  * Name tables (tv_cmap.c)
  * ----------------------------------------------------------------------- */
 extern const char *const tv_cmap_names[COLORMAP_NB];
@@ -172,5 +254,79 @@ typedef struct
 
 int  tv_stream_open(tv_stream_t *s, const char *arg, char *err, size_t errsz);
 void tv_stream_close(tv_stream_t *s);
+
+/* -----------------------------------------------------------------------
+ * Viewer state (termview.c)
+ * ----------------------------------------------------------------------- */
+typedef struct
+{
+    int button;   /**< 0 left, 1 middle, 2 right, 64/65 wheel up/down */
+    int x;        /**< 1-indexed column */
+    int y;        /**< 1-indexed row */
+    int is_press; /**< 1 for press/drag, 0 for release */
+    int is_drag;  /**< 1 if motion with a button held */
+} tv_mouse_event_t;
+
+/** Image-to-display mapping parameters; flips live in the options. */
+typedef struct
+{
+    double zoom;
+    double cx; /**< view centre, fraction of the image width */
+    double cy; /**< view centre, fraction of the image height */
+} tv_view_t;
+
+typedef struct
+{
+    tv_stream_t       *st;
+    termview_options_t opt;
+    tv_view_t          view;
+    int                rows, cols; /**< terminal size */
+    int                running;
+    int                dirty; /**< something changed: render the next frame */
+    int                exit_status;
+
+    tv_rgb_t lut[TV_LUT_N + 1]; /**< [TV_LUT_N]: NaN/Inf pixels */
+    int      lut_cmap;
+    int      lut_scale;
+    double   cur_min, cur_max; /**< range of the last rendered frame */
+
+    int             target_fps;
+    double          current_cpu_usage;
+    double          current_stream_fps;
+    uint64_t        last_cnt0_for_fps;
+    uint64_t        last_cnt0;
+    struct timespec last_time_real;
+    struct timespec last_time_cpu;
+    struct timespec last_render_real;
+    long            timeout_us;
+
+    int             popup_type;
+    struct timespec popup_expiry_time;
+
+    tv_mouse_event_t mouse;
+    int              mouse_is_dragging;
+    int              roi_is_dragging;
+    int              last_mouse_x;
+    int              last_mouse_y;
+    int              roi_start_x;
+    int              roi_start_y;
+    int              roi_end_x;
+    int              roi_end_y;
+
+    int         input_mode;
+    char        input_buf[64];
+    int         input_len;
+    const char *input_err; /**< validation message shown in the prompt line */
+
+    double    *display_buffer;
+    int        buffer_size;
+    tv_cell_t *screen;
+    tv_cell_t *prev_screen;
+    int        screen_size;
+    char      *frame_buffer;
+    size_t     frame_buffer_size;
+    double    *sort_buffer; /**< percentile scratch, grown on demand */
+    int        sort_size;
+} tv_state_t;
 
 #endif /* TERMVIEW_INTERNAL_H */
