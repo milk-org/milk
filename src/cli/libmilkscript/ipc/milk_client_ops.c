@@ -1766,15 +1766,12 @@ static int expr_streams(const char *expr, IMAGE *imgs, int *other)
         }
         memmove(id, rest, strlen(rest) + 1);
         id[strcspn(id, ".")] = '\0';
-        int  dup             = 0;
-        char shm[1024];
+        int dup              = 0;
         for (int i = 0; i < n && !dup; i++)
         {
             dup = (strcmp(imgs[i].name, id) == 0);
         }
-        if (!dup && n < WAIT_EXPR_MAXS &&
-            ImageStreamIO_filename(shm, sizeof(shm), id) == IMAGESTREAMIO_SUCCESS &&
-            access(shm, R_OK) == 0 && ImageStreamIO_openIm(&imgs[n], id) == IMAGESTREAMIO_SUCCESS)
+        if (!dup && n < WAIT_EXPR_MAXS && milk_waitfor_open(&imgs[n], id) == 0)
         {
             if (imgs[n].md != NULL && imgs[n].md->sem > 0)
             {
@@ -1948,8 +1945,7 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
 
     for (int i = 0; i < nstreams; i++)
     {
-        if (ImageStreamIO_openIm(&imgs[i], streams[i]) == IMAGESTREAMIO_SUCCESS &&
-            imgs[i].md != NULL)
+        if (milk_waitfor_open(&imgs[i], streams[i]) == 0)
         {
             opened[i]   = 1;
             init_cnt[i] = imgs[i].md->cnt0;
@@ -2000,8 +1996,7 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
             0; /* a stream not yet created, without semaphores, or local (server-side) */
         for (int i = 0; i < nstreams && hit < 0; i++)
         {
-            if (!opened[i] && ImageStreamIO_openIm(&imgs[i], streams[i]) == IMAGESTREAMIO_SUCCESS &&
-                imgs[i].md != NULL)
+            if (!opened[i] && milk_waitfor_open(&imgs[i], streams[i]) == 0)
             {
                 opened[i] = 1;
                 if (!has_init[i])

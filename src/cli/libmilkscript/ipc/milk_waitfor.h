@@ -16,6 +16,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "ImageStreamIO/ImageStruct.h"
+
 /** Return codes beyond 0 (condition met): */
 #define MILK_WAIT_TIMEOUT 124
 #define MILK_WAIT_CANCEL 130
@@ -60,6 +62,10 @@ int milk_waitfor_eq(const char            *lhs,
                     double                 t_start,
                     double                 timeout_sec,
                     const milk_wait_ops_t *ops);
+
+/** milk_waitfor_open() - open stream @sname into @img if its file exists (ImageStreamIO warns about a missing
+ * one); 0 when open. */
+int milk_waitfor_open(IMAGE *img, const char *sname);
 
 int milk_waitfor_stream(const char            *sname,
                         long                   nframes,

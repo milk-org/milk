@@ -421,6 +421,34 @@ def test_S5_on_when_level_hold_every(tmp_path, env):
     assert value(res.stdout, "bad1") == "2" and value(res.stdout, "bad2") == "2", out
 
 
+@pytest.mark.parametrize("env", [{}, {"MILK_NO_BUILTINS": "1"}])
+def test_S5_waits_for_missing_streams_are_quiet(tmp_path, env):
+    """No ImageStreamIO warning while a stream does not exist (@waitany printed one per poll), and the
+    waits still see it appear."""
+    res = milk_bash(
+        '@waitfor s.nq1 -t 0.3; echo "a=$?"\n'
+        '@waitfor s.nq1 5 -t 0.3; echo "b=$?"\n'
+        '@waitany s.nq2 s.nq3 -t 0.3 >/dev/null; echo "c=$?"\n'
+        '( sleep 0.3; mem.mk2Dim "@S:nq4" 4 4 >/dev/null\n'
+        '  for i in 1 2 3; do @calc "nq4 = $i"; sleep 0.05; done ) &\n'
+        '@waitfor s.nq4 2 -t 5; echo "d=$?"; wait\n'
+        '( sleep 0.3; mem.mk2Dim "@S:nq6" 4 4 >/dev/null ) &\n'
+        '@waitany s.nq5 s.nq6 -t 5; echo "e=$?"; wait',
+        tmp_path,
+        env,
+        timeout=60,
+    )
+    out = res.stdout + res.stderr
+    assert [value(res.stdout, k) for k in "abcde"] == [
+        "124",
+        "124",
+        "124",
+        "0",
+        "0",
+    ], out
+    assert "nq6" in res.stdout and "Cannot open shm" not in out, out
+
+
 # ------------------------------------------------------------- S6: @args, user commands
 
 

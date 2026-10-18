@@ -193,6 +193,19 @@ int milk_waitfor_eq(const char            *lhs,
     }
 }
 
+int milk_waitfor_open(IMAGE *img, const char *sname)
+{
+    char shm[1024];
+
+    if (sname[0] == '\0' ||
+        (ImageStreamIO_filename(shm, sizeof(shm), sname) == IMAGESTREAMIO_SUCCESS &&
+         access(shm, F_OK) != 0))
+    {
+        return -1;
+    }
+    return (ImageStreamIO_openIm(img, sname) == IMAGESTREAMIO_SUCCESS && img->md != NULL) ? 0 : -1;
+}
+
 /** wait_created() - open @sname into @img, waiting (inotify) until it exists; 0 when open. */
 static int wait_created(IMAGE                 *img,
                         const char            *sname,
@@ -207,9 +220,7 @@ static int wait_created(IMAGE                 *img,
     int  named = (ImageStreamIO_filename(shm, sizeof(shm), sname) == IMAGESTREAMIO_SUCCESS);
 
     *created = 0;
-    /* no open attempt while there is no file (ImageStreamIO would warn) */
-    while ((named && access(shm, F_OK) != 0) ||
-           ImageStreamIO_openIm(img, sname) != IMAGESTREAMIO_SUCCESS || img->md == NULL)
+    while (milk_waitfor_open(img, sname) != 0)
     {
         *created = 1;
         if ((rc = wait_stop(ops, t_start, timeout_sec)) != 0)
@@ -262,13 +273,9 @@ int milk_waitfor_stream(const char            *sname,
 {
     IMAGE img;
     memset(&img, 0, sizeof(img));
-    if (!wait_create)
+    if (!wait_create && milk_waitfor_open(&img, sname) != 0)
     {
-        if (sname[0] == '\0' || ImageStreamIO_openIm(&img, sname) != IMAGESTREAMIO_SUCCESS ||
-            img.md == NULL)
-        {
-            return MILK_WAIT_ABSENT;
-        }
+        return MILK_WAIT_ABSENT;
     }
     int created = 0;
     if (wait_create)
