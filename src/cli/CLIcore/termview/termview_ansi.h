@@ -28,38 +28,30 @@
 
 /* -----------------------------------------------------------------------
  * Cursor movement: \e[<row>;<col>H  (1-indexed)
- * Worst case: "\e[999;999H" = 10 bytes
+ * Worst case: "\e[99999;99999H" = 14 bytes
  * ----------------------------------------------------------------------- */
+static inline void tv_put_uint(char *buf, size_t *pos, unsigned int v)
+{
+    char tmp[10];
+    int  n = 0;
+    do
+    {
+        tmp[n++] = (char) ('0' + v % 10);
+        v /= 10;
+    } while (v > 0 && n < (int) sizeof(tmp));
+    while (n > 0)
+    {
+        buf[(*pos)++] = tmp[--n];
+    }
+}
+
 static inline void tv_move(char *buf, size_t *pos, int row, int col)
 {
-    /* Hand-rolled integer serialization avoids printf overhead */
     buf[(*pos)++] = '\033';
     buf[(*pos)++] = '[';
-
-    /* row */
-    if (row >= 100)
-    {
-        buf[(*pos)++] = (char) ('0' + row / 100);
-    }
-    if (row >= 10)
-    {
-        buf[(*pos)++] = (char) ('0' + (row / 10) % 10);
-    }
-    buf[(*pos)++] = (char) ('0' + row % 10);
-
+    tv_put_uint(buf, pos, (unsigned int) row);
     buf[(*pos)++] = ';';
-
-    /* col */
-    if (col >= 100)
-    {
-        buf[(*pos)++] = (char) ('0' + col / 100);
-    }
-    if (col >= 10)
-    {
-        buf[(*pos)++] = (char) ('0' + (col / 10) % 10);
-    }
-    buf[(*pos)++] = (char) ('0' + col % 10);
-
+    tv_put_uint(buf, pos, (unsigned int) col);
     buf[(*pos)++] = 'H';
 }
 
@@ -220,17 +212,12 @@ static inline void tv_newline(char *buf, size_t *pos)
 /* -----------------------------------------------------------------------
  * Compute required frame-buffer size for a given terminal size.
  *
- * Each cell can emit at most:
- *   tv_bg:        19 bytes
- *   tv_fg:        19 bytes
- *   tv_halfblock:  3 bytes
- *   tv_reset:      4 bytes
- * = 45 bytes per cell.  Multiply by cell count and add headroom for
- * cursor-positioning escapes and the info bar.
+ * A changed cell emits at most tv_move (14) + tv_bg (19) + tv_fg (19) + glyph (3) = 55 bytes,
+ * plus the per-frame sync markers and reset.
  * ----------------------------------------------------------------------- */
 static inline size_t tv_framebuf_size(int rows, int cols)
 {
-    return (size_t) (rows * cols * 48 + rows * 16 + 4096);
+    return (size_t) rows * (size_t) cols * 56 + (size_t) rows * 16 + 4096;
 }
 
 #endif /* TERMVIEW_ANSI_H */
