@@ -101,6 +101,7 @@ int parse_mode = 0; // 0 for cli_parse, 1 for cli_calc_eval_line
 
 static const char *calc_src =
     NULL; /* expression being evaluated by cli_calc_eval_bash, for messages */
+char          cli_calc_lasterr[256];    /* the last error message */
 static char  *calc_out          = NULL; /* when set, the result goes here instead of stdout */
 static size_t calc_out_sz       = 0;
 int           cli_calc_out_mode = CLI_CALC_OUT_VALUES;
@@ -176,6 +177,7 @@ cli_token *advance_eval(void)
  */
 void parse_errmsg(const char *msg)
 {
+    snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr), "%s", msg);
     if ((parse_mode == 1 || data.core.Debug > 0) &&
         parse_mode != 2) /* quiet hides banners, not errors */
     {
@@ -712,11 +714,12 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
     char tbuf[8192];
     snprintf(tbuf, sizeof(tbuf), "%s\n", input);
 
-    eval_ntok       = cli_tokenize(tbuf, eval_tokens, CLI_CALC_MAX_TOKENS);
-    data.parseerror = 0;
-    parse_error     = 0;
-    eval_error      = 0;
-    eval_pos        = 0;
+    cli_calc_lasterr[0] = '\0';
+    eval_ntok           = cli_tokenize(tbuf, eval_tokens, CLI_CALC_MAX_TOKENS);
+    data.parseerror     = 0;
+    parse_error         = 0;
+    eval_error          = 0;
+    eval_pos            = 0;
 
     if (eval_ntok < 0)
     {
@@ -763,6 +766,7 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
         if (!eval_error)
         {
             fprintf(stderr, "milk: calc error: syntax error in '%s'\n", input);
+            snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr), "syntax error");
         }
         if (out_rc != NULL)
         {
@@ -853,6 +857,34 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
         *out_rc = 0;
     }
     return 1;
+}
+
+void *cli_calc_keep_statement(const char *stmt)
+{
+    char tbuf[8192];
+
+    snprintf(tbuf, sizeof(tbuf), "%s\n", stmt);
+    parse_mode      = 1;
+    eval_ntok       = cli_tokenize(tbuf, eval_tokens, CLI_CALC_MAX_TOKENS);
+    data.parseerror = 0;
+    parse_error     = 0;
+    eval_error      = 0;
+    eval_pos        = 2;
+    if (eval_ntok < 3 || eval_tokens[0].type != TOK_IMAGE ||
+        strchr(eval_tokens[0].sval, '[') != NULL ||
+        !(eval_tokens[1].type == TOK_EQUAL || eval_tokens[1].type == TOK_OP_PLUS_EQ ||
+          eval_tokens[1].type == TOK_OP_MINUS_EQ || eval_tokens[1].type == TOK_OP_STAR_EQ))
+    {
+        return NULL;
+    }
+    imageID id = image_ID(eval_tokens[0].sval, data.core.image, data.core.NB_MAX_IMAGE);
+    void   *k  = (id == -1) ? NULL : cli_calc_fuse_keep(&data.core.image[id], eval_tokens[1].type);
+    if (k != NULL && cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE)
+    {
+        free(k);
+        k = NULL;
+    }
+    return k;
 }
 
 /**

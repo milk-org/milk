@@ -342,6 +342,57 @@ measure() {
   `@defer` runs after the entries; a RETURN trap set by the script replaces `@defer`'s.
 - `@unload` runs the entries left and gives the EXIT trap back.
 
+## Compute Units Without C
+
+A compute unit is a process that runs a function on each frame of a trigger stream, with its
+parameters in an FPS. Two units need no C code: `milk-fpsexec-milk-calc` runs calculator statements,
+and `milk-fpsexec-milk-script` runs a bash snippet. They take the commands and options of any fpsexec
+unit (`fpsinit`, `exec`, `runstart`, `runstop`, `-tmux`, `-loopd SEC`, `-n NAME`; see fps.md).
+
+```bash
+# out = (cam - dark) * gain on each frame of cam; gain is a parameter of FPS dsub
+milk-fpsexec-milk-calc -tmux -n dsub exec "out = (cam - dark) * gain" cam "gain:float=1"
+@set f.dsub.gain=2.5                  # read by the next frame
+@set f.dsub.expr="out = cam * gain"   # compiled at the next frame
+@get f.dsub.error                     # why the loop stopped (empty while it runs)
+milk-fpsexec-milk-calc -n dsub runstop
+
+# statements from a file, 100 ticks per second without a trigger stream
+milk-fpsexec-milk-calc -n acc fpsinit . "" "k:int=0 total:float=0" acc.calc
+milk-fpsexec-milk-calc -tmux -n acc -loopd 0.01 runstart
+
+# a bash snippet on each frame of cam, in a shell that loaded milk.bash once
+milk-fpsexec-milk-script -tmux -n mon exec '@get s.cam.mean >> cam.log' cam
+```
+
+The parameters of `milk-fpsexec-milk-calc`, in this order on the command line (`.` keeps the default):
+
+| Parameter | Meaning |
+| --- | --- |
+| `.expr` | the statements, separated by `;` or newlines |
+| `.trigger` | a stream whose frames run them; empty: once, or each tick of `-loopd` |
+| `.params` | more parameters, `name:type[=default][:help]` as for `@args` (int uint float bool str) |
+| `.file` | read the statements from this file instead (`#` starts a comment) |
+| `.error` | set by the unit: why the loop stopped |
+
+- The statements are compiled when the loop starts, and again at the frame after `.expr` or `.file`
+  is set (set `.file` again to read the file again). An element-wise image assignment
+  (`out = a*b + c`, also `+=` `-=` `*=`) runs as one pass over the pixels; other statements are
+  evaluated as text on each frame.
+- Names are shared streams: the unit is its own process, so a session's local images and calculator
+  variables are out of its reach. A statement that makes a new image creates it as a stream.
+- The `.params` parameters are calculator variables that `@set` changes while the loop runs. A
+  statement that assigns one (`total = itot(out)`) writes it back to the FPS on each frame, for
+  `@get`, `@waitfor` and other units.
+- An error stops the loop: a bad statement, or an image whose size or type changed.
+- FPS strings hold 63 characters, so longer programs go in a file. `.params` may be longer on the
+  `fpsinit` or `exec` command line that creates the FPS.
+
+`milk-fpsexec-milk-script` takes `.cmd`, the snippet, and `.trigger`. A new `.cmd` applies from the
+next tick. A tick that fails stops the loop, with its status in `.error`; end the snippet with `|| :`
+to go on. Ctrl-C or `runstop` interrupts a running tick. A tick costs its commands plus a pipe round
+trip (about 0.1 ms), which suits slow loops; for a longer snippet, `source` a file from `.cmd`.
+
 ## State, Assertions and Logs
 
 ```bash

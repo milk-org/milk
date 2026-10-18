@@ -54,6 +54,7 @@ set(MILKSCRIPT_SOURCES
     calc/cli_calc_fuse.c
     calc/cli_calc_complex.c
     calc/cli_calc_scalar.c
+    calc/cli_calc_prog.c
     shm_prop/milk_shm_prop.c
     shm_prop/milk_shm_prop_stream.c
     shm_prop/milk_shm_prop_fps.c
@@ -202,6 +203,14 @@ target_link_libraries(
 set_target_properties(milkbash PROPERTIES C_VISIBILITY_PRESET hidden INSTALL_RPATH "$ORIGIN")
 target_link_options(milkbash PRIVATE "-Wl,--disable-new-dtags" "-Wl,--no-undefined")
 install(TARGETS milkbash DESTINATION lib)
+
+# Compute units without C code (milk.calc, milk.script): fpsexec binaries that run calculator statements or
+# a bash snippet on each frame; the calculator and milk.bash come from libmilkscript.
+foreach(_unit calc script)
+  add_milk_standalone(milk-${_unit} units/milk_unit_${_unit}.c)
+  target_sources(milk-fpsexec-milk-${_unit} PRIVATE units/milk_unit.c)
+  target_link_libraries(milk-fpsexec-milk-${_unit} PUBLIC milkscript)
+endforeach()
 
 # Standalone helper executable (milk-call)
 add_executable(milk-call ipc/milk_call_main.c)

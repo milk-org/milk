@@ -21,9 +21,10 @@
 #include "cli_calc_tokenizer.h"
 
 
-extern int parse_mode;
-extern int parse_error;
-extern int eval_error;
+extern int  parse_mode;
+extern int  parse_error;
+extern int  eval_error;
+extern char cli_calc_lasterr[256]; /* the last error message (cli_calc_prog.c reports it) */
 
 cli_token *cur_parse(void);
 cli_token *advance_parse(void);
@@ -98,6 +99,10 @@ enum
 
 /** cli_calc_where() - `c ? t : f` for an image condition @c; @t and @f are images or numbers. */
 val_t cli_calc_where(val_t c, val_t t, val_t f);
+
+/** cli_calc_fuse_keep() - compile `dst aop <expr>` at the current token for repeated runs, variables read at
+ * each run (free() it); NULL if not element-wise over images of dst's size (tokens rewound). */
+void *cli_calc_fuse_keep(IMAGE *dst, cli_token_type aop);
 
 /** cli_calc_inplace() - `dst aop src` (image @src, or number @val if @src is NULL), any datatypes. */
 int cli_calc_inplace(IMAGE *dst, cli_token_type aop, const IMAGE *src, double val);

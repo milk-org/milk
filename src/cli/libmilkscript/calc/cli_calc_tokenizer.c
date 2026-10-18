@@ -475,11 +475,9 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
                 char fname[CLI_CALC_TOKEN_MAXLEN];
                 memcpy(fname, start, nlen);
                 fname[nlen] = '\0';
-                fprintf(stderr,
-                        "ERROR: unknown "
-                        "function "
-                        "'%s'\n",
-                        fname);
+                fprintf(stderr, "ERROR: unknown function '%s'\n", fname);
+                snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr), "unknown function '%s'",
+                         fname);
                 return -1;
             }
 
@@ -660,6 +658,8 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
     if (*p != '\0' && parse_mode != 0)
     {
         fprintf(stderr, "ERROR: expression too long (max %d tokens)\n", max_tok - 1);
+        snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr), "expression too long (max %d tokens)",
+                 max_tok - 1);
         return -1;
     }
 

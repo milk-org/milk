@@ -211,3 +211,61 @@ void milk_argval_format(const CLICMDARGDATA *ad, char *buf, size_t sz)
         break;
     }
 }
+
+static const struct
+{
+    const char *name;
+    uint64_t    type;
+} spec_types[] = { { "int", FPTYPE_INT64 },  { "uint", FPTYPE_UINT64 }, { "float", FPTYPE_FLOAT64 },
+                   { "bool", FPTYPE_ONOFF }, { "str", FPTYPE_STRING },  { NULL, 0 } };
+
+int milk_argspec_parse(char *s, milk_argspec_t *a)
+{
+    char *t = strchr(s, ':');
+
+    memset(a, 0, sizeof(*a));
+    if (t != NULL)
+    {
+        *t++ = '\0';
+    }
+    if (!(isalpha((unsigned char) s[0]) || s[0] == '_') || strlen(s) >= sizeof(a->name))
+    {
+        return -1;
+    }
+    for (const char *c = s; *c != '\0'; c++)
+    {
+        if (!(isalnum((unsigned char) *c) || *c == '_'))
+        {
+            return -1;
+        }
+    }
+    snprintf(a->name, sizeof(a->name), "%s", s);
+    a->tname = "str";
+    a->type  = FPTYPE_STRING;
+    if (t == NULL)
+    {
+        return 0;
+    }
+    char *h = strchr(t, ':');
+    if (h != NULL)
+    {
+        *h++    = '\0';
+        a->help = h;
+    }
+    char *d = strchr(t, '=');
+    if (d != NULL)
+    {
+        *d++   = '\0';
+        a->def = d;
+    }
+    for (int i = 0; spec_types[i].name != NULL; i++)
+    {
+        if (strcmp(t, spec_types[i].name) == 0)
+        {
+            a->tname = spec_types[i].name;
+            a->type  = spec_types[i].type;
+            return 0;
+        }
+    }
+    return -1;
+}

@@ -19,11 +19,14 @@
 
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "cli_calc_internal.h"
+#include "cli_calc_parser.h"
 #include "libmilkdata/milk_type_dispatch.h"
 
 #define FUSE_MAXINS 128
@@ -42,7 +45,8 @@ typedef enum
     FI_FN2, /* as FI_BIN, with fn */
     FI_FN3, /* fn(top, c, c2) */
     FI_SEL, /* cond ? t : f; cpos bit 0: t on the stack (else c), bit 1: f on the stack (else c2) */
-    FI_COORD /* push coordinate cpos (CALC_COORD_*) of image img's pixels about (c, c2) */
+    FI_COORD, /* push coordinate cpos (CALC_COORD_*) of image img's pixels about (c, c2) */
+    FI_SVAR   /* push the value calculator variable img has when the program runs (kept programs) */
 } fi_kind;
 
 typedef struct
@@ -67,6 +71,8 @@ typedef struct
     int          nops; /* vector operations emitted */
     int          out_double;
 } fprog;
+
+static int keep_vars; /* compiling a kept program: variables are read at each run, not folded */
 
 /** Compile-time value: a folded constant, or code that leaves a vector on the stack. */
 typedef struct
@@ -347,6 +353,12 @@ static int c_primary(fprog *p, fval *out)
         if (cur()->type >= TOK_EQUAL && cur()->type <= TOK_OP_SLASH_EQ)
         {
             return -1;
+        }
+        long vid = keep_vars ? variable_ID(t->sval) : -1;
+        if (vid >= 0 && data.core.variable[vid].type != 2)
+        {
+            out->vec = 1;
+            return emit(p, (fins) { .k = FI_SVAR, .img = (int) vid }, 1);
         }
         val_t v = eval_existing_var_ref(t->sval);
         if (v.type != VAL_LONG && v.type != VAL_DOUBLE)
@@ -713,6 +725,17 @@ static void run_block(const fprog *p, IMAGE *out, uint64_t off, int len, double 
             sp -= nv;
             break;
         }
+        case FI_SVAR:
+        {
+            const VARIABLE *v = &data.core.variable[in->img];
+            double          x = (v->type == 1) ? (double) v->value.l : v->value.f;
+            double         *d = stk[sp++];
+            for (int j = 0; j < len; j++)
+            {
+                d[j] = x;
+            }
+            break;
+        }
         case FI_COORD:
         {
             const IMAGE *im = p->img[in->img];
@@ -867,6 +890,77 @@ int cli_calc_coord_kind(const cli_token *t)
            : (strncmp(t->sval, "iy(", 3) == 0) ? CALC_COORD_Y
            : (strncmp(t->sval, "ir(", 3) == 0) ? CALC_COORD_R
                                                : CALC_COORD_THETA;
+}
+
+typedef struct
+{
+    fprog  p;
+    IMAGE *dst;
+} fkept;
+
+void *cli_calc_fuse_keep(IMAGE *dst, cli_token_type aop)
+{
+    fkept *k = calloc(1, sizeof(*k));
+    fval   v;
+    int    pos = cli_calc_tok_pos();
+
+    if (k == NULL || !is_real_datatype(dst->md[0].datatype))
+    {
+        free(k);
+        return NULL;
+    }
+    keep_vars = 1;
+    int rc    = compile(&k->p, 0, &v);
+    keep_vars = 0;
+    if (rc != 0 || !v.vec || k->p.nimg == 0 || !same_shape(dst, k->p.img[0]) ||
+        aop == TOK_OP_SLASH_EQ)
+    {
+        cli_calc_tok_seek(pos);
+        free(k);
+        return NULL;
+    }
+    if (aop != TOK_EQUAL) /* dst op= expr  ->  dst = dst op (expr) */
+    {
+        int i = (k->p.n + 2 <= FUSE_MAXINS && k->p.maxdepth + 1 <= FUSE_MAXSTK)
+                    ? add_image(&k->p, dst)
+                    : -1;
+        if (i < 0)
+        {
+            cli_calc_tok_seek(pos);
+            free(k);
+            return NULL;
+        }
+        memmove(&k->p.ins[1], &k->p.ins[0], sizeof(fins) * (size_t) k->p.n);
+        k->p.ins[0]          = (fins) { .k = FI_IMG, .img = i };
+        k->p.ins[k->p.n + 1] = (fins) { .k    = FI_BIN,
+                                        .op   = (aop == TOK_OP_PLUS_EQ)    ? TOK_OP_PLUS
+                                                : (aop == TOK_OP_MINUS_EQ) ? TOK_OP_MINUS
+                                                                           : TOK_OP_STAR,
+                                        .cpos = 0 };
+        k->p.n += 2;
+    }
+    k->dst = dst;
+    return k;
+}
+
+int cli_calc_fused_run(void *kept)
+{
+    fkept *k = kept;
+
+    for (int i = -1; i < k->p.nimg; i++) /* a stream re-created by its owner may have a new size */
+    {
+        const IMAGE *im = (i < 0) ? k->dst : k->p.img[i];
+        if (!im->used || !is_real_datatype(im->md[0].datatype) || !same_shape(im, k->dst))
+        {
+            snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr), "%s changed size or type",
+                     im->name);
+            return -1;
+        }
+    }
+    k->dst->md[0].write = 1;
+    run_program(&k->p, k->dst);
+    processinfo_update_output_stream(NULL, k->dst, NULL);
+    return 0;
 }
 
 int cli_calc_fuse_assign(IMAGE *dst, cli_token_type aop)

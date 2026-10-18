@@ -27,66 +27,7 @@
 
 #define ARGS_MAX 32
 
-typedef struct
-{
-    char        name[64];
-    const char *tname;
-    uint64_t    type;
-    const char *def; /* NULL: required */
-    const char *help;
-    const char *val;
-} arg_spec_t;
-
-static const struct
-{
-    const char *name;
-    uint64_t    type;
-} arg_types[] = { { "int", FPTYPE_INT64 },  { "uint", FPTYPE_UINT64 }, { "float", FPTYPE_FLOAT64 },
-                  { "bool", FPTYPE_ONOFF }, { "str", FPTYPE_STRING },  { NULL, 0 } };
-
-/** parse_spec() - "name:type[=default][:help]" (@s is kept: the fields point into it); 0 or -1. */
-static int parse_spec(char *s, arg_spec_t *a)
-{
-    char *t = strchr(s, ':');
-    memset(a, 0, sizeof(*a));
-    if (t != NULL)
-    {
-        *t++ = '\0';
-    }
-    if (!milk_ipc_is_identifier(s) || strlen(s) >= sizeof(a->name))
-    {
-        return -1;
-    }
-    snprintf(a->name, sizeof(a->name), "%s", s);
-    a->tname = "str";
-    a->type  = FPTYPE_STRING;
-    if (t == NULL)
-    {
-        return 0;
-    }
-    char *h = strchr(t, ':');
-    if (h != NULL)
-    {
-        *h++    = '\0';
-        a->help = h;
-    }
-    char *d = strchr(t, '=');
-    if (d != NULL)
-    {
-        *d++   = '\0';
-        a->def = d;
-    }
-    for (int i = 0; arg_types[i].name != NULL; i++)
-    {
-        if (strcmp(t, arg_types[i].name) == 0)
-        {
-            a->tname = arg_types[i].name;
-            a->type  = arg_types[i].type;
-            return 0;
-        }
-    }
-    return -1;
-}
+typedef milk_argspec_t arg_spec_t;
 
 static void print_usage(FILE *fp, const char *fname, const arg_spec_t *a, int n)
 {
@@ -160,7 +101,7 @@ int milk_client_args(int                        argc,
     for (; i < argc && strcmp(argv[i], "--") != 0; i++)
     {
         char *sp = (n < ARGS_MAX) ? strdup(argv[i]) : NULL;
-        if (sp == NULL || parse_spec(sp, &a[n]) != 0)
+        if (sp == NULL || milk_argspec_parse(sp, &a[n]) != 0)
         {
             fprintf(
                 stderr,

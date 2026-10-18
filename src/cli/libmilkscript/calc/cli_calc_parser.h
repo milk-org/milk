@@ -61,6 +61,14 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc);
 
 int cli_calc_eval_str(const char *input, int is_test, int *out_rc, char *out, size_t outsz);
 
+/** cli_calc_keep_statement() - `<image> = <element-wise expression>` (also += -= *=) compiled for repeated
+ * runs by cli_calc_fused_run(), variables read at each run (free() it); NULL for any other statement. */
+void *cli_calc_keep_statement(const char *stmt);
+
+/** cli_calc_fused_run() - run a program from cli_calc_keep_statement() and post its destination; -1 if one of
+ * its images changed size or type (cli_calc_lasterr names it). */
+int cli_calc_fused_run(void *kept);
+
 /* What cli_calc_eval_bash() prints for a @calc statement (set per request by the server) */
 enum
 {
