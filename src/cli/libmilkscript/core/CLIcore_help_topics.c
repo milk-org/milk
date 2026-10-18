@@ -376,7 +376,9 @@ void help_topic_flowcontrol(void)
            "   Block until any listed stream updates\n");
     printf("\n");
     printf(C_HDR "Cleanup:\n" C_RST);
-    printf("  " C_CMD "@defer <cmd...>" C_RST "     run at exit, last registered first\n");
+    printf(
+        "  " C_CMD "@defer <cmd...>" C_RST
+        "     run when the function or @source'd file returns (top level: at exit), last first\n");
     printf("\n");
 }
 
@@ -577,15 +579,16 @@ void help_topic_bash(void)
            "Bind pixels to array or stdout (or " C_CMD "| @replay --stdin" C_RST ")\n");
     printf("\n");
     printf(C_HDR "3. Core @ Primitives (milk.bash & milk-cli):\n" C_RST);
-    printf("  " C_CMD "@ [-v var] '<expr>'         " C_RST
-           "Vectorized image/scalar calculator (alias: " C_CMD "@calc" C_RST ")\n");
-    printf("    " C_NOTE "Examples:" C_RST " " C_CMD "@ 'im1 = 10; im2 = sqrt(im1) + 2'" C_RST
+    printf("  " C_CMD "@calc [-v var] '<expr>'     " C_RST "Vectorized image/scalar calculator\n");
+    printf("    " C_NOTE "Examples:" C_RST " " C_CMD "@calc 'im1 = 10; im2 = sqrt(im1) + 2'" C_RST
            "\n");
-    printf("              " C_CMD "@ 'im1[0:63, 0:63] = im2 * 0.5'" C_RST "\n");
-    printf("              " C_CMD "@ -v rms 'istd(im1)'" C_RST "  |  " C_CMD
+    printf("              " C_CMD "@calc 'im1[0:63, 0:63] = im2 * 0.5'" C_RST "\n");
+    printf("              " C_CMD "@calc -v rms 'istd(im1)'" C_RST "  |  " C_CMD
            "@calc -v ptv 'imax(im1)-imin(im1)'" C_RST "\n");
-    printf("              " C_CMD "@ -v n 'icount(im1 > 3)'" C_RST "  |  " C_CMD
-           "@ 'mf = imean(cube, 2)'" C_RST "  |  " C_CMD "@ 'name = \"f\" + 3'" C_RST "\n");
+    printf("              " C_CMD "@calc -v n 'icount(im1 > 3)'" C_RST "  |  " C_CMD
+           "@calc 'mf = imean(cube, 2)'" C_RST "  |  " C_CMD "@calc 'name = \"f\" + 3'" C_RST "\n");
+    printf("              " C_CMD "@calc 'im2 = where(ir(im1) < 10, im1, 0)'" C_RST "  |  " C_CMD
+           "@calc -v m 'imean(im1, im1 > 0)'" C_RST "\n");
     printf("  " C_CMD "@ls [-a arr|--json|-1] [pat]" C_RST
            "Unified table/discovery across s., l., f., p., q.\n");
     printf("  " C_CMD "@get [-v|-a|-A|--json] <sp> " C_RST
@@ -625,7 +628,9 @@ void help_topic_bash(void)
     printf("  " C_CMD "@on [opts] <t...> -- <cmd>  " C_RST "Reactive watcher (" C_CMD
            "--once|--max-hz|--cooldown|--stop" C_RST ")\n");
     printf("  " C_CMD "@defer <cmd...>             " C_RST
-           "Register LIFO cleanup command on shell/script EXIT\n");
+           "Clean up when the function or @source'd file returns (top level: at exit)\n");
+    printf("  " C_CMD "@args 'n:int=1' -- \"$@\"     " C_RST
+           "Declare and check the arguments of a function or script\n");
     printf("  " C_CMD "@source <file.milk> [args]  " C_RST
            "Translate .milk shorthand script and source in bash\n");
     printf("  " C_CMD "@server [subcommand ...]    " C_RST

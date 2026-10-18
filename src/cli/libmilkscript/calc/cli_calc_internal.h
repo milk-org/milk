@@ -78,6 +78,27 @@ int cli_calc_fuse_expr(int min_prec, val_t *out);
 /** cli_calc_fuse_assign() - `dst aop <expr>` written straight into @dst when possible (same returns). */
 int cli_calc_fuse_assign(IMAGE *dst, cli_token_type aop);
 
+/** cli_calc_select() - a new image, per pixel `c != 0 ? t : f` (image t/f, or number tc/fc when NULL), in
+ * one pass; its name, or NULL when the images differ in size or are not real. */
+const char *cli_calc_select(const IMAGE *c, const IMAGE *t, double tc, const IMAGE *f, double fc);
+
+/** cli_calc_coord() - a new image of @ref's size: coordinate @kind (CALC_COORD_*) of each pixel about (cx, cy). */
+const char *cli_calc_coord(const IMAGE *ref, int kind, double cx, double cy);
+
+/** cli_calc_coord_kind() - CALC_COORD_* for function token @t (ix iy ir itheta). */
+int cli_calc_coord_kind(const cli_token *t);
+
+enum
+{
+    CALC_COORD_X,
+    CALC_COORD_Y,
+    CALC_COORD_R,
+    CALC_COORD_THETA
+};
+
+/** cli_calc_where() - `c ? t : f` for an image condition @c; @t and @f are images or numbers. */
+val_t cli_calc_where(val_t c, val_t t, val_t f);
+
 /** cli_calc_inplace() - `dst aop src` (image @src, or number @val if @src is NULL), any datatypes. */
 int cli_calc_inplace(IMAGE *dst, cli_token_type aop, const IMAGE *src, double val);
 

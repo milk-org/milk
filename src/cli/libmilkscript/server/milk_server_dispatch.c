@@ -1855,6 +1855,7 @@ static int calc_stmt_cb(char *seg, void *ctx)
  */
 int milk_server_exec_calc_or_test(int            client_fd,
                                   int            is_test,
+                                  uint8_t        flags,
                                   const uint8_t *payload,
                                   uint32_t       len,
                                   char          *log_cmd,
@@ -1877,7 +1878,12 @@ int milk_server_exec_calc_or_test(int            client_fd,
     }
 
     (void) client_fd; /* calc variables reach bash only through -v (its output) */
-    return split_top_level(expr, 1, 0, calc_stmt_cb, &is_test);
+    cli_calc_out_mode = (flags & MILK_FLAG_PIXELS) ? CLI_CALC_OUT_PIXELS
+                        : (flags & MILK_FLAG_BIND) ? CLI_CALC_OUT_BIND
+                                                   : CLI_CALC_OUT_VALUES;
+    int rc            = split_top_level(expr, 1, 0, calc_stmt_cb, &is_test);
+    cli_calc_out_mode = CLI_CALC_OUT_VALUES;
+    return rc;
 }
 
 /* Environment overrides sent with a CALL apply to that request only (restored afterwards). */

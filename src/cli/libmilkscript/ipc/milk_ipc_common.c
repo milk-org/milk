@@ -80,8 +80,7 @@ static void get_shell_override_file(const milk_client_hooks_t *hooks, char *out,
     snprintf(out, outsz, "%s/.milk_active_sock_%u_%d", tmpdir, (unsigned) getuid(), shell_pid);
 }
 
-/** is_identifier() - 1 if @name matches [A-Za-z_][A-Za-z0-9_]*. */
-static int is_identifier(const char *name)
+int milk_ipc_is_identifier(const char *name)
 {
     if (name == NULL || !(isalpha((unsigned char) name[0]) || name[0] == '_'))
     {
@@ -108,7 +107,7 @@ static int settable_var_name(const char *name)
     };
     static const char *const deny_pfx[] = { "BASH_", "LD_", NULL };
 
-    if (!is_identifier(name))
+    if (!milk_ipc_is_identifier(name))
     {
         return 0;
     }
@@ -178,7 +177,7 @@ void milk_ipc_set_var(const milk_client_hooks_t *hooks,
     if (!settable_var_name(name))
     {
         fprintf(stderr, "milk: refusing to set shell variable %s\n",
-                is_identifier(name) ? name : "(invalid name)");
+                milk_ipc_is_identifier(name) ? name : "(invalid name)");
         return;
     }
     if (strcmp(name, "MILKCLI_SOCK") == 0)
@@ -284,7 +283,7 @@ char *milk_ipc_bind_script(const char *name, int assoc, char *text)
     if (!settable_var_name(name))
     {
         fprintf(stderr, "milk: refusing to set shell variable %s\n",
-                is_identifier(name) ? name : "(invalid name)");
+                milk_ipc_is_identifier(name) ? name : "(invalid name)");
         return NULL;
     }
     char  *out = NULL;

@@ -61,6 +61,15 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc);
 
 int cli_calc_eval_str(const char *input, int is_test, int *out_rc, char *out, size_t outsz);
 
+/* What cli_calc_eval_bash() prints for a @calc statement (set per request by the server) */
+enum
+{
+    CLI_CALC_OUT_VALUES, /* the values of non-assignments */
+    CLI_CALC_OUT_BIND, /* one line per statement: its value, an assignment's too (empty for an image) */
+    CLI_CALC_OUT_PIXELS /* as BIND, with an image's pixels on its line */
+};
+extern int cli_calc_out_mode;
+
 /**
  * @brief Delete every temporary `_tmpcalcN` image still tracked (e.g. after a command whose
  *        arguments were evaluated as expressions).

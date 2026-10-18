@@ -42,7 +42,8 @@ static inline int is_func_token(cli_token_type t)
            (t == TOK_FUNC_IM_D) || (t == TOK_FUNC_IMD_D) || (t == TOK_FUNC_WHERE) ||
            (t == TOK_FUNC_IMIM_D) || (t == TOK_FUNC_IMIM_IM) || (t == TOK_FUNC_S_D) ||
            (t == TOK_FUNC_S_S) || (t == TOK_FUNC_SDD_S) || (t == TOK_FUNC_SSS_S) ||
-           (t == TOK_FUNC_D_S) || (t == TOK_FUNC_IM_L) || (t == TOK_FUNC_CPLX);
+           (t == TOK_FUNC_D_S) || (t == TOK_FUNC_IM_L) || (t == TOK_FUNC_CPLX) ||
+           (t == TOK_FUNC_COORD);
 }
 
 static int skip_expr(int min_prec);
@@ -660,43 +661,7 @@ static val_t eval_ternary_op(val_t left,
         return left;
     }
 
-    if (!check_image(left.sval))
-    {
-        return mk_string("");
-    }
-    const char *tmask  = alloc_tmpname();
-    const char *timask = alloc_tmpname();
-    const char *tpart  = alloc_tmpname();
-    const char *fpart  = alloc_tmpname();
-    const char *tmpn   = alloc_tmpname();
-    arith_image_csttestne(left.sval, 0.0, tmask);
-    arith_image_cstteste(left.sval, 0.0, timask);
-    if (true_val.type == VAL_STRING)
-    {
-        if (!check_image(true_val.sval))
-        {
-            return mk_string("");
-        }
-        arith_image_mult(true_val.sval, tmask, tpart);
-    }
-    else
-    {
-        arith_image_cstmult(tmask, to_double(true_val), tpart);
-    }
-    if (false_val.type == VAL_STRING)
-    {
-        if (!check_image(false_val.sval))
-        {
-            return mk_string("");
-        }
-        arith_image_mult(false_val.sval, timask, fpart);
-    }
-    else
-    {
-        arith_image_cstmult(timask, to_double(false_val), fpart);
-    }
-    arith_image_add(tpart, fpart, tmpn);
-    return mk_string(tmpn);
+    return cli_calc_where(left, true_val, false_val);
 }
 
 /**

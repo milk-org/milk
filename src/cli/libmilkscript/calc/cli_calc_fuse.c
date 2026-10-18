@@ -10,10 +10,11 @@
  *   `x = (a*2 + b) / c` used to make one `_tmpcalc` image per operator. When an expression is made
  *   only of same-shape real images, numbers, arithmetic, comparisons and per-pixel math functions,
  *   it is compiled here to a small stack program and run block by block (OpenMP over blocks), with
- *   one output image, or none when the result is assigned to an existing image. Anything else
- *   (slices, broadcasting, reductions, strings, `&&`, `?:`, complex images) is left to the normal
- *   evaluator, which also produces the error messages. Results follow the same type rule as the
- *   normal path: DOUBLE if any image is DOUBLE, else FLOAT.
+ *   one output image, or none when the result is assigned to an existing image. `where(c, a, b)` and
+ *   `c ? a : b` with an image condition select per pixel; `ix iy ir itheta (im[, cx, cy])` compute
+ *   coordinates. Anything else (slices, broadcasting, reductions, strings, `&&`, a scalar `?:`,
+ *   complex images) is left to the normal evaluator, which also produces the error messages. Results
+ *   follow the same type rule as the normal path: DOUBLE if any image is DOUBLE, else FLOAT.
  */
 
 #include <math.h>
@@ -39,7 +40,9 @@ typedef enum
     FI_NOT,
     FI_FN1,
     FI_FN2, /* as FI_BIN, with fn */
-    FI_FN3  /* fn(top, c, c2) */
+    FI_FN3, /* fn(top, c, c2) */
+    FI_SEL, /* cond ? t : f; cpos bit 0: t on the stack (else c), bit 1: f on the stack (else c2) */
+    FI_COORD /* push coordinate cpos (CALC_COORD_*) of image img's pixels about (c, c2) */
 } fi_kind;
 
 typedef struct
@@ -253,6 +256,59 @@ static int c_func(fprog *p, const cli_token *ft, fval *out)
     return emit(p, in, both ? -1 : 0);
 }
 
+/** c_select() - per pixel `cond ? t : f`; the condition is on the stack under t and f. */
+static int c_select(fprog *p, fval t, fval f, fval *out)
+{
+    out->vec = 1;
+    return emit(p, (fins) { .k = FI_SEL, .cpos = t.vec | (f.vec << 1), .c = t.c, .c2 = f.c },
+                -(t.vec + f.vec));
+}
+
+/** c_coord() - ix/iy/ir/itheta(im[, cx, cy]): im (a plain image) gives the size, not pixels. */
+static int c_coord(fprog *p, const cli_token *ft, fval *out)
+{
+    cli_token *(*cur)(void) = cli_calc_cur_func();
+    cli_token *(*adv)(void) = cli_calc_advance_func();
+    cli_token *t            = adv();
+    fval       c[2];
+
+    if (t->type != TOK_IMAGE || strchr(t->sval, '[') != NULL)
+    {
+        return -1;
+    }
+    imageID id = image_ID(t->sval, data.core.image, data.core.NB_MAX_IMAGE);
+    int     k  = (id == -1) ? -1 : add_image(p, &data.core.image[id]);
+    if (k < 0)
+    {
+        return -1;
+    }
+    const IMAGE *im = p->img[k];
+    c[0].c          = (double) (im->md[0].size[0] / 2);
+    c[1].c          = (double) ((im->md[0].naxis > 1) ? im->md[0].size[1] / 2 : 0);
+    if (cur()->type == TOK_COMMA)
+    {
+        adv();
+        if (c_args(p, 2, c) != 0 || c[0].vec || c[1].vec)
+        {
+            return -1;
+        }
+    }
+    else if (cur()->type == TOK_RPAREN)
+    {
+        adv();
+    }
+    else
+    {
+        return -1;
+    }
+    out->vec = 1;
+    return emit(
+        p,
+        (fins) {
+            .k = FI_COORD, .img = k, .cpos = cli_calc_coord_kind(ft), .c = c[0].c, .c2 = c[1].c },
+        1);
+}
+
 static int c_primary(fprog *p, fval *out)
 {
     cli_token *(*cur)(void) = cli_calc_cur_func();
@@ -316,6 +372,17 @@ static int c_primary(fprog *p, fval *out)
     case TOK_FUNC_DD_D:
     case TOK_FUNC_DDD_D:
         return c_func(p, t, out);
+    case TOK_FUNC_WHERE:
+    {
+        fval a[3];
+        if (c_args(p, 3, a) != 0 || !a[0].vec) /* a number picks its branch: the normal path */
+        {
+            return -1;
+        }
+        return c_select(p, a[1], a[2], out);
+    }
+    case TOK_FUNC_COORD:
+        return c_coord(p, t, out);
     default:
         return -1;
     }
@@ -337,6 +404,22 @@ static int c_expr(fprog *p, int min_prec, fval *out)
         if (prec < min_prec)
         {
             return 0;
+        }
+        if (op == TOK_OP_QUESTION && out->vec) /* image condition: select per pixel */
+        {
+            fval t;
+            fval f;
+            adv();
+            if (c_expr(p, 0, &t) != 0 || cur()->type != TOK_OP_COLON)
+            {
+                return -1;
+            }
+            adv();
+            if (c_expr(p, 0, &f) != 0 || c_select(p, t, f, out) != 0)
+            {
+                return -1;
+            }
+            continue;
         }
         if (!fusible_op(op))
         {
@@ -497,6 +580,66 @@ static void run_fn2(const fins *in, double *restrict l, const double *restrict r
 }
 #undef BIN_LOOPS
 
+/** coord_block() - coordinate @kind of pixels [@off, @off + @len) of an @nx x @ny (x n) image about (cx, cy). */
+static void coord_block(int      kind,
+                        uint32_t nx,
+                        uint32_t ny,
+                        double   cx,
+                        double   cy,
+                        uint64_t off,
+                        int      len,
+                        double *restrict t)
+{
+    uint32_t x = (uint32_t) (off % nx);
+    uint32_t y = (uint32_t) ((off / nx) % ny);
+
+    for (int j = 0; j < len; j++)
+    {
+        double dx = (double) x - cx;
+        double dy = (double) y - cy;
+        t[j]      = (kind == CALC_COORD_X)   ? dx
+                    : (kind == CALC_COORD_Y) ? dy
+                    : (kind == CALC_COORD_R) ? sqrt(dx * dx + dy * dy)
+                                             : atan2(dy, dx);
+        if (++x == nx)
+        {
+            x = 0;
+            y = (y + 1 == ny) ? 0 : y + 1;
+        }
+    }
+}
+
+#define SEL_LOOP(T, F)                    \
+    for (int j = 0; j < len; j++)         \
+    {                                     \
+        c[j] = (c[j] != 0.0) ? (T) : (F); \
+    }
+
+/** run_sel() - c := c ? t : f, with t or f the constant in->c / in->c2 when not on the stack. */
+static void run_sel(const fins *in,
+                    double *restrict c,
+                    const double *restrict tv,
+                    const double *restrict fv,
+                    int len)
+{
+    switch (in->cpos)
+    {
+    case 0:
+        SEL_LOOP(in->c, in->c2);
+        break;
+    case 1:
+        SEL_LOOP(tv[j], in->c2);
+        break;
+    case 2:
+        SEL_LOOP(in->c, fv[j]);
+        break;
+    default:
+        SEL_LOOP(tv[j], fv[j]);
+        break;
+    }
+}
+#undef SEL_LOOP
+
 /** run_block() - evaluate @p on pixels [@off, @off + @len) and store into @out. */
 static void run_block(const fprog *p, IMAGE *out, uint64_t off, int len, double (*stk)[FUSE_BLK])
 {
@@ -560,6 +703,21 @@ static void run_block(const fprog *p, IMAGE *out, uint64_t off, int len, double 
             {
                 t[j] = f(t[j], in->c, in->c2);
             }
+            break;
+        }
+        case FI_SEL:
+        {
+            int nv = (in->cpos & 1) + (in->cpos >> 1);
+            run_sel(in, stk[sp - 1 - nv], (in->cpos & 1) ? stk[sp - nv] : NULL,
+                    (in->cpos & 2) ? stk[sp - 1] : NULL, len);
+            sp -= nv;
+            break;
+        }
+        case FI_COORD:
+        {
+            const IMAGE *im = p->img[in->img];
+            coord_block(in->cpos, im->md[0].size[0], (im->md[0].naxis > 1) ? im->md[0].size[1] : 1,
+                        in->c, in->c2, off, len, stk[sp++]);
             break;
         }
         }
@@ -637,6 +795,78 @@ int cli_calc_fuse_expr(int min_prec, val_t *out)
     run_program(&p, &data.core.image[tid]);
     *out = mk_string(tmpn);
     return 1;
+}
+
+/** new_output() - a temporary image of @ref's size, DOUBLE if @dbl else FLOAT; its name, or NULL. */
+static const char *new_output(const IMAGE *ref, int dbl, IMAGE **out)
+{
+    const char *tmpn  = alloc_tmpname();
+    imageID     tid   = -1;
+    uint32_t    sz[3] = { ref->md[0].size[0], ref->md[0].size[1], ref->md[0].size[2] };
+
+    create_image_ID(tmpn, ref->md[0].naxis, sz, dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT, 0, 10, 0,
+                    &tid);
+    if (tid == -1)
+    {
+        parse_errmsg("Failed to allocate output image");
+        return NULL;
+    }
+    *out = &data.core.image[tid];
+    return tmpn;
+}
+
+const char *cli_calc_select(const IMAGE *c, const IMAGE *t, double tc, const IMAGE *f, double fc)
+{
+    static fprog p;
+    IMAGE       *out;
+
+    memset(&p, 0, sizeof(p));
+    if (add_image(&p, c) != 0 || (t != NULL && add_image(&p, t) < 0) ||
+        (f != NULL && add_image(&p, f) < 0))
+    {
+        return NULL;
+    }
+    p.ins[p.n++] = (fins) { .k = FI_IMG, .img = 0 };
+    if (t != NULL)
+    {
+        p.ins[p.n++] = (fins) { .k = FI_IMG, .img = add_image(&p, t) };
+    }
+    if (f != NULL)
+    {
+        p.ins[p.n++] = (fins) { .k = FI_IMG, .img = add_image(&p, f) };
+    }
+    p.ins[p.n++] =
+        (fins) { .k = FI_SEL, .cpos = (t != NULL) | ((f != NULL) << 1), .c = tc, .c2 = fc };
+    const char *tmpn = new_output(c, p.out_double, &out);
+    if (tmpn != NULL)
+    {
+        run_program(&p, out);
+    }
+    return tmpn;
+}
+
+const char *cli_calc_coord(const IMAGE *ref, int kind, double cx, double cy)
+{
+    static fprog p;
+    IMAGE       *out;
+
+    memset(&p, 0, sizeof(p));
+    p.img[p.nimg++]  = ref;
+    p.ins[p.n++]     = (fins) { .k = FI_COORD, .img = 0, .cpos = kind, .c = cx, .c2 = cy };
+    const char *tmpn = new_output(ref, ref->md[0].datatype == _DATATYPE_DOUBLE, &out);
+    if (tmpn != NULL)
+    {
+        run_program(&p, out);
+    }
+    return tmpn;
+}
+
+int cli_calc_coord_kind(const cli_token *t)
+{
+    return (strncmp(t->sval, "ix(", 3) == 0)   ? CALC_COORD_X
+           : (strncmp(t->sval, "iy(", 3) == 0) ? CALC_COORD_Y
+           : (strncmp(t->sval, "ir(", 3) == 0) ? CALC_COORD_R
+                                               : CALC_COORD_THETA;
 }
 
 int cli_calc_fuse_assign(IMAGE *dst, cli_token_type aop)

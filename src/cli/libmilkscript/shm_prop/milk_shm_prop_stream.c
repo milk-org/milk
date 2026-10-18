@@ -14,6 +14,7 @@
  *   ImageStreamIO shared-memory streams.
  */
 
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +27,7 @@
 #include "milk_shm_prop.h"
 #include "milk_shm_cache.h"
 #include "milk_shm_prop_internal.h"
+#include "libmilkdata/milk_type_dispatch.h"
 
 /**
  * @brief Locate an active local image or open a shared-memory stream.
@@ -218,6 +220,98 @@ static int read_stream_keyword(const IMAGE *im, const char *kname, char *out, si
     return 0;
 }
 
+/* Statistics of all the pixels of a stream, as the calculator computes them (imin, imean, istd, ...) */
+typedef struct
+{
+    double min, max, tot, mean, var;
+    double count; /* non-zero pixels, as icount() */
+} stream_stats_t;
+
+/** stream_stats() - fill @st from the pixels of @im (two passes, like arith_image_rms); -1 if complex. */
+static int stream_stats(const IMAGE *im, stream_stats_t *st)
+{
+    uint64_t n  = im->md->nelement;
+    uint8_t  dt = im->md->datatype;
+    double   s2 = 0.0;
+
+    memset(st, 0, sizeof(*st));
+    if (n == 0)
+    {
+        return 0;
+    }
+    st->min = INFINITY;
+    st->max = -INFINITY;
+#define STATS_PASS1(MBR)                       \
+    for (uint64_t i = 0; i < n; i++)           \
+    {                                          \
+        double v = (double) im->array.MBR[i];  \
+        st->tot += v;                          \
+        st->min = (v < st->min) ? v : st->min; \
+        st->max = (v > st->max) ? v : st->max; \
+        st->count += (v != 0.0);               \
+    }
+#define STATS_PASS2(MBR)                                 \
+    for (uint64_t i = 0; i < n; i++)                     \
+    {                                                    \
+        double d = (double) im->array.MBR[i] - st->mean; \
+        s2 += d * d;                                     \
+    }
+    if (dt < _DATATYPE_UINT8 || dt > _DATATYPE_DOUBLE) /* complex, half: not dispatched below */
+    {
+        return -1;
+    }
+    MILK_FOR_EACH_DATATYPE(dt, STATS_PASS1, STATS_PASS1(D))
+    st->mean = st->tot / (double) n;
+    MILK_FOR_EACH_DATATYPE(dt, STATS_PASS2, STATS_PASS2(D))
+#undef STATS_PASS1
+#undef STATS_PASS2
+    st->var = s2 / (double) n;
+    return 0;
+}
+
+/** stream_stat_prop() - write statistic @prop of @im ("min" ... "count", or "stats": all, `key<TAB>value`
+ * lines); 1 if @prop is one, -1 if it cannot be computed (complex data), else 0. */
+static int stream_stat_prop(const IMAGE *im, const char *prop, char *out, size_t outsz)
+{
+    static const char *const names[] = { "min", "max", "mean", "std", "var", "tot", "count", NULL };
+    stream_stats_t           st;
+    double                   v[7];
+    int                      k;
+
+    for (k = 0; names[k] != NULL && strcmp(prop, names[k]) != 0; k++)
+    {
+    }
+    if (names[k] == NULL && strcmp(prop, "stats") != 0)
+    {
+        return 0;
+    }
+    if (stream_stats(im, &st) != 0)
+    {
+        return -1;
+    }
+    v[0] = st.min;
+    v[1] = st.max;
+    v[2] = st.mean;
+    v[3] = sqrt(st.var);
+    v[4] = st.var;
+    v[5] = st.tot;
+    v[6] = st.count;
+    if (names[k] != NULL)
+    {
+        milk_shm_prop_fmt_double(out, outsz, v[k]);
+        return 1;
+    }
+    size_t pos = 0;
+    for (int i = 0; names[i] != NULL && pos < outsz; i++)
+    {
+        char num[64];
+        milk_shm_prop_fmt_double(num, sizeof(num), v[i]);
+        pos += (size_t) snprintf(out + pos, outsz - pos, "%s%s\t%s", (i > 0) ? "\n" : "", names[i],
+                                 num);
+    }
+    return 1;
+}
+
 /**
  * @brief Read a stream or local image property into @out.
  *
@@ -235,7 +329,12 @@ int milk_shm_prop_get_stream(const char *name, const char *prop, char *out, size
         return -1;
     }
 
-    int found = 1;
+    int found = stream_stat_prop(im, prop, out, outsz);
+    if (found != 0)
+    {
+        return (found > 0) ? 0 : -1;
+    }
+    found = 1;
     if (strcmp(prop, "xsize") == 0 || strcmp(prop, "size0") == 0)
     {
         snprintf(out, outsz, "%u", im->md->size[0]);
@@ -374,7 +473,7 @@ int milk_shm_prop_get_stream(const char *name, const char *prop, char *out, size
     {
         snprintf(out, outsz,
                  "xsize ysize zsize naxis dtype typename type cnt0 cnt1 nelem sem pid ownerPID "
-                 "shared NBkw location inode age fps summary");
+                 "shared NBkw location inode age fps summary min max mean std var tot count stats");
     }
     else if (strcmp(prop, "kv") == 0)
     {

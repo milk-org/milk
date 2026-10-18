@@ -76,6 +76,10 @@ int milk_client_set_argv(int argc, char **argv, const milk_client_hooks_t *hooks
      */
 int milk_client_calc(const char *expr, const char *varname, const milk_client_hooks_t *hooks);
 
+/** milk_client_calc_argv() - `@calc [-v a[,b...]] [-a arr] <expr...>`: -v binds the values of the last
+ * statements (an assignment's value is the assigned value), -a the pixels of an image result. */
+int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hooks);
+
 /**
      * @brief Evaluate a `@test` boolean condition (`0` = true, `1` = false, `2` = error).
      */
@@ -95,6 +99,24 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
      * @brief Wait for any of the given streams to advance its frame counter (`@waitany`).
      */
 int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks);
+
+/**
+ * milk_client_sleep_argv() - `@sleep SECONDS`, or `@sleep --every T|--hz F [--late L] VAR`: sleep to the
+ * CLOCK_MONOTONIC deadline in VAR (ns; unset: one period from now), then advance VAR by a period,
+ * skipping the ticks already missed (their count goes to L). 130 if Ctrl-C ended the sleep.
+ */
+int milk_client_sleep_argv(int argc, char **argv, const milk_client_hooks_t *hooks);
+
+/**
+ * milk_client_args() - `@args "name:type[=default][:help]"... -- VALUE...`: check the values as module
+ * commands check theirs, then bind the names in the caller (`local` if @local). @fname names the caller
+ * in messages. 0 bound, 1 after -h (help printed), 2 on a usage error (reported).
+ */
+int milk_client_args(int                        argc,
+                     char                     **argv,
+                     const char                *fname,
+                     int                        local,
+                     const milk_client_hooks_t *hooks);
 
 /**
      * @brief Synchronously capture N consecutive stream frames into a 3D cube (`@grab`).

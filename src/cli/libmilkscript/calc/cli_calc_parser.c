@@ -27,6 +27,7 @@
 
 #include "cli_calc_tokenizer.h"
 #include "cli_calc_parser.h"
+#include "libmilkdata/milk_type_dispatch.h"
 #include "CLIcore_script.h"
 #include "cli_calc_internal.h"
 /* --------------------------------------------------------
@@ -100,8 +101,11 @@ int parse_mode = 0; // 0 for cli_parse, 1 for cli_calc_eval_line
 
 static const char *calc_src =
     NULL; /* expression being evaluated by cli_calc_eval_bash, for messages */
-static char  *calc_out    = NULL; /* when set, the result goes here instead of stdout */
-static size_t calc_out_sz = 0;
+static char  *calc_out          = NULL; /* when set, the result goes here instead of stdout */
+static size_t calc_out_sz       = 0;
+int           cli_calc_out_mode = CLI_CALC_OUT_VALUES;
+
+#define CLI_CALC_MAX_PIXELS 1048576 /* `@calc -a`: a bash array, not a data path */
 
 // Helper functions for cli_parse
 cli_token *cur_parse(void)
@@ -639,6 +643,57 @@ int cli_calc_eval_math_to_val(const char *input, int *out_type, long *out_lval, 
     return success;
 }
 
+/** pixel_line() - the pixels of image @name space-separated, numbers as @calc prints them (malloc'd);
+ * NULL after a message if the image is complex or larger than CLI_CALC_MAX_PIXELS. */
+static char *pixel_line(const char *name)
+{
+    const IMAGE *im = &data.core.image[image_ID(name, data.core.image, data.core.NB_MAX_IMAGE)];
+    uint64_t     n  = im->md[0].nelement;
+    uint8_t      dt = im->md[0].datatype;
+    char        *out;
+    size_t       pos = 0;
+
+    if (n > CLI_CALC_MAX_PIXELS || (out = (char *) malloc(n * 26 + 1)) == NULL)
+    {
+        fprintf(stderr, "milk: calc error: %s has %lu pixels (-a takes %d at most)\n", name,
+                (unsigned long) n, CLI_CALC_MAX_PIXELS);
+        return NULL;
+    }
+    out[0] = '\0';
+#define PIX_INT(MBR)                                                                              \
+    for (uint64_t i = 0; i < n; i++)                                                              \
+    {                                                                                             \
+        pos += (size_t) sprintf(out + pos, "%s%lld", i ? " " : "", (long long) im->array.MBR[i]); \
+    }
+#define PIX_REAL(MBR)                                                                \
+    for (uint64_t i = 0; i < n; i++)                                                 \
+    {                                                                                \
+        pos += (size_t) sprintf(out + pos, "%s%.*g", i ? " " : "", cli_float_digits, \
+                                (double) im->array.MBR[i]);                          \
+    }
+    if (dt < _DATATYPE_UINT8 || dt > _DATATYPE_DOUBLE) /* complex, half: not dispatched below */
+    {
+        fprintf(stderr, "milk: calc error: %s: -a takes real images\n", name);
+        free(out);
+        return NULL;
+    }
+    if (dt == _DATATYPE_FLOAT)
+    {
+        PIX_REAL(F)
+    }
+    else if (dt == _DATATYPE_DOUBLE)
+    {
+        PIX_REAL(D)
+    }
+    else
+    {
+        MILK_FOR_EACH_DATATYPE(dt, PIX_INT, PIX_INT(D))
+    }
+#undef PIX_INT
+#undef PIX_REAL
+    return out;
+}
+
 /**
  * @brief Evaluate an expression for @calc or @test in bash mode.
  */
@@ -687,15 +742,24 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
         }
     }
 
-    size_t tmark = tmp_begin();
-    calc_src     = input;
-    val_t result = parse_expr(0);
-    calc_src     = NULL;
+    size_t tmark  = tmp_begin();
+    calc_src      = input;
+    val_t result  = parse_expr(0);
+    calc_src      = NULL;
+    int   is_img  = (!parse_error && !eval_error && result.type == VAL_STRING &&
+                     image_ID(result.sval, data.core.image, data.core.NB_MAX_IMAGE) != -1);
+    char *pixels  = NULL; /* before tmp_end() deletes a temporary result image */
+    int   pix_bad = 0;
+    if (is_img && cli_calc_out_mode == CLI_CALC_OUT_PIXELS && !is_test)
+    {
+        pix_bad = ((pixels = pixel_line(result.sval)) == NULL);
+    }
     tmp_end(tmark);
 
-    if (parse_error || eval_error ||
+    if (parse_error || eval_error || pix_bad ||
         (cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE))
     {
+        free(pixels);
         if (!eval_error)
         {
             fprintf(stderr, "milk: calc error: syntax error in '%s'\n", input);
@@ -729,7 +793,36 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
         return 1;
     }
 
-    if (!is_assign_op)
+    if (cli_calc_out_mode != CLI_CALC_OUT_VALUES) /* -v/-a: one line per statement */
+    {
+        const char *sv = "";
+        char        num[64];
+        if (pixels != NULL)
+        {
+            sv = pixels;
+        }
+        else if (result.type == VAL_LONG || result.type == VAL_DOUBLE)
+        {
+            if (result.type == VAL_LONG)
+            {
+                snprintf(num, sizeof(num), "%ld", result.lval);
+            }
+            else
+            {
+                snprintf(num, sizeof(num), "%.*g", cli_float_digits, result.dval);
+            }
+            sv = num;
+        }
+        else if (result.type == VAL_STRING && !is_img) /* an assignment gives the variable's name */
+        {
+            const char *v = is_assign_op ? cli_var_get(result.sval) : result.sval;
+            sv            = (v != NULL) ? v : "";
+        }
+        printf("%s\n", sv);
+        fflush(stdout);
+        free(pixels);
+    }
+    else if (!is_assign_op)
     {
         char buf[CLI_CALC_TOKEN_MAXLEN + 32] = "";
         if (result.type == VAL_LONG)

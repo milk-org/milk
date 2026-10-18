@@ -26,7 +26,7 @@ See also: [CLI Syntax](CLIcore.md) · [Streams](streams.md) · [FPS](fps.md) ·
 | ----------------------------- | ------------------------------------------------------------------------- |
 | `word args`                   | bash                                                                      |
 | `module.command args`         | a module command: a bash function defined from the install catalog       |
-| `@keyword args`               | one of the 27 [keywords](#keywords)                                      |
+| `@keyword args`               | one of the 28 [keywords](#keywords)                                      |
 | `@{expr}` inside a word       | an entity path reads a property, anything else goes to the calculator    |
 | `\@{`                         | a literal `@{`                                                            |
 | `<anything> -h`, `--help`     | help                                                                      |
@@ -57,7 +57,7 @@ a file that can be run again.
 | values        | `@calc` `@test` `@assert` `@get` `@set` `@exists` `@running` `@ls`              |
 | events        | `@waitfor` `@waitany` `@on` `@sleep`                                            |
 | data          | `@grab` `@replay` `@snapshot` `@diff` `@restore` `@pipe`                        |
-| program       | `@source` `@defer` `@module` `@config` `@server` `@unload`                       |
+| program       | `@source` `@defer` `@args` `@module` `@config` `@server` `@unload`               |
 | introspection | `@help` `@log` `@history`                                                       |
 
 `@help` with no argument lists them; `@help <keyword>` and `<keyword> --help` describe one. The
@@ -105,6 +105,32 @@ mem.mk2Dim --no-run im 64 64       # print the resolved call, run nothing
   `.tag=value` per line.
 - In an image argument, `"@L:name"` makes a local image and `"@S:name"` a shared stream.
 
+### Your Own Commands
+
+`@args` declares the arguments of a function or script; they are checked as a module command's are:
+
+```bash
+# Average frames of a camera
+cam.average() {
+    @args 'cam:str:camera stream' 'n:int=100:frames to average' -- "$@"
+    @grab "s.${cam}" "${n}" "@L:avg_cube"
+    @calc "avg = imean(avg_cube, 2)"
+}
+cam.average cam0 .n=50       # values in order, or .name=value; '.' keeps a default
+cam.average -h               # the usage, from the declaration
+```
+
+- A declaration is `name:type[=default][:help]`, with type `int` `uint` `float` `bool` (bound as
+  1 or 0) or `str`. Without a default a value is required.
+- The names become local variables of the function (globals at a script's top level). After `-h`,
+  or a missing, invalid or extra value, the function returns (status 0 or 2); a script ends.
+- Without the libmilkbash builtins (`MILK_NO_BUILTINS=1`), `@args` assigns plain variables and
+  only returns its status: write `@args ... -- "$@" || return`, and declare the names `local`.
+- `*.bash` files in `$MILK_INSTALLDIR/share/milk/commands.d` and
+  `${XDG_CONFIG_HOME:-~/.config}/milk/commands.d` are loaded with milk.bash (in plain bash, milk-cli
+  and milk-script). The `module.cmd` functions they define are commands like the others: completion,
+  `@unload`, and `@help` (the comment line right above a definition is its description).
+
 ## Entities
 
 An entity path is `<namespace>.<name>.<property>`:
@@ -124,6 +150,8 @@ Images created by `mem.mk2Dim` and other commands are shared streams by default.
 ```bash
 @get s.cam.xsize                   # print a property
 @get -v nx s.cam.xsize             # bind it to a bash variable (no subshell)
+@get nx=s.cam.xsize ny=s.cam.ysize # several values in one call
+@get -A st s.cam.stats             # pixel statistics: ${st[mean]} ${st[std]} ...
 @get -a names 's.*'                # matching entity names into an indexed array
 @get -A sizes 's.dm*.xsize'        # name -> value into an associative array
 @get --json s.cam                  # all properties as JSON (also f.<fps>, p.<proc>)
@@ -136,7 +164,9 @@ echo "\@{s.cam.xsize}"             # escaped: printed as is
 Common properties:
 
 - streams (`s.`, `l.`): `xsize` `ysize` `zsize` `naxis` `nelem` `type` `typename` `cnt0` `cnt1`
-  `sem` `shared` `age` `fps` `ownerPID` `kw.<KEY>` (FITS keyword), `kw.*`, `list`, `summary`;
+  `sem` `shared` `age` `fps` `ownerPID` `kw.<KEY>` (FITS keyword), `kw.*`, `list`, `summary`, and
+  the pixel statistics `min` `max` `mean` `std` `var` `tot` `count` (non-zero pixels), `stats`
+  (all of them);
 - FPS (`f.`): any parameter (`f.loop.gain`), plus `status` `conf` `run` `confpid` `runpid` `nbparam`
   `list` `description`;
 - processes (`p.`): `status` `loopcnt` `loopfreq` `ctrl` `pid` `exectime` `missedframes`
@@ -156,6 +186,7 @@ Common properties:
 @set f.loop.conf=start             # FPS: conf=start|stop|step, run=start|stop
 @set p.loop.ctrl=pause             # processinfo control: run pause step stop ...
 @set p.loop.pause                  # same, as an action
+@set --restore f.loop.gain=0       # the old value comes back when the calling function returns
 @set --tui loop                    # browse and edit FPS parameters (milk-cli prompt)
 ```
 
@@ -175,6 +206,8 @@ Common properties:
 ```bash
 @calc "cam = cam * 0 + 5"          # image arithmetic, in place
 @calc -v m "imean(cam)"            # bind the result to a bash variable
+@calc -v rms,ptv 'istd(cam); imax(cam) - imin(cam)'   # the values of the last statements
+@calc -a row "cam[*, 10]"          # the pixels of an image into a bash array
 @calc 'rms = istd(cam); ptv = imax(cam) - imin(cam)'   # several statements
 @calc "cam[0:31, 0:31] = 0"        # slices: see slicing.md
 echo "mean=@{imean(cam)}"          # inline
@@ -186,6 +219,8 @@ if @test "imean(cam) > 1"; then echo bright; fi        # status 0 if true, 1 if 
 - A bash variable is read only by calculator text (`@calc`, `@test`, `@assert`, `@pipe`, `@{…}`),
   and only when the expression names it. Its value is data: `s="sqrt(16)"` is the string, not 4. A
   bash variable wins over a calculator variable of the same name.
+- `-v a,b,...` binds the values of the last statements, in order; an assignment's value is the
+  assigned value (`@calc -v x "y = 3"` gives 3).
 - Calculator variables come back to bash only through `-v` (and `@{…}`): after
   `@calc "x = 5"`, bash has no `$x`. Write `@calc -v x "5"`, or read it later with
   `@calc -v x "x"`. Commands that set calculator variables for their caller declare them:
@@ -206,7 +241,7 @@ Operators, loosest first:
 
 | Operators                       | Notes                                                            |
 | ------------------------------- | ---------------------------------------------------------------- |
-| `=` `+=` `-=` `*=` `/=`, `?:`   | `c ? a : b` with a scalar `c` evaluates only the branch it takes |
+| `=` `+=` `-=` `*=` `/=`, `?:`   | `c ? a : b`: a scalar `c` evaluates only its branch; an image `c` selects per pixel |
 | `\|\|`, `&&`                    | skip the right side once the result is known: `0 && (x = 1)`     |
 | `\|`, `^^`, `&`                 | bitwise or, xor, and                                             |
 | `==` `!=`, `<` `<=` `>` `>=`    | 1 or 0; on images, a 0/1 mask per pixel                          |
@@ -227,8 +262,19 @@ Functions (the math ones also apply per pixel to an image):
 | Image to integer | `icount(im)` (non-zero pixels), `iargmax(im)`, `iargmin(im)` (index `x + y*xsize`)       |
 | Along one axis   | `itot imin imax imean istd ivar` plus an axis: `imean(cube, 2)` is the mean frame        |
 | Image to image   | `where(c,a,b)`, `matmul(a,b)`                                                            |
+| Coordinates      | `ix iy ir itheta (im[, cx, cy])`: per pixel x, y, radius, angle about `(xsize/2, ysize/2)` |
 | Strings          | `strlen toupper tolower`, `substr(s,start,len)`, `replace(s,old,new)`, `hex oct bin`     |
 | Complex images   | `cplx(re,im)`, `real imag abs arg conj`; `+ - * /` and `-z` work on them                 |
+
+A second image argument is a mask: `imean(im, mask)` (also `itot imin imax istd ivar imedian`) and
+`perc(im, f, mask)` reduce over the pixels where the mask is not zero; no pixel gives NaN, or 0 for
+`itot`. A number instead is an axis.
+
+```bash
+@calc -v core 'imean(cam, ir(cam) < 10)'          # mean within 10 pixels of the centre
+@calc "cam = where(cam > 4000, 0, cam)"            # one pass; a NaN in the other branch stays out
+@calc "ramp = ix(cam, 0, 0) / s.cam.xsize"          # 0 ... 1 along x
+```
 
 Pixels of complex images go through those functions (`abs(z[3,4])` is a number); the other
 functions and operators reject complex images. Images combined pixel by pixel must have the same
@@ -241,7 +287,7 @@ size on each axis, or size 1 (a 2-D image applies to every frame of a cube).
 @waitfor s.cam 10 -t 2             # 10 frames, timeout 2 s (status 124 on timeout)
 @waitfor s.cam --cnt 5000          # until cnt0 reaches 5000
 @waitfor f.loop.status=RUN -t 5    # until a property has a value
-@waitfor "imean(cam) > 100" -t 5   # until an expression is true
+@waitfor "imean(cam) > 100" -t 5   # until an expression is true, checked on each frame of cam
 @waitany s.cam s.wfs -t 1          # whichever updates first; its name is in $MILK_TRIGGER
 @grab s.cam 100 "@L:cube"          # 100 consecutive frames into a cube
 @grab --fits cube.fits --timestamps t.txt s.cam 100
@@ -249,14 +295,52 @@ size on each axis, or size 1 (a 2-D image applies to every frame of a cube).
 @replay --fps 100 --loop cube.fits sim   # play a cube or FITS file into stream sim
 @on s.cam 'echo "new frame on $MILK_TRIGGER"'      # run on every update (background)
 @on --once --max-hz 10 s.cam s.wfs -- process_frame
+@on --when 'imax(cam) > 60000' --hold 0.5 -- echo saturated   # when it turns true (and stays)
+@on --when 'imean(cam) > 100' --level -- log_frame                # every frame while it is true
+@on --every 10 -- '@get s.cam.cnt0 >> counts.txt'                 # a periodic job
 @on --list ; @on --stop s.cam ; @on --clear
-@defer rm -f /tmp/work.fits        # run at exit, last registered first
 @sleep 0.05                        # sleep without starting a process
+unset t; while :; do @sleep --hz 100 t; process_frame; done   # a loop paced at 100 Hz
+@sleep --every 0.5 --late missed t # $missed: ticks a late call skipped
 ```
 
-`@waitfor` and `@waitany` sleep on the stream semaphores, so they use no CPU while waiting. With
-`--`, `@on` runs the words after it as a command; use the quoted form when the command refers to
-`$MILK_TRIGGER`.
+`@sleep --every T VAR` (or `--hz F VAR`) sleeps to the deadline held in `VAR`, an integer count of
+nanoseconds on the monotonic clock, then moves it one period on; an unset `VAR` starts one period
+from now. The loop keeps its rate whatever its body costs, without drift. A call that comes after its
+deadline returns at once and skips the ticks it missed instead of running them back to back.
+
+`@waitfor` and `@waitany` sleep on the stream semaphores, so they use no CPU while waiting. An
+expression is evaluated again on each new frame of the streams it names, in the shell when it is
+scalar; FPS, process and sequencer values in it are polled. `@waitfor --next "<expr>"` starts from
+the next frame. With `--`, `@on` runs the words after it as a command; use the quoted form when the
+command refers to `$MILK_TRIGGER`. `@on --when` fires when the expression turns true, also when it
+is already true at the start, then again once it has been false.
+
+`@defer` runs a command when the function or `@source`'d file that registered it returns, last
+registered first:
+
+```bash
+measure() {
+    local tmp=/tmp/measure.$$
+    @defer 'rm -f "$tmp"'              # runs when measure returns, with its locals
+    @set --restore f.loop.gain=0       # set now; the old gain comes back when measure returns
+    @defer --restore 's.cam.kw.*'      # every keyword of s.cam comes back
+    @on --scoped s.cam -- process_frame    # the watcher stops when measure returns
+    @defer --exit 'echo session done'  # at exit instead
+    @waitfor s.cam 100 -t 5
+}
+@defer rm -f /tmp/session.log          # at the top level: when the shell or script exits
+```
+
+- A plain `source` is not a scope: entries registered in a file sourced from a function run when the
+  function returns. At the top level, and with `--exit`, entries run at exit, after the scoped ones.
+- Each entry runs once. A function's return status is kept.
+- After Ctrl-C or a `set -e` failure, the skipped entries run before the next prompt or milk-cli
+  command, or at exit. A subshell runs only the entries it registered itself.
+- One argument is a command string, as for `trap`; several words are kept quoted.
+- `@defer` uses the RETURN trap, and the EXIT trap. A user EXIT trap set before the first
+  `@defer` runs after the entries; a RETURN trap set by the script replaces `@defer`'s.
+- `@unload` runs the entries left and gives the EXIT trap back.
 
 ## State, Assertions and Logs
 
@@ -264,6 +348,8 @@ size on each axis, or size 1 (a 2-D image applies to every frame of a cube).
 @snapshot -o base.json 'f.loop*' 's.cam*'     # FPS parameters and stream keywords to JSON
 @diff base.json                               # compare with the live state
 @restore -n base.json                         # dry run, then without -n to apply
+@restore --undo                               # set back what this shell's last @set changed
+@restore --undo -n 5                          # list what its last 5 @set calls changed
 @assert "istd(wfs) < 0.5" "residual diverged" # fails with the values of both sides
 @assert --running --fps-min 500 s.cam "camera stalled"
 @log -n 20                                    # recent milk commands, timing and output
@@ -272,6 +358,11 @@ size on each axis, or size 1 (a 2-D image applies to every frame of a cube).
 @config prompt preset std                     # live telemetry in the prompt
 @config                                       # digits, precision, procinfo
 ```
+
+Each shell keeps the values its `@set` calls overwrote: FPS parameters and stream keywords, not
+actions such as `run=start`. `@restore --undo [N]` sets back the last N calls, the last first, where a
+value still holds what was written; a value changed since is left as it is, with a warning and
+status 1. The writes of `@set --restore` and `@defer --restore` are not recorded.
 
 ## Errors and Exit Status
 
@@ -319,14 +410,16 @@ Measured on a recent desktop machine (see `test_latency_benchmark` in the regres
 | `@calc -v y "1+2"` (scalar only)      | ~2 µs         | evaluated in the shell                   |
 | `@get -v x s.cam.xsize`               | ~3 µs         | read from shared memory, no request      |
 | `@set s.cam.kw.FOO=1`                 | ~5 µs         |                                          |
+| `f() { @defer …; }; f`                | ~15 µs        | registered, then run when `f` returns    |
 | `x=@{s.cam.xsize}`, `y=@{1+2}`        | ~2–3 µs       | a statement of its own: bound with `-v`  |
 | `"frame @{s.cam.cnt0}"` (in a word)   | ~15 µs        | bash's `${| …; }` substitution, no fork  |
 | `@calc "cam = cam * 2"` (images)      | ~30 µs        | one request to the server                |
 | `mem.listim`, other milk commands     | ~75 µs        | one request to the server                |
 | `y=$(@calc 1+2)`                      | ~0.8 ms       | `$( )` forks a subshell: avoid in loops  |
 
-An expression made of same-size images, numbers, arithmetic, comparisons and the per-pixel math
-functions runs in one pass, however many operators it has (1024×1024 floats:
+An expression made of same-size images, numbers, arithmetic, comparisons, the per-pixel math
+functions, `where`, `?:` with an image condition and the coordinate functions runs in one pass,
+however many operators it has (1024×1024 floats:
 `x = (b*2 + c*3 - a) / 4` ~0.2 ms, `a += 1` ~0.2 ms), and assigning it to an existing image of
 the same size and type writes in place. Slices, broadcasting, reductions and complex images take
 one pass per operator.

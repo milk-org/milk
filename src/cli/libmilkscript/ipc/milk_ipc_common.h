@@ -48,6 +48,9 @@ void milk_ipc_set_var(const milk_client_hooks_t *hooks,
 
 char *milk_ipc_bind_script(const char *name, int assoc, char *text);
 
+/** milk_ipc_is_identifier() - 1 if @name matches [A-Za-z_][A-Za-z0-9_]* (a shell variable name). */
+int milk_ipc_is_identifier(const char *name);
+
 void milk_ipc_eval(const milk_client_hooks_t *hooks, char *script);
 
 /**

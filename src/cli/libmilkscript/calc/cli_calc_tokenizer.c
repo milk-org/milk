@@ -72,6 +72,12 @@ static const builtin_func builtins[] = {
     /* image, double -> double */
     { "perc(", (double (*)()) arith_image_percentile, TOK_FUNC_IMD_D },
 
+    /* image[, cx, cy] -> the pixel coordinates, centred on (xsize/2, ysize/2) */
+    { "ix(", NULL, TOK_FUNC_COORD },
+    { "iy(", NULL, TOK_FUNC_COORD },
+    { "ir(", NULL, TOK_FUNC_COORD },
+    { "itheta(", NULL, TOK_FUNC_COORD },
+
     /* special -> parser handles manually */
     { "where(", NULL, TOK_FUNC_WHERE },
     { "dot(", (double (*)()) arith_image_dot, TOK_FUNC_IMIM_D },

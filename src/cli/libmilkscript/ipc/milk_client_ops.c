@@ -27,6 +27,7 @@
 #endif
 
 #include <ctype.h>
+#include <errno.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <math.h>
@@ -526,6 +527,39 @@ static void client_bind_array(const milk_client_hooks_t *hooks,
     }
 }
 
+/**
+ * get_specs() - `@get spec...` and `@get name=spec...`: print each plain spec's value (one per line) and
+ * bind each named one; 0, or 1 if any read failed (the others are still done).
+ */
+static int get_specs(int n, char **specs, int json_mode, const milk_client_hooks_t *hooks)
+{
+    int rc = 0;
+    for (int i = 0; i < n; i++)
+    {
+        char        js[512];
+        const char *eq = strchr(specs[i], '=');
+        char        name[128];
+        const char *spec = specs[i];
+        if (eq != NULL) /* name=spec: entity paths never contain '=' */
+        {
+            snprintf(name, sizeof(name), "%.*s", (int) (eq - specs[i]), specs[i]);
+            if (!milk_ipc_is_identifier(name))
+            {
+                fprintf(stderr, "milk: @get: '%s' is no variable name\n", name);
+                return 2;
+            }
+            spec = eq + 1;
+        }
+        if (json_mode && eq == NULL)
+        {
+            snprintf(js, sizeof(js), "json:%s", spec);
+            spec = js;
+        }
+        rc |= (milk_client_get(spec, (eq != NULL) ? name : NULL, hooks) != 0);
+    }
+    return rc;
+}
+
 int milk_client_get_argv(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     const char *varname   = NULL;
@@ -533,6 +567,12 @@ int milk_client_get_argv(int argc, char **argv, const milk_client_hooks_t *hooks
     const char *assocname = NULL;
     const char *spec      = NULL;
     int         json_mode = 0;
+    int         nspec     = 0;
+    char      **specs     = (char **) calloc((size_t) argc + 1, sizeof(char *));
+    if (specs == NULL)
+    {
+        return 1;
+    }
     for (int i = 0; i < argc; i++)
     {
         if (strcmp(argv[i], "--json") == 0 || strcmp(argv[i], "-j") == 0)
@@ -551,16 +591,27 @@ int milk_client_get_argv(int argc, char **argv, const milk_client_hooks_t *hooks
         {
             assocname = argv[++i];
         }
-        else if (spec == NULL)
+        else
         {
-            spec = argv[i];
+            specs[nspec++] = argv[i];
         }
     }
-    if (spec == NULL)
+    spec = specs[0];
+    if (nspec == 0 || ((varname != NULL || arrname != NULL || assocname != NULL) &&
+                       (nspec > 1 || strchr(spec, '=') != NULL)))
     {
-        fprintf(stderr, "Usage: @get [--json|-j] [-v var | -a arr | -A assoc] <entity>\n");
-        return 1;
+        fprintf(stderr, "Usage: @get [--json|-j] [-v var | -a arr | -A assoc] <entity> | "
+                        "@get [<name>=]<entity>...\n");
+        free(specs);
+        return 2;
     }
+    if (varname == NULL && arrname == NULL && assocname == NULL)
+    {
+        int rc = get_specs(nspec, specs, json_mode, hooks);
+        free(specs);
+        return rc;
+    }
+    free(specs);
 
     char eff_spec[512];
     if (assocname != NULL)
@@ -678,6 +729,288 @@ static int is_entity_spec_token(const char *s)
 /**
  * @brief Parse and execute one or more `@set` assignments from `argv`.
  */
+/** sh_quote() - append @s single-quoted for the shell to the string @out of size @sz; -1 if it does not fit. */
+static int sh_quote(char *out, size_t sz, const char *s)
+{
+    size_t n = strlen(out);
+    if (n + 3 > sz)
+    {
+        return -1;
+    }
+    out[n++] = '\'';
+    for (; *s != '\0'; s++)
+    {
+        if (n + 6 > sz)
+        {
+            return -1;
+        }
+        if (*s == '\'')
+        {
+            memcpy(out + n, "'\\''", 4);
+            n += 4;
+        }
+        else
+        {
+            out[n++] = *s;
+        }
+    }
+    out[n++] = '\'';
+    out[n]   = '\0';
+    return 0;
+}
+
+/**
+ * set_restore() - `@set --restore <assignments>`: read the current value of every entity assigned (before
+ * anything is written) and register the `milkset` that puts them back in the caller's @defer scope; 0, or
+ * non-zero after a message (nothing registered).
+ */
+static int set_restore(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    char cmd[16384] = "__MILK_NOLOG=1 milkset";
+    int  i          = 0;
+    while (i < argc) /* the assignment grammar of milk_client_set_argv() */
+    {
+        const char *spec = argv[i++];
+        const char *eq   = strchr(spec, '=');
+        size_t      sl   = (eq != NULL) ? (size_t) (eq - spec) : strlen(spec);
+        int         has  = (eq != NULL);
+        if (eq == NULL && i < argc && strcmp(argv[i], "=") == 0)
+        {
+            has = (++i < argc);
+            i += has;
+        }
+        else if (eq == NULL && i < argc && !is_entity_spec_token(argv[i]))
+        {
+            has = 1;
+            i++;
+        }
+        if (i < argc && !is_entity_spec_token(argv[i])) /* a comment */
+        {
+            i++;
+        }
+        char name[512];
+        char old[4096];
+        char kv[4700];
+        snprintf(name, sizeof(name), "%.*s", (int) sl, spec);
+        if (!has) /* an action: nothing to put back */
+        {
+            continue;
+        }
+        if (strpbrk(name, "*?[") != NULL)
+        {
+            fprintf(stderr, "milk: @set --restore %s: for a glob, use @defer --restore\n", name);
+            return 2;
+        }
+        if (milk_client_get_buf(name, old, sizeof(old), hooks) != 0)
+        {
+            fprintf(stderr, "milk: @set --restore: cannot read %s\n", name);
+            return 1;
+        }
+        snprintf(kv, sizeof(kv), "%s=%s", name, old);
+        if (strlen(cmd) + 1 >= sizeof(cmd) ||
+            (strcat(cmd, " "), sh_quote(cmd, sizeof(cmd), kv)) != 0)
+        {
+            fprintf(stderr, "milk: @set --restore: too many values\n");
+            return 1;
+        }
+    }
+    char script[sizeof(cmd) * 2 + 32] = "_milk_defer_here ";
+    if (sh_quote(script, sizeof(script), cmd) == 0)
+    {
+        milk_ipc_eval(hooks, script);
+    }
+    return 0;
+}
+
+/* @restore --undo: each @set call adds an entry to the shell's __MILK_UNDO array, a
+ * "<spec>\t<old>\t<new>" line per value it changed */
+typedef struct
+{
+    char  *buf;
+    size_t len;
+    size_t cap;
+} undo_text_t;
+
+static void undo_add(undo_text_t *u, const char *line, size_t n)
+{
+    if (u->len + n + 1 > u->cap)
+    {
+        size_t cap = (u->cap + n + 1) * 2;
+        char  *b   = realloc(u->buf, cap);
+        if (b == NULL)
+        {
+            return;
+        }
+        u->buf = b;
+        u->cap = cap;
+    }
+    memcpy(u->buf + u->len, line, n);
+    u->len += n;
+    u->buf[u->len] = '\0';
+}
+
+/** undo_loggable() - 1 if @name is a value @restore --undo can set back: an FPS parameter or a stream
+ * keyword; not an action (conf, run, process or sequencer controls). */
+static int undo_loggable(const char *name)
+{
+    const char    *rest = name;
+    milk_ns_kind_t k    = milk_entity_ns_kind(name, &rest);
+    const char    *last = strrchr(name, '.');
+
+    if (k == MILK_NS_STREAM)
+    {
+        return strstr(rest, ".kw.") != NULL;
+    }
+    return k == MILK_NS_FPS && last != NULL && strcmp(last, ".conf") != 0 &&
+           strcmp(last, ".run") != 0 && strcmp(last, ".status") != 0;
+}
+
+/** undo_values() - "<spec>\t<value>\n" lines for @name, one per match of a glob; 0 or -1. A glob in the
+ * entity gives <ns>.<match>.<rest>; <entity>.* gives <entity>.<match>. */
+static int undo_values(const char *name, char *out, size_t sz, const milk_client_hooks_t *hooks)
+{
+    char   raw[8192];
+    size_t o = 0;
+
+    milk_ipc_sync_shm_env(hooks);
+    if (milk_shm_prop_get(name, raw, sizeof(raw)) !=
+        0) /* shared memory only: no request to the server */
+    {
+        return -1;
+    }
+    if (strpbrk(name, "*?[") == NULL)
+    {
+        raw[strcspn(raw, "\n")] = '\0';
+        snprintf(out, sz, "%s\t%s\n", name, raw);
+        return 0;
+    }
+    size_t      nl   = strlen(name);
+    int         tail = (nl > 2 && strcmp(name + nl - 2, ".*") == 0 &&
+                        strpbrk(name, "*?[") == name + nl - 1); /* <entity>.* */
+    const char *ent  = strchr(name, '.');
+    const char *att  = (ent != NULL) ? strchr(ent + 1, '.') : NULL;
+    if (!tail && (ent == NULL || att == NULL || strpbrk(att, "*?[") != NULL))
+    {
+        return -1;
+    }
+    out[0] = '\0';
+    for (char *line = strtok(raw, "\n"); line != NULL && o < sz; line = strtok(NULL, "\n"))
+    {
+        char *eq = strchr(line, '=');
+        if (eq == NULL)
+        {
+            continue;
+        }
+        *eq   = '\0';
+        int w = tail ? snprintf(out + o, sz - o, "%.*s%s\t%s\n", (int) (nl - 1), name, line, eq + 1)
+                     : snprintf(out + o, sz - o, "%.*s.%s%s\t%s\n", (int) (ent - name), name, line,
+                                att, eq + 1);
+        o += (w > 0) ? (size_t) w : 0;
+    }
+    return (o < sz) ? 0 : -1;
+}
+
+/** undo_pair() - add "<spec>\t<old>\t<new>" for each spec of @before whose value @after changed. */
+static void undo_pair(undo_text_t *u, char *before, const char *after)
+{
+    for (char *line = strtok(before, "\n"); line != NULL; line = strtok(NULL, "\n"))
+    {
+        char *tab = strchr(line, '\t');
+        if (tab == NULL)
+        {
+            continue;
+        }
+        size_t      sl  = (size_t) (tab - line);
+        const char *a   = after;
+        const char *now = NULL;
+        while (a != NULL && *a != '\0' && now == NULL)
+        {
+            if (strncmp(a, line, sl + 1) == 0)
+            {
+                now = a + sl + 1;
+            }
+            a = strchr(a, '\n');
+            a = (a != NULL) ? a + 1 : NULL;
+        }
+        size_t nn = (now != NULL) ? strcspn(now, "\n") : 0;
+        if (now != NULL && (strlen(tab + 1) != nn || strncmp(tab + 1, now, nn) != 0))
+        {
+            undo_add(u, line, strlen(line));
+            undo_add(u, "\t", 1);
+            undo_add(u, now, nn);
+            undo_add(u, "\n", 1);
+        }
+    }
+}
+
+static undo_text_t
+           g_undo_pending; /* entries of this shell not yet in __MILK_UNDO, '\036' after each */
+static int g_undo_npending;
+
+/** undo_flush() - append the pending entries to __MILK_UNDO (the last 1000 to 2000 calls are kept). */
+static void undo_flush(const milk_client_hooks_t *hooks)
+{
+    if (g_undo_pending.len == 0)
+    {
+        return;
+    }
+    char *script = malloc(2 * g_undo_pending.len + 160);
+    if (script != NULL)
+    {
+        char *p = stpcpy(script, "__MILK_UNDO+=($'");
+        for (const char *c = g_undo_pending.buf; *c != '\0'; c++)
+        {
+            p = (*c == '\036' && c[1] == '\0') ? p
+                : (*c == '\036')               ? stpcpy(p, "' $'")
+                : (*c == '\\')                 ? stpcpy(p, "\\\\")
+                : (*c == '\'')                 ? stpcpy(p, "\\'")
+                : (*c == '\n')                 ? stpcpy(p, "\\n")
+                : (*c == '\t')                 ? stpcpy(p, "\\t")
+                                               : (*p = *c, p + 1);
+        }
+        stpcpy(
+            p,
+            "'); (( ${#__MILK_UNDO[@]} <= 2000 )) || __MILK_UNDO=(\"${__MILK_UNDO[@]: -1000}\")");
+        milk_ipc_eval(hooks, script);
+        free(script);
+    }
+    g_undo_pending.len    = 0;
+    g_undo_pending.buf[0] = '\0';
+    g_undo_npending       = 0;
+}
+
+/** undo_commit() - keep the entry @u of this @set call: until the next flush in a shell (a builtin), at
+ * once from milk-call. */
+static void undo_commit(undo_text_t *u, const milk_client_hooks_t *hooks)
+{
+    if (u->len == 0)
+    {
+        return;
+    }
+    u->buf[--u->len] = '\0'; /* the last newline */
+    undo_add(&g_undo_pending, u->buf, u->len);
+    undo_add(&g_undo_pending, "\036", 1);
+    if (++g_undo_npending > 2000) /* never flushed: keep the last 1000 */
+    {
+        char *c = g_undo_pending.buf;
+        for (int k = 0; k < 1000 && c != NULL; k++)
+        {
+            c = strchr(c, '\036');
+            c = (c != NULL) ? c + 1 : NULL;
+        }
+        if (c != NULL)
+        {
+            g_undo_pending.len -= (size_t) (c - g_undo_pending.buf);
+            memmove(g_undo_pending.buf, c, g_undo_pending.len + 1);
+            g_undo_npending -= 1000;
+        }
+    }
+    if (hooks == NULL || hooks->eval == NULL)
+    {
+        undo_flush(hooks);
+    }
+}
+
 int milk_client_set_argv(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     if (argc < 1 || argv == NULL || argv[0] == NULL)
@@ -689,9 +1022,28 @@ int milk_client_set_argv(int argc, char **argv, const milk_client_hooks_t *hooks
     {
         return call_as("fparam", argc, argv, "--tui", NULL, 0, hooks);
     }
+    if (strcmp(argv[0], "--flush-undo") == 0) /* for @restore --undo */
+    {
+        undo_flush(hooks);
+        return 0;
+    }
+    if (strcmp(argv[0], "--restore") ==
+        0) /* put the old values back when the caller's scope ends */
+    {
+        int rr = set_restore(argc - 1, argv + 1, hooks);
+        if (rr != 0 || argc == 1)
+        {
+            return rr;
+        }
+        argc--;
+        argv++;
+    }
 
-    int rc = 0;
-    int i  = 0;
+    int         rc   = 0;
+    int         i    = 0;
+    undo_text_t undo = { NULL, 0, 0 };
+    const char *nl = milk_ipc_get_var(hooks, "__MILK_NOLOG"); /* the writes of an undo or restore */
+    int         nolog = (nl != NULL && nl[0] != '\0');
     while (i < argc)
     {
         const char *spec    = argv[i++];
@@ -725,46 +1077,159 @@ int milk_client_set_argv(int argc, char **argv, const milk_client_hooks_t *hooks
             }
         }
 
+        /* a value (not an action) that @restore --undo can set back: its values before and after */
+        char        name[512];
+        char        before[8192];
+        const char *eq  = strchr(spec, '=');
+        int         log = (eq != NULL || val != NULL) && !nolog;
+        snprintf(name, sizeof(name), "%.*s",
+                 (int) ((eq != NULL) ? (size_t) (eq - spec) : strlen(spec)), spec);
+        log = log && undo_loggable(name) && undo_values(name, before, sizeof(before), hooks) == 0;
         if (milk_client_set(spec, val, comment, hooks) != 0)
         {
             rc = 1;
         }
+        else if (log)
+        {
+            char after[8192];
+            if (undo_values(name, after, sizeof(after), hooks) == 0)
+            {
+                undo_pair(&undo, before, after);
+            }
+        }
     }
+    undo_commit(&undo, hooks);
+    free(undo.buf);
     return rc;
 }
 
+/** names_ok() - 1 if @names is a comma-separated list of shell variable names (`@calc -v a,b`). */
+static int names_ok(const char *names)
+{
+    char nm[128];
+    for (const char *p = names;;)
+    {
+        size_t l = strcspn(p, ",");
+        if (l == 0 || l >= sizeof(nm))
+        {
+            return 0;
+        }
+        snprintf(nm, sizeof(nm), "%.*s", (int) l, p);
+        if (!milk_ipc_is_identifier(nm))
+        {
+            return 0;
+        }
+        if (p[l] == '\0')
+        {
+            return 1;
+        }
+        p += l + 1;
+    }
+}
+
+/** bind_values() - set the variables @names to the last of the @n values @v, right-aligned: the k names
+ * get the values of the last k statements (a name without one is emptied). */
+static void bind_values(const milk_client_hooks_t *hooks, const char *names, char **v, int n)
+{
+    int k = 1;
+    for (const char *c = names; *c != '\0'; c++)
+    {
+        k += (*c == ',');
+    }
+    char nm[128];
+    for (const char *p = names;; k--)
+    {
+        size_t l = strcspn(p, ",");
+        snprintf(nm, sizeof(nm), "%.*s", (int) l, p);
+        milk_ipc_set_var(hooks, nm, (n - k >= 0) ? v[n - k] : "", 0);
+        if (p[l] == '\0')
+        {
+            return;
+        }
+        p += l + 1;
+    }
+}
+
+/** calc_local_list() - evaluate the `;`-separated statements of @expr in this process (cli_calc_local());
+ * their number, values in @vals, or -1 if one needs the engine. */
+static int calc_local_list(const char *expr, int digits, char vals[][256], int maxn, int *truth)
+{
+    char stmt[1024];
+    int  n = 0;
+
+    if (strpbrk(expr, "\"'") != NULL)
+    {
+        return -1;
+    }
+    for (const char *p = expr;;)
+    {
+        size_t l = strcspn(p, ";");
+        if (l >= sizeof(stmt))
+        {
+            return -1;
+        }
+        memcpy(stmt, p, l);
+        stmt[l] = '\0';
+        if (stmt[strspn(stmt, " \t")] != '\0' &&
+            (n == maxn || !cli_calc_local(stmt, digits, vals[n++], 256, truth)))
+        {
+            return -1;
+        }
+        if (p[l] == '\0')
+        {
+            return n;
+        }
+        p += l + 1;
+    }
+}
+
 /**
- * @brief Shared implementation for `@calc` and `@test` expression evaluation.
+ * client_calc_or_test() - @calc / @test @expr. @names ("a,b,...") binds the values of the last statements,
+ * @arr the pixels of an image result (or a number); otherwise the values of non-assignments are printed.
  */
 static int client_calc_or_test(const char                *expr,
                                int                        is_test,
-                               const char                *varname,
+                               const char                *names,
+                               const char                *arr,
                                const milk_client_hooks_t *hooks)
 {
     if (expr == NULL || expr[0] == '\0')
     {
         return is_test ? 1 : 0;
     }
+    if ((names != NULL && !names_ok(names)) || (arr != NULL && !milk_ipc_is_identifier(arr)))
+    {
+        fprintf(stderr, "milk: @calc: '%s' is no variable name\n", (arr != NULL) ? arr : names);
+        return 2;
+    }
 
     const char *dp = milk_ipc_get_var(hooks, "MILK_DPDIGITS"); /* sent back by @config digits */
     long        nd = (dp != NULL) ? strtol(dp, NULL, 10) : 0;
-    char        res[256];
+    char        lv[16][256];
+    char       *lp[16];
     int         truth = 0;
-    if (cli_calc_local(expr, (nd >= 1 && nd <= 17) ? (int) nd : 15, res, sizeof(res), &truth))
+    int n = (arr == NULL)
+                ? calc_local_list(expr, (nd >= 1 && nd <= 17) ? (int) nd : 15, lv, 16, &truth)
+                : -1;
+    if (n > 0 && (!is_test || n == 1)) /* nothing to look up on the server: evaluated here */
     {
-        if (is_test) /* nothing to look up on the server: evaluated here */
+        if (is_test)
         {
             return truth ? 0 : 1;
         }
-        if (varname != NULL && varname[0] != '\0')
+        for (int i = 0; i < n; i++)
         {
-            milk_ipc_set_var(hooks, varname, res, 0);
+            lp[i] = lv[i];
+            if (names == NULL)
+            {
+                printf("%s\n", lv[i]);
+            }
         }
-        else
+        if (names != NULL)
         {
-            printf("%s\n", res);
-            fflush(stdout);
+            bind_values(hooks, names, lp, n);
         }
+        fflush(stdout);
         return 0;
     }
 
@@ -810,87 +1275,97 @@ static int client_calc_or_test(const char                *expr,
         off += (uint32_t) vl;
     }
 
-    int cap_pipe[2] = { -1, -1 };
-    int out_fd      = STDOUT_FILENO;
-    if (!is_test && varname != NULL && varname[0] != '\0')
-    {
-        if (pipe(cap_pipe) == 0)
-        {
-            out_fd = cap_pipe[1];
-        }
-    }
-
-    int     cwd_fd = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-    int     fds[4] = { STDIN_FILENO, out_fd, STDERR_FILENO, cwd_fd };
-    uint8_t mtype  = is_test ? MILK_MSG_TEST : MILK_MSG_CALC;
-    int     sret   = milk_proto_send_with_fds(fd, mtype, 0, buf, off, fds, (cwd_fd >= 0) ? 4 : 3);
+    /* the values to bind go to a memory file: a pipe read after DONE would block a large -a output */
+    int bind      = !is_test && (names != NULL || arr != NULL);
+    int out_fd    = bind ? memfd_create("milk_calc_out", MFD_CLOEXEC) : STDOUT_FILENO;
+    int cwd_fd    = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    int fds[4]    = { STDIN_FILENO, (out_fd >= 0) ? out_fd : STDOUT_FILENO, STDERR_FILENO, cwd_fd };
+    uint8_t mtype = is_test ? MILK_MSG_TEST : MILK_MSG_CALC;
+    uint8_t flags = !bind ? 0 : (arr != NULL) ? MILK_FLAG_PIXELS : MILK_FLAG_BIND;
+    int     sret = milk_proto_send_with_fds(fd, mtype, flags, buf, off, fds, (cwd_fd >= 0) ? 4 : 3);
     if (cwd_fd >= 0)
     {
         close(cwd_fd);
     }
-    if (cap_pipe[1] >= 0)
-    {
-        close(cap_pipe[1]);
-    }
     free(buf);
 
-    if (sret != 0)
-    {
-        if (cap_pipe[0] >= 0)
-        {
-            close(cap_pipe[0]);
-        }
-        close(fd);
-        return 2;
-    }
-
-    int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
+    int rc = (sret != 0) ? 2 : milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
     close(fd);
 
-    if (cap_pipe[0] >= 0)
+    if (bind && out_fd >= 0)
     {
-        size_t  cap = 512;
-        size_t  cn  = 0;
-        char   *cb  = (char *) malloc(cap);
-        ssize_t nr;
-        while (cb != NULL && (nr = read(cap_pipe[0], cb + cn, cap - cn - 1)) > 0) // whole value
+        off_t sz   = lseek(out_fd, 0, SEEK_END);
+        char *text = (rc == 0 && sz >= 0) ? (char *) malloc((size_t) sz + 1) : NULL;
+        if (text != NULL && pread(out_fd, text, (size_t) sz, 0) == (ssize_t) sz)
         {
-            cn += (size_t) nr;
-            if (cn + 1 == cap)
+            char **lines = (char **) malloc(((size_t) sz + 1) * sizeof(char *));
+            int    nl    = 0;
+            text[sz]     = '\0';
+            for (char *l = text; lines != NULL && *l != '\0';) /* one line per statement */
             {
-                char *nb = (char *) realloc(cb, cap * 2);
-                if (nb == NULL)
+                char *e     = strchr(l, '\n');
+                lines[nl++] = l;
+                if (e == NULL)
                 {
                     break;
                 }
-                cb = nb;
-                cap *= 2;
+                *e = '\0';
+                l  = e + 1;
             }
-        }
-        close(cap_pipe[0]);
-        if (cb != NULL &&
-            (cn > 0 || rc == 0)) /* nothing printed (an assignment): empty, like @{...} */
-        {
-            cb[cn] = '\0';
-            while (cn > 0 && (cb[cn - 1] == '\n' || cb[cn - 1] == '\r'))
+            if (lines != NULL && names != NULL)
             {
-                cb[--cn] = '\0';
+                bind_values(hooks, names, lines, nl);
             }
-            milk_ipc_set_var(hooks, varname, cb, 0);
+            else if (lines != NULL && nl > 0)
+            {
+                client_bind_array(hooks, arr, 0, lines[nl - 1]);
+            }
+            free(lines);
         }
-        free(cb);
+        free(text);
+        close(out_fd);
     }
     return rc;
 }
 
 int milk_client_calc(const char *expr, const char *varname, const milk_client_hooks_t *hooks)
 {
-    return client_calc_or_test(expr, 0, varname, hooks);
+    return client_calc_or_test(expr, 0, varname, NULL, hooks);
+}
+
+int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    const char *names = NULL;
+    const char *arr   = NULL;
+    int         i     = 0;
+    for (; i + 1 < argc && (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "-a") == 0); i += 2)
+    {
+        *((argv[i][1] == 'v') ? &names : &arr) = argv[i + 1];
+    }
+    size_t tot = 1;
+    for (int j = i; j < argc; j++)
+    {
+        tot += strlen(argv[j]) + 1;
+    }
+    char *expr = (char *) malloc(tot);
+    if (expr == NULL)
+    {
+        return 2;
+    }
+    expr[0] = '\0';
+    for (int j = i; j < argc; j++)
+    {
+        strcat(expr, (j > i) ? " " : "");
+        strcat(expr, argv[j]);
+    }
+    int rc = client_calc_or_test(expr, 0, names, arr, hooks);
+    free(expr);
+    return rc;
 }
 
 int milk_client_test(const char *expr, const milk_client_hooks_t *hooks)
 {
-    return client_calc_or_test(expr, 1, NULL, hooks);
+    return client_calc_or_test(expr, 1, NULL, NULL, hooks);
 }
 
 /**
@@ -993,6 +1468,11 @@ static int client_wait_local(const milk_wait_target_t  *wt,
     return rc;
 }
 
+static int client_wait_expr(const char                *expr,
+                            int                        next,
+                            double                     timeout_sec,
+                            const milk_client_hooks_t *hooks);
+
 /**
  * @brief Wait for stream frames or a boolean condition (`@waitfor`).
  */
@@ -1006,10 +1486,15 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
     const char *timeout  = "0";
     const char *sem_str  = NULL;
     const char *cnt_str  = NULL;
+    int         next     = 0;
 
     for (int i = 0; i < argc; i++)
     {
-        if ((strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--timeout") == 0) && i + 1 < argc)
+        if (strcmp(argv[i], "--next") == 0)
+        {
+            next = 1;
+        }
+        else if ((strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--timeout") == 0) && i + 1 < argc)
         {
             timeout = argv[++i];
         }
@@ -1047,7 +1532,7 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
     if (target == NULL || target[0] == '\0')
     {
         fprintf(stderr, "Usage: @waitfor [-t|--timeout <sec>] [-s <sem>] [--cnt <target>] "
-                        "<stream|condition> [nframes]\n");
+                        "<stream|condition> [nframes] | @waitfor [--next] \"<expr>\"\n");
         return 1;
     }
 
@@ -1056,6 +1541,14 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
     {
         fprintf(stderr, "@waitfor: invalid target '%s'\n", target);
         return 1;
+    }
+    if (wt.kind == MILK_WAIT_EXPR)
+    {
+        while (*target == '@')
+        {
+            target++;
+        }
+        return client_wait_expr(target, next, strtod(timeout, NULL), hooks);
     }
 
     /* No RPC for shm entities and existing streams; local images, variables and expressions need the server */
@@ -1229,6 +1722,171 @@ static void sem_waiters_stop(sem_waiters_t *sw, IMAGE *imgs)
     {
         close(sw->efd);
     }
+}
+
+#define WAIT_EXPR_MAXS 16
+
+/**
+ * expr_streams() - the shared streams that @expr names (`s.<name>.<prop>`, or an image name that has a
+ * shm file), opened into @imgs; *@other is set if it also names FPS, process or sequencer values.
+ */
+static int expr_streams(const char *expr, IMAGE *imgs, int *other)
+{
+    int n  = 0;
+    *other = 0;
+    for (const char *p = expr; *p != '\0';)
+    {
+        if (*p == '"' || *p == '\'') /* a string literal */
+        {
+            const char *q = strchr(p + 1, *p);
+            p             = (q != NULL) ? q + 1 : p + strlen(p);
+            continue;
+        }
+        if (!(isalpha((unsigned char) *p) || *p == '_') ||
+            (p > expr && (isalnum((unsigned char) p[-1]) || p[-1] == '.')))
+        {
+            p++;
+            continue;
+        }
+        char   id[160];
+        size_t len = strspn(p, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.");
+        snprintf(id, sizeof(id), "%.*s", (int) ((len < sizeof(id)) ? len : sizeof(id) - 1), p);
+        p += len;
+        const char    *after = p + strspn(p, " \t");
+        const char    *rest  = id;
+        milk_ns_kind_t k     = milk_entity_ns_kind(id, &rest);
+        if (*after == '(' || (k == MILK_NS_NONE && strchr(id, '.') != NULL))
+        {
+            continue; /* a function, or not an entity */
+        }
+        if (k != MILK_NS_NONE && k != MILK_NS_STREAM)
+        {
+            *other = 1; /* FPS, process, sequencer or local image: no semaphore */
+            continue;
+        }
+        memmove(id, rest, strlen(rest) + 1);
+        id[strcspn(id, ".")] = '\0';
+        int  dup             = 0;
+        char shm[1024];
+        for (int i = 0; i < n && !dup; i++)
+        {
+            dup = (strcmp(imgs[i].name, id) == 0);
+        }
+        if (!dup && n < WAIT_EXPR_MAXS &&
+            ImageStreamIO_filename(shm, sizeof(shm), id) == IMAGESTREAMIO_SUCCESS &&
+            access(shm, R_OK) == 0 && ImageStreamIO_openIm(&imgs[n], id) == IMAGESTREAMIO_SUCCESS)
+        {
+            if (imgs[n].md != NULL && imgs[n].md->sem > 0)
+            {
+                n++;
+            }
+            else
+            {
+                ImageStreamIO_closeIm(&imgs[n]);
+                *other = 1; /* no semaphore to sleep on */
+            }
+        }
+    }
+    return n;
+}
+
+/**
+ * client_wait_expr() - `@waitfor "<expr>"`: evaluate it (in the shell when it is scalar, else in the
+ * server) each time a stream it names posts a frame, polling as well when it names no stream or FPS,
+ * process or sequencer values. @next: only from the next frame on. 0 once true, 124 on timeout, 130 on
+ * Ctrl-C, the evaluation's status on an error.
+ */
+static int client_wait_expr(const char                *expr,
+                            int                        next,
+                            double                     timeout_sec,
+                            const milk_client_hooks_t *hooks)
+{
+    IMAGE    imgs[WAIT_EXPR_MAXS];
+    int      opened[WAIT_EXPR_MAXS];
+    uint64_t cnt[WAIT_EXPR_MAXS];
+    int      other = 0;
+    int      iter  = 0;
+    int      rc    = 1;
+
+    milk_ipc_sync_shm_env(hooks);
+    memset(imgs, 0, sizeof(imgs));
+    int n = expr_streams(expr, imgs, &other);
+    for (int i = 0; i < n; i++)
+    {
+        opened[i] = 1;
+        cnt[i]    = imgs[i].md->cnt0;
+    }
+
+    struct sigaction sa_int, old_int;
+    memset(&sa_int, 0, sizeof(sa_int));
+    sa_int.sa_handler = client_wait_sigint_handler;
+    sigemptyset(&sa_int.sa_mask);
+    g_wait_sigint = 0;
+    sigaction(SIGINT, &sa_int, &old_int);
+    double t0 = milk_wait_now();
+
+    for (;;)
+    {
+        if (!next)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                cnt[i] =
+                    imgs[i].md->cnt0; /* frames that come during the evaluation wake the wait */
+            }
+            rc = milk_client_test(expr, hooks);
+            if (rc != 1)
+            {
+                break;
+            }
+        }
+        next = 0;
+        if (g_wait_sigint)
+        {
+            rc = 130;
+            break;
+        }
+        double left = (timeout_sec > 0.0) ? timeout_sec - (milk_wait_now() - t0) : 1.0;
+        if (left <= 0.0)
+        {
+            rc = 124;
+            break;
+        }
+        if (n == 0 || other)
+        {
+            milk_wait_backoff(&iter);
+            continue;
+        }
+        sem_waiters_t sw;
+        int           hit = 0;
+        sem_waiters_start(&sw, imgs, opened, cnt, n);
+        for (int i = 0; i < n && !hit; i++)
+        {
+            hit = (imgs[i].md->cnt0 != cnt[i]);
+        }
+        if (!hit && sw.efd >= 0)
+        {
+            struct pollfd pfd = { sw.efd, POLLIN, 0 };
+            poll(&pfd, 1, (left < 1.0) ? (int) (left * 1000.0) + 1 : 1000);
+        }
+        sem_waiters_stop(&sw, imgs);
+        for (int i = 0; i < n && !hit; i++)
+        {
+            hit = (imgs[i].md->cnt0 != cnt[i]);
+        }
+        next = !hit; /* no new frame (timeout, signal): nothing to evaluate */
+    }
+
+    sigaction(SIGINT, &old_int, NULL);
+    if (rc == 130 && hooks != NULL && hooks->on_sigint != NULL)
+    {
+        hooks->on_sigint(hooks->ctx);
+    }
+    for (int i = 0; i < n; i++)
+    {
+        ImageStreamIO_closeIm(&imgs[i]);
+    }
+    return rc;
 }
 
 int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
@@ -1446,6 +2104,152 @@ static void resolve_client_path(const char *in, char *out, size_t outsz)
     {
         snprintf(out, outsz, "%s", in);
     }
+}
+
+static volatile sig_atomic_t g_sleep_int = 0;
+
+static void sleep_on_int(int signo)
+{
+    (void) signo;
+    g_sleep_int = 1;
+}
+
+/** sleep_until() - sleep to CLOCK_MONOTONIC time @dl (ns); 130 if Ctrl-C ended it, passed on to the shell. */
+static int sleep_until(int64_t dl, const milk_client_hooks_t *hooks)
+{
+    struct timespec  ts = { (time_t) (dl / 1000000000), (long) (dl % 1000000000) };
+    struct sigaction sa;
+    struct sigaction old;
+
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = sleep_on_int;
+    sigemptyset(&sa.sa_mask);
+    g_sleep_int = 0;
+    sigaction(SIGINT, &sa, &old);
+    while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL) == EINTR && !g_sleep_int)
+    {
+    }
+    sigaction(SIGINT, &old, NULL);
+    if (!g_sleep_int)
+    {
+        return 0;
+    }
+    if (hooks != NULL && hooks->on_sigint != NULL)
+    {
+        hooks->on_sigint(hooks->ctx);
+    }
+    else
+    {
+        raise(SIGINT);
+    }
+    return 130;
+}
+
+static int64_t mono_ns(void)
+{
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (int64_t) t.tv_sec * 1000000000 + t.tv_nsec;
+}
+
+/** sleep_seconds() - @s as seconds (0 to 1e9), or -1. */
+static double sleep_seconds(const char *s)
+{
+    char  *end = NULL;
+    double v   = strtod(s, &end);
+    return (end != s && *end == '\0' && v >= 0.0 && v < 1.0e9) ? v : -1.0;
+}
+
+int milk_client_sleep_argv(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    static const char usage[] =
+        "Usage: @sleep <seconds> | @sleep --every <seconds>|--hz <rate> [--late <var>] <var>\n";
+    double      per  = -1.0;
+    const char *var  = NULL;
+    const char *late = NULL;
+
+    if (argc == 1 && sleep_seconds(argv[0]) >= 0.0)
+    {
+        return sleep_until(mono_ns() + (int64_t) (sleep_seconds(argv[0]) * 1.0e9), hooks);
+    }
+    for (int i = 0; i < argc; i++)
+    {
+        if ((strcmp(argv[i], "--every") == 0 || strcmp(argv[i], "--hz") == 0) && i + 1 < argc &&
+            per < 0.0)
+        {
+            per = sleep_seconds(argv[i + 1]);
+            per = (argv[i][2] == 'h') ? ((per > 0.0) ? 1.0 / per : -1.0) : per;
+            i++;
+            if (per <= 0.0)
+            {
+                fputs(usage, stderr);
+                return 2;
+            }
+        }
+        else if (strcmp(argv[i], "--late") == 0 && i + 1 < argc && late == NULL)
+        {
+            late = argv[++i];
+        }
+        else if (var == NULL && argv[i][0] != '-')
+        {
+            var = argv[i];
+        }
+        else
+        {
+            fputs(usage, stderr);
+            return 2;
+        }
+    }
+    if (per <= 0.0 || var == NULL || !milk_ipc_is_identifier(var) ||
+        (late != NULL && !milk_ipc_is_identifier(late)))
+    {
+        fputs(usage, stderr);
+        return 2;
+    }
+
+    /* the deadline: VAR (ns), or one period from now; without the shell's variables (milk-call), the
+     * fallback shim passes VAR's value as __MILK_SLEEP_VAR */
+    int64_t     p   = (int64_t) llround(per * 1.0e9);
+    int64_t     now = mono_ns();
+    int64_t     dl  = now + p;
+    const char *cur = (hooks != NULL && hooks->get_var != NULL) ? milk_ipc_get_var(hooks, var)
+                                                                : getenv("__MILK_SLEEP_VAR");
+    if (p < 1)
+    {
+        p = 1;
+    }
+    if (cur != NULL && cur[0] != '\0')
+    {
+        char *end = NULL;
+        dl        = (int64_t) strtoll(cur, &end, 10);
+        if (*end != '\0')
+        {
+            fprintf(stderr, "@sleep: $%s is not a deadline (integer ns): %s\n", var, cur);
+            return 2;
+        }
+    }
+    int64_t missed = 0;
+    if (dl > now)
+    {
+        int rc = sleep_until(dl, hooks);
+        if (rc != 0)
+        {
+            return rc;
+        }
+    }
+    else
+    {
+        missed = (now - dl) / p; /* late: serve this tick now, skip the ones missed */
+    }
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%lld", (long long) (dl + (missed + 1) * p));
+    milk_ipc_set_var(hooks, var, buf, 0);
+    if (late != NULL)
+    {
+        snprintf(buf, sizeof(buf), "%lld", (long long) missed);
+        milk_ipc_set_var(hooks, late, buf, 0);
+    }
+    return 0;
 }
 
 /**

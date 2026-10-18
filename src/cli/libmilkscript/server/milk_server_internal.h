@@ -90,6 +90,7 @@ int milk_server_exec_set(const uint8_t *payload, uint32_t len, char *log_cmd, si
 
 int milk_server_exec_calc_or_test(int            client_fd,
                                   int            is_test,
+                                  uint8_t        flags,
                                   const uint8_t *payload,
                                   uint32_t       len,
                                   char          *log_cmd,

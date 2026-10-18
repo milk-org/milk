@@ -17,6 +17,7 @@ Use after adding a CLI feature or fixing a CLI bug.
 | File (`python/tests/cli/`)    | Covers                                                            |
 | ----------------------------- | ----------------------------------------------------------------- |
 | `syntax_redesign_test.py`     | the language: keywords, arguments, catalog, `--modernize` goldens |
+| `syntax_enhancements_test.py` | Phase C additions (S1-S7): binding, `@defer` scopes, calculator, events, `@args`, undo |
 | `bash_engine_review_test.py`  | the bash engine: translator, server, coprocess, regressions       |
 | `bash_integration_test.py`    | longer scenarios in plain bash after `source milk.bash`           |
 | `cli_robustness_test.py`      | command lists that must run, fail, or print a given text          |

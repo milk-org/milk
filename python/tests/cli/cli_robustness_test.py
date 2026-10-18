@@ -270,8 +270,6 @@ TESTLIST_EXPECT_ERROR: list[list[str]] = [
     ["@calc \"_calc_err = non_existent_function(5)\""],
     ["@calc \"_calc_err = min(5)\""],
     ["@calc \"_calc_err = abs(1, 2)\""],
-    # --- Section 19: @defer max limit ---
-    [f'@defer "echo {i}"' for i in range(1, 34)],
     # --- Section 22: error-if-empty expansion ---
     ["echo ${_empty_err:?variable_is_missing}"],
     # --- Section 31: source error context ---
@@ -403,6 +401,8 @@ TESTLIST_EXPECT_GREP_WORKING: list[tuple[list[str], str]] = [
     # --- comment handling ---
     (["echo comment_ok # this is a comment and should not error"], "comment_ok"),
     (["echo indented_comment_ok   # indented comment"], "indented_comment_ok"),
+    # --- Section 19: @defer has no entry cap; the entries run at exit, last registered first ---
+    ([f'@defer "echo {i}"' for i in range(1, 34)], "33\n32\n31\n"),
     # --- Section 46: Phase 0 calc & slice features ---
     (["mem.mk2Dim _p0_im 4 4", "@calc \"_p0_im = 5.0\"", "@calc \"_p0_im += 2.0\"", "@calc -v _p0_tot \"itot(_p0_im)\"", "echo $_p0_tot", "mem.rm _p0_im"], "112"),
     (["mem.mk2Dim _p0_sl 4 4", "@calc \"_p0_sl = 0.0\"", "@calc \"_p0_sl[1, 2] = 42.0\"", "@calc -v _p0_v \"_p0_sl[1, 2]\"", "echo $_p0_v", "mem.rm _p0_sl"], "42"),

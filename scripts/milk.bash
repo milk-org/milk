@@ -20,8 +20,8 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             echo "Loads the milk module commands (module.cmd) and keywords into the current GNU Bash"
             echo "session: entities (@get, @set, @exists, @running, @ls), calculator (@calc, @test,"
             echo "@assert), events (@waitfor, @waitany, @on, @sleep), data (@grab, @replay, @snapshot,"
-            echo "@diff, @restore, @pipe), programs (@source, @defer, @module, @config, @server,"
-            echo "@unload) and introspection (@help, @log). @help lists them all."
+            echo "@diff, @restore, @pipe), programs (@source, @defer, @args, @module, @config,"
+            echo "@server, @unload) and introspection (@help, @log). @help lists them all."
             exit 0
             ;;
         *)
@@ -92,10 +92,12 @@ unset _milk_ov_file
 _MILK_BUILTIN_LOADED=0
 # the builtins of libmilkbash.so (also what @unload disables)
 declare -ga __MILK_BUILTINS=(milkcall milkget milkset milkcalc milktest milkexists milkls milkwaitfor
-    milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog milktranslate milkcloexec milksleep)
+    milkwaitany milkgrab milkcomplete milkshutdown milkserver milklog milktranslate milkcloexec milksleep
+    milkdefer milkargs)
 # the keywords that are builtins themselves, loaded as kw<name> and named @<name> (no shell function
 # per call); "${__MILK_KWBUILTINS[@]/#kw/@}" are their names
-declare -ga __MILK_KWBUILTINS=(kwcalc kwtest kwget kwset kwexists kwls kwwaitfor kwwaitany kwsleep kwgrab kwlog)
+declare -ga __MILK_KWBUILTINS=(kwcalc kwtest kwget kwset kwexists kwls kwwaitfor kwwaitany kwsleep kwgrab kwlog
+    kwdefer kwargs)
 enable -d "${__MILK_BUILTINS[@]}" "${__MILK_KWBUILTINS[@]/#kw/@}" 2>/dev/null || true
 # MILK_NO_BUILTINS=1 forces the milk-call shims (used by the tests to compare both paths)
 __milk_stale=0 # a libmilk library replaced on disk while mapped in this shell
@@ -128,13 +130,26 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 0 ]]; then
     }
     milkcall()     { _milk_call_eval call "$@"; }
     milkget()      { _milk_call_eval get "$@"; }
-    milkset()      { "${MILK_INSTALLDIR}/bin/milk-call" set "$@"; }
+    milkset()      { _milk_call_eval set "$@"; } # @set --restore and the undo log write to the shell
     milkcalc()     { _milk_call_eval calc "$@"; }
     milktest()     { "${MILK_INSTALLDIR}/bin/milk-call" test "$@"; }
     milkexists()   { "${MILK_INSTALLDIR}/bin/milk-call" exists "$@"; }
     milkls()       { _milk_call_eval ls "$@"; }
     milkwaitfor()  { "${MILK_INSTALLDIR}/bin/milk-call" waitfor "$@"; }
     milkwaitany()  { "${MILK_INSTALLDIR}/bin/milk-call" waitany "$@"; }
+    milkargs() { # plain assignments; write `@args ... || return`
+        local f
+        for f in "${FUNCNAME[@]:1}" "${BASH_SOURCE[-1]##*/}"; do [[ "${f}" == @args ]] || break; done
+        __MILK_ARGS_FNAME=${f} _milk_call_eval args "$@"
+    }
+    milksleep() { # --every/--hz: the deadline variable (the last word) goes in by environment, out by eval
+        if [[ ${1-} == --every || ${1-} == --hz ]] && (( $# >= 3 )) && [[ ${@: -1} =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+            local -n __milk_dl=${@: -1}
+            __MILK_SLEEP_VAR=${__milk_dl-} _milk_call_eval sleep "$@"
+        else
+            "${MILK_INSTALLDIR}/bin/milk-call" sleep "$@"
+        fi
+    }
     milkgrab()     { _milk_call_eval grab "$@"; }
     milkcomplete() { "${MILK_INSTALLDIR}/bin/milk-call" complete "$@"; }
     milkshutdown() { "${MILK_INSTALLDIR}/bin/milk-call" shutdown "$@"; }
@@ -145,53 +160,232 @@ fi
 # ---------------------------------------------------------------------------
 # 5. Lifecycle helpers: @defer (LIFO cleanup) and @on (background watchers)
 # ---------------------------------------------------------------------------
-declare -ga _MILK_DEFER_STACK=()
-declare -gi _MILK_DEFER_RAN=0
+# @defer entries belong to a scope: the function or @source'd file that registered them, kept as the
+# height of its frame on the call stack, or the session (--exit, or the top level). A RETURN trap runs a
+# scope's entries in its frame when it returns; entries that Ctrl-C or a `set -e` failure skipped run
+# before the next prompt or milk-cli command; the rest, then the session's, run at EXIT. Each runs once.
+# The milkdefer builtin keeps them (ipc/milk_bash_defer.c); without it, the same logic is in bash here.
+declare -ga _MILK_DEFER_STACK=() # scoped entries; their scopes nest, so a scope's entries are on top
+declare -ga _MILK_DEFER_DEPTH=() # their heights
+declare -ga _MILK_DEFER_EXIT=()  # session entries
+declare -gi _MILK_DEFER_TOP=0    # the height on top (0: none): a return above it costs one test
+declare -gi _MILK_DEFER_PID=0    # the process that owns the entries (a subshell starts its own)
+declare -g _MILK_DEFER_SF=""     # the last `source` end seen: "<height> <command>", and its $_
+declare -g _MILK_DEFER_SFU=""
+declare -g __MILK_DRUN_SH=""     # the entries a scope end runs: `eval '<cmd>' || :` lines, LIFO
 declare -g _MILK_USER_EXIT_TRAP=""
 declare -ga _MILK_ON_PIDS=()
 declare -ga _MILK_ON_TARGETS=()
 declare -ga _MILK_ON_CMDS=()
+declare -gA __MILK_SHIMSET=() # the milk-call shims of the builtins: milk's frames, never a scope
+for __milk_b in "${__MILK_BUILTINS[@]}"; do __MILK_SHIMSET[${__milk_b}]=1; done
+unset __milk_b
 
-_milk_run_defer_stack() {
-    local exit_rc=$?
-    if [[ ${_MILK_DEFER_RAN} -ne 0 ]]; then
-        return ${exit_rc}
+if (( BASH_VERSINFO[0] > 5 || (BASH_VERSINFO[0] == 5 && BASH_VERSINFO[1] >= 3) )); then
+    eval '_milk_exit_trap_get() { REPLY=${ trap -p EXIT; }; }' # no fork
+else
+    _milk_exit_trap_get() { REPLY=$(trap -p EXIT); }
+fi
+
+# install milk's EXIT trap unless it is there; a trap the user set first runs after the entries
+_milk_defer_exit_trap() {
+    _milk_exit_trap_get
+    if [[ ${REPLY} != *_milk_run_defer_stack* ]]; then
+        _MILK_USER_EXIT_TRAP=
+        if [[ -n ${REPLY} ]]; then
+            eval "set -- ${REPLY}" # trap -- '<cmd>' EXIT
+            _MILK_USER_EXIT_TRAP=$3
+        fi
+        trap '_milk_run_defer_stack' EXIT
     fi
-    _MILK_DEFER_RAN=1
-    local i
-    for (( i=${#_MILK_DEFER_STACK[@]}-1; i>=0; i-- )); do
-        eval "${_MILK_DEFER_STACK[$i]}" || true
-    done
-    _MILK_DEFER_STACK=()
-    # the user's own EXIT trap was registered before any @defer: run it last
-    if [[ -n "${_MILK_USER_EXIT_TRAP}" ]]; then
-        eval "${_MILK_USER_EXIT_TRAP}" || true
-    fi
-    return ${exit_rc}
 }
 
+# first @defer of this process: a subshell drops the entries it inherited (its parent runs them)
+_milk_defer_init() {
+    _MILK_DEFER_STACK=() _MILK_DEFER_DEPTH=() _MILK_DEFER_EXIT=() _MILK_DEFER_TOP=0 _MILK_DEFER_SF=
+    _MILK_DEFER_PID=${BASHPID} _MILK_USER_EXIT_TRAP=
+    if (( BASHPID != $$ )); then
+        trap - RETURN # until it sets a trap, a subshell's `trap -p` shows its parent's (inactive) traps
+    fi
+    _milk_defer_exit_trap
+}
+
+if (( _MILK_BUILTIN_LOADED )); then
+    _milk_defer_here() { milkdefer -- "$1"; }
+    _milk_defer_orphans() { milkdefer --orphans || eval "${__MILK_DRUN_SH}"; }
+    _milk_defer_flush() { milkdefer --exit-run || eval "${__MILK_DRUN_SH}"; }
+else
+    milkdefer() { _milk_defer_impl "$@"; }
+
+    # _milk_defer_here CMD: register CMD in the scope of the first caller that is not milk's: a function,
+    # or an @source'd file (_milk_source_impl); a plain `source` is no scope. The script's own frame is
+    # the bottom `main`, called from line 0 (a user function may be called main).
+    _milk_defer_here() {
+        local i n=${#FUNCNAME[@]}
+        for (( i = 1; i < n; i++ )); do
+            case ${FUNCNAME[i]} in
+                _milk_source_impl) break ;;
+                source | _milk_* | __milk_* | @*) ;;
+                main) (( BASH_LINENO[i] == 0 )) || break ;;
+                milk*) [[ -n ${__MILK_SHIMSET[${FUNCNAME[i]}]-} ]] || break ;;
+                *) break ;;
+            esac
+        done
+        (( _MILK_DEFER_PID == BASHPID )) || _milk_defer_init
+        if (( i < n )); then
+            _MILK_DEFER_STACK+=("$1")
+            _MILK_DEFER_DEPTH+=($(( _MILK_DEFER_TOP = n - i )))
+            # fires when a frame that is running now returns (any frame, with extdebug), in its context:
+            # ${#FUNCNAME[@]} is its height
+            trap '(( ${#FUNCNAME[@]} > _MILK_DEFER_TOP )) || _milk_defer_return "$_" || eval "${__MILK_DRUN_SH}"' RETURN
+        else
+            _MILK_DEFER_EXIT+=("$1")
+            _milk_defer_exit_trap # again: a user `trap ... EXIT` may have replaced it
+        fi
+    }
+
+    # _milk_defer_pop H: move the entries of the scopes at height H or above, which have ended, to
+    # __MILK_DRUN_SH; status 1 if there are any
+    _milk_defer_pop() {
+        local n
+        __MILK_DRUN_SH=
+        while (( (n = ${#_MILK_DEFER_DEPTH[@]}) && _MILK_DEFER_DEPTH[n - 1] >= $1 )); do
+            __MILK_DRUN_SH+="eval ${_MILK_DEFER_STACK[n - 1]@Q} || :"$'\n'
+            unset "_MILK_DEFER_STACK[n - 1]" "_MILK_DEFER_DEPTH[n - 1]"
+        done
+        if (( n )); then
+            _MILK_DEFER_TOP=${_MILK_DEFER_DEPTH[n - 1]}
+        else
+            _MILK_DEFER_TOP=0
+            trap - RETURN
+        fi
+        [[ -z ${__MILK_DRUN_SH} ]]
+    }
+
+    # RETURN trap, for a frame at or below _MILK_DEFER_TOP ($1: $_ then); status 1: run __MILK_DRUN_SH
+    _milk_defer_return() {
+        local h=$(( ${#FUNCNAME[@]} - 1 ))
+        (( h > 0 && _MILK_DEFER_PID == BASHPID )) || return 0
+        case ${BASH_COMMAND} in
+            source\ * | .\ * | builtin\ source\ * | builtin\ .\ * | command\ source\ * | command\ .\ *)
+                # A sourced file ended, with its caller's FUNCNAME; or that caller returns right after
+                # the source. Only then has $_ changed (to the source's last argument) since the file ended.
+                if [[ ${_MILK_DEFER_SF} != "${h} ${BASH_COMMAND}" || ${_MILK_DEFER_SFU} == "$1" ]]; then
+                    _MILK_DEFER_SF="${h} ${BASH_COMMAND}" _MILK_DEFER_SFU=$1
+                    return 0
+                fi
+                ;;
+        esac
+        _MILK_DEFER_SF=
+        _milk_defer_pop "${h}"
+    }
+
+    # entries left by Ctrl-C or a `set -e` failure, before a prompt or milk-cli command (no scope is open)
+    _milk_defer_orphans() {
+        if (( _MILK_DEFER_TOP && _MILK_DEFER_PID == BASHPID )); then
+            _milk_defer_pop 1 || eval "${__MILK_DRUN_SH}"
+        fi
+    }
+
+    # every entry left: the scoped ones, then the session's
+    _milk_defer_flush() {
+        local i
+        (( _MILK_DEFER_PID == BASHPID )) || return 0
+        _milk_defer_pop 0 || :
+        for (( i = ${#_MILK_DEFER_EXIT[@]} - 1; i >= 0; i-- )); do
+            __MILK_DRUN_SH+="eval ${_MILK_DEFER_EXIT[i]@Q} || :"$'\n'
+        done
+        _MILK_DEFER_EXIT=()
+        eval "${__MILK_DRUN_SH}"
+    }
+fi
+
+# EXIT trap: the entries left, then the user's own EXIT trap
+_milk_run_defer_stack() {
+    local rc=$?
+    _milk_defer_flush
+    if [[ -n ${_MILK_USER_EXIT_TRAP} ]]; then
+        eval "${_MILK_USER_EXIT_TRAP}" || true
+    fi
+    return ${rc}
+}
+
+# @unload: milk's session ends, so do its entries; the user's EXIT trap is put back
+_milk_defer_unload() {
+    _milk_defer_flush
+    trap - RETURN
+    _milk_exit_trap_get
+    if [[ ${REPLY} == *_milk_run_defer_stack* ]]; then
+        if [[ -n ${_MILK_USER_EXIT_TRAP} ]]; then
+            trap -- "${_MILK_USER_EXIT_TRAP}" EXIT
+        else
+            trap - EXIT
+        fi
+    fi
+}
+
+# @defer --restore SPEC...: read the values now and set them back when the scope ends. SPEC is an entity
+# path, `<entity>.*` (every parameter or keyword of one entity) or `<ns>.<glob>.<attr>`.
+_milk_defer_restore() {
+    local spec key val c
+    local -a cmd=(__MILK_NOLOG=1 milkset) # not an @set to undo
+    for spec in "$@"; do
+        if [[ ${spec} == *[*?[]* ]]; then
+            unset __MILK_KV
+            milkget -A __MILK_KV "${spec}" || return $?
+            for key in "${!__MILK_KV[@]}"; do
+                if [[ ${spec} == *.\* ]]; then
+                    cmd+=("${spec%\*}${key}=${__MILK_KV[${key}]}")
+                else
+                    val=${spec#*.}
+                    cmd+=("${spec%%.*}.${key}.${val#*.}=${__MILK_KV[${key}]}")
+                fi
+            done
+            unset __MILK_KV
+        else
+            milkget -v val "${spec}" || return $?
+            cmd+=("${spec}=${val}")
+        fi
+    done
+    if (( ${#cmd[@]} > 1 )); then
+        printf -v c '%q ' "${cmd[@]}"
+        _milk_defer_here "${c}"
+    fi
+}
+
+# @defer [--exit] CMD... | @defer --restore SPEC... (milkdefer without the builtin)
 _milk_defer_impl() {
-    if [[ $# -eq 0 ]]; then
+    local c
+    case ${1-} in
+        --restore)
+            shift
+            _milk_defer_restore "$@"
+            return
+            ;;
+        --exit)
+            shift
+            if (( $# )); then
+                if (( $# == 1 )); then c=$1; else printf -v c '%q ' "$@"; fi
+                (( _MILK_DEFER_PID == BASHPID )) || _milk_defer_init
+                _MILK_DEFER_EXIT+=("${c}")
+                _milk_defer_exit_trap
+            fi
+            return 0
+            ;;
+        --)
+            shift
+            ;;
+        -?*)
+            echo "Usage: @defer [--exit] <command...> | @defer --restore <spec>..." >&2
+            return 2
+            ;;
+    esac
+    if (( $# == 0 )); then
         return 0
     fi
-    if [[ ${#_MILK_DEFER_STACK[@]} -ge 32 ]]; then
-        echo "Error: defer stack full (max 32)" >&2
-        return 1
-    fi
-    _MILK_DEFER_RAN=0
     # one argument is a command string (like trap); several are kept as quoted words
-    if [[ $# -eq 1 ]]; then
-        _MILK_DEFER_STACK+=("$1")
-    else
-        _MILK_DEFER_STACK+=("$(printf '%q ' "$@")")
-    fi
-    local cur
-    cur="$(trap -p EXIT)"
-    if [[ -n "${cur}" && "${cur}" != *_milk_run_defer_stack* ]]; then
-        eval "set -- ${cur}"   # trap -- '<cmd>' EXIT
-        _MILK_USER_EXIT_TRAP="$3"
-    fi
-    trap '_milk_run_defer_stack' EXIT
+    if (( $# == 1 )); then c=$1; else printf -v c '%q ' "$@"; fi
+    _milk_defer_here "${c}"
 }
 
 # Report a failed inline expansion (status $1, source text $2 if any), empty the variable it was
@@ -272,7 +466,7 @@ export PROCINFO_NPROC="${PROCINFO_NPROC:-0}"
 
 _milk_on_impl() {
     if [[ $# -eq 0 ]]; then
-        echo "Usage: @on [--once|-1] [--max-hz <hz>] [--cooldown <sec>] [-t|--timeout <sec>] <target[,target2...]> \"<cmd>\" | --list | --stop <id|pid|target> | --clear" >&2
+        echo "Usage: @on [--once|-1] [--scoped] [--max-hz <hz>] [--cooldown <sec>] [-t|--timeout <sec>] <target[,target2...]> \"<cmd>\" | @on [...] --when \"<expr>\" [--hold <sec>] [--level] \"<cmd>\" | @on [--once] [--scoped] --every <sec> \"<cmd>\" | --list | --stop <id|pid|target> | --clear" >&2
         return 1
     fi
     if [[ "${1:-}" == "--list" ]]; then
@@ -319,12 +513,34 @@ _milk_on_impl() {
     fi
 
     local once=0
+    local scoped=0
     local cooldown=""
     local timeout_sec=""
+    local when="" hold="" level=0 every=""
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            --when) # fires when the expression turns true (rising edge)
+                when="${2:-}"
+                shift 2
+                ;;
+            --hold) # ... and has stayed true for that long
+                hold="${2:-}"
+                shift 2
+                ;;
+            --level) # on every new frame while it is true
+                level=1
+                shift
+                ;;
+            --every) # a periodic job
+                every="${2:-}"
+                shift 2
+                ;;
             --once|-1)
                 once=1
+                shift
+                ;;
+            --scoped) # stopped when the calling function or @source'd file returns
+                scoped=1
                 shift
                 ;;
             --cooldown)
@@ -360,8 +576,16 @@ _milk_on_impl() {
         esac
     done
 
+    if [[ -n "${when}${every}" ]]; then
+        _milk_on_cond "$@"
+        return
+    fi
+    if [[ -n "${hold}" || ${level} -eq 1 ]]; then
+        echo "@on: --hold and --level go with --when" >&2
+        return 2
+    fi
     if [[ $# -lt 2 ]]; then
-        echo "Usage: @on [--once|-1] [--max-hz <hz>] [--cooldown <sec>] [-t|--timeout <sec>] <target[,target2...]> \"<cmd>\" | --list | --stop <id|pid|target> | --clear" >&2
+        echo "Usage: @on [--once|-1] [--scoped] [--max-hz <hz>] [--cooldown <sec>] [-t|--timeout <sec>] <target[,target2...]> \"<cmd>\" | @on [...] --when \"<expr>\" [--hold <sec>] [--level] \"<cmd>\" | @on [--once] [--scoped] --every <sec> \"<cmd>\" | --list | --stop <id|pid|target> | --clear" >&2
         return 1
     fi
 
@@ -432,6 +656,62 @@ _milk_on_impl() {
     _MILK_ON_PIDS+=("$!")
     _MILK_ON_TARGETS+=("${tgt_label}")
     _MILK_ON_CMDS+=("${action}")
+    if (( scoped )); then
+        _milk_defer_here "_milk_on_impl --stop $!"
+    fi
+    return 0
+}
+
+# @on --when "<expr>" [--hold T] [--level] | --every T, then the command; the options parsed by
+# _milk_on_impl are its locals
+_milk_on_cond() {
+    local num='^([0-9]+\.?[0-9]*|\.[0-9]+)([eE][-+]?[0-9]+)?$' action label
+    [[ "${1:-}" == -- ]] && shift
+    if [[ -n "${when}" && -n "${every}" ]] || (( $# == 0 )) ||
+        [[ -n "${every}" && ! ${every} =~ ${num} ]] || [[ -n "${hold}" && ! ${hold} =~ ${num} ]] ||
+        [[ -n "${every}" && ( -n "${hold}" || ${level} -eq 1 ) ]]; then
+        echo "Usage: @on [--once] [--scoped] [--max-hz <hz>] [--cooldown <sec>] [-t <sec>] --when \"<expr>\" [--hold <sec>] [--level] [--] <cmd...> | @on [--once] [--scoped] --every <sec> [--] <cmd...>" >&2
+        return 2
+    fi
+    if (( $# == 1 )); then action=$1; else action="$(printf '%q ' "$@")"; fi
+    label=${when:+when:${when}}${every:+every:${every}}
+    (
+        local -a w=()
+        local c="(${when}) != 0" nc="(${when}) == 0" __milk_t
+        [[ -n "${timeout_sec}" ]] && w=(--timeout "${timeout_sec}")
+        export MILK_TRIGGER=${when:-every}
+        if [[ -n "${every}" ]]; then
+            while milksleep --every "${every}" __milk_t; do
+                eval "${action}" || true
+                (( once )) && break
+            done
+        elif (( level )); then
+            milkwaitfor "${w[@]}" "${c}" >/dev/null 2>&1 || exit 0
+            while :; do
+                eval "${action}" || true
+                (( once )) && break
+                [[ -n "${cooldown}" && "${cooldown}" != "0" ]] && sleep "${cooldown}"
+                milkwaitfor --next "${w[@]}" "${c}" >/dev/null 2>&1 || break
+            done
+        else
+            while milkwaitfor "${w[@]}" "${c}" >/dev/null 2>&1; do
+                if [[ -n "${hold}" ]]; then # not held if it turns false within that time
+                    milkwaitfor --timeout "${hold}" "${nc}" >/dev/null 2>&1
+                    (( $? == 124 )) || continue
+                fi
+                eval "${action}" || true
+                (( once )) && break
+                [[ -n "${cooldown}" && "${cooldown}" != "0" ]] && sleep "${cooldown}"
+                milkwaitfor "${w[@]}" "${nc}" >/dev/null 2>&1 || break # re-armed once false
+            done
+        fi
+    ) &
+    _MILK_ON_PIDS+=("$!")
+    _MILK_ON_TARGETS+=("${label}")
+    _MILK_ON_CMDS+=("${action}")
+    if (( scoped )); then
+        _milk_defer_here "_milk_on_impl --stop $!"
+    fi
     return 0
 }
 
@@ -496,6 +776,7 @@ _milk_inline_impl() {
 
 _milk_unload_impl() {
     _milk_on_impl --clear
+    _milk_defer_unload
     [[ "${_MILK_INLINE:-off}" == on ]] && _milk_inline_impl off
     unset _MILK_INLINE
     rm -f "${TMPDIR:-/tmp}/.milk_active_sock_${UID:-$(id -u)}_$$" 2>/dev/null || true
@@ -589,6 +870,53 @@ if [[ ${_MILK_BUILTIN_LOADED} -eq 1 ]]; then # these keywords are builtins: a fu
     unset -f "${__MILK_KWBUILTINS[@]/#kw/@}"
 fi
 
+# @restore --undo reads this shell's @set log (__MILK_UNDO, written by the set code); the rest of @restore
+# is the server's
+declare -ga __MILK_UNDO=()
+@restore() {
+    case ${1-} in
+        --help) milkls --help-keyword restore ;;
+        --undo) shift; _milk_undo_impl "$@" ;;
+        *) milkcall restore "$@" ;;
+    esac
+}
+
+# @restore --undo [-n] [N]: set back the values the last N @set calls (1) overwrote, where they still
+# hold what was written; -n lists them
+_milk_undo_impl() {
+    local dry=0 n=1 k i e name old new cur rc=0 note
+    local -a keys lines
+    if [[ ${1-} == -n ]]; then dry=1; shift; fi
+    if (( $# > 1 )) || [[ $# -eq 1 && ! $1 =~ ^[1-9][0-9]*$ ]]; then
+        echo "Usage: @restore --undo [-n] [N]" >&2
+        return 2
+    fi
+    (( $# )) && n=$1
+    milkset --flush-undo # the entries the builtin keeps until now
+    keys=("${!__MILK_UNDO[@]}")
+    for (( k = ${#keys[@]} - 1; k >= 0 && n > 0; k--, n-- )); do
+        e=${__MILK_UNDO[keys[k]]}
+        mapfile -t lines <<< "${e}"
+        for (( i = ${#lines[@]} - 1; i >= 0; i-- )); do
+            IFS=$'\t' read -r name old new <<< "${lines[i]}"
+            [[ -n "${name}" ]] || continue
+            milkget -v cur "${name}" 2>/dev/null || cur="?"
+            note=""
+            [[ "${cur}" == "${new}" ]] || note="  (now ${cur}: left as is)"
+            if (( dry )); then
+                printf '%s: %s -> %s%s\n' "${name}" "${new}" "${old}" "${note}"
+            elif [[ -z "${note}" ]]; then
+                __MILK_NOLOG=1 milkset "${name}=${old}" || rc=1
+            else
+                echo "milk: @restore --undo: ${name} is now ${cur}, not ${new}: left as is" >&2
+                rc=1
+            fi
+        done
+        (( dry )) || unset "__MILK_UNDO[keys[k]]"
+    done
+    return ${rc}
+}
+
 # ---------------------------------------------------------------------------
 # 7. Module commands: one function each from the install-time catalog (milk-cli --catalog), and the
 #    libexec/milk/bin links that let external tools (xargs, find -exec, timeout) run them
@@ -598,6 +926,71 @@ declare -gA __MILK_SHORT=()
 if [[ -f "${MILK_INSTALLDIR}/share/milk/catalog.bash" ]]; then
     # shellcheck disable=SC1091
     builtin source "${MILK_INSTALLDIR}/share/milk/catalog.bash"
+fi
+# User commands: share/milk/commands.d/*.bash, then ${XDG_CONFIG_HOME:-~/.config}/milk/commands.d/*.bash,
+# define module.cmd functions (arguments declared with @args); the comment line right above a
+# definition is its description for @help
+declare -gA __MILK_USERCMD=()
+__milk_usercmds() {
+    local d f line prev name re
+    re='^[[:space:]]*(function[[:space:]]+([a-z][a-z0-9]*\.[A-Za-z_][A-Za-z0-9_]*)|([a-z][a-z0-9]*\.[A-Za-z_][A-Za-z0-9_]*)[[:space:]]*\(\))'
+    for d in "${MILK_INSTALLDIR}/share/milk/commands.d" "${XDG_CONFIG_HOME:-${HOME}/.config}/milk/commands.d"; do
+        for f in "${d}"/*.bash; do
+            [[ -f "${f}" ]] || continue
+            # shellcheck disable=SC1090
+            builtin source "${f}" || echo "milk: ${f}: returned $?" >&2
+            prev=""
+            while IFS= read -r line || [[ -n "${line}" ]]; do
+                if [[ ${line} =~ ${re} ]]; then
+                    name=${BASH_REMATCH[2]:-${BASH_REMATCH[3]}}
+                    if declare -F "${name}" >/dev/null; then
+                        [[ -n "${__MILK_USERCMD[${name}]+x}" || " ${__MILK_CATALOG[*]} " == *" ${name} "* ]] ||
+                            __MILK_CATALOG+=("${name}")
+                        __MILK_USERCMD[${name}]=${prev}
+                    fi
+                fi
+                if [[ ${line} =~ ^[[:space:]]*#[[:space:]]?(.*)$ ]]; then prev=${BASH_REMATCH[1]}; else prev=""; fi
+            done < "${f}"
+        done
+    done
+}
+__milk_usercmds
+unset -f __milk_usercmds
+
+# @help knows them too: their description, then their own -h
+if (( ${#__MILK_USERCMD[@]} )); then
+    __milk_help_server() { # the generated @help
+        case ${1-} in --help) milkls --help-keyword help; return ;; esac
+        milkcall help "$@"
+    }
+    @help() {
+        local n rc=0 ns_user=0 ns_server=0
+        if (( $# == 1 )) && [[ -n "${__MILK_USERCMD[$1]+x}" ]]; then
+            [[ -n "${__MILK_USERCMD[$1]}" ]] && echo "$1 - ${__MILK_USERCMD[$1]}"
+            "$1" -h
+            return 0
+        fi
+        if (( $# == 1 )) && [[ "$1" != *.* && "$1" != -* ]]; then # a namespace: whose commands?
+            for n in "${__MILK_CATALOG[@]}"; do
+                [[ "${n}" == "$1".* ]] || continue
+                if [[ -n "${__MILK_USERCMD[${n}]+x}" ]]; then ns_user=1; else ns_server=1; fi
+            done
+        fi
+        if (( ! ns_user || ns_server )); then
+            __milk_help_server "$@"
+            rc=$?
+        fi
+        for n in "${!__MILK_USERCMD[@]}"; do # all of them, or a namespace's, or those -k finds
+            case "$#:${1-}" in
+                0:) ;;
+                2:-k) [[ "${n} ${__MILK_USERCMD[${n}]}" =~ $2 ]] || continue ;;
+                1:*) (( ns_user )) && [[ "${n}" == "$1".* ]] || continue ;;
+                *) continue ;;
+            esac
+            printf '  %-28s %s (user command)\n' "${n}" "${__MILK_USERCMD[${n}]}"
+        done
+        return ${rc}
+    }
 fi
 _MILK_CMD_COUNT=$(( ${#__MILK_KWSET[@]} + ${#__MILK_CATALOG[@]} ))
 if [[ -d "${MILK_INSTALLDIR}/libexec/milk/bin" && ":${PATH}:" != *":${MILK_INSTALLDIR}/libexec/milk/bin:"* ]]; then
@@ -699,7 +1092,7 @@ _milk_complete() {
         return 0
     fi
     if [[ "${cmd}" == "@on" && "${cur}" == -* ]]; then
-        mapfile -t COMPREPLY < <(compgen -W "--once -1 --max-hz --cooldown --timeout -t --list --stop -s --clear" -- "${cur}")
+        mapfile -t COMPREPLY < <(compgen -W "--once -1 --scoped --max-hz --cooldown --timeout -t --when --hold --level --every --list --stop -s --clear" -- "${cur}")
         return 0
     fi
     if [[ "${cmd}" == "@grab" && "${cur}" == -* ]]; then
@@ -817,6 +1210,7 @@ _milk_build_prompt_strings() {
 
 _milk_apply_ps1() {
     local __milk_last_rc=$?
+    _milk_defer_orphans
     local __ov="${TMPDIR:-/tmp}/.milk_active_sock_${UID:-$(id -u)}_$$"
     if [[ -f "${__ov}" ]]; then
         export MILKCLI_SOCK="$(<"${__ov}")"

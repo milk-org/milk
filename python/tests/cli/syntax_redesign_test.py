@@ -534,7 +534,7 @@ def test_L9_inline_assignment_keeps_substitution_semantics(tmp_path):
         "b": "[] rc=1",
         "c": "or",
         "d": "2",
-        "e": "[]",
+        "e": "[3]",
         "f": "3",
         "g": "unset",
         "h": "4",
@@ -867,11 +867,16 @@ PERF_OPS = [
     (1000, "@calc -v y 1+2", 5),
     (1000, "y=@{1+2}", 6),
     (100, "mem.listim >/dev/null", 200),
+    (1000, "dk", 40),  # a function with a scoped @defer: register, return, run
 ]
 
 
 def test_L0_latency_ceilings(tmp_path):
-    lines = ["mem.mk2Dim pbim 64 64 >/dev/null", "mem.mk2Dim s.pbsh 64 64 >/dev/null"]
+    lines = [
+        "mem.mk2Dim pbim 64 64 >/dev/null",
+        "mem.mk2Dim s.pbsh 64 64 >/dev/null",
+        "dk() { @defer :; }",
+    ]
     for (
         n,
         op,

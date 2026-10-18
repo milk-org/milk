@@ -40,6 +40,7 @@ set(MILKSCRIPT_SOURCES
     core/milk_catalog.c
     core/milk_catalog_build.c
     core/milk_cmd_args.c
+    core/milk_argval.c
     core/milk_cmd_index.c
     core/milk_lexicon.c
     core/milk_renames.c
@@ -61,6 +62,7 @@ set(MILKSCRIPT_SOURCES
     ipc/milk_ipc_common.c
     ipc/milk_client_conn.c
     ipc/milk_client_ops.c
+    ipc/milk_client_args.c
     ipc/milk_waitfor.c
     ipc/milk_srvlog_shm.c
     ipc/milk_srv_manager.c
@@ -169,8 +171,10 @@ install(TARGETS milk-script DESTINATION bin)
 add_library(
   milkbash SHARED
   ipc/milk_bash_builtins.c
+  ipc/milk_bash_defer.c
   ipc/milk_client_conn.c
   ipc/milk_client_ops.c
+  ipc/milk_client_args.c
   ipc/milk_ipc_common.c
   ipc/milk_waitfor.c
   ipc/milk_srvlog_shm.c
@@ -184,6 +188,7 @@ add_library(
   bash/milk_shell_lex.c
   bash/milk_bash_cmdfile.c
   core/milk_lexicon.c
+  core/milk_argval.c
   core/milk_renames.c
   core/milk_catalog.c
   core/CLIcore_inspect.c

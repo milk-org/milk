@@ -104,13 +104,13 @@ def _run_milk_cli(
 
 def test_builtin_loaded_and_commands_registered():
     res = _run_bash("""
-        for b in milkcall milkget milkset milkcalc milktest milkexists milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog; do
+        for b in milkcall milkget milkset milkcalc milktest milkexists milkwaitfor milkgrab milkcomplete milkshutdown milkserver milklog milkdefer; do
             [[ "$(type -t "$b")" == "builtin" ]]
         done
-        for f in @calc @test @get @set @exists @ls @waitfor @waitany @sleep @grab @log; do
+        for f in @calc @test @get @set @exists @ls @waitfor @waitany @sleep @grab @log @defer; do
             [[ "$(type -t "$f")" == "builtin" ]]
         done
-        for f in @running @replay @defer @on @source @server @help @pipe @module @config @unload; do
+        for f in @running @replay @on @source @server @help @pipe @module @config @unload; do
             [[ "$(type -t "$f")" == "function" ]]
         done
         [[ "$(type -t mem.mk2Dim)" == "function" ]]

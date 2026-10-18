@@ -8,7 +8,7 @@
  *
  * Exports loadable builtins:
  *   milkcall, milkget, milkset, milkcalc, milktest,
- *   milkexists, milkwaitfor, milkgrab, milkcomplete, milkshutdown
+ *   milkexists, milkwaitfor, milkgrab, milkcomplete, milkshutdown, milkdefer, milkargs
  *
  * Uses a minimal vendored GNU Bash ABI definition (stable across Bash 3.2 - 5.3+)
  * and resolves host bash symbols via dlsym(RTLD_DEFAULT, ...) so no external
@@ -30,6 +30,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "milk_bash_defer.h"
 #include "milk_bash_engine.h"
 #include "milk_lexicon.h"
 #include "milk_client.h"
@@ -268,41 +269,9 @@ static int milkcalc_builtin(WORD_LIST *list)
         free(argv);
         return EXECUTION_SUCCESS;
     }
-
-    const char *varname   = NULL;
-    int         start_idx = 0;
-    if (strcmp(argv[0], "-v") == 0 && argc >= 2)
-    {
-        varname   = argv[1];
-        start_idx = 2;
-    }
-
-    size_t tot = 1;
-    for (int i = start_idx; i < argc; i++)
-    {
-        tot += strlen(argv[i]) + 1;
-    }
-    char *expr = (char *) malloc(tot);
-    if (expr == NULL)
-    {
-        free(argv);
-        return 2;
-    }
-    expr[0]    = '\0';
-    size_t pos = 0;
-    for (int i = start_idx; i < argc; i++)
-    {
-        int n = snprintf(expr + pos, tot - pos, "%s%s", (i > start_idx) ? " " : "", argv[i]);
-        if (n > 0)
-        {
-            pos += (size_t) n;
-        }
-    }
-
     milk_client_hooks_t hooks;
     make_bash_hooks(&hooks);
-    int rc = milk_client_calc(expr, varname, &hooks);
-    free(expr);
+    int rc = milk_client_calc_argv(argc, argv, &hooks);
     free(argv);
     return rc;
 }
@@ -455,45 +424,16 @@ static int milklog_builtin(WORD_LIST *list)
     return rc;
 }
 
-/**
- * milktranslate_builtin() - `milktranslate -v VAR FILE`: translate a milk script into a private
- * command file and bind its path to VAR (no fork); `milktranslate --done PATH` removes it.
- */
-static volatile sig_atomic_t g_sleep_sigint = 0;
-
-static void sleep_on_sigint(int signo)
-{
-    (void) signo;
-    g_sleep_sigint = 1;
-}
-
-/** milksleep SECONDS - sleep in-process (no fork of sleep(1)); Ctrl-C ends it and reaches bash. */
+/** milksleep SECONDS | --every T VAR - sleep in-process (milk_client_sleep_argv()); Ctrl-C reaches bash. */
 static int milksleep_builtin(WORD_LIST *list)
 {
-    char  *end = NULL;
-    double sec = (list != NULL && list->next == NULL) ? strtod(list->word->word, &end) : -1.0;
-    if (end == NULL || end == list->word->word || *end != '\0' || !(sec >= 0.0 && sec < 1.0e9))
-    {
-        fprintf(stderr, "usage: milksleep SECONDS\n");
-        return 2;
-    }
-    struct timespec  req = { (time_t) sec, (long) ((sec - (double) (time_t) sec) * 1.0e9) };
-    struct sigaction sa, old;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = sleep_on_sigint;
-    sigemptyset(&sa.sa_mask);
-    g_sleep_sigint = 0;
-    sigaction(SIGINT, &sa, &old);
-    while (nanosleep(&req, &req) != 0 && errno == EINTR && !g_sleep_sigint)
-    {
-    }
-    sigaction(SIGINT, &old, NULL);
-    if (g_sleep_sigint)
-    {
-        raise(SIGINT);
-        return 130;
-    }
-    return 0;
+    char              **argv = NULL;
+    int                 argc = wordlist_to_argv(list, &argv);
+    milk_client_hooks_t hooks;
+    make_bash_hooks(&hooks);
+    int rc = milk_client_sleep_argv(argc, argv, &hooks);
+    free(argv);
+    return rc;
 }
 
 /** milkcloexec FD... - mark the engine's pipe fds close-on-exec so bash's children do not inherit them. */
@@ -531,6 +471,10 @@ static void sync_funsub_env(void)
     }
 }
 
+/**
+ * milktranslate_builtin() - `milktranslate -v VAR FILE`: translate a milk script into a private
+ * command file and bind its path to VAR (no fork); `milktranslate --done PATH` removes it.
+ */
 static int milktranslate_builtin(WORD_LIST *list)
 {
     char **argv = NULL;
@@ -623,6 +567,51 @@ static int milktranslate_builtin(WORD_LIST *list)
     return rc;
 }
 
+static int milkdefer_builtin(WORD_LIST *list)
+{
+    char **argv = NULL;
+    int    argc = wordlist_to_argv(list, &argv);
+    int    rc   = milk_bash_defer_argv(argc, argv);
+    free(argv);
+    return rc;
+}
+
+/**
+ * milkargs_builtin() - `@args SPEC... -- VALUE...`: the values become locals of the calling function
+ * (globals at a script's top level); after -h or a usage error the caller ends, as `eval return N` would.
+ */
+static int milkargs_builtin(WORD_LIST *list)
+{
+    char              **argv = NULL;
+    int                 argc = wordlist_to_argv(list, &argv);
+    const int          *vc   = (const int *) dlsym(RTLD_DEFAULT, "variable_context");
+    const int          *sl   = (const int *) dlsym(RTLD_DEFAULT, "sourcelevel");
+    int                 infn = (vc != NULL && *vc > 0);
+    const char         *fn   = bash_hook_get_var(infn ? "FUNCNAME" : "BASH_ARGV0", NULL);
+    milk_client_hooks_t hooks;
+    char                fname[256];
+    char                end[32];
+
+    if (fn == NULL || fn[0] == '\0' || strcmp(fn, "source") == 0) /* a sourced file: its name */
+    {
+        fn = bash_hook_get_var("BASH_SOURCE", NULL);
+    }
+    snprintf(fname, sizeof(fname), "%s",
+             (fn == NULL || fn[0] == '\0') ? "@args"
+                                           : (strrchr(fn, '/') ? strrchr(fn, '/') + 1 : fn));
+    make_bash_hooks(&hooks);
+    int rc = milk_client_args(argc, argv, fname, infn, &hooks);
+    free(argv);
+    if (rc == 0)
+    {
+        return 0;
+    }
+    rc = (rc == 1) ? 0 : 2;
+    snprintf(end, sizeof(end), (infn || (sl != NULL && *sl > 0)) ? "return %d" : "exit %d", rc);
+    bash_hook_eval(end, NULL); /* does not come back */
+    return rc;
+}
+
 static int milkls_builtin(WORD_LIST *list)
 {
     char              **argv = NULL;
@@ -650,8 +639,12 @@ static char *const milkgrab_doc[] = { "Capture consecutive stream frames into a 
 static char *const milkcomplete_doc[] = { "Query milk tab-completion candidates.", NULL };
 static char *const milkshutdown_doc[] = { "Shut down the session milk-cli --server.", NULL };
 static char *const milkserver_doc[]   = { "Manage milk-cli servers (@server).", NULL };
-static char *const milklog_doc[] = { "Inspect or search the milk server SHM log (@log).", NULL };
-static char *const milkls_doc[]  = { "List active milk entities (@ls).", NULL };
+static char *const milklog_doc[]   = { "Inspect or search the milk server SHM log (@log).", NULL };
+static char *const milkls_doc[]    = { "List active milk entities (@ls).", NULL };
+static char *const milkdefer_doc[] = { "Run a command when the calling function or file returns.",
+                                       NULL };
+static char *const milkargs_doc[]  = { "Declare and check the arguments of a function or script.",
+                                       NULL };
 static char *const milkcloexec_doc[] = { "Mark file descriptors close-on-exec.", NULL };
 static char *const milksleep_doc[]   = { "Sleep for SECONDS (fractional) without forking.", NULL };
 static char *const milktranslate_doc[] = { "Translate a milk script to source, or a typed line.",
@@ -684,6 +677,7 @@ MILK_BUILTIN_ENTRY(milkshutdown_builtin)
 MILK_BUILTIN_ENTRY(milkserver_builtin)
 MILK_BUILTIN_ENTRY(milklog_builtin)
 MILK_BUILTIN_ENTRY(milkls_builtin)
+MILK_BUILTIN_ENTRY(milksleep_builtin)
 
 /**
  * keyword_builtin() - `@<kw> args`: the keyword's help (milk_lexicon_help_arg()), else builtin @fn.
@@ -717,9 +711,11 @@ MILK_KEYWORD_BUILTIN(exists, milkexists_builtin_entry)
 MILK_KEYWORD_BUILTIN(ls, milkls_builtin_entry)
 MILK_KEYWORD_BUILTIN(waitfor, milkwaitfor_builtin_entry)
 MILK_KEYWORD_BUILTIN(waitany, milkwaitany_builtin_entry)
-MILK_KEYWORD_BUILTIN(sleep, milksleep_builtin)
+MILK_KEYWORD_BUILTIN(sleep, milksleep_builtin_entry)
 MILK_KEYWORD_BUILTIN(grab, milkgrab_builtin_entry)
 MILK_KEYWORD_BUILTIN(log, milklog_builtin_entry)
+MILK_KEYWORD_BUILTIN(defer, milkdefer_builtin)
+MILK_KEYWORD_BUILTIN(args, milkargs_builtin)
 
 /* The library is built with hidden visibility: bash finds each builtin by its `<name>_struct` symbol */
 #pragma GCC visibility push(default)
@@ -794,8 +790,23 @@ struct builtin milkls_struct = { "milkls",
                                  "milkls [-l|-q|--json|--local] [pat]",
                                  0 };
 
-struct builtin milksleep_struct = { "milksleep",   milksleep_builtin,   BUILTIN_ENABLED,
-                                    milksleep_doc, "milksleep SECONDS", 0 };
+struct builtin milkargs_struct = {
+    "milkargs", milkargs_builtin, BUILTIN_ENABLED, milkargs_doc, "milkargs SPEC... -- VALUE...", 0
+};
+
+struct builtin milkdefer_struct = { "milkdefer",
+                                    milkdefer_builtin,
+                                    BUILTIN_ENABLED,
+                                    milkdefer_doc,
+                                    "milkdefer [--exit] CMD... | --restore SPEC...",
+                                    0 };
+
+struct builtin milksleep_struct = { "milksleep",
+                                    milksleep_builtin_entry,
+                                    BUILTIN_ENABLED,
+                                    milksleep_doc,
+                                    "milksleep SECONDS | --every T|--hz F [--late L] VAR",
+                                    0 };
 
 struct builtin milkcloexec_struct = { "milkcloexec",   milkcloexec_builtin, BUILTIN_ENABLED,
                                       milkcloexec_doc, "milkcloexec FD...", 0 };
@@ -826,4 +837,6 @@ MILK_KEYWORD_STRUCT(waitany, milkwaitany_doc);
 MILK_KEYWORD_STRUCT(sleep, milksleep_doc);
 MILK_KEYWORD_STRUCT(grab, milkgrab_doc);
 MILK_KEYWORD_STRUCT(log, milklog_doc);
+MILK_KEYWORD_STRUCT(defer, milkdefer_doc);
+MILK_KEYWORD_STRUCT(args, milkargs_doc);
 #pragma GCC visibility pop

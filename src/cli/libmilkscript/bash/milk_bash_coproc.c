@@ -300,7 +300,9 @@ int milk_bash_engine_init(void)
             "    __MILK_DBGTRAP=$(trap -p DEBUG)\n"
             "    if shopt -q extdebug; then __MILK_XDBG=1; else __MILK_XDBG=0; fi\n"
             "    shopt -s extdebug\n"
-            "    trap '__milk_abort_dbg' DEBUG\n"
+            /* a simulated return inside a RETURN trap (@defer's) would run that trap again, forever: the
+             * entries it would run are left to _milk_defer_orphans */
+            "    trap 'trap - RETURN; __milk_abort_dbg' DEBUG\n"
             "}\n"
             "__milk_intr_reset() {\n"
             "    trap - DEBUG\n"
@@ -326,6 +328,7 @@ int milk_bash_engine_init(void)
             "    fi\n"
             "    __milk_rc=$?\n"
             "    if (( __MILK_INTR )); then __milk_intr_reset; __milk_rc=130; fi\n"
+            "    _milk_defer_orphans\n" /* @defer entries that a Ctrl-C left behind */
             "    printf '%d\\t%d\\t%s\\0' \"${__milk_rc}\" \"${__MILK_EXIT_REQ}\" \"${PWD}\" "
             ">&199\n"
             "    if [[ ${__MILK_EXIT_REQ} -eq 1 ]]; then\n"

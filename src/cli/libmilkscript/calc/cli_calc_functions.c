@@ -28,23 +28,21 @@
 #include "cli_calc_internal.h"
 #include "libmilkdata/milk_type_dispatch.h"
 
-/**
- * @brief Parse @nargs comma-separated expression arguments followed by `)`.
- *
- * @param nargs     Number of arguments expected (1..3)
- * @param args      Output array of `val_t` receiving parsed arguments
- * @param comma_msg Error message if a comma is missing
- * @return 0 on success, -1 on syntax/evaluation error
- */
-static int parse_func_args(int nargs, val_t *args, const char *comma_msg)
+/** parse_func_argv() - @nmin to @nmax comma-separated arguments and `)`; how many, or -1 on error. */
+static int parse_func_argv(int nmin, int nmax, val_t *args, const char *comma_msg)
 {
     cli_token *(*cur_func)(void)     = cli_calc_cur_func();
     cli_token *(*advance_func)(void) = cli_calc_advance_func();
+    int n                            = 0;
 
-    for (int i = 0; i < nargs; i++)
+    for (; n < nmax; n++)
     {
-        if (i > 0)
+        if (n > 0)
         {
+            if (n >= nmin && cur_func()->type == TOK_RPAREN)
+            {
+                break;
+            }
             if (cur_func()->type != TOK_COMMA)
             {
                 parse_errmsg(comma_msg != NULL ? comma_msg : "Expected ','");
@@ -52,7 +50,7 @@ static int parse_func_args(int nargs, val_t *args, const char *comma_msg)
             }
             advance_func();
         }
-        args[i] = parse_expr(0);
+        args[n] = parse_expr(0);
         if (parse_error || eval_error)
         {
             return -1;
@@ -64,7 +62,20 @@ static int parse_func_args(int nargs, val_t *args, const char *comma_msg)
         return -1;
     }
     advance_func();
-    return 0;
+    return n;
+}
+
+/**
+ * @brief Parse @nargs comma-separated expression arguments followed by `)`.
+ *
+ * @param nargs     Number of arguments expected (1..3)
+ * @param args      Output array of `val_t` receiving parsed arguments
+ * @param comma_msg Error message if a comma is missing
+ * @return 0 on success, -1 on syntax/evaluation error
+ */
+static int parse_func_args(int nargs, val_t *args, const char *comma_msg)
+{
+    return (parse_func_argv(nargs, nargs, args, comma_msg) < 0) ? -1 : 0;
 }
 
 /** reject_complex() - 1 (with an error) if one of the @n values is a complex image. */
@@ -111,9 +122,58 @@ static val_t func_eval_cplx(const cli_token *ftok)
     return cli_calc_complex_func(ftok->sval, args, n);
 }
 
-/**
- * @brief Evaluate `where(cond, T, F)` for scalar or image condition.
- */
+val_t cli_calc_where(val_t c, val_t t, val_t f)
+{
+    if (!check_image(c.sval) || (t.type == VAL_STRING && !check_image(t.sval)) ||
+        (f.type == VAL_STRING && !check_image(f.sval)))
+    {
+        return mk_string("");
+    }
+    const IMAGE *ci = &data.core.image[image_ID(c.sval, data.core.image, data.core.NB_MAX_IMAGE)];
+    const IMAGE *ti =
+        (t.type == VAL_STRING)
+            ? &data.core.image[image_ID(t.sval, data.core.image, data.core.NB_MAX_IMAGE)]
+            : NULL;
+    const IMAGE *fi =
+        (f.type == VAL_STRING)
+            ? &data.core.image[image_ID(f.sval, data.core.image, data.core.NB_MAX_IMAGE)]
+            : NULL;
+    const char *sel = cli_calc_select(ci, ti, (ti == NULL) ? to_double(t) : 0.0, fi,
+                                      (fi == NULL) ? to_double(f) : 0.0);
+    if (sel != NULL || parse_error)
+    {
+        return mk_string((sel != NULL) ? sel : "");
+    }
+
+    /* broadcasting (sizes differ): mask arithmetic, as the binary operators broadcast */
+    const char *tmask  = alloc_tmpname();
+    const char *timask = alloc_tmpname();
+    const char *tpart  = alloc_tmpname();
+    const char *fpart  = alloc_tmpname();
+    const char *tmpn   = alloc_tmpname();
+    arith_image_csttestne(c.sval, 0.0, tmask);
+    arith_image_cstteste(c.sval, 0.0, timask);
+    if (ti != NULL)
+    {
+        arith_image_mult(t.sval, tmask, tpart);
+    }
+    else
+    {
+        arith_image_cstmult(tmask, to_double(t), tpart);
+    }
+    if (fi != NULL)
+    {
+        arith_image_mult(f.sval, timask, fpart);
+    }
+    else
+    {
+        arith_image_cstmult(timask, to_double(f), fpart);
+    }
+    arith_image_add(tpart, fpart, tmpn);
+    return mk_string(tmpn);
+}
+
+/** func_where() - `where(cond, T, F)`: a number picks one, an image selects per pixel. */
 static val_t func_where(void)
 {
     val_t args[3];
@@ -121,60 +181,39 @@ static val_t func_where(void)
     {
         return mk_double(0);
     }
-
     if (args[0].type != VAL_STRING)
     {
-        double c = to_double(args[0]);
-        return (c != 0.0) ? args[1] : args[2];
+        return (to_double(args[0]) != 0.0) ? args[1] : args[2];
     }
+    return cli_calc_where(args[0], args[1], args[2]);
+}
 
-    char tmp_mask[200];
-    char tmp_imask[200];
-    char tmp_tpart[200];
-    char tmp_fpart[200];
-    char tmpn[200];
-    snprintf(tmp_mask, sizeof(tmp_mask), "%s", alloc_tmpname());
-    snprintf(tmp_imask, sizeof(tmp_imask), "%s", alloc_tmpname());
-    snprintf(tmp_tpart, sizeof(tmp_tpart), "%s", alloc_tmpname());
-    snprintf(tmp_fpart, sizeof(tmp_fpart), "%s", alloc_tmpname());
-    snprintf(tmpn, sizeof(tmpn), "%s", alloc_tmpname());
-
+/** func_coord() - ix/iy/ir/itheta(im[, cx, cy]): a new image of im's size, centred on (xsize/2, ysize/2). */
+static val_t func_coord(const cli_token *ftok)
+{
+    val_t args[3];
+    int   n = parse_func_argv(1, 3, args, "Expected ','");
+    if (n < 0)
+    {
+        return mk_double(0);
+    }
+    if (n == 2 || args[0].type != VAL_STRING ||
+        (n == 3 && (args[1].type == VAL_STRING || args[2].type == VAL_STRING)))
+    {
+        parse_errmsg("Expected an image, then optionally the centre: x, y");
+        return mk_double(0);
+    }
     if (!check_image(args[0].sval))
     {
         return mk_string("");
     }
-
-    arith_image_csttestne(args[0].sval, 0.0, tmp_mask);
-    arith_image_cstteste(args[0].sval, 0.0, tmp_imask);
-
-    if (args[1].type == VAL_STRING)
-    {
-        if (!check_image(args[1].sval))
-        {
-            return mk_string("");
-        }
-        arith_image_mult(args[1].sval, tmp_mask, tmp_tpart);
-    }
-    else
-    {
-        arith_image_cstmult(tmp_mask, to_double(args[1]), tmp_tpart);
-    }
-
-    if (args[2].type == VAL_STRING)
-    {
-        if (!check_image(args[2].sval))
-        {
-            return mk_string("");
-        }
-        arith_image_mult(args[2].sval, tmp_imask, tmp_fpart);
-    }
-    else
-    {
-        arith_image_cstmult(tmp_imask, to_double(args[2]), tmp_fpart);
-    }
-
-    arith_image_add(tmp_tpart, tmp_fpart, tmpn);
-    return mk_string(tmpn);
+    const IMAGE *im =
+        &data.core.image[image_ID(args[0].sval, data.core.image, data.core.NB_MAX_IMAGE)];
+    double      cx   = (n == 3) ? to_double(args[1]) : (double) (im->md[0].size[0] / 2);
+    double      cy   = (n == 3) ? to_double(args[2])
+                                : (double) ((im->md[0].naxis > 1) ? im->md[0].size[1] / 2 : 0);
+    const char *tmpn = cli_calc_coord(im, cli_calc_coord_kind(ftok), cx, cy);
+    return mk_string((tmpn != NULL) ? tmpn : "");
 }
 
 /**
@@ -602,7 +641,8 @@ typedef enum
     RED_MIN,
     RED_MAX,
     RED_STD,
-    RED_VAR
+    RED_VAR,
+    RED_PERC /* masked only: imedian, perc */
 } reduce_op;
 
 /** reduce_lane() - reduce the @n values @p[0], @p[stride], ... with @op. */
@@ -716,6 +756,72 @@ static val_t reduce_axis(const char *name, long axis, reduce_op op)
     return mk_string(tmpn);
 }
 
+static int cmp_double(const void *a, const void *b)
+{
+    double x = *(const double *) a;
+    double y = *(const double *) b;
+    return (x > y) - (x < y);
+}
+
+/**
+ * reduce_masked() - reduce the pixels of image @name where image @mask is not zero; RED_PERC takes the
+ * value at fraction @f of the sorted pixels. NaN when the mask selects no pixel (a sum is 0).
+ */
+static val_t reduce_masked(const char *name, const char *mask, reduce_op op, double f)
+{
+    const IMAGE *im  = &data.core.image[image_ID(name, data.core.image, data.core.NB_MAX_IMAGE)];
+    const IMAGE *mk  = &data.core.image[image_ID(mask, data.core.image, data.core.NB_MAX_IMAGE)];
+    uint64_t     nel = im->md[0].nelement;
+    uint64_t     n   = 0;
+    double       r;
+
+    int same = (mk->md[0].naxis == im->md[0].naxis);
+    for (int a = 0; same && a < im->md[0].naxis; a++)
+    {
+        same = (mk->md[0].size[a] == im->md[0].size[a]);
+    }
+    if (!same)
+    {
+        parse_errmsg("The mask must have the image's size");
+        return mk_double(0);
+    }
+    double *v = (double *) malloc(sizeof(double) * nel);
+    double *m = (double *) malloc(sizeof(double) * nel);
+    if (v == NULL || m == NULL)
+    {
+        free(v);
+        free(m);
+        parse_errmsg("Memory allocation failed");
+        return mk_double(0);
+    }
+    copy_im_to_double_buf(im, v);
+    copy_im_to_double_buf(mk, m);
+    for (uint64_t i = 0; i < nel; i++)
+    {
+        if (m[i] != 0.0)
+        {
+            v[n++] = v[i];
+        }
+    }
+    free(m);
+    if (n == 0)
+    {
+        r = (op == RED_SUM) ? 0.0 : NAN;
+    }
+    else if (op == RED_PERC)
+    {
+        long k = (long) (f * (double) n);
+        qsort(v, n, sizeof(double), cmp_double);
+        r = v[(k < 0) ? 0 : ((uint64_t) k >= n) ? (long) n - 1 : k];
+    }
+    else
+    {
+        r = reduce_lane(v, n, 1, op);
+    }
+    free(v);
+    return mk_double(r);
+}
+
 /** axis_reduce_op() - the reduce_op of reduction @fn, or -1 if it has no axis form. */
 static int axis_reduce_op(double (*fn)())
 {
@@ -788,10 +894,23 @@ static val_t func_eval_image_reduction(const cli_token *ftok)
         if (has_axis)
         {
             int op = (ftok->type == TOK_FUNC_IM_D) ? axis_reduce_op(ftok->fnctptr) : -1;
-            if (op < 0 || axisv.type == VAL_STRING)
+            if (axisv.type == VAL_STRING) /* f(im, mask) */
             {
-                parse_errmsg(op < 0 ? "This function takes no axis argument"
-                                    : "Axis must be a number");
+                op = (ftok->fnctptr == (double (*)()) arith_image_median) ? RED_PERC : op;
+                if (op < 0)
+                {
+                    parse_errmsg("This function takes no mask argument");
+                    return mk_double(0);
+                }
+                if (!check_image(axisv.sval) || reject_complex(&axisv, 1))
+                {
+                    return mk_double(0);
+                }
+                return reduce_masked(arg.sval, axisv.sval, (reduce_op) op, 0.5);
+            }
+            if (op < 0)
+            {
+                parse_errmsg("This function takes no axis argument");
                 return mk_double(0);
             }
             return reduce_axis(arg.sval, (long) to_double(axisv), (reduce_op) op);
@@ -800,21 +919,27 @@ static val_t func_eval_image_reduction(const cli_token *ftok)
         return (ftok->type == TOK_FUNC_IM_L) ? mk_long((long) res) : mk_double(res);
     }
 
-    val_t args[2];
-    if (parse_func_args(2, args, "Expected ','") != 0 || reject_complex(args, 2))
+    val_t args[3];
+    int   nargs = parse_func_argv(2, (ftok->type == TOK_FUNC_IMD_D) ? 3 : 2, args, "Expected ','");
+    if (nargs < 0 || reject_complex(args, nargs))
     {
         return mk_double(0);
     }
     if (ftok->type == TOK_FUNC_IMD_D)
     {
-        if (args[0].type != VAL_STRING)
+        if (args[0].type != VAL_STRING || (nargs == 3 && args[2].type != VAL_STRING))
         {
-            parse_errmsg("Expected image argument");
+            parse_errmsg(nargs == 3 ? "Expected perc(image, fraction, mask)"
+                                    : "Expected image argument");
             return mk_double(0);
         }
-        if (!check_image(args[0].sval))
+        if (!check_image(args[0].sval) || (nargs == 3 && !check_image(args[2].sval)))
         {
             return mk_double(0);
+        }
+        if (nargs == 3)
+        {
+            return reduce_masked(args[0].sval, args[2].sval, RED_PERC, to_double(args[1]));
         }
         double res =
             ((double (*)(const char *, double)) ftok->fnctptr)(args[0].sval, to_double(args[1]));
@@ -1007,6 +1132,8 @@ val_t parse_funccall(cli_token *ftok)
         return func_eval_ddd_d(ftok);
     case TOK_FUNC_WHERE:
         return func_where();
+    case TOK_FUNC_COORD:
+        return func_coord(ftok);
     case TOK_FUNC_IMIM_IM:
         return func_eval_matmul();
     case TOK_FUNC_IM_D:

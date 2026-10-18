@@ -183,17 +183,7 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
     }
     if (strcmp(sub, "calc") == 0)
     {
-        const char *varname   = NULL;
-        int         start_idx = 0;
-        if (argc >= 2 && strcmp(argv[0], "-v") == 0)
-        {
-            varname   = argv[1];
-            start_idx = 2;
-        }
-        char *expr = join_args(argc - start_idx, argv + start_idx);
-        int   rc   = milk_client_calc(expr ? expr : "", varname, NULL);
-        free(expr);
-        return rc;
+        return milk_client_calc_argv(argc, argv, NULL);
     }
     if (strcmp(sub, "test") == 0)
     {
@@ -230,6 +220,16 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
     if (strcmp(sub, "waitany") == 0)
     {
         return milk_client_waitany(argc, argv, NULL);
+    }
+    if (strcmp(sub, "sleep") == 0)
+    {
+        return milk_client_sleep_argv(argc, argv, NULL);
+    }
+    if (strcmp(sub, "args") ==
+        0) /* plain assignments: milk-call cannot make locals or end the caller */
+    {
+        const char *fn = getenv("__MILK_ARGS_FNAME"); /* the shim names the caller */
+        return milk_client_args(argc, argv, (fn != NULL && fn[0] != '\0') ? fn : "@args", 0, NULL);
     }
     if (strcmp(sub, "grab") == 0)
     {

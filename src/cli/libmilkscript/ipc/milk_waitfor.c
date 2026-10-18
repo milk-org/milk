@@ -198,12 +198,20 @@ static int wait_created(IMAGE                 *img,
                         const char            *sname,
                         double                 t_start,
                         double                 timeout_sec,
-                        const milk_wait_ops_t *ops)
+                        const milk_wait_ops_t *ops,
+                        int                   *created)
 {
-    int ifd = -1; /* inotify on the shm directory; -2: unavailable, poll every 10 ms */
-    int rc  = 0;
-    while (ImageStreamIO_openIm(img, sname) != IMAGESTREAMIO_SUCCESS || img->md == NULL)
+    int  ifd = -1; /* inotify on the shm directory; -2: unavailable, poll every 10 ms */
+    int  rc  = 0;
+    char shm[1024];
+    int  named = (ImageStreamIO_filename(shm, sizeof(shm), sname) == IMAGESTREAMIO_SUCCESS);
+
+    *created = 0;
+    /* no open attempt while there is no file (ImageStreamIO would warn) */
+    while ((named && access(shm, F_OK) != 0) ||
+           ImageStreamIO_openIm(img, sname) != IMAGESTREAMIO_SUCCESS || img->md == NULL)
     {
+        *created = 1;
         if ((rc = wait_stop(ops, t_start, timeout_sec)) != 0)
         {
             break;
@@ -216,8 +224,10 @@ static int wait_created(IMAGE                 *img,
         }
         if (ifd >= 0)
         {
+            /* a file that does not open yet is still being written: try again soon. 200 ms bounds the
+             * cancel/timeout checks */
             struct pollfd pfd = { ifd, POLLIN, 0 };
-            if (poll(&pfd, 1, 200) > 0) /* 200 ms bounds the cancel/timeout checks */
+            if (poll(&pfd, 1, (named && access(shm, F_OK) == 0) ? 2 : 200) > 0)
             {
                 char    evbuf[4096];
                 ssize_t rr = read(ifd, evbuf, sizeof(evbuf));
@@ -260,17 +270,20 @@ int milk_waitfor_stream(const char            *sname,
             return MILK_WAIT_ABSENT;
         }
     }
-    else
+    int created = 0;
+    if (wait_create)
     {
-        int rc = wait_created(&img, sname, t_start, timeout_sec, ops);
+        int rc = wait_created(&img, sname, t_start, timeout_sec, ops, &created);
         if (rc != 0)
         {
             return rc;
         }
     }
 
+    /* a stream created during the wait: its frames count from its creation, not from when it opened */
     uint64_t target_cnt =
-        (abs_cnt != NULL) ? *abs_cnt : img.md->cnt0 + (uint64_t) (nframes < 1 ? 1 : nframes);
+        (abs_cnt != NULL) ? *abs_cnt
+                          : (created ? 0 : img.md->cnt0) + (uint64_t) (nframes < 1 ? 1 : nframes);
     int semindex = (req_sem >= 0) ? req_sem : ImageStreamIO_getsemwaitindex(&img, -1);
     int use_sem  = (semindex >= 0 && semindex < img.md->sem);
     if (use_sem)

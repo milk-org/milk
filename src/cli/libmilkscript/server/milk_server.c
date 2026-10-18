@@ -802,7 +802,8 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
         else if (hdr.type == MILK_MSG_CALC || hdr.type == MILK_MSG_TEST)
         {
             rc = milk_server_exec_calc_or_test(client_fd, (hdr.type == MILK_MSG_TEST) ? 1 : 0,
-                                               payload, hdr.len, log_cmd, sizeof(log_cmd));
+                                               hdr.flags, payload, hdr.len, log_cmd,
+                                               sizeof(log_cmd));
         }
         else if (hdr.type == MILK_MSG_CALL)
         {
