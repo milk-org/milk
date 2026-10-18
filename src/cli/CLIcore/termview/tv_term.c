@@ -182,10 +182,16 @@ int tv_term_enter(void)
     raw.c_cc[VTIME] = 0;
 
     tv_term_active = 1; /* set first: a signal mid-way still restores */
-    if (tcsetattr(STDIN_FILENO, TCSANOW, &raw) != 0)
+    /* EINTR: stopped by SIGTTOU while in the background and resumed by fg; just retry */
+    int rc;
+    while ((rc = tcsetattr(STDIN_FILENO, TCSANOW, &raw)) != 0 && errno == EINTR && !tv_sig_quit)
+    {
+    }
+    if (rc != 0)
     {
         return -1;
     }
+    tv_sig_cont = 0; /* the resume is handled: do not let the enter sequence's write abort */
     return tv_write_all(TV_SEQ_ENTER, sizeof(TV_SEQ_ENTER) - 1);
 }
 

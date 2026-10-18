@@ -135,11 +135,13 @@ class Viewer:
     def pump(self, timeout=0.05):
         """Collect whatever the viewer writes during @timeout seconds."""
         end = time.monotonic() + timeout
+        first = True
         while self.master_open:
             left = end - time.monotonic()
-            if left <= 0:
-                return
-            r, _, _ = select.select([self.master], [], [], left)
+            if left <= 0 and not first:
+                return  # bounded even when the viewer writes continuously
+            first = False
+            r, _, _ = select.select([self.master], [], [], max(0.0, left))
             if not r:
                 return
             try:
@@ -559,6 +561,74 @@ def test_split_and_legacy_mouse(cfg):
             v.close()
 
 
+SYNC_ON = b"\x1b[?2026h"
+
+
+def test_drag_and_wheel_storms_are_capped(cfg):
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("ramp", "-s", "256x256")
+        v = start(cfg, shm, s)
+        try:
+            v.pump(0.5)
+            before = v.screen.text()
+            n0, t0 = v.out.count(SYNC_ON), time.monotonic()
+            v.send(b"\x1b[<0;40;20M")
+            # a moving drag report every ~2 ms, as a fast mouse sends them
+            for k in range(400):
+                x = 40 + (k % 40 if (k // 40) % 2 == 0 else 39 - k % 40)
+                v.send(b"\x1b[<32;%d;20M" % x)
+                v.pump(0)
+                time.sleep(0.002)
+            v.send(b"\x1b[<0;80;20m")
+            for k in range(100):  # wheel notches, one per report
+                v.send(b"\x1b[<65;40;20M")
+                v.pump(0)
+                time.sleep(0.002)
+            v.pump(0.3)
+            dt = time.monotonic() - t0
+            frames = v.out.count(SYNC_ON) - n0
+            check(
+                frames <= 64 * dt + 6,
+                f"{frames} frames in {dt:.2f} s: input renders not capped",
+            )
+            check(v.screen.text() != before, "drag and wheel did not change the view")
+            check(v.alive(), "viewer died")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_input_does_not_wait_for_data_frames(cfg):
+    """At 1 fps, a lone Esc and two quick keys still reach the screen promptly."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("ramp", "-s", "128x96")
+        v = start(cfg, shm, s, "-f", "1")
+        try:
+            check(v.screen_has("UI:   1 FPS", 2.0), "status line not found")
+            v.send(b"m")
+            check(v.screen_has("Enter Manual Min", 1.0), "prompt did not open")
+            v.pump(0.3)
+            t0 = time.monotonic()
+            v.send(b"\x1b")
+            while "Enter Manual" in v.screen.text() and time.monotonic() - t0 < 2.0:
+                v.pump(0.005)
+            esc_ms = (time.monotonic() - t0) * 1000
+            check(esc_ms < 250, f"lone Esc took {esc_ms:.0f} ms to close the prompt")
+            v.pump(0.3)
+            t0 = time.monotonic()
+            v.send(b"h")
+            time.sleep(0.005)
+            v.send(b"v")
+            while "v:FLIPV" not in v.screen.text() and time.monotonic() - t0 < 2.0:
+                v.pump(0.005)
+            keys_ms = (time.monotonic() - t0) * 1000
+            check("h:FLIPH" in v.screen.text(), "first key lost")
+            check(keys_ms < 150, f"second key took {keys_ms:.0f} ms to show")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
 TESTS = [
     test_help_oneline,
     test_missing_stream,
@@ -573,7 +643,67 @@ TESTS = [
     test_stop_cont_reapplies_raw_mode,
     test_hangup_exits,
     test_split_and_legacy_mouse,
+    test_drag_and_wheel_storms_are_capped,
+    test_input_does_not_wait_for_data_frames,
 ]
+
+
+# ------------------------------------------------------------------ perf checks
+
+
+def perf_idle_static_stream(cfg):
+    """A static stream costs about nothing: ~fps+1 wakeups/s, writes only for the 1 Hz status."""
+    tck = os.sysconf("SC_CLK_TCK")
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("static", "-s", "256x256")
+        v = start(cfg, shm, s, rows=90, cols=300)
+        try:
+            v.pump(1.5)
+            win = 5.0
+            n0, c0, w0 = len(v.out), v.cpu_ticks(), v.wakeups()
+            v.pump(win)
+            n1, c1, w1 = len(v.out), v.cpu_ticks(), v.wakeups()
+            cpu = (c1 - c0) / tck / win * 100
+            wk = (w1 - w0) / win
+            bps = (n1 - n0) / win
+            print(f"     idle: cpu {cpu:.2f} %, {wk:.1f} wakeups/s, {bps:.0f} B/s")
+            check(cpu <= 0.5, f"idle CPU {cpu:.2f} %")
+            check(wk <= 21 * 1.3, f"{wk:.1f} wakeups/s")
+            check(bps <= 2048, f"{bps:.0f} B/s written while idle")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def perf_key_latency(cfg):
+    """A key press reaches the screen within about one interactive frame."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("static", "-s", "256x256")
+        v = start(cfg, shm, s, rows=60, cols=200)
+        try:
+            v.pump(1.2)
+            lat = []
+            for key in b"hvhvhvhv":
+                v.pump(0.25)
+                n0 = len(v.out)
+                t0 = time.monotonic()
+                v.send(bytes([key]))
+                while len(v.out) == n0 and time.monotonic() - t0 < 1.0:
+                    v.pump(0.001)
+                lat.append((time.monotonic() - t0) * 1000)
+            lat.sort()
+            print(
+                f"     key latency: median {lat[len(lat) // 2]:.1f} ms, max {lat[-1]:.1f} ms"
+            )
+            check(
+                lat[len(lat) // 2] <= 20, f"median latency {lat[len(lat) // 2]:.1f} ms"
+            )
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+PERF = [perf_idle_static_stream, perf_key_latency]
 
 
 # ------------------------------------------------------------------ benchmark
@@ -628,6 +758,9 @@ def main():
     ap.add_argument("--mkstream", required=True)
     ap.add_argument("--only", action="append", default=[])
     ap.add_argument("--bench", action="store_true")
+    ap.add_argument(
+        "--perf", action="store_true", help="run the CPU/latency checks instead"
+    )
     ap.add_argument("--window", type=float, default=3.0)
     cfg = ap.parse_args()
 
@@ -636,7 +769,7 @@ def main():
         return 0
 
     failed = 0
-    for t in TESTS:
+    for t in PERF if cfg.perf else TESTS:
         if cfg.only and not any(o in t.__name__ for o in cfg.only):
             continue
         t0 = time.monotonic()

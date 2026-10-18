@@ -233,6 +233,97 @@ int  tv_write_all(const char *buf, size_t n);
 void tv_term_reraise(int sig);
 
 /* -----------------------------------------------------------------------
+ * Input decoding (tv_input.c)
+ * ----------------------------------------------------------------------- */
+
+/** An incomplete escape sequence older than this is resolved (lone ESC) or dropped. */
+#define TV_ESC_TIMEOUT_US 50000
+
+enum
+{
+    TV_EV_KEY = 1,
+    TV_EV_MOUSE
+};
+
+/** Keys: Unicode/ASCII and control bytes as themselves, special keys above U+10FFFF. */
+enum
+{
+    TV_K_UP = 0x110000,
+    TV_K_DOWN,
+    TV_K_LEFT,
+    TV_K_RIGHT,
+    TV_K_HOME,
+    TV_K_END,
+    TV_K_PGUP,
+    TV_K_PGDN,
+    TV_K_INS,
+    TV_K_DEL,
+    TV_K_ESC,
+    TV_K_F1, /* TV_K_F1 + 11 is F12 */
+};
+
+enum
+{
+    TV_MOD_SHIFT = 1,
+    TV_MOD_ALT   = 2,
+    TV_MOD_CTRL  = 4
+};
+
+enum
+{
+    TV_MB_LEFT = 0,
+    TV_MB_MIDDLE,
+    TV_MB_RIGHT,
+    TV_MB_NONE,
+    TV_MB_WHEEL_UP = 64,
+    TV_MB_WHEEL_DOWN,
+    TV_MB_WHEEL_LEFT,
+    TV_MB_WHEEL_RIGHT
+};
+
+enum
+{
+    TV_MA_PRESS = 0,
+    TV_MA_RELEASE,
+    TV_MA_DRAG,
+    TV_MA_MOVE
+};
+
+typedef struct
+{
+    uint8_t  type; /**< TV_EV_* */
+    uint8_t  mods; /**< TV_MOD_* */
+    uint8_t  button;
+    uint8_t  action;
+    uint32_t key;
+    int16_t  x; /**< 1-indexed column */
+    int16_t  y; /**< 1-indexed row */
+} tv_event_t;
+
+typedef struct
+{
+    unsigned char buf[256];
+    size_t        len;
+    int64_t       last_rx_us; /**< arrival time of the newest bytes */
+    int           skip;       /**< inside an over-long sequence (internal state) */
+    int           esc_stale;  /**< buf[0] is an ESC that timed out before more bytes came */
+} tv_input_t;
+
+/** tv_input_room() - Free bytes in the decoder buffer (what one read() may add). */
+static inline size_t tv_input_room(const tv_input_t *in)
+{
+    return sizeof(in->buf) - in->len;
+}
+
+void tv_input_feed(tv_input_t *in, const unsigned char *data, size_t n, int64_t now_us);
+
+/** tv_input_next() - Next decoded event at time @now_us; 1 if @ev was filled, 0 if none yet. */
+int tv_input_next(tv_input_t *in, int64_t now_us, tv_event_t *ev);
+
+/** tv_input_deadline() - When a pending partial sequence must be resolved, or -1. */
+int64_t tv_input_deadline(const tv_input_t *in);
+
+/* -----------------------------------------------------------------------
  * Stream access (tv_stream.c)
  * ----------------------------------------------------------------------- */
 typedef struct
@@ -258,14 +349,40 @@ void tv_stream_close(tv_stream_t *s);
 /* -----------------------------------------------------------------------
  * Viewer state (termview.c)
  * ----------------------------------------------------------------------- */
-typedef struct
+/** Dirty bits: what must be redone for the next frame. */
+enum
 {
-    int button;   /**< 0 left, 1 middle, 2 right, 64/65 wheel up/down */
-    int x;        /**< 1-indexed column */
-    int y;        /**< 1-indexed row */
-    int is_press; /**< 1 for press/drag, 0 for release */
-    int is_drag;  /**< 1 if motion with a button held */
-} tv_mouse_event_t;
+    TV_D_DATA   = 0x01, /**< new stream frame: resample */
+    TV_D_GEOM   = 0x02, /**< zoom, pan, flip or size changed: resample */
+    TV_D_MAP    = 0x04, /**< colormap, scale or range changed: recolour */
+    TV_D_CHROME = 0x08, /**< info bar, popup or prompt only */
+    TV_D_FULL   = 0x10  /**< terminal content unknown: repaint every cell */
+};
+
+/** Input-driven frames are spaced at least this far apart (about 60 Hz). */
+#define TV_INTERACTIVE_US 16000
+
+/** User actions; tv_do() is the single place that applies them. */
+typedef enum
+{
+    TV_ACT_QUIT,
+    TV_ACT_SUSPEND,
+    TV_ACT_REPAINT,
+    TV_ACT_CMAP,  /**< arg: step */
+    TV_ACT_SCALE, /**< arg: step */
+    TV_ACT_RANGE, /**< arg: step */
+    TV_ACT_LOCK,
+    TV_ACT_PROMPT, /**< arg: 1 min, 2 max */
+    TV_ACT_FLIP_H,
+    TV_ACT_FLIP_V,
+    TV_ACT_ZOOM, /**< arg: notches, > 0 zooms in */
+    TV_ACT_VIEW_RESET,
+    TV_ACT_PAN_X,      /**< arg: +1 right, -1 left, in screen space */
+    TV_ACT_PAN_Y,      /**< arg: +1 down, -1 up, in screen space */
+    TV_ACT_FPS,        /**< arg: step */
+    TV_ACT_ESCAPE,     /**< cancel drags and close the popup */
+    TV_ACT_POPUP_CLOSE /**< close the popup only */
+} tv_action_t;
 
 /** Image-to-display mapping parameters; flips live in the options. */
 typedef struct
@@ -282,7 +399,7 @@ typedef struct
     tv_view_t          view;
     int                rows, cols; /**< terminal size */
     int                running;
-    int                dirty; /**< something changed: render the next frame */
+    int                dirty; /**< TV_D_* bits */
     int                exit_status;
 
     tv_rgb_t lut[TV_LUT_N + 1]; /**< [TV_LUT_N]: NaN/Inf pixels */
@@ -295,23 +412,20 @@ typedef struct
     double          current_stream_fps;
     uint64_t        last_cnt0_for_fps;
     uint64_t        last_cnt0;
-    struct timespec last_time_real;
-    struct timespec last_time_cpu;
-    struct timespec last_render_real;
-    long            timeout_us;
+    int64_t         stats_time_us;
+    struct timespec stats_cpu;
 
-    int             popup_type;
-    struct timespec popup_expiry_time;
+    int     popup_type;
+    int64_t popup_expiry_us;
 
-    tv_mouse_event_t mouse;
-    int              mouse_is_dragging;
-    int              roi_is_dragging;
-    int              last_mouse_x;
-    int              last_mouse_y;
-    int              roi_start_x;
-    int              roi_start_y;
-    int              roi_end_x;
-    int              roi_end_y;
+    int mouse_is_dragging;
+    int roi_is_dragging;
+    int last_mouse_x;
+    int last_mouse_y;
+    int roi_start_x;
+    int roi_start_y;
+    int roi_end_x;
+    int roi_end_y;
 
     int         input_mode;
     char        input_buf[64];
@@ -328,5 +442,32 @@ typedef struct
     double    *sort_buffer; /**< percentile scratch, grown on demand */
     int        sort_size;
 } tv_state_t;
+
+/*
+ * State changes from user input go through tv_do() (discrete actions), tv_set_view() (mouse pan
+ * and box zoom) and tv_set_range() (typed limits); each sets the dirty bits it implies.
+ */
+
+/** tv_do() - Apply user action @a with argument @arg. */
+void tv_do(tv_state_t *s, tv_action_t a, int arg);
+
+/** tv_set_view() - Move the view to centre (@cx, @cy) at @zoom, clamped to the valid range. */
+void tv_set_view(tv_state_t *s, double cx, double cy, double zoom);
+
+/** tv_set_range() - Lock the display range to [@lo, @hi]; caller ensures lo < hi, both finite. */
+void tv_set_range(tv_state_t *s, double lo, double hi);
+
+/* Input handlers, exposed for the unit tests (termview.c) */
+void tv_handle_key(tv_state_t *s, const tv_event_t *ev);
+void tv_handle_mouse(tv_state_t *s, const tv_event_t *ev);
+void tv_dispatch_input(tv_state_t *s, tv_input_t *in, int64_t now_us, int budget);
+
+/** tv_now_us() - Monotonic clock in microseconds. */
+static inline int64_t tv_now_us(void)
+{
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (int64_t) t.tv_sec * 1000000 + t.tv_nsec / 1000;
+}
 
 #endif /* TERMVIEW_INTERNAL_H */
