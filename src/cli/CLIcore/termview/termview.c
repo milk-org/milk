@@ -22,8 +22,6 @@
 #include <time.h>
 #include <stdbool.h>
 
-#define TV_CTRL(c) ((c) & 0x1F)
-#define TV_POPUP_US 2000000 /* quick-pick popups close after 2 s */
 
 #define TV_STALE_MIN_US 1000000 /* no new frame for this long (or 5 periods): STALE */
 
@@ -80,12 +78,13 @@ static void tv_update_stats(tv_state_t *ctx, int64_t now_us)
         ctx->rate_hz = ctx->current_stream_fps;
     }
     ctx->last_cnt0_for_fps = cnt0;
+    ctx->ui_fps            = ctx->flushes / real_diff;
+    ctx->flushes           = 0;
     ctx->stats_time_us     = now_us;
     ctx->stats_cpu         = now_cpu;
 }
 
-/** tv_stale_age_us() - How long the stream has gone without a new frame, 0 while it is live. */
-static int64_t tv_stale_age_us(const tv_state_t *ctx, int64_t now_us)
+int64_t tv_stale_age_us(const tv_state_t *ctx, int64_t now_us)
 {
     int64_t age   = now_us - ctx->last_change_us;
     int64_t limit = TV_STALE_MIN_US;
@@ -168,6 +167,7 @@ static void tv_invalidate(tv_state_t *ctx)
             ctx->prev_screen[i] = TV_CELL_UNKNOWN;
         }
     }
+    ctx->ui.hover_sent = -1; /* the terminal's mouse mode is unknown too */
     ctx->dirty |= TV_D_FULL | TV_D_GEOM;
 }
 
@@ -200,13 +200,6 @@ static void tv_pause(tv_state_t *ctx, int on)
     }
     /* sample what is frozen (or live again) and draw it exactly */
     ctx->dirty |= TV_D_DATA | TV_D_MAP | TV_D_CHROME;
-}
-
-/** tv_popup_open() - Show quick-pick popup @type (1 cmap, 2 scale, 3 range) for TV_POPUP_US. */
-static void tv_popup_open(tv_state_t *ctx, int type)
-{
-    ctx->popup_type      = type;
-    ctx->popup_expiry_us = tv_now_us() + TV_POPUP_US;
 }
 
 /** tv_zmax() - Largest zoom for the current layout (a sample step of 1/64 pixel). */
@@ -260,35 +253,71 @@ void tv_do(tv_state_t *ctx, tv_action_t a, int arg)
         tv_pause(ctx, !ctx->paused);
         break;
     case TV_ACT_CMAP:
-        ctx->opt.colormap = (termview_colormap_t) tv_wrap(ctx->opt.colormap, arg, COLORMAP_NB);
-        tv_popup_open(ctx, 1);
-        ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        tv_do(ctx, TV_ACT_SET_CMAP, tv_wrap(ctx->opt.colormap, arg, COLORMAP_NB));
         break;
     case TV_ACT_SCALE:
-        ctx->opt.scale = (termview_scale_t) tv_wrap(ctx->opt.scale, arg, SCALE_NB);
-        tv_popup_open(ctx, 2);
-        ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        tv_do(ctx, TV_ACT_SET_SCALE, tv_wrap(ctx->opt.scale, arg, SCALE_NB));
         break;
     case TV_ACT_RANGE:
-        ctx->opt.range = (termview_range_t) tv_wrap(ctx->opt.range, arg, RANGE_NB);
-        tv_popup_open(ctx, 3);
+        tv_do(ctx, TV_ACT_SET_RANGE, tv_wrap(ctx->opt.range, arg, RANGE_NB));
+        break;
+    case TV_ACT_SET_CMAP:
+        ctx->opt.colormap = (termview_colormap_t) tv_wrap(arg, 0, COLORMAP_NB);
         ctx->dirty |= TV_D_MAP | TV_D_CHROME;
         break;
-    case TV_ACT_LOCK:
-        ctx->opt.range_locked = !ctx->opt.range_locked;
-        if (ctx->opt.range_locked)
+    case TV_ACT_SET_SCALE:
+        ctx->opt.scale = (termview_scale_t) tv_wrap(arg, 0, SCALE_NB);
+        ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        break;
+    case TV_ACT_SET_RANGE: /* choosing a range mode is asking for an automatic range */
+        ctx->opt.range        = (termview_range_t) tv_wrap(arg, 0, RANGE_NB);
+        ctx->opt.range_locked = false;
+        ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        break;
+    case TV_ACT_SET_COLORS:
+        if (arg >= 0 && arg <= 3 && arg != ctx->opt.colors)
         {
-            ctx->opt.manual_min = ctx->cur_min;
+            ctx->opt.colors = arg;
+            tv_emit_init(&ctx->emit, arg ? arg : tv_term_color_level());
+            tv_invalidate(ctx); /* every cell again, in the new codes */
+        }
+        ctx->dirty |= TV_D_CHROME;
+        break;
+    case TV_ACT_SET_FPS:
+        ctx->target_fps = (arg < 1) ? 1 : (arg > 120) ? 120 : arg;
+        ctx->dirty |= TV_D_CHROME;
+        break;
+    case TV_ACT_SMOOTH:
+        ctx->opt.range_smooth = !ctx->opt.range_smooth;
+        ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        break;
+    case TV_ACT_CENTRE:
+        tv_set_view(ctx, 0.5, 0.5, ctx->view.zoom);
+        break;
+    case TV_ACT_HELP:
+    {
+        int on = !ctx->ui.help;
+        tv_ui_open(ctx, -1); /* a menu, or the range editor, gives way to the help box */
+        ctx->ui.help     = on;
+        ctx->ui.help_top = 0;
+        ctx->mini.active = ctx->mini.active && !on;
+        ctx->dirty |= TV_D_CHROME;
+        break;
+    }
+    case TV_ACT_LOCK:
+    {
+        int lock = (arg < 0) ? !ctx->opt.range_locked : (arg != 0);
+        if (lock && !ctx->opt.range_locked)
+        {
+            ctx->opt.manual_min = ctx->cur_min; /* the range shown now */
             ctx->opt.manual_max = ctx->cur_max;
         }
+        ctx->opt.range_locked = lock;
         ctx->dirty |= TV_D_MAP | TV_D_CHROME;
         break;
+    }
     case TV_ACT_PROMPT:
-        ctx->input_mode   = (arg == 2) ? 2 : 1;
-        ctx->input_len    = 0;
-        ctx->input_buf[0] = '\0';
-        ctx->input_err    = NULL;
-        ctx->dirty |= TV_D_CHROME;
+        tv_mini_open(ctx, (arg == 2) ? 1 : 0);
         break;
     case TV_ACT_FLIP_H:
         ctx->opt.flip_h = !ctx->opt.flip_h;
@@ -315,11 +344,7 @@ void tv_do(tv_state_t *ctx, tv_action_t a, int arg)
                     ctx->view.zoom);
         break;
     case TV_ACT_FPS:
-        ctx->target_fps += arg;
-        ctx->target_fps = (ctx->target_fps < 1)     ? 1
-                          : (ctx->target_fps > 120) ? 120
-                                                    : ctx->target_fps;
-        ctx->dirty |= TV_D_CHROME;
+        tv_do(ctx, TV_ACT_SET_FPS, ctx->target_fps + arg);
         break;
     case TV_ACT_ESCAPE:
         if (ctx->mouse_is_dragging || ctx->roi_is_dragging)
@@ -328,22 +353,10 @@ void tv_do(tv_state_t *ctx, tv_action_t a, int arg)
             ctx->roi_is_dragging   = 0;
             ctx->dirty |= TV_D_CHROME;
         }
-        if (ctx->popup_type > 0)
-        {
-            ctx->popup_type = 0;
-            ctx->dirty |= TV_D_CHROME;
-        }
         break;
     case TV_ACT_LOWBW:
         ctx->opt.lowbw = !ctx->opt.lowbw;
         ctx->dirty |= TV_D_MAP | TV_D_CHROME;
-        break;
-    case TV_ACT_POPUP_CLOSE:
-        if (ctx->popup_type > 0)
-        {
-            ctx->popup_type = 0;
-            ctx->dirty |= TV_D_CHROME;
-        }
         break;
     }
 }
@@ -355,9 +368,7 @@ void tv_handle_key(tv_state_t *ctx, const tv_event_t *ev)
     {
         return; /* Alt+character is unbound; special keys keep their meaning with any modifier */
     }
-    /* Up/Down step through the open quick-pick popup */
-    static const tv_action_t popup_act[4] = { TV_ACT_ESCAPE, TV_ACT_CMAP, TV_ACT_SCALE,
-                                              TV_ACT_RANGE };
+
     switch (ev->key)
     {
     case 'q':
@@ -374,21 +385,20 @@ void tv_handle_key(tv_state_t *ctx, const tv_event_t *ev)
     case TV_K_ESC:
         tv_do(ctx, TV_ACT_ESCAPE, 0);
         break;
-    case '\r':
-    case '\n':
-        tv_do(ctx, TV_ACT_POPUP_CLOSE, 0);
-        break;
     case 'c':
-        tv_do(ctx, TV_ACT_CMAP, 1);
+    case 'C':
+        tv_do(ctx, TV_ACT_CMAP, (ev->key == 'c') ? 1 : -1);
         break;
     case 's':
-        tv_do(ctx, TV_ACT_SCALE, 1);
+    case 'S':
+        tv_do(ctx, TV_ACT_SCALE, (ev->key == 's') ? 1 : -1);
         break;
     case 'r':
-        tv_do(ctx, TV_ACT_RANGE, 1);
+    case 'R':
+        tv_do(ctx, TV_ACT_RANGE, (ev->key == 'r') ? 1 : -1);
         break;
     case 'l':
-        tv_do(ctx, TV_ACT_LOCK, 0);
+        tv_do(ctx, TV_ACT_LOCK, -1);
         break;
     case 'm':
         tv_do(ctx, TV_ACT_PROMPT, 1);
@@ -427,18 +437,8 @@ void tv_handle_key(tv_state_t *ctx, const tv_event_t *ev)
         break;
     case TV_K_UP:
     case TV_K_DOWN:
-    {
-        int step = (ev->key == TV_K_UP) ? -1 : 1;
-        if (ctx->popup_type >= 1 && ctx->popup_type <= 3)
-        {
-            tv_do(ctx, popup_act[ctx->popup_type], step);
-        }
-        else
-        {
-            tv_do(ctx, TV_ACT_PAN_Y, step);
-        }
+        tv_do(ctx, TV_ACT_PAN_Y, (ev->key == TV_K_UP) ? -1 : 1);
         break;
-    }
     case '<':
     case ',':
         tv_do(ctx, TV_ACT_FPS, -1);
@@ -461,6 +461,7 @@ static void tv_zoom_at(tv_state_t *ctx, int notches, int x, int y)
     tv_layout_t l;
     tv_xform_t  xf;
     tv_xform_now(ctx, &l, &xf);
+    y -= l.img_top;                /* screen row to image row, both 1-based */
     double dj = x - 0.5;           /* centre of column x (1-based) in samples */
     double di = 2.0 * (y - 1) + 1; /* between the cell's two sample rows */
     if (x < 1 || x > l.img_cols || y < 1 || y > l.img_rows)
@@ -498,7 +499,7 @@ void tv_handle_mouse(tv_state_t *ctx, const tv_event_t *ev)
     tv_xform_t  xf;
     tv_xform_now(ctx, &l, &xf);
     int    mx    = ev->x;
-    int    my    = ev->y;
+    int    my    = ev->y - l.img_top; /* image rows, 1-based */
     double xsize = ctx->st->xsize;
     /* a box zoom selection stays inside the image area, so outline and result agree */
     int    bx    = (mx < 1) ? 1 : (mx > l.img_cols) ? l.img_cols : mx;
@@ -570,84 +571,6 @@ void tv_handle_mouse(tv_state_t *ctx, const tv_event_t *ev)
     }
 }
 
-/** tv_handle_input_key() - Line editor for the manual min/max prompt; 1 if the key was consumed. */
-static int tv_handle_input_key(tv_state_t *ctx, const tv_event_t *ev)
-{
-    uint32_t ch = ev->key;
-    if (ev->mods & (TV_MOD_ALT | TV_MOD_CTRL))
-    {
-        return 0;
-    }
-    if (ch == '\n' || ch == '\r')
-    {
-        double v;
-        if (ctx->input_len == 0)
-        {
-            ctx->input_mode = 0;
-        }
-        else if (tv_parse_double(ctx->input_buf, &v) != 0)
-        {
-            ctx->input_err = "invalid number";
-        }
-        else
-        {
-            /* the other bound is the locked one, or the range shown right now */
-            double lo = ctx->opt.range_locked ? ctx->opt.manual_min : ctx->cur_min;
-            double hi = ctx->opt.range_locked ? ctx->opt.manual_max : ctx->cur_max;
-            if (ctx->input_mode == 1)
-            {
-                lo = v;
-            }
-            else
-            {
-                hi = v;
-            }
-            if (!(hi > lo))
-            {
-                ctx->input_err = "min must be < max";
-            }
-            else
-            {
-                tv_set_range(ctx, lo, hi);
-                ctx->input_mode = 0;
-            }
-        }
-    }
-    else if (ch == TV_K_ESC)
-    {
-        ctx->input_mode = 0;
-    }
-    else if (ch == 127 || ch == 8)
-    {
-        if (ctx->input_len > 0)
-        {
-            ctx->input_buf[--ctx->input_len] = '\0';
-        }
-        ctx->input_err = NULL;
-    }
-    else if (ch >= 32 && ch <= 126)
-    {
-        if (ctx->input_len < (int) sizeof(ctx->input_buf) - 1)
-        {
-            ctx->input_buf[ctx->input_len++] = (char) ch;
-            ctx->input_buf[ctx->input_len]   = '\0';
-        }
-        ctx->input_err = NULL;
-    }
-    else
-    {
-        return 0; /* mouse, control and special keys keep their normal meaning */
-    }
-    if (ctx->input_mode == 0)
-    {
-        ctx->input_len    = 0;
-        ctx->input_buf[0] = '\0';
-        ctx->input_err    = NULL;
-    }
-    ctx->dirty |= TV_D_CHROME;
-    return 1;
-}
-
 /** tv_flush_wheel() - Apply @notches of accumulated wheel motion as one zoom at the pointer. */
 static void tv_flush_wheel(tv_state_t *ctx, int *notches)
 {
@@ -684,7 +607,12 @@ void tv_dispatch_input(tv_state_t *ctx, tv_input_t *in, int64_t now_us, int budg
         {
             tv_flush_wheel(ctx, &wheel);
         }
-        if (is_drag)
+        if (is_mouse && tv_ui_wants_mouse(ctx, &ev))
+        {
+            tv_flush_wheel(ctx, &wheel);
+            tv_ui_mouse(ctx, &ev); /* menus, the help box, the menubar and the status row */
+        }
+        else if (is_drag)
         {
             drag      = ev;
             have_drag = 1;
@@ -699,7 +627,7 @@ void tv_dispatch_input(tv_state_t *ctx, tv_input_t *in, int64_t now_us, int budg
         {
             tv_handle_mouse(ctx, &ev);
         }
-        else if (!(ctx->input_mode > 0 && tv_handle_input_key(ctx, &ev)))
+        else if (!tv_ui_key(ctx, &ev))
         {
             tv_handle_key(ctx, &ev);
         }
@@ -711,302 +639,19 @@ void tv_dispatch_input(tv_state_t *ctx, tv_input_t *in, int64_t now_us, int budg
     tv_flush_wheel(ctx, &wheel);
 }
 
-static void termview_render_colorbar(tv_state_t *ctx,
-                                     int         disp_char_rows,
-                                     int         bar_col_start,
-                                     double      min_val,
-                                     double      max_val)
-{
-    for (int i = 0; i < disp_char_rows; i++)
-    {
-        double   norm_val = (disp_char_rows > 1) ? 1.0 - (double) i / (disp_char_rows - 1) : 0.5;
-        tv_rgb_t rgb      = ctx->lut[tv_lut_idx(norm_val, 0.0, TV_LUT_N - 1)];
-
-        tv_cell_t bar                                  = tv_cell(0, tv_rgb(rgb), TV_G_FULL_BLOCK);
-        ctx->screen[i * ctx->cols + bar_col_start - 1] = bar;
-        ctx->screen[i * ctx->cols + bar_col_start]     = bar;
-
-        char label[32];
-        int  label_len = 0;
-        if (i == 0)
-        {
-            label_len = snprintf(label, sizeof(label), "%.2g", max_val);
-        }
-        else if (i == disp_char_rows / 2)
-        {
-            label_len = snprintf(label, sizeof(label), "%.2g", (min_val + max_val) / 2);
-        }
-        else if (i == disp_char_rows - 1)
-        {
-            label_len = snprintf(label, sizeof(label), "%.2g", min_val);
-        }
-
-        label_len = tv_fmt_len(label_len, sizeof(label));
-        for (int k = 0; k < label_len; k++)
-        {
-            if (bar_col_start + 2 + k < ctx->cols)
-            {
-                tv_cell_t *lc = &ctx->screen[i * ctx->cols + bar_col_start + 2 + k];
-                *lc           = tv_cell_with_glyph(*lc, (uint8_t) label[k]);
-            }
-        }
-    }
-}
-
-static void termview_render_infobar(tv_state_t *ctx,
-                                    uint32_t    xsize,
-                                    uint32_t    ysize,
-                                    double      step,
-                                    double      min_val,
-                                    double      max_val,
-                                    int64_t     now_us)
-{
-    int info_row = ctx->rows - 3;
-
-    const char *cmap_str  = tv_cmap_names[ctx->opt.colormap];
-    const char *scale_str = tv_scale_names[ctx->opt.scale];
-    const char *range_str = tv_range_names[ctx->opt.range];
-
-    char info[256];
-    int  len;
-
-    /* LIVE while frames keep coming, STALE with the age of the last one otherwise; PAUSED and
-     * GONE (the stream was removed or replaced) win */
-    char     state[32];
-    int64_t  age  = tv_stale_age_us(ctx, now_us) / 1000000;
-    uint32_t pill = (age == 0) ? TV_RGB(80, 220, 80) : TV_RGB(255, 180, 0);
-    if (ctx->paused || ctx->gone)
-    {
-        snprintf(state, sizeof(state), "%s%s", ctx->paused ? "PAUSED" : "",
-                 ctx->gone ? (ctx->paused ? " GONE" : "GONE") : "");
-        pill = ctx->gone ? TV_RGB(255, 80, 80) : TV_RGB(100, 160, 255);
-    }
-    else if (age == 0)
-    {
-        snprintf(state, sizeof(state), "LIVE");
-    }
-    else
-    {
-        snprintf(state, sizeof(state), "STALE %lld%s",
-                 (long long) ((age < 60)     ? age
-                              : (age < 3600) ? age / 60
-                                             : age / 3600),
-                 (age < 60)     ? "s"
-                 : (age < 3600) ? "m"
-                                : "h");
-    }
-
-    int name_len = (int) strlen(ctx->st->name);
-    len = snprintf(info, sizeof(info),
-                   "Image: %s [%u x %u] Type: %d  |  CPU: %5.1f%%  UI: %3d FPS  Stream: %5.1f Hz  ",
-                   ctx->st->name, xsize, ysize, ctx->st->datatype, ctx->current_cpu_usage,
-                   ctx->target_fps, ctx->current_stream_fps);
-    len = tv_fmt_len(len, sizeof(info));
-    int state_pos = len;
-    len += tv_fmt_len(snprintf(info + len, sizeof(info) - (size_t) len, "%s", state),
-                      sizeof(info) - (size_t) len);
-    for (int k = 0; k < len && k < ctx->cols; k++)
-    {
-        tv_cell_t *c = &ctx->screen[info_row * ctx->cols + k];
-        *c           = tv_cell_with_glyph(*c, (uint8_t) info[k]);
-        if (k >= 7 && k < 7 + name_len)
-        {
-            *c = tv_cell_with_fg(*c, TV_RGB(0, 255, 255)); // Cyan
-        }
-        if (k >= state_pos)
-        {
-            *c = tv_cell_with_fg(*c, pill);
-        }
-    }
-    len = snprintf(info, sizeof(info),
-                   "Val: [%.4g : %.4g] Zoom: %.2fx (%.2f px/char H, %.2f px/char V)", min_val,
-                   max_val, ctx->view.zoom, step, step * 2.0);
-    len = tv_fmt_len(len, sizeof(info));
-    for (int k = 0; k < len && k < ctx->cols; k++)
-    {
-        tv_cell_t *c = &ctx->screen[(info_row + 1) * ctx->cols + k];
-        *c           = tv_cell_with_glyph(*c, (uint8_t) info[k]);
-    }
-
-    if (ctx->input_mode > 0)
-    {
-        len = snprintf(info, sizeof(info), "Enter Manual %s: %s_%s%s",
-                       ctx->input_mode == 1 ? "Min" : "Max", ctx->input_buf,
-                       ctx->input_err ? "   " : "", ctx->input_err ? ctx->input_err : "");
-        len = tv_fmt_len(len, sizeof(info));
-        for (int k = 0; k < len && k < ctx->cols; k++)
-        {
-            tv_cell_t *c = &ctx->screen[(info_row + 2) * ctx->cols + k];
-            *c = tv_cell_with_fg(tv_cell_with_glyph(*c, (uint8_t) info[k]), TV_RGB(255, 255, 0));
-        }
-        for (int k = len; k < ctx->cols; k++)
-        {
-            tv_cell_t *c = &ctx->screen[(info_row + 2) * ctx->cols + k];
-            *c           = tv_cell_with_glyph(*c, ' ');
-        }
-    }
-    else
-    {
-        char info1[128];
-        int  len1 = snprintf(info1, sizeof(info1), "[C]map: %s  [S]cale: %s  [R]ange: %s [",
-                             cmap_str, scale_str, range_str);
-        len1      = tv_fmt_len(len1, sizeof(info1));
-        const char *lock_str = ctx->opt.range_locked ? "LOCKED" : "AUTO";
-        int         lock_len = (int) strlen(lock_str);
-        char        info2[256];
-        int         len2 =
-            snprintf(info2, sizeof(info2), "%s%s]  (< >:FPS l:Lock m/M:MinMax ", info1, lock_str);
-        len2 = tv_fmt_len(len2, sizeof(info2));
-
-        const char *h_str = ctx->opt.flip_h ? "h:FLIPH" : "h:fliph";
-        const char *v_str = ctx->opt.flip_v ? "v:FLIPV" : "v:flipv";
-        const char *b_str = ctx->opt.lowbw ? "b:LOWBW" : "b:lowbw";
-
-        len      = snprintf(info, sizeof(info), "%s%s %s %s q:Quit)", info2, h_str, v_str, b_str);
-        len      = tv_fmt_len(len, sizeof(info));
-        int len3 = len2 + (int) strlen(h_str) + 1 + (int) strlen(v_str) + 1;
-
-        for (int k = 0; k < len && k < ctx->cols; k++)
-        {
-            tv_cell_t *c = &ctx->screen[(info_row + 2) * ctx->cols + k];
-            *c           = tv_cell_with_glyph(*c, (uint8_t) info[k]);
-            if (k >= len1 && k < len1 + lock_len)
-            {
-                // Red for Locked, green for Auto
-                *c = tv_cell_with_fg(*c, ctx->opt.range_locked ? TV_RGB(255, 50, 50)
-                                                               : TV_RGB(50, 255, 50));
-            }
-            if (ctx->opt.flip_h && k >= len2 && k < len2 + (int) strlen(h_str))
-            {
-                *c = tv_cell_with_fg(*c, TV_RGB(255, 255, 0)); // Yellow
-            }
-            if (ctx->opt.flip_v && k >= len2 + (int) strlen(h_str) + 1 &&
-                k < len2 + (int) strlen(h_str) + 1 + (int) strlen(v_str))
-            {
-                *c = tv_cell_with_fg(*c, TV_RGB(255, 255, 0)); // Yellow
-            }
-            if (ctx->opt.lowbw && k >= len3 && k < len3 + (int) strlen(b_str))
-            {
-                *c = tv_cell_with_fg(*c, TV_RGB(255, 255, 0)); // Yellow
-            }
-        }
-        for (int k = len; k < ctx->cols; k++)
-        {
-            tv_cell_t *c = &ctx->screen[(info_row + 2) * ctx->cols + k];
-            *c           = tv_cell_with_glyph(*c, ' ');
-        }
-    }
-}
-
-static void termview_render_popup(tv_state_t *ctx, int disp_char_rows, int disp_cols)
-{
-    if (ctx->popup_type <= 0)
-    {
-        return;
-    }
-    int                num_opts     = 0;
-    const char        *title        = "";
-    const char *const *names        = NULL;
-    int                selected_idx = 0;
-    int                box_w        = 16;
-    if (ctx->popup_type == 1)
-    {
-        title        = "COLORMAP";
-        names        = tv_cmap_names;
-        num_opts     = COLORMAP_NB;
-        selected_idx = ctx->opt.colormap;
-        box_w        = 40; // Wider box to fit colormap preview
-    }
-    else if (ctx->popup_type == 2)
-    {
-        title        = "SCALE";
-        names        = tv_scale_names;
-        num_opts     = SCALE_NB;
-        selected_idx = ctx->opt.scale;
-    }
-    else if (ctx->popup_type == 3)
-    {
-        title        = "RANGE";
-        names        = tv_range_names;
-        num_opts     = RANGE_NB;
-        selected_idx = ctx->opt.range;
-    }
-
-    int box_h   = num_opts + 2;
-    int start_r = (disp_char_rows - box_h) / 2;
-    int start_c = (disp_cols - box_w) / 2;
-    if (start_r < 0)
-    {
-        start_r = 0;
-    }
-    if (start_c < 0)
-    {
-        start_c = 0;
-    }
-
-    for (int i = 0; i < box_h; i++)
-    {
-        int r = start_r + i;
-        if (r >= disp_char_rows)
-        {
-            break;
-        }
-        for (int j = 0; j < box_w; j++)
-        {
-            int c = start_c + j;
-            if (c >= disp_cols)
-            {
-                break;
-            }
-
-            uint32_t bg    = TV_RGB(50, 50, 50);    // dark gray bg
-            uint32_t fg    = TV_RGB(255, 255, 255); // white fg
-            uint8_t  glyph = ' ';
-
-            if (i == 0)
-            {
-                int tlen   = (int) strlen(title);
-                int tstart = (box_w - tlen) / 2;
-                if (j >= tstart && j < tstart + tlen)
-                {
-                    glyph = (uint8_t) title[j - tstart];
-                    fg    = TV_RGB(255, 255, 0); // Yellow title
-                }
-            }
-            else if (i <= num_opts)
-            {
-                int opt_idx = i - 1;
-                if (opt_idx == selected_idx)
-                {
-                    bg = TV_RGB(200, 200, 200); // light gray selected
-                    fg = TV_RGB(0, 0, 0);
-                }
-
-                // Text portion
-                if (j >= 2 && j - 2 < (int) strlen(names[opt_idx]))
-                {
-                    glyph = (uint8_t) names[opt_idx][j - 2];
-                }
-
-                // Compressed colormap rendering
-                if (ctx->popup_type == 1 && j >= 16 && j < box_w - 2)
-                {
-                    int    bar_len = box_w - 2 - 16;
-                    double v       = (double) (j - 16) / (double) (bar_len - 1);
-                    bg             = tv_rgb(tv_cmap_color((termview_colormap_t) opt_idx, v));
-                    glyph          = ' ';
-                }
-            }
-            ctx->screen[r * ctx->cols + c] = tv_cell(bg, fg, glyph) | TV_ATTR_CHROME;
-        }
-    }
-}
-
 static void termview_flush_ansi(tv_state_t *ctx)
 {
     if (tv_sig_cont)
     {
         return; /* stopped while rendering: the screen is not ours until re-entered */
+    }
+    /* pointer motion reports only while a menu or the help box can use them */
+    int hover = ctx->ui.open || ctx->ui.help;
+    if (hover != ctx->ui.hover_sent)
+    {
+        ctx->ui.hover_sent = hover;
+        /* in xterm and tmux, resetting 1003 ends mouse reporting: back to button events */
+        tv_write_all(hover ? "\033[?1003h" : "\033[?1003l\033[?1002h", hover ? 8 : 16);
     }
     size_t n = tv_flush_diff(&ctx->emit, ctx->frame_buffer, ctx->screen, ctx->prev_screen,
                              ctx->rows, ctx->cols);
@@ -1014,6 +659,7 @@ static void termview_flush_ansi(tv_state_t *ctx)
     {
         return;
     }
+    ctx->flushes++;
     int64_t t0 = tv_now_us();
     if (tv_write_all(ctx->frame_buffer, n) != 0)
     {
@@ -1118,7 +764,7 @@ static void tv_draw_roi(tv_state_t *ctx)
     {
         for (int c = x0; c <= x1 && c <= l->img_cols; c++)
         {
-            tv_cell_t *cell = &ctx->screen[(r - 1) * ctx->cols + (c - 1)];
+            tv_cell_t *cell = &ctx->screen[(l->img_top + r - 1) * ctx->cols + (c - 1)];
             if (r == y0 || r == y1 || c == x0 || c == x1)
             {
                 *cell = tv_cell(yellow, yellow, TV_G_LOWER_HALF) | TV_ATTR_CHROME;
@@ -1144,7 +790,7 @@ static void tv_compose(tv_state_t *ctx, int64_t now_us)
     }
     for (int r = 0; r < l->img_rows; r++)
     {
-        memcpy(&ctx->screen[r * ctx->cols], &ctx->im.cells[(size_t) r * l->img_cols],
+        memcpy(&ctx->screen[(l->img_top + r) * ctx->cols], &ctx->im.cells[(size_t) r * l->img_cols],
                (size_t) l->img_cols * sizeof(tv_cell_t));
     }
     if (ctx->roi_is_dragging)
@@ -1156,24 +802,20 @@ static void tv_compose(tv_state_t *ctx, int64_t now_us)
         static const char msg[] = "stream gone: waiting for it to come back";
         int               len   = (int) sizeof(msg) - 1;
         int               col   = (len < l->img_cols) ? (l->img_cols - len) / 2 : 0;
-        tv_draw_text(ctx, l->img_rows / 2, col, msg);
+        int               row   = l->img_top + l->img_rows / 2;
+        tv_draw_text(ctx, row, col, msg);
         for (int k = 0; k < len && col + k < l->img_cols; k++)
         {
-            ctx->screen[(l->img_rows / 2) * ctx->cols + col + k] |= TV_ATTR_CHROME;
+            ctx->screen[row * ctx->cols + col + k] |= TV_ATTR_CHROME;
         }
     }
-    tv_xform_t xf;
-    tv_xform_compute(&xf, l, &ctx->view, ctx->st->xsize, ctx->st->ysize, ctx->opt.flip_h,
-                     ctx->opt.flip_v);
-    termview_render_colorbar(ctx, l->img_rows, l->bar_col, ctx->cur_min, ctx->cur_max);
-    termview_render_infobar(ctx, ctx->st->xsize, ctx->st->ysize, xf.step, ctx->cur_min,
-                            ctx->cur_max, now_us);
-    termview_render_popup(ctx, l->img_rows, l->img_cols);
+    tv_ui_render(ctx, now_us); /* marks its own cells, overlays on the image included */
 
     /* everything outside the image area is interface: sent ahead of image cells */
     for (int r = 0; r < ctx->rows; r++)
     {
-        for (int c = (r < l->img_rows) ? l->img_cols : 0; c < ctx->cols; c++)
+        int in = (r >= l->img_top && r < l->img_top + l->img_rows);
+        for (int c = in ? l->img_cols : 0; c < ctx->cols; c++)
         {
             ctx->screen[r * ctx->cols + c] |= TV_ATTR_CHROME;
         }
@@ -1317,7 +959,7 @@ int termview_run(const char *name, const termview_options_t *opt)
         }
 
         /* sleep until the earliest of: next data poll, frame cap (dirty, or image cells left
-         * over by the last flush), ESC timeout, tick, popup */
+         * over by the last flush), ESC timeout, tick */
         int64_t now    = tv_now_us();
         int64_t period = 1000000 / ctx->target_fps;
         if (next_data > now + period)
@@ -1338,10 +980,7 @@ int termview_run(const char *name, const termview_options_t *opt)
         {
             dl = next_tick;
         }
-        if (ctx->popup_type > 0 && ctx->popup_expiry_us < dl)
-        {
-            dl = ctx->popup_expiry_us;
-        }
+
 
         struct pollfd pfd        = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
         int           timeout_ms = (dl <= now) ? 0 : (int) ((dl - now + 999) / 1000);
@@ -1396,11 +1035,7 @@ int termview_run(const char *name, const termview_options_t *opt)
             next_tick = (next_tick + 1000000 > now) ? next_tick + 1000000 : now + 1000000;
             ctx->dirty |= TV_D_CHROME;
         }
-        if (ctx->popup_type > 0 && now >= ctx->popup_expiry_us)
-        {
-            ctx->popup_type = 0;
-            ctx->dirty |= TV_D_CHROME;
-        }
+
         if (ctx->emit.pending)
         {
             ctx->dirty |= TV_D_CHROME; /* send the image cells the last flush had no room for */
@@ -1464,9 +1099,15 @@ int termview_run(const char *name, const termview_options_t *opt)
             }
             ctx->mouse_is_dragging = 0;
             ctx->roi_is_dragging   = 0;
-            ctx->im.have_range     = 0;
-            ctx->im.held           = 0;
-            ctx->lay.rows          = 0; /* rebuild the tables once the size is usable again */
+            if (ctx->ui.open || ctx->ui.help)
+            {
+                tv_ui_open(ctx, -1); /* menus and help do not survive off screen */
+            }
+            ctx->mini.active   = 0;
+            ctx->ui.nhits      = 0;
+            ctx->im.have_range = 0;
+            ctx->im.held       = 0;
+            ctx->lay.rows      = 0; /* rebuild the tables once the size is usable again */
             termview_flush_ansi(ctx);
             continue;
         }

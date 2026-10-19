@@ -11,8 +11,12 @@
 #include "termview_internal.h"
 
 static const char *const tv_glyph_utf8[TV_G_COUNT - 0x80] = {
-    [TV_G_LOWER_HALF - 0x80] = "\xE2\x96\x84",
-    [TV_G_FULL_BLOCK - 0x80] = "\xE2\x96\x88",
+    [TV_G_LOWER_HALF - 0x80] = "\xE2\x96\x84", [TV_G_FULL_BLOCK - 0x80] = "\xE2\x96\x88",
+    [TV_G_DOWN - 0x80] = "\xE2\x96\xBC",       [TV_G_UP - 0x80] = "\xE2\x96\xB2",
+    [TV_G_DOT - 0x80] = "\xE2\x97\x8F",        [TV_G_SHADE - 0x80] = "\xE2\x96\x92",
+    [TV_G_HLINE - 0x80] = "\xE2\x94\x80",      [TV_G_VLINE - 0x80] = "\xE2\x94\x82",
+    [TV_G_TL - 0x80] = "\xE2\x95\xAD",         [TV_G_TR - 0x80] = "\xE2\x95\xAE",
+    [TV_G_BL - 0x80] = "\xE2\x95\xB0",         [TV_G_BR - 0x80] = "\xE2\x95\xAF",
 };
 
 /* xterm's default 16-colour palette */

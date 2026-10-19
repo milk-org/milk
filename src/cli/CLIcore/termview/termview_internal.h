@@ -141,6 +141,16 @@ enum
 {
     TV_G_LOWER_HALF = 0x80, /**< U+2584, top half shows bg, bottom half fg */
     TV_G_FULL_BLOCK,        /**< U+2588 */
+    TV_G_DOWN,              /**< U+25BC, menu marker and scroll hint */
+    TV_G_UP,                /**< U+25B2, scroll hint */
+    TV_G_DOT,               /**< U+25CF, status pill and selected choice */
+    TV_G_SHADE,             /**< U+2592, drop shadow */
+    TV_G_HLINE,             /**< U+2500 */
+    TV_G_VLINE,             /**< U+2502 */
+    TV_G_TL,                /**< U+256D, rounded corners: top left */
+    TV_G_TR,                /**< U+256E */
+    TV_G_BL,                /**< U+2570 */
+    TV_G_BR,                /**< U+256F */
     TV_G_COUNT
 };
 
@@ -410,18 +420,19 @@ typedef struct
     double cx; /**< view centre, fraction of the image width */
     double cy; /**< view centre, fraction of the image height */
 } tv_view_t;
-#define TV_BAR_WIDTH 12 /* colorbar + labels */
-#define TV_INFO_ROWS 4  /* rows below the image */
+#define TV_BAR_WIDTH 13  /* gutter, colorbar, gap and 9 label columns */
+#define TV_CHROME_ROWS 2 /* menubar above the image, status bar below */
 
 /** Screen areas, from the terminal size. */
 typedef struct
 {
     int rows, cols;
+    int img_top;  /**< screen row of the first image row (below the menubar) */
     int img_rows; /**< character rows of image; each shows 2 sample rows */
     int img_cols;
-    int bar_col; /**< first colorbar column */
-    int info_row;
-    int valid; /**< large enough to draw the image */
+    int bar_col;    /**< first column right of the image: gutter, then the colorbar */
+    int status_row; /**< status bar (or the range minibuffer) */
+    int valid;      /**< large enough to draw the image */
 } tv_layout_t;
 
 /** Display sample <-> image pixel mapping; samples are square, 2 per character row. */
@@ -536,6 +547,9 @@ enum
     TV_D_HELD   = 0x20  /**< low-bandwidth: redraw rows still showing held colours */
 };
 
+/** Key code of Ctrl+@c. */
+#define TV_CTRL(c) ((uint32_t) (c) & 0x1F)
+
 /** Input-driven frames are spaced at least this far apart (about 60 Hz). */
 #define TV_INTERACTIVE_US 16000
 
@@ -545,23 +559,92 @@ typedef enum
     TV_ACT_QUIT,
     TV_ACT_SUSPEND,
     TV_ACT_REPAINT,
-    TV_ACT_CMAP,  /**< arg: step */
-    TV_ACT_SCALE, /**< arg: step */
-    TV_ACT_RANGE, /**< arg: step */
-    TV_ACT_LOCK,
+    TV_ACT_CMAP,   /**< arg: step */
+    TV_ACT_SCALE,  /**< arg: step */
+    TV_ACT_RANGE,  /**< arg: step */
+    TV_ACT_LOCK,   /**< arg: 1 lock the range shown, 0 unlock, -1 flip */
     TV_ACT_PROMPT, /**< arg: 1 min, 2 max */
     TV_ACT_FLIP_H,
     TV_ACT_FLIP_V,
     TV_ACT_ZOOM, /**< arg: notches, > 0 zooms in */
     TV_ACT_VIEW_RESET,
-    TV_ACT_PAN_X,       /**< arg: +1 right, -1 left, in screen space */
-    TV_ACT_PAN_Y,       /**< arg: +1 down, -1 up, in screen space */
-    TV_ACT_FPS,         /**< arg: step */
-    TV_ACT_ESCAPE,      /**< cancel drags and close the popup */
-    TV_ACT_POPUP_CLOSE, /**< close the popup only */
-    TV_ACT_LOWBW,       /**< toggle low-bandwidth mode */
-    TV_ACT_PAUSE        /**< freeze or resume the image */
+    TV_ACT_PAN_X,      /**< arg: +1 right, -1 left, in screen space */
+    TV_ACT_PAN_Y,      /**< arg: +1 down, -1 up, in screen space */
+    TV_ACT_FPS,        /**< arg: step */
+    TV_ACT_ESCAPE,     /**< cancel drags */
+    TV_ACT_LOWBW,      /**< toggle low-bandwidth mode */
+    TV_ACT_PAUSE,      /**< freeze or resume the image */
+    TV_ACT_SET_CMAP,   /**< arg: colormap */
+    TV_ACT_SET_SCALE,  /**< arg: scale */
+    TV_ACT_SET_RANGE,  /**< arg: range mode; unlocks the range */
+    TV_ACT_SET_COLORS, /**< arg: 0 auto, 1 = 16, 2 = 256, 3 = 24-bit */
+    TV_ACT_SET_FPS,    /**< arg: UI refresh rate */
+    TV_ACT_SMOOTH,     /**< toggle range smoothing */
+    TV_ACT_CENTRE,     /**< centre the view, keep the zoom */
+    TV_ACT_HELP        /**< open or close the key help */
 } tv_action_t;
+
+/** Dropdown menus of the menubar, left to right. */
+enum
+{
+    TV_M_CMAP,
+    TV_M_SCALE,
+    TV_M_RANGE,
+    TV_M_VIEW,
+    TV_M_STREAM,
+    TV_M_COUNT
+};
+
+/** A clickable screen rectangle, inclusive, 0-based cells; hit-testing goes topmost first. */
+typedef struct
+{
+    int16_t x0, y0, x1, y1;
+    uint8_t kind; /**< TV_HIT_* */
+    int16_t id;
+} tv_hit_t;
+
+enum
+{
+    TV_HIT_BUTTON, /**< menubar button: id is the menu, TV_M_COUNT Help, TV_M_COUNT + 1 Quit */
+    TV_HIT_ITEM,   /**< dropdown item: id is its index */
+    TV_HIT_PANEL,  /**< the rest of an open dropdown or of the help box */
+    TV_HIT_FIELD,  /**< minibuffer field: id 0 min, 1 max */
+    TV_HIT_CHROME  /**< menubar or status row elsewhere */
+};
+
+#define TV_HITS 64
+
+/** Menus, help box and hover state. */
+typedef struct
+{
+    int      open;       /**< a menu is open: menu */
+    int      menu;       /**< the open (or last opened) menu, TV_M_* */
+    int      sel;        /**< highlighted item */
+    int      top;        /**< first item shown when the menu scrolls */
+    int      saved;      /**< the menu's choice when it opened (restored on Esc) */
+    int      saved_lock; /**< the range lock when the Range menu opened */
+    double   saved_lo;   /**< the range shown when the menu opened */
+    double   saved_hi;
+    unsigned gen;        /**< bumped whenever what is open changes */
+    unsigned hits_gen;   /**< gen of the last draw: older hit rects are not used */
+    int      help;       /**< the help box is open */
+    int      help_top;   /**< first help line shown */
+    int      hover;      /**< menubar button under the pointer + 1, 0 for none */
+    int      hover_sent; /**< pointer motion reports the terminal has: 1, 0, or -1 unknown */
+    int16_t  btn_x[TV_M_COUNT + 2]; /**< left column of each menubar button */
+    tv_hit_t hits[TV_HITS];
+    int      nhits;
+} tv_ui_t;
+
+/** Range minibuffer on the status row. */
+typedef struct
+{
+    int         active;
+    int         field;       /**< 0 min, 1 max */
+    char        text[2][24]; /**< what is typed */
+    int         fresh[2];    /**< the next typed key replaces the pre-filled text */
+    const char *err;         /**< why Enter would be refused, NULL when valid */
+} tv_mini_t;
 
 typedef struct
 {
@@ -598,8 +681,10 @@ typedef struct
     int64_t         stats_time_us;
     struct timespec stats_cpu;
 
-    int     popup_type;
-    int64_t popup_expiry_us;
+    tv_ui_t   ui;
+    tv_mini_t mini;
+    int       flushes; /**< flushes that wrote bytes since the last stats update */
+    double    ui_fps;  /**< screen updates per second */
 
     int mouse_is_dragging;
     int roi_is_dragging;
@@ -612,10 +697,6 @@ typedef struct
     int wheel_x; /**< pointer position of the last wheel notch */
     int wheel_y;
 
-    int         input_mode;
-    char        input_buf[64];
-    int         input_len;
-    const char *input_err; /**< validation message shown in the prompt line */
 
     tv_cell_t *screen;
     tv_cell_t *prev_screen;
@@ -642,6 +723,33 @@ void tv_set_range(tv_state_t *s, double lo, double hi);
 void tv_handle_key(tv_state_t *s, const tv_event_t *ev);
 void tv_handle_mouse(tv_state_t *s, const tv_event_t *ev);
 void tv_dispatch_input(tv_state_t *s, tv_input_t *in, int64_t now_us, int budget);
+
+/** tv_stale_age_us() - How long the stream has gone without a new frame, 0 while it is live. */
+int64_t tv_stale_age_us(const tv_state_t *s, int64_t now_us);
+
+/* -----------------------------------------------------------------------
+ * Interface: menubar, menus, status bar, minibuffer, help (tv_ui.c)
+ * ----------------------------------------------------------------------- */
+/** Keys and mouse, as the help box and -h show them: { keys, what they do }. */
+extern const char *const tv_help_keys[][2];
+extern const int         tv_help_nkeys;
+
+/** tv_ui_render() - Draw the interface over the composed image and register its hit rects. */
+void tv_ui_render(tv_state_t *s, int64_t now_us);
+
+/** tv_ui_key() - Keys for an open menu, the help box or the minibuffer, and the menu keys; 1 if
+ * consumed. */
+int tv_ui_key(tv_state_t *s, const tv_event_t *ev);
+
+/** tv_ui_wants_mouse() - @ev goes to tv_ui_mouse(), not to the image. */
+int  tv_ui_wants_mouse(const tv_state_t *s, const tv_event_t *ev);
+void tv_ui_mouse(tv_state_t *s, const tv_event_t *ev);
+
+/** tv_ui_open() - Open menu @m (-1: close, reverting an uncommitted choice). */
+void tv_ui_open(tv_state_t *s, int m);
+
+/** tv_mini_open() - Open the range minibuffer on field @field (0 min, 1 max), pre-filled. */
+void tv_mini_open(tv_state_t *s, int field);
 
 /** tv_now_us() - Monotonic clock in microseconds. */
 static inline int64_t tv_now_us(void)

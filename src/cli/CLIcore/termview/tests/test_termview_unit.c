@@ -1335,12 +1335,16 @@ static void state_init(tv_state_t *s)
     s->target_fps = 20;
     s->cur_min    = 0.0;
     s->cur_max    = 1000.0;
+    tv_layout_compute(&s->lay, s->rows, s->cols);
 }
 
 static void key(tv_state_t *s, uint32_t k, uint8_t mods)
 {
     tv_event_t ev = { .type = TV_EV_KEY, .key = k, .mods = mods };
-    tv_handle_key(s, &ev);
+    if (!tv_ui_key(s, &ev)) /* as tv_dispatch_input() does */
+    {
+        tv_handle_key(s, &ev);
+    }
 }
 
 static void mouse(tv_state_t *s, int button, int action, int x, int y)
@@ -1380,24 +1384,85 @@ static void test_actions(void)
 {
     tv_state_t s, r;
 
-    /* quick-pick popup: Up/Down step it, Enter closes it, the view does not move */
+    /* c/C, s/S, r/R step both ways and open nothing; r also gives up a locked range */
     state_init(&s);
     key(&s, 'c', 0);
-    TV_CHECK(s.opt.colormap == 1 && s.popup_type == 1);
-    key(&s, TV_K_DOWN, 0);
-    TV_CHECK(s.opt.colormap == 2);
-    key(&s, TV_K_UP, 0);
-    key(&s, TV_K_UP, 0);
-    key(&s, TV_K_UP, 0);
+    TV_CHECK(s.opt.colormap == 1 && !s.ui.open);
+    key(&s, 'C', 0);
+    key(&s, 'C', 0);
     TV_CHECK(s.opt.colormap == COLORMAP_NB - 1 && s.view.cy == 0.5);
-    key(&s, '\r', 0);
-    TV_CHECK(s.popup_type == 0);
+    s.opt.range_locked = true;
+    key(&s, 'R', 0);
+    TV_CHECK(s.opt.range == RANGE_NB - 1 && !s.opt.range_locked);
 
-    /* Esc cancels a drag and closes the popup in one press; Enter leaves a box zoom alone */
-    key(&s, 's', 0);
+    /* a menu previews the highlighted choice; Esc undoes it, Enter keeps it */
+    state_init(&s);
+    key(&s, TV_K_F1 + 1, 0); /* F2: Cmap */
+    TV_CHECK(s.ui.open && s.ui.menu == TV_M_CMAP && s.ui.sel == 0);
+    key(&s, TV_K_DOWN, 0);
+    key(&s, TV_K_DOWN, 0);
+    TV_CHECK(s.opt.colormap == 2 && (s.dirty & TV_D_MAP));
+    key(&s, TV_K_ESC, 0);
+    TV_CHECK(!s.ui.open && s.opt.colormap == 0);
+    key(&s, '\t', 0); /* Tab opens the last menu */
+    key(&s, TV_K_END, 0);
+    key(&s, '\r', 0);
+    TV_CHECK(!s.ui.open && s.opt.colormap == COLORMAP_NB - 1);
+    key(&s, TV_K_F1 + 1, 0);
+    key(&s, TV_K_UP, 0);
+    key(&s, TV_K_RIGHT, 0); /* to the Scale menu: the colormap preview is undone */
+    TV_CHECK(s.ui.open && s.ui.menu == TV_M_SCALE && s.opt.colormap == COLORMAP_NB - 1);
+    key(&s, 'c', 0); /* other keys do nothing while a menu is open */
+    TV_CHECK(s.opt.colormap == COLORMAP_NB - 1);
+    key(&s, TV_K_ESC, 0);
+
+    /* Range: previewing a mode unlocks, Esc locks again with the same limits */
+    state_init(&s);
+    tv_set_range(&s, 3.0, 4.0);
+    key(&s, TV_K_F1 + 3, 0);
+    key(&s, TV_K_DOWN, 0);
+    TV_CHECK(!s.opt.range_locked && s.opt.range == 1);
+    key(&s, TV_K_ESC, 0);
+    TV_CHECK(s.opt.range_locked && s.opt.range == 0 && s.opt.manual_min == 3.0);
+
+    /* a toggle chosen with Space stays applied and the menu stays open; Esc keeps it */
+    state_init(&s);
+    key(&s, TV_K_F1 + 4, 0); /* View */
+    for (int k = 0; k < 4; k++)
+    {
+        key(&s, TV_K_DOWN, 0);
+    }
+    key(&s, ' ', 0);
+    TV_CHECK(s.opt.flip_h && s.ui.open);
+    key(&s, TV_K_ESC, 0);
+    TV_CHECK(s.opt.flip_h && !s.ui.open);
+
+    /* Stream: the fps ladder previews; q still quits from a menu */
+    state_init(&s);
+    key(&s, TV_K_F1 + 5, 0);
+    key(&s, TV_K_DOWN, 0);
+    TV_CHECK(s.target_fps == 1);
+    key(&s, TV_K_ESC, 0);
+    TV_CHECK(s.target_fps == 20);
+    key(&s, TV_K_F1 + 5, 0);
+    key(&s, 'q', 0);
+    TV_CHECK(!s.running);
+
+    /* help: ? opens it, keys scroll it, Esc closes it */
+    state_init(&s);
+    key(&s, '?', 0);
+    TV_CHECK(s.ui.help && !s.ui.open);
+    key(&s, TV_K_DOWN, 0);
+    key(&s, '+', 0);
+    TV_CHECK(s.ui.help_top == 1 && s.view.zoom == 1.0);
+    key(&s, TV_K_ESC, 0);
+    TV_CHECK(!s.ui.help);
+
+    /* Esc cancels a drag; Enter leaves a box zoom alone */
+    state_init(&s);
     mouse(&s, TV_MB_LEFT, TV_MA_PRESS, 50, 20);
     key(&s, TV_K_ESC, 0);
-    TV_CHECK(s.popup_type == 0 && !s.mouse_is_dragging);
+    TV_CHECK(!s.mouse_is_dragging);
     mouse(&s, TV_MB_RIGHT, TV_MA_PRESS, 40, 10);
     key(&s, '\r', 0);
     TV_CHECK(s.roi_is_dragging);
@@ -1424,7 +1489,7 @@ static void test_actions(void)
     TV_CHECK(s.view.cx < 0.5);
     state_init(&s);
     key(&s, 'c', TV_MOD_ALT);
-    TV_CHECK(s.opt.colormap == 0 && s.popup_type == 0);
+    TV_CHECK(s.opt.colormap == 0 && !s.ui.open);
 
     /* left drag grabs the image: dragging right shows what was on the left */
     state_init(&s);
@@ -1460,14 +1525,24 @@ static void test_actions(void)
         TV_CHECK(s.view.zoom > 1.0 && (flip ? s.view.cx < 0.5 : s.view.cx > 0.5));
     }
 
-    /* typed limits lock the range and recolour; invalid input keeps the prompt open */
+    /* minibuffer: pre-filled, the first key replaces a field, every key validates, Enter locks */
     state_init(&s);
     feed_dispatch(&s, "m10\r", 4);
     TV_CHECK(s.opt.range_locked && s.opt.manual_min == 10.0 && s.opt.manual_max == 1000.0);
-    TV_CHECK((s.dirty & TV_D_MAP) && s.input_mode == 0);
+    TV_CHECK((s.dirty & TV_D_MAP) && !s.mini.active);
     state_init(&s);
     feed_dispatch(&s, "mnan\r", 5);
-    TV_CHECK(s.input_mode == 1 && !s.opt.range_locked && s.input_err != NULL);
+    TV_CHECK(s.mini.active && !s.opt.range_locked && s.mini.err != NULL);
+    feed_dispatch(&s,
+                  "\x7f\x7f\x7f"
+                  "2000",
+                  7);
+    TV_CHECK(s.mini.err != NULL && strcmp(s.mini.err, "min must be < max") == 0);
+    feed_dispatch(&s, "\t100000\r", 8); /* the first key replaces the pre-filled max */
+    TV_CHECK(!s.mini.active && s.opt.manual_min == 2000.0 && s.opt.manual_max == 100000.0);
+    state_init(&s);
+    feed_dispatch(&s, "M5q \x1b", 5);
+    TV_CHECK(!s.mini.active && !s.opt.range_locked && s.running && !s.paused);
     feed_dispatch(&s, "\x03", 1);
     TV_CHECK(!s.running);
 
@@ -1515,13 +1590,463 @@ static void test_actions(void)
     TV_CHECK(s.target_fps == 1);
 }
 
+/* ---- interface ---- */
+
+/** ui_screen() - Size @s to @rows x @cols with a fresh screen grid, and draw the interface. */
+static void ui_draw(tv_state_t *s, tv_cell_t *grid, int rows, int cols)
+{
+    s->rows   = rows;
+    s->cols   = cols;
+    s->screen = grid;
+    tv_layout_compute(&s->lay, rows, cols);
+    for (int i = 0; i < rows * cols; i++)
+    {
+        grid[i] = tv_cell(0, 0, 'x');
+    }
+    tv_ui_render(s, 0);
+}
+
+/** row_text() - Glyphs of screen row @r as text; non-ASCII glyphs become '#'. */
+static void row_text(const tv_state_t *s, int r, char *out)
+{
+    for (int c = 0; c < s->cols; c++)
+    {
+        uint8_t g = tv_cell_glyph(s->screen[(size_t) r * s->cols + c]);
+        out[c]    = (g >= 0x20 && g < 0x7F) ? (char) g : '#';
+    }
+    out[s->cols] = '\0';
+}
+
+/** Every state draws inside the screen at every size, interface cells marked, the pill shown. */
+static void test_ui_render(void)
+{
+    static tv_cell_t grid[300 * 999];
+    static char      txt[1000];
+    static const int sizes[][2] = { { 4, 17 },  { 4, 40 },   { 5, 17 },    { 6, 25 },  { 9, 30 },
+                                    { 24, 80 }, { 40, 120 }, { 300, 999 }, { 60, 17 }, { 4, 999 } };
+    tv_state_t       s;
+    int              ok = 1;
+    for (size_t z = 0; z < sizeof(sizes) / sizeof(sizes[0]); z++)
+    {
+        for (int mode = 0; mode < TV_M_COUNT + 3; mode++)
+        {
+            state_init(&s);
+            snprintf(tv_fake_stream.name, sizeof(tv_fake_stream.name), "tvunit_stream");
+            s.rows = sizes[z][0];
+            s.cols = sizes[z][1];
+            tv_layout_compute(&s.lay, s.rows, s.cols);
+            if (mode < TV_M_COUNT)
+            {
+                tv_ui_open(&s, mode);
+                key(&s, TV_K_END, 0); /* the last item: scrolled into view */
+            }
+            else if (mode == TV_M_COUNT)
+            {
+                key(&s, '?', 0);
+                key(&s, TV_K_END, 0);
+            }
+            else if (mode == TV_M_COUNT + 1)
+            {
+                key(&s, 'm', 0);
+            }
+            ui_draw(&s, grid, sizes[z][0], sizes[z][1]);
+            for (int k = 0; k < s.ui.nhits; k++)
+            {
+                const tv_hit_t *h = &s.ui.hits[k];
+                ok &= h->x0 >= 0 && h->y0 >= 0 && h->x1 < s.cols && h->y1 < s.rows;
+                /* dropdowns and the help box over the image are interface: sent first */
+                for (int y = h->y0; h->kind <= TV_HIT_PANEL && y <= h->y1; y++)
+                {
+                    for (int x = h->x0; h->kind != TV_HIT_BUTTON && x <= h->x1; x++)
+                    {
+                        ok &= tv_cell_is_chrome(grid[(size_t) y * s.cols + x]);
+                    }
+                }
+            }
+            /* the menubar and the status row are interface everywhere */
+            for (int c = 0; c < s.cols; c++)
+            {
+                ok &= tv_cell_is_chrome(grid[c]);
+                ok &= tv_cell_is_chrome(grid[(size_t) s.lay.status_row * s.cols + c]);
+            }
+            row_text(&s, s.lay.status_row, txt);
+            if (mode != TV_M_COUNT + 1)
+            {
+                ok &= (strncmp(txt, " # ", 3) == 0); /* the pill's dot */
+            }
+            row_text(&s, 0, txt);
+            ok &= (txt[s.cols - 2] == 'q' || txt[s.cols - 2] == 't'); /* "q" or "q Quit" */
+        }
+    }
+    TV_CHECK(ok);
+}
+
+/** The status bar drops segments from the end as the width shrinks; the pill always shows. */
+static void test_ui_status(void)
+{
+    static tv_cell_t grid[10 * 200];
+    static char      txt[201];
+    tv_state_t       s;
+    int              last = 1000, ok = 1;
+    state_init(&s);
+    snprintf(tv_fake_stream.name, sizeof(tv_fake_stream.name), "tvunit_stream");
+    s.opt.flip_h = true;
+    for (int cols = 200; cols >= 17; cols--)
+    {
+        ui_draw(&s, grid, 10, cols);
+        row_text(&s, s.lay.status_row, txt);
+        static const char *const order[] = { "LIVE",       "tvunit_stream", " Hz",
+                                             "[0 : 1000]", "200x100",       "CPU",
+                                             "fps",        "zoom",          "flipH" };
+        int                      shown   = 0;
+        while (shown < 9 && strstr(txt, order[shown]) != NULL)
+        {
+            shown++;
+        }
+        for (int k = shown; k < 9; k++)
+        {
+            ok &= (strstr(txt, order[k]) == NULL); /* nothing after the first one missing */
+        }
+        ok &= (shown >= 1 || cols < 8) && shown <= last;
+        last = shown;
+        if (cols == 200)
+        {
+            TV_CHECK(shown == 9);
+        }
+    }
+    TV_CHECK(ok && last <= 2);
+}
+
+/** A dropdown over the image takes the click (topmost); with the menu closed the image does. */
+static void test_ui_hits(void)
+{
+    static tv_cell_t grid[40 * 120];
+    tv_state_t       s;
+    state_init(&s);
+    snprintf(tv_fake_stream.name, sizeof(tv_fake_stream.name), "tvunit_stream");
+    tv_ui_open(&s, TV_M_CMAP);
+    ui_draw(&s, grid, 40, 120);
+    int x = -1, y = -1;
+    for (int k = 0; k < s.ui.nhits; k++)
+    {
+        if (s.ui.hits[k].kind == TV_HIT_ITEM && s.ui.hits[k].id == 3)
+        {
+            x = s.ui.hits[k].x0 + 2;
+            y = s.ui.hits[k].y0;
+        }
+    }
+    TV_CHECK(x >= 0 && y > s.lay.img_top);
+    tv_event_t ev = { .type   = TV_EV_MOUSE,
+                      .button = TV_MB_LEFT,
+                      .action = TV_MA_MOVE,
+                      .x      = (int16_t) (x + 1),
+                      .y      = (int16_t) (y + 1) };
+    ev.button     = TV_MB_NONE;
+    TV_CHECK(tv_ui_wants_mouse(&s, &ev));
+    tv_ui_mouse(&s, &ev); /* hovering previews */
+    TV_CHECK(s.opt.colormap == 3 && s.ui.open);
+    ev.button = TV_MB_LEFT;
+    ev.action = TV_MA_PRESS;
+    tv_ui_mouse(&s, &ev);
+    TV_CHECK(s.opt.colormap == 3 && !s.ui.open && s.ui.saved == 3);
+    ui_draw(&s, grid, 40, 120);
+    TV_CHECK(!tv_ui_wants_mouse(&s, &ev)); /* the same cell is image now */
+
+    /* a click on a menubar button opens its menu; on another, switches; outside, closes */
+    int bx = s.ui.btn_x[TV_M_SCALE] + 1;
+    ev     = (tv_event_t) { .type = TV_EV_MOUSE, .button = TV_MB_LEFT, .action = TV_MA_PRESS };
+    ev.x   = (int16_t) (bx + 1);
+    ev.y   = 1;
+    TV_CHECK(tv_ui_wants_mouse(&s, &ev));
+    tv_ui_mouse(&s, &ev);
+    TV_CHECK(s.ui.open && s.ui.menu == TV_M_SCALE);
+    key(&s, TV_K_DOWN, 0);
+    TV_CHECK(s.opt.scale == 1);
+    ui_draw(&s, grid, 40, 120);
+    ev.x = 100;
+    ev.y = 30;
+    tv_ui_mouse(&s, &ev);
+    TV_CHECK(!s.ui.open && s.opt.scale == 0 && s.view.zoom == 1.0 && !s.mouse_is_dragging);
+
+    /* help: the box takes clicks; the wheel scrolls it; outside closes it */
+    key(&s, '?', 0);
+    ui_draw(&s, grid, 12, 120);
+    ev.button = TV_MB_WHEEL_DOWN;
+    ev.x      = 60;
+    ev.y      = 6;
+    for (int k = 0; k < 20; k++)
+    {
+        tv_ui_mouse(&s, &ev);
+        ui_draw(&s, grid, 12, 120);
+    }
+    TV_CHECK(s.ui.help && s.ui.help_top == tv_help_nkeys - (12 - 5));
+    ev.button = TV_MB_LEFT;
+    ev.x      = 2; /* left of the box and its shadow */
+    tv_ui_mouse(&s, &ev);
+    TV_CHECK(!s.ui.help);
+}
+
+/** hit_cell() - A cell inside the first hit rect of @kind and @id, 1-based for mouse events. */
+static int hit_cell(const tv_state_t *s, int kind, int id, int *x, int *y)
+{
+    for (int k = 0; k < s->ui.nhits; k++)
+    {
+        if (s->ui.hits[k].kind == kind && s->ui.hits[k].id == id)
+        {
+            *x = s->ui.hits[k].x0 + 2;
+            *y = s->ui.hits[k].y0 + 1;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/** A click handled before the next draw finds no stale rect; too small, the interface is inert;
+ * a click outside a menu closes it and does nothing to the image. */
+static void test_ui_stale(void)
+{
+    static tv_cell_t grid[40 * 120];
+    tv_state_t       s;
+    char             buf[64];
+    int              x = 0, y = 0;
+
+    for (int target = 0; target < 2; target++) /* the old Quit item, then old item 4 */
+    {
+        state_init(&s);
+        tv_ui_open(&s, TV_M_STREAM);
+        ui_draw(&s, grid, 40, 120);
+        TV_CHECK(hit_cell(&s, TV_HIT_ITEM, target ? 4 : 14, &x, &y));
+        snprintf(buf, sizeof(buf), "\x1b[D\x1b[<0;%d;%dM\x1b[<0;%d;%dm", x, y, x, y);
+        feed_dispatch(&s, buf, strlen(buf)); /* Left, then a click, in one read */
+        TV_CHECK(s.running && !s.opt.flip_h && s.target_fps == 20);
+    }
+
+    state_init(&s);
+    ui_draw(&s, grid, 40, 120);
+    TV_CHECK(hit_cell(&s, TV_HIT_BUTTON, TV_M_COUNT + 1, &x, &y)); /* Quit */
+    s.rows = 3;
+    tv_layout_compute(&s.lay, 3, 120);
+    snprintf(buf, sizeof(buf), "\x1b[<0;%d;%dM\x1b[<0;%d;%dm\x1bOQ", x, y, x, y);
+    feed_dispatch(&s, buf, strlen(buf));
+    TV_CHECK(s.running && !s.ui.open);
+
+    state_init(&s);
+    tv_ui_open(&s, TV_M_SCALE);
+    key(&s, TV_K_DOWN, 0);
+    ui_draw(&s, grid, 40, 120);
+    feed_dispatch(&s, "\x1b[<0;60;30M\x1b[<32;70;32M\x1b[<0;70;32m", 33);
+    TV_CHECK(!s.ui.open && s.opt.scale == 0 && !s.mouse_is_dragging);
+    TV_CHECK(s.view.zoom == 1.0 && s.view.cx == 0.5 && s.view.cy == 0.5 && !s.roi_is_dragging);
+}
+
+/** Toggles and actions do not keep a range previewed on the way to them; help closes the editor. */
+static void test_ui_range_revert(void)
+{
+    tv_state_t s;
+    state_init(&s);
+    key(&s, TV_K_F1 + 3, 0);
+    for (int k = 0; k < 8; k++)
+    {
+        key(&s, TV_K_DOWN, 0); /* through the eight modes to Lock range */
+    }
+    s.cur_min = 200.0; /* what a preview render would have shown */
+    s.cur_max = 800.0;
+    key(&s, '\r', 0);
+    TV_CHECK(s.opt.range_locked && s.opt.range == 0);
+    TV_CHECK(s.opt.manual_min == 0.0 && s.opt.manual_max == 1000.0);
+
+    state_init(&s);
+    tv_set_range(&s, 3.0, 4.0);
+    s.cur_min = 3.0;
+    s.cur_max = 4.0;
+    key(&s, TV_K_F1 + 3, 0);
+    key(&s, TV_K_DOWN, 0);
+    s.cur_min = 200.0;
+    s.cur_max = 800.0;
+    key(&s, TV_K_END, 0);
+    key(&s, '\r', 0); /* Set min / max... */
+    TV_CHECK(s.mini.active && strcmp(s.mini.text[0], "3") == 0 && strcmp(s.mini.text[1], "4") == 0);
+    key(&s, TV_K_ESC, 0);
+    TV_CHECK(!s.mini.active && s.opt.range_locked && s.opt.manual_min == 3.0);
+
+    /* the same with Space, which keeps the menu open */
+    state_init(&s);
+    key(&s, TV_K_F1 + 3, 0);
+    for (int k = 0; k < 8; k++)
+    {
+        key(&s, TV_K_DOWN, 0);
+    }
+    s.cur_min = 200.0;
+    s.cur_max = 800.0;
+    key(&s, ' ', 0);
+    key(&s, TV_K_ESC, 0);
+    TV_CHECK(s.opt.range_locked && s.opt.range == 0 && s.opt.manual_max == 1000.0);
+
+    /* locked before: the box shows unlocked after the previews, and asking to lock keeps the
+     * typed limits */
+    state_init(&s);
+    tv_set_range(&s, 3.0, 4.0);
+    s.cur_min = 3.0;
+    s.cur_max = 4.0;
+    key(&s, TV_K_F1 + 3, 0);
+    for (int k = 0; k < 8; k++)
+    {
+        key(&s, TV_K_DOWN, 0);
+    }
+    s.cur_min = 200.0;
+    s.cur_max = 800.0;
+    key(&s, '\r', 0);
+    TV_CHECK(s.opt.range_locked && s.opt.manual_min == 3.0 && s.opt.manual_max == 4.0);
+
+    /* by mouse: the pointer crosses the choices on its way to Lock range */
+    static tv_cell_t grid[40 * 120];
+    char             buf[96];
+    int              x = 0, y = 0;
+    state_init(&s);
+    tv_ui_open(&s, TV_M_RANGE);
+    ui_draw(&s, grid, 40, 120);
+    for (int id = 1; id < 8; id++)
+    {
+        hit_cell(&s, TV_HIT_ITEM, id, &x, &y);
+        snprintf(buf, sizeof(buf), "\x1b[<35;%d;%dM", x, y);
+        feed_dispatch(&s, buf, strlen(buf));
+        ui_draw(&s, grid, 40, 120);
+    }
+    TV_CHECK(s.opt.range == 7);
+    s.cur_min = 200.0;
+    s.cur_max = 800.0;
+    TV_CHECK(hit_cell(&s, TV_HIT_ITEM, 9, &x, &y));
+    snprintf(buf, sizeof(buf), "\x1b[<35;%d;%dM\x1b[<0;%d;%dM\x1b[<0;%d;%dm", x, y, x, y, x, y);
+    feed_dispatch(&s, buf, strlen(buf));
+    key(&s, TV_K_ESC, 0);
+    TV_CHECK(s.opt.range_locked && s.opt.range == 0 && s.opt.manual_max == 1000.0);
+
+    /* Stream: Space on a toggle does not keep the refresh rate passed over */
+    state_init(&s);
+    key(&s, TV_K_F1 + 5, 0);
+    for (int k = 0; k < 10; k++)
+    {
+        key(&s, TV_K_DOWN, 0);
+    }
+    key(&s, ' ', 0);
+    key(&s, TV_K_ESC, 0);
+    TV_CHECK(s.target_fps == 20 && s.opt.lowbw);
+
+    state_init(&s);
+    key(&s, 'm', 0);
+    key(&s, TV_K_F1, 0);
+    TV_CHECK(s.ui.help && !s.mini.active);
+    key(&s, TV_K_ESC, 0);
+    TV_CHECK(!s.ui.help);
+    key(&s, 'q', 0);
+    TV_CHECK(!s.running);
+}
+
+/** The hover highlight shows only while motion reports are on (a menu or help open). */
+static void test_ui_hover(void)
+{
+    static tv_cell_t grid[40 * 120];
+    tv_state_t       s;
+    int              x = 0, y = 0;
+    state_init(&s);
+    tv_ui_open(&s, TV_M_CMAP);
+    ui_draw(&s, grid, 40, 120);
+    TV_CHECK(hit_cell(&s, TV_HIT_BUTTON, TV_M_COUNT, &x, &y)); /* Help */
+    tv_event_t ev = { .type   = TV_EV_MOUSE,
+                      .button = TV_MB_NONE,
+                      .action = TV_MA_MOVE,
+                      .x      = (int16_t) x,
+                      .y      = (int16_t) y };
+    tv_ui_mouse(&s, &ev);
+    ui_draw(&s, grid, 40, 120);
+    uint32_t hov = tv_cell_bg(grid[(size_t) (y - 1) * 120 + x - 1]);
+    TV_CHECK(s.ui.hover == TV_M_COUNT + 1 && hov == TV_RGB(45, 52, 72));
+    key(&s, TV_K_ESC, 0);
+    ui_draw(&s, grid, 40, 120);
+    TV_CHECK(s.ui.hover == 0 && tv_cell_bg(grid[(size_t) (y - 1) * 120 + x - 1]) != hov);
+
+    /* nothing open: a report over a button (a drag passing by) highlights nothing */
+    TV_CHECK(hit_cell(&s, TV_HIT_BUTTON, TV_M_SCALE, &x, &y));
+    ev.button = TV_MB_LEFT;
+    ev.action = TV_MA_DRAG;
+    ev.x      = (int16_t) x;
+    ev.y      = (int16_t) y;
+    tv_ui_mouse(&s, &ev);
+    ui_draw(&s, grid, 40, 120);
+    TV_CHECK(tv_cell_bg(grid[(size_t) (y - 1) * 120 + x - 1]) != hov);
+}
+
+/** Colorbar labels at extreme ranges: each one parses back whole, close to its value. */
+static void test_ui_labels(void)
+{
+    static tv_cell_t    grid[40 * 120];
+    static const double r[][2] = { { -1e308, 1e308 },
+                                   { 0.0, 1.7e308 },
+                                   { -8e307, 9e307 },
+                                   { -2e100, -1e100 },
+                                   { -1.23456e-5, -1.23455e-5 },
+                                   { 1234567.0, 1234567.5 },
+                                   { 0.0, 1.0 },
+                                   { -3.0, 1000.0 },
+                                   { 12345678.0, 12345682.0 },
+                                   { -0.1, 0.3 },
+                                   { -0.0004, 3.9996 } };
+    tv_state_t          s;
+    int                 ok = 1, seen = 0;
+    for (size_t k = 0; k < sizeof(r) / sizeof(r[0]); k++)
+    {
+        state_init(&s);
+        s.cur_min = r[k][0];
+        s.cur_max = r[k][1];
+        ui_draw(&s, grid, 40, 120);
+        double span = r[k][1] / 4 - r[k][0] / 4;
+        char   seen_txt[8][16];
+        int    nseen = 0;
+        for (int row = s.lay.img_top; row < s.lay.img_top + s.lay.img_rows; row++)
+        {
+            char txt[16];
+            int  n = 0;
+            for (int c = s.lay.bar_col + 4; c < s.cols && n < 15; c++)
+            {
+                txt[n++] = (char) tv_cell_glyph(grid[(size_t) row * s.cols + c]);
+            }
+            while (n > 0 && txt[n - 1] == ' ')
+            {
+                n--;
+            }
+            txt[n] = '\0';
+            if (n == 0)
+            {
+                continue;
+            }
+            char  *end;
+            double v = strtod(txt, &end);
+            ok &= (txt[0] != '-' || v != 0.0); /* no negative zero */
+            for (int j = 0; j < nseen; j++)
+            {
+                ok &= (k < 5 || strcmp(seen_txt[j], txt) != 0); /* distinct where they fit */
+            }
+            if (nseen < 8)
+            {
+                snprintf(seen_txt[nseen++], sizeof(seen_txt[0]), "%s", txt);
+            }
+            double f    = 1.0 - (double) (row - s.lay.img_top) / (s.lay.img_rows - 1);
+            double want = r[k][1] * f + r[k][0] * (1 - f);
+            ok &= (*end == '\0' && tv_finite(v));
+            ok &= fabs(v - want) <= fmax(span, 1e-3 * fabs(want));
+            seen++;
+        }
+    }
+    TV_CHECK(ok && seen >= 5 * 8);
+}
+
 /* ---- image pipeline ---- */
 
 static void test_view_transform(void)
 {
     tv_layout_t l;
     tv_layout_compute(&l, 40, 120);
-    TV_CHECK(l.valid && l.img_cols == 107 && l.img_rows == 36);
+    TV_CHECK(l.valid && l.img_cols == 107 && l.img_rows == 38 && l.img_top == 1);
     double zooms[5] = { 0.3, 1.0, 2.5, 17.0, 400.0 };
     for (int f = 0; f < 4; f++)
     {
@@ -1536,10 +2061,10 @@ static void test_view_transform(void)
                 TV_CHECK(fabs(tv_xf_disp_y(&x, tv_xf_img_y(&x, d)) - d) < 1e-9);
             }
             /* absolute values: step from the layout, edges from the centre */
-            double step = fmax(640.0 / 107, 480.0 / 72) / zooms[z];
-            TV_CHECK(fabs(x.step - step) < 1e-12 && x.cdx == 53.5 && x.cdy == 36.0);
+            double step = fmax(640.0 / 107, 480.0 / 76) / zooms[z];
+            TV_CHECK(fabs(x.step - step) < 1e-12 && x.cdx == 53.5 && x.cdy == 38.0);
             TV_CHECK(fabs(tv_xf_img_x(&x, 0.0) - (0.3 * 640 - x.sx * 53.5 * step)) < 1e-9);
-            TV_CHECK(fabs(tv_xf_img_y(&x, 0.0) - (0.7 * 480 - x.sy * 36.0 * step)) < 1e-9);
+            TV_CHECK(fabs(tv_xf_img_y(&x, 0.0) - (0.7 * 480 - x.sy * 38.0 * step)) < 1e-9);
             /* the display centre shows the view centre */
             TV_CHECK(fabs(tv_xf_img_x(&x, x.cdx) - 0.3 * 640) < 1e-9);
             TV_CHECK(fabs(tv_xf_img_y(&x, x.cdy) - 0.7 * 480) < 1e-9);
@@ -1547,7 +2072,7 @@ static void test_view_transform(void)
     }
 }
 
-/** img_point_at() - Image point under 1-based cell (@cx, @cy) for state @s. */
+/** img_point_at() - Image point under 1-based screen cell (@cx, @cy) for state @s. */
 static void img_point_at(const tv_state_t *s, int cx, int cy, double *px, double *py)
 {
     tv_layout_t l;
@@ -1555,7 +2080,7 @@ static void img_point_at(const tv_state_t *s, int cx, int cy, double *px, double
     tv_layout_compute(&l, s->rows, s->cols);
     tv_xform_compute(&x, &l, &s->view, s->st->xsize, s->st->ysize, s->opt.flip_h, s->opt.flip_v);
     *px = tv_xf_img_x(&x, cx - 0.5);
-    *py = tv_xf_img_y(&x, 2.0 * (cy - 1) + 1);
+    *py = tv_xf_img_y(&x, 2.0 * (cy - l.img_top - 1) + 1);
 }
 
 static void test_zoom_and_box(void)
@@ -1580,7 +2105,7 @@ static void test_zoom_and_box(void)
     state_init(&s);
     mouse(&s, TV_MB_RIGHT, TV_MA_PRESS, 70, 10);
     mouse(&s, TV_MB_RIGHT, TV_MA_RELEASE, 100, 30);
-    TV_CHECK(fabs(s.view.zoom - fmin(107.0 / 31, 72.0 / 42)) < 1e-9);
+    TV_CHECK(fabs(s.view.zoom - fmin(107.0 / 31, 76.0 / 42)) < 1e-9);
 
     /* the wheel stops at the zoom limit and keeps anchoring there */
     state_init(&s);
@@ -1636,7 +2161,7 @@ static void test_zoom_and_box(void)
 static void tables_identity(tv_image_t *im)
 {
     tv_layout_t l;
-    tv_layout_compute(&l, 3 + TV_INFO_ROWS, 7 + TV_BAR_WIDTH + 1);
+    tv_layout_compute(&l, 3 + TV_CHROME_ROWS, 7 + TV_BAR_WIDTH);
     tv_view_t  v = { .zoom = 1.0, .cx = 0.5, .cy = 0.5 };
     tv_xform_t x;
     tv_xform_compute(&x, &l, &v, 7, 5, false, false);
@@ -1828,7 +2353,7 @@ static void test_tables(void)
 {
     tv_image_t  im;
     tv_layout_t l;
-    tv_layout_compute(&l, 3 + TV_INFO_ROWS, 7 + TV_BAR_WIDTH + 1);
+    tv_layout_compute(&l, 3 + TV_CHROME_ROWS, 7 + TV_BAR_WIDTH);
     for (int f = 0; f < 4; f++)
     {
         memset(&im, 0, sizeof(im));
@@ -1969,7 +2494,7 @@ static void test_render_lowbw(void)
     opt.manual_min   = 0.0;
     opt.manual_max   = 1000.0;
     tv_layout_t l;
-    tv_layout_compute(&l, H / 2 + TV_INFO_ROWS, W + TV_BAR_WIDTH + 1);
+    tv_layout_compute(&l, H / 2 + TV_CHROME_ROWS, W + TV_BAR_WIDTH);
     tv_view_t  v = { .zoom = 1.0, .cx = 0.5, .cy = 0.5 };
     tv_xform_t x;
     tv_xform_compute(&x, &l, &v, W, H, false, false);
@@ -2294,6 +2819,13 @@ int main(void)
     test_input_splits();
     test_input_fuzz();
     test_actions();
+    test_ui_render();
+    test_ui_status();
+    test_ui_hits();
+    test_ui_stale();
+    test_ui_range_revert();
+    test_ui_labels();
+    test_ui_hover();
     test_view_transform();
     test_zoom_and_box();
     test_samplers();

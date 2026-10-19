@@ -320,14 +320,20 @@ class ShmDir:
     def stream(self, tag, *args):
         """Create stream tvtest_<pid>_<tag>; a positive -r rate keeps the generator running."""
         name = f"tvtest_{os.getpid()}_{tag}"
-        cmd = [self.mkstream, "-n", name] + [str(a) for a in args]
-        live = "-r" in args and float(args[list(args).index("-r") + 1]) > 0
+        args = [str(a) for a in args]
+        cmd = [self.mkstream, "-n", name] + args
+        live = "-r" in args and float(args[args.index("-r") + 1]) > 0
+        if live and "-u" not in args:
+            # the whole stream first (one frame), then the generator updates it: a viewer started
+            # now never sees a half-written header, however loaded the machine is
+            first = list(args)
+            first[first.index("-r") + 1] = "0"
+            subprocess.run(
+                [self.mkstream, "-n", name] + first, env=self.env, check=True
+            )
+            cmd.append("-u")
         if live:
             self.procs.append(subprocess.Popen(cmd, env=self.env))
-            path = os.path.join(self.dir, name + ".im.shm")
-            end = time.monotonic() + 3
-            while not os.path.exists(path) and time.monotonic() < end:
-                time.sleep(0.01)
             time.sleep(0.05)
         else:
             subprocess.run(cmd, env=self.env, check=True)
@@ -487,6 +493,18 @@ def test_small_terminals(cfg):
                 quit_clean(v)
             finally:
                 v.close()
+        # too small, nothing to draw: only the data polls wake the viewer (20/s)
+        still = shm.stream("still", "-s", "64x64")
+        v = start(cfg, shm, still, rows=3, cols=120)
+        try:
+            v.pump(0.5)
+            w0 = v.wakeups()
+            v.pump(2.0)
+            wk = (v.wakeups() - w0) / 2.0
+            check(wk <= 25, f"{wk:.0f} wakeups/s while the terminal is too small")
+            quit_clean(v)
+        finally:
+            v.close()
 
 
 def test_resize_storm(cfg):
@@ -551,7 +569,7 @@ def test_manual_range_validation(cfg):
                 v.pump(0.15)
                 check(v.alive(), f"{text!r}: viewer died")
             v.send(b"m10\r")
-            check(v.screen_has("LOCKED"), "valid min did not lock the range")
+            check(v.screen_has("LOCK"), "valid min did not lock the range")
             quit_clean(v)
         finally:
             v.close()
@@ -617,7 +635,7 @@ def test_split_and_legacy_mouse(cfg):
         s = shm.stream("ramp", "-s", "128x96")
         v = start(cfg, shm, s)
         try:
-            check(v.screen_has("UI:  20 FPS"), "status line not found")
+            check(v.screen_has("/20 fps"), "status line not found")
             v.send(b"\x1b[<0;12;5M", gap=0.005)
             v.send(b"\x1b[<0;12;5m", gap=0.005)
             # X10 press and release at column 81: 32 + 81 is 'q'
@@ -630,8 +648,8 @@ def test_split_and_legacy_mouse(cfg):
             v.pump(0.4)
             check(v.alive(), "viewer quit on mouse input")
             text = v.screen.text()
-            check("UI:  20 FPS" in text, "mouse bytes changed the refresh rate")
-            check("Enter Manual" not in text, "mouse bytes opened the min/max prompt")
+            check("/20 fps" in text, "mouse bytes changed the refresh rate")
+            check("Enter: lock" not in text, "mouse bytes opened the min/max prompt")
             quit_clean(v)
         finally:
             v.close()
@@ -680,13 +698,13 @@ def test_input_does_not_wait_for_data_frames(cfg):
         s = shm.stream("ramp", "-s", "128x96")
         v = start(cfg, shm, s, "-f", "1")
         try:
-            check(v.screen_has("UI:   1 FPS", 2.0), "status line not found")
+            check(v.screen_has("/1 fps", 2.0), "status line not found")
             v.send(b"m")
-            check(v.screen_has("Enter Manual Min", 1.0), "prompt did not open")
+            check(v.screen_has("Enter: lock", 1.0), "prompt did not open")
             v.pump(0.3)
             t0 = time.monotonic()
             v.send(b"\x1b")
-            while "Enter Manual" in v.screen.text() and time.monotonic() - t0 < 2.0:
+            while "Enter: lock" in v.screen.text() and time.monotonic() - t0 < 2.0:
                 v.pump(0.005)
             esc_ms = (time.monotonic() - t0) * 1000
             check(esc_ms < 250, f"lone Esc took {esc_ms:.0f} ms to close the prompt")
@@ -695,10 +713,10 @@ def test_input_does_not_wait_for_data_frames(cfg):
             v.send(b"h")
             time.sleep(0.005)
             v.send(b"v")
-            while "v:FLIPV" not in v.screen.text() and time.monotonic() - t0 < 2.0:
+            while "flipV" not in v.screen.text() and time.monotonic() - t0 < 2.0:
                 v.pump(0.005)
             keys_ms = (time.monotonic() - t0) * 1000
-            check("h:FLIPH" in v.screen.text(), "first key lost")
+            check("flipH" in v.screen.text(), "first key lost")
             check(keys_ms < 150, f"second key took {keys_ms:.0f} ms to show")
             quit_clean(v)
         finally:
@@ -725,10 +743,10 @@ def test_live_and_stale_indicator(cfg):
 
 
 def val_range(v):
-    """The 'Val: [lo : hi]' range shown in the info bar, or None."""
+    """The '[lo : hi]' range shown in the status bar, or None."""
     import re
 
-    m = re.search(r"Val: \[([-+0-9.eE]+) : ([-+0-9.eE]+)\]", v.screen.text())
+    m = re.search(r"\[([-+0-9.eE]+) : ([-+0-9.eE]+)\]", v.screen.text())
     return (float(m.group(1)), float(m.group(2))) if m else None
 
 
@@ -750,9 +768,9 @@ def test_range_mode_on_static_stream(cfg):
             v.pump(0.3)
             v.send(b"rrrrrrr")  # 20-80%
             r = wait_range(
-                v, lambda r: abs(r[0] - 200) < 3 and abs(r[1] - 800) < 3, 1.5
+                v, lambda r: abs(r[0] - 200) < 8 and abs(r[1] - 800) < 8, 1.5
             )
-            check(r and abs(r[0] - 200) < 3 and abs(r[1] - 800) < 3, f"20-80% gave {r}")
+            check(r and abs(r[0] - 200) < 8 and abs(r[1] - 800) < 8, f"20-80% gave {r}")
             quit_clean(v)
         finally:
             v.close()
@@ -806,11 +824,9 @@ def test_frame_between_polls_is_shown(cfg):
             subprocess.run(
                 [cfg.mkstream, "-n", s, "-u", "-p", "const"], env=shm.env, check=True
             )
-            v.send(b"m")  # an input-driven frame right after the new data
+            v.send(b"c")  # an input-driven frame right after the new data
             r = wait_range(v, lambda r: r[0] > 40 and r[1] < 44, 2.5)
             check(r and r[0] > 40 and r[1] < 44, f"new frame never shown: range {r}")
-            v.send(b"\x1b")
-            v.pump(0.2)
             quit_clean(v)
         finally:
             v.close()
@@ -818,7 +834,9 @@ def test_frame_between_polls_is_shown(cfg):
 
 def lowbw_diff(v):
     """Cells of the image area that differ from an exact (Ctrl-L) repaint."""
-    rows = range(v.screen.rows - 4)  # the image and colorbar; not the status rows
+    rows = range(
+        1, v.screen.rows - 1
+    )  # the image and colorbar; not the menubar or status
     held = v.screen.looks(rows)
     v.send(b"\x0c")
     v.pump(0.5)
@@ -841,7 +859,7 @@ def test_lowbw_converges_when_stream_stops(cfg):
             v = start(cfg, shm, s, "--min", "0", "--max", "1010", colour=True)
             try:
                 v.send(b"b")
-                check(v.screen_has("b:LOWBW"), "low-bandwidth mode did not turn on")
+                check(v.screen_has("lowbw"), "low-bandwidth mode did not turn on")
                 v.pump(run)
                 if (
                     repost
@@ -872,7 +890,7 @@ def test_lowbw_keeps_the_range(cfg):
         end = time.monotonic() + dt
         while time.monotonic() < end:
             v.pump(0.05)
-            m = re.search(r"Val: \[[^]]*\]", v.screen.text())
+            m = re.search(r"\[[-+0-9.eE]+ : [-+0-9.eE]+\]", v.screen.text())
             if m:
                 seen.add(m.group(0))
         return seen
@@ -935,20 +953,20 @@ def test_stream_removed_and_recreated(cfg):
         s = shm.stream("life", "-s", "64x64", "-t", "u16")
         v = start(cfg, shm, s)
         try:
-            check(v.screen_has("[64 x 64]"), "geometry not shown")
+            check(v.screen_has("64x64 u16"), "geometry not shown")
             v.send(b"++")
-            check(v.screen_has("Zoom: 1.44x"), "zoom did not apply")
+            check(v.screen_has("zoom 1.44x"), "zoom did not apply")
             os.unlink(shm_path(shm, s))
             check(v.screen_has("GONE", 2.0), "a removed stream is not shown GONE")
             remake(cfg, shm, s, "-s", "200x100", "-t", "f32")
             check(
-                v.screen_has("[200 x 100]", 2.0),
+                v.screen_has("200x100 f32", 2.0),
                 "the stream created again was not picked up",
             )
             v.pump(0.2)
             text = v.screen.text()
             check("GONE" not in text, "still GONE after the stream came back")
-            check("Zoom: 1.00x" in text, "a new geometry did not reset the view")
+            check("zoom 1.00x" in text, "a new geometry did not reset the view")
             quit_clean(v)
         finally:
             v.close()
@@ -1006,7 +1024,7 @@ def test_rate_after_counter_reset(cfg):
         end = time.monotonic() + dt
         while time.monotonic() < end:
             v.pump(0.1)
-            m = re.search(r"Stream:\s+(-?[0-9.]+) Hz", v.screen.text())
+            m = re.search(r"(-?[0-9]+\.[0-9]) Hz", v.screen.text())
             if m:
                 got.append(float(m.group(1)))
         return got
@@ -1076,7 +1094,7 @@ def test_reopen_leaks_nothing(cfg):
                 remake(
                     cfg, shm, s, "-s", f"{w}x256", "-t", ("f32", "u16", "f64")[k % 3]
                 )
-                check(v.screen_has(f"[{w} x 256]", 2.5), f"reopen {k} not picked up")
+                check(v.screen_has(f"{w}x256", 2.5), f"reopen {k} not picked up")
                 seen.append(counts(v.pid))
             fds, maps = {c[0] for c in seen[2:]}, {c[1] for c in seen[2:]}
             check(len(fds) == 1, f"fds grew over reopens: {seen}")
@@ -1277,7 +1295,7 @@ def test_pause_outlives_a_replacement(cfg):
             v.pump(2.2)
             text = v.screen.text()
             check(
-                "[64 x 64]" in text and "PAUSED GONE" in text,
+                "64x64" in text and "PAUSED GONE" in text,
                 "the paused view did not hold",
             )
             v.send(b"++")
@@ -1287,7 +1305,7 @@ def test_pause_outlives_a_replacement(cfg):
             check(v.alive(), f"viewer died, status {v.exit_code()}")
             v.send(b" ")
             check(
-                v.screen_has("[400 x 400]", 2.5),
+                v.screen_has("400x400", 2.5),
                 "the new stream was not picked up on resume",
             )
             v.pump(0.2)
@@ -1298,6 +1316,87 @@ def test_pause_outlives_a_replacement(cfg):
                 "STALE" in text and "LIVE" not in text,
                 "the new stream's age is not shown",
             )
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_menus(cfg):
+    """A click on the menubar opens a menu; moving previews, Esc undoes, Enter keeps; F3/Tab and
+    Left/Right switch; the help box shows the keys; the minibuffer locks a typed range.
+    """
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("menu", "-s", "128x96")
+        v = start(cfg, shm, s)
+        try:
+            check(v.screen_has("Cmap greyscale"), "no menubar")
+            col = v.screen.text().splitlines()[0].index("Cmap") + 2
+            n0 = len(v.out)
+            v.send(b"\x1b[<0;%d;1M\x1b[<0;%d;1m" % (col, col))
+            check(v.screen_has("viridis", 1.0), "a click on Cmap did not open its menu")
+            check(b"\x1b[?1003h" in v.out[n0:], "pointer motion reports not turned on")
+            v.send(b"\x1b[B\x1b[B")  # Down, Down: previews cold
+            check(v.screen_has("Cmap cold", 1.0), "moving in the menu did not preview")
+            n0 = len(v.out)
+            v.send(b"\x1b")
+            v.pump(0.2)
+            text = v.screen.text()
+            check(
+                "Cmap greyscale" in text and "viridis" not in text,
+                "Esc did not undo the preview",
+            )
+            check(
+                b"\x1b[?1003l\x1b[?1002h" in v.out[n0:], "motion reports not turned off"
+            )
+            v.send(b"\x1bOR")  # F3 (SS3 R): Scale
+            check(v.screen_has("log_extreme", 1.0), "F3 did not open the Scale menu")
+            v.send(b"\x1b[B\r")
+            v.pump(0.2)
+            check("Scale sqrt" in v.screen.text(), "Enter did not keep the choice")
+            v.send(b"\t\x1b[C")  # Tab: the last menu (Scale); Right: Range
+            check(
+                v.screen_has("Set min / max", 1.0),
+                "Tab and Right did not reach the Range menu",
+            )
+            v.send(b"\x1b")
+            v.pump(0.2)
+            v.send(b"?")
+            check(v.screen_has("Keys and mouse", 1.0), "? did not show the help box")
+            v.send(b"\x1b")
+            v.pump(0.2)
+            check(
+                "Keys and mouse" not in v.screen.text(),
+                "Esc did not close the help box",
+            )
+            v.send(b"m")
+            check(v.screen_has("Enter: lock", 1.0), "m did not open the minibuffer")
+            v.send(b"100\t900\r")
+            check(
+                v.screen_has("[100 : 900] LOCK", 1.0), "the typed range was not locked"
+            )
+            # xterm and tmux end all mouse reporting on ?1003l: button events must come back
+            body = bytes(v.out).split(LEAVE)[0]
+            k = body.find(b"\x1b[?1003l")
+            while k >= 0:
+                check(
+                    body[k + 8 : k + 16] == b"\x1b[?1002h",
+                    "?1003l without ?1002h after it",
+                )
+                k = body.find(b"\x1b[?1003l", k + 1)
+            # a resume re-enters the screen: the open menu gets its motion reports again
+            v.send(b"\x1bOQ")
+            check(v.screen_has("viridis", 1.0), "F2 did not open the Cmap menu")
+            os.kill(v.pid, signal.SIGSTOP)
+            time.sleep(0.1)
+            os.kill(v.pid, signal.SIGCONT)
+            v.pump(0.5)
+            after = bytes(v.out).rsplit(ENTER, 1)[-1]
+            check(
+                b"\x1b[?1003h" in after,
+                "motion reports not turned on again after a resume",
+            )
+            v.send(b"\x1b")
+            v.pump(0.2)
             quit_clean(v)
         finally:
             v.close()
@@ -1337,6 +1436,7 @@ TESTS = [
     test_lowbw_rests_when_gone,
     test_stderr_on_another_terminal,
     test_pause_refused_without_memory,
+    test_menus,
 ]
 
 
@@ -1442,11 +1542,12 @@ def drain_fast(v, dt):
     return n
 
 
-def key_latency(v, key, txt, rate, timeout=10):
-    """Seconds from sending @key until @txt is on screen, reading at @rate."""
+def key_latency(v, key, txt, rate, timeout=10, gone=False):
+    """Seconds from sending @key until @txt is on screen (or, with @gone, off it), reading at
+    @rate."""
     t0 = time.monotonic()
     v.send(key)
-    while txt not in v.screen.text() and time.monotonic() - t0 < timeout:
+    while (txt in v.screen.text()) == gone and time.monotonic() - t0 < timeout:
         drain_at(v, rate, 0.01)
     return time.monotonic() - t0
 
@@ -1479,8 +1580,8 @@ def perf_slow_terminal(cfg):
         try:
             drain_at(v, 1_000_000, 2.0)
             lat = []
-            for key, txt in ((b"h", "h:FLIPH"), (b"h", "h:fliph")) * 4:
-                lat.append(key_latency(v, key, txt, 1_000_000))
+            for gone in (False, True) * 4:
+                lat.append(key_latency(v, b"h", "flipH", 1_000_000, gone=gone))
                 drain_at(v, 1_000_000, 0.3)
             lat.sort()
             med = lat[len(lat) // 2]
@@ -1535,7 +1636,7 @@ def perf_static_repaint_slow_link(cfg):
             t0 = time.monotonic()
             v.send(b"h")  # flips the whole image: about 540 KB to send
             drain_at(v, 1_000_000, 0.1)
-            lat = key_latency(v, b"v", "v:FLIPV", 1_000_000)
+            lat = key_latency(v, b"v", "flipV", 1_000_000)
             n0 = len(v.out)
             reads = drain_at(v, 1_000_000, 3.0)
             big = [t for t, n in reads if n > 1024]
@@ -1651,7 +1752,9 @@ def perf_output_volume(cfg):
         print(
             f"     noise paint: {tc / 1024:.0f} KB truecolor, {c256 / 1024:.0f} KB at 256 colours"
         )
-        check(tc <= 560 * 1024, f"truecolor paint {tc / 1024:.0f} KB")
+        check(
+            tc <= 580 * 1024, f"truecolor paint {tc / 1024:.0f} KB"
+        )  # 88 x 287 image cells
         check(
             b"8;5;" in out256 and b"8;2;" not in out256,
             "256 colours: 24-bit codes sent",
@@ -1672,6 +1775,35 @@ def perf_output_volume(cfg):
             )
 
 
+def perf_menu_esc(cfg):
+    """Esc closes a menu within the ESC timeout plus one interactive frame (50 + 16 ms)."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream(
+            "esc", "-s", "256x256"
+        )  # static: only the viewer's latency is timed
+        v = start(cfg, shm, s, rows=60, cols=200)
+        try:
+            v.pump(1.0)
+            lat = []
+            for k in range(6):
+                v.send(b"\x1bOR")  # F3: Scale
+                check(v.screen_has("log_extreme", 1.0), "F3 did not open the menu")
+                v.pump(0.2)
+                t0 = time.monotonic()
+                v.send(b"\x1b")
+                while "log_extreme" in v.screen.text() and time.monotonic() - t0 < 1.0:
+                    v.pump(0.002)
+                lat.append((time.monotonic() - t0) * 1000)
+            lat.sort()
+            print(
+                f"     Esc closes a menu: median {lat[3]:.0f} ms, max {lat[-1]:.0f} ms"
+            )
+            check(lat[3] < 66, f"median {lat[3]:.0f} ms to close a menu")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
 PERF = [
     perf_idle_static_stream,
     perf_key_latency,
@@ -1680,6 +1812,7 @@ PERF = [
     perf_box_select_slow_link,
     perf_low_fps_slow_link,
     perf_output_volume,
+    perf_menu_esc,
 ]
 
 

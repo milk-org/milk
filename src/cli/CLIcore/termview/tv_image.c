@@ -24,13 +24,14 @@ static const double tv_range_hi[RANGE_NB] = { 1.0, 0.999, 0.995, 0.99, 0.95, 0.9
 
 void tv_layout_compute(tv_layout_t *l, int rows, int cols)
 {
-    l->rows     = rows;
-    l->cols     = cols;
-    l->img_rows = rows - TV_INFO_ROWS;
-    l->img_cols = cols - TV_BAR_WIDTH - 1;
-    l->bar_col  = cols - TV_BAR_WIDTH;
-    l->info_row = rows - 3;
-    l->valid    = (l->img_rows >= 2 && l->img_cols >= 4);
+    l->rows       = rows;
+    l->cols       = cols;
+    l->img_top    = 1;
+    l->img_rows   = rows - TV_CHROME_ROWS;
+    l->img_cols   = cols - TV_BAR_WIDTH;
+    l->bar_col    = cols - TV_BAR_WIDTH;
+    l->status_row = rows - 1;
+    l->valid      = (l->img_rows >= 2 && l->img_cols >= 4);
 }
 
 double tv_view_base(const tv_layout_t *l, uint32_t xsize, uint32_t ysize)

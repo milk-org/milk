@@ -23,16 +23,32 @@
 #include "termview_internal.h"
 
 #define TV_DESCRIPTION "TrueColor terminal image viewer"
-#define TV_DESCRIPTION_LONG                                                     \
-    "A low-resource TrueColor terminal image viewer. It maps a shared memory\n" \
-    "stream read-only and renders it with ANSI graphics, redrawing only what changed."
+#define TV_DESCRIPTION_LONG                                                             \
+    "A low-resource terminal image viewer for milk shared-memory streams. It maps\n"    \
+    "the stream read-only and redraws only the cells that changed, in 24-bit, 256 or\n" \
+    "16 colours. Menus set the colormap, scaling, range and view; the status bar\n"     \
+    "shows the stream state, rate and range. A stream that is removed or recreated\n"   \
+    "is followed."
 
-/** print_names() - Comma-separated list of the valid names for an option. */
-static void print_names(FILE *f, const char *const *names, int n)
+/** print_names() - Comma-separated list of the valid names from column @col, wrapped before
+ * column 80 with continuation lines indented to @indent. */
+static void print_names(FILE *f, const char *const *names, int n, int col, int indent)
 {
     for (int i = 0; i < n; i++)
     {
-        fprintf(f, "%s%s", (i > 0) ? ", " : "", names[i]);
+        int len = (int) strlen(names[i]) + ((i + 1 < n) ? 1 : 0);
+        if (i > 0 && col + 1 + len > 79)
+        {
+            fprintf(f, "\n%*s", indent, "");
+            col = indent;
+        }
+        else if (i > 0)
+        {
+            fputc(' ', f);
+            col++;
+        }
+        fprintf(f, "%s%s", names[i], (i + 1 < n) ? "," : "");
+        col += len;
     }
 }
 
@@ -44,9 +60,11 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_RST : "", mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
 
     milk_help_section("Description", mh_color);
-    printf("  A low-resource TrueColor terminal image viewer. It maps a shared memory\n"
-           "  stream read-only and renders it with ANSI graphics, redrawing only the\n"
-           "  cells that changed.\n\n");
+    printf("  A low-resource terminal image viewer for milk shared-memory streams. It maps\n"
+           "  the stream read-only and redraws only the cells that changed, in 24-bit, 256\n"
+           "  or 16 colours. The menubar (click, or F2-F6) sets the colormap, scaling, range\n"
+           "  and view; the status bar shows the stream state (LIVE, STALE, PAUSED, GONE),\n"
+           "  rate and range. A stream that is removed or recreated is followed.\n\n");
 
     milk_help_section("Arguments", mh_color);
     printf("  " MH_PAD_FMT " %s\n\n", MH_PAD(MH_ARG, "<stream>", 22),
@@ -56,7 +74,7 @@ static void print_help(const char *progname, int mh_color)
     printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_OPT, "-c, --cmap NAME", 22), "Initial colormap");
     printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_OPT, "-s, --scale NAME", 22), "Initial scaling");
     printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_OPT, "-r, --range NAME", 22),
-           "Initial range: minmax, 0.1, 0.5, 1, 5, 10, 15, 20 (percentile)");
+           "Initial range: minmax, 0.1, 0.5, 1, 5, 10, 15, 20 (%)");
     printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_OPT, "--min V --max V", 22),
            "Lock the display range to [min, max]");
     printf("  " MH_PAD_FMT " %s %s(20)%s\n", MH_PAD(MH_OPT, "-f, --fps N", 22),
@@ -72,33 +90,15 @@ static void print_help(const char *progname, int mh_color)
     printf("  " MH_PAD_FMT " %s\n\n", MH_PAD(MH_OPT, "-hm, --help-mono", 22),
            "Full help, no ANSI color");
     printf("  Colormaps: ");
-    print_names(stdout, tv_cmap_names, COLORMAP_NB);
+    print_names(stdout, tv_cmap_names, COLORMAP_NB, 13, 13);
     printf("\n  Scales:    ");
-    print_names(stdout, tv_scale_names, SCALE_NB);
+    print_names(stdout, tv_scale_names, SCALE_NB, 13, 13);
     printf("\n\n");
 
     milk_help_section("Keys", mh_color);
-    static const char *const keys[][2] = {
-        { "Arrows", "Pan the view" },
-        { "+ = / - _", "Zoom in / out" },
-        { "0", "Reset zoom and pan" },
-        { "c / s / r", "Next colormap / scaling / range (Up/Down in the popup)" },
-        { "l", "Lock or unlock the current range" },
-        { "m / M", "Type a manual min / max (locks the range)" },
-        { "h / v", "Flip horizontally / vertically" },
-        { "b", "Low-bandwidth mode: hold small changes on noisy images" },
-        { "Space", "Pause: freeze the image (zoom and pan still work), Space again to resume" },
-        { "< , / > .", "Decrease / increase the UI refresh rate" },
-        { "Ctrl-L", "Repaint the screen" },
-        { "Ctrl-Z", "Suspend" },
-        { "q, Ctrl-C", "Quit" },
-        { "Wheel", "Zoom in / out" },
-        { "Left drag", "Pan" },
-        { "Right drag", "Zoom to the selected box" },
-    };
-    for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++)
+    for (int i = 0; i < tv_help_nkeys; i++)
     {
-        printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_CMD, keys[i][0], 12), keys[i][1]);
+        printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_CMD, tv_help_keys[i][0], 14), tv_help_keys[i][1]);
     }
     printf("\n");
 
@@ -116,7 +116,7 @@ static void print_help(const char *progname, int mh_color)
     printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_OPT, "COLORTERM", 22),
            "truecolor or 24bit: 24-bit colour (--colors auto)");
     printf("  " MH_PAD_FMT " %s\n\n", MH_PAD(MH_OPT, "TERM", 22),
-           "Otherwise: 24-bit for kitty, foot, ...; 256 for xterm-like; else 16");
+           "Else 24-bit for kitty, foot..., 256 for xterm-like");
 
     const char *see_also[] = { "milk-streamCTRL:stream monitor and control",
                                "milk-stream-help:stream tools overview" };
@@ -147,8 +147,8 @@ static int parse_name(const char        *progname,
         char msg[64];
         snprintf(msg, sizeof(msg), "unknown %s", what);
         arg_error(progname, msg, val);
-        fprintf(stderr, "Valid %s names: ", what);
-        print_names(stderr, names, n);
+        int col = fprintf(stderr, "Valid %s names: ", what);
+        print_names(stderr, names, n, col, 2);
         fprintf(stderr, "\n");
         return -1;
     }

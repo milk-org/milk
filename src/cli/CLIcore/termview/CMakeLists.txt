@@ -21,7 +21,8 @@ add_library(
   tv_image.c
   tv_input.c
   tv_stream.c
-  tv_term.c)
+  tv_term.c
+  tv_ui.c)
 target_link_libraries(termview_core PUBLIC termview_flags ImageStreamIO m)
 target_include_directories(
   termview_core PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

@@ -92,6 +92,7 @@ size are set via `mdt->NBkw` and `mdt->CBsize` before calling `imgid_mkimage()`.
 
 Tools like `milk-streamCTRL` provide real-time introspection into active streams, displaying frame
 arrival rates, recent values, and the current state of semaphores without disrupting operations.
+To look at a stream's image in the terminal, use [`milk-termview`](termview.md).
 
 ## 5. C API (`IMGID`)
 
