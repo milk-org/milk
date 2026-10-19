@@ -349,3 +349,7 @@ errno_t functionparameter_PrintParameterInfo(FPS *fpsentry, int pindex)
 
     return RETURN_SUCCESS;
 }
+
+#undef AECBOLDHIGREEN
+#undef AECNORMAL
+#undef TUI_printfw

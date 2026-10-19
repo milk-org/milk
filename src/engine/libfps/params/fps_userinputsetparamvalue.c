@@ -118,3 +118,6 @@ int functionparameter_UserInputSetParamValue(FPS *fpsentry, int pindex)
 
     return 0;
 }
+
+#undef AECBOLDHIRED
+#undef AECNORMAL

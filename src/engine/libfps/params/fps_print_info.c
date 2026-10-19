@@ -271,3 +271,9 @@ int function_parameter_print_info(FPS *fps, int verbose, int show_info)
 
     return 0;
 }
+
+#undef C_TITLE
+#undef C_HDR
+#undef C_CMD
+#undef C_NOTE
+#undef C_BOLD

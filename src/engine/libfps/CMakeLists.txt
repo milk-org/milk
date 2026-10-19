@@ -35,6 +35,9 @@ set(SOURCEFILES
     imgid_slice.c)
 
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
+# Single translation unit
+set_target_properties(${LIBNAME} PROPERTIES UNITY_BUILD ON
+                                            UNITY_BUILD_BATCH_SIZE 0)
 
 target_include_directories(
   ${LIBNAME}
@@ -47,7 +50,9 @@ target_link_libraries(${LIBNAME} PUBLIC ImageStreamIO m rt milkprocessinfo
 
 if(USE_STATIC_LTO)
   add_library(${LIBNAME}_static STATIC ${SOURCEFILES})
-  set_target_properties(${LIBNAME}_static PROPERTIES OUTPUT_NAME ${LIBNAME})
+  set_target_properties(
+    ${LIBNAME}_static PROPERTIES OUTPUT_NAME ${LIBNAME} UNITY_BUILD ON
+                                 UNITY_BUILD_BATCH_SIZE 0)
   target_include_directories(
     ${LIBNAME}_static
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
