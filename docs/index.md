@@ -216,6 +216,6 @@ Who might you be?
 - [CLI Syntax Reference](guide/CLIcore.md) · [Readline Keys](guide/helpreadline.md)
 - [Scripts Reference](guide/scripts.md) · [Python API](guide/python.md) · [Valkey Integration](guide/valkey.md)
 - [Programmer's Guide](arch/programmers_guide.md) · [Dependency Graph](arch/dependency_graph.md) ·
-  [fpsCTRL Reference](guide/fpsCTRL_reference.md)
+  [fpsCTRL Reference](guide/fpsCTRL_reference.md) · [Stream Viewer](guide/termview.md)
 - [Working with Git](developer/WorkingWithGit.md) · [Code Assist Tools](developer/code_assist.md)
 - [All Markdown Files](Markdown_Index.md) · [Tag Index](tags.md)

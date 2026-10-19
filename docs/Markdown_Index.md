@@ -68,6 +68,7 @@ Documentation files will link to this website, other files will link directly to
 - [FPS Sequencer (`milk-seq`)](guide/sequencer.md) (sequencer.md)
 - [Stream Slicing](guide/slicing.md) (slicing.md)
 - [Shared Memory Streams (`ImageStreamIO`)](guide/streams.md) (streams.md)
+- [Stream Viewer (`milk-termview`)](guide/termview.md) (termview.md)
 - [Valkey Integration](guide/valkey.md) (valkey.md)
 
 ## docs/includes
@@ -357,6 +358,10 @@ Documentation files will link to this website, other files will link directly to
 
 - [CommandLineInterface Change Log {{ "{" }}#page_CommandLineInterface_ChangeLog}]({{ github_blob_url }}/src/cli/CLIcore/CHANGELOG.md) (CHANGELOG.md)
 - [CLIcore]({{ github_blob_url }}/src/cli/CLIcore/README.md) (README.md)
+
+## src/cli/CLIcore/termview
+
+- [milk-termview]({{ github_blob_url }}/src/cli/CLIcore/termview/README.md) (README.md)
 
 ## src/cli/libenginecli
 

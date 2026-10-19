@@ -84,6 +84,7 @@ nav:
   - User Guide:
     - Streams: guide/streams.md
     - Stream Slicing: guide/slicing.md
+    - Stream Viewer: guide/termview.md
     - FPS: guide/fps.md
     - fpsCTRL TUI: guide/fpsCTRL_reference.md
     - FPS Sequencer: guide/sequencer.md

@@ -8,816 +8,550 @@
  */
 
 #include "termview.h"
-#include "termview_ansi.h"
+#include "termview_internal.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "libmilkcommon/pixel_dispatch.h"
 
+#include <errno.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <termios.h>
-#include <sys/ioctl.h>
-#include <sys/select.h>
-#include <signal.h>
+#include <poll.h>
 #include <time.h>
 #include <stdbool.h>
 
-/* -----------------------------------------------------------------------
- * Typedefs & Constants
- * ----------------------------------------------------------------------- */
-typedef struct
-{
-    uint8_t r, g, b;
-} rgb_t;
 
-#define TV_KEY_UP 0x1001
-#define TV_KEY_DOWN 0x1002
-#define TV_KEY_LEFT 0x1003
-#define TV_KEY_RIGHT 0x1004
-#define TV_KEY_MOUSE 0x1005
+#define TV_STALE_MIN_US 1000000 /* no new frame for this long (or 5 periods): STALE */
 
-typedef struct
-{
-    int button;   // 0: Left, 1: Middle, 2: Right, 64: ScrollUp, 65: ScrollDown
-    int x;        // 1-indexed
-    int y;        // 1-indexed
-    int is_press; // 1 for press/drag, 0 for release
-    int is_drag;  // 1 if drag
-} tv_mouse_event_t;
-
-static tv_mouse_event_t last_mouse_event = { 0 };
-
-/* -----------------------------------------------------------------------
- * Global State
- * ----------------------------------------------------------------------- */
-static int                   loop = 1;
-static unsigned short        wrow = 0, wcol = 0;
-static int                   force_redraw   = 1;
-static volatile sig_atomic_t tv_resize_flag = 0;
-
-static termview_options_t current_options;
-static double             view_zoom     = 1.0;
-static double             view_center_x = 0.5;
-static double             view_center_y = 0.5;
-
-static double current_min_val = 0.0;
-static double current_max_val = 1.0;
-
-/* -----------------------------------------------------------------------
- * Grid-based Rendering State
- * ----------------------------------------------------------------------- */
-typedef struct
-{
-    uint8_t bg_r, bg_g, bg_b;
-    uint8_t fg_r, fg_g, fg_b;
-    char    ch[4]; // utf-8 char (half-block is 3 bytes, full-block 3 bytes)
-} tv_cell_t;
-
-static rgb_t colormap_lut[1024];
-static int   lut_colormap = -1;
-static int   lut_scale    = -1;
-
-static rgb_t get_colormap_color(termview_colormap_t cmap, double v)
-{
-    if (v < 0.0)
-    {
-        v = 0.0;
-    }
-    if (v > 1.0)
-    {
-        v = 1.0;
-    }
-
-    rgb_t c = { 0, 0, 0 };
-    if (cmap == COLORMAP_GREYSCALE)
-    {
-        c.r = c.g = c.b = (uint8_t) (v * 255.0f);
-    }
-    else
-    {
-        float r = 0.0f, g = 0.0f, b = 0.0f;
-        if (cmap == COLORMAP_HEAT)
-        {
-            if (v < 0.25f)
-            {
-                b = v * 4.0f;
-            }
-            else if (v < 0.5f)
-            {
-                b = 1.0f;
-                g = (v - 0.25f) * 4.0f;
-            }
-            else if (v < 0.75f)
-            {
-                b = 1.0f - (v - 0.5f) * 4.0f;
-                g = 1.0f;
-                r = (v - 0.5f) * 4.0f;
-            }
-            else
-            {
-                g = 1.0f - (v - 0.75f) * 4.0f;
-                r = 1.0f;
-            }
-        }
-        else if (cmap == COLORMAP_COLD)
-        {
-            if (v < 0.33f)
-            {
-                b = v * 3.0f;
-            }
-            else if (v < 0.66f)
-            {
-                b = 1.0f;
-                g = (v - 0.33f) * 3.0f;
-            }
-            else
-            {
-                b = 1.0f;
-                g = 1.0f;
-                r = (v - 0.66f) * 3.0f;
-            }
-        }
-        else if (cmap == COLORMAP_JET)
-        {
-            if (v < 0.25f)
-            {
-                b = 1.0f;
-                g = v * 4.0f;
-            }
-            else if (v < 0.5f)
-            {
-                b = 1.0f - (v - 0.25f) * 4.0f;
-                g = 1.0f;
-            }
-            else if (v < 0.75f)
-            {
-                g = 1.0f;
-                r = (v - 0.5f) * 4.0f;
-            }
-            else
-            {
-                g = 1.0f - (v - 0.75f) * 4.0f;
-                r = 1.0f;
-            }
-        }
-        else if (cmap == COLORMAP_INFERNO)
-        {
-            if (v < 0.33f)
-            {
-                r = v * 1.5f;
-                b = v * 2.0f;
-            }
-            else if (v < 0.66f)
-            {
-                r = 0.5f + (v - 0.33f) * 1.5f;
-                g = (v - 0.33f) * 1.5f;
-                b = 0.66f - (v - 0.33f) * 2.0f;
-            }
-            else
-            {
-                r = 1.0f;
-                g = 0.5f + (v - 0.66f) * 1.5f;
-            }
-        }
-        else if (cmap == COLORMAP_VIRIDIS)
-        {
-            if (v < 0.33f)
-            {
-                r = 0.2f;
-                g = v * 1.5f;
-                b = 0.4f + v * 1.2f;
-            }
-            else if (v < 0.66f)
-            {
-                r = 0.2f;
-                g = 0.5f + (v - 0.33f) * 1.0f;
-                b = 0.8f - (v - 0.33f) * 1.5f;
-            }
-            else
-            {
-                r = 0.2f + (v - 0.66f) * 2.4f;
-                g = 0.83f + (v - 0.66f) * 0.5f;
-                b = 0.3f - (v - 0.66f) * 0.9f;
-            }
-        }
-        else if (cmap == COLORMAP_MAGMA)
-        {
-            if (v < 0.25f)
-            {
-                r = v * 2.0f;
-                g = 0.0f;
-                b = v * 2.0f;
-            }
-            else if (v < 0.5f)
-            {
-                r = 0.5f + (v - 0.25f) * 2.0f;
-                g = 0.0f;
-                b = 0.5f - (v - 0.25f) * 2.0f;
-            }
-            else if (v < 0.75f)
-            {
-                r = 1.0f;
-                g = (v - 0.5f) * 2.0f;
-                b = 0.0f;
-            }
-            else
-            {
-                r = 1.0f;
-                g = 0.5f + (v - 0.75f) * 2.0f;
-                b = (v - 0.75f) * 4.0f;
-            }
-        }
-        else if (cmap == COLORMAP_PLASMA)
-        {
-            if (v < 0.33f)
-            {
-                r = v * 1.5f;
-                g = 0.0f;
-                b = 0.5f + v * 1.5f;
-            }
-            else if (v < 0.66f)
-            {
-                r = 0.5f + (v - 0.33f) * 1.5f;
-                g = (v - 0.33f) * 1.5f;
-                b = 1.0f - (v - 0.33f) * 1.5f;
-            }
-            else
-            {
-                r = 1.0f;
-                g = 0.5f + (v - 0.66f) * 1.5f;
-                b = 0.5f - (v - 0.66f) * 1.5f;
-            }
-        }
-        else if (cmap == COLORMAP_BONE)
-        {
-            if (v < 0.33f)
-            {
-                r = v * 1.5f;
-                g = v * 1.5f;
-                b = v * 2.0f;
-            }
-            else if (v < 0.66f)
-            {
-                r = 0.5f + (v - 0.33f) * 1.0f;
-                g = 0.5f + (v - 0.33f) * 1.5f;
-                b = 0.66f + (v - 0.33f) * 1.0f;
-            }
-            else
-            {
-                r = 0.83f + (v - 0.66f) * 0.5f;
-                g = 1.0f;
-                b = 1.0f;
-            }
-        }
-        else if (cmap == COLORMAP_RAINBOW)
-        {
-            float h = (1.0f - v) * 5.0f;
-            int   i = (int) h;
-            float f = h - i;
-            float q = 1.0f - f;
-            switch (i)
-            {
-            case 0:
-                r = 1.0f;
-                g = f;
-                b = 0.0f;
-                break;
-            case 1:
-                r = q;
-                g = 1.0f;
-                b = 0.0f;
-                break;
-            case 2:
-                r = 0.0f;
-                g = 1.0f;
-                b = f;
-                break;
-            case 3:
-                r = 0.0f;
-                g = q;
-                b = 1.0f;
-                break;
-            case 4:
-                r = f;
-                g = 0.0f;
-                b = 1.0f;
-                break;
-            case 5:
-                r = 1.0f;
-                g = 0.0f;
-                b = 1.0f;
-                break;
-            default:
-                r = 1.0f;
-                g = 0.0f;
-                b = 1.0f;
-                break;
-            }
-        }
-        else if (cmap == COLORMAP_TURBO)
-        {
-            float k1 =
-                0.1357f +
-                v * (4.5974f - v * (42.3277f - v * (130.5887f - v * (150.5666f - v * 58.1375f))));
-            float k2 = 0.0914f +
-                       v * (2.1941f + v * (4.8429f - v * (14.1850f - v * (4.2773f + v * 2.8251f))));
-            float k3 =
-                0.1066f +
-                v * (12.6419f - v * (60.5820f - v * (110.3627f - v * (89.9031f - v * 27.3482f))));
-            r = k1;
-            g = k2;
-            b = k3;
-        }
-        else if (cmap == COLORMAP_OCEAN)
-        {
-            r = v * 0.5f;
-            g = v * 0.8f;
-            b = 0.2f + v * 0.8f;
-        }
-        else if (cmap == COLORMAP_COPPER)
-        {
-            r = v * 1.25f;
-            g = v * 0.7812f;
-            b = v * 0.4975f;
-        }
-        else if (cmap == COLORMAP_SPRING)
-        {
-            r = 1.0f;
-            g = v;
-            b = 1.0f - v;
-        }
-        else if (cmap == COLORMAP_SUMMER)
-        {
-            r = v;
-            g = 0.5f + v * 0.5f;
-            b = 0.4f;
-        }
-        else if (cmap == COLORMAP_AUTUMN)
-        {
-            r = 1.0f;
-            g = v;
-            b = 0.0f;
-        }
-        else if (cmap == COLORMAP_WINTER)
-        {
-            r = 0.0f;
-            g = v;
-            b = 1.0f - v * 0.5f;
-        }
-        if (r > 1.0f)
-        {
-            r = 1.0f;
-        }
-        if (r < 0.0f)
-        {
-            r = 0.0f;
-        }
-        if (g > 1.0f)
-        {
-            g = 1.0f;
-        }
-        if (g < 0.0f)
-        {
-            g = 0.0f;
-        }
-        if (b > 1.0f)
-        {
-            b = 1.0f;
-        }
-        if (b < 0.0f)
-        {
-            b = 0.0f;
-        }
-        c.r = (uint8_t) (r * 255.0f);
-        c.g = (uint8_t) (g * 255.0f);
-        c.b = (uint8_t) (b * 255.0f);
-    }
-    return c;
-}
-
-static void build_colormap_lut(termview_colormap_t cmap, termview_scale_t scale)
-{
-    for (int i = 0; i < 1024; i++)
-    {
-        double v = i / 1023.0;
-        if (scale == SCALE_SQRT)
-        {
-            v = sqrt(v);
-        }
-        else if (scale == SCALE_LOG)
-        {
-            v = log(v * 9.0 + 1.0) / log(10.0);
-        }
-        else if (scale == SCALE_LOG_STRONG)
-        {
-            v = log(v * 99.0 + 1.0) / log(100.0);
-        }
-        else if (scale == SCALE_LOG_EXTREME)
-        {
-            v = log(v * 999.0 + 1.0) / log(1000.0);
-        }
-        else if (scale == SCALE_ASINH)
-        {
-            v = asinh(v * 10.0) / asinh(10.0);
-        }
-        else if (scale == SCALE_SQUARED)
-        {
-            v = v * v;
-        }
-        else if (scale == SCALE_CUBED)
-        {
-            v = v * v * v;
-        }
-
-        colormap_lut[i] = get_colormap_color(cmap, v);
-    }
-    lut_colormap = cmap;
-    lut_scale    = scale;
-}
-
-
-/* -----------------------------------------------------------------------
- * Terminal Management
- * ----------------------------------------------------------------------- */
-static struct termios tv_orig_termios;
-
-static void tv_handle_sigwinch(int sig)
-{
-    (void) sig;
-    tv_resize_flag = 1;
-}
-
-static void tv_exit_raw(void)
-{
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &tv_orig_termios);
-}
-
-static void tv_enter_raw(void)
-{
-    tcgetattr(STDIN_FILENO, &tv_orig_termios);
-    atexit(tv_exit_raw);
-    struct termios raw = tv_orig_termios;
-    raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-    raw.c_oflag &= ~(OPOST);
-    raw.c_cflag |= (CS8);
-    raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-    raw.c_cc[VMIN]  = 0;
-    raw.c_cc[VTIME] = 0;
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
-
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = tv_handle_sigwinch;
-    sigaction(SIGWINCH, &sa, NULL);
-}
-
-static void tv_enter_alt_screen(void)
-{
-    if (write(STDOUT_FILENO, "\033[?1049h\033[?25l\033[?1002h\033[?1006h", 30) < 0)
-    {
-    } // alt screen + hide cursor + mouse track
-}
-
-static void tv_exit_alt_screen(void)
-{
-    if (write(STDOUT_FILENO, "\033[?1006l\033[?1002l\033[?1049l\033[?25h", 30) < 0)
-    {
-    } // exit alt screen + show cursor + no mouse track
-}
-
-static void tv_get_size(unsigned short *rows, unsigned short *cols)
-{
-    struct winsize ws;
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
-    {
-        *rows = 24;
-        *cols = 80;
-    }
-    else
-    {
-        *rows = ws.ws_row;
-        *cols = ws.ws_col;
-    }
-}
-
-static int tv_read_key(long timeout_us)
-{
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(STDIN_FILENO, &readfds);
-
-    struct timeval tv;
-    tv.tv_sec  = timeout_us / 1000000;
-    tv.tv_usec = timeout_us % 1000000;
-
-    int ready = select(STDIN_FILENO + 1, &readfds, NULL, NULL, &tv);
-    if (ready == -1 || ready == 0)
-    {
-        return -1;
-    }
-
-    char seq[32];
-    int  nread = read(STDIN_FILENO, &seq[0], 1);
-    if (nread != 1)
-    {
-        return -1;
-    }
-
-    if (seq[0] == 27)
-    {
-        if (read(STDIN_FILENO, &seq[1], 1) != 1)
-        {
-            return 27;
-        }
-        if (read(STDIN_FILENO, &seq[2], 1) != 1)
-        {
-            return 27;
-        }
-
-        if (seq[1] == '[')
-        {
-            if (seq[2] == '<')
-            {
-                // Parse SGR mouse: \033[<B;X;Y[M|m]
-                int b = 0, x = 0, y = 0;
-                int type  = 0; // 'M' or 'm'
-                int state = 0; // 0: b, 1: x, 2: y, 3: type
-                for (int i = 3; i < 31; i++)
-                {
-                    if (read(STDIN_FILENO, &seq[i], 1) != 1)
-                    {
-                        return 27;
-                    }
-                    if (seq[i] == ';')
-                    {
-                        state++;
-                    }
-                    else if (seq[i] == 'M' || seq[i] == 'm')
-                    {
-                        type = seq[i];
-                        break;
-                    }
-                    else
-                    {
-                        if (state == 0)
-                        {
-                            b = b * 10 + (seq[i] - '0');
-                        }
-                        else if (state == 1)
-                        {
-                            x = x * 10 + (seq[i] - '0');
-                        }
-                        else if (state == 2)
-                        {
-                            y = y * 10 + (seq[i] - '0');
-                        }
-                    }
-                }
-                last_mouse_event.is_drag = ((b & 32) != 0);
-                if (b & 64)
-                {
-                    last_mouse_event.button  = b; // 64 or 65
-                    last_mouse_event.is_drag = 0;
-                }
-                else
-                {
-                    last_mouse_event.button = b & 3; // 0: Left, 1: Middle, 2: Right
-                }
-                last_mouse_event.x        = x;
-                last_mouse_event.y        = y;
-                last_mouse_event.is_press = (type == 'M');
-                return TV_KEY_MOUSE;
-            }
-            else
-            {
-                switch (seq[2])
-                {
-                case 'A':
-                    force_redraw = 1;
-                    return TV_KEY_UP;
-                case 'B':
-                    force_redraw = 1;
-                    return TV_KEY_DOWN;
-                case 'C':
-                    force_redraw = 1;
-                    return TV_KEY_RIGHT;
-                case 'D':
-                    force_redraw = 1;
-                    return TV_KEY_LEFT;
-                }
-            }
-        }
-        return 27;
-    }
-    else
-    {
-        return seq[0];
-    }
-}
-
-/* -----------------------------------------------------------------------
- * Data Retrieval & Colormaps
- * ----------------------------------------------------------------------- */
-static inline double get_pixel_value(IMAGE *img, int x, int y)
-{
-    long idx = y * img->md[0].size[0] + x;
-    if (x < 0 || x >= img->md[0].size[0] || y < 0 || y >= img->md[0].size[1])
-    {
-        return 0.0;
-    }
-#define GET_PIXEL_CASE(DT, ACC, CTYPE) \
-    case DT:                           \
-        return (double) img->array.ACC[idx];
-
-    switch (img->md[0].datatype)
-    {
-        FOREACH_REAL_DATATYPE(GET_PIXEL_CASE)
-    default:
-        return 0.0;
-    }
-#undef GET_PIXEL_CASE
-}
-
-
-static inline int compare_doubles(const void *a, const void *b)
-{
-    double arg1 = *(const double *) a;
-    double arg2 = *(const double *) b;
-    if (arg1 < arg2)
-    {
-        return -1;
-    }
-    if (arg1 > arg2)
-    {
-        return 1;
-    }
-    return 0;
-}
+/* A slow terminal gets per flush what it drains in one frame period, within these bounds */
+#define TV_FLUSH_SLICE_MIN_US 40000
+#define TV_FLUSH_SLICE_MAX_US 50000
+#define TV_FLUSH_BLOCKED_US 2000      /* a write that took longer met a terminal slower than us */
+#define TV_FLUSH_MIN_BYTES 16384      /* the budget is never less than this */
+#define TV_FLUSH_MAX_BYTES (4u << 20) /* above this the budget is dropped */
 
 /* -----------------------------------------------------------------------
  * Main Screen Loop
  * ----------------------------------------------------------------------- */
 
-/* -----------------------------------------------------------------------
- * Termview Refactored Context
- * ----------------------------------------------------------------------- */
-typedef struct
+/** tv_cnt0() - The stream's frame counter; the last value seen once the mapping is gone. */
+static inline uint64_t tv_cnt0(const tv_state_t *ctx)
 {
-    IMAGE          *img;
-    int             target_fps;
-    double          current_cpu_usage;
-    double          current_stream_fps;
-    uint64_t        last_cnt0_for_fps;
-    uint64_t        last_cnt0;
-    struct timespec last_time_real;
-    struct timespec last_time_cpu;
-    struct timespec last_render_real;
+    return (ctx->st->img.md != NULL) ? ctx->st->img.md->cnt0 : ctx->last_cnt0;
+}
 
-    int             popup_type;
-    struct timespec popup_expiry_time;
-
-    int  mouse_is_dragging;
-    int  roi_is_dragging;
-    int  last_mouse_x;
-    int  last_mouse_y;
-    int  roi_start_x;
-    int  roi_start_y;
-    int  roi_end_x;
-    int  roi_end_y;
-    int  input_mode;
-    char input_buf[64];
-    int  input_len;
-
-    double    *display_buffer;
-    int        buffer_size;
-    tv_cell_t *screen;
-    tv_cell_t *prev_screen;
-    int        screen_size;
-    char      *frame_buffer;
-    size_t     frame_buffer_size;
-
-    long timeout_us;
-} tv_context_t;
-
-
-static void termview_update_fps_stats(tv_context_t *ctx)
+/** tv_mapped() - The mapping can be read now; one just dropped is looked into at once. */
+static int tv_mapped(tv_state_t *ctx)
 {
-    clock_gettime(CLOCK_MONOTONIC, &ctx->last_render_real);
-    double real_diff = (ctx->last_render_real.tv_sec - ctx->last_time_real.tv_sec) +
-                       (ctx->last_render_real.tv_nsec - ctx->last_time_real.tv_nsec) / 1e9;
-    if (real_diff >= 1.0)
+    int had = (ctx->st->map != NULL);
+    if (tv_stream_safe(ctx->st))
     {
-        struct timespec now_cpu;
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now_cpu);
-        double cpu_diff        = (now_cpu.tv_sec - ctx->last_time_cpu.tv_sec) +
-                                 (now_cpu.tv_nsec - ctx->last_time_cpu.tv_nsec) / 1e9;
-        ctx->current_cpu_usage = (cpu_diff / real_diff) * 100.0;
+        return 1;
+    }
+    ctx->recheck |= had;
+    return 0;
+}
 
-        uint64_t current_cnt0   = ctx->img->md[0].cnt0;
-        ctx->current_stream_fps = (current_cnt0 - ctx->last_cnt0_for_fps) / real_diff;
-        ctx->last_cnt0_for_fps  = current_cnt0;
+/** tv_update_stats() - Refresh the CPU usage and stream rate shown in the info bar. */
+static void tv_update_stats(tv_state_t *ctx, int64_t now_us)
+{
+    double real_diff = (now_us - ctx->stats_time_us) / 1e6;
+    if (real_diff <= 0.0)
+    {
+        return;
+    }
+    struct timespec now_cpu;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now_cpu);
+    double cpu_diff =
+        (now_cpu.tv_sec - ctx->stats_cpu.tv_sec) + (now_cpu.tv_nsec - ctx->stats_cpu.tv_nsec) / 1e9;
+    ctx->current_cpu_usage = cpu_diff / real_diff * 100.0;
 
-        ctx->last_time_real = ctx->last_render_real;
-        ctx->last_time_cpu  = now_cpu;
+    uint64_t cnt0 = tv_cnt0(ctx);
+    /* a counter that went backwards means the stream was reset: re-baseline */
+    ctx->current_stream_fps = (cnt0 >= ctx->last_cnt0_for_fps)
+                                  ? (double) (cnt0 - ctx->last_cnt0_for_fps) / real_diff
+                                  : 0.0;
+    if (ctx->current_stream_fps > 0.0)
+    {
+        ctx->rate_hz = ctx->current_stream_fps;
+    }
+    ctx->last_cnt0_for_fps = cnt0;
+    ctx->ui_fps            = ctx->flushes / real_diff;
+    ctx->flushes           = 0;
+    ctx->stats_time_us     = now_us;
+    ctx->stats_cpu         = now_cpu;
+}
+
+int64_t tv_stale_age_us(const tv_state_t *ctx, int64_t now_us)
+{
+    int64_t age   = now_us - ctx->last_change_us;
+    int64_t limit = TV_STALE_MIN_US;
+    if (5.0 * ctx->period_us > (double) limit)
+    {
+        limit = (int64_t) (5.0 * ctx->period_us);
+    }
+    return (age > limit) ? age : 0;
+}
+
+/** tv_seen_at() - When the stream was last written (tv_now_us() time), from its write time. */
+static int64_t tv_seen_at(const IMAGE_METADATA *md, int64_t now_us)
+{
+    struct timespec wall;
+    clock_gettime(CLOCK_ISIO, &wall);
+    double age = (double) (wall.tv_sec - md->writetime.tv_sec) +
+                 (double) (wall.tv_nsec - md->writetime.tv_nsec) / 1e9;
+    if (md->writetime.tv_sec > 0 && tv_finite(age) && age > 0.0 && age < 1e9)
+    {
+        return now_us - (int64_t) (age * 1e6);
+    }
+    return now_us; /* not set, or from another clock */
+}
+
+/** tv_note_cnt0() - Record a cnt0 value seen at @now_us; true if it is a new frame. */
+static int tv_note_cnt0(tv_state_t *ctx, uint64_t cnt0, int64_t now_us)
+{
+    if (cnt0 == ctx->last_cnt0)
+    {
+        return 0;
+    }
+    int64_t seen = now_us;
+    if (cnt0 > ctx->last_cnt0 && ctx->period_us >= 0.0)
+    {
+        /* frame interval, smoothed: sets how long the stream may be quiet before STALE */
+        double obs     = (double) (now_us - ctx->last_change_us) / (double) (cnt0 - ctx->last_cnt0);
+        ctx->period_us = (ctx->period_us > 0.0) ? 0.75 * ctx->period_us + 0.25 * obs : obs;
+    }
+    else if (ctx->period_us < 0.0)
+    {
+        /* first change seen (or after a pause): not ours to time, but the frame says its age */
+        ctx->period_us = 0.0;
+        seen           = tv_seen_at(ctx->st->img.md, now_us);
+    }
+    ctx->last_cnt0      = cnt0;
+    ctx->last_change_us = seen;
+    return 1;
+}
+
+/** tv_quiet_us() - Rest time: 1.5 frame periods, 1 s while the period is unknown, at most 5 s. */
+static double tv_quiet_us(const tv_state_t *ctx)
+{
+    double q = (ctx->period_us > 0.0) ? 1.5 * ctx->period_us : 1e6;
+    return (q < 5e6) ? q : 5e6;
+}
+
+/** tv_layout_ok() - True when the image area is drawable; also guards every geometry divisor. */
+static int tv_layout_ok(const tv_state_t *ctx)
+{
+    tv_layout_t l;
+    tv_layout_compute(&l, ctx->rows, ctx->cols);
+    return l.valid;
+}
+
+/** tv_xform_now() - The current view transform, as the renderer uses it. */
+static void tv_xform_now(const tv_state_t *ctx, tv_layout_t *l, tv_xform_t *x)
+{
+    tv_layout_compute(l, ctx->rows, ctx->cols);
+    tv_xform_compute(x, l, &ctx->view, ctx->st->xsize, ctx->st->ysize, ctx->opt.flip_h,
+                     ctx->opt.flip_v);
+}
+
+/** tv_invalidate() - Forget what the terminal shows so the next frame repaints every cell. */
+static void tv_invalidate(tv_state_t *ctx)
+{
+    if (ctx->prev_screen)
+    {
+        for (int i = 0; i < ctx->screen_size; i++)
+        {
+            ctx->prev_screen[i] = TV_CELL_UNKNOWN;
+        }
+    }
+    ctx->ui.hover_sent = -1; /* the terminal's mouse mode is unknown too */
+    ctx->dirty |= TV_D_FULL | TV_D_GEOM;
+}
+
+/**
+ * tv_pause() - Freeze the image on a copy of the displayed slice (so zoom and pan keep working on
+ * it), or go back to the live stream. Without memory for the copy, the pause is refused (bell).
+ */
+static void tv_pause(tv_state_t *ctx, int on)
+{
+    tv_stream_t *st = ctx->st;
+    free(ctx->frozen);
+    ctx->frozen = NULL;
+    ctx->paused = on;
+    if (on && tv_mapped(ctx))
+    {
+        size_t n = (size_t) st->xsize * st->ysize * (size_t) ImageStreamIO_typesize(st->datatype);
+        ctx->frozen = malloc(n);
+        if (ctx->frozen == NULL)
+        {
+            ctx->paused = 0; /* no memory for the copy: a pause would show live data; refuse */
+            tv_write_all("\a", 1);
+            return;
+        }
+        memcpy(ctx->frozen, st->img.array.raw, n);
+    }
+    if (!on)
+    {
+        ctx->recheck   = 1;    /* pick up a stream that was replaced meanwhile */
+        ctx->period_us = -1.0; /* the pause is no frame interval */
+    }
+    /* sample what is frozen (or live again) and draw it exactly */
+    ctx->dirty |= TV_D_DATA | TV_D_MAP | TV_D_CHROME;
+}
+
+/** tv_zmax() - Largest zoom for the current layout (a sample step of 1/64 pixel). */
+static double tv_zmax(const tv_state_t *ctx)
+{
+    if (!tv_layout_ok(ctx))
+    {
+        return 1.0;
+    }
+    tv_layout_t l;
+    tv_layout_compute(&l, ctx->rows, ctx->cols);
+    return fmax(1.0, 64.0 * tv_view_base(&l, ctx->st->xsize, ctx->st->ysize));
+}
+
+void tv_set_view(tv_state_t *ctx, double cx, double cy, double zoom)
+{
+    ctx->view.cx   = cx;
+    ctx->view.cy   = cy;
+    ctx->view.zoom = zoom;
+    tv_view_sanitize(&ctx->view.zoom, &ctx->view.cx, &ctx->view.cy, tv_zmax(ctx));
+    ctx->dirty |= TV_D_GEOM | TV_D_CHROME;
+}
+
+void tv_set_range(tv_state_t *ctx, double lo, double hi)
+{
+    ctx->opt.manual_min   = lo;
+    ctx->opt.manual_max   = hi;
+    ctx->opt.range_locked = true;
+    ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+}
+
+static int tv_wrap(int v, int step, int n)
+{
+    return ((v + step) % n + n) % n;
+}
+
+void tv_do(tv_state_t *ctx, tv_action_t a, int arg)
+{
+    switch (a)
+    {
+    case TV_ACT_QUIT:
+        ctx->running = 0;
+        break;
+    case TV_ACT_SUSPEND:
+        ctx->suspend = 1; /* once the outstanding answers are read: see tv_fc_settle() */
+        break;
+    case TV_ACT_REPAINT:
+        tv_invalidate(ctx);
+        break;
+    case TV_ACT_PAUSE:
+        tv_pause(ctx, !ctx->paused);
+        break;
+    case TV_ACT_CMAP:
+        tv_do(ctx, TV_ACT_SET_CMAP, tv_wrap(ctx->opt.colormap, arg, COLORMAP_NB));
+        break;
+    case TV_ACT_SCALE:
+        tv_do(ctx, TV_ACT_SET_SCALE, tv_wrap(ctx->opt.scale, arg, SCALE_NB));
+        break;
+    case TV_ACT_RANGE:
+        tv_do(ctx, TV_ACT_SET_RANGE, tv_wrap(ctx->opt.range, arg, RANGE_NB));
+        break;
+    case TV_ACT_SET_CMAP:
+        ctx->opt.colormap = (termview_colormap_t) tv_wrap(arg, 0, COLORMAP_NB);
+        ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        break;
+    case TV_ACT_SET_SCALE:
+        ctx->opt.scale = (termview_scale_t) tv_wrap(arg, 0, SCALE_NB);
+        ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        break;
+    case TV_ACT_SET_RANGE: /* choosing a range mode is asking for an automatic range */
+        ctx->opt.range        = (termview_range_t) tv_wrap(arg, 0, RANGE_NB);
+        ctx->opt.range_locked = false;
+        ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        break;
+    case TV_ACT_SET_COLORS:
+        if (arg >= 0 && arg <= 3 && arg != ctx->opt.colors)
+        {
+            ctx->opt.colors = arg;
+            tv_emit_init(&ctx->emit, arg ? arg : tv_term_color_level());
+            tv_invalidate(ctx); /* every cell again, in the new codes */
+        }
+        ctx->dirty |= TV_D_CHROME;
+        break;
+    case TV_ACT_SET_FPS:
+        ctx->target_fps = (arg < 1) ? 1 : (arg > 120) ? 120 : arg;
+        ctx->dirty |= TV_D_CHROME;
+        break;
+    case TV_ACT_SMOOTH:
+        ctx->opt.range_smooth = !ctx->opt.range_smooth;
+        ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        break;
+    case TV_ACT_CENTRE:
+        tv_set_view(ctx, 0.5, 0.5, ctx->view.zoom);
+        break;
+    case TV_ACT_HELP:
+    {
+        int on = !ctx->ui.help;
+        tv_ui_open(ctx, -1); /* a menu, or the range editor, gives way to the help box */
+        ctx->ui.help     = on;
+        ctx->ui.help_top = 0;
+        ctx->mini.active = ctx->mini.active && !on;
+        ctx->dirty |= TV_D_CHROME;
+        break;
+    }
+    case TV_ACT_LOCK:
+    {
+        int lock = (arg < 0) ? !ctx->opt.range_locked : (arg != 0);
+        if (lock && !ctx->opt.range_locked)
+        {
+            ctx->opt.manual_min = ctx->cur_min; /* the range shown now */
+            ctx->opt.manual_max = ctx->cur_max;
+        }
+        ctx->opt.range_locked = lock;
+        ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        break;
+    }
+    case TV_ACT_PROMPT:
+        tv_mini_open(ctx, (arg == 2) ? 1 : 0);
+        break;
+    case TV_ACT_FLIP_H:
+        ctx->opt.flip_h = !ctx->opt.flip_h;
+        ctx->dirty |= TV_D_GEOM | TV_D_CHROME;
+        break;
+    case TV_ACT_FLIP_V:
+        ctx->opt.flip_v = !ctx->opt.flip_v;
+        ctx->dirty |= TV_D_GEOM | TV_D_CHROME;
+        break;
+    case TV_ACT_ZOOM:
+        tv_set_view(ctx, ctx->view.cx, ctx->view.cy, ctx->view.zoom * pow(1.2, arg));
+        break;
+    case TV_ACT_VIEW_RESET:
+        tv_set_view(ctx, 0.5, 0.5, 1.0);
+        break;
+    /* arrows move the viewport in screen space: Left shows what lies left of the screen */
+    case TV_ACT_PAN_X:
+        tv_set_view(ctx, ctx->view.cx + arg * (ctx->opt.flip_h ? -0.1 : 0.1) / ctx->view.zoom,
+                    ctx->view.cy, ctx->view.zoom);
+        break;
+    case TV_ACT_PAN_Y:
+        tv_set_view(ctx, ctx->view.cx,
+                    ctx->view.cy + arg * (ctx->opt.flip_v ? -0.1 : 0.1) / ctx->view.zoom,
+                    ctx->view.zoom);
+        break;
+    case TV_ACT_FPS:
+        tv_do(ctx, TV_ACT_SET_FPS, ctx->target_fps + arg);
+        break;
+    case TV_ACT_ESCAPE:
+        if (ctx->mouse_is_dragging || ctx->roi_is_dragging)
+        {
+            ctx->mouse_is_dragging = 0;
+            ctx->roi_is_dragging   = 0;
+            ctx->dirty |= TV_D_CHROME;
+        }
+        break;
+    case TV_ACT_LOWBW:
+        ctx->opt.lowbw = !ctx->opt.lowbw;
+        ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        break;
     }
 }
 
-static void termview_handle_mouse_event(tv_context_t *ctx)
+/** tv_handle_key() - Map a key event to an action. */
+void tv_handle_key(tv_state_t *ctx, const tv_event_t *ev)
 {
-    force_redraw = 1;
-    int mx       = last_mouse_event.x;
-    int my       = last_mouse_event.y;
+    if ((ev->mods & TV_MOD_ALT) && ev->key < TV_K_UP)
+    {
+        return; /* Alt+character is unbound; special keys keep their meaning with any modifier */
+    }
 
-    if (last_mouse_event.button == 64)
+    switch (ev->key)
     {
-        // Scroll Up -> Zoom in
-        view_zoom *= 1.2;
+    case 'q':
+    case TV_CTRL('c'):
+    case TV_CTRL('\\'):
+        tv_do(ctx, TV_ACT_QUIT, 0);
+        break;
+    case TV_CTRL('z'):
+        tv_do(ctx, TV_ACT_SUSPEND, 0);
+        break;
+    case TV_CTRL('l'):
+        tv_do(ctx, TV_ACT_REPAINT, 0);
+        break;
+    case TV_K_ESC:
+        tv_do(ctx, TV_ACT_ESCAPE, 0);
+        break;
+    case 'c':
+    case 'C':
+        tv_do(ctx, TV_ACT_CMAP, (ev->key == 'c') ? 1 : -1);
+        break;
+    case 's':
+    case 'S':
+        tv_do(ctx, TV_ACT_SCALE, (ev->key == 's') ? 1 : -1);
+        break;
+    case 'r':
+    case 'R':
+        tv_do(ctx, TV_ACT_RANGE, (ev->key == 'r') ? 1 : -1);
+        break;
+    case 'l':
+        tv_do(ctx, TV_ACT_LOCK, -1);
+        break;
+    case 'm':
+        tv_do(ctx, TV_ACT_PROMPT, 1);
+        break;
+    case 'M':
+        tv_do(ctx, TV_ACT_PROMPT, 2);
+        break;
+    case 'h':
+        tv_do(ctx, TV_ACT_FLIP_H, 0);
+        break;
+    case 'b':
+        tv_do(ctx, TV_ACT_LOWBW, 0);
+        break;
+    case ' ':
+        tv_do(ctx, TV_ACT_PAUSE, 0);
+        break;
+    case 'v':
+        tv_do(ctx, TV_ACT_FLIP_V, 0);
+        break;
+    case '+':
+    case '=':
+        tv_do(ctx, TV_ACT_ZOOM, 1);
+        break;
+    case '-':
+    case '_':
+        tv_do(ctx, TV_ACT_ZOOM, -1);
+        break;
+    case '0':
+        tv_do(ctx, TV_ACT_VIEW_RESET, 0);
+        break;
+    case TV_K_LEFT:
+        tv_do(ctx, TV_ACT_PAN_X, -1);
+        break;
+    case TV_K_RIGHT:
+        tv_do(ctx, TV_ACT_PAN_X, 1);
+        break;
+    case TV_K_UP:
+    case TV_K_DOWN:
+        tv_do(ctx, TV_ACT_PAN_Y, (ev->key == TV_K_UP) ? -1 : 1);
+        break;
+    case '<':
+    case ',':
+        tv_do(ctx, TV_ACT_FPS, -1);
+        break;
+    case '>':
+    case '.':
+        tv_do(ctx, TV_ACT_FPS, 1);
+        break;
+    default:
+        break;
     }
-    else if (last_mouse_event.button == 65)
+}
+
+/**
+ * tv_zoom_at() - Zoom by 1.2^@notches keeping the image point under cell (@x, @y) in place;
+ * about the view centre when the pointer is outside the image.
+ */
+static void tv_zoom_at(tv_state_t *ctx, int notches, int x, int y)
+{
+    tv_layout_t l;
+    tv_xform_t  xf;
+    tv_xform_now(ctx, &l, &xf);
+    y -= l.img_top;                /* screen row to image row, both 1-based */
+    double dj = x - 0.5;           /* centre of column x (1-based) in samples */
+    double di = 2.0 * (y - 1) + 1; /* between the cell's two sample rows */
+    if (x < 1 || x > l.img_cols || y < 1 || y > l.img_rows)
     {
-        // Scroll Down -> Zoom out
-        view_zoom /= 1.2;
-        if (view_zoom < 0.1)
-        {
-            view_zoom = 0.1;
-        }
+        tv_do(ctx, TV_ACT_ZOOM, notches);
+        return;
     }
-    else if (last_mouse_event.button == 0) // Left Button
+    double px   = tv_xf_img_x(&xf, dj);
+    double py   = tv_xf_img_y(&xf, di);
+    double zoom = ctx->view.zoom * pow(1.2, notches);
+    double zmax = tv_zmax(ctx);
+    zoom        = (zoom > zmax) ? zmax : (zoom < 0.1) ? 0.1 : zoom;
+    double step = tv_view_base(&l, ctx->st->xsize, ctx->st->ysize) / zoom;
+    double cx   = px - xf.sx * (dj - xf.cdx) * step;
+    double cy   = py - xf.sy * (di - xf.cdy) * step;
+    tv_set_view(ctx, cx / ctx->st->xsize, cy / ctx->st->ysize, zoom);
+}
+
+/** tv_handle_mouse() - Pan (left drag), box zoom (right drag) and wheel zoom at the pointer. */
+void tv_handle_mouse(tv_state_t *ctx, const tv_event_t *ev)
+{
+    if (!tv_layout_ok(ctx))
     {
-        if (last_mouse_event.is_press && !last_mouse_event.is_drag)
+        ctx->mouse_is_dragging = 0;
+        ctx->roi_is_dragging   = 0;
+        return;
+    }
+    if (ev->button == TV_MB_WHEEL_UP || ev->button == TV_MB_WHEEL_DOWN)
+    {
+        tv_zoom_at(ctx, (ev->button == TV_MB_WHEEL_UP) ? 1 : -1, ev->x, ev->y);
+        return;
+    }
+
+    tv_layout_t l;
+    tv_xform_t  xf;
+    tv_xform_now(ctx, &l, &xf);
+    int    mx    = ev->x;
+    int    my    = ev->y - l.img_top; /* image rows, 1-based */
+    double xsize = ctx->st->xsize;
+    /* a box zoom selection stays inside the image area, so outline and result agree */
+    int    bx    = (mx < 1) ? 1 : (mx > l.img_cols) ? l.img_cols : mx;
+    int    by    = (my < 1) ? 1 : (my > l.img_rows) ? l.img_rows : my;
+    double ysize = ctx->st->ysize;
+
+    if (ev->button == TV_MB_LEFT)
+    {
+        if (ev->action == TV_MA_PRESS)
         {
             ctx->mouse_is_dragging = 1;
             ctx->last_mouse_x      = mx;
             ctx->last_mouse_y      = my;
         }
-        else if (last_mouse_event.is_press && last_mouse_event.is_drag && ctx->mouse_is_dragging)
+        else if (ev->action == TV_MA_DRAG && ctx->mouse_is_dragging)
         {
-            uint32_t xsize          = ctx->img->md[0].size[0];
-            uint32_t ysize          = ctx->img->md[0].size[1];
-            int      bar_width      = 12;
-            int      disp_char_rows = wrow - 4; // info bar is 4 rows
-            int      disp_cols      = wcol - bar_width - 1;
-            int      disp_img_rows  = disp_char_rows * 2;
-            double   view_w_img     = (double) xsize / view_zoom;
-            double   view_h_img     = (double) ysize / view_zoom;
-            double   step           = fmax(view_w_img / disp_cols, view_h_img / disp_img_rows);
-
+            /* grab: the image point under the pointer follows it, whatever the flips */
             int dx = mx - ctx->last_mouse_x;
             int dy = my - ctx->last_mouse_y;
-
-            double dx_pixels = dx * step;
-            double dy_pixels = -dy * 2 * step;
-
-            view_center_x += dx_pixels / xsize;
-            view_center_y += dy_pixels / ysize;
-
-            if (view_center_x < 0.0)
-            {
-                view_center_x = 0.0;
-            }
-            if (view_center_x > 1.0)
-            {
-                view_center_x = 1.0;
-            }
-            if (view_center_y < 0.0)
-            {
-                view_center_y = 0.0;
-            }
-            if (view_center_y > 1.0)
-            {
-                view_center_y = 1.0;
-            }
-
+            tv_set_view(ctx, (xf.cx - xf.sx * dx * xf.step) / xsize,
+                        (xf.cy - xf.sy * 2.0 * dy * xf.step) / ysize, ctx->view.zoom);
             ctx->last_mouse_x = mx;
             ctx->last_mouse_y = my;
         }
-        else if (!last_mouse_event.is_press)
+        else if (ev->action == TV_MA_RELEASE)
         {
             ctx->mouse_is_dragging = 0;
         }
     }
-    else if (last_mouse_event.button == 2) // Right Button
+    else if (ev->button == TV_MB_RIGHT)
     {
-        if (last_mouse_event.is_press && !last_mouse_event.is_drag)
+        if (ev->action == TV_MA_PRESS)
         {
             ctx->roi_is_dragging = 1;
-            ctx->roi_start_x     = mx;
-            ctx->roi_start_y     = my;
-            ctx->roi_end_x       = mx;
-            ctx->roi_end_y       = my;
+            ctx->roi_start_x     = bx;
+            ctx->roi_start_y     = by;
+            ctx->roi_end_x       = bx;
+            ctx->roi_end_y       = by;
+            ctx->dirty |= TV_D_CHROME;
         }
-        else if (last_mouse_event.is_press && last_mouse_event.is_drag && ctx->roi_is_dragging)
+        else if (ev->action == TV_MA_DRAG && ctx->roi_is_dragging)
         {
-            ctx->roi_end_x = mx;
-            ctx->roi_end_y = my;
+            ctx->roi_end_x = bx;
+            ctx->roi_end_y = by;
+            ctx->dirty |= TV_D_CHROME;
         }
-        else if (!last_mouse_event.is_press && ctx->roi_is_dragging)
+        else if (ev->action == TV_MA_RELEASE && ctx->roi_is_dragging)
         {
-            ctx->roi_end_x       = mx;
-            ctx->roi_end_y       = my;
+            ctx->roi_end_x       = bx;
+            ctx->roi_end_y       = by;
             ctx->roi_is_dragging = 0;
+            ctx->dirty |= TV_D_CHROME;
 
             int min_x = (ctx->roi_start_x < ctx->roi_end_x) ? ctx->roi_start_x : ctx->roi_end_x;
             int max_x = (ctx->roi_start_x > ctx->roi_end_x) ? ctx->roi_start_x : ctx->roi_end_x;
@@ -826,1313 +560,1379 @@ static void termview_handle_mouse_event(tv_context_t *ctx)
 
             if (max_x - min_x >= 2 && max_y - min_y >= 2)
             {
-                uint32_t xsize          = ctx->img->md[0].size[0];
-                uint32_t ysize          = ctx->img->md[0].size[1];
-                int      bar_width      = 12;
-                int      disp_char_rows = wrow - 4; // info bar is 4 rows
-                int      disp_cols      = wcol - bar_width - 1;
-                int      disp_img_rows  = disp_char_rows * 2;
-                double   view_w_img     = (double) xsize / view_zoom;
-                double   view_h_img     = (double) ysize / view_zoom;
-                double   step           = fmax(view_w_img / disp_cols, view_h_img / disp_img_rows);
-                double   center_img_x   = view_center_x * xsize;
-                double   center_img_y   = view_center_y * ysize;
-                double   center_disp_x  = disp_cols / 2.0;
-                double   center_disp_y  = disp_img_rows / 2.0;
-
-                double roi_center_mx = (min_x + max_x) / 2.0;
-                double roi_center_my = (min_y + max_y) / 2.0;
-
-                double new_cx_pixel = center_img_x + (roi_center_mx - 1.0 - center_disp_x) * step;
-                double roi_center_img_row = (roi_center_my - 1.0) * 2.0 + 0.5;
-                double new_cy_pixel = center_img_y + (roi_center_img_row - center_disp_y) * step;
-
-                double roi_w_char = max_x - min_x + 1;
-                double roi_h_char = max_y - min_y + 1;
-                double new_step_x = (roi_w_char * step) / disp_cols;
-                double new_step_y = (roi_h_char * 2 * step) / disp_img_rows;
-                double new_step   = fmax(new_step_x, new_step_y);
-
-                view_center_x = new_cx_pixel / xsize;
-                view_center_y = new_cy_pixel / ysize;
-                view_zoom *= (step / new_step);
-
-                if (view_center_x < 0.0)
-                {
-                    view_center_x = 0.0;
-                }
-                if (view_center_x > 1.0)
-                {
-                    view_center_x = 1.0;
-                }
-                if (view_center_y < 0.0)
-                {
-                    view_center_y = 0.0;
-                }
-                if (view_center_y > 1.0)
-                {
-                    view_center_y = 1.0;
-                }
+                /* box edges in samples, mapped through the same transform as the image */
+                double x0 = tv_xf_img_x(&xf, min_x - 1.0), x1 = tv_xf_img_x(&xf, max_x);
+                double y0 = tv_xf_img_y(&xf, 2.0 * (min_y - 1)), y1 = tv_xf_img_y(&xf, 2.0 * max_y);
+                double step = fmax(fabs(x1 - x0) / l.img_cols, fabs(y1 - y0) / (2.0 * l.img_rows));
+                double base = tv_view_base(&l, ctx->st->xsize, ctx->st->ysize);
+                tv_set_view(ctx, 0.5 * (x0 + x1) / xsize, 0.5 * (y0 + y1) / ysize, base / step);
             }
         }
     }
 }
 
-static void termview_handle_keyboard_event(tv_context_t *ctx, int ch)
+/** tv_flush_wheel() - Apply @notches of accumulated wheel motion as one zoom at the pointer. */
+static void tv_flush_wheel(tv_state_t *ctx, int *notches)
 {
-    switch (ch)
+    if (*notches != 0 && tv_layout_ok(ctx))
     {
-    case 10: // ENTER key (LF)
-    case 13: // ENTER key (CR)
-    case 27: // ESC key
-        if (ctx->popup_type > 0)
-        {
-            ctx->popup_type = 0;
-            force_redraw    = 1;
-        }
-        break;
-    case 'q':
-        force_redraw = 1;
-        loop         = 0;
-        break;
-    case 'c':
-        force_redraw             = 1;
-        current_options.colormap = (current_options.colormap + 1) % COLORMAP_NB;
-        ctx->popup_type          = 1;
-        clock_gettime(CLOCK_MONOTONIC, &ctx->popup_expiry_time);
-        ctx->popup_expiry_time.tv_sec += 2;
-        break;
-    case 's':
-        force_redraw          = 1;
-        current_options.scale = (current_options.scale + 1) % SCALE_NB;
-        ctx->popup_type       = 2;
-        clock_gettime(CLOCK_MONOTONIC, &ctx->popup_expiry_time);
-        ctx->popup_expiry_time.tv_sec += 2;
-        break;
-    case 'r':
-        force_redraw          = 1;
-        current_options.range = (current_options.range + 1) % RANGE_NB;
-        ctx->popup_type       = 3;
-        clock_gettime(CLOCK_MONOTONIC, &ctx->popup_expiry_time);
-        ctx->popup_expiry_time.tv_sec += 2;
-        break;
-    case 'l':
-        force_redraw                 = 1;
-        current_options.range_locked = !current_options.range_locked;
-        if (current_options.range_locked)
-        {
-            current_options.manual_min = current_min_val;
-            current_options.manual_max = current_max_val;
-        }
-        break;
-    case 'm':
-        force_redraw      = 1;
-        ctx->input_mode   = 1;
-        ctx->input_len    = 0;
-        ctx->input_buf[0] = '\0';
-        break;
-    case 'M':
-        force_redraw      = 1;
-        ctx->input_mode   = 2;
-        ctx->input_len    = 0;
-        ctx->input_buf[0] = '\0';
-        break;
-    case 'h':
-        force_redraw           = 1;
-        current_options.flip_h = !current_options.flip_h;
-        break;
-    case 'v':
-        force_redraw           = 1;
-        current_options.flip_v = !current_options.flip_v;
-        break;
-    case '+':
-        force_redraw = 1;
-    case '=':
-        force_redraw = 1;
-        view_zoom *= 1.2;
-        break;
-    case '-':
-        force_redraw = 1;
-    case '_':
-        force_redraw = 1;
-        view_zoom /= 1.2;
-        if (view_zoom < 0.1)
-        {
-            view_zoom = 0.1;
-        }
-        break;
-    case '0':
-        force_redraw  = 1;
-        view_zoom     = 1.0;
-        view_center_x = 0.5;
-        view_center_y = 0.5;
-        break;
-    case TV_KEY_LEFT:
-        force_redraw = 1;
-        view_center_x += 0.1 / view_zoom;
-        if (view_center_x > 1.0)
-        {
-            view_center_x = 1.0;
-        }
-        break;
-    case TV_KEY_RIGHT:
-        force_redraw = 1;
-        view_center_x -= 0.1 / view_zoom;
-        if (view_center_x < 0.0)
-        {
-            view_center_x = 0.0;
-        }
-        break;
-    case TV_KEY_UP:
-        force_redraw = 1;
-        if (ctx->popup_type == 1)
-        {
-            current_options.colormap = (current_options.colormap + COLORMAP_NB - 1) % COLORMAP_NB;
-            clock_gettime(CLOCK_MONOTONIC, &ctx->popup_expiry_time);
-            ctx->popup_expiry_time.tv_sec += 2;
-        }
-        else if (ctx->popup_type == 2)
-        {
-            current_options.scale = (current_options.scale + SCALE_NB - 1) % SCALE_NB;
-            clock_gettime(CLOCK_MONOTONIC, &ctx->popup_expiry_time);
-            ctx->popup_expiry_time.tv_sec += 2;
-        }
-        else if (ctx->popup_type == 3)
-        {
-            current_options.range = (current_options.range + RANGE_NB - 1) % RANGE_NB;
-            clock_gettime(CLOCK_MONOTONIC, &ctx->popup_expiry_time);
-            ctx->popup_expiry_time.tv_sec += 2;
-        }
-        else
-        {
-            view_center_y -= 0.1 / view_zoom;
-            if (view_center_y < 0.0)
-            {
-                view_center_y = 0.0;
-            }
-        }
-        break;
-    case TV_KEY_DOWN:
-        force_redraw = 1;
-        if (ctx->popup_type == 1)
-        {
-            current_options.colormap = (current_options.colormap + 1) % COLORMAP_NB;
-            clock_gettime(CLOCK_MONOTONIC, &ctx->popup_expiry_time);
-            ctx->popup_expiry_time.tv_sec += 2;
-        }
-        else if (ctx->popup_type == 2)
-        {
-            current_options.scale = (current_options.scale + 1) % SCALE_NB;
-            clock_gettime(CLOCK_MONOTONIC, &ctx->popup_expiry_time);
-            ctx->popup_expiry_time.tv_sec += 2;
-        }
-        else if (ctx->popup_type == 3)
-        {
-            current_options.range = (current_options.range + 1) % RANGE_NB;
-            clock_gettime(CLOCK_MONOTONIC, &ctx->popup_expiry_time);
-            ctx->popup_expiry_time.tv_sec += 2;
-        }
-        else
-        {
-            view_center_y += 0.1 / view_zoom;
-            if (view_center_y > 1.0)
-            {
-                view_center_y = 1.0;
-            }
-        }
-        break;
-    case '<':
-        force_redraw = 1;
-    case ',':
-        force_redraw = 1;
-        ctx->target_fps -= 1;
-        if (ctx->target_fps < 1)
-        {
-            ctx->target_fps = 1;
-        }
-        break;
-    case '>':
-        force_redraw = 1;
-    case '.':
-        force_redraw = 1;
-        ctx->target_fps += 1;
-        if (ctx->target_fps > 120)
-        {
-            ctx->target_fps = 120;
-        }
-        break;
-    case TV_KEY_MOUSE:
-        termview_handle_mouse_event(ctx);
-        break;
+        tv_zoom_at(ctx, *notches, ctx->wheel_x, ctx->wheel_y);
     }
+    *notches = 0;
 }
 
-static void termview_render_image(tv_context_t *ctx,
-                                  int           disp_char_rows,
-                                  int           disp_cols,
-                                  double        center_img_x,
-                                  double        center_img_y,
-                                  double        sign_x,
-                                  double        sign_y,
-                                  double        step,
-                                  uint32_t      xsize,
-                                  uint32_t      ysize,
-                                  double        min_val,
-                                  double        max_val)
+/**
+ * tv_dispatch_input() - Apply up to @budget decoded events. Consecutive drags of one button, and
+ * consecutive wheel notches, merge into one update; any other event flushes them first, so the
+ * order of effects is kept.
+ */
+void tv_dispatch_input(tv_state_t *ctx, tv_input_t *in, int64_t now_us, int budget)
 {
-#define IS_IN_BOUNDS(jj, yy)                                                          \
-    (((int) (center_img_x + sign_x * ((jj) - center_disp_x) * step) >= 0) &&          \
-     ((int) (center_img_x + sign_x * ((jj) - center_disp_x) * step) < (int) xsize) && \
-     ((int) (center_img_y + sign_y * ((yy) - center_disp_y) * step) >= 0) &&          \
-     ((int) (center_img_y + sign_y * ((yy) - center_disp_y) * step) < (int) ysize))
+    tv_event_t ev, drag;
+    int        have_drag = 0;
+    int        wheel     = 0;
 
-    double center_disp_x = disp_cols / 2.0;
-    double center_disp_y = (disp_char_rows * 2) / 2.0;
-
-    for (int i = 0; i < disp_char_rows; i++)
+    while (budget-- > 0 && ctx->running && !ctx->suspend && tv_input_next(in, now_us, &ev))
     {
-        for (int j = 0; j < disp_cols; j++)
+        if (ev.type == TV_EV_CPR)
         {
-            int  img_y_top     = (int) (center_img_y + sign_y * ((i * 2) - center_disp_y) * step);
-            int  img_x_top     = (int) (center_img_x + sign_x * (j - center_disp_x) * step);
-            bool in_bounds_top = (img_x_top >= 0 && img_x_top < (int) xsize && img_y_top >= 0 &&
-                                  img_y_top < (int) ysize);
+            tv_fc_answer(ctx, now_us, ev.x); /* not input: the terminal showed what came before */
+            continue;
+        }
+        int is_mouse = (ev.type == TV_EV_MOUSE);
+        int is_wheel = is_mouse && (ev.button == TV_MB_WHEEL_UP || ev.button == TV_MB_WHEEL_DOWN);
+        int is_drag  = is_mouse && ev.action == TV_MA_DRAG;
 
-            int  img_y_bot = (int) (center_img_y + sign_y * ((i * 2 + 1) - center_disp_y) * step);
-            int  img_x_bot = (int) (center_img_x + sign_x * (j - center_disp_x) * step);
-            bool in_bounds_bot = (img_x_bot >= 0 && img_x_bot < (int) xsize && img_y_bot >= 0 &&
-                                  img_y_bot < (int) ysize);
-
-            tv_cell_t *cell = &ctx->screen[i * wcol + j];
-
-            if (!in_bounds_top && !in_bounds_bot)
-            {
-                bool near_top = IS_IN_BOUNDS(j - 1, i * 2) || IS_IN_BOUNDS(j + 1, i * 2) ||
-                                IS_IN_BOUNDS(j, i * 2 - 1) || IS_IN_BOUNDS(j, i * 2 + 1);
-                bool near_bot = IS_IN_BOUNDS(j - 1, i * 2 + 1) || IS_IN_BOUNDS(j + 1, i * 2 + 1) ||
-                                IS_IN_BOUNDS(j, i * 2) || IS_IN_BOUNDS(j, i * 2 + 2);
-                if (!near_top && !near_bot)
-                {
-                    continue; // left as space
-                }
-            }
-
-            double val_top = in_bounds_top ? ctx->display_buffer[(i * 2) * disp_cols + j] : 0.0;
-            double val_bot = in_bounds_bot ? ctx->display_buffer[(i * 2 + 1) * disp_cols + j] : 0.0;
-
-            double norm_top = (val_top - min_val) / (max_val - min_val);
-            if (norm_top < 0)
-            {
-                norm_top = 0;
-            }
-            if (norm_top > 1)
-            {
-                norm_top = 1;
-            }
-
-            double norm_bot = (val_bot - min_val) / (max_val - min_val);
-            if (norm_bot < 0)
-            {
-                norm_bot = 0;
-            }
-            if (norm_bot > 1)
-            {
-                norm_bot = 1;
-            }
-
-            rgb_t rgb_top = colormap_lut[(int) (norm_top * 1023)];
-            rgb_t rgb_bot = colormap_lut[(int) (norm_bot * 1023)];
-
-            if (!in_bounds_top)
-            {
-                if (IS_IN_BOUNDS(j - 1, i * 2) || IS_IN_BOUNDS(j + 1, i * 2) ||
-                    IS_IN_BOUNDS(j, i * 2 - 1) || IS_IN_BOUNDS(j, i * 2 + 1))
-                {
-                    rgb_top = (rgb_t) { 64, 64, 64 }; // Dark gray border
-                }
-                else
-                {
-                    rgb_top = (rgb_t) { 0, 0, 0 };
-                }
-            }
-
-            if (!in_bounds_bot)
-            {
-                if (IS_IN_BOUNDS(j - 1, i * 2 + 1) || IS_IN_BOUNDS(j + 1, i * 2 + 1) ||
-                    IS_IN_BOUNDS(j, i * 2) || IS_IN_BOUNDS(j, i * 2 + 2))
-                {
-                    rgb_bot = (rgb_t) { 64, 64, 64 }; // Dark gray border
-                }
-                else
-                {
-                    rgb_bot = (rgb_t) { 0, 0, 0 };
-                }
-            }
-
-            if (ctx->roi_is_dragging)
-            {
-                int rx_min =
-                    (ctx->roi_start_x < ctx->roi_end_x) ? ctx->roi_start_x : ctx->roi_end_x;
-                int rx_max =
-                    (ctx->roi_start_x > ctx->roi_end_x) ? ctx->roi_start_x : ctx->roi_end_x;
-                int ry_min =
-                    (ctx->roi_start_y < ctx->roi_end_y) ? ctx->roi_start_y : ctx->roi_end_y;
-                int ry_max =
-                    (ctx->roi_start_y > ctx->roi_end_y) ? ctx->roi_start_y : ctx->roi_end_y;
-
-                int term_x = j + 1;
-                int term_y = i + 1;
-
-                if (term_x >= rx_min && term_x <= rx_max && term_y >= ry_min && term_y <= ry_max)
-                {
-                    if (term_x == rx_min || term_x == rx_max || term_y == ry_min ||
-                        term_y == ry_max)
-                    {
-                        rgb_top = (rgb_t) { 255, 255, 0 }; // Yellow border
-                        rgb_bot = (rgb_t) { 255, 255, 0 };
-                    }
-                    else
-                    {
-                        // Dim the inside of the ROI
-                        rgb_top.r /= 2;
-                        rgb_top.g /= 2;
-                        rgb_top.b /= 2;
-                        rgb_bot.r /= 2;
-                        rgb_bot.g /= 2;
-                        rgb_bot.b /= 2;
-                    }
-                }
-            }
-
-            cell->bg_r  = rgb_top.r;
-            cell->bg_g  = rgb_top.g;
-            cell->bg_b  = rgb_top.b;
-            cell->fg_r  = rgb_bot.r;
-            cell->fg_g  = rgb_bot.g;
-            cell->fg_b  = rgb_bot.b;
-            cell->ch[0] = (char) 0xE2;
-            cell->ch[1] = (char) 0x96;
-            cell->ch[2] = (char) 0x84;
-            cell->ch[3] = '\0';
+        if (have_drag && !(is_drag && drag.button == ev.button))
+        {
+            tv_handle_mouse(ctx, &drag);
+            have_drag = 0;
+        }
+        if (!is_wheel)
+        {
+            tv_flush_wheel(ctx, &wheel);
+        }
+        if (is_mouse && tv_ui_wants_mouse(ctx, &ev))
+        {
+            tv_flush_wheel(ctx, &wheel);
+            tv_ui_mouse(ctx, &ev); /* menus, the help box, the menubar and the status row */
+        }
+        else if (is_drag)
+        {
+            drag      = ev;
+            have_drag = 1;
+        }
+        else if (is_wheel)
+        {
+            wheel += (ev.button == TV_MB_WHEEL_UP) ? 1 : -1;
+            ctx->wheel_x = ev.x;
+            ctx->wheel_y = ev.y;
+        }
+        else if (is_mouse)
+        {
+            tv_handle_mouse(ctx, &ev);
+        }
+        else if (!tv_ui_key(ctx, &ev))
+        {
+            tv_handle_key(ctx, &ev);
         }
     }
-#undef IS_IN_BOUNDS
+    if (have_drag)
+    {
+        tv_handle_mouse(ctx, &drag);
+    }
+    tv_flush_wheel(ctx, &wheel);
 }
 
-static void termview_render_colorbar(tv_context_t *ctx,
-                                     int           disp_char_rows,
-                                     int           bar_col_start,
-                                     double        min_val,
-                                     double        max_val)
+/** tv_slice_us() - A frame period within 40-50 ms: what a slow terminal gets per flush. */
+static int64_t tv_slice_us(const tv_state_t *ctx)
 {
-    for (int i = 0; i < disp_char_rows; i++)
-    {
-        double norm_val = 1.0 - (double) i / (disp_char_rows - 1);
-        rgb_t  rgb      = colormap_lut[(int) (norm_val * 1023)];
-
-        tv_cell_t *c1 = &ctx->screen[i * wcol + bar_col_start - 1];
-        tv_cell_t *c2 = &ctx->screen[i * wcol + bar_col_start];
-        c1->fg_r      = rgb.r;
-        c1->fg_g      = rgb.g;
-        c1->fg_b      = rgb.b;
-        c1->bg_r      = 0;
-        c1->bg_g      = 0;
-        c1->bg_b      = 0;
-        c1->ch[0]     = (char) 0xE2;
-        c1->ch[1]     = (char) 0x96;
-        c1->ch[2]     = (char) 0x88;
-        c1->ch[3]     = '\0';
-
-        c2->fg_r  = rgb.r;
-        c2->fg_g  = rgb.g;
-        c2->fg_b  = rgb.b;
-        c2->bg_r  = 0;
-        c2->bg_g  = 0;
-        c2->bg_b  = 0;
-        c2->ch[0] = (char) 0xE2;
-        c2->ch[1] = (char) 0x96;
-        c2->ch[2] = (char) 0x88;
-        c2->ch[3] = '\0';
-
-        char label[32];
-        int  label_len = 0;
-        if (i == 0)
-        {
-            label_len = snprintf(label, sizeof(label), "%.2g", max_val);
-        }
-        else if (i == disp_char_rows / 2)
-        {
-            label_len = snprintf(label, sizeof(label), "%.2g", (min_val + max_val) / 2);
-        }
-        else if (i == disp_char_rows - 1)
-        {
-            label_len = snprintf(label, sizeof(label), "%.2g", min_val);
-        }
-
-        for (int k = 0; k < label_len; k++)
-        {
-            if (bar_col_start + 2 + k < wcol)
-            {
-                tv_cell_t *lc = &ctx->screen[i * wcol + bar_col_start + 2 + k];
-                lc->ch[0]     = label[k];
-                lc->ch[1]     = '\0';
-            }
-        }
-    }
+    int64_t slice = 1000000 / ctx->target_fps;
+    return (slice < TV_FLUSH_SLICE_MIN_US)   ? TV_FLUSH_SLICE_MIN_US
+           : (slice > TV_FLUSH_SLICE_MAX_US) ? TV_FLUSH_SLICE_MAX_US
+                                             : slice;
 }
 
-static void termview_render_infobar(tv_context_t *ctx,
-                                    uint32_t      xsize,
-                                    uint32_t      ysize,
-                                    double        step,
-                                    double        min_val,
-                                    double        max_val)
+static inline int64_t tv_max64(int64_t a, int64_t b)
 {
-    int info_row = wrow - 3;
+    return (a > b) ? a : b;
+}
 
-    const char *cmap_str = "GREYSCALE";
-    switch (current_options.colormap)
-    {
-    case COLORMAP_HEAT:
-        cmap_str = "HEAT";
-        break;
-    case COLORMAP_COLD:
-        cmap_str = "COLD";
-        break;
-    case COLORMAP_JET:
-        cmap_str = "JET";
-        break;
-    case COLORMAP_INFERNO:
-        cmap_str = "INFERNO";
-        break;
-    case COLORMAP_VIRIDIS:
-        cmap_str = "VIRIDIS";
-        break;
-    case COLORMAP_MAGMA:
-        cmap_str = "MAGMA";
-        break;
-    case COLORMAP_PLASMA:
-        cmap_str = "PLASMA";
-        break;
-    case COLORMAP_BONE:
-        cmap_str = "BONE";
-        break;
-    case COLORMAP_RAINBOW:
-        cmap_str = "RAINBOW";
-        break;
-    case COLORMAP_TURBO:
-        cmap_str = "TURBO";
-        break;
-    case COLORMAP_OCEAN:
-        cmap_str = "OCEAN";
-        break;
-    case COLORMAP_COPPER:
-        cmap_str = "COPPER";
-        break;
-    case COLORMAP_SPRING:
-        cmap_str = "SPRING";
-        break;
-    case COLORMAP_SUMMER:
-        cmap_str = "SUMMER";
-        break;
-    case COLORMAP_AUTUMN:
-        cmap_str = "AUTUMN";
-        break;
-    case COLORMAP_WINTER:
-        cmap_str = "WINTER";
-        break;
-    default:
-        break;
-    }
-    const char *scale_str = "LIN";
-    switch (current_options.scale)
-    {
-    case SCALE_SQRT:
-        scale_str = "SQRT";
-        break;
-    case SCALE_LOG:
-        scale_str = "LOG";
-        break;
-    case SCALE_LOG_STRONG:
-        scale_str = "LOG_STR";
-        break;
-    case SCALE_LOG_EXTREME:
-        scale_str = "LOG_EXT";
-        break;
-    case SCALE_ASINH:
-        scale_str = "ASINH";
-        break;
-    case SCALE_SQUARED:
-        scale_str = "SQUARED";
-        break;
-    case SCALE_CUBED:
-        scale_str = "CUBED";
-        break;
-    default:
-        break;
-    }
-    const char *range_str = "MINMAX";
-    switch (current_options.range)
-    {
-    case RANGE_001_999:
-        range_str = "0.1-99.9%";
-        break;
-    case RANGE_005_995:
-        range_str = "0.5-99.5%";
-        break;
-    case RANGE_01_99:
-        range_str = "1-99%";
-        break;
-    case RANGE_05_95:
-        range_str = "5-95%";
-        break;
-    case RANGE_10_90:
-        range_str = "10-90%";
-        break;
-    case RANGE_15_85:
-        range_str = "15-85%";
-        break;
-    case RANGE_20_80:
-        range_str = "20-80%";
-        break;
-    default:
-        break;
-    }
+/** tv_fc_quiet() - Unanswered bytes an answer may come behind and still time the round trip:
+ * what the link shows in 5 ms, TV_FC_QUIET at least. */
+static uint64_t tv_fc_quiet(const tv_fc_t *fc)
+{
+    double q = fc->rate * 5000.0;
+    return (q > TV_FC_QUIET) ? (uint64_t) q : TV_FC_QUIET;
+}
 
-    char info[256];
-    int  len;
-
-    len = snprintf(info, sizeof(info),
-                   "Image: %s [%d x %d] Type: %d  |  CPU: %5.1f%%  UI: %3d FPS  Stream: %5.1f Hz",
-                   ctx->img->md[0].name, xsize, ysize, ctx->img->md[0].datatype,
-                   ctx->current_cpu_usage, ctx->target_fps, ctx->current_stream_fps);
-    for (int k = 0; k < len && k < wcol; k++)
+void tv_fc_window(tv_fc_t           *fc,
+                  int64_t            now_us,
+                  const tv_fc_req_t *r,
+                  uint64_t           delta,
+                  int64_t            slice_us)
+{
+    int64_t rtt     = now_us - r->us;
+    int64_t horizon = tv_max64(3000000, 4 * (fc->base_us + slice_us));
+    if (r->quiet)
     {
-        tv_cell_t *c = &ctx->screen[info_row * wcol + k];
-        c->ch[0]     = info[k];
-        c->ch[1]     = '\0';
-        int name_len = strlen(ctx->img->md[0].name);
-        if (k >= 7 && k < 7 + name_len)
+        /* nothing queued ahead: the plain round trip. While it holds, time it less often. If it
+         * grew by as much as every queue seen since a cut, that queue was the old round trip's
+         * doing: the rate comes back. */
+        int64_t d = (rtt > fc->base_us) ? rtt - fc->base_us : fc->base_us - rtt;
+        fc->gap_us =
+            (d <= tv_max64(2000, fc->base_us / 8))
+                ? ((2 * fc->gap_us < TV_FC_REBASE_MAX_US) ? 2 * fc->gap_us : TV_FC_REBASE_MAX_US)
+                : TV_FC_REBASE_US;
+        if (rtt > fc->base_us + 2 * slice_us && fc->cut_rate > fc->rate &&
+            fc->cut_rtt_us <= rtt + fc->base_us + 2 * slice_us)
         {
-            c->fg_r = 0;
-            c->fg_g = 255;
-            c->fg_b = 255; // Cyan
+            fc->rate    = fc->cut_rate;
+            fc->rate_us = now_us;
+        }
+        fc->cut_rate   = 0.0;
+        fc->cut_rtt_us = 0;
+        fc->base_us    = rtt;
+        fc->timed_us   = rtt;
+        fc->quiet_us   = now_us;
+    }
+    else if (rtt < fc->base_us)
+    {
+        fc->base_us = rtt;
+        if (rtt + 2 * slice_us < fc->timed_us)
+        {
+            /* the round trip shrank: the window keeps the rest of the old one queued: time it */
+            fc->timed_us = rtt;
+            fc->gap_us   = TV_FC_REBASE_US;
+            fc->quiet_us = now_us - TV_FC_REBASE_US;
         }
     }
-    len = snprintf(info, sizeof(info),
-                   "Val: [%.4g : %.4g] Zoom: %.2fx (%.2f px/char H, %.2f px/char V)", min_val,
-                   max_val, view_zoom, step, step * 2.0);
-    for (int k = 0; k < len && k < wcol; k++)
+    /* rtt - base is the queue ahead of the request plus its own flush: about a slice when the
+     * window is right */
+    int64_t q = rtt - fc->base_us;
+
+    /* delivery rate: the bytes shown since an earlier answer (far enough back for ssh's
+     * bunching), over the longer of the times between the answers and between their requests,
+     * so that answers held up and then let through together do not inflate it. A sample is low
+     * when there was little to send: only one taken while the window held image back behind a
+     * queue replaces a maximum gone stale. The first window's answer counts however soon it
+     * comes after the startup answer. */
+    double  sample = 0.0, ans = 0.0;
+    int     sampled = 0, first = fc->first;
+    int64_t least = tv_max64(5000, slice_us / 2);
+    if (now_us - fc->grow_us > fc->base_us + slice_us)
     {
-        ctx->screen[(info_row + 1) * wcol + k].ch[0] = info[k];
-        ctx->screen[(info_row + 1) * wcol + k].ch[1] = '\0';
+        fc->grow_us   = now_us;
+        fc->grow_rate = fc->rate;
+    }
+    if (fc->ref_us != 0 && (first || now_us - fc->ref_us >= least))
+    {
+        int64_t span = tv_max64(tv_max64(now_us - fc->ref_us, r->us - fc->ref_sus), least);
+        sample       = (double) (r->at - fc->ref_at) / (double) span;
+        ans     = (double) (r->at - fc->ref_at) / (double) tv_max64(now_us - fc->ref_us, least);
+        sample  = (fc->grow_rate > 0.0) ? fmin(sample, 2.0 * fc->grow_rate) : sample;
+        sampled = 1;
+        if (sample >= fc->rate || (now_us - fc->rate_us > horizon && fc->limited && q >= slice_us))
+        {
+            fc->rate    = sample;
+            fc->rate_us = now_us;
+        }
+    }
+    if (fc->ref_us == 0 || sampled)
+    {
+        fc->ref_us  = now_us;
+        fc->ref_sus = r->us;
+        fc->ref_at  = r->at;
+    }
+    if (fc->ramp_us != 0 && r->us == fc->ramp_us && fc->n > 0 && fc->req[fc->head].us == r->us)
+    {
+        fc->ref_us = 0; /* a drain's last request, with image in the same write: no reference */
     }
 
-    if (ctx->input_mode > 0)
+    /* Over 3 slices of queue for a slice of time, the link is slower than the maximum says (one
+     * late answer is not enough: delays vary): the rate goes to what the answers themselves
+     * show (sparse requests, as during a stall, say nothing), by half at most per round trip.
+     * Over 1.25 slices for longer, the round trip may have grown: tv_fc_room() times it again. */
+    fc->high_us = (q > 2 * slice_us) ? (fc->high_us ? fc->high_us : now_us) : 0;
+    if (q > slice_us + slice_us / 4)
     {
-        len = snprintf(info, sizeof(info), "Enter Manual %s: %s_",
-                       ctx->input_mode == 1 ? "Min" : "Max", ctx->input_buf);
-        for (int k = 0; k < len && k < wcol; k++)
-        {
-            tv_cell_t *c = &ctx->screen[(info_row + 2) * wcol + k];
-            c->ch[0]     = info[k];
-            c->ch[1]     = '\0';
-            c->fg_r      = 255;
-            c->fg_g      = 255;
-            c->fg_b      = 0; // Yellow text
-        }
-        for (int k = len; k < wcol; k++)
-        {
-            ctx->screen[(info_row + 2) * wcol + k].ch[0] = ' ';
-            ctx->screen[(info_row + 2) * wcol + k].ch[1] = '\0';
-        }
+        fc->lift_rtt_us = (fc->lift_us && fc->lift_rtt_us < rtt) ? fc->lift_rtt_us : rtt;
+        fc->lift_us     = fc->lift_us ? fc->lift_us : now_us;
     }
     else
     {
-        char        info1[128];
-        int         len1 = snprintf(info1, sizeof(info1), "[C]map: %s  [S]cale: %s  [R]ange: %s [",
-                                    cmap_str, scale_str, range_str);
-        const char *lock_str = current_options.range_locked ? "LOCKED" : "AUTO";
-        int         lock_len = strlen(lock_str);
-        char        info2[256];
-        int         len2 =
-            snprintf(info2, sizeof(info2), "%s%s]  (< >:FPS l:Lock m/M:MinMax ", info1, lock_str);
+        fc->lift_us = 0;
+    }
+    if (q > 3 * slice_us && fc->high_us && now_us - fc->high_us >= slice_us && sampled &&
+        ans < fc->rate && now_us - fc->cut_us > fc->base_us + slice_us)
+    {
+        fc->cut_rtt_us = (fc->cut_rate > 0.0) ? fc->cut_rtt_us : 0;
+        fc->cut_rate   = fmax(fc->cut_rate, fc->rate);
+        fc->rate       = fmax(ans, 0.5 * fc->rate); /* by half at most per round trip: jitter */
+        fc->rate_us    = now_us;
+        fc->cut_us     = now_us;
+    }
+    fc->cut_rtt_us = (fc->cut_rate > 0.0) ? tv_max64(fc->cut_rtt_us, rtt) : 0;
+    fc->full_us    = (fc->limited || fc->busy) ? now_us : fc->full_us;
 
-        const char *h_str = current_options.flip_h ? "h:FLIPH" : "h:fliph";
-        const char *v_str = current_options.flip_v ? "v:FLIPV" : "v:flipv";
+    double w   = (double) fc->window;
+    double est = fc->rate * (double) (fc->base_us + slice_us);
+    if (first && sampled)
+    {
+        w = est; /* what the first window took: the link, at once */
+    }
+    else if (fc->limited && q < slice_us)
+    {
+        w = fmax(w + (double) delta, fmin(est, 2.0 * w)); /* no queue yet: a window more per trip */
+    }
+    else if (fc->rate > 0.0)
+    {
+        w = fmin(est, 2.0 * w);
+    }
+    if (fc->rate > 0.0 && now_us - fc->full_us > horizon)
+    {
+        w = fmin(w,
+                 est / 4.0); /* long with little to send: start below it, the link may be slower */
+    }
+    fc->window  = (size_t) ((w < TV_FC_MIN) ? TV_FC_MIN : (w > TV_FC_MAX) ? TV_FC_MAX : w);
+    fc->limited = 0;
+    fc->busy    = 0;
+    fc->first   = first && !sampled;
+}
 
-        len = snprintf(info, sizeof(info), "%s%s %s q:Quit)", info2, h_str, v_str);
-
-        for (int k = 0; k < len && k < wcol; k++)
+/** tv_fc_used() - Column @col is still asked: a request in it may yet be answered (in the last
+ * column, @edge, also one past it, which a narrower terminal answers there). */
+static int tv_fc_used(const uint64_t *used, int col, int edge)
+{
+    for (int c = col; c <= (edge ? 128 : col); c++)
+    {
+        if ((used[(c - 1) / 64] >> ((c - 1) % 64)) & 1)
         {
-            tv_cell_t *c = &ctx->screen[(info_row + 2) * wcol + k];
-            c->ch[0]     = info[k];
-            c->ch[1]     = '\0';
-            if (k >= len1 && k < len1 + lock_len)
-            {
-                if (current_options.range_locked)
-                {
-                    c->fg_r = 255;
-                    c->fg_g = 50;
-                    c->fg_b = 50; // Red for Locked
-                }
-                else
-                {
-                    c->fg_r = 50;
-                    c->fg_g = 255;
-                    c->fg_b = 50; // Green for Auto
-                }
-            }
-            if (current_options.flip_h && k >= len2 && k < len2 + (int) strlen(h_str))
-            {
-                c->fg_r = 255;
-                c->fg_g = 255;
-                c->fg_b = 0; // Yellow
-            }
-            if (current_options.flip_v && k >= len2 + (int) strlen(h_str) + 1 &&
-                k < len2 + (int) strlen(h_str) + 1 + (int) strlen(v_str))
-            {
-                c->fg_r = 255;
-                c->fg_g = 255;
-                c->fg_b = 0; // Yellow
-            }
+            return 1;
         }
-        for (int k = len; k < wcol; k++)
-        {
-            ctx->screen[(info_row + 2) * wcol + k].ch[0] = ' ';
-            ctx->screen[(info_row + 2) * wcol + k].ch[1] = '\0';
-        }
+    }
+    return 0;
+}
+
+/*
+ * The (hidden) cursor goes to the last row, in a column of its own among 17..16+TV_FC_IDS (from
+ * the left, where a narrower terminal does not move it): the answer names its request, and its
+ * row (2 or more) and column (past 16) keep it apart from modified F3 (CSI 1;<mod> R). A column
+ * is not reused while an earlier request in it may still be answered: with none free, the
+ * request waits for answers (unless none is out).
+ */
+size_t tv_fc_request(tv_state_t *ctx, char *out, int64_t now_us)
+{
+    tv_fc_t *fc = &ctx->fc;
+    if (fc->n == TV_FC_REQS || fc->closing || fc->state == TV_FC_OFF || ctx->rows < 2)
+    {
+        return 0;
+    }
+    uint64_t used[2] = { fc->gone[0], fc->gone[1] };
+    for (int k = 0; k < fc->n; k++)
+    {
+        int c = fc->req[(fc->head + k) % TV_FC_REQS].col - 1;
+        used[c / 64] |= 1ull << (c % 64);
+    }
+    int ids = (ctx->cols > 17 + TV_FC_IDS) ? TV_FC_IDS : (ctx->cols > 18) ? ctx->cols - 17 : 1;
+    int col = 0;
+    for (unsigned i = 0; i < (unsigned) ids && col == 0; i++)
+    {
+        int c = (ids > 1) ? 17 + (int) ((fc->seq + i) % (unsigned) ids) : ctx->cols;
+        col   = tv_fc_used(used, c, ids == 1) ? 0 : c;
+        fc->seq += (col && ids > 1) ? i : 0;
+    }
+    if (col == 0 && fc->n > 0)
+    {
+        return 0;
+    }
+    col            = col ? col : (ids > 1) ? 17 + (int) (fc->seq % (unsigned) ids) : ctx->cols;
+    tv_fc_req_t *r = &fc->req[(fc->head + fc->n++) % TV_FC_REQS];
+    r->us          = now_us;
+    r->col         = col;
+    fc->seq += (ids > 1);
+    return (size_t) snprintf(out, 32, "\033[%d;%dH\033[6n", ctx->rows, r->col);
+}
+
+void tv_fc_wrote(tv_fc_t *fc, size_t n, size_t req, int failed)
+{
+    fc->sent += n;
+    if (req > 0 && failed)
+    {
+        fc->n--; /* it may not have reached the terminal */
+    }
+    else if (req > 0)
+    {
+        tv_fc_req_t *r = &fc->req[(fc->head + fc->n - 1) % TV_FC_REQS];
+        r->at          = fc->sent;
+        r->inflight    = fc->sent - fc->acked;
+        /* at the rate known now; not while answers are late: a queue may hide behind them */
+        r->quiet = fc->late_us == 0 && r->inflight <= tv_fc_quiet(fc);
     }
 }
 
-static void termview_render_popup(tv_context_t *ctx, int disp_char_rows, int disp_cols)
+size_t tv_fc_lead(tv_state_t *ctx, char *out, int64_t now_us, size_t room)
 {
-    if (ctx->popup_type <= 0)
+    tv_fc_t *fc = &ctx->fc;
+    /* draining, and nothing left to wait for: this one times the round trip, and bytes written
+     * after it cannot delay its answer, so the image need not wait for it */
+    int    quiet = fc->drain_us != 0 && fc->sent - fc->acked + 32 <= tv_fc_quiet(fc);
+    size_t n     = 0;
+    if (fc->ask || quiet || (room == 0 && fc->n == 0))
+    {
+        n = tv_fc_request(ctx, out, now_us);
+    }
+    if (n > 0)
+    {
+        fc->ask = 0;
+        if (quiet)
+        {
+            fc->drain_us = 0;
+            fc->quiet_us = now_us;
+            fc->ramp_us  = now_us;
+        }
+    }
+    return n;
+}
+
+void tv_fc_plan(tv_state_t *ctx, size_t room)
+{
+    tv_emit_t *e = &ctx->emit;
+    e->budget = (room != SIZE_MAX && (ctx->budget == 0 || room < ctx->budget)) ? room : ctx->budget;
+    e->hold   = (room == 0);
+    ctx->fc.wait = e->hold && ctx->fc.state == TV_FC_ON; /* an answer sends what is held */
+}
+
+void tv_fc_flushed(tv_state_t *ctx, size_t room)
+{
+    const tv_emit_t *e  = &ctx->emit;
+    tv_fc_t         *fc = &ctx->fc;
+    fc->limited         = fc->limited || (fc->wbound && e->pending && e->budget == room);
+    fc->busy            = fc->busy || e->pending; /* more to send than went (any limit): not idle */
+}
+
+int tv_fc_more(const tv_state_t *ctx)
+{
+    return ctx->emit.pending && !ctx->fc.wait;
+}
+
+/** tv_fc_req_due() - When the answer to @r is overdue: four round trips, then its queue drained
+ * at a quarter of the measured rate (TV_FC_FLOOR at least), then TV_FC_LOST_US. */
+static int64_t tv_fc_req_due(const tv_fc_t *fc, const tv_fc_req_t *r)
+{
+    if (fc->state == TV_FC_PROBE)
+    {
+        return r->us + TV_FC_PROBE_US;
+    }
+    double rate = (fc->rate / 4.0 > TV_FC_FLOOR / 1e6) ? fc->rate / 4.0 : TV_FC_FLOOR / 1e6;
+    return r->us + TV_FC_LOST_US + 4 * fc->base_us + (int64_t) ((double) r->inflight / rate);
+}
+
+int tv_fc_match(const tv_state_t *ctx, int col)
+{
+    const tv_fc_t *fc   = &ctx->fc;
+    int            edge = col == ctx->cols; /* a narrower terminal answers past its edge there */
+    int            k    = 0;
+    while (k < fc->n && fc->req[(fc->head + k) % TV_FC_REQS].col != col &&
+           !(edge && fc->req[(fc->head + k) % TV_FC_REQS].col > col))
+    {
+        k++;
+    }
+    return k;
+}
+
+void tv_fc_answer(tv_state_t *ctx, int64_t now_us, int col)
+{
+    tv_fc_t *fc = &ctx->fc;
+    int      k  = tv_fc_match(ctx, col);
+    if (k == fc->n)
+    {
+        return; /* to a request given up on (a stop, a full ring), or not ours */
+    }
+    tv_fc_req_t r = fc->req[(fc->head + k) % TV_FC_REQS]; /* the k before it got no answer */
+    /* an answer that late came behind a queue the trickle may hide: it times nothing */
+    r.quiet =
+        r.quiet && fc->late_us == 0 && (fc->state != TV_FC_ON || now_us < tv_fc_req_due(fc, &r));
+    fc->head = (fc->head + k + 1) % TV_FC_REQS;
+    fc->n -= k + 1;
+    fc->gone[0] = fc->gone[1] = 0; /* answers come in order: the terminal is past all before */
+    uint64_t delta            = (r.at > fc->acked) ? r.at - fc->acked : 0;
+    fc->acked                 = (r.at > fc->acked) ? r.at : fc->acked;
+    fc->credit                = 0; /* what trickled out is now answered for, or will be */
+    fc->nlate                 = 0;
+    /* answers to requests written while they were late: the trickle keeps its pace until one
+     * is on time again, not one more per answer */
+    fc->late_us = (fc->late_us && fc->n > 0 && fc->state == TV_FC_ON &&
+                   now_us >= tv_fc_req_due(fc, &fc->req[fc->head]))
+                      ? fc->late_us
+                      : 0;
+    if (fc->state != TV_FC_ON)
+    {
+        /* the startup request, possibly after it timed out: an answer that late came behind
+         * a queue, so the round trip is timed again soon */
+        fc->base_us  = now_us - r.us;
+        fc->timed_us = fc->base_us;
+        fc->gap_us   = TV_FC_REBASE_US;
+        fc->quiet_us = (fc->state == TV_FC_PROBE) ? now_us : now_us - TV_FC_REBASE_US;
+        fc->ref_us   = now_us;
+        fc->ref_sus  = r.us;
+        fc->ref_at   = r.at;
+        fc->full_us  = now_us;
+        fc->first    = 1;
+        fc->state    = TV_FC_ON;
+    }
+    else
+    {
+        tv_fc_window(fc, now_us, &r, delta, tv_slice_us(ctx));
+    }
+    fc->ask = fc->ask || (fc->n == 0 && fc->sent > fc->acked); /* cover what no request did */
+    /* send what was held now, not after the interactive cap: room came, a request is wanted, or
+     * a drain can send its quiet request */
+    if ((fc->wait || ctx->emit.pending) &&
+        (fc->ask || tv_fc_room(ctx, now_us) > 0 ||
+         (fc->drain_us != 0 && fc->sent - fc->acked + 32 <= tv_fc_quiet(fc))))
+    {
+        fc->release = 1;
+        fc->wait    = 0;
+        ctx->dirty |= TV_D_CHROME;
+    }
+}
+
+int64_t tv_fc_due_us(const tv_state_t *ctx)
+{
+    const tv_fc_t *fc = &ctx->fc;
+    if (fc->n == 0 || fc->state == TV_FC_OFF || fc->closing)
+    {
+        return 0;
+    }
+    return fc->late_us ? fc->late_us : tv_fc_req_due(fc, &fc->req[fc->head]);
+}
+
+/* A late answer is not a lost one: the request keeps its place, to be matched when its answer
+ * comes (unless the ring is full: then the oldest goes, its column unused until an answer
+ * comes). Meanwhile a little image goes now and then (less and less often), in case answers
+ * stopped for good; it is not counted as answered. Without an answer to the startup request,
+ * flow control stops (until one comes after all). */
+void tv_fc_expire(tv_state_t *ctx, int64_t now_us)
+{
+    tv_fc_t *fc  = &ctx->fc;
+    int64_t  due = tv_fc_due_us(ctx);
+    if (due == 0 || now_us < due)
     {
         return;
     }
-    int         num_opts = 0;
-    const char *title    = "";
-    const char *opts[32];
-    int         selected_idx = 0;
-    int         box_w        = 16;
-    if (ctx->popup_type == 1)
+    if (fc->state == TV_FC_PROBE)
     {
-        title        = "COLORMAP";
-        opts[0]      = "GREYSCALE";
-        opts[1]      = "HEAT";
-        opts[2]      = "COLD";
-        opts[3]      = "JET";
-        opts[4]      = "INFERNO";
-        opts[5]      = "VIRIDIS";
-        opts[6]      = "MAGMA";
-        opts[7]      = "PLASMA";
-        opts[8]      = "BONE";
-        opts[9]      = "RAINBOW";
-        opts[10]     = "TURBO";
-        opts[11]     = "OCEAN";
-        opts[12]     = "COPPER";
-        opts[13]     = "SPRING";
-        opts[14]     = "SUMMER";
-        opts[15]     = "AUTUMN";
-        opts[16]     = "WINTER";
-        num_opts     = COLORMAP_NB;
-        selected_idx = current_options.colormap;
-        box_w        = 40; // Wider box to fit colormap preview
+        fc->state = TV_FC_OFF; /* the requests stay, for answers that come after all */
     }
-    else if (ctx->popup_type == 2)
+    else
     {
-        title        = "SCALE";
-        opts[0]      = "LINEAR";
-        opts[1]      = "SQRT";
-        opts[2]      = "LOG";
-        opts[3]      = "LOG_STRONG";
-        opts[4]      = "LOG_EXTREME";
-        opts[5]      = "ASINH";
-        opts[6]      = "SQUARED";
-        opts[7]      = "CUBED";
-        num_opts     = SCALE_NB;
-        selected_idx = current_options.scale;
+        if (fc->n == TV_FC_REQS)
+        {
+            int c = fc->req[fc->head].col - 1;
+            fc->gone[c / 64] |= 1ull << (c % 64);
+            fc->head = (fc->head + 1) % TV_FC_REQS;
+            fc->n--;
+        }
+        uint64_t out = fc->sent - fc->acked;
+        fc->credit   = (out > fc->credit + TV_FC_MIN) ? fc->credit + TV_FC_MIN : out;
+        fc->late_us =
+            now_us + (TV_FC_LOST_US << ((fc->nlate < TV_FC_TRICKLES) ? fc->nlate : TV_FC_TRICKLES));
+        fc->nlate++;
     }
-    else if (ctx->popup_type == 3)
-    {
-        title        = "RANGE";
-        opts[0]      = "MINMAX";
-        opts[1]      = "0.1-99.9%";
-        opts[2]      = "0.5-99.5%";
-        opts[3]      = "1-99%";
-        opts[4]      = "5-95%";
-        opts[5]      = "10-90%";
-        opts[6]      = "15-85%";
-        opts[7]      = "20-80%";
-        num_opts     = RANGE_NB;
-        selected_idx = current_options.range;
-    }
+    fc->wait    = 0;
+    fc->release = 1;
+    ctx->dirty |= TV_D_CHROME;
+}
 
-    int box_h   = num_opts + 2;
-    int start_r = (disp_char_rows - box_h) / 2;
-    int start_c = (disp_cols - box_w) / 2;
-    if (start_r < 0)
+int64_t tv_fc_settle_end(const tv_state_t *ctx, int64_t now_us)
+{
+    const tv_fc_t *fc = &ctx->fc;
+    if (fc->n == 0)
     {
-        start_r = 0;
+        return now_us;
     }
-    if (start_c < 0)
+    /* until an answer comes, 3 s from the startup request at most (perhaps behind earlier output
+     * still on its way); then the newest request's due time */
+    const tv_fc_req_t *r     = &fc->req[(fc->head + fc->n - 1) % TV_FC_REQS];
+    int64_t            start = fc->req[fc->head].us + TV_FC_SETTLE_MAX_US;
+    int64_t            due   = (fc->state == TV_FC_OFF) ? start : tv_fc_req_due(fc, r);
+    due                      = (fc->state == TV_FC_PROBE && due > start) ? start : due;
+    if (fc->state == TV_FC_OFF && due <= now_us)
     {
-        start_c = 0;
+        return now_us;
     }
+    /* answers on time: as long as the queue ahead of the newest takes, which the far terminal
+     * is still showing; once one is overdue, the link may be gone */
+    int on_time =
+        fc->state == TV_FC_ON && fc->late_us == 0 && now_us < tv_fc_req_due(fc, &fc->req[fc->head]);
+    int64_t lim = on_time ? TV_FC_SETTLE_LONG_US : TV_FC_SETTLE_MAX_US;
+    return (due < now_us + TV_FC_SETTLE_MIN_US) ? now_us + TV_FC_SETTLE_MIN_US
+           : (due > now_us + lim)               ? now_us + lim
+                                                : due;
+}
 
-    for (int i = 0; i < box_h; i++)
+void tv_fc_resume(tv_fc_t *fc)
+{
+    for (int k = 0; k < fc->n; k++)
     {
-        int r = start_r + i;
-        if (r >= disp_char_rows)
+        int c = fc->req[(fc->head + k) % TV_FC_REQS].col - 1; /* may be answered after all */
+        fc->gone[c / 64] |= 1ull << (c % 64);
+    }
+    fc->n        = 0;
+    fc->wait     = 0;
+    fc->closing  = 0;
+    fc->release  = 0;
+    fc->limited  = 0;
+    fc->busy     = 0;
+    fc->first    = 0;
+    fc->drain_us = 0;
+    fc->high_us  = 0;
+    fc->lift_us  = 0;
+    fc->late_us  = 0;
+    fc->nlate    = 0;
+    fc->ref_us   = 0;
+    fc->acked    = fc->sent;
+    fc->credit   = 0;
+    fc->ask      = 1; /* before the repaint: in PROBE, it is the startup request again */
+}
+
+void tv_settle_begin(tv_state_t *ctx, tv_settle_t *st, int64_t now_us)
+{
+    st->t0          = now_us;
+    st->cut         = 0;
+    st->state       = ctx->fc.state;
+    st->end         = tv_fc_settle_end(ctx, now_us);
+    ctx->fc.closing = 1;
+}
+
+void tv_settle_answer(tv_state_t *ctx, tv_settle_t *st, int64_t now_us, int col)
+{
+    tv_fc_t *fc = &ctx->fc;
+    int      n  = fc->n;
+    tv_fc_answer(ctx, now_us, col);
+    if (fc->state != st->state)
+    {
+        st->state = fc->state; /* the first answer: the rest come on time, behind their queue */
+        st->end   = tv_fc_settle_end(ctx, now_us);
+    }
+    else if (fc->state == TV_FC_ON && fc->n < n)
+    {
+        /* answers still coming, however late: the link is up, wait on behind its queue */
+        int64_t more = now_us + TV_FC_SETTLE_MAX_US;
+        more    = (more < st->t0 + TV_FC_SETTLE_LONG_US) ? more : st->t0 + TV_FC_SETTLE_LONG_US;
+        st->end = (more > st->end) ? more : st->end;
+    }
+    st->end = (st->cut && st->cut < st->end) ? st->cut : st->end;
+}
+
+void tv_settle_cut(tv_state_t *ctx, tv_settle_t *st, int64_t now_us)
+{
+    /* not a short wait: a double tap to quit would send the answers to the shell */
+    int64_t two = 2 * (ctx->fc.base_us + tv_slice_us(ctx));
+    st->cut     = tv_max64(now_us, st->t0 + tv_max64(1000000, two));
+    st->end     = (st->end < st->cut) ? st->end : st->cut;
+}
+
+/** tv_settle_read() - Wait until @end for input on stdin and feed it to @in: 1 on input or a
+ * signal, 0 on timeout, -1 when the terminal hung up. */
+static int tv_settle_read(tv_input_t *in, int64_t end)
+{
+    int64_t       now   = tv_now_us();
+    struct pollfd pfd   = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
+    int           ready = (now < end) ? poll(&pfd, 1, (int) ((end - now + 999) / 1000)) : 0;
+    if (ready <= 0)
+    {
+        return (ready < 0 && errno == EINTR) ? 1 : 0; /* a resize is no pause in typing */
+    }
+    if (!(pfd.revents & POLLIN))
+    {
+        return -1;
+    }
+    unsigned char buf[sizeof(in->buf)];
+    ssize_t       n = read(STDIN_FILENO, buf, tv_input_room(in));
+    if ((n == 0 && (pfd.revents & (POLLHUP | POLLERR))) ||
+        (n < 0 && errno != EINTR && errno != EAGAIN))
+    {
+        return -1;
+    }
+    tv_input_feed(in, buf, (n > 0) ? (size_t) n : 0, tv_now_us());
+    return 1;
+}
+
+/**
+ * tv_fc_settle() - Read the answers still owed before the shell gets the terminal back, dropping
+ * keys typed meanwhile and the rest of a line begun then (all keys left, if @quitting).
+ */
+static int tv_fc_settle(tv_state_t *ctx, tv_input_t *in, int quitting)
+{
+    tv_fc_t    *fc = &ctx->fc;
+    tv_settle_t st;
+    int         nq = tv_sig_nquit, dropped = 0, partial = 0;
+    int64_t     hard = 0; /* the discarding of a line begun meanwhile ends by then */
+    tv_settle_begin(ctx, &st, tv_now_us());
+    while (tv_sig_nquit == nq && !tv_term_hup && tv_input_room(in) > 0)
+    {
+        /* what was read with the key that brought us here may hold answers already; once none
+         * is owed (or waited for), the keys after it stay for after a resume */
+        tv_event_t ev;
+        int64_t    now = tv_now_us();
+        while (((fc->n > 0 && now < st.end) || partial || quitting) && tv_input_next(in, now, &ev))
+        {
+            if (ev.type == TV_EV_CPR)
+            {
+                tv_settle_answer(ctx, &st, now, ev.x);
+            }
+            else if (ev.type == TV_EV_KEY && ev.key == TV_CTRL('c'))
+            {
+                tv_settle_cut(ctx, &st, now);
+                partial = 0; /* as in the shell, it ends a line typed meanwhile */
+            }
+            else if (ev.type == TV_EV_KEY)
+            {
+                dropped++;
+                if (ev.key == '\r' || ev.key == '\n' || ev.key == TV_CTRL('u'))
+                {
+                    partial = 0; /* Enter or Ctrl-U ends a line */
+                }
+                else if (ev.key != 'q' && ev.key != TV_K_ESC && ev.key != TV_CTRL('z') &&
+                         ev.key != TV_CTRL('\\'))
+                {
+                    partial = 1; /* the viewer's own q, Esc, Ctrl-Z, Ctrl-\ begin none */
+                }
+            }
+        }
+        hard = (fc->n == 0 && partial && hard == 0) ? now + TV_FC_LINE_MAX_US : hard;
+        if ((fc->n == 0 && !partial) || (fc->n > 0 && now >= st.end) || (hard && now >= hard))
         {
             break;
         }
-        for (int j = 0; j < box_w; j++)
+        /* answers in: the rest of a line begun meanwhile, until its end or a pause in typing */
+        int64_t idle = now + TV_FC_LINE_IDLE_US;
+        int     r    = tv_settle_read(in, (fc->n > 0) ? st.end : (idle < hard) ? idle : hard);
+        if (r < 0)
         {
-            int c = start_c + j;
-            if (c >= disp_cols)
+            tv_term_hup = 1;
+        }
+        else if (r == 0 && fc->n == 0)
+        {
+            break;
+        }
+    }
+    fc->closing = 0;
+    return dropped;
+}
+
+/** tv_note_dropped() - Say on stderr (the terminal is back) that @n typed keys were dropped. */
+static void tv_note_dropped(int n)
+{
+    if (n > 0)
+    {
+        fprintf(stderr, "milk-termview: %d key%s typed while waiting for the terminal dropped\n", n,
+                (n > 1) ? "s" : "");
+    }
+}
+
+/* What the window leaves unanswered, a slice's worth at most; none while the queue drains to
+ * time the round trip. Until the startup request is answered, the first window. */
+size_t tv_fc_room(tv_state_t *ctx, int64_t now_us)
+{
+    tv_fc_t *fc = &ctx->fc;
+    fc->wbound  = 0;
+    if (fc->state == TV_FC_OFF || (fc->state == TV_FC_PROBE && fc->n == 0))
+    {
+        return SIZE_MAX;
+    }
+    uint64_t unanswered = fc->sent - fc->acked;
+    unanswered -= (fc->credit < unanswered) ? fc->credit : unanswered;
+    if (fc->state == TV_FC_PROBE)
+    {
+        return (unanswered < fc->window) ? (size_t) (fc->window - unanswered) : 0;
+    }
+    int64_t slice = tv_slice_us(ctx);
+    int     lift =
+        fc->lift_us != 0 && now_us - fc->lift_us > tv_max64(2000000, 8 * (fc->base_us + slice));
+    if (fc->drain_us == 0 && (now_us - fc->quiet_us > fc->gap_us || lift))
+    {
+        /* due, or answers keep showing a queue: the round trip grew? */
+        fc->drain_us     = now_us;
+        fc->drain_rtt_us = lift ? tv_max64(fc->base_us, fc->lift_rtt_us) : fc->base_us;
+        fc->high_us      = 0;
+        fc->lift_us      = 0;
+    }
+    if (fc->drain_us != 0)
+    {
+        if (now_us - fc->drain_us <= 2 * fc->drain_rtt_us + 4 * slice + 200000)
+        {
+            return 0;
+        }
+        /* no quiet answer came: take the round trip the answers showed (an answer says less if
+         * it can), and try again later */
+        fc->drain_us = 0;
+        fc->quiet_us = now_us;
+        fc->ramp_us  = now_us;
+        fc->base_us  = fc->drain_rtt_us;
+        fc->timed_us = fc->base_us;
+        fc->gap_us = (2 * fc->gap_us < TV_FC_REBASE_MAX_US) ? 2 * fc->gap_us : TV_FC_REBASE_MAX_US;
+    }
+    /* after a drain the window opens over a round trip, not at once: keys would wait behind it */
+    double  w    = (double) fc->window;
+    int64_t up   = now_us - fc->ramp_us + slice;
+    int     ramp = up < fc->base_us + slice;
+    w            = ramp ? w * (double) up / (double) (fc->base_us + slice) : w;
+    size_t room  = (unanswered < (uint64_t) w) ? (size_t) w - (size_t) unanswered : 0;
+    /* a slice per flush: answers come back a slice apart and each releases the next one, so the
+     * link does not idle while the answer to a whole window travels back */
+    size_t chunk = (size_t) ((double) fc->window * (double) slice / (double) (fc->base_us + slice));
+    chunk        = (chunk < fc->window / (TV_FC_REQS - 2)) ? fc->window / (TV_FC_REQS - 2) : chunk;
+    fc->wbound   = !ramp && room <= chunk; /* the window, not the slice or the ramp, limits it */
+    /* not in crumbs: a flush per answer of what it freed would wake the viewer for little; but
+     * while no queue shows, a chunk and what it leaves of the window both go, or a short round
+     * trip idles the link once per answer */
+    size_t least = (chunk / 2 < TV_FC_CRUMB) ? chunk / 2 : TV_FC_CRUMB;
+    size_t rest  = (fc->window > chunk) ? (fc->window - chunk) / 2 : 0;
+    rest         = (rest < 1024) ? 1024 : rest;
+    least        = (least > rest && fc->high_us == 0) ? rest : least;
+    return (room < least) ? 0 : (room < chunk) ? room : chunk;
+}
+
+void tv_budget_update(tv_state_t *ctx, size_t n, int64_t dt_us)
+{
+    /* Image bytes per flush. Once a write blocks, a flush carries what the terminal drains in
+     * a frame period, so a key never waits longer behind image bytes. A large write that goes
+     * through at once means the terminal caught up: the budget doubles until it is dropped. */
+    if (dt_us > TV_FLUSH_BLOCKED_US)
+    {
+        /* a slower link is believed at once, a faster one halfway: a short write that kernel
+         * buffers absorbed overstates the rate */
+        double rate     = (double) n / (double) dt_us;
+        ctx->drain_rate = (rate > ctx->drain_rate && ctx->drain_rate > 0.0)
+                              ? 0.5 * (ctx->drain_rate + rate)
+                              : rate;
+        double b        = ctx->drain_rate * (double) tv_slice_us(ctx);
+        b               = (b > 2.0 * (double) n) ? 2.0 * (double) n : b; /* same reason */
+        ctx->budget     = (b < TV_FLUSH_MIN_BYTES) ? TV_FLUSH_MIN_BYTES : (size_t) b;
+    }
+    else if (ctx->budget > 0 && n >= ctx->budget / 2)
+    {
+        ctx->budget = (ctx->budget > TV_FLUSH_MAX_BYTES / 2) ? 0 : 2 * ctx->budget;
+        if (ctx->budget == 0)
+        {
+            ctx->drain_rate = 0.0;
+        }
+    }
+}
+
+static void termview_flush_ansi(tv_state_t *ctx)
+{
+    if (tv_sig_cont)
+    {
+        return; /* stopped while rendering: the screen is not ours until re-entered */
+    }
+    /* pointer motion reports only while a menu or the help box can use them */
+    tv_fc_t *fc    = &ctx->fc;
+    int      hover = ctx->ui.open || ctx->ui.help;
+    if (hover != ctx->ui.hover_sent)
+    {
+        ctx->ui.hover_sent = hover;
+        /* in xterm and tmux, resetting 1003 ends mouse reporting: back to button events */
+        tv_write_all(hover ? "\033[?1003h" : "\033[?1003l\033[?1002h", hover ? 8 : 16);
+        tv_fc_wrote(fc, hover ? 8 : 16, 0, 0);
+    }
+
+    /* image bytes this flush: the budget from blocked writes, within what flow control allows;
+     * interface cells always go */
+    tv_emit_t *e    = &ctx->emit;
+    int64_t    t0   = tv_now_us();
+    size_t     room = tv_fc_room(ctx, t0);
+    char       lead[32];
+    size_t     nl = tv_fc_lead(ctx, lead, t0, room);
+    if (nl > 0)
+    {
+        tv_fc_wrote(fc, nl, nl, tv_write_all(lead, nl) != 0);
+        room = tv_fc_room(ctx, t0);
+    }
+    tv_fc_plan(ctx, room);
+    size_t n =
+        tv_flush_diff(e, ctx->frame_buffer, ctx->screen, ctx->prev_screen, ctx->rows, ctx->cols);
+    tv_fc_flushed(ctx, room);
+    if (n == 0)
+    {
+        return;
+    }
+    size_t req = tv_fc_request(ctx, ctx->frame_buffer + n, t0); /* room: tv_framebuf_size() */
+    n += req;
+    ctx->flushes++;
+    int64_t t1     = tv_now_us();
+    int     failed = tv_write_all(ctx->frame_buffer, n) != 0;
+    if (failed)
+    {
+        tv_invalidate(ctx); /* partial frame on screen: repaint everything next time */
+    }
+    tv_fc_wrote(fc, n, req, failed);
+    tv_budget_update(ctx, n, tv_now_us() - t1);
+}
+
+/** tv_draw_text() - Write ASCII @text into grid row @row from column @col, clipped to the width. */
+static void tv_draw_text(tv_state_t *ctx, int row, int col, const char *text)
+{
+    for (int k = 0; text[k] != '\0' && col + k < ctx->cols; k++)
+    {
+        if (col + k >= 0)
+        {
+            tv_cell_t *c = &ctx->screen[row * ctx->cols + col + k];
+            *c           = tv_cell_with_glyph(*c, (uint8_t) text[k]);
+        }
+    }
+}
+
+/** tv_grow() - Make sure the screen grids and the frame buffer fit the terminal. */
+static int tv_grow(tv_state_t *ctx)
+{
+    if (ctx->rows * ctx->cols > ctx->screen_size)
+    {
+        size_t     n          = (size_t) ctx->rows * (size_t) ctx->cols;
+        tv_cell_t *tmp_screen = (tv_cell_t *) realloc(ctx->screen, n * sizeof(tv_cell_t));
+        if (tmp_screen == NULL)
+        {
+            return -1;
+        }
+        ctx->screen        = tmp_screen;
+        tv_cell_t *tmp_prv = (tv_cell_t *) realloc(ctx->prev_screen, n * sizeof(tv_cell_t));
+        if (tmp_prv == NULL)
+        {
+            return -1;
+        }
+        ctx->prev_screen = tmp_prv;
+        ctx->screen_size = (int) n;
+        tv_invalidate(ctx);
+    }
+    size_t needed_fb = tv_framebuf_size(ctx->rows, ctx->cols);
+    if (needed_fb > ctx->frame_buffer_size)
+    {
+        char *tmp_fb = (char *) realloc(ctx->frame_buffer, needed_fb);
+        if (tmp_fb == NULL)
+        {
+            return -1;
+        }
+        ctx->frame_buffer      = tmp_fb;
+        ctx->frame_buffer_size = needed_fb;
+    }
+    return 0;
+}
+
+/** tv_dim() - Half-brightness version of a packed colour. */
+static inline uint32_t tv_dim(uint32_t c)
+{
+    return (c >> 1) & 0x7F7F7F;
+}
+
+/** tv_draw_roi() - Box-zoom selection: yellow outline (interface), dimmed inside. */
+static void tv_draw_roi(tv_state_t *ctx)
+{
+    const tv_layout_t *l  = &ctx->lay;
+    int                x0 = (ctx->roi_start_x < ctx->roi_end_x) ? ctx->roi_start_x : ctx->roi_end_x;
+    int                x1 = (ctx->roi_start_x > ctx->roi_end_x) ? ctx->roi_start_x : ctx->roi_end_x;
+    int                y0 = (ctx->roi_start_y < ctx->roi_end_y) ? ctx->roi_start_y : ctx->roi_end_y;
+    int                y1 = (ctx->roi_start_y > ctx->roi_end_y) ? ctx->roi_start_y : ctx->roi_end_y;
+    uint32_t           yellow = TV_RGB(255, 255, 0);
+    for (int r = y0; r <= y1 && r <= l->img_rows; r++)
+    {
+        for (int c = x0; c <= x1 && c <= l->img_cols; c++)
+        {
+            tv_cell_t *cell = &ctx->screen[(l->img_top + r - 1) * ctx->cols + (c - 1)];
+            if (r == y0 || r == y1 || c == x0 || c == x1)
             {
-                break;
+                *cell = tv_cell(yellow, yellow, TV_G_LOWER_HALF) | TV_ATTR_CHROME;
             }
-
-            tv_cell_t *cell = &ctx->screen[r * wcol + c];
-            cell->bg_r      = 50;
-            cell->bg_g      = 50;
-            cell->bg_b      = 50; // dark gray bg
-            cell->fg_r      = 255;
-            cell->fg_g      = 255;
-            cell->fg_b      = 255; // white fg
-            cell->ch[0]     = ' ';
-            cell->ch[1]     = '\0';
-
-            if (i == 0)
+            else
             {
-                int tlen   = strlen(title);
-                int tstart = (box_w - tlen) / 2;
-                if (j >= tstart && j < tstart + tlen)
-                {
-                    cell->ch[0] = title[j - tstart];
-                    cell->fg_r  = 255;
-                    cell->fg_g  = 255;
-                    cell->fg_b  = 0; // Yellow title
-                }
-            }
-            else if (i <= num_opts)
-            {
-                int opt_idx = i - 1;
-                int is_sel  = (opt_idx == selected_idx);
-                if (is_sel)
-                {
-                    cell->bg_r = 200;
-                    cell->bg_g = 200;
-                    cell->bg_b = 200; // light gray selected
-                    cell->fg_r = 0;
-                    cell->fg_g = 0;
-                    cell->fg_b = 0; // black fg
-                }
-
-                // Text portion
-                if (j >= 2 && j - 2 < (int) strlen(opts[opt_idx]))
-                {
-                    cell->ch[0] = opts[opt_idx][j - 2];
-                }
-
-                // Compressed colormap rendering
-                if (ctx->popup_type == 1 && j >= 16 && j < box_w - 2)
-                {
-                    int    bar_len = box_w - 2 - 16;
-                    double v       = (double) (j - 16) / (double) (bar_len - 1);
-                    rgb_t  color   = get_colormap_color((termview_colormap_t) opt_idx, v);
-                    cell->bg_r     = color.r;
-                    cell->bg_g     = color.g;
-                    cell->bg_b     = color.b;
-                    cell->ch[0]    = ' ';
-                    cell->ch[1]    = '\0';
-                }
+                /* still image cells: on a slow link the dimming follows the byte budget */
+                *cell = tv_cell(tv_dim(tv_cell_bg(*cell)), tv_dim(tv_cell_fg(*cell)),
+                                tv_cell_glyph(*cell));
             }
         }
     }
 }
 
-static void termview_flush_ansi(tv_context_t *ctx)
+/** tv_compose() - Screen = cached image layer + colorbar + info bar + overlays. */
+static void tv_compose(tv_state_t *ctx, int64_t now_us)
 {
-    size_t fb_pos = 0;
-    int    cur_r = -1, cur_c = -1;
-    int    last_bg_r = -1, last_bg_g = -1, last_bg_b = -1;
-    int    last_fg_r = -1, last_fg_g = -1, last_fg_b = -1;
-
-    for (int r = 0; r < wrow; r++)
+    const tv_layout_t *l     = &ctx->lay;
+    tv_cell_t          blank = tv_cell(TV_RGB(0, 0, 0), TV_RGB(255, 255, 255), ' ');
+    for (int i = 0; i < ctx->rows * ctx->cols; i++)
     {
-        for (int c = 0; c < wcol; c++)
+        ctx->screen[i] = blank;
+    }
+    for (int r = 0; r < l->img_rows; r++)
+    {
+        memcpy(&ctx->screen[(l->img_top + r) * ctx->cols], &ctx->im.cells[(size_t) r * l->img_cols],
+               (size_t) l->img_cols * sizeof(tv_cell_t));
+    }
+    if (ctx->roi_is_dragging)
+    {
+        tv_draw_roi(ctx);
+    }
+    if (ctx->im.blank && l->img_rows > 0)
+    {
+        static const char msg[] = "stream gone: waiting for it to come back";
+        int               len   = (int) sizeof(msg) - 1;
+        int               col   = (len < l->img_cols) ? (l->img_cols - len) / 2 : 0;
+        int               row   = l->img_top + l->img_rows / 2;
+        tv_draw_text(ctx, row, col, msg);
+        for (int k = 0; k < len && col + k < l->img_cols; k++)
         {
-            tv_cell_t *cell = &ctx->screen[r * wcol + c];
-            tv_cell_t *prev = &ctx->prev_screen[r * wcol + c];
-
-            if (memcmp(cell, prev, sizeof(tv_cell_t)) != 0)
-            {
-                // Update cursor if not sequential
-                if (cur_r != r || cur_c != c)
-                {
-                    tv_move(ctx->frame_buffer, &fb_pos, r + 1, c + 1);
-                }
-
-                // Update BG
-                if (cell->bg_r != last_bg_r || cell->bg_g != last_bg_g || cell->bg_b != last_bg_b)
-                {
-                    tv_bg(ctx->frame_buffer, &fb_pos, cell->bg_r, cell->bg_g, cell->bg_b);
-                    last_bg_r = cell->bg_r;
-                    last_bg_g = cell->bg_g;
-                    last_bg_b = cell->bg_b;
-                }
-
-                // Update FG
-                if (cell->fg_r != last_fg_r || cell->fg_g != last_fg_g || cell->fg_b != last_fg_b)
-                {
-                    tv_fg(ctx->frame_buffer, &fb_pos, cell->fg_r, cell->fg_g, cell->fg_b);
-                    last_fg_r = cell->fg_r;
-                    last_fg_g = cell->fg_g;
-                    last_fg_b = cell->fg_b;
-                }
-
-                // Write Char
-                int k = 0;
-                while (cell->ch[k] != '\0' && k < 4)
-                {
-                    ctx->frame_buffer[fb_pos++] = cell->ch[k++];
-                }
-
-                cur_r = r;
-                cur_c = c + 1;
-                *prev = *cell;
-            }
+            ctx->screen[row * ctx->cols + col + k] |= TV_ATTR_CHROME;
         }
     }
+    tv_ui_render(ctx, now_us); /* marks its own cells, overlays on the image included */
 
-    tv_reset(ctx->frame_buffer, &fb_pos);
-
-    if (fb_pos > 0)
+    /* everything outside the image area is interface: sent ahead of image cells */
+    for (int r = 0; r < ctx->rows; r++)
     {
-        if (write(STDOUT_FILENO, ctx->frame_buffer, fb_pos) < 0)
+        int in = (r >= l->img_top && r < l->img_top + l->img_rows);
+        for (int c = in ? l->img_cols : 0; c < ctx->cols; c++)
         {
+            ctx->screen[r * ctx->cols + c] |= TV_ATTR_CHROME;
         }
     }
 }
 
-errno_t termview_screen(const char *imagename, termview_options_t options)
+/**
+ * tv_stream_monitor() - Notice a stream that was truncated, removed or recreated, and switch to
+ * the stream now at its path once that is readable. A new geometry resets the view; colormap,
+ * scale and range are kept. Paused, the switch waits for the resume.
+ */
+static void tv_stream_monitor(tv_state_t *ctx, int64_t now_us)
 {
-    IMAGE img;
-    ImageStreamIO_read_sharedmem_image_toIMAGE(imagename, &img);
-
-    if (img.md == NULL)
+    tv_stream_t *st       = ctx->st;
+    int          was_gone = ctx->gone;
+    ctx->gone             = (tv_stream_check(st) != TV_STREAM_OK);
+    if (ctx->gone && !ctx->paused)
     {
-        printf("Error: Could not connect to image %s\n", imagename);
+        uint32_t xsize = st->xsize, ysize = st->ysize;
+        if (tv_stream_reopen(st) == 0)
+        {
+            ctx->gone = 0;
+            if (st->xsize != xsize || st->ysize != ysize)
+            {
+                ctx->view.zoom = 1.0;
+                ctx->view.cx   = 0.5;
+                ctx->view.cy   = 0.5;
+            }
+            ctx->last_cnt0         = st->img.md->cnt0;
+            ctx->last_cnt0_for_fps = st->img.md->cnt0;
+            ctx->period_us         = -1.0;
+            ctx->last_change_us    = tv_seen_at(st->img.md, now_us);
+            ctx->im.have_range     = 0; /* other values: no smoothing from the old ones */
+            ctx->dirty |= TV_D_GEOM | TV_D_DATA | TV_D_CHROME;
+        }
+    }
+    if (ctx->gone != was_gone)
+    {
+        ctx->dirty |= TV_D_CHROME;
+    }
+}
+
+void termview_options_init(termview_options_t *opt)
+{
+    memset(opt, 0, sizeof(*opt));
+    opt->colormap     = COLORMAP_GREYSCALE;
+    opt->scale        = SCALE_LINEAR;
+    opt->range        = RANGE_MINMAX;
+    opt->range_locked = false;
+    opt->manual_min   = 0.0;
+    opt->manual_max   = 1.0;
+    opt->flip_h       = false;
+    opt->flip_v       = false;
+    opt->fps          = 20;
+    opt->range_smooth = true;
+}
+
+int tv_resize_waits(const tv_state_t *ctx, const tv_timers_t *tm, int64_t now_us)
+{
+    const tv_fc_t *fc = &ctx->fc;
+    return tm->resized_us != 0 && fc->wait && fc->n > 0 &&
+           now_us < tm->resized_us + fc->base_us + 2 * tv_slice_us(ctx);
+}
+
+int64_t tv_wake_at(const tv_state_t *ctx, const tv_timers_t *tm, int64_t now_us, int64_t esc_us)
+{
+    /* the earliest of: next data poll, frame cap (dirty, or image cells left over by the last
+     * flush), a held resize, an overdue answer, ESC timeout, tick */
+    int64_t dl    = ctx->paused ? tm->next_tick : tm->next_data; /* paused: one wakeup a second */
+    int     defer = tv_resize_waits(ctx, tm, now_us);
+    int     more  = (ctx->dirty && !defer) || tv_fc_more(ctx); /* image held: wait to be answered */
+    if (more && tm->last_render + TV_INTERACTIVE_US < dl)
+    {
+        dl = (ctx->fc.release && ctx->dirty) ? now_us : tm->last_render + TV_INTERACTIVE_US;
+    }
+    int64_t until = tm->resized_us + ctx->fc.base_us + 2 * tv_slice_us(ctx);
+    int64_t fc_dl = tv_fc_due_us(ctx);
+    dl            = (defer && until < dl) ? until : dl;
+    dl            = (fc_dl > 0 && fc_dl < dl) ? fc_dl : dl;
+    dl            = (esc_us >= 0 && esc_us < dl) ? esc_us : dl;
+    return (tm->next_tick < dl) ? tm->next_tick : dl;
+}
+
+int termview_run(const char *name, const termview_options_t *opt)
+{
+    char        err[512];
+    tv_stream_t st;
+
+    if (tv_stream_open(&st, name, err, sizeof(err)) != 0)
+    {
+        fprintf(stderr, "Error: %s\n", err);
+        return 1;
+    }
+    if (tv_term_init(err, sizeof(err)) != 0)
+    {
+        fprintf(stderr, "Error: %s\n", err);
+        tv_stream_close(&st);
         return 1;
     }
 
-    current_options = options;
-
-    tv_enter_raw();
-    tv_enter_alt_screen();
-    tv_get_size(&wrow, &wcol);
-
-    tv_context_t  context_instance = { 0 };
-    tv_context_t *ctx              = &context_instance;
-    ctx->img                       = &img;
-    ctx->target_fps                = 20;
-    ctx->last_cnt0                 = (uint64_t) -1;
-    ctx->last_cnt0_for_fps         = img.md[0].cnt0;
-
-    clock_gettime(CLOCK_MONOTONIC, &ctx->last_time_real);
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ctx->last_time_cpu);
-    ctx->last_render_real = ctx->last_time_real;
-
-    while (loop)
+    tv_state_t *ctx = (tv_state_t *) calloc(1, sizeof(tv_state_t));
+    if (ctx == NULL)
     {
-        if (tv_resize_flag)
-        {
-            tv_get_size(&wrow, &wcol);
-            tv_resize_flag = 0;
-            force_redraw   = 1;
-            if (ctx->prev_screen)
-            {
-                memset(ctx->prev_screen, 0, ctx->screen_size * sizeof(tv_cell_t));
-            }
-            if (write(STDOUT_FILENO, "\033[2J\033[H", 7) < 0)
-            {
-            }
-        }
+        fprintf(stderr, "Error: out of memory\n");
+        tv_stream_close(&st);
+        return 1;
+    }
+    ctx->st                = &st;
+    ctx->opt               = *opt;
+    ctx->view.zoom         = 1.0;
+    ctx->view.cx           = 0.5;
+    ctx->view.cy           = 0.5;
+    ctx->running           = 1;
+    ctx->dirty             = TV_D_FULL | TV_D_GEOM;
+    ctx->lut_cmap          = -1;
+    ctx->lut_scale         = -1;
+    ctx->cur_max           = 1.0;
+    ctx->target_fps        = (opt->fps >= 1 && opt->fps <= 120) ? opt->fps : 20;
+    ctx->last_cnt0         = st.img.md->cnt0; /* the first frame is drawn by the TV_D_FULL above */
+    ctx->period_us         = -1.0;            /* no frame interval observed yet */
+    ctx->last_cnt0_for_fps = st.img.md->cnt0;
+    int alloc_failed       = 0;
 
-        long            target_us = 1000000L / ctx->target_fps;
-        struct timespec now_real;
-        clock_gettime(CLOCK_MONOTONIC, &now_real);
-        long elapsed_since_last = (now_real.tv_sec - ctx->last_render_real.tv_sec) * 1000000L +
-                                  (now_real.tv_nsec - ctx->last_render_real.tv_nsec) / 1000L;
-        ctx->timeout_us         = target_us - elapsed_since_last;
-        if (ctx->timeout_us < 0)
-        {
-            ctx->timeout_us = 0;
-        }
+    ctx->stats_time_us = tv_now_us();
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ctx->stats_cpu);
+    tv_emit_init(&ctx->emit,
+                 (opt->colors >= 1 && opt->colors <= 3) ? opt->colors : tv_term_color_level());
 
-        if (ctx->popup_type > 0)
-        {
-            struct timespec now;
-            clock_gettime(CLOCK_MONOTONIC, &now);
-            long popup_remain_us = (ctx->popup_expiry_time.tv_sec - now.tv_sec) * 1000000L +
-                                   (ctx->popup_expiry_time.tv_nsec - now.tv_nsec) / 1000L;
-            if (popup_remain_us <= 0)
-            {
-                ctx->popup_type = 0;
-                force_redraw    = 1;
-            }
-            else if (popup_remain_us < ctx->timeout_us)
-            {
-                ctx->timeout_us = popup_remain_us;
-            }
-        }
+    ctx->last_change_us = tv_seen_at(st.img.md, ctx->stats_time_us); /* the newest frame's age */
 
-        int ch;
-        int first_wait = 1;
-        while (1)
+    if (tv_term_enter() != 0)
+    {
+        tv_term_restore();
+        tv_stream_close(&st);
+        free(ctx);
+        fprintf(stderr, "Error: cannot configure the terminal\n");
+        return 1;
+    }
+    ImageStreamIO_set_printError(NULL); /* reopening a half-written stream must stay quiet */
+    tv_term_size(&ctx->rows, &ctx->cols);
+
+    tv_input_t in;
+    memset(&in, 0, sizeof(in));
+    ctx->fc.window     = TV_FC_START;
+    ctx->fc.ask        = 1; /* before the first paint: does the terminal answer? (TV_FC_PROBE) */
+    tv_timers_t tm     = { .next_data = tv_now_us() };
+    tm.next_tick       = tm.next_data + 1000000;
+    tm.last_render     = tm.next_data - TV_INTERACTIVE_US;
+    int reenter_failed = 0;
+
+    while (ctx->running && !tv_sig_quit && !tv_term_hup)
+    {
+        if (tv_sig_cont)
         {
-            long wait_us = first_wait ? ctx->timeout_us : 0;
-            ch           = tv_read_key(wait_us);
-            first_wait   = 0;
-            if (ch == -1)
+            tv_sig_cont = 0;
+            if (tv_term_enter() != 0)
             {
+                ctx->exit_status = 1;
+                reenter_failed   = 1;
                 break;
             }
-
-            if (ctx->input_mode > 0)
-            {
-                if (ch == 10 || ch == 13 || ch == 27)
-                {
-                    if (ch != 27 && ctx->input_len > 0)
-                    {
-                        ctx->input_buf[ctx->input_len] = '\0';
-                        if (ctx->input_mode == 1)
-                        {
-                            current_options.manual_min   = atof(ctx->input_buf);
-                            current_options.range_locked = 1;
-                        }
-                        else if (ctx->input_mode == 2)
-                        {
-                            current_options.manual_max   = atof(ctx->input_buf);
-                            current_options.range_locked = 1;
-                        }
-                    }
-                    ctx->input_mode   = 0;
-                    ctx->input_len    = 0;
-                    ctx->input_buf[0] = '\0';
-                    force_redraw      = 1;
-                }
-                else if (ch == 127 || ch == 8)
-                {
-                    if (ctx->input_len > 0)
-                    {
-                        ctx->input_len--;
-                        ctx->input_buf[ctx->input_len] = '\0';
-                        force_redraw                   = 1;
-                    }
-                }
-                else if (ch >= 32 && ch <= 126 && ctx->input_len < 63)
-                {
-                    ctx->input_buf[ctx->input_len++] = ch;
-                    ctx->input_buf[ctx->input_len]   = '\0';
-                    force_redraw                     = 1;
-                }
-                continue;
-            }
-
-            termview_handle_keyboard_event(ctx, ch);
+            tv_sig_winch = 1;
+            tv_fc_resume(&ctx->fc);
         }
-        if (loop == 0)
+        if (tv_sig_winch)
+        {
+            tv_sig_winch = 0; /* cleared before the query: a resize during it is not lost */
+            tv_term_size(&ctx->rows, &ctx->cols);
+            tv_invalidate(ctx);
+            tm.resized_us = tm.resized_us ? tm.resized_us : tv_now_us();
+        }
+
+        int64_t now    = tv_now_us();
+        int64_t period = 1000000 / ctx->target_fps;
+        if (tm.next_data > now + period)
+        {
+            tm.next_data = now + period; /* the rate was raised: do not wait out the old period */
+        }
+        int64_t dl = tv_wake_at(ctx, &tm, now, tv_input_deadline(&in));
+
+        struct pollfd pfd        = { .fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
+        int           timeout_ms = (dl <= now) ? 0 : (int) ((dl - now + 999) / 1000);
+        int           ready      = poll(&pfd, 1, timeout_ms);
+        if (ready < 0 && errno != EINTR)
+        {
+            ctx->exit_status = 1;
+            break;
+        }
+        now = tv_now_us();
+        if (ready > 0)
+        {
+            if ((pfd.revents & POLLIN) && tv_input_room(&in) > 0)
+            {
+                unsigned char buf[sizeof(in.buf)];
+                ssize_t       n = read(STDIN_FILENO, buf, tv_input_room(&in));
+                if (n > 0)
+                {
+                    tv_input_feed(&in, buf, (size_t) n, now);
+                }
+                else if ((n == 0 && (pfd.revents & (POLLHUP | POLLERR))) ||
+                         (n < 0 && errno != EINTR && errno != EAGAIN))
+                {
+                    ctx->exit_status = 1; /* terminal closed */
+                    tv_term_hup      = 1;
+                    break;
+                }
+                /* else nothing: raw reads return 0 when a stop let someone else take the input */
+            }
+            else if (!(pfd.revents & POLLIN) && (pfd.revents & (POLLHUP | POLLERR | POLLNVAL)))
+            {
+                ctx->exit_status = 1;
+                tv_term_hup      = 1;
+                break;
+            }
+        }
+
+        tv_dispatch_input(ctx, &in, now, 512);
+        if (!ctx->running || tv_sig_quit || tv_term_hup)
         {
             break;
         }
-
-        if (ctx->popup_type > 0)
+        if (ctx->suspend || tv_sig_tstp)
         {
-            struct timespec now;
-            clock_gettime(CLOCK_MONOTONIC, &now);
-            long popup_remain_us = (ctx->popup_expiry_time.tv_sec - now.tv_sec) * 1000000L +
-                                   (ctx->popup_expiry_time.tv_nsec - now.tv_nsec) / 1000L;
-            if (popup_remain_us <= 0)
+            ctx->suspend = 0;
+            tv_sig_tstp  = 0;
+            if (tv_term_can_suspend())
             {
-                ctx->popup_type = 0;
-                force_redraw    = 1;
+                int dropped = tv_fc_settle(ctx, &in, 0);
+                if (tv_sig_quit || tv_term_hup)
+                {
+                    break; /* quitting after all: the exit reads what is still owed */
+                }
+                tv_term_restore();
+                tv_note_dropped(dropped);
+                tv_term_suspend(); /* stops here; the resume is handled at the top of the loop */
+            }
+            continue;
+        }
+        if (tv_sig_cont)
+        {
+            continue; /* resumed: restore the terminal before drawing anything */
+        }
+        tv_fc_expire(ctx, now);
+
+        if (now >= tm.next_tick || ctx->recheck)
+        {
+            ctx->recheck = 0;
+            tv_stream_monitor(ctx, now);
+        }
+        if (now >= tm.next_tick)
+        {
+            tv_update_stats(ctx, now);
+            tm.next_tick = (tm.next_tick + 1000000 > now) ? tm.next_tick + 1000000 : now + 1000000;
+            ctx->dirty |= TV_D_CHROME;
+        }
+
+        if (tv_fc_more(ctx))
+        {
+            ctx->dirty |= TV_D_CHROME; /* send the image cells the last flush had no room for */
+        }
+        if (now >= tm.next_data && !ctx->paused)
+        {
+            tm.next_data = (tm.next_data + period > now) ? tm.next_data + period : now + period;
+            if (tv_mapped(ctx) && tv_note_cnt0(ctx, tv_cnt0(ctx), now))
+            {
+                ctx->dirty |= TV_D_DATA;
+            }
+            else if (ctx->im.held &&
+                     (ctx->resting || (double) (now - ctx->last_change_us) > tv_quiet_us(ctx)))
+            {
+                ctx->dirty |= TV_D_HELD; /* the stream rests: redraw the held rows exactly */
             }
         }
 
-        termview_update_fps_stats(ctx);
-
-        if (!force_redraw && img.md[0].cnt0 == ctx->last_cnt0)
+        if (tv_resize_waits(ctx, &tm, now))
+        {
+            continue; /* the new size is painted once the image may go */
+        }
+        /* stream frames follow the data poll; input-driven frames are capped */
+        if (!(ctx->dirty & TV_D_DATA) &&
+            !(ctx->dirty && (now - tm.last_render >= TV_INTERACTIVE_US || ctx->fc.release)))
         {
             continue;
         }
-        ctx->last_cnt0 = img.md[0].cnt0;
-        force_redraw   = 0;
-
-        uint32_t xsize = img.md[0].size[0];
-        uint32_t ysize = img.md[0].size[1];
-
-        int bar_width      = 12;
-        int disp_char_rows = wrow - 4;
-        int disp_cols      = wcol - bar_width - 1;
-        int bar_col_start  = wcol - bar_width;
-
-        if (wrow * wcol > ctx->screen_size)
+        tm.last_render  = now;
+        ctx->fc.release = 0;
+        /* a user change shows a frame that arrived since the poll; other renders (the tick, a
+         * flush continuation) leave new frames to the data poll and its rate */
+        if ((ctx->dirty & (TV_D_GEOM | TV_D_MAP | TV_D_FULL)) && !ctx->paused && tv_mapped(ctx) &&
+            tv_note_cnt0(ctx, tv_cnt0(ctx), now))
         {
-            int        new_size = wrow * wcol;
-            tv_cell_t *tmp_screen =
-                (tv_cell_t *) realloc(ctx->screen, new_size * sizeof(tv_cell_t));
-            if (tmp_screen == NULL)
-            {
-                loop = 0;
-                continue;
-            }
-            ctx->screen = tmp_screen;
-
-            tv_cell_t *tmp_prev =
-                (tv_cell_t *) realloc(ctx->prev_screen, new_size * sizeof(tv_cell_t));
-            if (tmp_prev == NULL)
-            {
-                loop = 0;
-                continue;
-            }
-            ctx->prev_screen = tmp_prev;
-            ctx->screen_size = new_size;
-            memset(ctx->prev_screen, 0, ctx->screen_size * sizeof(tv_cell_t));
+            ctx->dirty |= TV_D_DATA;
         }
+        int dirty     = ctx->dirty;
+        ctx->dirty    = 0;
+        tm.resized_us = 0;
 
-        for (int i = 0; i < wrow * wcol; i++)
+        tv_layout_t lay;
+        tv_layout_compute(&lay, ctx->rows, ctx->cols);
+        if (lay.rows != ctx->lay.rows || lay.cols != ctx->lay.cols)
         {
-            ctx->screen[i].bg_r  = 0;
-            ctx->screen[i].bg_g  = 0;
-            ctx->screen[i].bg_b  = 0;
-            ctx->screen[i].fg_r  = 255;
-            ctx->screen[i].fg_g  = 255;
-            ctx->screen[i].fg_b  = 255;
-            ctx->screen[i].ch[0] = ' ';
-            ctx->screen[i].ch[1] = 0;
+            dirty |= TV_D_GEOM;
         }
-
-        if (disp_char_rows <= 0 || disp_cols <= 0)
+        ctx->lay = lay;
+        if (tv_grow(ctx) != 0)
         {
-            usleep(10000);
+            alloc_failed = 1;
+            break;
+        }
+        if (!lay.valid)
+        {
+            tv_cell_t blank = tv_cell(TV_RGB(0, 0, 0), TV_RGB(255, 255, 255), ' ');
+            for (int i = 0; i < ctx->rows * ctx->cols; i++)
+            {
+                ctx->screen[i] = blank;
+            }
+            char msg[64];
+            snprintf(msg, sizeof(msg), "terminal too small (%dx%d)", ctx->cols, ctx->rows);
+            int len = (int) strlen(msg);
+            tv_draw_text(ctx, ctx->rows / 2, (len < ctx->cols) ? (ctx->cols - len) / 2 : 0, msg);
+            for (int i = 0; i < ctx->rows * ctx->cols; i++)
+            {
+                ctx->screen[i] |= TV_ATTR_CHROME;
+            }
+            ctx->mouse_is_dragging = 0;
+            ctx->roi_is_dragging   = 0;
+            if (ctx->ui.open || ctx->ui.help)
+            {
+                tv_ui_open(ctx, -1); /* menus and help do not survive off screen */
+            }
+            ctx->mini.active   = 0;
+            ctx->ui.nhits      = 0;
+            ctx->im.have_range = 0;
+            ctx->im.held       = 0;
+            ctx->lay.rows      = 0; /* rebuild the tables once the size is usable again */
+            termview_flush_ansi(ctx);
             continue;
         }
 
-        int disp_img_rows = disp_char_rows * 2;
-
-        if (disp_img_rows * disp_cols > ctx->buffer_size)
+        /* geometry -> tables; data or geometry -> samples; anything but chrome -> recolour */
+        int sampled = 0;
+        if (dirty & (TV_D_GEOM | TV_D_FULL))
         {
-            int     new_buf_size = disp_img_rows * disp_cols;
-            double *tmp_buf =
-                (double *) realloc(ctx->display_buffer, new_buf_size * sizeof(double));
-            if (tmp_buf == NULL)
+            tv_view_sanitize(&ctx->view.zoom, &ctx->view.cx, &ctx->view.cy, tv_zmax(ctx));
+            tv_xform_t xf;
+            tv_xform_compute(&xf, &lay, &ctx->view, st.xsize, st.ysize, ctx->opt.flip_h,
+                             ctx->opt.flip_v);
+            if (tv_image_geom(&ctx->im, &lay, &xf, st.xsize, st.ysize) != 0)
             {
-                loop = 0;
-                continue;
-            }
-            ctx->display_buffer = tmp_buf;
-            ctx->buffer_size    = new_buf_size;
-        }
-
-        size_t needed_fb = tv_framebuf_size(wrow, wcol);
-        if (needed_fb > ctx->frame_buffer_size)
-        {
-            char *tmp_fb = (char *) realloc(ctx->frame_buffer, needed_fb);
-            if (tmp_fb == NULL)
-            {
-                loop = 0;
-                continue;
-            }
-            ctx->frame_buffer      = tmp_fb;
-            ctx->frame_buffer_size = needed_fb;
-        }
-
-        double view_w_img = (double) xsize / view_zoom;
-        double view_h_img = (double) ysize / view_zoom;
-        double step       = fmax(view_w_img / disp_cols, view_h_img / disp_img_rows);
-
-        double center_img_x  = view_center_x * xsize;
-        double center_img_y  = view_center_y * ysize;
-        double center_disp_x = disp_cols / 2.0;
-        double center_disp_y = disp_img_rows / 2.0;
-
-        double sign_y = current_options.flip_v ? -1.0 : 1.0;
-        double sign_x = current_options.flip_h ? -1.0 : 1.0;
-
-        int buf_idx = 0;
-        if (img.md[0].datatype == _DATATYPE_FLOAT)
-        {
-            const float *restrict data = img.array.F;
-            for (int i = 0; i < disp_img_rows; i++)
-            {
-                for (int j = 0; j < disp_cols; j++)
-                {
-                    int img_y = (int) (center_img_y + sign_y * (i - center_disp_y) * step);
-                    int img_x = (int) (center_img_x + sign_x * (j - center_disp_x) * step);
-                    if (img_x >= 0 && img_x < (int) xsize && img_y >= 0 && img_y < (int) ysize)
-                    {
-                        ctx->display_buffer[buf_idx++] = (double) data[img_y * xsize + img_x];
-                    }
-                    else
-                    {
-                        ctx->display_buffer[buf_idx++] = 0.0;
-                    }
-                }
+                alloc_failed = 1;
+                break;
             }
         }
-        else if (img.md[0].datatype == _DATATYPE_UINT16)
+        /* the frozen copy while paused, else the mapping; nothing once the mapping is gone */
+        const void *src = (ctx->paused && ctx->frozen) ? ctx->frozen
+                          : tv_mapped(ctx)             ? st.img.array.raw
+                                                       : NULL;
+        if (src == NULL)
         {
-            const uint16_t *restrict data = img.array.UI16;
-            for (int i = 0; i < disp_img_rows; i++)
+            ctx->im.held = 0; /* no samples: no held rows to refresh */
+            if (dirty & (TV_D_GEOM | TV_D_FULL))
             {
-                for (int j = 0; j < disp_cols; j++)
-                {
-                    int img_y = (int) (center_img_y + sign_y * (i - center_disp_y) * step);
-                    int img_x = (int) (center_img_x + sign_x * (j - center_disp_x) * step);
-                    if (img_x >= 0 && img_x < (int) xsize && img_y >= 0 && img_y < (int) ysize)
-                    {
-                        ctx->display_buffer[buf_idx++] = (double) data[img_y * xsize + img_x];
-                    }
-                    else
-                    {
-                        ctx->display_buffer[buf_idx++] = 0.0;
-                    }
-                }
+                tv_image_blank(&ctx->im); /* new geometry and no data to sample: empty image */
+            }
+            tv_compose(ctx, now);
+            termview_flush_ansi(ctx);
+            continue;
+        }
+        if (dirty & (TV_D_GEOM | TV_D_FULL | TV_D_DATA))
+        {
+            sampled      = tv_image_sample(&ctx->im, src, st.datatype);
+            ctx->resting = !sampled && (dirty & TV_D_DATA);
+            if (!sampled && ctx->im.held)
+            {
+                dirty |= TV_D_HELD; /* same samples: go on refreshing the held rows */
+            }
+            else if (!sampled && dirty == TV_D_DATA && ctx->im.settled)
+            {
+                continue; /* new frame, same picture: nothing to do */
             }
         }
-        else
+        /* a range still converging finishes on unchanged samples (and on the 1 Hz tick) */
+        int user = dirty & (TV_D_GEOM | TV_D_MAP | TV_D_FULL);
+        if (sampled || user || (dirty & TV_D_HELD) || !ctx->im.settled)
         {
-            for (int i = 0; i < disp_img_rows; i++)
+            if ((int) ctx->opt.colormap != ctx->lut_cmap || (int) ctx->opt.scale != ctx->lut_scale)
             {
-                for (int j = 0; j < disp_cols; j++)
-                {
-                    int img_y = (int) (center_img_y + sign_y * (i - center_disp_y) * step);
-                    int img_x = (int) (center_img_x + sign_x * (j - center_disp_x) * step);
-                    if (img_x >= 0 && img_x < (int) xsize && img_y >= 0 && img_y < (int) ysize)
-                    {
-                        ctx->display_buffer[buf_idx++] = get_pixel_value(&img, img_x, img_y);
-                    }
-                    else
-                    {
-                        ctx->display_buffer[buf_idx++] = 0.0;
-                    }
-                }
+                tv_lut_build(ctx->lut, ctx->opt.colormap, ctx->opt.scale);
+                ctx->lut_cmap  = ctx->opt.colormap;
+                ctx->lut_scale = ctx->opt.scale;
             }
-        }
-
-        int num_pixels = buf_idx;
-
-        double min_val = 0.0, max_val = 1.0;
-        if (current_options.range_locked)
-        {
-            min_val = current_options.manual_min;
-            max_val = current_options.manual_max;
-        }
-        else if (current_options.range == RANGE_MINMAX)
-        {
-            min_val = 1e20;
-            max_val = -1e20;
-            for (int k = 0; k < num_pixels; k++)
+            /* a user change shows its result at once; only stream updates are smoothed, and
+             * redrawing held rows leaves the range alone */
+            if (sampled || user || !ctx->im.settled)
             {
-                if (ctx->display_buffer[k] < min_val)
-                {
-                    min_val = ctx->display_buffer[k];
-                }
-                if (ctx->display_buffer[k] > max_val)
-                {
-                    max_val = ctx->display_buffer[k];
-                }
+                tv_image_range(&ctx->im, &ctx->opt, !ctx->im.have_range || !sampled || user);
+                ctx->cur_min = ctx->im.lo;
+                ctx->cur_max = ctx->im.hi;
             }
+            /* small changes are held only on stream updates, never on the user's own changes */
+            tv_image_render(&ctx->im, ctx->lut, ctx->opt.lowbw && !user);
         }
-        else
-        {
-            double *sorted_buf = (double *) malloc(num_pixels * sizeof(double));
-            memcpy(sorted_buf, ctx->display_buffer, num_pixels * sizeof(double));
-            qsort(sorted_buf, num_pixels, sizeof(double), compare_doubles);
-            double p_low = 0.0, p_high = 1.0;
-            switch (current_options.range)
-            {
-            case RANGE_001_999:
-                p_low  = 0.001;
-                p_high = 0.999;
-                break;
-            case RANGE_005_995:
-                p_low  = 0.005;
-                p_high = 0.995;
-                break;
-            case RANGE_01_99:
-                p_low  = 0.01;
-                p_high = 0.99;
-                break;
-            case RANGE_05_95:
-                p_low  = 0.05;
-                p_high = 0.95;
-                break;
-            case RANGE_10_90:
-                p_low  = 0.10;
-                p_high = 0.90;
-                break;
-            case RANGE_15_85:
-                p_low  = 0.15;
-                p_high = 0.85;
-                break;
-            case RANGE_20_80:
-                p_low  = 0.20;
-                p_high = 0.80;
-                break;
-            default:
-                break;
-            }
-            min_val = sorted_buf[(int) (p_low * (num_pixels - 1))];
-            max_val = sorted_buf[(int) (p_high * (num_pixels - 1))];
-            free(sorted_buf);
-        }
-        if (max_val <= min_val)
-        {
-            max_val = min_val + 1.0;
-        }
-
-        current_min_val = min_val;
-        current_max_val = max_val;
-
-        if (current_options.colormap != lut_colormap || current_options.scale != lut_scale)
-        {
-            build_colormap_lut(current_options.colormap, current_options.scale);
-        }
-
-        termview_render_image(ctx, disp_char_rows, disp_cols, center_img_x, center_img_y, sign_x,
-                              sign_y, step, xsize, ysize, min_val, max_val);
-        termview_render_colorbar(ctx, disp_char_rows, bar_col_start, min_val, max_val);
-        termview_render_infobar(ctx, xsize, ysize, step, min_val, max_val);
-        termview_render_popup(ctx, disp_char_rows, disp_cols);
+        tv_compose(ctx, now);
         termview_flush_ansi(ctx);
     }
 
-    tv_exit_alt_screen();
-    tv_exit_raw();
+    int dropped = 0;
+    if (tv_sig_quit != SIGHUP && !tv_term_hup && !reenter_failed && tv_term_is_active())
+    {
+        dropped = tv_fc_settle(ctx, &in, 1); /* an answer after the restore would reach the shell */
+    }
+    tv_term_restore();
+    tv_note_dropped(dropped);
+    ImageStreamIO_set_default_printError();
 
-    if (ctx->display_buffer)
-    {
-        free(ctx->display_buffer);
-    }
-    if (ctx->screen)
-    {
-        free(ctx->screen);
-    }
-    if (ctx->prev_screen)
-    {
-        free(ctx->prev_screen);
-    }
-    if (ctx->frame_buffer)
-    {
-        free(ctx->frame_buffer);
-    }
+    tv_image_free(&ctx->im);
+    free(ctx->frozen);
+    free(ctx->screen);
+    free(ctx->prev_screen);
+    free(ctx->frame_buffer);
+    int status = ctx->exit_status;
+    free(ctx);
+    tv_stream_close(&st);
 
-    ImageStreamIO_closeIm(&img);
-    return 0;
+    if (tv_sig_quit)
+    {
+        tv_term_reraise(tv_sig_quit);
+    }
+    if (alloc_failed)
+    {
+        fprintf(stderr, "Error: out of memory\n");
+        return 1;
+    }
+    if (reenter_failed)
+    {
+        fprintf(stderr, "Error: cannot restore the viewer's terminal mode after resuming\n");
+        return 1;
+    }
+    if (tv_term_hup)
+    {
+        return 1;
+    }
+    return status;
 }
