@@ -839,6 +839,17 @@ static void test_flush_budget(void)
         closed &= !in || prev[i] == cur[i];
     }
     TV_CHECK(e.pending && closed && vt.errors == 0 && vt_matches(&e, &vt, prev));
+
+    /* held (flow control): interface cells go, the image waits where the rotation stopped */
+    int resume       = e.resume_row;
+    e.hold           = 1;
+    cur[(R - 1) * C] = tv_cell(0x141620, 0xC8CDD6, 'Z') | TV_ATTR_CHROME;
+    n                = tv_flush_diff(&e, out, cur, prev, R, C);
+    vt_feed(&vt, out, n);
+    TV_CHECK(n > 0 && n < 200 && prev[(R - 1) * C] == cur[(R - 1) * C]);
+    TV_CHECK(e.pending && e.resume_row == resume);
+    TV_CHECK(tv_flush_diff(&e, out, cur, prev, R, C) == 0 && e.pending && e.resume_row == resume);
+    e.hold = 0;
     free(out);
 }
 
@@ -888,6 +899,10 @@ static void tv_ev_str(const tv_event_t *ev, char *out, size_t cap)
     if (ev->type == TV_EV_KEY)
     {
         snprintf(out + len, cap - len, "K%u/%u ", ev->key, ev->mods);
+    }
+    else if (ev->type == TV_EV_CPR)
+    {
+        snprintf(out + len, cap - len, "P%d,%d ", ev->y, ev->x);
     }
     else
     {
@@ -1000,6 +1015,12 @@ static void test_input_vectors(void)
         { "\x1b[<8;2;2M", "M0/0/2,2/2 " },
         { "\x1b[<35;5;5M", "M3/3/5,5/0 " },
         { "\x1b[<2;0;0m", "M2/1/1,1/0 " },
+        { "\x1b[90;300R", "P90,300 " }, /* answers to cursor position requests */
+        { "\x1b[2;1R", "P2,1 " },
+        { "\x1b[999;9999R", "P999,9999 " },
+        { "\x1b[1;120R", "P1,120 " }, /* the far terminal 1 row high: still past column 16 */
+        { "\x1b[1;17R", "P1,17 " },
+        { "\x1b[2;99999R", "P2,32767 " },
     };
     for (size_t i = 0; i < sizeof(plain) / sizeof(plain[0]); i++)
     {
@@ -1038,6 +1059,14 @@ static void test_input_vectors(void)
         { "\x1b[F", TV_K_END, 0 },
         { "\x1bOP", TV_K_F1, 0 },
         { "\x1b[1;2P", TV_K_F1, 1 },
+        { "\x1b[R", TV_K_F1 + 2, 0 }, /* F3, not a cursor position report: row 1 */
+        { "\x1b[1;2R", TV_K_F1 + 2, 1 },
+        { "\x1b[1;5R", TV_K_F1 + 2, 4 },
+        { "\x1b[1;3R", TV_K_F1 + 2, 2 },
+        { "\x1b[1;16R", TV_K_F1 + 2, 7 },
+        { "\x1b[2R", TV_K_F1 + 2, 1 }, /* xterm modifyFunctionKeys:1 */
+        { "\x1b[5R", TV_K_F1 + 2, 4 },
+        { "\x1b[3P", TV_K_F1, 2 },
         { "\x1b[[A", TV_K_F1, 0 },
         { "\x1b[11~", TV_K_F1, 0 },
         { "\x1b[15~", TV_K_F1 + 4, 0 },
@@ -1188,14 +1217,15 @@ static void test_input_splits(void)
 {
     static const char stream[] = "ab\x1b[A\x1b[<0;67;12M\x1b[<32;70;12M\x1b[<0;70;12m"
                                  "\x1b[M#q!\x1b[15;2~\x1bOP\x1b[<64;1;1Mz\xc3\xa9\x1b[1;5Dq"
-                                 "\x1b[?62;22c\x1b[[B\x1b[200~x\x1b[201~\x03";
+                                 "\x1b[?62;22c\x1b[[B\x1b[200~x\x1b[201~\x03"
+                                 "\x1b[40;120R\x1b[1;5R";
     size_t            n        = sizeof(stream) - 1;
     char              want[512], got[4096], early[4096];
 
     snprintf(want, sizeof(want),
              "K97/0 K98/0 K%u/0 M0/0/67,12/0 M0/2/70,12/0 M0/1/70,12/0 K%u/1 K%u/0 "
-             "M64/0/1,1/0 K122/0 K%u/4 K113/0 K%u/0 K120/0 K3/0 ",
-             TV_K_UP, TV_K_F1 + 4, TV_K_F1, TV_K_LEFT, TV_K_F1 + 1);
+             "M64/0/1,1/0 K122/0 K%u/4 K113/0 K%u/0 K120/0 K3/0 P40,120 K%u/4 ",
+             TV_K_UP, TV_K_F1 + 4, TV_K_F1, TV_K_LEFT, TV_K_F1 + 1, TV_K_F1 + 2);
     decode_chunked(stream, n, NULL, 0, 0, got, sizeof(got), early);
     TV_CHECK(strcmp(got, want) == 0 && strcmp(early, want) == 0);
 
@@ -2796,6 +2826,1286 @@ static void test_stream_lifecycle(void)
     free(saved);
 }
 
+/* ---- flow control ---- */
+
+/** fc_req() - Record request @col written after @at bytes, @inflight of them unanswered, at @us. */
+static void fc_req(tv_fc_t *fc, uint64_t at, uint64_t inflight, int64_t us, int col)
+{
+    tv_fc_req_t *r = &fc->req[(fc->head + fc->n++) % TV_FC_REQS];
+    r->at          = at;
+    r->inflight    = inflight;
+    r->us          = us;
+    r->col         = col;
+    fc->sent       = at;
+}
+
+static void test_fc_window(void)
+{
+    const int64_t sl = 50000;
+    tv_fc_t       fc;
+    tv_fc_req_t   r;
+    memset(&fc, 0, sizeof(fc));
+
+    /* an answer behind (almost) nothing times the round trip; while timings agree, less often */
+    fc.window  = 64 << 10;
+    fc.base_us = 20000;
+    fc.gap_us  = TV_FC_REBASE_US;
+    r          = (tv_fc_req_t) { .at = 1000, .inflight = 500, .us = 1000000, .quiet = 1 };
+    tv_fc_window(&fc, 1021000, &r, 500, sl);
+    TV_CHECK(fc.base_us == 21000 && fc.quiet_us == 1021000 && fc.gap_us == 2 * TV_FC_REBASE_US);
+    r.us = 2000000;
+    tv_fc_window(&fc, 2080000, &r, 0, sl); /* the round trip grew */
+    TV_CHECK(fc.base_us == 80000 && fc.quiet_us == 2080000 && fc.gap_us == TV_FC_REBASE_US);
+    /* behind a queue an answer times nothing, unless it is faster than the base */
+    r = (tv_fc_req_t) { .at = 1000, .inflight = 100000, .us = 3000000 };
+    tv_fc_window(&fc, 3150000, &r, 0, sl);
+    TV_CHECK(fc.base_us == 80000 && fc.quiet_us == 2080000);
+    r.us = 3200000;
+    tv_fc_window(&fc, 3230000, &r, 0, sl);
+    TV_CHECK(fc.base_us == 30000 && fc.quiet_us == 2080000);
+
+    /* the quietness of a request is decided when it is written, at the rate known then */
+    r = (tv_fc_req_t) { .at = 1000, .inflight = 4000, .us = 4000000, .quiet = 1 };
+    tv_fc_window(&fc, 4090000, &r, 0, sl);
+    TV_CHECK(fc.base_us == 90000 && fc.quiet_us == 4090000);
+    r = (tv_fc_req_t) { .at = 1000, .inflight = TV_FC_QUIET + 1, .us = 5000000 };
+    tv_fc_window(&fc, 5100000, &r, 0, sl);
+    TV_CHECK(fc.base_us == 90000 && fc.quiet_us == 4090000);
+
+    /* delivery rate: bytes shown between answers far enough apart, over the longer of the
+     * times between the answers and between their requests; the window is that rate times
+     * (round trip + slice). A sample at most doubles the rate within a round trip. */
+    memset(&fc, 0, sizeof(fc));
+    fc.window  = 64 << 10;
+    fc.base_us = 20000;
+    r          = (tv_fc_req_t) { .at = 100000, .inflight = 60000, .us = 1000000 };
+    tv_fc_window(&fc, 1030000, &r, 60000, sl); /* the first answer: where counting starts */
+    TV_CHECK(fc.rate == 0.0 && fc.ref_us == 1030000 && fc.window == 64 << 10);
+    r = (tv_fc_req_t) { .at = 110000, .inflight = 60000, .us = 1010000 };
+    tv_fc_window(&fc, 1040000, &r, 10000, sl); /* 10 ms later: too close (ssh bunches) */
+    TV_CHECK(fc.rate == 0.0 && fc.ref_us == 1030000);
+    r = (tv_fc_req_t) { .at = 400000, .inflight = 60000, .us = 1300000 };
+    tv_fc_window(&fc, 1330000, &r, 290000, sl); /* 300000 bytes in 300 ms */
+    TV_CHECK(fabs(fc.rate - 1.0) < 1e-9 && fc.window == 70000);
+    r = (tv_fc_req_t) { .at = 450000, .inflight = 60000, .us = 1400000 };
+    tv_fc_window(&fc, 1430000, &r, 50000, sl); /* little to send: the maximum stays */
+    TV_CHECK(fabs(fc.rate - 1.0) < 1e-9 && fc.window == 70000);
+    r = (tv_fc_req_t) { .at = 1650000, .inflight = 60000, .us = 1500000 };
+    tv_fc_window(&fc, 1530000, &r, 1200000, sl); /* 12 B/us: twice the rate, no more */
+    TV_CHECK(fabs(fc.rate - 2.0) < 1e-9 && fc.window == 140000);
+    tv_fc_window(&fc, 1530000, &r, 0, sl);
+    TV_CHECK(fc.window == 140000);
+    r = (tv_fc_req_t) { .at = 2850000, .inflight = 60000, .us = 1580000 };
+    tv_fc_window(&fc, 1610000, &r, 1200000, sl); /* a round trip later: twice again */
+    TV_CHECK(fabs(fc.rate - 4.0) < 1e-9 && fc.window == 280000);
+    /* answers that come together after a delay count over the time between their requests:
+     * here the reference answer came 1 s late, the next one 30 ms after it */
+    tv_fc_t f2   = fc;
+    f2.rate      = 0.5;
+    f2.ref_us    = 3000000;
+    f2.ref_sus   = 2000000;
+    f2.ref_at    = 1000000;
+    f2.grow_us   = 3029999;
+    f2.grow_rate = 0.0;
+    r            = (tv_fc_req_t) { .at = 1300000, .inflight = 60000, .us = 2700000 };
+    tv_fc_window(&f2, 3030000, &r, 300000, sl); /* 300000 bytes: over 700 ms, not 30 */
+    TV_CHECK(fabs(f2.rate - 0.5) < 1e-9);
+
+    /* a queue of over 3 slices, for a slice of time: the link is slower than the maximum,
+     * which goes toward what the answers show, by half at most (one late answer is not
+     * enough, and delays vary) */
+    r = (tv_fc_req_t) { .at = 3000000, .inflight = 200000, .us = 1610000 };
+    tv_fc_window(&fc, 1810000, &r, 150000, sl); /* rtt 200 ms */
+    TV_CHECK(fabs(fc.rate - 4.0) < 1e-9 && fc.high_us == 1810000);
+    r = (tv_fc_req_t) { .at = 3060000, .inflight = 200000, .us = 1660000 };
+    tv_fc_window(&fc, 1870000, &r, 60000, sl); /* 60 ms on, 60000 bytes in 60 ms */
+    TV_CHECK(fabs(fc.rate - 2.0) < 1e-9 && fabs(fc.cut_rate - 4.0) < 1e-9 && fc.window == 140000);
+    r = (tv_fc_req_t) { .at = 3100000, .inflight = 20000, .us = 1890000 };
+    tv_fc_window(&fc, 1930000, &r, 40000, sl); /* no queue any more */
+    TV_CHECK(fc.high_us == 0);
+    /* a quiet answer: the round trip grew, so that queue was its doing: the rate comes back */
+    f2 = fc;
+    r  = (tv_fc_req_t) { .at = 3100100, .inflight = 100, .us = 2475000, .quiet = 1 };
+    tv_fc_window(&f2, 2500000, &r, 100, sl);
+    TV_CHECK(fabs(f2.rate - 2.0) < 1e-9 && f2.cut_rate == 0.0 && f2.base_us == 25000);
+    /* ... unless a queue seen since the cut was longer than that growth: the link got slower */
+    f2            = fc;
+    f2.cut_rtt_us = 400000;
+    r             = (tv_fc_req_t) { .at = 3100100, .inflight = 100, .us = 2300000, .quiet = 1 };
+    tv_fc_window(&f2, 2500000, &r, 100, sl);
+    TV_CHECK(fabs(f2.rate - 2.0) < 1e-9 && f2.cut_rate == 0.0 && f2.base_us == 200000);
+    TV_CHECK(fc.cut_rtt_us == 210000);
+    tv_fc_window(&fc, 2500000, &r, 100, sl);
+    TV_CHECK(fabs(fc.rate - 4.0) < 1e-9 && fc.cut_rate == 0.0 && fc.base_us == 200000);
+
+    /* long with little to send, the window starts below the estimate (the link may have got
+     * slower); a stale maximum is replaced only by a sample taken while the window held image
+     * back behind a queue (without one, it measures the window, or the idle time before) */
+    r = (tv_fc_req_t) { .at = 3200000, .inflight = 50000, .us = 9800000 };
+    tv_fc_window(&fc, 10000000, &r, 99900, sl);
+    TV_CHECK(fabs(fc.rate - 4.0) < 1e-9 && fc.window == 250000);
+    f2         = fc;
+    fc.limited = 1;
+    r          = (tv_fc_req_t) { .at = 3201000, .inflight = 50000, .us = 9900000 };
+    tv_fc_window(&fc, 10100000, &r, 1000, sl);
+    TV_CHECK(fabs(fc.rate - 4.0) < 1e-9 && fc.full_us == 10100000);
+    f2.limited = 1;
+    r.us       = 9800000; /* 100 ms of queue */
+    tv_fc_window(&f2, 10100000, &r, 1000, sl);
+    TV_CHECK(fabs(f2.rate - 0.01) < 1e-9 && f2.full_us == 10100000);
+    /* image left over for another limit (writes blocking) is not idle either */
+    f2.busy    = 1;
+    f2.full_us = 0;
+    tv_fc_window(&f2, 10200000, &r, 0, sl);
+    TV_CHECK(f2.full_us == 10200000 && !f2.busy);
+
+    /* the window held image back and no queue shows: it grows by what was answered (a window
+     * more per round trip), not only to the measured rate */
+    memset(&fc, 0, sizeof(fc));
+    fc.window  = TV_FC_MIN;
+    fc.base_us = 20000;
+    fc.limited = 1;
+    r          = (tv_fc_req_t) { .at = 20000, .inflight = 20000, .us = 4040000 };
+    tv_fc_window(&fc, 4070000, &r, 20000, sl);
+    TV_CHECK(fc.window == TV_FC_MIN + 20000 && fc.limited == 0);
+    fc.limited = 1;
+    fc.ref_us  = 4099000; /* (no rate sample here) */
+    r          = (tv_fc_req_t) { .at = 70000, .inflight = 20000, .us = 4000000 };
+    tv_fc_window(&fc, 4100000, &r, 50000, sl); /* with a queue it does not */
+    TV_CHECK(fc.window == TV_FC_MIN + 20000);
+
+    /* limits */
+    fc.rate    = 1e6;
+    fc.rate_us = 4100000;
+    fc.full_us = 4100000;
+    fc.window  = TV_FC_MAX;
+    r          = (tv_fc_req_t) { .at = 80000, .inflight = 20000, .us = 4100000 };
+    tv_fc_window(&fc, 4120000, &r, 0, sl);
+    TV_CHECK(fc.window == TV_FC_MAX);
+}
+
+static void test_fc_requests(void)
+{
+    tv_state_t s;
+    state_init(&s); /* 40 x 120 */
+    tv_fc_t *fc = &s.fc;
+    char     buf[32];
+
+    /* the startup request; the first answer turns flow control on */
+    size_t n = tv_fc_request(&s, buf, 1000);
+    TV_CHECK(n > 0 && strcmp(buf, "\x1b[40;17H\x1b[6n") == 0 && fc->n == 1);
+    tv_fc_wrote(fc, n, n, 0);
+    TV_CHECK(fc->req[0].at == n && fc->req[0].inflight == n && fc->req[0].col == 17);
+    TV_CHECK(fc->req[0].quiet);
+    tv_fc_answer(&s, 31000, 17);
+    TV_CHECK(fc->state == TV_FC_ON && fc->n == 0 && fc->acked == n && fc->base_us == 30000);
+
+    /* then up to TV_FC_REQS, each in a column of its own, from 17 on (a narrower terminal does
+     * not move them) */
+    int cols[TV_FC_REQS], distinct = 1;
+    for (int k = 0; k < TV_FC_REQS; k++)
+    {
+        n = tv_fc_request(&s, buf, 40000 + k);
+        tv_fc_wrote(fc, 1000 + n, n, 0);
+        cols[k] = fc->req[(fc->head + fc->n - 1) % TV_FC_REQS].col;
+        distinct &= (cols[k] >= 17 && cols[k] <= 16 + TV_FC_IDS);
+        for (int j = 0; j < k; j++)
+        {
+            distinct &= (cols[j] != cols[k]);
+        }
+    }
+    TV_CHECK(distinct && fc->n == TV_FC_REQS && tv_fc_request(&s, buf, 50000) == 0);
+    unsigned seq = fc->seq;
+    for (int k = 0; k < 40; k++)
+    {
+        tv_fc_answer(&s, 60000, fc->req[fc->head].col);
+        tv_fc_wrote(fc, 100, tv_fc_request(&s, buf, 60000), 0);
+    }
+    TV_CHECK(fc->seq == seq + 40 && fc->n == TV_FC_REQS);
+
+    /* a failed write takes its request back */
+    tv_fc_answer(&s, 70000, fc->req[fc->head].col);
+    n = tv_fc_request(&s, buf, 70000);
+    tv_fc_wrote(fc, n, n, 1);
+    TV_CHECK(fc->n == TV_FC_REQS - 1);
+
+    /* none while closing, on a 1-row terminal, or with flow control off */
+    fc->closing = 1;
+    TV_CHECK(tv_fc_request(&s, buf, 70000) == 0);
+    fc->closing = 0;
+    s.rows      = 1;
+    TV_CHECK(tv_fc_request(&s, buf, 70000) == 0);
+    s.rows    = 40;
+    fc->state = TV_FC_OFF;
+    TV_CHECK(tv_fc_request(&s, buf, 70000) == 0);
+
+    /* narrow terminals: columns past 16 while there are any */
+    state_init(&s);
+    s.cols = 20;
+    for (int k = 0; k < 3; k++)
+    {
+        s.fc.state = TV_FC_ON;
+        tv_fc_wrote(&s.fc, 10, tv_fc_request(&s, buf, k), 0);
+    }
+    TV_CHECK(s.fc.req[0].col == 17 && s.fc.req[1].col == 18 && s.fc.req[2].col == 19);
+    /* narrower: those are answered in its last column, so it is in use until they are */
+    s.cols = 10;
+    TV_CHECK(tv_fc_request(&s, buf, 5) == 0);
+    tv_fc_answer(&s, 6, 10);
+    TV_CHECK(s.fc.n == 2 && s.fc.req[s.fc.head].col == 18);
+    tv_fc_answer(&s, 7, 10);
+    tv_fc_answer(&s, 8, 10);
+    tv_fc_wrote(&s.fc, 10, tv_fc_request(&s, buf, 9), 0);
+    TV_CHECK(s.fc.n == 1 && s.fc.req[s.fc.head].col == 10 && tv_fc_request(&s, buf, 10) == 0);
+
+    /* 41 columns, 24 of them: no more outstanding than that */
+    state_init(&s);
+    s.cols     = 41;
+    s.fc.state = TV_FC_ON;
+    for (int k = 0; k < 30; k++)
+    {
+        tv_fc_wrote(&s.fc, 10, tv_fc_request(&s, buf, k), 0);
+    }
+    TV_CHECK(s.fc.n == 24);
+    tv_fc_answer(&s, 40, 17);
+    tv_fc_wrote(&s.fc, 10, tv_fc_request(&s, buf, 41), 0);
+    TV_CHECK(s.fc.n == 24 && s.fc.req[(s.fc.head + 23) % TV_FC_REQS].col == 17);
+}
+
+static void test_fc_answers(void)
+{
+    tv_state_t s;
+    state_init(&s);
+    tv_fc_t *fc = &s.fc;
+
+    /* an answer nobody asked for changes nothing */
+    fc->sent = 5000;
+    tv_fc_answer(&s, 1000, 120);
+    TV_CHECK(fc->state == TV_FC_PROBE && fc->acked == 0 && fc->n == 0);
+
+    /* the startup request: on, timed, counting starts; what went out behind it gets a request */
+    fc->window = TV_FC_START;
+    fc_req(fc, 5000, 5000, 1000, 120);
+    fc->sent = 9000;
+    tv_fc_answer(&s, 31000, 120);
+    TV_CHECK(fc->state == TV_FC_ON && fc->acked == 5000 && fc->base_us == 30000);
+    TV_CHECK(fc->quiet_us == 31000 && fc->ref_us == 31000 && fc->n == 0 && fc->ask);
+    fc->ask = 0;
+
+    /* answers name their request; ones before it never came, an unknown column is dropped */
+    fc_req(fc, 10000, 5000, 40000, 119);
+    fc_req(fc, 20000, 15000, 50000, 118);
+    fc_req(fc, 30000, 25000, 60000, 117);
+    tv_fc_answer(&s, 80000, 100);
+    TV_CHECK(fc->n == 3 && fc->acked == 5000);
+    tv_fc_answer(&s, 90000, 118);
+    TV_CHECK(fc->n == 1 && fc->acked == 20000 && fc->req[fc->head].col == 117);
+    tv_fc_answer(&s, 95000, 119); /* the one given up on comes after all: too late */
+    TV_CHECK(fc->n == 1 && fc->acked == 20000);
+    fc->sent  = 40000;
+    fc->acked = 35000; /* trickled past it (an overdue answer): never back */
+    tv_fc_answer(&s, 96000, 117);
+    TV_CHECK(fc->n == 0 && fc->acked == 35000);
+    fc->acked = 30000;
+    fc->sent  = 30000;
+    fc->ask   = 0;
+
+    /* across the end of the ring */
+    fc->n    = 0;
+    fc->head = TV_FC_REQS - 1;
+    fc_req(fc, 40000, 10000, 100000, 116);
+    fc_req(fc, 50000, 10000, 110000, 115);
+    fc->wait = 1;
+    s.dirty  = 0;
+    tv_fc_answer(&s, 140000, 116);
+    TV_CHECK(fc->acked == 40000 && fc->n == 1 && fc->head == 0);
+    TV_CHECK(!fc->wait && fc->release && (s.dirty & TV_D_CHROME)); /* held image goes now */
+    fc->release = 0;
+    tv_fc_answer(&s, 150000, 115);
+    TV_CHECK(fc->acked == 50000 && fc->n == 0 && !fc->release && !fc->ask);
+    s.emit.pending = 1; /* image left over by the window goes now too */
+    fc_req(fc, 60000, 10000, 150000, 114);
+    tv_fc_answer(&s, 180000, 114);
+    TV_CHECK(fc->release);
+    /* no room, but what went after the last request needs one: held image goes with it */
+    fc->release = 0;
+    fc->wait    = 1;
+    fc_req(fc, 70000, 10000, 190000, 113);
+    fc->sent = 70000 + 2 * fc->window;
+    tv_fc_answer(&s, 220000, 113);
+    TV_CHECK(fc->ask && fc->release && !fc->wait);
+    /* a drain: once nothing is unanswered, its quiet request goes now, not at the next frame */
+    fc->release  = 0;
+    fc->ask      = 0;
+    fc->wait     = 1;
+    fc->drain_us = 230000;
+    fc_req(fc, fc->sent, 10000, 230000, 112);
+    tv_fc_answer(&s, 260000, 112);
+    TV_CHECK(fc->release && fc->drain_us != 0);
+
+    /* a startup request answered after it timed out: on again, and timed again soon */
+    state_init(&s);
+    fc_req(fc, 100, 100, 0, 120);
+    tv_fc_expire(&s, TV_FC_PROBE_US);
+    TV_CHECK(fc->state == TV_FC_OFF && fc->n == 1);
+    TV_CHECK(tv_fc_room(&s, TV_FC_PROBE_US) == SIZE_MAX);
+    fc->sent = 900000;
+    tv_fc_answer(&s, 3000000, 120);
+    TV_CHECK(fc->state == TV_FC_ON && fc->ask && fc->quiet_us + fc->gap_us <= 3000000);
+}
+
+static void test_fc_room(void)
+{
+    tv_state_t s;
+    state_init(&s);
+    tv_fc_t *fc = &s.fc;
+    char     buf[32];
+    s.target_fps = 20;
+
+    /* nothing asked yet, or a terminal that does not answer: no limit */
+    TV_CHECK(tv_fc_room(&s, 0) == SIZE_MAX);
+    fc->state = TV_FC_OFF;
+    TV_CHECK(tv_fc_room(&s, 0) == SIZE_MAX);
+
+    /* while the startup request is out: the first window (a slow link with a long round trip
+     * would get a flood otherwise) */
+    fc->state  = TV_FC_PROBE;
+    fc->window = TV_FC_START;
+    fc_req(fc, 20000, 20000, 0, 120);
+    TV_CHECK(tv_fc_room(&s, 0) == TV_FC_START - 20000);
+    TV_CHECK(tv_fc_room(&s, TV_FC_PROBE_US - 1) == TV_FC_START - 20000);
+
+    /* on: a slice of the window per flush, so that answers come back a slice apart */
+    fc->state    = TV_FC_ON;
+    fc->n        = 0;
+    fc->acked    = fc->sent;
+    fc->window   = 300 << 10;
+    fc->base_us  = 100000;
+    fc->gap_us   = TV_FC_REBASE_US;
+    fc->quiet_us = 0;
+    fc->ramp_us  = -10000000;
+    TV_CHECK(tv_fc_room(&s, 1000) == 100 << 10 && !fc->wbound);
+    fc->base_us = 0; /* no round trip: the whole window */
+    TV_CHECK(tv_fc_room(&s, 1000) == 300 << 10);
+    fc->base_us = 5000000; /* a long one: at most TV_FC_REQS - 2 slices in flight */
+    TV_CHECK(tv_fc_room(&s, 1000) == (300 << 10) / (TV_FC_REQS - 2));
+    fc->base_us = 100000;
+    fc->sent += 250 << 10; /* most of the window unanswered */
+    TV_CHECK(tv_fc_room(&s, 1000) == 50 << 10 && fc->wbound);
+    fc->sent += 100 << 10;
+    TV_CHECK(tv_fc_room(&s, 1000) == 0);
+    TV_CHECK(tv_fc_lead(&s, buf, 1000, 0) > 0 && fc->n == 1); /* held: something must answer */
+    tv_fc_wrote(fc, strlen(buf), strlen(buf), 0);
+    TV_CHECK(tv_fc_lead(&s, buf, 1000, 0) == 0);
+    fc->credit = 100 << 10; /* trickled out while answers were late: not counted as answered */
+    TV_CHECK(tv_fc_room(&s, 1000) == (50 << 10) - strlen(buf) &&
+             fc->acked + (350 << 10) < fc->sent);
+    fc->credit = 0;
+    fc->n      = 0;
+    fc->acked  = fc->sent;
+
+    /* not in crumbs, but a chunk and what it leaves of the window both go while no queue
+     * shows: a short round trip would idle the link per answer */
+    fc->window  = TV_FC_MIN;
+    fc->base_us = 20000;
+    fc->sent += 5851 + 12;
+    TV_CHECK(tv_fc_room(&s, 1000) == TV_FC_MIN - 5863);
+    fc->high_us = 1;
+    TV_CHECK(tv_fc_room(&s, 1000) == 0);
+    fc->high_us = 0;
+    fc->window  = 300 << 10;
+    fc->base_us = 100000;
+    fc->acked   = fc->sent;
+
+    /* long without a quiet answer: the image waits until the queue has drained, then one
+     * request goes out behind nothing and the image follows it at once */
+    TV_CHECK(tv_fc_room(&s, TV_FC_REBASE_US) > 0 && fc->drain_us == 0);
+    fc->sent += 5000;
+    TV_CHECK(tv_fc_room(&s, TV_FC_REBASE_US + 1) == 0 && fc->drain_us == TV_FC_REBASE_US + 1);
+    int64_t t = TV_FC_REBASE_US + 2;
+    size_t  n = tv_fc_lead(&s, buf, t, 0); /* 5000 bytes nobody asked about */
+    tv_fc_wrote(fc, n, n, 0);
+    TV_CHECK(n > 0 && fc->drain_us != 0 && fc->n == 1);
+    TV_CHECK(tv_fc_lead(&s, buf, t, 0) == 0); /* ... until that is answered */
+    t += 100000;
+    tv_fc_answer(&s, t, fc->req[fc->head].col);
+    n = tv_fc_lead(&s, buf, t, 0);
+    TV_CHECK(n > 0 && fc->drain_us == 0 && fc->quiet_us == t && fc->base_us == 100000);
+    tv_fc_wrote(fc, n, n, 0);
+    TV_CHECK(fc->req[(fc->head + fc->n - 1) % TV_FC_REQS].quiet);
+    TV_CHECK(tv_fc_room(&s, t) > 0 && !fc->wbound);
+    /* ... and the window opens over a round trip: keys would wait behind all of it at once */
+    fc->sent += 150000;
+    TV_CHECK(tv_fc_room(&s, t) == 0);
+    TV_CHECK(tv_fc_room(&s, t + 50000) == 204800 - (fc->sent - fc->acked));
+    TV_CHECK(tv_fc_room(&s, t + 100000) == 100 << 10);
+    fc->n     = 0;
+    fc->acked = fc->sent;
+
+    /* a drain that gets nowhere ends, and the next one waits */
+    t = fc->quiet_us + fc->gap_us + 1;
+    fc->sent += 5000;
+    TV_CHECK(tv_fc_room(&s, t) == 0);
+    int64_t limit = 2 * fc->base_us + 4 * 50000 + 200000;
+    TV_CHECK(tv_fc_room(&s, t + limit) == 0);
+    TV_CHECK(tv_fc_room(&s, t + limit + 1) > 0 && fc->drain_us == 0 &&
+             fc->quiet_us == t + limit + 1);
+
+    TV_CHECK(fc->gap_us == 2 * TV_FC_REBASE_US); /* timings to come less often */
+
+    /* answers that keep showing a queue start a drain early: the round trip may have grown.
+     * It lasts as long as the round trip they showed, which is the base if it times out. */
+    fc->acked       = fc->sent;
+    t               = fc->quiet_us + 1000;
+    fc->lift_us     = t;
+    fc->lift_rtt_us = 400000;
+    TV_CHECK(tv_fc_room(&s, t + 1999999) > 0);
+    TV_CHECK(tv_fc_room(&s, t + 2000001) == 0 && fc->drain_us == t + 2000001 && fc->lift_us == 0);
+    t += 2000001;
+    fc->sent += 5000;
+    limit = 2 * 400000 + 4 * 50000 + 200000;
+    TV_CHECK(tv_fc_room(&s, t + limit) == 0);
+    tv_fc_room(&s, t + limit + 1);
+    TV_CHECK(fc->drain_us == 0 && fc->base_us == 400000 && fc->timed_us == 400000);
+
+    /* the round trip shrank by more than two slices: timed again at once */
+    tv_fc_req_t r = { .at = fc->sent, .inflight = 50000, .us = t + limit };
+    tv_fc_window(fc, t + limit + 200000, &r, 0, 50000);
+    TV_CHECK(fc->base_us == 200000 && fc->quiet_us + fc->gap_us <= t + limit + 200000);
+}
+
+static void test_fc_expire(void)
+{
+    tv_state_t s;
+    state_init(&s);
+    tv_fc_t *fc = &s.fc;
+
+    /* the startup request unanswered: flow control is off, but its answer still counts */
+    fc_req(fc, 100, 100, 0, 120);
+    TV_CHECK(tv_fc_due_us(&s) == TV_FC_PROBE_US);
+    tv_fc_expire(&s, TV_FC_PROBE_US - 1);
+    TV_CHECK(fc->state == TV_FC_PROBE);
+    TV_CHECK(tv_fc_settle_end(&s, 300000) == TV_FC_PROBE_US); /* leaving early */
+    fc_req(fc, 200, 100, 1900000, 121);                       /* more requests may follow it */
+    TV_CHECK(tv_fc_settle_end(&s, 1950000) == TV_FC_SETTLE_MAX_US); /* 3 s from the start */
+    tv_fc_expire(&s, TV_FC_PROBE_US);
+    TV_CHECK(fc->state == TV_FC_OFF && fc->n == 2 && fc->req[fc->head].col == 120);
+    TV_CHECK(tv_fc_due_us(&s) == 0 && fc->release);
+    TV_CHECK(tv_fc_settle_end(&s, TV_FC_PROBE_US) == TV_FC_SETTLE_MAX_US); /* a late answer */
+    TV_CHECK(tv_fc_settle_end(&s, TV_FC_SETTLE_MAX_US + 1) == TV_FC_SETTLE_MAX_US + 1);
+    tv_fc_answer(&s, 2500000, 120); /* it came: the others are on their way behind it */
+    TV_CHECK(fc->state == TV_FC_ON && fc->n == 1 && tv_fc_settle_end(&s, 2500000) > 2500000);
+
+    /* on: an overdue answer is late, not lost. A little image goes now and then meanwhile, and
+     * the answer still counts when it comes. */
+    state_init(&s);
+    fc->state   = TV_FC_ON;
+    fc->base_us = 100000;
+    fc_req(fc, 64 << 10, 64 << 10, 0, 120);
+    fc_req(fc, 100 << 10, 100 << 10, 10, 119);
+    int64_t due = TV_FC_LOST_US + 4 * 100000 + (int64_t) ((64 << 10) / (TV_FC_FLOOR / 1e6));
+    TV_CHECK(llabs(tv_fc_due_us(&s) - due) <= 1);
+    fc->wait = 1;
+    tv_fc_expire(&s, due + 1);
+    TV_CHECK(fc->n == 2 && fc->credit == TV_FC_MIN && fc->acked == 0 && !fc->wait);
+    TV_CHECK(fc->state == TV_FC_ON && tv_fc_due_us(&s) == due + 1 + TV_FC_LOST_US);
+    fc_req(fc, 101 << 10, 100, due + 2, 118); /* not quiet: answers are late */
+    TV_CHECK(fc->n == 3);
+    fc->req[(fc->head + 2) % TV_FC_REQS].quiet = 1;
+    fc->n                                      = 2;
+    fc->sent                                   = 100 << 10;
+    tv_fc_wrote(fc, 0, 0, 0);
+    tv_fc_expire(&s, due + 1 + TV_FC_LOST_US); /* less and less often */
+    TV_CHECK(fc->credit == 2 * TV_FC_MIN && fc->late_us == due + 1 + 3 * TV_FC_LOST_US);
+    tv_fc_answer(&s, due + 2 + TV_FC_LOST_US, 120);
+    TV_CHECK(fc->acked == 64 << 10 && fc->n == 1 && fc->late_us == 0 && fc->credit == 0);
+
+    /* with the rate measured, the queue is allowed for at a quarter of it */
+    fc->rate = 1.0;
+    TV_CHECK(tv_fc_due_us(&s) == 10 + TV_FC_LOST_US + 400000 + 4 * (100 << 10));
+
+    /* leaving: wait for the newest answer, as long as its queue takes while answers come on
+     * time, 3 s at most once one is overdue */
+    TV_CHECK(tv_fc_settle_end(&s, 0) == 10 + TV_FC_LOST_US + 400000 + 4 * (100 << 10));
+    fc->rate = 0.0;
+    TV_CHECK(tv_fc_settle_end(&s, 0) ==
+             10 + TV_FC_LOST_US + 400000 + (int64_t) ((100 << 10) / (TV_FC_FLOOR / 1e6)));
+    fc->late_us = 1;
+    TV_CHECK(tv_fc_settle_end(&s, 0) == TV_FC_SETTLE_MAX_US);
+    fc->late_us = 0;
+    fc->rate    = 1000.0;
+    TV_CHECK(tv_fc_settle_end(&s, 0) == 10 + TV_FC_LOST_US + 400000 + 409);
+    TV_CHECK(tv_fc_settle_end(&s, 5000000) == 5000000 + TV_FC_SETTLE_MIN_US);
+    fc->state = TV_FC_OFF; /* the startup request kept: 3 s from it, for a late answer */
+    TV_CHECK(tv_fc_settle_end(&s, 0) == 10 + TV_FC_SETTLE_MAX_US - 10);
+    fc->n = 0;
+    TV_CHECK(tv_fc_settle_end(&s, 0) == 0);
+
+    /* a full ring of overdue requests: the oldest goes, so that a request can go out, but not
+     * in its column: its answer may still come, and would name a younger request */
+    state_init(&s);
+    char buf[32];
+    fc->state = TV_FC_ON;
+    for (int k = 0; k < TV_FC_REQS; k++)
+    {
+        fc_req(fc, 1000 * (uint64_t) (k + 1), 1000, k, 17 + k);
+    }
+    tv_fc_expire(&s, 100000000);
+    TV_CHECK(fc->n == TV_FC_REQS - 1 && fc->req[fc->head].col == 18 && fc->state == TV_FC_ON);
+    fc->seq = TV_FC_IDS; /* column 17 next */
+    tv_fc_wrote(fc, 10, tv_fc_request(&s, buf, 100000001), 0);
+    TV_CHECK(fc->n == TV_FC_REQS &&
+             fc->req[(fc->head + fc->n - 1) % TV_FC_REQS].col == 17 + TV_FC_REQS);
+    tv_fc_answer(&s, 100000002, 17); /* the evicted one: dropped */
+    TV_CHECK(fc->n == TV_FC_REQS && fc->gone[0] != 0);
+    tv_fc_answer(&s, 100000003, 18);
+    TV_CHECK(fc->n == TV_FC_REQS - 1 && fc->gone[0] == 0 && fc->gone[1] == 0);
+
+    /* a stop: nothing asked before it is waited for, and a request goes before the repaint */
+    fc->state = TV_FC_ON;
+    fc->sent  = 500000;
+    tv_fc_resume(fc);
+    TV_CHECK(fc->n == 0 && fc->acked == 500000 && fc->ask && tv_fc_due_us(&s) == 0);
+    TV_CHECK(((fc->gone[0] >> (19 - 1)) & 1) && fc->credit == 0); /* their columns wait */
+}
+
+static void test_wake_at(void)
+{
+    tv_state_t s;
+    state_init(&s);
+    s.target_fps   = 20;
+    tv_timers_t tm = { .next_data = 50000, .next_tick = 1000000, .last_render = 0 };
+    TV_CHECK(tv_wake_at(&s, &tm, 0, -1) == 50000); /* the next data poll */
+    s.paused = 1;
+    TV_CHECK(tv_wake_at(&s, &tm, 0, -1) == 1000000); /* paused: the tick */
+    /* an overdue answer: the trickle is not left to the tick */
+    s.fc.state   = TV_FC_ON;
+    s.fc.base_us = 100000;
+    fc_req(&s.fc, 1000, 1000, 0, 17);
+    s.fc.late_us = 300000;
+    TV_CHECK(tv_wake_at(&s, &tm, 0, -1) == 300000);
+    TV_CHECK(tv_wake_at(&s, &tm, 0, 20000) == 20000); /* an ESC sequence times out first */
+    /* image left over: the interactive cap; held image an answer let go: now */
+    s.paused       = 0;
+    s.fc.late_us   = 0;
+    s.emit.pending = 1;
+    TV_CHECK(tv_wake_at(&s, &tm, 0, -1) == TV_INTERACTIVE_US);
+    s.dirty      = TV_D_CHROME;
+    s.fc.release = 1;
+    TV_CHECK(tv_wake_at(&s, &tm, 5000, -1) == 5000);
+    /* a new size waits while the image does, for a round trip at most */
+    s.fc.release   = 0;
+    s.emit.pending = 0;
+    s.fc.wait      = 1;
+    tm.resized_us  = 1000;
+    TV_CHECK(tv_resize_waits(&s, &tm, 2000) && !tv_resize_waits(&s, &tm, 201000));
+    tm.next_data = 900000;
+    TV_CHECK(tv_wake_at(&s, &tm, 2000, -1) == 201000);
+    s.fc.n = 0; /* nothing will answer: no wait */
+    TV_CHECK(!tv_resize_waits(&s, &tm, 2000));
+}
+
+static void test_budget_update(void)
+{
+    tv_state_t s;
+    state_init(&s);
+    s.target_fps = 20;
+
+    /* fast writes leave the budget off */
+    tv_budget_update(&s, 500000, 1000);
+    TV_CHECK(s.budget == 0);
+    /* a write that blocked: what drains in a slice, at most twice the write, at least 16 KB */
+    tv_budget_update(&s, 100000, 100000); /* 1 B/us */
+    TV_CHECK(s.budget == 50000);
+    tv_budget_update(&s, 10000, 1000000); /* 0.01 B/us */
+    TV_CHECK(s.budget == 16384);
+    tv_budget_update(&s, 20000, 10000); /* 2 B/us: believed halfway, capped at twice the write */
+    TV_CHECK(s.budget == 40000);
+    /* the terminal caught up: doubling, then off */
+    s.budget = 1 << 20;
+    tv_budget_update(&s, 600000, 100);
+    TV_CHECK(s.budget == 2 << 20);
+    tv_budget_update(&s, 1100000, 100);
+    TV_CHECK(s.budget == 4 << 20);
+    tv_budget_update(&s, 2100000, 100);
+    TV_CHECK(s.budget == 0 && s.drain_rate == 0.0);
+}
+
+/*
+ * A deterministic model of a viewer behind ssh, to test the flow control end to end. The
+ * viewer's writes reach the far terminal fwd_us later, which shows them at a rate (0: the link
+ * stalls) and answers each request when it shows it; answers (and keys) take ret_us back, in
+ * order. sshd takes everything at once. The viewer gets a new frame of image bytes every 50 ms
+ * (or keeps a still image), a key every 0.7 s (300 interface bytes) and a status update every
+ * second (200), and flushes as termview_flush_ansi() does, through the same tv_fc_* calls. The
+ * image goes out in exact budgets: the emitter stops within a cell of them.
+ */
+#define SIM_STEP 250 /* us */
+#define SIM_SEGS 16384
+#define SIM_ANS 4096
+
+typedef struct
+{
+    int64_t t;    /* from this time on */
+    double  rate; /* bytes/us shown */
+    int64_t fwd_us, ret_us;
+} sim_link_t;
+
+typedef struct
+{
+    const sim_link_t *link;
+    int               nlink;
+    uint64_t          frame;       /* image bytes changed every 50 ms; 0: a still image */
+    double            secs;        /* run time */
+    double            from;        /* measured from */
+    double            quit;        /* > 0: q then: the settle, and answers it misses */
+    double            repaint;     /* > 0: the still image changes whole then */
+    int               drop;        /* every drop-th answer is lost */
+    int64_t           jitter_us;   /* answers take up to this much longer back */
+    int               spike_every; /* every n-th answer is spike_us late, the rest behind it */
+    int64_t           spike_us;
+    int64_t           freeze_every_us; /* the far terminal shows nothing for freeze_us ... */
+    int64_t           freeze_us;       /* ... then all that came meanwhile at once */
+    int64_t           iface_us;        /* interface bytes every iface_us (a key held down) */
+    int               iface_bytes;
+    int               cols; /* the terminal's width (300) */
+} sim_cfg_t;
+
+typedef struct
+{
+    double   busy;    /* bytes shown over what the link could show */
+    double   lat_med; /* keys: from pressing to seeing, s */
+    double   lat_max;
+    double   stall;   /* longest time without 8 KB of image shown, s (link up, live image) */
+    double   first;   /* first image complete, s */
+    double   repaint; /* the repaint complete, s after it */
+    double   settle;  /* how long the settle waited, s */
+    int      leaks;   /* answers that came after the settle */
+    int      mism;    /* answers taken for another request than their own */
+    int      state;
+    uint64_t queue_max; /* bytes written but not shown */
+} sim_result_t;
+
+static sim_result_t sim_run(const sim_cfg_t *c)
+{
+    static uint64_t seg_end[SIM_SEGS];
+    static int64_t  seg_at[SIM_SEGS];
+    static int      seg_col[SIM_SEGS];
+    static int64_t  ans_t[SIM_ANS];
+    static int      ans_col[SIM_ANS];
+    static uint64_t ans_at[SIM_ANS]; /* the request it answers: bytes up to it */
+    static double   lat[512];
+    static int64_t  key_t[64];  /* keys pressed, in order: when */
+    static uint64_t key_at[64]; /* the byte that shows them, 0 until flushed */
+    sim_result_t    res;
+    tv_state_t      s;
+    memset(&res, 0, sizeof(res));
+    state_init(&s);
+    s.rows         = 90;
+    s.cols         = c->cols ? c->cols : 300;
+    s.target_fps   = 20;
+    tv_fc_t *fc    = &s.fc;
+    fc->window     = TV_FC_START;
+    fc->ask        = 1;
+    int         sh = 0, sn = 0, ah = 0, an = 0, nlat = 0, nans = 0, li = 0, kh = 0, kn = 0;
+    uint64_t    shown = 0, pending = 0, iface = 0, shown0 = 0, last_img = 0, repaint_at = 0;
+    int64_t     last_flush = -1000000, next_frame = 0, next_key = 350000, next_tick = 1000000;
+    int64_t     next_iface = c->iface_us, last_prog = 0, last_ans = 0;
+    int64_t     end = (int64_t) (c->secs * 1e6), t0 = (int64_t) (c->from * 1e6);
+    int64_t     tq = (int64_t) (c->quit * 1e6), tr = (int64_t) (c->repaint * 1e6);
+    double      credit = 0.0, cap = 0.0;
+    uint64_t    rng      = 88172645463325252ull;
+    int         quitting = 0, gone = 0;
+    tv_settle_t st;
+    char        buf[32];
+    res.first      = -1.0;
+    res.repaint    = -1.0;
+    uint64_t still = 560000 * (uint64_t) s.cols / 300; /* a whole screen */
+    pending        = c->frame ? 0 : still;             /* a still image: one paint */
+
+    for (int64_t t = 0; t < end; t += SIM_STEP)
+    {
+        while (li + 1 < c->nlink && c->link[li + 1].t <= t)
+        {
+            li++;
+        }
+        const sim_link_t *L = &c->link[li];
+
+        /* the far terminal shows what has arrived, answering requests as it reaches them */
+        int frozen = c->freeze_every_us && t % c->freeze_every_us < c->freeze_us;
+        credit += L->rate * SIM_STEP;
+        while (!frozen && sn > 0 && seg_at[sh] + L->fwd_us <= t && credit >= 1.0)
+        {
+            uint64_t take = seg_end[sh] - shown;
+            take          = (take > (uint64_t) credit) ? (uint64_t) credit : take;
+            shown += take;
+            credit -= (double) take;
+            if (shown == seg_end[sh])
+            {
+                if (seg_col[sh] && an < SIM_ANS && !(c->drop && ++nans % c->drop == 0))
+                {
+                    int64_t late =
+                        (c->jitter_us ? (int64_t) ((rng >> 11) % (uint64_t) c->jitter_us) : 0);
+                    rng ^= rng << 13;
+                    rng ^= rng >> 7;
+                    rng ^= rng << 17;
+                    if (c->spike_every && ++nans % c->spike_every == 0)
+                    {
+                        late += c->spike_us;
+                    }
+                    int64_t at                   = t + L->ret_us + late;
+                    at                           = (at < last_ans) ? last_ans : at; /* in order */
+                    last_ans                     = at;
+                    ans_t[(ah + an) % SIM_ANS]   = at;
+                    ans_col[(ah + an) % SIM_ANS] = seg_col[sh];
+                    ans_at[(ah + an) % SIM_ANS]  = seg_end[sh];
+                    an++;
+                }
+                sh = (sh + 1) % SIM_SEGS;
+                sn--;
+            }
+        }
+        if (!frozen && (sn == 0 || seg_at[sh] + L->fwd_us > t))
+        {
+            credit = 0.0; /* an idle link saves nothing */
+        }
+        if (t >= t0 && !quitting)
+        {
+            cap += L->rate * SIM_STEP;
+            uint64_t q    = fc->sent - shown;
+            res.queue_max = (q > res.queue_max) ? q : res.queue_max;
+        }
+        else if (t < t0)
+        {
+            shown0 = shown;
+        }
+        while (kn > 0 && key_at[kh] != 0 && shown >= key_at[kh])
+        {
+            if (key_t[kh] >= t0 && nlat < 512)
+            {
+                lat[nlat++] = (double) (t - key_t[kh] + L->ret_us) / 1e6;
+            }
+            kh = (kh + 1) % 64;
+            kn--;
+        }
+        if (res.first < 0.0 && shown >= (c->frame ? c->frame : still))
+        {
+            res.first = (double) t / 1e6;
+        }
+        if (repaint_at && res.repaint < 0.0 && shown >= repaint_at)
+        {
+            res.repaint = (double) (t - tr) / 1e6;
+        }
+        if (shown - last_img >= 8192 || L->rate == 0.0 || !c->frame)
+        {
+            if (t >= t0 && !quitting && (double) (t - last_prog) / 1e6 > res.stall)
+            {
+                res.stall = (double) (t - last_prog) / 1e6;
+            }
+            last_prog = t;
+            last_img  = shown;
+        }
+
+        /* the viewer */
+        while (an > 0 && ans_t[ah] <= t)
+        {
+            /* its own request, if still outstanding, is the one it must be taken for */
+            int k = tv_fc_match(&s, ans_col[ah]), own = fc->n;
+            for (int j = 0; j < fc->n && own == fc->n; j++)
+            {
+                own = (fc->req[(fc->head + j) % TV_FC_REQS].at == ans_at[ah]) ? j : own;
+            }
+            res.mism += !gone && k != own && (k < fc->n || own < fc->n);
+            if (gone)
+            {
+                res.leaks++; /* the shell gets it */
+            }
+            else if (quitting)
+            {
+                tv_settle_answer(&s, &st, t, ans_col[ah]);
+            }
+            else
+            {
+                tv_fc_answer(&s, t, ans_col[ah]);
+            }
+            ah = (ah + 1) % SIM_ANS;
+            an--;
+        }
+        if (quitting)
+        {
+            /* tv_fc_settle(): answers only, until none is owed or the time is up */
+            if (!gone && (fc->n == 0 || t >= st.end))
+            {
+                gone       = 1;
+                res.settle = (double) (t - tq) / 1e6;
+            }
+            if (gone && sn == 0 && an == 0)
+            {
+                break;
+            }
+            continue;
+        }
+        if (tq && t >= tq)
+        {
+            quitting = 1;
+            tv_settle_begin(&s, &st, t);
+            end = t + 60000000; /* until all is shown and answered */
+            continue;
+        }
+        tv_fc_expire(&s, t);
+        int flush = 0;
+        if (c->frame && t >= next_frame)
+        {
+            pending = c->frame; /* noise: every cell changes again */
+            next_frame += 50000;
+            flush = 1;
+        }
+        if (tr && t >= tr && !repaint_at)
+        {
+            pending    = still;
+            repaint_at = fc->sent + still + 300;
+            flush      = 1;
+        }
+        if (t >= next_key && kn < 64)
+        {
+            iface += 300;
+            key_t[(kh + kn) % 64]  = t;
+            key_at[(kh + kn) % 64] = 0;
+            kn++;
+            next_key += 700000;
+        }
+        if (t >= next_tick)
+        {
+            iface += 200;
+            next_tick += 1000000;
+        }
+        if (c->iface_us && t >= next_iface)
+        {
+            iface += (uint64_t) c->iface_bytes;
+            next_iface += c->iface_us;
+        }
+        flush = flush || fc->release || (t - last_flush >= 16000 && (iface > 0 || tv_fc_more(&s)));
+        if (!flush)
+        {
+            continue;
+        }
+        size_t room = tv_fc_room(&s, t);
+        size_t nl   = tv_fc_lead(&s, buf, t, room);
+        if (nl > 0 && sn < SIM_SEGS)
+        {
+            tv_fc_wrote(fc, nl, nl, 0);
+            seg_end[(sh + sn) % SIM_SEGS] = fc->sent;
+            seg_at[(sh + sn) % SIM_SEGS]  = t;
+            seg_col[(sh + sn) % SIM_SEGS] = fc->req[(fc->head + fc->n - 1) % TV_FC_REQS].col;
+            sn++;
+            room = tv_fc_room(&s, t);
+        }
+        tv_fc_plan(&s, room);
+        size_t   budget = s.emit.hold ? 0 : s.emit.budget;
+        uint64_t img    = s.emit.hold ? 0 : (budget == 0 || pending < budget) ? pending : budget;
+        pending -= img;
+        s.emit.pending = pending > 0 || s.emit.hold; /* as tv_flush_diff() leaves it */
+        tv_fc_flushed(&s, room);
+        fc->release = 0;
+        last_flush  = t;
+        uint64_t n  = iface + img;
+        if (n == 0 || sn == SIM_SEGS)
+        {
+            continue;
+        }
+        iface      = 0;
+        size_t req = tv_fc_request(&s, buf, t);
+        tv_fc_wrote(fc, n + req, req, 0);
+        seg_end[(sh + sn) % SIM_SEGS] = fc->sent;
+        seg_at[(sh + sn) % SIM_SEGS]  = t;
+        seg_col[(sh + sn) % SIM_SEGS] = req ? fc->req[(fc->head + fc->n - 1) % TV_FC_REQS].col : 0;
+        sn++;
+        for (int k = 0; k < kn; k++)
+        {
+            key_at[(kh + k) % 64] = key_at[(kh + k) % 64] ? key_at[(kh + k) % 64] : fc->sent;
+        }
+    }
+    res.busy  = (cap > 0.0) ? (double) (shown - shown0) / cap : 0.0;
+    res.state = fc->state;
+    for (; kn > 0 && nlat < 512 && !tq; kh = (kh + 1) % 64, kn--)
+    {
+        if (key_t[kh] >= t0 && end - key_t[kh] > 2000000)
+        {
+            lat[nlat++] = (double) (end - key_t[kh]) / 1e6; /* never shown: what it waited so far */
+        }
+    }
+    for (int i = 1; i < nlat; i++)
+    {
+        for (int j = i; j > 0 && lat[j - 1] > lat[j]; j--)
+        {
+            double x   = lat[j];
+            lat[j]     = lat[j - 1];
+            lat[j - 1] = x;
+        }
+    }
+    res.lat_med = nlat ? lat[nlat / 2] : 0.0;
+    res.lat_max = nlat ? lat[nlat - 1] : 0.0;
+    return res;
+}
+
+static void sim_report(const char *what, sim_result_t r)
+{
+    if (getenv("TV_SIM_VERBOSE"))
+    {
+        fprintf(stderr,
+                "%-30s busy %3.0f%%  keys %5.0f / %5.0f ms  stall %5.0f ms  queue %5.0f KB  first "
+                "%.3f s  repaint %.3f s  settle %.3f s  leaks %d\n",
+                what, r.busy * 100, r.lat_med * 1000, r.lat_max * 1000, r.stall * 1000,
+                r.queue_max / 1024.0, r.first, r.repaint, r.settle, r.leaks);
+    }
+}
+
+/** sim_check() - Report @r; fail when it is worse than @want (today's values with margin). */
+static void sim_check(const char *what, sim_result_t r, sim_result_t want)
+{
+    sim_report(what, r);
+    if (r.busy < want.busy || r.lat_med > want.lat_med || r.lat_max > want.lat_max ||
+        r.stall > want.stall || (want.queue_max && r.queue_max > want.queue_max) || r.mism ||
+        (want.first > 0.0 && r.first > want.first) ||
+        (want.repaint > 0.0 && (r.repaint < 0.0 || r.repaint > want.repaint)) ||
+        r.state != TV_FC_ON)
+    {
+        fprintf(stderr,
+                "sim %s: busy %.2f (%.2f), keys %.3f/%.3f s (%.3f/%.3f), stall %.3f (%.3f), queue "
+                "%llu (%llu), first %.3f (%.3f), repaint %.3f (%.3f), state %d, %d answer(s) "
+                "taken for another request\n",
+                what, r.busy, want.busy, r.lat_med, r.lat_max, want.lat_med, want.lat_max, r.stall,
+                want.stall, (unsigned long long) r.queue_max, (unsigned long long) want.queue_max,
+                r.first, want.first, r.repaint, want.repaint, r.state, r.mism);
+        tv_failures++;
+    }
+}
+
+#define SIM_LINK(mbs, rtt_ms) { 0, (mbs), (rtt_ms) * 500, (rtt_ms) * 500 }
+
+/** sim_pin() - Limits from today's values: busy 3 points less, the rest 1.3x + 5 ms; 0: not
+ * checked. Re-pin with TV_SIM_VERBOSE=1 when the controller is changed on purpose. */
+static sim_result_t sim_pin(double busy,
+                            double med_ms,
+                            double max_ms,
+                            double stall_ms,
+                            double queue_kb)
+{
+    sim_result_t w = { 0 };
+    w.busy         = busy - 0.03;
+    w.lat_med      = med_ms ? 1.3 * med_ms / 1000 + 0.005 : 99;
+    w.lat_max      = max_ms ? 1.3 * max_ms / 1000 + 0.005 : 99;
+    w.stall        = stall_ms ? 1.3 * stall_ms / 1000 + 0.005 : 99;
+    w.queue_max    = (uint64_t) (1.3 * queue_kb * 1024);
+    return w;
+}
+
+static void test_fc_sim(void)
+{
+    char       what[64];
+    sim_cfg_t  c;
+    sim_link_t L[3];
+
+    /* steady links, a noisy 300x90 image: keys within the round trip and a little more, the
+     * link busy */
+    static const struct
+    {
+        double mbs;
+        int    rtt_ms;
+        double busy, med, max, stall, queue; /* today: fraction, ms, KB */
+    } steady[] = {
+        { 1, 20, 1.0, 54, 68, 28, 126 },
+        { 1, 100, 0.99, 137, 150, 108, 129 },
+        { 1, 300, 0.98, 338, 350, 308, 292 },
+        { 1, 1000, 0.93, 1045, 1055, 960, 600 },
+        { 10, 50, 1.0, 82, 117, 51, 905 },
+        { 0.1, 50, 1.0, 78, 103, 132, 8 },
+        { 0.03, 50, 0.98, 207, 276, 323, 7 },
+        { 0.03, 600, 0.96, 648, 690, 883, 12 },
+        { 0.05, 1000, 0.93, 1036, 1094, 1167, 29 },
+        { 0.1, 1000, 0.93, 1032, 1061, 1074, 58 },
+        { 0.1, 20, 1.0, 68, 85, 102, 7 }, /* short round trips: a few chunks, all in flight */
+        { 0.15, 20, 1.0, 43, 72, 74, 9 },
+        { 0.05, 10, 0.96, 93, 153, 184, 8 },
+        { 0.2, 10, 1.0, 49, 62, 51, 19 },
+    };
+    for (size_t i = 0; i < sizeof(steady) / sizeof(steady[0]); i++)
+    {
+        L[0] = (sim_link_t) SIM_LINK(steady[i].mbs, steady[i].rtt_ms);
+        c    = (sim_cfg_t) { .link = L, .nlink = 1, .frame = 560000, .secs = 30, .from = 15 };
+        snprintf(what, sizeof(what), "%.2f MB/s, %d ms", steady[i].mbs, steady[i].rtt_ms);
+        sim_check(what, sim_run(&c),
+                  sim_pin(steady[i].busy, steady[i].med, steady[i].max, steady[i].stall,
+                          steady[i].queue));
+    }
+
+    /* startup on slow links with long round trips: the first keys, and what they wait behind */
+    static const struct
+    {
+        double mbs;
+        int    rtt_ms;
+        double secs, max, queue;
+    } start[] = { { 0.1, 800, 6, 1353, 83 },    { 0.06, 800, 6, 1547, 64 },
+                  { 0.2, 1000, 6, 1627, 205 },  { 1, 1000, 6, 1366, 1026 },
+                  { 0.05, 1500, 12, 2677, 75 }, { 0.2, 1500, 12, 2426, 303 },
+                  { 0.1, 1900, 12, 3250, 190 } };
+    for (size_t i = 0; i < sizeof(start) / sizeof(start[0]); i++)
+    {
+        L[0] = (sim_link_t) SIM_LINK(start[i].mbs, start[i].rtt_ms);
+        c    = (sim_cfg_t) { .link = L, .nlink = 1, .frame = 560000, .secs = start[i].secs };
+        snprintf(what, sizeof(what), "start %.2f MB/s, %d ms", start[i].mbs, start[i].rtt_ms);
+        sim_check(what, sim_run(&c), sim_pin(0, 0, start[i].max, 0, start[i].queue));
+    }
+
+    /* a local terminal: the first paint goes out at once */
+    L[0]           = (sim_link_t) { 0, 100, 50, 50 };
+    c              = (sim_cfg_t) { .link = L, .nlink = 1, .frame = 1000000, .secs = 2, .from = 1 };
+    sim_result_t w = sim_pin(0, 10, 10, 40, 0);
+    w.first        = 0.02;
+    sim_check("local, 100 MB/s", sim_run(&c), w);
+
+    /* the link becomes 10x slower: keys are fast again within a second */
+    L[0] = (sim_link_t) SIM_LINK(1, 50);
+    L[1] = (sim_link_t) { 5000000, 0.1, 25000, 25000 };
+    c    = (sim_cfg_t) { .link = L, .nlink = 2, .frame = 560000, .secs = 12, .from = 6.5 };
+    sim_check("1 -> 0.1 MB/s", sim_run(&c), sim_pin(1.0, 79, 87, 85, 14));
+
+    /* the link stalls for 8 s: afterwards it is as before */
+    L[0] = (sim_link_t) SIM_LINK(1, 50);
+    L[1] = (sim_link_t) { 4000000, 0, 25000, 25000 };
+    L[2] = (sim_link_t) { 12000000, 1, 25000, 25000 };
+    c    = (sim_cfg_t) { .link = L, .nlink = 3, .frame = 560000, .secs = 20, .from = 14 };
+    sim_check("8 s stall", sim_run(&c), sim_pin(0.99, 92, 100, 58, 104));
+
+    /* the round trip grows tenfold, both ways or the way back only (up to 1.5 s: an uplink
+     * full of something else): the link is busy again within seconds */
+    L[0] = (sim_link_t) SIM_LINK(1, 20);
+    L[1] = (sim_link_t) { 5000000, 1, 100000, 100000 };
+    c    = (sim_cfg_t) { .link = L, .nlink = 2, .frame = 560000, .secs = 20, .from = 12 };
+    sim_check("rtt 20 -> 200 ms", sim_run(&c), sim_pin(1.0, 244, 251, 14, 174));
+    L[1] = (sim_link_t) { 5000000, 1, 10000, 1500000 };
+    c    = (sim_cfg_t) { .link = L, .nlink = 2, .frame = 560000, .secs = 25, .from = 15 };
+    sim_check("way back 10 -> 1500 ms", sim_run(&c), sim_pin(0.98, 1568, 1714, 101, 211));
+
+    /* answers held up and let through together (1 in 33 is 200 ms late, the rest behind it),
+     * and the far terminal pausing 200 ms every 2 s: no burst of output follows */
+    L[0] = (sim_link_t) SIM_LINK(1, 200);
+    c    = (sim_cfg_t) { .link        = L,
+                         .nlink       = 1,
+                         .frame       = 560000,
+                         .secs        = 25,
+                         .from        = 8,
+                         .spike_every = 33,
+                         .spike_us    = 200000 };
+    sim_check("late answers", sim_run(&c), sim_pin(0.87, 245, 301, 208, 388));
+    c = (sim_cfg_t) { .link            = L,
+                      .nlink           = 1,
+                      .frame           = 560000,
+                      .secs            = 25,
+                      .from            = 8,
+                      .freeze_every_us = 2000000,
+                      .freeze_us       = 200000 };
+    sim_check("far end pausing", sim_run(&c), sim_pin(0.88, 204, 401, 354, 332));
+
+    /* answers coming back up to 100 ms late at random */
+    L[0] = (sim_link_t) SIM_LINK(1, 50);
+    c    = (sim_cfg_t) {
+           .link = L, .nlink = 1, .frame = 560000, .secs = 25, .from = 8, .jitter_us = 100000
+    };
+    sim_check("jitter 0-100 ms", sim_run(&c), sim_pin(0.87, 120, 214, 140, 257));
+
+    /* every 10th answer lost */
+    c = (sim_cfg_t) { .link = L, .nlink = 1, .frame = 560000, .secs = 20, .from = 8, .drop = 10 };
+    sim_check("1 answer in 10 lost", sim_run(&c), sim_pin(0.92, 71, 117, 58, 107));
+
+    /* a key held down (150 bytes at 30 Hz): the round trip is still timed, no long holds */
+    L[0] = (sim_link_t) SIM_LINK(1, 300);
+    c    = (sim_cfg_t) { .link        = L,
+                         .nlink       = 1,
+                         .frame       = 560000,
+                         .secs        = 30,
+                         .from        = 8,
+                         .iface_us    = 33000,
+                         .iface_bytes = 150 };
+    sim_check("key held, 300 ms", sim_run(&c), sim_pin(0.99, 343, 352, 306, 401));
+
+    /* a still image for 10 s, then a repaint: it goes out about as fast as the link allows */
+    static const struct
+    {
+        int    rtt_ms;
+        double repaint;
+    } still[] = { { 100, 0.685 }, { 300, 0.935 }, { 600, 1.147 } };
+    for (size_t i = 0; i < sizeof(still) / sizeof(still[0]); i++)
+    {
+        L[0] = (sim_link_t) SIM_LINK(1, still[i].rtt_ms);
+        c    = (sim_cfg_t) {
+               .link = L, .nlink = 1, .frame = 0, .secs = 16, .from = 10, .repaint = 10
+        };
+        snprintf(what, sizeof(what), "repaint after 10 s, %d ms", still[i].rtt_ms);
+        w         = sim_pin(0, 0, 0, 0, 0);
+        w.repaint = 1.3 * still[i].repaint + 0.005;
+        sim_check(what, sim_run(&c), w);
+    }
+    /* ... and if the link got 10x slower meanwhile, keys still show soon after */
+    L[0] = (sim_link_t) SIM_LINK(1, 300);
+    L[1] = (sim_link_t) { 5000000, 0.1, 150000, 150000 };
+    c    = (sim_cfg_t) { .link = L, .nlink = 2, .frame = 0, .secs = 20, .from = 10, .repaint = 10 };
+    w    = sim_pin(0, 323, 1032, 0, 0);
+    w.repaint = 1.3 * 5.888;
+    sim_check("repaint, link 10x slower", sim_run(&c), w);
+
+    /* a repaint after 10 s on fast links: the window opens again within a round trip or two */
+    static const struct
+    {
+        double mbs;
+        int    rtt_ms;
+        double repaint;
+    } fast[] = { { 10, 100, 0.200 }, { 3, 300, 0.561 } };
+    for (size_t i = 0; i < sizeof(fast) / sizeof(fast[0]); i++)
+    {
+        L[0] = (sim_link_t) SIM_LINK(fast[i].mbs, fast[i].rtt_ms);
+        c    = (sim_cfg_t) {
+               .link = L, .nlink = 1, .frame = 0, .secs = 16, .from = 10, .repaint = 10
+        };
+        snprintf(what, sizeof(what), "repaint after 10 s, %.0f MB/s %d ms", fast[i].mbs,
+                 fast[i].rtt_ms);
+        w         = sim_pin(0, 0, 0, 0, 0);
+        w.repaint = fast[i].repaint ? 1.3 * fast[i].repaint + 0.005 : 99;
+        sim_check(what, sim_run(&c), w);
+    }
+    /* ... and a slow link's still image: no idle link while drains time the round trip */
+    L[0] = (sim_link_t) SIM_LINK(0.03, 50);
+    c    = (sim_cfg_t) { .link = L, .nlink = 1, .frame = 0, .secs = 40, .from = 10, .repaint = 10 };
+    w    = sim_pin(0, 0, 0, 0, 0);
+    w.repaint = 1.03 * 19.253; /* the link's own pace: 18.7 s */
+    sim_check("repaint after 10 s, 0.03 MB/s 50 ms", sim_run(&c), w);
+
+    /* the link gets slower as its round trip grows (a bulk upload sharing it): no flood */
+    L[0] = (sim_link_t) SIM_LINK(1, 50);
+    L[1] = (sim_link_t) { 20000000, 0.1, 125000, 125000 };
+    c    = (sim_cfg_t) { .link = L, .nlink = 2, .frame = 560000, .secs = 40, .from = 20 };
+    sim_check("1 -> 0.1 MB/s, rtt 50 -> 250 ms", sim_run(&c), sim_pin(0.9, 289, 580, 372, 88));
+    L[1] = (sim_link_t) { 20000000, 0.05, 300000, 300000 };
+    c    = (sim_cfg_t) { .link = L, .nlink = 2, .frame = 560000, .secs = 40, .from = 20 };
+    sim_check("1 -> 0.05 MB/s, rtt 50 -> 600 ms", sim_run(&c), sim_pin(0.89, 638, 1940, 765, 83));
+
+    /* the round trip shrinks (the way back clears) or grows a little: timed again soon */
+    L[0] = (sim_link_t) { 0, 1, 5000, 1500000 };
+    L[1] = (sim_link_t) { 20000000, 1, 5000, 5000 };
+    c    = (sim_cfg_t) { .link = L, .nlink = 2, .frame = 560000, .secs = 40, .from = 22 };
+    sim_check("way back 1500 -> 10 ms", sim_run(&c), sim_pin(0.99, 41, 108, 18, 112));
+    L[0] = (sim_link_t) SIM_LINK(1, 20);
+    L[1] = (sim_link_t) { 40000000, 1, 55000, 55000 };
+    c    = (sim_cfg_t) { .link = L, .nlink = 2, .frame = 560000, .secs = 80, .from = 40 };
+    sim_check("rtt 20 -> 110 ms after 40 s", sim_run(&c), sim_pin(0.95, 143, 220, 118, 236));
+
+    /* answers coming back up to 200 ms late at random */
+    L[0] = (sim_link_t) SIM_LINK(1, 50);
+    c    = (sim_cfg_t) {
+           .link = L, .nlink = 1, .frame = 560000, .secs = 25, .from = 8, .jitter_us = 200000
+    };
+    sim_check("jitter 0-200 ms", sim_run(&c), sim_pin(0.56, 52, 291, 250, 379));
+
+    /* stalls: a slow link 30 s, a long one 20 s; keys and the link afterwards */
+    L[0] = (sim_link_t) SIM_LINK(0.03, 100);
+    L[1] = (sim_link_t) { 10000000, 0, 50000, 50000 };
+    L[2] = (sim_link_t) { 40000000, 0.03, 50000, 50000 };
+    c    = (sim_cfg_t) { .link = L, .nlink = 3, .frame = 560000, .secs = 70, .from = 40 };
+    sim_check("30 s stall, 0.03 MB/s 100 ms", sim_run(&c), sim_pin(0.96, 245, 1386, 373, 46));
+    L[0] = (sim_link_t) SIM_LINK(1, 600);
+    L[1] = (sim_link_t) { 20000000, 0, 300000, 300000 };
+    L[2] = (sim_link_t) { 40000000, 1, 300000, 300000 };
+    c    = (sim_cfg_t) { .link = L, .nlink = 3, .frame = 560000, .secs = 50, .from = 40 };
+    sim_check("20 s stall, 1 MB/s 600 ms", sim_run(&c), sim_pin(0.99, 645, 766, 128, 624));
+
+    /* outages past what the ring holds: each answer still names its own request (checked in
+     * every case), and leaving soon after the link is back sends none to the shell */
+    static const struct
+    {
+        double mbs;
+        int    rtt_ms, cols, secs;
+        double quit, busy, med, max, stall, queue;
+    } outage[] = { { 1, 100, 120, 90, 0, 0.99, 144, 160, 108, 130 },
+                   { 0.1, 200, 120, 90, 0, 0.98, 226, 282, 277, 22 },
+                   { 0.1, 600, 41, 20, 0, 1.0, 620, 650, 90, 42 },
+                   { 0.1, 200, 120, 100, 2, 0, 0, 0, 0, 0 },
+                   { 0.1, 600, 41, 45, 2.5, 0, 0, 0, 0, 0 } };
+    for (size_t i = 0; i < sizeof(outage) / sizeof(outage[0]); i++)
+    {
+        int back = 20 + outage[i].secs;
+        L[0]     = (sim_link_t) SIM_LINK(outage[i].mbs, outage[i].rtt_ms);
+        L[1]     = (sim_link_t) { 20000000, 0, L[0].fwd_us, L[0].ret_us };
+        L[2] = (sim_link_t) { (int64_t) back * 1000000, outage[i].mbs, L[0].fwd_us, L[0].ret_us };
+        c    = (sim_cfg_t) { .link  = L,
+                             .nlink = 3,
+                             .frame = 560000 * (uint64_t) outage[i].cols / 300,
+                             .secs  = back + (outage[i].quit ? outage[i].quit : 20),
+                             .from  = back + 5,
+                             .cols  = outage[i].cols,
+                             .quit  = outage[i].quit ? back + outage[i].quit : 0 };
+        snprintf(what, sizeof(what), "%d s outage, %d cols, %.1f MB/s %d ms%s", outage[i].secs,
+                 outage[i].cols, outage[i].mbs, outage[i].rtt_ms, outage[i].quit ? ", q" : "");
+        sim_result_t r = sim_run(&c);
+        if (outage[i].quit)
+        {
+            sim_report(what, r);
+            TV_CHECK(r.leaks == 0 && r.mism == 0);
+        }
+        else
+        {
+            sim_check(what, r,
+                      sim_pin(outage[i].busy, outage[i].med, outage[i].max, outage[i].stall,
+                              outage[i].queue));
+        }
+    }
+
+    /* leaving: the settle waits for every answer still owed, early and late, on slow and long
+     * links too, and no longer than they take */
+    static const double rates[] = { 0.02, 0.03, 0.06, 0.1, 0.3, 1 };
+    static const int    rtts[]  = { 50, 300, 600, 1000 };
+    static const double quits[] = { 0.3, 1, 2, 4, 9 };
+    int                 leaks = 0, slow = 0;
+    double              longest = 0.0;
+    for (size_t i = 0; i < sizeof(rates) / sizeof(rates[0]); i++)
+    {
+        for (size_t j = 0; j < sizeof(rtts) / sizeof(rtts[0]); j++)
+        {
+            for (size_t k = 0; k < sizeof(quits) / sizeof(quits[0]); k++)
+            {
+                L[0]           = (sim_link_t) SIM_LINK(rates[i], rtts[j]);
+                c              = (sim_cfg_t) { .link  = L,
+                                               .nlink = 1,
+                                               .frame = 560000,
+                                               .secs  = quits[k] + 1,
+                                               .from  = 0,
+                                               .quit  = quits[k] };
+                sim_result_t r = sim_run(&c);
+                leaks += r.leaks;
+                slow += (r.settle > TV_FC_SETTLE_LONG_US / 1e6);
+                longest = (r.settle > longest) ? r.settle : longest;
+                if (r.leaks && getenv("TV_SIM_VERBOSE"))
+                {
+                    fprintf(stderr, "quit %.2f MB/s %d ms at %.1f s: %d leak(s), settle %.2f s\n",
+                            rates[i], rtts[j], quits[k], r.leaks, r.settle);
+                }
+            }
+        }
+    }
+    if (getenv("TV_SIM_VERBOSE"))
+    {
+        fprintf(stderr, "quits: %zu runs, %d answer(s) reach the shell, longest settle %.2f s\n",
+                sizeof(rates) / sizeof(rates[0]) * sizeof(rtts) / sizeof(rtts[0]) * sizeof(quits) /
+                    sizeof(quits[0]),
+                leaks, longest);
+    }
+    if (leaks || slow)
+    {
+        fprintf(stderr, "sim quits: %d answer(s) reach the shell, %d settle(s) too long\n", leaks,
+                slow);
+        tv_failures++;
+    }
+}
+
 int main(void)
 {
     test_finite();
@@ -2836,6 +4146,14 @@ int main(void)
     test_render();
     test_render_lowbw();
     test_stream_lifecycle();
+    test_fc_window();
+    test_fc_requests();
+    test_fc_answers();
+    test_fc_room();
+    test_fc_expire();
+    test_wake_at();
+    test_budget_update();
+    test_fc_sim();
     if (tv_failures > 0)
     {
         fprintf(stderr, "%d check(s) failed\n", tv_failures);

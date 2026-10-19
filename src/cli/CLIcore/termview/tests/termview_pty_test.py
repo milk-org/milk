@@ -14,6 +14,7 @@ tv-test-mkstream, so production streams are never touched.
 import argparse
 import fcntl
 import os
+import re
 import resource
 import select
 import shutil
@@ -27,6 +28,8 @@ import time
 
 ENTER = b"\x1b[?1049h"
 LEAVE = b"\x1b[?1049l"
+DSR = b"\x1b[6n"  # cursor position request: a terminal answers CSI row;col R
+CUP_DSR = re.compile(rb"\x1b\[(\d+);(\d+)H\x1b\[6n")  # how the viewer asks
 
 
 class Screen:
@@ -39,12 +42,19 @@ class Screen:
         self.rows, self.cols = rows, cols
         self.resize(rows, cols)
         self.pending = b""
+        self.dsr = []  # cursor position (1-based) at each request, for the answers
 
     def resize(self, rows, cols):
         self.rows, self.cols = rows, cols
         self.grid = [[" "] * cols for _ in range(rows)]
         self.attr = [[(None, None)] * cols for _ in range(rows)]
         self.r = self.c = 0
+
+    def set_size(self, rows, cols):
+        """The window changes size: the cursor stays, within it."""
+        r, c = self.r, self.c
+        self.resize(rows, cols)
+        self.r, self.c = min(r, rows - 1), min(c, cols - 1)
 
     def _put(self, ch):
         if 0 <= self.r < self.rows and 0 <= self.c < self.cols:
@@ -126,15 +136,17 @@ class Screen:
         nums = (
             [int(p) if p.isdigit() else 0 for p in params.split(";")] if params else []
         )
-        if final == "H":
-            self.r = (nums[0] if nums and nums[0] else 1) - 1
-            self.c = (nums[1] if len(nums) > 1 and nums[1] else 1) - 1
+        if final == "H":  # clamped, as a terminal does
+            self.r = min(self.rows, nums[0] if nums and nums[0] else 1) - 1
+            self.c = min(self.cols, nums[1] if len(nums) > 1 and nums[1] else 1) - 1
         elif final == "C":
             self.c = min(self.cols - 1, self.c + (nums[0] if nums and nums[0] else 1))
         elif final == "J" and nums and nums[0] == 2:
             self.resize(self.rows, self.cols)
         elif final == "m" and self.colour:
             self._sgr(nums or [0])
+        elif final == "n" and params == "6":
+            self.dsr.append((self.r + 1, self.c + 1))
 
     def text(self):
         return "\n".join("".join(row) for row in self.grid)
@@ -154,7 +166,16 @@ class Viewer:
         colour=False,
         stderr_path=None,
         limit_as=None,
+        answer=True,
+        delay=0.0,
+        block_tstp=False,
+        ignore_tstp=False,
     ):
+        self.answer, self.delay = answer, delay
+        self.answers = []  # (when, bytes, is an answer) not written yet
+        self.asked = self.answered = 0
+        # answers still owed each time the viewer let go of the terminal
+        self.leaves = []
         self.master, self.slave = os.openpty()
         fcntl.ioctl(
             self.master, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0)
@@ -174,6 +195,10 @@ class Viewer:
                     os.close(fd)
                 if block_hup:
                     signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGHUP})
+                if block_tstp:
+                    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTSTP})
+                if ignore_tstp:
+                    signal.signal(signal.SIGTSTP, signal.SIG_IGN)
                 resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
                 if limit_as:
                     resource.setrlimit(resource.RLIMIT_AS, (limit_as, limit_as))
@@ -197,8 +222,13 @@ class Viewer:
             if left <= 0 and not first:
                 return  # bounded even when the viewer writes continuously
             first = False
+            nxt = self.reply()
+            if nxt is not None:
+                left = min(left, nxt - time.monotonic())
             r, _, _ = select.select([self.master], [], [], max(0.0, left))
             if not r:
+                if time.monotonic() < end:
+                    continue  # woken for an answer
                 return
             try:
                 data = os.read(self.master, 1 << 16)
@@ -207,9 +237,63 @@ class Viewer:
             if not data:
                 time.sleep(min(0.01, max(0.0, end - time.monotonic())))
                 continue
-            self.out += data
+            self.got(data)
+        self.reply_until(end)
+
+    def got(self, data, feed=True):
+        """@data reached the terminal: kept, shown (with @feed), and its cursor requests answered.
+        Without the screen model (no @feed) the answer is where the move just before put it.
+        """
+        start = len(self.out)
+        self.out += data
+        lo = max(0, start - len(DSR) + 1)  # requests that end in @data
+        n = self.out.count(DSR, lo)
+        i = self.out.find(LEAVE, max(0, start - len(LEAVE) + 1))
+        while i >= 0:
+            self.leaves.append(len(self.answers) + self.out.count(DSR, lo, i))
+            i = self.out.find(LEAVE, i + 1)
+        pos = []
+        if feed:
             self.screen.feed(data)
-        time.sleep(max(0.0, end - time.monotonic()))
+            pos, self.screen.dsr = self.screen.dsr, []
+        self.asked += n
+        if not feed and n:
+            pos = [
+                (
+                    min(int(m.group(1)), self.screen.rows),
+                    min(int(m.group(2)), self.screen.cols),
+                )
+                for m in CUP_DSR.finditer(self.out, max(0, lo - 16))
+                if m.end() > start
+            ]
+        if self.answer:
+            due = time.monotonic() + self.delay
+            for k in range(n):
+                r, c = pos[k] if k < len(pos) else (self.screen.rows, self.screen.cols)
+                self.answers.append((due, b"\x1b[%d;%dR" % (r, c), True))
+        self.reply()
+
+    def reply(self):
+        """Write the answers that are due; returns when the next one is (None if none)."""
+        now = time.monotonic()
+        while self.answers and self.answers[0][0] <= now and self.master_open:
+            try:
+                os.write(self.master, self.answers[0][1])
+            except BlockingIOError:
+                return now + 0.001
+            except OSError:
+                pass
+            self.answered += self.answers.pop(0)[2]
+        return self.answers[0][0] if self.answers else None
+
+    def reply_until(self, end):
+        """Sleep until @end, writing answers as they fall due."""
+        while True:
+            nxt = self.reply()
+            now = time.monotonic()
+            if now >= end:
+                return
+            time.sleep(max(0.0, min(end, nxt or end) - now))
 
     def wait_for(self, pattern, timeout=3.0):
         end = time.monotonic() + timeout
@@ -296,6 +380,103 @@ class Viewer:
         return None if self.status is None else os.waitstatus_to_exitcode(self.status)
 
 
+class JobViewer(Viewer):
+    """The viewer under a job-control shell: a session leader runs it in a foreground process
+    group of its own and takes the terminal back when it stops, so Ctrl-Z really stops it (a
+    Viewer leads an orphaned session, where the kernel discards the stop)."""
+
+    def __init__(self, exe, args, env, rows=40, cols=120, delay=0.0):
+        self.answer, self.delay = True, delay
+        self.answers = []
+        self.asked = self.answered = 0
+        self.leaves = []
+        self.master, self.slave = os.openpty()
+        fcntl.ioctl(
+            self.master, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0)
+        )
+        self.saved = termios.tcgetattr(self.slave)
+        rd, wr = os.pipe()
+        shell = os.fork()
+        if shell == 0:
+            try:
+                os.close(self.master)
+                os.close(rd)
+                os.setsid()
+                fcntl.ioctl(self.slave, termios.TIOCSCTTY, 0)
+                signal.signal(signal.SIGTTOU, signal.SIG_IGN)
+                pid = os.fork()
+                if pid == 0:
+                    os.setpgid(0, 0)
+                    for fd in (0, 1, 2):
+                        os.dup2(self.slave, fd)
+                    os.tcsetpgrp(0, os.getpid())
+                    signal.signal(signal.SIGTTOU, signal.SIG_DFL)
+                    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+                    os.execve(exe, [exe] + list(args), env)
+                    os._exit(127)
+                try:
+                    os.setpgid(pid, pid)
+                except OSError:
+                    pass
+                os.write(wr, b"pid %d\n" % pid)
+                while True:
+                    _, st = os.waitpid(pid, os.WUNTRACED | os.WCONTINUED)
+                    if os.WIFSTOPPED(st):
+                        os.tcsetpgrp(self.slave, os.getpgrp())  # the shell has it again
+                        os.write(wr, b"stopped %d\n" % os.WSTOPSIG(st))
+                    elif os.WIFCONTINUED(st):
+                        os.write(wr, b"continued 0\n")
+                    else:
+                        os.write(wr, b"exit %d\n" % st)
+                        break
+            finally:
+                os._exit(0)
+        os.close(wr)
+        self.shell, self.rep, self.events = shell, rd, []
+        os.set_blocking(rd, False)
+        os.set_blocking(self.master, False)
+        self.out = bytearray()
+        self.screen = Screen(rows, cols, False)
+        self.status = self.rusage = None
+        self.master_open = True
+        while not self.events:
+            self.collect()
+            time.sleep(0.01)
+        self.pid = int(self.events[0][1])
+
+    def collect(self):
+        try:
+            data = os.read(self.rep, 4096)
+        except BlockingIOError:
+            return
+        for line in data.decode().splitlines():
+            ev, arg = line.split()
+            self.events.append((ev, int(arg)))
+            self.status = int(arg) if ev == "exit" else self.status
+
+    def pump(self, timeout=0.05):
+        super().pump(timeout)
+        self.collect()
+
+    def poll_exit(self):
+        self.collect()
+        return self.status
+
+    def stops(self):
+        return sum(e[0] == "stopped" for e in self.events)
+
+    def close(self):
+        if self.status is None:
+            for sig in (signal.SIGKILL, signal.SIGCONT):
+                try:
+                    os.kill(self.pid, sig)
+                except OSError:
+                    pass
+        os.waitpid(self.shell, 0)
+        self.close_master()
+        os.close(self.slave)
+
+
 class ShmDir:
     """Private MILK_SHM_DIR under /dev/shm plus test streams; removed on exit."""
 
@@ -376,6 +557,10 @@ def start(
     block_hup=False,
     colour=False,
     stderr=None,
+    answer=True,
+    delay=0.0,
+    block_tstp=False,
+    ignore_tstp=False,
 ):
     v = Viewer(
         cfg.termview,
@@ -386,6 +571,10 @@ def start(
         block_hup,
         colour,
         stderr,
+        answer=answer,
+        delay=delay,
+        block_tstp=block_tstp,
+        ignore_tstp=ignore_tstp,
     )
     check(
         v.wait_for(ENTER, 3.0), f"viewer did not start (output {bytes(v.out[:200])!r})"
@@ -1402,6 +1591,701 @@ def test_menus(cfg):
             v.close()
 
 
+def echoed_answers(v, dt=0.5):
+    """Answers written to the terminal during @dt seconds once the viewer let go of it: the
+    shell would read them as typed text (the restored terminal echoes them as ^[[...R).
+    """
+    n0 = len(v.out)
+    v.pump(dt)
+    return b"^[[" in v.out[n0:]
+
+
+def wait_owed(v, timeout=2.0):
+    """Pump until an answer is owed: a request reached the terminal, its answer not sent yet."""
+    end = time.monotonic() + timeout
+    while not any(a[2] for a in v.answers) and time.monotonic() < end:
+        v.pump(0.005)
+    check(any(a[2] for a in v.answers), "no request outstanding")
+
+
+def leave_owing(v, act, what):
+    """With an answer owed, do @act; check that none was owed when the terminal was let go,
+    and that it was let go as soon as the answers were in."""
+    wait_owed(v)
+    n0 = len(v.leaves)
+    t0 = time.monotonic()
+    act()
+    end = time.monotonic() + 4.0
+    while len(v.leaves) == n0 and time.monotonic() < end:
+        v.pump(0.01)
+    took = time.monotonic() - t0
+    check(len(v.leaves) > n0, f"terminal not restored on {what}")
+    check(v.leaves[n0] == 0, f"{v.leaves[n0]} answer(s) still owed after {what}")
+    check(
+        took < v.delay + 0.3,
+        f"{what}: let go {took:.2f} s later, answers {v.delay} s late",
+    )
+
+
+def test_cursor_answers_read_before_leaving(cfg):
+    """Ctrl-Z, SIGTSTP and quit wait for the answers to outstanding cursor requests, here 150 ms
+    late, so none reaches the shell. (The viewer leads its own session here, where the kernel
+    ignores the stop: the terminal is restored and the viewer comes straight back.)"""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        v = start(cfg, shm, s, delay=0.15)
+        try:
+            v.pump(1.0)
+            check(v.answered > 2, f"{v.asked} requests, {v.answered} answered")
+            n0 = v.out.count(ENTER)
+            leave_owing(v, lambda: v.send(b"\x1a"), "Ctrl-Z")
+            end = time.monotonic() + 2.0
+            while v.out.count(ENTER) <= n0 and time.monotonic() < end:
+                v.pump(0.02)
+            check(v.out.count(ENTER) > n0, "no resume")
+            v.pump(0.5)
+            leave_owing(v, lambda: os.kill(v.pid, signal.SIGTSTP), "SIGTSTP")
+            v.pump(0.5)
+            leave_owing(v, lambda: v.send(b"q"), "q")
+            check(not echoed_answers(v), "an answer reached the shell after q")
+            check(v.wait_exit(1.0), "viewer did not exit")
+            check(v.exit_code() == 0, f"exit status {v.exit_code()}")
+            check(v.termios_restored(), "terminal attributes not restored")
+        finally:
+            v.close()
+
+
+def test_terminate_signal_reads_answers(cfg):
+    """SIGTERM from outside reads the outstanding answers too before restoring the terminal."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        v = start(cfg, shm, s, delay=0.15)
+        try:
+            v.pump(1.0)
+            leave_owing(v, lambda: os.kill(v.pid, signal.SIGTERM), "SIGTERM")
+            check(not echoed_answers(v), "an answer reached the shell after SIGTERM")
+            check(v.wait_exit(1.0), "viewer did not exit")
+            check(
+                os.WIFSIGNALED(v.status) and os.WTERMSIG(v.status) == signal.SIGTERM,
+                f"status {v.status}",
+            )
+            check(v.termios_restored(), "terminal attributes not restored")
+        finally:
+            v.close()
+        # answers a second late: a second SIGTERM does not wait for them
+        v = start(cfg, shm, s, delay=1.0)
+        try:
+            v.pump(2.5)
+            wait_owed(v)
+            os.kill(v.pid, signal.SIGTERM)
+            v.pump(0.1)
+            t0 = time.monotonic()
+            os.kill(v.pid, signal.SIGTERM)
+            check(v.wait_exit(3.0), "viewer did not exit")
+            check(
+                time.monotonic() - t0 < 0.3, f"exit {time.monotonic() - t0:.2f} s later"
+            )
+        finally:
+            v.close()
+
+
+def owed_answer(v, timeout=2.0):
+    """Wait until exactly the newest request is owed, and take its answer back (to send it
+    with a key in one write)."""
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
+        v.pump(0.002)
+        owed = [a for a in v.answers if a[2]]
+        if len(owed) == 1 and time.monotonic() < owed[0][0] - 0.05:
+            v.answers.remove(owed[0])
+            return owed[0][1]
+    check(False, "no single answer owed")
+
+
+def test_key_with_the_last_answer(cfg):
+    """q or Ctrl-Z read together with the last answer owed: the terminal is let go at once."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("ramp", "-s", "64x64")  # still: few requests
+        v = start(cfg, shm, s, delay=0.3)
+        try:
+            v.pump(1.5)
+            for key in (b"\x1a", b"q"):
+                ans = owed_answer(v)
+                n0 = len(v.leaves)
+                t0 = time.monotonic()
+                v.send(key + ans)
+                while len(v.leaves) == n0 and time.monotonic() - t0 < 4.0:
+                    v.pump(0.01)
+                took = time.monotonic() - t0
+                check(
+                    len(v.leaves) > n0 and v.leaves[n0] == 0,
+                    f"{key!r}: not let go cleanly",
+                )
+                check(took < 0.3, f"{key!r} with the answer: let go {took:.2f} s later")
+                v.pump(0.5)
+            check(v.wait_exit(2.0) and v.exit_code() == 0, "viewer did not exit")
+        finally:
+            v.close()
+
+
+def test_ctrl_z_then_sigterm(cfg):
+    """SIGTERM while Ctrl-Z waits for answers: the viewer quits (it does not stop), and no
+    answer reaches the shell."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        v = start(cfg, shm, s, delay=1.0)
+        try:
+            v.pump(2.5)
+            wait_owed(v)
+            v.send(b"\x1a")
+            v.pump(0.2)
+            os.kill(v.pid, signal.SIGTERM)
+            check(v.wait_exit(4.0), "viewer did not exit")
+            check(
+                os.WIFSIGNALED(v.status) and os.WTERMSIG(v.status) == signal.SIGTERM,
+                f"status {v.status}",
+            )
+            check(
+                v.leaves and v.leaves[0] == 0, f"answers owed at the leave: {v.leaves}"
+            )
+            check(not echoed_answers(v, 1.5), "an answer reached the shell")
+            check(v.out.count(ENTER) == 1, "the terminal was entered again")
+        finally:
+            v.close()
+
+
+def test_ctrl_c_stops_the_wait(cfg):
+    """Answers late (the link got slow): after q, Ctrl-C ends the wait a second after it began,
+    and at once later on. A double tap does not cut a short wait: the answers would reach the
+    shell."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        for late in (0.2, 1.5):
+            v = start(cfg, shm, s, delay=0.05)
+            try:
+                v.pump(1.5)
+                v.delay = 5.0
+                v.pump(0.5)
+                wait_owed(v)
+                t0 = time.monotonic()
+                v.send(b"q")
+                v.pump(late)
+                v.send(b"\x03")
+                check(v.wait_exit(3.0), "viewer did not exit")
+                took = time.monotonic() - t0
+                want = 1.0 if late < 1.0 else late
+                check(
+                    want - 0.1 < took < want + 0.3,
+                    f"Ctrl-C {late} s after q: exit {took:.2f} s after q",
+                )
+            finally:
+                v.close()
+        v = start(cfg, shm, s, delay=0.3)
+        try:
+            v.pump(1.5)
+            wait_owed(v)
+            n0 = len(v.leaves)
+            v.send(b"\x03")
+            v.pump(0.1)
+            v.send(b"\x03")
+            check(v.wait_exit(3.0), "viewer did not exit")
+            check(
+                v.leaves[n0] == 0,
+                f"{v.leaves[n0]} answer(s) owed after a double Ctrl-C",
+            )
+            check(
+                not echoed_answers(v),
+                "an answer reached the shell after a double Ctrl-C",
+            )
+        finally:
+            v.close()
+
+
+def test_hangup_with_answers_owed(cfg):
+    """The terminal hangs up while answers are owed (SIGHUP not delivered): the viewer exits
+    at once, without a busy loop."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        v = start(cfg, shm, s, block_hup=True, delay=1.0)
+        try:
+            v.pump(2.5)
+            wait_owed(v)
+            v.close_master()
+            t0 = time.monotonic()
+            check(v.wait_exit(3.0), "viewer kept running after the hangup")
+            check(
+                time.monotonic() - t0 < 0.5,
+                f"exit {time.monotonic() - t0:.2f} s after it",
+            )
+            cpu = v.rusage.ru_utime + v.rusage.ru_stime
+            check(cpu < 2.0, f"{cpu:.2f} s CPU")
+        finally:
+            v.close()
+
+
+def test_typed_line_dropped_whole(cfg):
+    """Keys typed while q waits for answers are dropped, and the rest of a line begun then
+    too (it would run cut short); a note says so. The next line goes to the shell."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        err = os.path.join(shm.dir, "stderr.txt")
+        v = start(cfg, shm, s, delay=0.4, stderr=err)
+        try:
+            v.pump(1.5)
+            wait_owed(v)
+            v.send(b"q")
+            v.pump(0.05)
+            v.send(b"ech")  # during the wait
+            while any(a[2] for a in v.answers):
+                v.pump(0.01)
+            v.pump(0.1)
+            check(LEAVE not in v.out, "the terminal was let go in the middle of a line")
+            v.send(b"o cut\r")  # the rest of that line, after the answers are in
+            check(v.wait_exit(3.0) and v.exit_code() == 0, "viewer did not exit")
+            v.send(b"echo ok\r")
+            v.pump(0.3)
+            os.set_blocking(v.slave, False)
+            try:
+                line = os.read(v.slave, 256)
+            except BlockingIOError:
+                line = b""
+            check(line == b"echo ok\n", f"the shell got {line!r}")
+            with open(err) as f:
+                note = f.read()
+            check("dropped" in note, f"no note on stderr: {note!r}")
+        finally:
+            v.close()
+
+
+def typed_after_q(cfg, shm, s, keys, err=None):
+    """q while answers are owed (0.4 s late), then @keys: (delay, bytes, resize) steps from
+    then on. Returns what the shell got, and how long after q the viewer exited."""
+    v = start(cfg, shm, s, delay=0.4, stderr=err)
+    try:
+        v.pump(1.5)
+        wait_owed(v)
+        t0 = time.monotonic()
+        v.send(b"q")
+        for dt, data, resize in keys:
+            v.pump(dt)
+            v.resize(41, 120) if resize else v.send(data)
+        check(v.wait_exit(12.0) and v.exit_code() == 0, "viewer did not exit")
+        took = time.monotonic() - t0
+        v.pump(0.3)
+        os.set_blocking(v.slave, False)
+        try:
+            line = os.read(v.slave, 256)
+        except BlockingIOError:
+            line = b""
+        return line, took
+    finally:
+        v.close()
+
+
+def test_typed_lines_after_q(cfg):
+    """A line typed while q waits for answers is dropped whole, however long it takes to type
+    (at 8 keys/s here), with pauses under 1.5 s or a resize in the middle. The viewer's own
+    keys (q, Ctrl-Z) begin no line: the terminal is let go as the answers are in."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        line = b"git commit -am wip && git push\r"
+        steps = [(0.05, line[:1], False)] + [
+            (0.12, bytes([b]), False) for b in line[1:]
+        ]
+        got, _ = typed_after_q(cfg, shm, s, steps)
+        check(got == b"", f"a long line: the shell got {got!r}")
+        steps = [(0.05, b"ls -", False), (0.7, b"la /tmp\r", False)]
+        got, _ = typed_after_q(cfg, shm, s, steps)
+        check(got == b"", f"a pause: the shell got {got!r}")
+        steps = [(0.05, b"git st", False), (0.5, b"", True), (0.1, b"atus\r", False)]
+        got, _ = typed_after_q(cfg, shm, s, steps)
+        check(got == b"", f"a resize: the shell got {got!r}")
+        for key in (b"q", b"\x1a"):
+            got, took = typed_after_q(cfg, shm, s, [(0.05, key, False)])
+            check(
+                got == b"" and took < 1.0, f"{key!r} again: let go {took:.2f} s after q"
+            )
+
+
+def test_ctrl_z_with_sigtstp_ignored(cfg):
+    """With SIGTSTP ignored by the parent (a shell without job control), Ctrl-Z and SIGTSTP do
+    nothing at all: no stop, and nothing waits."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        v = start(cfg, shm, s, delay=0.3, ignore_tstp=True, cols=160)  # room for flipH
+        try:
+            v.pump(1.0)
+            n0, asked = len(v.out), v.asked
+            v.send(b"\x1a")
+            os.kill(v.pid, signal.SIGTSTP)
+            v.pump(0.1)
+            v.send(b"h")  # acts at once: nothing waits for answers
+            check(v.screen_has("flipH", 1.0), "a key after Ctrl-Z did not act")
+            v.pump(1.5)
+            check(LEAVE not in v.out[n0:], "the terminal was restored")
+            check(v.asked > asked + 10, f"{v.asked - asked} requests after Ctrl-Z")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_early_quit_without_answers(cfg):
+    """A terminal that never answers: q waits until the newest request gives up (2 s after it,
+    3 s after the start at most), and leaves nothing."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("ramp", "-s", "64x64")
+        v = start(cfg, shm, s, answer=False)
+        try:
+            v.pump(0.3)
+            t0 = time.monotonic()
+            v.send(b"q")
+            check(v.wait_exit(3.0) and v.exit_code() == 0, "viewer did not exit")
+            check(
+                time.monotonic() - t0 < 2.0, f"quit took {time.monotonic() - t0:.2f} s"
+            )
+        finally:
+            v.close()
+
+
+def test_narrower_far_terminal(cfg):
+    """The far terminal narrows while answers are on their way (it moves the cursor in, as the
+    viewer learns of the size later): answers still name their requests (none is left for the
+    shell), and requests go on."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        for cols in (100, 40):
+            v = Viewer(cfg.termview, [s], shm.env, 40, 120)
+            try:
+                relay = Relay(v, 300_000, 0.6)
+                check(relay.until(lambda: ENTER in v.out, 3.0), "viewer did not start")
+                relay.run(4.0)
+                relay.resize(40, cols)
+                relay.run(4.0)
+                asked = v.asked
+                relay.run(3.0)
+                check(
+                    v.asked > asked + 5,
+                    f"{v.asked - asked} requests after narrowing to {cols}",
+                )
+                relay.quit()
+                tail = bytes(v.out[v.out.rfind(LEAVE) :])
+                check(
+                    b"^[[" not in tail,
+                    f"{tail.count(b'^[[')} answer(s) reached the shell",
+                )
+            finally:
+                v.close()
+
+
+def test_quit_before_the_first_answer(cfg):
+    """q or SIGINT before the startup request is answered, on a slow link with a long round
+    trip: the viewer waits for that answer and those behind it, so the shell gets none.
+    """
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "256x256", "-p", "noise", "-r", "200")
+        for how in ("q", "SIGINT"):
+            v = Viewer(cfg.termview, [s], shm.env, 90, 300)
+            try:
+                relay = Relay(v, 20_000, 1.0)
+                relay.run(0.1)
+                relay.send(b"q") if how == "q" else os.kill(v.pid, signal.SIGINT)
+                check(
+                    relay.until(lambda: not v.alive(), 15.0),
+                    f"{how}: viewer did not exit",
+                )
+                idle = lambda: not select.select([v.master], [], [], 0.05)[0]
+                relay.until(
+                    lambda: not relay.fifo
+                    and not relay.wire
+                    and not v.answers
+                    and idle(),
+                    15.0,
+                )
+                tail = bytes(v.out[v.out.rfind(LEAVE) :])
+                check(
+                    v.leaves and v.leaves[0] == 0,
+                    f"{how}: answers owed at the leave: {v.leaves}",
+                )
+                check(
+                    b"^[[" not in tail,
+                    f"{how}: {tail.count(b'^[[')} answer(s) reached the shell",
+                )
+            finally:
+                v.close()
+
+
+def test_signal_during_a_blocked_write(cfg):
+    """A terminal that stops reading in the middle of a frame: SIGTSTP or SIGTERM still acts at
+    once (the write is cut short), not after the rest of the frame."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "256x256", "-p", "noise", "-r", "200")
+        for sig in (signal.SIGTSTP, signal.SIGTERM):
+            v = start(cfg, shm, s, rows=90, cols=300, answer=False)
+            try:
+                v.pump(2.5)  # no answers: no flow control, whole frames
+                time.sleep(
+                    1.0
+                )  # the terminal stops reading: the viewer blocks in a write
+                n0 = len(v.out)
+                os.kill(v.pid, sig)
+                time.sleep(0.2)
+                end = time.monotonic() + 3.0
+                while LEAVE not in v.out[n0:] and time.monotonic() < end:
+                    v.pump(0.02)
+                i = v.out.find(LEAVE, n0)
+                check(i >= 0, f"{sig.name}: the terminal was not restored")
+                check(
+                    i - n0 < 100_000, f"{sig.name}: {i - n0} bytes of the frame first"
+                )
+                if sig == signal.SIGTERM:
+                    check(v.wait_exit(2.0), "viewer did not exit")
+                else:
+                    quit_clean(v)
+            finally:
+                v.close()
+
+
+def test_stopped_then_terminated(cfg):
+    """Under a job-control shell, Ctrl-Z stops the viewer, here once the answers stopped coming
+    (the wait gives up). Killed while stopped (SIGTERM then SIGCONT, as bash's kill %1), it
+    exits at once and leaves the line typed at the shell meanwhile alone."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        v = JobViewer(cfg.termview, [s], shm.env, delay=0.05)
+        try:
+            check(v.wait_for(ENTER, 3.0), "viewer did not start")
+            v.pump(2.0)
+            v.answer = False  # requests go overdue
+            v.pump(3.5)
+            v.send(b"\x1a")
+            end = time.monotonic() + 8.0
+            while not v.stops() and time.monotonic() < end:
+                v.pump(0.02)
+            check(v.stops() == 1, "Ctrl-Z did not stop the viewer")
+            v.pump(0.3)
+            t0 = time.monotonic()
+            os.kill(v.pid, signal.SIGTERM)
+            os.kill(v.pid, signal.SIGCONT)
+            time.sleep(0.05)
+            v.send(b"ls\r")  # at the shell
+            end = time.monotonic() + 5.0
+            while v.poll_exit() is None and time.monotonic() < end:
+                v.pump(0.01)
+            check(v.status is not None, "viewer still there after SIGTERM and SIGCONT")
+            check(
+                time.monotonic() - t0 < 0.5, f"exit {time.monotonic() - t0:.2f} s later"
+            )
+            check(v.stops() == 1, "the viewer read the terminal from the background")
+            os.set_blocking(v.slave, False)
+            try:
+                line = os.read(v.slave, 256)
+            except BlockingIOError:
+                line = b""
+            check(line == b"ls\n", f"the shell got {line!r}")
+        finally:
+            v.close()
+
+
+def test_suspend_before_the_keys_after_it(cfg):
+    """Ctrl-Z and q in one read: the viewer stops first, and q applies after the resume. So
+    too with the last answer owed between them (read, it lets the terminal go)."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("ramp", "-s", "64x64")  # still: few requests
+        for answer in (False, True):
+            v = start(cfg, shm, s, answer=answer, delay=0.3 if answer else 0.0)
+            try:
+                if answer:
+                    v.pump(1.5)
+                    keys = b"\x1a" + owed_answer(v) + b"q"
+                else:
+                    v.pump(3.5)  # past the startup request and the wait for it
+                    keys = b"\x1aq"
+                n0 = len(v.out)
+                v.send(keys)
+                check(v.wait_exit(3.0), f"viewer did not exit (answers {answer})")
+                tail = bytes(v.out[n0:])
+                i = tail.find(LEAVE)
+                check(
+                    i >= 0 and tail.find(ENTER, i) > i,
+                    f"q was taken before the stop (answers {answer})",
+                )
+                check(v.exit_code() == 0, f"exit status {v.exit_code()}")
+            finally:
+                v.close()
+
+
+def test_slow_link_quit_leaves_nothing(cfg):
+    """Over a slow ssh link the answers take a while, behind the image queued at startup or in
+    steady state: quitting waits for them, so the shell gets none."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "256x256", "-p", "noise", "-r", "200")
+        for rate, rtt, after in (
+            (150_000, 0.04, 0.5),
+            (300_000, 0.04, 0.4),
+            (64_000, 0.2, 0.3),  # the first window alone takes a second
+            (100_000, 0.04, 5.0),
+            (60_000, 0.8, 1.0),  # satellite-like
+            (20_000, 0.05, 0.3),
+            (30_000, 1.0, 6.0),
+        ):
+            v = Viewer(cfg.termview, [s], shm.env, 90, 300)
+            try:
+                relay = Relay(v, rate, rtt)
+                check(relay.until(lambda: ENTER in v.out, 3.0), "viewer did not start")
+                relay.run(after)
+                relay.quit(20.0)
+                tail = bytes(v.out[v.out.rfind(LEAVE) :])
+                check(
+                    b"^[[" not in tail,
+                    f"{tail.count(b'^[[')} answer(s) reached the shell"
+                    f" at {rate // 1000} KB/s, q after {after} s",
+                )
+            finally:
+                v.close()
+
+
+def test_terminal_without_answers(cfg):
+    """A terminal that never answers cursor requests gets them only until the startup request
+    times out (64 KB of image meanwhile), then the viewer works as without flow control: frames
+    keep coming, and quitting does not wait."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        v = start(cfg, shm, s, answer=False)
+        try:
+            t0 = time.monotonic()
+            v.pump(1.8)
+            held = len(v.out)
+            v.pump(2.5 - (time.monotonic() - t0))
+            n0 = v.out.count(SYNC_ON)
+            v.pump(1.0)
+            frames = v.out.count(SYNC_ON) - n0
+            asked = v.asked
+            v.pump(0.5)
+            check(v.asked == asked, "requests go on to a terminal that never answers")
+            check(held < 80_000, f"{held} bytes before the startup request timed out")
+            check(frames >= 10, f"{frames} frames/s")
+            t1 = time.monotonic()
+            quit_clean(v)
+            check(
+                time.monotonic() - t1 < 0.2, f"quit took {time.monotonic() - t1:.2f} s"
+            )
+        finally:
+            v.close()
+        # a still image larger than the first window: the rest shows once the request timed out
+        s = shm.stream("still", "-s", "256x256", "-p", "noise")
+        v = Viewer(cfg.termview, [s], shm.env, 90, 300, answer=False)
+        try:
+            check(v.wait_for(ENTER, 3.0), "viewer did not start")
+            t0 = time.monotonic()
+            while len(v.out) < 250_000 and time.monotonic() - t0 < 3.0:
+                if select.select([v.master], [], [], 0.01)[0]:
+                    v.got(os.read(v.master, 1 << 16), feed=False)
+            took = time.monotonic() - t0
+            check(took < 2.5, f"250 KB of the first paint took {took:.2f} s")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_resume_forgets_requests(cfg):
+    """Answers lost across a stop (the shell read them) are not waited for: after the resume,
+    the image flows again at once over a slow link."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        v = Viewer(cfg.termview, [s], shm.env, 40, 120)
+        try:
+            relay = Relay(v, 300_000, 0.2)
+            relay.run(2.0)
+            check(ENTER in v.out and v.answered > 5, f"{v.answered} answers")
+            os.kill(v.pid, signal.SIGSTOP)
+            while (
+                relay.fifo or relay.wire or select.select([v.master], [], [], 0.05)[0]
+            ):
+                relay.run(0.05)
+            v.answers.clear()
+            termios.tcflush(v.slave, termios.TCIFLUSH)
+            os.kill(v.pid, signal.SIGCONT)
+            n0 = len(v.out)
+            relay.set_rtt(1.0)  # what the viewer writes before any answer can be back
+            relay.run(0.3)
+            kb = (
+                len(v.out) + len(relay.fifo) + sum(len(w[1]) for w in relay.wire) - n0
+            ) / 1024
+            check(kb > 25, f"{kb:.0f} KB written in the first 0.3 s after the resume")
+            relay.set_rtt(0.2)
+            relay.run(1.0)
+            kb = (len(v.out) - n0) / 1024
+            check(kb > 100, f"{kb:.0f} KB shown in the first 1.3 s after the resume")
+            relay.quit()
+        finally:
+            v.close()
+
+
+def test_ctrl_z_with_sigtstp_blocked(cfg):
+    """With SIGTSTP blocked by the parent, Ctrl-Z does nothing, and the viewer goes on as
+    before: images flow and the terminal is still asked."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        v = start(cfg, shm, s, delay=0.05, block_tstp=True)
+        try:
+            v.pump(1.0)
+            n0, asked = len(v.out), v.asked
+            v.send(b"\x1a")
+            v.pump(2.0)
+            check(LEAVE not in v.out[n0:], "the terminal was restored")
+            check(
+                v.asked > asked + 10, f"{v.asked - asked} requests in 2 s after Ctrl-Z"
+            )
+            check(
+                len(v.out) - n0 > 50000, f"{len(v.out) - n0} bytes in 2 s after Ctrl-Z"
+            )
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_stop_during_startup_request(cfg):
+    """A stop while the startup request is out, longer than it may take: after the resume the
+    terminal is asked again, before the repaint, and flow control works."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        v = start(cfg, shm, s, delay=0.5)
+        try:
+            os.kill(v.pid, signal.SIGSTOP)
+            v.pump(3.0)
+            n0 = len(v.out)
+            os.kill(v.pid, signal.SIGCONT)
+            v.pump(2.0)
+            tail = bytes(v.out[n0:])
+            i, j = tail.find(DSR), tail.find(SYNC_ON)
+            check(0 <= i < j, "no request before the repaint")
+            check(tail.count(DSR) > 5, f"{tail.count(DSR)} requests after the resume")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_input_taken_while_stopped(cfg):
+    """A key that arrived just before a stop, and that something else read meanwhile, is not
+    taken for a hangup after the resume."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("ramp", "-s", "64x64")
+        v = start(cfg, shm, s, answer=False)
+        try:
+            v.pump(2.5)  # no requests: the viewer waits for input
+            for _ in range(5):
+                v.send(b"x")
+                os.kill(v.pid, signal.SIGSTOP)
+                time.sleep(0.05)
+                termios.tcflush(v.slave, termios.TCIFLUSH)
+                os.kill(v.pid, signal.SIGCONT)
+                v.pump(0.3)
+                check(v.alive(), f"the viewer exited ({v.exit_code()}) after a stop")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
 TESTS = [
     test_help_oneline,
     test_missing_stream,
@@ -1437,6 +2321,27 @@ TESTS = [
     test_stderr_on_another_terminal,
     test_pause_refused_without_memory,
     test_menus,
+    test_cursor_answers_read_before_leaving,
+    test_terminate_signal_reads_answers,
+    test_suspend_before_the_keys_after_it,
+    test_slow_link_quit_leaves_nothing,
+    test_terminal_without_answers,
+    test_resume_forgets_requests,
+    test_input_taken_while_stopped,
+    test_ctrl_z_with_sigtstp_blocked,
+    test_stop_during_startup_request,
+    test_key_with_the_last_answer,
+    test_ctrl_z_then_sigterm,
+    test_ctrl_c_stops_the_wait,
+    test_hangup_with_answers_owed,
+    test_typed_line_dropped_whole,
+    test_typed_lines_after_q,
+    test_ctrl_z_with_sigtstp_ignored,
+    test_early_quit_without_answers,
+    test_narrower_far_terminal,
+    test_quit_before_the_first_answer,
+    test_signal_during_a_blocked_write,
+    test_stopped_then_terminated,
 ]
 
 
@@ -1507,8 +2412,16 @@ def drain_at(v, rate, dt, feed=True):
             left = slot - time.monotonic()
             if left <= 0:
                 break
-            r, _, _ = select.select([v.master], [], [], left)
+            nxt = v.reply()
+            r, _, _ = select.select(
+                [v.master],
+                [],
+                [],
+                left if nxt is None else max(0.0, min(left, nxt - time.monotonic())),
+            )
             if not r:
+                if nxt is not None and time.monotonic() < slot:
+                    continue  # woken for an answer
                 break
             try:
                 data = os.read(v.master, min(quota, 1 << 16))
@@ -1518,10 +2431,8 @@ def drain_at(v, rate, dt, feed=True):
                 break
             quota -= len(data)
             reads.append((time.monotonic(), len(data)))
-            v.out += data
-            if feed:
-                v.screen.feed(data)
-        time.sleep(max(0.0, slot - time.monotonic()))
+            v.got(data, feed)
+        v.reply_until(slot)
     return reads
 
 
@@ -1538,8 +2449,145 @@ def drain_fast(v, dt):
             except OSError:
                 data = b""
             n += len(data)
-            v.out += data
+            v.got(data, feed=False)
+        else:
+            v.reply()
     return n
+
+
+class Relay:
+    """sshd between the viewer and a terminal across a link of round trip @rtt, half each way.
+    sshd reads the viewer's output as soon as it comes, into a buffer of up to @cap bytes (ssh's
+    channel window), and sends it at @rate bytes/s (0: the link stalls). The terminal shows it
+    @rtt/2 later and answers a cursor request once shown; answers and keys take @rtt/2 back.
+    """
+
+    def __init__(self, v, rate, rtt=0.0, cap=2 << 20):
+        self.v, self.rate, self.cap = v, rate, cap
+        self.fifo = bytearray()  # in sshd
+        self.wire = []  # (arrival, bytes) on the way to the terminal
+        self.credit = 0.0
+        self.last = time.monotonic()
+        self.held = []  # bytes in sshd and on the wire, sampled
+        self.shown = []  # (time, bytes shown so far), sampled
+        self.later = []  # (time, rows, cols): sizes on their way to the viewer
+        self.set_rtt(rtt)
+
+    def set_rtt(self, rtt):
+        self.fwd = rtt / 2
+        self.v.delay = rtt / 2
+
+    def resize(self, rows, cols):
+        """The far terminal changes size now; the viewer hears of it half a round trip later."""
+        self.v.screen.set_size(rows, cols)
+        self.later.append((time.monotonic() + self.v.delay, rows, cols))
+
+    def send(self, key):
+        """A key typed on the far terminal: it reaches the viewer half a round trip later."""
+        self.v.answers.append((time.monotonic() + self.v.delay, key, False))
+
+    def run(self, dt, feed=True):
+        v = self.v
+        end = time.monotonic() + dt
+        while True:
+            now = time.monotonic()
+            self.credit += (now - self.last) * self.rate
+            self.last = now
+            if not self.fifo:
+                self.credit = min(
+                    self.credit, self.rate * 0.005
+                )  # slept idle: nothing saved
+            while len(self.fifo) < self.cap and v.master_open:
+                r, _, _ = select.select([v.master], [], [], 0)
+                if not r:
+                    break
+                try:
+                    data = os.read(v.master, min(self.cap - len(self.fifo), 1 << 16))
+                except OSError:
+                    data = b""
+                if not data:
+                    break
+                self.fifo += data
+            now = time.monotonic()
+            n = min(int(self.credit), len(self.fifo))
+            if n:
+                self.wire.append((now + self.fwd, bytes(self.fifo[:n])))
+                del self.fifo[:n]
+                self.credit -= n
+            if not self.fifo:
+                self.credit = min(
+                    self.credit, self.rate * 0.005
+                )  # an idle link saves nothing
+            while self.wire and self.wire[0][0] <= now:
+                v.got(self.wire.pop(0)[1], feed)
+            while self.later and self.later[0][0] <= now:
+                _, rows, cols = self.later.pop(0)
+                fcntl.ioctl(
+                    v.master, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0)
+                )
+            self.held.append(len(self.fifo) + sum(len(w[1]) for w in self.wire))
+            self.shown.append((now, len(v.out)))
+            nxt = v.reply()
+            if now >= end:
+                return
+            wait = min(0.005, end - now) if self.fifo else end - now
+            for t in (nxt, self.wire[0][0] if self.wire else None):
+                if t is not None:
+                    wait = max(0.0, min(wait, t - now))
+            if len(self.fifo) < self.cap:
+                select.select([v.master], [], [], wait)
+            else:
+                time.sleep(wait)
+
+    def until(self, pred, timeout):
+        """Run until @pred() holds or @timeout seconds pass; returns pred()."""
+        end = time.monotonic() + timeout
+        while not pred() and time.monotonic() < end:
+            self.run(0.01)
+        return pred()
+
+    def stall(self, since, least=8192):
+        """Longest time after @since during which the terminal showed fewer than @least bytes."""
+        pts = [p for p in self.shown if p[0] >= since]
+        worst, j = 0.0, 0
+        for i in range(len(pts)):
+            while pts[i][1] - pts[j][1] >= least:
+                j += 1
+            worst = max(worst, pts[i][0] - pts[j][0])
+        return worst
+
+    def busy(self, since):
+        """Bytes shown since @since over what the link could carry."""
+        pts = [p for p in self.shown if p[0] >= since]
+        if len(pts) < 2:
+            return 0.0
+        return (pts[-1][1] - pts[0][1]) / ((pts[-1][0] - pts[0][0]) * self.rate)
+
+    def latency(self, key, txt, gone=False, timeout=10):
+        """Seconds from typing @key until @txt is on the far screen (or, with @gone, off it)."""
+        t0 = time.monotonic()
+        self.send(key)
+        self.until(lambda: (txt in self.v.screen.text()) != gone, timeout)
+        return time.monotonic() - t0
+
+    def quit(self, timeout=5.0):
+        """q, and the viewer exits, as soon as the answers on the way are in: the key's way
+        there, the queue, an answer's way back. Then the link drains, answering what it still
+        carries, until the terminal (with its echoes) is quiet."""
+        held = len(self.fifo) + sum(len(w[1]) for w in self.wire)
+        t0 = time.monotonic()
+        self.send(b"q")
+        self.until(lambda: not self.v.alive(), timeout)
+        took = time.monotonic() - t0
+        check(not self.v.alive(), "viewer did not quit")
+        check(self.v.exit_code() == 0, f"exit status {self.v.exit_code()}")
+        bound = 3 * self.fwd + held / self.rate + 0.35
+        check(took < bound, f"quit took {took:.2f} s, the link needed {bound:.2f}")
+        idle = lambda: not select.select([self.v.master], [], [], 0.05)[0]  # echoes too
+        self.until(
+            lambda: not self.fifo and not self.wire and not self.v.answers and idle(),
+            30.0,
+        )
 
 
 def key_latency(v, key, txt, rate, timeout=10, gone=False):
@@ -1573,12 +2621,14 @@ def quit_slow(v, rate):
 
 
 def perf_slow_terminal(cfg):
-    """Over a 1 MB/s link a noisy 300x90 image cannot be sent whole: keys must still show fast."""
+    """Over a 1 MB/s link a noisy 300x90 image cannot be sent whole: keys must still show fast.
+    The terminal does not answer cursor requests, so this is the blocked-write budget's work.
+    """
     with ShmDir(cfg.mkstream) as shm:
         s = shm.stream("noise", "-s", "256x256", "-p", "noise", "-r", "200")
-        v = start(cfg, shm, s, rows=90, cols=300)
+        v = start(cfg, shm, s, rows=90, cols=300, answer=False)
         try:
-            drain_at(v, 1_000_000, 2.0)
+            drain_at(v, 1_000_000, 3.0)  # past the startup request
             lat = []
             for gone in (False, True) * 4:
                 lat.append(key_latency(v, b"h", "flipH", 1_000_000, gone=gone))
@@ -1627,10 +2677,11 @@ def perf_slow_terminal(cfg):
 
 
 def perf_static_repaint_slow_link(cfg):
-    """A static image over a 1 MB/s link: after a quiet spell a repaint must not stall keys."""
+    """A static image over a 1 MB/s link: after a quiet spell a repaint must not stall keys
+    (blocked-write budget: no answers)."""
     with ShmDir(cfg.mkstream) as shm:
         s = shm.stream("still", "-s", "256x256", "-p", "noise")
-        v = start(cfg, shm, s, rows=90, cols=300)
+        v = start(cfg, shm, s, rows=90, cols=300, answer=False)
         try:
             drain_at(v, 1_000_000, 4.0)  # first paint, then only the 1 Hz status
             t0 = time.monotonic()
@@ -1659,12 +2710,13 @@ def perf_static_repaint_slow_link(cfg):
 
 
 def perf_box_select_slow_link(cfg):
-    """Holding a box-zoom selection over a slow link: the dimmed image stays within the budget."""
+    """Holding a box-zoom selection over a slow link: the dimmed image stays within the budget
+    (blocked-write budget: no answers)."""
     with ShmDir(cfg.mkstream) as shm:
         s = shm.stream("noise", "-s", "256x256", "-p", "noise", "-r", "200")
-        v = start(cfg, shm, s, rows=90, cols=300)
+        v = start(cfg, shm, s, rows=90, cols=300, answer=False)
         try:
-            drain_at(v, 1_000_000, 2.0)
+            drain_at(v, 1_000_000, 3.0)  # past the startup request
             v.send(b"\x1b[<2;10;10M\x1b[<34;250;80M")
             drain_at(v, 1_000_000, 0.5)
             n0 = len(v.out)
@@ -1711,12 +2763,13 @@ def perf_low_fps_slow_link(cfg):
 
 
 def first_paint(cfg, shm, stream, env):
-    """Bytes of the first full paint of a static image at 300x90 (no budget: one flush)."""
+    """Bytes of the first full paint of a static image at 300x90, however many flushes flow
+    control cuts it into (plus a status update or two)."""
     v = Viewer(cfg.termview, [stream], env, 90, 300)
     try:
         check(v.wait_for(ENTER, 3.0), "viewer did not start")
         drain_fast(v, 1.5)
-        paint = max(flush_sizes(bytes(v.out)) or [0])
+        paint = sum(flush_sizes(bytes(v.out)))
         quit_clean(v)
         return paint, bytes(v.out)
     finally:
@@ -1724,17 +2777,15 @@ def first_paint(cfg, shm, stream, env):
 
 
 def lowbw_rate(cfg, shm, stream, keys, warmup=1.5, window=4.0):
-    """Bytes/s the viewer writes for @stream at 300x90 after @keys, read as fast as it comes,
-    and the size of its first (whole, unbudgeted) paint."""
+    """Bytes/s the viewer writes for @stream at 300x90 after @keys, read as fast as it comes."""
     v = Viewer(cfg.termview, [stream], shm.env, 90, 300)
     try:
         check(v.wait_for(ENTER, 3.0), "viewer did not start")
         v.send(keys)
         drain_fast(v, warmup)
-        paint = (flush_sizes(bytes(v.out)) or [0])[0]
         rate = drain_fast(v, window) / window
         quit_clean(v)
-        return rate, paint
+        return rate
     finally:
         v.close()
 
@@ -1760,9 +2811,12 @@ def perf_output_volume(cfg):
             "256 colours: 24-bit codes sent",
         )
         check(0.4 <= c256 / tc <= 0.75, f"256 colours: {c256 / tc:.2f} of truecolor")
+        paint, _ = first_paint(
+            cfg, shm, shm.stream("jitter", "-s", "256x256", "-p", "jitter"), shm.env
+        )
         for hz, warmup, window in ((200, 1.5, 4.0), (3, 1.5, 4.0), (0.5, 6.0, 10.0)):
             s = shm.stream(f"jitter{hz}", "-s", "256x256", "-p", "jitter", "-r", hz)
-            on, paint = lowbw_rate(cfg, shm, s, b"b", warmup, window)
+            on = lowbw_rate(cfg, shm, s, b"b", warmup, window)
             ratio = on / (
                 paint * min(hz, 20)
             )  # normal mode redraws nearly every cell per frame
@@ -1804,6 +2858,239 @@ def perf_menu_esc(cfg):
             v.close()
 
 
+def relay_keys(relay, n=3):
+    """Median and max seconds for @n pairs of h presses to show (and clear) flipH."""
+    lat = []
+    for gone in (False, True) * n:
+        lat.append(relay.latency(b"h", "flipH", gone=gone))
+        relay.run(0.3)
+    lat.sort()
+    return lat[len(lat) // 2], lat[-1]
+
+
+def perf_ssh_relay(cfg):
+    """Over ssh, writes do not block: sshd buffers up to 2 MB, which a slow link takes seconds
+    to send. The terminal's answers to cursor requests keep a round trip plus a frame period of
+    output in flight: keys show within the round trip plus about a frame period, and the link
+    stays busy. Without answers the whole buffer is in front of each key."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "256x256", "-p", "noise", "-r", "200")
+        rate = 1_000_000
+        for rtt in (0.02, 0.1, 0.3):
+            v = Viewer(cfg.termview, [s], shm.env, 90, 300)
+            try:
+                relay = Relay(v, rate, rtt)  # from the first byte: the first paint too
+                check(relay.until(lambda: ENTER in v.out, 3.0), "viewer did not start")
+                relay.run(1.0)
+                t0 = time.monotonic()
+                relay.run(2.0)
+                early = relay.busy(
+                    t0
+                )  # the window grows a window per round trip at first
+                t0 = time.monotonic()
+                relay.held = []
+                relay.run(6.0)  # a re-timing of the round trip falls in here
+                busy, stall = relay.busy(t0), relay.stall(t0)
+                held = sum(relay.held) / max(1, len(relay.held))
+                med, worst = relay_keys(relay)
+                print(
+                    f"     ssh relay, round trip {rtt * 1000:.0f} ms: keys median",
+                    f"{med * 1000:.0f} ms, max {worst * 1000:.0f} ms; link {busy * 100:.0f}%",
+                    f"busy ({early * 100:.0f}% in seconds 1-3), {held / 1024:.0f} KB on the way,",
+                    f"longest stall {stall * 1000:.0f} ms",
+                )
+                check(med < rtt + 0.15, f"median key latency {med:.2f} s")
+                check(
+                    early > 0.6, f"the link was {early * 100:.0f}% busy in seconds 1-3"
+                )
+                check(worst < rtt + 0.4, f"max key latency {worst:.2f} s")
+                check(busy > 0.8, f"the link is {busy * 100:.0f}% busy")
+                check(stall < 0.15 + 2 * rtt, f"the image stopped for {stall:.2f} s")
+                if rtt == 0.3:
+                    # the far terminal is dragged narrower, a column every 20 ms: answers to
+                    # requests on the way still match theirs, nothing piles up in sshd
+                    relay.held = []
+                    relay.run(1.0)
+                    before = max(relay.held)
+                    relay.held = []
+                    for k in range(30):
+                        relay.resize(90, 299 - k)
+                        relay.run(0.02)
+                    relay.run(1.0)
+                    after = max(relay.held)
+                    med, worst = relay_keys(relay, 1)
+                    print(
+                        f"     dragged narrower: keys max {worst * 1000:.0f} ms, sshd held"
+                        f" {after / 1024:.0f} KB (before {before / 1024:.0f} KB)"
+                    )
+                    check(
+                        worst < rtt + 0.4, f"key latency {worst:.2f} s after the drag"
+                    )
+                    check(
+                        after < 2 * before + 65536,
+                        f"{after} bytes in sshd after the drag",
+                    )
+                if rtt == 0.02:
+                    # another route: the round trip grows tenfold; the link is busy again soon
+                    relay.set_rtt(0.2)
+                    relay.run(7.0)
+                    t1 = time.monotonic()
+                    relay.run(3.0)
+                    busy = relay.busy(t1)
+                    print(f"     round trip now 200 ms: link {busy * 100:.0f}% busy")
+                    check(
+                        busy > 0.75,
+                        f"the link is {busy * 100:.0f}% busy after the change",
+                    )
+                    # the link stalls for 8 s: then all is as before, flow control on
+                    relay.rate = 0
+                    relay.run(8.0)
+                    relay.rate = rate
+                    relay.run(3.0)
+                    asked = v.asked
+                    med, worst = relay_keys(relay, 2)
+                    print(f"     after an 8 s stall: keys median {med * 1000:.0f} ms")
+                    check(v.asked > asked + 10, "no cursor requests after the stall")
+                    check(
+                        worst < 0.2 + 0.4,
+                        f"max key latency {worst:.2f} s after a stall",
+                    )
+                relay.quit()
+            finally:
+                v.close()
+
+        # a fast link with a long round trip: at first the window grows a window per round
+        # trip, not only with the rate it measures (bursts too short to time the link)
+        v = Viewer(cfg.termview, [s], shm.env, 90, 300)
+        try:
+            relay = Relay(v, 2_000_000, 1.0)
+            check(relay.until(lambda: ENTER in v.out, 3.0), "viewer did not start")
+            relay.run(2.0, feed=False)
+            t0 = time.monotonic()
+            relay.run(2.0, feed=False)
+            busy = relay.busy(t0)
+            print(
+                f"     2 MB/s, round trip 1 s: link {busy * 100:.0f}% busy in seconds 2-4"
+            )
+            check(busy > 0.5, f"the link was {busy * 100:.0f}% busy in seconds 2-4")
+            v.send(b"q")
+            relay.until(lambda: not v.alive(), 5.0)
+        finally:
+            v.close()
+
+        # a slow link: the smallest window still keeps keys within a few tenths
+        v = Viewer(cfg.termview, [s], shm.env, 90, 300)
+        try:
+            relay = Relay(v, 50_000, 0.05)
+            check(relay.until(lambda: ENTER in v.out, 3.0), "viewer did not start")
+            relay.run(6.0)
+            asked = v.asked
+            w0, t0 = v.wakeups(), time.monotonic()
+            relay.run(
+                3.0
+            )  # the image held most of the time: the viewer waits for answers
+            wk = (v.wakeups() - w0) / (time.monotonic() - t0)
+            med, worst = relay_keys(relay, 2)
+            print(
+                f"     50 KB/s: keys median {med * 1000:.0f} ms, max {worst * 1000:.0f} ms,"
+                f" {wk:.0f} wakeups/s"
+            )
+            check(med < 0.32, f"median key latency {med:.2f} s at 50 KB/s")
+            check(worst < 0.6, f"max key latency {worst:.2f} s at 50 KB/s")
+            check(v.asked > asked + 5, "flow control stopped at 50 KB/s")
+            check(wk < 50, f"{wk:.0f} wakeups/s while the image is held")
+            # a drag, a column every 20 ms: a new size is painted once per answer, not per step
+            for k in range(30):
+                relay.resize(90, 299 - k)
+                relay.run(0.02)
+            med, worst = relay_keys(relay, 1)
+            print(f"     50 KB/s, dragged narrower: the next key {worst * 1000:.0f} ms")
+            check(worst < 0.6, f"key latency {worst:.2f} s after a drag at 50 KB/s")
+            relay.quit()
+        finally:
+            v.close()
+
+        # a terminal that does not answer: each key waits behind the whole buffer
+        v = Viewer(cfg.termview, [s], shm.env, 90, 300, answer=False)
+        try:
+            relay = Relay(v, rate, 0.02)
+            relay.run(4.0)
+            med, _ = relay_keys(relay, 1)
+            print(f"     no answers: keys median {med * 1000:.0f} ms")
+            check(med > 1.0, f"{med:.2f} s without answers: the relay holds nothing")
+            relay.quit()
+        finally:
+            v.close()
+
+        # a large terminal: its first paint (about 1 MB) does not go out in one piece either
+        v = Viewer(cfg.termview, [s], shm.env, 120, 400)
+        try:
+            relay = Relay(v, rate, 0.02)
+            check(relay.until(lambda: ENTER in v.out, 3.0), "viewer did not start")
+            relay.run(0.1)
+            first = relay.latency(b"h", "flipH")
+            print(f"     400x120: key latency {first * 1000:.0f} ms at start")
+            check(first < 0.45, f"key latency {first:.2f} s at start")
+            relay.quit()
+        finally:
+            v.close()
+
+
+def perf_first_paint_local(cfg):
+    """A fast local terminal: a first paint larger than the first window still shows at once,
+    each answer releasing the next part without waiting for the interactive cap."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("still", "-s", "400x240", "-p", "noise")  # the whole screen
+        took = []
+        for _ in range(3):
+            v = Viewer(cfg.termview, [s], shm.env, 120, 400)
+            try:
+                check(v.wait_for(ENTER, 3.0), "viewer did not start")
+                t0 = time.monotonic()
+                n0 = len(v.out)
+                while len(v.out) - n0 < 800_000 and time.monotonic() - t0 < 2.0:
+                    if select.select([v.master], [], [], 0.01)[0]:
+                        v.got(os.read(v.master, 1 << 16), feed=False)  # no screen model
+                took.append(time.monotonic() - t0)
+                quit_clean(v)
+            finally:
+                v.close()
+        took.sort()
+        print(f"     first paint at 400x120 (1 MB): {took[1] * 1000:.0f} ms")
+        check(took[1] < 0.02, f"first paint took {took[1] * 1000:.0f} ms")
+
+
+def perf_outage_quit(cfg):
+    """A 25 s outage on a narrow terminal (24 columns to tell requests apart): each answer still
+    names its own request afterwards, so q soon after the link is back leaves none for the
+    shell."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("noise", "-s", "64x64", "-p", "noise", "-r", "100")
+        v = Viewer(cfg.termview, [s], shm.env, 40, 41)
+        try:
+            relay = Relay(v, 100_000, 0.6)
+            check(relay.until(lambda: ENTER in v.out, 3.0), "viewer did not start")
+            relay.run(4.0)
+            relay.rate = 0
+            relay.run(25.0)
+            relay.rate = 100_000
+            relay.run(2.0)
+            relay.send(b"q")
+            check(relay.until(lambda: not v.alive(), 20.0), "viewer did not quit")
+            idle = lambda: not select.select([v.master], [], [], 0.05)[0]
+            relay.until(
+                lambda: not relay.fifo and not relay.wire and not v.answers and idle(),
+                20.0,
+            )
+            tail = bytes(v.out[v.out.rfind(LEAVE) :])
+            print(f"     25 s outage, 41 columns: {tail.count(b'^[[')} answer(s) left")
+            check(
+                b"^[[" not in tail, f"{tail.count(b'^[[')} answer(s) reached the shell"
+            )
+        finally:
+            v.close()
+
+
 PERF = [
     perf_idle_static_stream,
     perf_key_latency,
@@ -1813,6 +3100,9 @@ PERF = [
     perf_low_fps_slow_link,
     perf_output_volume,
     perf_menu_esc,
+    perf_ssh_relay,
+    perf_outage_quit,
+    perf_first_paint_local,
 ]
 
 

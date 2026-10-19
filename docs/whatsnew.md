@@ -16,8 +16,8 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
-- **2026-10-18** — `milk-termview`: menus, status bar, slow-link output, stream following, Pause
-  `#cli` `#streams` `#performance` ([guide](guide/termview.md))
+- **2026-10-18** — `milk-termview`: menus, status bar, slow-link output, flow control over ssh,
+  stream following, Pause `#cli` `#streams` `#performance` ([guide](guide/termview.md))
 
 - **2026-10-16** — Fixes: extra commands of multi-command files (`mem.cp`, `mem.mv`, `extractim`,
   `imsetcnt1`, ...) read their arguments again, and images created by commands (`loadfits`,

@@ -96,16 +96,50 @@ range once both values are numbers with min < max. `l` locks or unlocks the rang
 
 ## Slow terminals and ssh
 
-- When the terminal cannot keep up, each screen update carries what it can show in about one frame
-  period, so keys still get an answer within that time. The rest of the image follows in the next
-  updates.
+- When the terminal cannot keep up, each screen update carries what it can show in about 50 ms (40
+  ms above `-f 25`), so keys still get an answer within that time. The rest of the image follows in
+  the next updates.
+- Over ssh, writes rarely block: ssh buffers up to 2 MB, which a slow link takes seconds to send. So
+  after each update the viewer asks the terminal where its cursor is (`CSI 6n`), having put the
+  hidden cursor in a column that names the question. The terminal answers once it has shown
+  everything sent before, so the viewer knows how much output is still on the way and how fast the
+  link shows it. It keeps the link's round trip plus about 50 ms of image in flight: the link stays
+  busy, and a key shows within about the round trip plus 50 ms. The menus and the status bar are
+  never held back.
+- Now and then (every 5 to 40 s, or sooner when the answers show that the round trip grew or
+  shrank) the image waits for a moment while the queue drains, so that an answer times the bare
+  round trip.
+- Delays that vary a lot on the way back (by 150 ms or more) look like a queue: the image then goes
+  slower, while keys stay prompt.
+- While answers are late, for instance while the link stalls, the image waits for them, a little
+  of it going through now and then (8 KB after 2 s, then less and less often). Once the link is
+  back, that shows first, then all is as before. A terminal that stops answering for good keeps
+  the image at that pace.
+- Until the terminal answers the first question, at most 64 KB of image goes out. A terminal that
+  does not answer within 2 s is not asked again (unless an answer comes later after all), and the
+  viewer sends as fast as writes go through, as above.
+- `q`, Ctrl-C and Ctrl-Z first read the answers still on the way, which would otherwise reach the
+  shell as typed text. This lasts as long as the output queued ahead of them, and up to 3 s after
+  the last answer, 30 s at most. With a terminal that does not answer, leaving in the first 3 s
+  waits until then. Ctrl-C during the wait ends it, at the earliest a second (or two round trips)
+  after it began; a second signal ends it at once. Answers still on the way then reach the shell.
+  An answer that comes later than all that (more than 3 s, for the first one) reaches the shell
+  too.
+- Keys typed while the viewer waits are dropped, with a note once the shell is back. So is the rest
+  of a line begun then, until Enter, Ctrl-U, a pause in typing of 1.5 s, or 10 s.
+- Behind tmux or screen, the multiplexer answers the questions, so they time the path to the
+  multiplexer, not to your terminal. Over ssh, run the multiplexer on your side of the link, or the
+  viewer outside it.
+- OpenSSH 9.5 and later obscure keystroke timing by default, and the answers keep that on while
+  you only watch: on a fast link (10 MB/s) it costs about 10-15% of the image. `ssh -o
+  ObscureKeystrokeTiming=no` avoids it.
 - Low-bandwidth mode (`b`, or Stream > Low-bandwidth) leaves a cell alone while its colour stays
   within a few levels of the exact one, and redraws a few rows exactly at each new frame. On a
   noisy but steady scene this cuts the output about ten-fold. When the stream stops, the image
   becomes exact.
-- Fewer colours send fewer bytes: View > Colors, or `--colors 256`.
-- Over ssh, writes rarely block (ssh buffers up to 2 MB), so a slow link can still delay keys behind
-  queued output. Low-bandwidth mode, 256 colours and a lower refresh rate (`-f 5`) help there.
+- Fewer colours send fewer bytes: View > Colors, or `--colors 256`. Together with low-bandwidth mode
+  they let a slow link show more frames. A lower refresh rate (`-f 5`) gives each frame time to
+  arrive whole once the link can carry one per period; it does not make keys faster.
 
 ## Streams that change
 

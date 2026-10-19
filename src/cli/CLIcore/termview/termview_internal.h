@@ -217,6 +217,7 @@ typedef struct
     uint32_t qkey[TV_QCACHE];
     uint8_t  qval[TV_QCACHE];
     size_t   budget;     /**< image bytes per flush, 0 = unlimited */
+    int      hold;       /**< interface cells only: the image waits (pending) */
     int      resume_row; /**< where the next budgeted flush starts */
     int      pending;    /**< the last flush left image cells unsent */
 } tv_emit_t;
@@ -229,8 +230,8 @@ uint32_t tv_emit_code(tv_emit_t *e, uint32_t rgb);
 /**
  * tv_flush_diff() - Escape sequences turning @prev into @cur, written to @out; @prev is updated.
  * Cells whose appearance at @e's colour depth did not change are not sent. Interface cells go
- * first; image cells follow within e->budget, rows rotating so that none starves, and the rest
- * waits for the next call (e->pending). Returns 0 when nothing needs to be written.
+ * first; image cells follow within e->budget (none with e->hold), rows rotating so that none
+ * starves, and the rest waits for the next call (e->pending). Returns 0 when nothing is to write.
  */
 size_t tv_flush_diff(tv_emit_t       *e,
                      char            *out,
@@ -267,11 +268,21 @@ extern volatile sig_atomic_t tv_sig_quit;  /**< terminating signal number, 0 if 
 extern volatile sig_atomic_t tv_sig_winch; /**< window size changed */
 extern volatile sig_atomic_t tv_sig_cont;  /**< resumed after a stop */
 extern volatile sig_atomic_t tv_term_hup;  /**< terminal hung up or write failed */
+extern volatile sig_atomic_t tv_sig_nquit; /**< terminating signals received */
+extern volatile sig_atomic_t tv_sig_tstp;  /**< SIGTSTP: stop at the next chance */
 
 int  tv_term_init(char *err, size_t errsz);
 int  tv_term_enter(void);
 void tv_term_restore(void);
+
+/** tv_term_can_suspend() - SIGTSTP is neither blocked nor was ignored at startup. */
+int tv_term_can_suspend(void);
+
+/** tv_term_suspend() - Restore the terminal and stop until SIGCONT; nothing if it cannot. */
 void tv_term_suspend(void);
+
+/** tv_term_is_active() - The terminal is in the viewer's modes (entered, not restored). */
+int  tv_term_is_active(void);
 void tv_term_size(int *rows, int *cols);
 int  tv_write_all(const char *buf, size_t n);
 
@@ -289,7 +300,8 @@ void tv_term_reraise(int sig);
 enum
 {
     TV_EV_KEY = 1,
-    TV_EV_MOUSE
+    TV_EV_MOUSE,
+    TV_EV_CPR /**< cursor position report (answer to CSI 6n): y row, x column, 1-based */
 };
 
 /** Keys: Unicode/ASCII and control bytes as themselves, special keys above U+10FFFF. */
@@ -636,6 +648,94 @@ typedef struct
     int      nhits;
 } tv_ui_t;
 
+/**
+ * End-to-end flow control. A cursor position request (CSI 6n) sent after a flush is answered
+ * only once the terminal has shown everything before it, however much ssh or a relay buffered on
+ * the way; image bytes are held while more than a window of them is unanswered. Each request puts
+ * the (hidden) cursor in its own column, so an answer names the request it answers.
+ */
+enum
+{
+    TV_FC_PROBE, /**< no answer yet: a first window applies until one comes */
+    TV_FC_ON,
+    TV_FC_OFF /**< the startup request got no answer: no flow control, until it does */
+};
+
+#define TV_FC_REQS 64           /* requests outstanding at most */
+#define TV_FC_IDS 72            /* columns that tell requests apart (17..88: two digits) */
+#define TV_FC_START (64u << 10) /* window until the answers measure the link */
+#define TV_FC_MIN (8u << 10)
+#define TV_FC_CRUMB 4096 /* image bytes a flush carries at least (or half a slice, if less) */
+#define TV_FC_MAX (4u << 20)
+#define TV_FC_QUIET \
+    1024 /* a request behind fewer unanswered bytes (or 5 ms of link) times the trip */
+#define TV_FC_REBASE_US 5000000 /* without such a timing for this long the queue drains for one */
+#define TV_FC_REBASE_MAX_US 40000000  /* ... less often while the timings agree */
+#define TV_FC_PROBE_US 2000000        /* no answer to the startup request: no flow control */
+#define TV_FC_LOST_US 2000000         /* an answer this late, past its round trip and queue ... */
+#define TV_FC_FLOOR 8192              /* ... drained at least this fast (bytes/s): image trickles */
+#define TV_FC_TRICKLES 4              /* ... every 2 s, then 4, 8, 16, 32 s while none comes */
+#define TV_FC_SETTLE_MIN_US 200000    /* leaving: waiting for outstanding answers, ... */
+#define TV_FC_SETTLE_MAX_US 3000000   /* ... at most this long after the last (or the start) ... */
+#define TV_FC_SETTLE_LONG_US 30000000 /* ... and this long in all */
+#define TV_FC_LINE_IDLE_US 1500000    /* a line typed meanwhile is dropped until this pause ... */
+#define TV_FC_LINE_MAX_US 10000000    /* ... or this long after the last answer */
+
+typedef struct
+{
+    uint64_t at;       /**< bytes written up to and with the request */
+    uint64_t inflight; /**< of those, unanswered when it was written */
+    int64_t  us;       /**< when it was written */
+    int      col;      /**< where it put the cursor: the answer's column */
+    int      quiet;    /**< behind so little that its answer times the round trip */
+} tv_fc_req_t;
+
+typedef struct
+{
+    int      state;
+    int      n;           /**< requests outstanding */
+    int      head;        /**< the oldest one in req[] */
+    unsigned seq;         /**< requests so far: picks the column */
+    int      wait;        /**< image held until an answer comes */
+    int      ask;         /**< a request is wanted before the next flush */
+    int      release;     /**< an answer let held image go: flush without the interactive cap */
+    int      limited;     /**< the window held image back since the last answer */
+    int      closing;     /**< reading the last answers: no new request */
+    int      busy;        /**< more image than went since the last answer: not idle */
+    int      first;       /**< the startup answer came: the next one measures the first window */
+    int      nlate;       /**< trickles since the last answer */
+    uint64_t gone[2];     /**< columns (bit col-1) of requests given up on, maybe still answered */
+    uint64_t sent;        /**< bytes written so far */
+    uint64_t acked;       /**< bytes the terminal has shown */
+    uint64_t credit;      /**< of the unanswered bytes, what trickled out while answers were late */
+    int64_t  base_us;     /**< round trip with nothing queued */
+    int64_t  timed_us;    /**< base_us as a quiet answer or a drain last timed it */
+    int64_t  quiet_us;    /**< when the round trip was last timed, or a timing begun or given up */
+    int64_t  gap_us;      /**< time between such timings */
+    int64_t  drain_us;    /**< image held since, to time it; 0 if not */
+    int64_t  high_us;     /**< answers show a queue over two slices since; 0 if not */
+    int64_t  lift_us;     /**< answers show a queue over 1.25 slices since: the trip grew? 0: no */
+    int64_t  lift_rtt_us; /**< the shortest round trip among those answers */
+    int64_t  late_us;     /**< the oldest answer is overdue: next trickle of image; 0 if not */
+    int64_t  drain_rtt_us; /**< the round trip the current drain expects */
+    int64_t  full_us;      /**< when an answer last came while the window held image back */
+    double   rate;         /**< delivery rate, bytes/us (recent maximum); 0 until measured */
+    int64_t  rate_us;      /**< when that maximum was seen */
+    double   grow_rate;    /**< the rate a round trip ago: it at most doubles per round trip */
+    int64_t  grow_us;
+    double   cut_rate;   /**< the rate before a queue cut it (back if the round trip grew) */
+    int64_t  cut_rtt_us; /**< the longest round trip since that cut */
+    int64_t  cut_us;     /**< when the rate was last cut */
+
+    int64_t     ramp_us; /**< a drain ended: the window opens over a round trip from then */
+    int         wbound;  /**< the room tv_fc_room() gave is what the window leaves */
+    int64_t     ref_us;  /**< the answer the next delivery sample counts from ... */
+    int64_t     ref_sus; /**< ... and when its request was written */
+    uint64_t    ref_at;
+    size_t      window; /**< unanswered bytes allowed */
+    tv_fc_req_t req[TV_FC_REQS];
+} tv_fc_t;
+
 /** Range minibuffer on the status row. */
 typedef struct
 {
@@ -655,6 +755,9 @@ typedef struct
     tv_image_t         im;
     tv_emit_t          emit;
     double             drain_rate; /**< terminal bytes/us measured on blocked writes, 0 if fast */
+    size_t             budget;     /**< image bytes per flush from blocked writes, 0 = no limit */
+    tv_fc_t            fc;
+    int                suspend;    /**< Ctrl-Z: stop once the outstanding answers are read */
     int                resting;    /**< the last new frame repeated the previous one */
     int                paused;     /**< Space: no new frames; the image comes from frozen */
     void              *frozen;     /**< copy of the displayed slice at pause, NULL if none */
@@ -723,6 +826,92 @@ void tv_set_range(tv_state_t *s, double lo, double hi);
 void tv_handle_key(tv_state_t *s, const tv_event_t *ev);
 void tv_handle_mouse(tv_state_t *s, const tv_event_t *ev);
 void tv_dispatch_input(tv_state_t *s, tv_input_t *in, int64_t now_us, int budget);
+
+/** tv_fc_window() - Learn from the answer to @r at @now_us, which acknowledged @delta bytes:
+ * round trip, delivery rate, window (rate x (round trip + @slice_us)). */
+void tv_fc_window(tv_fc_t           *fc,
+                  int64_t            now_us,
+                  const tv_fc_req_t *r,
+                  uint64_t           delta,
+                  int64_t            slice_us);
+
+/** tv_fc_match() - Which outstanding request (0: the oldest) an answer in @col is for; n: none. */
+int tv_fc_match(const tv_state_t *s, int col);
+
+/** tv_fc_answer() - The terminal answered at @now_us with the cursor in column @col. */
+void tv_fc_answer(tv_state_t *s, int64_t now_us, int col);
+
+/** tv_fc_room() - Image bytes the next flush may carry at @now_us (SIZE_MAX: no limit); may start
+ * or end a drain, and sets wbound. */
+size_t tv_fc_room(tv_state_t *s, int64_t now_us);
+
+/** tv_fc_request() - A request into @out (32 bytes) if one may go out; returns its length. */
+size_t tv_fc_request(tv_state_t *s, char *out, int64_t now_us);
+
+/** tv_fc_lead() - A request to write before the next flush (@room from tv_fc_room()), or 0. */
+size_t tv_fc_lead(tv_state_t *s, char *out, int64_t now_us, size_t room);
+
+/** tv_fc_wrote() - @n bytes written, the last @req of them a request (dropped if @failed). */
+void tv_fc_wrote(tv_fc_t *fc, size_t n, size_t req, int failed);
+
+/** tv_fc_plan() - The emitter's budget and hold for a flush that may carry @room image bytes. */
+void tv_fc_plan(tv_state_t *s, size_t room);
+
+/** tv_fc_flushed() - After the emitter: note whether the window (@room) held image back. */
+void tv_fc_flushed(tv_state_t *s, size_t room);
+
+/** tv_fc_more() - Image is left over and may go without waiting for an answer. */
+int tv_fc_more(const tv_state_t *s);
+
+/** tv_fc_due_us() - When the oldest outstanding answer is overdue; 0 if none can be. */
+int64_t tv_fc_due_us(const tv_state_t *s);
+
+/** tv_fc_expire() - At @now_us, act on an overdue answer (tv_fc_due_us()). */
+void tv_fc_expire(tv_state_t *s, int64_t now_us);
+
+/** tv_fc_settle_end() - Until when, leaving the terminal at @now_us, answers are waited for. */
+int64_t tv_fc_settle_end(const tv_state_t *s, int64_t now_us);
+
+/** tv_fc_resume() - After a stop: what was asked before is not waited for; ask again. */
+void tv_fc_resume(tv_fc_t *fc);
+
+/** Leaving the terminal: until when the answers still owed are waited for. */
+typedef struct
+{
+    int64_t t0;  /**< the wait began */
+    int64_t end; /**< it ends then, or once nothing is owed */
+    int64_t cut; /**< a Ctrl-C: it ends by then; 0 if none */
+    int     state;
+} tv_settle_t;
+
+/** tv_settle_begin() - Start waiting at @now_us for the answers still owed. */
+void tv_settle_begin(tv_state_t *s, tv_settle_t *st, int64_t now_us);
+
+/** tv_settle_answer() - An answer in column @col read while waiting: the wait follows answers. */
+void tv_settle_answer(tv_state_t *s, tv_settle_t *st, int64_t now_us, int col);
+
+/** tv_settle_cut() - Ctrl-C while waiting: a long wait ends soon (a short one still finishes). */
+void tv_settle_cut(tv_state_t *s, tv_settle_t *st, int64_t now_us);
+
+/** Main loop timers. */
+typedef struct
+{
+    int64_t next_data;   /**< the next stream poll */
+    int64_t next_tick;   /**< the next 1 Hz tick */
+    int64_t last_render; /**< the last frame drawn */
+    int64_t resized_us;  /**< a new size not painted yet: since when; 0 if none */
+} tv_timers_t;
+
+/** tv_resize_waits() - A new size's repaint (every interface cell) waits while the image does, for
+ * an answer due within a round trip: a drag sends one per answer, not one per step. */
+int tv_resize_waits(const tv_state_t *s, const tv_timers_t *tm, int64_t now_us);
+
+/** tv_wake_at() - When the main loop wakes next, at @now_us, with the ESC deadline @esc_us (<0:
+ * none). */
+int64_t tv_wake_at(const tv_state_t *s, const tv_timers_t *tm, int64_t now_us, int64_t esc_us);
+
+/** tv_budget_update() - Adapt the blocked-write budget to a flush of @n bytes that took @dt_us. */
+void tv_budget_update(tv_state_t *s, size_t n, int64_t dt_us);
 
 /** tv_stale_age_us() - How long the stream has gone without a new frame, 0 while it is live. */
 int64_t tv_stale_age_us(const tv_state_t *s, int64_t now_us);

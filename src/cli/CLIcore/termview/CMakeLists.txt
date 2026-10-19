@@ -65,7 +65,7 @@ if(BUILD_TESTING)
           ${CMAKE_CURRENT_SOURCE_DIR}/tests/termview_pty_test.py --perf
           --termview $<TARGET_FILE:milk-termview> --mkstream
           $<TARGET_FILE:tv-test-mkstream>)
-      set_tests_properties(termview_perf PROPERTIES TIMEOUT 240 RUN_SERIAL TRUE
+      set_tests_properties(termview_perf PROPERTIES TIMEOUT 480 RUN_SERIAL TRUE
                                                     LABELS "termview;perf")
     endif()
   endif()

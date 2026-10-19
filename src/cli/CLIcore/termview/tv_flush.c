@@ -317,15 +317,18 @@ static void tv_emit_cell(tv_out_t        *o,
 }
 
 /**
- * tv_flush_row() - Send the changed cells of row @r: interface cells only (@chrome) or the rest.
- * Returns the number of cells sent.
+ * tv_flush_row() - Send the changed cells of row @r: interface cells only (@chrome) or the rest,
+ * stopping once the output reaches @stop (*@cut set: the rest of the row waits). Returns the
+ * number of cells sent.
  */
 static int tv_flush_row(tv_out_t        *o,
                         const tv_cell_t *cur,
                         tv_cell_t       *prev,
                         int              cols,
                         int              r,
-                        int              chrome)
+                        int              chrome,
+                        size_t           stop,
+                        int             *cut)
 {
     int sent = 0;
     for (int c = 0; c < cols; c++)
@@ -349,6 +352,11 @@ static int tv_flush_row(tv_out_t        *o,
             prev[i] = cell; /* different cell, same appearance: nothing to send */
             continue;
         }
+        if (o->pos >= stop)
+        {
+            *cut = 1;
+            break;
+        }
         prev[i] = cell;
         tv_emit_cell(o, cur, prev, cols, r, c, l);
         sent++;
@@ -369,29 +377,30 @@ size_t tv_flush_diff(tv_emit_t       *e,
     tv_out_t o = {
         .e = e, .out = out, .pos = sizeof(sync_on) - 1, .r = -1, .c = -1, .bg = TV_ANY, .fg = TV_ANY
     };
-    int sent = 0;
+    int sent = 0, cut = 0;
     memcpy(out, sync_on, sizeof(sync_on) - 1);
 
     /* the interface first: keystroke feedback never waits behind image bytes */
     for (int r = 0; r < rows; r++)
     {
-        sent += tv_flush_row(&o, cur, prev, cols, r, 1);
+        sent += tv_flush_row(&o, cur, prev, cols, r, 1, SIZE_MAX, &cut);
     }
 
     /* then the image, within the budget, starting where the last budgeted flush stopped */
     size_t img_start = o.pos;
     int    start     = (e->budget > 0 && e->resume_row < rows) ? e->resume_row : 0;
-    e->pending       = 0;
-    for (int k = 0; k < rows; k++)
+    e->pending       = e->hold; /* held: the image waits, the rotation keeps its place */
+    size_t stop      = (e->budget > 0) ? img_start + e->budget : SIZE_MAX;
+    for (int k = 0; k < rows && !e->hold; k++)
     {
         int r = (start + k) % rows;
-        if (e->budget > 0 && o.pos - img_start >= e->budget)
+        sent += tv_flush_row(&o, cur, prev, cols, r, 0, stop, &cut);
+        if (cut)
         {
-            e->resume_row = r;
+            e->resume_row = r; /* within a cell of the budget: the rest of this row comes next */
             e->pending    = 1;
             break;
         }
-        sent += tv_flush_row(&o, cur, prev, cols, r, 0);
     }
     if (!e->pending)
     {

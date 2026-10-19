@@ -26,12 +26,15 @@ volatile sig_atomic_t tv_sig_quit;
 volatile sig_atomic_t tv_sig_winch;
 volatile sig_atomic_t tv_sig_cont;
 volatile sig_atomic_t tv_term_hup;
+volatile sig_atomic_t tv_sig_nquit;
+volatile sig_atomic_t tv_sig_tstp;
 
 static struct termios        tv_tio_orig;
 static volatile sig_atomic_t tv_term_active;
 static int                   tv_err_fd  = -1; /* the original stderr, for exit and crash messages */
 static int                   tv_null_fd = -1; /* /dev/null: stderr while the screen is ours */
 static volatile sig_atomic_t tv_err_quiet;
+static int                   tv_tstp_ignored; /* SIGTSTP was ignored at startup: no stops */
 static char                  tv_altstack[65536];
 
 /* Alt screen, hide cursor, no autowrap, button-event mouse tracking, SGR encoding. */
@@ -89,6 +92,7 @@ void tv_term_restore(void)
 static void tv_on_quit(int sig)
 {
     tv_sig_quit = sig;
+    tv_sig_nquit++;
 }
 
 static void tv_on_winch(int sig)
@@ -105,25 +109,8 @@ static void tv_on_cont(int sig)
 
 static void tv_on_tstp(int sig)
 {
-    int              saved = errno;
-    struct sigaction sa;
-
-    tv_term_restore();
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = SIG_DFL;
-    sigemptyset(&sa.sa_mask);
-    sigaction(SIGTSTP, &sa, NULL);
-
-    sigset_t mask;
-    sigemptyset(&mask);
-    sigaddset(&mask, SIGTSTP);
-    sigprocmask(SIG_UNBLOCK, &mask, NULL);
-    raise(sig); /* stops here until SIGCONT */
-
-    sa.sa_handler = tv_on_tstp;
-    sigaction(SIGTSTP, &sa, NULL);
-    tv_sig_cont = 1;
-    errno       = saved;
+    (void) sig;
+    tv_sig_tstp = 1; /* the loop reads the terminal's last answers, then tv_term_suspend() */
 }
 
 static void tv_on_fatal(int sig)
@@ -183,7 +170,12 @@ int tv_term_init(char *err, size_t errsz)
     tv_set_handler(SIGQUIT, tv_on_quit, 0);
     tv_set_handler(SIGWINCH, tv_on_winch, 0);
     tv_set_handler(SIGCONT, tv_on_cont, 0);
-    tv_set_handler(SIGTSTP, tv_on_tstp, 0);
+    struct sigaction old;
+    tv_tstp_ignored = sigaction(SIGTSTP, NULL, &old) == 0 && old.sa_handler == SIG_IGN;
+    if (!tv_tstp_ignored)
+    {
+        tv_set_handler(SIGTSTP, tv_on_tstp, 0);
+    }
     tv_set_handler(SIGPIPE, SIG_IGN, 0);
 
     int fatal_flags = SA_RESETHAND | SA_NODEFER | SA_ONSTACK;
@@ -230,9 +222,34 @@ int tv_term_enter(void)
     return tv_write_all(TV_SEQ_ENTER, sizeof(TV_SEQ_ENTER) - 1);
 }
 
+int tv_term_can_suspend(void)
+{
+    sigset_t mask;
+    return !tv_tstp_ignored && sigprocmask(SIG_BLOCK, NULL, &mask) == 0 &&
+           !sigismember(&mask, SIGTSTP);
+}
+
+int tv_term_is_active(void)
+{
+    return tv_term_active;
+}
+
 void tv_term_suspend(void)
 {
-    raise(SIGTSTP); /* tv_on_tstp restores, stops, and flags the resume */
+    tv_sig_tstp = 0;
+    if (!tv_term_can_suspend())
+    {
+        return;
+    }
+    tv_term_restore();
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = SIG_DFL;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGTSTP, &sa, NULL);
+    raise(SIGTSTP); /* stops here until SIGCONT */
+    tv_set_handler(SIGTSTP, tv_on_tstp, 0);
+    tv_sig_cont = 1;
 }
 
 void tv_term_size(int *rows, int *cols)
@@ -257,11 +274,15 @@ int tv_write_all(const char *buf, size_t n)
         {
             buf += w;
             n -= (size_t) w;
+            if (n > 0 && (tv_sig_quit || tv_sig_cont || tv_sig_tstp))
+            {
+                return -1; /* a signal cut a blocked write short (not EINTR: bytes went) */
+            }
             continue;
         }
         if (w < 0 && errno == EINTR)
         {
-            if (tv_sig_quit || tv_sig_cont)
+            if (tv_sig_quit || tv_sig_cont || tv_sig_tstp)
             {
                 return -1; /* abandon the frame; caller repaints */
             }
@@ -275,7 +296,7 @@ int tv_write_all(const char *buf, size_t n)
                 tv_term_hup = 1;
                 return -1;
             }
-            if (tv_sig_quit)
+            if (tv_sig_quit || tv_sig_tstp)
             {
                 return -1;
             }

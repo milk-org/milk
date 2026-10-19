@@ -408,10 +408,19 @@ static size_t tv_decode_csi(tv_input_t          *in,
         return used; /* private-prefixed replies (?, >, =): not keys */
     }
 
-    int params[4];
-    tv_parse_params(par, plen, params);
+    int      params[4];
+    int      np   = tv_parse_params(par, plen, params);
     uint32_t key  = 0;
     uint8_t  mods = tv_mods_from_param(params[1]);
+    if (fin == 'R' && np == 2 && (params[0] >= 2 || params[1] > 16))
+    {
+        /* a cursor position report (row;col): the viewer asks on row 2 or below and in a column
+         * past 16, while modified F3 is CSI 1;<mod> R with mod 2-16 (or CSI <mod> R) */
+        ev->type = TV_EV_CPR;
+        ev->y    = (int16_t) ((params[0] < INT16_MAX) ? params[0] : INT16_MAX);
+        ev->x    = (int16_t) ((params[1] < INT16_MAX) ? params[1] : INT16_MAX);
+        return used;
+    }
     if (fin == '~')
     {
         key = tv_tilde_key(params[0]);
@@ -424,6 +433,11 @@ static size_t tv_decode_csi(tv_input_t          *in,
     else
     {
         key = tv_letter_key(fin);
+        if (np == 1 && fin >= 'P' && fin <= 'S')
+        {
+            mods =
+                tv_mods_from_param(params[0]); /* F1-F4 as CSI <mod> P-S (modifyFunctionKeys:1) */
+        }
     }
     if (key != 0)
     {
