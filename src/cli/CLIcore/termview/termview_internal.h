@@ -380,8 +380,25 @@ typedef struct
     char     path[512];
 } tv_stream_t;
 
+/** tv_stream_open() - Validate and map stream @arg (name, name.im.shm or path) read-only. */
 int  tv_stream_open(tv_stream_t *s, const char *arg, char *err, size_t errsz);
 void tv_stream_close(tv_stream_t *s);
+
+enum
+{
+    TV_STREAM_OK,    /**< the path still names the mapped file */
+    TV_STREAM_MOVED, /**< removed or replaced: the mapping stays readable but is not the stream */
+    TV_STREAM_CLOSED /**< no mapping (the file shrank under it and it was dropped) */
+};
+
+/** tv_stream_safe() - The mapping can be read: drops it first if the file shrank below it. */
+int tv_stream_safe(tv_stream_t *s);
+
+/** tv_stream_check() - Health check; unmaps at once a file truncated below the mapping. */
+int tv_stream_check(tv_stream_t *s);
+
+/** tv_stream_reopen() - Replace @s with the stream now at s->path, if it is valid; 0 on success. */
+int tv_stream_reopen(tv_stream_t *s);
 
 /* -----------------------------------------------------------------------
  * Image pipeline (tv_image.c)
@@ -464,6 +481,7 @@ typedef struct
     int        have_shown; /**< shown[] matches the current tables */
     int        phase;      /**< low-bandwidth refresh row (mod TV_LOWBW_CYCLE) */
     long       held;       /**< samples the last render left at a stale colour */
+    int        blank;      /**< cells are empty: no data for this geometry */
 } tv_image_t;
 
 void   tv_layout_compute(tv_layout_t *l, int rows, int cols);
@@ -498,6 +516,9 @@ void tv_image_range(tv_image_t *im, const termview_options_t *opt, int snap);
 
 /** tv_image_render() - Colour the samples into im->cells with @lut; @lowbw holds small changes. */
 void tv_image_render(tv_image_t *im, const tv_rgb_t *lut, int lowbw);
+
+/** tv_image_blank() - Empty image layer for the current tables, when there is nothing to sample. */
+void tv_image_blank(tv_image_t *im);
 
 void tv_image_free(tv_image_t *im);
 
@@ -538,7 +559,8 @@ typedef enum
     TV_ACT_FPS,         /**< arg: step */
     TV_ACT_ESCAPE,      /**< cancel drags and close the popup */
     TV_ACT_POPUP_CLOSE, /**< close the popup only */
-    TV_ACT_LOWBW        /**< toggle low-bandwidth mode */
+    TV_ACT_LOWBW,       /**< toggle low-bandwidth mode */
+    TV_ACT_PAUSE        /**< freeze or resume the image */
 } tv_action_t;
 
 typedef struct
@@ -551,6 +573,10 @@ typedef struct
     tv_emit_t          emit;
     double             drain_rate; /**< terminal bytes/us measured on blocked writes, 0 if fast */
     int                resting;    /**< the last new frame repeated the previous one */
+    int                paused;     /**< Space: no new frames; the image comes from frozen */
+    void              *frozen;     /**< copy of the displayed slice at pause, NULL if none */
+    int                gone;       /**< the path no longer names the mapped stream */
+    int                recheck;    /**< check the stream at the next loop pass */
     int                rows, cols; /**< terminal size */
     int                running;
     int                dirty; /**< TV_D_* bits */

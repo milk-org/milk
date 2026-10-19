@@ -13,7 +13,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
+#include "ImageStreamIO/ImageStreamIO.h"
 #include "termview_internal.h"
 
 static int tv_failures = 0;
@@ -2194,6 +2197,80 @@ static void test_range_smoothing(void)
     free(im.samp);
 }
 
+/** mkstream() - Create stream @name in MILK_SHM_DIR (@w keeps it open for writing). */
+static int mkstream(IMAGE *w, const char *name, uint32_t xs, uint32_t ys, uint8_t dt)
+{
+    uint32_t size[2] = { xs, ys };
+    memset(w, 0, sizeof(*w));
+    return ImageStreamIO_createIm(w, name, 2, size, dt, 1, 0, 0) == IMAGESTREAMIO_SUCCESS ? 0 : -1;
+}
+
+/** Stream lifecycle: removed, created again with another geometry, truncated, replaced by junk. */
+static void test_stream_lifecycle(void)
+{
+    char dir[] = "/tmp/tvunit-XXXXXX";
+    if (mkdtemp(dir) == NULL)
+    {
+        TV_CHECK(0);
+        return;
+    }
+    char *saved = getenv("MILK_SHM_DIR") ? strdup(getenv("MILK_SHM_DIR")) : NULL;
+    setenv("MILK_SHM_DIR", dir, 1);
+    char path[600];
+    snprintf(path, sizeof(path), "%s/tvunit_life.im.shm", dir);
+
+    IMAGE       w;
+    tv_stream_t s;
+    char        err[256];
+    TV_CHECK(mkstream(&w, "tvunit_life", 16, 8, _DATATYPE_FLOAT) == 0);
+    w.array.F[3] = 7.0f;
+    TV_CHECK(tv_stream_open(&s, "tvunit_life", err, sizeof(err)) == 0);
+    TV_CHECK(s.xsize == 16 && s.ysize == 8 && s.img.array.F[3] == 7.0f);
+    TV_CHECK(tv_stream_check(&s) == TV_STREAM_OK && tv_stream_safe(&s));
+
+    /* removed: no longer the stream, but the mapping stays readable; nothing to reopen yet */
+    unlink(path);
+    TV_CHECK(tv_stream_check(&s) == TV_STREAM_MOVED && s.img.array.F[3] == 7.0f);
+    TV_CHECK(tv_stream_reopen(&s) != 0 && s.map != NULL && s.img.array.F[3] == 7.0f);
+    ImageStreamIO_closeIm(&w);
+
+    /* created again with another size and type: the reopen switches over */
+    TV_CHECK(mkstream(&w, "tvunit_life", 32, 4, _DATATYPE_UINT16) == 0);
+    TV_CHECK(tv_stream_check(&s) == TV_STREAM_MOVED && tv_stream_reopen(&s) == 0);
+    TV_CHECK(s.xsize == 32 && s.ysize == 4 && s.datatype == _DATATYPE_UINT16);
+    TV_CHECK(tv_stream_check(&s) == TV_STREAM_OK);
+    ImageStreamIO_closeIm(&w);
+
+    /* truncated in place: the mapping is dropped before anything reads it */
+    TV_CHECK(truncate(path, 0) == 0);
+    TV_CHECK(!tv_stream_safe(&s) && s.map == NULL && s.img.md == NULL && s.fd < 0);
+    TV_CHECK(tv_stream_check(&s) == TV_STREAM_CLOSED && tv_stream_reopen(&s) != 0);
+    TV_CHECK(s.xsize == 32 && strcmp(s.name, "tvunit_life") == 0); /* still described */
+
+    /* junk under the name: rejected, the stream stays closed */
+    FILE *f = fopen(path, "w");
+    for (int k = 0; f != NULL && k < 100000; k++)
+    {
+        fputc(k * 7 & 255, f);
+    }
+    if (f != NULL)
+    {
+        fclose(f);
+    }
+    TV_CHECK(tv_stream_reopen(&s) != 0 && s.map == NULL);
+
+    /* and a real stream again */
+    unlink(path);
+    TV_CHECK(mkstream(&w, "tvunit_life", 16, 8, _DATATYPE_FLOAT) == 0);
+    TV_CHECK(tv_stream_reopen(&s) == 0 && s.xsize == 16 && tv_stream_check(&s) == TV_STREAM_OK);
+    ImageStreamIO_destroyIm(&w);
+    tv_stream_close(&s);
+    tv_stream_close(&s); /* twice is harmless */
+    rmdir(dir);
+    saved ? setenv("MILK_SHM_DIR", saved, 1) : unsetenv("MILK_SHM_DIR");
+    free(saved);
+}
+
 int main(void)
 {
     test_finite();
@@ -2226,6 +2303,7 @@ int main(void)
     test_tables();
     test_render();
     test_render_lowbw();
+    test_stream_lifecycle();
     if (tv_failures > 0)
     {
         fprintf(stderr, "%d check(s) failed\n", tv_failures);

@@ -269,6 +269,7 @@ int tv_image_sample(tv_image_t *im, const void *data, uint8_t datatype)
         return 1;
     }
 
+    im->blank    = 0;
     size_t bytes = (size_t) im->ncols * im->nrows * sizeof(float);
     int    changed =
         !(im->have_prev && im->offset == im->prev_offset && memcmp(im->samp, im->prev, bytes) == 0);
@@ -512,6 +513,19 @@ void tv_image_render(tv_image_t *im, const tv_rgb_t *lut, int lowbw)
     }
     im->phase      = (im->phase + 1) % TV_LOWBW_CYCLE;
     im->have_shown = 1;
+}
+
+void tv_image_blank(tv_image_t *im)
+{
+    tv_cell_t blank = tv_cell(TV_RGB(0, 0, 0), TV_RGB(255, 255, 255), ' ');
+    for (size_t k = 0; k < (size_t) im->ncols * (size_t) (im->nrows / 2); k++)
+    {
+        im->cells[k] = blank;
+    }
+    im->have_prev  = 0; /* whatever comes next is new */
+    im->have_shown = 0;
+    im->held       = 0;
+    im->blank      = 1;
 }
 
 void tv_image_free(tv_image_t *im)

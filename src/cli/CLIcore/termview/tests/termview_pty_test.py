@@ -144,7 +144,16 @@ class Viewer:
     """milk-termview running on its own pty, with the slave side kept for termios checks."""
 
     def __init__(
-        self, exe, args, env, rows=40, cols=120, block_hup=False, colour=False
+        self,
+        exe,
+        args,
+        env,
+        rows=40,
+        cols=120,
+        block_hup=False,
+        colour=False,
+        stderr_path=None,
+        limit_as=None,
     ):
         self.master, self.slave = os.openpty()
         fcntl.ioctl(
@@ -157,9 +166,17 @@ class Viewer:
                 os.close(self.master)
                 os.login_tty(os.dup(self.slave))
                 os.close(self.slave)
+                if stderr_path:
+                    fd = os.open(
+                        stderr_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600
+                    )
+                    os.dup2(fd, 2)
+                    os.close(fd)
                 if block_hup:
                     signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGHUP})
                 resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+                if limit_as:
+                    resource.setrlimit(resource.RLIMIT_AS, (limit_as, limit_as))
                 os.execve(exe, [exe] + list(args), env)
             finally:
                 os._exit(127)
@@ -343,9 +360,26 @@ def check(cond, msg):
         raise AssertionError(msg)
 
 
-def start(cfg, shm, stream, *opts, rows=40, cols=120, block_hup=False, colour=False):
+def start(
+    cfg,
+    shm,
+    stream,
+    *opts,
+    rows=40,
+    cols=120,
+    block_hup=False,
+    colour=False,
+    stderr=None,
+):
     v = Viewer(
-        cfg.termview, list(opts) + [stream], shm.env, rows, cols, block_hup, colour
+        cfg.termview,
+        list(opts) + [stream],
+        shm.env,
+        rows,
+        cols,
+        block_hup,
+        colour,
+        stderr,
     )
     check(
         v.wait_for(ENTER, 3.0), f"viewer did not start (output {bytes(v.out[:200])!r})"
@@ -883,6 +917,392 @@ def test_colors_option(cfg):
                 v.close()
 
 
+def shm_path(shm, name):
+    return os.path.join(shm.dir, name + ".im.shm")
+
+
+def remake(cfg, shm, name, *args):
+    """Create stream @name again (a new file, as milk does), writing one frame."""
+    subprocess.run(
+        [cfg.mkstream, "-n", name] + [str(a) for a in args], env=shm.env, check=True
+    )
+
+
+def test_stream_removed_and_recreated(cfg):
+    """A removed stream shows GONE; one created again under the name, with another size and type,
+    is picked up and the view reset."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("life", "-s", "64x64", "-t", "u16")
+        v = start(cfg, shm, s)
+        try:
+            check(v.screen_has("[64 x 64]"), "geometry not shown")
+            v.send(b"++")
+            check(v.screen_has("Zoom: 1.44x"), "zoom did not apply")
+            os.unlink(shm_path(shm, s))
+            check(v.screen_has("GONE", 2.0), "a removed stream is not shown GONE")
+            remake(cfg, shm, s, "-s", "200x100", "-t", "f32")
+            check(
+                v.screen_has("[200 x 100]", 2.0),
+                "the stream created again was not picked up",
+            )
+            v.pump(0.2)
+            text = v.screen.text()
+            check("GONE" not in text, "still GONE after the stream came back")
+            check("Zoom: 1.00x" in text, "a new geometry did not reset the view")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_stream_truncated(cfg):
+    """A stream truncated in place: no crash, also with a key or a resize right after; GONE, an
+    empty image once the view changes; a new stream under the name brings the image back.
+    """
+    with ShmDir(cfg.mkstream) as shm:
+        for poke in ("none", "key", "resize", "key -f 1"):
+            s = shm.stream("trunc", "-s", "64x64")
+            opts = ["-f", "1"] if poke.endswith("-f 1") else []
+            v = start(cfg, shm, s, *opts)
+            try:
+                v.pump(0.5)
+                os.truncate(shm_path(shm, s), 0)
+                if poke.startswith("key"):
+                    v.send(b"+")
+                elif poke == "resize":
+                    v.resize(30, 100)
+                v.pump(0.3)
+                check(v.alive(), f"{poke}: viewer died, status {v.exit_code()}")
+                check(
+                    v.screen_has("GONE", 1.5),
+                    f"{poke}: a truncated stream is not shown GONE",
+                )
+                v.send(b"-")
+                check(
+                    v.screen_has("stream gone", 1.0),
+                    f"{poke}: no message over the empty image",
+                )
+                remake(cfg, shm, s, "-s", "64x64")
+                end = time.monotonic() + 2.5
+                while time.monotonic() < end and "GONE" in v.screen.text():
+                    v.pump(0.05)
+                v.pump(0.3)
+                text = v.screen.text()
+                check(
+                    "GONE" not in text and "stream gone" not in text,
+                    f"{poke}: no image",
+                )
+                quit_clean(v)
+            finally:
+                v.close()
+
+
+def test_rate_after_counter_reset(cfg):
+    """A stream created again restarts its frame counter: the rate shown stays sensible, whether
+    the new counter is below the old one or (replaced while paused) far above it."""
+    import re
+
+    def rates(v, dt):
+        got = []
+        end = time.monotonic() + dt
+        while time.monotonic() < end:
+            v.pump(0.1)
+            m = re.search(r"Stream:\s+(-?[0-9.]+) Hz", v.screen.text())
+            if m:
+                got.append(float(m.group(1)))
+        return got
+
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("rate", "-s", "32x32", "-p", "noise", "-r", "50")
+        gen = shm.procs[-1]
+        v = start(cfg, shm, s)
+        try:
+            v.pump(2.5)
+            gen.terminate()
+            gen.wait(3)
+            gen = (
+                shm.stream("rate", "-s", "32x32", "-p", "noise", "-r", "20")
+                and shm.procs[-1]
+            )
+            got = rates(v, 4.0)
+            check(
+                got and max(got) < 200 and min(got) >= 0, f"rates: {sorted(set(got))}"
+            )
+            check(
+                any(15 < r < 25 for r in got), f"20 Hz never shown: {sorted(set(got))}"
+            )
+
+            v.send(b" ")
+            v.pump(0.3)
+            gen.terminate()
+            gen.wait(3)
+            shm.stream("rate", "-s", "32x32", "-p", "noise", "-r", "200")
+            v.pump(4.0)
+            v.send(b" ")
+            got = rates(v, 4.0)
+            check(
+                got and max(got) < 300, f"after the paused switch: {sorted(set(got))}"
+            )
+            check(
+                any(150 < r < 250 for r in got),
+                f"200 Hz never shown: {sorted(set(got))}",
+            )
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_reopen_leaks_nothing(cfg):
+    """Each reopen (and each pause) releases the old file, mapping and memory. 12 reopens of a
+    256x256 stream; the plan's 100 would take 100 s, as each waits for the 1 Hz check.
+    """
+
+    def counts(pid):
+        with open(f"/proc/{pid}/maps") as f:
+            maps = sum(1 for _ in f)
+        with open(f"/proc/{pid}/status") as f:
+            rss = next(int(line.split()[1]) for line in f if line.startswith("VmRSS"))
+        return len(os.listdir(f"/proc/{pid}/fd")), maps, rss
+
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("leak", "-s", "256x256", "-t", "f32")
+        v = start(cfg, shm, s)
+        try:
+            seen = []
+            for k in range(12):
+                v.send(b" ")  # pause (a frame-sized copy) and resume
+                v.pump(0.1)
+                v.send(b" ")
+                w = 255 + k % 2
+                remake(
+                    cfg, shm, s, "-s", f"{w}x256", "-t", ("f32", "u16", "f64")[k % 3]
+                )
+                check(v.screen_has(f"[{w} x 256]", 2.5), f"reopen {k} not picked up")
+                seen.append(counts(v.pid))
+            fds, maps = {c[0] for c in seen[2:]}, {c[1] for c in seen[2:]}
+            check(len(fds) == 1, f"fds grew over reopens: {seen}")
+            if cfg.sanitized:
+                return  # the sanitizer allocator maps memory as it goes
+            check(len(maps) == 1, f"mappings grew over reopens: {seen}")
+            # the heap keeps a freed frame or two for reuse; a leak would add one per reopen
+            grew = seen[-1][2] - seen[5][2]
+            check(grew < 600, f"RSS grew by {grew} kB over the last 6 reopens")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_pause(cfg):
+    """Space freezes the image (zoom still works on the frozen frame) and wakes the viewer about
+    once a second; Space again resumes."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("pause", "-s", "64x64", "-p", "noise", "-r", "100")
+        v = start(cfg, shm, s, colour=True)
+        try:
+            rows = range(v.screen.rows - 4)
+            v.pump(0.5)
+            v.send(b" ")
+            check(v.screen_has("PAUSED"), "no PAUSED state")
+            v.pump(0.3)
+            a = v.screen.looks(rows)
+            w0, c0 = v.wakeups(), v.cpu_ticks()
+            v.pump(3.0)
+            wk = (v.wakeups() - w0) / 3.0
+            cpu = (v.cpu_ticks() - c0) / os.sysconf("SC_CLK_TCK") / 3.0 * 100
+            check(v.screen.looks(rows) == a, "the image changed while paused")
+            check(wk <= 4 and cpu < 2, f"paused: {wk:.1f} wakeups/s, {cpu:.1f} % CPU")
+            v.send(b"+")
+            v.pump(0.3)
+            b = v.screen.looks(rows)
+            check(b != a, "zoom did nothing while paused")
+            v.pump(0.5)
+            check(v.screen.looks(rows) == b, "the zoomed image changed while paused")
+            v.send(b"-")
+            v.pump(0.3)
+            check(
+                v.screen.looks(rows) == a, "zooming back does not show the frozen frame"
+            )
+            v.send(b" ")
+            v.pump(0.3)
+            check("PAUSED" not in v.screen.text(), "Space did not resume")
+            c = v.screen.looks(rows)
+            v.pump(0.3)
+            check(v.screen.looks(rows) != c, "the image does not move after resuming")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def corrupt_copy(shm, name):
+    """Replace stream @name by a copy whose header passes the viewer's checks but not
+    ImageStreamIO's (the name is cleared), so the library would complain on each retry.
+    """
+    path = shm_path(shm, name)
+    with open(path, "rb") as f:
+        data = bytearray(f.read())
+    data[32:112] = bytes(80)  # md->name
+    tmp = path + ".tmp"
+    with open(tmp, "wb") as f:
+        f.write(data)
+    os.rename(tmp, path)
+
+
+def test_junk_under_the_name(cfg):
+    """Junk, then a header ImageStreamIO rejects, under the name: GONE, and no library message
+    on the screen (stderr is /dev/null) or in a stderr file (the library printer is off).
+    """
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("junk", "-s", "64x64")
+        v = start(cfg, shm, s)
+        try:
+            v.pump(0.3)
+            if not cfg.sanitized:
+                fd2 = os.readlink(f"/proc/{v.pid}/fd/2")
+                check(fd2 == "/dev/null", f"stderr is {fd2} while the screen is in use")
+            tmp = shm_path(shm, s) + ".tmp"
+            with open(tmp, "wb") as f:
+                f.write(bytes((k * 7) & 255 for k in range(100000)))
+            os.rename(tmp, shm_path(shm, s))
+            check(v.screen_has("GONE", 2.0), "junk under the name is not shown GONE")
+            remake(cfg, shm, s, "-s", "64x64")
+            check(
+                v.screen_has("LIVE", 2.5) or v.screen_has("STALE", 0.1),
+                "no stream again",
+            )
+            n0 = len(v.out)
+            corrupt_copy(shm, s)
+            check(v.screen_has("GONE", 2.0), "a rejected header is not shown GONE")
+            v.pump(2.2)  # two more retries
+            check(b"ERROR" not in v.out[n0:], "a library message reached the screen")
+            check(v.alive(), "viewer died")
+            quit_clean(v)
+        finally:
+            v.close()
+
+        errlog = os.path.join(shm.dir, "stderr.log")
+        s = shm.stream("junk2", "-s", "64x64")
+        v = start(cfg, shm, s, stderr=errlog)
+        try:
+            v.pump(0.3)
+            corrupt_copy(shm, s)
+            check(v.screen_has("GONE", 2.0), "a rejected header is not shown GONE")
+            v.pump(2.2)
+            with open(errlog, "rb") as f:
+                err = f.read()
+            check(
+                err == b"",
+                f"the library wrote {len(err)} bytes to stderr: {err[:80]!r}",
+            )
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_stderr_on_another_terminal(cfg):
+    """stderr on another terminal than the image is left alone."""
+    master, slave = os.openpty()
+    try:
+        with ShmDir(cfg.mkstream) as shm:
+            s = shm.stream("tty", "-s", "64x64")
+            other = os.ttyname(slave)
+            v = start(cfg, shm, s, stderr=other)
+            try:
+                fd2 = os.readlink(f"/proc/{v.pid}/fd/2")
+                check(fd2 == other, f"stderr on {other} became {fd2}")
+                quit_clean(v)
+            finally:
+                v.close()
+    finally:
+        os.close(master)
+        os.close(slave)
+
+
+def test_pause_refused_without_memory(cfg):
+    """No memory for the frozen copy: the pause is refused with a bell instead of a PAUSED view
+    of live data."""
+    if cfg.sanitized:
+        print("     (skipped: an address-space limit breaks sanitizer builds)")
+        return
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("big", "-s", "4096x4096", "-t", "f32", "-p", "noise", "-r", "5")
+        v = Viewer(cfg.termview, [s], shm.env, 40, 120, limit_as=110 << 20)
+        try:
+            check(v.wait_for(ENTER, 3.0), "viewer did not start")
+            v.pump(0.5)
+            n0 = len(v.out)
+            v.send(b" ")
+            v.pump(0.5)
+            check(b"\a" in v.out[n0:], "no bell")
+            check("PAUSED" not in v.screen.text(), "PAUSED without a frozen copy")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_lowbw_rests_when_gone(cfg):
+    """Low-bandwidth mode with held colours, then the stream is truncated away: the viewer does
+    not keep redrawing; it wakes for its data polls only (120/s at -f 120)."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("hg", "-s", "128x128", "-p", "jitter", "-r", "50")
+        gen = shm.procs[-1]
+        v = start(cfg, shm, s, "-f", "120")
+        try:
+            v.send(b"b")
+            v.pump(1.0)
+            gen.terminate()
+            gen.wait(3)
+            os.truncate(shm_path(shm, s), 0)
+            check(v.screen_has("GONE", 1.5), "a truncated stream is not shown GONE")
+            v.pump(1.0)
+            w0 = v.wakeups()
+            v.pump(3.0)
+            wk = (v.wakeups() - w0) / 3.0
+            check(wk < 135, f"{wk:.0f} wakeups/s with nothing to draw")
+            quit_clean(v)
+        finally:
+            v.close()
+
+
+def test_pause_outlives_a_replacement(cfg):
+    """Replaced while paused: the frozen frame stays (zoom still works); the new stream comes
+    on the resume."""
+    with ShmDir(cfg.mkstream) as shm:
+        s = shm.stream("pr", "-s", "64x64", "-t", "u8")
+        v = start(cfg, shm, s)
+        try:
+            v.pump(0.3)
+            v.send(b" ")
+            check(v.screen_has("PAUSED"), "no PAUSED state")
+            os.unlink(shm_path(shm, s))
+            remake(cfg, shm, s, "-s", "400x400", "-t", "f64")
+            v.pump(2.2)
+            text = v.screen.text()
+            check(
+                "[64 x 64]" in text and "PAUSED GONE" in text,
+                "the paused view did not hold",
+            )
+            v.send(b"++")
+            v.pump(0.2)
+            v.send(b"--")
+            v.pump(0.2)
+            check(v.alive(), f"viewer died, status {v.exit_code()}")
+            v.send(b" ")
+            check(
+                v.screen_has("[400 x 400]", 2.5),
+                "the new stream was not picked up on resume",
+            )
+            v.pump(0.2)
+            text = v.screen.text()
+            check("GONE" not in text, "still GONE after the resume")
+            # written once, 2 s ago: its own write time says so
+            check(
+                "STALE" in text and "LIVE" not in text,
+                "the new stream's age is not shown",
+            )
+            quit_clean(v)
+        finally:
+            v.close()
+
+
 TESTS = [
     test_help_oneline,
     test_missing_stream,
@@ -907,6 +1327,16 @@ TESTS = [
     test_lowbw_converges_when_stream_stops,
     test_lowbw_keeps_the_range,
     test_colors_option,
+    test_stream_removed_and_recreated,
+    test_stream_truncated,
+    test_rate_after_counter_reset,
+    test_reopen_leaks_nothing,
+    test_pause,
+    test_junk_under_the_name,
+    test_pause_outlives_a_replacement,
+    test_lowbw_rests_when_gone,
+    test_stderr_on_another_terminal,
+    test_pause_refused_without_memory,
 ]
 
 
@@ -1317,6 +1747,11 @@ def main():
         "--perf", action="store_true", help="run the CPU/latency checks instead"
     )
     ap.add_argument("--window", type=float, default=3.0)
+    ap.add_argument(
+        "--sanitized",
+        action="store_true",
+        help="sanitizer build: stderr kept, own allocator mappings, no address-space limits",
+    )
     ap.add_argument(
         "--bench-basic", action="store_true", help="bench: only the two basic modes"
     )

@@ -38,6 +38,24 @@
  * Main Screen Loop
  * ----------------------------------------------------------------------- */
 
+/** tv_cnt0() - The stream's frame counter; the last value seen once the mapping is gone. */
+static inline uint64_t tv_cnt0(const tv_state_t *ctx)
+{
+    return (ctx->st->img.md != NULL) ? ctx->st->img.md->cnt0 : ctx->last_cnt0;
+}
+
+/** tv_mapped() - The mapping can be read now; one just dropped is looked into at once. */
+static int tv_mapped(tv_state_t *ctx)
+{
+    int had = (ctx->st->map != NULL);
+    if (tv_stream_safe(ctx->st))
+    {
+        return 1;
+    }
+    ctx->recheck |= had;
+    return 0;
+}
+
 /** tv_update_stats() - Refresh the CPU usage and stream rate shown in the info bar. */
 static void tv_update_stats(tv_state_t *ctx, int64_t now_us)
 {
@@ -52,7 +70,7 @@ static void tv_update_stats(tv_state_t *ctx, int64_t now_us)
         (now_cpu.tv_sec - ctx->stats_cpu.tv_sec) + (now_cpu.tv_nsec - ctx->stats_cpu.tv_nsec) / 1e9;
     ctx->current_cpu_usage = cpu_diff / real_diff * 100.0;
 
-    uint64_t cnt0 = ctx->st->img.md->cnt0;
+    uint64_t cnt0 = tv_cnt0(ctx);
     /* a counter that went backwards means the stream was reset: re-baseline */
     ctx->current_stream_fps = (cnt0 >= ctx->last_cnt0_for_fps)
                                   ? (double) (cnt0 - ctx->last_cnt0_for_fps) / real_diff
@@ -78,6 +96,20 @@ static int64_t tv_stale_age_us(const tv_state_t *ctx, int64_t now_us)
     return (age > limit) ? age : 0;
 }
 
+/** tv_seen_at() - When the stream was last written (tv_now_us() time), from its write time. */
+static int64_t tv_seen_at(const IMAGE_METADATA *md, int64_t now_us)
+{
+    struct timespec wall;
+    clock_gettime(CLOCK_ISIO, &wall);
+    double age = (double) (wall.tv_sec - md->writetime.tv_sec) +
+                 (double) (wall.tv_nsec - md->writetime.tv_nsec) / 1e9;
+    if (md->writetime.tv_sec > 0 && tv_finite(age) && age > 0.0 && age < 1e9)
+    {
+        return now_us - (int64_t) (age * 1e6);
+    }
+    return now_us; /* not set, or from another clock */
+}
+
 /** tv_note_cnt0() - Record a cnt0 value seen at @now_us; true if it is a new frame. */
 static int tv_note_cnt0(tv_state_t *ctx, uint64_t cnt0, int64_t now_us)
 {
@@ -85,6 +117,7 @@ static int tv_note_cnt0(tv_state_t *ctx, uint64_t cnt0, int64_t now_us)
     {
         return 0;
     }
+    int64_t seen = now_us;
     if (cnt0 > ctx->last_cnt0 && ctx->period_us >= 0.0)
     {
         /* frame interval, smoothed: sets how long the stream may be quiet before STALE */
@@ -93,10 +126,12 @@ static int tv_note_cnt0(tv_state_t *ctx, uint64_t cnt0, int64_t now_us)
     }
     else if (ctx->period_us < 0.0)
     {
-        ctx->period_us = 0.0; /* first change seen: the previous one is not ours to time */
+        /* first change seen (or after a pause): not ours to time, but the frame says its age */
+        ctx->period_us = 0.0;
+        seen           = tv_seen_at(ctx->st->img.md, now_us);
     }
     ctx->last_cnt0      = cnt0;
-    ctx->last_change_us = now_us;
+    ctx->last_change_us = seen;
     return 1;
 }
 
@@ -134,6 +169,37 @@ static void tv_invalidate(tv_state_t *ctx)
         }
     }
     ctx->dirty |= TV_D_FULL | TV_D_GEOM;
+}
+
+/**
+ * tv_pause() - Freeze the image on a copy of the displayed slice (so zoom and pan keep working on
+ * it), or go back to the live stream. Without memory for the copy, the pause is refused (bell).
+ */
+static void tv_pause(tv_state_t *ctx, int on)
+{
+    tv_stream_t *st = ctx->st;
+    free(ctx->frozen);
+    ctx->frozen = NULL;
+    ctx->paused = on;
+    if (on && tv_mapped(ctx))
+    {
+        size_t n = (size_t) st->xsize * st->ysize * (size_t) ImageStreamIO_typesize(st->datatype);
+        ctx->frozen = malloc(n);
+        if (ctx->frozen == NULL)
+        {
+            ctx->paused = 0; /* no memory for the copy: a pause would show live data; refuse */
+            tv_write_all("\a", 1);
+            return;
+        }
+        memcpy(ctx->frozen, st->img.array.raw, n);
+    }
+    if (!on)
+    {
+        ctx->recheck   = 1;    /* pick up a stream that was replaced meanwhile */
+        ctx->period_us = -1.0; /* the pause is no frame interval */
+    }
+    /* sample what is frozen (or live again) and draw it exactly */
+    ctx->dirty |= TV_D_DATA | TV_D_MAP | TV_D_CHROME;
 }
 
 /** tv_popup_open() - Show quick-pick popup @type (1 cmap, 2 scale, 3 range) for TV_POPUP_US. */
@@ -189,6 +255,9 @@ void tv_do(tv_state_t *ctx, tv_action_t a, int arg)
         break;
     case TV_ACT_REPAINT:
         tv_invalidate(ctx);
+        break;
+    case TV_ACT_PAUSE:
+        tv_pause(ctx, !ctx->paused);
         break;
     case TV_ACT_CMAP:
         ctx->opt.colormap = (termview_colormap_t) tv_wrap(ctx->opt.colormap, arg, COLORMAP_NB);
@@ -332,6 +401,9 @@ void tv_handle_key(tv_state_t *ctx, const tv_event_t *ev)
         break;
     case 'b':
         tv_do(ctx, TV_ACT_LOWBW, 0);
+        break;
+    case ' ':
+        tv_do(ctx, TV_ACT_PAUSE, 0);
         break;
     case 'v':
         tv_do(ctx, TV_ACT_FLIP_V, 0);
@@ -698,10 +770,18 @@ static void termview_render_infobar(tv_state_t *ctx,
     char info[256];
     int  len;
 
-    /* LIVE while frames keep coming, STALE with the age of the last one otherwise */
-    char    state[32];
-    int64_t age = tv_stale_age_us(ctx, now_us) / 1000000;
-    if (age == 0)
+    /* LIVE while frames keep coming, STALE with the age of the last one otherwise; PAUSED and
+     * GONE (the stream was removed or replaced) win */
+    char     state[32];
+    int64_t  age  = tv_stale_age_us(ctx, now_us) / 1000000;
+    uint32_t pill = (age == 0) ? TV_RGB(80, 220, 80) : TV_RGB(255, 180, 0);
+    if (ctx->paused || ctx->gone)
+    {
+        snprintf(state, sizeof(state), "%s%s", ctx->paused ? "PAUSED" : "",
+                 ctx->gone ? (ctx->paused ? " GONE" : "GONE") : "");
+        pill = ctx->gone ? TV_RGB(255, 80, 80) : TV_RGB(100, 160, 255);
+    }
+    else if (age == 0)
     {
         snprintf(state, sizeof(state), "LIVE");
     }
@@ -735,7 +815,7 @@ static void termview_render_infobar(tv_state_t *ctx,
         }
         if (k >= state_pos)
         {
-            *c = tv_cell_with_fg(*c, (age == 0) ? TV_RGB(80, 220, 80) : TV_RGB(255, 180, 0));
+            *c = tv_cell_with_fg(*c, pill);
         }
     }
     len = snprintf(info, sizeof(info),
@@ -1071,6 +1151,17 @@ static void tv_compose(tv_state_t *ctx, int64_t now_us)
     {
         tv_draw_roi(ctx);
     }
+    if (ctx->im.blank && l->img_rows > 0)
+    {
+        static const char msg[] = "stream gone: waiting for it to come back";
+        int               len   = (int) sizeof(msg) - 1;
+        int               col   = (len < l->img_cols) ? (l->img_cols - len) / 2 : 0;
+        tv_draw_text(ctx, l->img_rows / 2, col, msg);
+        for (int k = 0; k < len && col + k < l->img_cols; k++)
+        {
+            ctx->screen[(l->img_rows / 2) * ctx->cols + col + k] |= TV_ATTR_CHROME;
+        }
+    }
     tv_xform_t xf;
     tv_xform_compute(&xf, l, &ctx->view, ctx->st->xsize, ctx->st->ysize, ctx->opt.flip_h,
                      ctx->opt.flip_v);
@@ -1086,6 +1177,42 @@ static void tv_compose(tv_state_t *ctx, int64_t now_us)
         {
             ctx->screen[r * ctx->cols + c] |= TV_ATTR_CHROME;
         }
+    }
+}
+
+/**
+ * tv_stream_monitor() - Notice a stream that was truncated, removed or recreated, and switch to
+ * the stream now at its path once that is readable. A new geometry resets the view; colormap,
+ * scale and range are kept. Paused, the switch waits for the resume.
+ */
+static void tv_stream_monitor(tv_state_t *ctx, int64_t now_us)
+{
+    tv_stream_t *st       = ctx->st;
+    int          was_gone = ctx->gone;
+    ctx->gone             = (tv_stream_check(st) != TV_STREAM_OK);
+    if (ctx->gone && !ctx->paused)
+    {
+        uint32_t xsize = st->xsize, ysize = st->ysize;
+        if (tv_stream_reopen(st) == 0)
+        {
+            ctx->gone = 0;
+            if (st->xsize != xsize || st->ysize != ysize)
+            {
+                ctx->view.zoom = 1.0;
+                ctx->view.cx   = 0.5;
+                ctx->view.cy   = 0.5;
+            }
+            ctx->last_cnt0         = st->img.md->cnt0;
+            ctx->last_cnt0_for_fps = st->img.md->cnt0;
+            ctx->period_us         = -1.0;
+            ctx->last_change_us    = tv_seen_at(st->img.md, now_us);
+            ctx->im.have_range     = 0; /* other values: no smoothing from the old ones */
+            ctx->dirty |= TV_D_GEOM | TV_D_DATA | TV_D_CHROME;
+        }
+    }
+    if (ctx->gone != was_gone)
+    {
+        ctx->dirty |= TV_D_CHROME;
     }
 }
 
@@ -1149,16 +1276,7 @@ int termview_run(const char *name, const termview_options_t *opt)
     tv_emit_init(&ctx->emit,
                  (opt->colors >= 1 && opt->colors <= 3) ? opt->colors : tv_term_color_level());
 
-    /* age of the newest frame at startup, from the stream's own write time */
-    struct timespec wall;
-    clock_gettime(CLOCK_ISIO, &wall);
-    double age          = (wall.tv_sec - st.img.md->writetime.tv_sec) +
-                          (wall.tv_nsec - st.img.md->writetime.tv_nsec) / 1e9;
-    ctx->last_change_us = ctx->stats_time_us;
-    if (st.img.md->writetime.tv_sec > 0 && tv_finite(age) && age > 0.0 && age < 1e9)
-    {
-        ctx->last_change_us -= (int64_t) (age * 1e6);
-    }
+    ctx->last_change_us = tv_seen_at(st.img.md, ctx->stats_time_us); /* the newest frame's age */
 
     if (tv_term_enter() != 0)
     {
@@ -1168,6 +1286,7 @@ int termview_run(const char *name, const termview_options_t *opt)
         fprintf(stderr, "Error: cannot configure the terminal\n");
         return 1;
     }
+    ImageStreamIO_set_printError(NULL); /* reopening a half-written stream must stay quiet */
     tv_term_size(&ctx->rows, &ctx->cols);
 
     tv_input_t in;
@@ -1205,7 +1324,7 @@ int termview_run(const char *name, const termview_options_t *opt)
         {
             next_data = now + period; /* the rate was raised: do not wait out the old period */
         }
-        int64_t dl = next_data;
+        int64_t dl = ctx->paused ? next_tick : next_data; /* paused: about one wakeup a second */
         if ((ctx->dirty || ctx->emit.pending) && last_render + TV_INTERACTIVE_US < dl)
         {
             dl = last_render + TV_INTERACTIVE_US;
@@ -1266,6 +1385,11 @@ int termview_run(const char *name, const termview_options_t *opt)
             continue; /* resumed: restore the terminal before drawing anything */
         }
 
+        if (now >= next_tick || ctx->recheck)
+        {
+            ctx->recheck = 0;
+            tv_stream_monitor(ctx, now);
+        }
         if (now >= next_tick)
         {
             tv_update_stats(ctx, now);
@@ -1281,10 +1405,10 @@ int termview_run(const char *name, const termview_options_t *opt)
         {
             ctx->dirty |= TV_D_CHROME; /* send the image cells the last flush had no room for */
         }
-        if (now >= next_data)
+        if (now >= next_data && !ctx->paused)
         {
             next_data = (next_data + period > now) ? next_data + period : now + period;
-            if (tv_note_cnt0(ctx, st.img.md->cnt0, now))
+            if (tv_mapped(ctx) && tv_note_cnt0(ctx, tv_cnt0(ctx), now))
             {
                 ctx->dirty |= TV_D_DATA;
             }
@@ -1303,8 +1427,8 @@ int termview_run(const char *name, const termview_options_t *opt)
         last_render = now;
         /* a user change shows a frame that arrived since the poll; other renders (the tick, a
          * flush continuation) leave new frames to the data poll and its rate */
-        if ((ctx->dirty & (TV_D_GEOM | TV_D_MAP | TV_D_FULL)) &&
-            tv_note_cnt0(ctx, st.img.md->cnt0, now))
+        if ((ctx->dirty & (TV_D_GEOM | TV_D_MAP | TV_D_FULL)) && !ctx->paused && tv_mapped(ctx) &&
+            tv_note_cnt0(ctx, tv_cnt0(ctx), now))
         {
             ctx->dirty |= TV_D_DATA;
         }
@@ -1361,9 +1485,24 @@ int termview_run(const char *name, const termview_options_t *opt)
                 break;
             }
         }
+        /* the frozen copy while paused, else the mapping; nothing once the mapping is gone */
+        const void *src = (ctx->paused && ctx->frozen) ? ctx->frozen
+                          : tv_mapped(ctx)             ? st.img.array.raw
+                                                       : NULL;
+        if (src == NULL)
+        {
+            ctx->im.held = 0; /* no samples: no held rows to refresh */
+            if (dirty & (TV_D_GEOM | TV_D_FULL))
+            {
+                tv_image_blank(&ctx->im); /* new geometry and no data to sample: empty image */
+            }
+            tv_compose(ctx, now);
+            termview_flush_ansi(ctx);
+            continue;
+        }
         if (dirty & (TV_D_GEOM | TV_D_FULL | TV_D_DATA))
         {
-            sampled      = tv_image_sample(&ctx->im, st.img.array.raw, st.datatype);
+            sampled      = tv_image_sample(&ctx->im, src, st.datatype);
             ctx->resting = !sampled && (dirty & TV_D_DATA);
             if (!sampled && ctx->im.held)
             {
@@ -1400,8 +1539,10 @@ int termview_run(const char *name, const termview_options_t *opt)
     }
 
     tv_term_restore();
+    ImageStreamIO_set_default_printError();
 
     tv_image_free(&ctx->im);
+    free(ctx->frozen);
     free(ctx->screen);
     free(ctx->prev_screen);
     free(ctx->frame_buffer);

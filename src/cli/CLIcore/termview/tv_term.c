@@ -15,6 +15,8 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/sysmacros.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -27,7 +29,9 @@ volatile sig_atomic_t tv_term_hup;
 
 static struct termios        tv_tio_orig;
 static volatile sig_atomic_t tv_term_active;
-static int                   tv_err_fd = -1;
+static int                   tv_err_fd  = -1; /* the original stderr, for exit and crash messages */
+static int                   tv_null_fd = -1; /* /dev/null: stderr while the screen is ours */
+static volatile sig_atomic_t tv_err_quiet;
 static char                  tv_altstack[65536];
 
 /* Alt screen, hide cursor, no autowrap, button-event mouse tracking, SGR encoding. */
@@ -36,6 +40,20 @@ static const char TV_SEQ_ENTER[] = "\033[?1049h\033[?25l\033[?7l\033[?1002h\033[
 /* End sync, mouse off before its encoding, reset SGR, autowrap and cursor on, leave alt screen. */
 static const char TV_SEQ_LEAVE[] = "\033[?2026l\033[?1003l\033[?1002l\033[?1000l\033[?1006l"
                                    "\033[0m\033[?7h\033[?25h\033[?1049l";
+
+#ifndef TV_KEEP_STDERR
+/** tv_err_on_screen() - stderr is the terminal the image is drawn on (or /dev/tty). */
+static int tv_err_on_screen(void)
+{
+    struct stat o, e;
+    if (fstat(STDOUT_FILENO, &o) != 0 || fstat(STDERR_FILENO, &e) != 0 || !S_ISCHR(o.st_mode) ||
+        !S_ISCHR(e.st_mode))
+    {
+        return 0;
+    }
+    return e.st_rdev == o.st_rdev || e.st_rdev == makedev(5, 0);
+}
+#endif
 
 /** tv_term_restore() - Idempotent, async-signal-safe: leave sequence, then original termios. */
 void tv_term_restore(void)
@@ -61,6 +79,11 @@ void tv_term_restore(void)
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &tv_tio_orig);
     tcflush(STDIN_FILENO, TCIFLUSH);
+    if (tv_err_quiet)
+    {
+        dup2(tv_err_fd, STDERR_FILENO);
+        tv_err_quiet = 0;
+    }
 }
 
 static void tv_on_quit(int sig)
@@ -141,6 +164,12 @@ int tv_term_init(char *err, size_t errsz)
         return -1;
     }
     tv_err_fd = fcntl(STDERR_FILENO, F_DUPFD_CLOEXEC, 3);
+#ifndef TV_KEEP_STDERR /* sanitizer builds: keep their reports visible */
+    if (tv_err_fd >= 0 && tv_null_fd < 0 && tv_err_on_screen())
+    {
+        tv_null_fd = open("/dev/null", O_WRONLY | O_CLOEXEC);
+    }
+#endif
 
     stack_t ss;
     memset(&ss, 0, sizeof(ss));
@@ -193,6 +222,11 @@ int tv_term_enter(void)
         return -1;
     }
     tv_sig_cont = 0; /* the resume is handled: do not let the enter sequence's write abort */
+    /* library messages written to a terminal stderr would land in the middle of the image */
+    if (tv_null_fd >= 0 && dup2(tv_null_fd, STDERR_FILENO) >= 0)
+    {
+        tv_err_quiet = 1;
+    }
     return tv_write_all(TV_SEQ_ENTER, sizeof(TV_SEQ_ENTER) - 1);
 }
 

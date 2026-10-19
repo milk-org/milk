@@ -87,6 +87,7 @@ static void print_help(const char *progname, int mh_color)
         { "m / M", "Type a manual min / max (locks the range)" },
         { "h / v", "Flip horizontally / vertically" },
         { "b", "Low-bandwidth mode: hold small changes on noisy images" },
+        { "Space", "Pause: freeze the image (zoom and pan still work), Space again to resume" },
         { "< , / > .", "Decrease / increase the UI refresh rate" },
         { "Ctrl-L", "Repaint the screen" },
         { "Ctrl-Z", "Suspend" },

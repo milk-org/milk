@@ -119,22 +119,18 @@ static int tv_stream_check_md(const IMAGE_METADATA *md, char *err, size_t errsz)
     return 0;
 }
 
-int tv_stream_open(tv_stream_t *s, const char *arg, char *err, size_t errsz)
+/** tv_stream_open_path() - tv_stream_open() for the resolved file @path. */
+static int tv_stream_open_path(tv_stream_t *s, const char *path, char *err, size_t errsz)
 {
     memset(s, 0, sizeof(*s));
     s->fd        = -1;
     s->img.shmfd = -1;
-
-    if (tv_stream_path(arg, s->path, sizeof(s->path)) != 0)
-    {
-        snprintf(err, errsz, "invalid stream name '%s'", arg);
-        return -1;
-    }
+    snprintf(s->path, sizeof(s->path), "%s", path);
 
     struct stat st;
     if (stat(s->path, &st) != 0)
     {
-        snprintf(err, errsz, "stream '%s' not found (%s)", arg, s->path);
+        snprintf(err, errsz, "%s not found", s->path);
         return -1;
     }
     if (!S_ISREG(st.st_mode))
@@ -200,6 +196,69 @@ int tv_stream_open(tv_stream_t *s, const char *arg, char *err, size_t errsz)
         s->name[i]      = (c >= 0x20 && c < 0x7F) ? (char) c : '?';
     }
     s->name[i] = '\0';
+    return 0;
+}
+
+int tv_stream_open(tv_stream_t *s, const char *arg, char *err, size_t errsz)
+{
+    char path[sizeof(s->path)];
+    if (tv_stream_path(arg, path, sizeof(path)) != 0)
+    {
+        memset(s, 0, sizeof(*s));
+        s->fd = -1;
+        snprintf(err, errsz, "invalid stream name '%s'", arg);
+        return -1;
+    }
+    if (access(path, F_OK) != 0)
+    {
+        memset(s, 0, sizeof(*s));
+        s->fd = -1;
+        snprintf(err, errsz, "stream '%s' not found (%s)", arg, path);
+        return -1;
+    }
+    return tv_stream_open_path(s, path, err, errsz);
+}
+
+/** tv_stream_fstat() - fstat() the mapped file; drops the mapping if the file shrank under it. */
+static int tv_stream_fstat(tv_stream_t *s, struct stat *st)
+{
+    if (s->map != NULL && (fstat(s->fd, st) != 0 || (size_t) st->st_size < s->mapsize))
+    {
+        tv_stream_close(s); /* pages past the new end would fault */
+    }
+    return (s->map != NULL) ? 0 : -1;
+}
+
+int tv_stream_safe(tv_stream_t *s)
+{
+    struct stat st;
+    return tv_stream_fstat(s, &st) == 0;
+}
+
+int tv_stream_check(tv_stream_t *s)
+{
+    struct stat st, ps;
+    if (tv_stream_fstat(s, &st) != 0)
+    {
+        return TV_STREAM_CLOSED;
+    }
+    if (st.st_nlink == 0 || stat(s->path, &ps) != 0 || ps.st_ino != s->ino || ps.st_dev != s->dev)
+    {
+        return TV_STREAM_MOVED;
+    }
+    return TV_STREAM_OK;
+}
+
+int tv_stream_reopen(tv_stream_t *s)
+{
+    tv_stream_t n;
+    char        err[256];
+    if (tv_stream_open_path(&n, s->path, err, sizeof(err)) != 0)
+    {
+        return -1;
+    }
+    tv_stream_close(s);
+    *s = n;
     return 0;
 }
 

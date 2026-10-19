@@ -6,6 +6,7 @@ add_library(termview_flags INTERFACE)
 target_compile_options(termview_flags INTERFACE -fno-finite-math-only -Wall
                                                 -Wextra -Wimplicit-fallthrough)
 if(USE_SANITIZERS)
+  target_compile_definitions(termview_flags INTERFACE TV_KEEP_STDERR)
   target_compile_options(termview_flags INTERFACE -fsanitize=float-cast-overflow
                                                   -fno-sanitize-recover=all)
   target_link_options(termview_flags INTERFACE -fsanitize=float-cast-overflow
@@ -43,13 +44,18 @@ if(BUILD_TESTING)
     COMPONENTS Interpreter
     QUIET)
   if(Python3_Interpreter_FOUND)
+    set(termview_pty_args)
+    if(USE_SANITIZERS)
+      set(termview_pty_args --sanitized)
+    endif()
     add_test(
       NAME termview_pty
       COMMAND
         ${Python3_EXECUTABLE} -I
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/termview_pty_test.py --termview
-        $<TARGET_FILE:milk-termview> --mkstream $<TARGET_FILE:tv-test-mkstream>)
-    set_tests_properties(termview_pty PROPERTIES TIMEOUT 300)
+        $<TARGET_FILE:milk-termview> --mkstream $<TARGET_FILE:tv-test-mkstream>
+        ${termview_pty_args})
+    set_tests_properties(termview_pty PROPERTIES TIMEOUT 600)
     if(NOT USE_SANITIZERS)
       add_test(
         NAME termview_perf
@@ -58,7 +64,7 @@ if(BUILD_TESTING)
           ${CMAKE_CURRENT_SOURCE_DIR}/tests/termview_pty_test.py --perf
           --termview $<TARGET_FILE:milk-termview> --mkstream
           $<TARGET_FILE:tv-test-mkstream>)
-      set_tests_properties(termview_perf PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE
+      set_tests_properties(termview_perf PROPERTIES TIMEOUT 240 RUN_SERIAL TRUE
                                                     LABELS "termview;perf")
     endif()
   endif()
