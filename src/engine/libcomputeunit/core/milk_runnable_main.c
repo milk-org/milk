@@ -24,9 +24,9 @@ int milk_runnable_main(int argc, char *argv[], const MILK_RUNNABLE *r)
 
     const MILK_RUNNABLE *prev = milk_runnable_set_current(r);
 
-    int retval = fpsexec_main_function(argc, argv, (FPS_APP_INFO *) &r->app, r->bindings,
-                                       r->nb_bindings, r->farg, milk_runnable_compute_thunk,
-                                       r->confcheck);
+    int retval =
+        fpsexec_main_function(argc, argv, (FPS_APP_INFO *) &r->app, r->bindings, r->nb_bindings,
+                              r->farg, milk_runnable_compute_thunk, r->confcheck);
 
     milk_runnable_set_current(prev);
     return retval;
