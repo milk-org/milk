@@ -66,6 +66,8 @@ typedef struct
     int proc_indices[OV_MAX_LOOP_NODES / 2];
     int nb_fps;
     int fps_indices[OV_MAX_LOOP_NODES / 2];
+    unsigned
+        fps_via_run; /* bit i: fps_indices[i] is in the loop through the process it runs, not on the cycle */
 
     /* Overlap metadata */
     uint32_t overlap_mask;       /* Bitmask of other loop IDs (1 << (id-1)) */
@@ -80,6 +82,12 @@ typedef struct
     int    is_stale;   /* 1 if any running process has an unchanging loopcnt */
     int    is_error;   /* 1 if any process is ERR or CRSH */
 } OV_LOOP;
+
+/** ov_loop_units - processes and FPS of loop @lp, an FPS and the process it runs counting once. */
+static inline int ov_loop_units(const OV_LOOP *lp)
+{
+    return lp->nb_procs + lp->nb_fps - __builtin_popcount(lp->fps_via_run);
+}
 
 
 /* =========================================================

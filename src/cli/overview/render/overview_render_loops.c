@@ -96,7 +96,7 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_printf("%-16.16s ", ov_loop_name(lp));
 
         ov_theme_fg(OV_FG_DIM);
-        ov_buf_printf("%1ds %1dp  ", lp->nb_streams, lp->nb_procs + lp->nb_fps);
+        ov_buf_printf("%1ds %1dp  ", lp->nb_streams, ov_loop_units(lp));
 
         ov_theme_fg(OV_FG_TEXT);
         if (lp->min_hz > 0.0)
@@ -202,8 +202,8 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
         rrow++;
         r_rendered++;
 
-        /* Members through node_indices: nodes[].index follows the UI's sort, scan-time
-         * stream_indices/proc_indices do not */
+        /* Streams and processes in cycle order (node_indices); FPS from fps_indices, which also holds the
+         * FPS running a member process */
         for (int i = 0; i < cl->nb_nodes && r_rendered < max_rrows; i++)
         {
             int ni = cl->node_indices[i];
@@ -313,6 +313,49 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
                 rrow++;
                 r_rendered++;
             }
+        }
+
+        /* Member FPS table */
+        if (cl->nb_fps > 0 && r_rendered < max_rrows)
+        {
+            ov_buf_pos(rrow, lw + 2);
+            ov_theme_bg(OV_BG_HEADER);
+            ov_theme_fg(OV_FG_FPS_HDR);
+            ov_buf_printf("  %-16s %-8s %-8s %-10s %s", "FPS", "CONF/RUN", "STATUS", "RATE (Hz)",
+                          "IN THE LOOP");
+            render_pad_to_col(lw + rw);
+            rrow++;
+            r_rendered++;
+        }
+        for (int i = 0; i < cl->nb_fps && r_rendered < max_rrows; i++)
+        {
+            int fi = cl->fps_indices[i];
+            if (fi < 0 || fi >= m->nb_fps)
+            {
+                continue;
+            }
+            const OV_FPS *f   = &m->fps[fi];
+            int           rp  = f->run_alive ? ov_find_proc_by_pid(m, f->runpid) : -1;
+            ov_rgb_t      stc = OV_FG_DIM;
+            const char   *stl =
+                (rp >= 0) ? ov_proc_status(&m->procs[rp], &stc) : (f->run_alive ? "RUN" : "OFF");
+
+            ov_buf_pos(rrow, lw + 2);
+            ov_theme_bg(OV_BG_PANEL);
+            ov_theme_fg(OV_FG_FPS);
+            ov_buf_printf("  %-16.16s ", f->name);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf("%-4s/%-3s ", f->conf_alive ? "on" : "off", f->run_alive ? "on" : "off");
+            ov_theme_fg(stc);
+            ov_buf_printf("%-9s", stl);
+            ov_theme_fg(OV_FG_TEXT);
+            ov_buf_printf("%9.1f  ", (rp >= 0) ? m->procs[rp].loop_hz : 0.0);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf("%s",
+                          (cl->fps_via_run >> i & 1U) ? "runs a member process" : "on the cycle");
+            render_pad_to_col(lw + rw);
+            rrow++;
+            r_rendered++;
         }
     }
 

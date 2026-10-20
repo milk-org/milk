@@ -5,6 +5,7 @@
 /* CTest milkctrl_unit_graph: the typed link graph built from synthetic models (no shared memory). */
 
 #include "overview_data_internal.h"
+#include "overview_data_loops.h"
 
 #include <stdlib.h>
 
@@ -153,11 +154,41 @@ static void test_trace_timing(void)
     CHECK(ov_trace_end_to_end_ns(s) == 750000);
 }
 
+/* An FPS running a process of a loop is a loop member (F7 lists it), counted once with its process */
+static void test_loop_fps_members(void)
+{
+    static OV_MODEL m;
+    memset(&m, 0, sizeof(m));
+    int a = stream(&m, "la", 31);
+    int b = stream(&m, "lb", 32);
+    proc(&m, "pa", 70); /* pa: la -> lb, pb: lb -> la */
+    proc(&m, "pb", 71);
+    m.streams[b].nb_proctrace       = 1;
+    m.streams[b].proctrace_pid[0]   = 70;
+    m.streams[b].proctrace_inode[0] = 31;
+    m.streams[a].nb_proctrace       = 1;
+    m.streams[a].proctrace_pid[0]   = 71;
+    m.streams[a].proctrace_inode[0] = 32;
+    snprintf(m.fps[0].name, sizeof(m.fps[0].name), "fpa");
+    m.fps[0].valid     = 1;
+    m.fps[0].run_alive = 1;
+    m.fps[0].runpid    = 70;
+    m.nb_fps           = 1;
+    ov_build_graph(&m);
+    ov_detect_loops(&m, SG_MODE_FULL);
+    CHECK(m.nb_loops == 1);
+    const OV_LOOP *lp = &m.loops[0];
+    CHECK(lp->nb_procs == 2 && lp->nb_fps == 1 && lp->fps_indices[0] == 0 && lp->fps_via_run == 1U);
+    CHECK(ov_loop_units(lp) == 2);
+    CHECK(m.fps[0].nb_loops == 1 && m.fps[0].primary_loop_id == lp->loop_id);
+}
+
 int main(void)
 {
     test_edge_evidence();
     test_adjacency();
     test_trace_timing();
+    test_loop_fps_members();
     if (failures == 0)
     {
         printf("all ok\n");

@@ -64,3 +64,13 @@ def test_loop_rename_shows_at_once_and_persists(milkctrl, entities):
     time.sleep(2.5)  # two rescans rebuild the loops from the registry
     assert re.search(r"L01 myloop", m.screen())
     assert m.quit() == 0
+
+
+def test_f7_lists_fps_members(milkctrl, entities):
+    """The circuit pane lists the loop's FPS with their conf/run state."""
+    _ring(entities)
+    m = milkctrl(y=40)
+    m.keys("F7")
+    m.wait_for(r"FPS\s+CONF/RUN\s+STATUS")
+    m.wait_for(r"fps[AB]\s+off /off\s+OFF.*on the cycle")
+    assert m.quit() == 0

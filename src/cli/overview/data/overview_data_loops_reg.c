@@ -188,6 +188,29 @@ int register_cycle(OV_MODEL *model, const int *path, int path_len)
         }
     }
 
+    /* The FPS running a member process belongs to the loop too (FPS_RUNS_PROC is not a data edge, so it is
+     * never on the cycle itself) */
+    for (int i = 0; i < lp->nb_procs; i++)
+    {
+        int pn = model->procs[lp->proc_indices[i]].node_idx;
+        for (int k = OV_ADJ_B(model, in, pn); k < OV_ADJ_E(model, in, pn); k++)
+        {
+            const OV_EDGE *e   = &model->edges[model->adj_in[k]];
+            int            fi  = model->nodes[e->src_node].index;
+            int            dup = 0;
+            for (int j = 0; j < lp->nb_fps && !dup; j++)
+            {
+                dup = (lp->fps_indices[j] == fi);
+            }
+            if (e->type == OV_EDGE_FPS_RUNS_PROC && !dup &&
+                lp->nb_fps < (int) (sizeof(lp->fps_indices) / sizeof(lp->fps_indices[0])))
+            {
+                lp->fps_via_run |= 1U << lp->nb_fps;
+                lp->fps_indices[lp->nb_fps++] = fi;
+            }
+        }
+    }
+
     model->nb_loops++;
     return 1;
 }

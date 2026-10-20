@@ -50,10 +50,19 @@ void ov_format_loop_path(const OV_MODEL *m, const OV_LOOP *lp, char *buf, size_t
             is_shared = (m->fps[n->index].nb_loops > 1);
         }
 
-        char seg[64];
-        snprintf(seg, sizeof(seg), "%s%s%s%s",
+        char runner[48] = ""; /* a process shows the FPS running it: [proc (fps)] */
+        for (int k = OV_ADJ_B(m, in, ni); n->type == OV_NODE_PROC && k < OV_ADJ_E(m, in, ni); k++)
+        {
+            const OV_EDGE *e = &m->edges[m->adj_in[k]];
+            if (e->type == OV_EDGE_FPS_RUNS_PROC)
+            {
+                snprintf(runner, sizeof(runner), " (%s)", m->nodes[e->src_node].name);
+            }
+        }
+        char seg[128];
+        snprintf(seg, sizeof(seg), "%s%s%s%s%s",
                  (i == 0) ? "" : " \xe2\x94\x80\xe2\x94\x80\xe2\x96\xb6 ", /* ──▶ */
-                 (n->type == OV_NODE_STREAM) ? "" : "[", n->name,
+                 (n->type == OV_NODE_STREAM) ? "" : "[", n->name, runner,
                  (n->type == OV_NODE_STREAM) ? (is_shared ? "*" : "") : (is_shared ? "*]" : "]"));
 
         if (strlen(buf) + strlen(seg) < sz - 8)
@@ -162,7 +171,7 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 
         /* Node counts */
         ov_theme_fg(OV_FG_DIM);
-        ov_buf_printf("%2ds %2dp  ", lp->nb_streams, lp->nb_procs + lp->nb_fps);
+        ov_buf_printf("%2ds %2dp  ", lp->nb_streams, ov_loop_units(lp));
 
         /* Frequency (Hz) */
         ov_theme_fg(OV_FG_TEXT);
