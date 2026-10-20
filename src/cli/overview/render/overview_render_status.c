@@ -62,7 +62,7 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     switch (lay->focus)
     {
     case OV_FOCUS_STREAMS:
-        switch (lay->sort_key_stream)
+        switch (lay->panel[OV_FOCUS_STREAMS].sort_key)
         {
         case 1:
             sort_label = " [sort:typ]";
@@ -91,7 +91,7 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
         }
         break;
     case OV_FOCUS_PROCS:
-        switch (lay->sort_key_proc)
+        switch (lay->panel[OV_FOCUS_PROCS].sort_key)
         {
         case 1:
             sort_label = " [sort:PID]";
@@ -129,7 +129,7 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
         }
         break;
     case OV_FOCUS_FPS:
-        switch (lay->sort_key_fps)
+        switch (lay->panel[OV_FOCUS_FPS].sort_key)
         {
         case 1:
             sort_label = " [sort:CPID]";

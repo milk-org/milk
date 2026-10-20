@@ -20,7 +20,7 @@
 void ov_streams__render_header(const OV_LAYOUT *lay, OV_RECT r)
 {
     int hrow = r.row + 1;
-    int hs   = lay->hscroll_stream;
+    int hs   = lay->panel[OV_FOCUS_STREAMS].hscroll;
 
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
@@ -38,8 +38,8 @@ void ov_streams__render_header(const OV_LAYOUT *lay, OV_RECT r)
     int           num_cols = 0;
 
     {
-        int         sk = lay->sort_key_stream;
-        int         sd = lay->sort_dir_stream;
+        int         sk = lay->panel[OV_FOCUS_STREAMS].sort_key;
+        int         sd = lay->panel[OV_FOCUS_STREAMS].sort_dir;
         static char c_anc[32], c_name[32], c_typ[32];
         static char c_size[32];
         static char c_hz[32], c_mbps[32], c_ino[32], c_cnt[32];
@@ -80,8 +80,9 @@ void ov_streams__render_header(const OV_LAYOUT *lay, OV_RECT r)
     {
         if (c > 0)
         {
-            int prev_logical   = cols[c - 1].logical_col;
-            int prev_collapsed = (lay->col_collapsed_stream & (1U << prev_logical)) != 0;
+            int prev_logical = cols[c - 1].logical_col;
+            int prev_collapsed =
+                (lay->panel[OV_FOCUS_STREAMS].collapsed & (1U << prev_logical)) != 0;
             if (!prev_collapsed)
             {
                 ov_theme_bg(OV_BG_HEADER);
@@ -109,7 +110,8 @@ void ov_streams__render_header(const OV_LAYOUT *lay, OV_RECT r)
         }
 
         ov_render_cell(cols[c].logical_col, c, OV_FG_STREAM_HDR, OV_BG_HEADER, cell_buf, &hs_rem,
-                       &printed, avail, lay->highlight_col_stream, lay->col_collapsed_stream);
+                       &printed, avail, lay->panel[OV_FOCUS_STREAMS].highlight_col,
+                       lay->panel[OV_FOCUS_STREAMS].collapsed);
     }
     render_pad_spaces(printed, r.width);
 
@@ -171,7 +173,7 @@ void ov_streams__render_footer(const OV_LAYOUT *lay,
         snprintf(rbuf, sizeof(rbuf), " %.1f MB/s ", total_all_mb);
     }
     int rlen  = (int) strlen(rbuf);
-    int below = filt_n - lay->scroll_stream - max_rows;
+    int below = filt_n - lay->panel[OV_FOCUS_STREAMS].scroll - max_rows;
     int dw    = 0;
     if (below > 0)
     {

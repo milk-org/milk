@@ -38,16 +38,16 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
                                 const regex_t    *re,
                                 OV_RECT           r)
 {
-    const OV_PROC *p = &m->procs[pi];
-    int            is_sel =
-        (fi == lay->sel_proc && (lay->focus == OV_FOCUS_PROCS || lay->focus == OV_FOCUS_GRAPH));
-    int is_frozen =
-        (lay->freeze && lay->freeze_focus == OV_FOCUS_PROCS && fi == lay->freeze_sel_proc);
-    ov_focus_t eff_focus      = lay->freeze ? lay->freeze_focus : lay->focus;
-    int        has_rel        = (rel != NULL && bget(rel->procs, pi));
-    int        is_rel         = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_PROCS && has_rel);
-    int        is_write       = (has_rel && rel != NULL && bget(rel->proc_writes, pi));
-    int        is_loop_member = 0;
+    const OV_PROC *p         = &m->procs[pi];
+    int            is_sel    = (fi == lay->panel[OV_FOCUS_PROCS].sel &&
+                                (lay->focus == OV_FOCUS_PROCS || lay->focus == OV_FOCUS_GRAPH));
+    int            is_frozen = (lay->freeze && lay->freeze_focus == OV_FOCUS_PROCS &&
+                                fi == lay->panel[OV_FOCUS_PROCS].freeze_row);
+    ov_focus_t     eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
+    int            has_rel   = (rel != NULL && bget(rel->procs, pi));
+    int            is_rel    = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_PROCS && has_rel);
+    int            is_write  = (has_rel && rel != NULL && bget(rel->proc_writes, pi));
+    int            is_loop_member = 0;
     if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) && lay->sel_loop >= 0 &&
         lay->sel_loop < m->nb_loops)
     {
@@ -83,14 +83,14 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
     {
         row_bg = OV_BG_NEW_ITEM;
     }
-    else if (lay->mouse_hover && lay->hover_global_proc == pi)
+    else if (lay->mouse_hover && lay->panel[OV_FOCUS_PROCS].hover_idx == pi)
     {
         row_bg = OV_BG_HOVER;
     }
     row_bg = zebra_bg(row_bg, i);
 
     /* Per-field colored cell rendering */
-    int hs_rem  = lay->hscroll_proc;
+    int hs_rem  = lay->panel[OV_FOCUS_PROCS].hscroll;
     int printed = 1;
     int avail   = r.width - 2;
 
@@ -104,7 +104,8 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
         char _fb[256];                                                                            \
         int  _fl = snprintf(_fb, sizeof(_fb), fmt, ##__VA_ARGS__);                                \
         ov_render_cell(logical_idx, vcol_idx, (color), (bg_color), _fb, &hs_rem, &printed, avail, \
-                       lay->highlight_col_proc, lay->col_collapsed_proc);                         \
+                       lay->panel[OV_FOCUS_PROCS].highlight_col,                                  \
+                       lay->panel[OV_FOCUS_PROCS].collapsed);                                     \
     } while (0)
 
 #define PROC_FIELD(color, fmt, ...)                                                   \
@@ -167,7 +168,7 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
     ov_rgb_t anc_color =
         (p->nb_loops > 1) ? OV_FG_LOOP_SHARED : ((p->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
     ov_render_cell(0, 0, anc_color, row_bg, anc_str, &hs_rem, &printed, avail,
-                   lay->highlight_col_proc, lay->col_collapsed_proc);
+                   lay->panel[OV_FOCUS_PROCS].highlight_col, lay->panel[OV_FOCUS_PROCS].collapsed);
 
     /* Name */
     {

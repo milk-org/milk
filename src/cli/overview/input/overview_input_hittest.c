@@ -171,7 +171,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
             }
             else if (body_row >= 0)
             {
-                int idx = lay->scroll_fps + body_row;
+                int idx = lay->panel[OV_FOCUS_FPS].scroll + body_row;
                 if (idx < m->nb_fps)
                 {
                     lay->hover_idx = idx;
@@ -189,7 +189,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
         }
         else if (body_row >= 0)
         {
-            int idx = lay->scroll_stream + body_row;
+            int idx = lay->panel[OV_FOCUS_STREAMS].scroll + body_row;
             if (idx < m->nb_streams)
             {
                 lay->hover_idx = idx;
@@ -206,7 +206,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
         }
         else if (body_row >= 0)
         {
-            int idx = lay->scroll_proc + body_row;
+            int idx = lay->panel[OV_FOCUS_PROCS].scroll + body_row;
             if (idx < m->nb_procs)
             {
                 lay->hover_idx = idx;
@@ -254,7 +254,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
             }
             else if (body_row >= 0)
             {
-                int idx = lay->scroll_stream + body_row;
+                int idx = lay->panel[OV_FOCUS_STREAMS].scroll + body_row;
                 if (idx < m->nb_streams)
                 {
                     lay->hover_idx = idx;
@@ -271,7 +271,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
             }
             else if (body_row >= 0)
             {
-                int idx = lay->scroll_proc + body_row;
+                int idx = lay->panel[OV_FOCUS_PROCS].scroll + body_row;
                 if (idx < m->nb_procs)
                 {
                     lay->hover_idx = idx;
@@ -288,7 +288,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
             }
             else if (body_row >= 0)
             {
-                int idx = lay->scroll_fps + body_row;
+                int idx = lay->panel[OV_FOCUS_FPS].scroll + body_row;
                 if (idx < m->nb_fps)
                 {
                     lay->hover_idx = idx;

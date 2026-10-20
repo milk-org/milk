@@ -28,30 +28,32 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
                                 const char       *active_filter)
 {
     int    hrow = r.row + 1;
-    int    hs   = lay->hscroll_fps;
+    int    hs   = lay->panel[OV_FOCUS_FPS].hscroll;
     int8_t local_depth[OV_MAX_FPS];
     memset(local_depth, 0, sizeof(local_depth));
     {
         int eff_sel = -1;
-        if (lay->mouse_hover && lay->hover_global_fps >= 0)
+        if (lay->mouse_hover && lay->panel[OV_FOCUS_FPS].hover_idx >= 0)
         {
             for (int i = 0; i < filt_n; i++)
             {
-                if (fidx[i] == lay->hover_global_fps)
+                if (fidx[i] == lay->panel[OV_FOCUS_FPS].hover_idx)
                 {
                     eff_sel = i;
                     break;
                 }
             }
         }
-        else if (lay->freeze && lay->freeze_focus == OV_FOCUS_FPS && lay->freeze_sel_fps >= 0 &&
-                 lay->freeze_sel_fps < filt_n)
+        else if (lay->freeze && lay->freeze_focus == OV_FOCUS_FPS &&
+                 lay->panel[OV_FOCUS_FPS].freeze_row >= 0 &&
+                 lay->panel[OV_FOCUS_FPS].freeze_row < filt_n)
         {
-            eff_sel = lay->freeze_sel_fps;
+            eff_sel = lay->panel[OV_FOCUS_FPS].freeze_row;
         }
-        else if (lay->focus == OV_FOCUS_FPS && lay->sel_fps >= 0 && lay->sel_fps < filt_n)
+        else if (lay->focus == OV_FOCUS_FPS && lay->panel[OV_FOCUS_FPS].sel >= 0 &&
+                 lay->panel[OV_FOCUS_FPS].sel < filt_n)
         {
-            eff_sel = lay->sel_fps;
+            eff_sel = lay->panel[OV_FOCUS_FPS].sel;
         }
         if (eff_sel >= 0)
         {
@@ -74,7 +76,7 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
     }
 
     int max_rows = r.height - 4;
-    int start    = lay->scroll_fps;
+    int start    = lay->panel[OV_FOCUS_FPS].scroll;
 
     regex_t re;
     int     has_re = 0;
@@ -116,14 +118,14 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
         {
             int           fi     = fidx[ffi];
             const OV_FPS *f      = &m->fps[fi];
-            int           is_sel = (ffi == lay->sel_fps &&
+            int           is_sel = (ffi == lay->panel[OV_FOCUS_FPS].sel &&
                                     (lay->focus == OV_FOCUS_FPS || lay->focus == OV_FOCUS_GRAPH));
-            int           is_frozen =
-                (lay->freeze && lay->freeze_focus == OV_FOCUS_FPS && ffi == lay->freeze_sel_fps);
-            ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
-            int        has_rel   = (rel != NULL && bget(rel->fps, fi));
-            int        is_rel    = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_FPS && has_rel);
-            int        is_loop_member = 0;
+            int           is_frozen = (lay->freeze && lay->freeze_focus == OV_FOCUS_FPS &&
+                                       ffi == lay->panel[OV_FOCUS_FPS].freeze_row);
+            ov_focus_t    eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
+            int           has_rel   = (rel != NULL && bget(rel->fps, fi));
+            int           is_rel = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_FPS && has_rel);
+            int           is_loop_member = 0;
             if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) && lay->sel_loop >= 0 &&
                 lay->sel_loop < m->nb_loops)
             {
@@ -156,7 +158,7 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
             {
                 row_bg = OV_BG_NEW_ITEM;
             }
-            else if (lay->mouse_hover && lay->hover_global_fps == fi)
+            else if (lay->mouse_hover && lay->panel[OV_FOCUS_FPS].hover_idx == fi)
             {
                 row_bg = OV_BG_HOVER;
             }
@@ -228,7 +230,8 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
             ov_rgb_t anc_color = (f->nb_loops > 1) ? OV_FG_LOOP_SHARED
                                                    : ((f->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
             ov_render_cell(0, 0, anc_color, row_bg, anc_str, &hs_rem, &printed, avail,
-                           lay->highlight_col_fps, lay->col_collapsed_fps);
+                           lay->panel[OV_FOCUS_FPS].highlight_col,
+                           lay->panel[OV_FOCUS_FPS].collapsed);
 
 #define FPS_FIELD_WITH_COL(vcol_idx, logical_idx, color, bg_color, fmt, ...)                      \
     do                                                                                            \
@@ -236,7 +239,8 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
         char _fb[128];                                                                            \
         int  _fl = snprintf(_fb, sizeof(_fb), fmt, ##__VA_ARGS__);                                \
         ov_render_cell(logical_idx, vcol_idx, (color), (bg_color), _fb, &hs_rem, &printed, avail, \
-                       lay->highlight_col_fps, lay->col_collapsed_fps);                           \
+                       lay->panel[OV_FOCUS_FPS].highlight_col,                                    \
+                       lay->panel[OV_FOCUS_FPS].collapsed);                                       \
     } while (0)
 
 #define FPS_FIELD(color, fmt, ...)                                                   \
@@ -449,7 +453,7 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
             clear_row(row, r.col + 1, r.width - 2, OV_BG_PANEL);
         }
     }
-    render_scroll_indicators(r, lay->scroll_fps, max_rows, filt_n, OV_FG_FPS);
+    render_scroll_indicators(r, lay->panel[OV_FOCUS_FPS].scroll, max_rows, filt_n, OV_FG_FPS);
     if (has_re)
     {
         regfree(&re);
@@ -475,10 +479,10 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
                        ? m->loops[lay->sel_loop].loop_id
                        : -1;
     char ftitle[48];
-    ov_draw_panel_border_filter(r.row, r.col, r.height, r.width,
-                                ov_msel_title(lay, m, ftitle, sizeof(ftitle)), OV_FG_FPS,
-                                lay->focus == OV_FOCUS_FPS, 0, lay->ctrl_blink, loop_id,
-                                lay->filter_fps, lay->filter_fps_active, filt_n, m->nb_fps);
+    ov_draw_panel_border_filter(
+        r.row, r.col, r.height, r.width, ov_msel_title(lay, m, ftitle, sizeof(ftitle)), OV_FG_FPS,
+        lay->focus == OV_FOCUS_FPS, 0, lay->ctrl_blink, loop_id, lay->panel[OV_FOCUS_FPS].filter,
+        lay->panel[OV_FOCUS_FPS].filter_on, filt_n, m->nb_fps);
 
     ov_fps__render_header(lay, r);
     ov_fps__render_rows(lay, m, rel, r, fidx, filt_n, active_filter);

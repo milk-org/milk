@@ -63,9 +63,10 @@ void ov_render__sync_selection(OV_LAYOUT *lay, const OV_MODEL *m)
         }
         ov_sort_set_depths(depths);
 
-        ov_sort_streams(mm, lay->sort_key_stream, lay->sort_dir_stream);
-        ov_sort_procs(mm, lay->sort_key_proc, lay->sort_dir_proc);
-        ov_sort_fps(mm, lay->sort_key_fps, lay->sort_dir_fps);
+        ov_sort_streams(mm, lay->panel[OV_FOCUS_STREAMS].sort_key,
+                        lay->panel[OV_FOCUS_STREAMS].sort_dir);
+        ov_sort_procs(mm, lay->panel[OV_FOCUS_PROCS].sort_key, lay->panel[OV_FOCUS_PROCS].sort_dir);
+        ov_sort_fps(mm, lay->panel[OV_FOCUS_FPS].sort_key, lay->panel[OV_FOCUS_FPS].sort_dir);
         ov_sort_freeze_snapshot(mm);
 
         lay->sort_pending = 0;

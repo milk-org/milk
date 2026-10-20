@@ -118,15 +118,15 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     {
                         if (fpanel == OV_FOCUS_STREAMS)
                         {
-                            lay->filter_stream_active = 0;
+                            lay->panel[OV_FOCUS_STREAMS].filter_on = 0;
                         }
                         else if (fpanel == OV_FOCUS_PROCS)
                         {
-                            lay->filter_proc_active = 0;
+                            lay->panel[OV_FOCUS_PROCS].filter_on = 0;
                         }
                         else if (fpanel == OV_FOCUS_FPS)
                         {
-                            lay->filter_fps_active = 0;
+                            lay->panel[OV_FOCUS_FPS].filter_on = 0;
                         }
                         else
                         {
@@ -134,22 +134,23 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         }
                         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
                                        "%s filter paused (press 'f' to resume)", panel_full);
-                        lay->filter_active = (lay->filter_stream_active ||
-                                              lay->filter_proc_active || lay->filter_fps_active);
+                        lay->filter_active = (lay->panel[OV_FOCUS_STREAMS].filter_on ||
+                                              lay->panel[OV_FOCUS_PROCS].filter_on ||
+                                              lay->panel[OV_FOCUS_FPS].filter_on);
                     }
                     else if (fpat[0] != '\0')
                     {
                         if (fpanel == OV_FOCUS_STREAMS)
                         {
-                            lay->filter_stream_active = 1;
+                            lay->panel[OV_FOCUS_STREAMS].filter_on = 1;
                         }
                         else if (fpanel == OV_FOCUS_PROCS)
                         {
-                            lay->filter_proc_active = 1;
+                            lay->panel[OV_FOCUS_PROCS].filter_on = 1;
                         }
                         else if (fpanel == OV_FOCUS_FPS)
                         {
-                            lay->filter_fps_active = 1;
+                            lay->panel[OV_FOCUS_FPS].filter_on = 1;
                         }
                         else
                         {
@@ -157,8 +158,9 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         }
                         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s filter resumed: /%s/",
                                        panel_full, fpat);
-                        lay->filter_active = (lay->filter_stream_active ||
-                                              lay->filter_proc_active || lay->filter_fps_active);
+                        lay->filter_active = (lay->panel[OV_FOCUS_STREAMS].filter_on ||
+                                              lay->panel[OV_FOCUS_PROCS].filter_on ||
+                                              lay->panel[OV_FOCUS_FPS].filter_on);
                     }
                     else
                     {
@@ -247,7 +249,7 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 if (mr >= lay->r_streams.row + 3 && mr < lay->r_streams.row + lay->r_streams.height)
                 {
-                    int row = lay->scroll_stream + (mr - lay->r_streams.row - 3);
+                    int row = lay->panel[OV_FOCUS_STREAMS].scroll + (mr - lay->r_streams.row - 3);
                     int idx = ov_row_to_idx(lay, m, OV_FOCUS_STREAMS, row); /* drawn row -> entry */
                     if (row == lay->hover_idx && idx >= 0)
                     {
@@ -264,7 +266,7 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 if (mr >= lay->r_procs.row + 3 && mr < lay->r_procs.row + lay->r_procs.height)
                 {
-                    int row = lay->scroll_proc + (mr - lay->r_procs.row - 3);
+                    int row = lay->panel[OV_FOCUS_PROCS].scroll + (mr - lay->r_procs.row - 3);
                     int idx = ov_row_to_idx(lay, m, OV_FOCUS_PROCS, row);
                     if (row == lay->hover_idx && idx >= 0)
                     {
@@ -281,7 +283,7 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 if (mr >= lay->r_fps.row + 3 && mr < lay->r_fps.row + lay->r_fps.height)
                 {
-                    int row = lay->scroll_fps + (mr - lay->r_fps.row - 3);
+                    int row = lay->panel[OV_FOCUS_FPS].scroll + (mr - lay->r_fps.row - 3);
                     int idx = ov_row_to_idx(lay, m, OV_FOCUS_FPS, row);
                     if (row == lay->hover_idx && idx >= 0)
                     {

@@ -37,8 +37,8 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     switch (lay->focus)
     {
     case OV_FOCUS_STREAMS:
-        sel    = &lay->sel_stream;
-        scroll = &lay->scroll_stream;
+        sel    = &lay->panel[OV_FOCUS_STREAMS].sel;
+        scroll = &lay->panel[OV_FOCUS_STREAMS].scroll;
         {
             int fidx[OV_MAX_STREAMS];
             count = ov_rows(lay, m, OV_FOCUS_STREAMS, fidx, OV_MAX_STREAMS);
@@ -47,8 +47,8 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         break;
 
     case OV_FOCUS_PROCS:
-        sel    = &lay->sel_proc;
-        scroll = &lay->scroll_proc;
+        sel    = &lay->panel[OV_FOCUS_PROCS].sel;
+        scroll = &lay->panel[OV_FOCUS_PROCS].scroll;
         {
             int fidx[OV_MAX_PROCS];
             count = ov_rows(lay, m, OV_FOCUS_PROCS, fidx, OV_MAX_PROCS);
@@ -57,8 +57,8 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         break;
 
     case OV_FOCUS_FPS:
-        sel    = &lay->sel_fps;
-        scroll = &lay->scroll_fps;
+        sel    = &lay->panel[OV_FOCUS_FPS].sel;
+        scroll = &lay->panel[OV_FOCUS_FPS].scroll;
         {
             int fidx[OV_MAX_FPS];
             count = ov_rows(lay, m, OV_FOCUS_FPS, fidx, OV_MAX_FPS);

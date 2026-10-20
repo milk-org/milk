@@ -368,19 +368,21 @@ void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *out
     int idx = -1;
     if (focus == OV_FOCUS_STREAMS)
     {
-        idx = (lay->mouse_hover && lay->hover_global_stream >= 0)
-                  ? lay->hover_global_stream
+        idx = (lay->mouse_hover && lay->panel[OV_FOCUS_STREAMS].hover_idx >= 0)
+                  ? lay->panel[OV_FOCUS_STREAMS].hover_idx
                   : ov_get_selected_stream_idx(lay, m);
     }
     else if (focus == OV_FOCUS_FPS)
     {
-        idx = (lay->mouse_hover && lay->hover_global_fps >= 0) ? lay->hover_global_fps
-                                                               : ov_get_selected_fps_idx(lay, m);
+        idx = (lay->mouse_hover && lay->panel[OV_FOCUS_FPS].hover_idx >= 0)
+                  ? lay->panel[OV_FOCUS_FPS].hover_idx
+                  : ov_get_selected_fps_idx(lay, m);
     }
     else if (focus == OV_FOCUS_PROCS)
     {
-        idx = (lay->mouse_hover && lay->hover_global_proc >= 0) ? lay->hover_global_proc
-                                                                : ov_get_selected_proc_idx(lay, m);
+        idx = (lay->mouse_hover && lay->panel[OV_FOCUS_PROCS].hover_idx >= 0)
+                  ? lay->panel[OV_FOCUS_PROCS].hover_idx
+                  : ov_get_selected_proc_idx(lay, m);
     }
     ov_related_from(m, focus, idx, out);
 }
@@ -392,6 +394,6 @@ void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *out
 void ov_compute_related_frozen(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *out)
 {
     ov_focus_t focus = lay->freeze_focus;
-    int        idx = (focus < OV_FOCUS_GRAPH) ? ov_tgt_find(m, focus, &lay->freeze_tgt[focus]) : -1;
+    int idx = (focus < OV_FOCUS_GRAPH) ? ov_tgt_find(m, focus, &lay->panel[focus].freeze_tgt) : -1;
     ov_related_from(m, focus, idx, out);
 }

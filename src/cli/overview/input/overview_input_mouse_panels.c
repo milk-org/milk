@@ -111,7 +111,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             }
             else if (body_row >= 0)
             {
-                int idx = lay->scroll_fps + body_row;
+                int idx = lay->panel[OV_FOCUS_FPS].scroll + body_row;
                 if (ov_sel_row(lay, m, OV_FOCUS_FPS, idx) >= 0) /* rows past the list are ignored */
                 {
                     if (is_dbl)
@@ -132,7 +132,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
         }
         else if (body_row >= 0)
         {
-            int idx = lay->scroll_stream + body_row;
+            int idx = lay->panel[OV_FOCUS_STREAMS].scroll + body_row;
             if (ov_sel_row(lay, m, OV_FOCUS_STREAMS, idx) >= 0) /* rows past the list are ignored */
             {
                 if (is_dbl)
@@ -152,7 +152,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
         }
         else if (body_row >= 0)
         {
-            int idx = lay->scroll_proc + body_row;
+            int idx = lay->panel[OV_FOCUS_PROCS].scroll + body_row;
             if (ov_sel_row(lay, m, OV_FOCUS_PROCS, idx) >= 0) /* rows past the list are ignored */
             {
                 if (is_dbl)
@@ -203,7 +203,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             }
             else if (body_row >= 0)
             {
-                int idx = lay->scroll_stream + body_row;
+                int idx = lay->panel[OV_FOCUS_STREAMS].scroll + body_row;
                 if (ov_sel_row(lay, m, OV_FOCUS_STREAMS, idx) >=
                     0) /* rows past the list are ignored */
                 {
@@ -224,7 +224,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             }
             else if (body_row >= 0)
             {
-                int idx = lay->scroll_proc + body_row;
+                int idx = lay->panel[OV_FOCUS_PROCS].scroll + body_row;
                 if (ov_sel_row(lay, m, OV_FOCUS_PROCS, idx) >=
                     0) /* rows past the list are ignored */
                 {
@@ -245,7 +245,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             }
             else if (body_row >= 0)
             {
-                int idx = lay->scroll_fps + body_row;
+                int idx = lay->panel[OV_FOCUS_FPS].scroll + body_row;
                 if (ov_sel_row(lay, m, OV_FOCUS_FPS, idx) >= 0) /* rows past the list are ignored */
                 {
                     if (is_dbl)

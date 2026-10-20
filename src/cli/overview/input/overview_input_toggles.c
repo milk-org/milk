@@ -282,12 +282,15 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         }
         else
         {
-            lay->freeze            = 1;
-            lay->freeze_focus      = lay->focus;
-            lay->freeze_sel_stream = lay->sel_stream;
-            lay->freeze_sel_proc   = lay->sel_proc;
-            lay->freeze_sel_fps    = lay->sel_fps;
-            memcpy(lay->freeze_tgt, lay->sel_tgt, sizeof(lay->freeze_tgt));
+            lay->freeze                             = 1;
+            lay->freeze_focus                       = lay->focus;
+            lay->panel[OV_FOCUS_STREAMS].freeze_row = lay->panel[OV_FOCUS_STREAMS].sel;
+            lay->panel[OV_FOCUS_PROCS].freeze_row   = lay->panel[OV_FOCUS_PROCS].sel;
+            lay->panel[OV_FOCUS_FPS].freeze_row     = lay->panel[OV_FOCUS_FPS].sel;
+            for (int p = 0; p < OV_NB_LIST_PANELS; p++)
+            {
+                lay->panel[p].freeze_tgt = lay->panel[p].tgt;
+            }
         }
         return 1;
     }

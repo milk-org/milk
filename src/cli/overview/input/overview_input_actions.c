@@ -285,7 +285,7 @@ int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 if (f)
                 {
                     ov_msel_set(lay, f->name, !ov_msel_has(lay, f->name));
-                    ov_sel_row(lay, m, OV_FOCUS_FPS, lay->sel_fps + 1);
+                    ov_sel_row(lay, m, OV_FOCUS_FPS, lay->panel[OV_FOCUS_FPS].sel + 1);
                 }
             }
             else if (lay->ctrl_mode)

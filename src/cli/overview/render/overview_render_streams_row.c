@@ -38,15 +38,15 @@ void ov_streams_render_single_row(const OV_LAYOUT  *lay,
                                   const regex_t    *re,
                                   OV_RECT           r)
 {
-    const OV_STREAM *s = &m->streams[si];
-    int              is_sel =
-        (fi == lay->sel_stream && (lay->focus == OV_FOCUS_STREAMS || lay->focus == OV_FOCUS_GRAPH));
-    int is_frozen =
-        (lay->freeze && lay->freeze_focus == OV_FOCUS_STREAMS && fi == lay->freeze_sel_stream);
-    ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
-    int        is_rel    = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_STREAMS && rel != NULL &&
-                            bget(rel->streams, si));
-    int        is_loop_member = 0;
+    const OV_STREAM *s         = &m->streams[si];
+    int              is_sel    = (fi == lay->panel[OV_FOCUS_STREAMS].sel &&
+                                  (lay->focus == OV_FOCUS_STREAMS || lay->focus == OV_FOCUS_GRAPH));
+    int              is_frozen = (lay->freeze && lay->freeze_focus == OV_FOCUS_STREAMS &&
+                                  fi == lay->panel[OV_FOCUS_STREAMS].freeze_row);
+    ov_focus_t       eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
+    int is_rel         = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_STREAMS && rel != NULL &&
+                          bget(rel->streams, si));
+    int is_loop_member = 0;
     if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) && lay->sel_loop >= 0 &&
         lay->sel_loop < m->nb_loops)
     {
@@ -78,13 +78,13 @@ void ov_streams_render_single_row(const OV_LAYOUT  *lay,
     {
         row_bg = OV_BG_NEW_ITEM;
     }
-    else if (lay->mouse_hover && lay->hover_global_stream == si)
+    else if (lay->mouse_hover && lay->panel[OV_FOCUS_STREAMS].hover_idx == si)
     {
         row_bg = OV_BG_HOVER;
     }
     row_bg = zebra_bg(row_bg, i);
 
-    int hs_rem  = lay->hscroll_stream;
+    int hs_rem  = lay->panel[OV_FOCUS_STREAMS].hscroll;
     int printed = 1;
     int avail   = r.width - 2;
 
@@ -102,7 +102,8 @@ void ov_streams_render_single_row(const OV_LAYOUT  *lay,
         int  _fl = snprintf(_fb, sizeof(_fb), fmt, ##__VA_ARGS__);                                \
         (void) _fl;                                                                               \
         ov_render_cell(logical_idx, vcol_idx, (color), (bg_color), _fb, &hs_rem, &printed, avail, \
-                       lay->highlight_col_stream, lay->col_collapsed_stream);                     \
+                       lay->panel[OV_FOCUS_STREAMS].highlight_col,                                \
+                       lay->panel[OV_FOCUS_STREAMS].collapsed);                                   \
     } while (0)
 
 #define STRM_FIELD(color, fmt, ...)                                                   \
@@ -192,7 +193,8 @@ void ov_streams_render_single_row(const OV_LAYOUT  *lay,
     ov_rgb_t anc_color =
         (s->nb_loops > 1) ? OV_FG_LOOP_SHARED : ((s->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
     ov_render_cell(0, 0, anc_color, row_bg, anc_str, &hs_rem, &printed, avail,
-                   lay->highlight_col_stream, lay->col_collapsed_stream);
+                   lay->panel[OV_FOCUS_STREAMS].highlight_col,
+                   lay->panel[OV_FOCUS_STREAMS].collapsed);
 
     ov_rgb_t base_color = s->active ? OV_FG_STREAM : OV_FG_DIM;
 
@@ -269,7 +271,7 @@ void ov_streams_render_single_row(const OV_LAYOUT  *lay,
         STRM_FIELD(s->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM, "%10" PRIu64 " ", (uint64_t) s->cnt0);
 
         int sem_logical   = ov_get_logical_col_stream(vcol, lay->compact_mode);
-        int sem_collapsed = (lay->col_collapsed_stream & (1U << sem_logical)) != 0;
+        int sem_collapsed = (lay->panel[OV_FOCUS_STREAMS].collapsed & (1U << sem_logical)) != 0;
         if (sem_collapsed)
         {
             STRM_FIELD_WITH_COL(vcol, sem_logical, OV_FG_DIM, cell_bg, ".");
@@ -318,7 +320,7 @@ void ov_streams_render_single_row(const OV_LAYOUT  *lay,
 
     /* Read PIDs (compact list) */
     int rpid_logical   = ov_get_logical_col_stream(vcol, lay->compact_mode);
-    int rpid_collapsed = (lay->col_collapsed_stream & (1U << rpid_logical)) != 0;
+    int rpid_collapsed = (lay->panel[OV_FOCUS_STREAMS].collapsed & (1U << rpid_logical)) != 0;
     if (rpid_collapsed)
     {
         STRM_FIELD_WITH_COL(vcol, rpid_logical, OV_FG_DIM, cell_bg, "-");

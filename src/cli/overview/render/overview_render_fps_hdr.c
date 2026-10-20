@@ -17,7 +17,7 @@
 void ov_fps__render_header(const OV_LAYOUT *lay, OV_RECT r)
 {
     int hrow = r.row + 1;
-    int hs   = lay->hscroll_fps;
+    int hs   = lay->panel[OV_FOCUS_FPS].hscroll;
 
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
@@ -35,8 +35,8 @@ void ov_fps__render_header(const OV_LAYOUT *lay, OV_RECT r)
     int          num_cols = 0;
 
     {
-        int         sk = lay->sort_key_fps;
-        int         sd = lay->sort_dir_fps;
+        int         sk = lay->panel[OV_FOCUS_FPS].sort_key;
+        int         sd = lay->panel[OV_FOCUS_FPS].sort_dir;
         static char c_anc[32], c_name[32];
         static char c_c[32], c_r[32], c_mem[32];
         static char c_tmx[32], c_str[32];
@@ -71,7 +71,7 @@ void ov_fps__render_header(const OV_LAYOUT *lay, OV_RECT r)
         if (c > 0)
         {
             int prev_logical   = cols[c - 1].logical_col;
-            int prev_collapsed = (lay->col_collapsed_fps & (1U << prev_logical)) != 0;
+            int prev_collapsed = (lay->panel[OV_FOCUS_FPS].collapsed & (1U << prev_logical)) != 0;
             if (!prev_collapsed)
             {
                 ov_theme_bg(OV_BG_HEADER);
@@ -99,7 +99,8 @@ void ov_fps__render_header(const OV_LAYOUT *lay, OV_RECT r)
         }
 
         ov_render_cell(cols[c].logical_col, c, OV_FG_FPS_HDR, OV_BG_HEADER, cell_buf, &hs_rem,
-                       &printed, avail, lay->highlight_col_fps, lay->col_collapsed_fps);
+                       &printed, avail, lay->panel[OV_FOCUS_FPS].highlight_col,
+                       lay->panel[OV_FOCUS_FPS].collapsed);
     }
     render_pad_spaces(printed, r.width);
 
@@ -187,7 +188,7 @@ void ov_fps__render_footer(const OV_LAYOUT *lay,
     }
     snprintf(rbuf + roff, sizeof(rbuf) - (size_t) roff, " \u2502 %s ", tmem);
     int rlen  = (int) strlen(rbuf);
-    int below = filt_n - lay->scroll_fps - max_rows;
+    int below = filt_n - lay->panel[OV_FOCUS_FPS].scroll - max_rows;
     int dw    = 0;
     if (below > 0)
     {

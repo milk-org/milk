@@ -106,22 +106,18 @@ int  ov_cmdlog_drain_fd(OV_CMDLOG *log, int fd);
 
 
 #include "overview_overlay.h" /* needs OV_RECT */
+#include "overview_panel.h"
 
 /* Layout state */
 typedef struct
 {
+    OV_PANEL_STATE  panel[OV_NB_LIST_PANELS]; /* streams, processes, FPS (ov_focus_t index) */
     int             term_rows;
     int             term_cols;
     ov_view_t       view;
     ov_focus_t      focus;
-    int             sel_stream;
-    int             sel_proc;
-    int             sel_fps;
     int             sel_graph;
     int             sel_loop;
-    int             scroll_stream;
-    int             scroll_proc;
-    int             scroll_fps;
     int             scroll_graph;
     int             scroll_loop;
     int             scroll_detail;
@@ -131,18 +127,11 @@ typedef struct
     OV_HELP_STATE   help; /* help overlay */
     int             paused;
     char            filter[64];
-    /* Per-panel regex filter strings */
-    char       filter_stream[64];
-    char       filter_proc[64];
-    char       filter_fps[64];
-    int        filter_stream_active; /* 1 = stream filter active, 0 = paused/off */
-    int        filter_proc_active;   /* 1 = proc filter active, 0 = paused/off */
-    int        filter_fps_active;    /* 1 = fps filter active, 0 = paused/off */
-    ov_focus_t filter_panel;         /* panel currently being edited/filtered */
-    int        filter_active;        /* 1 = any panel filter active, 0 = none */
-    int        filter_editing;       /* 1 = typing filter */
-    int        filter_cursor;        /* cursor pos in filter */
-    int        filter_jump;          /* 1 = jump-to-match mode */
+    ov_focus_t      filter_panel;   /* panel currently being edited/filtered */
+    int             filter_active;  /* 1 = any panel filter active, 0 = none */
+    int             filter_editing; /* 1 = typing filter */
+    int             filter_cursor;  /* cursor pos in filter */
+    int             filter_jump;    /* 1 = jump-to-match mode */
     /* Header filter badge hit rects / positions */
     int        r_filter_start[4];
     int        r_filter_width[4];
@@ -173,51 +162,22 @@ typedef struct
     int ctrl_blink;
     /* Mouse hover track */
     int  mouse_hover;
-    int  hover_view;          /* Logical focus enum (e.g. OV_FOCUS_STREAMS) or -1 */
-    int  hover_idx;           /* Index of item hovered */
-    int  hover_is_header;     /* 1 if hovering header */
-    int  hover_col_logical;   /* Logical column index (0, 1, 2...) */
-    char hover_tooltip[256];  /* Text to display in tooltip pass */
-    int  hover_global_stream; /* Global stream index hovered (-1 if none) */
-    int  hover_global_proc;   /* Global proc index hovered (-1 if none) */
-    int  hover_global_fps;    /* Global fps index hovered (-1 if none) */
+    int  hover_view;         /* Logical focus enum (e.g. OV_FOCUS_STREAMS) or -1 */
+    int  hover_idx;          /* Index of item hovered */
+    int  hover_is_header;    /* 1 if hovering header */
+    int  hover_col_logical;  /* Logical column index (0, 1, 2...) */
+    char hover_tooltip[256]; /* Text to display in tooltip pass */
     /* Graph panel tab mode: 0=CONNECTIONS, 1=LOOPS, 2=DETAILS, 3=RESOURCES */
     int graph_tab_mode;
-    /* Horizontal scroll per panel */
-    int hscroll_stream;
-    int hscroll_proc;
-    int hscroll_fps;
-    /* Sort state per panel: 0=name, 1..N=column-specific */
-    int sort_key_stream;
-    int sort_key_proc;
-    int sort_key_fps;
-    /* Sort direction per panel: 0=ascending, 1=descending */
-    int sort_dir_stream;
-    int sort_dir_proc;
-    int sort_dir_fps;
     int sort_pending;
-    /* Highlighted columns in panels */
-    int highlight_col_stream;
-    int highlight_col_proc;
-    int highlight_col_fps;
-    /* Collapsed columns in panels (bitmasks) */
-    uint32_t col_collapsed_stream;
-    uint32_t col_collapsed_proc;
-    uint32_t col_collapsed_fps;
     /* Freeze selection: preview + cross-highlights
      * stay locked while navigation continues */
     int        freeze;
     ov_focus_t freeze_focus;
     ov_focus_t
         graph_root_focus; /* list panel whose selection roots CONNECTIONS while GRAPH has focus */
-    int freeze_sel_stream;
-    int freeze_sel_proc;
-    int freeze_sel_fps;
     /* Lineage tracking mode: 0 = Trigger, 1 = Input */
     int lineage_mode;
-    /* Cursor and freeze identities; sel_* and freeze_sel_* rows are derived from them */
-    OV_TARGET sel_tgt[OV_NB_LIST_PANELS];
-    OV_TARGET freeze_tgt[OV_NB_LIST_PANELS];
     /* FPS parameter navigation (detail panel) */
     int  param_sel;     /* selected param (-1=none) */
     int  param_scroll;  /* scroll offset */

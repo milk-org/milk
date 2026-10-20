@@ -181,23 +181,23 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
             else if (INSIDE(lay->r_fps, mr, mc))
             {
-                sel    = &lay->sel_fps;
-                scroll = &lay->scroll_fps;
+                sel    = &lay->panel[OV_FOCUS_FPS].sel;
+                scroll = &lay->panel[OV_FOCUS_FPS].scroll;
                 count  = ov_input_get_filtered_count(OV_FOCUS_FPS, lay, m);
                 page_h = lay->r_fps.height - 3;
             }
         }
         else if (lay->view == OV_VIEW_STREAMS)
         {
-            sel    = &lay->sel_stream;
-            scroll = &lay->scroll_stream;
+            sel    = &lay->panel[OV_FOCUS_STREAMS].sel;
+            scroll = &lay->panel[OV_FOCUS_STREAMS].scroll;
             count  = ov_input_get_filtered_count(OV_FOCUS_STREAMS, lay, m);
             page_h = lay->r_streams.height - 3;
         }
         else if (lay->view == OV_VIEW_PROCS)
         {
-            sel    = &lay->sel_proc;
-            scroll = &lay->scroll_proc;
+            sel    = &lay->panel[OV_FOCUS_PROCS].sel;
+            scroll = &lay->panel[OV_FOCUS_PROCS].scroll;
             count  = ov_input_get_filtered_count(OV_FOCUS_PROCS, lay, m);
             page_h = lay->r_procs.height - 3;
         }
@@ -254,22 +254,22 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
             if (INSIDE(lay->r_streams, mr, mc))
             {
-                sel    = &lay->sel_stream;
-                scroll = &lay->scroll_stream;
+                sel    = &lay->panel[OV_FOCUS_STREAMS].sel;
+                scroll = &lay->panel[OV_FOCUS_STREAMS].scroll;
                 count  = ov_input_get_filtered_count(OV_FOCUS_STREAMS, lay, m);
                 page_h = lay->r_streams.height - 3;
             }
             else if (INSIDE(lay->r_procs, mr, mc))
             {
-                sel    = &lay->sel_proc;
-                scroll = &lay->scroll_proc;
+                sel    = &lay->panel[OV_FOCUS_PROCS].sel;
+                scroll = &lay->panel[OV_FOCUS_PROCS].scroll;
                 count  = ov_input_get_filtered_count(OV_FOCUS_PROCS, lay, m);
                 page_h = lay->r_procs.height - 3;
             }
             else if (INSIDE(lay->r_fps, mr, mc))
             {
-                sel    = &lay->sel_fps;
-                scroll = &lay->scroll_fps;
+                sel    = &lay->panel[OV_FOCUS_FPS].sel;
+                scroll = &lay->panel[OV_FOCUS_FPS].scroll;
                 count  = ov_input_get_filtered_count(OV_FOCUS_FPS, lay, m);
                 page_h = lay->r_fps.height - 3;
             }
@@ -352,15 +352,15 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 *sel = 0;
             }
 
-            if (sel == &lay->sel_stream)
+            if (sel == &lay->panel[OV_FOCUS_STREAMS].sel)
             {
                 ov_sel_row(lay, m, OV_FOCUS_STREAMS, *sel);
             }
-            else if (sel == &lay->sel_proc)
+            else if (sel == &lay->panel[OV_FOCUS_PROCS].sel)
             {
                 ov_sel_row(lay, m, OV_FOCUS_PROCS, *sel);
             }
-            else if (sel == &lay->sel_fps)
+            else if (sel == &lay->panel[OV_FOCUS_FPS].sel)
             {
                 ov_sel_row(lay, m, OV_FOCUS_FPS, *sel);
             }

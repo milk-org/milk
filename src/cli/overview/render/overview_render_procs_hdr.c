@@ -17,7 +17,7 @@
 void ov_procs__render_header(const OV_LAYOUT *lay, OV_RECT r)
 {
     int hrow    = r.row + 1;
-    int hs      = lay->hscroll_proc;
+    int hs      = lay->panel[OV_FOCUS_PROCS].hscroll;
     int hs_rem  = hs;
     int printed = 1;
     int avail   = r.width - 2;
@@ -37,8 +37,8 @@ void ov_procs__render_header(const OV_LAYOUT *lay, OV_RECT r)
     PROC_COL_SPEC cols[16];
     int           num_cols = 0;
 
-    int  sk = lay->sort_key_proc;
-    int  sd = lay->sort_dir_proc;
+    int  sk = lay->panel[OV_FOCUS_PROCS].sort_key;
+    int  sd = lay->panel[OV_FOCUS_PROCS].sort_dir;
     char c_anc[32], c_name[32], c_pid[32];
     char c_prio[32], c_stat[32], c_hz[32];
     char c_upt[32], c_duty[32], c_cpu[32];
@@ -87,7 +87,7 @@ void ov_procs__render_header(const OV_LAYOUT *lay, OV_RECT r)
         if (c > 0)
         {
             int prev_logical   = cols[c - 1].logical_col;
-            int prev_collapsed = (lay->col_collapsed_proc & (1U << prev_logical)) != 0;
+            int prev_collapsed = (lay->panel[OV_FOCUS_PROCS].collapsed & (1U << prev_logical)) != 0;
             if (!prev_collapsed)
             {
                 ov_theme_bg(OV_BG_HEADER);
@@ -115,7 +115,8 @@ void ov_procs__render_header(const OV_LAYOUT *lay, OV_RECT r)
         }
 
         ov_render_cell(cols[c].logical_col, c, OV_FG_PROC_HDR, OV_BG_HEADER, cell_buf, &hs_rem,
-                       &printed, avail, lay->highlight_col_proc, lay->col_collapsed_proc);
+                       &printed, avail, lay->panel[OV_FOCUS_PROCS].highlight_col,
+                       lay->panel[OV_FOCUS_PROCS].collapsed);
     }
     render_pad_spaces(printed, r.width);
 
@@ -188,7 +189,7 @@ void ov_procs__render_footer(const OV_LAYOUT *lay,
     snprintf(rbuf, sizeof(rbuf), " %d RUN \u2502 %.0f%% CPU \u2502 %s ", tot_run, (double) tot_cpu,
              tmem);
     int rlen  = (int) strlen(rbuf);
-    int below = filt_n - lay->scroll_proc - (r.height - 3);
+    int below = filt_n - lay->panel[OV_FOCUS_PROCS].scroll - (r.height - 3);
     int dw    = 0;
     if (below > 0)
     {

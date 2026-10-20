@@ -26,18 +26,21 @@ int ov_input__handle_column_highlights(int key, OV_LAYOUT *lay, const OV_MODEL *
         int dir = (key == OV_KEY_SHIFT_LEFT) ? -1 : 1;
         if (lay->focus == OV_FOCUS_STREAMS)
         {
-            int num_cols              = ov_get_num_cols(lay, OV_FOCUS_STREAMS);
-            lay->highlight_col_stream = (lay->highlight_col_stream + dir + num_cols) % num_cols;
+            int num_cols = ov_get_num_cols(lay, OV_FOCUS_STREAMS);
+            lay->panel[OV_FOCUS_STREAMS].highlight_col =
+                (lay->panel[OV_FOCUS_STREAMS].highlight_col + dir + num_cols) % num_cols;
         }
         else if (lay->focus == OV_FOCUS_PROCS)
         {
-            int num_cols            = ov_get_num_cols(lay, OV_FOCUS_PROCS);
-            lay->highlight_col_proc = (lay->highlight_col_proc + dir + num_cols) % num_cols;
+            int num_cols = ov_get_num_cols(lay, OV_FOCUS_PROCS);
+            lay->panel[OV_FOCUS_PROCS].highlight_col =
+                (lay->panel[OV_FOCUS_PROCS].highlight_col + dir + num_cols) % num_cols;
         }
         else if (lay->focus == OV_FOCUS_FPS)
         {
-            int num_cols           = ov_get_num_cols(lay, OV_FOCUS_FPS);
-            lay->highlight_col_fps = (lay->highlight_col_fps + dir + num_cols) % num_cols;
+            int num_cols = ov_get_num_cols(lay, OV_FOCUS_FPS);
+            lay->panel[OV_FOCUS_FPS].highlight_col =
+                (lay->panel[OV_FOCUS_FPS].highlight_col + dir + num_cols) % num_cols;
         }
         return 1;
     }
@@ -46,19 +49,21 @@ int ov_input__handle_column_highlights(int key, OV_LAYOUT *lay, const OV_MODEL *
     {
         if (lay->focus == OV_FOCUS_STREAMS)
         {
-            int logical_col =
-                ov_get_logical_col_stream(lay->highlight_col_stream, lay->compact_mode);
-            lay->col_collapsed_stream ^= (1U << logical_col);
+            int logical_col = ov_get_logical_col_stream(lay->panel[OV_FOCUS_STREAMS].highlight_col,
+                                                        lay->compact_mode);
+            lay->panel[OV_FOCUS_STREAMS].collapsed ^= (1U << logical_col);
         }
         else if (lay->focus == OV_FOCUS_PROCS)
         {
-            int logical_col = ov_get_logical_col_proc(lay->highlight_col_proc, lay->compact_mode);
-            lay->col_collapsed_proc ^= (1U << logical_col);
+            int logical_col = ov_get_logical_col_proc(lay->panel[OV_FOCUS_PROCS].highlight_col,
+                                                      lay->compact_mode);
+            lay->panel[OV_FOCUS_PROCS].collapsed ^= (1U << logical_col);
         }
         else if (lay->focus == OV_FOCUS_FPS)
         {
-            int logical_col = ov_get_logical_col_fps(lay->highlight_col_fps, lay->compact_mode);
-            lay->col_collapsed_fps ^= (1U << logical_col);
+            int logical_col =
+                ov_get_logical_col_fps(lay->panel[OV_FOCUS_FPS].highlight_col, lay->compact_mode);
+            lay->panel[OV_FOCUS_FPS].collapsed ^= (1U << logical_col);
         }
         return 1;
     }
@@ -80,13 +85,13 @@ int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
         switch (lay->focus)
         {
         case OV_FOCUS_STREAMS:
-            lay->sort_key_stream = 3;
+            lay->panel[OV_FOCUS_STREAMS].sort_key = 3;
             break;
         case OV_FOCUS_PROCS:
-            lay->sort_key_proc = 3;
+            lay->panel[OV_FOCUS_PROCS].sort_key = 3;
             break;
         case OV_FOCUS_FPS:
-            lay->sort_key_fps = 1;
+            lay->panel[OV_FOCUS_FPS].sort_key = 1;
             break;
         default:
             break;
@@ -100,16 +105,16 @@ int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
         switch (lay->focus)
         {
         case OV_FOCUS_STREAMS:
-            lay->sort_key_stream = 7;
-            lay->sort_dir_stream = 0;
+            lay->panel[OV_FOCUS_STREAMS].sort_key = 7;
+            lay->panel[OV_FOCUS_STREAMS].sort_dir = 0;
             break;
         case OV_FOCUS_PROCS:
-            lay->sort_key_proc = 5;
-            lay->sort_dir_proc = 0;
+            lay->panel[OV_FOCUS_PROCS].sort_key = 5;
+            lay->panel[OV_FOCUS_PROCS].sort_dir = 0;
             break;
         case OV_FOCUS_FPS:
-            lay->sort_key_fps = 3;
-            lay->sort_dir_fps = 0;
+            lay->panel[OV_FOCUS_FPS].sort_key = 3;
+            lay->panel[OV_FOCUS_FPS].sort_dir = 0;
             break;
         default:
             break;
@@ -124,13 +129,13 @@ int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
         switch (lay->focus)
         {
         case OV_FOCUS_STREAMS:
-            lay->sort_key_stream = 0;
+            lay->panel[OV_FOCUS_STREAMS].sort_key = 0;
             break;
         case OV_FOCUS_PROCS:
-            lay->sort_key_proc = 0;
+            lay->panel[OV_FOCUS_PROCS].sort_key = 0;
             break;
         case OV_FOCUS_FPS:
-            lay->sort_key_fps = 0;
+            lay->panel[OV_FOCUS_FPS].sort_key = 0;
             break;
         default:
             break;
@@ -144,13 +149,13 @@ int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
         switch (lay->focus)
         {
         case OV_FOCUS_STREAMS:
-            lay->sort_key_stream = (lay->sort_key_stream + 1) % 8;
+            lay->panel[OV_FOCUS_STREAMS].sort_key = (lay->panel[OV_FOCUS_STREAMS].sort_key + 1) % 8;
             break;
         case OV_FOCUS_PROCS:
-            lay->sort_key_proc = (lay->sort_key_proc + 1) % 11;
+            lay->panel[OV_FOCUS_PROCS].sort_key = (lay->panel[OV_FOCUS_PROCS].sort_key + 1) % 11;
             break;
         case OV_FOCUS_FPS:
-            lay->sort_key_fps = (lay->sort_key_fps + 1) % 7;
+            lay->panel[OV_FOCUS_FPS].sort_key = (lay->panel[OV_FOCUS_FPS].sort_key + 1) % 7;
             break;
         default:
             break;
@@ -164,13 +169,13 @@ int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
         switch (lay->focus)
         {
         case OV_FOCUS_STREAMS:
-            lay->sort_key_stream = (lay->sort_key_stream + 7) % 8;
+            lay->panel[OV_FOCUS_STREAMS].sort_key = (lay->panel[OV_FOCUS_STREAMS].sort_key + 7) % 8;
             break;
         case OV_FOCUS_PROCS:
-            lay->sort_key_proc = (lay->sort_key_proc + 10) % 11;
+            lay->panel[OV_FOCUS_PROCS].sort_key = (lay->panel[OV_FOCUS_PROCS].sort_key + 10) % 11;
             break;
         case OV_FOCUS_FPS:
-            lay->sort_key_fps = (lay->sort_key_fps + 6) % 7;
+            lay->panel[OV_FOCUS_FPS].sort_key = (lay->panel[OV_FOCUS_FPS].sort_key + 6) % 7;
             break;
         default:
             break;
@@ -184,13 +189,13 @@ int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
         switch (lay->focus)
         {
         case OV_FOCUS_STREAMS:
-            lay->sort_dir_stream = !lay->sort_dir_stream;
+            lay->panel[OV_FOCUS_STREAMS].sort_dir = !lay->panel[OV_FOCUS_STREAMS].sort_dir;
             break;
         case OV_FOCUS_PROCS:
-            lay->sort_dir_proc = !lay->sort_dir_proc;
+            lay->panel[OV_FOCUS_PROCS].sort_dir = !lay->panel[OV_FOCUS_PROCS].sort_dir;
             break;
         case OV_FOCUS_FPS:
-            lay->sort_dir_fps = !lay->sort_dir_fps;
+            lay->panel[OV_FOCUS_FPS].sort_dir = !lay->panel[OV_FOCUS_FPS].sort_dir;
             break;
         default:
             break;

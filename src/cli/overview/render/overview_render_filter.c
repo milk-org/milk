@@ -57,15 +57,15 @@ int ov_has_panel_filter(const OV_LAYOUT *lay, ov_focus_t panel)
     }
     if (panel == OV_FOCUS_STREAMS)
     {
-        return (lay->filter_stream[0] != '\0');
+        return (lay->panel[OV_FOCUS_STREAMS].filter[0] != '\0');
     }
     if (panel == OV_FOCUS_PROCS)
     {
-        return (lay->filter_proc[0] != '\0');
+        return (lay->panel[OV_FOCUS_PROCS].filter[0] != '\0');
     }
     if (panel == OV_FOCUS_FPS)
     {
-        return (lay->filter_fps[0] != '\0');
+        return (lay->panel[OV_FOCUS_FPS].filter[0] != '\0');
     }
     return 0;
 }
@@ -85,15 +85,17 @@ int ov_is_panel_filter_active(const OV_LAYOUT *lay, ov_focus_t panel)
     }
     if (panel == OV_FOCUS_STREAMS)
     {
-        return lay->filter_stream_active && (lay->filter_stream[0] != '\0');
+        return lay->panel[OV_FOCUS_STREAMS].filter_on &&
+               (lay->panel[OV_FOCUS_STREAMS].filter[0] != '\0');
     }
     if (panel == OV_FOCUS_PROCS)
     {
-        return lay->filter_proc_active && (lay->filter_proc[0] != '\0');
+        return lay->panel[OV_FOCUS_PROCS].filter_on &&
+               (lay->panel[OV_FOCUS_PROCS].filter[0] != '\0');
     }
     if (panel == OV_FOCUS_FPS)
     {
-        return lay->filter_fps_active && (lay->filter_fps[0] != '\0');
+        return lay->panel[OV_FOCUS_FPS].filter_on && (lay->panel[OV_FOCUS_FPS].filter[0] != '\0');
     }
     return 0;
 }
@@ -113,15 +115,15 @@ const char *ov_get_panel_filter_pattern(const OV_LAYOUT *lay, ov_focus_t panel)
     }
     if (panel == OV_FOCUS_STREAMS)
     {
-        return lay->filter_stream;
+        return lay->panel[OV_FOCUS_STREAMS].filter;
     }
     if (panel == OV_FOCUS_PROCS)
     {
-        return lay->filter_proc;
+        return lay->panel[OV_FOCUS_PROCS].filter;
     }
     if (panel == OV_FOCUS_FPS)
     {
-        return lay->filter_fps;
+        return lay->panel[OV_FOCUS_FPS].filter;
     }
     return "";
 }
@@ -155,21 +157,22 @@ void ov_clear_panel_filter(OV_LAYOUT *lay, ov_focus_t panel)
     }
     if (panel == OV_FOCUS_STREAMS)
     {
-        lay->filter_stream[0]     = '\0';
-        lay->filter_stream_active = 0;
+        lay->panel[OV_FOCUS_STREAMS].filter[0] = '\0';
+        lay->panel[OV_FOCUS_STREAMS].filter_on = 0;
     }
     else if (panel == OV_FOCUS_PROCS)
     {
-        lay->filter_proc[0]     = '\0';
-        lay->filter_proc_active = 0;
+        lay->panel[OV_FOCUS_PROCS].filter[0] = '\0';
+        lay->panel[OV_FOCUS_PROCS].filter_on = 0;
     }
     else if (panel == OV_FOCUS_FPS)
     {
-        lay->filter_fps[0]     = '\0';
-        lay->filter_fps_active = 0;
+        lay->panel[OV_FOCUS_FPS].filter[0] = '\0';
+        lay->panel[OV_FOCUS_FPS].filter_on = 0;
     }
     lay->filter_active =
-        (lay->filter_stream_active || lay->filter_proc_active || lay->filter_fps_active);
+        (lay->panel[OV_FOCUS_STREAMS].filter_on || lay->panel[OV_FOCUS_PROCS].filter_on ||
+         lay->panel[OV_FOCUS_FPS].filter_on);
 }
 
 /**
@@ -184,8 +187,9 @@ int ov_has_filter(const OV_LAYOUT *lay)
     {
         return 0;
     }
-    return (lay->filter_stream[0] != '\0' || lay->filter_proc[0] != '\0' ||
-            lay->filter_fps[0] != '\0');
+    return (lay->panel[OV_FOCUS_STREAMS].filter[0] != '\0' ||
+            lay->panel[OV_FOCUS_PROCS].filter[0] != '\0' ||
+            lay->panel[OV_FOCUS_FPS].filter[0] != '\0');
 }
 
 /**
@@ -223,29 +227,29 @@ const char *ov_get_filter_pattern(const OV_LAYOUT *lay)
         return "";
     }
     ov_focus_t panel = ov_get_effective_filter_panel(lay);
-    if (panel == OV_FOCUS_STREAMS && lay->filter_stream[0] != '\0')
+    if (panel == OV_FOCUS_STREAMS && lay->panel[OV_FOCUS_STREAMS].filter[0] != '\0')
     {
-        return lay->filter_stream;
+        return lay->panel[OV_FOCUS_STREAMS].filter;
     }
-    if (panel == OV_FOCUS_PROCS && lay->filter_proc[0] != '\0')
+    if (panel == OV_FOCUS_PROCS && lay->panel[OV_FOCUS_PROCS].filter[0] != '\0')
     {
-        return lay->filter_proc;
+        return lay->panel[OV_FOCUS_PROCS].filter;
     }
-    if (panel == OV_FOCUS_FPS && lay->filter_fps[0] != '\0')
+    if (panel == OV_FOCUS_FPS && lay->panel[OV_FOCUS_FPS].filter[0] != '\0')
     {
-        return lay->filter_fps;
+        return lay->panel[OV_FOCUS_FPS].filter;
     }
-    if (lay->filter_stream[0] != '\0')
+    if (lay->panel[OV_FOCUS_STREAMS].filter[0] != '\0')
     {
-        return lay->filter_stream;
+        return lay->panel[OV_FOCUS_STREAMS].filter;
     }
-    if (lay->filter_proc[0] != '\0')
+    if (lay->panel[OV_FOCUS_PROCS].filter[0] != '\0')
     {
-        return lay->filter_proc;
+        return lay->panel[OV_FOCUS_PROCS].filter;
     }
-    if (lay->filter_fps[0] != '\0')
+    if (lay->panel[OV_FOCUS_FPS].filter[0] != '\0')
     {
-        return lay->filter_fps;
+        return lay->panel[OV_FOCUS_FPS].filter;
     }
     return "";
 }
@@ -276,15 +280,15 @@ void ov_clear_all_filters(OV_LAYOUT *lay)
     {
         return;
     }
-    lay->filter[0]            = '\0';
-    lay->filter_stream[0]     = '\0';
-    lay->filter_proc[0]       = '\0';
-    lay->filter_fps[0]        = '\0';
-    lay->filter_stream_active = 0;
-    lay->filter_proc_active   = 0;
-    lay->filter_fps_active    = 0;
-    lay->filter_active        = 0;
-    lay->filter_editing       = 0;
-    lay->filter_cursor        = 0;
-    lay->filter_jump          = 0;
+    lay->filter[0]                         = '\0';
+    lay->panel[OV_FOCUS_STREAMS].filter[0] = '\0';
+    lay->panel[OV_FOCUS_PROCS].filter[0]   = '\0';
+    lay->panel[OV_FOCUS_FPS].filter[0]     = '\0';
+    lay->panel[OV_FOCUS_STREAMS].filter_on = 0;
+    lay->panel[OV_FOCUS_PROCS].filter_on   = 0;
+    lay->panel[OV_FOCUS_FPS].filter_on     = 0;
+    lay->filter_active                     = 0;
+    lay->filter_editing                    = 0;
+    lay->filter_cursor                     = 0;
+    lay->filter_jump                       = 0;
 }

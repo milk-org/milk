@@ -44,24 +44,26 @@ static const char *stream_col_names[] = { "NAME", "TYP",   "SIZE",  "Hz",
  */
 void ov_input__streams_header_click(OV_LAYOUT *lay, int mc)
 {
-    int           table_x = mc - lay->r_streams.col - 2 + lay->hscroll_stream;
+    int           table_x = mc - lay->r_streams.col - 2 + lay->panel[OV_FOCUS_STREAMS].hscroll;
     OV_COL_LAYOUT cols[12];
     int           num_cols = ov_get_stream_col_layout(lay->compact_mode, cols);
-    int col_idx = ov_header_hittest_sort_key(cols, num_cols, lay->col_collapsed_stream, table_x);
+    int           col_idx =
+        ov_header_hittest_sort_key(cols, num_cols, lay->panel[OV_FOCUS_STREAMS].collapsed, table_x);
 
     if (col_idx >= 0)
     {
-        if (lay->sort_key_stream == col_idx)
+        if (lay->panel[OV_FOCUS_STREAMS].sort_key == col_idx)
         {
-            lay->sort_dir_stream = !lay->sort_dir_stream;
+            lay->panel[OV_FOCUS_STREAMS].sort_dir = !lay->panel[OV_FOCUS_STREAMS].sort_dir;
         }
         else
         {
-            lay->sort_key_stream = col_idx;
-            lay->sort_dir_stream = 0;
+            lay->panel[OV_FOCUS_STREAMS].sort_key = col_idx;
+            lay->panel[OV_FOCUS_STREAMS].sort_dir = 0;
         }
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Sort STREAMS by %s %s",
-                       stream_col_names[col_idx], lay->sort_dir_stream ? "▼" : "▲");
+                       stream_col_names[col_idx],
+                       lay->panel[OV_FOCUS_STREAMS].sort_dir ? "▼" : "▲");
         lay->sort_pending = 1;
         ov_scan_force_update();
     }
@@ -77,24 +79,25 @@ static const char *proc_col_names[] = { "NAME", "PID",    "STAT", "Hz",      "ME
  */
 void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
 {
-    int           table_x = mc - lay->r_procs.col - 2 + lay->hscroll_proc;
+    int           table_x = mc - lay->r_procs.col - 2 + lay->panel[OV_FOCUS_PROCS].hscroll;
     OV_COL_LAYOUT cols[16];
     int           num_cols = ov_get_proc_col_layout(lay->compact_mode, cols);
-    int col_idx = ov_header_hittest_sort_key(cols, num_cols, lay->col_collapsed_proc, table_x);
+    int           col_idx =
+        ov_header_hittest_sort_key(cols, num_cols, lay->panel[OV_FOCUS_PROCS].collapsed, table_x);
 
     if (col_idx >= 0)
     {
-        if (lay->sort_key_proc == col_idx)
+        if (lay->panel[OV_FOCUS_PROCS].sort_key == col_idx)
         {
-            lay->sort_dir_proc = !lay->sort_dir_proc;
+            lay->panel[OV_FOCUS_PROCS].sort_dir = !lay->panel[OV_FOCUS_PROCS].sort_dir;
         }
         else
         {
-            lay->sort_key_proc = col_idx;
-            lay->sort_dir_proc = 0;
+            lay->panel[OV_FOCUS_PROCS].sort_key = col_idx;
+            lay->panel[OV_FOCUS_PROCS].sort_dir = 0;
         }
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Sort PROCS by %s %s", proc_col_names[col_idx],
-                       lay->sort_dir_proc ? "▼" : "▲");
+                       lay->panel[OV_FOCUS_PROCS].sort_dir ? "▼" : "▲");
         lay->sort_pending = 1;
         ov_scan_force_update();
     }
@@ -109,24 +112,25 @@ static const char *fps_col_names[] = { "NAME", "CPID", "MEM", "ANCESTRY", "RPID"
  */
 void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
 {
-    int           table_x = mc - lay->r_fps.col - 2 + lay->hscroll_fps;
+    int           table_x = mc - lay->r_fps.col - 2 + lay->panel[OV_FOCUS_FPS].hscroll;
     OV_COL_LAYOUT cols[8];
     int           num_cols = ov_get_fps_col_layout(lay->compact_mode, lay->view, cols);
-    int col_idx = ov_header_hittest_sort_key(cols, num_cols, lay->col_collapsed_fps, table_x);
+    int           col_idx =
+        ov_header_hittest_sort_key(cols, num_cols, lay->panel[OV_FOCUS_FPS].collapsed, table_x);
 
     if (col_idx >= 0)
     {
-        if (lay->sort_key_fps == col_idx)
+        if (lay->panel[OV_FOCUS_FPS].sort_key == col_idx)
         {
-            lay->sort_dir_fps = !lay->sort_dir_fps;
+            lay->panel[OV_FOCUS_FPS].sort_dir = !lay->panel[OV_FOCUS_FPS].sort_dir;
         }
         else
         {
-            lay->sort_key_fps = col_idx;
-            lay->sort_dir_fps = 0;
+            lay->panel[OV_FOCUS_FPS].sort_key = col_idx;
+            lay->panel[OV_FOCUS_FPS].sort_dir = 0;
         }
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Sort FPS by %s %s", fps_col_names[col_idx],
-                       lay->sort_dir_fps ? "▼" : "▲");
+                       lay->panel[OV_FOCUS_FPS].sort_dir ? "▼" : "▲");
         lay->sort_pending = 1;
         ov_scan_force_update();
     }
@@ -139,9 +143,9 @@ void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
  */
 void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    lay->hover_global_stream = -1;
-    lay->hover_global_proc   = -1;
-    lay->hover_global_fps    = -1;
+    lay->panel[OV_FOCUS_STREAMS].hover_idx = -1;
+    lay->panel[OV_FOCUS_PROCS].hover_idx   = -1;
+    lay->panel[OV_FOCUS_FPS].hover_idx     = -1;
 
     if (!lay->mouse_hover || lay->hover_idx < 0)
     {
@@ -151,15 +155,17 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
     /* hover_idx is a drawn row: resolve it through the same rows the panel draws */
     if (lay->hover_view == OV_FOCUS_STREAMS)
     {
-        lay->hover_global_stream = ov_row_to_idx(lay, m, OV_FOCUS_STREAMS, lay->hover_idx);
+        lay->panel[OV_FOCUS_STREAMS].hover_idx =
+            ov_row_to_idx(lay, m, OV_FOCUS_STREAMS, lay->hover_idx);
     }
     else if (lay->hover_view == OV_FOCUS_PROCS)
     {
-        lay->hover_global_proc = ov_row_to_idx(lay, m, OV_FOCUS_PROCS, lay->hover_idx);
+        lay->panel[OV_FOCUS_PROCS].hover_idx =
+            ov_row_to_idx(lay, m, OV_FOCUS_PROCS, lay->hover_idx);
     }
     else if (lay->hover_view == OV_FOCUS_FPS)
     {
-        lay->hover_global_fps = ov_row_to_idx(lay, m, OV_FOCUS_FPS, lay->hover_idx);
+        lay->panel[OV_FOCUS_FPS].hover_idx = ov_row_to_idx(lay, m, OV_FOCUS_FPS, lay->hover_idx);
     }
     else if (lay->hover_view == OV_FOCUS_GRAPH)
     {
@@ -167,7 +173,7 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
         const SG_TREE_NODE *rows = ov_graph_rows(lay, m, &n);
         if (lay->hover_idx >= 0 && lay->hover_idx < n)
         {
-            lay->hover_global_stream = rows[lay->hover_idx].stream_idx;
+            lay->panel[OV_FOCUS_STREAMS].hover_idx = rows[lay->hover_idx].stream_idx;
         }
     }
 }

@@ -176,8 +176,8 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 
         /* Draw node name */
         ov_rgb_t name_color = rn->is_target ? OV_FG_WARN : OV_FG_STREAM;
-        int      hl_stream  = (lay->mouse_hover && lay->hover_global_stream >= 0 &&
-                               rn->stream_idx == lay->hover_global_stream);
+        int      hl_stream  = (lay->mouse_hover && lay->panel[OV_FOCUS_STREAMS].hover_idx >= 0 &&
+                               rn->stream_idx == lay->panel[OV_FOCUS_STREAMS].hover_idx);
         if (hl_stream)
         {
             ov_theme_bg(OV_BG_HOVER);
@@ -233,8 +233,8 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
             ov_rgb_t proc_color = rn->is_target_proc ? OV_FG_WARN : OV_FG_PROC;
 
             int proc_idx = sg_tree_reader_proc(m, rn);
-            int hl_proc  = (lay->mouse_hover && lay->hover_global_proc >= 0 &&
-                            proc_idx == lay->hover_global_proc);
+            int hl_proc  = (lay->mouse_hover && lay->panel[OV_FOCUS_PROCS].hover_idx >= 0 &&
+                            proc_idx == lay->panel[OV_FOCUS_PROCS].hover_idx);
 
             if (hl_proc)
             {

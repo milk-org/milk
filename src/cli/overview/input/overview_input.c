@@ -299,18 +299,18 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         switch (lay->focus)
         {
         case OV_FOCUS_STREAMS:
-            sel    = &lay->sel_stream;
-            scroll = &lay->scroll_stream;
+            sel    = &lay->panel[OV_FOCUS_STREAMS].sel;
+            scroll = &lay->panel[OV_FOCUS_STREAMS].scroll;
             page_h = lay->r_streams.height - 3;
             break;
         case OV_FOCUS_PROCS:
-            sel    = &lay->sel_proc;
-            scroll = &lay->scroll_proc;
+            sel    = &lay->panel[OV_FOCUS_PROCS].sel;
+            scroll = &lay->panel[OV_FOCUS_PROCS].scroll;
             page_h = lay->r_procs.height - 3;
             break;
         case OV_FOCUS_FPS:
-            sel    = &lay->sel_fps;
-            scroll = &lay->scroll_fps;
+            sel    = &lay->panel[OV_FOCUS_FPS].sel;
+            scroll = &lay->panel[OV_FOCUS_FPS].scroll;
             page_h = lay->r_fps.height - 3;
             break;
         case OV_FOCUS_GRAPH:
