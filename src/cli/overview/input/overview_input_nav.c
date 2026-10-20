@@ -82,18 +82,7 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
             sel    = &lay->sel_graph;
             scroll = &lay->scroll_graph;
-            {
-                int start_node = ov_graph_start_node(lay, m);
-                if (start_node >= 0)
-                {
-                    SG_RENDER_NODE rnodes[OV_MAX_NODES];
-                    count = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
-                }
-                else
-                {
-                    count = 0;
-                }
-            }
+            ov_graph_rows(lay, m, &count);
             page_h = lay->r_graph.height - 3;
         }
         else if (lay->graph_tab_mode == 2)

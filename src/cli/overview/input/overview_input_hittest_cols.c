@@ -163,31 +163,11 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
     }
     else if (lay->hover_view == OV_FOCUS_GRAPH)
     {
-        int start_node = ov_graph_start_node(lay, m);
-        if (start_node >= 0)
+        int                 n;
+        const SG_TREE_NODE *rows = ov_graph_rows(lay, m, &n);
+        if (lay->hover_idx >= 0 && lay->hover_idx < n)
         {
-            SG_RENDER_NODE rnodes[OV_MAX_NODES];
-            int n_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
-            if (lay->hover_idx < n_rnodes)
-            {
-                int node_idx = rnodes[lay->hover_idx].node_idx;
-                if (node_idx >= 0 && node_idx < m->nb_nodes)
-                {
-                    const OV_NODE *node = &m->nodes[node_idx];
-                    if (node->type == OV_NODE_STREAM)
-                    {
-                        lay->hover_global_stream = node->index;
-                    }
-                    else if (node->type == OV_NODE_PROC)
-                    {
-                        lay->hover_global_proc = node->index;
-                    }
-                    else if (node->type == OV_NODE_FPS)
-                    {
-                        lay->hover_global_fps = node->index;
-                    }
-                }
-            }
+            lay->hover_global_stream = rows[lay->hover_idx].stream_idx;
         }
     }
 }

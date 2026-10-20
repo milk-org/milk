@@ -146,6 +146,7 @@ int  ov_sel_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel);
 void ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m);
 int  ov_detail_target(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t *panel);
 int  ov_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m);
+const SG_TREE_NODE *ov_graph_rows(const OV_LAYOUT *lay, const OV_MODEL *m, int *n);
 
 void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc);
 

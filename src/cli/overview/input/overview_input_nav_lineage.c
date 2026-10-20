@@ -112,17 +112,13 @@ int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
     else if (lay->focus == OV_FOCUS_GRAPH)
     {
-        int start_node = ov_graph_start_node(lay, m);
-        if (start_node >= 0)
+        int                 n;
+        const SG_TREE_NODE *rows = ov_graph_rows(lay, m, &n);
+        if (lay->sel_graph >= 0 && lay->sel_graph < n)
         {
-            SG_RENDER_NODE rnodes[OV_MAX_NODES];
-            int n_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
-            if (lay->sel_graph >= 0 && lay->sel_graph < n_rnodes)
-            {
-                current_node = rnodes[lay->sel_graph].node_idx;
-            }
+            current_node = m->streams[rows[lay->sel_graph].stream_idx].node_idx;
         }
-        target_type = -1;
+        target_type = OV_NODE_STREAM; /* CONNECTIONS rows are streams */
     }
 
     if (current_node < 0 || current_node >= m->nb_nodes)
@@ -138,18 +134,14 @@ int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         const OV_NODE *tn = &m->nodes[target_node];
         if (lay->focus == OV_FOCUS_GRAPH)
         {
-            int start_node = ov_graph_start_node(lay, m);
-            if (start_node >= 0)
+            int                 n;
+            const SG_TREE_NODE *rows = ov_graph_rows(lay, m, &n);
+            for (int i = 0; i < n; i++)
             {
-                SG_RENDER_NODE rnodes[OV_MAX_NODES];
-                int n_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
-                for (int i = 0; i < n_rnodes; i++)
+                if (rows[i].stream_idx == tn->index && tn->type == OV_NODE_STREAM)
                 {
-                    if (rnodes[i].node_idx == target_node)
-                    {
-                        lay->sel_graph = i;
-                        break;
-                    }
+                    lay->sel_graph = i;
+                    break;
                 }
             }
         }

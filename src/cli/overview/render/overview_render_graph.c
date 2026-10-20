@@ -24,7 +24,11 @@ int ov_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
     int        target_type = -1;
     int        target_idx  = -1;
 
-    if (eff_focus == OV_FOCUS_STREAMS || eff_focus == OV_FOCUS_GRAPH)
+    if (eff_focus == OV_FOCUS_GRAPH)
+    {
+        eff_focus = lay->graph_root_focus;
+    }
+    if (eff_focus == OV_FOCUS_STREAMS)
     {
         target_type = OV_NODE_STREAM;
         target_idx  = ov_get_selected_stream_idx(lay, m);
@@ -54,6 +58,18 @@ int ov_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
 }
 
 /**
+ * ov_graph_rows - the CONNECTIONS rows as drawn, for render and input alike; @n gets their count.
+ * Static buffer: UI thread only, valid until the next call.
+ */
+const SG_TREE_NODE *ov_graph_rows(const OV_LAYOUT *lay, const OV_MODEL *m, int *n)
+{
+    static SG_TREE_NODE rows[OV_MAX_NODES];
+    int                 start = ov_graph_start_node(lay, m);
+    *n = (start >= 0) ? sg_compute_render_tree(m, start, lay->lineage_mode, rows) : 0;
+    return rows;
+}
+
+/**
  * ov_render_graph_panel - render the stream-process graph panel.
  * @lay: Pointer to layout structure.
  * @m:   Pointer to current data model snapshot.
@@ -79,14 +95,8 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
     render_pad_spaces(hlen, r.width);
     row++;
 
-    int          start_node = ov_graph_start_node(lay, m);
-    SG_TREE_NODE rnodes[OV_MAX_NODES];
-    int          nb_rnodes = 0;
-
-    if (start_node >= 0)
-    {
-        nb_rnodes = sg_compute_render_tree(m, start_node, lay->lineage_mode, rnodes);
-    }
+    int                 nb_rnodes;
+    const SG_TREE_NODE *rnodes = ov_graph_rows(lay, m, &nb_rnodes);
 
     if (nb_rnodes == 0)
     {

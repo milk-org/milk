@@ -213,9 +213,10 @@
     },
     {
         "ENTER / D",
-        "Inspect node connection details",
-        "Opens detailed connectivity report for the highlighted node, listing all upstream "
-        "writers, downstream readers, trigger modes, and semaphore indices.",
+        "Select the row's stream / toggle DETAILS",
+        "In CONNECTIONS, ENTER selects the highlighted row's stream in the STREAMS panel (DASH); "
+        "a double click on the reader name selects that process. The tree stays rooted at the "
+        "entry selected in the list panel last focused. D toggles the DETAILS sub-tab.",
         HF_ENTRY,
         HS_GRAPH,
     },

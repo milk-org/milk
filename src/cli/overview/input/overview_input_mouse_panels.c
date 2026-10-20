@@ -10,6 +10,46 @@
 #include "overview_input_internal.h"
 #include <string.h>
 
+/** utf8_cols - number of code points in @s (tree glyphs and names are one column each). */
+static int utf8_cols(const char *s)
+{
+    int n = 0;
+    for (int i = 0; s[i] != '\0'; i += utf8_char_length((unsigned char) s[i]))
+    {
+        n++;
+    }
+    return n;
+}
+
+/**
+ * graph_row_click - CONNECTIONS click on @body_row: move the graph cursor (the root stays pinned).
+ * A double click selects the row's stream in DASH, or its reader process when clicked right of the name.
+ */
+static void graph_row_click(OV_LAYOUT *lay, const OV_MODEL *m, int body_row, int mc, int is_dbl)
+{
+    int                 n;
+    const SG_TREE_NODE *rows = ov_graph_rows(lay, m, &n);
+    int                 idx  = lay->scroll_graph + body_row;
+    if (idx < 0 || idx >= n)
+    {
+        return;
+    }
+    lay->sel_graph = idx;
+    if (!is_dbl)
+    {
+        return;
+    }
+    const SG_TREE_NODE *rn = &rows[idx];
+    int name_end = utf8_cols(rn->tree_prefix) + (rn->is_target ? 2 : 0) + utf8_cols(rn->name);
+    int pi       = sg_tree_reader_proc(m, rn);
+    int on_proc  = (pi >= 0 && mc - lay->r_graph.col - 1 > name_end + 1);
+    int si       = rn->stream_idx;
+    lay->freeze  = 0;
+    ov_set_view(lay, OV_VIEW_DASHBOARD);
+    lay->focus = on_proc ? OV_FOCUS_PROCS : OV_FOCUS_STREAMS;
+    ov_sel_model(lay, m, lay->focus, on_proc ? pi : si);
+}
+
 /**
  * ov_input_mouse_panel_click - dispatch mouse clicks within view panels.
  * @lay:    Pointer to layout structure.
@@ -145,61 +185,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             {
                 if (lay->graph_tab_mode == 0)
                 {
-                    int start_node = ov_graph_start_node(lay, m);
-                    if (start_node >= 0)
-                    {
-                        SG_TREE_NODE rnodes[OV_MAX_NODES];
-                        int          nb_rnodes =
-                            sg_compute_render_tree(m, start_node, lay->lineage_mode, rnodes);
-
-                        int idx = lay->scroll_graph + body_row;
-                        if (idx < nb_rnodes)
-                        {
-                            lay->sel_graph         = idx;
-                            const SG_TREE_NODE *rn = &rnodes[idx];
-
-                            int proc_idx = sg_tree_reader_proc(m, rn);
-
-                            /* Estimate click position to decide stream vs proc */
-                            int disp_len = 0;
-                            for (int i = 0; rn->tree_prefix[i] != '\0';)
-                            {
-                                disp_len++;
-                                i += utf8_char_length((unsigned char) rn->tree_prefix[i]);
-                            }
-                            if (rn->is_target)
-                            {
-                                disp_len += 2;
-                            }
-                            for (int i = 0; rn->name[i] != '\0';)
-                            {
-                                disp_len++;
-                                i += utf8_char_length((unsigned char) rn->name[i]);
-                            }
-
-                            int click_on_proc = 0;
-                            if (mc - lay->r_graph.col - 1 > disp_len + 1)
-                            {
-                                click_on_proc = 1;
-                            }
-
-                            if (click_on_proc && proc_idx >= 0)
-                            {
-                                lay->focus = OV_FOCUS_PROCS;
-                                ov_sel_model(lay, m, OV_FOCUS_PROCS, proc_idx);
-                            }
-                            else if (rn->stream_idx >= 0)
-                            {
-                                lay->focus = OV_FOCUS_STREAMS;
-                                ov_sel_model(lay, m, OV_FOCUS_STREAMS, rn->stream_idx);
-                            }
-
-                            if (is_dbl)
-                            {
-                                ov_set_view(lay, OV_VIEW_DASHBOARD);
-                            }
-                        }
-                    }
+                    graph_row_click(lay, m, body_row, mc, is_dbl);
                 }
             }
         }
@@ -291,64 +277,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                 {
                     if (lay->graph_tab_mode == 0)
                     {
-                        int start_node = ov_graph_start_node(lay, m);
-                        if (start_node >= 0)
-                        {
-                            SG_TREE_NODE rnodes[OV_MAX_NODES];
-                            int          nb_rnodes =
-                                sg_compute_render_tree(m, start_node, lay->lineage_mode, rnodes);
-
-                            int idx = lay->scroll_graph + body_row;
-                            if (idx < nb_rnodes)
-                            {
-                                lay->sel_graph         = idx;
-                                const SG_TREE_NODE *rn = &rnodes[idx];
-
-                                int proc_idx = sg_tree_reader_proc(m, rn);
-
-                                /* Estimate click position to decide stream vs proc */
-                                int disp_len = 0;
-                                for (int i = 0; rn->tree_prefix[i] != '\0';)
-                                {
-                                    disp_len++;
-                                    i += utf8_char_length((unsigned char) rn->tree_prefix[i]);
-                                }
-                                if (rn->is_target)
-                                {
-                                    disp_len += 2;
-                                }
-                                for (int i = 0; rn->name[i] != '\0';)
-                                {
-                                    disp_len++;
-                                    i += utf8_char_length((unsigned char) rn->name[i]);
-                                }
-
-                                int click_on_proc = 0;
-                                if (mc - lay->r_graph.col - 1 > disp_len + 1)
-                                {
-                                    click_on_proc = 1;
-                                }
-
-                                if (click_on_proc && proc_idx >= 0)
-                                {
-                                    lay->focus = OV_FOCUS_PROCS;
-                                    ov_sel_model(lay, m, OV_FOCUS_PROCS, proc_idx);
-                                    if (is_dbl)
-                                    {
-                                        ov_set_view(lay, OV_VIEW_PROCS);
-                                    }
-                                }
-                                else if (rn->stream_idx >= 0)
-                                {
-                                    lay->focus = OV_FOCUS_STREAMS;
-                                    ov_sel_model(lay, m, OV_FOCUS_STREAMS, rn->stream_idx);
-                                    if (is_dbl)
-                                    {
-                                        ov_set_view(lay, OV_VIEW_STREAMS);
-                                    }
-                                }
-                            }
-                        }
+                        graph_row_click(lay, m, body_row, mc, is_dbl);
                     }
                     else if (lay->graph_tab_mode == 1)
                     {

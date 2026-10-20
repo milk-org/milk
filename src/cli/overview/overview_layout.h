@@ -216,9 +216,11 @@ typedef struct
      * stay locked while navigation continues */
     int        freeze;
     ov_focus_t freeze_focus;
-    int        freeze_sel_stream;
-    int        freeze_sel_proc;
-    int        freeze_sel_fps;
+    ov_focus_t
+        graph_root_focus; /* list panel whose selection roots CONNECTIONS while GRAPH has focus */
+    int freeze_sel_stream;
+    int freeze_sel_proc;
+    int freeze_sel_fps;
     /* Lineage tracking mode: 0 = Trigger, 1 = Input */
     int lineage_mode;
     /* Cursor and freeze identities; sel_* and freeze_sel_* rows are derived from them */

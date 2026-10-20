@@ -232,26 +232,18 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 1;
     }
 
-    /* Graph jump on Enter (must be before detail mode toggle) */
+    /* Graph jump on Enter (must be before detail mode toggle): select the row's stream in DASH */
     if ((key == '\n' || key == '\r') && lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 0)
     {
-        int start_node = ov_graph_start_node(lay, m);
-        if (start_node >= 0)
+        int                 n;
+        const SG_TREE_NODE *rows = ov_graph_rows(lay, m, &n);
+        if (lay->sel_graph >= 0 && lay->sel_graph < n)
         {
-            SG_RENDER_NODE rnodes[OV_MAX_NODES];
-            int n_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
-            if (lay->sel_graph < n_rnodes)
-            {
-                const SG_RENDER_NODE *rn    = &rnodes[lay->sel_graph];
-                const OV_NODE        *node  = &m->nodes[rn->node_idx];
-                ov_focus_t            panel = (node->type == OV_NODE_STREAM) ? OV_FOCUS_STREAMS
-                                              : (node->type == OV_NODE_PROC) ? OV_FOCUS_PROCS
-                                                                             : OV_FOCUS_FPS;
-                lay->freeze = 0; /* before resolving: freeze changes the drawn rows */
-                ov_set_view(lay, OV_VIEW_DASHBOARD);
-                lay->focus = panel;
-                ov_sel_model(lay, m, panel, node->index);
-            }
+            int si      = rows[lay->sel_graph].stream_idx;
+            lay->freeze = 0; /* before resolving: freeze changes the drawn rows */
+            ov_set_view(lay, OV_VIEW_DASHBOARD);
+            lay->focus = OV_FOCUS_STREAMS;
+            ov_sel_model(lay, m, OV_FOCUS_STREAMS, si);
         }
         return 1;
     }

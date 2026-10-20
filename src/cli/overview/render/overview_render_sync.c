@@ -25,6 +25,11 @@ void ov_render__sync_selection(OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_MODEL *mm = (OV_MODEL *) (uintptr_t) m;
 
+    if (lay->focus != OV_FOCUS_GRAPH)
+    {
+        lay->graph_root_focus = lay->focus; /* the graph cursor never re-roots the tree */
+    }
+
     /* One-shot sort: only runs once when the user presses S or s. Order stays frozen until
      * the user explicitly sorts again; the selection follows by identity. */
     if (lay->sort_pending)
