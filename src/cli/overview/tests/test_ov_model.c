@@ -60,6 +60,29 @@ static void test_stat_with_spaces(void)
     waitpid(pid, NULL, 0);
 }
 
+/* One /proc read per PID per scan: values for a live PID, none for an exited one (perf-3) */
+static void test_pid_table(void)
+{
+    uint64_t ut = 0, st = 0;
+    pid_cache_reset();
+    CHECK(pid_get_start_ticks(getpid()) > 0);
+    CHECK(pid_get_rss_kb(getpid()) > 0);
+    CHECK(pid_get_cpu_ticks(getpid(), &ut, &st) == 0);
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        _exit(0);
+    }
+    waitpid(pid, NULL, 0);
+    pid_cache_reset();
+    CHECK(pid_get_status(pid) == OV_PID_DEAD);
+    CHECK(pid_get_rss_kb(pid) == 0 && pid_get_start_ticks(pid) == 0);
+    CHECK(pid_get_cpu_ticks(pid, &ut, &st) == -1);
+    CHECK(!pid_same_process(pid, 1));
+    pid_cache_reset(); /* remembered as dead: still dead without a new probe */
+    CHECK(!pid_is_alive(pid));
+}
+
 /* A PID shared by dead registry entries and a live one resolves to the live, else newest (links-11) */
 static void test_find_proc_by_pid(void)
 {
@@ -429,6 +452,7 @@ int main(void)
     test_stat_with_spaces();
     test_find_proc_by_pid();
     test_lookup_indexes();
+    test_pid_table();
     test_labels();
     test_pid_identity();
     test_loop_ids_stable();

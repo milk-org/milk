@@ -9,6 +9,7 @@ add_library(
   ${OV_DIR}/data/overview_data_filter.c
   ${OV_DIR}/data/overview_data_graph.c
   ${OV_DIR}/data/overview_data_index.c
+  ${OV_DIR}/data/overview_data_pid.c
   ${OV_DIR}/data/overview_data_loops.c
   ${OV_DIR}/data/overview_data_loops_names.c
   ${OV_DIR}/data/overview_data_loops_reg.c

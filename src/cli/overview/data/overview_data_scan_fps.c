@@ -152,9 +152,9 @@ static void fill_fps_from_struct(OV_FPS *f, ov_fps_cache_t *ce)
     f->md_status  = fpsp->md->status;
     f->confpid    = fpsp->md->confpid;
     f->runpid     = fpsp->md->runpid;
-    f->mem_rss_kb = (f->runpid > 0) ? pid_get_rss_kb(f->runpid) : 0;
     f->conf_alive = (pid_get_status(f->confpid) == OV_PID_ALIVE);
     f->run_alive  = pid_is_alive(f->runpid);
+    f->mem_rss_kb = f->run_alive ? pid_get_rss_kb(f->runpid) : 0; /* not a dead or reused PID's */
     if (f->confpid != ce->tk_conf_pid)
     {
         ce->tk_conf_pid = f->confpid;
