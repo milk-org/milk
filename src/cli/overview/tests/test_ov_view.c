@@ -263,6 +263,52 @@ static void test_procs_table(void)
     free(m);
 }
 
+/* STREAMS table: per-semaphore cells, RPID overflow marker, NAME highlight */
+static void test_streams_table(void)
+{
+    const OV_TABLE  *t = &ov_streams_table;
+    static OV_LAYOUT lay;
+    memset(&lay, 0, sizeof(lay));
+    check_table(t, &lay, 3); /* INODE, COUNT, SEMS */
+
+    OV_MODEL  *m = calloc(1, sizeof(*m));
+    OV_STREAM *s = &m->streams[0];
+    snprintf(s->name, sizeof(s->name), "wfsim");
+    s->nb_sem       = 3;
+    s->semval[0]    = 0;
+    s->semval[1]    = 12;
+    s->semval[2]    = -1;
+    s->nb_read_pids = 5;
+    for (int i = 0; i < 5; i++)
+    {
+        s->read_pids[i] = 1000001 + i;
+    }
+    m->nb_streams = 1;
+    OV_ROW_CTX rc;
+    memset(&rc, 0, sizeof(rc));
+    rc.lay = &lay;
+    rc.m   = m;
+    OV_COLCELL c;
+    memset(&c, 0, sizeof(c));
+    t->cols[ov_table_find_id(t, "sems")].cell(&c, &rc);
+    CHECK(strcmp(c.text, "0+-.......") == 0 && c.nspan == 10);
+    memset(&c, 0, sizeof(c));
+    t->cols[ov_table_find_id(t, "rpid")].cell(&c, &rc);
+    CHECK(strcmp(c.text, "1000001:1000002+3") == 0); /* a third PID and "+2" would not fit in 23 */
+    CHECK((int) strlen(c.text) <= t->cols[ov_table_find_id(t, "rpid")].width);
+
+    regex_t re;
+    CHECK(regcomp(&re, "fs", REG_EXTENDED) == 0);
+    rc.re = &re;
+    memset(&c, 0, sizeof(c));
+    t->cols[ov_table_find_id(t, "name")].cell(&c, &rc);
+    CHECK(strcmp(c.text, "w\x01"
+                         "fs\x02"
+                         "im") == 0);
+    regfree(&re);
+    free(m);
+}
+
 int main(void)
 {
     test_sort_does_not_touch_model();
@@ -271,6 +317,7 @@ int main(void)
     test_view_cache();
     test_fps_table();
     test_procs_table();
+    test_streams_table();
     if (failures == 0)
     {
         printf("all ok\n");

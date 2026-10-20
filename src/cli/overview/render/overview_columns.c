@@ -8,13 +8,14 @@
  */
 
 #include "overview_render_internal.h"
+#include <stdarg.h>
 
-/** ov_table_for - column table of list panel @panel, or NULL while it has none. */
+/** ov_table_for - column table of list panel @panel, or NULL for other panels. */
 const OV_TABLE *ov_table_for(ov_focus_t panel)
 {
-    return (panel == OV_FOCUS_FPS)     ? &ov_fps_table
-           : (panel == OV_FOCUS_PROCS) ? &ov_procs_table
-                                       : NULL;
+    static const OV_TABLE *const tables[OV_NB_LIST_PANELS] = { &ov_streams_table, &ov_procs_table,
+                                                               &ov_fps_table };
+    return ((int) panel >= 0 && panel < OV_NB_LIST_PANELS) ? tables[panel] : NULL;
 }
 
 /** ov_table_col_width - content width of column @c (view-dependent widths included). */
@@ -95,4 +96,31 @@ const char *ov_table_status_label(const OV_TABLE *t, int sort_key)
 {
     int c = ov_table_find_key(t, sort_key);
     return (c < 0) ? "name" : (t->cols[c].status != NULL) ? t->cols[c].status : t->cols[c].label;
+}
+
+/** ov_cp_count - code points in @s. */
+static int ov_cp_count(const char *s)
+{
+    int n = 0;
+    for (; *s != '\0'; s++)
+    {
+        n += ((*s & 0xC0) != 0x80);
+    }
+    return n;
+}
+
+/** ov_cell_span - append printf text to @c as one run in @style (its end is set here). */
+void ov_cell_span(OV_COLCELL *c, OV_COLSPAN style, const char *fmt, ...)
+{
+    size_t  len = strlen(c->text);
+    va_list ap;
+    if (c->nspan >= OV_COLCELL_MAX_SPANS)
+    {
+        return;
+    }
+    va_start(ap, fmt);
+    vsnprintf(c->text + len, sizeof(c->text) - len, fmt, ap);
+    va_end(ap);
+    style.end           = ov_cp_count(c->text);
+    c->span[c->nspan++] = style;
 }

@@ -34,41 +34,6 @@ int ov_input_hit_panel_tab(int mc, int panel_col, const char **tabs, int num_tab
     return -1;
 }
 
-static const char *stream_col_names[] = { "NAME", "TYP",   "SIZE",  "Hz",
-                                          "MB/s", "INODE", "COUNT", "ANCESTRY" };
-
-/**
- * ov_input__streams_header_click - handle mouse clicks on streams table column headers.
- * @lay: Pointer to layout structure.
- * @mc:  Mouse column coordinate.
- */
-void ov_input__streams_header_click(OV_LAYOUT *lay, int mc)
-{
-    int           table_x = mc - lay->r_streams.col - 2 + lay->panel[OV_FOCUS_STREAMS].hscroll;
-    OV_COL_LAYOUT cols[12];
-    int           num_cols = ov_get_stream_col_layout(lay->compact_mode, cols);
-    int           col_idx =
-        ov_header_hittest_sort_key(cols, num_cols, lay->panel[OV_FOCUS_STREAMS].collapsed, table_x);
-
-    if (col_idx >= 0)
-    {
-        if (lay->panel[OV_FOCUS_STREAMS].sort_key == col_idx)
-        {
-            lay->panel[OV_FOCUS_STREAMS].sort_dir = !lay->panel[OV_FOCUS_STREAMS].sort_dir;
-        }
-        else
-        {
-            lay->panel[OV_FOCUS_STREAMS].sort_key = col_idx;
-            lay->panel[OV_FOCUS_STREAMS].sort_dir = 0;
-        }
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Sort STREAMS by %s %s",
-                       stream_col_names[col_idx],
-                       lay->panel[OV_FOCUS_STREAMS].sort_dir ? "▼" : "▲");
-        lay->sort_pending = 1;
-        ov_scan_force_update();
-    }
-}
-
 /**
  * ov_input__table_header_click - sort list panel @panel by the column clicked at screen column @mc
  * (the same column again flips the direction). Return: 1 when a sortable column was hit.
@@ -99,6 +64,16 @@ int ov_input__table_header_click(OV_LAYOUT *lay, ov_focus_t panel, int mc)
 void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
 {
     ov_input__table_header_click(lay, OV_FOCUS_FPS, mc);
+}
+
+/**
+ * ov_input__streams_header_click - handle mouse clicks on streams table column headers.
+ * @lay: Pointer to layout structure.
+ * @mc:  Mouse column coordinate.
+ */
+void ov_input__streams_header_click(OV_LAYOUT *lay, int mc)
+{
+    ov_input__table_header_click(lay, OV_FOCUS_STREAMS, mc);
 }
 
 /**

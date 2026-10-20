@@ -37,14 +37,29 @@ typedef struct
     const regex_t    *re;        /* compiled panel filter, NULL = none */
 } OV_ROW_CTX;
 
-/* One cell as a column function fills it; text may carry \x01..\x02 highlight markup */
+#define OV_COLCELL_MAX_SPANS 24
+
+/* A styled run of a cell, from the previous run's end to code point @end (exclusive) */
 typedef struct
 {
-    char     text[192];
+    int      end;
     ov_rgb_t fg;
-    int      has_bg; /* bg overrides the row background */
+    int      has_bg;
     ov_rgb_t bg;
     int      bold;
+} OV_COLSPAN;
+
+/* One cell as a column function fills it: text may carry \x01..\x02 highlight markup, or be built from
+ * styled runs with ov_cell_span() (then fg/bg/bold are unused) */
+typedef struct
+{
+    char       text[192];
+    ov_rgb_t   fg;
+    int        has_bg; /* bg overrides the row background */
+    ov_rgb_t   bg;
+    int        bold;
+    int        nspan;
+    OV_COLSPAN span[OV_COLCELL_MAX_SPANS];
 } OV_COLCELL;
 
 typedef struct
@@ -78,8 +93,11 @@ const char     *ov_table_status_label(const OV_TABLE *t, int sort_key);
 void            ov_table_header(const OV_TABLE *t, const OV_LAYOUT *lay, OV_RECT r, ov_rgb_t fg);
 int             ov_table_row(const OV_TABLE *t, const OV_ROW_CTX *rc, ov_rgb_t row_bg, int avail);
 int             ov_table_col_at(ov_focus_t panel, int mc);
+void            ov_cell_span(OV_COLCELL *c, OV_COLSPAN style, const char *fmt, ...)
+    __attribute__((format(printf, 3, 4)));
 
 extern const OV_TABLE ov_fps_table;
 extern const OV_TABLE ov_procs_table;
+extern const OV_TABLE ov_streams_table;
 
 #endif /* OVERVIEW_COLUMNS_H */

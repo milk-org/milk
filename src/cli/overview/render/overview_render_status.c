@@ -60,45 +60,11 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     /* Sort key label */
     const char *sort_label = "";
     char        sort_buf[48];
-    switch (lay->focus)
+    if (lay->focus < OV_NB_LIST_PANELS)
     {
-    case OV_FOCUS_STREAMS:
-        switch (lay->panel[OV_FOCUS_STREAMS].sort_key)
-        {
-        case 1:
-            sort_label = " [sort:typ]";
-            break;
-        case 2:
-            sort_label = " [sort:size]";
-            break;
-        case 3:
-            sort_label = " [sort:Hz]";
-            break;
-        case 4:
-            sort_label = " [sort:MB/s]";
-            break;
-        case 5:
-            sort_label = " [sort:inode]";
-            break;
-        case 6:
-            sort_label = " [sort:count]";
-            break;
-        case 7:
-            sort_label = " [sort:ancestry]";
-            break;
-        default:
-            sort_label = " [sort:name]";
-            break;
-        }
-        break;
-    case OV_FOCUS_PROCS:
-    case OV_FOCUS_FPS:
         snprintf(sort_buf, sizeof(sort_buf), " [sort:%s]",
                  ov_table_status_label(ov_table_for(lay->focus), lay->panel[lay->focus].sort_key));
         sort_label = sort_buf;
-        break;
-    default:
-        break;
     }
 
     /* The DASH graph panel's sub-tab, named as its tab bar names it */

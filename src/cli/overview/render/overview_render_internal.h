@@ -199,27 +199,6 @@ static inline void format_mem_kb(char *buf, size_t sz, int64_t kb)
     }
 }
 
-/* Inline sort column label builder */
-static inline int sort_col_label(char       *buf,
-                                 int         bufsz,
-                                 const char *label,
-                                 int         col_key,
-                                 int         cur_key,
-                                 int         desc,
-                                 int         visual_width)
-{
-    if (col_key == cur_key)
-    {
-        snprintf(buf, bufsz, "\x01%s%s\x02", label, desc ? "\xe2\x96\xbc" : "\xe2\x96\xb2");
-        return visual_width + 4;
-    }
-    else
-    {
-        snprintf(buf, bufsz, "%s", label);
-        return visual_width;
-    }
-}
-
 /* Inline semaphore color helper */
 static inline ov_rgb_t ov_get_sem_color(int val)
 {
@@ -429,7 +408,6 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
                                 const regex_t    *re,
                                 OV_RECT           r);
 
-void ov_streams__render_header(const OV_LAYOUT *lay, OV_RECT r);
 void ov_streams__render_footer(const OV_LAYOUT *lay,
                                const OV_MODEL  *m,
                                OV_RECT          r,

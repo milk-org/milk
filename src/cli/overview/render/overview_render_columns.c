@@ -143,6 +143,63 @@ int ov_table_col_at(ov_focus_t panel, int mc)
     return -1;
 }
 
+/** ov_table_spans - draw the styled runs of @c in @w columns (cut at @w, padded on the free side). */
+static void ov_table_spans(const OV_COLCELL     *c,
+                           int                   w,
+                           int                   right,
+                           int                   lc,
+                           int                   vc,
+                           ov_rgb_t              row_bg,
+                           const OV_PANEL_STATE *ps,
+                           int                  *hs_rem,
+                           int                  *printed,
+                           int                   avail)
+{
+    int  total = c->span[c->nspan - 1].end;
+    int  pad   = (total < w) ? w - total : 0;
+    char piece[256];
+    snprintf(piece, sizeof(piece), "%*s", pad, "");
+    if (right && pad > 0)
+    {
+        ov_render_cell(lc, vc, OV_FG_DIM, row_bg, piece, hs_rem, printed, avail, ps->highlight_col,
+                       0);
+    }
+    const char *p = c->text;
+    for (int k = 0, cp = 0; k < c->nspan && cp < w; k++)
+    {
+        const OV_COLSPAN *sp = &c->span[k];
+        size_t            b  = 0;
+        for (; cp < sp->end && *p != '\0'; cp++)
+        {
+            int clen = utf8_char_length((unsigned char) *p);
+            for (int i = 0; i < clen && *p != '\0'; i++, p++)
+            {
+                if (cp < w && b + 1 < sizeof(piece))
+                {
+                    piece[b++] = *p;
+                }
+            }
+        }
+        piece[b] = '\0';
+        if (sp->bold)
+        {
+            ov_buf_bold();
+        }
+        ov_render_cell(lc, vc, sp->fg, sp->has_bg ? sp->bg : row_bg, piece, hs_rem, printed, avail,
+                       ps->highlight_col, 0);
+        if (sp->bold)
+        {
+            ov_buf_reset_attr();
+        }
+    }
+    if (!right && pad > 0)
+    {
+        snprintf(piece, sizeof(piece), "%*s", pad, "");
+        ov_render_cell(lc, vc, OV_FG_DIM, row_bg, piece, hs_rem, printed, avail, ps->highlight_col,
+                       0);
+    }
+}
+
 /**
  * ov_table_row - draw the cells of one row of @t at the cursor (after the 1-column focus strip) on
  * @row_bg. Return: columns printed, counting the strip.
@@ -165,9 +222,15 @@ int ov_table_row(const OV_TABLE *t, const OV_ROW_CTX *rc, ov_rgb_t row_bg, int a
         memset(&c, 0, sizeof(c));
         c.fg = OV_FG_TEXT;
         col->cell(&c, rc);
+        int w = ov_table_col_width(t, rc->lay, vis[k]);
+        if (c.nspan > 0 && !((ps->collapsed >> vis[k]) & 1))
+        {
+            ov_table_spans(&c, w, (col->flags & OV_COLF_RIGHT) != 0, vis[k], k, row_bg, ps, &hs_rem,
+                           &printed, avail);
+            continue;
+        }
         char cell[256];
-        ov_cell_fit(c.text, ov_table_col_width(t, rc->lay, vis[k]),
-                    (col->flags & OV_COLF_RIGHT) != 0, cell, sizeof(cell));
+        ov_cell_fit(c.text, w, (col->flags & OV_COLF_RIGHT) != 0, cell, sizeof(cell));
         if (c.bold)
         {
             ov_buf_bold();

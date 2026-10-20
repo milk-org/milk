@@ -178,7 +178,7 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
                                     lay->panel[OV_FOCUS_STREAMS].filter_on, filt_n, m->nb_streams);
     }
 
-    ov_streams__render_header(lay, r);
+    ov_table_header(&ov_streams_table, lay, r, OV_FG_STREAM_HDR);
     ov_streams__render_rows(lay, m, rel, r, filt_idx, filt_n, active_filter);
 
     int max_rows = r.height - 4;
