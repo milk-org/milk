@@ -6,6 +6,7 @@
 
 #include "overview_data_internal.h"
 #include "overview_render_internal.h"
+#include "overview_input_keys.h"
 
 #include <stdlib.h>
 
@@ -370,6 +371,49 @@ static void test_keymap(void)
     CHECK(ov_key_footer(buf, 4) == 3); /* truncated, still terminated */
 }
 
+static int calls[4];
+
+/** row handlers for test_key_dispatch: record the call; row 1 declines */
+static int h0(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    (void) key, (void) lay, (void) m;
+    return ++calls[0], 1;
+}
+static int h1(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    (void) key, (void) lay, (void) m;
+    return ++calls[1], 0;
+}
+static int h2(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    (void) key, (void) lay, (void) m;
+    return ++calls[2], 2;
+}
+
+/* Key dispatch: context needed / forbidden, first match, a declining row falls through, wildcard */
+static void test_key_dispatch(void)
+{
+    static const OV_KEYBIND t[] = {
+        { { 'x' }, OV_CTX_CTRL, 0, h0 },
+        { { 'x', 'y' }, 0, OV_CTX_F5, h1 },
+        { { 'x' }, 0, 0, h2 },
+        { { OV_KEY_ANY }, OV_CTX_F5, 0, h0 },
+    };
+    static OV_LAYOUT lay;
+    memset(&lay, 0, sizeof(lay));
+    lay.view = OV_VIEW_DASHBOARD;
+    CHECK(ov_key_dispatch(t, 4, 'x', &lay, NULL) == 2 && calls[1] == 1 && calls[2] == 1);
+    lay.ctrl_mode = 1;
+    CHECK(ov_key_dispatch(t, 4, 'x', &lay, NULL) == 1 && calls[0] == 1);
+    CHECK(ov_key_dispatch(t, 4, 'y', &lay, NULL) == 0 && calls[1] == 2);
+    lay.view      = OV_VIEW_FPS;
+    lay.ctrl_mode = 0;
+    CHECK(ov_key_dispatch(t, 4, 'q', &lay, NULL) == 1 && calls[0] == 2);
+    CHECK(ov_key_dispatch(t, 4, 'y', &lay, NULL) == 1 && calls[1] == 2); /* F5: row 1 forbidden */
+    unsigned c = ov_key_ctx(&lay, NULL);
+    CHECK((c & OV_CTX_F5) && !(c & OV_CTX_MODEL) && (c & OV_CTX_FOCUS_LIST));
+}
+
 int main(void)
 {
     test_sort_does_not_touch_model();
@@ -382,6 +426,7 @@ int main(void)
     test_view_descs();
     test_loop_list_rows();
     test_keymap();
+    test_key_dispatch();
     if (failures == 0)
     {
         printf("all ok\n");

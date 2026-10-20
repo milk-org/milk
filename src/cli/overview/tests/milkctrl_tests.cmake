@@ -22,13 +22,14 @@ if(BUILD_TESTING)
     ../overview/render/overview_columns.c ../overview/render/overview_columns_fps.c
     ../overview/render/overview_columns_procs.c ../overview/render/overview_columns_streams.c
     ../overview/render/overview_render_utils.c ../overview/overview_view.c ../overview/overview_keymap.c
+    ../overview/input/overview_input_keys.c
     ../overview/render/overview_theme.c ../overview/render/overview_theme_palettes.c
     ../overview/render/overview_theme_palettes_extra.c ../overview/ansi/overview_ansi_buf.c
     ../overview/ansi/overview_ansi_delta.c ../overview/ansi/overview_ansi_utf8.c
     ../overview/ansi/overview_ansi_term.c ../overview/ansi/overview_ansi_key.c)
   target_include_directories(
     milkctrl-unit-view PRIVATE ${CMAKE_SOURCE_DIR}/src/cli/overview/render
-                               ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi)
+                               ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi ${CMAKE_SOURCE_DIR}/src/cli/overview/input)
   target_link_libraries(milkctrl-unit-view PRIVATE milkctrl_model)
   add_test(NAME milkctrl_unit_view COMMAND milkctrl-unit-view)
 endif()

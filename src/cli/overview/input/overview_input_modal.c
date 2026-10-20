@@ -77,57 +77,53 @@ int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     return 1;
 }
 
-/**
- * ov_input__handle_loop_actions - process loop view action keys (rename, filter, graph).
- * @key: Pressed key code.
- * @lay: Pointer to overview layout structure.
- * @m:   Pointer to current data model snapshot.
- *
- * Return: 1 if key was consumed, 0 otherwise.
- */
-int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+/** loop_rename - r / R: rename the selected loop (the name is saved). */
+static int loop_rename(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    int in_loops = (lay->view == OV_VIEW_LOOPS ||
-                    (lay->view == OV_VIEW_DASHBOARD && lay->subtab == OV_SUB_LOOPS &&
-                     lay->focus == OV_FOCUS_GRAPH));
-    if (!in_loops)
+    (void) key;
+    int li = lay->sub[OV_SUB_LOOPS].sel;
+    if (li < 0 || li >= m->nb_loops)
     {
         return 0;
     }
+    lay->rename.active = 1;
+    snprintf(lay->rename.buf, sizeof(lay->rename.buf), "%s", ov_loop_name(&m->loops[li]));
+    lay->rename.cursor = (int) strlen(lay->rename.buf);
+    return 1;
+}
 
-    /* 'r' or 'R' — rename selected loop */
-    if (key == 'r' || key == 'R')
+/** loop_isolate - f: lists show the selected loop's members only. */
+static int loop_isolate(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    (void) key, (void) m;
+    lay->loop_filter_active = !lay->loop_filter_active;
+    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                   lay->loop_filter_active ? "Loop isolation filter: ON"
+                                           : "Loop isolation filter: OFF");
+    return 1;
+}
+
+/** loop_graph - g: the CONNECTIONS tree (F7 opens F6). */
+static int loop_graph(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    (void) key, (void) m;
+    lay->subtab = OV_SUB_CONN;
+    if (lay->view == OV_VIEW_LOOPS)
     {
-        if (lay->sub[OV_SUB_LOOPS].sel >= 0 && lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
-        {
-            lay->rename.active = 1;
-            const OV_LOOP *lp  = &m->loops[lay->sub[OV_SUB_LOOPS].sel];
-            snprintf(lay->rename.buf, sizeof(lay->rename.buf), "%s", ov_loop_name(lp));
-            lay->rename.cursor = (int) strlen(lay->rename.buf);
-            return 1;
-        }
+        ov_set_view(lay, OV_VIEW_GRAPH);
     }
+    return 1;
+}
 
-    /* 'f' — toggle loop isolation filter */
-    if (key == 'f')
-    {
-        lay->loop_filter_active = !lay->loop_filter_active;
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
-                       lay->loop_filter_active ? "Loop isolation filter: ON"
-                                               : "Loop isolation filter: OFF");
-        return 1;
-    }
+/* On a loop list: F7, or the LOOPS sub-tab with focus (DASH and F6) */
+static const OV_KEYBIND loop_keys[] = {
+    { { 'r', 'R' }, OV_CTX_LOOP_LIST | OV_CTX_MODEL, 0, loop_rename },
+    { { 'f' }, OV_CTX_LOOP_LIST, 0, loop_isolate },
+    { { 'g' }, OV_CTX_LOOP_LIST, 0, loop_graph },
+};
 
-    /* 'g' — switch to graph CONNECTIONS tab to view circuit tree */
-    if (key == 'g')
-    {
-        lay->subtab = OV_SUB_CONN;
-        if (lay->view == OV_VIEW_LOOPS)
-        {
-            ov_set_view(lay, OV_VIEW_GRAPH);
-        }
-        return 1;
-    }
-
-    return 0;
+/** ov_input__handle_loop_actions - loop list keys: rename, isolate, graph. Return: 1 consumed. */
+int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    return ov_key_dispatch(loop_keys, OV_KEYBIND_N(loop_keys), key, lay, m);
 }

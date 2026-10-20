@@ -49,30 +49,13 @@ static int detail_scroll(int key, OV_LAYOUT *lay)
     return 1;
 }
 
-/**
- * ov_input__handle_navigation - dispatch cursor keys, paging, and scroll navigation.
- * @key: Pressed key code (arrows, Home/End, PgUp/PgDn, etc.).
- * @lay: Pointer to layout structure.
- * @m:   Pointer to data model snapshot.
- *
- * Return: 1 if navigation key was consumed, 0 otherwise.
- */
-int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+/** list_nav - arrows, pages, Home / End in the focused list, loop list, CONNECTIONS, or DETAILS text. */
+static int list_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     int *sel                            = NULL;
     int *scroll __attribute__((unused)) = NULL;
     int  count                          = 0;
     int  page_h                         = 10;
-
-    /* F5 view (OV_VIEW_FPS) param-tree intercept */
-    if (lay->view == OV_VIEW_FPS)
-    {
-        int rc = ov_input_nav_fps(key, lay, m);
-        if (rc != 0)
-        {
-            return rc;
-        }
-    }
 
     switch (lay->focus)
     {
@@ -213,4 +196,19 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     return 0;
+}
+
+static const OV_KEYBIND nav_keys[] = {
+    { { OV_KEY_SHIFT_UP, OV_KEY_SHIFT_DOWN }, 0, 0, ov_input__handle_ancestry_nav },
+    { { OV_KEY_ANY }, OV_CTX_F5, 0, ov_input_nav_fps }, /* F5 parameter tree first */
+    { { OV_KEY_UP, OV_KEY_DOWN, OV_KEY_PGUP, OV_KEY_PGDN, OV_KEY_HOME, OV_KEY_END },
+      0,
+      0,
+      list_nav },
+};
+
+/** ov_input__handle_navigation - lineage jumps, the F5 tree, and cursor movement. Return: 1 consumed. */
+int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    return ov_key_dispatch(nav_keys, OV_KEYBIND_N(nav_keys), key, lay, m);
 }

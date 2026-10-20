@@ -95,3 +95,16 @@ def test_toggle_keys_still_act(milkctrl):
     m.keys("G")
     _gone(m, "Control mode ON")
     assert m.quit() == 0
+
+
+def test_j_and_k_are_not_navigation(milkctrl, entities):
+    """No vi keys: j is unbound, k is SIGTERM on PROC/FPS and asks for CONTROL mode outside it."""
+    entities.make_proc("jkproc")
+    m = milkctrl(y=40)
+    m.keys("F4")
+    m.wait_for(r"jkproc")
+    m.keys("j")
+    m.wait_for(r"Unmapped key: 'j'")
+    m.keys("k")
+    m.wait_for(r"'k' requires CONTROL mode")
+    assert m.quit() == 0

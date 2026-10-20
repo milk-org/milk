@@ -27,6 +27,8 @@ unsigned ov_key_ctx(const OV_LAYOUT *lay, const OV_MODEL *m)
     c |= ((int) lay->focus >= 0 && lay->focus < OV_FOCUS_COUNT) ? focus_bit[lay->focus] : 0;
     c |= (lay->view == OV_VIEW_FPS && lay->fps_param_focus) ? OV_CTX_PARAM_TREE : 0;
     c |= (lay->multi_sel_count > 0) ? OV_CTX_MSEL : 0;
+    c |= ov_view_has_panel(lay->view, lay->focus) ? OV_CTX_FOCUS_SHOWN : 0;
+    c |= (lay->focus < OV_NB_LIST_PANELS) ? OV_CTX_FOCUS_LIST : 0;
     return c;
 }
 
@@ -42,7 +44,7 @@ int ov_key_dispatch(const OV_KEYBIND *t, int n, int key, OV_LAYOUT *lay, const O
         int hit = 0;
         for (int k = 0; k < 8 && t[i].keys[k] != 0 && !hit; k++)
         {
-            hit = (t[i].keys[k] == key);
+            hit = (t[i].keys[k] == key || t[i].keys[k] == OV_KEY_ANY);
         }
         if (hit && (ctx & t[i].need) == t[i].need && (ctx & t[i].forbid) == 0)
         {

@@ -217,32 +217,24 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         return 0;
     }
-    if (ov_input__handle_view_switch(key, lay, m))
+    /* 5. Key groups, in precedence order; each is a binding table next to its handlers */
+    static int (*const key_groups[])(int, OV_LAYOUT *, const OV_MODEL *) = {
+        ov_input__handle_view_switch,  /* F2..F7, Ctrl+arrows, TAB, Shift+TAB */
+        ov_input__handle_subtab_keys,  /* focused sub-tab: CONNECTIONS ENTER, DETAILS parameters */
+        ov_input__handle_misc_toggles, /* display toggles, splits, freeze, ENTER, LEFT / RIGHT */
+        ov_input__handle_column_keys,  /* column cursor, hide / show, sorting */
+        ov_input__handle_actions,      /* erase, inspect, CONTROL actions */
+        ov_input__handle_loop_actions, /* loop list: rename, isolate, graph */
+    };
+    for (size_t g = 0; g < sizeof(key_groups) / sizeof(key_groups[0]); g++)
     {
-        return 0;
-    }
-    if (ov_input__handle_subtab_keys(key, lay, m))
-    {
-        return 0;
-    }
-    if (ov_input__handle_misc_toggles(key, lay, m))
-    {
-        return 0;
-    }
-    if (ov_input__handle_column_keys(key, lay, m))
-    {
-        return 0;
-    }
-    if (ov_input__handle_actions(key, lay, m))
-    {
-        return 0;
-    }
-    if (ov_input__handle_loop_actions(key, lay, m))
-    {
-        return 0;
+        if (key_groups[g](key, lay, m))
+        {
+            return 0;
+        }
     }
 
-    if (ov_input__handle_ancestry_nav(key, lay, m) || ov_input__handle_navigation(key, lay, m))
+    if (ov_input__handle_navigation(key, lay, m))
     {
         /* Perform auto-scrolling if a navigation key was pressed */
         int *sel    = NULL;
@@ -293,11 +285,9 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 0;
     }
 
-    if (key == OV_KEY_SHIFT_UP || key == OV_KEY_SHIFT_DOWN || key == OV_KEY_SHIFT_LEFT ||
-        key == OV_KEY_SHIFT_RIGHT || key == OV_KEY_CTRL_LEFT || key == OV_KEY_CTRL_RIGHT ||
-        key == OV_KEY_BTAB || key == 27)
+    if (key == OV_KEY_SHIFT_UP || key == OV_KEY_SHIFT_DOWN)
     {
-        return 0;
+        return 0; /* no upstream / downstream entity: nothing to say */
     }
 
     if (key >= 32 && key <= 126)

@@ -25,8 +25,12 @@
 #define OV_CTX_FOCUS_PROCS (1U << 7)
 #define OV_CTX_FOCUS_FPS (1U << 8)
 #define OV_CTX_FOCUS_GRAPH (1U << 9)
-#define OV_CTX_PARAM_TREE (1U << 10) /* F5 parameter tree focused */
-#define OV_CTX_MSEL (1U << 11)       /* FPS batch marks set */
+#define OV_CTX_PARAM_TREE (1U << 10)  /* F5 parameter tree focused */
+#define OV_CTX_MSEL (1U << 11)        /* FPS batch marks set */
+#define OV_CTX_FOCUS_SHOWN (1U << 12) /* the focused panel is on screen */
+#define OV_CTX_FOCUS_LIST (1U << 13)  /* the focus is a list panel (streams, processes, FPS) */
+
+#define OV_KEY_ANY (-1) /* in keys[]: every key */
 
 #define OV_KEY_QUIT 2 /* handler return: quit milk-CTRL */
 
