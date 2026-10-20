@@ -28,7 +28,6 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
                                 const char       *active_filter)
 {
     int    hrow = r.row + 1;
-    int    hs   = lay->panel[OV_FOCUS_FPS].hscroll;
     int8_t local_depth[OV_MAX_FPS];
     memset(local_depth, 0, sizeof(local_depth));
     {
@@ -164,7 +163,6 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
             }
             row_bg = zebra_bg(row_bg, i);
 
-            int hs_rem  = hs;
             int printed = 1;
             int avail   = r.width - 2;
 
@@ -175,210 +173,18 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
             int panel_focused = (lay->focus == OV_FOCUS_FPS);
             render_focus_strip(row, r.col + 1, panel_focused, OV_FG_FPS, row_bg);
 
-            /* Multi-select marker */
-            if (ov_msel_has(lay, f->name))
-            {
-                ov_theme_fg(OV_FG_ACTIVE);
-                ov_buf_printf("\xe2\x97\x86"); /* ◆ */
-                printed += 1;
-            }
-
-            /* Ancestry column */
-            int8_t sdepth      = local_depth[fi];
-            char   anc_str[64] = "";
-            if (sdepth != 0 && !is_sel && !is_frozen)
-            {
-                int abs_d = sdepth < 0 ? -sdepth : sdepth;
-                if (abs_d > 99)
-                {
-                    abs_d = 99;
-                }
-                if (sdepth < 0)
-                {
-                    snprintf(anc_str, sizeof(anc_str),
-                             abs_d < 10 ? "\xe2\x97\x80%d  " : "\xe2\x97\x80%d ", abs_d);
-                }
-                else
-                {
-                    snprintf(anc_str, sizeof(anc_str),
-                             abs_d < 10 ? "%d\xe2\x96\xb6  " : "%d\xe2\x96\xb6 ", abs_d);
-                }
-            }
-            else if (is_sel || is_frozen)
-            {
-                snprintf(anc_str, sizeof(anc_str), "\xe2\x97\x8f   ");
-            }
-            else if (eff_focus == OV_FOCUS_STREAMS && is_rel && rel != NULL)
-            {
-                int is_written = bget(rel->fps_writes, fi);
-                snprintf(anc_str, sizeof(anc_str),
-                         is_written ? "\xe2\x96\xb6   " : "\xe2\x97\x80   ");
-            }
-            else if (f->nb_loops > 1)
-            {
-                snprintf(anc_str, sizeof(anc_str), "\xe2\xae\x82   "); /* ⮂ */
-            }
-            else if (f->nb_loops == 1)
-            {
-                snprintf(anc_str, sizeof(anc_str), "\xe2\x86\xba   "); /* ↺ */
-            }
-            else
-            {
-                snprintf(anc_str, sizeof(anc_str), "    ");
-            }
-
-            ov_rgb_t anc_color = (f->nb_loops > 1) ? OV_FG_LOOP_SHARED
-                                                   : ((f->nb_loops == 1) ? OV_FG_LOOP : OV_FG_WARN);
-            ov_render_cell(0, 0, anc_color, row_bg, anc_str, &hs_rem, &printed, avail,
-                           lay->panel[OV_FOCUS_FPS].highlight_col,
-                           lay->panel[OV_FOCUS_FPS].collapsed);
-
-#define FPS_FIELD_WITH_COL(vcol_idx, logical_idx, color, bg_color, fmt, ...)                      \
-    do                                                                                            \
-    {                                                                                             \
-        char _fb[128];                                                                            \
-        int  _fl = snprintf(_fb, sizeof(_fb), fmt, ##__VA_ARGS__);                                \
-        ov_render_cell(logical_idx, vcol_idx, (color), (bg_color), _fb, &hs_rem, &printed, avail, \
-                       lay->panel[OV_FOCUS_FPS].highlight_col,                                    \
-                       lay->panel[OV_FOCUS_FPS].collapsed);                                       \
-    } while (0)
-
-#define FPS_FIELD(color, fmt, ...)                                                   \
-    do                                                                               \
-    {                                                                                \
-        int logical_idx = ov_get_logical_col_fps(vcol, lay->compact_mode);           \
-        FPS_FIELD_WITH_COL(vcol, logical_idx, (color), cell_bg, fmt, ##__VA_ARGS__); \
-        vcol++;                                                                      \
-    } while (0)
-
-#define FPS_PID_FIELD(pid_val, fmt, ...)                                                            \
-    do                                                                                              \
-    {                                                                                               \
-        pid_t    _pval    = (pid_t) (pid_val);                                                      \
-        int      _match   = (_spid > 0 && _pval == _spid);                                          \
-        int      _idx     = ov_find_proc_by_pid(m, _pval);                                          \
-        int      _crashed = (_idx >= 0 && m->procs[_idx].loopstat == PROCESSINFO_LOOPSTAT_CRASHED); \
-        ov_rgb_t prev_bg  = cell_bg;                                                                \
-        if (_match)                                                                                 \
-        {                                                                                           \
-            if (_crashed)                                                                           \
-            {                                                                                       \
-                cell_bg = OV_FG_ERROR;                                                              \
-            }                                                                                       \
-            else                                                                                    \
-            {                                                                                       \
-                cell_bg = OV_BG_PID_MATCH;                                                          \
-            }                                                                                       \
-            ov_buf_bold();                                                                          \
-        }                                                                                           \
-        ov_rgb_t _fg;                                                                               \
-        if (_crashed)                                                                               \
-        {                                                                                           \
-            _fg = _match ? ov_rgb_on(OV_BG_PID_MATCH) : OV_FG_ERROR;                                \
-        }                                                                                           \
-        else if (_match)                                                                            \
-        {                                                                                           \
-            _fg = ov_rgb_on(OV_BG_PID_MATCH);                                                       \
-        }                                                                                           \
-        else                                                                                        \
-        {                                                                                           \
-            _fg = ov_pid_color(_pval);                                                              \
-        }                                                                                           \
-        FPS_FIELD(_fg, fmt, ##__VA_ARGS__);                                                         \
-        if (_match)                                                                                 \
-        {                                                                                           \
-            ov_buf_reset_attr();                                                                    \
-            cell_bg = prev_bg;                                                                      \
-        }                                                                                           \
-    } while (0)
-
-            pid_t    _spid   = (rel != NULL) ? rel->sel_pid : 0;
-            int      vcol    = 1;
-            ov_rgb_t cell_bg = row_bg;
-
-            /* FPS Name with regex match highlighting */
-            {
-                char       name_cell[128];
-                regmatch_t pm[1];
-                if (has_re && regexec(&re, f->name, 1, pm, 0) == 0)
-                {
-                    int b_len = pm[0].rm_so;
-                    if (b_len > 18)
-                    {
-                        b_len = 18;
-                    }
-                    int m_len = pm[0].rm_eo - pm[0].rm_so;
-                    if (b_len + m_len > 18)
-                    {
-                        m_len = 18 - b_len;
-                    }
-                    int tail_len = 18 - (b_len + m_len);
-                    if (tail_len < 0)
-                    {
-                        tail_len = 0;
-                    }
-                    snprintf(name_cell, sizeof(name_cell), "%.*s\x01%.*s\x02%.*s ", b_len, f->name,
-                             m_len, f->name + b_len, tail_len, f->name + b_len + m_len);
-                }
-                else
-                {
-                    snprintf(name_cell, sizeof(name_cell), "%-18.18s ", f->name);
-                }
-                FPS_FIELD(OV_FG_FPS, "%s", name_cell);
-            }
-
-            char tmx_str[4] = { (f->tmux_flags & OV_TMUX_CTRL) ? 'c' : '-',
-                                (f->tmux_flags & OV_TMUX_CONF) ? 'C' : '-',
-                                (f->tmux_flags & OV_TMUX_RUN) ? 'r' : '-', '\0' };
-            FPS_FIELD(OV_FG_DIM, "%3s ", tmx_str);
-
-            if (f->confpid > 0)
-            {
-                FPS_PID_FIELD(f->confpid, "%7d ", (int) f->confpid);
-            }
-            else
-            {
-                FPS_FIELD(OV_FG_DIM, "%7s ", "-");
-            }
-            if (f->runpid > 0)
-            {
-                FPS_PID_FIELD(f->runpid, "%7d ", (int) f->runpid);
-            }
-            else
-            {
-                FPS_FIELD(OV_FG_DIM, "%7s ", "-");
-            }
-            FPS_FIELD(OV_FG_TEXT, "%3d ", f->nb_stream_params);
-
-            /* MEM */
-            char memstr[16];
-            format_mem_kb(memstr, sizeof(memstr), f->mem_rss_kb);
-            FPS_FIELD(OV_FG_TEXT, "%5s ", memstr);
-
-            /* Detailed columns (hidden in compact) */
-            if (!lay->compact_mode)
-            {
-                if (lay->view == OV_VIEW_FPS)
-                {
-                    FPS_FIELD(OV_FG_DIM, "%-30.30s ", f->description);
-                }
-                else
-                {
-                    FPS_FIELD(OV_FG_DIM, "%-20.20s ", f->description);
-                }
-                /* FPS Hz sparkline */
-                if (f->hz_hist_idx > 0)
-                {
-                    render_sparkline(f->hz_hist, f->hz_hist_idx, OV_SPARKLINE_LEN, 8, OV_FG_FPS);
-                    printed += 8;
-                    ov_buf_printf(" ");
-                    printed += 1;
-                }
-            }
-
-#undef FPS_PID_FIELD
-#undef FPS_FIELD_WITH_COL
-#undef FPS_FIELD
+            OV_ROW_CTX rc = { lay,
+                              m,
+                              rel,
+                              fi,
+                              is_sel,
+                              is_frozen,
+                              is_rel,
+                              eff_focus,
+                              local_depth[fi],
+                              (rel != NULL) ? rel->sel_pid : 0,
+                              has_re ? &re : NULL };
+            printed       = ov_table_row(&ov_fps_table, &rc, row_bg, avail);
 
             /* When cross-highlighted by a stream selection, iterate all
              * stream params of this FPS that match the selected stream */
@@ -483,7 +289,7 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
         lay->focus == OV_FOCUS_FPS, 0, lay->ctrl_blink, loop_id, lay->panel[OV_FOCUS_FPS].filter,
         lay->panel[OV_FOCUS_FPS].filter_on, filt_n, m->nb_fps);
 
-    ov_fps__render_header(lay, r);
+    ov_table_header(&ov_fps_table, lay, r, OV_FG_FPS_HDR);
     ov_fps__render_rows(lay, m, rel, r, fidx, filt_n, active_filter);
 
     int max_rows = r.height - 4;

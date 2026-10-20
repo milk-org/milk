@@ -18,7 +18,12 @@ if(BUILD_TESTING)
     milkctrl-unit-view
     ../overview/tests/test_ov_view.c ../overview/render/overview_render_view.c
     ../overview/render/overview_render_select.c ../overview/render/overview_render_relate.c
-    ../overview/render/overview_render_filter.c ../overview/overview_cmdlog.c)
+    ../overview/render/overview_render_filter.c ../overview/overview_cmdlog.c
+    ../overview/render/overview_columns.c ../overview/render/overview_columns_fps.c
+    ../overview/render/overview_theme.c ../overview/render/overview_theme_palettes.c
+    ../overview/render/overview_theme_palettes_extra.c ../overview/ansi/overview_ansi_buf.c
+    ../overview/ansi/overview_ansi_delta.c ../overview/ansi/overview_ansi_utf8.c
+    ../overview/ansi/overview_ansi_term.c ../overview/ansi/overview_ansi_key.c)
   target_include_directories(
     milkctrl-unit-view PRIVATE ${CMAKE_SOURCE_DIR}/src/cli/overview/render
                                ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi)

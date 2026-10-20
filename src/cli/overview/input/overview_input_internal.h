@@ -65,6 +65,7 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m);
 void ov_input__streams_header_click(OV_LAYOUT *lay, int mc);
 void ov_input__procs_header_click(OV_LAYOUT *lay, int mc);
 void ov_input__fps_header_click(OV_LAYOUT *lay, int mc);
+int  ov_input__table_header_click(OV_LAYOUT *lay, ov_focus_t panel, int mc);
 void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m);
 
 /* Mouse dispatch & helpers */

@@ -256,6 +256,9 @@ add_executable(
   ../overview/render/overview_render_procs_hdr.c
   ../overview/render/overview_render_procs_row.c
   ../overview/render/overview_render_fps.c
+  ../overview/render/overview_render_columns.c
+  ../overview/render/overview_columns.c
+  ../overview/render/overview_columns_fps.c
   ../overview/render/overview_render_fps_hdr.c
   ../overview/render/overview_render_fps_params.c
   ../overview/render/overview_render_fps_params_info.c

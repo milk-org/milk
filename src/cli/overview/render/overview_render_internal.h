@@ -58,6 +58,11 @@ typedef struct
     int8_t stream_depth[OV_MAX_STREAMS];
 } OV_RELATED;
 
+#include "overview_columns.h" /* needs OV_RELATED */
+void ov_cell_ancestry(OV_COLCELL *c, const OV_ROW_CTX *rc, int nb_loops, int written);
+void ov_cell_name(OV_COLCELL *c, const OV_ROW_CTX *rc, const char *name, ov_rgb_t fg);
+void ov_cell_pid(OV_COLCELL *c, const OV_ROW_CTX *rc, pid_t pid);
+
 /* ---- Shared render utilities ---- */
 
 void render_pad_spaces(int chars_written, int panel_width);
@@ -336,54 +341,32 @@ int  ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc);
 
 
 /**
- * render_sparkline - draw a Unicode sparkline bar.
- * @hist:  circular buffer of values
- * @hidx:  next write index (points one past last)
- * @len:   buffer length (OV_SPARKLINE_LEN)
- * @width: number of characters to render
- * @fg:    foreground color
+ * ov_sparkline_str - @width-character Unicode sparkline of the circular buffer @hist (next write index
+ * @hidx, @len entries), scaled to its maximum, into @buf.
  */
-static inline void render_sparkline(const float *hist, int hidx, int len, int width, ov_rgb_t fg)
+static inline void ov_sparkline_str(char        *buf,
+                                    size_t       n,
+                                    const float *hist,
+                                    int          hidx,
+                                    int          len,
+                                    int          width)
 {
-    /* Unicode block elements: 1/8 to 8/8 */
     static const char *bars[] = { "\xe2\x96\x81", "\xe2\x96\x82", "\xe2\x96\x83", "\xe2\x96\x84",
                                   "\xe2\x96\x85", "\xe2\x96\x86", "\xe2\x96\x87", "\xe2\x96\x88" };
-    /* Find max in history for scaling */
-    float mx = 0.001f;
+    float              mx     = 0.001f;
+    size_t             used   = 0;
     for (int ii = 0; ii < len; ii++)
     {
-        if (hist[ii] > mx)
-        {
-            mx = hist[ii];
-        }
+        mx = (hist[ii] > mx) ? hist[ii] : mx;
     }
-    ov_theme_fg(fg);
-    int start = hidx - width;
-    if (start < 0)
+    int start = (hidx - width < 0) ? hidx - width + len : hidx - width;
+    buf[0]    = '\0';
+    for (int ii = 0; ii < width && used + 4 < n; ii++)
     {
-        start += len;
-    }
-    for (int ii = 0; ii < width; ii++)
-    {
-        int   idx   = (start + ii) % len;
-        float v     = hist[idx];
+        float v     = hist[(start + ii) % len];
         int   level = (int) (v / mx * 7.0f);
-        if (level < 0)
-        {
-            level = 0;
-        }
-        if (level > 7)
-        {
-            level = 7;
-        }
-        if (v < 0.001f)
-        {
-            ov_buf_printf(" ");
-        }
-        else
-        {
-            ov_buf_printf("%s", bars[level]);
-        }
+        level       = (level < 0) ? 0 : (level > 7) ? 7 : level;
+        used += (size_t) snprintf(buf + used, n - used, "%s", (v < 0.001f) ? " " : bars[level]);
     }
 }
 
@@ -420,7 +403,6 @@ static inline void format_uptime(char *buf, int sz, int64_t secs)
 
 
 /* Panel header and footer sub-renderers */
-void ov_fps__render_header(const OV_LAYOUT *lay, OV_RECT r);
 void ov_fps__render_footer(const OV_LAYOUT *lay,
                            const OV_MODEL  *m,
                            OV_RECT          r,

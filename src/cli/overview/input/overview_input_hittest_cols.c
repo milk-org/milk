@@ -103,7 +103,27 @@ void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
     }
 }
 
-static const char *fps_col_names[] = { "NAME", "CPID", "MEM", "ANCESTRY", "RPID", "TMX", "STR" };
+/**
+ * ov_input__table_header_click - sort list panel @panel by the column clicked at screen column @mc
+ * (the same column again flips the direction). Return: 1 when a sortable column was hit.
+ */
+int ov_input__table_header_click(OV_LAYOUT *lay, ov_focus_t panel, int mc)
+{
+    const OV_TABLE *t = ov_table_for(panel);
+    int             c = (t != NULL) ? ov_table_col_at(panel, mc) : -1;
+    if (c < 0 || t->cols[c].sort_key < 0)
+    {
+        return 0;
+    }
+    OV_PANEL_STATE *ps = &lay->panel[panel];
+    ps->sort_dir       = (ps->sort_key == t->cols[c].sort_key) ? !ps->sort_dir : 0;
+    ps->sort_key       = t->cols[c].sort_key;
+    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Sort %s by %s %s", t->what, t->cols[c].label,
+                   ps->sort_dir ? "\xe2\x96\xbc" : "\xe2\x96\xb2");
+    lay->sort_pending = 1;
+    ov_scan_force_update();
+    return 1;
+}
 
 /**
  * ov_input__fps_header_click - handle mouse clicks on FPS table column headers.
@@ -112,28 +132,7 @@ static const char *fps_col_names[] = { "NAME", "CPID", "MEM", "ANCESTRY", "RPID"
  */
 void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
 {
-    int           table_x = mc - lay->r_fps.col - 2 + lay->panel[OV_FOCUS_FPS].hscroll;
-    OV_COL_LAYOUT cols[8];
-    int           num_cols = ov_get_fps_col_layout(lay->compact_mode, lay->view, cols);
-    int           col_idx =
-        ov_header_hittest_sort_key(cols, num_cols, lay->panel[OV_FOCUS_FPS].collapsed, table_x);
-
-    if (col_idx >= 0)
-    {
-        if (lay->panel[OV_FOCUS_FPS].sort_key == col_idx)
-        {
-            lay->panel[OV_FOCUS_FPS].sort_dir = !lay->panel[OV_FOCUS_FPS].sort_dir;
-        }
-        else
-        {
-            lay->panel[OV_FOCUS_FPS].sort_key = col_idx;
-            lay->panel[OV_FOCUS_FPS].sort_dir = 0;
-        }
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Sort FPS by %s %s", fps_col_names[col_idx],
-                       lay->panel[OV_FOCUS_FPS].sort_dir ? "▼" : "▲");
-        lay->sort_pending = 1;
-        ov_scan_force_update();
-    }
+    ov_input__table_header_click(lay, OV_FOCUS_FPS, mc);
 }
 
 /**

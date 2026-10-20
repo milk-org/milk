@@ -172,12 +172,64 @@ static void test_view_cache(void)
     free(m);
 }
 
+/* Column tables: unique ids, one column per sort key, <= OV_TABLE_MAX_COLS, the >/< cycle over visible
+ * sortable columns only; and a few FPS cells */
+static void test_fps_table(void)
+{
+    const OV_TABLE *t = &ov_fps_table;
+    CHECK(t->n <= OV_TABLE_MAX_COLS);
+    for (int a = 0; a < t->n; a++)
+    {
+        for (int b = a + 1; b < t->n; b++)
+        {
+            CHECK(strcmp(t->cols[a].id, t->cols[b].id) != 0);
+            CHECK(t->cols[a].sort_key < 0 || t->cols[a].sort_key != t->cols[b].sort_key);
+        }
+    }
+    static OV_LAYOUT lay;
+    memset(&lay, 0, sizeof(lay));
+    lay.compact_mode = 1;
+    int vis[OV_TABLE_MAX_COLS];
+    int nv = ov_table_visible(t, &lay, vis);
+    CHECK(nv == t->n - 2); /* description and sparkline hidden */
+    int k = 0;
+    for (int i = 0; i < 20; i++) /* the cycle only lands on visible sortable columns */
+    {
+        k     = ov_table_next_sort(t, &lay, k, +1);
+        int c = ov_table_find_key(t, k);
+        CHECK(c >= 0 && !(t->cols[c].flags & OV_COLF_COMPACT_HIDE));
+    }
+    int mem = t->cols[ov_table_find_id(t, "mem")].sort_key;
+    int anc = t->cols[ov_table_find_id(t, "anc")].sort_key;
+    CHECK(ov_table_next_sort(t, &lay, mem, +1) == anc); /* wraps from the last sortable column */
+    CHECK(ov_table_next_sort(t, &lay, anc, -1) == mem);
+    CHECK(strcmp(ov_table_status_label(t, anc), "ancestry") == 0);
+
+    OV_MODEL *m = calloc(1, sizeof(*m));
+    snprintf(m->fps[0].name, sizeof(m->fps[0].name), "fpsx");
+    m->fps[0].confpid = 0;
+    m->nb_fps         = 1;
+    OV_ROW_CTX rc;
+    memset(&rc, 0, sizeof(rc));
+    rc.lay = &lay;
+    rc.m   = m;
+    OV_COLCELL c;
+    memset(&c, 0, sizeof(c));
+    t->cols[ov_table_find_id(t, "cpid")].cell(&c, &rc);
+    CHECK(strcmp(c.text, "-") == 0);
+    memset(&c, 0, sizeof(c));
+    t->cols[ov_table_find_id(t, "tmx")].cell(&c, &rc);
+    CHECK(strcmp(c.text, "---") == 0);
+    free(m);
+}
+
 int main(void)
 {
     test_sort_does_not_touch_model();
     test_order_survives_new_models();
     test_same_name_procs();
     test_view_cache();
+    test_fps_table();
     if (failures == 0)
     {
         printf("all ok\n");

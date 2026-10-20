@@ -59,6 +59,7 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
 
     /* Sort key label */
     const char *sort_label = "";
+    char        sort_buf[48];
     switch (lay->focus)
     {
     case OV_FOCUS_STREAMS:
@@ -129,30 +130,9 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
         }
         break;
     case OV_FOCUS_FPS:
-        switch (lay->panel[OV_FOCUS_FPS].sort_key)
-        {
-        case 1:
-            sort_label = " [sort:CPID]";
-            break;
-        case 2:
-            sort_label = " [sort:MEM]";
-            break;
-        case 3:
-            sort_label = " [sort:ancestry]";
-            break;
-        case 4:
-            sort_label = " [sort:RPID]";
-            break;
-        case 5:
-            sort_label = " [sort:TMX]";
-            break;
-        case 6:
-            sort_label = " [sort:STR]";
-            break;
-        default:
-            sort_label = " [sort:name]";
-            break;
-        }
+        snprintf(sort_buf, sizeof(sort_buf), " [sort:%s]",
+                 ov_table_status_label(&ov_fps_table, lay->panel[OV_FOCUS_FPS].sort_key));
+        sort_label = sort_buf;
         break;
     default:
         break;

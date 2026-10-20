@@ -235,11 +235,7 @@ static inline int ov_get_num_cols(const OV_LAYOUT *lay, ov_focus_t focus)
     {
         return lay->compact_mode ? 11 : 16;
     }
-    else if (focus == OV_FOCUS_FPS)
-    {
-        return lay->compact_mode ? 7 : 8;
-    }
-    return 1;
+    return 1; /* FPS: see its column table */
 }
 
 static inline int ov_get_logical_col_stream(int vis_col, int compact)
@@ -264,12 +260,6 @@ static inline int ov_get_logical_col_stream(int vis_col, int compact)
     {
         return 11;
     }
-    return vis_col;
-}
-
-static inline int ov_get_logical_col_fps(int vis_col, int compact)
-{
-    (void) compact;
     return vis_col;
 }
 
@@ -372,32 +362,6 @@ static inline int ov_get_proc_col_layout(int compact, OV_COL_LAYOUT *cols)
         cols[n++] = (OV_COL_LAYOUT) { 14, -1, 10 }; /* MISSED */
     }
     cols[n++] = (OV_COL_LAYOUT) { 15, -1, 200 }; /* MSG */
-    return n;
-}
-
-/**
- * @brief Populate column layout for FPS table.
- *
- * @param[in]  compact  1 if compact mode is enabled, 0 otherwise
- * @param[in]  view     Current overview view (OV_VIEW_FPS or other)
- * @param[out] cols     Array to store column layout entries (min size 8)
- * @return Number of columns populated
- */
-static inline int ov_get_fps_col_layout(int compact, int view, OV_COL_LAYOUT *cols)
-{
-    int n      = 0;
-    int desc_w = (view == OV_VIEW_FPS) ? 30 : 20;
-    cols[n++]  = (OV_COL_LAYOUT) { 0, 3, 3 };  /* A */
-    cols[n++]  = (OV_COL_LAYOUT) { 1, 0, 18 }; /* NAME */
-    cols[n++]  = (OV_COL_LAYOUT) { 2, 5, 3 };  /* TMX */
-    cols[n++]  = (OV_COL_LAYOUT) { 3, 1, 7 };  /* CPID */
-    cols[n++]  = (OV_COL_LAYOUT) { 4, 4, 7 };  /* RPID */
-    cols[n++]  = (OV_COL_LAYOUT) { 5, 6, 3 };  /* STR */
-    cols[n++]  = (OV_COL_LAYOUT) { 6, 2, 5 };  /* MEM */
-    if (!compact)
-    {
-        cols[n++] = (OV_COL_LAYOUT) { 7, -1, desc_w }; /* DESCRIPTION */
-    }
     return n;
 }
 

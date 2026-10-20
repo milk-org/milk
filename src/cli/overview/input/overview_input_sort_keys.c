@@ -26,13 +26,29 @@ int ov_input__handle_column_highlights(int key, OV_LAYOUT *lay, const OV_MODEL *
         int dir = (key == OV_KEY_SHIFT_LEFT) ? -1 : 1;
         if (lay->focus < OV_NB_LIST_PANELS)
         {
-            OV_PANEL_STATE *ps       = &lay->panel[lay->focus];
-            int             num_cols = ov_get_num_cols(lay, lay->focus);
-            ps->highlight_col        = (ps->highlight_col + dir + num_cols) % num_cols;
+            OV_PANEL_STATE *ps = &lay->panel[lay->focus];
+            const OV_TABLE *t  = ov_table_for(lay->focus);
+            int             vis[OV_TABLE_MAX_COLS];
+            int             num =
+                (t != NULL) ? ov_table_visible(t, lay, vis) : ov_get_num_cols(lay, lay->focus);
+            ps->highlight_col = ((ps->highlight_col % num) + dir + num) % num;
         }
         return 1;
     }
 
+    if ((key == 't' || key == 'T') && lay->focus < OV_NB_LIST_PANELS &&
+        ov_table_for(lay->focus) != NULL)
+    {
+        /* collapse bits are table indices; the cursor counts visible columns */
+        OV_PANEL_STATE *ps = &lay->panel[lay->focus];
+        int             vis[OV_TABLE_MAX_COLS];
+        int             nv = ov_table_visible(ov_table_for(lay->focus), lay, vis);
+        if (ps->highlight_col >= 0 && ps->highlight_col < nv)
+        {
+            ps->collapsed ^= (1U << vis[ps->highlight_col]);
+        }
+        return 1;
+    }
     if (key == 't' || key == 'T')
     {
         if (lay->focus == OV_FOCUS_STREAMS)
@@ -46,12 +62,6 @@ int ov_input__handle_column_highlights(int key, OV_LAYOUT *lay, const OV_MODEL *
             int logical_col = ov_get_logical_col_proc(lay->panel[OV_FOCUS_PROCS].highlight_col,
                                                       lay->compact_mode);
             lay->panel[OV_FOCUS_PROCS].collapsed ^= (1U << logical_col);
-        }
-        else if (lay->focus == OV_FOCUS_FPS)
-        {
-            int logical_col =
-                ov_get_logical_col_fps(lay->panel[OV_FOCUS_FPS].highlight_col, lay->compact_mode);
-            lay->panel[OV_FOCUS_FPS].collapsed ^= (1U << logical_col);
         }
         return 1;
     }
@@ -99,10 +109,16 @@ int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
                 ps->sort_dir = !ps->sort_dir;
                 break;
             case '<':
-                ps->sort_key = (ps->sort_key + n - 1) % n;
+                ps->sort_key =
+                    (ov_table_for(lay->focus) != NULL)
+                        ? ov_table_next_sort(ov_table_for(lay->focus), lay, ps->sort_key, -1)
+                        : (ps->sort_key + n - 1) % n;
                 break;
-            default: /* > ] */
-                ps->sort_key = (ps->sort_key + 1) % n;
+            default: /* > ] skip hidden and unsortable columns */
+                ps->sort_key =
+                    (ov_table_for(lay->focus) != NULL)
+                        ? ov_table_next_sort(ov_table_for(lay->focus), lay, ps->sort_key, +1)
+                        : (ps->sort_key + 1) % n;
                 break;
             }
         }
