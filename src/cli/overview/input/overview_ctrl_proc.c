@@ -103,7 +103,7 @@ void ov_ctrl_proc_set_ctrlval(const OV_PROC *p, int val, OV_CMDLOG *log)
     }
 
     char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_procdir(), p->name, (int) p->PID);
 
     int fd = open(fname, O_RDWR);
     if (fd < 0)
@@ -191,7 +191,7 @@ void ov_ctrl_proc_zero_counters(const OV_PROC *p, OV_CMDLOG *log)
     }
 
     char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_procdir(), p->name, (int) p->PID);
 
     int fd = open(fname, O_RDWR);
     if (fd < 0)
@@ -260,7 +260,7 @@ void ov_ctrl_proc_remove(const OV_PROC *p, OV_CMDLOG *log)
     }
 
     char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_procdir(), p->name, (int) p->PID);
 
     int rc        = unlink(fname);
     int file_gone = (rc == 0 || errno == ENOENT);

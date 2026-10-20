@@ -144,8 +144,7 @@ static void fill_fps_from_struct(OV_FPS *f, ov_fps_cache_t *ce)
  */
 void ov_scan_fps(OV_MODEL *model)
 {
-    char shmdir[OV_SHMDIR_MAXLEN];
-    function_parameter_struct_shmdirname(shmdir);
+    const char *shmdir = ov_get_fpsdir();
 
     /* Check directory mtime to skip readdir */
     struct stat dirstat;

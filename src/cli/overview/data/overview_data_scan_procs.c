@@ -22,8 +22,7 @@ void ov_scan_procs(OV_MODEL *model)
         return;
     }
 
-    char shmdir[OV_SHMDIR_MAXLEN];
-    processinfo_procdirname(shmdir);
+    const char *shmdir = ov_get_procdir();
 
     /* Mark all proc cache entries as not-in-use */
     for (int i = 0; i < s_pcache_nb; i++)

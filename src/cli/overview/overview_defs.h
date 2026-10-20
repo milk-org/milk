@@ -84,35 +84,10 @@ typedef long imageID;
  * Shared memory directory
  * ========================================================= */
 
-/**
- * @brief Return the shared memory directory path.
- *
- * Reads $MILK_SHM_DIR if set, otherwise checks standard /milk/shm,
- * /dev/shm, and falls back to /tmp.
- *
- * @return Pointer to directory path string.
- */
-static inline const char *ov_get_shmdir(void)
-{
-    const char *d = getenv("MILK_SHM_DIR");
-    if (d != NULL && d[0] != '\0')
-    {
-        return d;
-    }
-
-    struct stat st;
-    if (stat("/milk/shm", &st) == 0 && S_ISDIR(st.st_mode))
-    {
-        return "/milk/shm";
-    }
-
-    if (stat("/dev/shm", &st) == 0 && S_ISDIR(st.st_mode))
-    {
-        return "/dev/shm";
-    }
-
-    return "/tmp";
-}
+void        ov_dirs_init(void);
+const char *ov_get_shmdir(void);
+const char *ov_get_procdir(void);
+const char *ov_get_fpsdir(void);
 
 #define SHAREDSHMDIR (ov_get_shmdir())
 

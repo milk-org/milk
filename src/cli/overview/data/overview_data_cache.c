@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <pthread.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -14,6 +15,59 @@
 #include "fps_printparameter_valuestring.h"
 #include "fps_WriteParameterToDisk.h"
 #include "fps_save2disk.h"
+
+/* =========================================================
+ * Directories: each one comes from the resolver its writers use
+ * ========================================================= */
+
+static char           s_shmdir[PATH_MAX];
+static char           s_procdir[PATH_MAX];
+static char           s_fpsdir[PATH_MAX];
+static pthread_once_t s_dirs_once = PTHREAD_ONCE_INIT;
+
+/** dirs_resolve - ImageStreamIO, libprocessinfo and libfps resolvers, run once. */
+static void dirs_resolve(void)
+{
+    char  fname[PATH_MAX];
+    char *slash;
+
+    ImageStreamIO_filename(fname, sizeof(fname), "x");
+    slash = strrchr(fname, '/');
+    if (slash != NULL)
+    {
+        *slash = '\0';
+    }
+    snprintf(s_shmdir, sizeof(s_shmdir), "%s", fname);
+    processinfo_procdirname(s_procdir);
+    function_parameter_struct_shmdirname(s_fpsdir);
+}
+
+/** ov_dirs_init - resolve all directories now (call before raw mode: resolvers may print). */
+void ov_dirs_init(void)
+{
+    pthread_once(&s_dirs_once, dirs_resolve);
+}
+
+/** ov_get_shmdir - stream directory, as ImageStreamIO opens it. */
+const char *ov_get_shmdir(void)
+{
+    ov_dirs_init();
+    return s_shmdir;
+}
+
+/** ov_get_procdir - processinfo directory, as libprocessinfo creates entries. */
+const char *ov_get_procdir(void)
+{
+    ov_dirs_init();
+    return s_procdir;
+}
+
+/** ov_get_fpsdir - FPS directory, as libfps creates FPS files. */
+const char *ov_get_fpsdir(void)
+{
+    ov_dirs_init();
+    return s_fpsdir;
+}
 
 /* =========================================================
  * Persistent SHM mapping caches

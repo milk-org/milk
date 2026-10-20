@@ -152,6 +152,9 @@ int main(int argc, char *argv[])
     /* --- Initialize color theme --- */
     int theme_rc = ov_theme_init(cli_theme);
 
+    /* --- Resolve directories while the terminal is still cooked (resolvers may print) --- */
+    ov_dirs_init();
+
     /* --- Enter raw mode --- */
     ov_raw_mode_enter();
 
@@ -206,6 +209,11 @@ int main(int argc, char *argv[])
     lay.dash_split_h_dragging = 0;
 
     ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO, "Shared memory directory: %s", ov_get_shmdir());
+    if (strcmp(ov_get_procdir(), ov_get_shmdir()) != 0)
+    {
+        ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_WARN,
+                       "Process directory: %s (differs from shm directory)", ov_get_procdir());
+    }
     if (!utf8_locale)
     {
         ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_WARN,

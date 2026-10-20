@@ -125,7 +125,7 @@ ov_pid_status_t pid_get_status(pid_t pid)
 
     /* Cache miss — do the syscall(s) outside lock */
     ov_pid_status_t st = OV_PID_DEAD;
-    if (kill(pid, 0) == 0)
+    if (kill(pid, 0) == 0 || errno == EPERM) /* EPERM: alive, owned by another user */
     {
         st = pid_check_zombie(pid) ? OV_PID_ZOMBIE : OV_PID_ALIVE;
     }
