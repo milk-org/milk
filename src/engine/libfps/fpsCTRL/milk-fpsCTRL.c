@@ -36,6 +36,10 @@ void fpsCTRL_crash_handler(int sig)
 
     if (ansi__raw_active)
     {
+        if (ansi__orig_flags >= 0)
+        {
+            fcntl(STDIN_FILENO, F_SETFL, ansi__orig_flags);
+        }
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &ansi__orig_termios);
     }
 
@@ -171,7 +175,7 @@ int main(int argc, char *argv[])
         default:
             printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
             print_usage(argv[0]);
-            return 1;
+            return 2;
         }
     }
 

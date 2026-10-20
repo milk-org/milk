@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
         {
             printf("\n\033[1;31mERROR\033[0m: Invalid option or argument '%s'.\n\n", argv[i]);
             print_help(progname, 1);
-            return 1;
+            return 2;
         }
     }
 

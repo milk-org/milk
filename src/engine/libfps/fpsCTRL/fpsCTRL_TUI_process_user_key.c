@@ -843,7 +843,8 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
             }
             printf("  TOTAL :  %d nodes\n\n", fpsCTRLvar->NBkwn);
             printf("Press Enter to Continue\n");
-            while (getchar() != '\n')
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF) /* EOF: stdin closed, do not spin */
             {
             }
             {
