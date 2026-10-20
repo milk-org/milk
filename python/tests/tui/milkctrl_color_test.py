@@ -45,3 +45,14 @@ def test_monochrome(milkctrl, entities, extra):
     assert not colour, codes
     assert "7" in codes  # the selected row is drawn in reverse video
     assert m.quit() == 0
+
+
+def test_night_theme_has_no_fixed_rgb(milkctrl, entities):
+    """The night theme stays red: no fixed green/amber badge colours leak in (ux-4)."""
+    entities.make_stream("nightsel")
+    m = milkctrl("-T", "night")
+    m.wait_for(r"nightsel")
+    s = _sgr(m)
+    for fixed in ("20;180;20", "255;190;0", "240;175;20", "30;120;60", "50;90;160"):
+        assert fixed not in s, fixed
+    assert m.quit() == 0

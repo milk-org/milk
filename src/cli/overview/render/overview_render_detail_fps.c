@@ -189,7 +189,7 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             if (is_sel)
             {
                 H_ov_theme_fg(writable ? OV_FG_ACTIVE : OV_FG_DIM);
-                H_ov_buf_printf(writable ? " \xe2\x9c\x8e" : " \xf0\x9f\x94\x92");
+                H_ov_buf_printf(writable ? " W" : " R"); /* writable / read-only */
             }
             else
             {

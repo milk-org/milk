@@ -49,7 +49,7 @@ void render_highlighted_name(const char *name,
         if (m_len > 0)
         {
             ov_buf_bold();
-            ov_buf_fg(255, 255, 255);
+            ov_theme_fg(OV_FG_BRIGHT);
             ov_buf_printf("%.*s", m_len, name + b_len);
             ov_buf_reset_attr();
             ov_theme_bg(row_bg);

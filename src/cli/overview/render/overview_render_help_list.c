@@ -94,14 +94,14 @@ void ov_help_render_list_row(const OV_LAYOUT *lay,
                 ov_buf_fg(255, 95, 75);
                 ov_buf_printf("%-13s", h->key ? h->key : "");
                 ov_buf_fg(255, 80, 80);
-                ov_buf_printf(" ⚡ ");
+                ov_buf_printf(" ▶ ");
             }
             else
             {
                 ov_buf_fg(200, 140, 50);
                 ov_buf_printf("%-13s", h->key ? h->key : "");
                 ov_buf_fg(160, 115, 45);
-                ov_buf_printf(" 🔒 ");
+                ov_buf_printf(" ◆ ");
             }
         }
         else
@@ -230,14 +230,14 @@ void ov_help_render_list_row(const OV_LAYOUT *lay,
                 ov_buf_fg(255, 95, 75);
                 ov_buf_printf("%-13s", h->key);
                 ov_buf_fg(255, 80, 80);
-                ov_buf_printf(" ⚡ ");
+                ov_buf_printf(" ▶ ");
             }
             else
             {
                 ov_buf_fg(200, 140, 50);
                 ov_buf_printf("%-13s", h->key);
                 ov_buf_fg(160, 115, 45);
-                ov_buf_printf(" 🔒 ");
+                ov_buf_printf(" ◆ ");
             }
         }
         else

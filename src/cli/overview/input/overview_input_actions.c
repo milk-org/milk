@@ -72,7 +72,7 @@ void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m)
     if (!lay->ctrl_mode)
     {
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
-                       "\xf0\x9f\x9a\xab Action requires CONTROL mode"
+                       "Action requires CONTROL mode"
                        " (press c to toggle CTRL mode ON/OFF)");
         return;
     }
@@ -180,7 +180,7 @@ int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         if (!lay->ctrl_mode)
         {
             ov_cmdlog_push(log, OV_CMDLOG_WARN,
-                           "🚫 CTRL+e requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
+                           "CTRL+e requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
             return 1;
         }
 
@@ -369,7 +369,7 @@ int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
 
             ov_cmdlog_push(log, OV_CMDLOG_WARN,
-                           "🚫 %s requires CONTROL mode (press c to toggle CTRL mode ON/OFF)",
+                           "%s requires CONTROL mode (press c to toggle CTRL mode ON/OFF)",
                            keyname);
         }
         else

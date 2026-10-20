@@ -148,21 +148,21 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         int printed = 1;
         int avail   = r.width - 2;
 
-#define GRAPH_FIELD(color, fmt, ...)                                \
-    do                                                              \
-    {                                                               \
-        char _fb[128];                                              \
-        int  _fl  = snprintf(_fb, sizeof(_fb), fmt, ##__VA_ARGS__); \
-        int  _vis = _fl;                                            \
-        int  _max = avail - printed;                                \
-        if (_vis > _max)                                            \
-            _vis = _max;                                            \
-        if (_vis > 0)                                               \
-        {                                                           \
-            ov_theme_fg(color);                                     \
-            ov_buf_printf("%.*s", _vis, _fb);                       \
-            printed += _vis;                                        \
-        }                                                           \
+/* Print one field clipped to the columns left; counts columns, never cuts a UTF-8 character */
+#define GRAPH_FIELD(color, fmt, ...)                                                           \
+    do                                                                                         \
+    {                                                                                          \
+        char _fb[128];                                                                         \
+        int  _fl   = snprintf(_fb, sizeof(_fb), fmt, ##__VA_ARGS__);                           \
+        int  _cols = 0;                                                                        \
+        int  _nb   = ov_utf8_fit(_fb, (_fl < (int) sizeof(_fb)) ? _fl : (int) sizeof(_fb) - 1, \
+                                 avail - printed, &_cols);                                     \
+        if (_nb > 0)                                                                           \
+        {                                                                                      \
+            ov_theme_fg(color);                                                                \
+            ov_buf_printf("%.*s", _nb, _fb);                                                   \
+            printed += _cols;                                                                  \
+        }                                                                                      \
     } while (0)
 
         /* Draw tree prefix */

@@ -270,11 +270,11 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
         ov_rgb_t _fg;                                                                               \
         if (_crashed)                                                                               \
         {                                                                                           \
-            _fg = _match ? (ov_rgb_t) { 255, 255, 255 } : OV_FG_ERROR;                              \
+            _fg = _match ? ov_rgb_on(OV_BG_PID_MATCH) : OV_FG_ERROR;                                \
         }                                                                                           \
         else if (_match)                                                                            \
         {                                                                                           \
-            _fg = (ov_rgb_t) { 0, 0, 0 };                                                           \
+            _fg = ov_rgb_on(OV_BG_PID_MATCH);                                                       \
         }                                                                                           \
         else                                                                                        \
         {                                                                                           \
@@ -393,8 +393,8 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
 
                     if (strcmp(kname, "procinfo.triggersname") == 0)
                     {
-                        ov_buf_bg(120, 80, 10);
-                        ov_buf_fg(255, 210, 80);
+                        ov_theme_bg(OV_BG_STALE);
+                        ov_theme_fg(OV_FG_WARN);
                         ov_buf_bold();
                         int w = snprintf(NULL, 0, " [TRIG]");
                         ov_buf_printf(" [TRIG]");

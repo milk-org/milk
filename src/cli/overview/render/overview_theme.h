@@ -161,6 +161,13 @@ int               ov_theme_init(const char *preferred_theme);
 #define OV_GRAD_CPU_LO (ov_active_theme->grad_cpu_lo)
 #define OV_GRAD_CPU_HI (ov_active_theme->grad_cpu_hi)
 
+/* Badge, pill and button fills derived from each theme (may become palette slots later); text on them
+ * uses ov_rgb_on() */
+#define OV_BADGE_OK (ov_rgb_lerp(OV_BG_PANEL, OV_FG_ACTIVE, 0.6f))
+#define OV_BADGE_WARN (OV_FG_WARN)
+#define OV_BADGE_DANGER (ov_rgb_lerp(OV_BG_PANEL, OV_FG_ERROR, 0.85f))
+#define OV_BADGE_INFO (OV_GRAD_LO)
+
 /* Borders & box-drawing */
 
 #define OV_BOX_TL "╭"

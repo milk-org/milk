@@ -90,11 +90,11 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
             break;
         case OV_CMDLOG_WARN:
             bullet_fg = OV_FG_WARN;
-            bullet    = "⚠";
+            bullet    = "▲";
             break;
         default: /* INFO */
             bullet_fg = OV_FG_CONN;
-            bullet    = "ℹ";
+            bullet    = "●";
             break;
         }
 

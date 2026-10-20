@@ -285,7 +285,7 @@ void ov_ctrl_stream_delete(const OV_STREAM *s, OV_CMDLOG *log)
     {
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Stream \"%s\" — delete failed (open)", s->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Stream \"%s\" — delete failed (open)", s->name);
         }
         return;
     }
@@ -303,8 +303,7 @@ void ov_ctrl_stream_delete(const OV_STREAM *s, OV_CMDLOG *log)
     {
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Stream \"%s\" — delete failed (unlink)",
-                           s->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Stream \"%s\" — delete failed (unlink)", s->name);
         }
         return;
     }
@@ -314,7 +313,7 @@ void ov_ctrl_stream_delete(const OV_STREAM *s, OV_CMDLOG *log)
 
     if (log != NULL)
     {
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "🗑️ Stream \"%s\" — deleted", s->name);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "Stream \"%s\" — deleted", s->name);
     }
 }
 

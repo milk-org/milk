@@ -179,7 +179,7 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_printf(" [%s] %c%s", pname, pfx, fstr);
 
         /* Blinking cursor */
-        ov_buf_fg(255, 200, 50);
+        ov_theme_fg(OV_FG_WARN);
         ov_buf_printf("█");
         np += 1;
 
@@ -199,7 +199,7 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     int n1 = 0;
     if (lay->paused)
     {
-        ov_buf_fg(255, 50, 50);
+        ov_theme_fg(OV_FG_ERROR);
         n1 = snprintf(NULL, 0, " [PAUSED] ");
         ov_buf_printf(" [PAUSED] ");
         ov_theme_fg(OV_FG_DIM);
@@ -247,7 +247,7 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_printf(" \xe2\x80\xba ");
         ov_theme_fg(panel_fg);
         ov_buf_printf("%s", panel_name);
-        n1 += 3 + (int) strlen(view_name) + 3 + (int) strlen(panel_name);
+        n1 += 2 + (int) strlen(view_name) + 3 + (int) strlen(panel_name); /* "  " + " › " */
         ov_theme_fg(OV_FG_DIM);
     }
 
@@ -265,13 +265,13 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     {
         if ((lay->ctrl_blink % 4) < 2)
         {
-            ov_buf_bg(255, 190, 0); /* bright amber/gold */
-            ov_buf_fg(20, 20, 20);  /* dark text */
+            ov_theme_bg(OV_BADGE_WARN);
+            ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
         }
         else
         {
-            ov_buf_bg(230, 80, 20);   /* vibrant red-orange */
-            ov_buf_fg(255, 255, 255); /* white text */
+            ov_theme_bg(OV_BADGE_DANGER);
+            ov_theme_fg(ov_rgb_on(OV_BADGE_DANGER));
         }
         ov_buf_bold();
         char fstatus[64];
@@ -324,8 +324,8 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
             char        bg_status[64];
             snprintf(bg_status, sizeof(bg_status), " [%s: /%.8s/] ", bg_names[p], bg_pat);
             ov_buf_bold();
-            ov_buf_bg(220, 130, 20);
-            ov_buf_fg(255, 255, 255);
+            ov_theme_bg(OV_BADGE_WARN);
+            ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
             ov_buf_printf("%s", bg_status);
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_HEADER);
@@ -423,12 +423,12 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     if (lay->mouse_hover && (ov_mouse_row == r.row) && (ov_mouse_col >= col_start) &&
         (ov_mouse_col < col_start + n_exit))
     {
-        ov_buf_bg(220, 40, 40);   /* vibrant red background */
-        ov_buf_fg(255, 255, 255); /* white text */
+        ov_theme_bg(OV_BADGE_DANGER);
+        ov_theme_fg(ov_rgb_on(OV_BADGE_DANGER));
     }
     else
     {
-        ov_buf_fg(200, 80, 80);
+        ov_theme_fg(OV_FG_ERROR);
         ov_theme_bg(OV_BG_HEADER);
     }
     ov_buf_printf("%s", exit_label);

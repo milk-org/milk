@@ -83,7 +83,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             ov_theme_set(lay->theme_popup_sel);
             clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
             const ov_theme_t *th = ov_theme_get_active();
-            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name, th->desc);
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Theme: %s (%s)", th->name, th->desc);
             return 0;
         }
         else if (key == OV_KEY_DOWN || key == 'j' || key == OV_KEY_MOUSE_DOWN)
@@ -93,7 +93,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             ov_theme_set(lay->theme_popup_sel);
             clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
             const ov_theme_t *th = ov_theme_get_active();
-            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name, th->desc);
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Theme: %s (%s)", th->name, th->desc);
             return 0;
         }
         else if (key == ctrl('t') || key == OV_KEY_F8)
@@ -103,7 +103,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             ov_theme_set(lay->theme_popup_sel);
             clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
             const ov_theme_t *th = ov_theme_get_active();
-            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name, th->desc);
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Theme: %s (%s)", th->name, th->desc);
             return 0;
         }
         else if (key == OV_KEY_MOUSE_CLICK)
@@ -122,7 +122,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     ov_theme_set(item_idx);
                     clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
                     const ov_theme_t *th = ov_theme_get_active();
-                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name,
+                    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Theme: %s (%s)", th->name,
                                    th->desc);
                     return 0;
                 }

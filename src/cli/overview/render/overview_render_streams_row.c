@@ -113,23 +113,23 @@ void ov_streams_render_single_row(const OV_LAYOUT  *lay,
         vcol++;                                                                       \
     } while (0)
 
-#define STRM_PID_FIELD(pid_val, fmt, ...)                                            \
-    do                                                                               \
-    {                                                                                \
-        int      _match  = (_spid > 0 && (pid_t) (pid_val) == _spid);                \
-        ov_rgb_t prev_bg = cell_bg;                                                  \
-        if (_match)                                                                  \
-        {                                                                            \
-            cell_bg = OV_BG_PID_MATCH;                                               \
-            ov_buf_bold();                                                           \
-        }                                                                            \
-        STRM_FIELD(_match ? ((ov_rgb_t) { 0, 0, 0 }) : ov_pid_color((pid_val)), fmt, \
-                   ##__VA_ARGS__);                                                   \
-        if (_match)                                                                  \
-        {                                                                            \
-            ov_buf_reset_attr();                                                     \
-            cell_bg = prev_bg;                                                       \
-        }                                                                            \
+#define STRM_PID_FIELD(pid_val, fmt, ...)                                              \
+    do                                                                                 \
+    {                                                                                  \
+        int      _match  = (_spid > 0 && (pid_t) (pid_val) == _spid);                  \
+        ov_rgb_t prev_bg = cell_bg;                                                    \
+        if (_match)                                                                    \
+        {                                                                              \
+            cell_bg = OV_BG_PID_MATCH;                                                 \
+            ov_buf_bold();                                                             \
+        }                                                                              \
+        STRM_FIELD(_match ? ov_rgb_on(OV_BG_PID_MATCH) : ov_pid_color((pid_val)), fmt, \
+                   ##__VA_ARGS__);                                                     \
+        if (_match)                                                                    \
+        {                                                                              \
+            ov_buf_reset_attr();                                                       \
+            cell_bg = prev_bg;                                                         \
+        }                                                                              \
     } while (0)
 
     pid_t    _spid   = (rel != NULL) ? rel->sel_pid : 0;
@@ -341,7 +341,7 @@ void ov_streams_render_single_row(const OV_LAYOUT  *lay,
                     ov_buf_bold();
                 }
                 STRM_FIELD_WITH_COL(vcol, rpid_logical,
-                                    _match ? ((ov_rgb_t) { 0, 0, 0 })
+                                    _match ? ov_rgb_on(OV_BG_PID_MATCH)
                                            : ov_pid_color((s->read_pids[rp])),
                                     cell_bg, "%d", (int) s->read_pids[rp]);
                 if (_match)

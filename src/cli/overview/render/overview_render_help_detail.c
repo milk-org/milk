@@ -166,14 +166,14 @@ void ov_help_render_detail(const OV_LAYOUT    *lay,
                 ov_buf_fg(255, 95, 75);
                 ov_buf_printf("Key: [ %s ]", entry->key);
                 ov_buf_fg(255, 80, 80);
-                ov_buf_printf("  ⚡ CONTROL MODE: ON (Ready)");
+                ov_buf_printf("  ▶ CONTROL MODE: ON (Ready)");
             }
             else
             {
                 ov_buf_fg(205, 140, 50);
                 ov_buf_printf("Key: [ %s ]", entry->key);
                 ov_buf_fg(205, 140, 50);
-                ov_buf_printf("  🔒 REQUIRES CONTROL MODE (Press 'c')");
+                ov_buf_printf("  ◆ REQUIRES CONTROL MODE (Press 'c')");
             }
         }
         else

@@ -216,16 +216,13 @@ static inline ov_rgb_t ov_get_sem_color(int val)
 {
     if (val == 0)
     {
-        return (ov_rgb_t) { 0, 150, 0 };
+        return ov_rgb_lerp(OV_FG_DIM, OV_FG_ACTIVE, 0.5f);
     }
     if (val >= 10)
     {
-        return (ov_rgb_t) { 160, 90, 30 };
+        return OV_FG_ZOMBIE;
     }
-    int r = 100 + (val - 1) * (180 - 100) / 9;
-    int g = 120 - (val - 1) * (120 - 40) / 9;
-    int b = 30;
-    return (ov_rgb_t) { r, g, b };
+    return ov_rgb_lerp(OV_FG_ZOMBIE, OV_FG_ERROR, (float) (val - 1) / 9.0f);
 }
 
 /**
@@ -239,7 +236,7 @@ static inline ov_rgb_t ov_get_sem_color(int val)
  */
 static inline ov_rgb_t zebra_bg(ov_rgb_t base_bg, int row_idx)
 {
-    if (base_bg.r != 30 || base_bg.g != 32 || base_bg.b != 40)
+    if (base_bg.r != OV_BG_PANEL.r || base_bg.g != OV_BG_PANEL.g || base_bg.b != OV_BG_PANEL.b)
     {
         return base_bg;
     }

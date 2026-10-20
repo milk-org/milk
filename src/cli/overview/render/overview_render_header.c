@@ -131,16 +131,16 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         if (beat == 0)
         {
             /* Bright beat — vivid red */
-            ov_buf_fg(255, 50, 50);
+            ov_theme_fg(OV_FG_ERROR);
             ov_buf_bold();
-            ov_buf_printf("\xe2\x99\xa5"); /* ♥ */
+            ov_buf_printf("\xe2\x97\x8f"); /* ● heartbeat */
             ov_buf_reset_attr();
         }
         else
         {
             /* Dim beat — dark red */
-            ov_buf_fg(100, 30, 30);
-            ov_buf_printf("\xe2\x99\xa5"); /* ♥ */
+            ov_theme_fg(OV_ANIM_PULSE_BG_MIN);
+            ov_buf_printf("\xe2\x97\x8f"); /* ● heartbeat */
         }
         ov_theme_bg(OV_BG_HEADER);
     }
@@ -180,8 +180,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         }
         else
         {
-            ov_buf_bg(220, 40, 40);   /* vibrant red */
-            ov_buf_fg(255, 255, 255); /* white text */
+            ov_theme_bg(OV_BADGE_DANGER);
+            ov_theme_fg(ov_rgb_on(OV_BADGE_DANGER));
         }
         ov_buf_bold();
         ov_buf_printf(" [c] CONTROL ");
@@ -192,8 +192,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     else
     {
         /* READ ONLY badge (green) */
-        ov_buf_bg(20, 180, 20);   /* deep green background */
-        ov_buf_fg(220, 255, 220); /* light text */
+        ov_theme_bg(OV_BADGE_OK);
+        ov_theme_fg(ov_rgb_on(OV_BADGE_OK));
         ov_buf_bold();
         ov_buf_printf(" [c] READ ONLY ");
         ov_buf_reset_attr();
@@ -206,8 +206,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     if (lay->mouse_hover)
     {
         /* Mouse hover active badge */
-        ov_buf_bg(180, 180, 20); /* deep yellow background */
-        ov_buf_fg(20, 20, 20);   /* dark text */
+        ov_theme_bg(OV_BADGE_WARN);
+        ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
         ov_buf_bold();
         ov_buf_printf(" [m] HOVER: ON ");
         ov_buf_reset_attr();
@@ -256,21 +256,21 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
                 {
                     if ((lay->ctrl_blink % 4) < 2)
                     {
-                        ov_buf_bg(255, 190, 0); /* bright amber/gold */
-                        ov_buf_fg(20, 20, 20);  /* dark text */
+                        ov_theme_bg(OV_BADGE_WARN);
+                        ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
                     }
                     else
                     {
-                        ov_buf_bg(230, 80, 20);   /* vibrant red-orange */
-                        ov_buf_fg(255, 255, 255); /* white text */
+                        ov_theme_bg(OV_BADGE_DANGER);
+                        ov_theme_fg(ov_rgb_on(OV_BADGE_DANGER));
                     }
                     snprintf(fbadge, sizeof(fbadge), " [f] %s: /%.8s/ ", curr_nm, fpat);
                 }
                 else
                 {
                     /* Unselected panel: solid vivid amber pill */
-                    ov_buf_bg(220, 130, 20);
-                    ov_buf_fg(255, 255, 255);
+                    ov_theme_bg(OV_BADGE_WARN);
+                    ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
                     snprintf(fbadge, sizeof(fbadge), " %s: /%.8s/ ", curr_nm, fpat);
                 }
                 ov_buf_bold();
@@ -345,13 +345,13 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             if ((lay->ctrl_blink % 4) < 2)
             {
-                ov_buf_bg(255, 190, 0);
-                ov_buf_fg(20, 20, 20);
+                ov_theme_bg(OV_BADGE_WARN);
+                ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
             }
             else
             {
-                ov_buf_bg(230, 80, 20);
-                ov_buf_fg(255, 255, 255);
+                ov_theme_bg(OV_BADGE_DANGER);
+                ov_theme_fg(ov_rgb_on(OV_BADGE_DANGER));
             }
             ov_buf_bold();
             snprintf(fbadge, sizeof(fbadge), " [f] %s: /%.10s/ ", pname, fpat);
@@ -401,8 +401,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
                 ov_buf_printf(" ");
                 filter_w++;
                 ov_buf_bold();
-                ov_buf_bg(220, 130, 20);
-                ov_buf_fg(255, 255, 255);
+                ov_theme_bg(OV_BADGE_WARN);
+                ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
                 ov_buf_printf("%s", bg_badge);
                 ov_buf_reset_attr();
                 ov_theme_bg(OV_BG_HEADER);

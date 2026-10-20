@@ -10,6 +10,7 @@
 #ifndef OVERVIEW_THEME_DRAW_H
 #define OVERVIEW_THEME_DRAW_H
 
+#include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -79,6 +80,15 @@ static inline ov_rgb_t ov_rgb_lerp(ov_rgb_t a, ov_rgb_t b, float t)
         a.g + (int) ((float) (b.g - a.g) * t),
         a.b + (int) ((float) (b.b - a.b) * t),
     };
+}
+
+/** ov_rgb_on - readable text colour on @bg: the theme's bright text or terminal background, by luma. */
+static inline ov_rgb_t ov_rgb_on(ov_rgb_t bg)
+{
+    int lb = (299 * bg.r + 587 * bg.g + 114 * bg.b) / 1000;
+    int l1 = (299 * OV_FG_BRIGHT.r + 587 * OV_FG_BRIGHT.g + 114 * OV_FG_BRIGHT.b) / 1000;
+    int l2 = (299 * OV_BG_TERMINAL.r + 587 * OV_BG_TERMINAL.g + 114 * OV_BG_TERMINAL.b) / 1000;
+    return (abs(l1 - lb) >= abs(l2 - lb)) ? OV_FG_BRIGHT : OV_BG_TERMINAL;
 }
 
 /**

@@ -162,7 +162,7 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
     {
         /* Label badge */
         ov_theme_bg(label_color);
-        ov_buf_fg(0, 0, 0);
+        ov_theme_fg(ov_rgb_on(label_color));
         ov_buf_bold();
         ov_buf_printf("%.*s", 5, line);
         ov_buf_reset_attr();
@@ -199,14 +199,14 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             if (p->loopstat == 2)
             {
                 btns[nb].label         = " [p] \xe2\x96\xb6 Resume ";
-                btns[nb].bg            = (ov_rgb_t) { 30, 120, 60 };
+                btns[nb].bg            = OV_BADGE_OK;
                 btns[nb].id            = OV_BTN_PROC_PAUSE;
                 btns[nb].always_active = 0;
                 nb++;
 
                 /* Step */
                 btns[nb].label         = " [s] \xe2\x8f\xad Step ";
-                btns[nb].bg            = (ov_rgb_t) { 120, 100, 30 };
+                btns[nb].bg            = OV_BADGE_WARN;
                 btns[nb].id            = OV_BTN_PROC_STEP;
                 btns[nb].always_active = 0;
                 nb++;
@@ -214,26 +214,26 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             else
             {
                 btns[nb].label         = " [p] \xe2\x8f\xb8 Pause ";
-                btns[nb].bg            = (ov_rgb_t) { 50, 90, 160 };
+                btns[nb].bg            = OV_BADGE_INFO;
                 btns[nb].id            = OV_BTN_PROC_PAUSE;
                 btns[nb].always_active = 0;
                 nb++;
             }
             /* Exit (clean stop) */
             btns[nb].label         = " [e] \xe2\x8f\xbb Exit ";
-            btns[nb].bg            = (ov_rgb_t) { 160, 120, 30 };
+            btns[nb].bg            = OV_BADGE_WARN;
             btns[nb].id            = OV_BTN_PROC_EXIT;
             btns[nb].always_active = 0;
             nb++;
             /* Kill (SIGTERM) */
             btns[nb].label         = " [k] \xe2\x98\xa0 Kill ";
-            btns[nb].bg            = (ov_rgb_t) { 180, 40, 40 };
+            btns[nb].bg            = OV_BADGE_DANGER;
             btns[nb].id            = OV_BTN_PROC_KILL;
             btns[nb].always_active = 0;
             nb++;
             /* Inspect */
             btns[nb].label         = " [i] Inspect ";
-            btns[nb].bg            = (ov_rgb_t) { 50, 90, 160 };
+            btns[nb].bg            = OV_BADGE_INFO;
             btns[nb].id            = OV_BTN_INSPECT;
             btns[nb].always_active = 1;
             nb++;
@@ -243,25 +243,25 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             const OV_FPS *f = &m->fps[fsel];
             /* Conf toggle */
             btns[nb].label = f->conf_alive ? " [s] \xe2\x96\xa0 Conf " : " [s] \xe2\x96\xb6 Conf ";
-            btns[nb].bg = f->conf_alive ? (ov_rgb_t) { 160, 120, 30 } : (ov_rgb_t) { 30, 120, 60 };
-            btns[nb].id = OV_BTN_FPS_CONF;
+            btns[nb].bg    = f->conf_alive ? OV_BADGE_WARN : OV_BADGE_OK;
+            btns[nb].id    = OV_BTN_FPS_CONF;
             btns[nb].always_active = 0;
             nb++;
             /* Run toggle */
             btns[nb].label = f->run_alive ? " [r] \xe2\x96\xa0 Run " : " [r] \xe2\x96\xb6 Run ";
-            btns[nb].bg = f->run_alive ? (ov_rgb_t) { 160, 120, 30 } : (ov_rgb_t) { 30, 120, 60 };
-            btns[nb].id = OV_BTN_FPS_RUN;
+            btns[nb].bg    = f->run_alive ? OV_BADGE_WARN : OV_BADGE_OK;
+            btns[nb].id    = OV_BTN_FPS_RUN;
             btns[nb].always_active = 0;
             nb++;
             /* Kill */
             btns[nb].label         = " [k] \xe2\x98\xa0 Kill ";
-            btns[nb].bg            = (ov_rgb_t) { 180, 40, 40 };
+            btns[nb].bg            = OV_BADGE_DANGER;
             btns[nb].id            = OV_BTN_FPS_KILL;
             btns[nb].always_active = 0;
             nb++;
             /* Inspect */
             btns[nb].label         = " [i] Inspect ";
-            btns[nb].bg            = (ov_rgb_t) { 50, 90, 160 };
+            btns[nb].bg            = OV_BADGE_INFO;
             btns[nb].id            = OV_BTN_INSPECT;
             btns[nb].always_active = 1;
             nb++;
@@ -269,14 +269,14 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
         else if (focus == OV_FOCUS_STREAMS && ssel >= 0 && ssel < m->nb_streams)
         {
             /* Delete stream */
-            btns[nb].label         = " [DEL] \xe2\x9c\x95 Delete ";
-            btns[nb].bg            = (ov_rgb_t) { 180, 40, 40 };
+            btns[nb].label         = " [DEL] Delete ";
+            btns[nb].bg            = OV_BADGE_DANGER;
             btns[nb].id            = OV_BTN_STREAM_DEL;
             btns[nb].always_active = 0;
             nb++;
             /* Inspect */
             btns[nb].label         = " [i] Inspect ";
-            btns[nb].bg            = (ov_rgb_t) { 50, 90, 160 };
+            btns[nb].bg            = OV_BADGE_INFO;
             btns[nb].id            = OV_BTN_INSPECT;
             btns[nb].always_active = 1;
             nb++;
@@ -315,8 +315,8 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
                 ov_buf_pos(3, col);
                 if (btns[bi].always_active)
                 {
-                    ov_buf_bg(btns[bi].bg.r, btns[bi].bg.g, btns[bi].bg.b);
-                    ov_buf_fg(255, 255, 255);
+                    ov_theme_bg(btns[bi].bg);
+                    ov_theme_fg(ov_rgb_on(btns[bi].bg));
                 }
                 else if (!lay->ctrl_mode)
                 {
@@ -325,8 +325,8 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
                 }
                 else
                 {
-                    ov_buf_bg(btns[bi].bg.r, btns[bi].bg.g, btns[bi].bg.b);
-                    ov_buf_fg(255, 255, 255);
+                    ov_theme_bg(btns[bi].bg);
+                    ov_theme_fg(ov_rgb_on(btns[bi].bg));
                 }
                 ov_buf_bold();
                 ov_buf_printf("%s", btns[bi].label);
@@ -356,8 +356,8 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
         if (col > 1)
         {
             ov_buf_pos(3, col);
-            ov_buf_bg(60, 130, 200);
-            ov_buf_fg(255, 255, 255);
+            ov_theme_bg(OV_BADGE_INFO);
+            ov_theme_fg(ov_rgb_on(OV_BADGE_INFO));
             ov_buf_bold();
             ov_buf_printf("%s", badge);
         }

@@ -338,7 +338,7 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
         const char *hint     = (lay->help_search[0] != '\0')
                                    ? "[↑↓ nav • ESC clear search]"
                                    : "[↑↓ nav • →/← expand • [/] search • ESC close]";
-        int         hint_len = (int) strlen(hint);
+        int         hint_len = ov_str_display_width(hint); /* columns, not bytes */
         int         div_pad  = (pw - 2) - used_div - hint_len - 1;
         if (div_pad > 0)
         {

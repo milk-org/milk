@@ -64,7 +64,7 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             lay->theme_popup_active = 1;
             clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
             const ov_theme_t *th = ov_theme_get_active();
-            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name, th->desc);
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Theme: %s (%s)", th->name, th->desc);
             return 1;
         }
 

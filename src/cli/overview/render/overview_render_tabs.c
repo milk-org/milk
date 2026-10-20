@@ -104,8 +104,8 @@ void ov_render_tabs(OV_LAYOUT *lay)
         if ((now_ts.tv_sec % 2) == 0)
         {
             /* Bright prominent state: vibrant gold/amber bg, dark crisp text */
-            ov_buf_bg(240, 175, 20);
-            ov_buf_fg(20, 20, 25);
+            ov_theme_bg(OV_BADGE_WARN);
+            ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
         }
         else
         {
