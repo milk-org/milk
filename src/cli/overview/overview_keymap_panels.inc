@@ -21,9 +21,9 @@
 
     {
         "s / S",
-        "Sort by Name / CPU%",
-        "Press 's' to sort processes alphabetically by process name; press 'S' to sort by active CPU% "
-        "utilization or execution frequency.",
+        "Sort by name / loop rate (Hz)",
+        "Press 's' to sort processes by name (outside CONTROL mode, where 's' steps the loop); press 'S' to "
+        "sort by loop rate (Hz). Click the CPU% column title to sort by CPU use.",
         HS_PROCS,
         -1,
         0,
