@@ -79,7 +79,11 @@ def milkctrl(tui_env, tmux_server):
     panes: list[MilkCtrl] = []
 
     def launch(
-        *args: str, x: int = 200, y: int = 50, env_extra: dict[str, str] | None = None
+        *args: str,
+        x: int = 200,
+        y: int = 50,
+        env_extra: dict[str, str] | None = None,
+        ready: bool = True,
     ) -> MilkCtrl:
         e = dict(env)
         if env_extra:
@@ -88,6 +92,8 @@ def milkctrl(tui_env, tmux_server):
             tmux_server, [str(_install_dir() / "bin" / "milk-CTRL"), *args], e, x=x, y=y
         )
         panes.append(p)
+        if ready:
+            p.wait_for(r"F2:DASH")  # keys sent before raw mode would be flushed
         return p
 
     yield launch

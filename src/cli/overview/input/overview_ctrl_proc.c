@@ -8,8 +8,9 @@
  */
 
 #include "overview_input_internal.h"
-#include "processinfo_shm_list_create.h"
+#include "overview_data_internal.h"
 #include <errno.h>
+#include <limits.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
@@ -18,6 +19,62 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+/**
+ * plist_map_rw - map the existing process registry read-write, only for one control action.
+ * Return: the registry, or NULL (nothing is created when it does not exist).
+ */
+static PROCESSINFOLIST *plist_map_rw(ov_shm_map_t *m)
+{
+    char path[PATH_MAX];
+    snprintf(path, sizeof(path), "%s/processinfo.list.shm", ov_get_procdir());
+    if (ov_shm_map(m, path, 1, sizeof(PROCESSINFOLIST)) != 0)
+    {
+        return NULL;
+    }
+    return (PROCESSINFOLIST *) m->addr;
+}
+
+/**
+ * plist_reap_dead - settle registry slots whose PID no longer exists (ESRCH only): free the slot when
+ * its proc file is gone, else record STOPPED (loopstat STOP) or CRASHED. Return: slots changed, -1.
+ */
+static int plist_reap_dead(void)
+{
+    ov_shm_map_t     m;
+    PROCESSINFOLIST *pl = plist_map_rw(&m);
+    int              n  = 0;
+    if (pl == NULL)
+    {
+        return -1;
+    }
+    for (long i = 0; i < PROCESSINFOLISTSIZE; i++)
+    {
+        pid_t pid = pl->PIDarray[i];
+        if (pl->active[i] == 0 || pid <= 0 || kill(pid, 0) == 0 || errno != ESRCH)
+        {
+            continue;
+        }
+        char         fpath[PATH_MAX];
+        ov_shm_map_t pm;
+        snprintf(fpath, sizeof(fpath), "%s/proc.%.*s.%06d.shm", ov_get_procdir(),
+                 (int) sizeof(pl->pnamearray[i]), pl->pnamearray[i], (int) pid);
+        int newstate = 0;
+        if (ov_shm_map(&pm, fpath, 0, sizeof(PROCESSINFO)) == 0)
+        {
+            newstate =
+                (((const PROCESSINFO *) pm.addr)->loopstat == PROCESSINFO_LOOPSTAT_STOP) ? 2 : 3;
+            ov_shm_unmap(&pm);
+        }
+        if (pl->active[i] != newstate)
+        {
+            pl->active[i] = newstate;
+            n++;
+        }
+    }
+    ov_shm_unmap(&m);
+    return n;
+}
 
 /**
  * pid_is_stopped - check if a process is in 'T' state.
@@ -265,24 +322,21 @@ void ov_ctrl_proc_remove(const OV_PROC *p, OV_CMDLOG *log)
     int rc        = unlink(fname);
     int file_gone = (rc == 0 || errno == ENOENT);
 
-    int deactivated = 0;
-    if (pinfolist == NULL)
-    {
-        long pindex_unused;
-        processinfo_shm_list_create(&pindex_unused);
-    }
-
-    if (pinfolist != NULL)
+    int              deactivated = 0;
+    ov_shm_map_t     lm;
+    PROCESSINFOLIST *pl = plist_map_rw(&lm);
+    if (pl != NULL)
     {
         for (long i = 0; i < PROCESSINFOLISTSIZE; i++)
         {
-            if (pinfolist->PIDarray[i] == p->PID)
+            if (pl->active[i] != 0 && pl->PIDarray[i] == p->PID)
             {
-                pinfolist->active[i] = 0;
-                deactivated          = 1;
+                pl->active[i] = 0;
+                deactivated   = 1;
                 break;
             }
         }
+        ov_shm_unmap(&lm);
     }
 
     if (log != NULL)
@@ -329,11 +383,13 @@ void ov_ctrl_proc_pause_toggle(const OV_PROC *p, OV_CMDLOG *log)
 void ov_ctrl_procs_cleanup(OV_CMDLOG *log)
 {
     /* Silently remove crashed/stopped procinfo entries */
-    int rc = system("milk-procinfo-rm -c </dev/null >/dev/null 2>&1");
+    int rc     = system("milk-procinfo-rm -c </dev/null >/dev/null 2>&1");
+    int reaped = plist_reap_dead();
     if (log != NULL)
     {
-        ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "🧹 Process cleanup requested");
+        ov_cmdlog_push(log, (rc == 0 && reaped >= 0) ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
+                       "Process cleanup: stale files removed, %d registry slot(s) settled",
+                       reaped > 0 ? reaped : 0);
     }
 }
 

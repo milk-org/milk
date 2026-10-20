@@ -4,24 +4,81 @@
 
 #include "overview_data_internal.h"
 
+#include <limits.h>
 
 /**
- * @brief Scan processinfo for active processes.
+ * plist_map_ro - (re)map <procdir>/processinfo.list.shm read-only; NULL when it does not exist.
+ * A viewer never creates the registry.
+ */
+static const PROCESSINFOLIST *plist_map_ro(const char *procdir)
+{
+    char        path[PATH_MAX];
+    struct stat st;
+    snprintf(path, sizeof(path), "%s/processinfo.list.shm", procdir);
+    if (stat(path, &st) != 0)
+    {
+        ov_shm_unmap(&s_plist_map);
+        return NULL;
+    }
+    if (!ov_shm_same_file(&s_plist_map, &st))
+    {
+        ov_shm_unmap(&s_plist_map);
+        ov_shm_map(&s_plist_map, path, 0, sizeof(PROCESSINFOLIST));
+    }
+    return (const PROCESSINFOLIST *) s_plist_map.addr;
+}
+
+/**
+ * pcache_get - cached read-only map of one registry entry's proc file, remapped when @recheck finds
+ * it removed or re-created. A failed map is kept as a negative entry (pinfo NULL) so files of dead
+ * entries are not re-opened every scan. Return: cache index, or -1 when the cache is full.
+ */
+static int pcache_get(long pindex, pid_t pid, const char *fpath, int recheck)
+{
+    int ci        = pcache_find(pindex, pid);
+    int seen_dead = 0;
+    if (ci >= 0 && recheck)
+    {
+        struct stat st;
+        int         present = (stat(fpath, &st) == 0);
+        int         stale =
+            s_pcache[ci].pinfo ? (!present || !ov_shm_same_file(&s_pcache[ci].map, &st)) : present;
+        if (stale)
+        {
+            seen_dead = s_pcache[ci].seen_dead;
+            pcache_evict(ci);
+            ci = -1;
+        }
+    }
+    if (ci < 0)
+    {
+        if (s_pcache_nb >= OV_MAX_PROCS)
+        {
+            return -1;
+        }
+        ci = s_pcache_nb++;
+        memset(&s_pcache[ci], 0, sizeof(ov_proc_cache_t));
+        s_pcache[ci].pid       = pid;
+        s_pcache[ci].pindex    = pindex;
+        s_pcache[ci].seen_dead = seen_dead;
+        if (ov_shm_map(&s_pcache[ci].map, fpath, 0, sizeof(PROCESSINFO)) == 0)
+        {
+            s_pcache[ci].pinfo = (const PROCESSINFO *) s_pcache[ci].map.addr;
+        }
+    }
+    s_pcache[ci].in_use = 1;
+    return ci;
+}
+
+/**
+ * @brief Scan processinfo for active processes, read-only.
+ *
+ * Registry states 2/3 written by others are honoured. An entry still marked active (1) whose PID
+ * is gone is shown as STOPPED (clean exit: file removed or loopstat STOP) or CRASHED, computed
+ * here and never written back; the CONTROL-mode cleanup ('C') reaps such slots on request.
  */
 void ov_scan_procs(OV_MODEL *model)
 {
-    if (pinfolist == NULL)
-    {
-        long pindex_unused;
-        processinfo_shm_list_create(&pindex_unused);
-    }
-
-    if (pinfolist == NULL)
-    {
-        model->nb_procs = 0;
-        return;
-    }
-
     const char *shmdir = ov_get_procdir();
 
     /* Mark all proc cache entries as not-in-use */
@@ -30,98 +87,55 @@ void ov_scan_procs(OV_MODEL *model)
         s_pcache[i].in_use = 0;
     }
 
-    int idx = 0;
+    const PROCESSINFOLIST *pl  = plist_map_ro(shmdir);
+    int                    idx = 0;
 
-    for (long i = 0; i < PROCESSINFOLISTSIZE && idx < OV_MAX_PROCS; i++)
+    /* Proc files are re-checked only when the directory changed */
+    int         recheck = 0;
+    struct stat dst;
+    if (stat(shmdir, &dst) == 0 &&
+        (dst.st_mtim.tv_sec != s_proc_mtime.tv_sec || dst.st_mtim.tv_nsec != s_proc_mtime.tv_nsec))
     {
-        if (pinfolist->active[i] == 0)
+        s_proc_mtime = dst.st_mtim;
+        recheck      = 1;
+    }
+
+    for (long i = 0; pl != NULL && i < PROCESSINFOLISTSIZE && idx < OV_MAX_PROCS; i++)
+    {
+        int state = pl->active[i];
+        if (state == 0)
         {
             continue;
         }
 
-        pid_t pid = pinfolist->PIDarray[i];
+        pid_t pid = pl->PIDarray[i];
         if (pid <= 0)
         {
             continue;
         }
 
         char pname[STRINGMAXLEN_PROCESSINFO_NAME];
-        strncpy(pname, pinfolist->pnamearray[i], sizeof(pname) - 1);
+        strncpy(pname, pl->pnamearray[i], sizeof(pname) - 1);
         pname[sizeof(pname) - 1] = '\0';
 
         char fpath[1024];
         snprintf(fpath, sizeof(fpath), "%s/proc.%s.%06d.shm", shmdir, pname, (int) pid);
 
-        int alive = 0;
-        if (pinfolist->active[i] == 1)
-        {
-            alive = pid_is_alive(pid);
-        }
+        int                ci    = pcache_get(i, pid, fpath, recheck);
+        const PROCESSINFO *pinfo = (ci >= 0) ? s_pcache[ci].pinfo : NULL;
+        int alive = (state == 1) && !(ci >= 0 && s_pcache[ci].seen_dead) && pid_is_alive(pid);
 
-        /* Transition state if active but died */
-        if (pinfolist->active[i] == 1 && !alive)
-        {
-            int          fd;
-            PROCESSINFO *pinfo_tmp = processinfo_shm_link(fpath, &fd);
-            if (pinfo_tmp != (PROCESSINFO *) MAP_FAILED)
-            {
-                if (pinfo_tmp->loopstat == PROCESSINFO_LOOPSTAT_STOP)
-                {
-                    pinfolist->active[i] = 2; /* STOPPED */
-                }
-                else
-                {
-                    pinfolist->active[i] = 3; /* CRASHED */
-                }
-                processinfo_shm_close(pinfo_tmp, fd);
-            }
-            else
-            {
-                pinfolist->active[i] = 2; /* default to STOPPED if file removed */
-            }
-        }
-
-        PROCESSINFO *pinfo = NULL;
-        int          ci    = pcache_find_pid(pid);
-
-        if (pinfolist->active[i] == 1 && alive)
+        if (state == 1 && !alive)
         {
             if (ci >= 0)
             {
-                s_pcache[ci].in_use = 1;
-                pinfo               = s_pcache[ci].pinfo;
+                s_pcache[ci].seen_dead = 1;
             }
-            else
-            {
-                int pfd = open(fpath, O_RDONLY);
-                if (pfd != -1)
-                {
-                    PROCESSINFO *pm = (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ,
-                                                           MAP_SHARED, pfd, 0);
-                    if (pm != MAP_FAILED)
-                    {
-                        if (s_pcache_nb >= OV_MAX_PROCS)
-                        {
-                            munmap(pm, sizeof(PROCESSINFO));
-                            close(pfd);
-                            continue;
-                        }
-
-                        ci = s_pcache_nb;
-                        memset(&s_pcache[ci], 0, sizeof(ov_proc_cache_t));
-                        s_pcache[ci].pid    = pid;
-                        s_pcache[ci].pinfo  = pm;
-                        s_pcache[ci].fd     = pfd;
-                        s_pcache[ci].in_use = 1;
-                        s_pcache_nb++;
-                        pinfo = pm;
-                    }
-                    else
-                    {
-                        close(pfd);
-                    }
-                }
-            }
+            state = (pinfo == NULL || pinfo->loopstat == PROCESSINFO_LOOPSTAT_STOP) ? 2 : 3;
+        }
+        if (!alive)
+        {
+            pinfo = NULL; /* dead entries show zeros and their STOP/CRASHED label */
         }
 
         OV_PROC *p = &model->procs[idx];
@@ -138,24 +152,21 @@ void ov_scan_procs(OV_MODEL *model)
 
         p->PID    = pid;
         p->valid  = 1;
-        p->active = (pinfolist->active[i] == 1 && alive);
+        p->active = (state == 1 && alive);
 
         if (pinfo != NULL)
         {
             p->loopstat = pinfo->loopstat;
         }
+        else if (alive)
+        {
+            /* live PID: proc file absent (STOP) or present but not mappable (ERROR) */
+            p->loopstat =
+                (access(fpath, F_OK) == 0) ? PROCESSINFO_LOOPSTAT_ERROR : PROCESSINFO_LOOPSTAT_STOP;
+        }
         else
         {
-            p->loopstat = (pinfolist->active[i] == 2) ? PROCESSINFO_LOOPSTAT_STOP
-                                                      : PROCESSINFO_LOOPSTAT_CRASHED;
-        }
-
-        if (!alive)
-        {
-            p->loopstat = (pinfo != NULL && pinfo->loopstat == PROCESSINFO_LOOPSTAT_STOP)
-                              ? PROCESSINFO_LOOPSTAT_STOP
-                              : ((pinfolist->active[i] == 2) ? PROCESSINFO_LOOPSTAT_STOP
-                                                             : PROCESSINFO_LOOPSTAT_CRASHED);
+            p->loopstat = (state == 2) ? PROCESSINFO_LOOPSTAT_STOP : PROCESSINFO_LOOPSTAT_CRASHED;
         }
 
         if (pinfo != NULL)

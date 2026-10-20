@@ -22,7 +22,6 @@
 #include "overview_defs.h"
 #include "overview_layout.h"
 #include "overview_theme.h"
-#include "processinfo_shm_list_create.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -157,17 +156,6 @@ int main(int argc, char *argv[])
 
     /* --- Enter raw mode --- */
     ov_raw_mode_enter();
-
-    /* --- Connect to process list shared memory --- */
-    {
-        long pindex_unused;
-        if (processinfo_shm_list_create(&pindex_unused) != RETURN_SUCCESS)
-        {
-            ov_raw_mode_exit();
-            PRINT_ERROR("failed to connect to process list shared memory");
-            return 1;
-        }
-    }
 
     /* --- Start background scanner --- */
     if (ov_scan_start() != 0)

@@ -43,10 +43,9 @@ void ov_scan_cache_cleanup(void)
     /* Unmap all cached proc mappings */
     for (int i = s_pcache_nb - 1; i >= 0; i--)
     {
-        munmap(s_pcache[i].pinfo, sizeof(PROCESSINFO));
-        close(s_pcache[i].fd);
+        pcache_evict(i);
     }
-    s_pcache_nb = 0;
+    ov_shm_unmap(&s_plist_map);
 
     /* Reset directory mtime trackers */
     memset(&s_shm_mtime, 0, sizeof(s_shm_mtime));

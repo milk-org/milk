@@ -22,8 +22,7 @@
 #include "overview_data.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "fps_shmdirname.h"
-#include "processinfo_shm_list_create.h"
-#include "processinfo_shm_link.h"
+#include "processinfo.h"
 #include "processinfo_procdirname.h"
 
 long fps_connect(const char *name, FPS *fps, int fpsconnectmode);
@@ -68,12 +67,29 @@ typedef struct
 extern ov_fps_cache_t s_fcache[OV_MAX_FPS];
 extern int            s_fcache_nb;
 
+/* A read-only (or on-demand read-write) mapping of a whole shm file, with its identity */
 typedef struct
 {
-    pid_t        pid;
-    PROCESSINFO *pinfo;
-    int          fd;
-    int          in_use;
+    void  *addr;
+    size_t len;
+    dev_t  dev;
+    ino_t  ino;
+} ov_shm_map_t;
+
+int  ov_shm_map(ov_shm_map_t *m, const char *path, int rw, size_t minsize);
+void ov_shm_unmap(ov_shm_map_t *m);
+int  ov_shm_same_file(const ov_shm_map_t *m, const struct stat *st);
+
+extern ov_shm_map_t s_plist_map;
+
+typedef struct
+{
+    pid_t              pid;
+    long               pindex; /* registry slot */
+    const PROCESSINFO *pinfo;  /* NULL: file absent or unmappable */
+    ov_shm_map_t       map;
+    int                seen_dead; /* once dead, a reused PID never revives this entry */
+    int                in_use;
 
     uint64_t prev_utime;
     uint64_t prev_stime;
@@ -116,6 +132,7 @@ int  fcache_find(const char *name);
 void fcache_evict(int ci);
 void fcache_evict_locked(int ci);
 int  pcache_find_pid(pid_t pid);
+int  pcache_find(long pindex, pid_t pid);
 void pcache_evict(int ci);
 
 typedef struct

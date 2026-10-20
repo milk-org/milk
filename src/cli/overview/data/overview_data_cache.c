@@ -214,19 +214,82 @@ int pcache_find_pid(pid_t pid)
 }
 
 /**
- * pcache_evict - Evict a cached processinfo mapping by index
- * @ci: Cache slot index to evict
- *
- * Unmaps shared memory, closes file descriptor, and replaces the slot
- * with the last cache entry to keep cache contiguous.
+ * pcache_find - Look up a registry entry by slot and PID.
+ */
+int pcache_find(long pindex, pid_t pid)
+{
+    for (int i = 0; i < s_pcache_nb; i++)
+    {
+        if (s_pcache[i].pindex == pindex && s_pcache[i].pid == pid)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
+ * pcache_evict - Unmap a cached processinfo entry and move the last entry into its slot.
  */
 void pcache_evict(int ci)
 {
-    munmap(s_pcache[ci].pinfo, sizeof(PROCESSINFO));
-    close(s_pcache[ci].fd);
+    ov_shm_unmap(&s_pcache[ci].map);
     s_pcache_nb--;
     if (ci < s_pcache_nb)
     {
         s_pcache[ci] = s_pcache[s_pcache_nb];
     }
+}
+
+/* --- Shared memory file mappings --- */
+
+ov_shm_map_t s_plist_map;
+
+/**
+ * ov_shm_map - map an existing regular file of at least @minsize bytes, read-only unless @rw.
+ * The fd is closed once mapped. Return: 0, or -1 with *m zeroed.
+ */
+int ov_shm_map(ov_shm_map_t *m, const char *path, int rw, size_t minsize)
+{
+    struct stat st;
+    memset(m, 0, sizeof(*m));
+    int fd = open(path, (rw ? O_RDWR : O_RDONLY) | O_NONBLOCK | O_CLOEXEC);
+    if (fd < 0)
+    {
+        return -1;
+    }
+    if (fstat(fd, &st) != 0 || !S_ISREG(st.st_mode) || st.st_size <= 0 ||
+        (size_t) st.st_size < minsize)
+    {
+        close(fd);
+        return -1;
+    }
+    void *a = mmap(NULL, (size_t) st.st_size, PROT_READ | (rw ? PROT_WRITE : 0), MAP_SHARED, fd, 0);
+    close(fd);
+    if (a == MAP_FAILED)
+    {
+        return -1;
+    }
+    m->addr = a;
+    m->len  = (size_t) st.st_size;
+    m->dev  = st.st_dev;
+    m->ino  = st.st_ino;
+    return 0;
+}
+
+/** ov_shm_unmap - unmap exactly what ov_shm_map() mapped; no-op on an empty map. */
+void ov_shm_unmap(ov_shm_map_t *m)
+{
+    if (m->addr != NULL)
+    {
+        munmap(m->addr, m->len);
+    }
+    memset(m, 0, sizeof(*m));
+}
+
+/** ov_shm_same_file - 1 if @m maps the file described by @st (same device, inode and size). */
+int ov_shm_same_file(const ov_shm_map_t *m, const struct stat *st)
+{
+    return m->addr != NULL && m->dev == st->st_dev && m->ino == st->st_ino &&
+           m->len == (size_t) st->st_size;
 }

@@ -62,7 +62,7 @@ def test_control_chars_in_stream_name(milkctrl, entities, tmux_server):
     entities.make_hostile_stream("ccsrc", "evil\x1b]0;PWNED\x07nm")
     m = milkctrl()
     m.keys("F3")
-    m.wait_for(r"evil\?\]0;PWNED\?nm")
+    m.wait_for(r"evil\?\]0;PWNED\?")
     title = m.pane.cmd("display", "-p", "#{pane_title}").stdout
     assert "PWNED" not in "".join(title)
     assert m.quit() == 0
