@@ -39,8 +39,8 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             int body_row         = mr - lay->r_fps_params.row - 2;
             if (body_row >= 0)
             {
-                int fsel = lay->sel_fps;
-                if (fsel >= 0 && fsel < m->nb_fps)
+                int fsel = ov_sel_idx(lay, m, OV_FOCUS_FPS);
+                if (fsel >= 0)
                 {
                     const OV_FPS   *fps = &m->fps[fsel];
                     fps_tree_item_t items[1024];
@@ -72,13 +72,8 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             else if (body_row >= 0)
             {
                 int idx = lay->scroll_fps + body_row;
-                if (idx < m->nb_fps)
+                if (ov_sel_row(lay, m, OV_FOCUS_FPS, idx) >= 0) /* rows past the list are ignored */
                 {
-                    if (lay->sel_fps != idx)
-                    {
-                        lay->sel_fps         = idx;
-                        lay->sel_name_fps[0] = '\0';
-                    }
                     if (is_dbl)
                     {
                         lay->graph_tab_mode = 2;
@@ -98,10 +93,8 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
         else if (body_row >= 0)
         {
             int idx = lay->scroll_stream + body_row;
-            if (idx < m->nb_streams)
+            if (ov_sel_row(lay, m, OV_FOCUS_STREAMS, idx) >= 0) /* rows past the list are ignored */
             {
-                lay->sel_stream         = idx;
-                lay->sel_name_stream[0] = '\0';
                 if (is_dbl)
                 {
                     lay->graph_tab_mode = 2;
@@ -120,10 +113,8 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
         else if (body_row >= 0)
         {
             int idx = lay->scroll_proc + body_row;
-            if (idx < m->nb_procs)
+            if (ov_sel_row(lay, m, OV_FOCUS_PROCS, idx) >= 0) /* rows past the list are ignored */
             {
-                lay->sel_proc         = idx;
-                lay->sel_name_proc[0] = '\0';
                 if (is_dbl)
                 {
                     lay->graph_tab_mode = 2;
@@ -154,7 +145,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             {
                 if (lay->graph_tab_mode == 0)
                 {
-                    int start_node = ov_input_get_graph_start_node(lay, m);
+                    int start_node = ov_graph_start_node(lay, m);
                     if (start_node >= 0)
                     {
                         SG_TREE_NODE rnodes[OV_MAX_NODES];
@@ -205,15 +196,13 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
 
                             if (click_on_proc && proc_idx >= 0)
                             {
-                                lay->focus            = OV_FOCUS_PROCS;
-                                lay->sel_proc         = proc_idx;
-                                lay->sel_name_proc[0] = '\0';
+                                lay->focus = OV_FOCUS_PROCS;
+                                ov_sel_model(lay, m, OV_FOCUS_PROCS, proc_idx);
                             }
                             else if (rn->stream_idx >= 0)
                             {
-                                lay->focus              = OV_FOCUS_STREAMS;
-                                lay->sel_stream         = rn->stream_idx;
-                                lay->sel_name_stream[0] = '\0';
+                                lay->focus = OV_FOCUS_STREAMS;
+                                ov_sel_model(lay, m, OV_FOCUS_STREAMS, rn->stream_idx);
                             }
 
                             if (is_dbl)
@@ -240,10 +229,9 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             else if (body_row >= 0)
             {
                 int idx = lay->scroll_stream + body_row;
-                if (idx < m->nb_streams)
+                if (ov_sel_row(lay, m, OV_FOCUS_STREAMS, idx) >=
+                    0) /* rows past the list are ignored */
                 {
-                    lay->sel_stream         = idx;
-                    lay->sel_name_stream[0] = '\0';
                     if (is_dbl)
                     {
                         lay->graph_tab_mode = 2;
@@ -262,10 +250,9 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             else if (body_row >= 0)
             {
                 int idx = lay->scroll_proc + body_row;
-                if (idx < m->nb_procs)
+                if (ov_sel_row(lay, m, OV_FOCUS_PROCS, idx) >=
+                    0) /* rows past the list are ignored */
                 {
-                    lay->sel_proc         = idx;
-                    lay->sel_name_proc[0] = '\0';
                     if (is_dbl)
                     {
                         lay->graph_tab_mode = 2;
@@ -284,10 +271,8 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             else if (body_row >= 0)
             {
                 int idx = lay->scroll_fps + body_row;
-                if (idx < m->nb_fps)
+                if (ov_sel_row(lay, m, OV_FOCUS_FPS, idx) >= 0) /* rows past the list are ignored */
                 {
-                    lay->sel_fps         = idx;
-                    lay->sel_name_fps[0] = '\0';
                     if (is_dbl)
                     {
                         lay->graph_tab_mode = 2;
@@ -317,7 +302,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                 {
                     if (lay->graph_tab_mode == 0)
                     {
-                        int start_node = ov_input_get_graph_start_node(lay, m);
+                        int start_node = ov_graph_start_node(lay, m);
                         if (start_node >= 0)
                         {
                             SG_TREE_NODE rnodes[OV_MAX_NODES];
@@ -368,9 +353,8 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
 
                                 if (click_on_proc && proc_idx >= 0)
                                 {
-                                    lay->focus            = OV_FOCUS_PROCS;
-                                    lay->sel_proc         = proc_idx;
-                                    lay->sel_name_proc[0] = '\0';
+                                    lay->focus = OV_FOCUS_PROCS;
+                                    ov_sel_model(lay, m, OV_FOCUS_PROCS, proc_idx);
                                     if (is_dbl)
                                     {
                                         lay->view = OV_VIEW_PROCS;
@@ -378,9 +362,8 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                                 }
                                 else if (rn->stream_idx >= 0)
                                 {
-                                    lay->focus              = OV_FOCUS_STREAMS;
-                                    lay->sel_stream         = rn->stream_idx;
-                                    lay->sel_name_stream[0] = '\0';
+                                    lay->focus = OV_FOCUS_STREAMS;
+                                    ov_sel_model(lay, m, OV_FOCUS_STREAMS, rn->stream_idx);
                                     if (is_dbl)
                                     {
                                         lay->view = OV_VIEW_STREAMS;
@@ -409,20 +392,11 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                     }
                     else if (lay->graph_tab_mode == 2)
                     {
-                        ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
-                        int        fsel  = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
-
-                        int active_fps = -1;
-                        if (focus == OV_FOCUS_FPS && fsel >= 0 && fsel < m->nb_fps)
+                        ov_focus_t dpanel     = OV_FOCUS_STREAMS;
+                        int        active_fps = ov_detail_target(lay, m, &dpanel);
+                        if (dpanel != OV_FOCUS_FPS)
                         {
-                            active_fps = fsel;
-                        }
-                        else if (focus != OV_FOCUS_STREAMS && focus != OV_FOCUS_PROCS)
-                        {
-                            if (fsel >= 0 && fsel < m->nb_fps)
-                            {
-                                active_fps = fsel;
-                            }
+                            active_fps = -1; /* DETAILS shows a stream or process */
                         }
 
                         if (active_fps >= 0)
@@ -445,9 +419,8 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                                                 m, params->disp_param_value[dp]);
                                             if (si >= 0)
                                             {
-                                                lay->focus              = OV_FOCUS_STREAMS;
-                                                lay->sel_stream         = si;
-                                                lay->sel_name_stream[0] = '\0';
+                                                lay->focus = OV_FOCUS_STREAMS;
+                                                ov_sel_model(lay, m, OV_FOCUS_STREAMS, si);
                                                 if (is_dbl)
                                                 {
                                                     lay->view = OV_VIEW_STREAMS;

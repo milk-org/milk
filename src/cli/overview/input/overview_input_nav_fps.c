@@ -21,8 +21,8 @@
  */
 int ov_input_nav_fps(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    int fsel       = lay->sel_fps;
-    int has_params = (fsel >= 0 && fsel < m->nb_fps && m->fps[fsel].nb_disp_params > 0);
+    int fsel       = ov_sel_idx(lay, m, OV_FOCUS_FPS);
+    int has_params = (fsel >= 0 && m->fps[fsel].nb_disp_params > 0);
 
     int             nitems = 0;
     fps_tree_item_t items[1024];

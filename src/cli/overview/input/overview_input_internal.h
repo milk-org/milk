@@ -50,7 +50,6 @@ int   ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand);
 int   ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc);
 
 /* Shared selection and navigation helpers */
-int              ov_input_get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m);
 int              ov_input_hit_panel_tab(int mc, int panel_col, const char **tabs, int num_tabs);
 const OV_STREAM *ov_input_get_sel_stream(const OV_LAYOUT *lay, const OV_MODEL *m);
 const OV_PROC   *ov_input_get_sel_proc(const OV_LAYOUT *lay, const OV_MODEL *m);

@@ -76,59 +76,13 @@ int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     int n = ov_filter_build(lay->filter, names, count, fidx, OV_MAX_NODES);
                     if (n > 0)
                     {
-                        int found = fidx[0];
-                        if (target == OV_FOCUS_STREAMS)
+                        int         found = fidx[0];
+                        const char *what  = (target == OV_FOCUS_STREAMS) ? "stream"
+                                            : (target == OV_FOCUS_PROCS) ? "process"
+                                                                         : "FPS";
+                        if (ov_sel_model(lay, m, target, found) >= 0)
                         {
-                            lay->sel_stream = found;
-                            int page_h      = lay->r_streams.height - 3;
-                            if (page_h > 0)
-                            {
-                                if (lay->sel_stream < lay->scroll_stream)
-                                {
-                                    lay->scroll_stream = lay->sel_stream;
-                                }
-                                if (lay->sel_stream >= lay->scroll_stream + page_h)
-                                {
-                                    lay->scroll_stream = lay->sel_stream - page_h + 1;
-                                }
-                            }
-                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Jumped to stream: %s",
-                                           names[found]);
-                        }
-                        else if (target == OV_FOCUS_PROCS)
-                        {
-                            lay->sel_proc = found;
-                            int page_h    = lay->r_procs.height - 3;
-                            if (page_h > 0)
-                            {
-                                if (lay->sel_proc < lay->scroll_proc)
-                                {
-                                    lay->scroll_proc = lay->sel_proc;
-                                }
-                                if (lay->sel_proc >= lay->scroll_proc + page_h)
-                                {
-                                    lay->scroll_proc = lay->sel_proc - page_h + 1;
-                                }
-                            }
-                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Jumped to process: %s",
-                                           names[found]);
-                        }
-                        else if (target == OV_FOCUS_FPS)
-                        {
-                            lay->sel_fps = found;
-                            int page_h   = lay->r_fps.height - 3;
-                            if (page_h > 0)
-                            {
-                                if (lay->sel_fps < lay->scroll_fps)
-                                {
-                                    lay->scroll_fps = lay->sel_fps;
-                                }
-                                if (lay->sel_fps >= lay->scroll_fps + page_h)
-                                {
-                                    lay->scroll_fps = lay->sel_fps - page_h + 1;
-                                }
-                            }
-                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Jumped to FPS: %s",
+                            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Jumped to %s: %s", what,
                                            names[found]);
                         }
                     }

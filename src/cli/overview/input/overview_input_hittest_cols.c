@@ -148,78 +148,22 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
         return;
     }
 
+    /* hover_idx is a drawn row: resolve it through the same rows the panel draws */
     if (lay->hover_view == OV_FOCUS_STREAMS)
     {
-        int count = m->nb_streams;
-        int fidx[OV_MAX_STREAMS];
-        for (int i = 0; i < count; i++)
-        {
-            fidx[i] = i;
-        }
-        const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
-        if (filt[0] != '\0')
-        {
-            const char *names[OV_MAX_STREAMS];
-            for (int i = 0; i < count; i++)
-            {
-                names[i] = m->streams[i].name;
-            }
-            count = ov_filter_build(filt, names, m->nb_streams, fidx, OV_MAX_STREAMS);
-        }
-        if (lay->hover_idx < count)
-        {
-            lay->hover_global_stream = fidx[lay->hover_idx];
-        }
+        lay->hover_global_stream = ov_row_to_idx(lay, m, OV_FOCUS_STREAMS, lay->hover_idx);
     }
     else if (lay->hover_view == OV_FOCUS_PROCS)
     {
-        int count = m->nb_procs;
-        int fidx[OV_MAX_PROCS];
-        for (int i = 0; i < count; i++)
-        {
-            fidx[i] = i;
-        }
-        const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
-        if (filt[0] != '\0')
-        {
-            const char *names[OV_MAX_PROCS];
-            for (int i = 0; i < count; i++)
-            {
-                names[i] = m->procs[i].name;
-            }
-            count = ov_filter_build(filt, names, m->nb_procs, fidx, OV_MAX_PROCS);
-        }
-        if (lay->hover_idx < count)
-        {
-            lay->hover_global_proc = fidx[lay->hover_idx];
-        }
+        lay->hover_global_proc = ov_row_to_idx(lay, m, OV_FOCUS_PROCS, lay->hover_idx);
     }
     else if (lay->hover_view == OV_FOCUS_FPS)
     {
-        int count = m->nb_fps;
-        int fidx[OV_MAX_FPS];
-        for (int i = 0; i < count; i++)
-        {
-            fidx[i] = i;
-        }
-        const char *filt = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
-        if (filt[0] != '\0')
-        {
-            const char *names[OV_MAX_FPS];
-            for (int i = 0; i < count; i++)
-            {
-                names[i] = m->fps[i].name;
-            }
-            count = ov_filter_build(filt, names, m->nb_fps, fidx, OV_MAX_FPS);
-        }
-        if (lay->hover_idx < count)
-        {
-            lay->hover_global_fps = fidx[lay->hover_idx];
-        }
+        lay->hover_global_fps = ov_row_to_idx(lay, m, OV_FOCUS_FPS, lay->hover_idx);
     }
     else if (lay->hover_view == OV_FOCUS_GRAPH)
     {
-        int start_node = ov_input_get_graph_start_node(lay, m);
+        int start_node = ov_graph_start_node(lay, m);
         if (start_node >= 0)
         {
             SG_RENDER_NODE rnodes[OV_MAX_NODES];

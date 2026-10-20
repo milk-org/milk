@@ -41,7 +41,7 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         scroll = &lay->scroll_stream;
         {
             int fidx[OV_MAX_STREAMS];
-            count = ov_filter_streams(lay, m, NULL, fidx, OV_MAX_STREAMS);
+            count = ov_rows(lay, m, OV_FOCUS_STREAMS, fidx, OV_MAX_STREAMS);
         }
         page_h = lay->r_streams.height - 3;
         break;
@@ -51,7 +51,7 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         scroll = &lay->scroll_proc;
         {
             int fidx[OV_MAX_PROCS];
-            count = ov_filter_procs(lay, m, NULL, fidx, OV_MAX_PROCS);
+            count = ov_rows(lay, m, OV_FOCUS_PROCS, fidx, OV_MAX_PROCS);
         }
         page_h = lay->r_procs.height - 3;
         break;
@@ -61,7 +61,7 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         scroll = &lay->scroll_fps;
         {
             int fidx[OV_MAX_FPS];
-            count = ov_filter_fps(lay, m, NULL, fidx, OV_MAX_FPS);
+            count = ov_rows(lay, m, OV_FOCUS_FPS, fidx, OV_MAX_FPS);
         }
         page_h = lay->r_fps.height - 3;
         break;
@@ -72,7 +72,7 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             sel    = &lay->sel_graph;
             scroll = &lay->scroll_graph;
             {
-                int start_node = ov_input_get_graph_start_node(lay, m);
+                int start_node = ov_graph_start_node(lay, m);
                 if (start_node >= 0)
                 {
                     SG_RENDER_NODE rnodes[OV_MAX_NODES];
@@ -98,7 +98,12 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         else if (lay->graph_tab_mode == 2)
         {
             /* DETAILS tab: param nav if FPS selected */
-            int fps_sel = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
+            ov_focus_t dpanel  = OV_FOCUS_STREAMS;
+            int        fps_sel = ov_detail_target(lay, m, &dpanel);
+            if (dpanel != OV_FOCUS_FPS)
+            {
+                fps_sel = -1; /* DETAILS shows a stream or a process: no parameters */
+            }
             int has_fps_params =
                 (fps_sel >= 0 && fps_sel < m->nb_fps && m->fps[fps_sel].nb_disp_params > 0);
             int nparams = has_fps_params ? m->fps[fps_sel].nb_disp_params : 0;
@@ -309,83 +314,14 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
             if (navigated)
             {
-                if (lay->focus == OV_FOCUS_STREAMS)
+                if (lay->focus < OV_FOCUS_GRAPH)
                 {
-                    lay->sel_name_stream[0] = '\0';
+                    ov_sel_row(lay, m, lay->focus,
+                               *sel); /* the cursor is the identity of this row */
                 }
-                else if (lay->focus == OV_FOCUS_PROCS)
+                if (lay->focus == OV_FOCUS_FPS && lay->view == OV_VIEW_FPS)
                 {
-                    lay->sel_name_proc[0] = '\0';
-                }
-                else if (lay->focus == OV_FOCUS_FPS)
-                {
-                    lay->sel_name_fps[0] = '\0';
-                    if (lay->view == OV_VIEW_FPS)
-                    {
-                        lay->fps_param_focus = 0;
-                    }
-                }
-
-                if (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 0 && *sel != old_sel)
-                {
-                    int start_node = ov_input_get_graph_start_node(lay, m);
-                    if (start_node >= 0)
-                    {
-                        SG_RENDER_NODE rnodes[OV_MAX_NODES];
-                        int            n_rnodes =
-                            sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
-                        if (*sel < n_rnodes)
-                        {
-                            const SG_RENDER_NODE *rn   = &rnodes[*sel];
-                            const OV_NODE        *node = &m->nodes[rn->node_idx];
-
-                            if (node->type == OV_NODE_STREAM)
-                            {
-                                lay->sel_stream         = node->index;
-                                lay->sel_name_stream[0] = '\0';
-                                if (lay->sel_stream < lay->scroll_stream)
-                                {
-                                    lay->scroll_stream = lay->sel_stream;
-                                }
-                                if (lay->r_streams.height > 3 &&
-                                    lay->sel_stream >=
-                                        lay->scroll_stream + lay->r_streams.height - 3)
-                                {
-                                    lay->scroll_stream =
-                                        lay->sel_stream - (lay->r_streams.height - 3) + 1;
-                                }
-                            }
-                            else if (node->type == OV_NODE_PROC)
-                            {
-                                lay->sel_proc         = node->index;
-                                lay->sel_name_proc[0] = '\0';
-                                if (lay->sel_proc < lay->scroll_proc)
-                                {
-                                    lay->scroll_proc = lay->sel_proc;
-                                }
-                                if (lay->r_procs.height > 3 &&
-                                    lay->sel_proc >= lay->scroll_proc + lay->r_procs.height - 3)
-                                {
-                                    lay->scroll_proc =
-                                        lay->sel_proc - (lay->r_procs.height - 3) + 1;
-                                }
-                            }
-                            else if (node->type == OV_NODE_FPS)
-                            {
-                                lay->sel_fps         = node->index;
-                                lay->sel_name_fps[0] = '\0';
-                                if (lay->sel_fps < lay->scroll_fps)
-                                {
-                                    lay->scroll_fps = lay->sel_fps;
-                                }
-                                if (lay->r_fps.height > 3 &&
-                                    lay->sel_fps >= lay->scroll_fps + lay->r_fps.height - 3)
-                                {
-                                    lay->scroll_fps = lay->sel_fps - (lay->r_fps.height - 3) + 1;
-                                }
-                            }
-                        }
-                    }
+                    lay->fps_param_focus = 0;
                 }
             }
             return 1;

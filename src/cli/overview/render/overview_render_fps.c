@@ -469,7 +469,7 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
 
     /* Build filtered index array */
     int         fidx[OV_MAX_FPS];
-    int         filt_n        = ov_filter_fps(lay, m, rel, fidx, OV_MAX_FPS);
+    int         filt_n        = ov_rows(lay, m, OV_FOCUS_FPS, fidx, OV_MAX_FPS);
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
 
     int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)

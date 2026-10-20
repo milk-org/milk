@@ -170,8 +170,8 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 sel      = &lay->fps_param_sel;
                 scroll   = &lay->fps_param_scroll;
                 count    = 0;
-                int fsel = lay->sel_fps;
-                if (fsel >= 0 && fsel < m->nb_fps)
+                int fsel = ov_sel_idx(lay, m, OV_FOCUS_FPS);
+                if (fsel >= 0)
                 {
                     const OV_FPS   *fps = &m->fps[fsel];
                     fps_tree_item_t items[1024];
@@ -207,7 +207,7 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 sel            = &lay->sel_graph;
                 scroll         = &lay->scroll_graph;
-                int start_node = ov_input_get_graph_start_node(lay, m);
+                int start_node = ov_graph_start_node(lay, m);
                 if (start_node >= 0)
                 {
                     SG_RENDER_NODE rnodes[OV_MAX_NODES];
@@ -288,7 +288,7 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 {
                     sel            = &lay->sel_graph;
                     scroll         = &lay->scroll_graph;
-                    int start_node = ov_input_get_graph_start_node(lay, m);
+                    int start_node = ov_graph_start_node(lay, m);
                     if (start_node >= 0)
                     {
                         SG_RENDER_NODE rnodes[OV_MAX_NODES];
@@ -372,15 +372,15 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
             if (sel == &lay->sel_stream)
             {
-                lay->sel_name_stream[0] = '\0';
+                ov_sel_row(lay, m, OV_FOCUS_STREAMS, *sel);
             }
             else if (sel == &lay->sel_proc)
             {
-                lay->sel_name_proc[0] = '\0';
+                ov_sel_row(lay, m, OV_FOCUS_PROCS, *sel);
             }
             else if (sel == &lay->sel_fps)
             {
-                lay->sel_name_fps[0] = '\0';
+                ov_sel_row(lay, m, OV_FOCUS_FPS, *sel);
             }
         }
         return 1;

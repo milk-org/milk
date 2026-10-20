@@ -362,7 +362,7 @@ void ov_streams_render_single_row(const OV_LAYOUT  *lay,
 #undef STRM_FIELD
 #undef STRM_FIELD_WITH_COL
 
-    if (lay->mouse_hover && lay->hover_view == OV_FOCUS_STREAMS && lay->hover_idx == si)
+    if (lay->mouse_hover && lay->hover_view == OV_FOCUS_STREAMS && lay->hover_idx == fi)
     {
         snprintf((char *) lay->hover_tooltip, sizeof(lay->hover_tooltip),
                  "Stream: %s | Dimensions: %dD (%s) | Semaphores: %d | inode: %" PRIu64, s->name,

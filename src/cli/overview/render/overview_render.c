@@ -61,7 +61,7 @@ static void ov_render__dispatch_view(OV_LAYOUT *lay, const OV_MODEL *m, const OV
     case OV_VIEW_FPS:
         ov_render_fps_param_info(lay, m);
         ov_render_fps_panel(lay, m, rel);
-        int cur_fsel = ov_get_selected_fps_idx(lay, m);
+        int cur_fsel = ov_sel_idx(lay, m, OV_FOCUS_FPS); /* F5 follows the FPS cursor */
         if (cur_fsel >= 0 && cur_fsel < m->nb_fps && m->fps[cur_fsel].nb_disp_params > 0)
         {
             ov_render_fps_params_panel(lay, m);

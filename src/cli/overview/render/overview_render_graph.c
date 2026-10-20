@@ -12,13 +12,13 @@
 #include "stream_graph.h"
 
 /**
- * get_graph_start_node - resolve source graph node index for connection tree root.
+ * ov_graph_start_node - graph node of the selected (or frozen) entry: the connection tree root.
  * @lay: Pointer to layout structure.
  * @m:   Pointer to data model snapshot.
  *
  * Return: Node index in m->nodes, or -1 if no matching selection.
  */
-static int get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
+int ov_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     ov_focus_t eff_focus   = lay->freeze ? lay->freeze_focus : lay->focus;
     int        target_type = -1;
@@ -79,7 +79,7 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
     render_pad_spaces(hlen, r.width);
     row++;
 
-    int          start_node = get_graph_start_node(lay, m);
+    int          start_node = ov_graph_start_node(lay, m);
     SG_TREE_NODE rnodes[OV_MAX_NODES];
     int          nb_rnodes = 0;
 

@@ -233,8 +233,8 @@ void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
     ov_theme_bg(OV_BG_PANEL);
     ov_buf_hline(' ', lay->term_cols);
 
-    int fsel = lay->sel_fps;
-    if (fsel < 0 || fsel >= m->nb_fps)
+    int fsel = ov_sel_idx(lay, m, OV_FOCUS_FPS);
+    if (fsel < 0)
     {
         return;
     }

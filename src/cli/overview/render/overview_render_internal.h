@@ -133,6 +133,19 @@ const char *render_dtype(uint8_t dt);
 int         dtype_bytesize(uint8_t dt);
 
 void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *rel);
+void ov_compute_related_frozen(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *rel);
+
+/* Selection identity and drawn-row resolver (overview_render_select.c) */
+void ov_tgt_set(OV_TARGET *t, const OV_MODEL *m, ov_focus_t panel, int idx);
+int  ov_tgt_find(const OV_MODEL *m, ov_focus_t panel, const OV_TARGET *t);
+int  ov_rows(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int *fidx, int max);
+int  ov_row_to_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row);
+int  ov_sel_row(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row);
+int  ov_sel_model(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int idx);
+int  ov_sel_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel);
+void ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m);
+int  ov_detail_target(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t *panel);
+int  ov_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m);
 
 void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc);
 

@@ -10,75 +10,31 @@
 #include "overview_input_internal.h"
 
 /**
- * ov_input_get_sel_stream - get pointer to currently selected stream in model.
- * @lay: Pointer to layout structure.
- * @m:   Pointer to data model snapshot.
- *
- * Return: Selected OV_STREAM pointer, or NULL if none or not found.
+ * ov_input_get_sel_stream - the stream under the STREAMS cursor (by identity), or NULL.
  */
 const OV_STREAM *ov_input_get_sel_stream(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    if (lay == NULL || m == NULL || lay->sel_name_stream[0] == '\0')
-    {
-        return NULL;
-    }
-    for (int i = 0; i < m->nb_streams; i++)
-    {
-        if (strcmp(m->streams[i].name, lay->sel_name_stream) == 0)
-        {
-            return &m->streams[i];
-        }
-    }
-    return NULL;
+    int i = ov_sel_idx(lay, m, OV_FOCUS_STREAMS);
+    return (i >= 0) ? &m->streams[i] : NULL;
 }
 
 /**
- * ov_input_get_sel_proc - get pointer to currently selected process in model.
- * @lay: Pointer to layout structure.
- * @m:   Pointer to data model snapshot.
- *
- * Return: Selected OV_PROC pointer, or NULL if none or not found.
+ * ov_input_get_sel_proc - the process under the PROCS cursor (by identity), or NULL.
  */
 const OV_PROC *ov_input_get_sel_proc(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    if (lay == NULL || m == NULL || lay->sel_name_proc[0] == '\0')
-    {
-        return NULL;
-    }
-    for (int i = 0; i < m->nb_procs; i++)
-    {
-        if (strcmp(m->procs[i].name, lay->sel_name_proc) == 0 &&
-            m->procs[i].PID == lay->sel_pid_proc)
-        {
-            return &m->procs[i];
-        }
-    }
-    return NULL;
+    int i = ov_sel_idx(lay, m, OV_FOCUS_PROCS);
+    return (i >= 0) ? &m->procs[i] : NULL;
 }
 
 /**
- * ov_input_get_sel_fps - get pointer to currently selected FPS module in model.
- * @lay: Pointer to layout structure.
- * @m:   Pointer to data model snapshot.
- *
- * Return: Selected OV_FPS pointer, or NULL if none or not found.
+ * ov_input_get_sel_fps - the FPS under the FPS cursor (by identity), or NULL.
  */
 const OV_FPS *ov_input_get_sel_fps(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    if (lay == NULL || m == NULL || lay->sel_name_fps[0] == '\0')
-    {
-        return NULL;
-    }
-    for (int i = 0; i < m->nb_fps; i++)
-    {
-        if (strcmp(m->fps[i].name, lay->sel_name_fps) == 0)
-        {
-            return &m->fps[i];
-        }
-    }
-    return NULL;
+    int i = ov_sel_idx(lay, m, OV_FOCUS_FPS);
+    return (i >= 0) ? &m->fps[i] : NULL;
 }
-
 
 /**
  * ov_input__exec_preview_btn - execute a preview bar action button.
@@ -90,32 +46,25 @@ void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_CMDLOG *log = &lay->cmdlog;
 
+    /* Buttons act on the entry the preview line shows: the frozen one when frozen */
+    ov_focus_t       pfocus = lay->freeze ? lay->freeze_focus : lay->focus;
+    int              si     = ov_get_selected_stream_idx(lay, m);
+    int              pi     = ov_get_selected_proc_idx(lay, m);
+    int              fi     = ov_get_selected_fps_idx(lay, m);
+    const OV_STREAM *ps     = (si >= 0) ? &m->streams[si] : NULL;
+    const OV_PROC   *pp     = (pi >= 0) ? &m->procs[pi] : NULL;
+    const OV_FPS    *pf     = (fi >= 0) ? &m->fps[fi] : NULL;
+
     /* Inspect works without CONTROL mode */
     if (btn_id == OV_BTN_INSPECT)
     {
-        if (lay->focus == OV_FOCUS_STREAMS)
+        const void *item = (pfocus == OV_FOCUS_STREAMS) ? (const void *) ps
+                           : (pfocus == OV_FOCUS_PROCS) ? (const void *) pp
+                           : (pfocus == OV_FOCUS_FPS)   ? (const void *) pf
+                                                        : NULL;
+        if (item != NULL)
         {
-            const OV_STREAM *s = ov_input_get_sel_stream(lay, m);
-            if (s)
-            {
-                ov_ctrl_inspect_item(OV_FOCUS_STREAMS, s);
-            }
-        }
-        else if (lay->focus == OV_FOCUS_PROCS)
-        {
-            const OV_PROC *p = ov_input_get_sel_proc(lay, m);
-            if (p)
-            {
-                ov_ctrl_inspect_item(OV_FOCUS_PROCS, p);
-            }
-        }
-        else if (lay->focus == OV_FOCUS_FPS)
-        {
-            const OV_FPS *f = ov_input_get_sel_fps(lay, m);
-            if (f)
-            {
-                ov_ctrl_inspect_item(OV_FOCUS_FPS, f);
-            }
+            ov_ctrl_inspect_item(pfocus, item);
         }
         return;
     }
@@ -132,7 +81,7 @@ void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m)
     {
     case OV_BTN_PROC_PAUSE:
     {
-        const OV_PROC *p = ov_input_get_sel_proc(lay, m);
+        const OV_PROC *p = pp;
         if (p)
         {
             ov_ctrl_proc_set_ctrlval(p, -1, log);
@@ -141,7 +90,7 @@ void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m)
     }
     case OV_BTN_PROC_EXIT:
     {
-        const OV_PROC *p = ov_input_get_sel_proc(lay, m);
+        const OV_PROC *p = pp;
         if (p)
         {
             ov_ctrl_proc_set_ctrlval(p, 3, log);
@@ -150,7 +99,7 @@ void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m)
     }
     case OV_BTN_PROC_KILL:
     {
-        const OV_PROC *p = ov_input_get_sel_proc(lay, m);
+        const OV_PROC *p = pp;
         if (p)
         {
             ov_ctrl_proc_kill(p, log);
@@ -159,7 +108,7 @@ void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m)
     }
     case OV_BTN_PROC_STEP:
     {
-        const OV_PROC *p = ov_input_get_sel_proc(lay, m);
+        const OV_PROC *p = pp;
         if (p)
         {
             ov_ctrl_proc_set_ctrlval(p, 2, log);
@@ -168,7 +117,7 @@ void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m)
     }
     case OV_BTN_FPS_CONF:
     {
-        const OV_FPS *f = ov_input_get_sel_fps(lay, m);
+        const OV_FPS *f = pf;
         if (f)
         {
             ov_ctrl_fps_conf_toggle(f, log);
@@ -177,7 +126,7 @@ void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m)
     }
     case OV_BTN_FPS_RUN:
     {
-        const OV_FPS *f = ov_input_get_sel_fps(lay, m);
+        const OV_FPS *f = pf;
         if (f)
         {
             ov_ctrl_fps_run_toggle(f, log);
@@ -186,7 +135,7 @@ void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m)
     }
     case OV_BTN_FPS_KILL:
     {
-        const OV_FPS *f = ov_input_get_sel_fps(lay, m);
+        const OV_FPS *f = pf;
         if (f)
         {
             ov_ctrl_fps_signal_pid(f, SIGTERM, log);
@@ -195,7 +144,7 @@ void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m)
     }
     case OV_BTN_STREAM_DEL:
     {
-        const OV_STREAM *s = ov_input_get_sel_stream(lay, m);
+        const OV_STREAM *s = ps;
         if (s)
         {
             ov_ctrl_stream_delete(s, log);

@@ -260,6 +260,7 @@ add_executable(
   ../overview/render/overview_render_utils.c
   ../overview/render/overview_render_filter.c
   ../overview/render/overview_render_relate.c
+  ../overview/render/overview_render_select.c
   ../overview/render/overview_render_header.c
   ../overview/render/overview_render_tabs.c
   ../overview/render/overview_render_popup.c

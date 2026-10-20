@@ -12,6 +12,7 @@
 
 #include <stdint.h>
 #include <time.h>
+#include "overview_target.h"
 
 /* View modes */
 typedef enum
@@ -220,11 +221,9 @@ typedef struct
     int        freeze_sel_fps;
     /* Lineage tracking mode: 0 = Trigger, 1 = Input */
     int lineage_mode;
-    /* Track selected names to handle external removals */
-    char  sel_name_stream[80];
-    char  sel_name_proc[80];
-    pid_t sel_pid_proc;
-    char  sel_name_fps[80];
+    /* Cursor and freeze identities; sel_* and freeze_sel_* rows are derived from them */
+    OV_TARGET sel_tgt[OV_NB_LIST_PANELS];
+    OV_TARGET freeze_tgt[OV_NB_LIST_PANELS];
     /* FPS parameter navigation (detail panel) */
     int  param_sel;     /* selected param (-1=none) */
     int  param_scroll;  /* scroll offset */

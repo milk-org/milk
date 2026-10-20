@@ -270,32 +270,22 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     /* Graph jump on Enter (must be before detail mode toggle) */
     if ((key == '\n' || key == '\r') && lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 0)
     {
-        int start_node = ov_input_get_graph_start_node(lay, m);
+        int start_node = ov_graph_start_node(lay, m);
         if (start_node >= 0)
         {
             SG_RENDER_NODE rnodes[OV_MAX_NODES];
             int n_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
             if (lay->sel_graph < n_rnodes)
             {
-                const SG_RENDER_NODE *rn   = &rnodes[lay->sel_graph];
-                const OV_NODE        *node = &m->nodes[rn->node_idx];
-                if (node->type == OV_NODE_STREAM)
-                {
-                    lay->focus      = OV_FOCUS_STREAMS;
-                    lay->sel_stream = node->index;
-                }
-                else if (node->type == OV_NODE_PROC)
-                {
-                    lay->focus    = OV_FOCUS_PROCS;
-                    lay->sel_proc = node->index;
-                }
-                else if (node->type == OV_NODE_FPS)
-                {
-                    lay->focus   = OV_FOCUS_FPS;
-                    lay->sel_fps = node->index;
-                }
-                lay->view   = OV_VIEW_DASHBOARD;
-                lay->freeze = 0;
+                const SG_RENDER_NODE *rn    = &rnodes[lay->sel_graph];
+                const OV_NODE        *node  = &m->nodes[rn->node_idx];
+                ov_focus_t            panel = (node->type == OV_NODE_STREAM) ? OV_FOCUS_STREAMS
+                                              : (node->type == OV_NODE_PROC) ? OV_FOCUS_PROCS
+                                                                             : OV_FOCUS_FPS;
+                lay->freeze = 0; /* before resolving: freeze changes the drawn rows */
+                lay->focus  = panel;
+                ov_sel_model(lay, m, panel, node->index);
+                lay->view = OV_VIEW_DASHBOARD;
             }
         }
         return 1;
@@ -336,6 +326,7 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             lay->freeze_sel_stream = lay->sel_stream;
             lay->freeze_sel_proc   = lay->sel_proc;
             lay->freeze_sel_fps    = lay->sel_fps;
+            memcpy(lay->freeze_tgt, lay->sel_tgt, sizeof(lay->freeze_tgt));
         }
         return 1;
     }

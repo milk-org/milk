@@ -62,8 +62,8 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
     OV_RECT r = lay->r_fps_params;
 
     /* Guard: need a valid FPS selection with params */
-    int fsel = lay->sel_fps;
-    if (fsel < 0 || fsel >= m->nb_fps)
+    int fsel = ov_sel_idx(lay, m, OV_FOCUS_FPS);
+    if (fsel < 0)
     {
         ov_draw_panel_border(r.row, r.col, r.height, r.width, "PARAMS", OV_FG_DIM, 0, 0);
         return;

@@ -257,8 +257,9 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 if (mr >= lay->r_streams.row + 3 && mr < lay->r_streams.row + lay->r_streams.height)
                 {
-                    int idx = lay->scroll_stream + (mr - lay->r_streams.row - 3);
-                    if (idx == lay->hover_idx)
+                    int row = lay->scroll_stream + (mr - lay->r_streams.row - 3);
+                    int idx = ov_row_to_idx(lay, m, OV_FOCUS_STREAMS, row); /* drawn row -> entry */
+                    if (row == lay->hover_idx && idx >= 0)
                     {
                         if (mc >= lay->r_streams.col + lay->r_streams.width - 10 &&
                             mc < lay->r_streams.col + lay->r_streams.width)
@@ -273,8 +274,9 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 if (mr >= lay->r_procs.row + 3 && mr < lay->r_procs.row + lay->r_procs.height)
                 {
-                    int idx = lay->scroll_proc + (mr - lay->r_procs.row - 3);
-                    if (idx == lay->hover_idx)
+                    int row = lay->scroll_proc + (mr - lay->r_procs.row - 3);
+                    int idx = ov_row_to_idx(lay, m, OV_FOCUS_PROCS, row);
+                    if (row == lay->hover_idx && idx >= 0)
                     {
                         if (mc >= lay->r_procs.col + lay->r_procs.width - 8 &&
                             mc < lay->r_procs.col + lay->r_procs.width)
@@ -289,8 +291,9 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 if (mr >= lay->r_fps.row + 3 && mr < lay->r_fps.row + lay->r_fps.height)
                 {
-                    int idx = lay->scroll_fps + (mr - lay->r_fps.row - 3);
-                    if (idx == lay->hover_idx)
+                    int row = lay->scroll_fps + (mr - lay->r_fps.row - 3);
+                    int idx = ov_row_to_idx(lay, m, OV_FOCUS_FPS, row);
+                    if (row == lay->hover_idx && idx >= 0)
                     {
                         int right = lay->r_fps.col + lay->r_fps.width;
                         if (mc >= right - 8 && mc < right)
