@@ -86,20 +86,21 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
         }
     }
 
-    if (filt_n == 0 && active_filter[0] != '\0')
+    if (filt_n == 0)
     {
-        int row = hrow + 2;
-        ov_buf_pos(row, r.col + 1);
-        ov_theme_bg(OV_BG_PANEL);
-        ov_theme_fg(OV_FG_WARN);
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No matching FPS modules for '/%s/'", active_filter);
-        ov_buf_printf("%s", msg);
-        render_pad_spaces((int) strlen(msg), r.width);
-        for (int i = 1; i < max_rows; i++)
+        char msg[192];
+        if (active_filter[0] != '\0')
         {
-            clear_row(hrow + 2 + i, r.col + 1, r.width - 2, OV_BG_PANEL);
+            snprintf(msg, sizeof(msg), "  No matching FPS modules for '/%s/'", active_filter);
         }
+        else
+        {
+            snprintf(msg, sizeof(msg),
+                     "  No FPS \xe2\x80\x94 start a pipeline, or milk-CTRL -d DIR (now %s)",
+                     ov_get_shmdir());
+        }
+        render_empty_rows(r, hrow + 2, max_rows,
+                          (active_filter[0] != '\0') ? OV_FG_WARN : OV_FG_DIM, msg);
         if (has_re)
         {
             regfree(&re);

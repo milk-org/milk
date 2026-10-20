@@ -60,3 +60,15 @@ def test_help_button_and_context(milkctrl):
     m.keys("h")  # close help: q would only close the overlay
     m.wait_for(r"FEEDBACK LOOPS")
     assert m.quit() == 0
+
+
+def test_empty_states_say_what_to_do(milkctrl):
+    """With nothing in the shm directory, each list says so and F7 says there are no loops."""
+    m = milkctrl()
+    m.wait_for(r"No streams — start a pipeline, or milk-CTRL -d DIR")
+    m.wait_for(r"No processes — start")
+    m.wait_for(r"No FPS — start")
+    m.wait_for(r"h help · F2–F7 views · / filter")
+    m.keys("F7")
+    m.wait_for(r"No feedback loops")
+    assert m.quit() == 0

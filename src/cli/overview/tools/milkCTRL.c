@@ -224,6 +224,9 @@ int main(int argc, char *argv[])
     }
 
     ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO, "Shared memory directory: %s", ov_get_shmdir());
+    ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO,
+                   "h help \xc2\xb7 F2\xe2\x80\x93"
+                   "F7 views \xc2\xb7 / filter \xc2\xb7 c control \xc2\xb7 q quit");
     if (strcmp(ov_get_procdir(), ov_get_shmdir()) != 0)
     {
         ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_WARN,

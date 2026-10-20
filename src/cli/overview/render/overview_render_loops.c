@@ -118,6 +118,16 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
         rendered++;
     }
 
+    if (m->nb_loops == 0 && rendered < max_lrows)
+    {
+        ov_buf_pos(lrow, 2);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_DIM);
+        ov_buf_printf("  No feedback loops (mode: %s)", sg_mode_label(lay->lineage_mode));
+        render_pad_to_col(lw);
+        lrow++;
+        rendered++;
+    }
     if (m->loops_truncated && rendered < max_lrows)
     {
         ov_buf_pos(lrow, 2);

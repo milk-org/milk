@@ -153,6 +153,22 @@ void clear_row(int row, int col, int width, ov_rgb_t bg)
     ov_buf_reset_attr();
 }
 
+/** render_empty_rows - message @msg on the first of @max_rows panel rows from @row, the others cleared. */
+void render_empty_rows(OV_RECT r, int row, int max_rows, ov_rgb_t fg, const char *msg)
+{
+    ov_buf_pos(row, r.col + 1);
+    ov_theme_bg(OV_BG_PANEL);
+    ov_theme_fg(fg);
+    int cols  = 0;
+    int bytes = ov_utf8_fit(msg, (int) strlen(msg), r.width - 2, &cols);
+    ov_buf_printf("%.*s", bytes, msg);
+    render_pad_spaces(cols, r.width);
+    for (int i = 1; i < max_rows; i++)
+    {
+        clear_row(row + i, r.col + 1, r.width - 2, OV_BG_PANEL);
+    }
+}
+
 /**
  * render_pad_spaces - Pad the remainder of a panel interior row with spaces
  * @chars_written: Number of characters already written
