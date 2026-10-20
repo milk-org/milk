@@ -363,7 +363,8 @@
         "F3 shows the stream list and an inspector for the stream under the cursor (beside the list, or under it "
         "on narrow terminals). Right or ENTER enters it; there the arrows and PgUp/PgDn scroll, Right shows the next "
         "page, Left or ESC goes back to the list. Shift+TAB or a click on a page label also changes the page. Pages: "
-        "INFO (metadata, times, creator and owner), SEMS (every semaphore's value, reader and writer).",
+        "INFO (metadata, times, creator and owner), SEMS (every semaphore's value, reader and writer), TRACE (the "
+        "processes that wrote it, their trigger streams and timing), KEYS (its keywords).",
         HS_STREAMS,
         OV_KG_NAV,
         0,

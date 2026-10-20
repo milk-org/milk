@@ -47,6 +47,8 @@ typedef enum
 {
     OV_INSP_INFO = 0,
     OV_INSP_SEMS,
+    OV_INSP_TRACE,
+    OV_INSP_KEYS,
     OV_INSP_TAB_COUNT
 } ov_insp_tab_t;
 

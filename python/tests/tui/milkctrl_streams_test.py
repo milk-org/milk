@@ -64,3 +64,33 @@ def test_inspector_sems_lists_writers(milkctrl, entities):
     m.wait_for(rf"\s9\s+\d+\s+{writer} shmimpoke")  # the tenth semaphore too
     assert "[SEMS]" in m.lines()[-1]
     assert m.quit() == 0
+
+
+def test_inspector_keys_lists_keywords(milkctrl, entities):
+    """F3 inspector, KEYS page: the stream's keywords with type, value and comment."""
+    entities.make_stream("kwst", 4, 4)
+    entities.add_keywords(
+        "kwst", ("GAIN", "L", "12", "loop gain"), ("MODE", "S", "closed", "loop mode")
+    )
+    m = milkctrl("--view", "streams", "^kwst$")
+    m.wait_for(r"STREAM kwst")
+    m.keys("Right")
+    m.wait_for(r"Keywords\s+2 set")
+    for _ in range(3):  # INFO -> SEMS -> TRACE -> KEYS
+        m.keys("Right")
+    m.wait_for(r"GAIN\s+L\s+12\s+loop gain")
+    m.wait_for(r"MODE\s+S\s+closed\s+loop mode")
+    assert m.quit() == 0
+
+
+def test_inspector_trace_names_the_writer(milkctrl, entities):
+    """F3 inspector, TRACE page: the process that wrote pairst_out, its trigger and its timing."""
+    _, reader = entities.make_stream_pair("pairst")
+    m = milkctrl("--view", "streams", "^pairst_out$")
+    m.wait_for(r"STREAM pairst_out")
+    m.keys("Right", "Right", "Right")  # into INFO, then SEMS, TRACE
+    m.wait_for(r"1 hop, end to end")
+    m.wait_for(rf"0\. {reader} shmimcopy")
+    m.wait_for(r"trigger\s+\S+.*(waiting|received|timed out)")
+    m.wait_for(r"started\s+\S+ ago\s+compute")
+    assert m.quit() == 0

@@ -75,6 +75,13 @@ class Entities:
         self._run([sys.executable, "-c", _MKFPS, name, *params])
         return self.shm / f"{name}.fps.shm"
 
+    def add_keywords(self, name: str, *kws: tuple[str, str, str, str]) -> None:
+        """Set keywords (name, type L/D/S, value, comment) on stream @name with milk-cli imkwadd."""
+        lines = [f"mem.readshmim {name}"] + [
+            f'mem.imkwadd {name} {k} {t} {v} "{c}"' for k, t, v, c in kws
+        ]
+        self._run(["milk-cli", "-c", "\n".join(lines)])
+
     def make_stream_pair(self, name: str) -> tuple[int, int]:
         """Stream @name posted at 10 Hz by milk-shmimpoke and copied on each post by milk-shmimcopy-semtrig into
         @name_out: returns the (writer, reader) PIDs. Both tools come from this build, like the streams.

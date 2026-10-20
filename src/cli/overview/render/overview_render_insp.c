@@ -33,7 +33,7 @@ static struct
 } s_tab[OV_INSP_TAB_COUNT];
 static int s_tab_row;
 
-static const char *const s_tab_name[OV_INSP_TAB_COUNT] = { "INFO", "SEMS" };
+static const char *const s_tab_name[OV_INSP_TAB_COUNT] = { "INFO", "SEMS", "TRACE", "KEYS" };
 
 /** ov_insp_tab_name - label of inspector page @t. */
 const char *ov_insp_tab_name(int t)
@@ -251,6 +251,14 @@ void ov_render_stream_inspector(OV_LAYOUT *lay, const OV_MODEL *m)
     else if (lay->strm_insp_tab == OV_INSP_SEMS)
     {
         page_sems(m, &m->insp);
+    }
+    else if (lay->strm_insp_tab == OV_INSP_TRACE)
+    {
+        ov_insp_page_trace(m, &m->streams[si]);
+    }
+    else if (lay->strm_insp_tab == OV_INSP_KEYS)
+    {
+        ov_insp_page_keys(&m->insp);
     }
     else
     {
