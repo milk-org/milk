@@ -385,7 +385,7 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
         H_ov_buf_bold();
         char e2e[16], head[64];
         int n = snprintf(head, sizeof(head), " Process trace (%d):  end to end %s", s->nb_proctrace,
-                         ov_fmt_dt_ns(e2e, sizeof(e2e), ov_trace_end_to_end_ns(s)));
+                         ov_fmt_dt_ns(e2e, sizeof(e2e), ov_trace_end_to_end_ns(m, s)));
         H_ov_buf_printf("%s", head);
         H_ov_buf_reset_attr();
         H_ov_theme_bg(OV_BG_PANEL);
@@ -399,11 +399,11 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
         for (int tt = 0; tt < s->nb_proctrace; tt++)
         {
             /* Find proc name by PID */
-            int         pp    = ov_find_proc_by_pid(m, s->proctrace_pid[tt]);
+            int         pp    = ov_find_proc_by_pid(m, ov_stream_hops(m, s)[tt].pid);
             const char *pname = (pp >= 0) ? m->procs[pp].name : "???";
             H_ov_buf_pos(row + ri, r.col + 1);
             H_ov_theme_bg(OV_BG_PANEL);
-            H_ov_theme_fg(ov_pid_color(s->proctrace_pid[tt]));
+            H_ov_theme_fg(ov_pid_color(ov_stream_hops(m, s)[tt].pid));
             OV_HOP hop;
             char   tc[16], th[16], lag[24] = "";
             ov_trace_hop(m, s, tt, &hop);
@@ -413,8 +413,8 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
             }
             char line[256];
             int  n2 = snprintf(line, sizeof(line), "  PID %d (%s)  mode:%s  exec %s  hand-off %s%s",
-                               (int) s->proctrace_pid[tt], pname,
-                               processinfo_triggermode_name(s->proctrace_trigmode[tt], 0),
+                               (int) ov_stream_hops(m, s)[tt].pid, pname,
+                               processinfo_triggermode_name(ov_stream_hops(m, s)[tt].trigmode, 0),
                                ov_fmt_dt_ns(tc, sizeof(tc), hop.compute_ns),
                                ov_fmt_dt_ns(th, sizeof(th), hop.handoff_ns), lag);
             H_ov_buf_printf("%s", line);

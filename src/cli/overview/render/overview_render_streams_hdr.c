@@ -28,31 +28,38 @@ void ov_streams__render_footer(const OV_LAYOUT *lay,
                                int              filt_n,
                                int              max_rows)
 {
-    /* Totals over ALL streams */
-    double total_all_bps = 0.0;
-    for (int i = 0; i < m->nb_streams; i++)
+    /* Total over all streams: once per published model (it walks every stream record) */
+    static uint64_t s_seq;
+    static double   s_total_all_bps;
+    if (m->seq == 0 || m->seq != s_seq)
     {
-        const OV_STREAM *s = &m->streams[i];
-        if (s->update_hz > 0.1)
+        s_seq           = m->seq;
+        s_total_all_bps = 0.0;
+        for (int i = 0; i < m->nb_streams; i++)
         {
-            total_all_bps += s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype);
+            const OV_STREAM *s = &m->streams[i];
+            if (s->update_hz > 0.1)
+            {
+                s_total_all_bps +=
+                    s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype);
+            }
         }
     }
+    double total_all_bps = s_total_all_bps;
 
-    /* Totals over filtered subset */
-    double total_flt_bps = 0.0;
-    for (int i = 0; i < filt_n; i++)
+    /* Total over the filtered subset */
+    int    is_subset     = (filt_n < m->nb_streams);
+    double total_flt_bps = is_subset ? 0.0 : total_all_bps;
+    for (int i = 0; is_subset && i < filt_n; i++)
     {
-        int              si = filt_idx[i];
-        const OV_STREAM *s  = &m->streams[si];
+        const OV_STREAM *s = &m->streams[filt_idx[i]];
         if (s->update_hz > 0.1)
         {
             total_flt_bps += s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype);
         }
     }
 
-    int brow      = r.row + r.height - 1;
-    int is_subset = (filt_n < m->nb_streams);
+    int brow = r.row + r.height - 1;
 
     /* Right side: total (always) */
     double total_all_mb = total_all_bps / (1024.0 * 1024.0);

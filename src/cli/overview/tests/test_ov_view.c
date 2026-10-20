@@ -320,10 +320,9 @@ static void test_derived_and_related(void)
         m.streams[i].valid = 1;
         m.streams[i].inode = (ino_t) (5 + i);
     }
-    m.nb_streams                    = 2;
-    m.streams[1].nb_proctrace       = 1; /* pw writes sout, triggered by sin */
-    m.streams[1].proctrace_pid[0]   = 77;
-    m.streams[1].proctrace_inode[0] = 5;
+    m.nb_streams = 2;
+    *ov_stream_add_hop(&m, &m.streams[1]) =
+        (OV_TRACE_HOP) { .pid = 77, .inode = 5 }; /* pw writes sout, from sin */
     snprintf(m.procs[0].name, sizeof(m.procs[0].name), "pw");
     m.procs[0].valid  = 1;
     m.procs[0].active = 1;

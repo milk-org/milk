@@ -58,7 +58,7 @@ static int ov_tgt_match(const OV_MODEL *m, ov_focus_t panel, int i, const OV_TAR
     return strcmp(m->fps[i].name, t->name) == 0;
 }
 
-#define OV_ID_SLOTS 4096 /* power of two, > 2 * OV_MAX_STREAMS */
+#define OV_ID_SLOTS 32768 /* power of two, > 2 * OV_MAX_STREAMS */
 
 /* Name index of one panel of one published model: slot = model index + 1, 0 = empty */
 typedef struct

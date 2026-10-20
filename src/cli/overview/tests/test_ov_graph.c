@@ -68,10 +68,9 @@ static void test_edge_evidence(void)
     m.procs[1].active     = 0;
     m.procs[1].createtime = 99.0;
 
-    OV_STREAM *s                = &m.streams[wfs];
-    s->nb_proctrace             = 1;
-    s->proctrace_pid[0]         = 500; /* written by pwfs, triggered by cam */
-    s->proctrace_inode[0]       = 11;
+    OV_STREAM *s = &m.streams[wfs];
+    *ov_stream_add_hop(&m, s) =
+        (OV_TRACE_HOP) { .pid = 500, .inode = 11 }; /* written by pwfs, triggered by cam */
     s->nb_write_pids            = 1;
     s->write_pids[0]            = 500;
     m.streams[cam].nb_read_pids = 1;
@@ -127,19 +126,16 @@ static void test_trace_timing(void)
 {
     static OV_MODEL m;
     memset(&m, 0, sizeof(m));
-    int a                                        = stream(&m, "a", 21);
-    int b                                        = stream(&m, "b", 22);
-    m.streams[a].cnt0                            = 100;
-    OV_STREAM *s                                 = &m.streams[b];
-    s->nb_proctrace                              = 2;
-    s->proctrace_pid[0]                          = 600; /* wrote b, triggered by a */
-    s->proctrace_inode[0]                        = 21;
-    s->proctrace_cnt0[0]                         = 97;
-    s->proctrace_tstart_ns[0]                    = 1000000;
-    s->proctrace_tupdate_ns[0]                   = 1250000;
-    s->proctrace_pid[1]                          = 601; /* wrote a */
-    s->proctrace_tstart_ns[1]                    = 500000;
-    s->proctrace_tupdate_ns[1]                   = 900000;
+    int a                     = stream(&m, "a", 21);
+    int b                     = stream(&m, "b", 22);
+    m.streams[a].cnt0         = 100;
+    OV_STREAM *s              = &m.streams[b];
+    *ov_stream_add_hop(&m, s) = /* wrote b, triggered by a */
+        (OV_TRACE_HOP) {
+            .pid = 600, .inode = 21, .cnt0 = 97, .tstart_ns = 1000000, .tupdate_ns = 1250000
+        };
+    *ov_stream_add_hop(&m, s) =
+        (OV_TRACE_HOP) { .pid = 601, .tstart_ns = 500000, .tupdate_ns = 900000 }; /* wrote a */
     m.procs[proc(&m, "p600", 600)].MeasureTiming = 1;
     proc(&m, "p601", 601);
     ov_model_index(&m);
@@ -151,7 +147,7 @@ static void test_trace_timing(void)
     CHECK(h.compute_ns == -1 && h.handoff_ns == -1 &&
           h.lag == -1); /* no timing, no upstream, no inode */
     CHECK(ov_trace_hop(&m, s, 2, &h) == -1);
-    CHECK(ov_trace_end_to_end_ns(s) == 750000);
+    CHECK(ov_trace_end_to_end_ns(&m, s) == 750000);
 }
 
 /* An FPS running a process of a loop is a loop member (F7 lists it), counted once with its process */
@@ -163,12 +159,8 @@ static void test_loop_fps_members(void)
     int b = stream(&m, "lb", 32);
     proc(&m, "pa", 70); /* pa: la -> lb, pb: lb -> la */
     proc(&m, "pb", 71);
-    m.streams[b].nb_proctrace       = 1;
-    m.streams[b].proctrace_pid[0]   = 70;
-    m.streams[b].proctrace_inode[0] = 31;
-    m.streams[a].nb_proctrace       = 1;
-    m.streams[a].proctrace_pid[0]   = 71;
-    m.streams[a].proctrace_inode[0] = 32;
+    *ov_stream_add_hop(&m, &m.streams[b]) = (OV_TRACE_HOP) { .pid = 70, .inode = 31 };
+    *ov_stream_add_hop(&m, &m.streams[a]) = (OV_TRACE_HOP) { .pid = 71, .inode = 32 };
     snprintf(m.fps[0].name, sizeof(m.fps[0].name), "fpa");
     m.fps[0].valid     = 1;
     m.fps[0].run_alive = 1;
@@ -183,9 +175,26 @@ static void test_loop_fps_members(void)
     CHECK(m.fps[0].nb_loops == 1 && m.fps[0].primary_loop_id == lp->loop_id);
 }
 
+/* Trace hops: one contiguous run per stream in the model's pool; a full pool refuses more */
+static void test_hop_pool(void)
+{
+    static OV_MODEL m;
+    memset(&m, 0, sizeof(m));
+    OV_STREAM *a = &m.streams[0], *b = &m.streams[1];
+    ov_stream_add_hop(&m, a)->pid = 1;
+    ov_stream_add_hop(&m, a)->pid = 2;
+    ov_stream_add_hop(&m, b)->pid = 3;
+    CHECK(a->nb_proctrace == 2 && b->nb_proctrace == 1 && m.nb_trace == 3);
+    CHECK(ov_stream_hops(&m, a)[1].pid == 2 && ov_stream_hops(&m, b)[0].pid == 3);
+    m.nb_trace = OV_MAX_TRACE;
+    CHECK(ov_stream_add_hop(&m, b) == NULL && b->nb_proctrace == 1);
+    CHECK(sizeof(OV_STREAM) <= 512); /* the 10000-stream model stays small */
+}
+
 int main(void)
 {
     test_edge_evidence();
+    test_hop_pool();
     test_adjacency();
     test_trace_timing();
     test_loop_fps_members();

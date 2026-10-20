@@ -171,8 +171,11 @@ static void *ov_scan_thread_func(void *arg __attribute__((unused)))
         {
             struct timespec ts;
             clock_gettime(CLOCK_REALTIME, &ts);
+            /* streams still waiting to be mapped: come back after 50 ms */
+            double wait_s =
+                (ov_model_slots[ov_ready_idx].streams_pending > 0) ? 0.05 : ov_scan_interval_s;
             double sec_part  = 0.0;
-            double frac_part = modf((double) ov_scan_interval_s, &sec_part);
+            double frac_part = modf(wait_s, &sec_part);
             ts.tv_sec += (time_t) sec_part;
             ts.tv_nsec += (long) (frac_part * 1e9);
             if (ts.tv_nsec >= 1000000000L)

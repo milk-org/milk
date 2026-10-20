@@ -29,7 +29,7 @@
 #include "overview_data_index.h"
 
 #define OV_PID_TABLE_MAX 4096
-#define OV_PID_DEAD_MAX 4096
+#define OV_PID_DEAD_MAX 32768
 #define OV_PID_DEAD_RECHECK_S 10.0
 #define OV_PID_DEAD_FORGET_S 60.0
 
@@ -53,7 +53,7 @@ static long   s_dead_lp[OV_PID_DEAD_MAX];   /* ns_last_pid when found dead, -1 =
 static int    s_dead_nb;
 static double s_scan_t;        /* start of the current scan */
 static long   s_last_pid = -1; /* ns_last_pid at the start of the current scan */
-static OV_INDEX_DEF(8192) s_dead_ix;
+static OV_INDEX_DEF(65536) s_dead_ix;
 
 static pthread_mutex_t s_pid_mutex = PTHREAD_MUTEX_INITIALIZER;
 

@@ -70,36 +70,12 @@ static void scache_rate_update(OV_STREAM *s, int ci)
         {
             s->cnt_active = 1;
         }
-
-        /* Update sparkline in cache (auto-scale) */
-        float sv = (float) s->update_hz;
-        if (sv > ce->spark_max)
-        {
-            ce->spark_max = sv;
-        }
-        /* Decay max slowly so sparkline adapts */
-        ce->spark_max *= 0.999f;
-        if (ce->spark_max < 1.0f)
-        {
-            ce->spark_max = 1.0f;
-        }
-        float norm = sv / ce->spark_max;
-        if (norm > 1.0f)
-        {
-            norm = 1.0f;
-        }
-        ce->spark_rate[ce->spark_idx % OV_SPARKLINE_LEN] = norm;
-        ce->spark_idx++;
     }
 
     /* Store current cnt0 for next tick */
     ce->prev_cnt0 = s->cnt0;
     ce->has_prev  = 1;
-
-    /* Copy sparkline from cache to model */
-    memcpy(s->spark_rate, ce->spark_rate, sizeof(s->spark_rate));
-    s->spark_idx = ce->spark_idx;
-    s->is_new    = ce->is_new;
+    s->is_new     = ce->is_new;
     if (ce->is_new > 0)
     {
         ce->is_new--;
@@ -131,16 +107,30 @@ static int live_unique_pids(const pid_t *src, int n, pid_t *dst)
     return nb;
 }
 
-/**
- * fill_stream_from_img - populate OV_STREAM from
- *     a cached IMAGE mapping.
- * @s:     stream entry to fill
- * @imgp:  persistent IMAGE pointer
- * @name:  stream name
- * @inode: inode value
- */
-static void fill_stream_from_img(OV_STREAM *s, IMAGE *imgp, const char *name, ino_t inode)
+/** size_string - "W", "WxH" or "WxHxD" of a mapped image into @buf. */
+static void size_string(const IMAGE *img, char *buf, size_t n)
 {
+    const uint32_t *sz = img->md->size;
+    if (img->md->naxis == 1)
+    {
+        snprintf(buf, n, "%u", (unsigned) sz[0]);
+    }
+    else if (img->md->naxis == 2)
+    {
+        snprintf(buf, n, "%ux%u", (unsigned) sz[0], (unsigned) sz[1]);
+    }
+    else
+    {
+        snprintf(buf, n, "%ux%ux%u", (unsigned) sz[0], (unsigned) sz[1], (unsigned) sz[2]);
+    }
+}
+
+/** fill_stream_from_img - fill @s from cache entry @ce's mapping; its trace hops go to @m's pool. */
+static void fill_stream_from_img(OV_MODEL *m, OV_STREAM *s, ov_stream_cache_t *ce)
+{
+    IMAGE      *imgp  = &ce->img;
+    const char *name  = ce->name;
+    ino_t       inode = ce->inode;
     memset(s, 0, sizeof(OV_STREAM));
     strncpy(s->name, name, sizeof(s->name) - 1);
     s->valid = 1;
@@ -159,20 +149,7 @@ static void fill_stream_from_img(OV_STREAM *s, IMAGE *imgp, const char *name, in
     s->size[2]  = imgp->md->size[2];
     s->nelement = imgp->md->nelement;
 
-    if (s->naxis == 1)
-    {
-        snprintf(s->size_str, sizeof(s->size_str), "%u", (unsigned) s->size[0]);
-    }
-    else if (s->naxis == 2)
-    {
-        snprintf(s->size_str, sizeof(s->size_str), "%ux%u", (unsigned) s->size[0],
-                 (unsigned) s->size[1]);
-    }
-    else
-    {
-        snprintf(s->size_str, sizeof(s->size_str), "%ux%ux%u", (unsigned) s->size[0],
-                 (unsigned) s->size[1], (unsigned) s->size[2]);
-    }
+    memcpy(s->size_str, ce->size_str, sizeof(s->size_str));
 
     s->creatorPID = imgp->md->creatorPID;
     s->ownerPID   = imgp->md->ownerPID;
@@ -184,25 +161,19 @@ static void fill_stream_from_img(OV_STREAM *s, IMAGE *imgp, const char *name, in
     {
         npt = IMAGE_NB_PROCTRACE;
     }
-    s->nb_proctrace = 0;
-
-    if (imgp->streamproctrace != NULL)
+    for (int t = 0; imgp->streamproctrace != NULL && t < npt; t++)
     {
-        for (int t = 0; t < npt; t++)
+        STREAM_PROC_TRACE *spt = &imgp->streamproctrace[t];
+        OV_TRACE_HOP      *h   = (spt->procwrite_PID > 0) ? ov_stream_add_hop(m, s) : NULL;
+        if (h != NULL)
         {
-            STREAM_PROC_TRACE *spt = &imgp->streamproctrace[t];
-            if (spt->procwrite_PID > 0)
-            {
-                int ti                      = s->nb_proctrace;
-                s->proctrace_pid[ti]        = spt->procwrite_PID;
-                s->proctrace_inode[ti]      = spt->trigger_inode;
-                s->proctrace_trigmode[ti]   = spt->triggermode;
-                s->proctrace_status[ti]     = spt->triggerstatus;
-                s->proctrace_tstart_ns[ti]  = ts_ns(&spt->ts_procstart);
-                s->proctrace_tupdate_ns[ti] = ts_ns(&spt->ts_streamupdate);
-                s->proctrace_cnt0[ti]       = spt->cnt0;
-                s->nb_proctrace++;
-            }
+            *h = (OV_TRACE_HOP) { .pid        = spt->procwrite_PID,
+                                  .inode      = spt->trigger_inode,
+                                  .trigmode   = spt->triggermode,
+                                  .status     = spt->triggerstatus,
+                                  .tstart_ns  = ts_ns(&spt->ts_procstart),
+                                  .tupdate_ns = ts_ns(&spt->ts_streamupdate),
+                                  .cnt0       = spt->cnt0 };
         }
     }
 
@@ -227,11 +198,7 @@ static void fill_stream_from_img(OV_STREAM *s, IMAGE *imgp, const char *name, in
     }
 
     /* Writer PID: first active proc trace entry */
-    s->write_pid = 0;
-    if (s->nb_proctrace > 0)
-    {
-        s->write_pid = s->proctrace_pid[0];
-    }
+    s->write_pid = (s->nb_proctrace > 0) ? ov_stream_hops(m, s)[0].pid : 0;
 
     /* Readers and writers from the semaphore PID arrays: live, each once */
     s->nb_read_pids  = live_unique_pids(imgp->semReadPID, s->nb_sem, s->read_pids);
@@ -240,46 +207,102 @@ static void fill_stream_from_img(OV_STREAM *s, IMAGE *imgp, const char *name, in
     s->node_idx = -1;
 }
 
+/** fill_stream_pending - a listed stream not mapped yet: name and inode only. */
+static void fill_stream_pending(OV_STREAM *s, const char *name, ino_t inode)
+{
+    memset(s, 0, sizeof(*s));
+    snprintf(s->name, sizeof(s->name), "%s", name);
+    s->inode    = inode;
+    s->pending  = 1;
+    s->node_idx = -1;
+}
+
 /**
- * @brief Scan shared memory for active streams.
+ * scache_try_map - map cache entry @ci from @path unless done, while *@budget mappings remain this scan.
+ * Return: 0 mapped, 1 waiting (no budget), -1 the file cannot be mapped.
+ */
+static int scache_try_map(int ci, const char *path, int *budget)
+{
+    if (s_scache[ci].mapped)
+    {
+        return 0;
+    }
+    if (*budget <= 0)
+    {
+        return 1;
+    }
+    (*budget)--;
+    if (scache_map_ro(&s_scache[ci].img, path) != 0)
+    {
+        return -1;
+    }
+    s_scache[ci].mapped = 1;
+    size_string(&s_scache[ci].img, s_scache[ci].size_str, sizeof(s_scache[ci].size_str));
+    return 0;
+}
+
+/** emit_stream - model row @idx from cache entry @ci, mapped or waiting. Return: 1 if it waits. */
+static int emit_stream(OV_MODEL *model, int idx, int ci)
+{
+    if (!s_scache[ci].mapped)
+    {
+        fill_stream_pending(&model->streams[idx], s_scache[ci].name, s_scache[ci].inode);
+        return 1;
+    }
+    fill_stream_from_img(model, &model->streams[idx], &s_scache[ci]);
+    scache_rate_update(&model->streams[idx], ci);
+    return 0;
+}
+
+/**
+ * ov_scan_streams - list the *.im.shm of the shm directory (readdir only when its mtime changed) and fill the
+ * model's streams. At most OV_MAP_PER_SCAN new files are mapped per scan; the others are listed as pending
+ * (model->streams_pending) until a later scan maps them.
  */
 void ov_scan_streams(OV_MODEL *model)
 {
     const char *shmdir = SHAREDSHMDIR;
-
-    /* Check directory mtime to skip readdir */
+    static int  s_scanned; /* a full scan was done: the fast path holds even with no streams */
+    static int  s_capped;  /* the last readdir found more streams than OV_MAX_STREAMS */
+    int         budget = OV_MAP_PER_SCAN, idx = 0, waiting = 0;
+    char        fpath[1024];
     struct stat dirstat;
+
+    model->nb_trace        = 0;
+    model->streams_pending = 0;
+    model->streams_capped  = s_capped;
     if (stat(shmdir, &dirstat) != 0)
     {
         model->nb_streams = 0;
         return;
     }
-
     int dir_changed = (dirstat.st_mtim.tv_sec != s_shm_mtime.tv_sec) ||
                       (dirstat.st_mtim.tv_nsec != s_shm_mtime.tv_nsec);
 
-    static int s_scanned; /* a full scan was done: the fast path holds even with no streams */
     if (!dir_changed && s_scanned)
     {
-        /* Fast path: no files added/removed.
-         * Just re-read metadata from cache. */
+        /* Fast path: no files added or removed; map what still waits, re-read the rest */
         pthread_mutex_lock(&s_scache_mutex);
-        int idx = 0;
-        for (int ci = 0; ci < s_scache_nb && idx < OV_MAX_STREAMS; ci++)
+        for (int ci = 0; ci < s_scache_nb && idx < OV_MAX_STREAMS;)
         {
-            fill_stream_from_img(&model->streams[idx], &s_scache[ci].img, s_scache[ci].name,
-                                 s_scache[ci].inode);
-            scache_rate_update(&model->streams[idx], ci);
-            idx++;
+            snprintf(fpath, sizeof(fpath), "%s/%s.im.shm", shmdir, s_scache[ci].name);
+            if (scache_try_map(ci, fpath, &budget) < 0)
+            {
+                scache_evict_locked(ci); /* the last entry moves to ci */
+                continue;
+            }
+            waiting += emit_stream(model, idx++, ci++);
         }
         pthread_mutex_unlock(&s_scache_mutex);
-        model->nb_streams = idx;
+        model->nb_streams      = idx;
+        model->streams_pending = waiting;
         return;
     }
 
     /* Full path: directory changed */
     s_shm_mtime = dirstat.st_mtim;
     s_scanned   = 1;
+    s_capped    = 0;
 
     DIR *dp = opendir(shmdir);
     if (dp == NULL)
@@ -289,41 +312,30 @@ void ov_scan_streams(OV_MODEL *model)
     }
 
     pthread_mutex_lock(&s_scache_mutex);
-
-    /* Mark all cache entries as not-in-use */
     for (int i = 0; i < s_scache_nb; i++)
     {
         s_scache[i].in_use = 0;
     }
 
-    int            idx = 0;
     struct dirent *ep;
-
-    while ((ep = readdir(dp)) != NULL && idx < OV_MAX_STREAMS)
+    while ((ep = readdir(dp)) != NULL)
     {
         /* Match *.im.shm */
         int namelen = (int) strlen(ep->d_name);
-        if (namelen < 8)
+        if (namelen < 8 || strcmp(ep->d_name + namelen - 7, ".im.shm") != 0)
         {
             continue;
         }
-        if (strcmp(ep->d_name + namelen - 7, ".im.shm") != 0)
+        if (idx >= OV_MAX_STREAMS)
         {
+            s_capped = 1;
             continue;
         }
 
-        /* Extract stream name */
         char sname[STRINGMAXLEN_IMAGE_NAME];
-        int  snlen = namelen - 7;
-        if (snlen >= (int) sizeof(sname))
-        {
-            snlen = (int) sizeof(sname) - 1;
-        }
-        memcpy(sname, ep->d_name, (size_t) snlen);
-        sname[snlen] = '\0';
+        snprintf(sname, sizeof(sname), "%.*s", namelen - 7, ep->d_name);
 
         /* Inode from the directory entry; stat() only where the filesystem does not report it */
-        char fpath[1024];
         snprintf(fpath, sizeof(fpath), "%s/%s", shmdir, ep->d_name);
         ino_t ino = ep->d_ino;
         if (ino == 0)
@@ -336,53 +348,38 @@ void ov_scan_streams(OV_MODEL *model)
             ino = st.st_ino;
         }
 
-        /* Look up in cache */
-        int    ci   = scache_find(sname);
-        IMAGE *imgp = NULL;
-
-        if (ci >= 0 && s_scache[ci].inode == ino)
+        int ci = scache_find(sname);
+        if (ci >= 0 && s_scache[ci].inode != ino)
         {
-            /* Cache hit — reuse mapping */
-            s_scache[ci].in_use = 1;
-            imgp                = &s_scache[ci].img;
+            scache_evict_locked(ci); /* recreated: map the new file */
+            ci = -1;
         }
-        else
+        if (ci < 0)
         {
-            /* Cache miss or inode changed */
-            if (ci >= 0)
-            {
-                scache_evict_locked(ci);
-                ci = -1;
-            }
-
             if (s_scache_nb >= OV_MAX_STREAMS)
             {
+                s_capped = 1;
                 continue;
             }
-
-            ci = s_scache_nb;
+            ci = s_scache_nb++;
             memset(&s_scache[ci], 0, sizeof(ov_stream_cache_t));
-
-            if (scache_map_ro(&s_scache[ci].img, fpath) != 0)
-            {
-                continue;
-            }
-
-            strncpy(s_scache[ci].name, sname, sizeof(s_scache[ci].name) - 1);
+            snprintf(s_scache[ci].name, sizeof(s_scache[ci].name), "%s", sname);
             s_scache[ci].inode  = ino;
-            s_scache[ci].in_use = 1;
             s_scache[ci].is_new = (s_scan_dt_sec > 0.0) ? OV_NEW_SCANS : 0; /* none at startup */
-            s_scache_nb++;
-            imgp = &s_scache[ci].img;
         }
-
-        fill_stream_from_img(&model->streams[idx], imgp, sname, ino);
-        scache_rate_update(&model->streams[idx], ci);
-        idx++;
+        if (scache_try_map(ci, fpath, &budget) < 0)
+        {
+            scache_evict_locked(ci);
+            continue;
+        }
+        s_scache[ci].in_use = 1;
+        waiting += emit_stream(model, idx++, ci);
     }
 
     closedir(dp);
-    model->nb_streams = idx;
+    model->nb_streams      = idx;
+    model->streams_pending = waiting;
+    model->streams_capped  = s_capped;
 
     /* Evict stale cache entries */
     for (int i = s_scache_nb - 1; i >= 0; i--)

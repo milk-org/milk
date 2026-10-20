@@ -291,9 +291,18 @@ int main(int argc, char *argv[])
             {
                 if (m != NULL)
                 {
-                    ov_cmdlog_debug("scan %.1f ms: %d streams, %d processes, %d FPS, %u tmux polls",
-                                    m->scan_time_ms, m->nb_streams, m->nb_procs, m->nb_fps,
-                                    m->tmux_polls);
+                    ov_cmdlog_debug("scan %.1f ms: %d streams (%d pending), %d processes, %d FPS, "
+                                    "%u tmux polls",
+                                    m->scan_time_ms, m->nb_streams, m->streams_pending, m->nb_procs,
+                                    m->nb_fps, m->tmux_polls);
+                }
+                static int cap_warned;
+                if (m != NULL && m->streams_capped && !cap_warned)
+                {
+                    cap_warned = 1;
+                    ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_WARN,
+                                   "More than %d streams in %s: the rest are not listed",
+                                   OV_MAX_STREAMS, ov_get_shmdir());
                 }
                 ov_render__sync_selection(&lay, m);
                 need_render = 1;

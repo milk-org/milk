@@ -27,11 +27,13 @@
  * Limits
  * ========================================================= */
 
-#define OV_MAX_STREAMS 2000
+#define OV_MAX_STREAMS 10000
 #define OV_MAX_FPS 200
 #define OV_MAX_PROCS 500
-#define OV_MAX_NODES 2700
-#define OV_MAX_EDGES 5000
+#define OV_MAX_NODES (OV_MAX_STREAMS + OV_MAX_FPS + OV_MAX_PROCS)
+#define OV_MAX_EDGES 16000
+#define OV_MAX_TRACE 16384  /* process-trace hops of all streams (OV_MODEL.trace) */
+#define OV_MAP_PER_SCAN 500 /* new stream mappings per scan; the rest wait (OV_STREAM.pending) */
 
 #define OV_SPARKLINE_LEN 40
 #define OV_STALE_SCANS 3 /* scans without a loopcnt change before an active process is STALE */
@@ -133,6 +135,18 @@ typedef struct
 int  pid_read_perf_counters(pid_t pid, int64_t loopcnt, ov_perf_counters_t *out);
 void pid_perf_close(void);
 
+/* One hop of a stream's process trace: who wrote it, triggered by which stream */
+typedef struct
+{
+    pid_t    pid;
+    ino_t    inode; /**< trigger stream inode */
+    int      trigmode;
+    int      status;
+    int64_t  tstart_ns;  /**< hop triggered (CLOCK_MILK ns), 0 = unknown */
+    int64_t  tupdate_ns; /**< hop wrote its output (CLOCK_MILK ns) */
+    uint64_t cnt0;       /**< the hop's trigger stream cnt0 at that write */
+} OV_TRACE_HOP;
+
 /* =========================================================
  * Stream info (aggregated from IMAGE_METADATA)
  * ========================================================= */
@@ -172,23 +186,14 @@ typedef struct
     int   nb_write_pids; /**< live processes that posted the semaphores (semWritePID), unique */
     pid_t write_pids[IMAGE_NB_SEMAPHORE];
 
-    /* process trace (from STREAM_PROC_TRACE) */
-    int   nb_proctrace;
-    pid_t proctrace_pid[IMAGE_NB_PROCTRACE];
-    ino_t proctrace_inode[IMAGE_NB_PROCTRACE];
-    int   proctrace_trigmode[IMAGE_NB_PROCTRACE];
-    int   proctrace_status[IMAGE_NB_PROCTRACE];
-    int64_t
-        proctrace_tstart_ns[IMAGE_NB_PROCTRACE]; /**< hop triggered (CLOCK_MILK ns), 0 = unknown */
-    int64_t  proctrace_tupdate_ns[IMAGE_NB_PROCTRACE]; /**< hop wrote its output (CLOCK_MILK ns) */
-    uint64_t proctrace_cnt0[IMAGE_NB_PROCTRACE]; /**< the hop's trigger stream cnt0 at that write */
+    /* process trace (STREAM_PROC_TRACE): hops trace_off .. trace_off + nb_proctrace - 1 of OV_MODEL.trace */
+    int nb_proctrace;
+    int trace_off;
+
+    int pending; /**< listed, not mapped yet (OV_MAP_PER_SCAN): only name and inode are set */
 
     /* static string cache */
     char size_str[32];
-
-    /* sparkline history */
-    float spark_rate[OV_SPARKLINE_LEN];
-    int   spark_idx;
 
     /* graph node index (-1 if not in graph) */
     int node_idx;

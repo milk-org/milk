@@ -50,10 +50,9 @@ typedef struct
     int      in_use;
     uint64_t prev_cnt0;
     int      has_prev;
-    float    spark_max;
-    float    spark_rate[OV_SPARKLINE_LEN];
-    int      spark_idx;
-    int      is_new; /* scans left to highlight a new stream */
+    int      is_new;       /* scans left to highlight a new stream */
+    int      mapped;       /* img is mapped (else listed only, waiting for OV_MAP_PER_SCAN) */
+    char     size_str[32]; /* "WxH": the geometry of a mapping does not change */
 } ov_stream_cache_t;
 
 extern ov_stream_cache_t s_scache[OV_MAX_STREAMS];

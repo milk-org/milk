@@ -39,8 +39,8 @@ static int64_t reader_exec_ns(const OV_MODEL *m, int pi, int si)
         }
         const OV_STREAM *o = &m->streams[m->nodes[e->tgt_node].index];
         OV_HOP           h;
-        if (o->nb_proctrace > 0 && o->proctrace_pid[0] == m->procs[pi].PID &&
-            o->proctrace_inode[0] == m->streams[si].inode && ov_trace_hop(m, o, 0, &h) == 0)
+        if (o->nb_proctrace > 0 && ov_stream_hops(m, o)[0].pid == m->procs[pi].PID &&
+            ov_stream_hops(m, o)[0].inode == m->streams[si].inode && ov_trace_hop(m, o, 0, &h) == 0)
         {
             return h.compute_ns;
         }

@@ -251,7 +251,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     for (int u = 0; u < 4; u++)
     {
         h = hseg(sg, &n, HS_TEXT, 1, ucol[u], OV_BG_HEADER, 1);
-        snprintf(h->text, sizeof(h->text), "%d %s", cnt[u], unit[u]);
+        snprintf(h->text, sizeof(h->text), "%d%s %s", cnt[u],
+                 (u == 0 && m->streams_capped) ? "+" : "", unit[u]);
     }
     h = hseg(sg, &n, HS_TEXT, 2, OV_FG_DIM, OV_BG_HEADER, 4);
     snprintf(h->text, sizeof(h->text), "self %4.1f%% %4.1fkB/s", ov_sys_get_cpu_usage(),

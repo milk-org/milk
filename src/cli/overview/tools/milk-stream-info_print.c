@@ -347,10 +347,10 @@ void print_stream_info(const OV_MODEL *m, int si)
         printf("\n" C_HDR " Process Trace" C_RST " (STREAM_PROC_TRACE)\n");
         for (int t = 0; t < s->nb_proctrace; t++)
         {
-            const char *pn = proc_name_by_pid(m, s->proctrace_pid[t]);
+            const char *pn = proc_name_by_pid(m, ov_stream_hops(m, s)[t].pid);
             printf("   [%d] PID=%-6d  trig_inode=%-8" PRIu64 "  mode=%d", t,
-                   (int) s->proctrace_pid[t], (uint64_t) s->proctrace_inode[t],
-                   s->proctrace_trigmode[t]);
+                   (int) ov_stream_hops(m, s)[t].pid, (uint64_t) ov_stream_hops(m, s)[t].inode,
+                   ov_stream_hops(m, s)[t].trigmode);
             if (pn)
             {
                 printf("  (%s)", pn);

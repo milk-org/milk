@@ -26,7 +26,10 @@ void ov_scan_cache_cleanup(void)
     pthread_mutex_lock(&s_scache_mutex);
     for (int i = s_scache_nb - 1; i >= 0; i--)
     {
-        ImageStreamIO_closeIm(&s_scache[i].img);
+        if (s_scache[i].mapped)
+        {
+            ImageStreamIO_closeIm(&s_scache[i].img);
+        }
     }
     s_scache_nb = 0;
     pthread_mutex_unlock(&s_scache_mutex);

@@ -92,7 +92,7 @@ pthread_mutex_t   s_scache_mutex = PTHREAD_MUTEX_INITIALIZER;
  * Cache indexes: name (or slot+PID) -> cache position. A lookup first indexes the entries appended since
  * the last one; an eviction moves the last entry, so it marks the index stale (rebuilt on next lookup).
  */
-static OV_INDEX_DEF(4096) s_scache_ix;
+static OV_INDEX_DEF(32768) s_scache_ix;
 static int s_scache_ix_n = -1; /* entries indexed, -1 = stale */
 
 /** scache_match - cache entry @ci is stream @ctx. */
@@ -126,7 +126,10 @@ int scache_find(const char *name)
 void scache_evict_locked(int ci)
 {
     s_scache_ix_n = -1;
-    ImageStreamIO_closeIm(&s_scache[ci].img);
+    if (s_scache[ci].mapped)
+    {
+        ImageStreamIO_closeIm(&s_scache[ci].img);
+    }
     s_scache_nb--;
     if (ci < s_scache_nb)
     {

@@ -98,8 +98,12 @@ static inline int ov_loop_units(const OV_LOOP *lp)
 typedef struct
 {
     /* data arrays */
-    OV_STREAM streams[OV_MAX_STREAMS];
-    int       nb_streams;
+    OV_STREAM    streams[OV_MAX_STREAMS];
+    int          nb_streams;
+    int          streams_pending; /* listed streams not mapped yet: the scan comes back soon */
+    int          streams_capped;  /* more *.im.shm than OV_MAX_STREAMS */
+    OV_TRACE_HOP trace[OV_MAX_TRACE];
+    int          nb_trace;
 
     OV_FPS fps[OV_MAX_FPS];
     int    nb_fps;
@@ -128,8 +132,8 @@ typedef struct
     int     loops_truncated; /* cycle search hit its limit: more loops may exist */
 
     /* lookup indexes for ov_find_stream_by_name/_by_inode and ov_find_proc_by_pid, built with the graph */
-    OV_INDEX_DEF(4096) ix_stream_name;
-    OV_INDEX_DEF(4096) ix_stream_inode;
+    OV_INDEX_DEF(32768) ix_stream_name;
+    OV_INDEX_DEF(32768) ix_stream_inode;
     OV_INDEX_DEF(1024) ix_proc_pid; /* one entry per PID: the live process, else the newest */
     int indexed;                    /* 0: the ov_find_* helpers scan the arrays */
 
@@ -204,7 +208,7 @@ typedef struct
 } OV_HOP;
 
 int     ov_trace_hop(const OV_MODEL *m, const OV_STREAM *s, int t, OV_HOP *h);
-int64_t ov_trace_end_to_end_ns(const OV_STREAM *s);
+int64_t ov_trace_end_to_end_ns(const OV_MODEL *m, const OV_STREAM *s);
 
 /* for (int k = OV_ADJ_B(m, out, v); k < OV_ADJ_E(m, out, v); k++) e = &m->edges[m->adj_out[k]]:
  * the edges out of (out) or into (in) node v; an invalid v gives an empty range */
@@ -404,5 +408,13 @@ typedef enum
 const char *ov_state_name(ov_state_t st, int long_form);
 ov_state_t  ov_state_of_loopstat(int loopstat);
 const char *ov_loopstat_label(int loopstat, int long_form);
+
+/** ov_stream_hops - the process-trace hops of stream @s (nb_proctrace of them). */
+static inline const OV_TRACE_HOP *ov_stream_hops(const OV_MODEL *m, const OV_STREAM *s)
+{
+    return &m->trace[s->trace_off];
+}
+
+OV_TRACE_HOP *ov_stream_add_hop(OV_MODEL *m, OV_STREAM *s);
 
 #endif /* OVERVIEW_DATA_H */

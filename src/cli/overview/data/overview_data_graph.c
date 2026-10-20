@@ -167,7 +167,7 @@ int ov_find_proc_by_pid(const OV_MODEL *model, pid_t pid)
  * ========================================================= */
 
 /* (src, tgt, type) -> edge, for the duplicate check; follows one model's edge array */
-static OV_INDEX_DEF(16384) s_edge_ix;
+static OV_INDEX_DEF(32768) s_edge_ix;
 static const OV_MODEL *s_edge_model;
 static int             s_edge_n; /* edges indexed */
 
@@ -353,7 +353,7 @@ void ov_build_graph(OV_MODEL *model)
 
         for (int t = 0; t < s->nb_proctrace; t++)
         {
-            pid_t wpid = s->proctrace_pid[t];
+            pid_t wpid = ov_stream_hops(model, s)[t].pid;
             if (wpid <= 0)
             {
                 continue;
@@ -374,7 +374,7 @@ void ov_build_graph(OV_MODEL *model)
             }
 
             /* Find the trigger stream */
-            ino_t trig_inode = s->proctrace_inode[t];
+            ino_t trig_inode = ov_stream_hops(model, s)[t].inode;
             if (trig_inode != 0 && pi >= 0 && model->procs[pi].node_idx >= 0)
             {
                 int tsi = ov_find_stream_by_inode(model, trig_inode);
