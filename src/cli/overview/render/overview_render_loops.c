@@ -210,9 +210,16 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
         rrow++;
         r_rendered++;
 
-        for (int i = 0; i < cl->nb_streams && r_rendered < max_rrows; i++)
+        /* Members through node_indices: nodes[].index follows the UI's sort, scan-time
+         * stream_indices/proc_indices do not */
+        for (int i = 0; i < cl->nb_nodes && r_rendered < max_rrows; i++)
         {
-            int si = cl->stream_indices[i];
+            int ni = cl->node_indices[i];
+            if (ni < 0 || ni >= m->nb_nodes || m->nodes[ni].type != OV_NODE_STREAM)
+            {
+                continue;
+            }
+            int si = m->nodes[ni].index;
             if (si < 0 || si >= m->nb_streams)
             {
                 continue;
@@ -269,9 +276,14 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
             rrow++;
             r_rendered++;
 
-            for (int i = 0; i < cl->nb_procs && r_rendered < max_rrows; i++)
+            for (int i = 0; i < cl->nb_nodes && r_rendered < max_rrows; i++)
             {
-                int pi = cl->proc_indices[i];
+                int ni = cl->node_indices[i];
+                if (ni < 0 || ni >= m->nb_nodes || m->nodes[ni].type != OV_NODE_PROC)
+                {
+                    continue;
+                }
+                int pi = m->nodes[ni].index;
                 if (pi < 0 || pi >= m->nb_procs)
                 {
                     continue;

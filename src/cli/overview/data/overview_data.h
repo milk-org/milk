@@ -59,7 +59,8 @@ typedef struct
     int nb_nodes;
     int node_indices[OV_MAX_LOOP_NODES];
 
-    /* Membership indices */
+    /* Membership indices, scan-time order: the UI re-sorts the entity arrays, so it resolves
+     * members through node_indices / nodes[].index instead */
     int nb_streams;
     int stream_indices[OV_MAX_LOOP_NODES / 2];
     int nb_procs;

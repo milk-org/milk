@@ -232,9 +232,9 @@ void ov_render__sync_selection(OV_LAYOUT *lay, const OV_MODEL *m)
         lay->sort_pending = 0;
         g_last_model      = m;
     }
-    else
+    else if (m != g_last_model)
     {
-        /* A new scan model arrived. Re-apply the saved order so items don't shuffle. */
+        /* A new scan model arrived: re-apply the saved order once, so items don't shuffle */
         OV_MODEL *mm = (OV_MODEL *) (uintptr_t) m;
         ov_sort_apply_ranks(mm);
         g_last_model = m;
