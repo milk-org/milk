@@ -41,100 +41,120 @@ void ov_tgt_set(OV_TARGET *t, const OV_MODEL *m, ov_focus_t panel, int idx)
     }
 }
 
+/** ov_tgt_match - 1 if model entry @i of @panel has identity @t. */
+static int ov_tgt_match(const OV_MODEL *m, ov_focus_t panel, int i, const OV_TARGET *t)
+{
+    if (panel == OV_FOCUS_STREAMS)
+    {
+        return strcmp(m->streams[i].name, t->name) == 0 &&
+               (t->inode == 0 || (uint64_t) m->streams[i].inode == t->inode);
+    }
+    if (panel == OV_FOCUS_PROCS)
+    {
+        return strcmp(m->procs[i].name, t->name) == 0 && (int) m->procs[i].PID == t->pid &&
+               (t->start == 0 || m->procs[i].start_ticks == 0 ||
+                m->procs[i].start_ticks == t->start);
+    }
+    return strcmp(m->fps[i].name, t->name) == 0;
+}
+
+#define OV_ID_SLOTS 4096 /* power of two, > 2 * OV_MAX_STREAMS */
+
+/* Name index of one panel of one published model: slot = model index + 1, 0 = empty */
+typedef struct
+{
+    const OV_MODEL *m;
+    uint64_t        seq;
+    int16_t         slot[OV_ID_SLOTS];
+} OV_ID_INDEX;
+
+static OV_ID_INDEX s_id[OV_NB_LIST_PANELS];
+
+/** ov_id_hash - FNV-1a of @name, folded to a slot. */
+static uint32_t ov_id_hash(const char *name)
+{
+    uint32_t h = 2166136261u;
+    for (; *name != '\0'; name++)
+    {
+        h = (h ^ (uint8_t) *name) * 16777619u;
+    }
+    return h & (OV_ID_SLOTS - 1);
+}
+
+/** ov_id_index - the name index of @panel for @m, rebuilt when @m is a new publication. */
+static const OV_ID_INDEX *ov_id_index(const OV_MODEL *m, ov_focus_t panel)
+{
+    OV_ID_INDEX *x = &s_id[panel];
+    if (x->m != m || x->seq != m->seq)
+    {
+        int n = (panel == OV_FOCUS_STREAMS) ? m->nb_streams
+                : (panel == OV_FOCUS_PROCS) ? m->nb_procs
+                                            : m->nb_fps;
+        memset(x->slot, 0, sizeof(x->slot));
+        for (int i = 0; i < n; i++)
+        {
+            const char *name = (panel == OV_FOCUS_STREAMS) ? m->streams[i].name
+                               : (panel == OV_FOCUS_PROCS) ? m->procs[i].name
+                                                           : m->fps[i].name;
+            uint32_t    h    = ov_id_hash(name);
+            while (x->slot[h] != 0)
+            {
+                h = (h + 1) & (OV_ID_SLOTS - 1);
+            }
+            x->slot[h] = (int16_t) (i + 1);
+        }
+        x->m   = m;
+        x->seq = m->seq;
+    }
+    return x;
+}
+
 /**
- * ov_tgt_find - model index of the entry with identity @t, or -1.
+ * ov_tgt_find - model index of the entry with identity @t, or -1. Published models (seq != 0) use a
+ * name index built once per model; others are scanned.
  */
 int ov_tgt_find(const OV_MODEL *m, ov_focus_t panel, const OV_TARGET *t)
 {
-    if (m == NULL || t == NULL || t->name[0] == '\0')
+    if (m == NULL || t == NULL || t->name[0] == '\0' || panel >= OV_NB_LIST_PANELS)
     {
         return -1;
     }
-    if (panel == OV_FOCUS_STREAMS)
+    if (m->seq != 0)
     {
-        for (int i = 0; i < m->nb_streams; i++)
+        const OV_ID_INDEX *x = ov_id_index(m, panel);
+        for (uint32_t h = ov_id_hash(t->name); x->slot[h] != 0; h = (h + 1) & (OV_ID_SLOTS - 1))
         {
-            if (strcmp(m->streams[i].name, t->name) == 0 &&
-                (t->inode == 0 || (uint64_t) m->streams[i].inode == t->inode))
+            if (ov_tgt_match(m, panel, x->slot[h] - 1, t))
             {
-                return i;
+                return x->slot[h] - 1;
             }
         }
+        return -1;
     }
-    else if (panel == OV_FOCUS_PROCS)
+    int n = (panel == OV_FOCUS_STREAMS) ? m->nb_streams
+            : (panel == OV_FOCUS_PROCS) ? m->nb_procs
+                                        : m->nb_fps;
+    for (int i = 0; i < n; i++)
     {
-        for (int i = 0; i < m->nb_procs; i++)
+        if (ov_tgt_match(m, panel, i, t))
         {
-            if (strcmp(m->procs[i].name, t->name) == 0 && (int) m->procs[i].PID == t->pid &&
-                (t->start == 0 || m->procs[i].start_ticks == 0 ||
-                 m->procs[i].start_ticks == t->start))
-            {
-                return i;
-            }
-        }
-    }
-    else if (panel == OV_FOCUS_FPS)
-    {
-        for (int i = 0; i < m->nb_fps; i++)
-        {
-            if (strcmp(m->fps[i].name, t->name) == 0)
-            {
-                return i;
-            }
+            return i;
         }
     }
     return -1;
 }
 
 /**
- * ov_rows - model indices of the rows @panel draws, in display order (ov_order_get): regex, loop
- * isolation, then the relation of the frozen subject (never of the hovered item). Return: number of rows.
+ * ov_rows - copy into @fidx (at most @max) the model indices @panel draws, in drawn order: display
+ * order, regex, loop isolation, then the frozen subject's relation. Return: number of rows.
  */
 int ov_rows(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int *fidx, int max)
 {
-    static OV_RELATED rel;
-    static int        keep[OV_MAX_NODES];
-    static uint8_t    mark[OV_MAX_NODES];
-    const OV_RELATED *rp = NULL;
-    int               n;
-
-    if (lay->freeze && lay->freeze_focus < OV_FOCUS_GRAPH && lay->freeze_focus != panel)
-    {
-        ov_compute_related_frozen(lay, m, &rel);
-        rp = &rel;
-    }
-    switch (panel)
-    {
-    case OV_FOCUS_STREAMS:
-        n = ov_filter_streams(lay, m, rp, keep, OV_MAX_NODES);
-        break;
-    case OV_FOCUS_PROCS:
-        n = ov_filter_procs(lay, m, rp, keep, OV_MAX_NODES);
-        break;
-    case OV_FOCUS_FPS:
-        n = ov_filter_fps(lay, m, rp, keep, OV_MAX_NODES);
-        break;
-    default:
-        return 0;
-    }
-
-    /* The filters return model order: emit the kept entries in display order */
-    int        no;
-    const int *order = ov_order_get(m, panel, &no);
-    memset(mark, 0, (size_t) no);
-    for (int i = 0; i < n; i++)
-    {
-        mark[keep[i]] = 1;
-    }
-    int k = 0;
-    for (int r = 0; r < no && k < max; r++)
-    {
-        if (mark[order[r]])
-        {
-            fidx[k++] = order[r];
-        }
-    }
-    return k;
+    int        n;
+    const int *rows = ov_view_rows(lay, m, panel, &n);
+    n               = (n < max) ? n : max;
+    memcpy(fidx, rows, (size_t) n * sizeof(int));
+    return n;
 }
 
 /**
@@ -142,9 +162,9 @@ int ov_rows(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int *fidx
  */
 int ov_row_to_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row)
 {
-    int fidx[OV_MAX_NODES];
-    int n = ov_rows(lay, m, panel, fidx, OV_MAX_NODES);
-    return (row >= 0 && row < n) ? fidx[row] : -1;
+    int        n;
+    const int *rows = ov_view_rows(lay, m, panel, &n);
+    return (row >= 0 && row < n) ? rows[row] : -1;
 }
 
 /** ov_sel_rowp - the cursor row field of @panel. */
@@ -175,16 +195,12 @@ int ov_sel_row(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row)
  */
 int ov_sel_model(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int idx)
 {
-    int fidx[OV_MAX_NODES];
-    int n = ov_rows(lay, m, panel, fidx, OV_MAX_NODES);
-    for (int r = 0; r < n; r++)
+    int r = ov_view_row_of(lay, m, panel, idx);
+    if (r >= 0)
     {
-        if (fidx[r] == idx)
-        {
-            *ov_sel_rowp(lay, panel) = r;
-            ov_tgt_set(&lay->panel[panel].tgt, m, panel, idx);
-            return r;
-        }
+        *ov_sel_rowp(lay, panel) = r;
+        ov_tgt_set(&lay->panel[panel].tgt, m, panel, idx);
+        return r;
     }
     OV_TARGET t;
     ov_tgt_set(&t, m, panel, idx);
@@ -255,9 +271,8 @@ static void ov_sel_clamp_scroll(int row, int height, int *scroll)
  */
 void ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    static int fidx[OV_MAX_NODES];
-    const int  heights[OV_NB_LIST_PANELS] = { lay->r_streams.height, lay->r_procs.height,
-                                              lay->r_fps.height };
+    const int heights[OV_NB_LIST_PANELS] = { lay->r_streams.height, lay->r_procs.height,
+                                             lay->r_fps.height };
 
     if (lay->freeze && lay->freeze_focus < OV_FOCUS_GRAPH &&
         ov_tgt_find(m, lay->freeze_focus, &lay->panel[lay->freeze_focus].freeze_tgt) < 0)
@@ -271,7 +286,8 @@ void ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m)
     {
         ov_focus_t panel = (ov_focus_t) p;
         int       *row   = ov_sel_rowp(lay, panel);
-        int        n     = ov_rows(lay, m, panel, fidx, OV_MAX_NODES);
+        int        n;
+        const int *fidx = ov_view_rows(lay, m, panel, &n);
         if (n == 0)
         {
             *row = 0;
@@ -280,15 +296,7 @@ void ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m)
         else
         {
             int idx = ov_tgt_find(m, panel, &lay->panel[p].tgt);
-            int pos = -1;
-            for (int r = 0; r < n && idx >= 0; r++)
-            {
-                if (fidx[r] == idx)
-                {
-                    pos = r;
-                    break;
-                }
-            }
+            int pos = (idx >= 0) ? ov_view_row_of(lay, m, panel, idx) : -1;
             if (pos < 0)
             {
                 pos = (*row < 0) ? 0 : ((*row >= n) ? n - 1 : *row);
@@ -309,15 +317,8 @@ void ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m)
         lay->panel[p].freeze_row = -1;
         if (lay->freeze)
         {
-            int fi = ov_tgt_find(m, panel, &lay->panel[p].freeze_tgt);
-            for (int r = 0; r < n && fi >= 0; r++)
-            {
-                if (fidx[r] == fi)
-                {
-                    lay->panel[p].freeze_row = r;
-                    break;
-                }
-            }
+            int fi                   = ov_tgt_find(m, panel, &lay->panel[p].freeze_tgt);
+            lay->panel[p].freeze_row = (fi >= 0) ? ov_view_row_of(lay, m, panel, fi) : -1;
         }
     }
 }

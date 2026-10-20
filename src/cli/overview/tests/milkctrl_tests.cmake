@@ -14,7 +14,14 @@ if(BUILD_TESTING)
   target_link_libraries(milkctrl-unit-model PRIVATE milkctrl_model)
   add_test(NAME milkctrl_unit_model COMMAND milkctrl-unit-model)
 
-  add_executable(milkctrl-unit-view ../overview/tests/test_ov_view.c)
+  add_executable(
+    milkctrl-unit-view
+    ../overview/tests/test_ov_view.c ../overview/render/overview_render_view.c
+    ../overview/render/overview_render_select.c ../overview/render/overview_render_relate.c
+    ../overview/render/overview_render_filter.c ../overview/overview_cmdlog.c)
+  target_include_directories(
+    milkctrl-unit-view PRIVATE ${CMAKE_SOURCE_DIR}/src/cli/overview/render
+                               ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi)
   target_link_libraries(milkctrl-unit-view PRIVATE milkctrl_model)
   add_test(NAME milkctrl_unit_view COMMAND milkctrl-unit-view)
 endif()

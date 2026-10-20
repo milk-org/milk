@@ -31,6 +31,7 @@ typedef struct
     const OV_MODEL *m; /* model the order was built for */
     uint64_t        seq;
     int             sorted; /* a rank snapshot exists */
+    uint32_t        gen;    /* bumped whenever idx[] changes */
     ov_rank_slot_t  slot[OV_RANK_SLOTS];
 } ov_order_t;
 
@@ -142,6 +143,7 @@ static void ov_order_rebuild(ov_order_t *o, const OV_MODEL *m, int panel)
     }
     o->m   = m;
     o->seq = m->seq;
+    o->gen++;
 }
 
 /**
@@ -172,6 +174,7 @@ void ov_order_sort(const OV_MODEL *m, int panel, int key, int dir)
     o->sorted = 1;
     o->m      = m;
     o->seq    = m->seq;
+    o->gen++;
 }
 
 /**
@@ -189,8 +192,19 @@ const int *ov_order_get(const OV_MODEL *m, int panel, int *n)
     return o->idx;
 }
 
+/** ov_order_gen - generation of @panel's order: changes whenever its order array is rebuilt. */
+uint32_t ov_order_gen(int panel)
+{
+    return s_ord[panel].gen;
+}
+
 /** ov_order_reset - forget every order and rank snapshot (scan order again). */
 void ov_order_reset(void)
 {
-    memset(s_ord, 0, sizeof(s_ord));
+    for (int p = 0; p < OV_ORDER_NB; p++)
+    {
+        uint32_t gen = s_ord[p].gen;
+        memset(&s_ord[p], 0, sizeof(s_ord[p]));
+        s_ord[p].gen = gen + 1; /* never reuse a generation a cache may hold */
+    }
 }

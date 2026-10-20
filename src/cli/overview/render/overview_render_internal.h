@@ -137,16 +137,19 @@ void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *rel
 void ov_compute_related_frozen(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *rel);
 
 /* Selection identity and drawn-row resolver (overview_render_select.c) */
-void ov_tgt_set(OV_TARGET *t, const OV_MODEL *m, ov_focus_t panel, int idx);
-int  ov_tgt_find(const OV_MODEL *m, ov_focus_t panel, const OV_TARGET *t);
-int  ov_rows(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int *fidx, int max);
-int  ov_row_to_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row);
-int  ov_sel_row(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row);
-int  ov_sel_model(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int idx);
-int  ov_sel_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel);
-void ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m);
-int  ov_detail_target(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t *panel);
-int  ov_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m);
+void       ov_tgt_set(OV_TARGET *t, const OV_MODEL *m, ov_focus_t panel, int idx);
+int        ov_tgt_find(const OV_MODEL *m, ov_focus_t panel, const OV_TARGET *t);
+int        ov_rows(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int *fidx, int max);
+const int *ov_view_rows(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int *n);
+int        ov_view_row_of(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int idx);
+unsigned long ov_view_build_count(void);
+int           ov_row_to_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row);
+int           ov_sel_row(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row);
+int           ov_sel_model(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int idx);
+int           ov_sel_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel);
+void          ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m);
+int           ov_detail_target(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t *panel);
+int           ov_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m);
 const SG_TREE_NODE *ov_graph_rows(const OV_LAYOUT *lay, const OV_MODEL *m, int *n);
 int                 ov_msel_has(const OV_LAYOUT *lay, const char *name);
 void                ov_msel_set(OV_LAYOUT *lay, const char *name, int on);

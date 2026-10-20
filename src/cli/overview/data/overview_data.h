@@ -309,6 +309,7 @@ void ov_sort_fps(const OV_MODEL *model, int key, int dir, int *order);
 #define OV_ORDER_NB 3
 void       ov_order_sort(const OV_MODEL *m, int panel, int key, int dir);
 const int *ov_order_get(const OV_MODEL *m, int panel, int *n);
+uint32_t   ov_order_gen(int panel);
 void       ov_order_reset(void);
 
 /**

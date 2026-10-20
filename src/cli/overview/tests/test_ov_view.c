@@ -5,6 +5,7 @@
 /* CTest milkctrl_unit_view: display order of the list panels on synthetic models (no shared memory). */
 
 #include "overview_data_internal.h"
+#include "overview_render_internal.h"
 
 #include <stdlib.h>
 
@@ -126,11 +127,57 @@ static void test_same_name_procs(void)
     free(m);
 }
 
+/* The row cache: built once per input change, missed on a new publication, row_of inverse of rows */
+static void test_view_cache(void)
+{
+    static const char *const names[] = { "v3", "v1", "v2", "x9" };
+    OV_MODEL                *m       = mk_streams(names, 4, 30);
+    static OV_LAYOUT         lay;
+    memset(&lay, 0, sizeof(lay));
+    lay.sel_loop = -1;
+    ov_order_reset();
+    ov_order_sort(m, OV_ORDER_STREAMS, 0, 0);
+
+    int           n;
+    unsigned long b0   = ov_view_build_count();
+    const int    *rows = ov_view_rows(&lay, m, OV_FOCUS_STREAMS, &n);
+    CHECK(n == 4 && strcmp(m->streams[rows[0]].name, "v1") == 0);
+    CHECK(ov_view_build_count() == b0 + 1);
+    ov_view_rows(&lay, m, OV_FOCUS_STREAMS, &n); /* nothing changed: cached */
+    CHECK(ov_view_build_count() == b0 + 1);
+    for (int r = 0; r < n; r++)
+    {
+        CHECK(ov_view_row_of(&lay, m, OV_FOCUS_STREAMS, rows[r]) == r);
+    }
+
+    snprintf(lay.panel[OV_FOCUS_STREAMS].filter, sizeof(lay.panel[0].filter), "^v");
+    lay.panel[OV_FOCUS_STREAMS].filter_on = 1;
+    rows = ov_view_rows(&lay, m, OV_FOCUS_STREAMS, &n); /* filter changed: rebuilt */
+    CHECK(n == 3 && ov_view_build_count() == b0 + 2);
+    CHECK(ov_view_row_of(&lay, m, OV_FOCUS_STREAMS, 3) == -1); /* x9 filtered out */
+
+    m->seq = 31; /* new publication in the same slot */
+    ov_view_rows(&lay, m, OV_FOCUS_STREAMS, &n);
+    CHECK(ov_view_build_count() == b0 + 3);
+
+    /* identity lookups through the name index agree with a linear scan */
+    OV_TARGET t;
+    for (int i = 0; i < 4; i++)
+    {
+        ov_tgt_set(&t, m, OV_FOCUS_STREAMS, i);
+        CHECK(ov_tgt_find(m, OV_FOCUS_STREAMS, &t) == i);
+    }
+    snprintf(t.name, sizeof(t.name), "absent");
+    CHECK(ov_tgt_find(m, OV_FOCUS_STREAMS, &t) == -1);
+    free(m);
+}
+
 int main(void)
 {
     test_sort_does_not_touch_model();
     test_order_survives_new_models();
     test_same_name_procs();
+    test_view_cache();
     if (failures == 0)
     {
         printf("all ok\n");
