@@ -169,7 +169,7 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
 
     int hrow = r.row + 1;
 
-    ov_procs__render_header(lay, r);
+    ov_table_header(&ov_procs_table, lay, r, OV_FG_PROC_HDR);
     ov_procs__render_rows(lay, m, rel, hrow, r, filt_idx, filt_n, has_re, &re);
 
     int max_rows = r.height - 4;

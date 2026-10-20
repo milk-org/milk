@@ -92,46 +92,9 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
         }
         break;
     case OV_FOCUS_PROCS:
-        switch (lay->panel[OV_FOCUS_PROCS].sort_key)
-        {
-        case 1:
-            sort_label = " [sort:PID]";
-            break;
-        case 2:
-            sort_label = " [sort:stat]";
-            break;
-        case 3:
-            sort_label = " [sort:Hz]";
-            break;
-        case 4:
-            sort_label = " [sort:MEM]";
-            break;
-        case 5:
-            sort_label = " [sort:ancestry]";
-            break;
-        case 6:
-            sort_label = " [sort:PRIO]";
-            break;
-        case 7:
-            sort_label = " [sort:UPTIME]";
-            break;
-        case 8:
-            sort_label = " [sort:CPU%]";
-            break;
-        case 9:
-            sort_label = " [sort:LOOPCNT]";
-            break;
-        case 10:
-            sort_label = " [sort:DUTY]";
-            break;
-        default:
-            sort_label = " [sort:name]";
-            break;
-        }
-        break;
     case OV_FOCUS_FPS:
         snprintf(sort_buf, sizeof(sort_buf), " [sort:%s]",
-                 ov_table_status_label(&ov_fps_table, lay->panel[OV_FOCUS_FPS].sort_key));
+                 ov_table_status_label(ov_table_for(lay->focus), lay->panel[lay->focus].sort_key));
         sort_label = sort_buf;
         break;
     default:

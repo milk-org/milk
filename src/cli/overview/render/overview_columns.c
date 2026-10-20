@@ -12,7 +12,9 @@
 /** ov_table_for - column table of list panel @panel, or NULL while it has none. */
 const OV_TABLE *ov_table_for(ov_focus_t panel)
 {
-    return (panel == OV_FOCUS_FPS) ? &ov_fps_table : NULL;
+    return (panel == OV_FOCUS_FPS)     ? &ov_fps_table
+           : (panel == OV_FOCUS_PROCS) ? &ov_procs_table
+                                       : NULL;
 }
 
 /** ov_table_col_width - content width of column @c (view-dependent widths included). */

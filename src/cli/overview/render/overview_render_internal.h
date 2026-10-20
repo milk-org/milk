@@ -410,7 +410,6 @@ void ov_fps__render_footer(const OV_LAYOUT *lay,
                            int              filt_n,
                            int              max_rows);
 
-void ov_procs__render_header(const OV_LAYOUT *lay, OV_RECT r);
 void ov_procs__render_footer(const OV_LAYOUT *lay,
                              const OV_MODEL  *m,
                              OV_RECT          r,

@@ -231,11 +231,7 @@ static inline int ov_get_num_cols(const OV_LAYOUT *lay, ov_focus_t focus)
     {
         return lay->compact_mode ? 9 : 12;
     }
-    else if (focus == OV_FOCUS_PROCS)
-    {
-        return lay->compact_mode ? 11 : 16;
-    }
-    return 1; /* FPS: see its column table */
+    return 1; /* PROCS, FPS: see their column tables */
 }
 
 static inline int ov_get_logical_col_stream(int vis_col, int compact)
@@ -259,35 +255,6 @@ static inline int ov_get_logical_col_stream(int vis_col, int compact)
     if (vis_col == 8)
     {
         return 11;
-    }
-    return vis_col;
-}
-
-static inline int ov_get_logical_col_proc(int vis_col, int compact)
-{
-    if (!compact)
-    {
-        return vis_col;
-    }
-    if (vis_col <= 6)
-    {
-        return vis_col;
-    }
-    if (vis_col == 7)
-    {
-        return 11;
-    }
-    if (vis_col == 8)
-    {
-        return 12;
-    }
-    if (vis_col == 9)
-    {
-        return 13;
-    }
-    if (vis_col == 10)
-    {
-        return 15;
     }
     return vis_col;
 }
@@ -327,41 +294,6 @@ static inline int ov_get_stream_col_layout(int compact, OV_COL_LAYOUT *cols)
     }
     cols[n++] = (OV_COL_LAYOUT) { 10, -1, 7 }; /* WPID */
     cols[n++] = (OV_COL_LAYOUT) { 11, -1, 7 }; /* RPID */
-    return n;
-}
-
-/**
- * @brief Populate column layout for PROCS table.
- *
- * @param[in]  compact  1 if compact mode is enabled, 0 otherwise
- * @param[out] cols     Array to store column layout entries (min size 16)
- * @return Number of columns populated
- */
-static inline int ov_get_proc_col_layout(int compact, OV_COL_LAYOUT *cols)
-{
-    int n     = 0;
-    cols[n++] = (OV_COL_LAYOUT) { 0, 5, 3 };  /* A */
-    cols[n++] = (OV_COL_LAYOUT) { 1, 0, 14 }; /* NAME */
-    cols[n++] = (OV_COL_LAYOUT) { 2, 1, 7 };  /* PID */
-    cols[n++] = (OV_COL_LAYOUT) { 3, 6, 4 };  /* PRIO */
-    cols[n++] = (OV_COL_LAYOUT) { 4, 2, 5 };  /* STAT */
-    cols[n++] = (OV_COL_LAYOUT) { 5, 3, 6 };  /* Hz */
-    cols[n++] = (OV_COL_LAYOUT) { 6, 7, 6 };  /* UPTIME */
-    if (!compact)
-    {
-        cols[n++] = (OV_COL_LAYOUT) { 7, -1, 3 };  /* TRG */
-        cols[n++] = (OV_COL_LAYOUT) { 8, -1, 10 }; /* trig-strm */
-        cols[n++] = (OV_COL_LAYOUT) { 9, -1, 8 };  /* exec */
-        cols[n++] = (OV_COL_LAYOUT) { 10, 10, 5 }; /* DUTY */
-    }
-    cols[n++] = (OV_COL_LAYOUT) { 11, 8, 10 }; /* CPU% */
-    cols[n++] = (OV_COL_LAYOUT) { 12, 9, 10 }; /* LOOPCNT */
-    cols[n++] = (OV_COL_LAYOUT) { 13, 4, 5 };  /* MEM */
-    if (!compact)
-    {
-        cols[n++] = (OV_COL_LAYOUT) { 14, -1, 10 }; /* MISSED */
-    }
-    cols[n++] = (OV_COL_LAYOUT) { 15, -1, 200 }; /* MSG */
     return n;
 }
 

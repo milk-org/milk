@@ -57,12 +57,6 @@ int ov_input__handle_column_highlights(int key, OV_LAYOUT *lay, const OV_MODEL *
                                                         lay->compact_mode);
             lay->panel[OV_FOCUS_STREAMS].collapsed ^= (1U << logical_col);
         }
-        else if (lay->focus == OV_FOCUS_PROCS)
-        {
-            int logical_col = ov_get_logical_col_proc(lay->panel[OV_FOCUS_PROCS].highlight_col,
-                                                      lay->compact_mode);
-            lay->panel[OV_FOCUS_PROCS].collapsed ^= (1U << logical_col);
-        }
         return 1;
     }
 

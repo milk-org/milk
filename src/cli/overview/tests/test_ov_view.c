@@ -172,11 +172,10 @@ static void test_view_cache(void)
     free(m);
 }
 
-/* Column tables: unique ids, one column per sort key, <= OV_TABLE_MAX_COLS, the >/< cycle over visible
- * sortable columns only; and a few FPS cells */
-static void test_fps_table(void)
+/* Column tables: unique ids, one column per sort key, <= OV_TABLE_MAX_COLS, @hidden columns hidden in compact
+ * mode, and the >/< cycle over visible sortable columns only */
+static void check_table(const OV_TABLE *t, OV_LAYOUT *lay, int hidden)
 {
-    const OV_TABLE *t = &ov_fps_table;
     CHECK(t->n <= OV_TABLE_MAX_COLS);
     for (int a = 0; a < t->n; a++)
     {
@@ -186,19 +185,25 @@ static void test_fps_table(void)
             CHECK(t->cols[a].sort_key < 0 || t->cols[a].sort_key != t->cols[b].sort_key);
         }
     }
-    static OV_LAYOUT lay;
-    memset(&lay, 0, sizeof(lay));
-    lay.compact_mode = 1;
+    lay->compact_mode = 1;
     int vis[OV_TABLE_MAX_COLS];
-    int nv = ov_table_visible(t, &lay, vis);
-    CHECK(nv == t->n - 2); /* description and sparkline hidden */
+    CHECK(ov_table_visible(t, lay, vis) == t->n - hidden);
     int k = 0;
-    for (int i = 0; i < 20; i++) /* the cycle only lands on visible sortable columns */
+    for (int i = 0; i < 30; i++)
     {
-        k     = ov_table_next_sort(t, &lay, k, +1);
+        k     = ov_table_next_sort(t, lay, k, +1);
         int c = ov_table_find_key(t, k);
         CHECK(c >= 0 && !(t->cols[c].flags & OV_COLF_COMPACT_HIDE));
     }
+}
+
+/* FPS table: the >/< cycle wraps, and a few cells */
+static void test_fps_table(void)
+{
+    const OV_TABLE  *t = &ov_fps_table;
+    static OV_LAYOUT lay;
+    memset(&lay, 0, sizeof(lay));
+    check_table(t, &lay, 2); /* description and sparkline */
     int mem = t->cols[ov_table_find_id(t, "mem")].sort_key;
     int anc = t->cols[ov_table_find_id(t, "anc")].sort_key;
     CHECK(ov_table_next_sort(t, &lay, mem, +1) == anc); /* wraps from the last sortable column */
@@ -223,6 +228,41 @@ static void test_fps_table(void)
     free(m);
 }
 
+/* PROC table: hidden columns, every sort key has a column, and a few cells */
+static void test_procs_table(void)
+{
+    const OV_TABLE  *t = &ov_procs_table;
+    static OV_LAYOUT lay;
+    memset(&lay, 0, sizeof(lay));
+    check_table(t, &lay, 5); /* TRG, trig-strm, exec, DUTY, MISSED */
+    for (int k = 0; k < 11; k++)
+    {
+        CHECK(ov_table_find_key(t, k) >= 0);
+    }
+    CHECK(strcmp(ov_table_status_label(t, 2), "stat") == 0);
+    CHECK(strcmp(ov_table_status_label(t, 8), "CPU%") == 0);
+
+    OV_MODEL *m = calloc(1, sizeof(*m));
+    snprintf(m->procs[0].name, sizeof(m->procs[0].name), "pa");
+    m->procs[0].rt_priority = -1;
+    m->procs[0].cpu_used    = 12.5;
+    m->nb_procs             = 1;
+    OV_ROW_CTX rc;
+    memset(&rc, 0, sizeof(rc));
+    rc.lay             = &lay;
+    rc.m               = m;
+    const char *ids[]  = { "prio", "cpu", "duty", "exec" };
+    const char *want[] = { "-", "12.5%", "-", "-" };
+    for (int i = 0; i < 4; i++)
+    {
+        OV_COLCELL c;
+        memset(&c, 0, sizeof(c));
+        t->cols[ov_table_find_id(t, ids[i])].cell(&c, &rc);
+        CHECK(strcmp(c.text, want[i]) == 0);
+    }
+    free(m);
+}
+
 int main(void)
 {
     test_sort_does_not_touch_model();
@@ -230,6 +270,7 @@ int main(void)
     test_same_name_procs();
     test_view_cache();
     test_fps_table();
+    test_procs_table();
     if (failures == 0)
     {
         printf("all ok\n");

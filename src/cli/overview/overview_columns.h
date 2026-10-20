@@ -80,5 +80,6 @@ int             ov_table_row(const OV_TABLE *t, const OV_ROW_CTX *rc, ov_rgb_t r
 int             ov_table_col_at(ov_focus_t panel, int mc);
 
 extern const OV_TABLE ov_fps_table;
+extern const OV_TABLE ov_procs_table;
 
 #endif /* OVERVIEW_COLUMNS_H */
