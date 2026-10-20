@@ -41,7 +41,8 @@ if(BUILD_TESTING)
 
   add_executable(
     milkctrl-unit-ui ../overview/tests/test_ov_ui.c ../overview/overview_view.c ../overview/overview_keymap.c
-                     ../overview/input/overview_input_keys.c ../overview/render/overview_render_units.c)
+                     ../overview/input/overview_input_keys.c ../overview/render/overview_render_units.c
+                     ../overview/render/overview_render_bar.c)
   target_include_directories(
     milkctrl-unit-ui PRIVATE ${CMAKE_SOURCE_DIR}/src/cli/overview/render ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
                              ${CMAKE_SOURCE_DIR}/src/cli/overview/input)

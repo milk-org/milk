@@ -7,10 +7,7 @@
  */
 
 #include "overview_render_internal.h"
-
-
-/* All overview headers included via
- * overview_render_internal.h */
+#include <stdarg.h>
 
 /** ov_status_btn - record a @w-column button starting at the cursor; width 0 when it overflows @cols. */
 static void ov_status_btn(OV_RECT *b, int row, int w, int cols)
@@ -19,6 +16,128 @@ static void ov_status_btn(OV_RECT *b, int row, int w, int cols)
     b->col    = ov__cursor_col;
     b->height = 1;
     b->width  = (ov__cursor_col + w - 1 <= cols) ? w : 0;
+}
+
+/* One left-side segment of the status line: text in fg/bg, then an optional tail in tail_fg */
+#define SSEG_MAX 16
+typedef struct
+{
+    int      prio;
+    int      bold;
+    ov_rgb_t fg, bg, tail_fg;
+    char     text[96];
+    char     tail[24];
+} SSEG;
+
+/* Append a segment (printf-style text); empty texts are skipped */
+static SSEG *
+sseg(SSEG *sg, int *n, int prio, ov_rgb_t fg, ov_rgb_t bg, int bold, const char *fmt, ...)
+    __attribute__((format(printf, 7, 8)));
+static SSEG *
+sseg(SSEG *sg, int *n, int prio, ov_rgb_t fg, ov_rgb_t bg, int bold, const char *fmt, ...)
+{
+    static SSEG sink;
+    if (*n >= SSEG_MAX)
+    {
+        return &sink;
+    }
+    SSEG   *s = &sg[*n];
+    va_list ap;
+    *s = (SSEG) { .prio = prio, .bold = bold, .fg = fg, .bg = bg };
+    va_start(ap, fmt);
+    vsnprintf(s->text, sizeof(s->text), fmt, ap);
+    va_end(ap);
+    if (s->text[0] != '\0')
+    {
+        (*n)++;
+    }
+    return s;
+}
+
+static void sseg_draw(const SSEG *s)
+{
+    ov_theme_bg(s->bg);
+    ov_theme_fg(s->fg);
+    if (s->bold)
+    {
+        ov_buf_bold();
+    }
+    ov_buf_printf("%s", s->text);
+    if (s->tail[0] != '\0')
+    {
+        ov_theme_fg(s->tail_fg);
+        ov_buf_printf("%s", s->tail);
+    }
+    ov_buf_reset_attr();
+}
+
+/* Breadcrumb "  VIEW › Panel", the panel in its colour */
+static void status_crumb(SSEG *sg, int *n, const OV_LAYOUT *lay)
+{
+    const char *panel_name = "Graph";
+    ov_rgb_t    panel_fg   = OV_FG_DIM;
+    if (lay->view == OV_VIEW_LOOPS || (lay->view == OV_VIEW_DASHBOARD &&
+                                       lay->subtab == OV_SUB_LOOPS && lay->focus == OV_FOCUS_GRAPH))
+    {
+        panel_name = "Loops";
+        panel_fg   = OV_FG_LOOP;
+    }
+    else if (lay->focus == OV_FOCUS_STREAMS)
+    {
+        panel_name = "Streams";
+        panel_fg   = OV_FG_STREAM;
+    }
+    else if (lay->focus == OV_FOCUS_FPS)
+    {
+        panel_name = "FPS";
+        panel_fg   = OV_FG_FPS;
+    }
+    else if (lay->focus == OV_FOCUS_PROCS)
+    {
+        panel_name = "Procs";
+        panel_fg   = OV_FG_PROC;
+    }
+    SSEG *s =
+        sseg(sg, n, 3, OV_FG_DIM, OV_BG_HEADER, 0, "  %s \xe2\x80\xba ", ov_view_label(lay->view));
+    snprintf(s->tail, sizeof(s->tail), "%s", panel_name);
+    s->tail_fg = panel_fg;
+}
+
+/* Filter badges: the focused panel's filter (on: blinking, off: dim), then other panels' active filters */
+static void status_filters(SSEG *sg, int *n, OV_LAYOUT *lay)
+{
+    ov_focus_t  fpanel = ov_get_effective_filter_panel(lay);
+    const char *pname  = (fpanel == OV_FOCUS_STREAMS) ? "STRM "
+                         : (fpanel == OV_FOCUS_PROCS) ? "PROC "
+                         : (fpanel == OV_FOCUS_FPS)   ? "FPS "
+                                                      : "";
+    int         graph  = (fpanel == OV_FOCUS_GRAPH);
+    const char *fpat =
+        !graph ? ov_get_panel_filter_pattern(lay, fpanel) : ov_get_filter_pattern(lay);
+    int is_act = !graph ? ov_is_panel_filter_active(lay, fpanel) : ov_is_filter_active(lay);
+
+    if (is_act)
+    {
+        ov_rgb_t bg = ((lay->ctrl_blink % 4) < 2) ? OV_BADGE_WARN : OV_BADGE_DANGER;
+        sseg(sg, n, 1, ov_rgb_on(bg), bg, 1, " [%sFILTER ON: /%.*s/ ('f' toggle, ESC clear)] ",
+             pname, graph ? 12 : 10, fpat);
+    }
+    else if (fpat[0] != '\0')
+    {
+        sseg(sg, n, 2, OV_FG_WARN, OV_BG_PANEL, 1, " [%sFilter OFF: /%.*s/ ('f' enable)] ", pname,
+             graph ? 12 : 10, fpat);
+    }
+
+    static const ov_focus_t bg_panels[3] = { OV_FOCUS_STREAMS, OV_FOCUS_PROCS, OV_FOCUS_FPS };
+    static const char      *bg_names[3]  = { "STRM", "PROC", "FPS" };
+    for (int p = 0; p < 3; p++)
+    {
+        if (bg_panels[p] != fpanel && ov_is_panel_filter_active(lay, bg_panels[p]))
+        {
+            sseg(sg, n, 2, ov_rgb_on(OV_BADGE_WARN), OV_BADGE_WARN, 1, " [%s: /%.8s/] ",
+                 bg_names[p], ov_get_panel_filter_pattern(lay, bg_panels[p]));
+        }
+    }
 }
 
 /**
@@ -105,143 +224,20 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
         return;
     }
 
-    int n1 = 0;
+    /* Left side: segments by importance, cut to what leaves room for the theme/exit buttons and the clock */
+    SSEG sg[SSEG_MAX];
+    int  n = 0;
     if (lay->paused)
     {
-        ov_theme_fg(OV_FG_ERROR);
-        n1 = snprintf(NULL, 0, " [PAUSED] ");
-        ov_buf_printf(" [PAUSED] ");
-        ov_theme_fg(OV_FG_DIM);
+        sseg(sg, &n, 0, OV_FG_ERROR, OV_BG_HEADER, 0, " [PAUSED] ");
     }
     else
     {
-        n1 = snprintf(NULL, 0, " scan:%.0fms %.1fHz", m->scan_time_ms, rate_hz);
-        ov_buf_printf(" scan:%.0fms %.1fHz", m->scan_time_ms, rate_hz);
+        sseg(sg, &n, 0, OV_FG_DIM, OV_BG_HEADER, 0, " scan:%.0fms %.1fHz", m->scan_time_ms,
+             rate_hz);
     }
-    /* Breadcrumb trail (#11) */
-    {
-        const char *view_name  = ov_view_label(lay->view); /* the tab bar's names */
-        const char *panel_name = "";
-        ov_rgb_t    panel_fg   = OV_FG_DIM;
-        if (lay->view == OV_VIEW_LOOPS ||
-            (lay->view == OV_VIEW_DASHBOARD && lay->subtab == OV_SUB_LOOPS &&
-             lay->focus == OV_FOCUS_GRAPH))
-        {
-            panel_name = "Loops";
-            panel_fg   = OV_FG_LOOP;
-        }
-        else
-        {
-            switch (lay->focus)
-            {
-            case OV_FOCUS_STREAMS:
-                panel_name = "Streams";
-                panel_fg   = OV_FG_STREAM;
-                break;
-            case OV_FOCUS_FPS:
-                panel_name = "FPS";
-                panel_fg   = OV_FG_FPS;
-                break;
-            case OV_FOCUS_PROCS:
-                panel_name = "Procs";
-                panel_fg   = OV_FG_PROC;
-                break;
-            default:
-                panel_name = "Graph";
-                break;
-            }
-        }
-        ov_theme_fg(OV_FG_DIM);
-        ov_buf_printf("  %s", view_name);
-        ov_buf_printf(" \xe2\x80\xba ");
-        ov_theme_fg(panel_fg);
-        ov_buf_printf("%s", panel_name);
-        n1 += 2 + (int) strlen(view_name) + 3 + (int) strlen(panel_name); /* "  " + " › " */
-        ov_theme_fg(OV_FG_DIM);
-    }
-
-    ov_focus_t  fpanel = ov_get_effective_filter_panel(lay);
-    const char *pname  = (fpanel == OV_FOCUS_STREAMS) ? "STRM"
-                         : (fpanel == OV_FOCUS_PROCS) ? "PROC"
-                         : (fpanel == OV_FOCUS_FPS)   ? "FPS"
-                                                      : "FILTER";
-    const char *fpat   = (fpanel != OV_FOCUS_GRAPH) ? ov_get_panel_filter_pattern(lay, fpanel)
-                                                    : ov_get_filter_pattern(lay);
-    int         is_act = (fpanel != OV_FOCUS_GRAPH) ? ov_is_panel_filter_active(lay, fpanel)
-                                                    : ov_is_filter_active(lay);
-
-    if (is_act)
-    {
-        if ((lay->ctrl_blink % 4) < 2)
-        {
-            ov_theme_bg(OV_BADGE_WARN);
-            ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
-        }
-        else
-        {
-            ov_theme_bg(OV_BADGE_DANGER);
-            ov_theme_fg(ov_rgb_on(OV_BADGE_DANGER));
-        }
-        ov_buf_bold();
-        char fstatus[64];
-        if (fpanel != OV_FOCUS_GRAPH)
-        {
-            snprintf(fstatus, sizeof(fstatus), " [%s FILTER ON: /%.10s/ ('f' toggle, ESC clear)] ",
-                     pname, fpat);
-        }
-        else
-        {
-            snprintf(fstatus, sizeof(fstatus), " [FILTER ON: /%.12s/ ('f' toggle, ESC clear)] ",
-                     fpat);
-        }
-        ov_buf_printf("%s", fstatus);
-        ov_buf_reset_attr();
-        ov_theme_bg(OV_BG_HEADER);
-        ov_theme_fg(OV_FG_DIM);
-        n1 += (int) strlen(fstatus);
-    }
-    else if (fpat[0] != '\0')
-    {
-        ov_theme_bg(OV_BG_PANEL);
-        ov_theme_fg(OV_FG_WARN);
-        ov_buf_bold();
-        char fstatus[64];
-        if (fpanel != OV_FOCUS_GRAPH)
-        {
-            snprintf(fstatus, sizeof(fstatus), " [%s Filter OFF: /%.10s/ ('f' enable)] ", pname,
-                     fpat);
-        }
-        else
-        {
-            snprintf(fstatus, sizeof(fstatus), " [Filter OFF: /%.12s/ ('f' enable)] ", fpat);
-        }
-        ov_buf_printf("%s", fstatus);
-        ov_buf_reset_attr();
-        ov_theme_bg(OV_BG_HEADER);
-        ov_theme_fg(OV_FG_DIM);
-        n1 += (int) strlen(fstatus);
-    }
-
-    /* Also show alert badges for other panels with active filters */
-    ov_focus_t  bg_panels[3] = { OV_FOCUS_STREAMS, OV_FOCUS_PROCS, OV_FOCUS_FPS };
-    const char *bg_names[3]  = { "STRM", "PROC", "FPS" };
-    for (int p = 0; p < 3; p++)
-    {
-        if (bg_panels[p] != fpanel && ov_is_panel_filter_active(lay, bg_panels[p]))
-        {
-            const char *bg_pat = ov_get_panel_filter_pattern(lay, bg_panels[p]);
-            char        bg_status[64];
-            snprintf(bg_status, sizeof(bg_status), " [%s: /%.8s/] ", bg_names[p], bg_pat);
-            ov_buf_bold();
-            ov_theme_bg(OV_BADGE_WARN);
-            ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
-            ov_buf_printf("%s", bg_status);
-            ov_buf_reset_attr();
-            ov_theme_bg(OV_BG_HEADER);
-            ov_theme_fg(OV_FG_DIM);
-            n1 += (int) strlen(bg_status);
-        }
-    }
+    status_crumb(sg, &n, lay);
+    status_filters(sg, &n, lay);
 
     const char *exit_label = " [x] exit ";
     if (lay->help.show)
@@ -270,22 +266,17 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             help_hints = " 1/i Intro   ↑↓ Nav   →/← Expand   [/] Search   ESC Close";
         }
-        ov_buf_bold();
-        ov_theme_fg(OV_FG_TITLE);
-        ov_buf_printf("%s", help_hints);
-        ov_buf_reset_attr();
-        ov_theme_bg(OV_BG_HEADER);
-        ov_theme_fg(OV_FG_DIM);
-        n1 += (int) strlen(help_hints);
+        sseg(sg, &n, 1, OV_FG_TITLE, OV_BG_HEADER, 1, "%s", help_hints);
     }
     else
     {
-        char keys[96], line[256];
+        char keys[96];
         ov_key_footer(keys, sizeof(keys)); /* the keys marked for the status line in ov_keys */
-        snprintf(line, sizeof(line), "%s%s%s  %s  (Click headers/tabs)", ctrl_hint, sort_label,
-                 detail_label, keys);
-        ov_buf_printf("%s", line);
-        n1 += (int) strlen(line);
+        sseg(sg, &n, 1, OV_FG_DIM, OV_BG_HEADER, 0, "%s", ctrl_hint);
+        sseg(sg, &n, 2, OV_FG_DIM, OV_BG_HEADER, 0, "%s", sort_label);
+        sseg(sg, &n, 4, OV_FG_DIM, OV_BG_HEADER, 0, "%s", detail_label);
+        sseg(sg, &n, 3, OV_FG_DIM, OV_BG_HEADER, 0, "  %s", keys);
+        sseg(sg, &n, 6, OV_FG_DIM, OV_BG_HEADER, 0, "  (Click headers/tabs)");
     }
 
     time_t     now    = time(NULL);
@@ -297,8 +288,25 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     snprintf(th_label, sizeof(th_label), " [%s] ", ov_active_theme->id);
     int n_th = (int) strlen(th_label);
 
+    int         right = n_th + n_exit + n2 + 1;
+    OV_BAR_ITEM it[SSEG_MAX];
+    for (int i = 0; i < n; i++)
+    {
+        it[i] = (OV_BAR_ITEM) { ov_str_display_width(sg[i].text) + ov_str_display_width(sg[i].tail),
+                                0, sg[i].prio, 0 };
+    }
+    int used = ov_bar_layout(it, n, r.width - right);
+    for (int i = 0; i < n; i++)
+    {
+        if (it[i].shown)
+        {
+            sseg_draw(&sg[i]);
+        }
+    }
+
     /* Clock on the right edge */
-    int pad = r.width - n1 - n_th - n_exit - n2 - 1;
+    int pad = r.width - used - right;
+    ov_theme_bg(OV_BG_HEADER);
     if (pad > 0)
     {
         ov_buf_hline(' ', pad);

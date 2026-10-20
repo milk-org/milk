@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-/* CTest milkctrl_unit_ui: view table, layout helpers, key table and dispatch, unit formatting. */
+/* CTest milkctrl_unit_ui: view table, layout helpers, key table and dispatch, unit formatting, bar layout. */
 
 #include "overview_data_internal.h"
 #include "overview_render_internal.h"
@@ -149,6 +149,20 @@ static void test_fmt_dt(void)
     }
 }
 
+/* Bars: lower priority first, short form when the full one does not fit, ties in screen order */
+static void test_bar_layout(void)
+{
+    OV_BAR_ITEM it[4] = { { 10, 4, 1, 0 }, { 20, 0, 0, 0 }, { 8, 0, 2, 0 }, { 6, 3, 2, 0 } };
+    CHECK(ov_bar_layout(it, 4, 100) == 44);
+    CHECK(it[0].shown == 1 && it[1].shown == 1 && it[2].shown == 1 && it[3].shown == 1);
+    CHECK(ov_bar_layout(it, 4, 30) == 30);
+    CHECK(it[1].shown == 1 && it[0].shown == 1 && it[2].shown == 0 && it[3].shown == 0);
+    CHECK(ov_bar_layout(it, 4, 27) == 27);
+    CHECK(it[0].shown == 2 && it[2].shown == 0 && it[3].shown == 2);
+    CHECK(ov_bar_layout(it, 4, 19) == 18 && it[1].shown == 0 && it[0].shown == 1 &&
+          it[2].shown == 1);
+}
+
 
 int main(void)
 {
@@ -157,6 +171,7 @@ int main(void)
     test_keymap();
     test_key_dispatch();
     test_fmt_dt();
+    test_bar_layout();
     if (failures == 0)
     {
         printf("all ok\n");

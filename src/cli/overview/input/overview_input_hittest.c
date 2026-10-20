@@ -37,19 +37,13 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
 
     if (mr == lay->r_header.row)
     {
-        int commit_w    = (int) strlen(MILK_GIT_COMMIT) + 3;
-        int shmdir_w    = (int) strlen(ov_get_shmdir()) + 8;
-        int badge_start = lay->r_header.col + 18 + commit_w + shmdir_w;
-        int badge_w     = lay->ctrl_mode ? 13 : 15;
-        if (mc >= badge_start && mc < badge_start + badge_w)
+        if (lay->r_ctrl_badge.width > 0 && INSIDE(lay->r_ctrl_badge, mr, mc))
         {
             snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
                      "Control Mode: Toggle write access & actions (key: c)");
             return;
         }
-        int hover_badge_start = badge_start + badge_w + 1;
-        int hover_badge_w     = lay->mouse_hover ? 15 : 16;
-        if (mc >= hover_badge_start && mc < hover_badge_start + hover_badge_w)
+        if (lay->r_hover_badge.width > 0 && INSIDE(lay->r_hover_badge, mr, mc))
         {
             snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
                      "Mouse Hover: Toggle hover tooltips (key: m)");

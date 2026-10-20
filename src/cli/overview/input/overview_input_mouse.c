@@ -71,23 +71,15 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         /* Check for header tab clicks */
         if (mr == lay->r_header.row && mc >= 1)
         {
-            /* Check for CTRL mode toggle click */
-            int commit_w    = (int) strlen(MILK_GIT_COMMIT) + 3;
-            int shmdir_w    = (int) strlen(ov_get_shmdir()) + 8;
-            int badge_start = lay->r_header.col + 18 + commit_w + shmdir_w;
-            int badge_w     = lay->ctrl_mode ? 13 : 15;
-            if (mc >= badge_start && mc < badge_start + badge_w)
+            /* Badges where the header drew them */
+            if (lay->r_ctrl_badge.width > 0 && INSIDE(lay->r_ctrl_badge, mr, mc))
             {
                 lay->ctrl_mode = !lay->ctrl_mode;
                 ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Control mode %s",
                                lay->ctrl_mode ? "ON" : "OFF");
                 return 1;
             }
-
-            /* Check for HOVER badge click */
-            int hover_badge_start = badge_start + badge_w + 1;
-            int hover_badge_w     = lay->mouse_hover ? 15 : 16;
-            if (mc >= hover_badge_start && mc < hover_badge_start + hover_badge_w)
+            if (lay->r_hover_badge.width > 0 && INSIDE(lay->r_hover_badge, mr, mc))
             {
                 lay->mouse_hover = !lay->mouse_hover;
                 ov_set_mouse_hover(lay->mouse_hover);

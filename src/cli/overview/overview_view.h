@@ -29,7 +29,9 @@ extern const OV_VIEW_DESC ov_views[OV_VIEW_COUNT];
 #define OV_TABBAR_HELP (-2)
 
 int ov_view_cycle(int v, int step);
-int ov_tabbar_hit(int mc); /* render/overview_render_tabs.c */
+#define OV_TABBAR_HELP_W 11 /* " [h: HELP] " */
+int ov_tabbar_hit(int mc);  /* render/overview_render_tabs.c */
+int ov_tabbar_level(int width);
 int ov_subtab_hit(int mc); /* render/overview_render_subtabs.c */
 int ov_view_by_fkey(int fkey);
 int ov_view_by_name(const char *name);

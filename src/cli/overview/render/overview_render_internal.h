@@ -316,6 +316,17 @@ typedef struct
 } OV_ROW_HEALTH;
 
 void ov_graph_row_health(const OV_MODEL *m, const SG_TREE_NODE *rn, OV_ROW_HEALTH *h);
+
+/* One item of a bar laid out by ov_bar_layout */
+typedef struct
+{
+    int w;       /* columns of the full form */
+    int w_short; /* columns of the short form, 0 = none */
+    int prio;    /* 0 = most important */
+    int shown;   /* result: 0 hidden, 1 full form, 2 short form */
+} OV_BAR_ITEM;
+
+int  ov_bar_layout(OV_BAR_ITEM *it, int n, int width);
 void ov_graph_stalls(const OV_MODEL     *m,
                      const SG_TREE_NODE *rows,
                      int                 n,
