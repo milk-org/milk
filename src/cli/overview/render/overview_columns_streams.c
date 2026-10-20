@@ -124,7 +124,7 @@ static void cell_inode(OV_COLCELL *c, const OV_ROW_CTX *rc)
     snprintf(c->text, sizeof(c->text), "%" PRIu64, (uint64_t) STRM(rc)->inode);
 }
 
-/** cell_owner - creator process. */
+/** cell_owner - owner process. */
 static void cell_owner(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
     if (STRM(rc)->pending || STRM(rc)->err)
@@ -134,14 +134,26 @@ static void cell_owner(OV_COLCELL *c, const OV_ROW_CTX *rc)
     ov_cell_pid(c, rc, STRM(rc)->ownerPID);
 }
 
-/** cell_count - update counter, active while it moves. */
+/** cell_cpid - creator process. */
+static void cell_cpid(OV_COLCELL *c, const OV_ROW_CTX *rc)
+{
+    if (STRM(rc)->pending || STRM(rc)->err)
+    {
+        return; /* not mapped (yet) */
+    }
+    ov_cell_pid(c, rc, STRM(rc)->creatorPID);
+}
+
+/** cell_count - update counter, active while it moves; its background flashes for 1 s after a change. */
 static void cell_count(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
     if (STRM(rc)->pending || STRM(rc)->err)
     {
         return; /* not mapped (yet) */
     }
-    c->fg = STRM(rc)->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM;
+    c->fg     = STRM(rc)->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM;
+    c->has_bg = STRM(rc)->cnt_flash;
+    c->bg     = ov_rgb_lerp(OV_BG_PANEL, OV_FG_ACTIVE, 0.3f);
     ov_fmt_si(c->text, sizeof(c->text), (double) STRM(rc)->cnt0);
 }
 
@@ -230,7 +242,8 @@ static const OV_COLUMN stream_cols[] = {
     { "hz", "Hz", NULL, 6, 1, OV_COLF_RIGHT, 3, NULL, cell_hz },
     { "mbps", "B/s", NULL, 6, 4, OV_COLF_RIGHT, 4, NULL, cell_mbps },
     { "inode", "INODE", "inode", 10, 9, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, 5, NULL, cell_inode },
-    { "owner", "OWNER", NULL, 7, 6, OV_COLF_RIGHT, -1, NULL, cell_owner },
+    { "owner", "OWNER", "owner", 7, 6, OV_COLF_RIGHT, 9, NULL, cell_owner },
+    { "cpid", "CPID", "creator", 7, 7, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, 8, NULL, cell_cpid },
     { "count", "COUNT", "count", 6, 8, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, 6, NULL, cell_count },
     { "sems", "SEMS", NULL, 10, 10, OV_COLF_COMPACT_HIDE, -1, NULL, cell_sems },
     { "wpid", "WPID", NULL, 7, 2, OV_COLF_RIGHT, -1, NULL, cell_wpid },

@@ -249,9 +249,30 @@ static void test_stream_entries(void)
     CHECK(rmdir(dir) == 0);
 }
 
+/* Stream rates: per-scan rate, 1 s block average (the per-scan rate until the first block), 1 s flash */
+static void test_rate(void)
+{
+    OV_RATE r;
+    double  inst, avg;
+    int     chg, flash;
+    memset(&r, 0, sizeof(r));
+    ov_rate_step(&r, 100, 0.0, &inst, &avg, &chg, &flash); /* first sight: no rate */
+    CHECK(inst == 0.0 && avg == 0.0 && !chg && !flash);
+    ov_rate_step(&r, 150, 0.5, &inst, &avg, &chg, &flash); /* 100 Hz, half a block */
+    CHECK(inst == 100.0 && avg == 100.0 && chg && flash);
+    ov_rate_step(&r, 150, 0.5, &inst, &avg, &chg,
+                 &flash); /* stalled half: block of 1 s averages 50 Hz */
+    CHECK(inst == 0.0 && avg == 50.0 && !chg && flash);
+    ov_rate_step(&r, 150, 0.6, &inst, &avg, &chg, &flash); /* 1.1 s without change: flash over */
+    CHECK(avg == 50.0 && !flash);
+    ov_rate_step(&r, 250, 0.4, &inst, &avg, &chg, &flash); /* next block: 100 counts in 1.0 s */
+    CHECK(inst == 250.0 && avg == 100.0 && chg && flash);
+}
+
 int main(void)
 {
     test_edge_evidence();
+    test_rate();
     test_stream_entries();
     test_hop_pool();
     test_adjacency();

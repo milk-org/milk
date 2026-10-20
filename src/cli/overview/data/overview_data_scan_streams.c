@@ -53,31 +53,52 @@ static int scache_map_ro(IMAGE *img, const char *path)
 }
 
 /**
- * scache_rate_update - compute Hz and sparkline for
- *     a stream using cache's prev_cnt0.
- * @s:   the stream entry (already filled)
- * @ci:  cache index
+ * ov_rate_step - advance rate @r to counter @cnt after @dt s: rate since the previous step (@inst), averaged over
+ * blocks of at least 1 s (@avg; @inst until the first block completes), @changed this step, @flash within 1 s.
  */
+void ov_rate_step(OV_RATE *r,
+                  uint64_t cnt,
+                  double   dt,
+                  double  *inst,
+                  double  *avg,
+                  int     *changed,
+                  int     *flash)
+{
+    *changed = 0;
+    *inst    = 0.0;
+    if (r->has_prev && dt > 0.01)
+    {
+        uint64_t dc  = cnt - r->prev;
+        *inst        = (double) dc / dt;
+        *changed     = (dc > 0);
+        r->since_chg = (dc > 0) ? 0.0 : r->since_chg + dt;
+        r->blk_dt += dt;
+        if (r->blk_dt >= 1.0)
+        {
+            r->avg       = (double) (cnt - r->blk_start) / r->blk_dt;
+            r->blk_start = cnt;
+            r->blk_dt    = 0.0;
+        }
+    }
+    else if (!r->has_prev)
+    {
+        r->blk_start = cnt;
+        r->avg       = -1;
+        r->since_chg = 1e9;
+    }
+    r->prev     = cnt;
+    r->has_prev = 1;
+    *avg        = (r->avg >= 0) ? r->avg : *inst;
+    *flash      = (r->since_chg < 1.0);
+}
+
+/** scache_rate_update - rates of stream @s from cache entry @ci (all streams, so a sort by Hz is right). */
 static void scache_rate_update(OV_STREAM *s, int ci)
 {
     ov_stream_cache_t *ce = &s_scache[ci];
-
-    s->cnt_active = 0;
-    if (ce->has_prev && s_scan_dt_sec > 0.01)
-    {
-        uint64_t dc  = s->cnt0 - ce->prev_cnt0;
-        s->update_hz = (double) dc / s_scan_dt_sec;
-
-        if (dc > 0)
-        {
-            s->cnt_active = 1;
-        }
-    }
-
-    /* Store current cnt0 for next tick */
-    ce->prev_cnt0 = s->cnt0;
-    ce->has_prev  = 1;
-    s->is_new     = ce->is_new;
+    ov_rate_step(&ce->rate, s->cnt0, s_scan_dt_sec, &s->update_hz_inst, &s->update_hz,
+                 &s->cnt_active, &s->cnt_flash);
+    s->is_new = ce->is_new;
     if (ce->is_new > 0)
     {
         ce->is_new--;

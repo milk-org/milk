@@ -269,7 +269,7 @@ static void test_streams_table(void)
     const OV_TABLE  *t = &ov_streams_table;
     static OV_LAYOUT lay;
     memset(&lay, 0, sizeof(lay));
-    check_table(t, &lay, 3); /* INODE, COUNT, SEMS */
+    check_table(t, &lay, 4); /* INODE, CPID, COUNT, SEMS */
 
     OV_MODEL  *m = calloc(1, sizeof(*m));
     OV_STREAM *s = &m->streams[0];

@@ -217,8 +217,25 @@ static int sort_stream_by_ancestry(const void *a, const void *b)
     return sort_stream_by_name(a, b);
 }
 
-/** Number of sortable stream columns. */
-#define OV_STREAM_SORT_NCOL 7
+/** cmp_pid - PID order in the sort direction, unset (0) last. */
+static int cmp_pid(pid_t pa, pid_t pb)
+{
+    if ((pa > 0) != (pb > 0))
+    {
+        return (pa > 0) ? -1 : 1;
+    }
+    return ov_sort_dir_mul * ((pa > pb) - (pa < pb));
+}
+
+static int sort_stream_by_creator(const void *a, const void *b)
+{
+    return cmp_pid(((const OV_STREAM *) a)->creatorPID, ((const OV_STREAM *) b)->creatorPID);
+}
+
+static int sort_stream_by_owner(const void *a, const void *b)
+{
+    return cmp_pid(((const OV_STREAM *) a)->ownerPID, ((const OV_STREAM *) b)->ownerPID);
+}
 
 /** tie_stream - name order (processes: then PID), the tie-break of every key. */
 static int tie_stream(const void *a, const void *b)
@@ -259,6 +276,12 @@ void ov_sort_streams(const OV_MODEL *model, int key, int dir, int *order)
         break;
     case 7:
         cmp = sort_stream_by_ancestry;
+        break;
+    case 8:
+        cmp = sort_stream_by_creator;
+        break;
+    case 9:
+        cmp = sort_stream_by_owner;
         break;
     default:
         cmp = sort_stream_by_name;

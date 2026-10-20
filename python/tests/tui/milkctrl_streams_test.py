@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 
 import pytest
 
@@ -31,4 +32,20 @@ def test_symlink_shows_its_target(milkctrl, entities):
     m.wait_for(r"linkst→realst")
     m.wait_for(r"2 stm")
     assert "0 edg" in m.header()
+    assert m.quit() == 0
+
+
+def test_owner_and_creator_columns_sort(milkctrl, entities):
+    """OWNER and the new CPID column are sortable: the > cycle reaches both."""
+    entities.make_stream("cpidst")
+    m = milkctrl()
+    m.keys("F3")
+    m.wait_for(r"CPID")
+    seen = set()
+    for _ in range(12):
+        m.keys(">")
+        time.sleep(0.2)  # the frame for this key
+        hdr = next(x for x in m.lines() if "NAME" in x)
+        seen |= {c for c in ("OWNER", "CPID") if c + "▲" in hdr}
+    assert seen == {"OWNER", "CPID"}
     assert m.quit() == 0

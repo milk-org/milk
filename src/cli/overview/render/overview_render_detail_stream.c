@@ -314,8 +314,11 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
         H_ov_theme_fg(OV_FG_DIM);
         H_ov_buf_printf("  Hz: ");
         H_ov_theme_fg(s->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM);
-        int n = snprintf(NULL, 0, " cnt0: %" PRIu64 "  Hz: %.1f", (uint64_t) s->cnt0, s->update_hz);
+        int n = snprintf(NULL, 0, " cnt0: %" PRIu64 "  Hz: %.1f (now %.1f)", (uint64_t) s->cnt0,
+                         s->update_hz, s->update_hz_inst);
         H_ov_buf_printf("%.1f", s->update_hz);
+        H_ov_theme_fg(OV_FG_DIM);
+        H_ov_buf_printf(" (now %.1f)", s->update_hz_inst);
         H_render_pad_spaces(n, r.width);
         if (!skip_draw)
         {

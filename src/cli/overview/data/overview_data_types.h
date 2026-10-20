@@ -177,8 +177,10 @@ typedef struct
     /* counters & timing */
     uint64_t cnt0;
     uint64_t cnt0_prev;
-    double   update_hz;
-    int      cnt_active; /**< cnt0 changed since last scan */
+    double   update_hz;      /**< cnt0 rate averaged over the last block of at least 1 s */
+    double   update_hz_inst; /**< cnt0 rate since the previous scan */
+    int      cnt_active;     /**< cnt0 changed since last scan */
+    int      cnt_flash;      /**< cnt0 changed within the last second (COUNT highlight) */
 
     /* ownership */
     pid_t creatorPID;

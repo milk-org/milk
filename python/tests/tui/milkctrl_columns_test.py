@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import time
 
 import pytest
 
@@ -70,9 +71,14 @@ def test_narrow_columns_scroll_into_view(milkctrl, entities):
     m.wait_for(r"scrolls")
     hdr = next(x for x in m.lines() if "NAME" in x)
     assert "RPID" not in hdr and "›" in hdr
-    # A, NAME, then the scrollable columns in table order up to RPID
-    for _ in range(11):
+    # A, NAME, then the scrollable columns in table order up to RPID, the last one
+    for _ in range(20):
         m.keys("S-Right")
+        time.sleep(
+            0.2
+        )  # let the frame land before reading it: one press too many wraps around
+        if "RPID" in next(x for x in m.lines() if "NAME" in x):
+            break
     m.wait_for(r"‹A\s+NAME.*RPID")
     m.keys("S-Right")  # wraps to the first column, unscrolled
     m.wait_for(r"║ A\s+NAME.*›")

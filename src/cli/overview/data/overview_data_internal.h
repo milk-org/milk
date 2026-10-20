@@ -41,19 +41,37 @@ typedef struct
     ino_t  ino;
 } ov_shm_map_t;
 
+/* Rate of a counter: per step, and averaged over blocks of at least 1 s */
+typedef struct
+{
+    uint64_t prev; /* counter at the previous step */
+    int      has_prev;
+    uint64_t blk_start; /* counter at the start of the current block */
+    double   blk_dt;    /* seconds into the current block */
+    double   avg;       /* rate over the last completed block, -1 before the first */
+    double   since_chg; /* seconds since the counter last changed */
+} OV_RATE;
+
+void ov_rate_step(OV_RATE *r,
+                  uint64_t cnt,
+                  double   dt,
+                  double  *inst,
+                  double  *avg,
+                  int     *changed,
+                  int     *flash);
+
 // Cache structures
 typedef struct
 {
-    char     name[STRINGMAXLEN_IMAGE_NAME];
-    ino_t    inode;
-    IMAGE    img;
-    int      in_use;
-    uint64_t prev_cnt0;
-    int      has_prev;
-    int      is_new;       /* scans left to highlight a new stream */
-    int      mapped;       /* img is mapped (else listed only, waiting for OV_MAP_PER_SCAN) */
-    char     size_str[32]; /* "WxH": the geometry of a mapping does not change */
-    int      err; /* ov_stream_err_t of the last mapping attempt; retried when the file changes */
+    char    name[STRINGMAXLEN_IMAGE_NAME];
+    ino_t   inode;
+    IMAGE   img;
+    int     in_use;
+    OV_RATE rate;
+    int     is_new;       /* scans left to highlight a new stream */
+    int     mapped;       /* img is mapped (else listed only, waiting for OV_MAP_PER_SCAN) */
+    char    size_str[32]; /* "WxH": the geometry of a mapping does not change */
+    int     err; /* ov_stream_err_t of the last mapping attempt; retried when the file changes */
     struct timespec err_mtime; /* the file's mtime when it failed */
     int             is_link, alias;
     char            link_target[STRINGMAXLEN_IMAGE_NAME];
