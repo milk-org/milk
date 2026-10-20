@@ -332,6 +332,25 @@ static void test_view_descs(void)
     CHECK(lay.view == OV_VIEW_LOOPS && lay.focus == OV_FOCUS_GRAPH);
 }
 
+/* Loop list height: one helper replaces the four copies of the DASH formula; F7 uses its whole pane */
+static void test_loop_list_rows(void)
+{
+    static OV_LAYOUT lay;
+    memset(&lay, 0, sizeof(lay));
+    for (int h = 0; h < 60; h++)
+    {
+        lay.r_graph.height = h + 3;
+        lay.view           = OV_VIEW_DASHBOARD;
+        lay.subtab         = OV_SUB_LOOPS;
+        CHECK(ov_loop_list_rows(&lay) == ((h >= 6) ? ((h > 8) ? (h / 2) : 3) : h));
+        CHECK(ov_subtab_page(&lay) == ov_loop_list_rows(&lay));
+        lay.subtab = OV_SUB_CONN;
+        CHECK(ov_subtab_page(&lay) == h);
+        lay.view = OV_VIEW_LOOPS;
+        CHECK(ov_loop_list_rows(&lay) == ((h < 1) ? 1 : h));
+    }
+}
+
 int main(void)
 {
     test_sort_does_not_touch_model();
@@ -342,6 +361,7 @@ int main(void)
     test_procs_table();
     test_streams_table();
     test_view_descs();
+    test_loop_list_rows();
     if (failures == 0)
     {
         printf("all ok\n");

@@ -32,16 +32,8 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
         body_h = 4;
     }
 
-    /* Left pane: Loop table (40% width). Right pane: Detail circuit (60% width) */
-    int lw = (int) (W * 0.42f);
-    if (lw < 35)
-    {
-        lw = 35;
-    }
-    if (lw > W - 25)
-    {
-        lw = W - 25;
-    }
+    /* Left pane: loop list. Right pane: circuit of the selected loop */
+    int lw = ov_loops_list_width(lay);
     int rw = W - lw;
 
     /* Draw left panel frame */
@@ -82,10 +74,11 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
     render_pad_spaces(lhlen, lw);
     lrow++;
 
-    int max_lrows = body_h - 3;
+    int max_lrows = ov_loop_list_rows(lay);
     int rendered  = 0;
+    int first     = (lay->sub[OV_SUB_LOOPS].scroll > 0) ? lay->sub[OV_SUB_LOOPS].scroll : 0;
 
-    for (int i = 0; i < m->nb_loops && rendered < max_lrows; i++)
+    for (int i = first; i < m->nb_loops && rendered < max_lrows; i++)
     {
         const OV_LOOP *lp     = &m->loops[i];
         int            is_sel = (i == sel_idx);

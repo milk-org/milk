@@ -200,4 +200,30 @@ void ov_layout_compute(OV_LAYOUT *lay);
 int  ov_view_has_panel(ov_view_t v, ov_focus_t f);
 void ov_set_view(OV_LAYOUT *lay, ov_view_t v);
 
+/** ov_loop_list_rows - rows of the loop list: all of F7's left pane, the top half of the DASH sub-tab. */
+static inline int ov_loop_list_rows(const OV_LAYOUT *lay)
+{
+    int h = lay->r_graph.height - 3;
+    if (lay->view == OV_VIEW_LOOPS)
+    {
+        return (h < 1) ? 1 : h;
+    }
+    return (h >= 6) ? ((h > 8) ? h / 2 : 3) : h;
+}
+
+/** ov_loops_list_width - width of F7's left pane (the loop list); the circuit pane takes the rest. */
+static inline int ov_loops_list_width(const OV_LAYOUT *lay)
+{
+    int w = (int) ((float) lay->term_cols * 0.42f);
+    w     = (w < 35) ? 35 : w;
+    return (w > lay->term_cols - 25) ? lay->term_cols - 25 : w;
+}
+
+/** ov_subtab_page - rows a page key moves in the current sub-tab's list. */
+static inline int ov_subtab_page(const OV_LAYOUT *lay)
+{
+    return (lay->view == OV_VIEW_LOOPS || lay->subtab == OV_SUB_LOOPS) ? ov_loop_list_rows(lay)
+                                                                       : lay->r_graph.height - 3;
+}
+
 #endif /* OVERVIEW_LAYOUT_H */

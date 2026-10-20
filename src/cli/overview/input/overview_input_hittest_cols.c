@@ -10,31 +10,6 @@
 #include "overview_input_internal.h"
 
 /**
- * ov_input_hit_panel_tab - detect which tab label was clicked.
- * @mc:        Mouse column (1-based).
- * @panel_col: Panel left column.
- * @tabs:      Array of tab label strings.
- * @num_tabs:  Number of tabs in array.
- *
- * Return: Tab index [0..num_tabs-1], or -1 if no tab hit.
- */
-int ov_input_hit_panel_tab(int mc, int panel_col, const char **tabs, int num_tabs)
-{
-    int cur = panel_col + 2;
-    for (int ii = 0; ii < num_tabs; ii++)
-    {
-        /* Tab text is " LABEL ", so width = strlen + 2 */
-        int tw = (int) strlen(tabs[ii]) + 2;
-        if (mc >= cur && mc < cur + tw)
-        {
-            return ii;
-        }
-        cur += tw + 1; /* +1 for gap between tabs */
-    }
-    return -1;
-}
-
-/**
  * ov_input__table_header_click - sort list panel @panel by the column clicked at screen column @mc
  * (the same column again flips the direction). Return: 1 when a sortable column was hit.
  */
@@ -54,36 +29,6 @@ int ov_input__table_header_click(OV_LAYOUT *lay, ov_focus_t panel, int mc)
     lay->sort_pending = 1;
     ov_scan_force_update();
     return 1;
-}
-
-/**
- * ov_input__fps_header_click - handle mouse clicks on FPS table column headers.
- * @lay: Pointer to layout structure.
- * @mc:  Mouse column coordinate.
- */
-void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
-{
-    ov_input__table_header_click(lay, OV_FOCUS_FPS, mc);
-}
-
-/**
- * ov_input__streams_header_click - handle mouse clicks on streams table column headers.
- * @lay: Pointer to layout structure.
- * @mc:  Mouse column coordinate.
- */
-void ov_input__streams_header_click(OV_LAYOUT *lay, int mc)
-{
-    ov_input__table_header_click(lay, OV_FOCUS_STREAMS, mc);
-}
-
-/**
- * ov_input__procs_header_click - handle mouse clicks on process table column headers.
- * @lay: Pointer to layout structure.
- * @mc:  Mouse column coordinate.
- */
-void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
-{
-    ov_input__table_header_click(lay, OV_FOCUS_PROCS, mc);
 }
 
 /**

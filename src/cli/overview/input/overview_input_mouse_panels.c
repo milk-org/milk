@@ -10,44 +10,23 @@
 #include "overview_input_internal.h"
 #include <string.h>
 
-/** utf8_cols - number of code points in @s (tree glyphs and names are one column each). */
-static int utf8_cols(const char *s)
-{
-    int n = 0;
-    for (int i = 0; s[i] != '\0'; i += utf8_char_length((unsigned char) s[i]))
-    {
-        n++;
-    }
-    return n;
-}
-
 /**
- * graph_row_click - CONNECTIONS click on @body_row: move the graph cursor (the root stays pinned).
- * A double click selects the row's stream in DASH, or its reader process when clicked right of the name.
+ * list_click - click in list panel @f drawn in @r: the header rows sort, a row moves the cursor and a
+ * double click opens DETAILS on it.
  */
-static void graph_row_click(OV_LAYOUT *lay, const OV_MODEL *m, int body_row, int mc, int is_dbl)
+static void
+list_click(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t f, OV_RECT r, int mr, int mc, int is_dbl)
 {
-    int                 n;
-    const SG_TREE_NODE *rows = ov_graph_rows(lay, m, &n);
-    int                 idx  = lay->sub[OV_SUB_CONN].scroll + body_row;
-    if (idx < 0 || idx >= n)
+    int body_row = mr - r.row - 3;
+    lay->focus   = f;
+    if (body_row == -1 || body_row == -2)
     {
-        return;
+        ov_input__table_header_click(lay, f, mc);
     }
-    lay->sub[OV_SUB_CONN].sel = idx;
-    if (!is_dbl)
+    else if (body_row >= 0 && ov_sel_row(lay, m, f, lay->panel[f].scroll + body_row) >= 0 && is_dbl)
     {
-        return;
+        lay->subtab = OV_SUB_DETAILS; /* rows past the list are ignored */
     }
-    const SG_TREE_NODE *rn = &rows[idx];
-    int name_end = utf8_cols(rn->tree_prefix) + (rn->is_target ? 2 : 0) + utf8_cols(rn->name);
-    int pi       = sg_tree_reader_proc(m, rn);
-    int on_proc  = (pi >= 0 && mc - lay->r_graph.col - 1 > name_end + 1);
-    int si       = rn->stream_idx;
-    lay->freeze  = 0;
-    ov_set_view(lay, OV_VIEW_DASHBOARD);
-    lay->focus = on_proc ? OV_FOCUS_PROCS : OV_FOCUS_STREAMS;
-    ov_sel_model(lay, m, lay->focus, on_proc ? pi : si);
 }
 
 /**
@@ -102,245 +81,25 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
         }
         else if (INSIDE(lay->r_fps, mr, mc))
         {
-            lay->focus           = OV_FOCUS_FPS;
             lay->fps_param_focus = 0;
-            int body_row         = mr - lay->r_fps.row - 3;
-            if (body_row == -1 || body_row == -2)
-            {
-                ov_input__fps_header_click(lay, mc);
-            }
-            else if (body_row >= 0)
-            {
-                int idx = lay->panel[OV_FOCUS_FPS].scroll + body_row;
-                if (ov_sel_row(lay, m, OV_FOCUS_FPS, idx) >= 0) /* rows past the list are ignored */
-                {
-                    if (is_dbl)
-                    {
-                        lay->subtab = OV_SUB_DETAILS;
-                    }
-                }
-            }
+            list_click(lay, m, OV_FOCUS_FPS, lay->r_fps, mr, mc, is_dbl);
         }
     }
-    else if (lay->view == OV_VIEW_STREAMS && INSIDE(lay->r_streams, mr, mc))
+    else
     {
-        lay->focus   = OV_FOCUS_STREAMS;
-        int body_row = mr - lay->r_streams.row - 3;
-        if (body_row == -1 || body_row == -2)
+        const OV_RECT *lists[OV_NB_LIST_PANELS] = { &lay->r_streams, &lay->r_procs, &lay->r_fps };
+        int            hit                      = 0;
+        for (int f = 0; f < OV_NB_LIST_PANELS && !hit; f++)
         {
-            ov_input__streams_header_click(lay, mc);
-        }
-        else if (body_row >= 0)
-        {
-            int idx = lay->panel[OV_FOCUS_STREAMS].scroll + body_row;
-            if (ov_sel_row(lay, m, OV_FOCUS_STREAMS, idx) >= 0) /* rows past the list are ignored */
+            if (ov_view_has_panel(lay->view, (ov_focus_t) f) && INSIDE(*lists[f], mr, mc))
             {
-                if (is_dbl)
-                {
-                    lay->subtab = OV_SUB_DETAILS;
-                }
+                list_click(lay, m, (ov_focus_t) f, *lists[f], mr, mc, is_dbl);
+                hit = 1;
             }
         }
-    }
-    else if (lay->view == OV_VIEW_PROCS && INSIDE(lay->r_procs, mr, mc))
-    {
-        lay->focus   = OV_FOCUS_PROCS;
-        int body_row = mr - lay->r_procs.row - 3;
-        if (body_row == -1 || body_row == -2)
+        if (!hit && ov_view_has_panel(lay->view, OV_FOCUS_GRAPH) && INSIDE(lay->r_graph, mr, mc))
         {
-            ov_input__procs_header_click(lay, mc);
-        }
-        else if (body_row >= 0)
-        {
-            int idx = lay->panel[OV_FOCUS_PROCS].scroll + body_row;
-            if (ov_sel_row(lay, m, OV_FOCUS_PROCS, idx) >= 0) /* rows past the list are ignored */
-            {
-                if (is_dbl)
-                {
-                    lay->subtab = OV_SUB_DETAILS;
-                }
-            }
-        }
-    }
-    else if ((lay->view == OV_VIEW_GRAPH || lay->view == OV_VIEW_LOOPS) &&
-             INSIDE(lay->r_graph, mr, mc))
-    {
-        lay->focus = OV_FOCUS_GRAPH;
-
-        /* Tab header click */
-        if (lay->view == OV_VIEW_GRAPH && mr == lay->r_graph.row)
-        {
-            const char *dtabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-            int         ti      = ov_input_hit_panel_tab(mc, lay->r_graph.col, dtabs, 4);
-            if (ti >= 0)
-            {
-                lay->subtab = (ov_subtab_t) ti;
-                ov_scan_force_update();
-            }
-        }
-        else
-        {
-            int body_row = mr - lay->r_graph.row - 2;
-            if (body_row >= 0)
-            {
-                if (lay->subtab == OV_SUB_CONN)
-                {
-                    graph_row_click(lay, m, body_row, mc, is_dbl);
-                }
-            }
-        }
-    }
-    else if (lay->view == OV_VIEW_DASHBOARD)
-    {
-        /* Dashboard: four non-overlapping rects */
-        if (INSIDE(lay->r_streams, mr, mc))
-        {
-            lay->focus   = OV_FOCUS_STREAMS;
-            int body_row = mr - lay->r_streams.row - 3;
-            if (body_row == -1 || body_row == -2)
-            {
-                ov_input__streams_header_click(lay, mc);
-            }
-            else if (body_row >= 0)
-            {
-                int idx = lay->panel[OV_FOCUS_STREAMS].scroll + body_row;
-                if (ov_sel_row(lay, m, OV_FOCUS_STREAMS, idx) >=
-                    0) /* rows past the list are ignored */
-                {
-                    if (is_dbl)
-                    {
-                        lay->subtab = OV_SUB_DETAILS;
-                    }
-                }
-            }
-        }
-        else if (INSIDE(lay->r_procs, mr, mc))
-        {
-            lay->focus   = OV_FOCUS_PROCS;
-            int body_row = mr - lay->r_procs.row - 3;
-            if (body_row == -1 || body_row == -2)
-            {
-                ov_input__procs_header_click(lay, mc);
-            }
-            else if (body_row >= 0)
-            {
-                int idx = lay->panel[OV_FOCUS_PROCS].scroll + body_row;
-                if (ov_sel_row(lay, m, OV_FOCUS_PROCS, idx) >=
-                    0) /* rows past the list are ignored */
-                {
-                    if (is_dbl)
-                    {
-                        lay->subtab = OV_SUB_DETAILS;
-                    }
-                }
-            }
-        }
-        else if (INSIDE(lay->r_fps, mr, mc))
-        {
-            lay->focus   = OV_FOCUS_FPS;
-            int body_row = mr - lay->r_fps.row - 3;
-            if (body_row == -1 || body_row == -2)
-            {
-                ov_input__fps_header_click(lay, mc);
-            }
-            else if (body_row >= 0)
-            {
-                int idx = lay->panel[OV_FOCUS_FPS].scroll + body_row;
-                if (ov_sel_row(lay, m, OV_FOCUS_FPS, idx) >= 0) /* rows past the list are ignored */
-                {
-                    if (is_dbl)
-                    {
-                        lay->subtab = OV_SUB_DETAILS;
-                    }
-                }
-            }
-        }
-        else if (INSIDE(lay->r_graph, mr, mc))
-        {
-            lay->focus = OV_FOCUS_GRAPH;
-
-            /* Tab header click */
-            if (mr == lay->r_graph.row)
-            {
-                const char *dtabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-                int         ti      = ov_input_hit_panel_tab(mc, lay->r_graph.col, dtabs, 4);
-                if (ti >= 0)
-                {
-                    lay->subtab = (ov_subtab_t) ti;
-                    ov_scan_force_update();
-                }
-            }
-            else
-            {
-                int body_row = mr - lay->r_graph.row - 2;
-                if (body_row >= 0)
-                {
-                    if (lay->subtab == OV_SUB_CONN)
-                    {
-                        graph_row_click(lay, m, body_row, mc, is_dbl);
-                    }
-                    else if (lay->subtab == OV_SUB_LOOPS)
-                    {
-                        int max_rows = lay->r_graph.height - 3;
-                        int list_rows =
-                            (max_rows >= 6) ? ((max_rows > 8) ? (max_rows / 2) : 3) : max_rows;
-                        if (body_row >= 0 && body_row < list_rows)
-                        {
-                            int li = lay->sub[OV_SUB_LOOPS].scroll + body_row;
-                            if (li >= 0 && li < m->nb_loops)
-                            {
-                                lay->sub[OV_SUB_LOOPS].sel = li;
-                                if (is_dbl)
-                                {
-                                    ov_set_view(lay, OV_VIEW_LOOPS);
-                                }
-                            }
-                        }
-                    }
-                    else if (lay->subtab == OV_SUB_DETAILS)
-                    {
-                        ov_focus_t dpanel     = OV_FOCUS_STREAMS;
-                        int        active_fps = ov_detail_target(lay, m, &dpanel);
-                        if (dpanel != OV_FOCUS_FPS)
-                        {
-                            active_fps = -1; /* DETAILS shows a stream or process */
-                        }
-
-                        if (active_fps >= 0)
-                        {
-                            const OV_FPS *f = &m->fps[active_fps];
-                            if (f->nb_disp_params > 0)
-                            {
-                                int header_rows = 3 + (f->description[0] != '\0' ? 1 : 0);
-                                int param_row   = body_row - header_rows;
-                                if (param_row >= 0)
-                                {
-                                    int dp = lay->sub[OV_SUB_DETAILS].scroll + param_row;
-                                    const OV_FPS_PARAMS *params = ov_fps_get_params(f->name);
-                                    if (params != NULL && dp >= 0 && dp < params->nb_disp_params)
-                                    {
-                                        lay->sub[OV_SUB_DETAILS].sel = dp;
-                                        if (params->disp_param_type[dp] == FPTYPE_STREAMNAME)
-                                        {
-                                            int si = ov_find_stream_by_name(
-                                                m, params->disp_param_value[dp]);
-                                            if (si >= 0)
-                                            {
-                                                lay->focus = OV_FOCUS_STREAMS;
-                                                ov_sel_model(lay, m, OV_FOCUS_STREAMS, si);
-                                                if (is_dbl)
-                                                {
-                                                    ov_set_view(lay, OV_VIEW_STREAMS);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            ov_input__subtab_click(lay, m, mr, mc, is_dbl);
         }
     }
 

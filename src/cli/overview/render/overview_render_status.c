@@ -67,11 +67,12 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
         sort_label = sort_buf;
     }
 
-    /* The DASH graph panel's sub-tab, named as its tab bar names it */
-    static const char *const subtab[] = { " [CONN]", " [LOOPS]", " [DETAIL]", " [RES]" };
-    const char *detail_label = (lay->view == OV_VIEW_DASHBOARD && lay->subtab < OV_SUBTAB_COUNT)
-                                   ? subtab[lay->subtab]
-                                   : "";
+    /* The sub-tab shown in DASH and F6 */
+    char detail_label[16] = "";
+    if (lay->view == OV_VIEW_DASHBOARD || lay->view == OV_VIEW_GRAPH)
+    {
+        snprintf(detail_label, sizeof(detail_label), " [%s]", ov_subtab_status(lay->subtab));
+    }
 
     /* Filter editing prompt overrides normal status */
     if (lay->filter_editing)

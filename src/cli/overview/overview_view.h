@@ -4,7 +4,7 @@
 
 /**
  * @file overview_view.h
- * @brief View descriptors: one entry per top-level view (tab label, F-key, CLI name, panels shown)
+ * @brief View descriptors (tab label, F-key, CLI name, panels shown) and sub-tab tab-bar helpers
  *
  * Included by overview_layout.h after ov_view_t and ov_focus_t.
  */
@@ -29,6 +29,7 @@ extern const OV_VIEW_DESC ov_views[OV_VIEW_COUNT];
 
 int ov_view_cycle(int v, int step);
 int ov_tabbar_hit(int mc); /* render/overview_render_tabs.c */
+int ov_subtab_hit(int mc); /* render/overview_render_subtabs.c */
 int ov_view_by_fkey(int fkey);
 int ov_view_by_name(const char *name);
 

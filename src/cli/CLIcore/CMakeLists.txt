@@ -244,6 +244,7 @@ add_executable(
   ../overview/render/overview_render_view.c
   ../overview/render/overview_render_header.c
   ../overview/render/overview_render_tabs.c
+  ../overview/render/overview_render_subtabs.c
   ../overview/render/overview_render_popup.c
   ../overview/render/overview_render_sync.c
   ../overview/render/overview_render_status.c
@@ -296,6 +297,7 @@ add_executable(
   ../overview/input/overview_input_mouse_drag.c
   ../overview/input/overview_input_mouse_panels.c
   ../overview/input/overview_input_nav.c
+  ../overview/input/overview_input_subtab.c
   ../overview/input/overview_input_nav_fps.c
   ../overview/input/overview_input_nav_lineage.c
   ../overview/input/overview_input_sort_keys.c

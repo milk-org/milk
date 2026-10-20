@@ -320,6 +320,7 @@ int main(int argc, char *argv[])
         /* Render only when something changed */
         if (need_render)
         {
+            ov_layout_compute(&lay); /* keys may have switched view: draw with its rectangles */
             ov_render_frame(&lay, m);
             need_render = 0;
         }

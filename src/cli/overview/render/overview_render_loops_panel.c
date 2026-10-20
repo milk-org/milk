@@ -76,10 +76,8 @@ void ov_format_loop_path(const OV_MODEL *m, const OV_LOOP *lp, char *buf, size_t
  */
 void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    OV_RECT     r      = lay->r_graph;
-    const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->subtab, OV_FG_LOOP,
-                       lay->focus == OV_FOCUS_GRAPH);
+    OV_RECT r = lay->r_graph;
+    ov_subtab_bar(lay, OV_FG_LOOP);
 
     int max_rows = r.height - 3;
     int row      = r.row + 1;
@@ -124,13 +122,8 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     /* Split panel: top half list of loops, bottom half selected loop details */
-    int list_rows   = max_rows;
-    int detail_rows = 0;
-    if (max_rows >= 6)
-    {
-        list_rows   = (max_rows > 8) ? (max_rows / 2) : 3;
-        detail_rows = max_rows - list_rows;
-    }
+    int list_rows   = ov_loop_list_rows(lay);
+    int detail_rows = max_rows - list_rows;
 
     int rendered_list = 0;
     int scroll        = lay->sub[OV_SUB_LOOPS].scroll;

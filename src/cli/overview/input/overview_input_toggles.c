@@ -232,22 +232,6 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 1;
     }
 
-    /* Graph jump on Enter (must be before detail mode toggle): select the row's stream in DASH */
-    if ((key == '\n' || key == '\r') && lay->focus == OV_FOCUS_GRAPH && lay->subtab == OV_SUB_CONN)
-    {
-        int                 n;
-        const SG_TREE_NODE *rows = ov_graph_rows(lay, m, &n);
-        if (lay->sub[OV_SUB_CONN].sel >= 0 && lay->sub[OV_SUB_CONN].sel < n)
-        {
-            int si      = rows[lay->sub[OV_SUB_CONN].sel].stream_idx;
-            lay->freeze = 0; /* before resolving: freeze changes the drawn rows */
-            ov_set_view(lay, OV_VIEW_DASHBOARD);
-            lay->focus = OV_FOCUS_STREAMS;
-            ov_sel_model(lay, m, OV_FOCUS_STREAMS, si);
-        }
-        return 1;
-    }
-
     /* ENTER — open DETAILS for list panels; toggle when on graph */
     if ((key == 10 || key == 13) && m != NULL)
     {

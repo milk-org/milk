@@ -48,7 +48,6 @@ int  ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand);
 int  ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc);
 
 /* Shared selection and navigation helpers */
-int              ov_input_hit_panel_tab(int mc, int panel_col, const char **tabs, int num_tabs);
 const OV_STREAM *ov_input_get_sel_stream(const OV_LAYOUT *lay, const OV_MODEL *m);
 const OV_PROC   *ov_input_get_sel_proc(const OV_LAYOUT *lay, const OV_MODEL *m);
 const OV_FPS    *ov_input_get_sel_fps(const OV_LAYOUT *lay, const OV_MODEL *m);
@@ -62,9 +61,9 @@ int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 /* Hit-test & mouse resolution */
 void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc);
 void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m);
-void ov_input__streams_header_click(OV_LAYOUT *lay, int mc);
-void ov_input__procs_header_click(OV_LAYOUT *lay, int mc);
-void ov_input__fps_header_click(OV_LAYOUT *lay, int mc);
+void ov_input__subtab_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc, int is_dbl);
+int  ov_input__handle_subtab_keys(int key, OV_LAYOUT *lay, const OV_MODEL *m);
+void ov_input__detail_scroll_to(OV_LAYOUT *lay, int top);
 int  ov_input__table_header_click(OV_LAYOUT *lay, ov_focus_t panel, int mc);
 void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m);
 

@@ -76,10 +76,8 @@ const SG_TREE_NODE *ov_graph_rows(const OV_LAYOUT *lay, const OV_MODEL *m, int *
  */
 void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    OV_RECT     r      = lay->r_graph;
-    const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->subtab, OV_FG_CONN,
-                       lay->focus == OV_FOCUS_GRAPH);
+    OV_RECT r = lay->r_graph;
+    ov_subtab_bar(lay, OV_FG_CONN);
 
     int max_rows = r.height - 3;
     int row      = r.row + 1;

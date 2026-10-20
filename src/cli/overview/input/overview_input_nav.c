@@ -9,6 +9,46 @@
 
 #include "overview_input_internal.h"
 
+/** ov_input__detail_scroll_to - make line @top the first one of the DETAILS / RESOURCES text shown. */
+void ov_input__detail_scroll_to(OV_LAYOUT *lay, int top)
+{
+    int last           = lay->detail_total_lines - (lay->r_graph.height - 3);
+    last               = (last > 0) ? last : 0;
+    lay->scroll_detail = (top < 0) ? 0 : (top > last) ? last : top;
+}
+
+/** detail_scroll - scroll DETAILS / RESOURCES text by line, page, or to an end. Return: 1 for those keys. */
+static int detail_scroll(int key, OV_LAYOUT *lay)
+{
+    int page = lay->r_graph.height - 3;
+    int top  = lay->scroll_detail;
+    switch (key)
+    {
+    case OV_KEY_UP:
+        top--;
+        break;
+    case OV_KEY_DOWN:
+        top++;
+        break;
+    case OV_KEY_PGUP:
+        top -= page;
+        break;
+    case OV_KEY_PGDN:
+        top += page;
+        break;
+    case OV_KEY_HOME:
+        top = 0;
+        break;
+    case OV_KEY_END:
+        top = lay->detail_total_lines;
+        break;
+    default:
+        return 0;
+    }
+    ov_input__detail_scroll_to(lay, top);
+    return 1;
+}
+
 /**
  * ov_input__handle_navigation - dispatch cursor keys, paging, and scroll navigation.
  * @key: Pressed key code (arrows, Home/End, PgUp/PgDn, etc.).
@@ -70,166 +110,19 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         /* F7 always draws the loop list, whatever the DASH sub-tab */
         if (lay->view == OV_VIEW_LOOPS || lay->subtab == OV_SUB_LOOPS)
         {
-            sel    = &lay->sub[OV_SUB_LOOPS].sel;
-            scroll = &lay->sub[OV_SUB_LOOPS].scroll;
-            count  = m->nb_loops;
-            page_h = (lay->r_graph.height - 3 >= 6)
-                         ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
-                         : (lay->r_graph.height - 3);
-            break;
+            sel   = &lay->sub[OV_SUB_LOOPS].sel;
+            count = m->nb_loops;
         }
         else if (lay->subtab == OV_SUB_CONN)
         {
-            sel    = &lay->sub[OV_SUB_CONN].sel;
-            scroll = &lay->sub[OV_SUB_CONN].scroll;
+            sel = &lay->sub[OV_SUB_CONN].sel;
             ov_graph_rows(lay, m, &count);
-            page_h = lay->r_graph.height - 3;
-        }
-        else if (lay->subtab == OV_SUB_DETAILS)
-        {
-            /* DETAILS tab: param nav if FPS selected */
-            ov_focus_t dpanel  = OV_FOCUS_STREAMS;
-            int        fps_sel = ov_detail_target(lay, m, &dpanel);
-            if (dpanel != OV_FOCUS_FPS)
-            {
-                fps_sel = -1; /* DETAILS shows a stream or a process: no parameters */
-            }
-            int has_fps_params =
-                (fps_sel >= 0 && fps_sel < m->nb_fps && m->fps[fps_sel].nb_disp_params > 0);
-            int nparams = has_fps_params ? m->fps[fps_sel].nb_disp_params : 0;
-
-            if (has_fps_params && lay->sub[OV_SUB_DETAILS].sel >= 0)
-            {
-                /* Navigate parameter cursor */
-                if (key == OV_KEY_UP)
-                {
-                    if (lay->sub[OV_SUB_DETAILS].sel > 0)
-                    {
-                        lay->sub[OV_SUB_DETAILS].sel--;
-                    }
-                }
-                else if (key == OV_KEY_DOWN)
-                {
-                    if (lay->sub[OV_SUB_DETAILS].sel < nparams - 1)
-                    {
-                        lay->sub[OV_SUB_DETAILS].sel++;
-                    }
-                }
-                else if (key == OV_KEY_PGUP)
-                {
-                    lay->sub[OV_SUB_DETAILS].sel -= page_h;
-                    if (lay->sub[OV_SUB_DETAILS].sel < 0)
-                    {
-                        lay->sub[OV_SUB_DETAILS].sel = 0;
-                    }
-                }
-                else if (key == OV_KEY_PGDN)
-                {
-                    lay->sub[OV_SUB_DETAILS].sel += page_h;
-                    if (lay->sub[OV_SUB_DETAILS].sel >= nparams)
-                    {
-                        lay->sub[OV_SUB_DETAILS].sel = nparams - 1;
-                    }
-                }
-                else if (key == OV_KEY_HOME)
-                {
-                    lay->sub[OV_SUB_DETAILS].sel = 0;
-                }
-                else if (key == OV_KEY_END)
-                {
-                    lay->sub[OV_SUB_DETAILS].sel = nparams - 1;
-                    if (lay->sub[OV_SUB_DETAILS].sel < 0)
-                    {
-                        lay->sub[OV_SUB_DETAILS].sel = 0;
-                    }
-                }
-                else if (key == OV_KEY_ESC)
-                {
-                    lay->sub[OV_SUB_DETAILS].sel = -1;
-                }
-                else if (key == OV_KEY_ENTER || key == '\r' || key == '\n')
-                {
-                    if (!lay->ctrl_mode)
-                    {
-                        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
-                                       "Edit requires "
-                                       "CONTROL mode (press c to toggle CTRL mode ON/OFF)");
-                    }
-                    else
-                    {
-                        ov_fps_inline_edit(lay, m->fps[fps_sel].name, lay->sub[OV_SUB_DETAILS].sel);
-                    }
-                }
-                return 1;
-            }
-
-            /* Init param_sel on first nav key */
-            if (has_fps_params && lay->sub[OV_SUB_DETAILS].sel < 0 &&
-                (key == OV_KEY_DOWN || key == OV_KEY_UP))
-            {
-                lay->sub[OV_SUB_DETAILS].sel = 0;
-                return 1;
-            }
-
-            /* Fallback: detail scroll */
-            sel    = NULL;
-            scroll = NULL;
-            count  = lay->detail_total_lines;
-            page_h = lay->r_graph.height - 3;
-
-            if (key == OV_KEY_UP)
-            {
-                if (lay->scroll_detail > 0)
-                {
-                    lay->scroll_detail--;
-                }
-            }
-            else if (key == OV_KEY_DOWN)
-            {
-                if (lay->scroll_detail < lay->detail_total_lines - page_h)
-                {
-                    lay->scroll_detail++;
-                }
-            }
-            else if (key == OV_KEY_PGUP)
-            {
-                lay->scroll_detail -= page_h;
-                if (lay->scroll_detail < 0)
-                {
-                    lay->scroll_detail = 0;
-                }
-            }
-            else if (key == OV_KEY_PGDN)
-            {
-                lay->scroll_detail += page_h;
-                if (lay->scroll_detail > lay->detail_total_lines - page_h)
-                {
-                    lay->scroll_detail = lay->detail_total_lines - page_h;
-                }
-                if (lay->scroll_detail < 0)
-                {
-                    lay->scroll_detail = 0;
-                }
-            }
-            else if (key == OV_KEY_HOME)
-            {
-                lay->scroll_detail = 0;
-            }
-            else if (key == OV_KEY_END)
-            {
-                lay->scroll_detail = lay->detail_total_lines - page_h;
-                if (lay->scroll_detail < 0)
-                {
-                    lay->scroll_detail = 0;
-                }
-            }
-            return 1;
         }
         else
         {
-            sel    = NULL;
-            scroll = NULL;
+            return detail_scroll(key, lay); /* DETAILS text (parameters: sub-tab keys), RESOURCES */
         }
+        page_h = ov_subtab_page(lay);
         break;
 
     default:

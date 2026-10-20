@@ -286,7 +286,10 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
 
 void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel);
 
-int ov_render_detail_panel(OV_LAYOUT *lay, const OV_MODEL *m);
+int         ov_render_detail_panel(OV_LAYOUT *lay, const OV_MODEL *m);
+void        ov_subtab_bar(const OV_LAYOUT *lay, ov_rgb_t color);
+const char *ov_subtab_status(ov_subtab_t t);
+void        ov_render_subtab(OV_LAYOUT *lay, const OV_MODEL *m);
 
 int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m);
 

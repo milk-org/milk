@@ -171,134 +171,38 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 page_h = lay->r_fps.height - 3;
             }
         }
-        else if (lay->view == OV_VIEW_STREAMS)
+        else
         {
-            sel    = &lay->panel[OV_FOCUS_STREAMS].sel;
-            scroll = &lay->panel[OV_FOCUS_STREAMS].scroll;
-            count  = ov_input_get_filtered_count(OV_FOCUS_STREAMS, lay, m);
-            page_h = lay->r_streams.height - 3;
-        }
-        else if (lay->view == OV_VIEW_PROCS)
-        {
-            sel    = &lay->panel[OV_FOCUS_PROCS].sel;
-            scroll = &lay->panel[OV_FOCUS_PROCS].scroll;
-            count  = ov_input_get_filtered_count(OV_FOCUS_PROCS, lay, m);
-            page_h = lay->r_procs.height - 3;
-        }
-        else if (lay->view == OV_VIEW_GRAPH)
-        {
-            if (lay->subtab == OV_SUB_CONN)
+            const OV_RECT *lists[OV_NB_LIST_PANELS] = { &lay->r_streams, &lay->r_procs,
+                                                        &lay->r_fps };
+            for (int f = 0; f < OV_NB_LIST_PANELS && sel == NULL; f++)
             {
-                sel    = &lay->sub[OV_SUB_CONN].sel;
-                scroll = &lay->sub[OV_SUB_CONN].scroll;
-                ov_graph_rows(lay, m, &count);
-                page_h = lay->r_graph.height - 3;
+                if (ov_view_has_panel(lay->view, (ov_focus_t) f) && INSIDE(*lists[f], mr, mc))
+                {
+                    sel    = &lay->panel[f].sel;
+                    scroll = &lay->panel[f].scroll;
+                    count  = ov_input_get_filtered_count((ov_focus_t) f, lay, m);
+                    page_h = lists[f]->height - 3;
+                }
             }
-            else if (lay->subtab == OV_SUB_LOOPS)
+            if (sel == NULL && ov_view_has_panel(lay->view, OV_FOCUS_GRAPH) &&
+                INSIDE(lay->r_graph, mr, mc))
             {
-                sel    = &lay->sub[OV_SUB_LOOPS].sel;
-                scroll = &lay->sub[OV_SUB_LOOPS].scroll;
+                ov_subtab_t t = (lay->view == OV_VIEW_LOOPS) ? OV_SUB_LOOPS : lay->subtab;
+                if (t != OV_SUB_CONN && t != OV_SUB_LOOPS)
+                {
+                    ov_input__detail_scroll_to(lay,
+                                               lay->scroll_detail + dir); /* DETAILS, RESOURCES */
+                    return 1;
+                }
+                sel    = &lay->sub[t].sel;
+                scroll = &lay->sub[t].scroll;
                 count  = m->nb_loops;
-                page_h = (lay->r_graph.height - 3 >= 6)
-                             ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
-                             : (lay->r_graph.height - 3);
-            }
-            else if (lay->subtab == OV_SUB_DETAILS)
-            {
-                page_h = lay->r_graph.height - 3;
-                lay->scroll_detail += dir;
-                if (lay->scroll_detail < 0)
+                if (t == OV_SUB_CONN)
                 {
-                    lay->scroll_detail = 0;
-                }
-                if (lay->scroll_detail > lay->detail_total_lines - page_h)
-                {
-                    lay->scroll_detail = lay->detail_total_lines - page_h;
-                }
-                if (lay->scroll_detail < 0)
-                {
-                    lay->scroll_detail = 0;
-                }
-                return 1;
-            }
-            else
-            {
-                /* RESOURCES panel */
-                return 1;
-            }
-        }
-        else if (lay->view == OV_VIEW_LOOPS)
-        {
-            sel    = &lay->sub[OV_SUB_LOOPS].sel;
-            scroll = &lay->sub[OV_SUB_LOOPS].scroll;
-            count  = m->nb_loops;
-            page_h = lay->r_graph.height - 3;
-        }
-        else if (lay->view == OV_VIEW_DASHBOARD)
-        {
-            if (INSIDE(lay->r_streams, mr, mc))
-            {
-                sel    = &lay->panel[OV_FOCUS_STREAMS].sel;
-                scroll = &lay->panel[OV_FOCUS_STREAMS].scroll;
-                count  = ov_input_get_filtered_count(OV_FOCUS_STREAMS, lay, m);
-                page_h = lay->r_streams.height - 3;
-            }
-            else if (INSIDE(lay->r_procs, mr, mc))
-            {
-                sel    = &lay->panel[OV_FOCUS_PROCS].sel;
-                scroll = &lay->panel[OV_FOCUS_PROCS].scroll;
-                count  = ov_input_get_filtered_count(OV_FOCUS_PROCS, lay, m);
-                page_h = lay->r_procs.height - 3;
-            }
-            else if (INSIDE(lay->r_fps, mr, mc))
-            {
-                sel    = &lay->panel[OV_FOCUS_FPS].sel;
-                scroll = &lay->panel[OV_FOCUS_FPS].scroll;
-                count  = ov_input_get_filtered_count(OV_FOCUS_FPS, lay, m);
-                page_h = lay->r_fps.height - 3;
-            }
-            else if (INSIDE(lay->r_graph, mr, mc))
-            {
-                if (lay->subtab == OV_SUB_CONN)
-                {
-                    sel    = &lay->sub[OV_SUB_CONN].sel;
-                    scroll = &lay->sub[OV_SUB_CONN].scroll;
                     ov_graph_rows(lay, m, &count);
-                    page_h = lay->r_graph.height - 3;
                 }
-                else if (lay->subtab == OV_SUB_LOOPS)
-                {
-                    sel    = &lay->sub[OV_SUB_LOOPS].sel;
-                    scroll = &lay->sub[OV_SUB_LOOPS].scroll;
-                    count  = m->nb_loops;
-                    page_h =
-                        (lay->r_graph.height - 3 >= 6)
-                            ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
-                            : (lay->r_graph.height - 3);
-                }
-                else if (lay->subtab == OV_SUB_DETAILS)
-                {
-                    page_h = lay->r_graph.height - 3;
-                    lay->scroll_detail += dir;
-                    if (lay->scroll_detail < 0)
-                    {
-                        lay->scroll_detail = 0;
-                    }
-                    if (lay->scroll_detail > lay->detail_total_lines - page_h)
-                    {
-                        lay->scroll_detail = lay->detail_total_lines - page_h;
-                    }
-                    if (lay->scroll_detail < 0)
-                    {
-                        lay->scroll_detail = 0;
-                    }
-                    return 1;
-                }
-                else
-                {
-                    /* RESOURCES panel */
-                    return 1;
-                }
+                page_h = ov_subtab_page(lay);
             }
         }
 

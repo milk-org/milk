@@ -18,24 +18,7 @@ static void render_dash(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel
     ov_render_streams_panel(lay, m, rel);
     ov_render_procs_panel(lay, m, rel);
     ov_render_fps_panel(lay, m, rel);
-    int rendered = 0;
-    if (lay->subtab == OV_SUB_LOOPS)
-    {
-        ov_render_loops_panel(lay, m);
-        rendered = 1;
-    }
-    else if (lay->subtab == OV_SUB_DETAILS)
-    {
-        rendered = ov_render_detail_panel(lay, m);
-    }
-    else if (lay->subtab == OV_SUB_RES)
-    {
-        rendered = ov_render_resources_panel(lay, m);
-    }
-    if (!rendered)
-    {
-        ov_render_graph_panel(lay, m);
-    }
+    ov_render_subtab(lay, m);
 }
 
 /** render_streams - F3. */
@@ -67,11 +50,11 @@ static void render_fps(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
     }
 }
 
-/** render_conn - F6. */
+/** render_conn - F6: the sub-tab panel full screen. */
 static void render_conn(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
 {
     (void) rel;
-    ov_render_graph_panel(lay, m);
+    ov_render_subtab(lay, m);
 }
 
 /** render_loops - F7. */

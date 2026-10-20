@@ -269,6 +269,10 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         return 0;
     }
+    if (ov_input__handle_subtab_keys(key, lay, m))
+    {
+        return 0;
+    }
     if (ov_input__handle_misc_toggles(key, lay, m))
     {
         return 0;
@@ -314,21 +318,15 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             page_h = lay->r_fps.height - 3;
             break;
         case OV_FOCUS_GRAPH:
-            if (lay->subtab == OV_SUB_LOOPS || lay->view == OV_VIEW_LOOPS)
-            {
-                sel    = &lay->sub[OV_SUB_LOOPS].sel;
-                scroll = &lay->sub[OV_SUB_LOOPS].scroll;
-                page_h = (lay->r_graph.height - 3 >= 6)
-                             ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
-                             : (lay->r_graph.height - 3);
-            }
-            else
-            {
-                sel    = &lay->sub[OV_SUB_CONN].sel;
-                scroll = &lay->sub[OV_SUB_CONN].scroll;
-                page_h = lay->r_graph.height - 3;
-            }
+        {
+            ov_subtab_t t = (lay->subtab == OV_SUB_LOOPS || lay->view == OV_VIEW_LOOPS)
+                                ? OV_SUB_LOOPS
+                                : OV_SUB_CONN;
+            sel           = &lay->sub[t].sel;
+            scroll        = &lay->sub[t].scroll;
+            page_h        = ov_subtab_page(lay);
             break;
+        }
         default:
             break;
         }
