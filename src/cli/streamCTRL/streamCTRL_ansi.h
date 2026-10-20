@@ -119,10 +119,8 @@ static inline void ansi_raw_mode_enter(void)
     }
 
     /* hide cursor, disable line wrap, enable SGR mouse tracking */
-    if (write(STDOUT_FILENO,
-              "\033[?25l\033[?7l"
-              "\033[?1000h\033[?1006h",
-              11 + 10 + 10) < 0)
+    static const char enter_seq[] = "\033[?25l\033[?7l\033[?1000h\033[?1006h";
+    if (write(STDOUT_FILENO, enter_seq, sizeof(enter_seq) - 1) < 0)
     {
     }
     ansi__raw_active = 1;
@@ -138,10 +136,8 @@ static inline void ansi_raw_mode_exit(void)
         return;
     }
     /* disable mouse tracking, show cursor, enable line wrap */
-    if (write(STDOUT_FILENO,
-              "\033[?1006l\033[?1000l"
-              "\033[?25h\033[?7h",
-              10 + 10 + 11) < 0)
+    static const char exit_seq[] = "\033[?1006l\033[?1000l\033[?25h\033[?7h";
+    if (write(STDOUT_FILENO, exit_seq, sizeof(exit_seq) - 1) < 0)
     {
     }
     /* clear screen, reset attributes, home cursor */

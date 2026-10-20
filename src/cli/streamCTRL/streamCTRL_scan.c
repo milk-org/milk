@@ -26,7 +26,45 @@
 #include "streamCTRL_TUI.h"
 #include "streamCTRL_find_streams.h"
 #include "streamCTRL_utilfuncs.h"
+#include "milk_spawn.h"
 
+
+/**
+ * sc_fuser_pids - PIDs holding @path as fuser prints them, into @out; no shell. Return: 0, or -1.
+ */
+static int sc_fuser_pids(const char *path, char *out, size_t outsz)
+{
+    const char *const argv[] = { "fuser", path, NULL };
+    int               pfd[2];
+    size_t            n = 0;
+    char              sink[256];
+    ssize_t           r;
+
+    out[0] = '\0';
+    if (pipe(pfd) != 0)
+    {
+        return -1;
+    }
+    pid_t pid = milkspawn_start(argv, pfd[1], -1);
+    close(pfd[1]);
+    /* drain to EOF so fuser never blocks on a full pipe; keep what fits */
+    while ((r = read(pfd[0], (n + 1 < outsz) ? out + n : sink,
+                     (n + 1 < outsz) ? outsz - 1 - n : sizeof(sink))) > 0)
+    {
+        if (n + 1 < outsz)
+        {
+            n += (size_t) r;
+        }
+    }
+    close(pfd[0]);
+    out[n] = '\0';
+    if (pid < 0)
+    {
+        return -1;
+    }
+    milkspawn_wait(pid); /* fuser exits 1 when nobody holds the file: not an error */
+    return 0;
+}
 
 /**
  * @brief Scan shared memory directory for streams.
@@ -268,10 +306,7 @@ void *streamCTRL_scan(void *argptr)
 
         if (streaminfoproc->fuserUpdate == 1)
         {
-            FILE *fp;
-            int   STRINGMAXLEN_LINE = 2000;
-            char  plistoutline[STRINGMAXLEN_LINE];
-            char  command[STRINGMAXLEN_COMMAND];
+            char plistoutline[2000];
 
             int NBpid = 0;
 
@@ -284,92 +319,11 @@ void *streamCTRL_scan(void *argptr)
             }
             else
             {
-                int PReadMode = 1;
-
-                if (PReadMode == 0)
-                {
-                    // popen option
-                    {
-                        int slen = snprintf(command, STRINGMAXLEN_COMMAND,
-                                            "/bin/fuser %s/%s.im.shm "
-                                            "2>/dev/null",
-                                            SHAREDSHMDIR, streaminfo[sindexscan1].sname);
-                        if (slen < 1)
-                        {
-                            PRINT_ERROR("snprintf wrote <1 char");
-                            abort(); // can't handle this error any other way
-                        }
-                        if (slen >= STRINGMAXLEN_COMMAND)
-                        {
-                            PRINT_ERROR("snprintf string "
-                                        "truncation");
-                            abort(); // can't handle this error any other way
-                        }
-                    }
-
-                    fp = popen(command, "r");
-                    if (fp == NULL)
-                    {
-                        streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
-                    }
-                    else
-                    {
-                        streaminfo[sindexscan1].streamOpenPID_status = 1;
-
-                        if (fgets(plistoutline, STRINGMAXLEN_LINE - 1, fp) == NULL)
-                        {
-                            snprintf(plistoutline, STRINGMAXLEN_LINE, " ");
-                        }
-                        pclose(fp);
-                    }
-                }
-                else
-                {
-                    // filesystem option
-                    char plistfname[STRINGMAXLEN_FULLFILENAME];
-                    WRITE_FULLFILENAME(plistfname, "%s/%s.shmplist", SHAREDSHMDIR,
-                                       streaminfo[sindexscan1].sname);
-
-                    {
-                        int slen =
-                            snprintf(command, STRINGMAXLEN_COMMAND,
-                                     "/bin/fuser %s/%s.im.shm "
-                                     "2>/dev/null > %s",
-                                     SHAREDSHMDIR, streaminfo[sindexscan1].sname, plistfname);
-                        if (slen < 1)
-                        {
-                            PRINT_ERROR("snprintf wrote <1 char");
-                            abort(); // can't handle this error any other way
-                        }
-                        if (slen >= STRINGMAXLEN_COMMAND)
-                        {
-                            PRINT_ERROR("snprintf string "
-                                        "truncation");
-                            abort(); // can't handle this error any other way
-                        }
-                    }
-
-                    if (system(command) == -1)
-                    {
-                        PRINT_ERROR("Command system() failed: %s", strerror(errno));
-                        exit(EXIT_FAILURE);
-                    }
-
-                    fp = fopen(plistfname, "r");
-                    if (fp == NULL)
-                    {
-                        streaminfo[sindexscan1].streamOpenPID_status = 2;
-                    }
-                    else
-                    {
-                        if (fgets(plistoutline, STRINGMAXLEN_LINE - 1, fp) == NULL)
-                        {
-                            snprintf(plistoutline, STRINGMAXLEN_LINE, " ");
-                        }
-
-                        fclose(fp);
-                    }
-                }
+                char shmpath[STRINGMAXLEN_FULLFILENAME];
+                WRITE_FULLFILENAME(shmpath, "%s/%s.im.shm", SHAREDSHMDIR,
+                                   streaminfo[sindexscan1].sname);
+                streaminfo[sindexscan1].streamOpenPID_status =
+                    (sc_fuser_pids(shmpath, plistoutline, sizeof(plistoutline)) != 0) ? 2 : 1;
 
                 if (streaminfo[sindexscan1].streamOpenPID_status != 2)
                 {

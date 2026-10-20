@@ -70,9 +70,7 @@ int find_streams(STREAMINFO *streaminfo, int filter, const char *__restrict name
                 retv = lstat(fullname, &buf);
                 if (retv == -1)
                 {
-                    printf("File \"%s\"", dir->d_name);
-                    PRINT_ERROR("Error running lstat on file: %s", strerror(errno));
-                    exit(EXIT_FAILURE);
+                    continue; /* removed between readdir and lstat: normal during purges */
                 }
 
 

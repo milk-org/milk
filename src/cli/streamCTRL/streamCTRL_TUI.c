@@ -71,6 +71,7 @@ struct streamCTRL_TUI_parameters sTUIparam;
  */
 static void streamCTRL_TUI_exit()
 {
+    ansi_raw_mode_exit(); /* idempotent: restores the terminal on any exit() path */
 }
 
 
