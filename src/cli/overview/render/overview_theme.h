@@ -98,7 +98,7 @@ int               ov_theme_get_active_index(void);
 int               ov_theme_find_by_id(const char *id);
 void              ov_theme_set(int index);
 void              ov_theme_cycle(void);
-void              ov_theme_init(const char *preferred_theme);
+int               ov_theme_init(const char *preferred_theme);
 
 /* Semantic color palette (maps to active theme) */
 

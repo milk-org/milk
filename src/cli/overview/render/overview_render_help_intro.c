@@ -22,8 +22,8 @@
 void ov_help_render_intro(const OV_LAYOUT *lay, int pr, int pc, int ph, int pw)
 {
     const char *title =
-        (pw >= 84) ? "ABOUT milk-CTRL (1/i: Intro • 2/k: Controls • ↑↓: Scroll • ESC: Close)"
-                   : ((pw >= 52) ? "ABOUT milk-CTRL (1/i: Intro • 2/k: Controls • ESC: Close)"
+        (pw >= 84) ? "ABOUT milk-CTRL (1/i: Intro • 2: Controls • ↑↓: Scroll • ESC: Close)"
+                   : ((pw >= 52) ? "ABOUT milk-CTRL (1/i: Intro • 2: Controls • ESC: Close)"
                                  : "ABOUT milk-CTRL");
     ov_draw_panel_border(pr, pc, ph, pw, title, OV_FG_TITLE, 1, 0);
 
@@ -215,12 +215,12 @@ void ov_help_render_intro(const OV_LAYOUT *lay, int pr, int pc, int ph, int pw)
         if (max_scroll > 0)
         {
             snprintf(bstatus, sizeof(bstatus),
-                     " [↑↓ / PgUp/PgDn: Scroll (%d/%d) • 2/k: Controls • ESC: Close] ", scroll + 1,
+                     " [↑↓ / PgUp/PgDn: Scroll (%d/%d) • 2: Controls • ESC: Close] ", scroll + 1,
                      total_lines);
         }
         else
         {
-            snprintf(bstatus, sizeof(bstatus), " [2 / k: Controls Reference • ESC: Close] ");
+            snprintf(bstatus, sizeof(bstatus), " [2: Controls Reference • ESC: Close] ");
         }
 
         ov_buf_bold();

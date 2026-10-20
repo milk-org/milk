@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
     }
     if (opt_rc < 0)
     {
-        return 1;
+        return 2;
     }
 
     /* --- Require interactive terminal --- */
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
     ov_detect_color_level();
 
     /* --- Initialize color theme --- */
-    ov_theme_init(cli_theme);
+    int theme_rc = ov_theme_init(cli_theme);
 
     /* --- Enter raw mode --- */
     ov_raw_mode_enter();
@@ -214,6 +214,12 @@ int main(int argc, char *argv[])
     lay.dash_split_h_dragging = 0;
 
     ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO, "Shared memory directory: %s", ov_get_shmdir());
+    if (theme_rc < 0)
+    {
+        ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_WARN,
+                       "MILK_CTRL_THEME=%s is not a theme, using %s (milk-CTRL -h lists them)",
+                       getenv("MILK_CTRL_THEME"), ov_theme_get(ov_theme_get_active_index())->id);
+    }
 
     /* --- Main TUI loop (~10 fps) --- */
     /* Clear screen once on startup */

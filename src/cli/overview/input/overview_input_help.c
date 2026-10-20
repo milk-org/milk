@@ -8,6 +8,7 @@
  */
 
 #include "overview_input_internal.h"
+#include "overview_help_data.h"
 
 /**
  * ov_input_handle_help_key - handle input when interactive help overlay is open.
@@ -32,13 +33,12 @@ int ov_input_handle_help_key(int key, OV_LAYOUT *lay)
         {
             body_h = 4;
         }
-        int total_lines = 44;
+        int total_lines = g_intro_total;
         int max_scroll  = (total_lines > body_h) ? (total_lines - body_h) : 0;
 
         switch (key)
         {
         case '2':
-        case 'k':
         case '1':
         case 'i':
         case '\t':
@@ -92,6 +92,7 @@ int ov_input_handle_help_key(int key, OV_LAYOUT *lay)
         case 27: /* ESC — exit help overlay */
         case 3:  /* Ctrl+C */
         case 4:  /* Ctrl+D */
+        case 'h':
         case 'q':
         case 'x':
             lay->show_help = 0;
@@ -285,6 +286,7 @@ int ov_input_handle_help_key(int key, OV_LAYOUT *lay)
     case 27: /* ESC — clear search query if present, else exit help overlay */
     case 3:  /* Ctrl+C */
     case 4:  /* Ctrl+D */
+    case 'h':
     case 'q':
     case 'x':
         if (lay->help_search[0] != '\0')

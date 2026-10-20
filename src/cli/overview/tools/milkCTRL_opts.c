@@ -11,9 +11,12 @@
 #include "milk_config.h"
 #include "milk_help.h"
 #include "overview_data_internal.h"
+#include "overview_theme.h"
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 /**
  * milkctrl_print_help - render colored command reference and CLI manual for milk-CTRL.
@@ -146,35 +149,25 @@ void milkctrl_print_help(const char *prog, int mh_color)
 }
 
 /**
+ * usage_error - print a monochrome usage error to stderr.
+ * Return: -1, so callers can return it directly.
+ */
+static int usage_error(const char *prog, const char *what, const char *arg)
+{
+    fprintf(stderr, "Error: %s: %s\nRun %s -h for usage.\n", what, arg, prog);
+    return -1;
+}
+
+/**
  * milkctrl_parse_options - parse command line flags for milk-CTRL.
  * @argc:          Argument count.
  * @argv:          Argument strings.
  * @out_cli_theme: Output pointer to theme name if -T specified.
  *
- * Return: 0 to continue execution, 1 on clean help/version exit, -1 on error.
+ * Return: 0 to run, 1 when help was printed, -1 on a usage error (caller exits 2).
  */
 int milkctrl_parse_options(int argc, char *argv[], const char **out_cli_theme)
 {
-    const char *cli_theme = NULL;
-    for (int i = 1; i < argc; i++)
-    {
-        if (strcmp(argv[i], "-d") == 0 && (i + 1 < argc))
-        {
-            i++;
-            setenv("MILK_SHM_DIR", argv[i], 1);
-            setenv("MILK_PROC_DIR", argv[i], 1);
-        }
-        else if ((strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--theme") == 0) && (i + 1 < argc))
-        {
-            i++;
-            cli_theme = argv[i];
-        }
-    }
-    if (out_cli_theme != NULL)
-    {
-        *out_cli_theme = cli_theme;
-    }
-
     int action = milk_help_init(
         argc, argv, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
         "milk-CTRL is the unified, real-time diagnostic and control dashboard for the\n"
@@ -187,35 +180,61 @@ int milkctrl_parse_options(int argc, char *argv[], const char **out_cli_theme)
     {
         return 1;
     }
-
-    int mh_color = (action == MH_ACTION_HELP);
-
     if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
-        milkctrl_print_help(argv[0], mh_color);
+        milkctrl_print_help(argv[0], action == MH_ACTION_HELP);
         return 1;
     }
 
-    for (int i = 1; i < argc; i++)
+    static const struct option lopts[]   = { { "theme", required_argument, NULL, 'T' },
+                                             { NULL, 0, NULL, 0 } };
+    const char                *cli_theme = NULL;
+    int                        c;
+
+    opterr = 0;
+    while ((c = getopt_long(argc, argv, ":d:T:", lopts, NULL)) != -1)
     {
-        if (strcmp(argv[i], "-d") == 0 && (i + 1 < argc))
+        switch (c)
         {
-            i++;
+        case 'd':
+        {
+            struct stat st;
+            if (stat(optarg, &st) != 0 || !S_ISDIR(st.st_mode))
+            {
+                return usage_error(argv[0], "not a directory", optarg);
+            }
+            setenv("MILK_SHM_DIR", optarg, 1);
+            setenv("MILK_PROC_DIR", optarg, 1);
+            break;
         }
-        else if ((strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--theme") == 0) && (i + 1 < argc))
-        {
-            i++;
-        }
-        else if (argv[i][0] == '-')
-        {
-            fprintf(stderr,
-                    "%s Invalid option: %s%s%s\n"
-                    "Run %s%s%s %s for usage.\n",
-                    MH(MH_ERR, "Error:"), mh_color ? MH_OPT : "", argv[i], mh_color ? MH_RST : "",
-                    mh_color ? MH_CMD : "", argv[0], mh_color ? MH_RST : "", MH(MH_OPT, "-h"));
-            return -1;
+        case 'T':
+            if (ov_theme_find_by_id(optarg) < 0)
+            {
+                usage_error(argv[0], "unknown theme", optarg);
+                fprintf(stderr, "Valid themes:");
+                for (int i = 0; i < ov_theme_count(); i++)
+                {
+                    fprintf(stderr, "%s %s", i ? "," : "", ov_theme_get(i)->id);
+                }
+                fprintf(stderr, "\n");
+                return -1;
+            }
+            cli_theme = optarg;
+            break;
+        case ':':
+            return usage_error(argv[0], "option requires an argument", argv[optind - 1]);
+        default:
+            return usage_error(argv[0], "unknown option", argv[optind - 1]);
         }
     }
+    if (optind < argc)
+    {
+        return usage_error(argv[0], "unexpected argument", argv[optind]);
+    }
 
+    if (out_cli_theme != NULL)
+    {
+        *out_cli_theme = cli_theme;
+    }
     return 0;
 }

@@ -33,7 +33,7 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
 
     /* Draw outer panel border */
     const char *title =
-        (pw >= 84) ? "HELP & CONTROLS (1/i: Intro • 2/k: Controls • ↑↓ nav • / search • ESC close)"
+        (pw >= 84) ? "HELP & CONTROLS (1/i: Intro • 2: Controls • ↑↓ nav • / search • ESC close)"
                    : ((pw >= 54) ? "HELP & CONTROLS (1/i: Intro • / search • ESC close)" : "HELP");
     ov_draw_panel_border(pr, pc, ph, pw, title, OV_FG_BRIGHT, 1, 0);
 

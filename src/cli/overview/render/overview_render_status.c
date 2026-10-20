@@ -377,7 +377,7 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         }
         else if (lay->help_mode == 1)
         {
-            help_hints = " ↑↓/PgUp/PgDn Scroll   2/k Controls Reference   ESC Close";
+            help_hints = " ↑↓/PgUp/PgDn Scroll   2 Controls Reference   ESC Close";
         }
         else
         {

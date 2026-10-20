@@ -66,10 +66,10 @@ const intro_item_t g_intro_items[] = {
 
     { IL_HEADER,    "■ QUICK START & KEYSTROKES", NULL },
     { IL_KEY,       "  1 / i", "Toggle this Introduction guide on or off" },
-    { IL_KEY,       "  2 / k", "Switch to the Controls & Keybindings reference" },
+    { IL_KEY,       "  2", "Switch to the Controls & Keybindings reference" },
     { IL_KEY,       "  F2 - F7", "Switch view panels (DASH, STRM, PROC, FPS, CONN, LOOPS)" },
     { IL_KEY,       "  TAB", "Cycle active panel focus (Streams -> Procs -> FPS -> Graph)" },
-    { IL_KEY,       "  ↑ / ↓ (j / k)", "Navigate items in focused list, or scroll this guide" },
+    { IL_KEY,       "  ↑ / ↓", "Navigate items in focused list, or scroll this guide" },
     { IL_KEY,       "  c", "Toggle Control Mode ON to enable management actions" },
     { IL_KEY,       "  /", "Search topics in help, or regex filter in dashboard" },
     { IL_KEY,       "  f", "Toggle regex filter ON/OFF for focused panel" },

@@ -295,40 +295,6 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 0;
     }
 
-    if (key == '?')
-    {
-        char keys_str[128];
-        char ctrl_str[128] = "";
-
-        // Base keys always available
-        snprintf(keys_str, sizeof(keys_str),
-                 "Keys: q c h G v V ? TAB D L F W i <>[]sS +-= F2-F6 / ESC");
-
-        if (lay->ctrl_mode)
-        {
-            if (lay->focus == OV_FOCUS_FPS)
-            {
-                snprintf(ctrl_str, sizeof(ctrl_str), " | CTRL (FPS): r s k K ^e");
-            }
-            else if (lay->focus == OV_FOCUS_PROCS)
-            {
-                snprintf(ctrl_str, sizeof(ctrl_str), " | CTRL (PROC): p ^s e z C k K ^e");
-            }
-            else if (lay->focus == OV_FOCUS_STREAMS)
-            {
-                snprintf(ctrl_str, sizeof(ctrl_str), " | CTRL (STRM): DEL ^e");
-            }
-        }
-
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s%s", keys_str, ctrl_str);
-        if (lay->cmdlog_rows == 0)
-        {
-            lay->cmdlog_rows = 4;
-            ov_buf_force_clear();
-        }
-        return 0;
-    }
-
     if (key == OV_KEY_SHIFT_UP || key == OV_KEY_SHIFT_DOWN || key == OV_KEY_SHIFT_LEFT ||
         key == OV_KEY_SHIFT_RIGHT || key == OV_KEY_CTRL_LEFT || key == OV_KEY_CTRL_RIGHT ||
         key == OV_KEY_BTAB || key == 27)
