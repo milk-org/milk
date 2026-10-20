@@ -102,8 +102,8 @@ extern int             ov_handle_key(int key, OV_LAYOUT *lay, const OV_MODEL *m)
  */
 int main(int argc, char *argv[])
 {
-    const char *cli_theme = NULL;
-    int         opt_rc    = milkctrl_parse_options(argc, argv, &cli_theme);
+    OV_OPTS opts;
+    int     opt_rc = milkctrl_parse_options(argc, argv, &opts);
     if (opt_rc > 0)
     {
         return 0;
@@ -112,6 +112,18 @@ int main(int argc, char *argv[])
     {
         return 2;
     }
+    if (opts.shm_dir != NULL)
+    {
+        setenv("MILK_SHM_DIR", opts.shm_dir, 1);
+        setenv("MILK_PROC_DIR", opts.shm_dir, 1);
+    }
+    FILE *logf = NULL;
+    if (opts.log != NULL && (logf = fopen(opts.log, "a")) == NULL)
+    {
+        fprintf(stderr, "%s: --log %s: %s\n", argv[0], opts.log, strerror(errno));
+        return 1;
+    }
+    ov_cmdlog_mirror(logf, opts.debug);
 
     /* --- Require interactive terminal --- */
     if (!isatty(STDIN_FILENO))
@@ -147,7 +159,7 @@ int main(int argc, char *argv[])
     ov_detect_color_level();
 
     /* --- Initialize color theme --- */
-    int theme_rc = ov_theme_init(cli_theme);
+    int theme_rc = ov_theme_init(opts.theme);
 
     /* --- Resolve directories while the terminal is still cooked (resolvers may print) --- */
     ov_dirs_init();
@@ -193,6 +205,23 @@ int main(int argc, char *argv[])
     lay.dash_split_h_ratio      = 0.5f;
     lay.dash_split_v_dragging   = 0;
     lay.dash_split_h_dragging   = 0;
+
+    if (opts.view >= 0)
+    {
+        ov_set_view(&lay, (ov_view_t) opts.view);
+    }
+    if (opts.pattern != NULL) /* the view's list; DASH, CONN and LOOPS filter streams */
+    {
+        int             f  = ov_views[lay.view].default_focus;
+        OV_PANEL_STATE *ps = &lay.panel[(f >= 0 && f < OV_NB_LIST_PANELS) ? f : OV_FOCUS_STREAMS];
+        snprintf(ps->filter, sizeof(ps->filter), "%s", opts.pattern);
+        ps->filter_on     = 1;
+        lay.filter_active = 1;
+    }
+    if (opts.interval > 0)
+    {
+        ov_scan_set_interval((float) opts.interval);
+    }
 
     ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO, "Shared memory directory: %s", ov_get_shmdir());
     if (strcmp(ov_get_procdir(), ov_get_shmdir()) != 0)
@@ -257,6 +286,11 @@ int main(int argc, char *argv[])
             m                    = ov_scan_get_model();
             if (m != prev)
             {
+                if (m != NULL)
+                {
+                    ov_cmdlog_debug("scan %.1f ms: %d streams, %d processes, %d FPS",
+                                    m->scan_time_ms, m->nb_streams, m->nb_procs, m->nb_fps);
+                }
                 ov_render__sync_selection(&lay, m);
                 need_render = 1;
             }
@@ -279,6 +313,7 @@ int main(int argc, char *argv[])
                     break;
                 }
                 need_render = 1;
+                ov_cmdlog_debug("key %d", key);
                 if (ov_handle_key(key, &lay, m))
                 {
                     quit = 1;
@@ -366,6 +401,11 @@ int main(int argc, char *argv[])
     signal(SIGINT, SIG_DFL);
     ov_scan_stop();
     ov_input_history_free(&lay);
+    ov_cmdlog_mirror(NULL, 0);
+    if (logf != NULL)
+    {
+        fclose(logf);
+    }
 
     return 0;
 }

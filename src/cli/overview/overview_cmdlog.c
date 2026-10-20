@@ -19,6 +19,44 @@
 
 #include "overview_layout.h"
 
+static FILE *s_mirror;       /* --log file, NULL = none */
+static int   s_mirror_debug; /* --debug: ov_cmdlog_debug() lines too */
+
+/** ov_cmdlog_mirror - also append every entry to @fp (NULL stops); @debug enables ov_cmdlog_debug(). */
+void ov_cmdlog_mirror(FILE *fp, int debug)
+{
+    s_mirror       = fp;
+    s_mirror_debug = debug;
+}
+
+/** mirror_line - one "time level message" line in the --log file. */
+static void mirror_line(const struct timespec *ts, const char *level, const char *msg)
+{
+    struct tm tm;
+    char      t[32];
+    localtime_r(&ts->tv_sec, &tm);
+    strftime(t, sizeof(t), "%Y-%m-%dT%H:%M:%S", &tm);
+    fprintf(s_mirror, "%s.%03ld %-5s %s\n", t, ts->tv_nsec / 1000000L, level, msg);
+    fflush(s_mirror);
+}
+
+/** ov_cmdlog_debug - with --debug, a line in the --log file only (key events, scan timing). */
+void ov_cmdlog_debug(const char *fmt, ...)
+{
+    if (s_mirror == NULL || !s_mirror_debug)
+    {
+        return;
+    }
+    char            msg[256];
+    struct timespec ts;
+    va_list         ap;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    va_start(ap, fmt);
+    vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_end(ap);
+    mirror_line(&ts, "DEBUG", msg);
+}
+
 /**
  * ov_cmdlog_push - append a log entry.
  * @log:   command log ring buffer
@@ -51,6 +89,12 @@ void ov_cmdlog_push(OV_CMDLOG *log, ov_cmdlog_level_t level, const char *fmt, ..
         {
             *p = ' ';
         }
+    }
+
+    if (s_mirror != NULL)
+    {
+        static const char *const lvl[] = { "INFO", "OK", "FAIL", "WARN" };
+        mirror_line(&e->ts, ((unsigned) level < 4) ? lvl[level] : "?", e->msg);
     }
 
     log->head = (log->head + 1) % OV_CMDLOG_MAX;

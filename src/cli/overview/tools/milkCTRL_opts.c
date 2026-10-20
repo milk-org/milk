@@ -14,11 +14,9 @@
 #include "overview_keymap.h"
 #include "overview_layout.h"
 #include "overview_theme.h"
-#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
 /** help_row - print one "key  description" row, the key padded before it is coloured. */
 static void help_row(const char *key, const char *what, int mh_color)
@@ -49,9 +47,8 @@ void milkctrl_print_help(const char *prog, int mh_color)
         prog, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes", mh_color);
 
     milk_help_section("Usage", mh_color);
-    printf("  $ %s [%s %s] [%s %s]  (commit %s, shm %s)\n\n", prog, MH(MH_OPT, "-d"),
-           MH(MH_ARG, "DIR"), MH(MH_OPT, "-T"), MH(MH_ARG, "THEME"), MILK_GIT_COMMIT,
-           ov_get_shmdir());
+    printf("  $ %s [%s] [%s]  (commit %s, shm %s)\n\n", prog, MH(MH_OPT, "OPTIONS"),
+           MH(MH_ARG, "PATTERN"), MILK_GIT_COMMIT, ov_get_shmdir());
 
     milk_help_section("Description", mh_color);
     printf("  Real-time dashboard for milk streams (ImageStreamIO), function parameter\n"
@@ -62,8 +59,17 @@ void milkctrl_print_help(const char *prog, int mh_color)
     printf("  %-30s Show this help and exit\n", MH(MH_OPT, "-h, --help"));
     printf("  %-30s One-line description and exit\n", MH(MH_OPT, "-h1, --help-oneline"));
     printf("  %-30s Full help, forced monochrome\n", MH(MH_OPT, "-hm, --help-mono"));
-    printf("  %-30s Streams and processinfo directory (current: %s)\n", MH(MH_OPT, "-d <DIR>"),
-           ov_get_shmdir());
+    printf("  %-30s Streams and processinfo directory (current: %s)\n",
+           MH(MH_OPT, "-d, --shm-dir <DIR>"), ov_get_shmdir());
+    printf("  %-30s Open this view: dash streams procs fps conn loops\n",
+           MH(MH_OPT, "--view <NAME>"));
+    printf("  %-30s Scan period, 0.1 to 10 seconds (default 1; +/- change it)\n",
+           MH(MH_OPT, "--interval <SEC>"));
+    printf("  %-30s Append the command log to FILE\n", MH(MH_OPT, "--log <FILE>"));
+    printf("  %-30s Also log key events and scan timing to the --log file\n",
+           MH(MH_OPT, "--debug"));
+    printf("  %-30s Initial regex filter of the view's list (DASH, CONN, LOOPS: streams)\n",
+           MH(MH_ARG, "PATTERN"));
     printf("  %-30s Colour theme, one of:\n", MH(MH_OPT, "-T, --theme <NAME>"));
     for (int i = 0; i < ov_theme_count(); i++)
     {
@@ -103,7 +109,9 @@ void milkctrl_print_help(const char *prog, int mh_color)
            "  Hover action buttons appear in CONTROL mode.\n\n");
 
     milk_help_section("Examples", mh_color);
-    printf("  $ milk-CTRL\n  $ milk-CTRL -T night\n  $ milk-CTRL -d /tmp/mysim\n\n");
+    printf("  $ milk-CTRL\n  $ milk-CTRL -T night\n  $ milk-CTRL -d /tmp/mysim\n"
+           "  $ milk-CTRL --view procs 'wfs|dm'\n  $ milk-CTRL --interval 0.2 --log "
+           "/tmp/ctrl.log\n\n");
 
     milk_help_section("Environment", mh_color);
     static const char *const env[][2] = {
@@ -125,24 +133,10 @@ void milkctrl_print_help(const char *prog, int mh_color)
 }
 
 /**
- * usage_error - print a monochrome usage error to stderr.
- * Return: -1, so callers can return it directly.
- */
-static int usage_error(const char *prog, const char *what, const char *arg)
-{
-    fprintf(stderr, "Error: %s: %s\nRun %s -h for usage.\n", what, arg, prog);
-    return -1;
-}
-
-/**
- * milkctrl_parse_options - parse command line flags for milk-CTRL.
- * @argc:          Argument count.
- * @argv:          Argument strings.
- * @out_cli_theme: Output pointer to theme name if -T specified.
- *
+ * milkctrl_parse_options - help options, then ov_opts_parse(); usage errors go to stderr.
  * Return: 0 to run, 1 when help was printed, -1 on a usage error (caller exits 2).
  */
-int milkctrl_parse_options(int argc, char *argv[], const char **out_cli_theme)
+int milkctrl_parse_options(int argc, char *argv[], OV_OPTS *o)
 {
     int action = milk_help_init(
         argc, argv, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
@@ -161,56 +155,19 @@ int milkctrl_parse_options(int argc, char *argv[], const char **out_cli_theme)
         milkctrl_print_help(argv[0], action == MH_ACTION_HELP);
         return 1;
     }
-
-    static const struct option lopts[]   = { { "theme", required_argument, NULL, 'T' },
-                                             { NULL, 0, NULL, 0 } };
-    const char                *cli_theme = NULL;
-    int                        c;
-
-    opterr = 0;
-    while ((c = getopt_long(argc, argv, ":d:T:", lopts, NULL)) != -1)
+    if (ov_opts_parse(argc, argv, o) == 0)
     {
-        switch (c)
+        return 0;
+    }
+    fprintf(stderr, "Error: %s\nRun %s -h for usage.\n", o->err, argv[0]);
+    if (strncmp(o->err, "unknown theme", 13) == 0)
+    {
+        fprintf(stderr, "Valid themes:");
+        for (int i = 0; i < ov_theme_count(); i++)
         {
-        case 'd':
-        {
-            struct stat st;
-            if (stat(optarg, &st) != 0 || !S_ISDIR(st.st_mode))
-            {
-                return usage_error(argv[0], "not a directory", optarg);
-            }
-            setenv("MILK_SHM_DIR", optarg, 1);
-            setenv("MILK_PROC_DIR", optarg, 1);
-            break;
+            fprintf(stderr, "%s %s", i ? "," : "", ov_theme_get(i)->id);
         }
-        case 'T':
-            if (ov_theme_find_by_id(optarg) < 0)
-            {
-                usage_error(argv[0], "unknown theme", optarg);
-                fprintf(stderr, "Valid themes:");
-                for (int i = 0; i < ov_theme_count(); i++)
-                {
-                    fprintf(stderr, "%s %s", i ? "," : "", ov_theme_get(i)->id);
-                }
-                fprintf(stderr, "\n");
-                return -1;
-            }
-            cli_theme = optarg;
-            break;
-        case ':':
-            return usage_error(argv[0], "option requires an argument", argv[optind - 1]);
-        default:
-            return usage_error(argv[0], "unknown option", argv[optind - 1]);
-        }
+        fprintf(stderr, "\n");
     }
-    if (optind < argc)
-    {
-        return usage_error(argv[0], "unexpected argument", argv[optind]);
-    }
-
-    if (out_cli_theme != NULL)
-    {
-        *out_cli_theme = cli_theme;
-    }
-    return 0;
+    return -1;
 }

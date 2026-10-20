@@ -225,6 +225,7 @@ add_executable(
   milk-CTRL
   ../overview/tools/milkCTRL.c
   ../overview/tools/milkCTRL_opts.c
+  ../overview/tools/milkCTRL_opts_parse.c
   ../overview/overview_layout.c
   ../overview/overview_view.c
   ../overview/overview_keymap.c

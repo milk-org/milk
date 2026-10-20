@@ -11,6 +11,7 @@
 #define OVERVIEW_LAYOUT_H
 
 #include <stdint.h>
+#include <stdio.h>
 #include <time.h>
 #include "overview_target.h"
 
@@ -84,6 +85,8 @@ typedef struct
 
 void ov_cmdlog_push(OV_CMDLOG *log, ov_cmdlog_level_t level, const char *fmt, ...);
 int  ov_cmdlog_drain_fd(OV_CMDLOG *log, int fd);
+void ov_cmdlog_mirror(FILE *fp, int debug);
+void ov_cmdlog_debug(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
 
 #include "overview_overlay.h" /* needs OV_RECT */
