@@ -7,8 +7,10 @@
  * @brief   Process liveness and /proc/<pid>/stat values, read once per PID per scan.
  *
  * One read of /proc/<pid>/stat gives state, CPU ticks, start time and RSS. The table is reset at the
- * start of each scan (pid_cache_reset). A PID found dead is not probed again for OV_PID_DEAD_RECHECK_S
- * seconds: dead stream owners and stale registry entries would otherwise cost a syscall each, every scan.
+ * start of each scan (pid_cache_reset). A PID found dead is not probed again until the kernel may have
+ * reused it, i.e. its PID counter (ns_last_pid) wrapped, or for OV_PID_DEAD_RECHECK_S seconds when that
+ * counter cannot be read: dead stream owners and stale registry entries would otherwise cost a syscall each,
+ * every scan. Dead PIDs not looked up for OV_PID_DEAD_FORGET_S seconds are dropped.
  * pid_same_process() and pid_check_zombie() always read afresh: they guard actions.
  */
 
@@ -29,6 +31,7 @@
 #define OV_PID_TABLE_MAX 4096
 #define OV_PID_DEAD_MAX 4096
 #define OV_PID_DEAD_RECHECK_S 10.0
+#define OV_PID_DEAD_FORGET_S 60.0
 
 typedef struct
 {
@@ -43,9 +46,13 @@ static pid_entry_t s_pid[OV_PID_TABLE_MAX];
 static int         s_pid_nb;
 static OV_INDEX_DEF(8192) s_pid_ix;
 
-static pid_t  s_dead[OV_PID_DEAD_MAX]; /* PIDs found dead, and when */
-static double s_dead_t[OV_PID_DEAD_MAX];
+static pid_t  s_dead[OV_PID_DEAD_MAX];      /* PIDs found dead */
+static double s_dead_born[OV_PID_DEAD_MAX]; /* when found dead */
+static double s_dead_t[OV_PID_DEAD_MAX];    /* when last looked up */
+static long   s_dead_lp[OV_PID_DEAD_MAX];   /* ns_last_pid when found dead, -1 = unknown */
 static int    s_dead_nb;
+static double s_scan_t;        /* start of the current scan */
+static long   s_last_pid = -1; /* ns_last_pid at the start of the current scan */
 static OV_INDEX_DEF(8192) s_dead_ix;
 
 static pthread_mutex_t s_pid_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -70,22 +77,46 @@ static int dead_match(const void *ctx, int32_t i)
     return s_dead[i] == *(const pid_t *) ctx;
 }
 
+/** read_last_pid - the last PID the kernel allocated in our namespace, -1 if unknown. */
+static long read_last_pid(void)
+{
+    char buf[32];
+    int  fd = open("/proc/sys/kernel/ns_last_pid", O_RDONLY | O_CLOEXEC);
+    if (fd < 0)
+    {
+        return -1;
+    }
+    ssize_t n = read(fd, buf, sizeof(buf) - 1);
+    close(fd);
+    buf[(n > 0) ? n : 0] = '\0';
+    return (n > 0) ? strtol(buf, NULL, 10) : -1;
+}
+
 /**
- * pid_cache_reset - start a scan: forget this scan's PID reads, drop dead PIDs not checked recently.
+ * pid_cache_reset - start a scan: forget this scan's PID reads; drop dead PIDs the kernel may have reused
+ * (its PID counter wrapped) or that were not looked up recently.
  */
 void pid_cache_reset(void)
 {
     double now = now_s();
+    long   lp  = read_last_pid();
     pthread_mutex_lock(&s_pid_mutex);
-    s_pid_nb = 0;
+    s_scan_t   = now;
+    s_last_pid = lp;
+    s_pid_nb   = 0;
     ov_ix_clear(&s_pid_ix);
     int n = 0;
     for (int i = 0; i < s_dead_nb; i++)
     {
-        if (now - s_dead_t[i] < OV_PID_DEAD_RECHECK_S)
+        int reusable = (lp >= 0 && s_dead_lp[i] >= 0)
+                           ? (lp < s_dead_lp[i])
+                           : (now - s_dead_born[i] >= OV_PID_DEAD_RECHECK_S);
+        if (!reusable && now - s_dead_t[i] < OV_PID_DEAD_FORGET_S)
         {
-            s_dead[n]   = s_dead[i];
-            s_dead_t[n] = s_dead_t[i];
+            s_dead[n]      = s_dead[i];
+            s_dead_born[n] = s_dead_born[i];
+            s_dead_t[n]    = s_dead_t[i];
+            s_dead_lp[n]   = s_dead_lp[i];
             n++;
         }
     }
@@ -183,10 +214,12 @@ static void pid_lookup(pid_t pid, pid_entry_t *out)
     }
     pthread_mutex_lock(&s_pid_mutex);
     int i = ov_ix_find(&s_pid_ix, h, pid_match, &pid);
-    if (i < 0 && ov_ix_find(&s_dead_ix, h, dead_match, &pid) >= 0)
+    int d = (i < 0) ? ov_ix_find(&s_dead_ix, h, dead_match, &pid) : -1;
+    if (d >= 0)
     {
+        s_dead_t[d] = s_scan_t;
         pthread_mutex_unlock(&s_pid_mutex);
-        return; /* dead when last checked, less than OV_PID_DEAD_RECHECK_S ago */
+        return; /* found dead and not reusable since */
     }
     if (i >= 0)
     {
@@ -206,8 +239,10 @@ static void pid_lookup(pid_t pid, pid_entry_t *out)
     }
     if (out->status == OV_PID_DEAD && s_dead_nb < OV_PID_DEAD_MAX)
     {
-        s_dead[s_dead_nb]   = pid;
-        s_dead_t[s_dead_nb] = now_s();
+        s_dead[s_dead_nb]      = pid;
+        s_dead_born[s_dead_nb] = s_scan_t;
+        s_dead_t[s_dead_nb]    = s_scan_t;
+        s_dead_lp[s_dead_nb]   = s_last_pid;
         ov_ix_put(&s_dead_ix, h, s_dead_nb++);
     }
     pthread_mutex_unlock(&s_pid_mutex);
