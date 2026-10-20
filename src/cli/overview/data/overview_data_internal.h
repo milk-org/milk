@@ -160,7 +160,14 @@ typedef struct
     uint32_t type;
     uint64_t fpflag;
     int      is_writable;
+    int      has_min, has_max; /* FPFLAG_MINLIMIT / MAXLIMIT on a numeric type */
+    double   vmin, vmax;
 } ov_fps_param_info_t;
+
+/* Parameter write refusals, beyond -1 (not found / value rejected by libfps) */
+#define OV_PARAM_MOVED -2   /* FPS re-created or parameter moved since it was shown */
+#define OV_PARAM_RO_FILE -3 /* shm file not writable by this user */
+#define OV_PARAM_LOCKED -4  /* WRITESTATUS clear: not writable in the FPS's current state */
 
 /** Fetch parameter metadata safely under cache lock */
 int ov_fcache_get_param_info(const char *fps_name, int disp_idx, ov_fps_param_info_t *info);
