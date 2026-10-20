@@ -160,9 +160,10 @@
     },
     {
         "W",
-        "Export snapshot to file (/tmp)",
-        "Writes a complete timestamped diagnostic report of all active streams, "
-        "processes, and FPS modules to /tmp/milk-CTRL_snapshot_<timestamp>.txt.",
+        "Export snapshot to file ($TMPDIR, default /tmp)",
+        "Writes a diagnostic report of all streams, processes and FPS modules to a new private "
+        "file $TMPDIR/milk-CTRL_snapshot_<timestamp>_<random>.txt and shows its path, or the "
+        "error, in the command log.",
         HF_ENTRY,
         HS_NAV,
     },

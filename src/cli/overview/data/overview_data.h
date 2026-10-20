@@ -305,14 +305,7 @@ void ov_sort_fps(OV_MODEL *model, int key, int dir);
  * Return: number of matching indices written to @out.
  */
 int ov_filter_build(const char *pattern, const char **names, int count, int *out, int max_out);
-/**
- * ov_model_export_snapshot - dump model to a text file.
- * @m: model to export
- *
- * Writes a timestamped snapshot to /tmp/milk-CTRL_snapshot_*.txt
- * containing all streams, processes, and FPS entries.
- */
-void ov_model_export_snapshot(const OV_MODEL *m);
+int ov_model_export_snapshot(const OV_MODEL *m, char *path, size_t pathsz);
 
 const char *ov_loopstat_label(int loopstat, int long_form);
 const char *ov_ctrlval_label(int ctrlval);

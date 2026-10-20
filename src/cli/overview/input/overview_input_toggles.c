@@ -8,6 +8,8 @@
  */
 
 #include "overview_input_internal.h"
+#include <limits.h>
+#include <errno.h>
 
 /**
  * ov_input__handle_view_switch - handle F-key view switches (F2..F7) and tabs.
@@ -230,8 +232,15 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
     if (key == 'W')
     {
-        ov_model_export_snapshot(m);
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_OK, "📸 Snapshot exported");
+        char path[PATH_MAX];
+        if (ov_model_export_snapshot(m, path, sizeof(path)) == 0)
+        {
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_OK, "Snapshot written to %s", path);
+        }
+        else
+        {
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_FAIL, "Snapshot failed: %s", strerror(errno));
+        }
         return 1;
     }
     if (key == OV_KEY_F8 || key == ctrl('t'))

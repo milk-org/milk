@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import pytest
 
 pytestmark = pytest.mark.timeout(60)
@@ -68,4 +70,24 @@ def test_runstart_reports_failed_conf_check(milkctrl, entities):
     m = _fps_ctrl(milkctrl, r"nochk")
     m.keys("r")
     m.wait_for(r"RUNstart not sent, conf check not OK")
+    assert m.quit() == 0
+
+
+def test_snapshot_files_are_unique_private_and_reported(milkctrl, tmp_path):
+    m = milkctrl()
+    m.keys("W")
+    m.wait_for(r"Snapshot written to \S+")
+    m.keys("W")
+    time.sleep(0.5)
+    snaps = sorted((tmp_path / "tmp").glob("milk-CTRL_snapshot_*.txt"))
+    assert len(snaps) == 2
+    for s in snaps:
+        assert (s.stat().st_mode & 0o777) == 0o600
+    assert m.quit() == 0
+
+
+def test_snapshot_failure_is_reported(milkctrl, tmp_path):
+    m = milkctrl(env_extra={"TMPDIR": str(tmp_path / "missing")})
+    m.keys("W")
+    m.wait_for(r"Snapshot failed: No such file or directory")
     assert m.quit() == 0

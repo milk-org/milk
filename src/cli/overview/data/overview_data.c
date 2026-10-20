@@ -20,6 +20,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include <limits.h>
+#include <errno.h>
 
 #include "processtools_trigger.h"
 #include <signal.h>
@@ -110,25 +112,53 @@ void ov_model_full_scan(OV_MODEL *model)
  * ========================================================= */
 
 /**
- * ov_model_export_snapshot - Export current model state to a text file in /tmp
- * @m: Pointer to data model snapshot
+ * ov_model_export_snapshot - Write the model to a new private file
+ * ${TMPDIR:-/tmp}/milk-CTRL_snapshot_<time>_XXXXXX.txt (O_EXCL, mode 0600).
+ * @m:      Pointer to data model snapshot
+ * @path:   Receives the file name
+ * @pathsz: Size of @path
+ *
+ * Return: 0, or -1 with errno set (nothing is left behind on failure).
  */
-void ov_model_export_snapshot(const OV_MODEL *m)
+int ov_model_export_snapshot(const OV_MODEL *m, char *path, size_t pathsz)
 {
-    if (m == NULL)
+    if (m == NULL || path == NULL)
     {
-        return;
+        errno = EINVAL;
+        return -1;
     }
 
-    time_t     now    = time(NULL);
-    struct tm *tm_ptr = localtime(&now);
-    char       fname[128];
-    strftime(fname, sizeof(fname), "/tmp/milk-CTRL_snapshot_%Y%m%d_%H%M%S.txt", tm_ptr);
+    time_t      now = time(NULL);
+    struct tm   tmv;
+    struct tm  *tm_ptr = localtime_r(&now, &tmv);
+    const char *dir    = getenv("TMPDIR");
+    char        stamp[32];
+    char        fname[PATH_MAX];
+    if (dir == NULL || dir[0] == '\0')
+    {
+        dir = "/tmp";
+    }
+    strftime(stamp, sizeof(stamp), "%Y%m%d_%H%M%S", tm_ptr);
+    int n = snprintf(fname, sizeof(fname), "%s/milk-CTRL_snapshot_%s_XXXXXX.txt", dir, stamp);
+    if (n < 0 || (size_t) n >= sizeof(fname) || (size_t) n >= pathsz)
+    {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
 
-    FILE *fp = fopen(fname, "w");
+    int fd = mkstemps(fname, 4);
+    if (fd < 0)
+    {
+        return -1;
+    }
+    FILE *fp = fdopen(fd, "w");
     if (fp == NULL)
     {
-        return;
+        int err = errno;
+        close(fd);
+        unlink(fname);
+        errno = err;
+        return -1;
     }
 
     char tstr[64];
@@ -185,7 +215,17 @@ void ov_model_export_snapshot(const OV_MODEL *m)
         }
     }
 
-    fclose(fp);
+    errno   = 0;
+    int bad = ferror(fp);
+    if (fclose(fp) != 0 || bad)
+    {
+        int err = errno ? errno : EIO;
+        unlink(fname);
+        errno = err;
+        return -1;
+    }
+    snprintf(path, pathsz, "%s", fname);
+    return 0;
 }
 
 /**
