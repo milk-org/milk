@@ -113,8 +113,10 @@ typedef struct
     int     loops_truncated; /* cycle search hit its limit: more loops may exist */
 
     /* scan metadata */
-    double          scan_time_ms;
-    uint64_t        scan_count;
+    double   scan_time_ms;
+    uint64_t scan_count;
+    uint64_t
+        seq; /* publication number from the scan thread: unique per model, 0 = never published */
     struct timespec last_scan_time;
 } OV_MODEL;
 

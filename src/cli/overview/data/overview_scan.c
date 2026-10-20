@@ -109,6 +109,8 @@ int ov_scan_get_event_fd(void)
 }
 
 
+static uint64_t ov_publish_seq; /* scan thread only */
+
 /**
  * ov_scan_thread_func - Background worker thread scanning system and milk state
  * @arg: Unused thread argument
@@ -127,6 +129,8 @@ static void *ov_scan_thread_func(void *arg __attribute__((unused)))
         /* Scan into our private write slot
          * (no lock needed — display never touches it) */
         ov_model_full_scan(&ov_model_slots[ov_write_idx]);
+        ov_model_slots[ov_write_idx].seq =
+            ++ov_publish_seq; /* scan_count is per slot: not unique */
 
         /* Publish: swap write → ready.
          * The old ready slot becomes our new write slot. */
