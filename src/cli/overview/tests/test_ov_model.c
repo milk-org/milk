@@ -205,11 +205,11 @@ static void test_labels(void)
         CHECK(strstr(OV_STATE_LEGEND, ov_state_name((ov_state_t) st, 0)) != NULL);
         CHECK(strlen(ov_state_name((ov_state_t) st, 0)) <= 4);
     }
-    CHECK(strcmp(ov_ctrlval_label(PROCESSINFO_CTRLVAL_PAUSE), "PAUSE") == 0);
-    CHECK(strcmp(ov_ctrlval_label(PROCESSINFO_CTRLVAL_INCR), "STEP") == 0);
-    CHECK(strcmp(ov_trigmode_label(3, 1), "SEMAPHORE") == 0);
-    CHECK(strcmp(ov_trigmode_label(1, 1), "CNT0") == 0);
-    CHECK(strcmp(ov_trigmode_label(4, 0), "DLY") == 0);
+    CHECK(strcmp(processinfo_ctrlval_name(PROCESSINFO_CTRLVAL_PAUSE), "PAUSE") == 0);
+    CHECK(strcmp(processinfo_ctrlval_name(PROCESSINFO_CTRLVAL_INCR), "STEP") == 0);
+    CHECK(strcmp(processinfo_triggermode_name(3, 1), "SEMAPHORE") == 0);
+    CHECK(strcmp(processinfo_triggermode_name(1, 1), "CNT0") == 0);
+    CHECK(strcmp(processinfo_triggermode_name(4, 0), "DLY") == 0);
 }
 
 /* A PID names the same process only while its start time matches (robust-3, control-5) */

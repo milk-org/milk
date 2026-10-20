@@ -414,7 +414,7 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
             char line[256];
             int  n2 = snprintf(line, sizeof(line), "  PID %d (%s)  mode:%s  exec %s  hand-off %s%s",
                                (int) s->proctrace_pid[tt], pname,
-                               ov_trigmode_label(s->proctrace_trigmode[tt], 0),
+                               processinfo_triggermode_name(s->proctrace_trigmode[tt], 0),
                                ov_fmt_dt_ns(tc, sizeof(tc), hop.compute_ns),
                                ov_fmt_dt_ns(th, sizeof(th), hop.handoff_ns), lag);
             H_ov_buf_printf("%s", line);

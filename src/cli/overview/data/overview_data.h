@@ -7,6 +7,7 @@
 
 #include "overview_data_types.h"
 #include "overview_data_index.h"
+#include "processinfo_labels.h"
 
 /* =========================================================
  * Graph node
@@ -403,7 +404,5 @@ typedef enum
 const char *ov_state_name(ov_state_t st, int long_form);
 ov_state_t  ov_state_of_loopstat(int loopstat);
 const char *ov_loopstat_label(int loopstat, int long_form);
-const char *ov_ctrlval_label(int ctrlval);
-const char *ov_trigmode_label(int mode, int long_form);
 
 #endif /* OVERVIEW_DATA_H */

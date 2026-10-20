@@ -101,7 +101,7 @@ static void print_proc_info(const OV_MODEL *m, int pi)
     printf("\n" C_HDR " Status" C_RST "\n");
     printf("   %-18s: %s%s" C_RST "\n", "Loop stat", loopstat_color(p->loopstat),
            ov_loopstat_label(p->loopstat, 1));
-    printf("   %-18s: %s\n", "CTRL val", ov_ctrlval_label(p->CTRLval));
+    printf("   %-18s: %s\n", "CTRL val", processinfo_ctrlval_name(p->CTRLval));
     printf("   %-18s: " C_VAL "%" PRId64 "" C_RST "\n", "Loop count", (int64_t) p->loopcnt);
     if (p->rt_priority > 0)
     {
@@ -149,8 +149,8 @@ static void print_proc_info(const OV_MODEL *m, int pi)
 
     /* ---- Trigger ---- */
     printf("\n" C_HDR " Trigger" C_RST "\n");
-    printf("   %-18s: " C_VAL "%s (%d)" C_RST "\n", "Mode", ov_trigmode_label(p->triggermode, 1),
-           p->triggermode);
+    printf("   %-18s: " C_VAL "%s (%d)" C_RST "\n", "Mode",
+           processinfo_triggermode_name(p->triggermode, 1), p->triggermode);
     if (p->trigstreamname[0] != '\0')
     {
         printf("   %-18s: " C_STREAM "%s" C_RST "\n", "Stream", p->trigstreamname);

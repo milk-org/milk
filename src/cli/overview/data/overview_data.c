@@ -249,16 +249,17 @@ int ov_model_export_snapshot(const OV_MODEL *m, char *path, size_t pathsz)
     return 0;
 }
 
-/** ov_state_name - name of state @st, short (at most 4 chars) or long form. */
+/** ov_state_name - name of state @st, short (at most 4 chars) or long form: processinfo's, plus STAL and IDLE. */
 const char *ov_state_name(ov_state_t st, int long_form)
 {
-    static const char *const sn[OV_ST_COUNT] = { "INIT", "RUN",  "PAUS", "STOP", "ERR",
-                                                 "SPIN", "CRSH", "STAL", "IDLE", "??" };
-    static const char *const ln[OV_ST_COUNT] = { "INIT",  "RUNNING",  "PAUSED",  "STOPPED",
-                                                 "ERROR", "SPINNING", "CRASHED", "STALLED",
-                                                 "IDLE",  "UNKNOWN" };
-    st = ((int) st < 0 || st >= OV_ST_COUNT) ? OV_ST_UNKNOWN : st;
-    return long_form ? ln[st] : sn[st];
+    static const char *const sn[] = { "STAL", "IDLE", "??" };
+    static const char *const ln[] = { "STALLED", "IDLE", "UNKNOWN" };
+    st                            = ((int) st < 0 || st >= OV_ST_COUNT) ? OV_ST_UNKNOWN : st;
+    if (st < OV_ST_STAL)
+    {
+        return processinfo_loopstat_name((int) st, long_form);
+    }
+    return long_form ? ln[st - OV_ST_STAL] : sn[st - OV_ST_STAL];
 }
 
 /** ov_state_of_loopstat - state of processinfo loop state @loopstat. */
@@ -273,39 +274,4 @@ ov_state_t ov_state_of_loopstat(int loopstat)
 const char *ov_loopstat_label(int loopstat, int long_form)
 {
     return ov_state_name(ov_state_of_loopstat(loopstat), long_form);
-}
-
-/**
- * ov_ctrlval_label - processinfo CTRLval request name (RUN/PAUSE/STEP/EXIT).
- */
-const char *ov_ctrlval_label(int ctrlval)
-{
-    switch (ctrlval)
-    {
-    case PROCESSINFO_CTRLVAL_RUN:
-        return "RUN";
-    case PROCESSINFO_CTRLVAL_PAUSE:
-        return "PAUSE";
-    case PROCESSINFO_CTRLVAL_INCR:
-        return "STEP";
-    case PROCESSINFO_CTRLVAL_EXIT:
-        return "EXIT";
-    default:
-        return "UNKNOWN";
-    }
-}
-
-/**
- * ov_trigmode_label - processinfo trigger mode name, short (3 chars) or long form.
- */
-const char *ov_trigmode_label(int mode, int long_form)
-{
-    static const char *const sl[] = { "IMM", "CN0", "CN1", "SEM", "DLY", "SMP", "CN2" };
-    static const char *const ll[] = { "IMMEDIATE", "CNT0",         "CNT1", "SEMAPHORE",
-                                      "DELAY",     "SEM+TIMEOUTS", "CNT2" };
-    if (mode < PROCESSINFO_TRIGGERMODE_IMMEDIATE || mode > PROCESSINFO_TRIGGERMODE_CNT2)
-    {
-        return long_form ? "UNKNOWN" : " - ";
-    }
-    return long_form ? ll[mode] : sl[mode];
 }

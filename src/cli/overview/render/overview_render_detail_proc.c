@@ -96,10 +96,10 @@ int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_CONN);
         const char *tstream = (p->trigstreamname[0] != '\0') ? p->trigstreamname : "-";
-        int         n = snprintf(NULL, 0, " Trigger: %s  stream: %s  sem: %d",
-                                 ov_trigmode_label(p->triggermode, 0), tstream, p->triggersem);
-        H_ov_buf_printf(" Trigger: %s  stream: %s  sem: %d", ov_trigmode_label(p->triggermode, 0),
-                        tstream, p->triggersem);
+        int n = snprintf(NULL, 0, " Trigger: %s  stream: %s  sem: %d",
+                         processinfo_triggermode_name(p->triggermode, 0), tstream, p->triggersem);
+        H_ov_buf_printf(" Trigger: %s  stream: %s  sem: %d",
+                        processinfo_triggermode_name(p->triggermode, 0), tstream, p->triggersem);
         H_render_pad_spaces(n, r.width);
         if (!skip_draw)
         {

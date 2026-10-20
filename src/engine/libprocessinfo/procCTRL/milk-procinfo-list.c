@@ -21,6 +21,7 @@
 
 #include "processinfo.h"
 #include "processinfo_procdirname.h"
+#include "processinfo_labels.h"
 #include "milkDebugTools.h"
 #include "milk_help.h"
 
@@ -224,33 +225,22 @@ int main(int argc, char *argv[])
 
         int alive = (kill(pid, 0) == 0 || errno == EPERM);
 
-        if (alive)
+        /* A dead process that did not stop cleanly crashed; a live one shows its loop state */
+        int state = (!alive && loopstat != PROCESSINFO_LOOPSTAT_STOP) ? PROCESSINFO_LOOPSTAT_CRASHED
+                    : alive                                           ? loopstat
+                                                                      : PROCESSINFO_LOOPSTAT_STOP;
+        const char *scolor = (state == PROCESSINFO_LOOPSTAT_STOP)      ? C_TYPE
+                             : (state == PROCESSINFO_LOOPSTAT_CRASHED) ? C_ERR
+                                                                       : C_NAME;
+        status_str         = processinfo_loopstat_name(state, 1);
+        if (alive && state != PROCESSINFO_LOOPSTAT_STOP)
         {
-            if (loopstat == PROCESSINFO_LOOPSTAT_STOP)
-            {
-                status_str = C_TYPE "STOPPED" C_RST;
-            }
-            else
-            {
-                status_str = C_NAME "RUNNING" C_RST;
-                pid_color  = C_NAME;
-                pid_reset  = C_RST;
-            }
-        }
-        else
-        {
-            if (loopstat == PROCESSINFO_LOOPSTAT_STOP)
-            {
-                status_str = C_TYPE "STOPPED" C_RST;
-            }
-            else
-            {
-                status_str = C_ERR "CRASHED" C_RST;
-            }
+            pid_color = C_NAME;
+            pid_reset = C_RST;
         }
 
-        printf(C_NAME "%-30s" C_RST " %s%-10ld%s %s\n", pname, pid_color, (long) pid, pid_reset,
-               status_str);
+        printf(C_NAME "%-30s" C_RST " %s%-10ld%s %s%s" C_RST "\n", pname, pid_color, (long) pid,
+               pid_reset, scolor, status_str);
     }
 
     closedir(dir);

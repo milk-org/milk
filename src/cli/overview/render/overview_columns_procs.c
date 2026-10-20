@@ -77,7 +77,8 @@ static void cell_uptime(OV_COLCELL *c, const OV_ROW_CTX *rc)
 static void cell_trg(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
     c->fg = OV_FG_CONN;
-    snprintf(c->text, sizeof(c->text), "%s", ov_trigmode_label(PROC(rc)->triggermode, 0));
+    snprintf(c->text, sizeof(c->text), "%s",
+             processinfo_triggermode_name(PROC(rc)->triggermode, 0));
 }
 
 /** cell_trigstrm - trigger stream. */
