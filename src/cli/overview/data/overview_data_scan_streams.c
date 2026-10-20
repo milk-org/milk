@@ -292,8 +292,9 @@ static int emit_stream(OV_MODEL *model, int idx, int ci)
         s->pending = !ce->err;
         s->err     = (int8_t) ce->err;
     }
-    s->is_link = (int8_t) ce->is_link;
-    s->alias   = (int8_t) ce->alias;
+    s->is_link    = (int8_t) ce->is_link;
+    s->nb_holders = (int16_t) ce->nb_holders;
+    s->alias      = (int8_t) ce->alias;
     memcpy(s->link_target, ce->link_target, sizeof(s->link_target));
     return s->pending;
 }
@@ -432,6 +433,7 @@ void ov_scan_streams(OV_MODEL *model)
             s_scache[ci].is_link = is_link;
             s_scache[ci].err     = derr; /* a dangling link is not mapped */
             s_scache[ci].is_new  = (s_scan_dt_sec > 0.0) ? OV_NEW_SCANS : 0; /* none at startup */
+            s_scache[ci].nb_holders = -1;
         }
         scache_try_map(ci, fpath, &budget);
         s_scache[ci].in_use = 1;

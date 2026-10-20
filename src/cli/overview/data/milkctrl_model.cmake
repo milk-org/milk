@@ -28,6 +28,7 @@ add_library(
   ${OV_DIR}/data/overview_data_trace.c
   ${OV_DIR}/data/overview_data_stream_err.c
   ${OV_DIR}/data/overview_data_inspect.c
+  ${OV_DIR}/data/overview_data_holders.c
   ${OV_DIR}/data/overview_data_sys_proc.c
   ${OV_DIR}/data/overview_data_sys_perf.c
   ${OV_DIR}/data/overview_scan.c

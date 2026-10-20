@@ -74,6 +74,8 @@ typedef struct
     int     err; /* ov_stream_err_t of the last mapping attempt; retried when the file changes */
     struct timespec err_mtime; /* the file's mtime when it failed */
     int             is_link, alias;
+    int             nb_holders; /* -1 = no HOLDERS pass yet */
+    pid_t           holder[OV_MAX_HOLDERS];
     char            link_target[STRINGMAXLEN_IMAGE_NAME];
 } ov_stream_cache_t;
 
@@ -88,6 +90,7 @@ int        ov_stream_dirent(const char          *dir,
                             size_t               n);
 int        ov_stream_map_err(int rc, int version_ok);
 void       ov_scan_inspect(OV_MODEL *model);
+void       ov_scan_holders(OV_MODEL *model);
 extern int s_scache_nb;
 
 typedef struct

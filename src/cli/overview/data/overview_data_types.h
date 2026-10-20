@@ -205,9 +205,10 @@ typedef struct
 
     int    pending; /**< listed, not mapped yet (OV_MAP_PER_SCAN): only name and inode are set */
     int8_t err; /**< ov_stream_err_t: the file is listed but cannot be used (name and inode only) */
-    int8_t is_link; /**< the *.im.shm is a symbolic link to link_target */
-    int8_t alias;   /**< a link whose target is listed too: shown, kept out of the graph */
-    char   link_target[STRINGMAXLEN_IMAGE_NAME];
+    int8_t is_link;     /**< the *.im.shm is a symbolic link to link_target */
+    int8_t alias;       /**< a link whose target is listed too: shown, kept out of the graph */
+    int16_t nb_holders; /**< processes mapping the file at the last HOLDERS pass, -1 = unknown */
+    char    link_target[STRINGMAXLEN_IMAGE_NAME];
 
     /* static string cache */
     char size_str[32];
@@ -227,6 +228,7 @@ typedef struct
 
 /* Everything known about the one stream under inspection (F3 inspector, DETAILS): ov_scan_set_inspect */
 #define OV_INSP_MAX_KW 64
+#define OV_MAX_HOLDERS 16 /* processes listed per stream as mapping it */
 typedef struct
 {
     char            name[STRINGMAXLEN_IMAGE_NAME]; /* "" = none */
@@ -244,6 +246,12 @@ typedef struct
     pid_t           sem_read[IMAGE_NB_SEMAPHORE], sem_write[IMAGE_NB_SEMAPHORE];
     uint8_t         sem_read_alive[IMAGE_NB_SEMAPHORE], sem_write_alive[IMAGE_NB_SEMAPHORE];
     int             nb_kw, nb_kw_listed; /* keywords in the stream, copied below */
+    int             nb_holders; /* processes mapping the file at the last pass, -1 = unknown */
+    struct
+    {
+        pid_t pid;
+        char  comm[16];
+    } holder[OV_MAX_HOLDERS];
     struct
     {
         char name[KEYWORD_MAX_STRING];

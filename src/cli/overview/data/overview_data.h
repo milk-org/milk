@@ -104,7 +104,10 @@ typedef struct
     int              streams_capped;  /* more *.im.shm than OV_MAX_STREAMS */
     OV_TRACE_HOP     trace[OV_MAX_TRACE];
     int              nb_trace;
-    OV_STREAM_DETAIL insp; /* the stream named by ov_scan_set_inspect */
+    OV_STREAM_DETAIL insp;               /* the stream named by ov_scan_set_inspect */
+    double           holders_age_s;      /* since the last /proc maps pass, -1 = none yet */
+    double           holders_ms;         /* how long that pass took */
+    int              holders_unreadable; /* processes whose maps could not be read (other users) */
 
     OV_FPS fps[OV_MAX_FPS];
     int    nb_fps;
@@ -260,6 +263,8 @@ void ov_scan_force_update(void);
 /* UI hints to the scan thread (ov_scan_set_hints) */
 #define OV_HINT_PAUSED 0x1U      /* display paused: do not scan */
 #define OV_HINT_FPS_VISIBLE 0x2U /* an FPS panel is on screen: tmux windows are worth polling */
+#define OV_HINT_HOLDERS \
+    0x4U /* the HOLDERS page is on screen: find who maps the streams (every 2 s) */
 
 void     ov_scan_set_hints(unsigned hints);
 void     ov_scan_set_inspect(const char *name);

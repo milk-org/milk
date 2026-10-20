@@ -74,6 +74,7 @@ void        ov_render_stream_inspector(OV_LAYOUT *lay, const OV_MODEL *m);
 int         ov_insp_tab_at(int mr, int mc);
 void        ov_insp_page_trace(const OV_MODEL *m, const OV_STREAM *s);
 void        ov_insp_page_keys(const OV_STREAM_DETAIL *d);
+void        ov_insp_page_holders(const OV_MODEL *m, const OV_STREAM_DETAIL *d);
 void        ov_insp_tab_step(OV_LAYOUT *lay, int step); /* input/overview_input_nav_insp.c */
 int         ov_input_nav_insp(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 const char *ov_insp_tab_name(int t);

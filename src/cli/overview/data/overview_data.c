@@ -104,6 +104,7 @@ void ov_model_full_scan(OV_MODEL *model)
     model->nb_edges   = 0;
     model->nb_loops   = 0;
 
+    ov_scan_holders(model); /* before the streams: their rows copy the counts */
     ov_scan_streams(model);
     ov_scan_inspect(model);
     ov_scan_fps(model);

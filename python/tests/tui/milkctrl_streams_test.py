@@ -94,3 +94,19 @@ def test_inspector_trace_names_the_writer(milkctrl, entities):
     m.wait_for(r"trigger\s+\S+.*(waiting|received|timed out)")
     m.wait_for(r"started\s+\S+ ago\s+compute")
     assert m.quit() == 0
+
+
+def test_inspector_holders_lists_mapping_processes(milkctrl, entities):
+    """F3 inspector, HOLDERS page: the poke process maps pairst; milk-CTRL itself is not listed."""
+    writer, reader = entities.make_stream_pair("pairst")
+    m = milkctrl("--view", "streams", "^pairst$")
+    m.wait_for(r"STREAM pairst")
+    m.keys(
+        "Right", "Right", "Right", "Right", "Right"
+    )  # into INFO, then SEMS, TRACE, KEYS, HOLDERS
+    m.wait_for(
+        r"2 processes map it"
+    )  # the poke and the copy; milk-CTRL, which maps it too, is left out
+    m.wait_for(rf"\s{writer}\s+milk-fpsexec-")
+    m.wait_for(rf"\s{reader}\s+milk-fpsexec-")
+    assert m.quit() == 0

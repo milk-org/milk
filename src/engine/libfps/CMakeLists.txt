@@ -257,6 +257,7 @@ add_executable(
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_scan_streams.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_stream_err.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_inspect.c
+  ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_holders.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_scan_fps.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_scan_procs.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_scan_tmux.c

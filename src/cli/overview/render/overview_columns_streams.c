@@ -134,6 +134,14 @@ static void cell_owner(OV_COLCELL *c, const OV_ROW_CTX *rc)
     ov_cell_pid(c, rc, STRM(rc)->ownerPID);
 }
 
+/** cell_hold - processes mapping the stream at the last HOLDERS pass ("-" before one). */
+static void cell_hold(OV_COLCELL *c, const OV_ROW_CTX *rc)
+{
+    c->fg = OV_FG_DIM;
+    snprintf(c->text, sizeof(c->text), (STRM(rc)->nb_holders >= 0) ? "%d" : "-",
+             (int) STRM(rc)->nb_holders);
+}
+
 /** cell_cpid - creator process. */
 static void cell_cpid(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
@@ -248,6 +256,7 @@ static const OV_COLUMN stream_cols[] = {
     { "sems", "SEMS", NULL, 10, 10, OV_COLF_COMPACT_HIDE, -1, NULL, cell_sems },
     { "wpid", "WPID", NULL, 7, 2, OV_COLF_RIGHT, -1, NULL, cell_wpid },
     { "rpid", "RPID", NULL, RPID_W, 11, 0, -1, NULL, cell_rpid },
+    { "hold", "HOLD", "holders", 4, 12, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, 10, NULL, cell_hold },
 };
 
 const OV_TABLE ov_streams_table = { stream_cols,

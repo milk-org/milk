@@ -237,6 +237,17 @@ static int sort_stream_by_owner(const void *a, const void *b)
     return cmp_pid(((const OV_STREAM *) a)->ownerPID, ((const OV_STREAM *) b)->ownerPID);
 }
 
+/* By the number of processes mapping the stream, most first in the default direction; unknown (-1) last */
+static int sort_stream_by_holders(const void *a, const void *b)
+{
+    int ha = ((const OV_STREAM *) a)->nb_holders, hb = ((const OV_STREAM *) b)->nb_holders;
+    if ((ha < 0) != (hb < 0))
+    {
+        return (ha < 0) ? 1 : -1;
+    }
+    return ov_sort_dir_mul * ((hb > ha) - (hb < ha));
+}
+
 /** tie_stream - name order (processes: then PID), the tie-break of every key. */
 static int tie_stream(const void *a, const void *b)
 {
@@ -282,6 +293,9 @@ void ov_sort_streams(const OV_MODEL *model, int key, int dir, int *order)
         break;
     case 9:
         cmp = sort_stream_by_owner;
+        break;
+    case 10:
+        cmp = sort_stream_by_holders;
         break;
     default:
         cmp = sort_stream_by_name;

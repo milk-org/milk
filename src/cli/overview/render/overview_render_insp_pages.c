@@ -4,8 +4,8 @@
 
 /**
  * @file    overview_render_insp_pages.c
- * @brief   F3 stream inspector pages TRACE (the process chain that wrote the stream, with timing) and KEYS
- *          (the stream's keywords).
+ * @brief   F3 stream inspector pages TRACE (the process chain that wrote the stream, with timing), KEYS (the
+ *          stream's keywords) and HOLDERS (the processes that map it).
  */
 
 #include "overview_render_internal.h"
@@ -85,5 +85,32 @@ void ov_insp_page_keys(const OV_STREAM_DETAIL *d)
     if (d->nb_kw_listed == OV_INSP_MAX_KW && d->nb_kw > OV_INSP_MAX_KW)
     {
         ov_insp_line(OV_FG_DIM, " (first %d shown)", OV_INSP_MAX_KW);
+    }
+}
+
+/** ov_insp_page_holders - the processes mapping the inspected stream at the last /proc maps pass (every 2 s). */
+void ov_insp_page_holders(const OV_MODEL *m, const OV_STREAM_DETAIL *d)
+{
+    char b1[16];
+    if (m->holders_age_s < 0 || d->nb_holders < 0)
+    {
+        ov_insp_line(OV_FG_DIM, " Looking for processes that map it \xe2\x80\xa6");
+        return;
+    }
+    ov_insp_line(OV_FG_TITLE, " %d process%s map%s it", d->nb_holders,
+                 (d->nb_holders == 1) ? "" : "es", (d->nb_holders == 1) ? "s" : "");
+    ov_insp_line(OV_FG_DIM, " (milk-CTRL excluded; pass %.0f ms, %.1f s ago%s)", m->holders_ms,
+                 m->holders_age_s,
+                 (m->holders_unreadable > 0) ? ", some processes not readable" : "");
+    for (int k = 0; k < d->nb_holders && k < OV_MAX_HOLDERS; k++)
+    {
+        int pi = ov_find_proc_by_pid(m, d->holder[k].pid);
+        ov_insp_line(ov_pid_color(d->holder[k].pid), " %8d  %-16s %s", (int) d->holder[k].pid,
+                     d->holder[k].comm, (pi >= 0) ? m->procs[pi].name : "");
+    }
+    if (d->nb_holders > OV_MAX_HOLDERS)
+    {
+        snprintf(b1, sizeof(b1), "%d", d->nb_holders - OV_MAX_HOLDERS);
+        ov_insp_line(OV_FG_DIM, " and %s more", b1);
     }
 }

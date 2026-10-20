@@ -108,6 +108,23 @@ void ov_scan_inspect(OV_MODEL *model)
             snprintf(d->kw[j].comment, sizeof(d->kw[j].comment), "%.*s", KEYWORD_MAX_COMMENT,
                      k->comment);
         }
+        d->nb_holders = s_scache[ci].nb_holders;
+        for (int k = 0; k < d->nb_holders && k < OV_MAX_HOLDERS; k++)
+        {
+            char  path[64];
+            FILE *f              = NULL;
+            d->holder[k].pid     = s_scache[ci].holder[k];
+            d->holder[k].comm[0] = '\0';
+            snprintf(path, sizeof(path), "/proc/%d/comm", (int) d->holder[k].pid);
+            if ((f = fopen(path, "re")) != NULL)
+            {
+                if (fgets(d->holder[k].comm, sizeof(d->holder[k].comm), f) != NULL)
+                {
+                    d->holder[k].comm[strcspn(d->holder[k].comm, "\n")] = '\0';
+                }
+                fclose(f);
+            }
+        }
         d->valid = 1;
     }
     pthread_mutex_unlock(&s_scache_mutex);
