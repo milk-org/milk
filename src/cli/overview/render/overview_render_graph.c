@@ -79,6 +79,46 @@ const SG_TREE_NODE *ov_graph_rows(const OV_LAYOUT *lay, const OV_MODEL *m, int *
     return rows;
 }
 
+/* Health columns on the right of each CONNECTIONS row, in screen order */
+#define OV_HCOLS 5
+#define OV_GRAPH_TREE_MIN 24 /* the tree keeps at least this many columns */
+static const struct
+{
+    const char *title;
+    int         w;
+    int         prio; /* lower stays longer when the panel is narrow */
+} hcol[OV_HCOLS] = { { "Hz", 7, 1 },
+                     { "STATE", 5, 0 },
+                     { "EXEC", 7, 2 },
+                     { "MISS", 5, 3 },
+                     { "FPS", 14, 4 } };
+
+/** health_cols - the health columns that fit next to the tree in @avail columns, in @shown. Return: width. */
+static int health_cols(int avail, int *shown, int *n)
+{
+    int w = 0, keep[OV_HCOLS] = { 0 };
+    for (int p = 0; p < OV_HCOLS; p++)
+    {
+        for (int c = 0; c < OV_HCOLS; c++)
+        {
+            if (hcol[c].prio == p && avail - (w + hcol[c].w + 1) >= OV_GRAPH_TREE_MIN)
+            {
+                keep[c] = 1;
+                w += hcol[c].w + 1;
+            }
+        }
+    }
+    *n = 0;
+    for (int c = 0; c < OV_HCOLS; c++)
+    {
+        if (keep[c])
+        {
+            shown[(*n)++] = c;
+        }
+    }
+    return w;
+}
+
 /**
  * ov_render_graph_panel - render the stream-process graph panel.
  * @lay: Pointer to layout structure.
@@ -96,11 +136,21 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
     ov_buf_pos(row, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
     ov_theme_fg(OV_FG_DIM);
+    int  avail = r.width - 2;
+    int  shown[OV_HCOLS], nshown;
+    int  hw        = health_cols(avail, shown, &nshown);
+    int  tree_cols = avail - hw;
     char htext[256];
     int  hlen =
         snprintf(htext, sizeof(htext), " %-12s      %s", "MODE", sg_mode_label(lay->lineage_mode));
-    ov_buf_printf("%s", htext);
-    render_pad_spaces(hlen, r.width);
+    ov_buf_printf("%.*s", tree_cols, htext);
+    hlen = (hlen < tree_cols) ? hlen : tree_cols;
+    render_pad_spaces(hlen, tree_cols + 1);
+    for (int c = 0; c < nshown; c++)
+    {
+        ov_buf_printf(" %*s", hcol[shown[c]].w, hcol[shown[c]].title);
+    }
+    render_pad_spaces(avail, r.width);
     row++;
 
     int                 nb_rnodes;
@@ -123,8 +173,10 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         return;
     }
 
-    int rendered_rows = 0;
-    int scroll        = lay->sub[OV_SUB_CONN].scroll;
+    int           rendered_rows = 0;
+    int           scroll        = lay->sub[OV_SUB_CONN].scroll;
+    static int8_t cause[OV_MAX_NODES], dim[OV_MAX_NODES];
+    ov_graph_stalls(m, rnodes, nb_rnodes, cause, dim);
 
     for (int ri = scroll; ri < nb_rnodes && rendered_rows < max_rows; ri++)
     {
@@ -154,7 +206,6 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_printf(" ");
 
         int printed = 1;
-        int avail   = r.width - 2;
 
 /* Print one field clipped to the columns left; counts columns, never cuts a UTF-8 character */
 #define GRAPH_FIELD(color, fmt, ...)                                                           \
@@ -164,10 +215,10 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         int  _fl   = snprintf(_fb, sizeof(_fb), fmt, ##__VA_ARGS__);                           \
         int  _cols = 0;                                                                        \
         int  _nb   = ov_utf8_fit(_fb, (_fl < (int) sizeof(_fb)) ? _fl : (int) sizeof(_fb) - 1, \
-                                 avail - printed, &_cols);                                     \
+                                 tree_cols - printed, &_cols);                                 \
         if (_nb > 0)                                                                           \
         {                                                                                      \
-            ov_theme_fg(color);                                                                \
+            ov_theme_fg(dim[ri] ? OV_FG_DIM : (color));                                        \
             ov_buf_printf("%.*s", _nb, _fb);                                                   \
             printed += _cols;                                                                  \
         }                                                                                      \
@@ -271,7 +322,23 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 
 #undef GRAPH_FIELD
 
-        render_pad_spaces(printed, r.width);
+        /* Health on the right: below a stall the row is dimmed, the stall itself says so in red */
+        OV_ROW_HEALTH h;
+        ov_graph_row_health(m, rn, &h);
+        render_pad_spaces(printed, tree_cols + 1);
+        char hz[16];
+        snprintf(hz, sizeof(hz), "%s%s", h.hz,
+                 h.mismatch ? "!" : ""); /* ! : the reader is slower */
+        const char *txt[OV_HCOLS] = { hz, cause[ri] ? "STALL" : h.state, h.exec, h.miss, h.fps };
+        ov_rgb_t    col[OV_HCOLS] = { h.mismatch ? OV_FG_WARN : OV_FG_TEXT,
+                                      cause[ri] ? OV_FG_ERROR : h.state_fg, OV_FG_TEXT, OV_FG_TEXT,
+                                      OV_FG_FPS };
+        for (int c = 0; c < nshown; c++)
+        {
+            ov_theme_fg(dim[ri] ? OV_FG_DIM : col[shown[c]]);
+            ov_buf_printf(" %*.*s", hcol[shown[c]].w, hcol[shown[c]].w, txt[shown[c]]);
+        }
+        render_pad_spaces(avail, r.width);
         ov_buf_reset_attr();
         row++;
         rendered_rows++;

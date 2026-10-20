@@ -363,6 +363,49 @@ static void test_derived_and_related(void)
     CHECK(bget(rel.fps, 0) && bget(rel.fps_writes, 0)); /* sout -> pw -> fw */
 }
 
+/* CONNECTIONS health: reader state, FPS, rate mismatch; a stall marks its row and dims the rows below */
+static void test_graph_health(void)
+{
+    static OV_MODEL m;
+    memset(&m, 0, sizeof(m));
+    snprintf(m.streams[0].name, sizeof(m.streams[0].name), "cam");
+    m.streams[0].valid     = 1;
+    m.streams[0].update_hz = 1000.0;
+    m.nb_streams           = 1;
+    snprintf(m.procs[0].name, sizeof(m.procs[0].name), "wfs");
+    m.procs[0].valid       = 1;
+    m.procs[0].active      = 1;
+    m.procs[0].PID         = 50;
+    m.procs[0].loopstat    = PROCESSINFO_LOOPSTAT_ACTIVE;
+    m.procs[0].stale_count = OV_STALE_SCANS; /* stalled */
+    m.procs[0].loop_hz     = 10.0;
+    m.nb_procs             = 1;
+    snprintf(m.fps[0].name, sizeof(m.fps[0].name), "wfsfps");
+    m.fps[0].valid     = 1;
+    m.fps[0].run_alive = 1;
+    m.fps[0].runpid    = 50;
+    m.nb_fps           = 1;
+    ov_build_graph(&m);
+
+    SG_TREE_NODE rows[3];
+    memset(rows, 0, sizeof(rows));
+    rows[0] =
+        (SG_TREE_NODE) { .stream_idx = 0, .reader_node_idx = m.procs[0].node_idx, .depth = 0 };
+    rows[1] = (SG_TREE_NODE) { .stream_idx = 0, .reader_node_idx = -1, .depth = 1 };
+    rows[2] = (SG_TREE_NODE) { .stream_idx = 0, .reader_node_idx = -1, .depth = 0 };
+    OV_ROW_HEALTH h;
+    ov_graph_row_health(&m, &rows[0], &h);
+    CHECK(strcmp(h.state, "STAL") == 0 && h.stalled && h.mismatch);
+    CHECK(strcmp(h.hz, "1.00k") == 0 && strcmp(h.fps, "wfsfps") == 0);
+    int8_t cause[3], dim[3];
+    ov_graph_stalls(&m, rows, 3, cause, dim);
+    CHECK(cause[0] && !dim[0] && dim[1] && !cause[1] &&
+          !dim[2]); /* the sibling subtree is not dimmed */
+    char b[16];
+    CHECK(strcmp(ov_fmt_si(b, sizeof(b), 12345.0), "12.3k") == 0);
+    CHECK(strcmp(ov_fmt_si(b, sizeof(b), 999.9), "999.9") == 0);
+}
+
 int main(void)
 {
     test_sort_does_not_touch_model();
@@ -373,6 +416,7 @@ int main(void)
     test_procs_table();
     test_streams_table();
     test_derived_and_related();
+    test_graph_health();
     if (failures == 0)
     {
         printf("all ok\n");

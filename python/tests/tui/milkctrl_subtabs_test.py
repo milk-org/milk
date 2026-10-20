@@ -125,3 +125,17 @@ def test_perf_counters_released_when_resources_hidden(milkctrl, entities):
     m.keys("F3")
     assert _wait(lambda: _perf_fds(m) == 0)
     assert m.quit() == 0
+
+
+def test_connections_rows_show_health(milkctrl, entities):
+    """CONNECTIONS rows carry the stream rate and the reader's state, also at 80 columns."""
+    for s in ["hlA", "hlB"]:
+        entities.make_stream(s)
+    entities.make_fps("hfA", "streamin:STREAMNAME:hlB", "streamout:STREAMNAME:hlA")
+    m = milkctrl(x=80, y=24)
+    m.keys("F3")
+    m.wait_for(r"hlA")
+    m.keys("F6")
+    m.wait_for(r"Hz STATE\s+EXEC\s+MISS")
+    m.wait_for(r"hl[AB].*\s0\s+-")  # an idle stream: 0 Hz, no reader state
+    assert m.quit() == 0

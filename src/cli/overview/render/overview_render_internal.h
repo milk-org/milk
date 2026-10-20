@@ -299,6 +299,28 @@ const int8_t     *ov_node_depths(const OV_MODEL *m, int root, sg_mode_t mode);
 const SG_LINEAGE *ov_lineage(const OV_MODEL *m, int si, sg_mode_t mode);
 unsigned          ov_derived_build_count(void);
 const char       *ov_fmt_dt_ns(char *buf, size_t n, int64_t ns);
+const char       *ov_fmt_si(char *buf, size_t n, double v);
+
+/* Right-hand health of a CONNECTIONS row (ov_graph_row_health) */
+typedef struct
+{
+    char hz[8];    /* stream rate, SI */
+    int  mismatch; /* the reader runs slower than the stream */
+    const char
+            *state; /* reader state: RUN, STAL, CRSH..., OFF (FPS not running), "-" (no reader) */
+    ov_rgb_t state_fg;
+    int      stalled;  /* the reader's loop stopped counting */
+    char     miss[8];  /* missed triggers, % of iterations */
+    char     exec[12]; /* reader compute time on this input */
+    char     fps[32];  /* FPS the reader runs under */
+} OV_ROW_HEALTH;
+
+void ov_graph_row_health(const OV_MODEL *m, const SG_TREE_NODE *rn, OV_ROW_HEALTH *h);
+void ov_graph_stalls(const OV_MODEL     *m,
+                     const SG_TREE_NODE *rows,
+                     int                 n,
+                     int8_t             *cause,
+                     int8_t             *dim);
 
 void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m);
 

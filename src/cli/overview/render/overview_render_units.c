@@ -35,3 +35,29 @@ const char *ov_fmt_dt_ns(char *buf, size_t n, int64_t ns)
     }
     return buf;
 }
+
+/** ov_fmt_si - @v with an SI suffix in at most 6 columns: "999.9", "12.3k", "1.20M", "45G"; "-" when < 0. */
+const char *ov_fmt_si(char *buf, size_t n, double v)
+{
+    static const char suffix[] = " kMGTP";
+    int               k        = 0;
+    if (v < 0)
+    {
+        snprintf(buf, n, "-");
+        return buf;
+    }
+    while (v >= 999.95 && k < 5)
+    {
+        v /= 1000.0;
+        k++;
+    }
+    if (k == 0)
+    {
+        snprintf(buf, n, (v == (double) (int64_t) v) ? "%.0f" : "%.1f", v);
+    }
+    else
+    {
+        snprintf(buf, n, (v < 9.995) ? "%.2f%c" : (v < 99.95) ? "%.1f%c" : "%.0f%c", v, suffix[k]);
+    }
+    return buf;
+}
