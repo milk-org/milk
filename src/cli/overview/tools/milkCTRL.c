@@ -405,6 +405,7 @@ int main(int argc, char *argv[])
     ov_raw_mode_exit();
     signal(SIGINT, SIG_DFL);
     ov_scan_stop();
+    pid_perf_close();
     ov_input_history_free(&lay);
     ov_cmdlog_mirror(NULL, 0);
     if (logf != NULL)

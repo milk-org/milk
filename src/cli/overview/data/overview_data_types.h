@@ -122,7 +122,8 @@ typedef struct
  * @loopcnt: current loop iteration count of the process, used to calculate per-loop rates.
  * Requires CAP_PERFMON or root, or perf_event_paranoid <= 2
  */
-int pid_read_perf_counters(pid_t pid, int64_t loopcnt, ov_perf_counters_t *out);
+int  pid_read_perf_counters(pid_t pid, int64_t loopcnt, ov_perf_counters_t *out);
+void pid_perf_close(void);
 
 /* =========================================================
  * Stream info (aggregated from IMAGE_METADATA)

@@ -165,6 +165,11 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     {
         view_render[lay->view](lay, m, &rel);
     }
+    if (lay->help.show || !ov_view_has_panel(lay->view, OV_FOCUS_GRAPH) ||
+        lay->view == OV_VIEW_LOOPS || lay->subtab != OV_SUB_RES)
+    {
+        pid_perf_close(); /* counters stay attached to a process only while RESOURCES shows them */
+    }
 
     if (lay->help.show)
     {

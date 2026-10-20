@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import time
+
 import pytest
 
 from tests.tui.milkctrl_fps_identity_test import _get_param
@@ -78,4 +82,46 @@ def test_f7_click_selects_a_loop(milkctrl, entities):
     hit = m.wait_for(r"^.*L02 L02")
     m.click(6, hit.string.count("\n", 0, hit.start()) + 1)
     m.wait_for(r"LOOP L02 CIRCUIT")
+    assert m.quit() == 0
+
+
+def _perf_fds(m) -> int:
+    """perf_event fds held by the milk-CTRL running in pane @m."""
+    out = subprocess.run(
+        ["pgrep", "-P", str(m.pane.pane_pid), "-x", "milk-CTRL"],
+        capture_output=True,
+        text=True,
+    ).stdout.split()
+    n = 0
+    for fd in os.listdir(f"/proc/{out[0]}/fd"):
+        try:
+            n += os.readlink(f"/proc/{out[0]}/fd/{fd}") == "anon_inode:[perf_event]"
+        except OSError:
+            pass
+    return n
+
+
+def _wait(cond, timeout=5.0) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if cond():
+            return True
+        time.sleep(0.1)
+    return False
+
+
+def test_perf_counters_released_when_resources_hidden(milkctrl, entities):
+    """Hardware counters stay attached to the inspected process only while RESOURCES shows them."""
+    entities.make_proc("perfme")
+    m = milkctrl()
+    m.keys("F4")
+    m.wait_for(r"perfme")
+    m.keys(
+        "F2", "BTab", "BTab", "BTab"
+    )  # DASH keeps the process focus; sub-tab RESOURCES
+    m.wait_for(r"RESOURCES")
+    if not _wait(lambda: _perf_fds(m) > 0):
+        pytest.skip("perf_event_open not permitted here")
+    m.keys("F3")
+    assert _wait(lambda: _perf_fds(m) == 0)
     assert m.quit() == 0
