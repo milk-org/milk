@@ -29,6 +29,12 @@ const ov_theme_t *ov_active_theme     = &ov_theme_dark;
 
 /* Public API implementation */
 
+/** ov_theme_pack - theme RGB as the cell colour the renderer stores. */
+static uint32_t ov_theme_pack(ov_rgb_t c)
+{
+    return OV_COLOR_TRUE | ((c.r & 0xFFu) << 16) | ((c.g & 0xFFu) << 8) | (c.b & 0xFFu);
+}
+
 /**
  * ov_theme_count - return total number of registered themes.
  *
@@ -141,9 +147,9 @@ void ov_theme_set(int index)
     ov_theme_active_idx = index;
     ov_active_theme     = ov_themes[index];
 
-    ov_rgb_t tbg = ov_active_theme->bg_terminal;
-    ov__default_bg =
-        OV_COLOR_TRUE | ((tbg.r & 0xFF) << 16) | ((tbg.g & 0xFF) << 8) | (tbg.b & 0xFF);
+    ov__default_bg         = ov_theme_pack(ov_active_theme->bg_terminal);
+    ov__mono_reverse_bg[0] = ov_theme_pack(ov_active_theme->bg_selected);
+    ov__mono_reverse_bg[1] = ov_theme_pack(ov_active_theme->bg_frozen);
 
     /* Invalidate front delta cache so full screen repaints with new palette */
     ov_buf_force_clear();
@@ -193,11 +199,6 @@ int ov_theme_init(const char *preferred_theme)
         idx = 0;
     }
 
-    ov_theme_active_idx = idx;
-    ov_active_theme     = ov_themes[idx];
-
-    ov_rgb_t tbg = ov_active_theme->bg_terminal;
-    ov__default_bg =
-        OV_COLOR_TRUE | ((tbg.r & 0xFF) << 16) | ((tbg.g & 0xFF) << 8) | (tbg.b & 0xFF);
+    ov_theme_set(idx);
     return env_rc;
 }

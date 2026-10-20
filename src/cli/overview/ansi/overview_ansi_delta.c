@@ -3,6 +3,104 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "overview_ansi.h"
+uint32_t ov__mono_reverse_bg[2] = { OV_COLOR_NONE, OV_COLOR_NONE };
+
+/* xterm default 16-colour palette */
+static const uint8_t ov_pal16[16][3] = { { 0, 0, 0 },      { 205, 0, 0 },     { 0, 205, 0 },
+                                         { 205, 205, 0 },  { 0, 0, 238 },     { 205, 0, 205 },
+                                         { 0, 205, 205 },  { 229, 229, 229 }, { 127, 127, 127 },
+                                         { 255, 0, 0 },    { 0, 255, 0 },     { 255, 255, 0 },
+                                         { 92, 92, 255 },  { 255, 0, 255 },   { 0, 255, 255 },
+                                         { 255, 255, 255 } };
+static const uint8_t ov_cube[6]      = { 0, 95, 135, 175, 215, 255 };
+
+/** ov_dist2 - squared RGB distance. */
+static int ov_dist2(int r, int g, int b, int r2, int g2, int b2)
+{
+    return (r - r2) * (r - r2) + (g - g2) * (g - g2) + (b - b2) * (b - b2);
+}
+
+/** ov_rgb_to_256 - nearest xterm-256 index: 6x6x6 cube entry or 232-255 grey. */
+static int ov_rgb_to_256(int r, int g, int b)
+{
+    int ri = (r < 48) ? 0 : (r < 115) ? 1 : (r - 35) / 40;
+    int gi = (g < 48) ? 0 : (g < 115) ? 1 : (g - 35) / 40;
+    int bi = (b < 48) ? 0 : (b < 115) ? 1 : (b - 35) / 40;
+    int gr = ((r + g + b) / 3 - 3) / 10;
+    gr     = (gr < 0) ? 0 : (gr > 23) ? 23 : gr;
+    int gv = 8 + 10 * gr;
+    return (ov_dist2(r, g, b, gv, gv, gv) <
+            ov_dist2(r, g, b, ov_cube[ri], ov_cube[gi], ov_cube[bi]))
+               ? 232 + gr
+               : 16 + 36 * ri + 6 * gi + bi;
+}
+
+/** ov_rgb_to_16 - nearest entry of the xterm default 16-colour palette. */
+static int ov_rgb_to_16(int r, int g, int b)
+{
+    int best = 0, bd = 1 << 30;
+    for (int i = 0; i < 16; i++)
+    {
+        int d = ov_dist2(r, g, b, ov_pal16[i][0], ov_pal16[i][1], ov_pal16[i][2]);
+        if (d < bd)
+        {
+            bd   = d;
+            best = i;
+        }
+    }
+    return best;
+}
+
+/**
+ * ov_color_downgrade - colour @col as the terminal can show it at @level (see ov_detect_color_level):
+ * unchanged at 3, a 256 index at 2, a 16 index at 1, OV_COLOR_NONE at 0.
+ */
+uint32_t ov_color_downgrade(uint32_t col, int level)
+{
+    if (col == OV_COLOR_NONE || level >= 3)
+    {
+        return col;
+    }
+    if (level <= 0)
+    {
+        return OV_COLOR_NONE;
+    }
+    int r, g, b;
+    if (col & OV_COLOR_TRUE)
+    {
+        r = (col >> 16) & 0xFF;
+        g = (col >> 8) & 0xFF;
+        b = col & 0xFF;
+        if (level == 2)
+        {
+            return OV_COLOR_256 | (uint32_t) ov_rgb_to_256(r, g, b);
+        }
+    }
+    else if (col & OV_COLOR_256)
+    {
+        int i = (int) (col & 0xFF);
+        if (level == 2 || i < 16)
+        {
+            return (level == 2) ? col : (OV_COLOR_16 | (uint32_t) i);
+        }
+        if (i >= 232)
+        {
+            r = g = b = 8 + 10 * (i - 232);
+        }
+        else
+        {
+            r = ov_cube[(i - 16) / 36];
+            g = ov_cube[((i - 16) / 6) % 6];
+            b = ov_cube[(i - 16) % 6];
+        }
+    }
+    else
+    {
+        return col; /* already a 16 index */
+    }
+    return OV_COLOR_16 | (uint32_t) ov_rgb_to_16(r, g, b);
+}
+
 /**
  * ov_buf_emit_sgr_delta - Emit ANSI SGR codes to transition between styling states
  * @sc:        Target cell style to transition to
@@ -125,6 +223,11 @@ static void ov_buf_emit_sgr_delta(const OV_CELL *sc,
             {
                 len += snprintf(tmp + len, sizeof(tmp) - len, "38;5;%u", sc->fg & 0xFF);
             }
+            else if (sc->fg & OV_COLOR_16)
+            {
+                unsigned i = sc->fg & 0xF;
+                len += snprintf(tmp + len, sizeof(tmp) - len, "%u", (i < 8) ? 30 + i : 90 + i - 8);
+            }
             first = 0;
         }
         *emit_fg = sc->fg;
@@ -146,6 +249,11 @@ static void ov_buf_emit_sgr_delta(const OV_CELL *sc,
             else if (sc->bg & OV_COLOR_256)
             {
                 len += snprintf(tmp + len, sizeof(tmp) - len, "48;5;%u", sc->bg & 0xFF);
+            }
+            else if (sc->bg & OV_COLOR_16)
+            {
+                unsigned i = sc->bg & 0xF;
+                len += snprintf(tmp + len, sizeof(tmp) - len, "%u", (i < 8) ? 40 + i : 100 + i - 8);
             }
             first = 0;
         }
@@ -228,6 +336,8 @@ void ov_buf_flush_delta(int term_rows, int term_cols)
         term_cols = OV_MAX_COLS;
     }
 
+    int level = (ov__color_level < 0) ? 3 : ov__color_level;
+
     // Start synchronized output
     ov_buf_append("\033[?2026h", 8);
 
@@ -264,8 +374,25 @@ void ov_buf_flush_delta(int term_rows, int term_cols)
                     emit_cursor_c = c + 1;
                 }
 
-                // Batch SGR attributes and colors
-                ov_buf_emit_sgr_delta(sc, &emit_attr, &emit_fg, &emit_bg, &emit_ul);
+                // Batch SGR attributes and colors; below truecolor a converted copy is emitted (the
+                // front buffer keeps the theme colours, so the diff is unchanged)
+                if (level >= 3)
+                {
+                    ov_buf_emit_sgr_delta(sc, &emit_attr, &emit_fg, &emit_bg, &emit_ul);
+                }
+                else
+                {
+                    OV_CELL dc = *sc;
+                    dc.fg      = ov_color_downgrade(sc->fg, level);
+                    dc.bg      = ov_color_downgrade(sc->bg, level);
+                    dc.ul = OV_COLOR_NONE; /* SGR 58 reads as blink without truecolor support */
+                    if (level == 0 && sc->bg != OV_COLOR_NONE &&
+                        (sc->bg == ov__mono_reverse_bg[0] || sc->bg == ov__mono_reverse_bg[1]))
+                    {
+                        dc.attr |= OV_ATTR_REVERSE; /* selection and freeze stay visible */
+                    }
+                    ov_buf_emit_sgr_delta(&dc, &emit_attr, &emit_fg, &emit_bg, &emit_ul);
+                }
 
                 // Char
                 size_t chlen = strlen(sc->ch);

@@ -9,7 +9,7 @@
 
 struct termios        ov__orig_termios;
 volatile sig_atomic_t ov__raw_active  = 0;
-int                   ov__color_level = 0;
+int                   ov__color_level = -1;
 int                   ov__tty_fd      = STDOUT_FILENO;
 static int            ov__saved_out   = -1;
 static int            ov__saved_err   = -1;
@@ -221,29 +221,34 @@ void ov_get_terminal_size(int *rows, int *cols)
 }
 
 /**
- * ov_detect_color_level - Detect terminal color capabilities from environment variables
- *
- * Sets ov__color_level to 3 (TrueColor), 2 (256-color), or 1 (16-color) based on
- * COLORTERM and TERM environment variables.
+ * ov_detect_color_level - colour depth from the environment, once: NO_COLOR or TERM unset/dumb gives 0
+ * (monochrome), COLORTERM truecolor/24bit gives 3, TERM *256color gives 2, anything else 1 (16).
+ * TMUX alone does not imply truecolor.
  */
 void ov_detect_color_level(void)
 {
-    if (ov__color_level > 0)
+    if (ov__color_level >= 0)
     {
         return;
     }
+    const char *nocolor   = getenv("NO_COLOR");
     const char *colorterm = getenv("COLORTERM");
     const char *term      = getenv("TERM");
-    if (colorterm && (strstr(colorterm, "truecolor") || strstr(colorterm, "24bit")))
+    if ((nocolor != NULL && nocolor[0] != '\0') || term == NULL || term[0] == '\0' ||
+        strcmp(term, "dumb") == 0)
     {
-        ov__color_level = 3; /* TrueColor */
+        ov__color_level = 0;
     }
-    else if (term && strstr(term, "256color"))
+    else if (colorterm && (strstr(colorterm, "truecolor") || strstr(colorterm, "24bit")))
     {
-        ov__color_level = 2; /* 256-color */
+        ov__color_level = 3;
+    }
+    else if (strstr(term, "256color"))
+    {
+        ov__color_level = 2;
     }
     else
     {
-        ov__color_level = 1; /* 16-color */
+        ov__color_level = 1;
     }
 }

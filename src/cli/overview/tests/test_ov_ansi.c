@@ -227,6 +227,21 @@ static void test_keys(void)
     close(p[1]);
 }
 
+/* Flush-time colour downgrade: 256 cube/grey, 16 palette, monochrome (gap-3) */
+static void test_downgrade(void)
+{
+    uint32_t red  = OV_COLOR_TRUE | 0xFF0000u;
+    uint32_t grey = OV_COLOR_TRUE | 0x808080u;
+    CHECK(ov_color_downgrade(red, 3) == red);
+    CHECK(ov_color_downgrade(red, 2) == (OV_COLOR_256 | 196u));
+    CHECK(ov_color_downgrade(grey, 2) == (OV_COLOR_256 | 244u));
+    CHECK(ov_color_downgrade(red, 1) == (OV_COLOR_16 | 9u));
+    CHECK(ov_color_downgrade(OV_COLOR_256 | 196u, 1) == (OV_COLOR_16 | 9u));
+    CHECK(ov_color_downgrade(OV_COLOR_256 | 4u, 1) == (OV_COLOR_16 | 4u));
+    CHECK(ov_color_downgrade(red, 0) == OV_COLOR_NONE);
+    CHECK(ov_color_downgrade(OV_COLOR_NONE, 1) == OV_COLOR_NONE);
+}
+
 int main(void)
 {
     test_sanitize();
@@ -236,6 +251,7 @@ int main(void)
     test_delta_resync();
     test_overflow();
     test_keys();
+    test_downgrade();
     if (failures == 0)
     {
         printf("all ok\n");

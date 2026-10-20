@@ -77,6 +77,8 @@ extern int wcwidth(wchar_t c);
 extern int      ov_mouse_row;
 extern int      ov_mouse_col;
 extern uint32_t ov__default_bg;
+extern uint32_t ov__mono_reverse_bg[2]; /* backgrounds drawn as reverse video in monochrome */
+extern int      ov__color_level;        /* 0 mono, 1 16, 2 256, 3 truecolor; -1 not detected */
 extern int      ov_mouse_btn;
 extern int      ov_hover_row;
 extern int      ov_hover_col;
@@ -124,10 +126,11 @@ void ov_buf_append_cluster(const char *utf8_seq, int bytes, int width);
 void ov_buf_append_char(const char *utf8_seq, int bytes);
 void ov_buf_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
-void ov_buf_hline(char ch, int len);
-void ov_buf_hline_utf8(const char *s, int len);
-void ov_detect_color_level(void);
-int  ov_get_key(void);
+void     ov_buf_hline(char ch, int len);
+void     ov_buf_hline_utf8(const char *s, int len);
+void     ov_detect_color_level(void);
+uint32_t ov_color_downgrade(uint32_t col, int level);
+int      ov_get_key(void);
 /* =========================================================
  * Buffered screen writer (Delta Rendering Shadow Buffer)
  * ========================================================= */
@@ -141,6 +144,7 @@ int  ov_get_key(void);
 
 #define OV_COLOR_256 0x01000000  // Flag for 256-color
 #define OV_COLOR_TRUE 0x02000000 // Flag for TrueColor
+#define OV_COLOR_16 0x04000000   // Flag for 16-colour index (flush-time downgrade only)
 
 #define OV_ATTR_BOLD (1 << 0)
 #define OV_ATTR_DIM (1 << 1)
