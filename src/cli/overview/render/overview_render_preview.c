@@ -148,7 +148,7 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             const OV_LOOP *lp = &m->loops[lay->sel_loop];
             len = snprintf(line, sizeof(line),
                            " LOOP L%02d  %-20.20s  Nodes:%d (%ds, %dp)  Hz:%.1f  %s  %s",
-                           lp->loop_id, lp->name, lp->nb_nodes, lp->nb_streams,
+                           lp->loop_id, ov_loop_name(lp), lp->nb_nodes, lp->nb_streams,
                            lp->nb_procs + lp->nb_fps, lp->min_hz, ov_loop_status(lp, NULL),
                            (lp->overlap_mask != 0) ? "OVERLAPPING" : "EXCLUSIVE");
         }

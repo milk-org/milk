@@ -99,8 +99,8 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_theme_fg(OV_FG_LOOP);
         ov_buf_printf("L%02d ", lp->loop_id);
 
-        ov_theme_fg(is_sel ? OV_FG_BRIGHT : (lp->has_custom_name ? OV_FG_TITLE : OV_FG_TEXT));
-        ov_buf_printf("%-16.16s ", lp->name);
+        ov_theme_fg(is_sel ? OV_FG_BRIGHT : (ov_loop_is_custom(lp) ? OV_FG_TITLE : OV_FG_TEXT));
+        ov_buf_printf("%-16.16s ", ov_loop_name(lp));
 
         ov_theme_fg(OV_FG_DIM);
         ov_buf_printf("%1ds %1dp  ", lp->nb_streams, lp->nb_procs + lp->nb_fps);
@@ -153,7 +153,7 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_pos(rrow, lw + 2);
         ov_theme_bg(OV_BG_HEADER);
         ov_theme_fg(OV_FG_LOOP);
-        ov_buf_printf(" Loop L%02d: %s", cl->loop_id, cl->name);
+        ov_buf_printf(" Loop L%02d: %s", cl->loop_id, ov_loop_name(cl));
         ov_theme_fg(OV_FG_DIM);
         ov_buf_printf("  |  Bottleneck: %.1f Hz  |  Nodes: %d (%d streams, %d procs)", cl->min_hz,
                       cl->nb_nodes, cl->nb_streams, cl->nb_procs);

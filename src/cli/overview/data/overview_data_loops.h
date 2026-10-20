@@ -49,7 +49,9 @@ void ov_loop_names_save(const OV_MODEL *model);
  *
  * Return: 0 on success, non-zero on error.
  */
-int ov_loop_rename(OV_MODEL *model, int loop_idx, const char *new_name);
+int         ov_loop_rename(const OV_MODEL *model, int loop_idx, const char *new_name);
+const char *ov_loop_name(const OV_LOOP *lp);
+int         ov_loop_is_custom(const OV_LOOP *lp);
 
 /**
  * ov_get_loop_name - Retrieve display name for a loop ID.

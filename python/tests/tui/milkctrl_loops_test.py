@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+import time
+
 import pytest
 
 pytestmark = pytest.mark.timeout(60)
@@ -43,4 +46,21 @@ def test_declared_fps_ring_is_idle(milkctrl, entities):
     m.wait_for(r"L01 L01")
     row = next(line for line in m.lines() if "L01 L01" in line)
     assert "IDLE" in row and "RUN" not in row, row
+    assert m.quit() == 0
+
+
+def test_loop_rename_shows_at_once_and_persists(milkctrl, entities):
+    """Renaming updates the saved-name registry only; the display reads it, before and after rescans."""
+    _ring(entities)
+    m = milkctrl(y=40)
+    m.keys("F7")
+    m.wait_for(r"L01 L01")
+    m.keys("r")
+    m.keys("C-u")
+    m.text("myloop")
+    m.keys("Enter")
+    m.wait_for(r"renamed to 'myloop'")
+    m.wait_for(r"L01 myloop", timeout=1.0)
+    time.sleep(2.5)  # two rescans rebuild the loops from the registry
+    assert re.search(r"L01 myloop", m.screen())
     assert m.quit() == 0

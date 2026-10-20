@@ -146,7 +146,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     /* 1b. Loop rename mode: all characters belong to the rename prompt */
     if (lay->rename.active)
     {
-        ov_input__handle_loop_rename(key, lay, (OV_MODEL *) m);
+        ov_input__handle_loop_rename(key, lay, m);
         return 0;
     }
 
@@ -285,7 +285,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         return 0;
     }
-    if (ov_input__handle_loop_actions(key, lay, (OV_MODEL *) m))
+    if (ov_input__handle_loop_actions(key, lay, m))
     {
         return 0;
     }

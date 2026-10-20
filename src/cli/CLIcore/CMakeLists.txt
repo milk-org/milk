@@ -307,6 +307,9 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
 target_link_libraries(milk-CTRL PRIVATE milkctrl_model)
 install(TARGETS milk-CTRL DESTINATION bin)
+# render/ and input/ must not cast away the const of the scanned model
+file(GLOB OV_UI_SRC ${CMAKE_SOURCE_DIR}/src/cli/overview/render/*.c ${CMAKE_SOURCE_DIR}/src/cli/overview/input/*.c)
+set_source_files_properties(${OV_UI_SRC} PROPERTIES COMPILE_OPTIONS -Wcast-qual)
 install(PROGRAMS ../overview/milk-setup-caps DESTINATION bin)
 
 # milk-stream-graph: stream dependency graph tool

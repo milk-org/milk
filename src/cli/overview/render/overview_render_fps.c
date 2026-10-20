@@ -418,9 +418,8 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
 
             if (lay->mouse_hover && lay->hover_view == OV_FOCUS_FPS && lay->hover_idx == fi)
             {
-                snprintf((char *) lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                         "FPS: %s | RunPID: %d | ConfPID: %d | Mem: %" PRId64 " KB", f->name,
-                         f->runpid, f->confpid, (int64_t) f->mem_rss_kb);
+                ov_row_tooltip("FPS: %s | RunPID: %d | ConfPID: %d | Mem: %" PRId64 " KB", f->name,
+                               f->runpid, f->confpid, (int64_t) f->mem_rss_kb);
 
                 int btn_w = 24; /* " [Run]  [Stop]  [Conf] " */
                 int rem   = r.width - (printed + n5);

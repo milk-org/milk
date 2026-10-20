@@ -8,6 +8,7 @@
  */
 
 #include "overview_render_internal.h"
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -130,18 +131,31 @@ void ov_render_tabs(OV_LAYOUT *lay)
     ov_theme_bg(OV_BG_HEADER);
 }
 
+static char s_row_tooltip[256]; /* set by the row under the mouse while the frame is drawn */
+
+/** ov_row_tooltip - set the tooltip of the hovered row for this frame (overrides the hit-test text). */
+void ov_row_tooltip(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(s_row_tooltip, sizeof(s_row_tooltip), fmt, ap);
+    va_end(ap);
+}
+
 /**
  * ov_draw_tooltip - render floating mouse hover tooltip box near cursor.
  * @lay: Pointer to layout structure.
  */
 void ov_draw_tooltip(OV_LAYOUT *lay)
 {
-    if (!lay->mouse_hover || lay->hover_tooltip[0] == '\0')
+    const char *text = (s_row_tooltip[0] != '\0') ? s_row_tooltip : lay->hover_tooltip;
+    if (!lay->mouse_hover || text[0] == '\0')
     {
+        s_row_tooltip[0] = '\0';
         return;
     }
 
-    int len = (int) strlen(lay->hover_tooltip);
+    int len = (int) strlen(text);
     if (len == 0)
     {
         return;
@@ -169,10 +183,11 @@ void ov_draw_tooltip(OV_LAYOUT *lay)
     ov_buf_pos(tr, tc);
     ov_theme_bg(OV_BG_HEADER); /* Pop out visually */
     ov_theme_fg(OV_FG_WARN);
-    ov_buf_printf(" %s ", lay->hover_tooltip);
+    ov_buf_printf(" %s ", text);
 
     /* Reset for next frame */
     lay->hover_tooltip[0] = '\0';
+    s_row_tooltip[0]      = '\0';
 }
 
 /**

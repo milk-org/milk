@@ -164,8 +164,8 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_printf("L%02d ", lp->loop_id);
 
         /* Loop Name */
-        ov_theme_fg(is_sel ? OV_FG_BRIGHT : (lp->has_custom_name ? OV_FG_TITLE : OV_FG_TEXT));
-        ov_buf_printf("%-20.20s ", lp->name);
+        ov_theme_fg(is_sel ? OV_FG_BRIGHT : (ov_loop_is_custom(lp) ? OV_FG_TITLE : OV_FG_TEXT));
+        ov_buf_printf("%-20.20s ", ov_loop_name(lp));
 
         /* Node counts */
         ov_theme_fg(OV_FG_DIM);

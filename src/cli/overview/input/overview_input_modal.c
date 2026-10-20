@@ -19,7 +19,7 @@
  *
  * Return: 1 if key was consumed, 0 otherwise.
  */
-int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, OV_MODEL *m)
+int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (!lay->rename.active)
     {
@@ -41,7 +41,7 @@ int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, OV_MODEL *m)
         {
             ov_loop_rename(m, lay->sel_loop, lay->rename.buf);
             ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Loop L%02d renamed to '%s'",
-                           m->loops[lay->sel_loop].loop_id, m->loops[lay->sel_loop].name);
+                           m->loops[lay->sel_loop].loop_id, ov_loop_name(&m->loops[lay->sel_loop]));
         }
         return 1;
     }
@@ -84,7 +84,7 @@ int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, OV_MODEL *m)
  *
  * Return: 1 if key was consumed, 0 otherwise.
  */
-int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, OV_MODEL *m)
+int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     int in_loops =
         (lay->view == OV_VIEW_LOOPS || (lay->view == OV_VIEW_DASHBOARD &&
@@ -101,8 +101,7 @@ int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, OV_MODEL *m)
         {
             lay->rename.active = 1;
             const OV_LOOP *lp  = &m->loops[lay->sel_loop];
-            snprintf(lay->rename.buf, sizeof(lay->rename.buf), "%s",
-                     lp->has_custom_name ? lp->custom_name : lp->name);
+            snprintf(lay->rename.buf, sizeof(lay->rename.buf), "%s", ov_loop_name(lp));
             lay->rename.cursor = (int) strlen(lay->rename.buf);
             return 1;
         }

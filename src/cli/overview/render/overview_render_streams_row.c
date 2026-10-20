@@ -366,9 +366,8 @@ void ov_streams_render_single_row(const OV_LAYOUT  *lay,
 
     if (lay->mouse_hover && lay->hover_view == OV_FOCUS_STREAMS && lay->hover_idx == fi)
     {
-        snprintf((char *) lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                 "Stream: %s | Dimensions: %dD (%s) | Semaphores: %d | inode: %" PRIu64, s->name,
-                 s->naxis, s->size_str, s->nb_sem, (uint64_t) s->inode);
+        ov_row_tooltip("Stream: %s | Dimensions: %dD (%s) | Semaphores: %d | inode: %" PRIu64,
+                       s->name, s->naxis, s->size_str, s->nb_sem, (uint64_t) s->inode);
 
         int btn_w = 10; /* " [Delete] " */
         int rem   = r.width - printed;

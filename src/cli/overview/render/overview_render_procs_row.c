@@ -353,9 +353,8 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
         {
             format_uptime(loc_upt, sizeof(loc_upt), p->start_time_sec);
         }
-        snprintf((char *) lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                 "PID: %d | Up: %s | CPU: %4.1f%% | Exec: %zu ns", (int) p->PID, loc_upt,
-                 p->cpu_used, (size_t) p->dtmedian_exec_ns);
+        ov_row_tooltip("PID: %d | Up: %s | CPU: %4.1f%% | Exec: %zu ns", (int) p->PID, loc_upt,
+                       p->cpu_used, (size_t) p->dtmedian_exec_ns);
 
         int btn_w = 8; /* " [Kill] " */
         int rem   = avail - printed;

@@ -320,6 +320,7 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m);
 void ov_render_tabs(OV_LAYOUT *lay);
 void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m);
 void ov_draw_tooltip(OV_LAYOUT *lay);
+void ov_row_tooltip(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 void ov_render__sync_selection(OV_LAYOUT *lay, const OV_MODEL *m);
 void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m);
 

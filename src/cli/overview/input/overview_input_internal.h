@@ -56,8 +56,8 @@ int              ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, co
 
 /* Modal & text input handling */
 int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay, const OV_MODEL *m);
-int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, OV_MODEL *m);
-int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, OV_MODEL *m);
+int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, const OV_MODEL *m);
+int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 
 /* Hit-test & mouse resolution */
 void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc);
