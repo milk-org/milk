@@ -8,11 +8,11 @@
  * Lookup helpers: O(1) through the model indexes once the graph is built, linear before
  * ========================================================= */
 
-/** stream_inode_match - stream @si has the inode in @ctx. */
+/** stream_inode_match - stream @si has the inode in @ctx (an alias link never matches: its target does). */
 static int stream_inode_match(const void *ctx, int32_t si)
 {
     const OV_MODEL *m = ((const void *const *) ctx)[0];
-    return m->streams[si].valid &&
+    return m->streams[si].valid && !m->streams[si].alias &&
            m->streams[si].inode == *(const ino_t *) ((const void *const *) ctx)[1];
 }
 
@@ -313,7 +313,7 @@ void ov_build_graph(OV_MODEL *model)
 
     for (int i = 0; i < model->nb_streams; i++)
     {
-        if (!model->streams[i].valid)
+        if (!model->streams[i].valid || model->streams[i].alias)
         {
             continue;
         }

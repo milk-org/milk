@@ -5,6 +5,10 @@
 /* CTest milkctrl_unit_graph: the typed link graph built from synthetic models (no shared memory). */
 
 #include "overview_data_internal.h"
+
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "overview_data_loops.h"
 
 #include <stdlib.h>
@@ -191,9 +195,64 @@ static void test_hop_pool(void)
     CHECK(sizeof(OV_STREAM) <= 512); /* the 10000-stream model stays small */
 }
 
+/* Directory entries: regular file, link (target inode), dangling link; failure reasons */
+static void test_stream_entries(void)
+{
+    char dir[] = "/tmp/ov-sentry-XXXXXX", path[256], lpath[256], target[80];
+    CHECK(mkdtemp(dir) != NULL);
+    snprintf(path, sizeof(path), "%s/a.im.shm", dir);
+    FILE *f = fopen(path, "w");
+    CHECK(f != NULL);
+    fclose(f);
+    snprintf(lpath, sizeof(lpath), "%s/b.im.shm", dir);
+    CHECK(symlink(path, lpath) == 0);
+    snprintf(lpath, sizeof(lpath), "%s/c.im.shm", dir);
+    CHECK(symlink("/nonexistent/z.im.shm", lpath) == 0);
+
+    struct stat st;
+    CHECK(stat(path, &st) == 0);
+    DIR           *d = opendir(dir);
+    struct dirent *ep;
+    int            seen = 0;
+    while (d != NULL && (ep = readdir(d)) != NULL)
+    {
+        ino_t ino;
+        int   link, rc = ov_stream_dirent(dir, ep, &ino, &link, target, sizeof(target));
+        if (strcmp(ep->d_name, "a.im.shm") == 0)
+        {
+            CHECK(rc == 0 && !link && ino == st.st_ino);
+            seen++;
+        }
+        else if (strcmp(ep->d_name, "b.im.shm") == 0)
+        {
+            CHECK(rc == 0 && link && ino == st.st_ino && strcmp(target, "a") == 0);
+            seen++;
+        }
+        else if (strcmp(ep->d_name, "c.im.shm") == 0)
+        {
+            CHECK(rc == OV_SERR_DANGLING && link);
+            seen++;
+        }
+    }
+    closedir(d);
+    CHECK(seen == 3);
+    CHECK(ov_stream_map_err(-1, 1) == OV_SERR_OPEN && ov_stream_map_err(-2, 1) == OV_SERR_FILE);
+    CHECK(ov_stream_map_err(0, 0) == OV_SERR_VERSION && ov_stream_map_err(0, 1) == OV_SERR_DAMAGED);
+    CHECK(strcmp(ov_stream_err_label(OV_SERR_DANGLING), "dangling link") == 0 &&
+          ov_stream_err_label(0)[0] == 0);
+    const char *rm[] = { "a.im.shm", "b.im.shm", "c.im.shm" };
+    for (int i = 0; i < 3; i++)
+    {
+        snprintf(path, sizeof(path), "%s/%s", dir, rm[i]);
+        CHECK(unlink(path) == 0);
+    }
+    CHECK(rmdir(dir) == 0);
+}
+
 int main(void)
 {
     test_edge_evidence();
+    test_stream_entries();
     test_hop_pool();
     test_adjacency();
     test_trace_timing();

@@ -110,6 +110,7 @@ graph TD
     MILKCTRLMODEL --> FPS
     MILKCTRLMODEL --> PROCINFO
     MILKCTRLMODEL --> ISIO
+    MILKCTRLMODEL --> MILKDATA
     MILKCTRL --> MILKCTRLMODEL
     MILKEXE --> FPSSTANDALONE
     CACAOEXE --> FPSSTANDALONE
@@ -429,7 +430,7 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 | milk-fpsCTRL                 | milkfpsseq, milkfps, milkprocessinfo, ImageStreamIO |
 | milk-procCTRL                | milkprocessinfo, ImageStreamIO                      |
 | milk-streamCTRL              | ImageStreamIO, milkprocessinfo                      |
-| milk-CTRL                    | milkctrl_model (milkfps, milkprocessinfo, ImageStreamIO) |
+| milk-CTRL                    | milkctrl_model (milkfps, milkprocessinfo, milkdata, ImageStreamIO) |
 | milk-fps-list/search/info/rm | milkfpsStandalone (transitively: milkfps, milkdata) |
 | milk-fps-set/track           | milkfpsStandalone                                   |
 | milk-fps-conf*/run*          | milkfpsStandalone                                   |

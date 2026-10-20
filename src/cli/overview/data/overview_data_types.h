@@ -135,6 +135,17 @@ typedef struct
 int  pid_read_perf_counters(pid_t pid, int64_t loopcnt, ov_perf_counters_t *out);
 void pid_perf_close(void);
 
+/* Why a listed *.im.shm cannot be used */
+typedef enum
+{
+    OV_SERR_NONE = 0,
+    OV_SERR_OPEN,     /* cannot open (permission, vanished) */
+    OV_SERR_FILE,     /* not a regular file, or too small for a stream */
+    OV_SERR_VERSION,  /* written by another ImageStreamIO version */
+    OV_SERR_DAMAGED,  /* sizes inconsistent with the file length, not shared */
+    OV_SERR_DANGLING, /* symbolic link to nothing */
+} ov_stream_err_t;
+
 /* One hop of a stream's process trace: who wrote it, triggered by which stream */
 typedef struct
 {
@@ -190,7 +201,11 @@ typedef struct
     int nb_proctrace;
     int trace_off;
 
-    int pending; /**< listed, not mapped yet (OV_MAP_PER_SCAN): only name and inode are set */
+    int    pending; /**< listed, not mapped yet (OV_MAP_PER_SCAN): only name and inode are set */
+    int8_t err; /**< ov_stream_err_t: the file is listed but cannot be used (name and inode only) */
+    int8_t is_link; /**< the *.im.shm is a symbolic link to link_target */
+    int8_t alias;   /**< a link whose target is listed too: shown, kept out of the graph */
+    char   link_target[STRINGMAXLEN_IMAGE_NAME];
 
     /* static string cache */
     char size_str[32];

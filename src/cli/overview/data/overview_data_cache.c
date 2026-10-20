@@ -286,7 +286,8 @@ ov_shm_map_t s_plist_map;
 
 /**
  * ov_shm_map - map an existing regular file of at least @minsize bytes, read-only unless @rw.
- * The fd is closed once mapped. Return: 0, or -1 with *m zeroed.
+ * The fd is closed once mapped. Return: 0; -1 cannot open, -2 not a regular file of that size, -3 mmap failed
+ * (*m zeroed).
  */
 int ov_shm_map(ov_shm_map_t *m, const char *path, int rw, size_t minsize)
 {
@@ -301,13 +302,13 @@ int ov_shm_map(ov_shm_map_t *m, const char *path, int rw, size_t minsize)
         (size_t) st.st_size < minsize)
     {
         close(fd);
-        return -1;
+        return -2;
     }
     void *a = mmap(NULL, (size_t) st.st_size, PROT_READ | (rw ? PROT_WRITE : 0), MAP_SHARED, fd, 0);
     close(fd);
     if (a == MAP_FAILED)
     {
-        return -1;
+        return -3;
     }
     m->addr = a;
     m->len  = (size_t) st.st_size;

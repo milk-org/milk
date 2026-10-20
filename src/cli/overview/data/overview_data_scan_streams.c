@@ -13,33 +13,35 @@ errno_t ImageStreamIO_image_sizing(IMAGE *image, uint8_t *map);
  * scache_map_ro - map a stream file read-only: metadata, keywords, semaphores and traces.
  *
  * Unlike ImageStreamIO_read_sharedmem_image_toIMAGE() this needs no write access, does not
- * MAP_POPULATE or mlock the image data, keeps no fd, and rejects half-created files silently.
- * Release with ImageStreamIO_closeIm(). Return: 0, or -1 with nothing mapped.
+ * MAP_POPULATE or mlock the image data, and keeps no fd. Release with ImageStreamIO_closeIm().
+ * Return: 0, or an ov_stream_err_t with nothing mapped.
  */
 static int scache_map_ro(IMAGE *img, const char *path)
 {
     ov_shm_map_t m;
     memset(img, 0, sizeof(*img));
-    if (ov_shm_map(&m, path, 0, sizeof(IMAGE_METADATA) + 1) != 0)
+    int rc = ov_shm_map(&m, path, 0, sizeof(IMAGE_METADATA) + 1);
+    if (rc != 0)
     {
-        return -1;
+        return ov_stream_map_err(rc, 1);
     }
     img->md = (IMAGE_METADATA *) m.addr;
-    if (strncmp(img->md->version, IMAGESTRUCT_VERSION, sizeof(img->md->version)) != 0 ||
-        img->md->shared != 1 ||
+    int version_ok =
+        (strncmp(img->md->version, IMAGESTRUCT_VERSION, sizeof(img->md->version)) == 0);
+    if (!version_ok || img->md->shared != 1 ||
         ImageStreamIO_image_sizing(img, (uint8_t *) m.addr) != IMAGESTREAMIO_SUCCESS ||
         img->memsize != m.len)
     {
         ov_shm_unmap(&m);
         memset(img, 0, sizeof(*img));
-        return -1;
+        return ov_stream_map_err(0, version_ok);
     }
     img->semptr = (sem_t **) calloc((size_t) img->md->sem + 1, sizeof(sem_t *));
     if (img->semptr == NULL)
     {
         ov_shm_unmap(&m);
         memset(img, 0, sizeof(*img));
-        return -1;
+        return OV_SERR_OPEN;
     }
     for (long si = 0; si < img->md->sem; si++)
     {
@@ -207,6 +209,14 @@ static void fill_stream_from_img(OV_MODEL *m, OV_STREAM *s, ov_stream_cache_t *c
     s->node_idx = -1;
 }
 
+/** err_file_changed - 1 if the file of failed cache entry @ci changed since it failed (mtime): retry it. */
+static int err_file_changed(int ci, const char *path)
+{
+    struct stat st;
+    return stat(path, &st) != 0 || st.st_mtim.tv_sec != s_scache[ci].err_mtime.tv_sec ||
+           st.st_mtim.tv_nsec != s_scache[ci].err_mtime.tv_nsec;
+}
+
 /** fill_stream_pending - a listed stream not mapped yet: name and inode only. */
 static void fill_stream_pending(OV_STREAM *s, const char *name, ino_t inode)
 {
@@ -218,40 +228,72 @@ static void fill_stream_pending(OV_STREAM *s, const char *name, ino_t inode)
 }
 
 /**
- * scache_try_map - map cache entry @ci from @path unless done, while *@budget mappings remain this scan.
- * Return: 0 mapped, 1 waiting (no budget), -1 the file cannot be mapped.
+ * scache_try_map - map cache entry @ci from @path unless done or failed, while *@budget mappings remain this
+ * scan; a failure is remembered with the file's mtime. Return: 0 mapped, 1 waiting (no budget), 2 failed.
  */
 static int scache_try_map(int ci, const char *path, int *budget)
 {
-    if (s_scache[ci].mapped)
+    ov_stream_cache_t *ce = &s_scache[ci];
+    if (ce->mapped || ce->err)
     {
-        return 0;
+        return ce->mapped ? 0 : 2;
     }
     if (*budget <= 0)
     {
         return 1;
     }
     (*budget)--;
-    if (scache_map_ro(&s_scache[ci].img, path) != 0)
+    ce->err = scache_map_ro(&ce->img, path);
+    if (ce->err)
     {
-        return -1;
+        struct stat st;
+        ce->err_mtime = (stat(path, &st) == 0) ? st.st_mtim : (struct timespec) { 0, 0 };
+        return 2;
     }
     s_scache[ci].mapped = 1;
     size_string(&s_scache[ci].img, s_scache[ci].size_str, sizeof(s_scache[ci].size_str));
     return 0;
 }
 
-/** emit_stream - model row @idx from cache entry @ci, mapped or waiting. Return: 1 if it waits. */
+/** emit_stream - model row @idx from cache entry @ci: mapped, waiting, or failed. Return: 1 if it waits. */
 static int emit_stream(OV_MODEL *model, int idx, int ci)
 {
-    if (!s_scache[ci].mapped)
+    ov_stream_cache_t *ce = &s_scache[ci];
+    OV_STREAM         *s  = &model->streams[idx];
+    if (ce->mapped)
     {
-        fill_stream_pending(&model->streams[idx], s_scache[ci].name, s_scache[ci].inode);
-        return 1;
+        fill_stream_from_img(model, s, ce);
+        scache_rate_update(s, ci);
     }
-    fill_stream_from_img(model, &model->streams[idx], &s_scache[ci]);
-    scache_rate_update(&model->streams[idx], ci);
-    return 0;
+    else
+    {
+        fill_stream_pending(s, ce->name, ce->inode);
+        s->pending = !ce->err;
+        s->err     = (int8_t) ce->err;
+    }
+    s->is_link = (int8_t) ce->is_link;
+    s->alias   = (int8_t) ce->alias;
+    memcpy(s->link_target, ce->link_target, sizeof(s->link_target));
+    return s->pending;
+}
+
+/** mark_aliases - a link whose target is listed under its own name is an alias (cache and model rows). */
+static void mark_aliases(OV_MODEL *model)
+{
+    for (int i = 0; i < model->nb_streams; i++)
+    {
+        OV_STREAM *s = &model->streams[i];
+        if (s->is_link)
+        {
+            int t    = scache_find(s->link_target);
+            s->alias = (int8_t) (t >= 0 && !s_scache[t].is_link);
+            int ci   = scache_find(s->name);
+            if (ci >= 0)
+            {
+                s_scache[ci].alias = s->alias;
+            }
+        }
+    }
 }
 
 /**
@@ -286,11 +328,12 @@ void ov_scan_streams(OV_MODEL *model)
         for (int ci = 0; ci < s_scache_nb && idx < OV_MAX_STREAMS;)
         {
             snprintf(fpath, sizeof(fpath), "%s/%s.im.shm", shmdir, s_scache[ci].name);
-            if (scache_try_map(ci, fpath, &budget) < 0)
+            if (s_scache[ci].err && s_scache[ci].err != OV_SERR_DANGLING &&
+                err_file_changed(ci, fpath))
             {
-                scache_evict_locked(ci); /* the last entry moves to ci */
-                continue;
+                s_scache[ci].err = 0; /* caught half-written: try again now that it changed */
             }
+            scache_try_map(ci, fpath, &budget);
             waiting += emit_stream(model, idx++, ci++);
         }
         pthread_mutex_unlock(&s_scache_mutex);
@@ -335,23 +378,22 @@ void ov_scan_streams(OV_MODEL *model)
         char sname[STRINGMAXLEN_IMAGE_NAME];
         snprintf(sname, sizeof(sname), "%.*s", namelen - 7, ep->d_name);
 
-        /* Inode from the directory entry; stat() only where the filesystem does not report it */
+        /* Inode from the directory entry (a link's target's); links resolved */
         snprintf(fpath, sizeof(fpath), "%s/%s", shmdir, ep->d_name);
-        ino_t ino = ep->d_ino;
-        if (ino == 0)
+        ino_t ino;
+        int   is_link;
+        char  target[STRINGMAXLEN_IMAGE_NAME];
+        int   derr = ov_stream_dirent(shmdir, ep, &ino, &is_link, target, sizeof(target));
+        if (derr < 0)
         {
-            struct stat st;
-            if (stat(fpath, &st) != 0)
-            {
-                continue;
-            }
-            ino = st.st_ino;
+            continue;
         }
 
         int ci = scache_find(sname);
-        if (ci >= 0 && s_scache[ci].inode != ino)
+        if (ci >= 0 && (s_scache[ci].inode != ino ||
+                        (s_scache[ci].err && !derr && err_file_changed(ci, fpath))))
         {
-            scache_evict_locked(ci); /* recreated: map the new file */
+            scache_evict_locked(ci); /* recreated, or a failed file changed: try the new one */
             ci = -1;
         }
         if (ci < 0)
@@ -364,17 +406,17 @@ void ov_scan_streams(OV_MODEL *model)
             ci = s_scache_nb++;
             memset(&s_scache[ci], 0, sizeof(ov_stream_cache_t));
             snprintf(s_scache[ci].name, sizeof(s_scache[ci].name), "%s", sname);
-            s_scache[ci].inode  = ino;
-            s_scache[ci].is_new = (s_scan_dt_sec > 0.0) ? OV_NEW_SCANS : 0; /* none at startup */
+            snprintf(s_scache[ci].link_target, sizeof(s_scache[ci].link_target), "%s", target);
+            s_scache[ci].inode   = ino;
+            s_scache[ci].is_link = is_link;
+            s_scache[ci].err     = derr; /* a dangling link is not mapped */
+            s_scache[ci].is_new  = (s_scan_dt_sec > 0.0) ? OV_NEW_SCANS : 0; /* none at startup */
         }
-        if (scache_try_map(ci, fpath, &budget) < 0)
-        {
-            scache_evict_locked(ci);
-            continue;
-        }
+        scache_try_map(ci, fpath, &budget);
         s_scache[ci].in_use = 1;
         waiting += emit_stream(model, idx++, ci);
     }
+    mark_aliases(model);
 
     closedir(dp);
     model->nb_streams      = idx;

@@ -26,6 +26,7 @@ add_library(
   ${OV_DIR}/data/overview_data_sort_fps.c
   ${OV_DIR}/data/overview_data_sys.c
   ${OV_DIR}/data/overview_data_trace.c
+  ${OV_DIR}/data/overview_data_stream_err.c
   ${OV_DIR}/data/overview_data_sys_proc.c
   ${OV_DIR}/data/overview_data_sys_perf.c
   ${OV_DIR}/data/overview_scan.c
@@ -41,4 +42,4 @@ target_include_directories(
          ${OV_DIR}
          ${OV_DIR}/data)
 target_compile_options(milkctrl_model PRIVATE -Wmissing-prototypes)
-target_link_libraries(milkctrl_model PUBLIC ImageStreamIO milkprocessinfo milkfps m rt pthread)
+target_link_libraries(milkctrl_model PUBLIC ImageStreamIO milkprocessinfo milkfps milkdata m rt pthread)

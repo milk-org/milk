@@ -53,10 +53,23 @@ typedef struct
     int      is_new;       /* scans left to highlight a new stream */
     int      mapped;       /* img is mapped (else listed only, waiting for OV_MAP_PER_SCAN) */
     char     size_str[32]; /* "WxH": the geometry of a mapping does not change */
+    int      err; /* ov_stream_err_t of the last mapping attempt; retried when the file changes */
+    struct timespec err_mtime; /* the file's mtime when it failed */
+    int             is_link, alias;
+    char            link_target[STRINGMAXLEN_IMAGE_NAME];
 } ov_stream_cache_t;
 
 extern ov_stream_cache_t s_scache[OV_MAX_STREAMS];
-extern int               s_scache_nb;
+
+struct dirent;
+int        ov_stream_dirent(const char          *dir,
+                            const struct dirent *ep,
+                            ino_t               *ino,
+                            int                 *is_link,
+                            char                *target,
+                            size_t               n);
+int        ov_stream_map_err(int rc, int version_ok);
+extern int s_scache_nb;
 
 typedef struct
 {

@@ -267,22 +267,27 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
         line_idx++;
     }
 
+    /* A file that is not (yet) a usable stream: say why, nothing else to show */
+    if (s->err || s->pending)
+    {
+        H_ov_theme_bg(OV_BG_PANEL);
+        H_ov_theme_fg(s->err ? OV_FG_ERROR : OV_FG_DIM);
+        H_detail_row(ri, line_idx, row, r.col, r.width, " %s  (inode %" PRIu64 ")",
+                     s->err ? ov_stream_err_label(s->err) : "listed, not mapped yet",
+                     (uint64_t) s->inode);
+        return ri;
+    }
+    if (s->is_link)
+    {
+        H_ov_theme_bg(OV_BG_PANEL);
+        H_ov_theme_fg(OV_FG_DIM);
+        H_detail_row(ri, line_idx, row, r.col, r.width, " Link to %s%s", s->link_target,
+                     s->alias ? "  (listed too: not in the graph)" : "");
+    }
+
     /* Type + Size */
     {
-        char szb[48];
-        if (s->naxis == 1)
-        {
-            snprintf(szb, sizeof(szb), "%u", (unsigned) s->size[0]);
-        }
-        else if (s->naxis == 2)
-        {
-            snprintf(szb, sizeof(szb), "%ux%u", (unsigned) s->size[0], (unsigned) s->size[1]);
-        }
-        else
-        {
-            snprintf(szb, sizeof(szb), "%ux%ux%u", (unsigned) s->size[0], (unsigned) s->size[1],
-                     (unsigned) s->size[2]);
-        }
+        const char *szb = s->size_str;
         H_ov_buf_pos(row + ri, r.col + 1);
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_DIM);

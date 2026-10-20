@@ -416,5 +416,6 @@ static inline const OV_TRACE_HOP *ov_stream_hops(const OV_MODEL *m, const OV_STR
 }
 
 OV_TRACE_HOP *ov_stream_add_hop(OV_MODEL *m, OV_STREAM *s);
+const char   *ov_stream_err_label(int err);
 
 #endif /* OVERVIEW_DATA_H */

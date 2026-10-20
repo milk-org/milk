@@ -42,22 +42,36 @@ static void cell_anc(OV_COLCELL *c, const OV_ROW_CTX *rc)
 /** cell_name - stream name, dim when the stream is not updating. */
 static void cell_name(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
-    if (STRM(rc)->pending)
+    const OV_STREAM *st = STRM(rc);
+    char             nm[2 * STRINGMAXLEN_IMAGE_NAME + 32];
+    if (st->err)
     {
-        char nm[STRINGMAXLEN_IMAGE_NAME + 4];
-        snprintf(nm, sizeof(nm), "%s \xe2\x80\xa6", STRM(rc)->name); /* "name …": not mapped yet */
+        snprintf(nm, sizeof(nm), "%s \xe2\x9c\x97 %s", st->name,
+                 ov_stream_err_label(st->err)); /* ✗ */
+        ov_cell_name(c, rc, nm, OV_FG_ERROR);
+        return;
+    }
+    if (st->pending)
+    {
+        snprintf(nm, sizeof(nm), "%s \xe2\x80\xa6", st->name); /* "name …": not mapped yet */
         ov_cell_name(c, rc, nm, OV_FG_DIM);
         return;
     }
-    ov_cell_name(c, rc, STRM(rc)->name, STRM(rc)->active ? OV_FG_STREAM : OV_FG_DIM);
+    if (st->is_link)
+    {
+        snprintf(nm, sizeof(nm), "%s\xe2\x86\x92%s", st->name, st->link_target); /* name→target */
+        ov_cell_name(c, rc, nm, st->alias ? OV_FG_DIM : (st->active ? OV_FG_STREAM : OV_FG_DIM));
+        return;
+    }
+    ov_cell_name(c, rc, st->name, st->active ? OV_FG_STREAM : OV_FG_DIM);
 }
 
 /** cell_typ - data type. */
 static void cell_typ(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
-    if (STRM(rc)->pending)
+    if (STRM(rc)->pending || STRM(rc)->err)
     {
-        return; /* not mapped yet */
+        return; /* not mapped (yet) */
     }
     c->fg = OV_FG_MUTED;
     snprintf(c->text, sizeof(c->text), "%s", render_dtype(STRM(rc)->datatype));
@@ -66,9 +80,9 @@ static void cell_typ(OV_COLCELL *c, const OV_ROW_CTX *rc)
 /** cell_size - dimensions. */
 static void cell_size(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
-    if (STRM(rc)->pending)
+    if (STRM(rc)->pending || STRM(rc)->err)
     {
-        return; /* not mapped yet */
+        return; /* not mapped (yet) */
     }
     snprintf(c->text, sizeof(c->text), "%s", STRM(rc)->size_str);
 }
@@ -76,9 +90,9 @@ static void cell_size(OV_COLCELL *c, const OV_ROW_CTX *rc)
 /** cell_hz - update rate. */
 static void cell_hz(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
-    if (STRM(rc)->pending)
+    if (STRM(rc)->pending || STRM(rc)->err)
     {
-        return; /* not mapped yet */
+        return; /* not mapped (yet) */
     }
     double hz = STRM(rc)->update_hz;
     c->fg     = (hz > 0.1) ? OV_FG_ACTIVE : OV_FG_DIM;
@@ -88,9 +102,9 @@ static void cell_hz(OV_COLCELL *c, const OV_ROW_CTX *rc)
 /** cell_mbps - throughput in bytes per second. */
 static void cell_mbps(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
-    if (STRM(rc)->pending)
+    if (STRM(rc)->pending || STRM(rc)->err)
     {
-        return; /* not mapped yet */
+        return; /* not mapped (yet) */
     }
     const OV_STREAM *s = STRM(rc);
     c->fg              = OV_FG_DIM;
@@ -113,9 +127,9 @@ static void cell_inode(OV_COLCELL *c, const OV_ROW_CTX *rc)
 /** cell_owner - creator process. */
 static void cell_owner(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
-    if (STRM(rc)->pending)
+    if (STRM(rc)->pending || STRM(rc)->err)
     {
-        return; /* not mapped yet */
+        return; /* not mapped (yet) */
     }
     ov_cell_pid(c, rc, STRM(rc)->ownerPID);
 }
@@ -123,9 +137,9 @@ static void cell_owner(OV_COLCELL *c, const OV_ROW_CTX *rc)
 /** cell_count - update counter, active while it moves. */
 static void cell_count(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
-    if (STRM(rc)->pending)
+    if (STRM(rc)->pending || STRM(rc)->err)
     {
-        return; /* not mapped yet */
+        return; /* not mapped (yet) */
     }
     c->fg = STRM(rc)->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM;
     ov_fmt_si(c->text, sizeof(c->text), (double) STRM(rc)->cnt0);
@@ -134,9 +148,9 @@ static void cell_count(OV_COLCELL *c, const OV_ROW_CTX *rc)
 /** cell_sems - one character per semaphore: its value (+ above 9), '.' for absent ones. */
 static void cell_sems(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
-    if (STRM(rc)->pending)
+    if (STRM(rc)->pending || STRM(rc)->err)
     {
-        return; /* not mapped yet */
+        return; /* not mapped (yet) */
     }
     const OV_STREAM *s = STRM(rc);
     for (int i = 0; i < 10; i++)
@@ -159,9 +173,9 @@ static void cell_sems(OV_COLCELL *c, const OV_ROW_CTX *rc)
 /** cell_wpid - last writer process. */
 static void cell_wpid(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
-    if (STRM(rc)->pending)
+    if (STRM(rc)->pending || STRM(rc)->err)
     {
-        return; /* not mapped yet */
+        return; /* not mapped (yet) */
     }
     ov_cell_pid(c, rc, STRM(rc)->write_pid);
 }
@@ -175,9 +189,9 @@ static OV_COLSPAN span_of(const OV_COLCELL *c)
 /** cell_rpid - reader processes, ':'-separated; +N counts those that do not fit. */
 static void cell_rpid(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
-    if (STRM(rc)->pending)
+    if (STRM(rc)->pending || STRM(rc)->err)
     {
-        return; /* not mapped yet */
+        return; /* not mapped (yet) */
     }
     const OV_STREAM *s    = STRM(rc);
     int              used = 0;
