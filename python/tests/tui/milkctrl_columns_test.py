@@ -82,6 +82,10 @@ def test_narrow_columns_scroll_into_view(milkctrl, entities):
         if "RPID" in next(x for x in m.lines() if "NAME" in x):
             break
     m.wait_for(r"‹A\s+NAME.*RPID")
-    m.keys("S-Right")  # wraps to the first column, unscrolled
+    for _ in range(6):  # on past the last column: wraps to the first, unscrolled
+        m.keys("S-Right")
+        time.sleep(0.2)
+        if "\u2551 A" in next(x for x in m.lines() if "NAME" in x):
+            break
     m.wait_for(r"║ A\s+NAME.*›")
     assert m.quit() == 0
