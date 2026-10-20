@@ -54,7 +54,6 @@ graph TD
 
     FPSCTRL["milk-fpsCTRL"]:::exe
     PROCCTRL["milk-procCTRL"]:::exe
-    STREAMCTRL["milk-streamCTRL"]:::exe
     MILKCTRLMODEL["milkctrl_model"]:::fw
     MILKCTRL["milk-CTRL"]:::exe
     MILKEXE["milk-fpsexec-*"]:::exe
@@ -105,8 +104,6 @@ graph TD
     FPSCTRL --> ISIO
     PROCCTRL --> PROCINFO
     PROCCTRL --> ISIO
-    STREAMCTRL --> PROCINFO
-    STREAMCTRL --> ISIO
     MILKCTRLMODEL --> FPS
     MILKCTRLMODEL --> PROCINFO
     MILKCTRLMODEL --> ISIO
@@ -429,7 +426,7 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 | milk-cli                     | CLIcore + all module libs                           |
 | milk-fpsCTRL                 | milkfpsseq, milkfps, milkprocessinfo, ImageStreamIO |
 | milk-procCTRL                | milkprocessinfo, ImageStreamIO                      |
-| milk-streamCTRL              | ImageStreamIO, milkprocessinfo                      |
+| milk-streamCTRL              | a link to milk-CTRL (opens its streams view)        |
 | milk-CTRL                    | milkctrl_model (milkfps, milkprocessinfo, milkdata, ImageStreamIO) |
 | milk-fps-list/search/info/rm | milkfpsStandalone (transitively: milkfps, milkdata) |
 | milk-fps-set/track           | milkfpsStandalone                                   |

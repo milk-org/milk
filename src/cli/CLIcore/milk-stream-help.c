@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
     printf(C_HDR "Inspecting and Monitoring Streams\n" C_RST);
     printf("  " C_CMD "milk-streamCTRL" C_RST
-           "         TUI stream monitor (like top/htop for streams)\n"
+           "         milk-CTRL on its streams view (like top/htop for streams)\n"
            "  " C_CMD "milk-stream-info " C_STRM "<name>" C_RST
            " Detailed configuration and connection graph\n"
            "  " C_CMD "milk-stream-graph" C_RST

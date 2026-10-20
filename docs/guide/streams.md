@@ -211,7 +211,8 @@ oldest ancestor in the chain.
 
 ### Viewing the Trace
 
-- In `streamCTRL`: select a stream and press `t` to see the full process trace.
+- In `milk-CTRL` (or `milk-streamCTRL`), F3: select a stream, press Right to open the inspector and
+  Right again until the TRACE page: each hop's process, trigger stream, mode and timing.
 - In `milk-CTRL` overview: the trace is used to draw stream→process→stream dependency graphs.
 
 ---

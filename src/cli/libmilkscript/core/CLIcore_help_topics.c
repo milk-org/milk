@@ -533,7 +533,7 @@ void help_topic_milk(void)
     printf("  " C_CMD "milk-fps-help           " C_RST "FPS usage guide\n");
     printf("\n");
     printf(C_HDR "Process Monitoring:\n" C_RST);
-    printf("  " C_CMD "milk-streamCTRL        " C_RST "TUI stream monitor\n");
+    printf("  " C_CMD "milk-streamCTRL        " C_RST "milk-CTRL on its streams view\n");
     printf("  " C_CMD "milk-procCTRL          " C_RST "TUI process monitor\n");
     printf("  " C_CMD "milk-procinfo-help      " C_RST "Processinfo guide\n");
     printf("\n");
@@ -704,7 +704,8 @@ static void help_topic_streams(void)
            " Publish pixels from stdin to SHM stream\n");
     printf("\n");
     printf(C_HDR "3. Standalone OS Tools:\n" C_RST);
-    printf("  " C_CMD "milk-streamCTRL        " C_RST "Interactive TUI stream monitor\n");
+    printf("  " C_CMD "milk-streamCTRL        " C_RST
+           "milk-CTRL on its streams view (stream monitor)\n");
     printf("  " C_CMD "milk-termview <stream> " C_RST "Live terminal pixel viewer\n");
     printf("  " C_CMD "milk-stream-info <s>   " C_RST
            "Detailed stream lineage & reader/writer PIDs\n");

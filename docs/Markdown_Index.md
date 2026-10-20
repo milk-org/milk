@@ -376,10 +376,6 @@ Documentation files will link to this website, other files will link directly to
 
 - [overview (milk-CTRL)]({{ github_blob_url }}/src/cli/overview/README.md) (README.md)
 
-## src/cli/streamCTRL
-
-- [streamCTRL]({{ github_blob_url }}/src/cli/streamCTRL/README.md) (README.md)
-
 ## src/coremods/COREMOD_arith
 
 - [Module: COREMOD_arith]({{ github_blob_url }}/src/coremods/COREMOD_arith/README.md) (README.md)

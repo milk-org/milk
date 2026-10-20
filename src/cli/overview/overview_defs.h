@@ -8,7 +8,6 @@
  *
  * Provides all standalone macros, types, and helpers
  * needed by milk-CTRL without depending on CLIcore.
- * Mirrors the streamCTRL_defs.h pattern.
  */
 
 #ifndef OVERVIEW_DEFS_H

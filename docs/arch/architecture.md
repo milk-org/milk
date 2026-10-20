@@ -81,7 +81,7 @@ ones.
 ```text
 ┌──────────────────────────────────────────┐
 │            User Interfaces               │
-│  milk-cli · milk-fpsCTRL · streamCTRL    │
+│  milk-cli · milk-CTRL · milk-fpsCTRL     │
 ├──────────────────────────────────────────┤
 │            Plugins                       │
 │  milk-extra (fft, linalgebra, image*…)   │
@@ -128,7 +128,7 @@ milk/
 │   │
 │   ├── cli/                           ← User-facing tools
 │   │   ├── CLIcore/                   Interactive shell framework
-│   │   └── streamCTRL/               Stream monitor tool
+│   │   └── overview/                 milk-CTRL dashboard (milk-streamCTRL opens it on F3)
 │   │
 │   ├── coremods/                      ← Core computation modules
 │   │   ├── COREMOD_arith/            Arithmetic operations
@@ -325,7 +325,7 @@ graph TD
 | `milk-cli`        | Interactive shell for running commands, loading modules, scripting pipelines | FPS, Streams              |
 | `milk-fpsCTRL`    | TUI dashboard for monitoring and editing FPS parameters in real time         | FPS, processinfo          |
 | `milk-procCTRL`   | TUI for process health monitoring                                            | processinfo               |
-| `milk-streamCTRL` | TUI for inspecting live stream metadata, frame rates, semaphore state        | Streams                   |
+| `milk-streamCTRL` | milk-CTRL on its streams view: metadata, rates, semaphores, traces, holders  | Streams                   |
 | `milk-fpsexec-*`  | Standalone compute executables (one per function)                            | FPS, Streams, processinfo |
 | `milk-fps-*`      | CLI utilities for FPS operations (set, list, search, deploy)                 | FPS                       |
 

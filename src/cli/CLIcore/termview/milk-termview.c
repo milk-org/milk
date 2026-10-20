@@ -118,7 +118,7 @@ static void print_help(const char *progname, int mh_color)
     printf("  " MH_PAD_FMT " %s\n\n", MH_PAD(MH_OPT, "TERM", 22),
            "Else 24-bit for kitty, foot..., 256 for xterm-like");
 
-    const char *see_also[] = { "milk-streamCTRL:stream monitor and control",
+    const char *see_also[] = { "milk-streamCTRL:milk-CTRL on its streams view",
                                "milk-stream-help:stream tools overview" };
     milk_help_see_also(see_also, 2, mh_color);
 }

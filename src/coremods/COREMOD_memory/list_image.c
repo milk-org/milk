@@ -15,7 +15,7 @@
  *    parseable
  *
  * Note: the interactive "mmon" TUI has been
- * moved to the streamCTRL CLI tools suite.
+ * moved to milk-CTRL (streams view, F3).
  */
 
 

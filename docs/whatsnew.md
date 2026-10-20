@@ -16,6 +16,18 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
+- **2026-10-20** — `milk-streamCTRL` is now `milk-CTRL` opened on its streams view (an installed
+  link; `-h` maps the old keys), and the old streamCTRL TUI is removed. F3 gains an inspector with
+  INFO, SEMS (readers and writers of each semaphore), TRACE (writer chain with timing), KEYS and
+  HOLDERS (processes mapping the file, from `/proc`, no `fuser`) pages. Streams: up to 10000, mapped
+  progressively; files that are not usable streams and dangling links are listed with the reason;
+  symbolic links show their target; creator PID, holder count and owner sorts; Hz averaged over 1 s;
+  COUNT flashes when it moves; per-stage scan timing. Libraries: libprocessinfo shares the state,
+  control and trigger-mode names, computes timing medians for any reader (EXEC and DUTY no longer
+  need milk-procCTRL-scan) and settles dead registry slots; libmilkdata lists streams, which fixes
+  `readshmimall` and `shmimpurge` finding none in milk-cli; `processinfo_exec_end` measures across
+  second boundaries ([guide](guide/milk-CTRL.md)) `#cli` `#streams` `#api` `#docs`
+
 - **2026-10-20** — `milk-CTRL` efficiency, links and presentation round: the scan takes about
   1.6 ms instead of 5.7 ms on 2000 streams / 200 FPS and stops while paused; tmux is asked only
   while an FPS panel shows; perf counters close when RESOURCES is hidden; dead PIDs are not probed again; resident memory

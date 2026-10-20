@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file streamCTRL_ansi.h
- * @brief TrueColor ANSI terminal primitives for milk-streamCTRL
+ * @file procCTRL_ansi.h
+ * @brief TrueColor ANSI terminal primitives for milk-procCTRL
  *
  * Self-contained raw-terminal helpers: TrueColor fg/bg, cursor movement,
  * non-blocking keyboard input with ANSI escape sequence decoding, and

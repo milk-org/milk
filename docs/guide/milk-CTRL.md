@@ -18,6 +18,7 @@ destructive ones.
 milk-CTRL
 milk-CTRL --view procs 'wfs|dm'
 milk-CTRL -d /tmp/mysim --interval 0.2 --log /tmp/ctrl.log
+milk-streamCTRL            # the same program, opened on the streams view (F3)
 ```
 
 ## Screen
@@ -39,7 +40,8 @@ milk-CTRL -d /tmp/mysim --interval 0.2 --log /tmp/ctrl.log
 - **Panels**: each list has a header row; click a column title to sort by it.
 - **Command log**: results of actions, warnings, and messages from the libraries. `G` hides it,
   `v` / `V` make it smaller / larger.
-- **Status line**: scan time and rate, the view and focused panel, the sort column, the sub-tab,
+- **Status line**: scan time and the rate scans actually run at (hover it, with `m` on, for the time
+  of each scan stage), the view and focused panel, the sort column, the sub-tab or inspector page,
   the keys of the current context (CONTROL on PROC: `k term  p pause  e exit`; the F5 parameter
   tree: `← up  ESC back  ENTER edit`), the theme, an exit button and the clock.
 
@@ -53,7 +55,7 @@ and then `F2`. `[h: HELP]`, `[x] exit` and the clock always stay.
 | View | Shows |
 |------|-------|
 | `F2` DASH | The streams, processes and FPS lists, and the sub-tab panel bottom right |
-| `F3` STRM | Streams: type, size, rate, throughput, inode, owner, counter, semaphores, writer, readers |
+| `F3` STRM | Streams: type, size, rate, throughput, inode, owner, creator, counter, semaphores, writer, readers, holders; and an inspector for the stream under the cursor (below) |
 | `F4` PROC | Processes: PID, priority, state, loop rate, uptime, trigger, execution time, duty cycle, CPU, loop counter, memory, missed triggers, status message |
 | `F5` FPS | The FPS list on the left, the parameter tree of the FPS under the cursor on the right |
 | `F6` CONN | The sub-tab panel full screen |
@@ -112,6 +114,48 @@ FPS whose run process is on the cycle.
 - **Lineage**: Shift+UP / DOWN jump to the nearest upstream / downstream entity. The `A` column
   shows, relative to the selection: `◀3` / `3▶` three steps upstream / downstream, `●` the
   selection, `▶` / `◀` writes / reads the selected stream, `↺` part of a loop, `⮂` of several.
+
+## Streams view (F3)
+
+The stream list sits beside an inspector (below it on terminals narrower than 100 columns; `{` / `}`
+move the split). Right or ENTER enters the inspector; there the arrows and PgUp / PgDn scroll, Right
+shows the next page, Left or ESC go back. Shift+TAB or a click on a page label also changes the page;
+the status line names it.
+
+| Page | Shows |
+|------|-------|
+| INFO | Type, size and memory, location, version, created / written / accessed times with their ages, creator and owner, the counters, the rate averaged over 1 s and the last per-scan rate, inode or link target, semaphores, keywords, circular buffer |
+| SEMS | Each semaphore's value and the PIDs of its last reader and writer, with their processinfo names; `†` marks a process that is gone |
+| TRACE | The processes that wrote the stream (STREAM_PROC_TRACE): per hop the writer, its trigger stream, mode and status, how long ago it started, its compute time, the hand-off from the previous hop and the lag in frames |
+| KEYS | The stream's keywords: name, type, value, comment |
+| HOLDERS | The processes that map the file, from `/proc/<pid>/maps` (read every 2 s while the page is shown; milk-CTRL itself is left out, and processes of other users may not be readable) |
+
+The list also shows:
+
+- **Files that are not usable streams** as rows with the reason: `name ✗ cannot open`, `not a stream
+  file`, `ImageStreamIO version` (written by a different ImageStreamIO, e.g. another installation's
+  Python module), `damaged or truncated`, `dangling link`. They are retried when the file changes.
+- **Symbolic links** as `name→target`. A link to a listed stream is shown dimmed and kept out of the
+  graph, so the stream is not counted twice.
+- **Streams not mapped yet** as `name …`: up to 10000 streams are listed, at most 500 new ones are
+  mapped per scan, and the scan comes back after 50 ms until all are. Past 10000 the header count
+  reads `10000+ stm` and the command log says so.
+- **COUNT** lit for 1 s after the counter moves; **HOLD**, the number of processes mapping the stream
+  at the last HOLDERS pass (sortable, compact-hidden); **CPID** the creator.
+
+`milk-streamCTRL` is milk-CTRL started under that name (an installed link): it opens this view,
+names itself in the header, and accepts the old `-w` (it never did anything). The old keys map to:
+
+| milk-streamCTRL | milk-CTRL |
+|-----------------|-----------|
+| F2 semaphores | SEMS column; inspector SEMS page |
+| F3 / F4 write / read PIDs | WPID and RPID columns; inspector SEMS page |
+| F5 process trace | inspector TRACE page |
+| F6 holders (`fuser`) | inspector HOLDERS page |
+| RIGHT detail | Right or ENTER: inspector INFO page |
+| `1` `2` `3` `4` `]` `[` sorting | `s` name, `S` rate, `>` `<` columns (CPID, OWNER, HOLD), `[` reverse |
+| Ctrl+e erase | `c` (CONTROL), then Ctrl+e or DEL, confirmed with `y` |
+| `{` `}` scan rate | `+` / `-` |
 
 ## CONTROL mode
 
@@ -263,4 +307,5 @@ the selection in reverse video.
 ## See also
 
 `milk-stream-info`, `milk-procinfo-info` and `milk-fps-info` (what `i` runs on the selection),
-`milk-stream-graph`, [`milk-termview`](termview.md), [fpsCTRL](fpsCTRL_reference.md).
+`milk-stream-graph`, `milk-streamCTRL-cli` (a line-oriented stream monitor for logs and pipes),
+[`milk-termview`](termview.md), [fpsCTRL](fpsCTRL_reference.md).

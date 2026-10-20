@@ -15,7 +15,7 @@ project(milk LANGUAGES C)
 # ncurses, bison, and flex.
 #
 # USE_NCURSES (default ON, requires USE_CLI): Enable ncurses TUI (milk-fpsCTRL,
-# streamCTRL).
+# milk-procCTRL).
 #
 # USE_READLINE (default ON, requires USE_CLI): Enable readline for interactive
 # CLI input.

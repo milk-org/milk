@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file streamCTRL_TUIcompat.c
+ * @file procCTRL_TUIcompat.c
  * @brief Global state storage for the TUIcompat frame buffer
  *
  * Defines storage for all externally-declared globals in
- * streamCTRL_TUIcompat.h and streamCTRL_standalone_defs.h.
+ * procCTRL_TUIcompat.h.
  */
 
 #include "procCTRL_TUIcompat.h"

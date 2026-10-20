@@ -92,7 +92,7 @@ disabled, see [Build Tiers](docs/quickstart/build_tiers.md).
 | `USE_COREMODS` | ON      | Build core modules (COREMOD\_\*)                  |
 | `USE_CFITSIO`  | ON      | Build FITS I/O (requires cfitsio)                 |
 | `USE_CLI`      | ON      | Build interactive CLI (`milk-cli`), TUI, scripts  |
-| `USE_NCURSES`  | ON      | Enable ncurses TUI (`milk-fpsCTRL`, `streamCTRL`) |
+| `USE_NCURSES`  | ON      | Enable ncurses TUI (`milk-fpsCTRL`, `milk-procCTRL`) |
 | `USE_READLINE` | ON      | Enable readline for CLI input                     |
 | `USE_GSL`      | ON      | Enable GSL for plugins                            |
 | `USE_CUDA`     | OFF     | Enable CUDA GPU acceleration                      |

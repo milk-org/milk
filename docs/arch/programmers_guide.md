@@ -142,7 +142,8 @@ is `src/milk_module_example/examplefunc_fps_cli_poc.c`.
   core library), `libfpsseq` (FPS sequencer), `libmilkcommon` (common utilities, debug tools),
   `libprocessinfo`, and `libmilkdata`.
 - `src/cli/`: User interfaces and scripting layer, including `libmilkscript` (core interpreter),
-  `CLIcore` (interactive shell), `overview` (system overview TUI), and `streamCTRL`.
+  `CLIcore` (interactive shell) and `overview` (milk-CTRL; `milk-streamCTRL` is a link that opens it on
+  its streams view).
 - `src/milk_module_example`: Compute unit templates (start here!).
 - `src/coremods/COREMOD_*/`: Core computation libraries (tools, iofits, arith, memory).
 - `plugins/milk-extra-src/`: General plugin modules (fft, linalgebra, image processing...).
