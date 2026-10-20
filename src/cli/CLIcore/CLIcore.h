@@ -149,10 +149,11 @@ static inline errno_t TUI_exit()
  *
  * If a module has no deps, omit this macro entirely.
  */
-#    define MODULE_DEPS(...)                                                                        \
-        static const char *_module_deps[] = { __VA_ARGS__ };                                        \
-        static const int   _module_ndeps  = (int) (sizeof(_module_deps) / sizeof(_module_deps[0])); \
-        static const int   _module_deps_defined = 1
+#    define MODULE_DEPS(...)                                            \
+        static const char *_module_deps[] = { __VA_ARGS__, NULL };      \
+        static const int   _module_ndeps =                              \
+            (int) (sizeof(_module_deps) / sizeof(_module_deps[0])) - 1; \
+        static const int _module_deps_defined = 1
 
 /** @brief CLI registration function type. */
 typedef errno_t (*module_cli_reg_fn)(void);

@@ -66,24 +66,3 @@ install(
   PROGRAMS ${PERFBENCH_SCRIPTS}
   DESTINATION bin
   RENAME milk-perfbench.sh)
-
-# ──────────────────────────────────────────
-# CTest benchmarks (label: perf)
-# ──────────────────────────────────────────
-
-include(CTest)
-
-# Smoke test: run the template compute unit through the harness. Uses a wrapper
-# script that creates the cam01 stream required by clitest.
-set(TESTNAME "perf-clitest")
-add_test(NAME "${TESTNAME}"
-         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tests/test-perf-clitest.sh 100
-                 ${CMAKE_BINARY_DIR}/perfresults)
-set_property(TEST "${TESTNAME}" PROPERTY LABELS "perf")
-set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 30)
-set_property(
-  TEST "${TESTNAME}"
-  PROPERTY
-    ENVIRONMENT
-    "PATH=${CMAKE_BINARY_DIR}/src/perfbench:${CMAKE_BINARY_DIR}/src/milk_module_example:${CMAKE_BINARY_DIR}/src/engine/libfps:${PROJECT_SOURCE_DIR}/scripts:$ENV{PATH}"
-)

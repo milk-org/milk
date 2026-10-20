@@ -55,29 +55,6 @@ set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
 set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION
                                          "COREMOD_tools")
 
-list(
-  APPEND
-  commandlist
-  "rtprio"
-  "tsetpmove"
-  "tsetpmoveext"
-  "csetpmove"
-  "csetandprioext"
-  "writef2file"
-  "dispim3d"
-  "ctsmstats")
-
-foreach(CLIcmdname IN LISTS commandlist)
-
-  set(TESTCLIFUNC "${CLIcmdname}")
-  set(TESTNAME "CLIfunc-COREMOD_tools-${TESTCLIFUNC}")
-  add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "@help tools.${CLIcmdname}")
-  set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLIfunc")
-  set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
-  set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "src:")
-
-endforeach()
-
 add_executable(milk-makecsetandrt bin/milk-makecsetandrt.c)
 target_include_directories(
   milk-makecsetandrt

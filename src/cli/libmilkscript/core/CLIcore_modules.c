@@ -17,6 +17,7 @@
 
 #include "CLIcore.h"
 #include "milkdata.h"
+#include "milk_catalog.h"
 #include "milk_cmd_args.h"
 #include "milk_cmd_index.h"
 
@@ -112,12 +113,19 @@ errno_t newstyle_milk_module_registration(void *handle, const char *libname)
         return RETURN_SUCCESS;
     }
 
+    info->mod_registered = 1;
+
     /* Load declared deps before registering */
     if (info->deps)
     {
-        for (int _di = 0; info->deps[_di]; _di++)
+        for (int _di = 0;
+             (const void *) &info->deps[_di] != (const void *) info && info->deps[_di] != NULL;
+             _di++)
         {
-            load_module_shared(info->deps[_di]);
+            if (!milk_module_loaded(info->deps[_di]))
+            {
+                load_module_shared(info->deps[_di]);
+            }
         }
     }
 
@@ -143,8 +151,6 @@ errno_t newstyle_milk_module_registration(void *handle, const char *libname)
     strncpy(data.modulename, "", STRINGMAXLEN_MODULE_NAME - 1);
     strncpy(data.moduleshortname_default, "", STRINGMAXLEN_MODULE_SHORTNAME - 1);
     strncpy(data.moduleshortname, "", STRINGMAXLEN_MODULE_SHORTNAME - 1);
-
-    info->mod_registered = 1;
 
     return RETURN_SUCCESS;
 }

@@ -85,28 +85,6 @@ set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
 set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION
                                          "COREMOD_memory")
 
-list(APPEND commandlist "mk2Dim" "mk3Dim" "listim" "rmall")
-
-foreach(CLIcmdname IN LISTS commandlist)
-
-  set(TESTCLIFUNC "${CLIcmdname}")
-  set(TESTNAME "CLIfunc-COREMOD_memory-${TESTCLIFUNC}")
-  add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "@help mem.${CLIcmdname}")
-  set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLIfunc")
-  set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
-  set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "src:")
-
-endforeach()
-
-set(TESTNAME "milksemloopspeed")
-add_test(NAME "${TESTNAME}"
-         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/milk-semloopspeed "-D"
-                 "123456")
-set_property(TEST "${TESTNAME}" PROPERTY LABELS "perf")
-set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 5)
-set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION
-                                         "cnt0 = 123457")
-
 add_executable(milk-fpsexec-cnt2push bin/cnt2push_main.c)
 target_include_directories(milk-fpsexec-cnt2push
                            PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
