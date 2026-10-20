@@ -39,6 +39,15 @@ if(BUILD_TESTING)
   add_test(NAME milkctrl_unit_view COMMAND milkctrl-unit-view)
 
   add_executable(
+    milkctrl-unit-ui ../overview/tests/test_ov_ui.c ../overview/overview_view.c ../overview/overview_keymap.c
+                     ../overview/input/overview_input_keys.c ../overview/render/overview_render_units.c)
+  target_include_directories(
+    milkctrl-unit-ui PRIVATE ${CMAKE_SOURCE_DIR}/src/cli/overview/render ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
+                             ${CMAKE_SOURCE_DIR}/src/cli/overview/input)
+  target_link_libraries(milkctrl-unit-ui PRIVATE milkctrl_model)
+  add_test(NAME milkctrl_unit_ui COMMAND milkctrl-unit-ui)
+
+  add_executable(
     milkctrl-unit-opts
     ../overview/tests/test_ov_opts.c ../overview/tools/milkCTRL_opts_parse.c ../overview/overview_view.c
     ../overview/render/overview_theme.c ../overview/render/overview_theme_palettes.c
