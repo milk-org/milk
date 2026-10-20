@@ -314,4 +314,8 @@ int ov_filter_build(const char *pattern, const char **names, int count, int *out
  */
 void ov_model_export_snapshot(const OV_MODEL *m);
 
+const char *ov_loopstat_label(int loopstat, int long_form);
+const char *ov_ctrlval_label(int ctrlval);
+const char *ov_trigmode_label(int mode, int long_form);
+
 #endif /* OVERVIEW_DATA_H */

@@ -39,6 +39,7 @@ def test_stalled_loop_turns_stale(milkctrl, entities):
     m.wait_for(r"stallme")
     os.kill(pid, signal.SIGUSR1)  # loopcnt freezes, loopstat stays ACTIVE
     _wait_row_bg(m, "stallme", STALE_BG)  # after OV_STALE_SCANS scans
+    m.wait_for(r"stallme.*STAL")
     os.kill(pid, signal.SIGUSR1)  # resumes
     _wait_row_bg(m, "stallme", STALE_BG, present=False)
     assert m.quit() == 0

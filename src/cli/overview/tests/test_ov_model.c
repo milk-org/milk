@@ -78,11 +78,27 @@ static void test_find_proc_by_pid(void)
     CHECK(ov_find_proc_by_pid(&m, 7) == -1);
 }
 
+/* Shared labels follow processinfo.h and processtools_trigger.h (gap-1, ux-8) */
+static void test_labels(void)
+{
+    CHECK(strcmp(ov_loopstat_label(PROCESSINFO_LOOPSTAT_ACTIVE, 1), "RUNNING") == 0);
+    CHECK(strcmp(ov_loopstat_label(PROCESSINFO_LOOPSTAT_PAUSE, 0), "PAUS") == 0);
+    CHECK(strcmp(ov_loopstat_label(PROCESSINFO_LOOPSTAT_STOP, 1), "STOPPED") == 0);
+    CHECK(strcmp(ov_loopstat_label(PROCESSINFO_LOOPSTAT_CRASHED, 0), "CRSH") == 0);
+    CHECK(strcmp(ov_loopstat_label(42, 1), "UNKNOWN") == 0);
+    CHECK(strcmp(ov_ctrlval_label(PROCESSINFO_CTRLVAL_PAUSE), "PAUSE") == 0);
+    CHECK(strcmp(ov_ctrlval_label(PROCESSINFO_CTRLVAL_INCR), "STEP") == 0);
+    CHECK(strcmp(ov_trigmode_label(3, 1), "SEMAPHORE") == 0);
+    CHECK(strcmp(ov_trigmode_label(1, 1), "CNT0") == 0);
+    CHECK(strcmp(ov_trigmode_label(4, 0), "DLY") == 0);
+}
+
 int main(void)
 {
     test_pid_liveness();
     test_stat_with_spaces();
     test_find_proc_by_pid();
+    test_labels();
     if (failures == 0)
     {
         printf("all ok\n");

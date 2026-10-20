@@ -6,8 +6,6 @@ Findings: gap-2, links-4, robust-6.
 from __future__ import annotations
 
 import mmap
-import os
-import signal
 import time
 from pathlib import Path
 
@@ -39,10 +37,7 @@ def _slot_state(shm: str, pid: int) -> int:
 def _killed_proc(entities, name: str) -> int:
     """A registered process killed with SIGKILL: its slot stays active=1 with a proc file."""
     pid = entities.make_proc(name)
-    os.kill(pid, signal.SIGKILL)
-    for p in entities.procs:
-        if p.pid == pid:
-            p.wait(timeout=5)
+    entities.kill(pid)
     return pid
 
 

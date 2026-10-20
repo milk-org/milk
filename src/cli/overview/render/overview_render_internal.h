@@ -146,29 +146,8 @@ void render_highlighted_name(const char *name,
                              ov_rgb_t    normal_fg,
                              ov_rgb_t    row_bg);
 
-/* Inline trigger-mode short label */
-static inline const char *render_trigmode_label(int mode)
-{
-    switch (mode)
-    {
-    case 0:
-        return "IMM";
-    case 1:
-        return "CN0";
-    case 2:
-        return "CN1";
-    case 3:
-        return "SEM";
-    case 4:
-        return "DLY";
-    case 5:
-        return "SMP";
-    case 6:
-        return "CN2";
-    default:
-        return " - ";
-    }
-}
+/* Process status label (STAL when stalled) and its colour; @fg may be NULL */
+const char *ov_proc_status(const OV_PROC *p, ov_rgb_t *fg);
 
 /* Inline memory-size formatter */
 static inline void format_mem_kb(char *buf, size_t sz, int64_t kb)

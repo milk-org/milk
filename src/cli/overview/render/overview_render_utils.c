@@ -351,3 +351,44 @@ void ov_render_cell(int         logical_col,
         *hs_rem = (vis_col_ctr < *hs_rem) ? 0 : (*hs_rem - vis_col_ctr);
     }
 }
+
+/**
+ * ov_proc_status - short status label of a process and its colour (STAL when an active loop stalled).
+ */
+const char *ov_proc_status(const OV_PROC *p, ov_rgb_t *fg)
+{
+    ov_rgb_t c;
+    if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE && p->stale_count >= OV_STALE_SCANS)
+    {
+        if (fg != NULL)
+        {
+            *fg = OV_FG_WARN;
+        }
+        return "STAL";
+    }
+    switch (p->loopstat)
+    {
+    case PROCESSINFO_LOOPSTAT_ACTIVE:
+        c = OV_FG_ACTIVE;
+        break;
+    case PROCESSINFO_LOOPSTAT_PAUSE:
+    case PROCESSINFO_LOOPSTAT_SPIN:
+        c = OV_FG_WARN;
+        break;
+    case PROCESSINFO_LOOPSTAT_STOP:
+        c = OV_FG_ZOMBIE;
+        break;
+    case PROCESSINFO_LOOPSTAT_ERROR:
+    case PROCESSINFO_LOOPSTAT_CRASHED:
+        c = OV_FG_ERROR;
+        break;
+    default:
+        c = OV_FG_DIM;
+        break;
+    }
+    if (fg != NULL)
+    {
+        *fg = c;
+    }
+    return ov_loopstat_label(p->loopstat, 0);
+}

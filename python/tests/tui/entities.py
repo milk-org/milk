@@ -100,6 +100,13 @@ class Entities:
             time.sleep(0.05)
         return int(line)
 
+    def kill(self, pid: int, sig: int = signal.SIGKILL) -> None:
+        """Signal a process started by make_proc and reap it (no lingering zombie)."""
+        os.kill(pid, sig)
+        for p in self.procs:
+            if p.pid == pid:
+                p.wait(timeout=5)
+
     def tmux_session(self, server, name: str) -> None:
         """A session shaped like an FPS one: windows ctrl, conf, run running cat."""
         s = server.new_session(

@@ -118,35 +118,9 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
     int      vcol    = 1;
     ov_rgb_t cell_bg = row_bg;
 
-    /* Calculate Status Color */
-    ov_rgb_t sc;
-    switch (p->loopstat)
-    {
-    case PROCESSINFO_LOOPSTAT_INIT:
-        sc = OV_FG_DIM;
-        break;
-    case PROCESSINFO_LOOPSTAT_ACTIVE:
-        sc = OV_FG_ACTIVE;
-        break;
-    case PROCESSINFO_LOOPSTAT_PAUSE:
-        sc = OV_FG_WARN;
-        break;
-    case PROCESSINFO_LOOPSTAT_STOP:
-        sc = OV_FG_ZOMBIE;
-        break;
-    case PROCESSINFO_LOOPSTAT_ERROR:
-        sc = OV_FG_ERROR;
-        break;
-    case PROCESSINFO_LOOPSTAT_SPIN:
-        sc = OV_FG_WARN;
-        break;
-    case PROCESSINFO_LOOPSTAT_CRASHED:
-        sc = OV_FG_ERROR;
-        break;
-    default:
-        sc = OV_FG_DIM;
-        break;
-    }
+    /* Status label and colour */
+    ov_rgb_t    sc;
+    const char *sl = ov_proc_status(p, &sc);
 
     /* Ancestry column — rendered raw */
 
@@ -242,34 +216,6 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
     }
 
     /* Status */
-    const char *sl;
-    switch (p->loopstat)
-    {
-    case PROCESSINFO_LOOPSTAT_INIT:
-        sl = "INIT";
-        break;
-    case PROCESSINFO_LOOPSTAT_ACTIVE:
-        sl = " RUN";
-        break;
-    case PROCESSINFO_LOOPSTAT_PAUSE:
-        sl = "PAUS";
-        break;
-    case PROCESSINFO_LOOPSTAT_STOP:
-        sl = "STOP";
-        break;
-    case PROCESSINFO_LOOPSTAT_ERROR:
-        sl = "ERR!";
-        break;
-    case PROCESSINFO_LOOPSTAT_SPIN:
-        sl = "SPIN";
-        break;
-    case PROCESSINFO_LOOPSTAT_CRASHED:
-        sl = "CRSH";
-        break;
-    default:
-        sl = " ?? ";
-        break;
-    }
     PROC_FIELD(sc, "%4s ", sl);
 
     /* Hz */
@@ -297,7 +243,7 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
     if (!lay->compact_mode)
     {
         /* TRG */
-        PROC_FIELD(OV_FG_CONN, "%3s ", render_trigmode_label(p->triggermode));
+        PROC_FIELD(OV_FG_CONN, "%3s ", ov_trigmode_label(p->triggermode, 0));
 
         /* trig-strm */
         if (p->trigstreamname[0] != '\0' && p->triggermode > 0)

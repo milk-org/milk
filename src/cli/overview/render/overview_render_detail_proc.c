@@ -50,28 +50,7 @@ int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
 
     /* Status + loop info */
     {
-        const char *sl;
-        switch (p->loopstat)
-        {
-        case 0:
-            sl = "IDLE";
-            break;
-        case 1:
-            sl = "RUNNING";
-            break;
-        case 2:
-            sl = "PAUSED";
-            break;
-        case 3:
-            sl = "TERMINATING";
-            break;
-        case 4:
-            sl = "ERROR";
-            break;
-        default:
-            sl = "UNKNOWN";
-            break;
-        }
+        const char *sl = ov_loopstat_label(p->loopstat, 1);
         H_ov_buf_pos(row + ri, r.col + 1);
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_TEXT);
@@ -115,8 +94,8 @@ int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
         H_ov_theme_fg(OV_FG_CONN);
         const char *tstream = (p->trigstreamname[0] != '\0') ? p->trigstreamname : "-";
         int         n = snprintf(NULL, 0, " Trigger: %s  stream: %s  sem: %d",
-                                 render_trigmode_label(p->triggermode), tstream, p->triggersem);
-        H_ov_buf_printf(" Trigger: %s  stream: %s  sem: %d", render_trigmode_label(p->triggermode),
+                                 ov_trigmode_label(p->triggermode, 0), tstream, p->triggersem);
+        H_ov_buf_printf(" Trigger: %s  stream: %s  sem: %d", ov_trigmode_label(p->triggermode, 0),
                         tstream, p->triggersem);
         H_render_pad_spaces(n, r.width);
         if (!skip_draw)

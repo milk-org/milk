@@ -92,30 +92,9 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             break;
         }
-        const OV_PROC *p = &m->procs[psel];
-        const char    *sl;
-        switch (p->loopstat)
-        {
-        case 0:
-            sl = "IDLE";
-            break;
-        case 1:
-            sl = "RUN";
-            break;
-        case 2:
-            sl = "PAUS";
-            break;
-        case 3:
-            sl = "TERM";
-            break;
-        case 4:
-            sl = "ERR";
-            break;
-        default:
-            sl = "??";
-            break;
-        }
-        char loopinfo[48];
+        const OV_PROC *p  = &m->procs[psel];
+        const char    *sl = ov_proc_status(p, NULL);
+        char           loopinfo[48];
         loopinfo[0] = '\0';
         if (p->nb_loops > 1)
         {

@@ -286,21 +286,10 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
                 ov_theme_fg(OV_FG_DIM);
                 ov_buf_printf("%-8d ", (int) p->PID);
 
-                if (p->loopstat == 1)
-                {
-                    ov_theme_fg(OV_FG_ACTIVE);
-                    ov_buf_printf("RUN      ");
-                }
-                else if (p->loopstat == 2)
-                {
-                    ov_theme_fg(OV_FG_WARN);
-                    ov_buf_printf("PAUS     ");
-                }
-                else
-                {
-                    ov_theme_fg(OV_FG_DIM);
-                    ov_buf_printf("IDLE     ");
-                }
+                ov_rgb_t    stc;
+                const char *stl = ov_proc_status(p, &stc);
+                ov_theme_fg(stc);
+                ov_buf_printf("%-9s", stl);
 
                 ov_theme_fg(OV_FG_TEXT);
                 ov_buf_printf("%9.1f  ", p->loop_hz);

@@ -405,9 +405,9 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
             H_ov_theme_bg(OV_BG_PANEL);
             H_ov_theme_fg(ov_pid_color(s->proctrace_pid[tt]));
             int n2 = snprintf(NULL, 0, "  PID %d (%s)  mode:%s", (int) s->proctrace_pid[tt], pname,
-                              render_trigmode_label(s->proctrace_trigmode[tt]));
+                              ov_trigmode_label(s->proctrace_trigmode[tt], 0));
             H_ov_buf_printf("  PID %d (%s)  mode:%s", (int) s->proctrace_pid[tt], pname,
-                            render_trigmode_label(s->proctrace_trigmode[tt]));
+                            ov_trigmode_label(s->proctrace_trigmode[tt], 0));
             H_render_pad_spaces(n2, r.width);
             if (!skip_draw)
             {

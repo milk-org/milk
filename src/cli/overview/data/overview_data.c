@@ -20,6 +20,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+
+#include "processtools_trigger.h"
 #include <signal.h>
 
 #include "overview_defs.h"
@@ -154,29 +156,8 @@ void ov_model_export_snapshot(const OV_MODEL *m)
     fprintf(fp, "%-20s %7s %6s %8s %10s %s\n", "NAME", "PID", "STAT", "Hz", "MEM(KB)", "TRIGGER");
     for (int i = 0; i < m->nb_procs; i++)
     {
-        const OV_PROC *p = &m->procs[i];
-        const char    *sl;
-        switch (p->loopstat)
-        {
-        case 0:
-            sl = "IDLE";
-            break;
-        case 1:
-            sl = "RUN";
-            break;
-        case 2:
-            sl = "PAUS";
-            break;
-        case 3:
-            sl = "TERM";
-            break;
-        case 4:
-            sl = "ERR";
-            break;
-        default:
-            sl = "??";
-            break;
-        }
+        const OV_PROC *p  = &m->procs[i];
+        const char    *sl = ov_loopstat_label(p->loopstat, 0);
         fprintf(fp, "%-20s %7d %6s %8.1f %10" PRId64 " %s\n", p->name, (int) p->PID, sl, p->loop_hz,
                 (int64_t) p->mem_rss_kb, p->trigstreamname[0] ? p->trigstreamname : "-");
     }
@@ -205,4 +186,54 @@ void ov_model_export_snapshot(const OV_MODEL *m)
     }
 
     fclose(fp);
+}
+
+/**
+ * ov_loopstat_label - processinfo loop state name, short (4 chars) or long form.
+ */
+const char *ov_loopstat_label(int loopstat, int long_form)
+{
+    static const char *const sl[] = { "INIT", "RUN", "PAUS", "STOP", "ERR!", "SPIN", "CRSH" };
+    static const char *const ll[] = { "INIT",  "RUNNING",  "PAUSED", "STOPPED",
+                                      "ERROR", "SPINNING", "CRASHED" };
+    if (loopstat < PROCESSINFO_LOOPSTAT_INIT || loopstat > PROCESSINFO_LOOPSTAT_CRASHED)
+    {
+        return long_form ? "UNKNOWN" : "??";
+    }
+    return long_form ? ll[loopstat] : sl[loopstat];
+}
+
+/**
+ * ov_ctrlval_label - processinfo CTRLval request name (RUN/PAUSE/STEP/EXIT).
+ */
+const char *ov_ctrlval_label(int ctrlval)
+{
+    switch (ctrlval)
+    {
+    case PROCESSINFO_CTRLVAL_RUN:
+        return "RUN";
+    case PROCESSINFO_CTRLVAL_PAUSE:
+        return "PAUSE";
+    case PROCESSINFO_CTRLVAL_INCR:
+        return "STEP";
+    case PROCESSINFO_CTRLVAL_EXIT:
+        return "EXIT";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+/**
+ * ov_trigmode_label - processinfo trigger mode name, short (3 chars) or long form.
+ */
+const char *ov_trigmode_label(int mode, int long_form)
+{
+    static const char *const sl[] = { "IMM", "CN0", "CN1", "SEM", "DLY", "SMP", "CN2" };
+    static const char *const ll[] = { "IMMEDIATE", "CNT0",         "CNT1", "SEMAPHORE",
+                                      "DELAY",     "SEM+TIMEOUTS", "CNT2" };
+    if (mode < PROCESSINFO_TRIGGERMODE_IMMEDIATE || mode > PROCESSINFO_TRIGGERMODE_CNT2)
+    {
+        return long_form ? "UNKNOWN" : " - ";
+    }
+    return long_form ? ll[mode] : sl[mode];
 }
