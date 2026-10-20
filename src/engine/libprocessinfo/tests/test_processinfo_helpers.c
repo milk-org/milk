@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-/* CTest processinfo_unit_helpers: shared helpers of libprocessinfo (labels, timing medians, exec_end). */
+/* CTest processinfo_unit_helpers: shared helpers of libprocessinfo (labels, timing medians, exec_end, reap). */
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,10 @@
 #include "processinfo_labels.h"
 #include "processinfo_timing.h"
 #include "processtools.h"
+
+#include <sys/mman.h>
+#include <sys/wait.h>
+#include <unistd.h>
 #include "processtools_trigger.h"
 
 static int failures = 0;
@@ -112,11 +117,83 @@ static void test_exec_end_limit(void)
     CHECK(pi.dtexec_limit_cnt == 1);
 }
 
+/* A PID that existed and is gone: a reaped child's */
+static pid_t dead_pid(void)
+{
+    pid_t c = fork();
+    if (c == 0)
+    {
+        _exit(0);
+    }
+    waitpid(c, NULL, 0);
+    return c;
+}
+
+/* A proc file for registry slot @name/@pid with loop state @loopstat */
+static void proc_file(const char *dir, const char *name, pid_t pid, int loopstat)
+{
+    char path[512];
+    snprintf(path, sizeof(path), "%s/proc.%s.%06d.shm", dir, name, (int) pid);
+    memset(&pi, 0, sizeof(pi));
+    pi.loopstat = loopstat;
+    FILE *f     = fopen(path, "w");
+    fwrite(&pi, sizeof(pi), 1, f);
+    fclose(f);
+}
+
+/* Reap settles dead slots (stopped, crashed, no file, PID reused) and leaves live ones; clear_slot checks the PID */
+static void test_reap(void)
+{
+    char dir[] = "/tmp/pinfo-reap-XXXXXX", path[512];
+    CHECK(mkdtemp(dir) != NULL);
+    setenv("MILK_PROC_DIR", dir, 1);
+    CHECK(processinfo_list_reap(0) == -1); /* no registry: nothing created */
+
+    snprintf(path, sizeof(path), "%s/processinfo.list.shm", dir);
+    FILE *f = fopen(path, "w");
+    CHECK(f != NULL && ftruncate(fileno(f), sizeof(PROCESSINFOLIST)) == 0);
+    fclose(f);
+    int              fd = open(path, O_RDWR);
+    PROCESSINFOLIST *pl = mmap(NULL, sizeof(*pl), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    close(fd);
+    struct timespec now;
+    clock_gettime(CLOCK_REALTIME, &now);
+    const char *names[5] = { "live", "stopped", "crashed", "nofile", "reused" };
+    pid_t       pids[5]  = { getpid(), dead_pid(), dead_pid(), dead_pid(), getpid() };
+    for (int i = 0; i < 5; i++)
+    {
+        pl->active[i]   = 1;
+        pl->PIDarray[i] = pids[i];
+        pl->createtime[i] =
+            (i == 4) ? 1000.0 : (double) now.tv_sec; /* slot 4: registered in 1970 */
+        snprintf(pl->pnamearray[i], sizeof(pl->pnamearray[i]), "%s", names[i]);
+    }
+    proc_file(dir, "stopped", pids[1], PROCESSINFO_LOOPSTAT_STOP);
+    proc_file(dir, "crashed", pids[2], PROCESSINFO_LOOPSTAT_ACTIVE);
+
+    CHECK(processinfo_list_reap(0) == 4);
+    CHECK(pl->active[0] == 1 && pl->active[1] == 2 && pl->active[2] == 3 && pl->active[3] == 0 &&
+          pl->active[4] == 0);
+    CHECK(processinfo_list_reap(0) == 0); /* settled */
+    CHECK(processinfo_list_reap(PROCESSINFO_REAP_UNLINK) == 2);
+    CHECK(pl->active[1] == 0 && pl->active[2] == 0);
+    snprintf(path, sizeof(path), "%s/proc.stopped.%06d.shm", dir, (int) pids[1]);
+    CHECK(access(path, F_OK) != 0);
+
+    CHECK(processinfo_list_clear_slot(0, pids[1]) == 0 && pl->active[0] == 1);
+    CHECK(processinfo_list_clear_slot(0, getpid()) == 1 && pl->active[0] == 0);
+    CHECK(processinfo_list_clear_slot(-1, getpid()) == -1);
+    munmap(pl, sizeof(*pl));
+    snprintf(path, sizeof(path), "%s/processinfo.list.shm", dir);
+    CHECK(unlink(path) == 0 && rmdir(dir) == 0); /* every proc file was removed above */
+}
+
 int main(void)
 {
     test_labels();
     test_timing_median();
     test_exec_end_limit();
+    test_reap();
     if (failures == 0)
     {
         printf("all ok\n");

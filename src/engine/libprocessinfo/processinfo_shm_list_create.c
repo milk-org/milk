@@ -102,7 +102,7 @@ errno_t processinfo_shm_list_create(long *pindex_out)
             FUNC_RETURN_FAILURE("processinfo_shm_link(%s) failed", SM_fname);
         }
 
-        while ((pinfolist->active[pindex] != 0) && (pindex < PROCESSINFOLISTSIZE))
+        while (pindex < PROCESSINFOLISTSIZE && pinfolist->active[pindex] != 0)
         {
             pindex++;
         }

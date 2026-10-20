@@ -7,6 +7,7 @@ set(SOURCES
     processinfo_exec_start.c
     processinfo_globals.c
     processinfo_labels.c
+    processinfo_list.c
     processinfo_loopstep.c
     processinfo_procdirname.c
     processinfo_setup.c

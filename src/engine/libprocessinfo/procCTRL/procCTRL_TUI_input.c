@@ -322,19 +322,19 @@ void procctrl_handle_keyboard_event(procctrl_context_t *ctx, int ch, int NBactiv
             ctx->procinfoproc->selected_col = 1;
         }
     }
-    else if (ch == 'r' || ch == 'R')
+    else if (ch == 'r')
     {
-        int all = (ch == 'R');
-        for (int i = 0; i < PROCESSINFOLISTSIZE; i++)
+        /* free the selected stopped/crashed slot, only if it still holds that process */
+        int i = ctx->pindexSelected;
+        if (i >= 0 && i < PROCESSINFOLISTSIZE &&
+            (pinfolist->active[i] == 2 || pinfolist->active[i] == 3))
         {
-            if (all || i == ctx->pindexSelected)
-            {
-                if (pinfolist->active[i] == 2 || pinfolist->active[i] == 3)
-                {
-                    pinfolist->active[i] = 0;
-                }
-            }
+            processinfo_list_clear_slot(i, pinfolist->PIDarray[i]);
         }
+    }
+    else if (ch == 'R')
+    {
+        processinfo_list_reap(PROCESSINFO_REAP_FREE_SLOTS); /* every slot whose process is gone */
     }
     else if ((ch == 'T' || ch == 'K' || ch == 'I') && NBactive > 0)
     {

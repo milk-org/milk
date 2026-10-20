@@ -30,6 +30,7 @@
 #include "processtools_trigger.h"
 #include "processinfo_labels.h"
 #include "processinfo_timing.h"
+#include "processinfo_list.h"
 
 #define PROCESSINFOLISTSIZE 50000
 

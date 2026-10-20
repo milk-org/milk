@@ -10,6 +10,7 @@
 #include "overview_input_internal.h"
 #include "overview_data_internal.h"
 #include "milk_spawn.h"
+#include "processinfo_list.h"
 #include <errno.h>
 #include <limits.h>
 #include <fcntl.h>
@@ -22,59 +23,18 @@
 #include <unistd.h>
 
 /**
- * plist_map - map the existing process registry, read-write only for a control action.
+ * plist_map - map the existing process registry read-only (slots are changed through processinfo_list_*).
  * Return: the registry, or NULL (nothing is created when it does not exist).
  */
-static PROCESSINFOLIST *plist_map(ov_shm_map_t *m, int rw)
+static const PROCESSINFOLIST *plist_map(ov_shm_map_t *m)
 {
     char path[PATH_MAX];
     snprintf(path, sizeof(path), "%s/processinfo.list.shm", ov_get_procdir());
-    if (ov_shm_map(m, path, rw, sizeof(PROCESSINFOLIST)) != 0)
+    if (ov_shm_map(m, path, 0, sizeof(PROCESSINFOLIST)) != 0)
     {
         return NULL;
     }
-    return (PROCESSINFOLIST *) m->addr;
-}
-
-/**
- * plist_reap_dead - settle registry slots whose PID no longer exists (ESRCH only): free the slot when
- * its proc file is gone, else record STOPPED (loopstat STOP) or CRASHED. Return: slots changed, -1.
- */
-static int plist_reap_dead(void)
-{
-    ov_shm_map_t     m;
-    PROCESSINFOLIST *pl = plist_map(&m, 1);
-    int              n  = 0;
-    if (pl == NULL)
-    {
-        return -1;
-    }
-    for (long i = 0; i < PROCESSINFOLISTSIZE; i++)
-    {
-        pid_t pid = pl->PIDarray[i];
-        if (pl->active[i] == 0 || pid <= 0 || kill(pid, 0) == 0 || errno != ESRCH)
-        {
-            continue;
-        }
-        char         fpath[PATH_MAX];
-        ov_shm_map_t pm;
-        snprintf(fpath, sizeof(fpath), "%s/proc.%.*s.%06d.shm", ov_get_procdir(),
-                 (int) sizeof(pl->pnamearray[i]), pl->pnamearray[i], (int) pid);
-        int newstate = 0;
-        if (ov_shm_map(&pm, fpath, 0, sizeof(PROCESSINFO)) == 0)
-        {
-            newstate =
-                (((const PROCESSINFO *) pm.addr)->loopstat == PROCESSINFO_LOOPSTAT_STOP) ? 2 : 3;
-            ov_shm_unmap(&pm);
-        }
-        if (pl->active[i] != newstate)
-        {
-            pl->active[i] = newstate;
-            n++;
-        }
-    }
-    ov_shm_unmap(&m);
-    return n;
+    return (const PROCESSINFOLIST *) m->addr;
 }
 
 /**
@@ -84,7 +44,7 @@ static int plist_reap_dead(void)
 static int proc_shm_path(const OV_PROC *p, char *buf, size_t len)
 {
     ov_shm_map_t           m;
-    const PROCESSINFOLIST *pl = plist_map(&m, 0);
+    const PROCESSINFOLIST *pl = plist_map(&m);
     int                    rc = -1;
     if (pl != NULL && p->pindex >= 0 && p->pindex < PROCESSINFOLISTSIZE &&
         pl->PIDarray[p->pindex] == p->PID)
@@ -240,17 +200,8 @@ void ov_ctrl_proc_remove(const OV_PROC *p, OV_CMDLOG *log)
                        p->name);
         return;
     }
-    int file_gone = (unlink(path) == 0 || errno == ENOENT);
-
-    ov_shm_map_t     lm;
-    PROCESSINFOLIST *pl          = plist_map(&lm, 1);
-    int              deactivated = 0;
-    if (pl != NULL && pl->PIDarray[p->pindex] == p->PID)
-    {
-        pl->active[p->pindex] = 0;
-        deactivated           = 1;
-    }
-    ov_shm_unmap(&lm);
+    int file_gone   = (unlink(path) == 0 || errno == ENOENT);
+    int deactivated = (processinfo_list_clear_slot(p->pindex, p->PID) == 1);
 
     ov_cmdlog_push(log, (deactivated && file_gone) ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
                    "Process \"%s\" (PID %d): entry %s", p->name, (int) p->PID,
@@ -266,7 +217,7 @@ void ov_ctrl_procs_cleanup(OV_CMDLOG *log)
     static const char *const argv[] = { "milk-procinfo-rm", "-c", NULL };
     int                      rc     = milkspawn_run(argv, -1, -1);
     int                      err    = errno;
-    int                      reaped = plist_reap_dead();
+    int                      reaped = processinfo_list_reap(0);
     if (rc < 0)
     {
         ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process cleanup failed: milk-procinfo-rm: %s",
