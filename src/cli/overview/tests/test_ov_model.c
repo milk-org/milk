@@ -199,6 +199,12 @@ static void test_labels(void)
     CHECK(strcmp(ov_loopstat_label(PROCESSINFO_LOOPSTAT_STOP, 1), "STOPPED") == 0);
     CHECK(strcmp(ov_loopstat_label(PROCESSINFO_LOOPSTAT_CRASHED, 0), "CRSH") == 0);
     CHECK(strcmp(ov_loopstat_label(42, 1), "UNKNOWN") == 0);
+    CHECK(strcmp(ov_loopstat_label(PROCESSINFO_LOOPSTAT_ERROR, 0), "ERR") == 0);
+    for (int st = 0; st < OV_ST_UNKNOWN; st++)
+    {
+        CHECK(strstr(OV_STATE_LEGEND, ov_state_name((ov_state_t) st, 0)) != NULL);
+        CHECK(strlen(ov_state_name((ov_state_t) st, 0)) <= 4);
+    }
     CHECK(strcmp(ov_ctrlval_label(PROCESSINFO_CTRLVAL_PAUSE), "PAUSE") == 0);
     CHECK(strcmp(ov_ctrlval_label(PROCESSINFO_CTRLVAL_INCR), "STEP") == 0);
     CHECK(strcmp(ov_trigmode_label(3, 1), "SEMAPHORE") == 0);

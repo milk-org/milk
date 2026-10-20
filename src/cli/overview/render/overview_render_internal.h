@@ -177,6 +177,17 @@ void render_highlighted_name(const char *name,
 const char *ov_proc_status(const OV_PROC *p, ov_rgb_t *fg);
 const char *ov_loop_status(const OV_LOOP *lp, ov_rgb_t *fg);
 
+/* A state as shown: short and long names, theme colour */
+typedef struct
+{
+    const char *sname;
+    const char *lname;
+    ov_rgb_t    fg;
+} OV_STATE_INFO;
+OV_STATE_INFO ov_state_info(ov_state_t st);
+ov_state_t    ov_proc_state(const OV_PROC *p);
+ov_state_t    ov_loop_state(const OV_LOOP *lp);
+
 /* Inline memory-size formatter */
 static inline void format_mem_kb(char *buf, size_t sz, int64_t kb)
 {

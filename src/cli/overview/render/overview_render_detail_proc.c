@@ -48,11 +48,16 @@ int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
 
     /* Status + loop info */
     {
-        const char *sl = ov_loopstat_label(p->loopstat, 1);
+        OV_STATE_INFO si = ov_state_info(ov_proc_state(p));
+        const char   *sl = si.lname;
         H_ov_buf_pos(row + ri, r.col + 1);
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_TEXT);
-        H_ov_buf_printf(" Status: %s  Loops: ", sl);
+        H_ov_buf_printf(" Status: ");
+        H_ov_theme_fg(si.fg);
+        H_ov_buf_printf("%s", sl);
+        H_ov_theme_fg(OV_FG_TEXT);
+        H_ov_buf_printf("  Loops: ");
         H_ov_theme_fg(p->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM);
         H_ov_buf_printf("%" PRId64, (int64_t) p->loopcnt);
         H_ov_theme_fg(OV_FG_DIM);

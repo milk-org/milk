@@ -80,7 +80,7 @@ void ov_graph_row_health(const OV_MODEL *m, const SG_TREE_NODE *rn, OV_ROW_HEALT
     }
     const OV_PROC *p = &m->procs[pi];
     h->state         = ov_proc_status(p, &h->state_fg);
-    h->stalled       = (strcmp(h->state, "STAL") == 0);
+    h->stalled       = (ov_proc_state(p) == OV_ST_STAL);
     h->mismatch      = (hz > 0.1 && p->loop_hz < 0.9 * hz && p->active);
     if (p->loopcnt + (int64_t) p->triggermissed_cumul > 0)
     {

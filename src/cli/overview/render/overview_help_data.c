@@ -239,7 +239,7 @@ const intro_item_t g_intro_items[] = {
     { IL_SUBHEADER, "3. processinfo (Processes — PROC / F4)", NULL },
     { IL_BULLET,    "• Telemetry: ", "Heartbeat registration, loop frequencies (Hz) & jitter." },
     { IL_BULLET,    "• Resources: ", "CPU core pinning masks, RSS memory, & cycle times." },
-    { IL_BULLET,    "• Lifecycle: ", "Tracks RUNNING, PAUSED, STOPPED, & CRASHED states." },
+    { IL_BULLET,    "• States: ", OV_STATE_LEGEND },
     { IL_BLANK,     NULL, NULL },
 
     { IL_HEADER,    "■ WHAT CAN milk-CTRL DO?", NULL },

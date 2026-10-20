@@ -53,7 +53,7 @@ milk-CTRL -d /tmp/mysim --interval 0.2 --log /tmp/ctrl.log
 | `F6` CONN | The sub-tab panel full screen |
 | `F7` LOOPS | The feedback loops on the left, the selected loop's circuit and members on the right |
 
-Process states: `INIT`, `RUN`, `PAUS`, `SPIN`, `STOP`, `ERR!`, `CRSH`, and `STAL` for a running
+Process states: `INIT`, `RUN`, `PAUS`, `SPIN`, `STOP`, `ERR`, `CRSH`, and `STAL` for a running
 loop whose counter stopped moving. Loop states, worst first: `ERR`, `STAL`, `PAUS`, `RUN`, `IDLE`.
 
 ## Sub-tabs

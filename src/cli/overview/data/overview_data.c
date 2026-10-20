@@ -249,19 +249,30 @@ int ov_model_export_snapshot(const OV_MODEL *m, char *path, size_t pathsz)
     return 0;
 }
 
-/**
- * ov_loopstat_label - processinfo loop state name, short (4 chars) or long form.
- */
+/** ov_state_name - name of state @st, short (at most 4 chars) or long form. */
+const char *ov_state_name(ov_state_t st, int long_form)
+{
+    static const char *const sn[OV_ST_COUNT] = { "INIT", "RUN",  "PAUS", "STOP", "ERR",
+                                                 "SPIN", "CRSH", "STAL", "IDLE", "??" };
+    static const char *const ln[OV_ST_COUNT] = { "INIT",  "RUNNING",  "PAUSED",  "STOPPED",
+                                                 "ERROR", "SPINNING", "CRASHED", "STALLED",
+                                                 "IDLE",  "UNKNOWN" };
+    st = ((int) st < 0 || st >= OV_ST_COUNT) ? OV_ST_UNKNOWN : st;
+    return long_form ? ln[st] : sn[st];
+}
+
+/** ov_state_of_loopstat - state of processinfo loop state @loopstat. */
+ov_state_t ov_state_of_loopstat(int loopstat)
+{
+    return (loopstat < PROCESSINFO_LOOPSTAT_INIT || loopstat > PROCESSINFO_LOOPSTAT_CRASHED)
+               ? OV_ST_UNKNOWN
+               : (ov_state_t) loopstat;
+}
+
+/** ov_loopstat_label - processinfo loop state name, short (4 chars) or long form. */
 const char *ov_loopstat_label(int loopstat, int long_form)
 {
-    static const char *const sl[] = { "INIT", "RUN", "PAUS", "STOP", "ERR!", "SPIN", "CRSH" };
-    static const char *const ll[] = { "INIT",  "RUNNING",  "PAUSED", "STOPPED",
-                                      "ERROR", "SPINNING", "CRASHED" };
-    if (loopstat < PROCESSINFO_LOOPSTAT_INIT || loopstat > PROCESSINFO_LOOPSTAT_CRASHED)
-    {
-        return long_form ? "UNKNOWN" : "??";
-    }
-    return long_form ? ll[loopstat] : sl[loopstat];
+    return ov_state_name(ov_state_of_loopstat(loopstat), long_form);
 }
 
 /**

@@ -378,6 +378,30 @@ int ov_filter_build(const char *pattern, const char **names, int count, int *out
 unsigned long ov_filter_compile_count(void);
 int           ov_model_export_snapshot(const OV_MODEL *m, char *path, size_t pathsz);
 
+/* States of processes and loops: the first seven follow processinfo's PROCESSINFO_LOOPSTAT_* */
+typedef enum
+{
+    OV_ST_INIT,
+    OV_ST_RUN,
+    OV_ST_PAUS,
+    OV_ST_STOP,
+    OV_ST_ERR,
+    OV_ST_SPIN,
+    OV_ST_CRSH,
+    OV_ST_STAL, /* running, counter not moving */
+    OV_ST_IDLE, /* loop with no running member */
+    OV_ST_UNKNOWN,
+    OV_ST_COUNT
+} ov_state_t;
+
+/* Help legend of the states; a unit test checks it names every state */
+#define OV_STATE_LEGEND                                                                            \
+    "INIT, RUN, PAUS (paused), SPIN, STOP, ERR, CRSH (crashed), STAL (running, counter stopped); " \
+    "loops IDLE "                                                                                  \
+    "when no member runs"
+
+const char *ov_state_name(ov_state_t st, int long_form);
+ov_state_t  ov_state_of_loopstat(int loopstat);
 const char *ov_loopstat_label(int loopstat, int long_form);
 const char *ov_ctrlval_label(int ctrlval);
 const char *ov_trigmode_label(int mode, int long_form);

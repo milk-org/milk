@@ -301,7 +301,7 @@ void ov_render_confirm(const OV_LAYOUT *lay, const OV_MODEL *m)
     else if (c->panel == OV_FOCUS_PROCS)
     {
         snprintf(lines[nl++], 160, "%s  PID %d  %s", m->procs[idx].name, (int) m->procs[idx].PID,
-                 ov_loopstat_label(m->procs[idx].loopstat, 1));
+                 ov_state_info(ov_proc_state(&m->procs[idx])).lname);
     }
     else if (c->panel == OV_FOCUS_FPS)
     {

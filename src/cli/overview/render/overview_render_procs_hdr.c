@@ -27,16 +27,14 @@ void ov_procs__render_footer(const OV_LAYOUT *lay,
 {
     (void) max_rows;
     /* Compute totals over ALL procs */
-    int     tot_run = 0;
+    int     tot_run = 0, tot_stal = 0;
     double  tot_cpu = 0.0;
     int64_t tot_mem = 0;
     for (int j = 0; j < m->nb_procs; j++)
     {
         const OV_PROC *p = &m->procs[j];
-        if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE)
-        {
-            tot_run++;
-        }
+        tot_run += (ov_proc_state(p) == OV_ST_RUN);
+        tot_stal += (ov_proc_state(p) == OV_ST_STAL);
         if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE ||
             p->loopstat == PROCESSINFO_LOOPSTAT_SPIN || p->loopstat == PROCESSINFO_LOOPSTAT_INIT)
         {
@@ -52,10 +50,7 @@ void ov_procs__render_footer(const OV_LAYOUT *lay,
     for (int j = 0; j < filt_n; j++)
     {
         const OV_PROC *p = &m->procs[pidx[j]];
-        if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE)
-        {
-            flt_run++;
-        }
+        flt_run += (ov_proc_state(p) == OV_ST_RUN);
         if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE ||
             p->loopstat == PROCESSINFO_LOOPSTAT_SPIN || p->loopstat == PROCESSINFO_LOOPSTAT_INIT)
         {
@@ -71,8 +66,13 @@ void ov_procs__render_footer(const OV_LAYOUT *lay,
     char tmem[16];
     format_mem_kb(tmem, sizeof(tmem), tot_mem);
     char rbuf[80];
-    snprintf(rbuf, sizeof(rbuf), " %d RUN \u2502 %.0f%% CPU \u2502 %s ", tot_run, (double) tot_cpu,
-             tmem);
+    char stal[24] = "";
+    if (tot_stal > 0)
+    {
+        snprintf(stal, sizeof(stal), " %d STAL", tot_stal);
+    }
+    snprintf(rbuf, sizeof(rbuf), " %d RUN%s \u2502 %.0f%% CPU \u2502 %s ", tot_run, stal,
+             (double) tot_cpu, tmem);
     int rlen  = (int) strlen(rbuf);
     int below = filt_n - lay->panel[OV_FOCUS_PROCS].scroll - (r.height - 3);
     int dw    = 0;

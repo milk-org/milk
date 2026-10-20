@@ -295,77 +295,72 @@ void ov_render_cell(int         col,
     }
 }
 
-/**
- * ov_proc_status - short status label of a process and its colour (STAL when an active loop stalled).
- */
-const char *ov_proc_status(const OV_PROC *p, ov_rgb_t *fg)
+/** ov_state_info - names and theme colour of state @st. */
+OV_STATE_INFO ov_state_info(ov_state_t st)
 {
-    ov_rgb_t c;
-    if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE && p->stale_count >= OV_STALE_SCANS)
+    ov_rgb_t fg;
+    switch (st)
     {
-        if (fg != NULL)
-        {
-            *fg = OV_FG_WARN;
-        }
-        return "STAL";
-    }
-    switch (p->loopstat)
-    {
-    case PROCESSINFO_LOOPSTAT_ACTIVE:
-        c = OV_FG_ACTIVE;
+    case OV_ST_RUN:
+        fg = OV_FG_ACTIVE;
         break;
-    case PROCESSINFO_LOOPSTAT_PAUSE:
-    case PROCESSINFO_LOOPSTAT_SPIN:
-        c = OV_FG_WARN;
+    case OV_ST_PAUS:
+    case OV_ST_SPIN:
+    case OV_ST_STAL:
+        fg = OV_FG_WARN;
         break;
-    case PROCESSINFO_LOOPSTAT_STOP:
-        c = OV_FG_ZOMBIE;
+    case OV_ST_STOP:
+        fg = OV_FG_ZOMBIE;
         break;
-    case PROCESSINFO_LOOPSTAT_ERROR:
-    case PROCESSINFO_LOOPSTAT_CRASHED:
-        c = OV_FG_ERROR;
+    case OV_ST_ERR:
+    case OV_ST_CRSH:
+        fg = OV_FG_ERROR;
         break;
     default:
-        c = OV_FG_DIM;
+        fg = OV_FG_DIM;
         break;
     }
-    if (fg != NULL)
-    {
-        *fg = c;
-    }
-    return ov_loopstat_label(p->loopstat, 0);
+    return (OV_STATE_INFO) { ov_state_name(st, 0), ov_state_name(st, 1), fg };
 }
 
-/**
- * ov_loop_status - short status label of a loop and its colour: ERR > STAL > PAUS > RUN > IDLE.
- */
-const char *ov_loop_status(const OV_LOOP *lp, ov_rgb_t *fg)
+/** ov_proc_state - state of process @p: its loop state, or STAL when an active loop's counter stopped. */
+ov_state_t ov_proc_state(const OV_PROC *p)
 {
-    const char *lbl = "IDLE";
-    ov_rgb_t    c   = OV_FG_DIM;
-    if (lp->is_error)
+    if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE && p->stale_count >= OV_STALE_SCANS)
     {
-        lbl = "ERR";
-        c   = OV_FG_ERROR;
+        return OV_ST_STAL;
     }
-    else if (lp->is_stale)
-    {
-        lbl = "STAL";
-        c   = OV_FG_WARN;
-    }
-    else if (lp->is_paused)
-    {
-        lbl = "PAUS";
-        c   = OV_FG_WARN;
-    }
-    else if (lp->is_running)
-    {
-        lbl = "RUN";
-        c   = OV_FG_ACTIVE;
-    }
+    return ov_state_of_loopstat(p->loopstat);
+}
+
+/** ov_loop_state - state of loop @lp, worst first: ERR > STAL > PAUS > RUN > IDLE. */
+ov_state_t ov_loop_state(const OV_LOOP *lp)
+{
+    return lp->is_error     ? OV_ST_ERR
+           : lp->is_stale   ? OV_ST_STAL
+           : lp->is_paused  ? OV_ST_PAUS
+           : lp->is_running ? OV_ST_RUN
+                            : OV_ST_IDLE;
+}
+
+/** ov_proc_status - short state label of process @p, and its colour in @fg when not NULL. */
+const char *ov_proc_status(const OV_PROC *p, ov_rgb_t *fg)
+{
+    OV_STATE_INFO si = ov_state_info(ov_proc_state(p));
     if (fg != NULL)
     {
-        *fg = c;
+        *fg = si.fg;
     }
-    return lbl;
+    return si.sname;
+}
+
+/** ov_loop_status - short state label of loop @lp, and its colour in @fg when not NULL. */
+const char *ov_loop_status(const OV_LOOP *lp, ov_rgb_t *fg)
+{
+    OV_STATE_INFO si = ov_state_info(ov_loop_state(lp));
+    if (fg != NULL)
+    {
+        *fg = si.fg;
+    }
+    return si.sname;
 }
