@@ -7,6 +7,7 @@
  */
 
 #include "overview_render_internal.h"
+#include "../input/overview_input_keys.h"
 #include <stdarg.h>
 
 /** ov_status_btn - record a @w-column button starting at the cursor; width 0 when it overflows @cols. */
@@ -19,7 +20,7 @@ static void ov_status_btn(OV_RECT *b, int row, int w, int cols)
 }
 
 /* One left-side segment of the status line: text in fg/bg, then an optional tail in tail_fg */
-#define SSEG_MAX 16
+#define SSEG_MAX 24
 typedef struct
 {
     int      prio;
@@ -155,27 +156,6 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     double interval = (double) ov_scan_get_interval();
     double rate_hz  = (interval > 0.0) ? (1.0 / interval) : 0.0;
 
-    /* Context-sensitive ctrl hints */
-    const char *ctrl_hint = "";
-    if (lay->ctrl_mode)
-    {
-        switch (lay->focus)
-        {
-        case OV_FOCUS_FPS:
-            ctrl_hint = "  r:run s:conf k:kill";
-            break;
-        case OV_FOCUS_STREAMS:
-            ctrl_hint = "  DEL:delete";
-            break;
-        case OV_FOCUS_PROCS:
-            ctrl_hint = "  p:pause e:exit k:kill";
-            break;
-        default:
-            ctrl_hint = "";
-            break;
-        }
-    }
-
     /* Sort key label */
     const char *sort_label = "";
     char        sort_buf[48];
@@ -270,13 +250,19 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     }
     else
     {
-        char keys[96];
-        ov_key_footer(keys, sizeof(keys)); /* the keys marked for the status line in ov_keys */
-        sseg(sg, &n, 1, OV_FG_DIM, OV_BG_HEADER, 0, "%s", ctrl_hint);
-        sseg(sg, &n, 2, OV_FG_DIM, OV_BG_HEADER, 0, "%s", sort_label);
-        sseg(sg, &n, 4, OV_FG_DIM, OV_BG_HEADER, 0, "%s", detail_label);
-        sseg(sg, &n, 3, OV_FG_DIM, OV_BG_HEADER, 0, "  %s", keys);
-        sseg(sg, &n, 6, OV_FG_DIM, OV_BG_HEADER, 0, "  (Click headers/tabs)");
+        /* Key hints of the context, the most specific first: "k term  p pause  e exit" */
+        const OV_KEYHINT *hint[12];
+        int               nh = ov_key_hints(ov_key_ctx(lay, m), hint, 12);
+        sseg(sg, &n, 4, OV_FG_DIM, OV_BG_HEADER, 0, "%s", sort_label);
+        sseg(sg, &n, 6, OV_FG_DIM, OV_BG_HEADER, 0, "%s", detail_label);
+        for (int i = 0; i < nh; i++)
+        {
+            int prio =
+                (hint[i]->need != 0) ? 2 : 7 + i; /* the context's own keys before general ones */
+            SSEG *s = sseg(sg, &n, prio, OV_FG_TEXT, OV_BG_HEADER, 0, "  %s", hint[i]->key);
+            snprintf(s->tail, sizeof(s->tail), " %s", hint[i]->meaning);
+            s->tail_fg = OV_FG_DIM;
+        }
     }
 
     time_t     now    = time(NULL);

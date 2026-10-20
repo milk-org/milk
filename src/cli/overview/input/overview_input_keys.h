@@ -14,21 +14,7 @@
 #ifndef OVERVIEW_INPUT_KEYS_H
 #define OVERVIEW_INPUT_KEYS_H
 
-/* Context bits (ov_key_ctx) */
-#define OV_CTX_MODEL (1U << 0)         /* a model is loaded */
-#define OV_CTX_CTRL (1U << 1)          /* CONTROL mode */
-#define OV_CTX_FROZEN (1U << 2)        /* a selection is frozen */
-#define OV_CTX_DASH (1U << 3)          /* view F2 */
-#define OV_CTX_F5 (1U << 4)            /* view F5 */
-#define OV_CTX_LOOP_LIST (1U << 5)     /* F7, or the LOOPS sub-tab focused */
-#define OV_CTX_FOCUS_STREAMS (1U << 6) /* focus on a panel */
-#define OV_CTX_FOCUS_PROCS (1U << 7)
-#define OV_CTX_FOCUS_FPS (1U << 8)
-#define OV_CTX_FOCUS_GRAPH (1U << 9)
-#define OV_CTX_PARAM_TREE (1U << 10)  /* F5 parameter tree focused */
-#define OV_CTX_MSEL (1U << 11)        /* FPS batch marks set */
-#define OV_CTX_FOCUS_SHOWN (1U << 12) /* the focused panel is on screen */
-#define OV_CTX_FOCUS_LIST (1U << 13)  /* the focus is a list panel (streams, processes, FPS) */
+#include "overview_keymap.h" /* OV_CTX_* */
 
 #define OV_KEY_ANY (-1) /* in keys[]: every key */
 

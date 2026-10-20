@@ -4,7 +4,7 @@
 
 /* Key table rows: introduction, global and navigation keys, streams panel.
  * Fields: display, label, help detail (NULL = label), help section (-1 = -h only),
- * -h group (-1 = help only), OV_KF_* flags, status-line hint (NULL = none). */
+ * -h group (-1 = help only), OV_KF_* flags, status-line hint (OV_NOHINT = none). */
 
     {
         "1 / i",
@@ -14,7 +14,7 @@
         HS_INTRO,
         -1,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -26,7 +26,7 @@
         HS_NAV,
         -1,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -37,7 +37,7 @@
         HS_NAV,
         OV_KG_VIEWS,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -48,7 +48,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        "TAB",
+        { "TAB", "focus", OV_CTX_DASH, 0 },
     },
 
     {
@@ -59,7 +59,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        NULL,
+        { "\xe2\x86\x90", "up", OV_CTX_PARAM_TREE, 0 },
     },
 
     {
@@ -70,7 +70,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -81,7 +81,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -92,7 +92,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -103,7 +103,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -114,7 +114,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -125,7 +125,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        "/",
+        { "/", "filter", OV_CTX_FOCUS_LIST | OV_CTX_FOCUS_SHOWN, 0 },
     },
 
     {
@@ -136,7 +136,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -147,7 +147,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -158,7 +158,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        "+/-",
+        OV_NOHINT,
     },
 
     {
@@ -169,7 +169,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -181,7 +181,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -192,7 +192,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -203,7 +203,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        "c",
+        { "c", "control", 0, OV_CTX_CTRL },
     },
 
     {
@@ -214,7 +214,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        "h",
+        { "h", "help", 0, 0 },
     },
 
     {
@@ -225,7 +225,7 @@
         HS_NAV,
         OV_KG_NAV,
         0,
-        "q",
+        { "q", "quit", 0, 0 },
     },
 
     {
@@ -235,7 +235,7 @@
         -1,
         OV_KG_NAV,
         0,
-        "D",
+        { "D", "details", OV_CTX_FOCUS_LIST | OV_CTX_FOCUS_SHOWN, OV_CTX_CTRL | OV_CTX_F5 },
     },
 
     {
@@ -245,7 +245,7 @@
         -1,
         OV_KG_NAV,
         0,
-        NULL,
+        { "ESC", "back", OV_CTX_PARAM_TREE, 0 },
     },
 
     {
@@ -256,7 +256,7 @@
         HS_STREAMS,
         -1,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -267,7 +267,7 @@
         HS_STREAMS,
         -1,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -278,7 +278,7 @@
         HS_STREAMS,
         -1,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -289,7 +289,7 @@
         HS_STREAMS,
         -1,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -300,7 +300,7 @@
         HS_STREAMS,
         OV_KG_COLUMNS,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -310,7 +310,7 @@
         HS_STREAMS,
         OV_KG_COLUMNS,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -321,7 +321,8 @@
         HS_STREAMS,
         OV_KG_COLUMNS,
         0,
-        NULL,
+        { "\xe2\x87\xa7\xe2\x86\x90\xe2\x86\x92", "columns", OV_CTX_FOCUS_LIST | OV_CTX_FOCUS_SHOWN,
+          OV_CTX_CTRL | OV_CTX_F5 },
     },
 
     {
@@ -332,7 +333,7 @@
         HS_STREAMS,
         OV_KG_COLUMNS,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -343,7 +344,7 @@
         HS_STREAMS,
         OV_KG_COLUMNS,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -353,7 +354,7 @@
         -1,
         OV_KG_COLUMNS,
         0,
-        "S/s",
+        { "s/S", "sort", OV_CTX_FOCUS_LIST | OV_CTX_FOCUS_SHOWN, OV_CTX_CTRL | OV_CTX_F5 },
     },
 
     {
@@ -364,5 +365,5 @@
         HS_STREAMS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        { "DEL", "delete", OV_CTX_CTRL | OV_CTX_FOCUS_STREAMS | OV_CTX_FOCUS_SHOWN, 0 },
     },

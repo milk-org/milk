@@ -45,3 +45,13 @@ def test_narrow_exit_button_click_exits(milkctrl):
     last = m.lines()[-1]
     m.click(last.index("[x] exit") + 2, 24)
     assert m.exit_code() == 0
+
+
+def test_status_hints_follow_the_context(milkctrl):
+    """The status line lists the keys of the current context: CONTROL on PROC shows its actions."""
+    m = milkctrl(x=80, y=24)
+    m.keys("F4")
+    m.wait_for(r"/ filter\s+D details")
+    m.keys("c")
+    m.wait_for(r"k term\s+p pause\s+e exit")
+    assert m.quit() == 0

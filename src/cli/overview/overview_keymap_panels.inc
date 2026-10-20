@@ -4,7 +4,7 @@
 
 /* Key table rows: processes, FPS, graph and loops, command log and mouse, theme.
  * Fields: display, label, help detail (NULL = label), help section (-1 = -h only),
- * -h group (-1 = help only), OV_KF_* flags, status-line hint (NULL = none). */
+ * -h group (-1 = help only), OV_KF_* flags, status-line hint (OV_NOHINT = none). */
 
 
     {
@@ -16,7 +16,7 @@
         HS_PROCS,
         -1,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -27,7 +27,7 @@
         HS_PROCS,
         -1,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -38,7 +38,7 @@
         HS_PROCS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        { "k", "term", OV_CTX_CTRL | OV_CTX_FOCUS_PROCS | OV_CTX_FOCUS_SHOWN, 0 },
     },
 
     {
@@ -49,7 +49,7 @@
         HS_PROCS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -60,7 +60,7 @@
         HS_PROCS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        { "p", "pause", OV_CTX_CTRL | OV_CTX_FOCUS_PROCS | OV_CTX_FOCUS_SHOWN, 0 },
     },
 
     {
@@ -71,7 +71,7 @@
         HS_PROCS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -82,7 +82,7 @@
         HS_PROCS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        { "e", "exit", OV_CTX_CTRL | OV_CTX_FOCUS_PROCS | OV_CTX_FOCUS_SHOWN, 0 },
     },
 
     {
@@ -93,7 +93,7 @@
         HS_PROCS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -104,7 +104,7 @@
         HS_PROCS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -117,7 +117,7 @@
         HS_PROCS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -128,7 +128,7 @@
         HS_FPS,
         -1,
         0,
-        NULL,
+        { "ENTER", "edit", OV_CTX_PARAM_TREE, 0 },
     },
 
     {
@@ -141,7 +141,7 @@
         HS_FPS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        { "r", "run", OV_CTX_CTRL | OV_CTX_FOCUS_FPS | OV_CTX_FOCUS_SHOWN, OV_CTX_PARAM_TREE },
     },
 
     {
@@ -153,7 +153,7 @@
         HS_FPS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        { "s", "conf", OV_CTX_CTRL | OV_CTX_FOCUS_FPS | OV_CTX_FOCUS_SHOWN, OV_CTX_PARAM_TREE },
     },
 
     {
@@ -164,7 +164,7 @@
         HS_FPS,
         -1,
         OV_KF_CTRL,
-        NULL,
+        { "k", "kill", OV_CTX_CTRL | OV_CTX_FOCUS_FPS | OV_CTX_FOCUS_SHOWN, OV_CTX_PARAM_TREE },
     },
 
     {
@@ -175,7 +175,7 @@
         HS_FPS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        { "o", "on/off", OV_CTX_CTRL | OV_CTX_PARAM_TREE, 0 },
     },
 
     {
@@ -187,7 +187,7 @@
         HS_FPS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        { "b", "mark", OV_CTX_CTRL | OV_CTX_FOCUS_FPS | OV_CTX_FOCUS_SHOWN, OV_CTX_PARAM_TREE },
     },
 
     {
@@ -198,7 +198,7 @@
         HS_FPS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -208,7 +208,7 @@
         HS_FPS,
         -1,
         0,
-        NULL,
+        { "ESC", "unmark", OV_CTX_MSEL, OV_CTX_PARAM_TREE },
     },
 
     {
@@ -219,7 +219,7 @@
         HS_FPS,
         -1,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -230,7 +230,7 @@
         HS_GRAPH,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -241,7 +241,7 @@
         HS_GRAPH,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -252,7 +252,7 @@
         HS_GRAPH,
         OV_KG_NAV,
         0,
-        NULL,
+        { "L", "lineage", OV_CTX_FOCUS_GRAPH, OV_CTX_LOOP_LIST },
     },
 
     {
@@ -264,7 +264,7 @@
         HS_GRAPH,
         -1,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -275,7 +275,7 @@
         HS_GRAPH,
         OV_KG_NAV,
         0,
-        NULL,
+        { "\xe2\x87\xa7TAB", "sub-tab", OV_CTX_FOCUS_GRAPH, 0 },
     },
 
     {
@@ -286,7 +286,7 @@
         HS_GRAPH,
         OV_KG_LOOPS,
         0,
-        NULL,
+        { "r", "rename", OV_CTX_LOOP_LIST, 0 },
     },
 
     {
@@ -297,7 +297,7 @@
         HS_GRAPH,
         OV_KG_LOOPS,
         0,
-        NULL,
+        { "f", "isolate", OV_CTX_LOOP_LIST, 0 },
     },
 
     {
@@ -307,7 +307,7 @@
         HS_GRAPH,
         OV_KG_LOOPS,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -318,7 +318,7 @@
         HS_CMDLOG,
         OV_KG_NAV,
         0,
-        "G",
+        { "G", "log", 0, 0 },
     },
 
     {
@@ -328,7 +328,7 @@
         HS_CMDLOG,
         OV_KG_NAV,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -339,7 +339,7 @@
         HS_CMDLOG,
         OV_KG_COLUMNS,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -350,7 +350,7 @@
         HS_CMDLOG,
         OV_KG_COLUMNS,
         0,
-        NULL,
+        OV_NOHINT,
     },
 
     {
@@ -361,7 +361,7 @@
         HS_MOUSE,
         OV_KG_NAV,
         0,
-        "m",
+        { "m", "hover", 0, 0 },
     },
 
     {
@@ -373,5 +373,5 @@
         HS_COLORS,
         -1,
         0,
-        NULL,
+        OV_NOHINT,
     },

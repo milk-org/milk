@@ -28,21 +28,24 @@ const char *const ov_keygroup_title[OV_KG_COUNT] = {
     [OV_KG_CTRL]    = "Control mode actions ('c' toggles; y/N asks before destructive ones)",
 };
 
-/** ov_key_footer - the status-line hints ("TAB / +/- ...") into @buf. Return: length written. */
-size_t ov_key_footer(char *buf, size_t n)
+/**
+ * ov_key_hints - status-line hints of the keys in context @ctx (OV_CTX_*): those tied to the context first,
+ * then the general ones, in table order. Return: count written to @out.
+ */
+int ov_key_hints(unsigned ctx, const OV_KEYHINT **out, int max)
 {
-    size_t len = 0;
-    if (n > 0)
+    int n = 0;
+    for (int pass = 0; pass < 2; pass++)
     {
-        buf[0] = '\0';
-    }
-    for (int i = 0; i < ov_nb_keys && len < n; i++)
-    {
-        if (ov_keys[i].footer != NULL)
+        for (int i = 0; i < ov_nb_keys && n < max; i++)
         {
-            int w = snprintf(buf + len, n - len, "%s%s", (len > 0) ? " " : "", ov_keys[i].footer);
-            len += (w > 0) ? (size_t) w : 0;
+            const OV_KEYHINT *h = &ov_keys[i].hint;
+            if (h->key != NULL && (h->need != 0) == (pass == 0) && (ctx & h->need) == h->need &&
+                (ctx & h->forbid) == 0)
+            {
+                out[n++] = h;
+            }
         }
     }
-    return (len < n) ? len : n - 1;
+    return n;
 }

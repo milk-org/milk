@@ -64,7 +64,22 @@ static void test_loop_list_rows(void)
     }
 }
 
-/* Key table: every entry is documented somewhere; status-line hints are distinct */
+/* Whether the hints shown in @ctx include "@key @meaning" */
+static int has_hint(unsigned ctx, const char *key, const char *meaning)
+{
+    const OV_KEYHINT *h[32];
+    int               n = ov_key_hints(ctx, h, 32);
+    for (int i = 0; i < n; i++)
+    {
+        if (strcmp(h[i]->key, key) == 0 && strcmp(h[i]->meaning, meaning) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Key table: every entry is documented; in every consistent context the shown hints have distinct keys */
 static void test_keymap(void)
 {
     for (int i = 0; i < ov_nb_keys; i++)
@@ -72,15 +87,54 @@ static void test_keymap(void)
         CHECK(ov_keys[i].display != NULL && ov_keys[i].label != NULL);
         CHECK(ov_keys[i].section >= 0 || ov_keys[i].group >= 0);
         CHECK(ov_keys[i].section < HS_COUNT && ov_keys[i].group < OV_KG_COUNT);
-        for (int j = i + 1; ov_keys[i].footer != NULL && j < ov_nb_keys; j++)
+        CHECK((ov_keys[i].hint.key == NULL) == (ov_keys[i].hint.meaning == NULL));
+        CHECK(ov_keys[i].hint.meaning == NULL || strlen(ov_keys[i].hint.meaning) <= 8);
+    }
+    static const unsigned focus[4] = { OV_CTX_FOCUS_STREAMS, OV_CTX_FOCUS_PROCS, OV_CTX_FOCUS_FPS,
+                                       OV_CTX_FOCUS_GRAPH };
+    static const unsigned free_bits[] = { OV_CTX_CTRL,        OV_CTX_FROZEN,    OV_CTX_DASH,
+                                          OV_CTX_F5,          OV_CTX_LOOP_LIST, OV_CTX_MSEL,
+                                          OV_CTX_FOCUS_SHOWN, OV_CTX_PARAM_TREE };
+    for (int f = 0; f < 4; f++)
+    {
+        for (unsigned b = 0; b < (1U << 8); b++)
         {
-            CHECK(ov_keys[j].footer == NULL || strcmp(ov_keys[i].footer, ov_keys[j].footer) != 0);
+            unsigned ctx = OV_CTX_MODEL | focus[f] | ((f < 3) ? OV_CTX_FOCUS_LIST : 0);
+            for (int k = 0; k < 8; k++)
+            {
+                ctx |= ((b >> k) & 1) ? free_bits[k] : 0;
+            }
+            if (((ctx & OV_CTX_DASH) && (ctx & OV_CTX_F5)) ||
+                ((ctx & OV_CTX_PARAM_TREE) && (!(ctx & OV_CTX_F5) || f != 2)) ||
+                ((ctx & OV_CTX_LOOP_LIST) && f < 3 &&
+                 (ctx & OV_CTX_FOCUS_SHOWN))) /* F7 shows no list */
+            {
+                continue; /* not reachable */
+            }
+            const OV_KEYHINT *h[32];
+            int               n = ov_key_hints(ctx, h, 32);
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = i + 1; j < n; j++)
+                {
+                    CHECK(strcmp(h[i]->key, h[j]->key) != 0);
+                }
+            }
         }
     }
-    char buf[96];
-    CHECK(ov_key_footer(buf, sizeof(buf)) == strlen(buf));
-    CHECK(strstr(buf, "TAB") != NULL && strstr(buf, "q") != NULL);
-    CHECK(ov_key_footer(buf, 4) == 3); /* truncated, still terminated */
+    unsigned proc = OV_CTX_MODEL | OV_CTX_FOCUS_PROCS | OV_CTX_FOCUS_LIST | OV_CTX_FOCUS_SHOWN;
+    CHECK(has_hint(proc, "/", "filter") && has_hint(proc, "s/S", "sort") &&
+          has_hint(proc, "c", "control"));
+    CHECK(has_hint(proc | OV_CTX_CTRL, "k", "term") && has_hint(proc | OV_CTX_CTRL, "e", "exit"));
+    CHECK(!has_hint(proc | OV_CTX_CTRL, "r", "run") &&
+          !has_hint(proc | OV_CTX_CTRL, "c", "control"));
+    unsigned          tree = OV_CTX_MODEL | OV_CTX_F5 | OV_CTX_FOCUS_FPS | OV_CTX_FOCUS_LIST |
+                             OV_CTX_FOCUS_SHOWN | OV_CTX_PARAM_TREE;
+    const OV_KEYHINT *h[4];
+    CHECK(ov_key_hints(tree, h, 4) == 4 && h[0]->need != 0 &&
+          h[2]->need != 0); /* the context's own first */
+    CHECK(has_hint(tree, "ENTER", "edit") && has_hint(tree, "ESC", "back"));
+    CHECK(!has_hint(tree, "s/S", "sort") && has_hint(tree | OV_CTX_CTRL, "o", "on/off"));
 }
 
 static int calls[4];
