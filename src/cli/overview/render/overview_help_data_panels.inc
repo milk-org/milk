@@ -47,9 +47,9 @@
     },
     {
         "p",
-        "Pause / resume process (SIGSTOP/CONT)",
-        "Toggles process execution between paused and running by setting CTRLval or "
-        "dispatching SIGSTOP/SIGCONT signals. Requires Control Mode ON.",
+        "Pause / run (CTRLval 1/0)",
+        "Toggles CTRLval between 1 (pause) and 0 (run). Only loops that honour CTRLval react; "
+        "no signal is sent. Requires Control Mode ON.",
         HF_ENTRY | HF_CTRL_MODE,
         HS_PROCS,
     },
@@ -145,6 +145,15 @@
         HS_FPS,
     },
     {
+        "o",
+        "Toggle ON/OFF parameter (F5)",
+        "Flips the highlighted ON/OFF parameter in the F5 tree. Refused, with the reason, when "
+        "the parameter is write-protected or the FPS file is not writable. Requires Control "
+        "Mode ON.",
+        HF_ENTRY | HF_CTRL_MODE,
+        HS_FPS,
+    },
+    {
         "b",
         "Toggle the batch mark on an FPS module",
         "Marks or unmarks the highlighted FPS (by name) and moves down. With marks set, k, K, r "
@@ -208,9 +217,9 @@
     },
     {
         "L",
-        "Cycle lineage mode (Trigger vs Input)",
-        "Toggles lineage graph filtering: Triggers only (shows strictly semaphore-triggered "
-        "compute dependencies) vs All Inputs (includes sampled/passive streams).",
+        "Cycle lineage mode (Trigger / Input / Full)",
+        "Trigger follows semaphore-triggered dependencies only; Input adds sampled streams; "
+        "Full also follows FPS stream parameters.",
         HF_ENTRY,
         HS_GRAPH,
     },
@@ -374,10 +383,9 @@
     {
         "F8 / ^T",
         "Open theme selector popup (↑/↓ to choose, ESC or 1s to close)",
-        "Brings up a theme selector popup with live palette swatches. Select with "
-        "Up/Down arrows or ^T; closes after 1s inactivity or on ESC. Available: "
-        "dark, night, accessible, light, nordic, dracula, solarized-dark, "
-        "solarized-light, monokai, matrix.",
+        "Switches to the next theme and opens the selector with live swatches; Up/Down or ^T "
+        "choose, ESC or 1 s idle closes. milk-CTRL -h lists the themes. Colours follow the "
+        "terminal depth (COLORTERM/TERM); NO_COLOR or TERM=dumb gives monochrome.",
         HF_ENTRY,
         HS_COLORS,
     },

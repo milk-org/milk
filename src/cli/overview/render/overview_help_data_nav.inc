@@ -87,17 +87,17 @@
     },
     {
         "Left / Right",
-        "Panel focus / horizontal table scroll",
-        "In Dashboard view, moves focus between adjacent panels. When a wide table "
-        "exceeds screen width, scrolls table columns horizontally.",
+        "Move focus to the adjacent panel",
+        "In DASH (F2), moves focus to the neighbouring panel. In F5, Right/ENTER enter the "
+        "parameter tree and Left goes back up. No effect in other views.",
         HF_ENTRY,
         HS_NAV,
     },
     {
         "UP / DOWN",
-        "Navigate rows in focused panel (or j/k)",
-        "Moves the row selection cursor up or down in the currently focused list or "
-        "table. Vim navigation keys j and k are also supported.",
+        "Navigate rows in focused panel",
+        "Moves the row cursor up or down in the focused list. The cursor follows its entry, "
+        "not the row number, when the list is rescanned or re-sorted.",
         HF_ENTRY,
         HS_NAV,
     },
@@ -114,6 +114,22 @@
         "Jump to first / last item",
         "Instantly jumps the selection cursor to the very top (first item) or "
         "bottom (last item) of the currently focused list.",
+        HF_ENTRY,
+        HS_NAV,
+    },
+    {
+        "?",
+        "Jump to the first match",
+        "Prompts for a regex and moves the cursor of the focused panel to the first matching "
+        "entry; the cursor stays there across rescans. Says so when a panel filter hides it.",
+        HF_ENTRY,
+        HS_NAV,
+    },
+    {
+        "i",
+        "Inspect selection",
+        "Suspends the dashboard and runs milk-stream-info, milk-procinfo-info or milk-fps-info "
+        "on the selection (names passed as arguments, no shell); ENTER returns.",
         HF_ENTRY,
         HS_NAV,
     },
@@ -169,9 +185,9 @@
     },
     {
         "F8 / ^T",
-        "Cycle color theme",
-        "Cycles through available color themes (dark, night, accessible, light, nordic). "
-        "Can also be cycled by clicking the theme badge in the status bar.",
+        "Next theme + selector",
+        "Switches to the next theme and opens the selector (see Theme & Colors). Clicking the "
+        "theme badge in the status bar does the same.",
         HF_ENTRY,
         HS_NAV,
     },

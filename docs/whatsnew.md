@@ -16,6 +16,15 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
+- **2026-10-19** — `milk-CTRL` safety and correctness round: viewing never writes shared memory;
+  actions hit the highlighted entry (identity, not row number) and check it is still the same
+  stream/FPS/process before acting; `y/N` before SIGKILL, erase, cleanup and batch actions; FPS
+  batch marks (`b`, `a`); no shell for inspect, tmux or snapshots; terminal restored on every
+  exit; colour depth honoured (256/16/monochrome); stall detection, loop health and the
+  CONNECTIONS tree fixed. Legacy TUIs: streamCTRL, procCTRL and fpsCTRL restore the terminal
+  and drop shell calls; the fpsCTRL FIFO is retired (`-f`/`-s` are ignored; use `milk-fps-set`)
+  `#cli` `#streams` `#fps`
+
 - **2026-10-18** — `milk-termview`: menus, status bar, slow-link output, flow control over ssh,
   stream following, Pause `#cli` `#streams` `#performance` ([guide](guide/termview.md))
 
