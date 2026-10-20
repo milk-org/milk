@@ -356,7 +356,7 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 | ----------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | milkfpsStandalone | milkfps, milkdata                                                                                               |                                                            |
 | milkfpsCLI        | milkfps, CLIcore                                                                                                |                                                            |
-| milkscript        | _(see CLIcore)_                                                                                                 |                                                            |
+| milkscript        | _(see CLIcore)_                                                                                                 | COREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP, OpenBLAS, MKL |
 | CLIcore           | COREMODarith, COREMODmemory, COREMODtools, milkfps, milkfpsseq, milkdata, milkprocessinfo, milkscript, readline | COREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP |
 
 </details>

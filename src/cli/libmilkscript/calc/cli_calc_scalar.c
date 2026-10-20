@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include <limits.h>
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,6 +20,23 @@
 #include "cli_calc_scalar.h"
 #include "milk_entity_ns.h"
 #include "milk_shm_prop.h"
+
+double cli_calc_isnan(double a)
+{
+    uint64_t u;
+    memcpy(&u, &a, sizeof(u));
+    return ((u & 0x7ff0000000000000ULL) == 0x7ff0000000000000ULL &&
+            (u & 0x000fffffffffffffULL) != 0)
+               ? 1.0
+               : 0.0;
+}
+
+double cli_calc_isfinite(double a)
+{
+    uint64_t u;
+    memcpy(&u, &a, sizeof(u));
+    return ((u & 0x7ff0000000000000ULL) != 0x7ff0000000000000ULL) ? 1.0 : 0.0;
+}
 
 /** posi() - Heaviside step: 1 if @a > 0, else 0. */
 static double posi(double a)
@@ -49,6 +67,9 @@ static const cli_calc_scalar_fn_t scalar_fns[] = { { "sin(", 1, (double (*)()) s
                                                    { "abs(", 1, (double (*)()) fabs },
                                                    { "fabs(", 1, (double (*)()) fabs },
                                                    { "round(", 1, (double (*)()) round },
+                                                   { "isnan(", 1, (double (*)()) cli_calc_isnan },
+                                                   { "isfinite(", 1,
+                                                     (double (*)()) cli_calc_isfinite },
                                                    { "atan2(", 2, (double (*)()) atan2 },
                                                    { "fmod(", 2, (double (*)()) fmod },
                                                    { "min(", 2, (double (*)()) fmin },
@@ -682,7 +703,7 @@ int cli_calc_local(const char *expr, int digits, char *out, size_t outsz, int *t
     }
     else
     {
-        *truth = (v.dval != 0.0 && !isnan(v.dval));
+        *truth = (v.dval != 0.0 && cli_calc_isnan(v.dval) == 0.0);
         snprintf(out, outsz, "%.*g", digits, v.dval);
     }
     return 1;

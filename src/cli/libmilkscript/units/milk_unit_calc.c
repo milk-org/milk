@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -26,9 +27,10 @@
 #include "milk_argval.h"
 #include "milk_unit.h"
 
-#define CALC_NFIXED 5
-#define CALC_ERROR 4 /* index of .error */
+#define CALC_NFIXED 7
+#define CALC_ERROR 6 /* index of .error */
 #define CALC_MAXPAR 32
+#define CALC_NBUILTIN 3
 #define CALC_MAXTEXT 65536
 
 static FPS_APP_INFO app = {
@@ -37,14 +39,17 @@ static FPS_APP_INFO app = {
     .description = "run calculator statements on each frame",
     .description_long =
         "Runs the calculator statements of .expr, or of the file .file names, on each frame of "
-        ".trigger. .params declares more parameters (name:type[=default][:help], types int "
-        "uint float bool str) that the statements read and @set changes while it runs."
+        ".trigger. .init or .initfile runs once before frame 0. .params declares more parameters "
+        "(name:type[=default][:help], types int uint float bool str) that the statements read and "
+        "@set changes while it runs."
 };
 
 static char expr[FUNCTION_PARAMETER_STRMAXLEN];
 static char trigger[FUNCTION_PARAMETER_STRMAXLEN];
 static char params[FUNCTION_PARAMETER_STRMAXLEN];
 static char file[FUNCTION_PARAMETER_STRMAXLEN];
+static char init_expr[FUNCTION_PARAMETER_STRMAXLEN];
+static char initfile[FUNCTION_PARAMETER_STRMAXLEN];
 static char error[FUNCTION_PARAMETER_STRMAXLEN];
 
 /* the fixed parameters, then the declared ones */
@@ -57,6 +62,10 @@ static FPS_CLI_BINDING bindings[CALC_NFIXED + CALC_MAXPAR] = {
       "more parameters: name:type[=default]", -2, -1 },
     { ".file", file, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,
       "statements from this file", -2, -1 },
+    { ".init", init_expr, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,
+      "statements run once at start", -2, -1 },
+    { ".initfile", initfile, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,
+      "init statements from this file", -2, -1 },
     { ".error", error, FPTYPE_STRING, 0, FPFLAG_DEFAULT_OUTPUT, "why the loop stopped", -2, -1 },
 };
 static int nbind = CALC_NFIXED;
@@ -71,14 +80,28 @@ static union
 } pval[CALC_MAXPAR];
 static char             pkey[CALC_MAXPAR][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN + 1];
 static char             pdescr[CALC_MAXPAR][FUNCTION_PARAMETER_DESCR_STRMAXLEN];
-static cli_calc_binding cvars[CALC_MAXPAR];
+static cli_calc_binding cvars[CALC_MAXPAR + CALC_NBUILTIN];
+static int64_t          frame_n  = 0;
+static double           frame_t  = 0.0;
+static double           frame_dt = 0.0;
 
 static CLICMDARGDEF farg[1];
 CLICMDDATA          CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
 FPS_CMDSETTINGS_INIT(calc, CLIcmddata, app)
 
+static double now_sec(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double) ts.tv_sec + (double) ts.tv_nsec * 1e-9;
+}
+
 static int is_fixed(const char *name)
 {
+    if (strcmp(name, "_n") == 0 || strcmp(name, "_t") == 0 || strcmp(name, "_dt") == 0)
+    {
+        return 1;
+    }
     for (int i = 0; i < CALC_NFIXED; i++)
     {
         if (strcmp(bindings[i].fpskeyword + 1, name) == 0)
@@ -183,12 +206,12 @@ static int find_params(const char *name)
     return rc;
 }
 
-/** create() - (re)create the FPS from the command line: .expr .trigger .params .file. */
+/** create() - (re)create the FPS from the command line: .expr .trigger .params .file .init .initfile. */
 static int create(const milk_unit_args *a)
 {
-    char *fixed[] = { expr, trigger, params, file };
+    char *fixed[] = { expr, trigger, params, file, init_expr, initfile };
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 6; i++)
     {
         const char *v = milk_unit_pos(a, i);
         snprintf(fixed[i], FUNCTION_PARAMETER_STRMAXLEN, "%s", (v != NULL) ? v : "");
@@ -196,7 +219,9 @@ static int create(const milk_unit_args *a)
         {
             fprintf(stderr, "milk.calc: %s is longer than %d characters%s\n",
                     bindings[i].fpskeyword, FUNCTION_PARAMETER_STRMAXLEN - 1,
-                    (i == 0) ? ": write the statements in a file (.file)" : "");
+                    (i == 0)   ? ": write the statements in a file (.file)"
+                    : (i == 4) ? ": write the statements in a file (.initfile)"
+                               : "");
             if (i != 2) /* .params is read from the command line, and only shown */
             {
                 return 1;
@@ -210,24 +235,24 @@ static int create(const milk_unit_args *a)
     return milk_unit_create(a, &app, bindings, nbind);
 }
 
-/** program_text() - .file's content when .file is set, else .expr; NULL (@err) if it cannot be read. */
-static char *program_text(char *err, size_t errsz)
+/** source_text() - @fpath's content when @fpath is set, else @inline_str; NULL (@err) if it cannot be read. */
+static char *source_text(const char *inline_str, const char *fpath, char *err, size_t errsz)
 {
-    if (file[0] == '\0')
+    if (fpath[0] == '\0')
     {
-        return strdup(expr);
+        return strdup(inline_str);
     }
-    FILE *fp = fopen(file, "r");
+    FILE *fp = fopen(fpath, "r");
     char *t  = (fp != NULL) ? calloc(1, CALC_MAXTEXT) : NULL;
     if (t != NULL && fread(t, 1, CALC_MAXTEXT - 1, fp) == CALC_MAXTEXT - 1)
     {
         free(t);
         t = NULL;
-        snprintf(err, errsz, "%s is longer than %d bytes", file, CALC_MAXTEXT - 1);
+        snprintf(err, errsz, "%s is longer than %d bytes", fpath, CALC_MAXTEXT - 1);
     }
     else if (t == NULL)
     {
-        snprintf(err, errsz, "cannot read %s", file);
+        snprintf(err, errsz, "cannot read %s", fpath);
     }
     if (fp != NULL)
     {
@@ -249,12 +274,23 @@ static void report(PROCESSINFO *pi, const char *msg)
 
 static MILK_HOT errno_t compute(void)
 {
-    char           err[512] = "";
-    cli_calc_prog *prog     = NULL;
-    long           pe       = functionparameter_GetParamIndex(dcfpsptr, ".expr");
-    long           pf       = functionparameter_GetParamIndex(dcfpsptr, ".file");
-    uint64_t       built[2] = { 0, 0 }; /* value_cnt of .expr and .file compiled */
-    const char    *tname    = dcfpsptr->cmdset.triggerstreamname;
+    char           err[512]      = "";
+    cli_calc_prog *prog          = NULL;
+    long           pe            = functionparameter_GetParamIndex(dcfpsptr, ".expr");
+    long           pf            = functionparameter_GetParamIndex(dcfpsptr, ".file");
+    long           pi            = functionparameter_GetParamIndex(dcfpsptr, ".init");
+    long           pif           = functionparameter_GetParamIndex(dcfpsptr, ".initfile");
+    uint64_t       built[2]      = { 0, 0 }; /* value_cnt of .expr and .file compiled */
+    uint64_t       init_built[2] = { 0, 0 }; /* value_cnt of .init and .initfile run */
+    int            init_done     = 0;
+    double         t_start       = 0.0;
+    double         t_prev        = 0.0;
+    int            npar          = nbind - CALC_NFIXED;
+    const char    *tname         = dcfpsptr->cmdset.triggerstreamname;
+
+    cvars[npar + 0] = (cli_calc_binding) { "_n", FPTYPE_INT64, &frame_n };
+    cvars[npar + 1] = (cli_calc_binding) { "_t", FPTYPE_FLOAT64, &frame_t };
+    cvars[npar + 2] = (cli_calc_binding) { "_dt", FPTYPE_FLOAT64, &frame_dt };
 
     cli_calc_prog_attach();
     error[0] = '\0';
@@ -268,30 +304,78 @@ static MILK_HOT errno_t compute(void)
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-        if (prog == NULL || dcfpsptr->parray[pe].value_cnt != built[0] ||
-            dcfpsptr->parray[pf].value_cnt != built[1])
+        if (!init_done || dcfpsptr->parray[pi].value_cnt != init_built[0] ||
+            dcfpsptr->parray[pif].value_cnt != init_built[1])
         {
-            char *text = program_text(err, sizeof(err));
+            t_start       = now_sec();
+            t_prev        = t_start;
+            frame_n       = 0;
+            frame_t       = 0.0;
+            frame_dt      = 0.0;
+            init_done     = 1;
+            init_built[0] = dcfpsptr->parray[pi].value_cnt;
+            init_built[1] = dcfpsptr->parray[pif].value_cnt;
             cli_calc_prog_free(prog);
-            prog     = (text != NULL)
-                           ? cli_calc_prog_new(text, cvars, nbind - CALC_NFIXED, err, sizeof(err))
-                           : NULL;
-            built[0] = dcfpsptr->parray[pe].value_cnt;
-            built[1] = dcfpsptr->parray[pf].value_cnt;
-            free(text);
-        }
-        if (prog == NULL || cli_calc_prog_run(prog, err, sizeof(err)) != 0)
-        {
-            report(processinfo, err);
-            processloopOK = 0;
-        }
-        for (int k = 0; prog != NULL && err[0] == '\0' && k < nbind - CALC_NFIXED; k++)
-        {
-            if (cli_calc_prog_assigns(prog, k)) /* a result: back to the FPS, for @get and others */
+            prog = NULL;
+            if (init_expr[0] != '\0' || initfile[0] != '\0')
             {
-                sync_local_to_fps(dcfpsptr, bindings[CALC_NFIXED + k]._fps_pindex,
-                                  &bindings[CALC_NFIXED + k]);
+                unsigned char assigned[CALC_MAXPAR + CALC_NBUILTIN] = { 0 };
+                char         *itext = source_text(init_expr, initfile, err, sizeof(err));
+                if (itext == NULL || cli_calc_prog_exec_once(itext, cvars, npar + CALC_NBUILTIN,
+                                                             assigned, err, sizeof(err)) != 0)
+                {
+                    free(itext);
+                    report(processinfo, err);
+                    processloopOK = 0;
+                }
+                else
+                {
+                    free(itext);
+                    for (int k = 0; k < npar; k++)
+                    {
+                        if (assigned[k])
+                        {
+                            sync_local_to_fps(dcfpsptr, bindings[CALC_NFIXED + k]._fps_pindex,
+                                              &bindings[CALC_NFIXED + k]);
+                        }
+                    }
+                }
             }
+        }
+        if (err[0] == '\0')
+        {
+            double t_now = now_sec();
+            frame_t      = (frame_n == 0) ? 0.0 : (t_now - t_start);
+            frame_dt     = (frame_n == 0) ? 0.0 : (t_now - t_prev);
+            t_prev       = t_now;
+
+            if (prog == NULL || dcfpsptr->parray[pe].value_cnt != built[0] ||
+                dcfpsptr->parray[pf].value_cnt != built[1])
+            {
+                char *text = source_text(expr, file, err, sizeof(err));
+                cli_calc_prog_free(prog);
+                prog = (text != NULL)
+                           ? cli_calc_prog_new(text, cvars, npar + CALC_NBUILTIN, err, sizeof(err))
+                           : NULL;
+                built[0] = dcfpsptr->parray[pe].value_cnt;
+                built[1] = dcfpsptr->parray[pf].value_cnt;
+                free(text);
+            }
+            if (prog == NULL || cli_calc_prog_run(prog, err, sizeof(err)) != 0)
+            {
+                report(processinfo, err);
+                processloopOK = 0;
+            }
+            for (int k = 0; prog != NULL && err[0] == '\0' && k < npar; k++)
+            {
+                if (cli_calc_prog_assigns(prog,
+                                          k)) /* a result: back to the FPS, for @get and others */
+                {
+                    sync_local_to_fps(dcfpsptr, bindings[CALC_NFIXED + k]._fps_pindex,
+                                      &bindings[CALC_NFIXED + k]);
+                }
+            }
+            frame_n++;
         }
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
@@ -307,13 +391,16 @@ int main(int argc, char **argv)
 
     milk_unit_args_read(argc, argv, app.fps_name, &a);
     init = (strcmp(a.cmd, "fpsinit") == 0);
-    if (milk_unit_pos(&a, 3) != NULL) /* .file: also what main_impl() writes for exec and set */
+    for (int p = 3; p <= 5; p += 2) /* .file (3) and .initfile (5): also what main_impl() writes */
     {
-        char path[PATH_MAX];
-        if (realpath(milk_unit_pos(&a, 3), path) != NULL && strlen(path) < sizeof(file))
+        if (milk_unit_pos(&a, p) != NULL)
         {
-            argv[a.posi[3]] = strdup(path);
-            a.pos[3]        = argv[a.posi[3]];
+            char path[PATH_MAX];
+            if (realpath(milk_unit_pos(&a, p), path) != NULL && strlen(path) < sizeof(file))
+            {
+                argv[a.posi[p]] = strdup(path);
+                a.pos[p]        = argv[a.posi[p]];
+            }
         }
     }
     if (!a.help && (init || (strcmp(a.cmd, "exec") == 0 && !milk_unit_fps_exists(a.name))))

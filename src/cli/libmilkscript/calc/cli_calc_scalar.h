@@ -60,6 +60,12 @@ cli_token_type cli_calc_scan_op(const char *p, int *len);
  * TOK_DOUBLE in *@l / *@d; returns its length, 0 if @p holds none. */
 size_t cli_calc_scan_number(const char *p, cli_token_type *type, long *l, double *d);
 
+/** cli_calc_isnan() - IEEE-754 bit-level NaN test (1.0 if @a is NaN, else 0.0), safe under -Ofast. */
+double cli_calc_isnan(double a);
+
+/** cli_calc_isfinite() - IEEE-754 bit-level finite test (1.0 if @a is finite, else 0.0), safe under -Ofast. */
+double cli_calc_isfinite(double a);
+
 /** cli_calc_local() - evaluate @expr here when it holds only numbers, operators, math functions and
  * stream, FPS, process or sequencer properties: 1 with its value in @out (printed with @digits
  * significant digits) and its truth in *@truth; 0 when the engine must evaluate it (names, images,

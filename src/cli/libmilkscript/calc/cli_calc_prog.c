@@ -280,7 +280,14 @@ cli_calc_prog *cli_calc_prog_new(const char             *text,
     {
         char name[STRINGMAXLEN_IMAGE_NAME];
         int  op = target(p->st[i].text, name, sizeof(name));
-        int  b  = 0;
+        if (op != 0 &&
+            (strcmp(name, "_n") == 0 || strcmp(name, "_t") == 0 || strcmp(name, "_dt") == 0))
+        {
+            snprintf(err, errsz, "cannot assign to read-only variable '%s'", name);
+            cli_calc_prog_free(p);
+            return NULL;
+        }
+        int b = 0;
         while (op != 0 && b < nvars && strcmp(vars[b].name, name) != 0)
         {
             b++;
@@ -341,6 +348,72 @@ int cli_calc_prog_run(cli_calc_prog *p, char *err, size_t errsz)
         }
     }
     store_vars(p);
+    return 0;
+}
+
+int cli_calc_prog_exec_once(const char             *text,
+                            const cli_calc_binding *vars,
+                            int                     nvars,
+                            unsigned char          *assigned_out,
+                            char                   *err,
+                            size_t                  errsz)
+{
+    cli_calc_prog *p = calloc(1, sizeof(*p));
+
+    if (p == NULL)
+    {
+        snprintf(err, errsz, "out of memory");
+        return -1;
+    }
+    p->nvars = nvars;
+    snprintf(err, errsz, "out of memory");
+    if (bind_vars(p, vars, err, errsz) != 0 || split(p, text, err, errsz) != 0)
+    {
+        cli_calc_prog_free(p);
+        return -1;
+    }
+    for (int i = 0; i < p->n; i++)
+    {
+        char name[STRINGMAXLEN_IMAGE_NAME];
+        int  op = target(p->st[i].text, name, sizeof(name));
+        if (op != 0 &&
+            (strcmp(name, "_n") == 0 || strcmp(name, "_t") == 0 || strcmp(name, "_dt") == 0))
+        {
+            snprintf(err, errsz, "cannot assign to read-only variable '%s'", name);
+            cli_calc_prog_free(p);
+            return -1;
+        }
+        int b = 0;
+        while (op != 0 && b < nvars && strcmp(vars[b].name, name) != 0)
+        {
+            b++;
+        }
+        if (op != 0 && b < nvars)
+        {
+            p->assigned[b] = 1;
+        }
+        if (eval_text(p->st[i].text, err, errsz) != 0)
+        {
+            cli_calc_prog_free(p);
+            return -1;
+        }
+        if (op == '=' && b == nvars && variable_ID(name) == -1)
+        {
+            imageID id = image_ID(name, data.core.image, data.core.NB_MAX_IMAGE);
+            if (id != -1 && data.core.image[id].md[0].shared != 1 && share(name, err, errsz) != 0)
+            {
+                cli_calc_prog_free(p);
+                return -1;
+            }
+        }
+    }
+    store_vars(p);
+    if (assigned_out != NULL && nvars > 0)
+    {
+        memcpy(assigned_out, p->assigned, (size_t) nvars);
+    }
+    cli_calc_prog_free(p);
+    err[0] = '\0';
     return 0;
 }
 

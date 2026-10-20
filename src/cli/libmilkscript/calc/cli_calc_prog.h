@@ -43,6 +43,18 @@ int cli_calc_prog_assigns(const cli_calc_prog *p, int i);
 /** cli_calc_prog_run() - set the bound variables, run the statements, copy back the assigned ones; 0 or -1. */
 int cli_calc_prog_run(cli_calc_prog *p, char *err, size_t errsz);
 
+/**
+ * cli_calc_prog_exec_once() - execute @text once (for .init / .initfile): statements ended by `;` or
+ * a newline, `#` to the end of the line a comment. Any new image target becomes a shared stream, and
+ * assigned bound variables are copied back and marked in @assigned_out (if non-NULL); 0 or -1.
+ */
+int cli_calc_prog_exec_once(const char             *text,
+                            const cli_calc_binding *vars,
+                            int                     nvars,
+                            unsigned char          *assigned_out,
+                            char                   *err,
+                            size_t                  errsz);
+
 void cli_calc_prog_free(cli_calc_prog *p);
 
 #endif

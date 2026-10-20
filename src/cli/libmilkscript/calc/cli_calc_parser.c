@@ -784,7 +784,7 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
         }
         else if (result.type == VAL_DOUBLE)
         {
-            truthy = (result.dval != 0.0 && !isnan(result.dval));
+            truthy = (result.dval != 0.0 && cli_calc_isnan(result.dval) == 0.0);
         }
         else if (result.type == VAL_STRING)
         {

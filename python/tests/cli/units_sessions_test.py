@@ -126,6 +126,87 @@ def test_E8_calc_program_file_delay_loop_and_stop(tmp_path):
     )
 
 
+def test_E8_calc_init_and_initfile_and_frame_vars(tmp_path):
+    """One-time .init / .initfile runs before frame 0, is preserved across live .expr changes,
+    re-runs when .init changes live, and provides read-only _n, _t, _dt frame variables.
+    """
+    (tmp_path / "init.calc").write_text("acc = cam * 0; k0 = 10\n")
+    res = milk_bash(
+        HELPERS
+        + 'milk-fpsexec-milk-calc -n u4 fpsinit "acc = acc + cam; fn = _n; ft = _t; fdt = _dt" '
+        'cam "k0:int=0 fn:int=-1 ft:float=-1 fdt:float=-1" . . init.calc >/dev/null\n'
+        "milk-fpsexec-milk-calc -n u4 runstart >run.log 2>&1 & pid=$!\n"
+        "until_file acc; sleep 0.3\n"
+        'echo "f0=$(@get s.acc.mean),$(@get f.u4.k0),$(@get f.u4.fn)"\n'
+        'frame 3; echo "f1=$(@get s.acc.mean),$(@get f.u4.fn)"\n'
+        '@set f.u4.expr="acc = acc + cam * 2; fn = _n"; frame 5\n'
+        'echo "f2=$(@get s.acc.mean),$(@get f.u4.fn)"\n'
+        '@set f.u4.initfile="" f.u4.init="acc = cam * 0 + 100"; frame 2\n'
+        'echo "f3=$(@get s.acc.mean),$(@get f.u4.fn)"\n'
+        "stop $pid\n"
+        'milk-fpsexec-milk-calc -n ubad exec "_n = 5" >/dev/null 2>&1; echo "ro=$(@get f.ubad.error)"',
+        tmp_path,
+    )
+    got = [value(res.stdout, k) for k in ("f0", "f1", "f2", "f3", "ro")]
+    assert got == [
+        "2,10,0",
+        "5,1",
+        "15,2",
+        "104,0",
+        "cannot assign to read-only variable '_n'",
+    ], (
+        res.stdout + res.stderr + (tmp_path / "run.log").read_text()
+    )
+
+
+def test_E8_calc_isnan_isfinite_and_stale_stream_remap(tmp_path):
+    """IEEE-754 bit-level isnan() and isfinite() work under -Ofast on scalars and images, and
+    milk.calc automatically remaps a shared stream recreated with a new inode in /dev/shm.
+    """
+    res = milk_bash(
+        HELPERS
+        + '@calc -v s_nan,s_fin1,s_fin2 "isnan(sqrt(-1)); isfinite(exp(1000)); isfinite(42.0)"\n'
+        'echo "sc=$s_nan,$s_fin1,$s_fin2"\n'
+        '@test "sqrt(-1)"; echo "tnan=$?"\n'
+        '@calc "bad = cam * 1.0; bad[0,0] = sqrt(-1); clean = where(isnan(bad), 99, bad)"\n'
+        'echo "cl=$(@get l.clean.tot)"\n'
+        'mem.mk2Dim "@S:cal" 4 4 >/dev/null; @calc "cal = 3"\n'
+        'milk-fpsexec-milk-calc -n u5 fpsinit "out5 = cam + cal" cam >/dev/null\n'
+        "milk-fpsexec-milk-calc -n u5 runstart >run.log 2>&1 & pid=$!\n"
+        "until_file out5; sleep 0.3\n"
+        'frame 2; echo "before=$(@get s.out5.mean)"\n'
+        'rm -f "$MILK_SHM_DIR/cal.im.shm"\n'
+        'mem.mk2Dim "@S:cal" 4 4 >/dev/null; @calc "cal = 10"\n'
+        "sleep 0.1\n"
+        'frame 2; echo "after=$(@get s.out5.mean)"; stop $pid',
+        tmp_path,
+    )
+    got = [value(res.stdout, k) for k in ("sc", "tnan", "cl", "before", "after")]
+    assert got == ["1,0,1", "1", "129", "5", "12"], (
+        res.stdout + res.stderr + (tmp_path / "run.log").read_text()
+    )
+
+
+def test_E8_calc_matmul_and_transpose(tmp_path):
+    """transpose(), matmul(transpose(A), B), matmul(A, transpose(B)), and pre-compiled kept
+    dst = matmul(...) / dst = transpose(...) in milk.calc."""
+    res = milk_bash(
+        HELPERS + 'mem.mk2Dim "@S:mA" 3 2 >/dev/null\n'
+        'mem.mk2Dim "@S:vB" 2 1 >/dev/null\n'
+        '@calc "mA[0,0]=1; mA[1,0]=2; mA[2,0]=3; mA[0,1]=4; mA[1,1]=5; mA[2,1]=6"\n'
+        '@calc "vB[0,0]=10; vB[1,0]=20"\n'
+        '@calc "mAt = transpose(mA); p1 = matmul(mA, vB); p2 = matmul(transpose(mAt), vB)"\n'
+        '@calc "p3 = matmul(mA, transpose(mA))"\n'
+        'echo "shapes=$(@get l.mAt.xsize)x$(@get l.mAt.ysize),$(@get l.p3.xsize)x$(@get l.p3.ysize)"\n'
+        'echo "tots=$(@get l.p1.tot),$(@get l.p2.tot),$(@get l.p3.tot)"\n'
+        'milk-fpsexec-milk-calc -n u6 exec "outm = matmul(mA, vB); outt = transpose(mA)" >/dev/null\n'
+        'echo "unit=$(@get s.outm.tot),$(@get s.outt.xsize)x$(@get s.outt.ysize)"',
+        tmp_path,
+    )
+    got = [value(res.stdout, k) for k in ("shapes", "tots", "unit")]
+    assert got == ["2x3,3x3", "360,360,261", "360,2x3"], res.stdout + res.stderr
+
+
 # ------------------------------------------------------------- E8a: milk.script
 
 

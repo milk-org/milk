@@ -81,6 +81,7 @@ set(MILKSCRIPT_SOURCES
     milkscript_api.c)
 
 add_library(milkscript SHARED ${MILKSCRIPT_SOURCES})
+milk_apply_extensions(milkscript)
 
 if(USE_CFITSIO AND ${CFITSIO_FOUND})
   link_directories(${CFITSIO_LIBRARY_DIRS})

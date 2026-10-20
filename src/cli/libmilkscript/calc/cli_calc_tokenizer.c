@@ -83,6 +83,7 @@ static const builtin_func builtins[] = {
     { "dot(", (double (*)()) arith_image_dot, TOK_FUNC_IMIM_D },
     { "norm(", (double (*)()) arith_image_norm, TOK_FUNC_IM_D },
     { "matmul(", NULL, TOK_FUNC_IMIM_IM },
+    { "transpose(", NULL, TOK_FUNC_IMIM_IM },
 
     /* complex images */
     { "real(", NULL, TOK_FUNC_CPLX },
@@ -161,6 +162,31 @@ static int is_numeric_env_var(const char *s)
 }
 
 /**
+ * @brief Remap a shared image in place if its /dev/shm/<name>.im.shm file was re-created with a new inode.
+ */
+void cli_calc_refresh_shared_image(IMAGE *im)
+{
+    if (im == NULL || !im->used || im->md == NULL || im->md[0].shared != 1)
+    {
+        return;
+    }
+    char        shmpath[512];
+    struct stat st;
+    if (ImageStreamIO_filename(shmpath, sizeof(shmpath), im->name) == IMAGESTREAMIO_SUCCESS &&
+        stat(shmpath, &st) == 0 && st.st_ino != im->md[0].inode)
+    {
+        IMAGE fresh;
+        memset(&fresh, 0, sizeof(fresh));
+        if (ImageStreamIO_read_sharedmem_image_toIMAGE(im->name, &fresh) == IMAGESTREAMIO_SUCCESS)
+        {
+            ImageStreamIO_closeIm(im);
+            memcpy(im, &fresh, sizeof(IMAGE));
+            im->used = 1;
+        }
+    }
+}
+
+/**
  * @brief Resolve an image by name, auto-connecting from /dev/shm/<name>.im.shm if allowed.
  */
 static imageID resolve_or_autoconnect_image(const char *name, int allow_autoconnect)
@@ -173,23 +199,9 @@ static imageID resolve_or_autoconnect_image(const char *name, int allow_autoconn
     const char *bare = (sp.name != NULL && sp.name[0] != '\0') ? sp.name : name;
 
     imageID id = image_ID(bare, data.core.image, data.core.NB_MAX_IMAGE);
-    if (id != -1 && data.core.image[id].md != NULL && data.core.image[id].md->shared == 1)
+    if (id != -1)
     {
-        /* a stream re-created by another process has a new file: map that one, not the old one */
-        char        shmpath[512];
-        struct stat st;
-        if (ImageStreamIO_filename(shmpath, sizeof(shmpath), bare) == IMAGESTREAMIO_SUCCESS &&
-            stat(shmpath, &st) == 0 && st.st_ino != data.core.image[id].md->inode)
-        {
-            IMAGE fresh;
-            memset(&fresh, 0, sizeof(fresh));
-            if (ImageStreamIO_read_sharedmem_image_toIMAGE(bare, &fresh) == IMAGESTREAMIO_SUCCESS)
-            {
-                ImageStreamIO_closeIm(&data.core.image[id]);
-                memcpy(&data.core.image[id], &fresh, sizeof(IMAGE));
-                data.core.image[id].used = 1;
-            }
-        }
+        cli_calc_refresh_shared_image(&data.core.image[id]);
     }
     if (id != -1 || !allow_autoconnect || sp.loc == 'L')
     {

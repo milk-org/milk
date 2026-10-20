@@ -256,19 +256,20 @@ Functions (the math ones also apply per pixel to an image):
 
 | Kind             | Functions                                                                                |
 | ---------------- | ---------------------------------------------------------------------------------------- |
-| Math             | `sin cos tan asin acos atan exp ln log sqrt cbrt ceil floor round abs posi`              |
+| Math             | `sin cos tan asin acos atan exp ln log sqrt cbrt ceil floor round abs posi isnan isfinite` |
 | Math, 2-3 args   | `atan2(y,x)`, `fmod(a,b)`, `min(a,b)`, `max(a,b)`, `trunc(x,lo,hi)` (clamp)              |
 | Image to number  | `itot imin imax imean istd ivar imedian norm`, `perc(im,f)`, `dot(a,b)`; `irms` = `istd` |
 | Image to integer | `icount(im)` (non-zero pixels), `iargmax(im)`, `iargmin(im)` (index `x + y*xsize`)       |
 | Along one axis   | `itot imin imax imean istd ivar` plus an axis: `imean(cube, 2)` is the mean frame        |
-| Image to image   | `where(c,a,b)`, `matmul(a,b)`                                                            |
+| Image to image   | `where(c,a,b)`, `matmul(a,b)`, `transpose(im)`                                           |
 | Coordinates      | `ix iy ir itheta (im[, cx, cy])`: per pixel x, y, radius, angle about `(xsize/2, ysize/2)` |
 | Strings          | `strlen toupper tolower`, `substr(s,start,len)`, `replace(s,old,new)`, `hex oct bin`     |
 | Complex images   | `cplx(re,im)`, `real imag abs arg conj`; `+ - * /` and `-z` work on them                 |
 
 A second image argument is a mask: `imean(im, mask)` (also `itot imin imax istd ivar imedian`) and
 `perc(im, f, mask)` reduce over the pixels where the mask is not zero; no pixel gives NaN, or 0 for
-`itot`. A number instead is an axis.
+`itot`. A number instead is an axis. `matmul(transpose(a), b)` and `matmul(a, transpose(b))` apply
+the transpose directly inside the matrix product without allocating an intermediate transposed image.
 
 ```bash
 @calc -v core 'imean(cam, ir(cam) < 10)'          # mean within 10 pixels of the centre
@@ -357,6 +358,9 @@ milk-fpsexec-milk-calc -tmux -n dsub exec "out = (cam - dark) * gain" cam "gain:
 @get f.dsub.error                     # why the loop stopped (empty while it runs)
 milk-fpsexec-milk-calc -n dsub runstop
 
+# one-time initialization (.init) before frame 0, then per-frame leaky integrator
+milk-fpsexec-milk-calc -tmux -n ema exec "acc = (1 - a) * acc + a * cam" cam "a:float=0.1" . "acc = cam * 0"
+
 # statements from a file, 100 ticks per second without a trigger stream
 milk-fpsexec-milk-calc -n acc fpsinit . "" "k:int=0 total:float=0" acc.calc
 milk-fpsexec-milk-calc -tmux -n acc -loopd 0.01 runstart
@@ -373,20 +377,31 @@ The parameters of `milk-fpsexec-milk-calc`, in this order on the command line (`
 | `.trigger` | a stream whose frames run them; empty: once, or each tick of `-loopd` |
 | `.params` | more parameters, `name:type[=default][:help]` as for `@args` (int uint float bool str) |
 | `.file` | read the statements from this file instead (`#` starts a comment) |
+| `.init` | statements run once before frame 0 (and again if `.init` is set live) |
+| `.initfile` | read the init statements from this file instead |
 | `.error` | set by the unit: why the loop stopped |
 
 - The statements are compiled when the loop starts, and again at the frame after `.expr` or `.file`
-  is set (set `.file` again to read the file again). An element-wise image assignment
-  (`out = a*b + c`, also `+=` `-=` `*=`) runs as one pass over the pixels; other statements are
+  is set (set `.file` again to read the file again). `.init` (or `.initfile`) runs once before
+  frame 0 to create accumulator streams or set initial values; changing `.expr` or `.file` live
+  keeps that state intact, while setting `.init` or `.initfile` runs the initialization again and
+  resets the frame counters.
+- Three read-only variables are updated before each frame: `_n` (0-based frame index, `int`),
+  `_t` (elapsed seconds since loop/init start, `float`), and `_dt` (seconds since the previous
+  frame, `float`, `0` on frame 0).
+- An element-wise image assignment (`out = a*b + c`, also `+=` `-=` `*=`), `out = matmul(...)`, or
+  `out = transpose(...)` is compiled once and writes directly into `out`; other statements are
   evaluated as text on each frame.
 - Names are shared streams: the unit is its own process, so a session's local images and calculator
-  variables are out of its reach. A statement that makes a new image creates it as a stream.
+  variables are out of its reach. A statement that makes a new image creates it as a stream. Shared
+  streams recreated in `$MILK_SHM_DIR` with the same shape and compatible type are remapped
+  automatically.
 - The `.params` parameters are calculator variables that `@set` changes while the loop runs. A
   statement that assigns one (`total = itot(out)`) writes it back to the FPS on each frame, for
   `@get`, `@waitfor` and other units.
 - An error stops the loop: a bad statement, or an image whose size or type changed.
-- FPS strings hold 63 characters, so longer programs go in a file. `.params` may be longer on the
-  `fpsinit` or `exec` command line that creates the FPS.
+- FPS strings hold 63 characters, so longer programs go in a file (`.file` or `.initfile`). `.params`
+  may be longer on the `fpsinit` or `exec` command line that creates the FPS.
 
 `milk-fpsexec-milk-script` takes `.cmd`, the snippet, and `.trigger`. A new `.cmd` applies from the
 next tick. A tick that fails stops the loop, with its status in `.error`; end the snippet with `|| :`

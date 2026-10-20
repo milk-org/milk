@@ -66,7 +66,8 @@ val_t mk_double(double v);
 
 val_t mk_string(const char *s);
 
-int check_image(const char *name);
+int  check_image(const char *name);
+void cli_calc_refresh_shared_image(IMAGE *im);
 
 int   cli_calc_tok_pos(void);
 void  cli_calc_tok_seek(int pos);
@@ -114,6 +115,15 @@ val_t        cli_calc_complex_binop(cli_token_type op, val_t left, val_t right);
 val_t        cli_calc_complex_neg(const IMAGE *z);
 val_t        cli_calc_complex_part(const IMAGE *z, int which);
 val_t        cli_calc_complex_func(const char *fname, const val_t *args, int nargs);
+
+int cli_calc_matmul_check(const IMAGE *im1,
+                          int          transA,
+                          const IMAGE *im2,
+                          int          transB,
+                          const IMAGE *dst);
+int cli_calc_matmul_into(const IMAGE *im1, int transA, const IMAGE *im2, int transB, IMAGE *outim);
+int cli_calc_transpose_check(const IMAGE *src, const IMAGE *dst);
+int cli_calc_transpose_into(const IMAGE *src, IMAGE *dst);
 
 const char *alloc_tmpname(void);
 

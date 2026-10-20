@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+// MILK_CMAKE_REQUEST_BLAS
 #include "CLIcore.h"
 #include "CLIcore_script.h"
 #include "COREMOD_arith/COREMOD_arith.h"
@@ -27,6 +28,7 @@
 #include "COREMOD_memory/stream_slice.h"
 #include "cli_calc_internal.h"
 #include "libmilkdata/milk_type_dispatch.h"
+#include "milk_blas_lapacke.h"
 
 /** parse_func_argv() - @nmin to @nmax comma-separated arguments and `)`; how many, or -1 on error. */
 static int parse_func_argv(int nmin, int nmax, val_t *args, const char *comma_msg)
@@ -463,16 +465,670 @@ static void copy_im_to_double_buf(const IMAGE *im, double *dst)
 #undef COPY_BODY
 }
 
-/**
- * @brief Evaluate `matmul(imA, imB)` (`TOK_FUNC_IMIM_IM`).
- */
-static val_t func_eval_matmul(void)
+int cli_calc_transpose_check(const IMAGE *src, const IMAGE *dst)
 {
-    val_t args[2];
-    if (parse_func_args(2, args, "Expected ','") != 0)
+    if (src == NULL || dst == NULL || !src->used || !dst->used || src == dst)
+    {
+        return -1;
+    }
+    if (cli_calc_is_complex_dt(src->md[0].datatype) ||
+        (src->md[0].naxis != 1 && src->md[0].naxis != 2))
+    {
+        return -1;
+    }
+    if (dst->md[0].datatype != _DATATYPE_FLOAT && dst->md[0].datatype != _DATATYPE_DOUBLE)
+    {
+        return -1;
+    }
+    uint64_t M = src->md[0].size[0];
+    uint64_t N = (src->md[0].naxis == 2) ? src->md[0].size[1] : 1;
+    if (dst->md[0].naxis != 2 || dst->md[0].size[0] != N || dst->md[0].size[1] != M)
+    {
+        return -1;
+    }
+    return 0;
+}
+
+int cli_calc_transpose_into(const IMAGE *src, IMAGE *dst)
+{
+    uint64_t M       = src->md[0].size[0];
+    uint64_t N       = (src->md[0].naxis == 2) ? src->md[0].size[1] : 1;
+    uint8_t  src_dt  = src->md[0].datatype;
+    uint8_t  dst_dt  = dst->md[0].datatype;
+    uint64_t nel     = M * N;
+    uint64_t tile_sz = 32;
+
+    if (src_dt == _DATATYPE_FLOAT && dst_dt == _DATATYPE_FLOAT)
+    {
+        const float *restrict s = src->array.F;
+        float *restrict d       = dst->array.F;
+        if (M == 1 || N == 1)
+        {
+            __builtin_memcpy(d, s, sizeof(float) * nel);
+            return 0;
+        }
+#pragma omp parallel for collapse(2) schedule(static) if (nel >= 65536)
+        for (uint64_t m0 = 0; m0 < M; m0 += tile_sz)
+        {
+            for (uint64_t n0 = 0; n0 < N; n0 += tile_sz)
+            {
+                uint64_t mend = (m0 + tile_sz < M) ? m0 + tile_sz : M;
+                uint64_t nend = (n0 + tile_sz < N) ? n0 + tile_sz : N;
+                for (uint64_t n = n0; n < nend; n++)
+                {
+                    const float *restrict scol = &s[n * M];
+                    for (uint64_t m = m0; m < mend; m++)
+                    {
+                        d[m * N + n] = scol[m];
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
+    if (src_dt == _DATATYPE_DOUBLE && dst_dt == _DATATYPE_DOUBLE)
+    {
+        const double *restrict s = src->array.D;
+        double *restrict d       = dst->array.D;
+        if (M == 1 || N == 1)
+        {
+            __builtin_memcpy(d, s, sizeof(double) * nel);
+            return 0;
+        }
+#pragma omp parallel for collapse(2) schedule(static) if (nel >= 65536)
+        for (uint64_t m0 = 0; m0 < M; m0 += tile_sz)
+        {
+            for (uint64_t n0 = 0; n0 < N; n0 += tile_sz)
+            {
+                uint64_t mend = (m0 + tile_sz < M) ? m0 + tile_sz : M;
+                uint64_t nend = (n0 + tile_sz < N) ? n0 + tile_sz : N;
+                for (uint64_t n = n0; n < nend; n++)
+                {
+                    const double *restrict scol = &s[n * M];
+                    for (uint64_t m = m0; m < mend; m++)
+                    {
+                        d[m * N + n] = scol[m];
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
+    double *buf = (double *) malloc(sizeof(double) * nel);
+    if (buf == NULL)
+    {
+        parse_errmsg("transpose: memory allocation failed");
+        return -1;
+    }
+    copy_im_to_double_buf(src, buf);
+    for (uint64_t m = 0; m < M; m++)
+    {
+        for (uint64_t n = 0; n < N; n++)
+        {
+            double v = buf[n * M + m];
+            if (dst_dt == _DATATYPE_DOUBLE)
+            {
+                dst->array.D[m * N + n] = v;
+            }
+            else
+            {
+                dst->array.F[m * N + n] = (float) v;
+            }
+        }
+    }
+    free(buf);
+    return 0;
+}
+
+static val_t func_eval_transpose(void)
+{
+    val_t arg;
+    if (parse_func_args(1, &arg, NULL) != 0)
     {
         return mk_double(0);
     }
+    if (reject_complex(&arg, 1))
+    {
+        return mk_string("");
+    }
+    if (arg.type != VAL_STRING || !check_image(arg.sval))
+    {
+        if (arg.type != VAL_STRING)
+        {
+            parse_errmsg("transpose: expected image argument");
+        }
+        return mk_string("");
+    }
+    IMAGE *src = &data.core.image[image_ID(arg.sval, data.core.image, data.core.NB_MAX_IMAGE)];
+    if (src->md[0].naxis != 1 && src->md[0].naxis != 2)
+    {
+        parse_errmsg("transpose: expected 1D or 2D image");
+        return mk_string("");
+    }
+    uint32_t outsz[3] = { (src->md[0].naxis == 2) ? src->md[0].size[1] : 1, src->md[0].size[0], 1 };
+    uint8_t out_dt = (src->md[0].datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
+    const char *tmpn = alloc_tmpname();
+    imageID     tid  = -1;
+    create_image_ID(tmpn, 2, outsz, out_dt, 0, 10, 0, &tid);
+    if (tid == -1)
+    {
+        parse_errmsg("transpose: failed to allocate output image");
+        return mk_string("");
+    }
+    if (cli_calc_transpose_into(src, &data.core.image[tid]) != 0)
+    {
+        return mk_string("");
+    }
+    return mk_string(tmpn);
+}
+
+static int cli_calc_matmul_dims(const IMAGE *im1,
+                                int          transA,
+                                const IMAGE *im2,
+                                int          transB,
+                                int         *out_tA,
+                                int         *out_tB,
+                                uint64_t    *out_M,
+                                uint64_t    *out_K,
+                                uint64_t    *out_N,
+                                long        *out_nax,
+                                uint32_t     out_sz[3])
+{
+    uint64_t a0      = im1->md[0].size[0];
+    uint64_t a1      = 1;
+    int      is_3d_a = 0;
+    if (im1->md[0].naxis == 3)
+    {
+        if (transA)
+        {
+            return -1;
+        }
+        a0      = (uint64_t) im1->md[0].size[0] * im1->md[0].size[1];
+        a1      = im1->md[0].size[2];
+        is_3d_a = 1;
+    }
+    else if (im1->md[0].naxis >= 2)
+    {
+        a1 = im1->md[0].size[1];
+    }
+
+    uint64_t b0 = im2->md[0].size[0];
+    uint64_t b1 = 1;
+    if (im2->md[0].naxis == 3)
+    {
+        if (transB)
+        {
+            return -1;
+        }
+        b0 = (uint64_t) im2->md[0].size[0] * im2->md[0].size[1];
+        b1 = im2->md[0].size[2];
+    }
+    else if (im2->md[0].naxis >= 2 && !(is_3d_a && !transA && !transB &&
+                                        a0 == (uint64_t) im2->md[0].size[0] * im2->md[0].size[1]))
+    {
+        b1 = im2->md[0].size[1];
+    }
+    else if (is_3d_a && !transA && !transB && im2->md[0].naxis == 2 &&
+             a0 == (uint64_t) im2->md[0].size[0] * im2->md[0].size[1])
+    {
+        b0 = a0;
+        b1 = 1;
+    }
+
+    int      tA = 0;
+    int      tB = 0;
+    uint64_t M  = 0;
+    uint64_t K  = 0;
+    uint64_t N  = 0;
+    if (!transA && !transB)
+    {
+        if (a1 == b0)
+        {
+            tA = 0;
+            tB = 0;
+            M  = a0;
+            K  = a1;
+            N  = b1;
+        }
+        else if (a0 == b0)
+        {
+            tA = 1;
+            tB = 0;
+            M  = a1;
+            K  = a0;
+            N  = b1;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+    else
+    {
+        uint64_t eff_a0 = transA ? a1 : a0;
+        uint64_t eff_a1 = transA ? a0 : a1;
+        uint64_t eff_b0 = transB ? b1 : b0;
+        uint64_t eff_b1 = transB ? b0 : b1;
+        if (eff_a1 != eff_b0)
+        {
+            return -1;
+        }
+        tA = transA;
+        tB = transB;
+        M  = eff_a0;
+        K  = eff_a1;
+        N  = eff_b1;
+    }
+
+    out_sz[0] = 1;
+    out_sz[1] = 1;
+    out_sz[2] = 1;
+    if (tA == 0 && tB == 0 && is_3d_a)
+    {
+        out_sz[0] = im1->md[0].size[0];
+        out_sz[1] = im1->md[0].size[1];
+        *out_nax  = (N == 1) ? 2 : 3;
+        out_sz[2] = (uint32_t) N;
+    }
+    else if (N == 1 && ((im2->md[0].naxis == 1 && !transB) || (tA == 1 && tB == 0)))
+    {
+        *out_nax  = 1;
+        out_sz[0] = (uint32_t) M;
+    }
+    else
+    {
+        *out_nax  = 2;
+        out_sz[0] = (uint32_t) M;
+        out_sz[1] = (uint32_t) N;
+    }
+    *out_tA = tA;
+    *out_tB = tB;
+    *out_M  = M;
+    *out_K  = K;
+    *out_N  = N;
+    return 0;
+}
+
+int cli_calc_matmul_check(const IMAGE *im1,
+                          int          transA,
+                          const IMAGE *im2,
+                          int          transB,
+                          const IMAGE *dst)
+{
+    if (im1 == NULL || im2 == NULL || dst == NULL || !im1->used || !im2->used || !dst->used ||
+        dst == im1 || dst == im2)
+    {
+        return -1;
+    }
+    if (cli_calc_is_complex_dt(im1->md[0].datatype) || cli_calc_is_complex_dt(im2->md[0].datatype))
+    {
+        return -1;
+    }
+    if (dst->md[0].datatype != _DATATYPE_FLOAT && dst->md[0].datatype != _DATATYPE_DOUBLE)
+    {
+        return -1;
+    }
+    int      tA       = 0;
+    int      tB       = 0;
+    uint64_t M        = 0;
+    uint64_t K        = 0;
+    uint64_t N        = 0;
+    long     onax     = 0;
+    uint32_t outsz[3] = { 1, 1, 1 };
+    if (cli_calc_matmul_dims(im1, transA, im2, transB, &tA, &tB, &M, &K, &N, &onax, outsz) != 0)
+    {
+        return -1;
+    }
+    if (dst->md[0].nelement != M * N)
+    {
+        return -1;
+    }
+    if (N == 1)
+    {
+        if (dst->md[0].size[0] != outsz[0])
+        {
+            return -1;
+        }
+    }
+    else if (dst->md[0].naxis != onax || dst->md[0].size[0] != outsz[0] ||
+             dst->md[0].size[1] != outsz[1] || (onax == 3 && dst->md[0].size[2] != outsz[2]))
+    {
+        return -1;
+    }
+    return 0;
+}
+
+static void matmul_kernel_f(const float *restrict A,
+                            int tA,
+                            const float *restrict B,
+                            int tB,
+                            float *restrict C,
+                            uint64_t M,
+                            uint64_t K,
+                            uint64_t N)
+{
+#ifdef HAVE_BLAS
+    if (N == 1)
+    {
+        cblas_sgemv(CblasColMajor, tA ? CblasTrans : CblasNoTrans, (int) (tA ? K : M),
+                    (int) (tA ? M : K), 1.0f, A, (int) (tA ? K : M), B, 1, 0.0f, C, 1);
+        return;
+    }
+    cblas_sgemm(CblasColMajor, tA ? CblasTrans : CblasNoTrans, tB ? CblasTrans : CblasNoTrans,
+                (int) M, (int) N, (int) K, 1.0f, A, (int) (tA ? K : M), B, (int) (tB ? N : K), 0.0f,
+                C, (int) M);
+#else
+    if (!tA)
+    {
+        const uint64_t mblk  = 128;
+        uint64_t       nmblk = (M + mblk - 1) / mblk;
+#    pragma omp parallel for collapse(2) schedule(static) if (M * N * K >= 262144)
+        for (uint64_t n = 0; n < N; n++)
+        {
+            for (uint64_t mb = 0; mb < nmblk; mb++)
+            {
+                uint64_t m0          = mb * mblk;
+                uint64_t mend        = (m0 + mblk < M) ? m0 + mblk : M;
+                uint64_t mlen        = mend - m0;
+                float *restrict cblk = &C[n * M + m0];
+                memset(cblk, 0, sizeof(float) * mlen);
+                for (uint64_t k = 0; k < K; k++)
+                {
+                    float b_kn                 = tB ? B[k * N + n] : B[n * K + k];
+                    const float *restrict colA = &A[k * M + m0];
+#    pragma omp simd
+                    for (uint64_t m = 0; m < mlen; m++)
+                    {
+                        cblk[m] += colA[m] * b_kn;
+                    }
+                }
+            }
+        }
+    }
+    else if (!tB)
+    {
+#    pragma omp      parallel for collapse(2) schedule(static) if (M * N * K >= 262144)
+        for (uint64_t n = 0; n < N; n++)
+        {
+            for (uint64_t m = 0; m < M; m++)
+            {
+                const float *restrict rowA = &A[m * K];
+                const float *restrict colB = &B[n * K];
+                float acc                  = 0.0f;
+#    pragma omp simd reduction(+ : acc)
+                for (uint64_t k = 0; k < K; k++)
+                {
+                    acc += rowA[k] * colB[k];
+                }
+                C[n * M + m] = acc;
+            }
+        }
+    }
+    else
+    {
+#    pragma omp      parallel for collapse(2) schedule(static) if (M * N * K >= 262144)
+        for (uint64_t n = 0; n < N; n++)
+        {
+            for (uint64_t m = 0; m < M; m++)
+            {
+                const float *restrict rowA = &A[m * K];
+                float acc                  = 0.0f;
+                for (uint64_t k = 0; k < K; k++)
+                {
+                    acc += rowA[k] * B[k * N + n];
+                }
+                C[n * M + m] = acc;
+            }
+        }
+    }
+#endif
+}
+
+static void matmul_kernel_d(const double *restrict A,
+                            int tA,
+                            const double *restrict B,
+                            int tB,
+                            double *restrict C,
+                            uint64_t M,
+                            uint64_t K,
+                            uint64_t N)
+{
+#ifdef HAVE_BLAS
+    if (N == 1)
+    {
+        cblas_dgemv(CblasColMajor, tA ? CblasTrans : CblasNoTrans, (int) (tA ? K : M),
+                    (int) (tA ? M : K), 1.0, A, (int) (tA ? K : M), B, 1, 0.0, C, 1);
+        return;
+    }
+    cblas_dgemm(CblasColMajor, tA ? CblasTrans : CblasNoTrans, tB ? CblasTrans : CblasNoTrans,
+                (int) M, (int) N, (int) K, 1.0, A, (int) (tA ? K : M), B, (int) (tB ? N : K), 0.0,
+                C, (int) M);
+#else
+    if (!tA)
+    {
+        const uint64_t mblk  = 64;
+        uint64_t       nmblk = (M + mblk - 1) / mblk;
+#    pragma omp parallel for collapse(2) schedule(static) if (M * N * K >= 262144)
+        for (uint64_t n = 0; n < N; n++)
+        {
+            for (uint64_t mb = 0; mb < nmblk; mb++)
+            {
+                uint64_t m0           = mb * mblk;
+                uint64_t mend         = (m0 + mblk < M) ? m0 + mblk : M;
+                uint64_t mlen         = mend - m0;
+                double *restrict cblk = &C[n * M + m0];
+                memset(cblk, 0, sizeof(double) * mlen);
+                for (uint64_t k = 0; k < K; k++)
+                {
+                    double b_kn                 = tB ? B[k * N + n] : B[n * K + k];
+                    const double *restrict colA = &A[k * M + m0];
+#    pragma omp simd
+                    for (uint64_t m = 0; m < mlen; m++)
+                    {
+                        cblk[m] += colA[m] * b_kn;
+                    }
+                }
+            }
+        }
+    }
+    else if (!tB)
+    {
+#    pragma omp      parallel for collapse(2) schedule(static) if (M * N * K >= 262144)
+        for (uint64_t n = 0; n < N; n++)
+        {
+            for (uint64_t m = 0; m < M; m++)
+            {
+                const double *restrict rowA = &A[m * K];
+                const double *restrict colB = &B[n * K];
+                double acc                  = 0.0;
+#    pragma omp simd reduction(+ : acc)
+                for (uint64_t k = 0; k < K; k++)
+                {
+                    acc += rowA[k] * colB[k];
+                }
+                C[n * M + m] = acc;
+            }
+        }
+    }
+    else
+    {
+#    pragma omp      parallel for collapse(2) schedule(static) if (M * N * K >= 262144)
+        for (uint64_t n = 0; n < N; n++)
+        {
+            for (uint64_t m = 0; m < M; m++)
+            {
+                const double *restrict rowA = &A[m * K];
+                double acc                  = 0.0;
+                for (uint64_t k = 0; k < K; k++)
+                {
+                    acc += rowA[k] * B[k * N + n];
+                }
+                C[n * M + m] = acc;
+            }
+        }
+    }
+#endif
+}
+
+int cli_calc_matmul_into(const IMAGE *im1, int transA, const IMAGE *im2, int transB, IMAGE *outim)
+{
+    int      tA       = 0;
+    int      tB       = 0;
+    uint64_t M        = 0;
+    uint64_t K        = 0;
+    uint64_t N        = 0;
+    long     onax     = 0;
+    uint32_t outsz[3] = { 1, 1, 1 };
+    if (cli_calc_matmul_dims(im1, transA, im2, transB, &tA, &tB, &M, &K, &N, &onax, outsz) != 0)
+    {
+        parse_errmsg("matmul: incompatible image dimensions");
+        return -1;
+    }
+
+    uint8_t dt1    = im1->md[0].datatype;
+    uint8_t dt2    = im2->md[0].datatype;
+    uint8_t out_dt = outim->md[0].datatype;
+
+    if (dt1 == _DATATYPE_FLOAT && dt2 == _DATATYPE_FLOAT && out_dt == _DATATYPE_FLOAT)
+    {
+        matmul_kernel_f(im1->array.F, tA, im2->array.F, tB, outim->array.F, M, K, N);
+        return 0;
+    }
+    if (dt1 == _DATATYPE_DOUBLE && dt2 == _DATATYPE_DOUBLE && out_dt == _DATATYPE_DOUBLE)
+    {
+        matmul_kernel_d(im1->array.D, tA, im2->array.D, tB, outim->array.D, M, K, N);
+        return 0;
+    }
+
+    double *bufA = (double *) malloc(sizeof(double) * im1->md[0].nelement);
+    double *bufB = (double *) malloc(sizeof(double) * im2->md[0].nelement);
+    if (bufA == NULL || bufB == NULL)
+    {
+        free(bufA);
+        free(bufB);
+        parse_errmsg("matmul: memory allocation failed");
+        return -1;
+    }
+    copy_im_to_double_buf(im1, bufA);
+    copy_im_to_double_buf(im2, bufB);
+
+    if (out_dt == _DATATYPE_DOUBLE)
+    {
+        matmul_kernel_d(bufA, tA, bufB, tB, outim->array.D, M, K, N);
+    }
+    else
+    {
+        double *bufC = (double *) malloc(sizeof(double) * M * N);
+        if (bufC == NULL)
+        {
+            free(bufA);
+            free(bufB);
+            parse_errmsg("matmul: memory allocation failed");
+            return -1;
+        }
+        matmul_kernel_d(bufA, tA, bufB, tB, bufC, M, K, N);
+        for (uint64_t i = 0; i < M * N; i++)
+        {
+            outim->array.F[i] = (float) bufC[i];
+        }
+        free(bufC);
+    }
+
+    free(bufA);
+    free(bufB);
+    return 0;
+}
+
+static int is_top_level_transpose(cli_token_type end_tok)
+{
+    cli_token *(*cur_func)(void)     = cli_calc_cur_func();
+    cli_token *(*advance_func)(void) = cli_calc_advance_func();
+    if (cur_func()->type != TOK_FUNC_IMIM_IM || strcmp(cur_func()->sval, "transpose(") != 0)
+    {
+        return 0;
+    }
+    int saved = cli_calc_tok_pos();
+    advance_func();
+    int depth = 1;
+    while (depth > 0 && cur_func()->type != TOK_EOF && cur_func()->type != TOK_NEWLINE)
+    {
+        cli_token_type t = cur_func()->type;
+        if (t == TOK_LPAREN ||
+            (t >= TOK_FUNC_D_D && t <= TOK_FUNC_COORD && strchr(cur_func()->sval, '(') != NULL))
+        {
+            depth++;
+        }
+        else if (t == TOK_RPAREN)
+        {
+            depth--;
+        }
+        advance_func();
+    }
+    int is_top = (depth == 0 && cur_func()->type == end_tok);
+    cli_calc_tok_seek(saved);
+    return is_top;
+}
+
+static int parse_matmul_arg(val_t *out, int *out_trans, cli_token_type end_tok)
+{
+    cli_token *(*cur_func)(void)     = cli_calc_cur_func();
+    cli_token *(*advance_func)(void) = cli_calc_advance_func();
+    int trans                        = 0;
+
+    if (is_top_level_transpose(end_tok))
+    {
+        advance_func();
+        trans = 1;
+    }
+    *out = parse_expr(0);
+    if (parse_error || eval_error)
+    {
+        return -1;
+    }
+    if (trans)
+    {
+        if (cur_func()->type != TOK_RPAREN)
+        {
+            parse_errmsg("Expected ')'");
+            return -1;
+        }
+        advance_func();
+    }
+    *out_trans = trans;
+    return 0;
+}
+
+static val_t func_eval_matmul(void)
+{
+    cli_token *(*cur_func)(void)     = cli_calc_cur_func();
+    cli_token *(*advance_func)(void) = cli_calc_advance_func();
+    val_t args[2];
+    int   transA = 0;
+    int   transB = 0;
+
+    if (parse_matmul_arg(&args[0], &transA, TOK_COMMA) != 0)
+    {
+        return mk_double(0);
+    }
+    if (cur_func()->type != TOK_COMMA)
+    {
+        parse_errmsg("Expected ','");
+        return mk_double(0);
+    }
+    advance_func();
+    if (parse_matmul_arg(&args[1], &transB, TOK_RPAREN) != 0)
+    {
+        return mk_double(0);
+    }
+    if (cur_func()->type != TOK_RPAREN)
+    {
+        parse_errmsg("Expected ')'");
+        return mk_double(0);
+    }
+    advance_func();
+
     if (reject_complex(args, 2))
     {
         return mk_string("");
@@ -487,87 +1143,20 @@ static val_t func_eval_matmul(void)
         return mk_string("");
     }
 
-    imageID id1 = image_ID(args[0].sval, data.core.image, data.core.NB_MAX_IMAGE);
-    imageID id2 = image_ID(args[1].sval, data.core.image, data.core.NB_MAX_IMAGE);
-    IMAGE  *im1 = &data.core.image[id1];
-    IMAGE  *im2 = &data.core.image[id2];
+    IMAGE *im1 = &data.core.image[image_ID(args[0].sval, data.core.image, data.core.NB_MAX_IMAGE)];
+    IMAGE *im2 = &data.core.image[image_ID(args[1].sval, data.core.image, data.core.NB_MAX_IMAGE)];
 
-    uint64_t a0      = im1->md[0].size[0];
-    uint64_t a1      = 1;
-    int      is_3d_a = 0;
-    if (im1->md[0].naxis == 3)
-    {
-        a0      = (uint64_t) im1->md[0].size[0] * im1->md[0].size[1];
-        a1      = im1->md[0].size[2];
-        is_3d_a = 1;
-    }
-    else if (im1->md[0].naxis >= 2)
-    {
-        a1 = im1->md[0].size[1];
-    }
-
-    uint64_t b0 = im2->md[0].size[0];
-    uint64_t b1 = 1;
-    if (im2->md[0].naxis == 3)
-    {
-        b0 = (uint64_t) im2->md[0].size[0] * im2->md[0].size[1];
-        b1 = im2->md[0].size[2];
-    }
-    else if (im2->md[0].naxis >= 2 &&
-             !(is_3d_a && a0 == (uint64_t) im2->md[0].size[0] * im2->md[0].size[1]))
-    {
-        b1 = im2->md[0].size[1];
-    }
-    else if (is_3d_a && im2->md[0].naxis == 2 &&
-             a0 == (uint64_t) im2->md[0].size[0] * im2->md[0].size[1])
-    {
-        b0 = a0;
-        b1 = 1;
-    }
-
-    int      mode = 0;
-    uint64_t M    = 0;
-    uint64_t N    = 0;
-    uint64_t K    = 0;
-    if (a1 == b0)
-    {
-        mode = 1;
-        M    = a0;
-        K    = a1;
-        N    = b1;
-    }
-    else if (a0 == b0)
-    {
-        mode = 2;
-        M    = a1;
-        K    = a0;
-        N    = b1;
-    }
-    else
+    int      tA       = 0;
+    int      tB       = 0;
+    uint64_t M        = 0;
+    uint64_t K        = 0;
+    uint64_t N        = 0;
+    long     onax     = 0;
+    uint32_t outsz[3] = { 1, 1, 1 };
+    if (cli_calc_matmul_dims(im1, transA, im2, transB, &tA, &tB, &M, &K, &N, &onax, outsz) != 0)
     {
         parse_errmsg("matmul: incompatible image dimensions");
         return mk_string("");
-    }
-
-    uint32_t outsz[3] = { 1, 1, 1 };
-    long     onax     = 2;
-    if (mode == 1 && is_3d_a)
-    {
-        outsz[0] = im1->md[0].size[0];
-        outsz[1] = im1->md[0].size[1];
-        onax     = (N == 1) ? 2 : 3;
-        outsz[2] = (uint32_t) N;
-    }
-    else if (N == 1 && (im2->md[0].naxis == 1 || mode == 2))
-    {
-        onax     = 1;
-        outsz[0] = (uint32_t) M;
-    }
-    else
-    {
-        onax     = 2;
-        outsz[0] = (uint32_t) M;
-        outsz[1] = (uint32_t) N;
     }
 
     uint8_t out_dt =
@@ -583,54 +1172,10 @@ static val_t func_eval_matmul(void)
         parse_errmsg("matmul: failed to allocate output image");
         return mk_string("");
     }
-    IMAGE *outim = &data.core.image[tid];
-
-    double *bufA = (double *) malloc(sizeof(double) * im1->md[0].nelement);
-    double *bufB = (double *) malloc(sizeof(double) * im2->md[0].nelement);
-    if (bufA == NULL || bufB == NULL)
+    if (cli_calc_matmul_into(im1, transA, im2, transB, &data.core.image[tid]) != 0)
     {
-        free(bufA);
-        free(bufB);
-        parse_errmsg("matmul: memory allocation failed");
         return mk_string("");
     }
-    copy_im_to_double_buf(im1, bufA);
-    copy_im_to_double_buf(im2, bufB);
-
-    for (uint64_t n = 0; n < N; n++)
-    {
-        for (uint64_t m = 0; m < M; m++)
-        {
-            double acc = 0.0;
-            if (mode == 1)
-            {
-                for (uint64_t k = 0; k < K; k++)
-                {
-                    acc += bufA[k * M + m] * bufB[n * K + k];
-                }
-            }
-            else
-            {
-                const double *rowA = &bufA[m * K];
-                const double *colB = &bufB[n * K];
-                for (uint64_t k = 0; k < K; k++)
-                {
-                    acc += rowA[k] * colB[k];
-                }
-            }
-            if (out_dt == _DATATYPE_DOUBLE)
-            {
-                outim->array.D[n * M + m] = acc;
-            }
-            else
-            {
-                outim->array.F[n * M + m] = (float) acc;
-            }
-        }
-    } // for (uint64_t n = 0; n < N; n++)
-
-    free(bufA);
-    free(bufB);
     return mk_string(tmpn);
 }
 
@@ -1135,7 +1680,8 @@ val_t parse_funccall(cli_token *ftok)
     case TOK_FUNC_COORD:
         return func_coord(ftok);
     case TOK_FUNC_IMIM_IM:
-        return func_eval_matmul();
+        return (strncmp(ftok->sval, "transpose(", 10) == 0) ? func_eval_transpose()
+                                                            : func_eval_matmul();
     case TOK_FUNC_IM_D:
     case TOK_FUNC_IM_L:
     case TOK_FUNC_IMD_D:

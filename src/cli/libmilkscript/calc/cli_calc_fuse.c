@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -46,8 +47,19 @@ typedef enum
     FI_FN3, /* fn(top, c, c2) */
     FI_SEL, /* cond ? t : f; cpos bit 0: t on the stack (else c), bit 1: f on the stack (else c2) */
     FI_COORD, /* push coordinate cpos (CALC_COORD_*) of image img's pixels about (c, c2) */
-    FI_SVAR   /* push the value calculator variable img has when the program runs (kept programs) */
+    FI_SVAR,  /* scalar tape: read calculator variable vid */
+    FI_CONST  /* push scalar constant c onto the vector stack */
 } fi_kind;
+
+typedef struct
+{
+    fi_kind        k;
+    cli_token_type op;
+    int            vid;
+    int            s[3]; /* > 0: 1-based index in sval[]; 0: use c[] */
+    double         c[3];
+    double (*fn)();
+} fsins;
 
 typedef struct
 {
@@ -55,6 +67,8 @@ typedef struct
     cli_token_type op;
     int            img;
     int            cpos;
+    int            s1; /* > 0: 1-based index in sval[] for c */
+    int            s2; /* > 0: 1-based index in sval[] for c2 */
     double         c;
     double         c2;
     double (*fn)();
@@ -64,6 +78,8 @@ typedef struct
 {
     fins         ins[FUSE_MAXINS];
     int          n;
+    fsins        sins[FUSE_MAXINS];
+    int          ns;
     const IMAGE *img[FUSE_MAXIMG];
     int          nimg;
     int          depth;
@@ -74,10 +90,11 @@ typedef struct
 
 static int keep_vars; /* compiling a kept program: variables are read at each run, not folded */
 
-/** Compile-time value: a folded constant, or code that leaves a vector on the stack. */
+/** Compile-time value: a scalar (constant c when s1 == 0, else sins[s1 - 1]), or a vector on stk[]. */
 typedef struct
 {
     int    vec;
+    int    s1;
     double c;
 } fval;
 
@@ -98,6 +115,17 @@ static int emit(fprog *p, fins in, int ddepth)
         p->nops++;
     }
     return (p->maxdepth > FUSE_MAXSTK) ? -1 : 0;
+}
+
+static int emit_scalar(fprog *p, fsins in, fval *out)
+{
+    if (p->ns >= FUSE_MAXINS)
+    {
+        return -1;
+    }
+    p->sins[p->ns++] = in;
+    *out             = (fval) { .vec = 0, .s1 = p->ns, .c = 0.0 };
+    return 0;
 }
 
 static int is_real_datatype(uint8_t dt)
@@ -213,17 +241,37 @@ static int c_args(fprog *p, int n, fval *a)
 
 static int c_func(fprog *p, const cli_token *ft, fval *out)
 {
-    fval a[3];
+    fval a[3]  = { { 0, 0, 0.0 }, { 0, 0, 0.0 }, { 0, 0, 0.0 } };
     int  nargs = (ft->type == TOK_FUNC_D_D) ? 1 : (ft->type == TOK_FUNC_DD_D) ? 2 : 3;
     if (c_args(p, nargs, a) != 0)
     {
         return -1;
     }
     out->vec = a[0].vec || (nargs > 1 && a[1].vec) || (nargs > 2 && a[2].vec);
+    if (!out->vec)
+    {
+        if (a[0].s1 == 0 && (nargs < 2 || a[1].s1 == 0) && (nargs < 3 || a[2].s1 == 0))
+        {
+            out->s1 = 0;
+            out->c =
+                (nargs == 1) ? ((double (*)(double)) ft->fnctptr)(a[0].c)
+                : (nargs == 2)
+                    ? ((double (*)(double, double)) ft->fnctptr)(a[0].c, a[1].c)
+                    : ((double (*)(double, double, double)) ft->fnctptr)(a[0].c, a[1].c, a[2].c);
+            return 0;
+        }
+        return emit_scalar(p,
+                           (fsins) { .k  = (nargs == 1)   ? FI_FN1
+                                           : (nargs == 2) ? FI_FN2
+                                                          : FI_FN3,
+                                     .fn = ft->fnctptr,
+                                     .s  = { a[0].s1, a[1].s1, a[2].s1 },
+                                     .c  = { a[0].c, a[1].c, a[2].c } },
+                           out);
+    }
     if (ft->type == TOK_FUNC_D_D)
     {
-        out->c = out->vec ? 0 : ((double (*)(double)) ft->fnctptr)(a[0].c);
-        return out->vec ? emit(p, (fins) { .k = FI_FN1, .fn = ft->fnctptr }, 0) : 0;
+        return emit(p, (fins) { .k = FI_FN1, .fn = ft->fnctptr }, 0);
     }
     if (ft->type == TOK_FUNC_DDD_D) /* trunc(im, lo, hi): only the first argument may be an image */
     {
@@ -231,18 +279,14 @@ static int c_func(fprog *p, const cli_token *ft, fval *out)
         {
             return -1;
         }
-        out->c = out->vec
-                     ? 0
-                     : ((double (*)(double, double, double)) ft->fnctptr)(a[0].c, a[1].c, a[2].c);
-        return out->vec
-                   ? emit(p, (fins) { .k = FI_FN3, .fn = ft->fnctptr, .c = a[1].c, .c2 = a[2].c },
-                          0)
-                   : 0;
-    }
-    if (!out->vec)
-    {
-        out->c = ((double (*)(double, double)) ft->fnctptr)(a[0].c, a[1].c);
-        return 0;
+        return emit(p,
+                    (fins) { .k  = FI_FN3,
+                             .fn = ft->fnctptr,
+                             .s1 = a[1].s1,
+                             .c  = a[1].c,
+                             .s2 = a[2].s1,
+                             .c2 = a[2].c },
+                    0);
     }
     /* image forms the normal path supports: (im, x) any; (x, im) and (im, im) min/max/fmod(/pow) */
     double (*fn)() = ft->fnctptr;
@@ -258,6 +302,7 @@ static int c_func(fprog *p, const cli_token *ft, fval *out)
                 .cpos = both       ? 0
                         : a[0].vec ? 2
                                    : 1,
+                .s1   = a[0].vec ? a[1].s1 : a[0].s1,
                 .c    = a[0].vec ? a[1].c : a[0].c };
     return emit(p, in, both ? -1 : 0);
 }
@@ -266,7 +311,14 @@ static int c_func(fprog *p, const cli_token *ft, fval *out)
 static int c_select(fprog *p, fval t, fval f, fval *out)
 {
     out->vec = 1;
-    return emit(p, (fins) { .k = FI_SEL, .cpos = t.vec | (f.vec << 1), .c = t.c, .c2 = f.c },
+    out->s1  = 0;
+    return emit(p,
+                (fins) { .k    = FI_SEL,
+                         .cpos = t.vec | (f.vec << 1),
+                         .s1   = t.s1,
+                         .c    = t.c,
+                         .s2   = f.s1,
+                         .c2   = f.c },
                 -(t.vec + f.vec));
 }
 
@@ -289,8 +341,8 @@ static int c_coord(fprog *p, const cli_token *ft, fval *out)
         return -1;
     }
     const IMAGE *im = p->img[k];
-    c[0].c          = (double) (im->md[0].size[0] / 2);
-    c[1].c          = (double) ((im->md[0].naxis > 1) ? im->md[0].size[1] / 2 : 0);
+    c[0]            = (fval) { 0, 0, (double) (im->md[0].size[0] / 2) };
+    c[1]            = (fval) { 0, 0, (double) ((im->md[0].naxis > 1) ? im->md[0].size[1] / 2 : 0) };
     if (cur()->type == TOK_COMMA)
     {
         adv();
@@ -308,11 +360,16 @@ static int c_coord(fprog *p, const cli_token *ft, fval *out)
         return -1;
     }
     out->vec = 1;
-    return emit(
-        p,
-        (fins) {
-            .k = FI_COORD, .img = k, .cpos = cli_calc_coord_kind(ft), .c = c[0].c, .c2 = c[1].c },
-        1);
+    out->s1  = 0;
+    return emit(p,
+                (fins) { .k    = FI_COORD,
+                         .img  = k,
+                         .cpos = cli_calc_coord_kind(ft),
+                         .s1   = c[0].s1,
+                         .c    = c[0].c,
+                         .s2   = c[1].s1,
+                         .c2   = c[1].c },
+                1);
 }
 
 static int c_primary(fprog *p, fval *out)
@@ -324,10 +381,10 @@ static int c_primary(fprog *p, fval *out)
     switch (t->type)
     {
     case TOK_LONG:
-        *out = (fval) { 0, (double) t->val_l };
+        *out = (fval) { 0, 0, (double) t->val_l };
         return 0;
     case TOK_DOUBLE:
-        *out = (fval) { 0, t->val_d };
+        *out = (fval) { 0, 0, t->val_d };
         return 0;
     case TOK_OP_MINUS:
     case TOK_OP_NOT:
@@ -337,8 +394,15 @@ static int c_primary(fprog *p, fval *out)
         }
         if (!out->vec)
         {
-            out->c = (t->type == TOK_OP_MINUS) ? -out->c : (out->c == 0.0);
-            return 0;
+            if (out->s1 == 0)
+            {
+                out->c = (t->type == TOK_OP_MINUS) ? -out->c : (out->c == 0.0);
+                return 0;
+            }
+            return emit_scalar(p,
+                               (fsins) { .k = (t->type == TOK_OP_MINUS) ? FI_NEG : FI_NOT,
+                                         .s = { out->s1, 0, 0 } },
+                               out);
         }
         return emit(p, (fins) { .k = (t->type == TOK_OP_MINUS) ? FI_NEG : FI_NOT }, 0);
     case TOK_LPAREN:
@@ -357,15 +421,14 @@ static int c_primary(fprog *p, fval *out)
         long vid = keep_vars ? variable_ID(t->sval) : -1;
         if (vid >= 0 && data.core.variable[vid].type != 2)
         {
-            out->vec = 1;
-            return emit(p, (fins) { .k = FI_SVAR, .img = (int) vid }, 1);
+            return emit_scalar(p, (fsins) { .k = FI_SVAR, .vid = (int) vid }, out);
         }
         val_t v = eval_existing_var_ref(t->sval);
         if (v.type != VAL_LONG && v.type != VAL_DOUBLE)
         {
             return -1;
         }
-        *out = (fval) { 0, to_double(v) };
+        *out = (fval) { 0, 0, to_double(v) };
         return 0;
     }
     case TOK_IMAGE:
@@ -378,6 +441,7 @@ static int c_primary(fprog *p, fval *out)
         imageID id = image_ID(t->sval, data.core.image, data.core.NB_MAX_IMAGE);
         int     k  = (id == -1) ? -1 : add_image(p, &data.core.image[id]);
         out->vec   = 1;
+        out->s1    = 0;
         return (k < 0) ? -1 : emit(p, (fins) { .k = FI_IMG, .img = k }, 1);
     }
     case TOK_FUNC_D_D:
@@ -445,14 +509,26 @@ static int c_expr(fprog *p, int min_prec, fval *out)
         }
         if (!out->vec && !r.vec)
         {
-            if ((op == TOK_OP_SLASH || op == TOK_OP_MOD) && r.c == 0.0)
+            if ((op == TOK_OP_SLASH || op == TOK_OP_MOD) && r.s1 == 0 && r.c == 0.0)
             {
                 return -1; /* the normal path reports the division by zero */
             }
-            out->c = scalar_bin(op, out->c, r.c);
+            if (out->s1 == 0 && r.s1 == 0)
+            {
+                out->c = scalar_bin(op, out->c, r.c);
+            }
+            else if (emit_scalar(p,
+                                 (fsins) { .k  = FI_BIN,
+                                           .op = op,
+                                           .s  = { out->s1, r.s1, 0 },
+                                           .c  = { out->c, r.c, 0.0 } },
+                                 out) != 0)
+            {
+                return -1;
+            }
             continue;
         }
-        if (!r.vec && (op == TOK_OP_SLASH || op == TOK_OP_MOD) && r.c == 0.0)
+        if (!r.vec && r.s1 == 0 && (op == TOK_OP_SLASH || op == TOK_OP_MOD) && r.c == 0.0)
         {
             return -1;
         }
@@ -467,12 +543,14 @@ static int c_expr(fprog *p, int min_prec, fval *out)
                           .cpos = both       ? 0
                                   : out->vec ? 2
                                              : 1,
+                          .s1   = out->vec ? r.s1 : out->s1,
                           .c    = out->vec ? r.c : out->c },
                  both ? -1 : 0) != 0)
         {
             return -1;
         }
         out->vec = 1;
+        out->s1  = 0;
     }
 }
 
@@ -652,6 +730,61 @@ static void run_sel(const fins *in,
 }
 #undef SEL_LOOP
 
+/** eval_scalars() - evaluate per-frame scalar variable sub-expressions into instruction constants. */
+static void eval_scalars(fprog *p)
+{
+    if (p->ns == 0)
+    {
+        return;
+    }
+    double sval[FUSE_MAXINS];
+    for (int i = 0; i < p->ns; i++)
+    {
+        const fsins *s = &p->sins[i];
+        double       a = (s->s[0] > 0) ? sval[s->s[0] - 1] : s->c[0];
+        double       b = (s->s[1] > 0) ? sval[s->s[1] - 1] : s->c[1];
+        double       d = (s->s[2] > 0) ? sval[s->s[2] - 1] : s->c[2];
+        switch (s->k)
+        {
+        case FI_SVAR:
+        {
+            const VARIABLE *v = &data.core.variable[s->vid];
+            sval[i]           = (v->type == 1) ? (double) v->value.l : v->value.f;
+            break;
+        }
+        case FI_NEG:
+            sval[i] = -a;
+            break;
+        case FI_NOT:
+            sval[i] = (double) (a == 0.0);
+            break;
+        case FI_BIN:
+            sval[i] = scalar_bin(s->op, a, b);
+            break;
+        case FI_FN1:
+            sval[i] = ((double (*)(double)) s->fn)(a);
+            break;
+        case FI_FN2:
+            sval[i] = ((double (*)(double, double)) s->fn)(a, b);
+            break;
+        default:
+            sval[i] = ((double (*)(double, double, double)) s->fn)(a, b, d);
+            break;
+        }
+    }
+    for (int i = 0; i < p->n; i++)
+    {
+        if (p->ins[i].s1 > 0)
+        {
+            p->ins[i].c = sval[p->ins[i].s1 - 1];
+        }
+        if (p->ins[i].s2 > 0)
+        {
+            p->ins[i].c2 = sval[p->ins[i].s2 - 1];
+        }
+    }
+}
+
 /** run_block() - evaluate @p on pixels [@off, @off + @len) and store into @out. */
 static void run_block(const fprog *p, IMAGE *out, uint64_t off, int len, double (*stk)[FUSE_BLK])
 {
@@ -725,18 +858,17 @@ static void run_block(const fprog *p, IMAGE *out, uint64_t off, int len, double 
             sp -= nv;
             break;
         }
-        case FI_SVAR:
+        case FI_CONST:
         {
-            const VARIABLE *v = &data.core.variable[in->img];
-            double          x = (v->type == 1) ? (double) v->value.l : v->value.f;
-            double         *d = stk[sp++];
+            double  x = in->c;
+            double *d = stk[sp++];
             for (int j = 0; j < len; j++)
             {
                 d[j] = x;
             }
             break;
         }
-        case FI_COORD:
+        default:
         {
             const IMAGE *im = p->img[in->img];
             coord_block(in->cpos, im->md[0].size[0], (im->md[0].naxis > 1) ? im->md[0].size[1] : 1,
@@ -748,23 +880,20 @@ static void run_block(const fprog *p, IMAGE *out, uint64_t off, int len, double 
     store_block(out, off, len, stk[0], 0, 0.0);
 }
 
-static void run_program(const fprog *p, IMAGE *out)
+static void run_program(fprog *p, IMAGE *out)
 {
+    eval_scalars(p);
     uint64_t nel  = out->md[0].nelement;
     uint64_t nblk = (nel + FUSE_BLK - 1) / FUSE_BLK;
 #pragma omp parallel if (nel >= FUSE_OMP_MIN)
     {
-        double (*stk)[FUSE_BLK] = malloc(sizeof(double) * FUSE_MAXSTK * FUSE_BLK);
-        if (stk != NULL)
-        {
+        MILK_ALIGNED(64) double stk[FUSE_MAXSTK][FUSE_BLK];
 #pragma omp for schedule(static)
-            for (uint64_t b = 0; b < nblk; b++)
-            {
-                uint64_t off = b * FUSE_BLK;
-                int      len = (int) ((nel - off < FUSE_BLK) ? nel - off : FUSE_BLK);
-                run_block(p, out, off, len, stk);
-            }
-            free(stk);
+        for (uint64_t b = 0; b < nblk; b++)
+        {
+            uint64_t off = b * FUSE_BLK;
+            int      len = (int) ((nel - off < FUSE_BLK) ? nel - off : FUSE_BLK);
+            run_block(p, out, off, len, stk);
         }
     }
 }
@@ -892,11 +1021,124 @@ int cli_calc_coord_kind(const cli_token *t)
                                                : CALC_COORD_THETA;
 }
 
+enum
+{
+    FKEPT_ELEMWISE  = 0,
+    FKEPT_MATMUL    = 1,
+    FKEPT_TRANSPOSE = 2
+};
+
 typedef struct
 {
-    fprog  p;
-    IMAGE *dst;
+    fprog           p;
+    IMAGE          *dst;
+    uint64_t        last_cnt0[FUSE_MAXIMG];
+    struct timespec last_check;
+    int             kind;
+    int             transA;
+    int             transB;
 } fkept;
+
+static int parse_kept_img_or_trans(IMAGE **out_im, int *out_trans)
+{
+    int trans = 0;
+    if (cur_eval()->type == TOK_FUNC_IMIM_IM && strcmp(cur_eval()->sval, "transpose(") == 0)
+    {
+        advance_eval();
+        trans = 1;
+    }
+    if (cur_eval()->type != TOK_IMAGE || strchr(cur_eval()->sval, '[') != NULL)
+    {
+        return -1;
+    }
+    imageID id = image_ID(cur_eval()->sval, data.core.image, data.core.NB_MAX_IMAGE);
+    if (id == -1)
+    {
+        return -1;
+    }
+    advance_eval();
+    if (trans)
+    {
+        if (cur_eval()->type != TOK_RPAREN)
+        {
+            return -1;
+        }
+        advance_eval();
+    }
+    *out_im    = &data.core.image[id];
+    *out_trans = trans;
+    return 0;
+}
+
+static int compile_kept_matrix_op(fkept *k, IMAGE *dst)
+{
+    int pos = cli_calc_tok_pos();
+    if (cur_eval()->type != TOK_FUNC_IMIM_IM)
+    {
+        return -1;
+    }
+    if (strcmp(cur_eval()->sval, "transpose(") == 0)
+    {
+        advance_eval();
+        if (cur_eval()->type != TOK_IMAGE || strchr(cur_eval()->sval, '[') != NULL)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        imageID id = image_ID(cur_eval()->sval, data.core.image, data.core.NB_MAX_IMAGE);
+        advance_eval();
+        if (id == -1 || cur_eval()->type != TOK_RPAREN)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if ((cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE) ||
+            cli_calc_transpose_check(&data.core.image[id], dst) != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        k->kind     = FKEPT_TRANSPOSE;
+        k->p.img[0] = &data.core.image[id];
+        k->p.nimg   = 1;
+        return 0;
+    }
+    if (strcmp(cur_eval()->sval, "matmul(") == 0)
+    {
+        advance_eval();
+        IMAGE *imA    = NULL;
+        IMAGE *imB    = NULL;
+        int    transA = 0;
+        int    transB = 0;
+        if (parse_kept_img_or_trans(&imA, &transA) != 0 || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (parse_kept_img_or_trans(&imB, &transB) != 0 || cur_eval()->type != TOK_RPAREN)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if ((cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE) ||
+            cli_calc_matmul_check(imA, transA, imB, transB, dst) != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        k->kind     = FKEPT_MATMUL;
+        k->transA   = transA;
+        k->transB   = transB;
+        k->p.img[0] = imA;
+        k->p.img[1] = imB;
+        k->p.nimg   = 2;
+        return 0;
+    }
+    return -1;
+}
 
 void *cli_calc_fuse_keep(IMAGE *dst, cli_token_type aop)
 {
@@ -909,9 +1151,30 @@ void *cli_calc_fuse_keep(IMAGE *dst, cli_token_type aop)
         free(k);
         return NULL;
     }
+    if (aop == TOK_EQUAL && compile_kept_matrix_op(k, dst) == 0)
+    {
+        k->dst = dst;
+        for (int i = 0; i < k->p.nimg; i++)
+        {
+            k->last_cnt0[i] = k->p.img[i]->md[0].cnt0;
+        }
+        clock_gettime(CLOCK_MONOTONIC_COARSE, &k->last_check);
+        return k;
+    }
     keep_vars = 1;
     int rc    = compile(&k->p, 0, &v);
     keep_vars = 0;
+    if (rc == 0 && !v.vec && aop != TOK_OP_SLASH_EQ)
+    {
+        if (add_image(&k->p, dst) < 0 ||
+            emit(&k->p, (fins) { .k = FI_CONST, .s1 = v.s1, .c = v.c }, 1) != 0)
+        {
+            cli_calc_tok_seek(pos);
+            free(k);
+            return NULL;
+        }
+        v.vec = 1;
+    }
     if (rc != 0 || !v.vec || k->p.nimg == 0 || !same_shape(dst, k->p.img[0]) ||
         aop == TOK_OP_SLASH_EQ)
     {
@@ -940,22 +1203,80 @@ void *cli_calc_fuse_keep(IMAGE *dst, cli_token_type aop)
         k->p.n += 2;
     }
     k->dst = dst;
+    for (int i = 0; i < k->p.nimg; i++)
+    {
+        k->last_cnt0[i] = k->p.img[i]->md[0].cnt0;
+    }
+    clock_gettime(CLOCK_MONOTONIC_COARSE, &k->last_check);
     return k;
 }
 
 int cli_calc_fused_run(void *kept)
 {
-    fkept *k = kept;
+    fkept          *k = kept;
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
+    int check_shm = (ts.tv_sec != k->last_check.tv_sec || ts.tv_nsec != k->last_check.tv_nsec);
+    if (check_shm)
+    {
+        k->last_check = ts;
+    }
 
     for (int i = -1; i < k->p.nimg; i++) /* a stream re-created by its owner may have a new size */
     {
-        const IMAGE *im = (i < 0) ? k->dst : k->p.img[i];
-        if (!im->used || !is_real_datatype(im->md[0].datatype) || !same_shape(im, k->dst))
+        IMAGE *im = (IMAGE *) ((i < 0) ? k->dst : k->p.img[i]);
+        if (check_shm && im->used && im->md != NULL)
+        {
+            if (i < 0 || im->md[0].cnt0 == k->last_cnt0[i])
+            {
+                cli_calc_refresh_shared_image(im);
+            }
+            if (i >= 0)
+            {
+                k->last_cnt0[i] = im->md[0].cnt0;
+            }
+        }
+        if (k->kind == FKEPT_ELEMWISE &&
+            (!im->used || !is_real_datatype(im->md[0].datatype) || !same_shape(im, k->dst)))
         {
             snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr), "%s changed size or type",
                      im->name);
             return -1;
         }
+    }
+    if (k->kind == FKEPT_MATMUL)
+    {
+        if (cli_calc_matmul_check(k->p.img[0], k->transA, k->p.img[1], k->transB, k->dst) != 0)
+        {
+            snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr),
+                     "matmul: %s or input changed size or type", k->dst->name);
+            return -1;
+        }
+        k->dst->md[0].write = 1;
+        if (cli_calc_matmul_into(k->p.img[0], k->transA, k->p.img[1], k->transB, k->dst) != 0)
+        {
+            k->dst->md[0].write = 0;
+            return -1;
+        }
+        processinfo_update_output_stream(NULL, k->dst, NULL);
+        return 0;
+    }
+    if (k->kind == FKEPT_TRANSPOSE)
+    {
+        if (cli_calc_transpose_check(k->p.img[0], k->dst) != 0)
+        {
+            snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr),
+                     "transpose: %s or input changed size or type", k->dst->name);
+            return -1;
+        }
+        k->dst->md[0].write = 1;
+        if (cli_calc_transpose_into(k->p.img[0], k->dst) != 0)
+        {
+            k->dst->md[0].write = 0;
+            return -1;
+        }
+        processinfo_update_output_stream(NULL, k->dst, NULL);
+        return 0;
     }
     k->dst->md[0].write = 1;
     run_program(&k->p, k->dst);
@@ -1038,8 +1359,8 @@ int cli_calc_inplace(IMAGE *dst, cli_token_type aop, const IMAGE *src, double va
     if (src != NULL &&
         aop == TOK_OP_SLASH_EQ) /* like the scalar case: a zero divisor is an error */
     {
-        double *blk = malloc(sizeof(double) * FUSE_BLK);
-        int     bad = (blk == NULL);
+        MILK_ALIGNED(64) double blk[FUSE_BLK];
+        int                     bad = 0;
         for (uint64_t off = 0; off < nel && !bad; off += FUSE_BLK)
         {
             int len = (int) ((nel - off < FUSE_BLK) ? nel - off : FUSE_BLK);
@@ -1049,7 +1370,6 @@ int cli_calc_inplace(IMAGE *dst, cli_token_type aop, const IMAGE *src, double va
                 bad = (blk[j] == 0.0);
             }
         }
-        free(blk);
         if (bad)
         {
             parse_errmsg("Division by zero");
