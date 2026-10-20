@@ -155,6 +155,18 @@ static void fill_fps_from_struct(OV_FPS *f, ov_fps_cache_t *ce)
     f->mem_rss_kb = (f->runpid > 0) ? pid_get_rss_kb(f->runpid) : 0;
     f->conf_alive = (pid_get_status(f->confpid) == OV_PID_ALIVE);
     f->run_alive  = pid_is_alive(f->runpid);
+    if (f->confpid != ce->tk_conf_pid)
+    {
+        ce->tk_conf_pid = f->confpid;
+        ce->tk_conf     = f->conf_alive ? pid_get_start_ticks(f->confpid) : 0;
+    }
+    if (f->runpid != ce->tk_run_pid)
+    {
+        ce->tk_run_pid = f->runpid;
+        ce->tk_run     = f->run_alive ? pid_get_start_ticks(f->runpid) : 0;
+    }
+    f->conf_start_ticks = ce->tk_conf;
+    f->run_start_ticks  = ce->tk_run;
 
     if (!ce->sparam_cached)
     {

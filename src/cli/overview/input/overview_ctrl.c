@@ -35,7 +35,6 @@
 #include "fps_isvalid.h"
 #include "milk_spawn.h"
 
-int pid_is_stopped(pid_t pid);
 
 /**
  * ov_ctrl_fps_action - run an action on an FPS.
@@ -265,6 +264,17 @@ void ov_ctrl_stream_delete(const OV_STREAM *s, OV_CMDLOG *log)
         return;
     }
 
+    /* The file must still be the stream the user selected (same inode) */
+    char        fullpath[512];
+    struct stat st;
+    ImageStreamIO_filename(fullpath, sizeof(fullpath), s->name);
+    if (s->inode != 0 && (stat(fullpath, &st) != 0 || (uint64_t) st.st_ino != (uint64_t) s->inode))
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Stream \"%s\" was re-created or removed; not deleted",
+                       s->name);
+        return;
+    }
+
     /* Evict from scanner cache before destroying semaphores so scan thread doesn't poll it */
     scache_evict_by_name(s->name);
 
@@ -288,9 +298,6 @@ void ov_ctrl_stream_delete(const OV_STREAM *s, OV_CMDLOG *log)
 
     /* Close (unmap + close fd) */
     ImageStreamIO_closeIm(&im);
-
-    char fullpath[512];
-    ImageStreamIO_filename(fullpath, sizeof(fullpath), s->name);
 
     if (unlink(fullpath) != 0)
     {
@@ -323,62 +330,32 @@ void ov_ctrl_fps_signal_pid(const OV_FPS *f, int sig, OV_CMDLOG *log)
     {
         return;
     }
-    int ok = 0;
-    if (f->run_alive && f->runpid > 0)
+    const char *signame = (sig == SIGTERM) ? "SIGTERM" : (sig == SIGKILL) ? "SIGKILL" : "signal";
+    const struct
     {
-        if (kill(f->runpid, sig) == 0)
+        const char *role;
+        int         alive;
+        pid_t       pid;
+        uint64_t    ticks;
+    } t[2]   = { { "run", f->run_alive, f->runpid, f->run_start_ticks },
+                 { "conf", f->conf_alive, f->confpid, f->conf_start_ticks } };
+    int sent = 0;
+    for (int i = 0; i < 2; i++)
+    {
+        if (!t[i].alive || t[i].pid <= 0)
         {
-            ok = 1;
+            continue;
         }
-    }
-    if (f->conf_alive && f->confpid > 0)
-    {
-        if (kill(f->confpid, sig) == 0)
+        if (!pid_same_process(t[i].pid, t[i].ticks))
         {
-            ok = 1;
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "FPS \"%s\": %s PID %d was reused; not signalled",
+                           f->name, t[i].role, (int) t[i].pid);
+            continue;
         }
+        sent += (kill(t[i].pid, sig) == 0);
     }
-    if (log != NULL)
-    {
-        const char *signame = (sig == SIGTERM)   ? "SIGTERM"
-                              : (sig == SIGKILL) ? "SIGKILL"
-                                                 : "signal";
-        ov_cmdlog_push(log, ok ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\" — %s sent", f->name,
-                       signame);
-    }
-}
-
-/**
- * ov_ctrl_fps_pause_toggle - toggle SIGSTOP/SIGCONT for FPS run and conf processes.
- * @f:   FPS model entry
- * @log: command log (may be NULL)
- */
-void ov_ctrl_fps_pause_toggle(const OV_FPS *f, OV_CMDLOG *log)
-{
-    if (f == NULL)
-    {
-        return;
-    }
-    /* Use runpid state to decide direction */
-    int stopped = 0;
-    if (f->run_alive && f->runpid > 0)
-    {
-        stopped = pid_is_stopped(f->runpid);
-    }
-    int sig = stopped ? SIGCONT : SIGSTOP;
-    if (f->run_alive && f->runpid > 0)
-    {
-        kill(f->runpid, sig);
-    }
-    if (f->conf_alive && f->confpid > 0)
-    {
-        kill(f->confpid, sig);
-    }
-    if (log != NULL)
-    {
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "%s FPS \"%s\" — %s", stopped ? "⏯️" : "⏸️", f->name,
-                       stopped ? "resumed" : "paused");
-    }
+    ov_cmdlog_push(log, sent ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\": %s %s", f->name, signame,
+                   sent ? "sent" : "not sent (no live conf/run process)");
 }
 
 /**

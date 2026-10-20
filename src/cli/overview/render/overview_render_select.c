@@ -32,7 +32,8 @@ void ov_tgt_set(OV_TARGET *t, const OV_MODEL *m, ov_focus_t panel, int idx)
     else if (panel == OV_FOCUS_PROCS && idx < m->nb_procs)
     {
         snprintf(t->name, sizeof(t->name), "%s", m->procs[idx].name);
-        t->pid = (int) m->procs[idx].PID;
+        t->pid   = (int) m->procs[idx].PID;
+        t->start = m->procs[idx].start_ticks;
     }
     else if (panel == OV_FOCUS_FPS && idx < m->nb_fps)
     {
@@ -64,7 +65,9 @@ int ov_tgt_find(const OV_MODEL *m, ov_focus_t panel, const OV_TARGET *t)
     {
         for (int i = 0; i < m->nb_procs; i++)
         {
-            if (strcmp(m->procs[i].name, t->name) == 0 && (int) m->procs[i].PID == t->pid)
+            if (strcmp(m->procs[i].name, t->name) == 0 && (int) m->procs[i].PID == t->pid &&
+                (t->start == 0 || m->procs[i].start_ticks == 0 ||
+                 m->procs[i].start_ticks == t->start))
             {
                 return i;
             }

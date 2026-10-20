@@ -101,14 +101,12 @@ static int64_t get_boot_time(void)
  */
 static int64_t pid_get_start_time(pid_t pid)
 {
-    char        buf[1024];
-    const char *p = pid_stat_skip(pid_stat_fields(pid, buf, sizeof(buf)), 19); /* field 22 */
-    if (p == NULL)
+    int64_t starttime = (int64_t) pid_get_start_ticks(pid);
+    if (starttime == 0)
     {
         return 0;
     }
-    int64_t starttime = (int64_t) atoll(p);
-    long    clk       = sysconf(_SC_CLK_TCK);
+    long clk = sysconf(_SC_CLK_TCK);
     if (clk <= 0)
     {
         clk = 100;

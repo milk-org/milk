@@ -88,6 +88,24 @@ const char *pid_stat_skip(const char *p, int n)
 }
 
 /**
+ * pid_get_start_ticks - start time of @pid in clock ticks since boot (/proc stat field 22), or 0.
+ */
+uint64_t pid_get_start_ticks(pid_t pid)
+{
+    char        buf[1024];
+    const char *p = pid_stat_skip(pid_stat_fields(pid, buf, sizeof(buf)), 19);
+    return (p != NULL) ? strtoull(p, NULL, 10) : 0;
+}
+
+/**
+ * pid_same_process - 1 if @pid exists and is still the process that started at @ticks.
+ */
+int pid_same_process(pid_t pid, uint64_t ticks)
+{
+    return pid > 0 && ticks != 0 && pid_get_start_ticks(pid) == ticks;
+}
+
+/**
  * pid_check_zombie - 1 if /proc/<pid>/stat reports state 'Z'.
  */
 int pid_check_zombie(pid_t pid)

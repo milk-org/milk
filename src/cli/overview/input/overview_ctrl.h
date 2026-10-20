@@ -56,13 +56,6 @@ void ov_ctrl_proc_sigkill(const OV_PROC *p, OV_CMDLOG *log);
 void ov_ctrl_proc_remove(const OV_PROC *p, OV_CMDLOG *log);
 
 /**
- * ov_ctrl_proc_pause_toggle - toggle SIGSTOP/SIGCONT.
- * @p:   process model entry
- * @log: command log (may be NULL)
- */
-void ov_ctrl_proc_pause_toggle(const OV_PROC *p, OV_CMDLOG *log);
-
-/**
  * ov_ctrl_proc_set_ctrlval - mutate process CTRLval.
  * @p:   process model entry
  * @val: new value (-1 to toggle between 0 and 1)
@@ -84,14 +77,6 @@ void ov_ctrl_proc_zero_counters(const OV_PROC *p, OV_CMDLOG *log);
  * @log: command log (may be NULL)
  */
 void ov_ctrl_fps_signal_pid(const OV_FPS *f, int sig, OV_CMDLOG *log);
-
-/**
- * ov_ctrl_fps_pause_toggle - toggle SIGSTOP/SIGCONT
- * for FPS processes.
- * @f:   FPS model entry
- * @log: command log (may be NULL)
- */
-void ov_ctrl_fps_pause_toggle(const OV_FPS *f, OV_CMDLOG *log);
 
 /**
  * ov_ctrl_fps_remove - stop conf/run and remove the

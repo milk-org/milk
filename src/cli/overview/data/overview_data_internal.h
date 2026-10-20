@@ -74,6 +74,10 @@ typedef struct
     int sparam_cached;
 
     ov_shm_map_t map;         /* read-only mapping of <fpsdir>/<fname>.fps.shm */
+    pid_t        tk_conf_pid; /* start ticks of the conf/run PIDs, refreshed when a PID changes */
+    pid_t        tk_run_pid;
+    uint64_t     tk_conf;
+    uint64_t     tk_run;
     long         nbparam_fit; /* parameters that fit in the mapped length */
 
     float hz_hist[OV_SPARKLINE_LEN]; /* run-process Hz history, kept across scans */
@@ -100,6 +104,7 @@ typedef struct
     int                seen_dead; /* once dead, a reused PID never revives this entry */
     int                in_use;
     int                stale_count; /* consecutive scans active without a loopcnt change */
+    uint64_t           start_ticks; /* /proc start time of the process when first seen alive */
     int                is_new;
 
     uint64_t prev_utime;
@@ -129,6 +134,8 @@ extern struct timespec s_proc_mtime;
 void        pid_cache_reset(void);
 const char *pid_stat_fields(pid_t pid, char *buf, size_t sz);
 const char *pid_stat_skip(const char *p, int n);
+uint64_t    pid_get_start_ticks(pid_t pid);
+int         pid_same_process(pid_t pid, uint64_t ticks);
 int         pid_check_zombie(pid_t pid);
 int64_t     pid_get_rss_kb(pid_t pid);
 int         pid_is_alive(pid_t pid);

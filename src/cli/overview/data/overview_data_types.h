@@ -227,9 +227,11 @@ typedef struct
     pid_t    confpid;
     pid_t    runpid;
 
-    int64_t mem_rss_kb;
-    int     conf_alive;
-    int     run_alive;
+    int64_t  mem_rss_kb;
+    int      conf_alive;
+    int      run_alive;
+    uint64_t conf_start_ticks; /* /proc start times: identity for signals */
+    uint64_t run_start_ticks;
 
     /* tmux tracking */
     uint8_t tmux_flags;
@@ -281,12 +283,13 @@ int ov_get_fps_tree_items(const OV_FPS    *fps,
 
 typedef struct
 {
-    char   name[40];
-    pid_t  PID;
-    long   pindex;     /**< processinfo registry slot */
-    double createtime; /**< registry createtime[pindex] */
-    int    valid;
-    int    active;
+    char     name[40];
+    pid_t    PID;
+    long     pindex;      /**< processinfo registry slot */
+    double   createtime;  /**< registry createtime[pindex] */
+    uint64_t start_ticks; /**< /proc start time when first seen alive: identity for signals */
+    int      valid;
+    int      active;
 
     /* status */
     int loopstat;

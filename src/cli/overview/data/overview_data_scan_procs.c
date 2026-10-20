@@ -138,11 +138,16 @@ void ov_scan_procs(OV_MODEL *model)
         {
             pinfo = NULL; /* dead entries show zeros and their STOP/CRASHED label */
         }
+        else if (ci >= 0 && s_pcache[ci].start_ticks == 0)
+        {
+            s_pcache[ci].start_ticks = pid_get_start_ticks(pid);
+        }
 
         OV_PROC *p = &model->procs[idx];
         memset(p, 0, sizeof(OV_PROC));
-        p->pindex     = i;
-        p->createtime = pl->createtime[i];
+        p->pindex      = i;
+        p->createtime  = pl->createtime[i];
+        p->start_ticks = (ci >= 0) ? s_pcache[ci].start_ticks : 0;
         if (ci >= 0)
         {
             p->is_new = s_pcache[ci].is_new;

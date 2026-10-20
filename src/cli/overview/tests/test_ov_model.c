@@ -93,12 +93,23 @@ static void test_labels(void)
     CHECK(strcmp(ov_trigmode_label(4, 0), "DLY") == 0);
 }
 
+/* A PID names the same process only while its start time matches (robust-3, control-5) */
+static void test_pid_identity(void)
+{
+    uint64_t me = pid_get_start_ticks(getpid());
+    CHECK(me != 0);
+    CHECK(pid_same_process(getpid(), me) == 1);
+    CHECK(pid_same_process(getpid(), me + 1) == 0);
+    CHECK(pid_same_process(getpid(), 0) == 0);
+}
+
 int main(void)
 {
     test_pid_liveness();
     test_stat_with_spaces();
     test_find_proc_by_pid();
     test_labels();
+    test_pid_identity();
     if (failures == 0)
     {
         printf("all ok\n");
