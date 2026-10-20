@@ -183,12 +183,13 @@ static const milk_keyword_t keywords[] = {
     { "args", MILK_KW_BUILTIN, MILK_KW_ALL, 0,
       "@args \"<name>:<type>[=<default>][:<help>]\"... -- \"$@\"",
       "Declare the arguments of a function or script; they are checked like a module command's",
-      "  Types: int uint float bool (1 or 0) str. Without a default a value is required. Values "
-      "in\n"
-      "  order or as .name=value, '.' keeps a default, -h prints the usage. The names become "
-      "locals\n"
-      "  of the function; after -h or a bad value the function returns (status 0 or 2). Commands\n"
-      "  in share/milk/commands.d and ~/.config/milk/commands.d (*.bash) are module.cmd functions.",
+      "  Types: int uint float bool (1 or 0) str stream fits. Without a default a value is "
+      "required.\n"
+      "  Values in order or as .name=value, '.' keeps a default, -h prints the usage. The names "
+      "become\n"
+      "  locals of the function; after -h or a bad value the function returns (status 0 or 2).\n"
+      "  Commands in share/milk/commands.d and ~/.config/milk/commands.d (*.bash) are module.cmd\n"
+      "  functions.",
       "  measure() { @args 'cam:str:camera stream' 'n:int=100:frames' -- \"$@\"; echo \"$cam $n\"; "
       "}\n"
       "  measure s.cam0 .n=50" },

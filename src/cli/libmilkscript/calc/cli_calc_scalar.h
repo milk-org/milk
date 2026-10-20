@@ -12,6 +12,7 @@
 #define CLI_CALC_SCALAR_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 #include "cli_calc_tokenizer.h"
 
@@ -65,6 +66,9 @@ double cli_calc_isnan(double a);
 
 /** cli_calc_isfinite() - IEEE-754 bit-level finite test (1.0 if @a is finite, else 0.0), safe under -Ofast. */
 double cli_calc_isfinite(double a);
+
+/** cli_calc_cast_datatype() - _DATATYPE_* for an explicit cast function (f32..i64), else 0. */
+uint8_t cli_calc_cast_datatype(double (*fn)());
 
 /** cli_calc_local() - evaluate @expr here when it holds only numbers, operators, math functions and
  * stream, FPS, process or sequencer properties: 1 with its value in @out (printed with @digits

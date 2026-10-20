@@ -17,6 +17,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <poll.h>
 #include <signal.h>
@@ -31,10 +32,13 @@
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "fps.h"
+#include "milk_argval.h"
 #include "milk_unit.h"
 #include "processinfo_signals.h"
 
-#define SCRIPT_NFIXED 3
+#define SCRIPT_NFIXED 5
+#define SCRIPT_MAXPAR 32
+#define SCRIPT_MAXTEXT 65536
 #define SCRIPT_STATUS_FD 77 /* the shell writes a status line per tick there */
 
 static FPS_APP_INFO app = {
@@ -42,21 +46,42 @@ static FPS_APP_INFO app = {
     .cmdkey      = "script",
     .description = "run a bash snippet on each frame",
     .description_long =
-        "Runs the commands of .cmd on each frame of .trigger, in a bash that loaded milk.bash "
-        "once. A tick that fails stops the loop; its status is kept in .error."
+        "Runs the commands of .cmd, or of the file .file names, on each frame of .trigger, in a "
+        "bash that loaded milk.bash once. .params declares more parameters "
+        "(name:type[=default][:help], types int uint float bool str stream fits) exposed as shell "
+        "variables that @set changes while it runs. A tick that fails stops the loop; its status "
+        "is kept in .error."
 };
 
 static char cmd[FUNCTION_PARAMETER_STRMAXLEN];
 static char trigger[FUNCTION_PARAMETER_STRMAXLEN];
+static char params[FUNCTION_PARAMETER_STRMAXLEN];
+static char file[FUNCTION_PARAMETER_STRMAXLEN];
 static char error[FUNCTION_PARAMETER_STRMAXLEN];
 
-static FPS_CLI_BINDING bindings[SCRIPT_NFIXED] = {
+static FPS_CLI_BINDING bindings[SCRIPT_NFIXED + SCRIPT_MAXPAR] = {
     { ".cmd", cmd, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,
       "commands run on each frame", -2, -1 },
     { ".trigger", trigger, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM,
       "a frame of this stream runs them", -2, -1 },
+    { ".params", params, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT,
+      "more parameters: name:type[=default]", -2, -1 },
+    { ".file", file, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,
+      "commands from this file", -2, -1 },
     { ".error", error, FPTYPE_STRING, 0, FPFLAG_DEFAULT_OUTPUT, "why the loop stopped", -2, -1 },
 };
+static int nbind = SCRIPT_NFIXED;
+
+static union
+{
+    int64_t  i;
+    uint64_t u;
+    double   f;
+    int32_t  b;
+    char     s[FUNCTION_PARAMETER_STRMAXLEN];
+} pval[SCRIPT_MAXPAR];
+static char pkey[SCRIPT_MAXPAR][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN + 1];
+static char pdescr[SCRIPT_MAXPAR][FUNCTION_PARAMETER_DESCR_STRMAXLEN];
 
 static CLICMDARGDEF farg[1];
 CLICMDDATA          CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
@@ -65,6 +90,138 @@ FPS_CMDSETTINGS_INIT(script, CLIcmddata, app)
 static pid_t sh_pid = -1;
 static int   sh_in  = -1; /* commands to the shell */
 static int   sh_st  = -1; /* a status line per tick, from SCRIPT_STATUS_FD */
+
+static int is_fixed(const char *name)
+{
+    if (strcmp(name, "_n") == 0)
+    {
+        return 1;
+    }
+    for (int i = 0; i < SCRIPT_NFIXED; i++)
+    {
+        if (strcmp(bindings[i].fpskeyword + 1, name) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int bind(const char *name, uint64_t type, uint64_t fpflag, const char *descr)
+{
+    int k = nbind - SCRIPT_NFIXED;
+
+    if (k == SCRIPT_MAXPAR || is_fixed(name))
+    {
+        fprintf(stderr, "milk.script: parameter '%s': %s\n", name,
+                is_fixed(name) ? "reserved" : "too many");
+        return -1;
+    }
+    memset(&pval[k], 0, sizeof(pval[k]));
+    snprintf(pkey[k], sizeof(pkey[k]), ".%s", name);
+    snprintf(pdescr[k], sizeof(pdescr[k]), "%s", (descr != NULL) ? descr : "");
+    bindings[nbind++] = (FPS_CLI_BINDING) { pkey[k], &pval[k], type, 0, fpflag, pdescr[k], -2, -1 };
+    return 0;
+}
+
+static int declare(const char *text)
+{
+    char *buf = strdup(text);
+    char *save;
+    int   rc = (buf == NULL) ? -1 : 0;
+
+    for (char *t = strtok_r(buf, " \t\n", &save); t != NULL && rc == 0;
+         t       = strtok_r(NULL, " \t\n", &save))
+    {
+        milk_argspec_t d;
+        CLICMDARGDATA  ad;
+        char           spec[FUNCTION_PARAMETER_STRMAXLEN * 4];
+        snprintf(spec, sizeof(spec), "%s", t);
+        memset(&ad, 0, sizeof(ad));
+        if (milk_argspec_parse(t, &d) != 0 || (d.def != NULL && d.type != FPTYPE_STRING &&
+                                               milk_argval_parse(d.type, d.def, &ad) != 0))
+        {
+            fprintf(
+                stderr,
+                "milk.script: bad parameter '%s': name:type[=default][:help], type int uint float "
+                "bool str stream fits\n",
+                spec);
+            rc = -1;
+        }
+        else if ((rc = bind(d.name, d.type, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, d.help)) == 0)
+        {
+            int k = nbind - SCRIPT_NFIXED - 1;
+            switch (d.type)
+            {
+            case FPTYPE_INT64:
+                pval[k].i = ad.val.i64;
+                break;
+            case FPTYPE_UINT64:
+                pval[k].u = ad.val.ui64;
+                break;
+            case FPTYPE_FLOAT64:
+                pval[k].f = ad.val.f64;
+                break;
+            case FPTYPE_ONOFF:
+                pval[k].b = (ad.val.i64 != 0);
+                break;
+            default:
+                snprintf(pval[k].s, sizeof(pval[k].s), "%s", (d.def != NULL) ? d.def : "");
+            }
+        }
+    }
+    free(buf);
+    return rc;
+}
+
+static int find_params(const char *name)
+{
+    FPS fps;
+    int rc = 0;
+
+    if (fps_connect(name, &fps, FPSCONNECT_SIMPLE) == -1)
+    {
+        return 0;
+    }
+    for (long i = 0; i < fps.md->NBparamMAX && rc == 0; i++)
+    {
+        const FPS_PARAM *p = &fps.parray[i];
+        if ((p->fpflag & FPFLAG_ACTIVE) && p->keywordlevel == 2 && !is_fixed(p->keyword[1]) &&
+            (p->type == FPTYPE_INT64 || p->type == FPTYPE_UINT64 || p->type == FPTYPE_FLOAT64 ||
+             p->type == FPTYPE_ONOFF || p->type == FPTYPE_STRING || p->type == FPTYPE_STREAMNAME ||
+             p->type == FPTYPE_FITSFILENAME))
+        {
+            rc = bind(p->keyword[1], p->type, p->fpflag, p->description);
+        }
+    }
+    fps_disconnect(&fps);
+    return rc;
+}
+
+static char *source_text(const char *inline_str, const char *fpath, char *err, size_t errsz)
+{
+    if (fpath[0] == '\0')
+    {
+        return strdup(inline_str);
+    }
+    FILE *fp = fopen(fpath, "r");
+    char *t  = (fp != NULL) ? calloc(1, SCRIPT_MAXTEXT) : NULL;
+    if (t != NULL && fread(t, 1, SCRIPT_MAXTEXT - 1, fp) == SCRIPT_MAXTEXT - 1)
+    {
+        free(t);
+        t = NULL;
+        snprintf(err, errsz, "%s is longer than %d bytes", fpath, SCRIPT_MAXTEXT - 1);
+    }
+    else if (t == NULL)
+    {
+        snprintf(err, errsz, "cannot read %s", fpath);
+    }
+    if (fp != NULL)
+    {
+        fclose(fp);
+    }
+    return t;
+}
 
 /** put_quoted() - write @s to the shell as a single-quoted word. */
 static int put_quoted(const char *s)
@@ -82,6 +239,49 @@ static int put_quoted(const char *s)
     }
     fputc('\'', fp);
     return fclose(fp);
+}
+
+static void sync_shell_params(int npar, uint64_t *pcnt, int force)
+{
+    for (int k = 0; k < npar; k++)
+    {
+        const FPS_CLI_BINDING *b    = &bindings[SCRIPT_NFIXED + k];
+        long                   pidx = b->_fps_pindex;
+        if (!force && (pidx < 0 || dcfpsptr->parray[pidx].value_cnt == pcnt[k]))
+        {
+            continue;
+        }
+        if (pidx >= 0)
+        {
+            pcnt[k] = dcfpsptr->parray[pidx].value_cnt;
+        }
+        const char *name = b->fpskeyword + 1;
+        switch (b->type)
+        {
+        case FPTYPE_INT64:
+            dprintf(sh_in, "%s=%" PRId64 "\n", name, pval[k].i);
+            break;
+        case FPTYPE_UINT64:
+            dprintf(sh_in, "%s=%" PRIu64 "\n", name, pval[k].u);
+            break;
+        case FPTYPE_FLOAT64:
+        {
+            CLICMDARGDATA ad = { .type = FPTYPE_FLOAT64, .val.f64 = pval[k].f };
+            char          buf[64];
+            milk_argval_format(&ad, buf, sizeof(buf));
+            dprintf(sh_in, "%s=%s\n", name, buf);
+            break;
+        }
+        case FPTYPE_ONOFF:
+            dprintf(sh_in, "%s=%d\n", name, pval[k].b ? 1 : 0);
+            break;
+        default:
+            dprintf(sh_in, "%s=", name);
+            put_quoted(pval[k].s);
+            dprintf(sh_in, "\n");
+            break;
+        }
+    }
 }
 
 /** read_line() - the shell's next status line into @buf; 0, -1 if it exited, -2 if it was stopped. */
@@ -195,12 +395,12 @@ static int shell_start(char *err, size_t errsz)
     signal(SIGPIPE, SIG_IGN);
     dprintf(sh_in, "source ");
     put_quoted(dir);
-    dprintf(
-        sh_in,
-        "/milk.bash >/dev/null || exit 1\n"
-        "__milk_unit_tick() { eval \"$__MILK_UNIT_CMD\" </dev/null; printf '%%d\\n' $? >&%d; }\n"
-        "echo ready >&%d\n",
-        SCRIPT_STATUS_FD, SCRIPT_STATUS_FD);
+    dprintf(sh_in,
+            "/milk.bash >/dev/null || exit 1\n"
+            "__milk_unit_tick() { _n=$1; eval \"$__MILK_UNIT_CMD\" </dev/null; printf '%%d\\n' $? "
+            ">&%d; }\n"
+            "echo ready >&%d\n",
+            SCRIPT_STATUS_FD, SCRIPT_STATUS_FD);
     if (read_line(line, sizeof(line), 60.0, NULL) != 0)
     {
         snprintf(err, errsz, "bash could not load %s/milk.bash", dir);
@@ -222,10 +422,14 @@ static void report(PROCESSINFO *pi, const char *msg)
 
 static errno_t compute(void)
 {
-    char        err[256] = "";
-    long        pc       = functionparameter_GetParamIndex(dcfpsptr, ".cmd");
-    uint64_t    built    = 0;
-    const char *tname    = dcfpsptr->cmdset.triggerstreamname;
+    char        err[512]            = "";
+    long        pc                  = functionparameter_GetParamIndex(dcfpsptr, ".cmd");
+    long        pf                  = functionparameter_GetParamIndex(dcfpsptr, ".file");
+    uint64_t    built[2]            = { 0, 0 };
+    uint64_t    pcnt[SCRIPT_MAXPAR] = { 0 };
+    int         npar                = nbind - SCRIPT_NFIXED;
+    int64_t     frame_n             = 0;
+    const char *tname               = dcfpsptr->cmdset.triggerstreamname;
 
     error[0] = '\0';
     functionparameter_SetParamValue_STRING(dcfpsptr, ".error", "");
@@ -245,26 +449,43 @@ static errno_t compute(void)
     {
         char line[64];
         int  rc = 0;
-        if (built != dcfpsptr->parray[pc].value_cnt || built == 0)
+        sync_shell_params(npar, pcnt, frame_n == 0);
+        if (frame_n == 0 || built[0] != dcfpsptr->parray[pc].value_cnt ||
+            built[1] != dcfpsptr->parray[pf].value_cnt)
         {
-            built = dcfpsptr->parray[pc].value_cnt;
-            dprintf(sh_in, "__MILK_UNIT_CMD=");
-            put_quoted(cmd);
-            dprintf(sh_in, "\n");
+            char *text = source_text(cmd, file, err, sizeof(err));
+            built[0]   = dcfpsptr->parray[pc].value_cnt;
+            built[1]   = dcfpsptr->parray[pf].value_cnt;
+            if (text == NULL)
+            {
+                report(processinfo, err);
+                processloopOK = 0;
+            }
+            else
+            {
+                dprintf(sh_in, "__MILK_UNIT_CMD=");
+                put_quoted(text);
+                dprintf(sh_in, "\n");
+                free(text);
+            }
         }
-        dprintf(sh_in, "__milk_unit_tick\n");
-        rc = read_line(line, sizeof(line), 1e9, processinfo);
-        if (rc == 0 && atoi(line) != 0)
+        if (err[0] == '\0')
         {
-            snprintf(err, sizeof(err), "status %d: %s", atoi(line), cmd);
-            report(processinfo, err);
+            dprintf(sh_in, "__milk_unit_tick %" PRId64 "\n", frame_n++);
+            rc = read_line(line, sizeof(line), 1e9, processinfo);
+            if (rc == 0 && atoi(line) != 0)
+            {
+                snprintf(err, sizeof(err), "status %d: %s", atoi(line),
+                         (file[0] != '\0') ? file : cmd);
+                report(processinfo, err);
+            }
+            else if (rc == -1)
+            {
+                snprintf(err, sizeof(err), "the shell exited: %s", (file[0] != '\0') ? file : cmd);
+                report(processinfo, err);
+            }
+            processloopOK = (rc == 0 && err[0] == '\0') ? processloopOK : 0;
         }
-        else if (rc == -1)
-        {
-            snprintf(err, sizeof(err), "the shell exited: %s", cmd);
-            report(processinfo, err);
-        }
-        processloopOK = (rc == 0 && err[0] == '\0') ? processloopOK : 0;
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -272,24 +493,31 @@ static errno_t compute(void)
     return (err[0] != '\0') ? RETURN_FAILURE : RETURN_SUCCESS;
 }
 
-/** create() - (re)create the FPS from the command line: .cmd .trigger. */
+/** create() - (re)create the FPS from the command line: .cmd .trigger .params .file. */
 static int create(const milk_unit_args *a)
 {
-    char *fixed[] = { cmd, trigger };
+    char *fixed[] = { cmd, trigger, params, file };
 
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < 4; i++)
     {
         const char *v = milk_unit_pos(a, i);
+        snprintf(fixed[i], FUNCTION_PARAMETER_STRMAXLEN, "%s", (v != NULL) ? v : "");
         if (v != NULL && strlen(v) >= FUNCTION_PARAMETER_STRMAXLEN)
         {
             fprintf(stderr, "milk.script: %s is longer than %d characters%s\n",
                     bindings[i].fpskeyword, FUNCTION_PARAMETER_STRMAXLEN - 1,
-                    (i == 0) ? ": source a file from it" : "");
-            return 1;
+                    (i == 0) ? ": write the commands in a file (.file)" : "");
+            if (i != 2) /* .params is read from the command line, and only shown */
+            {
+                return 1;
+            }
         }
-        snprintf(fixed[i], FUNCTION_PARAMETER_STRMAXLEN, "%s", (v != NULL) ? v : "");
     }
-    return milk_unit_create(a, &app, bindings, SCRIPT_NFIXED);
+    if (declare((milk_unit_pos(a, 2) != NULL) ? milk_unit_pos(a, 2) : "") != 0)
+    {
+        return 1;
+    }
+    return milk_unit_create(a, &app, bindings, nbind);
 }
 
 int main(int argc, char **argv)
@@ -299,6 +527,15 @@ int main(int argc, char **argv)
 
     milk_unit_args_read(argc, argv, app.fps_name, &a);
     init = (strcmp(a.cmd, "fpsinit") == 0);
+    if (milk_unit_pos(&a, 3) != NULL) /* .file (3): also what main_impl() writes */
+    {
+        char path[PATH_MAX];
+        if (realpath(milk_unit_pos(&a, 3), path) != NULL && strlen(path) < sizeof(file))
+        {
+            argv[a.posi[3]] = strdup(path);
+            a.pos[3]        = argv[a.posi[3]];
+        }
+    }
     if (!a.help && (init || (strcmp(a.cmd, "exec") == 0 && !milk_unit_fps_exists(a.name))))
     {
         int rc = create(&a);
@@ -307,5 +544,9 @@ int main(int argc, char **argv)
             return rc; /* fpsinit is done here: the parameters come from this command line */
         }
     }
-    return main_impl(argc, argv, &app, bindings, SCRIPT_NFIXED, farg, compute, NULL);
+    else if (!a.help && find_params(a.name) != 0)
+    {
+        return 1;
+    }
+    return main_impl(argc, argv, &app, bindings, nbind, farg, compute, NULL);
 }

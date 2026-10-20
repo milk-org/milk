@@ -40,8 +40,8 @@ static FPS_APP_INFO app = {
     .description_long =
         "Runs the calculator statements of .expr, or of the file .file names, on each frame of "
         ".trigger. .init or .initfile runs once before frame 0. .params declares more parameters "
-        "(name:type[=default][:help], types int uint float bool str) that the statements read and "
-        "@set changes while it runs."
+        "(name:type[=default][:help], types int uint float bool str stream fits) that the "
+        "statements read and @set changes while it runs."
 };
 
 static char expr[FUNCTION_PARAMETER_STRMAXLEN];
@@ -152,7 +152,7 @@ static int declare(const char *text)
             fprintf(
                 stderr,
                 "milk.calc: bad parameter '%s': name:type[=default][:help], type int uint float "
-                "bool str\n",
+                "bool str stream fits\n",
                 spec);
             rc = -1;
         }
@@ -197,7 +197,8 @@ static int find_params(const char *name)
         const FPS_PARAM *p = &fps.parray[i];
         if ((p->fpflag & FPFLAG_ACTIVE) && p->keywordlevel == 2 && !is_fixed(p->keyword[1]) &&
             (p->type == FPTYPE_INT64 || p->type == FPTYPE_UINT64 || p->type == FPTYPE_FLOAT64 ||
-             p->type == FPTYPE_ONOFF || p->type == FPTYPE_STRING))
+             p->type == FPTYPE_ONOFF || p->type == FPTYPE_STRING || p->type == FPTYPE_STREAMNAME ||
+             p->type == FPTYPE_FITSFILENAME))
         {
             rc = bind(p->keyword[1], p->type, p->fpflag, p->description);
         }
@@ -282,11 +283,12 @@ static MILK_HOT errno_t compute(void)
     long           pif           = functionparameter_GetParamIndex(dcfpsptr, ".initfile");
     uint64_t       built[2]      = { 0, 0 }; /* value_cnt of .expr and .file compiled */
     uint64_t       init_built[2] = { 0, 0 }; /* value_cnt of .init and .initfile run */
-    int            init_done     = 0;
-    double         t_start       = 0.0;
-    double         t_prev        = 0.0;
-    int            npar          = nbind - CALC_NFIXED;
-    const char    *tname         = dcfpsptr->cmdset.triggerstreamname;
+    uint64_t       stream_built[CALC_MAXPAR] = { 0 };
+    int            init_done                 = 0;
+    double         t_start                   = 0.0;
+    double         t_prev                    = 0.0;
+    int            npar                      = nbind - CALC_NFIXED;
+    const char    *tname                     = dcfpsptr->cmdset.triggerstreamname;
 
     cvars[npar + 0] = (cli_calc_binding) { "_n", FPTYPE_INT64, &frame_n };
     cvars[npar + 1] = (cli_calc_binding) { "_t", FPTYPE_FLOAT64, &frame_t };
@@ -344,12 +346,22 @@ static MILK_HOT errno_t compute(void)
         }
         if (err[0] == '\0')
         {
-            double t_now = now_sec();
-            frame_t      = (frame_n == 0) ? 0.0 : (t_now - t_start);
-            frame_dt     = (frame_n == 0) ? 0.0 : (t_now - t_prev);
-            t_prev       = t_now;
+            double t_now          = now_sec();
+            int    stream_changed = 0;
+            frame_t               = (frame_n == 0) ? 0.0 : (t_now - t_start);
+            frame_dt              = (frame_n == 0) ? 0.0 : (t_now - t_prev);
+            t_prev                = t_now;
 
-            if (prog == NULL || dcfpsptr->parray[pe].value_cnt != built[0] ||
+            for (int k = 0; k < npar; k++)
+            {
+                long pidx = bindings[CALC_NFIXED + k]._fps_pindex;
+                if (bindings[CALC_NFIXED + k].type == FPTYPE_STREAMNAME && pidx >= 0 &&
+                    dcfpsptr->parray[pidx].value_cnt != stream_built[k])
+                {
+                    stream_changed = 1;
+                }
+            }
+            if (prog == NULL || stream_changed || dcfpsptr->parray[pe].value_cnt != built[0] ||
                 dcfpsptr->parray[pf].value_cnt != built[1])
             {
                 char *text = source_text(expr, file, err, sizeof(err));
@@ -359,6 +371,14 @@ static MILK_HOT errno_t compute(void)
                            : NULL;
                 built[0] = dcfpsptr->parray[pe].value_cnt;
                 built[1] = dcfpsptr->parray[pf].value_cnt;
+                for (int k = 0; k < npar; k++)
+                {
+                    long pidx = bindings[CALC_NFIXED + k]._fps_pindex;
+                    if (pidx >= 0)
+                    {
+                        stream_built[k] = dcfpsptr->parray[pidx].value_cnt;
+                    }
+                }
                 free(text);
             }
             if (prog == NULL || cli_calc_prog_run(prog, err, sizeof(err)) != 0)

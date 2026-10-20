@@ -307,6 +307,25 @@ static val_t func_eval_d_d(const cli_token *ftok)
         {
             return mk_string("");
         }
+        uint8_t cdt = cli_calc_cast_datatype(ftok->fnctptr);
+        if (cdt != 0)
+        {
+            const IMAGE *src =
+                &data.core.image[image_ID(arg.sval, data.core.image, data.core.NB_MAX_IMAGE)];
+            uint32_t    sz[3] = { src->md[0].size[0], src->md[0].size[1], src->md[0].size[2] };
+            const char *tmpn  = alloc_tmpname();
+            imageID     tid   = -1;
+            create_image_ID(tmpn, src->md[0].naxis, sz, cdt, 0, 10, 0, &tid);
+            if (tid == -1 || cli_calc_inplace(&data.core.image[tid], TOK_EQUAL, src, 0.0) != 0)
+            {
+                if (tid == -1)
+                {
+                    parse_errmsg("Failed to allocate output image");
+                }
+                return mk_string("");
+            }
+            return mk_string(tmpn);
+        }
         const char *tmpn = alloc_tmpname();
         arith_image_function_im_im__d_d(arg.sval, tmpn, ftok->fnctptr);
         if (data.core.Debug > 0)
@@ -447,22 +466,33 @@ static val_t func_eval_ddd_d(const cli_token *ftok)
     return mk_double(((double (*)(double, double, double)) ftok->fnctptr)(d1, d2, d3));
 }
 
-/** copy_im_to_double_buf() - every pixel of @im as a double into @dst (zeros for complex or half). */
-static void copy_im_to_double_buf(const IMAGE *im, double *dst)
+static inline double read_im_pix(const IMAGE *im, uint8_t dt, uint64_t idx)
 {
-    uint64_t nel = im->md[0].nelement;
-    uint8_t  dt  = im->md[0].datatype;
-#define COPY_BODY(MBR)                      \
-    for (uint64_t i = 0; i < nel; i++)      \
-    {                                       \
-        dst[i] = (double) im->array.MBR[i]; \
-    }
-    MILK_FOR_EACH_DATATYPE(dt, COPY_BODY, memcpy(dst, im->array.D, sizeof(double) * nel);)
-    else
+    switch (dt)
     {
-        memset(dst, 0, sizeof(double) * nel);
+    case _DATATYPE_FLOAT:
+        return (double) im->array.F[idx];
+    case _DATATYPE_DOUBLE:
+        return im->array.D[idx];
+    case _DATATYPE_UINT8:
+        return (double) im->array.UI8[idx];
+    case _DATATYPE_INT8:
+        return (double) im->array.SI8[idx];
+    case _DATATYPE_UINT16:
+        return (double) im->array.UI16[idx];
+    case _DATATYPE_INT16:
+        return (double) im->array.SI16[idx];
+    case _DATATYPE_UINT32:
+        return (double) im->array.UI32[idx];
+    case _DATATYPE_INT32:
+        return (double) im->array.SI32[idx];
+    case _DATATYPE_UINT64:
+        return (double) im->array.UI64[idx];
+    case _DATATYPE_INT64:
+        return (double) im->array.SI64[idx];
+    default:
+        return 0.0;
     }
-#undef COPY_BODY
 }
 
 int cli_calc_transpose_check(const IMAGE *src, const IMAGE *dst)
@@ -556,18 +586,11 @@ int cli_calc_transpose_into(const IMAGE *src, IMAGE *dst)
         return 0;
     }
 
-    double *buf = (double *) malloc(sizeof(double) * nel);
-    if (buf == NULL)
-    {
-        parse_errmsg("transpose: memory allocation failed");
-        return -1;
-    }
-    copy_im_to_double_buf(src, buf);
     for (uint64_t m = 0; m < M; m++)
     {
         for (uint64_t n = 0; n < N; n++)
         {
-            double v = buf[n * M + m];
+            double v = read_im_pix(src, src_dt, n * M + m);
             if (dst_dt == _DATATYPE_DOUBLE)
             {
                 dst->array.D[m * N + n] = v;
@@ -578,7 +601,6 @@ int cli_calc_transpose_into(const IMAGE *src, IMAGE *dst)
             }
         }
     }
-    free(buf);
     return 0;
 }
 
@@ -620,6 +642,153 @@ static val_t func_eval_transpose(void)
     if (cli_calc_transpose_into(src, &data.core.image[tid]) != 0)
     {
         return mk_string("");
+    }
+    return mk_string(tmpn);
+}
+
+int cli_calc_reshape_check(const IMAGE *src, const IMAGE *dst)
+{
+    if (src == NULL || dst == NULL || !src->used || !dst->used || src == dst ||
+        src->md[0].nelement != dst->md[0].nelement)
+    {
+        return -1;
+    }
+    if (src->md[0].datatype != dst->md[0].datatype &&
+        (cli_calc_is_complex_dt(src->md[0].datatype) ||
+         cli_calc_is_complex_dt(dst->md[0].datatype)))
+    {
+        return -1;
+    }
+    return 0;
+}
+
+int cli_calc_reshape_into(const IMAGE *src, IMAGE *dst)
+{
+    if (src->md[0].datatype == dst->md[0].datatype)
+    {
+        int tsz = ImageStreamIO_typesize(src->md[0].datatype);
+        if (tsz <= 0)
+        {
+            return -1;
+        }
+        __builtin_memcpy(dst->array.raw, src->array.raw,
+                         (size_t) src->md[0].nelement * (size_t) tsz);
+        return 0;
+    }
+    return cli_calc_inplace(dst, TOK_EQUAL, src, 0.0);
+}
+
+static val_t func_eval_reshape(void)
+{
+    val_t args[4];
+    int   n = parse_func_argv(2, 4, args, "Expected ','");
+    if (n < 0)
+    {
+        return mk_string("");
+    }
+    if (args[0].type != VAL_STRING || !check_image(args[0].sval))
+    {
+        if (args[0].type != VAL_STRING)
+        {
+            parse_errmsg("reshape: first argument must be an image");
+        }
+        return mk_string("");
+    }
+    IMAGE *src = &data.core.image[image_ID(args[0].sval, data.core.image, data.core.NB_MAX_IMAGE)];
+    uint64_t nel      = src->md[0].nelement;
+    int      ndims    = n - 1;
+    long     dims[3]  = { 1, 1, 1 };
+    int      neg_idx  = -1;
+    uint64_t prod_pos = 1;
+
+    for (int i = 0; i < ndims; i++)
+    {
+        if (args[i + 1].type == VAL_STRING)
+        {
+            parse_errmsg("reshape: dimensions must be integers");
+            return mk_string("");
+        }
+        long d =
+            (args[i + 1].type == VAL_LONG) ? args[i + 1].lval : (long) llround(args[i + 1].dval);
+        if (d == -1)
+        {
+            if (neg_idx != -1)
+            {
+                parse_errmsg("reshape: at most one dimension may be -1");
+                return mk_string("");
+            }
+            neg_idx = i;
+        }
+        else if (d <= 0)
+        {
+            parse_errmsg("reshape: dimensions must be positive");
+            return mk_string("");
+        }
+        else
+        {
+            dims[i] = d;
+            prod_pos *= (uint64_t) d;
+        }
+    }
+    if (neg_idx != -1)
+    {
+        if (prod_pos == 0 || nel % prod_pos != 0)
+        {
+            parse_errmsg("reshape: element count mismatch");
+            return mk_string("");
+        }
+        dims[neg_idx] = (long) (nel / prod_pos);
+        prod_pos      = nel;
+    }
+    if (prod_pos != nel)
+    {
+        parse_errmsg("reshape: element count mismatch");
+        return mk_string("");
+    }
+    uint32_t    outsz[3] = { (uint32_t) dims[0], (uint32_t) dims[1], (uint32_t) dims[2] };
+    const char *tmpn     = alloc_tmpname();
+    imageID     tid      = -1;
+    create_image_ID(tmpn, ndims, outsz, src->md[0].datatype, 0, 10, 0, &tid);
+    if (tid == -1 || cli_calc_reshape_into(src, &data.core.image[tid]) != 0)
+    {
+        if (tid == -1)
+        {
+            parse_errmsg("reshape: failed to allocate output image");
+        }
+        return mk_string("");
+    }
+    return mk_string(tmpn);
+}
+
+static val_t func_eval_vec(void)
+{
+    val_t args[256];
+    int   n = parse_func_argv(1, 256, args, "Expected ','");
+    if (n < 0)
+    {
+        return mk_string("");
+    }
+    for (int i = 0; i < n; i++)
+    {
+        if (args[i].type == VAL_STRING)
+        {
+            parse_errmsg("vec: arguments must be numbers");
+            return mk_string("");
+        }
+    }
+    uint32_t    outsz[3] = { (uint32_t) n, 1, 1 };
+    const char *tmpn     = alloc_tmpname();
+    imageID     tid      = -1;
+    create_image_ID(tmpn, 1, outsz, _DATATYPE_FLOAT, 0, 10, 0, &tid);
+    if (tid == -1)
+    {
+        parse_errmsg("vec: failed to allocate output image");
+        return mk_string("");
+    }
+    IMAGE *out = &data.core.image[tid];
+    for (int i = 0; i < n; i++)
+    {
+        out->array.F[i] = (float) to_double(args[i]);
     }
     return mk_string(tmpn);
 }
@@ -755,7 +924,8 @@ int cli_calc_matmul_check(const IMAGE *im1,
                           int          transA,
                           const IMAGE *im2,
                           int          transB,
-                          const IMAGE *dst)
+                          const IMAGE *dst,
+                          int          allow_reshape)
 {
     if (im1 == NULL || im2 == NULL || dst == NULL || !im1->used || !im2->used || !dst->used ||
         dst == im1 || dst == im2)
@@ -784,6 +954,10 @@ int cli_calc_matmul_check(const IMAGE *im1,
     if (dst->md[0].nelement != M * N)
     {
         return -1;
+    }
+    if (allow_reshape)
+    {
+        return 0;
     }
     if (N == 1)
     {
@@ -1011,8 +1185,14 @@ int cli_calc_matmul_into(const IMAGE *im1, int transA, const IMAGE *im2, int tra
         parse_errmsg("matmul: memory allocation failed");
         return -1;
     }
-    copy_im_to_double_buf(im1, bufA);
-    copy_im_to_double_buf(im2, bufB);
+    for (uint64_t i = 0; i < im1->md[0].nelement; i++)
+    {
+        bufA[i] = read_im_pix(im1, dt1, i);
+    }
+    for (uint64_t i = 0; i < im2->md[0].nelement; i++)
+    {
+        bufB[i] = read_im_pix(im2, dt2, i);
+    }
 
     if (out_dt == _DATATYPE_DOUBLE)
     {
@@ -1190,13 +1370,68 @@ typedef enum
     RED_PERC /* masked only: imedian, perc */
 } reduce_op;
 
-/** reduce_lane() - reduce the @n values @p[0], @p[stride], ... with @op. */
-static double reduce_lane(const double *p, uint64_t n, uint64_t stride, reduce_op op)
+/** reduce_lane_im() - reduce @n values of @im starting at @base with @stride using @op. */
+static double reduce_lane_im(const IMAGE *im,
+                             uint8_t      dt,
+                             uint64_t     base,
+                             uint64_t     n,
+                             uint64_t     stride,
+                             reduce_op    op)
 {
     double acc = (op == RED_MIN) ? INFINITY : (op == RED_MAX) ? -INFINITY : 0.0;
+    if (dt == _DATATYPE_FLOAT)
+    {
+        const float *restrict p = im->array.F + base;
+        for (uint64_t k = 0; k < n; k++)
+        {
+            double v = (double) p[k * stride];
+            acc      = (op == RED_MIN) ? fmin(acc, v) : (op == RED_MAX) ? fmax(acc, v) : acc + v;
+        }
+        if (op == RED_SUM || op == RED_MIN || op == RED_MAX)
+        {
+            return acc;
+        }
+        double mean = acc / (double) n;
+        if (op == RED_MEAN)
+        {
+            return mean;
+        }
+        double s2 = 0.0;
+        for (uint64_t k = 0; k < n; k++)
+        {
+            double d = (double) p[k * stride] - mean;
+            s2 += d * d;
+        }
+        return (op == RED_VAR) ? s2 / (double) n : sqrt(s2 / (double) n);
+    }
+    if (dt == _DATATYPE_DOUBLE)
+    {
+        const double *restrict p = im->array.D + base;
+        for (uint64_t k = 0; k < n; k++)
+        {
+            double v = p[k * stride];
+            acc      = (op == RED_MIN) ? fmin(acc, v) : (op == RED_MAX) ? fmax(acc, v) : acc + v;
+        }
+        if (op == RED_SUM || op == RED_MIN || op == RED_MAX)
+        {
+            return acc;
+        }
+        double mean = acc / (double) n;
+        if (op == RED_MEAN)
+        {
+            return mean;
+        }
+        double s2 = 0.0;
+        for (uint64_t k = 0; k < n; k++)
+        {
+            double d = p[k * stride] - mean;
+            s2 += d * d;
+        }
+        return (op == RED_VAR) ? s2 / (double) n : sqrt(s2 / (double) n);
+    }
     for (uint64_t k = 0; k < n; k++)
     {
-        double v = p[k * stride];
+        double v = read_im_pix(im, dt, base + k * stride);
         acc      = (op == RED_MIN) ? fmin(acc, v) : (op == RED_MAX) ? fmax(acc, v) : acc + v;
     }
     if (op == RED_SUM || op == RED_MIN || op == RED_MAX)
@@ -1211,7 +1446,7 @@ static double reduce_lane(const double *p, uint64_t n, uint64_t stride, reduce_o
     double s2 = 0.0;
     for (uint64_t k = 0; k < n; k++)
     {
-        double d = p[k * stride] - mean;
+        double d = read_im_pix(im, dt, base + k * stride) - mean;
         s2 += d * d;
     }
     return (op == RED_VAR) ? s2 / (double) n : sqrt(s2 / (double) n);
@@ -1220,10 +1455,9 @@ static double reduce_lane(const double *p, uint64_t n, uint64_t stride, reduce_o
 /** reduce_axis() - reduce image @name along @axis into a temporary image with that axis removed. */
 static val_t reduce_axis(const char *name, long axis, reduce_op op)
 {
-    IMAGE   *im  = &data.core.image[image_ID(name, data.core.image, data.core.NB_MAX_IMAGE)];
-    int      nax = im->md[0].naxis;
-    uint8_t  dt  = im->md[0].datatype;
-    uint64_t nel = im->md[0].nelement;
+    IMAGE  *im  = &data.core.image[image_ID(name, data.core.image, data.core.NB_MAX_IMAGE)];
+    int     nax = im->md[0].naxis;
+    uint8_t dt  = im->md[0].datatype;
     if (axis < 0 || axis >= nax)
     {
         parse_errmsg("Axis out of range");
@@ -1256,18 +1490,9 @@ static val_t reduce_axis(const char *name, long axis, reduce_op op)
         }
     }
 
-    double *buf = (double *) malloc(sizeof(double) * nel);
-    if (buf == NULL)
-    {
-        parse_errmsg("Memory allocation failed");
-        return mk_double(0);
-    }
-    copy_im_to_double_buf(im, buf);
     if (onax == 0) // 1-D input: the result is a scalar
     {
-        double r = reduce_lane(buf, n, 1, op);
-        free(buf);
-        return mk_double(r);
+        return mk_double(reduce_lane_im(im, dt, 0, n, 1, op));
     }
 
     int         out_d = !(dt == _DATATYPE_FLOAT || dt == _DATATYPE_HALF || dt == _DATATYPE_UINT8 ||
@@ -1277,7 +1502,6 @@ static val_t reduce_axis(const char *name, long axis, reduce_op op)
     create_image_ID(tmpn, onax, osz, out_d ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT, 0, 10, 0, &tid);
     if (tid == -1)
     {
-        free(buf);
         parse_errmsg("Failed to allocate output image");
         return mk_string("");
     }
@@ -1286,7 +1510,7 @@ static val_t reduce_axis(const char *name, long axis, reduce_op op)
     {
         for (uint64_t i = 0; i < inner; i++)
         {
-            double r = reduce_lane(buf + o * n * inner + i, n, inner, op);
+            double r = reduce_lane_im(im, dt, o * n * inner + i, n, inner, op);
             if (out_d)
             {
                 oim->array.D[o * inner + i] = r;
@@ -1297,7 +1521,6 @@ static val_t reduce_axis(const char *name, long axis, reduce_op op)
             }
         }
     }
-    free(buf);
     return mk_string(tmpn);
 }
 
@@ -1317,8 +1540,9 @@ static val_t reduce_masked(const char *name, const char *mask, reduce_op op, dou
     const IMAGE *im  = &data.core.image[image_ID(name, data.core.image, data.core.NB_MAX_IMAGE)];
     const IMAGE *mk  = &data.core.image[image_ID(mask, data.core.image, data.core.NB_MAX_IMAGE)];
     uint64_t     nel = im->md[0].nelement;
+    uint8_t      idt = im->md[0].datatype;
+    uint8_t      mdt = mk->md[0].datatype;
     uint64_t     n   = 0;
-    double       r;
 
     int same = (mk->md[0].naxis == im->md[0].naxis);
     for (int a = 0; same && a < im->md[0].naxis; a++)
@@ -1330,41 +1554,66 @@ static val_t reduce_masked(const char *name, const char *mask, reduce_op op, dou
         parse_errmsg("The mask must have the image's size");
         return mk_double(0);
     }
-    double *v = (double *) malloc(sizeof(double) * nel);
-    double *m = (double *) malloc(sizeof(double) * nel);
-    if (v == NULL || m == NULL)
+
+    if (op == RED_PERC)
     {
+        double *v = (double *) malloc(sizeof(double) * nel);
+        if (v == NULL)
+        {
+            parse_errmsg("Memory allocation failed");
+            return mk_double(0);
+        }
+        for (uint64_t i = 0; i < nel; i++)
+        {
+            if (read_im_pix(mk, mdt, i) != 0.0)
+            {
+                v[n++] = read_im_pix(im, idt, i);
+            }
+        }
+        double r = NAN;
+        if (n > 0)
+        {
+            long k = (long) (f * (double) n);
+            qsort(v, n, sizeof(double), cmp_double);
+            r = v[(k < 0) ? 0 : ((uint64_t) k >= n) ? (long) n - 1 : k];
+        }
         free(v);
-        free(m);
-        parse_errmsg("Memory allocation failed");
-        return mk_double(0);
+        return mk_double(r);
     }
-    copy_im_to_double_buf(im, v);
-    copy_im_to_double_buf(mk, m);
+
+    double acc = (op == RED_MIN) ? INFINITY : (op == RED_MAX) ? -INFINITY : 0.0;
     for (uint64_t i = 0; i < nel; i++)
     {
-        if (m[i] != 0.0)
+        if (read_im_pix(mk, mdt, i) != 0.0)
         {
-            v[n++] = v[i];
+            double v = read_im_pix(im, idt, i);
+            acc      = (op == RED_MIN) ? fmin(acc, v) : (op == RED_MAX) ? fmax(acc, v) : acc + v;
+            n++;
         }
     }
-    free(m);
     if (n == 0)
     {
-        r = (op == RED_SUM) ? 0.0 : NAN;
+        return mk_double((op == RED_SUM) ? 0.0 : NAN);
     }
-    else if (op == RED_PERC)
+    if (op == RED_SUM || op == RED_MIN || op == RED_MAX)
     {
-        long k = (long) (f * (double) n);
-        qsort(v, n, sizeof(double), cmp_double);
-        r = v[(k < 0) ? 0 : ((uint64_t) k >= n) ? (long) n - 1 : k];
+        return mk_double(acc);
     }
-    else
+    double mean = acc / (double) n;
+    if (op == RED_MEAN)
     {
-        r = reduce_lane(v, n, 1, op);
+        return mk_double(mean);
     }
-    free(v);
-    return mk_double(r);
+    double s2 = 0.0;
+    for (uint64_t i = 0; i < nel; i++)
+    {
+        if (read_im_pix(mk, mdt, i) != 0.0)
+        {
+            double d = read_im_pix(im, idt, i) - mean;
+            s2 += d * d;
+        }
+    }
+    return mk_double((op == RED_VAR) ? s2 / (double) n : sqrt(s2 / (double) n));
 }
 
 /** axis_reduce_op() - the reduce_op of reduction @fn, or -1 if it has no axis form. */
@@ -1680,8 +1929,19 @@ val_t parse_funccall(cli_token *ftok)
     case TOK_FUNC_COORD:
         return func_coord(ftok);
     case TOK_FUNC_IMIM_IM:
-        return (strncmp(ftok->sval, "transpose(", 10) == 0) ? func_eval_transpose()
-                                                            : func_eval_matmul();
+        if (strncmp(ftok->sval, "transpose(", 10) == 0)
+        {
+            return func_eval_transpose();
+        }
+        if (strncmp(ftok->sval, "reshape(", 8) == 0)
+        {
+            return func_eval_reshape();
+        }
+        if (strncmp(ftok->sval, "vec(", 4) == 0)
+        {
+            return func_eval_vec();
+        }
+        return func_eval_matmul();
     case TOK_FUNC_IM_D:
     case TOK_FUNC_IM_L:
     case TOK_FUNC_IMD_D:

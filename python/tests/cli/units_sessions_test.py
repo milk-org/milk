@@ -7,6 +7,8 @@ on today's fpsexec API. Their loops run as background processes here, stopped wi
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from milk.cliwrap import HAVE_CLI
@@ -243,3 +245,120 @@ def test_E8_script_stop_interrupts_a_long_tick(tmp_path):
     )
     assert value(res.stdout, "shell") == "gone error=[]", res.stdout + res.stderr
     assert int(value(res.stdout, "ms") or 9999) < 2000, res.stdout
+
+
+def test_E8_calc_reshape_expi_vec_and_casts(tmp_path):
+    """vec(), reshape() (including -1 and matmul), expi(), clamp(), and explicit datatype casts."""
+    res = milk_bash(
+        HELPERS
+        + '@calc "v = vec(1, 2, 3, 4, 5, 6); r2 = reshape(v, 3, 2); r1 = reshape(v, -1, 3)"\n'
+        'echo "vshape=$(@get l.v.naxis):$(@get l.v.xsize):$(@get l.v.tot)"\n'
+        'echo "rshape=$(@get l.r2.xsize)x$(@get l.r2.ysize),$(@get l.r1.xsize)x$(@get l.r1.ysize)"\n'
+        '@calc -v p21 "r2[2,1]"; echo "p21=$p21"\n'
+        '@calc "phi = vec(0, 1.5707963267948966); z = expi(phi); mag = abs(z); zr = real(z); zi = imag(z)"\n'
+        '@calc -v m0,r0,i1 "round(mag[0]); round(zr[0]); round(zi[1])"\n'
+        'echo "expi=$(@get l.z.dtype):$m0,$r0,$i1"\n'
+        '@calc -v c_u8,c_i8,c_u16,c_cl "u8(300); i8(-200); u16(70000); clamp(5, 0, 3)"\n'
+        'echo "scast=$c_u8,$c_i8,$c_u16,$c_cl"\n'
+        '@calc "im_u16 = u16(cam * 10 + 3); im_f64 = f64(cam + 0.5); im_i8 = i8(cam - 10)"\n'
+        'echo "imcast=$(@get l.im_u16.dtype):$(@get l.im_u16.mean),'
+        "$(@get l.im_f64.dtype):$(@get l.im_f64.mean),"
+        '$(@get l.im_i8.dtype):$(@get l.im_i8.mean)"\n'
+        'mem.mk2Dim "@S:mR" 4 2 >/dev/null; mem.mk2Dim "@S:vR" 2 1 >/dev/null\n'
+        '@calc "mR = 2; vR = 3"\n'
+        'milk-fpsexec-milk-calc -n u7 exec "out_r = reshape(matmul(mR, vR), 2, 2); out_v = reshape(mR, 8)" >/dev/null\n'
+        'echo "u7=$(@get s.out_r.xsize)x$(@get s.out_r.ysize):$(@get s.out_r.tot),$(@get s.out_v.xsize):$(@get s.out_v.naxis)"',
+        tmp_path,
+    )
+    got = [
+        value(res.stdout, k)
+        for k in ("vshape", "rshape", "p21", "expi", "scast", "imcast", "u7")
+    ]
+    assert got == [
+        "1:6:21",
+        "3x2,2x3",
+        "6",
+        "COMPLEX_FLOAT:1,1,1",
+        "44,56,4464,3",
+        "UINT16:23,DOUBLE:2.5,INT8:-8",
+        "2x2:48,8:1",
+    ], (
+        res.stdout + res.stderr
+    )
+
+
+def test_E8_calc_fused_fastmath_and_zero_alloc_reductions(tmp_path):
+    """Fused fast-math opcodes (^2, ^0.5, ^3, ^-1, min, max, clamp, round) and zero-alloc reductions."""
+    res = milk_bash(
+        HELPERS + '@calc "a = reshape(vec(1, 4, 9, 16), 2, 2)"\n'
+        '@calc "fm = (a^0.5)^2 + a^3 - 144*(a^-1) + min(a, 5) + max(a, 10) + clamp(a, 2, 8) + round(a * 0.5)"\n'
+        'echo "fm=$(@get l.fm.tot)"\n'
+        '@calc "ax0 = itot(a, 0); ax1 = imean(a, 1); msk = a > 2"\n'
+        '@calc -v mtot,mmean3,mmin,mmax "itot(a, msk); round(imean(a, msk) * 3); imin(a, msk); imax(a, msk)"\n'
+        '@calc -v a00,a01,a10,a11 "ax0[0]; ax0[1]; ax1[0]; ax1[1]"\n'
+        'echo "red=$a00,$a01,$a10,$a11|$mtot,$mmean3,$mmin,$mmax"\n'
+        '@calc "au16 = u16(a); axu = itot(au16, 0)"\n'
+        '@calc -v u0,u1,utot "axu[0]; axu[1]; itot(au16, msk)"\n'
+        'echo "u16red=$u0,$u1,$utot"',
+        tmp_path,
+    )
+    got = [value(res.stdout, k) for k in ("fm", "red", "u16red")]
+    assert got == [
+        "4814",
+        "5,25,5,10|29,29,4,16",
+        "5,25,29",
+    ], (
+        res.stdout + res.stderr
+    )
+
+
+def test_E8_calc_stream_params(tmp_path):
+    """milk.calc supports stream parameters (in:stream=..., out:stream=...) with live rebinding."""
+    res = milk_bash(
+        HELPERS + 'mem.mk2Dim "@S:camB" 4 4 >/dev/null; @calc "camB = 10"\n'
+        'milk-fpsexec-milk-calc -n u8 fpsinit "out = in * gain" cam "in:stream=cam out:stream=outA gain:float=3" >/dev/null\n'
+        "milk-fpsexec-milk-calc -n u8 runstart >run.log 2>&1 & pid=$!\n"
+        "until_file outA; sleep 0.3\n"
+        'frame 2; echo "a=$(@get s.outA.mean)"\n'
+        "@set f.u8.in=camB f.u8.out=outB\n"
+        "sleep 0.1; frame 2\n"
+        'until_file outB; echo "b=$(@get s.outB.mean)"; stop $pid',
+        tmp_path,
+    )
+    got = [value(res.stdout, k) for k in ("a", "b")]
+    assert got == ["6", "30"], (
+        res.stdout + res.stderr + (tmp_path / "run.log").read_text()
+    )
+
+
+def test_E8_script_params_file_and_args_types(tmp_path):
+    """milk.script supports .params, .file, and _n; @args supports stream and fits types."""
+    (tmp_path / "tick.milk").write_text('echo "$_n:$gain:$mode:$in" >> tick.log\n')
+    res = milk_bash(
+        HELPERS
+        + "fn() { @args 's:stream:in stream' 'f:fits=cal.fits:fits file' -- \"$@\" || return; echo \"arg=$s,$f\"; }\n"
+        "fn my_cam; fn my_cam flat.fits; fn 'bad stream' 2>/dev/null; echo \"badrc=$?\"\n"
+        "milk-fpsexec-milk-script -n s3 fpsinit '' cam 'gain:float=2.5 mode:str=fast in:stream=cam' "
+        "tick.milk >/dev/null\n"
+        "milk-fpsexec-milk-script -n s3 runstart >run.log 2>&1 & pid=$!\n"
+        "for _ in $(seq 50); do @calc 'cam = 1'; sleep 0.1; [ -s tick.log ] && break; done; sleep 0.2; : > tick.log\n"
+        "frame 2\n"
+        "@set f.s3.gain=7.5 f.s3.mode=accurate\n"
+        "sleep 0.1; frame 3; stop $pid\n"
+        'echo "ticks=$(tr "\\n" "|" < tick.log)"',
+        tmp_path,
+    )
+    assert re.findall(r"^arg=(.*)$", res.stdout, re.M) == [
+        "my_cam,cal.fits",
+        "my_cam,flat.fits",
+    ], (
+        res.stdout + res.stderr
+    )
+    assert value(res.stdout, "badrc") == "2", res.stdout + res.stderr
+    ticks = [t for t in (value(res.stdout, "ticks") or "").split("|") if t]
+    assert len(ticks) >= 2, res.stdout + res.stderr + (tmp_path / "run.log").read_text()
+    assert ticks[0].endswith(":2.5:fast:cam"), ticks
+    assert ticks[-1].endswith(":7.5:accurate:cam"), ticks
+    n0 = int(ticks[0].split(":")[0])
+    n1 = int(ticks[-1].split(":")[0])
+    assert n1 > n0 >= 0, ticks

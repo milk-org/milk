@@ -121,7 +121,7 @@ cam.average -h               # the usage, from the declaration
 ```
 
 - A declaration is `name:type[=default][:help]`, with type `int` `uint` `float` `bool` (bound as
-  1 or 0) or `str`. Without a default a value is required.
+  1 or 0), `str`, `stream` or `fits`. Without a default a value is required.
 - The names become local variables of the function (globals at a script's top level). After `-h`,
   or a missing, invalid or extra value, the function returns (status 0 or 2); a script ends.
 - Without the libmilkbash builtins (`MILK_NO_BUILTINS=1`), `@args` assigns plain variables and
@@ -257,19 +257,22 @@ Functions (the math ones also apply per pixel to an image):
 | Kind             | Functions                                                                                |
 | ---------------- | ---------------------------------------------------------------------------------------- |
 | Math             | `sin cos tan asin acos atan exp ln log sqrt cbrt ceil floor round abs posi isnan isfinite` |
-| Math, 2-3 args   | `atan2(y,x)`, `fmod(a,b)`, `min(a,b)`, `max(a,b)`, `trunc(x,lo,hi)` (clamp)              |
+| Math, 2-3 args   | `atan2(y,x)`, `fmod(a,b)`, `min(a,b)`, `max(a,b)`, `clamp(x,lo,hi)` (`trunc`)            |
+| Datatype casts   | `f32 f64 u8 i8 u16 i16 u32 i32 u64 i64`: cast a scalar or produce an image of that type  |
 | Image to number  | `itot imin imax imean istd ivar imedian norm`, `perc(im,f)`, `dot(a,b)`; `irms` = `istd` |
 | Image to integer | `icount(im)` (non-zero pixels), `iargmax(im)`, `iargmin(im)` (index `x + y*xsize`)       |
 | Along one axis   | `itot imin imax imean istd ivar` plus an axis: `imean(cube, 2)` is the mean frame        |
-| Image to image   | `where(c,a,b)`, `matmul(a,b)`, `transpose(im)`                                           |
+| Image to image   | `where(c,a,b)`, `matmul(a,b)`, `transpose(im)`, `reshape(im,nx[,ny,nz])`, `vec(x0,...)`  |
 | Coordinates      | `ix iy ir itheta (im[, cx, cy])`: per pixel x, y, radius, angle about `(xsize/2, ysize/2)` |
 | Strings          | `strlen toupper tolower`, `substr(s,start,len)`, `replace(s,old,new)`, `hex oct bin`     |
-| Complex images   | `cplx(re,im)`, `real imag abs arg conj`; `+ - * /` and `-z` work on them                 |
+| Complex images   | `cplx(re,im)`, `expi(phi)`, `real imag abs arg conj`; `+ - * /` and `-z` work on them    |
 
 A second image argument is a mask: `imean(im, mask)` (also `itot imin imax istd ivar imedian`) and
 `perc(im, f, mask)` reduce over the pixels where the mask is not zero; no pixel gives NaN, or 0 for
 `itot`. A number instead is an axis. `matmul(transpose(a), b)` and `matmul(a, transpose(b))` apply
 the transpose directly inside the matrix product without allocating an intermediate transposed image.
+`reshape(im, nx[, ny, nz])` reinterprets the contiguous elements of `im` with new dimensions (up to
+one dimension may be `-1` to infer it from the total element count).
 
 ```bash
 @calc -v core 'imean(cam, ir(cam) < 10)'          # mean within 10 pixels of the centre
@@ -375,7 +378,7 @@ The parameters of `milk-fpsexec-milk-calc`, in this order on the command line (`
 | --- | --- |
 | `.expr` | the statements, separated by `;` or newlines |
 | `.trigger` | a stream whose frames run them; empty: once, or each tick of `-loopd` |
-| `.params` | more parameters, `name:type[=default][:help]` as for `@args` (int uint float bool str) |
+| `.params` | more parameters, `name:type[=default][:help]` as for `@args` (`int` `uint` `float` `bool` `str` `stream` `fits`) |
 | `.file` | read the statements from this file instead (`#` starts a comment) |
 | `.init` | statements run once before frame 0 (and again if `.init` is set live) |
 | `.initfile` | read the init statements from this file instead |
@@ -389,24 +392,28 @@ The parameters of `milk-fpsexec-milk-calc`, in this order on the command line (`
 - Three read-only variables are updated before each frame: `_n` (0-based frame index, `int`),
   `_t` (elapsed seconds since loop/init start, `float`), and `_dt` (seconds since the previous
   frame, `float`, `0` on frame 0).
-- An element-wise image assignment (`out = a*b + c`, also `+=` `-=` `*=`), `out = matmul(...)`, or
-  `out = transpose(...)` is compiled once and writes directly into `out`; other statements are
-  evaluated as text on each frame.
+- An element-wise image assignment (`out = a*b + c`, also `+=` `-=` `*=`), `out = matmul(...)`,
+  `out = transpose(...)`, `out = reshape(...)`, or `out = reshape(matmul(...), ...)` is compiled
+  once and writes directly into `out`; other statements are evaluated as text on each frame.
 - Names are shared streams: the unit is its own process, so a session's local images and calculator
   variables are out of its reach. A statement that makes a new image creates it as a stream. Shared
   streams recreated in `$MILK_SHM_DIR` with the same shape and compatible type are remapped
   automatically.
 - The `.params` parameters are calculator variables that `@set` changes while the loop runs. A
   statement that assigns one (`total = itot(out)`) writes it back to the FPS on each frame, for
-  `@get`, `@waitfor` and other units.
+  `@get`, `@waitfor` and other units. A `stream` parameter (`in:stream=cam0`, `out:stream=out0`)
+  binds an input or output stream name dynamically so `@set f.unit.in=cam1` re-targets the unit on
+  the next frame.
 - An error stops the loop: a bad statement, or an image whose size or type changed.
 - FPS strings hold 63 characters, so longer programs go in a file (`.file` or `.initfile`). `.params`
   may be longer on the `fpsinit` or `exec` command line that creates the FPS.
 
-`milk-fpsexec-milk-script` takes `.cmd`, the snippet, and `.trigger`. A new `.cmd` applies from the
-next tick. A tick that fails stops the loop, with its status in `.error`; end the snippet with `|| :`
-to go on. Ctrl-C or `runstop` interrupts a running tick. A tick costs its commands plus a pipe round
-trip (about 0.1 ms), which suits slow loops; for a longer snippet, `source` a file from `.cmd`.
+`milk-fpsexec-milk-script` takes `.cmd` (the snippet), `.trigger`, `.params`
+(`name:type[=default][:help]`, synced into shell variables before each tick), and `.file` (read the
+script from a file instead of `.cmd`). The 0-based frame counter `_n` is also set on each tick. A
+new `.cmd` or `.file` applies from the next tick. A tick that fails stops the loop, with its status
+in `.error`; end the snippet with `|| :` to go on. Ctrl-C or `runstop` interrupts a running tick. A
+tick costs its commands plus a pipe round trip (about 0.1 ms), which suits slow loops.
 
 ## State, Assertions and Logs
 

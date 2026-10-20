@@ -120,10 +120,13 @@ int cli_calc_matmul_check(const IMAGE *im1,
                           int          transA,
                           const IMAGE *im2,
                           int          transB,
-                          const IMAGE *dst);
+                          const IMAGE *dst,
+                          int          allow_reshape);
 int cli_calc_matmul_into(const IMAGE *im1, int transA, const IMAGE *im2, int transB, IMAGE *outim);
 int cli_calc_transpose_check(const IMAGE *src, const IMAGE *dst);
 int cli_calc_transpose_into(const IMAGE *src, IMAGE *dst);
+int cli_calc_reshape_check(const IMAGE *src, const IMAGE *dst);
+int cli_calc_reshape_into(const IMAGE *src, IMAGE *dst);
 
 const char *alloc_tmpname(void);
 

@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ImageStreamIO/ImageStruct.h"
 #include "cli_calc_scalar.h"
 #include "milk_entity_ns.h"
 #include "milk_shm_prop.h"
@@ -44,10 +45,105 @@ static double posi(double a)
     return (a > 0.0) ? 1.0 : 0.0;
 }
 
-/** clamp() - @a limited to [@lo, @hi] (the calculator's `trunc`). */
+/** clamp() - @a limited to [@lo, @hi] (the calculator's `trunc` / `clamp`). */
 static double clamp(double a, double lo, double hi)
 {
     return (a > hi) ? hi : (a < lo) ? lo : a;
+}
+
+static double cast_f32(double a)
+{
+    return (double) (float) a;
+}
+
+static double cast_f64(double a)
+{
+    return a;
+}
+
+static double cast_u8(double a)
+{
+    return (double) (uint8_t) (int64_t) a;
+}
+
+static double cast_i8(double a)
+{
+    return (double) (int8_t) (int64_t) a;
+}
+
+static double cast_u16(double a)
+{
+    return (double) (uint16_t) (int64_t) a;
+}
+
+static double cast_i16(double a)
+{
+    return (double) (int16_t) (int64_t) a;
+}
+
+static double cast_u32(double a)
+{
+    return (double) (uint32_t) (int64_t) a;
+}
+
+static double cast_i32(double a)
+{
+    return (double) (int32_t) (int64_t) a;
+}
+
+static double cast_u64(double a)
+{
+    return (double) (uint64_t) (a >= 0.0 ? a : (int64_t) a);
+}
+
+static double cast_i64(double a)
+{
+    return (double) (int64_t) a;
+}
+
+uint8_t cli_calc_cast_datatype(double (*fn)())
+{
+    if (fn == (double (*)()) cast_f32)
+    {
+        return _DATATYPE_FLOAT;
+    }
+    if (fn == (double (*)()) cast_f64)
+    {
+        return _DATATYPE_DOUBLE;
+    }
+    if (fn == (double (*)()) cast_u8)
+    {
+        return _DATATYPE_UINT8;
+    }
+    if (fn == (double (*)()) cast_i8)
+    {
+        return _DATATYPE_INT8;
+    }
+    if (fn == (double (*)()) cast_u16)
+    {
+        return _DATATYPE_UINT16;
+    }
+    if (fn == (double (*)()) cast_i16)
+    {
+        return _DATATYPE_INT16;
+    }
+    if (fn == (double (*)()) cast_u32)
+    {
+        return _DATATYPE_UINT32;
+    }
+    if (fn == (double (*)()) cast_i32)
+    {
+        return _DATATYPE_INT32;
+    }
+    if (fn == (double (*)()) cast_u64)
+    {
+        return _DATATYPE_UINT64;
+    }
+    if (fn == (double (*)()) cast_i64)
+    {
+        return _DATATYPE_INT64;
+    }
+    return 0;
 }
 
 static const cli_calc_scalar_fn_t scalar_fns[] = { { "sin(", 1, (double (*)()) sin },
@@ -70,11 +166,22 @@ static const cli_calc_scalar_fn_t scalar_fns[] = { { "sin(", 1, (double (*)()) s
                                                    { "isnan(", 1, (double (*)()) cli_calc_isnan },
                                                    { "isfinite(", 1,
                                                      (double (*)()) cli_calc_isfinite },
+                                                   { "f32(", 1, (double (*)()) cast_f32 },
+                                                   { "f64(", 1, (double (*)()) cast_f64 },
+                                                   { "u8(", 1, (double (*)()) cast_u8 },
+                                                   { "i8(", 1, (double (*)()) cast_i8 },
+                                                   { "u16(", 1, (double (*)()) cast_u16 },
+                                                   { "i16(", 1, (double (*)()) cast_i16 },
+                                                   { "u32(", 1, (double (*)()) cast_u32 },
+                                                   { "i32(", 1, (double (*)()) cast_i32 },
+                                                   { "u64(", 1, (double (*)()) cast_u64 },
+                                                   { "i64(", 1, (double (*)()) cast_i64 },
                                                    { "atan2(", 2, (double (*)()) atan2 },
                                                    { "fmod(", 2, (double (*)()) fmod },
                                                    { "min(", 2, (double (*)()) fmin },
                                                    { "max(", 2, (double (*)()) fmax },
                                                    { "trunc(", 3, (double (*)()) clamp },
+                                                   { "clamp(", 3, (double (*)()) clamp },
                                                    { NULL, 0, NULL } };
 
 const cli_calc_scalar_fn_t *cli_calc_scalar_fn(const char *p)

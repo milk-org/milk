@@ -370,6 +370,56 @@ val_t cli_calc_complex_func(const char *fname, const val_t *args, int nargs)
         check_image(args[0].sval);
         return mk_double(0);
     }
+    if (strncmp(fname, "expi(", 5) == 0)
+    {
+        if (z == NULL || cli_calc_is_complex_dt(z->md[0].datatype))
+        {
+            parse_errmsg("expi: expected a real phase image");
+            return mk_double(0);
+        }
+        int         dbl = is_double_dt(z->md[0].datatype);
+        const char *tmpn;
+        IMAGE *out = new_image(z, dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT, &tmpn);
+        if (out == NULL)
+        {
+            return mk_double(0);
+        }
+        uint64_t nel = out->md[0].nelement;
+        if (z->md[0].datatype == _DATATYPE_FLOAT)
+        {
+            const float *restrict src   = z->array.F;
+            complex_float *restrict dst = out->array.CF;
+#pragma omp parallel for schedule(static) if (nel >= 131072)
+            for (uint64_t i = 0; i < nel; i++)
+            {
+                float phi = src[i];
+                dst[i].re = cosf(phi);
+                dst[i].im = sinf(phi);
+            }
+        }
+        else if (z->md[0].datatype == _DATATYPE_DOUBLE)
+        {
+            const double *restrict src   = z->array.D;
+            complex_double *restrict dst = out->array.CD;
+#pragma omp parallel for schedule(static) if (nel >= 131072)
+            for (uint64_t i = 0; i < nel; i++)
+            {
+                double phi = src[i];
+                dst[i].re  = cos(phi);
+                dst[i].im  = sin(phi);
+            }
+        }
+        else
+        {
+            for (uint64_t i = 0; i < nel; i++)
+            {
+                double phi = 0.0, unused = 0.0;
+                pix(z, i, &phi, &unused);
+                set_pix(out, i, cos(phi), sin(phi));
+            }
+        }
+        return mk_string(tmpn);
+    }
     if (z == NULL || !cli_calc_is_complex_dt(z->md[0].datatype)) /* a real value: x + 0i */
     {
         if (strncmp(fname, "conj(", 5) == 0 || which == 0)

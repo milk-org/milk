@@ -61,6 +61,14 @@ static const char *check(const arg_spec_t *a, const char *v, char *buf, size_t s
     {
         return v;
     }
+    if (a->type == FPTYPE_STREAMNAME && (v[0] == '\0' || strpbrk(v, " \t\n/") != NULL))
+    {
+        return NULL;
+    }
+    if (a->type == FPTYPE_FITSFILENAME && v[0] == '\0')
+    {
+        return NULL;
+    }
     memset(&ad, 0, sizeof(ad));
     ad.type = a->type;
     if (milk_argval_parse(a->type, v, &ad) != 0)
@@ -106,7 +114,7 @@ int milk_client_args(int                        argc,
             fprintf(
                 stderr,
                 "@args: bad declaration '%s': name:type[=default][:help], type int uint float bool "
-                "str (at most %d)\n",
+                "str stream fits (at most %d)\n",
                 argv[i], ARGS_MAX);
             free(sp);
             rc = 2;
@@ -193,7 +201,7 @@ int milk_client_args(int                        argc,
     p = stpcpy(p, local ? "local" : ":");
     for (int k = 0; k < n && rc == 0; k++)
     {
-        char        buf[64];
+        char        buf[256];
         const char *v = (a[k].val != NULL) ? a[k].val : a[k].def;
         const char *c = (v != NULL) ? check(&a[k], v, buf, sizeof(buf)) : NULL;
         if (v == NULL)

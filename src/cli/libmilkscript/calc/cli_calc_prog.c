@@ -193,6 +193,15 @@ static void load_vars(cli_calc_prog *p)
             v->type    = 0;
             v->value.f = *(double *) x;
             break;
+        case FPTYPE_STREAMNAME:
+            v->type = 3;
+            snprintf(v->value.s, sizeof(v->value.s), "%s", (const char *) x);
+            if (v->value.s[0] != '\0' &&
+                image_ID(v->value.s, data.core.image, data.core.NB_MAX_IMAGE) == -1)
+            {
+                read_sharedmem_image(v->value.s, data.core.image, data.core.NB_MAX_IMAGE);
+            }
+            break;
         default:
             v->type = 2;
             snprintf(v->value.s, sizeof(v->value.s), "%s", (const char *) x);
@@ -207,7 +216,8 @@ static void store_vars(cli_calc_prog *p)
         const VARIABLE *v = &data.core.variable[p->vid[i]];
         void           *x = p->vars[i].ptr;
         double          d = (v->type == 1) ? (double) v->value.l : v->value.f;
-        if (!p->assigned[i] || (v->type == 2) != (p->vars[i].type == FPTYPE_STRING))
+        int is_str = (p->vars[i].type == FPTYPE_STRING || p->vars[i].type == FPTYPE_FITSFILENAME);
+        if (!p->assigned[i] || p->vars[i].type == FPTYPE_STREAMNAME || (v->type == 2) != is_str)
         {
             continue;
         }
@@ -243,8 +253,10 @@ static int bind_vars(cli_calc_prog *p, const cli_calc_binding *vars, char *err, 
     }
     for (int i = 0; i < p->nvars; i++)
     {
+        int is_str = (vars[i].type == FPTYPE_STRING || vars[i].type == FPTYPE_STREAMNAME ||
+                      vars[i].type == FPTYPE_FITSFILENAME);
         p->vars[i] = vars[i];
-        p->vid[i]  = (vars[i].type == FPTYPE_STRING) ? create_variable_string_ID(vars[i].name, "")
+        p->vid[i]  = is_str ? create_variable_string_ID(vars[i].name, "")
                      : (vars[i].type == FPTYPE_FLOAT64) ? create_variable_ID(vars[i].name, 0.0)
                                                         : create_variable_long_ID(vars[i].name, 0);
         if (p->vid[i] < 0)
@@ -292,15 +304,19 @@ cli_calc_prog *cli_calc_prog_new(const char             *text,
         {
             b++;
         }
-        if (op != 0 && b < nvars)
+        if (op != 0 && b < nvars && vars[b].type != FPTYPE_STREAMNAME)
         {
             p->assigned[b] = 1; /* a result: evaluated as text */
             continue;
         }
+        if (op != 0 && b < nvars && vars[b].type == FPTYPE_STREAMNAME)
+        {
+            snprintf(name, sizeof(name), "%s", (const char *) vars[b].ptr);
+        }
         p->st[i].kept = cli_calc_keep_statement(p->st[i].text);
         if (p->st[i].kept != NULL || op != '=' ||
             image_ID(name, data.core.image, data.core.NB_MAX_IMAGE) != -1 ||
-            variable_ID(name) != -1)
+            (b == nvars && variable_ID(name) != -1))
         {
             continue;
         }
@@ -388,16 +404,21 @@ int cli_calc_prog_exec_once(const char             *text,
         {
             b++;
         }
-        if (op != 0 && b < nvars)
+        if (op != 0 && b < nvars && vars[b].type != FPTYPE_STREAMNAME)
         {
             p->assigned[b] = 1;
+        }
+        if (op != 0 && b < nvars && vars[b].type == FPTYPE_STREAMNAME)
+        {
+            snprintf(name, sizeof(name), "%s", (const char *) vars[b].ptr);
         }
         if (eval_text(p->st[i].text, err, errsz) != 0)
         {
             cli_calc_prog_free(p);
             return -1;
         }
-        if (op == '=' && b == nvars && variable_ID(name) == -1)
+        if (op == '=' && (b == nvars || vars[b].type == FPTYPE_STREAMNAME) &&
+            (b < nvars || variable_ID(name) == -1))
         {
             imageID id = image_ID(name, data.core.image, data.core.NB_MAX_IMAGE);
             if (id != -1 && data.core.image[id].md[0].shared != 1 && share(name, err, errsz) != 0)

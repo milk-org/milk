@@ -84,6 +84,8 @@ static const builtin_func builtins[] = {
     { "norm(", (double (*)()) arith_image_norm, TOK_FUNC_IM_D },
     { "matmul(", NULL, TOK_FUNC_IMIM_IM },
     { "transpose(", NULL, TOK_FUNC_IMIM_IM },
+    { "reshape(", NULL, TOK_FUNC_IMIM_IM },
+    { "vec(", NULL, TOK_FUNC_IMIM_IM },
 
     /* complex images */
     { "real(", NULL, TOK_FUNC_CPLX },
@@ -91,6 +93,7 @@ static const builtin_func builtins[] = {
     { "arg(", NULL, TOK_FUNC_CPLX },
     { "conj(", NULL, TOK_FUNC_CPLX },
     { "cplx(", NULL, TOK_FUNC_CPLX },
+    { "expi(", NULL, TOK_FUNC_CPLX },
 
     /* string -> double */
     { "strlen(", NULL, TOK_FUNC_S_D },
@@ -509,6 +512,39 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
             /* classify the identifier */
             const char *s = tokens[nt].sval;
 
+            {
+                const char *bk = strchr(s, '[');
+                if (bk != NULL)
+                {
+                    char   bare[CLI_CALC_TOKEN_MAXLEN];
+                    size_t bn = (size_t) (bk - s);
+                    if (bn > 0 && bn < CLI_CALC_TOKEN_MAXLEN)
+                    {
+                        memcpy(bare, s, bn);
+                        bare[bn]  = '\0';
+                        long bvid = variable_ID(bare);
+                        if (bvid != -1 && data.core.variable[bvid].type == 3 &&
+                            data.core.variable[bvid].value.s[0] != '\0')
+                        {
+                            char tail[CLI_CALC_TOKEN_MAXLEN];
+                            snprintf(tail, sizeof(tail), "%s", bk);
+                            snprintf(tokens[nt].sval, CLI_CALC_TOKEN_MAXLEN, "%s%s",
+                                     data.core.variable[bvid].value.s, tail);
+                        }
+                    }
+                }
+                else
+                {
+                    long svid = variable_ID(s);
+                    if (svid != -1 && data.core.variable[svid].type == 3 &&
+                        data.core.variable[svid].value.s[0] != '\0')
+                    {
+                        snprintf(tokens[nt].sval, CLI_CALC_TOKEN_MAXLEN, "%s",
+                                 data.core.variable[svid].value.s);
+                    }
+                }
+            }
+
             /* Determine whether auto-connecting /dev/shm/<name>.im.shm is safe here */
             int allow_autoconnect = 0;
             if (strchr(s, '[') != NULL || nt > 0 || parse_mode == 2)
@@ -532,7 +568,7 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
                 }
             }
 
-            if (variable_ID(s) != -1)
+            if (variable_ID(s) != -1 && data.core.variable[variable_ID(s)].type != 3)
             {
                 tokens[nt].type = TOK_VAR;
                 if (data.core.Debug > 0)

@@ -216,8 +216,10 @@ static const struct
 {
     const char *name;
     uint64_t    type;
-} spec_types[] = { { "int", FPTYPE_INT64 },  { "uint", FPTYPE_UINT64 }, { "float", FPTYPE_FLOAT64 },
-                   { "bool", FPTYPE_ONOFF }, { "str", FPTYPE_STRING },  { NULL, 0 } };
+} spec_types[] = { { "int", FPTYPE_INT64 },         { "uint", FPTYPE_UINT64 },
+                   { "float", FPTYPE_FLOAT64 },     { "bool", FPTYPE_ONOFF },
+                   { "str", FPTYPE_STRING },        { "stream", FPTYPE_STREAMNAME },
+                   { "fits", FPTYPE_FITSFILENAME }, { NULL, 0 } };
 
 int milk_argspec_parse(char *s, milk_argspec_t *a)
 {

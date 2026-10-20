@@ -27,12 +27,12 @@ int milk_argval_is_numeric(uint64_t type);
 /** milk_argval_format() - @ad's value as text that milk_argval_parse() reads back. */
 void milk_argval_format(const CLICMDARGDATA *ad, char *buf, size_t sz);
 
-/* A declared parameter, "name:type[=default][:help]": @args, and the .params of a milk.calc unit */
+/* A declared parameter, "name:type[=default][:help]": @args, and .params of milk.calc / milk.script */
 typedef struct
 {
     char        name[64];
-    const char *tname; /* int uint float bool str */
-    uint64_t    type;  /* FPTYPE_INT64 UINT64 FLOAT64 ONOFF STRING */
+    const char *tname; /* int uint float bool str stream fits */
+    uint64_t    type;  /* FPTYPE_INT64 UINT64 FLOAT64 ONOFF STRING STREAMNAME FITSFILENAME */
     const char *def;   /* NULL: required */
     const char *help;
     const char *val; /* for the caller: the value given */
