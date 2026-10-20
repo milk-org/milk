@@ -20,15 +20,14 @@
  */
 int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
 {
-    if (key >= OV_KEY_F2 && key <= OV_KEY_F7)
+    if (key >= OV_KEY_F1 && key <= OV_KEY_F8 && ov_view_by_fkey(key - OV_KEY_F1 + 1) >= 0)
     {
-        ov_set_view(lay, (ov_view_t) (key - OV_KEY_F2));
+        ov_set_view(lay, (ov_view_t) ov_view_by_fkey(key - OV_KEY_F1 + 1));
         return 1;
     }
     if (key == OV_KEY_CTRL_LEFT || key == OV_KEY_CTRL_RIGHT)
     {
-        int step = (key == OV_KEY_CTRL_LEFT) ? OV_VIEW_COUNT - 1 : 1;
-        ov_set_view(lay, (ov_view_t) (((int) lay->view + step) % OV_VIEW_COUNT));
+        ov_set_view(lay, (ov_view_t) ov_view_cycle(lay->view, (key == OV_KEY_CTRL_LEFT) ? -1 : 1));
         return 1;
     }
 

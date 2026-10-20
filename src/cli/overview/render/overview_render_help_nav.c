@@ -212,19 +212,9 @@ int ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc)
     {
         lay->help.show = 0;
         ov_buf_force_clear();
-        if (mr == lay->r_tabs.row)
+        if (mr == lay->r_tabs.row && ov_tabbar_hit(mc) >= 0)
         {
-            int tx = 1;
-            for (int v = 0; v < OV_VIEW_COUNT; v++)
-            {
-                int tw = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
-                if (mc >= tx && mc < tx + tw)
-                {
-                    ov_set_view(lay, (ov_view_t) v);
-                    break;
-                }
-                tx += tw;
-            }
+            ov_set_view(lay, (ov_view_t) ov_tabbar_hit(mc));
         }
         return 1;
     }

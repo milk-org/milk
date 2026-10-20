@@ -309,6 +309,29 @@ static void test_streams_table(void)
     free(m);
 }
 
+/* View descriptors: unique F-keys and CLI names, entry focus on a shown panel, cycling wraps */
+static void test_view_descs(void)
+{
+    for (int a = 0; a < OV_VIEW_COUNT; a++)
+    {
+        CHECK(ov_view_by_fkey(ov_views[a].fkey) == a);
+        CHECK(ov_view_by_name(ov_views[a].cli_name) == a);
+        CHECK(ov_views[a].default_focus < 0 ||
+              ov_view_has_panel((ov_view_t) a, (ov_focus_t) ov_views[a].default_focus));
+        CHECK(ov_view_cycle(ov_view_cycle(a, +1), -1) == a);
+    }
+    CHECK(ov_view_by_fkey(1) == -1 && ov_view_by_name("nope") == -1);
+    CHECK(ov_view_cycle(0, -1) == OV_VIEW_COUNT - 1 && ov_view_cycle(OV_VIEW_COUNT - 1, 1) == 0);
+    CHECK(strcmp(ov_view_label(OV_VIEW_LOOPS), "LOOPS") == 0);
+    static OV_LAYOUT lay;
+    memset(&lay, 0, sizeof(lay));
+    lay.focus = OV_FOCUS_FPS;
+    ov_set_view(&lay, OV_VIEW_DASHBOARD); /* DASH keeps the focus */
+    CHECK(lay.view == OV_VIEW_DASHBOARD && lay.focus == OV_FOCUS_FPS);
+    ov_set_view(&lay, OV_VIEW_LOOPS);
+    CHECK(lay.view == OV_VIEW_LOOPS && lay.focus == OV_FOCUS_GRAPH);
+}
+
 int main(void)
 {
     test_sort_does_not_touch_model();
@@ -318,6 +341,7 @@ int main(void)
     test_fps_table();
     test_procs_table();
     test_streams_table();
+    test_view_descs();
     if (failures == 0)
     {
         printf("all ok\n");

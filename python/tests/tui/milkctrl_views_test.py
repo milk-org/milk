@@ -36,3 +36,27 @@ def test_details_keys_hint_outside_dash(milkctrl, entities, view, key):
     m.keys(key)
     m.wait_for(r"DETAILS is shown in F2:DASH and F6:GRAPH")
     assert m.quit() == 0
+
+
+@pytest.mark.parametrize("label", ["F3:STRM", "F7:LOOPS"])
+def test_tab_click_switches_view(milkctrl, label):
+    """Tabs are hit-tested where the tab bar drew them."""
+    m = milkctrl()
+    m.wait_for(r"F2:DASH")
+    tabs = m.lines()[1]
+    m.click(tabs.index(label) + 2, 2)
+    m.wait_for(rf"▌ {label} ▐")
+    assert m.quit() == 0
+
+
+def test_help_button_and_context(milkctrl):
+    """The [h: HELP] button opens help, whose context names the current view (F7 used to say CONN)."""
+    m = milkctrl()
+    m.keys("F7")
+    m.wait_for(r"▌ F7:LOOPS")
+    tabs = m.lines()[1]
+    m.click(tabs.index("h: HELP") + 2, 2)
+    m.wait_for(r"Context: \[LOOPS /")
+    m.keys("h")  # close help: q would only close the overlay
+    m.wait_for(r"FEEDBACK LOOPS")
+    assert m.quit() == 0

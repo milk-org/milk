@@ -131,24 +131,8 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     /* Ctrl+scroll: cycle views (#12) */
     if (key == OV_KEY_CTRL_SCROLL_UP || key == OV_KEY_CTRL_SCROLL_DOWN)
     {
-        int v = (int) lay->view;
-        if (key == OV_KEY_CTRL_SCROLL_UP)
-        {
-            v--;
-            if (v < 0)
-            {
-                v = OV_VIEW_COUNT - 1;
-            }
-        }
-        else
-        {
-            v++;
-            if (v >= OV_VIEW_COUNT)
-            {
-                v = 0;
-            }
-        }
-        ov_set_view(lay, (ov_view_t) v);
+        ov_set_view(lay,
+                    (ov_view_t) ov_view_cycle(lay->view, (key == OV_KEY_CTRL_SCROLL_UP) ? -1 : 1));
         return 1;
     }
 

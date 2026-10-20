@@ -181,21 +181,8 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         /* Check for tab selection & help button clicks (row 2) */
         if (mr == lay->r_tabs.row && mc >= 1)
         {
-            int tab_widths[OV_VIEW_COUNT];
-            int tabs_total_width = 0;
-            for (int v = 0; v < OV_VIEW_COUNT; v++)
-            {
-                tab_widths[v] = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
-                tabs_total_width += tab_widths[v];
-            }
-
-            int help_width = 11;
-            int help_col   = (lay->term_cols >= tabs_total_width + help_width)
-                                 ? (lay->term_cols - help_width + 1)
-                                 : (tabs_total_width + 1);
-
-            /* Check help button click */
-            if (mc >= help_col && mc < help_col + help_width)
+            int t = ov_tabbar_hit(mc);
+            if (t == OV_TABBAR_HELP)
             {
                 if (lay->help.show)
                 {
@@ -208,22 +195,15 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 }
                 return 1;
             }
-
-            /* Check tab selection clicks */
-            int tx = 1;
-            for (int v = 0; v < OV_VIEW_COUNT; v++)
+            if (t >= 0)
             {
-                if (mc >= tx && mc < tx + tab_widths[v])
+                ov_set_view(lay, (ov_view_t) t);
+                if (lay->help.show)
                 {
-                    ov_set_view(lay, (ov_view_t) v);
-                    if (lay->help.show)
-                    {
-                        lay->help.show = 0;
-                        ov_buf_force_clear();
-                    }
-                    return 1;
+                    lay->help.show = 0;
+                    ov_buf_force_clear();
                 }
-                tx += tab_widths[v];
+                return 1;
             }
         }
 

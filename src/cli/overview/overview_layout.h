@@ -26,27 +26,6 @@ typedef enum
     OV_VIEW_COUNT,
 } ov_view_t;
 
-static inline const char *ov_view_label(ov_view_t v)
-{
-    switch (v)
-    {
-    case OV_VIEW_DASHBOARD:
-        return "DASH";
-    case OV_VIEW_STREAMS:
-        return "STRM";
-    case OV_VIEW_PROCS:
-        return "PROC";
-    case OV_VIEW_FPS:
-        return "FPS";
-    case OV_VIEW_GRAPH:
-        return "CONN";
-    case OV_VIEW_LOOPS:
-        return "LOOPS";
-    default:
-        return "";
-    }
-}
-
 /* Panel rectangle */
 typedef struct
 {
@@ -62,6 +41,8 @@ typedef enum
     OV_FOCUS_GRAPH,
     OV_FOCUS_COUNT,
 } ov_focus_t;
+
+#include "overview_view.h"
 
 /* Preview-bar button action IDs */
 #define OV_BTN_NONE 0

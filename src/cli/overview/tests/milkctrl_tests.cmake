@@ -21,7 +21,7 @@ if(BUILD_TESTING)
     ../overview/render/overview_render_filter.c ../overview/overview_cmdlog.c
     ../overview/render/overview_columns.c ../overview/render/overview_columns_fps.c
     ../overview/render/overview_columns_procs.c ../overview/render/overview_columns_streams.c
-    ../overview/render/overview_render_utils.c
+    ../overview/render/overview_render_utils.c ../overview/overview_view.c
     ../overview/render/overview_theme.c ../overview/render/overview_theme_palettes.c
     ../overview/render/overview_theme_palettes_extra.c ../overview/ansi/overview_ansi_buf.c
     ../overview/ansi/overview_ansi_delta.c ../overview/ansi/overview_ansi_utf8.c

@@ -77,11 +77,7 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_bold();
         ov_theme_fg(OV_FG_TITLE);
 
-        const char *vname = (lay->view == OV_VIEW_DASHBOARD) ? "DASH"
-                            : (lay->view == OV_VIEW_STREAMS) ? "STRM"
-                            : (lay->view == OV_VIEW_PROCS)   ? "PROC"
-                            : (lay->view == OV_VIEW_FPS)     ? "FPS"
-                                                             : "CONN";
+        const char *vname = ov_view_label(lay->view);
         const char *pname = (lay->focus == OV_FOCUS_STREAMS) ? "Streams"
                             : (lay->focus == OV_FOCUS_PROCS) ? "Processes"
                             : (lay->focus == OV_FOCUS_FPS)   ? "FPS"

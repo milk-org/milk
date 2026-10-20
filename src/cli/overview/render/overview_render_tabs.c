@@ -12,6 +12,26 @@
 #include <stdio.h>
 #include <string.h>
 
+/* Tab bar cells as last drawn (1-based screen column, width): the views, then the help button */
+static struct
+{
+    int col;
+    int w;
+} s_tab[OV_VIEW_COUNT + 1];
+
+/** ov_tabbar_hit - view tab under screen column @mc as last drawn, OV_TABBAR_HELP, or -1. */
+int ov_tabbar_hit(int mc)
+{
+    for (int v = 0; v <= OV_VIEW_COUNT; v++)
+    {
+        if (s_tab[v].w > 0 && mc >= s_tab[v].col && mc < s_tab[v].col + s_tab[v].w)
+        {
+            return (v == OV_VIEW_COUNT) ? OV_TABBAR_HELP : v;
+        }
+    }
+    return -1;
+}
+
 /**
  * ov_render_tabs - render dedicated tab selection bar and prominent help button.
  * @lay: layout state
@@ -26,17 +46,13 @@ void ov_render_tabs(OV_LAYOUT *lay)
     ov_buf_pos(r.row, r.col);
     ov_theme_bg(OV_BG_HEADER);
 
-    /* Render view tabs */
+    /* View tabs: " [ F2:DASH ] ", or the pill " ▌ F2:DASH ▐ " for the current view */
     int tabs_total_width = 0;
-    int tab_widths[OV_VIEW_COUNT];
     for (int v = 0; v < OV_VIEW_COUNT; v++)
     {
-        tab_widths[v] = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
-        tabs_total_width += tab_widths[v];
-    }
-
-    for (int v = 0; v < OV_VIEW_COUNT; v++)
-    {
+        s_tab[v].col = r.col + tabs_total_width;
+        s_tab[v].w   = (int) strlen(ov_views[v].label) + 9;
+        tabs_total_width += s_tab[v].w;
         if (v == (int) lay->view)
         {
             ov_theme_bg(OV_BG_HEADER);
@@ -45,7 +61,7 @@ void ov_render_tabs(OV_LAYOUT *lay)
             ov_theme_bg(OV_FG_TITLE);
             ov_theme_fg(OV_BG_TERMINAL);
             ov_buf_bold();
-            ov_buf_printf(" F%d:%s ", v + 2, ov_view_label((ov_view_t) v));
+            ov_buf_printf(" F%d:%s ", ov_views[v].fkey, ov_views[v].label);
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_HEADER);
             ov_theme_fg(OV_FG_TITLE);
@@ -58,7 +74,7 @@ void ov_render_tabs(OV_LAYOUT *lay)
             ov_buf_printf(" [");
             ov_theme_fg(OV_FG_TEXT);
             ov_buf_bold();
-            ov_buf_printf(" F%d:%s ", v + 2, ov_view_label((ov_view_t) v));
+            ov_buf_printf(" F%d:%s ", ov_views[v].fkey, ov_views[v].label);
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_HEADER);
             ov_theme_fg(OV_FG_DIM);
@@ -78,6 +94,8 @@ void ov_render_tabs(OV_LAYOUT *lay)
     {
         pad = 0;
     }
+    s_tab[OV_VIEW_COUNT].col = r.col + tabs_total_width + pad;
+    s_tab[OV_VIEW_COUNT].w   = help_width;
 
     /* Render prominent help button */
     if (lay->help.show)

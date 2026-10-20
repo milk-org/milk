@@ -95,35 +95,18 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
 
     if (mr == lay->r_tabs.row)
     {
-        int tab_widths[OV_VIEW_COUNT];
-        int tabs_total_width = 0;
-        for (int v = 0; v < OV_VIEW_COUNT; v++)
-        {
-            tab_widths[v] = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
-            tabs_total_width += tab_widths[v];
-        }
-        int help_width = 11;
-        int help_col   = (lay->term_cols >= tabs_total_width + help_width)
-                             ? (lay->term_cols - help_width + 1)
-                             : (tabs_total_width + 1);
-
-        if (mc >= help_col && mc < help_col + help_width)
+        int t = ov_tabbar_hit(mc);
+        if (t == OV_TABBAR_HELP)
         {
             snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
                      "Help: Toggle interactive help & keybinding menu (key: h)");
             return;
         }
-
-        int tx = 1;
-        for (int v = 0; v < OV_VIEW_COUNT; v++)
+        if (t >= 0)
         {
-            if (mc >= tx && mc < tx + tab_widths[v])
-            {
-                snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                         "View: Switch to %s view (key: F%d)", ov_view_label((ov_view_t) v), v + 2);
-                return;
-            }
-            tx += tab_widths[v];
+            snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
+                     "View: Switch to %s view (key: F%d)", ov_views[t].label, ov_views[t].fkey);
+            return;
         }
     }
 

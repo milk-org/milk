@@ -85,33 +85,6 @@ int ov_render_header_text(const char *text, int hs, int max_vis_width, ov_rgb_t 
 void render_pad_spaces(int chars_written, int panel_width);
 
 /**
- * view_label - get short 4-letter view mode tag string.
- * @v: View mode enum.
- *
- * Return: Static label string ("DASH", "STRM", "PROC", "FPS", "CONN", "LOOPS").
- */
-static const char *view_label(ov_view_t v)
-{
-    switch (v)
-    {
-    case OV_VIEW_DASHBOARD:
-        return "DASH";
-    case OV_VIEW_STREAMS:
-        return "STRM";
-    case OV_VIEW_PROCS:
-        return "PROC";
-    case OV_VIEW_FPS:
-        return "FPS";
-    case OV_VIEW_GRAPH:
-        return "CONN";
-    case OV_VIEW_LOOPS:
-        return "LOOPS";
-    default:
-        return "";
-    }
-}
-
-/**
  * ov_render_header - render the top status header bar of milk-CTRL.
  * @lay: Pointer to layout structure.
  * @m:   Pointer to current data model snapshot.
