@@ -444,15 +444,11 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
 
     ov_theme_fg(OV_FG_DIM);
     {
+        /* milk-CTRL's own cost: its CPU (RUSAGE_SELF) and its output rate to the terminal */
         double cpu_pct = ov_sys_get_cpu_usage();
-        chars_left += snprintf(NULL, 0, "  CPU: %4.1f%%", cpu_pct);
-        ov_buf_printf("  CPU: %4.1f%%", cpu_pct);
-    }
-
-    {
-        double bw_kbs = ov_sys_get_bandwidth_usage();
-        chars_left += snprintf(NULL, 0, "  BW: %4.1f kB/s", bw_kbs);
-        ov_buf_printf("  BW: %4.1f kB/s", bw_kbs);
+        double bw_kbs  = ov_sys_get_bandwidth_usage();
+        chars_left += snprintf(NULL, 0, "  self %4.1f%% %4.1fkB/s", cpu_pct, bw_kbs);
+        ov_buf_printf("  self %4.1f%% %4.1fkB/s", cpu_pct, bw_kbs);
     }
 
     int pad = r.width - chars_left;

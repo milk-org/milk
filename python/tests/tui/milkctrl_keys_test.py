@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 
 import pytest
@@ -49,4 +50,19 @@ def test_intro_scrolls_to_last_line(milkctrl):
     m.wait_for(r"Quit milk-CTRL cleanly")
     m.keys("Escape")
     _gone(m, "ABOUT milk-CTRL")
+    assert m.quit() == 0
+
+
+def test_status_labels_match_tabs(milkctrl):
+    """Breadcrumb uses the tab names; the sub-tab badge names the tab shown (it said DETAIL for LOOPS)."""
+    m = milkctrl()
+    m.wait_for(r"DASH ›")
+    assert "[CONN]" in m.status()
+    m.keys("BTab")  # next DASH sub-tab: LOOPS
+    m.wait_for(r"\[LOOPS\]")
+    m.keys("F3")
+    m.wait_for(r"STRM ›")
+    assert "[LOOPS]" not in m.status()  # no graph panel in F3
+    assert " p c " not in m.status()
+    assert re.search(r"self\s+\d+\.\d%", m.header())
     assert m.quit() == 0

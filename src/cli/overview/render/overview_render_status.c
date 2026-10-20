@@ -158,19 +158,12 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
         break;
     }
 
-    const char *detail_label = "";
-    switch (lay->graph_tab_mode)
-    {
-    case 0:
-        detail_label = " [CONN]";
-        break;
-    case 1:
-        detail_label = " [DETAIL]";
-        break;
-    case 2:
-        detail_label = " [RES]";
-        break;
-    }
+    /* The DASH graph panel's sub-tab, named as its tab bar names it */
+    static const char *const subtab[] = { " [CONN]", " [LOOPS]", " [DETAIL]", " [RES]" };
+    const char              *detail_label =
+        (lay->view == OV_VIEW_DASHBOARD && lay->graph_tab_mode >= 0 && lay->graph_tab_mode < 4)
+            ? subtab[lay->graph_tab_mode]
+            : "";
 
     /* Filter editing prompt overrides normal status */
     if (lay->filter_editing)
@@ -218,31 +211,7 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     }
     /* Breadcrumb trail (#11) */
     {
-        const char *view_name = "";
-        switch (lay->view)
-        {
-        case OV_VIEW_DASHBOARD:
-            view_name = "OVW";
-            break;
-        case OV_VIEW_STREAMS:
-            view_name = "STR";
-            break;
-        case OV_VIEW_FPS:
-            view_name = "FPS";
-            break;
-        case OV_VIEW_PROCS:
-            view_name = "PRC";
-            break;
-        case OV_VIEW_GRAPH:
-            view_name = "GRP";
-            break;
-        case OV_VIEW_LOOPS:
-            view_name = "LOOP";
-            break;
-        default:
-            view_name = "???";
-            break;
-        }
+        const char *view_name  = ov_view_label(lay->view); /* the tab bar's names */
         const char *panel_name = "";
         ov_rgb_t    panel_fg   = OV_FG_DIM;
         if (lay->view == OV_VIEW_LOOPS ||
@@ -402,9 +371,9 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     }
     else
     {
-        int n_hints = snprintf(NULL, 0, "%s%s%s  +/- TAB D S/s / p c m G h q  (Click headers/tabs)",
+        int n_hints = snprintf(NULL, 0, "%s%s%s  +/- TAB D S/s / c m G h q  (Click headers/tabs)",
                                ctrl_hint, sort_label, detail_label);
-        ov_buf_printf("%s%s%s  +/- TAB D S/s / p c m G h q  (Click headers/tabs)", ctrl_hint,
+        ov_buf_printf("%s%s%s  +/- TAB D S/s / c m G h q  (Click headers/tabs)", ctrl_hint,
                       sort_label, detail_label);
         n1 += n_hints;
     }
