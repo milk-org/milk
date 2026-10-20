@@ -213,9 +213,15 @@ void ov_scan_fps(OV_MODEL *model)
     int dir_changed = (dirstat.st_mtim.tv_sec != s_fps_mtime.tv_sec) ||
                       (dirstat.st_mtim.tv_nsec != s_fps_mtime.tv_nsec);
 
-    if (!dir_changed && s_fcache_nb > 0)
+    /* Re-creating a file changes the directory mtime; the files themselves are checked as a safety net */
+    static int      s_scanned;    /* a full scan was done: the fast path holds even with no FPS */
+    static double   s_file_check; /* last per-file check */
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    double t = (double) now.tv_sec + 1e-9 * (double) now.tv_nsec;
+    if (!dir_changed && s_scanned && t - s_file_check >= OV_FILE_RECHECK_S)
     {
-        /* Fast path: no files added/removed, unless an entry was re-created in place */
+        s_file_check = t;
         pthread_mutex_lock(&s_fcache_mutex);
         int all_same = 1;
         for (int ci = 0; ci < s_fcache_nb && all_same; ci++)
@@ -225,7 +231,7 @@ void ov_scan_fps(OV_MODEL *model)
         pthread_mutex_unlock(&s_fcache_mutex);
         dir_changed = !all_same;
     }
-    if (!dir_changed && s_fcache_nb > 0)
+    if (!dir_changed && s_scanned)
     {
         pthread_mutex_lock(&s_fcache_mutex);
         int idx = 0;
@@ -240,7 +246,9 @@ void ov_scan_fps(OV_MODEL *model)
     }
 
     /* Full path: directory changed */
-    s_fps_mtime = dirstat.st_mtim;
+    s_fps_mtime  = dirstat.st_mtim;
+    s_scanned    = 1;
+    s_file_check = t;
 
     DIR *dp = opendir(shmdir);
     if (dp == NULL)

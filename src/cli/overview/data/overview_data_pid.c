@@ -138,7 +138,18 @@ const char *pid_stat_skip(const char *p, int n)
     return p;
 }
 
-/** pid_probe - one /proc read of @pid; with no stat file (gone, or hidden by hidepid) kill() decides. */
+/** proc_hidden - 1 when /proc hides other users' processes (hidepid): init's stat file is not readable. */
+static int proc_hidden(void)
+{
+    static int hidden = -1;
+    if (hidden < 0)
+    {
+        hidden = (access("/proc/1/stat", R_OK) != 0);
+    }
+    return hidden;
+}
+
+/** pid_probe - one /proc read of @pid; with no stat file it is gone, unless /proc hides it (kill() decides). */
 static void pid_probe(pid_t pid, pid_entry_t *e)
 {
     char        buf[1024];
@@ -147,7 +158,8 @@ static void pid_probe(pid_t pid, pid_entry_t *e)
     e->pid = pid;
     if (f3 == NULL)
     {
-        e->status = (kill(pid, 0) == 0 || errno == EPERM) ? OV_PID_ALIVE : OV_PID_DEAD;
+        e->status =
+            (proc_hidden() && (kill(pid, 0) == 0 || errno == EPERM)) ? OV_PID_ALIVE : OV_PID_DEAD;
         return;
     }
     e->status       = (f3[0] == 'Z') ? OV_PID_ZOMBIE : OV_PID_ALIVE;

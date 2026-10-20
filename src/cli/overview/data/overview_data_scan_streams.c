@@ -254,7 +254,8 @@ void ov_scan_streams(OV_MODEL *model)
     int dir_changed = (dirstat.st_mtim.tv_sec != s_shm_mtime.tv_sec) ||
                       (dirstat.st_mtim.tv_nsec != s_shm_mtime.tv_nsec);
 
-    if (!dir_changed && s_scache_nb > 0)
+    static int s_scanned; /* a full scan was done: the fast path holds even with no streams */
+    if (!dir_changed && s_scanned)
     {
         /* Fast path: no files added/removed.
          * Just re-read metadata from cache. */
@@ -274,6 +275,7 @@ void ov_scan_streams(OV_MODEL *model)
 
     /* Full path: directory changed */
     s_shm_mtime = dirstat.st_mtim;
+    s_scanned   = 1;
 
     DIR *dp = opendir(shmdir);
     if (dp == NULL)
@@ -316,20 +318,25 @@ void ov_scan_streams(OV_MODEL *model)
         memcpy(sname, ep->d_name, (size_t) snlen);
         sname[snlen] = '\0';
 
-        /* stat() for inode */
+        /* Inode from the directory entry; stat() only where the filesystem does not report it */
         char fpath[1024];
         snprintf(fpath, sizeof(fpath), "%s/%s", shmdir, ep->d_name);
-        struct stat st;
-        if (stat(fpath, &st) != 0)
+        ino_t ino = ep->d_ino;
+        if (ino == 0)
         {
-            continue;
+            struct stat st;
+            if (stat(fpath, &st) != 0)
+            {
+                continue;
+            }
+            ino = st.st_ino;
         }
 
         /* Look up in cache */
         int    ci   = scache_find(sname);
         IMAGE *imgp = NULL;
 
-        if (ci >= 0 && s_scache[ci].inode == st.st_ino)
+        if (ci >= 0 && s_scache[ci].inode == ino)
         {
             /* Cache hit — reuse mapping */
             s_scache[ci].in_use = 1;
@@ -358,14 +365,14 @@ void ov_scan_streams(OV_MODEL *model)
             }
 
             strncpy(s_scache[ci].name, sname, sizeof(s_scache[ci].name) - 1);
-            s_scache[ci].inode  = st.st_ino;
+            s_scache[ci].inode  = ino;
             s_scache[ci].in_use = 1;
             s_scache[ci].is_new = (s_scan_dt_sec > 0.0) ? OV_NEW_SCANS : 0; /* none at startup */
             s_scache_nb++;
             imgp = &s_scache[ci].img;
         }
 
-        fill_stream_from_img(&model->streams[idx], imgp, sname, st.st_ino);
+        fill_stream_from_img(&model->streams[idx], imgp, sname, ino);
         scache_rate_update(&model->streams[idx], ci);
         idx++;
     }

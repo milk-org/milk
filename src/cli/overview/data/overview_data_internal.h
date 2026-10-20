@@ -5,6 +5,8 @@
 #ifndef OVERVIEW_DATA_INTERNAL_H
 #define OVERVIEW_DATA_INTERNAL_H
 
+#define OV_FILE_RECHECK_S 10.0 /* period (s) of the per-file check of cached FPS mappings */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
