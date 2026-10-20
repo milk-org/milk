@@ -105,12 +105,14 @@ int main(void)
         }
     }
 
-    /* Wide: nothing dropped, NAME at its maximum; narrow: NAME at its minimum */
+    /* Wide: nothing dropped, NAME at its maximum; narrow: NAME only takes what no dropped column fits in */
     OV_TABLE_LAYOUT lo;
     ov_table_layout(&ov_streams_table, &lay, 400, 0, &lo);
     CHECK(lo.n == ov_streams_table.n && !lo.more_right && lo.w[1] == OV_COL_ELASTIC_MAX);
     ov_table_layout(&ov_streams_table, &lay, 77, 0, &lo);
-    CHECK(lo.more_right && lo.w[1] == ov_streams_table.cols[1].width);
+    CHECK(lo.more_right && lo.w[1] >= ov_streams_table.cols[1].width &&
+          lo.w[1] < OV_COL_ELASTIC_MAX);
+    CHECK(lo.used == 77);
 
     /* Compact mode hides its columns; collapsing a column takes one column and frees room */
     lay.compact_mode = 1;

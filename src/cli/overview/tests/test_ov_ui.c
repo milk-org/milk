@@ -127,7 +127,7 @@ static void test_key_dispatch(void)
 }
 
 
-/* Durations keep at most 7 columns */
+/* Durations keep at most 7 columns, SI-scaled values at most 6 */
 static void test_fmt_dt(void)
 {
     static const struct
@@ -146,6 +146,18 @@ static void test_fmt_dt(void)
     {
         CHECK(strcmp(ov_fmt_dt_ns(buf, sizeof(buf), g[i].ns), g[i].want) == 0);
         CHECK(strlen(buf) <= 7);
+    }
+    static const struct
+    {
+        double      v;
+        const char *want;
+    } si[] = { { -1, "-" },         { 0, "0" },         { 7, "7" },          { 999.9, "999.9" },
+               { 999.96, "1.00k" }, { 12e3, "12.0k" },  { 123.4e3, "123k" }, { 1.2e6, "1.20M" },
+               { 45e9, "45.0G" },   { 9.99e17, "999P" } };
+    for (size_t i = 0; i < sizeof(si) / sizeof(si[0]); i++)
+    {
+        CHECK(strcmp(ov_fmt_si(buf, sizeof(buf), si[i].v), si[i].want) == 0);
+        CHECK(strlen(buf) <= 6);
     }
 }
 

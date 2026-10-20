@@ -63,10 +63,10 @@ static void cell_hz(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
     double hz = STRM(rc)->update_hz;
     c->fg     = (hz > 0.1) ? OV_FG_ACTIVE : OV_FG_DIM;
-    snprintf(c->text, sizeof(c->text), (hz > 0.1) ? "%.1f" : "-", hz);
+    ov_fmt_si(c->text, sizeof(c->text), (hz > 0.1) ? hz : -1.0);
 }
 
-/** cell_mbps - throughput. */
+/** cell_mbps - throughput in bytes per second. */
 static void cell_mbps(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
     const OV_STREAM *s = STRM(rc);
@@ -74,11 +74,9 @@ static void cell_mbps(OV_COLCELL *c, const OV_ROW_CTX *rc)
     snprintf(c->text, sizeof(c->text), "-");
     if (s->update_hz > 0.1)
     {
-        double mb =
-            s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype) / (1024.0 * 1024.0);
         c->fg = OV_FG_ACTIVE;
-        snprintf(c->text, sizeof(c->text), (mb >= 1000.0) ? "%.1fG" : "%.1fM",
-                 (mb >= 1000.0) ? mb / 1024.0 : mb);
+        ov_fmt_si(c->text, sizeof(c->text),
+                  s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype));
     }
 }
 
@@ -99,7 +97,7 @@ static void cell_owner(OV_COLCELL *c, const OV_ROW_CTX *rc)
 static void cell_count(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
     c->fg = STRM(rc)->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM;
-    snprintf(c->text, sizeof(c->text), "%" PRIu64, (uint64_t) STRM(rc)->cnt0);
+    ov_fmt_si(c->text, sizeof(c->text), (double) STRM(rc)->cnt0);
 }
 
 /** cell_sems - one character per semaphore: its value (+ above 9), '.' for absent ones. */
@@ -173,10 +171,10 @@ static const OV_COLUMN stream_cols[] = {
     { "typ", "TYP", "typ", 4, 5, OV_COLF_RIGHT, 1, NULL, cell_typ },
     { "size", "SIZE", "size", 11, 3, OV_COLF_RIGHT, 2, NULL, cell_size },
     { "hz", "Hz", NULL, 6, 1, OV_COLF_RIGHT, 3, NULL, cell_hz },
-    { "mbps", "MB/s", NULL, 7, 4, OV_COLF_RIGHT, 4, NULL, cell_mbps },
+    { "mbps", "B/s", NULL, 6, 4, OV_COLF_RIGHT, 4, NULL, cell_mbps },
     { "inode", "INODE", "inode", 10, 9, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, 5, NULL, cell_inode },
     { "owner", "OWNER", NULL, 7, 6, OV_COLF_RIGHT, -1, NULL, cell_owner },
-    { "count", "COUNT", "count", 10, 8, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, 6, NULL, cell_count },
+    { "count", "COUNT", "count", 6, 8, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, 6, NULL, cell_count },
     { "sems", "SEMS", NULL, 10, 10, OV_COLF_COMPACT_HIDE, -1, NULL, cell_sems },
     { "wpid", "WPID", NULL, 7, 2, OV_COLF_RIGHT, -1, NULL, cell_wpid },
     { "rpid", "RPID", NULL, RPID_W, 11, 0, -1, NULL, cell_rpid },

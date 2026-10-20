@@ -60,7 +60,7 @@ static void cell_hz(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
     double hz = PROC(rc)->loop_hz;
     c->fg = (hz > 0.1) ? ov_rgb_lerp(OV_FG_DIM, OV_FG_ACTIVE, (float) (hz / 5000.0)) : OV_FG_DIM;
-    snprintf(c->text, sizeof(c->text), (hz > 0.1) ? "%.1f" : "-", hz);
+    ov_fmt_si(c->text, sizeof(c->text), (hz > 0.1) ? hz : -1.0);
 }
 
 /** cell_uptime - time since the process started. */
@@ -89,7 +89,7 @@ static void cell_trigstrm(OV_COLCELL *c, const OV_ROW_CTX *rc)
     snprintf(c->text, sizeof(c->text), "%s", t ? p->trigstreamname : "-");
 }
 
-/** cell_exec - median execution time in ms; W/R when it writes/reads the selected stream. */
+/** cell_exec - median execution time; W/R when it writes/reads the selected stream. */
 static void cell_exec(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
     const OV_PROC *p = PROC(rc);
@@ -100,7 +100,9 @@ static void cell_exec(OV_COLCELL *c, const OV_ROW_CTX *rc)
     {
         double ms = 1.0e-6 * (double) p->dtmedian_exec_ns;
         c->fg     = (ms < 1.0) ? OV_FG_ACTIVE : (ms < 10.0) ? OV_FG_WARN : OV_FG_ERROR;
-        snprintf(c->text, sizeof(c->text), "%.3f%s", ms, suffix);
+        char dt[16];
+        snprintf(c->text, sizeof(c->text), "%s%s",
+                 ov_fmt_dt_ns(dt, sizeof(dt), p->dtmedian_exec_ns), suffix);
     }
     else
     {
@@ -133,7 +135,7 @@ static void cell_cpu(OV_COLCELL *c, const OV_ROW_CTX *rc)
 static void cell_loopcnt(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
     c->fg = PROC(rc)->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM;
-    snprintf(c->text, sizeof(c->text), "%" PRId64, (int64_t) PROC(rc)->loopcnt);
+    ov_fmt_si(c->text, sizeof(c->text), (double) PROC(rc)->loopcnt);
 }
 
 /** cell_mem - resident memory. */
@@ -147,7 +149,7 @@ static void cell_missed(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
     uint64_t n = PROC(rc)->triggermissed_cumul;
     c->fg      = (n > 0) ? OV_FG_WARN : OV_FG_DIM;
-    snprintf(c->text, sizeof(c->text), "%" PRIu64, n);
+    ov_fmt_si(c->text, sizeof(c->text), (double) n);
 }
 
 /** cell_msg - status message of the loop. */
@@ -166,12 +168,12 @@ static const OV_COLUMN proc_cols[] = {
     { "uptime", "UPTIME", NULL, 6, 10, OV_COLF_RIGHT, 7, NULL, cell_uptime },
     { "trg", "TRG", NULL, 3, 11, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, -1, NULL, cell_trg },
     { "trigstrm", "trig-strm", NULL, 10, 12, OV_COLF_COMPACT_HIDE, -1, NULL, cell_trigstrm },
-    { "exec", "exec", NULL, 9, 13, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, -1, NULL, cell_exec },
+    { "exec", "EXEC", NULL, 9, 13, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, -1, NULL, cell_exec },
     { "duty", "DUTY", NULL, 5, 14, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, 10, NULL, cell_duty },
     { "cpu", "CPU%", NULL, 6, 4, OV_COLF_RIGHT, 8, NULL, cell_cpu },
-    { "loopcnt", "LOOPCNT", NULL, 10, 6, OV_COLF_RIGHT, 9, NULL, cell_loopcnt },
+    { "loopcnt", "LOOPCNT", NULL, 7, 6, OV_COLF_RIGHT, 9, NULL, cell_loopcnt },
     { "mem", "MEM", NULL, 5, 5, OV_COLF_RIGHT, 4, NULL, cell_mem },
-    { "missed", "MISSED", NULL, 10, 15, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, -1, NULL,
+    { "missed", "MISSED", NULL, 6, 15, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, -1, NULL,
       cell_missed },
     { "msg", "MSG", NULL, 12, 16, OV_COLF_FILL, -1, NULL, cell_msg },
 };
