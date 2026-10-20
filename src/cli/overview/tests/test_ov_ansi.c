@@ -213,6 +213,14 @@ static void test_keys(void)
     CHECK(ov_get_key() == OV_KEY_MOUSE_MOVE && ov_hover_col == 40 && ov_hover_row == 2);
     waitpid(pid, NULL, 0);
 
+    /* Bracketed paste: printable bytes flagged, CR and escape sequences dropped (robust-7) */
+    const char *paste = "\x1b[200~q\r\x1b[Ay\x1b[201~x";
+    CHECK(write(p[1], paste, strlen(paste)) == (ssize_t) strlen(paste));
+    CHECK(ov_get_key() == ('q' | OV_KEY_PASTED));
+    CHECK(ov_get_key() == ('y' | OV_KEY_PASTED));
+    CHECK(ov_get_key() == 'x');
+    CHECK(ov_get_key() == OV_KEY_NONE);
+
     dup2(saved, STDIN_FILENO);
     close(saved);
     close(p[0]);

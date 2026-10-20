@@ -224,6 +224,10 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
         }
         usleep(10000);
         int key = ov_get_key();
+        if (key > 0)
+        {
+            key &= ~OV_KEY_PASTED; /* the editor is a text prompt: pasted text is welcome */
+        }
 
         if (key == OV_KEY_NONE)
         {

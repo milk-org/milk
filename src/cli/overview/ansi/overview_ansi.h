@@ -70,6 +70,9 @@ extern int wcwidth(wchar_t c);
 #define OV_KEY_CTRL_SCROLL_UP 289
 #define OV_KEY_CTRL_SCROLL_DOWN 290
 #define OV_KEY_MOUSE_MOVE 291
+#define OV_KEY_PASTE_BEGIN 292 /* ESC [ 200 ~ (bracketed paste) */
+#define OV_KEY_PASTE_END 293   /* ESC [ 201 ~ */
+#define OV_KEY_PASTED 0x10000  /* flag on printable bytes inside a bracketed paste */
 
 extern int      ov_mouse_row;
 extern int      ov_mouse_col;

@@ -16,7 +16,7 @@ static int            ov__saved_err   = -1;
 static int            ov__cap[2]      = { -1, -1 };
 
 static const char ov__restore_seq[] =
-    "\033[?2026l\033[?1003l\033[?1006l\033[?1002l\033[?25h\033[?7h\033[0m\033[?1049l";
+    "\033[?2004l\033[?2026l\033[?1003l\033[?1006l\033[?1002l\033[?25h\033[?7h\033[0m\033[?1049l";
 
 /**
  * ov_capture_stdio - point fds 1 and 2 at a pipe while the TUI owns the terminal.
@@ -101,7 +101,7 @@ void ov_raw_mode_enter(void)
 
     ov_capture_stdio();
 
-    const char seq[] = "\033[?1049h\033[?25l\033[?7l\033[?1002h\033[?1006h";
+    const char seq[] = "\033[?1049h\033[?25l\033[?7l\033[?1002h\033[?1006h\033[?2004h";
     if (write(ov__tty_fd, seq, sizeof(seq) - 1) < 0)
     {
     }

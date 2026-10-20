@@ -167,6 +167,10 @@ static int ov_key_tilde(int code)
     case 18:
     case 19:
         return OV_KEY_F6 + (code - 17);
+    case 200:
+        return OV_KEY_PASTE_BEGIN;
+    case 201:
+        return OV_KEY_PASTE_END;
     default:
         return OV_KEY_NONE;
     }
@@ -302,15 +306,11 @@ static int ov_key_ss3(void)
 }
 
 /**
- * ov_get_key - Read one keypress, escape sequence or SGR mouse report from stdin
- *
+ * ov_key_read - one keypress, escape sequence or SGR mouse report from stdin, paste markers included.
  * Bytes of a sequence split across reads are kept until it completes (20 ms grace); a sequence
  * that stays incomplete is dropped together with its tail, never replayed as keys.
- *
- * Return: Key code enum (e.g. OV_KEY_UP, OV_KEY_MOUSE), ASCII character code,
- *         OV_KEY_NONE if no key available, or OV_KEY_EOF on EOF.
  */
-int ov_get_key(void)
+static int ov_key_read(void)
 {
     if (kbuf_len == 0 && ov_key_fill(0) < 0)
     {
@@ -371,4 +371,44 @@ int ov_get_key(void)
     }
     ov_key_consume(1); /* ESC followed by an ordinary key */
     return OV_KEY_ESC;
+}
+
+/**
+ * ov_get_key - Read one key; inside a bracketed paste, printable bytes come flagged OV_KEY_PASTED and
+ * everything else (CR, LF, escape sequences) is dropped, so pasted text never acts as commands.
+ *
+ * Return: Key code enum (e.g. OV_KEY_UP, OV_KEY_MOUSE), ASCII character code (| OV_KEY_PASTED),
+ *         OV_KEY_NONE if no key available, or OV_KEY_EOF on EOF.
+ */
+int ov_get_key(void)
+{
+    static int             in_paste = 0;
+    static struct timespec last;
+    struct timespec        now;
+
+    for (;;)
+    {
+        int key = ov_key_read();
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        if (key == OV_KEY_PASTE_BEGIN || key == OV_KEY_PASTE_END)
+        {
+            in_paste = (key == OV_KEY_PASTE_BEGIN);
+            last     = now;
+            continue;
+        }
+        if (in_paste && key == OV_KEY_NONE &&
+            (now.tv_sec - last.tv_sec) * 1000 + (now.tv_nsec - last.tv_nsec) / 1000000 > 500)
+        {
+            in_paste = 0; /* watchdog: the END marker was lost */
+        }
+        if (!in_paste || key == OV_KEY_NONE || key == OV_KEY_EOF)
+        {
+            return key;
+        }
+        last = now;
+        if (key >= 32 && key <= 126)
+        {
+            return key | OV_KEY_PASTED;
+        }
+    }
 }

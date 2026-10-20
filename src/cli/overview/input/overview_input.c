@@ -24,6 +24,31 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 0;
     }
 
+    /* Bracketed paste: pasted text reaches text prompts only; it never quits, kills or answers y/N */
+    static int paste_warned = 0;
+    if (key & OV_KEY_PASTED)
+    {
+        if (lay->filter_editing || lay->renaming_loop ||
+            (lay->show_help && lay->help_search_active))
+        {
+            key &= ~OV_KEY_PASTED;
+        }
+        else
+        {
+            if (!paste_warned)
+            {
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
+                               "Pasted text ignored (no text prompt open)");
+            }
+            paste_warned = 1;
+            return 0;
+        }
+    }
+    else
+    {
+        paste_warned = 0;
+    }
+
     /* y/N confirmation: modal while open */
     if (ov_input__handle_confirm(key, lay, m))
     {
