@@ -16,6 +16,17 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
+- **2026-10-20** — `milk-CTRL` efficiency, links and presentation round: the scan takes about
+  1.6 ms instead of 5.7 ms on 2000 streams / 200 FPS and stops while paused; tmux is asked only
+  while an FPS panel shows; perf counters close when RESOURCES is hidden; dead PIDs are not probed again; resident memory
+  with an empty directory is down from 17 to 5 MB.
+  One typed graph per scan feeds every view; CONNECTIONS rows show rate, reader state, compute
+  time, missed triggers and the FPS, and mark where a pipeline stalls; stream DETAILS shows per-hop
+  latency; F7 lists a loop's FPS. At 80 columns the bars keep what matters, list columns are
+  dropped by priority and scroll back with the column cursor, numbers are SI-scaled, empty lists
+  say why, the status line shows the keys of the current context, and states read the same
+  everywhere (`ERR`, `STAL`) ([guide](guide/milk-CTRL.md)) `#cli` `#performance` `#docs`
+
 - **2026-10-20** — `milk-CTRL` restructured so a column, view, sub-tab, key or option is one table
   entry; process rows line up with their header again, F6 shows the sub-tab it selects, F7 clicks
   select loops, ENTER edits a DETAILS parameter, F1 opens help, and the help, `-h` and status hints

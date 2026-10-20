@@ -30,7 +30,7 @@ milk-CTRL -d /tmp/mysim --interval 0.2 --log /tmp/ctrl.log
 ╔═ FPS (4) ═══════════════════════════╗╔═ CONNECTIONS ═ LOOPS ═ DETAILS ═ RESOURCES ═════════╗
 ║ ...                                 ║║ ...                                                 ║
  12:00:01 ● Control mode ON
- scan:2ms 1.0Hz  DASH › Streams [sort:name] [CONN]  TAB / +/- c h q D S/s G m      [dark]  [x] exit
+ scan:2ms 1.0Hz  DASH › Streams [sort:name] [CONN]  TAB focus  / filter  D details  q quit  [dark]  [x] exit 12:00:05
 ```
 
 - **Header**: commit, shared-memory directory, the mode badges (click to toggle CONTROL mode and
@@ -40,7 +40,13 @@ milk-CTRL -d /tmp/mysim --interval 0.2 --log /tmp/ctrl.log
 - **Command log**: results of actions, warnings, and messages from the libraries. `G` hides it,
   `v` / `V` make it smaller / larger.
 - **Status line**: scan time and rate, the view and focused panel, the sort column, the sub-tab,
-  the main keys, the theme and an exit button.
+  the keys of the current context (CONTROL on PROC: `k term  p pause  e exit`; the F5 parameter
+  tree: `← up  ESC back  ENTER edit`), the theme, an exit button and the clock.
+
+On a narrow terminal (80 columns) the header, tab bar and status line drop their least important
+items first: the commit, the shm path (shortened to its last directory), the logo and the general
+key hints go before the mode badge, the counts and the filter badges. The tabs shorten to `F2:DASH`
+and then `F2`. `[h: HELP]`, `[x] exit` and the clock always stay.
 
 ## Views
 
@@ -63,10 +69,25 @@ Shift+TAB to cycle; `D` toggles DETAILS.
 
 | Sub-tab | Shows |
 |---------|-------|
-| CONNECTIONS | Producers and consumers of the entry last selected in a list. `L` cycles the lineage mode (trigger, input, full); ENTER selects the row's stream in DASH; a double click right of the name selects the reader process |
+| CONNECTIONS | Producers and consumers of the entry last selected in a list, with their health (below). `L` cycles the lineage mode (trigger, input, full); ENTER selects the row's stream in DASH; a double click right of the name selects the reader process |
 | LOOPS | The feedback loops (top) and the selected one (bottom). ENTER or `f` isolates the loop: the lists show its members only. `r` renames it, `g` shows its CONNECTIONS, a double click opens F7 |
 | DETAILS | The entry under the cursor of the focused list, else the last FPS, stream or process selected. For an FPS, its parameters: the arrows move a cursor, ENTER edits the value (CONTROL mode) |
 | RESOURCES | The process behind that entry: memory, CPU cores, scheduling and hardware counters |
+
+CONNECTIONS health columns, right of each row (dropped by width like list columns):
+
+| Column | Shows |
+|--------|-------|
+| Hz | Update rate of the row's stream; `!` and the warning colour when its reader runs slower |
+| STATE | The reader process's state, `OFF` for an FPS whose run process is down, `-` without a reader. `STALL` in red marks the first node upstream that stopped advancing; rows below it are dimmed |
+| EXEC | The reader's median compute time |
+| MISS | Its missed-trigger share |
+| FPS | The FPS running the reader process |
+
+Stream DETAILS lists the process trace: per hop the trigger mode, the compute time (processes
+with timing enabled), the hand-off delay from the previous hop and how many frames behind the
+input it ran (`lag`), with the end-to-end latency on top. F7 lists the FPS of a loop, including the
+FPS whose run process is on the cycle.
 
 ## Lists
 
@@ -74,6 +95,16 @@ Shift+TAB to cycle; `D` toggles DETAILS.
   `<` / `>` the previous / next sortable column, `[` reverse.
 - **Columns**: Shift+LEFT / RIGHT moves the column cursor, `t` hides the column under it (it shrinks
   to `»`; `t` again shows it), `d` hides the wide optional columns.
+- **Narrow panels**: `A` and NAME always show. The other columns are dropped, least important
+  first, until the rest fit; `›` at the right of the header means some were dropped. Moving the
+  column cursor onto a dropped column scrolls the columns to show it (`‹` means some are scrolled
+  off on the left), so every column can be reached. NAME widens, up to 48 columns, when there is
+  room. Cut text ends with `…`.
+- **Numbers**: rates, throughput and counters are scaled with SI suffixes in at most 6 columns
+  (`999.9`, `12.3k`, `1.20M`): Hz, B/s (bytes per second), COUNT, LOOPCNT, MISSED. EXEC and
+  latencies carry their unit (`850ns`, `12.3us`, `1.25ms`, `2.40s`).
+- **Empty lists** say so, with the directory scanned: `No streams — start a pipeline, or
+  milk-CTRL -d DIR (now /milk/shm)`. F7 says `No feedback loops`.
 - **Filter**: `/` types an extended, case-insensitive regex for the focused list; `f` toggles it,
   ESC clears it, `?` jumps to the first match without filtering.
 - **Freeze**: SPACE keeps the selected entry and its relations highlighted while you move the
