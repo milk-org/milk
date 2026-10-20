@@ -6,6 +6,9 @@
 
 #include "overview_data_internal.h"
 
+#include <signal.h>
+#include <sys/prctl.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 static int failures = 0;
@@ -30,9 +33,35 @@ static void test_pid_liveness(void)
     }
 }
 
+/* /proc/<pid>/stat parsing survives a comm field with spaces (gap-11) */
+static void test_stat_with_spaces(void)
+{
+    uint64_t ut = 0, st = 0;
+    pid_t    pid = fork();
+    if (pid == 0)
+    {
+        prctl(PR_SET_NAME, "a b c", 0, 0, 0);
+        pause();
+        _exit(0);
+    }
+    usleep(50000);
+    CHECK(pid_get_cpu_ticks(pid, &ut, &st) == 0);
+    CHECK(pid_check_zombie(pid) == 0);
+    kill(pid, SIGKILL);
+    int zombie = 0;
+    for (int i = 0; i < 100 && !zombie; i++)
+    {
+        usleep(10000);
+        zombie = pid_check_zombie(pid);
+    }
+    CHECK(zombie == 1);
+    waitpid(pid, NULL, 0);
+}
+
 int main(void)
 {
     test_pid_liveness();
+    test_stat_with_spaces();
     if (failures == 0)
     {
         printf("all ok\n");

@@ -100,6 +100,8 @@ extern struct timespec s_proc_mtime;
 
 // Function declarations
 void        pid_cache_reset(void);
+const char *pid_stat_fields(pid_t pid, char *buf, size_t sz);
+const char *pid_stat_skip(const char *p, int n);
 int         pid_check_zombie(pid_t pid);
 int64_t     pid_get_rss_kb(pid_t pid);
 int         pid_is_alive(pid_t pid);

@@ -206,9 +206,10 @@ int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         {
             if (fscanf(fp, "%" SCNu64 " %" SCNu64, &vm_size, &vm_rss) == 2)
             {
-                /* Scale to MB (assuming 4 KB pages) */
-                vm_size = (vm_size * 4) / 1024;
-                vm_rss  = (vm_rss * 4) / 1024;
+                /* Pages to MB */
+                uint64_t page_kb = (uint64_t) sysconf(_SC_PAGESIZE) / 1024;
+                vm_size          = (vm_size * page_kb) / 1024;
+                vm_rss           = (vm_rss * page_kb) / 1024;
             }
             fclose(fp);
         }

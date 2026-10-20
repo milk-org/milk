@@ -49,28 +49,52 @@ void pid_cache_reset(void)
 }
 
 /**
- * pid_check_zombie - test if PID is zombie via /proc.
- *
- * Reads the third field of /proc/<pid>/stat. If it is
- * 'Z', the process is a zombie.
+ * pid_stat_fields - read /proc/<pid>/stat into @buf and return its field 3 (state), found after the
+ * last ')' because the comm field may contain spaces and parentheses. NULL on failure.
  */
-int pid_check_zombie(pid_t pid)
+const char *pid_stat_fields(pid_t pid, char *buf, size_t sz)
 {
     char path[64];
     snprintf(path, sizeof(path), "/proc/%d/stat", (int) pid);
     FILE *fp = fopen(path, "r");
     if (fp == NULL)
     {
-        return 0;
+        return NULL;
     }
-    /* Skip PID and (comm), then read state */
-    char state = '\0';
-    if (fscanf(fp, "%*d %*s %c", &state) != 1)
-    {
-        state = '\0';
-    }
+    char *ok = fgets(buf, (int) sz, fp);
     fclose(fp);
-    return (state == 'Z');
+    if (ok == NULL)
+    {
+        return NULL;
+    }
+    char *p = strrchr(buf, ')');
+    return (p != NULL && p[1] == ' ') ? p + 2 : NULL;
+}
+
+/**
+ * pid_stat_skip - advance @p, pointing at a /proc stat field, by @n fields; NULL if too short.
+ */
+const char *pid_stat_skip(const char *p, int n)
+{
+    for (int i = 0; i < n && p != NULL; i++)
+    {
+        p = strchr(p, ' ');
+        if (p != NULL)
+        {
+            p++;
+        }
+    }
+    return p;
+}
+
+/**
+ * pid_check_zombie - 1 if /proc/<pid>/stat reports state 'Z'.
+ */
+int pid_check_zombie(pid_t pid)
+{
+    char        buf[1024];
+    const char *f3 = pid_stat_fields(pid, buf, sizeof(buf));
+    return (f3 != NULL && f3[0] == 'Z');
 }
 
 /**
@@ -174,25 +198,13 @@ int pid_is_alive(pid_t pid)
  */
 int pid_get_cpu_ticks(pid_t pid, uint64_t *utime, uint64_t *stime)
 {
-    char path[64];
-    snprintf(path, sizeof(path), "/proc/%d/stat", (int) pid);
-    FILE *fp = fopen(path, "r");
-    if (fp == NULL)
+    char        buf[1024];
+    const char *f = pid_stat_skip(pid_stat_fields(pid, buf, sizeof(buf)), 11); /* field 14 */
+    if (f == NULL)
     {
         return -1;
     }
-
-    /* Skip to field 14 (utime) and 15 (stime).
-     * Fields: pid (comm) state ppid pgrp session
-     * tty_nr tpgid flags minflt cminflt majflt
-     * cmajflt utime stime */
-    int rc = fscanf(fp,
-                    "%*d %*s %*c %*d %*d %*d %*d %*d "
-                    "%*u %*u %*u %*u %*u %" SCNu64 " %" SCNu64,
-                    utime, stime);
-    fclose(fp);
-
-    return (rc == 2) ? 0 : -1;
+    return (sscanf(f, "%" SCNu64 " %" SCNu64, utime, stime) == 2) ? 0 : -1;
 }
 
 /**

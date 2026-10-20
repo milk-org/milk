@@ -117,45 +117,11 @@ static int64_t get_boot_time(void)
  */
 static int64_t pid_get_start_time(pid_t pid)
 {
-    char path[64];
-    snprintf(path, sizeof(path), "/proc/%d/stat", (int) pid);
-    FILE *fp = fopen(path, "r");
-    if (fp == NULL)
+    char        buf[1024];
+    const char *p = pid_stat_skip(pid_stat_fields(pid, buf, sizeof(buf)), 19); /* field 22 */
+    if (p == NULL)
     {
         return 0;
-    }
-    /* Field 22 is starttime (in clock ticks).
-     * Skip past the comm field (in parens) first. */
-    char buf[1024];
-    if (fgets(buf, sizeof(buf), fp) == NULL)
-    {
-        fclose(fp);
-        return 0;
-    }
-    fclose(fp);
-
-    /* Find closing paren of comm field */
-    char *cp = strrchr(buf, ')');
-    if (cp == NULL)
-    {
-        return 0;
-    }
-    /* Skip fields 3..21 (19 fields after ')') */
-    char *p = cp + 2;
-    for (int ff = 0; ff < 19; ff++)
-    {
-        while (*p == ' ')
-        {
-            p++;
-        }
-        while (*p != ' ' && *p != '\0')
-        {
-            p++;
-        }
-    }
-    while (*p == ' ')
-    {
-        p++;
     }
     int64_t starttime = (int64_t) atoll(p);
     long    clk       = sysconf(_SC_CLK_TCK);
