@@ -288,8 +288,9 @@ int main(int argc, char *argv[])
             {
                 if (m != NULL)
                 {
-                    ov_cmdlog_debug("scan %.1f ms: %d streams, %d processes, %d FPS",
-                                    m->scan_time_ms, m->nb_streams, m->nb_procs, m->nb_fps);
+                    ov_cmdlog_debug("scan %.1f ms: %d streams, %d processes, %d FPS, %u tmux polls",
+                                    m->scan_time_ms, m->nb_streams, m->nb_procs, m->nb_fps,
+                                    m->tmux_polls);
                 }
                 ov_render__sync_selection(&lay, m);
                 need_render = 1;

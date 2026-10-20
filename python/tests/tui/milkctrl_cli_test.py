@@ -140,3 +140,27 @@ def test_pause_stops_scanning(milkctrl, tmp_path):
     time.sleep(1.0)
     assert log.read_text().count("DEBUG scan") > before
     assert m.quit() == 0
+
+
+def _tmux_polls(log) -> int:
+    lines = [x for x in log.read_text().splitlines() if "DEBUG scan" in x]
+    return int(lines[-1].rsplit(",", 1)[1].split()[0]) if lines else -1
+
+
+def test_tmux_polled_only_with_an_fps_panel(milkctrl, entities, tmp_path):
+    """tmux windows (TMX column) are polled while an FPS panel is on screen, not in F3/F4/F6/F7."""
+    entities.make_fps("tmxfps")
+    log = tmp_path / "tmux.log"
+    m = milkctrl("--interval", "0.2", "--log", str(log), "--debug")
+    m.wait_for(r"tmxfps")
+    m.keys("F3")
+    m.wait_for(r"▌ F3:STRM")
+    time.sleep(1.0)
+    before = _tmux_polls(log)
+    time.sleep(4.0)  # longer than the shortest poll period (3 s)
+    assert _tmux_polls(log) == before
+    m.keys("F5")
+    m.wait_for(r"▌ F5:FPS")
+    time.sleep(1.0)
+    assert _tmux_polls(log) > before
+    assert m.quit() == 0

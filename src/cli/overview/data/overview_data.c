@@ -40,11 +40,28 @@
 #define OV_SHMDIR_MAXLEN STRINGMAXLEN_FPS_DIRNAME
 
 
+#include <stdatomic.h>
+
 #include "overview_data_internal.h"
 
 /* =========================================================
  * Full scan
  * ========================================================= */
+
+/* What the UI shows (OV_HINT_*); tools without a UI scan as if every panel were on screen */
+static atomic_uint s_scan_hints = OV_HINT_FPS_VISIBLE;
+
+/** ov_scan_hints - the hints last set by the UI. */
+unsigned ov_scan_hints(void)
+{
+    return atomic_load(&s_scan_hints);
+}
+
+/** ov_scan_hints_swap - set the hints, returning the previous ones (ov_scan_set_hints wakes the scan). */
+unsigned ov_scan_hints_swap(unsigned hints)
+{
+    return atomic_exchange(&s_scan_hints, hints);
+}
 
 /**
  * ov_model_full_scan - Perform a full discovery and state scan into the model

@@ -119,6 +119,7 @@ typedef struct
     int indexed;                    /* 0: the ov_find_* helpers scan the arrays */
 
     /* scan metadata */
+    unsigned tmux_polls; /* tmux spawns since start (ov_scan_tmux_sessions) */
     double   scan_time_ms;
     uint64_t scan_count;
     uint64_t
@@ -223,7 +224,9 @@ void ov_scan_force_update(void);
 #define OV_HINT_FPS_VISIBLE 0x2U /* an FPS panel is on screen: tmux windows are worth polling */
 
 void     ov_scan_set_hints(unsigned hints);
+void     ov_scan_tmux_refresh(void);
 unsigned ov_scan_hints(void);
+unsigned ov_scan_hints_swap(unsigned hints);
 
 /** ov_scan_get_interval / ov_scan_set_interval - scan period in seconds (set clamps to 0.1-10). */
 float ov_scan_get_interval(void);

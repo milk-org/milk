@@ -64,7 +64,6 @@ static pthread_t      ov_scan_thread;
 static volatile int   ov_scan_running      = 0;
 static volatile float ov_scan_interval_s   = 1.0f;
 static atomic_int     ov_force_update_flag = 0;
-static atomic_uint    ov_scan_hint_word    = 0; /* OV_HINT_*, set by the UI once per frame */
 
 /**
  * ov_scan_get_interval - get current scan interval.
@@ -129,8 +128,7 @@ static void *ov_scan_thread_func(void *arg __attribute__((unused)))
     {
         /* Paused display: no scans until the UI clears the hint (or stops the thread) */
         pthread_mutex_lock(&ov_model_mutex);
-        while (ov_scan_running && !OV_SIG_ANY_SET() &&
-               (atomic_load(&ov_scan_hint_word) & OV_HINT_PAUSED))
+        while (ov_scan_running && !OV_SIG_ANY_SET() && (ov_scan_hints() & OV_HINT_PAUSED))
         {
             pthread_cond_wait(&ov_scan_cond, &ov_model_mutex);
         }
@@ -290,7 +288,7 @@ const OV_MODEL *ov_scan_get_model(void)
 /** ov_scan_set_hints - what the UI shows now (OV_HINT_*); clearing OV_HINT_PAUSED resumes scanning. */
 void ov_scan_set_hints(unsigned hints)
 {
-    unsigned old = atomic_exchange(&ov_scan_hint_word, hints);
+    unsigned old = ov_scan_hints_swap(hints);
     if ((old & OV_HINT_PAUSED) && !(hints & OV_HINT_PAUSED))
     {
         pthread_mutex_lock(&ov_model_mutex);
@@ -299,17 +297,12 @@ void ov_scan_set_hints(unsigned hints)
     }
 }
 
-/** ov_scan_hints - the hints last set by the UI. */
-unsigned ov_scan_hints(void)
-{
-    return atomic_load(&ov_scan_hint_word);
-}
-
 /**
  * ov_scan_force_update - interrupt sleep to force an immediate scan.
  */
 void ov_scan_force_update(void)
 {
+    ov_scan_tmux_refresh(); /* forced by an action that may have started or stopped tmux windows */
     atomic_store_explicit(&ov_force_update_flag, 1, memory_order_release);
     pthread_mutex_lock(&ov_model_mutex);
     pthread_cond_broadcast(&ov_scan_cond);
