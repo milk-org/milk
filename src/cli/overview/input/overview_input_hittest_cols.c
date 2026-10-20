@@ -143,9 +143,10 @@ void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
  */
 void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    lay->panel[OV_FOCUS_STREAMS].hover_idx = -1;
-    lay->panel[OV_FOCUS_PROCS].hover_idx   = -1;
-    lay->panel[OV_FOCUS_FPS].hover_idx     = -1;
+    for (int p = 0; p < OV_NB_LIST_PANELS; p++)
+    {
+        lay->panel[p].hover_idx = -1;
+    }
 
     if (!lay->mouse_hover || lay->hover_idx < 0)
     {

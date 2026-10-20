@@ -126,9 +126,7 @@ int ov_row_to_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int
 /** ov_sel_rowp - the cursor row field of @panel. */
 static int *ov_sel_rowp(OV_LAYOUT *lay, ov_focus_t panel)
 {
-    return (panel == OV_FOCUS_STREAMS) ? &lay->panel[OV_FOCUS_STREAMS].sel
-           : (panel == OV_FOCUS_PROCS) ? &lay->panel[OV_FOCUS_PROCS].sel
-                                       : &lay->panel[OV_FOCUS_FPS].sel;
+    return &lay->panel[panel].sel;
 }
 
 /**
@@ -182,34 +180,29 @@ int ov_sel_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel)
     return (panel < OV_FOCUS_GRAPH) ? ov_tgt_find(m, panel, &lay->panel[panel].tgt) : -1;
 }
 
-/**
- * ov_get_selected_stream_idx - model index of the selected stream (frozen one when frozen), or -1.
- */
+/** ov_selected_idx - model index of @panel's selection (its frozen entry when frozen), or -1. */
+static int ov_selected_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel)
+{
+    const OV_PANEL_STATE *ps = &lay->panel[panel];
+    return ov_tgt_find(m, panel, lay->freeze ? &ps->freeze_tgt : &ps->tgt);
+}
+
+/** ov_get_selected_stream_idx - model index of the selected stream (frozen one when frozen), or -1. */
 int ov_get_selected_stream_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    const OV_TARGET *t =
-        lay->freeze ? &lay->panel[OV_FOCUS_STREAMS].freeze_tgt : &lay->panel[OV_FOCUS_STREAMS].tgt;
-    return ov_tgt_find(m, OV_FOCUS_STREAMS, t);
+    return ov_selected_idx(lay, m, OV_FOCUS_STREAMS);
 }
 
-/**
- * ov_get_selected_proc_idx - model index of the selected process (frozen one when frozen), or -1.
- */
+/** ov_get_selected_proc_idx - model index of the selected process (frozen one when frozen), or -1. */
 int ov_get_selected_proc_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    const OV_TARGET *t =
-        lay->freeze ? &lay->panel[OV_FOCUS_PROCS].freeze_tgt : &lay->panel[OV_FOCUS_PROCS].tgt;
-    return ov_tgt_find(m, OV_FOCUS_PROCS, t);
+    return ov_selected_idx(lay, m, OV_FOCUS_PROCS);
 }
 
-/**
- * ov_get_selected_fps_idx - model index of the selected FPS (frozen one when frozen), or -1.
- */
+/** ov_get_selected_fps_idx - model index of the selected FPS (frozen one when frozen), or -1. */
 int ov_get_selected_fps_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    const OV_TARGET *t =
-        lay->freeze ? &lay->panel[OV_FOCUS_FPS].freeze_tgt : &lay->panel[OV_FOCUS_FPS].tgt;
-    return ov_tgt_find(m, OV_FOCUS_FPS, t);
+    return ov_selected_idx(lay, m, OV_FOCUS_FPS);
 }
 
 /** ov_sel_clamp_scroll - keep @row visible in a panel of @height lines (3 lines of chrome). */
@@ -239,14 +232,8 @@ static void ov_sel_clamp_scroll(int row, int height, int *scroll)
 void ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m)
 {
     static int fidx[OV_MAX_NODES];
-    int       *scrolls[OV_NB_LIST_PANELS] = { &lay->panel[OV_FOCUS_STREAMS].scroll,
-                                              &lay->panel[OV_FOCUS_PROCS].scroll,
-                                              &lay->panel[OV_FOCUS_FPS].scroll };
     const int  heights[OV_NB_LIST_PANELS] = { lay->r_streams.height, lay->r_procs.height,
                                               lay->r_fps.height };
-    int       *frows[OV_NB_LIST_PANELS]   = { &lay->panel[OV_FOCUS_STREAMS].freeze_row,
-                                              &lay->panel[OV_FOCUS_PROCS].freeze_row,
-                                              &lay->panel[OV_FOCUS_FPS].freeze_row };
 
     if (lay->freeze && lay->freeze_focus < OV_FOCUS_GRAPH &&
         ov_tgt_find(m, lay->freeze_focus, &lay->panel[lay->freeze_focus].freeze_tgt) < 0)
@@ -292,10 +279,10 @@ void ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m)
                 ov_tgt_set(&lay->panel[p].tgt, m, panel, fidx[pos]);
             }
             *row = pos;
-            ov_sel_clamp_scroll(pos, heights[p], scrolls[p]);
+            ov_sel_clamp_scroll(pos, heights[p], &lay->panel[p].scroll);
         }
 
-        *frows[p] = -1;
+        lay->panel[p].freeze_row = -1;
         if (lay->freeze)
         {
             int fi = ov_tgt_find(m, panel, &lay->panel[p].freeze_tgt);
@@ -303,7 +290,7 @@ void ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 if (fidx[r] == fi)
                 {
-                    *frows[p] = r;
+                    lay->panel[p].freeze_row = r;
                     break;
                 }
             }

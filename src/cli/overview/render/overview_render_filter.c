@@ -42,161 +42,91 @@ ov_focus_t ov_get_effective_filter_panel(const OV_LAYOUT *lay)
     return OV_FOCUS_GRAPH;
 }
 
+/** ov_pf - the panel state for list panel @panel, or NULL (graph or out of range). */
+static const OV_PANEL_STATE *ov_pf(const OV_LAYOUT *lay, ov_focus_t panel)
+{
+    return (lay != NULL && panel >= 0 && panel < OV_NB_LIST_PANELS) ? &lay->panel[panel] : NULL;
+}
+
 /**
- * ov_has_panel_filter - check if a specific panel has a defined filter string.
- * @lay:   Pointer to layout structure.
- * @panel: Panel focus enum.
- *
- * Return: 1 if non-empty filter exists, 0 otherwise.
+ * ov_has_panel_filter - 1 if list panel @panel has a filter pattern (applied or not).
  */
 int ov_has_panel_filter(const OV_LAYOUT *lay, ov_focus_t panel)
 {
-    if (lay == NULL)
-    {
-        return 0;
-    }
-    if (panel == OV_FOCUS_STREAMS)
-    {
-        return (lay->panel[OV_FOCUS_STREAMS].filter[0] != '\0');
-    }
-    if (panel == OV_FOCUS_PROCS)
-    {
-        return (lay->panel[OV_FOCUS_PROCS].filter[0] != '\0');
-    }
-    if (panel == OV_FOCUS_FPS)
-    {
-        return (lay->panel[OV_FOCUS_FPS].filter[0] != '\0');
-    }
-    return 0;
+    const OV_PANEL_STATE *ps = ov_pf(lay, panel);
+    return ps != NULL && ps->filter[0] != '\0';
 }
 
 /**
- * ov_is_panel_filter_active - check if a panel filter is currently enabled.
- * @lay:   Pointer to layout structure.
- * @panel: Panel focus enum.
- *
- * Return: 1 if active, 0 otherwise.
+ * ov_is_panel_filter_active - 1 if list panel @panel has a pattern and it is applied.
  */
 int ov_is_panel_filter_active(const OV_LAYOUT *lay, ov_focus_t panel)
 {
-    if (lay == NULL)
+    const OV_PANEL_STATE *ps = ov_pf(lay, panel);
+    return ps != NULL && ps->filter_on && ps->filter[0] != '\0';
+}
+
+/**
+ * ov_get_panel_filter_pattern - pattern of list panel @panel, applied or not ("" when none).
+ */
+const char *ov_get_panel_filter_pattern(const OV_LAYOUT *lay, ov_focus_t panel)
+{
+    const OV_PANEL_STATE *ps = ov_pf(lay, panel);
+    return (ps != NULL) ? ps->filter : "";
+}
+
+/**
+ * ov_get_active_filter_for - pattern of list panel @panel if applied, else "".
+ */
+const char *ov_get_active_filter_for(const OV_LAYOUT *lay, ov_focus_t panel)
+{
+    return ov_is_panel_filter_active(lay, panel) ? ov_get_panel_filter_pattern(lay, panel) : "";
+}
+
+/** ov_filter_any_on - 1 if any list panel has its filter applied. */
+int ov_filter_any_on(const OV_LAYOUT *lay)
+{
+    for (int p = 0; p < OV_NB_LIST_PANELS; p++)
     {
-        return 0;
-    }
-    if (panel == OV_FOCUS_STREAMS)
-    {
-        return lay->panel[OV_FOCUS_STREAMS].filter_on &&
-               (lay->panel[OV_FOCUS_STREAMS].filter[0] != '\0');
-    }
-    if (panel == OV_FOCUS_PROCS)
-    {
-        return lay->panel[OV_FOCUS_PROCS].filter_on &&
-               (lay->panel[OV_FOCUS_PROCS].filter[0] != '\0');
-    }
-    if (panel == OV_FOCUS_FPS)
-    {
-        return lay->panel[OV_FOCUS_FPS].filter_on && (lay->panel[OV_FOCUS_FPS].filter[0] != '\0');
+        if (lay->panel[p].filter_on)
+        {
+            return 1;
+        }
     }
     return 0;
 }
 
 /**
- * ov_get_panel_filter_pattern - get configured filter string for a panel.
- * @lay:   Pointer to layout structure.
- * @panel: Panel focus enum.
- *
- * Return: Pointer to filter string or empty string.
- */
-const char *ov_get_panel_filter_pattern(const OV_LAYOUT *lay, ov_focus_t panel)
-{
-    if (lay == NULL)
-    {
-        return "";
-    }
-    if (panel == OV_FOCUS_STREAMS)
-    {
-        return lay->panel[OV_FOCUS_STREAMS].filter;
-    }
-    if (panel == OV_FOCUS_PROCS)
-    {
-        return lay->panel[OV_FOCUS_PROCS].filter;
-    }
-    if (panel == OV_FOCUS_FPS)
-    {
-        return lay->panel[OV_FOCUS_FPS].filter;
-    }
-    return "";
-}
-
-/**
- * ov_get_active_filter_for - get active filter pattern string for a panel.
- * @lay:   Pointer to layout structure.
- * @panel: Panel focus enum.
- *
- * Return: Pointer to pattern string if active, or empty string.
- */
-const char *ov_get_active_filter_for(const OV_LAYOUT *lay, ov_focus_t panel)
-{
-    if (!ov_is_panel_filter_active(lay, panel))
-    {
-        return "";
-    }
-    return ov_get_panel_filter_pattern(lay, panel);
-}
-
-/**
- * ov_clear_panel_filter - reset filter string and active flag for a panel.
- * @lay:   Pointer to layout structure.
- * @panel: Panel focus enum.
+ * ov_clear_panel_filter - drop the pattern of list panel @panel.
  */
 void ov_clear_panel_filter(OV_LAYOUT *lay, ov_focus_t panel)
 {
-    if (lay == NULL)
+    if (ov_pf(lay, panel) == NULL)
     {
         return;
     }
-    if (panel == OV_FOCUS_STREAMS)
-    {
-        lay->panel[OV_FOCUS_STREAMS].filter[0] = '\0';
-        lay->panel[OV_FOCUS_STREAMS].filter_on = 0;
-    }
-    else if (panel == OV_FOCUS_PROCS)
-    {
-        lay->panel[OV_FOCUS_PROCS].filter[0] = '\0';
-        lay->panel[OV_FOCUS_PROCS].filter_on = 0;
-    }
-    else if (panel == OV_FOCUS_FPS)
-    {
-        lay->panel[OV_FOCUS_FPS].filter[0] = '\0';
-        lay->panel[OV_FOCUS_FPS].filter_on = 0;
-    }
-    lay->filter_active =
-        (lay->panel[OV_FOCUS_STREAMS].filter_on || lay->panel[OV_FOCUS_PROCS].filter_on ||
-         lay->panel[OV_FOCUS_FPS].filter_on);
+    lay->panel[panel].filter[0] = '\0';
+    lay->panel[panel].filter_on = 0;
+    lay->filter_active          = ov_filter_any_on(lay);
 }
 
 /**
- * ov_has_filter - check if any panel has a non-empty filter pattern.
- * @lay: Pointer to layout structure.
- *
- * Return: 1 if any pattern is set, 0 otherwise.
+ * ov_has_filter - 1 if any list panel has a pattern (applied or not).
  */
 int ov_has_filter(const OV_LAYOUT *lay)
 {
-    if (lay == NULL)
+    for (int p = 0; lay != NULL && p < OV_NB_LIST_PANELS; p++)
     {
-        return 0;
+        if (lay->panel[p].filter[0] != '\0')
+        {
+            return 1;
+        }
     }
-    return (lay->panel[OV_FOCUS_STREAMS].filter[0] != '\0' ||
-            lay->panel[OV_FOCUS_PROCS].filter[0] != '\0' ||
-            lay->panel[OV_FOCUS_FPS].filter[0] != '\0');
+    return 0;
 }
 
 /**
- * ov_is_filter_active - check if filter is active for focused panel or any panel.
- * @lay: Pointer to layout structure.
- *
- * Return: 1 if active, 0 otherwise.
+ * ov_is_filter_active - 1 if the filtered panel (or, from the graph, any panel) has an applied filter.
  */
 int ov_is_filter_active(const OV_LAYOUT *lay)
 {
@@ -205,20 +135,22 @@ int ov_is_filter_active(const OV_LAYOUT *lay)
         return 0;
     }
     ov_focus_t panel = ov_get_effective_filter_panel(lay);
-    if (panel == OV_FOCUS_STREAMS || panel == OV_FOCUS_PROCS || panel == OV_FOCUS_FPS)
+    if (panel < OV_NB_LIST_PANELS)
     {
         return ov_is_panel_filter_active(lay, panel);
     }
-    return (ov_is_panel_filter_active(lay, OV_FOCUS_STREAMS) ||
-            ov_is_panel_filter_active(lay, OV_FOCUS_PROCS) ||
-            ov_is_panel_filter_active(lay, OV_FOCUS_FPS));
+    for (int p = 0; p < OV_NB_LIST_PANELS; p++)
+    {
+        if (ov_is_panel_filter_active(lay, (ov_focus_t) p))
+        {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 /**
- * ov_get_filter_pattern - get configured filter pattern for focused panel.
- * @lay: Pointer to layout structure.
- *
- * Return: Pointer to filter pattern string or empty string.
+ * ov_get_filter_pattern - pattern of the filtered panel, else the first panel that has one, else "".
  */
 const char *ov_get_filter_pattern(const OV_LAYOUT *lay)
 {
@@ -227,47 +159,26 @@ const char *ov_get_filter_pattern(const OV_LAYOUT *lay)
         return "";
     }
     ov_focus_t panel = ov_get_effective_filter_panel(lay);
-    if (panel == OV_FOCUS_STREAMS && lay->panel[OV_FOCUS_STREAMS].filter[0] != '\0')
+    if (ov_has_panel_filter(lay, panel))
     {
-        return lay->panel[OV_FOCUS_STREAMS].filter;
+        return lay->panel[panel].filter;
     }
-    if (panel == OV_FOCUS_PROCS && lay->panel[OV_FOCUS_PROCS].filter[0] != '\0')
+    for (int p = 0; p < OV_NB_LIST_PANELS; p++)
     {
-        return lay->panel[OV_FOCUS_PROCS].filter;
-    }
-    if (panel == OV_FOCUS_FPS && lay->panel[OV_FOCUS_FPS].filter[0] != '\0')
-    {
-        return lay->panel[OV_FOCUS_FPS].filter;
-    }
-    if (lay->panel[OV_FOCUS_STREAMS].filter[0] != '\0')
-    {
-        return lay->panel[OV_FOCUS_STREAMS].filter;
-    }
-    if (lay->panel[OV_FOCUS_PROCS].filter[0] != '\0')
-    {
-        return lay->panel[OV_FOCUS_PROCS].filter;
-    }
-    if (lay->panel[OV_FOCUS_FPS].filter[0] != '\0')
-    {
-        return lay->panel[OV_FOCUS_FPS].filter;
+        if (lay->panel[p].filter[0] != '\0')
+        {
+            return lay->panel[p].filter;
+        }
     }
     return "";
 }
 
 /**
- * ov_get_active_filter - get active filter string for currently focused panel.
- * @lay: Pointer to layout structure.
- *
- * Return: Pointer to active pattern string or empty string.
+ * ov_get_active_filter - applied pattern of the filtered panel, or "".
  */
 const char *ov_get_active_filter(const OV_LAYOUT *lay)
 {
-    if (lay == NULL)
-    {
-        return "";
-    }
-    ov_focus_t panel = ov_get_effective_filter_panel(lay);
-    return ov_get_active_filter_for(lay, panel);
+    return (lay != NULL) ? ov_get_active_filter_for(lay, ov_get_effective_filter_panel(lay)) : "";
 }
 
 /**
@@ -280,15 +191,14 @@ void ov_clear_all_filters(OV_LAYOUT *lay)
     {
         return;
     }
-    lay->filter[0]                         = '\0';
-    lay->panel[OV_FOCUS_STREAMS].filter[0] = '\0';
-    lay->panel[OV_FOCUS_PROCS].filter[0]   = '\0';
-    lay->panel[OV_FOCUS_FPS].filter[0]     = '\0';
-    lay->panel[OV_FOCUS_STREAMS].filter_on = 0;
-    lay->panel[OV_FOCUS_PROCS].filter_on   = 0;
-    lay->panel[OV_FOCUS_FPS].filter_on     = 0;
-    lay->filter_active                     = 0;
-    lay->filter_editing                    = 0;
-    lay->filter_cursor                     = 0;
-    lay->filter_jump                       = 0;
+    for (int p = 0; p < OV_NB_LIST_PANELS; p++)
+    {
+        lay->panel[p].filter[0] = '\0';
+        lay->panel[p].filter_on = 0;
+    }
+    lay->filter[0]      = '\0';
+    lay->filter_active  = 0;
+    lay->filter_editing = 0;
+    lay->filter_cursor  = 0;
+    lay->filter_jump    = 0;
 }

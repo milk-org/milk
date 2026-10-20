@@ -80,6 +80,7 @@ void clear_row(int row, int col, int width, ov_rgb_t bg);
 
 int ov_filter_build(const char *pattern, const char **names, int count, int *out, int max_out);
 
+int        ov_filter_any_on(const OV_LAYOUT *lay);
 ov_focus_t ov_get_effective_filter_panel(const OV_LAYOUT *lay);
 
 int ov_has_panel_filter(const OV_LAYOUT *lay, ov_focus_t panel);

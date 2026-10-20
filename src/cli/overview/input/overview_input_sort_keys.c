@@ -24,23 +24,11 @@ int ov_input__handle_column_highlights(int key, OV_LAYOUT *lay, const OV_MODEL *
     if (key == OV_KEY_SHIFT_LEFT || key == OV_KEY_SHIFT_RIGHT)
     {
         int dir = (key == OV_KEY_SHIFT_LEFT) ? -1 : 1;
-        if (lay->focus == OV_FOCUS_STREAMS)
+        if (lay->focus < OV_NB_LIST_PANELS)
         {
-            int num_cols = ov_get_num_cols(lay, OV_FOCUS_STREAMS);
-            lay->panel[OV_FOCUS_STREAMS].highlight_col =
-                (lay->panel[OV_FOCUS_STREAMS].highlight_col + dir + num_cols) % num_cols;
-        }
-        else if (lay->focus == OV_FOCUS_PROCS)
-        {
-            int num_cols = ov_get_num_cols(lay, OV_FOCUS_PROCS);
-            lay->panel[OV_FOCUS_PROCS].highlight_col =
-                (lay->panel[OV_FOCUS_PROCS].highlight_col + dir + num_cols) % num_cols;
-        }
-        else if (lay->focus == OV_FOCUS_FPS)
-        {
-            int num_cols = ov_get_num_cols(lay, OV_FOCUS_FPS);
-            lay->panel[OV_FOCUS_FPS].highlight_col =
-                (lay->panel[OV_FOCUS_FPS].highlight_col + dir + num_cols) % num_cols;
+            OV_PANEL_STATE *ps       = &lay->panel[lay->focus];
+            int             num_cols = ov_get_num_cols(lay, lay->focus);
+            ps->highlight_col        = (ps->highlight_col + dir + num_cols) % num_cols;
         }
         return 1;
     }
@@ -80,129 +68,46 @@ int ov_input__handle_column_highlights(int key, OV_LAYOUT *lay, const OV_MODEL *
  */
 int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
 {
-    if (key == 'S')
+    /* Per panel (ov_focus_t): sort key of 'S' (rate) and 'A' (ancestry), and number of sort keys */
+    static const int key_rate[OV_NB_LIST_PANELS] = { 3, 3, 1 };
+    static const int key_anc[OV_NB_LIST_PANELS]  = { 7, 5, 3 };
+    static const int nb_keys[OV_NB_LIST_PANELS]  = { 8, 11, 7 };
+
+    int             list = (lay->focus < OV_NB_LIST_PANELS);
+    OV_PANEL_STATE *ps   = list ? &lay->panel[lay->focus] : NULL;
+
+    if (key == 'S' || key == 'A' || key == '>' || key == ']' || key == '<' || key == '[' ||
+        (key == 's' &&
+         !(lay->ctrl_mode && (lay->focus == OV_FOCUS_FPS || lay->focus == OV_FOCUS_PROCS))))
     {
-        switch (lay->focus)
+        if (ps != NULL)
         {
-        case OV_FOCUS_STREAMS:
-            lay->panel[OV_FOCUS_STREAMS].sort_key = 3;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->panel[OV_FOCUS_PROCS].sort_key = 3;
-            break;
-        case OV_FOCUS_FPS:
-            lay->panel[OV_FOCUS_FPS].sort_key = 1;
-            break;
-        default:
-            break;
+            int n = nb_keys[lay->focus];
+            switch (key)
+            {
+            case 'S':
+                ps->sort_key = key_rate[lay->focus];
+                break;
+            case 'A':
+                ps->sort_key = key_anc[lay->focus];
+                ps->sort_dir = 0;
+                break;
+            case 's':
+                ps->sort_key = 0;
+                break;
+            case '[':
+                ps->sort_dir = !ps->sort_dir;
+                break;
+            case '<':
+                ps->sort_key = (ps->sort_key + n - 1) % n;
+                break;
+            default: /* > ] */
+                ps->sort_key = (ps->sort_key + 1) % n;
+                break;
+            }
         }
         lay->sort_pending = 1;
         return 1;
     }
-
-    if (key == 'A')
-    {
-        switch (lay->focus)
-        {
-        case OV_FOCUS_STREAMS:
-            lay->panel[OV_FOCUS_STREAMS].sort_key = 7;
-            lay->panel[OV_FOCUS_STREAMS].sort_dir = 0;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->panel[OV_FOCUS_PROCS].sort_key = 5;
-            lay->panel[OV_FOCUS_PROCS].sort_dir = 0;
-            break;
-        case OV_FOCUS_FPS:
-            lay->panel[OV_FOCUS_FPS].sort_key = 3;
-            lay->panel[OV_FOCUS_FPS].sort_dir = 0;
-            break;
-        default:
-            break;
-        }
-        lay->sort_pending = 1;
-        return 1;
-    }
-
-    if (key == 's' &&
-        !(lay->ctrl_mode && (lay->focus == OV_FOCUS_FPS || lay->focus == OV_FOCUS_PROCS)))
-    {
-        switch (lay->focus)
-        {
-        case OV_FOCUS_STREAMS:
-            lay->panel[OV_FOCUS_STREAMS].sort_key = 0;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->panel[OV_FOCUS_PROCS].sort_key = 0;
-            break;
-        case OV_FOCUS_FPS:
-            lay->panel[OV_FOCUS_FPS].sort_key = 0;
-            break;
-        default:
-            break;
-        }
-        lay->sort_pending = 1;
-        return 1;
-    }
-
-    if (key == '>' || key == ']')
-    {
-        switch (lay->focus)
-        {
-        case OV_FOCUS_STREAMS:
-            lay->panel[OV_FOCUS_STREAMS].sort_key = (lay->panel[OV_FOCUS_STREAMS].sort_key + 1) % 8;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->panel[OV_FOCUS_PROCS].sort_key = (lay->panel[OV_FOCUS_PROCS].sort_key + 1) % 11;
-            break;
-        case OV_FOCUS_FPS:
-            lay->panel[OV_FOCUS_FPS].sort_key = (lay->panel[OV_FOCUS_FPS].sort_key + 1) % 7;
-            break;
-        default:
-            break;
-        }
-        lay->sort_pending = 1;
-        return 1;
-    }
-
-    if (key == '<')
-    {
-        switch (lay->focus)
-        {
-        case OV_FOCUS_STREAMS:
-            lay->panel[OV_FOCUS_STREAMS].sort_key = (lay->panel[OV_FOCUS_STREAMS].sort_key + 7) % 8;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->panel[OV_FOCUS_PROCS].sort_key = (lay->panel[OV_FOCUS_PROCS].sort_key + 10) % 11;
-            break;
-        case OV_FOCUS_FPS:
-            lay->panel[OV_FOCUS_FPS].sort_key = (lay->panel[OV_FOCUS_FPS].sort_key + 6) % 7;
-            break;
-        default:
-            break;
-        }
-        lay->sort_pending = 1;
-        return 1;
-    }
-
-    if (key == '[')
-    {
-        switch (lay->focus)
-        {
-        case OV_FOCUS_STREAMS:
-            lay->panel[OV_FOCUS_STREAMS].sort_dir = !lay->panel[OV_FOCUS_STREAMS].sort_dir;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->panel[OV_FOCUS_PROCS].sort_dir = !lay->panel[OV_FOCUS_PROCS].sort_dir;
-            break;
-        case OV_FOCUS_FPS:
-            lay->panel[OV_FOCUS_FPS].sort_dir = !lay->panel[OV_FOCUS_FPS].sort_dir;
-            break;
-        default:
-            break;
-        }
-        lay->sort_pending = 1;
-        return 1;
-    }
-
     return 0;
 }
