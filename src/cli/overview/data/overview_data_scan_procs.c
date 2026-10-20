@@ -61,6 +61,7 @@ static int pcache_get(long pindex, pid_t pid, const char *fpath, int recheck)
         s_pcache[ci].pid       = pid;
         s_pcache[ci].pindex    = pindex;
         s_pcache[ci].seen_dead = seen_dead;
+        s_pcache[ci].is_new    = (s_scan_dt_sec > 0.0) ? OV_NEW_SCANS : 0; /* none at startup */
         if (ov_shm_map(&s_pcache[ci].map, fpath, 0, sizeof(PROCESSINFO)) == 0)
         {
             s_pcache[ci].pinfo = (const PROCESSINFO *) s_pcache[ci].map.addr;
@@ -140,6 +141,16 @@ void ov_scan_procs(OV_MODEL *model)
 
         OV_PROC *p = &model->procs[idx];
         memset(p, 0, sizeof(OV_PROC));
+        p->pindex     = i;
+        p->createtime = pl->createtime[i];
+        if (ci >= 0)
+        {
+            p->is_new = s_pcache[ci].is_new;
+            if (s_pcache[ci].is_new > 0)
+            {
+                s_pcache[ci].is_new--;
+            }
+        }
 
         if (pinfo != NULL && pinfo->name[0] != '\0')
         {
@@ -177,10 +188,6 @@ void ov_scan_procs(OV_MODEL *model)
 
             p->dtmedian_iter_ns = pinfo->dtmedian_iter_ns;
             p->dtmedian_exec_ns = pinfo->dtmedian_exec_ns;
-            if (p->dtmedian_iter_ns > 0)
-            {
-                p->loop_hz = 1.0e9 / (double) p->dtmedian_iter_ns;
-            }
 
             strncpy(p->trigstreamname, pinfo->triggerstreamname, sizeof(p->trigstreamname) - 1);
             p->triggermode         = pinfo->triggermode;
@@ -195,15 +202,23 @@ void ov_scan_procs(OV_MODEL *model)
             {
                 ov_proc_cache_t *ce = &s_pcache[ci];
 
-                if (p->loop_hz < 0.1 && ce->has_prev_loop && s_scan_dt_sec > 0.01)
+                /* Rate from the loop counter: a stalled loop reads 0 Hz (dtmedian stays frozen) */
+                if (ce->has_prev_loop && s_scan_dt_sec > 0.01)
                 {
                     int64_t dlc = p->loopcnt - ce->prev_loopcnt;
-                    if (dlc > 0)
-                    {
-                        p->loop_hz = (double) dlc / s_scan_dt_sec;
-                    }
+                    p->loop_hz  = (dlc > 0) ? (double) dlc / s_scan_dt_sec : 0.0;
                 }
-                p->cnt_active     = (ce->has_prev_loop && p->loopcnt != ce->prev_loopcnt);
+                p->cnt_active = (ce->has_prev_loop && p->loopcnt != ce->prev_loopcnt);
+                if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE && ce->has_prev_loop &&
+                    !p->cnt_active)
+                {
+                    ce->stale_count++;
+                }
+                else
+                {
+                    ce->stale_count = 0;
+                }
+                p->stale_count    = ce->stale_count;
                 ce->prev_loopcnt  = p->loopcnt;
                 ce->has_prev_loop = 1;
 

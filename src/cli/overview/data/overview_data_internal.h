@@ -42,6 +42,7 @@ typedef struct
     float    spark_max;
     float    spark_rate[OV_SPARKLINE_LEN];
     int      spark_idx;
+    int      is_new; /* scans left to highlight a new stream */
 } ov_stream_cache_t;
 
 extern ov_stream_cache_t s_scache[OV_MAX_STREAMS];
@@ -62,6 +63,10 @@ typedef struct
     int  dparam_nb;
 
     int sparam_cached;
+
+    float hz_hist[OV_SPARKLINE_LEN]; /* run-process Hz history, kept across scans */
+    int   hz_hist_idx;
+    int   is_new;
 } ov_fps_cache_t;
 
 extern ov_fps_cache_t s_fcache[OV_MAX_FPS];
@@ -90,6 +95,8 @@ typedef struct
     ov_shm_map_t       map;
     int                seen_dead; /* once dead, a reused PID never revives this entry */
     int                in_use;
+    int                stale_count; /* consecutive scans active without a loopcnt change */
+    int                is_new;
 
     uint64_t prev_utime;
     uint64_t prev_stime;
@@ -131,7 +138,6 @@ void scache_evict_by_name(const char *name);
 int  fcache_find(const char *name);
 void fcache_evict(int ci);
 void fcache_evict_locked(int ci);
-int  pcache_find_pid(pid_t pid);
 int  pcache_find(long pindex, pid_t pid);
 void pcache_evict(int ci);
 

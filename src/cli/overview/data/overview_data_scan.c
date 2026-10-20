@@ -61,22 +61,8 @@ void ov_scan_cache_cleanup(void)
 
 
 /* =========================================================
- * Post-scan enrichment
- *
- * After all scanners and graph build, this function adds:
- *  - FPS Hz sparklines (cross-ref RPID to proc)
- *  - Process uptime (from /proc/PID/stat)
- *  - Stale process detection (alive but counter stuck)
- *  - New-item flash (items not in previous scan)
+ * Post-scan enrichment: FPS Hz sparklines (run PID to proc) and process uptime
  * ========================================================= */
-
-/* Previous scan name sets for new-item detection */
-static char s_prev_stream_names[OV_MAX_STREAMS][40];
-static int  s_prev_nb_streams = 0;
-static char s_prev_fps_names[OV_MAX_FPS][STRINGMAXLEN_FPS_NAME];
-static int  s_prev_nb_fps = 0;
-static char s_prev_proc_names[OV_MAX_PROCS][48];
-static int  s_prev_nb_procs = 0;
 
 /**
  * get_boot_time - read system boot time in seconds.
@@ -132,58 +118,36 @@ static int64_t pid_get_start_time(pid_t pid)
     return boot + starttime / clk;
 }
 
-/**
- * name_in_list - check if name exists in a name array.
- * @name:  name to search for
- * @list:  array of name strings
- * @count: number of entries in list
- * @width: sizeof each entry (stride)
- *
- * Return: 1 if found, 0 otherwise.
- */
-static int name_in_list(const char *name, const char *list, int count, int width)
-{
-    for (int ii = 0; ii < count; ii++)
-    {
-        if (strcmp(name, list + ii * width) == 0)
-        {
-            return 1;
-        }
-    }
-    return 0;
-}
 
 /**
- * ov_post_scan_enrich - Enrich model entries with historical sparklines and stale flags
+ * ov_post_scan_enrich - FPS run-process Hz history and process uptime.
  * @model: Pointer to data model
  *
- * Updates sparklines, calculates uptime, detects stale streams/processes, and
- * flags newly appeared items for UI highlight effects.
+ * Per-item history (stale count, new-item age, rates) lives in the scan caches.
  */
 void ov_post_scan_enrich(OV_MODEL *model)
 {
     int64_t now_epoch = (int64_t) time(NULL);
 
-    /* --- #6: FPS sparklines (cross-ref RPID to procs) --- */
+    /* --- FPS Hz history: run-process rate, kept in the FPS cache across scans --- */
+    pthread_mutex_lock(&s_fcache_mutex);
     for (int fi = 0; fi < model->nb_fps; fi++)
     {
         OV_FPS *f  = &model->fps[fi];
-        float   hz = 0.0f;
-        if (f->runpid > 0)
+        int     pi = ov_find_proc_by_pid(model, f->runpid);
+        int     ci = fcache_find(f->name);
+        if (ci < 0)
         {
-            for (int pi = 0; pi < model->nb_procs; pi++)
-            {
-                if (model->procs[pi].PID == f->runpid)
-                {
-                    hz = (float) model->procs[pi].loop_hz;
-                    break;
-                }
-            }
+            continue;
         }
-        int idx         = f->hz_hist_idx % OV_SPARKLINE_LEN;
-        f->hz_hist[idx] = hz;
-        f->hz_hist_idx++;
+        ov_fps_cache_t *ce = &s_fcache[ci];
+        ce->hz_hist[ce->hz_hist_idx % OV_SPARKLINE_LEN] =
+            (pi >= 0) ? (float) model->procs[pi].loop_hz : 0.0f;
+        ce->hz_hist_idx++;
+        memcpy(f->hz_hist, ce->hz_hist, sizeof(f->hz_hist));
+        f->hz_hist_idx = ce->hz_hist_idx;
     }
+    pthread_mutex_unlock(&s_fcache_mutex);
 
     /* --- #7: Process uptime --- */
     for (int pi = 0; pi < model->nb_procs; pi++)
@@ -191,7 +155,7 @@ void ov_post_scan_enrich(OV_MODEL *model)
         OV_PROC *p = &model->procs[pi];
         if (p->PID > 0)
         {
-            int ci = pcache_find_pid(p->PID);
+            int ci = pcache_find(p->pindex, p->PID);
             if (ci >= 0 && s_pcache[ci].has_start_time)
             {
                 if (s_pcache[ci].start_time > 0)
@@ -213,72 +177,5 @@ void ov_post_scan_enrich(OV_MODEL *model)
                 }
             }
         }
-    }
-
-    /* --- #15: Stale process detection --- */
-    for (int pi = 0; pi < model->nb_procs; pi++)
-    {
-        OV_PROC *p = &model->procs[pi];
-        if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE && !p->cnt_active)
-        {
-            p->stale_count++;
-        }
-        else
-        {
-            p->stale_count = 0;
-        }
-    }
-
-    /* --- #16: New-item flash --- */
-    /* Streams */
-    for (int si = 0; si < model->nb_streams; si++)
-    {
-        OV_STREAM *s = &model->streams[si];
-        if (s_prev_nb_streams > 0 &&
-            !name_in_list(s->name, (const char *) s_prev_stream_names, s_prev_nb_streams, 40))
-        {
-            s->is_new = 4;
-        }
-    }
-    /* FPS */
-    for (int fi = 0; fi < model->nb_fps; fi++)
-    {
-        OV_FPS *f = &model->fps[fi];
-        if (s_prev_nb_fps > 0 && !name_in_list(f->name, (const char *) s_prev_fps_names,
-                                               s_prev_nb_fps, STRINGMAXLEN_FPS_NAME))
-        {
-            f->is_new = 4;
-        }
-    }
-    /* Procs */
-    for (int pi = 0; pi < model->nb_procs; pi++)
-    {
-        OV_PROC *p = &model->procs[pi];
-        /* Build unique key: name + PID */
-        char key[48];
-        snprintf(key, sizeof(key), "%s/%d", p->name, (int) p->PID);
-        if (s_prev_nb_procs > 0 &&
-            !name_in_list(key, (const char *) s_prev_proc_names, s_prev_nb_procs, 48))
-        {
-            p->is_new = 4;
-        }
-    }
-
-    /* Save current names for next scan */
-    s_prev_nb_streams = model->nb_streams;
-    for (int si = 0; si < model->nb_streams && si < OV_MAX_STREAMS; si++)
-    {
-        strncpy(s_prev_stream_names[si], model->streams[si].name, 39);
-    }
-    s_prev_nb_fps = model->nb_fps;
-    for (int fi = 0; fi < model->nb_fps && fi < OV_MAX_FPS; fi++)
-    {
-        strncpy(s_prev_fps_names[fi], model->fps[fi].name, STRINGMAXLEN_FPS_NAME - 1);
-    }
-    s_prev_nb_procs = model->nb_procs;
-    for (int pi = 0; pi < model->nb_procs && pi < OV_MAX_PROCS; pi++)
-    {
-        snprintf(s_prev_proc_names[pi], sizeof(s_prev_proc_names[pi]), "%s/%d",
-                 model->procs[pi].name, (int) model->procs[pi].PID);
     }
 }

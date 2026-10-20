@@ -98,6 +98,13 @@ static void fill_fps_from_struct(OV_FPS *f, ov_fps_cache_t *ce)
     memset(f, 0, sizeof(OV_FPS));
     strncpy(f->name, ce->fname, sizeof(f->name) - 1);
     f->valid = 1;
+    memcpy(f->hz_hist, ce->hz_hist, sizeof(f->hz_hist));
+    f->hz_hist_idx = ce->hz_hist_idx;
+    f->is_new      = ce->is_new;
+    if (ce->is_new > 0)
+    {
+        ce->is_new--;
+    }
 
     if (fpsp->md == NULL)
     {
@@ -243,6 +250,7 @@ void ov_scan_fps(OV_MODEL *model)
 
             strncpy(s_fcache[ci].fname, fname, sizeof(s_fcache[ci].fname) - 1);
             s_fcache[ci].in_use = 1;
+            s_fcache[ci].is_new = (s_scan_dt_sec > 0.0) ? OV_NEW_SCANS : 0;
             s_fcache_nb++;
         }
 

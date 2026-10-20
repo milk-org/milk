@@ -199,21 +199,6 @@ int             s_pcache_nb = 0;
 
 
 /**
- * @brief Look up a process by PID in the cache.
- */
-int pcache_find_pid(pid_t pid)
-{
-    for (int i = 0; i < s_pcache_nb; i++)
-    {
-        if (s_pcache[i].pid == pid)
-        {
-            return i;
-        }
-    }
-    return -1;
-}
-
-/**
  * pcache_find - Look up a registry entry by slot and PID.
  */
 int pcache_find(long pindex, pid_t pid)

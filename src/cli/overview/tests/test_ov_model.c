@@ -58,10 +58,31 @@ static void test_stat_with_spaces(void)
     waitpid(pid, NULL, 0);
 }
 
+/* A PID shared by dead registry entries and a live one resolves to the live, else newest (links-11) */
+static void test_find_proc_by_pid(void)
+{
+    static OV_MODEL m;
+    memset(&m, 0, sizeof(m));
+    m.nb_procs = 3;
+    for (int i = 0; i < 3; i++)
+    {
+        m.procs[i].valid = 1;
+        m.procs[i].PID   = 4242;
+    }
+    m.procs[0].createtime = 10.0;
+    m.procs[1].createtime = 30.0;
+    m.procs[2].createtime = 20.0;
+    CHECK(ov_find_proc_by_pid(&m, 4242) == 1);
+    m.procs[2].active = 1;
+    CHECK(ov_find_proc_by_pid(&m, 4242) == 2);
+    CHECK(ov_find_proc_by_pid(&m, 7) == -1);
+}
+
 int main(void)
 {
     test_pid_liveness();
     test_stat_with_spaces();
+    test_find_proc_by_pid();
     if (failures == 0)
     {
         printf("all ok\n");

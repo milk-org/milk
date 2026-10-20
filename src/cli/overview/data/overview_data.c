@@ -88,11 +88,10 @@ void ov_model_full_scan(OV_MODEL *model)
     ov_scan_procs(model);
 
     ov_build_graph(model);
-    ov_detect_loops(model, SG_MODE_FULL);
 
-    /* Post-scan enrichment: sparklines, uptime,
-     * stale detection, new-item flash */
+    /* Per-item derived data first: loop health reads it */
     ov_post_scan_enrich(model);
+    ov_detect_loops(model, SG_MODE_FULL);
 
     clock_gettime(CLOCK_MONOTONIC, &t1);
     struct timespec dt    = ov_timespec_diff(t0, t1);

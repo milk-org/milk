@@ -237,7 +237,7 @@ void ov_detect_loops(OV_MODEL *model, sg_mode_t mode)
                 {
                     lp->is_error = 1;
                 }
-                if (pr->stale_count > 2)
+                if (pr->stale_count >= OV_STALE_SCANS)
                 {
                     lp->is_stale = 1;
                 }

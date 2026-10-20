@@ -54,6 +54,11 @@ static void scache_rate_update(OV_STREAM *s, int ci)
     /* Copy sparkline from cache to model */
     memcpy(s->spark_rate, ce->spark_rate, sizeof(s->spark_rate));
     s->spark_idx = ce->spark_idx;
+    s->is_new    = ce->is_new;
+    if (ce->is_new > 0)
+    {
+        ce->is_new--;
+    }
 }
 
 /**
@@ -310,6 +315,7 @@ void ov_scan_streams(OV_MODEL *model)
             strncpy(s_scache[ci].name, sname, sizeof(s_scache[ci].name) - 1);
             s_scache[ci].inode  = st.st_ino;
             s_scache[ci].in_use = 1;
+            s_scache[ci].is_new = (s_scan_dt_sec > 0.0) ? OV_NEW_SCANS : 0; /* none at startup */
             s_scache_nb++;
             imgp = &s_scache[ci].img;
         }

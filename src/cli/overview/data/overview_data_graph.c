@@ -55,26 +55,35 @@ int ov_find_stream_by_name(const OV_MODEL *model, const char *name)
 }
 
 /**
- * ov_find_proc_by_pid - Find process index by PID
+ * ov_find_proc_by_pid - Find the process entry for a PID: the live one, else the newest.
  * @model: Pointer to data model
  * @pid:   Process ID to match
  *
+ * A dead registry entry may share its PID with a later process; the live entry wins.
  * Return: Process index in @model->procs, or -1 if not found.
  */
 int ov_find_proc_by_pid(const OV_MODEL *model, pid_t pid)
 {
+    int best = -1;
     if (pid <= 0)
     {
         return -1;
     }
     for (int i = 0; i < model->nb_procs; i++)
     {
-        if (model->procs[i].valid && model->procs[i].PID == pid)
+        const OV_PROC *p = &model->procs[i];
+        if (!p->valid || p->PID != pid)
         {
-            return i;
+            continue;
+        }
+        if (best < 0 || (p->active && !model->procs[best].active) ||
+            (p->active == model->procs[best].active &&
+             p->createtime > model->procs[best].createtime))
+        {
+            best = i;
         }
     }
-    return -1;
+    return best;
 }
 
 

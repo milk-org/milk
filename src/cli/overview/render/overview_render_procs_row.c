@@ -75,7 +75,7 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
     {
         row_bg = OV_BG_RELATED;
     }
-    else if (p->stale_count >= 3)
+    else if (p->stale_count >= OV_STALE_SCANS)
     {
         row_bg = OV_BG_STALE;
     }

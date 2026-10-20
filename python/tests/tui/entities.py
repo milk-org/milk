@@ -11,9 +11,12 @@ import time
 from pathlib import Path
 
 # A processinfo loop at about 20 Hz that honours CTRLval (1 pause, 3 exit) and prints its PID.
+# SIGUSR1 toggles a stall: loopcnt stops while loopstat stays ACTIVE.
 _FAKEPROC = textwrap.dedent("""
-    import os, sys, time
+    import os, signal, sys, time
     from pyMilk.interfacing.pinfo import ProcessInfo
+    stalled = [False]
+    signal.signal(signal.SIGUSR1, lambda *a: stalled.__setitem__(0, not stalled[0]))
     p = ProcessInfo()
     p.create(sys.argv[1], 0)
     p.loopstat = 1
@@ -21,7 +24,7 @@ _FAKEPROC = textwrap.dedent("""
     while True:
         if p.CTRLval == 3:
             break
-        if p.CTRLval != 1:
+        if p.CTRLval != 1 and not stalled[0]:
             p.loopcnt = p.loopcnt + 1
         time.sleep(0.05)
     p.loopstat = 3

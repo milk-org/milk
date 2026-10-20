@@ -171,7 +171,7 @@ static void print_proc_info(const OV_MODEL *m, int pi)
     {
         double iter_us = (double) p->dtmedian_iter_ns / 1e3;
         printf("   %-18s: " C_VAL "%.1f µs" C_RST "  (%.1f Hz)\n", "Iter (median)", iter_us,
-               p->loop_hz);
+               1.0e9 / (double) p->dtmedian_iter_ns);
     }
     else
     {

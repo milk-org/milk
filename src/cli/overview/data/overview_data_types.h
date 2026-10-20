@@ -34,6 +34,8 @@
 #define OV_MAX_EDGES 5000
 
 #define OV_SPARKLINE_LEN 40
+#define OV_STALE_SCANS 3 /* scans without a loopcnt change before an active process is STALE */
+#define OV_NEW_SCANS 4   /* scans a newly appeared item stays highlighted */
 
 /* =========================================================
  * Node and edge types
@@ -180,7 +182,7 @@ typedef struct
     int      nb_loops;
     int      primary_loop_id;
 
-    /* new-item flash counter (frames remaining) */
+    /* new-item flash counter (scans remaining) */
     int is_new;
 } OV_STREAM;
 
@@ -256,7 +258,7 @@ typedef struct
     int      nb_loops;
     int      primary_loop_id;
 
-    /* new-item flash counter (frames remaining) */
+    /* new-item flash counter (scans remaining) */
     int is_new;
 } OV_FPS;
 
@@ -279,10 +281,12 @@ int ov_get_fps_tree_items(const OV_FPS    *fps,
 
 typedef struct
 {
-    char  name[40];
-    pid_t PID;
-    int   valid;
-    int   active;
+    char   name[40];
+    pid_t  PID;
+    long   pindex;     /**< processinfo registry slot */
+    double createtime; /**< registry createtime[pindex] */
+    int    valid;
+    int    active;
 
     /* status */
     int loopstat;
@@ -324,7 +328,7 @@ typedef struct
      * where alive but loopcnt unchanged */
     int stale_count;
 
-    /* new-item flash counter (frames remaining) */
+    /* new-item flash counter (scans remaining) */
     int is_new;
 
     /* loop membership */

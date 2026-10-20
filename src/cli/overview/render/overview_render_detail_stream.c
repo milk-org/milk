@@ -399,15 +399,8 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
         for (int tt = 0; tt < s->nb_proctrace; tt++)
         {
             /* Find proc name by PID */
-            const char *pname = "???";
-            for (int pp = 0; pp < m->nb_procs; pp++)
-            {
-                if (m->procs[pp].PID == s->proctrace_pid[tt])
-                {
-                    pname = m->procs[pp].name;
-                    break;
-                }
-            } // for procs
+            int         pp    = ov_find_proc_by_pid(m, s->proctrace_pid[tt]);
+            const char *pname = (pp >= 0) ? m->procs[pp].name : "???";
             H_ov_buf_pos(row + ri, r.col + 1);
             H_ov_theme_bg(OV_BG_PANEL);
             H_ov_theme_fg(ov_pid_color(s->proctrace_pid[tt]));
