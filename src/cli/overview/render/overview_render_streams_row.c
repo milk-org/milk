@@ -370,7 +370,7 @@ void ov_streams_render_single_row(const OV_LAYOUT  *lay,
 
         int btn_w = 10; /* " [Delete] " */
         int rem   = r.width - printed;
-        if (rem >= btn_w)
+        if (lay->ctrl_mode && rem >= btn_w) /* action buttons: CONTROL mode only */
         {
             render_pad_spaces(printed, r.width - btn_w);
             ov_theme_bg(OV_FG_ERROR);

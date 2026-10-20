@@ -84,6 +84,16 @@ int ov_input__handle_sorting(int key, OV_LAYOUT *lay);
 /* Actions: stream delete, proc kill/pause/step, FPS tmux */
 int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 
+/* y/N confirmation for destructive and batch verbs */
+void ov_confirm_open(OV_LAYOUT      *lay,
+                     const OV_MODEL *m,
+                     ov_act_t        verb,
+                     int             arg,
+                     ov_focus_t      panel,
+                     int             idx);
+int  ov_confirm_batch_arg(const OV_LAYOUT *lay, const OV_MODEL *m, int conf);
+int  ov_input__handle_confirm(int key, OV_LAYOUT *lay, const OV_MODEL *m);
+
 /* Navigation: cursor movement, paging, scrolling */
 int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m);

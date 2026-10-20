@@ -304,6 +304,7 @@ add_executable(
   ../overview/input/overview_input_hittest.c
   ../overview/input/overview_input_hittest_cols.c
   ../overview/input/overview_input_modal.c
+  ../overview/input/overview_input_confirm.c
   ../overview/input/overview_input_modal_filter.c
   ../overview/input/overview_input_mouse.c
   ../overview/input/overview_input_mouse_drag.c

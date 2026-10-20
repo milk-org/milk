@@ -250,8 +250,8 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
         }
 
-        /* Quick Action Buttons (Hover) */
-        if (lay->mouse_hover && lay->hover_idx >= 0)
+        /* Quick Action Buttons (Hover): drawn and live only in CONTROL mode */
+        if (lay->ctrl_mode && lay->mouse_hover && lay->hover_idx >= 0)
         {
             if (lay->hover_view == OV_FOCUS_STREAMS && lay->hover_idx < m->nb_streams)
             {
@@ -264,7 +264,7 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         if (mc >= lay->r_streams.col + lay->r_streams.width - 10 &&
                             mc < lay->r_streams.col + lay->r_streams.width)
                         {
-                            ov_ctrl_stream_delete(&m->streams[idx], &lay->cmdlog);
+                            ov_confirm_open(lay, m, OV_ACT_STREAM_DELETE, 0, OV_FOCUS_STREAMS, idx);
                             return 1;
                         }
                     }

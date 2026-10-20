@@ -174,8 +174,7 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
             render_focus_strip(row, r.col + 1, panel_focused, OV_FG_FPS, row_bg);
 
             /* Multi-select marker */
-            int fsi = (int) (f - m->fps);
-            if (fsi >= 0 && fsi < 200 && lay->multi_sel_fps[fsi])
+            if (ov_msel_has(lay, f->name))
             {
                 ov_theme_fg(OV_FG_ACTIVE);
                 ov_buf_printf("\xe2\x97\x86"); /* ◆ */
@@ -421,7 +420,7 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
 
                 int btn_w = 24; /* " [Run]  [Stop]  [Conf] " */
                 int rem   = r.width - (printed + n5);
-                if (rem >= btn_w)
+                if (lay->ctrl_mode && rem >= btn_w) /* action buttons: CONTROL mode only */
                 {
                     render_pad_spaces(printed + n5, r.width - btn_w);
 
@@ -472,10 +471,12 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
     int         filt_n        = ov_rows(lay, m, OV_FOCUS_FPS, fidx, OV_MAX_FPS);
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
 
-    int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-                      ? m->loops[lay->sel_loop].loop_id
-                      : -1;
-    ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "FPS", OV_FG_FPS,
+    int  loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+                       ? m->loops[lay->sel_loop].loop_id
+                       : -1;
+    char ftitle[48];
+    ov_draw_panel_border_filter(r.row, r.col, r.height, r.width,
+                                ov_msel_title(lay, m, ftitle, sizeof(ftitle)), OV_FG_FPS,
                                 lay->focus == OV_FOCUS_FPS, 0, lay->ctrl_blink, loop_id,
                                 lay->filter_fps, lay->filter_fps_active, filt_n, m->nb_fps);
 

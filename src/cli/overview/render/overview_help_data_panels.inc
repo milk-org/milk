@@ -39,8 +39,8 @@
     {
         "K",
         "Immediate kill (SIGKILL)",
-        "Sends SIGKILL (signal 9) directly to the process PID. Forces immediate kernel "
-        "termination. Use when a process is stuck or unresponsive to SIGTERM. "
+        "Sends SIGKILL (signal 9) directly to the process PID after a y/N confirmation. Forces "
+        "immediate kernel termination. Use when a process is stuck or unresponsive to SIGTERM. "
         "Requires Control Mode ON.",
         HF_ENTRY | HF_CTRL_MODE,
         HS_PROCS,
@@ -79,17 +79,19 @@
     },
     {
         "C",
-        "Cleanup / release allocations",
-        "Requests process to execute internal memory and resource cleanup procedures "
-        "without terminating the process. Requires Control Mode ON.",
+        "Clean up dead process entries",
+        "After a y/N confirmation, removes STOPPED and CRASHED processinfo entries "
+        "(milk-procinfo-rm -c). Live processes are untouched. Requires Control Mode ON.",
         HF_ENTRY | HF_CTRL_MODE,
         HS_PROCS,
     },
     {
         "CTRL+e",
-        "Erase stale / dead process entry",
-        "Deactivates a dead or crashed process slot in processinfo.list.shm, removing "
-        "orphaned entries from the dashboard. Requires Control Mode ON.",
+        "Erase entry (stream, dead process, FPS)",
+        "After a y/N confirmation: deletes the selected stream, removes a dead process entry, or "
+        "erases the selected FPS (stops CONF and RUN, closes its tmux session, deletes its shm). "
+        "Requires Control Mode ON. FPS erase is refused unless the FPS name is [A-Za-z0-9_-], its "
+        "shm file is yours, and no other tmux session starts with that name.",
         HF_ENTRY | HF_CTRL_MODE,
         HS_PROCS,
     },
@@ -137,32 +139,33 @@
     {
         "k / K",
         "Send SIGTERM / SIGKILL to FPS session",
-        "Sends termination signals to the tmux session and worker processes managing "
-        "the selected FPS module. Requires Control Mode ON.",
+        "Sends SIGTERM (k, immediate) or SIGKILL (K, after y/N) to the conf and run processes of "
+        "the selected FPS module, or to every marked FPS (y/N). Requires Control Mode ON.",
         HF_ENTRY | HF_CTRL_MODE,
         HS_FPS,
     },
     {
-        "SPACE",
-        "Toggle multi-select on FPS module",
-        "Toggles multi-selection checkbox on the highlighted FPS module for performing "
-        "batch run/stop or kill operations on multiple modules at once. Requires Control Mode ON.",
+        "b",
+        "Toggle the batch mark on an FPS module",
+        "Marks or unmarks the highlighted FPS (by name) and moves down. With marks set, k, K, r "
+        "and s act on every marked FPS after a y/N confirmation; the FPS title shows the count "
+        "and how many marks a filter hides. Requires Control Mode ON.",
         HF_ENTRY | HF_CTRL_MODE,
         HS_FPS,
     },
     {
         "a",
-        "Select all FPS modules (batch)",
-        "Selects all listed FPS modules simultaneously for batch operations "
-        "(e.g. stopping or starting an entire pipeline together). Requires Control Mode ON.",
+        "Mark every visible FPS module (batch)",
+        "Adds every FPS row shown (the filter is respected) to the batch marks, e.g. to stop or "
+        "start a whole pipeline together. Requires Control Mode ON.",
         HF_ENTRY | HF_CTRL_MODE,
         HS_FPS,
     },
     {
-        "c",
-        "Clear FPS multi-selections",
-        "Clears all multi-selection marks across all FPS modules, returning to "
-        "single-selection mode.",
+        "ESC",
+        "Clear FPS batch marks",
+        "Last step of the ESC back-chain: once no filter is left to clear, ESC drops every FPS "
+        "batch mark.",
         HF_ENTRY,
         HS_FPS,
     },

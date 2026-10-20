@@ -83,6 +83,8 @@ def test_cleanup_settles_dead_slot(milkctrl, entities, tui_env):
     m.keys("c")
     m.wait_for(r"CONTROL")
     m.keys("C")
+    m.wait_for(r"CONFIRM")
+    m.keys("y")
     m.wait_for(r"registry slot\(s\) settled")
     assert _slot_state(shm, pid) == 3  # CRASHED: file kept, loopstat was not STOP
     assert m.quit() == 0

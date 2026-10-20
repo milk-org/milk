@@ -187,6 +187,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     /* End frame overlays */
     ov_render_theme_popup(lay);
     ov_draw_tooltip(lay);
+    ov_render_confirm(lay, m);
 
     ov_buf_flush_delta(lay->term_rows, lay->term_cols);
 }

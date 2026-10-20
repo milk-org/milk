@@ -358,7 +358,7 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
 
         int btn_w = 8; /* " [Kill] " */
         int rem   = avail - printed;
-        if (rem >= btn_w)
+        if (lay->ctrl_mode && rem >= btn_w) /* action buttons: CONTROL mode only */
         {
             ov_buf_hline(' ', rem - btn_w);
             ov_theme_bg(OV_FG_ERROR);

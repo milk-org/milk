@@ -288,8 +288,8 @@
     {
         "DEL",
         "Delete stream shared memory file",
-        "Unlinks and removes the selected stream from /dev/shm. Any processes holding "
-        "the file descriptor remain mapped until closed. Requires Control Mode ON.",
+        "After a y/N confirmation, unlinks the selected stream from the shm directory. Processes "
+        "holding it stay mapped until they close it. Requires Control Mode ON.",
         HF_ENTRY | HF_CTRL_MODE,
         HS_STREAMS,
     },

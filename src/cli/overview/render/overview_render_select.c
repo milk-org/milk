@@ -306,3 +306,79 @@ void ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m)
         }
     }
 }
+
+/** ov_msel_find - slot of the FPS batch mark @name, or -1. */
+static int ov_msel_find(const OV_LAYOUT *lay, const char *name)
+{
+    for (int k = 0; k < lay->multi_sel_count; k++)
+    {
+        if (strcmp(lay->multi_sel_fps[k].name, name) == 0)
+        {
+            return k;
+        }
+    }
+    return -1;
+}
+
+/** ov_msel_has - 1 if FPS @name carries a batch mark. */
+int ov_msel_has(const OV_LAYOUT *lay, const char *name)
+{
+    return ov_msel_find(lay, name) >= 0;
+}
+
+/** ov_msel_set - add (@on) or remove the batch mark of FPS @name; set semantics. */
+void ov_msel_set(OV_LAYOUT *lay, const char *name, int on)
+{
+    int k = ov_msel_find(lay, name);
+    if (on && k < 0 && lay->multi_sel_count < OV_MSEL_MAX)
+    {
+        OV_TARGET *t = &lay->multi_sel_fps[lay->multi_sel_count++];
+        memset(t, 0, sizeof(*t));
+        snprintf(t->name, sizeof(t->name), "%s", name);
+    }
+    else if (!on && k >= 0)
+    {
+        lay->multi_sel_fps[k] = lay->multi_sel_fps[--lay->multi_sel_count];
+    }
+}
+
+/** ov_msel_clear - drop every FPS batch mark. */
+void ov_msel_clear(OV_LAYOUT *lay)
+{
+    lay->multi_sel_count = 0;
+}
+
+/**
+ * ov_msel_title - FPS panel title showing the batch scope: "FPS", "FPS ◆N" or "FPS ◆N (K hidden)",
+ * K counting marks not drawn (filtered out or gone). Return: @buf.
+ */
+const char *ov_msel_title(const OV_LAYOUT *lay, const OV_MODEL *m, char *buf, size_t n)
+{
+    static int fidx[OV_MAX_NODES];
+    if (lay->multi_sel_count == 0)
+    {
+        snprintf(buf, n, "FPS");
+        return buf;
+    }
+    int rows   = ov_rows(lay, m, OV_FOCUS_FPS, fidx, OV_MAX_NODES);
+    int hidden = 0;
+    for (int k = 0; k < lay->multi_sel_count; k++)
+    {
+        int fi    = ov_tgt_find(m, OV_FOCUS_FPS, &lay->multi_sel_fps[k]);
+        int shown = 0;
+        for (int r = 0; r < rows && fi >= 0 && !shown; r++)
+        {
+            shown = (fidx[r] == fi);
+        }
+        hidden += !shown;
+    }
+    if (hidden > 0)
+    {
+        snprintf(buf, n, "FPS \xe2\x97\x86%d (%d hidden)", lay->multi_sel_count, hidden);
+    }
+    else
+    {
+        snprintf(buf, n, "FPS \xe2\x97\x86%d", lay->multi_sel_count);
+    }
+    return buf;
+}

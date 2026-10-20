@@ -155,8 +155,9 @@ typedef struct
     ov_focus_t r_filter_panel[4];
     int        r_filter_count;
     /* Multi-select state for FPS batch ops (#8) */
-    uint8_t multi_sel_fps[200]; /* per-FPS select */
-    int     multi_sel_count;    /* count of selected */
+    OV_TARGET  multi_sel_fps[OV_MSEL_MAX]; /* FPS batch marks, by name */
+    int        multi_sel_count;
+    OV_CONFIRM confirm; /* y/N modal for destructive and batch verbs */
     /* Compact mode (#13): hide extra columns */
     int compact_mode;
     /* Dashboard panel rects */

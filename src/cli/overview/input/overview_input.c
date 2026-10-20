@@ -24,6 +24,12 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 0;
     }
 
+    /* y/N confirmation: modal while open */
+    if (ov_input__handle_confirm(key, lay, m))
+    {
+        return 0;
+    }
+
     /* 0. Theme selector popup: handle navigation, selection, and auto-dismissal */
     if (lay->theme_popup_active)
     {
@@ -154,6 +160,14 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         lay->loop_filter_active = 0;
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Loop isolation filter: OFF");
+        return 0;
+    }
+
+    /* ESC — last step of the back-chain: drop the FPS batch marks */
+    if (key == 27 && lay->multi_sel_count > 0)
+    {
+        ov_msel_clear(lay);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "FPS batch marks cleared");
         return 0;
     }
 

@@ -24,4 +24,30 @@ typedef struct
     uint64_t start;
 } OV_TARGET;
 
+#define OV_MSEL_MAX 200 /* FPS batch marks, == OV_MAX_FPS */
+
+/* Destructive and batch verbs that ask y/N first */
+typedef enum
+{
+    OV_ACT_NONE = 0,
+    OV_ACT_PROC_SIGKILL,
+    OV_ACT_PROC_REMOVE,
+    OV_ACT_PROC_CLEANUP,
+    OV_ACT_FPS_SIGKILL,
+    OV_ACT_FPS_ERASE,
+    OV_ACT_STREAM_DELETE,
+    OV_ACT_BATCH_SIGNAL, /* arg: signal number */
+    OV_ACT_BATCH_RUN,    /* arg: 1 start the stopped ones, 0 stop */
+    OV_ACT_BATCH_CONF,   /* arg: 1 start the stopped ones, 0 stop */
+} ov_act_t;
+
+/* Pending confirmation (verb NONE = closed); the target identity is captured when it opens */
+typedef struct
+{
+    ov_act_t  verb;
+    int       arg;
+    int       panel;
+    OV_TARGET tgt;
+} OV_CONFIRM;
+
 #endif /* OVERVIEW_TARGET_H */

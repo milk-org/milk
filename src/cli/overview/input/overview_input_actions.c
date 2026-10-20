@@ -144,10 +144,9 @@ void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m)
     }
     case OV_BTN_STREAM_DEL:
     {
-        const OV_STREAM *s = ps;
-        if (s)
+        if (ps != NULL)
         {
-            ov_ctrl_stream_delete(s, log);
+            ov_confirm_open(lay, m, OV_ACT_STREAM_DELETE, 0, OV_FOCUS_STREAMS, si);
         }
         break;
     }
@@ -185,31 +184,13 @@ int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             return 1;
         }
 
-        if (lay->focus == OV_FOCUS_FPS)
+        static const ov_act_t erase[OV_NB_LIST_PANELS] = { OV_ACT_STREAM_DELETE, OV_ACT_PROC_REMOVE,
+                                                           OV_ACT_FPS_ERASE };
+        int                   idx                      = ov_sel_idx(lay, m, lay->focus);
+        if (idx >= 0)
         {
-            const OV_FPS *f = ov_input_get_sel_fps(lay, m);
-            if (f)
-            {
-                ov_ctrl_fps_remove(f, log);
-            }
+            ov_confirm_open(lay, m, erase[lay->focus], 0, lay->focus, idx);
         }
-        else if (lay->focus == OV_FOCUS_PROCS)
-        {
-            const OV_PROC *p = ov_input_get_sel_proc(lay, m);
-            if (p)
-            {
-                ov_ctrl_proc_remove(p, log);
-            }
-        }
-        else if (lay->focus == OV_FOCUS_STREAMS)
-        {
-            const OV_STREAM *s = ov_input_get_sel_stream(lay, m);
-            if (s)
-            {
-                ov_ctrl_stream_delete(s, log);
-            }
-        }
-        ov_scan_force_update();
         return 1;
     }
 
@@ -251,7 +232,7 @@ int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             is_ctrl_action = 1;
             if (lay->ctrl_mode)
             {
-                ov_ctrl_procs_cleanup(log);
+                ov_confirm_open(lay, m, OV_ACT_PROC_CLEANUP, 0, OV_FOCUS_PROCS, -1);
             }
         }
         else if (key == 'k' || key == 'K' || key == 'p' || key == 's' || key == ctrl('s') ||
@@ -269,7 +250,8 @@ int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     }
                     else if (key == 'K')
                     {
-                        ov_ctrl_proc_sigkill(p, log);
+                        ov_confirm_open(lay, m, OV_ACT_PROC_SIGKILL, 0, OV_FOCUS_PROCS,
+                                        (int) (p - m->procs));
                     }
                     else if (key == 'p')
                     {
@@ -293,106 +275,61 @@ int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
     else if (lay->focus == OV_FOCUS_FPS)
     {
-        /* Space: toggle multi-select (#8) */
-        if (key == ' ' && lay->ctrl_mode)
-        {
-            int           fi = lay->sel_fps;
-            const OV_FPS *f  = ov_input_get_sel_fps(lay, m);
-            if (f)
-            {
-                int idx = (int) (f - m->fps);
-                if (idx >= 0 && idx < 200)
-                {
-                    lay->multi_sel_fps[idx] ^= 1;
-                    lay->multi_sel_count += lay->multi_sel_fps[idx] ? 1 : -1;
-                }
-            }
-            /* Advance cursor */
-            int cnt = ov_input_get_filtered_count(OV_FOCUS_FPS, lay, m);
-            if (fi + 1 < cnt)
-            {
-                lay->sel_fps++;
-            }
-            return 0;
-        }
-        /* 'a': select/deselect all filtered (#8) */
-        if (key == 'a' && lay->ctrl_mode)
-        {
-            /* If any selected, deselect all;
-             * otherwise select all filtered */
-            if (lay->multi_sel_count > 0)
-            {
-                memset(lay->multi_sel_fps, 0, sizeof(lay->multi_sel_fps));
-                lay->multi_sel_count = 0;
-            }
-            else
-            {
-                /* Would need filtered indices here;
-                 * for simplicity, select all FPS */
-                for (int j = 0; j < m->nb_fps; j++)
-                {
-                    lay->multi_sel_fps[j] = 1;
-                }
-                lay->multi_sel_count = m->nb_fps;
-            }
-            return 0;
-        }
-        if (key == 'k' || key == 'K' || key == 'r' || key == 's')
+        /* Batch marks: b toggles the cursor FPS, a marks every visible row; ESC clears */
+        if (key == 'b' || key == 'a')
         {
             is_ctrl_action = 1;
-            if (lay->ctrl_mode)
+            if (lay->ctrl_mode && key == 'b')
             {
-                /* Batch dispatch over multi-selected
-                 * or single selected (#8) */
-                if (lay->multi_sel_count > 0)
+                const OV_FPS *f = ov_input_get_sel_fps(lay, m);
+                if (f)
                 {
-                    for (int j = 0; j < m->nb_fps; j++)
-                    {
-                        if (!lay->multi_sel_fps[j])
-                        {
-                            continue;
-                        }
-                        const OV_FPS *f = &m->fps[j];
-                        if (key == 'k')
-                        {
-                            ov_ctrl_fps_signal_pid(f, SIGTERM, log);
-                        }
-                        else if (key == 'K')
-                        {
-                            ov_ctrl_fps_signal_pid(f, SIGKILL, log);
-                        }
-                        else if (key == 'r')
-                        {
-                            ov_ctrl_fps_run_toggle(f, log);
-                        }
-                        else if (key == 's')
-                        {
-                            ov_ctrl_fps_conf_toggle(f, log);
-                        }
-                    }
+                    ov_msel_set(lay, f->name, !ov_msel_has(lay, f->name));
+                    ov_sel_row(lay, m, OV_FOCUS_FPS, lay->sel_fps + 1);
+                }
+            }
+            else if (lay->ctrl_mode)
+            {
+                int fidx[OV_MAX_FPS];
+                int n = ov_rows(lay, m, OV_FOCUS_FPS, fidx, OV_MAX_FPS);
+                for (int r = 0; r < n; r++)
+                {
+                    ov_msel_set(lay, m->fps[fidx[r]].name, 1);
+                }
+            }
+        }
+        else if (key == 'k' || key == 'K' || key == 'r' || key == 's')
+        {
+            is_ctrl_action  = 1;
+            const OV_FPS *f = ov_input_get_sel_fps(lay, m);
+            if (lay->ctrl_mode && lay->multi_sel_count > 0)
+            {
+                ov_act_t verb = (key == 'r')   ? OV_ACT_BATCH_RUN
+                                : (key == 's') ? OV_ACT_BATCH_CONF
+                                               : OV_ACT_BATCH_SIGNAL;
+                int      arg  = (key == 'k')   ? SIGTERM
+                                : (key == 'K') ? SIGKILL
+                                               : ov_confirm_batch_arg(lay, m, key == 's');
+                ov_confirm_open(lay, m, verb, arg, OV_FOCUS_FPS, -1);
+            }
+            else if (lay->ctrl_mode && f != NULL)
+            {
+                if (key == 'k')
+                {
+                    ov_ctrl_fps_signal_pid(f, SIGTERM, log);
+                }
+                else if (key == 'K')
+                {
+                    ov_confirm_open(lay, m, OV_ACT_FPS_SIGKILL, 0, OV_FOCUS_FPS,
+                                    (int) (f - m->fps));
+                }
+                else if (key == 'r')
+                {
+                    ov_ctrl_fps_run_toggle(f, log);
                 }
                 else
                 {
-                    const OV_FPS *f = ov_input_get_sel_fps(lay, m);
-                    if (f)
-                    {
-                        if (key == 'k')
-                        {
-                            ov_ctrl_fps_signal_pid(f, SIGTERM, log);
-                        }
-                        else if (key == 'K')
-                        {
-                            ov_ctrl_fps_signal_pid(f, SIGKILL, log);
-                        }
-                        else if (key == 'r')
-                        {
-                            ov_ctrl_fps_run_toggle(f, log);
-                        }
-                        else if (key == 's')
-                        {
-                            ov_ctrl_fps_conf_toggle(f, log);
-                        }
-                    }
+                    ov_ctrl_fps_conf_toggle(f, log);
                 }
             }
         }
@@ -404,10 +341,10 @@ int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             is_ctrl_action = 1;
             if (lay->ctrl_mode)
             {
-                const OV_STREAM *s = ov_input_get_sel_stream(lay, m);
-                if (s)
+                int si = ov_sel_idx(lay, m, OV_FOCUS_STREAMS);
+                if (si >= 0)
                 {
-                    ov_ctrl_stream_delete(s, log);
+                    ov_confirm_open(lay, m, OV_ACT_STREAM_DELETE, 0, OV_FOCUS_STREAMS, si);
                 }
             }
         }

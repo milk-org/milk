@@ -58,6 +58,8 @@ def test_library_output_goes_to_cmdlog(milkctrl, entities):
     m.keys("c")
     m.wait_for(r"CONTROL")
     m.keys("DC")  # Delete: ImageStreamIO re-opens the stream and complains
+    m.wait_for(r"CONFIRM")
+    m.keys("y")
     m.wait_for(r"^ \d\d:\d\d:\d\d \S+ +.*incompatible version")
     assert "milk-CTRL" in m.lines()[0]
     assert m.quit() == 0

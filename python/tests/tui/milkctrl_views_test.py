@@ -20,6 +20,8 @@ def test_tab_in_streams_view_keeps_stream_focus(milkctrl, entities, tui_env):
     m.keys("c")
     m.wait_for(r"CONTROL")
     m.keys("C-e")
+    m.wait_for(r"CONFIRM")
+    m.keys("y")
     m.wait_for(r"\"tabkeep\".*deleted")
     assert not os.path.exists(os.path.join(shm, "tabkeep.im.shm"))
     assert m.quit() == 0

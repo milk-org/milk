@@ -147,6 +147,11 @@ void ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m);
 int  ov_detail_target(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t *panel);
 int  ov_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m);
 const SG_TREE_NODE *ov_graph_rows(const OV_LAYOUT *lay, const OV_MODEL *m, int *n);
+int                 ov_msel_has(const OV_LAYOUT *lay, const char *name);
+void                ov_msel_set(OV_LAYOUT *lay, const char *name, int on);
+void                ov_msel_clear(OV_LAYOUT *lay);
+const char         *ov_msel_title(const OV_LAYOUT *lay, const OV_MODEL *m, char *buf, size_t n);
+void                ov_render_confirm(const OV_LAYOUT *lay, const OV_MODEL *m);
 
 void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc);
 

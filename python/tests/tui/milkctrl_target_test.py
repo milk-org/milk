@@ -42,6 +42,8 @@ def test_delete_hits_highlighted_row_under_loop_isolation(milkctrl, entities, tu
     m.keys("c")
     m.wait_for(r"CONTROL")
     m.keys("DC")
+    m.wait_for(r"CONFIRM")
+    m.keys("y")
     m.wait_for(rf"\"{target}\".*deleted")
     assert not os.path.exists(os.path.join(shm, f"{target}.im.shm"))
     for keep in ["aa1", "aa2", "zz9"]:
