@@ -312,6 +312,25 @@ static void relate_mark(const OV_MODEL *m,
     }
 }
 
+/** relate_neighbours - mark the nodes joined to node @v by an edge, either way. */
+static void relate_neighbours(const OV_MODEL *m,
+                              OV_RELATED     *out,
+                              int             v,
+                              ov_focus_t      focus,
+                              int             sel_stream_idx)
+{
+    for (int k = OV_ADJ_B(m, out, v); k < OV_ADJ_E(m, out, v); k++)
+    {
+        const OV_EDGE *e = &m->edges[m->adj_out[k]];
+        relate_mark(m, out, e->tgt_node, OV_EDGE_IS_WRITE(e), focus, sel_stream_idx);
+    }
+    for (int k = OV_ADJ_B(m, in, v); k < OV_ADJ_E(m, in, v); k++)
+    {
+        const OV_EDGE *e = &m->edges[m->adj_in[k]];
+        relate_mark(m, out, e->src_node, OV_EDGE_IS_WRITE(e), focus, sel_stream_idx);
+    }
+}
+
 /**
  * ov_related_from - mark the entries connected to model entry @idx of panel @focus.
  */
@@ -340,16 +359,42 @@ static void ov_related_from(const OV_MODEL *m, ov_focus_t focus, int idx, OV_REL
         return;
     }
 
-    /* Neighbours of sel_node, through the edges out of it and into it */
+    /* An FPS and the process it runs act as one unit: the selection's neighbours are those of both */
+    int unit[1 + OV_MAX_PROCS], nunit = 0;
+    unit[nunit++] = sel_node;
     for (int k = OV_ADJ_B(m, out, sel_node); k < OV_ADJ_E(m, out, sel_node); k++)
     {
         const OV_EDGE *e = &m->edges[m->adj_out[k]];
-        relate_mark(m, out, e->tgt_node, OV_EDGE_IS_WRITE(e), focus, sel_stream_idx);
+        if (e->type == OV_EDGE_FPS_RUNS_PROC && nunit <= OV_MAX_PROCS)
+        {
+            unit[nunit++] = e->tgt_node;
+        }
     }
     for (int k = OV_ADJ_B(m, in, sel_node); k < OV_ADJ_E(m, in, sel_node); k++)
     {
         const OV_EDGE *e = &m->edges[m->adj_in[k]];
-        relate_mark(m, out, e->src_node, OV_EDGE_IS_WRITE(e), focus, sel_stream_idx);
+        if (e->type == OV_EDGE_FPS_RUNS_PROC && nunit <= OV_MAX_PROCS)
+        {
+            unit[nunit++] = e->src_node;
+        }
+    }
+    for (int u = 0; u < nunit; u++)
+    {
+        relate_neighbours(m, out, unit[u], focus, sel_stream_idx);
+    }
+
+    /* ...and so are the related processes and FPS: a stream relates to its writer's FPS too */
+    for (int pi = 0; pi < m->nb_procs; pi++)
+    {
+        int pn = m->procs[pi].node_idx;
+        for (int k = OV_ADJ_B(m, in, pn); bget(out->procs, pi) && k < OV_ADJ_E(m, in, pn); k++)
+        {
+            const OV_EDGE *e = &m->edges[m->adj_in[k]];
+            if (e->type == OV_EDGE_FPS_RUNS_PROC)
+            {
+                relate_mark(m, out, e->src_node, bget(out->proc_writes, pi), focus, sel_stream_idx);
+            }
+        }
     }
 }
 

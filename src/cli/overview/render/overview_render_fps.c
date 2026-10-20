@@ -60,8 +60,7 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
             int root_node = m->fps[root_fi].node_idx;
             if (root_node >= 0)
             {
-                int8_t node_depths[OV_MAX_NODES];
-                sg_compute_node_depths(m, root_node, SG_MODE_FPS, node_depths);
+                const int8_t *node_depths = ov_node_depths(m, root_node, SG_MODE_FPS);
                 for (int fi = 0; fi < m->nb_fps; fi++)
                 {
                     int n = m->fps[fi].node_idx;

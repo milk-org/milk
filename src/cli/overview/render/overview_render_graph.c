@@ -44,28 +44,38 @@ int ov_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
         target_idx  = ov_get_selected_fps_idx(lay, m);
     }
 
-    if (target_type != -1 && target_idx != -1)
+    if (target_idx < 0)
     {
-        for (int i = 0; i < m->nb_nodes; i++)
-        {
-            if (m->nodes[i].type == target_type && m->nodes[i].index == target_idx)
-            {
-                return i;
-            }
-        }
+        return -1;
     }
-    return -1;
+    return (target_type == OV_NODE_STREAM) ? m->streams[target_idx].node_idx
+           : (target_type == OV_NODE_PROC) ? m->procs[target_idx].node_idx
+           : (target_type == OV_NODE_FPS)  ? m->fps[target_idx].node_idx
+                                           : -1;
 }
 
 /**
  * ov_graph_rows - the CONNECTIONS rows as drawn, for render and input alike; @n gets their count.
- * Static buffer: UI thread only, valid until the next call.
+ * Static buffer: UI thread only; recomputed when the model, the root or the lineage mode changes.
  */
 const SG_TREE_NODE *ov_graph_rows(const OV_LAYOUT *lay, const OV_MODEL *m, int *n)
 {
-    static SG_TREE_NODE rows[OV_MAX_NODES];
-    int                 start = ov_graph_start_node(lay, m);
-    *n = (start >= 0) ? sg_compute_render_tree(m, start, lay->lineage_mode, rows) : 0;
+    static SG_TREE_NODE    rows[OV_MAX_NODES];
+    static int             nb;
+    static const OV_MODEL *key_m; /* rows are for this model, root and lineage mode */
+    static uint64_t        key_seq;
+    static int             key_start = -2, key_mode = -1;
+    int                    start = ov_graph_start_node(lay, m);
+    if (m->seq == 0 || m != key_m || m->seq != key_seq || start != key_start ||
+        lay->lineage_mode != key_mode)
+    {
+        nb        = (start >= 0) ? sg_compute_render_tree(m, start, lay->lineage_mode, rows) : 0;
+        key_m     = m;
+        key_seq   = m->seq;
+        key_start = start;
+        key_mode  = lay->lineage_mode;
+    }
+    *n = nb;
     return rows;
 }
 

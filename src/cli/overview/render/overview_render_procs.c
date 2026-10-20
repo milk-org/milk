@@ -84,8 +84,7 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
             int root_node = m->procs[root_pi].node_idx;
             if (root_node >= 0)
             {
-                int8_t node_depths[OV_MAX_NODES];
-                sg_compute_node_depths(m, root_node, SG_MODE_FULL, node_depths);
+                const int8_t *node_depths = ov_node_depths(m, root_node, SG_MODE_FULL);
                 for (int pi = 0; pi < m->nb_procs; pi++)
                 {
                     int n = m->procs[pi].node_idx;

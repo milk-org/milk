@@ -294,7 +294,10 @@ void        ov_render_subtab(OV_LAYOUT *lay, const OV_MODEL *m);
 
 int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m);
 
-void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m);
+void              ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m);
+const int8_t     *ov_node_depths(const OV_MODEL *m, int root, sg_mode_t mode);
+const SG_LINEAGE *ov_lineage(const OV_MODEL *m, int si, sg_mode_t mode);
+unsigned          ov_derived_build_count(void);
 
 void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m);
 

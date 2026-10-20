@@ -414,6 +414,60 @@ static void test_key_dispatch(void)
     CHECK((c & OV_CTX_F5) && !(c & OV_CTX_MODEL) && (c & OV_CTX_FOCUS_LIST));
 }
 
+/* Graph walks are cached per model, root and mode; a stream also relates to its writer's FPS (two hops) */
+static void test_derived_and_related(void)
+{
+    static OV_MODEL m, copy;
+    memset(&m, 0, sizeof(m));
+    for (int i = 0; i < 2; i++)
+    {
+        snprintf(m.streams[i].name, sizeof(m.streams[i].name), i ? "sout" : "sin");
+        m.streams[i].valid = 1;
+        m.streams[i].inode = (ino_t) (5 + i);
+    }
+    m.nb_streams                    = 2;
+    m.streams[1].nb_proctrace       = 1; /* pw writes sout, triggered by sin */
+    m.streams[1].proctrace_pid[0]   = 77;
+    m.streams[1].proctrace_inode[0] = 5;
+    snprintf(m.procs[0].name, sizeof(m.procs[0].name), "pw");
+    m.procs[0].valid  = 1;
+    m.procs[0].active = 1;
+    m.procs[0].PID    = 77;
+    m.nb_procs        = 1;
+    snprintf(m.fps[0].name, sizeof(m.fps[0].name), "fw"); /* fw runs pw */
+    m.fps[0].valid     = 1;
+    m.fps[0].run_alive = 1;
+    m.fps[0].runpid    = 77;
+    m.nb_fps           = 1;
+    ov_build_graph(&m);
+
+    m.seq       = 9;
+    unsigned b0 = ov_derived_build_count();
+    int      sn = m.streams[0].node_idx;
+    CHECK(ov_node_depths(&m, sn, SG_MODE_FULL) == ov_node_depths(&m, sn, SG_MODE_FULL));
+    CHECK(ov_derived_build_count() == b0 + 1); /* same model, root and mode: one walk */
+    m.seq = 10;
+    ov_node_depths(&m, sn, SG_MODE_FULL);
+    CHECK(ov_derived_build_count() == b0 + 2); /* a new model */
+    m.seq = 0;
+    ov_node_depths(&m, sn, SG_MODE_FULL);
+    ov_node_depths(&m, sn, SG_MODE_FULL);
+    CHECK(ov_derived_build_count() == b0 + 4); /* never published: never cached */
+    memcpy(&copy, &m, sizeof(m));
+    ov_lineage(&m, 0, SG_MODE_FULL);
+    CHECK(memcmp(&copy, &m, sizeof(m)) == 0);
+
+    static OV_LAYOUT  lay;
+    static OV_RELATED rel;
+    memset(&lay, 0, sizeof(lay));
+    lay.focus = OV_FOCUS_STREAMS;
+    m.seq     = 11;
+    ov_sel_model(&lay, &m, OV_FOCUS_STREAMS, 1);
+    ov_compute_related(&lay, &m, &rel);
+    CHECK(bget(rel.procs, 0) && bget(rel.proc_writes, 0));
+    CHECK(bget(rel.fps, 0) && bget(rel.fps_writes, 0)); /* sout -> pw -> fw */
+}
+
 int main(void)
 {
     test_sort_does_not_touch_model();
@@ -427,6 +481,7 @@ int main(void)
     test_loop_list_rows();
     test_keymap();
     test_key_dispatch();
+    test_derived_and_related();
     if (failures == 0)
     {
         printf("all ok\n");

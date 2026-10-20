@@ -194,8 +194,8 @@ static int ov_fps__render_detail_stream_lineage(OV_LAYOUT      *lay,
                                                 int             row,
                                                 int             max_rows)
 {
-    SG_LINEAGE lin;
-    sg_compute_lineage(m, ssel, (sg_mode_t) lay->lineage_mode, &lin);
+    const SG_LINEAGE *lp  = ov_lineage(m, ssel, (sg_mode_t) lay->lineage_mode);
+    const SG_LINEAGE  lin = *lp; /* the cache slot may be reused by a later call in this frame */
 
     int has_lineage = (lin.nb_ancestors > 0 || lin.nb_descendants > 0);
     if (!has_lineage)

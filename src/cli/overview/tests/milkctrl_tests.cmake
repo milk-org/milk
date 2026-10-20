@@ -23,6 +23,7 @@ if(BUILD_TESTING)
     ../overview/tests/test_ov_view.c ../overview/render/overview_render_view.c
     ../overview/render/overview_render_select.c ../overview/render/overview_render_relate.c
     ../overview/render/overview_render_filter.c ../overview/overview_cmdlog.c
+    ../overview/render/overview_render_derived.c
     ../overview/render/overview_columns.c ../overview/render/overview_columns_fps.c
     ../overview/render/overview_columns_procs.c ../overview/render/overview_columns_streams.c
     ../overview/render/overview_render_utils.c ../overview/overview_view.c ../overview/overview_keymap.c

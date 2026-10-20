@@ -62,16 +62,15 @@ static void ov_streams__render_rows(const OV_LAYOUT  *lay,
 
         if (eff_sel >= 0)
         {
-            int        root_si = filt_idx[eff_sel];
-            SG_LINEAGE lin;
-            sg_compute_lineage(m, root_si, SG_MODE_FULL, &lin);
+            int               root_si = filt_idx[eff_sel];
+            const SG_LINEAGE *lin     = ov_lineage(m, root_si, SG_MODE_FULL);
 
-            for (int a = 0; a < lin.nb_ancestors; a++)
+            for (int a = 0; a < lin->nb_ancestors; a++)
             {
-                int si = lin.ancestors[a].stream_idx;
+                int si = lin->ancestors[a].stream_idx;
                 if (si >= 0 && si < m->nb_streams)
                 {
-                    int d = lin.ancestors[a].depth;
+                    int d = lin->ancestors[a].depth;
                     if (d > 127)
                     {
                         d = 127;
@@ -79,12 +78,12 @@ static void ov_streams__render_rows(const OV_LAYOUT  *lay,
                     local_depth[si] = (int8_t) (-d);
                 }
             }
-            for (int di = 0; di < lin.nb_descendants; di++)
+            for (int di = 0; di < lin->nb_descendants; di++)
             {
-                int si = lin.descendants[di].stream_idx;
+                int si = lin->descendants[di].stream_idx;
                 if (si >= 0 && si < m->nb_streams)
                 {
-                    int dp = lin.descendants[di].depth;
+                    int dp = lin->descendants[di].depth;
                     if (dp > 127)
                     {
                         dp = 127;
