@@ -14,62 +14,56 @@
 
 typedef struct
 {
-    char    pattern[64];
-    regex_t re;
-    int     valid;
+    char     pattern[64];
+    regex_t  re;
+    int      state; /* 0 empty, 1 compiled, -1 regcomp failed (negative entry, nothing to free) */
+    uint64_t used;  /* last-use tick, for LRU eviction */
 } ov_filter_cache_entry_t;
 
 static ov_filter_cache_entry_t s_filter_cache[OV_FILTER_CACHE_SIZE];
-static int                     s_filter_cache_init = 0;
+static uint64_t                s_filter_tick;
+static unsigned long           s_filter_compiles;
+
+/** ov_filter_compile_count - number of regcomp() calls so far (cache behaviour checks). */
+unsigned long ov_filter_compile_count(void)
+{
+    return s_filter_compiles;
+}
 
 /**
- * get_cached_regex - lookup or compile regular expression in circular LRU cache.
- * @pattern:    Regular expression pattern string.
- * @out_reg_ok: Output flag set to 1 if regex compilation succeeded, 0 otherwise.
- *
- * Return: Pointer to compiled regex_t, or NULL if compilation failed.
+ * get_cached_regex - compiled @pattern from a small LRU cache. Failed patterns are cached too, so an
+ * invalid filter is not recompiled every frame and does not evict the other panels' regexes.
+ * Return: the regex with *@out_reg_ok = 1, or NULL with 0 when @pattern does not compile.
  */
 static regex_t *get_cached_regex(const char *pattern, int *out_reg_ok)
 {
-    if (!s_filter_cache_init)
-    {
-        memset(s_filter_cache, 0, sizeof(s_filter_cache));
-        s_filter_cache_init = 1;
-    }
-
-    /* Check cache hit */
+    int slot = 0;
     for (int i = 0; i < OV_FILTER_CACHE_SIZE; i++)
     {
-        if (s_filter_cache[i].valid && strcmp(s_filter_cache[i].pattern, pattern) == 0)
+        ov_filter_cache_entry_t *e = &s_filter_cache[i];
+        if (e->state != 0 && strcmp(e->pattern, pattern) == 0)
         {
-            *out_reg_ok = 1;
-            return &s_filter_cache[i].re;
+            e->used     = ++s_filter_tick;
+            *out_reg_ok = (e->state == 1);
+            return (e->state == 1) ? &e->re : NULL;
+        }
+        if (e->used < s_filter_cache[slot].used)
+        {
+            slot = i; /* least recently used (empty slots have used == 0) */
         }
     }
 
-    /* Cache miss: evict slot round-robin */
-    static int next_slot = 0;
-    int        slot      = next_slot;
-    next_slot            = (next_slot + 1) % OV_FILTER_CACHE_SIZE;
-
-    if (s_filter_cache[slot].valid)
+    ov_filter_cache_entry_t *e = &s_filter_cache[slot];
+    if (e->state == 1)
     {
-        regfree(&s_filter_cache[slot].re);
-        s_filter_cache[slot].valid = 0;
+        regfree(&e->re);
     }
-
-    strncpy(s_filter_cache[slot].pattern, pattern, sizeof(s_filter_cache[slot].pattern) - 1);
-    s_filter_cache[slot].pattern[sizeof(s_filter_cache[slot].pattern) - 1] = '\0';
-
-    if (regcomp(&s_filter_cache[slot].re, pattern, REG_EXTENDED | REG_NOSUB | REG_ICASE) == 0)
-    {
-        s_filter_cache[slot].valid = 1;
-        *out_reg_ok                = 1;
-        return &s_filter_cache[slot].re;
-    }
-
-    *out_reg_ok = 0;
-    return NULL;
+    snprintf(e->pattern, sizeof(e->pattern), "%s", pattern);
+    s_filter_compiles++;
+    e->state    = (regcomp(&e->re, pattern, REG_EXTENDED | REG_NOSUB | REG_ICASE) == 0) ? 1 : -1;
+    e->used     = ++s_filter_tick;
+    *out_reg_ok = (e->state == 1);
+    return (e->state == 1) ? &e->re : NULL;
 }
 
 /**

@@ -319,6 +319,22 @@ static void test_fps_stream_direction(void)
     CHECK(has_fps_edge(&m, "out_x", "f1", OV_EDGE_FPS_INPUT_STREAM));
 }
 
+/* The filter regex cache: an invalid pattern compiles once, keeps the substring fallback and evicts nothing */
+static void test_filter_cache(void)
+{
+    const char *names[] = { "a(b", "xyz", "ab" };
+    int         out[3];
+    CHECK(ov_filter_build("x|a", names, 3, out, 3) == 3); /* compiled and cached */
+    unsigned long c0 = ov_filter_compile_count();
+    for (int i = 0; i < 5; i++)
+    {
+        CHECK(ov_filter_build("a(", names, 3, out, 3) == 1 && out[0] == 0); /* substring fallback */
+    }
+    CHECK(ov_filter_compile_count() == c0 + 1);
+    CHECK(ov_filter_build("x|a", names, 3, out, 3) == 3);
+    CHECK(ov_filter_compile_count() == c0 + 1); /* "x|a" was not evicted */
+}
+
 int main(void)
 {
     test_pid_liveness();
@@ -331,6 +347,7 @@ int main(void)
     test_loop_truncation();
     test_lineage_roots();
     test_fps_stream_direction();
+    test_filter_cache();
     if (failures == 0)
     {
         printf("all ok\n");

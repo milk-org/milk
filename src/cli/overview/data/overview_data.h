@@ -308,7 +308,8 @@ void ov_sort_fps(OV_MODEL *model, int key, int dir);
  * Return: number of matching indices written to @out.
  */
 int ov_filter_build(const char *pattern, const char **names, int count, int *out, int max_out);
-int ov_model_export_snapshot(const OV_MODEL *m, char *path, size_t pathsz);
+unsigned long ov_filter_compile_count(void);
+int           ov_model_export_snapshot(const OV_MODEL *m, char *path, size_t pathsz);
 
 const char *ov_loopstat_label(int loopstat, int long_form);
 const char *ov_ctrlval_label(int ctrlval);

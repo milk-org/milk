@@ -34,7 +34,8 @@ if(BUILD_TESTING)
     ../overview/data/overview_data_sort_fps.c
     ../overview/data/stream_graph.c
     ../overview/data/stream_graph_lineage.c
-    ../overview/data/stream_graph_tree.c)
+    ../overview/data/stream_graph_tree.c
+    ../overview/render/overview_render_filter.c)
   target_include_directories(
     milkctrl-unit-model
     PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
