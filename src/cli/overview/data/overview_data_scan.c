@@ -35,9 +35,8 @@ void ov_scan_cache_cleanup(void)
     pthread_mutex_lock(&s_fcache_mutex);
     for (int i = s_fcache_nb - 1; i >= 0; i--)
     {
-        fps_disconnect(&s_fcache[i].fps);
+        fcache_evict_locked(i);
     }
-    s_fcache_nb = 0;
     pthread_mutex_unlock(&s_fcache_mutex);
 
     /* Unmap all cached proc mappings */

@@ -3,7 +3,52 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "overview_data_internal.h"
+#include "ImageStreamIO/ImageStreamIO_config.h" /* IMAGESTRUCT_VERSION */
 
+
+/* Exported by libImageStreamIO but not declared in ImageStreamIO.h (upstream follow-up) */
+errno_t ImageStreamIO_image_sizing(IMAGE *image, uint8_t *map);
+
+/**
+ * scache_map_ro - map a stream file read-only: metadata, keywords, semaphores and traces.
+ *
+ * Unlike ImageStreamIO_read_sharedmem_image_toIMAGE() this needs no write access, does not
+ * MAP_POPULATE or mlock the image data, keeps no fd, and rejects half-created files silently.
+ * Release with ImageStreamIO_closeIm(). Return: 0, or -1 with nothing mapped.
+ */
+static int scache_map_ro(IMAGE *img, const char *path)
+{
+    ov_shm_map_t m;
+    memset(img, 0, sizeof(*img));
+    if (ov_shm_map(&m, path, 0, sizeof(IMAGE_METADATA) + 1) != 0)
+    {
+        return -1;
+    }
+    img->md = (IMAGE_METADATA *) m.addr;
+    if (strncmp(img->md->version, IMAGESTRUCT_VERSION, sizeof(img->md->version)) != 0 ||
+        img->md->shared != 1 ||
+        ImageStreamIO_image_sizing(img, (uint8_t *) m.addr) != IMAGESTREAMIO_SUCCESS ||
+        img->memsize != m.len)
+    {
+        ov_shm_unmap(&m);
+        memset(img, 0, sizeof(*img));
+        return -1;
+    }
+    img->semptr = (sem_t **) calloc((size_t) img->md->sem + 1, sizeof(sem_t *));
+    if (img->semptr == NULL)
+    {
+        ov_shm_unmap(&m);
+        memset(img, 0, sizeof(*img));
+        return -1;
+    }
+    for (long si = 0; si < img->md->sem; si++)
+    {
+        img->semptr[si] = &img->semfile[si].semdata;
+    }
+    img->shmfd = -1;
+    img->used  = 1;
+    return 0;
+}
 
 /**
  * scache_rate_update - compute Hz and sparkline for
@@ -306,8 +351,7 @@ void ov_scan_streams(OV_MODEL *model)
             ci = s_scache_nb;
             memset(&s_scache[ci], 0, sizeof(ov_stream_cache_t));
 
-            if (ImageStreamIO_read_sharedmem_image_toIMAGE(sname, &s_scache[ci].img) !=
-                IMAGESTREAMIO_SUCCESS)
+            if (scache_map_ro(&s_scache[ci].img, fpath) != 0)
             {
                 continue;
             }

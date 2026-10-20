@@ -46,13 +46,19 @@ def test_hup_term_exit_cleanly(milkctrl_pty, sig):
         assert run.tty_restored()
 
 
-def test_library_output_goes_to_cmdlog(milkctrl, tui_env):
-    """ImageStreamIO's error on a truncated .im.shm is shown in the command log, not over the UI."""
-    _, shm = tui_env
-    with open(os.path.join(shm, "bad.im.shm"), "wb") as f:
-        f.write(b"\0" * 64)
+def test_library_output_goes_to_cmdlog(milkctrl, entities):
+    """ImageStreamIO's error on a corrupted stream is shown in the command log, not over the UI."""
+    path = entities.make_stream("corruptme")
     m = milkctrl()
-    m.wait_for(r"^ \d\d:\d\d:\d\d \S+ +Error in the file \(too small\)")
+    m.keys("F3")
+    m.wait_for(r"corruptme")
+    fd = os.open(path, os.O_WRONLY)
+    os.pwrite(fd, b"9.99\0", 0)  # IMAGE_METADATA.version, same inode and size
+    os.close(fd)
+    m.keys("c")
+    m.wait_for(r"CONTROL")
+    m.keys("DC")  # Delete: ImageStreamIO re-opens the stream and complains
+    m.wait_for(r"^ \d\d:\d\d:\d\d \S+ +.*incompatible version")
     assert "milk-CTRL" in m.lines()[0]
     assert m.quit() == 0
 

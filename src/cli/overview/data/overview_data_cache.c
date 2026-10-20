@@ -173,7 +173,7 @@ int fcache_find(const char *name)
  */
 void fcache_evict_locked(int ci)
 {
-    fps_disconnect(&s_fcache[ci].fps);
+    ov_shm_unmap(&s_fcache[ci].map);
     s_fcache_nb--;
     if (ci < s_fcache_nb)
     {

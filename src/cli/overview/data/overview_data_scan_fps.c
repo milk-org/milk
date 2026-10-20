@@ -4,6 +4,42 @@
 
 #include "overview_data_internal.h"
 
+#include <limits.h>
+
+
+/**
+ * fcache_map_ro - map an FPS file read-only for the scan cache; unlike fps_connect() it writes
+ * nothing into the FPS and keeps no fd. Return: 0, or -1 (nothing mapped).
+ */
+static int fcache_map_ro(ov_fps_cache_t *ce, const char *path)
+{
+    if (ov_shm_map(&ce->map, path, 0, sizeof(FUNCTION_PARAMETER_STRUCT_MD)) != 0)
+    {
+        return -1;
+    }
+    FUNCTION_PARAMETER_STRUCT_MD *md = (FUNCTION_PARAMETER_STRUCT_MD *) ce->map.addr;
+    ce->nbparam_fit                  = (long) ((ce->map.len - sizeof(*md)) / sizeof(FPS_PARAM));
+    if (md->NBparamMAX < 0 || md->NBparamMAX > ce->nbparam_fit)
+    {
+        ov_shm_unmap(&ce->map);
+        return -1;
+    }
+    ce->fps.md     = md;
+    ce->fps.parray = (FPS_PARAM *) (md + 1);
+    ce->fps.SMfd   = -1;
+    return 0;
+}
+
+/**
+ * fcache_same_file - 1 if the cache entry still maps <fpsdir>/<fname>.fps.shm (same dev/ino/size).
+ */
+static int fcache_same_file(const ov_fps_cache_t *ce)
+{
+    char        path[PATH_MAX];
+    struct stat st;
+    snprintf(path, sizeof(path), "%s/%s.fps.shm", ov_get_fpsdir(), ce->fname);
+    return stat(path, &st) == 0 && ov_shm_same_file(&ce->map, &st);
+}
 
 /**
  * fcache_build_params - discover param indices and cache them.
@@ -24,7 +60,8 @@ void fcache_build_params(ov_fps_cache_t *ce)
         return;
     }
 
-    int nb_params = fpsp->md->NBparamMAX;
+    long nb_params =
+        (fpsp->md->NBparamMAX < ce->nbparam_fit) ? fpsp->md->NBparamMAX : ce->nbparam_fit;
     if (nb_params > 10000)
     {
         nb_params = 10000;
@@ -166,7 +203,18 @@ void ov_scan_fps(OV_MODEL *model)
 
     if (!dir_changed && s_fcache_nb > 0)
     {
-        /* Fast path: no files added/removed */
+        /* Fast path: no files added/removed, unless an entry was re-created in place */
+        pthread_mutex_lock(&s_fcache_mutex);
+        int all_same = 1;
+        for (int ci = 0; ci < s_fcache_nb && all_same; ci++)
+        {
+            all_same = fcache_same_file(&s_fcache[ci]);
+        }
+        pthread_mutex_unlock(&s_fcache_mutex);
+        dir_changed = !all_same;
+    }
+    if (!dir_changed && s_fcache_nb > 0)
+    {
         pthread_mutex_lock(&s_fcache_mutex);
         int idx = 0;
         for (int ci = 0; ci < s_fcache_nb && idx < OV_MAX_FPS; ci++)
@@ -222,8 +270,13 @@ void ov_scan_fps(OV_MODEL *model)
         memcpy(fname, ep->d_name, (size_t) fnlen);
         fname[fnlen] = '\0';
 
-        /* Look up in cache */
+        /* Look up in cache; an FPS re-created under the same name gets a fresh mapping */
         int ci = fcache_find(fname);
+        if (ci >= 0 && !fcache_same_file(&s_fcache[ci]))
+        {
+            fcache_evict_locked(ci);
+            ci = -1;
+        }
 
         if (ci >= 0)
         {
@@ -242,8 +295,9 @@ void ov_scan_fps(OV_MODEL *model)
             memset(&s_fcache[ci], 0, sizeof(ov_fps_cache_t));
             s_fcache[ci].fps.SMfd = -1;
 
-            long fpsID = fps_connect(fname, &s_fcache[ci].fps, FPSCONNECT_SIMPLE);
-            if (fpsID < 0)
+            char fpath[PATH_MAX];
+            snprintf(fpath, sizeof(fpath), "%s/%s", shmdir, ep->d_name);
+            if (fcache_map_ro(&s_fcache[ci], fpath) != 0)
             {
                 continue;
             }

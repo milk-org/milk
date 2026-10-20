@@ -294,13 +294,19 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
 
     if (!aborted && bufpos > 0)
     {
-        if (ov_fcache_set_param_value(fps_name, disp_idx, buf) != 0)
+        int rc = ov_fcache_set_param_value(fps_name, disp_idx, pinfo.keyword, buf);
+        if (rc != 0)
         {
             /* Show error briefly */
-            const char errmsg[] = "\033[1;31m  ERROR: invalid value"
-                                  "\033[0m";
-            if (write(ov__tty_fd, errmsg, sizeof(errmsg) - 1) < 0)
+            const char  errmsg[]   = "\033[1;31m  ERROR: invalid value\033[0m";
+            const char  movedmsg[] = "\033[1;31m  FPS was re-created: value not written\033[0m";
+            const char *msg        = (rc == -2) ? movedmsg : errmsg;
+            if (write(ov__tty_fd, msg, strlen(msg)) < 0)
             {
+            }
+            if (rc == -2)
+            {
+                ov_scan_force_update();
             }
             usleep(500000);
         }

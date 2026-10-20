@@ -30,6 +30,15 @@ int  fps_disconnect(FPS *fps);
 
 #define OV_SHMDIR_MAXLEN STRINGMAXLEN_FPS_DIRNAME
 
+/* A read-only (or on-demand read-write) mapping of a whole shm file, with its identity */
+typedef struct
+{
+    void  *addr;
+    size_t len;
+    dev_t  dev;
+    ino_t  ino;
+} ov_shm_map_t;
+
 // Cache structures
 typedef struct
 {
@@ -64,6 +73,9 @@ typedef struct
 
     int sparam_cached;
 
+    ov_shm_map_t map;         /* read-only mapping of <fpsdir>/<fname>.fps.shm */
+    long         nbparam_fit; /* parameters that fit in the mapped length */
+
     float hz_hist[OV_SPARKLINE_LEN]; /* run-process Hz history, kept across scans */
     int   hz_hist_idx;
     int   is_new;
@@ -72,14 +84,6 @@ typedef struct
 extern ov_fps_cache_t s_fcache[OV_MAX_FPS];
 extern int            s_fcache_nb;
 
-/* A read-only (or on-demand read-write) mapping of a whole shm file, with its identity */
-typedef struct
-{
-    void  *addr;
-    size_t len;
-    dev_t  dev;
-    ino_t  ino;
-} ov_shm_map_t;
 
 int  ov_shm_map(ov_shm_map_t *m, const char *path, int rw, size_t minsize);
 void ov_shm_unmap(ov_shm_map_t *m);
@@ -162,7 +166,10 @@ int ov_fcache_toggle_param(const char *fps_name,
                            int        *out_newval);
 
 /** Set an FPS parameter value string under cache lock */
-int ov_fcache_set_param_value(const char *fps_name, int disp_idx, const char *valstr);
+int ov_fcache_set_param_value(const char *fps_name,
+                              int         disp_idx,
+                              const char *kw,
+                              const char *valstr);
 
 /** Post-scan enrichment: sparklines, uptime, stale, new-item */
 void ov_post_scan_enrich(OV_MODEL *model);
