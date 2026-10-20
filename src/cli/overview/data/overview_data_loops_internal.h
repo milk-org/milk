@@ -26,4 +26,6 @@ int is_valid_loop_edge(const OV_MODEL *m, const OV_EDGE *e, sg_mode_t mode);
 
 int register_cycle(OV_MODEL *model, const int *path, int path_len);
 
+void ov_loop_set_names(const OV_MODEL *model, OV_LOOP *lp);
+
 #endif /* OVERVIEW_DATA_LOOPS_INTERNAL_H */

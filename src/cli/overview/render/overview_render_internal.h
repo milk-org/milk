@@ -161,6 +161,7 @@ void render_highlighted_name(const char *name,
 
 /* Process status label (STAL when stalled) and its colour; @fg may be NULL */
 const char *ov_proc_status(const OV_PROC *p, ov_rgb_t *fg);
+const char *ov_loop_status(const OV_LOOP *lp, ov_rgb_t *fg);
 
 /* Inline memory-size formatter */
 static inline void format_mem_kb(char *buf, size_t sz, int64_t kb)

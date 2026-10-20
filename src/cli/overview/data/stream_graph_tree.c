@@ -8,7 +8,7 @@ static void sg_dfs_tree(const OV_MODEL *m,
                         int             current_stream,
                         int             reader_node_idx,
                         int             target_stream,
-                        int             target_proc,
+                        int             target_node,
                         const uint64_t *S_words,
                         sg_mode_t       mode,
                         const char     *prefix,
@@ -45,17 +45,14 @@ static void sg_dfs_tree(const OV_MODEL *m,
     node->name[sizeof(node->name) - 1] = '\0';
 
     /* Find reader proc */
-    node->reader_name[0] = '\0';
-    node->is_target_proc = 0;
+    node->reader_name[0]  = '\0';
+    node->reader_node_idx = reader_node_idx;
+    node->is_target_proc  = (reader_node_idx >= 0 && reader_node_idx == target_node);
     if (reader_node_idx >= 0)
     {
         const OV_NODE *rn = &m->nodes[reader_node_idx];
         strncpy(node->reader_name, rn->name, sizeof(node->reader_name) - 1);
         node->reader_name[sizeof(node->reader_name) - 1] = '\0';
-        if (rn->type == OV_NODE_PROC && rn->index == target_proc)
-        {
-            node->is_target_proc = 1;
-        }
     }
 
     /* Build prefix */
@@ -196,7 +193,7 @@ static void sg_dfs_tree(const OV_MODEL *m,
     for (int i = 0; i < nb_child_nodes; i++)
     {
         sg_dfs_tree(m, child_nodes[i].stream_idx, child_nodes[i].reader_node_idx, target_stream,
-                    target_proc, S_words, mode, child_prefix, (i == nb_child_nodes - 1), 0,
+                    target_node, S_words, mode, child_prefix, (i == nb_child_nodes - 1), 0,
                     depth + 1, path, path_len + 1, out_nodes, nb_out_nodes);
     }
 }
@@ -222,17 +219,8 @@ int sg_compute_render_tree(const OV_MODEL *m,
     }
 
     const OV_NODE *sn            = &m->nodes[start_node];
-    int            target_stream = -1;
-    int            target_proc   = -1;
-
-    if (sn->type == OV_NODE_STREAM)
-    {
-        target_stream = sn->index;
-    }
-    else if (sn->type == OV_NODE_PROC)
-    {
-        target_proc = sn->index;
-    }
+    int            target_stream = (sn->type == OV_NODE_STREAM) ? sn->index : -1;
+    int            target_node   = (sn->type == OV_NODE_STREAM) ? -1 : start_node;
 
     uint64_t S_words[SG_BSET_WORDS(OV_MAX_STREAMS)];
     memset(S_words, 0, sizeof(S_words));
@@ -253,8 +241,9 @@ int sg_compute_render_tree(const OV_MODEL *m,
             sg_bset(S_words, lin.descendants[i].stream_idx);
         }
     }
-    else if (target_proc != -1)
+    else if (sn->type == OV_NODE_PROC || sn->type == OV_NODE_FPS)
     {
+        /* Process and FPS roots: the streams reachable from that node, upstream or downstream */
         int8_t depths[OV_MAX_NODES];
         memset(depths, 127, sizeof(depths));
         sg_compute_node_depths(m, start_node, mode, depths);
@@ -262,7 +251,7 @@ int sg_compute_render_tree(const OV_MODEL *m,
 
         for (int i = 0; i < m->nb_nodes; i++)
         {
-            if (depths[i] < 127 || depths[i] > -127)
+            if (depths[i] != 127)
             {
                 if (m->nodes[i].type == OV_NODE_STREAM)
                 {
@@ -411,7 +400,7 @@ int sg_compute_render_tree(const OV_MODEL *m,
     for (int i = 0; i < nb_root_nodes; i++)
     {
         sg_dfs_tree(m, root_nodes[i].stream_idx, root_nodes[i].reader_node_idx, target_stream,
-                    target_proc, S_words, mode, "", (i == nb_root_nodes - 1), 1, 0, path, 0,
+                    target_node, S_words, mode, "", (i == nb_root_nodes - 1), 1, 0, path, 0,
                     out_nodes, &nb_out);
     }
 

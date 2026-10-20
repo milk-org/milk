@@ -184,26 +184,10 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         }
 
         /* Status */
-        if (lp->is_error)
-        {
-            ov_theme_fg(OV_FG_ERROR);
-            ov_buf_printf("ERR   ");
-        }
-        else if (lp->is_paused)
-        {
-            ov_theme_fg(OV_FG_WARN);
-            ov_buf_printf("PAUS  ");
-        }
-        else if (lp->is_running)
-        {
-            ov_theme_fg(OV_FG_ACTIVE);
-            ov_buf_printf("RUN   ");
-        }
-        else
-        {
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf("IDLE  ");
-        }
+        ov_rgb_t    stc;
+        const char *st = ov_loop_status(lp, &stc);
+        ov_theme_fg(stc);
+        ov_buf_printf("%-6s", st);
 
         /* Overlap summary */
         if (lp->overlap_mask != 0)

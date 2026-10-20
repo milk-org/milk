@@ -392,3 +392,37 @@ const char *ov_proc_status(const OV_PROC *p, ov_rgb_t *fg)
     }
     return ov_loopstat_label(p->loopstat, 0);
 }
+
+/**
+ * ov_loop_status - short status label of a loop and its colour: ERR > STAL > PAUS > RUN > IDLE.
+ */
+const char *ov_loop_status(const OV_LOOP *lp, ov_rgb_t *fg)
+{
+    const char *lbl = "IDLE";
+    ov_rgb_t    c   = OV_FG_DIM;
+    if (lp->is_error)
+    {
+        lbl = "ERR";
+        c   = OV_FG_ERROR;
+    }
+    else if (lp->is_stale)
+    {
+        lbl = "STAL";
+        c   = OV_FG_WARN;
+    }
+    else if (lp->is_paused)
+    {
+        lbl = "PAUS";
+        c   = OV_FG_WARN;
+    }
+    else if (lp->is_running)
+    {
+        lbl = "RUN";
+        c   = OV_FG_ACTIVE;
+    }
+    if (fg != NULL)
+    {
+        *fg = c;
+    }
+    return lbl;
+}

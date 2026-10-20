@@ -158,18 +158,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                             lay->sel_graph         = idx;
                             const SG_TREE_NODE *rn = &rnodes[idx];
 
-                            int proc_idx = -1;
-                            if (rn->reader_name[0] != '\0')
-                            {
-                                for (int i = 0; i < m->nb_procs; i++)
-                                {
-                                    if (strcmp(m->procs[i].name, rn->reader_name) == 0)
-                                    {
-                                        proc_idx = i;
-                                        break;
-                                    }
-                                }
-                            }
+                            int proc_idx = sg_tree_reader_proc(m, rn);
 
                             /* Estimate click position to decide stream vs proc */
                             int disp_len = 0;
@@ -315,18 +304,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                                 lay->sel_graph         = idx;
                                 const SG_TREE_NODE *rn = &rnodes[idx];
 
-                                int proc_idx = -1;
-                                if (rn->reader_name[0] != '\0')
-                                {
-                                    for (int i = 0; i < m->nb_procs; i++)
-                                    {
-                                        if (strcmp(m->procs[i].name, rn->reader_name) == 0)
-                                        {
-                                            proc_idx = i;
-                                            break;
-                                        }
-                                    }
-                                }
+                                int proc_idx = sg_tree_reader_proc(m, rn);
 
                                 /* Estimate click position to decide stream vs proc */
                                 int disp_len = 0;

@@ -115,27 +115,26 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
             ov_buf_printf("   idle  ");
         }
 
-        if (lp->is_running)
-        {
-            ov_theme_fg(OV_FG_ACTIVE);
-            ov_buf_printf("RUN");
-        }
-        else if (lp->is_paused)
-        {
-            ov_theme_fg(OV_FG_WARN);
-            ov_buf_printf("PAUS");
-        }
-        else
-        {
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf("IDLE");
-        }
+        ov_rgb_t    stc;
+        const char *st = ov_loop_status(lp, &stc);
+        ov_theme_fg(stc);
+        ov_buf_printf("%s", st);
 
         render_pad_to_col(lw);
         lrow++;
         rendered++;
     }
 
+    if (m->loops_truncated && rendered < max_lrows)
+    {
+        ov_buf_pos(lrow, 2);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_DIM);
+        ov_buf_printf("  more loops not shown (search limit)");
+        render_pad_to_col(lw);
+        lrow++;
+        rendered++;
+    }
     for (; rendered < max_lrows; rendered++, lrow++)
     {
         clear_row(lrow, 2, lw - 2, OV_BG_PANEL);

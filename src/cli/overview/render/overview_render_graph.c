@@ -222,17 +222,9 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
             }
             ov_rgb_t proc_color = rn->is_target_proc ? OV_FG_WARN : OV_FG_PROC;
 
-            int proc_idx = -1;
-            for (int i = 0; i < m->nb_procs; i++)
-            {
-                if (strcmp(m->procs[i].name, rn->reader_name) == 0)
-                {
-                    proc_idx = i;
-                    break;
-                }
-            }
-            int hl_proc = (lay->mouse_hover && lay->hover_global_proc >= 0 &&
-                           proc_idx == lay->hover_global_proc);
+            int proc_idx = sg_tree_reader_proc(m, rn);
+            int hl_proc  = (lay->mouse_hover && lay->hover_global_proc >= 0 &&
+                            proc_idx == lay->hover_global_proc);
 
             if (hl_proc)
             {

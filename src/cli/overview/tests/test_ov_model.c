@@ -5,6 +5,8 @@
 /* CTest milkctrl_unit_model: milk-CTRL data-layer checks that need no shared memory. */
 
 #include "overview_data_internal.h"
+#include "data/overview_data_loops_internal.h"
+#include "stream_graph.h"
 
 #include <signal.h>
 #include <sys/prctl.h>
@@ -103,6 +105,169 @@ static void test_pid_identity(void)
     CHECK(pid_same_process(getpid(), 0) == 0);
 }
 
+/* Graph builders for the loop and lineage cases: no shared memory, no scan */
+static int add_node(OV_MODEL *m, ov_node_type_t type, const char *name)
+{
+    int ni            = m->nb_nodes++;
+    m->nodes[ni].type = type;
+    snprintf(m->nodes[ni].name, sizeof(m->nodes[ni].name), "%s", name);
+    if (type == OV_NODE_STREAM)
+    {
+        m->nodes[ni].index = m->nb_streams;
+        snprintf(m->streams[m->nb_streams].name, sizeof(m->streams[0].name), "%s", name);
+        m->streams[m->nb_streams++].node_idx = ni;
+    }
+    else if (type == OV_NODE_PROC)
+    {
+        m->nodes[ni].index = m->nb_procs;
+        snprintf(m->procs[m->nb_procs].name, sizeof(m->procs[0].name), "%s", name);
+        m->procs[m->nb_procs].valid    = 1;
+        m->procs[m->nb_procs].loopstat = PROCESSINFO_LOOPSTAT_ACTIVE;
+        m->procs[m->nb_procs].loop_hz  = 100.0;
+        m->procs[m->nb_procs++].PID    = 1000 + ni;
+    }
+    else
+    {
+        m->nodes[ni].index = m->nb_fps;
+        snprintf(m->fps[m->nb_fps].name, sizeof(m->fps[0].name), "%s", name);
+        m->fps[m->nb_fps++].node_idx = ni;
+    }
+    return ni;
+}
+
+static void add_edge(OV_MODEL *m, int src, int tgt, ov_edge_type_t type)
+{
+    OV_EDGE *e  = &m->edges[m->nb_edges++];
+    e->src_node = src;
+    e->tgt_node = tgt;
+    e->type     = type;
+    e->active   = 1;
+}
+
+/* stream s -> unit u -> stream t -> unit v -> s, units being processes or FPS */
+static void add_ring(OV_MODEL      *m,
+                     const char    *s,
+                     const char    *u,
+                     const char    *t,
+                     const char    *v,
+                     ov_node_type_t ut)
+{
+    int            ns = add_node(m, OV_NODE_STREAM, s), nu = add_node(m, ut, u);
+    int            nt = add_node(m, OV_NODE_STREAM, t), nv = add_node(m, ut, v);
+    ov_edge_type_t in =
+        (ut == OV_NODE_PROC) ? OV_EDGE_STREAM_TRIGGERS_PROC : OV_EDGE_FPS_INPUT_STREAM;
+    ov_edge_type_t out =
+        (ut == OV_NODE_PROC) ? OV_EDGE_PROC_WRITES_STREAM : OV_EDGE_FPS_OUTPUT_STREAM;
+    add_edge(m, ns, nu, in);
+    add_edge(m, nu, nt, out);
+    add_edge(m, nt, nv, in);
+    add_edge(m, nv, ns, out);
+}
+
+/* Loop IDs follow the loop signature, not the scan order (links-9) */
+static void test_loop_ids_stable(void)
+{
+    static OV_MODEL a, b;
+    memset(&a, 0, sizeof(a));
+    memset(&b, 0, sizeof(b));
+    s_names_loaded = 1; /* no loop-name file */
+    add_ring(&a, "a1", "pa", "a2", "qa", OV_NODE_PROC);
+    add_ring(&a, "x1", "px", "x2", "qx", OV_NODE_PROC);
+    add_ring(&b, "x1", "px", "x2", "qx", OV_NODE_PROC);
+    add_ring(&b, "a1", "pa", "a2", "qa", OV_NODE_PROC);
+    ov_detect_loops(&a, SG_MODE_FULL);
+    ov_detect_loops(&b, SG_MODE_FULL);
+    CHECK(a.nb_loops == 2 && b.nb_loops == 2);
+    CHECK(strcmp(a.loops[0].signature, b.loops[0].signature) == 0);
+    CHECK(a.loops[0].loop_id == 1 && b.loops[0].loop_id == 1);
+    CHECK(strncmp(b.loops[0].name, "L01 [a1", 7) == 0);
+    CHECK(a.loops_truncated == 0);
+}
+
+/* Health counts every member: 0 Hz, crashed, stalled; FPS loops need a live run process (links-3/10) */
+static void test_loop_health(void)
+{
+    static OV_MODEL m;
+    memset(&m, 0, sizeof(m));
+    s_names_loaded = 1;
+    add_ring(&m, "a1", "pa", "a2", "qa", OV_NODE_PROC);
+    m.streams[0].update_hz = 0.0;
+    m.streams[1].update_hz = 100.0;
+    ov_detect_loops(&m, SG_MODE_FULL);
+    CHECK(m.nb_loops == 1 && m.loops[0].min_hz == 0.0 && m.loops[0].is_running == 1);
+    m.procs[0].stale_count = OV_STALE_SCANS;
+    ov_detect_loops(&m, SG_MODE_FULL);
+    CHECK(m.loops[0].is_stale == 1 && m.loops[0].is_error == 0);
+    m.procs[1].loopstat = PROCESSINFO_LOOPSTAT_CRASHED;
+    ov_detect_loops(&m, SG_MODE_FULL);
+    CHECK(m.loops[0].is_error == 1 && m.loops[0].is_running == 0);
+
+    static OV_MODEL f;
+    memset(&f, 0, sizeof(f));
+    add_ring(&f, "c1", "fa", "c2", "fb", OV_NODE_FPS);
+    ov_detect_loops(&f, SG_MODE_FULL);
+    CHECK(f.nb_loops == 1 && f.loops[0].is_running == 0); /* declared only: IDLE, not RUN */
+    int rp = add_node(&f, OV_NODE_PROC, "runner");
+    for (int i = 0; i < f.nb_fps; i++)
+    {
+        f.fps[i].run_alive = 1;
+        f.fps[i].runpid    = f.procs[f.nodes[rp].index].PID;
+    }
+    ov_detect_loops(&f, SG_MODE_FULL);
+    CHECK(f.loops[0].is_running == 1);
+}
+
+/* More cycles than OV_MAX_LOOPS are flagged, not silently dropped (links-10) */
+static void test_loop_truncation(void)
+{
+    static OV_MODEL m;
+    memset(&m, 0, sizeof(m));
+    s_names_loaded = 1;
+    int hub        = add_node(&m, OV_NODE_STREAM, "hub");
+    for (int i = 0; i <= OV_MAX_LOOPS; i++)
+    {
+        char name[16];
+        snprintf(name, sizeof(name), "p%02d", i);
+        int p = add_node(&m, OV_NODE_PROC, name);
+        add_edge(&m, hub, p, OV_EDGE_STREAM_TRIGGERS_PROC);
+        add_edge(&m, p, hub, OV_EDGE_PROC_WRITES_STREAM);
+    }
+    ov_detect_loops(&m, SG_MODE_FULL);
+    CHECK(m.nb_loops == OV_MAX_LOOPS && m.loops_truncated == 1);
+}
+
+/* A process root shows only its own streams; an FPS root has a tree (links-2, robust-18) */
+static void test_lineage_roots(void)
+{
+    static OV_MODEL     m;
+    static SG_TREE_NODE rows[OV_MAX_NODES];
+    memset(&m, 0, sizeof(m));
+    int s_in  = add_node(&m, OV_NODE_STREAM, "in");
+    int p     = add_node(&m, OV_NODE_PROC, "unit");
+    int s_out = add_node(&m, OV_NODE_STREAM, "out");
+    add_node(&m, OV_NODE_STREAM, "zz");
+    int s_fi = add_node(&m, OV_NODE_STREAM, "fin");
+    int f    = add_node(&m, OV_NODE_FPS, "fpsu");
+    int s_fo = add_node(&m, OV_NODE_STREAM, "fout");
+    add_edge(&m, s_in, p, OV_EDGE_STREAM_TRIGGERS_PROC);
+    add_edge(&m, p, s_out, OV_EDGE_PROC_WRITES_STREAM);
+    add_edge(&m, s_fi, f, OV_EDGE_FPS_INPUT_STREAM);
+    add_edge(&m, f, s_fo, OV_EDGE_FPS_OUTPUT_STREAM);
+
+    int n = sg_compute_render_tree(&m, p, SG_MODE_FULL, rows);
+    CHECK(n >= 2);
+    for (int i = 0; i < n; i++)
+    {
+        CHECK(strcmp(rows[i].name, "zz") != 0 && strcmp(rows[i].name, "fin") != 0);
+    }
+    CHECK(n > 0 && rows[0].reader_node_idx == p && rows[0].is_target_proc == 1);
+    CHECK(sg_tree_reader_proc(&m, &rows[0]) == m.nodes[p].index);
+
+    n = sg_compute_render_tree(&m, f, SG_MODE_FULL, rows);
+    CHECK(n >= 2);
+    CHECK(n > 0 && rows[0].reader_node_idx == f && sg_tree_reader_proc(&m, &rows[0]) == -1);
+}
+
 int main(void)
 {
     test_pid_liveness();
@@ -110,6 +275,10 @@ int main(void)
     test_find_proc_by_pid();
     test_labels();
     test_pid_identity();
+    test_loop_ids_stable();
+    test_loop_health();
+    test_loop_truncation();
+    test_lineage_roots();
     if (failures == 0)
     {
         printf("all ok\n");

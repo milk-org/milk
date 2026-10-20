@@ -33,3 +33,14 @@ def test_f7_members_survive_sort(milkctrl, entities):
         m.wait_for(rf"NAME{arrow}")
         _check_f7(m)
     assert m.quit() == 0
+
+
+def test_declared_fps_ring_is_idle(milkctrl, entities):
+    """An FPS ring with no run process is IDLE, not RUN by vacuous truth (links-10)."""
+    _ring(entities)
+    m = milkctrl(y=40)
+    m.keys("F7")
+    m.wait_for(r"L01 L01")
+    row = next(line for line in m.lines() if "L01 L01" in line)
+    assert "IDLE" in row and "RUN" not in row, row
+    assert m.quit() == 0

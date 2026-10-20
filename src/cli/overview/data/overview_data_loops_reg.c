@@ -161,7 +161,6 @@ int register_cycle(OV_MODEL *model, const int *path, int path_len)
     OV_LOOP *lp   = &model->loops[lidx];
     memset(lp, 0, sizeof(*lp));
 
-    lp->loop_id        = lidx + 1;
     lp->signature_hash = sig_hash;
     strncpy(lp->signature, sig, sizeof(lp->signature) - 1);
     lp->nb_nodes = path_len;
@@ -195,6 +194,15 @@ int register_cycle(OV_MODEL *model, const int *path, int path_len)
         }
     }
 
+    model->nb_loops++;
+    return 1;
+}
+
+/**
+ * ov_loop_set_names - auto-name loop @lp from its ID and streams, or use its saved custom name.
+ */
+void ov_loop_set_names(const OV_MODEL *model, OV_LOOP *lp)
+{
     /* Build auto-name */
     if (lp->nb_streams == 1)
     {
@@ -217,7 +225,7 @@ int register_cycle(OV_MODEL *model, const int *path, int path_len)
     pthread_mutex_lock(&s_loop_names_mutex);
     for (int k = 0; k < s_nb_saved_names; k++)
     {
-        if (s_saved_names[k].hash == sig_hash)
+        if (s_saved_names[k].hash == lp->signature_hash)
         {
             strncpy(lp->custom_name, s_saved_names[k].name, sizeof(lp->custom_name) - 1);
             lp->custom_name[sizeof(lp->custom_name) - 1] = '\0';
@@ -236,7 +244,4 @@ int register_cycle(OV_MODEL *model, const int *path, int path_len)
         strncpy(lp->name, lp->auto_name, sizeof(lp->name) - 1);
     }
     lp->name[sizeof(lp->name) - 1] = '\0';
-
-    model->nb_loops++;
-    return 1;
 }

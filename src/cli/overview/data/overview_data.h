@@ -76,10 +76,10 @@ typedef struct
     /* Telemetry & Health */
     double min_hz; /* Bottleneck loop frequency */
     double max_hz;
-    int    is_running; /* 1 if all processes in loop are RUN */
+    int    is_running; /* 1 if every process (and FPS run process) is RUN */
     int    is_paused;  /* 1 if any process in loop is PAUS */
-    int    is_stale;   /* 1 if any process has unchanging loopcnt */
-    int    is_error;   /* 1 if any process is ERR */
+    int    is_stale;   /* 1 if any running process has an unchanging loopcnt */
+    int    is_error;   /* 1 if any process is ERR or CRSH */
 } OV_LOOP;
 
 
@@ -109,6 +109,7 @@ typedef struct
     /* detected loops */
     OV_LOOP loops[OV_MAX_LOOPS];
     int     nb_loops;
+    int     loops_truncated; /* cycle search hit its limit: more loops may exist */
 
     /* scan metadata */
     double          scan_time_ms;

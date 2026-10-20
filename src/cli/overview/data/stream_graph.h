@@ -90,13 +90,22 @@ typedef struct
 {
     int  stream_idx;       /* Index in m->streams */
     int  is_target;        /* 1 if this is the target root stream */
-    int  is_target_proc;   /* 1 if the reader_name matches the target process */
+    int  is_target_proc;   /* 1 if the reader is the target process/FPS node */
+    int  reader_node_idx;  /* Node index of the reader, or -1 */
     int  depth;            /* Graph depth */
     int  is_loop;          /* 1 if this node closes a cycle */
     char name[64];         /* Stream name */
     char reader_name[64];  /* Name of the process/fps reading this stream */
     char tree_prefix[128]; /* Prefix strings for rendering (e.g. "|-- ") */
 } SG_TREE_NODE;
+
+/** sg_tree_reader_proc - m->procs index of the reader of tree row @rn, or -1 (none, or an FPS). */
+static inline int sg_tree_reader_proc(const OV_MODEL *m, const SG_TREE_NODE *rn)
+{
+    int ni = rn->reader_node_idx;
+    return (ni >= 0 && ni < m->nb_nodes && m->nodes[ni].type == OV_NODE_PROC) ? m->nodes[ni].index
+                                                                              : -1;
+}
 
 /**
  * SG_LINEAGE - complete lineage result for one stream.
