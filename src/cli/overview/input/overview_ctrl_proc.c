@@ -9,6 +9,7 @@
 
 #include "overview_input_internal.h"
 #include "overview_data_internal.h"
+#include "milk_spawn.h"
 #include <errno.h>
 #include <limits.h>
 #include <fcntl.h>
@@ -382,12 +383,22 @@ void ov_ctrl_proc_pause_toggle(const OV_PROC *p, OV_CMDLOG *log)
  */
 void ov_ctrl_procs_cleanup(OV_CMDLOG *log)
 {
-    /* Silently remove crashed/stopped procinfo entries */
-    int rc     = system("milk-procinfo-rm -c </dev/null >/dev/null 2>&1");
-    int reaped = plist_reap_dead();
-    if (log != NULL)
+    static const char *const argv[] = { "milk-procinfo-rm", "-c", NULL };
+    int                      rc     = milkspawn_run(argv, -1, -1);
+    int                      err    = errno;
+    int                      reaped = plist_reap_dead();
+    if (rc < 0)
     {
-        ov_cmdlog_push(log, (rc == 0 && reaped >= 0) ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process cleanup failed: milk-procinfo-rm: %s",
+                       strerror(err));
+    }
+    else if (rc != 0)
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process cleanup failed: milk-procinfo-rm exit %d", rc);
+    }
+    else
+    {
+        ov_cmdlog_push(log, reaped >= 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
                        "Process cleanup: stale files removed, %d registry slot(s) settled",
                        reaped > 0 ? reaped : 0);
     }
@@ -405,22 +416,27 @@ void ov_ctrl_inspect_item(ov_focus_t panel, const void *item)
         return;
     }
 
-    char cmd[512] = { 0 };
-
+    /* argv only: names come from shm file names and must never reach a shell */
+    char        pid_str[16];
+    const char *argv[5] = { NULL };
     if (panel == OV_FOCUS_STREAMS)
     {
-        const OV_STREAM *s = (const OV_STREAM *) item;
-        snprintf(cmd, sizeof(cmd), "milk-stream-info %s", s->name);
+        argv[0] = "milk-stream-info";
+        argv[1] = "--";
+        argv[2] = ((const OV_STREAM *) item)->name;
     }
     else if (panel == OV_FOCUS_PROCS)
     {
-        const OV_PROC *p = (const OV_PROC *) item;
-        snprintf(cmd, sizeof(cmd), "milk-procinfo-info %s", p->name);
+        snprintf(pid_str, sizeof(pid_str), "%d", (int) ((const OV_PROC *) item)->PID);
+        argv[0] = "milk-procinfo-info";
+        argv[1] = "--pid";
+        argv[2] = pid_str;
     }
     else if (panel == OV_FOCUS_FPS)
     {
-        const OV_FPS *f = (const OV_FPS *) item;
-        snprintf(cmd, sizeof(cmd), "milk-fps-info %s", f->name);
+        argv[0] = "milk-fps-info";
+        argv[1] = "--";
+        argv[2] = ((const OV_FPS *) item)->name;
     }
     else
     {
@@ -429,12 +445,26 @@ void ov_ctrl_inspect_item(ov_focus_t panel, const void *item)
 
     /* Suspend TUI */
     ov_raw_mode_exit();
-    int rc_clear = system("clear");
-    (void) rc_clear;
+    fputs("\033[H\033[2J", stdout);
+    fflush(stdout);
 
-    /* Show the diagnostic output */
-    int rc_cmd = system(cmd);
-    (void) rc_cmd;
+    /* Show the diagnostic output; ^C stops the tool, not milk-CTRL (as system() did) */
+    struct sigaction ign, old_int, old_quit;
+    memset(&ign, 0, sizeof(ign));
+    ign.sa_handler = SIG_IGN;
+    sigaction(SIGINT, &ign, &old_int);
+    sigaction(SIGQUIT, &ign, &old_quit);
+    int rc = milkspawn_run(argv, STDOUT_FILENO, STDERR_FILENO);
+    if (rc < 0)
+    {
+        printf("\n%s: %s\n", argv[0], strerror(errno));
+    }
+    else if (rc > 0)
+    {
+        printf("\n%s exited with status %d\n", argv[0], rc);
+    }
+    sigaction(SIGINT, &old_int, NULL);
+    sigaction(SIGQUIT, &old_quit, NULL);
 
     /* Prompt the user to return */
     printf("\n\033[1;36m"

@@ -29,13 +29,14 @@ class TuiPane:
         env: dict[str, str],
         x: int = 200,
         y: int = 50,
+        cwd: str | None = None,
     ):
         self.server = server
         self.name = f"tui-{uuid.uuid4().hex[:8]}"
         envs = " ".join(f"{k}={shlex.quote(v)}" for k, v in sorted(env.items()))
         cmd = f"env {envs} {shlex.join(argv)}; echo __rc=$?; sleep 600"
         self.session = server.new_session(
-            session_name=self.name, x=x, y=y, window_command=cmd
+            session_name=self.name, x=x, y=y, window_command=cmd, start_directory=cwd
         )
         self.pane = self.session.active_window.active_pane
 

@@ -73,7 +73,7 @@ def entities(tui_env):
 
 
 @pytest.fixture
-def milkctrl(tui_env, tmux_server):
+def milkctrl(tui_env, tmux_server, tmp_path):
     """Factory: milkctrl(*args, x=200, y=50, env_extra=None) -> MilkCtrl running in a private tmux pane."""
     env, _ = tui_env
     panes: list[MilkCtrl] = []
@@ -89,7 +89,12 @@ def milkctrl(tui_env, tmux_server):
         if env_extra:
             e.update(env_extra)
         p = MilkCtrl(
-            tmux_server, [str(_install_dir() / "bin" / "milk-CTRL"), *args], e, x=x, y=y
+            tmux_server,
+            [str(_install_dir() / "bin" / "milk-CTRL"), *args],
+            e,
+            x=x,
+            y=y,
+            cwd=str(tmp_path / "cwd"),
         )
         panes.append(p)
         if ready:

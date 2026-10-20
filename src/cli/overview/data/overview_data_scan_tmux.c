@@ -2,7 +2,12 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE /* pipe2 */
+#endif
+
 #include "overview_data_internal.h"
+#include "milk_spawn.h"
 
 
 typedef struct
@@ -36,7 +41,7 @@ void ov_scan_tmux_sessions(OV_MODEL *model)
     }
 
     /* Fast check: does the tmux socket directory exist?
-     * If not, tmux is definitely not running, avoid popen fork. */
+     * If not, tmux is definitely not running, avoid spawning it. */
     static char tmux_dir[128] = { 0 };
     if (tmux_dir[0] == '\0')
     {
@@ -57,7 +62,7 @@ void ov_scan_tmux_sessions(OV_MODEL *model)
         return;
     }
 
-    /* Rate limit popen("tmux ...") to at most once every 3.0 seconds */
+    /* Rate limit the tmux spawn to at most once every 3.0 seconds */
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
     double elapsed = (double) (now.tv_sec - s_last_tmux_scan.tv_sec) +
@@ -83,10 +88,24 @@ void ov_scan_tmux_sessions(OV_MODEL *model)
     s_last_tmux_scan = now;
     s_tmux_cache_cnt = 0;
 
-    FILE *fp = popen(
-        "tmux list-windows -a -F \"#{session_name}:#{window_name}\" </dev/null 2>/dev/null", "r");
+    static const char *const argv[] = {
+        "tmux", "list-windows", "-a", "-F", "#{session_name}:#{window_name}", NULL
+    };
+    int pfd[2];
+    if (pipe2(pfd, O_CLOEXEC) != 0)
+    {
+        return;
+    }
+    pid_t pid = milkspawn_start(argv, pfd[1], -1); /* no /bin/sh; stdin and stderr: /dev/null */
+    close(pfd[1]);
+    FILE *fp = (pid < 0) ? NULL : fdopen(pfd[0], "r");
     if (fp == NULL)
     {
+        close(pfd[0]);
+        if (pid >= 0)
+        {
+            milkspawn_wait(pid);
+        }
         return;
     }
 
@@ -159,5 +178,6 @@ void ov_scan_tmux_sessions(OV_MODEL *model)
         }
     }
 
-    pclose(fp);
+    fclose(fp);
+    milkspawn_wait(pid);
 }
