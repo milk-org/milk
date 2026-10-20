@@ -217,7 +217,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         return 0;
     }
-    if (ov_input__handle_view_switch(key, lay))
+    if (ov_input__handle_view_switch(key, lay, m))
     {
         return 0;
     }

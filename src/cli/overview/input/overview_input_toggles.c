@@ -11,47 +11,56 @@
 #include <limits.h>
 #include <errno.h>
 
-/**
- * ov_input__handle_view_switch - handle F-key view switches (F2..F7) and tabs.
- * @key: Pressed key code.
- * @lay: Pointer to layout structure.
- *
- * Return: 1 if key was consumed, 0 otherwise.
- */
-int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
+/** view_fkey - F2..F7: the view bound to that key. */
+static int view_fkey(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    if (key >= OV_KEY_F1 && key <= OV_KEY_F8 && ov_view_by_fkey(key - OV_KEY_F1 + 1) >= 0)
-    {
-        ov_set_view(lay, (ov_view_t) ov_view_by_fkey(key - OV_KEY_F1 + 1));
-        return 1;
-    }
-    if (key == OV_KEY_CTRL_LEFT || key == OV_KEY_CTRL_RIGHT)
-    {
-        ov_set_view(lay, (ov_view_t) ov_view_cycle(lay->view, (key == OV_KEY_CTRL_LEFT) ? -1 : 1));
-        return 1;
-    }
+    (void) m;
+    ov_set_view(lay, (ov_view_t) ov_view_by_fkey(key - OV_KEY_F1 + 1));
+    return 1;
+}
 
-    if (key == OV_KEY_TAB)
-    {
-        /* Only panels on screen take focus: DASH cycles its four, F5 its list and tree */
-        if (lay->view == OV_VIEW_DASHBOARD)
-        {
-            lay->focus = (ov_focus_t) (((int) lay->focus + 1) % OV_FOCUS_COUNT);
-        }
-        else if (lay->view == OV_VIEW_FPS)
-        {
-            lay->fps_param_focus = !lay->fps_param_focus;
-        }
-        return 1;
-    }
+/** view_cycle - Ctrl+LEFT / RIGHT: previous / next view. */
+static int view_cycle(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    (void) m;
+    ov_set_view(lay, (ov_view_t) ov_view_cycle(lay->view, (key == OV_KEY_CTRL_LEFT) ? -1 : 1));
+    return 1;
+}
 
-    if (key == OV_KEY_BTAB)
+/** focus_cycle - TAB: next panel on screen (DASH: the four; F5: list / tree; elsewhere nothing). */
+static int focus_cycle(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    (void) key, (void) m;
+    if (lay->view == OV_VIEW_DASHBOARD)
     {
-        lay->subtab = (ov_subtab_t) ((lay->subtab + 1) % OV_SUBTAB_COUNT);
-        return 1;
+        lay->focus = (ov_focus_t) (((int) lay->focus + 1) % OV_FOCUS_COUNT);
     }
+    else if (lay->view == OV_VIEW_FPS)
+    {
+        lay->fps_param_focus = !lay->fps_param_focus;
+    }
+    return 1;
+}
 
-    return 0;
+/** subtab_cycle - Shift+TAB: next sub-tab. */
+static int subtab_cycle(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    (void) key, (void) m;
+    lay->subtab = (ov_subtab_t) ((lay->subtab + 1) % OV_SUBTAB_COUNT);
+    return 1;
+}
+
+static const OV_KEYBIND view_keys[] = {
+    { { OV_KEY_F2, OV_KEY_F3, OV_KEY_F4, OV_KEY_F5, OV_KEY_F6, OV_KEY_F7 }, 0, 0, view_fkey },
+    { { OV_KEY_CTRL_LEFT, OV_KEY_CTRL_RIGHT }, 0, 0, view_cycle },
+    { { OV_KEY_TAB }, 0, 0, focus_cycle },
+    { { OV_KEY_BTAB }, 0, 0, subtab_cycle },
+};
+
+/** ov_input__handle_view_switch - views (F2..F7, Ctrl+arrows), TAB and Shift+TAB. Return: 1 consumed. */
+int ov_input__handle_view_switch(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    return ov_key_dispatch(view_keys, OV_KEYBIND_N(view_keys), key, lay, m);
 }
 
 /**
