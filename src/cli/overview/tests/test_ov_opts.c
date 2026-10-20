@@ -35,6 +35,14 @@ int main(void)
     char   *none[] = { "milk-CTRL", NULL };
 
     CHECK(ov_opts_parse(1, none, &o) == 0 && o.view == -1 && o.pattern == NULL && o.interval == 0);
+
+    /* Started as milk-streamCTRL (a link to milk-CTRL): F3, and the legacy -w is accepted */
+    char *sc[]  = { "/opt/milk/bin/milk-streamCTRL", "-w", "-d", "/", NULL };
+    char *scv[] = { "milk-streamCTRL", "--view", "procs", NULL };
+    CHECK(ov_opts_parse(4, sc, &o) == 0 && o.profile == OV_PROFILE_STREAMCTRL &&
+          o.view == OV_VIEW_STREAMS && o.wave && strcmp(o.shm_dir, "/") == 0);
+    CHECK(ov_opts_parse(3, scv, &o) == 0 && o.view == OV_VIEW_PROCS); /* --view still wins */
+    CHECK(PARSE(&o, "-w") == -1 && o.profile == OV_PROFILE_NONE); /* not an option of milk-CTRL */
     CHECK(PARSE(&o, "--view", "procs") == 0 && o.view == OV_VIEW_PROCS);
     CHECK(PARSE(&o, "--view=loops", "wfs|dm") == 0 && o.view == OV_VIEW_LOOPS &&
           strcmp(o.pattern, "wfs|dm") == 0);

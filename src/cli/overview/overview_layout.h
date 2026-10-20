@@ -108,12 +108,13 @@ typedef struct
     int             detail_total_lines;
     OV_HELP_STATE   help; /* help overlay */
     int             paused;
-    char            filter[64];
-    ov_focus_t      filter_panel;   /* panel currently being edited/filtered */
-    int             filter_active;  /* 1 = any panel filter active, 0 = none */
-    int             filter_editing; /* 1 = typing filter */
-    int             filter_cursor;  /* cursor pos in filter */
-    int             filter_jump;    /* 1 = jump-to-match mode */
+    int        profile; /* OV_PROFILE_* (milkCTRL_opts.h): the name milk-CTRL was started under */
+    char       filter[64];
+    ov_focus_t filter_panel;   /* panel currently being edited/filtered */
+    int        filter_active;  /* 1 = any panel filter active, 0 = none */
+    int        filter_editing; /* 1 = typing filter */
+    int        filter_cursor;  /* cursor pos in filter */
+    int        filter_jump;    /* 1 = jump-to-match mode */
     /* Header filter badge hit rects / positions */
     int        r_filter_start[4];
     int        r_filter_width[4];

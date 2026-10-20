@@ -238,6 +238,7 @@ int main(int argc, char *argv[])
     lay.dash_split_v_dragging   = 0;
     lay.dash_split_h_dragging   = 0;
 
+    lay.profile = opts.profile;
     if (opts.view >= 0)
     {
         ov_set_view(&lay, (ov_view_t) opts.view);
@@ -256,6 +257,14 @@ int main(int argc, char *argv[])
     }
 
     ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO, "Shared memory directory: %s", ov_get_shmdir());
+    if (opts.profile == OV_PROFILE_STREAMCTRL)
+    {
+        ov_cmdlog_push(
+            &lay.cmdlog, OV_CMDLOG_INFO,
+            "milk-streamCTRL is milk-CTRL on F3: Right inspects a stream (SEMS, TRACE, HOLDERS); "
+            "%s -h maps the old keys%s",
+            argv[0], opts.wave ? "; -w does nothing" : "");
+    }
     ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO,
                    "h help \xc2\xb7 F2\xe2\x80\x93"
                    "F7 views \xc2\xb7 / filter \xc2\xb7 c control \xc2\xb7 q quit");

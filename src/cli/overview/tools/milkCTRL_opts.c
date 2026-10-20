@@ -89,6 +89,25 @@ void milkctrl_print_help(const char *prog, int mh_color)
            "  structures (FPS) and processinfo loops, with the links between them.\n"
            "  Viewing never writes shared memory; CONTROL mode ('c') enables actions.\n\n");
 
+    const char *exe = (strrchr(prog, '/') != NULL) ? strrchr(prog, '/') + 1 : prog;
+    if (strcmp(exe, "milk-streamCTRL") == 0)
+    {
+        static const char *const legacy[][2] = {
+            { "F2 semaphores", "SEMS column; inspector SEMS page (Right, then Right)" },
+            { "F3/F4 write/read PIDs", "WPID and RPID columns; inspector SEMS page" },
+            { "F5 process trace", "inspector TRACE page" },
+            { "F6 holders (fuser)", "inspector HOLDERS page (/proc maps, every 2 s)" },
+            { "RIGHT detail", "Right or ENTER: inspector INFO page" },
+            { "1 2 3 4 ] [ sort", "s name, S rate, > < columns (CPID, OWNER, HOLD), [ reverse" },
+            { "Ctrl+e erase", "c (CONTROL), then Ctrl+e or DEL, confirmed with y" },
+            { "{ } scan rate", "+ / -" },
+            { "-w", "accepted, does nothing (as before)" },
+        };
+        milk_help_section("milk-streamCTRL", mh_color);
+        printf("  milk-streamCTRL is milk-CTRL opened on F3:STRM. Its old keys map to:\n");
+        HELP_ROWS(legacy);
+    }
+
     milk_help_section("Options", mh_color);
     printf("  %-30s Show this help and exit\n", MH(MH_OPT, "-h, --help"));
     printf("  %-30s One-line description and exit\n", MH(MH_OPT, "-h1, --help-oneline"));

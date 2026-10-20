@@ -193,8 +193,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     h = hseg(sg, &n, HS_HEART, 0, OV_FG_ERROR, OV_BG_HEADER, 1);
     snprintf(h->text, sizeof(h->text), "\xe2\x97\x8f"); /* ● heartbeat */
     h = hseg(sg, &n, HS_LOGO, 0, OV_GRAD_LO, OV_BG_HEADER, 5);
-    snprintf(h->text, sizeof(h->text), "%s %s milk-CTRL %s", OV_LCARS_LEFT, OV_BULLET,
-             OV_LCARS_RIGHT);
+    snprintf(h->text, sizeof(h->text), "%s %s %s %s", OV_LCARS_LEFT, OV_BULLET,
+             lay->profile ? "milk-streamCTRL" : "milk-CTRL", OV_LCARS_RIGHT);
     h = hseg(sg, &n, HS_TEXT, 1, OV_FG_DIM, OV_BG_HEADER, 7);
     snprintf(h->text, sizeof(h->text), "[%s]", MILK_GIT_COMMIT);
     h = hseg(sg, &n, HS_TEXT, 1, OV_FG_DIM, OV_BG_HEADER, 6);

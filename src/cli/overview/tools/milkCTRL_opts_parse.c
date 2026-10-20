@@ -41,11 +41,18 @@ int ov_opts_parse(int argc, char *const argv[], OV_OPTS *o)
         { NULL, 0, NULL, 0 },
     };
     memset(o, 0, sizeof(*o));
-    o->view = -1;
-    optind  = 0; /* GNU: restart scanning */
-    opterr  = 0;
+    o->view         = -1;
+    const char *exe = (argc > 0 && argv[0] != NULL) ? argv[0] : "";
+    exe             = (strrchr(exe, '/') != NULL) ? strrchr(exe, '/') + 1 : exe;
+    if (strcmp(exe, "milk-streamCTRL") == 0) /* the profile installed as a link to milk-CTRL */
+    {
+        o->profile = OV_PROFILE_STREAMCTRL;
+        o->view    = OV_VIEW_STREAMS;
+    }
+    optind = 0; /* GNU: restart scanning */
+    opterr = 0;
     int c;
-    while ((c = getopt_long(argc, argv, ":d:T:", lopts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, ":d:T:w", lopts, NULL)) != -1)
     {
         struct stat st;
         char       *end = NULL;
@@ -85,6 +92,13 @@ int ov_opts_parse(int argc, char *const argv[], OV_OPTS *o)
             break;
         case 'g':
             o->debug = 1;
+            break;
+        case 'w':
+            if (o->profile != OV_PROFILE_STREAMCTRL)
+            {
+                return bad(o, "unknown option", "-w");
+            }
+            o->wave = 1; /* milk-streamCTRL's -w never did anything */
             break;
         case ':':
             return bad(o, "option requires an argument", argv[optind - 1]);

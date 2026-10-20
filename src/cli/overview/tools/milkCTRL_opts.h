@@ -10,6 +10,9 @@
  * @brief Command-line options of milk-CTRL: a pure parser, the help banner, and the wrapper main() calls.
  */
 
+#define OV_PROFILE_NONE 0
+#define OV_PROFILE_STREAMCTRL 1 /* started as milk-streamCTRL: opens F3 */
+
 #define OV_INTERVAL_MIN 0.1
 #define OV_INTERVAL_MAX 10.0
 
@@ -22,6 +25,8 @@ typedef struct
     double      interval; /* --interval seconds; 0 = default */
     const char *log;      /* --log FILE: command log mirror */
     int         debug;    /* --debug: also key events and scan timing in the --log file */
+    int         profile;  /* OV_PROFILE_*: from the name it was started under (argv[0]) */
+    int         wave;     /* -w given (milk-streamCTRL profile: accepted, does nothing) */
     char        err[160]; /* usage error when ov_opts_parse() fails */
 } OV_OPTS;
 
