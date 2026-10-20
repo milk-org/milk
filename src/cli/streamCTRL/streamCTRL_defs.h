@@ -114,18 +114,28 @@ typedef long imageID;
  * ========================================================= */
 
 /**
- * streamctrl_get_shmdir - return the SHM directory path.
- *
- * Reads $MILK_SHM_DIR if set, otherwise returns "/dev/shm".
+ * streamctrl_get_shmdir - the directory ImageStreamIO opens streams in (cached), so listing and
+ * opening agree: $MILK_SHM_DIR, else /milk/shm, else /tmp. "/dev/shm" only if ISIO cannot say.
  */
 static inline const char *streamctrl_get_shmdir(void)
 {
-    const char *d = getenv("MILK_SHM_DIR");
-    if (d != NULL && d[0] != '\0')
+    static char dir[1024] = "";
+    if (dir[0] == '\0')
     {
-        return d;
+        char  fname[1024];
+        char *slash;
+        if (ImageStreamIO_filename(fname, sizeof(fname), "x") == 0 &&
+            (slash = strrchr(fname, '/')) != NULL && slash != fname)
+        {
+            *slash = '\0';
+            snprintf(dir, sizeof(dir), "%s", fname);
+        }
+        else
+        {
+            snprintf(dir, sizeof(dir), "/dev/shm");
+        }
     }
-    return "/dev/shm";
+    return dir;
 }
 
 /* SHAREDSHMDIR expands to a run-time string expression */

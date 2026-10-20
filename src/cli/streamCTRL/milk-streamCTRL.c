@@ -59,7 +59,8 @@ static void print_help(const char *progname, int mh_color)
            "  managing shared memory streams in real-time.\n\n");
 
     milk_help_section("Options", mh_color);
-    printf("  %s %s                   Override SHM directory (default: /dev/shm)\n",
+    printf("  %s %s                   SHM directory (default: $MILK_SHM_DIR, else /milk/shm, else "
+           "/tmp)\n",
            MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"));
     printf("  %s             Enable wave background animation\n", MH(MH_OPT, "-w, --wave"));
     printf("  %s             Show this help and exit\n", MH(MH_OPT, "-h, --help"));
@@ -128,6 +129,9 @@ int main(int argc, char *argv[])
     /* Install signal handlers */
     signal(SIGINT, handle_sigint);
     signal(SIGTERM, handle_sigterm);
+
+    /* Resolve the shm directory on a cooked terminal: ImageStreamIO may print or exit here */
+    (void) streamctrl_get_shmdir();
 
     /* Enter raw terminal mode */
     ansi_raw_mode_enter();
