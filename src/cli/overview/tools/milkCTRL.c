@@ -326,6 +326,10 @@ int main(int argc, char *argv[])
             }
         }
 
+        /* Tell the scan thread what is on screen: pause stops scanning, tmux only for FPS panels */
+        ov_scan_set_hints((lay.paused ? OV_HINT_PAUSED : 0U) |
+                          (ov_view_has_panel(lay.view, OV_FOCUS_FPS) ? OV_HINT_FPS_VISIBLE : 0U));
+
         /* Library output captured from fds 1/2 goes to the command log */
         fflush(stdout);
         if (ov_cmdlog_drain_fd(&lay.cmdlog, ov_term_capture_fd()) > 0)

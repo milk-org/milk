@@ -208,6 +208,13 @@ int ov_scan_has_new_data(void);
  */
 void ov_scan_force_update(void);
 
+/* UI hints to the scan thread (ov_scan_set_hints) */
+#define OV_HINT_PAUSED 0x1U      /* display paused: do not scan */
+#define OV_HINT_FPS_VISIBLE 0x2U /* an FPS panel is on screen: tmux windows are worth polling */
+
+void     ov_scan_set_hints(unsigned hints);
+unsigned ov_scan_hints(void);
+
 /** ov_scan_get_interval / ov_scan_set_interval - scan period in seconds (set clamps to 0.1-10). */
 float ov_scan_get_interval(void);
 void  ov_scan_set_interval(float s);

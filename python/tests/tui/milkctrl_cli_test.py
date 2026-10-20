@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+import time
 
 import pytest
 
@@ -120,3 +121,22 @@ def test_log_mirrors_the_command_log(milkctrl, tmp_path):
     assert "INFO  Shared memory directory:" in text
     assert "INFO  Compact mode ON" in text
     assert "DEBUG key 100" in text and "DEBUG scan " in text
+
+
+def test_pause_stops_scanning(milkctrl, tmp_path):
+    """F pauses the display and the scan thread: no scan is logged until F again."""
+    log = tmp_path / "scan.log"
+    m = milkctrl("--interval", "0.2", "--log", str(log), "--debug")
+    m.wait_for(r"F2:DASH")
+    time.sleep(1.0)
+    m.keys("F")
+    m.wait_for(r"Display paused")
+    time.sleep(0.5)  # a scan already running may still finish
+    before = log.read_text().count("DEBUG scan")
+    time.sleep(2.0)
+    assert log.read_text().count("DEBUG scan") == before
+    m.keys("F")
+    m.wait_for(r"Display resumed")
+    time.sleep(1.0)
+    assert log.read_text().count("DEBUG scan") > before
+    assert m.quit() == 0

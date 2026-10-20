@@ -64,6 +64,7 @@ static pthread_t      ov_scan_thread;
 static volatile int   ov_scan_running      = 0;
 static volatile float ov_scan_interval_s   = 1.0f;
 static atomic_int     ov_force_update_flag = 0;
+static atomic_uint    ov_scan_hint_word    = 0; /* OV_HINT_*, set by the UI once per frame */
 
 /**
  * ov_scan_get_interval - get current scan interval.
@@ -126,6 +127,19 @@ static void *ov_scan_thread_func(void *arg __attribute__((unused)))
 
     while (ov_scan_running && !OV_SIG_ANY_SET())
     {
+        /* Paused display: no scans until the UI clears the hint (or stops the thread) */
+        pthread_mutex_lock(&ov_model_mutex);
+        while (ov_scan_running && !OV_SIG_ANY_SET() &&
+               (atomic_load(&ov_scan_hint_word) & OV_HINT_PAUSED))
+        {
+            pthread_cond_wait(&ov_scan_cond, &ov_model_mutex);
+        }
+        pthread_mutex_unlock(&ov_model_mutex);
+        if (!ov_scan_running || OV_SIG_ANY_SET())
+        {
+            break;
+        }
+
         /* Scan into our private write slot
          * (no lock needed — display never touches it) */
         ov_model_full_scan(&ov_model_slots[ov_write_idx]);
@@ -271,6 +285,24 @@ const OV_MODEL *ov_scan_get_model(void)
     pthread_mutex_unlock(&ov_model_mutex);
 
     return &ov_model_slots[ov_display_idx];
+}
+
+/** ov_scan_set_hints - what the UI shows now (OV_HINT_*); clearing OV_HINT_PAUSED resumes scanning. */
+void ov_scan_set_hints(unsigned hints)
+{
+    unsigned old = atomic_exchange(&ov_scan_hint_word, hints);
+    if ((old & OV_HINT_PAUSED) && !(hints & OV_HINT_PAUSED))
+    {
+        pthread_mutex_lock(&ov_model_mutex);
+        pthread_cond_broadcast(&ov_scan_cond);
+        pthread_mutex_unlock(&ov_model_mutex);
+    }
+}
+
+/** ov_scan_hints - the hints last set by the UI. */
+unsigned ov_scan_hints(void)
+{
+    return atomic_load(&ov_scan_hint_word);
 }
 
 /**
