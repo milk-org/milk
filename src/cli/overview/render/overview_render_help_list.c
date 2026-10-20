@@ -52,7 +52,7 @@ void ov_help_render_list_row(const OV_LAYOUT *lay,
         ov_theme_bg(OV_BG_PANEL);
     }
 
-    if (lay->help_search[0] != '\0')
+    if (lay->help.search[0] != '\0')
     {
         /* Search match row with section badge */
         if (is_sel)

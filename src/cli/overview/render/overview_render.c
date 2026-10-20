@@ -85,7 +85,7 @@ static void ov_render__dispatch_view(OV_LAYOUT *lay, const OV_MODEL *m, const OV
 static void ov_render__draw_edge_highlights(const OV_LAYOUT *lay)
 {
     /* Highlight movable edges if hovering */
-    if (lay->mouse_hover && !lay->show_help)
+    if (lay->mouse_hover && !lay->help.show)
     {
         ov_theme_fg(OV_FG_WARN);
         ov_theme_bg(OV_BG_TERMINAL);
@@ -166,17 +166,17 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     ov_render_tabs(lay);
 
     /* Render view panels if help overlay is not active */
-    if (!lay->show_help)
+    if (!lay->help.show)
     {
         ov_render__dispatch_view(lay, m, &rel);
     }
 
-    if (lay->show_help)
+    if (lay->help.show)
     {
         ov_render_help(lay, m);
     }
 
-    if (!lay->show_help)
+    if (!lay->help.show)
     {
         ov_render_cmdlog(lay);
     }

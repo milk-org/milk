@@ -28,8 +28,8 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     static int paste_warned = 0;
     if (key & OV_KEY_PASTED)
     {
-        if (lay->filter_editing || lay->renaming_loop ||
-            (lay->show_help && lay->help_search_active))
+        if (lay->filter_editing || lay->rename.active ||
+            (lay->help.show && lay->help.search_active))
         {
             key &= ~OV_KEY_PASTED;
         }
@@ -56,32 +56,32 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     /* 0. Theme selector popup: handle navigation, selection, and auto-dismissal */
-    if (lay->theme_popup_active)
+    if (lay->theme_popup.active)
     {
         struct timespec now_ts;
         clock_gettime(CLOCK_MONOTONIC, &now_ts);
-        double elapsed = (now_ts.tv_sec - lay->theme_popup_ts.tv_sec) +
-                         (now_ts.tv_nsec - lay->theme_popup_ts.tv_nsec) * 1e-9;
+        double elapsed = (now_ts.tv_sec - lay->theme_popup.ts.tv_sec) +
+                         (now_ts.tv_nsec - lay->theme_popup.ts.tv_nsec) * 1e-9;
         if (elapsed >= 1.0)
         {
-            lay->theme_popup_active = 0;
+            lay->theme_popup.active = 0;
         }
         else if (key == OV_KEY_ESC)
         {
-            lay->theme_popup_active = 0;
+            lay->theme_popup.active = 0;
             return 0;
         }
         else if (key == '\n' || key == '\r' || key == 10 || key == 13)
         {
-            lay->theme_popup_active = 0;
+            lay->theme_popup.active = 0;
             return 0;
         }
         else if (key == OV_KEY_UP || key == 'k' || key == OV_KEY_MOUSE_UP)
         {
             int count            = ov_theme_count();
-            lay->theme_popup_sel = (lay->theme_popup_sel - 1 + count) % count;
-            ov_theme_set(lay->theme_popup_sel);
-            clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
+            lay->theme_popup.sel = (lay->theme_popup.sel - 1 + count) % count;
+            ov_theme_set(lay->theme_popup.sel);
+            clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup.ts);
             const ov_theme_t *th = ov_theme_get_active();
             ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Theme: %s (%s)", th->name, th->desc);
             return 0;
@@ -89,9 +89,9 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         else if (key == OV_KEY_DOWN || key == 'j' || key == OV_KEY_MOUSE_DOWN)
         {
             int count            = ov_theme_count();
-            lay->theme_popup_sel = (lay->theme_popup_sel + 1) % count;
-            ov_theme_set(lay->theme_popup_sel);
-            clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
+            lay->theme_popup.sel = (lay->theme_popup.sel + 1) % count;
+            ov_theme_set(lay->theme_popup.sel);
+            clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup.ts);
             const ov_theme_t *th = ov_theme_get_active();
             ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Theme: %s (%s)", th->name, th->desc);
             return 0;
@@ -99,9 +99,9 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         else if (key == ctrl('t') || key == OV_KEY_F8)
         {
             int count            = ov_theme_count();
-            lay->theme_popup_sel = (lay->theme_popup_sel + 1) % count;
-            ov_theme_set(lay->theme_popup_sel);
-            clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
+            lay->theme_popup.sel = (lay->theme_popup.sel + 1) % count;
+            ov_theme_set(lay->theme_popup.sel);
+            clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup.ts);
             const ov_theme_t *th = ov_theme_get_active();
             ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Theme: %s (%s)", th->name, th->desc);
             return 0;
@@ -110,30 +110,30 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
             int mr = ov_mouse_row;
             int mc = ov_mouse_col;
-            if (mr >= lay->r_theme_popup.row &&
-                mr < lay->r_theme_popup.row + lay->r_theme_popup.height &&
-                mc >= lay->r_theme_popup.col &&
-                mc < lay->r_theme_popup.col + lay->r_theme_popup.width)
+            if (mr >= lay->theme_popup.rect.row &&
+                mr < lay->theme_popup.rect.row + lay->theme_popup.rect.height &&
+                mc >= lay->theme_popup.rect.col &&
+                mc < lay->theme_popup.rect.col + lay->theme_popup.rect.width)
             {
-                int item_idx = mr - (lay->r_theme_popup.row + 1);
+                int item_idx = mr - (lay->theme_popup.rect.row + 1);
                 if (item_idx >= 0 && item_idx < ov_theme_count())
                 {
-                    lay->theme_popup_sel = item_idx;
+                    lay->theme_popup.sel = item_idx;
                     ov_theme_set(item_idx);
-                    clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
+                    clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup.ts);
                     const ov_theme_t *th = ov_theme_get_active();
                     ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Theme: %s (%s)", th->name,
                                    th->desc);
                     return 0;
                 }
             }
-            lay->theme_popup_active = 0;
+            lay->theme_popup.active = 0;
             return 0;
         }
         else
         {
             /* Other keys dismiss the popup and fall through */
-            lay->theme_popup_active = 0;
+            lay->theme_popup.active = 0;
         }
     }
 
@@ -144,7 +144,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     /* 1b. Loop rename mode: all characters belong to the rename prompt */
-    if (lay->renaming_loop)
+    if (lay->rename.active)
     {
         ov_input__handle_loop_rename(key, lay, (OV_MODEL *) m);
         return 0;

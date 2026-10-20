@@ -14,18 +14,18 @@
 
 void ov_render_theme_popup(OV_LAYOUT *lay)
 {
-    if (!lay->theme_popup_active)
+    if (!lay->theme_popup.active)
     {
         return;
     }
 
     struct timespec now_ts;
     clock_gettime(CLOCK_MONOTONIC, &now_ts);
-    double elapsed = (now_ts.tv_sec - lay->theme_popup_ts.tv_sec) +
-                     (now_ts.tv_nsec - lay->theme_popup_ts.tv_nsec) * 1e-9;
+    double elapsed = (now_ts.tv_sec - lay->theme_popup.ts.tv_sec) +
+                     (now_ts.tv_nsec - lay->theme_popup.ts.tv_nsec) * 1e-9;
     if (elapsed >= 1.0)
     {
-        lay->theme_popup_active = 0;
+        lay->theme_popup.active = 0;
         return;
     }
 
@@ -53,10 +53,10 @@ void ov_render_theme_popup(OV_LAYOUT *lay)
         pw = lay->term_cols - pc;
     }
 
-    lay->r_theme_popup.row    = pr;
-    lay->r_theme_popup.col    = pc;
-    lay->r_theme_popup.height = ph;
-    lay->r_theme_popup.width  = pw;
+    lay->theme_popup.rect.row    = pr;
+    lay->theme_popup.rect.col    = pc;
+    lay->theme_popup.rect.height = ph;
+    lay->theme_popup.rect.width  = pw;
 
     /* Top border */
     ov_buf_pos(pr, pc);
@@ -79,7 +79,7 @@ void ov_render_theme_popup(OV_LAYOUT *lay)
     for (int i = 0; i < nthemes && (pr + 1 + i) < (pr + ph - 1); i++)
     {
         int               row       = pr + 1 + i;
-        int               is_sel    = (i == lay->theme_popup_sel);
+        int               is_sel    = (i == lay->theme_popup.sel);
         int               is_active = (i == ov_theme_get_active_index());
         const ov_theme_t *th        = ov_theme_get(i);
 

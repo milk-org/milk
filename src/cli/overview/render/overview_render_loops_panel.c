@@ -259,13 +259,13 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         detail_rows--;
 
         /* Rename input mode line */
-        if (lay->renaming_loop && detail_rows > 0)
+        if (lay->rename.active && detail_rows > 0)
         {
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(OV_BG_SELECTED);
             ov_theme_fg(OV_FG_WARN);
             ov_buf_printf(" Rename L%02d: [ %s_ ]  (Enter: save, Esc: cancel)", cl->loop_id,
-                          lay->rename_buf);
+                          lay->rename.buf);
             render_pad_to_col(r.col + r.width - 1);
             row++;
             detail_rows--;

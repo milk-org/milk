@@ -335,25 +335,25 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     const char *exit_label = " [x] exit ";
-    if (lay->show_help)
+    if (lay->help.show)
     {
-        exit_label = (lay->help_search[0] != '\0' || lay->help_search_active) ? " [ESC] clear "
+        exit_label = (lay->help.search[0] != '\0' || lay->help.search_active) ? " [ESC] clear "
                                                                               : " [ESC] close ";
     }
     int n_exit = (int) strlen(exit_label);
 
-    if (lay->show_help)
+    if (lay->help.show)
     {
         const char *help_hints;
-        if (lay->help_search_active)
+        if (lay->help.search_active)
         {
             help_hints = " Type to search   ENTER Browse results   ESC Back";
         }
-        else if (lay->help_search[0] != '\0')
+        else if (lay->help.search[0] != '\0')
         {
             help_hints = " ↑↓ Navigate results   [/] Edit search   ESC Clear search";
         }
-        else if (lay->help_mode == 1)
+        else if (lay->help.mode == 1)
         {
             help_hints = " ↑↓/PgUp/PgDn Scroll   2 Controls Reference   ESC Close";
         }

@@ -79,7 +79,7 @@ void ov_render_tabs(OV_LAYOUT *lay)
     }
 
     /* Render prominent help button */
-    if (lay->show_help)
+    if (lay->help.show)
     {
         /* Active state when help overlay is visible: light-blue solid pill */
         ov_theme_bg(OV_BG_HEADER);

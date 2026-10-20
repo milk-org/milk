@@ -299,15 +299,15 @@ int main(int argc, char *argv[])
         }
 
         /* Check if theme selector popup timed out (1s inactivity) */
-        if (lay.theme_popup_active)
+        if (lay.theme_popup.active)
         {
             struct timespec now_ts;
             clock_gettime(CLOCK_MONOTONIC, &now_ts);
-            double elapsed = (now_ts.tv_sec - lay.theme_popup_ts.tv_sec) +
-                             (now_ts.tv_nsec - lay.theme_popup_ts.tv_nsec) * 1e-9;
+            double elapsed = (now_ts.tv_sec - lay.theme_popup.ts.tv_sec) +
+                             (now_ts.tv_nsec - lay.theme_popup.ts.tv_nsec) * 1e-9;
             if (elapsed >= 1.0)
             {
-                lay.theme_popup_active = 0;
+                lay.theme_popup.active = 0;
                 need_render            = 1;
             }
             else
@@ -364,6 +364,7 @@ int main(int argc, char *argv[])
     ov_raw_mode_exit();
     signal(SIGINT, SIG_DFL);
     ov_scan_stop();
+    ov_input_history_free(&lay);
 
     return 0;
 }

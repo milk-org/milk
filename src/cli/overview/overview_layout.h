@@ -104,39 +104,33 @@ typedef struct
 void ov_cmdlog_push(OV_CMDLOG *log, ov_cmdlog_level_t level, const char *fmt, ...);
 int  ov_cmdlog_drain_fd(OV_CMDLOG *log, int fd);
 
+
+#include "overview_overlay.h" /* needs OV_RECT */
+
 /* Layout state */
 typedef struct
 {
-    int        term_rows;
-    int        term_cols;
-    ov_view_t  view;
-    ov_focus_t focus;
-    int        sel_stream;
-    int        sel_proc;
-    int        sel_fps;
-    int        sel_graph;
-    int        sel_loop;
-    int        scroll_stream;
-    int        scroll_proc;
-    int        scroll_fps;
-    int        scroll_graph;
-    int        scroll_loop;
-    int        scroll_detail;
-    int        loop_filter_active;
-    int        renaming_loop;
-    char       rename_buf[64];
-    int        rename_cursor;
-    int        detail_total_lines;
-    int        show_help;
-    int        help_mode;          /* 0 = Controls & keybindings, 1 = Intro to milk-CTRL */
-    int        help_intro_scroll;  /* scroll row in full intro view */
-    int        help_sel;           /* cursor row in help */
-    uint32_t   help_expand;        /* bitmask: 1=expanded */
-    char       help_search[64];    /* keyword/topic search query */
-    int        help_search_active; /* 1 if typing in search prompt */
-    int        help_search_cursor; /* cursor position in search query */
-    int        paused;
-    char       filter[64];
+    int             term_rows;
+    int             term_cols;
+    ov_view_t       view;
+    ov_focus_t      focus;
+    int             sel_stream;
+    int             sel_proc;
+    int             sel_fps;
+    int             sel_graph;
+    int             sel_loop;
+    int             scroll_stream;
+    int             scroll_proc;
+    int             scroll_fps;
+    int             scroll_graph;
+    int             scroll_loop;
+    int             scroll_detail;
+    int             loop_filter_active;
+    OV_RENAME_STATE rename; /* loop rename prompt */
+    int             detail_total_lines;
+    OV_HELP_STATE   help; /* help overlay */
+    int             paused;
+    char            filter[64];
     /* Per-panel regex filter strings */
     char       filter_stream[64];
     char       filter_proc[64];
@@ -161,20 +155,16 @@ typedef struct
     /* Compact mode (#13): hide extra columns */
     int compact_mode;
     /* Dashboard panel rects */
-    OV_RECT r_header;
-    OV_RECT r_tabs;
-    OV_RECT r_streams;
-    OV_RECT r_procs;
-    OV_RECT r_fps;
-    OV_RECT r_graph;
-    OV_RECT r_cmdlog;
-    OV_RECT r_status;
-    OV_RECT r_exit_btn, r_theme_btn; /* status-bar buttons as drawn; width 0 = not shown */
-    /* Theme selector popup */
-    int             theme_popup_active;
-    int             theme_popup_sel;
-    struct timespec theme_popup_ts;
-    OV_RECT         r_theme_popup;
+    OV_RECT        r_header;
+    OV_RECT        r_tabs;
+    OV_RECT        r_streams;
+    OV_RECT        r_procs;
+    OV_RECT        r_fps;
+    OV_RECT        r_graph;
+    OV_RECT        r_cmdlog;
+    OV_RECT        r_status;
+    OV_RECT        r_exit_btn, r_theme_btn; /* status-bar buttons as drawn; width 0 = not shown */
+    OV_THEME_POPUP theme_popup;             /* theme selector popup */
     /* Command log */
     OV_CMDLOG cmdlog;
     int       cmdlog_rows; /* 0=hidden, default=4 */
@@ -239,22 +229,8 @@ typedef struct
     char fps_param_path[200]; /* Current tree path, e.g. "conf" or "conf.sub" */
     int  fps_param_sel;       /* selected row in param tree */
     int  fps_param_scroll;    /* scroll offset in param tree */
-    /* FPS parameter tree history */
-    struct
-    {
-        char fps_name[80];
-        char path[200];
-    } fps_last_path[200];
-    int nb_fps_last_path;
-
-    struct
-    {
-        char fps_name[80];
-        char path[200];
-        int  sel;
-        int  scroll;
-    } fps_dir_history[1000];
-    int nb_fps_dir_history;
+    OV_INPUT_HISTORY
+    *hist; /* F5 tree positions per FPS and directory; heap, owned by input history */
     /* F5 view split rects */
     OV_RECT r_fps_list;   /* left: FPS list  */
     OV_RECT r_fps_params; /* right: param tree */
@@ -280,6 +256,10 @@ typedef struct
     int   dash_split_h_hover;
     int   cmdlog_split_hover;
 } OV_LAYOUT;
+_Static_assert(sizeof(OV_LAYOUT) < 64 * 1024,
+               "OV_LAYOUT is a stack local: keep large state on the heap");
+
+void ov_input_history_free(OV_LAYOUT *lay); /* input/overview_input_history.c */
 
 void ov_layout_compute(OV_LAYOUT *lay);
 int  ov_view_has_panel(ov_view_t v, ov_focus_t f);

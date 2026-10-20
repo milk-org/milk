@@ -60,9 +60,9 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             int count = ov_theme_count();
             int next  = (ov_theme_get_active_index() + 1) % count;
             ov_theme_set(next);
-            lay->theme_popup_sel    = next;
-            lay->theme_popup_active = 1;
-            clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
+            lay->theme_popup.sel    = next;
+            lay->theme_popup.active = 1;
+            clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup.ts);
             const ov_theme_t *th = ov_theme_get_active();
             ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Theme: %s (%s)", th->name, th->desc);
             return 1;
@@ -195,9 +195,9 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             /* Check help button click */
             if (mc >= help_col && mc < help_col + help_width)
             {
-                if (lay->show_help)
+                if (lay->help.show)
                 {
-                    lay->show_help = 0;
+                    lay->help.show = 0;
                     ov_buf_force_clear();
                 }
                 else
@@ -214,9 +214,9 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 if (mc >= tx && mc < tx + tab_widths[v])
                 {
                     ov_set_view(lay, (ov_view_t) v);
-                    if (lay->show_help)
+                    if (lay->help.show)
                     {
-                        lay->show_help = 0;
+                        lay->help.show = 0;
                         ov_buf_force_clear();
                     }
                     return 1;
