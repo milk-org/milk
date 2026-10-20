@@ -152,10 +152,15 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
     regex_t re;
     int     filt_n = ov_procs__filter(lay, m, rel, filt_idx, &has_re, &re);
 
-    int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-                      ? m->loops[lay->sel_loop].loop_id
-                      : -1;
-    ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "PROCESSINFO", OV_FG_PROC,
+    int  loop_id    = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+                          ? m->loops[lay->sel_loop].loop_id
+                          : -1;
+    char ptitle[48] = "PROCESSINFO";
+    if (m->nb_procs_hidden > 0)
+    {
+        snprintf(ptitle, sizeof(ptitle), "PROCESSINFO +%d hidden", m->nb_procs_hidden);
+    }
+    ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, ptitle, OV_FG_PROC,
                                 lay->focus == OV_FOCUS_PROCS, 0, lay->ctrl_blink, loop_id,
                                 lay->filter_proc, lay->filter_proc_active, filt_n, m->nb_procs);
 

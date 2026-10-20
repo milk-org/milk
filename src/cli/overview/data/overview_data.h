@@ -98,6 +98,7 @@ typedef struct
 
     OV_PROC procs[OV_MAX_PROCS];
     int     nb_procs;
+    int     nb_procs_hidden; /* registry entries beyond OV_MAX_PROCS (stale ones go first) */
 
     /* graph */
     OV_NODE nodes[OV_MAX_NODES];

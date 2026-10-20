@@ -50,32 +50,22 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             last_click_c  = mc;
         }
 
-        /* Check for status bar exit and theme button clicks */
-        if (mr == lay->term_rows)
+        /* Status bar exit and theme buttons, where the last frame drew them */
+        if (lay->r_exit_btn.width > 0 && INSIDE(lay->r_exit_btn, mr, mc))
         {
-            int col_exit = lay->term_cols - 18;
-            if (mc >= col_exit && mc < col_exit + 10)
-            {
-                return 2; /* exit request */
-            }
-
-            char th_buf[32];
-            snprintf(th_buf, sizeof(th_buf), " [%s] ", ov_active_theme->id);
-            int n_th   = (int) strlen(th_buf);
-            int col_th = col_exit - n_th;
-            if (mc >= col_th && mc < col_exit)
-            {
-                int count = ov_theme_count();
-                int next  = (ov_theme_get_active_index() + 1) % count;
-                ov_theme_set(next);
-                lay->theme_popup_sel    = next;
-                lay->theme_popup_active = 1;
-                clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
-                const ov_theme_t *th = ov_theme_get_active();
-                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name,
-                               th->desc);
-                return 1;
-            }
+            return 2; /* exit request */
+        }
+        if (lay->r_theme_btn.width > 0 && INSIDE(lay->r_theme_btn, mr, mc))
+        {
+            int count = ov_theme_count();
+            int next  = (ov_theme_get_active_index() + 1) % count;
+            ov_theme_set(next);
+            lay->theme_popup_sel    = next;
+            lay->theme_popup_active = 1;
+            clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
+            const ov_theme_t *th = ov_theme_get_active();
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name, th->desc);
+            return 1;
         }
 
         /* Check for header tab clicks */

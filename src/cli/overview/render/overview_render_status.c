@@ -12,12 +12,21 @@
 /* All overview headers included via
  * overview_render_internal.h */
 
+/** ov_status_btn - record a @w-column button starting at the cursor; width 0 when it overflows @cols. */
+static void ov_status_btn(OV_RECT *b, int row, int w, int cols)
+{
+    b->row    = row;
+    b->col    = ov__cursor_col;
+    b->height = 1;
+    b->width  = (ov__cursor_col + w - 1 <= cols) ? w : 0;
+}
+
 /**
  * ov_render_status - Render the bottom status bar and key hints
  * @lay: Layout configuration
  * @m:   Data model snapshot
  */
-void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
+void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_RECT r = lay->r_status;
     ov_buf_pos(r.row, r.col);
@@ -416,8 +425,17 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_hline(' ', pad);
     }
 
+    /* Buttons are hit-tested where they are drawn; one cut off by the terminal edge has no target */
+    ov_status_btn(&lay->r_theme_btn, r.row, n_th, lay->term_cols);
+    ov_status_btn(&lay->r_exit_btn, r.row, n_exit, lay->term_cols);
+    lay->r_exit_btn.col += n_th; /* drawn right after the theme button */
+    if (lay->r_exit_btn.col + n_exit - 1 > lay->term_cols)
+    {
+        lay->r_exit_btn.width = 0;
+    }
+
     /* Render theme button with hover highlight */
-    int col_th_start = r.width - n_th - n_exit - n2;
+    int col_th_start = ov__cursor_col;
     if (lay->mouse_hover && (ov_mouse_row == r.row) && (ov_mouse_col >= col_th_start) &&
         (ov_mouse_col < col_th_start + n_th))
     {
@@ -432,7 +450,7 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
     ov_buf_printf("%s", th_label);
 
     /* Render [x] exit with distinct color or hover highlight */
-    int col_start = r.width - n_exit - n2;
+    int col_start = ov__cursor_col;
     if (lay->mouse_hover && (ov_mouse_row == r.row) && (ov_mouse_col >= col_start) &&
         (ov_mouse_col < col_start + n_exit))
     {

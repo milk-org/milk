@@ -169,6 +169,7 @@ typedef struct
     OV_RECT r_graph;
     OV_RECT r_cmdlog;
     OV_RECT r_status;
+    OV_RECT r_exit_btn, r_theme_btn; /* status-bar buttons as drawn; width 0 = not shown */
     /* Theme selector popup */
     int             theme_popup_active;
     int             theme_popup_sel;
