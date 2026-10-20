@@ -15,12 +15,17 @@ const OV_VIEW_DESC ov_views[OV_VIEW_COUNT] = {
     [OV_VIEW_DASHBOARD] = { "DASH", "dash", 2,
                             OV_PANEL_BIT(OV_FOCUS_STREAMS) | OV_PANEL_BIT(OV_FOCUS_PROCS) |
                                 OV_PANEL_BIT(OV_FOCUS_FPS) | OV_PANEL_BIT(OV_FOCUS_GRAPH),
-                            -1 },
-    [OV_VIEW_STREAMS] = { "STRM", "streams", 3, OV_PANEL_BIT(OV_FOCUS_STREAMS), OV_FOCUS_STREAMS },
-    [OV_VIEW_PROCS]   = { "PROC", "procs", 4, OV_PANEL_BIT(OV_FOCUS_PROCS), OV_FOCUS_PROCS },
-    [OV_VIEW_FPS]     = { "FPS", "fps", 5, OV_PANEL_BIT(OV_FOCUS_FPS), OV_FOCUS_FPS },
-    [OV_VIEW_GRAPH]   = { "CONN", "conn", 6, OV_PANEL_BIT(OV_FOCUS_GRAPH), OV_FOCUS_GRAPH },
-    [OV_VIEW_LOOPS]   = { "LOOPS", "loops", 7, OV_PANEL_BIT(OV_FOCUS_GRAPH), OV_FOCUS_GRAPH },
+                            -1, "Streams, processes and FPS panels plus the sub-tab panel" },
+    [OV_VIEW_STREAMS]   = { "STRM", "streams", 3, OV_PANEL_BIT(OV_FOCUS_STREAMS), OV_FOCUS_STREAMS,
+                            "Streams: size, rate, semaphores, writers" },
+    [OV_VIEW_PROCS]     = { "PROC", "procs", 4, OV_PANEL_BIT(OV_FOCUS_PROCS), OV_FOCUS_PROCS,
+                            "Processes: state (RUN/STOP/CRSH/STAL), rate, CPU" },
+    [OV_VIEW_FPS]       = { "FPS", "fps", 5, OV_PANEL_BIT(OV_FOCUS_FPS), OV_FOCUS_FPS,
+                            "FPS list (left) and parameter tree (right)" },
+    [OV_VIEW_GRAPH]     = { "CONN", "conn", 6, OV_PANEL_BIT(OV_FOCUS_GRAPH), OV_FOCUS_GRAPH,
+                            "Sub-tab panel full screen: connections, loops, details, resources" },
+    [OV_VIEW_LOOPS]     = { "LOOPS", "loops", 7, OV_PANEL_BIT(OV_FOCUS_GRAPH), OV_FOCUS_GRAPH,
+                            "Feedback loops: members, rate, status (ERR/STAL/PAUS/RUN/IDLE)" },
 };
 
 /** ov_view_cycle - view @step places after @v in tab order, wrapping. */

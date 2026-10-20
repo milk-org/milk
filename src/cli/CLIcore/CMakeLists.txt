@@ -227,6 +227,7 @@ add_executable(
   ../overview/tools/milkCTRL_opts.c
   ../overview/overview_layout.c
   ../overview/overview_view.c
+  ../overview/overview_keymap.c
   ../overview/ansi/overview_ansi_term.c
   ../overview/ansi/overview_ansi_buf.c
   ../overview/ansi/overview_ansi_delta.c

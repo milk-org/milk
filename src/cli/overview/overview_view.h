@@ -21,6 +21,7 @@ typedef struct
     int         fkey;          /* function key number: 2 = F2 */
     unsigned    panels;        /* OV_PANEL_BIT() of each ov_focus_t panel shown */
     int         default_focus; /* ov_focus_t given on entry, -1 = keep the current focus */
+    const char *desc;          /* one line for -h */
 } OV_VIEW_DESC;
 
 extern const OV_VIEW_DESC ov_views[OV_VIEW_COUNT];

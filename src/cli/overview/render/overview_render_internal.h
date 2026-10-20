@@ -59,6 +59,7 @@ typedef struct
 } OV_RELATED;
 
 #include "overview_columns.h" /* needs OV_RELATED */
+#include "overview_keymap.h"
 void ov_cell_ancestry(OV_COLCELL *c, const OV_ROW_CTX *rc, int nb_loops, int written);
 void ov_cell_name(OV_COLCELL *c, const OV_ROW_CTX *rc, const char *name, ov_rgb_t fg);
 void ov_cell_pid(OV_COLCELL *c, const OV_ROW_CTX *rc, pid_t pid);

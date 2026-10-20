@@ -351,6 +351,25 @@ static void test_loop_list_rows(void)
     }
 }
 
+/* Key table: every entry is documented somewhere; status-line hints are distinct */
+static void test_keymap(void)
+{
+    for (int i = 0; i < ov_nb_keys; i++)
+    {
+        CHECK(ov_keys[i].display != NULL && ov_keys[i].label != NULL);
+        CHECK(ov_keys[i].section >= 0 || ov_keys[i].group >= 0);
+        CHECK(ov_keys[i].section < HS_COUNT && ov_keys[i].group < OV_KG_COUNT);
+        for (int j = i + 1; ov_keys[i].footer != NULL && j < ov_nb_keys; j++)
+        {
+            CHECK(ov_keys[j].footer == NULL || strcmp(ov_keys[i].footer, ov_keys[j].footer) != 0);
+        }
+    }
+    char buf[96];
+    CHECK(ov_key_footer(buf, sizeof(buf)) == strlen(buf));
+    CHECK(strstr(buf, "TAB") != NULL && strstr(buf, "q") != NULL);
+    CHECK(ov_key_footer(buf, 4) == 3); /* truncated, still terminated */
+}
+
 int main(void)
 {
     test_sort_does_not_touch_model();
@@ -362,6 +381,7 @@ int main(void)
     test_streams_table();
     test_view_descs();
     test_loop_list_rows();
+    test_keymap();
     if (failures == 0)
     {
         printf("all ok\n");

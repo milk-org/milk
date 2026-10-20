@@ -280,11 +280,12 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     }
     else
     {
-        int n_hints = snprintf(NULL, 0, "%s%s%s  +/- TAB D S/s / c m G h q  (Click headers/tabs)",
-                               ctrl_hint, sort_label, detail_label);
-        ov_buf_printf("%s%s%s  +/- TAB D S/s / c m G h q  (Click headers/tabs)", ctrl_hint,
-                      sort_label, detail_label);
-        n1 += n_hints;
+        char keys[96], line[256];
+        ov_key_footer(keys, sizeof(keys)); /* the keys marked for the status line in ov_keys */
+        snprintf(line, sizeof(line), "%s%s%s  %s  (Click headers/tabs)", ctrl_hint, sort_label,
+                 detail_label, keys);
+        ov_buf_printf("%s", line);
+        n1 += (int) strlen(line);
     }
 
     time_t     now    = time(NULL);
