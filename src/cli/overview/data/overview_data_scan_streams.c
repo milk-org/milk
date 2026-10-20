@@ -106,6 +106,25 @@ static void scache_rate_update(OV_STREAM *s, int ci)
     }
 }
 
+/** live_unique_pids - the live PIDs among @src[0..n), each once, into @dst. Return: how many. */
+static int live_unique_pids(const pid_t *src, int n, pid_t *dst)
+{
+    int nb = 0;
+    for (int sm = 0; src != NULL && sm < n && nb < IMAGE_NB_SEMAPHORE; sm++)
+    {
+        int dup = 0;
+        for (int k = 0; k < nb && !dup; k++)
+        {
+            dup = (dst[k] == src[sm]);
+        }
+        if (src[sm] > 0 && !dup && pid_is_alive(src[sm]))
+        {
+            dst[nb++] = src[sm];
+        }
+    }
+    return nb;
+}
+
 /**
  * fill_stream_from_img - populate OV_STREAM from
  *     a cached IMAGE mapping.
@@ -205,33 +224,9 @@ static void fill_stream_from_img(OV_STREAM *s, IMAGE *imgp, const char *name, in
         s->write_pid = s->proctrace_pid[0];
     }
 
-    /* Reader PIDs from semReadPID array */
-    s->nb_read_pids = 0;
-    if (imgp->semReadPID != NULL)
-    {
-        for (int sm = 0; sm < s->nb_sem && s->nb_read_pids < IMAGE_NB_SEMAPHORE; sm++)
-        {
-            pid_t rpid = imgp->semReadPID[sm];
-            if (rpid > 0 && pid_is_alive(rpid))
-            {
-                /* Avoid duplicates */
-                int dup = 0;
-                for (int k = 0; k < s->nb_read_pids; k++)
-                {
-                    if (s->read_pids[k] == rpid)
-                    {
-                        dup = 1;
-                        break;
-                    }
-                }
-                if (!dup)
-                {
-                    s->read_pids[s->nb_read_pids] = rpid;
-                    s->nb_read_pids++;
-                }
-            }
-        }
-    }
+    /* Readers and writers from the semaphore PID arrays: live, each once */
+    s->nb_read_pids  = live_unique_pids(imgp->semReadPID, s->nb_sem, s->read_pids);
+    s->nb_write_pids = live_unique_pids(imgp->semWritePID, s->nb_sem, s->write_pids);
 
     s->node_idx = -1;
 }

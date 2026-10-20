@@ -180,14 +180,14 @@ static void test_lookup_indexes(void)
     {
         for (int i = 0; i < 1000; i++)
         {
-            ov_add_edge(&m, i, i + 1, (ov_edge_type_t) (i % 3), "x");
+            ov_add_edge(&m, i, i + 1, (ov_edge_type_t) (i % 3), OV_EV_PROCTRACE);
         }
     }
     CHECK(m.nb_edges == 1000);
-    ov_add_edge(&m, 5, 6, (ov_edge_type_t) 1, "y"); /* new type for an existing pair */
+    ov_add_edge(&m, 5, 6, (ov_edge_type_t) 1, OV_EV_PROCTRACE); /* new type for an existing pair */
     CHECK(m.nb_edges == 1001);
     m.nb_edges = 0; /* a reset array is re-indexed */
-    ov_add_edge(&m, 1, 2, (ov_edge_type_t) 1, "z");
+    ov_add_edge(&m, 1, 2, (ov_edge_type_t) 1, OV_EV_PROCTRACE);
     CHECK(m.nb_edges == 1);
 }
 
@@ -252,7 +252,7 @@ static void add_edge(OV_MODEL *m, int src, int tgt, ov_edge_type_t type)
     e->src_node = src;
     e->tgt_node = tgt;
     e->type     = type;
-    e->active   = 1;
+    e->evidence = OV_EV_PROCTRACE;
 }
 
 /* stream s -> unit u -> stream t -> unit v -> s, units being processes or FPS */

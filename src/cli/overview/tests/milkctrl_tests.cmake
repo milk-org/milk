@@ -1,4 +1,4 @@
-# milk-CTRL unit tests (CTest milkctrl_unit_ansi, milkctrl_unit_model).
+# milk-CTRL unit tests (CTest milkctrl_unit_ansi, _model, _graph, _view, _opts, milkctrl_keys_doc).
 # Included from src/cli/CLIcore/CMakeLists.txt: relative paths resolve against that directory.
 if(BUILD_TESTING)
   add_executable(
@@ -13,6 +13,10 @@ if(BUILD_TESTING)
   add_executable(milkctrl-unit-model ../overview/tests/test_ov_model.c)
   target_link_libraries(milkctrl-unit-model PRIVATE milkctrl_model)
   add_test(NAME milkctrl_unit_model COMMAND milkctrl-unit-model)
+
+  add_executable(milkctrl-unit-graph ../overview/tests/test_ov_graph.c)
+  target_link_libraries(milkctrl-unit-graph PRIVATE milkctrl_model)
+  add_test(NAME milkctrl_unit_graph COMMAND milkctrl-unit-graph)
 
   add_executable(
     milkctrl-unit-view

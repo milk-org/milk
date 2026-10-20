@@ -45,10 +45,6 @@ static uint64_t fnv1a_hash(const char *str)
  */
 int is_valid_loop_edge(const OV_MODEL *m, const OV_EDGE *e, sg_mode_t mode)
 {
-    if (!e->active)
-    {
-        return 0;
-    }
     int src = e->src_node;
     int tgt = e->tgt_node;
     if (src < 0 || src >= m->nb_nodes || tgt < 0 || tgt >= m->nb_nodes)
@@ -64,13 +60,11 @@ int is_valid_loop_edge(const OV_MODEL *m, const OV_EDGE *e, sg_mode_t mode)
     {
         if (mode == SG_MODE_TRIGGER)
         {
-            return (e->type == OV_EDGE_STREAM_TRIGGERS_PROC ||
-                    e->type == OV_EDGE_PROC_TRIGGER_STREAM || e->type == OV_EDGE_FPS_INPUT_STREAM);
+            return (e->type == OV_EDGE_STREAM_TRIGGERS_PROC || e->type == OV_EDGE_FPS_INPUT_STREAM);
         }
         else
         {
             return (e->type == OV_EDGE_STREAM_TRIGGERS_PROC ||
-                    e->type == OV_EDGE_PROC_TRIGGER_STREAM ||
                     e->type == OV_EDGE_STREAM_READ_BY_PROC || e->type == OV_EDGE_FPS_INPUT_STREAM);
         }
     }

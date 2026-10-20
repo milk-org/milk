@@ -55,9 +55,17 @@ typedef enum
     OV_EDGE_FPS_RUNS_PROC,
     OV_EDGE_FPS_INPUT_STREAM,
     OV_EDGE_FPS_OUTPUT_STREAM,
-    OV_EDGE_PROC_TRIGGER_STREAM,
     OV_EDGE_STREAM_READ_BY_PROC,
+    OV_EDGE_TYPE_COUNT,
 } ov_edge_type_t;
+
+/* Where an edge was seen (OV_EDGE.evidence); one edge may be seen several ways */
+#define OV_EV_PROCTRACE 0x01     /* stream proctrace: writer PID, trigger stream inode */
+#define OV_EV_SEM_READ 0x02      /* semReadPID: a process waits on the stream */
+#define OV_EV_SEM_WRITE 0x04     /* semWritePID: a process posted the stream */
+#define OV_EV_PINFO_TRIGGER 0x08 /* processinfo trigger stream name */
+#define OV_EV_FPS_PARAM 0x10     /* FPS stream-type parameter */
+#define OV_EV_FPS_RUNPID 0x20    /* FPS run PID */
 
 /* =========================================================
  * PID status (used for uniform PID coloring)
@@ -161,6 +169,8 @@ typedef struct
     pid_t write_pid; /**< writer PID (from proc trace) */
     int   nb_read_pids;
     pid_t read_pids[IMAGE_NB_SEMAPHORE];
+    int   nb_write_pids; /**< live processes that posted the semaphores (semWritePID), unique */
+    pid_t write_pids[IMAGE_NB_SEMAPHORE];
 
     /* process trace (from STREAM_PROC_TRACE) */
     int   nb_proctrace;

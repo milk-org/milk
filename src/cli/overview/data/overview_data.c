@@ -228,8 +228,11 @@ int ov_model_export_snapshot(const OV_MODEL *m, char *path, size_t pathsz)
         if (e->src_node >= 0 && e->src_node < m->nb_nodes && e->tgt_node >= 0 &&
             e->tgt_node < m->nb_nodes)
         {
+            static const char *const kind[OV_EDGE_TYPE_COUNT] = { "writes", "triggers", "runs",
+                                                                  "input",  "output",   "reads" };
             fprintf(fp, "  %s -> %s  [%s]\n", m->nodes[e->src_node].name,
-                    m->nodes[e->tgt_node].name, e->label);
+                    m->nodes[e->tgt_node].name,
+                    ((unsigned) e->type < OV_EDGE_TYPE_COUNT) ? kind[e->type] : "?");
         }
     }
 

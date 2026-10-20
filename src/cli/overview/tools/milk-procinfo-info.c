@@ -182,8 +182,7 @@ static void print_proc_info(const OV_MODEL *m, int pi)
             {
                 continue;
             }
-            if (m->edges[e].type != OV_EDGE_STREAM_TRIGGERS_PROC &&
-                m->edges[e].type != OV_EDGE_PROC_TRIGGER_STREAM)
+            if (m->edges[e].type != OV_EDGE_STREAM_TRIGGERS_PROC)
             {
                 continue;
             }

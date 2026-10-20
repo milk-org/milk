@@ -33,8 +33,7 @@ typedef struct
     int            src_node;
     int            tgt_node;
     ov_edge_type_t type;
-    char           label[32];
-    int            active;
+    unsigned       evidence; /* OV_EV_* */
 } OV_EDGE;
 
 
@@ -287,7 +286,7 @@ int ov_find_proc_by_pid(const OV_MODEL *model, pid_t pid);
  * @type:  edge type
  * @label: human-readable label
  */
-void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, const char *label);
+void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, unsigned evidence);
 
 /* =========================================================
  * Sorting helpers

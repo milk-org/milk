@@ -256,8 +256,7 @@ void print_stream_info(const OV_MODEL *m, int si)
             {
                 continue;
             }
-            if (m->edges[e].type != OV_EDGE_STREAM_TRIGGERS_PROC &&
-                m->edges[e].type != OV_EDGE_PROC_TRIGGER_STREAM)
+            if (m->edges[e].type != OV_EDGE_STREAM_TRIGGERS_PROC)
             {
                 continue;
             }

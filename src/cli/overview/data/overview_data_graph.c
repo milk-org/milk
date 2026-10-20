@@ -192,20 +192,15 @@ static int edge_match(const void *ctx, int32_t ei)
  * @src:   Source node index
  * @tgt:   Target node index
  * @type:  Relationship edge type
- * @label: Text label for edge
+ * @evidence: where it was seen (OV_EV_*); seeing an existing edge again adds to its evidence
  */
-void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, const char *label)
+void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, unsigned evidence)
 {
     const int k[3] = { src, tgt, (int) type };
     if (src < 0 || tgt < 0 || src == tgt)
     {
         return;
     }
-    if (model->nb_edges >= OV_MAX_EDGES)
-    {
-        return;
-    }
-
     /* Duplicate check: (re)index this model's edges when the array is new or was reset */
     if (model != s_edge_model || s_edge_n > model->nb_edges)
     {
@@ -218,7 +213,13 @@ void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, const c
         const OV_EDGE *x = &model->edges[s_edge_n];
         ov_ix_put(&s_edge_ix, edge_hash(x->src_node, x->tgt_node, (int) x->type), s_edge_n);
     }
-    if (ov_ix_find(&s_edge_ix, edge_hash(src, tgt, (int) type), edge_match, k) >= 0)
+    int dup = ov_ix_find(&s_edge_ix, edge_hash(src, tgt, (int) type), edge_match, k);
+    if (dup >= 0)
+    {
+        model->edges[dup].evidence |= evidence;
+        return;
+    }
+    if (model->nb_edges >= OV_MAX_EDGES)
     {
         return;
     }
@@ -227,9 +228,7 @@ void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, const c
     e->src_node = src;
     e->tgt_node = tgt;
     e->type     = type;
-    e->active   = 1;
-    strncpy(e->label, label, sizeof(e->label) - 1);
-    e->label[sizeof(e->label) - 1] = '\0';
+    e->evidence = evidence;
     model->nb_edges++;
 }
 
@@ -371,7 +370,7 @@ void ov_build_graph(OV_MODEL *model)
             {
                 /* proc → stream (writes) */
                 ov_add_edge(model, model->procs[pi].node_idx, s->node_idx,
-                            OV_EDGE_PROC_WRITES_STREAM, "writes");
+                            OV_EDGE_PROC_WRITES_STREAM, OV_EV_PROCTRACE);
             }
 
             /* Find the trigger stream */
@@ -383,7 +382,7 @@ void ov_build_graph(OV_MODEL *model)
                 {
                     /* stream → proc (triggers) */
                     ov_add_edge(model, model->streams[tsi].node_idx, model->procs[pi].node_idx,
-                                OV_EDGE_STREAM_TRIGGERS_PROC, "triggers");
+                                OV_EDGE_STREAM_TRIGGERS_PROC, OV_EV_PROCTRACE);
                 }
             }
         }
@@ -399,8 +398,19 @@ void ov_build_graph(OV_MODEL *model)
                 {
                     /* stream → proc (reads/inputs) */
                     ov_add_edge(model, s->node_idx, model->procs[rpi].node_idx,
-                                OV_EDGE_STREAM_READ_BY_PROC, "reads");
+                                OV_EDGE_STREAM_READ_BY_PROC, OV_EV_SEM_READ);
                 }
+            }
+        }
+
+        /* Writers that posted the stream's semaphores (semWritePID) */
+        for (int w = 0; w < s->nb_write_pids; w++)
+        {
+            int wpi = ov_find_proc_by_pid(model, s->write_pids[w]);
+            if (wpi >= 0 && model->procs[wpi].node_idx >= 0)
+            {
+                ov_add_edge(model, model->procs[wpi].node_idx, s->node_idx,
+                            OV_EDGE_PROC_WRITES_STREAM, OV_EV_SEM_WRITE);
             }
         }
     }
@@ -422,7 +432,7 @@ void ov_build_graph(OV_MODEL *model)
             if (pi >= 0 && model->procs[pi].node_idx >= 0)
             {
                 ov_add_edge(model, f->node_idx, model->procs[pi].node_idx, OV_EDGE_FPS_RUNS_PROC,
-                            "runs");
+                            OV_EV_FPS_RUNPID);
             }
         }
 
@@ -443,9 +453,7 @@ void ov_build_graph(OV_MODEL *model)
 
             const char *pname = f->stream_param_name[sp];
 
-            /* Skip procinfo trigger stream —
-             * already handled by
-             * PROC_TRIGGER_STREAM edges */
+            /* Skip the procinfo trigger stream parameter: the process trigger edge covers it */
             if (strstr(pname, "procinfo.trigger"))
             {
                 continue;
@@ -455,13 +463,13 @@ void ov_build_graph(OV_MODEL *model)
             {
                 /* FPS → stream (output) */
                 ov_add_edge(model, f->node_idx, model->streams[si].node_idx,
-                            OV_EDGE_FPS_OUTPUT_STREAM, "output");
+                            OV_EDGE_FPS_OUTPUT_STREAM, OV_EV_FPS_PARAM);
             }
             else
             {
                 /* stream → FPS (input) */
                 ov_add_edge(model, model->streams[si].node_idx, f->node_idx,
-                            OV_EDGE_FPS_INPUT_STREAM, "input");
+                            OV_EDGE_FPS_INPUT_STREAM, OV_EV_FPS_PARAM);
             }
         }
     }
@@ -482,7 +490,7 @@ void ov_build_graph(OV_MODEL *model)
             if (si >= 0 && model->streams[si].node_idx >= 0)
             {
                 ov_add_edge(model, model->streams[si].node_idx, p->node_idx,
-                            OV_EDGE_PROC_TRIGGER_STREAM, "trigger");
+                            OV_EDGE_STREAM_TRIGGERS_PROC, OV_EV_PINFO_TRIGGER);
             }
         }
     }

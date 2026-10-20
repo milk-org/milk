@@ -48,10 +48,10 @@ int main(int argc, char *argv[])
         const char *tn =
             (e->tgt_node >= 0 && e->tgt_node < m.nb_nodes) ? m.nodes[e->tgt_node].name : "??";
         const char *tnames[] = {
-            "PROC_WRITES_STREAM", "STREAM_TRIGGERS_PROC", "FPS_RUNS_PROC",       "FPS_INPUT_STREAM",
-            "FPS_OUTPUT_STREAM",  "PROC_TRIGGER_STREAM",  "STREAM_READ_BY_PROC",
+            "PROC_WRITES_STREAM", "STREAM_TRIGGERS_PROC", "FPS_RUNS_PROC",
+            "FPS_INPUT_STREAM",   "FPS_OUTPUT_STREAM",    "STREAM_READ_BY_PROC",
         };
-        const char *tn2 = (e->type <= 6) ? tnames[e->type] : "??";
+        const char *tn2 = (e->type < OV_EDGE_TYPE_COUNT) ? tnames[e->type] : "??";
         printf("  [%2d] %-20s -> %-20s "
                "%s\n",
                i, sn, tn, tn2);
