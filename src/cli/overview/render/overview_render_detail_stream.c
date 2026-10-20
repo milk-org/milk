@@ -383,8 +383,10 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_TITLE);
         H_ov_buf_bold();
-        int n = snprintf(NULL, 0, " Process trace (%d):", s->nb_proctrace);
-        H_ov_buf_printf(" Process trace (%d):", s->nb_proctrace);
+        char e2e[16], head[64];
+        int n = snprintf(head, sizeof(head), " Process trace (%d):  end to end %s", s->nb_proctrace,
+                         ov_fmt_dt_ns(e2e, sizeof(e2e), ov_trace_end_to_end_ns(s)));
+        H_ov_buf_printf("%s", head);
         H_ov_buf_reset_attr();
         H_ov_theme_bg(OV_BG_PANEL);
         H_render_pad_spaces(n, r.width);
@@ -402,10 +404,20 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
             H_ov_buf_pos(row + ri, r.col + 1);
             H_ov_theme_bg(OV_BG_PANEL);
             H_ov_theme_fg(ov_pid_color(s->proctrace_pid[tt]));
-            int n2 = snprintf(NULL, 0, "  PID %d (%s)  mode:%s", (int) s->proctrace_pid[tt], pname,
-                              ov_trigmode_label(s->proctrace_trigmode[tt], 0));
-            H_ov_buf_printf("  PID %d (%s)  mode:%s", (int) s->proctrace_pid[tt], pname,
-                            ov_trigmode_label(s->proctrace_trigmode[tt], 0));
+            OV_HOP hop;
+            char   tc[16], th[16], lag[24] = "";
+            ov_trace_hop(m, s, tt, &hop);
+            if (hop.lag >= 0)
+            {
+                snprintf(lag, sizeof(lag), "  lag %lld", (long long) hop.lag);
+            }
+            char line[256];
+            int  n2 = snprintf(line, sizeof(line), "  PID %d (%s)  mode:%s  exec %s  hand-off %s%s",
+                               (int) s->proctrace_pid[tt], pname,
+                               ov_trigmode_label(s->proctrace_trigmode[tt], 0),
+                               ov_fmt_dt_ns(tc, sizeof(tc), hop.compute_ns),
+                               ov_fmt_dt_ns(th, sizeof(th), hop.handoff_ns), lag);
+            H_ov_buf_printf("%s", line);
             H_render_pad_spaces(n2, r.width);
             if (!skip_draw)
             {

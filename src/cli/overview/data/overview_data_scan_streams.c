@@ -106,6 +106,12 @@ static void scache_rate_update(OV_STREAM *s, int ci)
     }
 }
 
+/** ts_ns - a timespec in nanoseconds (0 stays 0: never set). */
+static int64_t ts_ns(const struct timespec *ts)
+{
+    return (int64_t) ts->tv_sec * 1000000000LL + ts->tv_nsec;
+}
+
 /** live_unique_pids - the live PIDs among @src[0..n), each once, into @dst. Return: how many. */
 static int live_unique_pids(const pid_t *src, int n, pid_t *dst)
 {
@@ -187,11 +193,14 @@ static void fill_stream_from_img(OV_STREAM *s, IMAGE *imgp, const char *name, in
             STREAM_PROC_TRACE *spt = &imgp->streamproctrace[t];
             if (spt->procwrite_PID > 0)
             {
-                int ti                    = s->nb_proctrace;
-                s->proctrace_pid[ti]      = spt->procwrite_PID;
-                s->proctrace_inode[ti]    = spt->trigger_inode;
-                s->proctrace_trigmode[ti] = spt->triggermode;
-                s->proctrace_status[ti]   = spt->triggerstatus;
+                int ti                      = s->nb_proctrace;
+                s->proctrace_pid[ti]        = spt->procwrite_PID;
+                s->proctrace_inode[ti]      = spt->trigger_inode;
+                s->proctrace_trigmode[ti]   = spt->triggermode;
+                s->proctrace_status[ti]     = spt->triggerstatus;
+                s->proctrace_tstart_ns[ti]  = ts_ns(&spt->ts_procstart);
+                s->proctrace_tupdate_ns[ti] = ts_ns(&spt->ts_streamupdate);
+                s->proctrace_cnt0[ti]       = spt->cnt0;
                 s->nb_proctrace++;
             }
         }

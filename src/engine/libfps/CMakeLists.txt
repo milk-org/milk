@@ -263,6 +263,7 @@ add_executable(
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_sort_procs.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_sort_fps.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_sys.c
+  ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_trace.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_sys_proc.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_sys_perf.c)
 target_compile_definitions(milk-fps-info PRIVATE FPS_INFO_CONNECTIONS)

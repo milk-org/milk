@@ -25,6 +25,7 @@ add_library(
   ${OV_DIR}/data/overview_data_sort_procs.c
   ${OV_DIR}/data/overview_data_sort_fps.c
   ${OV_DIR}/data/overview_data_sys.c
+  ${OV_DIR}/data/overview_data_trace.c
   ${OV_DIR}/data/overview_data_sys_proc.c
   ${OV_DIR}/data/overview_data_sys_perf.c
   ${OV_DIR}/data/overview_scan.c

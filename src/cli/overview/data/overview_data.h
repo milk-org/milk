@@ -186,6 +186,17 @@ void ov_build_graph(OV_MODEL *model);
 void ov_model_index(OV_MODEL *model);
 void ov_model_adjacency(OV_MODEL *model);
 
+/* Timing of hop t of a stream's trigger chain (ov_trace_hop); -1 = unknown */
+typedef struct
+{
+    int64_t compute_ns; /* trigger to write, when the process measures timing */
+    int64_t handoff_ns; /* upstream write to this trigger */
+    int64_t lag;        /* frames the trigger stream moved on since the write */
+} OV_HOP;
+
+int     ov_trace_hop(const OV_MODEL *m, const OV_STREAM *s, int t, OV_HOP *h);
+int64_t ov_trace_end_to_end_ns(const OV_STREAM *s);
+
 /* for (int k = OV_ADJ_B(m, out, v); k < OV_ADJ_E(m, out, v); k++) e = &m->edges[m->adj_out[k]]:
  * the edges out of (out) or into (in) node v; an invalid v gives an empty range */
 #define OV_ADJ_OK(m, v) ((v) >= 0 && (v) < (m)->nb_nodes)

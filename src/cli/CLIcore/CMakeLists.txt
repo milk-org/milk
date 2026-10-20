@@ -248,6 +248,7 @@ add_executable(
   ../overview/render/overview_render_tabs.c
   ../overview/render/overview_render_subtabs.c
   ../overview/render/overview_render_derived.c
+  ../overview/render/overview_render_units.c
   ../overview/render/overview_render_popup.c
   ../overview/render/overview_render_sync.c
   ../overview/render/overview_render_status.c

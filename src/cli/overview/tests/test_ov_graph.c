@@ -121,10 +121,43 @@ static void test_adjacency(void)
     CHECK(OV_ADJ_B(&m, out, -1) == OV_ADJ_E(&m, out, -1)); /* an invalid node has no edges */
 }
 
+/* Trigger-chain timing: compute only for processes measuring timing, hand-off, lag, end to end (links-13) */
+static void test_trace_timing(void)
+{
+    static OV_MODEL m;
+    memset(&m, 0, sizeof(m));
+    int a                                        = stream(&m, "a", 21);
+    int b                                        = stream(&m, "b", 22);
+    m.streams[a].cnt0                            = 100;
+    OV_STREAM *s                                 = &m.streams[b];
+    s->nb_proctrace                              = 2;
+    s->proctrace_pid[0]                          = 600; /* wrote b, triggered by a */
+    s->proctrace_inode[0]                        = 21;
+    s->proctrace_cnt0[0]                         = 97;
+    s->proctrace_tstart_ns[0]                    = 1000000;
+    s->proctrace_tupdate_ns[0]                   = 1250000;
+    s->proctrace_pid[1]                          = 601; /* wrote a */
+    s->proctrace_tstart_ns[1]                    = 500000;
+    s->proctrace_tupdate_ns[1]                   = 900000;
+    m.procs[proc(&m, "p600", 600)].MeasureTiming = 1;
+    proc(&m, "p601", 601);
+    ov_model_index(&m);
+
+    OV_HOP h;
+    CHECK(ov_trace_hop(&m, s, 0, &h) == 0);
+    CHECK(h.compute_ns == 250000 && h.handoff_ns == 100000 && h.lag == 3);
+    CHECK(ov_trace_hop(&m, s, 1, &h) == 0);
+    CHECK(h.compute_ns == -1 && h.handoff_ns == -1 &&
+          h.lag == -1); /* no timing, no upstream, no inode */
+    CHECK(ov_trace_hop(&m, s, 2, &h) == -1);
+    CHECK(ov_trace_end_to_end_ns(s) == 750000);
+}
+
 int main(void)
 {
     test_edge_evidence();
     test_adjacency();
+    test_trace_timing();
     if (failures == 0)
     {
         printf("all ok\n");

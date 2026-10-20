@@ -178,6 +178,10 @@ typedef struct
     ino_t proctrace_inode[IMAGE_NB_PROCTRACE];
     int   proctrace_trigmode[IMAGE_NB_PROCTRACE];
     int   proctrace_status[IMAGE_NB_PROCTRACE];
+    int64_t
+        proctrace_tstart_ns[IMAGE_NB_PROCTRACE]; /**< hop triggered (CLOCK_MILK ns), 0 = unknown */
+    int64_t  proctrace_tupdate_ns[IMAGE_NB_PROCTRACE]; /**< hop wrote its output (CLOCK_MILK ns) */
+    uint64_t proctrace_cnt0[IMAGE_NB_PROCTRACE]; /**< the hop's trigger stream cnt0 at that write */
 
     /* static string cache */
     char size_str[32];

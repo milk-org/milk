@@ -468,6 +468,28 @@ static void test_derived_and_related(void)
     CHECK(bget(rel.fps, 0) && bget(rel.fps_writes, 0)); /* sout -> pw -> fw */
 }
 
+/* Durations keep at most 7 columns */
+static void test_fmt_dt(void)
+{
+    static const struct
+    {
+        int64_t     ns;
+        const char *want;
+    } g[] = { { -1, "-" },
+              { 850, "850ns" },
+              { 12345, "12.3us" },
+              { 1250000, "1.25ms" },
+              { 999000000, "999ms" },
+              { 2400000000LL, "2.40s" },
+              { 123456789000LL, "123s" } };
+    char buf[16];
+    for (size_t i = 0; i < sizeof(g) / sizeof(g[0]); i++)
+    {
+        CHECK(strcmp(ov_fmt_dt_ns(buf, sizeof(buf), g[i].ns), g[i].want) == 0);
+        CHECK(strlen(buf) <= 7);
+    }
+}
+
 int main(void)
 {
     test_sort_does_not_touch_model();
@@ -482,6 +504,7 @@ int main(void)
     test_keymap();
     test_key_dispatch();
     test_derived_and_related();
+    test_fmt_dt();
     if (failures == 0)
     {
         printf("all ok\n");
