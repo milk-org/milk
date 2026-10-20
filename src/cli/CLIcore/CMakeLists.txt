@@ -299,6 +299,7 @@ add_executable(
   ../overview/input/overview_input_mouse_panels.c
   ../overview/input/overview_input_nav.c
   ../overview/input/overview_input_subtab.c
+  ../overview/input/overview_input_keys.c
   ../overview/input/overview_input_nav_fps.c
   ../overview/input/overview_input_nav_lineage.c
   ../overview/input/overview_input_sort_keys.c

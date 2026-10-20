@@ -202,59 +202,11 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 0;
     }
 
-    /* 4. Global quit */
-    if (key == 'q' || key == 'x' || key == 3 || key == ctrl('c') || key == 4 || key == ctrl('d') ||
-        key == 24 || key == ctrl('x') || key == 17 || key == ctrl('q'))
+    /* 4. Global keys: quit, command log, CONTROL mode, hover, help */
+    int global = ov_input__handle_global_keys(key, lay, m);
+    if (global != 0)
     {
-        return 1;
-    }
-
-    /* 5. Command log panel toggle — 'G' */
-    if (key == 'G')
-    {
-        if (lay->cmdlog_rows > 0)
-        {
-            lay->cmdlog_rows = 0;
-        }
-        else
-        {
-            lay->cmdlog_rows = 4;
-        }
-        ov_buf_force_clear();
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Command log %s",
-                       lay->cmdlog_rows > 0 ? "shown" : "hidden");
-        return 0;
-    }
-
-    /* 6. Control mode toggle — 'c' */
-    if (key == 'c')
-    {
-        lay->ctrl_mode = !lay->ctrl_mode;
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Control mode %s",
-                       lay->ctrl_mode ? "ON" : "OFF");
-        return 0;
-    }
-
-    /* 7. Mouse hover toggle — 'm' */
-    if (key == 'm')
-    {
-        lay->mouse_hover = !lay->mouse_hover;
-        ov_set_mouse_hover(lay->mouse_hover);
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Mouse hover %s",
-                       lay->mouse_hover ? "ON" : "OFF");
-        if (lay->mouse_hover)
-        {
-            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
-                           "Warning: Hover uses extra CPU on slow connections");
-        }
-        return 0;
-    }
-
-    /* 8. Help toggle — 'h' */
-    if (key == 'h')
-    {
-        ov_help_open(lay);
-        return 0;
+        return global == OV_KEY_QUIT;
     }
     int mouse_res = ov_input__handle_mouse(key, lay, m);
     if (mouse_res == 2)

@@ -28,6 +28,18 @@ def test_h_toggles_help(milkctrl):
     assert m.quit() == 0
 
 
+def test_f1_opens_help(milkctrl):
+    """F1 is a help key (it used to log "Unmapped key")."""
+    m = milkctrl(y=40)
+    m.wait_for(r"F2:DASH")
+    m.keys("F1")
+    m.wait_for(r"HELP & CONTROLS")
+    assert "Unmapped" not in m.screen()
+    m.keys("h")
+    _gone(m, "HELP & CONTROLS")
+    assert m.quit() == 0
+
+
 def test_question_mark_opens_jump_prompt(milkctrl):
     m = milkctrl(y=40)
     m.wait_for(r"F2:DASH")
@@ -65,4 +77,21 @@ def test_status_labels_match_tabs(milkctrl):
     assert "[LOOPS]" not in m.status()  # no graph panel in F3
     assert " p c " not in m.status()
     assert re.search(r"self\s+\d+\.\d%", m.header())
+    assert m.quit() == 0
+
+
+def test_toggle_keys_still_act(milkctrl):
+    """Keys moved to binding tables keep their effect: compact, pause, CONTROL, G hides the log."""
+    m = milkctrl(y=40)
+    m.wait_for(r"F2:DASH")
+    m.keys("d")
+    m.wait_for(r"Compact mode ON")
+    m.keys("F")
+    m.wait_for(r"Display paused")
+    m.keys("F")
+    m.wait_for(r"Display resumed")
+    m.keys("c")
+    m.wait_for(r"Control mode ON")
+    m.keys("G")
+    _gone(m, "Control mode ON")
     assert m.quit() == 0

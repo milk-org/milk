@@ -35,6 +35,8 @@
 #include "fps_WriteParameterToDisk.h"
 #include "fps_save2disk.h"
 
+#include "overview_input_keys.h"
+
 #define INSIDE(R, MR, MC)                                                 \
     ((MR) >= (R).row && (MR) < (R).row + (R).height && (MC) >= (R).col && \
      (MC) < (R).col + (R).width)
@@ -76,6 +78,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
 /* View switching, sorting, highlights, and toggles */
 int ov_input__handle_view_switch(int key, OV_LAYOUT *lay);
 int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m);
+int ov_input__handle_global_keys(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 int ov_input__handle_column_highlights(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 int ov_input__handle_sorting(int key, OV_LAYOUT *lay);
 
