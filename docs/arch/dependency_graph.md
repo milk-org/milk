@@ -55,6 +55,8 @@ graph TD
     FPSCTRL["milk-fpsCTRL"]:::exe
     PROCCTRL["milk-procCTRL"]:::exe
     STREAMCTRL["milk-streamCTRL"]:::exe
+    MILKCTRLMODEL["milkctrl_model"]:::fw
+    MILKCTRL["milk-CTRL"]:::exe
     MILKEXE["milk-fpsexec-*"]:::exe
     CACAOEXE["cacao-fpsexec-*"]:::exe
     FPSTOOLS["milk-fps-set/list/..."]:::exe
@@ -75,6 +77,7 @@ graph TD
     ARITH -.->|USE_CFITSIO| IOFITS
     ARITH -.->|USE_CFITSIO| CFITSIO
     MEMORY --> FPS
+    MEMORY --> MILKDATA
     MEMORY -.->|USE_CFITSIO| IOFITS
     MEMORY -.->|USE_CFITSIO| CFITSIO
     TOOLS --> FPS
@@ -104,6 +107,10 @@ graph TD
     PROCCTRL --> ISIO
     STREAMCTRL --> PROCINFO
     STREAMCTRL --> ISIO
+    MILKCTRLMODEL --> FPS
+    MILKCTRLMODEL --> PROCINFO
+    MILKCTRLMODEL --> ISIO
+    MILKCTRL --> MILKCTRLMODEL
     MILKEXE --> FPSSTANDALONE
     CACAOEXE --> FPSSTANDALONE
     FPSTOOLS --> FPSSTANDALONE
@@ -367,7 +374,7 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 | Target            | Links to         | Conditional                          |
 | ----------------- | ---------------- | ------------------------------------ |
 | milkCOREMODtools  | milkfps          |                                      |
-| milkCOREMODmemory | milkfps          | cfitsio (USE_CFITSIO)                |
+| milkCOREMODmemory | milkfps, milkdata | cfitsio (USE_CFITSIO)                |
 | milkCOREMODarith  | milkfps          | COREMODiofits, cfitsio (USE_CFITSIO) |
 | milkCOREMODiofits | milkfps, cfitsio | _only built with USE_CFITSIO_        |
 
@@ -422,6 +429,7 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 | milk-fpsCTRL                 | milkfpsseq, milkfps, milkprocessinfo, ImageStreamIO |
 | milk-procCTRL                | milkprocessinfo, ImageStreamIO                      |
 | milk-streamCTRL              | ImageStreamIO, milkprocessinfo                      |
+| milk-CTRL                    | milkctrl_model (milkfps, milkprocessinfo, ImageStreamIO) |
 | milk-fps-list/search/info/rm | milkfpsStandalone (transitively: milkfps, milkdata) |
 | milk-fps-set/track           | milkfpsStandalone                                   |
 | milk-fps-conf*/run*          | milkfpsStandalone                                   |

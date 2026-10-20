@@ -33,12 +33,11 @@ endif()
 target_include_directories(
   ${LIBNAME}
   PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
          $<INSTALL_INTERFACE:include>)
 target_link_libraries(
   ${LIBNAME}
   PUBLIC
-    m ${CFITSIO_LIBRARIES} milkfps
+    m ${CFITSIO_LIBRARIES} milkfps milkdata
     $<$<AND:$<BOOL:${USE_CFITSIO}>,$<BOOL:${CFITSIO_FOUND}>>:milkCOREMODiofits>)
 
 set(SCRIPTS

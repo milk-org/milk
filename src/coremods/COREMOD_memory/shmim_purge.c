@@ -18,9 +18,7 @@
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#ifndef MILK_NO_CLI
-#    include "streamCTRL_find_streams.h"
-#endif
+#include "milkdata_streamlist.h"
 
 #include "image_ID.h"
 #include "read_shmim.h"
@@ -63,46 +61,49 @@ static char stringfilter[FUNCTION_PARAMETER_STRMAXLEN] = "";
 errno_t shmim_purge(const char *strfilter)
 {
 #ifdef MILK_NO_CLI
-    /* STREAMINFO and find_streams require
-     * CLI/TUI headers not available in
-     * standalone builds.
-     */
     (void) strfilter;
     printf("shmim_purge: not available in "
            "standalone mode\n");
     return RETURN_SUCCESS;
 #else
-    int         NBstreamMAX = 10000;
-    STREAMINFO *streaminfo;
-
+    int              cap = 10000;
+    MILK_STREAM_ENT *ent = (MILK_STREAM_ENT *) calloc(cap, sizeof(MILK_STREAM_ENT));
+    if (ent == NULL)
+    {
+        FUNC_RETURN_FAILURE("calloc failed");
+    }
     DEBUG_TRACEPOINT("Searching for streams");
-    streaminfo   = (STREAMINFO *) calloc(NBstreamMAX, sizeof(STREAMINFO));
-    int NBstream = find_streams(streaminfo, 1, strfilter);
-    printf("%d stream(s) found\n", NBstream);
+    int NBstream = milk_stream_list(NULL, strfilter, ent, cap);
+    NBstream     = (NBstream > cap) ? cap : NBstream;
+    printf("%d stream(s) found\n", (NBstream > 0) ? NBstream : 0);
 
     DEBUG_TRACEPOINT("scanning %d streams for purging", NBstream);
     for (int sindex = 0; sindex < NBstream; sindex++)
     {
-        printf(" STREAM %3d   %s\n", sindex, streaminfo[sindex].sname);
-        IMGID img = imgid_make_from_name(streaminfo[sindex].sname);
+        if (ent[sindex].broken)
+        {
+            continue; /* a dangling link has no image to check */
+        }
+        printf(" STREAM %3d   %s\n", sindex, ent[sindex].name);
+        IMGID img = imgid_make_from_name(ent[sindex].name);
         resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
         if (img.ID == -1)
         {
-            imageID fid = read_sharedmem_image(streaminfo[sindex].sname, dcimg, dcnimg);
+            imageID fid = read_sharedmem_image(ent[sindex].name, dcimg, dcnimg);
             if (fid == -1)
             {
-                printf("Failed to load stream %s\n", streaminfo[sindex].sname);
+                printf("Failed to load stream %s\n", ent[sindex].name);
                 continue;
             }
 
             resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
             if (img.ID == -1 || img.im == NULL)
             {
-                printf("Failed to resolve stream %s after load\n", streaminfo[sindex].sname);
+                printf("Failed to resolve stream %s after load\n", ent[sindex].name);
                 continue;
             }
         }
-        DEBUG_TRACEPOINT("stream %s loaded ID %ld", streaminfo[sindex].sname, (long) img.ID);
+        DEBUG_TRACEPOINT("stream %s loaded ID %ld", ent[sindex].name, (long) img.ID);
 
         pid_t opid;
         opid = img.im->md[0].ownerPID;
@@ -113,22 +114,22 @@ errno_t shmim_purge(const char *strfilter)
         {
             if (getpgid(opid) >= 0)
             {
-                printf("Keeping stream %s\n", streaminfo[sindex].sname);
+                printf("Keeping stream %s\n", ent[sindex].name);
             }
             else
             {
-                printf("Purging stream %s\n", streaminfo[sindex].sname);
+                printf("Purging stream %s\n", ent[sindex].name);
                 ImageStreamIO_destroyIm(img.im);
             }
         }
         else
         {
-            printf("Purging stream %s\n", streaminfo[sindex].sname);
+            printf("Purging stream %s\n", ent[sindex].name);
             ImageStreamIO_destroyIm(img.im);
         }
     }
 
-    free(streaminfo);
+    free(ent);
 
     return RETURN_SUCCESS;
 #endif /* MILK_NO_CLI */

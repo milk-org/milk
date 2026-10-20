@@ -19,14 +19,6 @@ __attribute__((weak)) void cli_history_save(void)
 
 __attribute__((weak)) DATA data;
 
-__attribute__((weak)) int find_streams(void *streaminfo, int filter, const char *namefilter)
-{
-    (void) streaminfo;
-    (void) filter;
-    (void) namefilter;
-    return 0;
-}
-
 __attribute__((weak)) int cli_is_command(const char *word)
 {
     (void) word;

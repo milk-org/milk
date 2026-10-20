@@ -269,7 +269,6 @@ else()
   # Provide CLI header paths so modules can find CLIcore.h (which redirects to
   # standalone stubs)
   include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL
@@ -301,7 +300,6 @@ else()
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/libmilkscript/core>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL>

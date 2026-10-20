@@ -123,7 +123,6 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
          $<INSTALL_INTERFACE:include/${SRCNAME}>)
 
 set_target_properties(milkscript PROPERTIES INSTALL_RPATH "$ORIGIN")
