@@ -89,7 +89,7 @@ void ov_buf_append(const char *data, int len)
 }
 
 /**
- * ov_buf_flush_internal - Flush accumulated screen output buffer to stdout
+ * ov_buf_flush_internal - Flush accumulated screen output buffer to the terminal
  */
 void ov_buf_flush_internal(void)
 {
@@ -98,8 +98,8 @@ void ov_buf_flush_internal(void)
         int written = 0;
         while (written < ov__screenbuf_len)
         {
-            ssize_t ret = write(STDOUT_FILENO, ov__screenbuf + written,
-                                (size_t) (ov__screenbuf_len - written));
+            ssize_t ret =
+                write(ov__tty_fd, ov__screenbuf + written, (size_t) (ov__screenbuf_len - written));
             if (ret < 0)
             {
                 if (errno == EINTR)
@@ -109,7 +109,7 @@ void ov_buf_flush_internal(void)
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
                 {
                     struct pollfd pfd;
-                    pfd.fd     = STDOUT_FILENO;
+                    pfd.fd     = ov__tty_fd;
                     pfd.events = POLLOUT;
                     poll(&pfd, 1, 100);
                     continue;
@@ -183,6 +183,13 @@ void ov_buf_append_cluster(const char *utf8_seq, int bytes, int width)
         if (bytes >= (int) sizeof(cell->ch))
         {
             bytes = (int) sizeof(cell->ch) - 1;
+        }
+        unsigned char b0 = (unsigned char) utf8_seq[0];
+        if ((b0 < 0x20 || b0 >= 0x7F) && !ov_utf8_cluster_printable(utf8_seq, bytes))
+        {
+            utf8_seq = "?"; /* never emit control bytes or broken UTF-8 taken from shm strings */
+            bytes    = 1;
+            width    = 1;
         }
         memset(cell->ch, 0, sizeof(cell->ch));
         memcpy(cell->ch, utf8_seq, (size_t) bytes);

@@ -101,6 +101,7 @@ typedef struct
 } OV_CMDLOG;
 
 void ov_cmdlog_push(OV_CMDLOG *log, ov_cmdlog_level_t level, const char *fmt, ...);
+int  ov_cmdlog_drain_fd(OV_CMDLOG *log, int fd);
 
 /* Layout state */
 typedef struct

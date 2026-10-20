@@ -86,9 +86,9 @@ extern int      ov_hover_col;
  * Terminal state
  * ========================================================= */
 
-extern struct termios ov__orig_termios;
-extern int            ov__orig_flags;
-extern int            ov__raw_active;
+extern struct termios        ov__orig_termios;
+extern volatile sig_atomic_t ov__raw_active;
+extern int                   ov__tty_fd;
 
 
 /* =========================================================
@@ -97,6 +97,9 @@ extern int            ov__raw_active;
 
 void ov_raw_mode_enter(void);
 void ov_raw_mode_exit(void);
+void ov_term_restore_async(void);
+int  ov_term_capture_fd(void);
+int  ov_term_init_locale(void);
 void ov_set_mouse_hover(int enable);
 void ov_get_terminal_size(int *rows, int *cols);
 
@@ -111,6 +114,8 @@ int  utf8_char_length(unsigned char c);
 int  ov_utf8_decode(const char *s, int len, uint32_t *cp);
 int  ov_utf8_next_cluster(const char *s, int max_len, int *bytes_out, int *width_out);
 int  ov_str_display_width(const char *s);
+int  ov_utf8_cluster_printable(const char *s, int bytes);
+void ov_str_sanitize(char *s);
 void ov_buf_append_cluster(const char *utf8_seq, int bytes, int width);
 void ov_buf_append_char(const char *utf8_seq, int bytes);
 void ov_buf_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));

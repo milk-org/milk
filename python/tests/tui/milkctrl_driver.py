@@ -2,8 +2,17 @@
 
 from __future__ import annotations
 
+import fcntl
+import os
+import pty
 import re
+import resource
+import select
 import shlex
+import signal
+import struct
+import subprocess
+import termios
 import time
 import uuid
 
@@ -109,3 +118,83 @@ class MilkCtrl(TuiPane):
     def status(self) -> str:
         lines = [ln for ln in self.lines() if ln.strip()]
         return lines[-1] if lines else ""
+
+
+class PtyRun:
+    """A TUI on a pty we own: keeps the slave fd so termios and O_NONBLOCK can be checked after exit."""
+
+    def __init__(
+        self, argv: list[str], env: dict[str, str], rows: int = 50, cols: int = 160
+    ):
+        self.master, self.slave = pty.openpty()
+        fcntl.ioctl(
+            self.slave, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0)
+        )
+        self.orig_attr = termios.tcgetattr(self.slave)
+        self.orig_flags = fcntl.fcntl(self.slave, fcntl.F_GETFL)
+        self.out = b""
+
+        def pre():
+            fcntl.ioctl(0, termios.TIOCSCTTY, 0)
+            resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+
+        self.proc = subprocess.Popen(
+            argv,
+            env=env,
+            stdin=self.slave,
+            stdout=self.slave,
+            stderr=self.slave,
+            start_new_session=True,
+            preexec_fn=pre,
+        )
+
+    def _pump(self, timeout: float) -> None:
+        r, _, _ = select.select([self.master], [], [], timeout)
+        if r:
+            try:
+                self.out += os.read(self.master, 65536)
+            except OSError:
+                pass
+
+    def read_until(self, pattern: bytes, timeout: float = 8.0) -> None:
+        deadline = time.monotonic() + timeout
+        while re.search(pattern, self.out) is None:
+            if time.monotonic() > deadline:
+                raise AssertionError(
+                    f"timeout waiting for {pattern!r}; got {self.out[-400:]!r}"
+                )
+            self._pump(0.05)
+
+    def write(self, data: bytes) -> None:
+        os.write(self.master, data)
+
+    def wait(self, timeout: float = 8.0) -> int:
+        deadline = time.monotonic() + timeout
+        while self.proc.poll() is None:
+            if time.monotonic() > deadline:
+                raise AssertionError("process did not exit")
+            self._pump(0.05)
+        self._pump(0.05)
+        return self.proc.returncode
+
+    def tty_restored(self) -> bool:
+        """Canonical mode and echo are back, and stdin is blocking again."""
+        attr = termios.tcgetattr(self.slave)
+        flags = fcntl.fcntl(self.slave, fcntl.F_GETFL)
+        lflag_ok = (attr[3] & (termios.ICANON | termios.ECHO)) == (
+            self.orig_attr[3] & (termios.ICANON | termios.ECHO)
+        )
+        return lflag_ok and not (flags & os.O_NONBLOCK)
+
+    def close(self) -> None:
+        if self.proc.poll() is None:
+            try:
+                os.killpg(self.proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            self.proc.wait(timeout=5)
+        for fd in (self.master, self.slave):
+            try:
+                os.close(fd)
+            except OSError:
+                pass

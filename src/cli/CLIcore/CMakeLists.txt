@@ -456,3 +456,15 @@ add_test(NAME milklistim COMMAND milk-exec "mem.listim")
 set_property(TEST milklistim PROPERTY LABELS "CLI")
 set_tests_properties(milklistim PROPERTIES TIMEOUT 1)
 set_property(TEST milklistim PROPERTY PASS_REGULAR_EXPRESSION "0 image")
+
+# milk-CTRL unit tests (not installed)
+if(BUILD_TESTING)
+  add_executable(
+    milkctrl-unit-ansi
+    ../overview/tests/test_ov_ansi.c ../overview/ansi/overview_ansi_term.c
+    ../overview/ansi/overview_ansi_buf.c ../overview/ansi/overview_ansi_delta.c
+    ../overview/ansi/overview_ansi_utf8.c ../overview/ansi/overview_ansi_key.c)
+  target_include_directories(milkctrl-unit-ansi
+                             PRIVATE ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi)
+  add_test(NAME milkctrl_unit_ansi COMMAND milkctrl-unit-ansi)
+endif()

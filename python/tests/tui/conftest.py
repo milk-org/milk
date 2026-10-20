@@ -6,6 +6,7 @@ server, so nothing reaches the user's shm, history files or tmux sessions.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 import uuid
@@ -15,7 +16,7 @@ import pytest
 
 from tests.cli.bash_integration_test import _install_dir, _isolated_shm_env
 from tests.tui.entities import Entities
-from tests.tui.milkctrl_driver import MilkCtrl, TuiPane
+from tests.tui.milkctrl_driver import MilkCtrl, PtyRun, TuiPane
 
 libtmux = pytest.importorskip("libtmux")
 
@@ -114,3 +115,27 @@ def legacy_pane(tui_env, tmux_server):
     yield launch
     for p in panes:
         p.kill()
+
+
+@pytest.fixture
+def milkctrl_pty(tui_env):
+    """Context-manager factory: with milkctrl_pty(*args) as run: ... (byte-level and tty-state checks)."""
+    env, _ = tui_env
+
+    @contextlib.contextmanager
+    def start(
+        *args: str,
+        rows: int = 50,
+        cols: int = 160,
+        env_extra: dict[str, str] | None = None,
+    ):
+        e = dict(env)
+        if env_extra:
+            e.update(env_extra)
+        run = PtyRun([str(_install_dir() / "bin" / "milk-CTRL"), *args], e, rows, cols)
+        try:
+            yield run
+        finally:
+            run.close()
+
+    return start

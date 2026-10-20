@@ -67,26 +67,12 @@ static void handle_sigterm(int sig)
 }
 
 /**
- * crash_handler - Crash signal handler for milkCTRL
+ * crash_handler - restore the terminal on a fatal signal, then re-raise it with the default action.
  * @sig: Signal number
- *
- * Captures SIGSEGV/SIGABRT, restores terminal,
- * and prints a diagnostic message.
  */
 static void crash_handler(int sig)
 {
-    static const char reset[] = "\033[?1049l\033[?25h\033[0m\n";
-    if (write(STDERR_FILENO, reset, sizeof(reset) - 1) < 0)
-    {
-    }
-    if (ov__raw_active)
-    {
-        if (ov__orig_flags >= 0)
-        {
-            fcntl(STDIN_FILENO, F_SETFL, ov__orig_flags);
-        }
-        tcsetattr(STDIN_FILENO, TCSAFLUSH, &ov__orig_termios);
-    }
+    ov_term_restore_async();
     struct sigaction sa;
     sa.sa_handler = SIG_DFL;
     sigemptyset(&sa.sa_mask);
@@ -136,6 +122,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "%s: interactive terminal required on stdin.\n", argv[0]);
         return 1;
     }
+    int utf8_locale = ov_term_init_locale();
 
     /* --- Install signal handlers --- */
     {
@@ -147,11 +134,16 @@ int main(int argc, char *argv[])
 
         sa.sa_handler = handle_sigterm;
         sigaction(SIGTERM, &sa, NULL);
+        sigaction(SIGHUP, &sa, NULL);
 
+        static const int fatal_sigs[] = {
+            SIGSEGV, SIGBUS, SIGABRT, SIGFPE, SIGILL, SIGQUIT, SIGPIPE
+        };
         sa.sa_handler = crash_handler;
-        sigaction(SIGSEGV, &sa, NULL);
-        sigaction(SIGBUS, &sa, NULL);
-        sigaction(SIGABRT, &sa, NULL);
+        for (size_t i = 0; i < sizeof(fatal_sigs) / sizeof(fatal_sigs[0]); i++)
+        {
+            sigaction(fatal_sigs[i], &sa, NULL);
+        }
     }
 
     /* --- Detect color level --- */
@@ -214,6 +206,11 @@ int main(int argc, char *argv[])
     lay.dash_split_h_dragging = 0;
 
     ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO, "Shared memory directory: %s", ov_get_shmdir());
+    if (!utf8_locale)
+    {
+        ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_WARN,
+                       "Locale is not UTF-8: glyphs may be garbled; widths use C.UTF-8");
+    }
     if (theme_rc < 0)
     {
         ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_WARN,
@@ -225,7 +222,7 @@ int main(int argc, char *argv[])
     /* Clear screen once on startup */
     {
         const char cls[] = "\033[2J\033[H";
-        if (write(STDOUT_FILENO, cls, sizeof(cls) - 1) < 0)
+        if (write(ov__tty_fd, cls, sizeof(cls) - 1) < 0)
         {
         }
     }
@@ -248,7 +245,7 @@ int main(int argc, char *argv[])
             {
                 /* Size changed, force clear */
                 const char cls[] = "\033[2J\033[H";
-                if (write(STDOUT_FILENO, cls, sizeof(cls) - 1) < 0)
+                if (write(ov__tty_fd, cls, sizeof(cls) - 1) < 0)
                 {
                 }
             }
@@ -298,6 +295,13 @@ int main(int argc, char *argv[])
             {
                 break;
             }
+        }
+
+        /* Library output captured from fds 1/2 goes to the command log */
+        fflush(stdout);
+        if (ov_cmdlog_drain_fd(&lay.cmdlog, ov_term_capture_fd()) > 0)
+        {
+            need_render = 1;
         }
 
         /* Check if theme selector popup timed out (1s inactivity) */
@@ -362,9 +366,10 @@ int main(int argc, char *argv[])
         }
     }
 
-    /* --- Cleanup --- */
-    ov_scan_stop();
+    /* --- Cleanup: restore the tty first; a second Ctrl-C then kills a stuck scan join --- */
     ov_raw_mode_exit();
+    signal(SIGINT, SIG_DFL);
+    ov_scan_stop();
 
     return 0;
 }

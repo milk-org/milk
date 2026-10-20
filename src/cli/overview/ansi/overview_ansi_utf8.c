@@ -177,3 +177,72 @@ int ov_str_display_width(const char *s)
     }
     return total_w;
 }
+
+/**
+ * ov_utf8_cluster_printable - 1 if @s[0..@bytes) is well-formed UTF-8 with no C0, DEL or C1 control.
+ */
+int ov_utf8_cluster_printable(const char *s, int bytes)
+{
+    int i = 0;
+    while (i < bytes)
+    {
+        unsigned char c = (unsigned char) s[i];
+        int           n;
+        if (c >= 0x20 && c < 0x7F)
+        {
+            n = 1;
+        }
+        else if (c >= 0xC2 && c <= 0xDF)
+        {
+            n = 2;
+        }
+        else if (c >= 0xE0 && c <= 0xEF)
+        {
+            n = 3;
+        }
+        else if (c >= 0xF0 && c <= 0xF4)
+        {
+            n = 4;
+        }
+        else
+        {
+            return 0;
+        }
+        if (i + n > bytes)
+        {
+            return 0;
+        }
+        for (int k = 1; k < n; k++)
+        {
+            if ((((unsigned char) s[i + k]) & 0xC0) != 0x80)
+            {
+                return 0;
+            }
+        }
+        if (c == 0xC2 && (unsigned char) s[i + 1] < 0xA0) /* C1 controls U+0080..U+009F */
+        {
+            return 0;
+        }
+        i += n;
+    }
+    return bytes > 0;
+}
+
+/**
+ * ov_str_sanitize - replace in place each byte of invalid UTF-8 or of a control character with '?'.
+ */
+void ov_str_sanitize(char *s)
+{
+    int len = (int) strlen(s);
+    int i   = 0;
+    while (i < len)
+    {
+        int n = utf8_char_length((unsigned char) s[i]);
+        if (i + n > len || !ov_utf8_cluster_printable(s + i, n))
+        {
+            s[i++] = '?';
+            continue;
+        }
+        i += n;
+    }
+}
