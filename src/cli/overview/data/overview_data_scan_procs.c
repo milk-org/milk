@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "overview_data_internal.h"
+#include "processinfo_timing.h"
 
 #define OV_PLIST_FULL_WALK_S \
     30.0 /* full registry walk period (s); in between, up to the last slot in use */
@@ -159,8 +160,18 @@ static void fill_proc(OV_MODEL *model, const PROCESSINFOLIST *pl, long i, int al
         p->loopcnt    = pinfo->loopcnt;
         p->mem_rss_kb = pid_get_rss_kb(pinfo->PID);
 
+        /* Medians from the process's timing ring: no procCTRL-scan needed (it may also write dtmedian_*) */
         p->dtmedian_iter_ns = pinfo->dtmedian_iter_ns;
         p->dtmedian_exec_ns = pinfo->dtmedian_exec_ns;
+        if (pinfo->MeasureTiming && p->active)
+        {
+            int64_t iter_ns, exec_ns;
+            if (processinfo_timing_median(pinfo, &iter_ns, &exec_ns) > 0)
+            {
+                p->dtmedian_iter_ns = iter_ns;
+                p->dtmedian_exec_ns = exec_ns;
+            }
+        }
 
         strncpy(p->trigstreamname, pinfo->triggerstreamname, sizeof(p->trigstreamname) - 1);
         p->triggermode         = pinfo->triggermode;

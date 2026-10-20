@@ -14,6 +14,7 @@ set(SOURCES
     processinfo_shm_create.c
     processinfo_shm_link.c
     processinfo_shm_list_create.c
+    processinfo_timing.c
     processinfo_SIGexit.c
     processinfo_signals.c
     processinfo_update_output_stream.c
