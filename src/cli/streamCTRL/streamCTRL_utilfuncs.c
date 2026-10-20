@@ -30,11 +30,7 @@ imageID image_ID_from_images(IMAGE *images, const char *__restrict name)
             if ((strncmp(name, images[i].name, strlen(name)) == 0) &&
                 (images[i].name[strlen(name)] == '\0'))
             {
-                if (images[i].md != NULL)
-                {
-                    clock_gettime(CLOCK_MILK, &images[i].md->lastaccesstime);
-                }
-                return i;
+                return i; /* read-only lookup: never stamps the stream's metadata */
             }
         }
         i++;

@@ -24,3 +24,15 @@ def test_holder_scan_runs_no_shell(legacy_pane, entities, tmp_path):
     assert p.alive()
     p.keys("x")
     assert p.exit_code() == 0
+
+
+def test_viewing_does_not_write_streams(legacy_pane, entities):
+    """The scan used to stamp md->lastaccesstime into every stream at 10 Hz (sctl-d11)."""
+    path = entities.make_stream("watched")
+    before = path.read_bytes()
+    p = legacy_pane("milk-streamCTRL")
+    p.wait_for(r"watched")
+    time.sleep(1.5)
+    assert path.read_bytes() == before
+    p.keys("x")
+    assert p.exit_code() == 0

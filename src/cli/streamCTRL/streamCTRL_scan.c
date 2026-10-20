@@ -123,11 +123,10 @@ void *streamCTRL_scan(void *argptr)
         // look for streams on filesystem
         // NBsindex is total nymber of streams found
         //
+        pthread_mutex_lock(&streamCTRLdata->lock); /* until the stale IDs are removed */
         NBsindex = find_streams(streaminfo, streaminfoproc->filter, streaminfoproc->namefilter);
 
-        /* Publish immediately: TUI can render stream names right away.
-         * IDs from the previous scan are still valid for already-open
-         * streams; new entries have ID=-1 from init and show as
+        /* Publish now, under the lock: entries not yet connected keep ID=-1 and show as
          * "connecting" until the loop below sets them. */
         streaminfoproc->NBstream = NBsindex;
 
@@ -184,7 +183,8 @@ void *streamCTRL_scan(void *argptr)
                                    ID);*/
 
             // Check if the inode exists but has been externally overwritten
-            if (ID != -1 && ImageStreamIO_check_image_inode(&images[ID]) == IMAGESTREAMIO_INODE)
+            if (ID != -1 && images[ID].md != NULL &&
+                ImageStreamIO_check_image_inode(&images[ID]) == IMAGESTREAMIO_INODE)
             {
                 ImageStreamIO_closeIm(&images[ID]);
                 ID = -1;
@@ -207,6 +207,7 @@ void *streamCTRL_scan(void *argptr)
                     ID = image_get_first_ID_available_from_images(images);
                     if (ID < 0)
                     {
+                        pthread_mutex_unlock(&streamCTRLdata->lock);
                         return NULL;
                     }
                     /*EXECUTE_SYSTEM_COMMAND_NOCHECK("echo \"  %ld get ID = %ld\" >> IDlog.txt",
@@ -215,6 +216,13 @@ void *streamCTRL_scan(void *argptr)
 
                     streaminfo[sindex].ISIOretval = ImageStreamIO_read_sharedmem_image_toIMAGE(
                         streaminfo[sindex].sname, &images[ID]);
+                    if (streaminfo[sindex].ISIOretval != IMAGESTREAMIO_SUCCESS)
+                    {
+                        /* ISIO leaves md dangling on its error paths: never close or read it */
+                        images[ID].md        = NULL;
+                        images[ID].array.raw = NULL;
+                        images[ID].memsize   = 0;
+                    }
 
                     // images[ID] used to keep track of each stream, even if not successfully loaded
                     // force used to be 1 even if load fails, so we can keep track of attempted loads
@@ -288,7 +296,14 @@ void *streamCTRL_scan(void *argptr)
                         char fname[512];
                         ImageStreamIO_filename(fname, sizeof(fname), streaminfo[sindex].sname);
                         remove(fname);
-                        ImageStreamIO_closeIm(&images[ID]);
+                        if (images[ID].md != NULL)
+                        {
+                            ImageStreamIO_closeIm(&images[ID]);
+                        }
+                        else
+                        {
+                            images[ID].used = 0;
+                        }
                     }
                 }
                 // Reset so flag does not persist
@@ -297,6 +312,7 @@ void *streamCTRL_scan(void *argptr)
                 streaminfo[sindex].erased = 0;
             }
         }
+        pthread_mutex_unlock(&streamCTRLdata->lock);
 
 
         streaminfoproc->WriteFlistToFile = 0;
@@ -322,8 +338,10 @@ void *streamCTRL_scan(void *argptr)
                 char shmpath[STRINGMAXLEN_FULLFILENAME];
                 WRITE_FULLFILENAME(shmpath, "%s/%s.im.shm", SHAREDSHMDIR,
                                    streaminfo[sindexscan1].sname);
-                streaminfo[sindexscan1].streamOpenPID_status =
-                    (sc_fuser_pids(shmpath, plistoutline, sizeof(plistoutline)) != 0) ? 2 : 1;
+                int fuser_rc = sc_fuser_pids(shmpath, plistoutline, sizeof(plistoutline));
+
+                pthread_mutex_lock(&streamCTRLdata->lock); /* spawned unlocked; publish locked */
+                streaminfo[sindexscan1].streamOpenPID_status = (fuser_rc != 0) ? 2 : 1;
 
                 if (streaminfo[sindexscan1].streamOpenPID_status != 2)
                 {
@@ -369,14 +387,13 @@ void *streamCTRL_scan(void *argptr)
                     }
                 }
                 streaminfo[sindexscan1].streamOpenPID_cnt1 = cnt1;
+                pthread_mutex_unlock(&streamCTRLdata->lock);
 
                 streaminfoproc->sindexscan++;
             }
         }
 
         streaminfoproc->fuserUpdate0 = 0;
-
-        streaminfoproc->NBstream = NBsindex;
         streaminfoproc->loopcnt++;
 
         //EXECUTE_SYSTEM_COMMAND_NOCHECK("echo \"[%ld] loopEND\" >> IDlog.txt", scaniter);

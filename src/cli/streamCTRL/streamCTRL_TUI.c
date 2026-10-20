@@ -329,6 +329,7 @@ errno_t streamCTRL_CTRLscreen(void)
 
     DEBUG_TRACEPOINT("Start scan thread");
     streaminfoproc.loop = 1;
+    pthread_mutex_init(&streamCTRLdata.lock, NULL);
     pthread_create(&threadscan, NULL, streamCTRL_scan, (void *) &streamCTRLdata);
 
     DEBUG_TRACEPOINT("Scan thread started");
@@ -376,6 +377,7 @@ errno_t streamCTRL_CTRLscreen(void)
         }
         DEBUG_TRACEPOINT(" ");
 
+        pthread_mutex_lock(&streamCTRLdata.lock); /* the scan thread rewrites sinfo and images */
         int ch;
         while ((ch = ansi_get_key()) != ANSI_KEY_NONE)
         {
@@ -390,6 +392,7 @@ errno_t streamCTRL_CTRLscreen(void)
         TUI_clearscreen(&wrow, &wcol);
 
         streamCTRL_render_screen(&streamCTRLdata, &state);
+        pthread_mutex_unlock(&streamCTRLdata.lock);
 
         DEBUG_TRACEPOINT(" ");
 
@@ -398,6 +401,7 @@ errno_t streamCTRL_CTRLscreen(void)
 
     streaminfoproc.loop = 0;
     pthread_join(threadscan, NULL);
+    pthread_mutex_destroy(&streamCTRLdata.lock);
 
     for (int pidi = 0; pidi < state.PIDmax; pidi++)
     {
@@ -410,7 +414,7 @@ errno_t streamCTRL_CTRLscreen(void)
 
     for (imageID ID = 0; ID < streamNBID_MAX; ID++)
     {
-        if (streamCTRLimages[ID].used == 1)
+        if (streamCTRLimages[ID].used == 1 && streamCTRLimages[ID].md != NULL)
         {
             ImageStreamIO_closeIm(&streamCTRLimages[ID]);
         }

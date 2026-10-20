@@ -15,6 +15,7 @@
 #define _STREAMCTRL_H
 
 
+#include <pthread.h>
 #include <stdint.h>
 #include <unistd.h> // getpid()
 
@@ -133,6 +134,8 @@ typedef struct
     // pointers to images
     IMAGE *images;
 
+    pthread_mutex_t lock; /* guards sinfo, images and PIDtable between the scan and UI threads */
+
 } streamCTRLarg_struct;
 
 
@@ -142,11 +145,11 @@ extern "C"
 #endif
 
 #ifndef __STDC_LIB_EXT1__
-    typedef int errno_t;
+typedef int errno_t;
 #endif
 
-    /** Main TUI entry point — runs until user presses 'x' or SIGINT */
-    errno_t streamCTRL_CTRLscreen(void);
+/** Main TUI entry point — runs until user presses 'x' or SIGINT */
+errno_t streamCTRL_CTRLscreen(void);
 
 #ifdef __cplusplus
 }
