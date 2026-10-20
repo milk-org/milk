@@ -136,7 +136,8 @@ typedef struct
     OV_RECT        r_status;
     OV_RECT        r_exit_btn, r_theme_btn; /* status-bar buttons as drawn; width 0 = not shown */
     OV_RECT        r_ctrl_badge, r_hover_badge; /* header badges as drawn; width 0 = not shown */
-    OV_THEME_POPUP theme_popup;                 /* theme selector popup */
+    OV_RECT        r_scan_info; /* status-line scan time and rate as drawn (stage tooltip) */
+    OV_THEME_POPUP theme_popup; /* theme selector popup */
     /* Command log */
     OV_CMDLOG cmdlog;
     int       cmdlog_rows; /* 0=hidden, default=4 */

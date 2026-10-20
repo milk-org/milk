@@ -57,6 +57,14 @@ unsigned ov_scan_hints(void)
     return atomic_load(&s_scan_hints);
 }
 
+/** ov_stage_name - short name of scan stage @stage ("" when out of range). */
+const char *ov_stage_name(int stage)
+{
+    static const char *const n[OV_STAGE_COUNT] = { "streams", "fps",    "tmux", "procs",
+                                                   "graph",   "enrich", "loops" };
+    return (stage >= 0 && stage < OV_STAGE_COUNT) ? n[stage] : "";
+}
+
 /** ov_scan_hints_swap - set the hints, returning the previous ones (ov_scan_set_hints wakes the scan). */
 unsigned ov_scan_hints_swap(unsigned hints)
 {
@@ -104,18 +112,34 @@ void ov_model_full_scan(OV_MODEL *model)
     model->nb_edges   = 0;
     model->nb_loops   = 0;
 
+    struct timespec ts = t0, te;
+#define OV_STAGE_END(st)                                                                        \
+    do                                                                                          \
+    {                                                                                           \
+        clock_gettime(CLOCK_MONOTONIC, &te);                                                    \
+        model->stage_ms[st] =                                                                   \
+            (double) (te.tv_sec - ts.tv_sec) * 1e3 + (double) (te.tv_nsec - ts.tv_nsec) * 1e-6; \
+        ts = te;                                                                                \
+    } while (0)
+
     ov_scan_holders(model); /* before the streams: their rows copy the counts */
     ov_scan_streams(model);
     ov_scan_inspect(model);
+    OV_STAGE_END(OV_STAGE_STREAMS);
     ov_scan_fps(model);
+    OV_STAGE_END(OV_STAGE_FPS);
     ov_scan_tmux_sessions(model);
+    OV_STAGE_END(OV_STAGE_TMUX);
     ov_scan_procs(model);
-
+    OV_STAGE_END(OV_STAGE_PROCS);
     ov_build_graph(model);
-
-    /* Per-item derived data first: loop health reads it */
-    ov_post_scan_enrich(model);
+    OV_STAGE_END(OV_STAGE_GRAPH);
+    ov_post_scan_enrich(model); /* per-item derived data first: loop health reads it */
+    OV_STAGE_END(OV_STAGE_ENRICH);
     ov_detect_loops(model, SG_MODE_FULL);
+    OV_STAGE_END(OV_STAGE_LOOPS);
+#undef OV_STAGE_END
+    model->scan_rate_hz = (s_scan_dt_sec > 0.0) ? 1.0 / s_scan_dt_sec : 0.0;
 
     clock_gettime(CLOCK_MONOTONIC, &t1);
     struct timespec dt    = ov_timespec_diff(t0, t1);

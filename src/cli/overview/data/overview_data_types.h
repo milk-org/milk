@@ -135,6 +135,19 @@ typedef struct
 int  pid_read_perf_counters(pid_t pid, int64_t loopcnt, ov_perf_counters_t *out);
 void pid_perf_close(void);
 
+/* Stages of a scan, timed in OV_MODEL.stage_ms */
+typedef enum
+{
+    OV_STAGE_STREAMS = 0, /* holders, streams, inspected stream */
+    OV_STAGE_FPS,
+    OV_STAGE_TMUX,
+    OV_STAGE_PROCS,
+    OV_STAGE_GRAPH,
+    OV_STAGE_ENRICH,
+    OV_STAGE_LOOPS,
+    OV_STAGE_COUNT
+} ov_stage_t;
+
 /* Why a listed *.im.shm cannot be used */
 typedef enum
 {

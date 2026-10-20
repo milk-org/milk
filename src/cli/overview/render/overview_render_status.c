@@ -217,8 +217,9 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     }
     else
     {
+        /* the rate scans ran at (configured until two scans); hovering lists the stages */
         sseg(sg, &n, 0, OV_FG_DIM, OV_BG_HEADER, 0, " scan:%.0fms %.1fHz", m->scan_time_ms,
-             rate_hz);
+             (m->scan_rate_hz > 0.0) ? m->scan_rate_hz : rate_hz);
     }
     status_crumb(sg, &n, lay);
     status_filters(sg, &n, lay);
@@ -285,11 +286,16 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
         it[i] = (OV_BAR_ITEM) { ov_str_display_width(sg[i].text) + ov_str_display_width(sg[i].tail),
                                 0, sg[i].prio, 0 };
     }
-    int used = ov_bar_layout(it, n, r.width - right);
+    int used         = ov_bar_layout(it, n, r.width - right);
+    lay->r_scan_info = (OV_RECT) { 0, 0, 0, 0 };
     for (int i = 0; i < n; i++)
     {
         if (it[i].shown)
         {
+            if (i == 0)
+            {
+                lay->r_scan_info = (OV_RECT) { r.row, ov__cursor_col, 1, it[0].w };
+            }
             sseg_draw(&sg[i]);
         }
     }

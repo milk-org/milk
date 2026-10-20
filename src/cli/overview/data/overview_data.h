@@ -141,8 +141,10 @@ typedef struct
     OV_INDEX_DEF(1024) ix_proc_pid; /* one entry per PID: the live process, else the newest */
     int indexed;                    /* 0: the ov_find_* helpers scan the arrays */
 
-    /* scan metadata */
-    unsigned tmux_polls; /* tmux spawns since start (ov_scan_tmux_sessions) */
+    /* scan metadata: time per stage (ov_stage_name), and the rate scans actually ran at */
+    double   stage_ms[OV_STAGE_COUNT];
+    double   scan_rate_hz; /* 0 until two scans */
+    unsigned tmux_polls;   /* tmux spawns since start (ov_scan_tmux_sessions) */
     double   scan_time_ms;
     uint64_t scan_count;
     uint64_t
@@ -415,6 +417,8 @@ typedef enum
 const char *ov_state_name(ov_state_t st, int long_form);
 ov_state_t  ov_state_of_loopstat(int loopstat);
 const char *ov_loopstat_label(int loopstat, int long_form);
+
+const char *ov_stage_name(int stage);
 
 /** ov_stream_hops - the process-trace hops of stream @s (nb_proctrace of them). */
 static inline const OV_TRACE_HOP *ov_stream_hops(const OV_MODEL *m, const OV_STREAM *s)

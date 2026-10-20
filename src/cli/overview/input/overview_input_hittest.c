@@ -35,6 +35,18 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
         return;
     }
 
+    if (m != NULL && lay->r_scan_info.width > 0 && INSIDE(lay->r_scan_info, mr, mc))
+    {
+        int n = snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip), "Scan stages (ms):");
+        for (int st = 0; st < OV_STAGE_COUNT && n > 0 && (size_t) n < sizeof(lay->hover_tooltip);
+             st++)
+        {
+            n += snprintf(lay->hover_tooltip + n, sizeof(lay->hover_tooltip) - (size_t) n,
+                          " %s %.1f", ov_stage_name(st), m->stage_ms[st]);
+        }
+        return;
+    }
+
     if (mr == lay->r_header.row)
     {
         if (lay->r_ctrl_badge.width > 0 && INSIDE(lay->r_ctrl_badge, mr, mc))

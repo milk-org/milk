@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 import time
 
@@ -121,6 +122,18 @@ def test_log_mirrors_the_command_log(milkctrl, tmp_path):
     assert "INFO  Shared memory directory:" in text
     assert "INFO  Compact mode ON" in text
     assert "DEBUG key 100" in text and "DEBUG scan " in text
+    stages = re.search(
+        r"stages ms:((?: \w+ [0-9.]+)+)", text
+    )  # per-stage scan time (round 4)
+    assert stages and [w for w in stages.group(1).split()[::2]] == [
+        "streams",
+        "fps",
+        "tmux",
+        "procs",
+        "graph",
+        "enrich",
+        "loops",
+    ]
 
 
 def test_pause_stops_scanning(milkctrl, tmp_path):

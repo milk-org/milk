@@ -323,10 +323,18 @@ int main(int argc, char *argv[])
             {
                 if (m != NULL)
                 {
+                    char stages[160];
+                    int  ns = 0;
+                    for (int st = 0; st < OV_STAGE_COUNT && ns >= 0 && (size_t) ns < sizeof(stages);
+                         st++)
+                    {
+                        ns += snprintf(stages + ns, sizeof(stages) - (size_t) ns, " %s %.2f",
+                                       ov_stage_name(st), m->stage_ms[st]);
+                    }
                     ov_cmdlog_debug("scan %.1f ms: %d streams (%d pending), %d processes, %d FPS, "
-                                    "%u tmux polls",
+                                    "%u tmux polls; stages ms:%s",
                                     m->scan_time_ms, m->nb_streams, m->streams_pending, m->nb_procs,
-                                    m->nb_fps, m->tmux_polls);
+                                    m->nb_fps, m->tmux_polls, stages);
                 }
                 static int cap_warned;
                 if (m != NULL && m->streams_capped && !cap_warned)
