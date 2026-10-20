@@ -61,7 +61,9 @@ def test_inspector_sems_lists_writers(milkctrl, entities):
     m.wait_for(r"Creator\s+\d+")
     m.keys("Right")  # next page: SEMS
     m.wait_for(r"#\s+VALUE\s+READER\s+WRITER")
-    m.wait_for(rf"\s9\s+\d+\s+{writer} shmimpoke")  # the tenth semaphore too
+    m.wait_for(
+        rf"\s9\s+\d+\s+{writer}\b"
+    )  # the tenth semaphore too (its name once processinfo lists it)
     assert "[SEMS]" in m.lines()[-1]
     assert m.quit() == 0
 
@@ -90,7 +92,9 @@ def test_inspector_trace_names_the_writer(milkctrl, entities):
     m.wait_for(r"STREAM pairst_out")
     m.keys("Right", "Right", "Right")  # into INFO, then SEMS, TRACE
     m.wait_for(r"1 hop, end to end")
-    m.wait_for(rf"0\. {reader} shmimcopy")
+    m.wait_for(
+        rf"0\. {reader}\b"
+    )  # its processinfo name follows once the registry lists it
     m.wait_for(r"trigger\s+\S+.*(waiting|received|timed out)")
     m.wait_for(r"started\s+\S+ ago\s+compute")
     assert m.quit() == 0

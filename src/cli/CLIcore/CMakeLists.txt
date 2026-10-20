@@ -144,7 +144,6 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/libmilkscript>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../streamCTRL>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CLIcore>
          $<INSTALL_INTERFACE:include/${SRCNAME}>
          $<$<BOOL:${USE_NCURSES}>:${NCURSES_INCLUDE_DIR}>)
@@ -189,32 +188,7 @@ install(
         ../libmilkscript/core/CLIcore_utils.h
   DESTINATION include/${SRCNAME}/CLIcore)
 
-add_executable(
-  milk-streamCTRL
-  ../streamCTRL/milk-streamCTRL.c
-  ../streamCTRL/streamCTRL_TUI.c
-  ../streamCTRL/streamCTRL_TUI_render.c
-  ../streamCTRL/streamCTRL_TUI_render_help.c
-  ../streamCTRL/streamCTRL_TUI_render_header.c
-  ../streamCTRL/streamCTRL_TUI_render_stream_rows.c
-  ../streamCTRL/streamCTRL_TUI_render_footer.c
-  ../streamCTRL/streamCTRL_TUI_input.c
-  ../streamCTRL/streamCTRL_find_streams.c
-  ../streamCTRL/streamCTRL_print_inode.c
-  ../streamCTRL/streamCTRL_print_procpid.c
-  ../streamCTRL/streamCTRL_print_trace.c
-  ../streamCTRL/streamCTRL_scan.c
-  ../streamCTRL/streamCTRL_utilfuncs.c
-  ../streamCTRL/streamCTRL_TUIcompat.c)
-
-target_link_libraries(milk-streamCTRL PUBLIC ImageStreamIO milkprocessinfo m rt
-                                             pthread)
-target_include_directories(
-  milk-streamCTRL
-  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
-install(TARGETS milk-streamCTRL DESTINATION bin)
-
-# milk-fpsexec-mmon retired — use milk-streamCTRL instead
+# milk-streamCTRL is milk-CTRL started under that name (it opens F3): a link, installed with milk-CTRL below
 
 add_subdirectory(termview)
 
@@ -325,6 +299,12 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
 target_link_libraries(milk-CTRL PRIVATE milkctrl_model)
 install(TARGETS milk-CTRL DESTINATION bin)
+# milk-streamCTRL: the profile of milk-CTRL that opens F3 (argv[0]); a link in the build tree and at install
+add_custom_command(
+  TARGET milk-CTRL
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E create_symlink milk-CTRL $<TARGET_FILE_DIR:milk-CTRL>/milk-streamCTRL)
+install(CODE "file(CREATE_LINK milk-CTRL \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin/milk-streamCTRL\" SYMBOLIC)")
 # render/ and input/ must not cast away the const of the scanned model
 file(GLOB OV_UI_SRC ${CMAKE_SOURCE_DIR}/src/cli/overview/render/*.c ${CMAKE_SOURCE_DIR}/src/cli/overview/input/*.c)
 set_source_files_properties(${OV_UI_SRC} PROPERTIES COMPILE_OPTIONS -Wcast-qual)
