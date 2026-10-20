@@ -8,6 +8,8 @@
  */
 
 #include "overview_input_internal.h"
+#include <ctype.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
@@ -30,7 +32,8 @@
 #include "fps_FPSremove.h"
 #include "fps_connect.h"
 #include "fps_disconnect.h"
-#include "fps_tmux.h"
+#include "fps_isvalid.h"
+#include "milk_spawn.h"
 
 int pid_is_stopped(pid_t pid);
 
@@ -67,6 +70,102 @@ static int ov_ctrl_fps_action(const char *fps_name, errno_t (*action)(FPS *))
 }
 
 /**
+ * ov_ctrl_stderr_mute - send stderr to /dev/null while libfps runs its tmux commands.
+ * Return: saved stderr fd for ov_ctrl_stderr_restore(), or -1 if stderr was left alone.
+ */
+static int ov_ctrl_stderr_mute(void)
+{
+    int saved   = fcntl(STDERR_FILENO, F_DUPFD_CLOEXEC, STDERR_FILENO + 1);
+    int devnull = open("/dev/null", O_WRONLY | O_CLOEXEC);
+
+    if (saved < 0 || devnull < 0 || dup2(devnull, STDERR_FILENO) < 0)
+    {
+        if (saved >= 0)
+        {
+            close(saved);
+        }
+        saved = -1;
+    }
+    if (devnull >= 0)
+    {
+        close(devnull);
+    }
+    return saved;
+}
+
+/**
+ * ov_ctrl_stderr_restore - undo ov_ctrl_stderr_mute().
+ * @saved: its return value
+ */
+static void ov_ctrl_stderr_restore(int saved)
+{
+    if (saved >= 0)
+    {
+        dup2(saved, STDERR_FILENO);
+        close(saved);
+    }
+}
+
+/**
+ * ov_ctrl_tmux_probe - tell how tmux resolves the bare "-t @name" target that libfps uses.
+ * Return: 1 if session =@name exists, 0 if @name matches no session, -1 if it would hit another session.
+ */
+static int ov_ctrl_tmux_probe(const char *name)
+{
+    char        exact[STRINGMAXLEN_FPS_NAME + 1];
+    const char *argv[] = { "tmux", "has-session", "-t", exact, NULL };
+
+    snprintf(exact, sizeof(exact), "=%s", name);
+    if (milkspawn_run(argv, -1, -1) == 0)
+    {
+        return 1;
+    }
+    argv[3] = name;
+    return (milkspawn_run(argv, -1, -1) == 0) ? -1 : 0;
+}
+
+/**
+ * ov_ctrl_fps_guard - vet @fps before libfps pastes its strings into sh and bare tmux targets.
+ * @f:    selected FPS row
+ * @fps:  connected FPS
+ * @what: action name for the log
+ * @log:  command log (may be NULL)
+ *
+ * Return: ov_ctrl_tmux_probe() result (1 or 0) if the action may go ahead, -1 if refused (reason logged).
+ */
+static int ov_ctrl_fps_guard(const OV_FPS *f, FPS *fps, const char *what, OV_CMDLOG *log)
+{
+    const char *n   = fps->md->name;
+    size_t      len = strnlen(n, sizeof(fps->md->name));
+    int ok = len > 0 && len < sizeof(fps->md->name) && n[0] != '-' && strcmp(n, f->name) == 0;
+    struct stat st;
+
+    for (size_t i = 0; ok && i < len; i++)
+    {
+        ok = isalnum((unsigned char) n[i]) || n[i] == '_' || n[i] == '-';
+    }
+    if (!ok)
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                       "FPS %s refused: name outside [A-Za-z0-9_-] or not the file name", what);
+        return -1;
+    }
+    if (fstat(fps->SMfd, &st) != 0 || st.st_uid != geteuid())
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "FPS \"%s\": %s refused, shm file not owned by you", n,
+                       what);
+        return -1;
+    }
+    int ts = ov_ctrl_tmux_probe(n);
+    if (ts < 0)
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                       "FPS \"%s\": %s refused, tmux name matches another session", n, what);
+    }
+    return ts;
+}
+
+/**
  * ov_ctrl_fps_run_toggle - start or stop the FPS run process.
  * @f:   FPS model entry
  * @log: command log (may be NULL)
@@ -78,59 +177,41 @@ void ov_ctrl_fps_run_toggle(const OV_FPS *f, OV_CMDLOG *log)
         return;
     }
 
-    if (f->run_alive)
+    FPS fps;
+    memset(&fps, 0, sizeof(fps));
+    if (fps_connect(f->name, &fps, FPSCONNECT_SIMPLE) == -1)
     {
-        int rc = ov_ctrl_fps_action(f->name, functionparameter_RUNstop);
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\" — RUNstop %s",
-                           f->name, rc == 0 ? "succeeded" : "failed");
-        }
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "FPS \"%s\": connect failed", f->name);
+        return;
     }
-    else
+
+    const char *what = f->run_alive ? "RUNstop" : "RUNstart";
+    int         ts   = ov_ctrl_fps_guard(f, &fps, what, log);
+
+    if (ts == 0 && f->run_alive)
     {
-        FPS fps;
-        memset(&fps, 0, sizeof(fps));
-
-        long crc = fps_connect(f->name, &fps, FPSCONNECT_SIMPLE);
-        if (crc == -1)
-        {
-            if (log != NULL)
-            {
-                ov_cmdlog_push(log, OV_CMDLOG_FAIL, "FPS \"%s\" — RUNstart connect failed",
-                               f->name);
-            }
-            return;
-        }
-
-        int saved_stderr = dup(STDERR_FILENO);
-        {
-            int devnull = open("/dev/null", O_WRONLY);
-            if (devnull >= 0)
-            {
-                dup2(devnull, STDERR_FILENO);
-                close(devnull);
-            }
-        }
-
-        functionparameter_FPS_tmux_ensure(&fps);
-
-        if (saved_stderr >= 0)
-        {
-            dup2(saved_stderr, STDERR_FILENO);
-            close(saved_stderr);
-        }
-
-        errno_t arc = functionparameter_RUNstart(&fps);
-        fps_disconnect(&fps);
-
-        int rc = (arc == RETURN_SUCCESS) ? 0 : -1;
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\" — RUNstart %s",
-                           f->name, rc == 0 ? "succeeded" : "failed");
-        }
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                       "FPS \"%s\": no tmux session, RUNstop not sent (k: SIGTERM)", f->name);
     }
+    else if (ts >= 0 && !f->run_alive &&
+             !(fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK))
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                       "FPS \"%s\": RUNstart not sent, conf check not OK (%u errors)", f->name,
+                       (unsigned) fps.md->conferrcnt);
+    }
+    else if (ts >= 0)
+    {
+        int     saved = ov_ctrl_stderr_mute();
+        errno_t rc =
+            f->run_alive ? functionparameter_RUNstop(&fps) : functionparameter_RUNstart(&fps);
+
+        ov_ctrl_stderr_restore(saved);
+        ov_cmdlog_push(log, rc == RETURN_SUCCESS ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
+                       "FPS \"%s\": %s %s", f->name, what,
+                       rc == RETURN_SUCCESS ? "sent" : "failed");
+    }
+    fps_disconnect(&fps);
 }
 
 /**
@@ -144,60 +225,32 @@ void ov_ctrl_fps_conf_toggle(const OV_FPS *f, OV_CMDLOG *log)
     {
         return;
     }
-
     if (f->conf_alive)
     {
         int rc = ov_ctrl_fps_action(f->name, functionparameter_CONFstop);
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\" — CONFstop %s",
-                           f->name, rc == 0 ? "succeeded" : "failed");
-        }
+        ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\": CONFstop %s",
+                       f->name, rc == 0 ? "requested" : "failed");
+        return;
     }
-    else
+
+    FPS fps;
+    memset(&fps, 0, sizeof(fps));
+    if (fps_connect(f->name, &fps, FPSCONNECT_SIMPLE) == -1)
     {
-        FPS fps;
-        memset(&fps, 0, sizeof(fps));
-
-        long crc = fps_connect(f->name, &fps, FPSCONNECT_SIMPLE);
-        if (crc == -1)
-        {
-            if (log != NULL)
-            {
-                ov_cmdlog_push(log, OV_CMDLOG_FAIL, "FPS \"%s\" — CONFstart connect failed",
-                               f->name);
-            }
-            return;
-        }
-
-        int saved_stderr = dup(STDERR_FILENO);
-        {
-            int devnull = open("/dev/null", O_WRONLY);
-            if (devnull >= 0)
-            {
-                dup2(devnull, STDERR_FILENO);
-                close(devnull);
-            }
-        }
-
-        functionparameter_FPS_tmux_ensure(&fps);
-
-        if (saved_stderr >= 0)
-        {
-            dup2(saved_stderr, STDERR_FILENO);
-            close(saved_stderr);
-        }
-
-        errno_t arc = functionparameter_CONFstart(&fps);
-        fps_disconnect(&fps);
-
-        int rc = (arc == RETURN_SUCCESS) ? 0 : -1;
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                           "FPS \"%s\" — CONFstart %s", f->name, rc == 0 ? "succeeded" : "failed");
-        }
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "FPS \"%s\": connect failed", f->name);
+        return;
     }
+    if (ov_ctrl_fps_guard(f, &fps, "CONFstart", log) >= 0)
+    {
+        int     saved = ov_ctrl_stderr_mute();
+        errno_t rc    = functionparameter_CONFstart(&fps);
+
+        ov_ctrl_stderr_restore(saved);
+        ov_cmdlog_push(log, rc == RETURN_SUCCESS ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
+                       "FPS \"%s\": CONFstart %s", f->name,
+                       rc == RETURN_SUCCESS ? "sent" : "failed");
+    }
+    fps_disconnect(&fps);
 }
 
 /**
@@ -342,43 +395,28 @@ void ov_ctrl_fps_remove(const OV_FPS *f, OV_CMDLOG *log)
 
     FPS fps;
     memset(&fps, 0, sizeof(fps));
-
-    long rc = fps_connect(f->name, &fps, FPSCONNECT_SIMPLE);
-    if (rc == -1)
+    if (fps_connect(f->name, &fps, FPSCONNECT_SIMPLE) == -1)
     {
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "FPS \"%s\" — erase failed (connect)", f->name);
-        }
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "FPS \"%s\": erase failed (connect)", f->name);
         return;
     }
 
-    /* Suppress stderr from tmux commands to avoid TUI display corruptions */
-    int saved_stderr = dup(STDERR_FILENO);
+    int ts = ov_ctrl_fps_guard(f, &fps, "erase", log);
+    if (ts >= 0)
     {
-        int devnull = open("/dev/null", O_WRONLY);
-        if (devnull >= 0)
+        int saved = ov_ctrl_stderr_mute();
+
+        functionparameter_CONFstop(&fps);
+        if (ts == 1)
         {
-            dup2(devnull, STDERR_FILENO);
-            close(devnull);
+            functionparameter_RUNstop(&fps); /* without a session RUNstop has nothing to talk to */
         }
+        functionparameter_FPSremove(&fps);
+        ov_ctrl_stderr_restore(saved);
+
+        int gone = !function_parameter_struct_isvalid(&fps); /* shm file unlinked */
+        ov_cmdlog_push(log, gone ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\": %s", f->name,
+                       gone ? "erased" : "erase failed, shm file still present");
     }
-
-    functionparameter_CONFstop(&fps);
-    functionparameter_RUNstop(&fps);
-    functionparameter_FPSremove(&fps);
-
-    /* Restore stderr */
-    if (saved_stderr >= 0)
-    {
-        dup2(saved_stderr, STDERR_FILENO);
-        close(saved_stderr);
-    }
-
     fps_disconnect(&fps);
-
-    if (log != NULL)
-    {
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "🗑️ FPS \"%s\" — erased", f->name);
-    }
 }

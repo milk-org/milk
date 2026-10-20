@@ -117,7 +117,9 @@
         "r",
         "Toggle Run loop (runstart / runstop)",
         "Dispatches runstart or runstop command to the selected FPS module tmux session "
-        "or control process, starting or stopping compute loop. Requires Control Mode ON.",
+        "or control process, starting or stopping compute loop. Requires Control Mode ON. "
+        "runstart is only sent once the conf check passes. Refused unless the FPS name is "
+        "[A-Za-z0-9_-], its shm file is yours, and no other tmux session starts with that name.",
         HF_ENTRY | HF_CTRL_MODE,
         HS_FPS,
     },
@@ -125,7 +127,9 @@
         "s",
         "Toggle Conf loop (confstart / confstop)",
         "Dispatches confstart or confstop command to the selected FPS module, "
-        "toggling configuration loop monitoring. Requires Control Mode ON.",
+        "toggling configuration loop monitoring. Requires Control Mode ON. Refused unless the "
+        "FPS name is [A-Za-z0-9_-], its shm file is yours, and no other tmux session starts "
+        "with that name.",
         HF_ENTRY | HF_CTRL_MODE,
         HS_FPS,
     },
