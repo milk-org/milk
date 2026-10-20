@@ -13,6 +13,7 @@
 
 #include "CLIcore.h"
 #include "CLIcore_modules.h"
+#include "cli_calc_parser.h"
 #include "milk_catalog.h"
 #include "milk_cmd_index.h"
 #include "milk_server_internal.h"
@@ -165,6 +166,17 @@ int milk_server_config(int argc, char **argv)
         }
         dcprocinfo = (val != NULL) ? (strcmp(val, "on") == 0) : dcprocinfo;
         printf("procinfo %s\n", dcprocinfo ? "on" : "off");
+        return 0;
+    }
+    if (strcmp(key, "calc") == 0 && argc <= 3)
+    {
+        if (val != NULL && strcmp(val, "on") != 0 && strcmp(val, "off") != 0)
+        {
+            fprintf(stderr, "milk: @config calc: on or off\n");
+            return 2;
+        }
+        cli_calc_mode = (val != NULL) ? (strcmp(val, "on") == 0) : cli_calc_mode;
+        printf("calc %s\n", cli_calc_mode ? "on" : "off");
         return 0;
     }
     if ((rc = repl_setting(key)) != NULL)

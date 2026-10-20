@@ -1428,17 +1428,25 @@ static int try_exec_entity_lhs_assignment(const char *expr, int *out_rc)
     {
         exp_rhs[rlen - 1] = '\0';
         *out_rc           = (milk_shm_prop_set(lhs, exp_rhs + 1, NULL) == 0) ? 0 : 1;
+        if (*out_rc == 0 && cli_calc_out_mode == CLI_CALC_OUT_REPL)
+        {
+            printf("%s %s\n", lhs, exp_rhs + 1);
+            fflush(stdout);
+        }
         return 1;
     }
 
     char assign_expr[4200];
     snprintf(assign_expr, sizeof(assign_expr), "_milk_ent_rhs = %s", exp_rhs);
-    int eval_rc = 2;
-    int saved_q = dcquiet;
-    dcquiet     = 1;
+    int eval_rc       = 2;
+    int saved_q       = dcquiet;
+    int saved_om      = cli_calc_out_mode;
+    dcquiet           = 1;
+    cli_calc_out_mode = CLI_CALC_OUT_VALUES;
     cli_calc_eval_bash(assign_expr, 0, &eval_rc);
-    dcquiet   = saved_q;
-    long vidx = variable_ID("_milk_ent_rhs");
+    cli_calc_out_mode = saved_om;
+    dcquiet           = saved_q;
+    long vidx         = variable_ID("_milk_ent_rhs");
     if (eval_rc == 0 && vidx != -1)
     {
         char vbuf[128];
@@ -1457,10 +1465,20 @@ static int try_exec_entity_lhs_assignment(const char *expr, int *out_rc)
         }
         data.core.variable[vidx].used = 0;
         *out_rc                       = (milk_shm_prop_set(lhs, vbuf, NULL) == 0) ? 0 : 1;
+        if (*out_rc == 0 && cli_calc_out_mode == CLI_CALC_OUT_REPL)
+        {
+            printf("%s %s\n", lhs, vbuf);
+            fflush(stdout);
+        }
     }
     else
     {
         *out_rc = (milk_shm_prop_set(lhs, exp_rhs, NULL) == 0) ? 0 : 1;
+        if (*out_rc == 0 && cli_calc_out_mode == CLI_CALC_OUT_REPL)
+        {
+            printf("%s %s\n", lhs, exp_rhs);
+            fflush(stdout);
+        }
     }
     return 1;
 }
@@ -1880,6 +1898,7 @@ int milk_server_exec_calc_or_test(int            client_fd,
     (void) client_fd; /* calc variables reach bash only through -v (its output) */
     cli_calc_out_mode = (flags & MILK_FLAG_PIXELS) ? CLI_CALC_OUT_PIXELS
                         : (flags & MILK_FLAG_BIND) ? CLI_CALC_OUT_BIND
+                        : (flags & MILK_FLAG_REPL) ? CLI_CALC_OUT_REPL
                                                    : CLI_CALC_OUT_VALUES;
     int rc            = split_top_level(expr, 1, 0, calc_stmt_cb, &is_test);
     cli_calc_out_mode = CLI_CALC_OUT_VALUES;

@@ -29,6 +29,7 @@
 #define MILK_FLAG_ASYNC 0x01U
 #define MILK_FLAG_BIND 0x02U   /* CALC: a line per statement, assignments too (@calc -v a,b) */
 #define MILK_FLAG_PIXELS 0x04U /* CALC: as BIND, an image result as its pixels (@calc -a) */
+#define MILK_FLAG_REPL 0x08U   /* CALC: interactive calc mode (@calc --repl) */
 
 /* Client -> Server message opcodes */
 enum milk_msg_type

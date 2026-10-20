@@ -1423,6 +1423,97 @@ def test_Sec2_eval_fd_escaping(server, tmp_path):
     assert "PWNED" not in res.stderr
 
 
+def test_calc_mode(tmp_path):
+    """In milk-cli calc mode (@calc with no args), every line is evaluated as @calc, results
+    (including assignments and images) are printed, the prompt shows a colored [calc] tag, and
+    exit/quit/@calc leave calc mode back to milk-cli."""
+    res = milk_cli_script(
+        """
+        @calc
+        a=1+3.2
+        b=a*2
+        1+3.2
+        a+=0.8
+        v = vec(1, 2, 3, 4)
+        m = reshape(v, 2, 2)
+        m * 2
+        exit
+        echo "normal1 a=$(@calc 'a') b=$(@calc 'b')"
+        @calc
+        c=10
+        quit
+        echo "normal2 c=$(@calc 'c')"
+        @calc
+        d=20
+        @calc
+        echo "normal3 d=$(@calc 'd')"
+        """,
+        tmp_path,
+    )
+    assert res.returncode == 0, res.stderr
+    lines = [ln.strip() for ln in res.stdout.splitlines() if ln.strip()]
+    assert "a 4.2" in lines
+    assert "b 8.4" in lines
+    assert "4.2" in lines
+    assert "a 5" in lines
+    assert "v [4] f32" in lines
+    assert "m [2 x 2] f32" in lines
+    assert "[2 x 2] f32" in lines
+    assert "normal1 a=5 b=8.4" in lines
+    assert "c 10" in lines
+    assert "normal2 c=10" in lines
+    assert "d 20" in lines
+    assert "normal3 d=20" in lines
+
+    # Interactive PTY: check visible colored [calc] tag in prompt
+    master, slave = pty.openpty()
+    env, _ = _env()
+    proc = subprocess.Popen(
+        [MILK_CLI_EXEC, "-q"],
+        stdin=slave,
+        stdout=slave,
+        stderr=slave,
+        env=env,
+        cwd=str(tmp_path),
+        close_fds=True,
+    )
+    os.close(slave)
+    out = b""
+
+    def drain(wait_for: bytes, timeout: float = 5.0):
+        nonlocal out
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            r, _, _ = select.select([master], [], [], 0.05)
+            if r:
+                try:
+                    chunk = os.read(master, 4096)
+                except OSError:
+                    break
+                if not chunk:
+                    break
+                out += chunk
+                if wait_for in out:
+                    return True
+        return wait_for in out
+
+    try:
+        assert drain(b"> ")
+        os.write(master, b"@calc\n")
+        assert drain(b"[calc]")
+        assert b"\033[1;33m" in out
+        os.write(master, b"a=1+3.2\n")
+        assert drain(b"a 4.2")
+        os.write(master, b"exit\n")
+        time.sleep(0.1)
+        os.write(master, b"exit\n")
+        proc.wait(timeout=5)
+    finally:
+        os.close(master)
+        if proc.poll() is None:
+            proc.kill()
+
+
 # ------------------------------------------------ latency benchmark (reported, not asserted)
 
 

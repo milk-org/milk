@@ -37,6 +37,7 @@
 #include "CLIcore.h"
 #include "CLIcore_script.h"
 #include "CLIcore_signals.h"
+#include "cli_calc_parser.h"
 #include "milk_bash_engine.h"
 #include "milk_bash_engine_internal.h"
 #include "milk_shell_lex.h"
@@ -606,6 +607,140 @@ void milk_bash_engine_serve(void)
     }
 }
 
+/** trim_calc_line() - strip unquoted # comment and leading/trailing spaces/tabs/CR in-place. */
+static char *trim_calc_line(char *s)
+{
+    while (*s == ' ' || *s == '\t' || *s == '\r')
+    {
+        s++;
+    }
+    int in_sq = 0;
+    int in_dq = 0;
+    for (size_t i = 0; s[i] != '\0'; i++)
+    {
+        if (s[i] == '\\' && !in_sq && s[i + 1] != '\0')
+        {
+            i++;
+            continue;
+        }
+        if (s[i] == '\'' && !in_dq)
+        {
+            in_sq = !in_sq;
+        }
+        else if (s[i] == '"' && !in_sq)
+        {
+            in_dq = !in_dq;
+        }
+        else if (s[i] == '#' && !in_sq && !in_dq)
+        {
+            s[i] = '\0';
+            break;
+        }
+    }
+    size_t len = strlen(s);
+    while (len > 0 && (s[len - 1] == ' ' || s[len - 1] == '\t' || s[len - 1] == '\r'))
+    {
+        s[--len] = '\0';
+    }
+    return s;
+}
+
+/** cmdline_has_bare_calc() - 1 if any line in @cmdline is bare `@calc` (calc-mode toggle). */
+static int cmdline_has_bare_calc(const char *cmdline)
+{
+    if (cmdline == NULL)
+    {
+        return 0;
+    }
+    const char *p = cmdline;
+    while (*p != '\0')
+    {
+        const char *nl   = strchr(p, '\n');
+        size_t      llen = (nl != NULL) ? (size_t) (nl - p) : strlen(p);
+        const char *s    = p;
+        const char *end  = p + llen;
+        while (s < end && (*s == ' ' || *s == '\t'))
+        {
+            s++;
+        }
+        if ((size_t) (end - s) >= 5 && strncmp(s, "@calc", 5) == 0)
+        {
+            const char *q = s + 5;
+            while (q < end && (*q == ' ' || *q == '\t' || *q == '\r'))
+            {
+                q++;
+            }
+            if (q == end || *q == '#')
+            {
+                return 1;
+            }
+        }
+        if (nl == NULL)
+        {
+            break;
+        }
+        p = nl + 1;
+    }
+    return 0;
+}
+
+/** exec_calc_repl_expr() - wrap @expr as `@calc --repl "<escaped>"` and run via engine_exec(). */
+static int exec_calc_repl_expr(const char *expr, int *out_exit_req)
+{
+    size_t elen = strlen(expr);
+    if (elen >= 2 &&
+        ((expr[0] == '"' && expr[elen - 1] == '"') || (expr[0] == '\'' && expr[elen - 1] == '\'')))
+    {
+        char   q      = expr[0];
+        int    closed = 0;
+        size_t k      = 1;
+        for (; k + 1 < elen; k++)
+        {
+            if (expr[k] == '\\' && q == '"' && k + 2 < elen)
+            {
+                k++;
+                continue;
+            }
+            if (expr[k] == q)
+            {
+                closed = 1;
+                break;
+            }
+        }
+        if (!closed)
+        {
+            char *inner = strndup(expr + 1, elen - 2);
+            if (inner != NULL)
+            {
+                int rc = exec_calc_repl_expr(inner, out_exit_req);
+                free(inner);
+                return rc;
+            }
+        }
+    }
+
+    size_t cap = elen * 2 + 32;
+    char  *cmd = (char *) malloc(cap);
+    if (cmd == NULL)
+    {
+        return 2;
+    }
+    size_t pos = (size_t) sprintf(cmd, "@calc --repl \"");
+    for (size_t i = 0; i < elen; i++)
+    {
+        if (expr[i] == '"' || expr[i] == '\\' || expr[i] == '`')
+        {
+            cmd[pos++] = '\\';
+        }
+        cmd[pos++] = expr[i];
+    }
+    cmd[pos++] = '"';
+    cmd[pos]   = '\0';
+    int rc     = engine_exec(cmd, out_exit_req);
+    free(cmd);
+    return rc;
+}
+
 int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
 {
     if (g_exec_depth > 0)
@@ -619,8 +754,123 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
         }
         return 1;
     }
+    if (out_exit_req != NULL)
+    {
+        *out_exit_req = 0;
+    }
+    if (cmdline == NULL)
+    {
+        return 0;
+    }
+
     g_exec_depth++;
-    int rc = engine_exec(cmdline, out_exit_req);
+    int rc = 0;
+    if (!cli_calc_mode && !cmdline_has_bare_calc(cmdline))
+    {
+        rc = engine_exec(cmdline, out_exit_req);
+    }
+    else
+    {
+        const char *p = cmdline;
+        while (*p != '\0')
+        {
+            const char *nl   = strchr(p, '\n');
+            size_t      llen = (nl != NULL) ? (size_t) (nl - p) : strlen(p);
+            char       *raw  = strndup(p, llen);
+            if (raw == NULL)
+            {
+                rc = 1;
+                break;
+            }
+            char *trimmed = trim_calc_line(raw);
+            int   exreq   = 0;
+
+            if (trimmed[0] == '\0')
+            {
+                free(raw);
+            }
+            else if (strcmp(trimmed, "@calc") == 0)
+            {
+                cli_calc_mode   = !cli_calc_mode;
+                cli_last_retval = 0;
+                rc              = 0;
+                free(raw);
+            }
+            else if (!cli_calc_mode)
+            {
+                rc = engine_exec(raw, &exreq);
+                free(raw);
+                if (exreq)
+                {
+                    if (out_exit_req != NULL)
+                    {
+                        *out_exit_req = 1;
+                    }
+                    break;
+                }
+            }
+            else if (strcmp(trimmed, "exit") == 0 || strcmp(trimmed, "quit") == 0)
+            {
+                cli_calc_mode   = 0;
+                cli_last_retval = 0;
+                rc              = 0;
+                free(raw);
+            }
+            else if (trimmed[0] == '@')
+            {
+                if (strncmp(trimmed, "@calc", 5) == 0 && (trimmed[5] == ' ' || trimmed[5] == '\t'))
+                {
+                    const char *rest = trimmed + 5;
+                    while (*rest == ' ' || *rest == '\t')
+                    {
+                        rest++;
+                    }
+                    if (strncmp(rest, "-h", 2) == 0 || strncmp(rest, "--help", 6) == 0 ||
+                        strncmp(rest, "-v", 2) == 0 || strncmp(rest, "-a", 2) == 0 ||
+                        strncmp(rest, "--repl", 6) == 0)
+                    {
+                        rc = engine_exec(trimmed, &exreq);
+                    }
+                    else
+                    {
+                        rc = exec_calc_repl_expr(rest, &exreq);
+                    }
+                }
+                else
+                {
+                    rc = engine_exec(trimmed, &exreq);
+                }
+                free(raw);
+                if (exreq)
+                {
+                    if (out_exit_req != NULL)
+                    {
+                        *out_exit_req = 1;
+                    }
+                    break;
+                }
+            }
+            else
+            {
+                rc = exec_calc_repl_expr(trimmed, &exreq);
+                free(raw);
+                if (exreq)
+                {
+                    if (out_exit_req != NULL)
+                    {
+                        *out_exit_req = 1;
+                    }
+                    break;
+                }
+            }
+
+            if (nl == NULL)
+            {
+                break;
+            }
+            p = nl + 1;
+        }
+    }
     g_exec_depth--;
     dcexitcode = rc; /* milk-cli exits with the status of the last command */
     return rc;

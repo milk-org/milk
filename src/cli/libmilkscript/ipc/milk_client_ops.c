@@ -1189,6 +1189,7 @@ static int calc_local_list(const char *expr, int digits, char vals[][256], int m
  */
 static int client_calc_or_test(const char                *expr,
                                int                        is_test,
+                               int                        repl,
                                const char                *names,
                                const char                *arr,
                                const milk_client_hooks_t *hooks)
@@ -1208,7 +1209,7 @@ static int client_calc_or_test(const char                *expr,
     char        lv[16][256];
     char       *lp[16];
     int         truth = 0;
-    int n = (arr == NULL)
+    int n = (arr == NULL && !repl)
                 ? calc_local_list(expr, (nd >= 1 && nd <= 17) ? (int) nd : 15, lv, 16, &truth)
                 : -1;
     if (n > 0 && (!is_test || n == 1)) /* nothing to look up on the server: evaluated here */
@@ -1281,7 +1282,9 @@ static int client_calc_or_test(const char                *expr,
     int cwd_fd    = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
     int fds[4]    = { STDIN_FILENO, (out_fd >= 0) ? out_fd : STDOUT_FILENO, STDERR_FILENO, cwd_fd };
     uint8_t mtype = is_test ? MILK_MSG_TEST : MILK_MSG_CALC;
-    uint8_t flags = !bind ? 0 : (arr != NULL) ? MILK_FLAG_PIXELS : MILK_FLAG_BIND;
+    uint8_t flags = !bind           ? (repl ? MILK_FLAG_REPL : 0)
+                    : (arr != NULL) ? MILK_FLAG_PIXELS
+                                    : MILK_FLAG_BIND;
     int     sret = milk_proto_send_with_fds(fd, mtype, flags, buf, off, fds, (cwd_fd >= 0) ? 4 : 3);
     if (cwd_fd >= 0)
     {
@@ -1330,17 +1333,31 @@ static int client_calc_or_test(const char                *expr,
 
 int milk_client_calc(const char *expr, const char *varname, const milk_client_hooks_t *hooks)
 {
-    return client_calc_or_test(expr, 0, varname, NULL, hooks);
+    return client_calc_or_test(expr, 0, 0, varname, NULL, hooks);
 }
 
 int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     const char *names = NULL;
     const char *arr   = NULL;
+    int         repl  = 0;
     int         i     = 0;
-    for (; i + 1 < argc && (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "-a") == 0); i += 2)
+    while (i < argc)
     {
-        *((argv[i][1] == 'v') ? &names : &arr) = argv[i + 1];
+        if (strcmp(argv[i], "--repl") == 0)
+        {
+            repl = 1;
+            i++;
+        }
+        else if (i + 1 < argc && (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "-a") == 0))
+        {
+            *((argv[i][1] == 'v') ? &names : &arr) = argv[i + 1];
+            i += 2;
+        }
+        else
+        {
+            break;
+        }
     }
     size_t tot = 1;
     for (int j = i; j < argc; j++)
@@ -1358,14 +1375,14 @@ int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hook
         strcat(expr, (j > i) ? " " : "");
         strcat(expr, argv[j]);
     }
-    int rc = client_calc_or_test(expr, 0, names, arr, hooks);
+    int rc = client_calc_or_test(expr, 0, repl, names, arr, hooks);
     free(expr);
     return rc;
 }
 
 int milk_client_test(const char *expr, const milk_client_hooks_t *hooks)
 {
-    return client_calc_or_test(expr, 1, NULL, NULL, hooks);
+    return client_calc_or_test(expr, 1, 0, NULL, NULL, hooks);
 }
 
 /**

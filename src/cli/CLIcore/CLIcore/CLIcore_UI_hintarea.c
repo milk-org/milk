@@ -49,6 +49,7 @@
 
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
+#include "cli_calc_parser.h"
 #include "treesitter/cli_treesitter.h"
 
 
@@ -361,7 +362,7 @@ void update_hint_area(void)
         int col = 0;
 
         /* 1. Real-time syntax diagnostics */
-        if (data.syntax_diagnostics)
+        if (data.syntax_diagnostics && !cli_calc_mode)
         {
             CLI_SYNTAX_DIAG diag;
             memset(&diag, 0, sizeof(diag));

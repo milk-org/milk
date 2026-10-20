@@ -105,6 +105,7 @@ char          cli_calc_lasterr[256];    /* the last error message */
 static char  *calc_out          = NULL; /* when set, the result goes here instead of stdout */
 static size_t calc_out_sz       = 0;
 int           cli_calc_out_mode = CLI_CALC_OUT_VALUES;
+int           cli_calc_mode     = 0;
 
 #define CLI_CALC_MAX_PIXELS 1048576 /* `@calc -a`: a bash array, not a data path */
 
@@ -696,6 +697,79 @@ static char *pixel_line(const char *name)
     return out;
 }
 
+/** format_image_summary() - format [<name> ][<dims>] <type> for CLI_CALC_OUT_REPL. */
+static void format_image_summary(const char *name, int is_assign, char *out, size_t outsz)
+{
+    imageID id = image_ID(name, data.core.image, data.core.NB_MAX_IMAGE);
+    if (id == -1)
+    {
+        snprintf(out, outsz, "%s", name);
+        return;
+    }
+    const IMAGE_METADATA *md   = &data.core.image[id].md[0];
+    size_t                dpos = 0;
+    char                  dims[128];
+    dims[0] = '\0';
+    for (uint8_t a = 0; a < md->naxis && dpos + 24 < sizeof(dims); a++)
+    {
+        dpos += (size_t) snprintf(dims + dpos, sizeof(dims) - dpos, "%s%lu", (a > 0) ? " x " : "",
+                                  (unsigned long) md->size[a]);
+    }
+    const char *tstr = "?";
+    switch (md->datatype)
+    {
+    case _DATATYPE_FLOAT:
+        tstr = "f32";
+        break;
+    case _DATATYPE_DOUBLE:
+        tstr = "f64";
+        break;
+    case _DATATYPE_UINT8:
+        tstr = "u8";
+        break;
+    case _DATATYPE_INT8:
+        tstr = "i8";
+        break;
+    case _DATATYPE_UINT16:
+        tstr = "u16";
+        break;
+    case _DATATYPE_INT16:
+        tstr = "i16";
+        break;
+    case _DATATYPE_UINT32:
+        tstr = "u32";
+        break;
+    case _DATATYPE_INT32:
+        tstr = "i32";
+        break;
+    case _DATATYPE_UINT64:
+        tstr = "u64";
+        break;
+    case _DATATYPE_INT64:
+        tstr = "i64";
+        break;
+    case _DATATYPE_COMPLEX_FLOAT:
+        tstr = "cf32";
+        break;
+    case _DATATYPE_COMPLEX_DOUBLE:
+        tstr = "cf64";
+        break;
+    case _DATATYPE_HALF:
+        tstr = "f16";
+        break;
+    default:
+        break;
+    }
+    if (is_assign || strncmp(name, "_tmpcalc", 8) != 0)
+    {
+        snprintf(out, outsz, "%s [%s] %s", name, dims, tstr);
+    }
+    else
+    {
+        snprintf(out, outsz, "[%s] %s", dims, tstr);
+    }
+}
+
 /**
  * @brief Evaluate an expression for @calc or @test in bash mode.
  */
@@ -734,7 +808,9 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
         return 1;
     }
 
-    int is_assign_op = 0;
+    int  is_assign_op = 0;
+    char lhs_name[CLI_CALC_TOKEN_MAXLEN];
+    lhs_name[0] = '\0';
     if (eval_ntok >= 2)
     {
         cli_token_type atype = eval_tokens[1].type;
@@ -742,20 +818,26 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
             atype == TOK_OP_STAR_EQ || atype == TOK_OP_SLASH_EQ)
         {
             is_assign_op = 1;
+            snprintf(lhs_name, sizeof(lhs_name), "%s", eval_tokens[0].sval);
         }
     }
 
-    size_t tmark  = tmp_begin();
-    calc_src      = input;
-    val_t result  = parse_expr(0);
-    calc_src      = NULL;
-    int   is_img  = (!parse_error && !eval_error && result.type == VAL_STRING &&
-                     image_ID(result.sval, data.core.image, data.core.NB_MAX_IMAGE) != -1);
-    char *pixels  = NULL; /* before tmp_end() deletes a temporary result image */
-    int   pix_bad = 0;
+    size_t tmark           = tmp_begin();
+    calc_src               = input;
+    val_t result           = parse_expr(0);
+    calc_src               = NULL;
+    int   is_img           = (!parse_error && !eval_error && result.type == VAL_STRING &&
+                              image_ID(result.sval, data.core.image, data.core.NB_MAX_IMAGE) != -1);
+    char *pixels           = NULL; /* before tmp_end() deletes a temporary result image */
+    int   pix_bad          = 0;
+    char  img_summary[256] = "";
     if (is_img && cli_calc_out_mode == CLI_CALC_OUT_PIXELS && !is_test)
     {
         pix_bad = ((pixels = pixel_line(result.sval)) == NULL);
+    }
+    else if (is_img && cli_calc_out_mode == CLI_CALC_OUT_REPL && !is_test)
+    {
+        format_image_summary(result.sval, is_assign_op, img_summary, sizeof(img_summary));
     }
     tmp_end(tmark);
 
@@ -797,7 +879,8 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
         return 1;
     }
 
-    if (cli_calc_out_mode != CLI_CALC_OUT_VALUES) /* -v/-a: one line per statement */
+    if (cli_calc_out_mode == CLI_CALC_OUT_BIND ||
+        cli_calc_out_mode == CLI_CALC_OUT_PIXELS) /* -v/-a: one line per statement */
     {
         const char *sv = "";
         char        num[64];
@@ -825,6 +908,42 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
         printf("%s\n", sv);
         fflush(stdout);
         free(pixels);
+    }
+    else if (cli_calc_out_mode == CLI_CALC_OUT_REPL)
+    {
+        if (is_img)
+        {
+            printf("%s\n", img_summary);
+            fflush(stdout);
+        }
+        else
+        {
+            char val_buf[CLI_CALC_TOKEN_MAXLEN + 32] = "";
+            if (result.type == VAL_LONG)
+            {
+                snprintf(val_buf, sizeof(val_buf), "%ld", result.lval);
+            }
+            else if (result.type == VAL_DOUBLE)
+            {
+                snprintf(val_buf, sizeof(val_buf), "%.*g", cli_float_digits, result.dval);
+            }
+            else if (result.type == VAL_STRING)
+            {
+                const char *v = is_assign_op ? cli_var_get(result.sval) : result.sval;
+                snprintf(val_buf, sizeof(val_buf), "%s", (v != NULL) ? v : "");
+            }
+            if (is_assign_op && lhs_name[0] != '\0')
+            {
+                printf("%s %s\n", lhs_name, val_buf);
+                fflush(stdout);
+            }
+            else if (result.type == VAL_LONG || result.type == VAL_DOUBLE ||
+                     result.type == VAL_STRING)
+            {
+                printf("%s\n", val_buf);
+                fflush(stdout);
+            }
+        }
     }
     else if (!is_assign_op)
     {

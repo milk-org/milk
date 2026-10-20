@@ -19,11 +19,12 @@
 static const milk_keyword_t keywords[] = {
     /* values and expressions */
     { "calc", MILK_KW_BUILTIN, MILK_KW_ALL, 1,
-      "@calc [-v <var>[,<var>...] | -a <arr>] \"<expr>[; <expr>...]\"",
-      "Evaluate image or scalar expressions",
+      "@calc [-v <var>[,<var>...] | -a <arr>] [\"<expr>[; <expr>...]\"]",
+      "Evaluate image or scalar expressions (no args in milk-cli: toggle calc mode)",
       "  -v a,b    bind the values of the last statements (an assignment's value is the assigned "
       "one)\n"
       "  -a <arr>  bind the pixels of an image result into an indexed array\n"
+      "  (no args) toggle interactive calc mode in milk-cli (exit/quit/@calc to leave)\n"
       "  Images, calculator variables, the bash variables the text names and entity paths "
       "(s.cam.xsize)\n"
       "  are visible. Slicing (im[x0:x1,y0:y1]), reductions and per-pixel math.",

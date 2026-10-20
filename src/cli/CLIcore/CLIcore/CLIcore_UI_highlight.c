@@ -36,6 +36,7 @@
 #include "milk_lexicon.h"
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
+#include "cli_calc_parser.h"
 #include "treesitter/cli_treesitter.h"
 
 
@@ -97,7 +98,7 @@ void cli_highlight_redisplay(void)
     }
 
 #    ifdef USE_TREESITTER
-    if (data.syntax_highlight >= 2)
+    if (data.syntax_highlight >= 2 && !cli_calc_mode)
     {
         // Tree-sitter performs its own rendering
         // including cursor save/restore
@@ -172,7 +173,14 @@ void cli_highlight_redisplay(void)
 
     /* Pick color */
     const char *col;
-    if (cli_is_command(firstword))
+    if (cli_calc_mode && firstword[0] != '@' && strcmp(firstword, "exit") != 0 &&
+        strcmp(firstword, "quit") != 0)
+    {
+        fflush(rl_outstream);
+        return;
+    }
+    else if (cli_is_command(firstword) ||
+             (cli_calc_mode && (strcmp(firstword, "exit") == 0 || strcmp(firstword, "quit") == 0)))
     {
         col = "\033[32m"; /* green */
     }

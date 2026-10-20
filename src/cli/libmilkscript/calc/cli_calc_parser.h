@@ -74,9 +74,11 @@ enum
 {
     CLI_CALC_OUT_VALUES, /* the values of non-assignments */
     CLI_CALC_OUT_BIND, /* one line per statement: its value, an assignment's too (empty for an image) */
-    CLI_CALC_OUT_PIXELS /* as BIND, with an image's pixels on its line */
+    CLI_CALC_OUT_PIXELS, /* as BIND, with an image's pixels on its line */
+    CLI_CALC_OUT_REPL    /* interactive calc mode: <val>, <var> <val>, or [<name> ]<dims> <type> */
 };
 extern int cli_calc_out_mode;
+extern int cli_calc_mode;
 
 /**
  * @brief Delete every temporary `_tmpcalcN` image still tracked (e.g. after a command whose

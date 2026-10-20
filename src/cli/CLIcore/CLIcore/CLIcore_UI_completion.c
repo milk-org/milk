@@ -50,6 +50,7 @@
 #include "CLIcore_script.h"
 #include "CLIcore_signals.h"
 #include "CLIcore_UI_execute.h"
+#include "cli_calc_parser.h"
 #include "treesitter/cli_treesitter.h"
 
 #include <fnmatch.h>
@@ -61,6 +62,7 @@
 
 #define COLORRED "\001\033[31m\002"
 #define COLORHBOLDCYAN "\001\e[0;96m\002"
+#define COLORCALC "\001\033[1;33m\002"
 #define COLORDIMYELLOW "\033[2;33m"
 #define COLORRST "\033[0m"
 #define RL_COLORRESET "\001\033[0m\002"
@@ -326,7 +328,7 @@ void rl_cb_linehandler(char *linein)
 
     /* Handle multi-line continuation (quotes, here-documents, compound commands, trailing
      * operators and backslashes): milk_shell_incomplete() is the bash-aware check */
-    if (milk_shell_incomplete(multiline_buf))
+    if (!cli_calc_mode && milk_shell_incomplete(multiline_buf))
     {
         had_continuation = 1;
         rl_callback_handler_remove();
@@ -479,16 +481,23 @@ void rl_cb_linehandler(char *linein)
     {
         rl_callback_handler_install(cli_get_active_prompt(), (rl_vcpfunc_t *) &rl_cb_linehandler);
     }
+    else
+    {
+        rl_set_prompt(cli_get_active_prompt());
+    }
 
     free(linein);
 }
 
 static char cli_active_prompt[FPS_DIR_STRLENMAX] = "";
+static char cli_base_prompt[FPS_DIR_STRLENMAX]   = "";
 
 void cli_set_active_prompt(const char *prompt)
 {
     if (prompt != NULL)
     {
+        strncpy(cli_base_prompt, prompt, sizeof(cli_base_prompt) - 1);
+        cli_base_prompt[sizeof(cli_base_prompt) - 1] = '\0';
         strncpy(cli_active_prompt, prompt, sizeof(cli_active_prompt) - 1);
         cli_active_prompt[sizeof(cli_active_prompt) - 1] = '\0';
     }
@@ -496,9 +505,27 @@ void cli_set_active_prompt(const char *prompt)
 
 const char *cli_get_active_prompt(void)
 {
-    if (cli_active_prompt[0] == '\0')
+    if (cli_base_prompt[0] == '\0')
     {
-        runCLI_prompt("", cli_active_prompt);
+        runCLI_prompt("", cli_base_prompt);
+    }
+    if (!cli_calc_mode)
+    {
+        strncpy(cli_active_prompt, cli_base_prompt, sizeof(cli_active_prompt) - 1);
+        cli_active_prompt[sizeof(cli_active_prompt) - 1] = '\0';
+        return cli_active_prompt;
+    }
+    const char *gt = strstr(cli_base_prompt, " > ");
+    if (gt != NULL)
+    {
+        size_t pfx = (size_t) (gt - cli_base_prompt);
+        snprintf(cli_active_prompt, sizeof(cli_active_prompt),
+                 "%.*s " COLORCALC "[calc]" COLORHBOLDCYAN "%s", (int) pfx, cli_base_prompt, gt);
+    }
+    else
+    {
+        snprintf(cli_active_prompt, sizeof(cli_active_prompt),
+                 COLORCALC "[calc]" RL_COLORRESET " %s", cli_base_prompt);
     }
     return cli_active_prompt;
 }
@@ -516,26 +543,36 @@ errno_t runCLI_prompt(char *promptstring, char *prompt)
 
     if (ps1_val != NULL && strlen(ps1_val) > 0)
     {
-        strncpy(prompt, ps1_val, FPS_DIR_STRLENMAX - 1);
-        prompt[FPS_DIR_STRLENMAX - 1] = '\0';
+        if (cli_calc_mode)
+        {
+            snprintf(prompt, FPS_DIR_STRLENMAX, COLORCALC "[calc]" RL_COLORRESET " %s", ps1_val);
+        }
+        else
+        {
+            strncpy(prompt, ps1_val, FPS_DIR_STRLENMAX - 1);
+            prompt[FPS_DIR_STRLENMAX - 1] = '\0';
+        }
         return RETURN_SUCCESS;
     }
 
+    const char *tag = cli_calc_mode ? (" " COLORCALC "[calc]" COLORHBOLDCYAN) : "";
     if (strlen(promptstring) > 0)
     {
         if (data.processnameflag == 0)
         {
-            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s > " RL_COLORRESET, promptstring);
+            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s%s > " RL_COLORRESET,
+                     promptstring, tag);
         }
         else
         {
-            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s-%s > " RL_COLORRESET,
-                     promptstring, data.processname);
+            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s-%s%s > " RL_COLORRESET,
+                     promptstring, data.processname, tag);
         }
     }
     else
     {
-        snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s > " RL_COLORRESET, data.processname);
+        snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s%s > " RL_COLORRESET,
+                 data.processname, tag);
     }
 
     return RETURN_SUCCESS;
