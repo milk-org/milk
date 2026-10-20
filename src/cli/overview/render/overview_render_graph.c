@@ -78,7 +78,7 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_RECT     r      = lay->r_graph;
     const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_CONN,
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->subtab, OV_FG_CONN,
                        lay->focus == OV_FOCUS_GRAPH);
 
     int max_rows = r.height - 3;
@@ -116,7 +116,7 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     int rendered_rows = 0;
-    int scroll        = lay->scroll_graph;
+    int scroll        = lay->sub[OV_SUB_CONN].scroll;
 
     for (int ri = scroll; ri < nb_rnodes && rendered_rows < max_rows; ri++)
     {
@@ -124,9 +124,9 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 
         ov_buf_pos(row, r.col + 1);
 
-        int      is_sel   = (ri == lay->sel_graph && lay->focus == OV_FOCUS_GRAPH);
+        int      is_sel   = (ri == lay->sub[OV_SUB_CONN].sel && lay->focus == OV_FOCUS_GRAPH);
         int      is_hover = (lay->mouse_hover && lay->hover_view == OV_FOCUS_GRAPH &&
-                             lay->graph_tab_mode == 0 && ri == lay->hover_idx);
+                             lay->subtab == OV_SUB_CONN && ri == lay->hover_idx);
         ov_rgb_t row_bg   = is_hover ? OV_BG_HOVER : OV_BG_PANEL;
         int      use_ul   = 0;
         ov_rgb_t ul_color = { 0, 0, 0 };

@@ -69,10 +69,9 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
 
     /* The DASH graph panel's sub-tab, named as its tab bar names it */
     static const char *const subtab[] = { " [CONN]", " [LOOPS]", " [DETAIL]", " [RES]" };
-    const char              *detail_label =
-        (lay->view == OV_VIEW_DASHBOARD && lay->graph_tab_mode >= 0 && lay->graph_tab_mode < 4)
-            ? subtab[lay->graph_tab_mode]
-            : "";
+    const char *detail_label = (lay->view == OV_VIEW_DASHBOARD && lay->subtab < OV_SUBTAB_COUNT)
+                                   ? subtab[lay->subtab]
+                                   : "";
 
     /* Filter editing prompt overrides normal status */
     if (lay->filter_editing)
@@ -124,7 +123,7 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
         const char *panel_name = "";
         ov_rgb_t    panel_fg   = OV_FG_DIM;
         if (lay->view == OV_VIEW_LOOPS ||
-            (lay->view == OV_VIEW_DASHBOARD && lay->graph_tab_mode == 1 &&
+            (lay->view == OV_VIEW_DASHBOARD && lay->subtab == OV_SUB_LOOPS &&
              lay->focus == OV_FOCUS_GRAPH))
         {
             panel_name = "Loops";

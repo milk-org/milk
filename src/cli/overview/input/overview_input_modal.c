@@ -37,11 +37,12 @@ int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     if (key == '\n' || key == '\r' || key == OV_KEY_ENTER)
     {
         lay->rename.active = 0;
-        if (lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+        if (lay->sub[OV_SUB_LOOPS].sel >= 0 && lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
         {
-            ov_loop_rename(m, lay->sel_loop, lay->rename.buf);
+            ov_loop_rename(m, lay->sub[OV_SUB_LOOPS].sel, lay->rename.buf);
             ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Loop L%02d renamed to '%s'",
-                           m->loops[lay->sel_loop].loop_id, ov_loop_name(&m->loops[lay->sel_loop]));
+                           m->loops[lay->sub[OV_SUB_LOOPS].sel].loop_id,
+                           ov_loop_name(&m->loops[lay->sub[OV_SUB_LOOPS].sel]));
         }
         return 1;
     }
@@ -86,9 +87,9 @@ int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, const OV_MODEL *m)
  */
 int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    int in_loops =
-        (lay->view == OV_VIEW_LOOPS || (lay->view == OV_VIEW_DASHBOARD &&
-                                        lay->graph_tab_mode == 1 && lay->focus == OV_FOCUS_GRAPH));
+    int in_loops = (lay->view == OV_VIEW_LOOPS ||
+                    (lay->view == OV_VIEW_DASHBOARD && lay->subtab == OV_SUB_LOOPS &&
+                     lay->focus == OV_FOCUS_GRAPH));
     if (!in_loops)
     {
         return 0;
@@ -97,10 +98,10 @@ int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     /* 'r' or 'R' — rename selected loop */
     if (key == 'r' || key == 'R')
     {
-        if (lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+        if (lay->sub[OV_SUB_LOOPS].sel >= 0 && lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
         {
             lay->rename.active = 1;
-            const OV_LOOP *lp  = &m->loops[lay->sel_loop];
+            const OV_LOOP *lp  = &m->loops[lay->sub[OV_SUB_LOOPS].sel];
             snprintf(lay->rename.buf, sizeof(lay->rename.buf), "%s", ov_loop_name(lp));
             lay->rename.cursor = (int) strlen(lay->rename.buf);
             return 1;
@@ -120,7 +121,7 @@ int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     /* 'g' — switch to graph CONNECTIONS tab to view circuit tree */
     if (key == 'g')
     {
-        lay->graph_tab_mode = 0;
+        lay->subtab = OV_SUB_CONN;
         if (lay->view == OV_VIEW_LOOPS)
         {
             ov_set_view(lay, OV_VIEW_GRAPH);

@@ -203,17 +203,17 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
         int body_row    = mr - lay->r_graph.row - 2;
         if (body_row >= 0)
         {
-            if (lay->graph_tab_mode == 0 && lay->view != OV_VIEW_LOOPS)
+            if (lay->subtab == OV_SUB_CONN && lay->view != OV_VIEW_LOOPS)
             {
-                int idx = lay->scroll_graph + body_row;
+                int idx = lay->sub[OV_SUB_CONN].scroll + body_row;
                 if (idx < m->nb_edges)
                 {
                     lay->hover_idx = idx;
                 }
             }
-            else if (lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS)
+            else if (lay->subtab == OV_SUB_LOOPS || lay->view == OV_VIEW_LOOPS)
             {
-                int idx = lay->scroll_loop + body_row;
+                int idx = lay->sub[OV_SUB_LOOPS].scroll + body_row;
                 if (idx < m->nb_loops)
                 {
                     lay->hover_idx = idx;
@@ -284,17 +284,17 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
             int body_row    = mr - lay->r_graph.row - 2;
             if (body_row >= 0)
             {
-                if (lay->graph_tab_mode == 0)
+                if (lay->subtab == OV_SUB_CONN)
                 {
-                    int idx = lay->scroll_graph + body_row;
+                    int idx = lay->sub[OV_SUB_CONN].scroll + body_row;
                     if (idx < m->nb_edges)
                     {
                         lay->hover_idx = idx;
                     }
                 }
-                else if (lay->graph_tab_mode == 1)
+                else if (lay->subtab == OV_SUB_LOOPS)
                 {
-                    int idx = lay->scroll_loop + body_row;
+                    int idx = lay->sub[OV_SUB_LOOPS].scroll + body_row;
                     if (idx < m->nb_loops)
                     {
                         lay->hover_idx = idx;

@@ -45,10 +45,10 @@ void ov_streams_render_single_row(const OV_LAYOUT  *lay,
     int is_rel         = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_STREAMS && rel != NULL &&
                           bget(rel->streams, si));
     int is_loop_member = 0;
-    if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) && lay->sel_loop >= 0 &&
-        lay->sel_loop < m->nb_loops)
+    if ((lay->subtab == OV_SUB_LOOPS || lay->view == OV_VIEW_LOOPS) &&
+        lay->sub[OV_SUB_LOOPS].sel >= 0 && lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
     {
-        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        uint32_t active_mask = (UINT32_C(1) << lay->sub[OV_SUB_LOOPS].sel);
         if (s->loop_mask & active_mask)
         {
             is_loop_member = 1;

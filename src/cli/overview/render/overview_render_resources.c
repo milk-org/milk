@@ -79,7 +79,7 @@ int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, target_color,
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->subtab, target_color,
                        lay->focus == OV_FOCUS_GRAPH);
 
     int ri       = 0;

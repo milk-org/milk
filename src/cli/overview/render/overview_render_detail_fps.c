@@ -32,7 +32,7 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
     const OV_FPS *f = &m->fps[fsel];
 
     const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_FPS,
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->subtab, OV_FG_FPS,
                        lay->focus == OV_FOCUS_GRAPH);
 
     int ri       = 0;
@@ -106,7 +106,7 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
         H_ov_theme_bg(OV_BG_PANEL);
 
         /* Hint: ↑↓ ENTER (only when graph focused) */
-        if (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 2)
+        if (lay->focus == OV_FOCUS_GRAPH && lay->subtab == OV_SUB_DETAILS)
         {
             H_ov_theme_fg(OV_FG_DIM);
             int h = snprintf(NULL, 0, "  [↑↓ ENTER]");
@@ -124,9 +124,9 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
         line_idx++;
 
         /* Clamp param_sel */
-        if (lay->param_sel >= f->nb_disp_params)
+        if (lay->sub[OV_SUB_DETAILS].sel >= f->nb_disp_params)
         {
-            lay->param_sel = f->nb_disp_params - 1;
+            lay->sub[OV_SUB_DETAILS].sel = f->nb_disp_params - 1;
         }
 
         /* Auto-scroll to keep selection visible */
@@ -136,20 +136,20 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             {
                 vis_rows = 1;
             }
-            if (lay->param_sel >= 0)
+            if (lay->sub[OV_SUB_DETAILS].sel >= 0)
             {
-                if (lay->param_sel < lay->param_scroll)
+                if (lay->sub[OV_SUB_DETAILS].sel < lay->sub[OV_SUB_DETAILS].scroll)
                 {
-                    lay->param_scroll = lay->param_sel;
+                    lay->sub[OV_SUB_DETAILS].scroll = lay->sub[OV_SUB_DETAILS].sel;
                 }
-                if (lay->param_sel >= lay->param_scroll + vis_rows)
+                if (lay->sub[OV_SUB_DETAILS].sel >= lay->sub[OV_SUB_DETAILS].scroll + vis_rows)
                 {
-                    lay->param_scroll = lay->param_sel - vis_rows + 1;
+                    lay->sub[OV_SUB_DETAILS].scroll = lay->sub[OV_SUB_DETAILS].sel - vis_rows + 1;
                 }
             }
-            if (lay->param_scroll < 0)
+            if (lay->sub[OV_SUB_DETAILS].scroll < 0)
             {
-                lay->param_scroll = 0;
+                lay->sub[OV_SUB_DETAILS].scroll = 0;
             }
         }
 
@@ -157,18 +157,18 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
         for (int dp = 0; dp < f->nb_disp_params; dp++)
         {
             /* Skip rows above scroll window */
-            if (dp < lay->param_scroll)
+            if (dp < lay->sub[OV_SUB_DETAILS].scroll)
             {
                 line_idx++;
                 continue;
             }
 
-            int is_sel =
-                (dp == lay->param_sel && lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 2);
+            int is_sel      = (dp == lay->sub[OV_SUB_DETAILS].sel && lay->focus == OV_FOCUS_GRAPH &&
+                               lay->subtab == OV_SUB_DETAILS);
             int header_rows = 3 + (f->description[0] != '\0' ? 1 : 0);
-            int is_hover    = (lay->mouse_hover && lay->hover_view == OV_FOCUS_GRAPH &&
-                               lay->graph_tab_mode == 2 &&
-                               lay->hover_idx == header_rows + (dp - lay->param_scroll));
+            int is_hover = (lay->mouse_hover && lay->hover_view == OV_FOCUS_GRAPH &&
+                            lay->subtab == OV_SUB_DETAILS &&
+                            lay->hover_idx == header_rows + (dp - lay->sub[OV_SUB_DETAILS].scroll));
 
             ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : (is_hover ? OV_BG_HOVER : OV_BG_PANEL);
 

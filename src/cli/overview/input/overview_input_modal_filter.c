@@ -150,9 +150,9 @@ int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     /* 'f' or Ctrl+F — toggle active filter without erasing */
-    int in_loops =
-        (lay->view == OV_VIEW_LOOPS || (lay->view == OV_VIEW_DASHBOARD &&
-                                        lay->graph_tab_mode == 1 && lay->focus == OV_FOCUS_GRAPH));
+    int in_loops = (lay->view == OV_VIEW_LOOPS ||
+                    (lay->view == OV_VIEW_DASHBOARD && lay->subtab == OV_SUB_LOOPS &&
+                     lay->focus == OV_FOCUS_GRAPH));
     if ((!in_loops && key == 'f') || key == ctrl('f'))
     {
         ov_focus_t target = ov_get_effective_filter_panel(lay);

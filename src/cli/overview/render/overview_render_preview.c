@@ -143,9 +143,10 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
     case OV_FOCUS_GRAPH:
     {
         label_color = OV_FG_LOOP;
-        if (lay->graph_tab_mode == 1 && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+        if (lay->subtab == OV_SUB_LOOPS && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+            lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
         {
-            const OV_LOOP *lp = &m->loops[lay->sel_loop];
+            const OV_LOOP *lp = &m->loops[lay->sub[OV_SUB_LOOPS].sel];
             len = snprintf(line, sizeof(line),
                            " LOOP L%02d  %-20.20s  Nodes:%d (%ds, %dp)  Hz:%.1f  %s  %s",
                            lp->loop_id, ov_loop_name(lp), lp->nb_nodes, lp->nb_streams,

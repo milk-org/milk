@@ -316,9 +316,9 @@ void ov_help_render_detail(const OV_LAYOUT    *lay,
     }
     else if (entry->section == HS_GRAPH)
     {
-        if (m != NULL && lay->sel_graph >= 0 && lay->sel_graph < m->nb_nodes)
+        if (m != NULL && lay->sub[OV_SUB_CONN].sel >= 0 && lay->sub[OV_SUB_CONN].sel < m->nb_nodes)
         {
-            const OV_NODE *n = &m->nodes[lay->sel_graph];
+            const OV_NODE *n = &m->nodes[lay->sub[OV_SUB_CONN].sel];
             target_fg        = OV_FG_CONN;
             snprintf(tbuf, sizeof(tbuf), "Selected node '%s' (type: %s)", n->name,
                      (n->type == OV_NODE_STREAM) ? "Stream"

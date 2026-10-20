@@ -19,16 +19,16 @@ static void render_dash(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel
     ov_render_procs_panel(lay, m, rel);
     ov_render_fps_panel(lay, m, rel);
     int rendered = 0;
-    if (lay->graph_tab_mode == 1)
+    if (lay->subtab == OV_SUB_LOOPS)
     {
         ov_render_loops_panel(lay, m);
         rendered = 1;
     }
-    else if (lay->graph_tab_mode == 2)
+    else if (lay->subtab == OV_SUB_DETAILS)
     {
         rendered = ov_render_detail_panel(lay, m);
     }
-    else if (lay->graph_tab_mode == 3)
+    else if (lay->subtab == OV_SUB_RES)
     {
         rendered = ov_render_resources_panel(lay, m);
     }

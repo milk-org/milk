@@ -97,11 +97,9 @@ typedef struct
     int             term_cols;
     ov_view_t       view;
     ov_focus_t      focus;
-    int             sel_graph;
-    int             sel_loop;
-    int             scroll_graph;
-    int             scroll_loop;
-    int             scroll_detail;
+    ov_subtab_t     subtab;               /* sub-tab of the bottom-right panel */
+    OV_SUBTAB_STATE sub[OV_SUBTAB_COUNT]; /* list cursor of each sub-tab */
+    int             scroll_detail;        /* first line of DETAILS / RESOURCES text */
     int             loop_filter_active;
     OV_RENAME_STATE rename; /* loop rename prompt */
     int             detail_total_lines;
@@ -148,9 +146,7 @@ typedef struct
     int  hover_is_header;    /* 1 if hovering header */
     int  hover_col_logical;  /* Logical column index (0, 1, 2...) */
     char hover_tooltip[256]; /* Text to display in tooltip pass */
-    /* Graph panel tab mode: 0=CONNECTIONS, 1=LOOPS, 2=DETAILS, 3=RESOURCES */
-    int graph_tab_mode;
-    int sort_pending;
+    int  sort_pending;
     /* Freeze selection: preview + cross-highlights
      * stay locked while navigation continues */
     int        freeze;
@@ -160,8 +156,6 @@ typedef struct
     /* Lineage tracking mode: 0 = Trigger, 1 = Input */
     int lineage_mode;
     /* FPS parameter navigation (detail panel) */
-    int  param_sel;     /* selected param (-1=none) */
-    int  param_scroll;  /* scroll offset */
     int  param_editing; /* 1 = inline edit active */
     char param_edit_buf[200];
     int  param_edit_pos; /* cursor in edit buffer */

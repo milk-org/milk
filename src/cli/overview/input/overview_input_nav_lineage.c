@@ -114,9 +114,9 @@ int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         int                 n;
         const SG_TREE_NODE *rows = ov_graph_rows(lay, m, &n);
-        if (lay->sel_graph >= 0 && lay->sel_graph < n)
+        if (lay->sub[OV_SUB_CONN].sel >= 0 && lay->sub[OV_SUB_CONN].sel < n)
         {
-            current_node = m->streams[rows[lay->sel_graph].stream_idx].node_idx;
+            current_node = m->streams[rows[lay->sub[OV_SUB_CONN].sel].stream_idx].node_idx;
         }
         target_type = OV_NODE_STREAM; /* CONNECTIONS rows are streams */
     }
@@ -140,7 +140,7 @@ int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 if (rows[i].stream_idx == tn->index && tn->type == OV_NODE_STREAM)
                 {
-                    lay->sel_graph = i;
+                    lay->sub[OV_SUB_CONN].sel = i;
                     break;
                 }
             }

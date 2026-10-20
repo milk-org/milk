@@ -187,23 +187,23 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         }
         else if (lay->view == OV_VIEW_GRAPH)
         {
-            if (lay->graph_tab_mode == 0)
+            if (lay->subtab == OV_SUB_CONN)
             {
-                sel    = &lay->sel_graph;
-                scroll = &lay->scroll_graph;
+                sel    = &lay->sub[OV_SUB_CONN].sel;
+                scroll = &lay->sub[OV_SUB_CONN].scroll;
                 ov_graph_rows(lay, m, &count);
                 page_h = lay->r_graph.height - 3;
             }
-            else if (lay->graph_tab_mode == 1)
+            else if (lay->subtab == OV_SUB_LOOPS)
             {
-                sel    = &lay->sel_loop;
-                scroll = &lay->scroll_loop;
+                sel    = &lay->sub[OV_SUB_LOOPS].sel;
+                scroll = &lay->sub[OV_SUB_LOOPS].scroll;
                 count  = m->nb_loops;
                 page_h = (lay->r_graph.height - 3 >= 6)
                              ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
                              : (lay->r_graph.height - 3);
             }
-            else if (lay->graph_tab_mode == 2)
+            else if (lay->subtab == OV_SUB_DETAILS)
             {
                 page_h = lay->r_graph.height - 3;
                 lay->scroll_detail += dir;
@@ -229,8 +229,8 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         }
         else if (lay->view == OV_VIEW_LOOPS)
         {
-            sel    = &lay->sel_loop;
-            scroll = &lay->scroll_loop;
+            sel    = &lay->sub[OV_SUB_LOOPS].sel;
+            scroll = &lay->sub[OV_SUB_LOOPS].scroll;
             count  = m->nb_loops;
             page_h = lay->r_graph.height - 3;
         }
@@ -259,24 +259,24 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
             else if (INSIDE(lay->r_graph, mr, mc))
             {
-                if (lay->graph_tab_mode == 0)
+                if (lay->subtab == OV_SUB_CONN)
                 {
-                    sel    = &lay->sel_graph;
-                    scroll = &lay->scroll_graph;
+                    sel    = &lay->sub[OV_SUB_CONN].sel;
+                    scroll = &lay->sub[OV_SUB_CONN].scroll;
                     ov_graph_rows(lay, m, &count);
                     page_h = lay->r_graph.height - 3;
                 }
-                else if (lay->graph_tab_mode == 1)
+                else if (lay->subtab == OV_SUB_LOOPS)
                 {
-                    sel    = &lay->sel_loop;
-                    scroll = &lay->scroll_loop;
+                    sel    = &lay->sub[OV_SUB_LOOPS].sel;
+                    scroll = &lay->sub[OV_SUB_LOOPS].scroll;
                     count  = m->nb_loops;
                     page_h =
                         (lay->r_graph.height - 3 >= 6)
                             ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
                             : (lay->r_graph.height - 3);
                 }
-                else if (lay->graph_tab_mode == 2)
+                else if (lay->subtab == OV_SUB_DETAILS)
                 {
                     page_h = lay->r_graph.height - 3;
                     lay->scroll_detail += dir;

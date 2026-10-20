@@ -66,9 +66,10 @@ int ov_filter_streams(const OV_LAYOUT  *lay,
         filt_n = new_filt_n;
     }
 
-    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    if (lay->loop_filter_active && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+        lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
     {
-        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        uint32_t active_mask = (UINT32_C(1) << lay->sub[OV_SUB_LOOPS].sel);
         int      new_filt_n  = 0;
         for (int i = 0; i < filt_n; i++)
         {
@@ -139,9 +140,10 @@ int ov_filter_procs(const OV_LAYOUT  *lay,
         filt_n = new_filt_n;
     }
 
-    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    if (lay->loop_filter_active && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+        lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
     {
-        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        uint32_t active_mask = (UINT32_C(1) << lay->sub[OV_SUB_LOOPS].sel);
         int      new_filt_n  = 0;
         for (int i = 0; i < filt_n; i++)
         {
@@ -212,9 +214,10 @@ int ov_filter_fps(const OV_LAYOUT  *lay,
         filt_n = new_filt_n;
     }
 
-    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    if (lay->loop_filter_active && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+        lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
     {
-        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        uint32_t active_mask = (UINT32_C(1) << lay->sub[OV_SUB_LOOPS].sel);
         int      new_filt_n  = 0;
         for (int i = 0; i < filt_n; i++)
         {

@@ -4,7 +4,7 @@
 
 /**
  * @file overview_panel.h
- * @brief State of one list panel (streams, processes or FPS); OV_LAYOUT holds one per panel
+ * @brief State of one list panel (streams, processes or FPS) and of each sub-tab; OV_LAYOUT holds them
  */
 
 #ifndef OVERVIEW_PANEL_H
@@ -31,5 +31,22 @@ typedef struct
     int       filter_on;     /* regex filter applied (the pattern is kept when off) */
     char      filter[64];    /* regex filter pattern */
 } OV_PANEL_STATE;
+
+/* Sub-tabs of the bottom-right panel (DASH) and of F6 */
+typedef enum
+{
+    OV_SUB_CONN = 0, /* CONNECTIONS */
+    OV_SUB_LOOPS,    /* LOOPS (F7 shows its list too) */
+    OV_SUB_DETAILS,  /* DETAILS: text, or the FPS parameter list */
+    OV_SUB_RES,      /* RESOURCES */
+    OV_SUBTAB_COUNT,
+} ov_subtab_t;
+
+/* List cursor of one sub-tab, indexed by ov_subtab_t */
+typedef struct
+{
+    int sel;    /* cursor row (-1 = none) */
+    int scroll; /* first drawn row */
+} OV_SUBTAB_STATE;
 
 #endif /* OVERVIEW_PANEL_H */

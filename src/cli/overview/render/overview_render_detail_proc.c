@@ -24,7 +24,7 @@ int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
     const OV_PROC *p = &m->procs[psel];
 
     const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_PROC,
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->subtab, OV_FG_PROC,
                        lay->focus == OV_FOCUS_GRAPH);
 
     int ri       = 0;

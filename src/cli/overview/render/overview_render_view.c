@@ -51,8 +51,9 @@ static void ov_view_key(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t pane
     k->m            = m;
     k->seq          = m->seq;
     k->order_gen    = ov_order_gen(panel);
-    k->loop         = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-                          ? lay->sel_loop
+    k->loop         = (lay->loop_filter_active && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+                       lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
+                          ? lay->sub[OV_SUB_LOOPS].sel
                           : -1;
     k->freeze_focus = -1;
     if (lay->freeze && lay->freeze_focus < OV_FOCUS_GRAPH && lay->freeze_focus != panel)

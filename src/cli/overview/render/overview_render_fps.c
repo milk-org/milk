@@ -125,10 +125,10 @@ static void ov_fps__render_rows(const OV_LAYOUT  *lay,
             int           has_rel   = (rel != NULL && bget(rel->fps, fi));
             int           is_rel = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_FPS && has_rel);
             int           is_loop_member = 0;
-            if ((lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS) && lay->sel_loop >= 0 &&
-                lay->sel_loop < m->nb_loops)
+            if ((lay->subtab == OV_SUB_LOOPS || lay->view == OV_VIEW_LOOPS) &&
+                lay->sub[OV_SUB_LOOPS].sel >= 0 && lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
             {
-                uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+                uint32_t active_mask = (UINT32_C(1) << lay->sub[OV_SUB_LOOPS].sel);
                 if (f->loop_mask & active_mask)
                 {
                     is_loop_member = 1;
@@ -280,8 +280,9 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
     int         filt_n        = ov_rows(lay, m, OV_FOCUS_FPS, fidx, OV_MAX_FPS);
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_FPS);
 
-    int  loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-                       ? m->loops[lay->sel_loop].loop_id
+    int  loop_id = (lay->loop_filter_active && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+                    lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
+                       ? m->loops[lay->sub[OV_SUB_LOOPS].sel].loop_id
                        : -1;
     char ftitle[48];
     ov_draw_panel_border_filter(

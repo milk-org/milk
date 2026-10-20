@@ -68,24 +68,24 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
     case OV_FOCUS_GRAPH:
         /* F7 always draws the loop list, whatever the DASH sub-tab */
-        if (lay->view == OV_VIEW_LOOPS || lay->graph_tab_mode == 1)
+        if (lay->view == OV_VIEW_LOOPS || lay->subtab == OV_SUB_LOOPS)
         {
-            sel    = &lay->sel_loop;
-            scroll = &lay->scroll_loop;
+            sel    = &lay->sub[OV_SUB_LOOPS].sel;
+            scroll = &lay->sub[OV_SUB_LOOPS].scroll;
             count  = m->nb_loops;
             page_h = (lay->r_graph.height - 3 >= 6)
                          ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
                          : (lay->r_graph.height - 3);
             break;
         }
-        else if (lay->graph_tab_mode == 0)
+        else if (lay->subtab == OV_SUB_CONN)
         {
-            sel    = &lay->sel_graph;
-            scroll = &lay->scroll_graph;
+            sel    = &lay->sub[OV_SUB_CONN].sel;
+            scroll = &lay->sub[OV_SUB_CONN].scroll;
             ov_graph_rows(lay, m, &count);
             page_h = lay->r_graph.height - 3;
         }
-        else if (lay->graph_tab_mode == 2)
+        else if (lay->subtab == OV_SUB_DETAILS)
         {
             /* DETAILS tab: param nav if FPS selected */
             ov_focus_t dpanel  = OV_FOCUS_STREAMS;
@@ -98,54 +98,54 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 (fps_sel >= 0 && fps_sel < m->nb_fps && m->fps[fps_sel].nb_disp_params > 0);
             int nparams = has_fps_params ? m->fps[fps_sel].nb_disp_params : 0;
 
-            if (has_fps_params && lay->param_sel >= 0)
+            if (has_fps_params && lay->sub[OV_SUB_DETAILS].sel >= 0)
             {
                 /* Navigate parameter cursor */
                 if (key == OV_KEY_UP)
                 {
-                    if (lay->param_sel > 0)
+                    if (lay->sub[OV_SUB_DETAILS].sel > 0)
                     {
-                        lay->param_sel--;
+                        lay->sub[OV_SUB_DETAILS].sel--;
                     }
                 }
                 else if (key == OV_KEY_DOWN)
                 {
-                    if (lay->param_sel < nparams - 1)
+                    if (lay->sub[OV_SUB_DETAILS].sel < nparams - 1)
                     {
-                        lay->param_sel++;
+                        lay->sub[OV_SUB_DETAILS].sel++;
                     }
                 }
                 else if (key == OV_KEY_PGUP)
                 {
-                    lay->param_sel -= page_h;
-                    if (lay->param_sel < 0)
+                    lay->sub[OV_SUB_DETAILS].sel -= page_h;
+                    if (lay->sub[OV_SUB_DETAILS].sel < 0)
                     {
-                        lay->param_sel = 0;
+                        lay->sub[OV_SUB_DETAILS].sel = 0;
                     }
                 }
                 else if (key == OV_KEY_PGDN)
                 {
-                    lay->param_sel += page_h;
-                    if (lay->param_sel >= nparams)
+                    lay->sub[OV_SUB_DETAILS].sel += page_h;
+                    if (lay->sub[OV_SUB_DETAILS].sel >= nparams)
                     {
-                        lay->param_sel = nparams - 1;
+                        lay->sub[OV_SUB_DETAILS].sel = nparams - 1;
                     }
                 }
                 else if (key == OV_KEY_HOME)
                 {
-                    lay->param_sel = 0;
+                    lay->sub[OV_SUB_DETAILS].sel = 0;
                 }
                 else if (key == OV_KEY_END)
                 {
-                    lay->param_sel = nparams - 1;
-                    if (lay->param_sel < 0)
+                    lay->sub[OV_SUB_DETAILS].sel = nparams - 1;
+                    if (lay->sub[OV_SUB_DETAILS].sel < 0)
                     {
-                        lay->param_sel = 0;
+                        lay->sub[OV_SUB_DETAILS].sel = 0;
                     }
                 }
                 else if (key == OV_KEY_ESC)
                 {
-                    lay->param_sel = -1;
+                    lay->sub[OV_SUB_DETAILS].sel = -1;
                 }
                 else if (key == OV_KEY_ENTER || key == '\r' || key == '\n')
                 {
@@ -157,16 +157,17 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     }
                     else
                     {
-                        ov_fps_inline_edit(lay, m->fps[fps_sel].name, lay->param_sel);
+                        ov_fps_inline_edit(lay, m->fps[fps_sel].name, lay->sub[OV_SUB_DETAILS].sel);
                     }
                 }
                 return 1;
             }
 
             /* Init param_sel on first nav key */
-            if (has_fps_params && lay->param_sel < 0 && (key == OV_KEY_DOWN || key == OV_KEY_UP))
+            if (has_fps_params && lay->sub[OV_SUB_DETAILS].sel < 0 &&
+                (key == OV_KEY_DOWN || key == OV_KEY_UP))
             {
-                lay->param_sel = 0;
+                lay->sub[OV_SUB_DETAILS].sel = 0;
                 return 1;
             }
 

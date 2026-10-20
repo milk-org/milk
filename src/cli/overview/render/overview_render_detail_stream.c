@@ -245,7 +245,7 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
     const OV_STREAM *s = &m->streams[ssel];
 
     const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_STREAM,
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->subtab, OV_FG_STREAM,
                        lay->focus == OV_FOCUS_GRAPH);
 
     int ri       = 0;

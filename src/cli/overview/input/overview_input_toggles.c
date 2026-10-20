@@ -47,7 +47,7 @@ int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
 
     if (key == OV_KEY_BTAB)
     {
-        lay->graph_tab_mode = (lay->graph_tab_mode + 1) % 4;
+        lay->subtab = (ov_subtab_t) ((lay->subtab + 1) % OV_SUBTAB_COUNT);
         return 1;
     }
 
@@ -97,7 +97,7 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
             return 1;
         }
-        lay->graph_tab_mode = (lay->graph_tab_mode == 2) ? 0 : 2;
+        lay->subtab = (lay->subtab == OV_SUB_DETAILS) ? OV_SUB_CONN : OV_SUB_DETAILS;
         return 1;
     }
     /* Compact column mode toggle (#13) */
@@ -222,7 +222,8 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
     /* Loop filter toggle on Enter when on Loops */
     if ((key == '\n' || key == '\r' || key == 10 || key == 13) &&
-        (lay->view == OV_VIEW_LOOPS || (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 1)))
+        (lay->view == OV_VIEW_LOOPS ||
+         (lay->focus == OV_FOCUS_GRAPH && lay->subtab == OV_SUB_LOOPS)))
     {
         lay->loop_filter_active = !lay->loop_filter_active;
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
@@ -232,13 +233,13 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     /* Graph jump on Enter (must be before detail mode toggle): select the row's stream in DASH */
-    if ((key == '\n' || key == '\r') && lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 0)
+    if ((key == '\n' || key == '\r') && lay->focus == OV_FOCUS_GRAPH && lay->subtab == OV_SUB_CONN)
     {
         int                 n;
         const SG_TREE_NODE *rows = ov_graph_rows(lay, m, &n);
-        if (lay->sel_graph >= 0 && lay->sel_graph < n)
+        if (lay->sub[OV_SUB_CONN].sel >= 0 && lay->sub[OV_SUB_CONN].sel < n)
         {
-            int si      = rows[lay->sel_graph].stream_idx;
+            int si      = rows[lay->sub[OV_SUB_CONN].sel].stream_idx;
             lay->freeze = 0; /* before resolving: freeze changes the drawn rows */
             ov_set_view(lay, OV_VIEW_DASHBOARD);
             lay->focus = OV_FOCUS_STREAMS;
@@ -264,11 +265,11 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             lay->focus == OV_FOCUS_FPS)
         {
             /* Always jump to DETAILS sub-tab */
-            lay->graph_tab_mode = 2;
+            lay->subtab = OV_SUB_DETAILS;
         }
         else
         {
-            lay->graph_tab_mode = (lay->graph_tab_mode == 2) ? 0 : 2;
+            lay->subtab = (lay->subtab == OV_SUB_DETAILS) ? OV_SUB_CONN : OV_SUB_DETAILS;
         }
         return 1;
     }

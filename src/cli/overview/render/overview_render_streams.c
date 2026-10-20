@@ -169,8 +169,9 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
 
     /* Panel title with prominent filter indicator */
     {
-        int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-                          ? lay->sel_loop + 1
+        int loop_id = (lay->loop_filter_active && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+                       lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
+                          ? lay->sub[OV_SUB_LOOPS].sel + 1
                           : -1;
         ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "STREAMS", OV_FG_STREAM,
                                     lay->focus == OV_FOCUS_STREAMS, 0, lay->ctrl_blink, loop_id,

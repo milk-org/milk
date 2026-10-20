@@ -183,16 +183,16 @@ int main(int argc, char *argv[])
     /* --- Initialize layout --- */
     OV_LAYOUT lay;
     memset(&lay, 0, sizeof(lay));
-    lay.view                  = OV_VIEW_DASHBOARD;
-    lay.focus                 = OV_FOCUS_STREAMS;
-    lay.cmdlog_rows           = 4;
-    lay.param_sel             = -1;
-    lay.fps_split_ratio       = 0.4f;
-    lay.fps_split_dragging    = 0;
-    lay.dash_split_v_ratio    = 0.5f;
-    lay.dash_split_h_ratio    = 0.5f;
-    lay.dash_split_v_dragging = 0;
-    lay.dash_split_h_dragging = 0;
+    lay.view                    = OV_VIEW_DASHBOARD;
+    lay.focus                   = OV_FOCUS_STREAMS;
+    lay.cmdlog_rows             = 4;
+    lay.sub[OV_SUB_DETAILS].sel = -1;
+    lay.fps_split_ratio         = 0.4f;
+    lay.fps_split_dragging      = 0;
+    lay.dash_split_v_ratio      = 0.5f;
+    lay.dash_split_h_ratio      = 0.5f;
+    lay.dash_split_v_dragging   = 0;
+    lay.dash_split_h_dragging   = 0;
 
     ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO, "Shared memory directory: %s", ov_get_shmdir());
     if (strcmp(ov_get_procdir(), ov_get_shmdir()) != 0)

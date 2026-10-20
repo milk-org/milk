@@ -163,10 +163,10 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         ov_input_nav_fps(key, lay, m);
         return 0;
     }
-    if (key == 27 && lay->param_sel >= 0 && lay->focus == OV_FOCUS_GRAPH &&
-        lay->graph_tab_mode == 2 && ov_view_has_panel(lay->view, OV_FOCUS_GRAPH))
+    if (key == 27 && lay->sub[OV_SUB_DETAILS].sel >= 0 && lay->focus == OV_FOCUS_GRAPH &&
+        lay->subtab == OV_SUB_DETAILS && ov_view_has_panel(lay->view, OV_FOCUS_GRAPH))
     {
-        lay->param_sel = -1;
+        lay->sub[OV_SUB_DETAILS].sel = -1;
         return 0;
     }
 
@@ -314,18 +314,18 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             page_h = lay->r_fps.height - 3;
             break;
         case OV_FOCUS_GRAPH:
-            if (lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS)
+            if (lay->subtab == OV_SUB_LOOPS || lay->view == OV_VIEW_LOOPS)
             {
-                sel    = &lay->sel_loop;
-                scroll = &lay->scroll_loop;
+                sel    = &lay->sub[OV_SUB_LOOPS].sel;
+                scroll = &lay->sub[OV_SUB_LOOPS].scroll;
                 page_h = (lay->r_graph.height - 3 >= 6)
                              ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
                              : (lay->r_graph.height - 3);
             }
             else
             {
-                sel    = &lay->sel_graph;
-                scroll = &lay->scroll_graph;
+                sel    = &lay->sub[OV_SUB_CONN].sel;
+                scroll = &lay->sub[OV_SUB_CONN].scroll;
                 page_h = lay->r_graph.height - 3;
             }
             break;

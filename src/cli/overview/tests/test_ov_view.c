@@ -134,7 +134,7 @@ static void test_view_cache(void)
     OV_MODEL                *m       = mk_streams(names, 4, 30);
     static OV_LAYOUT         lay;
     memset(&lay, 0, sizeof(lay));
-    lay.sel_loop = -1;
+    lay.sub[OV_SUB_LOOPS].sel = -1;
     ov_order_reset();
     ov_order_sort(m, OV_ORDER_STREAMS, 0, 0);
 

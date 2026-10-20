@@ -154,8 +154,9 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
     regex_t re;
     int     filt_n = ov_procs__filter(lay, m, rel, filt_idx, &has_re, &re);
 
-    int  loop_id    = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-                          ? m->loops[lay->sel_loop].loop_id
+    int  loop_id    = (lay->loop_filter_active && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+                       lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
+                          ? m->loops[lay->sub[OV_SUB_LOOPS].sel].loop_id
                           : -1;
     char ptitle[48] = "PROCESSINFO";
     if (m->nb_procs_hidden > 0)

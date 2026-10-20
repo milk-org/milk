@@ -29,12 +29,12 @@ static void graph_row_click(OV_LAYOUT *lay, const OV_MODEL *m, int body_row, int
 {
     int                 n;
     const SG_TREE_NODE *rows = ov_graph_rows(lay, m, &n);
-    int                 idx  = lay->scroll_graph + body_row;
+    int                 idx  = lay->sub[OV_SUB_CONN].scroll + body_row;
     if (idx < 0 || idx >= n)
     {
         return;
     }
-    lay->sel_graph = idx;
+    lay->sub[OV_SUB_CONN].sel = idx;
     if (!is_dbl)
     {
         return;
@@ -116,7 +116,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                 {
                     if (is_dbl)
                     {
-                        lay->graph_tab_mode = 2;
+                        lay->subtab = OV_SUB_DETAILS;
                     }
                 }
             }
@@ -137,7 +137,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             {
                 if (is_dbl)
                 {
-                    lay->graph_tab_mode = 2;
+                    lay->subtab = OV_SUB_DETAILS;
                 }
             }
         }
@@ -157,7 +157,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             {
                 if (is_dbl)
                 {
-                    lay->graph_tab_mode = 2;
+                    lay->subtab = OV_SUB_DETAILS;
                 }
             }
         }
@@ -174,7 +174,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             int         ti      = ov_input_hit_panel_tab(mc, lay->r_graph.col, dtabs, 4);
             if (ti >= 0)
             {
-                lay->graph_tab_mode = ti;
+                lay->subtab = (ov_subtab_t) ti;
                 ov_scan_force_update();
             }
         }
@@ -183,7 +183,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             int body_row = mr - lay->r_graph.row - 2;
             if (body_row >= 0)
             {
-                if (lay->graph_tab_mode == 0)
+                if (lay->subtab == OV_SUB_CONN)
                 {
                     graph_row_click(lay, m, body_row, mc, is_dbl);
                 }
@@ -209,7 +209,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                 {
                     if (is_dbl)
                     {
-                        lay->graph_tab_mode = 2;
+                        lay->subtab = OV_SUB_DETAILS;
                     }
                 }
             }
@@ -230,7 +230,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                 {
                     if (is_dbl)
                     {
-                        lay->graph_tab_mode = 2;
+                        lay->subtab = OV_SUB_DETAILS;
                     }
                 }
             }
@@ -250,7 +250,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                 {
                     if (is_dbl)
                     {
-                        lay->graph_tab_mode = 2;
+                        lay->subtab = OV_SUB_DETAILS;
                     }
                 }
             }
@@ -266,7 +266,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                 int         ti      = ov_input_hit_panel_tab(mc, lay->r_graph.col, dtabs, 4);
                 if (ti >= 0)
                 {
-                    lay->graph_tab_mode = ti;
+                    lay->subtab = (ov_subtab_t) ti;
                     ov_scan_force_update();
                 }
             }
@@ -275,21 +275,21 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                 int body_row = mr - lay->r_graph.row - 2;
                 if (body_row >= 0)
                 {
-                    if (lay->graph_tab_mode == 0)
+                    if (lay->subtab == OV_SUB_CONN)
                     {
                         graph_row_click(lay, m, body_row, mc, is_dbl);
                     }
-                    else if (lay->graph_tab_mode == 1)
+                    else if (lay->subtab == OV_SUB_LOOPS)
                     {
                         int max_rows = lay->r_graph.height - 3;
                         int list_rows =
                             (max_rows >= 6) ? ((max_rows > 8) ? (max_rows / 2) : 3) : max_rows;
                         if (body_row >= 0 && body_row < list_rows)
                         {
-                            int li = lay->scroll_loop + body_row;
+                            int li = lay->sub[OV_SUB_LOOPS].scroll + body_row;
                             if (li >= 0 && li < m->nb_loops)
                             {
-                                lay->sel_loop = li;
+                                lay->sub[OV_SUB_LOOPS].sel = li;
                                 if (is_dbl)
                                 {
                                     ov_set_view(lay, OV_VIEW_LOOPS);
@@ -297,7 +297,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                             }
                         }
                     }
-                    else if (lay->graph_tab_mode == 2)
+                    else if (lay->subtab == OV_SUB_DETAILS)
                     {
                         ov_focus_t dpanel     = OV_FOCUS_STREAMS;
                         int        active_fps = ov_detail_target(lay, m, &dpanel);
@@ -315,11 +315,11 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                                 int param_row   = body_row - header_rows;
                                 if (param_row >= 0)
                                 {
-                                    int                  dp     = lay->param_scroll + param_row;
+                                    int dp = lay->sub[OV_SUB_DETAILS].scroll + param_row;
                                     const OV_FPS_PARAMS *params = ov_fps_get_params(f->name);
                                     if (params != NULL && dp >= 0 && dp < params->nb_disp_params)
                                     {
-                                        lay->param_sel = dp;
+                                        lay->sub[OV_SUB_DETAILS].sel = dp;
                                         if (params->disp_param_type[dp] == FPTYPE_STREAMNAME)
                                         {
                                             int si = ov_find_stream_by_name(

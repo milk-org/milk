@@ -49,7 +49,7 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
 
     /* Draw right panel frame */
     char rtitle[128];
-    int  sel_idx = lay->sel_loop;
+    int  sel_idx = lay->sub[OV_SUB_LOOPS].sel;
     if (sel_idx < 0)
     {
         sel_idx = 0;

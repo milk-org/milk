@@ -78,7 +78,7 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_RECT     r      = lay->r_graph;
     const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_LOOP,
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->subtab, OV_FG_LOOP,
                        lay->focus == OV_FOCUS_GRAPH);
 
     int max_rows = r.height - 3;
@@ -113,7 +113,7 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         return;
     }
 
-    int sel_idx = lay->sel_loop;
+    int sel_idx = lay->sub[OV_SUB_LOOPS].sel;
     if (sel_idx < 0)
     {
         sel_idx = 0;
@@ -133,7 +133,7 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     int rendered_list = 0;
-    int scroll        = lay->scroll_loop;
+    int scroll        = lay->sub[OV_SUB_LOOPS].scroll;
     if (scroll < 0)
     {
         scroll = 0;
