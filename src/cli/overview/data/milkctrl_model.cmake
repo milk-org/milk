@@ -11,6 +11,7 @@ add_library(
   ${OV_DIR}/data/overview_data_loops.c
   ${OV_DIR}/data/overview_data_loops_names.c
   ${OV_DIR}/data/overview_data_loops_reg.c
+  ${OV_DIR}/data/overview_data_order.c
   ${OV_DIR}/data/overview_data_scan.c
   ${OV_DIR}/data/overview_data_scan_streams.c
   ${OV_DIR}/data/overview_data_scan_fps.c

@@ -168,18 +168,21 @@ static int sort_fps_by_nstreams(const void *a, const void *b)
 /** Number of sortable FPS columns. */
 #define OV_FPS_SORT_NCOL 6
 
+/** tie_fps - name order (processes: then PID), the tie-break of every key. */
+static int tie_fps(const void *a, const void *b)
+{
+    return strcmp(((const OV_FPS *) a)->name, ((const OV_FPS *) b)->name);
+}
+
 /**
- * ov_sort_fps - Sort FPS array in model according to selected key and direction
+ * ov_sort_fps - fill @order with the model indices in sort order (the model is not moved)
  * @model: Pointer to data model
  * @key:   Column sort key index
  * @dir:   Sort direction (0 for asc, 1 for desc)
+ * @order: Output, model->nb_fps entries
  */
-void ov_sort_fps(OV_MODEL *model, int key, int dir)
+void ov_sort_fps(const OV_MODEL *model, int key, int dir, int *order)
 {
-    if (model->nb_fps < 2)
-    {
-        return;
-    }
     ov_sort_dir_mul = dir ? -1 : 1;
     int (*cmp)(const void *, const void *);
     switch (key)
@@ -206,5 +209,5 @@ void ov_sort_fps(OV_MODEL *model, int key, int dir)
         cmp = sort_fps_by_name;
         break;
     }
-    qsort(model->fps, (size_t) model->nb_fps, sizeof(OV_FPS), cmp);
+    ov_sort_index(model->fps, sizeof(OV_FPS), model->nb_fps, cmp, tie_fps, order);
 }

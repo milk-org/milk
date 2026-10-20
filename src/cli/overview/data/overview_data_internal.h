@@ -192,7 +192,11 @@ void ov_post_scan_enrich(OV_MODEL *model);
 double ov_sys_get_cpu_usage(void);
 
 /** Ordering and rank sorting */
-void ov_sort_freeze_snapshot(const OV_MODEL *mm);
-void ov_sort_apply_ranks(OV_MODEL *mm);
+void ov_sort_index(const void *base,
+                   size_t      elsz,
+                   int         n,
+                   int (*cmp)(const void *, const void *),
+                   int (*tie)(const void *, const void *),
+                   int *order);
 
 #endif // OVERVIEW_DATA_INTERNAL_H

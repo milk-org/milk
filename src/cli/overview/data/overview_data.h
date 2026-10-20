@@ -59,8 +59,7 @@ typedef struct
     int nb_nodes;
     int node_indices[OV_MAX_LOOP_NODES];
 
-    /* Membership indices, scan-time order: the UI re-sorts the entity arrays, so it resolves
-     * members through node_indices / nodes[].index instead */
+    /* Membership: model indices (the UI never reorders the model; display order is separate) */
     int nb_streams;
     int stream_indices[OV_MAX_LOOP_NODES / 2];
     int nb_procs;
@@ -280,28 +279,37 @@ void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, const c
 void ov_sort_set_depths(const int8_t *depths);
 
 /**
- * ov_sort_streams - sort streams array in-place.
+ * ov_sort_streams - fill an index array with the streams in sort order.
  * @model: model whose streams to sort
  * @key:   0=name, 1=type, 2=size, 3=Hz, 4=inode, 5=count
  * @dir:   0=ascending, 1=descending
  */
-void ov_sort_streams(OV_MODEL *model, int key, int dir);
+void ov_sort_streams(const OV_MODEL *model, int key, int dir, int *order);
 
 /**
- * ov_sort_procs - sort procs array in-place.
+ * ov_sort_procs - fill an index array with the processes in sort order.
  * @model: model whose procs to sort
  * @key:   0=name, 1=PID, 2=status, 3=Hz
  * @dir:   0=ascending, 1=descending
  */
-void ov_sort_procs(OV_MODEL *model, int key, int dir);
+void ov_sort_procs(const OV_MODEL *model, int key, int dir, int *order);
 
 /**
- * ov_sort_fps - sort FPS array in-place.
+ * ov_sort_fps - fill an index array with the FPS in sort order.
  * @model: model whose FPS entries to sort
  * @key:   0=name, 1=conf+run alive status
  * @dir:   0=ascending, 1=descending
  */
-void ov_sort_fps(OV_MODEL *model, int key, int dir);
+void ov_sort_fps(const OV_MODEL *model, int key, int dir, int *order);
+
+/* Display order of the list panels (panel numbers equal the UI's ov_focus_t list panels) */
+#define OV_ORDER_STREAMS 0
+#define OV_ORDER_PROCS 1
+#define OV_ORDER_FPS 2
+#define OV_ORDER_NB 3
+void       ov_order_sort(const OV_MODEL *m, int panel, int key, int dir);
+const int *ov_order_get(const OV_MODEL *m, int panel, int *n);
+void       ov_order_reset(void);
 
 /**
  * ov_filter_build - build filtered index array.

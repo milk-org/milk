@@ -220,18 +220,21 @@ static int sort_stream_by_ancestry(const void *a, const void *b)
 /** Number of sortable stream columns. */
 #define OV_STREAM_SORT_NCOL 7
 
+/** tie_stream - name order (processes: then PID), the tie-break of every key. */
+static int tie_stream(const void *a, const void *b)
+{
+    return strcmp(((const OV_STREAM *) a)->name, ((const OV_STREAM *) b)->name);
+}
+
 /**
- * ov_sort_streams - Sort streams array in model according to selected key and direction
+ * ov_sort_streams - fill @order with the model indices in sort order (the model is not moved)
  * @model: Pointer to data model
  * @key:   Column sort key index
  * @dir:   Sort direction (0 for asc, 1 for desc)
+ * @order: Output, model->nb_streams entries
  */
-void ov_sort_streams(OV_MODEL *model, int key, int dir)
+void ov_sort_streams(const OV_MODEL *model, int key, int dir, int *order)
 {
-    if (model->nb_streams < 2)
-    {
-        return;
-    }
     ov_sort_dir_mul = dir ? -1 : 1;
     int (*cmp)(const void *, const void *);
     switch (key)
@@ -261,5 +264,5 @@ void ov_sort_streams(OV_MODEL *model, int key, int dir)
         cmp = sort_stream_by_name;
         break;
     }
-    qsort(model->streams, (size_t) model->nb_streams, sizeof(OV_STREAM), cmp);
+    ov_sort_index(model->streams, sizeof(OV_STREAM), model->nb_streams, cmp, tie_stream, order);
 }

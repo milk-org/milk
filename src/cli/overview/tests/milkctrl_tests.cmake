@@ -13,4 +13,8 @@ if(BUILD_TESTING)
   add_executable(milkctrl-unit-model ../overview/tests/test_ov_model.c)
   target_link_libraries(milkctrl-unit-model PRIVATE milkctrl_model)
   add_test(NAME milkctrl_unit_model COMMAND milkctrl-unit-model)
+
+  add_executable(milkctrl-unit-view ../overview/tests/test_ov_view.c)
+  target_link_libraries(milkctrl-unit-view PRIVATE milkctrl_model)
+  add_test(NAME milkctrl_unit_view COMMAND milkctrl-unit-view)
 endif()

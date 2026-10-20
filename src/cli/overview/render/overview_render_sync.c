@@ -14,24 +14,20 @@
 #include <stdio.h>
 #include <string.h>
 
-static const OV_MODEL *g_last_model = NULL;
-
 /**
- * ov_render__sync_selection - clamp selections, handle sort freezing, and sync node indices.
+ * ov_render__sync_selection - apply a pending sort, then re-derive cursor rows from identities.
  * @lay: Pointer to layout structure.
  * @m:   Pointer to data model snapshot.
  */
 void ov_render__sync_selection(OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    OV_MODEL *mm = (OV_MODEL *) (uintptr_t) m;
-
     if (lay->focus != OV_FOCUS_GRAPH)
     {
         lay->graph_root_focus = lay->focus; /* the graph cursor never re-roots the tree */
     }
 
-    /* One-shot sort: only runs once when the user presses S or s. Order stays frozen until
-     * the user explicitly sorts again; the selection follows by identity. */
+    /* One-shot sort when the user asks (S, s, header click...): the order then stays until the
+     * next request, also across new models; the selection follows by identity */
     if (lay->sort_pending)
     {
         int8_t depths[OV_MAX_NODES];
@@ -46,65 +42,31 @@ void ov_render__sync_selection(OV_LAYOUT *lay, const OV_MODEL *m)
         int        idx      = -1;
         if (focus == OV_FOCUS_STREAMS && (idx = ov_get_selected_stream_idx(lay, m)) >= 0)
         {
-            sel_node = mm->streams[idx].node_idx;
+            sel_node = m->streams[idx].node_idx;
         }
         else if (focus == OV_FOCUS_PROCS && (idx = ov_get_selected_proc_idx(lay, m)) >= 0)
         {
-            sel_node = mm->procs[idx].node_idx;
+            sel_node = m->procs[idx].node_idx;
         }
         else if (focus == OV_FOCUS_FPS && (idx = ov_get_selected_fps_idx(lay, m)) >= 0)
         {
-            sel_node = mm->fps[idx].node_idx;
+            sel_node = m->fps[idx].node_idx;
         }
         if (sel_node >= 0)
         {
             sg_mode_t smode = (focus == OV_FOCUS_FPS) ? SG_MODE_FPS : SG_MODE_FULL;
-            sg_compute_node_depths(mm, sel_node, smode, depths);
+            sg_compute_node_depths(m, sel_node, smode, depths);
         }
         ov_sort_set_depths(depths);
 
-        ov_sort_streams(mm, lay->panel[OV_FOCUS_STREAMS].sort_key,
-                        lay->panel[OV_FOCUS_STREAMS].sort_dir);
-        ov_sort_procs(mm, lay->panel[OV_FOCUS_PROCS].sort_key, lay->panel[OV_FOCUS_PROCS].sort_dir);
-        ov_sort_fps(mm, lay->panel[OV_FOCUS_FPS].sort_key, lay->panel[OV_FOCUS_FPS].sort_dir);
-        ov_sort_freeze_snapshot(mm);
-
+        for (int p = 0; p < OV_NB_LIST_PANELS; p++)
+        {
+            ov_order_sort(m, p, lay->panel[p].sort_key, lay->panel[p].sort_dir);
+        }
         lay->sort_pending = 0;
-        g_last_model      = m;
-    }
-    else if (m != g_last_model)
-    {
-        /* A new scan model arrived: re-apply the saved order once, so items don't shuffle */
-        ov_sort_apply_ranks(mm);
-        g_last_model = m;
     }
 
-    /* Patch graph node .index fields to the current array positions (the frozen relation and
-     * F7 read them), then re-derive the cursor rows from the selection identities */
-    for (int i = 0; i < mm->nb_streams; i++)
-    {
-        int ni = mm->streams[i].node_idx;
-        if (ni >= 0 && ni < mm->nb_nodes)
-        {
-            mm->nodes[ni].index = i;
-        }
-    }
-    for (int i = 0; i < mm->nb_fps; i++)
-    {
-        int ni = mm->fps[i].node_idx;
-        if (ni >= 0 && ni < mm->nb_nodes)
-        {
-            mm->nodes[ni].index = i;
-        }
-    }
-    for (int i = 0; i < mm->nb_procs; i++)
-    {
-        int ni = mm->procs[i].node_idx;
-        if (ni >= 0 && ni < mm->nb_nodes)
-        {
-            mm->nodes[ni].index = i;
-        }
-    }
+    /* Rows follow the display order (ov_order_get); re-derive the cursor rows from identities */
     ov_sel_sync(lay, m);
 
     /* F5 parameter tree follows the FPS cursor: keep a valid parameter row */

@@ -87,13 +87,16 @@ int ov_tgt_find(const OV_MODEL *m, ov_focus_t panel, const OV_TARGET *t)
 }
 
 /**
- * ov_rows - model indices of the rows @panel draws: regex, loop isolation, then the relation of
- * the frozen subject (never of the hovered item). Return: number of rows.
+ * ov_rows - model indices of the rows @panel draws, in display order (ov_order_get): regex, loop
+ * isolation, then the relation of the frozen subject (never of the hovered item). Return: number of rows.
  */
 int ov_rows(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int *fidx, int max)
 {
     static OV_RELATED rel;
+    static int        keep[OV_MAX_NODES];
+    static uint8_t    mark[OV_MAX_NODES];
     const OV_RELATED *rp = NULL;
+    int               n;
 
     if (lay->freeze && lay->freeze_focus < OV_FOCUS_GRAPH && lay->freeze_focus != panel)
     {
@@ -103,14 +106,35 @@ int ov_rows(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int *fidx
     switch (panel)
     {
     case OV_FOCUS_STREAMS:
-        return ov_filter_streams(lay, m, rp, fidx, max);
+        n = ov_filter_streams(lay, m, rp, keep, OV_MAX_NODES);
+        break;
     case OV_FOCUS_PROCS:
-        return ov_filter_procs(lay, m, rp, fidx, max);
+        n = ov_filter_procs(lay, m, rp, keep, OV_MAX_NODES);
+        break;
     case OV_FOCUS_FPS:
-        return ov_filter_fps(lay, m, rp, fidx, max);
+        n = ov_filter_fps(lay, m, rp, keep, OV_MAX_NODES);
+        break;
     default:
         return 0;
     }
+
+    /* The filters return model order: emit the kept entries in display order */
+    int        no;
+    const int *order = ov_order_get(m, panel, &no);
+    memset(mark, 0, (size_t) no);
+    for (int i = 0; i < n; i++)
+    {
+        mark[keep[i]] = 1;
+    }
+    int k = 0;
+    for (int r = 0; r < no && k < max; r++)
+    {
+        if (mark[order[r]])
+        {
+            fidx[k++] = order[r];
+        }
+    }
+    return k;
 }
 
 /**
