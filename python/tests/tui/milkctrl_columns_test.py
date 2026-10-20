@@ -43,3 +43,20 @@ def test_stream_rows_align_with_header(milkctrl, entities):
     assert _end(hdr, r"SIZE") == _end(row, r"\b\d+x\d+\b")
     assert _end(hdr, r"INODE") == _end(row, r"\b\d{3,}\b")
     assert m.quit() == 0
+
+
+def test_sort_keys_reach_the_table(milkctrl, entities):
+    """S sorts by Hz, [ reverses, > moves to the next sortable column, t hides the cursor column."""
+    entities.make_stream("sortk")
+    m = milkctrl()
+    m.keys("F3")
+    m.wait_for(r"sortk")
+    m.keys("S")
+    m.wait_for(r"Hz▲")
+    m.keys("[")
+    m.wait_for(r"Hz▼")
+    m.keys(">")
+    m.wait_for(r"MB/s▼")
+    m.keys("t")  # column cursor on A: collapsed to one column
+    m.wait_for(r"\u00bbNAME")  # no separator after a collapsed column
+    assert m.quit() == 0

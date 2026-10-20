@@ -229,11 +229,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         return 0;
     }
-    if (ov_input__handle_column_highlights(key, lay, m))
-    {
-        return 0;
-    }
-    if (ov_input__handle_sorting(key, lay))
+    if (ov_input__handle_column_keys(key, lay, m))
     {
         return 0;
     }
