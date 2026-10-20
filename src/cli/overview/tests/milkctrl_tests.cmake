@@ -1,4 +1,4 @@
-# milk-CTRL unit tests (CTest milkctrl_unit_ansi, _model, _graph, _view, _table, _ui, _opts, milkctrl_keys_doc).
+# milk-CTRL unit tests (CTest milkctrl_unit_ansi, _model, _graph, _view, _table, _ui, _opts, _theme, milkctrl_keys_doc).
 # Included from src/cli/CLIcore/CMakeLists.txt: relative paths resolve against that directory.
 if(BUILD_TESTING)
   add_executable(
@@ -63,6 +63,17 @@ if(BUILD_TESTING)
                                ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
   target_link_libraries(milkctrl-unit-opts PRIVATE milkctrl_model)
   add_test(NAME milkctrl_unit_opts COMMAND milkctrl-unit-opts)
+
+  add_executable(
+    milkctrl-unit-theme
+    ../overview/tests/test_ov_theme.c ../overview/render/overview_theme.c ../overview/render/overview_theme_palettes.c
+    ../overview/render/overview_theme_palettes_extra.c ../overview/ansi/overview_ansi_buf.c
+    ../overview/ansi/overview_ansi_delta.c ../overview/ansi/overview_ansi_utf8.c
+    ../overview/ansi/overview_ansi_term.c ../overview/ansi/overview_ansi_key.c)
+  target_include_directories(milkctrl-unit-theme PRIVATE ${CMAKE_SOURCE_DIR}/src/cli/overview/render
+                                                         ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi)
+  target_link_libraries(milkctrl-unit-theme PRIVATE milkctrl_model)
+  add_test(NAME milkctrl_unit_theme COMMAND milkctrl-unit-theme)
 
   add_test(NAME milkctrl_keys_doc
            COMMAND bash ${CMAKE_SOURCE_DIR}/src/cli/overview/tests/check_keys_doc.sh $<TARGET_FILE:milk-CTRL>

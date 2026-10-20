@@ -66,24 +66,29 @@ const char *fps_param_type_badge(uint32_t type)
  */
 ov_rgb_t fps_param_type_color(uint32_t type)
 {
-    if (type == FPTYPE_INT64 || type == FPTYPE_INT32 || type == FPTYPE_UINT64 ||
-        type == FPTYPE_UINT32)
+    switch (type)
     {
-        return (ov_rgb_t) { 80, 140, 220 }; /* blue-ish */
+    case FPTYPE_INT64:
+    case FPTYPE_INT32:
+    case FPTYPE_UINT64:
+    case FPTYPE_UINT32:
+        return OV_FG_TYPE_INT;
+    case FPTYPE_FLOAT64:
+    case FPTYPE_FLOAT32:
+        return OV_FG_TYPE_FLOAT;
+    case FPTYPE_ONOFF:
+        return OV_FG_WARN;
+    case FPTYPE_STREAMNAME:
+        return OV_FG_STREAM;
+    case FPTYPE_FPSNAME:
+        return OV_FG_FPS;
+    case FPTYPE_PID:
+        return OV_FG_PROC;
+    case FPTYPE_TIMESPEC:
+        return OV_FG_TYPE_STR;
+    default:
+        return FPTYPE_IS_STRING(type) ? OV_FG_TYPE_STR : OV_FG_DIM;
     }
-    if (type == FPTYPE_FLOAT64 || type == FPTYPE_FLOAT32)
-    {
-        return (ov_rgb_t) { 80, 200, 140 }; /* teal */
-    }
-    if (type == FPTYPE_ONOFF)
-    {
-        return (ov_rgb_t) { 200, 150, 60 }; /* amber */
-    }
-    if (type == FPTYPE_STREAMNAME)
-    {
-        return (ov_rgb_t) { 160, 100, 220 }; /* purple */
-    }
-    return (ov_rgb_t) { 130, 130, 130 }; /* dim grey */
 }
 
 /**

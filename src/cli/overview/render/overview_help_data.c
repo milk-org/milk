@@ -380,7 +380,7 @@ ov_rgb_t ov_help_section_color(int sec)
     switch (sec)
     {
     case HS_INTRO:
-        return (ov_rgb_t) { 255, 215, 80 };
+        return OV_FG_ACCENT;
     case HS_NAV:
         return OV_FG_TITLE;
     case HS_STREAMS:
@@ -392,11 +392,11 @@ ov_rgb_t ov_help_section_color(int sec)
     case HS_GRAPH:
         return OV_FG_CONN;
     case HS_CMDLOG:
-        return (ov_rgb_t) { 180, 210, 170 };
+        return OV_FG_MUTED;
     case HS_MOUSE:
         return OV_FG_WARN;
     case HS_COLORS:
-        return (ov_rgb_t) { 230, 130, 255 };
+        return OV_FG_LOOP;
     default:
         return OV_FG_DIM;
     }

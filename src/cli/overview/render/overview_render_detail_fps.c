@@ -8,6 +8,7 @@
  */
 
 #include "overview_render_detail_internal.h"
+#include "overview_render_fps_params.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -196,54 +197,44 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
 
             /* Type badge */
             const char *tbadge = "???";
-            ov_rgb_t    tcolor = OV_FG_DIM;
             if (pt == FPTYPE_INT64 || pt == FPTYPE_INT32)
             {
                 tbadge = "INT";
-                tcolor = (ov_rgb_t) { 120, 180, 255 };
             }
             else if (pt == FPTYPE_UINT64 || pt == FPTYPE_UINT32)
             {
                 tbadge = "UINT";
-                tcolor = (ov_rgb_t) { 100, 160, 220 };
             }
             else if (pt == FPTYPE_FLOAT64 || pt == FPTYPE_FLOAT32)
             {
                 tbadge = "FLT";
-                tcolor = (ov_rgb_t) { 180, 200, 100 };
             }
             else if (pt == FPTYPE_ONOFF)
             {
                 tbadge = "ON/OFF";
-                tcolor = (ov_rgb_t) { 220, 180, 60 };
             }
             else if (pt == FPTYPE_STREAMNAME)
             {
                 tbadge = "STRM";
-                tcolor = OV_FG_STREAM;
             }
             else if (pt == FPTYPE_FPSNAME)
             {
                 tbadge = "FPS";
-                tcolor = OV_FG_FPS;
             }
             else if (FPTYPE_IS_STRING(pt))
             {
                 tbadge = "STR";
-                tcolor = (ov_rgb_t) { 200, 160, 120 };
             }
             else if (pt == FPTYPE_PID)
             {
                 tbadge = "PID";
-                tcolor = OV_FG_PROC;
             }
             else if (pt == FPTYPE_TIMESPEC)
             {
                 tbadge = "TIME";
-                tcolor = (ov_rgb_t) { 160, 180, 200 };
             }
 
-            H_ov_theme_fg(tcolor);
+            H_ov_theme_fg(fps_param_type_color(pt));
             H_ov_buf_printf("[%-6s]", tbadge);
 
             /* Parameter name */
@@ -268,7 +259,7 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             else if (pt == FPTYPE_ONOFF)
             {
                 int      is_on  = (strcmp(pval, "ON") == 0 || strcmp(pval, "1") == 0);
-                ov_rgb_t vcolor = is_on ? (ov_rgb_t) { 100, 255, 100 } : OV_FG_DIM;
+                ov_rgb_t vcolor = is_on ? OV_FG_ACTIVE : OV_FG_DIM;
                 if (is_sel || is_hover)
                 {
                     H_ov_theme_fg(vcolor);
