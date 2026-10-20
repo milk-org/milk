@@ -24,6 +24,40 @@ static void help_row(const char *key, const char *what, int mh_color)
     printf("  %s%-24s%s %s\n", mh_color ? MH_OPT : "", key, mh_color ? MH_RST : "", what);
 }
 
+/** key_what - the one-line description of key row @k in -h and the docs (CONTROL rows name their panel). */
+static const char *key_what(const OV_KEYDEF *k, char *buf, size_t n)
+{
+    const char *panel = (k->section == HS_STREAMS) ? "STRM: "
+                        : (k->section == HS_PROCS) ? "PROC: "
+                        : (k->section == HS_FPS)   ? "FPS: "
+                                                   : "";
+    snprintf(buf, n, "%s%s", (k->group == OV_KG_CTRL) ? panel : "", k->label);
+    return buf;
+}
+
+/** milkctrl_print_keys_markdown - the key sections of -h as Markdown tables (docs/guide/milk-CTRL.md). */
+static void milkctrl_print_keys_markdown(void)
+{
+    for (int g = 0; g < OV_KG_COUNT; g++)
+    {
+        printf("%s### %s\n\n| Keys | Action |\n|------|--------|\n", g ? "\n" : "",
+               ov_keygroup_title[g]);
+        for (int v = 0; g == OV_KG_VIEWS && v < OV_VIEW_COUNT; v++)
+        {
+            printf("| `F%d` %s | %s |\n", ov_views[v].fkey, ov_views[v].label, ov_views[v].desc);
+        }
+        for (int i = 0; i < ov_nb_keys; i++)
+        {
+            char what[160];
+            if (ov_keys[i].group == g)
+            {
+                printf("| `%s` | %s |\n", ov_keys[i].display,
+                       key_what(&ov_keys[i], what, sizeof(what)));
+            }
+        }
+    }
+}
+
 /** help_rows - print @n "key  description" rows and a blank line. */
 static void help_rows(const char *const rows[][2], int n, int mh_color)
 {
@@ -88,16 +122,10 @@ void milkctrl_print_help(const char *prog, int mh_color)
         }
         for (int i = 0; i < ov_nb_keys; i++)
         {
-            const OV_KEYDEF *k     = &ov_keys[i];
-            const char      *panel = (k->section == HS_STREAMS) ? "STRM: "
-                                     : (k->section == HS_PROCS) ? "PROC: "
-                                     : (k->section == HS_FPS)   ? "FPS: "
-                                                                : "";
-            char             what[160];
-            snprintf(what, sizeof(what), "%s%s", (g == OV_KG_CTRL) ? panel : "", k->label);
-            if (k->group == g)
+            char what[160];
+            if (ov_keys[i].group == g)
             {
-                help_row(k->display, what, mh_color);
+                help_row(ov_keys[i].display, key_what(&ov_keys[i], what, sizeof(what)), mh_color);
             }
         }
         printf("\n");
@@ -138,6 +166,12 @@ void milkctrl_print_help(const char *prog, int mh_color)
  */
 int milkctrl_parse_options(int argc, char *argv[], OV_OPTS *o)
 {
+    if (argc == 2 &&
+        strcmp(argv[1], "--keys-markdown") == 0) /* hidden: regenerates the docs key tables */
+    {
+        milkctrl_print_keys_markdown();
+        return 1;
+    }
     int action = milk_help_init(
         argc, argv, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
         "milk-CTRL is the unified, real-time diagnostic and control dashboard for the\n"

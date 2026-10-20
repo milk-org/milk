@@ -16,6 +16,12 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
+- **2026-10-20** — `milk-CTRL` restructured so a column, view, sub-tab, key or option is one table
+  entry; process rows line up with their header again, F6 shows the sub-tab it selects, F7 clicks
+  select loops, ENTER edits a DETAILS parameter, F1 opens help, and the help, `-h` and status hints
+  come from one key table. New options: `--view NAME`, a positional regex `PATTERN`, `--interval SEC`,
+  `--log FILE` and `--debug`, `--shm-dir` ([guide](guide/milk-CTRL.md)) `#cli` `#refactor` `#docs`
+
 - **2026-10-19** — `milk-CTRL` safety and correctness round: viewing never writes shared memory;
   actions hit the highlighted entry (identity, not row number) and check it is still the same
   stream/FPS/process before acting; `y/N` before SIGKILL, erase, cleanup and batch actions; FPS

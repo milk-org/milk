@@ -61,6 +61,7 @@ Documentation files will link to this website, other files will link directly to
 - [Function Processing System (FPS)](guide/fps.md) (fps.md)
 - [fpsCTRL Reference](guide/fpsCTRL_reference.md) (fpsCTRL_reference.md)
 - [Readline Keyboard Shortcuts](guide/helpreadline.md) (helpreadline.md)
+- [Dashboard (`milk-CTRL`)](guide/milk-CTRL.md) (milk-CTRL.md)
 - [Process Info (`procinfo`)](guide/procinfo.md) (procinfo.md)
 - [Python API](guide/python.md) (python.md)
 - [Scripting](guide/scripting.md) (scripting.md)

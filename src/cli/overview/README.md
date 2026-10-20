@@ -9,6 +9,23 @@ Provides a single-pane-of-glass view of the entire milk runtime environment.
 structures, and processinfo registry) into a multi-panel, differential double-buffered ANSI
 terminal interface with sorting, regex filtering, lineage tracing, and interactive control.
 
+User guide, with the key tables generated from the code: [docs/guide/milk-CTRL.md](../../../docs/guide/milk-CTRL.md).
+
+## Extending milk-CTRL
+
+Most additions are one table entry:
+
+| To add | Edit |
+| ------ | ---- |
+| A list column | `render/overview_columns_{streams,procs,fps}.c`: one `OV_COLUMN` (header, hit-test, sort, collapse and `<`/`>` follow) |
+| A view | `overview_view.c` (`ov_views[]`) and its body renderer in `render/overview_render.c` (`view_render[]`) |
+| A sub-tab | `render/overview_render_subtabs.c` (label, renderer) and `input/overview_input_subtab.c` (click, keys) |
+| A key | its documentation row in `overview_keymap_*.inc` (help, `-h`, status hints, docs), and its binding row next to the handler (`OV_KEYBIND`, see `input/overview_input_keys.h`) |
+| A command-line option | `tools/milkCTRL_opts_parse.c` (pure, unit-tested) and its use in `tools/milkCTRL.c` |
+
+After changing key rows, regenerate the docs tables: `milk-CTRL --keys-markdown` (CTest
+`milkctrl_keys_doc` compares them).
+
 ## Architecture & Rendering
 
 `milk-CTRL` is a standalone executable with zero dependency on `ncurses` or `CLIcore`. It uses

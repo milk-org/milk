@@ -45,4 +45,8 @@ if(BUILD_TESTING)
                                ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
   target_link_libraries(milkctrl-unit-opts PRIVATE milkctrl_model)
   add_test(NAME milkctrl_unit_opts COMMAND milkctrl-unit-opts)
+
+  add_test(NAME milkctrl_keys_doc
+           COMMAND bash ${CMAKE_SOURCE_DIR}/src/cli/overview/tests/check_keys_doc.sh $<TARGET_FILE:milk-CTRL>
+                   ${CMAKE_SOURCE_DIR}/docs/guide/milk-CTRL.md)
 endif()
