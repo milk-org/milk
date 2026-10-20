@@ -29,12 +29,20 @@ static void ov_cell_blank(OV_CELL *c)
     c->width = 1;
 }
 
+static int s_drawn_rows, s_drawn_cols; /* largest area drawn so far: the part of the grids in use */
+
 /**
  * ov_buf_force_clear - Invalidate the front buffer to force full screen repaint
+ *
+ * Only the area drawn so far is cleared: untouched cells are zero already, and clearing the whole
+ * 256x512 grid made all 4 MiB resident.
  */
 void ov_buf_force_clear(void)
 {
-    memset(ov__front, 0, sizeof(ov__front));
+    for (int r = 0; r < s_drawn_rows; r++)
+    {
+        memset(ov__front[r], 0, (size_t) s_drawn_cols * sizeof(OV_CELL));
+    }
 }
 
 /**
@@ -61,6 +69,8 @@ void ov_buf_reset_size(int rows, int cols)
         cols = OV_MAX_COLS;
     }
 
+    s_drawn_rows = (rows > s_drawn_rows) ? rows : s_drawn_rows;
+    s_drawn_cols = (cols > s_drawn_cols) ? cols : s_drawn_cols;
     for (int r = 0; r < rows; r++)
     {
         for (int c = 0; c < cols; c++)

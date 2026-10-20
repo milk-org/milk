@@ -122,7 +122,7 @@ static uint64_t ov_publish_seq; /* scan thread only */
  */
 static void *ov_scan_thread_func(void *arg __attribute__((unused)))
 {
-    memset(ov_model_slots, 0, sizeof(ov_model_slots));
+    /* the slots are static, zero already: no memset, which made all three (9.5 MB) resident */
 
     while (ov_scan_running && !OV_SIG_ANY_SET())
     {
