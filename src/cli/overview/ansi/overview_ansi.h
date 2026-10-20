@@ -154,6 +154,8 @@ extern char     ov__screenbuf[OV_SCREENBUF_SIZE];
 extern int      ov__screenbuf_len;
 extern uint64_t ov__total_bytes_rendered;
 
+double ov_sys_get_bandwidth_usage(void);
+
 extern OV_CELL ov__shadow[OV_MAX_ROWS][OV_MAX_COLS];
 extern OV_CELL ov__front[OV_MAX_ROWS][OV_MAX_COLS];
 

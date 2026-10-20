@@ -27,7 +27,6 @@ exclusively on stream diagnostics with higher detail.
 | `streamCTRL_print_trace.c/.h`   | Stream trace rendering            |
 | `streamCTRL_defs.h`             | Shared constants and struct defs  |
 | `streamCTRL_ansi.h`             | ANSI color/style definitions      |
-| `mmon_ui.c`                     | Minimal stream monitor mode       |
 
 ## Build Tier
 
