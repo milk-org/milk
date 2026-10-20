@@ -156,7 +156,9 @@ install(TARGETS milk-shmimpurge DESTINATION bin)
 add_executable(milk-logshim-ctrl bin/milk-logshim-ctrl.c)
 target_include_directories(
   milk-logshim-ctrl
-  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkcommon>)
+target_link_libraries(milk-logshim-ctrl PRIVATE milkcommon)
 install(TARGETS milk-logshim-ctrl DESTINATION bin)
 
 add_executable(milk-stream-link bin/milk-stream-link.c)

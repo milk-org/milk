@@ -28,9 +28,6 @@ cset="system"
 datestring="$(date -u +'%Y-%m-%dT%H:%M:%S.%NZ')"
 daystring="$(date -u +'%Y%m%d')"
 
-TMUXNAME="milkFITSlogger"
-fifoname="${MILK_SHM_DIR}/milkFITSlogger.fifo"
-
 milkFITSloggerdir="${MILK_SHM_DIR}/FITSlogger"
 mkdir -p ${milkFITSloggerdir}
 cd ${milkFITSloggerdir}
@@ -38,8 +35,8 @@ cd ${milkFITSloggerdir}
 MSextdescr="
 Log stream to disk as FITS cubes.
 
-Logging processes are running in tmux session ${TMUXNAME}.
-User can connect to tmux session to control logging processes.
+Logging processes run in tmux session streamFITSlog-<stream>
+(windows ctrl, conf, run). Parameters are written with milk-fps-set.
 
 List of actions:
 	pstart  start log process
@@ -92,7 +89,7 @@ NOTES:
 
 # prerequisites
 #
-RequiredCommands=( tmux milk )
+RequiredCommands=( tmux milk-cli milk-fps-set milk-fps-rm )
 RequiredFiles=( )
 RequiredDirs=( )
 
@@ -203,77 +200,64 @@ if [ ${EXITSTATUS} = 1 ]; then
 	exit 1
 fi
 
+FPS="streamFITSlog-${STREAMNAME}"
+
 if [ $update_rootlogdir == 1 ]; then
 	fulllogdir="${logdirectory}/${daystring}/${STREAMNAME}"
 fi
 mkdir -p ${fulllogdir}
 
-function logtmuxsessionstart()
+# fpsset KEY VALUE: write one parameter of this logger's FPS
+function fpsset()
 {
-	# check if tmux session exists
-	#
-	set +o pipefail
-	{ tmux has-session -t ${TMUXNAME} 2>/dev/null; retstatus=$?; } || :
-	set -o pipefail
-	#echo "retstatus = $retstatus"
-	if [ "${retstatus}" = "0" ]; then
-		# found
-		echo "FOUND SESSION  ${TMUXNAME} : keep it"
-	else
-		tmux new-session -d -s ${TMUXNAME}
-		tmux send-keys -t ${TMUXNAME} "bash" C-m
-		tmux send-keys -t ${TMUXNAME} " FPS_FILTSTRING_NAME=\"streamFITSlog\" milk-fpsCTRL -s -f ${fifoname}" C-m
-	fi
+	milk-fps-set "${FPS}.$1" "$2" >/dev/null
+}
+
+# fpswin WINDOW KEYS...: type into a window of the FPS tmux session (exact session name)
+function fpswin()
+{
+	local win="$1"
+	shift
+	tmux send-keys -t "=${FPS}:${win}" "$@"
 }
 
 function runupdatesfps()
 {
 	if [ $update_logdir == 1 ]; then
-		echo "setval streamFITSlog-${STREAMNAME}.dirname ${fulllogdir}" >> ${fifoname}
+		fpsset dirname "${fulllogdir}"
 		mkdir -p ${fulllogdir}
 	fi
 
 	if [ $update_cubesize == 1 ]; then
-		echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
+		fpsset cubesize "${cubesize}"
 	fi
 
 	if [ $update_nbframe == 1 ]; then
-		echo "setval streamFITSlog-${STREAMNAME}.maxframecnt ${nbframe}" >> ${fifoname}
+		fpsset maxframecnt "${nbframe}"
 	fi
 
 	if [ $update_nbcube == 1 ]; then
-		echo "setval streamFITSlog-${STREAMNAME}.maxfilecnt ${nbcube}" >> ${fifoname}
+		fpsset maxfilecnt "${nbcube}"
 	fi
 
 	if [ $update_cubetimeout == 1 ]; then
-		echo "setval streamFITSlog-${STREAMNAME}.procinfo.triggertimeout ${cubetimeout}" >> ${fifoname}
+		fpsset procinfo.triggertimeout "${cubetimeout}"
 	fi
 
 	if [ $update_realtimeprio == 1 ]; then
-		echo "setval streamFITSlog-${STREAMNAME}.procinfo.RTprio ${realtimeprio}" >> ${fifoname}
+		fpsset procinfo.RTprio "${realtimeprio}"
 	fi
 
 	if [ $update_writerrealtimeprio == 1 ]; then
-		echo "setval streamFITSlog-${STREAMNAME}.writerRTprio ${writerrealtimeprio}" >> ${fifoname}
+		fpsset writerRTprio "${writerrealtimeprio}"
 	fi
 
 	if [ $update_cset == 1 ]; then
-		echo "setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}" >> ${fifoname}
+		fpsset procinfo.cset "${cset}"
 	fi
-
-	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	# The FIFO's confwupdate (wait for the CONF process to check) has no standalone tool yet;
+	# the running CONF process picks the new values up on its next update.
 }
-
-function logresetdefault()
-{
-	echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
-	echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
-
-}
-
-#tmux kill-session -t ${TMUXNAME} > /dev/null || :
-
-logtmuxsessionstart
 
 if [ ${ACTION} == "pstart" ]; then
 	echo "action = pstart"
@@ -281,7 +265,7 @@ if [ ${ACTION} == "pstart" ]; then
 	# setup FPS instance
 
 echo ""
-milk << EOF
+milk-cli << EOF
 readshmim ${STREAMNAME}
 streamFITSlog ..procinfo 1
 streamFITSlog ..loopcntMax -1
@@ -301,29 +285,12 @@ streamFITSlog _TMUXSTART_ "${STREAMNAME}"
 exit
 EOF
 
-	tmux send-keys -t ${TMUXNAME} "s"
-
-	# give time to fpsCTRL to create fifo
-	echo "waiting for fifo \"${fifoname}\" ..."
-	until [ -p "${fifoname}" ]
-	do
-		sleep 0.05
-		echo -n "."
-	done
-	echo "found fifo -> continuing"
-
-	echo "echo \"confstart streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
-	echo "confstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
-
-	echo "echo \"setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}\" >> ${fifoname}"
-	echo "setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}" >> ${fifoname}
-
-	echo "echo \"confwupdate streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
-	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
-
-	echo "echo \"runstart streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
-	echo "runstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
-	echo "rescan" >> ${fifoname}
+	# Start through the FPS's own tmux windows (created by _TMUXSTART_ above):
+	# milk-fps-*start cannot drive milk-cli-hosted units yet
+	fpswin conf " fpsconfstart" C-m
+	sleep 1 # let the CONF process map the FPS before the RUN process starts
+	fpsset procinfo.cset "${cset}"
+	fpswin run " fpsrunstart" C-m
 fi
 
 if [ ${ACTION} == "set" ]; then
@@ -335,14 +302,14 @@ fi
 if [ ${ACTION} == "rstart" ]; then
 	echo "action = rstart"
 	ACTIONOK=1
-	echo "runstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	fpswin run " fpsrunstart" C-m
 	runupdatesfps
 fi
 
 if [ ${ACTION} == "rstop" ]; then
 	echo "action = pstop"
 	ACTIONOK=1
-	echo "runstop streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	fpswin run C-c # stops the RUN loop, as libfps RUNstop does
 	runupdatesfps
 fi
 
@@ -350,8 +317,7 @@ if [ ${ACTION} == "on" ]; then
 	echo "action = on"
 	ACTIONOK=1
 	runupdatesfps
-	echo "setval streamFITSlog-${STREAMNAME}.saveON ON"
-	echo "setval streamFITSlog-${STREAMNAME}.saveON ON" >> ${fifoname}
+	fpsset saveON ON
 
 fi
 
@@ -359,24 +325,24 @@ if [ ${ACTION} == "off" ]; then
 	echo "action = off"
 	ACTIONOK=1
 	runupdatesfps
-	echo "setval streamFITSlog-${STREAMNAME}.saveON OFF" >> ${fifoname}
+	fpsset saveON OFF
 fi
 
 if [ ${ACTION} == "offc" ]; then
 	echo "action = offc"
 	ACTIONOK=1
 	runupdatesfps
-	echo "setval streamFITSlog-${STREAMNAME}.lastcubeON ON" >> ${fifoname}
+	fpsset lastcubeON ON
 fi
 
 if [ ${ACTION} == "kill" ]; then
 	echo "action = kill"
 	ACTIONOK=1
-	echo "runstop streamFITSlog-${STREAMNAME}" >> ${fifoname}
-	echo "confstop streamFITSlog-${STREAMNAME}" >> ${fifoname}
-	echo "tmuxstop streamFITSlog-${STREAMNAME}" >> ${fifoname}
-	echo "fpsrm streamFITSlog-${STREAMNAME}" >> ${fifoname}
-	echo "rescan" >> ${fifoname}
+	# milk-fps-rm takes an unanchored regex: anchor and escape the name.
+	# -f kills the CONF and RUN processes, then removes the FPS.
+	fpsre="^$(printf '%s' "${FPS}" | sed 's/[][\\.^$*+?(){}|]/\\&/g')\$"
+	milk-fps-rm -f "${fpsre}" || true
+	tmux kill-session -t "=${FPS}" 2>/dev/null || true
 	rm -f ${MILK_SHM_DIR}/${STREAMNAME}_logbuff0.im.shm
 	rm -f ${MILK_SHM_DIR}/${STREAMNAME}_logbuff1.im.shm
 fi
@@ -393,5 +359,3 @@ if [ ${ACTIONOK} == 0 ]; then
 fi
 
 exit
-
-FPS_FILTSTRING_NAME="streamFITSlog" milk-fpsCTRL
