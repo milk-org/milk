@@ -69,12 +69,10 @@ void ov_cell_pid(OV_COLCELL *c, const OV_ROW_CTX *rc, pid_t pid);
 void render_pad_spaces(int chars_written, int panel_width);
 void render_pad_to_col(int end_col);
 int  ov_render_header_text(const char *text, int hs, int max_vis_width, ov_rgb_t base_fg);
-void ov_render_cell(int         logical_col,
-                    int         vis_col,
+void ov_render_cell(int         col,
                     ov_rgb_t    fg,
                     ov_rgb_t    bg,
                     const char *str,
-                    int        *hs_rem,
                     int        *printed,
                     int         avail,
                     int         highlighted_col,

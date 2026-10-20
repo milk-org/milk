@@ -157,8 +157,8 @@ static void cell_msg(OV_COLCELL *c, const OV_ROW_CTX *rc)
 }
 
 static const OV_COLUMN proc_cols[] = {
-    { "anc", "A", "ancestry", 3, 8, 0, 5, NULL, cell_anc },
-    { "name", "NAME", "name", 14, 0, 0, 0, NULL, cell_name },
+    { "anc", "A", "ancestry", 3, 8, OV_COLF_PIN, 5, NULL, cell_anc },
+    { "name", "NAME", "name", 14, 0, OV_COLF_PIN | OV_COLF_ELASTIC, 0, NULL, cell_name },
     { "pid", "PID", NULL, 7, 1, OV_COLF_RIGHT, 1, NULL, cell_pid },
     { "prio", "PRIO", NULL, 4, 9, OV_COLF_RIGHT, 6, NULL, cell_prio },
     { "stat", "STAT", "stat", 4, 2, OV_COLF_RIGHT, 2, NULL, cell_stat },
@@ -173,7 +173,7 @@ static const OV_COLUMN proc_cols[] = {
     { "mem", "MEM", NULL, 5, 5, OV_COLF_RIGHT, 4, NULL, cell_mem },
     { "missed", "MISSED", NULL, 10, 15, OV_COLF_RIGHT | OV_COLF_COMPACT_HIDE, -1, NULL,
       cell_missed },
-    { "msg", "MSG", NULL, 200, 16, 0, -1, NULL, cell_msg },
+    { "msg", "MSG", NULL, 12, 16, OV_COLF_FILL, -1, NULL, cell_msg },
 };
 
 const OV_TABLE ov_procs_table = { proc_cols, (int) (sizeof(proc_cols) / sizeof(proc_cols[0])),

@@ -21,11 +21,11 @@ typedef struct
     OV_TARGET freeze_tgt;    /* frozen entry identity; freeze_row derived from it */
     int       sel;           /* cursor row */
     int       scroll;        /* first drawn row */
-    int       hscroll;       /* horizontal column offset */
+    int       hscroll;       /* scrollable columns skipped on the left */
     int       freeze_row;    /* row of the frozen entry, or -1 */
     int       sort_key;      /* 0 = name, 1..N = column-specific */
     int       sort_dir;      /* 0 = ascending, 1 = descending */
-    int       highlight_col; /* column cursor (visible index) */
+    int       highlight_col; /* column cursor (table index) */
     uint32_t  collapsed;     /* collapsed columns, one bit per logical column */
     int       hover_idx;     /* model index under the mouse, or -1 */
     int       filter_on;     /* regex filter applied (the pattern is kept when off) */

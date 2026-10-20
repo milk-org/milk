@@ -15,17 +15,15 @@ static OV_PANEL_STATE *list_panel(OV_LAYOUT *lay)
     return (lay->focus < OV_NB_LIST_PANELS) ? &lay->panel[lay->focus] : NULL;
 }
 
-/** col_cursor - Shift+LEFT / RIGHT: move the column cursor over the visible columns. */
+/** col_cursor - Shift+LEFT / RIGHT: move the column cursor, scrolling the columns to keep it shown. */
 static int col_cursor(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     (void) m;
     OV_PANEL_STATE *ps = list_panel(lay);
     if (ps != NULL)
     {
-        int vis[OV_TABLE_MAX_COLS];
-        int num = ov_table_visible(ov_table_for(lay->focus), lay, vis);
-        ps->highlight_col =
-            ((ps->highlight_col % num) + ((key == OV_KEY_SHIFT_LEFT) ? -1 : 1) + num) % num;
+        ov_table_cursor_move(ov_table_for(lay->focus), lay, ov_table_width(lay->focus),
+                             &ps->highlight_col, &ps->hscroll, (key == OV_KEY_SHIFT_LEFT) ? -1 : 1);
     }
     return 1;
 }
@@ -35,14 +33,9 @@ static int col_collapse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     (void) key, (void) m;
     OV_PANEL_STATE *ps = list_panel(lay);
-    if (ps != NULL)
+    if (ps != NULL && ps->highlight_col >= 0 && ps->highlight_col < OV_TABLE_MAX_COLS)
     {
-        int vis[OV_TABLE_MAX_COLS];
-        int nv = ov_table_visible(ov_table_for(lay->focus), lay, vis);
-        if (ps->highlight_col >= 0 && ps->highlight_col < nv)
-        {
-            ps->collapsed ^= (1U << vis[ps->highlight_col]);
-        }
+        ps->collapsed ^= (1U << ps->highlight_col);
     }
     return 1;
 }

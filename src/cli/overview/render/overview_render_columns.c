@@ -7,8 +7,8 @@
  * @brief   Draw list-panel headers and rows from their column tables; record header hit rectangles.
  *
  * Column c of a table is collapsed when bit c of the panel's collapsed mask is set ('t'), and the
- * column cursor (Shift+Left/Right) counts visible columns. One space separates a column from the next
- * unless it is collapsed, in the header and in the rows alike.
+ * column cursor (Shift+Left/Right) is a table index. Header and rows share one ov_table_layout() of the
+ * panel width; one space separates a column from the next unless it is collapsed.
  */
 
 #include "overview_render_internal.h"
@@ -22,14 +22,27 @@ static struct
 } s_hit[OV_NB_LIST_PANELS][OV_TABLE_MAX_COLS];
 static int s_nhit[OV_NB_LIST_PANELS];
 
+/** fit_cps - code points of @s, \x01/\x02 markup excluded. */
+static int fit_cps(const char *s)
+{
+    int n = 0;
+    for (; *s != '\0'; s++)
+    {
+        n += ((*s & 0xC0) != 0x80 && *s != 0x01 && *s != 0x02);
+    }
+    return n;
+}
+
 /**
- * ov_cell_fit - @s laid out in exactly @width columns (one per code point, \x01/\x02 markup kept),
- * truncated or padded on the side opposite to @right alignment, into @out.
+ * ov_cell_fit - @s laid out in exactly @width columns (one per code point, \x01/\x02 markup kept) into @out:
+ * padded on the side opposite to @right alignment, or cut with a trailing ellipsis.
  */
 static void ov_cell_fit(const char *s, int width, int right, char *out, size_t n)
 {
     char   body[256];
-    size_t b    = 0;
+    size_t b     = 0;
+    int    cut   = (fit_cps(s) > width && width > 1);
+    int    limit = cut ? width - 1 : width;
     int    cols = 0, open = 0;
     for (size_t i = 0; s[i] != '\0' && b + 8 < sizeof(body);)
     {
@@ -40,7 +53,7 @@ static void ov_cell_fit(const char *s, int width, int right, char *out, size_t n
             body[b++] = s[i++];
             continue;
         }
-        if (cols == width)
+        if (cols == limit)
         {
             break;
         }
@@ -55,19 +68,21 @@ static void ov_cell_fit(const char *s, int width, int right, char *out, size_t n
     {
         body[b++] = 0x02;
     }
+    if (cut)
+    {
+        memcpy(body + b, "\xe2\x80\xa6", 3); /* … */
+        b += 3;
+        cols++;
+    }
     body[b] = '\0';
     int pad = width - cols;
     snprintf(out, n, "%*s%s%*s", right ? pad : 0, "", body, right ? 0 : pad, "");
 }
 
-/** ov_table_sep - one separator space, counted against horizontal scroll and the panel width. */
-static void ov_table_sep(int *hs_rem, int *printed, int avail)
+/** ov_table_sep - one separator space, within the panel width. */
+static void ov_table_sep(int *printed, int avail)
 {
-    if (*hs_rem > 0)
-    {
-        (*hs_rem)--;
-    }
-    else if (*printed < avail)
+    if (*printed < avail)
     {
         ov_buf_printf(" ");
         (*printed)++;
@@ -76,29 +91,33 @@ static void ov_table_sep(int *hs_rem, int *printed, int avail)
 
 /**
  * ov_table_header - draw the header row of @t in panel rect @r (sorted column marked, cursor column
- * highlighted) and record where each column is, for ov_table_col_at().
+ * highlighted, ‹ › where columns are scrolled off or dropped) and record where each column is, for
+ * ov_table_col_at().
  */
 void ov_table_header(const OV_TABLE *t, const OV_LAYOUT *lay, OV_RECT r, ov_rgb_t fg)
 {
     const OV_PANEL_STATE *ps = &lay->panel[t->panel];
-    int                   vis[OV_TABLE_MAX_COLS];
-    int                   nv     = ov_table_visible(t, lay, vis);
-    int                   hs_rem = ps->hscroll, printed = 1, avail = r.width - 2;
+    OV_TABLE_LAYOUT       lo;
+    int                   printed = 1, avail = r.width - 2;
+    ov_table_set_width(t->panel, avail - 2); /* the focus strip, and the last column for › */
+    ov_table_layout(t, lay, avail - 2, ps->hscroll, &lo);
 
     ov_buf_pos(r.row + 1, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
-    ov_buf_printf(" ");
+    ov_theme_fg(OV_FG_WARN);
+    ov_buf_printf("%s", lo.more_left ? "\xe2\x80\xb9" : " "); /* ‹ */
     s_nhit[t->panel] = 0;
-    for (int k = 0; k < nv; k++)
+    for (int k = 0; k < lo.n; k++)
     {
-        const OV_COLUMN *col  = &t->cols[vis[k]];
-        int              coll = (ps->collapsed >> vis[k]) & 1;
-        if (k > 0 && !((ps->collapsed >> vis[k - 1]) & 1))
+        int              c    = lo.c[k];
+        const OV_COLUMN *col  = &t->cols[c];
+        int              coll = (ps->collapsed >> c) & 1;
+        if (k > 0 && !((ps->collapsed >> lo.c[k - 1]) & 1))
         {
             ov_theme_bg(OV_BG_HEADER);
-            ov_table_sep(&hs_rem, &printed, avail);
+            ov_table_sep(&printed, avail);
         }
-        int  w = ov_table_col_width(t, lay, vis[k]);
+        int  w = lo.w[k];
         char label[96], cell[256];
         if (col->flags & OV_COLF_NOLABEL)
         {
@@ -120,12 +139,21 @@ void ov_table_header(const OV_TABLE *t, const OV_LAYOUT *lay, OV_RECT r, ov_rgb_
         {
             int h                  = s_nhit[t->panel]++;
             s_hit[t->panel][h].col = r.col + 1 + printed;
-            s_hit[t->panel][h].w   = (coll ? 1 : w) + ((k + 1 < nv && !coll) ? 1 : 0);
-            s_hit[t->panel][h].c   = vis[k];
+            s_hit[t->panel][h].w   = (coll ? 1 : w) + ((k + 1 < lo.n && !coll) ? 1 : 0);
+            s_hit[t->panel][h].c   = c;
         }
-        ov_render_cell(vis[k], k, fg, OV_BG_HEADER, cell, &hs_rem, &printed, avail,
-                       ps->highlight_col, ps->collapsed);
+        ov_render_cell(c, fg, OV_BG_HEADER, cell, &printed, avail, ps->highlight_col,
+                       ps->collapsed);
     }
+    if (lo.more_right && printed < avail)
+    {
+        ov_theme_bg(OV_BG_HEADER);
+        ov_buf_hline(' ', avail - 1 - printed);
+        ov_theme_fg(OV_FG_WARN);
+        ov_buf_printf("\xe2\x80\xba"); /* › */
+        printed = avail;
+    }
+    ov_theme_bg(OV_BG_HEADER);
     render_pad_spaces(printed, r.width);
     render_separator(r.row + 2, r.col + 1, r.width - 2, fg);
 }
@@ -148,21 +176,20 @@ static void ov_table_spans(const OV_COLCELL     *c,
                            int                   w,
                            int                   right,
                            int                   lc,
-                           int                   vc,
                            ov_rgb_t              row_bg,
                            const OV_PANEL_STATE *ps,
-                           int                  *hs_rem,
                            int                  *printed,
                            int                   avail)
 {
-    int  total = c->span[c->nspan - 1].end;
-    int  pad   = (total < w) ? w - total : 0;
+    int total = c->span[c->nspan - 1].end;
+    int pad   = (total < w) ? w - total : 0;
+    int cut   = (total > w && w > 1);
+    w         = cut ? w - 1 : w;
     char piece[256];
     snprintf(piece, sizeof(piece), "%*s", pad, "");
     if (right && pad > 0)
     {
-        ov_render_cell(lc, vc, OV_FG_DIM, row_bg, piece, hs_rem, printed, avail, ps->highlight_col,
-                       0);
+        ov_render_cell(lc, OV_FG_DIM, row_bg, piece, printed, avail, ps->highlight_col, 0);
     }
     const char *p = c->text;
     for (int k = 0, cp = 0; k < c->nspan && cp < w; k++)
@@ -185,59 +212,63 @@ static void ov_table_spans(const OV_COLCELL     *c,
         {
             ov_buf_bold();
         }
-        ov_render_cell(lc, vc, sp->fg, sp->has_bg ? sp->bg : row_bg, piece, hs_rem, printed, avail,
+        ov_render_cell(lc, sp->fg, sp->has_bg ? sp->bg : row_bg, piece, printed, avail,
                        ps->highlight_col, 0);
         if (sp->bold)
         {
             ov_buf_reset_attr();
         }
     }
+    if (cut)
+    {
+        ov_render_cell(lc, OV_FG_DIM, row_bg, "\xe2\x80\xa6", printed, avail, ps->highlight_col, 0);
+    }
     if (!right && pad > 0)
     {
         snprintf(piece, sizeof(piece), "%*s", pad, "");
-        ov_render_cell(lc, vc, OV_FG_DIM, row_bg, piece, hs_rem, printed, avail, ps->highlight_col,
-                       0);
+        ov_render_cell(lc, OV_FG_DIM, row_bg, piece, printed, avail, ps->highlight_col, 0);
     }
 }
 
 /**
  * ov_table_row - draw the cells of one row of @t at the cursor (after the 1-column focus strip) on
- * @row_bg. Return: columns printed, counting the strip.
+ * @row_bg, laid out as its header. Return: columns printed, counting the strip.
  */
 int ov_table_row(const OV_TABLE *t, const OV_ROW_CTX *rc, ov_rgb_t row_bg, int avail)
 {
     const OV_PANEL_STATE *ps = &rc->lay->panel[t->panel];
-    int                   vis[OV_TABLE_MAX_COLS];
-    int                   nv     = ov_table_visible(t, rc->lay, vis);
-    int                   hs_rem = ps->hscroll, printed = 1;
-    for (int k = 0; k < nv; k++)
+    OV_TABLE_LAYOUT       lo;
+    int                   printed = 1;
+    ov_table_layout(t, rc->lay, avail - 2, ps->hscroll, &lo);
+    for (int k = 0; k < lo.n; k++)
     {
-        const OV_COLUMN *col = &t->cols[vis[k]];
-        if (k > 0 && !((ps->collapsed >> vis[k - 1]) & 1))
+        int              c   = lo.c[k];
+        const OV_COLUMN *col = &t->cols[c];
+        if (k > 0 && !((ps->collapsed >> lo.c[k - 1]) & 1))
         {
             ov_theme_bg(row_bg);
-            ov_table_sep(&hs_rem, &printed, avail);
+            ov_table_sep(&printed, avail);
         }
-        OV_COLCELL c;
-        memset(&c, 0, sizeof(c));
-        c.fg = OV_FG_TEXT;
-        col->cell(&c, rc);
-        int w = ov_table_col_width(t, rc->lay, vis[k]);
-        if (c.nspan > 0 && !((ps->collapsed >> vis[k]) & 1))
+        OV_COLCELL cc;
+        memset(&cc, 0, sizeof(cc));
+        cc.fg = OV_FG_TEXT;
+        col->cell(&cc, rc);
+        int w = lo.w[k];
+        if (cc.nspan > 0 && !((ps->collapsed >> c) & 1))
         {
-            ov_table_spans(&c, w, (col->flags & OV_COLF_RIGHT) != 0, vis[k], k, row_bg, ps, &hs_rem,
-                           &printed, avail);
+            ov_table_spans(&cc, w, (col->flags & OV_COLF_RIGHT) != 0, c, row_bg, ps, &printed,
+                           avail);
             continue;
         }
         char cell[256];
-        ov_cell_fit(c.text, w, (col->flags & OV_COLF_RIGHT) != 0, cell, sizeof(cell));
-        if (c.bold)
+        ov_cell_fit(cc.text, w, (col->flags & OV_COLF_RIGHT) != 0, cell, sizeof(cell));
+        if (cc.bold)
         {
             ov_buf_bold();
         }
-        ov_render_cell(vis[k], k, c.fg, c.has_bg ? c.bg : row_bg, cell, &hs_rem, &printed, avail,
+        ov_render_cell(c, cc.fg, cc.has_bg ? cc.bg : row_bg, cell, &printed, avail,
                        ps->highlight_col, ps->collapsed);
-        if (c.bold)
+        if (cc.bold)
         {
             ov_buf_reset_attr();
         }

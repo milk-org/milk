@@ -168,8 +168,8 @@ static void cell_rpid(OV_COLCELL *c, const OV_ROW_CTX *rc)
 }
 
 static const OV_COLUMN stream_cols[] = {
-    { "anc", "A", "ancestry", 3, 7, 0, 7, NULL, cell_anc },
-    { "name", "NAME", "name", 14, 0, 0, 0, NULL, cell_name },
+    { "anc", "A", "ancestry", 3, 7, OV_COLF_PIN, 7, NULL, cell_anc },
+    { "name", "NAME", "name", 14, 0, OV_COLF_PIN | OV_COLF_ELASTIC, 0, NULL, cell_name },
     { "typ", "TYP", "typ", 4, 5, OV_COLF_RIGHT, 1, NULL, cell_typ },
     { "size", "SIZE", "size", 11, 3, OV_COLF_RIGHT, 2, NULL, cell_size },
     { "hz", "Hz", NULL, 6, 1, OV_COLF_RIGHT, 3, NULL, cell_hz },

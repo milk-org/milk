@@ -18,6 +18,11 @@
 #define OV_COLF_RIGHT 0x01        /* right-aligned content */
 #define OV_COLF_COMPACT_HIDE 0x02 /* hidden in compact mode ('d') */
 #define OV_COLF_NOLABEL 0x04      /* no header text (marks, sparklines) */
+#define OV_COLF_PIN 0x08          /* never dropped or scrolled away (mark, A, NAME) */
+#define OV_COLF_ELASTIC 0x10 /* width is a minimum; spare room widens it up to OV_COL_ELASTIC_MAX */
+#define OV_COLF_FILL 0x20    /* width is a minimum; takes the room left after the elastic columns */
+
+#define OV_COL_ELASTIC_MAX 48
 
 #define OV_TABLE_MAX_COLS 32 /* collapse bits are one per table index */
 
@@ -64,13 +69,13 @@ typedef struct
 
 typedef struct
 {
-    const char *id;                        /* stable name: docs, future --sort */
-    const char *label;                     /* header text */
-    const char *status;                    /* [sort:...] text; NULL = label */
-    int         width;                     /* content columns, separator excluded */
-    int         priority;                  /* lower survives narrower terminals (round 3) */
-    int         flags;                     /* OV_COLF_* */
-    int         sort_key;                  /* data-layer sort key (ov_sort_*), -1 = not sortable */
+    const char *id;       /* stable name: docs, future --sort */
+    const char *label;    /* header text */
+    const char *status;   /* [sort:...] text; NULL = label */
+    int         width;    /* content columns, separator excluded */
+    int         priority; /* higher is dropped first when the panel is too narrow */
+    int         flags;    /* OV_COLF_* */
+    int         sort_key; /* data-layer sort key (ov_sort_*), -1 = not sortable */
     int (*width_fn)(const OV_LAYOUT *lay); /* overrides width when set */
     void (*cell)(OV_COLCELL *c, const OV_ROW_CTX *rc);
 } OV_COLUMN;
@@ -83,8 +88,33 @@ typedef struct
     const char      *what; /* "streams", "processes", "FPS": cmdlog wording */
 } OV_TABLE;
 
+/* Columns of a table as laid out in a panel: shown columns in screen order and their drawn widths */
+typedef struct
+{
+    int n;
+    int c[OV_TABLE_MAX_COLS]; /* table index */
+    int w[OV_TABLE_MAX_COLS]; /* content width (1 when collapsed) */
+    int used;                 /* columns used, separators included */
+    int hscroll;              /* scroll offset actually applied */
+    int more_left;            /* columns scrolled off on the left */
+    int more_right;           /* columns dropped for room on the right */
+} OV_TABLE_LAYOUT;
+
 const OV_TABLE *ov_table_for(ov_focus_t panel);
+void            ov_table_layout(const OV_TABLE  *t,
+                                const OV_LAYOUT *lay,
+                                int              width,
+                                int              hscroll,
+                                OV_TABLE_LAYOUT *lo);
+void            ov_table_set_width(ov_focus_t panel, int width);
+int             ov_table_width(ov_focus_t panel);
 int             ov_table_visible(const OV_TABLE *t, const OV_LAYOUT *lay, int *vis);
+int             ov_table_cursor_move(const OV_TABLE  *t,
+                                     const OV_LAYOUT *lay,
+                                     int              width,
+                                     int             *cur,
+                                     int             *hscroll,
+                                     int              step);
 int             ov_table_col_width(const OV_TABLE *t, const OV_LAYOUT *lay, int c);
 int             ov_table_find_key(const OV_TABLE *t, int sort_key);
 int             ov_table_find_id(const OV_TABLE *t, const char *id);

@@ -158,9 +158,9 @@ static int desc_width(const OV_LAYOUT *lay)
 }
 
 static const OV_COLUMN fps_cols[] = {
-    { "mark", "", NULL, 1, 9, OV_COLF_NOLABEL, -1, NULL, cell_mark },
-    { "anc", "A", "ancestry", 3, 8, 0, 3, NULL, cell_anc },
-    { "name", "NAME", "name", 18, 0, 0, 0, NULL, cell_name },
+    { "mark", "", NULL, 1, 9, OV_COLF_NOLABEL | OV_COLF_PIN, -1, NULL, cell_mark },
+    { "anc", "A", "ancestry", 3, 8, OV_COLF_PIN, 3, NULL, cell_anc },
+    { "name", "NAME", "name", 18, 0, OV_COLF_PIN | OV_COLF_ELASTIC, 0, NULL, cell_name },
     { "tmx", "TMX", NULL, 3, 6, OV_COLF_RIGHT, 5, NULL, cell_tmx },
     { "cpid", "CPID", NULL, 7, 2, OV_COLF_RIGHT, 1, NULL, cell_cpid },
     { "rpid", "RPID", NULL, 7, 1, OV_COLF_RIGHT, 4, NULL, cell_rpid },
