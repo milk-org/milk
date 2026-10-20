@@ -247,6 +247,7 @@ add_executable(
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_cache.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_cache_fps.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_graph.c
+  ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_index.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_loops.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_loops_names.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_loops_reg.c

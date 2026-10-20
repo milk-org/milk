@@ -5,8 +5,73 @@
 #include "overview_data_internal.h"
 
 /* =========================================================
- * Lookup helpers
+ * Lookup helpers: O(1) through the model indexes once the graph is built, linear before
  * ========================================================= */
+
+/** stream_inode_match - stream @si has the inode in @ctx. */
+static int stream_inode_match(const void *ctx, int32_t si)
+{
+    const OV_MODEL *m = ((const void *const *) ctx)[0];
+    return m->streams[si].valid &&
+           m->streams[si].inode == *(const ino_t *) ((const void *const *) ctx)[1];
+}
+
+/** stream_name_match - stream @si is named as in @ctx. */
+static int stream_name_match(const void *ctx, int32_t si)
+{
+    const OV_MODEL *m = ((const void *const *) ctx)[0];
+    return m->streams[si].valid && strcmp(m->streams[si].name, ((const void *const *) ctx)[1]) == 0;
+}
+
+/** proc_pid_match - process @pi has the PID in @ctx. */
+static int proc_pid_match(const void *ctx, int32_t pi)
+{
+    const OV_MODEL *m = ((const void *const *) ctx)[0];
+    return m->procs[pi].PID == *(const pid_t *) ((const void *const *) ctx)[1];
+}
+
+/** proc_better - process @a should stand for its PID rather than @b: live first, then the newest. */
+static int proc_better(const OV_MODEL *m, int a, int b)
+{
+    const OV_PROC *pa = &m->procs[a], *pb = &m->procs[b];
+    return (pa->active && !pb->active) ||
+           (pa->active == pb->active && pa->createtime > pb->createtime);
+}
+
+/** ov_model_index - (re)build the lookup indexes of @m from its stream and process arrays. */
+void ov_model_index(OV_MODEL *m)
+{
+    ov_ix_clear(&m->ix_stream_name);
+    ov_ix_clear(&m->ix_stream_inode);
+    ov_ix_clear(&m->ix_proc_pid);
+    for (int i = 0; i < m->nb_streams; i++)
+    {
+        if (m->streams[i].valid)
+        {
+            ov_ix_put(&m->ix_stream_name, ov_hash_str(m->streams[i].name), i);
+            ov_ix_put(&m->ix_stream_inode, ov_hash_u64((uint64_t) m->streams[i].inode), i);
+        }
+    }
+    for (int i = 0; i < m->nb_procs; i++)
+    {
+        pid_t       pid    = m->procs[i].PID;
+        const void *ctx[2] = { m, &pid };
+        if (!m->procs[i].valid || pid <= 0)
+        {
+            continue;
+        }
+        int slot = ov_ix_slot(&m->ix_proc_pid, ov_hash_u64((uint64_t) pid), proc_pid_match, ctx);
+        if (slot < 0)
+        {
+            ov_ix_put(&m->ix_proc_pid, ov_hash_u64((uint64_t) pid), i);
+        }
+        else if (proc_better(m, i, m->ix_proc_pid.val[slot]))
+        {
+            m->ix_proc_pid.val[slot] = i;
+        }
+    }
+    m->indexed = 1;
+}
 
 /**
  * ov_find_stream_by_inode - Find stream index by inode number
@@ -17,13 +82,19 @@
  */
 int ov_find_stream_by_inode(const OV_MODEL *model, ino_t inode)
 {
+    const void *ctx[2] = { model, &inode };
     if (inode == 0)
     {
         return -1;
     }
+    if (model->indexed)
+    {
+        return ov_ix_find(&model->ix_stream_inode, ov_hash_u64((uint64_t) inode),
+                          stream_inode_match, ctx);
+    }
     for (int i = 0; i < model->nb_streams; i++)
     {
-        if (model->streams[i].valid && model->streams[i].inode == inode)
+        if (stream_inode_match(ctx, i))
         {
             return i;
         }
@@ -40,13 +111,18 @@ int ov_find_stream_by_inode(const OV_MODEL *model, ino_t inode)
  */
 int ov_find_stream_by_name(const OV_MODEL *model, const char *name)
 {
+    const void *ctx[2] = { model, name };
     if (name == NULL || name[0] == '\0')
     {
         return -1;
     }
+    if (model->indexed)
+    {
+        return ov_ix_find(&model->ix_stream_name, ov_hash_str(name), stream_name_match, ctx);
+    }
     for (int i = 0; i < model->nb_streams; i++)
     {
-        if (model->streams[i].valid && strcmp(model->streams[i].name, name) == 0)
+        if (stream_name_match(ctx, i))
         {
             return i;
         }
@@ -64,21 +140,20 @@ int ov_find_stream_by_name(const OV_MODEL *model, const char *name)
  */
 int ov_find_proc_by_pid(const OV_MODEL *model, pid_t pid)
 {
-    int best = -1;
+    const void *ctx[2] = { model, &pid };
+    int         best   = -1;
     if (pid <= 0)
     {
         return -1;
     }
+    if (model->indexed)
+    {
+        return ov_ix_find(&model->ix_proc_pid, ov_hash_u64((uint64_t) pid), proc_pid_match, ctx);
+    }
     for (int i = 0; i < model->nb_procs; i++)
     {
-        const OV_PROC *p = &model->procs[i];
-        if (!p->valid || p->PID != pid)
-        {
-            continue;
-        }
-        if (best < 0 || (p->active && !model->procs[best].active) ||
-            (p->active == model->procs[best].active &&
-             p->createtime > model->procs[best].createtime))
+        if (model->procs[i].valid && model->procs[i].PID == pid &&
+            (best < 0 || proc_better(model, i, best)))
         {
             best = i;
         }
@@ -91,6 +166,26 @@ int ov_find_proc_by_pid(const OV_MODEL *model, pid_t pid)
  * Edge management
  * ========================================================= */
 
+/* (src, tgt, type) -> edge, for the duplicate check; follows one model's edge array */
+static OV_INDEX_DEF(16384) s_edge_ix;
+static const OV_MODEL *s_edge_model;
+static int             s_edge_n; /* edges indexed */
+
+/** edge_hash - hash of an edge's endpoints and type. */
+static uint64_t edge_hash(int src, int tgt, int type)
+{
+    return ov_hash_u64(((uint64_t) (uint32_t) src << 32) ^ ((uint64_t) (uint32_t) tgt << 4) ^
+                       (uint64_t) type);
+}
+
+/** edge_match - edge @ei joins the endpoints and type in @ctx (an int[3]). */
+static int edge_match(const void *ctx, int32_t ei)
+{
+    const int     *k = ctx;
+    const OV_EDGE *e = &s_edge_model->edges[ei];
+    return e->src_node == k[0] && e->tgt_node == k[1] && (int) e->type == k[2];
+}
+
 /**
  * ov_add_edge - Add a directed relationship edge between two graph nodes
  * @model: Pointer to data model
@@ -101,6 +196,7 @@ int ov_find_proc_by_pid(const OV_MODEL *model, pid_t pid)
  */
 void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, const char *label)
 {
+    const int k[3] = { src, tgt, (int) type };
     if (src < 0 || tgt < 0 || src == tgt)
     {
         return;
@@ -110,14 +206,21 @@ void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, const c
         return;
     }
 
-    /* Check for duplicate */
-    for (int i = 0; i < model->nb_edges; i++)
+    /* Duplicate check: (re)index this model's edges when the array is new or was reset */
+    if (model != s_edge_model || s_edge_n > model->nb_edges)
     {
-        if (model->edges[i].src_node == src && model->edges[i].tgt_node == tgt &&
-            model->edges[i].type == type)
-        {
-            return;
-        }
+        ov_ix_clear(&s_edge_ix);
+        s_edge_model = model;
+        s_edge_n     = 0;
+    }
+    for (; s_edge_n < model->nb_edges; s_edge_n++)
+    {
+        const OV_EDGE *x = &model->edges[s_edge_n];
+        ov_ix_put(&s_edge_ix, edge_hash(x->src_node, x->tgt_node, (int) x->type), s_edge_n);
+    }
+    if (ov_ix_find(&s_edge_ix, edge_hash(src, tgt, (int) type), edge_match, k) >= 0)
+    {
+        return;
     }
 
     OV_EDGE *e  = &model->edges[model->nb_edges];
@@ -205,6 +308,7 @@ void ov_build_graph(OV_MODEL *model)
 {
     model->nb_nodes = 0;
     model->nb_edges = 0;
+    ov_model_index(model);
 
     /* ---- Create nodes for all entities ---- */
 

@@ -61,8 +61,9 @@ void ov_model_full_scan(OV_MODEL *model)
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
 
-    /* Reset per-tick PID liveness cache */
+    /* Reset per-tick PID liveness cache; the arrays change, so the lookup indexes are stale until the graph */
     pid_cache_reset();
+    model->indexed = 0;
 
     /* Compute time delta for rate estimation
      * (used by scache_rate_update inside scan).

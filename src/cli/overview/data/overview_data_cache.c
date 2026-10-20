@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "overview_data_internal.h"
+#include "overview_data_index.h"
 
 #undef STRINGMAXLEN_DIRNAME
 #undef STRINGMAXLEN_FULLFILENAME
@@ -87,6 +88,19 @@ ov_stream_cache_t s_scache[OV_MAX_STREAMS];
 int               s_scache_nb    = 0;
 pthread_mutex_t   s_scache_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/*
+ * Cache indexes: name (or slot+PID) -> cache position. A lookup first indexes the entries appended since
+ * the last one; an eviction moves the last entry, so it marks the index stale (rebuilt on next lookup).
+ */
+static OV_INDEX_DEF(4096) s_scache_ix;
+static int s_scache_ix_n = -1; /* entries indexed, -1 = stale */
+
+/** scache_match - cache entry @ci is stream @ctx. */
+static int scache_match(const void *ctx, int32_t ci)
+{
+    return strcmp(s_scache[ci].name, (const char *) ctx) == 0;
+}
+
 /**
  * scache_find - find stream in cache by name.
  *
@@ -94,14 +108,16 @@ pthread_mutex_t   s_scache_mutex = PTHREAD_MUTEX_INITIALIZER;
  */
 int scache_find(const char *name)
 {
-    for (int i = 0; i < s_scache_nb; i++)
+    if (s_scache_ix_n < 0 || s_scache_ix_n > s_scache_nb)
     {
-        if (strcmp(s_scache[i].name, name) == 0)
-        {
-            return i;
-        }
+        ov_ix_clear(&s_scache_ix);
+        s_scache_ix_n = 0;
     }
-    return -1;
+    for (; s_scache_ix_n < s_scache_nb; s_scache_ix_n++)
+    {
+        ov_ix_put(&s_scache_ix, ov_hash_str(s_scache[s_scache_ix_n].name), s_scache_ix_n);
+    }
+    return ov_ix_find(&s_scache_ix, ov_hash_str(name), scache_match, name);
 }
 
 /**
@@ -109,6 +125,7 @@ int scache_find(const char *name)
  */
 void scache_evict_locked(int ci)
 {
+    s_scache_ix_n = -1;
     ImageStreamIO_closeIm(&s_scache[ci].img);
     s_scache_nb--;
     if (ci < s_scache_nb)
@@ -153,19 +170,30 @@ static OV_FPS_PARAMS s_active_fps_params;
 ov_fps_cache_t s_fcache[OV_MAX_FPS];
 int            s_fcache_nb = 0;
 
+static OV_INDEX_DEF(512) s_fcache_ix;
+static int s_fcache_ix_n = -1; /* entries indexed, -1 = stale */
+
+/** fcache_match - cache entry @ci is FPS @ctx. */
+static int fcache_match(const void *ctx, int32_t ci)
+{
+    return strcmp(s_fcache[ci].fname, (const char *) ctx) == 0;
+}
+
 /**
  * @brief Look up an FPS entry in the connection cache.
  */
 int fcache_find(const char *name)
 {
-    for (int i = 0; i < s_fcache_nb; i++)
+    if (s_fcache_ix_n < 0 || s_fcache_ix_n > s_fcache_nb)
     {
-        if (strcmp(s_fcache[i].fname, name) == 0)
-        {
-            return i;
-        }
+        ov_ix_clear(&s_fcache_ix);
+        s_fcache_ix_n = 0;
     }
-    return -1;
+    for (; s_fcache_ix_n < s_fcache_nb; s_fcache_ix_n++)
+    {
+        ov_ix_put(&s_fcache_ix, ov_hash_str(s_fcache[s_fcache_ix_n].fname), s_fcache_ix_n);
+    }
+    return ov_ix_find(&s_fcache_ix, ov_hash_str(name), fcache_match, name);
 }
 
 /**
@@ -173,6 +201,7 @@ int fcache_find(const char *name)
  */
 void fcache_evict_locked(int ci)
 {
+    s_fcache_ix_n = -1;
     ov_shm_unmap(&s_fcache[ci].map);
     s_fcache_nb--;
     if (ci < s_fcache_nb)
@@ -198,19 +227,40 @@ ov_proc_cache_t s_pcache[OV_MAX_PROCS];
 int             s_pcache_nb = 0;
 
 
+static OV_INDEX_DEF(1024) s_pcache_ix;
+static int s_pcache_ix_n = -1; /* entries indexed, -1 = stale */
+
+/** pcache_key - hash of a registry slot and PID. */
+static uint64_t pcache_key(long pindex, pid_t pid)
+{
+    return ov_hash_u64(((uint64_t) pindex << 32) ^ (uint32_t) pid);
+}
+
+/** pcache_match - cache entry @ci is the registry slot and PID in @ctx (a long[2]). */
+static int pcache_match(const void *ctx, int32_t ci)
+{
+    const long *k = ctx;
+    return s_pcache[ci].pindex == k[0] && s_pcache[ci].pid == (pid_t) k[1];
+}
+
 /**
  * pcache_find - Look up a registry entry by slot and PID.
  */
 int pcache_find(long pindex, pid_t pid)
 {
-    for (int i = 0; i < s_pcache_nb; i++)
+    const long k[2] = { pindex, (long) pid };
+    if (s_pcache_ix_n < 0 || s_pcache_ix_n > s_pcache_nb)
     {
-        if (s_pcache[i].pindex == pindex && s_pcache[i].pid == pid)
-        {
-            return i;
-        }
+        ov_ix_clear(&s_pcache_ix);
+        s_pcache_ix_n = 0;
     }
-    return -1;
+    for (; s_pcache_ix_n < s_pcache_nb; s_pcache_ix_n++)
+    {
+        ov_ix_put(&s_pcache_ix,
+                  pcache_key(s_pcache[s_pcache_ix_n].pindex, s_pcache[s_pcache_ix_n].pid),
+                  s_pcache_ix_n);
+    }
+    return ov_ix_find(&s_pcache_ix, pcache_key(pindex, pid), pcache_match, k);
 }
 
 /**
@@ -218,6 +268,7 @@ int pcache_find(long pindex, pid_t pid)
  */
 void pcache_evict(int ci)
 {
+    s_pcache_ix_n = -1;
     ov_shm_unmap(&s_pcache[ci].map);
     s_pcache_nb--;
     if (ci < s_pcache_nb)

@@ -80,6 +80,94 @@ static void test_find_proc_by_pid(void)
     CHECK(ov_find_proc_by_pid(&m, 7) == -1);
 }
 
+
+/** ix_is - match: the value equals *ctx */
+static int ix_is(const void *ctx, int32_t v)
+{
+    return v == *(const int *) ctx;
+}
+
+/* Hash index: colliding keys, full table; model lookups agree with the array scan (perf-1) */
+static void test_lookup_indexes(void)
+{
+    OV_INDEX_DEF(16) ix;
+    ov_ix_clear(&ix);
+    for (int v = 0; v < 8; v++)
+    {
+        CHECK(ov_ix_put(&ix, 42, v) == 0); /* all on one hash */
+    }
+    for (int v = 0; v < 8; v++)
+    {
+        CHECK(ov_ix_find(&ix, 42, ix_is, &v) == v);
+    }
+    int nine = 9;
+    CHECK(ov_ix_find(&ix, 42, ix_is, &nine) == -1);
+    for (int v = 8; v < 16; v++)
+    {
+        CHECK(ov_ix_put(&ix, 7, v) == 0);
+    }
+    CHECK(ov_ix_put(&ix, 7, 99) == -1); /* full */
+
+    static OV_MODEL m;
+    memset(&m, 0, sizeof(m));
+    m.nb_streams = 1500;
+    for (int i = 0; i < m.nb_streams; i++)
+    {
+        snprintf(m.streams[i].name, sizeof(m.streams[i].name), "st%d", i);
+        m.streams[i].inode = (ino_t) (1000 + 3 * i);
+        m.streams[i].valid = (i % 7 != 0);
+    }
+    m.nb_procs = 400;
+    for (int i = 0; i < m.nb_procs; i++)
+    {
+        m.procs[i].PID        = 100 + i % 150; /* shared by up to 3 entries */
+        m.procs[i].valid      = (i % 11 != 0);
+        m.procs[i].active     = (i % 3 == 0);
+        m.procs[i].createtime = (double) ((i * 37) % 101);
+    }
+    int lin_s[1600], lin_i[1600], lin_p[300];
+    for (int q = 0; q < 1600; q++)
+    {
+        char name[32];
+        snprintf(name, sizeof(name), "st%d", q);
+        lin_s[q] = ov_find_stream_by_name(&m, name);
+        lin_i[q] = ov_find_stream_by_inode(&m, (ino_t) (1000 + 3 * q));
+    }
+    for (int q = 0; q < 300; q++)
+    {
+        lin_p[q] = ov_find_proc_by_pid(&m, 50 + q);
+    }
+    ov_model_index(&m);
+    CHECK(m.indexed == 1);
+    for (int q = 0; q < 1600; q++)
+    {
+        char name[32];
+        snprintf(name, sizeof(name), "st%d", q);
+        CHECK(ov_find_stream_by_name(&m, name) == lin_s[q]);
+        CHECK(ov_find_stream_by_inode(&m, (ino_t) (1000 + 3 * q)) == lin_i[q]);
+    }
+    for (int q = 0; q < 300; q++)
+    {
+        CHECK(ov_find_proc_by_pid(&m, 50 + q) == lin_p[q]);
+    }
+
+    /* Edge duplicates are dropped, whatever the arrival order */
+    m.nb_edges = 0;
+    for (int r = 0; r < 3; r++)
+    {
+        for (int i = 0; i < 1000; i++)
+        {
+            ov_add_edge(&m, i, i + 1, (ov_edge_type_t) (i % 3), "x");
+        }
+    }
+    CHECK(m.nb_edges == 1000);
+    ov_add_edge(&m, 5, 6, (ov_edge_type_t) 1, "y"); /* new type for an existing pair */
+    CHECK(m.nb_edges == 1001);
+    m.nb_edges = 0; /* a reset array is re-indexed */
+    ov_add_edge(&m, 1, 2, (ov_edge_type_t) 1, "z");
+    CHECK(m.nb_edges == 1);
+}
+
 /* Shared labels follow processinfo.h and processtools_trigger.h (gap-1, ux-8) */
 static void test_labels(void)
 {
@@ -340,6 +428,7 @@ int main(void)
     test_pid_liveness();
     test_stat_with_spaces();
     test_find_proc_by_pid();
+    test_lookup_indexes();
     test_labels();
     test_pid_identity();
     test_loop_ids_stable();

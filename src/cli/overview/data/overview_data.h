@@ -6,6 +6,7 @@
 #define OVERVIEW_DATA_H
 
 #include "overview_data_types.h"
+#include "overview_data_index.h"
 
 /* =========================================================
  * Graph node
@@ -111,6 +112,12 @@ typedef struct
     int     nb_loops;
     int     loops_truncated; /* cycle search hit its limit: more loops may exist */
 
+    /* lookup indexes for ov_find_stream_by_name/_by_inode and ov_find_proc_by_pid, built with the graph */
+    OV_INDEX_DEF(4096) ix_stream_name;
+    OV_INDEX_DEF(4096) ix_stream_inode;
+    OV_INDEX_DEF(1024) ix_proc_pid; /* one entry per PID: the live process, else the newest */
+    int indexed;                    /* 0: the ov_find_* helpers scan the arrays */
+
     /* scan metadata */
     double   scan_time_ms;
     uint64_t scan_count;
@@ -167,6 +174,9 @@ void ov_scan_tmux_sessions(OV_MODEL *model);
  * the directed connection graph.
  */
 void ov_build_graph(OV_MODEL *model);
+
+/** ov_model_index - build the lookup indexes of @model (ov_build_graph does it first). */
+void ov_model_index(OV_MODEL *model);
 
 /**
  * ov_model_full_scan - run all four steps in sequence.
