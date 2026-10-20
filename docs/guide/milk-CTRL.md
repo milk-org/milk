@@ -164,6 +164,7 @@ checks that they match. `h` or F1 opens the help, with every key and a longer de
 | `q / x` | Quit milk-CTRL |
 | `ENTER / D` | DETAILS sub-tab (DASH, F6); select the CONNECTIONS row's stream; F5: tree / edit |
 | `ESC` | Back out: parameter tree, DETAILS cursor, filters, FPS marks |
+| `F3: Right / ENTER` | Open the stream inspector; Right: next page |
 | `Shift+Up` | Jump to upstream producer (Ancestor) |
 | `Shift+Down` | Jump to downstream consumer (Descendant) |
 | `L` | Cycle lineage mode (Trigger / Input / Full) |

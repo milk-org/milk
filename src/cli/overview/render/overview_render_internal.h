@@ -68,6 +68,16 @@ void ov_cell_pid(OV_COLCELL *c, const OV_ROW_CTX *rc, pid_t pid);
 
 void render_pad_spaces(int chars_written, int panel_width);
 void render_empty_rows(OV_RECT r, int row, int max_rows, ov_rgb_t fg, const char *msg);
+
+/* F3 stream inspector (overview_render_insp*.c) */
+void        ov_render_stream_inspector(OV_LAYOUT *lay, const OV_MODEL *m);
+int         ov_insp_tab_at(int mr, int mc);
+void        ov_insp_tab_step(OV_LAYOUT *lay, int step); /* input/overview_input_nav_insp.c */
+int         ov_input_nav_insp(int key, OV_LAYOUT *lay, const OV_MODEL *m);
+const char *ov_insp_tab_name(int t);
+void        ov_insp_line(ov_rgb_t fg, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+void        ov_insp_kv(const char *label, ov_rgb_t fg, const char *fmt, ...)
+    __attribute__((format(printf, 3, 4)));
 void render_pad_to_col(int end_col);
 int  ov_render_header_text(const char *text, int hs, int max_vis_width, ov_rgb_t base_fg);
 void ov_render_cell(int         col,

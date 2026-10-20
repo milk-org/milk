@@ -173,6 +173,12 @@ typedef struct
     /* F5 view split rects */
     OV_RECT r_fps_list;   /* left: FPS list  */
     OV_RECT r_fps_params; /* right: param tree */
+    /* F3 stream inspector: beside the list, under it below 100 columns; width 0 = not shown */
+    OV_RECT r_strm_insp;
+    int     strm_insp_focus;  /* 1: navigation keys scroll the inspector */
+    int     strm_insp_tab;    /* ov_insp_tab_t */
+    int     strm_insp_scroll; /* first line of the page shown */
+    float   strm_split_ratio; /* list width / screen width (side by side) */
     /* Preview-bar action buttons (row 2) */
     struct
     {

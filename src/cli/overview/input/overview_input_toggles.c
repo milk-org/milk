@@ -39,13 +39,22 @@ static int focus_cycle(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         lay->fps_param_focus = !lay->fps_param_focus;
     }
+    else if (lay->view == OV_VIEW_STREAMS)
+    {
+        lay->strm_insp_focus = !lay->strm_insp_focus && lay->r_strm_insp.width > 0;
+    }
     return 1;
 }
 
-/** subtab_cycle - Shift+TAB: next sub-tab. */
+/** subtab_cycle - Shift+TAB: next sub-tab; in F3 the inspector's next page. */
 static int subtab_cycle(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     (void) key, (void) m;
+    if (lay->view == OV_VIEW_STREAMS)
+    {
+        ov_insp_tab_step(lay, 1);
+        return 1;
+    }
     lay->subtab = (ov_subtab_t) ((lay->subtab + 1) % OV_SUBTAB_COUNT);
     return 1;
 }
@@ -205,7 +214,9 @@ static void nudge(float *r, float step)
 static int split_v(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     (void) m;
-    nudge((lay->view == OV_VIEW_FPS) ? &lay->fps_split_ratio : &lay->dash_split_v_ratio,
+    nudge((lay->view == OV_VIEW_FPS)       ? &lay->fps_split_ratio
+          : (lay->view == OV_VIEW_STREAMS) ? &lay->strm_split_ratio
+                                           : &lay->dash_split_v_ratio,
           (key == '{') ? -0.05f : 0.05f);
     return 1;
 }
@@ -329,14 +340,14 @@ static const OV_KEYBIND toggle_keys[] = {
     { { '\n', '\r' }, OV_CTX_LOOP_LIST, 0, loop_filter },
     { { '\n', '\r' },
       OV_CTX_MODEL,
-      OV_CTX_F5,
-      enter_details }, /* F5: ENTER edits (navigation group) */
+      OV_CTX_F5 | OV_CTX_F3,
+      enter_details }, /* F5: ENTER edits, F3: enters the inspector (navigation group) */
     { { ' ' }, 0, 0, freeze_toggle },
     { { OV_KEY_LEFT, OV_KEY_RIGHT }, OV_CTX_DASH, 0, focus_adjacent },
     { { OV_KEY_LEFT, OV_KEY_RIGHT },
       0,
-      OV_CTX_F5,
-      swallow }, /* F5: tree up / down (navigation group) */
+      OV_CTX_F5 | OV_CTX_F3,
+      swallow }, /* F5: tree up / down, F3: inspector in / out (navigation group) */
 };
 
 /** ov_input__handle_misc_toggles - display toggles, splits, freeze, ENTER and LEFT / RIGHT. Return: 1 consumed. */

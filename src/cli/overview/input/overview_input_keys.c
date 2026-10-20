@@ -26,6 +26,10 @@ unsigned ov_key_ctx(const OV_LAYOUT *lay, const OV_MODEL *m)
              : 0;
     c |= ((int) lay->focus >= 0 && lay->focus < OV_FOCUS_COUNT) ? focus_bit[lay->focus] : 0;
     c |= (lay->view == OV_VIEW_FPS && lay->fps_param_focus) ? OV_CTX_PARAM_TREE : 0;
+    c |= (lay->view == OV_VIEW_STREAMS) ? OV_CTX_F3 : 0;
+    c |= (lay->view == OV_VIEW_STREAMS && lay->strm_insp_focus && lay->r_strm_insp.width > 0)
+             ? OV_CTX_INSP
+             : 0;
     c |= (lay->multi_sel_count > 0) ? OV_CTX_MSEL : 0;
     c |= ov_view_has_panel(lay->view, lay->focus) ? OV_CTX_FOCUS_SHOWN : 0;
     c |= (lay->focus < OV_NB_LIST_PANELS) ? OV_CTX_FOCUS_LIST : 0;

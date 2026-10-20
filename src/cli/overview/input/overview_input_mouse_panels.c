@@ -85,8 +85,19 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
             list_click(lay, m, OV_FOCUS_FPS, lay->r_fps, mr, mc, is_dbl);
         }
     }
+    else if (lay->view == OV_VIEW_STREAMS && INSIDE(lay->r_strm_insp, mr, mc))
+    {
+        int t                = ov_insp_tab_at(mr, mc); /* F3 inspector: a page label, or the page */
+        lay->strm_insp_focus = 1;
+        if (t >= 0)
+        {
+            lay->strm_insp_tab    = t;
+            lay->strm_insp_scroll = 0;
+        }
+    }
     else
     {
+        lay->strm_insp_focus                    = 0;
         const OV_RECT *lists[OV_NB_LIST_PANELS] = { &lay->r_streams, &lay->r_procs, &lay->r_fps };
         int            hit                      = 0;
         for (int f = 0; f < OV_NB_LIST_PANELS && !hit; f++)

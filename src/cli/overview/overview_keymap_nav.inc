@@ -358,6 +358,19 @@
     },
 
     {
+        "F3: Right / ENTER",
+        "Open the stream inspector; Right: next page",
+        "F3 shows the stream list and an inspector for the stream under the cursor (beside the list, or under it "
+        "on narrow terminals). Right or ENTER enters it; there the arrows and PgUp/PgDn scroll, Right shows the next "
+        "page, Left or ESC goes back to the list. Shift+TAB or a click on a page label also changes the page. Pages: "
+        "INFO (metadata, times, creator and owner), SEMS (every semaphore's value, reader and writer).",
+        HS_STREAMS,
+        OV_KG_NAV,
+        0,
+        { "\xe2\x86\x92", "inspect", OV_CTX_F3 | OV_CTX_FOCUS_SHOWN, OV_CTX_INSP },
+    },
+
+    {
         "DEL",
         "Delete stream shared memory file",
         "After a y/N confirmation, unlinks the selected stream from the shm directory. Processes holding it stay "

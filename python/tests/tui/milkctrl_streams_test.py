@@ -49,3 +49,18 @@ def test_owner_and_creator_columns_sort(milkctrl, entities):
         seen |= {c for c in ("OWNER", "CPID") if c + "▲" in hdr}
     assert seen == {"OWNER", "CPID"}
     assert m.quit() == 0
+
+
+def test_inspector_sems_lists_writers(milkctrl, entities):
+    """F3 inspector, SEMS page: one row per semaphore with its value and the process that posted it (milk's
+    semaphore copy does not register as a reader, so READER stays empty here)."""
+    writer, _ = entities.make_stream_pair("pairst")
+    m = milkctrl("--view", "streams", "^pairst$")
+    m.wait_for(r"STREAM pairst")
+    m.keys("Right")  # into the inspector (INFO)
+    m.wait_for(r"Creator\s+\d+")
+    m.keys("Right")  # next page: SEMS
+    m.wait_for(r"#\s+VALUE\s+READER\s+WRITER")
+    m.wait_for(rf"\s9\s+\d+\s+{writer} shmimpoke")  # the tenth semaphore too
+    assert "[SEMS]" in m.lines()[-1]
+    assert m.quit() == 0

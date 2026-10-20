@@ -172,6 +172,10 @@ void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m)
     {
         snprintf(detail_label, sizeof(detail_label), " [%s]", ov_subtab_status(lay->subtab));
     }
+    else if (lay->view == OV_VIEW_STREAMS && lay->r_strm_insp.width > 0)
+    {
+        snprintf(detail_label, sizeof(detail_label), " [%s]", ov_insp_tab_name(lay->strm_insp_tab));
+    }
 
     /* Filter editing prompt overrides normal status */
     if (lay->filter_editing)

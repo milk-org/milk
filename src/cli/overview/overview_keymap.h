@@ -55,6 +55,8 @@ typedef enum
 #define OV_CTX_MSEL (1U << 11)        /* FPS batch marks set */
 #define OV_CTX_FOCUS_SHOWN (1U << 12) /* the focused panel is on screen */
 #define OV_CTX_FOCUS_LIST (1U << 13)  /* the focus is a list panel (streams, processes, FPS) */
+#define OV_CTX_F3 (1U << 14)          /* view F3 */
+#define OV_CTX_INSP (1U << 15)        /* F3 stream inspector focused */
 
 /* Status-line hint of a key: shown while the context has every @need bit and no @forbid bit */
 typedef struct

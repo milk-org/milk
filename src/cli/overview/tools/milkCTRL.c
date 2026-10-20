@@ -87,6 +87,7 @@ extern void            ov_scan_stop(void);
 extern const OV_MODEL *ov_scan_get_model(void);
 extern void            ov_render_frame(const OV_LAYOUT *lay, const OV_MODEL *m);
 extern void            ov_render__sync_selection(OV_LAYOUT *lay, const OV_MODEL *m);
+extern int             ov_get_selected_stream_idx(const OV_LAYOUT *lay, const OV_MODEL *m);
 extern int             ov_handle_key(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 
 /* =========================================================
@@ -100,6 +101,36 @@ extern int             ov_handle_key(int key, OV_LAYOUT *lay, const OV_MODEL *m)
  *
  * Return: 0 on clean exit, non-zero on error.
  */
+/**
+ * milkctrl_inspect_hint - name the stream the F3 inspector shows to the scan thread, and scan at once, once the
+ * cursor has rested on it for 150 ms (holding a key down must not trigger a scan per row).
+ */
+static void milkctrl_inspect_hint(const OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    static char     sent[STRINGMAXLEN_IMAGE_NAME], want[STRINGMAXLEN_IMAGE_NAME];
+    static double   t_want;
+    struct timespec ts;
+    const char     *name = "";
+    int si = (m != NULL && lay->r_strm_insp.width > 0) ? ov_get_selected_stream_idx(lay, m) : -1;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    double now = (double) ts.tv_sec + 1e-9 * (double) ts.tv_nsec;
+    if (si >= 0)
+    {
+        name = m->streams[si].name;
+    }
+    if (strcmp(want, name) != 0)
+    {
+        snprintf(want, sizeof(want), "%s", name);
+        t_want = now;
+    }
+    if (strcmp(sent, want) != 0 && now - t_want >= 0.15)
+    {
+        snprintf(sent, sizeof(sent), "%s", want);
+        ov_scan_set_inspect(want);
+        ov_scan_force_update();
+    }
+}
+
 int main(int argc, char *argv[])
 {
     OV_OPTS opts;
@@ -200,6 +231,7 @@ int main(int argc, char *argv[])
     lay.cmdlog_rows             = 4;
     lay.sub[OV_SUB_DETAILS].sel = -1;
     lay.fps_split_ratio         = 0.4f;
+    lay.strm_split_ratio        = 0.6f;
     lay.fps_split_dragging      = 0;
     lay.dash_split_v_ratio      = 0.5f;
     lay.dash_split_h_ratio      = 0.5f;
@@ -342,6 +374,7 @@ int main(int argc, char *argv[])
         /* Tell the scan thread what is on screen: pause stops scanning, tmux only for FPS panels */
         ov_scan_set_hints((lay.paused ? OV_HINT_PAUSED : 0U) |
                           (ov_view_has_panel(lay.view, OV_FOCUS_FPS) ? OV_HINT_FPS_VISIBLE : 0U));
+        milkctrl_inspect_hint(&lay, m);
 
         /* Library output captured from fds 1/2 goes to the command log */
         fflush(stdout);

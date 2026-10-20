@@ -42,6 +42,14 @@ typedef enum
     OV_SUBTAB_COUNT,
 } ov_subtab_t;
 
+/* Pages of the F3 stream inspector */
+typedef enum
+{
+    OV_INSP_INFO = 0,
+    OV_INSP_SEMS,
+    OV_INSP_TAB_COUNT
+} ov_insp_tab_t;
+
 /* List cursor of one sub-tab, indexed by ov_subtab_t */
 typedef struct
 {

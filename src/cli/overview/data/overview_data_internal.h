@@ -87,6 +87,7 @@ int        ov_stream_dirent(const char          *dir,
                             char                *target,
                             size_t               n);
 int        ov_stream_map_err(int rc, int version_ok);
+void       ov_scan_inspect(OV_MODEL *model);
 extern int s_scache_nb;
 
 typedef struct

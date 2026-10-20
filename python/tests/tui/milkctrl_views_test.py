@@ -27,7 +27,9 @@ def test_tab_in_streams_view_keeps_stream_focus(milkctrl, entities, tui_env):
     assert m.quit() == 0
 
 
-@pytest.mark.parametrize("view,key", [("F3", "Enter"), ("F4", "D")])
+@pytest.mark.parametrize(
+    "view,key", [("F3", "D"), ("F4", "D")]
+)  # F3 ENTER opens the stream inspector
 def test_details_keys_hint_outside_dash(milkctrl, entities, view, key):
     entities.make_stream("hintme")
     m = milkctrl()

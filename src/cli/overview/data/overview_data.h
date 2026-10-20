@@ -98,12 +98,13 @@ static inline int ov_loop_units(const OV_LOOP *lp)
 typedef struct
 {
     /* data arrays */
-    OV_STREAM    streams[OV_MAX_STREAMS];
-    int          nb_streams;
-    int          streams_pending; /* listed streams not mapped yet: the scan comes back soon */
-    int          streams_capped;  /* more *.im.shm than OV_MAX_STREAMS */
-    OV_TRACE_HOP trace[OV_MAX_TRACE];
-    int          nb_trace;
+    OV_STREAM        streams[OV_MAX_STREAMS];
+    int              nb_streams;
+    int              streams_pending; /* listed streams not mapped yet: the scan comes back soon */
+    int              streams_capped;  /* more *.im.shm than OV_MAX_STREAMS */
+    OV_TRACE_HOP     trace[OV_MAX_TRACE];
+    int              nb_trace;
+    OV_STREAM_DETAIL insp; /* the stream named by ov_scan_set_inspect */
 
     OV_FPS fps[OV_MAX_FPS];
     int    nb_fps;
@@ -261,6 +262,7 @@ void ov_scan_force_update(void);
 #define OV_HINT_FPS_VISIBLE 0x2U /* an FPS panel is on screen: tmux windows are worth polling */
 
 void     ov_scan_set_hints(unsigned hints);
+void     ov_scan_set_inspect(const char *name);
 void     ov_scan_tmux_refresh(void);
 unsigned ov_scan_hints(void);
 unsigned ov_scan_hints_swap(unsigned hints);

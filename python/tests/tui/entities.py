@@ -75,6 +75,29 @@ class Entities:
         self._run([sys.executable, "-c", _MKFPS, name, *params])
         return self.shm / f"{name}.fps.shm"
 
+    def make_stream_pair(self, name: str) -> tuple[int, int]:
+        """Stream @name posted at 10 Hz by milk-shmimpoke and copied on each post by milk-shmimcopy-semtrig into
+        @name_out: returns the (writer, reader) PIDs. Both tools come from this build, like the streams.
+        """
+        self.make_stream(name, 4, 4)
+        self.make_stream(name + "_out", 4, 4)
+        pids = []
+        for argv in (
+            ["milk-shmimpoke", "-loopd", "0.1", "exec", name],
+            ["milk-shmimcopy-semtrig", "-loops", "exec", name, name + "_out"],
+        ):
+            p = subprocess.Popen(
+                argv,
+                env=self.env,
+                cwd=self.shm,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            self.procs.append(p)
+            pids.append(p.pid)
+        time.sleep(1.5)  # a few posts
+        return pids[0], pids[1]
+
     def make_proc(self, name: str) -> int:
         """Start a fake processinfo loop; returns its PID once the registry entry exists."""
         p = subprocess.Popen(

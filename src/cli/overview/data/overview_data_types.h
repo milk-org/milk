@@ -225,6 +225,34 @@ typedef struct
 } OV_STREAM;
 
 
+/* Everything known about the one stream under inspection (F3 inspector, DETAILS): ov_scan_set_inspect */
+#define OV_INSP_MAX_KW 64
+typedef struct
+{
+    char            name[STRINGMAXLEN_IMAGE_NAME]; /* "" = none */
+    int             valid;                         /* mapped and filled */
+    char            version[32];
+    uint64_t        imagetype, flag, memsize;
+    int8_t          location; /* -1 CPU, >= 0 GPU device */
+    uint8_t         shared, status, logflag, write;
+    struct timespec creationtime, lastaccesstime, atime, writetime;
+    uint64_t        cnt0, cnt1, cnt2;
+    uint32_t        cb_size, cb_index;
+    uint64_t        cb_cycle;
+    int             nb_sem;
+    int             semval[IMAGE_NB_SEMAPHORE];
+    pid_t           sem_read[IMAGE_NB_SEMAPHORE], sem_write[IMAGE_NB_SEMAPHORE];
+    uint8_t         sem_read_alive[IMAGE_NB_SEMAPHORE], sem_write_alive[IMAGE_NB_SEMAPHORE];
+    int             nb_kw, nb_kw_listed; /* keywords in the stream, copied below */
+    struct
+    {
+        char name[KEYWORD_MAX_STRING];
+        char type; /* L long, D double, S string */
+        char value[32];
+        char comment[KEYWORD_MAX_COMMENT];
+    } kw[OV_INSP_MAX_KW];
+} OV_STREAM_DETAIL;
+
 /* =========================================================
  * FPS info (aggregated from FPS)
  * ========================================================= */

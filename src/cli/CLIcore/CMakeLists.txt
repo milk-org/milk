@@ -250,6 +250,8 @@ add_executable(
   ../overview/render/overview_render_derived.c
   ../overview/render/overview_render_units.c
   ../overview/render/overview_render_bar.c
+  ../overview/render/overview_render_insp.c
+  ../overview/input/overview_input_nav_insp.c
   ../overview/render/overview_render_graph_health.c
   ../overview/render/overview_render_popup.c
   ../overview/render/overview_render_sync.c

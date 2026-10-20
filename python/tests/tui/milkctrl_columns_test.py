@@ -39,7 +39,9 @@ def test_stream_rows_align_with_header(milkctrl, entities):
     m.wait_for(r"aligns")
     lines = m.lines()
     hdr = next(x for x in lines if "NAME" in x and "INODE" in x)
-    row = next(x for x in lines if "aligns" in x)
+    row = next(
+        x for x in lines if re.match(r"\u2551\s+(\S+\s+)?aligns\s", x)
+    )  # the list row, not the inspector
     assert _end(hdr, r"TYP") == _end(row, r"\b[A-Z]+\d+\b")
     assert _end(hdr, r"SIZE") == _end(row, r"\b\d+x\d+\b")
     assert _end(hdr, r"INODE") == _end(row, r"\b\d{3,}\b")

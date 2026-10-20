@@ -200,7 +200,8 @@ static int list_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
 static const OV_KEYBIND nav_keys[] = {
     { { OV_KEY_SHIFT_UP, OV_KEY_SHIFT_DOWN }, 0, 0, ov_input__handle_ancestry_nav },
-    { { OV_KEY_ANY }, OV_CTX_F5, 0, ov_input_nav_fps }, /* F5 parameter tree first */
+    { { OV_KEY_ANY }, OV_CTX_F5, 0, ov_input_nav_fps },  /* F5 parameter tree first */
+    { { OV_KEY_ANY }, OV_CTX_F3, 0, ov_input_nav_insp }, /* F3 stream inspector first */
     { { OV_KEY_UP, OV_KEY_DOWN, OV_KEY_PGUP, OV_KEY_PGDN, OV_KEY_HOME, OV_KEY_END },
       0,
       0,

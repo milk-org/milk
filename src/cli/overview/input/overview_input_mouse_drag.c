@@ -147,6 +147,11 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         int  count  = 0;
         int  page_h = 10;
 
+        if (lay->view == OV_VIEW_STREAMS && INSIDE(lay->r_strm_insp, mr, mc))
+        {
+            lay->strm_insp_scroll += dir; /* clamped when drawn */
+            return 1;
+        }
         if (lay->view == OV_VIEW_FPS)
         {
             if (INSIDE(lay->r_fps_params, mr, mc))

@@ -163,6 +163,11 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         ov_input_nav_fps(key, lay, m);
         return 0;
     }
+    if (key == 27 && lay->view == OV_VIEW_STREAMS && lay->strm_insp_focus)
+    {
+        lay->strm_insp_focus = 0;
+        return 0;
+    }
     if (key == 27 && lay->sub[OV_SUB_DETAILS].sel >= 0 && lay->focus == OV_FOCUS_GRAPH &&
         lay->subtab == OV_SUB_DETAILS && ov_view_has_panel(lay->view, OV_FOCUS_GRAPH))
     {

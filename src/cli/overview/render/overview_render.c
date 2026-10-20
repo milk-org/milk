@@ -21,10 +21,11 @@ static void render_dash(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel
     ov_render_subtab(lay, m);
 }
 
-/** render_streams - F3. */
+/** render_streams - F3: the stream list and its inspector. */
 static void render_streams(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
 {
     ov_render_streams_panel(lay, m, rel);
+    ov_render_stream_inspector(lay, m);
 }
 
 /** render_procs - F4. */
