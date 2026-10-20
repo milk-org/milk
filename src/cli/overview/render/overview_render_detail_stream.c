@@ -364,9 +364,9 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
             int val = s->semval[ii];
             H_ov_theme_fg(val > 0 ? OV_FG_WARN : OV_FG_TEXT);
             char rpid_str[32] = "";
-            if (s->read_pids[ii] > 0)
+            if (s->sem_read_pid[ii] > 0) /* this semaphore's reader, not the compacted list */
             {
-                snprintf(rpid_str, sizeof(rpid_str), "reader:%d", (int) s->read_pids[ii]);
+                snprintf(rpid_str, sizeof(rpid_str), "reader:%d", (int) s->sem_read_pid[ii]);
             }
             int n = snprintf(NULL, 0, "  [%d] val:%d  %s", ii, val, rpid_str);
             H_ov_buf_printf("  [%d] val:%d  %s", ii, val, rpid_str);

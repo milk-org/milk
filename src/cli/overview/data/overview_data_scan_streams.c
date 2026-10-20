@@ -195,6 +195,7 @@ static void fill_stream_from_img(OV_STREAM *s, IMAGE *imgp, const char *name, in
         {
             s->semval[sm] = 0;
         }
+        s->sem_read_pid[sm] = (imgp->semReadPID != NULL) ? imgp->semReadPID[sm] : 0;
     }
 
     /* Writer PID: first active proc trace entry */

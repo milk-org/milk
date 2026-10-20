@@ -166,6 +166,36 @@ static int add_node(OV_MODEL *model, ov_node_type_t type, int index, const char 
 
 
 /**
+ * fps_param_is_output - direction of FPS stream parameter @sp (stream @si). A live run process decides
+ * by what it does (writes: output, reads a semaphore: input); otherwise the trigger/run-required flags
+ * mark inputs, and the "out" name heuristic is the last resort (FPFLAG_WRITE only means editable).
+ */
+static int fps_param_is_output(const OV_MODEL *m, const OV_FPS *f, int sp, int si)
+{
+    const OV_STREAM *s = &m->streams[si];
+    if (f->run_alive && f->runpid > 0)
+    {
+        if (s->write_pid == f->runpid)
+        {
+            return 1;
+        }
+        for (int k = 0; k < s->nb_read_pids; k++)
+        {
+            if (s->read_pids[k] == f->runpid)
+            {
+                return 0;
+            }
+        }
+    }
+    if (f->stream_param_flags[sp] & (FPFLAG_TRIGGER_STREAM | FPFLAG_STREAM_RUN_REQUIRED))
+    {
+        return 0;
+    }
+    const char *pname = f->stream_param_name[sp];
+    return strstr(pname, "out") != NULL || strstr(pname, "OUT") != NULL;
+}
+
+/**
  * @brief Build the stream-process connectivity graph.
  *
  * Analyzes processinfo triggers and stream
@@ -317,17 +347,7 @@ void ov_build_graph(OV_MODEL *model)
                 continue;
             }
 
-            /* Determine direction by param name.
-             * FPFLAG_WRITE cannot be used — it
-             * means "user-editable", which is
-             * set for both inputs and outputs. */
-            int is_out = 0;
-            if (strstr(pname, "out") || strstr(pname, "OUT"))
-            {
-                is_out = 1;
-            }
-
-            if (is_out)
+            if (fps_param_is_output(model, f, sp, si))
             {
                 /* FPS → stream (output) */
                 ov_add_edge(model, f->node_idx, model->streams[si].node_idx,

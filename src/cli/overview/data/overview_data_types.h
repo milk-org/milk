@@ -152,8 +152,9 @@ typedef struct
     ino_t inode;
 
     /* semaphores */
-    int nb_sem;
-    int semval[10];
+    int   nb_sem;
+    int   semval[10];
+    pid_t sem_read_pid[10]; /**< semReadPID per semaphore, aligned with semval */
 
     /* Write / read PIDs */
     pid_t write_pid; /**< writer PID (from proc trace) */

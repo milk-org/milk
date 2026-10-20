@@ -268,6 +268,57 @@ static void test_lineage_roots(void)
     CHECK(n > 0 && rows[0].reader_node_idx == f && sg_tree_reader_proc(&m, &rows[0]) == -1);
 }
 
+/* 1 if the graph has an edge @type between stream @sname and FPS @fname, in that direction */
+static int has_fps_edge(const OV_MODEL *m,
+                        const char     *sname,
+                        const char     *fname,
+                        ov_edge_type_t  type)
+{
+    for (int e = 0; e < m->nb_edges; e++)
+    {
+        const OV_NODE *a = &m->nodes[m->edges[e].src_node], *b = &m->nodes[m->edges[e].tgt_node];
+        const OV_NODE *st = (type == OV_EDGE_FPS_OUTPUT_STREAM) ? b : a;
+        const OV_NODE *fp = (type == OV_EDGE_FPS_OUTPUT_STREAM) ? a : b;
+        if (m->edges[e].type == type && strcmp(st->name, sname) == 0 &&
+            strcmp(fp->name, fname) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* FPS stream direction: the run process's I/O first, then trigger/run-required flags, then the name (links-8) */
+static void test_fps_stream_direction(void)
+{
+    static OV_MODEL m;
+    memset(&m, 0, sizeof(m));
+    const char *sn[2] = { "imname", "out_x" };
+    for (int i = 0; i < 2; i++)
+    {
+        snprintf(m.streams[i].name, sizeof(m.streams[i].name), "%s", sn[i]);
+        m.streams[i].valid = 1;
+    }
+    m.nb_streams           = 2;
+    m.streams[0].write_pid = 777;
+    OV_FPS *f              = &m.fps[0];
+    snprintf(f->name, sizeof(f->name), "f1");
+    f->valid            = 1;
+    f->run_alive        = 1;
+    f->runpid           = 777;
+    f->nb_stream_params = 2;
+    for (int i = 0; i < 2; i++)
+    {
+        snprintf(f->stream_param_name[i], sizeof(f->stream_param_name[i]), "%s", sn[i]);
+        snprintf(f->stream_param_value[i], sizeof(f->stream_param_value[i]), "%s", sn[i]);
+    }
+    f->stream_param_flags[1] = FPFLAG_TRIGGER_STREAM;
+    m.nb_fps                 = 1;
+    ov_build_graph(&m);
+    CHECK(has_fps_edge(&m, "imname", "f1", OV_EDGE_FPS_OUTPUT_STREAM));
+    CHECK(has_fps_edge(&m, "out_x", "f1", OV_EDGE_FPS_INPUT_STREAM));
+}
+
 int main(void)
 {
     test_pid_liveness();
@@ -279,6 +330,7 @@ int main(void)
     test_loop_health();
     test_loop_truncation();
     test_lineage_roots();
+    test_fps_stream_direction();
     if (failures == 0)
     {
         printf("all ok\n");
