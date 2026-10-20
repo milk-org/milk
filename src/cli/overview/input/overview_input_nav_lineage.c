@@ -51,17 +51,12 @@ static int find_relative_node_of_type(const OV_MODEL *m,
     {
         int curr = queue[head++];
 
-        for (int i = 0; i < m->nb_edges; i++)
+        int beg = upstream ? OV_ADJ_B(m, in, curr) : OV_ADJ_B(m, out, curr);
+        int lim = upstream ? OV_ADJ_E(m, in, curr) : OV_ADJ_E(m, out, curr);
+        for (int k = beg; k < lim; k++)
         {
-            int next = -1;
-            if (upstream && m->edges[i].tgt_node == curr)
-            {
-                next = m->edges[i].src_node;
-            }
-            else if (!upstream && m->edges[i].src_node == curr)
-            {
-                next = m->edges[i].tgt_node;
-            }
+            const OV_EDGE *e    = &m->edges[upstream ? m->adj_in[k] : m->adj_out[k]];
+            int            next = upstream ? e->src_node : e->tgt_node;
 
             if (next >= 0 && !visited[next])
             {

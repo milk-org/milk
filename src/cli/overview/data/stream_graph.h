@@ -28,6 +28,8 @@
 
 #define SG_MAX_LINEAGE 128
 #define SG_MAX_DEPTH 16
+#define SG_TREE_MAX_DEPTH \
+    64 /* CONNECTIONS tree levels: each recursion level uses about 32 KB of stack */
 
 /* =========================================================
  * Traversal modes

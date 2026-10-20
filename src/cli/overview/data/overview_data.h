@@ -106,6 +106,13 @@ typedef struct
     OV_EDGE edges[OV_MAX_EDGES];
     int     nb_edges;
 
+    /* adjacency: the edges out of / into node v are adj_out[adj_out_off[v] .. adj_out_off[v + 1]) (and
+     * adj_in likewise), in edge order; built by ov_model_adjacency */
+    int adj_out_off[OV_MAX_NODES + 1];
+    int adj_out[OV_MAX_EDGES];
+    int adj_in_off[OV_MAX_NODES + 1];
+    int adj_in[OV_MAX_EDGES];
+
     /* detected loops */
     OV_LOOP loops[OV_MAX_LOOPS];
     int     nb_loops;
@@ -177,6 +184,13 @@ void ov_build_graph(OV_MODEL *model);
 
 /** ov_model_index - build the lookup indexes of @model (ov_build_graph does it first). */
 void ov_model_index(OV_MODEL *model);
+void ov_model_adjacency(OV_MODEL *model);
+
+/* for (int k = OV_ADJ_B(m, out, v); k < OV_ADJ_E(m, out, v); k++) e = &m->edges[m->adj_out[k]]:
+ * the edges out of (out) or into (in) node v; an invalid v gives an empty range */
+#define OV_ADJ_OK(m, v) ((v) >= 0 && (v) < (m)->nb_nodes)
+#define OV_ADJ_B(m, d, v) (OV_ADJ_OK(m, v) ? (m)->adj_##d##_off[(v)] : 0)
+#define OV_ADJ_E(m, d, v) (OV_ADJ_OK(m, v) ? (m)->adj_##d##_off[(v) + 1] : 0)
 
 /**
  * ov_model_full_scan - run all four steps in sequence.

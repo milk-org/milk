@@ -87,13 +87,9 @@ void sg_compute_node_depths(const OV_MODEL *m, int start_node, sg_mode_t mode, i
 
         const OV_NODE *cn = &m->nodes[cur.node];
 
-        for (int ei = 0; ei < m->nb_edges; ei++)
+        for (int k = m->adj_out_off[cur.node]; k < m->adj_out_off[cur.node + 1]; k++)
         {
-            const OV_EDGE *e = &m->edges[ei];
-            if (e->src_node != cur.node)
-            {
-                continue;
-            }
+            const OV_EDGE *e = &m->edges[m->adj_out[k]];
 
             if (cn->type == OV_NODE_STREAM)
             {
@@ -181,13 +177,9 @@ void sg_compute_node_depths(const OV_MODEL *m, int start_node, sg_mode_t mode, i
 
         const OV_NODE *cn = &m->nodes[cur.node];
 
-        for (int ei = 0; ei < m->nb_edges; ei++)
+        for (int k = m->adj_in_off[cur.node]; k < m->adj_in_off[cur.node + 1]; k++)
         {
-            const OV_EDGE *e = &m->edges[ei];
-            if (e->tgt_node != cur.node)
-            {
-                continue;
-            }
+            const OV_EDGE *e = &m->edges[m->adj_in[k]];
 
             int next = e->src_node;
             if (next < 0 || next >= m->nb_nodes)

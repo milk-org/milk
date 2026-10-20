@@ -4,6 +4,7 @@ set(OV_DIR ${CMAKE_SOURCE_DIR}/src/cli/overview)
 add_library(
   milkctrl_model STATIC
   ${OV_DIR}/data/overview_data.c
+  ${OV_DIR}/data/overview_data_adj.c
   ${OV_DIR}/data/overview_data_cache.c
   ${OV_DIR}/data/overview_data_cache_fps.c
   ${OV_DIR}/data/overview_data_filter.c

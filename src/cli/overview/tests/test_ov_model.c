@@ -243,6 +243,7 @@ static int add_node(OV_MODEL *m, ov_node_type_t type, const char *name)
         snprintf(m->fps[m->nb_fps].name, sizeof(m->fps[0].name), "%s", name);
         m->fps[m->nb_fps++].node_idx = ni;
     }
+    ov_model_adjacency(m); /* the graph is set by hand: keep its adjacency current */
     return ni;
 }
 
@@ -253,6 +254,7 @@ static void add_edge(OV_MODEL *m, int src, int tgt, ov_edge_type_t type)
     e->tgt_node = tgt;
     e->type     = type;
     e->evidence = OV_EV_PROCTRACE;
+    ov_model_adjacency(m);
 }
 
 /* stream s -> unit u -> stream t -> unit v -> s, units being processes or FPS */

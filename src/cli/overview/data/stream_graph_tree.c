@@ -20,7 +20,7 @@ static void sg_dfs_tree(const OV_MODEL *m,
                         SG_TREE_NODE   *out_nodes,
                         int            *nb_out_nodes)
 {
-    if (*nb_out_nodes >= OV_MAX_NODES)
+    if (*nb_out_nodes >= OV_MAX_NODES || path_len >= SG_TREE_MAX_DEPTH)
     {
         return;
     }
@@ -91,11 +91,11 @@ static void sg_dfs_tree(const OV_MODEL *m,
         int child_streams[OV_MAX_STREAMS];
         int nb_child_streams = 0;
 
-        for (int ei = 0; ei < m->nb_edges; ei++)
+        for (int ki = OV_ADJ_B(m, out, reader_node_idx); ki < OV_ADJ_E(m, out, reader_node_idx);
+             ki++)
         {
-            const OV_EDGE *e = &m->edges[ei];
-            if (e->src_node == reader_node_idx &&
-                (e->type == OV_EDGE_PROC_WRITES_STREAM || e->type == OV_EDGE_FPS_OUTPUT_STREAM))
+            const OV_EDGE *e = &m->edges[m->adj_out[ki]];
+            if ((e->type == OV_EDGE_PROC_WRITES_STREAM || e->type == OV_EDGE_FPS_OUTPUT_STREAM))
             {
                 int c_node = e->tgt_node;
                 if (c_node >= 0 && c_node < m->nb_nodes && m->nodes[c_node].type == OV_NODE_STREAM)
@@ -131,10 +131,10 @@ static void sg_dfs_tree(const OV_MODEL *m,
 
             if (n_node >= 0)
             {
-                for (int ei = 0; ei < m->nb_edges; ei++)
+                for (int ki = OV_ADJ_B(m, out, n_node); ki < OV_ADJ_E(m, out, n_node); ki++)
                 {
-                    const OV_EDGE *e1 = &m->edges[ei];
-                    if (e1->src_node == n_node && sg_edge_matches_mode_from_stream(e1, mode))
+                    const OV_EDGE *e1 = &m->edges[m->adj_out[ki]];
+                    if (sg_edge_matches_mode_from_stream(e1, mode))
                     {
                         int r_node    = e1->tgt_node;
                         int duplicate = 0;
@@ -146,7 +146,8 @@ static void sg_dfs_tree(const OV_MODEL *m,
                                 break;
                             }
                         }
-                        if (!duplicate)
+                        if (!duplicate &&
+                            nb_readers < OV_MAX_PROCS) /* readers are processes or FPS */
                         {
                             readers[nb_readers++] = r_node;
                         }
@@ -282,26 +283,22 @@ int sg_compute_render_tree(const OV_MODEL *m,
             continue;
         }
 
-        for (int ei = 0; ei < m->nb_edges; ei++)
+        for (int ki = OV_ADJ_B(m, out, n_node); ki < OV_ADJ_E(m, out, n_node); ki++)
         {
-            const OV_EDGE *e1 = &m->edges[ei];
-            if (e1->src_node == n_node && sg_edge_matches_mode_from_stream(e1, mode))
+            const OV_EDGE *e1 = &m->edges[m->adj_out[ki]];
+            if (sg_edge_matches_mode_from_stream(e1, mode))
             {
                 int p_node = e1->tgt_node;
-                for (int ej = 0; ej < m->nb_edges; ej++)
+                for (int kj = OV_ADJ_B(m, out, p_node); kj < OV_ADJ_E(m, out, p_node); kj++)
                 {
-                    const OV_EDGE *e2 = &m->edges[ej];
-                    if (e2->src_node == p_node)
+                    int c_node = m->edges[m->adj_out[kj]].tgt_node;
+                    if (c_node >= 0 && c_node < m->nb_nodes &&
+                        m->nodes[c_node].type == OV_NODE_STREAM)
                     {
-                        int c_node = e2->tgt_node;
-                        if (c_node >= 0 && c_node < m->nb_nodes &&
-                            m->nodes[c_node].type == OV_NODE_STREAM)
+                        int c_stream = m->nodes[c_node].index;
+                        if (sg_bget(S_words, c_stream))
                         {
-                            int c_stream = m->nodes[c_node].index;
-                            if (sg_bget(S_words, c_stream))
-                            {
-                                has_parent[c_stream] = 1;
-                            }
+                            has_parent[c_stream] = 1;
                         }
                     }
                 }
@@ -351,10 +348,10 @@ int sg_compute_render_tree(const OV_MODEL *m,
 
         if (n_node >= 0)
         {
-            for (int ei = 0; ei < m->nb_edges; ei++)
+            for (int ki = OV_ADJ_B(m, out, n_node); ki < OV_ADJ_E(m, out, n_node); ki++)
             {
-                const OV_EDGE *e1 = &m->edges[ei];
-                if (e1->src_node == n_node && sg_edge_matches_mode_from_stream(e1, mode))
+                const OV_EDGE *e1 = &m->edges[m->adj_out[ki]];
+                if (sg_edge_matches_mode_from_stream(e1, mode))
                 {
                     int r_node    = e1->tgt_node;
                     int duplicate = 0;
@@ -366,7 +363,7 @@ int sg_compute_render_tree(const OV_MODEL *m,
                             break;
                         }
                     }
-                    if (!duplicate)
+                    if (!duplicate && nb_readers < OV_MAX_PROCS) /* readers are processes or FPS */
                     {
                         readers[nb_readers++] = r_node;
                     }

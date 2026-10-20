@@ -8,6 +8,9 @@
  */
 
 #include "overview_render_internal.h"
+
+#define OV_EDGE_IS_WRITE(e) \
+    ((e)->type == OV_EDGE_PROC_WRITES_STREAM || (e)->type == OV_EDGE_FPS_OUTPUT_STREAM)
 #include <string.h>
 
 /**
@@ -254,6 +257,61 @@ int bget(const uint64_t *words, int idx)
     return (words[idx / BITS_PER_WORD] >> (idx % BITS_PER_WORD)) & 1;
 }
 
+/** relate_mark - mark node @other, joined to the selection by a writes edge or not (@is_write), as related. */
+static void relate_mark(const OV_MODEL *m,
+                        OV_RELATED     *out,
+                        int             other,
+                        int             is_write,
+                        ov_focus_t      focus,
+                        int             sel_stream_idx)
+{
+    if (other < 0 || other >= m->nb_nodes)
+    {
+        return;
+    }
+
+    const OV_NODE *n = &m->nodes[other];
+    if (n->type == OV_NODE_STREAM && n->index >= 0 && n->index < m->nb_streams)
+    {
+        bset(out->streams, n->index);
+        if (is_write)
+        {
+            bset(out->stream_written, n->index);
+        }
+    }
+    else if (n->type == OV_NODE_FPS && n->index >= 0 && n->index < m->nb_fps)
+    {
+        int fi = n->index;
+        bset(out->fps, fi);
+        if (is_write)
+        {
+            bset(out->fps_writes, fi);
+        }
+
+        /* Find all stream params of this FPS that match sel_node */
+        if (focus == OV_FOCUS_STREAMS && sel_stream_idx >= 0 && sel_stream_idx < m->nb_streams)
+        {
+            const char   *sname = m->streams[sel_stream_idx].name;
+            const OV_FPS *f     = &m->fps[fi];
+            for (int sp = 0; sp < f->nb_stream_params; sp++)
+            {
+                if (strcmp(f->stream_param_value[sp], sname) == 0)
+                {
+                    out->fps_param_mask[fi] |= (UINT32_C(1) << sp);
+                }
+            }
+        }
+    }
+    else if (n->type == OV_NODE_PROC && n->index >= 0 && n->index < m->nb_procs)
+    {
+        bset(out->procs, n->index);
+        if (is_write)
+        {
+            bset(out->proc_writes, n->index);
+        }
+    }
+}
+
 /**
  * ov_related_from - mark the entries connected to model entry @idx of panel @focus.
  */
@@ -282,76 +340,16 @@ static void ov_related_from(const OV_MODEL *m, ov_focus_t focus, int idx, OV_REL
         return;
     }
 
-    /* Walk all edges; mark neighbours of sel_node */
-    for (int ei = 0; ei < m->nb_edges; ei++)
+    /* Neighbours of sel_node, through the edges out of it and into it */
+    for (int k = OV_ADJ_B(m, out, sel_node); k < OV_ADJ_E(m, out, sel_node); k++)
     {
-        const OV_EDGE *e          = &m->edges[ei];
-        int            other      = -1;
-        int            is_write   = 0; /* 1 = proc writes stream */
-        int            fps_is_src = 0;
-
-        if (e->src_node == sel_node)
-        {
-            other = e->tgt_node;
-            is_write =
-                (e->type == OV_EDGE_PROC_WRITES_STREAM) || (e->type == OV_EDGE_FPS_OUTPUT_STREAM);
-            fps_is_src = 0;
-        }
-        else if (e->tgt_node == sel_node)
-        {
-            other = e->src_node;
-            is_write =
-                (e->type == OV_EDGE_PROC_WRITES_STREAM) || (e->type == OV_EDGE_FPS_OUTPUT_STREAM);
-            fps_is_src = 1;
-        }
-
-        if (other < 0 || other >= m->nb_nodes)
-        {
-            continue;
-        }
-
-        const OV_NODE *n = &m->nodes[other];
-        if (n->type == OV_NODE_STREAM && n->index >= 0 && n->index < m->nb_streams)
-        {
-            bset(out->streams, n->index);
-            if (is_write)
-            {
-                bset(out->stream_written, n->index);
-            }
-        }
-        else if (n->type == OV_NODE_FPS && n->index >= 0 && n->index < m->nb_fps)
-        {
-            int fi = n->index;
-            bset(out->fps, fi);
-            if (is_write)
-            {
-                bset(out->fps_writes, fi);
-            }
-
-            /* Find all stream params of this FPS that match sel_node */
-            if (focus == OV_FOCUS_STREAMS && sel_stream_idx >= 0 && sel_stream_idx < m->nb_streams)
-            {
-                const char   *sname = m->streams[sel_stream_idx].name;
-                const OV_FPS *f     = &m->fps[fi];
-                for (int sp = 0; sp < f->nb_stream_params; sp++)
-                {
-                    if (strcmp(f->stream_param_value[sp], sname) == 0)
-                    {
-                        out->fps_param_mask[fi] |= (UINT32_C(1) << sp);
-                    }
-                }
-            }
-
-            (void) fps_is_src;
-        }
-        else if (n->type == OV_NODE_PROC && n->index >= 0 && n->index < m->nb_procs)
-        {
-            bset(out->procs, n->index);
-            if (is_write)
-            {
-                bset(out->proc_writes, n->index);
-            }
-        }
+        const OV_EDGE *e = &m->edges[m->adj_out[k]];
+        relate_mark(m, out, e->tgt_node, OV_EDGE_IS_WRITE(e), focus, sel_stream_idx);
+    }
+    for (int k = OV_ADJ_B(m, in, sel_node); k < OV_ADJ_E(m, in, sel_node); k++)
+    {
+        const OV_EDGE *e = &m->edges[m->adj_in[k]];
+        relate_mark(m, out, e->src_node, OV_EDGE_IS_WRITE(e), focus, sel_stream_idx);
     }
 }
 

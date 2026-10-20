@@ -22,19 +22,19 @@
  * @depth:          Current path depth
  * @path:           Array recording current traversal path
  * @in_path:        Bitmask/array marking nodes currently on the DFS path
- * @adj:            Adjacency matrix of outgoing edges
- * @adj_cnt:        Count of outgoing edges per node
+ * @off:            Loop successors of node v: to[off[v] .. off[v + 1])
+ * @to:             Successor nodes
  * @total_explored: Pointer to running counter of explored states
  */
-static void dfs_search_cycles(OV_MODEL *model,
-                              int       start_node,
-                              int       curr_node,
-                              int       depth,
-                              int      *path,
-                              uint8_t  *in_path,
-                              const int adj[OV_MAX_NODES][64],
-                              const int adj_cnt[OV_MAX_NODES],
-                              int      *total_explored)
+static void dfs_search_cycles(OV_MODEL  *model,
+                              int        start_node,
+                              int        curr_node,
+                              int        depth,
+                              int       *path,
+                              uint8_t   *in_path,
+                              const int *off,
+                              const int *to,
+                              int       *total_explored)
 {
     if (model->nb_loops >= OV_MAX_LOOPS || *total_explored > 4096)
     {
@@ -50,9 +50,9 @@ static void dfs_search_cycles(OV_MODEL *model,
     path[depth]        = curr_node;
     in_path[curr_node] = 1;
 
-    for (int i = 0; i < adj_cnt[curr_node]; i++)
+    for (int i = off[curr_node]; i < off[curr_node + 1]; i++)
     {
-        int next = adj[curr_node][i];
+        int next = to[i];
 
         if (next == start_node && depth >= 1)
         {
@@ -69,7 +69,7 @@ static void dfs_search_cycles(OV_MODEL *model,
             /* Avoid visiting nodes with index < start_node to reduce redundant traversals */
             if (next >= start_node)
             {
-                dfs_search_cycles(model, start_node, next, depth + 1, path, in_path, adj, adj_cnt,
+                dfs_search_cycles(model, start_node, next, depth + 1, path, in_path, off, to,
                                   total_explored);
             }
         }
@@ -168,36 +168,26 @@ void ov_detect_loops(OV_MODEL *model, sg_mode_t mode)
 
     model->nb_loops = 0;
 
-    /* Build adjacency lists */
-    static int adj[OV_MAX_NODES][64];
-    static int adj_cnt[OV_MAX_NODES];
-    memset(adj_cnt, 0, sizeof(adj_cnt));
-
-    for (int ei = 0; ei < model->nb_edges; ei++)
+    /* Loop successors of each node: targets of its valid loop edges, each once (from the model adjacency) */
+    static int off[OV_MAX_NODES + 1];
+    static int to[OV_MAX_EDGES];
+    static int seen[OV_MAX_NODES]; /* last node that listed this target */
+    int        nto = 0;
+    memset(seen, 0xff, sizeof(seen));
+    for (int u = 0; u < model->nb_nodes; u++)
     {
-        const OV_EDGE *e = &model->edges[ei];
-        if (is_valid_loop_edge(model, e, mode))
+        off[u] = nto;
+        for (int k = model->adj_out_off[u]; k < model->adj_out_off[u + 1]; k++)
         {
-            int u = e->src_node;
-            int v = e->tgt_node;
-            if (adj_cnt[u] < 64)
+            const OV_EDGE *e = &model->edges[model->adj_out[k]];
+            if (is_valid_loop_edge(model, e, mode) && seen[e->tgt_node] != u)
             {
-                int dup = 0;
-                for (int k = 0; k < adj_cnt[u]; k++)
-                {
-                    if (adj[u][k] == v)
-                    {
-                        dup = 1;
-                        break;
-                    }
-                }
-                if (!dup)
-                {
-                    adj[u][adj_cnt[u]++] = v;
-                }
+                seen[e->tgt_node] = u;
+                to[nto++]         = e->tgt_node;
             }
         }
     }
+    off[model->nb_nodes] = nto;
 
     /* Search for cycles starting from each stream node */
     int     path[OV_MAX_LOOP_NODES];
@@ -209,7 +199,7 @@ void ov_detect_loops(OV_MODEL *model, sg_mode_t mode)
         if (model->nodes[ni].type == OV_NODE_STREAM)
         {
             int total_explored = 0;
-            dfs_search_cycles(model, ni, ni, 0, path, in_path, adj, adj_cnt, &total_explored);
+            dfs_search_cycles(model, ni, ni, 0, path, in_path, off, to, &total_explored);
             if (total_explored > 4096 || model->nb_loops >= OV_MAX_LOOPS)
             {
                 model->loops_truncated = 1;

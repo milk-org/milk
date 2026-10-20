@@ -88,9 +88,43 @@ static void test_edge_evidence(void)
     CHECK(m.nb_edges == 3);
 }
 
+/* Adjacency lists: every edge once in its source's out-list and its target's in-list, in edge order */
+static void test_adjacency(void)
+{
+    static OV_MODEL m;
+    memset(&m, 0, sizeof(m));
+    m.nb_nodes = 300;
+    unsigned x = 12345;
+    for (int i = 0; i < 2000; i++)
+    {
+        x     = x * 1103515245U + 12345U;
+        int a = (int) ((x >> 8) % 300), b = (int) ((x >> 20) % 300);
+        ov_add_edge(&m, a, b, (ov_edge_type_t) (i % OV_EDGE_TYPE_COUNT), OV_EV_PROCTRACE);
+    }
+    ov_model_adjacency(&m);
+    int seen_out = 0, seen_in = 0;
+    for (int v = 0; v < m.nb_nodes; v++)
+    {
+        for (int k = OV_ADJ_B(&m, out, v); k < OV_ADJ_E(&m, out, v); k++)
+        {
+            CHECK(m.edges[m.adj_out[k]].src_node == v);
+            CHECK(k == OV_ADJ_B(&m, out, v) || m.adj_out[k] > m.adj_out[k - 1]);
+            seen_out++;
+        }
+        for (int k = OV_ADJ_B(&m, in, v); k < OV_ADJ_E(&m, in, v); k++)
+        {
+            CHECK(m.edges[m.adj_in[k]].tgt_node == v);
+            seen_in++;
+        }
+    }
+    CHECK(seen_out == m.nb_edges && seen_in == m.nb_edges);
+    CHECK(OV_ADJ_B(&m, out, -1) == OV_ADJ_E(&m, out, -1)); /* an invalid node has no edges */
+}
+
 int main(void)
 {
     test_edge_evidence();
+    test_adjacency();
     if (failures == 0)
     {
         printf("all ok\n");

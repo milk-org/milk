@@ -494,4 +494,6 @@ void ov_build_graph(OV_MODEL *model)
             }
         }
     }
+
+    ov_model_adjacency(model);
 }
