@@ -37,8 +37,6 @@
  * Global state (defined here, declared extern elsewhere)
  * ========================================================= */
 
-volatile sig_atomic_t ov_sigINT  = 0;
-volatile sig_atomic_t ov_sigTERM = 0;
 /* Global ANSI and terminal state is owned and defined in overview_ansi.c */
 
 /* =========================================================

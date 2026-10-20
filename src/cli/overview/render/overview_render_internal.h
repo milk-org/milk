@@ -329,7 +329,6 @@ int  ov_help_focus_section(ov_focus_t focus);
 int  ov_help_section_first_vis_row(const OV_LAYOUT *lay, int sec);
 int  ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc);
 
-extern float ov_scan_get_interval(void);
 
 /**
  * render_sparkline - draw a Unicode sparkline bar.

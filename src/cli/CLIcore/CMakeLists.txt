@@ -218,34 +218,13 @@ install(TARGETS milk-streamCTRL DESTINATION bin)
 
 add_subdirectory(termview)
 
+include(${CMAKE_SOURCE_DIR}/src/cli/overview/data/milkctrl_model.cmake)
+
 # milkCTRL: unified system dashboard TUI
 add_executable(
   milk-CTRL
   ../overview/tools/milkCTRL.c
   ../overview/tools/milkCTRL_opts.c
-  ../overview/data/overview_data.c
-  ../overview/data/overview_data_cache.c
-  ../overview/data/overview_data_cache_fps.c
-  ../overview/data/overview_data_graph.c
-  ../overview/data/overview_data_loops.c
-  ../overview/data/overview_data_loops_names.c
-  ../overview/data/overview_data_loops_reg.c
-  ../overview/data/overview_data_scan.c
-  ../overview/data/overview_data_scan_streams.c
-  ../overview/data/overview_data_scan_fps.c
-  ../overview/data/overview_data_scan_procs.c
-  ../overview/data/overview_data_scan_tmux.c
-  ../overview/data/overview_data_sort.c
-  ../overview/data/overview_data_sort_streams.c
-  ../overview/data/overview_data_sort_procs.c
-  ../overview/data/overview_data_sort_fps.c
-  ../overview/data/overview_data_sys.c
-  ../overview/data/overview_data_sys_proc.c
-  ../overview/data/overview_data_sys_perf.c
-  ../overview/data/overview_scan.c
-  ../overview/data/stream_graph.c
-  ../overview/data/stream_graph_lineage.c
-  ../overview/data/stream_graph_tree.c
   ../overview/overview_layout.c
   ../overview/ansi/overview_ansi_term.c
   ../overview/ansi/overview_ansi_buf.c
@@ -325,8 +304,7 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/src/cli/overview/input
           ${CMAKE_SOURCE_DIR}/src/cli/overview/render
           ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
-target_link_libraries(milk-CTRL PUBLIC ImageStreamIO milkprocessinfo milkfps m
-                                       rt pthread)
+target_link_libraries(milk-CTRL PRIVATE milkctrl_model)
 install(TARGETS milk-CTRL DESTINATION bin)
 install(PROGRAMS ../overview/milk-setup-caps DESTINATION bin)
 
@@ -335,30 +313,7 @@ add_executable(
   milk-stream-graph
   ../overview/tools/milk-stream-graph.c
   ../overview/tools/milk-stream-graph_export.c
-  ../overview/tools/milk-stream-graph_tui.c
-  ../overview/data/overview_data.c
-  ../overview/data/overview_data_cache.c
-  ../overview/data/overview_data_cache_fps.c
-  ../overview/data/overview_data_graph.c
-  ../overview/data/overview_data_loops.c
-  ../overview/data/overview_data_loops_names.c
-  ../overview/data/overview_data_loops_reg.c
-  ../overview/data/overview_data_scan.c
-  ../overview/data/overview_data_scan_streams.c
-  ../overview/data/overview_data_scan_fps.c
-  ../overview/data/overview_data_scan_procs.c
-  ../overview/data/overview_data_scan_tmux.c
-  ../overview/data/overview_data_sort.c
-  ../overview/data/overview_data_sort_streams.c
-  ../overview/data/overview_data_sort_procs.c
-  ../overview/data/overview_data_sort_fps.c
-  ../overview/data/overview_data_sys.c
-  ../overview/data/overview_data_sys_proc.c
-  ../overview/data/overview_data_sys_perf.c
-  ../overview/data/overview_scan.c
-  ../overview/data/stream_graph.c
-  ../overview/data/stream_graph_lineage.c
-  ../overview/data/stream_graph_tree.c)
+  ../overview/tools/milk-stream-graph_tui.c)
 target_include_directories(
   milk-stream-graph
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
@@ -367,34 +322,14 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/src/cli/overview
           ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
           ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
-target_link_libraries(milk-stream-graph PUBLIC ImageStreamIO milkprocessinfo
-                                               milkfps m rt pthread)
+target_link_libraries(milk-stream-graph PRIVATE milkctrl_model)
 install(TARGETS milk-stream-graph DESTINATION bin)
 
 # milk-stream-info: detailed stream info with connections
 add_executable(
   milk-stream-info
   ../overview/tools/milk-stream-info.c
-  ../overview/tools/milk-stream-info_print.c
-  ../overview/data/overview_data.c
-  ../overview/data/overview_data_loops.c
-  ../overview/data/overview_data_loops_names.c
-  ../overview/data/overview_data_loops_reg.c
-  ../overview/data/overview_data_sys.c
-  ../overview/data/overview_data_sys_proc.c
-  ../overview/data/overview_data_sys_perf.c
-  ../overview/data/overview_data_cache.c
-  ../overview/data/overview_data_cache_fps.c
-  ../overview/data/overview_data_scan.c
-  ../overview/data/overview_data_scan_streams.c
-  ../overview/data/overview_data_scan_fps.c
-  ../overview/data/overview_data_scan_procs.c
-  ../overview/data/overview_data_scan_tmux.c
-  ../overview/data/overview_data_graph.c
-  ../overview/data/overview_data_sort.c
-  ../overview/data/overview_data_sort_streams.c
-  ../overview/data/overview_data_sort_procs.c
-  ../overview/data/overview_data_sort_fps.c)
+  ../overview/tools/milk-stream-info_print.c)
 target_include_directories(
   milk-stream-info
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
@@ -403,33 +338,13 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/src/cli/overview
           ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
           ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
-target_link_libraries(milk-stream-info PUBLIC ImageStreamIO milkprocessinfo
-                                              milkfps m rt pthread)
+target_link_libraries(milk-stream-info PRIVATE milkctrl_model)
 install(TARGETS milk-stream-info DESTINATION bin)
 
 # milk-procinfo-info: detailed processinfo with connections
 add_executable(
   milk-procinfo-info
-  ../overview/tools/milk-procinfo-info.c
-  ../overview/data/overview_data.c
-  ../overview/data/overview_data_loops.c
-  ../overview/data/overview_data_loops_names.c
-  ../overview/data/overview_data_loops_reg.c
-  ../overview/data/overview_data_sys.c
-  ../overview/data/overview_data_sys_proc.c
-  ../overview/data/overview_data_sys_perf.c
-  ../overview/data/overview_data_cache.c
-  ../overview/data/overview_data_cache_fps.c
-  ../overview/data/overview_data_scan.c
-  ../overview/data/overview_data_scan_streams.c
-  ../overview/data/overview_data_scan_fps.c
-  ../overview/data/overview_data_scan_procs.c
-  ../overview/data/overview_data_scan_tmux.c
-  ../overview/data/overview_data_graph.c
-  ../overview/data/overview_data_sort.c
-  ../overview/data/overview_data_sort_streams.c
-  ../overview/data/overview_data_sort_procs.c
-  ../overview/data/overview_data_sort_fps.c)
+  ../overview/tools/milk-procinfo-info.c)
 target_include_directories(
   milk-procinfo-info
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
@@ -438,8 +353,7 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/src/cli/overview
           ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
           ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
-target_link_libraries(milk-procinfo-info PUBLIC ImageStreamIO milkprocessinfo
-                                                milkfps m rt pthread)
+target_link_libraries(milk-procinfo-info PRIVATE milkctrl_model)
 install(TARGETS milk-procinfo-info DESTINATION bin)
 
 # milk-fuzzy-match: bigram fuzzy string matcher

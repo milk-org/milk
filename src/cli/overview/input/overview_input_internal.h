@@ -40,14 +40,12 @@
      (MC) < (R).col + (R).width)
 
 /* External scan and help API */
-float ov_scan_get_interval(void);
-void  ov_scan_set_interval(float s);
-void  ov_help_open(OV_LAYOUT *lay);
-int   ov_help_visible_count(const OV_LAYOUT *lay);
-int   ov_help_nb_sections(void);
-int   ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
-int   ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand);
-int   ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc);
+void ov_help_open(OV_LAYOUT *lay);
+int  ov_help_visible_count(const OV_LAYOUT *lay);
+int  ov_help_nb_sections(void);
+int  ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
+int  ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand);
+int  ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc);
 
 /* Shared selection and navigation helpers */
 int              ov_input_hit_panel_tab(int mc, int panel_col, const char **tabs, int num_tabs);

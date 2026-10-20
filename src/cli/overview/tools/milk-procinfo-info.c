@@ -28,8 +28,6 @@
 #include "processtools_trigger.h"
 
 /* Required by overview_defs.h (extern) */
-volatile sig_atomic_t ov_sigINT  = 0;
-volatile sig_atomic_t ov_sigTERM = 0;
 
 /* One-line description */
 #define PI_ONELINE                         \

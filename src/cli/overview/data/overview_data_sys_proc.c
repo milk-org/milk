@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "overview_data_internal.h"
-#include "overview_ansi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

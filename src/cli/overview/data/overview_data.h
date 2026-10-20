@@ -209,6 +209,10 @@ int ov_scan_has_new_data(void);
  */
 void ov_scan_force_update(void);
 
+/** ov_scan_get_interval / ov_scan_set_interval - scan period in seconds (set clamps to 0.1-10). */
+float ov_scan_get_interval(void);
+void  ov_scan_set_interval(float s);
+
 /**
  * ov_scan_drain_event_fd - drain pending wakeups from scan eventfd.
  */

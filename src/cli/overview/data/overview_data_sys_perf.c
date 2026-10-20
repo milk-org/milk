@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "overview_data_internal.h"
-#include "overview_ansi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <signal.h>
+#include <sys/ioctl.h>
 #include <sys/syscall.h>
 #include <linux/perf_event.h>
 
