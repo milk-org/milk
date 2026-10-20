@@ -171,6 +171,11 @@ int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_CMDLOG *log = &lay->cmdlog;
 
+    if (!ov_view_has_panel(lay->view, lay->focus))
+    {
+        return 0; /* never act on a panel that is not on screen */
+    }
+
     if (key == ctrl('e'))
     {
         if (!lay->ctrl_mode)

@@ -22,80 +22,27 @@ int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
 {
     if (key >= OV_KEY_F2 && key <= OV_KEY_F7)
     {
-        int vi = key - OV_KEY_F2;
-        if (vi < OV_VIEW_COUNT)
-        {
-            lay->view = (ov_view_t) vi;
-            if (vi == OV_VIEW_STREAMS)
-            {
-                lay->focus = OV_FOCUS_STREAMS;
-            }
-            else if (vi == OV_VIEW_PROCS)
-            {
-                lay->focus = OV_FOCUS_PROCS;
-            }
-            else if (vi == OV_VIEW_FPS)
-            {
-                lay->focus = OV_FOCUS_FPS;
-            }
-            else if (vi == OV_VIEW_GRAPH || vi == OV_VIEW_LOOPS)
-            {
-                lay->focus = OV_FOCUS_GRAPH;
-            }
-        }
+        ov_set_view(lay, (ov_view_t) (key - OV_KEY_F2));
         return 1;
     }
-
-    if (key == OV_KEY_CTRL_LEFT)
+    if (key == OV_KEY_CTRL_LEFT || key == OV_KEY_CTRL_RIGHT)
     {
-        int v     = (int) lay->view;
-        v         = (v - 1 + OV_VIEW_COUNT) % OV_VIEW_COUNT;
-        lay->view = (ov_view_t) v;
-        if (v == OV_VIEW_STREAMS)
-        {
-            lay->focus = OV_FOCUS_STREAMS;
-        }
-        else if (v == OV_VIEW_PROCS)
-        {
-            lay->focus = OV_FOCUS_PROCS;
-        }
-        else if (v == OV_VIEW_FPS)
-        {
-            lay->focus = OV_FOCUS_FPS;
-        }
-        else if (v == OV_VIEW_GRAPH || v == OV_VIEW_LOOPS)
-        {
-            lay->focus = OV_FOCUS_GRAPH;
-        }
-        return 1;
-    }
-    if (key == OV_KEY_CTRL_RIGHT)
-    {
-        int v     = (int) lay->view;
-        v         = (v + 1) % OV_VIEW_COUNT;
-        lay->view = (ov_view_t) v;
-        if (v == OV_VIEW_STREAMS)
-        {
-            lay->focus = OV_FOCUS_STREAMS;
-        }
-        else if (v == OV_VIEW_PROCS)
-        {
-            lay->focus = OV_FOCUS_PROCS;
-        }
-        else if (v == OV_VIEW_FPS)
-        {
-            lay->focus = OV_FOCUS_FPS;
-        }
-        else if (v == OV_VIEW_GRAPH || v == OV_VIEW_LOOPS)
-        {
-            lay->focus = OV_FOCUS_GRAPH;
-        }
+        int step = (key == OV_KEY_CTRL_LEFT) ? OV_VIEW_COUNT - 1 : 1;
+        ov_set_view(lay, (ov_view_t) (((int) lay->view + step) % OV_VIEW_COUNT));
         return 1;
     }
 
     if (key == OV_KEY_TAB)
     {
-        lay->focus = (ov_focus_t) (((int) lay->focus + 1) % OV_FOCUS_COUNT);
+        /* Only panels on screen take focus: DASH cycles its four, F5 its list and tree */
+        if (lay->view == OV_VIEW_DASHBOARD)
+        {
+            lay->focus = (ov_focus_t) (((int) lay->focus + 1) % OV_FOCUS_COUNT);
+        }
+        else if (lay->view == OV_VIEW_FPS)
+        {
+            lay->fps_param_focus = !lay->fps_param_focus;
+        }
         return 1;
     }
 
@@ -106,6 +53,20 @@ int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
     }
 
     return 0;
+}
+
+/**
+ * ov_view_details_hint - in a view without the graph panel, say where DETAILS lives.
+ * Return: 1 when the hint was given (key consumed, nothing toggled).
+ */
+static int ov_view_details_hint(OV_LAYOUT *lay)
+{
+    if (lay->view == OV_VIEW_DASHBOARD || lay->view == OV_VIEW_GRAPH)
+    {
+        return 0;
+    }
+    ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "DETAILS is shown in F2:DASH and F6:GRAPH");
+    return 1;
 }
 
 /**
@@ -133,6 +94,10 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
     if (key == 'D')
     {
+        if (ov_view_details_hint(lay))
+        {
+            return 1;
+        }
         lay->graph_tab_mode = (lay->graph_tab_mode == 2) ? 0 : 2;
         return 1;
     }
@@ -283,9 +248,9 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                                               : (node->type == OV_NODE_PROC) ? OV_FOCUS_PROCS
                                                                              : OV_FOCUS_FPS;
                 lay->freeze = 0; /* before resolving: freeze changes the drawn rows */
-                lay->focus  = panel;
+                ov_set_view(lay, OV_VIEW_DASHBOARD);
+                lay->focus = panel;
                 ov_sel_model(lay, m, panel, node->index);
-                lay->view = OV_VIEW_DASHBOARD;
             }
         }
         return 1;
@@ -298,6 +263,10 @@ int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         if (lay->view == OV_VIEW_FPS)
         {
             return 0;
+        }
+        if (ov_view_details_hint(lay))
+        {
+            return 1;
         }
 
         if (lay->focus == OV_FOCUS_STREAMS || lay->focus == OV_FOCUS_PROCS ||

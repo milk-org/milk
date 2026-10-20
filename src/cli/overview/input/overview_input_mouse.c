@@ -223,7 +223,7 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 if (mc >= tx && mc < tx + tab_widths[v])
                 {
-                    lay->view = (ov_view_t) v;
+                    ov_set_view(lay, (ov_view_t) v);
                     if (lay->show_help)
                     {
                         lay->show_help = 0;

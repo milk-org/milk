@@ -14,7 +14,8 @@
         "D / ENTER",
         "Toggle process detail pane",
         "Opens process inspector showing command line, start time, thread count, "
-        "voluntary context switches, page faults, CPU core affinity, and perf counter metrics.",
+        "voluntary context switches, page faults, CPU core affinity, and perf counter metrics."
+        " In F3/F4 the key only says DETAILS is in F2/F6.",
         HF_ENTRY,
         HS_PROCS,
     },

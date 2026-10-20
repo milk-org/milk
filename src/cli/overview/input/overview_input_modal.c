@@ -124,7 +124,7 @@ int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, OV_MODEL *m)
         lay->graph_tab_mode = 0;
         if (lay->view == OV_VIEW_LOOPS)
         {
-            lay->view = OV_VIEW_GRAPH;
+            ov_set_view(lay, OV_VIEW_GRAPH);
         }
         return 1;
     }

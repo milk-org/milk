@@ -207,7 +207,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
 
                             if (is_dbl)
                             {
-                                lay->view = OV_VIEW_DASHBOARD;
+                                ov_set_view(lay, OV_VIEW_DASHBOARD);
                             }
                         }
                     }
@@ -357,7 +357,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                                     ov_sel_model(lay, m, OV_FOCUS_PROCS, proc_idx);
                                     if (is_dbl)
                                     {
-                                        lay->view = OV_VIEW_PROCS;
+                                        ov_set_view(lay, OV_VIEW_PROCS);
                                     }
                                 }
                                 else if (rn->stream_idx >= 0)
@@ -366,7 +366,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                                     ov_sel_model(lay, m, OV_FOCUS_STREAMS, rn->stream_idx);
                                     if (is_dbl)
                                     {
-                                        lay->view = OV_VIEW_STREAMS;
+                                        ov_set_view(lay, OV_VIEW_STREAMS);
                                     }
                                 }
                             }
@@ -385,7 +385,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                                 lay->sel_loop = li;
                                 if (is_dbl)
                                 {
-                                    lay->view = OV_VIEW_LOOPS;
+                                    ov_set_view(lay, OV_VIEW_LOOPS);
                                 }
                             }
                         }
@@ -423,7 +423,7 @@ int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc
                                                 ov_sel_model(lay, m, OV_FOCUS_STREAMS, si);
                                                 if (is_dbl)
                                                 {
-                                                    lay->view = OV_VIEW_STREAMS;
+                                                    ov_set_view(lay, OV_VIEW_STREAMS);
                                                 }
                                             }
                                         }

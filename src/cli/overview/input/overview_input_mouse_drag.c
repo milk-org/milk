@@ -148,7 +148,7 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 v = 0;
             }
         }
-        lay->view = (ov_view_t) v;
+        ov_set_view(lay, (ov_view_t) v);
         return 1;
     }
 

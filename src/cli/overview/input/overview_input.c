@@ -126,6 +126,19 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 0;
     }
 
+    /* ESC backs out of the innermost state on screen: F5 parameter tree, DETAILS cursor, filters */
+    if (key == 27 && lay->view == OV_VIEW_FPS && lay->fps_param_focus)
+    {
+        ov_input_nav_fps(key, lay, m);
+        return 0;
+    }
+    if (key == 27 && lay->param_sel >= 0 && lay->focus == OV_FOCUS_GRAPH &&
+        lay->graph_tab_mode == 2 && ov_view_has_panel(lay->view, OV_FOCUS_GRAPH))
+    {
+        lay->param_sel = -1;
+        return 0;
+    }
+
     /* 3. Filter activation ('/'), toggle ('f'), and filter clearing (ESC) */
     if (key == '/' || key == '?' || key == 'f' || key == ctrl('f') ||
         (key == 27 && ov_has_filter(lay)))

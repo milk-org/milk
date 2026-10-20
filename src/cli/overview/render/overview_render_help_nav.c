@@ -220,7 +220,7 @@ int ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc)
                 int tw = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
                 if (mc >= tx && mc < tx + tw)
                 {
-                    lay->view = (ov_view_t) v;
+                    ov_set_view(lay, (ov_view_t) v);
                     break;
                 }
                 tx += tw;

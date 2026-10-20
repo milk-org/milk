@@ -278,6 +278,8 @@ typedef struct
 } OV_LAYOUT;
 
 void ov_layout_compute(OV_LAYOUT *lay);
+int  ov_view_has_panel(ov_view_t v, ov_focus_t f);
+void ov_set_view(OV_LAYOUT *lay, ov_view_t v);
 
 static inline int ov_get_num_cols(const OV_LAYOUT *lay, ov_focus_t focus)
 {

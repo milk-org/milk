@@ -216,7 +216,8 @@
         "D / ENTER",
         "Toggle detailed inspection pane",
         "Opens the stream inspector showing full metadata, dimensions, datatype, circular "
-        "buffer depth, memory address, shared semaphore count, and active writer PID.",
+        "buffer depth, memory address, shared semaphore count, and active writer PID."
+        " In F3/F4 the key only says DETAILS is in F2/F6.",
         HF_ENTRY,
         HS_STREAMS,
     },

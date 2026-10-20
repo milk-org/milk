@@ -67,7 +67,18 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         break;
 
     case OV_FOCUS_GRAPH:
-        if (lay->graph_tab_mode == 0)
+        /* F7 always draws the loop list, whatever the DASH sub-tab */
+        if (lay->view == OV_VIEW_LOOPS || lay->graph_tab_mode == 1)
+        {
+            sel    = &lay->sel_loop;
+            scroll = &lay->scroll_loop;
+            count  = m->nb_loops;
+            page_h = (lay->r_graph.height - 3 >= 6)
+                         ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
+                         : (lay->r_graph.height - 3);
+            break;
+        }
+        else if (lay->graph_tab_mode == 0)
         {
             sel    = &lay->sel_graph;
             scroll = &lay->scroll_graph;
@@ -84,16 +95,6 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 }
             }
             page_h = lay->r_graph.height - 3;
-        }
-        else if (lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS)
-        {
-            sel    = &lay->sel_loop;
-            scroll = &lay->scroll_loop;
-            count  = m->nb_loops;
-            page_h = (lay->r_graph.height - 3 >= 6)
-                         ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
-                         : (lay->r_graph.height - 3);
-            break;
         }
         else if (lay->graph_tab_mode == 2)
         {
