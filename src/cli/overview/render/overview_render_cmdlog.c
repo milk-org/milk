@@ -117,23 +117,7 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         }
 
         int msg_disp_len = 0;
-        int max_bytes    = 0;
-        for (int i = 0; e->msg[i] != '\0';)
-        {
-            int b = 0, w = 1;
-            ov_utf8_next_cluster(&e->msg[i], (int) strlen(&e->msg[i]), &b, &w);
-            if (b <= 0)
-            {
-                break;
-            }
-            if (msg_disp_len + w > msg_max)
-            {
-                break;
-            }
-            msg_disp_len += w;
-            max_bytes += b;
-            i += b;
-        }
+        int max_bytes    = ov_utf8_fit(e->msg, (int) strlen(e->msg), msg_max, &msg_disp_len);
 
         ov_buf_printf("%.*s", max_bytes, e->msg);
         nw += msg_disp_len;

@@ -116,6 +116,7 @@ int  ov_utf8_next_cluster(const char *s, int max_len, int *bytes_out, int *width
 int  ov_str_display_width(const char *s);
 int  ov_utf8_cluster_printable(const char *s, int bytes);
 void ov_str_sanitize(char *s);
+int  ov_utf8_fit(const char *s, int len, int max_cols, int *cols_out);
 void ov_buf_append_cluster(const char *utf8_seq, int bytes, int width);
 void ov_buf_append_char(const char *utf8_seq, int bytes);
 void ov_buf_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));

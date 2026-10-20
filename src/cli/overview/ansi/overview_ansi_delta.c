@@ -182,6 +182,26 @@ static void ov_buf_emit_sgr_delta(const OV_CELL *sc,
 }
 
 /**
+ * ov_cell_width_trusted - 0 when terminals may disagree on the cell's width (emoji-like ranges,
+ * multi-codepoint clusters, wide cells); the next changed cell then gets an explicit cursor move.
+ */
+static int ov_cell_width_trusted(const OV_CELL *sc)
+{
+    uint32_t cp = 0;
+    if ((unsigned char) sc->ch[0] < 0x80)
+    {
+        return 1;
+    }
+    int n = ov_utf8_decode(sc->ch, (int) strlen(sc->ch), &cp);
+    if (sc->width == 2 || sc->ch[n] != '\0')
+    {
+        return 0;
+    }
+    return !((cp >= 0x2300 && cp <= 0x23FF) || (cp >= 0x2600 && cp <= 0x27BF) ||
+             (cp >= 0x2B00 && cp <= 0x2BFF) || cp >= 0x1F000);
+}
+
+/**
  * ov_buf_flush_delta - Diff shadow buffer against front buffer and render changes
  * @term_rows: Active terminal rows
  * @term_cols: Active terminal columns
@@ -251,6 +271,10 @@ void ov_buf_flush_delta(int term_rows, int term_cols)
                 size_t chlen = strlen(sc->ch);
                 ov_buf_append(sc->ch, (int) chlen);
                 emit_cursor_c += sc->width;
+                if (!ov_cell_width_trusted(sc))
+                {
+                    emit_cursor_c = -1;
+                }
 
                 *fc = *sc;
                 if (sc->width == 2 && c + 1 < term_cols)

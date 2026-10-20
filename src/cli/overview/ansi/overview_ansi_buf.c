@@ -18,6 +18,17 @@ uint32_t ov__current_bg   = OV_COLOR_NONE;
 uint32_t ov__default_bg   = OV_COLOR_NONE;
 uint32_t ov__current_ul   = OV_COLOR_NONE;
 uint8_t  ov__current_attr = 0;
+
+/**
+ * ov_cell_blank - turn a cell into a single-width space, keeping its colours.
+ */
+static void ov_cell_blank(OV_CELL *c)
+{
+    memset(c->ch, 0, sizeof(c->ch));
+    c->ch[0] = ' ';
+    c->width = 1;
+}
+
 /**
  * ov_buf_force_clear - Invalidate the front buffer to force full screen repaint
  */
@@ -81,11 +92,17 @@ void ov_buf_reset(void)
  */
 void ov_buf_append(const char *data, int len)
 {
-    if (ov__screenbuf_len + len < OV_SCREENBUF_SIZE)
+    if (ov__screenbuf_len + len >= OV_SCREENBUF_SIZE)
     {
-        memcpy(ov__screenbuf + ov__screenbuf_len, data, (size_t) len);
-        ov__screenbuf_len += len;
+        ov_buf_flush_internal(); /* still inside ?2026, so the frame stays atomic */
     }
+    if (ov__screenbuf_len + len >= OV_SCREENBUF_SIZE)
+    {
+        ov_buf_force_clear(); /* cannot be sent: repaint everything next frame */
+        return;
+    }
+    memcpy(ov__screenbuf + ov__screenbuf_len, data, (size_t) len);
+    ov__screenbuf_len += len;
 }
 
 /**
@@ -114,10 +131,12 @@ void ov_buf_flush_internal(void)
                     poll(&pfd, 1, 100);
                     continue;
                 }
+                ov_buf_force_clear(); /* the front buffer no longer matches the terminal */
                 break;
             }
             if (ret == 0)
             {
+                ov_buf_force_clear();
                 break;
             }
             written += ret;
@@ -179,7 +198,23 @@ void ov_buf_append_cluster(const char *utf8_seq, int bytes, int width)
     if (ov__cursor_row >= 1 && ov__cursor_row <= OV_MAX_ROWS && ov__cursor_col >= 1 &&
         ov__cursor_col <= OV_MAX_COLS)
     {
-        OV_CELL *cell = &ov__shadow[ov__cursor_row - 1][ov__cursor_col - 1];
+        OV_CELL *row  = ov__shadow[ov__cursor_row - 1];
+        int      c    = ov__cursor_col - 1;
+        OV_CELL *cell = &row[c];
+
+        /* Keep the invariant: a width-2 cell is always followed by its width-0 continuation */
+        if (cell->width == 0 && c > 0)
+        {
+            ov_cell_blank(&row[c - 1]); /* overwriting the right half of a wide glyph */
+        }
+        if (cell->width == 2 && width == 1 && c + 1 < OV_MAX_COLS)
+        {
+            ov_cell_blank(&row[c + 1]); /* orphaned continuation */
+        }
+        if (width == 2 && c + 2 < OV_MAX_COLS && row[c + 1].width == 2)
+        {
+            ov_cell_blank(&row[c + 2]); /* our right half lands on another wide glyph */
+        }
         if (bytes >= (int) sizeof(cell->ch))
         {
             bytes = (int) sizeof(cell->ch) - 1;
