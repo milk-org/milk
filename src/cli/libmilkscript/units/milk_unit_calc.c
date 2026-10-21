@@ -19,11 +19,9 @@
 #include <string.h>
 #include <time.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "cli_calc_prog.h"
-#include "computeunit.h"
-#include "fps.h"
 #include "fps_modulevars_resync.h"
 #include "milk_argval.h"
 #include "milk_unit.h"
@@ -34,17 +32,6 @@
 #define CALC_NBUILTIN 3
 #define CALC_MAXTEXT 65536
 
-static FPS_APP_INFO app = {
-    .fps_name    = "milkcalc",
-    .cmdkey      = "calc",
-    .description = "run calculator statements on each frame",
-    .description_long =
-        "Runs the calculator statements of .expr, or of the file .file names, on each frame of "
-        ".trigger. .init or .initfile runs once before frame 0. .params declares more parameters "
-        "(name:type[=default][:help], types int uint float bool str stream fits) that the "
-        "statements read and @set changes while it runs."
-};
-
 static char expr[FUNCTION_PARAMETER_STRMAXLEN];
 static char trigger[FUNCTION_PARAMETER_STRMAXLEN];
 static char params[FUNCTION_PARAMETER_STRMAXLEN];
@@ -53,22 +40,25 @@ static char init_expr[FUNCTION_PARAMETER_STRMAXLEN];
 static char initfile[FUNCTION_PARAMETER_STRMAXLEN];
 static char error[FUNCTION_PARAMETER_STRMAXLEN];
 
-/* the fixed parameters, then the declared ones */
-static FPS_CLI_BINDING bindings[CALC_NFIXED + CALC_MAXPAR] = {
-    { ".expr", expr, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,
-      "statements, ; between them", -2, -1 },
-    { ".trigger", trigger, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM,
-      "a frame of this stream runs them", -2, -1 },
-    { ".params", params, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT,
-      "more parameters: name:type[=default]", -2, -1 },
-    { ".file", file, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,
-      "statements from this file", -2, -1 },
-    { ".init", init_expr, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,
-      "statements run once at start", -2, -1 },
-    { ".initfile", initfile, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,
-      "init statements from this file", -2, -1 },
-    { ".error", error, FPTYPE_STRING, 0, FPFLAG_DEFAULT_OUTPUT, "why the loop stopped", -2, -1 },
-};
+/* Fixed parameters declared with X-macro; user-declared parameters are appended at runtime */
+#define CALC_FIXED_PARAMS(X)                                                                   \
+    X(".expr", expr, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,                 \
+      "statements, ; between them")                                                            \
+    X(".trigger", trigger, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
+      "a frame of this stream runs them")                                                      \
+    X(".params", params, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT,                               \
+      "more parameters: name:type[=default]")                                                  \
+    X(".file", file, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,                 \
+      "statements from this file")                                                             \
+    X(".init", init_expr, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,            \
+      "statements run once at start")                                                          \
+    X(".initfile", initfile, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,         \
+      "init statements from this file")                                                        \
+    X(".error", error, FPTYPE_STRING, 0, FPFLAG_DEFAULT_OUTPUT, "why the loop stopped")
+
+static FPS_CLI_BINDING bindings[CALC_NFIXED + CALC_MAXPAR] = { CALC_FIXED_PARAMS(FPS_X_BINDING) };
+static CLICMDARGDEF    calc_farg[]                         = { CALC_FIXED_PARAMS(FPS_X_FARG) };
+MILK_RUNNABLE_RT_DEFINE(calc);
 static int nbind = CALC_NFIXED;
 
 static union
@@ -86,14 +76,27 @@ static int64_t          frame_n  = 0;
 static double           frame_t  = 0.0;
 static double           frame_dt = 0.0;
 
-static CMDSETTINGS  calc_cms = { .procinfo_loopcntMax = 1 };
-static CLICMDARGDEF farg[1];
-CLICMDDATA          CLIcmddata = {
-    .key            = "calc",
-    .description    = "run calculator statements on each frame",
-    .sourcefilename = __FILE__,
-    .flags          = CLICMDFLAG_FPS,
-    .cmdsettings    = &calc_cms,
+static errno_t compute(const MILK_RUNNABLE *self);
+
+static MILK_RUNNABLE unit_calc = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = {
+        .fps_name    = "milkcalc",
+        .cmdkey      = "calc",
+        .description = "run calculator statements on each frame",
+        .description_long =
+            "Runs the calculator statements of .expr, or of the file .file names, on each frame "
+            "of .trigger. .init or .initfile runs once before frame 0. .params declares more "
+            "parameters (name:type[=default][:help], types int uint float bool str stream fits) "
+            "that the statements read and @set changes while it runs.",
+    },
+    .srcfile     = __FILE__,
+    .bindings    = bindings,
+    .nb_bindings = CALC_NFIXED,
+    .farg        = calc_farg,
+    .nbarg       = (int) (sizeof(calc_farg) / sizeof(calc_farg[0])),
+    .rt          = &calc_rt,
+    .compute     = compute,
 };
 
 /**
@@ -257,7 +260,7 @@ static int create(const milk_unit_args *a)
     {
         return 1;
     }
-    return milk_unit_create(a, &app, bindings, nbind);
+    return milk_unit_create(a, &unit_calc.app, bindings, nbind);
 }
 
 /** source_text() - @fpath's content when @fpath is set, else @inline_str; NULL (@err) if it cannot be read. */
@@ -309,6 +312,7 @@ static void report(PROCESSINFO *pi, const char *msg)
 
 /**
  * compute - Main processinfo frame loop compiling and executing calculator expressions
+ * @self: Pointer to the `MILK_RUNNABLE` descriptor for this compute unit
  *
  * Runs `.init` / `.initfile` statements once before frame 0 (and whenever modified),
  * recompiles `.expr` / `.file` bytecode when changed, executes the compiled program
@@ -317,7 +321,7 @@ static void report(PROCESSINFO *pi, const char *msg)
  *
  * Return: `RETURN_SUCCESS` on clean loop exit, `RETURN_FAILURE` if an expression error occurred.
  */
-static MILK_HOT errno_t compute(void)
+static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
 {
     char           err[512]      = "";
     cli_calc_prog *prog          = NULL;
@@ -347,8 +351,8 @@ static MILK_HOT errno_t compute(void)
     }
     processinfo_CatchSignals(); /* Ctrl-C and runstop end the loop through its cleanup */
 
-    _MILK_PROCINFO_INIT_IMPL(CLIcmddata)
-    _MILK_PROCINFO_LOOPSTART_IMPL(CLIcmddata)
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
     {
         if (!init_done || dcfpsptr->parray[pi].value_cnt != init_built[0] ||
             dcfpsptr->parray[pif].value_cnt != init_built[1])
@@ -442,7 +446,7 @@ static MILK_HOT errno_t compute(void)
             frame_n++;
         }
     }
-    _MILK_PROCINFO_END_IMPL(CLIcmddata)
+    MILK_PROCINFO_END(self)
 
     cli_calc_prog_free(prog);
     return (err[0] != '\0') ? RETURN_FAILURE : RETURN_SUCCESS;
@@ -455,7 +459,7 @@ static MILK_HOT errno_t compute(void)
  *
  * Parses unit arguments, resolves `.file` and `.initfile` paths to canonical paths,
  * creates or attaches dynamic FPS parameters, and delegates execution to
- * `fpsexec_main_function()`.
+ * `milk_runnable_main()`.
  *
  * Return: 0 on success, non-zero on error.
  */
@@ -464,10 +468,10 @@ int main(int argc, char **argv)
     milk_unit_args a;
     int            init;
 
-    milk_unit_args_read(argc, argv, app.fps_name, &a);
+    milk_unit_args_read(argc, argv, unit_calc.app.fps_name, &a);
     init = (strcmp(a.cmd, "fpsinit") == 0);
     for (int p = 3; p <= 5;
-         p += 2) /* .file (3) and .initfile (5): also what fpsexec_main_function() writes */
+         p += 2) /* .file (3) and .initfile (5): also what milk_runnable_main() writes */
     {
         if (milk_unit_pos(&a, p) != NULL)
         {
@@ -491,5 +495,6 @@ int main(int argc, char **argv)
     {
         return 1;
     }
-    return fpsexec_main_function(argc, argv, &app, bindings, nbind, farg, compute, NULL);
+    unit_calc.nb_bindings = nbind;
+    return milk_runnable_main(argc, argv, &unit_calc);
 }

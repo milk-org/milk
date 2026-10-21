@@ -13,9 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "CLIcore.h"
-#include "computeunit.h"
-#include "fps.h"
+#include "milk_runnable.h"
 #include "milk_unit.h"
 
 static const char *const sync_cmds[] = { "runstart",  "run",      "exec",    "set",
@@ -162,12 +160,12 @@ int milk_unit_fps_exists(const char *name)
  *
  * Return: 0 on success, 1 on initialization failure.
  */
-int milk_unit_create(const milk_unit_args *a, FPS_APP_INFO *app, FPS_CLI_BINDING *b, int nb)
+int milk_unit_create(const milk_unit_args *a, const FPS_APP_INFO *app, FPS_CLI_BINDING *b, int nb)
 {
     FPS fps;
 
     printf("FPS " COLORCOMMAND "%s" COLORRESET " fpsinit\n", a->name);
-    if (fps_generic_init(a->name, app, b, nb, 1) != 0)
+    if (fps_generic_init(a->name, (FPS_APP_INFO *) app, b, nb, 1) != 0)
     {
         return 1;
     }

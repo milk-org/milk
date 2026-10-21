@@ -17,6 +17,7 @@
 #include "CLIcore_script.h"
 #include "milk_cmd_index.h"
 #include "milk_config.h"
+#include "milk_runnable.h"
 #include "milk_session.h"
 
 /* Loaded in every front-end after the core modules, unless $MILKCLI_ADD_LIBS says otherwise */
@@ -28,12 +29,26 @@ static const char *const default_extra_modules =
 
 static int g_milk_midx = -1;
 
+#define SESSION_CLI_CMD(tag, keystr, descstr, fn)                     \
+    MILK_RUNNABLE_RT_DEFINE(tag);                                     \
+    static const MILK_RUNNABLE unit_##tag = {                         \
+        .kind     = MILK_RUNNABLE_CLI,                                \
+        .app      = { .cmdkey = (keystr), .description = (descstr) }, \
+        .srcfile  = __FILE__,                                         \
+        .cli_func = (fn),                                             \
+        .rt       = &tag##_rt,                                        \
+    }
+
+SESSION_CLI_CMD(ci, "ci", "print version, build settings and memory use", printInfo);
+SESSION_CLI_CMD(fpsdump, "fpsdump", "dump FPS parameters as key=value", cli_cmd_fpsdump);
+SESSION_CLI_CMD(help, "help", "help on topics, keywords, modules and commands", help);
+
 /**
  * milk_module_begin - Activate the built-in `"milk"` module context for registration
  *
  * Temporarily unlocks the reserved `"milk"` shortname, registers the `"milk"` module
- * slot on first call, and sets `data.moduleindex` so subsequent `RegisterCLIcommand`
- * or `RegisterCLIcmd` calls register commands under `milk.<cmd>`.
+ * slot on first call, and sets `data.moduleindex` so subsequent `milk_register_runnable`
+ * calls register commands under `milk.<cmd>`.
  *
  * Return: void
  */
@@ -74,22 +89,18 @@ void milk_module_end(void)
  * milk_session_register_engine - Register built-in `milk.*` and root engine commands
  *
  * Registers `milk.ci`, `milk.fpsdump`, and the root `help` command shared across
- * all CLI and scripting front-ends.
+ * all CLI and scripting front-ends via `MILK_RUNNABLE` descriptors.
  *
  * Return: void
  */
 void milk_session_register_engine(void)
 {
     milk_module_begin();
-    RegisterCLIcommand("ci", __FILE__, printInfo, "print version, build settings and memory use",
-                       "no argument", "milk.ci", "int printInfo()");
-    RegisterCLIcommand("fpsdump", __FILE__, cli_cmd_fpsdump, "dump FPS parameters as key=value",
-                       "[-t] [--json] <fpsname>", "milk.fpsdump loopctrl", "cli_cmd_fpsdump()");
+    milk_register_runnable(&unit_ci);
+    milk_register_runnable(&unit_fpsdump);
     milk_module_end();
 
-    RegisterCLIcommand("help", __FILE__, help, "help on topics, keywords, modules and commands",
-                       "[subject] [--json|--porcelain] | -k <regex> | --tui",
-                       "help iofits.loadfits", "int help()");
+    milk_register_runnable(&unit_help);
 }
 
 /**

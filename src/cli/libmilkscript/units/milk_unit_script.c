@@ -29,10 +29,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "computeunit.h"
-#include "fps.h"
 #include "milk_argval.h"
 #include "milk_unit.h"
 #include "processinfo_signals.h"
@@ -42,35 +40,28 @@
 #define SCRIPT_MAXTEXT 65536
 #define SCRIPT_STATUS_FD 77 /* the shell writes a status line per tick there */
 
-static FPS_APP_INFO app = {
-    .fps_name    = "milkscript",
-    .cmdkey      = "script",
-    .description = "run a bash snippet on each frame",
-    .description_long =
-        "Runs the commands of .cmd, or of the file .file names, on each frame of .trigger, in a "
-        "bash that loaded milk.bash once. .params declares more parameters "
-        "(name:type[=default][:help], types int uint float bool str stream fits) exposed as shell "
-        "variables that @set changes while it runs. A tick that fails stops the loop; its status "
-        "is kept in .error."
-};
-
 static char cmd[FUNCTION_PARAMETER_STRMAXLEN];
 static char trigger[FUNCTION_PARAMETER_STRMAXLEN];
 static char params[FUNCTION_PARAMETER_STRMAXLEN];
 static char file[FUNCTION_PARAMETER_STRMAXLEN];
 static char error[FUNCTION_PARAMETER_STRMAXLEN];
 
-static FPS_CLI_BINDING bindings[SCRIPT_NFIXED + SCRIPT_MAXPAR] = {
-    { ".cmd", cmd, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,
-      "commands run on each frame", -2, -1 },
-    { ".trigger", trigger, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM,
-      "a frame of this stream runs them", -2, -1 },
-    { ".params", params, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT,
-      "more parameters: name:type[=default]", -2, -1 },
-    { ".file", file, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,
-      "commands from this file", -2, -1 },
-    { ".error", error, FPTYPE_STRING, 0, FPFLAG_DEFAULT_OUTPUT, "why the loop stopped", -2, -1 },
-};
+/* Fixed parameters declared with X-macro; user-declared parameters are appended at runtime */
+#define SCRIPT_FIXED_PARAMS(X)                                                                 \
+    X(".cmd", cmd, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,                   \
+      "commands run on each frame")                                                            \
+    X(".trigger", trigger, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
+      "a frame of this stream runs them")                                                      \
+    X(".params", params, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT,                               \
+      "more parameters: name:type[=default]")                                                  \
+    X(".file", file, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,                 \
+      "commands from this file")                                                               \
+    X(".error", error, FPTYPE_STRING, 0, FPFLAG_DEFAULT_OUTPUT, "why the loop stopped")
+
+static FPS_CLI_BINDING bindings[SCRIPT_NFIXED + SCRIPT_MAXPAR] = { SCRIPT_FIXED_PARAMS(
+    FPS_X_BINDING) };
+static CLICMDARGDEF    script_farg[] = { SCRIPT_FIXED_PARAMS(FPS_X_FARG) };
+MILK_RUNNABLE_RT_DEFINE(script);
 static int nbind = SCRIPT_NFIXED;
 
 static union
@@ -84,14 +75,28 @@ static union
 static char pkey[SCRIPT_MAXPAR][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN + 1];
 static char pdescr[SCRIPT_MAXPAR][FUNCTION_PARAMETER_DESCR_STRMAXLEN];
 
-static CMDSETTINGS  script_cms = { .procinfo_loopcntMax = 1 };
-static CLICMDARGDEF farg[1];
-CLICMDDATA          CLIcmddata = {
-    .key            = "script",
-    .description    = "run a bash snippet on each frame",
-    .sourcefilename = __FILE__,
-    .flags          = CLICMDFLAG_FPS,
-    .cmdsettings    = &script_cms,
+static errno_t compute(const MILK_RUNNABLE *self);
+
+static MILK_RUNNABLE unit_script = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = {
+        .fps_name    = "milkscript",
+        .cmdkey      = "script",
+        .description = "run a bash snippet on each frame",
+        .description_long =
+            "Runs the commands of .cmd, or of the file .file names, on each frame of .trigger, in "
+            "a bash that loaded milk.bash once. .params declares more parameters "
+            "(name:type[=default][:help], types int uint float bool str stream fits) exposed as "
+            "shell variables that @set changes while it runs. A tick that fails stops the loop; "
+            "its status is kept in .error.",
+    },
+    .srcfile     = __FILE__,
+    .bindings    = bindings,
+    .nb_bindings = SCRIPT_NFIXED,
+    .farg        = script_farg,
+    .nbarg       = (int) (sizeof(script_farg) / sizeof(script_farg[0])),
+    .rt          = &script_rt,
+    .compute     = compute,
 };
 
 static pid_t sh_pid = -1;
@@ -511,6 +516,7 @@ static void report(PROCESSINFO *pi, const char *msg)
 
 /**
  * compute - Main processinfo frame loop driving the persistent bash coprocess
+ * @self: Pointer to the `MILK_RUNNABLE` descriptor for this compute unit
  *
  * Launches a background bash shell preloaded with `milk.bash`, synchronizes modified
  * FPS parameters into shell variables before each tick, updates `__MILK_UNIT_CMD` when
@@ -519,7 +525,7 @@ static void report(PROCESSINFO *pi, const char *msg)
  *
  * Return: `RETURN_SUCCESS` on clean loop exit, `RETURN_FAILURE` if a command tick failed.
  */
-static errno_t compute(void)
+static errno_t compute(const MILK_RUNNABLE *self)
 {
     char        err[512]            = "";
     long        pc                  = functionparameter_GetParamIndex(dcfpsptr, ".cmd");
@@ -538,13 +544,13 @@ static errno_t compute(void)
     }
     processinfo_CatchSignals(); /* Ctrl-C and runstop end the loop through its cleanup */
 
-    _MILK_PROCINFO_INIT_IMPL(CLIcmddata)
+    MILK_PROCINFO_INIT(self)
     if (shell_start(err, sizeof(err)) != 0)
     {
         report(processinfo, err);
         processloopOK = 0;
     }
-    _MILK_PROCINFO_LOOPSTART_IMPL(CLIcmddata)
+    MILK_PROCINFO_LOOPSTART(self)
     {
         char line[64];
         int  rc = 0;
@@ -586,7 +592,7 @@ static errno_t compute(void)
             processloopOK = (rc == 0 && err[0] == '\0') ? processloopOK : 0;
         }
     }
-    _MILK_PROCINFO_END_IMPL(CLIcmddata)
+    MILK_PROCINFO_END(self)
 
     shell_stop();
     return (err[0] != '\0') ? RETURN_FAILURE : RETURN_SUCCESS;
@@ -616,7 +622,7 @@ static int create(const milk_unit_args *a)
     {
         return 1;
     }
-    return milk_unit_create(a, &app, bindings, nbind);
+    return milk_unit_create(a, &unit_script.app, bindings, nbind);
 }
 
 /**
@@ -626,7 +632,7 @@ static int create(const milk_unit_args *a)
  *
  * Parses unit arguments, resolves the `.file` path to a canonical path when given,
  * creates or attaches dynamic FPS parameters, and delegates execution to
- * `fpsexec_main_function()`.
+ * `milk_runnable_main()`.
  *
  * Return: 0 on success, non-zero on error.
  */
@@ -635,9 +641,9 @@ int main(int argc, char **argv)
     milk_unit_args a;
     int            init;
 
-    milk_unit_args_read(argc, argv, app.fps_name, &a);
+    milk_unit_args_read(argc, argv, unit_script.app.fps_name, &a);
     init = (strcmp(a.cmd, "fpsinit") == 0);
-    if (milk_unit_pos(&a, 3) != NULL) /* .file (3): also what fpsexec_main_function() writes */
+    if (milk_unit_pos(&a, 3) != NULL) /* .file (3): also what milk_runnable_main() writes */
     {
         char path[PATH_MAX];
         if (realpath(milk_unit_pos(&a, 3), path) != NULL && strlen(path) < sizeof(file))
@@ -658,5 +664,6 @@ int main(int argc, char **argv)
     {
         return 1;
     }
-    return fpsexec_main_function(argc, argv, &app, bindings, nbind, farg, compute, NULL);
+    unit_script.nb_bindings = nbind;
+    return milk_runnable_main(argc, argv, &unit_script);
 }

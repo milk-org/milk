@@ -219,7 +219,7 @@ install(TARGETS milkbash DESTINATION lib)
 # a bash snippet on each frame; the calculator and milk.bash come from libmilkscript.
 foreach(_unit calc script)
   add_executable(milk-fpsexec-milk-${_unit} units/milk_unit_${_unit}.c units/milk_unit.c)
-  target_compile_definitions(milk-fpsexec-milk-${_unit} PRIVATE FPS_STANDALONE)
+  target_compile_definitions(milk-fpsexec-milk-${_unit} PRIVATE MILK_NO_CLI)
   milk_configure_fpsexec(milk-fpsexec-milk-${_unit} PREFIX milk)
   target_link_libraries(milk-fpsexec-milk-${_unit} PUBLIC milkscript)
 endforeach()

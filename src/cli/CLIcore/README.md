@@ -9,7 +9,7 @@ Interactive Command Line Interface (REPL) and syntax-aware UI layer for the
 
 - The interactive `milk>` CLI prompt (Readline REPL) and server/daemon startup
   mode (`milk-cli --server` / `--daemon`).
-- Module and command registration (`MILK_MODULE_RUNNABLES`, `RegisterCLIcmd`).
+- Module and command registration (`MILK_MODULE_RUNNABLES`, `milk_register_runnable`).
 - Context-aware tab completion, interactive Zsh-style grid menu selection, and
   inline ghost-text suggestions.
 - Real-time Tree-sitter and lexical syntax highlighting, delimiter matching,
@@ -20,7 +20,8 @@ Interactive Command Line Interface (REPL) and syntax-aware UI layer for the
 
 - `CLIcore.c` — Main entry point (`runCLI()`), CLI flag parsing, server/daemon
   mode startup, and Readline event loop.
-- `CLIcore_cmd_registry.c` — Command registration table (`RegisterCLIcmd`).
+- `CLIcore_cmd_registry.c` — Command registration table (`MILK_RUNNABLE` /
+  `milk_register_runnable`).
 - `CLIcore/CLIcore_UI_completion.c` — Readline line acceptance, multiline
   execution, and Levenshtein command suggestions.
 - `CLIcore/CLIcore_UI_completion_tab.c` — Context-sensitive tab-completion

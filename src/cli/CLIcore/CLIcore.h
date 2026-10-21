@@ -284,7 +284,6 @@ typedef struct
 #    define STRINGMAXLEN_CMD_INFO 1000
 #    define STRINGMAXLEN_CMD_SYNTAX 1000
 #    define STRINGMAXLEN_CMD_EXAMPLE 1000
-#    define STRINGMAXLEN_CMD_CCALL 1000
 #    define STRINGMAXLEN_CMD_SRCFILE 1000
 typedef struct
 {
@@ -300,13 +299,12 @@ typedef struct
     // command function pointer
     errno_t (*fp)();
 
-    // descriptor this command was registered from (NULL for legacy commands)
+    // descriptor this command was registered from
     const struct MILK_RUNNABLE_ *runnable;
 
     char info[STRINGMAXLEN_CMD_INFO];       // short description/help
     char syntax[STRINGMAXLEN_CMD_SYNTAX];   // command syntax
     char example[STRINGMAXLEN_CMD_EXAMPLE]; // command example
-    char Ccall[STRINGMAXLEN_CMD_CCALL];
 
     // command arguments and parameters
     int nbarg;   // Number of visible CLI arguments

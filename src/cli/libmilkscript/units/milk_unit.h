@@ -36,6 +36,6 @@ int milk_unit_fps_exists(const char *name);
 
 /** milk_unit_create() - (re)create FPS a->name from bindings @b (their values the defaults), with processinfo
  * entries, then apply -loops or -loopd; 0 or 1. */
-int milk_unit_create(const milk_unit_args *a, FPS_APP_INFO *app, FPS_CLI_BINDING *b, int nb);
+int milk_unit_create(const milk_unit_args *a, const FPS_APP_INFO *app, FPS_CLI_BINDING *b, int nb);
 
 #endif

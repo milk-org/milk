@@ -146,8 +146,207 @@ static errno_t runnable_trampoline(void)
 }
 
 
-/** @brief Register one MILK_RUNNABLE as a CLI command of the module being loaded. */
-static void register_runnable(const MILK_RUNNABLE *r)
+/**
+ * is_valid_cli_cmd_key - Check whether a CLI command key uses only valid characters
+ * @key: Candidate command name string
+ *
+ * Ensures that command names contain only `[A-Za-z0-9_.*?+-]` before inserting
+ * them into `data.cmd[]` and the command hash index.
+ *
+ * Return: 1 if valid, 0 otherwise
+ */
+static int is_valid_cli_cmd_key(const char *key)
+{
+    if (key == NULL || key[0] == '\0')
+    {
+        return 0;
+    }
+    for (const char *p = key; *p != '\0'; p++)
+    {
+        unsigned char c = (unsigned char) *p;
+        if (!isalnum(c) && c != '_' && c != '.' && c != '*' && c != '?' && c != '+' && c != '-')
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/**
+ * RegisterCLIcmd - Populate a `data.cmd[]` entry from a prepared `CLICMDDATA` struct
+ * @CLIcmddata: Command metadata and argument definitions prepared from a `MILK_RUNNABLE`
+ * @CLIfptr:    Dispatch trampoline function pointer (`runnable_trampoline`)
+ *
+ * Internal helper used by `milk_register_runnable()` to allocate a slot in
+ * `data.cmd[]`, format the syntax and example strings from visible CLI arguments,
+ * copy argument descriptors into `data.cmd[i].argdata`, and insert the command
+ * into the global command hash index.
+ *
+ * Return: Index of the newly registered command in `data.cmd[]`
+ */
+static uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
+{
+    DEBUG_TRACE_FSTART();
+
+    if (CLIcmddata.key[0] == '\0')
+    {
+        DEBUG_TRACE_FEXIT();
+        return data.NBcmd;
+    }
+
+    if (!is_valid_cli_cmd_key(CLIcmddata.key))
+    {
+        fprintf(stderr, "ERROR: Invalid CLI command name '%s' (must match [A-Za-z0-9_.*?+-])\n",
+                CLIcmddata.key);
+        DEBUG_TRACE_FEXIT();
+        return data.NBcmd;
+    }
+
+    data.cmd[data.NBcmd].moduleindex = data.moduleindex;
+    if (data.cmd[data.NBcmd].moduleindex == -1)
+    {
+        strncpy(data.cmd[data.NBcmd].module, "MAIN", STRINGMAXLEN_MODULE_NAME - 1);
+        strncpy(data.cmd[data.NBcmd].key, CLIcmddata.key, STRINGMAXLEN_CMD_KEY - 1);
+    }
+    else
+    {
+        if (strlen(data.module[data.moduleindex].shortname) == 0)
+        {
+            strncpy(data.cmd[data.NBcmd].key, CLIcmddata.key, STRINGMAXLEN_CMD_KEY);
+        }
+        else if (snprintf(data.cmd[data.NBcmd].key, STRINGMAXLEN_CMD_KEY, "%s.%s",
+                          data.module[data.moduleindex].shortname,
+                          CLIcmddata.key) >= STRINGMAXLEN_CMD_KEY)
+        {
+            fprintf(stderr, "milk: command name '%s' is too long\n", CLIcmddata.key);
+            DEBUG_TRACE_FEXIT();
+            return data.NBcmd;
+        }
+    }
+    if (milk_cmd_key_check(data.cmd[data.NBcmd].key, data.moduleindex) != 0)
+    {
+        DEBUG_TRACE_FEXIT();
+        return data.NBcmd;
+    }
+
+    if (strlen(data.modulename) == 0)
+    {
+        strncpy(data.cmd[data.NBcmd].module, "unknown", STRINGMAXLEN_MODULE_NAME - 1);
+    }
+    else
+    {
+        strncpy(data.cmd[data.NBcmd].module, data.modulename, STRINGMAXLEN_MODULE_NAME - 1);
+    }
+
+    DEBUG_TRACEPOINT("settingsrcfile to %s", CLIcmddata.sourcefilename);
+    strncpy(data.cmd[data.NBcmd].srcfile, CLIcmddata.sourcefilename, STRINGMAXLEN_CMD_SRCFILE - 1);
+    data.cmd[data.NBcmd].fp      = CLIfptr;
+    data.cmd[data.NBcmd].outvars = CLIcmddata.outvars;
+    strncpy(data.cmd[data.NBcmd].info, CLIcmddata.description, STRINGMAXLEN_CMD_INFO - 1);
+
+    // assemble argument syntax string for help
+    char          argstring[STRINGMAXLEN_CMD_SYNTAX];
+    CLICMDARGDEF *farg_visible = NULL;
+    if (CLIcmddata.nbarg > 0)
+    {
+        farg_visible = (CLICMDARGDEF *) calloc(CLIcmddata.nbarg, sizeof(CLICMDARGDEF));
+        if (farg_visible == NULL)
+        {
+            PRINT_ERROR("calloc failed for farg_visible");
+            abort();
+        }
+    }
+    int nbarg_visible = 0;
+    for (int argi = 0; argi < CLIcmddata.nbarg; argi++)
+    {
+        if (CLIcmddata.funcfpscliarg[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+        {
+            farg_visible[nbarg_visible] = CLIcmddata.funcfpscliarg[argi];
+            nbarg_visible++;
+        }
+    }
+
+    CLIhelp_make_argstring(farg_visible, nbarg_visible, argstring);
+    strncpy(data.cmd[data.NBcmd].syntax, argstring, STRINGMAXLEN_CMD_SYNTAX - 1);
+
+    // assemble example string for help
+    char cmdexamplestring[STRINGMAXLEN_CMD_EXAMPLE];
+    CLIhelp_make_cmdexamplestring(farg_visible, nbarg_visible, CLIcmddata.key, cmdexamplestring);
+    strncpy(data.cmd[data.NBcmd].example, cmdexamplestring, STRINGMAXLEN_CMD_EXAMPLE - 1);
+
+    free(farg_visible);
+
+    DEBUG_TRACEPOINT("define arguments to CLI function from content of "
+                     "CLIcmddata.funcfpscliarg");
+    data.cmd[data.NBcmd].nbarg = 0; // count only primary mandatory arguments
+    for (int argi = 0; argi < CLIcmddata.nbarg; argi++)
+    {
+        if (CLIcmddata.funcfpscliarg[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+        {
+            data.cmd[data.NBcmd].nbarg++;
+        }
+    }
+
+    // Still allocate the full array for all parameters (including hidden ones)
+    data.cmd[data.NBcmd].nbparam = CLIcmddata.nbarg;
+    if (CLIcmddata.nbarg > 0)
+    {
+        data.cmd[data.NBcmd].argdata =
+            (CLICMDARGDATA *) calloc(CLIcmddata.nbarg, sizeof(CLICMDARGDATA));
+        if (data.cmd[data.NBcmd].argdata == NULL)
+        {
+            PRINT_ERROR("calloc failed for argdata");
+            abort();
+        }
+
+        for (int argi = 0; argi < CLIcmddata.nbarg; argi++)
+        {
+            data.cmd[data.NBcmd].argdata[argi].type   = CLIcmddata.funcfpscliarg[argi].type;
+            data.cmd[data.NBcmd].argdata[argi].fpflag = CLIcmddata.funcfpscliarg[argi].fpflag;
+
+            strncpy(data.cmd[data.NBcmd].argdata[argi].descr, CLIcmddata.funcfpscliarg[argi].descr,
+                    STRINGMAXLEN_FPSCLIARG_DESCR - 1);
+
+            strncpy(data.cmd[data.NBcmd].argdata[argi].fpstag,
+                    CLIcmddata.funcfpscliarg[argi].fpstag, STRINGMAXLEN_FPSCLIARG_TAG - 1);
+
+            strncpy(data.cmd[data.NBcmd].argdata[argi].example,
+                    CLIcmddata.funcfpscliarg[argi].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE - 1);
+        }
+        milk_args_register((int) data.NBcmd); /* declared defaults */
+    }
+
+    DEBUG_TRACEPOINT("define CLI function flags from content of CLIcmddata.flags");
+
+    data.cmd[data.NBcmd].cmdsettings.flags = CLIcmddata.flags;
+
+    // set default values
+    data.cmd[data.NBcmd].cmdsettings.procinfo_loopcntMax    = 1;
+    data.cmd[data.NBcmd].cmdsettings.procinfo_MeasureTiming = 1;
+
+    data.cmd[data.NBcmd].cmdsettings.triggerdelay.tv_sec  = 0;
+    data.cmd[data.NBcmd].cmdsettings.triggerdelay.tv_nsec = 0;
+
+    data.cmd[data.NBcmd].cmdsettings.triggertimeout.tv_sec  = 1;
+    data.cmd[data.NBcmd].cmdsettings.triggertimeout.tv_nsec = 0;
+
+    data.NBcmd++;
+    milk_cmd_index_add(data.NBcmd - 1);
+
+    DEBUG_TRACE_FEXIT();
+
+    return ((uint32_t) ((int) data.NBcmd - 1));
+}
+
+/**
+ * milk_register_runnable - Register a `MILK_RUNNABLE` descriptor as a CLI command
+ * @r: Pointer to the runnable descriptor (`MILK_RUNNABLE_FPS` or `MILK_RUNNABLE_CLI`)
+ *
+ * Prepares the runtime `CLICMDDATA` block of @r, fills default parameter examples
+ * for FPS runnables, registers the command in `data.cmd[]` with `runnable_trampoline`
+ * as its dispatch function, and links `data.cmd[cmdi].runnable` back to @r.
+ */
+void milk_register_runnable(const MILK_RUNNABLE *r)
 {
     milk_runnable_prepare(r);
 
@@ -172,7 +371,7 @@ static void register_runnable(const MILK_RUNNABLE *r)
  * @handle:  `dlopen` handle for the loaded shared library
  * @libname: File path of the shared object being registered
  *
- * Looks up the `__milk_module_info` descriptor exported by modern milk modules,
+ * Looks up the `__milk_module_info` descriptor exported by milk modules,
  * recursively loads any declared module dependencies, registers the module slot in
  * `data.module[]`, and registers each non-NULL `MILK_RUNNABLE` entry as a CLI command.
  *
@@ -180,12 +379,6 @@ static void register_runnable(const MILK_RUNNABLE *r)
  */
 errno_t newstyle_milk_module_registration(void *handle, const char *libname)
 {
-    /* New-style modules export __milk_module_info.
-    We perform the registration code that priorly belonged to INIT_MILK_MODULE macro.
-
-    Except that now this code lives within the CLI/script so, not the module so.
-    */
-
     MILK_MODULE_INFO *info = (MILK_MODULE_INFO *) dlsym(handle, "__milk_module_info");
     if (info == NULL || info->mod_registered == 1)
     {
@@ -218,8 +411,7 @@ errno_t newstyle_milk_module_registration(void *handle, const char *libname)
     RegisterModule(info->source_file, info->package, info->description, info->version_major,
                    info->version_minor, info->version_patch);
 
-    /* Stamp sofilename so load_module_shared
-                 * can find this slot by Case-1 match. */
+    /* Stamp sofilename so load_module_shared can find this slot by Case-1 match. */
     strncpy(data.module[data.moduleindex].sofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
 
     for (int ri = 0; ri < info->n_runnables; ri++)
@@ -227,7 +419,7 @@ errno_t newstyle_milk_module_registration(void *handle, const char *libname)
         // NULL: weak runnable whose file was dropped by an unmet MILK_CMAKE_MANDATE_*
         if (info->runnables[ri] != NULL)
         {
-            register_runnable(info->runnables[ri]);
+            milk_register_runnable(info->runnables[ri]);
         }
     }
 
@@ -255,7 +447,7 @@ errno_t load_module_shared(const char *__restrict modulename)
     DEBUG_TRACE_FSTART();
     char libname[STRINGMAXLEN_MODULE_SOFILENAME];
 
-    // make locacl copy of module name
+    // make local copy of module name
     char modulenameLC[STRINGMAXLEN_MODULE_SOFILENAME];
 
     {
@@ -278,8 +470,6 @@ errno_t load_module_shared(const char *__restrict modulename)
     }
     else
     {
-        // Assemble absolute path module filename
-        //printf("Searching for shared object in directory MILK_INSTALLDIR/lib : %s/lib\n", getenv("MILK_INSTALLDIR"));
         DEBUG_TRACEPOINT("Searching for shared object in directory [dcinstalldir]/lib : "
                          "%s/lib",
                          dcinstalldir);
@@ -318,22 +508,13 @@ errno_t load_module_shared(const char *__restrict modulename)
     // Now, WARNING, this function may recurse into other calls to load_module_shared
     newstyle_milk_module_registration(DLib_handle[DLib_index - 1], libname);
 
-    // Find the correct module slot for metadata.
-    //
-    // We cannot blindly use data.moduleindex because dlopen() may have transitively loaded other
-    // libraries whose constructors changed it.
-    // If the .so was already loaded (transitive dep of a prior dlopen), the constructor does not
-    // re-run and moduleindex is stale.
-    //
-    // Strategy:
-    //  1. Match by sofilename (set by a prior call)
-    //  2. Among newly registered modules, match by
-    //     module name as suffix of the load name
-    //  3. Fall back to data.moduleindex
-
+    // Find the module slot registered for this shared library (note that
+    // newstyle_milk_module_registration may have recursively loaded dependencies
+    // first, so we look up by sofilename or module name before falling back to
+    // data.moduleindex).
     int target_idx = -1;
 
-    // Case 1: sofilename already set by prior call
+    // Case 1: sofilename set by newstyle_milk_module_registration
     for (int m = 0; m < data.NBmodule; m++)
     {
         if (strcmp(data.module[m].sofilename, libname) == 0)
@@ -343,10 +524,7 @@ errno_t load_module_shared(const char *__restrict modulename)
         }
     }
 
-    // Case 2: match module name as suffix of load
-    // name. Handles modules loaded transitively by
-    // an earlier dlopen (sofilename still empty).
-    // E.g. loadname "milkpsf" matches name "psf".
+    // Case 2: match module name as suffix of load name
     if (target_idx < 0)
     {
         int llen = (int) strlen(modulenameLC);
@@ -516,10 +694,6 @@ errno_t RegisterModule(const char *__restrict FileName,
 
     data.module[moduleindex].type = data.moduletype;
 
-
-    //printf("--- libnameloaded : %s\n", libnameloaded);
-
-
     if (dcprogstatus == 0)
     {
         OKmsg = 1;
@@ -527,8 +701,6 @@ errno_t RegisterModule(const char *__restrict FileName,
         {
             printf(".");
         }
-        //	printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
-        //	fflush(stdout);
     }
 
     if (dcprogstatus == 1)
@@ -548,21 +720,13 @@ errno_t RegisterModule(const char *__restrict FileName,
         fflush(stdout);
     }
 
-
-    // default
-    // may be overridden by load_module_shared
-    //
-    //data.moduletype = MODULE_TYPE_STARTUP;
-
     data.module[data.moduleindex].type = MODULE_TYPE_STARTUP;
 
-    //strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
     if (data.module[data.moduleindex].sofilename[0] != '/')
     {
         strncpy(data.module[data.moduleindex].sofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
     }
 
-    //strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
     strncpy(data.module[data.moduleindex].loadname, "", STRINGMAXLEN_MODULE_LOADNAME - 1);
 
     // Copy dependency info from transient DATA fields
@@ -577,319 +741,4 @@ errno_t RegisterModule(const char *__restrict FileName,
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
-}
-
-
-/**
- * @brief Validate that a CLI command key contains only allowed characters [A-Za-z0-9_.*?+-].
- */
-static int is_valid_cli_cmd_key(const char *key)
-{
-    if (key == NULL || key[0] == '\0')
-    {
-        return 0;
-    }
-    for (const char *p = key; *p != '\0'; p++)
-    {
-        unsigned char c = (unsigned char) *p;
-        if (!isalnum(c) && c != '_' && c != '.' && c != '*' && c != '?' && c != '+' && c != '-')
-        {
-            return 0;
-        }
-    }
-    return 1;
-}
-
-/**
- * RegisterCLIcommand - Register a CLI command using the legacy registration API
- * @CLIkey:       Command name (prefixed with module shortname if registered inside a module)
- * @CLImodulesrc: Source filename where the command is implemented
- * @CLIfptr:      Function pointer invoked when the command runs
- * @CLIinfo:      Short one-line description of the command
- * @CLIsyntax:    Usage syntax summary string
- * @CLIexample:   Example invocation string
- * @CLICcall:     Underlying C function prototype string
- *
- * Stores a command entry in `data.cmd[]` at index `data.NBcmd` and adds it to the
- * hash index. Kept for engine root commands; modules use `MILK_RUNNABLE` or `RegisterCLIcmd()`.
- *
- * Return: Updated `data.NBcmd` count after registration
- */
-uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
-                            const char *__restrict CLImodulesrc,
-                            errno_t (*CLIfptr)(),
-                            const char *__restrict CLIinfo,
-                            const char *__restrict CLIsyntax,
-                            const char *__restrict CLIexample,
-                            const char *__restrict CLICcall)
-{
-    DEBUG_TRACE_FSTART();
-
-    if (!is_valid_cli_cmd_key(CLIkey))
-    {
-        fprintf(stderr, "ERROR: Invalid CLI command name '%s' (must match [A-Za-z0-9_.*?+-])\n",
-                CLIkey ? CLIkey : "(null)");
-        DEBUG_TRACE_FEXIT();
-        return data.NBcmd;
-    }
-
-    DEBUG_TRACEPOINT("FARG CLIkey %s -> command index %u / %d", CLIkey, data.NBcmd,
-                     DATA_NB_MAX_COMMAND);
-
-    data.cmd[data.NBcmd].moduleindex = data.moduleindex;
-
-    if (data.cmd[data.NBcmd].moduleindex == -1)
-    {
-        strncpy(data.cmd[data.NBcmd].module, "MAIN", STRINGMAXLEN_MODULE_NAME - 1);
-        strncpy(data.cmd[data.NBcmd].key, CLIkey, STRINGMAXLEN_CMD_KEY - 1);
-    }
-    else
-    {
-        if (strlen(data.module[data.moduleindex].shortname) == 0)
-        {
-            strncpy(data.cmd[data.NBcmd].key, CLIkey, STRINGMAXLEN_CMD_KEY - 1);
-        }
-        else if (snprintf(data.cmd[data.NBcmd].key, STRINGMAXLEN_CMD_KEY, "%s.%s",
-                          data.module[data.moduleindex].shortname, CLIkey) >= STRINGMAXLEN_CMD_KEY)
-        {
-            fprintf(stderr, "milk: command name '%s' is too long\n", CLIkey);
-            DEBUG_TRACE_FEXIT();
-            return data.NBcmd;
-        }
-    }
-    if (milk_cmd_key_check(data.cmd[data.NBcmd].key, data.moduleindex) != 0)
-    {
-        DEBUG_TRACE_FEXIT();
-        return data.NBcmd;
-    }
-
-    DEBUG_TRACEPOINT("set module name");
-    if (strlen(data.modulename) == 0)
-    {
-        strncpy(data.cmd[data.NBcmd].module, "unknown", STRINGMAXLEN_MODULE_NAME - 1);
-    }
-    else
-    {
-        strncpy(data.cmd[data.NBcmd].module, data.modulename, STRINGMAXLEN_MODULE_NAME - 1);
-    }
-
-    DEBUG_TRACEPOINT("load function data");
-
-    strncpy(data.cmd[data.NBcmd].srcfile, CLImodulesrc, STRINGMAXLEN_CMD_SRCFILE - 1);
-
-    data.cmd[data.NBcmd].fp = CLIfptr;
-
-    strncpy(data.cmd[data.NBcmd].info, CLIinfo, STRINGMAXLEN_CMD_INFO - 1);
-
-    strncpy(data.cmd[data.NBcmd].syntax, CLIsyntax, STRINGMAXLEN_CMD_SYNTAX - 1);
-
-    strncpy(data.cmd[data.NBcmd].example, CLIexample, STRINGMAXLEN_CMD_EXAMPLE - 1);
-
-    strncpy(data.cmd[data.NBcmd].Ccall, CLICcall, STRINGMAXLEN_CMD_CCALL - 1);
-
-    data.cmd[data.NBcmd].nbarg   = 0;
-    data.cmd[data.NBcmd].outvars = NULL;
-
-    // Set defaults
-    data.cmd[data.NBcmd].cmdsettings.procinfo_loopcntMax    = 1;
-    data.cmd[data.NBcmd].cmdsettings.procinfo_MeasureTiming = 1;
-
-    data.NBcmd++;
-    milk_cmd_index_add(data.NBcmd - 1);
-
-    DEBUG_TRACEPOINT("Done1");
-
-    DEBUG_TRACE_FEXIT();
-
-    DEBUG_TRACEPOINT("NBcmd = %u", data.NBcmd);
-
-    return (data.NBcmd);
-}
-
-
-/**
- * @brief Register a CLI command (current API).
- *
- * Replaces the legacy RegisterCLIcommand().
- * Uses a CLICMDDATA struct to define the command
- * key, source file, description, argument
- * definitions, and flags.
- *
- * Automatically builds the CLI syntax and example
- * strings from the argument definitions, and
- * initializes per-command processinfo settings.
- *
- * @param CLIcmddata  Command definition struct
- * @param CLIfptr     Function pointer to execute
- * @return Index of the newly registered command
- */
-uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
-{
-    // Command registration logic
-    DEBUG_TRACE_FSTART();
-
-    /* Guard against constructor ordering race:
-     * per-command __attribute__((constructor))
-     * may not have run yet, leaving key empty.
-     */
-    if (CLIcmddata.key[0] == '\0')
-    {
-        DEBUG_TRACE_FEXIT();
-        return data.NBcmd;
-    }
-
-    if (!is_valid_cli_cmd_key(CLIcmddata.key))
-    {
-        fprintf(stderr, "ERROR: Invalid CLI command name '%s' (must match [A-Za-z0-9_.*?+-])\n",
-                CLIcmddata.key);
-        DEBUG_TRACE_FEXIT();
-        return data.NBcmd;
-    }
-
-
-    data.cmd[data.NBcmd].moduleindex = data.moduleindex;
-    if (data.cmd[data.NBcmd].moduleindex == -1)
-    {
-        strncpy(data.cmd[data.NBcmd].module, "MAIN", STRINGMAXLEN_MODULE_NAME - 1);
-        strncpy(data.cmd[data.NBcmd].key, CLIcmddata.key, STRINGMAXLEN_CMD_KEY - 1);
-    }
-    else
-    {
-        if (strlen(data.module[data.moduleindex].shortname) == 0)
-        {
-            strncpy(data.cmd[data.NBcmd].key, CLIcmddata.key, STRINGMAXLEN_CMD_KEY);
-        }
-        else if (snprintf(data.cmd[data.NBcmd].key, STRINGMAXLEN_CMD_KEY, "%s.%s",
-                          data.module[data.moduleindex].shortname,
-                          CLIcmddata.key) >= STRINGMAXLEN_CMD_KEY)
-        {
-            fprintf(stderr, "milk: command name '%s' is too long\n", CLIcmddata.key);
-            DEBUG_TRACE_FEXIT();
-            return data.NBcmd;
-        }
-    }
-    if (milk_cmd_key_check(data.cmd[data.NBcmd].key, data.moduleindex) != 0)
-    {
-        DEBUG_TRACE_FEXIT();
-        return data.NBcmd;
-    }
-
-    if (strlen(data.modulename) == 0)
-    {
-        strncpy(data.cmd[data.NBcmd].module, "unknown", STRINGMAXLEN_MODULE_NAME - 1);
-    }
-    else
-    {
-        strncpy(data.cmd[data.NBcmd].module, data.modulename, STRINGMAXLEN_MODULE_NAME - 1);
-    }
-
-
-    DEBUG_TRACEPOINT("settingsrcfile to %s", CLIcmddata.sourcefilename);
-    strncpy(data.cmd[data.NBcmd].srcfile, CLIcmddata.sourcefilename, STRINGMAXLEN_CMD_SRCFILE - 1);
-    data.cmd[data.NBcmd].fp      = CLIfptr;
-    data.cmd[data.NBcmd].outvars = CLIcmddata.outvars;
-    strncpy(data.cmd[data.NBcmd].info, CLIcmddata.description, STRINGMAXLEN_CMD_INFO - 1);
-
-
-    // assemble argument syntax string for help
-    char          argstring[STRINGMAXLEN_CMD_SYNTAX];
-    CLICMDARGDEF *farg_visible = NULL;
-    if (CLIcmddata.nbarg > 0)
-    {
-        farg_visible = (CLICMDARGDEF *) calloc(CLIcmddata.nbarg, sizeof(CLICMDARGDEF));
-        if (farg_visible == NULL)
-        {
-            PRINT_ERROR("calloc failed for farg_visible");
-            abort();
-        }
-    }
-    int nbarg_visible = 0;
-    for (int argi = 0; argi < CLIcmddata.nbarg; argi++)
-    {
-        if (CLIcmddata.funcfpscliarg[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
-        {
-            farg_visible[nbarg_visible] = CLIcmddata.funcfpscliarg[argi];
-            nbarg_visible++;
-        }
-    }
-
-    CLIhelp_make_argstring(farg_visible, nbarg_visible, argstring);
-    strncpy(data.cmd[data.NBcmd].syntax, argstring, STRINGMAXLEN_CMD_SYNTAX - 1);
-
-
-    // assemble example string for help
-    char cmdexamplestring[STRINGMAXLEN_CMD_EXAMPLE];
-    CLIhelp_make_cmdexamplestring(farg_visible, nbarg_visible, CLIcmddata.key, cmdexamplestring);
-    strncpy(data.cmd[data.NBcmd].example, cmdexamplestring, STRINGMAXLEN_CMD_EXAMPLE - 1);
-
-    free(farg_visible);
-
-
-    strncpy(data.cmd[data.NBcmd].Ccall, "--callstring--", STRINGMAXLEN_CMD_CCALL - 1);
-
-
-    DEBUG_TRACEPOINT("define arguments to CLI function from content of "
-                     "CLIcmddata.funcfpscliarg");
-    data.cmd[data.NBcmd].nbarg = 0; // count only primary mandatory arguments
-    for (int argi = 0; argi < CLIcmddata.nbarg; argi++)
-    {
-        if (CLIcmddata.funcfpscliarg[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
-        {
-            data.cmd[data.NBcmd].nbarg++;
-        }
-    }
-
-    // Still allocate the full array for all parameters (including hidden ones)
-    data.cmd[data.NBcmd].nbparam = CLIcmddata.nbarg;
-    if (CLIcmddata.nbarg > 0)
-    {
-        data.cmd[data.NBcmd].argdata =
-            (CLICMDARGDATA *) calloc(CLIcmddata.nbarg, sizeof(CLICMDARGDATA));
-        if (data.cmd[data.NBcmd].argdata == NULL)
-        {
-            PRINT_ERROR("calloc failed for argdata");
-            free(farg_visible);
-            abort();
-        }
-
-        for (int argi = 0; argi < CLIcmddata.nbarg; argi++)
-        {
-            data.cmd[data.NBcmd].argdata[argi].type   = CLIcmddata.funcfpscliarg[argi].type;
-            data.cmd[data.NBcmd].argdata[argi].fpflag = CLIcmddata.funcfpscliarg[argi].fpflag;
-
-            strncpy(data.cmd[data.NBcmd].argdata[argi].descr, CLIcmddata.funcfpscliarg[argi].descr,
-                    STRINGMAXLEN_FPSCLIARG_DESCR - 1);
-
-            strncpy(data.cmd[data.NBcmd].argdata[argi].fpstag,
-                    CLIcmddata.funcfpscliarg[argi].fpstag, STRINGMAXLEN_FPSCLIARG_TAG - 1);
-
-            strncpy(data.cmd[data.NBcmd].argdata[argi].example,
-                    CLIcmddata.funcfpscliarg[argi].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE - 1);
-        }
-        milk_args_register((int) data.NBcmd); /* declared defaults */
-    }
-
-    DEBUG_TRACEPOINT("define CLI function flags from content of CLIcmddata.flags");
-
-
-    data.cmd[data.NBcmd].cmdsettings.flags = CLIcmddata.flags;
-
-
-    // set default values
-    //
-    data.cmd[data.NBcmd].cmdsettings.procinfo_loopcntMax    = 1;
-    data.cmd[data.NBcmd].cmdsettings.procinfo_MeasureTiming = 1;
-
-    data.cmd[data.NBcmd].cmdsettings.triggerdelay.tv_sec  = 0;
-    data.cmd[data.NBcmd].cmdsettings.triggerdelay.tv_nsec = 0;
-
-    data.cmd[data.NBcmd].cmdsettings.triggertimeout.tv_sec  = 1;
-    data.cmd[data.NBcmd].cmdsettings.triggertimeout.tv_nsec = 0;
-
-    data.NBcmd++;
-    milk_cmd_index_add(data.NBcmd - 1);
-
-    DEBUG_TRACE_FEXIT();
-
-    return ((uint32_t) ((int) data.NBcmd - 1));
 }
