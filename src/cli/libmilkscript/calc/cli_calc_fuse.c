@@ -727,214 +727,6 @@ static void store_block(IMAGE   *im,
 #undef STORE_BODY
 }
 
-/* apply EXPR(a, b) with a/b each either a vector slot or the constant c */
-#define BIN_LOOPS(EXPR)                \
-    if (in->cpos == 0)                 \
-    {                                  \
-        for (int j = 0; j < len; j++)  \
-        {                              \
-            double a = l[j], b = r[j]; \
-            l[j] = (EXPR);             \
-        }                              \
-    }                                  \
-    else if (in->cpos == 2)            \
-    {                                  \
-        const double b = in->c;        \
-        for (int j = 0; j < len; j++)  \
-        {                              \
-            double a = l[j];           \
-            l[j]     = (EXPR);         \
-        }                              \
-    }                                  \
-    else                               \
-    {                                  \
-        const double a = in->c;        \
-        for (int j = 0; j < len; j++)  \
-        {                              \
-            double b = l[j];           \
-            l[j]     = (EXPR);         \
-        }                              \
-    }
-
-/**
- * run_bin - Execute a binary vector instruction (`FI_BIN`) over a pixel block
- * @in:  Instruction specifying the operator (`in->op`), constant mode (`in->cpos`), and `in->c`
- * @l:   Left/in-place vector stack slot of length @len
- * @r:   Right vector stack slot of length @len (used when `in->cpos == 0`)
- * @len: Number of elements in the current block
- *
- * Evaluates arithmetic and comparison operators across @len elements, using
- * algebraic fast paths for common exponents (`^2`, `^0.5`, `^3`, `^-1`) to
- * avoid calling `pow()` in the inner loop.
- *
- * Return: void
- */
-static void run_bin(const fins *in, double *restrict l, const double *restrict r, int len)
-{
-    switch (in->op)
-    {
-    case TOK_OP_PLUS:
-        BIN_LOOPS(a + b);
-        break;
-    case TOK_OP_MINUS:
-        BIN_LOOPS(a - b);
-        break;
-    case TOK_OP_STAR:
-        BIN_LOOPS(a * b);
-        break;
-    case TOK_OP_SLASH:
-        BIN_LOOPS(a / b);
-        break;
-    case TOK_OP_MOD:
-        BIN_LOOPS(fmod(a, b));
-        break;
-    case TOK_OP_CARET:
-        if (in->cpos == 2 && in->c == 2.0)
-        {
-            for (int j = 0; j < len; j++)
-            {
-                double a = l[j];
-                l[j]     = a * a;
-            }
-        }
-        else if (in->cpos == 2 && in->c == 0.5)
-        {
-            for (int j = 0; j < len; j++)
-            {
-                l[j] = sqrt(l[j]);
-            }
-        }
-        else if (in->cpos == 2 && in->c == 3.0)
-        {
-            for (int j = 0; j < len; j++)
-            {
-                double a = l[j];
-                l[j]     = a * a * a;
-            }
-        }
-        else if (in->cpos == 2 && in->c == -1.0)
-        {
-            for (int j = 0; j < len; j++)
-            {
-                l[j] = 1.0 / l[j];
-            }
-        }
-        else
-        {
-            BIN_LOOPS(pow(a, b));
-        }
-        break;
-    case TOK_OP_LT:
-        BIN_LOOPS((double) (a < b));
-        break;
-    case TOK_OP_LE:
-        BIN_LOOPS((double) (a <= b));
-        break;
-    case TOK_OP_GT:
-        BIN_LOOPS((double) (a > b));
-        break;
-    case TOK_OP_GE:
-        BIN_LOOPS((double) (a >= b));
-        break;
-    case TOK_OP_EQ:
-        BIN_LOOPS((double) (a == b));
-        break;
-    default:
-        BIN_LOOPS((double) (a != b));
-        break;
-    }
-}
-
-/**
- * run_fn2 - Execute a two-argument math function instruction (`FI_FN2`) over a pixel block
- * @in:  Instruction specifying the function pointer (`in->fn`), `in->cpos`, and `in->c`
- * @l:   Left/in-place vector stack slot of length @len
- * @r:   Right vector stack slot of length @len (used when `in->cpos == 0`)
- * @len: Number of elements in the current block
- *
- * Inlines `fmin` and `fmax` comparisons for vectorization and dispatches other
- * binary math functions (`atan2`, `fmod`, `pow`) through `in->fn`.
- *
- * Return: void
- */
-static void run_fn2(const fins *in, double *restrict l, const double *restrict r, int len)
-{
-    double (*f)(double, double) = (double (*)(double, double)) in->fn;
-    if (f == fmin)
-    {
-        BIN_LOOPS((a < b) ? a : b);
-    }
-    else if (f == fmax)
-    {
-        BIN_LOOPS((a > b) ? a : b);
-    }
-    else
-    {
-        BIN_LOOPS(f(a, b));
-    }
-}
-#undef BIN_LOOPS
-
-/** coord_block() - coordinate @kind of pixels [@off, @off + @len) of an @nx x @ny (x n) image about (cx, cy). */
-static void coord_block(int      kind,
-                        uint32_t nx,
-                        uint32_t ny,
-                        double   cx,
-                        double   cy,
-                        uint64_t off,
-                        int      len,
-                        double *restrict t)
-{
-    uint32_t x = (uint32_t) (off % nx);
-    uint32_t y = (uint32_t) ((off / nx) % ny);
-
-    for (int j = 0; j < len; j++)
-    {
-        double dx = (double) x - cx;
-        double dy = (double) y - cy;
-        t[j]      = (kind == CALC_COORD_X)   ? dx
-                    : (kind == CALC_COORD_Y) ? dy
-                    : (kind == CALC_COORD_R) ? sqrt(dx * dx + dy * dy)
-                                             : atan2(dy, dx);
-        if (++x == nx)
-        {
-            x = 0;
-            y = (y + 1 == ny) ? 0 : y + 1;
-        }
-    }
-}
-
-#define SEL_LOOP(T, F)                    \
-    for (int j = 0; j < len; j++)         \
-    {                                     \
-        c[j] = (c[j] != 0.0) ? (T) : (F); \
-    }
-
-/** run_sel() - c := c ? t : f, with t or f the constant in->c / in->c2 when not on the stack. */
-static void run_sel(const fins *in,
-                    double *restrict c,
-                    const double *restrict tv,
-                    const double *restrict fv,
-                    int len)
-{
-    switch (in->cpos)
-    {
-    case 0:
-        SEL_LOOP(in->c, in->c2);
-        break;
-    case 1:
-        SEL_LOOP(tv[j], in->c2);
-        break;
-    case 2:
-        SEL_LOOP(in->c, fv[j]);
-        break;
-    default:
-        SEL_LOOP(tv[j], fv[j]);
-        break;
-    }
-}
-#undef SEL_LOOP
-
 /** eval_scalars() - evaluate per-frame scalar variable sub-expressions into instruction constants. */
 static void eval_scalars(fprog *p)
 {
@@ -990,153 +782,65 @@ static void eval_scalars(fprog *p)
     }
 }
 
-/** run_block() - evaluate @p on pixels [@off, @off + @len) and store into @out. */
-static void run_block(const fprog *p, IMAGE *out, uint64_t off, int len, double (*stk)[FUSE_BLK])
+/** store_block_d() - store a block of double results into @im (any real datatype). */
+static void store_block_d(IMAGE *im, uint64_t off, int len, const double *restrict v)
 {
-    int sp = 0;
-    for (int i = 0; i < p->n; i++)
+    store_block(im, off, len, v, 0, 0.0);
+}
+
+/** load_block_f() - copy a block of a FLOAT image (the float32 path only runs on FLOAT images). */
+static void load_block_f(const IMAGE *im, uint64_t off, int len, float *restrict dst)
+{
+    __builtin_memcpy(dst, im->array.F + off, (size_t) len * sizeof(float));
+}
+
+/** store_block_f() - copy a block of float results into a FLOAT image. */
+static void store_block_f(IMAGE *im, uint64_t off, int len, const float *restrict v)
+{
+    __builtin_memcpy(im->array.F + off, v, (size_t) len * sizeof(float));
+}
+
+/* block kernels in double (any datatype; results converted on store) */
+#define FT double
+#define FK(name) name##_d
+#define FM(fn) fn
+#define FK_LOAD load_block
+#define FK_STORE store_block_d
+#include "cli_calc_fuse_kernels.h"
+#undef FT
+#undef FK
+#undef FM
+#undef FK_LOAD
+#undef FK_STORE
+
+/* block kernels in float32 (every image FLOAT: twice the SIMD width, float libm) */
+#define FT float
+#define FK(name) name##_f
+#define FM(fn) fn##f
+#define FK_LOAD load_block_f
+#define FK_STORE store_block_f
+#include "cli_calc_fuse_kernels.h"
+#undef FT
+#undef FK
+#undef FM
+#undef FK_LOAD
+#undef FK_STORE
+
+/** all_float() - 1 if @out and every image @p reads are FLOAT: the program runs in float32. */
+static int all_float(const fprog *p, const IMAGE *out)
+{
+    if (out->md[0].datatype != _DATATYPE_FLOAT)
     {
-        const fins *in = &p->ins[i];
-        double     *t  = stk[(sp > 0) ? sp - 1 : 0];
-        switch (in->k)
+        return 0;
+    }
+    for (int i = 0; i < p->nimg; i++)
+    {
+        if (p->img[i]->md[0].datatype != _DATATYPE_FLOAT)
         {
-        case FI_IMG:
-            load_block(p->img[in->img], off, len, stk[sp++]);
-            break;
-        case FI_BIN:
-            if (in->cpos == 0)
-            {
-                run_bin(in, stk[sp - 2], t, len);
-                sp--;
-            }
-            else
-            {
-                run_bin(in, t, NULL, len);
-            }
-            break;
-        case FI_FN2:
-            if (in->cpos == 0)
-            {
-                run_fn2(in, stk[sp - 2], t, len);
-                sp--;
-            }
-            else
-            {
-                run_fn2(in, t, NULL, len);
-            }
-            break;
-        case FI_NEG:
-            for (int j = 0; j < len; j++)
-            {
-                t[j] = 0.0 - t[j];
-            }
-            break;
-        case FI_NOT:
-            for (int j = 0; j < len; j++)
-            {
-                t[j] = (double) (t[j] == 0.0);
-            }
-            break;
-        case FI_FN1:
-        {
-            double (*f)(double) = (double (*)(double)) in->fn;
-            if (f == fabs)
-            {
-                for (int j = 0; j < len; j++)
-                {
-                    t[j] = fabs(t[j]);
-                }
-            }
-            else if (f == sqrt)
-            {
-                for (int j = 0; j < len; j++)
-                {
-                    t[j] = sqrt(t[j]);
-                }
-            }
-            else if (f == floor)
-            {
-                for (int j = 0; j < len; j++)
-                {
-                    t[j] = floor(t[j]);
-                }
-            }
-            else if (f == ceil)
-            {
-                for (int j = 0; j < len; j++)
-                {
-                    t[j] = ceil(t[j]);
-                }
-            }
-            else if (f == round)
-            {
-                for (int j = 0; j < len; j++)
-                {
-                    t[j] = round(t[j]);
-                }
-            }
-            else if (f == cli_calc_isnan)
-            {
-                for (int j = 0; j < len; j++)
-                {
-                    t[j] = cli_calc_isnan(t[j]);
-                }
-            }
-            else if (f == cli_calc_isfinite)
-            {
-                for (int j = 0; j < len; j++)
-                {
-                    t[j] = cli_calc_isfinite(t[j]);
-                }
-            }
-            else
-            {
-                for (int j = 0; j < len; j++)
-                {
-                    t[j] = f(t[j]);
-                }
-            }
-            break;
-        }
-        case FI_FN3:
-        {
-            double lo = in->c;
-            double hi = in->c2;
-            for (int j = 0; j < len; j++)
-            {
-                double x = t[j];
-                t[j]     = (x < lo) ? lo : (x > hi) ? hi : x;
-            }
-            break;
-        }
-        case FI_SEL:
-        {
-            int nv = (in->cpos & 1) + (in->cpos >> 1);
-            run_sel(in, stk[sp - 1 - nv], (in->cpos & 1) ? stk[sp - nv] : NULL,
-                    (in->cpos & 2) ? stk[sp - 1] : NULL, len);
-            sp -= nv;
-            break;
-        }
-        case FI_CONST:
-        {
-            double  x = in->c;
-            double *d = stk[sp++];
-            for (int j = 0; j < len; j++)
-            {
-                d[j] = x;
-            }
-            break;
-        }
-        default:
-        {
-            const IMAGE *im = p->img[in->img];
-            coord_block(in->cpos, im->md[0].size[0], (im->md[0].naxis > 1) ? im->md[0].size[1] : 1,
-                        in->c, in->c2, off, len, stk[sp++]);
-            break;
-        }
+            return 0;
         }
     }
-    store_block(out, off, len, stk[0], 0, 0.0);
+    return 1;
 }
 
 /**
@@ -1146,7 +850,8 @@ static void run_block(const fprog *p, IMAGE *out, uint64_t off, int len, double 
  *
  * Evaluates per-frame scalar tape instructions (`eval_scalars()`) and then
  * processes @out in `FUSE_BLK`-pixel chunks, parallelizing across blocks with
- * OpenMP when `nelement >= FUSE_OMP_MIN`.
+ * OpenMP when `nelement >= FUSE_OMP_MIN`. The program runs in float32 when @out
+ * and every image it reads are FLOAT, else in double.
  *
  * Return: void
  */
@@ -1155,6 +860,21 @@ static void run_program(fprog *p, IMAGE *out)
     eval_scalars(p);
     uint64_t nel  = out->md[0].nelement;
     uint64_t nblk = (nel + FUSE_BLK - 1) / FUSE_BLK;
+    if (all_float(p, out))
+    {
+#pragma omp parallel if (nel >= FUSE_OMP_MIN)
+        {
+            MILK_ALIGNED(64) float stk[FUSE_MAXSTK][FUSE_BLK];
+#pragma omp for schedule(static)
+            for (uint64_t b = 0; b < nblk; b++)
+            {
+                uint64_t off = b * FUSE_BLK;
+                int      len = (int) ((nel - off < FUSE_BLK) ? nel - off : FUSE_BLK);
+                run_block_f(p, out, off, len, stk);
+            }
+        }
+        return;
+    }
 #pragma omp parallel if (nel >= FUSE_OMP_MIN)
     {
         MILK_ALIGNED(64) double stk[FUSE_MAXSTK][FUSE_BLK];
@@ -1163,7 +883,7 @@ static void run_program(fprog *p, IMAGE *out)
         {
             uint64_t off = b * FUSE_BLK;
             int      len = (int) ((nel - off < FUSE_BLK) ? nel - off : FUSE_BLK);
-            run_block(p, out, off, len, stk);
+            run_block_d(p, out, off, len, stk);
         }
     }
 }

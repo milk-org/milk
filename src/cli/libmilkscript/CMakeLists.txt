@@ -88,6 +88,14 @@ set(MILKSCRIPT_SOURCES
 add_library(milkscript SHARED ${MILKSCRIPT_SOURCES})
 milk_apply_extensions(milkscript)
 
+# The fused evaluator's float32 kernels: under -Ofast, GCC vectorizes float division and 1/sqrt with
+# approximate reciprocals (RCPPS/RSQRTPS + Newton step), which turn x/0 into NaN instead of inf.
+# -mno-recip keeps IEEE division and square root there (-mrecip=none is not honoured by GCC 15), and
+# unlike -fno-finite-math-only it keeps __FAST_MATH__, so libm calls still vectorize with libmvec.
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+  set_source_files_properties(calc/cli_calc_fuse.c PROPERTIES COMPILE_OPTIONS "-mno-recip")
+endif()
+
 if(USE_CFITSIO AND ${CFITSIO_FOUND})
   link_directories(${CFITSIO_LIBRARY_DIRS})
   target_compile_definitions(milkscript PUBLIC USE_CFITSIO=1)

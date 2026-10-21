@@ -510,7 +510,8 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
             }
 
             /* classify the identifier */
-            const char *s = tokens[nt].sval;
+            const char *s       = tokens[nt].sval;
+            long        tok_vid = -2; /* variable_ID(s), once known (-2: not looked up yet) */
 
             {
                 const char *bk = strchr(s, '[');
@@ -542,6 +543,10 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
                         snprintf(tokens[nt].sval, CLI_CALC_TOKEN_MAXLEN, "%s",
                                  data.core.variable[svid].value.s);
                     }
+                    else
+                    {
+                        tok_vid = svid; /* the name is unchanged: its lookup still holds */
+                    }
                 }
             }
 
@@ -568,7 +573,11 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
                 }
             }
 
-            if (variable_ID(s) != -1 && data.core.variable[variable_ID(s)].type != 3)
+            if (tok_vid == -2)
+            {
+                tok_vid = variable_ID(s);
+            }
+            if (tok_vid != -1 && data.core.variable[tok_vid].type != 3)
             {
                 tokens[nt].type = TOK_VAR;
                 if (data.core.Debug > 0)
