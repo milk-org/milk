@@ -22,6 +22,7 @@
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "cli_calc_prog.h"
+#include "computeunit.h"
 #include "fps.h"
 #include "fps_modulevars_resync.h"
 #include "milk_argval.h"
@@ -85,9 +86,15 @@ static int64_t          frame_n  = 0;
 static double           frame_t  = 0.0;
 static double           frame_dt = 0.0;
 
+static CMDSETTINGS  calc_cms = { .procinfo_loopcntMax = 1 };
 static CLICMDARGDEF farg[1];
-CLICMDDATA          CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-FPS_CMDSETTINGS_INIT(calc, CLIcmddata, app)
+CLICMDDATA          CLIcmddata = {
+    .key            = "calc",
+    .description    = "run calculator statements on each frame",
+    .sourcefilename = __FILE__,
+    .flags          = CLICMDFLAG_FPS,
+    .cmdsettings    = &calc_cms,
+};
 
 static double now_sec(void)
 {
@@ -303,8 +310,8 @@ static MILK_HOT errno_t compute(void)
     }
     processinfo_CatchSignals(); /* Ctrl-C and runstop end the loop through its cleanup */
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    _MILK_PROCINFO_INIT_IMPL(CLIcmddata)
+    _MILK_PROCINFO_LOOPSTART_IMPL(CLIcmddata)
     {
         if (!init_done || dcfpsptr->parray[pi].value_cnt != init_built[0] ||
             dcfpsptr->parray[pif].value_cnt != init_built[1])
@@ -398,7 +405,7 @@ static MILK_HOT errno_t compute(void)
             frame_n++;
         }
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    _MILK_PROCINFO_END_IMPL(CLIcmddata)
 
     cli_calc_prog_free(prog);
     return (err[0] != '\0') ? RETURN_FAILURE : RETURN_SUCCESS;
@@ -411,7 +418,8 @@ int main(int argc, char **argv)
 
     milk_unit_args_read(argc, argv, app.fps_name, &a);
     init = (strcmp(a.cmd, "fpsinit") == 0);
-    for (int p = 3; p <= 5; p += 2) /* .file (3) and .initfile (5): also what main_impl() writes */
+    for (int p = 3; p <= 5;
+         p += 2) /* .file (3) and .initfile (5): also what fpsexec_main_function() writes */
     {
         if (milk_unit_pos(&a, p) != NULL)
         {
@@ -435,5 +443,5 @@ int main(int argc, char **argv)
     {
         return 1;
     }
-    return main_impl(argc, argv, &app, bindings, nbind, farg, compute, NULL);
+    return fpsexec_main_function(argc, argv, &app, bindings, nbind, farg, compute, NULL);
 }

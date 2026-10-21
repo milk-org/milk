@@ -286,6 +286,6 @@ int FPSRUN_writer(const char *fps_name)
     return 0;
 }
 
-#ifndef MILK_MODULE
+#ifndef EXAMPLE03_MODULE_BUILD
 FPS_MAIN_STANDALONE("writer03", writer, WRITER_HELPTEXT, WRITER_PARAMS)
 #endif

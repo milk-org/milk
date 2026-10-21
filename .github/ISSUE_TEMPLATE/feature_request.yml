@@ -49,10 +49,9 @@ body:
         Optional. If you have ideas on implementation,
         describe them here. For reference, new compute
         units should follow the
-        [V2 template](src/milk_module_example/examplefunc_fps_cli_poc.c).
-        AI agents can use workflows like `/create-fpsexec`,
-        `/add-function`, `/add-stream-processor`, or
-        `/add-new-module`.
+        [MILK_RUNNABLE template](src/milk_module_example/examplefunc_fps_cli_poc.c).
+        AI agents can use workflows like `/add-runnable`
+        or `/add-module`.
 
   - type: dropdown
     id: scope

@@ -5,14 +5,14 @@ conventions help ensure readability, maintainability, and seamless integration o
 plugins.
 
 See also: [Programmer's Guide](../arch/programmers_guide.md) · [Documenting Code](DocumentingCode.md) ·
-[Template Source Code](TemplateSourceCode.md) · [Module Files](ModuleFiles.md)
+[Adding Plugins](plugins.md)
 
 ## General C Code Style
 
 - **Linux Kernel Style:** Use the
   [Linux kernel's C coding style](https://www.kernel.org/doc/html/v4.10/process/coding-style.html)
   as the baseline for indentation and formatting, wherever it doesn't conflict with the rules below.
-- **Short Lines:** Keep lines short, generally **no more than 80 characters**.
+- **Short Lines:** Keep lines short, generally **no more than 100 characters**.
 - **Scope limitation:** Use code blocks (`{ ... }`) to reduce the scope of variables as much as
   possible.
 

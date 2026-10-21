@@ -269,9 +269,10 @@ else()
   # Provide CLI header paths so modules can find CLIcore.h (which redirects to
   # standalone stubs)
   include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tui/procCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libcomputeunit
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tui/fpsCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkcommon
@@ -300,9 +301,10 @@ else()
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/libmilkscript/core>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/tui/procCTRL>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libcomputeunit>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/tui/fpsCTRL>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/ImageStreamIO>
@@ -420,6 +422,7 @@ endif()
 option(USE_LTO "Enable Link-Time Optimization (-flto=auto)" ON)
 if(USE_LTO)
   add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto=auto>)
+  add_link_options(-flto=auto)
 endif()
 # NOTE: -fwhole-program is applied only to standalone executables (via
 # milk_standalone.cmake) where main() is the sole entry point.  Applying it
@@ -451,13 +454,14 @@ message("EXTRAMODULES             = ${EXTRAMODULES}")
 include(CTest)
 
 # =======================================
-# STANDALONE EXECUTABLE HELPERS
+# FPSEXEC HELPERS
 # =======================================
-# Functions: add_milk_standalone, add_cacao_standalone,
-# add_cacao_standalone_plugins See cmake/milk_standalone.cmake for docs.
+# fpsexec link sets / PGO / LTO helpers (milk_standalone.cmake) and the
+# MILK_RUNNABLE module helpers (milk_runnable.cmake).
 
 include(${PROJECT_SOURCE_DIR}/cmake/milk_standalone.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/milk_static_lto.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/milk_runnable.cmake)
 
 # =======================================
 # INSTALL PATHS
@@ -475,6 +479,8 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # src/engine is needed globally so that all targets can resolve #include
 # "ImageStreamIO/ImageStreamIO.h"
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libcomputeunit)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/tui)
 # Generated config.h/milk_config.h live in the build tree; see configure_file() above.
 include_directories(${CMAKE_BINARY_DIR}/config)
 
@@ -518,6 +524,7 @@ endif()
 # add libfps (standalone fps library exploration)
 add_subdirectory(src/engine/libmilkcommon)
 add_subdirectory(src/engine/libfps)
+add_subdirectory(src/engine/libcomputeunit)
 add_subdirectory(src/engine/libfpsseq)
 
 # add libmilkdata (core data layer, no CLI dependency)
@@ -525,6 +532,9 @@ add_subdirectory(src/engine/libmilkdata)
 
 # add libprocessinfo
 add_subdirectory(src/engine/libprocessinfo)
+
+# engine-tier TUIs
+add_subdirectory(src/tui)
 
 # Package definitions (needed by both CLI and standalone)
 add_definitions(
@@ -699,8 +709,6 @@ if(USE_CLI)
 
 endif(USE_CLI)
 
-install(FILES docs/cli/help.txt DESTINATION doc)
-
 # milk-cli script payloads (.milk files) – installed as data, not executables
 install(FILES scripts/makecircleofdisks.milk DESTINATION share/milk/scripts)
 
@@ -709,7 +717,9 @@ install(FILES scripts/makecircleofdisks.milk DESTINATION share/milk/scripts)
 if(USE_CLI)
   install(CODE "
     set(_milk_prefix \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}\")
-    execute_process(COMMAND \${CMAKE_COMMAND} -E env MILK_INSTALLDIR=\${_milk_prefix}
+    execute_process(COMMAND \${CMAKE_COMMAND} -E env
+                            MILK_INSTALLDIR=\${_milk_prefix}
+                            LD_LIBRARY_PATH=\${_milk_prefix}/lib:\$ENV{LD_LIBRARY_PATH}
                             \${_milk_prefix}/bin/milk-cli --catalog
                     RESULT_VARIABLE _milk_rc)
     if(NOT _milk_rc EQUAL 0)

@@ -7,7 +7,13 @@
  * @brief Stream semaphore operations
  */
 
-errno_t CLIADDCMD_COREMOD_memory__stream_sem();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imseminfo;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imsetsempost;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imsetsempostl;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imsetsemwait;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imsetsemflush;
 
 imageID COREMOD_MEMORY_image_seminfo(const char *IDname);
 

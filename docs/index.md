@@ -165,9 +165,9 @@ Who might you be?
 
     ***
 
-    Breakdown of `milk_module_example`.
+    Walkthrough of the `MILK_RUNNABLE` template in `milk_module_example`.
 
-    [⮕ Template source](developer/TemplateSourceCode.md)
+    [⮕ Compute units](arch/programmers_guide.md#3-writing-a-compute-unit)
 
 </div>
 
@@ -218,4 +218,4 @@ Who might you be?
 - [Programmer's Guide](arch/programmers_guide.md) · [Dependency Graph](arch/dependency_graph.md) ·
   [fpsCTRL Reference](guide/fpsCTRL_reference.md) · [Stream Viewer](guide/termview.md)
 - [Working with Git](developer/WorkingWithGit.md) · [Code Assist Tools](developer/code_assist.md)
-- [All Markdown Files](Markdown_Index.md) · [Tag Index](tags.md)
+- [Tag Index](tags.md)

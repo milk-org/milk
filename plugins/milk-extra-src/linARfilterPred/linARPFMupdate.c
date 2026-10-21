@@ -7,22 +7,10 @@
  * @brief   Update predictive filter matrix
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "linARfilterPred.h"
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "linARPFMupdate",
-    .cmdkey           = "linARPFMupdate",
-    .description      = "update predictive filter matrix",
-    .description_long = "Linear autoregressive filter prediction engine. Manages filter training, "
-                        "update, and application for real-time prediction."
-};
 
 static char   param_pf_name[FUNCTION_PARAMETER_STRMAXLEN]  = "outPF";
 static char   param_pfm_name[FUNCTION_PARAMETER_STRMAXLEN] = "PFMat";
@@ -39,30 +27,27 @@ static MILK_HOT errno_t fpsexec()
     return RETURN_SUCCESS;
 }
 
-FPS_V2_SECTION5(FPS_PARAMS)
-static MILK_HOT errno_t compute_function()
+MILK_PARAMS_DEFINE(linARPFMupdate, FPS_PARAMS);
+
+static MILK_HOT errno_t linARPFMupdate_compute(const MILK_RUNNABLE *self)
 {
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
     fpsexec();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
     return RETURN_SUCCESS;
 }
 
-#ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_linARfilterPred__linARPFMupdate()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_linARfilterPred_linARPFMupdate = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "linARPFMupdate",
+                 .cmdkey           = "linARPFMupdate",
+                 .description      = "update predictive filter matrix",
+                 .description_long = "Linear autoregressive filter prediction engine. Manages "
+                                     "filter training, update, and application for real-time "
+                                     "prediction." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(linARPFMupdate),
+    .compute = linARPFMupdate_compute,
+};
+EXPORT_FPSEXEC(milk, "linAR-PFMupdate", runnable_linARfilterPred_linARPFMupdate);

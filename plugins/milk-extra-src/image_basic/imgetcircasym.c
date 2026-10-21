@@ -9,12 +9,8 @@
 
 #include <math.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -30,38 +26,18 @@ static char   p_out[FUNCTION_PARAMETER_STRMAXLEN] = "imout";
 static double p_xcenter                           = 256.0;
 static double p_ycenter                           = 230.5;
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "imgetcircasym",
-    .cmdkey           = "imgetcircasym",
-    .description      = "extract non-circ symmetric part",
-    .description_long = "Extract the non-circularly-symmetric component of a 2D image. Subtracts "
-                        "the azimuthal average to isolate asymmetric structures."
-};
-
 #define FPS_PARAMS(X)                                                              \
     X(".in_name", p_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
     X(".out_name", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")  \
     X(".xcenter", &p_xcenter, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "x center") \
     X(".ycenter", &p_ycenter, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "y center")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(imgetcircasym, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t imgetcircasym_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     IMAGE_BASIC_get_circasym_component(p_in, p_out, (float) p_xcenter, (float) p_ycenter, "");
-    return RETURN_SUCCESS;
-}
-
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_basic__imgetcircasym()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -226,3 +202,16 @@ imageID IMAGE_BASIC_get_circasym_component(const char *__restrict ID_name,
     return IMAGE_BASIC_get_circasym_component_byID(imgin.ID, ID_out_name, xcenter, ycenter,
                                                    options);
 }
+
+const MILK_RUNNABLE runnable_image_basic_imgetcircasym = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "imgetcircasym",
+              .cmdkey           = "imgetcircasym",
+              .description      = "extract non-circ symmetric part",
+              .description_long = "Extract the non-circularly-symmetric component of a 2D image. "
+                                  "Subtracts the azimuthal average to isolate asymmetric "
+                                  "structures." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imgetcircasym),
+    .compute = imgetcircasym_compute,
+};

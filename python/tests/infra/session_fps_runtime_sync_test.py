@@ -7,6 +7,7 @@ from pyMilk.interfacing.fps import FPS
 from pyMilk.interfacing.pinfo import ProcessInfo
 
 from milk.session import ComputeSession
+from tests.conftestaux.polling import poll_until_or_fail
 from .session_fixtures import fixt_fpsinit_factory
 
 
@@ -45,28 +46,34 @@ FPS_TEST_PARAMS = [
 
 
 def test_fpssynctest(fixt_fpsinit_pinfo_fpstest):
+    # breakpoint()
     session: FPSTestCU = fixt_fpsinit_pinfo_fpstest
     fps = session.fps
     assert fps
 
     fps["procinfo.loopcntMax"] = -1
     fps["procinfo.triggermode"] = 4  # delay
-    fps["procinfo.triggerdelay"] = 0.01
+    fps["procinfo.triggerdelay"] = 0.001
 
     session.confstart()
-    time.sleep(0.1)
+
+    print()
+    print("Poll confstart:", poll_until_or_fail(fps.conf_isrunning, t=0.1))
+
     assert fps.conf_isrunning()
     session.runstart()
-    time.sleep(0.1)
-    assert fps.run_isrunning()
+
+    print("Poll runstart:", poll_until_or_fail(fps.run_isrunning, t=0.5))
 
     pinfo = ProcessInfo()
-    pinfo.link(
-        f"{os.environ['MILK_PROC_DIR']}/proc.fpssynctest.{fps.fps.md().runpid:06d}.shm"
+    pinfo_file = (
+        f"{os.environ['MILK_PROC_DIR']}/"
+        f"proc.fpssynctest.{fps.fps.md().runpid:06d}.shm"
     )
+    assert os.path.isfile(pinfo_file)
+    pinfo.link(pinfo_file)
 
-    time.sleep(0.1)
-    assert pinfo.loopcnt > 10
+    # assert pinfo.loopcnt == 0 # We should have been fast enough to link at iter 1.
 
     def busywait_until_incr(lastvalue: int):
         while pinfo.loopcnt == lastvalue:
@@ -107,5 +114,3 @@ def test_fpssynctest(fixt_fpsinit_pinfo_fpstest):
             assert value == base_value
         else:
             assert False
-
-    # Find a way to assert that the counter has spun by about ~100

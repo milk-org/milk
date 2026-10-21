@@ -7,8 +7,11 @@
  * @brief Convert CR2 file to FITS
  */
 
-#include "CLIcore.h"
-#include "fps.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -27,36 +30,16 @@ imageID CR2toFITS(const char *__restrict fnameCR2, const char *__restrict fnameF
 static char p_in[FUNCTION_PARAMETER_STRMAXLEN]  = "im01.CR2";
 static char p_out[FUNCTION_PARAMETER_STRMAXLEN] = "im01.fits";
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "cr2tofits",
-    .cmdkey           = "cr2tofits",
-    .description      = "convert cr2 file to fits",
-    .description_long = "Convert Canon CR2 raw camera files to FITS format. Extracts the raw "
-                        "sensor data and writes it as a FITS image."
-};
-
 #define FPS_PARAMS(X)                                                             \
     X(".in_name", p_in, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "input CR2 file") \
     X(".out_name", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output FITS file")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(CR2toFITS, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t CR2toFITS_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     CR2toFITS(p_in, p_out);
-    return RETURN_SUCCESS;
-}
-
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_format__CR2toFITS()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -166,3 +149,20 @@ imageID CR2toFITS(const char *__restrict fnameCR2, const char *__restrict fnameF
 
     return ID;
 }
+
+/* ================================================================
+ * RUNNABLE DESCRIPTOR
+ * ============================================================= */
+
+const MILK_RUNNABLE runnable_image_format_CR2toFITS = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "cr2tofits",
+                 .cmdkey      = "cr2tofits",
+                 .description = "convert cr2 file to fits",
+                 .description_long =
+                     "Convert Canon CR2 raw camera files to FITS format. Extracts the raw sensor "
+                     "data and writes it as a FITS image." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(CR2toFITS),
+    .compute = CR2toFITS_compute,
+};

@@ -43,11 +43,10 @@ Module includes key frameworks:
 
 - [**Image streams**](docs/guide/streams.md) — low-latency shared memory streams
 - [**processinfo**](docs/guide/procinfo.md) — process management and control
-- [**Function Parameter Structure (FPS)**](docs/guide/fps.md) — reading/writing function parameters. See [FPS Standalone and CMD Modes](docs/arch/FPS_Standalone_CMD_Modes.md) for implementation details.
+- [**Function Parameter Structure (FPS)**](docs/guide/fps.md) — reading/writing function parameters, standalone command line.
 - [**milk-CTRL**](docs/guide/milk-CTRL.md) — terminal dashboard of the streams, FPS and processes, with their links and CONTROL-mode actions
 
 For a comprehensive guide, see the [Documentation Index](docs/index.md).
-For a full list of all available documentation in this repository, see the [Markdown Documentation Index](docs/Markdown_Index.md).
 
 ## Download
 

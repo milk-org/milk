@@ -14,33 +14,17 @@
 #define MODULE_SHORTNAME_DEFAULT "tools"
 #define MODULE_DESCRIPTION "misc tools"
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
+#include "milk_runnable.h"
 
-#    include "COREMOD_memory/COREMOD_memory.h"
-#    include "COREMOD_tools/COREMOD_tools.h"
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "COREMOD_tools/COREMOD_tools.h"
 
-#    include "imdisplay3d.h"
-#    include "mvprocCPUset.h"
-#    include "statusstat.h"
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_COREMOD_tools_csetandprioext, &runnable_COREMOD_tools_rtprio,
+    &runnable_COREMOD_tools_tsetpmove,      &runnable_COREMOD_tools_tsetpmoveext,
+    &runnable_COREMOD_tools_csetpmove,      &runnable_COREMOD_tools_fileutils,
+    &runnable_COREMOD_tools_imdisplay3d,    &runnable_COREMOD_tools_statusstat,
+};
 
-/**
- * @brief Register COREMOD_tools CLI commands.
- */
-static errno_t init_module_CLI()
-{
-    CLIADDCMD_COREMOD_tools__mvprocCPUset();
-
-    CLIADDCMD_COREMOD_tools__fileutils();
-    CLIADDCMD_COREMOD_tools__imdisplay3d();
-    CLIADDCMD_COREMOD_tools__statusstat();
-
-
-    return RETURN_SUCCESS;
-}
-
-MILK_MODULE(COREMOD_tools, init_module_CLI, NULL);
-
-#endif /* ELSE MILK_NO_CLI */
+MILK_MODULE_RUNNABLES(COREMOD_tools, NULL, runnables);

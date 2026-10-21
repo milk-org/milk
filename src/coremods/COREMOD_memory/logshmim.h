@@ -14,6 +14,8 @@
 #ifndef CLICORE_MEMORY_LOGSHMIM_H
 #define CLICORE_MEMORY_LOGSHMIM_H
 
-errno_t CLIADDCMD_COREMOD_MEMORY__logshmim();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_logshmim;
 
 #endif

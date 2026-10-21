@@ -30,23 +30,11 @@
 
 extern "C"
 {
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "libmilkcommon/pixel_dispatch.h"
 #include "timeutils.h"
 #include "linalgebra.h"
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "MVMmextrmodes",
-    .cmdkey           = "MVMmextrmodes",
-    .description      = "extract modes by MVM",
-    .description_long = "Extract modal coefficients from a wavefront by matrix-vector "
-                        "multiplication. Projects the input onto a pre-computed mode basis."
-};
 
 
 /* ================================================================
@@ -81,10 +69,10 @@ static int64_t  opt_modenorm                              = 1;
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  PARAMETER BINDINGS
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(MVMextract, FPS_PARAMS);
 
 
 enum class ComputeMode : int
@@ -272,7 +260,7 @@ void cast_to_float(float *target, IMAGE *source_image, uint64_t n)
 #undef _MVM_CONV_CASE
 }
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t MVMextract_compute(const MILK_RUNNABLE *self)
 {
     errno_t _return_value = RETURN_SUCCESS;
 
@@ -374,7 +362,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     }
 
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
+    MILK_PROCINFO_INIT(self)
     /* Runtime backend selector */
     ComputeMode                 compute_mode = _compute_mode_determine(processinfo);
     std::unique_ptr<MVMBackend> backend      = nullptr;
@@ -448,7 +436,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     printf(">>> START MVM loop\n");
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     /*
         Summary of steps:
         - float cast [on CPU, common]
@@ -469,7 +457,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         // We're done
         processinfo_update_output_stream(processinfo, imgid_out.im, imgid_in.im);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
 cleanup:
     free(normcoeff);
@@ -491,29 +479,29 @@ cleanup:
 
 
 /* =============================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  MILK_RUNNABLE DESCRIPTOR AND FPSEXEC EXPORT
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
+// Explicit extern: a namespace-scope const in C++ would otherwise have internal linkage.
+extern const MILK_RUNNABLE runnable_linalgebra_MVMextract;
 
-errno_t CLIADDCMD_linalgebra__MVMextractModes()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
+// Fields in struct order: C++ rejects out-of-order designated initializers.
+const MILK_RUNNABLE runnable_linalgebra_MVMextract = {
+    .kind        = MILK_RUNNABLE_FPS,
+    .app         = { .fps_name         = "MVMmextrmodes",
+                     .cmdkey           = "MVMmextrmodes",
+                     .description      = "extract modes by MVM",
+                     .description_long = "Extract modal coefficients from a wavefront by "
+                                         "matrix-vector multiplication. Projects the input onto a "
+                                         "pre-computed mode basis." },
+    .srcfile     = __FILE__,
+    .farg        = MVMextract_farg,
+    .nbarg       = (int) (sizeof(MVMextract_farg) / sizeof(MVMextract_farg[0])),
+    .bindings    = MVMextract_bind,
+    .nb_bindings = (int) (sizeof(MVMextract_bind) / sizeof(MVMextract_bind[0])),
+    .compute     = MVMextract_compute,
+    .rt          = &MVMextract_rt,
+};
+EXPORT_FPSEXEC(milk, "linalg-MVMextract", runnable_linalgebra_MVMextract);
 
-/* ================================================================
-    * 8.  STANDALONE ENTRY POINT
-    * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
 } // extern "C"

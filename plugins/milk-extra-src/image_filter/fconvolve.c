@@ -9,12 +9,7 @@
 
 #include <math.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -30,38 +25,31 @@ static char fconv_in[FUNCTION_PARAMETER_STRMAXLEN]  = "imin";
 static char fconv_ke[FUNCTION_PARAMETER_STRMAXLEN]  = "kernim";
 static char fconv_out[FUNCTION_PARAMETER_STRMAXLEN] = "imout";
 
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "fconv",
-                                     .cmdkey      = "fconv",
-                                     .description = "Fourier-based convolution",
-                                     .description_long =
-                                         "Convolve two images using FFT-based multiplication in "
-                                         "Fourier space. Efficient for large kernel sizes." };
-
 #define FPS_PARAMS(X)                                                                   \
     X(".in_name", fconv_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")  \
     X(".ke_name", fconv_ke, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "kernel image") \
     X(".out_name", fconv_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(fconvolve, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t fconvolve_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     fconvolve(fconv_in, fconv_ke, fconv_out);
     return RETURN_SUCCESS;
 }
 
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_filter__fconvolve()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
+const MILK_RUNNABLE runnable_image_filter_fconvolve = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "fconv",
+                 .cmdkey           = "fconv",
+                 .description      = "Fourier-based convolution",
+                 .description_long = "Convolve two images using FFT-based multiplication in "
+                                     "Fourier space. Efficient for large kernel sizes." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(fconvolve),
+    .compute = fconvolve_compute,
+};
 
 imageID fconvolve(const char *__restrict name_in,
                   const char *__restrict name_ke,

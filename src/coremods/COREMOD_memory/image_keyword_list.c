@@ -9,27 +9,9 @@
  * Uses FPS V2 framework.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "imkwlist",
-    .cmdkey           = "imkwlist",
-    .description      = "list image keywords",
-    .description_long = "List all FITS-style keywords attached to an image stream, showing name, "
-                        "typed value, and comment for each entry."
-};
 
 
 /* ================================================================
@@ -100,41 +82,40 @@ errno_t image_keywords_list(IMGID img)
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(image_keyword_list, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_keyword_list_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START image_keywords_list(imgid_make_from_name(inname));
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    image_keywords_list(imgid_make_from_name(inname));
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__image_keyword_list()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_image_keyword_list = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "imkwlist",
+                 .cmdkey      = "imkwlist",
+                 .description = "list image keywords",
+                 .description_long =
+                     "List all FITS-style keywords attached to an image stream, showing "
+                     "name, typed value, and comment for each entry." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_keyword_list),
+    .compute = image_keyword_list_compute,
+};

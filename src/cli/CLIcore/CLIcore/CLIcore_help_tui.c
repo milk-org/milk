@@ -50,7 +50,7 @@
 
 #include "CLIcore.h"
 #include "CLIcore_help.h"
-#include "fps.h"
+#include "computeunit.h"
 #include "fps_connect.h"
 
 /**

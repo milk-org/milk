@@ -16,10 +16,12 @@
 #include <string.h>
 
 #include "CLIcore.h"
+#include "CLIcore_fps_function.h"
 #include "milkdata.h"
 #include "milk_catalog.h"
 #include "milk_cmd_args.h"
 #include "milk_cmd_index.h"
+#include "milk_runnable.h"
 
 #define KNRM "\x1B[0m"
 #define KRED "\x1B[31m"
@@ -99,6 +101,72 @@ errno_t load_sharedobj(const char *__restrict libname)
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief fp of every command registered from a MILK_RUNNABLE.
+ *
+ * The descriptor is found through data.cmdindex; FPS runnables go through the generic FPS CLI
+ * lifecycle, CLI runnables get their arguments parsed and linked here.
+ */
+static errno_t runnable_trampoline(void)
+{
+    const MILK_RUNNABLE *r = data.cmd[data.cmdindex].runnable;
+
+    if (r->kind == MILK_RUNNABLE_FPS)
+    {
+        const MILK_RUNNABLE *prev = milk_runnable_set_current(r);
+
+        errno_t retval =
+            fps_generic_CLIfunction((FPS_APP_INFO *) &r->app, r->farg, &r->rt->cmddata, r->bindings,
+                                    r->nb_bindings, milk_runnable_compute_thunk);
+
+        milk_runnable_set_current(prev);
+        return retval;
+    }
+
+    errno_t retval = CLI_checkarg_array(r->farg, r->nbarg);
+    if (retval == RETURN_SUCCESS)
+    {
+        for (int argi = 0; argi < r->nbarg; argi++)
+        {
+            long  fpsi              = -1;
+            void *ptr               = get_farg_ptr(r->farg[argi].fpstag, &fpsi);
+            *(r->farg[argi].valptr) = ptr;
+            if (r->farg[argi].indexptr != NULL)
+            {
+                *(r->farg[argi].indexptr) = fpsi;
+            }
+        }
+        return r->cli_func();
+    }
+    if (retval == RETURN_CLICHECKARGARRAY_HELP || retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
+    {
+        return RETURN_SUCCESS;
+    }
+    return retval;
+}
+
+
+/** @brief Register one MILK_RUNNABLE as a CLI command of the module being loaded. */
+static void register_runnable(const MILK_RUNNABLE *r)
+{
+    milk_runnable_prepare(r);
+
+    if (r->kind == MILK_RUNNABLE_FPS)
+    {
+        fps_fill_farg_examples(r->farg, r->bindings, r->nb_bindings);
+    }
+    if (getenv("MILK_FPSPROCINFO"))
+    {
+        r->rt->cmddata.flags |= CLICMDFLAG_PROCINFO;
+    }
+
+    uint32_t cmdi = RegisterCLIcmd(r->rt->cmddata, runnable_trampoline);
+
+    r->rt->cmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+    data.cmd[cmdi].runnable    = r;
+}
+
+
 errno_t newstyle_milk_module_registration(void *handle, const char *libname)
 {
     /* New-style modules export __milk_module_info.
@@ -143,9 +211,13 @@ errno_t newstyle_milk_module_registration(void *handle, const char *libname)
                  * can find this slot by Case-1 match. */
     strncpy(data.module[data.moduleindex].sofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
 
-    if (info->reg_call)
+    for (int ri = 0; ri < info->n_runnables; ri++)
     {
-        (*(info->reg_call))();
+        // NULL: weak runnable whose file was dropped by an unmet MILK_CMAKE_MANDATE_*
+        if (info->runnables[ri] != NULL)
+        {
+            register_runnable(info->runnables[ri]);
+        }
     }
 
     strncpy(data.modulename, "", STRINGMAXLEN_MODULE_NAME - 1);
@@ -298,14 +370,9 @@ errno_t load_module_shared(const char *__restrict modulename)
  * @brief Register a module in the global module
  *        table.
  *
- * Called from each module's __attribute__((constructor))
- * init function during dlopen. Records the module
+ * Called by the CLI core when a module is loaded. Records the module
  * name, package, version, short name, and build
  * timestamps in data.module[].
- *
- * If the module exports a NULL-sentinel function-pointer
- * array named @c __reg_calls, each entry is invoked to
- * register the module's CLI commands.
  *
  * @param FileName      Source filename of the module
  * @param PackageName   Package the module belongs to

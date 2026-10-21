@@ -10,7 +10,6 @@
 #ifndef LINOPT_IMTOOLS__LINRM_FROM_INOUT_H
 #define LINOPT_IMTOOLS__LINRM_FROM_INOUT_H
 
-MILK_WEAK errno_t CLIADDCMD_linopt_imtools__linRM_from_inout() MILK_WEAK_CLIFUNCDEF;
 
 MILK_WEAK errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
                                                   const char *IDinmask_name,

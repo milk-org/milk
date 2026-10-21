@@ -603,6 +603,17 @@ static void fps_set(const char *fpsname, const char *param_tag, const char *valu
 }
 
 /**
+ * @brief Apply the extra positional args (-a) with the fpsexec "set" command.
+ */
+static void fps_apply_args(const bench_cfg_t *cfg)
+{
+    if (cfg->fpsargs[0] != '\0')
+    {
+        run_cmd("%s %s:set %s >/dev/null 2>&1", cfg->fpsexec, cfg->fpsname, cfg->fpsargs);
+    }
+}
+
+/**
  * @brief Initialize FPS and configure procinfo.
  *
  * Runs fpsinit + confstep, enables procinfo and
@@ -626,13 +637,7 @@ static void fps_setup(const bench_cfg_t *cfg)
     /* triggermode 0 = IMMEDIATE */
     fps_set(cfg->fpsname, "procinfo.triggermode", "0");
 
-    /* apply extra positional args if any */
-    if (cfg->fpsargs[0] != '\0')
-    {
-        run_cmd("%s %s:set %s"
-                " >/dev/null 2>&1",
-                cfg->fpsexec, cfg->fpsname, cfg->fpsargs);
-    }
+    fps_apply_args(cfg);
 }
 
 /**
@@ -650,7 +655,7 @@ static void fps_create_streams(const bench_cfg_t *cfg)
     snprintf(cmd, sizeof(cmd),
              "%s %s:fps 2>/dev/null"
              " | sed 's/\\x1b\\[[0-9;]*m//g'"
-             " | awk '$3==\"STREAMNAME\" && NF>=8"
+             " | awk '$3==\"STREAMNAME\" && $4 !~ /^[0-9]+$/"
              " {print $4}'",
              cfg->fpsexec, cfg->fpsname);
 
@@ -2093,6 +2098,7 @@ int main(int argc, char *argv[])
         fps_set(cfg->fpsname, "procinfo.enabled", "ON");
         fps_set(cfg->fpsname, "procinfo.MeasureTiming", "ON");
         fps_set(cfg->fpsname, "procinfo.triggermode", "0");
+        fps_apply_args(cfg);
 
         printf("  [total ] %d iterations ...\n", cfg->nbiter);
         run_phase(cfg, cfg->nbiter, &ph_total, &pi, 1, &t_ns);

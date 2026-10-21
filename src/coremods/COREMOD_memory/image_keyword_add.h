@@ -12,6 +12,8 @@
 
 #include <stdint.h>
 
-errno_t CLIADDCMD_COREMOD_memory__image_keyword_add();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_image_keyword_add;
 
 #endif

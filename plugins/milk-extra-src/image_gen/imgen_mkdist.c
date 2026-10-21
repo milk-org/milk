@@ -7,14 +7,10 @@
  * @brief   make distance from point image
  */
 
+#include "milk_runnable.h"
+#include "image_gen.h"
 #include "image_gen_internal.h"
 
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "mkdist",
-                                     .cmdkey      = "mkdist",
-                                     .description = "make distance from point image",
-                                     .description_long =
-                                         "Generate a distance map: each pixel value is the "
-                                         "Euclidean distance from a specified center point." };
 
 /* ================================================================
  * 2.  LOCAL PARAMETER VARIABLES
@@ -40,42 +36,39 @@ static double  di_cy                              = 256.0;
 /* ================================================================
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(imgen_mkdist, FPS_PARAMS);
 
 /* ================================================================
  * 4/6. COMPUTE FUNCTION
  * ============================================================= */
-static errno_t compute_function(void)
+static MILK_HOT errno_t imgen_mkdist_compute(const MILK_RUNNABLE *self)
 {
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     make_dist(di_n, (uint32_t) di_xs, (uint32_t) di_ys, di_cx, di_cy);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
     return RETURN_SUCCESS;
 }
 
 /* ================================================================
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_gen__mkdist(void)
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+
+const MILK_RUNNABLE runnable_image_gen_imgen_mkdist = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "mkdist",
+                 .cmdkey           = "mkdist",
+                 .description      = "make distance from point image",
+                 .description_long = "Generate a distance map: each pixel value is the "
+                                     "Euclidean distance from a specified center point." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imgen_mkdist),
+    .compute = imgen_mkdist_compute,
+};
+EXPORT_FPSEXEC(milk, "imggen-mkdist", runnable_image_gen_imgen_mkdist);

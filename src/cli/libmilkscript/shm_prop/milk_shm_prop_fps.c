@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
+#include "computeunit.h"
 #include "fps.h"
 #include "fps_CONFstop.h"
 #include "fps_GetParamIndex.h"

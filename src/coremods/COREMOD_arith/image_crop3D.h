@@ -7,8 +7,6 @@
  * @brief 2D and 3D image crop functions
  */
 
-errno_t CLIADDCMD_COREMOD_arith__image_crop();
-
 imageID arith_image_crop(const char *ID_name,
                          const char *ID_out,
                          int64_t    *start,

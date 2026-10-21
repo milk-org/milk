@@ -7,13 +7,14 @@
  * @brief   Save image to FITS file.
  *
  * Exports public save functions used by many
- * modules and the CLIADDCMD registration.
+ * modules and the savefits runnable.
  */
 
 #ifndef COREMOD_IOFITS_SAVEFITS_H
 #define COREMOD_IOFITS_SAVEFITS_H
 
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 #include "processinfo.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
@@ -61,6 +62,6 @@ errno_t saveall_fits(const char *savedirname);
 
 errno_t save_fits(const char *inputimname, const char *outputFITSname);
 
-errno_t CLIADDCMD_COREMOD_iofits__saveFITS();
+extern const MILK_RUNNABLE runnable_COREMOD_iofits_savefits;
 
 #endif

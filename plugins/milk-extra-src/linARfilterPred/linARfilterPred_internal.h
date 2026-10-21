@@ -35,7 +35,7 @@
 #else
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
-#    include "fps.h"
+#    include "computeunit.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "timeutils.h"
@@ -49,8 +49,6 @@
 #include "statistic/statistic.h"
 
 #include "linARfilterPred/linARfilterPred.h"
-#include "build_linPF.h"
-#include "applyPF.h"
 
 #ifdef HAVE_CUDA
 #    include "linalgebra/linalgebra.h"

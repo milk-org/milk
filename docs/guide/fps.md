@@ -13,7 +13,7 @@ parameters, states, and commands for compute units. FPS instances provide a high
 standardized interface directly in shared memory.
 
 See also: [Streams](streams.md) · [Process Info](procinfo.md) ·
-[Programmer's Guide](../arch/programmers_guide.md) · [FPS Standalone Modes](../arch/FPS_Standalone_CMD_Modes.md) ·
+[Programmer's Guide](../arch/programmers_guide.md) ·
 [FPS Sequencer](sequencer.md)
 
 ## 1. Architecture and Location
@@ -158,37 +158,30 @@ For complete keyboard shortcuts and display modes, see [fpsCTRL Reference](fpsCT
 
 === ":material-code-tags: Developer Integration"
 
-    Integrating with FPS uses the V2 X-macro pattern. Parameters are defined **once** and
-    automatically generate FPS entries, CLI arguments, and help text.
+    Parameters are defined **once**, in an X-macro table of a `MILK_RUNNABLE` unit, and generate the
+    FPS entries, the CLI arguments and the help text.
 
     **X-macro field order:** `X(keyword, ptr, type, is_primary, flag, descr)`
 
     ```c
-    // Local variables (section 2)
     static char in_name[FUNCTION_PARAMETER_STRMAXLEN];
     static double gain = 0.5;
-    static int64_t nbiter = 100;
 
-    // X-macro (section 3)
-    #define FPS_PARAMS(X)                           \
-        X(".in_name", in_name,                      \
-          FPTYPE_STREAMNAME, 1,                     \
-          FPFLAG_DEFAULT_TRIGGER_STREAM,            \
-          "Input stream")                           \
-        X(".gain", &gain,                           \
-          FPTYPE_FLOAT64, 1,                        \
-          FPFLAG_DEFAULT_INPUT                      \
-          | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT       \
-          | FPFLAG_WRITERUN,                        \
-          "Loop gain")                              \
-        X(".NBiter", &nbiter,                       \
-          FPTYPE_INT64, 0,                          \
-          FPFLAG_DEFAULT_INPUT,                     \
-          "Number of iterations")
+    #define MYPARAMS(X)                          \
+        X(".in_name", in_name,                   \
+          FPTYPE_STREAMNAME, 1,                  \
+          FPFLAG_DEFAULT_TRIGGER_STREAM,         \
+          "Input stream")                        \
+        X(".gain", &gain,                        \
+          FPTYPE_FLOAT64, 0,                     \
+          FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,\
+          "Loop gain")
+
+    MILK_PARAMS_DEFINE(my, MYPARAMS);
     ```
 
-    See the [Developer Tutorial](../developer/tutorial.md) and
-    `src/milk_module_example/examplefunc_fps_cli_poc.c` for a complete walkthrough.
+    See the [Programmer's Guide](../arch/programmers_guide.md#3-writing-a-compute-unit) and
+    `src/milk_module_example/examplefunc_fps_cli_poc.c` for a complete unit.
 
 ### 5. Sequencer Integration
 
@@ -198,6 +191,40 @@ execution.
 
 See the dedicated **[FPS Sequencer Documentation](sequencer.md)** for details on the `milk-seq`
 daemon, script syntax, and integrating `seq.*` commands from within `milk-cli`.
+
+## 6. Standalone Executables (`fpsexec`)
+
+A compute unit marked with `EXPORT_FPSEXEC` is built as `milk-fpsexec-<id>` (or `cacao-fpsexec-<id>`).
+It takes native `argv`, and drives the FPS lifecycle of its shared-memory FPS. Command-line options
+go before the command, the command goes last.
+
+<details markdown="1">
+<summary><b>Options and commands</b></summary>
+
+- **Options**:
+    - `-h`, `--help`: detailed parameter bindings and command help.
+    - `-h1`, `--help-oneline`: one-line description and exit.
+    - `-h2`, `--help-description`: verbose description only (no color) and exit.
+    - `-hm`, `--help-mono`: full help, forced monochrome.
+    - `-tmux`: create a `tmux` session and dispatch the commands isolated from the main terminal.
+    - `-n`, `--name <fpsname>`: override the default FPS shared memory name.
+    - `-procinfo`: enable processinfo entries at `fpsinit`.
+    - `-loops`: infinite loop with stream semaphore trigger.
+    - `-loopd <sec>`: infinite loop with delay trigger (seconds).
+- **Commands**:
+    - `fpsinit`: create the FPS shared memory segment.
+    - `confstart`, `confstep`, `confstop`: manage the configuration loop.
+    - `runstart`, `runstop`: manage the execution loop (`run` is an alias of `runstart`).
+    - `set [args]`: set positional arguments in FPS (use `.` to skip a position).
+    - `fps`: print the content of the FPS.
+    - `fpslist`: list all FPS instances matching this executable.
+    - `exec [args]`: auto-init, set args and run (one-shot).
+
+</details>
+
+Positional arguments that are not a command (e.g. `milk-fpsexec-mymod 2.5 100`) run the unit once: the
+executable connects to the FPS if it exists, otherwise creates a local one, maps the arguments onto
+the primary parameters, and runs the compute function exactly as `milk-cli` would.
 
 ---
 

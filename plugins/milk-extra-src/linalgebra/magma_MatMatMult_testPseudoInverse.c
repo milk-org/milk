@@ -28,9 +28,10 @@ extern magma_queue_t magmaqueue;
 #else
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
-#    include "fps.h"
+#    include "computeunit.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "linalgebra_types.h"
@@ -47,57 +48,33 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
 // Gen 4 V2 CLI command: cudatestpsinv
 // ==========================================
 
-static char         tp_a[FUNCTION_PARAMETER_STRMAXLEN]  = "matA";
-static char         tp_ai[FUNCTION_PARAMETER_STRMAXLEN] = "matAinv";
-static char         tp_o[FUNCTION_PARAMETER_STRMAXLEN]  = "matOut";
-static FPS_APP_INFO FPS_app_info_tp                     = {
-    .fps_name         = "cudatestpsinv",
-    .cmdkey           = "cudatestpsinv",
-    .description      = "test pseudo inverse",
-    .description_long = "Test pseudo-inverse computation using MAGMA GPU library. Validates matrix "
-                        "inversion accuracy and performance."
-};
+static char tp_a[FUNCTION_PARAMETER_STRMAXLEN]  = "matA";
+static char tp_ai[FUNCTION_PARAMETER_STRMAXLEN] = "matAinv";
+static char tp_o[FUNCTION_PARAMETER_STRMAXLEN]  = "matOut";
 #define FPS_PARAMS_TP(X)                                                        \
     X(".matA", tp_a, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "matA")        \
     X(".matAinv", tp_ai, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "matAinv") \
     X(".out_name", tp_o, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output")
-#include "fps.h"
-static FPS_CLI_BINDING                   tp_b[]     = { FPS_PARAMS_TP(FPS_X_BINDING) };
-static const int                         tp_nb      = sizeof(tp_b) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF                      farg[]     = { FPS_PARAMS_TP(FPS_X_FARG) };
-static CLICMDDATA                        CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS                       tp_cms     = { 0 };
-static __attribute__((constructor)) void init_tp(void)
-{
-    strncpy(CLIcmddata.key, FPS_app_info_tp.cmdkey, sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description, FPS_app_info_tp.description,
-            sizeof(CLIcmddata.description) - 1);
-    CLIcmddata.nbarg         = sizeof(farg) / sizeof(CLICMDARGDEF);
-    CLIcmddata.funcfpscliarg = farg;
-    CLIcmddata.flags         = CLICMDFLAG_FPS;
-    if (!CLIcmddata.cmdsettings)
-    {
-        CLIcmddata.cmdsettings = &tp_cms;
-    }
-}
-static errno_t tp_compute(void)
+MILK_PARAMS_DEFINE(tp, FPS_PARAMS_TP);
+
+static errno_t tp_compute(__attribute__((unused)) const MILK_RUNNABLE *self)
 {
     LINALGEBRA_MatMatMult_testPseudoInverse(tp_a, tp_ai, tp_o);
     return RETURN_SUCCESS;
 }
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_tp, farg, &CLIcmddata, tp_b, tp_nb,
-                                        tp_compute);
-}
 
-errno_t MatMatMult_testPseudoInverse_addCLIcmd()
-{
-    safe_fps_fill_farg_examples(farg, tp_b, tp_nb);
-    INSERT_STD_CLIREGISTERFUNC;
+const MILK_RUNNABLE runnable_linalgebra_cudatestpsinv = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "cudatestpsinv",
+                 .cmdkey           = "cudatestpsinv",
+                 .description      = "test pseudo inverse",
+                 .description_long = "Test pseudo-inverse computation using MAGMA GPU library. "
+                                     "Validates matrix inversion accuracy and performance." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(tp),
+    .compute = tp_compute,
+};
 
-    return RETURN_SUCCESS;
-}
 
 /** @brief Test pseudo inverse
  *

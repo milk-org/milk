@@ -25,10 +25,10 @@ The Milk ecosystem follows a strict hierarchy:
 
 #### Dual-Mode Implementation
 
-All code in this example is designed to be built in two modes:
+The example is built in two modes:
 
 1.  **Standalone Executable:** A self-contained binary that manages its own shared memory segments and loops.
-2.  **CLI Module:** A shared object (`.so`) loadable into the `milk` shell. In this mode, the `milk` framework handles the boilerplate (setup, signal catching, etc.), while the module provides the core compute logic.
+2.  **CLI Module:** A shared object (`.so`) loadable into the `milk` shell. The module exports its `MILK_RUNNABLE` descriptors (`MILK_MODULE_RUNNABLES`), the CLI core registers them after `dlopen()` and handles the boilerplate, while the module provides the compute logic.
 
 #### Shared Parameter Management (X-Macros)
 
@@ -45,9 +45,9 @@ Parameters are defined once in a header file (e.g., `PROCESSOR_PARAMS` in `proce
 
 - `processor.h / .c`: Core logic for the ROI extraction processor.
 - `writer.h / .c`: Core logic for the pattern generator writer.
-- `processor_module.c`: CLI command registration for the processor.
-- `writer_module.c`: CLI command registration for the writer.
-- `example03fps_module.c`: Combined module initialization for the `example03fps` shared object.
+- `processor_module.c`: `MILK_RUNNABLE` descriptor of the processor CLI command.
+- `writer_module.c`: `MILK_RUNNABLE` descriptor of the writer CLI command.
+- `example03fps_module.c`: Module registry (`MILK_MODULE_RUNNABLES`) of the `example03fps` shared object.
 - `CMakeLists.txt`: Multi-target build configuration.
 
 ---

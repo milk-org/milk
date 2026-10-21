@@ -7,6 +7,8 @@
  * @brief List function parameter structures
  */
 
-errno_t CLIADDCMD_COREMOD_memory__fps_list();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_fps_list;
 
 errno_t fps_list();

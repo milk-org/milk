@@ -18,12 +18,15 @@ function(milk_link_module target LIBNAME)
 endfunction()
 
 # milk_add_static_lto(<LIBNAME>
+#                     [OBJECTS_FROM <object library>]
 #                     [LINK_LIBS <libs...>]
 #                     [CFITSIO_LINK_LIBS <libs...>])
 #
 # Builds <LIBNAME>_static from the sources of <LIBNAME> (call after
-# add_library). No-op unless USE_STATIC_LTO is ON. The archive is neither
-# installed nor exported (see docs/notes_for_future.md).
+# add_library), or from the objects of <object library> when OBJECTS_FROM is
+# given (compile-once modules, see milk_runnable.cmake). No-op unless
+# USE_STATIC_LTO is ON. The archive is neither installed nor exported (see
+# docs/notes_for_future.md).
 #
 # LINK_LIBS         static dependencies, always linked.
 # CFITSIO_LINK_LIBS static dependencies linked only when HAVE_CFITSIO is set.
@@ -32,11 +35,15 @@ function(milk_add_static_lto LIBNAME)
     if(NOT USE_STATIC_LTO)
         return()
     endif()
-    cmake_parse_arguments(ARG "" "" "LINK_LIBS;CFITSIO_LINK_LIBS" ${ARGN})
+    cmake_parse_arguments(ARG "" "OBJECTS_FROM" "LINK_LIBS;CFITSIO_LINK_LIBS" ${ARGN})
 
     set(_static ${LIBNAME}_static)
-    get_target_property(_sources ${LIBNAME} SOURCES)
-    add_library(${_static} STATIC ${_sources})
+    if(ARG_OBJECTS_FROM)
+        add_library(${_static} STATIC $<TARGET_OBJECTS:${ARG_OBJECTS_FROM}>)
+    else()
+        get_target_property(_sources ${LIBNAME} SOURCES)
+        add_library(${_static} STATIC ${_sources})
+    endif()
     set_target_properties(${_static} PROPERTIES OUTPUT_NAME ${LIBNAME})
     target_compile_definitions(${_static} PRIVATE MILK_NO_CLI)
     target_include_directories(
@@ -44,9 +51,10 @@ function(milk_add_static_lto LIBNAME)
         PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
         $<TARGET_PROPERTY:milkfps_static,INTERFACE_INCLUDE_DIRECTORIES>
+        $<TARGET_PROPERTY:milkcomputeunit_static,INTERFACE_INCLUDE_DIRECTORIES>
         $<INSTALL_INTERFACE:include>)
-    target_link_libraries(${_static} PUBLIC m milkfps_static milkcommon
-        ${ARG_LINK_LIBS})
+    target_link_libraries(${_static} PUBLIC m milkfps_static milkcomputeunit_static
+        milkcommon ${ARG_LINK_LIBS})
     # Unresolved symbols are looked up in archives that follow this one.
     set(_core milkCOREMODmemory_static milkCOREMODtools_static
         milkCOREMODarith_static)

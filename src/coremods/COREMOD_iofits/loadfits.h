@@ -19,8 +19,6 @@
 #define LOADFITS_ERRMODE_ERROR 2
 #define LOADFITS_ERRMODE_EXIT 3
 
-errno_t CLIADDCMD_COREMOD_iofits__loadfits();
-
 errno_t load_fits(const char *restrict file_name,
                   const char *restrict ID_name,
                   int      errmode,

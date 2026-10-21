@@ -42,6 +42,7 @@
 #    include "ImageStreamIO/ImageStruct.h"
 
 #    include <fps.h>
+#    include <computeunit.h>
 #    include <processtools.h>
 #    include "timeutils.h"
 
@@ -139,80 +140,8 @@ static inline errno_t TUI_exit()
 //  ************ lib module init **********************************
 //
 
-/**
- * @brief Declare module dependencies.
- *
- * Place this macro before MILK_MODULE(name, init_module_CLI, _module_deps) in the
- * module's main .c file.  Arguments are loadnames (matching mload convention), e.g.:
- *
- *     MODULE_DEPS("milkfft", "milkimage_gen")
- *
- * If a module has no deps, omit this macro entirely.
- */
-#    define MODULE_DEPS(...)                                            \
-        static const char *_module_deps[] = { __VA_ARGS__, NULL };      \
-        static const int   _module_ndeps =                              \
-            (int) (sizeof(_module_deps) / sizeof(_module_deps[0])) - 1; \
-        static const int _module_deps_defined = 1
-
-/** @brief CLI registration function type. */
-typedef errno_t (*module_cli_reg_fn)(void);
-
-/**
- * @brief Per-module registration descriptor.
- *
- * Export as the symbol __milk_module_info from the module's main .c file.
- * load_sharedobj() reads it after dlopen() and drives the full registration
- * sequence without ever needing __attribute__((constructor)).
- *
- * Use the MILK_MODULE() macro to define and export this module-defining struct.
- */
-typedef struct
-{
-    const char *name;              /**< module name token */
-    const char *shortname_default; /**< MODULE_SHORTNAME_DEFAULT */
-    const char *description;       /**< MODULE_DESCRIPTION */
-    const char *source_file;       /**< __FILE__ */
-    const char *package;           /**< PROJECT_NAME */
-    int         version_major;
-    int         version_minor;
-    int         version_patch;
-    const char *date_string; /**< __DATE__ */
-    const char *time_string; /**< __TIME__ */
-    /** Module CLI initializer (init_module_CLI) */
-    module_cli_reg_fn reg_call;
-    /** NULL-sentinel dep load names, or NULL */
-    const char **deps;
-    int          mod_registered;
-    int          constructor_called;
-} MILK_MODULE_INFO;
-
-/**
- * @brief Define and export the module descriptor.
- *
- * Use in a module's main .c.  load_sharedobj() reads the descriptor after dlopen() and calls the module's
- * init_module_CLI(); no __attribute__((constructor)) is emitted.
- * Deprecates INIT_MODULE_LIB().
- *
- * @param modname       Module name token (unquoted)
- * @param cli_reg_call  init_module_CLI function pointer
- * @param _deps         NULL-sentinel dep array, or NULL
- */
-#    define MILK_MODULE(modname, cli_reg_call, _deps)                                           \
-        MILK_MODULE_INFO __milk_module_info = { .name               = #modname,                 \
-                                                .shortname_default  = MODULE_SHORTNAME_DEFAULT, \
-                                                .description        = MODULE_DESCRIPTION,       \
-                                                .source_file        = __FILE__,                 \
-                                                .package            = MILK_PROJECT_NAME,        \
-                                                .version_major      = MILK_VERSION_MAJOR,       \
-                                                .version_minor      = MILK_VERSION_MINOR,       \
-                                                .version_patch      = MILK_VERSION_PATCH,       \
-                                                .date_string        = __DATE__,                 \
-                                                .time_string        = __TIME__,                 \
-                                                .reg_call           = cli_reg_call,             \
-                                                .deps               = (_deps),                  \
-                                                .mod_registered     = 0,                        \
-                                                .constructor_called = 0 }
+/* MODULE_DEPS, MILK_MODULE_INFO and MILK_MODULE_RUNNABLES (engine tier) */
+#    include "milk_module_info.h"
 
 #    define MAX_NB_FRAMENAME_CHAR 500
 #    define MAX_NB_EXCLUSIONS 40
@@ -303,6 +232,9 @@ typedef struct
 
     // command function pointer
     errno_t (*fp)();
+
+    // descriptor this command was registered from (NULL for legacy commands)
+    const struct MILK_RUNNABLE_ *runnable;
 
     char info[STRINGMAXLEN_CMD_INFO];       // short description/help
     char syntax[STRINGMAXLEN_CMD_SYNTAX];   // command syntax

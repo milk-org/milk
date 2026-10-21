@@ -7,8 +7,6 @@
  * @brief Radial profile
  */
 
-errno_t CLIADDCMD_info__improfile();
-
 errno_t profile(const char *ID_name,
                 const char *outfile,
                 double      xcenter,

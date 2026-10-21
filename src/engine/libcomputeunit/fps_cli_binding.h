@@ -1,0 +1,97 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * @file    fps_cli_binding.h
+ * @brief   FPS-CLI binding type and X-macro expansion helpers
+ *
+ * Provides the FPS_CLI_BINDING structure and associated macros
+ * for the unified FPS-CLI parameter architecture.
+ */
+
+#ifndef FPS_CLI_BINDING_H
+#define FPS_CLI_BINDING_H
+
+#include <stdint.h>
+#include <string.h>
+
+
+#include "fps_types.h"
+#include "libmilkdata/milkdata_clicmd.h"
+
+
+/**
+ * @brief Application identity for FPS-based commands.
+ *
+ * Every FPS module defines one of these describing the command
+ * name, FPS base name, and human-readable description.
+ */
+typedef struct FPS_APP_INFO_
+{
+    const char *fps_name;
+    const char *cmdkey;
+    const char *description;
+    const char *description_long;
+    const char *outvars; /* calculator variables set for the caller, space-separated (NULL: none) */
+} FPS_APP_INFO;
+
+
+/**
+ * @brief Binding between an FPS keyword and a local C variable.
+ *
+ * Replaces CLICMDARGDEF by directly linking FPS keywords to
+ * the memory locations of module-local variables.
+ *
+ * @param fpskeyword  FPS keyword (e.g. ".gain")
+ * @param ptr         Pointer to local variable
+ * @param type        FPS type (FPTYPE_FLOAT64, etc.)
+ * @param is_primary  1 if primary CLI argument, 0 otherwise
+ * @param fpflag      Standard FPS flags
+ * @param descr       Human-readable description
+ * @param _fps_pindex   Cache: parameter index in fps->parray. -2 unresolved, -1 not found, >=0 resolved.
+ * @param _fps_last_cnt Cache: last parray[].value_cnt seen by fps_resync_bindings(). -1 = never synced.
+ */
+typedef struct FPS_CLI_BINDING_
+{
+    const char *fpskeyword;
+    void       *ptr;
+    uint64_t    type;
+    int         is_primary;
+    uint64_t    fpflag;
+    const char *descr;
+    long        _fps_pindex;
+    int64_t     _fps_last_cnt;
+} FPS_CLI_BINDING;
+
+
+/* ---- X-macro expansion helpers ---- */
+
+/**
+ * @brief Expand a PARAMS(X) macro into an FPS_CLI_BINDING array.
+ *
+ * Usage:
+ *   static FPS_CLI_BINDING bindings[] = {
+ *       MY_PARAMS(FPS_X_BINDING)
+ *   };
+ */
+/*
+ * Trailing -2, -1 seed _fps_pindex/_fps_last_cnt explicitly.
+ * 0, 0 init would break the caching.
+ */
+#define FPS_X_BINDING(kw, ptr, type, is_primary, flag, desc) \
+    { kw, ptr, type, is_primary, flag, desc, -2, -1 },
+
+/**
+ * @brief Expand a PARAMS(X) macro into a CLICMDARGDEF array.
+ *
+ * Usage:
+ *   static CLICMDARGDEF farg[] = {
+ *       MY_PARAMS(FPS_X_FARG)
+ *   };
+ */
+#define FPS_X_FARG(kw, ptr, fctype, is_primary, flag, desc) \
+    { fctype, kw, desc, "", flag | (is_primary ? FPFLAG_PRIMARY_CLI_INPUT : 0), NULL, NULL },
+
+
+#endif /* FPS_CLI_BINDING_H */

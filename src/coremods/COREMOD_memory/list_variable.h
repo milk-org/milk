@@ -7,7 +7,10 @@
  * @brief List variables in memory
  */
 
-errno_t CLIADDCMD_COREMOD_memory__list_variable();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_listvar;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_listvarf;
 
 /** @brief List variables matching optional regex */
 errno_t list_variable_ID(const char *regexstr);

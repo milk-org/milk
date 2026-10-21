@@ -3,26 +3,15 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "ImageStreamIO/ImageStruct.h"
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#    include "COREMOD_memory/COREMOD_memory.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
+#include "image_gen.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "statistic/statistic.h" // ran1, gauss, gauss_trc
 
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "mkrnd",
-    .cmdkey      = "mkrnd",
-    .description = "make random image",
-    .description_long =
-        "Generate a random image with Poisson or Gaussian noise for testing and simulation."
-};
 
 
 /* ================================================================
@@ -51,7 +40,7 @@ static uint32_t distrib_val                              = 0;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(mkrandomim, FPS_PARAMS);
 
 
 /**
@@ -114,7 +103,7 @@ static imageID make_image_random(IMGID *img, int pdf)
     return (img->ID);
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t mkrandomim_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -127,13 +116,14 @@ static MILK_HOT errno_t compute_function()
      */
     IMGID img = stream_connect_create_2D(outim_name, outim_xsize, outim_ysize, _DATATYPE_FLOAT);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     make_image_random(&img, distrib_val);
 
     DEBUG_TRACEPOINT("update output ID %ld", img.ID);
     processinfo_update_output_stream(processinfo, img.im, NULL);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     imgid_free(&img);
 
@@ -146,26 +136,20 @@ static MILK_HOT errno_t compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_gen__mkrandomim()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
 
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_image_gen_mkrandomim = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "mkrnd",
+                 .cmdkey           = "mkrnd",
+                 .description      = "make random image",
+                 .description_long = "Generate a random image with Poisson or Gaussian noise for "
+                                     "testing and simulation." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(mkrandomim),
+    .compute = mkrandomim_compute,
+};
+EXPORT_FPSEXEC(milk, "imggen-mkrandom", runnable_image_gen_mkrandomim);

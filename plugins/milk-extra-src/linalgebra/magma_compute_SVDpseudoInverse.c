@@ -31,9 +31,10 @@
 #else
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
-#    include "fps.h"
+#    include "computeunit.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
+#include "milk_runnable.h"
 #include "timeutils.h"
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
@@ -129,62 +130,37 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 // Gen 4 V2 CLI command: linalgebrapsinv
 // ==========================================
 
-static char         pi_r[FUNCTION_PARAMETER_STRMAXLEN]  = "matA";
-static char         pi_c[FUNCTION_PARAMETER_STRMAXLEN]  = "matAinv";
-static double       pi_eps                              = 0.01;
-static int64_t      pi_nm                               = 100;
-static char         pi_vt[FUNCTION_PARAMETER_STRMAXLEN] = "VTmat";
-static FPS_APP_INFO FPS_app_info_pi                     = {
-    .fps_name    = "linalgebrapsinv",
-    .cmdkey      = "linalgebrapsinv",
-    .description = "compute pseudo inverse",
-    .description_long =
-        "Compute the Moore-Penrose pseudo-inverse of a matrix via SVD using the MAGMA GPU library."
-};
+static char    pi_r[FUNCTION_PARAMETER_STRMAXLEN]  = "matA";
+static char    pi_c[FUNCTION_PARAMETER_STRMAXLEN]  = "matAinv";
+static double  pi_eps                              = 0.01;
+static int64_t pi_nm                               = 100;
+static char    pi_vt[FUNCTION_PARAMETER_STRMAXLEN] = "VTmat";
 #define FPS_PARAMS_PI(X)                                                       \
     X(".inmat", pi_r, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input mat") \
     X(".outmat", pi_c, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output")       \
     X(".svdeps", &pi_eps, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD eps")  \
     X(".nbmodes", &pi_nm, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "max modes")  \
     X(".vtmat", pi_vt, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "VT matrix")
-#include "fps.h"
-static FPS_CLI_BINDING                   pi_b[]     = { FPS_PARAMS_PI(FPS_X_BINDING) };
-static const int                         pi_nb      = sizeof(pi_b) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF                      farg[]     = { FPS_PARAMS_PI(FPS_X_FARG) };
-static CLICMDDATA                        CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS                       pi_cms     = { 0 };
-static __attribute__((constructor)) void init_pi(void)
-{
-    strncpy(CLIcmddata.key, FPS_app_info_pi.cmdkey, sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description, FPS_app_info_pi.description,
-            sizeof(CLIcmddata.description) - 1);
-    CLIcmddata.nbarg         = sizeof(farg) / sizeof(CLICMDARGDEF);
-    CLIcmddata.funcfpscliarg = farg;
-    CLIcmddata.flags         = CLICMDFLAG_FPS;
-    if (!CLIcmddata.cmdsettings)
-    {
-        CLIcmddata.cmdsettings = &pi_cms;
-    }
-}
-static errno_t pi_compute(void)
+MILK_PARAMS_DEFINE(pi, FPS_PARAMS_PI);
+
+static errno_t pi_compute(__attribute__((unused)) const MILK_RUNNABLE *self)
 {
     LINALGEBRA_magma_compute_SVDpseudoInverse(pi_r, pi_c, pi_eps, (long) pi_nm, pi_vt, 0, 0, 64, 0,
                                               NULL);
     return RETURN_SUCCESS;
 }
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_pi, farg, &CLIcmddata, pi_b, pi_nb,
-                                        pi_compute);
-}
 
-errno_t magma_compute_SVDpseudoInverse_addCLIcmd()
-{
-    safe_fps_fill_farg_examples(farg, pi_b, pi_nb);
-    INSERT_STD_CLIREGISTERFUNC;
-
-    return RETURN_SUCCESS;
-}
+const MILK_RUNNABLE runnable_linalgebra_linalgebrapsinv = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "linalgebrapsinv",
+                 .cmdkey           = "linalgebrapsinv",
+                 .description      = "compute pseudo inverse",
+                 .description_long = "Compute the Moore-Penrose pseudo-inverse of a matrix via SVD "
+                                     "using the MAGMA GPU library." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(pi),
+    .compute = pi_compute,
+};
 
 
 // =========================================================

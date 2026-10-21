@@ -179,12 +179,31 @@ imageID make_tile(const char *IDin_name, uint32_t size, const char *IDout_name);
 
 imageID image_gen_im2coord(const char *IDin_name, uint8_t axis, const char *IDout_name);
 
-imageID image_gen_make_voronoi_map(const char *filename,
-                                   const char *IDout_name,
-                                   uint32_t    xsize,
-                                   uint32_t    ysize,
-                                   float       radius, // maximum radius of each Voronoi zone
-                                   float       maxsep  // gap between Voronoi zones
+imageID image_gen_make_voronoi_map(IMGID *imgpos,
+                                   IMGID *imgout,
+                                   float  radius, // maximum radius of each Voronoi zone
+                                   float  maxsep  // gap between Voronoi zones
 );
+
+#    include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_image_gen_imgen_im2coord;
+extern const MILK_RUNNABLE runnable_image_gen_imgen_mkdist;
+extern const MILK_RUNNABLE runnable_image_gen_imgen_mkfiberclpoverlap;
+extern const MILK_RUNNABLE runnable_image_gen_imgen_mkgauss;
+extern const MILK_RUNNABLE runnable_image_gen_imgen_mkgridpix;
+extern const MILK_RUNNABLE runnable_image_gen_imgen_mkhexsegpup;
+extern const MILK_RUNNABLE runnable_image_gen_imgen_mklincoord;
+extern const MILK_RUNNABLE runnable_image_gen_imgen_mkline;
+extern const MILK_RUNNABLE runnable_image_gen_imgen_mkrect;
+extern const MILK_RUNNABLE runnable_image_gen_imgen_mkrndgim;
+extern const MILK_RUNNABLE runnable_image_gen_imgen_mkrndim;
+extern const MILK_RUNNABLE runnable_image_gen_imgen_mkslopexy;
+extern const MILK_RUNNABLE runnable_image_gen_imgen_segs2wfmodes;
+extern const MILK_RUNNABLE runnable_image_gen_mkdisk;
+extern const MILK_RUNNABLE runnable_image_gen_mkpolygon;
+extern const MILK_RUNNABLE runnable_image_gen_mkrandomim;
+extern const MILK_RUNNABLE runnable_image_gen_mkspdisk;
+extern const MILK_RUNNABLE runnable_image_gen_voronoi;
 
 #endif

@@ -67,7 +67,7 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF fpscliarg[], int nbarg, FPS *fps)
      * actually registered (and thus allocated in
      * argdata).  The caller may pass nb_bindings
      * as nbarg, which can exceed nbparam when the
-     * CLIcmddata uses CLICMD_FIELDS_NOPARAM.
+     * the runnable has no parameters.
      */
     int nreg = data.cmd[cmdi].nbparam;
     if (data.cmd[cmdi].argdata == NULL)

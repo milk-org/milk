@@ -30,7 +30,7 @@
 #include <sys/ioctl.h>
 #include "CLIcore.h"
 
-#include "fps.h"
+#include "computeunit.h"
 #include "fps_connect.h"
 #include "milk_cmd_args.h"
 #include "milk_lexicon.h"

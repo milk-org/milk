@@ -14,27 +14,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
 #include "imresize.h"
-#include "fps.h"
+#include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "ImageStreamIO/ImageStreamIO.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "resizeim",
-    .cmdkey           = "resizeim",
-    .description      = "resize 2D image",
-    .description_long = "Resize a 2D image to arbitrary dimensions using bilinear interpolation."
-};
 
 
 /* ================================================================
@@ -109,7 +93,6 @@ static void imresize_step(IMAGE *imgin, IMAGE *imgout)
  * Public convenience function
  * ========================================= */
 
-#ifndef FPS_STANDALONE
 long basic_resizeim(const char *imname_in, const char *imname_out, long xsizeout, long ysizeout)
 {
     IMGID in = imgid_make_from_name(imname_in);
@@ -119,61 +102,50 @@ long basic_resizeim(const char *imname_in, const char *imname_out, long xsizeout
     ImageStreamIO_UpdateIm(out.im);
     return 0;
 }
-#endif
 
 
 /* ================================================================
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(imresize, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t imresize_compute(const MILK_RUNNABLE *self)
 {
     IMGID in = imgid_make_from_name(imresize_inimname);
     resolveIMGID(&in, ERRMODE_ABORT, dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(imresize_outimname, imresize_xsize, imresize_ysize);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     imresize_step(in.im, out.im);
     processinfo_update_output_stream(processinfo, out.im, in.im);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_basic__imresize()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_image_basic_imresize = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "resizeim",
+                 .cmdkey           = "resizeim",
+                 .description      = "resize 2D image",
+                 .description_long = "Resize a 2D image to arbitrary dimensions using bilinear "
+                                     "interpolation." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imresize),
+    .compute = imresize_compute,
+};
+EXPORT_FPSEXEC(milk, "imgbasic-resizeim", runnable_image_basic_imresize);

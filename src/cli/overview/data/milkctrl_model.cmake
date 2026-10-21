@@ -41,7 +41,8 @@ target_include_directories(
   PUBLIC ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
          ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
          ${CMAKE_SOURCE_DIR}/src/engine/libfps
+         ${CMAKE_SOURCE_DIR}/src/engine/libcomputeunit
          ${OV_DIR}
          ${OV_DIR}/data)
 target_compile_options(milkctrl_model PRIVATE -Wmissing-prototypes)
-target_link_libraries(milkctrl_model PUBLIC ImageStreamIO milkprocessinfo milkfps milkdata m rt pthread)
+target_link_libraries(milkctrl_model PUBLIC ImageStreamIO milkprocessinfo milkfps milkcomputeunit milkdata milkcommon m rt pthread)

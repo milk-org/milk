@@ -11,41 +11,20 @@
  * See script milk-test-simplefuncFPS for example usage.
  */
 
-#include "CLIcore.h"
-#include "fps.h"
+#include "milk_runnable.h"
+#include "examplefunc2_FPS.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-
-static FPS_APP_INFO FPS_app_info = { .fps_name = "imsum2",
-                                     .cmdkey   = "imsum2",
-                                     .description =
-                                         "compute total of image example2, FPS-compatible" };
 
 // Local variables pointers
 
 static char   *inimname;
 static double *scoeff;
 
-#define FPS_PARAMS(X)                                                                   \
+#define IMSUM2_PARAMS(X)                                                                \
     X(".in_name", &inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
     X(".scaling", &scoeff, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "scaling coefficient")
 
-
-static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
-
-static const int __attribute__((unused)) nb_bindings =
-    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
-
-#ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata = {
-#else
-static CLICMDDATA CLIcmddata = {
-#endif
-    "", "", CLICMD_FIELDS_DEFAULTS
-};
-
-FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
+MILK_PARAMS_DEFINE(imsum2, IMSUM2_PARAMS);
 
 
 /**
@@ -87,9 +66,9 @@ static errno_t example_compute_2Dimage_total(IMGID *imgptr, double scalingcoeff)
 /**
  * @brief Wrapper function, used by all CLI calls
  *
- * INSERT_STD_PROCINFO statements enable processinfo support
+ * MILK_PROCINFO_* macros enable processinfo support
  */
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t imsum2_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -98,42 +77,28 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     IMGID img = imgid_make_from_name(inimname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-
-    example_compute_2Dimage_total(&img, *scoeff);
-    if (img.ID == -1)
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
     {
-        return RETURN_FAILURE;
+        example_compute_2Dimage_total(&img, *scoeff);
+        if (img.ID == -1)
+        {
+            return RETURN_FAILURE;
+        }
     }
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-// Register function in CLI
-errno_t CLIADDCMD_milk_module_example__simplefunc_FPS()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    // Optional custom settings for this function can be included
-    // CLIcmddata.cmdsettings->procinfo_loopcntMax = 9;
-
-    return RETURN_SUCCESS;
-}
-#endif
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_modex_imsum2 = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "imsum2",
+                 .cmdkey      = "imsum2",
+                 .description = "compute total of image example2, FPS-compatible" },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imsum2),
+    .compute = imsum2_compute,
+};
+EXPORT_FPSEXEC(milk, "imsum2", runnable_modex_imsum2);

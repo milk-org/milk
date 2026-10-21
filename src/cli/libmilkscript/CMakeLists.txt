@@ -26,6 +26,8 @@ set(MILKSCRIPT_SOURCES
     core/CLIcore_UI_execute_debug.c
     core/CLIcore_checkargs.c
     core/CLIcore_checkargs_fps.c
+    core/CLIcore_fps_function.c
+    core/CLIcore_fps_query.c
     core/CLIcore_datainit.c
     core/CLIcore_help.c
     core/CLIcore_help_command.c
@@ -107,6 +109,7 @@ target_link_libraries(
          milkCOREMODtools
          milkprocessinfo
          milkfps
+         milkcomputeunit
          milkfpsseq
          milkdata)
 
@@ -138,6 +141,9 @@ install(
   FILES core/CLIcore_UI_execute.h
         core/CLIcore_checkargs.h
         core/CLIcore_datainit.h
+        core/CLIcore_fps_function.h
+        core/CLIcore_fps_getFPSargs.h
+        core/CLIcore_fps_query.h
         core/CLIcore_help.h
         core/CLIcore_memory.h
         core/CLIcore_modules.h
@@ -198,7 +204,7 @@ target_include_directories(
   milkbash PRIVATE $<TARGET_PROPERTY:milkscript,INTERFACE_INCLUDE_DIRECTORIES>)
 target_compile_definitions(milkbash PRIVATE MILK_BASH_CLIENT)
 target_link_libraries(
-  milkbash PRIVATE milkfpsseq milkfps milkprocessinfo milkdata m dl rt
+  milkbash PRIVATE milkfpsseq milkfps milkcomputeunit milkprocessinfo milkdata m dl rt
                    ${CMAKE_THREAD_LIBS_INIT})
 set_target_properties(milkbash PROPERTIES C_VISIBILITY_PRESET hidden INSTALL_RPATH "$ORIGIN")
 target_link_options(milkbash PRIVATE "-Wl,--disable-new-dtags" "-Wl,--no-undefined")
@@ -207,8 +213,9 @@ install(TARGETS milkbash DESTINATION lib)
 # Compute units without C code (milk.calc, milk.script): fpsexec binaries that run calculator statements or
 # a bash snippet on each frame; the calculator and milk.bash come from libmilkscript.
 foreach(_unit calc script)
-  add_milk_standalone(milk-${_unit} units/milk_unit_${_unit}.c)
-  target_sources(milk-fpsexec-milk-${_unit} PRIVATE units/milk_unit.c)
+  add_executable(milk-fpsexec-milk-${_unit} units/milk_unit_${_unit}.c units/milk_unit.c)
+  target_compile_definitions(milk-fpsexec-milk-${_unit} PRIVATE FPS_STANDALONE)
+  milk_configure_fpsexec(milk-fpsexec-milk-${_unit} PREFIX milk)
   target_link_libraries(milk-fpsexec-milk-${_unit} PUBLIC milkscript)
 endforeach()
 

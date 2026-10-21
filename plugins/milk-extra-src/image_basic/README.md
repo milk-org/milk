@@ -36,4 +36,4 @@ Frequently used image functions
 
 ## Dependencies
 
-- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
+- `milk_runnable.h` (`libcomputeunit`), which provides the FPS and processinfo macros

@@ -9,8 +9,8 @@
 
 #include <math.h>
 
-#include "CLIcore.h"
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
@@ -21,38 +21,31 @@ imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name);
 static char p_in[FUNCTION_PARAMETER_STRMAXLEN]  = "incube";
 static char p_out[FUNCTION_PARAMETER_STRMAXLEN] = "outim";
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "cubeslmatch",
-    .cmdkey           = "cubeslmatch",
-    .description      = "compute sqsum diffs between slices",
-    .description_long = "Compute a matrix of sum-of-squared differences between all pairs of "
-                        "slices in an image cube. Used for similarity analysis."
-};
-
 #define FPS_PARAMS(X)                                                                   \
     X(".in_name", p_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image cube") \
     X(".out_name", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(cubeMatchMatrix, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t cubeMatchMatrix_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     info_cubeMatchMatrix(p_in, p_out);
     return RETURN_SUCCESS;
 }
 
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_info__cubeMatchMatrix()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
+const MILK_RUNNABLE runnable_info_cubeMatchMatrix = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "cubeslmatch",
+                 .cmdkey      = "cubeslmatch",
+                 .description = "compute sqsum diffs between slices",
+                 .description_long =
+                     "Compute a matrix of sum-of-squared differences between all pairs of "
+                     "slices in an image cube. Used for similarity analysis." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(cubeMatchMatrix),
+    .compute = cubeMatchMatrix_compute,
+};
 
 imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name)
 {

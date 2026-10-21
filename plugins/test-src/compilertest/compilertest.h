@@ -4,15 +4,16 @@
 
 /**
  * @file    compilertest.h
- * @brief   Function prototypes compilertest
+ * @brief   Runnables of compilertest that are always built (mandated ones are weak-declared in
+ *          compilertest.c)
  *
  */
 
 #ifndef COMPILERTEST_H
 #define COMPILERTEST_H
 
-errno_t COMPILERTEST_CLIADDCMD_MANDATE_CUDA();
-errno_t COMPILERTEST_CLIADDCMD_REQUEST_CUDA();
-errno_t COMPILERTEST_CLIADDCMD_MANDATE_LAPACKE();
+#include "milk_runnable.h"
 
-#endif // #ifndef _COMPILERTEST_H
+extern const MILK_RUNNABLE runnable_ct_requestcuda;
+
+#endif // #ifndef COMPILERTEST_H

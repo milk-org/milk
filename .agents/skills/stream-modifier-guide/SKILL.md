@@ -1,6 +1,6 @@
 ---
 name: stream-modifier-guide
-description: Where stream names, their @X: modifiers and
+description: Where stream names, their '@X:' modifiers and
   slice syntax are defined and parsed (IMGID)
 ---
 

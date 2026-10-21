@@ -7,6 +7,8 @@
  * @brief Remove all images, variables, and FPS
  */
 
-errno_t CLIADDCMD_COREMOD_memory__clearall();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_clearall;
 
 errno_t clearall();

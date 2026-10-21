@@ -10,7 +10,9 @@
 /** @file stream_delay,h
  */
 
-errno_t stream_monitorlimits_addCLIcmd();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_streammlim;
 
 errno_t stream_monitorlimits_FPCONF();
 

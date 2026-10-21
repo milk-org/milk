@@ -51,10 +51,6 @@ errno_t milkscript_init(int argc, char **argv)
     setSHMdir();
     CLI_data_init();
 
-    {
-        load_sharedobj("libmilkfpsCLI.so");
-    }
-
     milk_session_register_engine(); /* the reserved module `milk` comes first */
     milk_session_load_modules();
 

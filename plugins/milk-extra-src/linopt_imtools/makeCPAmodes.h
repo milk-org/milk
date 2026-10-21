@@ -10,7 +10,6 @@
 #ifndef LINOPT_IMTOOLS__MAKECPAMODES_H
 #define LINOPT_IMTOOLS__MAKECPAMODES_H
 
-errno_t CLIADDCMD_linopt_imtools__makeCPAmodes();
 
 errno_t linopt_imtools_makeCPAmodes(IMGID   *imgoutm,
                                     uint32_t sizex,

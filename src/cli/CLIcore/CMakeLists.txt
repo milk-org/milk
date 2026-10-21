@@ -135,6 +135,7 @@ target_link_libraries(
          milkCOREMODtools
          milkprocessinfo
          milkfps
+         milkcomputeunit
          milkfpsseq
          milkdata)
 
@@ -179,6 +180,9 @@ install(
   FILES ../libmilkscript/core/CLIcore_UI_execute.h
         ../libmilkscript/core/CLIcore_checkargs.h
         ../libmilkscript/core/CLIcore_datainit.h
+        ../libmilkscript/core/CLIcore_fps_function.h
+        ../libmilkscript/core/CLIcore_fps_getFPSargs.h
+        ../libmilkscript/core/CLIcore_fps_query.h
         ../libmilkscript/core/CLIcore_help.h
         ../libmilkscript/core/CLIcore_memory.h
         ../libmilkscript/core/CLIcore_modules.h

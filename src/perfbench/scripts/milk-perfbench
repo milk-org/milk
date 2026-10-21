@@ -197,7 +197,7 @@ ${FPSEXEC} ${FPSNAME}:fps 2>/dev/null \
     if [ ! -f "${SHMDIR}/${SNAME}.im.shm" ]; then
         echo "  Creating stream: ${SNAME} (32x32)"
         milk-perfbench-mkstream \
-            "${SNAME}" 32 32
+            "${SNAME}" 128 128
     else
         echo "  Stream exists: ${SNAME}"
     fi

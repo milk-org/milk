@@ -70,14 +70,8 @@ C_KEYWORDS = frozenset(
     }
 )
 
-# Macro names that generate a main() and call the third argument (compute fn)
-STANDALONE_MACRO_RE = re.compile(
-    r"\bFPS_MAIN_STANDALONE_V2(?:_CONFCHECK)?\s*\("
-    r"\s*\w+\s*,\s*\w+\s*,\s*(\w+)"  # third argument = compute function name
-)
-
-# CLIADDCMD_* calls — the callee name encodes the actual function name
-CLIADDCMD_CALL_RE = re.compile(r"\bCLIADDCMD_(\w+)\s*\(")
+# MILK_RUNNABLE descriptor fields: the referenced functions are run by the framework
+RUNNABLE_FN_RE = re.compile(r"\.(?:compute|cli_func|confcheck)\s*=\s*(\w+)")
 
 # Function-like macro definitions: #define NAME(...) body (possibly multiline)
 MACRO_DEF_RE = re.compile(r"^\s*#\s*define\s+([A-Za-z_]\w*)\s*\(", re.MULTILINE)
@@ -253,30 +247,13 @@ def main():
             # Find the actual main() function name
             entry_points.add("main")
 
-        #  b) FPS_MAIN_STANDALONE_V2(INFO, PARAMS, COMPUTE_FN)
-        for m in STANDALONE_MACRO_RE.finditer(raw):
-            compute_fn = m.group(1)
-            entry_points.add(compute_fn)
-            # Also mark the generated main as reachable if it exists
-            entry_points.add("main")
-
-        #  c) CLIADDCMD_* calls — the function they register is considered reachable
-        for m in CLIADDCMD_CALL_RE.finditer(san):
-            registered = m.group(1)  # e.g. "COREMOD_iofits__loadfits"
-            entry_points.add("CLIADDCMD_" + registered)
-            entry_points.add(registered)
+        #  b) MILK_RUNNABLE descriptors: .compute / .cli_func / .confcheck functions
+        for m in RUNNABLE_FN_RE.finditer(san):
+            entry_points.add(m.group(1))
 
         # Build call edges for all functions defined in this file
         for fname, bs, be, body in extract_functions(san, raw, fpath):
             calls = extract_calls(body)
-            # Also harvest CLIADDCMD_ calls from inside the body
-            for cm in CLIADDCMD_CALL_RE.finditer(body):
-                registered = cm.group(1)
-                calls.add("CLIADDCMD_" + registered)
-                calls.add(registered)
-            # Register FPS_MAIN compute function references
-            for sm in STANDALONE_MACRO_RE.finditer(raw[bs:be]):
-                calls.add(sm.group(1))
             if fname in all_functions:
                 all_functions[fname]["calls"].update(calls & all_functions.keys())
 

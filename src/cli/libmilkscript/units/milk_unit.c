@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "CLIcore.h"
+#include "computeunit.h"
 #include "fps.h"
 #include "milk_unit.h"
 

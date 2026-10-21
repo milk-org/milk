@@ -11,8 +11,10 @@
  */
 
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #ifdef USE_CFITSIO
@@ -20,19 +22,6 @@
 #endif
 
 #include "image_filter/image_filter.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "combineHDR",
-    .cmdkey           = "combineHDR",
-    .description      = "combine HDR image",
-    .description_long = "Combine multiple exposures into a high dynamic range (HDR) image. Merges "
-                        "short and long exposures weighted by signal-to-noise."
-};
 
 
 /* ================================================================
@@ -60,7 +49,7 @@ static char   *outimname = NULL;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(combineHDR, FPS_PARAMS);
 
 errno_t combine_HDR_image(const char *__restrict flistname,
                           float satvalue,
@@ -400,17 +389,18 @@ errno_t combine_HDR_image(const char *__restrict flistname,
     return RETURN_SUCCESS;
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t combineHDR_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     printf("satlevel  = %f\n", *satlevel);
     printf("biaslevel = %f\n", *biaslevel);
 
     combine_HDR_image(flistname, *satlevel, *biaslevel, outimname);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -418,29 +408,19 @@ static MILK_HOT errno_t compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_format__combineHDR()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_image_format_combineHDR = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "combineHDR",
+                 .cmdkey      = "combineHDR",
+                 .description = "combine HDR image",
+                 .description_long =
+                     "Combine multiple exposures into a high dynamic range (HDR) image. Merges "
+                     "short and long exposures weighted by signal-to-noise." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(combineHDR),
+    .compute = combineHDR_compute,
+};
+EXPORT_FPSEXEC(milk, "imgfmt-combineHDR", runnable_image_format_combineHDR);

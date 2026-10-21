@@ -31,6 +31,7 @@
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "computeunit.h"
 #include "fps.h"
 #include "milk_argval.h"
 #include "milk_unit.h"
@@ -83,9 +84,15 @@ static union
 static char pkey[SCRIPT_MAXPAR][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN + 1];
 static char pdescr[SCRIPT_MAXPAR][FUNCTION_PARAMETER_DESCR_STRMAXLEN];
 
+static CMDSETTINGS  script_cms = { .procinfo_loopcntMax = 1 };
 static CLICMDARGDEF farg[1];
-CLICMDDATA          CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-FPS_CMDSETTINGS_INIT(script, CLIcmddata, app)
+CLICMDDATA          CLIcmddata = {
+    .key            = "script",
+    .description    = "run a bash snippet on each frame",
+    .sourcefilename = __FILE__,
+    .flags          = CLICMDFLAG_FPS,
+    .cmdsettings    = &script_cms,
+};
 
 static pid_t sh_pid = -1;
 static int   sh_in  = -1; /* commands to the shell */
@@ -439,13 +446,13 @@ static errno_t compute(void)
     }
     processinfo_CatchSignals(); /* Ctrl-C and runstop end the loop through its cleanup */
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    _MILK_PROCINFO_INIT_IMPL(CLIcmddata)
     if (shell_start(err, sizeof(err)) != 0)
     {
         report(processinfo, err);
         processloopOK = 0;
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    _MILK_PROCINFO_LOOPSTART_IMPL(CLIcmddata)
     {
         char line[64];
         int  rc = 0;
@@ -487,7 +494,7 @@ static errno_t compute(void)
             processloopOK = (rc == 0 && err[0] == '\0') ? processloopOK : 0;
         }
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    _MILK_PROCINFO_END_IMPL(CLIcmddata)
 
     shell_stop();
     return (err[0] != '\0') ? RETURN_FAILURE : RETURN_SUCCESS;
@@ -527,7 +534,7 @@ int main(int argc, char **argv)
 
     milk_unit_args_read(argc, argv, app.fps_name, &a);
     init = (strcmp(a.cmd, "fpsinit") == 0);
-    if (milk_unit_pos(&a, 3) != NULL) /* .file (3): also what main_impl() writes */
+    if (milk_unit_pos(&a, 3) != NULL) /* .file (3): also what fpsexec_main_function() writes */
     {
         char path[PATH_MAX];
         if (realpath(milk_unit_pos(&a, 3), path) != NULL && strlen(path) < sizeof(file))
@@ -548,5 +555,5 @@ int main(int argc, char **argv)
     {
         return 1;
     }
-    return main_impl(argc, argv, &app, bindings, nbind, farg, compute, NULL);
+    return fpsexec_main_function(argc, argv, &app, bindings, nbind, farg, compute, NULL);
 }

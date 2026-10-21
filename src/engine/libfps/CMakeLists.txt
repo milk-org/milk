@@ -1,24 +1,8 @@
 set(LIBNAME "milkfps")
 set(SRCNAME "libfps")
 
-option(USE_NCURSES "Enable ncurses and TUI support" ON)
-
-if(USE_NCURSES)
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(NCURSES REQUIRED ncurses)
-endif()
-
 set(SOURCEFILES
-    cmd/fps_execFPScmd.c
     cmd/fps_scan.c
-    cmd/fps_tmux.c
-    cmd/fps_processcmdline_interactive.c
-    cmd/fps_processcmdline_file.c
-    cmd/fps_process_fpsCMDarray.c
-    cmd/fps_getFPSargs.c
-    #cli/fps_cli_sync.c # Adding this HERE completely messes the linkage. Some declarations of this are in CLICore_standalone.h. TBC...
-    cli/fps_cli_init.c
-    cli/fps_cli_function_registry.c
     core/fps_connect.c
     core/fps_connectExternalFPS.c
     core/fps_disconnect.c
@@ -32,7 +16,6 @@ set(SOURCEFILES
     io/fps_loadstream.c
     io/fps_outlog.c
     io/fps_load.c
-    io/fps_read_fpsCMD_fifo.c
     io/fps_loadmemstream_lite.c
     io/fps_streamname_parse.c
     io/fps_local_store.c
@@ -49,130 +32,38 @@ set(SOURCEFILES
     params/fps_PrintParameterInfo.c
     params/fps_printparameter_valuestring.c
     params/fps_userinputsetparamvalue.c
-    params/fps_modulevars_resync.c
-    procinfo/fps_processinfo_entries.c
-    procinfo/fps_processinfo.c
-    procinfo/fps_apply_process_settings.c
-    state/fps_FPCONFsetup.c
-    state/fps_FPCONFexit.c
-    state/fps_FPCONFloopstep.c
-    state/fps_RUNexit.c
-    state/fps_RUNstart.c
-    state/fps_RUNstop.c
-    state/fps_CONFstart.c
-    state/fps_CONFstop.c
-    imgid_slice.c
-    )
+    imgid_slice.c)
 
-# Core library (no TUI/ncurses dependency)
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
+# Single translation unit
+set_target_properties(${LIBNAME} PROPERTIES UNITY_BUILD ON
+                                            UNITY_BUILD_BATCH_SIZE 0)
 
 target_include_directories(
   ${LIBNAME}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-         # CLIcore path (src/cli/CLIcore) no longer needed in PUBLIC interface
-         # after extracting CLICMDARGDEF to engine tier.
          $<INSTALL_INTERFACE:include>)
-# src/cli and src/coremods: only for guarded .c files
-target_include_directories(
-  ${LIBNAME}
-  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
-          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
-          ${CMAKE_CURRENT_SOURCE_DIR}/core
-          ${CMAKE_CURRENT_SOURCE_DIR}/state
-          ${CMAKE_CURRENT_SOURCE_DIR}/params
-          ${CMAKE_CURRENT_SOURCE_DIR}/io
-          ${CMAKE_CURRENT_SOURCE_DIR}/cmd
-          ${CMAKE_CURRENT_SOURCE_DIR}/cli
-          ${CMAKE_CURRENT_SOURCE_DIR}/procinfo)
 
 target_link_libraries(${LIBNAME} PUBLIC ImageStreamIO m rt milkprocessinfo
                                         milkcommon)
 
-# ==========================================
-# milkfpsStandalone — standalone FPS framework No CLI/readline dependency.
-# ==========================================
-
-set(SOURCEFILES_STANDALONE
-    cli/fps_cli_sync.c cli/fps_cli_init.c core/fps_lifecycle.c
-    procinfo/fps_apply_process_settings.c)
-
-add_library(milkfpsStandalone SHARED ${SOURCEFILES_STANDALONE})
-target_compile_definitions(milkfpsStandalone PRIVATE FPS_STANDALONE)
-target_include_directories(
-  milkfpsStandalone PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                           $<INSTALL_INTERFACE:include>)
-target_link_libraries(milkfpsStandalone PUBLIC ${LIBNAME} milkdata)
-install(
-  TARGETS milkfpsStandalone
-  EXPORT milkTargets
-  DESTINATION lib)
-
-# ==========================================
-# Static archives for -DUSE_STATIC_LTO
-# ==========================================
-
 if(USE_STATIC_LTO)
   add_library(${LIBNAME}_static STATIC ${SOURCEFILES})
-  set_target_properties(${LIBNAME}_static PROPERTIES OUTPUT_NAME ${LIBNAME})
+  set_target_properties(
+    ${LIBNAME}_static PROPERTIES OUTPUT_NAME ${LIBNAME} UNITY_BUILD ON
+                                 UNITY_BUILD_BATCH_SIZE 0)
   target_include_directories(
     ${LIBNAME}_static
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
            $<INSTALL_INTERFACE:include>)
   target_link_libraries(
     ${LIBNAME}_static PUBLIC ImageStreamIO_static m rt milkprocessinfo_static
                              milkcommon)
-
-  add_library(milkfpsStandalone_static STATIC ${SOURCEFILES_STANDALONE})
-  set_target_properties(milkfpsStandalone_static PROPERTIES OUTPUT_NAME
-                                                            milkfpsStandalone)
-  target_compile_definitions(milkfpsStandalone_static PRIVATE FPS_STANDALONE)
-  target_include_directories(
-    milkfpsStandalone_static
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
-           $<INSTALL_INTERFACE:include>)
-  target_link_libraries(milkfpsStandalone_static
-                        PUBLIC ${LIBNAME}_static milkdata_static milkcommon)
 endif()
-
-# ==========================================
-# milkfpsCLI — CLI-dependent FPS framework Links to both milkfps and CLIcore.
-# ==========================================
-
-set(SOURCEFILES_CLI
-    cli/fps_cli_sync.c cli/fps_cli_function.c cli/fps_cli_query.c
-    core/fps_lifecycle.c procinfo/fps_apply_process_settings.c)
-
-add_library(milkfpsCLI SHARED ${SOURCEFILES_CLI})
-target_include_directories(
-  milkfpsCLI PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                    $<INSTALL_INTERFACE:include>)
-target_link_libraries(milkfpsCLI PUBLIC ${LIBNAME})
-target_include_directories(
-  milkfpsCLI PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
-install(
-  TARGETS milkfpsCLI
-  EXPORT milkTargets
-  DESTINATION lib)
-# ==========================================
 
 install(
   TARGETS ${LIBNAME}
@@ -183,29 +74,6 @@ file(GLOB LIBFPS_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 install(
   FILES ${LIBFPS_HEADERS}
   DESTINATION include/libfps)
-
-# ==========================================
-# milk-fpsCTRL executable
-# ==========================================
-
-set(SOURCEFILES_FPSCTRL
-    fpsCTRL/milk-fpsCTRL.c
-    fpsCTRL/fpsCTRL_FPSdisplay.c
-    fpsCTRL/fpsCTRL_TUI.c
-    fpsCTRL/fpsCTRL_TUIcompat.c
-    fpsCTRL/fpsCTRL_TUI_process_user_key.c
-    fpsCTRL/level0node_summary.c
-    fpsCTRL/print_nodeinfo.c
-    fpsCTRL/scheduler_display.c
-    fpsCTRL/fpsCTRL_globals.c)
-
-add_executable(milk-fpsCTRL ${SOURCEFILES_FPSCTRL})
-target_include_directories(milk-fpsCTRL
-                           PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL)
-target_link_libraries(milk-fpsCTRL PUBLIC milkfpsseq milkfps milkprocessinfo
-                                          ImageStreamIO pthread m)
-
-install(TARGETS milk-fpsCTRL DESTINATION bin)
 
 # ==========================================
 # Standalone FPS tools (no CLIcore needed)
@@ -233,11 +101,11 @@ install(TARGETS milk-fps-help DESTINATION bin)
 # --- FPS query tools ---
 
 add_executable(milk-fps-list tools/milk-fps-list.c)
-target_link_libraries(milk-fps-list PUBLIC milkfpsStandalone pthread m)
+target_link_libraries(milk-fps-list PUBLIC ${LIBNAME} pthread m)
 install(TARGETS milk-fps-list DESTINATION bin)
 
 add_executable(milk-fps-search tools/milk-fps-search.c)
-target_link_libraries(milk-fps-search PUBLIC milkfpsStandalone pthread m)
+target_link_libraries(milk-fps-search PUBLIC ${LIBNAME} pthread m)
 install(TARGETS milk-fps-search DESTINATION bin)
 
 add_executable(
@@ -274,36 +142,26 @@ target_include_directories(
   milk-fps-info
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
           ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
+          ${CMAKE_SOURCE_DIR}/src/engine/libmilkdata
           ${CMAKE_SOURCE_DIR}/src/cli/overview
           ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
           ${CMAKE_SOURCE_DIR}/src/cli/overview/data)
-target_link_libraries(milk-fps-info PUBLIC milkfpsStandalone ImageStreamIO
-                                           milkprocessinfo pthread m rt)
+target_link_libraries(milk-fps-info PUBLIC ${LIBNAME} ImageStreamIO
+                                           milkprocessinfo milkdata pthread m rt)
 install(TARGETS milk-fps-info DESTINATION bin)
 
 add_executable(milk-fps-rm tools/milk-fps-rm.c)
-target_link_libraries(milk-fps-rm PUBLIC milkfpsStandalone pthread m)
+target_link_libraries(milk-fps-rm PUBLIC ${LIBNAME} pthread m)
 install(TARGETS milk-fps-rm DESTINATION bin)
-
-# --- FPS control commands ---
-
-set(FPS_GENERIC_CMDS milk-fps-confstart milk-fps-confstop milk-fps-runstart
-                     milk-fps-runstop milk-fps-confstep)
-
-foreach(cmd ${FPS_GENERIC_CMDS})
-  add_executable(${cmd} tools/milk-fps-cmd.c)
-  target_link_libraries(${cmd} PUBLIC milkfpsStandalone pthread m)
-  install(TARGETS ${cmd} DESTINATION bin)
-endforeach()
 
 # --- milk-fps-set ---
 
 add_executable(milk-fps-set tools/milk-fps-set.c)
-target_link_libraries(milk-fps-set PUBLIC milkfpsStandalone pthread m)
+target_link_libraries(milk-fps-set PUBLIC ${LIBNAME} pthread m)
 install(TARGETS milk-fps-set DESTINATION bin)
 
 # --- milk-fps-track ---
 
 add_executable(milk-fps-track tools/milk-fps-track.c)
-target_link_libraries(milk-fps-track PUBLIC milkfpsStandalone pthread m)
+target_link_libraries(milk-fps-track PUBLIC ${LIBNAME} pthread m)
 install(TARGETS milk-fps-track DESTINATION bin)

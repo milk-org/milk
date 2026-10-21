@@ -41,9 +41,3 @@ mkdocs serve
 
 You can leave `mkdocs serve` running and the browser open while modifying documentation source file.
 The render will update continuously.
-
-## 2. (Future) nox, pytest, coverage.
-
-TODO.
-
-## 3. (Future) License checks with REUSE

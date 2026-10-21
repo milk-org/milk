@@ -9,7 +9,7 @@ Interactive Command Line Interface (REPL) and syntax-aware UI layer for the
 
 - The interactive `milk>` CLI prompt (Readline REPL) and server/daemon startup
   mode (`milk-cli --server` / `--daemon`).
-- Module and command registration (`CLIADDCMD_*`).
+- Module and command registration (`MILK_MODULE_RUNNABLES`, `RegisterCLIcmd`).
 - Context-aware tab completion, interactive Zsh-style grid menu selection, and
   inline ghost-text suggestions.
 - Real-time Tree-sitter and lexical syntax highlighting, delimiter matching,

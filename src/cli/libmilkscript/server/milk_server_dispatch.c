@@ -386,11 +386,45 @@ static int try_dispatch_interceptor(const char *cmdname, int argc, char **argv, 
         return 1;
     }
     if ((strcmp(cmdname, "listim") == 0 || strcmp(cmdname, "mem.listim") == 0) && argc >= 2 &&
-        argv[1][0] != '-' && (strchr(argv[1], '*') != NULL || strchr(argv[1], '?') != NULL))
+        strcmp(argv[1], "-h") != 0 && strcmp(argv[1], "--help") != 0 && strcmp(argv[1], "-?") != 0)
     {
-        cli_listim_glob(argv[1]);
-        *out_rc = 0;
-        return 1;
+        if (argc == 2 && argv[1][0] != '-' &&
+            (strchr(argv[1], '*') != NULL || strchr(argv[1], '?') != NULL))
+        {
+            cli_listim_glob(argv[1]);
+            *out_rc = 0;
+            return 1;
+        }
+        int         json_mode      = 0;
+        int         porcelain_mode = 0;
+        int         quiet_mode     = 0;
+        const char *pattern        = NULL;
+        for (int i = 1; i < argc; i++)
+        {
+            const char *tok = argv[i];
+            if (strcmp(tok, "--json") == 0)
+            {
+                json_mode = 1;
+            }
+            else if (strcmp(tok, "--porcelain") == 0)
+            {
+                porcelain_mode = 1;
+            }
+            else if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
+            {
+                quiet_mode = 1;
+            }
+            else if (tok[0] != '-')
+            {
+                pattern = tok;
+            }
+        }
+        if (json_mode || porcelain_mode || quiet_mode)
+        {
+            list_image_ID_with_opts(json_mode, porcelain_mode, quiet_mode, pattern);
+            *out_rc = 0;
+            return 1;
+        }
     }
     return 0;
 }

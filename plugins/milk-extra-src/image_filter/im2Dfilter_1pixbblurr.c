@@ -9,27 +9,10 @@
  *
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#    include "COREMOD_memory/COREMOD_memory.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include "libmilkcommon/pixel_dispatch.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "im2Dfilt1pblurr",
-    .cmdkey           = "im2Dfilt1pblurr",
-    .description      = "1 pixel radual blurr, can be iterated",
-    .description_long = "Apply a 1-pixel box blur to a 2D image. Can be iterated multiple times to "
-                        "approximate a Gaussian blur via the central limit theorem."
-};
 
 
 /* ================================================================
@@ -59,7 +42,7 @@ static uint32_t *NBloop    = NULL;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(im2Dfilter_1pixbblurr, FPS_PARAMS);
 
 static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, long NBiter)
 {
@@ -160,7 +143,7 @@ static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, lo
 }
 
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t im2Dfilter_1pixbblurr_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -176,15 +159,15 @@ static MILK_HOT errno_t compute_function()
     }
 
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         imfilter_im2D_1pixblurr(imgin, &imgout, *blurramp, *NBloop);
 
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     imgid_free(&imgin);
     imgid_free(&imgout);
@@ -195,29 +178,19 @@ static MILK_HOT errno_t compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_filter__im2Dfilter_1pixblurr()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_image_filter_im2Dfilter_1pixbblurr = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "im2Dfilt1pblurr",
+                 .cmdkey      = "im2Dfilt1pblurr",
+                 .description = "1 pixel radual blurr, can be iterated",
+                 .description_long =
+                     "Apply a 1-pixel box blur to a 2D image. Can be iterated multiple times to "
+                     "approximate a Gaussian blur via the central limit theorem." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(im2Dfilter_1pixbblurr),
+    .compute = im2Dfilter_1pixbblurr_compute,
+};
+EXPORT_FPSEXEC(milk, "imgfilt-im2Dfilt1pxbb", runnable_image_filter_im2Dfilter_1pixbblurr);

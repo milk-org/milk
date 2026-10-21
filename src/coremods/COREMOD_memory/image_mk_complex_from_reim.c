@@ -10,26 +10,8 @@
  */
 
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "ri2c",
-    .cmdkey           = "ri2c",
-    .description      = "real, imaginary -> complex",
-    .description_long = "Construct a complex image from separate real and imaginary component "
-                        "images. Combines two real-valued streams into one complex stream."
-};
 
 
 /* ================================================================
@@ -144,14 +126,14 @@ errno_t mk_complex_from_reim(const char *re_name,
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(image_mk_complex_from_reim, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_mk_complex_from_reim_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -159,9 +141,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     IMGID imgim  = imgid_make_from_name(inimimname);
     IMGID imgout = imgid_make_from_name(outimname);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START mk_complex_from_reim_IMGID(&imgre, &imgim, &imgout);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    mk_complex_from_reim_IMGID(&imgre, &imgim, &imgout);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END imgid_free(&imgre);
+    MILK_PROCINFO_END(self)
+    imgid_free(&imgre);
     imgid_free(&imgim);
     imgid_free(&imgout);
 
@@ -171,28 +156,18 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD__mk_complex_from_reim()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_image_mk_complex_from_reim = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "ri2c",
+                 .cmdkey           = "ri2c",
+                 .description      = "real, imaginary -> complex",
+                 .description_long = "Construct a complex image from separate real and imaginary "
+                                     "component images. Combines two real-valued streams into one "
+                                     "complex stream." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_mk_complex_from_reim),
+    .compute = image_mk_complex_from_reim_compute,
+};

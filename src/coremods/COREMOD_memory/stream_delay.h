@@ -10,7 +10,9 @@
 /** @file stream_delay,h
  */
 
-errno_t CLIADDCMD_COREMOD_memory__streamdelay();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_streamdelay;
 
 /*
 errno_t COREMOD_MEMORY_streamDelay(

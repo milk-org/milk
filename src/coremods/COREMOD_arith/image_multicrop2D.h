@@ -10,6 +10,8 @@
 #ifndef COREMOD_ARITH_MULTICROP2D_H
 #define COREMOD_ARITH_MULTICROP2D_H
 
-errno_t CLIADDCMD_COREMODE_arith__multicrop2D();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_arith_image_multicrop2D;
 
 #endif

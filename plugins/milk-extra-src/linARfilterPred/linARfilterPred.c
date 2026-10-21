@@ -42,7 +42,7 @@
 
 #include <time.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "timeutils.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
@@ -56,9 +56,6 @@
 #include "linARfilterPred/linARfilterPred.h"
 #include "linARfilterPred_internal.h"
 
-#include "build_linPF.h"
-#include "applyPF.h"
-
 
 #ifdef HAVE_CUDA
 #    include "linalgebra/linalgebra.h"
@@ -70,28 +67,15 @@
 /* ================================================================== */
 /* ================================================================== */
 
-// Module initialization macro in CLIcore.h
-// macro argument defines module name for bindings
-//
-static errno_t init_module_CLI()
-{
-    CLIADDCMD_linARfilterPred__pfloadascii();
-    CLIADDCMD_linARfilterPred__mselblock();
-    CLIADDCMD_linARfilterPred__imrepshiftx();
-    CLIADDCMD_linARfilterPred__mkARpfilt();
-    CLIADDCMD_linARfilterPred__applyARpfilt();
-    CLIADDCMD_linARfilterPred__mscangain();
-    CLIADDCMD_linARfilterPred__linARPFMupdate();
-    CLIADDCMD_linARfilterPred__linARapplyRT();
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_linARfilterPred_pfloadascii,    &runnable_linARfilterPred_mselblock,
+    &runnable_linARfilterPred_imrepshiftx,    &runnable_linARfilterPred_mkARpfilt,
+    &runnable_linARfilterPred_applyARpfilt,   &runnable_linARfilterPred_mscangain,
+    &runnable_linARfilterPred_linARPFMupdate, &runnable_linARfilterPred_linARapplyRT,
+    &runnable_linARfilterPred_build_linPF,    &runnable_linARfilterPred_applyPF,
+};
 
-    CLIADDCMD_LinARfilterPred__build_linPF();
-    CLIADDCMD_LinARfilterPred__applyPF();
-
-    // add atexit functions here
-
-    return RETURN_SUCCESS;
-}
-
-MILK_MODULE(linARfilterPred, init_module_CLI, NULL);
+MILK_MODULE_RUNNABLES(linARfilterPred, NULL, runnables);
 
 /* =============================================================================================== */

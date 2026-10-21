@@ -48,13 +48,12 @@ Follow the project's [Coding Standards](docs/developer/coding_standards.md):
 
 ## Writing Compute Units
 
-New functions should follow the V2 template pattern:
+New compute units are `MILK_RUNNABLE` descriptors:
 
 1. Copy `src/milk_module_example/examplefunc_fps_cli_poc.c`
-2. Follow the 8-section structure documented in the file header
+2. Follow the structure documented in the file header
 3. See the [Developer Tutorial](docs/developer/tutorial.md) for a walkthrough
-4. See the [fpsexec conventions](.agents/rules/fpsexec-conventions.md)
-   for CMake setup
+4. See the [Programmer's Guide](docs/arch/programmers_guide.md) for registration and CMake setup
 
 ## Commit Messages
 

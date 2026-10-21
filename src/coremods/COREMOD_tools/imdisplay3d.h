@@ -7,6 +7,8 @@
  * @brief Display 2D image as 3D surface
  */
 
-errno_t CLIADDCMD_COREMOD_tools__imdisplay3d();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_tools_imdisplay3d;
 
 errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step);

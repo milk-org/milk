@@ -10,6 +10,8 @@
 #ifndef COREMOD_MEMORY_STREAM_AVE_H
 #define COREMOD_MEMORY_STREAM_AVE_H
 
-errno_t CLIADDCMD_streamaverage();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_streamave;
 
 #endif

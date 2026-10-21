@@ -284,8 +284,8 @@ static int action_stat(const char *stream)
     /* If FPS SHM exists, parse saveON by scanning for key */
     if (fps_alive)
     {
-        /* We can't include milkfpsStandalone here (standalone binary
-         * must not link CLIcore).  Read raw bytes from the SHM file
+        /* We can't link CLIcore here (standalone binary
+         * must not link it).  Read raw bytes from the SHM file
          * and search for the saveON parameter name.
          *
          * The FPS SHM layout stores parameter name strings followed
@@ -293,9 +293,9 @@ static int action_stat(const char *stream)
          * in the first 4 MB of the file, then read the adjacent
          * ON/OFF bytes that milk-fpsCTRL / milk-streamFITSlog write.
          *
-         * For a fully robust implementation, link milkfpsStandalone
+         * For a fully robust implementation, link milkfps
          * and call fps_paramname_to_indexparam() — but this avoids
-         * the CLIcore dependency for a standalone binary.
+         * the extra dependency for a standalone binary.
          */
         FILE *fp = fopen(shm_path, "rb");
         if (fp != NULL)

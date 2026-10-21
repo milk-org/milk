@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
@@ -27,13 +27,6 @@ static int fmInit = 0;
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "imfitmodes",
-                                     .cmdkey      = "imfitmodes",
-                                     .description = "fit image as sum of modes",
-                                     .description_long =
-                                         "Fit an image as a weighted sum of mode images using "
-                                         "least-squares. Returns the best-fit coefficients." };
 
 
 /* ================================================================
@@ -64,7 +57,7 @@ static int    *reuse          = NULL;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(image_fitModes, FPS_PARAMS);
 
 
 /** @brief Decompose image as linear sum
@@ -162,16 +155,17 @@ errno_t linopt_imtools_image_fitModes(const char *ID_name,
     return RETURN_SUCCESS;
 }
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_fitModes_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     linopt_imtools_image_fitModes(inimname, modesimname, maskimname, *SVDeps, outcoeffimname,
                                   *reuse, NULL);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -182,26 +176,20 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_linopt_imtools__image_fitModes()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
 
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_linopt_imtools_image_fitModes = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "imfitmodes",
+                 .cmdkey           = "imfitmodes",
+                 .description      = "fit image as sum of modes",
+                 .description_long = "Fit an image as a weighted sum of mode images using "
+                                     "least-squares. Returns the best-fit coefficients." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_fitModes),
+    .compute = image_fitModes_compute,
+};
+EXPORT_FPSEXEC(milk, "linopt-imgFitModes", runnable_linopt_imtools_image_fitModes);

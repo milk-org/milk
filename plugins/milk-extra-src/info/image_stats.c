@@ -9,8 +9,8 @@
 
 #include <math.h>
 
-#include "CLIcore.h"
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
@@ -29,37 +29,29 @@ errno_t info_image_stats(const char *ID_name, const char *options);
 
 static char p1_in[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 
-static FPS_APP_INFO FPS_app_info_1 = { .fps_name    = "imstats",
-                                       .cmdkey      = "imstats",
-                                       .description = "image stats",
-                                       .description_long =
-                                           "Compute detailed statistics of a 2D image (mean, rms, "
-                                           "min, max, percentiles) and write results to a file.",
-                                       .outvars = IMSTATS_OUTVARS };
-
 #define FPS_PARAMS_1(X) \
     X(".in_name", p1_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")
 
-static FPS_CLI_BINDING my_bindings_1[] = { FPS_PARAMS_1(FPS_X_BINDING) };
-static const int       nb_bindings_1   = sizeof(my_bindings_1) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg_1[]        = { FPS_PARAMS_1(FPS_X_FARG) };
-static CLICMDDATA      CLIcmddata_1    = {
-    "",   "",   __FILE__, sizeof(farg_1) / sizeof(CLICMDARGDEF), farg_1, CLICMDFLAG_FPS,
-    NULL, NULL, NULL
-};
-FPS_CMDSETTINGS_INIT(1, CLIcmddata_1, FPS_app_info_1)
+MILK_PARAMS_DEFINE(image_stats_1, FPS_PARAMS_1);
 
-
-static MILK_HOT errno_t compute_function_1()
+static MILK_HOT errno_t image_stats_1_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     return info_image_stats(p1_in, "");
 }
 
-static errno_t CLIfunction_1(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_1, farg_1, &CLIcmddata_1, my_bindings_1,
-                                        nb_bindings_1, compute_function_1);
-}
+const MILK_RUNNABLE runnable_info_image_stats_1 = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "imstats",
+                 .cmdkey           = "imstats",
+                 .description      = "image stats",
+                 .description_long = "Compute detailed statistics of a 2D image (mean, rms, "
+                                     "min, max, percentiles) and write results to a file.",
+                 .outvars          = IMSTATS_OUTVARS },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_stats_1),
+    .compute = image_stats_1_compute,
+};
 
 /* =========================================
  *  Command 2: imstatsf
@@ -67,51 +59,29 @@ static errno_t CLIfunction_1(void)
 
 static char p2_in[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 
-static FPS_APP_INFO FPS_app_info_2 = { .fps_name    = "imstatsf",
-                                       .cmdkey      = "imstatsf",
-                                       .description = "image stats with file output",
-                                       .description_long =
-                                           "Compute detailed statistics of a 2D image (mean, rms, "
-                                           "min, max, percentiles) and write results to a file.",
-                                       .outvars = IMSTATS_OUTVARS };
-
 #define FPS_PARAMS_2(X) \
     X(".in_name", p2_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")
 
-static FPS_CLI_BINDING my_bindings_2[] = { FPS_PARAMS_2(FPS_X_BINDING) };
-static const int       nb_bindings_2   = sizeof(my_bindings_2) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg_2[]        = { FPS_PARAMS_2(FPS_X_FARG) };
-static CLICMDDATA      CLIcmddata_2    = {
-    "",   "",   __FILE__, sizeof(farg_2) / sizeof(CLICMDARGDEF), farg_2, CLICMDFLAG_FPS,
-    NULL, NULL, NULL
-};
-FPS_CMDSETTINGS_INIT(2, CLIcmddata_2, FPS_app_info_2)
+MILK_PARAMS_DEFINE(image_stats_2, FPS_PARAMS_2);
 
-
-static MILK_HOT errno_t compute_function_2()
+static MILK_HOT errno_t image_stats_2_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     return info_image_stats(p2_in, "fileout");
 }
 
-static errno_t CLIfunction_2(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_2, farg_2, &CLIcmddata_2, my_bindings_2,
-                                        nb_bindings_2, compute_function_2);
-}
-
-errno_t CLIADDCMD_info__image_stats()
-{
-#ifndef MILK_NO_CLI
-    safe_fps_fill_farg_examples(farg_1, my_bindings_1, nb_bindings_1);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_1, CLIfunction_1);
-
-    safe_fps_fill_farg_examples(farg_2, my_bindings_2, nb_bindings_2);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_2, CLIfunction_2);
-#endif
-
-    return RETURN_SUCCESS;
-}
-
+const MILK_RUNNABLE runnable_info_image_stats_2 = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "imstatsf",
+                 .cmdkey           = "imstatsf",
+                 .description      = "image stats with file output",
+                 .description_long = "Compute detailed statistics of a 2D image (mean, rms, "
+                                     "min, max, percentiles) and write results to a file.",
+                 .outvars          = IMSTATS_OUTVARS },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_stats_2),
+    .compute = image_stats_2_compute,
+};
 // option "fileout" : output to file imstat.info.txt
 errno_t info_image_stats(const char *ID_name, const char *options)
 {

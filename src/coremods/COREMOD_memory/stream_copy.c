@@ -9,12 +9,7 @@
  * Uses FPS V2 framework.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_ID.h"
@@ -22,20 +17,6 @@
 
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "libmilkcommon/milk_compiler.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "shmimcopy",
-    .cmdkey      = "shmimcopy",
-    .description = "copy in stream to existing out stream",
-    .description_long =
-        "Copy frames from one shared memory stream to another in real-time. Triggered by semaphore "
-        "on the input stream. Supports type conversion between streams of different data types."
-};
 
 
 /* ================================================================
@@ -56,17 +37,12 @@ static char outimname[FUNCTION_PARAMETER_STRMAXLEN] = "imout";
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  RUNNABLE
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(shmimcopy, FPS_PARAMS);
 
-
-/* ================================================================
- * 6.  COMPUTE WRAPPER
- * ============================================================= */
-
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t shmimcopy_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -82,7 +58,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         ImageStreamIO_typesize(imgin.im->md->datatype) * imgout.im->md->nelement;
     uint64_t byte_copy_size = im_in_datasize < im_out_datasize ? im_in_datasize : im_out_datasize;
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
     {
         ImageStreamIO_semflush(imgin.im, processinfo->triggersem);
 
@@ -107,34 +84,22 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- * 7.  MILK MODULE REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__stream_copy()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_shmimcopy = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "shmimcopy",
+              .cmdkey      = "shmimcopy",
+              .description = "copy in stream to existing out stream",
+              .description_long =
+                  "Copy frames from one shared memory stream to another in real-time. Triggered "
+                  "by semaphore on the input stream. Supports type conversion between streams of "
+                  "different data types." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(shmimcopy),
+    .compute = shmimcopy_compute,
+};
+EXPORT_FPSEXEC(milk, "mem-streamcopy", runnable_COREMOD_memory_shmimcopy);

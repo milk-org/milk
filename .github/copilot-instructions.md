@@ -18,20 +18,20 @@ Adaptive Optics. Architecture: shared-memory streams
 | Coding style     | `.agents/rules/code-style-guide.md`                 |
 | Performance      | `.agents/rules/performance-practices.md`            |
 | Architecture     | `.agents/rules/architecture-principles.md`          |
-| FPS executables  | `.agents/rules/fpsexec-conventions.md`              |
+| Compute units    | `.agents/rules/runnable-conventions.md`             |
 | CMake            | `.agents/rules/cmake-conventions.md`                |
 | Git/PR workflow  | `.agents/rules/git-workflow.md`                     |
-| V2 template      | `src/milk_module_example/examplefunc_fps_cli_poc.c` |
+| Unit template    | `src/milk_module_example/examplefunc_fps_cli_poc.c` |
 | Module CMakeLists| `src/milk_module_example/CMakeLists.txt`           |
 | Dependency graph | `docs/arch/dependency_graph.md`                     |
 | Full onboarding  | `AGENTS.md`                                         |
 
 ## Critical Rules (Summary)
 
-- Lines ≤ 80 characters, Linux kernel C style
+- Lines ≤ 100 characters, Linux kernel C style
 - Kernel-Doc on functions, explicit `#include`s
 - `framework-dev` branch only — never `dev`/`main`
 - Use `sqrtf()` not `sqrt()` for float data
 - No `printf` in compute hot paths
 - No `malloc`/`free` inside per-frame loops
-- Standalone executables link `_compute` variants
+- fpsexecs never link `CLIcore` (`milk_add_fpsexec_stubs()`)

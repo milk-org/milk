@@ -11,21 +11,13 @@
 
 #include "milk_blas_lapacke.h"
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "imsvd",
-    .cmdkey           = "imsvd",
-    .description      = "Singular values decomposition",
-    .description_long = "Decompose image data using Singular Value Decomposition. Extracts "
-                        "principal modes and their singular values from an image cube."
-};
 
 
 /* ================================================================
@@ -51,7 +43,7 @@ static char outcoeffname[FUNCTION_PARAMETER_STRMAXLEN] = "";
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(compute_SVDdecomp, FPS_PARAMS);
 
 
 /**
@@ -183,15 +175,16 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
     return RETURN_SUCCESS;
 }
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t compute_SVDdecomp_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     linopt_compute_SVDdecomp(imcinname, outimname, outcoeffname, NULL);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -202,26 +195,21 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_linopt_imtools__compute_SVDdecomp()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
 
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_linopt_imtools_compute_SVDdecomp = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "imsvd",
+                 .cmdkey      = "imsvd",
+                 .description = "Singular values decomposition",
+                 .description_long =
+                     "Decompose image data using Singular Value Decomposition. Extracts "
+                     "principal modes and their singular values from an image cube." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(compute_SVDdecomp),
+    .compute = compute_SVDdecomp_compute,
+};
+EXPORT_FPSEXEC(milk, "linopt-SVDdecomp", runnable_linopt_imtools_compute_SVDdecomp);

@@ -10,6 +10,12 @@
 #ifndef _ZERNIKEPOLYN_H
 #define _ZERNIKEPOLYN_H
 
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_ZernikePolyn_mkzer;
+extern const MILK_RUNNABLE runnable_ZernikePolyn_rmcpiston;
+extern const MILK_RUNNABLE runnable_ZernikePolyn_mkzercube;
+
 
 void __attribute__((constructor)) libinit_ZernikePolyn();
 

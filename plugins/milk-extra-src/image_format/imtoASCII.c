@@ -7,8 +7,11 @@
  * @brief Convert image file to ASCII
  */
 
-#include "CLIcore.h"
-#include "fps.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -18,35 +21,16 @@ errno_t IMAGE_FORMAT_im_to_ASCII(const char *__restrict IDname, const char *__re
 static char p_in[FUNCTION_PARAMETER_STRMAXLEN]  = "im";
 static char p_out[FUNCTION_PARAMETER_STRMAXLEN] = "im.txt";
 
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "im2ascii",
-                                     .cmdkey      = "im2ascii",
-                                     .description = "convert image file to ASCII",
-                                     .description_long =
-                                         "Export image pixel values to a text (ASCII) file with "
-                                         "configurable formatting and delimiters." };
-
 #define FPS_PARAMS(X)                                                              \
     X(".in_name", p_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
     X(".out_name", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output ASCII file")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(imtoASCII, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t imtoASCII_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     IMAGE_FORMAT_im_to_ASCII(p_in, p_out);
-    return RETURN_SUCCESS;
-}
-
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_format__imtoASCII()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -147,3 +131,20 @@ errno_t IMAGE_FORMAT_im_to_ASCII(const char *__restrict IDname, const char *__re
 
     return RETURN_SUCCESS;
 }
+
+/* ================================================================
+ * RUNNABLE DESCRIPTOR
+ * ============================================================= */
+
+const MILK_RUNNABLE runnable_image_format_imtoASCII = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "im2ascii",
+              .cmdkey      = "im2ascii",
+              .description = "convert image file to ASCII",
+              .description_long =
+                  "Export image pixel values to a text (ASCII) file with configurable formatting "
+                  "and delimiters." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imtoASCII),
+    .compute = imtoASCII_compute,
+};

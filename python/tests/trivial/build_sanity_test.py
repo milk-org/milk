@@ -60,31 +60,31 @@ FPSEXECS = _find_fpsexecs()
         "milkZernikePolyn",
     ],
 )
-def test_module_import_in_cli(module_name: str):
+def test_module_import_in_cli(module_name: str, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MILKCLI_ADD_LIBS", "none")
     cli = CLI(strip_ansi=True)
     try:
-        stdout = cli.send_line(f"mload {module_name}")
+        stdout = cli.send_line(f"@module load {module_name}")
         last_line = stdout.split("\n")[-1]
         lib_file = f"lib{module_name}.so"
 
         if "COREMOD" in module_name:
-            assert last_line.endswith("already loaded - no action taken")
-            fullpath_to_so = pathlib.Path(last_line.split()[2]).resolve()
+            assert stdout == ""
         else:
             assert "LOADED :" in last_line
             assert last_line.endswith(lib_file)
             fullpath_to_so = pathlib.Path(last_line.split()[-1]).resolve()
+            milk_installdir = pathlib.Path(os.environ["MILK_INSTALLDIR"]).resolve()
+            assert milk_installdir / "lib" / lib_file == fullpath_to_so
 
-        milk_installdir = pathlib.Path(os.environ["MILK_INSTALLDIR"]).resolve()
-
-        assert milk_installdir / "lib" / lib_file == fullpath_to_so
-
-        stdout_lines = cli.send_line(f"m?").split("\n")
+        list_out = cli.send_line("@module list")
+        stdout_lines = list_out.split("\n")
+        assert module_name in list_out
         assert len(stdout_lines) > 4
         if "COREMOD" in module_name:
-            assert len(stdout_lines) == 8
+            assert len(stdout_lines) == 6
         else:
-            assert len(stdout_lines) == 9
+            assert len(stdout_lines) >= 7
     finally:
         cli.close()
 

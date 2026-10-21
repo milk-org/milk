@@ -7,7 +7,9 @@
  * @brief List images in memory
  */
 
-errno_t CLIADDCMD_COREMOD_memory__list_image();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_listim;
 
 errno_t memory_monitor(const char *termttyname);
 
@@ -22,6 +24,11 @@ errno_t list_image_ID_ofp(FILE *fo);
 errno_t list_image_ID_ofp_simple(FILE *fo);
 
 errno_t list_image_ID();
+
+errno_t list_image_ID_with_opts(int         json_mode,
+                                int         porcelain_mode,
+                                int         quiet_mode,
+                                const char *pattern);
 
 errno_t list_image_ID_file(const char *fname);
 

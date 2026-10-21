@@ -9,30 +9,15 @@
  * Uses FPS V2 framework.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include <stdio.h>
+#include <string.h>
+
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "create_image.h"
 #include "image_ID.h"
 #include "processinfo.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "streammlim",
-    .cmdkey           = "streammlim",
-    .description      = "monitor stream values for safety",
-    .description_long = "Monitor pixel values in a stream and flag frames where values exceed "
-                        "configurable min/max thresholds. Reports out-of-range statistics."
-};
 
 
 /* ================================================================
@@ -126,24 +111,19 @@ static errno_t monitor_logic(IMGID *imgptr)
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  RUNNABLE
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(streammlim, FPS_PARAMS);
 
-
-/* ================================================================
- * 6.  COMPUTE WRAPPER
- * ============================================================= */
-
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t streammlim_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
     IMGID inimg = imgid_make_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
     if (dcprocinfo == 1)
     {
@@ -158,41 +138,27 @@ static MILK_HOT errno_t compute_function()
         }
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         monitor_logic(&inimg);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- * 7.  MILK MODULE REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t stream_monitorlimits_addCLIcmd()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_streammlim = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "streammlim",
+                 .cmdkey      = "streammlim",
+                 .description = "monitor stream values for safety",
+                 .description_long =
+                     "Monitor pixel values in a stream and flag frames where values exceed "
+                     "configurable min/max thresholds. Reports out-of-range statistics." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(streammlim),
+    .compute = streammlim_compute,
+};
 
 
 /* ================================================================
@@ -208,5 +174,6 @@ errno_t stream_monitorlimits(const char *instreamname)
     maxON  = 0;
     maxVal = 1000.0;
 
-    return compute_function();
+    milk_runnable_prepare(&runnable_COREMOD_memory_streammlim);
+    return streammlim_compute(&runnable_COREMOD_memory_streammlim);
 }

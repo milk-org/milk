@@ -73,20 +73,17 @@ Modifiers are composable: `@LE:name` means "local memory, must exist".
 _When writing modules using `fpsexec` patterns, passing a non-existent or disallowed modifier
 automatically alerts the user and aborts the module spin-up to prevent silent failures._
 
-### Legacy `>` Prefixes
+### `>` Type Prefix
 
-Older code may use `>` as a separator for inline creation hints embedded in the stream name string:
+A `>` separator introduces inline creation hints embedded in the stream name string:
 
 | Prefix  | Example    | Effect                  |
 | ------- | ---------- | ----------------------- |
 | `t...>` | `tf32>im1` | Set data type (float32) |
 
-These are parsed by `imgid_make_from_name()` and remain supported. Keyword count and circular buffer
-size are set via `mdt->NBkw` and `mdt->CBsize` before calling `imgid_mkimage()`.
-
-> [!NOTE]
-> The `s>` prefix (shared memory) has been **removed**. It was redundant with the default behavior
-> (shared memory is always the default). Use `@S:` for explicit shared-memory annotation if needed.
+These are parsed by `imgid_make_from_name()`. Keyword count and circular buffer size are set via
+`mdt->NBkw` and `mdt->CBsize` before calling `imgid_mkimage()`. Shared memory is the default; use
+`@S:` for explicit shared-memory annotation if needed.
 
 ## 4. Introspection
 

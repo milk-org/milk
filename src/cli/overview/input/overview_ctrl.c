@@ -33,6 +33,7 @@
 #include "fps_connect.h"
 #include "fps_disconnect.h"
 #include "fps_isvalid.h"
+#include "fps_tmux.h"
 #include "milk_spawn.h"
 
 

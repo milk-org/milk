@@ -15,28 +15,17 @@
 #define MODULE_SHORTNAME_DEFAULT "info"
 #define MODULE_DESCRIPTION "Image information and statistics"
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "cubeMatchMatrix.h"
-#include "cubestats.h"
-#include "image_stats.h"
-#include "improfile.h"
-#include "stream_monproc.h"
+#include "info.h"
 
 int infoscreen_wcol;
 int infoscreen_wrow; // window size
 
-static errno_t init_module_CLI()
-{
-    CLIADDCMD_info__cubeMatchMatrix();
-    CLIADDCMD_info__cubestats();
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_info_cubeMatchMatrix, &runnable_info_cubestats,     &runnable_info_stream_monproc,
+    &runnable_info_image_stats_1,   &runnable_info_image_stats_2, &runnable_info_improfile,
+};
 
-    CLIADDCMD_info__stream_monproc();
-
-    CLIADDCMD_info__image_stats();
-    CLIADDCMD_info__improfile();
-
-    return RETURN_SUCCESS;
-}
-
-MILK_MODULE(info, init_module_CLI, NULL);
+MILK_MODULE_RUNNABLES(info, NULL, runnables);

@@ -9,27 +9,13 @@
  * Uses FPS V2 framework.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include <stdlib.h>
+#include <string.h>
+
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "breakcube",
-    .cmdkey           = "breakcube",
-    .description      = "break cube into individual images",
-    .description_long = "Split a 3D FITS cube into individual 2D FITS files, one per slice along "
-                        "the z-axis. Output files are numbered sequentially."
-};
 
 
 /* ================================================================
@@ -94,45 +80,35 @@ imageID break_cube(const char *restrict ID_name)
 }
 
 
-/* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
- * ============================================================= */
-
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(breakcube, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t breakcube_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START break_cube(inname);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    break_cube(inname);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- * 7.  MILK MODULE REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_iofits__breakcube()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_COREMOD_iofits_breakcube = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "breakcube",
+                 .cmdkey           = "breakcube",
+                 .description      = "break cube into individual images",
+                 .description_long = "Split a 3D FITS cube into individual 2D FITS files, one per "
+                                     "slice along the z-axis. Output files are numbered "
+                                     "sequentially." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(breakcube),
+    .compute = breakcube_compute,
+};

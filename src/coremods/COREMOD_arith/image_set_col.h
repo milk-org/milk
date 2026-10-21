@@ -10,6 +10,8 @@
 #ifndef COREMOD_ARITH_IMAGE_SET_COL_H
 #define COREMOD_ARITH_IMAGE_SET_COL_H
 
-errno_t CLIADDCMD_COREMOD_arith__imset_col();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_arith_image_set_col;
 
 #endif

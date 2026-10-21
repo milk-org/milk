@@ -15,12 +15,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -28,19 +23,6 @@
 
 /* forward decl */
 errno_t write_float_file(const char *fname, float value);
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "writef2file",
-    .cmdkey           = "writef2file",
-    .description      = "write float to file",
-    .description_long = "File system utility operations: count files matching a pattern, list "
-                        "directory contents, and check file existence."
-};
 
 
 /* ================================================================
@@ -60,33 +42,31 @@ static double p_value = 0.0;
     X(".fname", p_fname, FPTYPE_FILENAME, 1, FPFLAG_DEFAULT_INPUT, "output filename") \
     X(".value", &p_value, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "float value")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(fileutils, FPS_PARAMS);
 
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t fileutils_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START FUNC_CHECK_RETURN(write_float_file(p_fname, p_value));
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END   DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    FUNC_CHECK_RETURN(write_float_file(p_fname, p_value));
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_tools__fileutils()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
-#endif /* MILK_NO_CLI */
+const MILK_RUNNABLE runnable_COREMOD_tools_fileutils = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "writef2file",
+              .cmdkey           = "writef2file",
+              .description      = "write float to file",
+              .description_long = "File system utility operations: count files matching a pattern, "
+                                  "list directory contents, and check file existence." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(fileutils),
+    .compute = fileutils_compute,
+};
 
 int file_exist(char *filename)
 {
