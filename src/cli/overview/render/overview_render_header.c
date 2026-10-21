@@ -16,73 +16,7 @@
 #include <string.h>
 
 extern float ov_scan_get_interval(void);
-
-/**
- * ov_render_header_text - render formatted header text with highlight markers and UTF-8 handling.
- * @text:          Input string with optional \x01 (highlight on) and \x02 (highlight off).
- * @hs:            Horizontal scroll offset.
- * @max_vis_width: Maximum visible columns allowed to be printed.
- * @base_fg:       Base foreground color when not highlighted.
- *
- * Return: Number of visible character cells printed.
- */
-int ov_render_header_text(const char *text, int hs, int max_vis_width, ov_rgb_t base_fg)
-{
-    int vis_col = 0;
-    int printed = 0;
-    int i       = 0;
-
-    while (text[i] != '\0' && printed < max_vis_width)
-    {
-        if (text[i] == '\x01')
-        {
-            if (vis_col >= hs)
-            {
-                ov_theme_fg(OV_FG_BRIGHT);
-                ov_buf_bold();
-                ov_buf_underline();
-            }
-            i++;
-        }
-        else if (text[i] == '\x02')
-        {
-            if (vis_col >= hs)
-            {
-                ov_buf_reset_attr();
-                ov_theme_bg(OV_BG_HEADER);
-                ov_theme_fg(base_fg);
-            }
-            i++;
-        }
-        else
-        {
-            int clen = 1;
-            if ((text[i] & 0xE0) == 0xC0)
-            {
-                clen = 2;
-            }
-            else if ((text[i] & 0xF0) == 0xE0)
-            {
-                clen = 3;
-            }
-            else if ((text[i] & 0xF8) == 0xF0)
-            {
-                clen = 4;
-            }
-
-            if (vis_col >= hs)
-            {
-                ov_buf_printf("%.*s", clen, text + i);
-                printed++;
-            }
-            vis_col++;
-            i += clen;
-        }
-    }
-    return printed;
-}
-
-void render_pad_spaces(int chars_written, int panel_width);
+void         render_pad_spaces(int chars_written, int panel_width);
 
 /* One header segment: drawn after @lead spaces of header background */
 enum

@@ -143,18 +143,6 @@ static void ov_loop_names_save_locked(void)
     fclose(fp);
 }
 
-/**
- * @brief Save persistent custom loop names to disk.
- * @param[in] model System model containing detected loops (unused)
- */
-void ov_loop_names_save(const OV_MODEL *model)
-{
-    (void) model;
-    pthread_mutex_lock(&s_loop_names_mutex);
-    ov_loop_names_save_locked();
-    pthread_mutex_unlock(&s_loop_names_mutex);
-}
-
 /** saved_find_locked - slot of @hash in the saved-name registry, or -1 (mutex held). */
 static int saved_find_locked(uint64_t hash)
 {
@@ -245,27 +233,4 @@ const char *ov_get_loop_name(const OV_MODEL *model, int loop_id)
     }
     int idx = loop_id - 1;
     return (idx < model->nb_loops) ? ov_loop_name(&model->loops[idx]) : "";
-}
-
-/**
- * ov_find_loop_by_id - Find loop array index from 1-based loop ID.
- * @model:   System model
- * @loop_id: 1-based loop ID
- *
- * Return: Array index in model->loops[], or -1 if not found.
- */
-int ov_find_loop_by_id(const OV_MODEL *model, int loop_id)
-{
-    if (model == NULL || loop_id <= 0)
-    {
-        return -1;
-    }
-    for (int i = 0; i < model->nb_loops; i++)
-    {
-        if (model->loops[i].loop_id == loop_id)
-        {
-            return i;
-        }
-    }
-    return -1;
 }

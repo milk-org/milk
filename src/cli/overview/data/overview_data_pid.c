@@ -324,13 +324,3 @@ int pid_same_process(pid_t pid, uint64_t ticks)
     pid_probe(pid, &e);
     return e.status != OV_PID_DEAD && e.start == ticks;
 }
-
-/**
- * pid_check_zombie - 1 if /proc/<pid>/stat reports state 'Z' (read afresh).
- */
-int pid_check_zombie(pid_t pid)
-{
-    char        buf[1024];
-    const char *f3 = pid_stat_fields(pid, buf, sizeof(buf));
-    return (f3 != NULL && f3[0] == 'Z');
-}

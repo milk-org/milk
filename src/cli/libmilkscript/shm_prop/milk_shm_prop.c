@@ -26,13 +26,7 @@
 #include "milk_shm_prop.h"
 #include "milk_shm_prop_internal.h"
 
-/**
- * @brief Check whether a prefix token is a known entity namespace.
- *
- * @param prefix Token before the first dot
- * @return 1 if @prefix is a recognized namespace, 0 otherwise
- */
-/** fmt_double_roundtrip() - shortest %g form of @v that strtod() maps back to @v. */
+/** milk_shm_prop_fmt_double() - shortest %g form of @v that strtod() maps back to @v. */
 void milk_shm_prop_fmt_double(char *out, size_t outsz, double v)
 {
     for (int prec = 15; prec <= 17; prec++)

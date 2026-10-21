@@ -281,37 +281,6 @@ static const char *proc_status_str(const PROCESSINFO *pi, pid_t pid)
 }
 
 /**
- * strip_ws_local - Advance a string pointer past leading spaces and tabs
- * @s: Input NUL-terminated string
- *
- * Skips horizontal whitespace characters at the start of @s.
- *
- * Return: Pointer to the first non-whitespace character in @s
- */
-static const char *strip_ws_local(const char *s)
-{
-    while (*s == ' ' || *s == '\t')
-    {
-        s++;
-    }
-    return s;
-}
-
-/**
- * starts_with_local - Check whether a string begins with a given prefix
- * @line:   Input string to inspect
- * @prefix: Prefix string to match against the start of @line
- *
- * Compares the leading bytes of @line with @prefix.
- *
- * Return: 1 if @line starts with @prefix, 0 otherwise
- */
-static int starts_with_local(const char *line, const char *prefix)
-{
-    return strncmp(line, prefix, strlen(prefix)) == 0;
-}
-
-/**
  * json_escape_str - write JSON-escaped string to buf
  * @buf:   destination buffer
  * @bufsz: size of @buf in bytes

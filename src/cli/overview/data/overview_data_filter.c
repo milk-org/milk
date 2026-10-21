@@ -29,13 +29,6 @@ typedef struct
 
 static ov_filter_cache_entry_t s_filter_cache[OV_FILTER_CACHE_SIZE];
 static uint64_t                s_filter_tick;
-static unsigned long           s_filter_compiles;
-
-/** ov_filter_compile_count - number of regcomp() calls so far (cache behaviour checks). */
-unsigned long ov_filter_compile_count(void)
-{
-    return s_filter_compiles;
-}
 
 /**
  * get_cached_regex - compiled @pattern from a small LRU cache. Failed patterns are cached too, so an
@@ -66,7 +59,6 @@ static regex_t *get_cached_regex(const char *pattern, int *out_reg_ok)
         regfree(&e->re);
     }
     snprintf(e->pattern, sizeof(e->pattern), "%s", pattern);
-    s_filter_compiles++;
     e->state    = (regcomp(&e->re, pattern, REG_EXTENDED | REG_NOSUB | REG_ICASE) == 0) ? 1 : -1;
     e->used     = ++s_filter_tick;
     *out_reg_ok = (e->state == 1);

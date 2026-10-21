@@ -219,18 +219,6 @@ static inline uint8_t tv_cell_glyph(tv_cell_t c)
 }
 
 /**
- * tv_cell_with_fg - Return a copy of cell @c with its 24-bit foreground color replaced by @fg
- * @c:  Original packed cell word
- * @fg: New 24-bit foreground RGB value
- *
- * Return: Updated packed cell word.
- */
-static inline tv_cell_t tv_cell_with_fg(tv_cell_t c, uint32_t fg)
-{
-    return (c & ~((uint64_t) 0xFFFFFF << 24)) | ((uint64_t) (fg & 0xFFFFFF) << 24);
-}
-
-/**
  * tv_cell_with_glyph - Return a copy of cell @c with its glyph index replaced by @glyph
  * @c:     Original packed cell word
  * @glyph: New 8-bit glyph index
@@ -275,9 +263,6 @@ typedef struct
 } tv_emit_t;
 
 void tv_emit_init(tv_emit_t *e, int level);
-
-/** tv_emit_code() - @rgb as sent at @e's depth: the RGB itself, or the palette index. */
-uint32_t tv_emit_code(tv_emit_t *e, uint32_t rgb);
 
 /**
  * tv_flush_diff() - Escape sequences turning @prev into @cur, written to @out; @prev is updated.
@@ -518,18 +503,6 @@ static inline double tv_xf_img_x(const tv_xform_t *x, double dj)
 static inline double tv_xf_img_y(const tv_xform_t *x, double di)
 {
     return x->cy + x->sy * (di - x->cdy) * x->step;
-}
-
-/** tv_xf_disp_x() - Inverse of tv_xf_img_x(). */
-static inline double tv_xf_disp_x(const tv_xform_t *x, double ix)
-{
-    return x->cdx + x->sx * (ix - x->cx) / x->step;
-}
-
-/** tv_xf_disp_y() - Inverse of tv_xf_img_y(). */
-static inline double tv_xf_disp_y(const tv_xform_t *x, double iy)
-{
-    return x->cdy + x->sy * (iy - x->cy) / x->step;
 }
 
 /** Sampling tables, samples, display range and the image layer, reused across frames. */

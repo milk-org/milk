@@ -82,7 +82,6 @@ void        ov_insp_line(ov_rgb_t fg, const char *fmt, ...) __attribute__((forma
 void        ov_insp_kv(const char *label, ov_rgb_t fg, const char *fmt, ...)
     __attribute__((format(printf, 3, 4)));
 void render_pad_to_col(int end_col);
-int  ov_render_header_text(const char *text, int hs, int max_vis_width, ov_rgb_t base_fg);
 void ov_render_cell(int         col,
                     ov_rgb_t    fg,
                     ov_rgb_t    bg,
@@ -116,8 +115,6 @@ int ov_has_filter(const OV_LAYOUT *lay);
 int ov_is_filter_active(const OV_LAYOUT *lay);
 
 const char *ov_get_filter_pattern(const OV_LAYOUT *lay);
-
-const char *ov_get_active_filter(const OV_LAYOUT *lay);
 
 void ov_clear_all_filters(OV_LAYOUT *lay);
 
@@ -160,14 +157,13 @@ int        ov_tgt_find(const OV_MODEL *m, ov_focus_t panel, const OV_TARGET *t);
 int        ov_rows(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int *fidx, int max);
 const int *ov_view_rows(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int *n);
 int        ov_view_row_of(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int idx);
-unsigned long ov_view_build_count(void);
-int           ov_row_to_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row);
-int           ov_sel_row(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row);
-int           ov_sel_model(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int idx);
-int           ov_sel_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel);
-void          ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m);
-int           ov_detail_target(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t *panel);
-int           ov_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m);
+int        ov_row_to_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row);
+int        ov_sel_row(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row);
+int        ov_sel_model(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int idx);
+int        ov_sel_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel);
+void       ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m);
+int        ov_detail_target(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t *panel);
+int        ov_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m);
 const SG_TREE_NODE *ov_graph_rows(const OV_LAYOUT *lay, const OV_MODEL *m, int *n);
 int                 ov_msel_has(const OV_LAYOUT *lay, const char *name);
 void                ov_msel_set(OV_LAYOUT *lay, const char *name, int on);
@@ -179,13 +175,6 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc);
 
 void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m);
 void ov_render_theme_popup(OV_LAYOUT *lay);
-
-void render_highlighted_name(const char *name,
-                             int         max_len,
-                             regex_t    *re,
-                             int         has_re,
-                             ov_rgb_t    normal_fg,
-                             ov_rgb_t    row_bg);
 
 /* Process status label (STAL when stalled) and its colour; @fg may be NULL */
 const char *ov_proc_status(const OV_PROC *p, ov_rgb_t *fg);
@@ -320,7 +309,6 @@ int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m);
 void              ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m);
 const int8_t     *ov_node_depths(const OV_MODEL *m, int root, sg_mode_t mode);
 const SG_LINEAGE *ov_lineage(const OV_MODEL *m, int si, sg_mode_t mode);
-unsigned          ov_derived_build_count(void);
 const char       *ov_fmt_dt_ns(char *buf, size_t n, int64_t ns);
 const char       *ov_fmt_si(char *buf, size_t n, double v);
 
@@ -374,11 +362,9 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m);
 
 /* Help panel utilities */
 void ov_help_open(OV_LAYOUT *lay);
-int  ov_help_nb_sections(void);
 int  ov_help_visible_count(const OV_LAYOUT *lay);
 int  ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
 int  ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand);
-int  ov_help_focus_section(ov_focus_t focus);
 int  ov_help_section_first_vis_row(const OV_LAYOUT *lay, int sec);
 int  ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc);
 

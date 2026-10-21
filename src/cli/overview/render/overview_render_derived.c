@@ -24,8 +24,6 @@ typedef struct
     int             mode;
 } OV_DERIVED_KEY;
 
-static unsigned s_builds;
-
 /** derived_slot - slot of @keys holding (m, root, mode), or the one to overwrite (*hit 0). */
 static int derived_slot(OV_DERIVED_KEY *keys,
                         int            *next,
@@ -47,7 +45,6 @@ static int derived_slot(OV_DERIVED_KEY *keys,
     *next   = (*next + 1) % OV_DERIVED_SLOTS;
     keys[i] = (OV_DERIVED_KEY) { m, m->seq, root, mode };
     *hit    = 0;
-    s_builds++;
     return i;
 }
 
@@ -79,10 +76,4 @@ const SG_LINEAGE *ov_lineage(const OV_MODEL *m, int si, sg_mode_t mode)
         sg_compute_lineage(m, si, mode, &lin[i]);
     }
     return &lin[i];
-}
-
-/** ov_derived_build_count - walks computed so far (cache misses), for tests. */
-unsigned ov_derived_build_count(void)
-{
-    return s_builds;
 }

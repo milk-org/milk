@@ -110,7 +110,6 @@ void ov_get_terminal_size(int *rows, int *cols);
 
 void ov_buf_force_clear(void);
 void ov_buf_reset_size(int rows, int cols);
-void ov_buf_reset(void);
 void ov_buf_append(const char *data, int len);
 void ov_buf_flush_internal(void);
 void ov_buf_flush_delta(int term_rows, int term_cols);
@@ -203,24 +202,6 @@ static inline void ov_buf_bg(int r, int g, int b)
 }
 
 /**
- * ov_buf_fg_256 - Set active 256-color palette foreground index for subsequent draws
- * @code: 256-color palette index (`0..255`)
- */
-static inline void ov_buf_fg_256(int code)
-{
-    ov__current_fg = OV_COLOR_256 | (code & 0xFF);
-}
-
-/**
- * ov_buf_bg_256 - Set active 256-color palette background index for subsequent draws
- * @code: 256-color palette index (`0..255`)
- */
-static inline void ov_buf_bg_256(int code)
-{
-    ov__current_bg = OV_COLOR_256 | (code & 0xFF);
-}
-
-/**
  * ov_buf_ul_color - Set active 24-bit truecolor underline RGB color for subsequent draws
  * @r: Red channel (`0..255`)
  * @g: Green channel (`0..255`)
@@ -229,15 +210,6 @@ static inline void ov_buf_bg_256(int code)
 static inline void ov_buf_ul_color(int r, int g, int b)
 {
     ov__current_ul = OV_COLOR_TRUE | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
-}
-
-/**
- * ov_buf_ul_color_256 - Set active 256-color palette underline index for subsequent draws
- * @code: 256-color palette index (`0..255`)
- */
-static inline void ov_buf_ul_color_256(int code)
-{
-    ov__current_ul = OV_COLOR_256 | (code & 0xFF);
 }
 
 /**
@@ -271,52 +243,11 @@ static inline void ov_buf_bold(void)
 }
 
 /**
- * ov_buf_dim - Enable dim attribute bit (`OV_ATTR_DIM`) for subsequent draws
- */
-static inline void ov_buf_dim(void)
-{
-    ov__current_attr |= OV_ATTR_DIM;
-}
-
-/**
- * ov_buf_italic - Enable italic attribute bit (`OV_ATTR_ITALIC`) for subsequent draws
- */
-static inline void ov_buf_italic(void)
-{
-    ov__current_attr |= OV_ATTR_ITALIC;
-}
-
-/**
  * ov_buf_underline - Enable underline attribute bit (`OV_ATTR_UNDERLINE`) for subsequent draws
  */
 static inline void ov_buf_underline(void)
 {
     ov__current_attr |= OV_ATTR_UNDERLINE;
 }
-
-/**
- * ov_buf_reverse - Enable reverse-video attribute bit (`OV_ATTR_REVERSE`) for subsequent draws
- */
-static inline void ov_buf_reverse(void)
-{
-    ov__current_attr |= OV_ATTR_REVERSE;
-}
-
-/**
- * ov_buf_blink - Enable blink attribute bit (`OV_ATTR_BLINK`) for subsequent draws
- */
-static inline void ov_buf_blink(void)
-{
-    ov__current_attr |= OV_ATTR_BLINK;
-}
-
-/**
- * ov_buf_cls - Force a full-screen clear on the next frame flush
- */
-static inline void ov_buf_cls(void)
-{
-    ov_buf_force_clear();
-}
-
 
 #endif /* OVERVIEW_ANSI_H */

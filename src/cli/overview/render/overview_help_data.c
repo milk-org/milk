@@ -271,16 +271,6 @@ const intro_item_t g_intro_items[] = {
 const int g_intro_total = (int) (sizeof(g_intro_items) / sizeof(g_intro_items[0]));
 
 /**
- * ov_help_nb_sections - get the total number of help sections.
- *
- * Return: Number of help sections (HS_COUNT).
- */
-int ov_help_nb_sections(void)
-{
-    return HS_COUNT;
-}
-
-/**
  * ov_help_section_name - get human-readable name of a section.
  * @sec: Section index.
  *
@@ -310,29 +300,6 @@ const char *ov_help_section_name(int sec)
         return "Colors";
     default:
         return "Help";
-    }
-}
-
-/**
- * ov_help_focus_section - map layout focus to its corresponding help section.
- * @focus: Active panel focus enum.
- *
- * Return: Corresponding section index (HS_STREAMS, HS_PROCS, etc.).
- */
-int ov_help_focus_section(ov_focus_t focus)
-{
-    switch (focus)
-    {
-    case OV_FOCUS_STREAMS:
-        return HS_STREAMS;
-    case OV_FOCUS_PROCS:
-        return HS_PROCS;
-    case OV_FOCUS_FPS:
-        return HS_FPS;
-    case OV_FOCUS_GRAPH:
-        return HS_GRAPH;
-    default:
-        return HS_NAV;
     }
 }
 

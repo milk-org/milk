@@ -48,8 +48,6 @@ int cli_determine_mode_lexical(const char *line,
 
 bool find_match_pair_lexical(const char *line, int len, int cursor_pos, CLI_MATCH_PAIR *pair);
 
-int cli_ts_has_unclosed_quotes(const char *s);
-
 bool cli_ts_is_statement_boundary_before(const char *s, size_t i);
 
 int cli_ts_count_shell_keyword(const char *s, const char *kw);

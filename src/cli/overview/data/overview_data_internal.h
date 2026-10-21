@@ -172,14 +172,12 @@ const char *pid_stat_fields(pid_t pid, char *buf, size_t sz);
 const char *pid_stat_skip(const char *p, int n);
 uint64_t    pid_get_start_ticks(pid_t pid);
 int         pid_same_process(pid_t pid, uint64_t ticks);
-int         pid_check_zombie(pid_t pid);
 int64_t     pid_get_rss_kb(pid_t pid);
 int         pid_is_alive(pid_t pid);
 int         pid_get_cpu_ticks(pid_t pid, uint64_t *utime, uint64_t *stime);
 const char *ov_datatype_name(uint8_t dt);
 
 int  scache_find(const char *name);
-void scache_evict(int ci);
 void scache_evict_locked(int ci);
 void scache_evict_by_name(const char *name);
 int  fcache_find(const char *name);

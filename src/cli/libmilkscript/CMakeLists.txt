@@ -37,7 +37,6 @@ set(MILKSCRIPT_SOURCES
     core/CLIcore_modules.c
     core/CLIcore_setSHMdir.c
     core/CLIcore_signals.c
-    core/CLIcore_utils.c
     core/CLIcore_vars.c
     core/milk_catalog.c
     core/milk_catalog_build.c

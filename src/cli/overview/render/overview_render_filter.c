@@ -174,14 +174,6 @@ const char *ov_get_filter_pattern(const OV_LAYOUT *lay)
 }
 
 /**
- * ov_get_active_filter - applied pattern of the filtered panel, or "".
- */
-const char *ov_get_active_filter(const OV_LAYOUT *lay)
-{
-    return (lay != NULL) ? ov_get_active_filter_for(lay, ov_get_effective_filter_panel(lay)) : "";
-}
-
-/**
  * ov_clear_all_filters - clear all filter strings and reset filter state.
  * @lay: Pointer to layout structure.
  */

@@ -59,27 +59,12 @@ extern const intro_item_t g_intro_items[];
 extern const int          g_intro_total;
 
 /**
- * ov_help_nb_sections - get the total number of help sections.
- *
- * Return: Number of sections (HS_COUNT).
- */
-int ov_help_nb_sections(void);
-
-/**
  * ov_help_section_name - get human-readable name of a section.
  * @sec: Section index.
  *
  * Return: Section title string.
  */
 const char *ov_help_section_name(int sec);
-
-/**
- * ov_help_focus_section - map layout focus to its corresponding help section.
- * @focus: Active panel focus enum.
- *
- * Return: Corresponding section index (HS_STREAMS, HS_PROCS, etc.).
- */
-int ov_help_focus_section(ov_focus_t focus);
 
 /**
  * ov_help_section_tag - get short 3-4 letter badge for section.

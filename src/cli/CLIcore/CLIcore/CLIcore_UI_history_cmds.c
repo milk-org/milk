@@ -2,6 +2,14 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file    CLIcore_UI_history_cmds.c
+ * @brief   History search, save, and display commands.
+ *
+ * @see CLIcore_UI_history.c for core log mgmt.
+ * @see CLIcore_UI_history_display.c for ghistory.
+ */
+
 #ifndef _GNU_SOURCE
 #    define _GNU_SOURCE
 #endif
@@ -13,14 +21,6 @@
 #    include <readline/readline.h>
 #endif
 #include "CLIcore.h"
-
-/**
- * @file    CLIcore_UI_history_cmds.c
- * @brief   History search, save, and display commands.
- *
- * @see CLIcore_UI_history.c for core log mgmt.
- * @see CLIcore_UI_history_display.c for ghistory.
- */
 
 /**
  * @brief Write readline command history to a file.

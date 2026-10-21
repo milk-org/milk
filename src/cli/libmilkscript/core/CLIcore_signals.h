@@ -15,8 +15,6 @@
 
 #include <setjmp.h>
 
-errno_t write_process_log();
-
 errno_t set_signal_catch();
 
 errno_t write_process_exit_report(const char *__restrict errortypestring);

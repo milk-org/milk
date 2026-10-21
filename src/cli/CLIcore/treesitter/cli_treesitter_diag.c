@@ -447,67 +447,6 @@ static bool find_first_error(TSNode node, const char *source, CLI_SYNTAX_DIAG *d
     return false;
 }
 
-/**
- * node_tree_has_missing - Check whether an AST subtree has an unclosed block or subshell.
- * @node:   Current Tree-sitter AST node being inspected.
- * @buffer: Full multi-line source buffer being checked for completeness.
- *
- * Recursively walks @node to determine if any missing closer (`done`, `fi`,
- * `esac`, `}`, `)`) or open-block `ERROR` node requires a multi-line PS2
- * continuation prompt.
- *
- * Return: true if @buffer has an unclosed block or subshell, or false otherwise.
- */
-static bool node_tree_has_missing(TSNode node, const char *buffer)
-{
-    if (ts_node_is_missing(node))
-    {
-        const char *mtype = ts_node_type(node);
-        if (strcmp(mtype, "done") == 0)
-        {
-            return is_unclosed_block_keyword("for", buffer, NULL, 0);
-        }
-        if (strcmp(mtype, "fi") == 0)
-        {
-            return is_unclosed_block_keyword("if", buffer, NULL, 0);
-        }
-        if (strcmp(mtype, "esac") == 0)
-        {
-            return is_unclosed_block_keyword("case", buffer, NULL, 0);
-        }
-        if (strcmp(mtype, "}") == 0)
-        {
-            return is_unclosed_block_keyword("{", buffer, NULL, 0);
-        }
-        if (strcmp(mtype, ")") == 0)
-        {
-            int o = cli_ts_count_shell_keyword(buffer, "(");
-            int c = cli_ts_count_shell_keyword(buffer, ")");
-            return (o > c);
-        }
-        if (is_terminator_type(mtype))
-        {
-            return has_unclosed_block(buffer, NULL, 0);
-        }
-        return false;
-    }
-
-    if (strcmp(ts_node_type(node), "ERROR") == 0 && is_open_block_error(node, buffer))
-    {
-        return true;
-    }
-
-    uint32_t count = ts_node_child_count(node);
-    for (uint32_t i = 0; i < count; i++)
-    {
-        if (node_tree_has_missing(ts_node_child(node, i), buffer))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
 #endif /* USE_TREESITTER */
 
 /**
@@ -746,54 +685,6 @@ int cli_ts_get_diagnostic(const char *line, CLI_SYNTAX_DIAG *diag)
         snprintf(diag->token, sizeof(diag->token), "}");
         return 1;
     }
-    return 0;
-#endif
-}
-
-/**
- * cli_ts_is_incomplete - Check if a command buffer requires multi-line continuation.
- * @buffer: Null-terminated accumulated command buffer.
- *
- * Tests whether @buffer has unclosed quotes, a trailing line-continuation or
- * pipeline operator, or an unclosed compound block (`for`, `while`, `until`,
- * `if`, `case`, `{`, `(`) in the Tree-sitter AST.
- *
- * Return: 1 if @buffer is incomplete and needs a PS2 prompt, or 0 if complete.
- */
-int cli_ts_is_incomplete(const char *buffer)
-{
-    if (buffer == NULL || buffer[0] == '\0')
-    {
-        return 0;
-    }
-    if (cli_ts_has_unclosed_quotes(buffer))
-    {
-        return 1;
-    }
-    if (has_trailing_continuation_op(buffer, NULL))
-    {
-        return 1;
-    }
-
-#ifdef USE_TREESITTER
-    if (cli_ts_get_parser() == NULL && cli_ts_init() != 0)
-    {
-        return 0;
-    }
-    TSTree *tree = cli_ts_parse_normalized_tree(buffer, strlen(buffer));
-    if (!tree)
-    {
-        return 0;
-    }
-    TSNode root       = ts_tree_root_node(tree);
-    bool   incomplete = false;
-    if (ts_node_has_error(root))
-    {
-        incomplete = node_tree_has_missing(root, buffer);
-    }
-    ts_tree_delete(tree);
-    return incomplete ? 1 : 0;
-#else
     return 0;
 #endif
 }

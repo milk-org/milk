@@ -351,9 +351,6 @@ void *get_farg_ptr(char *tag, long *fpsi)
  *
  * This function is intended to be used when running from the CLI.
  * For standalone applications, arguments are parsed in the main() function.
- *
- * This function has been moved from libfps to CLIcore_checkargs.c
- * to have native access to CLIcore data structures.
  */
 errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
 {

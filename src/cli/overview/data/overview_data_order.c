@@ -197,14 +197,3 @@ uint32_t ov_order_gen(int panel)
 {
     return s_ord[panel].gen;
 }
-
-/** ov_order_reset - forget every order and rank snapshot (scan order again). */
-void ov_order_reset(void)
-{
-    for (int p = 0; p < OV_ORDER_NB; p++)
-    {
-        uint32_t gen = s_ord[p].gen;
-        memset(&s_ord[p], 0, sizeof(s_ord[p]));
-        s_ord[p].gen = gen + 1; /* never reuse a generation a cache may hold */
-    }
-}

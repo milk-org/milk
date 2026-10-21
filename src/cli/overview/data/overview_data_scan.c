@@ -9,12 +9,6 @@
  * Cache cleanup (called from ov_scan_stop)
  * ========================================================= */
 
-/**
- * ov_scan_cache_cleanup - Release and unmap all cached streams and FPS descriptors
- * Called during worker shutdown to close opened ImageStreamIO images, disconnect
- * active FPS mappings, and free cached processinfo entries.
- */
-
 struct timespec s_shm_mtime   = { 0, 0 };
 struct timespec s_fps_mtime   = { 0, 0 };
 struct timespec s_proc_mtime  = { 0, 0 };

@@ -894,38 +894,6 @@ bool find_match_pair_lexical(const char *line, int len, int cursor_pos, CLI_MATC
 }
 
 /**
- * cli_ts_has_unclosed_quotes - Check if a string contains an unclosed single or double quote.
- * @s: Null-terminated command buffer to scan.
- *
- * Scans @s respecting backslash escapes outside single quotes and toggles
- * single- and double-quote state flags.
- *
- * Return: Non-zero if a single or double quote remains unclosed at the end of @s, or 0 otherwise.
- */
-int cli_ts_has_unclosed_quotes(const char *s)
-{
-    int in_dquote = 0;
-    int in_squote = 0;
-    for (size_t i = 0; s[i] != '\0'; i++)
-    {
-        if (s[i] == '\\' && s[i + 1] != '\0' && !in_squote)
-        {
-            i++;
-            continue;
-        }
-        if (s[i] == '"' && !in_squote)
-        {
-            in_dquote = !in_dquote;
-        }
-        else if (s[i] == '\'' && !in_dquote)
-        {
-            in_squote = !in_squote;
-        }
-    }
-    return in_dquote || in_squote;
-}
-
-/**
  * @brief Check if a statement boundary precedes the token at index @i.
  */
 bool cli_ts_is_statement_boundary_before(const char *s, size_t i)

@@ -462,21 +462,6 @@ int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t
     return found ? 0 : -1;
 }
 
-/**
- * @brief Write process control state on an active processinfo entry (`@p.<name>.<prop>`).
- *
- * Accepts:
- * - `prop` in `{"ctrl", "ctrlval", "CTRLval", "action", "status", "state"}` with
- *   symbolic values (`"run"`, `"resume"`, `"pause"`, `"step"`, `"incr"`, `"stop"`,
- *   `"exit"`, `"kill"`) or integer control codes (`0..3`).
- * - Action-property shorthands: `prop` in `{"run", "resume", "pause", "step",
- *   "incr", "stop", "exit", "kill"}`.
- *
- * @param name Process name in `pinfolist`
- * @param prop Property key
- * @param val  Control value string
- * @return 0 on success, -1 on error
- */
 /** parse_bool() - 1 for 1/on/true/yes/empty, 0 for 0/off/false/no, -1 otherwise. */
 static int parse_bool(const char *v)
 {

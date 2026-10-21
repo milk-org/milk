@@ -165,9 +165,6 @@ static inline int milk_read_all(int fd, void *buf, size_t len)
 }
 
 /**
- * @brief Send a framed message without file descriptors.
- */
-/**
  * milk_sendmsg_all() - send header + payload in one sendmsg (more only on a short write); @msg's
  * control data (fds) goes with the first chunk. 0 on success.
  */
@@ -286,11 +283,6 @@ static inline int milk_proto_send_with_fds(int         fd,
     return milk_sendmsg_all(fd, &msg, sizeof(hdr) + ((msg.msg_iovlen == 2) ? len : 0));
 }
 
-/**
- * @brief Receive a frame header (and optional SCM_RIGHTS fds) + payload.
- *
- * Caller must free(*payload_out) if *payload_out != NULL.
- */
 /** milk_proto_close_fds() - close and reset received fds (error paths must never leak them). */
 static inline void milk_proto_close_fds(int fds[4])
 {

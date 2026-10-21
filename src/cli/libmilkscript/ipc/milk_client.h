@@ -68,14 +68,6 @@ int milk_client_set(const char                *spec,
      */
 int milk_client_set_argv(int argc, char **argv, const milk_client_hooks_t *hooks);
 
-/**
-     * @brief Evaluate a `@calc` expression on the persistent server.
-     *
-     * If @p varname is non-NULL, captures any printed scalar result into
-     * @p varname via `hooks->set_var`.
-     */
-int milk_client_calc(const char *expr, const char *varname, const milk_client_hooks_t *hooks);
-
 /** milk_client_calc_argv() - `@calc [-v a[,b...]] [-a arr] <expr...>`: -v binds the values of the last
  * statements (an assignment's value is the assigned value), -a the pixels of an image result. */
 int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hooks);

@@ -44,7 +44,6 @@
 /* External scan and help API */
 void ov_help_open(OV_LAYOUT *lay);
 int  ov_help_visible_count(const OV_LAYOUT *lay);
-int  ov_help_nb_sections(void);
 int  ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
 int  ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand);
 int  ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc);

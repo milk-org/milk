@@ -6,8 +6,7 @@
  * @file    CLIcore_help_command.c
  * @brief   Per-command help and search functions
  *
- * Contains help_command(), command_info_search(),
- * help(), and help_module().
+ * Contains help_command(), help(), and help_module().
  *
  * @see CLIcore_help.c for system info and listings.
  */
@@ -443,120 +442,6 @@ errno_t help_command(const char *__restrict cmdkey)
     return RETURN_SUCCESS;
 }
 
-
-/**
- * @brief search for string in command info
- *
- */
-
-errno_t command_info_search(const char *restrict searchstring)
-{
-    int foundsubstring  = 0;
-    int foundregexmatch = 0;
-    int colorcodecmd    = 31; // red
-    int colorcodeinfo   = 32; // green
-
-    regex_t regex;
-    /* Compile regular expression */
-    int reti = regcomp(&regex, searchstring, REG_EXTENDED);
-    if (reti)
-    {
-        PRINT_ERROR("Could not compile regex : \"%s\"", searchstring);
-        return RETURN_FAILURE;
-    }
-    int        maxGroups = 8;
-    regmatch_t groupArray[maxGroups];
-
-    for (unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
-    {
-        int matchsubstring = 0;
-        // look for substring match
-
-        if (strstr(data.cmd[cmdi].info, searchstring) != NULL)
-        {
-            foundsubstring = 1;
-            matchsubstring = 1;
-            printf("%c[%d;%dm%s%c[%dm in %s [%s]\n\t%c[%d;%dm%s%c[%dm\n", (char) 27, 1,
-                   colorcodecmd, data.cmd[cmdi].key, (char) 27, 0, data.cmd[cmdi].module,
-                   cmd_shortname(cmdi), (char) 27, 1, colorcodeinfo, data.cmd[cmdi].info, (char) 27,
-                   0);
-        }
-
-        // Regular expression search
-        if (matchsubstring == 0)
-        {
-            // Regular expression search
-            reti = regexec(&regex, data.cmd[cmdi].info, maxGroups, groupArray, 0);
-            if (!reti)
-            {
-                foundregexmatch = 1;
-
-                printf("%c[%d;%dm%s%c[%dm in %s "
-                       "[%s]\n\t%c[%d;%dm%s%c[%dm\n",
-                       (char) 27, 1, colorcodecmd, data.cmd[cmdi].key, (char) 27, 0,
-                       data.cmd[cmdi].module, cmd_shortname(cmdi), (char) 27, 1, colorcodeinfo,
-                       data.cmd[cmdi].info, (char) 27, 0);
-
-                char        *cursor = data.cmd[cmdi].info;
-                unsigned int offset = 0;
-                for (int g = 0; g < maxGroups; g++)
-                {
-                    if (groupArray[g].rm_so == (regoff_t) ((size_t) -1))
-                    {
-                        break; // No more groups
-                    }
-
-                    if (g == 0)
-                    {
-                        offset = groupArray[g].rm_eo;
-                    }
-
-                    char cursorCopy[strlen(cursor) + 1];
-                    memcpy(cursorCopy, cursor, strlen(cursor) + 1);
-                    cursorCopy[groupArray[g].rm_eo] = 0;
-                    /*printf("\t    Match Group %u: [%2u-%2u]: %s\n",
-                           g, groupArray[g].rm_so, groupArray[g].rm_eo,
-                           cursorCopy + groupArray[g].rm_so);*/
-                }
-                cursor += offset;
-            }
-            else if (reti == REG_NOMATCH)
-            {
-                //puts("No match");
-            }
-            else
-            {
-                char msgbuf[100];
-                regerror(reti, &regex, msgbuf, sizeof(msgbuf));
-                PRINT_ERROR("Regex match failed: %s", msgbuf);
-                regfree(&regex);
-                return RETURN_FAILURE;
-            }
-        }
-    }
-
-    regfree(&regex);
-
-    if (foundsubstring == 0)
-    {
-        if (foundregexmatch == 0)
-        {
-            printf("\tNo substring or regex match to \"%s\"\n", searchstring);
-        }
-    }
-
-    return RETURN_SUCCESS;
-}
-
-
-/**
- * @brief Top-level 'help' command handler.
- *
- * Dispatches to topic-specific help pages or the
- * general CLI help summary. Supports --json and
- * --porcelain output modes for machine-readable
- * output.
- */
 /* `@help --tui` (milk-cli sets it: the fuzzy finder lives with readline) */
 errno_t (*milk_help_tui_hook)(void) = NULL;
 

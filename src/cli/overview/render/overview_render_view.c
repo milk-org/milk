@@ -36,13 +36,6 @@ typedef struct
 } OV_PANEL_VIEW;
 
 static OV_PANEL_VIEW s_view[OV_NB_LIST_PANELS];
-static unsigned long s_view_builds;
-
-/** ov_view_build_count - number of row rebuilds so far (cache behaviour checks). */
-unsigned long ov_view_build_count(void)
-{
-    return s_view_builds;
-}
 
 /** ov_view_key - the inputs of @panel's rows (call after ov_order_get, which may rebuild the order). */
 static void ov_view_key(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, OV_VIEW_KEY *k)
@@ -111,7 +104,6 @@ static void ov_view_build(OV_PANEL_VIEW   *v,
         }
     }
     v->valid = 1;
-    s_view_builds++;
 }
 
 /**

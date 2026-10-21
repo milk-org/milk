@@ -156,15 +156,6 @@ void ov_theme_set(int index)
 }
 
 /**
- * ov_theme_cycle - cycle to the next theme.
- */
-void ov_theme_cycle(void)
-{
-    int next = (ov_theme_active_idx + 1) % ov_num_themes;
-    ov_theme_set(next);
-}
-
-/**
  * ov_theme_init - initialize theme subsystem from CLI arg or environment.
  * @preferred_theme: CLI argument or NULL.
  *

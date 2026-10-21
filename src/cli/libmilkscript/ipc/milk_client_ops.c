@@ -1507,19 +1507,6 @@ static int client_calc_or_test(const char                *expr,
 }
 
 /**
- * milk_client_calc - Evaluate calculator expression @expr and print or bind to @varname
- * @expr:    Calculator expression string
- * @varname: Optional shell variable name to bind (or NULL to print)
- * @hooks:   Optional shell variable hooks
- *
- * Return: 0 on success, non-zero on error.
- */
-int milk_client_calc(const char *expr, const char *varname, const milk_client_hooks_t *hooks)
-{
-    return client_calc_or_test(expr, 0, 0, varname, NULL, hooks);
-}
-
-/**
  * milk_client_calc_argv - Parse and execute `@calc` command-line arguments (`--repl`, `-v`, `-a`, `<expr>...`)
  * @argc:  Argument count
  * @argv:  Argument vector

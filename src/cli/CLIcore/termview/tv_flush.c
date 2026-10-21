@@ -143,21 +143,6 @@ static inline uint32_t tv_quant(tv_emit_t *e, uint32_t rgb)
     return e->qval[h];
 }
 
-/**
- * tv_emit_code - Convert a 24-bit RGB color to the emitter's active color code
- * @e:   Emitter state structure
- * @rgb: Packed 0xRRGGBB color value
- *
- * Exposes tv_quant() so UI rendering can snap colors to the active palette
- * before comparing or drawing cells.
- *
- * Return: 24-bit RGB value (level 3) or quantized palette index (levels 1 and 2)
- */
-uint32_t tv_emit_code(tv_emit_t *e, uint32_t rgb)
-{
-    return tv_quant(e, rgb);
-}
-
 /* What a cell looks like: colours that are not drawn (no ink, or full ink) do not count. */
 typedef struct
 {

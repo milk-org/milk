@@ -327,11 +327,11 @@ int ov_find_proc_by_pid(const OV_MODEL *model, pid_t pid);
 
 /**
  * ov_add_edge - add an edge to the graph if not duplicate.
- * @model: model to modify
- * @src:   source node index
- * @tgt:   target node index
- * @type:  edge type
- * @label: human-readable label
+ * @model:    model to modify
+ * @src:      source node index
+ * @tgt:      target node index
+ * @type:     edge type
+ * @evidence: bitmask of OV_EV_* evidence sources
  */
 void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, unsigned evidence);
 
@@ -376,7 +376,6 @@ void ov_sort_fps(const OV_MODEL *model, int key, int dir, int *order);
 void       ov_order_sort(const OV_MODEL *m, int panel, int key, int dir);
 const int *ov_order_get(const OV_MODEL *m, int panel, int *n);
 uint32_t   ov_order_gen(int panel);
-void       ov_order_reset(void);
 
 /**
  * ov_filter_build - build filtered index array.
@@ -389,8 +388,7 @@ void       ov_order_reset(void);
  * Return: number of matching indices written to @out.
  */
 int ov_filter_build(const char *pattern, const char **names, int count, int *out, int max_out);
-unsigned long ov_filter_compile_count(void);
-int           ov_model_export_snapshot(const OV_MODEL *m, char *path, size_t pathsz);
+int ov_model_export_snapshot(const OV_MODEL *m, char *path, size_t pathsz);
 
 /* States of processes and loops: the first seven follow processinfo's PROCESSINFO_LOOPSTAT_* */
 typedef enum

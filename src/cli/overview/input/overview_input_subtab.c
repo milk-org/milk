@@ -23,7 +23,7 @@ static int utf8_cols(const char *s)
     return n;
 }
 
-/** jump_to_stream - leave the sub-tab for DASH with list panel @f on model entry @idx. */
+/** jump_to - leave the sub-tab for DASH with list panel @f on model entry @idx. */
 static void jump_to(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t f, int idx)
 {
     lay->freeze = 0; /* before resolving: freeze changes the drawn rows */

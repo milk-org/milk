@@ -26,50 +26,6 @@
 #include "timeutils.h"
 
 /**
- * @brief Write entry into debug log
- *
- *
- */
-errno_t write_process_log()
-{
-    static FILE *fplog;
-    static long  logcnt = 0;
-    char         fname[STRINGMAXLEN_FILENAME];
-    pid_t        thisPID;
-
-    thisPID = getpid();
-    WRITE_FILENAME(fname, "logreport.%05d.log", thisPID);
-
-    fplog = fopen(fname, "a");
-
-    if (fplog != NULL)
-    {
-        char timestring[TIMESTRINGLEN];
-        mkUTtimestring_nanosec(timestring, dctestpoint.time);
-
-        fprintf(fplog, "%18ld  %s ", logcnt, timestring);
-
-        {
-            // extract last word
-            char str[STRINGMAXLEN_FULLFILENAME];
-            snprintf(str, sizeof(str), "%s", dctestpoint.file);
-            char *lastword = strrchr(str, '/') + 1;
-            fprintf(fplog, " %s", lastword);
-        }
-
-        fprintf(fplog, " %4d", dctestpoint.line);
-        fprintf(fplog, " %s", dctestpoint.func);
-        fprintf(fplog, "  %s\n", dctestpoint.msg);
-
-        logcnt++;
-
-        fclose(fplog);
-    }
-
-    return RETURN_SUCCESS;
-}
-
-/**
  * @brief Restore terminal echo mode.
  *
  * Re-enables ECHO on stdin. Called during signal

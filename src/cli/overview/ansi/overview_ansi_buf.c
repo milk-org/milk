@@ -88,14 +88,6 @@ void ov_buf_reset_size(int rows, int cols)
 }
 
 /**
- * ov_buf_reset - Reset shadow screen buffer to max terminal dimensions
- */
-void ov_buf_reset(void)
-{
-    ov_buf_reset_size(OV_MAX_ROWS, OV_MAX_COLS);
-}
-
-/**
  * ov_buf_append - Append raw ANSI sequence bytes to the screen output buffer
  * @data: Byte buffer containing ANSI sequences or text
  * @len:  Number of bytes to append

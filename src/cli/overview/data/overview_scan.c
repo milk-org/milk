@@ -248,15 +248,6 @@ void ov_scan_stop(void)
 }
 
 /**
- * ov_scan_get_model - pick up the latest complete model.
- *
- * Swaps ready → display under lock. The returned pointer
- * remains valid and untouched by the scan thread until
- * the next call to ov_scan_get_model().
- *
- * Return: pointer to the current display model.
- */
-/**
  * ov_scan_drain_event_fd - drain pending wakeups from scan eventfd.
  */
 void ov_scan_drain_event_fd(void)

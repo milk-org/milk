@@ -566,16 +566,3 @@ int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[],
 
     return strlen(outcmdexstring);
 }
-
-/**
- * @brief Print a 64-bit flag with ON/OFF indicator.
- *
- * Tests whether @testflag is set in @flags and
- * prints a colored ON or OFF label followed by
- * @flagdescription.
- *
- * @param flags           Combined flag word
- * @param testflag        Bit(s) to test
- * @param flagdescription Human-readable label
- * @return 1 if flag is set, 0 if not
- */

@@ -30,15 +30,6 @@
 void cli_parse(const char *input);
 
 /**
- * @brief Evaluate an entire line as a math expression.
- *
- * If the line successfully evaluates as a generic math
- * expression, print the result and return 1.
- * If it contains syntax errors, return 0.
- */
-int cli_calc_eval_line(const char *input);
-
-/**
  * @brief Evaluate a string as a pure math expression, returning the result value silently.
  *
  * @param input     Expression string

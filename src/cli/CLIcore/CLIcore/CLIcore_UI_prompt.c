@@ -2,25 +2,15 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include <stdio.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
-#include <termios.h>
-#ifdef USE_READLINE
-#    include <readline/history.h>
-#    include <readline/readline.h>
-#endif
-#include "CLIcore.h"
-#include "CLIcore_UI_execute.h"
-#include "CLIcore_script.h"
-#include "cli_calc_parser.h"
-#include <glob.h>
-#include <sys/wait.h>
-#include "COREMOD_memory/COREMOD_memory.h"
-#include "timeutils.h"
+/**
+ * @file    CLIcore_UI_prompt.c
+ * @brief   Configurable CLI prompt format (`cli_setprompt()`)
+ */
 
+#include <stdio.h>
+#include <string.h>
+
+#include "CLIcore.h"
 
 /*
  * ============================================================
@@ -35,15 +25,15 @@
  *   %n = CLI process name (data.processname)
  */
 
-/** prompt_format stored in data struct is TBD;
- *  for now use a file-scope buffer. */
 char cli_prompt_format[200] = "";
 
 /**
- * @brief Update the CLI prompt string.
+ * cli_setprompt - Configure or display the interactive CLI prompt format string
  *
- * Reflects current directory, session name, and
- * script nesting level.
+ * Prints the active prompt format and supported `%` tokens when called without
+ * arguments, or updates `cli_prompt_format` from the first CLI argument.
+ *
+ * Return: RETURN_SUCCESS
  */
 errno_t cli_setprompt(void)
 {
@@ -68,7 +58,3 @@ errno_t cli_setprompt(void)
     printf("Prompt set to: '%s'\n", cli_prompt_format);
     return RETURN_SUCCESS;
 }
-
-
-// cli_expand_braces moved to CLIcore_script_expand.c
-// cli_expand_env moved to CLIcore_script_expand.c

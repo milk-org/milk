@@ -226,8 +226,3 @@ void ov_draw_tooltip(OV_LAYOUT *lay)
     lay->hover_tooltip[0] = '\0';
     s_row_tooltip[0]      = '\0';
 }
-
-/**
- * ov_render_theme_popup - render interactive color theme selection popup.
- * @lay: Pointer to layout structure.
- */

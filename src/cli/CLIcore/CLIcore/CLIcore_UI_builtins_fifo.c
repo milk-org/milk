@@ -2,29 +2,20 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include <stdio.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <string.h>
-#include <unistd.h>
-#include "CLIcore.h"
-
-
 /**
  * @file    CLIcore_UI_builtins_fifo.c
- * @brief   FIFO management and stream/FPS listing
+ * @brief   Dynamic FIFO management command (`cli_fifo()`)
  *
- * Contains:
- *  - cli_fifo()        — dynamic FIFO management
- *  - cli_list_streams()— list shared-memory streams
- *  - cli_list_fps()    — list FPS instances
- *
- * @see CLIcore_UI_builtins.c for other builtins.
+ * @see CLIcore_UI_builtins.c for other interactive CLI builtins.
  */
 
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
 
-/* Forward declarations for FIFO helpers
- * defined in CLIcore.c */
+#include "CLIcore.h"
+
+/* Forward declarations for FIFO helpers defined in CLIcore.c */
 extern int  cli_fifo_open(const char *path);
 extern void cli_fifo_close(void);
 
@@ -170,9 +161,3 @@ errno_t cli_fifo(void)
            sub);
     return RETURN_FAILURE;
 }
-
-/*
- * ============================================================
- *  List Streams / FPS Command
- * ============================================================
- */

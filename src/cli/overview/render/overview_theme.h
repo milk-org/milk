@@ -103,7 +103,6 @@ const ov_theme_t *ov_theme_get_active(void);
 int               ov_theme_get_active_index(void);
 int               ov_theme_find_by_id(const char *id);
 void              ov_theme_set(int index);
-void              ov_theme_cycle(void);
 int               ov_theme_init(const char *preferred_theme);
 
 /* Semantic color palette (maps to active theme) */
@@ -217,10 +216,6 @@ int               ov_theme_init(const char *preferred_theme);
 /* LCARS block elements */
 #define OV_LCARS_LEFT "▌"
 #define OV_LCARS_RIGHT "▐"
-
-/* Sparkline block characters (1/8 to full) */
-static const char *OV_SPARK_CHARS[] = { " ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█" };
-#define OV_SPARK_LEVELS 9
 
 #include "overview_theme_draw.h"
 #include "overview_theme_panel.h"

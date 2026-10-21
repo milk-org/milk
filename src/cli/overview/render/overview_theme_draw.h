@@ -104,52 +104,6 @@ static inline ov_rgb_t ov_rgb_on(ov_rgb_t bg)
 }
 
 /**
- * ov_buf_gradient_bar - render a horizontal gradient bar.
- * @row:   screen row
- * @col:   start column
- * @len:   total bar width (characters)
- * @fill:  fraction filled 0.0 to 1.0
- * @lo:    color at 0%
- * @hi:    color at 100%
- */
-static inline void ov_buf_gradient_bar(int      row,
-                                       int      col,
-                                       int      len,
-                                       float    fill,
-                                       ov_rgb_t lo,
-                                       ov_rgb_t hi)
-{
-    if (fill < 0.0f)
-    {
-        fill = 0.0f;
-    }
-    if (fill > 1.0f)
-    {
-        fill = 1.0f;
-    }
-    int filled = (int) (fill * (float) len + 0.5f);
-
-    ov_buf_pos(row, col);
-    for (int i = 0; i < len; i++)
-    {
-        if (i < filled)
-        {
-            float    t = (len > 1) ? (float) i / (float) (len - 1) : 0.0f;
-            ov_rgb_t c = ov_rgb_lerp(lo, hi, t);
-            ov_theme_bg(c);
-            ov_buf_printf(" ");
-        }
-        else
-        {
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_MUTED);
-            ov_buf_printf("%s", OV_BOX_H);
-        }
-    }
-    ov_buf_reset_attr();
-}
-
-/**
  * ov_buf_printf_gradient - print text with a gradient foreground color.
  * @a:   start color
  * @b:   end color
@@ -203,37 +157,6 @@ static inline void ov_buf_printf_gradient(ov_rgb_t a, ov_rgb_t b, const char *fm
             char_idx++;
         }
     }
-}
-
-/**
- * ov_buf_sparkline - draw a sparkline from a value array.
- * @row:     screen row
- * @col:     start column
- * @vals:    array of values [0.0, 1.0]
- * @len:     number of values to render
- * @color:   foreground color
- */
-static inline void ov_buf_sparkline(int row, int col, const float *vals, int len, ov_rgb_t color)
-{
-    ov_buf_pos(row, col);
-    ov_theme_bg(OV_BG_PANEL);
-    ov_theme_fg(color);
-
-    for (int i = 0; i < len; i++)
-    {
-        float v = vals[i];
-        if (v < 0.0f)
-        {
-            v = 0.0f;
-        }
-        if (v > 1.0f)
-        {
-            v = 1.0f;
-        }
-        int idx = (int) (v * (float) (OV_SPARK_LEVELS - 1) + 0.5f);
-        ov_buf_printf("%s", OV_SPARK_CHARS[idx]);
-    }
-    ov_buf_reset_attr();
 }
 
 /**

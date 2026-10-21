@@ -138,16 +138,6 @@ void scache_evict_locked(int ci)
 }
 
 /**
- * scache_evict - close mapping and compact array.
- */
-void scache_evict(int ci)
-{
-    pthread_mutex_lock(&s_scache_mutex);
-    scache_evict_locked(ci);
-    pthread_mutex_unlock(&s_scache_mutex);
-}
-
-/**
  * scache_evict_by_name - find and evict stream by name under lock.
  */
 void scache_evict_by_name(const char *name)

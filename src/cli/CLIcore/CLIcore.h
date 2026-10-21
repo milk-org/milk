@@ -495,13 +495,9 @@ errno_t set_signal_catch();
 
 void sig_handler(int signo);
 
-errno_t runCLItest(int argc, char *argv[], char *promptstring);
-
 errno_t runCLI(int argc, char *argv[], char *promptstring);
 
 errno_t CLI_execute_line();
-
-errno_t write_process_log();
 
 #endif /* !MILK_NO_CLI — full CLI mode */
 

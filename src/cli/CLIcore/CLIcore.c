@@ -164,14 +164,6 @@ void    cli_fifo_close(void);
 int     cli_fifo_open(const char *path);
 errno_t cli_fifo(void);
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                    FUNCTIONS SOURCE CODE                                        */
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name CLIcore functions */
-
-/// CLI functions
 
 static int exitCLI_done = 0;
 
@@ -212,7 +204,7 @@ errno_t exitCLI()
     {
         printf("Closing PID %ld (prompt process)\n", (long) getpid());
     }
-    //    exit(0);
+
     cli_history_save();
     data.CLIloopON = 0; // stop CLI loop
 
@@ -334,11 +326,6 @@ errno_t CLI_startup()
 {
     DEBUG_TRACE_FSTART();
 
-    if (dcquiet == 1)
-    {
-        // ImageStreamIO_set_verbosity(0);
-    }
-
     // get PID and write it to shell env variable MILK_CLI_PID
     CLIPID = getpid();
     if (dcquiet == 0)
@@ -349,8 +336,6 @@ errno_t CLI_startup()
                                        "Cpus_allowed_list",
                                        CLIPID);
     }
-
-    //	printf("    _SC_CLK_TCK = %d\n", sysconf(_SC_CLK_TCK));
 
     if (Verbose)
     {
@@ -394,9 +379,6 @@ errno_t CLI_startup()
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-// RegisterCLIcmd duplicate removed
-
 
 /**
  * sighandler - Record terminal window size change signals (SIGWINCH)
@@ -1048,12 +1030,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     return RETURN_SUCCESS;
 }
 
-
-/*
- * runCLI_cmd_init() and its static helper callbacks
- * have been extracted to CLIcore_cmd_registry.c.
- * The function prototype is forward-declared above.
- */
 
 /**
  * runCLI_free - Release dynamically allocated CLI runtime tables and RNG state

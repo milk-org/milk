@@ -228,22 +228,3 @@ void sg_compute_node_depths(const OV_MODEL *m, int start_node, sg_mode_t mode, i
         }
     }
 }
-
-/**
- * sg_dfs_tree - Recursively format graph tree hierarchy with Unicode box-drawing branches
- * @m:               Pointer to data model
- * @current_stream:  Current stream index in traversal
- * @reader_node_idx: Node index of consuming process or FPS
- * @target_stream:   Root stream index
- * @target_proc:     Root process index
- * @S_words:         Reachable streams bitmask
- * @mode:            Graph mode filter
- * @prefix:          Prefix indentation string for tree branches
- * @is_last:         Flag indicating if this is the last sibling
- * @is_root:         Flag indicating if this is the root node
- * @depth:           Current tree depth
- * @path:            Array tracking ancestor nodes on path for cycle detection
- * @path_len:        Length of @path
- * @out_nodes:       Output array of formatted tree nodes
- * @nb_out_nodes:    Running count of tree nodes in output
- */

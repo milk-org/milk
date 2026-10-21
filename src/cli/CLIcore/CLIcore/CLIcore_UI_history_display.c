@@ -2,17 +2,6 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#ifndef _GNU_SOURCE
-#    define _GNU_SOURCE
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <time.h>
-#include <fnmatch.h>
-#include "CLIcore.h"
-
 /**
  * @file    CLIcore_UI_history_display.c
  * @brief   History log display and query commands.
@@ -23,6 +12,17 @@
  *
  * @see CLIcore_UI_history.c for core log management.
  */
+
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
+#include <fnmatch.h>
+#include "CLIcore.h"
 
 /* Forward declaration — defined in
  * CLIcore_UI_history.c */

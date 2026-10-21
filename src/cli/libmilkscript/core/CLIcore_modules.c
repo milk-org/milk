@@ -402,16 +402,7 @@ errno_t RegisterModule(const char *__restrict FileName,
     DEBUG_TRACE_FSTART();
 
     /* On the very first call, scan /proc/self/cmdline for -q /
-     * --quiet / -h1 / --help-oneline.
-     * This fires before main() when called from a
-     * __attribute__((constructor)) in a linked .so, so it is
-     * the only reliable place to intercept a command-line flag
-     * at constructor time. */
-    /*
-    NOTE: deprecated requirement since this will NOT be called from constructors anymore,
-    since we fetch a struct from modules and the "constructor" is deferred to code that is
-    here and executes synchronously.
-    */
+     * --quiet / -h1 / --help-oneline. */
     static int quiet_scanned = 0;
     if (!quiet_scanned)
     {

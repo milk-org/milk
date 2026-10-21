@@ -34,12 +34,6 @@
 #include <unistd.h>
 
 /* =========================================================
- * Global state (defined here, declared extern elsewhere)
- * ========================================================= */
-
-/* Global ANSI and terminal state is owned and defined in overview_ansi.c */
-
-/* =========================================================
  * Signal handlers
  * ========================================================= */
 
@@ -90,20 +84,10 @@ extern void            ov_render__sync_selection(OV_LAYOUT *lay, const OV_MODEL 
 extern int             ov_get_selected_stream_idx(const OV_LAYOUT *lay, const OV_MODEL *m);
 extern int             ov_handle_key(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 
-/* =========================================================
- * main
- * ========================================================= */
-
 /**
- * main - Entry point for milk-CTRL standalone TUI dashboard
- * @argc: Command-line argument count
- * @argv: Command-line argument vector
- *
- * Return: 0 on clean exit, non-zero on error.
- */
-/**
- * milkctrl_inspect_hint - name the stream the F3 inspector shows to the scan thread, and scan at once, once the
- * cursor has rested on it for 150 ms (holding a key down must not trigger a scan per row).
+ * milkctrl_inspect_hint - name the stream the F3 inspector shows to the scan thread, and scan at
+ * once, once the cursor has rested on it for 150 ms (holding a key down must not trigger a scan
+ * per row).
  */
 static void milkctrl_inspect_hint(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
@@ -130,6 +114,10 @@ static void milkctrl_inspect_hint(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_scan_force_update();
     }
 }
+
+/* =========================================================
+ * main
+ * ========================================================= */
 
 /**
  * main - Entry point for the milk-CTRL standalone TUI dashboard
