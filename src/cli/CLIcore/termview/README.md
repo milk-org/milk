@@ -16,6 +16,4 @@ guide: [docs/guide/termview.md](../../../../docs/guide/termview.md).
 | tv_stream.c | Read-only stream mapping, validation, truncation guard, reopen |
 | tv_term.c | Raw mode, enter/leave sequences, signals, stderr while the screen is in use |
 | tv_cmap.c | Colormaps, scale curves, the LUT, option name tables |
-| tests/test_termview_unit.c | Unit tests (decoder, emitter, pipeline, interface, stream lifecycle) |
-| tests/termview_pty_test.py | pty tests and benchmarks (`--perf`, `--bench`) |
-| tests/tv-test-mkstream.c | Test stream generator (patterns, rates; MILK_SHM_DIR only) |
+| tests/test_termview_unit.c | Unit tests (NaN/Inf guards, LUT, range smoothing, stream lifecycle) |

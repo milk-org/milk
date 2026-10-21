@@ -37,7 +37,4 @@ if(BUILD_TESTING)
   target_link_libraries(test_termview_unit PRIVATE termview_core)
   add_test(NAME termview_unit COMMAND test_termview_unit)
   set_tests_properties(termview_unit PROPERTIES LABELS termview)
-
-  add_executable(tv-test-mkstream tests/tv-test-mkstream.c)
-  target_link_libraries(tv-test-mkstream PRIVATE termview_flags ImageStreamIO m)
 endif()
