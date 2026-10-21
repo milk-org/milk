@@ -35,20 +35,7 @@ __attribute__((weak)) void cli_history_log_shell(const char *cmd)
     (void) cmd;
 }
 
-__attribute__((weak)) void cli_session_log_cmd(const char *cmd)
-{
-    (void) cmd;
-}
-
-__attribute__((weak)) void cli_history_expand(void)
-{
-}
-
 __attribute__((weak)) int cli_savehistory(void)
 {
     return 0;
-}
-
-__attribute__((weak)) void cli_save_last_argument(void)
-{
 }

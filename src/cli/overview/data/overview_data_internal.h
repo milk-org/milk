@@ -183,7 +183,6 @@ void scache_evict(int ci);
 void scache_evict_locked(int ci);
 void scache_evict_by_name(const char *name);
 int  fcache_find(const char *name);
-void fcache_evict(int ci);
 void fcache_evict_locked(int ci);
 int  pcache_find(long pindex, pid_t pid);
 void pcache_evict(int ci);

@@ -63,7 +63,7 @@ set(CORE_FILES
 
 # Add vendored parser when tree-sitter is available
 if(TREESITTER_FOUND)
-  list(APPEND CORE_FILES treesitter/milkcli_parser.c)
+  list(APPEND CORE_FILES ${CMAKE_SOURCE_DIR}/tree-sitter-milkcli/src/parser.c)
 endif()
 
 link_directories(${NCURSES_LIBRARY_DIRS})
@@ -113,8 +113,9 @@ endif()
 
 if(TREESITTER_FOUND)
   target_compile_definitions(CLIcore PUBLIC USE_TREESITTER)
-  target_include_directories(CLIcore
-                             PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/treesitter)
+  target_include_directories(
+    CLIcore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/treesitter
+                    ${CMAKE_SOURCE_DIR}/tree-sitter-milkcli/src)
   target_link_libraries(CLIcore PUBLIC ${TREESITTER_LIB})
 endif()
 

@@ -223,11 +223,6 @@ errno_t function_parameter_structure_load__cli()
     }
 }
 
-
-void fnExit_fifoclose()
-{
-}
-
 /**
  * @brief Open (or create) a command FIFO
  *

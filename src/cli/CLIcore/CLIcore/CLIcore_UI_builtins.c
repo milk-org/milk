@@ -447,25 +447,3 @@ errno_t cli_sessionlog(void)
     }
     return RETURN_SUCCESS;
 }
-
-/**
- * @brief Log a command to session log if active
- */
-void cli_session_log_cmd(const char *cmd)
-{
-    if (session_log_fp == NULL)
-    {
-        return;
-    }
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    double elapsed_ms = (double) (now.tv_sec - session_log_t0.tv_sec) * 1000.0 +
-                        (double) (now.tv_nsec - session_log_t0.tv_nsec) / 1.0e6;
-    {
-        time_t t = time(NULL);
-        char   tbuf[64];
-        strftime(tbuf, sizeof(tbuf), "%Y-%m-%dT%H:%M:%S", localtime(&t));
-        fprintf(session_log_fp, "[%s] [%10.1f ms] %s\n", tbuf, elapsed_ms, cmd);
-        fflush(session_log_fp);
-    }
-}

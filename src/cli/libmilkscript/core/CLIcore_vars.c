@@ -264,22 +264,3 @@ static void var_set(const char *name, const char *val, int eval)
     }
     printf("Error: variable table full (max %d)\n", CLI_MAX_VARS);
 }
-
-/**
- * @brief Remove a CLI variable
- *
- * @param name  Variable name
- */
-void cli_var_unset(const char *name)
-{
-    for (int i = 0; i < CLI_MAX_VARS; i++)
-    {
-        if (cli_vars[i].used && strcmp(cli_vars[i].name, name) == 0)
-        {
-            cli_vars[i].used    = 0;
-            cli_vars[i].name[0] = '\0';
-            cli_vars[i].val[0]  = '\0';
-            return;
-        }
-    }
-}

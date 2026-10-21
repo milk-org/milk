@@ -1,4 +1,4 @@
-"""Legacy TUIs: usage errors exit 2; stdin is blocking again after quitting (W7 #5, pc-5, fpsctrl-d8)."""
+"""Consolidated tests for legacy TUIs (milk-fpsCTRL, milk-procCTRL, milk-streamCTRL) and companion tools."""
 
 from __future__ import annotations
 
@@ -17,10 +17,8 @@ from tests.tui.conftest import _install_dir
 
 pytestmark = pytest.mark.timeout(60)
 
-TOOLS = ["milk-streamCTRL", "milk-procCTRL", "milk-fpsCTRL"]
 
-
-@pytest.mark.parametrize("tool", TOOLS)
+@pytest.mark.parametrize("tool", ["milk-streamCTRL", "milk-procCTRL", "milk-fpsCTRL"])
 def test_usage_error_exits_2(tui_env, tool):
     env, _ = tui_env
     r = subprocess.run(
@@ -33,9 +31,7 @@ def test_usage_error_exits_2(tui_env, tool):
     assert r.returncode == 2
 
 
-@pytest.mark.parametrize(
-    "tool", ["milk-streamCTRL", "milk-fpsCTRL"]
-)  # procCTRL needs its scanner
+@pytest.mark.parametrize("tool", ["milk-streamCTRL", "milk-fpsCTRL"])
 def test_stdin_blocking_after_quit(tui_env, tool):
     env, _ = tui_env
     master, slave = pty.openpty()
@@ -70,7 +66,6 @@ def test_stdin_blocking_after_quit(tui_env, tool):
 
 
 def test_procctrl_exits_1_without_scanner(tui_env):
-    """Declining to start the scanner daemon is a failure to start, not success (pc-10)."""
     env, _ = tui_env
     r = subprocess.run(
         [str(_install_dir() / "bin" / "milk-procCTRL")],
@@ -81,3 +76,31 @@ def test_procctrl_exits_1_without_scanner(tui_env):
     )
     assert b"daemon is required" in r.stdout + r.stderr
     assert r.returncode == 1
+
+
+def test_streamctrl_profile_and_readonly_viewing(legacy_pane, entities):
+    path = entities.make_stream("watched")
+    before = path.read_bytes()
+    p = legacy_pane("milk-streamCTRL")
+    p.wait_for(r"milk-streamCTRL")
+    p.wait_for(r"watched")
+    p.keys("Right")
+    time.sleep(1.0)
+    assert path.read_bytes() == before
+    p.keys("q")
+    assert p.exit_code() == 0
+
+
+def test_procinfo_info_labels(entities, tui_env):
+    env, _ = tui_env
+    entities.make_proc("lblproc")
+    out = subprocess.run(
+        ["milk-procinfo-info", "lblproc"],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    ).stdout
+    assert "RUNNING" in out
+    assert "CTRL val          : RUN" in out
+    assert "IMMEDIATE (0)" in out

@@ -19,20 +19,12 @@ errno_t help();
 /** milk_help_tui_hook - the `@help --tui` fuzzy finder (set by milk-cli), or NULL. */
 extern errno_t (*milk_help_tui_hook)(void);
 
-errno_t helpreadline();
-
 int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[], int nbarg, char *outargstring);
 
 int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[],
                                   int          nbarg,
                                   char        *shortname,
                                   char        *outcmdexstring);
-
-errno_t help_cmd();
-
-errno_t cmdinfosearch();
-
-errno_t help_module();
 
 errno_t printInfo();
 
@@ -64,10 +56,6 @@ void help_topic_milk(void);
  * @return 0 on success, 1 if topic unknown.
  */
 int help_topic_dispatch(const char *topic);
-
-
-errno_t list_commands();
-
 
 errno_t list_commands_module(CONST_WORD modulename);
 

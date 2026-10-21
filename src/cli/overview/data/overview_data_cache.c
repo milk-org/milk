@@ -213,16 +213,6 @@ void fcache_evict_locked(int ci)
     }
 }
 
-/**
- * @brief Evict and disconnect an FPS cache entry.
- */
-void fcache_evict(int ci)
-{
-    pthread_mutex_lock(&s_fcache_mutex);
-    fcache_evict_locked(ci);
-    pthread_mutex_unlock(&s_fcache_mutex);
-}
-
 /* --- Proc cache --- */
 
 

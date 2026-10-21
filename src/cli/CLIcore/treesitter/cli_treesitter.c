@@ -38,11 +38,6 @@ TSParser *cli_ts_get_parser(void)
     return ts_parser;
 }
 
-int cli_ts_get_color_level(void)
-{
-    return color_level;
-}
-
 struct color_mapping
 {
     const char *capture;

@@ -83,32 +83,3 @@ errno_t write_tracedebugfile()
 
     return RETURN_SUCCESS;
 }
-
-
-/**
- * @brief Execute a command string without clobbering
- *        the current command line.
- *
- * Saves the current data.CLIcmdline, replaces it with
- * @cmd, runs CLI_execute_line(), then restores the
- * original. This allows re-entrant command execution
- * (e.g. from within scripts, trap handlers, or
- * on_update callbacks) without losing the outer
- * command context.
- *
- * @param cmd  Null-terminated command string to execute
- * @return RETURN_SUCCESS on success, error code on
- *         failure
- */
-errno_t CLI_execute_string(const char *cmd)
-{
-    char save_cmdline[STRINGMAXLEN_CLICMDLINE];
-    strncpy(save_cmdline, data.CLIcmdline, STRINGMAXLEN_CLICMDLINE - 1);
-    save_cmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-    strncpy(data.CLIcmdline, cmd, STRINGMAXLEN_CLICMDLINE - 1);
-    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-    errno_t ret                                  = CLI_execute_line();
-    strncpy(data.CLIcmdline, save_cmdline, STRINGMAXLEN_CLICMDLINE - 1);
-    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-    return ret;
-}

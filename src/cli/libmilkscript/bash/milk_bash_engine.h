@@ -24,13 +24,6 @@
 #include <stddef.h>
 
 /**
- * @brief Check whether the bash execution engine is enabled for milk-cli.
- *
- * @return Always 1 (the bash engine is the sole execution engine)
- */
-int milk_is_bash_engine_enabled(void);
-
-/**
  * @brief Translate milk-cli shorthands into standard milk.bash syntax.
  *
  * Preserves 1:1 line numbering across multi-line scripts so bash `$LINENO`
@@ -74,12 +67,6 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req);
  * @return Exit status of the script (0 = success)
  */
 int milk_bash_engine_exec_file(const char *filename, int *out_exit_req);
-
-/**
- * @brief Return 1 while a command is executing in the bash co-process (milk commands called back
- *        from bash run in this state and must not re-enter the engine).
- */
-int milk_bash_engine_busy(void);
 
 /** Listening socket of the in-process server (-1 before the engine starts), for the REPL's idle select(). */
 int milk_bash_engine_listen_fd(void);

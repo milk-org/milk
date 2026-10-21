@@ -46,8 +46,6 @@ void cli_var_set(const char *name, const char *val);
 /** cli_var_set_text() - like cli_var_set(), but a value that is not a number stays text. */
 void cli_var_set_text(const char *name, const char *val);
 
-void cli_var_unset(const char *name);
-
 const char *cli_var_lookup(const char *name);
 
 void cli_export_vars_to_env(void);

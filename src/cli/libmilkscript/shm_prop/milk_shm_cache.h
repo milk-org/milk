@@ -21,6 +21,4 @@ IMAGE *milk_shm_cache_stream(const char *name);
 
 FPS *milk_shm_cache_fps(const char *name);
 
-void milk_shm_cache_drop_all(void);
-
 #endif /* MILK_SHM_CACHE_H */

@@ -16,88 +16,11 @@
 
 /**
  * @file    CLIcore_UI_history_cmds.c
- * @brief   History expansion, search, save, and
- *          misc history commands.
- *
- * Implements:
- *  - !! / !$ / !prefix expansion
- *  - cli_save_last_argument()
- *  - savehistory command
- *  - history <N> command
- *  - searchhist command
+ * @brief   History search, save, and display commands.
  *
  * @see CLIcore_UI_history.c for core log mgmt.
  * @see CLIcore_UI_history_display.c for ghistory.
  */
-
-
-/**
- * @brief Expand history references in the
- *        current command line.
- *
- * Called at the very start of CLI_execute_line(),
- * before alias expansion.
- *
- * Supports:
- *   !!        — replay last command
- *   !$        — last argument of previous cmd
- *   !<prefix> — last command starting with prefix
- */
-void cli_history_expand(void)
-{
-#ifdef USE_READLINE
-    char *expanded_str = NULL;
-    int   result       = history_expand(data.CLIcmdline, &expanded_str);
-
-    if (result < 0 || result == 2)
-    {
-        /* -1: Error (expanded_str contains error msg)
-         *  2: Display only, don't execute
-         */
-        if (expanded_str != NULL)
-        {
-            printf("%s\n", expanded_str);
-            free(expanded_str);
-        }
-        data.CLIcmdline[0] = '\0'; /* Prevent execution */
-    }
-    else if (result == 1)
-    {
-        /* 1: Expansion took place */
-        if (expanded_str != NULL)
-        {
-            strncpy(data.CLIcmdline, expanded_str, STRINGMAXLEN_CLICMDLINE - 1);
-            data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-            printf(">> %s\n", data.CLIcmdline);
-            free(expanded_str);
-        }
-    }
-    else
-    {
-        /* 0: No expansion took place */
-        if (expanded_str != NULL)
-        {
-            free(expanded_str);
-        }
-    }
-#endif
-}
-
-
-/**
- * @brief Save last argument after command execution
- */
-void cli_save_last_argument(void)
-{
-    if (data.cmdNBarg > 1)
-    {
-        long last = data.cmdNBarg - 1;
-        strncpy(data.last_argument, data.cmdargtoken[last].val.string,
-                sizeof(data.last_argument) - 1);
-        data.last_argument[sizeof(data.last_argument) - 1] = '\0';
-    }
-}
-
 
 /**
  * @brief Write readline command history to a file.

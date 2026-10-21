@@ -21,7 +21,6 @@ errno_t runCLI_prompt(char *promptstring, char *prompt);
 char **CLI_completion(const char *, int, int);
 #endif
 
-errno_t CLI_execute_string(const char *cmd);
 errno_t CLI_execute_line();
 void    handle_did_you_mean(const char *input_cmd);
 
@@ -56,14 +55,8 @@ int  find_command_match(const char *firstword);
 void set_pending_suggestion(const char *text, int replace_len);
 #endif
 
-/* Watch command */
-
-/* List active shared memory structures */
-
 /* Startup script */
 void cli_milkrc_load(void);
-
-/* Command timing */
 
 /* Command statistics */
 errno_t cli_cmdstats(void);
@@ -93,7 +86,6 @@ errno_t cli_savehistory(void);
 
 /* Configurable prompt */
 errno_t cli_setprompt(void);
-void    cli_build_prompt(const char *fmt, char *out, int maxlen);
 
 /* Session logging */
 errno_t cli_sessionlog(void);
@@ -105,23 +97,14 @@ errno_t cli_history_show(void);
 errno_t cli_searchhist(void);
 errno_t cli_fhist(void);
 
-/* Built-in cd and pwd */
-
 /* Structured history log */
 void    cli_history_log_init(void);
 errno_t cli_ghistory(void);
 errno_t cli_lhistory(void);
 
-#define BOOKMARK_MAX 64
-#define BOOKMARK_NAMELEN 200
-#define BOOKMARK_CMDLEN 2000
-
-void        cli_history_expand(void);
-void        cli_session_log_cmd(const char *cmd);
 void        cli_history_log_cmd(const char *cmd);
 void        cli_history_log_prompt(const char *prompt);
 void        cli_history_log_shell(const char *cmd);
 const char *CLI_history_file(void);
-void        cli_save_last_argument(void);
 
 #endif /* CLICORE_UI_H */

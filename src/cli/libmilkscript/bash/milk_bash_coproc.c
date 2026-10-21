@@ -177,16 +177,6 @@ static void engine_atexit(void)
     kill(g_bash_pid, SIGHUP);
 }
 
-/**
- * @brief Check whether the bash execution engine is enabled for milk-cli.
- *
- * @return Always 1 (the bash engine is the sole execution engine)
- */
-int milk_is_bash_engine_enabled(void)
-{
-    return 1;
-}
-
 static int engine_exec(const char *cmdline, int *out_exit_req);
 
 /**
@@ -586,11 +576,6 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
     cli_last_retval = rc;
     unlink(g_cmdfile); /* bash has read it (source reads the whole file) */
     return rc;
-}
-
-int milk_bash_engine_busy(void)
-{
-    return g_exec_depth > 0;
 }
 
 int milk_bash_engine_listen_fd(void)

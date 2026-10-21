@@ -66,8 +66,6 @@ bool cli_ts_is_transition_token_line(const char *trimmed);
 
 TSParser *cli_ts_get_parser(void);
 
-int cli_ts_get_color_level(void);
-
 TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len);
 
 /* ---- Diagnostic span collector (cli_treesitter_diag.c) ---- */

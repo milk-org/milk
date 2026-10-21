@@ -158,23 +158,3 @@ FPS *milk_shm_cache_fps(const char *name)
     e->h.used = 1;
     return &e->fps;
 }
-
-void milk_shm_cache_drop_all(void)
-{
-    for (int i = 0; i < SHM_CACHE_NSTREAM; i++)
-    {
-        if (g_stream[i].h.used)
-        {
-            ImageStreamIO_closeIm(&g_stream[i].im);
-            g_stream[i].h.used = 0;
-        }
-    }
-    for (int i = 0; i < SHM_CACHE_NFPS; i++)
-    {
-        if (g_fps[i].h.used)
-        {
-            fps_disconnect(&g_fps[i].fps);
-            g_fps[i].h.used = 0;
-        }
-    }
-}
