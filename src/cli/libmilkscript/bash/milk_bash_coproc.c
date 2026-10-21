@@ -51,12 +51,13 @@ static int   g_status_pipe_r = -1;
 static pid_t g_bash_pid      = -1;
 static char  g_sockpath[128] = { '\0' };
 static char  g_cmdfile[300]  = { '\0' }; /* translated command, `source`d by bash (keeps $LINENO) */
-static char  g_label[64]     = "milk";   /* command-file name: bash error messages show it */
-static int   g_bash_pidfd    = -1;       /* readable once bash exits (-1: poll waitpid instead) */
-static pid_t g_engine_owner  = 0;        /* process that started bash (atexit guard) */
-static int   g_inflight      = 0;        /* a command was sent and its status is not back yet */
-static int   g_tty_handoff   = 0;        /* bash's process group owns the terminal */
-static struct termios g_tty_modes;       /* terminal modes saved before the handoff */
+static char  g_cmdfile_sent[300] = { '\0' }; /* path last sent to the current bash ("": none) */
+static char  g_label[64]         = "milk";   /* command-file name: bash error messages show it */
+static int   g_bash_pidfd        = -1; /* readable once bash exits (-1: poll waitpid instead) */
+static pid_t g_engine_owner      = 0;  /* process that started bash (atexit guard) */
+static int   g_inflight          = 0;  /* a command was sent and its status is not back yet */
+static int   g_tty_handoff       = 0;  /* bash's process group owns the terminal */
+static struct termios g_tty_modes;     /* terminal modes saved before the handoff */
 
 /** tty_owner() - make @pgrp the terminal's foreground group (SIGTTOU blocked: we may be in the background). */
 static void tty_owner(pid_t pgrp)
@@ -308,10 +309,17 @@ int milk_bash_engine_init(void)
             "__milk_rc=0\n"
             "while :; do\n"
             "    __milk_rd=0\n"
-            "    IFS= read -r -d '' __milk_cmd <&198 || __milk_rd=$?\n" /* no errexit if the user set -e */
+            /* no errexit if the user set -e */
+            "    IFS= read -r -N 1 __milk_m <&198 || __milk_rd=$?\n"
             "    (( __MILK_INTR )) && __milk_intr_reset\n" /* a late Ctrl-C must not hit the next command */
             "    (( __milk_rd > 128 )) && continue\n"
-            "    (( __milk_rd == 0 )) && IFS= read -r -d '' __MILK_INTERACTIVE <&198 || break\n"
+            "    (( __milk_rd == 0 )) || break\n"
+            /* 'P': a new command-file path, then the flag; otherwise the byte is the flag */
+            "    if [[ ${__milk_m} == P ]]; then\n"
+            "        IFS= read -r -d '' __milk_cmd <&198 &&\n"
+            "            IFS= read -r -N 1 __milk_m <&198 || break\n"
+            "    fi\n"
+            "    __MILK_INTERACTIVE=${__milk_m}\n"
             "    if __milk_ret \"${__milk_rc}\"; then\n" /* each command starts with the previous $? */
             "        builtin source \"$__milk_cmd\" 198<&-\n"
             "    else\n"
@@ -334,9 +342,10 @@ int milk_bash_engine_init(void)
     close(cmd_pipe[0]);
     close(status_pipe[1]);
     setpgid(pid, pid); /* also in the child: either may run first */
-    g_cmd_pipe_w    = cmd_pipe[1];
-    g_status_pipe_r = status_pipe[0];
-    g_bash_pid      = pid;
+    g_cmd_pipe_w      = cmd_pipe[1];
+    g_status_pipe_r   = status_pipe[0];
+    g_bash_pid        = pid;
+    g_cmdfile_sent[0] = '\0'; /* the new bash knows no command-file path yet */
 #ifdef SYS_pidfd_open
     g_bash_pidfd = (int) syscall(SYS_pidfd_open, pid, 0);
 #endif
@@ -451,12 +460,19 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
         fprintf(stderr, "milk: cannot write command file %s\n", g_cmdfile);
         return 1;
     }
-    /* message: command-file path, then the interactive flag (bash reads it into __MILK_INTERACTIVE) */
+    /* message: the interactive flag (bash reads it into __MILK_INTERACTIVE), preceded by 'P' and
+     * the NUL-terminated command-file path when that path differs from the last one sent: bash
+     * reads a pipe one byte per read(), so the common case is a single byte */
     char   msg[sizeof(g_cmdfile) + 4];
-    size_t plen = strlen(g_cmdfile) + 1;
-    memcpy(msg, g_cmdfile, plen);
+    size_t plen = 0;
+    if (strcmp(g_cmdfile, g_cmdfile_sent) != 0)
+    {
+        msg[plen++] = 'P';
+        size_t flen = strlen(g_cmdfile) + 1;
+        memcpy(msg + plen, g_cmdfile, flen);
+        plen += flen;
+    }
     msg[plen++]  = cli_is_interactive_mode() ? '1' : '0';
-    msg[plen++]  = '\0';
     size_t psent = 0;
     while (psent < plen)
     {
@@ -472,6 +488,7 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
         }
         psent += (size_t) n;
     }
+    snprintf(g_cmdfile_sent, sizeof(g_cmdfile_sent), "%s", g_cmdfile);
 
     char   sbuf[4096];
     size_t spos          = 0;

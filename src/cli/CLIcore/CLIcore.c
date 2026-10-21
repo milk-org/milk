@@ -599,9 +599,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     int initstartup = 0; /// becomes 1 after startup
 
-    int            blockCLIinput = 0;
-    int            cliwaitus     = 100;
-    struct timeval tv; // sleep 100 us after reading FIFO
+    int blockCLIinput = 0;
+    /* select() timeout of the input loop: input, the bash engine and signals wake it at once, so
+     * this only bounds how late a dynamically opened fifo is picked up */
+    int            cliwaitus = 50000;
+    struct timeval tv;
 
     strncpy(data.processname, argv[0], STRINGMAXLEN_PROCESSNAME - 1);
 
@@ -856,14 +858,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             {
                 // stop CLI input loop
                 data.CLIloopON = 0;
-            }
-
-            {
-                // CLI loop delay to keep CPU load light
-                struct timespec nsts;
-                nsts.tv_sec  = 0;
-                nsts.tv_nsec = 3000000; // 3 ms delay
-                nanosleep(&nsts, NULL);
             }
 
             if (sigwinch_received)
