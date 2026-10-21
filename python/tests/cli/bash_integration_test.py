@@ -5,101 +5,17 @@ and the milk-cli bash engine (milk.bash primitives and milk-cli shorthands).
 
 from __future__ import annotations
 
-import os
-import shutil
-import subprocess
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from milk.cliwrap import CLICommands, HAVE_CLI, MILK_CLI_EXEC
+from milk.cliwrap import CLICommands, HAVE_CLI
+from tests.cli.conftest import _run_bash, _run_milk_cli
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
     pytest.mark.timeout(25),
 ]
-
-
-def _install_dir() -> Path:
-    return Path(os.environ["MILK_INSTALLDIR"]).resolve()
-
-
-def _isolated_shm_env(
-    extra_env: dict[str, str] | None = None,
-) -> tuple[dict[str, str], str]:
-    """Build a subprocess env rooted inside conftest's spoofed MILK_SHM_DIR."""
-    install_dir = _install_dir()
-    base_shm = os.environ.get("MILK_SHM_DIR", "/tmp")
-    os.makedirs(base_shm, exist_ok=True)
-    shm_dir = tempfile.mkdtemp(prefix="milk_bash_", dir=base_shm)
-
-    env = os.environ.copy()
-    env["MILK_INSTALLDIR"] = str(install_dir)
-    env["PATH"] = f"{install_dir / 'bin'}:{env.get('PATH', '')}"
-    env["LD_LIBRARY_PATH"] = f"{install_dir / 'lib'}:{env.get('LD_LIBRARY_PATH', '')}"
-    env["MILK_SHM_DIR"] = shm_dir
-    env["MILK_PROC_DIR"] = shm_dir
-    if extra_env:
-        env.update(extra_env)
-    return env, shm_dir
-
-
-def _run_bash(
-    script: str, extra_env: dict[str, str] | None = None
-) -> subprocess.CompletedProcess[str]:
-    install_dir = _install_dir()
-    env, shm_dir = _isolated_shm_env(extra_env)
-    try:
-        full_script = f'source "{install_dir / "bin" / "milk.bash"}"\n{script}\n'
-        return subprocess.run(
-            ["/bin/bash", "-e", "-c", full_script],
-            env=env,
-            text=True,
-            capture_output=True,
-            timeout=25,
-        )
-    finally:
-        shutil.rmtree(shm_dir, ignore_errors=True)
-
-
-def _run_milk_cli(
-    script: str,
-    tmp_path: Path,
-    mode: str = "script",
-    extra_env: dict[str, str] | None = None,
-) -> subprocess.CompletedProcess[str]:
-    assert MILK_CLI_EXEC is not None
-    env, shm_dir = _isolated_shm_env(extra_env)
-    try:
-        if mode == "cmd":
-            return subprocess.run(
-                [MILK_CLI_EXEC, "-c", script],
-                env=env,
-                text=True,
-                capture_output=True,
-                timeout=25,
-            )
-        if mode == "stdin":
-            return subprocess.run(
-                [MILK_CLI_EXEC],
-                input=script + "\nexit\n",
-                env=env,
-                text=True,
-                capture_output=True,
-                timeout=25,
-            )
-        script_file = tmp_path / "test_script.milk"
-        script_file.write_text(script + "\n")
-        return subprocess.run(
-            [MILK_CLI_EXEC, "-s", str(script_file)],
-            env=env,
-            text=True,
-            capture_output=True,
-            timeout=25,
-        )
-    finally:
-        shutil.rmtree(shm_dir, ignore_errors=True)
 
 
 def test_builtin_loaded_and_commands_registered():
@@ -164,50 +80,26 @@ def test_stream_modifiers_all_types():
         # Location modifiers: @S: (shared) and @L: (local)
         mem.mk2Dim "@S:sh_im" 8 8
         mem.mk2Dim "@L:loc_im" 8 8
-        [[ "$(@get s.sh_im.shared)" == "1" ]]
-        [[ "$(@get s.loc_im.shared)" == "0" ]]
+        [[ "$(@get s.sh_im.shared)" == "1" && "$(@get s.loc_im.shared)" == "0" ]]
 
         # Explicit @T<type>: datatype modifiers
-        mem.mk2Dim "@TF32:im_f32" 8 8
-        mem.mk2Dim "@TF64:im_f64" 8 8
-        mem.mk2Dim "@TF16:im_f16" 8 8
-        mem.mk2Dim "@TU8:im_u8" 8 8
-        mem.mk2Dim "@TU16:im_u16" 8 8
-        mem.mk2Dim "@TU32:im_u32" 8 8
-        mem.mk2Dim "@TU64:im_u64" 8 8
-        mem.mk2Dim "@TI8:im_i8" 8 8
-        mem.mk2Dim "@TI16:im_i16" 8 8
-        mem.mk2Dim "@TI32:im_i32" 8 8
-        mem.mk2Dim "@TI64:im_i64" 8 8
-        mem.mk2Dim "@TC64:im_c64" 8 8
-        mem.mk2Dim "@TC128:im_c128" 8 8
-
-        [[ "$(@get s.im_f32.dtype)" == "FLOAT" ]]
-        [[ "$(@get s.im_f32.typename)" == "FLT32" ]]
-        [[ "$(@get s.im_f64.dtype)" == "DOUBLE" ]]
-        [[ "$(@get s.im_f64.typename)" == "FLT64" ]]
-        [[ "$(@get s.im_f16.dtype)" == "HALF" ]]
-        [[ "$(@get s.im_f16.typename)" == "FLT16" ]]
-        [[ "$(@get s.im_u8.dtype)" == "UINT8" ]]
-        [[ "$(@get s.im_u16.dtype)" == "UINT16" ]]
-        [[ "$(@get s.im_u32.dtype)" == "UINT32" ]]
-        [[ "$(@get s.im_u64.dtype)" == "UINT64" ]]
-        [[ "$(@get s.im_i8.dtype)" == "INT8" ]]
-        [[ "$(@get s.im_i16.dtype)" == "INT16" ]]
-        [[ "$(@get s.im_i32.dtype)" == "INT32" ]]
-        [[ "$(@get s.im_i64.dtype)" == "INT64" ]]
-        [[ "$(@get s.im_c64.dtype)" == "COMPLEX_FLOAT" ]]
-        [[ "$(@get s.im_c64.typename)" == "CPLX32" ]]
-        [[ "$(@get s.im_c128.dtype)" == "COMPLEX_DOUBLE" ]]
-        [[ "$(@get s.im_c128.typename)" == "CPLX64" ]]
+        for spec in \\
+            F32:FLOAT:FLT32 F64:DOUBLE:FLT64 F16:HALF:FLT16 \\
+            U8:UINT8: U16:UINT16: U32:UINT32: U64:UINT64: \\
+            I8:INT8: I16:INT16: I32:INT32: I64:INT64: \\
+            C64:COMPLEX_FLOAT:CPLX32 C128:COMPLEX_DOUBLE:CPLX64; do
+            IFS=: read -r mod dt tn <<< "$spec"
+            im="im_${mod,,}"
+            mem.mk2Dim "@T${mod}:${im}" 8 8
+            [[ "$(@get "s.${im}.dtype")" == "$dt" ]]
+            [[ -z "$tn" || "$(@get "s.${im}.typename")" == "$tn" ]]
+        done
 
         # Combined location + datatype modifiers
         mem.mk2Dim "@STF64:sh_f64" 10 12
         mem.mk2Dim "@LTU16:loc_u16" 10 12
-        [[ "$(@get s.sh_f64.shared)" == "1" ]]
-        [[ "$(@get s.sh_f64.dtype)" == "DOUBLE" ]]
-        [[ "$(@get s.loc_u16.shared)" == "0" ]]
-        [[ "$(@get s.loc_u16.dtype)" == "UINT16" ]]
+        [[ "$(@get s.sh_f64.shared)" == "1" && "$(@get s.sh_f64.dtype)" == "DOUBLE" ]]
+        [[ "$(@get s.loc_u16.shared)" == "0" && "$(@get s.loc_u16.dtype)" == "UINT16" ]]
 
         # Invalid datatype modifier must fail cleanly
         ! mem.mk2Dim "@TX99:bad_im" 8 8 2>/dev/null
@@ -220,37 +112,21 @@ def test_stream_modifiers_all_types():
 def test_get_set_fps_kw_and_dcvar_sync():
     res = _run_bash("""
         imgen.mkrndim "@S:im1" 32 48
-        [[ "$(@get s.im1.xsize)" == "32" ]]
-        [[ "$(@get s.im1.size0)" == "32" ]]
-        [[ "$(@get s.im1.ysize)" == "48" ]]
-        [[ "$(@get s.im1.size1)" == "48" ]]
-        [[ "$(@get s.im1.zsize)" == "1" ]]
-        [[ "$(@get s.im1.naxis)" == "2" ]]
-        [[ "$(@get s.im1.nelement)" == "1536" ]]
-        [[ "$(@get s.im1.dtype)" == "FLOAT" ]]
-        [[ "$(@get s.im1.shared)" == "1" ]]
+        for kv in xsize:32 size0:32 ysize:48 size1:48 zsize:1 naxis:2 nelement:1536 dtype:FLOAT shared:1; do
+            [[ "$(@get "s.im1.${kv%%:*}")" == "${kv#*:}" ]]
+        done
 
-        # Zero-fork @get -v into bash variable
+        # Zero-fork @get -v into bash variable and dcvar sync after info.imstats
         @get -v ys s.im1.ysize
         [[ "$ys" == "48" ]]
-
-        # Direct entity invocation via command fallback
-        [[ "$(@get s.im1.xsize)" == "32" ]]
-
-        # dcvar sync back into bash variables after info.imstats
         info.imstats im1 >/dev/null
-        [[ "$imsize0" == "32" ]]
-        [[ "$imsize1" == "48" ]]
-        [[ -n "$vp50" ]]
-        [[ -n "$vrms" ]]
+        [[ "$imsize0" == "32" && "$imsize1" == "48" && -n "$vp50" && -n "$vrms" ]]
 
         # FITS keyword read/write (int, float, string, stdin pipe, wildcard)
         @set s.im1.kw.NFRAMES 100 "Frame count"
         @set s.im1.kw.EXPTIME 0.0125 "Exposure time [s]"
         @set s.im1.kw.FILTER "H-band" "Filter name"
-        [[ "$(@get s.im1.kw.NFRAMES)" == "100" ]]
-        [[ "$(@get s.im1.kw.EXPTIME)" == "0.0125" ]]
-        [[ "$(@get s.im1.kw.FILTER)" == "H-band" ]]
+        [[ "$(@get s.im1.kw.NFRAMES)" == "100" && "$(@get s.im1.kw.EXPTIME)" == "0.0125" && "$(@get s.im1.kw.FILTER)" == "H-band" ]]
 
         echo "0.025" | @set s.im1.kw.EXPTIME -
         [[ "$(@get s.im1.kw.EXPTIME)" == "0.025" ]]
@@ -261,12 +137,10 @@ def test_get_set_fps_kw_and_dcvar_sync():
         # FPS creation via standalone fpsinit, @exists, @get, @set
         milk-fpsexec-imggen-mkrndim -n testfps fpsinit >/dev/null 2>&1
         @exists f.testfps
-        fps_params="$(@get "f.testfps.*")"
-        [[ "$fps_params" == *"xsize"* ]]
+        [[ "$(@get "f.testfps.*")" == *"xsize"* ]]
         @set f.testfps.xsize 256
-        [[ "$(@get f.testfps.xsize)" == "256" ]]
         @set f.testfps.ysize=512
-        [[ "$(@get f.testfps.ysize)" == "512" ]]
+        [[ "$(@get f.testfps.xsize)" == "256" && "$(@get f.testfps.ysize)" == "512" ]]
         echo "OK"
         """)
     assert res.returncode == 0, res.stderr

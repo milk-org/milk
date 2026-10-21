@@ -9,7 +9,7 @@ import pytest
 
 from milk.cliwrap import HAVE_CLI, MILK_CLI_EXEC
 
-from tests.cli.bash_integration_test import _isolated_shm_env
+from tests.cli.conftest import _isolated_shm_env
 
 pytestmark = pytest.mark.skipif(not HAVE_CLI, reason="milk-cli not built")
 

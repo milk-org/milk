@@ -7,224 +7,31 @@ Finding IDs (T*, C*, P*, S*, Sec*) refer to the review / work plan.
 from __future__ import annotations
 
 import os
-import pty
 import re
-import select
-import signal
-import subprocess
-import time
 from pathlib import Path
 
 import pytest
 
 from milk.cliwrap import HAVE_CLI, MILK_CLI_EXEC
-from tests.cli.bash_integration_test import _install_dir, _isolated_shm_env, _run_bash
+from tests.cli.conftest import (
+    _env,
+    _install_dir,
+    _kill_by_cmdline,
+    _run,
+    _run_bash,
+    bug,
+    milk_cli_script,
+    milk_cli_stdin,
+    milk_script,
+    pty_session,
+    translate,
+    value,
+)
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
     pytest.mark.timeout(40),
 ]
-
-_ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
-
-
-def bug(finding: str, reason: str, strict: bool = True):
-    """Xfail marker tagged with a review finding ID (strict unless the repro is timing-dependent)."""
-    return pytest.mark.xfail(strict=strict, reason=f"[{finding}] {reason}")
-
-
-# ---------------------------------------------------------------- helpers
-
-
-def _session_pids(sid: int) -> list[int]:
-    pids = []
-    for d in os.listdir("/proc"):
-        if not d.isdigit():
-            continue
-        try:
-            stat = Path(f"/proc/{d}/stat").read_text()
-        except OSError:
-            continue
-        fields = stat.rsplit(")", 1)[1].split()
-        if int(fields[3]) == sid:
-            pids.append(int(d))
-    return pids
-
-
-def _kill_session(sid: int) -> None:
-    """Kill every process in session @sid (milk-cli puts bash in its own pgrp)."""
-    for pid in _session_pids(sid):
-        try:
-            os.kill(pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-
-
-def _kill_by_cmdline(token: str) -> None:
-    """Kill processes whose command line contains @token (auto-spawned milk servers live in their own session)."""
-    for d in os.listdir("/proc"):
-        if not d.isdigit() or int(d) == os.getpid():
-            continue
-        try:
-            cmd = (
-                Path(f"/proc/{d}/cmdline")
-                .read_bytes()
-                .replace(b"\0", b" ")
-                .decode(errors="replace")
-            )
-        except OSError:
-            continue
-        if token in cmd:
-            try:
-                os.kill(int(d), signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-
-
-def _run(
-    argv: list[str],
-    env: dict[str, str],
-    timeout: float,
-    stdin: str | None = None,
-    cwd: str | None = None,
-) -> subprocess.CompletedProcess[str]:
-    """subprocess.run that also reaps the whole session on timeout."""
-    proc = subprocess.Popen(
-        argv,
-        env=env,
-        cwd=cwd,
-        text=True,
-        start_new_session=True,
-        stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    try:
-        out, err = proc.communicate(stdin, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        _kill_session(proc.pid)
-        try:
-            out, err = proc.communicate(timeout=5)
-        except subprocess.TimeoutExpired:  # pipes held by a daemon outside the session
-            proc.kill()
-            out, err = "", ""
-        return subprocess.CompletedProcess(
-            argv, 124, _ANSI.sub("", out or ""), _ANSI.sub("", err or "")
-        )
-    _kill_session(proc.pid)
-    return subprocess.CompletedProcess(
-        argv, proc.returncode, _ANSI.sub("", out), _ANSI.sub("", err)
-    )
-
-
-def _env() -> tuple[dict[str, str], str]:
-    """Isolated SHM dir plus a private HOME so ~/.milk_history and ~/.milkrc are never touched."""
-    env, shm = _isolated_shm_env({"MILK_QUIET": "1"})
-    home = Path(shm) / "home"
-    home.mkdir(exist_ok=True)
-    env["HOME"] = str(home)
-    return env, shm
-
-
-def milk_cli_script(
-    script: str, tmp_path: Path, timeout: float = 20
-) -> subprocess.CompletedProcess[str]:
-    """Run @script as a file via `milk-cli -s`."""
-    env, _ = _env()
-    f = tmp_path / "s.milk"
-    f.write_text(script + "\n")
-    return _run([MILK_CLI_EXEC, "-s", str(f)], env, timeout, cwd=str(tmp_path))
-
-
-def milk_cli_stdin(
-    script: str, tmp_path: Path, timeout: float = 20
-) -> subprocess.CompletedProcess[str]:
-    """Pipe @script into milk-cli as REPL input."""
-    env, _ = _env()
-    return _run([MILK_CLI_EXEC], env, timeout, stdin=script + "\n", cwd=str(tmp_path))
-
-
-def milk_script(
-    script: str,
-    tmp_path: Path,
-    args: list[str] | None = None,
-    opts: list[str] | None = None,
-    timeout: float = 20,
-) -> subprocess.CompletedProcess[str]:
-    """Run @script with the standalone milk-script interpreter."""
-    env, _ = _env()
-    f = tmp_path / "ms.milk"
-    f.write_text(script + "\n")
-    exe = str(_install_dir() / "bin" / "milk-script")
-    return _run(
-        [exe, "-q", *(opts or []), str(f), *(args or [])],
-        env,
-        timeout,
-        cwd=str(tmp_path),
-    )
-
-
-def translate(src: str) -> str:
-    """Translate @src with `milk-call translate --legacy -` (no server needed)."""
-    env, _ = _env()
-    res = _run(
-        [str(_install_dir() / "bin" / "milk-call"), "translate", "--legacy", "-"],
-        env,
-        10,
-        stdin=src,
-    )
-    assert res.returncode == 0, res.stderr
-    return res.stdout
-
-
-def value(out: str, key: str) -> str | None:
-    """Return the value of the last `key=value` line in @out."""
-    m = re.findall(rf"^{re.escape(key)}=(.*)$", out, re.M)
-    return m[-1] if m else None
-
-
-def pty_session(
-    steps: list[tuple[str, str, float]], tmp_path: Path, warmup: float = 2.0
-) -> str:
-    """Drive interactive milk-cli on a pty; steps are (kind, payload, wait) with kind in line|raw."""
-    env, _ = _env()
-    env["TERM"] = "dumb"
-    pid, fd = pty.fork()
-    if pid == 0:
-        os.chdir(tmp_path)
-        os.execve(MILK_CLI_EXEC, [MILK_CLI_EXEC], env)
-    out = b""
-
-    def drain(t: float) -> None:
-        nonlocal out
-        end = time.time() + t
-        while time.time() < end:
-            r, _, _ = select.select([fd], [], [], 0.05)
-            if r:
-                try:
-                    d = os.read(fd, 65536)
-                except OSError:
-                    return
-                if not d:
-                    return
-                out += d
-
-    try:
-        drain(warmup)
-        for kind, payload, wait in steps:
-            os.write(
-                fd, (payload + "\r").encode() if kind == "line" else payload.encode()
-            )
-            drain(wait)
-    finally:
-        sid = os.getsid(pid) if Path(f"/proc/{pid}").exists() else pid
-        _kill_session(sid)
-        try:
-            os.waitpid(pid, 0)
-        except ChildProcessError:
-            pass
-        os.close(fd)
-    return _ANSI.sub("", out.decode(errors="replace")).replace("\r", "")
 
 
 # ------------------------------------------------- T*: translator (bash/milk_bash_translate.c)

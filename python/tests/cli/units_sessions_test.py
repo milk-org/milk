@@ -12,8 +12,7 @@ import re
 import pytest
 
 from milk.cliwrap import HAVE_CLI
-from tests.cli.bash_engine_review_test import value
-from tests.cli.syntax_redesign_test import milk_bash
+from tests.cli.conftest import milk_bash, value
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),

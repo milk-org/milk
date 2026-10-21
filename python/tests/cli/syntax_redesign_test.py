@@ -14,11 +14,14 @@ from pathlib import Path
 
 import pytest
 
-from milk.cliwrap import HAVE_CLI, MILK_CLI_EXEC
-from tests.cli.bash_engine_review_test import (
+from milk.cliwrap import HAVE_CLI
+from tests.cli.conftest import (
     _env,
     _install_dir,
     _run,
+    events,
+    milk_bash,
+    milk_cli_env,
     milk_cli_script,
     milk_script,
     translate,
@@ -29,31 +32,6 @@ pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
     pytest.mark.timeout(60),
 ]
-
-
-def milk_bash(
-    script: str,
-    tmp_path: Path,
-    extra_env: dict[str, str] | None = None,
-    timeout: float = 30,
-):
-    """Run @script in plain bash after `source milk.bash` (no -e), with an isolated HOME and SHM dir."""
-    env, _ = _env()
-    if extra_env:
-        env.update(extra_env)
-    full = f'source "{_install_dir() / "bin" / "milk.bash"}"\n{script}\n'
-    return _run(["/bin/bash", "-c", full], env, timeout, cwd=str(tmp_path))
-
-
-def milk_cli_env(script: str, tmp_path: Path, env: dict[str, str], timeout: float = 20):
-    """`milk-cli -s` with a caller-provided environment."""
-    f = tmp_path / "s.milk"
-    f.write_text(script + "\n")
-    return _run([MILK_CLI_EXEC, "-s", str(f)], env, timeout, cwd=str(tmp_path))
-
-
-def events(out: str) -> list[str]:
-    return re.findall(r"^D:(.*)$", out, re.M)
 
 
 def test_keywords_namespaces_and_module_registration(tmp_path):
