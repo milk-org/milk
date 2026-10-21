@@ -10,6 +10,8 @@
 #ifndef COREMOD_ARITH_IMAGE_SET_3DAXES_H
 #define COREMOD_ARITH_IMAGE_SET_3DAXES_H
 
-errno_t CLIADDCMD_COREMOD_arith__imset_3Daxes();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_arith_image_set_3Daxes;
 
 #endif

@@ -30,7 +30,7 @@
 #include <sys/ioctl.h>
 #include "CLIcore.h"
 
-#include "fps.h"
+#include "computeunit.h"
 #include "fps_connect.h"
 
 #define C_RST "\033[0m"

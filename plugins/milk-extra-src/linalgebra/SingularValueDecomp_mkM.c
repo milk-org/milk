@@ -12,22 +12,10 @@
 
 #include <math.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "linalgebra.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "SVDmkM",
-                                     .cmdkey      = "SVDmkM",
-                                     .description = "reconstruct SVD M",
-                                     .description_long =
-                                         "Reconstruct a matrix from its SVD components. Computes M "
-                                         "= U * S * V^T from pre-computed U, S, V matrices." };
 
 
 /* ================================================================
@@ -52,10 +40,10 @@ static int32_t *GPUdevice = NULL;
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  PARAMETER BINDINGS
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(SVDmkM, FPS_PARAMS);
 
 errno_t SVDmkM(IMGID imgU, IMGID imgS, IMGID imgV, IMGID *imgM, int GPUdev)
 {
@@ -124,7 +112,7 @@ errno_t SVDmkM(IMGID imgU, IMGID imgS, IMGID imgV, IMGID *imgM, int GPUdev)
 }
 
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t SVDmkM_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -153,15 +141,15 @@ static MILK_HOT errno_t compute_function()
     }
 
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         SVDmkM(imginU, imginS, imginV, &imgoutM, *GPUdevice);
         processinfo_update_output_stream(processinfo, imgoutM.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     imgid_free(&imginU);
     imgid_free(&imginS);
@@ -174,29 +162,18 @@ static MILK_HOT errno_t compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  MILK_RUNNABLE DESCRIPTOR AND FPSEXEC EXPORT
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_linalgebra__SVDmkM()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_linalgebra_SVDmkM = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "SVDmkM",
+                 .cmdkey           = "SVDmkM",
+                 .description      = "reconstruct SVD M",
+                 .description_long = "Reconstruct a matrix from its SVD components. Computes M "
+                                     "= U * S * V^T from pre-computed U, S, V matrices." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(SVDmkM),
+    .compute = SVDmkM_compute,
+};
+EXPORT_FPSEXEC(milk, "linalg-SVDmkM", runnable_linalgebra_SVDmkM);

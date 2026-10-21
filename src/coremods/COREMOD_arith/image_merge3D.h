@@ -10,6 +10,8 @@
 #ifndef COREMOD_ARITH_IMAGE_MERGE3D_H
 #define COREMOD_ARITH_IMAGE_MERGE3D_H
 
-errno_t CLIADDCMD_COREMOD_arith__image_merge();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_arith_image_merge3D;
 
 #endif

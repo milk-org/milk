@@ -62,11 +62,8 @@ Error message
   ```cmake
   target_link_libraries(mylib PUBLIC missinglib)
   ```
-- For standalone executables:
-  ```cmake
-  target_link_libraries(milk-fpsexec-foo
-    milkfoo)
-  ```
+- For fpsexecs, declare the unit with `EXPORT_FPSEXEC` (the stub is linked to the module library
+  by `milk_add_fpsexec_stubs()`).
 
 **Common missing libraries**:
 
@@ -75,8 +72,8 @@ Error message
 | `imgid_*`, `IMGID` | `milkdata`                                 |
 | `fps_*`, `FPS_*`   | `milkfps`                                  |
 | `processinfo_*`    | `milkprocessinfo`                          |
-| `RegisterCLIcmd`   | `CLIcore` (never for standalone!)          |
-| `data` (`DATA`)    | Raw `RegisterCLIcmd`/`data.cmd[]` in module code: use `INSERT_STD_CLIREGISTERFUNC[_NAMED]` |
+| `RegisterCLIcmd`   | `CLIcore` (never for fpsexecs!)            |
+| `data` (`DATA`)    | Raw `RegisterCLIcmd`/`data.cmd[]` in module code: list the runnable in `MILK_MODULE_RUNNABLES` instead |
 | `cblas_sgemv`      | `// MILK_CMAKE_REQUEST_BLAS` in the source |
 | Math functions     | `m` (libm)                                 |
 
@@ -185,17 +182,16 @@ tier:
 | Core       | Engine + COREMOD\_{arith,memory,tools}            |
 | Core+FITS  | Core + COREMOD_iofits, cfitsio                    |
 | Full       | Everything: CLIcore, all plugins                  |
-| Standalone | Engine + regular COREMOD libs, `-DMILK_NO_CLI`    |
+| Fpsexec    | Engine + regular COREMOD libs + the module library |
 
-## Standalone Executable Checklist
+## fpsexec Checklist
 
-When a standalone executable fails to build:
+When an fpsexec fails to build or link:
 
-- [ ] Uses `CLIcore_standalone.h` not `CLIcore.h`
-- [ ] Links the regular module libraries (no separate variant needed)
-- [ ] Has `FPS_STANDALONE` compile definition
-- [ ] Has `MILK_NO_CLI` compile definition
-- [ ] Does NOT call `RegisterCLIcmd` or any CLI
-      functions; registers via
-      `INSERT_STD_CLIREGISTERFUNC[_NAMED]` only
+- [ ] The unit has a single-line `EXPORT_FPSEXEC(milk|cacao, "id", unit);` in a module source
+      (re-run `cmake`: the lines are scanned at configure time)
+- [ ] The module is built with `milk_add_runnable_module()` + `milk_add_fpsexec_stubs()`
+- [ ] No `CLIcore` in the link line (`ldd <exe> | grep CLIcore` must be empty)
+- [ ] The unit's source file was not dropped by an unmet `MILK_CMAKE_MANDATE_*` (a `[SKIP]` line is
+      printed at configure time)
 - [ ] Follows `src/milk_module_example/CMakeLists.txt`

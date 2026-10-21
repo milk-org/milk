@@ -19,26 +19,13 @@
 #include <errno.h>
 #include <float.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include <processtools_trigger.h>
 
 #include "streamtiming_stats.h"
 #include "stream_monproc.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "streammon",
-    .cmdkey           = "streammon",
-    .description      = "stream monitor with multi-level time binning and circular buffer",
-    .description_long = "Monitor a shared memory stream with multi-level temporal binning and "
-                        "circular buffer logging. Tracks frame rate, statistics, and timing jitter."
-};
 
 
 /* ================================================================
@@ -64,7 +51,7 @@ static uint32_t cbbuffersize                           = 100;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(stream_monproc, FPS_PARAMS);
 
 // ----------------------------------------------------------------------------
 // Help
@@ -170,43 +157,14 @@ static inline int get_bin_index(float val, float min_val, float max_val, int nbi
 // Stream Monitor Run Function
 // ----------------------------------------------------------------------------
 
-errno_t stream_monitor_run(const char *inimname_arg,
-                           uint64_t    tbinflag_arg,
-                           uint32_t    cbbuffersize_arg,
-                           int         procinfo_flag,
-                           int         fps_flag __attribute__((unused)))
+static errno_t stream_monitor_loop(const MILK_RUNNABLE *self,
+                                   const char          *inimname_arg,
+                                   uint64_t             tbinflag_arg,
+                                   uint32_t             cbbuffersize_arg)
 {
     DEBUG_TRACE_FSTART();
 
-    // FORCE NULL first to ignore any previous/garbage state
-    CLIcmddata.cmdsettings = NULL;
-
-    // Setup CLIcmddata if running standalone
-    CMDSETTINGS standalone_settings;
-    long        local_loop_limit = -1; // Enforce infinite
-
-    if (CLIcmddata.cmdsettings == NULL)
-    {
-        memset(&standalone_settings, 0, sizeof(CMDSETTINGS));
-        standalone_settings.procinfo_loopcntMax = -1; // Default to infinite loop
-
-        // Semaphore Triggering
-        standalone_settings.triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
-        strncpy(standalone_settings.triggerstreamname, inimname_arg, STRINGMAXLEN_IMAGE_NAME - 1);
-        standalone_settings.semindexrequested = -1; // Auto
-
-        if (procinfo_flag)
-        {
-            standalone_settings.flags |= CLICMDFLAG_PROCINFO;
-        }
-
-        CLIcmddata.cmdsettings = &standalone_settings;
-    }
-    else
-    {
-        // If reusing settings, read loop limit
-        local_loop_limit = CLIcmddata.cmdsettings->procinfo_loopcntMax;
-    }
+    long local_loop_limit = -1; // Enforce infinite
 
     // Connect to input image
     IMGID inimg = imgid_make_from_name(inimname_arg);
@@ -240,7 +198,7 @@ errno_t stream_monitor_run(const char *inimname_arg,
     printf("  PID: %d\n", getpid());
     fflush(stdout);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
     // FORCE infinite loop settings on processinfo if active
     if (processinfo)
@@ -372,7 +330,7 @@ errno_t stream_monitor_run(const char *inimname_arg,
 
     while (processloopOK)
     {
-        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
+        if (self->rt->cmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
         {
             processloopOK = processinfo_loopstep(processinfo);
             if (processloopOK)
@@ -558,7 +516,7 @@ errno_t stream_monitor_run(const char *inimname_arg,
         smon->cnt++;
 
         // End of loop updates
-        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
+        if (self->rt->cmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
         {
             if (processinfo != NULL)
             {
@@ -581,17 +539,12 @@ errno_t stream_monitor_run(const char *inimname_arg,
     }
 
     // Clean up processinfo if it was created
-    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
+    if (self->rt->cmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
     {
         if (processinfo)
         {
             processinfo_cleanExit(processinfo);
         }
-    }
-
-    if (CLIcmddata.cmdsettings == &standalone_settings)
-    {
-        CLIcmddata.cmdsettings = NULL;
     }
 
     // Cleanup
@@ -616,37 +569,39 @@ errno_t stream_monitor_run(const char *inimname_arg,
     return RETURN_SUCCESS;
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t stream_monproc_compute(const MILK_RUNNABLE *self)
 {
-    // Wrapper for CLI mode
-    return stream_monitor_run(inimname, tbinflag, cbbuffersize, 0, 0);
+    // Monitor runs on its own semaphore-triggered settings, not the CLI's
+    CMDSETTINGS standalone_settings;
+    memset(&standalone_settings, 0, sizeof(CMDSETTINGS));
+    standalone_settings.procinfo_loopcntMax = -1;
+    standalone_settings.triggermode         = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
+    strncpy(standalone_settings.triggerstreamname, inimname, STRINGMAXLEN_IMAGE_NAME - 1);
+    standalone_settings.semindexrequested = -1;
+
+    CMDSETTINGS *saved_settings   = self->rt->cmddata.cmdsettings;
+    self->rt->cmddata.cmdsettings = &standalone_settings;
+    errno_t retval                = stream_monitor_loop(self, inimname, tbinflag, cbbuffersize);
+    self->rt->cmddata.cmdsettings = saved_settings;
+    return retval;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_info__stream_monproc()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_info_stream_monproc = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "streammon",
+                 .cmdkey      = "streammon",
+                 .description = "stream monitor with multi-level time binning and "
+                                "circular buffer",
+                 .description_long =
+                     "Monitor a shared memory stream with multi-level temporal binning and "
+                     "circular buffer logging. Tracks frame rate, statistics, and timing jitter." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(stream_monproc),
+    .compute = stream_monproc_compute,
+};
+EXPORT_FPSEXEC(milk, "info-strmonproc", runnable_info_stream_monproc);

@@ -12,7 +12,7 @@
 
 #include <math.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #ifdef HAVE_CFITSIO
@@ -26,14 +26,6 @@
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = { .fps_name = "lincRMiter",
-                                     .cmdkey   = "lincRMiter",
-                                     .description =
-                                         "estimate response matrix from input and output",
-                                     .description_long =
-                                         "Estimate a response matrix from measured input-output "
-                                         "pairs using least-squares linear regression." };
 
 
 /* ================================================================
@@ -62,7 +54,7 @@ static char outRMimname[FUNCTION_PARAMETER_STRMAXLEN];
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(linRM_from_inout, FPS_PARAMS);
 
 //
 // solve for response matrix given a series of input and output
@@ -307,15 +299,16 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
 }
 
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t linRM_from_inout_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     linopt_compute_linRM_from_inout(inputimname, inmaskname, mrespimname, outRMimname, NULL);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -326,26 +319,20 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_linopt_imtools__linRM_from_inout()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
 
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_linopt_imtools_linRM_from_inout = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "lincRMiter",
+                 .cmdkey           = "lincRMiter",
+                 .description      = "estimate response matrix from input and output",
+                 .description_long = "Estimate a response matrix from measured input-output "
+                                     "pairs using least-squares linear regression." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(linRM_from_inout),
+    .compute = linRM_from_inout_compute,
+};
+EXPORT_FPSEXEC(milk, "linopt-linRM", runnable_linopt_imtools_linRM_from_inout);

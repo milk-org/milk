@@ -30,9 +30,10 @@
 #    else
 #        include "libmilkdata/milkdata.h"
 #        include "milkDebugTools.h"
-#        include "fps.h"
+#        include "computeunit.h"
 #        include "ImageStreamIO/ImageStreamIO.h"
 #    endif
+#    include "milk_runnable.h"
 #    include "COREMOD_memory/COREMOD_memory.h"
 
 #    ifndef max
@@ -56,60 +57,36 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
 // Gen 4 V2 CLI command: linalgebrapsinvSVD
 // ==========================================
 
-static char         ps_r[FUNCTION_PARAMETER_STRMAXLEN]  = "matA";
-static char         ps_c[FUNCTION_PARAMETER_STRMAXLEN]  = "matAinv";
-static double       ps_eps                              = 0.01;
-static int64_t      ps_nm                               = 100;
-static char         ps_vt[FUNCTION_PARAMETER_STRMAXLEN] = "VTmat";
-static FPS_APP_INFO FPS_app_info_ps = { .fps_name    = "linalgebrapsinvSVD",
-                                        .cmdkey      = "linalgebrapsinvSVD",
-                                        .description = "pseudo inverse via direct SVD",
-                                        .description_long =
-                                            "Compute SVD for pseudo-inverse using MAGMA. Low-level "
-                                            "SVD computation step with GPU acceleration." };
+static char    ps_r[FUNCTION_PARAMETER_STRMAXLEN]  = "matA";
+static char    ps_c[FUNCTION_PARAMETER_STRMAXLEN]  = "matAinv";
+static double  ps_eps                              = 0.01;
+static int64_t ps_nm                               = 100;
+static char    ps_vt[FUNCTION_PARAMETER_STRMAXLEN] = "VTmat";
 #    define FPS_PARAMS_PS(X)                                                       \
         X(".inmat", ps_r, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input mat") \
         X(".outmat", ps_c, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output")       \
         X(".svdeps", &ps_eps, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD eps")  \
         X(".nbmodes", &ps_nm, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "max modes")  \
         X(".vtmat", ps_vt, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "VT matrix")
-#    include "fps.h"
-static FPS_CLI_BINDING                   ps_b[]     = { FPS_PARAMS_PS(FPS_X_BINDING) };
-static const int                         ps_nb      = sizeof(ps_b) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF                      farg[]     = { FPS_PARAMS_PS(FPS_X_FARG) };
-static CLICMDDATA                        CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS                       ps_cms     = { 0 };
-static __attribute__((constructor)) void init_ps(void)
-{
-    strncpy(CLIcmddata.key, FPS_app_info_ps.cmdkey, sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description, FPS_app_info_ps.description,
-            sizeof(CLIcmddata.description) - 1);
-    CLIcmddata.nbarg         = sizeof(farg) / sizeof(CLICMDARGDEF);
-    CLIcmddata.funcfpscliarg = farg;
-    CLIcmddata.flags         = CLICMDFLAG_FPS;
-    if (!CLIcmddata.cmdsettings)
-    {
-        CLIcmddata.cmdsettings = &ps_cms;
-    }
-}
-static errno_t ps_compute(void)
+MILK_PARAMS_DEFINE(ps, FPS_PARAMS_PS);
+
+static errno_t ps_compute(__attribute__((unused)) const MILK_RUNNABLE *self)
 {
     LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(ps_r, ps_c, ps_eps, (long) ps_nm, ps_vt);
     return RETURN_SUCCESS;
 }
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_ps, farg, &CLIcmddata, ps_b, ps_nb,
-                                        ps_compute);
-}
 
-errno_t magma_compute_SVDpseudoInverse_SVD_addCLIcmd()
-{
-    safe_fps_fill_farg_examples(farg, ps_b, ps_nb);
-    INSERT_STD_CLIREGISTERFUNC;
-
-    return RETURN_SUCCESS;
-}
+const MILK_RUNNABLE runnable_linalgebra_linalgebrapsinvSVD = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "linalgebrapsinvSVD",
+                 .cmdkey           = "linalgebrapsinvSVD",
+                 .description      = "pseudo inverse via direct SVD",
+                 .description_long = "Compute SVD for pseudo-inverse using MAGMA. Low-level "
+                                     "SVD computation step with GPU acceleration." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(ps),
+    .compute = ps_compute,
+};
 
 //
 // Computes control matrix

@@ -19,7 +19,7 @@ add_library(${LIBNAME} SHARED ${SOURCEFILES})
 target_include_directories(
   ${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
                     $<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME} PUBLIC m milkfps milkfpsseq CLIcore)
+target_link_libraries(${LIBNAME} PUBLIC m milkfps milkcomputeunit milkfpsseq CLIcore)
 
 install(
   TARGETS ${LIBNAME}

@@ -38,4 +38,4 @@ Fast distance-based clustering of streams.
 
 ## Dependencies
 
-- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
+- `milk_runnable.h` (`libcomputeunit`), which provides the FPS and processinfo macros

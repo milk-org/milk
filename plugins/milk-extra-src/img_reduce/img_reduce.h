@@ -10,6 +10,14 @@
 #ifndef _IMGREDUCE_H
 #define _IMGREDUCE_H
 
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_img_reduce_bpf;
+extern const MILK_RUNNABLE runnable_img_reduce_bps;
+extern const MILK_RUNNABLE runnable_img_reduce_css;
+extern const MILK_RUNNABLE runnable_img_reduce_cn;
+extern const MILK_RUNNABLE runnable_img_reduce_cp;
+
 void __attribute__((constructor)) libinit_img_reduce();
 
 imageID IMG_REDUCE_cubesimplestat(const char *IDin_name);

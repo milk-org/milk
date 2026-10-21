@@ -10,7 +10,10 @@
 #ifndef _STREAM_UDP_H
 #define _STREAM_UDP_H
 
-errno_t CLIADDCMD_COREMOD_memory__stream_UDP();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imudptransmit;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imudpreceive;
 
 imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
                                             const char *IPaddr,

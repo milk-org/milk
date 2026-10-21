@@ -7,12 +7,8 @@
  * @brief Load images into a cube
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -23,35 +19,16 @@ long load_fitsimages_cube(const char *__restrict strfilter, const char *__restri
 static char p_pat[FUNCTION_PARAMETER_STRMAXLEN] = "im";
 static char p_out[FUNCTION_PARAMETER_STRMAXLEN] = "out";
 
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "loadfitsimgcube",
-                                     .cmdkey      = "loadfitsimgcube",
-                                     .description = "load images into a single cube",
-                                     .description_long =
-                                         "Load multiple FITS image files from disk and assemble "
-                                         "them into a single 3D cube in shared memory." };
-
 #define FPS_PARAMS(X)                                                                 \
     X(".in_pattern", p_pat, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "string pattern") \
     X(".out_name", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output cube")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(loadfitsimgcube, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t loadfitsimgcube_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     load_fitsimages_cube(p_pat, p_out);
-    return RETURN_SUCCESS;
-}
-
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_basic__loadfitsimgcube()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -153,3 +130,15 @@ long load_fitsimages_cube(const char *__restrict strfilter, const char *__restri
 
     return cnt;
 }
+
+const MILK_RUNNABLE runnable_image_basic_loadfitsimgcube = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "loadfitsimgcube",
+                 .cmdkey           = "loadfitsimgcube",
+                 .description      = "load images into a single cube",
+                 .description_long = "Load multiple FITS image files from disk and assemble them "
+                                     "into a single 3D cube in shared memory." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(loadfitsimgcube),
+    .compute = loadfitsimgcube_compute,
+};

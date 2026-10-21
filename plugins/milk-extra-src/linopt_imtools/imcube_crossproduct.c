@@ -12,21 +12,14 @@
 
 #include <math.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
+#include "linopt_imtools.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "imcubeXprod",
-    .cmdkey           = "imcubeXprod",
-    .description      = "cross product of two image cubes",
-    .description_long = "Compute the cross-product matrix of two image cubes. Each element (i,j) "
-                        "is the dot product of slice i from cube A with slice j from cube B."
-};
 
 
 /* ================================================================
@@ -54,7 +47,7 @@ static char imout[FUNCTION_PARAMETER_STRMAXLEN]    = "";
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(imcube_crossproduct, FPS_PARAMS);
 
 static errno_t imcube_crossproduct(IMGID imgcube0, IMGID imgcube1, IMGID imgmask, char *imoutname)
 {
@@ -122,7 +115,7 @@ static errno_t imcube_crossproduct(IMGID imgcube0, IMGID imgcube1, IMGID imgmask
  * @return errno_t
  */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t imcube_crossproduct_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -132,11 +125,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     IMGID imginc1 = imgid_make_from_name(inimc1);
     IMGID imgmask = imgid_make_from_name(inimmask);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     imcube_crossproduct(imginc0, imginc1, imgmask, imout);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     imgid_free(&imginc0);
     imgid_free(&imginc1);
@@ -151,26 +145,21 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_linopt_imtools__imcube_crossproduct()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
 
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_linopt_imtools_imcube_crossproduct = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "imcubeXprod",
+                 .cmdkey      = "imcubeXprod",
+                 .description = "cross product of two image cubes",
+                 .description_long =
+                     "Compute the cross-product matrix of two image cubes. Each element (i,j) "
+                     "is the dot product of slice i from cube A with slice j from cube B." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imcube_crossproduct),
+    .compute = imcube_crossproduct_compute,
+};
+EXPORT_FPSEXEC(milk, "linopt-imcXprod", runnable_linopt_imtools_imcube_crossproduct);

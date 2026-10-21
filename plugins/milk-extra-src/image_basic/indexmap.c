@@ -7,12 +7,8 @@
  * @brief Map values using index map
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -25,37 +21,17 @@ static char p_idx[FUNCTION_PARAMETER_STRMAXLEN] = "imap";
 static char p_val[FUNCTION_PARAMETER_STRMAXLEN] = "imval";
 static char p_out[FUNCTION_PARAMETER_STRMAXLEN] = "outmap";
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "imindexmap",
-    .cmdkey           = "imindexmap",
-    .description      = "map values using index map",
-    .description_long = "Map pixel values through a lookup table defined by an index map. Each "
-                        "output pixel takes the value at the index specified by the map."
-};
-
 #define FPS_PARAMS(X)                                                                    \
     X(".in_index", p_idx, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "index map image") \
     X(".in_values", p_val, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "values image")   \
     X(".out_name", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(indexmap, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t indexmap_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     image_basic_indexmap(p_idx, p_val, p_out);
-    return RETURN_SUCCESS;
-}
-
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_basic__indexmap()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -234,3 +210,16 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
 
     return imgout.ID;
 }
+
+const MILK_RUNNABLE runnable_image_basic_indexmap = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "imindexmap",
+              .cmdkey           = "imindexmap",
+              .description      = "map values using index map",
+              .description_long = "Map pixel values through a lookup table defined by an index "
+                                  "map. Each output pixel takes the value at the index specified "
+                                  "by the map." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(indexmap),
+    .compute = indexmap_compute,
+};

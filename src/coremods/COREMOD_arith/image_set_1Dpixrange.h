@@ -10,6 +10,8 @@
 #ifndef COREMOD_ARITH_IMAGE_SET_1DPIXRANGE_H
 #define COREMOD_ARITH_IMAGE_SET_1DPIXRANGE_H
 
-errno_t CLIADDCMD_COREMOD_arith__imset_1Dpixrange();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_arith_image_set_1Dpixrange;
 
 #endif

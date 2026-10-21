@@ -7,7 +7,9 @@
  * @brief Half-image difference
  */
 
-errno_t CLIADDCMD_COREMOD_memory__stream_halfimdiff();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_streamhalfdiff;
 
 imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
                                          const char *IDstreamout_name,

@@ -10,9 +10,8 @@
 #ifndef FPS_CLI_POC_H
 #define FPS_CLI_POC_H
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 
-// Define register function
-errno_t CLIADDCMD_milk_module_example__fpscli();
+extern const MILK_RUNNABLE runnable_modex_fpscli;
 
 #endif

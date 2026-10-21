@@ -7,7 +7,9 @@
  * @brief File utility functions
  */
 
-errno_t CLIADDCMD_COREMOD_tools__fileutils();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_tools_fileutils;
 
 int file_exist(char *filename);
 

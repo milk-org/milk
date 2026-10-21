@@ -9,6 +9,7 @@
 
 #include "overview_render_internal.h"
 #include "overview_data_internal.h"
+#include "overview_ansi.h"
 #include "milk_config.h"
 #include <math.h>
 #include <stdio.h>

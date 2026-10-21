@@ -13,7 +13,7 @@
 #    include "CLIcore_standalone.h"
 #else
 #    include "libmilkdata/milkdata.h"
-#    include <fps.h>
+#    include <computeunit.h>
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 

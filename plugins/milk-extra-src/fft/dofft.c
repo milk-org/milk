@@ -12,21 +12,8 @@
  *   - dofft_2d.c  (2D complex + real FFTs)
  */
 
+#include "milk_runnable.h"
 #include "dofft_internal.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "dofft",
-    .cmdkey      = "dofft",
-    .description = "perform 2D complex FFT",
-    .description_long =
-        "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports "
-        "real-to-complex and complex-to-complex transforms, forward and inverse directions."
-};
 
 
 /* ================================================================
@@ -64,26 +51,13 @@ imageID do2dfft(const char *in_name, const char *out_name);
 static char p_1dfft_in[FUNCTION_PARAMETER_STRMAXLEN]  = "in";
 static char p_1dfft_out[FUNCTION_PARAMETER_STRMAXLEN] = "out";
 
-static FPS_APP_INFO FPS_app_info_1dfft = {
-    .fps_name    = "do1Dfft",
-    .cmdkey      = "do1Dfft",
-    .description = "perform 1D complex->complex FFT",
-    .description_long =
-        "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports "
-        "real-to-complex and complex-to-complex transforms, forward and inverse directions."
-};
-
 #define FPS_PARAMS_1DFFT(X)                                                                      \
     X(".in_name", p_1dfft_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input complex image") \
     X(".out_name", p_1dfft_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output complex image")
 
-static CLICMDDATA CLIcmddata_1dfft = { "", "", CLICMD_FIELDS_NOPARAM };
-
-FPS_CMDSETTINGS_INIT(1dfft, CLIcmddata_1dfft, FPS_app_info_1dfft)
-
-
-static errno_t __attribute__((unused)) compute_1dfft()
+static MILK_HOT errno_t dofft_1dfft_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     do1dfft(p_1dfft_in, p_1dfft_out);
     return RETURN_SUCCESS;
 }
@@ -96,26 +70,13 @@ static errno_t __attribute__((unused)) compute_1dfft()
 static char p_1drfft_in[FUNCTION_PARAMETER_STRMAXLEN]  = "in";
 static char p_1drfft_out[FUNCTION_PARAMETER_STRMAXLEN] = "out";
 
-static FPS_APP_INFO FPS_app_info_1drfft = {
-    .fps_name    = "do1Drfft",
-    .cmdkey      = "do1Drfft",
-    .description = "perform 1D real->complex FFT",
-    .description_long =
-        "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports "
-        "real-to-complex and complex-to-complex transforms, forward and inverse directions."
-};
-
 #define FPS_PARAMS_1DRFFT(X)                                                                   \
     X(".in_name", p_1drfft_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input real image") \
     X(".out_name", p_1drfft_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output complex image")
 
-static CLICMDDATA CLIcmddata_1drfft = { "", "", CLICMD_FIELDS_NOPARAM };
-
-FPS_CMDSETTINGS_INIT(1drfft, CLIcmddata_1drfft, FPS_app_info_1drfft)
-
-
-static errno_t __attribute__((unused)) compute_1drfft()
+static MILK_HOT errno_t dofft_1drfft_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     do1drfft(p_1drfft_in, p_1drfft_out);
     return RETURN_SUCCESS;
 }
@@ -125,69 +86,66 @@ static errno_t __attribute__((unused)) compute_1drfft()
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(dofft, FPS_PARAMS);
+MILK_PARAMS_DEFINE(dofft_1dfft, FPS_PARAMS_1DFFT);
+MILK_PARAMS_DEFINE(dofft_1drfft, FPS_PARAMS_1DRFFT);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t dofft_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     do2dfft(dofft_inimname, dofft_outimname);
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTORS
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
+const MILK_RUNNABLE runnable_fft_dofft = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "dofft",
+              .cmdkey      = "dofft",
+              .description = "perform 2D complex FFT",
+              .description_long =
+                  "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports "
+                  "real-to-complex and complex-to-complex transforms, forward and inverse "
+                  "directions." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(dofft),
+    .compute = dofft_compute,
+};
+EXPORT_FPSEXEC(milk, "fft-dofft", runnable_fft_dofft);
 
-static FPS_CLI_BINDING b_1dfft[]  = { FPS_PARAMS_1DFFT(FPS_X_BINDING) };
-static CLICMDARGDEF    fa_1dfft[] = { FPS_PARAMS_1DFFT(FPS_X_FARG) };
+const MILK_RUNNABLE runnable_fft_dofft_1dfft = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "do1Dfft",
+              .cmdkey      = "do1Dfft",
+              .description = "perform 1D complex->complex FFT",
+              .description_long =
+                  "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports "
+                  "real-to-complex and complex-to-complex transforms, forward and inverse "
+                  "directions." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(dofft_1dfft),
+    .compute = dofft_1dfft_compute,
+};
 
-static errno_t CLIfunction_1dfft(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_1dfft, fa_1dfft, &CLIcmddata_1dfft, b_1dfft,
-                                        sizeof(b_1dfft) / sizeof(FPS_CLI_BINDING), compute_1dfft);
-}
-
-static FPS_CLI_BINDING b_1drfft[]  = { FPS_PARAMS_1DRFFT(FPS_X_BINDING) };
-static CLICMDARGDEF    fa_1drfft[] = { FPS_PARAMS_1DRFFT(FPS_X_FARG) };
-
-static errno_t CLIfunction_1drfft(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_1drfft, fa_1drfft, &CLIcmddata_1drfft,
-                                        b_1drfft, sizeof(b_1drfft) / sizeof(FPS_CLI_BINDING),
-                                        compute_1drfft);
-}
-
-errno_t CLIADDCMD_milkfft__dofft()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC;
-
-    safe_fps_fill_farg_examples(fa_1dfft, b_1dfft, sizeof(b_1dfft) / sizeof(FPS_CLI_BINDING));
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_1dfft, CLIfunction_1dfft);
-
-    safe_fps_fill_farg_examples(fa_1drfft, b_1drfft, sizeof(b_1drfft) / sizeof(FPS_CLI_BINDING));
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_1drfft, CLIfunction_1drfft);
-
-    return RETURN_SUCCESS;
-}
-#endif
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_fft_dofft_1drfft = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name    = "do1Drfft",
+              .cmdkey      = "do1Drfft",
+              .description = "perform 1D real->complex FFT",
+              .description_long =
+                  "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports "
+                  "real-to-complex and complex-to-complex transforms, forward and inverse "
+                  "directions." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(dofft_1drfft),
+    .compute = dofft_1drfft_compute,
+};

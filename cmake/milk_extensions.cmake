@@ -68,7 +68,8 @@ function(milk_apply_extensions target)
     endif()
     math(EXPR _valid_src_count "${_valid_src_count} + 1")
 
-    file(STRINGS "${_src}" _req_lines REGEX "MILK_CMAKE_REQUEST_")
+    # Directives are whole-line comments: strings or prose mentioning a tag do not count.
+    file(STRINGS "${_src}" _req_lines REGEX "^[ \t]*//[ \t]*MILK_CMAKE_REQUEST_")
     foreach(_line IN LISTS _req_lines)
       if(_line MATCHES "MILK_CMAKE_REQUEST_BLAS")
         set(_want_blas TRUE)
@@ -89,7 +90,7 @@ function(milk_apply_extensions target)
 
     # Per-file MANDATE_ scan.  Any single unmet mandate excludes this source
     # from compilation.  Passing mandates imply REQUEST (auto-link).
-    file(STRINGS "${_src}" _mnd_lines REGEX "MILK_CMAKE_MANDATE_")
+    file(STRINGS "${_src}" _mnd_lines REGEX "^[ \t]*//[ \t]*MILK_CMAKE_MANDATE_")
     set(_src_excluded FALSE)
     foreach(_line IN LISTS _mnd_lines)
       if(_line MATCHES "MILK_CMAKE_MANDATE_BLAS")

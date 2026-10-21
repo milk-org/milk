@@ -10,17 +10,12 @@
 #define MODULE_SHORTNAME_DEFAULT "seq"
 #define MODULE_DESCRIPTION "sequencer control module"
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#    include "seq_cli.h"
+#include "CLIcore.h"
+#include "seq_cli.h"
 
-static errno_t init_module_CLI()
-{
-    CLIADDCMD_sequencer__seq_cli();
-    return RETURN_SUCCESS;
-}
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_sequencer_list,  &runnable_sequencer_submit, &runnable_sequencer_status,
+    &runnable_sequencer_start, &runnable_sequencer_stop,   &runnable_sequencer_log,
+};
 
-MILK_MODULE(sequencer, init_module_CLI, NULL);
-#endif /* MILK_NO_CLI */
+MILK_MODULE_RUNNABLES(sequencer, NULL, runnables);

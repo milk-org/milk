@@ -594,7 +594,9 @@ Return:
             [](pyFps &cls)
             {
                 pid_t pid = cls->md->runpid;
-                if ((getpgid(pid) >= 0) && (pid > 0))
+                if (pid_is_running(pid) &&
+                    cls->md->status &
+                        FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP) // PID is live + completed loop setup.
                 {
                     return 1;
                 }

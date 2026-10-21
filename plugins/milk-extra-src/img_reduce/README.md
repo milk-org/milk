@@ -12,6 +12,6 @@ centering and normalization, and correlation analysis.
 
 ## Dependencies
 
-- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
+- `milk_runnable.h` (`libcomputeunit`), which provides the FPS and processinfo macros
 - `COREMOD_arith`, `COREMOD_iofits`, `COREMOD_memory`
 - `fft`, `image_filter`

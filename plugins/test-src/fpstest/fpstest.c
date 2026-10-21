@@ -12,24 +12,15 @@
 #define MODULE_SHORTNAME_DEFAULT "compilertest"
 #define MODULE_DESCRIPTION "Cmake stack test"
 
-#include "CLIcore.h"
-// #include "COREMOD_memory/COREMOD_memory.h"
+#include "milk_runnable.h"
+#include "fpstest.h"
 
-// clang-format off
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_fpstest_fps_sync_test,
+};
 
-// Weak and non-weak CLIADDCMD declarations.
+MILK_MODULE_RUNNABLES(fpstest, NULL, runnables);
 
-          errno_t FPSTEST_CLIADDCMD_FPSSYNCTEST();
-// clang-format on
-
-static errno_t init_module_CLI()
-{
-    // Add non-mandating initializers here.
-    FPSTEST_CLIADDCMD_FPSSYNCTEST();
-
-    return RETURN_SUCCESS;
-}
-
-MILK_MODULE(fpstest, init_module_CLI, NULL);
 
 // Additional weak function definitions for things that need exported and miss a MANDATE

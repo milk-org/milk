@@ -9,17 +9,32 @@
  * Provides seq.list, seq.submit, seq.status, seq.tasks, seq.start, seq.stop
  */
 
+#include <fcntl.h>
+#include <signal.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include "CLIcore.h"
+#include "milk_runnable.h"
+#include "fpsseq.h"
 #include "seq_cli.h"
 
-#ifndef MILK_NO_CLI
+/* Linked to the first CLI argument of every command taking a sequencer name */
+static char *seq_name;
 
-#    include "CLIcore.h"
-#    include "fpsseq.h"
-#    include <fcntl.h>
-#    include <signal.h>
-#    include <unistd.h>
-#    include <sys/stat.h>
-#    include <sys/types.h>
+/* Mandatory second argument of submit; the full command is rebuilt from data.cmdargtoken */
+static char *seq_extra;
+
+#define SEQ_NAME_FARG                            \
+    { CLIARG_STR,                                \
+      ".name",                                   \
+      "sequencer name",                          \
+      "loop01",                                  \
+      (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT), \
+      (void **) &seq_name,                       \
+      NULL }
 
 /**
  * @brief Resolve SHM directory for PID/log files
@@ -96,12 +111,7 @@ static errno_t cli_seq_list(void)
  */
 static errno_t cli_seq_submit(void)
 {
-    if (CLI_checkarg(1, 4) == 0)
-    {
-        return RETURN_SUCCESS;
-    }
-
-    const char    *seqname = data.cmdargtoken[1].val.string;
+    const char    *seqname = seq_name;
     MILKSEQ_STATE *state   = milkseq_connect(seqname);
     if (!state)
     {
@@ -152,12 +162,7 @@ static errno_t cli_seq_submit(void)
  */
 static errno_t cli_seq_status(void)
 {
-    if (CLI_checkarg(1, 4) == 0)
-    {
-        return RETURN_SUCCESS;
-    }
-
-    const char    *seqname = data.cmdargtoken[1].val.string;
+    const char    *seqname = seq_name;
     MILKSEQ_STATE *state   = milkseq_connect(seqname);
     if (!state)
     {
@@ -208,12 +213,7 @@ static errno_t cli_seq_status(void)
  */
 static errno_t cli_seq_start(void)
 {
-    if (CLI_checkarg(1, 4) == 0)
-    {
-        return RETURN_SUCCESS;
-    }
-
-    const char *seqname = data.cmdargtoken[1].val.string;
+    const char *seqname = seq_name;
     char        cmd[512];
 
     if (data.cmdargtoken[2].type == 4 && strcmp(data.cmdargtoken[2].val.string, "-f") == 0)
@@ -249,12 +249,7 @@ static errno_t cli_seq_start(void)
  */
 static errno_t cli_seq_stop(void)
 {
-    if (CLI_checkarg(1, 4) == 0)
-    {
-        return RETURN_SUCCESS;
-    }
-
-    const char *seqname = data.cmdargtoken[1].val.string;
+    const char *seqname = seq_name;
 
     /* Try PID file first */
     char pidpath[256];
@@ -323,12 +318,7 @@ static errno_t cli_seq_stop(void)
  */
 static errno_t cli_seq_log(void)
 {
-    if (CLI_checkarg(1, 4) == 0)
-    {
-        return RETURN_SUCCESS;
-    }
-
-    const char *seqname = data.cmdargtoken[1].val.string;
+    const char *seqname = seq_name;
 
     char logpath[256];
     snprintf(logpath, sizeof(logpath), "%s/milkseq.%s.log", get_shm_dir(), seqname);
@@ -386,30 +376,57 @@ static errno_t cli_seq_log(void)
     return RETURN_SUCCESS;
 }
 
-/**
- * @brief Register all commands
- */
-errno_t CLIADDCMD_sequencer__seq_cli(void)
-{
-    RegisterCLIcommand("list", __func__, cli_seq_list, "List active sequencer instances",
-                       "seq.list", "seq.list", "");
+/* Descriptor of a CLI-only command; the module registry is in sequencer.c */
+#define SEQ_RUNNABLE(sym, key, descr, farray, nb, func)                              \
+    MILK_RUNNABLE_RT_DEFINE(seq_##sym);                                              \
+    const MILK_RUNNABLE runnable_sequencer_##sym = {                                 \
+        .kind     = MILK_RUNNABLE_CLI,                                               \
+        .app      = { .fps_name = "seq" #sym, .cmdkey = key, .description = descr }, \
+        .srcfile  = __FILE__,                                                        \
+        .farg     = farray,                                                          \
+        .nbarg    = nb,                                                              \
+        .cli_func = func,                                                            \
+        .rt       = &seq_##sym##_rt,                                                 \
+    }
 
-    RegisterCLIcommand("submit", __func__, cli_seq_submit, "Submit a command to a sequencer",
-                       "seq.submit <name> <cmd...>", "seq.submit loop01 sleep 1.5", "");
+#define SEQ_NBARG(farray) ((int) (sizeof(farray) / sizeof((farray)[0])))
 
-    RegisterCLIcommand("status", __func__, cli_seq_status, "Show status of a sequencer",
-                       "seq.status <name>", "seq.status loop01", "");
+static CLICMDARGDEF farg_name[] = { SEQ_NAME_FARG };
 
-    RegisterCLIcommand("start", __func__, cli_seq_start, "Start a new sequencer instance",
-                       "seq.start <name> [-f script.seq]", "seq.start calib -f test.seq", "");
+static CLICMDARGDEF farg_submit[] = {
+    SEQ_NAME_FARG,
+    { CLIARG_STR, ".cmd", "command (remaining tokens are appended)", "sleep",
+      (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT), (void **) &seq_extra, NULL },
+};
 
-    RegisterCLIcommand("stop", __func__, cli_seq_stop, "Stop a sequencer instance safely",
-                       "seq.stop <name>", "seq.stop calib", "");
-
-    RegisterCLIcommand("log", __func__, cli_seq_log, "Show tail of sequencer log", "seq.log <name>",
-                       "seq.log calib", "");
-
-    return RETURN_SUCCESS;
-}
-
-#endif /* MILK_NO_CLI */
+SEQ_RUNNABLE(list, "list", "List active sequencer instances", NULL, 0, cli_seq_list);
+SEQ_RUNNABLE(submit,
+             "submit",
+             "Submit a command to a sequencer",
+             farg_submit,
+             SEQ_NBARG(farg_submit),
+             cli_seq_submit);
+SEQ_RUNNABLE(status,
+             "status",
+             "Show status of a sequencer",
+             farg_name,
+             SEQ_NBARG(farg_name),
+             cli_seq_status);
+SEQ_RUNNABLE(start,
+             "start",
+             "Start a new sequencer instance (optional: -f script.seq)",
+             farg_name,
+             SEQ_NBARG(farg_name),
+             cli_seq_start);
+SEQ_RUNNABLE(stop,
+             "stop",
+             "Stop a sequencer instance safely",
+             farg_name,
+             SEQ_NBARG(farg_name),
+             cli_seq_stop);
+SEQ_RUNNABLE(log,
+             "log",
+             "Show tail of sequencer log",
+             farg_name,
+             SEQ_NBARG(farg_name),
+             cli_seq_log);

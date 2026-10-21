@@ -10,6 +10,8 @@
 #ifndef COREMOD_ARITH_PIXUNMAP_H
 #define COREMOD_ARITH_PIXUNMAP_H
 
-errno_t CLIADDCMD_COREMODE_arith__pixunmap();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_arith_image_pixunmap;
 
 #endif

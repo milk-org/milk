@@ -29,7 +29,7 @@ static long   milkfps_nb_max  = 0;
  * @brief Set the module-local image array for standalone
  *        stream loading.
  *
- * Called by FPS_MAIN_STANDALONE_V2 after CLI_data_init()
+ * Called by fpsexec_main_function() after CLI_data_init()
  * to provide the image array and its capacity.  Must be
  * called before any COREMOD_IOFITS_LoadMemStream() call.
  *

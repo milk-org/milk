@@ -13,20 +13,10 @@
 #define MODULE_SHORTNAME_DEFAULT "imgformat"
 #define MODULE_DESCRIPTION "Conversion between image format, I/O"
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "CR2toFITS.h"
-#include "FITS_to_floatbin_lock.h"
-#include "FITS_to_ushortintbin_lock.h"
-#include "combineHDR.h"
-#include "stream_temporal_stats.h"
-#include "extract_RGGBchan.h"
-#include "extract_utr.h"
-#include "imtoASCII.h"
-#include "loadCR2toFITSRGB.h"
-#include "read_binary32f.h"
-#include "writeBMP.h"
+#include "image_format.h"
 
 
 /*typedef struct
@@ -42,28 +32,19 @@
 */
 //#pragma pack(2)
 
-static errno_t init_module_CLI()
-{
-    CLIADDCMD_image_format__extractRGGBchan();
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_image_format_extract_RGGBchan,
+    &runnable_image_format_combineHDR,
+    &runnable_image_format_extract_utr,
+    &runnable_image_format_stream_temporal_stats,
+    &runnable_image_format_imtoASCII,
+    &runnable_image_format_writeBMP,
+    &runnable_image_format_CR2toFITS,
+    &runnable_image_format_loadCR2toFITSRGB,
+    &runnable_image_format_FITS_to_floatbin_lock,
+    &runnable_image_format_FITS_to_ushortintbin_lock,
+    &runnable_image_format_read_binary32f,
+};
 
-    CLIADDCMD_image_format__combineHDR();
-    CLIADDCMD_image_format__cred_cds_utr();
-    CLIADDCMD_image_format__temporal_stats();
-
-    CLIADDCMD_image_format__imtoASCII();
-
-    CLIADDCMD_image_format__mkBMPimage();
-    //	writeBMP_addCLIcmd();
-
-    CLIADDCMD_image_format__CR2toFITS();
-    CLIADDCMD_image_format__loadCR2toFITSRGB();
-    CLIADDCMD_image_format__floatbin_lock();
-    CLIADDCMD_image_format__ushortintbin_lock();
-    CLIADDCMD_image_format__read_binary32f();
-
-    // add atexit functions here
-
-    return RETURN_SUCCESS;
-}
-
-MILK_MODULE(image_format, init_module_CLI, NULL);
+MILK_MODULE_RUNNABLES(image_format, NULL, runnables);

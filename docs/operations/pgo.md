@@ -285,7 +285,7 @@ _build/pgo/
 ```
 
 This isolation is automatic — the `milk_pgo_target()` CMake helper (called by
-`add_milk_standalone()` / `add_cacao_standalone()`) sets per-target `-fprofile-dir`.
+`milk_add_runnable_module()` and `milk_configure_fpsexec()`) sets per-target `-fprofile-dir`.
 
 ### 2.4. Optimizing Specific Executables
 
@@ -390,9 +390,9 @@ libCOREMODarith.so
 ...
 ```
 
-- Linked by `milk-cli` upon `mload`, dependent module shared libraries, the module's standalone executables (by default).
-- Contain full CLI registration code (if `-DUSE_CLI=ON`; `RegisterModule`, `RegisterCLIcommand`, etc.), but that code is written to stay off the compute path so it's safe for standalone consumers
-- `-DMILK_NO_CLI`, applied to the standalone executable target itself, redirects `CLIcore.h` to the `CLIcore_standalone.h` stub for that target.
+- Linked by `milk-cli` upon `mload`, dependent module shared libraries, the module's fpsexec executables.
+- Contain full CLI registration code (if `-DUSE_CLI=ON`; `RegisterModule`, `RegisterCLIcommand`, etc.), but that code is written to stay off the compute path so it's safe for fpsexec consumers
+- Module sources are compiled once, with `-DMILK_NO_CLI`, which redirects `CLIcore.h` to the `CLIcore_standalone.h` stub.
 - Loaded at runtime in the CLI via `dlopen()`.
 
 ### 4.2. Static Archives (`.a`) — for Static LTO
@@ -402,7 +402,7 @@ When `USE_STATIC_LTO=ON`, a `_static`-suffixed archive variant is built for each
 ```text
 libImageStreamIO.a
 libmilkfps.a
-libmilkfpsStandalone.a
+libmilkcomputeunit.a
 libmilkdata.a
 libmilkprocessinfo.a
 libCOREMODmemory_static.a
@@ -436,7 +436,7 @@ libCOREMODiofits_static.a
 │  Default: links regular .so (dyn)   │
 │  Static LTO: links _static .a       │
 │  + PGO: adds profiling/use flags    │
-│  (-DMILK_NO_CLI on the executable)  │
+│  (executable: generated main() stub)│
 └─────────────────────────────────────┘
 ```
 
@@ -631,15 +631,6 @@ Because the binary is fully self-contained, no library installation is needed on
 | `-D_GNU_SOURCE` (C flag) | set        | Exposes `cpu_set_t`, `pthread_setaffinity_np` and other POSIX extensions in musl |
 
 ### 8.6. Known Warnings (Non-Fatal)
-
-**`_GNU_SOURCE` redefined:**
-
-```text
-fps_standalone_data.c:6:9: warning: '_GNU_SOURCE' redefined
-```
-
-`fps_standalone_data.c` defines `_GNU_SOURCE` internally; passing it as a CMake flag causes a
-harmless redefinition. No action required.
 
 **LTO type mismatch on `copy_image_ID`:**
 

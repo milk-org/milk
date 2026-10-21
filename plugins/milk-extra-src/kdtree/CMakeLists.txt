@@ -12,15 +12,8 @@ project(lib_${LIBNAME}_project)
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
 
-add_library(${LIBNAME} SHARED ${SOURCEFILES})
-target_include_directories(
-  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
-milk_apply_extensions(${LIBNAME})
-milk_add_static_lto(${LIBNAME})
+milk_add_runnable_module(${LIBNAME} SOURCES ${SOURCEFILES})
+milk_add_fpsexec_stubs(${LIBNAME})
 
-install(
-  TARGETS ${LIBNAME}
-  EXPORT milkTargets
-  DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)

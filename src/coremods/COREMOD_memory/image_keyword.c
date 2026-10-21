@@ -16,12 +16,7 @@
  *  - imwritekwL — write a long-type keyword
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_ID.h"
@@ -39,48 +34,37 @@ imageID image_list_keywords(const char *IDname);
  *  CMD 1: imlistkw (1 arg)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_listkw = {
-    .fps_name         = "imlistkw",
-    .cmdkey           = "imlistkw",
-    .description      = "list image keywords",
-    .description_long = "List, read, or modify FITS-style keywords attached to a shared memory "
-                        "image stream. Keywords are stored in the stream metadata header."
-};
-
 static char p_listkw_imname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 
 #define FPS_PARAMS_listkw(X) \
     X(".imname", p_listkw_imname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "image name")
 
-static FPS_CLI_BINDING bindings_listkw[] = { FPS_PARAMS_listkw(FPS_X_BINDING) };
+MILK_PARAMS_DEFINE(listkw, FPS_PARAMS_listkw);
 
-static const int __attribute__((unused)) nb_bindings_listkw =
-    sizeof(bindings_listkw) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF __attribute__((unused)) farg_listkw[] = { FPS_PARAMS_listkw(FPS_X_FARG) };
-
-static CLICMDDATA CLIcmddata_listkw = { "", "", CLICMD_FIELDS_NOPARAM };
-
-FPS_CMDSETTINGS_INIT(listkw, CLIcmddata_listkw, FPS_app_info_listkw)
-
-static errno_t __attribute__((unused)) compute_listkw()
+static MILK_HOT errno_t listkw_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     image_list_keywords(p_listkw_imname);
     return RETURN_SUCCESS;
 }
 
+const MILK_RUNNABLE runnable_COREMOD_memory_imlistkw = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "imlistkw",
+              .cmdkey           = "imlistkw",
+              .description      = "list image keywords",
+              .description_long = "List, read, or modify FITS-style keywords attached to a shared "
+                                  "memory image stream. Keywords are stored in the stream "
+                                  "metadata header." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(listkw),
+    .compute = listkw_compute,
+};
+
 
 /* ================================================================
- *  CMD 2: imwritekwL (4 args, primary)
+ *  CMD 2: imwritekwL (4 args)
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "imwritekwL",
-    .cmdkey           = "imwritekwL",
-    .description      = "write long type keyword",
-    .description_long = "List, read, or modify FITS-style keywords attached to a shared memory "
-                        "image stream. Keywords are stored in the stream metadata header."
-};
 
 static char      p_imname[FUNCTION_PARAMETER_STRMAXLEN]  = "im1";
 static char      p_kname[FUNCTION_PARAMETER_STRMAXLEN]   = "kw2";
@@ -93,45 +77,31 @@ static char      p_comment[FUNCTION_PARAMETER_STRMAXLEN] = "my_keyword_comment";
     X(".kwval", &p_kwval, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "keyword value")    \
     X(".comment", p_comment, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "comment")
 
-FPS_V2_SECTION5(FPS_PARAMS)
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+MILK_PARAMS_DEFINE(writekwL, FPS_PARAMS);
+
+static MILK_HOT errno_t writekwL_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
     image_write_keyword_L(p_imname, p_kname, p_kwval, p_comment);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- *  REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-
-static errno_t CLIfunction_listkw(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_listkw, farg_listkw, &CLIcmddata_listkw,
-                                        bindings_listkw, nb_bindings_listkw, compute_listkw);
-}
-
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__image_keyword()
-{
-    safe_fps_fill_farg_examples(farg_listkw, bindings_listkw, nb_bindings_listkw);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_listkw, CLIfunction_listkw);
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC;
-
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_imwritekwL = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "imwritekwL",
+              .cmdkey           = "imwritekwL",
+              .description      = "write long type keyword",
+              .description_long = "List, read, or modify FITS-style keywords attached to a shared "
+                                  "memory image stream. Keywords are stored in the stream "
+                                  "metadata header." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(writekwL),
+    .compute = writekwL_compute,
+};
 
 
 /* ================================================================

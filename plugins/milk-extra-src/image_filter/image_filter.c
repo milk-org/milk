@@ -17,33 +17,16 @@
 // Module short description
 #define MODULE_DESCRIPTION "Image filtering"
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#    include "COREMOD_memory/COREMOD_memory.h"
-#else
-#    include "CLIcore.h"
+#include "milk_runnable.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
-#    include "fconvolve.h"
-#    include "gaussfilter.h"
-#    include "im2Dfilter_1pixbblurr.h"
+#include "image_filter.h"
 
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_image_filter_gaussfilter,
+    &runnable_image_filter_fconvolve,
+    &runnable_image_filter_im2Dfilter_1pixbblurr,
+};
 
-// Module initialization macro in CLIcore.h
-// macro argument defines module name for bindings
-//
-
-static errno_t init_module_CLI()
-{
-    gaussfilter_addCLIcmd();
-    CLIADDCMD_image_filter__fconvolve();
-
-    CLIADDCMD_image_filter__im2Dfilter_1pixblurr();
-
-    // add atexit functions here
-
-    return RETURN_SUCCESS;
-}
-
-MILK_MODULE(image_filter, init_module_CLI, NULL);
-
-#endif /* MILK_NO_CLI */
+MILK_MODULE_RUNNABLES(image_filter, NULL, runnables);

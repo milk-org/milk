@@ -14,32 +14,14 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_ID.h"
 #include "image_keyword_list.h"
 #include "list_image.h"
 #include "imageID.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "readshmim",
-    .cmdkey      = "readshmim",
-    .description = "read shared memory image",
-    .description_long =
-        "Connect to an existing shared memory image stream by name. Maps the stream into the "
-        "current process address space for reading. Returns failure if the stream does not exist."
-};
+#include "read_shmim.h"
 
 
 /* ================================================================
@@ -76,50 +58,44 @@ imageID read_sharedmem_image(const char *restrict sname, IMAGE *imagearray, long
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  BINDINGS AND FARG
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(read_sharedmem_image, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t read_sharedmem_image_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START read_sharedmem_image(insname, dcimg, dcnimg);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    read_sharedmem_image(insname, dcimg, dcnimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__read_sharedmem_image()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_readshmim = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "readshmim",
+                 .cmdkey      = "readshmim",
+                 .description = "read shared memory image",
+                 .description_long =
+                     "Connect to an existing shared memory image stream by name. Maps the stream "
+                     "into the current process address space for reading. Returns failure if the "
+                     "stream does not exist." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(read_sharedmem_image),
+    .compute = read_sharedmem_image_compute,
+};

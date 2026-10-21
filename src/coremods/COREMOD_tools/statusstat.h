@@ -7,6 +7,8 @@
  * @brief Status statistics monitoring
  */
 
-errno_t CLIADDCMD_COREMOD_tools__statusstat();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_tools_statusstat;
 
 imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax);

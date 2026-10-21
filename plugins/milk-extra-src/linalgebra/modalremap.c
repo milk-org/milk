@@ -11,7 +11,7 @@
 
 #include <math.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "ImageStreamIO/ImageStruct.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
@@ -27,19 +27,6 @@ MILK_WEAK declaration for functions that may be in this file.
 But this file should never include its own .h with the MILK_WEAK declaration, or we have a circular include.
 How fix ????
 */
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "Mremap",
-    .cmdkey           = "Mremap",
-    .description      = "use modal mapping for linear transformation",
-    .description_long = "Apply a linear transformation defined by a modal mapping matrix. Remaps "
-                        "coefficients from one modal basis to another."
-};
 
 
 /* ================================================================
@@ -65,10 +52,10 @@ static int32_t *GPUdevice = NULL;
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  PARAMETER BINDINGS
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(ModalRemap, FPS_PARAMS);
 
 /**
  * @brief Remap input M0 in space U0 to output M1 in space U1
@@ -214,7 +201,7 @@ errno_t ModalRemap(IMGID imgM0, IMGID imgU0, IMGID imgU1, IMGID *imgM1, int GPUd
 }
 
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t ModalRemap_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -243,15 +230,15 @@ static MILK_HOT errno_t compute_function()
     }
 
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         ModalRemap(imginM0, imginU0, imginU1, &imgoutM1, *GPUdevice);
         processinfo_update_output_stream(processinfo, imgoutM1.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
 
     DEBUG_TRACE_FEXIT();
@@ -260,29 +247,18 @@ static MILK_HOT errno_t compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  MILK_RUNNABLE DESCRIPTOR AND FPSEXEC EXPORT
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_linalgebra__ModalRemap()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_linalgebra_ModalRemap = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "Mremap",
+              .cmdkey           = "Mremap",
+              .description      = "use modal mapping for linear transformation",
+              .description_long = "Apply a linear transformation defined by a modal mapping "
+                                  "matrix. Remaps coefficients from one modal basis to another." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(ModalRemap),
+    .compute = ModalRemap_compute,
+};
+EXPORT_FPSEXEC(milk, "linalg-modalremap", runnable_linalgebra_ModalRemap);

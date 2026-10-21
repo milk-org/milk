@@ -9,8 +9,8 @@
 
 #include <math.h>
 
-#include "CLIcore.h"
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -29,13 +29,6 @@ static double    p_ycenter                           = 256.0;
 static double    p_step                              = 1.0;
 static long long p_nbstep                            = 100;
 
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "profile",
-                                     .cmdkey      = "profile",
-                                     .description = "radial profile",
-                                     .description_long =
-                                         "Compute the azimuthally-averaged radial profile of a 2D "
-                                         "image centered on a specified point." };
-
 #define FPS_PARAMS(X)                                                              \
     X(".in_name", p_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
     X(".out_name", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output file")   \
@@ -44,26 +37,26 @@ static FPS_APP_INFO FPS_app_info = { .fps_name    = "profile",
     X(".step", &p_step, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "step size")      \
     X(".nbstep", &p_nbstep, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "number of steps")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(improfile, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t improfile_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     profile(p_in, p_out, p_xcenter, p_ycenter, p_step, (long) p_nbstep);
     return RETURN_SUCCESS;
 }
 
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_info__improfile()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
+const MILK_RUNNABLE runnable_info_improfile = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "profile",
+                 .cmdkey           = "profile",
+                 .description      = "radial profile",
+                 .description_long = "Compute the azimuthally-averaged radial profile of a 2D "
+                                     "image centered on a specified point." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(improfile),
+    .compute = improfile_compute,
+};
 
 /**
  * Compute radial profile of an image.

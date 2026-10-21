@@ -144,7 +144,6 @@ void ov_post_scan_enrich(OV_MODEL *model);
 
 /** System metrics and telemetry */
 double ov_sys_get_cpu_usage(void);
-double ov_sys_get_bandwidth_usage(void);
 
 /** Ordering and rank sorting */
 void ov_sort_freeze_snapshot(const OV_MODEL *mm);

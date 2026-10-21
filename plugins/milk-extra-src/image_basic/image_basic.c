@@ -35,41 +35,7 @@
 
 //#include <fitsio.h>  /* required by every program that uses CFITSIO  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-//#include "COREMOD_tools/COREMOD_tools.h"
-//#include "COREMOD_memory/COREMOD_memory.h"
-//#include "COREMOD_iofits/COREMOD_iofits.h"
-//#include "COREMOD_arith/COREMOD_arith.h"
-
-/*
-#include "fft/fft.h"
-#include "image_filter/image_filter.h"
-#include "image_gen/image_gen.h"
-#include "info/info.h"
-#include "kdtree/kdtree.h"
-#include "linopt_imtools/linopt_imtools.h"
-#include "statistic/statistic.h"
-*/
-
-//#include "image_basic/image_basic.h"
-
-#    include "cubecollapse.h"
-#    include "im3Dto2D.h"
-#    include "image_add.h"
-#    include "imcontract.h"
-#    include "imexpand.h"
-#    include "imgetcircasym.h"
-#    include "imgetcircsym.h"
-#    include "imresize.h"
-#    include "imrotate.h"
-#    include "imswapaxis2D.h"
-#    include "indexmap.h"
-#    include "loadfitsimgcube.h"
-#    include "streamfeed.h"
-#    include "streamrecord.h"
+#include "image_basic.h"
 
 /*
 #define SBUFFERSIZE 1000
@@ -90,30 +56,17 @@ char errmsg[SBUFFERSIZE];
 /* ================================================================== */
 /* ================================================================== */
 
-// Module initialization macro in CLIcore.h
-// macro argument defines module name for bindings
-//
-static errno_t init_module_CLI()
-{
-    CLIADDCMD_image_basic__imswapaxis2D();
-    CLIADDCMD_image_basic__im3Dto2D();
-    CLIADDCMD_image_basic__image_add();
-    CLIADDCMD_image_basic__imexpand();
-    CLIADDCMD_image_basic__imgetcircsym();
-    CLIADDCMD_image_basic__imgetcircasym();
-    CLIADDCMD_image_basic__imresize();
-    CLIADDCMD_image_basic__imcontract();
-    CLIADDCMD_image_basic__imrotate();
-    CLIADDCMD_image_basic__loadfitsimgcube();
-    CLIADDCMD_image_basic__streamfeed();
-    CLIADDCMD_image_basic__streamrecord();
-    CLIADDCMD_image_basic__cubecollapse();
-    CLIADDCMD_image_basic__indexmap();
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_image_basic_imswapaxis2D,    &runnable_image_basic_im3Dto2D,
+    &runnable_image_basic_addim,           &runnable_image_basic_addim3D,
+    &runnable_image_basic_imexpand,        &runnable_image_basic_imexpand3D,
+    &runnable_image_basic_imgetcircsym,    &runnable_image_basic_imgetcircasym,
+    &runnable_image_basic_imresize,        &runnable_image_basic_imcontract,
+    &runnable_image_basic_imcontract3D,    &runnable_image_basic_imrotate,
+    &runnable_image_basic_loadfitsimgcube, &runnable_image_basic_streamfeed,
+    &runnable_image_basic_streamrecord,    &runnable_image_basic_cubecollapse,
+    &runnable_image_basic_indexmap,
+};
 
-    // add atexit functions here
-
-    return RETURN_SUCCESS;
-}
-
-MILK_MODULE(image_basic, init_module_CLI, NULL);
-#endif /* MILK_NO_CLI */
+MILK_MODULE_RUNNABLES(image_basic, NULL, runnables);

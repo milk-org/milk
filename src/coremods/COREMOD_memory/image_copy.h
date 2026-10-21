@@ -7,7 +7,11 @@
  * @brief Image copy, rename, copy to shm
  */
 
-errno_t CLIADDCMD_COREMOD_memory__image_copy();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_cp;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_mv;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imcp2shm;
 
 imageID copy_image_ID(const char *name, const char *newname, int shared);
 imageID copy_image_ID_IMGID(IMGID *imgin, IMGID *imgout, int shared);

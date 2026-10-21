@@ -10,30 +10,12 @@
  */
 
 #include <math.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "normslice",
-    .cmdkey           = "normslice",
-    .description      = "image norm by slice",
-    .description_long = "Compute the norm (sum of absolute values or RMS) of each slice in a 3D "
-                        "image cube. Returns a 1D array of per-slice norms. Useful for monitoring "
-                        "signal levels across time series or modal decompositions."
-};
 
 
 /* ================================================================
@@ -131,14 +113,14 @@ static errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t slicea
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(image_norm, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_norm_compute(const MILK_RUNNABLE *self)
 {
     if (!norm_sliceaxis)
     {
@@ -148,38 +130,33 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     resolveIMGID(&idin, ERRMODE_ABORT, dcimg, dcnimg);
     IMGID idout = imgid_make_from_name(norm_outimname);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START image_slicenorm_IMGID(&idin, &idout, *norm_sliceaxis);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    image_slicenorm_IMGID(&idin, &idout, *norm_sliceaxis);
     processinfo_update_output_stream(processinfo, idout.im, idin.im);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END imgid_free(&idin);
+    MILK_PROCINFO_END(self)
+    imgid_free(&idin);
     imgid_free(&idout);
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_arith__image_normslice()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_arith_image_norm = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "normslice",
+              .cmdkey           = "normslice",
+              .description      = "image norm by slice",
+              .description_long = "Compute the norm (sum of absolute values or RMS) of each slice "
+                                  "in a 3D image cube. Returns a 1D array of per-slice norms. "
+                                  "Useful for monitoring signal levels across time series or "
+                                  "modal decompositions." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_norm),
+    .compute = image_norm_compute,
+};
+EXPORT_FPSEXEC(milk, "arith-normslice", runnable_COREMOD_arith_image_norm);

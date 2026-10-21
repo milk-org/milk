@@ -19,7 +19,7 @@
 #include <pthread.h>
 #include <valkey/valkey.h>
 
-#include "fps.h"
+#include "computeunit.h"
 
 #define FPS_VALKEY_HOSTNAME_LEN 64
 #define FPS_VALKEY_PREFIX_LEN 128

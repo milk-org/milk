@@ -10,30 +10,12 @@
 /** @file pupfft.c
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "dofft.h"
 #include "permut.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "pup2foc",
-    .cmdkey      = "pup2foc",
-    .description = "pupil to focus by FFT",
-    .description_long =
-        "Propagate a wavefront from pupil plane to focal plane using FFT. Applies the Fraunhofer "
-        "diffraction integral to compute the PSF from a pupil amplitude/phase map."
-};
 
 
 /* ================================================================
@@ -61,7 +43,7 @@ static char outpha[FUNCTION_PARAMETER_STRMAXLEN] = "";
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(pup2foc, FPS_PARAMS);
 
 /* inv = 0 for direct fft and 1 for inverse fft */
 /* direct = focal plane -> pupil plane  equ. fft2d(..,..,..,1) */
@@ -142,7 +124,7 @@ errno_t pup2foc_fft(const char *__restrict ID_name_ampl,
 }
 
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t pup2foc_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -156,25 +138,24 @@ static MILK_HOT errno_t compute_function()
     }
     resolveIMGID(&imgpha, ERRMODE_WARN, dcimg, dcnimg);
 
-    //    printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
     if (imgpha.ID == -1)
     {
         return RETURN_FAILURE;
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
     // custom initialization
-    printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
-    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
+    printf(" COMPUTE Flags = %ld\n", self->rt->cmddata.cmdsettings->flags);
+    if (self->rt->cmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
     {
         // procinfo is accessible here
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         pup2foc_fft(inamp, inpha, outamp, outpha, "");
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -182,29 +163,20 @@ static MILK_HOT errno_t compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_milk_fft__pup2foc()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_fft_pup2foc = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "pup2foc",
+                 .cmdkey      = "pup2foc",
+                 .description = "pupil to focus by FFT",
+                 .description_long =
+                     "Propagate a wavefront from pupil plane to focal plane using FFT. Applies "
+                     "the Fraunhofer diffraction integral to compute the PSF from a pupil "
+                     "amplitude/phase map." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(pup2foc),
+    .compute = pup2foc_compute,
+};
+EXPORT_FPSEXEC(milk, "fft-pup2foc", runnable_fft_pup2foc);

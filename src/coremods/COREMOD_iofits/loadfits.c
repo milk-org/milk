@@ -9,10 +9,13 @@
 
 // MILK_CMAKE_MANDATE_CFITSIO
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
-#include "CLIcore.h"
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 #include "loadfits.h"
 
 #include "COREMOD_iofits_common.h"
@@ -28,14 +31,6 @@ extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 // FPS V2
 // ==========================================
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "loadfits",
-    .cmdkey           = "loadfits",
-    .description      = "load FITS format file",
-    .description_long = "Load a FITS file from disk into a shared memory image stream. Supports 2D "
-                        "and 3D images with automatic data type detection."
-};
-
 // CLI function arguments and parameters
 static char    infilename[FUNCTION_PARAMETER_STRMAXLEN] = "";
 static char    outimname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
@@ -47,8 +42,7 @@ static int64_t FITSIOerrmode                            = 2;
     X(".errmode", &FITSIOerrmode, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT,                         \
       "FITSIO errors mode (0:ignore) (1:warning) (2:error) (3:exit)")
 
-
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(loadfits, FPS_PARAMS);
 
 
 /// errmode values :
@@ -517,36 +511,31 @@ errno_t load_fits(const char *__restrict file_name,
     return retval;
 }
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t loadfits_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START IMGID imgout = imgid_make_from_name(outimname);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    IMGID imgout = imgid_make_from_name(outimname);
     FUNC_CHECK_RETURN(load_fits_IMGID(infilename, &imgout, FITSIOerrmode));
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
+const MILK_RUNNABLE runnable_COREMOD_iofits_loadfits = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "loadfits",
+              .cmdkey           = "loadfits",
+              .description      = "load FITS format file",
+              .description_long = "Load a FITS file from disk into a shared memory image stream. "
+                                  "Supports 2D and 3D images with automatic data type "
+                                  "detection." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(loadfits),
+    .compute = loadfits_compute,
+};
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-// Register function in CLI
-errno_t CLIADDCMD_COREMOD_iofits__loadfits()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
-#endif
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+EXPORT_FPSEXEC(milk, "iofits-loadfits", runnable_COREMOD_iofits_loadfits);

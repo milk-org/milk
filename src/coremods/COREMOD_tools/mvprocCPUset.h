@@ -7,4 +7,10 @@
  * @brief CPU set and RT priority utilities
  */
 
-errno_t CLIADDCMD_COREMOD_tools__mvprocCPUset();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_tools_csetandprioext;
+extern const MILK_RUNNABLE runnable_COREMOD_tools_rtprio;
+extern const MILK_RUNNABLE runnable_COREMOD_tools_tsetpmove;
+extern const MILK_RUNNABLE runnable_COREMOD_tools_tsetpmoveext;
+extern const MILK_RUNNABLE runnable_COREMOD_tools_csetpmove;

@@ -29,7 +29,7 @@
 
 #include <fitsio.h> /* required by every program that uses CFITSIO  */
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
@@ -42,8 +42,6 @@
 #include "zernike_value.h"
 
 #include "ZernikePolyn/ZernikePolyn.h"
-
-#include "mkzercube.h"
 
 #define SWAP(x, y) \
     tmp = (x);     \
@@ -72,53 +70,33 @@ static int64_t mkz_size                              = 512;
 static int64_t mkz_index                             = 43;
 static double  mkz_rpix                              = 100.0;
 
-static FPS_APP_INFO FPS_app_info_mkz = {
-    .fps_name         = "mkzer",
-    .cmdkey           = "mkzer",
-    .description      = "create Zernike polynomial",
-    .description_long = "Compute and manipulate Zernike polynomials for wavefront analysis. "
-                        "Supports piston removal and modal decomposition."
-};
-
 #define FPS_PARAMS_MKZ(X)                                                              \
     X(".out_name", mkz_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")    \
     X(".size", &mkz_size, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "image size")         \
     X(".zerindex", &mkz_index, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "Zernike index") \
     X(".rpix", &mkz_rpix, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "radius in pixels")
 
-#include "fps.h"
+MILK_PARAMS_DEFINE(mkzer, FPS_PARAMS_MKZ);
 
-static FPS_CLI_BINDING mkz_bindings[]  = { FPS_PARAMS_MKZ(FPS_X_BINDING) };
-static const int       mkz_nb_bindings = sizeof(mkz_bindings) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg[]          = { FPS_PARAMS_MKZ(FPS_X_FARG) };
-static CLICMDDATA      CLIcmddata      = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS     mkz_cms         = { 0 };
-
-static __attribute__((constructor)) void init_mkz_cms(void)
+static MILK_HOT errno_t mkzer_compute(const MILK_RUNNABLE *self)
 {
-    strncpy(CLIcmddata.key, FPS_app_info_mkz.cmdkey, sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description, FPS_app_info_mkz.description,
-            sizeof(CLIcmddata.description) - 1);
-    CLIcmddata.nbarg         = sizeof(farg) / sizeof(CLICMDARGDEF);
-    CLIcmddata.funcfpscliarg = farg;
-    CLIcmddata.flags         = CLICMDFLAG_FPS;
-    if (CLIcmddata.cmdsettings == NULL)
-    {
-        CLIcmddata.cmdsettings = &mkz_cms;
-    }
-}
-
-static errno_t mkz_compute(void)
-{
+    (void) self;
     mk_zer(mkz_out, (long) mkz_size, (long) mkz_index, (float) mkz_rpix);
     return RETURN_SUCCESS;
 }
 
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_mkz, farg, &CLIcmddata, mkz_bindings,
-                                        mkz_nb_bindings, mkz_compute);
-}
+const MILK_RUNNABLE runnable_ZernikePolyn_mkzer = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "mkzer",
+                 .cmdkey      = "mkzer",
+                 .description = "create Zernike polynomial",
+                 .description_long =
+                     "Compute and manipulate Zernike polynomials for wavefront analysis. "
+                     "Supports piston removal and modal decomposition." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(mkzer),
+    .compute = mkzer_compute,
+};
 
 /* ============================================
  * Command: rmcpiston
@@ -127,72 +105,40 @@ static errno_t CLIfunction(void)
 static char rmp_in[FUNCTION_PARAMETER_STRMAXLEN]   = "wfc";
 static char rmp_mask[FUNCTION_PARAMETER_STRMAXLEN] = "mask";
 
-static FPS_APP_INFO FPS_app_info_rmp = {
-    .fps_name         = "rmcpiston",
-    .cmdkey           = "rmcpiston",
-    .description      = "remove piston term from WF cube",
-    .description_long = "Compute and manipulate Zernike polynomials for wavefront analysis. "
-                        "Supports piston removal and modal decomposition."
-};
-
 #define FPS_PARAMS_RMP(X)                                                        \
     X(".in_name", rmp_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "WF cube") \
     X(".mask_name", rmp_mask, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "aperture mask")
 
-static FPS_CLI_BINDING rmp_bindings[]  = { FPS_PARAMS_RMP(FPS_X_BINDING) };
-static const int       rmp_nb_bindings = sizeof(rmp_bindings) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    rmp_farg[]      = { FPS_PARAMS_RMP(FPS_X_FARG) };
-static CLICMDDATA      rmp_CLIcmddata  = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS     rmp_cms         = { 0 };
+MILK_PARAMS_DEFINE(rmcpiston, FPS_PARAMS_RMP);
 
-static __attribute__((constructor)) void init_rmp_cms(void)
+static MILK_HOT errno_t rmcpiston_compute(const MILK_RUNNABLE *self)
 {
-    strncpy(rmp_CLIcmddata.key, FPS_app_info_rmp.cmdkey, sizeof(rmp_CLIcmddata.key) - 1);
-    strncpy(rmp_CLIcmddata.description, FPS_app_info_rmp.description,
-            sizeof(rmp_CLIcmddata.description) - 1);
-    rmp_CLIcmddata.nbarg         = sizeof(rmp_farg) / sizeof(CLICMDARGDEF);
-    rmp_CLIcmddata.funcfpscliarg = rmp_farg;
-    rmp_CLIcmddata.flags         = CLICMDFLAG_FPS;
-    if (rmp_CLIcmddata.cmdsettings == NULL)
-    {
-        rmp_CLIcmddata.cmdsettings = &rmp_cms;
-    }
-}
-
-static errno_t rmp_compute(void)
-{
+    (void) self;
     ZERNIKEPOLYN_rmPiston(rmp_in, rmp_mask);
     return RETURN_SUCCESS;
 }
 
-static errno_t rmp_CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_rmp, rmp_farg, &rmp_CLIcmddata, rmp_bindings,
-                                        rmp_nb_bindings, rmp_compute);
-}
+const MILK_RUNNABLE runnable_ZernikePolyn_rmcpiston = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "rmcpiston",
+                 .cmdkey      = "rmcpiston",
+                 .description = "remove piston term from WF cube",
+                 .description_long =
+                     "Compute and manipulate Zernike polynomials for wavefront analysis. "
+                     "Supports piston removal and modal decomposition." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(rmcpiston),
+    .compute = rmcpiston_compute,
+};
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t init_module_CLI()
-{
-    /* mkzer */
-    safe_fps_fill_farg_examples(farg, mkz_bindings, mkz_nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC;
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_ZernikePolyn_mkzer,
+    &runnable_ZernikePolyn_rmcpiston,
+    &runnable_ZernikePolyn_mkzercube,
+};
 
-    /* rmcpiston */
-    safe_fps_fill_farg_examples(rmp_farg, rmp_bindings, rmp_nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(rmp_CLIcmddata, rmp_CLIfunction);
-
-    CLIADDCMD_ZernikePolyn__mkzercube();
-
-    // add atexit functions here
-
-    return RETURN_SUCCESS;
-}
-
-// INITIALIZE MILK IMPORTABLE MODULE
-MILK_MODULE(ZernikePolyn, init_module_CLI, NULL);
-
-#endif // #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+MILK_MODULE_RUNNABLES(ZernikePolyn, NULL, runnables);
 
 imageID mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)
 {

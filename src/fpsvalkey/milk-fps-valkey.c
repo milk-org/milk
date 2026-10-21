@@ -27,7 +27,7 @@
 #include <signal.h>
 #include <regex.h>
 
-#include "fps.h"
+#include "computeunit.h"
 #include "fps_globals.h"
 #include "fps_scan.h"
 #include "fps_GetTypeString.h"

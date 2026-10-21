@@ -16,8 +16,21 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
-- **2026-10-07** — Unified module `CMakeLists.txt` template, `milk_link_module()` for static-LTO standalones, and
-  `INSERT_STD_CLIREGISTERFUNC_NAMED` for CLI registration `#build` `#api`
+- **2026-10-15** — The macro-based "V2 8-section" compute unit framework is removed
+  (`FPS_MAIN_STANDALONE_V2`, `INSERT_STD_PROCINFO_COMPUTEFUNC_*`, `CLIADDCMD_*`,
+  `add_milk_standalone` / `add_cacao_standalone*`, `MILK_MODULE`/`init_module_CLI`): every compute
+  unit is a `MILK_RUNNABLE`, built by `milk_add_runnable_module()` `#api` `#build` `#refactor`
+- **2026-10-14** — `milk_module_example` migrated to `MILK_RUNNABLE`: the template units `imsum1`,
+  `imsum2`, `streamupdate`, `streamprocess` and `fpscli` are listed in one module registry, and the
+  template executables are generated from `EXPORT_FPSEXEC` `#api` `#build` `#docs`
+- **2026-10-14** — `linalgebra` migrated to `MILK_RUNNABLE`: its CLI commands are listed in one module registry, mandated (CUDA, MAGMA, LAPACKE) units are weak, and the 11 executables are generated from `EXPORT_FPSEXEC` `#api` `#build`
+- **2026-10-11** — New `libcomputeunit` engine library holds the FPS runtime (standalone `main`, tmux,
+  conf/run, bindings, standalone macros); `libfps` is reduced to the FPS struct and no longer
+  depends on `USE_CLI`. `fpsCTRL` and `procCTRL` move to `src/tui/`, and the CLI wrapper now lives in
+  `libmilkscript`. Include `computeunit.h` instead of `fps.h` for the runtime API
+  `#build` `#api` `#refactor` `#fps`
+- **2026-10-09** — `MILK_RUNNABLE` descriptors: several CLI commands / fpsexecs per file, sources compiled
+  once, generated `main()` stubs via `EXPORT_FPSEXEC` (test module `runnabletest`) `#api` `#build`
 - **2026-10-06** — Reorganized `docs/` into topic subfolders
   (`quickstart/`, `guide/`, `developer/`, `arch/`, `operations/`,
   `maintenance/`) matching the site navigation `#docs`
@@ -111,10 +124,3 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 - **2026-01** — Gen 4 V2 CLI registration for all modules `#cli` `#refactor`
 - **2026-01** — FPS parameter tab-completion + argument hints `#cli` `#fps`
   ([PR #71](https://github.com/milk-org/milk/pull/71))
-
----
-
-## dev
-
-_No recent significant changes. Entries will be added here when `framework-dev` features are merged
-into `dev`._

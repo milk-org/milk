@@ -14,28 +14,9 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "libmilkcommon/pixel_dispatch.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "streamave",
-    .cmdkey           = "streamave",
-    .description      = "average stream of images",
-    .description_long = "Compute a running average of image stream frames. Accumulates N "
-                        "consecutive frames and writes the mean to the output stream. Useful for "
-                        "background estimation and noise reduction."
-};
 
 
 /* ================================================================
@@ -160,17 +141,12 @@ static MILK_HOT errno_t fpsexec(IMAGE  *imgin,
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  RUNNABLE
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(streamave, FPS_PARAMS);
 
-
-/* ================================================================
- * 6.  COMPUTE WRAPPER
- * ============================================================= */
-
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t streamave_compute(const MILK_RUNNABLE *self)
 {
     IMGID in = imgid_make_from_name(streamave_inimname);
     resolveIMGID(&in, ERRMODE_NULL, dcimg, dcnimg);
@@ -214,9 +190,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         return RETURN_FAILURE;
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START fpsexec(in.im, imgoutave, imgoutrms, d1, d2);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    fpsexec(in.im, imgoutave, imgoutrms, d1, d2);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END free(d1);
+    MILK_PROCINFO_END(self)
+    free(d1);
     if (d2 != NULL)
     {
         free(d2);
@@ -224,30 +203,17 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- * 7.  MILK MODULE REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_streamaverage()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_streamave = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "streamave",
+                 .cmdkey      = "streamave",
+                 .description = "average stream of images",
+                 .description_long =
+                     "Compute a running average of image stream frames. Accumulates N "
+                     "consecutive frames and writes the mean to the output stream. Useful for "
+                     "background estimation and noise reduction." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(streamave),
+    .compute = streamave_compute,
+};
+EXPORT_FPSEXEC(milk, "mem-streamave", runnable_COREMOD_memory_streamave);

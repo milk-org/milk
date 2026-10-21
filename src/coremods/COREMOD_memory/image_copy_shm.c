@@ -11,30 +11,11 @@
 
 #include <stdbool.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "create_image.h"
 #include "read_shmim.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "imcpshm",
-    .cmdkey      = "imcpshm",
-    .description = "copy image to shm",
-    .description_long =
-        "Copy an image from local memory to shared memory (/dev/shm), making it accessible to "
-        "other processes. Creates the shared memory segment if it does not already exist."
-};
 
 
 /* ================================================================
@@ -115,23 +96,26 @@ errno_t image_copy_shm(const char *inname, const char *outname)
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(image_copy_shm, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_copy_shm_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
     IMGID imgin  = imgid_make_from_name(inimname);
     IMGID imgshm = imgid_make_from_name(outimname);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START image_copy_shm_IMGID(&imgin, &imgshm);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    image_copy_shm_IMGID(&imgin, &imgshm);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END imgid_free(&imgin);
+    MILK_PROCINFO_END(self)
+    imgid_free(&imgin);
     imgid_free(&imgshm);
 
     DEBUG_TRACE_FEXIT();
@@ -140,28 +124,19 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__image_copy_shm()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_image_copy_shm = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "imcpshm",
+                 .cmdkey      = "imcpshm",
+                 .description = "copy image to shm",
+                 .description_long =
+                     "Copy an image from local memory to shared memory (/dev/shm), making it "
+                     "accessible to other processes. Creates the shared memory segment if it does "
+                     "not already exist." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_copy_shm),
+    .compute = image_copy_shm_compute,
+};

@@ -7,12 +7,8 @@
  * @brief Swap axis of a 2D image
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -22,35 +18,16 @@ imageID image_basic_SwapAxis2D(const char *__restrict IDin_name, const char *__r
 static char p_in[FUNCTION_PARAMETER_STRMAXLEN]  = "im1";
 static char p_out[FUNCTION_PARAMETER_STRMAXLEN] = "im2";
 
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "imswapaxis2D",
-                                     .cmdkey      = "imswapaxis2D",
-                                     .description = "swap axis of a 2D image",
-                                     .description_long =
-                                         "Transpose a 2D image by swapping its x and y axes. "
-                                         "Equivalent to a matrix transpose operation." };
-
 #define FPS_PARAMS(X)                                                              \
     X(".in_name", p_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
     X(".out_name", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(imswapaxis2D, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t imswapaxis2D_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     image_basic_SwapAxis2D(p_in, p_out);
-    return RETURN_SUCCESS;
-}
-
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_basic__imswapaxis2D()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -96,3 +73,15 @@ imageID image_basic_SwapAxis2D(const char *__restrict IDin_name, const char *__r
 
     return image_basic_SwapAxis2D_byID(imgin.ID, IDout_name);
 }
+
+const MILK_RUNNABLE runnable_image_basic_imswapaxis2D = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "imswapaxis2D",
+                 .cmdkey           = "imswapaxis2D",
+                 .description      = "swap axis of a 2D image",
+                 .description_long = "Transpose a 2D image by swapping its x and y axes. "
+                                     "Equivalent to a matrix transpose operation." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imswapaxis2D),
+    .compute = imswapaxis2D_compute,
+};

@@ -10,7 +10,6 @@
 #ifndef LINOPT_IMTOOLS__COMPUTE_SVDDECOMP_H
 #define LINOPT_IMTOOLS__COMPUTE_SVDDECOMP_H
 
-MILK_WEAK errno_t CLIADDCMD_linopt_imtools__compute_SVDdecomp() MILK_WEAK_CLIFUNCDEF;
 
 MILK_WEAK errno_t linopt_compute_SVDdecomp(const char *IDin_name,
                                            const char *IDout_name,

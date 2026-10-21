@@ -45,13 +45,13 @@ stream processing are immediately visible from the top-level dashboard.
 
 ## 4. Standalone Executable Integration (`fpsexec`)
 
-When utilizing the standard V2 templates for standalone modules (`FPS_MAIN_STANDALONE_V2`),
+For `MILK_RUNNABLE` units run as an fpsexec (see [Programmer's Guide](../arch/programmers_guide.md)),
 `procinfo` is automatically enabled and registered for you. Your executable simply needs to
 correctly execute its while loop, and the framework pulses the heartbeat for you.
 
 ## 5. C Code Template
 
-For custom usage without the standard V2 template, here is how you initialize and use `PROCESSINFO`:
+For custom usage without a `MILK_RUNNABLE` unit, here is how you initialize and use `PROCESSINFO`:
 
 ```c
 #include "CLIcore.h"
@@ -141,31 +141,26 @@ by the developer:
 
 ## 7. Compute Function Macros
 
-For V2 fpsexec compute units, the FPS framework provides macros (defined in `fps_procinfo_macros.h`)
-that wrap the `processinfo` API for a standard compute loop:
+For `MILK_RUNNABLE` compute units, `milk_runnable.h` provides macros that wrap the `processinfo` API
+for a standard compute loop; `self` is the `const MILK_RUNNABLE *` argument of the compute function:
 
-| Macro                                       | Purpose                                                  |
-| ------------------------------------------- | -------------------------------------------------------- |
-| `INSERT_STD_PROCINFO_COMPUTEFUNC_INIT`      | Allocate and register PROCESSINFO, set up signal handler |
-| `INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART` | Start the compute loop, set loopOK flag                  |
-| `INSERT_STD_PROCINFO_COMPUTEFUNC_START`     | Per-iteration start (check signals, processinfo step)    |
-| `INSERT_STD_PROCINFO_COMPUTEFUNC_END`       | Per-iteration end (timing, counters, signal handling)    |
-
-These macros are used inside `compute_function()` (Section 6 of the V2 template):
+| Macro                          | Purpose                                                  |
+| ------------------------------ | -------------------------------------------------------- |
+| `MILK_PROCINFO_INIT(self)`      | Allocate and register PROCESSINFO, set up signal handler |
+| `MILK_PROCINFO_LOOPSTART(self)` | Start the compute loop (opens the loop body), set loopOK |
+| `MILK_PROCINFO_END(self)`       | Per-iteration end (timing, counters), closes the loop    |
 
 ```c
-static errno_t compute_function()
+static errno_t my_compute(const MILK_RUNNABLE *self)
 {
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
-    {
-        INSERT_STD_PROCINFO_COMPUTEFUNC_START
-        // ... per-iteration computation ...
-        processinfo_update_output_stream(
-            processinfo, imgout.im);
-        INSERT_STD_PROCINFO_COMPUTEFUNC_END
-    }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPEND
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+
+    // ... per-iteration computation ...
+    processinfo_update_output_stream(processinfo, imgout.im, imgin.im);
+
+    MILK_PROCINFO_END(self)
+    return RETURN_SUCCESS;
 }
 ```
 

@@ -8,7 +8,9 @@ To be tested:
 - cuda off
 - cuda on
 
-These files test the new compilation system.
+These files test the new compilation system. The module is made of `MILK_RUNNABLE` units (one
+per file, built with `milk_add_runnable_module()`); the executables come from `EXPORT_FPSEXEC`,
+and `compilertest.c` is the module registry.
 
 The main CMakeLists.txt provides symbols for us
 
@@ -27,6 +29,11 @@ mandate_cuda.c:
 - Contains a // MILK_CMAKE_MANDATE_CUDA guard
 - Does not need to use #ifdef HAVE_CUDA guards
 - Will be excluded entirely if -DUSE_CUDA=OFF (because unset by user, forced OFF, or missing CUDA)
+- When excluded, its runnable is NULL in the registry (weak declaration in `compilertest.c`): the
+  CLI command is absent and the executable is not built (see
+  [Managing Dependencies](../../../docs/developer/dependency_system.md))
+
+mandate_lapacke.c: same, with `// MILK_CMAKE_MANDATE_LAPACKE`.
 
 ## Tests
 
@@ -58,6 +65,16 @@ cmake .. -DUSE_CUDA=ON
 milk-cli
 mload milkcompilertest
 compilertest.mandcuda
+
+cmake .. -DUSE_CUDA=OFF
+
+milk-cli
+mload milkcompilertest
+---> loads without error
+compilertest.reqcuda
+---> runs
+compilertest.mandcuda
+---> unknown command
 ---> CublasSaxpy
 compilertest.reqcuda
 ---> CublasSaxpy

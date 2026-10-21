@@ -21,33 +21,28 @@
 #    include "magma_v2.h"
 #endif
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "linalgebra_types.h"
 
-// Prototypes for all CLICommands from module files
-// clang-format off
-MILK_WEAK errno_t linalgebrainit_addCLIcmd() {return 0;};
-
-errno_t           CLIADDCMD_linalgebra__basis_rotate_match();
-errno_t           CLIADDCMD_linalgebra__GramSchmidt();
-MILK_WEAK errno_t CLIADDCMD_linalgebra__PCAdecomp() {return 0;};
-
-MILK_WEAK errno_t MatMatMult_testPseudoInverse_addCLIcmd() {return 0;};
-MILK_WEAK errno_t magma_compute_SVDpseudoInverse_addCLIcmd() {return 0;};
-MILK_WEAK errno_t magma_compute_SVDpseudoInverse_SVD_addCLIcmd() {return 0;};
-
-MILK_WEAK errno_t Coeff2Map_Loop_addCLIcmd() {return 0;};
-
-errno_t           CLIADDCMD_linalgebra__ModalRemap();
-errno_t           CLIADDCMD_linalgebra__MVMextractModes();
-errno_t           CLIADDCMD_linalgebra__PCAmatch();
-errno_t           CLIADDCMD_linalgebra__Qexpand();
-MILK_WEAK errno_t CLIADDCMD_linalgebra__compSVD() {return 0;};
-errno_t           CLIADDCMD_linalgebra__compSVDU();
-errno_t           CLIADDCMD_linalgebra__SVDmkM();
-errno_t           CLIADDCMD_linalgebra__SGEMM();
-// clang-format on
+// Units of the module. Units of files dropped by an unmet MILK_CMAKE_MANDATE_* are weak (NULL).
+extern const MILK_RUNNABLE runnable_linalgebra_basisrotmatch;
+extern const MILK_RUNNABLE runnable_linalgebra_GramSchmidt;
+extern const MILK_RUNNABLE runnable_linalgebra_MVMextract;
+extern const MILK_RUNNABLE runnable_linalgebra_PCAmatch;
+extern const MILK_RUNNABLE runnable_linalgebra_Qexpand;
+extern const MILK_RUNNABLE runnable_linalgebra_SGEMM;
+extern const MILK_RUNNABLE runnable_linalgebra_SVDmkM;
+extern const MILK_RUNNABLE runnable_linalgebra_SVDmkU;
+extern const MILK_RUNNABLE runnable_linalgebra_ModalRemap;
+MILK_RUNNABLE_WEAK_DECL(runnable_linalgebra_PCAdecomp);
+MILK_RUNNABLE_WEAK_DECL(runnable_linalgebra_cudacoeff2map);
+MILK_RUNNABLE_WEAK_DECL(runnable_linalgebra_cudacoeffo2map);
+MILK_RUNNABLE_WEAK_DECL(runnable_linalgebra_linalgebrainit);
+MILK_RUNNABLE_WEAK_DECL(runnable_linalgebra_linalgebrapsinv);
+MILK_RUNNABLE_WEAK_DECL(runnable_linalgebra_linalgebrapsinvSVD);
+MILK_RUNNABLE_WEAK_DECL(runnable_linalgebra_cudatestpsinv);
+MILK_RUNNABLE_WEAK_DECL(runnable_linalgebra_compSVD);
 
 // globals
 
@@ -89,41 +84,28 @@ static void __attribute__((constructor)) libinit_linalgebra_printinfo()
 #endif
 }
 
-static errno_t init_module_CLI()
-{
-    linalgebrainit_addCLIcmd();
+// Module registry: CLI exposure = membership here. linalgebratest is not exposed (as before).
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_linalgebra_linalgebrainit,
+    &runnable_linalgebra_basisrotmatch,
+    &runnable_linalgebra_GramSchmidt,
+    &runnable_linalgebra_PCAdecomp,
+    &runnable_linalgebra_cudatestpsinv,
+    &runnable_linalgebra_linalgebrapsinv,
+    &runnable_linalgebra_linalgebrapsinvSVD,
+    &runnable_linalgebra_cudacoeff2map,
+    &runnable_linalgebra_cudacoeffo2map,
+    &runnable_linalgebra_MVMextract,
+    &runnable_linalgebra_PCAmatch,
+    &runnable_linalgebra_Qexpand,
+    &runnable_linalgebra_compSVD,
+    &runnable_linalgebra_SVDmkU,
+    &runnable_linalgebra_SVDmkM,
+    &runnable_linalgebra_SGEMM,
+    &runnable_linalgebra_ModalRemap,
+};
 
-    CLIADDCMD_linalgebra__basis_rotate_match();
-    CLIADDCMD_linalgebra__GramSchmidt();
-
-    CLIADDCMD_linalgebra__PCAdecomp();
-
-    MatMatMult_testPseudoInverse_addCLIcmd();
-    magma_compute_SVDpseudoInverse_addCLIcmd();
-    magma_compute_SVDpseudoInverse_SVD_addCLIcmd();
-
-    Coeff2Map_Loop_addCLIcmd();
-
-    CLIADDCMD_linalgebra__MVMextractModes();
-
-    CLIADDCMD_linalgebra__PCAmatch();
-
-    CLIADDCMD_linalgebra__Qexpand();
-
-    CLIADDCMD_linalgebra__compSVD();
-    CLIADDCMD_linalgebra__compSVDU();
-    CLIADDCMD_linalgebra__SVDmkM();
-
-    CLIADDCMD_linalgebra__SGEMM();
-
-    CLIADDCMD_linalgebra__ModalRemap();
-
-    // add atexit functions here
-
-    return RETURN_SUCCESS;
-}
-
-MILK_MODULE(linalgebra, init_module_CLI, NULL);
+MILK_MODULE_RUNNABLES(linalgebra, NULL, runnables);
 
 
 // WEAK declarations for all functions exported by the module
@@ -201,8 +183,6 @@ errno_t PCAmatch(IMGID  imgmodesA,
                  IMGID *imgoutimA,
                  IMGID *imgoutimB,
                  int    GPUdev);
-
-errno_t CLIADDCMD_linalgebra__ModalRemap();
 
 MW long CLINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
                                                  const char *IDmatAinv_name,

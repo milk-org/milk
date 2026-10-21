@@ -14,8 +14,9 @@
 #ifndef COREMOD_MEMORY_READ_SHMIM_H
 #define COREMOD_MEMORY_READ_SHMIM_H
 
-errno_t CLIADDCMD_COREMOD_memory__read_sharedmem_image();
+#include "milk_runnable.h"
 
+extern const MILK_RUNNABLE runnable_COREMOD_memory_readshmim;
 
 imageID read_sharedmem_image(const char *sname, IMAGE *imagearray, long NB_images);
 

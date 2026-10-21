@@ -7,7 +7,10 @@
  * @brief Image keyword read/write
  */
 
-errno_t CLIADDCMD_COREMOD_memory__image_keyword();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imlistkw;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imwritekwL;
 
 long image_write_keyword_L(const char *IDname, const char *kname, long value, const char *comment);
 

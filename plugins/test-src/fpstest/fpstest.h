@@ -11,6 +11,9 @@
 #ifndef FPSTEST_H
 #define FPSTEST_H
 
-errno_t FPSTEST_CLIADDCMD_FPSSYNCTEST();
+
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_fpstest_fps_sync_test;
 
 #endif // #ifndef _COMPILERTEST_H

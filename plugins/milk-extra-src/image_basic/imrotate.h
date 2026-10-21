@@ -10,8 +10,6 @@
 #ifndef IMAGE_BASIC_IMROTATE_H
 #define IMAGE_BASIC_IMROTATE_H
 
-errno_t CLIADDCMD_image_basic__imrotate();
-
 imageID basic_rotate(const char *ID_name, const char *IDout_name, float angle);
 
 imageID basic_rotate90(const char *ID_name, const char *ID_out_name);

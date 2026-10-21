@@ -9,12 +9,8 @@
 
 #include <sched.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -27,36 +23,16 @@ static char   p_in[FUNCTION_PARAMETER_STRMAXLEN]     = "im";
 static char   p_stream[FUNCTION_PARAMETER_STRMAXLEN] = "imstream";
 static double p_freq                                 = 100.0;
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "imgstreamfeed",
-    .cmdkey           = "imgstreamfeed",
-    .description      = "feed stream of images",
-    .description_long = "Feed a sequence of images from a 3D cube into a 2D shared memory stream, "
-                        "playing back slices at a configurable frame rate."
-};
-
 #define FPS_PARAMS(X)                                                                   \
     X(".in_name", p_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image/cube") \
     X(".stream", p_stream, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output stream") \
     X(".freq", &p_freq, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "frequency [Hz]")
 
-FPS_V2_SECTION5(FPS_PARAMS)
-static MILK_HOT errno_t compute_function()
+MILK_PARAMS_DEFINE(streamfeed, FPS_PARAMS);
+static MILK_HOT errno_t streamfeed_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     IMAGE_BASIC_streamfeed(p_in, p_stream, (float) p_freq);
-    return RETURN_SUCCESS;
-}
-
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_basic__streamfeed()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -191,3 +167,16 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
 
     return (0);
 }
+
+const MILK_RUNNABLE runnable_image_basic_streamfeed = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "imgstreamfeed",
+                 .cmdkey           = "imgstreamfeed",
+                 .description      = "feed stream of images",
+                 .description_long = "Feed a sequence of images from a 3D cube into a 2D shared "
+                                     "memory stream, playing back slices at a configurable frame "
+                                     "rate." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(streamfeed),
+    .compute = streamfeed_compute,
+};

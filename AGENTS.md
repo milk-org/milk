@@ -17,8 +17,7 @@ context efficiently.
 1. Read sections 1–3 below (What is milk, Reading
    order, Source tree map).
 2. Run `/compile-test` to verify your build works.
-3. For your first task, try `/add-function` or
-   `/create-fpsexec`.
+3. For your first task, try `/add-runnable`.
 4. Read the relevant rules in `.agents/rules/` as
    you encounter them.
 
@@ -30,7 +29,6 @@ work):
 - Add CLI robustness tests (use `cli-test-writer`)
 - Fix type consistency gaps (`/check-type-consistency`)
 - Update module READMEs
-- Migrate V1 fpsexec code to V2 (`/migrate-to-v2`)
 
 ---
 
@@ -61,7 +59,7 @@ isolation — a crash in one unit never takes down others.
 
 | Priority   | Document                                                 | What you learn                                                                                      |
 | ---------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| 🔴 **1st** | [`docs/arch/programmers_guide.md`](docs/arch/programmers_guide.md) | Architecture overview, V2 compute unit template, directory map, CMake conventions, header hierarchy |
+| 🔴 **1st** | [`docs/arch/programmers_guide.md`](docs/arch/programmers_guide.md) | Architecture overview, `MILK_RUNNABLE` compute units, directory map, CMake conventions, header hierarchy |
 | 🔴 **2nd** | [`docs/arch/dependency_graph.md`](docs/arch/dependency_graph.md)   | Full build-tier diagrams, library link tables, standalone executable cmake patterns                 |
 | 🟠 **3rd** | [`docs/guide/streams.md`](docs/guide/streams.md)                     | `IMGID` C API, stream creation/connection, semaphore model, stream modifiers (`@S:`, `@L:`)         |
 | 🟠 **4th** | [`docs/guide/fps.md`](docs/guide/fps.md)                             | FPS parameter types, tmux dispatch, `milk-fpsCTRL`, `fpslist.txt` workflow                          |
@@ -78,10 +76,12 @@ milk/
 │   ├── engine/                    ← Core libraries (POSIX only, no CLI)
 │   │   ├── ImageStreamIO/         ← Zero-copy shared memory streams
 │   │   ├── libfps/                ← FPS core (parameter management)
+│   │   ├── libcomputeunit/        ← FPS runtime (standalone main, tmux, conf/run)
 │   │   ├── libfpsseq/             ← FPS sequencer library
 │   │   ├── libmilkcommon/         ← Common utilities, debug macros
 │   │   ├── libprocessinfo/        ← Heartbeat + process tracking
 │   │   └── libmilkdata/           ← IMGID struct, image utilities
+│   ├── tui/                       ← Engine-tier TUIs (fpsCTRL, procCTRL)
 │   ├── cli/                       ← User-facing tools
 │   │   ├── libmilkscript/         ← Standalone scripting engine
 │   │   ├── CLIcore/               ← Interactive shell framework
@@ -111,47 +111,24 @@ milk/
 
 ## 4. Key Code Patterns
 
-### 4.1 The V2 8-Section Layout
+### 4.1 The `MILK_RUNNABLE` Descriptor
 
-Every FPS compute unit follows this standardized layout
-(see `examplefunc_fps_cli_poc.c`):
+Every compute unit (CLI command and/or fpsexec) is an exported `const MILK_RUNNABLE`
+(`src/engine/libcomputeunit/milk_runnable.h`): identity (`.app`), an X-macro parameter table
+(`MILK_PARAMS_DEFINE`), a compute function using `MILK_PROCINFO_*(self)`, and optionally
+`EXPORT_FPSEXEC(...)` to build an executable. The module lists its runnables in
+`MILK_MODULE_RUNNABLES(...)`. Details and template (`examplefunc_fps_cli_poc.c`):
+[`docs/arch/programmers_guide.md`](docs/arch/programmers_guide.md) §3.
 
-| Section | Content                                                                                                  |
-| ------- | -------------------------------------------------------------------------------------------------------- |
-| 1       | `FPS_APP_INFO` — name, CLI keyword, description                                                          |
-| 2       | Local C variables for parameters                                                                         |
-| 3       | `FPS_PARAMS` X-macro — binds C vars to FPS shared memory                                                 |
-| 4       | `fpsexec()` — pure computation function                                                                  |
-| 5       | `CLIcmddata` — CLI registry scoping                                                                      |
-| 6       | Compute wrapper — `INSERT_STD_PROCINFO_COMPUTEFUNC_*`                                                    |
-| 7       | Module registration — `CLIADDCMD_*` (guarded by `#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)`) |
-| 8       | `FPS_MAIN_STANDALONE_V2` — standalone `main()`                                                           |
+### 4.2 Compile-Once Sources
 
-### 4.2 Dual-Mode Files
-
-Source files compiled both as shared library (CLI) and
-standalone executable use conditional includes:
-
-```c
-#ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"   /* stubs for standalone */
-#else
-#include "CLIcore.h"              /* full CLI types */
-#endif
-#include "fps.h"
-```
+Runnable sources include `milk_runnable.h` and are compiled once (`-DMILK_NO_CLI`) by
+`milk_add_runnable_module()`; they never include `CLIcore.h` directly.
 
 ### 4.3 Standalone Linking
 
-Standalone executables must **never** link `CLIcore`.
-They link the same regular module libraries as the CLI
-(e.g. `milkfft`, `milkstatistic`) — `MILK_NO_CLI`,
-applied to the executable target itself, is what
-excludes CLI registration code, not a separate library.
-
-Use `add_milk_standalone()` or `add_cacao_standalone()`
-CMake helpers — they set up the correct link set
-automatically.
+Generated fpsexecs (`milk_add_fpsexec_stubs()`) must **never** link `CLIcore`; they link the module
+library and the engine/coremod libraries.
 
 ### 4.4 IMGID API
 
@@ -181,8 +158,7 @@ float *data = img.im->array.F;
    engine → core → full. Adding a dependency in the wrong
    direction breaks lower tiers.
 
-2. **Linking standalone executables to CLIcore.** Use `add_milk_standalone()` / `add_cacao_standalone()`,
-   which apply `-DMILK_NO_CLI` to the executable target.
+2. **Linking fpsexecs to CLIcore.** Use `milk_add_fpsexec_stubs()`.
    Verify with `pytest -q --color=no --tb=short tests/trivial/build_sanity_test.py`
    (from `python/`, `MILK_INSTALLDIR` set).
 
@@ -191,8 +167,7 @@ float *data = img.im->array.F;
    `CLIcore.h` pulling in `math.h` or `stdlib.h`.
 
 4. **Forgetting to update `docs/arch/programmers_guide.md`**
-   after architectural changes (the
-   `maintain-programmers-guide` rule enforces this).
+   after architectural changes.
 
 5. **Lines > 100 characters.** The project enforces
    short lines for readability.
@@ -206,111 +181,20 @@ float *data = img.im->array.F;
 
 ---
 
-## 6. Agent Rules (Always Active)
+## 6. Agent Rules, Skills and Workflows
 
-These rules in `.agents/rules/` are automatically loaded
-and enforced. Know what they require:
+Everything lives in `.agents/`; list the directories for the current index and open a file for its
+trigger conditions and required actions (human-readable overview:
+[`docs/developer/code_assist.md`](docs/developer/code_assist.md)).
 
-| Rule                                       | Key Requirement                                                                   |
-| ------------------------------------------ | --------------------------------------------------------------------------------- |
-| `agent-docs-update.md`                     | Update AGENTS.md and code_assist.md when agent files change                       |
-| `architecture-principles.md`               | Check dependency graph before adding deps                                         |
-| `cli-error-help.md`                        | Print red error + colored help on CLI argument errors                             |
-| `cmake-conventions.md`                     | Use `PUBLIC`/`INTERFACE` properties; modules own their headers                    |
-| `code-style-guide.md`                      | 100-char lines, Kernel-Doc, Linux kernel style, explicit includes                 |
-| `common-agent-mistakes.md`                 | Consolidated checklist of frequent AI code-generation pitfalls                    |
-| `compile-after-edit.md`                    | Always compile-test after C/CMake changes                                         |
-| `const-correctness.md`                     | Use `const` on read-only pointer params and input pixel-data pointers             |
-| `concurrency-practices.md`                 | Semaphore protocol, FPS sync, process coordination                                |
-| `defensive-programming-practices.md`       | Buffer safety, pointer discipline, bounded input validation                       |
-| `documentation-site.md`                    | MkDocs structure, page creation, tag categories                                   |
-| `documentation-standards.md`               | Consistent markdown, shell prompts, link checking                                 |
-| `error-handling-practices.md`              | Use milkDebugTools.h macros for errors                                            |
-| `files-directories.md`                     | cacao lives at `plugins/cacao-src` → `~/src/cacao`                                |
-| `fpsexec-conventions.md`                   | V2 template, 8-section layout, `-h1` support                                      |
-| `library-vs-application-error-handling.md` | Libraries return errors; only app entry points may call `exit()`                  |
-| `git-workflow.md`                          | Small changes direct to `framework-dev`; ask user for branch/PR on larger changes |
-| `help-consistency.md`                      | Cross-check all sibling help sources                                              |
-| `help-message-standard.md`                 | Unified help format, flags (`-h`/`-h1`/`-hm`), color palette via `milk_help.h`    |
-| `local-install-test.md`                    | Install to `_build/_install`; never `sudo` or system paths                        |
-| `maintain-programmers-guide.md`            | Update programmer's guide on arch changes                                         |
-| `module-deps-declaration.md`               | MODULE_DEPS and INIT_MODULE_LIB_DEPS macros                                       |
-| `naming-conventions.md`                    | File, function, variable, macro naming; loop index types                          |
-| `parameter-alignment.md`                   | Column-align parameter names in multi-line prototypes                             |
-| `performance-practices.md`                 | SIMD, BLAS, pointer alignment, type dispatch, CPU pinning                         |
-| `readme-update.md`                         | Update module README when files change                                            |
-| `run-milk-commands.md`                     | Environment setup, SHM cleanup, tmux guidance                                     |
-| `script-docs.md`                           | Update `docs/guide/scripts.md` when scripts change                               |
-| `script-naming.md`                         | `milk-*` for OS executables, `.milk` for CLI scripts                              |
-| `shared-memory-safety.md`                  | SHM cleanup, stale detection, stream creation                                     |
-| `testing-practices.md`                     | Run tests after changes; add regression tests                                     |
-| `tui-browser-testing.md`                   | milk TUIs cannot be tested using browser testing tools                            |
-| `tui-conventions.md`                       | Delta Rendering, TrueColor compatibility, and input/help standards                |
-| `whatsnew-update.md`                       | Add entry to `docs/whatsnew.md` for significant features                          |
-
----
-
-## 7. Skills
-
-Skills are specialized instruction sets located in
-`.agents/skills/`. Each skill provides the agent with
-deep context, helper scripts, and rules for a specific
-technical domain. Agents consult these automatically
-when domain-specific tasks require extended capabilities.
-
-| Skill                        | When to use                                                                                    |
-| ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| `advanced-math-patterns`     | High-performance mathematical and DSP operations, BLAS, FFT, and vectorization                 |
-| `api-quick-reference`        | API cheat sheet for IMGID, processinfo macros, stream variables, datatypes, and parameter sync |
-| `batch-kernel-doc`           | Systematic Kernel-Doc documentation passes                                                     |
-| `cli-test-writer`            | Writing CLI robustness test cases                                                              |
-| `cmake-patterns`             | Module CMake setup, standalone builds                                                          |
-| `debug-cli-behavior`         | Investigating CLI crashes, display bugs, missing errors                                        |
-| `diagnose-build-failure`     | Triaging CMake/GCC build errors                                                                |
-| `feature-planner`            | Structured planning and decomposition for new features                                         |
-| `fps-parameter-guide`        | FPS parameter types, flags, X-macro patterns                                                   |
-| `imagestream-internals`      | SHM stream layout, semaphore protocol, circular buffers                                        |
-| `milk-script-writer`         | Generate correct milk-cli scripts from natural language prompts                                |
-| `module-loading-internals`   | Debugging module registration, empty commands                                                  |
-| `optimize-compute-function`  | Systematic performance optimization methodology                                                |
-| `plugin-creator`             | Scaffolding a new plugin module with CMake and module registration                             |
-| `pr-preparation`             | Packaging work into a pull request                                                             |
-| `pseudocode-to-compute-unit` | Translating algorithms to V2 compute units                                                     |
-| `refactor-c-source`          | Splitting large C files into smaller modules                                                   |
-| `stream-modifier-guide`      | IMGID parsing, `@S:`/`@L:` modifiers, slice syntax                                             |
-| `tui-creator`                | Developing high-performance, flicker-free terminal interfaces using Delta Rendering            |
-
----
-
-## 8. Workflows (On-Demand)
-
-Invoke these as slash commands when working on the
-listed task types:
-
-| Command                     | When to use                                              |
-| --------------------------- | -------------------------------------------------------- |
-| `/add-cli-command`          | Adding a CLI command to a module                         |
-| `/add-function`             | Adding a function to an existing module                  |
-| `/add-new-module`           | Creating a new module (core or plugin)                   |
-| `/add-stream-processor`     | Creating a stream processing loop                        |
-| `/compile-test`             | After any C or CMake edit                                |
-| `/create-fpsexec`           | Scaffolding a new standalone executable                  |
-| `/create-plugin`            | Scaffolding a new plugin module with full boilerplate    |
-| `/fix-bug`                  | Investigating, fixing, and verifying a bug               |
-| `/migrate-to-v2`            | Converting V1 fpsexec code to V2 template                |
-| `/review-pr`                | Reviewing a PR for standards compliance                  |
-| `/setup-dev-environment`    | First-time development setup                             |
-| `/update-programmers-guide` | After architectural changes                              |
-| `/audit-code-quality`       | Audit code for readability, simplicity, and organization |
-| `/audit-help-consistency`   | After editing help text anywhere                         |
-| `/check-type-consistency`   | Auditing data type handling in switch blocks             |
-| `/cli-robustness-test`      | Running CLI robustness test suite                        |
-| `/inspect-machine-code`     | Assembly inspection for performance                      |
-| `/sync-worktree`            | Syncing worktree to latest framework-dev                 |
-| `/update-docs-site`         | Adding or updating MkDocs pages                          |
-| `/update-scripts-docs`      | After adding or modifying shell scripts                  |
-
----
+- **`.agents/rules/`** — always-on guardrails (code style, naming, error handling, performance, shared
+  memory safety, CMake, documentation, `runnable-conventions`...). Rules are loaded automatically.
+- **`.agents/skills/`** — specialized instruction sets with helper content, consulted when a task needs
+  domain depth (API quick reference, ImageStreamIO internals, stream modifiers, CMake patterns,
+  build-failure triage, CLI debugging, optimization, TUI creation, PR preparation...).
+- **`.agents/workflows/`** — on-demand task templates invoked as slash commands, one per file
+  (`/add-runnable`, `/add-module`, `/compile-test`, `/fix-bug`, `/review-pr`, `/setup-dev-environment`,
+  `/update-docs-site`...).
 
 ## 9. Build System Quick Reference
 
@@ -335,7 +219,7 @@ $ ctest --output-on-failure
 ### Module CMakeLists.txt
 
 Follow `src/milk_module_example/CMakeLists.txt`; skeleton and
-standalone helpers in `docs/programmers_guide.md` §6.
+helpers in `docs/arch/programmers_guide.md` §6.
 
 ---
 
@@ -345,9 +229,8 @@ standalone helpers in `docs/programmers_guide.md` §6.
 symlink to `~/src/cacao`. When editing cacao modules,
 treat this symlink directory as part of the workspace.
 
-cacao modules follow the same V2 template conventions as
-milk modules, but use `add_cacao_standalone()` or
-`add_cacao_standalone_plugins()` for their executables.
+cacao modules are `MILK_RUNNABLE` modules like milk modules; their fpsexecs are
+declared with `EXPORT_FPSEXEC(cacao, "id", unit)`.
 
 ---
 
@@ -356,7 +239,6 @@ milk modules, but use `add_cacao_standalone()` or
 | Macro            | Set By                   | Effect                                                    |
 | ---------------- | ------------------------ | --------------------------------------------------------- |
 | `MILK_NO_CLI`    | CMake `-DMILK_NO_CLI`    | Excludes CLI code, uses `CLIcore_standalone.h`            |
-| `FPS_STANDALONE` | CMake `-DFPS_STANDALONE` | Includes standalone `main()` via `FPS_MAIN_STANDALONE_V2` |
 | `USE_CLI`        | CMake option             | Controls whether CLI targets are built                    |
 | `USE_CFITSIO`    | CMake option             | Controls cfitsio-dependent modules                        |
 | `USE_COREMODS`   | CMake option             | Controls COREMOD compilation                              |

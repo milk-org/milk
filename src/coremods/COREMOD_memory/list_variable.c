@@ -9,16 +9,14 @@
  * Uses FPS V2 framework.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include <regex.h>
+#include <stdio.h>
 #include <string.h>
+
+#include "list_variable.h"
 
 
 /* ================================================================
@@ -128,105 +126,68 @@ errno_t list_variable_ID_file(const char *fname)
 
 
 /* ================================================================
- *  CMD 1: listvar — REGISTRATION
+ *  CMD 1: listvar
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info_listvar = {
-    .fps_name         = "listvar",
-    .cmdkey           = "listvar",
-    .description      = "list variables in memory",
-    .description_long = "List all variables currently defined in the process memory space, showing "
-                        "name, type, and value."
-};
 
 static char p_regex[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 #define FPS_PARAMS_listvar(X) \
     X(".regex", p_regex, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "regex filter (empty = all)")
 
-static FPS_CLI_BINDING my_bindings_listvar[] = { FPS_PARAMS_listvar(FPS_X_BINDING) };
+MILK_PARAMS_DEFINE(listvar, FPS_PARAMS_listvar);
 
-static const int __attribute__((unused)) nb_bindings_listvar =
-    sizeof(my_bindings_listvar) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF farg_listvar[] = { FPS_PARAMS_listvar(FPS_X_FARG) };
-
-static CLICMDDATA CLIcmddata_listvar = {
-    "",   "",   __FILE__, sizeof(farg_listvar) / sizeof(CLICMDARGDEF), farg_listvar, CLICMDFLAG_FPS,
-    NULL, NULL, NULL
-};
-
-FPS_CMDSETTINGS_INIT(dft1, CLIcmddata_listvar, FPS_app_info_listvar)
-
-static errno_t __attribute__((unused)) compute_listvar()
+static MILK_HOT errno_t listvar_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     FUNC_CHECK_RETURN(list_variable_ID(p_regex));
     return RETURN_SUCCESS;
 }
 
+const MILK_RUNNABLE runnable_COREMOD_memory_listvar = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "listvar",
+                 .cmdkey      = "listvar",
+                 .description = "list variables in memory",
+                 .description_long =
+                     "List all variables currently defined in the process memory space, showing "
+                     "name, type, and value." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(listvar),
+    .compute = listvar_compute,
+};
+
 
 /* ================================================================
- *  CMD 2: listvarf — REGISTRATION
+ *  CMD 2: listvarf
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info_listvarf = {
-    .fps_name         = "listvarf",
-    .cmdkey           = "listvarf",
-    .description      = "list variables to file",
-    .description_long = "List all variables currently defined in the process memory space, showing "
-                        "name, type, and value."
-};
 
 static char p_fname[FUNCTION_PARAMETER_STRMAXLEN] = "var.txt";
 
 #define FPS_PARAMS_listvarf(X) \
     X(".fname", p_fname, FPTYPE_FILENAME, 1, FPFLAG_DEFAULT_INPUT, "output filename")
 
-static FPS_CLI_BINDING my_bindings2[] = { FPS_PARAMS_listvarf(FPS_X_BINDING) };
+MILK_PARAMS_DEFINE(listvarf, FPS_PARAMS_listvarf);
 
-static const int __attribute__((unused)) nb_bindings2 =
-    sizeof(my_bindings2) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF farg[] = { FPS_PARAMS_listvarf(FPS_X_FARG) };
-
-static CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-
-FPS_CMDSETTINGS_INIT(dft2, CLIcmddata, FPS_app_info_listvarf)
-
-static errno_t __attribute__((unused)) compute_listvarf()
+static MILK_HOT errno_t listvarf_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START FUNC_CHECK_RETURN(list_variable_ID_file(p_fname));
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END   DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    FUNC_CHECK_RETURN(list_variable_ID_file(p_fname));
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- *  REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-
-static errno_t CLIfunction_listvar(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_listvar, farg_listvar, &CLIcmddata_listvar,
-                                        my_bindings_listvar, nb_bindings_listvar, compute_listvar);
-}
-
-static errno_t CLIfunction_listvarf(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_listvarf, farg, &CLIcmddata, my_bindings2,
-                                        nb_bindings2, compute_listvarf);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__list_variable()
-{
-    safe_fps_fill_farg_examples(farg_listvar, my_bindings_listvar, nb_bindings_listvar);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_listvar, CLIfunction_listvar);
-    safe_fps_fill_farg_examples(farg, my_bindings2, nb_bindings2);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata, CLIfunction_listvarf);
-
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_listvarf = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "listvarf",
+                 .cmdkey      = "listvarf",
+                 .description = "list variables to file",
+                 .description_long =
+                     "List all variables currently defined in the process memory space, showing "
+                     "name, type, and value." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(listvarf),
+    .compute = listvarf_compute,
+};

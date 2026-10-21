@@ -49,4 +49,8 @@ Linear algebra operations: SVD, pseudo-inverse, matrix multiplication via BLAS, 
 
 ## Dependencies
 
-- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
+- `milk_runnable.h` (`libcomputeunit`), which provides the FPS and processinfo macros
+- `COREMOD_memory` and `COREMOD_iofits` (image connection, FITS I/O)
+- CUDA, MAGMA, BLAS and LAPACKE through the `MILK_CMAKE_REQUEST_*` and `MILK_CMAKE_MANDATE_*` tags
+
+CLI commands are listed in the module registry in `linalgebra.c`.

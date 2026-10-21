@@ -10,6 +10,8 @@
 #ifndef _BASIC_H
 #define _BASIC_H
 
+#include "milk_runnable.h"
+
 #include "image_basic/image_add.h"
 
 #include "image_basic/cubecollapse.h"
@@ -30,5 +32,23 @@
 #include "image_basic/streamfeed.h"
 #include "image_basic/streamrecord.h"
 #include "image_basic/tableto2Dim.h"
+
+extern const MILK_RUNNABLE runnable_image_basic_addim;
+extern const MILK_RUNNABLE runnable_image_basic_addim3D;
+extern const MILK_RUNNABLE runnable_image_basic_cubecollapse;
+extern const MILK_RUNNABLE runnable_image_basic_im3Dto2D;
+extern const MILK_RUNNABLE runnable_image_basic_imcontract;
+extern const MILK_RUNNABLE runnable_image_basic_imcontract3D;
+extern const MILK_RUNNABLE runnable_image_basic_imexpand;
+extern const MILK_RUNNABLE runnable_image_basic_imexpand3D;
+extern const MILK_RUNNABLE runnable_image_basic_imgetcircasym;
+extern const MILK_RUNNABLE runnable_image_basic_imgetcircsym;
+extern const MILK_RUNNABLE runnable_image_basic_imresize;
+extern const MILK_RUNNABLE runnable_image_basic_imrotate;
+extern const MILK_RUNNABLE runnable_image_basic_imswapaxis2D;
+extern const MILK_RUNNABLE runnable_image_basic_indexmap;
+extern const MILK_RUNNABLE runnable_image_basic_loadfitsimgcube;
+extern const MILK_RUNNABLE runnable_image_basic_streamfeed;
+extern const MILK_RUNNABLE runnable_image_basic_streamrecord;
 
 #endif
