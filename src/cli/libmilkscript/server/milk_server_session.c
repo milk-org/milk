@@ -20,7 +20,15 @@
 
 extern int cli_float_digits;
 
-/* @module list [--all] */
+/**
+ * module_list - Print loaded modules and optionally unloaded catalog modules
+ * @all: Non-zero (`--all`) to also list catalog modules not yet loaded in this server
+ *
+ * Formats a table of module names, short prefixes, shared library load names, and
+ * registered command counts to stdout.
+ *
+ * Return: 0
+ */
 static int module_list(int all)
 {
     printf("%-20s %-12s %-28s %s\n", "MODULE", "SHORT", "LOAD NAME", "COMMANDS");
@@ -50,6 +58,16 @@ static int module_list(int all)
     return 0;
 }
 
+/**
+ * milk_server_module - Server handler for the `@module` session keyword
+ * @argc: Number of command tokens (including `@module`)
+ * @argv: Argument vector (`list [--all]` or `load <name|file.so> [--as <short>]`)
+ *
+ * Lists loaded/available modules or dynamically loads a shared module into the
+ * server process with an optional custom short namespace alias.
+ *
+ * Return: 0 on success, 1 on load failure, 2 on usage or short-name validation error
+ */
 int milk_server_module(int argc, char **argv)
 {
     const char *sub = (argc >= 2) ? argv[1] : "list";
@@ -83,7 +101,15 @@ int milk_server_module(int argc, char **argv)
     return 2;
 }
 
-/* the engine command behind a milk-cli REPL setting */
+/**
+ * repl_setting - Map a `@config` REPL setting name to its underlying CLI engine command
+ * @key: Setting key name (e.g., `synhl`, `indent`, `prompt`)
+ *
+ * Translates user-facing `@config` keys into the internal `CLIcore` command names
+ * registered by the interactive `milk-cli` REPL.
+ *
+ * Return: Internal engine command name, or NULL if @key is not a REPL setting
+ */
 static const char *repl_setting(const char *key)
 {
     static const char *const map[][2] = { { "synhl", "synhl" },
@@ -103,7 +129,17 @@ static const char *repl_setting(const char *key)
     return NULL;
 }
 
-/* redispatch() - run engine command @cmd with the arguments @argv[1..@argc) */
+/**
+ * redispatch - Dispatch an internal engine command with trailing arguments
+ * @cmd:  Engine command name to invoke as `av[0]`
+ * @argc: Number of elements in @argv (where `argv[1..argc-1]` are forwarded)
+ * @argv: Original argument vector
+ *
+ * Builds a temporary argument vector headed by @cmd and invokes
+ * `milk_server_dispatch_argv`.
+ *
+ * Return: Exit status returned by `milk_server_dispatch_argv`
+ */
 static int redispatch(const char *cmd, int argc, char **argv)
 {
     char *av[64];
@@ -118,6 +154,17 @@ static int redispatch(const char *cmd, int argc, char **argv)
     return milk_server_dispatch_argv(n, av);
 }
 
+/**
+ * milk_server_config - Server handler for the `@config` session keyword
+ * @argc: Number of command tokens (including `@config`)
+ * @argv: Argument vector (`@config [<key> [<value>]]`)
+ *
+ * Queries or updates session settings (`digits`, `precision`, `procinfo`, `calc`)
+ * or forwards REPL-specific settings (`synhl`, `syndiag`, `indent`, `showmatch`,
+ * `prompt`, `sessionlog`) to their engine commands.
+ *
+ * Return: 0 on success, 2 on invalid key or value
+ */
 int milk_server_config(int argc, char **argv)
 {
     const char *key = (argc >= 2) ? argv[1] : NULL;
@@ -192,6 +239,17 @@ int milk_server_config(int argc, char **argv)
     return 2;
 }
 
+/**
+ * milk_server_history - Server handler for `@history` subcommands
+ * @argc:    Number of command tokens (including `@history`)
+ * @argv:    Argument vector (`search`, `--global`, `--local`, `save`, `--stats`, `--tui`)
+ * @handled: Output flag set to 1 if `argv[1]` matched a known history subcommand
+ *
+ * Maps `@history` subcommands and flags to their corresponding `CLIcore` history
+ * commands and dispatches them.
+ *
+ * Return: Exit status of the dispatched command when `*handled == 1`, or 0 otherwise
+ */
 int milk_server_history(int argc, char **argv, int *handled)
 {
     static const char *const map[][2] = { { "search", "searchhist" },

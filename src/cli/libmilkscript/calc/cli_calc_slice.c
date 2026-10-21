@@ -305,6 +305,18 @@ static int eval_slice_bounds(const char *btext,
     return 0;
 }
 
+/**
+ * validate_slice_neg_bounds - Verify that negative slice indices do not underflow axis dimensions
+ * @slc:  Parsed slice specification containing start and end indices per axis
+ * @snax: Number of axes in the source image
+ * @ssz:  Array of axis sizes for the source image
+ *
+ * Negative slice bounds count backward from the axis length (`sz + idx`). This
+ * check rejects indices that still remain negative after adding `sz`, reporting
+ * a clear out-of-bounds parse error before output dimension computation.
+ *
+ * Return: 0 if all negative bounds are valid, -1 on out-of-bounds error
+ */
 static int validate_slice_neg_bounds(const IMGID_SLICE *slc, int snax, const uint32_t *ssz)
 {
     for (int aa = 0; aa < slc->naxis && aa < snax; aa++)
@@ -411,6 +423,16 @@ static int resolve_image_slice(const char       *tok_sval,
     return 0;
 }
 
+/**
+ * single_pixel_flat_index - Compute the 1D flat array index for a resolved single-pixel slice
+ * @rs: Resolved slice structure with validated per-axis start coordinates and sizes
+ *
+ * Converts 1D, 2D, or 3D single-element slice coordinates (`im[x]`, `im[x,y]`,
+ * `im[x,y,z]`) into a linear pixel offset so scalar reads and writes can bypass
+ * temporary slice image allocation.
+ *
+ * Return: Linear 0-based pixel index in the source image array
+ */
 static inline uint64_t single_pixel_flat_index(const resolved_slice_t *rs)
 {
     uint64_t ii = (uint64_t) rs->slc.start[0];

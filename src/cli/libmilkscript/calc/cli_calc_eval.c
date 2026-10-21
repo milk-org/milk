@@ -30,12 +30,31 @@
 
 /* Operator precedence and associativity: cli_calc_scalar.c (shared with the in-shell evaluator) */
 
+/**
+ * is_assign_op - Test whether a token type is an assignment operator
+ * @t: Token type to inspect
+ *
+ * Identifies simple (`=`) and compound (`+=`, `-=`, `*=`, `/=`) assignment
+ * tokens so primary expression handlers can branch into assignment evaluation.
+ *
+ * Return: 1 if @t is an assignment operator, 0 otherwise
+ */
 static inline int is_assign_op(cli_token_type t)
 {
     return (t == TOK_EQUAL) || (t == TOK_OP_PLUS_EQ) || (t == TOK_OP_MINUS_EQ) ||
            (t == TOK_OP_STAR_EQ) || (t == TOK_OP_SLASH_EQ);
 }
 
+/**
+ * is_func_token - Test whether a token type represents a built-in function call
+ * @t: Token type to inspect
+ *
+ * Checks if @t belongs to any of the calculator's built-in scalar, image,
+ * string, complex, or coordinate function categories (whose tokens include the
+ * opening parenthesis).
+ *
+ * Return: 1 if @t is a function token, 0 otherwise
+ */
 static inline int is_func_token(cli_token_type t)
 {
     return (t == TOK_FUNC_D_D) || (t == TOK_FUNC_DD_D) || (t == TOK_FUNC_DDD_D) ||

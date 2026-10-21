@@ -22,6 +22,18 @@
 static const double tv_range_lo[RANGE_NB] = { 0.0, 0.001, 0.005, 0.01, 0.05, 0.10, 0.15, 0.20 };
 static const double tv_range_hi[RANGE_NB] = { 1.0, 0.999, 0.995, 0.99, 0.95, 0.90, 0.85, 0.80 };
 
+/**
+ * tv_layout_compute - Compute screen region geometry from terminal dimensions
+ * @l:    Output layout structure to populate
+ * @rows: Terminal height in character rows
+ * @cols: Terminal width in character columns
+ *
+ * Partitions the terminal into the top menubar row, central image viewport,
+ * right-hand colorbar column, and bottom status/info rows, setting `l->valid`
+ * when the image viewport is at least 2 rows by 4 columns.
+ *
+ * Return: void
+ */
 void tv_layout_compute(tv_layout_t *l, int rows, int cols)
 {
     l->rows       = rows;
@@ -34,11 +46,38 @@ void tv_layout_compute(tv_layout_t *l, int rows, int cols)
     l->valid      = (l->img_rows >= 2 && l->img_cols >= 4);
 }
 
+/**
+ * tv_view_base - Compute the unzoomed image-pixels-per-sample step for a layout
+ * @l:     Screen layout with valid `img_cols` and `img_rows`
+ * @xsize: Image width in pixels
+ * @ysize: Image height in pixels
+ *
+ * Returns the larger of the horizontal and vertical pixel-to-sample ratios so
+ * the entire image fits inside the viewport at zoom = 1.0 with square aspect.
+ *
+ * Return: Base sample step in image pixels
+ */
 double tv_view_base(const tv_layout_t *l, uint32_t xsize, uint32_t ysize)
 {
     return fmax((double) xsize / l->img_cols, (double) ysize / (2.0 * l->img_rows));
 }
 
+/**
+ * tv_xform_compute - Build the sample-to-image coordinate transform
+ * @x:      Output transform structure
+ * @l:      Current screen layout
+ * @v:      Viewport center and zoom state
+ * @xsize:  Image width in pixels
+ * @ysize:  Image height in pixels
+ * @flip_h: True if horizontal mirror is active
+ * @flip_v: True if vertical flip is active
+ *
+ * Combines the layout base step, zoom factor, normalized center coordinates,
+ * and flip signs into a transform used by both the image sampler and mouse
+ * coordinate mapping.
+ *
+ * Return: void
+ */
 void tv_xform_compute(tv_xform_t        *x,
                       const tv_layout_t *l,
                       const tv_view_t   *v,
@@ -73,6 +112,20 @@ static int tv_grow_buf(void **p, size_t *cap, size_t n, size_t size)
     return 0;
 }
 
+/**
+ * tv_image_geom - Precompute column and row sampling lookup tables for the viewport
+ * @im:    Image pipeline state whose buffers and index tables are updated
+ * @l:     Current screen layout
+ * @x:     Current sample-to-image coordinate transform
+ * @xsize: Source image width in pixels
+ * @ysize: Source image height in pixels
+ *
+ * Resizes internal sample/cell buffers if needed and populates `col_src`,
+ * `col_in`, `row_off`, and `row_in` for the `img_cols` by `2 * img_rows`
+ * half-block sample grid.
+ *
+ * Return: 0 on success, -1 on memory allocation failure
+ */
 int tv_image_geom(tv_image_t        *im,
                   const tv_layout_t *l,
                   const tv_xform_t  *x,
@@ -116,6 +169,15 @@ int tv_image_geom(tv_image_t        *im,
     return 0;
 }
 
+/**
+ * tv_finitef - Test whether a 32-bit IEEE-754 float is finite via bit inspection
+ * @v: Float value to test
+ *
+ * Inspects the exponent bits directly via memcpy() so `-Ofast` / `-ffast-math`
+ * cannot optimize away NaN and infinity checks.
+ *
+ * Return: Non-zero if @v is finite, 0 if NaN or infinite
+ */
 static inline int tv_finitef(float v)
 {
     uint32_t u;
@@ -187,6 +249,16 @@ static double tv_pixel(const void *data, uint8_t datatype, size_t idx)
     }
 }
 
+/**
+ * cmp_double - Compare two double values for qsort() ascending order
+ * @a: Pointer to first double
+ * @b: Pointer to second double
+ *
+ * Used by tv_offset() to sort up to 9 finite reference pixels when computing
+ * the median offset for wide numeric types.
+ *
+ * Return: -1 if `*a < *b`, 1 if `*a > *b`, 0 if equal
+ */
 static int cmp_double(const void *a, const void *b)
 {
     double x = *(const double *) a, y = *(const double *) b;
@@ -243,6 +315,19 @@ static double tv_offset(const tv_image_t *im, const void *data, uint8_t datatype
     return v[n / 2];
 }
 
+/**
+ * tv_image_sample - Sample the source image through the viewport lookup tables
+ * @im:       Image pipeline state
+ * @data:     Pointer to raw source pixel buffer
+ * @datatype: ImageStreamIO datatype code of @data
+ *
+ * Computes a median reference offset for wide types (32/64-bit integers and
+ * doubles), dispatches the typed nearest-neighbor sampler to fill `im->samp`
+ * along with `vmin`, `vmax`, and `nvalid`, and compares against `im->prev` to
+ * detect whether any visible sample changed.
+ *
+ * Return: Non-zero if the sampled grid differs from the previous sample, 0 if unchanged
+ */
 int tv_image_sample(tv_image_t *im, const void *data, uint8_t datatype)
 {
     /* wide types lose precision in float: sample relative to an in-view value */
@@ -287,6 +372,15 @@ static inline uint32_t tv_fkey(float v)
     return (u & 0x80000000u) ? ~u : (u | 0x80000000u);
 }
 
+/**
+ * tv_fkey_inv - Convert an order-preserving unsigned radix key back to a float
+ * @k: Unsigned 32-bit key produced by tv_fkey()
+ *
+ * Inverts the sign-bit/complement mapping of tv_fkey() to recover the exact
+ * IEEE-754 float selected by radix selection.
+ *
+ * Return: Reconstructed float value
+ */
 static inline float tv_fkey_inv(uint32_t k)
 {
     uint32_t u = (k & 0x80000000u) ? (k & 0x7FFFFFFFu) : ~k;
@@ -351,6 +445,18 @@ static void tv_percentiles(tv_image_t *im, double plo, double phi, double *lo, d
     *hi = tv_select(im, (long) (phi * (im->nvalid - 1)));
 }
 
+/**
+ * tv_image_range - Compute and optionally smooth the active display intensity range
+ * @im:   Image pipeline state containing sampled values and previous range
+ * @opt:  Viewer options (range mode, manual lock bounds, smoothing flag)
+ * @snap: Non-zero to bypass temporal smoothing and jump immediately to target bounds
+ *
+ * Determines `[im->lo, im->hi]` from manual bounds, min/max, or radix-selected
+ * percentiles, applies hysteresis and half-step narrowing when smoothing is
+ * enabled, and guarantees a non-degenerate finite interval.
+ *
+ * Return: void
+ */
 void tv_image_range(tv_image_t *im, const termview_options_t *opt, int snap)
 {
     double lo, hi;
@@ -460,6 +566,18 @@ static inline int tv_shown_idx(tv_image_t *im, const tv_rgb_t *lut, size_t k, in
     return idx;
 }
 
+/**
+ * tv_image_render - Render sampled float values through the LUT into half-block cells
+ * @im:    Image pipeline state with populated samples and range
+ * @lut:   Color lookup table of `TV_LUT_N + 1` entries
+ * @lowbw: Non-zero to suppress small color changes on non-phase rows
+ *
+ * Pairs consecutive sample rows into terminal cells using the lower-half-block
+ * glyph (`TV_G_LOWER_HALF`), draws a 1-sample grey border immediately outside
+ * the image bounds, and fills `im->cells`.
+ *
+ * Return: void
+ */
 void tv_image_render(tv_image_t *im, const tv_rgb_t *lut, int lowbw)
 {
     static const uint32_t border = TV_RGB(64, 64, 64);
@@ -516,6 +634,15 @@ void tv_image_render(tv_image_t *im, const tv_rgb_t *lut, int lowbw)
     im->have_shown = 1;
 }
 
+/**
+ * tv_image_blank - Fill the image cell layer with black space cells
+ * @im: Image pipeline state to clear
+ *
+ * Used when no readable stream or frozen frame is available, resetting sample
+ * history flags so the next valid frame triggers a full redraw.
+ *
+ * Return: void
+ */
 void tv_image_blank(tv_image_t *im)
 {
     tv_cell_t blank = tv_cell(TV_RGB(0, 0, 0), TV_RGB(255, 255, 255), ' ');
@@ -529,6 +656,15 @@ void tv_image_blank(tv_image_t *im)
     im->blank      = 1;
 }
 
+/**
+ * tv_image_free - Free all heap buffers owned by an image pipeline state
+ * @im: Image pipeline state to release and zero
+ *
+ * Releases lookup tables, sample buffers, and rendered cell arrays, and resets
+ * `*im` to zero.
+ *
+ * Return: void
+ */
 void tv_image_free(tv_image_t *im)
 {
     free(im->col_src);

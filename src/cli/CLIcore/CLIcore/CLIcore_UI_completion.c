@@ -70,6 +70,15 @@
 
 /* ---- String utilities ---- */
 
+/**
+ * xmalloc - Allocate memory or terminate the process on allocation failure
+ * @size: Number of bytes to allocate
+ *
+ * Wraps malloc() with an out-of-memory check so callers in the readline
+ * completion subsystem do not need to handle NULL returns individually.
+ *
+ * Return: Pointer to the newly allocated memory block
+ */
 void *xmalloc(int size)
 {
     void *buf;
@@ -142,21 +151,14 @@ int cli_accept_line(int count, int key)
 }
 
 /**
- * @brief Readline callback handler — processes a
- *        completed input line.
+ * cli_execute_multiline - Execute an assembled command buffer with fault isolation
+ * @buffer: NUL-terminated single- or multi-line command string to execute
  *
- * Invoked by rl_callback_read_char() when the user
- * presses Enter. Copies the input into
- * data.CLIcmdline, handles backslash line
- * continuation (reading extra lines until no
- * trailing backslash), then dispatches the
- * assembled command via CLI_execute_line().
+ * Arms CLI signal fault isolation (SIGINT, SIGSEGV, SIGBUS, SIGABRT) around
+ * milk_bash_engine_exec() so that fatal signals or user interrupts abort only
+ * the running command and return cleanly to the interactive prompt.
  *
- * If linein is NULL (Ctrl-D / EOF), sets
- * data.CLIloopON=0 to exit the main loop.
- *
- * @param linein  Line text from readline
- *                (caller-allocated, freed here)
+ * Return: void
  */
 static void cli_execute_multiline(const char *buffer)
 {
@@ -293,11 +295,28 @@ static void cli_multiline_to_single_line(const char *multiline, char *single, si
 static int g_auto_indent_spaces     = 0;
 static int g_in_continuation_prompt = 0;
 
+/**
+ * cli_is_continuation_prompt - Check if readline is inside a PS2 continuation prompt
+ *
+ * Indicates whether the CLI is currently collecting additional lines for an
+ * incomplete multi-line construct so UI hooks can adjust display behavior.
+ *
+ * Return: Non-zero if reading a continuation line, 0 otherwise
+ */
 int cli_is_continuation_prompt(void)
 {
     return g_in_continuation_prompt;
 }
 
+/**
+ * cli_auto_indent_startup_hook - Insert leading indentation into a new readline line
+ *
+ * Installed as rl_startup_hook before invoking readline(PS2) during multi-line
+ * input. Inserts g_auto_indent_spaces spaces into the fresh line buffer based
+ * on the current Tree-sitter block nesting depth.
+ *
+ * Return: Always 0
+ */
 static int cli_auto_indent_startup_hook(void)
 {
     if (g_auto_indent_spaces > 0)
@@ -310,6 +329,18 @@ static int cli_auto_indent_startup_hook(void)
     return 0;
 }
 
+/**
+ * rl_cb_linehandler - Readline callback invoked when a complete input line is entered
+ * @linein:Newly allocated line string from readline (freed before returning), or NULL on EOF
+ *
+ * Handles EOF (Ctrl-D) by stopping the REPL loop. For non-empty input, checks
+ * whether the shell construct is incomplete (unclosed quotes, compound blocks,
+ * trailing operators, or backslashes) and interactively prompts with PS2 and
+ * automatic block indentation until the command is complete. Records flattened
+ * single-line history and dispatches execution via cli_execute_multiline().
+ *
+ * Return: void
+ */
 void rl_cb_linehandler(char *linein)
 {
     if (NULL == linein)
@@ -492,6 +523,16 @@ void rl_cb_linehandler(char *linein)
 static char cli_active_prompt[FPS_DIR_STRLENMAX] = "";
 static char cli_base_prompt[FPS_DIR_STRLENMAX]   = "";
 
+/**
+ * cli_set_active_prompt - Store the base and active readline prompt strings
+ * @prompt: NUL-terminated prompt string to set (ignored if NULL)
+ *
+ * Saves the caller-provided prompt into both cli_base_prompt and
+ * cli_active_prompt so subsequent mode transitions (such as toggling calc mode)
+ * can reconstruct the decorated prompt without losing the base string.
+ *
+ * Return: void
+ */
 void cli_set_active_prompt(const char *prompt)
 {
     if (prompt != NULL)
@@ -503,6 +544,14 @@ void cli_set_active_prompt(const char *prompt)
     }
 }
 
+/**
+ * cli_get_active_prompt - Retrieve the current readline prompt string
+ *
+ * Lazily initializes cli_base_prompt via runCLI_prompt() if not yet set, and
+ * injects the "[calc]" indicator badge when calculator mode is active.
+ *
+ * Return: Pointer to the internal NUL-terminated active prompt buffer
+ */
 const char *cli_get_active_prompt(void)
 {
     if (cli_base_prompt[0] == '\0')

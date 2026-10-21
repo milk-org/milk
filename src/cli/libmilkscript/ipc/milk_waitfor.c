@@ -193,6 +193,17 @@ int milk_waitfor_eq(const char            *lhs,
     }
 }
 
+/**
+ * milk_waitfor_open - Open a shared-memory stream if its backing file exists
+ * @img:   Output `IMAGE` structure to populate on success
+ * @sname: Stream name to open
+ *
+ * Checks whether the `.im.shm` file exists on disk before calling
+ * `ImageStreamIO_openIm` so missing streams fail quietly without printing
+ * library error messages during wait loops.
+ *
+ * Return: 0 if the stream was opened with valid metadata, -1 otherwise
+ */
 int milk_waitfor_open(IMAGE *img, const char *sname)
 {
     char shm[1024];

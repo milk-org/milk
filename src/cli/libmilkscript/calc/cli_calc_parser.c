@@ -59,12 +59,29 @@ static size_t tmp_n        = 0;
 static size_t tmp_cap      = 0;
 static int    eval_depth   = 0;
 
+/**
+ * tmp_begin - Enter a temporary-image tracking scope for expression evaluation
+ *
+ * Increments `eval_depth` and records the current count of `_tmpcalc` images so
+ * nested evaluations only delete temporaries created within their own scope.
+ *
+ * Return: Mark index into `tmp_ids` at the start of this evaluation scope
+ */
 static size_t tmp_begin(void)
 {
     eval_depth++;
     return tmp_n;
 }
 
+/**
+ * tmp_delete_to - Delete temporary calculator images down to a saved mark
+ * @mark: Target `tmp_n` watermark to restore
+ *
+ * Deletes `_tmpcalc<id>` images created since @mark from `data.core.image` and
+ * resets `data.calctmp_imindex` when all tracked temporaries have been reaped.
+ *
+ * Return: void
+ */
 static void tmp_delete_to(size_t mark)
 {
     while (tmp_n > mark)
@@ -82,12 +99,29 @@ static void tmp_delete_to(size_t mark)
     }
 }
 
+/**
+ * tmp_end - Exit a temporary-image tracking scope and reap its temporaries
+ * @mark: Watermark returned by the matching `tmp_begin()` call
+ *
+ * Decrements `eval_depth` and deletes temporaries back to @mark, or down to 0
+ * when exiting the outermost evaluation scope.
+ *
+ * Return: void
+ */
 static void tmp_end(size_t mark)
 {
     eval_depth--;
     tmp_delete_to(eval_depth == 0 ? 0 : mark);
 }
 
+/**
+ * cli_calc_tmp_cleanup - Delete all tracked temporary calculator images
+ *
+ * Reaps every `_tmpcalc` image recorded in `tmp_ids` after command or
+ * expression execution completes.
+ *
+ * Return: void
+ */
 void cli_calc_tmp_cleanup(void)
 {
     tmp_delete_to(0);
@@ -109,12 +143,26 @@ int           cli_calc_mode     = 0;
 
 #define CLI_CALC_MAX_PIXELS 1048576 /* `@calc -a`: a bash array, not a data path */
 
-// Helper functions for cli_parse
+/**
+ * cur_parse - Return the current token in the `cli_parse` token stream
+ *
+ * Provides lookahead on `parse_tokens` without advancing `parse_pos`.
+ *
+ * Return: Pointer to the current `cli_token` in `parse_tokens`
+ */
 cli_token *cur_parse(void)
 {
     return &parse_tokens[parse_pos];
 }
 
+/**
+ * advance_parse - Consume and return the current token in the `cli_parse` stream
+ *
+ * Advances `parse_pos` if tokens remain and returns the token that was at the
+ * cursor prior to advancing.
+ *
+ * Return: Pointer to the consumed `cli_token`
+ */
 cli_token *advance_parse(void)
 {
     cli_token *t = &parse_tokens[parse_pos];
@@ -125,7 +173,13 @@ cli_token *advance_parse(void)
     return t;
 }
 
-// Helper functions for cli_calc_eval_line
+/**
+ * cur_eval - Return the current token in the `cli_calc_eval_line` token stream
+ *
+ * Provides lookahead on `eval_tokens` without advancing `eval_pos`.
+ *
+ * Return: Pointer to the current `cli_token` in `eval_tokens`
+ */
 cli_token *cur_eval(void)
 {
     return &eval_tokens[eval_pos];
@@ -137,6 +191,15 @@ int cli_calc_tok_pos(void)
     return (parse_mode == 0) ? parse_pos : eval_pos;
 }
 
+/**
+ * cli_calc_tok_seek - Restore the token cursor in the active token stream
+ * @pos: Token index previously obtained from `cli_calc_tok_pos()`
+ *
+ * Rewinds `parse_pos` or `eval_pos` (depending on `parse_mode`) when a
+ * speculative pass such as fused-expression compilation bails out.
+ *
+ * Return: void
+ */
 void cli_calc_tok_seek(int pos)
 {
     if (parse_mode == 0)
@@ -162,6 +225,14 @@ int cli_calc_tokens_have_image(void)
     return 0;
 }
 
+/**
+ * advance_eval - Consume and return the current token in the `eval_tokens` stream
+ *
+ * Advances `eval_pos` if tokens remain and returns the token that was at the
+ * cursor prior to advancing.
+ *
+ * Return: Pointer to the consumed `cli_token`
+ */
 cli_token *advance_eval(void)
 {
     cli_token *t = &eval_tokens[eval_pos];
@@ -978,6 +1049,16 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
     return 1;
 }
 
+/**
+ * cli_calc_keep_statement - Pre-compile an image assignment statement into a reusable fused program
+ * @stmt: Calculator statement string to tokenize and compile
+ *
+ * Tokenizes @stmt and attempts to compile a whole-image assignment (`im = ...`,
+ * `im += ...`, `im -= ...`, `im *= ...`) via `cli_calc_fuse_keep()` so
+ * `milk.calc` compute units can execute it on every frame without re-parsing.
+ *
+ * Return: Opaque compiled fused program pointer, or NULL if @stmt cannot be fused
+ */
 void *cli_calc_keep_statement(const char *stmt)
 {
     char tbuf[8192];

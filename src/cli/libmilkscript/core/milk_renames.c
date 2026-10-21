@@ -125,6 +125,16 @@ static const rename_t cmd_renames[] = {
 /* Entity namespaces */
 static const rename_t ns_renames[] = { { "seq.", "q." }, { "procinfo.", "p." }, { NULL, NULL } };
 
+/**
+ * milk_rename_cmd - Look up the replacement for a removed or renamed command word
+ * @word: Command token as typed by the user (e.g. `"@fpslist"` or `"@savefits"`)
+ * @how:  Optional output pointer receiving how the replacement should be presented
+ *
+ * Searches `cmd_renames[]` so the CLI can guide users from retired command spellings
+ * and legacy `@` aliases to their current keyword or `<module>.<cmd>` equivalents.
+ *
+ * Return: Replacement command or syntax hint string, or NULL if @word is not in the table
+ */
 const char *milk_rename_cmd(const char *word, milk_ren_how_t *how)
 {
     for (const rename_t *r = cmd_renames; word != NULL && r->old != NULL; r++)
@@ -141,6 +151,16 @@ const char *milk_rename_cmd(const char *word, milk_ren_how_t *how)
     return NULL;
 }
 
+/**
+ * milk_rename_ns - Check whether an entity path uses a retired namespace prefix
+ * @path:   Entity path string to inspect (e.g. `"procinfo.loop"` or `"seq.cal"`)
+ * @oldlen: Optional output pointer receiving the byte length of the matched old prefix
+ *
+ * Matches @path against `ns_renames[]` (`"seq."` -> `"q."`, `"procinfo."` -> `"p."`)
+ * so callers can emit targeted migration diagnostics.
+ *
+ * Return: Replacement namespace prefix string (including trailing dot), or NULL if no match
+ */
 const char *milk_rename_ns(const char *path, size_t *oldlen)
 {
     for (const rename_t *r = ns_renames; path != NULL && r->old != NULL; r++)

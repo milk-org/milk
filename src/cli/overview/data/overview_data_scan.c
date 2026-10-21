@@ -20,6 +20,15 @@ struct timespec s_fps_mtime   = { 0, 0 };
 struct timespec s_proc_mtime  = { 0, 0 };
 double          s_scan_dt_sec = 0.0;
 
+/**
+ * ov_scan_cache_cleanup - Release and unmap all cached streams, FPS, and proc descriptors
+ *
+ * Called during background scan worker shutdown to close opened ImageStreamIO images,
+ * disconnect active FPS mappings, unmap processinfo segments, and reset directory
+ * mtime and PID liveness caches.
+ *
+ * Return: void
+ */
 void ov_scan_cache_cleanup(void)
 {
     /* Close all cached stream mappings */

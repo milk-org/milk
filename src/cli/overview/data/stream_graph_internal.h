@@ -17,11 +17,23 @@
 #define SG_BITS_PER_WORD 64
 #define SG_BSET_WORDS(n) (((n) + SG_BITS_PER_WORD - 1) / SG_BITS_PER_WORD)
 
+/**
+ * sg_bset - Set bit @idx in 64-bit word array @words
+ * @words: Bitset word array
+ * @idx:   0-based bit index to set
+ */
 static inline void sg_bset(uint64_t *words, int idx)
 {
     words[idx / SG_BITS_PER_WORD] |= (UINT64_C(1) << (idx % SG_BITS_PER_WORD));
 }
 
+/**
+ * sg_bget - Test bit @idx in 64-bit word array @words
+ * @words: Bitset word array
+ * @idx:   0-based bit index to query
+ *
+ * Return: 1 if bit @idx is set, 0 otherwise.
+ */
 static inline int sg_bget(const uint64_t *words, int idx)
 {
     return (int) ((words[idx / SG_BITS_PER_WORD] >> (idx % SG_BITS_PER_WORD)) & 1);

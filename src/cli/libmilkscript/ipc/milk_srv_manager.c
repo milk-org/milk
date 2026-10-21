@@ -43,6 +43,14 @@ extern void milk_srvlog_get_dir(char *out, size_t outsz);
 #define C_CMD "\033[32m"
 #define C_DIM "\033[2m"
 
+/**
+ * use_color_output - Check whether ANSI color escape sequences should be emitted
+ *
+ * Respects the `NO_COLOR` environment variable convention and checks whether
+ * `STDOUT_FILENO` is attached to an interactive terminal.
+ *
+ * Return: 1 if color output should be used, 0 otherwise
+ */
 static int use_color_output(void)
 {
     const char *nc = getenv("NO_COLOR");
@@ -157,6 +165,17 @@ static int start_named_server(const char *srv_name, int use_tmux, const milk_cli
     return (milk_ipc_spawn_daemon(binpath, sockpath, -1, -1, 1, 0) == 0) ? 0 : 1;
 }
 
+/**
+ * format_uptime - Format elapsed time since server startup as a compact human-readable string
+ * @start_sec: Server creation timestamp (`CLOCK_REALTIME` seconds)
+ * @out:       Output buffer receiving the formatted uptime (e.g., `42s`, `5m12s`, `2h03m`)
+ * @outsz:     Capacity of @out in bytes
+ *
+ * Computes elapsed seconds from @start_sec to current `CLOCK_REALTIME` and formats
+ * into seconds, minutes+seconds, or hours+minutes for `@server status` and `@server list`.
+ *
+ * Return: void
+ */
 static void format_uptime(time_t start_sec, char *out, size_t outsz)
 {
     struct timespec now;
@@ -487,6 +506,13 @@ static int stop_one_server(const char *sockpath)
     return 0;
 }
 
+/**
+ * print_server_help - Print usage and subcommand reference for `@server`
+ *
+ * Writes `@server` command syntax and subcommand descriptions to stdout.
+ *
+ * Return: void
+ */
 static void print_server_help(void)
 {
     printf("Usage: @server <subcommand> [args...]\n\n");
@@ -502,6 +528,19 @@ static void print_server_help(void)
     printf("  log [options] [pattern] Query, search, or live-tail the server command log (@log)\n");
 }
 
+/**
+ * handle_server_start_or_use - Implement `@server start` and `@server use`
+ * @sub:   Subcommand name (`start` or `use`)
+ * @argc:  Number of arguments passed to `@server`
+ * @argv:  Argument vector passed to `@server`
+ * @hooks: Optional shell callback hooks for updating `MILKCLI_SOCK`
+ *
+ * Parses `<name>`, `--tmux`, and `--no-switch`/`-d` flags, ensures the named
+ * server is running via `start_named_server`, and updates the calling shell's
+ * `MILKCLI_SOCK` and `_MILK_SERVER_NAME` variables unless `--no-switch` is set.
+ *
+ * Return: 0 on success, 1 on invalid arguments or server startup failure
+ */
 static int handle_server_start_or_use(const char                *sub,
                                       int                        argc,
                                       char                     **argv,
@@ -564,6 +603,18 @@ static const char *home_sock(const milk_client_hooks_t *hooks)
     return (s != NULL) ? s : milk_ipc_get_var(hooks, "_MILK_LOCAL_SOCK");
 }
 
+/**
+ * handle_server_stop - Implement `@server stop [name|--all]`
+ * @argc:  Number of arguments passed to `@server`
+ * @argv:  Argument vector passed to `@server`
+ * @hooks: Optional shell callback hooks for resetting `MILKCLI_SOCK`
+ *
+ * Stops either all user-owned servers (`--all`), a named server, or the currently
+ * selected server, refusing to stop the in-process `milk-cli` session server and
+ * restoring the shell's default home socket if the active server was stopped.
+ *
+ * Return: 0 on success, 1 if attempting to stop the `milk-cli` session server
+ */
 static int handle_server_stop(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     if (argc >= 2 && strcmp(argv[1], "--all") == 0)
@@ -642,6 +693,18 @@ static int handle_server_stop(int argc, char **argv, const milk_client_hooks_t *
     return 0;
 }
 
+/**
+ * handle_server_attach - Implement `@server attach [name]`
+ * @argc:  Number of arguments passed to `@server`
+ * @argv:  Argument vector passed to `@server`
+ * @hooks: Optional shell callback hooks
+ *
+ * Attaches interactively to the target server's `tmux` session if it was launched
+ * with `--tmux`, or falls back to live-tailing its shared-memory command log
+ * (`@log -f`).
+ *
+ * Return: 0 on success, non-zero on error
+ */
 static int handle_server_attach(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     char cur_sock[256];

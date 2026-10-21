@@ -64,6 +64,17 @@ static errno_t print_session_name()
     return RETURN_SUCCESS;
 }
 
+/**
+ * runCLI_cmd_init - Register all built-in CLI core and UI commands
+ *
+ * Populates the root and `milk.*` command namespaces with built-in interactive
+ * commands (session name, FPS loader, FIFO control, command timing, usage
+ * statistics, syntax highlighting/diagnostics, auto-indentation, delimiter
+ * matching, history utilities, and the interactive FPS parameter editor), and
+ * binds the help TUI hook.
+ *
+ * Return: void
+ */
 void runCLI_cmd_init()
 {
     // ensure that commands below belong to root/MAIN module

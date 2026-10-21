@@ -116,6 +116,49 @@ val_t        cli_calc_complex_neg(const IMAGE *z);
 val_t        cli_calc_complex_part(const IMAGE *z, int which);
 val_t        cli_calc_complex_func(const char *fname, const val_t *args, int nargs);
 
+int cli_calc_parse_func_argv(int nmin, int nmax, val_t *args, const char *comma_msg);
+
+int cli_calc_reject_complex(const val_t *v, int n);
+
+/**
+ * cli_calc_read_im_pix - Read linear element @idx of real image @im as `double`
+ * @im:  Image structure
+ * @dt:  ImageStreamIO datatype code (`_DATATYPE_*`)
+ * @idx: Linear pixel index
+ *
+ * Provides a uniform scalar read fallback for mixed-datatype reductions and transposes.
+ *
+ * Return: Pixel value converted to `double`, or `0.0` for unsupported types.
+ */
+static inline double cli_calc_read_im_pix(const IMAGE *im, uint8_t dt, uint64_t idx)
+{
+    switch (dt)
+    {
+    case _DATATYPE_FLOAT:
+        return (double) im->array.F[idx];
+    case _DATATYPE_DOUBLE:
+        return im->array.D[idx];
+    case _DATATYPE_UINT8:
+        return (double) im->array.UI8[idx];
+    case _DATATYPE_INT8:
+        return (double) im->array.SI8[idx];
+    case _DATATYPE_UINT16:
+        return (double) im->array.UI16[idx];
+    case _DATATYPE_INT16:
+        return (double) im->array.SI16[idx];
+    case _DATATYPE_UINT32:
+        return (double) im->array.UI32[idx];
+    case _DATATYPE_INT32:
+        return (double) im->array.SI32[idx];
+    case _DATATYPE_UINT64:
+        return (double) im->array.UI64[idx];
+    case _DATATYPE_INT64:
+        return (double) im->array.SI64[idx];
+    default:
+        return 0.0;
+    }
+}
+
 int cli_calc_matmul_check(const IMAGE *im1,
                           int          transA,
                           const IMAGE *im2,
@@ -127,6 +170,11 @@ int cli_calc_transpose_check(const IMAGE *src, const IMAGE *dst);
 int cli_calc_transpose_into(const IMAGE *src, IMAGE *dst);
 int cli_calc_reshape_check(const IMAGE *src, const IMAGE *dst);
 int cli_calc_reshape_into(const IMAGE *src, IMAGE *dst);
+
+val_t cli_calc_func_transpose(void);
+val_t cli_calc_func_reshape(void);
+val_t cli_calc_func_vec(void);
+val_t cli_calc_func_matmul(void);
 
 const char *alloc_tmpname(void);
 

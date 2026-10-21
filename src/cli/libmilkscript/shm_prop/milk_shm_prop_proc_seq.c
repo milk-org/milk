@@ -32,6 +32,17 @@
 extern PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
 extern errno_t      processinfo_procdirname(char *procdname);
 
+/**
+ * get_procdir_local - Resolve the directory holding processinfo shared-memory files
+ * @pdname: Output buffer receiving the resolved directory path
+ * @pdsz:   Capacity of @pdname in bytes
+ *
+ * Checks `MILK_PROC_DIR` and `MILK_SHM_DIR` environment variables, falling back to
+ * `dcshmdir` or `processinfo_procdirname()` so isolated test environments and custom
+ * shared-memory directories are honored consistently.
+ *
+ * Return: void
+ */
 static void get_procdir_local(char *pdname, size_t pdsz)
 {
     const char *pdir = getenv("MILK_PROC_DIR");
@@ -61,6 +72,15 @@ static void get_procdir_local(char *pdname, size_t pdsz)
 static char s_pinfolist_dir[256] = "";
 static int  s_pinfolist_fd       = -1;
 
+/**
+ * get_pinfolist_local - Map and cache the global PROCESSINFOLIST shared-memory table
+ *
+ * Resolves the active processinfo directory and maps `processinfo.list.shm` if not
+ * already mapped (or remaps it if the directory changed), updating the global
+ * `pinfolist` pointer.
+ *
+ * Return: Pointer to the mapped `PROCESSINFOLIST`, or NULL if unavailable.
+ */
 static PROCESSINFOLIST *get_pinfolist_local(void)
 {
     char pdname[256];
@@ -242,6 +262,17 @@ static PROCESSINFO *map_proc_shm(const char *name, pid_t pid, int *fd_out)
     return NULL;
 }
 
+/**
+ * proc_status_str - Map a PROCESSINFO state and OS process liveness to a status label
+ * @pi:  Mapped `PROCESSINFO` structure
+ * @pid: Fallback PID to check if `pi->PID` is unset
+ *
+ * Checks whether the target process is still alive via `kill(pid, 0)` and combines
+ * `loopstat` and `CTRLval` into a human-readable state string (`"ACTIVE"`, `"PAUSED"`,
+ * `"STOPPED"`, `"CRASHED"`, `"INIT"`, `"ERROR"`, `"SPINNING"`, or `"OTHER"`).
+ *
+ * Return: Static status string describing the process state.
+ */
 static const char *proc_status_str(const PROCESSINFO *pi, pid_t pid)
 {
     pid_t check_pid = (pi->PID > 0) ? pi->PID : pid;
@@ -282,6 +313,15 @@ static const char *proc_status_str(const PROCESSINFO *pi, pid_t pid)
     }
 }
 
+/**
+ * proc_ctrl_str - Convert a numeric PROCESSINFO control code to its symbolic name
+ * @ctrlval: Process control value (`PROCESSINFO_CTRLVAL_*`)
+ *
+ * Translates integer control values (`0..3`) into `"run"`, `"pause"`, `"step"`, or
+ * `"stop"`.
+ *
+ * Return: Static symbolic control name, or `"unknown"`.
+ */
 static const char *proc_ctrl_str(int ctrlval)
 {
     switch (ctrlval)
@@ -453,6 +493,17 @@ static int parse_bool(const char *v)
     return -1;
 }
 
+/**
+ * milk_shm_prop_set_proc - Write process control state on an active processinfo entry
+ * @name: Process name in `pinfolist` or `/dev/shm/proc.*.shm`
+ * @prop: Control property or action shorthand (`ctrl`, `run`, `pause`, `step`, `stop`, etc.)
+ * @val:  Control value string (symbolic action, boolean `1`/`0`, or integer code `0..3`)
+ *
+ * Resolves @prop and @val into a `PROCESSINFO_CTRLVAL_*` code, maps the target
+ * process's `PROCESSINFO` segment, and updates its `CTRLval` field.
+ *
+ * Return: 0 on success, -1 on invalid arguments or missing process.
+ */
 int milk_shm_prop_set_proc(const char *name, const char *prop, const char *val)
 {
     if (name == NULL || prop == NULL)

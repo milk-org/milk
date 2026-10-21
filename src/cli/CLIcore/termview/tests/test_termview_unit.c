@@ -34,6 +34,15 @@ static int tv_failures = 0;
 /* volatile keeps the compiler from constant-folding the special values */
 static volatile double tv_zero = 0.0;
 
+/**
+ * test_finite - Verify IEEE-754 finite float/double detection under optimization
+ *
+ * Tests tv_finite() against zero, extreme finite values, NaN, and positive and
+ * negative infinity constructed via volatile division so -Ofast cannot fold
+ * or elide the checks.
+ *
+ * Return: void
+ */
 static void test_finite(void)
 {
     double nan_v = tv_zero / tv_zero;
@@ -46,6 +55,14 @@ static void test_finite(void)
     TV_CHECK(!tv_finite(-inf_v));
 }
 
+/**
+ * test_lut_idx - Verify LUT index mapping, clamping, and NaN/Inf sentinel routing
+ *
+ * Checks that tv_lut_idx() maps non-finite values to the reserved NaN slot
+ * (TV_LUT_N) and clamps out-of-range or overflowing finite values to [0, TV_LUT_N - 1].
+ *
+ * Return: void
+ */
 static void test_lut_idx(void)
 {
     double nan_v = tv_zero / tv_zero;
@@ -66,6 +83,15 @@ static void test_lut_idx(void)
     TV_CHECK(tv_lut_idx(1.0, 0.0, 0.0) == 0);
 }
 
+/**
+ * test_parse_double - Verify strict finite floating-point string parsing
+ *
+ * Ensures tv_parse_double() accepts valid numbers (with optional trailing
+ * whitespace) and rejects NaN, infinities, overflows, trailing garbage, empty
+ * strings, and NULL pointers.
+ *
+ * Return: void
+ */
 static void test_parse_double(void)
 {
     double v = 0.0;
@@ -81,6 +107,14 @@ static void test_parse_double(void)
     TV_CHECK(tv_parse_double(NULL, &v) != 0);
 }
 
+/**
+ * test_view_sanitize - Verify viewport zoom and center coordinate sanitization
+ *
+ * Confirms that tv_view_sanitize() resets non-finite or non-positive zoom/center
+ * parameters to defaults and clamps extreme values to their valid bounds.
+ *
+ * Return: void
+ */
 static void test_view_sanitize(void)
 {
     double nan_v = tv_zero / tv_zero;
@@ -108,6 +142,15 @@ static void test_view_sanitize(void)
     TV_CHECK(z == 1.0);
 }
 
+/**
+ * test_names - Verify case-insensitive exact and unambiguous prefix name lookup
+ *
+ * Tests tv_lookup_name() across colormap, scale, and range tables, checking
+ * exact matches, unique prefix matches, ambiguous prefix rejection, and
+ * full table round-trips.
+ *
+ * Return: void
+ */
 static void test_names(void)
 {
     TV_CHECK(tv_lookup_name(tv_cmap_names, COLORMAP_NB, "viridis") == COLORMAP_VIRIDIS);
@@ -131,6 +174,14 @@ static void test_names(void)
     }
 }
 
+/**
+ * test_fmt_len - Verify bounded snprintf return value clamping
+ *
+ * Checks that tv_fmt_len() maps negative errors to 0 and clamps truncated
+ * lengths to `size - 1`.
+ *
+ * Return: void
+ */
 static void test_fmt_len(void)
 {
     TV_CHECK(tv_fmt_len(-1, 16) == 0);
@@ -139,6 +190,14 @@ static void test_fmt_len(void)
     TV_CHECK(tv_fmt_len(300, 16) == 15);
 }
 
+/**
+ * test_names_unique - Verify that all entries in option name tables are non-empty and unique
+ *
+ * Scans colormap, scale, range name, and range key tables to ensure no NULL,
+ * empty, or case-insensitively duplicate strings exist.
+ *
+ * Return: void
+ */
 static void test_names_unique(void)
 {
     const char *const *tables[] = { tv_cmap_names, tv_scale_names, tv_range_names, tv_range_keys };
@@ -156,6 +215,15 @@ static void test_names_unique(void)
     }
 }
 
+/**
+ * test_lut - Verify colormap and intensity scale lookup table generation
+ *
+ * Checks greyscale endpoints, monotonicity across all scaling curves, and
+ * presence of the magenta NaN sentinel color at index TV_LUT_N for every
+ * colormap/scale combination.
+ *
+ * Return: void
+ */
 static void test_lut(void)
 {
     static tv_rgb_t lut[TV_LUT_N + 1];
@@ -204,6 +272,15 @@ static void fill_samples(tv_image_t *im, const float *v, int n)
     }
 }
 
+/**
+ * test_range_smoothing - Verify display range hysteresis and temporal smoothing
+ *
+ * Tests deadband filtering for small extrema fluctuations, immediate widening
+ * on brighter frames, exponential half-step narrowing on dimmer frames, user
+ * snap override, and unsmoothed tracking.
+ *
+ * Return: void
+ */
 static void test_range_smoothing(void)
 {
     termview_options_t opt;
@@ -296,6 +373,15 @@ static void test_stream_lifecycle(void)
     free(saved);
 }
 
+/**
+ * main - Run all termview unit tests
+ *
+ * Executes unit tests for floating-point classification, LUT indexing, number
+ * parsing, view sanitization, option name lookup, string length clamping, LUT
+ * construction, range smoothing, and shared-memory stream lifecycle handling.
+ *
+ * Return: 0 if all checks pass, 1 if any check failed
+ */
 int main(void)
 {
     test_finite();

@@ -27,12 +27,33 @@ static const uint32_t tv_pal16[16] = {
 
 static const uint8_t tv_cube[6] = { 0, 95, 135, 175, 215, 255 };
 
+/**
+ * tv_framebuf_size - Compute worst-case ANSI output buffer size for a screen grid
+ * @rows: Terminal height in rows
+ * @cols: Terminal width in columns
+ *
+ * Returns a byte capacity guaranteed to hold a full-screen diff emission
+ * including cursor positioning, 24-bit foreground/background SGR sequences,
+ * UTF-8 block glyphs, and synchronized update wrappers.
+ *
+ * Return: Required output buffer size in bytes
+ */
 size_t tv_framebuf_size(int rows, int cols)
 {
     /* worst case per cell: move (14) + combined colours (38) + glyph (3) */
     return (size_t) rows * (size_t) cols * 56 + (size_t) rows * 16 + 4096;
 }
 
+/**
+ * tv_dist2 - Compute squared Euclidean distance between two 24-bit RGB colors
+ * @a: First packed 0xRRGGBB color
+ * @b: Second packed 0xRRGGBB color
+ *
+ * Used for nearest-neighbor palette quantization in 256-color and 16-color
+ * terminal modes.
+ *
+ * Return: Squared RGB distance
+ */
 static inline int tv_dist2(uint32_t a, uint32_t b)
 {
     int dr = (int) ((a >> 16) & 255) - (int) ((b >> 16) & 255);
@@ -61,6 +82,14 @@ static uint8_t tv_nearest256(uint32_t rgb)
                : (uint8_t) (16 + 36 * ci[0] + 6 * ci[1] + ci[2]);
 }
 
+/**
+ * tv_nearest16 - Find the closest ANSI 16-color palette index for a 24-bit RGB color
+ * @rgb: Packed 0xRRGGBB color value
+ *
+ * Searches the standard 16-entry xterm palette by minimum squared RGB distance.
+ *
+ * Return: Palette index in [0, 15]
+ */
 static uint8_t tv_nearest16(uint32_t rgb)
 {
     int best = 0, bd = tv_dist2(rgb, tv_pal16[0]);
@@ -76,6 +105,16 @@ static uint8_t tv_nearest16(uint32_t rgb)
     return (uint8_t) best;
 }
 
+/**
+ * tv_emit_init - Initialize ANSI diff emitter state and color quantization cache
+ * @e:     Emitter state structure to initialize
+ * @level: Color depth level (1 = 16-color, 2 = 256-color, 3 = 24-bit TrueColor)
+ *
+ * Resets the byte budget, row rotation cursor, and direct-mapped quantization
+ * cache keys.
+ *
+ * Return: void
+ */
 void tv_emit_init(tv_emit_t *e, int level)
 {
     e->level      = (level >= 1 && level <= 3) ? level : 3;
@@ -104,6 +143,16 @@ static inline uint32_t tv_quant(tv_emit_t *e, uint32_t rgb)
     return e->qval[h];
 }
 
+/**
+ * tv_emit_code - Convert a 24-bit RGB color to the emitter's active color code
+ * @e:   Emitter state structure
+ * @rgb: Packed 0xRRGGBB color value
+ *
+ * Exposes tv_quant() so UI rendering can snap colors to the active palette
+ * before comparing or drawing cells.
+ *
+ * Return: 24-bit RGB value (level 3) or quantized palette index (levels 1 and 2)
+ */
 uint32_t tv_emit_code(tv_emit_t *e, uint32_t rgb)
 {
     return tv_quant(e, rgb);
@@ -118,6 +167,17 @@ typedef struct
 
 #define TV_ANY UINT32_MAX
 
+/**
+ * tv_look - Compute the canonical visible appearance of a screen cell
+ * @e: Emitter state holding the active color quantization level
+ * @c: Packed terminal cell value
+ *
+ * Quantizes foreground and background colors, collapses lower-half-block cells
+ * whose top and bottom colors match into a plain space, and marks invisible
+ * foreground/background channels as TV_ANY to avoid redundant SGR changes.
+ *
+ * Return: Canonical cell appearance descriptor (tv_look_t)
+ */
 static inline tv_look_t tv_look(tv_emit_t *e, tv_cell_t c)
 {
     tv_look_t l;
@@ -139,6 +199,16 @@ static inline tv_look_t tv_look(tv_emit_t *e, tv_cell_t c)
     return l;
 }
 
+/**
+ * tv_look_eq - Test whether two canonical cell appearances are visually identical
+ * @a: First cell appearance descriptor
+ * @b: Second cell appearance descriptor
+ *
+ * Compares glyph and quantized foreground/background codes after invisible
+ * channels have been canonicalized.
+ *
+ * Return: Non-zero if identical on screen, 0 otherwise
+ */
 static inline int tv_look_eq(tv_look_t a, tv_look_t b)
 {
     return a.glyph == b.glyph && a.bg == b.bg && a.fg == b.fg;
@@ -180,6 +250,17 @@ static inline void tv_put_dec(char *out, size_t *pos, unsigned v)
     }
 }
 
+/**
+ * tv_put_str - Append a fixed-length byte sequence to the ANSI output buffer
+ * @out: Destination character buffer
+ * @pos: In/out current write offset within @out
+ * @s:   Source byte sequence to copy
+ * @n:   Number of bytes to copy from @s
+ *
+ * Copies @n bytes into `out + *pos` and advances `*pos` by @n.
+ *
+ * Return: void
+ */
 static inline void tv_put_str(char *out, size_t *pos, const char *s, size_t n)
 {
     memcpy(out + *pos, s, n);
@@ -364,6 +445,21 @@ static int tv_flush_row(tv_out_t        *o,
     return sent;
 }
 
+/**
+ * tv_flush_diff - Emit a synchronized ANSI diff between current and previous cell grids
+ * @e:    Emitter state (color level, byte budget, and row rotation cursor)
+ * @out:  Output buffer of at least tv_framebuf_size(@rows, @cols) bytes
+ * @cur:  Current target cell grid (@rows * @cols elements)
+ * @prev: In/out terminal state cell grid updated as cells are emitted
+ * @rows: Grid height in rows
+ * @cols: Grid width in columns
+ *
+ * Emits all changed UI chrome cells first with no byte limit so interactive
+ * feedback is immediate, then emits changed image cells in round-robin row
+ * order up to `e->budget` bytes wrapped in DEC mode 2026 synchronized output.
+ *
+ * Return: Number of bytes written to @out (0 if no cells changed)
+ */
 size_t tv_flush_diff(tv_emit_t       *e,
                      char            *out,
                      const tv_cell_t *cur,

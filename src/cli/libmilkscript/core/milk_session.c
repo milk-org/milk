@@ -28,6 +28,15 @@ static const char *const default_extra_modules =
 
 static int g_milk_midx = -1;
 
+/**
+ * milk_module_begin - Activate the built-in `"milk"` module context for registration
+ *
+ * Temporarily unlocks the reserved `"milk"` shortname, registers the `"milk"` module
+ * slot on first call, and sets `data.moduleindex` so subsequent `RegisterCLIcommand`
+ * or `RegisterCLIcmd` calls register commands under `milk.<cmd>`.
+ *
+ * Return: void
+ */
 void milk_module_begin(void)
 {
     milk_reserve_milk_shortname(1);
@@ -45,6 +54,14 @@ void milk_module_begin(void)
     strncpy(data.modulename, "milk", STRINGMAXLEN_MODULE_NAME - 1);
 }
 
+/**
+ * milk_module_end - Close the built-in `"milk"` module registration context
+ *
+ * Resets transient module registration fields in `data` and re-locks the `"milk"`
+ * shortname so user modules cannot claim it.
+ *
+ * Return: void
+ */
 void milk_module_end(void)
 {
     data.moduleindex        = -1;
@@ -53,6 +70,14 @@ void milk_module_end(void)
     milk_reserve_milk_shortname(0);
 }
 
+/**
+ * milk_session_register_engine - Register built-in `milk.*` and root engine commands
+ *
+ * Registers `milk.ci`, `milk.fpsdump`, and the root `help` command shared across
+ * all CLI and scripting front-ends.
+ *
+ * Return: void
+ */
 void milk_session_register_engine(void)
 {
     milk_module_begin();
@@ -67,6 +92,15 @@ void milk_session_register_engine(void)
                        "help iofits.loadfits", "int help()");
 }
 
+/**
+ * milk_session_load_modules - Load core modules and configured extra modules at startup
+ *
+ * Loads the `COREMOD` shared libraries (`memory`, `iofits`, `arith`, `tools`) followed
+ * by the comma/space/semicolon-separated list in `$MILKCLI_ADD_LIBS` (or the default
+ * standard plugin list when unset).
+ *
+ * Return: void
+ */
 void milk_session_load_modules(void)
 {
     load_module_shared("milkCOREMODmemory");

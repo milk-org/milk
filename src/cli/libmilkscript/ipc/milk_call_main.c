@@ -28,12 +28,33 @@
 #include "milk_client.h"
 #include "milkdata.h"
 
+/**
+ * milkcall_pre_quiet - Suppress milk library startup messages in `milk-call`
+ *
+ * Constructor that sets `milk_data.quiet = 1` and `MILK_QUIET=1` before `main()`
+ * so standalone client invocations emit only command output.
+ *
+ * Return: void
+ */
 __attribute__((constructor(101))) static void milkcall_pre_quiet(void)
 {
     milk_data.quiet = 1;
     setenv("MILK_QUIET", "1", 0);
 }
 
+/**
+ * setup_bin_farm - Populate a directory with symlinks for milk keywords and commands
+ * @bin_farm:   Directory path where symlinks should be created
+ * @sigil:      Prefix string for symlink names (e.g., `@` or empty)
+ * @target_bin: Target executable path (`milk-call`) that symlinks point to
+ * @cmd_list:   Optional file path containing newline-delimited command names
+ *
+ * Cleans up stale symlinks matching @sigil in @bin_farm and creates fresh symlinks
+ * for all callable `@` keywords and any commands listed in @cmd_list so external
+ * utilities (`xargs`, `find -exec`, `parallel`) can invoke milk commands via PATH.
+ *
+ * Return: 0 on success, 1 if required arguments are NULL
+ */
 static int setup_bin_farm(const char *bin_farm,
                           const char *sigil,
                           const char *target_bin,
@@ -107,6 +128,14 @@ static int setup_bin_farm(const char *bin_farm,
     return 0;
 }
 
+/**
+ * print_usage - Print `milk-call` command-line usage and subcommand summary
+ * @prog: Program name (`argv[0]`) for the usage header
+ *
+ * Displays available `milk-call` subcommands and their syntax to stdout.
+ *
+ * Return: void
+ */
 static void print_usage(const char *prog)
 {
     printf("Usage: %s <subcommand> [args...]\n\n", prog);
@@ -135,6 +164,16 @@ static void print_usage(const char *prog)
     printf("  shutdown                         Shut down session milk-cli --server\n");
 }
 
+/**
+ * join_args - Concatenate an argument vector into a single space-separated string
+ * @argc: Number of arguments in @argv
+ * @argv: Array of argument strings
+ *
+ * Allocates a heap buffer containing all elements of @argv separated by single
+ * spaces. Caller is responsible for freeing the returned string.
+ *
+ * Return: Newly allocated space-joined string, or NULL on allocation failure
+ */
 static char *join_args(int argc, char **argv)
 {
     size_t tot = 1;
@@ -160,6 +199,18 @@ static char *join_args(int argc, char **argv)
     return out;
 }
 
+/**
+ * dispatch_subcommand - Route a `milk-call` subcommand to its client handler
+ * @sub:  Subcommand name (e.g., `call`, `get`, `set`, `calc`, `waitfor`)
+ * @argc: Number of arguments following @sub
+ * @argv: Argument array following @sub
+ *
+ * Matches @sub against built-in client operations and executes the corresponding
+ * `milk_client_*` function. Returns -1 if @sub is not a known subcommand so the
+ * caller can fall back to treating it as a milk command name.
+ *
+ * Return: Non-negative exit status of the subcommand, or -1 if @sub is unrecognized
+ */
 static int dispatch_subcommand(const char *sub, int argc, char **argv)
 {
     if (strcmp(sub, "call") == 0)
@@ -332,6 +383,17 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
     return -1;
 }
 
+/**
+ * main - Entry point for the `milk-call` standalone client executable
+ * @argc: Number of command-line arguments
+ * @argv: Command-line argument vector
+ *
+ * Inspects `basename(argv[0])` to support busybox-style symlink invocation for
+ * `@<keyword>` and `<module.cmd>` links in the bin farm, or dispatches the first
+ * argument as a subcommand or milk server command.
+ *
+ * Return: Process exit status from the dispatched subcommand or remote command
+ */
 int main(int argc, char **argv)
 {
     char progbuf[256];

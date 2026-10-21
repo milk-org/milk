@@ -64,6 +64,20 @@ const int tv_help_nkeys = (int) (sizeof(tv_help_keys) / sizeof(tv_help_keys[0]))
  * Drawing and hit rects
  * ----------------------------------------------------------------------- */
 
+/**
+ * tv_put - Write an interface cell with glyph and colors into the screen grid.
+ * @s:  Termview state structure.
+ * @r:  Zero-based screen row index.
+ * @c:  Zero-based screen column index.
+ * @g:  Glyph identifier or ASCII character byte.
+ * @fg: Packed 24-bit foreground RGB color.
+ * @bg: Packed 24-bit background RGB color.
+ *
+ * Stores a cell marked with `TV_ATTR_CHROME` at (@r, @c) if the coordinates
+ * fall within the current terminal dimensions.
+ *
+ * Return: Nothing.
+ */
 static inline void tv_put(tv_state_t *s, int r, int c, uint8_t g, uint32_t fg, uint32_t bg)
 {
     if (r >= 0 && r < s->rows && c >= 0 && c < s->cols)
@@ -82,6 +96,19 @@ static int tv_text(tv_state_t *s, int r, int c, int end, const char *t, uint32_t
     return c;
 }
 
+/**
+ * tv_fill - Fill a horizontal span of cells on a single row with a background color.
+ * @s:  Termview state structure.
+ * @r:  Zero-based screen row index.
+ * @c0: Starting column index (inclusive).
+ * @c1: Ending column index (exclusive).
+ * @bg: Packed 24-bit background RGB color.
+ *
+ * Writes space glyphs with `TV_C_TEXT` foreground and @bg background across
+ * columns `@c0 .. @c1 - 1` on row @r.
+ *
+ * Return: Nothing.
+ */
 static void tv_fill(tv_state_t *s, int r, int c0, int c1, uint32_t bg)
 {
     for (int c = c0; c < c1; c++)
@@ -90,6 +117,21 @@ static void tv_fill(tv_state_t *s, int r, int c0, int c1, uint32_t bg)
     }
 }
 
+/**
+ * tv_hit - Register a mouse hit rectangle for an interactive UI element.
+ * @s:    Termview state structure.
+ * @x0:   Leftmost column index (0-based, inclusive).
+ * @y0:   Topmost row index (0-based, inclusive).
+ * @x1:   Rightmost column index (0-based, inclusive).
+ * @y1:   Bottommost row index (0-based, inclusive).
+ * @kind: Hit region category (`TV_HIT_*`).
+ * @id:   Element identifier within @kind (e.g., button or menu item index).
+ *
+ * Clips (@x1, @y1) to the screen bounds and appends the rectangle to
+ * `s->ui.hits[]` if capacity remains and the rectangle is non-empty.
+ *
+ * Return: Nothing.
+ */
 static void tv_hit(tv_state_t *s, int x0, int y0, int x1, int y1, int kind, int id)
 {
     x1 = (x1 >= s->cols) ? s->cols - 1 : x1; /* clipped to the screen */
@@ -178,6 +220,20 @@ typedef struct
 
 static const int tv_fps_ladder[] = { 1, 2, 5, 10, 15, 20, 30, 60 };
 
+/**
+ * tv_add - Append an entry to a dropdown menu item array.
+ * @it:    Menu item array of capacity `TV_ITEMS`.
+ * @n:     Current number of items in @it.
+ * @kind:  Item kind (`TV_I_CHOICE`, `TV_I_TOGGLE`, `TV_I_ACTION`, or `TV_I_SEP`).
+ * @on:    Non-zero if the choice or toggle is currently active/checked.
+ * @act:   Action code (`tv_action_t`) triggered when the item is activated.
+ * @arg:   Integer argument passed to `tv_do()` with @act.
+ * @label: Display string for the menu entry.
+ *
+ * Populates `it[n]` and increments @n if `@n < TV_ITEMS`.
+ *
+ * Return: Updated item count.
+ */
 static int tv_add(tv_item_t *it, int n, int kind, int on, int act, int arg, const char *label)
 {
     if (n < TV_ITEMS)
@@ -327,6 +383,18 @@ static int tv_first_sel(int m, const tv_item_t *it, int n)
     return 0;
 }
 
+/**
+ * tv_ui_open - Open dropdown menu @m or close any active menu and help overlay.
+ * @s: Termview state structure.
+ * @m: Menu index (`0 .. TV_M_COUNT - 1`) to open, or -1 to close all menus.
+ *
+ * Restores any uncommitted preview in the previously open menu, clears the
+ * help box and hover state, and if @m names a valid menu, closes the range
+ * minibuffer, selects the initial item, and snapshots the current choice so
+ * `Esc` can revert previews.
+ *
+ * Return: Nothing.
+ */
 void tv_ui_open(tv_state_t *s, int m)
 {
     if (s->ui.open)
@@ -419,6 +487,15 @@ static void tv_activate(tv_state_t *s, const tv_item_t *it, int k, int stay)
  * Keys
  * ----------------------------------------------------------------------- */
 
+/**
+ * tv_passes - Check if a key event is a global session control key that bypasses open overlays.
+ * @ev: Decoded key event to inspect.
+ *
+ * Allows quit (`q`, `Ctrl-C`, `Ctrl-\`), suspend (`Ctrl-Z`), and repaint
+ * (`Ctrl-L`) keys to pass through when a dropdown menu or help box is open.
+ *
+ * Return: Non-zero if @ev should pass through to the main key handler, or 0 otherwise.
+ */
 static int tv_passes(const tv_event_t *ev)
 {
     /* quit, suspend and repaint work whatever is open */
@@ -426,6 +503,17 @@ static int tv_passes(const tv_event_t *ev)
            ev->key == TV_CTRL('z') || ev->key == TV_CTRL('l');
 }
 
+/**
+ * tv_menu_key - Handle keyboard navigation and selection while a dropdown menu is open.
+ * @s:  Termview state structure.
+ * @ev: Decoded key event.
+ *
+ * Processes menu navigation (`Up`, `Down`, `Home`, `End`, `PgUp`, `PgDn`,
+ * `Left`, `Right`, `Tab`), item activation (`Enter`, `Space`), menu switching
+ * (`F2`-`F6`), help (`F1`, `?`), and cancellation (`Esc`).
+ *
+ * Return: 1 if the key was handled (or consumed by the menu), or 0 to pass it through.
+ */
 static int tv_menu_key(tv_state_t *s, const tv_event_t *ev)
 {
     tv_item_t it[TV_ITEMS];
@@ -489,6 +577,17 @@ static int tv_menu_key(tv_state_t *s, const tv_event_t *ev)
     }
 }
 
+/**
+ * tv_help_key - Handle keyboard scrolling and dismissal while the help overlay is open.
+ * @s:  Termview state structure.
+ * @ev: Decoded key event.
+ *
+ * Closes the help overlay on `Esc`, `?`, `F1`, or `Enter`, scrolls the key
+ * table on navigation keys (`Up`, `Down`, `PgUp`, `PgDn`, `Home`, `End`), and
+ * blocks non-global keys.
+ *
+ * Return: 1 if the key was handled (or consumed), or 0 to pass it through.
+ */
 static int tv_help_key(tv_state_t *s, const tv_event_t *ev)
 {
     switch (ev->key)
@@ -534,6 +633,17 @@ static const char *tv_mini_check(const tv_mini_t *m, double *lo, double *hi)
     return (*hi > *lo) ? NULL : "min must be < max";
 }
 
+/**
+ * tv_mini_open - Open the status-row range minibuffer pre-filled with the current min and max.
+ * @s:     Termview state structure.
+ * @field: Initial field to focus (0 for minimum, 1 for maximum).
+ *
+ * Closes any open menu or help box, formats `s->cur_min` and `s->cur_max` into
+ * `s->mini.text[]`, marks both fields fresh so the first character typed
+ * replaces the pre-filled value, and flags the UI chrome dirty.
+ *
+ * Return: Nothing.
+ */
 void tv_mini_open(tv_state_t *s, int field)
 {
     tv_mini_t *m = &s->mini;
@@ -553,6 +663,17 @@ void tv_mini_open(tv_state_t *s, int field)
     s->dirty |= TV_D_CHROME;
 }
 
+/**
+ * tv_mini_key - Process a key event while the range minibuffer is active.
+ * @s:  Termview state structure.
+ * @ev: Decoded key event.
+ *
+ * Handles `Enter` (validates and locks range), `Esc` (cancels), `Tab`
+ * (switches between min and max fields), `Backspace`, and printable ASCII
+ * characters, leaving navigation and function keys to the main handler.
+ *
+ * Return: 1 if the key was consumed by the minibuffer, or 0 otherwise.
+ */
 static int tv_mini_key(tv_state_t *s, const tv_event_t *ev)
 {
     tv_mini_t *m = &s->mini;
@@ -615,6 +736,17 @@ static int tv_mini_key(tv_state_t *s, const tv_event_t *ev)
     return 1;
 }
 
+/**
+ * tv_ui_key - Route a key event to the active UI overlay or menubar shortcuts.
+ * @s:  Termview state structure.
+ * @ev: Decoded key event.
+ *
+ * Delegates to the range minibuffer, help overlay, or open dropdown menu when
+ * active, or opens the help overlay (`?`, `F1`) or dropdown menus (`F2`-`F6`,
+ * `Tab`, `F9`) when the terminal layout is valid.
+ *
+ * Return: 1 if the UI handled the key event, or 0 to pass it to `tv_handle_key()`.
+ */
 int tv_ui_key(tv_state_t *s, const tv_event_t *ev)
 {
     if (!s->lay.valid)
@@ -659,11 +791,31 @@ int tv_ui_key(tv_state_t *s, const tv_event_t *ev)
  * Mouse
  * ----------------------------------------------------------------------- */
 
+/**
+ * tv_is_press - Check if a mouse event is a left, middle, or right button press.
+ * @ev: Decoded mouse event to test.
+ *
+ * Distinguishes primary button press actions (`TV_MA_PRESS` with button
+ * `<= TV_MB_RIGHT`) from releases, drags, moves, and wheel events.
+ *
+ * Return: Non-zero if @ev is a button press, or 0 otherwise.
+ */
 static int tv_is_press(const tv_event_t *ev)
 {
     return ev->action == TV_MA_PRESS && ev->button <= TV_MB_RIGHT;
 }
 
+/**
+ * tv_ui_wants_mouse - Check if a mouse event should be handled by the UI chrome rather than the image.
+ * @s:  Termview state structure.
+ * @ev: Decoded mouse event.
+ *
+ * Claims all mouse events while a dropdown menu or help box is open, and
+ * claims button presses on the menubar row, status row, or any registered hit
+ * rectangle when no overlay is open.
+ *
+ * Return: Non-zero if the UI claims @ev, or 0 if it belongs to the image canvas.
+ */
 int tv_ui_wants_mouse(const tv_state_t *s, const tv_event_t *ev)
 {
     if (!s->lay.valid)
@@ -701,6 +853,17 @@ static void tv_button(tv_state_t *s, int b)
     }
 }
 
+/**
+ * tv_ui_mouse - Process a mouse event claimed by the UI chrome or open overlays.
+ * @s:  Termview state structure.
+ * @ev: Decoded mouse event.
+ *
+ * Updates button hover state, scrolls or closes the help overlay, tracks hover
+ * and clicks across open dropdown menus and menubar buttons, or switches focus
+ * between range minibuffer fields.
+ *
+ * Return: Nothing.
+ */
 void tv_ui_mouse(tv_state_t *s, const tv_event_t *ev)
 {
     const tv_hit_t *h     = tv_hit_at(s, ev->x - 1, ev->y - 1);
@@ -824,6 +987,20 @@ static int tv_button_width(const tv_state_t *s, int b, int lng)
     return (int) strlen(lab) + ((b < TV_M_COUNT) ? 2 : 0);
 }
 
+/**
+ * tv_draw_button - Draw a single menubar button and register its hit rectangle.
+ * @s:   Termview state structure.
+ * @b:   Button identifier (`0 .. TV_M_COUNT - 1`, `TV_HELP_BTN`, or `TV_QUIT_BTN`).
+ * @lng: Non-zero to draw the full label, or 0 for the compact label.
+ * @x:   Starting column index on row 0.
+ * @end: Exclusive right-hand column limit.
+ *
+ * Renders the button label (plus the dropdown arrow for menu buttons) with
+ * active, hover, or normal colors, records its left edge in `s->ui.btn_x[b]`,
+ * and registers a `TV_HIT_BUTTON` region.
+ *
+ * Return: Nothing.
+ */
 static void tv_draw_button(tv_state_t *s, int b, int lng, int x, int end)
 {
     char lab[48];
@@ -847,6 +1024,16 @@ static void tv_draw_button(tv_state_t *s, int b, int lng, int x, int end)
     tv_hit(s, x0, 0, x - 1, 0, TV_HIT_BUTTON, b);
 }
 
+/**
+ * tv_render_menubar - Render the top menubar row with menu, help, and quit buttons.
+ * @s: Termview state structure.
+ *
+ * Chooses long or compact button labels to fit `s->cols`, draws the five
+ * dropdown menu buttons on the left and the Help/Quit buttons on the right,
+ * and shows a subtle keyboard/mouse hint when space permits.
+ *
+ * Return: Nothing.
+ */
 static void tv_render_menubar(tv_state_t *s)
 {
     static const char hint[] = "Tab: menu  (click)";
@@ -907,6 +1094,17 @@ static uint32_t tv_swatch(int cm, int k)
     return sw[cm][k];
 }
 
+/**
+ * tv_render_menu - Render the currently open dropdown menu box and its items.
+ * @s: Termview state structure.
+ *
+ * Computes the menu box geometry aligned under `s->ui.btn_x[s->ui.menu]`,
+ * clamps scrolling so `s->ui.sel` is visible, draws the bordered box with drop
+ * shadow, renders each visible choice, toggle, action, or separator (plus
+ * colormap swatches in the Cmap menu), and registers hit rectangles.
+ *
+ * Return: Nothing.
+ */
 static void tv_render_menu(tv_state_t *s)
 {
     const tv_layout_t *l = &s->lay;
@@ -980,6 +1178,16 @@ static void tv_render_menu(tv_state_t *s)
     }
 }
 
+/**
+ * tv_render_help - Render the centered modal keyboard and mouse help dialog.
+ * @s: Termview state structure.
+ *
+ * Sizes and centers a bordered dialog box over the image canvas, clamps
+ * `s->ui.help_top` to the visible row count, draws scroll indicators when
+ * needed, and renders the two-column `tv_help_keys` bindings table.
+ *
+ * Return: Nothing.
+ */
 static void tv_render_help(tv_state_t *s)
 {
     static const char title[] = " Keys and mouse ";
@@ -1135,6 +1343,16 @@ static void tv_labels(const double *v, int n, int width, char out[][16])
     }
 }
 
+/**
+ * tv_render_colorbar - Render the vertical colorbar and numeric tick labels.
+ * @s: Termview viewer state.
+ *
+ * Paints the two-column colormap gradient along the right edge of the image
+ * viewport and formats up to five evenly spaced value labels (top, bottom,
+ * and quarters when height permits) using compact scientific/general notation.
+ *
+ * Return: void.
+ */
 static void tv_render_colorbar(tv_state_t *s)
 {
     const tv_layout_t *l  = &s->lay;
@@ -1170,6 +1388,15 @@ static void tv_render_colorbar(tv_state_t *s)
     }
 }
 
+/**
+ * tv_dtype_name - Return a short display string for an ImageStreamIO datatype.
+ * @dt: ImageStreamIO datatype code (_DATATYPE_*).
+ *
+ * Maps numeric datatype codes to compact status-bar labels such as "f32" or
+ * "u16".
+ *
+ * Return: Static short string describing @dt, or "?" if unknown.
+ */
 static const char *tv_dtype_name(uint8_t dt)
 {
     switch (dt)
@@ -1199,6 +1426,17 @@ static const char *tv_dtype_name(uint8_t dt)
     }
 }
 
+/**
+ * tv_render_mini - Render the inline manual-range editor on the status row.
+ * @s: Termview viewer state.
+ * @r: Terminal row index of the status bar.
+ *
+ * Draws the Min and Max text input fields, cursor/selection highlight, mouse
+ * hit regions, and either the active validation error message or keyboard
+ * usage hints.
+ *
+ * Return: void.
+ */
 static void tv_render_mini(tv_state_t *s, int r)
 {
     static const char hint[] = "Enter: lock  Tab: other field  Esc: cancel";
@@ -1321,6 +1559,17 @@ static void tv_render_status(tv_state_t *s, int64_t now_us)
     }
 }
 
+/**
+ * tv_ui_render - Render all UI chrome and active overlays onto the screen grid.
+ * @s:      Termview viewer state.
+ * @now_us: Current monotonic timestamp in microseconds.
+ *
+ * Resets the mouse hit-region table for the current UI generation, renders the
+ * colorbar, menu bar, and status bar (or mini-buffer), and paints any open
+ * drop-down menu or help overlay on top.
+ *
+ * Return: void.
+ */
 void tv_ui_render(tv_state_t *s, int64_t now_us)
 {
     s->ui.nhits    = 0;

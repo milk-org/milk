@@ -22,6 +22,19 @@ enum
     TV_SKIP_STR  /* until BEL or ESC */
 };
 
+/**
+ * tv_input_feed - Append newly read terminal bytes to the input decoder buffer.
+ * @in:     Input decoder state structure.
+ * @data:   Raw input byte buffer read from the terminal.
+ * @n:      Number of bytes available in @data.
+ * @now_us: Current monotonic timestamp in microseconds.
+ *
+ * Copies up to the remaining buffer capacity of @in from @data, marks a
+ * lone buffered `ESC` byte as stale if its escape timeout has already
+ * elapsed before a non-sequence byte arrived, and updates @in->last_rx_us.
+ *
+ * Return: Nothing.
+ */
 void tv_input_feed(tv_input_t *in, const unsigned char *data, size_t n, int64_t now_us)
 {
     size_t room = sizeof(in->buf) - in->len;
@@ -44,11 +57,31 @@ void tv_input_feed(tv_input_t *in, const unsigned char *data, size_t n, int64_t 
     in->last_rx_us = now_us;
 }
 
+/**
+ * tv_input_deadline - Compute the timeout timestamp for pending incomplete escape sequences.
+ * @in: Input decoder state structure.
+ *
+ * Returns the timestamp at which a partial escape sequence or active skip
+ * state expires (`last_rx_us + TV_ESC_TIMEOUT_US`), or -1 when no bytes or
+ * skip state are pending.
+ *
+ * Return: Expiration timestamp in microseconds, or -1 if idle.
+ */
 int64_t tv_input_deadline(const tv_input_t *in)
 {
     return (in->len > 0 || in->skip != TV_SKIP_NONE) ? in->last_rx_us + TV_ESC_TIMEOUT_US : -1;
 }
 
+/**
+ * tv_ev_key - Populate a decoded key event structure.
+ * @ev:   Output event structure to initialize.
+ * @key:  Decoded key code (`TV_K_*` or ASCII code).
+ * @mods: Active modifier bitmask (`TV_MOD_*`).
+ *
+ * Clears @ev and sets its type to `TV_EV_KEY` with the given @key and @mods.
+ *
+ * Return: Nothing.
+ */
 static void tv_ev_key(tv_event_t *ev, uint32_t key, uint8_t mods)
 {
     memset(ev, 0, sizeof(*ev));
@@ -82,6 +115,16 @@ static int tv_parse_params(const unsigned char *p, size_t n, int out[4])
     return (n > 0) ? ((np < 4) ? np + 1 : 4) : 0;
 }
 
+/**
+ * tv_tilde_key - Map a CSI `~` numeric parameter to a special key code.
+ * @p: Numeric parameter preceding `~` in `ESC [ <p> ~`.
+ *
+ * Translates VT220/xterm tilde-terminated function and navigation key
+ * numbers (Home, Insert, Delete, End, PageUp, PageDown, F1-F12) into
+ * `TV_K_*` constants.
+ *
+ * Return: Corresponding `TV_K_*` key code, or 0 if unrecognized.
+ */
 static uint32_t tv_tilde_key(int p)
 {
     switch (p)
@@ -120,6 +163,15 @@ static uint32_t tv_tilde_key(int p)
     }
 }
 
+/**
+ * tv_letter_key - Map a CSI or SS3 final letter to a navigation or function key code.
+ * @c: Final character byte of the escape sequence.
+ *
+ * Translates cursor arrow letters (`A`-`D`), `H`/`F` (Home/End), and
+ * `P`-`S` (F1-F4) into `TV_K_*` constants.
+ *
+ * Return: Corresponding `TV_K_*` key code, or 0 if unrecognized.
+ */
 static uint32_t tv_letter_key(int c)
 {
     switch (c)
@@ -527,6 +579,18 @@ static size_t tv_decode(tv_input_t          *in,
     }
 }
 
+/**
+ * tv_input_next - Pop and decode the next terminal input event from the buffer.
+ * @in:     Input decoder state structure.
+ * @now_us: Current monotonic timestamp in microseconds.
+ * @ev:     Output structure populated when an event is decoded.
+ *
+ * Consumes buffered terminal bytes in @in, resolving or dropping incomplete
+ * escape sequences if `TV_ESC_TIMEOUT_US` has elapsed since `in->last_rx_us`,
+ * and populates @ev with the next key, mouse, or CPR event.
+ *
+ * Return: 1 if an event was decoded into @ev, or 0 if more bytes are needed.
+ */
 int tv_input_next(tv_input_t *in, int64_t now_us, tv_event_t *ev)
 {
     int expired = (now_us - in->last_rx_us >= TV_ESC_TIMEOUT_US);

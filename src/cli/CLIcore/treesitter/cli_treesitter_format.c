@@ -57,6 +57,16 @@ int cli_ts_compute_indent_depth(const char *buffer)
 
 #ifdef USE_TREESITTER
 
+/**
+ * is_ast_compound_block - Check if a Tree-sitter node type represents a compound shell block.
+ * @type: Null-terminated AST node type string from `ts_node_type()`.
+ *
+ * Identifies multi-line compound statements (`for_statement`, `while_statement`,
+ * `until_statement`, `if_statement`, `case_statement`, `function_definition`,
+ * and `subshell`) that introduce an indentation level and a foldable block.
+ *
+ * Return: true if @type is a compound block node, or false otherwise.
+ */
 static bool is_ast_compound_block(const char *type)
 {
     return (strcmp(type, "for_statement") == 0 || strcmp(type, "while_statement") == 0 ||
@@ -65,6 +75,19 @@ static bool is_ast_compound_block(const char *type)
             strcmp(type, "subshell") == 0);
 }
 
+/**
+ * compute_ast_line_depths - Recursively accumulate per-line indentation depths from an AST.
+ * @node:       Current Tree-sitter AST node being visited.
+ * @line_depth: Array of length @num_lines receiving the nesting depth for each 0-based line.
+ * @num_lines:  Total number of lines in the source script.
+ * @lines:      Array of trimmed line strings used to exclude closing-keyword lines.
+ *
+ * Increments @line_depth for every line spanned by a multi-line compound block
+ * node (excluding the final line if it starts with a closing keyword such as
+ * `done`, `fi`, `esac`, `}`, or `)`), then recurses over all child nodes.
+ *
+ * Return: Nothing.
+ */
 static void compute_ast_line_depths(TSNode             node,
                                     int               *line_depth,
                                     int                num_lines,
@@ -96,6 +119,20 @@ static void compute_ast_line_depths(TSNode             node,
     }
 }
 
+/**
+ * print_folds_ast_walk - Recursively walk the AST and print multi-line compound block summaries.
+ * @node:        Current Tree-sitter AST node being visited.
+ * @source:      Full source code string of the script.
+ * @depth:       Current compound block nesting depth for indentation.
+ * @block_count: In/out counter incremented for each multi-line block printed.
+ * @out:         Output stream receiving the formatted outline lines.
+ *
+ * Prints the 1-based start/end line numbers, line span, and a 60-character
+ * preview of the opening line for every multi-line compound block in @node,
+ * recursing through child nodes with increased @depth.
+ *
+ * Return: Nothing.
+ */
 static void print_folds_ast_walk(TSNode      node,
                                  const char *source,
                                  int         depth,
@@ -186,6 +223,18 @@ static void compute_lexical_line_depths(char **trimmed_lines, int *line_depth, i
     }
 }
 
+/**
+ * cli_ts_format_code - Format a multi-line milk script with consistent block indentation.
+ * @code:         Null-terminated source code string to format.
+ * @indent_width: Number of spaces per indentation level (clamped to 1..16, default 4).
+ *
+ * Splits @code into trimmed lines, computes per-line block nesting depths via
+ * the normalized Tree-sitter AST (falling back to lexical keyword counting if
+ * the parser is unavailable), and reconstructs the formatted script with
+ * @indent_width spaces per nesting level.
+ *
+ * Return: Newly heap-allocated formatted string (caller must `free()`), or NULL on error.
+ */
 char *cli_ts_format_code(const char *code, int indent_width)
 {
     if (!code)
@@ -345,6 +394,18 @@ char *cli_ts_format_code(const char *code, int indent_width)
 #endif
 }
 
+/**
+ * cli_ts_print_block_folds - Print a hierarchical outline of multi-line blocks in a script.
+ * @code:  Null-terminated script source code string.
+ * @label: Optional script or file label for the outline header (may be NULL).
+ * @out:   Output stream to write the outline to (defaults to `stdout` if NULL).
+ *
+ * Parses @code into a normalized Tree-sitter AST and walks its compound block
+ * nodes via print_folds_ast_walk() to display line ranges and opening-line
+ * previews.
+ *
+ * Return: Number of multi-line compound blocks printed.
+ */
 int cli_ts_print_block_folds(const char *code, const char *label, FILE *out)
 {
 #ifndef USE_TREESITTER

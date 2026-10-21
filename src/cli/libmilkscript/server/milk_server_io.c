@@ -485,6 +485,16 @@ static int find_server_cmd(const char *cmdname)
     return (count == 1) ? match : -1;
 }
 
+/**
+ * argtype_label - Map a `CLIARG_*` parameter type constant to a short display label
+ * @type: `CLICMDARGDATA` argument type code (`CLIARG_*`)
+ *
+ * Returns a concise uppercase label (`FITS`, `FILE`, `IMG`, `FPS`, `ONOFF`, `FLOAT`,
+ * `INT`, `UINT`, `STR`, or `ARG`) used when formatting command signatures during
+ * interactive tab-completion.
+ *
+ * Return: Static short label string for @type
+ */
 static const char *argtype_label(uint64_t type)
 {
     if (type == CLIARG_FITSFILENAME)
@@ -526,6 +536,18 @@ static const char *argtype_label(uint64_t type)
     return "ARG";
 }
 
+/**
+ * find_cmd_cli_arg - Locate the metadata descriptor for the N-th positional CLI argument
+ * @cmdidx: Index of the command in `data.cmd[]`
+ * @argidx: Zero-based positional argument index on the command line
+ *
+ * Walks the command's `argdata` array, counting entries marked with
+ * `FPFLAG_PRIMARY_CLI_INPUT` (or falling back to raw index order if none are
+ * marked), so context-aware tab-completion knows the expected type of the active
+ * argument.
+ *
+ * Return: Pointer to the matching `CLICMDARGDATA` entry, or NULL if out of range
+ */
 static const CLICMDARGDATA *find_cmd_cli_arg(int cmdidx, int argidx)
 {
     if (cmdidx < 0 || argidx < 0 || data.cmd[cmdidx].argdata == NULL)
@@ -553,6 +575,19 @@ static const CLICMDARGDATA *find_cmd_cli_arg(int cmdidx, int argidx)
     return NULL;
 }
 
+/**
+ * format_cmd_signature - Format a command's argument signature and active-argument hint
+ * @cmdname:       Command name to look up
+ * @active_argidx: Zero-based index of the argument currently being typed (-1 if none)
+ * @out:           Output buffer receiving the formatted signature text
+ * @outsz:         Capacity of @out in bytes
+ *
+ * Builds a two-line help snippet showing the command's primary CLI arguments
+ * (highlighting @active_argidx with `*...*`) and the description/default of the
+ * active argument.
+ *
+ * Return: Number of bytes written to @out (0 if @cmdname is not found)
+ */
 static size_t format_cmd_signature(const char *cmdname, int active_argidx, char *out, size_t outsz)
 {
     int cmdidx = find_server_cmd(cmdname);
@@ -653,6 +688,18 @@ static size_t format_cmd_signature(const char *cmdname, int active_argidx, char 
     return pos;
 }
 
+/**
+ * complete_cmd_dot_tags - Complete named `.tag` parameter overrides for a command
+ * @cmdidx: Index of the command in `data.cmd[]`
+ * @prefix: Current word prefix starting with `.`
+ * @out:    Output buffer receiving newline-delimited `.tag` completions
+ * @outsz:  Capacity of @out in bytes
+ *
+ * Scans all parameters declared in `data.cmd[cmdidx].argdata` and emits matching
+ * `.fpstag` names so users can tab-complete named argument overrides.
+ *
+ * Return: Number of bytes written to @out
+ */
 static size_t complete_cmd_dot_tags(int cmdidx, const char *prefix, char *out, size_t outsz)
 {
     size_t pos  = 0;
@@ -689,6 +736,17 @@ static size_t complete_cmd_dot_tags(int cmdidx, const char *prefix, char *out, s
     return pos;
 }
 
+/**
+ * complete_fps_only - Complete active FPS shared-memory names matching a prefix
+ * @prefix: Prefix to match against `<name>.fps.shm` entries
+ * @out:    Output buffer receiving newline-delimited FPS names
+ * @outsz:  Capacity of @out in bytes
+ *
+ * Scans the shared-memory directory for `.fps.shm` files and emits bare FPS names
+ * for commands expecting a `CLIARG_FPSNAME` argument.
+ *
+ * Return: Number of bytes written to @out
+ */
 static size_t complete_fps_only(const char *prefix, char *out, size_t outsz)
 {
     size_t      pos    = 0;
@@ -729,6 +787,17 @@ static size_t complete_fps_only(const char *prefix, char *out, size_t outsz)
     return pos;
 }
 
+/**
+ * complete_images_only - Complete stream modifiers, local images, and SHM streams
+ * @prefix: Prefix to match against `@*:` modifiers, local image names, and `.im.shm` files
+ * @out:    Output buffer receiving newline-delimited completion candidates
+ * @outsz:  Capacity of @out in bytes
+ *
+ * Provides targeted completion candidates when a command parameter has type
+ * `CLIARG_IMG` or `CLIARG_STREAM`.
+ *
+ * Return: Number of bytes written to @out
+ */
 static size_t complete_images_only(const char *prefix, char *out, size_t outsz)
 {
     size_t pos  = 0;

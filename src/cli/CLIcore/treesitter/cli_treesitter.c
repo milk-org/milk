@@ -33,6 +33,14 @@ static TSParser *ts_parser   = NULL;
 static TSQuery  *ts_query    = NULL;
 static int       color_level = 1; /* 1 = 16-color, 2 = 256-color */
 
+/**
+ * cli_ts_get_parser - Return the active module-level Tree-sitter parser instance.
+ *
+ * Provides read access to the singleton `TSParser` initialized by
+ * cli_ts_init() for sibling translation units in the `treesitter/` module.
+ *
+ * Return: Pointer to the active `TSParser`, or NULL if not initialized.
+ */
 TSParser *cli_ts_get_parser(void)
 {
     return ts_parser;
@@ -68,6 +76,15 @@ static const struct color_mapping colormap[] = {
     { NULL, NULL, NULL }
 };
 
+/**
+ * get_color_for_capture - Look up the ANSI escape sequence for a Tree-sitter highlight capture name.
+ * @capture_name: Null-terminated capture name string from the highlight query.
+ *
+ * Searches `colormap[]` for @capture_name and returns either the 256-color or
+ * 16-color SGR escape sequence according to `color_level`.
+ *
+ * Return: ANSI escape sequence string, or NULL if @capture_name is not mapped.
+ */
 static const char *get_color_for_capture(const char *capture_name)
 {
     for (int i = 0; colormap[i].capture != NULL; i++)
@@ -80,6 +97,14 @@ static const char *get_color_for_capture(const char *capture_name)
     return NULL;
 }
 
+/**
+ * cli_ts_detect_color_level - Detect whether the terminal supports 256-color or 16-color ANSI codes.
+ *
+ * Inspects `COLORTERM` for `truecolor`/`24bit` and `TERM` for `256color` to
+ * select between the 256-color and 16-color highlight palettes.
+ *
+ * Return: 2 if 256-color/truecolor is supported, or 1 for basic 16-color ANSI.
+ */
 int cli_ts_detect_color_level(void)
 {
     const char *term      = getenv("TERM");
@@ -95,6 +120,15 @@ int cli_ts_detect_color_level(void)
     return 1;
 }
 
+/**
+ * cli_ts_init - Initialize the Tree-sitter `milkcli` parser and highlight query.
+ *
+ * Detects the terminal color level, creates the singleton `TSParser` bound to
+ * `tree_sitter_milkcli()`, and compiles `milkcli_highlights_scm` into
+ * `ts_query`. No-op if already initialized.
+ *
+ * Return: 0 on success, or -1 on allocation or query compilation failure.
+ */
 int cli_ts_init(void)
 {
     if (ts_parser != NULL)
@@ -123,6 +157,14 @@ int cli_ts_init(void)
     return 0;
 }
 
+/**
+ * cli_ts_cleanup - Release the Tree-sitter highlight query and parser resources.
+ *
+ * Frees `ts_query` and `ts_parser` if allocated and resets their pointers to
+ * NULL.
+ *
+ * Return: Nothing.
+ */
 void cli_ts_cleanup(void)
 {
     if (ts_query)
@@ -137,6 +179,17 @@ void cli_ts_cleanup(void)
     }
 }
 
+/**
+ * compare_spans - `qsort()` comparator ordering `HighlightSpan` entries for stack rendering.
+ * @a: Pointer to the first `HighlightSpan`.
+ * @b: Pointer to the second `HighlightSpan`.
+ *
+ * Orders spans by ascending `start_byte`, then descending `end_byte` (outer
+ * spans before inner spans), and finally ascending `priority` so higher
+ * priority spans are pushed last onto the color stack.
+ *
+ * Return: Negative if `@a < @b`, positive if `@a > @b`, or 0 if equal.
+ */
 static int compare_spans(const void *a, const void *b)
 {
     const HighlightSpan *sa = (const HighlightSpan *) a;
@@ -715,6 +768,20 @@ static void collect_at_token_spans(const char    *line,
     }
 }
 
+/**
+ * cli_ts_highlight_line - Render an ANSI syntax-highlighted command line to an output stream.
+ * @line:       Input command line string to highlight.
+ * @len:        Number of bytes in @line to render.
+ * @cursor_pos: Current cursor byte offset for bracket/keyword pair matching (or -1).
+ * @out:        Output stream receiving the ANSI-formatted text.
+ *
+ * Parses @line with cli_ts_parse_normalized_tree(), executes the highlight
+ * query, merges `@`-token spans, syntax error spans, and cursor match-pair
+ * spans, sorts them via compare_spans(), and writes the colored characters
+ * to @out using a nested color stack.
+ *
+ * Return: Nothing.
+ */
 void cli_ts_highlight_line(const char *line, int len, int cursor_pos, FILE *out)
 {
     if (!ts_parser || !ts_query || !line || len == 0)
@@ -854,6 +921,18 @@ void cli_ts_highlight_line(const char *line, int len, int cursor_pos, FILE *out)
     fflush(out);
 }
 
+/**
+ * cli_ts_find_match_pair - Locate the matching delimiter or block keyword pair at @cursor_pos.
+ * @line:       Null-terminated input command line string.
+ * @cursor_pos: Zero-based byte offset of the cursor in @line.
+ * @pair:       Output structure populated with token and partner byte ranges.
+ *
+ * Queries the normalized Tree-sitter AST via find_match_pair_ast() first and
+ * falls back to find_match_pair_lexical() when the AST is incomplete or
+ * unavailable.
+ *
+ * Return: true if a matching pair was found, or false otherwise.
+ */
 bool cli_ts_find_match_pair(const char *line, int cursor_pos, CLI_MATCH_PAIR *pair)
 {
     memset(pair, 0, sizeof(*pair));
@@ -886,20 +965,53 @@ bool cli_ts_find_match_pair(const char *line, int cursor_pos, CLI_MATCH_PAIR *pa
 
 #else /* !USE_TREESITTER */
 
+/**
+ * cli_ts_init - No-op stub when Tree-sitter support is disabled at compile time.
+ *
+ * Satisfies the CLI initialization interface without allocating a parser.
+ *
+ * Return: Always 0.
+ */
 int cli_ts_init(void)
 {
     return 0;
 }
 
+/**
+ * cli_ts_detect_color_level - Fallback color capability query when Tree-sitter is disabled.
+ *
+ * Returns basic 16-color level when compiled without `USE_TREESITTER`.
+ *
+ * Return: Always 1.
+ */
 int cli_ts_detect_color_level(void)
 {
     return 1;
 }
 
+/**
+ * cli_ts_cleanup - No-op cleanup stub when Tree-sitter support is disabled.
+ *
+ * Provided for link compatibility when `USE_TREESITTER` is not defined.
+ *
+ * Return: Nothing.
+ */
 void cli_ts_cleanup(void)
 {
 }
 
+/**
+ * cli_ts_highlight_line - Fallback line renderer with lexical bracket-match highlighting.
+ * @line:       Input command line string to write.
+ * @len:        Number of bytes in @line.
+ * @cursor_pos: Current cursor byte offset for lexical pair matching (or -1).
+ * @out:        Output stream receiving the text.
+ *
+ * Renders @line with reverse-video highlighting on matching delimiters or
+ * keywords when `data.show_match` is enabled, or prints @line verbatim.
+ *
+ * Return: Nothing.
+ */
 void cli_ts_highlight_line(const char *line, int len, int cursor_pos, FILE *out)
 {
     if (line == NULL || len == 0)
@@ -931,6 +1043,16 @@ void cli_ts_highlight_line(const char *line, int len, int cursor_pos, FILE *out)
     fflush(out);
 }
 
+/**
+ * cli_ts_find_match_pair - Lexical fallback for delimiter and keyword matching without Tree-sitter.
+ * @line:       Null-terminated input command line string.
+ * @cursor_pos: Zero-based byte offset of the cursor in @line.
+ * @pair:       Output structure populated with token and partner byte ranges.
+ *
+ * Delegates directly to find_match_pair_lexical() when Tree-sitter is disabled.
+ *
+ * Return: true if a matching pair was found, or false otherwise.
+ */
 bool cli_ts_find_match_pair(const char *line, int cursor_pos, CLI_MATCH_PAIR *pair)
 {
     if (line == NULL || cursor_pos < 0)

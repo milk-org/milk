@@ -50,6 +50,7 @@ set(MILKSCRIPT_SOURCES
     calc/cli_calc_tokenizer.c
     calc/cli_calc_parser.c
     calc/cli_calc_functions.c
+    calc/cli_calc_linalg.c
     calc/cli_calc_binops.c
     calc/cli_calc_eval.c
     calc/cli_calc_slice.c
@@ -65,6 +66,7 @@ set(MILKSCRIPT_SOURCES
     ipc/milk_ipc_common.c
     ipc/milk_client_conn.c
     ipc/milk_client_ops.c
+    ipc/milk_client_ext.c
     ipc/milk_client_args.c
     ipc/milk_waitfor.c
     ipc/milk_srvlog_shm.c
@@ -74,8 +76,10 @@ set(MILKSCRIPT_SOURCES
     server/milk_server_stream.c
     server/milk_server_io.c
     server/milk_server_dispatch.c
+    server/milk_server_eval.c
     server/milk_server_session.c
     bash/milk_bash_translate.c
+    bash/milk_bash_modernize.c
     bash/milk_shell_lex.c
     bash/milk_bash_coproc.c
     bash/milk_bash_cmdfile.c
@@ -181,6 +185,7 @@ add_library(
   ipc/milk_bash_defer.c
   ipc/milk_client_conn.c
   ipc/milk_client_ops.c
+  ipc/milk_client_ext.c
   ipc/milk_client_args.c
   ipc/milk_ipc_common.c
   ipc/milk_waitfor.c
@@ -192,6 +197,7 @@ add_library(
   shm_prop/milk_shm_prop_proc_seq.c
   shm_prop/milk_shm_cache.c
   bash/milk_bash_translate.c
+  bash/milk_bash_modernize.c
   bash/milk_shell_lex.c
   bash/milk_bash_cmdfile.c
   core/milk_lexicon.c

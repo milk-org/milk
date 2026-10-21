@@ -46,12 +46,29 @@
 
 static volatile sig_atomic_t g_follow_sigint = 0;
 
+/**
+ * follow_sigint_handler - Async-signal-safe SIGINT handler for `@log -f` live tailing
+ * @sig: Signal number (`SIGINT`)
+ *
+ * Sets `g_follow_sigint` so the `@log -f` polling loop exits cleanly when the
+ * user presses Ctrl-C.
+ *
+ * Return: void
+ */
 static void follow_sigint_handler(int sig)
 {
     (void) sig;
     g_follow_sigint = 1;
 }
 
+/**
+ * use_color_output - Check whether ANSI color escape sequences should be emitted
+ *
+ * Respects the `NO_COLOR` environment variable and checks whether `STDOUT_FILENO`
+ * refers to a terminal device.
+ *
+ * Return: 1 if color output should be used, 0 otherwise
+ */
 static int use_color_output(void)
 {
     const char *nc = getenv("NO_COLOR");
@@ -478,6 +495,15 @@ void milk_srvlog_server_close(milk_srvlog_shm_t *shm, int unlink_file)
     }
 }
 
+/**
+ * print_json_escaped - Print a C string to stdout as a double-quoted JSON string
+ * @s: Input string to escape and print (may be NULL)
+ *
+ * Escapes quotes, backslashes, standard whitespace control characters, and raw
+ * bytes below `0x20` (`\uXXXX`) so log commands and outputs are valid JSON.
+ *
+ * Return: void
+ */
 static void print_json_escaped(const char *s)
 {
     putchar('"');
@@ -518,6 +544,16 @@ static void print_json_escaped(const char *s)
     putchar('"');
 }
 
+/**
+ * parse_since_spec - Parse a `--since` time specification into a UNIX epoch timestamp
+ * @spec: Relative duration (`30s`, `5m`, `1h`, `2d`), wall time (`HH:MM[:SS]`),
+ *        ISO-8601 timestamp (`YYYY-MM-DD[T ]HH:MM:SS`), or raw epoch seconds
+ *
+ * Converts human-friendly relative or absolute time strings into a `time_t`
+ * threshold for filtering server log entries.
+ *
+ * Return: Cutoff timestamp in seconds since the epoch, or 0 if @spec is empty/invalid
+ */
 static time_t parse_since_spec(const char *spec)
 {
     if (spec == NULL || spec[0] == '\0')
@@ -583,6 +619,20 @@ static time_t parse_since_spec(const char *spec)
     return 0;
 }
 
+/**
+ * entry_matches_filters - Test whether a server log entry satisfies active `@log` filters
+ * @e:           Pointer to the ring-buffer log entry to evaluate
+ * @errors_only: Non-zero to match only entries with `rc != 0`
+ * @min_dur_ns:  Minimum execution duration in nanoseconds (0 for no minimum)
+ * @since_sec:   Minimum start timestamp in epoch seconds (0 for no cutoff)
+ * @has_regex:   Non-zero if @re contains a compiled regular expression
+ * @re:          Compiled POSIX extended regex matched against `cmd` and `output`
+ *
+ * Evaluates all active filter predicates against @e for both historical log scans
+ * and live `-f` tailing.
+ *
+ * Return: 1 if the entry matches all filters, 0 otherwise
+ */
 static int entry_matches_filters(const milk_srvlog_entry_t *e,
                                  int                        errors_only,
                                  uint64_t                   min_dur_ns,
@@ -616,6 +666,17 @@ static int entry_matches_filters(const milk_srvlog_entry_t *e,
     return 1;
 }
 
+/**
+ * format_entry_line - Render a single server log entry to stdout as text or JSON
+ * @e:         Log entry to format
+ * @json_mode: Non-zero to emit a single-line JSON object, 0 for human-readable table row
+ * @color:     Non-zero to include ANSI color codes in human-readable mode
+ *
+ * Prints the entry's timestamp, duration, return code, client PID, command string,
+ * and any captured multi-line output snippet.
+ *
+ * Return: void
+ */
 static void format_entry_line(const milk_srvlog_entry_t *e, int json_mode, int color)
 {
     struct tm tmv;
@@ -677,6 +738,13 @@ static void format_entry_line(const milk_srvlog_entry_t *e, int json_mode, int c
     }
 }
 
+/**
+ * print_log_help - Print usage and command-line option reference for `@log`
+ *
+ * Writes `@log` / `@server log` flags and usage examples to stdout.
+ *
+ * Return: void
+ */
 static void print_log_help(void)
 {
     printf("Usage: @log [options] [pattern]\n");

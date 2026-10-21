@@ -203,6 +203,17 @@ static uint64_t outvar_hash(const char *name)
     return h | 1;
 }
 
+/**
+ * milk_server_outvars_snap - Fingerprint a command's declared output variables before execution
+ * @outvars: Space-separated list of output variable names (`CLICMDDATA.outvars`)
+ * @h:       Output array (up to `MILK_OUTVARS_MAX` elements) receiving 64-bit hashes
+ *
+ * Computes a pre-execution hash of each variable listed in @outvars so
+ * `milk_server_outvars_diff` can detect which variables were created or modified
+ * by the command.
+ *
+ * Return: Number of output variable hashes recorded in @h
+ */
 int milk_server_outvars_snap(const char *outvars, uint64_t *h)
 {
     char name[80];
@@ -215,6 +226,18 @@ int milk_server_outvars_snap(const char *outvars, uint64_t *h)
     return n;
 }
 
+/**
+ * milk_server_outvars_diff - Queue declared output variables whose values changed during a command
+ * @outvars: Space-separated list of output variable names (`CLICMDDATA.outvars`)
+ * @h:       Pre-execution hash array populated by `milk_server_outvars_snap`
+ * @n:       Number of entries in @h
+ *
+ * Compares each variable's current hash against @h and appends modified variable
+ * names to `g_outq` (deduplicated across multi-command batches) for transmission
+ * back to the client shell.
+ *
+ * Return: void
+ */
 void milk_server_outvars_diff(const char *outvars, const uint64_t *h, int n)
 {
     char name[80];
@@ -249,6 +272,16 @@ static void send_setvar(int client_fd, const char *vname, const char *val)
     free(pkt);
 }
 
+/**
+ * milk_server_outvars_send - Transmit queued output variable updates to the client and reset queue
+ * @client_fd: Connected client socket file descriptor
+ *
+ * Formats each variable in `g_outq`, updates `g_dcvar_cached_str` to preserve
+ * round-trip precision, sends a `MILK_MSG_SETVAR` frame to @client_fd, and clears
+ * `g_noutq`.
+ *
+ * Return: void
+ */
 void milk_server_outvars_send(int client_fd)
 {
     for (int j = 0; j < g_noutq && client_fd >= 0; j++)

@@ -35,7 +35,16 @@ typedef struct
     char        info[256];
 } entry_t;
 
-/* elf_defines() - 1 if the ELF64 shared object @path defines the dynamic symbol @sym */
+/**
+ * elf_defines - Check whether an ELF64 shared object exports a dynamic symbol
+ * @path: Path to the `.so` shared library file
+ * @sym:  Dynamic symbol name to search for (e.g. `"__milk_module_info"`)
+ *
+ * Memory-maps @path read-only and inspects its `SHT_DYNSYM` section headers without
+ * calling `dlopen()`, avoiding execution of library constructors for non-module `.so` files.
+ *
+ * Return: 1 if @path defines @sym in its dynamic symbol table, 0 otherwise
+ */
 static int elf_defines(const char *path, const char *sym)
 {
     struct stat st;
@@ -95,8 +104,16 @@ static int elf_defines(const char *path, const char *sym)
     return found;
 }
 
-/* loads_cleanly() - 1 if module @load loads and registers in a child: a broken library (an undefined
- * symbol hit by lazy binding) ends the process, so it must not be the catalog's */
+/**
+ * loads_cleanly - Test in a child process whether a module loads and registers cleanly
+ * @load: Module load name to probe
+ *
+ * Forks a child process to call `load_module_shared(load)` so that a broken shared
+ * library (e.g. an unresolved symbol triggered during registration) does not abort
+ * the parent `milk-cli --catalog` process.
+ *
+ * Return: 1 if the child exited with status 0, 0 otherwise
+ */
 static int loads_cleanly(const char *load)
 {
     int   st;
@@ -115,11 +132,29 @@ static int loads_cleanly(const char *load)
     return pid > 0 && waitpid(pid, &st, 0) == pid && WIFEXITED(st) && WEXITSTATUS(st) == 0;
 }
 
+/**
+ * cmp_str - Compare two `char *` pointers lexicographically for `qsort`
+ * @a: Pointer to first `char *` element
+ * @b: Pointer to second `char *` element
+ *
+ * Used to sort shared library filenames deterministically before loading modules.
+ *
+ * Return: Negative, zero, or positive integer as `*a` is less than, equal to, or
+ *         greater than `*b`
+ */
 static int cmp_str(const void *a, const void *b)
 {
     return strcmp(*(char *const *) a, *(char *const *) b);
 }
 
+/**
+ * milk_module_loaded - Check whether a module with the given load name is already loaded
+ * @loadname: Module load name (e.g. `"milkfft"` or `"milkCOREMODmemory"`)
+ *
+ * Scans `data.module[]` for an entry whose `loadname` matches @loadname.
+ *
+ * Return: 1 if the module is already loaded, 0 otherwise
+ */
 int milk_module_loaded(const char *loadname)
 {
     for (long m = 0; m < data.NBmodule; m++)
@@ -132,8 +167,16 @@ int milk_module_loaded(const char *loadname)
     return 0;
 }
 
-/* load_installed_modules() - load every module library of @libdir not loaded yet (no others: their
- * constructors would run) */
+/**
+ * load_installed_modules - Discover and load all milk module libraries in @libdir
+ * @libdir: Directory containing installed `lib*.so` shared libraries
+ *
+ * Scans @libdir for `lib*.so` files that export `__milk_module_info`, verifies each
+ * one in a child process via `loads_cleanly()`, and loads healthy modules into the
+ * current process so their commands are registered in `data.cmd[]`.
+ *
+ * Return: void
+ */
 static void load_installed_modules(const char *libdir)
 {
     DIR           *d = opendir(libdir);
@@ -191,6 +234,16 @@ static void load_installed_modules(const char *libdir)
     free(names);
 }
 
+/**
+ * cmp_entry - Compare two catalog entries by module load name, then by command key
+ * @a: Pointer to first `entry_t` element
+ * @b: Pointer to second `entry_t` element
+ *
+ * Groups entries belonging to the same module together so `write_tsv()` can emit
+ * one `.tsv` file per module in a single pass.
+ *
+ * Return: Negative, zero, or positive ordering result
+ */
 static int cmp_entry(const void *a, const void *b)
 {
     const entry_t *x = a;
@@ -200,6 +253,15 @@ static int cmp_entry(const void *a, const void *b)
     return (c != 0) ? c : strcmp(x->key, y->key);
 }
 
+/**
+ * mkdir_p - Recursively create a directory path and all missing parent directories
+ * @path: Mutable directory path string
+ *
+ * Walks @path component by component, temporarily NUL-terminating each slash to
+ * create intermediate directories with mode `0755`.
+ *
+ * Return: 0 on success (or if the directory already exists), -1 on error
+ */
 static int mkdir_p(char *path)
 {
     for (char *p = path + 1; *p != '\0'; p++)
@@ -218,7 +280,15 @@ static int mkdir_p(char *path)
     return (mkdir(path, 0755) != 0 && errno != EEXIST) ? -1 : 0;
 }
 
-/* clear_dir() - remove the entries of @dir ending in @suffix ("" for all) */
+/**
+ * clear_dir - Unlink all entries in @dir whose filenames end with @suffix
+ * @dir:    Directory path to clean
+ * @suffix: Required filename suffix to remove (or `""` to remove all files)
+ *
+ * Removes stale generated catalog files or symlinks before writing fresh ones.
+ *
+ * Return: void
+ */
 static void clear_dir(const char *dir, const char *suffix)
 {
     DIR           *d = opendir(dir);
@@ -244,6 +314,17 @@ static void clear_dir(const char *dir, const char *suffix)
     }
 }
 
+/**
+ * write_tsv - Write per-module `.tsv` catalog files into `catalog.d`
+ * @dir: Path to `$MILK_INSTALLDIR/share/milk/catalog.d`
+ * @e:   Array of catalog entries sorted by `cmp_entry` (grouped by `load`)
+ * @n:   Number of entries in @e
+ *
+ * Writes `<load>.tsv` files containing `<key>\t<load>\t<info>` lines for each
+ * module represented in @e.
+ *
+ * Return: 0 on success, -1 on file I/O error
+ */
 static int write_tsv(const char *dir, const entry_t *e, size_t n)
 {
     FILE *fp = NULL;
@@ -269,11 +350,32 @@ static int write_tsv(const char *dir, const entry_t *e, size_t n)
     return (fp != NULL && fclose(fp) != 0) ? -1 : 0;
 }
 
+/**
+ * cmp_entry_key - Compare two catalog entries by command key for `qsort`
+ * @a: Pointer to first `entry_t` element
+ * @b: Pointer to second `entry_t` element
+ *
+ * Orders `entry_t` records alphabetically by `key` before generating `catalog.bash`.
+ *
+ * Return: Negative, zero, or positive integer as `a->key` is less than, equal to,
+ *         or greater than `b->key`
+ */
 static int cmp_entry_key(const void *a, const void *b)
 {
     return strcmp(((const entry_t *) a)->key, ((const entry_t *) b)->key);
 }
 
+/**
+ * write_bash - Atomically write `share/milk/catalog.bash` with shell wrapper functions
+ * @path: Destination path for `catalog.bash`
+ * @e:    Array of catalog entries (sorted in place by `cmp_entry_key`)
+ * @n:    Number of entries in @e
+ *
+ * Generates `__MILK_CATALOG`, `__MILK_SHORT`, and a `function <mod>.<cmd>` wrapper
+ * for every catalogued command via a temporary file and atomic `rename()`.
+ *
+ * Return: 0 on success, -1 on I/O error
+ */
 static int write_bash(const char *path, entry_t *e, size_t n)
 {
     char  tmp[CATALOG_PATHMAX];
@@ -332,7 +434,18 @@ static int write_bash(const char *path, entry_t *e, size_t n)
     return 0;
 }
 
-/* write_farm() - links to milk-call for external tools: callable keywords (@name) and commands */
+/**
+ * write_farm - Populate `libexec/milk/bin` with `milk-call` symlinks for commands and keywords
+ * @dir: Mutable path to `<prefix>/libexec/milk/bin`
+ * @e:   Array of catalogued module commands
+ * @n:   Number of entries in @e
+ *
+ * Creates relative symlinks pointing to `../../../bin/milk-call` for every callable
+ * `@keyword` and `<module>.<cmd>` so external tools (`xargs`, `find`, `parallel`) can
+ * invoke them directly from `$PATH`.
+ *
+ * Return: 0 on success, non-zero if directory creation or any `symlink()` call failed
+ */
 static int write_farm(char *dir, const entry_t *e, size_t n)
 {
     const char *target = "../../../bin/milk-call";
@@ -360,6 +473,16 @@ static int write_farm(char *dir, const entry_t *e, size_t n)
     return rc;
 }
 
+/**
+ * milk_catalog_build - Build the install-time command catalog under @prefix
+ * @prefix: Installation root directory (e.g. `$MILK_INSTALLDIR`)
+ *
+ * Loads all healthy module shared libraries in `<prefix>/lib`, collects their
+ * registered `<module>.<cmd>` commands, and writes `<prefix>/share/milk/catalog.d/*.tsv`,
+ * `<prefix>/share/milk/catalog.bash`, and the `<prefix>/libexec/milk/bin` symlink farm.
+ *
+ * Return: 0 on success, -1 if any catalog artifact could not be written
+ */
 int milk_catalog_build(const char *prefix)
 {
     char     p[CATALOG_PATHMAX];
@@ -428,6 +551,15 @@ int milk_catalog_build(const char *prefix)
     return (rc != 0) ? -1 : 0;
 }
 
+/**
+ * milk_catalog_autoload - Quietly load the module owning @key if it is in the catalog
+ * @key: Full `<module>.<cmd>` command name to resolve
+ *
+ * Looks up @key in the install-time catalog and, if its owning module is not yet
+ * loaded in this session, calls `load_module_shared()` with `dcquiet = 1`.
+ *
+ * Return: 1 if @key is registered in `data.cmd[]` after autoloading, 0 otherwise
+ */
 int milk_catalog_autoload(const char *key)
 {
     const char *mod = milk_catalog_module(key);

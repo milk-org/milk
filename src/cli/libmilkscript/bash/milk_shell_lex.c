@@ -74,6 +74,18 @@ typedef struct
     int         trailing_op; /* top level ends with | && || */
 } lex_t;
 
+/**
+ * mark - Record lexical context and substitution depth for a source byte
+ * @L:     Active lexer state
+ * @i:     Byte offset in the source buffer
+ * @ctx:   Lexical context code (`MSL_*`)
+ * @depth: Command-substitution nesting depth (clamped to 255)
+ *
+ * Populates the per-byte `ctx` and `depth` arrays of `L->m` when @i is within
+ * bounds so callers can query quote/comment/expansion state at any offset.
+ *
+ * Return: void
+ */
 static void mark(lex_t *L, size_t i, int ctx, int depth)
 {
     if (i < L->len)
@@ -83,6 +95,20 @@ static void mark(lex_t *L, size_t i, int ctx, int depth)
     }
 }
 
+/**
+ * push - Push a new lexical frame onto the scanner stack
+ * @L:      Active lexer state
+ * @type:   Frame type (`F_CODE`, `F_SQ`, `F_DQ`, `F_ANSI`, `F_PARAM`, `F_ARITH`)
+ * @closer: Closing delimiter kind (`C_*` or `A_*`)
+ * @depth:  Command-substitution depth for bytes inside this frame
+ * @start:  Byte index where the frame body begins
+ *
+ * Initializes a zeroed frame with `cmdpos = 1` on top of `L->f` (or reuses the
+ * top frame if `MSL_MAX_FRAMES` is reached) to track nested quotes and
+ * expansions in a single forward pass.
+ *
+ * Return: Pointer to the newly pushed (or top) frame
+ */
 static frame_t *push(lex_t *L, int type, int closer, int depth, size_t start)
 {
     if (L->nf >= MSL_MAX_FRAMES)
@@ -99,6 +125,15 @@ static frame_t *push(lex_t *L, int type, int closer, int depth, size_t start)
     return f;
 }
 
+/**
+ * pop - Pop the innermost lexical frame from the scanner stack
+ * @L: Active lexer state
+ *
+ * Decrements `L->nf` while preserving the bottom top-level `F_CODE` frame
+ * (`L->nf > 1`).
+ *
+ * Return: void
+ */
 static void pop(lex_t *L)
 {
     if (L->nf > 1)
@@ -107,22 +142,59 @@ static void pop(lex_t *L)
     }
 }
 
+/**
+ * is_meta - Check whether a character is a bash unquoted word delimiter
+ * @c: Character to test
+ *
+ * Identifies whitespace and shell metacharacters (`;`, `&`, `|`, `(`, `)`,
+ * `<`, `>`) that terminate unquoted words and heredoc delimiters.
+ *
+ * Return: 1 if @c is a shell metacharacter or whitespace, 0 otherwise
+ */
 static int is_meta(char c)
 {
     return c == ' ' || c == '\t' || c == '\n' || c == ';' || c == '&' || c == '|' || c == '(' ||
            c == ')' || c == '<' || c == '>';
 }
 
+/**
+ * kw_top - Return the innermost open compound keyword in a code frame
+ * @f: Code frame to inspect
+ *
+ * Reads the top of the per-frame keyword stack (`'i'`, `'c'`, `'l'`, `'{'`)
+ * used to detect unfinished compound commands and `case` pattern lists.
+ *
+ * Return: Top keyword tag character, or 0 if no compound keyword is open
+ */
 static int kw_top(const frame_t *f)
 {
     return (f->nkw > 0) ? f->kw[f->nkw - 1] : 0;
 }
 
+/**
+ * case_open - Check whether the innermost compound construct is a `case` block
+ * @f: Code frame to inspect
+ *
+ * Distinguishes `)` closing a `case` pattern arm from `)` closing a subshell
+ * or command substitution.
+ *
+ * Return: 1 if a `case` block is currently innermost in @f, 0 otherwise
+ */
 static int case_open(const frame_t *f)
 {
     return kw_top(f) == 'c';
 }
 
+/**
+ * kw_push - Push an open compound-command tag onto a code frame's keyword stack
+ * @f: Code frame to update
+ * @k: Keyword tag (`'i'` for if, `'c'` for case, `'l'` for loops, `'{'` for brace group)
+ *
+ * Records an opened bash compound construct so `msl_scan()` knows the input is
+ * incomplete until the matching closing keyword is seen.
+ *
+ * Return: void
+ */
 static void kw_push(frame_t *f, char k)
 {
     if (f->nkw < MSL_MAX_KW)
@@ -131,6 +203,16 @@ static void kw_push(frame_t *f, char k)
     }
 }
 
+/**
+ * kw_pop - Pop a matching compound-command tag from a code frame's keyword stack
+ * @f: Code frame to update
+ * @k: Expected keyword tag matching the closing keyword (`fi`, `esac`, `done`, `}`)
+ *
+ * Pops the top entry of `f->kw` when it matches @k, closing the corresponding
+ * compound construct.
+ *
+ * Return: void
+ */
 static void kw_pop(frame_t *f, char k)
 {
     if (kw_top(f) == k)
@@ -393,6 +475,19 @@ static size_t code_word(lex_t *L, frame_t *f, size_t i)
     return (n > 0) ? n : 1;
 }
 
+/**
+ * msl_scan - Scan a bash command or script buffer and classify every byte
+ * @src: Input shell source buffer
+ * @len: Number of bytes to scan in @src
+ * @m:   Output lexical map populated with per-byte context, depth, and completion flags
+ *
+ * Performs a single forward pass with an explicit frame stack (`F_CODE`, quotes,
+ * parameter and arithmetic expansions, and queued here-documents) to annotate
+ * each byte's context and command-substitution depth, and sets `m->incomplete`
+ * or `m->unterminated` when constructs remain open at the end of @src.
+ *
+ * Return: 0 on success, -1 on memory allocation failure
+ */
 int msl_scan(const char *src, size_t len, msl_map_t *m)
 {
     memset(m, 0, sizeof(*m));
@@ -777,6 +872,14 @@ int msl_scan(const char *src, size_t len, msl_map_t *m)
     return 0;
 }
 
+/**
+ * msl_free - Release the context and depth arrays allocated by `msl_scan()`
+ * @m: Lexical map structure whose heap buffers should be freed
+ *
+ * Frees `m->ctx` and `m->depth` and resets the map fields to zero.
+ *
+ * Return: void
+ */
 void msl_free(msl_map_t *m)
 {
     free(m->ctx);
@@ -786,6 +889,16 @@ void msl_free(msl_map_t *m)
     m->len   = 0;
 }
 
+/**
+ * milk_shell_incomplete - Check whether a bash input buffer needs a continuation line
+ * @src: Null-terminated shell command or multi-line buffer to inspect
+ *
+ * Runs `msl_scan()` on @src and returns whether any quote, expansion, subshell,
+ * compound command (`if`/`case`/`for`/`while`/`{`), heredoc, or trailing pipe/logical
+ * operator remains unfinished.
+ *
+ * Return: 1 if @src is syntactically incomplete and requires more input, 0 otherwise
+ */
 int milk_shell_incomplete(const char *src)
 {
     if (src == NULL || src[0] == '\0')

@@ -43,12 +43,31 @@ static volatile sig_atomic_t g_client_sigwinch = 0;
 
 static uint32_t g_seen_gen = 0; /* registry generation of the server's last CALL reply */
 
+/**
+ * client_sigint_handler - Async-signal-safe SIGINT handler for active client calls
+ * @sig: Signal number (`SIGINT`)
+ *
+ * Sets `g_client_sigint` so the response poll loop in `milk_client_await_response`
+ * can forward `MILK_MSG_CANCEL` to the server instead of terminating the client
+ * process immediately.
+ *
+ * Return: void
+ */
 static void client_sigint_handler(int sig)
 {
     (void) sig;
     g_client_sigint = 1;
 }
 
+/**
+ * client_sigwinch_handler - Async-signal-safe SIGWINCH handler for active client calls
+ * @sig: Signal number (`SIGWINCH`)
+ *
+ * Sets `g_client_sigwinch` so the response loop notifies the server of terminal
+ * window size changes via `MILK_MSG_WINCH`.
+ *
+ * Return: void
+ */
 static void client_sigwinch_handler(int sig)
 {
     (void) sig;
@@ -168,6 +187,19 @@ int milk_client_connect_or_start(const milk_client_hooks_t *hooks,
     return -1;
 }
 
+/**
+ * try_add_packed_var - Look up an identifier in the shell and append it to a packed variable set
+ * @pv:    Packed variable accumulator structure
+ * @hooks: Optional shell callback hooks for reading unexported variables
+ * @ident: Candidate variable identifier extracted from an expression
+ *
+ * Deduplicates @ident against entries already present in @pv and, if defined in
+ * the calling shell with a value shorter than 128 bytes, records its name and value
+ * so the server can evaluate `@calc` / `@test` expressions referencing local shell
+ * variables.
+ *
+ * Return: void
+ */
 static void try_add_packed_var(milk_packed_vars_t        *pv,
                                const milk_client_hooks_t *hooks,
                                const char                *ident)

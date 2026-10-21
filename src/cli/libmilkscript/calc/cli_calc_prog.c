@@ -41,11 +41,32 @@ struct cli_calc_prog
     int               nvars;
 };
 
+/**
+ * cli_calc_prog_attach - Bind the CLI core image and variable tables to `milk_data`
+ *
+ * Points `data.core` at `milk_data` so standalone `milk.calc` compute units
+ * share the same in-memory image and variable arrays as the calculator engine.
+ *
+ * Return: void
+ */
 void cli_calc_prog_attach(void)
 {
     data.core = milk_data; /* the same arrays: what the runtime loads, the calculator sees */
 }
 
+/**
+ * add_stmt - Trim whitespace and append a statement string to a program
+ * @p:     Calculator program being constructed
+ * @s:     Start of statement substring
+ * @len:   Length of statement substring in bytes
+ * @err:   Buffer for error message if `PROG_MAXSTMT` is exceeded
+ * @errsz: Size of @err in bytes
+ *
+ * Strips leading and trailing whitespace, ignores empty statements, and
+ * duplicates non-empty statements into `p->st` up to `PROG_MAXSTMT`.
+ *
+ * Return: 0 on success (including empty statements), -1 on limit or allocation failure
+ */
 static int add_stmt(cli_calc_prog *p, const char *s, size_t len, char *err, size_t errsz)
 {
     while (len > 0 && isspace((unsigned char) *s))
@@ -140,6 +161,17 @@ static int target(const char *s, char *name, size_t sz)
     return op;
 }
 
+/**
+ * eval_text - Evaluate a single calculator statement from source text
+ * @stmt:  Null-terminated calculator statement string
+ * @err:   Buffer to receive a formatted diagnostic message on error
+ * @errsz: Size of @err in bytes
+ *
+ * Runs `cli_calc_eval_str()` on @stmt and formats `cli_calc_lasterr` with the
+ * offending statement into @err when evaluation fails.
+ *
+ * Return: 0 on success, -1 on parse or evaluation error
+ */
 static int eval_text(const char *stmt, char *err, size_t errsz)
 {
     char out[256];
@@ -169,6 +201,16 @@ static int share(const char *name, char *err, size_t errsz)
     return 0;
 }
 
+/**
+ * load_vars - Copy bound C parameter values into calculator variables before execution
+ * @p: Compiled calculator program with variable bindings
+ *
+ * Synchronizes each bound FPS parameter (`INT64`, `UINT64`, `ONOFF`, `FLOAT64`,
+ * `STREAMNAME`, or string) into its corresponding `data.core.variable` slot,
+ * mapping shared-memory streams on demand when `FPTYPE_STREAMNAME` is bound.
+ *
+ * Return: void
+ */
 static void load_vars(cli_calc_prog *p)
 {
     for (int i = 0; i < p->nvars; i++)
@@ -209,6 +251,16 @@ static void load_vars(cli_calc_prog *p)
     }
 }
 
+/**
+ * store_vars - Write assigned calculator variable values back to bound C parameters
+ * @p: Compiled calculator program with variable bindings
+ *
+ * Updates only the bound C pointers whose calculator variables were assigned
+ * by statements in @p (`p->assigned[i] != 0`), converting numeric and string
+ * types appropriately.
+ *
+ * Return: void
+ */
 static void store_vars(cli_calc_prog *p)
 {
     for (int i = 0; i < p->nvars; i++)
@@ -269,6 +321,20 @@ static int bind_vars(cli_calc_prog *p, const cli_calc_binding *vars, char *err, 
     return 0;
 }
 
+/**
+ * cli_calc_prog_new - Parse, bind, and pre-compile a multi-statement calculator program
+ * @text:  Source text containing `;`- or newline-separated calculator statements
+ * @vars:  Array of variable bindings connecting FPS parameters to calculator names
+ * @nvars: Number of entries in @vars
+ * @err:   Buffer to receive an error description on failure
+ * @errsz: Size of @err in bytes
+ *
+ * Splits @text into statements, creates bound variables, evaluates initial
+ * assignments that create new output images (promoting them to shared streams),
+ * and compiles eligible image assignments into fused one-pass programs.
+ *
+ * Return: Newly allocated `cli_calc_prog` pointer, or NULL on error
+ */
 cli_calc_prog *cli_calc_prog_new(const char             *text,
                                  const cli_calc_binding *vars,
                                  int                     nvars,
@@ -340,11 +406,33 @@ cli_calc_prog *cli_calc_prog_new(const char             *text,
     return p;
 }
 
+/**
+ * cli_calc_prog_assigns - Query whether a bound variable is assigned by the program
+ * @p: Compiled calculator program
+ * @i: 0-based index into the variable bindings array
+ *
+ * Allows callers to inspect which bound parameters act as outputs written by
+ * the program during execution.
+ *
+ * Return: 1 if binding @i is assigned by @p, 0 otherwise
+ */
 int cli_calc_prog_assigns(const cli_calc_prog *p, int i)
 {
     return (i >= 0 && i < p->nvars) ? p->assigned[i] : 0;
 }
 
+/**
+ * cli_calc_prog_run - Execute all statements of a compiled calculator program for one frame
+ * @p:     Compiled calculator program
+ * @err:   Buffer to receive an error message if a statement fails
+ * @errsz: Size of @err in bytes
+ *
+ * Loads current bound variable values, runs each statement via its pre-compiled
+ * fused program (`cli_calc_fused_run()`) or text fallback (`eval_text()`), and
+ * stores assigned scalar outputs back into their bound C variables.
+ *
+ * Return: 0 on success, -1 on runtime evaluation error
+ */
 int cli_calc_prog_run(cli_calc_prog *p, char *err, size_t errsz)
 {
     load_vars(p);
@@ -367,6 +455,21 @@ int cli_calc_prog_run(cli_calc_prog *p, char *err, size_t errsz)
     return 0;
 }
 
+/**
+ * cli_calc_prog_exec_once - Parse and execute a calculator program once without keeping it
+ * @text:         Source text of calculator statements (`begin` or `end` hook)
+ * @vars:         Array of variable bindings
+ * @nvars:        Number of entries in @vars
+ * @assigned_out: Optional array of length @nvars set to 1 for each assigned binding
+ * @err:          Buffer to receive an error message on failure
+ * @errsz:        Size of @err in bytes
+ *
+ * Evaluates a one-shot statement block (such as an initialization or cleanup
+ * script), promotes newly created images to shared memory streams, and updates
+ * bound output variables before freeing temporary program state.
+ *
+ * Return: 0 on success, -1 on error
+ */
 int cli_calc_prog_exec_once(const char             *text,
                             const cli_calc_binding *vars,
                             int                     nvars,
@@ -438,6 +541,15 @@ int cli_calc_prog_exec_once(const char             *text,
     return 0;
 }
 
+/**
+ * cli_calc_prog_free - Release all memory associated with a compiled calculator program
+ * @p: Calculator program to free (may be NULL)
+ *
+ * Frees statement strings, compiled fused programs, binding arrays, and the
+ * `cli_calc_prog` structure itself.
+ *
+ * Return: void
+ */
 void cli_calc_prog_free(cli_calc_prog *p)
 {
     if (p == NULL)

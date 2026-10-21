@@ -669,6 +669,15 @@ int milk_shm_prop_exists_stream(const char *name)
     return (access(shmpath, F_OK) == 0) ? 1 : 0;
 }
 
+/**
+ * milk_shm_prop_exists_local_stream - Check whether a process-local non-shared image exists
+ * @name: Local image name to look up in `MILK_LOCAL_IMAGES`
+ *
+ * Scans the process-local image table for an active entry matching @name that is
+ * not backed by shared memory (`md->shared == 0`).
+ *
+ * Return: 1 if a matching local image exists, 0 otherwise.
+ */
 int milk_shm_prop_exists_local_stream(const char *name)
 {
     if (MILK_LOCAL_IMAGES == NULL)
@@ -686,6 +695,18 @@ int milk_shm_prop_exists_local_stream(const char *name)
     return 0;
 }
 
+/**
+ * milk_shm_prop_get_local_stream - Read a metadata property or keyword from a local image
+ * @name:  Local image name (`@l.<name>.<prop>`)
+ * @prop:  Property key or `kw.<FITSKEY>` specifier
+ * @out:   Output buffer receiving the formatted property value
+ * @outsz: Capacity of @out in bytes
+ *
+ * Verifies that @name is a process-local (non-shared) image before delegating property
+ * extraction to milk_shm_prop_get_stream().
+ *
+ * Return: 0 on success, -1 if @name is not a local image or @prop is not found.
+ */
 int milk_shm_prop_get_local_stream(const char *name, const char *prop, char *out, size_t outsz)
 {
     if (!milk_shm_prop_exists_local_stream(name))
@@ -695,6 +716,18 @@ int milk_shm_prop_get_local_stream(const char *name, const char *prop, char *out
     return milk_shm_prop_get_stream(name, prop, out, outsz);
 }
 
+/**
+ * milk_shm_prop_set_local_stream - Write a FITS keyword on a process-local image
+ * @name:    Local image name (`@l.<name>.kw.<FITSKEY>`)
+ * @prop:    Property path (must start with `kw.`)
+ * @val:     Value string to assign
+ * @comment: Optional FITS keyword comment (may be NULL)
+ *
+ * Verifies that @name exists as a process-local (non-shared) image before delegating
+ * the keyword update to milk_shm_prop_set_stream().
+ *
+ * Return: 0 on success, -1 if @name is not a local image or the write fails.
+ */
 int milk_shm_prop_set_local_stream(const char *name,
                                    const char *prop,
                                    const char *val,

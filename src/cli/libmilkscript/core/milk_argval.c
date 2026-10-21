@@ -20,6 +20,15 @@
 #include "fps_types.h"
 #include "milk_argval.h"
 
+/**
+ * milk_argval_is_numeric - Check whether an FPS/CLI parameter type holds a numeric value
+ * @type: `FPTYPE_*` parameter type identifier
+ *
+ * Classifies integer, floating-point, PID, boolean (`FPTYPE_ONOFF`), and timespec
+ * types as numeric so callers know whether to parse numbers/expressions or copy strings.
+ *
+ * Return: 1 if @type is numeric, 0 if string-like
+ */
 int milk_argval_is_numeric(uint64_t type)
 {
     switch (type)
@@ -38,6 +47,17 @@ int milk_argval_is_numeric(uint64_t type)
     return 0;
 }
 
+/**
+ * milk_argval_set_number - Store a range-checked floating-point number into a typed argument
+ * @type: Target `FPTYPE_*` parameter type
+ * @v:    Numeric value to convert and store
+ * @ad:   Destination argument data structure
+ *
+ * Validates that @v fits within the domain of @type (requiring an exact integer and
+ * checking bounds for integral and boolean types) before writing the union field in @ad.
+ *
+ * Return: 0 on success, -1 if @v is out of range or non-integral for an integer type
+ */
 int milk_argval_set_number(uint64_t type, double v, CLICMDARGDATA *ad)
 {
     if (type == FPTYPE_FLOAT32 || type == FPTYPE_FLOAT64 || type == FPTYPE_TIMESPEC)
@@ -102,6 +122,18 @@ int milk_argval_set_number(uint64_t type, double v, CLICMDARGDATA *ad)
     return -1;
 }
 
+/**
+ * milk_argval_parse - Parse a text token into a typed CLI argument value
+ * @type: Target `FPTYPE_*` parameter type
+ * @s:    Input NUL-terminated string to parse
+ * @ad:   Destination argument data structure
+ *
+ * Parses @s according to @type: copies bounded strings for string types, accepts
+ * `on`/`off`/`true`/`false` for `FPTYPE_ONOFF`, uses 64-bit integer parsers to preserve
+ * full integer precision, and falls back to `strtod` + `milk_argval_set_number`.
+ *
+ * Return: 0 on success, -1 if @s is NULL, malformed, or out of range for @type
+ */
 int milk_argval_parse(uint64_t type, const char *s, CLICMDARGDATA *ad)
 {
     char  *end;
@@ -168,7 +200,18 @@ int milk_argval_parse(uint64_t type, const char *s, CLICMDARGDATA *ad)
     return milk_argval_set_number(type, v, ad);
 }
 
-/* the shortest of %.{6,9}g (float) or %.{15,17}g (double) that reads back exactly */
+/**
+ * format_real - Format a float or double with the shortest exact decimal representation
+ * @v:      Floating-point value to format
+ * @single: Non-zero for 32-bit float precision (`%.6g`/`%.9g`), 0 for 64-bit (`%.15g`/`%.17g`)
+ * @buf:    Destination character buffer
+ * @sz:     Capacity of @buf in bytes
+ *
+ * Formats @v at standard precision first and widens to full round-trip precision only
+ * if `strtod(buf, NULL)` does not reproduce the original binary value.
+ *
+ * Return: void
+ */
 static void format_real(double v, int single, char *buf, size_t sz)
 {
     snprintf(buf, sz, "%.*g", single ? 6 : 15, v);
@@ -179,6 +222,17 @@ static void format_real(double v, int single, char *buf, size_t sz)
     }
 }
 
+/**
+ * milk_argval_format - Format a typed CLI argument value as a canonical string
+ * @ad:  Source argument value with its `type` field set
+ * @buf: Destination buffer receiving the formatted string
+ * @sz:  Capacity of @buf in bytes
+ *
+ * Converts the current value stored in @ad into a round-trip-safe text representation
+ * suitable for help output, `--no-run` command printing, and preset files.
+ *
+ * Return: void
+ */
 void milk_argval_format(const CLICMDARGDATA *ad, char *buf, size_t sz)
 {
     switch (ad->type)
@@ -221,6 +275,17 @@ static const struct
                    { "str", FPTYPE_STRING },        { "stream", FPTYPE_STREAMNAME },
                    { "fits", FPTYPE_FITSFILENAME }, { NULL, 0 } };
 
+/**
+ * milk_argspec_parse - Parse an `@args` parameter declaration string in place
+ * @s: Writable specification string (`<name>[:<type>[=<default>][:<help>]]`)
+ * @a: Output structure populated with pointers into @s and the resolved type
+ *
+ * Splits @s on `:` and `=` delimiters, validates that the parameter name is a valid
+ * identifier, and maps the short type name (`int`, `uint`, `float`, `bool`, `str`,
+ * `stream`, `fits`) to its corresponding `FPTYPE_*` constant.
+ *
+ * Return: 0 on success, -1 if the identifier or type name is invalid
+ */
 int milk_argspec_parse(char *s, milk_argspec_t *a)
 {
     char *t = strchr(s, ':');

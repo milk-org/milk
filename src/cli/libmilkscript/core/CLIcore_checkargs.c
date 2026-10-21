@@ -108,7 +108,16 @@ static const char *CMDARGTOKEN_type_to_string(uint32_t type)
 }
 
 
-/* raw_number() - read raw-string token @i strictly as a @type number; 0, or 2 if it is not one */
+/**
+ * raw_number - Parse a raw-string CLI token strictly as a numeric value
+ * @i:    Index in `data.cmdargtoken[]`
+ * @type: Target numeric type (`FPTYPE_FLOAT64` or `FPTYPE_INT64`)
+ *
+ * Parses `data.cmdargtoken[i].val.string` using `milk_argval_parse()` and populates
+ * `val.numf` and `val.numl` when the token is a valid number of @type.
+ *
+ * Return: 0 on success, or 2 if the token is not a valid number
+ */
 static int raw_number(int i, uint64_t type)
 {
     CLICMDARGDATA v;
@@ -318,7 +327,17 @@ int CLI_checkarg_noerrmsg(int CLIargnum, uint32_t funcargtype)
 }
 
 
-/* sync_fps_to_argdata() - read FPS parameter @fp (type @ptype) into argument @ad. */
+/**
+ * sync_fps_to_argdata - Copy an FPS parameter's current value into a CLI argument slot
+ * @ptype: Parameter type (`FPTYPE_*`)
+ * @fp:    Source FPS parameter structure in shared memory
+ * @ad:    Destination CLI argument data structure
+ *
+ * Transfers the active scalar, timespec, or string value from @fp into @ad when
+ * resolving arguments against a shared FPS instance (`cmd:fpsname`).
+ *
+ * Return: void
+ */
 static void sync_fps_to_argdata(uint32_t ptype, FPS_PARAM *fp, CLICMDARGDATA *ad)
 {
     switch (ptype)
@@ -364,12 +383,30 @@ static void sync_fps_to_argdata(uint32_t ptype, FPS_PARAM *fp, CLICMDARGDATA *ad
     }
 }
 
+/**
+ * raw_arg - Retrieve the unexpanded command-line text for a positional token
+ * @call: Active per-call argument state, or NULL-backed fallback
+ * @t:    Token index in the current command invocation
+ *
+ * Returns the original raw argv string recorded before CLI expression/token parsing
+ * when available, falling back to the tokenized string buffer in `data.cmdargtoken`.
+ *
+ * Return: Pointer to the NUL-terminated raw token text
+ */
 static const char *raw_arg(const milk_call_t *call, int t)
 {
     return (call->raw != NULL && t < call->nraw) ? call->raw[t] : data.cmdargtoken[t].val.string;
 }
 
-/* is_expression() - @s has an operator or a call (the CLI parser evaluated it: `2*3`, `sqrt(2)`) */
+/**
+ * is_expression - Check whether a raw argument string contains math operators or calls
+ * @s: Raw argument string as typed by the user
+ *
+ * Detects whether @s contains arithmetic operators or parentheses (such as `2*3` or
+ * `sqrt(2)`) so `token_value()` knows to accept the pre-evaluated token value.
+ *
+ * Return: 1 if @s looks like an arithmetic expression, 0 otherwise
+ */
 static int is_expression(const char *s)
 {
     if (s[0] == '(')
@@ -386,8 +423,17 @@ static int is_expression(const char *s)
     return 0;
 }
 
-/* token_value() - store positional token @t (@raw as typed) in @ad: a literal, an evaluated
- * expression or a milk variable. 0, or -1 if it is none of them. */
+/**
+ * token_value - Resolve positional token @t into typed argument structure @ad
+ * @t:   Token index in `data.cmdargtoken[]`
+ * @raw: Raw unexpanded token text as typed on the command line
+ * @ad:  Destination CLI argument data structure
+ *
+ * Attempts to parse @raw directly, or falls back to the CLI parser's evaluated
+ * numeric result for expressions or a lookup in the `dcvar` variable table.
+ *
+ * Return: 0 on success, -1 if the token cannot be resolved to @ad->type
+ */
 static int token_value(int t, const char *raw, CLICMDARGDATA *ad)
 {
     const CMDARGTOKEN *tok = &data.cmdargtoken[t];
@@ -423,6 +469,17 @@ static int token_value(int t, const char *raw, CLICMDARGDATA *ad)
 static errno_t usage_error(milk_call_t *call, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
 
+/**
+ * usage_error - Print a formatted CLI usage diagnostic and mark the call as failed
+ * @call: Active per-call state whose `usage_error` flag will be set
+ * @fmt:  printf-style format string describing the argument error
+ *
+ * Reports an argument resolution or validation error to stderr alongside a brief
+ * command synopsis, sets `call->usage_error = 1` so callers return exit status 2,
+ * and aborts argument checking.
+ *
+ * Return: Always returns RETURN_CLICHECKARGARRAY_FAILURE
+ */
 static errno_t usage_error(milk_call_t *call, const char *fmt, ...)
 {
     const CMD *c = &data.cmd[call->cmdi];
@@ -437,7 +494,17 @@ static errno_t usage_error(milk_call_t *call, const char *fmt, ...)
     return RETURN_CLICHECKARGARRAY_FAILURE;
 }
 
-/* store_session_defaults() - `--default`: the values given become session defaults, `.` clears */
+/**
+ * store_session_defaults - Apply or display session parameter defaults for `--default`
+ * @call: Active per-call argument state
+ * @n:    Number of parameters on the command
+ *
+ * Persists any parameter values explicitly supplied in @call as session defaults
+ * (or clears overrides where `.` was passed). If no arguments were supplied with
+ * `--default`, prints the active session defaults to `stdout`.
+ *
+ * Return: void
+ */
 static void store_session_defaults(milk_call_t *call, int n)
 {
     CLICMDARGDATA *ad  = data.cmd[call->cmdi].argdata;
@@ -466,6 +533,20 @@ static void store_session_defaults(milk_call_t *call, int n)
     }
 }
 
+/**
+ * resolve_args - Resolve named, positional, preset, FPS, and default arguments for a call
+ * @call: Active per-call argument context
+ * @fa:   Array of declared command argument definitions
+ * @n:    Number of declared parameters to resolve
+ *
+ * Populates `data.cmd[call->cmdi].argdata` by layering values in precedence order:
+ * declared/session defaults, shared FPS instance state (`cmd:fpsname`), `--load`
+ * presets, named `.tag=value` overrides before `--`, and positional arguments for
+ * remaining primary inputs. Also handles `--default`, `--save`, and `--no-run`.
+ *
+ * Return: RETURN_CLICHECKARGARRAY_SUCCESS when ready to run, RETURN_CLICHECKARGARRAY_HELP
+ *         when execution should be skipped cleanly, or RETURN_CLICHECKARGARRAY_FAILURE on error
+ */
 static errno_t resolve_args(milk_call_t *call, CLICMDARGDEF fa[], int n)
 {
     CLICMDARGDATA *ad  = data.cmd[call->cmdi].argdata;

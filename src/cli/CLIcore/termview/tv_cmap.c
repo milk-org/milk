@@ -37,6 +37,17 @@ _Static_assert(TV_COUNT(tv_scale_names) == SCALE_NB, "scale name table out of sy
 _Static_assert(TV_COUNT(tv_range_names) == RANGE_NB, "range name table out of sync");
 _Static_assert(TV_COUNT(tv_range_keys) == RANGE_NB, "range key table out of sync");
 
+/**
+ * tv_lookup_name - Match an option string against a table of canonical names
+ * @names: Array of @n NUL-terminated option name strings
+ * @n:     Number of entries in @names
+ * @s:     Input string to resolve (case-insensitive exact or unique prefix)
+ *
+ * Returns immediately on an exact case-insensitive match; otherwise accepts a
+ * case-insensitive prefix only when it is unambiguous across all @n entries.
+ *
+ * Return: Matching index in [0, @n - 1], or -1 if not found or ambiguous
+ */
 int tv_lookup_name(const char *const *names, int n, const char *s)
 {
     if (s == NULL || *s == '\0')
@@ -59,6 +70,16 @@ int tv_lookup_name(const char *const *names, int n, const char *s)
     return (match >= 0) ? match : -1;
 }
 
+/**
+ * tv_cmap_color - Evaluate a colormap at normalized intensity @v
+ * @cmap: Colormap identifier
+ * @v:    Normalized scalar value (clamped to [0.0, 1.0])
+ *
+ * Computes the 8-bit per channel RGB color corresponding to @v under the
+ * piecewise linear or polynomial definition of @cmap.
+ *
+ * Return: 24-bit RGB color struct (tv_rgb_t)
+ */
 tv_rgb_t tv_cmap_color(termview_colormap_t cmap, double v)
 {
     if (v < 0.0)
@@ -377,6 +398,18 @@ tv_rgb_t tv_cmap_color(termview_colormap_t cmap, double v)
     return c;
 }
 
+/**
+ * tv_lut_build - Precompute the color lookup table for a colormap and transfer scale
+ * @lut:   Output array of TV_LUT_N + 1 RGB entries
+ * @cmap:  Selected colormap
+ * @scale: Selected non-linear or linear intensity scaling curve
+ *
+ * Populates entries 0..TV_LUT_N-1 by transforming normalized indices through
+ * @scale and sampling @cmap, and sets entry TV_LUT_N to bright magenta
+ * (255, 0, 255) for non-finite (NaN/Inf) pixels.
+ *
+ * Return: void
+ */
 void tv_lut_build(tv_rgb_t *lut, termview_colormap_t cmap, termview_scale_t scale)
 {
     for (int i = 0; i < TV_LUT_N; i++)

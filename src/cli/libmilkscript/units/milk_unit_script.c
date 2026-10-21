@@ -98,6 +98,15 @@ static pid_t sh_pid = -1;
 static int   sh_in  = -1; /* commands to the shell */
 static int   sh_st  = -1; /* a status line per tick, from SCRIPT_STATUS_FD */
 
+/**
+ * is_fixed - Check whether a parameter name collides with reserved script unit names
+ * @name: Candidate parameter name (without leading dot)
+ *
+ * Rejects the built-in frame index variable `_n` and the unit's fixed FPS parameters
+ * (`.cmd`, `.trigger`, `.params`, `.file`, `.error`).
+ *
+ * Return: 1 if @name is reserved, 0 otherwise.
+ */
 static int is_fixed(const char *name)
 {
     if (strcmp(name, "_n") == 0)
@@ -114,6 +123,18 @@ static int is_fixed(const char *name)
     return 0;
 }
 
+/**
+ * bind - Register a user-declared parameter in the script unit's FPS binding table
+ * @name:   Parameter name (without leading dot)
+ * @type:   FPS parameter type (`FPTYPE_*`)
+ * @fpflag: FPS parameter flags (`FPFLAG_*`)
+ * @descr:  Optional human-readable description string (may be NULL)
+ *
+ * Appends `.name` to `bindings[]` backed by `pval[]` after verifying that the
+ * parameter limit (`SCRIPT_MAXPAR`) has not been reached and @name is not reserved.
+ *
+ * Return: 0 on success, -1 if @name is reserved or the parameter table is full.
+ */
 static int bind(const char *name, uint64_t type, uint64_t fpflag, const char *descr)
 {
     int k = nbind - SCRIPT_NFIXED;
@@ -131,6 +152,15 @@ static int bind(const char *name, uint64_t type, uint64_t fpflag, const char *de
     return 0;
 }
 
+/**
+ * declare - Parse whitespace-separated parameter specifications and bind them
+ * @text: Space-separated list of `"name:type[=default][:help]"` declarations
+ *
+ * Parses each parameter specification in @text, registers it via bind(), and
+ * initializes its default value in `pval[]`.
+ *
+ * Return: 0 on success, -1 on syntax error or binding failure.
+ */
 static int declare(const char *text)
 {
     char *buf = strdup(text);
@@ -181,6 +211,15 @@ static int declare(const char *text)
     return rc;
 }
 
+/**
+ * find_params - Discover and bind user-declared parameters from an existing FPS
+ * @name: FPS instance name in shared memory
+ *
+ * Connects to @name and binds all active single-level non-fixed parameters so a
+ * subsequent `run` or `set` invocation maps them into `bindings[]`.
+ *
+ * Return: 0 on success (or if @name is not yet created), -1 on binding failure.
+ */
 static int find_params(const char *name)
 {
     FPS fps;
@@ -205,6 +244,18 @@ static int find_params(const char *name)
     return rc;
 }
 
+/**
+ * source_text - Load script commands from @fpath if non-empty, else duplicate @inline_str
+ * @inline_str: Inline command snippet from `.cmd`
+ * @fpath:      Path to script file from `.file` (empty string if unused)
+ * @err:        Output buffer receiving an error message on failure
+ * @errsz:      Capacity of @err in bytes
+ *
+ * Reads up to `SCRIPT_MAXTEXT - 1` bytes from @fpath when specified, or duplicates
+ * @inline_str when @fpath is empty.
+ *
+ * Return: Newly allocated command string (caller frees), or NULL on error.
+ */
 static char *source_text(const char *inline_str, const char *fpath, char *err, size_t errsz)
 {
     if (fpath[0] == '\0')
@@ -248,6 +299,18 @@ static int put_quoted(const char *s)
     return fclose(fp);
 }
 
+/**
+ * sync_shell_params - Push modified FPS user parameters into the persistent bash coprocess
+ * @npar:  Number of user-declared parameters
+ * @pcnt:  Per-parameter array tracking the last synced `value_cnt`
+ * @force: Non-zero to emit all parameters regardless of `value_cnt` (used on frame 0)
+ *
+ * Writes shell variable assignments (`name=value`) to `sh_in` for any declared
+ * parameter whose FPS `value_cnt` changed since the previous tick (or all parameters
+ * when @force is non-zero).
+ *
+ * Return: void
+ */
 static void sync_shell_params(int npar, uint64_t *pcnt, int force)
 {
     for (int k = 0; k < npar; k++)
@@ -337,6 +400,15 @@ static int read_line(char *buf, size_t sz, double timeout, PROCESSINFO *pi)
     }
 }
 
+/**
+ * shell_stop - Terminate and reap the persistent bash coprocess
+ *
+ * Closes the command and status pipes to signal EOF to the child bash process,
+ * waits up to 1 second for graceful exit, and sends `SIGKILL` to its process group
+ * if it has not exited.
+ *
+ * Return: void
+ */
 static void shell_stop(void)
 {
     if (sh_pid <= 0)
@@ -416,6 +488,16 @@ static int shell_start(char *err, size_t errsz)
     return 0;
 }
 
+/**
+ * report - Record a runtime error message to stderr, the FPS `.error` parameter, and processinfo
+ * @pi:  Active `PROCESSINFO` handle (may be NULL)
+ * @msg: Error message string
+ *
+ * Prints @msg to `stderr`, stores it in the `.error` output parameter of the unit's
+ * FPS, and writes it to the processinfo status message when @pi is active.
+ *
+ * Return: void
+ */
 static void report(PROCESSINFO *pi, const char *msg)
 {
     fprintf(stderr, "milk.script %s: %s\n", dcfpsptr->md->name, msg);
@@ -427,6 +509,16 @@ static void report(PROCESSINFO *pi, const char *msg)
     }
 }
 
+/**
+ * compute - Main processinfo frame loop driving the persistent bash coprocess
+ *
+ * Launches a background bash shell preloaded with `milk.bash`, synchronizes modified
+ * FPS parameters into shell variables before each tick, updates `__MILK_UNIT_CMD` when
+ * `.cmd` or `.file` changes, and dispatches `__milk_unit_tick` on every frame or delay
+ * tick until stopped or an unhandled non-zero status occurs.
+ *
+ * Return: `RETURN_SUCCESS` on clean loop exit, `RETURN_FAILURE` if a command tick failed.
+ */
 static errno_t compute(void)
 {
     char        err[512]            = "";
@@ -527,6 +619,17 @@ static int create(const milk_unit_args *a)
     return milk_unit_create(a, &app, bindings, nbind);
 }
 
+/**
+ * main - Entry point for the milk-fpsexec-milk-script standalone compute unit
+ * @argc: Command-line argument count
+ * @argv: Command-line argument vector
+ *
+ * Parses unit arguments, resolves the `.file` path to a canonical path when given,
+ * creates or attaches dynamic FPS parameters, and delegates execution to
+ * `fpsexec_main_function()`.
+ *
+ * Return: 0 on success, non-zero on error.
+ */
 int main(int argc, char **argv)
 {
     milk_unit_args a;

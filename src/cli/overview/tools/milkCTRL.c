@@ -131,6 +131,17 @@ static void milkctrl_inspect_hint(const OV_LAYOUT *lay, const OV_MODEL *m)
     }
 }
 
+/**
+ * main - Entry point for the milk-CTRL standalone TUI dashboard
+ * @argc: Command-line argument count
+ * @argv: Command-line argument vector
+ *
+ * Parses command-line options, initializes terminal raw mode, theme colors, signal
+ * handlers, and the background shared-memory scanner thread, then drives the event
+ * and rendering loop until termination.
+ *
+ * Return: 0 on clean exit, non-zero on initialization or argument error.
+ */
 int main(int argc, char *argv[])
 {
     OV_OPTS opts;

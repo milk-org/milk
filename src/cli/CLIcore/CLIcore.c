@@ -175,6 +175,16 @@ errno_t cli_fifo(void);
 
 static int exitCLI_done = 0;
 
+/**
+ * exitCLI - Perform graceful shutdown of the interactive CLI session
+ *
+ * Cleans up the terminal scroll region, closes and unlinks any active command
+ * FIFO, removes temporary image list files, persists the command history to
+ * disk, and clears the main REPL loop flag so the process can exit cleanly.
+ * Guarded by an internal flag to ensure idempotency if called multiple times.
+ *
+ * Return: RETURN_SUCCESS
+ */
 errno_t exitCLI()
 {
     if (exitCLI_done)
@@ -209,6 +219,15 @@ errno_t exitCLI()
     return RETURN_SUCCESS;
 }
 
+/**
+ * function_parameter_structure_load__cli - CLI wrapper to load an FPS from shared memory
+ *
+ * Validates that the first CLI command argument is a string naming a Function
+ * Parameter Structure (FPS) and loads it into the current session via
+ * function_parameter_structure_load().
+ *
+ * Return: CLICMD_SUCCESS on valid argument, CLICMD_INVALID_ARG otherwise
+ */
 errno_t function_parameter_structure_load__cli()
 {
     DEBUG_TRACEPOINT("calling CLI_checkarg");
@@ -300,6 +319,17 @@ void cli_fifo_close(void)
     data.fifoname[0] = '\0';
 }
 
+/**
+ * CLI_startup - Initialize the interactive CLI overlay and runtime defaults
+ *
+ * Records the CLI process ID, prints OpenMP/OpenACC runtime configuration when
+ * not in quiet mode, initializes the core runtime subsystem via
+ * CLI_runtime_init(), and sets default interactive UI preferences
+ * (autocompletion, history suggestions, argument hints, fuzzy matching, syntax
+ * diagnostics, auto-indentation, and delimiter matching).
+ *
+ * Return: RETURN_SUCCESS
+ */
 errno_t CLI_startup()
 {
     DEBUG_TRACE_FSTART();
@@ -368,8 +398,15 @@ errno_t CLI_startup()
 // RegisterCLIcmd duplicate removed
 
 
-/* Handle SIGWINCH and window size changes when readline is not active and
-   reading a character. */
+/**
+ * sighandler - Record terminal window size change signals (SIGWINCH)
+ * @sig: Signal number received (unused)
+ *
+ * Sets an atomic flag when SIGWINCH arrives while readline is idle so the main
+ * select() loop can query the updated terminal dimensions and resize readline.
+ *
+ * Return: void
+ */
 static void sighandler(int sig)
 {
     (void) sig;
@@ -1018,8 +1055,14 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
  * The function prototype is forward-declared above.
  */
 
-/* Body moved to CLIcore_cmd_registry.c */
-
+/**
+ * runCLI_free - Release dynamically allocated CLI runtime tables and RNG state
+ *
+ * Frees the image table, variable table, FPS array, and random number generator
+ * state when dynamic data allocation is used.
+ *
+ * Return: void
+ */
 static void __attribute__((unused)) runCLI_free()
 {
 #ifndef DATA_STATIC_ALLOC
@@ -1046,6 +1089,14 @@ static void __attribute__((unused)) runCLI_free()
     milk_rng_free();
 }
 
+/**
+ * user_function - Placeholder user callback that prints a two-dash progress marker
+ *
+ * Legacy hook retained for compatibility with external callers expecting a
+ * default user_function() symbol.
+ *
+ * Return: Always 0
+ */
 int user_function()
 {
     printf("-");
@@ -1065,6 +1116,19 @@ void fnExit1(void)
 }
 
 
+/**
+ * command_line_process_options - Parse CLI command-line flags and configure session state
+ * @argc: Number of command-line arguments passed to the process
+ * @argv: Array of command-line argument strings
+ *
+ * Processes short and long getopt options (`-h`, `-v`, `-i`, `-o`, `-e`, `-q`,
+ * `-Z`, `-A`, `-d`, `-n`, `-p`, `-f`, `-F`, `-c`, `-s`, and long-only server,
+ * catalog, and script-tool flags). Sets the process name (defaulting to
+ * `<timestamp>p<pid>` when `-n` is omitted) and updates the OS thread title via
+ * prctl(PR_SET_NAME).
+ *
+ * Return: RETURN_SUCCESS on valid options, RETURN_FAILURE on unrecognized option
+ */
 static int command_line_process_options(int argc, char **argv)
 {
     int  option_index = 0;

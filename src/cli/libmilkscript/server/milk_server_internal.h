@@ -77,6 +77,10 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
 
 /* --- milk_server_dispatch.c --- */
 
+int milk_server_resolve_cmd_index(const char *name, int *out_ambig);
+
+int milk_server_set_argv(int argc, char **argv);
+
 int milk_server_dispatch_argv(int argc, char **argv);
 
 /** milk_server_module() - `@module`; milk_server_config() - `@config` (its server settings). */
@@ -88,6 +92,19 @@ int milk_server_history(int argc, char **argv, int *handled);
 
 int milk_server_exec_set(const uint8_t *payload, uint32_t len, char *log_cmd, size_t log_cmd_sz);
 
+int milk_server_exec_call(int            client_fd,
+                          int            listen_fd,
+                          const uint8_t *payload,
+                          uint32_t       len,
+                          char          *log_cmd,
+                          size_t         log_cmd_sz);
+
+/* --- milk_server_eval.c --- */
+
+int milk_server_assert(int argc, char **argv);
+
+int milk_server_batch_or_pipe(int argc, char **argv);
+
 int milk_server_exec_calc_or_test(int            client_fd,
                                   int            is_test,
                                   uint8_t        flags,
@@ -95,13 +112,6 @@ int milk_server_exec_calc_or_test(int            client_fd,
                                   uint32_t       len,
                                   char          *log_cmd,
                                   size_t         log_cmd_sz);
-
-int milk_server_exec_call(int            client_fd,
-                          int            listen_fd,
-                          const uint8_t *payload,
-                          uint32_t       len,
-                          char          *log_cmd,
-                          size_t         log_cmd_sz);
 
 /* --- milk_server.c --- */
 

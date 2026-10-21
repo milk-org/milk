@@ -25,11 +25,30 @@
 
 #define CPLX_HINT "use real(), imag() or abs() first"
 
+/**
+ * cli_calc_is_complex_dt - Check whether an ImageStreamIO datatype is complex
+ * @dt: ImageStreamIO `_DATATYPE_*` code
+ *
+ * Identifies single- and double-precision complex image datatypes so the
+ * calculator can dispatch operations to complex-aware routines.
+ *
+ * Return: 1 if @dt is `_DATATYPE_COMPLEX_FLOAT` or `_DATATYPE_COMPLEX_DOUBLE`, 0 otherwise
+ */
 int cli_calc_is_complex_dt(uint8_t dt)
 {
     return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
 }
 
+/**
+ * cli_calc_complex_image - Resolve a calculator value to a complex IMAGE pointer
+ * @v: Calculator value to inspect
+ *
+ * Checks whether @v names an existing image in `data.core.image` whose
+ * datatype is complex (`CF` or `CD`), returning NULL for scalar values,
+ * unknown names, or real images.
+ *
+ * Return: Pointer to the complex `IMAGE`, or NULL if @v is not a complex image
+ */
 const IMAGE *cli_calc_complex_image(const val_t *v)
 {
     if (v->type != VAL_STRING)
@@ -69,6 +88,18 @@ static inline void pix(const IMAGE *im, uint64_t i, double *re, double *imv)
     *re = 0.0;
 }
 
+/**
+ * set_pix - Store a complex value into pixel @i of a complex image
+ * @im:  Destination complex image (`COMPLEX_FLOAT` or `COMPLEX_DOUBLE`)
+ * @i:   Linear pixel index
+ * @re:  Real component to store
+ * @imv: Imaginary component to store
+ *
+ * Casts @re and @imv to `float` when @im is `COMPLEX_FLOAT` or writes `double`
+ * directly for `COMPLEX_DOUBLE`.
+ *
+ * Return: void
+ */
 static inline void set_pix(IMAGE *im, uint64_t i, double re, double imv)
 {
     if (im->md[0].datatype == _DATATYPE_COMPLEX_FLOAT)
@@ -111,6 +142,15 @@ cop(cli_token_type op, double ar, double ai, double br, double bi, double *r, do
     }
 }
 
+/**
+ * is_double_dt - Check whether an image datatype uses 64-bit floating-point precision
+ * @dt: ImageStreamIO `_DATATYPE_*` code
+ *
+ * Determines whether a complex operation should promote its output to
+ * `_DATATYPE_COMPLEX_DOUBLE` or `_DATATYPE_DOUBLE`.
+ *
+ * Return: 1 if @dt is `_DATATYPE_DOUBLE` or `_DATATYPE_COMPLEX_DOUBLE`, 0 otherwise
+ */
 static int is_double_dt(uint8_t dt)
 {
     return dt == _DATATYPE_DOUBLE || dt == _DATATYPE_COMPLEX_DOUBLE;
@@ -131,6 +171,16 @@ static IMAGE *new_image(const IMAGE *like, uint8_t dt, const char **name)
     return &data.core.image[tid];
 }
 
+/**
+ * val_image - Look up the IMAGE referenced by a string calculator value
+ * @v: Calculator value to resolve
+ *
+ * Resolves `v->sval` in `data.core.image` when @v has type `VAL_STRING`,
+ * allowing binary and function evaluators to distinguish image operands from
+ * numeric scalars.
+ *
+ * Return: Pointer to the resolved `IMAGE`, or NULL if @v is not an existing image
+ */
 static const IMAGE *val_image(const val_t *v)
 {
     if (v->type != VAL_STRING)
@@ -141,6 +191,18 @@ static const IMAGE *val_image(const val_t *v)
     return (id == -1) ? NULL : &data.core.image[id];
 }
 
+/**
+ * cli_calc_complex_binop - Evaluate a binary arithmetic operator involving a complex image
+ * @op:    Operator token (`+`, `-`, `*`, or `/`)
+ * @left:  Left operand (complex image, real image, or scalar)
+ * @right: Right operand (complex image, real image, or scalar)
+ *
+ * Allocates a temporary complex image (`COMPLEX_DOUBLE` if either image uses
+ * double precision, otherwise `COMPLEX_FLOAT`) and evaluates `+`, `-`, `*`, or
+ * `/` element-wise, treating real operands as having zero imaginary part.
+ *
+ * Return: `VAL_STRING` naming the temporary output image, or empty string on error
+ */
 val_t cli_calc_complex_binop(cli_token_type op, val_t left, val_t right)
 {
     if (op != TOK_OP_PLUS && op != TOK_OP_MINUS && op != TOK_OP_STAR && op != TOK_OP_SLASH)
@@ -195,6 +257,15 @@ val_t cli_calc_complex_binop(cli_token_type op, val_t left, val_t right)
     return mk_string(tmpn);
 }
 
+/**
+ * cli_calc_complex_neg - Negate every pixel of a complex image
+ * @z: Source complex image
+ *
+ * Creates a temporary complex image of the same shape and datatype as @z with
+ * both real and imaginary parts negated.
+ *
+ * Return: `VAL_STRING` naming the temporary negated image, or empty string on error
+ */
 val_t cli_calc_complex_neg(const IMAGE *z)
 {
     const char *tmpn;
@@ -212,6 +283,19 @@ val_t cli_calc_complex_neg(const IMAGE *z)
     return mk_string(tmpn);
 }
 
+/**
+ * cli_calc_inplace_complex - Perform in-place assignment or compound update on a complex image
+ * @dst: Destination image (must have a complex datatype)
+ * @aop: Assignment operator (`=`, `+=`, `-=`, `*=`, or `/=`)
+ * @src: Optional source image operand, or NULL when @val is used
+ * @val: Scalar real operand used when @src is NULL
+ *
+ * Applies `dst aop src` or `dst aop val` element-wise on complex pixels,
+ * rejecting attempts to store complex data into a real destination image or
+ * divide by a zero pixel.
+ *
+ * Return: 0 on success, -1 on error (with parse error message set)
+ */
 int cli_calc_inplace_complex(IMAGE *dst, cli_token_type aop, const IMAGE *src, double val)
 {
     if (!cli_calc_is_complex_dt(dst->md[0].datatype))

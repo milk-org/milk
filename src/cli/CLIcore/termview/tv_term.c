@@ -89,30 +89,77 @@ void tv_term_restore(void)
     }
 }
 
+/**
+ * tv_on_quit - Signal handler for clean termination signals.
+ * @sig: Signal number received (SIGINT, SIGTERM, SIGHUP, or SIGQUIT).
+ *
+ * Records the signal number in @tv_sig_quit and increments the quit signal
+ * counter @tv_sig_nquit so the event loop and flow-control settle loop wake
+ * up and exit cleanly.
+ *
+ * Return: Nothing.
+ */
 static void tv_on_quit(int sig)
 {
     tv_sig_quit = sig;
     tv_sig_nquit++;
 }
 
+/**
+ * tv_on_winch - Signal handler for terminal window size changes (SIGWINCH).
+ * @sig: Signal number received (unused).
+ *
+ * Sets @tv_sig_winch so the main event loop queries the updated terminal
+ * geometry and resizes the screen buffers on its next iteration.
+ *
+ * Return: Nothing.
+ */
 static void tv_on_winch(int sig)
 {
     (void) sig;
     tv_sig_winch = 1;
 }
 
+/**
+ * tv_on_cont - Signal handler for process continuation after stop (SIGCONT).
+ * @sig: Signal number received (unused).
+ *
+ * Sets @tv_sig_cont to notify the main event loop that the process has
+ * resumed and must re-enter raw terminal mode and repaint the screen.
+ *
+ * Return: Nothing.
+ */
 static void tv_on_cont(int sig)
 {
     (void) sig;
     tv_sig_cont = 1;
 }
 
+/**
+ * tv_on_tstp - Signal handler for interactive terminal stop (SIGTSTP).
+ * @sig: Signal number received (unused).
+ *
+ * Flags @tv_sig_tstp so the main loop can drain outstanding terminal CPR
+ * replies and restore normal terminal state before suspending the process.
+ *
+ * Return: Nothing.
+ */
 static void tv_on_tstp(int sig)
 {
     (void) sig;
     tv_sig_tstp = 1; /* the loop reads the terminal's last answers, then tv_term_suspend() */
 }
 
+/**
+ * tv_on_fatal - Signal handler for fatal crash signals on the alternate stack.
+ * @sig: Fatal signal number received (SIGSEGV, SIGBUS, SIGABRT, SIGFPE, SIGILL).
+ *
+ * Immediately restores the terminal state via tv_term_restore(), writes a
+ * diagnostic notice to the saved original stderr descriptor, and re-raises
+ * @sig with `SA_RESETHAND` so default kernel termination proceeds.
+ *
+ * Return: Nothing (does not return once @sig is re-raised).
+ */
 static void tv_on_fatal(int sig)
 {
     static const char msg[] = "milk-termview: fatal signal, terminal restored\n";
@@ -126,6 +173,18 @@ static void tv_on_fatal(int sig)
     raise(sig); /* SA_RESETHAND: default action now */
 }
 
+/**
+ * tv_set_handler - Register a POSIX signal action without SA_RESTART.
+ * @sig:   Signal number to configure.
+ * @fn:    Signal handler callback function.
+ * @flags: Additional sigaction flags (e.g., SA_RESETHAND | SA_ONSTACK).
+ *
+ * Installs @fn for @sig with an empty signal mask and without `SA_RESTART`
+ * so blocking `poll()` and `write()` calls return `EINTR` immediately when
+ * a signal arrives.
+ *
+ * Return: Nothing.
+ */
 static void tv_set_handler(int sig, void (*fn)(int), int flags)
 {
     struct sigaction sa;
@@ -136,6 +195,19 @@ static void tv_set_handler(int sig, void (*fn)(int), int flags)
     sigaction(sig, &sa, NULL);
 }
 
+/**
+ * tv_term_init - Initialize terminal state, signal handlers, and exit hooks.
+ * @err:   Destination buffer for an error message on failure.
+ * @errsz: Size of @err in bytes.
+ *
+ * Verifies that stdin and stdout are TTYs, saves the original `termios`
+ * attributes, duplicates stderr so it can be silenced while the alternate
+ * screen is active, sets up an alternate signal stack, installs handlers
+ * for quit, resize, job-control, and fatal signals, and registers
+ * tv_term_restore() with `atexit()`.
+ *
+ * Return: 0 on success, or -1 if stdin/stdout are not terminals or termios fails.
+ */
 int tv_term_init(char *err, size_t errsz)
 {
     static int registered = 0;
@@ -193,6 +265,17 @@ int tv_term_init(char *err, size_t errsz)
     return 0;
 }
 
+/**
+ * tv_term_enter - Switch the terminal into raw mode and enter the alternate screen.
+ *
+ * Configures non-blocking raw `termios` on stdin, redirects stderr to
+ * `/dev/null` if it shares the display terminal so background library
+ * messages do not corrupt the TUI, and writes the ANSI enter sequence to
+ * enable the alternate screen, hide the cursor, disable autowrap, and
+ * activate SGR mouse reporting.
+ *
+ * Return: 0 on success, or -1 on termios or write failure.
+ */
 int tv_term_enter(void)
 {
     struct termios raw = tv_tio_orig;
@@ -222,6 +305,14 @@ int tv_term_enter(void)
     return tv_write_all(TV_SEQ_ENTER, sizeof(TV_SEQ_ENTER) - 1);
 }
 
+/**
+ * tv_term_can_suspend - Check whether interactive job suspension (SIGTSTP) is allowed.
+ *
+ * Verifies that `SIGTSTP` was not ignored when the process started and is
+ * not currently blocked in the process signal mask.
+ *
+ * Return: 1 if the process can be suspended via SIGTSTP, or 0 otherwise.
+ */
 int tv_term_can_suspend(void)
 {
     sigset_t mask;
@@ -229,11 +320,28 @@ int tv_term_can_suspend(void)
            !sigismember(&mask, SIGTSTP);
 }
 
+/**
+ * tv_term_is_active - Query whether the terminal is currently in raw/TUI mode.
+ *
+ * Returns the state flag set by tv_term_enter() and cleared by
+ * tv_term_restore().
+ *
+ * Return: Non-zero if raw terminal mode is active, or 0 if restored.
+ */
 int tv_term_is_active(void)
 {
     return tv_term_active;
 }
 
+/**
+ * tv_term_suspend - Restore the terminal and suspend the process with SIGTSTP.
+ *
+ * Leaves the alternate screen and restores original `termios` settings,
+ * resets `SIGTSTP` to `SIG_DFL`, raises `SIGTSTP` to stop the process, and
+ * upon resumption reinstalls `tv_on_tstp` and sets @tv_sig_cont.
+ *
+ * Return: Nothing.
+ */
 void tv_term_suspend(void)
 {
     tv_sig_tstp = 0;
@@ -252,6 +360,17 @@ void tv_term_suspend(void)
     tv_sig_cont = 1;
 }
 
+/**
+ * tv_term_size - Query the current terminal dimensions in character cells.
+ * @rows: Output pointer receiving the terminal height in rows.
+ * @cols: Output pointer receiving the terminal width in columns.
+ *
+ * Queries `TIOCGWINSZ` on stdout, falling back to 24x80 if the ioctl fails
+ * or reports zero dimensions, and clamps the result to `TV_MAX_ROWS` and
+ * `TV_MAX_COLS`.
+ *
+ * Return: Nothing.
+ */
 void tv_term_size(int *rows, int *cols)
 {
     struct winsize ws;
@@ -265,6 +384,17 @@ void tv_term_size(int *rows, int *cols)
     *cols = (ws.ws_col > TV_MAX_COLS) ? TV_MAX_COLS : ws.ws_col;
 }
 
+/**
+ * tv_write_all - Write an entire buffer to stdout, handling partial writes and EAGAIN.
+ * @buf: Pointer to the byte buffer to write.
+ * @n:   Number of bytes to write.
+ *
+ * Loops over `write(STDOUT_FILENO, ...)` until all @n bytes are sent. Aborts
+ * early returning -1 if a quit, stop, or continue signal arrives mid-frame,
+ * or sets @tv_term_hup and returns -1 on unrecoverable I/O errors.
+ *
+ * Return: 0 when all bytes are written, or -1 if interrupted by a signal or I/O error.
+ */
 int tv_write_all(const char *buf, size_t n)
 {
     while (n > 0)
@@ -308,6 +438,16 @@ int tv_write_all(const char *buf, size_t n)
     return 0;
 }
 
+/**
+ * tv_term_color_level - Detect the terminal's ANSI color capability from environment variables.
+ *
+ * Inspects `COLORTERM` and `TERM` to classify the terminal into 24-bit
+ * truecolor (3), 256-color palette (2), or 16-color basic ANSI (1),
+ * recognizing modern direct-color emulators even over SSH where `COLORTERM`
+ * is often not forwarded.
+ *
+ * Return: 3 for 24-bit truecolor, 2 for 256-color, or 1 for 16-color.
+ */
 int tv_term_color_level(void)
 {
     /* ssh forwards TERM but not COLORTERM: known 24-bit terminals are recognised by name, and
@@ -360,6 +500,15 @@ int tv_term_color_level(void)
     return (strcmp(term, "st") == 0 || strncmp(term, "st-", 3) == 0) ? 2 : 1;
 }
 
+/**
+ * tv_term_reraise - Reset a signal handler to default and re-raise the signal.
+ * @sig: Signal number to re-raise.
+ *
+ * Restores `SIG_DFL` for @sig and raises it so the calling process exits
+ * with the authentic wait status for that signal.
+ *
+ * Return: Nothing.
+ */
 void tv_term_reraise(int sig)
 {
     signal(sig, SIG_DFL);

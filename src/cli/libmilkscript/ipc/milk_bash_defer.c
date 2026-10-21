@@ -105,6 +105,15 @@ static int sh_eval(const char *script)
                        : 1; /* SEVAL_NONINT | SEVAL_NOHIST */
 }
 
+/**
+ * bash_array - Look up an indexed Bash array variable's internal ARRAY pointer
+ * @name: Name of the Bash array variable (e.g., `FUNCNAME` or `BASH_LINENO`)
+ *
+ * Queries Bash's symbol table via `find_variable` and verifies `BASH_ATT_ARRAY`
+ * is set before returning the raw `ARRAY *` stored in the variable's value slot.
+ *
+ * Return: Pointer to Bash's internal ARRAY structure, or NULL if not an array
+ */
 static void *bash_array(const char *name)
 {
     bash_var_t *v = fn_find_variable(name);
@@ -311,6 +320,16 @@ static int run(int h, int with_exit)
     return s != NULL;
 }
 
+/**
+ * is_source - Check whether a Bash command string is a `source` or `.` invocation
+ * @cmd: Command string from `BASH_COMMAND`
+ *
+ * Detects whether a `RETURN` trap was triggered by the completion of a plain
+ * `source` or `.` command (with optional `builtin` or `command` prefix) so its
+ * caller's deferred actions are not prematurely executed.
+ *
+ * Return: 1 if @cmd starts with a source builtin invocation, 0 otherwise
+ */
 static int is_source(const char *cmd)
 {
     static const char *const pre[] = { "source ",         ". ",
@@ -358,6 +377,18 @@ static int defer_return(const char *u)
     return run(h, 0);
 }
 
+/**
+ * milk_bash_defer_argv - Register or execute scoped `@defer` cleanup commands in Bash
+ * @argc: Number of argument tokens
+ * @argv: Argument array (flags such as `--return`, `--exit`, `--restore`, or command words)
+ *
+ * Implements the `milkdefer` loadable builtin. Registers cleanup commands tied to
+ * either the current function/`@source` call-frame height or the shell session exit,
+ * and populates `__MILK_DRUN_SH` when invoked from the `RETURN` or `EXIT` trap.
+ *
+ * Return: 0 on success (or when no deferred commands need to run), 1 when trap
+ *         commands were staged into `__MILK_DRUN_SH` or on error, 2 on bad usage
+ */
 int milk_bash_defer_argv(int argc, char **argv)
 {
     int session = 0;

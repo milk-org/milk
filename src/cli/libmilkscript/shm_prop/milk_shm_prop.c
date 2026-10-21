@@ -56,16 +56,45 @@ const char *milk_shm_prop_shmdir(void)
     return (dcshmdir[0] != '\0') ? dcshmdir : "/dev/shm";
 }
 
+/**
+ * is_known_namespace - Check whether a prefix token is a recognized entity namespace
+ * @prefix: Token string preceding the first dot in an entity specification
+ *
+ * Delegates to milk_is_known_namespace() to determine whether @prefix names a valid
+ * milk shared-memory or local entity namespace (`s`, `l`, `f`, `p`, `q`, or their
+ * long forms).
+ *
+ * Return: Non-zero if @prefix is a recognized namespace, 0 otherwise.
+ */
 static int is_known_namespace(const char *prefix)
 {
     return milk_is_known_namespace(prefix);
 }
 
+/**
+ * has_glob_chars - Check whether a string contains wildcard glob characters
+ * @s: Input string to inspect (may be NULL)
+ *
+ * Tests whether @s contains `*` or `?` characters so callers can distinguish
+ * exact entity names from fnmatch() wildcard patterns.
+ *
+ * Return: 1 if @s contains `*` or `?`, 0 otherwise.
+ */
 static int has_glob_chars(const char *s)
 {
     return (s != NULL && (strchr(s, '*') != NULL || strchr(s, '?') != NULL));
 }
 
+/**
+ * token_in_space_list - Check whether a token already appears in a space-separated list
+ * @list: Space-delimited list of entity names
+ * @tok:  Candidate token to search for
+ *
+ * Scans @list token by token to prevent duplicate entity names when aggregating
+ * results from both local image slots and `/dev/shm` files.
+ *
+ * Return: 1 if @tok is present in @list as a complete word, 0 otherwise.
+ */
 static int token_in_space_list(const char *list, const char *tok)
 {
     size_t tlen = strlen(tok);
@@ -102,6 +131,18 @@ static int append_word(char *out, size_t outsz, size_t *pos, const char *w)
     return 0;
 }
 
+/**
+ * list_entities_in_namespace - Enumerate active entities in a namespace matching a glob
+ * @nsp:     Namespace identifier (`s`, `l`, `f`, `p`, `q`, or their long aliases)
+ * @pattern: Glob pattern to filter entity names (`NULL` or `"list"` matches `"*"`)
+ * @out:     Output buffer receiving a space-separated list of matching entity names
+ * @outsz:   Capacity of @out in bytes
+ *
+ * Scans process-local image slots (when applicable), `/dev/shm` files, and the
+ * `PROCESSINFOLIST` table to collect live entity names in @nsp matching @pattern.
+ *
+ * Return: 0 on success, -1 if unavailable, or -2 if the output buffer was truncated.
+ */
 static int list_entities_in_namespace(const char *nsp, const char *pattern, char *out, size_t outsz)
 {
     const char *pat  = (pattern == NULL || strcmp(pattern, "list") == 0) ? "*" : pattern;
@@ -243,6 +284,16 @@ static int list_entities_in_namespace(const char *nsp, const char *pattern, char
     return full ? -2 : 0; // -2: some entries did not fit
 }
 
+/**
+ * is_json_number - Check whether a string is a syntactically valid JSON number literal
+ * @s: Candidate string to test
+ *
+ * Validates that @s matches the JSON number grammar (optional `-`, integer digits
+ * without leading zeros, optional fraction, optional exponent) so numeric property
+ * values can be emitted unquoted in JSON output.
+ *
+ * Return: 1 if @s is a valid JSON number, 0 otherwise.
+ */
 static int is_json_number(const char *s)
 {
     if (s == NULL || *s == '\0')
@@ -297,6 +348,18 @@ static int is_json_number(const char *s)
     return (*p == '\0');
 }
 
+/**
+ * append_json_escaped_str - Append a double-quoted JSON-escaped string to @out
+ * @out:   Destination character buffer
+ * @outsz: Total capacity of @out in bytes
+ * @pos:   In/out write cursor offset within @out
+ * @s:     Source string to escape and quote
+ *
+ * Wraps @s in double quotes and escapes quotes, backslashes, newlines, carriage
+ * returns, and tabs while respecting @outsz bounds.
+ *
+ * Return: void
+ */
 static void append_json_escaped_str(char *out, size_t outsz, size_t *pos, const char *s)
 {
     size_t p = *pos;
@@ -340,6 +403,19 @@ static void append_json_escaped_str(char *out, size_t outsz, size_t *pos, const 
     *pos   = p;
 }
 
+/**
+ * append_kv_entries_json - Convert newline-delimited key-value lines into JSON object members
+ * @kv:    Input string containing `key\tval` or `key=val` lines
+ * @out:   Destination JSON buffer
+ * @outsz: Total capacity of @out in bytes
+ * @pos:   In/out write cursor offset within @out
+ * @first: In/out flag (1 before first member, set to 0 after emitting a member)
+ *
+ * Parses each line of @kv and appends `"key":val` (numeric) or `"key":"val"` (string)
+ * members separated by commas into @out.
+ *
+ * Return: void
+ */
 static void append_kv_entries_json(const char *kv, char *out, size_t outsz, size_t *pos, int *first)
 {
     char *dup = strdup(kv ? kv : "");
@@ -395,6 +471,18 @@ static void append_kv_entries_json(const char *kv, char *out, size_t outsz, size
     free(dup);
 }
 
+/**
+ * kv_to_json_obj - Format key-value text and optional FITS keyword lines as a JSON object
+ * @kv:          Primary newline-delimited key-value pairs
+ * @extra_kw_kv: Optional newline-delimited FITS keyword pairs to nest under `"kw"`
+ * @out:         Destination buffer receiving the JSON object string
+ * @outsz:       Capacity of @out in bytes
+ *
+ * Builds a complete `{...}` JSON object from @kv and, when @extra_kw_kv is non-empty,
+ * embeds a nested `"kw":{...}` object.
+ *
+ * Return: void
+ */
 static void kv_to_json_obj(const char *kv, const char *extra_kw_kv, char *out, size_t outsz)
 {
     size_t pos = 0;
@@ -433,6 +521,17 @@ static void kv_to_json_obj(const char *kv, const char *extra_kw_kv, char *out, s
     }
 }
 
+/**
+ * list_to_json_arr - Convert a whitespace-separated token list into a JSON string array
+ * @list:  Whitespace-delimited string of tokens
+ * @out:   Destination buffer receiving the JSON array (`["a","b",...]`)
+ * @outsz: Capacity of @out in bytes
+ *
+ * Tokenizes @list on whitespace and formats each token as a JSON-escaped string element
+ * inside a bracketed JSON array.
+ *
+ * Return: void
+ */
 static void list_to_json_arr(const char *list, char *out, size_t outsz)
 {
     size_t pos = 0;
@@ -467,6 +566,19 @@ static void list_to_json_arr(const char *list, char *out, size_t outsz)
     }
 }
 
+/**
+ * dispatch_ns_get - Route an entity property read to the appropriate namespace handler
+ * @nsp:   Namespace token (`s`, `l`, `f`, `p`, `q`, or long form)
+ * @name:  Entity name within @nsp
+ * @prop:  Property key (or `"json"` / `"kw.json"` synthetic formatters)
+ * @out:   Output buffer receiving the property value
+ * @outsz: Capacity of @out in bytes
+ *
+ * Handles synthetic `"json"` and `"kw.json"` serialization directly via `"kv"` queries
+ * and dispatches all other property reads to the namespace-specific getter.
+ *
+ * Return: 0 on success, -1 if the namespace, entity, or property is not found.
+ */
 static int dispatch_ns_get(const char *nsp,
                            const char *name,
                            const char *prop,
@@ -682,6 +794,20 @@ int milk_shm_prop_get(const char *spec, char *out, size_t outsz)
     return milk_shm_prop_get_proc(buf, rest, out, outsz);
 }
 
+/**
+ * dispatch_ns_set - Route an entity property or keyword write to its namespace handler
+ * @nsp:     Namespace token (`f`, `s`, `l`, `p`, `q`, or long form)
+ * @name:    Entity name within @nsp
+ * @prop:    Property key or `kw.<FITSKEY>` path
+ * @val:     Value string to assign
+ * @comment: Optional FITS keyword comment (may be NULL)
+ *
+ * Dispatches property and FITS keyword writes to the corresponding namespace setter
+ * (`milk_shm_prop_set_fps`, `milk_shm_prop_set_stream`, `milk_shm_prop_set_local_stream`,
+ * `milk_shm_prop_set_proc`, or `milk_shm_prop_set_seq`).
+ *
+ * Return: 0 on success, -1 on error or unrecognized namespace.
+ */
 static int dispatch_ns_set(const char *nsp,
                            const char *name,
                            const char *prop,
@@ -815,6 +941,17 @@ static int shm_prop_set_impl(const char *spec,
     return milk_shm_prop_set_fps(specbuf, rest, val);
 }
 
+/**
+ * milk_shm_prop_set - Write a live milk entity property, control action, or FITS keyword
+ * @spec:    Entity path string (optionally containing `=val`)
+ * @val:     Value string to assign (NULL if embedded in @spec, or `"-"` to read stdin)
+ * @comment: Optional FITS keyword comment (may be NULL)
+ *
+ * Public wrapper around shm_prop_set_impl() that enables reading `"-" ` values from
+ * standard input.
+ *
+ * Return: 0 on success, -1 on error.
+ */
 int milk_shm_prop_set(const char *spec, const char *val, const char *comment)
 {
     return shm_prop_set_impl(spec, val, comment, 1);
@@ -868,6 +1005,16 @@ int milk_shm_prop_exists(const char *spec, int check_running)
     return 0;
 }
 
+/**
+ * is_fps_readonly_meta_key - Check whether an FPS key is a synthetic read-only metadata key
+ * @k: FPS key name to test
+ *
+ * Identifies synthetic status/PID metadata keys (`status`, `conf`, `run`, `confrunning`,
+ * `runrunning`, `pid`, `confpid`, `runpid`, `nbparam`, `description`) that must be
+ * excluded when exporting configurable FPS parameters in `@snapshot`.
+ *
+ * Return: 1 if @k is a read-only metadata key, 0 otherwise.
+ */
 static int is_fps_readonly_meta_key(const char *k)
 {
     static const char *const ro[] = { "status",     "conf",        "run",     "confrunning",
@@ -883,6 +1030,15 @@ static int is_fps_readonly_meta_key(const char *k)
     return 0;
 }
 
+/**
+ * is_snapshot_filter_arg - Determine whether a CLI argument is an entity filter pattern
+ * @arg: Command-line argument string from `@snapshot`, `@diff`, or `@restore`
+ *
+ * Distinguishes namespace/glob filter patterns (such as `s.cam*`, `f.dm*`, or `*`)
+ * from file paths and `.json` snapshot filenames.
+ *
+ * Return: 1 if @arg is a snapshot entity filter pattern, 0 otherwise.
+ */
 static int is_snapshot_filter_arg(const char *arg)
 {
     if (arg == NULL || arg[0] == '\0' || strchr(arg, '/') != NULL)
@@ -901,6 +1057,17 @@ static int is_snapshot_filter_arg(const char *arg)
             strcmp(norm, "*") == 0);
 }
 
+/**
+ * snapshot_key_matches - Check whether a snapshot key matches any active filter pattern
+ * @key:      Canonical snapshot key (`f.<fps>.<param>` or `s.<stream>.kw.<key>`)
+ * @nfilters: Number of filter patterns in @filters (0 matches all keys)
+ * @filters:  Array of user-supplied filter pattern strings
+ *
+ * Normalizes each filter pattern to canonical `s.` or `f.` prefixes and tests both
+ * direct `fnmatch(norm, key)` and prefix `fnmatch("norm.*", key)` matches.
+ *
+ * Return: 1 if @key matches at least one filter (or @nfilters <= 0), 0 otherwise.
+ */
 static int snapshot_key_matches(const char *key, int nfilters, char **filters)
 {
     if (nfilters <= 0)
@@ -941,6 +1108,18 @@ static int snapshot_key_matches(const char *key, int nfilters, char **filters)
     return 0;
 }
 
+/**
+ * emit_snapshot_json_entry - Write a single formatted JSON key-value line to @fp
+ * @fp:    Output stream receiving the JSON snapshot
+ * @first: In/out flag tracking whether this is the first emitted JSON property
+ * @key:   Snapshot property key string
+ * @val:   Snapshot property value string
+ *
+ * Emits a comma separator when needed and formats @key and @val as a JSON object
+ * entry, leaving numeric values unquoted and escaping string values.
+ *
+ * Return: void
+ */
 static void emit_snapshot_json_entry(FILE *fp, int *first, const char *key, const char *val)
 {
     if (!(*first))
@@ -1138,6 +1317,15 @@ int milk_shm_prop_snapshot(int argc, char **argv)
     return rc;
 }
 
+/**
+ * read_file_all - Read an entire file or stdin stream into a NUL-terminated heap buffer
+ * @path: File path to read, or `"-"` to read from `stdin`
+ *
+ * Dynamically grows a heap buffer until EOF is reached so `@diff` and `@restore`
+ * can parse arbitrary-sized JSON snapshot files.
+ *
+ * Return: Newly allocated NUL-terminated string (caller frees), or NULL on error.
+ */
 static char *read_file_all(const char *path)
 {
     FILE *fp = (strcmp(path, "-") == 0) ? stdin : fopen(path, "r");
@@ -1184,6 +1372,19 @@ static char *read_file_all(const char *path)
     return buf;
 }
 
+/**
+ * scan_next_json_kv - Extract the next flat JSON key-value pair from a snapshot buffer
+ * @cursor: In/out pointer advancing through the JSON text
+ * @key:    Output buffer receiving the unescaped JSON property key
+ * @keysz:  Capacity of @key in bytes
+ * @val:    Output buffer receiving the unescaped string or raw literal value
+ * @valsz:  Capacity of @val in bytes
+ *
+ * Scans forward from `*cursor` for the next `"key": value` entry in a flat `@snapshot`
+ * JSON object, unescaping string values and copying numeric/literal tokens verbatim.
+ *
+ * Return: 1 when a key-value pair was extracted, 0 when the end of the object is reached.
+ */
 static int scan_next_json_kv(const char **cursor, char *key, size_t keysz, char *val, size_t valsz)
 {
     const char *p = *cursor;
@@ -1290,6 +1491,16 @@ static int scan_next_json_kv(const char **cursor, char *key, size_t keysz, char 
     return 0;
 }
 
+/**
+ * snapshot_values_equal - Compare two snapshot property values with numeric tolerance
+ * @a: First property value string
+ * @b: Second property value string
+ *
+ * Returns 1 if @a and @b are byte-identical or if both parse as finite floating-point
+ * numbers within a relative tolerance of `1e-9`.
+ *
+ * Return: 1 if considered equal, 0 otherwise.
+ */
 static int snapshot_values_equal(const char *a, const char *b)
 {
     if (strcmp(a, b) == 0)

@@ -108,12 +108,18 @@ static void fprintf_stdout(FILE *f, char const *fmt, ...)
     va_end(ap);
 }
 
-/** @brief signal catching
- *
- */
 #define CLI_SIG_ALTSTACK_SIZE 65536
 static char sig_altstack_mem[CLI_SIG_ALTSTACK_SIZE];
 
+/**
+ * set_signal_catch - Configure alternate signal stack and install CLI signal handlers
+ *
+ * Registers `sig_altstack_mem` via `sigaltstack()` so stack-overflow crashes can still
+ * be caught, and installs `sig_handler` with `SA_ONSTACK` for termination, interrupt,
+ * and fatal hardware/memory fault signals.
+ *
+ * Return: RETURN_SUCCESS
+ */
 errno_t set_signal_catch()
 {
     stack_t ss;
@@ -175,14 +181,6 @@ errno_t set_signal_catch()
     return RETURN_SUCCESS;
 }
 
-/**
- * @brief Write to disk a process report
- *
- * This function is typically called upon crash to help debugging
- *
- * errortypestring describes the type of error or reason to issue report
- *
- */
 /**
  * @brief Write a crash/exit report to disk.
  *
@@ -290,31 +288,79 @@ static volatile sig_atomic_t cli_fault_isolation_active = 0;
 static volatile sig_atomic_t cli_interactive_mode       = 0;
 static volatile sig_atomic_t cli_sigint_forward         = 0;
 
+/**
+ * cli_set_interactive_mode - Enable or disable interactive REPL signal behavior
+ * @mode: Non-zero when running an interactive REPL prompt, 0 in batch/script mode
+ *
+ * Controls how `sig_handler` treats `SIGINT` when fault isolation is disarmed:
+ * in interactive mode `SIGINT` prints a newline without exiting the process.
+ *
+ * Return: void
+ */
 void cli_set_interactive_mode(int mode)
 {
     cli_interactive_mode = mode;
 }
 
+/**
+ * cli_is_interactive_mode - Query whether interactive REPL signal handling is active
+ *
+ * Checks the flag set by `cli_set_interactive_mode()`.
+ *
+ * Return: Non-zero if interactive mode is enabled, 0 otherwise
+ */
 int cli_is_interactive_mode(void)
 {
     return cli_interactive_mode;
 }
 
+/**
+ * cli_get_repl_env - Return the jump buffer used for REPL fault recovery
+ *
+ * Provides access to the `sigjmp_buf` where the interactive loop saves its
+ * execution context before dispatching a command under fault isolation.
+ *
+ * Return: Pointer to the global `cli_repl_env` jump buffer
+ */
 sigjmp_buf *cli_get_repl_env(void)
 {
     return &cli_repl_env;
 }
 
+/**
+ * cli_fault_isolation_arm - Arm signal-based fault recovery around command execution
+ *
+ * Enables `siglongjmp` recovery in `sig_handler` so fatal signals (`SIGSEGV`,
+ * `SIGBUS`, `SIGFPE`, `SIGILL`, `SIGABRT`) and `SIGINT` abort only the current
+ * command and return control to `cli_repl_env`.
+ *
+ * Return: void
+ */
 void cli_fault_isolation_arm(void)
 {
     cli_fault_isolation_active = 1;
 }
 
+/**
+ * cli_fault_isolation_disarm - Disarm signal-based fault recovery after a command returns
+ *
+ * Restores normal signal handling once the guarded command dispatch has completed.
+ *
+ * Return: void
+ */
 void cli_fault_isolation_disarm(void)
 {
     cli_fault_isolation_active = 0;
 }
 
+/**
+ * cli_is_fault_isolation_armed - Check whether REPL fault isolation is currently armed
+ *
+ * Queries the atomic flag controlled by `cli_fault_isolation_arm()` and
+ * `cli_fault_isolation_disarm()`.
+ *
+ * Return: 1 if fault isolation is armed, 0 otherwise
+ */
 int cli_is_fault_isolation_armed(void)
 {
     return cli_fault_isolation_active;
@@ -326,6 +372,13 @@ void cli_set_sigint_forward(int on)
     cli_sigint_forward = on;
 }
 
+/**
+ * cli_get_sigint_forward - Query whether SIGINT forwarding to the bash co-process is active
+ *
+ * Returns the flag set by `cli_set_sigint_forward()`.
+ *
+ * Return: Non-zero if SIGINT is being captured for forwarding, 0 otherwise
+ */
 int cli_get_sigint_forward(void)
 {
     return cli_sigint_forward;

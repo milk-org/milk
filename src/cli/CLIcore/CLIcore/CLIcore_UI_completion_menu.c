@@ -39,7 +39,14 @@ void set_pending_suggestion(const char *text, int replace_len);
 static int g_menu_just_selected = 0;
 
 /**
- * @brief Custom readline `getc` hook that resets `rl_last_func` after menu selection.
+ * cli_custom_getc - Readline character input hook that resets state after menu selection
+ * @stream: Input FILE stream passed by readline
+ *
+ * Clears rl_last_func when an item was just chosen from the interactive
+ * completion menu so a subsequent Tab press starts a fresh completion cycle,
+ * then delegates character reading to rl_getc().
+ *
+ * Return: Next character read from @stream, or EOF
  */
 int cli_custom_getc(FILE *stream)
 {
@@ -51,6 +58,14 @@ int cli_custom_getc(FILE *stream)
     return rl_getc(stream);
 }
 
+/**
+ * menu_readchar - Read a single raw byte from standard input
+ *
+ * Performs an unbuffered 1-byte read() on STDIN_FILENO while the terminal is in
+ * raw mode during interactive completion menu navigation.
+ *
+ * Return: Unsigned byte value (0..255) on success, or -1 on EOF/error
+ */
 static int menu_readchar(void)
 {
     unsigned char ch;
@@ -58,6 +73,15 @@ static int menu_readchar(void)
     return (n == 1) ? (int) ch : -1;
 }
 
+/**
+ * menu_stdin_wait_ms - Wait up to a timeout for readable input on STDIN_FILENO
+ * @ms: Timeout in milliseconds
+ *
+ * Uses select() on STDIN_FILENO to distinguish a bare Escape key press from a
+ * multi-byte ANSI cursor movement sequence inside the completion menu.
+ *
+ * Return: 1 if input becomes available before the timeout expires, 0 otherwise
+ */
 static int menu_stdin_wait_ms(int ms)
 {
     fd_set         fds;
@@ -268,7 +292,16 @@ static int handle_menu_escape_seq(int *selected,
 }
 
 /**
- * @brief Interactive Zsh-style menu completion display hook.
+ * cli_menu_display_matches - Interactive Zsh-style menu completion display hook
+ * @matches:     Array of completion match strings (1-indexed, NULL-terminated)
+ * @num_matches: Number of candidate strings in @matches
+ * @max_length:  Maximum string length among the candidates
+ *
+ * Installed as rl_completion_display_matches_hook. Deduplicates matches, auto-inserts
+ * if only one unique candidate remains, or enters a raw-terminal interactive grid
+ * allowing arrow/Tab navigation and Enter selection before restoring the prompt.
+ *
+ * Return: void
  */
 void cli_menu_display_matches(char **matches, int num_matches, int max_length)
 {
@@ -445,6 +478,16 @@ void cli_menu_display_matches(char **matches, int num_matches, int max_length)
 
 #else /* !USE_READLINE */
 
+/**
+ * cli_menu_display_matches - No-op completion display stub when readline is disabled
+ * @matches:     Array of completion match strings (unused)
+ * @num_matches: Number of candidate strings (unused)
+ * @max_length:  Maximum candidate string length (unused)
+ *
+ * Provides link compatibility for non-readline builds.
+ *
+ * Return: void
+ */
 void cli_menu_display_matches(char **matches, int num_matches, int max_length)
 {
     (void) matches;
@@ -452,6 +495,14 @@ void cli_menu_display_matches(char **matches, int num_matches, int max_length)
     (void) max_length;
 }
 
+/**
+ * cli_custom_getc - Fallback character input wrapper when readline is disabled
+ * @stream: Input FILE stream to read from
+ *
+ * Reads the next character directly via fgetc() in builds without readline.
+ *
+ * Return: Next character read from @stream, or EOF
+ */
 int cli_custom_getc(FILE *stream)
 {
     return fgetc(stream);

@@ -269,6 +269,15 @@ void ov_scan_drain_event_fd(void)
     }
 }
 
+/**
+ * ov_scan_get_model - Acquire the latest completed scan model snapshot for display
+ *
+ * Swaps the `ready` and `display` triple-buffer indices under `ov_model_mutex` if
+ * new scan data has been published. The returned pointer remains owned by the
+ * display thread and untouched by the scanner until the next call.
+ *
+ * Return: Pointer to the current display `OV_MODEL` slot.
+ */
 const OV_MODEL *ov_scan_get_model(void)
 {
     /* Pick up the latest ready buffer ONLY if new data

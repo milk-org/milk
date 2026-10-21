@@ -4,12 +4,11 @@
 
 /**
  * @file milk_client_internal.h
- * @brief Internal declarations shared between `milk_client_conn.c` and `milk_client_ops.c`.
+ * @brief Internal declarations shared across `milk_client_conn.c`, `milk_client_ops.c`, and `milk_client_ext.c`.
  *
  * Role & Goal:
- *   Exposes the connection, lazy auto-start, variable-packing, and response
- *   loop helpers implemented in `milk_client_conn.c` to the public client
- *   operation entry points in `milk_client_ops.c`.
+ *   Exposes the connection, lazy auto-start, variable-packing, response-loop,
+ *   and array-capture helpers shared across the `ipc/` client implementation files.
  */
 
 #ifndef MILK_CLIENT_INTERNAL_H
@@ -20,7 +19,7 @@
 #include "milk_client.h"
 
 /**
- * @brief The shell variables a calc expression names, sent with its request (CALC, TEST, `@assert`, `@pipe`).
+ * @brief Shell variables referenced by a calc/predicate expression, packed into RPC payloads.
  */
 typedef struct
 {
@@ -45,5 +44,23 @@ int milk_client_await_response(int                        fd,
                                char                      *value_buf,
                                size_t                     value_sz,
                                int                       *got_value);
+
+int milk_client_has_arg(int argc, char **argv, const char *opt);
+
+int milk_client_call_as(const char                *as,
+                        int                        argc,
+                        char                     **argv,
+                        const char                *opt,
+                        const char                *last,
+                        int                        async_flag,
+                        const milk_client_hooks_t *hooks);
+
+int milk_client_capture_array(int (*fn)(int, char **, const milk_client_hooks_t *),
+                              int                        argc,
+                              char                     **argv,
+                              const char                *extra,
+                              const milk_client_hooks_t *hooks);
+
+int milk_client_is_entity_spec_token(const char *s);
 
 #endif /* MILK_CLIENT_INTERNAL_H */

@@ -56,6 +56,18 @@ const char *milk_ipc_get_var(const milk_client_hooks_t *hooks, const char *name)
     return getenv(name);
 }
 
+/**
+ * get_shell_override_file - Compute the per-shell active socket override file path
+ * @hooks: Optional shell callback hooks for reading `_MILK_LOCAL_SOCK`
+ * @out:   Output buffer receiving the file path
+ * @outsz: Size of @out in bytes
+ *
+ * Determines the owning shell PID from `_MILK_LOCAL_SOCK` (or `getpid()`/`getppid()`)
+ * and formats a path in `$TMPDIR` used to persist `@server use` socket switches across
+ * subshells and standalone `milk-call` invocations.
+ *
+ * Return: void
+ */
 static void get_shell_override_file(const milk_client_hooks_t *hooks, char *out, size_t outsz)
 {
     int         shell_pid  = 0;
@@ -80,6 +92,16 @@ static void get_shell_override_file(const milk_client_hooks_t *hooks, char *out,
     snprintf(out, outsz, "%s/.milk_active_sock_%u_%d", tmpdir, (unsigned) getuid(), shell_pid);
 }
 
+/**
+ * milk_ipc_is_identifier - Check whether a string is a valid POSIX shell identifier
+ * @name: Candidate variable or symbol name
+ *
+ * Verifies that @name starts with an ASCII letter or underscore and contains only
+ * ASCII alphanumeric characters or underscores, preventing shell injection when
+ * constructing variable assignment statements.
+ *
+ * Return: 1 if @name is a valid identifier, 0 otherwise
+ */
 int milk_ipc_is_identifier(const char *name)
 {
     if (name == NULL || !(isalpha((unsigned char) name[0]) || name[0] == '_'))
@@ -488,6 +510,16 @@ int milk_ipc_is_numeric_str(const char *s)
     return 1;
 }
 
+/**
+ * milk_ipc_peer_is_self - Verify that a UNIX domain socket peer belongs to the current UID
+ * @fd: Connected UNIX domain socket file descriptor
+ *
+ * Queries `SO_PEERCRED` on @fd and compares the peer's UID against `getuid()` to
+ * prevent connecting to or accepting commands from an abstract UNIX socket claimed
+ * by another local user.
+ *
+ * Return: 1 if the peer UID matches `getuid()`, 0 otherwise
+ */
 int milk_ipc_peer_is_self(int fd)
 {
     struct ucred cred;

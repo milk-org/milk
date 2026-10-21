@@ -111,6 +111,18 @@ static int make_cmddir(void)
     return 0;
 }
 
+/**
+ * milk_bash_cmdfile_path - Build the path for a translated command file
+ * @label: Base filename label (e.g. script basename or "milk")
+ * @out:   Destination buffer for the full command file path
+ * @outsz: Size of @out in bytes
+ *
+ * Ensures the process-private command directory exists and formats the path
+ * `<cmddir>/<label>` into @out so bash can `source` translated code while
+ * preserving meaningful script names in diagnostic messages.
+ *
+ * Return: 0 on success, -1 if the private directory could not be created
+ */
 int milk_bash_cmdfile_path(const char *label, char *out, size_t outsz)
 {
     if (make_cmddir() != 0)
@@ -121,6 +133,16 @@ int milk_bash_cmdfile_path(const char *label, char *out, size_t outsz)
     return 0;
 }
 
+/**
+ * milk_bash_cmdfile_owned - Check whether a file path resides in our command directory
+ * @path: Filesystem path to validate
+ *
+ * Verifies that @path starts with this process's private `g_cmddir` prefix and
+ * contains no `..` traversal components, preventing accidental deletion or
+ * treatment of user files as temporary translated command files.
+ *
+ * Return: 1 if @path is inside the private command directory, 0 otherwise
+ */
 int milk_bash_cmdfile_owned(const char *path)
 {
     size_t n = strlen(g_cmddir);
@@ -128,6 +150,14 @@ int milk_bash_cmdfile_owned(const char *path)
            strstr(path + n, "/..") == NULL;
 }
 
+/**
+ * milk_bash_cmdfile_cleanup - Remove the process-private translated command directory
+ *
+ * Unlinks all remaining translated command files in `g_cmddir` and removes the
+ * directory itself during engine shutdown.
+ *
+ * Return: void
+ */
 void milk_bash_cmdfile_cleanup(void)
 {
     if (g_cmddir[0] != '\0')

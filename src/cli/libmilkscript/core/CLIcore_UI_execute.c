@@ -35,6 +35,18 @@ errno_t CLI_execute_line()
     return (rc == 0) ? RETURN_SUCCESS : RETURN_FAILURE;
 }
 
+/**
+ * cmd_levenshtein_distance - Compute bounded Levenshtein edit distance between two strings
+ * @s1: First null-terminated command string
+ * @s2: Second null-terminated command string
+ *
+ * Computes the minimum number of single-character edits (insertions, deletions, or
+ * substitutions) required to transform @s1 into @s2, capping compared lengths at 63
+ * characters so the dynamic programming row fits in a fixed stack buffer. Used to
+ * rank close command matches for typo suggestions when an unknown command is entered.
+ *
+ * Return: Edit distance between the two strings (truncated to 63 characters)
+ */
 static int cmd_levenshtein_distance(const char *s1, const char *s2)
 {
     size_t l1 = strlen(s1);

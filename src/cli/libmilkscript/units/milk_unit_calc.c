@@ -96,6 +96,14 @@ CLICMDDATA          CLIcmddata = {
     .cmdsettings    = &calc_cms,
 };
 
+/**
+ * now_sec - Read the current monotonic clock time in seconds
+ *
+ * Queries `CLOCK_MONOTONIC` to compute elapsed time `_t` and frame delta `_dt`
+ * for calculator expressions without sensitivity to wall-clock adjustments.
+ *
+ * Return: Monotonic timestamp in floating-point seconds.
+ */
 static double now_sec(void)
 {
     struct timespec ts;
@@ -103,6 +111,15 @@ static double now_sec(void)
     return (double) ts.tv_sec + (double) ts.tv_nsec * 1e-9;
 }
 
+/**
+ * is_fixed - Check whether a parameter name collides with built-in or fixed unit parameters
+ * @name: Candidate parameter name (without leading dot)
+ *
+ * Rejects built-in frame variables (`_n`, `_t`, `_dt`) and the unit's fixed FPS
+ * parameters (`.expr`, `.trigger`, `.params`, `.file`, `.init`, `.initfile`, `.error`).
+ *
+ * Return: 1 if @name is reserved, 0 otherwise.
+ */
 static int is_fixed(const char *name)
 {
     if (strcmp(name, "_n") == 0 || strcmp(name, "_t") == 0 || strcmp(name, "_dt") == 0)
@@ -269,6 +286,16 @@ static char *source_text(const char *inline_str, const char *fpath, char *err, s
     return t;
 }
 
+/**
+ * report - Record a runtime error message to stderr, the FPS `.error` parameter, and processinfo
+ * @pi:  Active `PROCESSINFO` handle (may be NULL)
+ * @msg: Error message string
+ *
+ * Prints @msg to `stderr`, stores it in the `.error` output parameter of the unit's
+ * FPS, and writes it to the processinfo status message when @pi is active.
+ *
+ * Return: void
+ */
 static void report(PROCESSINFO *pi, const char *msg)
 {
     fprintf(stderr, "milk.calc %s: %s\n", dcfpsptr->md->name, msg);
@@ -280,6 +307,16 @@ static void report(PROCESSINFO *pi, const char *msg)
     }
 }
 
+/**
+ * compute - Main processinfo frame loop compiling and executing calculator expressions
+ *
+ * Runs `.init` / `.initfile` statements once before frame 0 (and whenever modified),
+ * recompiles `.expr` / `.file` bytecode when changed, executes the compiled program
+ * on each trigger frame or delay tick, and syncs any assigned user parameters back to
+ * the FPS.
+ *
+ * Return: `RETURN_SUCCESS` on clean loop exit, `RETURN_FAILURE` if an expression error occurred.
+ */
 static MILK_HOT errno_t compute(void)
 {
     char           err[512]      = "";
@@ -411,6 +448,17 @@ static MILK_HOT errno_t compute(void)
     return (err[0] != '\0') ? RETURN_FAILURE : RETURN_SUCCESS;
 }
 
+/**
+ * main - Entry point for the milk-fpsexec-milk-calc standalone compute unit
+ * @argc: Command-line argument count
+ * @argv: Command-line argument vector
+ *
+ * Parses unit arguments, resolves `.file` and `.initfile` paths to canonical paths,
+ * creates or attaches dynamic FPS parameters, and delegates execution to
+ * `fpsexec_main_function()`.
+ *
+ * Return: 0 on success, non-zero on error.
+ */
 int main(int argc, char **argv)
 {
     milk_unit_args a;

@@ -97,6 +97,17 @@ void print_milk_synchro_help(void)
     printf("\n");
 }
 
+/**
+ * main - Entry point for the milk-cli-help-synchro standalone utility
+ * @argc: Number of command-line arguments
+ * @argv: Array of command-line argument strings
+ *
+ * Handles the `-h1` / `--help-oneline` flag for `milk-fpsexec-list` discovery,
+ * initializes a quiet CLI runtime context, and prints the synchronization
+ * architecture overview to stdout.
+ *
+ * Return: 0 on success
+ */
 int main(int argc, char *argv[])
 {
     /* One-line help - before CLI_startup() */

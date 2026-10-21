@@ -227,11 +227,31 @@ static int cmp_pid(pid_t pa, pid_t pb)
     return ov_sort_dir_mul * ((pa > pb) - (pa < pb));
 }
 
+/**
+ * sort_stream_by_creator - Compare streams by their creator PID
+ * @a: Pointer to first `OV_STREAM`
+ * @b: Pointer to second `OV_STREAM`
+ *
+ * Orders streams by `creatorPID` in the active sort direction while placing
+ * streams without a recorded creator PID (`0`) last.
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_stream_by_creator(const void *a, const void *b)
 {
     return cmp_pid(((const OV_STREAM *) a)->creatorPID, ((const OV_STREAM *) b)->creatorPID);
 }
 
+/**
+ * sort_stream_by_owner - Compare streams by their owner PID
+ * @a: Pointer to first `OV_STREAM`
+ * @b: Pointer to second `OV_STREAM`
+ *
+ * Orders streams by `ownerPID` in the active sort direction while placing
+ * streams without a recorded owner PID (`0`) last.
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
 static int sort_stream_by_owner(const void *a, const void *b)
 {
     return cmp_pid(((const OV_STREAM *) a)->ownerPID, ((const OV_STREAM *) b)->ownerPID);

@@ -84,6 +84,16 @@ static void tv_update_stats(tv_state_t *ctx, int64_t now_us)
     ctx->stats_cpu         = now_cpu;
 }
 
+/**
+ * tv_stale_age_us - Compute how long the stream has been quiet once past the stale threshold.
+ * @ctx:    Termview state structure.
+ * @now_us: Current monotonic timestamp in microseconds.
+ *
+ * Compares the elapsed time since `ctx->last_change_us` against the greater of
+ * `TV_STALE_MIN_US` (1 second) and five smoothed frame periods (`5 * period_us`).
+ *
+ * Return: Elapsed quiet time in microseconds if stale, or 0 if still live.
+ */
 int64_t tv_stale_age_us(const tv_state_t *ctx, int64_t now_us)
 {
     int64_t age   = now_us - ctx->last_change_us;
@@ -214,6 +224,18 @@ static double tv_zmax(const tv_state_t *ctx)
     return fmax(1.0, 64.0 * tv_view_base(&l, ctx->st->xsize, ctx->st->ysize));
 }
 
+/**
+ * tv_set_view - Update the viewport center and zoom factor and clamp to valid bounds.
+ * @ctx:  Termview state structure.
+ * @cx:   Horizontal viewport center in normalized image coordinates (0..1).
+ * @cy:   Vertical viewport center in normalized image coordinates (0..1).
+ * @zoom: Requested zoom multiplier.
+ *
+ * Sets `ctx->view`, sanitizes zoom and center coordinates against `tv_zmax(ctx)`
+ * via tv_view_sanitize(), and marks geometry and UI chrome dirty.
+ *
+ * Return: Nothing.
+ */
 void tv_set_view(tv_state_t *ctx, double cx, double cy, double zoom)
 {
     ctx->view.cx   = cx;
@@ -223,6 +245,18 @@ void tv_set_view(tv_state_t *ctx, double cx, double cy, double zoom)
     ctx->dirty |= TV_D_GEOM | TV_D_CHROME;
 }
 
+/**
+ * tv_set_range - Lock the display intensity range to explicit minimum and maximum values.
+ * @ctx: Termview state structure.
+ * @lo:  Lower display intensity bound.
+ * @hi:  Upper display intensity bound.
+ *
+ * Stores @lo and @hi in `ctx->opt.manual_min` and `ctx->opt.manual_max`,
+ * enables `ctx->opt.range_locked`, and marks the color mapping and UI chrome
+ * dirty.
+ *
+ * Return: Nothing.
+ */
 void tv_set_range(tv_state_t *ctx, double lo, double hi)
 {
     ctx->opt.manual_min   = lo;
@@ -231,11 +265,35 @@ void tv_set_range(tv_state_t *ctx, double lo, double hi)
     ctx->dirty |= TV_D_MAP | TV_D_CHROME;
 }
 
+/**
+ * tv_wrap - Advance an index cyclicly modulo @n.
+ * @v:    Current 0-based index.
+ * @step: Signed increment to apply.
+ * @n:    Modulus (number of enum states).
+ *
+ * Computes `(v + step) mod n` in the range `0 .. n - 1` even when `v + step`
+ * is negative.
+ *
+ * Return: Wrapped index in `0 .. @n - 1`.
+ */
 static int tv_wrap(int v, int step, int n)
 {
     return ((v + step) % n + n) % n;
 }
 
+/**
+ * tv_do - Execute a high-level viewer action from keyboard or UI menu dispatch.
+ * @ctx: Termview state structure.
+ * @a:   Action identifier (`TV_ACT_*`).
+ * @arg: Action-specific integer argument (step direction, enum value, or FPS target).
+ *
+ * Dispatches viewer commands including quit, suspend, repaint, pause, colormap/
+ * scale/range cycling or selection, color depth switching, FPS target adjustment,
+ * range smoothing/locking, minibuffer prompt, horizontal/vertical flips, zoom,
+ * pan, drag cancellation, and low-bandwidth mode toggling.
+ *
+ * Return: Nothing.
+ */
 void tv_do(tv_state_t *ctx, tv_action_t a, int arg)
 {
     switch (a)
@@ -653,6 +711,15 @@ static int64_t tv_slice_us(const tv_state_t *ctx)
                                              : slice;
 }
 
+/**
+ * tv_max64 - Return the larger of two 64-bit signed integers.
+ * @a: First value.
+ * @b: Second value.
+ *
+ * Used by flow-control timing calculations to clamp durations and spans.
+ *
+ * Return: The maximum of @a and @b.
+ */
 static inline int64_t tv_max64(int64_t a, int64_t b)
 {
     return (a > b) ? a : b;
@@ -666,6 +733,22 @@ static uint64_t tv_fc_quiet(const tv_fc_t *fc)
     return (q > TV_FC_QUIET) ? (uint64_t) q : TV_FC_QUIET;
 }
 
+/**
+ * tv_fc_window - Update flow-control round-trip time, delivery rate, and byte window on a CPR reply.
+ * @fc:       Flow-control state structure.
+ * @now_us:   Current monotonic timestamp in microseconds.
+ * @r:        The request record whose CPR reply just arrived.
+ * @delta:    Newly acknowledged byte count since the previous reply.
+ * @slice_us: Target flush slice duration in microseconds.
+ *
+ * Refines the baseline round-trip time `fc->base_us` from quiet probes or
+ * lower RTT observations, estimates the terminal delivery rate `fc->rate`
+ * across intervals long enough to smooth SSH packet bunching, cuts the rate
+ * if persistent queuing is detected, and adjusts `fc->window` within
+ * `TV_FC_MIN .. TV_FC_MAX`.
+ *
+ * Return: Nothing.
+ */
 void tv_fc_window(tv_fc_t           *fc,
                   int64_t            now_us,
                   const tv_fc_req_t *r,
@@ -814,12 +897,17 @@ static int tv_fc_used(const uint64_t *used, int col, int edge)
     return 0;
 }
 
-/*
- * The (hidden) cursor goes to the last row, in a column of its own among 17..16+TV_FC_IDS (from
- * the left, where a narrower terminal does not move it): the answer names its request, and its
- * row (2 or more) and column (past 16) keep it apart from modified F3 (CSI 1;<mod> R). A column
- * is not reused while an earlier request in it may still be answered: with none free, the
- * request waits for answers (unless none is out).
+/**
+ * tv_fc_request - Format a cursor-position-report (CPR) flow-control request into @out.
+ * @ctx:    Termview state structure.
+ * @out:    Output buffer of at least 32 bytes receiving the ANSI CPR query.
+ * @now_us: Current monotonic timestamp in microseconds.
+ *
+ * Moves the hidden cursor to the last row in a distinct column (`17 .. 16 + TV_FC_IDS`)
+ * and emits `CSI 6n` so the terminal's reply (`CSI row;col R`) uniquely
+ * identifies the request and cannot collide with modified `F3` (`CSI 1;<mod> R`).
+ *
+ * Return: Number of bytes written to @out, or 0 if no request was queued.
  */
 size_t tv_fc_request(tv_state_t *ctx, char *out, int64_t now_us)
 {
@@ -854,6 +942,18 @@ size_t tv_fc_request(tv_state_t *ctx, char *out, int64_t now_us)
     return (size_t) snprintf(out, 32, "\033[%d;%dH\033[6n", ctx->rows, r->col);
 }
 
+/**
+ * tv_fc_wrote - Account for bytes written to the terminal and finalize any appended CPR request.
+ * @fc:     Flow-control state structure.
+ * @n:      Total number of bytes passed to the write call.
+ * @req:    Number of bytes in @n belonging to a trailing CPR request (or 0).
+ * @failed: Non-zero if the write call failed or was cut short.
+ *
+ * Advances `fc->sent` by @n, rolls back the request slot if @failed is set,
+ * or records `r->at`, `r->inflight`, and `r->quiet` on the newest request.
+ *
+ * Return: Nothing.
+ */
 void tv_fc_wrote(tv_fc_t *fc, size_t n, size_t req, int failed)
 {
     fc->sent += n;
@@ -871,6 +971,19 @@ void tv_fc_wrote(tv_fc_t *fc, size_t n, size_t req, int failed)
     }
 }
 
+/**
+ * tv_fc_lead - Emit a leading CPR probe before a frame flush when needed.
+ * @ctx:    Termview state structure.
+ * @out:    Output buffer of at least 32 bytes receiving the ANSI CPR query.
+ * @now_us: Current monotonic timestamp in microseconds.
+ * @room:   Available byte room in the flow-control window before the flush.
+ *
+ * Generates a CPR request ahead of the frame payload when explicitly requested
+ * (`fc->ask`), when a drain interval has emptied the in-flight queue, or when
+ * the window is full with no request in flight.
+ *
+ * Return: Number of bytes written to @out, or 0 if no leading probe is needed.
+ */
 size_t tv_fc_lead(tv_state_t *ctx, char *out, int64_t now_us, size_t room)
 {
     tv_fc_t *fc = &ctx->fc;
@@ -895,6 +1008,17 @@ size_t tv_fc_lead(tv_state_t *ctx, char *out, int64_t now_us, size_t room)
     return n;
 }
 
+/**
+ * tv_fc_plan - Configure the emitter byte budget and hold state before diffing a frame.
+ * @ctx:  Termview state structure.
+ * @room: Byte allowance returned by `tv_fc_room()`.
+ *
+ * Sets `ctx->emit.budget` to the smaller of @room and `ctx->budget`, sets
+ * `ctx->emit.hold` when `@room == 0` so only UI chrome cells are emitted, and
+ * marks `ctx->fc.wait` if image cells are held waiting for a CPR reply.
+ *
+ * Return: Nothing.
+ */
 void tv_fc_plan(tv_state_t *ctx, size_t room)
 {
     tv_emit_t *e = &ctx->emit;
@@ -903,6 +1027,17 @@ void tv_fc_plan(tv_state_t *ctx, size_t room)
     ctx->fc.wait = e->hold && ctx->fc.state == TV_FC_ON; /* an answer sends what is held */
 }
 
+/**
+ * tv_fc_flushed - Record whether the frame diff was constrained by the flow-control window.
+ * @ctx:  Termview state structure.
+ * @room: Byte allowance that was passed to `tv_fc_plan()`.
+ *
+ * Updates `fc->limited` when the window (rather than the slice or ramp) stopped
+ * image cells from being emitted, and sets `fc->busy` whenever image cells
+ * remain pending.
+ *
+ * Return: Nothing.
+ */
 void tv_fc_flushed(tv_state_t *ctx, size_t room)
 {
     const tv_emit_t *e  = &ctx->emit;
@@ -911,6 +1046,15 @@ void tv_fc_flushed(tv_state_t *ctx, size_t room)
     fc->busy            = fc->busy || e->pending; /* more to send than went (any limit): not idle */
 }
 
+/**
+ * tv_fc_more - Check if deferred image cells can be sent on the next frame tick without waiting.
+ * @ctx: Termview state structure.
+ *
+ * Returns true when `ctx->emit.pending` is set and flow control is not holding
+ * output waiting for an in-flight CPR answer (`!ctx->fc.wait`).
+ *
+ * Return: Non-zero if more image cells are ready to flush, or 0 otherwise.
+ */
 int tv_fc_more(const tv_state_t *ctx)
 {
     return ctx->emit.pending && !ctx->fc.wait;
@@ -928,6 +1072,17 @@ static int64_t tv_fc_req_due(const tv_fc_t *fc, const tv_fc_req_t *r)
     return r->us + TV_FC_LOST_US + 4 * fc->base_us + (int64_t) ((double) r->inflight / rate);
 }
 
+/**
+ * tv_fc_match - Find the pending flow-control request matching a CPR column.
+ * @ctx: Termview viewer state.
+ * @col: 1-based column reported in the cursor-position report.
+ *
+ * Scans the active request ring from the oldest entry for a request whose
+ * encoded column matches @col (or exceeds it when clamped at the right edge of
+ * a narrowed terminal).
+ *
+ * Return: Ring offset of the matching request, or `fc->n` if none matched.
+ */
 int tv_fc_match(const tv_state_t *ctx, int col)
 {
     const tv_fc_t *fc   = &ctx->fc;
@@ -941,6 +1096,18 @@ int tv_fc_match(const tv_state_t *ctx, int col)
     return k;
 }
 
+/**
+ * tv_fc_answer - Process a cursor-position report answer for flow control.
+ * @ctx:    Termview viewer state.
+ * @now_us: Current monotonic timestamp in microseconds.
+ * @col:    1-based column reported by the terminal.
+ *
+ * Matches @col against the request ring, retires it and any older unanswered
+ * requests, updates acknowledged byte counts and round-trip/window estimates,
+ * and releases held output when room becomes available.
+ *
+ * Return: void.
+ */
 void tv_fc_answer(tv_state_t *ctx, int64_t now_us, int col)
 {
     tv_fc_t *fc = &ctx->fc;
@@ -998,6 +1165,15 @@ void tv_fc_answer(tv_state_t *ctx, int64_t now_us, int col)
     }
 }
 
+/**
+ * tv_fc_due_us - Return the deadline for the oldest pending flow-control request.
+ * @ctx: Termview viewer state.
+ *
+ * Computes the timestamp at which the oldest outstanding CPR request is
+ * considered overdue, or the next trickle deadline if already late.
+ *
+ * Return: Deadline timestamp in microseconds, or 0 if no timeout is active.
+ */
 int64_t tv_fc_due_us(const tv_state_t *ctx)
 {
     const tv_fc_t *fc = &ctx->fc;
@@ -1008,11 +1184,20 @@ int64_t tv_fc_due_us(const tv_state_t *ctx)
     return fc->late_us ? fc->late_us : tv_fc_req_due(fc, &fc->req[fc->head]);
 }
 
-/* A late answer is not a lost one: the request keeps its place, to be matched when its answer
- * comes (unless the ring is full: then the oldest goes, its column unused until an answer
- * comes). Meanwhile a little image goes now and then (less and less often), in case answers
- * stopped for good; it is not counted as answered. Without an answer to the startup request,
- * flow control stops (until one comes after all). */
+/**
+ * tv_fc_expire - Handle an overdue flow-control request timeout.
+ * @ctx:    Termview viewer state.
+ * @now_us: Current monotonic timestamp in microseconds.
+ *
+ * A late answer is not a lost one: the request keeps its place to be matched
+ * when its answer arrives (unless the ring is full, in which case the oldest
+ * entry is retired and its column marked gone). Meanwhile a trickle credit is
+ * granted with exponential backoff so the viewer does not freeze if answers
+ * stopped permanently; without an answer to the initial probe, flow control
+ * disables itself until one arrives.
+ *
+ * Return: void.
+ */
 void tv_fc_expire(tv_state_t *ctx, int64_t now_us)
 {
     tv_fc_t *fc  = &ctx->fc;
@@ -1045,6 +1230,16 @@ void tv_fc_expire(tv_state_t *ctx, int64_t now_us)
     ctx->dirty |= TV_D_CHROME;
 }
 
+/**
+ * tv_fc_settle_end - Compute the deadline for draining pending CPR answers on exit.
+ * @ctx:    Termview viewer state.
+ * @now_us: Current monotonic timestamp in microseconds.
+ *
+ * Determines how long to wait for in-flight cursor-position reports before
+ * returning control to the shell, bounded by minimum and maximum settle limits.
+ *
+ * Return: Monotonic timestamp in microseconds at which settling ends.
+ */
 int64_t tv_fc_settle_end(const tv_state_t *ctx, int64_t now_us)
 {
     const tv_fc_t *fc = &ctx->fc;
@@ -1072,6 +1267,16 @@ int64_t tv_fc_settle_end(const tv_state_t *ctx, int64_t now_us)
                                                 : due;
 }
 
+/**
+ * tv_fc_resume - Reset flow-control tracking state after resuming from SIGTSTP.
+ * @fc: Flow-control state structure.
+ *
+ * Marks columns of previously pending requests as gone so late replies are not
+ * misattributed, clears in-flight counters and timers, and schedules a fresh
+ * request before the next repaint.
+ *
+ * Return: void.
+ */
 void tv_fc_resume(tv_fc_t *fc)
 {
     for (int k = 0; k < fc->n; k++)
@@ -1097,6 +1302,17 @@ void tv_fc_resume(tv_fc_t *fc)
     fc->ask      = 1; /* before the repaint: in PROBE, it is the startup request again */
 }
 
+/**
+ * tv_settle_begin - Initialize the settle state machine before leaving raw mode.
+ * @ctx:    Termview viewer state.
+ * @st:     Settle state structure to initialize.
+ * @now_us: Current monotonic timestamp in microseconds.
+ *
+ * Records the start time, initial flow-control state, and settle deadline, and
+ * marks flow control as closing so no new CPR requests are emitted.
+ *
+ * Return: void.
+ */
 void tv_settle_begin(tv_state_t *ctx, tv_settle_t *st, int64_t now_us)
 {
     st->t0          = now_us;
@@ -1106,6 +1322,18 @@ void tv_settle_begin(tv_state_t *ctx, tv_settle_t *st, int64_t now_us)
     ctx->fc.closing = 1;
 }
 
+/**
+ * tv_settle_answer - Handle a CPR answer received while settling before exit.
+ * @ctx:    Termview viewer state.
+ * @st:     Active settle state structure.
+ * @now_us: Current monotonic timestamp in microseconds.
+ * @col:    1-based column reported by the terminal.
+ *
+ * Passes the answer to `tv_fc_answer()` and updates the settle deadline as
+ * pending requests drain from the link.
+ *
+ * Return: void.
+ */
 void tv_settle_answer(tv_state_t *ctx, tv_settle_t *st, int64_t now_us, int col)
 {
     tv_fc_t *fc = &ctx->fc;
@@ -1126,6 +1354,18 @@ void tv_settle_answer(tv_state_t *ctx, tv_settle_t *st, int64_t now_us, int col)
     st->end = (st->cut && st->cut < st->end) ? st->cut : st->end;
 }
 
+/**
+ * tv_settle_cut - Shorten the settle deadline when Ctrl-C is pressed during settle.
+ * @ctx:    Termview viewer state.
+ * @st:     Active settle state structure.
+ * @now_us: Current monotonic timestamp in microseconds.
+ *
+ * Caps the remaining settle wait to at least 1 second (or two round trips) from
+ * settle start so a quick double tap to quit does not leak CPR replies into the
+ * shell while still bounding the wait on a wedged link.
+ *
+ * Return: void.
+ */
 void tv_settle_cut(tv_state_t *ctx, tv_settle_t *st, int64_t now_us)
 {
     /* not a short wait: a double tap to quit would send the answers to the shell */
@@ -1233,8 +1473,17 @@ static void tv_note_dropped(int n)
     }
 }
 
-/* What the window leaves unanswered, a slice's worth at most; none while the queue drains to
- * time the round trip. Until the startup request is answered, the first window. */
+/**
+ * tv_fc_room - Compute the image-byte budget allowed by flow control for this flush.
+ * @ctx:    Termview viewer state.
+ * @now_us: Current monotonic timestamp in microseconds.
+ *
+ * Returns how many image bytes may be sent in the current flush based on the
+ * unanswered byte window, capped to at most one slice's worth of bytes, or 0
+ * while draining the link to re-measure the base round-trip time.
+ *
+ * Return: Number of image bytes allowed for this flush, or `SIZE_MAX` if unconstrained.
+ */
 size_t tv_fc_room(tv_state_t *ctx, int64_t now_us)
 {
     tv_fc_t *fc = &ctx->fc;
@@ -1296,6 +1545,18 @@ size_t tv_fc_room(tv_state_t *ctx, int64_t now_us)
     return (room < least) ? 0 : (room < chunk) ? room : chunk;
 }
 
+/**
+ * tv_budget_update - Update the per-flush byte budget from write duration.
+ * @ctx:   Termview viewer state.
+ * @n:     Number of bytes written in the completed flush.
+ * @dt_us: Duration of the write call in microseconds.
+ *
+ * Adjusts `ctx->drain_rate` and `ctx->budget` when a write blocks longer than
+ * `TV_FLUSH_BLOCKED_US` so each flush carries at most what the terminal drains
+ * in one frame slice, or doubles/clears the budget once writes complete quickly.
+ *
+ * Return: void.
+ */
 void tv_budget_update(tv_state_t *ctx, size_t n, int64_t dt_us)
 {
     /* Image bytes per flush. Once a write blocks, a flush carries what the terminal drains in
@@ -1323,6 +1584,17 @@ void tv_budget_update(tv_state_t *ctx, size_t n, int64_t dt_us)
     }
 }
 
+/**
+ * termview_flush_ansi - Emit the frame diff and flow-control probes to the terminal.
+ * @ctx: Termview viewer state.
+ *
+ * Toggles pointer-motion reporting when menus or help open/close, plans the
+ * image byte budget with flow control, encodes modified cells via
+ * `tv_flush_diff()`, appends any needed CPR probe, writes the buffer to
+ * stdout, and updates flow-control and write-budget state.
+ *
+ * Return: void.
+ */
 static void termview_flush_ansi(tv_state_t *ctx)
 {
     if (tv_sig_cont)
@@ -1534,6 +1806,15 @@ static void tv_stream_monitor(tv_state_t *ctx, int64_t now_us)
     }
 }
 
+/**
+ * termview_options_init - Initialize termview options to their default values.
+ * @opt: Options structure to initialize.
+ *
+ * Clears @opt and populates default colormap, linear scale, min-max range,
+ * 20 Hz target frame rate, and range smoothing settings.
+ *
+ * Return: void.
+ */
 void termview_options_init(termview_options_t *opt)
 {
     memset(opt, 0, sizeof(*opt));
@@ -1549,6 +1830,18 @@ void termview_options_init(termview_options_t *opt)
     opt->range_smooth = true;
 }
 
+/**
+ * tv_resize_waits - Check whether a pending resize repaint should wait for flow control.
+ * @ctx:    Termview viewer state.
+ * @tm:     Event-loop timer state.
+ * @now_us: Current monotonic timestamp in microseconds.
+ *
+ * Holds off painting a newly resized layout briefly while flow control is
+ * waiting on in-flight CPR answers so the resized image is not immediately
+ * starved of byte budget.
+ *
+ * Return: 1 if the resize repaint should wait, 0 otherwise.
+ */
 int tv_resize_waits(const tv_state_t *ctx, const tv_timers_t *tm, int64_t now_us)
 {
     const tv_fc_t *fc = &ctx->fc;
@@ -1556,6 +1849,19 @@ int tv_resize_waits(const tv_state_t *ctx, const tv_timers_t *tm, int64_t now_us
            now_us < tm->resized_us + fc->base_us + 2 * tv_slice_us(ctx);
 }
 
+/**
+ * tv_wake_at - Compute the next poll wakeup deadline for the main event loop.
+ * @ctx:    Termview viewer state.
+ * @tm:     Event-loop timer state.
+ * @now_us: Current monotonic timestamp in microseconds.
+ * @esc_us: Escape-sequence disambiguation deadline, or -1 if none.
+ *
+ * Returns the earliest deadline among the next stream data poll, interactive
+ * frame cap, deferred resize timeout, flow-control request timeout, ESC key
+ * timeout, and the 1 Hz status tick.
+ *
+ * Return: Monotonic wakeup timestamp in microseconds.
+ */
 int64_t tv_wake_at(const tv_state_t *ctx, const tv_timers_t *tm, int64_t now_us, int64_t esc_us)
 {
     /* the earliest of: next data poll, frame cap (dirty, or image cells left over by the last
@@ -1575,6 +1881,17 @@ int64_t tv_wake_at(const tv_state_t *ctx, const tv_timers_t *tm, int64_t now_us,
     return (tm->next_tick < dl) ? tm->next_tick : dl;
 }
 
+/**
+ * termview_run - Open an ImageStreamIO stream and run the interactive terminal viewer.
+ * @name: Stream name or path (including optional slice suffix).
+ * @opt:  Initial viewer options.
+ *
+ * Opens the target stream, initializes the raw terminal and signal handlers,
+ * runs the poll-driven rendering and flow-control loop until quit or hangup,
+ * drains any in-flight CPR replies, and restores terminal state.
+ *
+ * Return: 0 on normal exit, 1 on error or hangup.
+ */
 int termview_run(const char *name, const termview_options_t *opt)
 {
     char        err[512];

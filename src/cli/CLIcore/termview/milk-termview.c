@@ -52,6 +52,17 @@ static void print_names(FILE *f, const char *const *names, int n, int col, int i
     }
 }
 
+/**
+ * print_help - Print the command-line usage and help guide for milk-termview
+ * @progname: Invoked executable name
+ * @mh_color: Non-zero to emit ANSI color escape codes, 0 for monochrome output
+ *
+ * Displays the banner, synopsis, description, CLI options, valid colormap and
+ * scale names, interactive keybindings, examples, environment variables, and
+ * related tools.
+ *
+ * Return: void
+ */
 static void print_help(const char *progname, int mh_color)
 {
     milk_help_banner(progname, TV_DESCRIPTION, mh_color);
@@ -156,6 +167,17 @@ static int parse_name(const char        *progname,
     return 0;
 }
 
+/**
+ * main - Entry point for the milk-termview standalone executable
+ * @argc: Number of command-line arguments
+ * @argv: Array of command-line argument strings
+ *
+ * Parses standard milk help flags and viewer options (`-c`, `-s`, `-r`, `-f`,
+ * `--min`, `--max`, `--colors`), validates option constraints, and launches the
+ * terminal viewer loop via termview_run().
+ *
+ * Return: 0 on normal exit, non-zero on invalid arguments or runtime failure
+ */
 int main(int argc, char **argv)
 {
     const char *progname = basename(argv[0]);

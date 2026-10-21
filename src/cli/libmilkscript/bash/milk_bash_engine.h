@@ -4,14 +4,16 @@
 
 /**
  * @file milk_bash_engine.h
- * @brief Supervised bash co-process and milk-cli shorthand translator.
+ * @brief Supervised bash co-process, `@{...}` inline translator, and `--modernize` engine.
  *
  * Role & Goal:
  *   Provides the public interface for milk-cli's bash execution engine:
- *   1. `milk_translate_shorthand_to_bash()`: Translates `.milk` scripts and interactive
- *      REPL lines (`milk-cli` `@` shorthands, `@{expr}`, `@s.im.prop`, and interactive
- *      REPL commands) into `milk.bash` syntax while preserving 1:1 line numbers.
- *   2. `milk_bash_engine_*()`: Manages the persistent supervised bash co-process
+ *   1. `milk_translate_shorthand_to_bash()`: Translates inline `@{...}` entity/calculator
+ *      expansions and `\@` escapes into `milk.bash` syntax while preserving 1:1 line numbers.
+ *   2. `milk_bash_modernize()`: Rewrites legacy shorthands (`@ <expr>`, `@s.im.prop`,
+ *      `@f.name.param=val`, `a |> b`) into current `@calc`, `@get`, `@set`, `@pipe`, and
+ *      `@{...}` syntax (`milk-script --modernize`).
+ *   3. `milk_bash_engine_*()`: Manages the persistent supervised bash co-process
  *      and in-process UNIX domain socket server used by interactive `milk-cli`
  *      and `milk-cli <script.milk>`.
  */

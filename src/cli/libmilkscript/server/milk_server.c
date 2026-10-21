@@ -63,6 +63,15 @@ volatile sig_atomic_t g_milk_server_stop = 0;
 static pthread_mutex_t g_cmd_mutex;
 static pthread_once_t  g_cmd_mutex_once = PTHREAD_ONCE_INIT;
 
+/**
+ * cmd_mutex_init - Initialize the recursive server command serialization mutex
+ *
+ * Configures `g_cmd_mutex` as `PTHREAD_MUTEX_RECURSIVE` so nested command
+ * dispatches on the same thread do not deadlock while worker threads are
+ * serialized against process-wide state and stdio changes.
+ *
+ * Return: void
+ */
 static void cmd_mutex_init(void)
 {
     pthread_mutexattr_t attr;
@@ -72,17 +81,42 @@ static void cmd_mutex_init(void)
     pthread_mutexattr_destroy(&attr);
 }
 
+/**
+ * milk_server_cmd_lock - Acquire the recursive server command mutex
+ *
+ * Serializes access to process-wide `data` state, `dcvar` tables, and temporary
+ * stdio/cwd redirections across the main server loop and detached stream worker
+ * threads.
+ *
+ * Return: void
+ */
 void milk_server_cmd_lock(void)
 {
     pthread_once(&g_cmd_mutex_once, cmd_mutex_init);
     pthread_mutex_lock(&g_cmd_mutex);
 }
 
+/**
+ * milk_server_cmd_unlock - Release the recursive server command mutex
+ *
+ * Releases the lock acquired by `milk_server_cmd_lock`.
+ *
+ * Return: void
+ */
 void milk_server_cmd_unlock(void)
 {
     pthread_mutex_unlock(&g_cmd_mutex);
 }
 
+/**
+ * milk_child_reset_omp - Reset OpenMP thread pool and mutex state in forked children
+ *
+ * Invoked as a `pthread_atfork` child handler so forked `--async` and `@replay`
+ * worker processes reset OpenMP to a single thread, reinitialize `g_cmd_mutex`
+ * in an unlocked state, and clear inherited watcher state.
+ *
+ * Return: void
+ */
 static void milk_child_reset_omp(void)
 {
 #ifdef _OPENMP
@@ -102,6 +136,16 @@ static void *stream_worker(void *arg)
     return NULL;
 }
 
+/**
+ * milk_server_spawn_stream_worker - Spawn a detached thread to service a blocking stream request
+ * @client_fd: Connected client socket file descriptor (ownership transferred on success)
+ *
+ * Launches a detached worker thread with all signals blocked so long-running
+ * `MILK_MSG_WAITFOR` and `MILK_MSG_GRAB` requests execute in-process (sharing live
+ * local images and streams) without blocking concurrent server requests.
+ *
+ * Return: 0 if the worker thread was spawned, -1 on failure
+ */
 int milk_server_spawn_stream_worker(int client_fd)
 {
     pthread_attr_t attr;
@@ -130,6 +174,14 @@ static int peek_request_type(int fd)
 
 static pthread_once_t g_atfork_once = PTHREAD_ONCE_INIT;
 
+/**
+ * register_atfork_handler - Register the child post-fork cleanup handler once per process
+ *
+ * Installs `milk_child_reset_omp` via `pthread_atfork` so any subsequent `fork()`
+ * in the server safely resets OpenMP and synchronization primitives in the child.
+ *
+ * Return: void
+ */
 static void register_atfork_handler(void)
 {
     pthread_atfork(NULL, NULL, milk_child_reset_omp);
@@ -217,6 +269,19 @@ typedef struct
     size_t cap_len;
 } tee_pump_ctx_t;
 
+/**
+ * tee_drain_fd - Drain available bytes from a captured pipe into client stdio and the log buffer
+ * @rfd:       Non-blocking read end of the server stdout/stderr capture pipe
+ * @wfd:       Client destination file descriptor to forward output to
+ * @ctx:       Tee pump context holding the ring-buffer log snippet accumulator
+ * @open_flag: In/out flag cleared to 0 when @rfd reaches EOF
+ *
+ * Reads all currently available bytes from @rfd, forwards them completely to @wfd,
+ * and appends up to `MILK_SRVLOG_OUT_MAX - 1` bytes into `ctx->cap_buf` for the
+ * shared-memory command log.
+ *
+ * Return: void
+ */
 static void tee_drain_fd(int rfd, int wfd, tee_pump_ctx_t *ctx, int *open_flag)
 {
     char buf[4096];
@@ -341,6 +406,15 @@ static void *tee_pump_thread(void *arg)
     return NULL;
 }
 
+/**
+ * diff_timespec_ns - Compute the non-negative nanosecond difference between two timestamps
+ * @t0: Start timestamp
+ * @t1: End timestamp
+ *
+ * Calculates `(@t1 - @t0)` in nanoseconds, clamping negative differences to 0.
+ *
+ * Return: Elapsed duration in nanoseconds
+ */
 static uint64_t diff_timespec_ns(const struct timespec *t0, const struct timespec *t1)
 {
     int64_t ds  = (int64_t) t1->tv_sec - (int64_t) t0->tv_sec;

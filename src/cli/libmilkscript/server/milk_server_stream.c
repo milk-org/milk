@@ -98,12 +98,29 @@ static int wait_cancelled(void *ctx)
     return check_client_cancelled(*(const int *) ctx);
 }
 
+/**
+ * wait_lock - `milk_wait_ops_t` callback to acquire the server command lock
+ * @ctx: Unused callback context pointer
+ *
+ * Acquires `milk_server_cmd_lock()` before polling shared/local state from a
+ * wait loop that may be executing on a detached stream worker thread.
+ *
+ * Return: void
+ */
 static void wait_lock(void *ctx)
 {
     (void) ctx;
     milk_server_cmd_lock(); /* may run in a worker thread */
 }
 
+/**
+ * wait_unlock - `milk_wait_ops_t` callback to release the server command lock
+ * @ctx: Unused callback context pointer
+ *
+ * Releases `milk_server_cmd_unlock()` after polling state during a wait step.
+ *
+ * Return: void
+ */
 static void wait_unlock(void *ctx)
 {
     (void) ctx;

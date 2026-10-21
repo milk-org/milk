@@ -36,6 +36,14 @@
 #include "milk_client.h"
 #include "milkdata.h"
 
+/**
+ * milkbash_init_quiet - Suppress milk startup banners when loaded as a Bash builtin
+ *
+ * Sets the global quiet flag during shared library initialization so that loading
+ * libmilkbash.so via `enable -f` does not pollute the interactive shell's output.
+ *
+ * Return: void
+ */
 __attribute__((constructor(101))) static void milkbash_init_quiet(void)
 {
     milk_data.quiet = 1;
@@ -86,6 +94,16 @@ static bash_get_string_value_fn  fn_get_string_value  = NULL;
 static bash_parse_and_execute_fn fn_parse_and_execute = NULL;
 static int                       g_syms_resolved      = 0;
 
+/**
+ * resolve_bash_symbols - Lazily resolve host Bash C API symbols via dlsym
+ *
+ * Looks up `bind_variable`, `get_string_value`, and `parse_and_execute` in the
+ * hosting Bash process image using `RTLD_DEFAULT`. Avoids a compile-time dependency
+ * on version-specific GNU Bash internal headers while allowing builtins to read and
+ * mutate shell state directly.
+ *
+ * Return: void
+ */
 static void resolve_bash_symbols(void)
 {
     if (g_syms_resolved)
@@ -98,6 +116,17 @@ static void resolve_bash_symbols(void)
     fn_parse_and_execute = (bash_parse_and_execute_fn) dlsym(RTLD_DEFAULT, "parse_and_execute");
 }
 
+/**
+ * bash_hook_get_var - Read a shell or environment variable from the host Bash process
+ * @name: Variable name to look up
+ * @ctx:  Unused hook context pointer
+ *
+ * Queries the host Bash symbol table via `get_string_value` so unexported shell
+ * variables are visible to milk client operations, falling back to `getenv()` if
+ * the Bash symbol is unavailable.
+ *
+ * Return: Pointer to variable value string, or NULL if unset
+ */
 static const char *bash_hook_get_var(const char *name, void *ctx)
 {
     (void) ctx;
@@ -109,6 +138,18 @@ static const char *bash_hook_get_var(const char *name, void *ctx)
     return getenv(name);
 }
 
+/**
+ * bash_hook_set_var - Bind a shell variable in the host Bash process
+ * @name: Variable name to assign
+ * @val:  String value to bind (NULL is treated as empty string)
+ * @ctx:  Unused hook context pointer
+ *
+ * Binds @name directly in the running shell's variable table via `bind_variable`
+ * so milk commands can return values into shell variables without command
+ * substitution or subshell forks. Falls back to `setenv()` if unavailable.
+ *
+ * Return: void
+ */
 static void bash_hook_set_var(const char *name, const char *val, void *ctx)
 {
     (void) ctx;
@@ -123,6 +164,17 @@ static void bash_hook_set_var(const char *name, const char *val, void *ctx)
     }
 }
 
+/**
+ * bash_hook_def_cmd - Define a shell wrapper function for a milk module command
+ * @cmdname: Dotted module command name (e.g., `module.command`)
+ * @ctx:     Unused hook context pointer
+ *
+ * Evaluates a non-interactive, no-history function definition in the host shell
+ * that forwards invocations of @cmdname to `milkcall`, enabling newly loaded
+ * server commands to be called directly as first-class shell commands.
+ *
+ * Return: void
+ */
 static void bash_hook_def_cmd(const char *cmdname, void *ctx)
 {
     (void) ctx;
@@ -146,12 +198,33 @@ static void bash_hook_def_cmd(const char *cmdname, void *ctx)
 
 static volatile sig_atomic_t g_sigint_pending = 0; /* SIGINT taken by the client, owed to bash */
 
+/**
+ * bash_hook_on_sigint - Record that a SIGINT was caught during a client operation
+ * @ctx: Unused hook context pointer
+ *
+ * Marks a pending SIGINT flag so the builtin entry wrapper can re-raise SIGINT
+ * after restoring Bash's own signal handlers, ensuring Bash traps and script
+ * abort semantics behave as expected.
+ *
+ * Return: void
+ */
 static void bash_hook_on_sigint(void *ctx)
 {
     (void) ctx;
     g_sigint_pending = 1;
 }
 
+/**
+ * bash_hook_eval - Evaluate a Bash script snippet in the current shell frame
+ * @script: Null-terminated shell code string to execute
+ * @ctx:    Unused hook context pointer
+ *
+ * Passes a heap-duplicated copy of @script to Bash's `parse_and_execute` with
+ * non-interactive and no-history flags, used to bind array variables or run
+ * caller-scoped `local` / `return` statements.
+ *
+ * Return: void
+ */
 static void bash_hook_eval(char *script, void *ctx)
 {
     (void) ctx;
@@ -162,6 +235,16 @@ static void bash_hook_eval(char *script, void *ctx)
     }
 }
 
+/**
+ * make_bash_hooks - Populate a milk client hook table with host Bash callbacks
+ * @hooks: Output hook structure to initialize
+ *
+ * Resolves host Bash symbols and wires variable access, command definition,
+ * SIGINT notification, and script evaluation callbacks into @hooks for use by
+ * loadable builtin implementations.
+ *
+ * Return: void
+ */
 static void make_bash_hooks(milk_client_hooks_t *hooks)
 {
     resolve_bash_symbols();
@@ -173,6 +256,16 @@ static void make_bash_hooks(milk_client_hooks_t *hooks)
     hooks->ctx       = NULL;
 }
 
+/**
+ * wordlist_to_argv - Convert a Bash WORD_LIST linked list into a C argv array
+ * @list:     Head of the Bash word list passed to a builtin
+ * @out_argv: Output pointer receiving the newly allocated NULL-terminated argv array
+ *
+ * Counts words in @list and allocates a pointer array referencing the underlying
+ * word strings without copying characters. The caller must `free(*out_argv)`.
+ *
+ * Return: Number of arguments in @out_argv, or 0 on empty list or allocation failure
+ */
 static int wordlist_to_argv(WORD_LIST *list, char ***out_argv)
 {
     int count = 0;
@@ -200,6 +293,15 @@ static int wordlist_to_argv(WORD_LIST *list, char ***out_argv)
  *  Builtin Entry Points
  * ============================================================ */
 
+/**
+ * milkcall_builtin - Bash builtin entry point for `milkcall`
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Dispatches a milk CLI command (optionally with `--async`) to the session's
+ * `milk-cli --server` daemon over IPC using in-process Bash variable hooks.
+ *
+ * Return: Command execution status (`EXECUTION_SUCCESS` or error code)
+ */
 static int milkcall_builtin(WORD_LIST *list)
 {
     char **argv = NULL;
@@ -231,6 +333,15 @@ static int milkcall_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milkget_builtin - Bash builtin entry point for `milkget` (`@get`)
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Queries stream, FPS, processinfo, or sequencer properties directly in-process
+ * or via the session server and optionally binds results to shell variables.
+ *
+ * Return: 0 on success, non-zero on lookup or syntax failure
+ */
 static int milkget_builtin(WORD_LIST *list)
 {
     char              **argv = NULL;
@@ -242,6 +353,15 @@ static int milkget_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milkset_builtin - Bash builtin entry point for `milkset` (`@set`)
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Modifies FPS parameters, stream FITS keywords, or processinfo controls from
+ * the shell without spawning an external process.
+ *
+ * Return: 0 on success, `EXECUTION_FAILURE` or error code on failure
+ */
 static int milkset_builtin(WORD_LIST *list)
 {
     char **argv = NULL;
@@ -260,6 +380,15 @@ static int milkset_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milkcalc_builtin - Bash builtin entry point for `milkcalc` (`@calc`)
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Evaluates a mathematical or image arithmetic expression via the milk client
+ * and server, binding any resulting variables directly in the host shell.
+ *
+ * Return: 0 on success, non-zero on evaluation error
+ */
 static int milkcalc_builtin(WORD_LIST *list)
 {
     char **argv = NULL;
@@ -276,6 +405,15 @@ static int milkcalc_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milktest_builtin - Bash builtin entry point for `milktest` (`@test`)
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Concatenates @list into a boolean expression and evaluates it via
+ * `milk_client_test` for use in shell conditionals (`if @test ...`).
+ *
+ * Return: 0 if the condition is true, 1 if false, 2 on error
+ */
 static int milktest_builtin(WORD_LIST *list)
 {
     char **argv = NULL;
@@ -316,6 +454,15 @@ static int milktest_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milkexists_builtin - Bash builtin entry point for `milkexists` (`@exists`)
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Checks whether a milk stream, FPS, processinfo, or sequencer entity exists
+ * (or is actively running when `-r` / `--running` is passed).
+ *
+ * Return: 0 if the entity exists (and is running if `-r`), 1 otherwise
+ */
 static int milkexists_builtin(WORD_LIST *list)
 {
     char **argv = NULL;
@@ -347,6 +494,15 @@ static int milkexists_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milkwaitfor_builtin - Bash builtin entry point for `milkwaitfor` (`@waitfor`)
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Waits in-process or via the session server for a stream to advance by N frames
+ * or for an entity/boolean condition to be satisfied.
+ *
+ * Return: 0 on condition met, 124 on timeout, 130 on SIGINT, 1 on error
+ */
 static int milkwaitfor_builtin(WORD_LIST *list)
 {
     char              **argv = NULL;
@@ -358,6 +514,15 @@ static int milkwaitfor_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milkwaitany_builtin - Bash builtin entry point for `milkwaitany` (`@waitany`)
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Blocks until any one of the specified shared-memory streams updates and outputs
+ * or binds the triggered stream's name.
+ *
+ * Return: 0 when a stream updates, 124 on timeout, 130 on SIGINT, 1 on error
+ */
 static int milkwaitany_builtin(WORD_LIST *list)
 {
     char              **argv = NULL;
@@ -369,6 +534,15 @@ static int milkwaitany_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milkgrab_builtin - Bash builtin entry point for `milkgrab` (`@grab`)
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Captures one or more consecutive frames from a stream into an image, 3D cube,
+ * FITS file, or stdout via `milk_client_grab`.
+ *
+ * Return: 0 on success, 124 on timeout, 130 on SIGINT, 1 on error
+ */
 static int milkgrab_builtin(WORD_LIST *list)
 {
     char              **argv = NULL;
@@ -380,6 +554,15 @@ static int milkgrab_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milkcomplete_builtin - Bash builtin entry point for `milkcomplete`
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST (`<prefix> [cmd|arg]`)
+ *
+ * Queries tab-completion candidates from the session server for interactive
+ * readline completion in `milk.bash` and `milk-cli`.
+ *
+ * Return: 0 on success, non-zero on error
+ */
 static int milkcomplete_builtin(WORD_LIST *list)
 {
     char      **argv      = NULL;
@@ -394,6 +577,15 @@ static int milkcomplete_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milkshutdown_builtin - Bash builtin entry point for `milkshutdown`
+ * @list: Unused argument list
+ *
+ * Closes the shell's lifetime owner pipe and requests clean termination of the
+ * session's `milk-cli --server` daemon.
+ *
+ * Return: 0 on success, non-zero on error
+ */
 static int milkshutdown_builtin(WORD_LIST *list)
 {
     (void) list;
@@ -402,6 +594,15 @@ static int milkshutdown_builtin(WORD_LIST *list)
     return milk_client_shutdown(&hooks);
 }
 
+/**
+ * milkserver_builtin - Bash builtin entry point for `milkserver` (`@server`)
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Manages, inspects, starts, stops, or switches `milk-cli --server` instances
+ * from the current Bash session.
+ *
+ * Return: 0 on success, non-zero on error
+ */
 static int milkserver_builtin(WORD_LIST *list)
 {
     char              **argv = NULL;
@@ -413,6 +614,15 @@ static int milkserver_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milklog_builtin - Bash builtin entry point for `milklog` (`@log`)
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Queries, filters, or live-tails the shared-memory command ring-buffer log of
+ * the active or specified milk server.
+ *
+ * Return: 0 on success, non-zero on error
+ */
 static int milklog_builtin(WORD_LIST *list)
 {
     char              **argv = NULL;
@@ -567,6 +777,15 @@ static int milktranslate_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milkdefer_builtin - Bash builtin entry point for `milkdefer` (`@defer`)
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Registers cleanup commands to run when the current function, sourced file, or
+ * shell session exits, or evaluates pending deferred commands on `RETURN`/`EXIT`.
+ *
+ * Return: 0 on success, non-zero when staging trap commands or on error
+ */
 static int milkdefer_builtin(WORD_LIST *list)
 {
     char **argv = NULL;
@@ -612,6 +831,15 @@ static int milkargs_builtin(WORD_LIST *list)
     return rc;
 }
 
+/**
+ * milkls_builtin - Bash builtin entry point for `milkls` (`@ls`)
+ * @list: Arguments passed to the builtin as a Bash WORD_LIST
+ *
+ * Lists active streams, local images, FPS instances, processinfo entries, and
+ * sequencers via `milk_client_ls`.
+ *
+ * Return: 0 on success, non-zero on error
+ */
 static int milkls_builtin(WORD_LIST *list)
 {
     char              **argv = NULL;

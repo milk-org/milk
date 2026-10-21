@@ -303,7 +303,16 @@ errno_t cli_showmatch_toggle(void)
 #endif
 
 
-/* read_file() - the contents of @fname (NUL-terminated, to free), or NULL */
+/**
+ * read_file - Read the entire contents of a file into a heap-allocated string
+ * @fname: Path to the file to read
+ *
+ * Opens the file in binary mode, determines its byte length, and reads the
+ * contents into a NUL-terminated buffer allocated with malloc(). Used by the
+ * standalone script formatting and outline tools.
+ *
+ * Return: Newly allocated NUL-terminated buffer (caller must free), or NULL on error
+ */
 static char *read_file(const char *fname)
 {
     FILE *f = fopen(fname, "rb");
@@ -327,6 +336,18 @@ static char *read_file(const char *fname)
     return buf;
 }
 
+/**
+ * cli_format_file - Auto-format a milk/bash script file using Tree-sitter
+ * @fname:    Path to the script file to format
+ * @in_place: Non-zero to overwrite @fname in place, 0 to write to stdout
+ * @width:    Number of spaces per indentation level
+ *
+ * Reads the target script file, re-indents its lines according to the
+ * Tree-sitter bash syntax tree via cli_ts_format_code(), and outputs the
+ * formatted source either back to @fname or to standard output.
+ *
+ * Return: 0 on success, 1 on file I/O or formatting failure
+ */
 int cli_format_file(const char *fname, int in_place, int width)
 {
     char *buf       = read_file(fname);
@@ -354,6 +375,16 @@ int cli_format_file(const char *fname, int in_place, int width)
     return 0;
 }
 
+/**
+ * cli_outline_file - Print a structural block outline of a script file
+ * @fname: Path to the script file to inspect
+ *
+ * Reads the script file and invokes cli_ts_print_block_folds() to list all
+ * multi-line compound blocks (functions, loops, conditionals) along with their
+ * line ranges and summary count to stdout.
+ *
+ * Return: 0 on success, 1 if the file cannot be read
+ */
 int cli_outline_file(const char *fname)
 {
     char *buf = read_file(fname);

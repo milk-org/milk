@@ -26,11 +26,33 @@
 #include "cli_treesitter_internal.h"
 #include "milk_entity_ns.h"
 
+/**
+ * is_word_char - Check if a character is an ASCII alphanumeric or underscore identifier byte.
+ * @c: Character byte to test.
+ *
+ * Used by lexical keyword scanners to verify word boundaries around reserved
+ * shell keywords.
+ *
+ * Return: true if @c is alphanumeric or `'_'`, or false otherwise.
+ */
 static bool is_word_char(char c)
 {
     return isalnum((unsigned char) c) || c == '_';
 }
 
+/**
+ * is_word_at - Check if a standalone identifier word matches at a given byte offset.
+ * @line: Input command line string.
+ * @len:  Length of @line in bytes.
+ * @pos:  Zero-based byte offset in @line to test.
+ * @word: Null-terminated keyword string to match.
+ * @wlen: Optional output pointer receiving `strlen(word)`.
+ *
+ * Verifies that @word occurs at `line[pos]` and is neither preceded nor
+ * followed by a word character (`is_word_char()`).
+ *
+ * Return: true if @word matches as a standalone word at @pos, or false otherwise.
+ */
 static bool is_word_at(const char *line, int len, int pos, const char *word, int *wlen)
 {
     int wl = (int) strlen(word);
@@ -57,6 +79,18 @@ static bool is_word_at(const char *line, int len, int pos, const char *word, int
     return true;
 }
 
+/**
+ * ends_with_sep_keyword - Check if the token ending at @prev_idx is a command-introducing keyword.
+ * @line:       Input command line string.
+ * @prev_idx:   Index of the last non-whitespace byte preceding the current token.
+ * @kw:         Null-terminated keyword string to test (e.g., `"do"`, `"then"`, `"time"`).
+ * @allow_semi: Non-zero if `;` immediately before @kw is also accepted as a boundary.
+ *
+ * Tests whether `line[0..prev_idx]` ends with @kw preceded by the start of
+ * the line, whitespace, or (when @allow_semi is non-zero) a semicolon.
+ *
+ * Return: true if @kw ends at @prev_idx on a valid boundary, or false otherwise.
+ */
 static bool ends_with_sep_keyword(const char *line, int prev_idx, const char *kw, int allow_semi)
 {
     int kwlen = (int) strlen(kw);
@@ -282,6 +316,18 @@ int cli_determine_mode_lexical(const char *line,
     return -1;
 }
 
+/**
+ * build_quote_comment_mask - Classify each byte of @line by quote or comment state.
+ * @line: Input command line string.
+ * @len:  Length of @line in bytes.
+ * @mask: Output array of @len bytes receiving the lexical state per byte.
+ *
+ * Populates `mask[i]` with 0 for unquoted code, 1 for single-quoted text,
+ * 2 for double-quoted text, and 3 for `#` comments so delimiter and keyword
+ * matchers can skip non-code regions in O(1) time per byte.
+ *
+ * Return: Nothing.
+ */
 static void build_quote_comment_mask(const char *line, int len, uint8_t *mask)
 {
     int in_sq  = 0;
@@ -328,6 +374,18 @@ static void build_quote_comment_mask(const char *line, int len, uint8_t *mask)
     }
 }
 
+/**
+ * set_match_pair - Populate a `CLI_MATCH_PAIR` structure with matched token spans.
+ * @pair:   Output match pair structure.
+ * @tstart: Start byte offset of the token under the cursor.
+ * @tend:   End byte offset of the token under the cursor.
+ * @mstart: Start byte offset of the matching partner token.
+ * @mend:   End byte offset of the matching partner token.
+ *
+ * Stores the byte ranges and sets `pair->has_match = true`.
+ *
+ * Return: Nothing.
+ */
 static void set_match_pair(CLI_MATCH_PAIR *pair, int tstart, int tend, int mstart, int mend)
 {
     pair->token_start = (uint32_t) tstart;
@@ -337,6 +395,21 @@ static void set_match_pair(CLI_MATCH_PAIR *pair, int tstart, int tend, int mstar
     pair->has_match   = true;
 }
 
+/**
+ * match_single_char_forward - Scan forward for the matching closing delimiter of @open_c.
+ * @line:    Input command line string.
+ * @len:     Length of @line in bytes.
+ * @mask:    Per-byte quote/comment mask from build_quote_comment_mask().
+ * @pos:     Byte offset of the opening delimiter @open_c.
+ * @open_c:  Opening delimiter character (`'('`, `'['`, or `'{'`).
+ * @close_c: Closing delimiter character (`')'`, `']'`, or `'}'`).
+ * @pair:    Output match pair structure populated when a match is found.
+ *
+ * Tracks nesting depth across unquoted bytes (`mask[i] == 0`) after @pos and
+ * records the matching closing delimiter when depth reaches zero.
+ *
+ * Return: true if a matching closing delimiter was found, or false otherwise.
+ */
 static bool match_single_char_forward(const char     *line,
                                       int             len,
                                       const uint8_t  *mask,
@@ -369,6 +442,23 @@ static bool match_single_char_forward(const char     *line,
     return false;
 }
 
+/**
+ * match_single_char_backward - Scan backward for the matching opening delimiter of @close_c.
+ * @line:                  Input command line string.
+ * @mask:                  Per-byte quote/comment mask from build_quote_comment_mask().
+ * @pos:                   Byte offset of the closing delimiter @close_c.
+ * @open_c:                Opening delimiter character (`'('`, `'['`, or `'{'`).
+ * @close_c:               Closing delimiter character (`')'`, `']'`, or `'}'`).
+ * @allow_dq_mask:         Non-zero to allow matching inside double-quoted expansions (`${...}`).
+ * @include_dollar_prefix: Non-zero to include a preceding `'$'` in the matched opening span.
+ * @pair:                  Output match pair structure populated when a match is found.
+ *
+ * Tracks nesting depth backward from `@pos - 1` and records the matching
+ * opening delimiter (plus any leading `'$'` when @include_dollar_prefix is set)
+ * when depth reaches zero.
+ *
+ * Return: true if a matching opening delimiter was found, or false otherwise.
+ */
 static bool match_single_char_backward(const char     *line,
                                        const uint8_t  *mask,
                                        int             pos,
@@ -568,6 +658,23 @@ static bool try_match_delimiter_at(const char     *line,
     return false;
 }
 
+/**
+ * match_kw_forward - Scan forward for the matching closing keyword of a compound block.
+ * @line:            Input command line string.
+ * @len:             Length of @line in bytes.
+ * @mask:            Per-byte quote/comment mask from build_quote_comment_mask().
+ * @wstart:          Start byte offset of the opening keyword under the cursor.
+ * @wend:            End byte offset of the opening keyword under the cursor.
+ * @open_kw:         Opening keyword string (e.g., `"if"`, `"do"`, `"case"`).
+ * @close_kw:        Closing keyword string (e.g., `"fi"`, `"done"`, `"esac"`).
+ * @match_all_loops: Non-zero if `"for"`, `"while"`, and `"until"` all increment loop depth.
+ * @pair:            Output match pair structure populated when a match is found.
+ *
+ * Scans unquoted words after @wend, incrementing depth on nested opening
+ * keywords and decrementing on @close_kw until depth reaches zero.
+ *
+ * Return: true if the matching closing keyword was found, or false otherwise.
+ */
 static bool match_kw_forward(const char     *line,
                              int             len,
                              const uint8_t  *mask,
@@ -607,6 +714,24 @@ static bool match_kw_forward(const char     *line,
     return false;
 }
 
+/**
+ * match_kw_backward - Scan backward for the matching opening keyword of a compound block.
+ * @line:            Input command line string.
+ * @len:             Length of @line in bytes.
+ * @mask:            Per-byte quote/comment mask from build_quote_comment_mask().
+ * @wstart:          Start byte offset of the closing keyword under the cursor.
+ * @wend:            End byte offset of the closing keyword under the cursor.
+ * @open_kw:         Opening keyword string (e.g., `"if"`, `"do"`, `"case"`).
+ * @close_kw:        Closing keyword string (e.g., `"fi"`, `"done"`, `"esac"`).
+ * @match_all_loops: Non-zero to match `"do"`, `"for"`, `"while"`, or `"until"` when scanning back.
+ * @pair:            Output match pair structure populated when a match is found.
+ *
+ * Scans unquoted words backward from `@wstart - 1`, incrementing depth on
+ * nested @close_kw tokens and decrementing on matching opening keywords until
+ * depth reaches zero.
+ *
+ * Return: true if the matching opening keyword was found, or false otherwise.
+ */
 static bool match_kw_backward(const char     *line,
                               int             len,
                               const uint8_t  *mask,
@@ -768,6 +893,15 @@ bool find_match_pair_lexical(const char *line, int len, int cursor_pos, CLI_MATC
     return matched;
 }
 
+/**
+ * cli_ts_has_unclosed_quotes - Check if a string contains an unclosed single or double quote.
+ * @s: Null-terminated command buffer to scan.
+ *
+ * Scans @s respecting backslash escapes outside single quotes and toggles
+ * single- and double-quote state flags.
+ *
+ * Return: Non-zero if a single or double quote remains unclosed at the end of @s, or 0 otherwise.
+ */
 int cli_ts_has_unclosed_quotes(const char *s)
 {
     int in_dquote = 0;

@@ -160,37 +160,83 @@ enum
 /** Packed 24-bit colour, as stored in a cell. */
 #define TV_RGB(r, g, b) (((uint32_t) (r) << 16) | ((uint32_t) (g) << 8) | (uint32_t) (b))
 
+/**
+ * tv_rgb - Pack an RGB triple @c into a 24-bit `0xRRGGBB` integer
+ * @c: RGB color struct
+ *
+ * Return: Packed 24-bit color value.
+ */
 static inline uint32_t tv_rgb(tv_rgb_t c)
 {
     return ((uint32_t) c.r << 16) | ((uint32_t) c.g << 8) | c.b;
 }
 
+/**
+ * tv_cell - Pack background color, foreground color, and glyph index into a 64-bit `tv_cell_t`
+ * @bg:    24-bit background RGB color (`bits 0..23`)
+ * @fg:    24-bit foreground RGB color (`bits 24..47`)
+ * @glyph: Glyph table index (`bits 48..55`)
+ *
+ * Return: Packed 64-bit cell word.
+ */
 static inline tv_cell_t tv_cell(uint32_t bg, uint32_t fg, uint8_t glyph)
 {
     return (uint64_t) (bg & 0xFFFFFF) | ((uint64_t) (fg & 0xFFFFFF) << 24) |
            ((uint64_t) glyph << 48);
 }
 
+/**
+ * tv_cell_bg - Extract 24-bit background RGB color from packed cell @c
+ * @c: Packed cell word
+ *
+ * Return: 24-bit background RGB value.
+ */
 static inline uint32_t tv_cell_bg(tv_cell_t c)
 {
     return (uint32_t) (c & 0xFFFFFF);
 }
 
+/**
+ * tv_cell_fg - Extract 24-bit foreground RGB color from packed cell @c
+ * @c: Packed cell word
+ *
+ * Return: 24-bit foreground RGB value.
+ */
 static inline uint32_t tv_cell_fg(tv_cell_t c)
 {
     return (uint32_t) ((c >> 24) & 0xFFFFFF);
 }
 
+/**
+ * tv_cell_glyph - Extract 8-bit glyph table index from packed cell @c
+ * @c: Packed cell word
+ *
+ * Return: Glyph index (`0..255`).
+ */
 static inline uint8_t tv_cell_glyph(tv_cell_t c)
 {
     return (uint8_t) (c >> 48);
 }
 
+/**
+ * tv_cell_with_fg - Return a copy of cell @c with its 24-bit foreground color replaced by @fg
+ * @c:  Original packed cell word
+ * @fg: New 24-bit foreground RGB value
+ *
+ * Return: Updated packed cell word.
+ */
 static inline tv_cell_t tv_cell_with_fg(tv_cell_t c, uint32_t fg)
 {
     return (c & ~((uint64_t) 0xFFFFFF << 24)) | ((uint64_t) (fg & 0xFFFFFF) << 24);
 }
 
+/**
+ * tv_cell_with_glyph - Return a copy of cell @c with its glyph index replaced by @glyph
+ * @c:     Original packed cell word
+ * @glyph: New 8-bit glyph index
+ *
+ * Return: Updated packed cell word.
+ */
 static inline tv_cell_t tv_cell_with_glyph(tv_cell_t c, uint8_t glyph)
 {
     return (c & ~((uint64_t) 0xFF << 48)) | ((uint64_t) glyph << 48);
@@ -199,6 +245,12 @@ static inline tv_cell_t tv_cell_with_glyph(tv_cell_t c, uint8_t glyph)
 /** Attribute bit: drawn by the user interface, not the image; sent ahead of image cells. */
 #define TV_ATTR_CHROME ((uint64_t) 1 << 56)
 
+/**
+ * tv_cell_is_chrome - Check whether cell @c carries the UI chrome priority bit (`TV_ATTR_CHROME`)
+ * @c: Packed cell word
+ *
+ * Return: 1 if @c is a UI chrome cell, 0 if it is an image cell.
+ */
 static inline int tv_cell_is_chrome(tv_cell_t c)
 {
     return (c & TV_ATTR_CHROME) != 0;

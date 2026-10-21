@@ -167,6 +167,17 @@ static void register_runnable(const MILK_RUNNABLE *r)
 }
 
 
+/**
+ * newstyle_milk_module_registration - Register a loaded module via its `__milk_module_info`
+ * @handle:  `dlopen` handle for the loaded shared library
+ * @libname: File path of the shared object being registered
+ *
+ * Looks up the `__milk_module_info` descriptor exported by modern milk modules,
+ * recursively loads any declared module dependencies, registers the module slot in
+ * `data.module[]`, and registers each non-NULL `MILK_RUNNABLE` entry as a CLI command.
+ *
+ * Return: RETURN_SUCCESS
+ */
 errno_t newstyle_milk_module_registration(void *handle, const char *libname)
 {
     /* New-style modules export __milk_module_info.
@@ -579,19 +590,6 @@ errno_t RegisterModule(const char *__restrict FileName,
 
 
 /**
- * @brief Register a CLI command (legacy API).
- *
- * Deprecated in favor of RegisterCLIcmd().
- * Stores the command key, source file, function
- * pointer, info/syntax/example strings, and C-call
- * prototype in data.cmd[] at index data.NBcmd.
- *
- * The command key is prefixed with the module's
- * shortname (if set) to form namespace.command.
- *
- * @return New data.NBcmd count
- */
-/**
  * @brief Validate that a CLI command key contains only allowed characters [A-Za-z0-9_.*?+-].
  */
 static int is_valid_cli_cmd_key(const char *key)
@@ -611,6 +609,21 @@ static int is_valid_cli_cmd_key(const char *key)
     return 1;
 }
 
+/**
+ * RegisterCLIcommand - Register a CLI command using the legacy registration API
+ * @CLIkey:       Command name (prefixed with module shortname if registered inside a module)
+ * @CLImodulesrc: Source filename where the command is implemented
+ * @CLIfptr:      Function pointer invoked when the command runs
+ * @CLIinfo:      Short one-line description of the command
+ * @CLIsyntax:    Usage syntax summary string
+ * @CLIexample:   Example invocation string
+ * @CLICcall:     Underlying C function prototype string
+ *
+ * Stores a command entry in `data.cmd[]` at index `data.NBcmd` and adds it to the
+ * hash index. Kept for engine root commands; modules use `MILK_RUNNABLE` or `RegisterCLIcmd()`.
+ *
+ * Return: Updated `data.NBcmd` count after registration
+ */
 uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
                             const char *__restrict CLImodulesrc,
                             errno_t (*CLIfptr)(),

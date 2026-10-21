@@ -307,6 +307,17 @@ static int modernize_files(int nf, char **files, int rewrite)
     return err ? 2 : ((!rewrite && total > 0) ? 1 : 0);
 }
 
+/**
+ * main - Entry point for the `milk-script` standalone script interpreter
+ * @argc: Number of command-line arguments
+ * @argv: Command-line argument vector
+ *
+ * Parses interpreter options (`-e`, `-x`, `-E`, `-q`, `-d`, `-n`, `--check`,
+ * `--modernize`), initializes `libmilkscript`, forwards positional arguments into
+ * the Bash engine, and executes the target script file or standard input.
+ *
+ * Return: Exit code of the executed script or `--check`/`--modernize` pass
+ */
 int main(int argc, char **argv)
 {
     /* Handle -h1/--help-oneline before getopt so "-h1" is not

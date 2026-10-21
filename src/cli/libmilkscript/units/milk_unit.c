@@ -21,6 +21,20 @@
 static const char *const sync_cmds[] = { "runstart",  "run",      "exec",    "set",
                                          "confstart", "confstep", "fpsinit", NULL };
 
+/**
+ * milk_unit_args_read - Parse command-line options, action verb, and positional args for a unit
+ * @argc:      Command-line argument count
+ * @argv:      Command-line argument vector
+ * @dflt_name: Default FPS instance name when `-n`/`--name` or `<name>:<cmd>` is not given
+ * @a:         Output structure populated with parsed flags, FPS name, command, and positions
+ *
+ * Scans @argv using the same rules as `fpsexec_main_function()` and
+ * `fps_process_cli_and_sync()` so standalone script/calc compute units can inspect
+ * positional arguments and create their dynamic FPS parameters before delegating to
+ * the standard compute-unit entry point.
+ *
+ * Return: void
+ */
 void milk_unit_args_read(int argc, char **argv, const char *dflt_name, milk_unit_args *a)
 {
     int cmd      = -1;
@@ -100,11 +114,30 @@ void milk_unit_args_read(int argc, char **argv, const char *dflt_name, milk_unit
     }
 }
 
+/**
+ * milk_unit_pos - Retrieve the @i-th positional argument, treating "." as omitted
+ * @a: Parsed unit command-line arguments
+ * @i: Zero-based positional argument index
+ *
+ * Returns the positional argument at index @i if present and not equal to the
+ * placeholder token `"."`.
+ *
+ * Return: Pointer to the positional argument string, or NULL if absent or `"."`.
+ */
 const char *milk_unit_pos(const milk_unit_args *a, int i)
 {
     return (i < a->npos && strcmp(a->pos[i], ".") != 0) ? a->pos[i] : NULL;
 }
 
+/**
+ * milk_unit_fps_exists - Check whether a shared-memory FPS instance already exists
+ * @name: FPS instance name (names starting with `_` are private/ephemeral)
+ *
+ * Attempts a simple non-creating `fps_connect()` to determine whether @name is
+ * already initialized in shared memory.
+ *
+ * Return: 1 if the FPS exists in shared memory, 0 otherwise.
+ */
 int milk_unit_fps_exists(const char *name)
 {
     FPS fps;
@@ -117,6 +150,18 @@ int milk_unit_fps_exists(const char *name)
     return 1;
 }
 
+/**
+ * milk_unit_create - Initialize an FPS instance and apply initial bindings and loop overrides
+ * @a:   Parsed unit command-line arguments
+ * @app: FPS application descriptor
+ * @b:   Array of CLI-to-FPS parameter bindings
+ * @nb:  Number of entries in @b
+ *
+ * Creates the FPS shared-memory structure via `fps_generic_init()`, synchronizes
+ * default `ON` boolean parameters, and applies `-loops` or `-loopd` trigger overrides.
+ *
+ * Return: 0 on success, 1 on initialization failure.
+ */
 int milk_unit_create(const milk_unit_args *a, FPS_APP_INFO *app, FPS_CLI_BINDING *b, int nb)
 {
     FPS fps;

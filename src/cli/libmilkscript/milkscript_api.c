@@ -130,6 +130,14 @@ errno_t milkscript_run(FILE *fp)
     return (rc == 0) ? 0 : 1;
 }
 
+/**
+ * milkscript_cleanup - Shut down the milk scripting engine and its Bash co-process
+ *
+ * Terminates the persistent Bash co-process engine and releases associated IPC
+ * resources prior to process exit.
+ *
+ * Return: void
+ */
 void milkscript_cleanup(void)
 {
     milk_bash_engine_shutdown();

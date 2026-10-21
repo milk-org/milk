@@ -38,6 +38,15 @@ typedef struct
 static sessdef_t *g_sess;
 static int        g_nsess;
 
+/**
+ * preset_name_ok - Validate a preset name for `--save=NAME` and `--load=NAME`
+ * @s: Candidate preset name string
+ *
+ * Rejects empty names, names starting with `.`, names that exceed the `save` buffer,
+ * or names containing characters outside `[A-Za-z0-9_.-]` to prevent path traversal.
+ *
+ * Return: 1 if @s is a valid preset name, 0 otherwise
+ */
 static int preset_name_ok(const char *s)
 {
     size_t n = strlen(s);
@@ -56,6 +65,18 @@ static int preset_name_ok(const char *s)
     return 1;
 }
 
+/**
+ * milk_args_begin - Push a per-call argument frame and strip call-level meta-flags
+ * @cmdi: Index of the command being invoked in `data.cmd[]`
+ * @argc: In/out argument count; updated in place after stripping meta-flags
+ * @argv: Argument vector; compacted in place with remaining positional/named tokens
+ *
+ * Extracts `--`, `--default`, `--no-run`, `--save=NAME`, and `--load=NAME` before
+ * `CLI_checkarg_array` runs, allocates the per-parameter source tracking array, and
+ * resets `data.cmd[cmdi].argdata` to session/declared defaults.
+ *
+ * Return: 0 on success, or 2 on option usage error
+ */
 int milk_args_begin(int cmdi, int *argc, char **argv)
 {
     CMD         *cmd = &data.cmd[cmdi];
@@ -145,6 +166,15 @@ int milk_args_begin(int cmdi, int *argc, char **argv)
     return 0;
 }
 
+/**
+ * milk_args_end - Pop the active per-call argument frame and restore defaults
+ *
+ * Resets `data.cmd[cmdi].argdata` back to session/declared defaults so interactive
+ * help and tab completion between calls reflect the default state, frees per-call
+ * allocations, and returns whether the call failed with a usage error.
+ *
+ * Return: 1 if the completed call encountered a usage error, 0 otherwise
+ */
 int milk_args_end(void)
 {
     if (g_ncall <= 0)
@@ -167,6 +197,14 @@ int milk_args_end(void)
     return ue;
 }
 
+/**
+ * milk_args_call - Return the active `milk_call_t` frame if it matches @cmdi
+ * @cmdi: Command index expected at the top of the call stack
+ *
+ * Retrieves the per-call argument state prepared by `milk_args_begin()`.
+ *
+ * Return: Pointer to the active `milk_call_t`, or NULL if none matches @cmdi
+ */
 milk_call_t *milk_args_call(int cmdi)
 {
     if (g_ncall <= 0 || g_ncall > MILK_CALL_DEPTH || g_call[g_ncall - 1].cmdi != cmdi)
@@ -176,6 +214,15 @@ milk_call_t *milk_args_call(int cmdi)
     return &g_call[g_ncall - 1];
 }
 
+/**
+ * milk_args_named - Check whether a token has `.tag=value` named-argument syntax
+ * @s: Candidate token string
+ *
+ * Tests if @s begins with `.` followed by a valid parameter tag (`[A-Za-z_][A-Za-z0-9_.]*`)
+ * and an `=` assignment delimiter.
+ *
+ * Return: 1 if @s is a `.tag=value` token, 0 otherwise
+ */
 int milk_args_named(const char *s)
 {
     if (s == NULL || s[0] != '.' || !(isalpha((unsigned char) s[1]) || s[1] == '_'))
@@ -192,11 +239,31 @@ int milk_args_named(const char *s)
     return 1;
 }
 
+/**
+ * milk_args_tag - Strip a leading dot from an FPS parameter tag if present
+ * @fpstag: Parameter tag string from `CLICMDARGDEF` or `CLICMDARGDATA`
+ *
+ * Normalizes parameter tag strings so comparisons work regardless of whether the
+ * declaration included a leading `.`.
+ *
+ * Return: Pointer to the tag name without a leading dot
+ */
 const char *milk_args_tag(const char *fpstag)
 {
     return (fpstag[0] == '.') ? fpstag + 1 : fpstag;
 }
 
+/**
+ * milk_args_find - Find the parameter index for a tag name on command @cmdi
+ * @cmdi: Command index in `data.cmd[]`
+ * @tag:  Parameter tag name (without leading dot, not necessarily NUL-terminated)
+ * @len:  Length of @tag in bytes
+ *
+ * Searches `data.cmd[cmdi].argdata` for a parameter whose normalized tag matches
+ * the @len bytes at @tag.
+ *
+ * Return: Parameter index `0 .. nbparam-1` on match, or -1 if not found
+ */
 int milk_args_find(int cmdi, const char *tag, size_t len)
 {
     for (int i = 0; i < data.cmd[cmdi].nbparam; i++)
@@ -211,7 +278,15 @@ int milk_args_find(int cmdi, const char *tag, size_t len)
     return -1;
 }
 
-/* the declared default: the parameter's example, read as registration always did */
+/**
+ * argval_declared - Populate a parameter's value from its declared example string
+ * @ad: Command argument data entry whose `example` and `type` are initialized
+ *
+ * Parses `ad->example` into the appropriate union member of `ad->val` according to
+ * `ad->type` when initializing or resetting command argument defaults.
+ *
+ * Return: void
+ */
 static void argval_declared(CLICMDARGDATA *ad)
 {
     const char *ex = ad->example;
@@ -245,6 +320,15 @@ static void argval_declared(CLICMDARGDATA *ad)
     }
 }
 
+/**
+ * milk_args_session_get - Get the session-default override string for a parameter
+ * @cmdi: Command index in `data.cmd[]`
+ * @argi: Parameter index within the command
+ *
+ * Looks up any session-level default previously set via `--default`.
+ *
+ * Return: Session default string for `(cmdi, argi)`, or NULL if none is set
+ */
 const char *milk_args_session_get(int cmdi, int argi)
 {
     if (cmdi < 0 || cmdi >= g_nsess || argi < 0 || argi >= g_sess[cmdi].n)
@@ -254,6 +338,17 @@ const char *milk_args_session_get(int cmdi, int argi)
     return g_sess[cmdi].val[argi];
 }
 
+/**
+ * milk_args_session_set - Set or clear the session-default override for a parameter
+ * @cmdi: Command index in `data.cmd[]`
+ * @argi: Parameter index within the command
+ * @val:  Formatted default value string to store, or NULL to clear the override
+ *
+ * Stores a duplicated string in `g_sess[cmdi].val[argi]` so subsequent invocations
+ * in the same session start from @val instead of the declared example value.
+ *
+ * Return: 0 on success, -1 on invalid indices or allocation failure
+ */
 int milk_args_session_set(int cmdi, int argi, const char *val)
 {
     if (cmdi < 0 || argi < 0 || argi >= data.cmd[cmdi].nbparam)
@@ -291,6 +386,15 @@ int milk_args_session_set(int cmdi, int argi, const char *val)
     return (val != NULL && s->val[argi] == NULL) ? -1 : 0;
 }
 
+/**
+ * milk_args_register - Initialize parameter defaults when a command is registered
+ * @cmdi: Command index in `data.cmd[]`
+ *
+ * Clears any stale session defaults at slot @cmdi and populates `argdata` from the
+ * command's declared example strings.
+ *
+ * Return: void
+ */
 void milk_args_register(int cmdi)
 {
     if (cmdi < g_nsess && g_sess[cmdi].val != NULL)
@@ -305,6 +409,15 @@ void milk_args_register(int cmdi)
     milk_args_reset(cmdi);
 }
 
+/**
+ * milk_args_reset - Reset a command's `argdata` values to session or declared defaults
+ * @cmdi: Command index in `data.cmd[]`
+ *
+ * Restores every parameter of `data.cmd[cmdi]` to its declared example value and
+ * overlays any active session default from `g_sess`.
+ *
+ * Return: void
+ */
 void milk_args_reset(int cmdi)
 {
     CMD *c = &data.cmd[cmdi];
@@ -321,7 +434,16 @@ void milk_args_reset(int cmdi)
     }
 }
 
-/* ${XDG_STATE_HOME:-$HOME/.local/state}/milk/args/<key> */
+/**
+ * args_dir - Format the per-command preset directory path under XDG state home
+ * @key: Command key (`<module>.<cmd>`)
+ * @buf: Destination buffer receiving `${XDG_STATE_HOME:-$HOME/.local/state}/milk/args/<key>`
+ * @sz:  Capacity of @buf in bytes
+ *
+ * Resolves the state directory where named argument presets for @key are stored.
+ *
+ * Return: 0 on success, -1 if neither `XDG_STATE_HOME` nor `HOME` is set or @buf is too small
+ */
 static int args_dir(const char *key, char *buf, size_t sz)
 {
     const char *st   = getenv("XDG_STATE_HOME");
@@ -343,6 +465,15 @@ static int args_dir(const char *key, char *buf, size_t sz)
     return (n > 0 && (size_t) n < sz) ? 0 : -1;
 }
 
+/**
+ * mkdir_p - Recursively create a directory path and all missing parent directories
+ * @path: Mutable directory path string
+ *
+ * Walks @path component by component, temporarily NUL-terminating each slash to
+ * create intermediate directories with mode `0755`.
+ *
+ * Return: 0 on success (or if the directory already exists), -1 on error
+ */
 static int mkdir_p(char *path)
 {
     for (char *p = path + 1; *p != '\0'; p++)
@@ -361,6 +492,17 @@ static int mkdir_p(char *path)
     return (mkdir(path, 0755) != 0 && errno != EEXIST) ? -1 : 0;
 }
 
+/**
+ * milk_args_preset_save - Save the resolved arguments of command @cmdi as a named preset
+ * @cmdi: Command index in `data.cmd[]`
+ * @name: Validated preset name
+ *
+ * Writes all parameter `.tag=value` pairs of `data.cmd[cmdi]` to
+ * `${XDG_STATE_HOME:-$HOME/.local/state}/milk/args/<key>/<name>` atomically via a
+ * temporary file.
+ *
+ * Return: 0 on success, -1 on directory or file I/O error
+ */
 int milk_args_preset_save(int cmdi, const char *name)
 {
     CMD  *c = &data.cmd[cmdi];
@@ -399,6 +541,15 @@ int milk_args_preset_save(int cmdi, const char *name)
     return 0;
 }
 
+/**
+ * milk_args_preset_load - Load a saved parameter preset into the active call's `argdata`
+ * @call: Active per-call context specifying `cmdi` and the `load` preset name
+ *
+ * Reads `.tag=value` lines from the preset file for `call->load`, parses each value
+ * into `data.cmd[call->cmdi].argdata`, and marks its source as `MILK_ARGSRC_PRESET`.
+ *
+ * Return: 0 on success, -1 if the preset file is missing or contains invalid entries
+ */
 int milk_args_preset_load(milk_call_t *call)
 {
     CMD  *c = &data.cmd[call->cmdi];
@@ -447,6 +598,16 @@ int milk_args_preset_load(milk_call_t *call)
     return 0;
 }
 
+/**
+ * milk_args_preset_list - Print available saved preset names for command @cmdi
+ * @cmdi: Command index in `data.cmd[]`
+ * @fp:   Output stream (e.g. `stdout`)
+ *
+ * Scans the command's preset directory and prints a one-line summary of saved
+ * preset names for inclusion in `<cmd> -h` help output.
+ *
+ * Return: void
+ */
 void milk_args_preset_list(int cmdi, FILE *fp)
 {
     char           dir[2048];
@@ -472,6 +633,16 @@ void milk_args_preset_list(int cmdi, FILE *fp)
     }
 }
 
+/**
+ * put_quoted - Write a string to @fp with shell-safe single-quoting when needed
+ * @s:  Input NUL-terminated string to print
+ * @fp: Output file stream
+ *
+ * Prints @s verbatim if it is non-empty and consists only of safe shell characters,
+ * or wraps it in single quotes (escaping embedded single quotes) otherwise.
+ *
+ * Return: void
+ */
 static void put_quoted(const char *s, FILE *fp)
 {
     int plain = (s[0] != '\0');
@@ -500,6 +671,17 @@ static void put_quoted(const char *s, FILE *fp)
     fputc('\'', fp);
 }
 
+/**
+ * milk_args_print_call - Print a reproducible command line with `.tag=value` arguments
+ * @cmdi:    Command index in `data.cmd[]`
+ * @session: Non-zero to print only session-default overrides (`--default`), 0 for all
+ * @fp:      Output file stream
+ *
+ * Formats the command key followed by shell-quoted `.tag=value` arguments for
+ * `--no-run` inspection or `--default` display.
+ *
+ * Return: void
+ */
 void milk_args_print_call(int cmdi, int session, FILE *fp)
 {
     CMD *c = &data.cmd[cmdi];

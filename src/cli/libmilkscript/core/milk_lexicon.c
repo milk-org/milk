@@ -253,11 +253,27 @@ static const char *const bash_words[] = {
     "unalias",  "pushd",   "popd",    "dirs",   "[[",       NULL
 };
 
+/**
+ * milk_lexicon_keywords - Return the NULL-terminated table of milk language keywords
+ *
+ * Provides read-only access to the master `keywords[]` descriptor array used for
+ * dispatch, help generation, syntax highlighting, and tab completion.
+ *
+ * Return: Pointer to the first element of the `keywords` array
+ */
 const milk_keyword_t *milk_lexicon_keywords(void)
 {
     return keywords;
 }
 
+/**
+ * milk_lexicon_keyword - Look up a milk language keyword descriptor by name
+ * @name: Keyword name with or without a leading `@` (e.g. `"@get"` or `"get"`)
+ *
+ * Searches the `keywords[]` table for an entry matching @name.
+ *
+ * Return: Pointer to the matching `milk_keyword_t` descriptor, or NULL if not a keyword
+ */
 const milk_keyword_t *milk_lexicon_keyword(const char *name)
 {
     if (name == NULL)
@@ -278,6 +294,15 @@ const milk_keyword_t *milk_lexicon_keyword(const char *name)
     return NULL;
 }
 
+/**
+ * milk_lexicon_frontend - Map a front-end engine name to its `MILK_KW_*` bitmask flag
+ * @engine: Engine identifier string (`"cli"`, `"script"`, or `"bash"`/NULL)
+ *
+ * Translates the current front-end identifier into a bitmask used to check whether
+ * a keyword (such as `@history` or `@unload`) is supported in that environment.
+ *
+ * Return: `MILK_KW_CLI`, `MILK_KW_SCRIPT`, or `MILK_KW_BASH`
+ */
 unsigned milk_lexicon_frontend(const char *engine)
 {
     if (engine != NULL && strcmp(engine, "cli") == 0)
@@ -291,11 +316,29 @@ unsigned milk_lexicon_frontend(const char *engine)
     return MILK_KW_BASH;
 }
 
+/**
+ * milk_lexicon_bash_words - Return the NULL-terminated list of reserved bash words
+ *
+ * Used by the milk REPL syntax highlighter and completer to recognize shell control
+ * structures and builtins.
+ *
+ * Return: Pointer to the NULL-terminated `bash_words` string array
+ */
 const char *const *milk_lexicon_bash_words(void)
 {
     return bash_words;
 }
 
+/**
+ * milk_lexicon_help_arg - Check whether a first argument requests help for keyword @k
+ * @k:   Keyword descriptor being invoked
+ * @arg: First argument token passed to the keyword
+ *
+ * Recognizes `--help` for all keywords and `-h` for keywords where `-h` is not an
+ * expression or option flag (all except `@calc`, `@test`, and `@assert`).
+ *
+ * Return: 1 if @arg is a help flag for @k, 0 otherwise
+ */
 int milk_lexicon_help_arg(const milk_keyword_t *k, const char *arg)
 {
     if (arg == NULL || arg[0] != '-')
@@ -307,6 +350,16 @@ int milk_lexicon_help_arg(const milk_keyword_t *k, const char *arg)
             strcmp(k->name, "test") != 0 && strcmp(k->name, "assert") != 0);
 }
 
+/**
+ * milk_lexicon_print_help - Format and print full help for a language keyword
+ * @k:  Keyword descriptor to display
+ * @fp: Output file stream
+ *
+ * Prints the keyword's summary, synopsis, details, and examples with ANSI color
+ * formatting to @fp.
+ *
+ * Return: void
+ */
 void milk_lexicon_print_help(const milk_keyword_t *k, FILE *fp)
 {
     fprintf(fp, "\n\033[32m@%s\033[0m [language keyword]\n\t\033[32m%s\n\033[0m", k->name,

@@ -99,6 +99,18 @@ typedef struct
     double c;
 } fval;
 
+/**
+ * emit - Append a vector stack instruction to a fused image program
+ * @p:      Fused program being compiled
+ * @in:     Vector instruction to append
+ * @ddepth: Change in vector evaluation stack depth caused by @in
+ *
+ * Appends @in to `p->ins`, updates current and peak stack depth (`p->maxdepth`),
+ * and counts non-load vector operations so the compiler can reject programs
+ * that exceed `FUSE_MAXINS` or `FUSE_MAXSTK`.
+ *
+ * Return: 0 on success, -1 if instruction or stack capacity is exceeded
+ */
 static int emit(fprog *p, fins in, int ddepth)
 {
     if (p->n >= FUSE_MAXINS)
@@ -118,6 +130,17 @@ static int emit(fprog *p, fins in, int ddepth)
     return (p->maxdepth > FUSE_MAXSTK) ? -1 : 0;
 }
 
+/**
+ * emit_scalar - Append a scalar tape instruction for runtime variable evaluation
+ * @p:   Fused program being compiled
+ * @in:  Scalar instruction (`FI_SVAR`, `FI_NEG`, `FI_NOT`, `FI_BIN`, `FI_FN*`)
+ * @out: Output compile-time value referencing the 1-based slot in `p->sins`
+ *
+ * Records scalar sub-expressions that depend on calculator variables in kept
+ * programs so their values are recomputed once per frame before the pixel loop.
+ *
+ * Return: 0 on success, -1 if `FUSE_MAXINS` scalar instructions are exceeded
+ */
 static int emit_scalar(fprog *p, fsins in, fval *out)
 {
     if (p->ns >= FUSE_MAXINS)
@@ -129,12 +152,31 @@ static int emit_scalar(fprog *p, fsins in, fval *out)
     return 0;
 }
 
+/**
+ * is_real_datatype - Check whether an ImageStreamIO datatype is supported by the fused engine
+ * @dt: ImageStreamIO `_DATATYPE_*` code
+ *
+ * Accepts standard integer and 32/64-bit floating-point real datatypes while
+ * excluding complex and half-precision (`_DATATYPE_HALF`) images.
+ *
+ * Return: 1 if @dt is a supported real datatype, 0 otherwise
+ */
 static int is_real_datatype(uint8_t dt)
 {
     return dt != _DATATYPE_COMPLEX_FLOAT && dt != _DATATYPE_COMPLEX_DOUBLE &&
            dt != _DATATYPE_HALF && ImageStreamIO_typesize(dt) > 0;
 }
 
+/**
+ * same_shape - Check whether two images have identical axis count and dimensions
+ * @a: First image to compare
+ * @b: Second image to compare
+ *
+ * Verifies that @a and @b share the exact same `naxis` and `size[i]` along all
+ * axes, which is required for element-wise fused evaluation without broadcasting.
+ *
+ * Return: 1 if @a and @b have the same shape, 0 otherwise
+ */
 static int same_shape(const IMAGE *a, const IMAGE *b)
 {
     if (a->md[0].naxis != b->md[0].naxis)
@@ -174,6 +216,17 @@ static int add_image(fprog *p, const IMAGE *im)
     return p->nimg++;
 }
 
+/**
+ * scalar_bin - Evaluate a fusible binary operator on two double-precision scalars
+ * @op: Arithmetic or comparison operator token
+ * @a:  Left scalar operand
+ * @b:  Right scalar operand
+ *
+ * Folds constant scalar sub-expressions at compile time and evaluates scalar
+ * tape instructions (`FI_BIN`) at the start of each kept-program frame.
+ *
+ * Return: Result of `@a @op @b` as a `double`
+ */
 static double scalar_bin(cli_token_type op, double a, double b)
 {
     switch (op)
@@ -205,6 +258,16 @@ static double scalar_bin(cli_token_type op, double a, double b)
     }
 }
 
+/**
+ * fusible_op - Test whether a binary operator token can be compiled into a fused program
+ * @op: Operator token type
+ *
+ * Accepts arithmetic (`+`, `-`, `*`, `/`, `%`, `^`) and relational/equality
+ * (`<`, `<=`, `>`, `>=`, `==`, `!=`) operators, rejecting logical short-circuit
+ * and bitwise operators.
+ *
+ * Return: 1 if @op is supported by the fused engine, 0 otherwise
+ */
 static int fusible_op(cli_token_type op)
 {
     return op >= TOK_OP_PLUS && op <= TOK_OP_NEQ; /* arithmetic and comparisons */
@@ -240,6 +303,18 @@ static int c_args(fprog *p, int n, fval *a)
     return 0;
 }
 
+/**
+ * c_func - Compile a 1-, 2-, or 3-argument math or cast function call into @p
+ * @p:   Fused program being compiled
+ * @ft:  Function token (`TOK_FUNC_D_D`, `TOK_FUNC_DD_D`, or `TOK_FUNC_DDD_D`)
+ * @out: Output compile-time value descriptor (scalar or vector)
+ *
+ * Folds pure scalar arguments into a constant or scalar tape instruction, and
+ * emits `FI_FN1`, `FI_FN2`, or `FI_FN3` when any argument is an image vector
+ * (recording explicit output cast datatypes via `cli_calc_cast_datatype()`).
+ *
+ * Return: 0 on success, -1 if argument types or arity are not fusible
+ */
 static int c_func(fprog *p, const cli_token *ft, fval *out)
 {
     fval a[3]  = { { 0, 0, 0.0 }, { 0, 0, 0.0 }, { 0, 0, 0.0 } };
@@ -381,6 +456,18 @@ static int c_coord(fprog *p, const cli_token *ft, fval *out)
                 1);
 }
 
+/**
+ * c_primary - Compile a primary expression atom into a fused program
+ * @p:   Fused program being compiled
+ * @out: Output compile-time value descriptor
+ *
+ * Handles numeric literals, unary `-` and `!`, parenthesized sub-expressions,
+ * scalar variables, whole-image references, math functions, `where()`, and
+ * coordinate generators (`ix`, `iy`, `ir`, `itheta`), bailing out with -1 on
+ * slices, assignments, or unsupported tokens.
+ *
+ * Return: 0 on success, -1 if the atom cannot be fused
+ */
 static int c_primary(fprog *p, fval *out)
 {
     cli_token *(*cur)(void) = cli_calc_cur_func();
@@ -474,6 +561,18 @@ static int c_primary(fprog *p, fval *out)
     }
 }
 
+/**
+ * c_expr - Compile an expression with minimum precedence @min_prec into a fused program
+ * @p:        Fused program being compiled
+ * @min_prec: Minimum operator binding precedence to consume
+ * @out:      Output compile-time value descriptor
+ *
+ * Uses Pratt precedence climbing to compile binary arithmetic, comparisons, and
+ * image-conditioned ternary `? :` selections into `p->ins` (or `p->sins` for
+ * scalar sub-expressions), returning -1 if any non-fusible construct is met.
+ *
+ * Return: 0 on success, -1 if the expression cannot be fused
+ */
 static int c_expr(fprog *p, int min_prec, fval *out)
 {
     cli_token *(*cur)(void) = cli_calc_cur_func();
@@ -567,6 +666,18 @@ static int c_expr(fprog *p, int min_prec, fval *out)
 
 /* ---------------------------------------------------------------- execution */
 
+/**
+ * load_block - Convert a contiguous block of image pixels to `double`
+ * @im:  Source real image
+ * @off: Starting pixel index in @im
+ * @len: Number of pixels to load (`<= FUSE_BLK`)
+ * @dst: Destination `double` buffer of length @len
+ *
+ * Dispatches on `im->md[0].datatype` to widen @len pixels starting at @off into
+ * a cache-resident stack slot for fused vector execution.
+ *
+ * Return: void
+ */
 static void load_block(const IMAGE *im, uint64_t off, int len, double *restrict dst)
 {
     uint8_t dt = im->md[0].datatype;
@@ -582,6 +693,20 @@ static void load_block(const IMAGE *im, uint64_t off, int len, double *restrict 
 #undef LOAD_BODY
 }
 
+/**
+ * store_block - Write a block of evaluated `double` pixels or a constant into an image
+ * @im:  Destination real image
+ * @off: Starting pixel index in @im
+ * @len: Number of pixels to write (`<= FUSE_BLK`)
+ * @v:   Source `double` buffer of length @len (ignored when @isc is non-zero)
+ * @isc: Non-zero to fill the block with scalar constant @c instead of @v
+ * @c:   Scalar constant value used when @isc is non-zero
+ *
+ * Converts each double-precision result (or scalar constant @c) to the native
+ * datatype of @im and stores it at `[@off, @off + @len)`.
+ *
+ * Return: void
+ */
 static void store_block(IMAGE   *im,
                         uint64_t off,
                         int      len,
@@ -631,6 +756,19 @@ static void store_block(IMAGE   *im,
         }                              \
     }
 
+/**
+ * run_bin - Execute a binary vector instruction (`FI_BIN`) over a pixel block
+ * @in:  Instruction specifying the operator (`in->op`), constant mode (`in->cpos`), and `in->c`
+ * @l:   Left/in-place vector stack slot of length @len
+ * @r:   Right vector stack slot of length @len (used when `in->cpos == 0`)
+ * @len: Number of elements in the current block
+ *
+ * Evaluates arithmetic and comparison operators across @len elements, using
+ * algebraic fast paths for common exponents (`^2`, `^0.5`, `^3`, `^-1`) to
+ * avoid calling `pow()` in the inner loop.
+ *
+ * Return: void
+ */
 static void run_bin(const fins *in, double *restrict l, const double *restrict r, int len)
 {
     switch (in->op)
@@ -707,6 +845,18 @@ static void run_bin(const fins *in, double *restrict l, const double *restrict r
     }
 }
 
+/**
+ * run_fn2 - Execute a two-argument math function instruction (`FI_FN2`) over a pixel block
+ * @in:  Instruction specifying the function pointer (`in->fn`), `in->cpos`, and `in->c`
+ * @l:   Left/in-place vector stack slot of length @len
+ * @r:   Right vector stack slot of length @len (used when `in->cpos == 0`)
+ * @len: Number of elements in the current block
+ *
+ * Inlines `fmin` and `fmax` comparisons for vectorization and dispatches other
+ * binary math functions (`atan2`, `fmod`, `pow`) through `in->fn`.
+ *
+ * Return: void
+ */
 static void run_fn2(const fins *in, double *restrict l, const double *restrict r, int len)
 {
     double (*f)(double, double) = (double (*)(double, double)) in->fn;
@@ -989,6 +1139,17 @@ static void run_block(const fprog *p, IMAGE *out, uint64_t off, int len, double 
     store_block(out, off, len, stk[0], 0, 0.0);
 }
 
+/**
+ * run_program - Execute a compiled fused program across all blocks of an output image
+ * @p:   Compiled fused program to execute
+ * @out: Destination image receiving the evaluated pixels
+ *
+ * Evaluates per-frame scalar tape instructions (`eval_scalars()`) and then
+ * processes @out in `FUSE_BLK`-pixel chunks, parallelizing across blocks with
+ * OpenMP when `nelement >= FUSE_OMP_MIN`.
+ *
+ * Return: void
+ */
 static void run_program(fprog *p, IMAGE *out)
 {
     eval_scalars(p);
@@ -1022,6 +1183,18 @@ static int compile(fprog *p, int min_prec, fval *v)
 
 /* ---------------------------------------------------------------- public */
 
+/**
+ * cli_calc_fuse_expr - Attempt one-pass fused evaluation of an element-wise image expression
+ * @min_prec: Minimum operator precedence for the expression at the current token
+ * @out:      Output `val_t` set to the temporary result image name when fused
+ *
+ * Compiles the upcoming sub-expression into a single-pass block program when it
+ * involves at least one vector operation on same-shape real images, allocating
+ * a single `_tmpcalc` output image and rewinding the token stream if fusion is
+ * not applicable.
+ *
+ * Return: 1 if fused and evaluated into @out, 0 to fall back to normal evaluation, -1 on error
+ */
 int cli_calc_fuse_expr(int min_prec, val_t *out)
 {
     if (parse_mode == 0 || !cli_calc_tokens_have_image())
@@ -1076,6 +1249,19 @@ static const char *new_output(const IMAGE *ref, int dbl, IMAGE **out)
     return tmpn;
 }
 
+/**
+ * cli_calc_select - Evaluate a per-pixel conditional selection `c ? t : f` into a temporary image
+ * @c:  Condition image (non-zero pixel selects the true branch)
+ * @t:  True-branch image, or NULL when the true branch is scalar @tc
+ * @tc: Scalar true-branch value used when @t is NULL
+ * @f:  False-branch image, or NULL when the false branch is scalar @fc
+ * @fc: Scalar false-branch value used when @f is NULL
+ *
+ * Builds and executes a short fused `FI_SEL` program when @c (and any non-NULL
+ * branch images @t, @f) are same-shape real images.
+ *
+ * Return: Name of the temporary output image, or NULL if shapes or types are incompatible
+ */
 const char *cli_calc_select(const IMAGE *c, const IMAGE *t, double tc, const IMAGE *f, double fc)
 {
     static fprog p;
@@ -1106,6 +1292,19 @@ const char *cli_calc_select(const IMAGE *c, const IMAGE *t, double tc, const IMA
     return tmpn;
 }
 
+/**
+ * cli_calc_coord - Generate a coordinate image (`ix`, `iy`, `ir`, `itheta`) shaped like @ref
+ * @ref:  Reference image providing output dimensions and precision
+ * @kind: Coordinate selector (`CALC_COORD_X`, `CALC_COORD_Y`, `CALC_COORD_R`, `CALC_COORD_THETA`)
+ * @cx:   X-axis center coordinate subtracted from pixel column index
+ * @cy:   Y-axis center coordinate subtracted from pixel row index
+ *
+ * Allocates a temporary `FLOAT` or `DOUBLE` image matching @ref and populates
+ * it with pixel coordinates relative to `(@cx, @cy)` using the fused `FI_COORD`
+ * block runner.
+ *
+ * Return: Name of the temporary coordinate image, or NULL on allocation failure
+ */
 const char *cli_calc_coord(const IMAGE *ref, int kind, double cx, double cy)
 {
     static fprog p;
@@ -1122,6 +1321,14 @@ const char *cli_calc_coord(const IMAGE *ref, int kind, double cx, double cy)
     return tmpn;
 }
 
+/**
+ * cli_calc_coord_kind - Map a `TOK_FUNC_COORD` token to its `CALC_COORD_*` enum value
+ * @t: Coordinate function token (`ix(`, `iy(`, `ir(`, or `itheta(`)
+ *
+ * Inspects `t->sval` to identify which pixel coordinate generator was called.
+ *
+ * Return: `CALC_COORD_X`, `CALC_COORD_Y`, `CALC_COORD_R`, or `CALC_COORD_THETA`
+ */
 int cli_calc_coord_kind(const cli_token *t)
 {
     return (strncmp(t->sval, "ix(", 3) == 0)   ? CALC_COORD_X
@@ -1150,6 +1357,17 @@ typedef struct
     int             allow_reshape;
 } fkept;
 
+/**
+ * parse_kept_img_or_trans - Parse `im` or `transpose(im)` as an operand of a kept `matmul()`
+ * @out_im:    Output pointer to the resolved `IMAGE`
+ * @out_trans: Output flag set to 1 if wrapped in `transpose(...)`, 0 otherwise
+ *
+ * Consumes a plain image token or `transpose(im)` from `eval_tokens` so
+ * `matmul(transpose(A), B)` can be executed directly via BLAS transpose flags
+ * without materializing an intermediate transposed image.
+ *
+ * Return: 0 on success, -1 if the tokens do not match `im` or `transpose(im)`
+ */
 static int parse_kept_img_or_trans(IMAGE **out_im, int *out_trans)
 {
     int trans = 0;
@@ -1181,6 +1399,16 @@ static int parse_kept_img_or_trans(IMAGE **out_im, int *out_trans)
     return 0;
 }
 
+/**
+ * parse_kept_reshape_dims - Parse and validate target dimensions of a kept `reshape(...)` call
+ * @nel: Total number of elements expected in the reshaped image
+ * @dst: Pre-allocated destination image whose shape must match the parsed dimensions
+ *
+ * Parses up to 3 comma-separated constant dimension arguments (allowing at most
+ * one `-1` inferred axis) and verifies that the resulting shape matches @dst.
+ *
+ * Return: 0 if the parsed dimensions are valid and match @dst, -1 otherwise
+ */
 static int parse_kept_reshape_dims(uint64_t nel, const IMAGE *dst)
 {
     int      ndims    = 0;
@@ -1250,6 +1478,18 @@ static int parse_kept_reshape_dims(uint64_t nel, const IMAGE *dst)
     return 0;
 }
 
+/**
+ * compile_kept_matrix_op - Try to compile a top-level `transpose`, `matmul`, or `reshape` into @k
+ * @k:   Kept-statement structure to populate
+ * @dst: Destination image assigned by the statement
+ *
+ * Recognizes `dst = transpose(A)`, `dst = matmul(A, B)` (with optional
+ * `transpose()` on either operand), `dst = reshape(matmul(...), ...)`, and
+ * `dst = reshape(A, ...)` so `milk.calc` can run them directly into @dst
+ * without per-frame temporary allocations.
+ *
+ * Return: 0 on successful compilation, -1 if the RHS is not a supported matrix/reshape op
+ */
 static int compile_kept_matrix_op(fkept *k, IMAGE *dst)
 {
     int pos = cli_calc_tok_pos();
@@ -1376,6 +1616,17 @@ static int compile_kept_matrix_op(fkept *k, IMAGE *dst)
     return -1;
 }
 
+/**
+ * cli_calc_fuse_keep - Compile an image assignment RHS into a persistent `fkept` program
+ * @dst: Destination image being assigned
+ * @aop: Assignment operator (`=`, `+=`, `-=`, or `*=`)
+ *
+ * Compiles either a direct matrix/reshape operation (`compile_kept_matrix_op()`)
+ * or an element-wise fused expression with live scalar variable references
+ * (`keep_vars = 1`) that writes directly into @dst on each `cli_calc_fused_run()`.
+ *
+ * Return: Newly allocated `fkept` program pointer, or NULL if not fusible
+ */
 void *cli_calc_fuse_keep(IMAGE *dst, cli_token_type aop)
 {
     fkept *k = calloc(1, sizeof(*k));
@@ -1451,6 +1702,17 @@ void *cli_calc_fuse_keep(IMAGE *dst, cli_token_type aop)
     return k;
 }
 
+/**
+ * cli_calc_fused_run - Execute a pre-compiled `fkept` statement and notify output stream readers
+ * @kept: Opaque `fkept` pointer returned by `cli_calc_fuse_keep()`
+ *
+ * Periodically checks whether shared-memory input or output streams were
+ * recreated, validates image shapes and types, executes the kept element-wise
+ * or matrix/reshape operation into `k->dst`, and posts stream semaphores via
+ * `processinfo_update_output_stream()`.
+ *
+ * Return: 0 on success, -1 if an input or output image changed shape or type
+ */
 int cli_calc_fused_run(void *kept)
 {
     fkept          *k = kept;
@@ -1542,6 +1804,17 @@ int cli_calc_fused_run(void *kept)
     return 0;
 }
 
+/**
+ * cli_calc_fuse_assign - Attempt to fuse and execute a whole-image assignment in place
+ * @dst: Existing destination image on the left-hand side
+ * @aop: Assignment operator (`=`, `+=`, `-=`, `*=`, or `/=`)
+ *
+ * Compiles the right-hand side expression and evaluates it directly into @dst
+ * without allocating a temporary image when shapes and datatypes match the
+ * normal evaluator's semantics, rewinding the token stream otherwise.
+ *
+ * Return: 1 if fused and written to @dst, 0 to fall back to normal evaluation, -1 on error
+ */
 int cli_calc_fuse_assign(IMAGE *dst, cli_token_type aop)
 {
     if (parse_mode == 0 || !is_real_datatype(dst->md[0].datatype))
@@ -1601,6 +1874,18 @@ int cli_calc_fuse_assign(IMAGE *dst, cli_token_type aop)
     return 1;
 }
 
+/**
+ * cli_calc_inplace - Update an image in place with a scalar or same-size source image
+ * @dst: Destination image to modify
+ * @aop: Assignment or compound operator (`=`, `+=`, `-=`, `*=`, or `/=`)
+ * @src: Optional source image of the same element count, or NULL when @val is used
+ * @val: Scalar operand used when @src is NULL
+ *
+ * Delegates complex images to `cli_calc_inplace_complex()`, checks for zero
+ * divisors on `/=`, and executes typed block-wise updates across @dst.
+ *
+ * Return: 0 on success, -1 on division by zero or unsupported datatype
+ */
 int cli_calc_inplace(IMAGE *dst, cli_token_type aop, const IMAGE *src, double val)
 {
     if (aop == TOK_OP_SLASH_EQ && src == NULL && val == 0.0)

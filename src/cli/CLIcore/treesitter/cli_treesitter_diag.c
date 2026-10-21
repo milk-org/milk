@@ -115,6 +115,17 @@ static bool has_unclosed_block(const char *source, char *out_msg, size_t msg_sz)
            is_unclosed_block_keyword("{", source, out_msg, msg_sz);
 }
 
+/**
+ * is_open_block_error - Check if an AST ERROR node stems from an unclosed compound block.
+ * @node:   Tree-sitter ERROR node to inspect.
+ * @source: Full source code buffer being parsed.
+ *
+ * Iterates over the direct children of @node and checks whether any child is
+ * an unclosed block keyword (`for`, `while`, `until`, `do`, `if`, `then`,
+ * `elif`, `else`, `case`, `function`, or `{`) in @source.
+ *
+ * Return: true if @node represents an unclosed block rather than a syntax error, or false otherwise.
+ */
 static bool is_open_block_error(TSNode node, const char *source)
 {
     uint32_t count = ts_node_child_count(node);
@@ -129,6 +140,23 @@ static bool is_open_block_error(TSNode node, const char *source)
     return false;
 }
 
+/**
+ * cli_ts_collect_error_spans - Append underline highlight spans for AST syntax error nodes.
+ * @node:      Current Tree-sitter AST node being traversed.
+ * @source:    Original command line string.
+ * @linelen:   Length of @source in bytes.
+ * @spans:     Destination array of `HighlightSpan` entries.
+ * @num_spans: In/out count of spans populated in @spans.
+ * @max_spans: Maximum capacity of @spans.
+ * @color_lvl: Terminal color capability level (1 for 16-color, 2 for 256-color).
+ *
+ * Recursively traverses @node and records red-underlined error spans for
+ * `ERROR` nodes while suppressing false positives on unclosed multi-line
+ * blocks, continuation closer/transition lines, `@` tokens, and trailing `$`
+ * characters being typed.
+ *
+ * Return: Nothing.
+ */
 void cli_ts_collect_error_spans(TSNode         node,
                                 const char    *source,
                                 size_t         linelen,
@@ -192,6 +220,19 @@ void cli_ts_collect_error_spans(TSNode         node,
     }
 }
 
+/**
+ * handle_missing_node_diag - Populate a syntax diagnostic from a missing Tree-sitter AST node.
+ * @node:   Missing Tree-sitter AST node (`ts_node_is_missing(node) == true`).
+ * @source: Full source buffer being diagnosed.
+ * @diag:   Output diagnostic structure to populate.
+ *
+ * Classifies missing closers (`done`, `fi`, `esac`, `then`, `do`, `}`, `)`,
+ * `]`, `]]`) or missing statement terminators inside unclosed blocks as
+ * `CLI_DIAG_SEVERITY_INFO` hints, and other missing tokens as
+ * `CLI_DIAG_SEVERITY_ERROR`.
+ *
+ * Return: true if @diag was populated with a valid diagnostic, or false if suppressed.
+ */
 static bool handle_missing_node_diag(TSNode node, const char *source, CLI_SYNTAX_DIAG *diag)
 {
     const char *mtype = ts_node_type(node);
@@ -277,6 +318,19 @@ static bool handle_missing_node_diag(TSNode node, const char *source, CLI_SYNTAX
     return true;
 }
 
+/**
+ * find_first_error - Locate the first actionable syntax error or incomplete construct in an AST.
+ * @node:   Current Tree-sitter AST node being inspected.
+ * @source: Original command line string.
+ * @diag:   Output diagnostic structure populated when an issue is found.
+ *
+ * Checks @node for missing tokens via handle_missing_node_diag() or `ERROR`
+ * nodes (distinguishing unclosed blocks, unclosed `${`/`$(`/`$((` expansions,
+ * missing redirection operands, and unexpected tokens), then recurses into
+ * child nodes until the first diagnostic is produced.
+ *
+ * Return: true if a diagnostic was recorded in @diag, or false otherwise.
+ */
 static bool find_first_error(TSNode node, const char *source, CLI_SYNTAX_DIAG *diag)
 {
     if (ts_node_is_missing(node))
@@ -393,6 +447,17 @@ static bool find_first_error(TSNode node, const char *source, CLI_SYNTAX_DIAG *d
     return false;
 }
 
+/**
+ * node_tree_has_missing - Check whether an AST subtree has an unclosed block or subshell.
+ * @node:   Current Tree-sitter AST node being inspected.
+ * @buffer: Full multi-line source buffer being checked for completeness.
+ *
+ * Recursively walks @node to determine if any missing closer (`done`, `fi`,
+ * `esac`, `}`, `)`) or open-block `ERROR` node requires a multi-line PS2
+ * continuation prompt.
+ *
+ * Return: true if @buffer has an unclosed block or subshell, or false otherwise.
+ */
 static bool node_tree_has_missing(TSNode node, const char *buffer)
 {
     if (ts_node_is_missing(node))
@@ -512,6 +577,17 @@ static int has_trailing_continuation_op(const char *line, CLI_SYNTAX_DIAG *diag)
     return 0;
 }
 
+/**
+ * cli_ts_get_diagnostic - Inspect a command line for syntax errors or incomplete constructs.
+ * @line: Null-terminated command line string to analyze.
+ * @diag: Output structure populated with diagnostic severity, span, and message.
+ *
+ * Checks for unclosed quotes, unclosed `@{` calculator expressions, trailing
+ * continuation operators (`\`, `|`, `&&`, `||`), and Tree-sitter AST errors or
+ * missing block closers.
+ *
+ * Return: 1 if a diagnostic was recorded in @diag, or 0 if no issue was found.
+ */
 int cli_ts_get_diagnostic(const char *line, CLI_SYNTAX_DIAG *diag)
 {
     if (diag)
@@ -674,6 +750,16 @@ int cli_ts_get_diagnostic(const char *line, CLI_SYNTAX_DIAG *diag)
 #endif
 }
 
+/**
+ * cli_ts_is_incomplete - Check if a command buffer requires multi-line continuation.
+ * @buffer: Null-terminated accumulated command buffer.
+ *
+ * Tests whether @buffer has unclosed quotes, a trailing line-continuation or
+ * pipeline operator, or an unclosed compound block (`for`, `while`, `until`,
+ * `if`, `case`, `{`, `(`) in the Tree-sitter AST.
+ *
+ * Return: 1 if @buffer is incomplete and needs a PS2 prompt, or 0 if complete.
+ */
 int cli_ts_is_incomplete(const char *buffer)
 {
     if (buffer == NULL || buffer[0] == '\0')
@@ -730,6 +816,23 @@ static int entity_completion_mode(const char *at)
 }
 #endif
 
+/**
+ * cli_ts_determine_completion_mode - Determine the Readline tab-completion context at @start.
+ * @line:         Full input command line buffer (`rl_line_buffer`).
+ * @start:        Byte offset in @line where the token being completed begins.
+ * @text:         Prefix string of the token being completed.
+ * @out_cmdname:  Optional output buffer receiving the active command name when completing args.
+ * @cmdname_size: Capacity of @out_cmdname in bytes.
+ * @out_argidx:   Optional output pointer receiving the 0-based argument index.
+ *
+ * Checks fast lexical prefix/boundary rules first, then walks the normalized
+ * Tree-sitter AST around @start to identify variable expansions, entity paths,
+ * I/O redirections, or command/argument positions, falling back to
+ * cli_determine_mode_lexical().
+ *
+ * Return: A `CLICOMPLETIONMODE_*` constant (>= 0), or -1 when completing arguments
+ *         for @out_cmdname at @out_argidx.
+ */
 int cli_ts_determine_completion_mode(const char *line,
                                      int         start,
                                      const char *text,

@@ -22,6 +22,15 @@
 #include "milk_entity_ns.h"
 #include "milk_shm_prop.h"
 
+/**
+ * cli_calc_isnan - Test whether an IEEE-754 double is NaN using bit inspection
+ * @a: Floating-point value to inspect
+ *
+ * Inspects the raw IEEE-754 exponent and mantissa bits directly so NaN detection
+ * remains reliable even when compiled with `-ffast-math` / `-ffinite-math-only`.
+ *
+ * Return: 1.0 if @a is NaN, 0.0 otherwise
+ */
 double cli_calc_isnan(double a)
 {
     uint64_t u;
@@ -32,6 +41,15 @@ double cli_calc_isnan(double a)
                : 0.0;
 }
 
+/**
+ * cli_calc_isfinite - Test whether an IEEE-754 double is finite using bit inspection
+ * @a: Floating-point value to inspect
+ *
+ * Checks that the IEEE-754 exponent bits of @a are not all ones, avoiding
+ * `-ffast-math` folding of standard `isfinite()`.
+ *
+ * Return: 1.0 if @a is finite, 0.0 if infinite or NaN
+ */
 double cli_calc_isfinite(double a)
 {
     uint64_t u;
@@ -51,56 +69,156 @@ static double clamp(double a, double lo, double hi)
     return (a > hi) ? hi : (a < lo) ? lo : a;
 }
 
+/**
+ * cast_f32 - Round a double-precision scalar to single-precision `float`
+ * @a: Input value
+ *
+ * Implements the calculator `f32(x)` scalar conversion and serves as the
+ * function pointer tag for `_DATATYPE_FLOAT` image casts.
+ *
+ * Return: @a converted to `float` and widened back to `double`
+ */
 static double cast_f32(double a)
 {
     return (double) (float) a;
 }
 
+/**
+ * cast_f64 - Identity conversion for double-precision `f64(x)` casts
+ * @a: Input value
+ *
+ * Implements the calculator `f64(x)` conversion and serves as the function
+ * pointer tag for `_DATATYPE_DOUBLE` image casts.
+ *
+ * Return: @a unchanged
+ */
 static double cast_f64(double a)
 {
     return a;
 }
 
+/**
+ * cast_u8 - Truncate a scalar to an unsigned 8-bit integer (`u8(x)`)
+ * @a: Input value
+ *
+ * Converts @a via `int64_t` to `uint8_t` and serves as the function pointer tag
+ * for `_DATATYPE_UINT8` image casts.
+ *
+ * Return: @a cast to `uint8_t`, widened to `double`
+ */
 static double cast_u8(double a)
 {
     return (double) (uint8_t) (int64_t) a;
 }
 
+/**
+ * cast_i8 - Truncate a scalar to a signed 8-bit integer (`i8(x)`)
+ * @a: Input value
+ *
+ * Converts @a via `int64_t` to `int8_t` and serves as the function pointer tag
+ * for `_DATATYPE_INT8` image casts.
+ *
+ * Return: @a cast to `int8_t`, widened to `double`
+ */
 static double cast_i8(double a)
 {
     return (double) (int8_t) (int64_t) a;
 }
 
+/**
+ * cast_u16 - Truncate a scalar to an unsigned 16-bit integer (`u16(x)`)
+ * @a: Input value
+ *
+ * Converts @a via `int64_t` to `uint16_t` and serves as the function pointer tag
+ * for `_DATATYPE_UINT16` image casts.
+ *
+ * Return: @a cast to `uint16_t`, widened to `double`
+ */
 static double cast_u16(double a)
 {
     return (double) (uint16_t) (int64_t) a;
 }
 
+/**
+ * cast_i16 - Truncate a scalar to a signed 16-bit integer (`i16(x)`)
+ * @a: Input value
+ *
+ * Converts @a via `int64_t` to `int16_t` and serves as the function pointer tag
+ * for `_DATATYPE_INT16` image casts.
+ *
+ * Return: @a cast to `int16_t`, widened to `double`
+ */
 static double cast_i16(double a)
 {
     return (double) (int16_t) (int64_t) a;
 }
 
+/**
+ * cast_u32 - Truncate a scalar to an unsigned 32-bit integer (`u32(x)`)
+ * @a: Input value
+ *
+ * Converts @a via `int64_t` to `uint32_t` and serves as the function pointer tag
+ * for `_DATATYPE_UINT32` image casts.
+ *
+ * Return: @a cast to `uint32_t`, widened to `double`
+ */
 static double cast_u32(double a)
 {
     return (double) (uint32_t) (int64_t) a;
 }
 
+/**
+ * cast_i32 - Truncate a scalar to a signed 32-bit integer (`i32(x)`)
+ * @a: Input value
+ *
+ * Converts @a via `int64_t` to `int32_t` and serves as the function pointer tag
+ * for `_DATATYPE_INT32` image casts.
+ *
+ * Return: @a cast to `int32_t`, widened to `double`
+ */
 static double cast_i32(double a)
 {
     return (double) (int32_t) (int64_t) a;
 }
 
+/**
+ * cast_u64 - Truncate a scalar to an unsigned 64-bit integer (`u64(x)`)
+ * @a: Input value
+ *
+ * Converts @a to `uint64_t` (routing negative values through `int64_t`) and
+ * serves as the function pointer tag for `_DATATYPE_UINT64` image casts.
+ *
+ * Return: @a cast to `uint64_t`, widened to `double`
+ */
 static double cast_u64(double a)
 {
     return (double) (uint64_t) (a >= 0.0 ? a : (int64_t) a);
 }
 
+/**
+ * cast_i64 - Truncate a scalar to a signed 64-bit integer (`i64(x)`)
+ * @a: Input value
+ *
+ * Converts @a to `int64_t` and serves as the function pointer tag for
+ * `_DATATYPE_INT64` image casts.
+ *
+ * Return: @a cast to `int64_t`, widened to `double`
+ */
 static double cast_i64(double a)
 {
     return (double) (int64_t) a;
 }
 
+/**
+ * cli_calc_cast_datatype - Map a scalar cast function pointer to its ImageStreamIO datatype
+ * @fn: Unary scalar function pointer to inspect
+ *
+ * Checks whether @fn is one of `cast_f32`..`cast_i64` so image evaluators can
+ * allocate an output image of the requested explicit datatype when a cast wraps
+ * an image expression.
+ *
+ * Return: Matching `_DATATYPE_*` constant, or 0 if @fn is not a type-cast function
+ */
 uint8_t cli_calc_cast_datatype(double (*fn)())
 {
     if (fn == (double (*)()) cast_f32)
@@ -184,6 +302,15 @@ static const cli_calc_scalar_fn_t scalar_fns[] = { { "sin(", 1, (double (*)()) s
                                                    { "clamp(", 3, (double (*)()) clamp },
                                                    { NULL, 0, NULL } };
 
+/**
+ * cli_calc_scalar_fn - Match a built-in scalar math or cast function call prefix
+ * @p: Source pointer to test against `<name>(` prefixes
+ *
+ * Looks up @p in the shared `scalar_fns` table used by both the main tokenizer
+ * and the lightweight in-shell evaluator.
+ *
+ * Return: Pointer to the matching `cli_calc_scalar_fn_t` descriptor, or NULL
+ */
 const cli_calc_scalar_fn_t *cli_calc_scalar_fn(const char *p)
 {
     for (int i = 0; scalar_fns[i].name != NULL; i++)
@@ -196,6 +323,15 @@ const cli_calc_scalar_fn_t *cli_calc_scalar_fn(const char *p)
     return NULL;
 }
 
+/**
+ * cli_calc_op_prec - Return the Pratt parser precedence level for an operator token
+ * @t: Operator token type
+ *
+ * Defines the unified operator precedence hierarchy shared across the main
+ * calculator, fused image compiler, and in-shell scalar evaluator.
+ *
+ * Return: Non-negative precedence level, or -1 if @t is not an infix/ternary operator
+ */
 int cli_calc_op_prec(cli_token_type t)
 {
     switch (t)
@@ -243,6 +379,16 @@ int cli_calc_op_prec(cli_token_type t)
     }
 }
 
+/**
+ * cli_calc_op_right_assoc - Check whether an operator token is right-associative
+ * @t: Operator token type
+ *
+ * Identifies exponentiation (`^`), assignments (`=`, `op=`), and ternary (`?`)
+ * so precedence climbing uses `prec` instead of `prec + 1` for the right-hand
+ * recursive call.
+ *
+ * Return: 1 if @t is right-associative, 0 otherwise
+ */
 int cli_calc_op_right_assoc(cli_token_type t)
 {
     return (t == TOK_OP_CARET) || (t == TOK_EQUAL) || (t == TOK_OP_PLUS_EQ) ||
@@ -250,6 +396,15 @@ int cli_calc_op_right_assoc(cli_token_type t)
            (t == TOK_OP_QUESTION);
 }
 
+/**
+ * num_l - Construct a `VAL_LONG` scalar value without pulling in CLIcore symbols
+ * @v: Signed integer value
+ *
+ * Local `val_t` constructor used in `cli_calc_scalar.c` so the thin bash client
+ * does not depend on `cli_calc_parser.c`.
+ *
+ * Return: `val_t` initialized with `type = VAL_LONG` and `lval = @v`
+ */
 static val_t num_l(long v)
 {
     val_t r;
@@ -260,6 +415,15 @@ static val_t num_l(long v)
     return r;
 }
 
+/**
+ * num_d - Construct a `VAL_DOUBLE` scalar value without pulling in CLIcore symbols
+ * @v: Double-precision floating-point value
+ *
+ * Local `val_t` constructor used in `cli_calc_scalar.c` so the thin bash client
+ * does not depend on `cli_calc_parser.c`.
+ *
+ * Return: `val_t` initialized with `type = VAL_DOUBLE` and `dval = @v`
+ */
 static val_t num_d(double v)
 {
     val_t r;
@@ -270,6 +434,14 @@ static val_t num_d(double v)
     return r;
 }
 
+/**
+ * num - Extract a scalar `val_t` as a `double`
+ * @v: Scalar calculator value (`VAL_LONG` or `VAL_DOUBLE`)
+ *
+ * Promotes `VAL_LONG` to `double` or returns `v->dval` directly.
+ *
+ * Return: Numeric value of @v as a `double`
+ */
 static double num(const val_t *v)
 {
     return (v->type == VAL_LONG) ? (double) v->lval : v->dval;
@@ -362,6 +534,19 @@ static int long_binop(cli_token_type op, long a, long b, val_t *out, const char 
     }
 }
 
+/**
+ * cli_calc_scalar_binop - Evaluate a binary operator on two numeric scalar values
+ * @op:  Operator token type
+ * @l:   Left numeric operand (`VAL_LONG` or `VAL_DOUBLE`)
+ * @r:   Right numeric operand (`VAL_LONG` or `VAL_DOUBLE`)
+ * @out: Output scalar result
+ *
+ * Preserves exact 64-bit integer arithmetic when both operands are `VAL_LONG`
+ * (falling back to `double` on overflow or `/` division) and otherwise computes
+ * in double precision.
+ *
+ * Return: NULL on success, or a static error string (e.g. division/modulo by zero)
+ */
 const char *cli_calc_scalar_binop(cli_token_type op, const val_t *l, const val_t *r, val_t *out)
 {
     const char *err = NULL;
@@ -451,6 +636,16 @@ const char *cli_calc_scalar_binop(cli_token_type op, const val_t *l, const val_t
     return err;
 }
 
+/**
+ * cli_calc_scan_op - Scan an operator or punctuation token at the start of @p
+ * @p:   Input string pointer
+ * @len: Output number of characters consumed (1 or 2) when matched
+ *
+ * Checks two-character operators (`<=`, `>=`, `==`, `!=`, `&&`, `||`, `+=`,
+ * etc.) before single-character operators and delimiters.
+ *
+ * Return: Matched `cli_token_type`, or `TOK_EOF` if @p does not start with an operator
+ */
 cli_token_type cli_calc_scan_op(const char *p, int *len)
 {
     static const struct
@@ -486,6 +681,18 @@ cli_token_type cli_calc_scan_op(const char *p, int *len)
     return TOK_EOF;
 }
 
+/**
+ * cli_calc_scan_number - Scan an integer or floating-point literal at @p
+ * @p:    Input string pointer
+ * @type: Output token type (`TOK_LONG` or `TOK_DOUBLE`)
+ * @l:    Output integer value when `@type == TOK_LONG`
+ * @d:    Output floating-point value when `@type == TOK_DOUBLE`
+ *
+ * Parses decimal, hexadecimal (`0x`), octal (`0o`), and binary (`0b`) integers
+ * as well as decimal/scientific floating-point literals.
+ *
+ * Return: Number of bytes consumed from @p, or 0 if no numeric literal starts at @p
+ */
 size_t cli_calc_scan_number(const char *p, cli_token_type *type, long *l, double *d)
 {
     const char *start    = p;
@@ -564,6 +771,19 @@ typedef struct
     int    bail; /* the engine must evaluate it */
 } lexp_t;
 
+/**
+ * push - Append a token to the in-shell scalar evaluator's token buffer
+ * @x:    Local lexer/evaluator state
+ * @type: Token type
+ * @l:    Integer literal value (for `TOK_LONG`)
+ * @d:    Floating-point literal value (for `TOK_DOUBLE`)
+ * @fn:   Scalar function descriptor (for `TOK_FUNC_*`), or NULL
+ *
+ * Appends a lightweight token to `x->t`, failing if `LOCAL_MAX_TOK - 1` is
+ * reached so the expression falls back to the server engine.
+ *
+ * Return: 0 on success, -1 if the local token buffer is full
+ */
 static int push(lexp_t *x, cli_token_type type, long l, double d, const cli_calc_scalar_fn_t *fn)
 {
     if (x->n >= LOCAL_MAX_TOK - 1)
@@ -790,6 +1010,20 @@ static val_t lexpr(lexp_t *x, int min_prec, int live)
     return left;
 }
 
+/**
+ * cli_calc_local - Evaluate a pure scalar expression in-process without contacting the server
+ * @expr:   Null-terminated expression string to evaluate
+ * @digits: Significant digits to use when formatting floating-point output
+ * @out:    Destination buffer for the formatted numeric result string
+ * @outsz:  Size of @out in bytes
+ * @truth:  Output boolean truth value (1 if result is non-zero and not NaN, 0 otherwise)
+ *
+ * Tokenizes and evaluates @expr locally when it consists solely of numbers,
+ * scalar operators, built-in math/cast functions, and numeric SHM entity
+ * properties, avoiding a socket round-trip to the `milk-cli` server.
+ *
+ * Return: 1 if @expr was evaluated locally, 0 if the server engine must handle it
+ */
 int cli_calc_local(const char *expr, int digits, char *out, size_t outsz, int *truth)
 {
     lexp_t x;

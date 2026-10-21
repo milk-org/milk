@@ -35,6 +35,14 @@
 extern PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
 extern errno_t      processinfo_procdirname(char *procdname);
 
+/**
+ * get_shmdir_local - Resolve the active shared memory directory path
+ *
+ * Checks the `MILK_SHM_DIR` environment variable first, then the engine's
+ * configured `dcshmdir`, and finally falls back to `/dev/shm`.
+ *
+ * Return: Pointer to the NUL-terminated shared memory directory path
+ */
 static const char *get_shmdir_local(void)
 {
     const char *env = getenv("MILK_SHM_DIR");
@@ -49,6 +57,17 @@ static const char *get_shmdir_local(void)
     return "/dev/shm";
 }
 
+/**
+ * get_procdir_local - Resolve the directory containing processinfo shared memory files
+ * @pdname: Output buffer receiving the resolved directory path
+ * @pdsz:   Capacity of @pdname in bytes
+ *
+ * Determines the directory where `processinfo` shared memory files reside by
+ * honoring `MILK_PROC_DIR` and `MILK_SHM_DIR` overrides before falling back to
+ * `dcshmdir` or `processinfo_procdirname()`.
+ *
+ * Return: void
+ */
 static void get_procdir_local(char *pdname, size_t pdsz)
 {
     const char *pdir = getenv("MILK_PROC_DIR");
@@ -78,6 +97,14 @@ static void get_procdir_local(char *pdname, size_t pdsz)
 static char s_pinfolist_dir[256] = "";
 static int  s_pinfolist_fd       = -1;
 
+/**
+ * get_pinfolist_local - Map and cache the global processinfo list shared memory table
+ *
+ * Connects to `processinfo.list.shm` in the active processinfo directory, caching
+ * the mapping across calls and remapping if the target directory changes.
+ *
+ * Return: Pointer to the mapped PROCESSINFOLIST, or NULL if unavailable
+ */
 static PROCESSINFOLIST *get_pinfolist_local(void)
 {
     char pdname[256];
@@ -119,6 +146,18 @@ static PROCESSINFOLIST *get_pinfolist_local(void)
     return pinfolist;
 }
 
+/**
+ * open_proc_shm_local - Map a processinfo entry's individual shared memory struct
+ * @pdname:  Processinfo shared memory directory path
+ * @pname:   Process name from the processinfo list (may be NULL or empty)
+ * @fpid:    PID of the target process
+ * @pfd_out: Output pointer receiving the open file descriptor for the mapping
+ *
+ * Attempts to link `proc.<pname>.<pid>.shm` first and falls back to `proc.<pid>.shm`.
+ * The caller is responsible for unmapping the returned struct and closing *@pfd_out.
+ *
+ * Return: Mapped PROCESSINFO pointer on success, or NULL if not found
+ */
 static PROCESSINFO *open_proc_shm_local(const char *pdname,
                                         const char *pname,
                                         pid_t       fpid,
@@ -164,6 +203,15 @@ static PROCESSINFO *open_proc_shm_local(const char *pdname,
     return NULL;
 }
 
+/**
+ * fps_status_str - Convert an FPS status bitmask into a short state string
+ * @st: FPS metadata status bitmask
+ *
+ * Translates the active `FUNCTION_PARAMETER_STRUCT_STATUS_*` flags into a
+ * human-readable state label for CLI and JSON inspection output.
+ *
+ * Return: Static string "RUN", "CONF", or "IDLE"
+ */
 static const char *fps_status_str(uint32_t st)
 {
     if (st & (FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN | FUNCTION_PARAMETER_STRUCT_STATUS_RUN |
@@ -178,6 +226,16 @@ static const char *fps_status_str(uint32_t st)
     return "IDLE";
 }
 
+/**
+ * proc_status_str - Derive a human-readable status label for a tracked process
+ * @pi:  Mapped PROCESSINFO structure, or NULL if the SHM file could not be opened
+ * @pid: Fallback process ID from the processinfo list
+ *
+ * Combines `kill(pid, 0)` liveness probing with `pi->loopstat` and `pi->CTRLval`
+ * to distinguish active, paused, cleanly stopped, and crashed processes.
+ *
+ * Return: Static status string such as "ACTIVE", "PAUSED", "STOPPED", or "CRASHED"
+ */
 static const char *proc_status_str(const PROCESSINFO *pi, pid_t pid)
 {
     if (pi == NULL)
@@ -222,6 +280,14 @@ static const char *proc_status_str(const PROCESSINFO *pi, pid_t pid)
     }
 }
 
+/**
+ * strip_ws_local - Advance a string pointer past leading spaces and tabs
+ * @s: Input NUL-terminated string
+ *
+ * Skips horizontal whitespace characters at the start of @s.
+ *
+ * Return: Pointer to the first non-whitespace character in @s
+ */
 static const char *strip_ws_local(const char *s)
 {
     while (*s == ' ' || *s == '\t')
@@ -231,6 +297,15 @@ static const char *strip_ws_local(const char *s)
     return s;
 }
 
+/**
+ * starts_with_local - Check whether a string begins with a given prefix
+ * @line:   Input string to inspect
+ * @prefix: Prefix string to match against the start of @line
+ *
+ * Compares the leading bytes of @line with @prefix.
+ *
+ * Return: 1 if @line starts with @prefix, 0 otherwise
+ */
 static int starts_with_local(const char *line, const char *prefix)
 {
     return strncmp(line, prefix, strlen(prefix)) == 0;
@@ -289,6 +364,17 @@ static void json_escape_str(char *buf, size_t bufsz, const char *src)
  * ============================================================
  */
 
+/**
+ * emit_fps_json_body - Print JSON array elements for matching FPS instances
+ * @pat:    Optional `fnmatch` glob pattern to filter FPS names, or NULL for all
+ * @indent: Number of leading spaces to indent each JSON object
+ *
+ * Scans the FPS shared memory directory for `.fps.shm` files matching @pat,
+ * connects to each active FPS to read its status and description, and writes
+ * comma-separated JSON objects to stdout.
+ *
+ * Return: Number of FPS JSON entries emitted
+ */
 static int emit_fps_json_body(const char *pat, int indent)
 {
     char shmdname[STRINGMAXLEN_SHMDIRNAME];
@@ -563,6 +649,17 @@ errno_t cli_cmd_fpsdump(void)
  * ============================================================
  */
 
+/**
+ * format_img_dims - Format 1D, 2D, or 3D image dimensions as a `WxH[xD]` string
+ * @naxis: Number of axes (1..3)
+ * @size:  Array of axis sizes
+ * @szstr: Output buffer receiving the formatted dimension string
+ * @szlen: Capacity of @szstr in bytes
+ *
+ * Formats image dimensions into a compact human-readable string for `@ls -l`.
+ *
+ * Return: void
+ */
 static void format_img_dims(uint8_t naxis, const uint32_t *size, char *szstr, size_t szlen)
 {
     if (naxis <= 1)
@@ -579,6 +676,17 @@ static void format_img_dims(uint8_t naxis, const uint32_t *size, char *szstr, si
     }
 }
 
+/**
+ * emit_streams_json_body - Print JSON array elements for matching shared-memory streams
+ * @pat:    Optional `fnmatch` glob pattern to filter stream names, or NULL for all
+ * @indent: Number of leading spaces to indent each JSON object
+ *
+ * Enumerates `.im.shm` files in the active shared memory directory (skipping internal
+ * `_tmpcalc` scratch streams), opens each matching stream to inspect its geometry,
+ * datatype, and frame counter, and prints comma-separated JSON objects to stdout.
+ *
+ * Return: Number of stream JSON entries emitted
+ */
 static int emit_streams_json_body(const char *pat, int indent)
 {
     char pad[32];
@@ -677,6 +785,17 @@ static int emit_streams_json_body(const char *pat, int indent)
  * ============================================================
  */
 
+/**
+ * emit_procs_json_body - Print JSON array elements for matching processinfo entries
+ * @pat:    Optional `fnmatch` glob pattern to filter process names, or NULL for all
+ * @indent: Number of leading spaces to indent each JSON object
+ *
+ * Iterates over active entries in `processinfo.list.shm`, probes each process's
+ * shared memory telemetry and PID liveness, and writes comma-separated JSON objects
+ * with name, status, PID, and median loop rate to stdout.
+ *
+ * Return: Number of process JSON entries emitted
+ */
 static int emit_procs_json_body(const char *pat, int indent)
 {
     PROCESSINFOLIST *plist = get_pinfolist_local();
@@ -758,6 +877,17 @@ static int emit_procs_json_body(const char *pat, int indent)
  * ============================================================
  */
 
+/**
+ * emit_seqs_json_body - Print JSON array elements for matching sequencer instances
+ * @pat:    Optional `fnmatch` glob pattern to filter sequencer names, or NULL for all
+ * @indent: Number of leading spaces to indent each JSON object
+ *
+ * Scans the shared memory directory for `milkseq.<name>.shm` files matching @pat,
+ * connects to each sequencer to read its execution status and PID, and writes
+ * comma-separated JSON objects to stdout.
+ *
+ * Return: Number of sequencer JSON entries emitted
+ */
 static int emit_seqs_json_body(const char *pat, int indent)
 {
     char pad[32];
@@ -834,6 +964,16 @@ static int emit_seqs_json_body(const char *pat, int indent)
     return count;
 }
 
+/**
+ * emit_local_json_body - Print JSON array elements for matching process-local RAM images
+ * @pat:    Optional `fnmatch` glob pattern to filter local image names, or NULL for all
+ * @indent: Number of leading spaces to indent each JSON object
+ *
+ * Iterates over `MILK_LOCAL_IMAGES` to find non-shared, non-scratch images matching
+ * @pat and emits their name, dimensions, datatype, and `"loc": "RAM"` as JSON objects.
+ *
+ * Return: Number of local image JSON entries emitted
+ */
 static int emit_local_json_body(const char *pat, int indent)
 {
     if (MILK_LOCAL_IMAGES == NULL)

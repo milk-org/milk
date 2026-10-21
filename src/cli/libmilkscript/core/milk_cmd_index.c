@@ -35,11 +35,31 @@ static uint32_t fnv1a(const char *s)
     return h;
 }
 
+/**
+ * milk_reserve_milk_shortname - Toggle whether the reserved `"milk"` module shortname is allowed
+ * @on: Non-zero while registering the built-in `milk` module, 0 otherwise
+ *
+ * Allows `milk_module_begin()` to register the built-in `milk` module while preventing
+ * external modules from claiming `"milk"` as their shortname.
+ *
+ * Return: void
+ */
 void milk_reserve_milk_shortname(int on)
 {
     g_allow_milk = on;
 }
 
+/**
+ * milk_shortname_check - Validate a module shortname against naming and collision rules
+ * @name:  Candidate module shortname string
+ * @quiet: Non-zero to suppress diagnostic output on stderr
+ *
+ * Verifies that @name matches `[a-z][a-z0-9]{1,15}` and does not collide with a
+ * language keyword, an entity namespace (`s`, `f`, `p`, `q`, `l`), or the reserved
+ * `"milk"` module name.
+ *
+ * Return: 0 if @name is valid, -1 if rejected
+ */
 int milk_shortname_check(const char *name, int quiet)
 {
     const char *why = NULL;
@@ -93,6 +113,16 @@ static int valid_part(const char *s, size_t n)
     return 1;
 }
 
+/**
+ * milk_cmd_key_check - Validate a command key and check for duplicate registrations
+ * @key:  Full command key (`<module>.<name>` or root command name)
+ * @midx: Owning module index in `data.module[]`, or -1 for engine root commands
+ *
+ * Ensures module commands have a valid module shortname, a `<module>.<name>` dot
+ * separator with `[A-Za-z0-9_]` characters, and have not already been registered.
+ *
+ * Return: 0 if @key may be registered, -1 if invalid or duplicate
+ */
 int milk_cmd_key_check(const char *key, int midx)
 {
     if (key == NULL || key[0] == '\0')
@@ -124,6 +154,15 @@ int milk_cmd_key_check(const char *key, int midx)
     return 0;
 }
 
+/**
+ * milk_cmd_lookup - Find a registered command's index in `data.cmd[]` by key
+ * @key: Command key string to look up
+ *
+ * Lazily indexes any newly added entries in `data.cmd[]` and probes the open-addressed
+ * FNV-1a hash table `g_slot`.
+ *
+ * Return: Index in `data.cmd[]` (`0 .. data.NBcmd-1`), or -1 if not found
+ */
 int milk_cmd_lookup(const char *key)
 {
     if (key == NULL)
@@ -151,6 +190,15 @@ int milk_cmd_lookup(const char *key)
     return -1;
 }
 
+/**
+ * milk_cmd_index_add - Insert `data.cmd[cmdi]` into the command hash table
+ * @cmdi: Index of the newly registered command in `data.cmd[]`
+ *
+ * Inserts `cmdi + 1` into `g_slot` using linear probing and bumps the registry
+ * generation counter `g_gen` if the command is not already in the static catalog.
+ *
+ * Return: void
+ */
 void milk_cmd_index_add(unsigned int cmdi)
 {
     if (cmdi < g_indexed_upto)
@@ -173,6 +221,14 @@ void milk_cmd_index_add(unsigned int cmdi)
     }
 }
 
+/**
+ * milk_registry_gen - Return the command registry generation counter
+ *
+ * Increments whenever a non-catalogued module command is dynamically registered so
+ * connected shells know when to synchronize newly added command functions.
+ *
+ * Return: Current registry generation count
+ */
 uint32_t milk_registry_gen(void)
 {
     return g_gen;

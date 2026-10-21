@@ -578,11 +578,28 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
     return rc;
 }
 
+/**
+ * milk_bash_engine_listen_fd - Return the in-process UNIX domain listener file descriptor
+ *
+ * Exposes `g_listen_fd` so the interactive readline event loop can poll for
+ * incoming client requests while waiting for user keyboard input.
+ *
+ * Return: Listener socket file descriptor, or -1 if not initialized
+ */
 int milk_bash_engine_listen_fd(void)
 {
     return g_listen_fd;
 }
 
+/**
+ * milk_bash_engine_serve - Accept and service one pending request on the engine socket
+ *
+ * Invoked from interactive event loops when `g_listen_fd` becomes readable so
+ * background jobs or external `milk-call` clients can execute commands while
+ * the prompt is idle.
+ *
+ * Return: void
+ */
 void milk_bash_engine_serve(void)
 {
     int shutdown_flag = 0;
@@ -726,6 +743,18 @@ static int exec_calc_repl_expr(const char *expr, int *out_exit_req)
     return rc;
 }
 
+/**
+ * milk_bash_engine_exec - Execute a command line or script block in the bash co-process
+ * @cmdline:      Command string or multi-line script to execute
+ * @out_exit_req: Optional output flag set to 1 if `exit` or `quit` was requested
+ *
+ * Guards against recursive shell invocation from inside a milk command handler,
+ * dispatches bare `@calc` mode toggles and calculator REPL lines when active,
+ * and otherwise delegates execution to `engine_exec()`. Updates `dcexitcode`
+ * with the resulting status.
+ *
+ * Return: Exit status of the executed command (0 on success)
+ */
 int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
 {
     if (g_exec_depth > 0)

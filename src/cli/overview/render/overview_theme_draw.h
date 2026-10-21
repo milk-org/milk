@@ -19,16 +19,28 @@
 
 /* Helper: emit themed fg/bg */
 
+/**
+ * ov_theme_fg - Apply theme RGB color @c as the active foreground color
+ * @c: Theme RGB color
+ */
 static inline void ov_theme_fg(ov_rgb_t c)
 {
     ov_buf_fg(c.r, c.g, c.b);
 }
 
+/**
+ * ov_theme_bg - Apply theme RGB color @c as the active background color
+ * @c: Theme RGB color
+ */
 static inline void ov_theme_bg(ov_rgb_t c)
 {
     ov_buf_bg(c.r, c.g, c.b);
 }
 
+/**
+ * ov_theme_ul - Apply theme RGB color @c as the active underline color
+ * @c: Theme RGB color
+ */
 static inline void ov_theme_ul(ov_rgb_t c)
 {
     ov_buf_ul_color(c.r, c.g, c.b);
@@ -224,6 +236,15 @@ static inline void ov_buf_sparkline(int row, int col, const float *vals, int len
     ov_buf_reset_attr();
 }
 
+/**
+ * ov_theme_highlight_bg - Compute a subtle cursor-row highlight color from @base_bg
+ * @base_bg: Base panel background color
+ *
+ * Lightens dark palettes slightly and darkens light palettes slightly so row
+ * selection remains visible regardless of the active theme's luminance.
+ *
+ * Return: Adjusted highlight background color.
+ */
 static inline ov_rgb_t ov_theme_highlight_bg(ov_rgb_t base_bg)
 {
     ov_rgb_t highlight;

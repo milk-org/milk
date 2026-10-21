@@ -29,6 +29,18 @@
 
 typedef milk_argspec_t arg_spec_t;
 
+/**
+ * print_usage - Write a one-line `@args` parameter synopsis to a stream
+ * @fp:    Output stream (`stdout` or `stderr`)
+ * @fname: Function or script name to display
+ * @a:     Array of parsed argument specifications
+ * @n:     Number of argument specifications in @a
+ *
+ * Formats required parameters as `<name>` and optional parameters (those with a
+ * default value) as `[name]`.
+ *
+ * Return: void
+ */
 static void print_usage(FILE *fp, const char *fname, const arg_spec_t *a, int n)
 {
     fprintf(fp, "Usage: %s", fname);
@@ -39,6 +51,17 @@ static void print_usage(FILE *fp, const char *fname, const arg_spec_t *a, int n)
     fputc('\n', fp);
 }
 
+/**
+ * print_help - Print full parameter documentation for a function or script using `@args`
+ * @fname: Function or script name
+ * @a:     Array of parsed argument specifications
+ * @n:     Number of argument specifications in @a
+ *
+ * Outputs the usage synopsis followed by a formatted table of parameter names,
+ * types, defaults, and descriptions when the caller receives `-h` or `--help`.
+ *
+ * Return: void
+ */
 static void print_help(const char *fname, const arg_spec_t *a, int n)
 {
     print_usage(stdout, fname, a, n);
@@ -94,6 +117,20 @@ static int bad(const char *fname, const arg_spec_t *a, int n, const char *msg, c
     return 2;
 }
 
+/**
+ * milk_client_args - Parse, validate, and bind `@args` declarations and caller arguments
+ * @argc:  Total argument count (`SPEC... -- VALUE...`)
+ * @argv:  Argument vector containing specifications before `--` and values after `--`
+ * @fname: Name of the calling shell function or script for usage/error messages
+ * @local: Non-zero to emit `local` bindings (inside a shell function), 0 for globals
+ * @hooks: Shell integration hooks used to evaluate the generated variable bindings
+ *
+ * Parses parameter specifications (`name:type[=default][:help]`), matches positional
+ * and `.name=value` arguments, validates types via `milk_argval_parse`, and evaluates
+ * a single-quoted assignment command in the calling shell.
+ *
+ * Return: 0 on success, 1 after printing `-h`/`--help`, 2 on declaration or argument error
+ */
 int milk_client_args(int                        argc,
                      char                     **argv,
                      const char                *fname,

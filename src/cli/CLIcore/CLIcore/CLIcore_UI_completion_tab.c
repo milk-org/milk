@@ -669,6 +669,18 @@ static char *gen_vars_proc_match(const char *text, size_t len, int state)
     return NULL;
 }
 
+/**
+ * format_env_var_candidate - Format a variable name as a tab-completion candidate
+ * @vname:      Base variable identifier
+ * @has_dollar: Non-zero if the token starts with '$'
+ * @has_brace:  Non-zero if the token starts with '${'
+ * @is_array:   Non-zero to append '[@]}' when completing a braced array variable
+ *
+ * Wraps @vname in the sigil and brace syntax matching the user's current input
+ * prefix so readline replaces the token seamlessly.
+ *
+ * Return: Newly allocated candidate string via dupstr()
+ */
 static char *format_env_var_candidate(const char *vname,
                                       int         has_dollar,
                                       int         has_brace,

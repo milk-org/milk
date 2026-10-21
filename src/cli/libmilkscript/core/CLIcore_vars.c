@@ -146,11 +146,33 @@ void cli_var_set(const char *name, const char *val)
     var_set(name, val, 1);
 }
 
+/**
+ * cli_var_set_text - Set a CLI variable without evaluating math expressions
+ * @name: Variable name to create or update
+ * @val:  Value string (parsed as numeric literal if exact, otherwise stored as text)
+ *
+ * Updates @name in `cli_vars[]` and `dcvar[]` without invoking the calculator parser
+ * on non-numeric strings. Used when syncing plain text values from bash.
+ *
+ * Return: void
+ */
 void cli_var_set_text(const char *name, const char *val)
 {
     var_set(name, val, 0);
 }
 
+/**
+ * var_set - Create or update a CLI variable in the table and engine variable store
+ * @name: Variable name to assign
+ * @val:  Input string representation of the value
+ * @eval: Non-zero to evaluate @val as a math expression if it is not a numeric literal
+ *
+ * Classifies @val as an integer, floating-point number, evaluated math expression (when
+ * @eval is non-zero), or plain string, then records it in `cli_vars[]` and mirrors
+ * numeric values into the engine's `dcvar` table.
+ *
+ * Return: void
+ */
 static void var_set(const char *name, const char *val, int eval)
 {
     int    type = 2;

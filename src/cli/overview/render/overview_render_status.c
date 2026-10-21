@@ -34,6 +34,22 @@ typedef struct
 static SSEG *
 sseg(SSEG *sg, int *n, int prio, ov_rgb_t fg, ov_rgb_t bg, int bold, const char *fmt, ...)
     __attribute__((format(printf, 7, 8)));
+
+/**
+ * sseg - Format and append a prioritized segment to the status-bar segment array
+ * @sg:   Destination array of `SSEG` status segments (capacity `SSEG_MAX`)
+ * @n:    In/out count of populated segments in @sg
+ * @prio: Layout priority (lower numbers are higher priority when width is tight)
+ * @fg:   Foreground RGB color for the segment body text
+ * @bg:   Background RGB color for the segment
+ * @bold: Non-zero to render the segment with bold attribute
+ * @fmt:  printf-style format string for the segment text
+ *
+ * Formats the segment text into `sg[*n]` and increments `*n` only when the
+ * resulting string is non-empty. Returns a dummy sink segment if @sg is full.
+ *
+ * Return: Pointer to the initialized `SSEG` entry (so callers can populate `.tail`).
+ */
 static SSEG *
 sseg(SSEG *sg, int *n, int prio, ov_rgb_t fg, ov_rgb_t bg, int bold, const char *fmt, ...)
 {
@@ -55,6 +71,15 @@ sseg(SSEG *sg, int *n, int prio, ov_rgb_t fg, ov_rgb_t bg, int bold, const char 
     return s;
 }
 
+/**
+ * sseg_draw - Emit a single status-bar segment and its optional colored tail to the frame buffer
+ * @s: Pointer to the `SSEG` segment to render
+ *
+ * Applies the segment's background, foreground, and bold attributes, prints `.text`
+ * and optional `.tail` (using `.tail_fg`), and resets terminal attributes.
+ *
+ * Return: void
+ */
 static void sseg_draw(const SSEG *s)
 {
     ov_theme_bg(s->bg);

@@ -75,6 +75,15 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
 
 errno_t processinfo_CTRLscreen();
 #    else
+/**
+ * functionparameter_CTRLscreen - No-op FPS TUI stub when built without ncurses
+ * @mode:            TUI display mode (unused)
+ * @fpsnamemask:     FPS name filter mask (unused)
+ * @fpsCTRLfifoname: Control FIFO path (unused)
+ * @timeout_sec:     Refresh timeout in seconds (unused)
+ *
+ * Return: 0.
+ */
 static inline errno_t functionparameter_CTRLscreen(uint32_t mode,
                                                    char    *fpsnamemask,
                                                    char    *fpsCTRLfifoname,
@@ -86,10 +95,21 @@ static inline errno_t functionparameter_CTRLscreen(uint32_t mode,
     (void) timeout_sec;
     return 0;
 }
+
+/**
+ * processinfo_CTRLscreen - No-op processinfo TUI stub when built without ncurses
+ *
+ * Return: 0.
+ */
 static inline errno_t processinfo_CTRLscreen()
 {
     return 0;
 }
+
+/**
+ * TUI_printfw - Fallback formatted stdout writer when built without ncurses
+ * @fmt: `printf`-style format string
+ */
 static inline void TUI_printfw(const char *fmt, ...)
 {
     va_list args;
@@ -97,38 +117,85 @@ static inline void TUI_printfw(const char *fmt, ...)
     vprintf(fmt, args);
     va_end(args);
 }
+
+/**
+ * TUI_newline - Emit a newline to stdout when built without ncurses
+ */
 static inline void TUI_newline()
 {
     printf("\n");
 }
+
+/**
+ * screenprint_setreverse - No-op reverse-video attribute setter without ncurses
+ */
 static inline void screenprint_setreverse()
 {
 }
+
+/**
+ * screenprint_unsetreverse - No-op reverse-video attribute resetter without ncurses
+ */
 static inline void screenprint_unsetreverse()
 {
 }
+
+/**
+ * screenprint_setcolor - No-op color-pair setter without ncurses
+ * @pair: Color pair index (unused)
+ */
 static inline void screenprint_setcolor(int pair)
 {
     (void) pair;
 }
+
+/**
+ * screenprint_unsetcolor - No-op color-pair resetter without ncurses
+ * @pair: Color pair index (unused)
+ */
 static inline void screenprint_unsetcolor(int pair)
 {
     (void) pair;
 }
+
+/**
+ * TUI_set_screenprintmode - No-op screen print mode selector without ncurses
+ * @mode: Screen print mode (unused)
+ */
 static inline void TUI_set_screenprintmode(int mode)
 {
     (void) mode;
 }
+
+/**
+ * TUI_init_terminal - No-op terminal initializer without ncurses
+ * @wrow: Output row count pointer (unused)
+ * @wcol: Output column count pointer (unused)
+ *
+ * Return: 0.
+ */
 static inline errno_t TUI_init_terminal(short unsigned int *wrow, short unsigned int *wcol)
 {
     (void) wrow;
     (void) wcol;
     return 0;
 }
+
+/**
+ * get_singlechar_nonblock - Non-blocking character input stub without ncurses
+ *
+ * Return: Always -1 (no key available).
+ */
 static inline int get_singlechar_nonblock()
 {
     return -1;
 }
+
+/**
+ * TUI_exit - No-op terminal teardown stub without ncurses
+ *
+ * Return: 0.
+ */
 static inline errno_t TUI_exit()
 {
     return 0;

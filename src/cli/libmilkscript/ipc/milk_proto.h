@@ -203,6 +203,19 @@ static inline int milk_sendmsg_all(int fd, struct msghdr *msg, size_t total)
     return 0;
 }
 
+/**
+ * milk_proto_send - Send a framed `milk_frame_hdr_t` message and payload over socket @fd
+ * @fd:      Connected UNIX domain socket descriptor
+ * @type:    Frame message type (`MILK_MSG_*`)
+ * @flags:   Frame bitmask flags (`MILK_FLAG_*`)
+ * @payload: Optional payload buffer (may be NULL when @len == 0)
+ * @len:     Payload length in bytes
+ *
+ * Combines the 12-byte frame header and payload into a single `sendmsg()` scatter/gather
+ * write to avoid extra syscalls on small RPC messages.
+ *
+ * Return: 0 on success, -1 on write error.
+ */
 static inline int milk_proto_send(int         fd,
                                   uint8_t     type,
                                   uint8_t     flags,
