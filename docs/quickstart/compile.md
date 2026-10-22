@@ -141,6 +141,8 @@ $ sudo mount /milk/shm
 
 ??? danger "Running multiple versions side by side"
 
+    TODO: much better vision now. TMUX + ENV setup trick.
+
     !!! warning
         Untested — may require tweaking.
 

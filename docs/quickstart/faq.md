@@ -116,7 +116,7 @@ See also: [Streams](../guide/streams.md)
     The default shared memory directory is `/milk/shm`. Override with:
 
     ```bash
-    export MILK_SHM_DIR=/path/to/custom/shm
+    export MILK_SHM_DIR=/path/to/custom/shmdir
     ```
 
 ---
