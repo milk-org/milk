@@ -67,6 +67,12 @@ double cli_calc_isnan(double a);
 /** cli_calc_isfinite() - IEEE-754 bit-level finite test (1.0 if @a is finite, else 0.0), safe under -Ofast. */
 double cli_calc_isfinite(double a);
 
+/** cli_calc_posi() - Heaviside step (1.0 if @a > 0, else 0.0). */
+double cli_calc_posi(double a);
+
+/** cli_calc_sign() - Signum function (1.0 if @a > 0, -1.0 if @a < 0, else 0.0). */
+double cli_calc_sign(double a);
+
 /** cli_calc_cast_datatype() - _DATATYPE_* for an explicit cast function (f32..i64), else 0. */
 uint8_t cli_calc_cast_datatype(double (*fn)());
 

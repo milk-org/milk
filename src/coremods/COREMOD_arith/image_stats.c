@@ -27,14 +27,20 @@
 
 #ifdef _OPENMP
 #    include <omp.h>
-#    define OMP_NELEMENT_LIMIT 1000000
+#    define OMP_NELEMENT_LIMIT 131072
 #    define MILK_PRAGMA_OMP_MIN \
         _Pragma("omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)")
 #    define MILK_PRAGMA_OMP_MAX \
         _Pragma("omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)")
+#    define MILK_PRAGMA_OMP_SUM2 \
+        _Pragma("omp parallel for simd reduction(+:sum2) if (nelement > OMP_NELEMENT_LIMIT)")
+#    define MILK_PRAGMA_OMP_COUNT \
+        _Pragma("omp parallel for simd reduction(+:n) if (nelement > OMP_NELEMENT_LIMIT)")
 #else
 #    define MILK_PRAGMA_OMP_MIN
 #    define MILK_PRAGMA_OMP_MAX
+#    define MILK_PRAGMA_OMP_SUM2
+#    define MILK_PRAGMA_OMP_COUNT
 #endif
 
 double arith_image_mean_IMGID(IMGID *imgin)
@@ -535,6 +541,7 @@ double MILK_HOT arith_image_rms_IMGID(IMGID *imgin)
     {                                                            \
         __typeof__(imgin->im->array.MBR[0]) *MILK_RESTRICT ptr = \
             MILK_ASSUME_ALIGNED(imgin->im->array.MBR);           \
+        MILK_PRAGMA_OMP_SUM2                                     \
         for (uint64_t ii = 0; ii < nelement; ii++)               \
         {                                                        \
             double d = (double) ptr[ii] - mean;                  \
@@ -590,6 +597,7 @@ double MILK_HOT arith_image_count_IMGID(IMGID *imgin)
     {                                                            \
         __typeof__(imgin->im->array.MBR[0]) *MILK_RESTRICT ptr = \
             MILK_ASSUME_ALIGNED(imgin->im->array.MBR);           \
+        MILK_PRAGMA_OMP_COUNT                                    \
         for (uint64_t ii = 0; ii < nelement; ii++)               \
         {                                                        \
             n += (ptr[ii] != 0);                                 \

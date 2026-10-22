@@ -171,8 +171,14 @@ static void FK(run_bin)(const fins *in, FT *restrict l, const FT *restrict r, in
     case TOK_OP_EQ:
         BIN_LOOPS((FT) (a == b));
         break;
-    default:
+    case TOK_OP_NEQ:
         BIN_LOOPS((FT) (a != b));
+        break;
+    case TOK_OP_AND:
+        BIN_LOOPS((FT) ((a != (FT) 0) & (b != (FT) 0)));
+        break;
+    default:
+        BIN_LOOPS((FT) ((a != (FT) 0) | (b != (FT) 0)));
         break;
     }
 }
@@ -204,6 +210,10 @@ static void FK(run_fn2)(const fins *in, FT *restrict l, const FT *restrict r, in
     else if (f == atan2)
     {
         BIN_LOOPS(FM(atan2)(a, b));
+    }
+    else if (f == hypot)
+    {
+        BIN_LOOPS(FM(sqrt)(a * a + b * b));
     }
     else if (f == pow)
     {
@@ -247,25 +257,42 @@ static void FK(run_fn1)(double (*fn)(), FT *restrict l, int len)
     FN1_CASE(sin)
     FN1_CASE(cos)
     FN1_CASE(tan)
+    FN1_CASE(sinh)
+    FN1_CASE(cosh)
+    FN1_CASE(tanh)
     FN1_CASE(exp)
+    FN1_CASE(exp2)
     FN1_CASE(log)
     FN1_CASE(log10)
+    FN1_CASE(log2)
+    FN1_CASE(erf)
+    FN1_CASE(erfc)
     FN1_CASE(atan)
     FN1_CASE(asin)
     FN1_CASE(acos)
     FN1_CASE(cbrt)
 #undef FN1_CASE
+    if (f == cli_calc_posi)
+    {
+        MAP_LOOP((FT) (x > (FT) 0));
+        return;
+    }
+    if (f == cli_calc_sign)
+    {
+        MAP_LOOP((FT) ((x > (FT) 0) - (x < (FT) 0)));
+        return;
+    }
     /* bit-test NaN checks: -Ofast would fold isnan() away */
     if (f == cli_calc_isnan || f == cli_calc_isfinite)
     {
         MAP_LOOP((FT) f((double) x));
         return;
     }
-    MAP_LOOP((FT) f((double) x)); /* casts, posi: through the pointer, in double */
+    MAP_LOOP((FT) f((double) x)); /* casts: through the pointer, in double */
 }
 
 /** FK(coord_block) - coordinate @kind of pixels [@off, @off + @len) of an @nx x @ny image
- * about (cx, cy). */
+ * about (cx, cy), segmented by row so inner loops vectorize across x. */
 static void FK(coord_block)(int      kind,
                             uint32_t nx,
                             uint32_t ny,
@@ -277,20 +304,50 @@ static void FK(coord_block)(int      kind,
 {
     uint32_t x = (uint32_t) (off % nx);
     uint32_t y = (uint32_t) ((off / nx) % ny);
+    int      j = 0;
 
-    for (int j = 0; j < len; j++)
+    while (j < len)
     {
-        const FT dx = (FT) ((double) x - cx);
-        const FT dy = (FT) ((double) y - cy);
-        t[j]        = (kind == CALC_COORD_X)   ? dx
-                      : (kind == CALC_COORD_Y) ? dy
-                      : (kind == CALC_COORD_R) ? FM(sqrt)(dx * dx + dy * dy)
-                                               : FM(atan2)(dy, dx);
-        if (++x == nx)
+        int      rem     = (int) (nx - x);
+        int      cnt     = (len - j < rem) ? (len - j) : rem;
+        const FT bx      = (FT) ((double) x - cx);
+        const FT dy      = (FT) ((double) y - cy);
+        FT *restrict row = t + j;
+
+        if (kind == CALC_COORD_X)
         {
-            x = 0;
-            y = (y + 1 == ny) ? 0 : y + 1;
+            for (int k = 0; k < cnt; k++)
+            {
+                row[k] = bx + (FT) k;
+            }
         }
+        else if (kind == CALC_COORD_Y)
+        {
+            for (int k = 0; k < cnt; k++)
+            {
+                row[k] = dy;
+            }
+        }
+        else if (kind == CALC_COORD_R)
+        {
+            const FT dy2 = dy * dy;
+            for (int k = 0; k < cnt; k++)
+            {
+                const FT dx = bx + (FT) k;
+                row[k]      = FM(sqrt)(dx * dx + dy2);
+            }
+        }
+        else
+        {
+            for (int k = 0; k < cnt; k++)
+            {
+                const FT dx = bx + (FT) k;
+                row[k]      = FM(atan2)(dy, dx);
+            }
+        }
+        j += cnt;
+        x = 0;
+        y = (y + 1 == ny) ? 0 : y + 1;
     }
 }
 
@@ -325,16 +382,15 @@ static void FK(
 #undef SEL_LOOP
 
 /**
- * FK(run_block) - Evaluate program @p on pixels [@off, @off + @len) and store the result into @out
+ * FK(eval_block) - Evaluate program @p on pixels [@off, @off + @len) leaving result in `stk[0]`
  * @p:   Compiled program (scalar constants already evaluated)
- * @out: Destination image
  * @off: First pixel of the block
  * @len: Number of pixels (`<= FUSE_BLK`)
  * @stk: Per-thread vector stack, FUSE_MAXSTK slots of FUSE_BLK elements
  *
  * Return: void
  */
-static void FK(run_block)(const fprog *p, IMAGE *out, uint64_t off, int len, FT (*stk)[FUSE_BLK])
+static void FK(eval_block)(const fprog *p, uint64_t off, int len, FT (*stk)[FUSE_BLK])
 {
     int sp = 0;
     for (int i = 0; i < p->n; i++)
@@ -422,7 +478,179 @@ static void FK(run_block)(const fprog *p, IMAGE *out, uint64_t off, int len, FT 
         }
         } // switch (in->k)
     } // for (int i = 0; i < p->n; i++)
+}
+
+/**
+ * FK(run_block) - Evaluate program @p on pixels [@off, @off + @len) and store the result into @out
+ * @p:   Compiled program (scalar constants already evaluated)
+ * @out: Destination image
+ * @off: First pixel of the block
+ * @len: Number of pixels (`<= FUSE_BLK`)
+ * @stk: Per-thread vector stack, FUSE_MAXSTK slots of FUSE_BLK elements
+ *
+ * Return: void
+ */
+static void FK(run_block)(const fprog *p, IMAGE *out, uint64_t off, int len, FT (*stk)[FUSE_BLK])
+{
+    FK(eval_block)(p, off, len, stk);
     FK_STORE(out, off, len, stk[0]);
+}
+
+/**
+ * FK(reduce_block) - Reduce a block of evaluated pixels @v (with optional mask/second vector @m)
+ * @op:  Reduction operation (`RED_SUM`..`RED_DOT`)
+ * @v:   Evaluated primary block of length @len
+ * @m:   Optional mask block (for `RED_SUM`..`RED_VAR`) or second operand block (for `RED_DOT`)
+ * @len: Number of elements in the block (`<= FUSE_BLK`)
+ * @acc: Thread-local reduction accumulator updated in place
+ *
+ * Return: void
+ */
+static void FK(
+    reduce_block)(reduce_op op, const FT *restrict v, const FT *restrict m, int len, fred_acc *acc)
+{
+    if (op == RED_DOT)
+    {
+        double s = 0.0;
+        for (int j = 0; j < len; j++)
+        {
+            s += (double) v[j] * (double) m[j];
+        }
+        acc->sum += s;
+        acc->n += (uint64_t) len;
+        return;
+    }
+    if (m != NULL)
+    {
+        uint64_t nb = 0;
+        double   sb = 0.0;
+        double   mn = acc->min;
+        double   mx = acc->max;
+        for (int j = 0; j < len; j++)
+        {
+            if (m[j] != (FT) 0)
+            {
+                double x = (double) v[j];
+                sb += x;
+                mn = (x < mn || !(mn == mn)) ? x : mn;
+                mx = (x > mx || !(mx == mx)) ? x : mx;
+                nb++;
+            }
+        }
+        if (nb == 0)
+        {
+            return;
+        }
+        double bm = sb / (double) nb;
+        double m2 = 0.0;
+        if (op == RED_STD || op == RED_VAR)
+        {
+            for (int j = 0; j < len; j++)
+            {
+                if (m[j] != (FT) 0)
+                {
+                    double d = (double) v[j] - bm;
+                    m2 += d * d;
+                }
+            }
+        }
+        fred_acc blk = { nb, sb, bm, m2, mn, mx };
+        fred_merge(acc, &blk);
+        return;
+    }
+    switch (op)
+    {
+    case RED_SUM:
+    case RED_MEAN:
+    {
+        double s = 0.0;
+        for (int j = 0; j < len; j++)
+        {
+            s += (double) v[j];
+        }
+        acc->sum += s;
+        acc->n += (uint64_t) len;
+        break;
+    }
+    case RED_MIN:
+    {
+        double mn = acc->min;
+        int    j0 = 0;
+        if (!(mn == mn) && len > 0)
+        {
+            mn = (double) v[0];
+            j0 = 1;
+        }
+        for (int j = j0; j < len; j++)
+        {
+            double x = (double) v[j];
+            mn       = (x < mn) ? x : mn;
+        }
+        acc->min = mn;
+        acc->n += (uint64_t) len;
+        break;
+    }
+    case RED_MAX:
+    {
+        double mx = acc->max;
+        int    j0 = 0;
+        if (!(mx == mx) && len > 0)
+        {
+            mx = (double) v[0];
+            j0 = 1;
+        }
+        for (int j = j0; j < len; j++)
+        {
+            double x = (double) v[j];
+            mx       = (x > mx) ? x : mx;
+        }
+        acc->max = mx;
+        acc->n += (uint64_t) len;
+        break;
+    }
+    case RED_STD:
+    case RED_VAR:
+    {
+        double s = 0.0;
+        for (int j = 0; j < len; j++)
+        {
+            s += (double) v[j];
+        }
+        double bm = s / (double) len;
+        double m2 = 0.0;
+        for (int j = 0; j < len; j++)
+        {
+            double d = (double) v[j] - bm;
+            m2 += d * d;
+        }
+        fred_acc blk = { (uint64_t) len, s, bm, m2, acc->min, acc->max };
+        fred_merge(acc, &blk);
+        break;
+    }
+    case RED_NORM:
+    {
+        double s2 = 0.0;
+        for (int j = 0; j < len; j++)
+        {
+            double x = (double) v[j];
+            s2 += x * x;
+        }
+        acc->sum += s2;
+        acc->n += (uint64_t) len;
+        break;
+    }
+    case RED_COUNT:
+    default:
+    {
+        uint64_t c = 0;
+        for (int j = 0; j < len; j++)
+        {
+            c += (v[j] != (FT) 0);
+        }
+        acc->n += c;
+        break;
+    }
+    } // switch (op)
 }
 
 #undef MAP_LOOP

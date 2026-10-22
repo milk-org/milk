@@ -227,11 +227,26 @@ val_t cli_calc_complex_binop(cli_token_type op, val_t left, val_t right)
         parse_errmsg("Division by zero");
         return mk_string("");
     }
-    const IMAGE *like = (li != NULL && cli_calc_is_complex_dt(li->md[0].datatype)) ? li : ri;
-    int          dbl  = (li != NULL && is_double_dt(li->md[0].datatype)) ||
-                        (ri != NULL && is_double_dt(ri->md[0].datatype));
-    const char  *tmpn;
-    IMAGE *out = new_image(like, dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT, &tmpn);
+    const IMAGE *like   = (li != NULL && cli_calc_is_complex_dt(li->md[0].datatype)) ? li : ri;
+    int          dbl    = (li != NULL && is_double_dt(li->md[0].datatype)) ||
+                          (ri != NULL && is_double_dt(ri->md[0].datatype));
+    uint8_t      out_dt = dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT;
+    const char  *tmpn   = NULL;
+    IMAGE       *out    = NULL;
+    if (li != NULL && li->md[0].datatype == out_dt && strncmp(left.sval, "_tmpcalc", 8) == 0)
+    {
+        out  = (IMAGE *) li;
+        tmpn = left.sval;
+    }
+    else if (ri != NULL && ri->md[0].datatype == out_dt && strncmp(right.sval, "_tmpcalc", 8) == 0)
+    {
+        out  = (IMAGE *) ri;
+        tmpn = right.sval;
+    }
+    else
+    {
+        out = new_image(like, out_dt, &tmpn);
+    }
     if (out == NULL)
     {
         return mk_string("");
@@ -239,6 +254,84 @@ val_t cli_calc_complex_binop(cli_token_type op, val_t left, val_t right)
     double   lc  = (li == NULL) ? to_double(left) : 0.0;
     double   rc  = (ri == NULL) ? to_double(right) : 0.0;
     uint64_t nel = out->md[0].nelement;
+
+    if (!dbl && li != NULL && li->md[0].datatype == _DATATYPE_COMPLEX_FLOAT && ri != NULL &&
+        ri->md[0].datatype == _DATATYPE_COMPLEX_FLOAT)
+    {
+        const complex_float *a   = li->array.CF;
+        const complex_float *b   = ri->array.CF;
+        complex_float       *dst = out->array.CF;
+        if (op == TOK_OP_PLUS)
+        {
+            const float *af = (const float *) a;
+            const float *bf = (const float *) b;
+            float       *df = (float *) dst;
+            uint64_t     n2 = nel * 2;
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+            for (uint64_t k = 0; k < n2; k++)
+            {
+                df[k] = af[k] + bf[k];
+            }
+            return mk_string(tmpn);
+        }
+        if (op == TOK_OP_MINUS)
+        {
+            const float *af = (const float *) a;
+            const float *bf = (const float *) b;
+            float       *df = (float *) dst;
+            uint64_t     n2 = nel * 2;
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+            for (uint64_t k = 0; k < n2; k++)
+            {
+                df[k] = af[k] - bf[k];
+            }
+            return mk_string(tmpn);
+        }
+        if (op == TOK_OP_STAR)
+        {
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+            for (uint64_t i = 0; i < nel; i++)
+            {
+                float ar  = a[i].re;
+                float ai  = a[i].im;
+                float br  = b[i].re;
+                float bi  = b[i].im;
+                dst[i].re = ar * br - ai * bi;
+                dst[i].im = ar * bi + ai * br;
+            }
+            return mk_string(tmpn);
+        }
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+        for (uint64_t i = 0; i < nel; i++)
+        {
+            float ar  = a[i].re;
+            float ai  = a[i].im;
+            float br  = b[i].re;
+            float bi  = b[i].im;
+            float d   = br * br + bi * bi;
+            dst[i].re = (ar * br + ai * bi) / d;
+            dst[i].im = (ai * br - ar * bi) / d;
+        }
+        return mk_string(tmpn);
+    }
+
+    if (!dbl && li != NULL && li->md[0].datatype == _DATATYPE_COMPLEX_FLOAT && ri == NULL)
+    {
+        const float *af = (const float *) li->array.CF;
+        float       *df = (float *) out->array.CF;
+        uint64_t     n2 = nel * 2;
+        if (op == TOK_OP_STAR || op == TOK_OP_SLASH)
+        {
+            float s = (op == TOK_OP_STAR) ? (float) rc : (float) (1.0 / rc);
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+            for (uint64_t k = 0; k < n2; k++)
+            {
+                df[k] = af[k] * s;
+            }
+            return mk_string(tmpn);
+        }
+    }
+
 #pragma omp parallel for schedule(static) if (nel >= 131072)
     for (uint64_t i = 0; i < nel; i++)
     {
@@ -268,17 +361,32 @@ val_t cli_calc_complex_binop(cli_token_type op, val_t left, val_t right)
  */
 val_t cli_calc_complex_neg(const IMAGE *z)
 {
-    const char *tmpn;
-    IMAGE      *out = new_image(z, z->md[0].datatype, &tmpn);
+    const char *tmpn = z->name;
+    IMAGE      *out =
+        (strncmp(tmpn, "_tmpcalc", 8) == 0) ? (IMAGE *) z : new_image(z, z->md[0].datatype, &tmpn);
     if (out == NULL)
     {
         return mk_string("");
     }
-    for (uint64_t i = 0; i < z->md[0].nelement; i++)
+    uint64_t nel = z->md[0].nelement;
+    uint64_t n2  = nel * 2;
+    if (z->md[0].datatype == _DATATYPE_COMPLEX_FLOAT)
     {
-        double re, im;
-        pix(z, i, &re, &im);
-        set_pix(out, i, 0.0 - re, 0.0 - im);
+        const float *src = (const float *) z->array.CF;
+        float       *dst = (float *) out->array.CF;
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+        for (uint64_t k = 0; k < n2; k++)
+        {
+            dst[k] = 0.0f - src[k];
+        }
+        return mk_string(tmpn);
+    }
+    const double *src = (const double *) z->array.CD;
+    double       *dst = (double *) out->array.CD;
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+    for (uint64_t k = 0; k < n2; k++)
+    {
+        dst[k] = 0.0 - src[k];
     }
     return mk_string(tmpn);
 }
@@ -329,6 +437,79 @@ int cli_calc_inplace_complex(IMAGE *dst, cli_token_type aop, const IMAGE *src, d
             }
         }
     }
+    if (dst->md[0].datatype == _DATATYPE_COMPLEX_FLOAT && src != NULL &&
+        src->md[0].datatype == _DATATYPE_COMPLEX_FLOAT)
+    {
+        complex_float       *d  = dst->array.CF;
+        const complex_float *s  = src->array.CF;
+        uint64_t             n2 = nel * 2;
+        if (aop == TOK_EQUAL)
+        {
+            if (d != s)
+            {
+                __builtin_memcpy(d, s, nel * sizeof(complex_float));
+            }
+            return 0;
+        }
+        if (aop == TOK_OP_PLUS_EQ)
+        {
+            float       *df = (float *) d;
+            const float *sf = (const float *) s;
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+            for (uint64_t k = 0; k < n2; k++)
+            {
+                df[k] += sf[k];
+            }
+            return 0;
+        }
+        if (aop == TOK_OP_MINUS_EQ)
+        {
+            float       *df = (float *) d;
+            const float *sf = (const float *) s;
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+            for (uint64_t k = 0; k < n2; k++)
+            {
+                df[k] -= sf[k];
+            }
+            return 0;
+        }
+        if (aop == TOK_OP_STAR_EQ)
+        {
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+            for (uint64_t i = 0; i < nel; i++)
+            {
+                float ar = d[i].re;
+                float ai = d[i].im;
+                float br = s[i].re;
+                float bi = s[i].im;
+                d[i].re  = ar * br - ai * bi;
+                d[i].im  = ar * bi + ai * br;
+            }
+            return 0;
+        }
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+        for (uint64_t i = 0; i < nel; i++)
+        {
+            float ar = d[i].re;
+            float ai = d[i].im;
+            float br = s[i].re;
+            float bi = s[i].im;
+            float dn = br * br + bi * bi;
+            d[i].re  = (ar * br + ai * bi) / dn;
+            d[i].im  = (ai * br - ar * bi) / dn;
+        }
+        return 0;
+    }
+    if (dst->md[0].datatype == _DATATYPE_COMPLEX_DOUBLE && src != NULL &&
+        src->md[0].datatype == _DATATYPE_COMPLEX_DOUBLE && aop == TOK_EQUAL)
+    {
+        if (dst->array.CD != src->array.CD)
+        {
+            __builtin_memcpy(dst->array.CD, src->array.CD, nel * sizeof(complex_double));
+        }
+        return 0;
+    }
+#pragma omp                   parallel for schedule(static) if (nel >= 131072)
     for (uint64_t i = 0; i < nel; i++)
     {
         double br = val, bi = 0.0, ar, ai, r, im;
@@ -369,13 +550,68 @@ val_t cli_calc_complex_part(const IMAGE *z, int which)
     {
         return mk_string("");
     }
+    if (!dbl && z->md[0].datatype == _DATATYPE_COMPLEX_FLOAT)
+    {
+        const complex_float *restrict src = z->array.CF;
+        float *restrict dst               = out->array.F;
+        if (which == 0)
+        {
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+            for (uint64_t i = 0; i < nel; i++)
+            {
+                dst[i] = src[i].re;
+            }
+        }
+        else if (which == 1)
+        {
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+            for (uint64_t i = 0; i < nel; i++)
+            {
+                dst[i] = src[i].im;
+            }
+        }
+        else if (which == 2)
+        {
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+            for (uint64_t i = 0; i < nel; i++)
+            {
+                float re = src[i].re;
+                float im = src[i].im;
+                dst[i]   = sqrtf(re * re + im * im);
+            }
+        }
+        else
+        {
+            uint64_t nblk = (nel + 255) / 256;
+#pragma omp                   parallel for schedule(static) if (nel >= 131072)
+            for (uint64_t b = 0; b < nblk; b++)
+            {
+                uint64_t               off = b * 256;
+                int                    len = (int) ((nel - off < 256) ? (nel - off) : 256);
+                MILK_ALIGNED(64) float rb[256];
+                MILK_ALIGNED(64) float ib[256];
+                for (int j = 0; j < len; j++)
+                {
+                    rb[j] = src[off + (uint64_t) j].re;
+                    ib[j] = src[off + (uint64_t) j].im;
+                }
+                for (int j = 0; j < len; j++)
+                {
+                    dst[off + (uint64_t) j] = atan2f(ib[j], rb[j]);
+                }
+            }
+        }
+        return mk_string(tmpn);
+    }
+
+#pragma omp parallel for schedule(static) if (nel >= 131072)
     for (uint64_t i = 0; i < nel; i++)
     {
         double re, im;
         pix(z, i, &re, &im);
         double v = (which == 0)   ? re
                    : (which == 1) ? im
-                   : (which == 2) ? hypot(re, im)
+                   : (which == 2) ? sqrt(re * re + im * im)
                                   : atan2(im, re);
         if (dbl)
         {
@@ -425,9 +661,27 @@ val_t cli_calc_complex_func(const char *fname, const val_t *args, int nargs)
         {
             return mk_double(0);
         }
-        double ac = (a == NULL) ? to_double(args[0]) : 0.0;
-        double bc = (b == NULL) ? to_double(args[1]) : 0.0;
-        for (uint64_t i = 0; i < out->md[0].nelement; i++)
+        double   ac  = (a == NULL) ? to_double(args[0]) : 0.0;
+        double   bc  = (b == NULL) ? to_double(args[1]) : 0.0;
+        uint64_t nel = out->md[0].nelement;
+        if (!dbl && (a == NULL || a->md[0].datatype == _DATATYPE_FLOAT) &&
+            (b == NULL || b->md[0].datatype == _DATATYPE_FLOAT))
+        {
+            const float *restrict af  = (a != NULL) ? a->array.F : NULL;
+            const float *restrict bf  = (b != NULL) ? b->array.F : NULL;
+            complex_float *restrict d = out->array.CF;
+            const float fac           = (float) ac;
+            const float fbc           = (float) bc;
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+            for (uint64_t i = 0; i < nel; i++)
+            {
+                d[i].re = (af != NULL) ? af[i] : fac;
+                d[i].im = (bf != NULL) ? bf[i] : fbc;
+            }
+            return mk_string(tmpn);
+        }
+#pragma omp                   parallel for schedule(static) if (nel >= 131072)
+        for (uint64_t i = 0; i < nel; i++)
         {
             double re = ac, im = bc, unused;
             if (a != NULL)
@@ -473,28 +727,63 @@ val_t cli_calc_complex_func(const char *fname, const val_t *args, int nargs)
         {
             const float *restrict src   = z->array.F;
             complex_float *restrict dst = out->array.CF;
-#pragma omp parallel for schedule(static) if (nel >= 131072)
-            for (uint64_t i = 0; i < nel; i++)
+            uint64_t nblk               = (nel + 255) / 256;
+#pragma omp                   parallel for schedule(static) if (nel >= 131072)
+            for (uint64_t b = 0; b < nblk; b++)
             {
-                float phi = src[i];
-                dst[i].re = cosf(phi);
-                dst[i].im = sinf(phi);
+                uint64_t off              = b * 256;
+                int      len              = (int) ((nel - off < 256) ? (nel - off) : 256);
+                const float *restrict s   = src + off;
+                complex_float *restrict d = dst + off;
+                MILK_ALIGNED(64) float cr[256];
+                MILK_ALIGNED(64) float ci[256];
+                for (int j = 0; j < len; j++)
+                {
+                    cr[j] = cosf(s[j]);
+                }
+                for (int j = 0; j < len; j++)
+                {
+                    ci[j] = sinf(s[j]);
+                }
+                for (int j = 0; j < len; j++)
+                {
+                    d[j].re = cr[j];
+                    d[j].im = ci[j];
+                }
             }
         }
         else if (z->md[0].datatype == _DATATYPE_DOUBLE)
         {
             const double *restrict src   = z->array.D;
             complex_double *restrict dst = out->array.CD;
-#pragma omp parallel for schedule(static) if (nel >= 131072)
-            for (uint64_t i = 0; i < nel; i++)
+            uint64_t nblk                = (nel + 255) / 256;
+#pragma omp                   parallel for schedule(static) if (nel >= 131072)
+            for (uint64_t b = 0; b < nblk; b++)
             {
-                double phi = src[i];
-                dst[i].re  = cos(phi);
-                dst[i].im  = sin(phi);
+                uint64_t off               = b * 256;
+                int      len               = (int) ((nel - off < 256) ? (nel - off) : 256);
+                const double *restrict s   = src + off;
+                complex_double *restrict d = dst + off;
+                MILK_ALIGNED(64) double cr[256];
+                MILK_ALIGNED(64) double ci[256];
+                for (int j = 0; j < len; j++)
+                {
+                    cr[j] = cos(s[j]);
+                }
+                for (int j = 0; j < len; j++)
+                {
+                    ci[j] = sin(s[j]);
+                }
+                for (int j = 0; j < len; j++)
+                {
+                    d[j].re = cr[j];
+                    d[j].im = ci[j];
+                }
             }
         }
         else
         {
+#pragma omp                   parallel for schedule(static) if (nel >= 131072)
             for (uint64_t i = 0; i < nel; i++)
             {
                 double phi = 0.0, unused = 0.0;
@@ -518,17 +807,33 @@ val_t cli_calc_complex_func(const char *fname, const val_t *args, int nargs)
     }
     if (strncmp(fname, "conj(", 5) == 0)
     {
-        const char *tmpn;
-        IMAGE      *out = new_image(z, z->md[0].datatype, &tmpn);
+        const char *tmpn = z->name;
+        IMAGE *out = (strncmp(tmpn, "_tmpcalc", 8) == 0) ? (IMAGE *) z
+                                                         : new_image(z, z->md[0].datatype, &tmpn);
         if (out == NULL)
         {
             return mk_double(0);
         }
-        for (uint64_t i = 0; i < z->md[0].nelement; i++)
+        uint64_t nel = z->md[0].nelement;
+        if (z->md[0].datatype == _DATATYPE_COMPLEX_FLOAT)
         {
-            double re, im;
-            pix(z, i, &re, &im);
-            set_pix(out, i, re, 0.0 - im);
+            const complex_float *src = z->array.CF;
+            complex_float       *dst = out->array.CF;
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+            for (uint64_t i = 0; i < nel; i++)
+            {
+                dst[i].re = src[i].re;
+                dst[i].im = 0.0f - src[i].im;
+            }
+            return mk_string(tmpn);
+        }
+        const complex_double *src = z->array.CD;
+        complex_double       *dst = out->array.CD;
+#pragma omp parallel for simd schedule(static) if (nel >= 131072)
+        for (uint64_t i = 0; i < nel; i++)
+        {
+            dst[i].re = src[i].re;
+            dst[i].im = 0.0 - src[i].im;
         }
         return mk_string(tmpn);
     }

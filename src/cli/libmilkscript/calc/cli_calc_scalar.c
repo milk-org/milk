@@ -57,10 +57,16 @@ double cli_calc_isfinite(double a)
     return ((u & 0x7ff0000000000000ULL) != 0x7ff0000000000000ULL) ? 1.0 : 0.0;
 }
 
-/** posi() - Heaviside step: 1 if @a > 0, else 0. */
-static double posi(double a)
+/** cli_calc_posi() - Heaviside step: 1 if @a > 0, else 0. */
+double cli_calc_posi(double a)
 {
     return (a > 0.0) ? 1.0 : 0.0;
+}
+
+/** cli_calc_sign() - Signum: 1 if @a > 0, -1 if @a < 0, else 0. */
+double cli_calc_sign(double a)
+{
+    return (double) ((a > 0.0) - (a < 0.0));
 }
 
 /** clamp() - @a limited to [@lo, @hi] (the calculator's `trunc` / `clamp`). */
@@ -267,9 +273,16 @@ uint8_t cli_calc_cast_datatype(double (*fn)())
 static const cli_calc_scalar_fn_t scalar_fns[] = { { "sin(", 1, (double (*)()) sin },
                                                    { "cos(", 1, (double (*)()) cos },
                                                    { "exp(", 1, (double (*)()) exp },
+                                                   { "exp2(", 1, (double (*)()) exp2 },
                                                    { "ln(", 1, (double (*)()) log },
                                                    { "log(", 1, (double (*)()) log10 },
+                                                   { "log2(", 1, (double (*)()) log2 },
                                                    { "tan(", 1, (double (*)()) tan },
+                                                   { "sinh(", 1, (double (*)()) sinh },
+                                                   { "cosh(", 1, (double (*)()) cosh },
+                                                   { "tanh(", 1, (double (*)()) tanh },
+                                                   { "erf(", 1, (double (*)()) erf },
+                                                   { "erfc(", 1, (double (*)()) erfc },
                                                    { "atan(", 1, (double (*)()) atan },
                                                    { "sqrt(", 1, (double (*)()) sqrt },
                                                    { "cbrt(", 1, (double (*)()) cbrt },
@@ -277,7 +290,8 @@ static const cli_calc_scalar_fn_t scalar_fns[] = { { "sin(", 1, (double (*)()) s
                                                    { "floor(", 1, (double (*)()) floor },
                                                    { "asin(", 1, (double (*)()) asin },
                                                    { "acos(", 1, (double (*)()) acos },
-                                                   { "posi(", 1, (double (*)()) posi },
+                                                   { "posi(", 1, (double (*)()) cli_calc_posi },
+                                                   { "sign(", 1, (double (*)()) cli_calc_sign },
                                                    { "abs(", 1, (double (*)()) fabs },
                                                    { "fabs(", 1, (double (*)()) fabs },
                                                    { "round(", 1, (double (*)()) round },
@@ -295,6 +309,7 @@ static const cli_calc_scalar_fn_t scalar_fns[] = { { "sin(", 1, (double (*)()) s
                                                    { "u64(", 1, (double (*)()) cast_u64 },
                                                    { "i64(", 1, (double (*)()) cast_i64 },
                                                    { "atan2(", 2, (double (*)()) atan2 },
+                                                   { "hypot(", 2, (double (*)()) hypot },
                                                    { "fmod(", 2, (double (*)()) fmod },
                                                    { "min(", 2, (double (*)()) fmin },
                                                    { "max(", 2, (double (*)()) fmax },

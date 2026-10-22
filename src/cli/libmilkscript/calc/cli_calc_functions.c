@@ -413,7 +413,7 @@ static val_t func_eval_dd_d(const cli_token *ftok)
             return mk_string("");
         }
         const char *tmpn = alloc_tmpname();
-        if (ftok->fnctptr == fmin || ftok->fnctptr == fmax) // commutative
+        if (ftok->fnctptr == fmin || ftok->fnctptr == fmax || ftok->fnctptr == hypot) // commutative
         {
             arith_image_function_imd_im__dd_d(args[1].sval, to_double(args[0]), tmpn,
                                               ftok->fnctptr);
@@ -474,17 +474,6 @@ static val_t func_eval_ddd_d(const cli_token *ftok)
     double d3 = to_double(args[2]);
     return mk_double(((double (*)(double, double, double)) ftok->fnctptr)(d1, d2, d3));
 }
-
-typedef enum
-{
-    RED_SUM,
-    RED_MEAN,
-    RED_MIN,
-    RED_MAX,
-    RED_STD,
-    RED_VAR,
-    RED_PERC /* masked only: imedian, perc */
-} reduce_op;
 
 /** reduce_lane_im() - reduce @n values of @im starting at @base with @stride using @op. */
 static double reduce_lane_im(const IMAGE *im,
@@ -771,12 +760,45 @@ static int axis_reduce_op(double (*fn)())
     return -1;
 }
 
+/** fused_reduce_op() - the reduce_op of reduction @fn for fused block reduction, or -1. */
+static int fused_reduce_op(double (*fn)())
+{
+    int op = axis_reduce_op(fn);
+    if (op >= 0)
+    {
+        return op;
+    }
+    if (fn == (double (*)()) arith_image_norm)
+    {
+        return RED_NORM;
+    }
+    if (fn == (double (*)()) arith_image_count)
+    {
+        return RED_COUNT;
+    }
+    if (fn == (double (*)()) arith_image_dot)
+    {
+        return RED_DOT;
+    }
+    return -1;
+}
+
 /**
  * func_eval_image_reduction() - image-to-scalar reductions (`TOK_FUNC_IM_D`, `_IM_L`, `_IMD_D`, `_IMIM_D`);
  * `f(im, axis)` reduces along one axis instead and returns an image.
  */
 static val_t func_eval_image_reduction(const cli_token *ftok)
 {
+    int fop = fused_reduce_op(ftok->fnctptr);
+    if (fop >= 0)
+    {
+        val_t fout;
+        if (cli_calc_fuse_reduce((reduce_op) fop, ftok->type == TOK_FUNC_IM_L, &fout))
+        {
+            return fout;
+        }
+    }
+
     if (ftok->type == TOK_FUNC_IM_D || ftok->type == TOK_FUNC_IM_L)
     {
         cli_token *(*cur_func)(void)     = cli_calc_cur_func();

@@ -98,6 +98,24 @@ enum
     CALC_COORD_THETA
 };
 
+typedef enum
+{
+    RED_SUM,
+    RED_MEAN,
+    RED_MIN,
+    RED_MAX,
+    RED_STD,
+    RED_VAR,
+    RED_NORM,
+    RED_COUNT,
+    RED_DOT,
+    RED_PERC /* masked only: imedian, perc */
+} reduce_op;
+
+/** cli_calc_fuse_reduce() - evaluate reduction @op over fused expression(s) in one pass:
+ * 1 done, 0 fallback. */
+int cli_calc_fuse_reduce(reduce_op op, int is_long, val_t *out);
+
 /** cli_calc_where() - `c ? t : f` for an image condition @c; @t and @f are images or numbers. */
 val_t cli_calc_where(val_t c, val_t t, val_t f);
 

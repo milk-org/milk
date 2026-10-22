@@ -61,9 +61,9 @@
 
 double MILK_HOT arith_image_total_IMGID(IMGID *imgin)
 {
-    long double lvalue; // uses long double internally
-    uint64_t    nelement;
-    uint8_t     datatype;
+    double   lvalue;
+    uint64_t nelement;
+    uint8_t  datatype;
 
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
@@ -76,7 +76,7 @@ double MILK_HOT arith_image_total_IMGID(IMGID *imgin)
 
     lvalue = 0.0;
 
-#define ACCUM_CAST long double
+#define ACCUM_CAST double
 #define ELEM_EXPR(v) (v)
 
 #ifdef _OPENMP
@@ -100,7 +100,7 @@ double MILK_HOT arith_image_total_IMGID(IMGID *imgin)
 #undef ACCUM_CAST
 #undef ELEM_EXPR
 
-    return (double) lvalue;
+    return lvalue;
 }
 
 double arith_image_total(const char *ID_name)

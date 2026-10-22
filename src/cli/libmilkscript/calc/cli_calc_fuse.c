@@ -253,8 +253,12 @@ static double scalar_bin(cli_token_type op, double a, double b)
         return a >= b;
     case TOK_OP_EQ:
         return a == b;
-    default:
+    case TOK_OP_NEQ:
         return a != b;
+    case TOK_OP_AND:
+        return (a != 0.0) && (b != 0.0);
+    default:
+        return (a != 0.0) || (b != 0.0);
     }
 }
 
@@ -262,15 +266,14 @@ static double scalar_bin(cli_token_type op, double a, double b)
  * fusible_op - Test whether a binary operator token can be compiled into a fused program
  * @op: Operator token type
  *
- * Accepts arithmetic (`+`, `-`, `*`, `/`, `%`, `^`) and relational/equality
- * (`<`, `<=`, `>`, `>=`, `==`, `!=`) operators, rejecting logical short-circuit
- * and bitwise operators.
+ * Accepts arithmetic (`+`, `-`, `*`, `/`, `%`, `^`), relational/equality
+ * (`<`, `<=`, `>`, `>=`, `==`, `!=`), and logical (`&&`, `||`) operators.
  *
  * Return: 1 if @op is supported by the fused engine, 0 otherwise
  */
 static int fusible_op(cli_token_type op)
 {
-    return op >= TOK_OP_PLUS && op <= TOK_OP_NEQ; /* arithmetic and comparisons */
+    return (op >= TOK_OP_PLUS && op <= TOK_OP_NEQ) || op == TOK_OP_AND || op == TOK_OP_OR;
 }
 
 static int c_expr(fprog *p, int min_prec, fval *out);
@@ -370,12 +373,13 @@ static int c_func(fprog *p, const cli_token *ft, fval *out)
                              .c2 = a[2].c },
                     0);
     }
-    /* image forms the normal path supports: (im, x) any; (x, im) and (im, im) min/max/fmod(/pow) */
+    /* image forms: (im, x) any; (x, im) and (im, im) min/max/fmod/hypot/pow/atan2 */
     double (*fn)() = ft->fnctptr;
     int both       = a[0].vec && a[1].vec;
-    int cmut =
-        (fn == (double (*)()) fmin || fn == (double (*)()) fmax || fn == (double (*)()) fmod);
-    if ((both && !cmut && fn != (double (*)()) pow) || (!a[0].vec && !cmut))
+    int cmut       = (fn == (double (*)()) fmin || fn == (double (*)()) fmax ||
+                      fn == (double (*)()) fmod || fn == (double (*)()) hypot);
+    if ((both && !cmut && fn != (double (*)()) pow && fn != (double (*)()) atan2) ||
+        (!a[0].vec && !cmut && fn != (double (*)()) atan2))
     {
         return -1;
     }
@@ -606,7 +610,8 @@ static int c_expr(fprog *p, int min_prec, fval *out)
             }
             continue;
         }
-        if (!fusible_op(op))
+        if (!fusible_op(op) || (!out->vec && (op == TOK_OP_AND || op == TOK_OP_OR) &&
+                                (out->s1 != 0 || (out->c != 0.0) == (op == TOK_OP_OR))))
         {
             return -1;
         }
@@ -665,6 +670,53 @@ static int c_expr(fprog *p, int min_prec, fval *out)
 }
 
 /* ---------------------------------------------------------------- execution */
+
+typedef struct
+{
+    uint64_t n;
+    double   sum;
+    double   mean;
+    double   m2;
+    double   min;
+    double   max;
+} fred_acc;
+
+/**
+ * fred_merge - Combine a block or thread reduction accumulator @b into @a
+ * @a: Destination accumulator updated in place
+ * @b: Source accumulator to merge
+ *
+ * Uses Chan's parallel variance recurrence for `mean` and `m2` so block-wise
+ * and OpenMP-thread reductions preserve two-pass numerical stability.
+ *
+ * Return: void
+ */
+static void fred_merge(fred_acc *a, const fred_acc *b)
+{
+    if (b->n == 0)
+    {
+        return;
+    }
+    if (a->n == 0)
+    {
+        *a = *b;
+        return;
+    }
+    uint64_t n = a->n + b->n;
+    double   d = b->mean - a->mean;
+    a->sum += b->sum;
+    a->mean += d * ((double) b->n / (double) n);
+    a->m2 += b->m2 + d * d * ((double) a->n * (double) b->n / (double) n);
+    if (b->min < a->min || !(a->min == a->min))
+    {
+        a->min = b->min;
+    }
+    if (b->max > a->max || !(a->max == a->max))
+    {
+        a->max = b->max;
+    }
+    a->n = n;
+}
 
 /**
  * load_block - Convert a contiguous block of image pixels to `double`
@@ -826,10 +878,10 @@ static void store_block_f(IMAGE *im, uint64_t off, int len, const float *restric
 #undef FK_LOAD
 #undef FK_STORE
 
-/** all_float() - 1 if @out and every image @p reads are FLOAT: the program runs in float32. */
-static int all_float(const fprog *p, const IMAGE *out)
+/** all_float_prog() - 1 if every image @p reads is FLOAT and @p has no non-FLOAT explicit cast. */
+static int all_float_prog(const fprog *p)
 {
-    if (out->md[0].datatype != _DATATYPE_FLOAT)
+    if (p->out_double || (p->out_dt != 0 && p->out_dt != _DATATYPE_FLOAT))
     {
         return 0;
     }
@@ -841,6 +893,12 @@ static int all_float(const fprog *p, const IMAGE *out)
         }
     }
     return 1;
+}
+
+/** all_float() - 1 if @out and every image @p reads are FLOAT: the program runs in float32. */
+static int all_float(const fprog *p, const IMAGE *out)
+{
+    return (out->md[0].datatype == _DATATYPE_FLOAT) && all_float_prog(p);
 }
 
 /**
@@ -888,6 +946,80 @@ static void run_program(fprog *p, IMAGE *out)
     }
 }
 
+/**
+ * run_reduce - Evaluate one or two fused programs block-by-block into a scalar reduction
+ * @p1:      Primary fused program (value expression)
+ * @p2:      Optional secondary fused program (mask or second `dot()` operand), or NULL
+ * @op:      Reduction operation (`RED_SUM`..`RED_DOT`)
+ * @out_acc: Output combined accumulator
+ *
+ * Evaluates @p1 (and @p2 if non-NULL) in L1-resident `FUSE_BLK` tiles without
+ * allocating a temporary image, reducing each tile in `double` and combining
+ * thread-local accumulators with `fred_merge()`.
+ *
+ * Return: void
+ */
+static void run_reduce(fprog *p1, fprog *p2, reduce_op op, fred_acc *out_acc)
+{
+    eval_scalars(p1);
+    if (p2 != NULL)
+    {
+        eval_scalars(p2);
+    }
+    uint64_t nel  = p1->img[0]->md[0].nelement;
+    uint64_t nblk = (nel + FUSE_BLK - 1) / FUSE_BLK;
+    *out_acc      = (fred_acc) { 0, 0.0, 0.0, 0.0, NAN, NAN };
+
+    if (all_float_prog(p1) && (p2 == NULL || all_float_prog(p2)))
+    {
+#pragma omp parallel if (nel >= FUSE_OMP_MIN)
+        {
+            MILK_ALIGNED(64) float stk1[FUSE_MAXSTK][FUSE_BLK];
+            MILK_ALIGNED(64) float stk2[FUSE_MAXSTK][FUSE_BLK];
+            fred_acc               loc = { 0, 0.0, 0.0, 0.0, NAN, NAN };
+#pragma omp for schedule(static) nowait
+            for (uint64_t b = 0; b < nblk; b++)
+            {
+                uint64_t off = b * FUSE_BLK;
+                int      len = (int) ((nel - off < FUSE_BLK) ? nel - off : FUSE_BLK);
+                eval_block_f(p1, off, len, stk1);
+                if (p2 != NULL)
+                {
+                    eval_block_f(p2, off, len, stk2);
+                }
+                reduce_block_f(op, stk1[0], (p2 != NULL) ? stk2[0] : NULL, len, &loc);
+            }
+#pragma omp critical
+            {
+                fred_merge(out_acc, &loc);
+            }
+        }
+        return;
+    }
+#pragma omp parallel if (nel >= FUSE_OMP_MIN)
+    {
+        MILK_ALIGNED(64) double stk1[FUSE_MAXSTK][FUSE_BLK];
+        MILK_ALIGNED(64) double stk2[FUSE_MAXSTK][FUSE_BLK];
+        fred_acc                loc = { 0, 0.0, 0.0, 0.0, NAN, NAN };
+#pragma omp for schedule(static) nowait
+        for (uint64_t b = 0; b < nblk; b++)
+        {
+            uint64_t off = b * FUSE_BLK;
+            int      len = (int) ((nel - off < FUSE_BLK) ? nel - off : FUSE_BLK);
+            eval_block_d(p1, off, len, stk1);
+            if (p2 != NULL)
+            {
+                eval_block_d(p2, off, len, stk2);
+            }
+            reduce_block_d(op, stk1[0], (p2 != NULL) ? stk2[0] : NULL, len, &loc);
+        }
+#pragma omp critical
+        {
+            fred_merge(out_acc, &loc);
+        }
+    }
+}
+
 /** compile() - compile the expression at the current token; tokens are rewound unless it returns 0. */
 static int compile(fprog *p, int min_prec, fval *v)
 {
@@ -902,6 +1034,120 @@ static int compile(fprog *p, int min_prec, fval *v)
 }
 
 /* ---------------------------------------------------------------- public */
+
+/**
+ * cli_calc_fuse_reduce - Attempt fused map-reduce evaluation of an image reduction call
+ * @op:      Reduction operation (`RED_SUM`..`RED_DOT`)
+ * @is_long: Non-zero if the reduction returns `VAL_LONG` (`icount`), 0 for `VAL_DOUBLE`
+ * @out:     Output `val_t` receiving the reduced scalar when fused
+ *
+ * Compiles the argument expression (and optional mask or second `dot()` operand)
+ * into fused block programs and reduces them in L1 cache without allocating any
+ * temporary `_tmpcalc` images, rewinding the token cursor if not applicable.
+ *
+ * Return: 1 if fused and evaluated into @out, 0 to fall back to normal evaluation
+ */
+int cli_calc_fuse_reduce(reduce_op op, int is_long, val_t *out)
+{
+    if (parse_mode == 0 || !cli_calc_tokens_have_image())
+    {
+        return 0;
+    }
+    cli_token *(*cur)(void) = cli_calc_cur_func();
+    cli_token *(*adv)(void) = cli_calc_advance_func();
+    static fprog p1;
+    static fprog p2;
+    fval         v1;
+    fval         v2;
+    int          pos = cli_calc_tok_pos();
+
+    if (compile(&p1, 0, &v1) != 0 || !v1.vec)
+    {
+        cli_calc_tok_seek(pos);
+        return 0;
+    }
+
+    int has_p2 = 0;
+    if (op == RED_DOT)
+    {
+        if (cur()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return 0;
+        }
+        adv();
+        if (compile(&p2, 0, &v2) != 0 || !v2.vec || !same_shape(p1.img[0], p2.img[0]) ||
+            (p1.nops == 0 && p2.nops == 0))
+        {
+            cli_calc_tok_seek(pos);
+            return 0;
+        }
+        has_p2 = 1;
+    }
+    else if (cur()->type == TOK_COMMA)
+    {
+        if (op != RED_SUM && op != RED_MEAN && op != RED_MIN && op != RED_MAX && op != RED_STD &&
+            op != RED_VAR)
+        {
+            cli_calc_tok_seek(pos);
+            return 0;
+        }
+        adv();
+        if (compile(&p2, 0, &v2) != 0 || !v2.vec || !same_shape(p1.img[0], p2.img[0]))
+        {
+            cli_calc_tok_seek(pos);
+            return 0;
+        }
+        has_p2 = 1;
+    }
+
+    if (cur()->type != TOK_RPAREN)
+    {
+        cli_calc_tok_seek(pos);
+        return 0;
+    }
+    adv();
+
+    fred_acc acc;
+    run_reduce(&p1, has_p2 ? &p2 : NULL, op, &acc);
+    if (acc.n == 0)
+    {
+        *out = is_long ? mk_long(0) : mk_double((op == RED_SUM || op == RED_DOT) ? 0.0 : NAN);
+        return 1;
+    }
+    double r = 0.0;
+    switch (op)
+    {
+    case RED_SUM:
+    case RED_DOT:
+        r = acc.sum;
+        break;
+    case RED_MEAN:
+        r = acc.sum / (double) acc.n;
+        break;
+    case RED_MIN:
+        r = acc.min;
+        break;
+    case RED_MAX:
+        r = acc.max;
+        break;
+    case RED_VAR:
+        r = acc.m2 / (double) acc.n;
+        break;
+    case RED_STD:
+        r = sqrt(acc.m2 / (double) acc.n);
+        break;
+    case RED_NORM:
+        r = sqrt(acc.sum);
+        break;
+    case RED_COUNT:
+    default:
+        r = (double) acc.n;
+        break;
+    }
+    *out = is_long ? mk_long((long) r) : mk_double(r);
+    return 1;
+}
 
 /**
  * cli_calc_fuse_expr - Attempt one-pass fused evaluation of an element-wise image expression

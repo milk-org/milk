@@ -195,3 +195,42 @@ def test_S6_S7_args_user_commands_and_undo(tmp_path):
         tmp_path,
     )
     assert events(res.stdout) == ["s.cam 50 0.5", "u1=2", "u2=1"]
+
+
+def test_calc_fused_reductions_math_and_complex_kernels(tmp_path):
+    res = milk_cli_script(
+        "mem.mk2Dim a 4 4 >/dev/null; mem.mk2Dim b 4 4 >/dev/null\n"
+        "@calc 'a = ix(a); b = iy(a)'\n"
+        "@calc -v tot,mn,sd,vr 'itot(a - b); imean(a + b); irms(a - b); ivar(a - b)'\n"
+        "@calc -v mn0,mx0,cnt,dt 'imin(a + b); imax(a + b); icount((a >= 0) && (b >= 0)); dot(a + 1, b + 1)'\n"
+        "@calc -v mtot,mstd 'itot(a, (a > -2) && (b == 0)); irms(a, b == 0)'\n"
+        "@calc 'c = where((a >= 0) || (b >= 0), posi(a) + sign(b), -10)'\n"
+        "@calc -v ctot 'itot(c)'\n"
+        "@calc 'h = hypot(a, b); r = ir(a); th = itheta(a); at = atan2(b, a)'\n"
+        "@calc -v hdiff,tdiff 'imax(abs(h - r)); imax(abs(th - at))'\n"
+        "@calc 'm = tanh(sinh(a * 0.1)) + cosh(b * 0.1) + exp2(log2(abs(a) + 1)) + erf(a * 0.5) + erfc(b * 0.5)'\n"
+        "@calc -v mfin 'isfinite(itot(m))'\n"
+        "@calc 'z1 = expi(a * 0.25); z2 = cplx(a, b); z3 = (z1 * conj(z1)) + (z2 / z1) * z1 - z2'\n"
+        "@calc -v zre,zim,zarg 'imean(real(z3)); imax(abs(imag(z3))); imax(abs(arg(expi(a * 0.2)) - a * 0.2))'\n"
+        'echo "red=$tot $mn $mn0 $mx0 $cnt $dt"\n'
+        'echo "mred=$mtot $ctot"\n'
+        'echo "coord=$hdiff $tdiff $mfin"\n'
+        'echo "cplx=$zre $zim $zarg"\n'
+        'echo "sd=$sd"\n'
+        'echo "vr=$vr"\n'
+        'echo "mstd=$mstd"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "red") == "0 -1 -4 2 4 4", out
+    assert value(res.stdout, "mred") == "0 -36", out
+    assert value(res.stdout, "coord") == "0 0 1", out
+    zre, zim, zarg = [float(x) for x in value(res.stdout, "cplx").split()]
+    assert zre == pytest.approx(1.0, abs=1e-5)
+    assert zim == pytest.approx(0.0, abs=1e-5)
+    assert zarg == pytest.approx(0.0, abs=1e-5)
+    assert float(value(res.stdout, "sd")) == pytest.approx(
+        (40.0 / 16.0) ** 0.5, rel=1e-5
+    )
+    assert float(value(res.stdout, "vr")) == pytest.approx(40.0 / 16.0, rel=1e-5)
+    assert float(value(res.stdout, "mstd")) == pytest.approx(1.25**0.5, rel=1e-5)

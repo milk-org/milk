@@ -578,6 +578,16 @@ val_t cli_calc_eval_image_whole_assign(const char *tok_sval, cli_token_type aop,
     {
         if (dstid != srcid || aop != TOK_EQUAL)
         {
+            if (aop == TOK_EQUAL && dstim->md[0].shared == 0 && srcim->md[0].shared == 0 &&
+                dstim->md[0].datatype == srcim->md[0].datatype &&
+                strncmp(rhs.sval, "_tmpcalc", 8) == 0)
+            {
+                void *tmp_raw    = dstim->array.raw;
+                dstim->array.raw = srcim->array.raw;
+                srcim->array.raw = tmp_raw;
+                dstim->md[0].cnt0++;
+                return mk_string(tok_sval);
+            }
             dstim->md[0].write = 1;
             if (apply_image_to_image_inplace(dstim, srcim, aop) != 0)
             {

@@ -83,20 +83,26 @@ def main():
         ("imC = imA^1.7", 512),
         ("imC = imA^3", 512),
         ("imD = imA*2.5 + imB*0.5", 512),
+        ("v = irms(imA - imB)", 512),
+        ("imC = where((ir(imA)<200)&&(imA>0), imA, 0)", 512),
+        ("zC = expi(imA)", 512),
+        ("zC = zA * conj(zB)", 512),
     ]
-    print(f"{'statement':30s} {'size':>6s} {'us/stmt':>10s} {'ns/px':>8s}")
+    print(f"{'statement':44s} {'size':>6s} {'us/stmt':>10s} {'ns/px':>8s}")
     for stmt, n in stmts:
         pre = "a=1\n"
         if n:
             pre += "".join(f"mem.mk2Dim {im} {n} {n}\n" for im in ("imA", "imB", "imC"))
             pre += '@calc "imA = imA + 0.3; imB = imB + 0.2"\n'
+            if stmt.startswith("zC"):
+                pre += '@calc "zA = cplx(imA, imB); zB = cplx(imB, imA)"\n'
         count = 60 if n >= 512 else (300 if args.quick else 1000)
         one = run(pin + script, pre + f'@calc --repl "{stmt}"\n', env1, reps)
         body = '@calc --repl "' + "; ".join([stmt] * count) + '"\n'
         many = run(pin + script, pre + body, env1, reps)
         us = (many - one) * 1e6 / (count - 1)
         npx = f"{us * 1e3 / (n * n):8.2f}" if n else f"{'':8s}"
-        print(f"{stmt:30s} {(str(n) + '^2') if n else '':>6s} {us:10.1f} {npx}")
+        print(f"{stmt:44s} {(str(n) + '^2') if n else '':>6s} {us:10.1f} {npx}")
 
 
 if __name__ == "__main__":
