@@ -107,14 +107,14 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
         ov_row_tooltip("PID: %d | Up: %s | CPU: %4.1f%% | Exec: %zu ns", (int) p->PID, loc_upt,
                        p->cpu_used, (size_t) p->dtmedian_exec_ns);
 
-        int btn_w = 8; /* " [Kill] " */
+        int btn_w = 8; /* " [Kill] " or " [Erase]" */
         int rem   = avail - printed;
         if (lay->ctrl_mode && rem >= btn_w) /* action buttons: CONTROL mode only */
         {
             ov_buf_hline(' ', rem - btn_w);
             ov_theme_bg(OV_FG_ERROR);
             ov_theme_fg(OV_FG_TEXT);
-            ov_buf_printf(" [Kill] ");
+            ov_buf_printf(p->active ? " [Kill] " : " [Erase]");
             printed += rem;
         }
     }

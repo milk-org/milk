@@ -47,15 +47,18 @@ typedef enum
 
 /* Preview-bar button action IDs */
 #define OV_BTN_NONE 0
-#define OV_BTN_PROC_PAUSE 1 /* toggle pause/resume  */
-#define OV_BTN_PROC_EXIT 2  /* clean exit (CTRLval=3)*/
-#define OV_BTN_PROC_KILL 3  /* SIGTERM              */
-#define OV_BTN_PROC_STEP 4  /* step (CTRLval=2)     */
-#define OV_BTN_FPS_CONF 5   /* toggle conf          */
-#define OV_BTN_FPS_RUN 6    /* toggle run           */
-#define OV_BTN_FPS_KILL 7   /* SIGTERM FPS pids     */
-#define OV_BTN_STREAM_DEL 8 /* delete stream SHM    */
-#define OV_BTN_INSPECT 9    /* inspect sel. item    */
+#define OV_BTN_PROC_PAUSE 1    /* toggle pause/resume     */
+#define OV_BTN_PROC_EXIT 2     /* clean exit (CTRLval=3)  */
+#define OV_BTN_PROC_KILL 3     /* SIGTERM                 */
+#define OV_BTN_PROC_STEP 4     /* step (CTRLval=2)        */
+#define OV_BTN_FPS_CONF 5      /* toggle conf             */
+#define OV_BTN_FPS_RUN 6       /* toggle run              */
+#define OV_BTN_FPS_KILL 7      /* SIGTERM FPS pids        */
+#define OV_BTN_STREAM_DEL 8    /* delete stream SHM       */
+#define OV_BTN_INSPECT 9       /* inspect sel. item       */
+#define OV_BTN_PROC_REMOVE 10  /* remove dead proc entry  */
+#define OV_BTN_PROC_CLEANUP 11 /* clean up all dead procs */
+#define OV_BTN_FPS_ERASE 12    /* erase FPS session/shm   */
 
 /* ---- Command Log ---- */
 #define OV_CMDLOG_MAX 32 /* ring buffer capacity */

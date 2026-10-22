@@ -245,7 +245,14 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         if (mc >= lay->r_procs.col + lay->r_procs.width - 8 &&
                             mc < lay->r_procs.col + lay->r_procs.width)
                         {
-                            ov_ctrl_proc_kill(&m->procs[idx], &lay->cmdlog);
+                            if (m->procs[idx].active)
+                            {
+                                ov_ctrl_proc_kill(&m->procs[idx], &lay->cmdlog);
+                            }
+                            else
+                            {
+                                ov_confirm_open(lay, m, OV_ACT_PROC_REMOVE, 0, OV_FOCUS_PROCS, idx);
+                            }
                             return 1;
                         }
                     }

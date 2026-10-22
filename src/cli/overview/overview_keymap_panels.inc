@@ -104,7 +104,7 @@
         HS_PROCS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        OV_NOHINT,
+        { "C", "cleanup", OV_CTX_CTRL | OV_CTX_FOCUS_PROCS | OV_CTX_FOCUS_SHOWN, 0 },
     },
 
     {
@@ -117,7 +117,7 @@
         HS_PROCS,
         OV_KG_CTRL,
         OV_KF_CTRL,
-        OV_NOHINT,
+        { "^e", "erase", OV_CTX_CTRL | OV_CTX_FOCUS_LIST | OV_CTX_FOCUS_SHOWN, OV_CTX_PARAM_TREE },
     },
 
     {

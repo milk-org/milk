@@ -196,40 +196,58 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
         if (focus == OV_FOCUS_PROCS && psel >= 0 && psel < m->nb_procs)
         {
             const OV_PROC *p = &m->procs[psel];
-            /* Pause / Resume */
-            if (p->loopstat == 2)
+            if (p->active)
             {
-                btns[nb].label         = " [p] \xe2\x96\xb6 Resume ";
-                btns[nb].bg            = OV_BADGE_OK;
-                btns[nb].id            = OV_BTN_PROC_PAUSE;
+                /* Pause / Resume */
+                if (p->loopstat == 2)
+                {
+                    btns[nb].label         = " [p] \xe2\x96\xb6 Resume ";
+                    btns[nb].bg            = OV_BADGE_OK;
+                    btns[nb].id            = OV_BTN_PROC_PAUSE;
+                    btns[nb].always_active = 0;
+                    nb++;
+
+                    /* Step */
+                    btns[nb].label         = " [s] \xe2\x8f\xad Step ";
+                    btns[nb].bg            = OV_BADGE_WARN;
+                    btns[nb].id            = OV_BTN_PROC_STEP;
+                    btns[nb].always_active = 0;
+                    nb++;
+                }
+                else
+                {
+                    btns[nb].label         = " [p] \xe2\x8f\xb8 Pause ";
+                    btns[nb].bg            = OV_BADGE_INFO;
+                    btns[nb].id            = OV_BTN_PROC_PAUSE;
+                    btns[nb].always_active = 0;
+                    nb++;
+                }
+                /* Exit (clean stop) */
+                btns[nb].label         = " [e] \xe2\x8f\xbb Exit ";
+                btns[nb].bg            = OV_BADGE_WARN;
+                btns[nb].id            = OV_BTN_PROC_EXIT;
                 btns[nb].always_active = 0;
                 nb++;
-
-                /* Step */
-                btns[nb].label         = " [s] \xe2\x8f\xad Step ";
-                btns[nb].bg            = OV_BADGE_WARN;
-                btns[nb].id            = OV_BTN_PROC_STEP;
+                /* Kill (SIGTERM) */
+                btns[nb].label         = " [k] \xe2\x98\xa0 Kill ";
+                btns[nb].bg            = OV_BADGE_DANGER;
+                btns[nb].id            = OV_BTN_PROC_KILL;
                 btns[nb].always_active = 0;
                 nb++;
             }
             else
             {
-                btns[nb].label         = " [p] \xe2\x8f\xb8 Pause ";
-                btns[nb].bg            = OV_BADGE_INFO;
-                btns[nb].id            = OV_BTN_PROC_PAUSE;
+                /* Erase single dead process entry */
+                btns[nb].label         = " [^e] \xe2\x9c\x95 Erase ";
+                btns[nb].bg            = OV_BADGE_DANGER;
+                btns[nb].id            = OV_BTN_PROC_REMOVE;
                 btns[nb].always_active = 0;
                 nb++;
             }
-            /* Exit (clean stop) */
-            btns[nb].label         = " [e] \xe2\x8f\xbb Exit ";
+            /* Cleanup all dead process entries */
+            btns[nb].label         = " [C] Cleanup ";
             btns[nb].bg            = OV_BADGE_WARN;
-            btns[nb].id            = OV_BTN_PROC_EXIT;
-            btns[nb].always_active = 0;
-            nb++;
-            /* Kill (SIGTERM) */
-            btns[nb].label         = " [k] \xe2\x98\xa0 Kill ";
-            btns[nb].bg            = OV_BADGE_DANGER;
-            btns[nb].id            = OV_BTN_PROC_KILL;
+            btns[nb].id            = OV_BTN_PROC_CLEANUP;
             btns[nb].always_active = 0;
             nb++;
             /* Inspect */
@@ -258,6 +276,12 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             btns[nb].label         = " [k] \xe2\x98\xa0 Kill ";
             btns[nb].bg            = OV_BADGE_DANGER;
             btns[nb].id            = OV_BTN_FPS_KILL;
+            btns[nb].always_active = 0;
+            nb++;
+            /* Erase */
+            btns[nb].label         = " [^e] \xe2\x9c\x95 Erase ";
+            btns[nb].bg            = OV_BADGE_DANGER;
+            btns[nb].id            = OV_BTN_FPS_ERASE;
             btns[nb].always_active = 0;
             nb++;
             /* Inspect */

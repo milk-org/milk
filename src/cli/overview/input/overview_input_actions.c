@@ -142,6 +142,27 @@ void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m)
         }
         break;
     }
+    case OV_BTN_PROC_REMOVE:
+    {
+        if (pi >= 0)
+        {
+            ov_confirm_open(lay, m, OV_ACT_PROC_REMOVE, 0, OV_FOCUS_PROCS, pi);
+        }
+        break;
+    }
+    case OV_BTN_PROC_CLEANUP:
+    {
+        ov_confirm_open(lay, m, OV_ACT_PROC_CLEANUP, 0, OV_FOCUS_PROCS, -1);
+        break;
+    }
+    case OV_BTN_FPS_ERASE:
+    {
+        if (fi >= 0)
+        {
+            ov_confirm_open(lay, m, OV_ACT_FPS_ERASE, 0, OV_FOCUS_FPS, fi);
+        }
+        break;
+    }
     case OV_BTN_STREAM_DEL:
     {
         if (ps != NULL)
