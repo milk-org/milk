@@ -301,7 +301,7 @@ int milk_unit_main(int argc, char **argv, const milk_unit_desc *d)
         given |= (k != d->params_opt && a.opt[k] != NULL);
     }
     fps_cli_set_standalone_args(argc, argv);
-    fps_cli_set_unit_help(NULL, d->help_options);
+    fps_cli_set_unit_help(NULL, d->help_options, d->nfixed);
     exists = milk_unit_fps_exists(a.name);
     init   = (strcmp(a.cmd, "fpsinit") == 0);
     create = !a.help && (init || (strcmp(a.cmd, "exec") == 0 && !exists));

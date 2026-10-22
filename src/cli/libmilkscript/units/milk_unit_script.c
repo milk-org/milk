@@ -6,9 +6,10 @@
  * @file milk_unit_script.c
  * @brief milk-fpsexec-milk-script (milk.script): a compute unit that runs a bash snippet on each frame.
  *
- * .cmd runs on each frame of .trigger, else on each tick of the delay loop, in one bash that loaded milk.bash
- * at start: a tick costs what its commands cost (a pipe round trip, ~0.1 ms, on top). A new .cmd applies from
- * the next tick. A tick that fails stops the loop, with its status in .error (`|| :` ignores a failure).
+ * .unit.cmd runs on each frame of .unit.trigger, else on each tick of the delay loop, in one bash
+ * that loaded milk.bash at start: a tick costs what its commands cost (a pipe round trip, ~0.1 ms,
+ * on top). A new .unit.cmd applies from the next tick. A tick that fails stops the loop, with its
+ * status in .unit.error (`|| :` ignores a failure).
  */
 
 #ifndef _GNU_SOURCE
@@ -46,17 +47,17 @@ static char params[FUNCTION_PARAMETER_STRMAXLEN];
 static char file[FUNCTION_PARAMETER_STRMAXLEN];
 static char error[FUNCTION_PARAMETER_STRMAXLEN];
 
-/* Fixed parameters declared with X-macro, set by unit options (not positional values);
+/* Fixed unit-definition entries under .unit.*, set by unit options (not positional values);
  * user-declared parameters are appended at runtime */
-#define SCRIPT_FIXED_PARAMS(X)                                                                 \
-    X(".cmd", cmd, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,                   \
-      "commands run on each frame (-c)")                                                       \
-    X(".trigger", trigger, FPTYPE_STREAMNAME, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
-      "a frame of this stream runs them (-t)")                                                 \
-    X(".params", params, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT, "declared parameters (-p)")   \
-    X(".file", file, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,                 \
-      "commands from this file (-f)")                                                          \
-    X(".error", error, FPTYPE_STRING, 0, FPFLAG_DEFAULT_OUTPUT, "why the loop stopped")
+#define SCRIPT_FIXED_PARAMS(X)                                                                    \
+    X(".unit.cmd", cmd, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,                 \
+      "commands run on each frame (-c)")                                                          \
+    X(".unit.trigger", trigger, FPTYPE_STREAMNAME, 0,                                             \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, "a frame of this stream runs them (-t)")      \
+    X(".unit.params", params, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT, "declared parameters (-p)") \
+    X(".unit.file", file, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,               \
+      "commands from this file (-f)")                                                             \
+    X(".unit.error", error, FPTYPE_STRING, 0, FPFLAG_DEFAULT_OUTPUT, "why the loop stopped")
 
 static FPS_CLI_BINDING bindings[SCRIPT_NFIXED + SCRIPT_MAXPAR] = { SCRIPT_FIXED_PARAMS(
     FPS_X_BINDING) };
@@ -88,7 +89,7 @@ static MILK_RUNNABLE unit_script = {
             "(-t), or on each -loopd tick without one, in a bash that loaded milk.bash once. -p "
             "declares parameters exposed as shell variables: the values after the command word "
             "set them, in declaration order, and @set changes them while it runs. A tick that "
-            "fails stops the loop; its status is kept in .error.",
+            "fails stops the loop; its status is kept in .unit.error.",
     },
     .srcfile     = __FILE__,
     .bindings    = bindings,
@@ -107,25 +108,14 @@ static int   sh_st  = -1; /* a status line per tick, from SCRIPT_STATUS_FD */
  * is_fixed - Check whether a parameter name collides with reserved script unit names
  * @name: Candidate parameter name (without leading dot)
  *
- * Rejects the built-in frame index variable `_n` and the unit's fixed FPS parameters
- * (`.cmd`, `.trigger`, `.params`, `.file`, `.error`).
+ * Rejects the built-in frame index variable `_n` and `unit` (which holds the unit
+ * definition entries `.unit.*`).
  *
  * Return: 1 if @name is reserved, 0 otherwise.
  */
 static int is_fixed(const char *name)
 {
-    if (strcmp(name, "_n") == 0)
-    {
-        return 1;
-    }
-    for (int i = 0; i < SCRIPT_NFIXED; i++)
-    {
-        if (strcmp(bindings[i].fpskeyword + 1, name) == 0)
-        {
-            return 1;
-        }
-    }
-    return 0;
+    return strcmp(name, "_n") == 0 || strcmp(name, "unit") == 0;
 }
 
 /**
@@ -498,11 +488,11 @@ static int shell_start(char *err, size_t errsz)
 }
 
 /**
- * report - Record a runtime error message to stderr, the FPS `.error` parameter, and processinfo
+ * report - Record a runtime error message to stderr, the FPS `.unit.error` parameter, and processinfo
  * @pi:  Active `PROCESSINFO` handle (may be NULL)
  * @msg: Error message string
  *
- * Prints @msg to `stderr`, stores it in the `.error` output parameter of the unit's
+ * Prints @msg to `stderr`, stores it in the `.unit.error` output parameter of the unit's
  * FPS, and writes it to the processinfo status message when @pi is active.
  *
  * Return: void
@@ -511,7 +501,7 @@ static void report(PROCESSINFO *pi, const char *msg)
 {
     fprintf(stderr, "milk.script %s: %s\n", dcfpsptr->md->name, msg);
     snprintf(error, sizeof(error), "%s", msg);
-    functionparameter_SetParamValue_STRING(dcfpsptr, ".error", error);
+    functionparameter_SetParamValue_STRING(dcfpsptr, ".unit.error", error);
     if (pi != NULL)
     {
         processinfo_WriteMessage(pi, msg);
@@ -524,7 +514,7 @@ static void report(PROCESSINFO *pi, const char *msg)
  *
  * Launches a background bash shell preloaded with `milk.bash`, synchronizes modified
  * FPS parameters into shell variables before each tick, updates `__MILK_UNIT_CMD` when
- * `.cmd` or `.file` changes, and dispatches `__milk_unit_tick` on every frame or delay
+ * `.unit.cmd` or `.unit.file` changes, and dispatches `__milk_unit_tick` on every frame or delay
  * tick until stopped or an unhandled non-zero status occurs.
  *
  * Return: `RETURN_SUCCESS` on clean loop exit, `RETURN_FAILURE` if a command tick failed.
@@ -532,8 +522,8 @@ static void report(PROCESSINFO *pi, const char *msg)
 static errno_t compute(const MILK_RUNNABLE *self)
 {
     char        err[512]            = "";
-    long        pc                  = functionparameter_GetParamIndex(dcfpsptr, ".cmd");
-    long        pf                  = functionparameter_GetParamIndex(dcfpsptr, ".file");
+    long        pc                  = functionparameter_GetParamIndex(dcfpsptr, ".unit.cmd");
+    long        pf                  = functionparameter_GetParamIndex(dcfpsptr, ".unit.file");
     uint64_t    built[2]            = { 0, 0 };
     uint64_t    pcnt[SCRIPT_MAXPAR] = { 0 };
     int         npar                = nbind - SCRIPT_NFIXED;
@@ -541,7 +531,7 @@ static errno_t compute(const MILK_RUNNABLE *self)
     const char *tname               = dcfpsptr->cmdset.triggerstreamname;
 
     error[0] = '\0';
-    functionparameter_SetParamValue_STRING(dcfpsptr, ".error", "");
+    functionparameter_SetParamValue_STRING(dcfpsptr, ".unit.error", "");
     if (tname[0] != '\0' && image_ID(tname, dcimg, dcnimg) == -1)
     {
         read_sharedmem_image(tname, dcimg, dcnimg); /* the processinfo trigger waits on it */
@@ -607,8 +597,8 @@ static errno_t compute(const MILK_RUNNABLE *self)
  * @argc: Command-line argument count
  * @argv: Command-line argument vector
  *
- * The unit options -c -t -p -f set the fixed parameters (.cmd .trigger .params .file);
- * milk_unit_main() creates or updates the FPS and delegates to `milk_runnable_main()`.
+ * The unit options -c -t -p -f set the unit definition (.unit.cmd .unit.trigger .unit.params
+ * .unit.file); milk_unit_main() creates or updates the FPS and delegates to `milk_runnable_main()`.
  *
  * Return: 0 on success, 2 on a usage error, non-zero on other errors.
  */
@@ -624,6 +614,7 @@ int main(int argc, char **argv)
         .tag         = "milk.script",
         .unit        = &unit_script,
         .bindings    = bindings,
+        .nfixed      = SCRIPT_NFIXED,
         .nbind       = &nbind,
         .opts        = opts,
         .nopt        = (int) (sizeof(opts) / sizeof(opts[0])),
@@ -631,13 +622,16 @@ int main(int argc, char **argv)
         .declare     = declare,
         .find_params = find_params,
         .help_options =
-            "  -c, --cmd CMD         bash commands run on each tick (end with '|| :' to go on)\n"
-            "  -t, --trigger STREAM  a frame of STREAM runs them (none: once, or per -loopd tick)\n"
-            "  -p, --params DECL     declare parameters: \"name:type[=default][:help] ...\",\n"
+            "  -c, --cmd CMD         bash commands run on each tick (.unit.cmd;\n"
+            "                        end with '|| :' to go on)\n"
+            "  -t, --trigger STREAM  a frame of STREAM runs them (.unit.trigger)\n"
+            "  -p, --params DECL     declare parameters (.unit.params):\n"
+            "                        \"name:type[=default][:help] ...\",\n"
             "                        types int uint float bool str stream fits\n"
-            "  -f, --file FILE       commands from FILE instead of -c\n"
+            "  -f, --file FILE       commands from FILE instead of -c (.unit.file)\n"
             "  fpsinit and exec create the FPS from them; on an existing FPS, -c -t -f update\n"
-            "  it (applied from the next tick) and -p cannot change.\n"
+            "  .unit.* (applied from the next tick) and -p cannot change. Why the loop\n"
+            "  stopped is recorded in .unit.error.\n"
             "  Example:\n"
             "    milk-fpsexec-milk-script -n mon -t cam -p \"log:str=cam.log\" \\\n"
             "        -c '@get s.cam.mean >> \"$log\"' exec\n",

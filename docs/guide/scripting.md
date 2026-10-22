@@ -368,8 +368,8 @@ as the values of any fpsexec set its parameters.
 # out = (cam - dark) * gain on each frame of cam; gain is a parameter of FPS dsub, set to 2.5
 milk-fpsexec-milk-calc -tmux -n dsub -t cam -p "gain:float=1" -e "out = (cam - dark) * gain" exec 2.5
 milk-fpsexec-milk-calc -n dsub set 3.0          # read by the next frame (same as @set f.dsub.gain=3)
-@set f.dsub.expr="out = cam * gain"             # compiled at the next frame (or: -e "..." set)
-@get f.dsub.error                               # why the loop stopped (empty while it runs)
+@set f.dsub.unit.expr="out = cam * gain"        # compiled at the next frame (or: -e "..." set)
+@get f.dsub.unit.error                          # why the loop stopped (empty while it runs)
 milk-fpsexec-milk-calc -n dsub runstop
 
 # one-time initialization (-i) before frame 0, then per-frame leaky integrator
@@ -384,28 +384,29 @@ milk-fpsexec-milk-calc -tmux -n acc -loopd 0.01 runstart
 milk-fpsexec-milk-script -tmux -n mon -t cam -c '@get s.cam.mean >> cam.log' exec
 ```
 
-The unit options of `milk-fpsexec-milk-calc` and the FPS parameters they set
-(`milk-fpsexec-milk-calc -h` lists them, with the declared parameters):
+The unit options of `milk-fpsexec-milk-calc` and the `.unit.*` FPS entries they set
+(`milk-fpsexec-milk-calc -h` lists the unit options under `Unit Options` and the declared
+parameters under `Parameters`):
 
-| Option | Parameter | Meaning |
+| Option | FPS Entry | Meaning |
 | --- | --- | --- |
-| `-e`, `--expr` | `.expr` | the statements, separated by `;` or newlines |
-| `-t`, `--trigger` | `.trigger` | a stream whose frames run them; none: once, or each tick of `-loopd` |
-| `-p`, `--params` | `.params` | parameters, `name:type[=default][:help]` as for `@args` (`int` `uint` `float` `bool` `str` `stream` `fits`): the values set them |
-| `-f`, `--file` | `.file` | read the statements from this file instead (`#` starts a comment) |
-| `-i`, `--init` | `.init` | statements run once before frame 0 (and again if `.init` is set live) |
-| `-I`, `--initfile` | `.initfile` | read the init statements from this file instead |
-| | `.error` | set by the unit: why the loop stopped |
+| `-e`, `--expr` | `.unit.expr` | the statements, separated by `;` or newlines |
+| `-t`, `--trigger` | `.unit.trigger` | a stream whose frames run them; none: once, or each tick of `-loopd` |
+| `-p`, `--params` | `.unit.params` | parameters, `name:type[=default][:help]` as for `@args` (`int` `uint` `float` `bool` `str` `stream` `fits`): the values set them |
+| `-f`, `--file` | `.unit.file` | read the statements from this file instead (`#` starts a comment) |
+| `-i`, `--init` | `.unit.init` | statements run once before frame 0 (and again if `.unit.init` is set live) |
+| `-I`, `--initfile` | `.unit.initfile` | read the init statements from this file instead |
+| | `.unit.error` | set by the unit: why the loop stopped |
 
 - `fpsinit`, and `exec` when the FPS does not exist yet, create the FPS from the unit options. On an
-  existing FPS, `-e` `-t` `-f` `-i` `-I` (with `set`, `exec` or `runstart`) write their parameter,
-  as `@set` does; `-p` cannot change: run `fpsinit` again to declare other parameters.
+  existing FPS, `-e` `-t` `-f` `-i` `-I` (with `set`, `exec` or `runstart`) write their `.unit.*`
+  entry, as `@set` does; `-p` cannot change: run `fpsinit` again to declare other parameters.
 
-- The statements are compiled when the loop starts, and again at the frame after `.expr` or `.file`
-  is set (set `.file` again to read the file again). `.init` (or `.initfile`) runs once before
-  frame 0 to create accumulator streams or set initial values; changing `.expr` or `.file` live
-  keeps that state intact, while setting `.init` or `.initfile` runs the initialization again and
-  resets the frame counters.
+- The statements are compiled when the loop starts, and again at the frame after `.unit.expr` or
+  `.unit.file` is set (set `.unit.file` again to read the file again). `.unit.init` (or
+  `.unit.initfile`) runs once before frame 0 to create accumulator streams or set initial values;
+  changing `.unit.expr` or `.unit.file` live keeps that state intact, while setting `.unit.init` or
+  `.unit.initfile` runs the initialization again and resets the frame counters.
 - Three read-only variables are updated before each frame: `_n` (0-based frame index, `int`),
   `_t` (elapsed seconds since loop/init start, `float`), and `_dt` (seconds since the previous
   frame, `float`, `0` on frame 0).
@@ -417,22 +418,22 @@ The unit options of `milk-fpsexec-milk-calc` and the FPS parameters they set
   variables are out of its reach. A statement that makes a new image creates it as a stream. Shared
   streams recreated in `$MILK_SHM_DIR` with the same shape and compatible type are remapped
   automatically.
-- The `.params` parameters are calculator variables that `@set` changes while the loop runs. A
+- The `-p` parameters are calculator variables that `@set` changes while the loop runs. A
   statement that assigns one (`total = itot(out)`) writes it back to the FPS on each frame, for
   `@get`, `@waitfor` and other units. A `stream` parameter (`in:stream=cam0`, `out:stream=out0`)
-  binds an input or output stream name dynamically so `@set f.unit.in=cam1` re-targets the unit on
+  binds an input or output stream name dynamically so `@set f.dsub.in=cam1` re-targets the unit on
   the next frame.
 - An error stops the loop: a bad statement, or an image whose size or type changed.
 - FPS strings hold 63 characters, so longer programs go in a file (`-f` or `-I`). `-p` may be longer
   on the `fpsinit` or `exec` command line that creates the FPS.
 
-`milk-fpsexec-milk-script` takes `-c`/`--cmd` (the snippet, `.cmd`), `-t` (`.trigger`), `-p`
-(`.params`: `name:type[=default][:help]`, synced into shell variables before each tick; the values
-set them), and `-f` (`.file`: read the script from a file instead of `.cmd`). The 0-based frame
-counter `_n` is also set on each tick. A
-new `.cmd` or `.file` applies from the next tick. A tick that fails stops the loop, with its status
-in `.error`; end the snippet with `|| :` to go on. Ctrl-C or `runstop` interrupts a running tick. A
-tick costs its commands plus a pipe round trip (about 0.1 ms), which suits slow loops.
+`milk-fpsexec-milk-script` takes `-c`/`--cmd` (the snippet, `.unit.cmd`), `-t` (`.unit.trigger`),
+`-p` (`.unit.params`: `name:type[=default][:help]`, synced into shell variables before each tick;
+the values set them), and `-f` (`.unit.file`: read the script from a file instead of `.unit.cmd`).
+The 0-based frame counter `_n` is also set on each tick. A new `.unit.cmd` or `.unit.file` applies
+from the next tick. A tick that fails stops the loop, with its status in `.unit.error`; end the
+snippet with `|| :` to go on. Ctrl-C or `runstop` interrupts a running tick. A tick costs its
+commands plus a pipe round trip (about 0.1 ms), which suits slow loops.
 
 ## State, Assertions and Logs
 

@@ -58,11 +58,13 @@ void fps_cli_set_standalone_args(int argc, char **argv)
 /* Own syntax of a unit, for its -h (fps_cli_set_unit_help()) */
 static const char *unit_usage;
 static const char *unit_options;
+static int         unit_first_param;
 
-void fps_cli_set_unit_help(const char *usage, const char *options)
+void fps_cli_set_unit_help(const char *usage, const char *options, int first_param)
 {
-    unit_usage   = usage;
-    unit_options = options;
+    unit_usage       = usage;
+    unit_options     = options;
+    unit_first_param = first_param;
 }
 
 const char *fps_cli_unit_usage(void)
@@ -73,6 +75,11 @@ const char *fps_cli_unit_usage(void)
 const char *fps_cli_unit_options(void)
 {
     return unit_options;
+}
+
+int fps_cli_unit_first_param(void)
+{
+    return unit_first_param;
 }
 
 

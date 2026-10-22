@@ -579,8 +579,9 @@ int fpsexec_main_function(int              argc,
         }
         /* ---- VALUES ---- */
         {
-            int nprim = 0;
-            for (int k = 0; k < nb_bindings; k++)
+            int first_p = fps_cli_unit_first_param();
+            int nprim   = 0;
+            for (int k = first_p; k < nb_bindings; k++)
             {
                 nprim += (bindings[k].is_primary != 0);
             }
@@ -592,29 +593,39 @@ int fpsexec_main_function(int              argc,
             printf("  " MH_PAD_FMT "  keep the current value (as a value or .name=.)\n",
                    MH_PAD(MH_ARG, ".", 18));
             printf("  Negative numbers are values. A bad or extra value is an error (status 2).\n");
-            if (nprim == 0)
+            if (nprim == 0 && first_p == 0)
             {
                 printf("  No parameter takes a positional value here: use .name=value.\n");
             }
             printf("\n");
         }
         /* ---- PARAMETERS ---- */
-        struct HELPER_PRETTYPRINT pp = {
-            .col_kw_w = 7, .col_tp_w = 4, .col_df_w = 7, .show_help_color = mh_color, .CLIargcnt = 0
-        };
-        //PARAMS_MACRO(X_HELP_MEASURE_V2)
+        {
+            int                       first_p = fps_cli_unit_first_param();
+            int                       n_p     = (nb_bindings > first_p) ? nb_bindings - first_p : 0;
+            struct HELPER_PRETTYPRINT pp      = { .col_kw_w        = 7,
+                                                  .col_tp_w        = 4,
+                                                  .col_df_w        = 7,
+                                                  .show_help_color = mh_color,
+                                                  .CLIargcnt       = 0 };
 
-        X_HELP_MEASURE_V2_LOOP(bindings, nb_bindings, &pp);
-
-        milk_help_section("Parameters", mh_color);
-        printf("  %-3s %-*s %-*s %-*s %s\n", "Idx", pp.col_kw_w, "Keyword", pp.col_tp_w, "Type",
-               pp.col_df_w, "Default", "Description");
-        printf("  %-3s %-*s %-*s %-*s %s\n", "---", pp.col_kw_w, "-------", pp.col_tp_w, "----",
-               pp.col_df_w, "-------", "-----------");
-
-        //PARAMS_MACRO(X_HELP_PRINT_V2)
-        X_HELP_PRINT_V2_LOOP(bindings, nb_bindings, &pp);
-        printf("\n");
+            milk_help_section("Parameters", mh_color);
+            if (n_p == 0 && first_p > 0)
+            {
+                printf("  (none declared -- use -p \"name:type[=default][:help] ...\""
+                       " or -n NAME for an existing FPS)\n\n");
+            }
+            else
+            {
+                X_HELP_MEASURE_V2_LOOP(bindings + first_p, n_p, &pp);
+                printf("  %-3s %-*s %-*s %-*s %s\n", "Idx", pp.col_kw_w, "Keyword", pp.col_tp_w,
+                       "Type", pp.col_df_w, "Default", "Description");
+                printf("  %-3s %-*s %-*s %-*s %s\n", "---", pp.col_kw_w, "-------", pp.col_tp_w,
+                       "----", pp.col_df_w, "-------", "-----------");
+                X_HELP_PRINT_V2_LOOP(bindings + first_p, n_p, &pp);
+                printf("\n");
+            }
+        }
         /* ---- SEE ALSO ---- */
         {
             const char *_sa[] = { "milk-fpsexec-help:print detailed FPS framework info",

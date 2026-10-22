@@ -45,7 +45,8 @@ typedef struct
 {
     const char          *tag; /* "milk.calc", for messages */
     MILK_RUNNABLE       *unit;
-    FPS_CLI_BINDING     *bindings; /* fixed bindings, then the declared ones */
+    FPS_CLI_BINDING     *bindings; /* fixed .unit.* bindings, then the declared ones */
+    int                  nfixed;   /* leading fixed bindings (.unit.*), hidden from Parameters */
     const int           *nbind;    /* bindings in use */
     const milk_unit_opt *opts;
     int                  nopt;

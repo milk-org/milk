@@ -34,16 +34,17 @@ mem.mk2Dim "@S:cam" 4 4 >/dev/null; @calc "cam = 2"
 
 def test_E8_calc_once_makes_a_stream_and_declared_parameters(tmp_path):
     """No trigger: one run. A new image target becomes a stream; declared parameters get their defaults
-    (bool true is ON), an assigned one is written back, and `ex` is not taken for `expr`.
+    (bool true is ON), an assigned one is written back, and `expr` is free as a user parameter name
+    because the unit definition lives under `.unit.*`.
     """
     res = milk_bash(
         HELPERS
         + 'milk-fpsexec-milk-calc -n u1 -e "out = cam * gain + 1; tot = itot(out)" '
-        '-p "gain:float=3 n:int=2 on:bool=1 off:bool=false ex:int=5 tot:float=0" exec >/dev/null 2>&1\n'
+        '-p "gain:float=3 n:int=2 on:bool=1 off:bool=false expr:int=5 tot:float=0" exec >/dev/null 2>&1\n'
         'echo "rc=$?"\n'
         'echo "out=$(@get s.out.mean) shared=$(@get s.out.shared)"\n'
-        'echo "p=$(@get f.u1.gain),$(@get f.u1.n),$(@get f.u1.on),$(@get f.u1.off),$(@get f.u1.ex)"\n'
-        'echo "tot=$(@get f.u1.tot) error=[$(@get f.u1.error)]"',
+        'echo "p=$(@get f.u1.gain),$(@get f.u1.n),$(@get f.u1.on),$(@get f.u1.off),$(@get f.u1.expr)"\n'
+        'echo "tot=$(@get f.u1.tot) error=[$(@get f.u1.unit.error)]"',
         tmp_path,
     )
     got = [value(res.stdout, k) for k in ("rc", "out", "p", "tot")]
@@ -56,7 +57,7 @@ def test_E8_calc_bad_declarations_and_long_values(tmp_path):
     res = milk_bash(
         HELPERS
         + 'milk-fpsexec-milk-calc -n b1 -e "out = cam" -p "g:float=x" fpsinit 2>&1; echo "badval=$?"\n'
-        'milk-fpsexec-milk-calc -n b2 -e "out = cam" -p "expr:int=1" fpsinit 2>&1; echo "reserved=$?"\n'
+        'milk-fpsexec-milk-calc -n b2 -e "out = cam" -p "unit:int=1" fpsinit 2>&1; echo "reserved=$?"\n'
         'milk-fpsexec-milk-calc -n b3 -e "out = cam" -p "1x:int" fpsinit 2>&1; echo "badname=$?"\n'
         f'milk-fpsexec-milk-calc -n b4 -e "out = cam + {"1 + " * 20}1" fpsinit 2>&1; echo "long=$?"',
         tmp_path,
@@ -65,14 +66,14 @@ def test_E8_calc_bad_declarations_and_long_values(tmp_path):
         value(res.stdout, k) for k in ("badval", "reserved", "badname", "long")
     ] == ["2"] * 4, (res.stdout + res.stderr)
     assert "bad parameter 'g:float=x'" in res.stdout
-    assert "'expr': reserved" in res.stdout
+    assert "'unit': reserved" in res.stdout
     assert "write the statements in a file (-f)" in res.stdout
 
 
 def test_E8_calc_loop_follows_frames_and_live_changes(tmp_path):
     """fpsinit, then runstart in another process (it finds the declared parameters in the FPS): each frame
-    of .trigger runs the statements; @set of a parameter and of .expr apply from the next frame; an error
-    stops the loop with the reason in .error."""
+    of .unit.trigger runs the statements; @set of a parameter and of .unit.expr apply from the next frame;
+    an error stops the loop with the reason in .unit.error."""
     res = milk_bash(
         HELPERS
         + 'milk-fpsexec-milk-calc -n u2 -t cam -p "gain:float=2" -e "out2 = cam * gain" fpsinit >/dev/null\n'
@@ -80,11 +81,11 @@ def test_E8_calc_loop_follows_frames_and_live_changes(tmp_path):
         "until_file out2; sleep 0.3\n"
         'frame 5; echo "a=$(@get s.out2.mean)"\n'
         '@set f.u2.gain=3; frame 5; echo "b=$(@get s.out2.mean)"\n'
-        '@set f.u2.expr="out2 = cam + gain"; frame 5; echo "c=$(@get s.out2.mean)"\n'
-        '@set f.u2.expr="out2 = cam + nosuch(cam)"; frame 6\n'
+        '@set f.u2.unit.expr="out2 = cam + gain"; frame 5; echo "c=$(@get s.out2.mean)"\n'
+        '@set f.u2.unit.expr="out2 = cam + nosuch(cam)"; frame 6\n'
         "for _ in $(seq 40); do kill -0 $pid 2>/dev/null || break; sleep 0.05; done\n"
         'echo "exited=$(kill -0 $pid 2>/dev/null && echo no || echo yes)"; stop $pid\n'
-        'echo "d=$(@get s.out2.mean)"; echo "error=$(@get f.u2.error)"',
+        'echo "d=$(@get s.out2.mean)"; echo "error=$(@get f.u2.unit.error)"',
         tmp_path,
     )
     got = [value(res.stdout, k) for k in ("a", "b", "c", "exited", "d", "error")]
@@ -101,7 +102,7 @@ def test_E8_calc_loop_follows_frames_and_live_changes(tmp_path):
 
 
 def test_E8_calc_program_file_delay_loop_and_stop(tmp_path):
-    """.file with comments and several statements, a new image that reads a declared parameter (fused,
+    """.unit.file with comments and several statements, a new image that reads a declared parameter (fused,
     the variable read on each run), the -loopd delay loop, and SIGINT ending the loop through its cleanup.
     """
     (tmp_path / "prog.calc").write_text(
@@ -128,8 +129,8 @@ def test_E8_calc_program_file_delay_loop_and_stop(tmp_path):
 
 
 def test_E8_calc_init_and_initfile_and_frame_vars(tmp_path):
-    """One-time .init / .initfile runs before frame 0, is preserved across live .expr changes,
-    re-runs when .init changes live, and provides read-only _n, _t, _dt frame variables.
+    """One-time .unit.init / .unit.initfile runs before frame 0, is preserved across live .unit.expr
+    changes, re-runs when .unit.init changes live, and provides read-only _n, _t, _dt frame variables.
     """
     (tmp_path / "init.calc").write_text("acc = cam * 0; k0 = 10\n")
     res = milk_bash(
@@ -140,12 +141,12 @@ def test_E8_calc_init_and_initfile_and_frame_vars(tmp_path):
         "until_file acc; sleep 0.3\n"
         'echo "f0=$(@get s.acc.mean),$(@get f.u4.k0),$(@get f.u4.fn)"\n'
         'frame 3; echo "f1=$(@get s.acc.mean),$(@get f.u4.fn)"\n'
-        '@set f.u4.expr="acc = acc + cam * 2; fn = _n"; frame 5\n'
+        '@set f.u4.unit.expr="acc = acc + cam * 2; fn = _n"; frame 5\n'
         'echo "f2=$(@get s.acc.mean),$(@get f.u4.fn)"\n'
-        '@set f.u4.initfile="" f.u4.init="acc = cam * 0 + 100"; frame 2\n'
+        '@set f.u4.unit.initfile="" f.u4.unit.init="acc = cam * 0 + 100"; frame 2\n'
         'echo "f3=$(@get s.acc.mean),$(@get f.u4.fn)"\n'
         "stop $pid\n"
-        'milk-fpsexec-milk-calc -n ubad -e "_n = 5" exec >/dev/null 2>&1; echo "ro=$(@get f.ubad.error)"',
+        'milk-fpsexec-milk-calc -n ubad -e "_n = 5" exec >/dev/null 2>&1; echo "ro=$(@get f.ubad.unit.error)"',
         tmp_path,
     )
     got = [value(res.stdout, k) for k in ("f0", "f1", "f2", "f3", "ro")]
@@ -211,10 +212,11 @@ def test_E8_calc_matmul_and_transpose(tmp_path):
 def test_E8_calc_values_set_declared_parameters(tmp_path):
     """The values after the command word set the parameters -p declares (in order, or .name=value,
     negative numbers included); -e on an existing FPS updates it, -p cannot change; a bad, unknown or
-    extra value is a usage error that changes nothing; -h lists the declared parameters.
+    extra value is a usage error that changes nothing; -h lists only the declared parameters (not .unit.*).
     """
     res = milk_bash(
         HELPERS + 'C="milk-fpsexec-milk-calc -n v1"\n'
+        'milk-fpsexec-milk-calc -hm | grep -c "none declared" | xargs -I{} echo "empty_h={}"\n'
         '$C -t cam -p "gain:float=1 off:float=0 n:int=0" -e "out = cam * gain + off" fpsinit '
         '3.5 .n=-4 >/dev/null; echo "init=$?"\n'
         'echo "p0=$(@get f.v1.gain),$(@get f.v1.off),$(@get f.v1.n)"\n'
@@ -223,21 +225,24 @@ def test_E8_calc_values_set_declared_parameters(tmp_path):
         '$C set .gain=abc >/dev/null 2>err2; echo "bad=$?"\n'
         '$C set .nosuch=1 >/dev/null 2>err3; echo "unknown=$?"\n'
         'echo "p2=$(@get f.v1.gain),$(@get f.v1.off),$(@get f.v1.n)"\n'
-        '$C -e "out = cam - off" set >/dev/null; echo "expr=$(@get f.v1.expr)"\n'
+        '$C -e "out = cam - off" set >/dev/null; echo "expr=$(@get f.v1.unit.expr)"\n'
         '$C -p "k:int=1" set >/dev/null 2>err4; echo "redeclare=$?"\n'
-        '$C -hm | grep -E "^ +[0-9]+ (gain|off|n) " | tr -s " " | tr "\\n" "|"; echo\n'
+        '$C -hm | sed -n "/^Parameters:/,/^See Also:/p" > params_sec\n'
+        'grep -E "^ +[0-9]+ (gain|off|n) " params_sec | tr -s " " | tr "\\n" "|"; echo\n'
+        'echo "unit_in_params=$(grep -cE "unit\\.expr| trigger " params_sec)"\n'
         "cat err1 err2 err3 err4",
         tmp_path,
     )
     got = [
         value(res.stdout, k)
-        for k in ("init", "p0", "p1", "many", "bad", "unknown", "p2")
+        for k in ("empty_h", "init", "p0", "p1", "many", "bad", "unknown", "p2")
     ]
-    assert got == ["0", "3.5,0,-4", "3.5,-1.5", "2", "2", "2", "3.5,-1.5,-4"], (
+    assert got == ["1", "0", "3.5,0,-4", "3.5,-1.5", "2", "2", "2", "3.5,-1.5,-4"], (
         res.stdout + res.stderr
     )
     assert value(res.stdout, "expr") == "out = cam - off", res.stdout
     assert value(res.stdout, "redeclare") == "2", res.stdout
+    assert value(res.stdout, "unit_in_params") == "0", res.stdout
     assert (
         " 0 gain FLOAT64 3.5" in res.stdout and " 2 n INT64 -4" in res.stdout
     ), res.stdout
@@ -279,11 +284,11 @@ def test_E8_script_runs_per_frame_follows_cmd_and_stops_on_failure(tmp_path):
         "milk-fpsexec-milk-script -n s1 runstart >run.log 2>&1 & pid=$!\n"
         "for _ in $(seq 50); do @calc 'cam = 1'; sleep 0.1; [ -s log ] && break; done; sleep 0.3; : > log\n"
         'frame 3; frame 4; echo "log=$(tr "\\n" , < log)"\n'
-        "@set f.s1.cmd='echo tick >> log2'; frame 5; frame 6; echo \"log2=$(tr '\\n' , < log2)\"\n"
-        "@set f.s1.cmd='false'; frame 7\n"
+        "@set f.s1.unit.cmd='echo tick >> log2'; frame 5; frame 6; echo \"log2=$(tr '\\n' , < log2)\"\n"
+        "@set f.s1.unit.cmd='false'; frame 7\n"
         "for _ in $(seq 40); do kill -0 $pid 2>/dev/null || break; sleep 0.05; done\n"
         'echo "exited=$(kill -0 $pid 2>/dev/null && echo no || echo yes)"; stop $pid\n'
-        'echo "error=$(@get f.s1.error)"',
+        'echo "error=$(@get f.s1.unit.error)"',
         tmp_path,
     )
     got = [value(res.stdout, k) for k in ("log", "log2", "exited", "error")]
@@ -300,7 +305,7 @@ def test_E8_script_stop_interrupts_a_long_tick(tmp_path):
         "for _ in $(seq 100); do sh=$(pgrep -P $pid -x bash) && break; sleep 0.05; done\n"
         "sleep 0.3; t0=$EPOCHREALTIME; stop $pid\n"
         'echo "ms=$(( (${EPOCHREALTIME/./} - ${t0/./}) / 1000 ))"\n'
-        'echo "shell=$(kill -0 $sh 2>/dev/null && echo alive || echo gone) error=[$(@get f.s2.error)]"',
+        'echo "shell=$(kill -0 $sh 2>/dev/null && echo alive || echo gone) error=[$(@get f.s2.unit.error)]"',
         tmp_path,
     )
     assert value(res.stdout, "shell") == "gone error=[]", res.stdout + res.stderr

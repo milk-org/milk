@@ -36,13 +36,16 @@ int fps_cli_option_span(int argc, char *const *argv, int i);
 /**
  * fps_cli_set_unit_help() - Describe the own syntax of a standalone unit in its -h: @usage
  * replaces "[values...]" after "<command>", @options ("  -x ARG   text\n" lines) is printed as
- * "Unit Options". NULL keeps the default. Call before fpsexec_main_function().
+ * "Unit Options", and the first @first_param bindings (the unit definition in .unit.*) are
+ * omitted from the "Parameters" table. NULL / 0 keeps the default. Call before
+ * fpsexec_main_function().
  */
-void fps_cli_set_unit_help(const char *usage, const char *options);
+void fps_cli_set_unit_help(const char *usage, const char *options, int first_param);
 
-/** fps_cli_unit_usage(), fps_cli_unit_options() - what fps_cli_set_unit_help() set, or NULL. */
+/** fps_cli_unit_usage(), fps_cli_unit_options(), fps_cli_unit_first_param() - unit -h settings. */
 const char *fps_cli_unit_usage(void);
 const char *fps_cli_unit_options(void);
+int         fps_cli_unit_first_param(void);
 
 
 /**
