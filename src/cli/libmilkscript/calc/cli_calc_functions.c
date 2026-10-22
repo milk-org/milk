@@ -199,11 +199,76 @@ static val_t func_where(void)
     return cli_calc_where(args[0], args[1], args[2]);
 }
 
-/** func_coord() - ix/iy/ir/itheta(im[, cx, cy]): a new image of im's size, centred on (xsize/2, ysize/2). */
+/**
+ * eval_rng_scalar - Evaluate a single uniform (`CALC_COORD_RAND`) or Gaussian (`CALC_COORD_RANDN`) draw
+ * @kind: `CALC_COORD_RAND` or `CALC_COORD_RANDN`
+ * @seed: 32-bit seed value
+ *
+ * Return: Pseudo-random `double` in `[0, 1)` for `CALC_COORD_RAND` or `N(0, 1)` for `CALC_COORD_RANDN`.
+ */
+static double eval_rng_scalar(int kind, uint32_t seed)
+{
+    uint32_t h0 = seed ^ 0x9e3779b9u;
+    h0          = ((h0 >> 16) ^ h0) * 0x45d9f3bu;
+    h0          = ((h0 >> 16) ^ h0) * 0x45d9f3bu;
+    h0          = (h0 >> 16) ^ h0;
+    if (kind == CALC_COORD_RAND)
+    {
+        return (double) (int32_t) (h0 >> 8) * 5.9604644775390625e-8;
+    }
+    uint32_t h1 = (seed ^ 0x9e3779b9u) ^ 0x85ebca6bu;
+    h1          = ((h1 >> 16) ^ h1) * 0x45d9f3bu;
+    h1          = ((h1 >> 16) ^ h1) * 0x45d9f3bu;
+    h1          = (h1 >> 16) ^ h1;
+    int32_t sum = ((int32_t) h0 >> 22) + ((int32_t) (h0 << 10) >> 22) +
+                  ((int32_t) (h0 << 20) >> 22) + ((int32_t) h1 >> 22) +
+                  ((int32_t) (h1 << 10) >> 22) + ((int32_t) (h1 << 20) >> 22) + 3;
+    return (double) sum * 0.0013810685772936816;
+}
+
+/** func_coord() - ix/iy/ir/itheta(im[, cx, cy]) or rand/randn([im[, seed]]). */
 static val_t func_coord(const cli_token *ftok)
 {
+    int   kind = cli_calc_coord_kind(ftok);
     val_t args[3];
-    int   n = cli_calc_parse_func_argv(1, 3, args, "Expected ','");
+
+    if (kind == CALC_COORD_RAND || kind == CALC_COORD_RANDN)
+    {
+        cli_token *(*cur_func)(void)     = cli_calc_cur_func();
+        cli_token *(*advance_func)(void) = cli_calc_advance_func();
+        if (cur_func()->type == TOK_RPAREN)
+        {
+            advance_func();
+            return mk_double(eval_rng_scalar(kind, cli_calc_next_rng_seed()));
+        }
+        int n = cli_calc_parse_func_argv(1, 2, args, "Expected ','");
+        if (n < 0 || cli_calc_reject_complex(args, n))
+        {
+            return mk_double(0);
+        }
+        if (n == 1 && args[0].type != VAL_STRING)
+        {
+            uint32_t seed = (uint32_t) (int64_t) llround(to_double(args[0]));
+            return mk_double(eval_rng_scalar(kind, seed));
+        }
+        if (args[0].type != VAL_STRING || (n == 2 && args[1].type == VAL_STRING))
+        {
+            parse_errmsg("rand: expected rand([im[, seed]])");
+            return mk_double(0);
+        }
+        if (!check_image(args[0].sval))
+        {
+            return mk_string("");
+        }
+        const IMAGE *im =
+            &data.core.image[image_ID(args[0].sval, data.core.image, data.core.NB_MAX_IMAGE)];
+        uint32_t seed =
+            (n == 2) ? (uint32_t) (int64_t) llround(to_double(args[1])) : cli_calc_next_rng_seed();
+        const char *tmpn = cli_calc_coord(im, kind, (double) seed, 1.0);
+        return mk_string((tmpn != NULL) ? tmpn : "");
+    }
+
+    int n = cli_calc_parse_func_argv(1, 3, args, "Expected ','");
     if (n < 0)
     {
         return mk_double(0);
@@ -223,7 +288,7 @@ static val_t func_coord(const cli_token *ftok)
     double      cx   = (n == 3) ? to_double(args[1]) : (double) (im->md[0].size[0] / 2);
     double      cy   = (n == 3) ? to_double(args[2])
                                 : (double) ((im->md[0].naxis > 1) ? im->md[0].size[1] / 2 : 0);
-    const char *tmpn = cli_calc_coord(im, cli_calc_coord_kind(ftok), cx, cy);
+    const char *tmpn = cli_calc_coord(im, kind, cx, cy);
     return mk_string((tmpn != NULL) ? tmpn : "");
 }
 

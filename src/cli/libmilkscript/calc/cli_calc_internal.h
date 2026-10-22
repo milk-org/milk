@@ -87,15 +87,18 @@ const char *cli_calc_select(const IMAGE *c, const IMAGE *t, double tc, const IMA
 /** cli_calc_coord() - a new image of @ref's size: coordinate @kind (CALC_COORD_*) of each pixel about (cx, cy). */
 const char *cli_calc_coord(const IMAGE *ref, int kind, double cx, double cy);
 
-/** cli_calc_coord_kind() - CALC_COORD_* for function token @t (ix iy ir itheta). */
-int cli_calc_coord_kind(const cli_token *t);
+/** cli_calc_coord_kind() - CALC_COORD_* for function token @t (ix iy ir itheta rand randn). */
+int      cli_calc_coord_kind(const cli_token *t);
+uint32_t cli_calc_next_rng_seed(void);
 
 enum
 {
     CALC_COORD_X,
     CALC_COORD_Y,
     CALC_COORD_R,
-    CALC_COORD_THETA
+    CALC_COORD_THETA,
+    CALC_COORD_RAND,
+    CALC_COORD_RANDN
 };
 
 typedef enum

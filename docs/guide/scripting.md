@@ -265,7 +265,7 @@ Functions (the math ones also apply per pixel to an image):
 | Image to image   | `where(c,a,b)`, `transpose(im)`, `reshape(im,nx[,ny,nz])`, `vec(x0,...)`, `eye(N[,M])`, `diag(X[,k])`, `matmul(A,B)`, `outer(x,y)` |
 | BLAS (in-place)  | `scal(a,x)`, `axpy(a,x,y)`, `gemv(a,A,x,b,y)`, `symv(a,A,x,b,y)`, `ger(a,x,y,A)`, `syrk(a,A,b,C)`, `gemm(a,A,B,b,C)` |
 | LAPACK / Solvers | `trsv(A,b[,uplo[,diag]])`, `trsm(A,B[,uplo[,diag[,a]]])`, `solve(A,B[,reg])`, `gesv(A,B)`, `posv(A,B)`, `gels(A,B)`, `inv(A)`, `pinv(A[,rtol])` |
-| Coordinates      | `ix iy ir itheta (im[, cx, cy])`: per pixel x, y, radius, angle about `(xsize/2, ysize/2)` |
+| Coordinates/PRNG | `ix iy ir itheta (im[, cx, cy])`: per pixel x, y, radius, angle; `rand([im[, seed]])` ($[0,1)$), `randn([im[, seed]])` ($\mathcal{N}(0,1)$) |
 | Strings          | `strlen toupper tolower`, `substr(s,start,len)`, `replace(s,old,new)`, `hex oct bin`     |
 | Complex images   | `cplx(re,im)`, `expi(phi)`, `real imag abs arg conj`; `+ - * /` and `-z` work on them    |
 

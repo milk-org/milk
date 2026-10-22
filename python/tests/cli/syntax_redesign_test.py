@@ -317,3 +317,33 @@ def test_calc_lapack_solvers_and_inverses(tmp_path):
         vals = [float(x) for x in value(res.stdout, key).split()]
         for v in vals:
             assert v == pytest.approx(0.0, abs=1e-4), f"{key}: {vals}\n{out}"
+
+
+def test_calc_simd_random_generators(tmp_path):
+    res = milk_cli_script(
+        "mem.mk2Dim u 256 256 >/dev/null; mem.mk2Dim g 256 256 >/dev/null\n"
+        "@calc -v sr0,sr1,sg0 'rand(42); urand(42); randn(42)'\n"
+        "@calc 'u = rand(u, 123); u2 = urand(u, 123); u3 = rand(u)'\n"
+        "@calc -v umin,umax,umean,ustd,urep,udiff 'imin(u); imax(u); imean(u); istd(u); imax(abs(u - u2)); imax(abs(u - u3))'\n"
+        "@calc 'g = 10.0 + 2.5 * randn(g, 99); g2 = 10.0 + 2.5 * grand(g, 99); g3 = randn(g)'\n"
+        "@calc -v gmean,gstd,grep,gdiff 'imean(g); istd(g); imax(abs(g - g2)); imax(abs(g3 - randn(g)))'\n"
+        'echo "s=$sr0 $sr1 $sg0"\n'
+        'echo "u=$umin $umax $umean $ustd $urep $udiff"\n'
+        'echo "g=$gmean $gstd $grep $gdiff"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    sr0, sr1, _ = [float(x) for x in value(res.stdout, "s").split()]
+    assert sr0 == pytest.approx(sr1, abs=1e-12), out
+    assert 0.0 <= sr0 < 1.0, out
+    umin, umax, umean, ustd, urep, udiff = [
+        float(x) for x in value(res.stdout, "u").split()
+    ]
+    assert umin >= 0.0 and umax < 1.0, out
+    assert umean == pytest.approx(0.5, abs=0.01), out
+    assert ustd == pytest.approx((1.0 / 12.0) ** 0.5, abs=0.01), out
+    assert urep == 0.0 and udiff > 0.1, out
+    gmean, gstd, grep, gdiff = [float(x) for x in value(res.stdout, "g").split()]
+    assert gmean == pytest.approx(10.0, abs=0.05), out
+    assert gstd == pytest.approx(2.5, abs=0.05), out
+    assert grep == 0.0 and gdiff > 0.5, out

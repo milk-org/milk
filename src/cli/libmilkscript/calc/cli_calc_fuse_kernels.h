@@ -302,6 +302,43 @@ static void FK(coord_block)(int      kind,
                             int      len,
                             FT *restrict t)
 {
+    if (kind == CALC_COORD_RAND)
+    {
+        uint32_t s = ((uint32_t) (int64_t) cx ^ 0x9e3779b9u) + (uint32_t) off * 747796405u;
+#pragma omp simd
+        for (int k = 0; k < len; k++)
+        {
+            uint32_t h = s + (uint32_t) k * 747796405u;
+            h          = ((h >> 16) ^ h) * 0x45d9f3bu;
+            h          = ((h >> 16) ^ h) * 0x45d9f3bu;
+            h          = (h >> 16) ^ h;
+            t[k]       = (FT) (int32_t) (h >> 8) * (FT) 5.9604644775390625e-8;
+        }
+        return;
+    }
+    if (kind == CALC_COORD_RANDN)
+    {
+        uint32_t s0 = ((uint32_t) (int64_t) cx ^ 0x9e3779b9u) + (uint32_t) off * 747796405u;
+        uint32_t s1 = s0 ^ 0x85ebca6bu;
+#pragma omp simd
+        for (int k = 0; k < len; k++)
+        {
+            uint32_t h0 = s0 + (uint32_t) k * 747796405u;
+            uint32_t h1 = s1 + (uint32_t) k * 2891336453u;
+            h0          = ((h0 >> 16) ^ h0) * 0x45d9f3bu;
+            h0          = ((h0 >> 16) ^ h0) * 0x45d9f3bu;
+            h0          = (h0 >> 16) ^ h0;
+            h1          = ((h1 >> 16) ^ h1) * 0x45d9f3bu;
+            h1          = ((h1 >> 16) ^ h1) * 0x45d9f3bu;
+            h1          = (h1 >> 16) ^ h1;
+            int32_t sum = ((int32_t) h0 >> 22) + ((int32_t) (h0 << 10) >> 22) +
+                          ((int32_t) (h0 << 20) >> 22) + ((int32_t) h1 >> 22) +
+                          ((int32_t) (h1 << 10) >> 22) + ((int32_t) (h1 << 20) >> 22) + 3;
+            t[k]        = (FT) sum * (FT) 0.0013810685772936816;
+        }
+        return;
+    }
+
     uint32_t x = (uint32_t) (off % nx);
     uint32_t y = (uint32_t) ((off / nx) % ny);
     int      j = 0;

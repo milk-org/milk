@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -409,13 +410,14 @@ static int c_select(fprog *p, fval t, fval f, fval *out)
                 -(t.vec + f.vec));
 }
 
-/** c_coord() - ix/iy/ir/itheta(im[, cx, cy]): im (a plain image) gives the size, not pixels. */
+/** c_coord() - ix/iy/ir/itheta(im[, cx, cy]) or rand/randn(im[, seed]): im gives the size, not pixels. */
 static int c_coord(fprog *p, const cli_token *ft, fval *out)
 {
     cli_token *(*cur)(void) = cli_calc_cur_func();
     cli_token *(*adv)(void) = cli_calc_advance_func();
     cli_token *t            = adv();
     fval       c[2];
+    int        kind = cli_calc_coord_kind(ft);
 
     if (t->type != TOK_IMAGE || strchr(t->sval, '[') != NULL)
     {
@@ -426,6 +428,41 @@ static int c_coord(fprog *p, const cli_token *ft, fval *out)
     if (k < 0)
     {
         return -1;
+    }
+    if (kind == CALC_COORD_RAND || kind == CALC_COORD_RANDN)
+    {
+        c[0] = (fval) { 0, 0, 0.0 };
+        c[1] = (fval) { 0, 0, 0.0 };
+        if (cur()->type == TOK_COMMA)
+        {
+            adv();
+            if (c_expr(p, 0, &c[0]) != 0 || c[0].vec || cur()->type != TOK_RPAREN)
+            {
+                return -1;
+            }
+            adv();
+            c[1].c = 1.0;
+        }
+        else if (cur()->type == TOK_RPAREN)
+        {
+            adv();
+        }
+        else
+        {
+            return -1;
+        }
+        p->out_dt = 0;
+        out->vec  = 1;
+        out->s1   = 0;
+        return emit(p,
+                    (fins) { .k    = FI_COORD,
+                             .img  = k,
+                             .cpos = kind,
+                             .s1   = c[0].s1,
+                             .c    = c[0].c,
+                             .s2   = 0,
+                             .c2   = c[1].c },
+                    1);
     }
     const IMAGE *im = p->img[k];
     c[0]            = (fval) { 0, 0, (double) (im->md[0].size[0] / 2) };
@@ -452,7 +489,7 @@ static int c_coord(fprog *p, const cli_token *ft, fval *out)
     return emit(p,
                 (fins) { .k    = FI_COORD,
                          .img  = k,
-                         .cpos = cli_calc_coord_kind(ft),
+                         .cpos = kind,
                          .s1   = c[0].s1,
                          .c    = c[0].c,
                          .s2   = c[1].s1,
@@ -782,6 +819,15 @@ static void store_block(IMAGE   *im,
 /** eval_scalars() - evaluate per-frame scalar variable sub-expressions into instruction constants. */
 static void eval_scalars(fprog *p)
 {
+    for (int i = 0; i < p->n; i++)
+    {
+        if (p->ins[i].k == FI_COORD &&
+            (p->ins[i].cpos == CALC_COORD_RAND || p->ins[i].cpos == CALC_COORD_RANDN) &&
+            p->ins[i].s1 == 0 && p->ins[i].c2 == 0.0)
+        {
+            p->ins[i].c = (double) cli_calc_next_rng_seed();
+        }
+    }
     if (p->ns == 0)
     {
         return;
@@ -1293,15 +1339,50 @@ const char *cli_calc_coord(const IMAGE *ref, int kind, double cx, double cy)
 }
 
 /**
+ * cli_calc_next_rng_seed - Return the next 32-bit seed for unseeded `rand()` / `randn()` calls
+ *
+ * Mixes the realtime clock and PID on first use and advances a Weyl sequence
+ * on each call so consecutive `rand(im)` / `randn(im)` calls and `milk.calc`
+ * frames produce independent random realizations.
+ *
+ * Return: Non-zero 32-bit seed value
+ */
+uint32_t cli_calc_next_rng_seed(void)
+{
+    static uint32_t rng_state = 0;
+    if (rng_state == 0)
+    {
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        uint32_t s =
+            (uint32_t) ts.tv_nsec ^ (uint32_t) ts.tv_sec ^ ((uint32_t) getpid() * 0x9e3779b9u);
+        rng_state = (s != 0) ? s : 0x6d2b79f5u;
+    }
+    rng_state += 0x9e3779b9u;
+    uint32_t z = rng_state;
+    z          = ((z >> 16) ^ z) * 0x45d9f3bu;
+    z          = ((z >> 16) ^ z) * 0x45d9f3bu;
+    return (z >> 16) ^ z;
+}
+
+/**
  * cli_calc_coord_kind - Map a `TOK_FUNC_COORD` token to its `CALC_COORD_*` enum value
- * @t: Coordinate function token (`ix(`, `iy(`, `ir(`, or `itheta(`)
+ * @t: Coordinate or RNG function token (`ix(`, `iy(`, `ir(`, `itheta(`, `rand(`, `randn(`)
  *
- * Inspects `t->sval` to identify which pixel coordinate generator was called.
+ * Inspects `t->sval` to identify which pixel coordinate or random generator was called.
  *
- * Return: `CALC_COORD_X`, `CALC_COORD_Y`, `CALC_COORD_R`, or `CALC_COORD_THETA`
+ * Return: `CALC_COORD_X`, `CALC_COORD_Y`, `CALC_COORD_R`, `CALC_COORD_THETA`, `CALC_COORD_RAND`, or `CALC_COORD_RANDN`
  */
 int cli_calc_coord_kind(const cli_token *t)
 {
+    if (strncmp(t->sval, "rand(", 5) == 0 || strncmp(t->sval, "urand(", 6) == 0)
+    {
+        return CALC_COORD_RAND;
+    }
+    if (strncmp(t->sval, "randn(", 6) == 0 || strncmp(t->sval, "grand(", 6) == 0)
+    {
+        return CALC_COORD_RANDN;
+    }
     return (strncmp(t->sval, "ix(", 3) == 0)   ? CALC_COORD_X
            : (strncmp(t->sval, "iy(", 3) == 0) ? CALC_COORD_Y
            : (strncmp(t->sval, "ir(", 3) == 0) ? CALC_COORD_R
