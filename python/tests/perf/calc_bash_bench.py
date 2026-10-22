@@ -62,11 +62,11 @@ def main():
         "calc  'a=1+3.2'": "@calc\n" + "a=1+3.2\n" * nlines + "exit\n",
     }
     print(f"{'line':30s} {'milk-cli':>10s} {'milk-script':>12s}")
+    base_c = run(pin + cli, "exit\n", env1, reps)
+    base_s = run(pin + script, "exit\n", env1, reps)
     for label, body in lines.items():
-        base_c = run(cli, "exit\n", env, reps)
-        base_s = run(script, "exit\n", env, reps)
-        t_c = run(cli, body + "exit\n", env, reps)
-        t_s = run(script, body + "exit\n", env, reps)
+        t_c = run(pin + cli, body + "exit\n", env1, reps)
+        t_s = run(pin + script, body + "exit\n", env1, reps)
         per_c = (t_c - base_c) * 1e6 / nlines
         per_s = (t_s - base_s) * 1e6 / nlines
         print(f"{label:30s} {per_c:10.1f} {per_s:12.1f}")

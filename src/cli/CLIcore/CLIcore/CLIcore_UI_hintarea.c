@@ -49,6 +49,7 @@
 
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
+#include "CLIcore_signals.h"
 #include "cli_calc_parser.h"
 #include "treesitter/cli_treesitter.h"
 
@@ -548,6 +549,15 @@ void CLI_redisplay(void)
         return;
     }
 #    endif
+
+    if (!cli_is_interactive_mode())
+    {
+        rl_redisplay_function = NULL;
+        rl_redisplay();
+        fflush(stdout);
+        rl_redisplay_function = CLI_redisplay;
+        return;
+    }
 
     /* Default or syntax-highlighted redisplay */
     rl_redisplay_function = NULL;

@@ -765,9 +765,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             exit(EXIT_FAILURE);
         }
 
-        compute_image_memory();
-        compute_nb_image();
-
         // Run the -s startup file (fed through the fifo when fifo input is on)
         if (initstartup == 0)
         {

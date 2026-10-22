@@ -1099,7 +1099,7 @@ int milk_server_exec_call(int            client_fd,
         uint32_t nvars = 0;
         memcpy(&nvars, payload + off, sizeof(uint32_t));
         off += (uint32_t) sizeof(uint32_t);
-        milk_server_sync_bash_vars(payload, len, nvars, &off);
+        milk_server_sync_bash_vars(payload, len, nvars, &off, 0);
     }
 
     milk_server_outvars_send(-1); /* nothing queued by an earlier request survives */

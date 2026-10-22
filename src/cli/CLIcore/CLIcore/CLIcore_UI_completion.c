@@ -493,10 +493,9 @@ void rl_cb_linehandler(char *linein)
     {
         add_history(history_entry);
         cli_history_log_prompt(history_entry);
-        if (data.autocomplete_history)
+        if (data.autocomplete_history && cli_is_interactive_mode())
         {
             append_history(1, CLI_history_file());
-            history_truncate_file(CLI_history_file(), 10000);
         }
     }
 

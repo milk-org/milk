@@ -413,3 +413,27 @@ def test_milk_cli_shorthands_comprehensive(tmp_path: Path):
     ) as res_wrap:
         assert res_wrap.returncode == 0, res_wrap.stderr
         assert "CLIWRAP_OK=8:384" in res_wrap.stdout
+
+
+def test_calc_repl_inproc_and_bash_sync(tmp_path: Path):
+    script = """
+bx=40
+by=100
+@calc
+a = 1.5 + 2.5
+b = a * 3
+c = bx + 2
+bx = bx + 10
+d = bx + by
+e = $bx + 5
+exit
+bx=7
+@calc
+f = bx * 3
+exit
+echo "CALC_REPL_OK=@{a}:@{b}:@{c}:@{d}:@{e}:@{f}"
+"""
+    for mode in ("stdin", "script"):
+        res = _run_milk_cli(script, tmp_path, mode=mode)
+        assert res.returncode == 0, res.stderr
+        assert "CALC_REPL_OK=4:12:42:150:45:21" in res.stdout

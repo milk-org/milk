@@ -355,6 +355,7 @@ int milk_bash_engine_init(void)
         atexit(engine_atexit);
     }
 
+    milk_server_reset_bash_epoch();
     int dummy_exit = 0;
     engine_exec(":", &dummy_exit); // internal: init may run inside an exec (lazy start / respawn)
     return 0;
@@ -399,6 +400,15 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
         {
             return 1;
         }
+    }
+
+    int bump_epoch =
+        (strcmp(cmdline, ":") != 0 && strncmp(cmdline, "BASH_ARGV0=", 11) != 0 &&
+         !(strncmp(cmdline, "@calc --repl \"", 14) == 0 && strchr(cmdline, '$') == NULL &&
+           strchr(cmdline, '`') == NULL && strstr(cmdline, "@{") == NULL));
+    if (bump_epoch)
+    {
+        milk_server_bump_bash_epoch();
     }
 
     msl_map_t chk;
@@ -590,6 +600,10 @@ static int engine_exec(const char *cmdline, int *out_exit_req)
     {
         *out_exit_req = exreq;
     }
+    if (bump_epoch)
+    {
+        milk_server_bump_bash_epoch();
+    }
     cli_last_retval = rc;
     unlink(g_cmdfile); /* bash has read it (source reads the whole file) */
     return rc;
@@ -703,7 +717,7 @@ static int cmdline_has_bare_calc(const char *cmdline)
     return 0;
 }
 
-/** exec_calc_repl_expr() - wrap @expr as `@calc --repl "<escaped>"` and run via engine_exec(). */
+/** exec_calc_repl_expr() - evaluate @expr in-process when eligible, else via `@calc --repl`. */
 static int exec_calc_repl_expr(const char *expr, int *out_exit_req)
 {
     size_t elen = strlen(expr);
@@ -736,6 +750,13 @@ static int exec_calc_repl_expr(const char *expr, int *out_exit_req)
                 return rc;
             }
         }
+    }
+
+    if (!dcerrorexit && milk_server_can_exec_calc_inproc(expr))
+    {
+        int rc          = milk_server_exec_calc_repl_inproc(expr);
+        cli_last_retval = rc;
+        return rc;
     }
 
     size_t cap = elen * 2 + 32;

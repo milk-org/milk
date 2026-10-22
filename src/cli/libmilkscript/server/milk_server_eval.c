@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "CLIcore.h"
@@ -1223,7 +1224,7 @@ int milk_server_exec_calc_or_test(int            client_fd,
         uint32_t nvars = 0;
         memcpy(&nvars, payload + off, sizeof(uint32_t));
         off += (uint32_t) sizeof(uint32_t);
-        milk_server_sync_bash_vars(payload, len, nvars, &off);
+        milk_server_sync_bash_vars(payload, len, nvars, &off, (flags & MILK_FLAG_REPL) != 0);
     }
 
     (void) client_fd; /* calc variables reach bash only through -v (its output) */
@@ -1233,5 +1234,53 @@ int milk_server_exec_calc_or_test(int            client_fd,
                                                    : CLI_CALC_OUT_VALUES;
     int rc            = split_top_level(expr, 1, 0, calc_stmt_cb, &is_test);
     cli_calc_out_mode = CLI_CALC_OUT_VALUES;
+    if (!is_test)
+    {
+        milk_server_mark_expr_vars_synced(expr);
+    }
+    return rc;
+}
+
+/**
+ * milk_server_exec_calc_repl_inproc - Evaluate a Calc mode REPL line directly in `milk-cli`
+ * @expr: Calculator expression string
+ *
+ * Executes @expr in-process with `MILK_FLAG_REPL` output formatting and records
+ * the operation in the shared-memory server log when active, bypassing the bash
+ * co-process and UNIX domain socket round-trip.
+ *
+ * Return: 0 on success, non-zero on evaluation or syntax error.
+ */
+int milk_server_exec_calc_repl_inproc(const char *expr)
+{
+    if (expr == NULL || expr[0] == '\0')
+    {
+        return 0;
+    }
+
+    milk_server_cmd_lock();
+    struct timespec ts_start;
+    if (g_srvlog_shm != NULL)
+    {
+        clock_gettime(CLOCK_REALTIME, &ts_start);
+    }
+
+    char     log_cmd[MILK_SRVLOG_CMD_MAX] = "";
+    uint32_t len                          = (uint32_t) strlen(expr) + 1;
+    int      rc = milk_server_exec_calc_or_test(-1, 0, MILK_FLAG_REPL, (const uint8_t *) expr, len,
+                                                log_cmd, sizeof(log_cmd));
+    fflush(stdout);
+    fflush(stderr);
+
+    if (g_srvlog_shm != NULL && log_cmd[0] != '\0')
+    {
+        struct timespec ts_end;
+        clock_gettime(CLOCK_REALTIME, &ts_end);
+        int64_t dur_ns = ((int64_t) ts_end.tv_sec - (int64_t) ts_start.tv_sec) * 1000000000LL +
+                         ((int64_t) ts_end.tv_nsec - (int64_t) ts_start.tv_nsec);
+        milk_srvlog_record(g_srvlog_shm, &ts_start, (dur_ns > 0) ? (uint64_t) dur_ns : 0, getpid(),
+                           MILK_MSG_CALC, rc, log_cmd, "");
+    }
+    milk_server_cmd_unlock();
     return rc;
 }

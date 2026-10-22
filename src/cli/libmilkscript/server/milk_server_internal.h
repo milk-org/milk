@@ -35,7 +35,8 @@ void milk_server_init_dcvar_cache(void);
 void milk_server_sync_bash_vars(const uint8_t *buf,
                                 uint32_t       len,
                                 uint32_t       nvars,
-                                uint32_t      *offset_io);
+                                uint32_t      *offset_io,
+                                int            is_repl);
 
 #define MILK_OUTVARS_MAX 32 /* declared outputs tracked per command */
 
@@ -52,6 +53,8 @@ void milk_server_outvars_send(int client_fd);
 
 
 void milk_server_expand_entities_in_expr(const char *in, char *out, size_t outsz);
+
+void milk_server_mark_expr_vars_synced(const char *expr);
 
 /* --- milk_server_stream.c --- */
 

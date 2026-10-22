@@ -70,4 +70,9 @@ void milk_server_set_log_flags(uint32_t flags);
  */
 void milk_server_close_log(int unlink_shm);
 
+void milk_server_reset_bash_epoch(void);
+void milk_server_bump_bash_epoch(void);
+int  milk_server_can_exec_calc_inproc(const char *expr);
+int  milk_server_exec_calc_repl_inproc(const char *expr);
+
 #endif /* MILK_SERVER_H */
