@@ -107,6 +107,7 @@ typedef enum
     RED_STD,
     RED_VAR,
     RED_NORM,
+    RED_ASUM,
     RED_COUNT,
     RED_DOT,
     RED_PERC /* masked only: imedian, perc */
@@ -177,13 +178,27 @@ static inline double cli_calc_read_im_pix(const IMAGE *im, uint8_t dt, uint64_t 
     }
 }
 
+void cli_calc_flatten2d(const IMAGE *im, uint64_t *d0, uint64_t *d1, int *is_3d);
+int  cli_calc_parse_matmul_arg(val_t *out, int *out_trans);
+
 int cli_calc_matmul_check(const IMAGE *im1,
                           int          transA,
                           const IMAGE *im2,
                           int          transB,
                           const IMAGE *dst,
                           int          allow_reshape);
+int cli_calc_gemm_into(const IMAGE *im1,
+                       int          transA,
+                       const IMAGE *im2,
+                       int          transB,
+                       double       alpha,
+                       double       beta,
+                       IMAGE       *outim);
 int cli_calc_matmul_into(const IMAGE *im1, int transA, const IMAGE *im2, int transB, IMAGE *outim);
+int cli_calc_ger_check(const IMAGE *imX, const IMAGE *imY, const IMAGE *dst);
+int cli_calc_ger_into(const IMAGE *imX, const IMAGE *imY, double alpha, double beta, IMAGE *outim);
+int cli_calc_syrk_check(const IMAGE *imA, int transA, const IMAGE *dst);
+int cli_calc_syrk_into(const IMAGE *imA, int transA, double alpha, double beta, IMAGE *outim);
 int cli_calc_transpose_check(const IMAGE *src, const IMAGE *dst);
 int cli_calc_transpose_into(const IMAGE *src, IMAGE *dst);
 int cli_calc_reshape_check(const IMAGE *src, const IMAGE *dst);
@@ -192,7 +207,24 @@ int cli_calc_reshape_into(const IMAGE *src, IMAGE *dst);
 val_t cli_calc_func_transpose(void);
 val_t cli_calc_func_reshape(void);
 val_t cli_calc_func_vec(void);
+val_t cli_calc_func_eye(void);
+val_t cli_calc_func_diag(void);
 val_t cli_calc_func_matmul(void);
+val_t cli_calc_func_outer(void);
+val_t cli_calc_func_gemm(int is_gemv);
+val_t cli_calc_func_ger(void);
+val_t cli_calc_func_syrk(void);
+val_t cli_calc_func_symv(void);
+val_t cli_calc_func_axpy(void);
+val_t cli_calc_func_scal(void);
+
+val_t cli_calc_func_trsv(int is_trsm);
+val_t cli_calc_func_gesv(void);
+val_t cli_calc_func_posv(void);
+val_t cli_calc_func_gels(void);
+val_t cli_calc_func_solve(void);
+val_t cli_calc_func_inv(void);
+val_t cli_calc_func_pinv(void);
 
 const char *alloc_tmpname(void);
 

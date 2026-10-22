@@ -730,6 +730,42 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
             is_assign_op = 1;
             snprintf(lhs_name, sizeof(lhs_name), "%s", eval_tokens[0].sval);
         }
+        else if (eval_tokens[0].type == TOK_FUNC_IMIM_IM &&
+                 (strcmp(eval_tokens[0].sval, "gemm(") == 0 ||
+                  strcmp(eval_tokens[0].sval, "gemv(") == 0 ||
+                  strcmp(eval_tokens[0].sval, "symv(") == 0 ||
+                  strcmp(eval_tokens[0].sval, "syrk(") == 0 ||
+                  strcmp(eval_tokens[0].sval, "ger(") == 0 ||
+                  strcmp(eval_tokens[0].sval, "axpy(") == 0 ||
+                  strcmp(eval_tokens[0].sval, "scal(") == 0))
+        {
+            int depth = 1;
+            int idx   = 1;
+            while (idx < eval_ntok && depth > 0 && eval_tokens[idx].type != TOK_NEWLINE &&
+                   eval_tokens[idx].type != TOK_EOF)
+            {
+                cli_token_type t = eval_tokens[idx].type;
+                if (t == TOK_LPAREN || (t >= TOK_FUNC_D_D && t <= TOK_FUNC_COORD &&
+                                        strchr(eval_tokens[idx].sval, '(') != NULL))
+                {
+                    depth++;
+                }
+                else if (t == TOK_RPAREN)
+                {
+                    depth--;
+                }
+                idx++;
+            }
+            if (depth == 0 && (idx >= eval_ntok || eval_tokens[idx].type == TOK_NEWLINE ||
+                               eval_tokens[idx].type == TOK_EOF))
+            {
+                is_assign_op = 1;
+                if (idx >= 2 && eval_tokens[idx - 2].type == TOK_IMAGE)
+                {
+                    snprintf(lhs_name, sizeof(lhs_name), "%s", eval_tokens[idx - 2].sval);
+                }
+            }
+        }
     }
 
     size_t tmark           = tmp_begin();
@@ -893,8 +929,9 @@ int cli_calc_eval_bash(const char *input, int is_test, int *out_rc)
  * @stmt: Calculator statement string to tokenize and compile
  *
  * Tokenizes @stmt and attempts to compile a whole-image assignment (`im = ...`,
- * `im += ...`, `im -= ...`, `im *= ...`) via `cli_calc_fuse_keep()` so
- * `milk.calc` compute units can execute it on every frame without re-parsing.
+ * `im += ...`, `im -= ...`, `im *= ...`) or a standalone in-place BLAS routine
+ * (`gemm`, `gemv`, `syrk`, `ger`) via `cli_calc_fuse_keep()` so `milk.calc`
+ * compute units can execute it on every frame without re-parsing.
  *
  * Return: Opaque compiled fused program pointer, or NULL if @stmt cannot be fused
  */
@@ -908,7 +945,33 @@ void *cli_calc_keep_statement(const char *stmt)
     data.parseerror = 0;
     parse_error     = 0;
     eval_error      = 0;
-    eval_pos        = 2;
+    if (eval_ntok >= 4 && eval_tokens[0].type == TOK_FUNC_IMIM_IM &&
+        (strcmp(eval_tokens[0].sval, "gemm(") == 0 || strcmp(eval_tokens[0].sval, "gemv(") == 0 ||
+         strcmp(eval_tokens[0].sval, "syrk(") == 0 || strcmp(eval_tokens[0].sval, "ger(") == 0))
+    {
+        int end = eval_ntok;
+        while (end > 0 &&
+               (eval_tokens[end - 1].type == TOK_NEWLINE || eval_tokens[end - 1].type == TOK_EOF))
+        {
+            end--;
+        }
+        if (end >= 3 && eval_tokens[end - 1].type == TOK_RPAREN &&
+            eval_tokens[end - 2].type == TOK_IMAGE &&
+            strchr(eval_tokens[end - 2].sval, '[') == NULL)
+        {
+            imageID id =
+                image_ID(eval_tokens[end - 2].sval, data.core.image, data.core.NB_MAX_IMAGE);
+            eval_pos = 0;
+            void *k  = (id == -1) ? NULL : cli_calc_fuse_keep(&data.core.image[id], TOK_EQUAL);
+            if (k != NULL && cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE)
+            {
+                free(k);
+                k = NULL;
+            }
+            return k;
+        }
+    }
+    eval_pos = 2;
     if (eval_ntok < 3 || eval_tokens[0].type != TOK_IMAGE ||
         strchr(eval_tokens[0].sval, '[') != NULL ||
         !(eval_tokens[1].type == TOK_EQUAL || eval_tokens[1].type == TOK_OP_PLUS_EQ ||

@@ -45,9 +45,18 @@ double arith_image_var_IMGID(IMGID *imgin);
 double arith_image_count(const char *ID_name);
 double arith_image_count_IMGID(IMGID *imgin);
 
-/* argmax/argmin: linear pixel index (x + y*xsize + ...), -1 if every pixel is NaN */
+/* argmax/argmin/iamax: linear pixel index (x + y*xsize + ...), -1 if every pixel is NaN */
 double arith_image_argmax(const char *ID_name);
 double arith_image_argmax_IMGID(IMGID *imgin);
 
 double arith_image_argmin(const char *ID_name);
 double arith_image_argmin_IMGID(IMGID *imgin);
+
+double arith_image_iamax(const char *ID_name);
+double arith_image_iamax_IMGID(IMGID *imgin);
+
+double arith_image_asum(const char *ID_name);
+double arith_image_asum_IMGID(IMGID *imgin);
+
+double arith_image_trace(const char *ID_name);
+double arith_image_trace_IMGID(IMGID *imgin);

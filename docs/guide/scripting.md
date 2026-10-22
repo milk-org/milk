@@ -259,20 +259,28 @@ Functions (the math ones also apply per pixel to an image):
 | Math             | `sin cos tan asin acos atan exp ln log sqrt cbrt ceil floor round abs posi isnan isfinite` |
 | Math, 2-3 args   | `atan2(y,x)`, `fmod(a,b)`, `min(a,b)`, `max(a,b)`, `clamp(x,lo,hi)` (`trunc`)            |
 | Datatype casts   | `f32 f64 u8 i8 u16 i16 u32 i32 u64 i64`: cast a scalar or produce an image of that type  |
-| Image to number  | `itot imin imax imean istd ivar imedian norm`, `perc(im,f)`, `dot(a,b)`; `irms` = `istd` |
-| Image to integer | `icount(im)` (non-zero pixels), `iargmax(im)`, `iargmin(im)` (index `x + y*xsize`)       |
-| Along one axis   | `itot imin imax imean istd ivar` plus an axis: `imean(cube, 2)` is the mean frame        |
-| Image to image   | `where(c,a,b)`, `matmul(a,b)`, `transpose(im)`, `reshape(im,nx[,ny,nz])`, `vec(x0,...)`  |
+| Image to number  | `itot imin imax imean istd ivar imedian norm nrm2 asum`, `perc(im,f)`, `dot(a,b)`, `trace(A)`; `irms` = `istd` |
+| Image to integer | `icount(im)` (non-zero pixels), `iargmax(im)`, `iargmin(im)`, `iamax(im)` (index of $\max \|x_i\|$) |
+| Along one axis   | `itot imin imax imean istd ivar norm nrm2 asum` plus an axis: `imean(cube, 2)` is the mean frame |
+| Image to image   | `where(c,a,b)`, `transpose(im)`, `reshape(im,nx[,ny,nz])`, `vec(x0,...)`, `eye(N[,M])`, `diag(X[,k])`, `matmul(A,B)`, `outer(x,y)` |
+| BLAS (in-place)  | `scal(a,x)`, `axpy(a,x,y)`, `gemv(a,A,x,b,y)`, `symv(a,A,x,b,y)`, `ger(a,x,y,A)`, `syrk(a,A,b,C)`, `gemm(a,A,B,b,C)` |
+| LAPACK / Solvers | `trsv(A,b[,uplo[,diag]])`, `trsm(A,B[,uplo[,diag[,a]]])`, `solve(A,B[,reg])`, `gesv(A,B)`, `posv(A,B)`, `gels(A,B)`, `inv(A)`, `pinv(A[,rtol])` |
 | Coordinates      | `ix iy ir itheta (im[, cx, cy])`: per pixel x, y, radius, angle about `(xsize/2, ysize/2)` |
 | Strings          | `strlen toupper tolower`, `substr(s,start,len)`, `replace(s,old,new)`, `hex oct bin`     |
 | Complex images   | `cplx(re,im)`, `expi(phi)`, `real imag abs arg conj`; `+ - * /` and `-z` work on them    |
 
-A second image argument is a mask: `imean(im, mask)` (also `itot imin imax istd ivar imedian`) and
+A second image argument is a mask: `imean(im, mask)` (also `itot imin imax istd ivar imedian norm nrm2 asum`) and
 `perc(im, f, mask)` reduce over the pixels where the mask is not zero; no pixel gives NaN, or 0 for
-`itot`. A number instead is an axis. `matmul(transpose(a), b)` and `matmul(a, transpose(b))` apply
-the transpose directly inside the matrix product without allocating an intermediate transposed image.
-`reshape(im, nx[, ny, nz])` reinterprets the contiguous elements of `im` with new dimensions (up to
-one dimension may be `-1` to infer it from the total element count).
+`itot`/`asum`/`norm`. A number instead is an axis. `matmul`, `gemm`, `gemv`, `syrk`, `trsv`, `trsm`,
+`gesv`, `gels`, `solve`, `inv`, and `pinv` fold a top-level `transpose(A)` directly into the BLAS/LAPACK
+kernel without allocating an intermediate transposed image. The BLAS routines (`scal`, `axpy`, `gemv`,
+`symv`, `ger`, `syrk`, `gemm`) use strict BLAS parameter order and mutate their destination image in-place
+(`gemm(alpha, A, B, beta, C)` updates `C` with $\alpha\,\text{op}(A)\,\text{op}(B) + \beta\,C$), while
+algebraic assignments using `matmul(A, B)` and `outer(x, y)` (such as `C = alpha * matmul(A, B) + beta * C`,
+`dm = leak * dm - gain * matmul(Cmat, wfs)`, `A += alpha * outer(x, y)`, and
+`G = alpha * matmul(transpose(A), A) + beta * G`) automatically lower to the same single in-place BLAS pass.
+`reshape(im, nx[, ny, nz])` reinterprets the contiguous elements of `im` with new dimensions (up to one
+dimension may be `-1` to infer it from the total element count).
 
 ```bash
 @calc -v core 'imean(cam, ir(cam) < 10)'          # mean within 10 pixels of the centre
@@ -401,9 +409,10 @@ The unit options of `milk-fpsexec-milk-calc` and the FPS parameters they set
 - Three read-only variables are updated before each frame: `_n` (0-based frame index, `int`),
   `_t` (elapsed seconds since loop/init start, `float`), and `_dt` (seconds since the previous
   frame, `float`, `0` on frame 0).
-- An element-wise image assignment (`out = a*b + c`, also `+=` `-=` `*=`), `out = matmul(...)`,
-  `out = transpose(...)`, `out = reshape(...)`, or `out = reshape(matmul(...), ...)` is compiled
-  once and writes directly into `out`; other statements are evaluated as text on each frame.
+- An element-wise image assignment (`out = a*b + c`, also `+=` `-=` `*=`), `out = matmul(...)` /
+  `gemm` / `gemv` / `ger` / `syrk` (including scaled `out = alpha * matmul(...) + beta * out` and
+  `+=` / `-=` forms), `out = transpose(...)`, `out = reshape(...)`, or `out = reshape(matmul(...), ...)`
+  is compiled once and writes directly into `out`; other statements are evaluated as text on each frame.
 - Names are shared streams: the unit is its own process, so a session's local images and calculator
   variables are out of its reach. A statement that makes a new image creates it as a stream. Shared
   streams recreated in `$MILK_SHM_DIR` with the same shape and compatible type are remapped

@@ -531,9 +531,9 @@ static void FK(
             if (m[j] != (FT) 0)
             {
                 double x = (double) v[j];
-                sb += x;
-                mn = (x < mn || !(mn == mn)) ? x : mn;
-                mx = (x > mx || !(mx == mx)) ? x : mx;
+                sb += (op == RED_ASUM) ? fabs(x) : (op == RED_NORM) ? x * x : x;
+                mn = (nb == 0 || x < mn) ? x : mn;
+                mx = (nb == 0 || x > mx) ? x : mx;
                 nb++;
             }
         }
@@ -572,11 +572,22 @@ static void FK(
         acc->n += (uint64_t) len;
         break;
     }
+    case RED_ASUM:
+    {
+        double s = 0.0;
+        for (int j = 0; j < len; j++)
+        {
+            s += fabs((double) v[j]);
+        }
+        acc->sum += s;
+        acc->n += (uint64_t) len;
+        break;
+    }
     case RED_MIN:
     {
         double mn = acc->min;
         int    j0 = 0;
-        if (!(mn == mn) && len > 0)
+        if (acc->n == 0 && len > 0)
         {
             mn = (double) v[0];
             j0 = 1;
@@ -594,7 +605,7 @@ static void FK(
     {
         double mx = acc->max;
         int    j0 = 0;
-        if (!(mx == mx) && len > 0)
+        if (acc->n == 0 && len > 0)
         {
             mx = (double) v[0];
             j0 = 1;

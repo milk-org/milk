@@ -490,11 +490,19 @@ static double reduce_lane_im(const IMAGE *im,
         for (uint64_t k = 0; k < n; k++)
         {
             double v = (double) p[k * stride];
-            acc      = (op == RED_MIN) ? fmin(acc, v) : (op == RED_MAX) ? fmax(acc, v) : acc + v;
+            acc      = (op == RED_MIN)    ? fmin(acc, v)
+                       : (op == RED_MAX)  ? fmax(acc, v)
+                       : (op == RED_ASUM) ? acc + fabs(v)
+                       : (op == RED_NORM) ? acc + v * v
+                                          : acc + v;
         }
-        if (op == RED_SUM || op == RED_MIN || op == RED_MAX)
+        if (op == RED_SUM || op == RED_MIN || op == RED_MAX || op == RED_ASUM)
         {
             return acc;
+        }
+        if (op == RED_NORM)
+        {
+            return sqrt(acc);
         }
         double mean = acc / (double) n;
         if (op == RED_MEAN)
@@ -515,11 +523,19 @@ static double reduce_lane_im(const IMAGE *im,
         for (uint64_t k = 0; k < n; k++)
         {
             double v = p[k * stride];
-            acc      = (op == RED_MIN) ? fmin(acc, v) : (op == RED_MAX) ? fmax(acc, v) : acc + v;
+            acc      = (op == RED_MIN)    ? fmin(acc, v)
+                       : (op == RED_MAX)  ? fmax(acc, v)
+                       : (op == RED_ASUM) ? acc + fabs(v)
+                       : (op == RED_NORM) ? acc + v * v
+                                          : acc + v;
         }
-        if (op == RED_SUM || op == RED_MIN || op == RED_MAX)
+        if (op == RED_SUM || op == RED_MIN || op == RED_MAX || op == RED_ASUM)
         {
             return acc;
+        }
+        if (op == RED_NORM)
+        {
+            return sqrt(acc);
         }
         double mean = acc / (double) n;
         if (op == RED_MEAN)
@@ -537,11 +553,19 @@ static double reduce_lane_im(const IMAGE *im,
     for (uint64_t k = 0; k < n; k++)
     {
         double v = cli_calc_read_im_pix(im, dt, base + k * stride);
-        acc      = (op == RED_MIN) ? fmin(acc, v) : (op == RED_MAX) ? fmax(acc, v) : acc + v;
+        acc      = (op == RED_MIN)    ? fmin(acc, v)
+                   : (op == RED_MAX)  ? fmax(acc, v)
+                   : (op == RED_ASUM) ? acc + fabs(v)
+                   : (op == RED_NORM) ? acc + v * v
+                                      : acc + v;
     }
-    if (op == RED_SUM || op == RED_MIN || op == RED_MAX)
+    if (op == RED_SUM || op == RED_MIN || op == RED_MAX || op == RED_ASUM)
     {
         return acc;
+    }
+    if (op == RED_NORM)
+    {
+        return sqrt(acc);
     }
     double mean = acc / (double) n;
     if (op == RED_MEAN)
@@ -701,17 +725,25 @@ static val_t reduce_masked(const char *name, const char *mask, reduce_op op, dou
         if (cli_calc_read_im_pix(mk, mdt, i) != 0.0)
         {
             double v = cli_calc_read_im_pix(im, idt, i);
-            acc      = (op == RED_MIN) ? fmin(acc, v) : (op == RED_MAX) ? fmax(acc, v) : acc + v;
+            acc      = (op == RED_MIN)    ? fmin(acc, v)
+                       : (op == RED_MAX)  ? fmax(acc, v)
+                       : (op == RED_ASUM) ? acc + fabs(v)
+                       : (op == RED_NORM) ? acc + v * v
+                                          : acc + v;
             n++;
         }
     }
     if (n == 0)
     {
-        return mk_double((op == RED_SUM) ? 0.0 : NAN);
+        return mk_double((op == RED_SUM || op == RED_ASUM || op == RED_NORM) ? 0.0 : NAN);
     }
-    if (op == RED_SUM || op == RED_MIN || op == RED_MAX)
+    if (op == RED_SUM || op == RED_MIN || op == RED_MAX || op == RED_ASUM)
     {
         return mk_double(acc);
+    }
+    if (op == RED_NORM)
+    {
+        return mk_double(sqrt(acc));
     }
     double mean = acc / (double) n;
     if (op == RED_MEAN)
@@ -757,6 +789,14 @@ static int axis_reduce_op(double (*fn)())
     {
         return RED_VAR;
     }
+    if (fn == (double (*)()) arith_image_norm)
+    {
+        return RED_NORM;
+    }
+    if (fn == (double (*)()) arith_image_asum)
+    {
+        return RED_ASUM;
+    }
     return -1;
 }
 
@@ -767,10 +807,6 @@ static int fused_reduce_op(double (*fn)())
     if (op >= 0)
     {
         return op;
-    }
-    if (fn == (double (*)()) arith_image_norm)
-    {
-        return RED_NORM;
     }
     if (fn == (double (*)()) arith_image_count)
     {
@@ -1077,17 +1113,89 @@ val_t parse_funccall(cli_token *ftok)
     case TOK_FUNC_COORD:
         return func_coord(ftok);
     case TOK_FUNC_IMIM_IM:
-        if (strncmp(ftok->sval, "transpose(", 10) == 0)
+        if (strcmp(ftok->sval, "transpose(") == 0)
         {
             return cli_calc_func_transpose();
         }
-        if (strncmp(ftok->sval, "reshape(", 8) == 0)
+        if (strcmp(ftok->sval, "reshape(") == 0)
         {
             return cli_calc_func_reshape();
         }
-        if (strncmp(ftok->sval, "vec(", 4) == 0)
+        if (strcmp(ftok->sval, "vec(") == 0)
         {
             return cli_calc_func_vec();
+        }
+        if (strcmp(ftok->sval, "eye(") == 0)
+        {
+            return cli_calc_func_eye();
+        }
+        if (strcmp(ftok->sval, "diag(") == 0)
+        {
+            return cli_calc_func_diag();
+        }
+        if (strcmp(ftok->sval, "gemm(") == 0)
+        {
+            return cli_calc_func_gemm(0);
+        }
+        if (strcmp(ftok->sval, "gemv(") == 0)
+        {
+            return cli_calc_func_gemm(1);
+        }
+        if (strcmp(ftok->sval, "ger(") == 0)
+        {
+            return cli_calc_func_ger();
+        }
+        if (strcmp(ftok->sval, "outer(") == 0)
+        {
+            return cli_calc_func_outer();
+        }
+        if (strcmp(ftok->sval, "syrk(") == 0)
+        {
+            return cli_calc_func_syrk();
+        }
+        if (strcmp(ftok->sval, "symv(") == 0)
+        {
+            return cli_calc_func_symv();
+        }
+        if (strcmp(ftok->sval, "axpy(") == 0)
+        {
+            return cli_calc_func_axpy();
+        }
+        if (strcmp(ftok->sval, "scal(") == 0)
+        {
+            return cli_calc_func_scal();
+        }
+        if (strcmp(ftok->sval, "trsv(") == 0)
+        {
+            return cli_calc_func_trsv(0);
+        }
+        if (strcmp(ftok->sval, "trsm(") == 0)
+        {
+            return cli_calc_func_trsv(1);
+        }
+        if (strcmp(ftok->sval, "gesv(") == 0)
+        {
+            return cli_calc_func_gesv();
+        }
+        if (strcmp(ftok->sval, "posv(") == 0)
+        {
+            return cli_calc_func_posv();
+        }
+        if (strcmp(ftok->sval, "gels(") == 0)
+        {
+            return cli_calc_func_gels();
+        }
+        if (strcmp(ftok->sval, "solve(") == 0)
+        {
+            return cli_calc_func_solve();
+        }
+        if (strcmp(ftok->sval, "inv(") == 0)
+        {
+            return cli_calc_func_inv();
+        }
+        if (strcmp(ftok->sval, "pinv(") == 0)
+        {
+            return cli_calc_func_pinv();
         }
         return cli_calc_func_matmul();
     case TOK_FUNC_IM_D:

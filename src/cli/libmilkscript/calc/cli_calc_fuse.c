@@ -707,11 +707,11 @@ static void fred_merge(fred_acc *a, const fred_acc *b)
     a->sum += b->sum;
     a->mean += d * ((double) b->n / (double) n);
     a->m2 += b->m2 + d * d * ((double) a->n * (double) b->n / (double) n);
-    if (b->min < a->min || !(a->min == a->min))
+    if (b->min < a->min || cli_calc_isnan(a->min) != 0.0)
     {
         a->min = b->min;
     }
-    if (b->max > a->max || !(a->max == a->max))
+    if (b->max > a->max || cli_calc_isnan(a->max) != 0.0)
     {
         a->max = b->max;
     }
@@ -1087,7 +1087,7 @@ int cli_calc_fuse_reduce(reduce_op op, int is_long, val_t *out)
     else if (cur()->type == TOK_COMMA)
     {
         if (op != RED_SUM && op != RED_MEAN && op != RED_MIN && op != RED_MAX && op != RED_STD &&
-            op != RED_VAR)
+            op != RED_VAR && op != RED_NORM && op != RED_ASUM)
         {
             cli_calc_tok_seek(pos);
             return 0;
@@ -1112,13 +1112,18 @@ int cli_calc_fuse_reduce(reduce_op op, int is_long, val_t *out)
     run_reduce(&p1, has_p2 ? &p2 : NULL, op, &acc);
     if (acc.n == 0)
     {
-        *out = is_long ? mk_long(0) : mk_double((op == RED_SUM || op == RED_DOT) ? 0.0 : NAN);
+        *out = is_long
+                   ? mk_long(0)
+                   : mk_double((op == RED_SUM || op == RED_ASUM || op == RED_NORM || op == RED_DOT)
+                                   ? 0.0
+                                   : NAN);
         return 1;
     }
     double r = 0.0;
     switch (op)
     {
     case RED_SUM:
+    case RED_ASUM:
     case RED_DOT:
         r = acc.sum;
         break;
@@ -1308,7 +1313,9 @@ enum
     FKEPT_ELEMWISE  = 0,
     FKEPT_MATMUL    = 1,
     FKEPT_TRANSPOSE = 2,
-    FKEPT_RESHAPE   = 3
+    FKEPT_RESHAPE   = 3,
+    FKEPT_GER       = 4,
+    FKEPT_SYRK      = 5
 };
 
 typedef struct
@@ -1321,6 +1328,10 @@ typedef struct
     int             transA;
     int             transB;
     int             allow_reshape;
+    double          alpha_c;
+    double          beta_c;
+    int16_t         alpha_s1;
+    int16_t         beta_s1;
 } fkept;
 
 /**
@@ -1362,6 +1373,431 @@ static int parse_kept_img_or_trans(IMAGE **out_im, int *out_trans)
     }
     *out_im    = &data.core.image[id];
     *out_trans = trans;
+    return 0;
+}
+
+/**
+ * parse_kept_scalar_factor - Parse a scalar constant or live variable factor for BLAS alpha/beta
+ * @p:      Fused program storing live variable references when `keep_vars` is active
+ * @out_c:  Output constant multiplier
+ * @out_s1: Output 1-based live variable slot (`0` when constant)
+ *
+ * Return: 0 on success, -1 if the current token is not a scalar factor.
+ */
+static int parse_kept_scalar_factor(fprog *p, double *out_c, int16_t *out_s1)
+{
+    int    pos  = cli_calc_tok_pos();
+    double sign = 1.0;
+    while (cur_eval()->type == TOK_OP_MINUS)
+    {
+        advance_eval();
+        sign = -sign;
+    }
+    if (cur_eval()->type == TOK_LONG)
+    {
+        *out_c  = sign * (double) cur_eval()->val_l;
+        *out_s1 = 0;
+        advance_eval();
+        return 0;
+    }
+    if (cur_eval()->type == TOK_DOUBLE)
+    {
+        *out_c  = sign * cur_eval()->val_d;
+        *out_s1 = 0;
+        advance_eval();
+        return 0;
+    }
+    if ((cur_eval()->type == TOK_VAR || cur_eval()->type == TOK_NVAR) && !cur_eval()->literal &&
+        image_ID(cur_eval()->sval, data.core.image, data.core.NB_MAX_IMAGE) == -1)
+    {
+        if (keep_vars)
+        {
+            long vid = variable_ID(cur_eval()->sval);
+            if (vid >= 0 && data.core.variable[vid].type != 2)
+            {
+                *out_c  = sign;
+                *out_s1 = (int16_t) (vid + 1);
+                advance_eval();
+                return 0;
+            }
+        }
+        fval dv;
+        if (c_primary(p, &dv) == 0 && !dv.vec)
+        {
+            *out_c  = sign * dv.c;
+            *out_s1 = 0;
+            return 0;
+        }
+    }
+    cli_calc_tok_seek(pos);
+    return -1;
+}
+
+/**
+ * parse_kept_dst_term - Parse `[scalar *] dst [* scalar]` representing `beta * dst`
+ * @p:       Fused program storing live variable references
+ * @dst:     Destination image
+ * @sign:    Leading `+1.0` or `-1.0` term sign
+ * @beta_c:  Output constant multiplier for `beta`
+ * @beta_s1: Output 1-based live variable slot for `beta` (`0` when constant)
+ *
+ * Return: 0 on match, -1 otherwise (rewinding token cursor).
+ */
+static int parse_kept_dst_term(fprog       *p,
+                               const IMAGE *dst,
+                               double       sign,
+                               double      *beta_c,
+                               int16_t     *beta_s1)
+{
+    int pos = cli_calc_tok_pos();
+    if (cur_eval()->type == TOK_OP_MINUS)
+    {
+        advance_eval();
+        sign = -sign;
+    }
+    if (cur_eval()->type == TOK_IMAGE && strcmp(cur_eval()->sval, dst->name) == 0)
+    {
+        advance_eval();
+        double  c  = 1.0;
+        int16_t s1 = 0;
+        if (cur_eval()->type == TOK_OP_STAR)
+        {
+            advance_eval();
+            if (parse_kept_scalar_factor(p, &c, &s1) != 0)
+            {
+                cli_calc_tok_seek(pos);
+                return -1;
+            }
+        }
+        *beta_c  = sign * c;
+        *beta_s1 = s1;
+        return 0;
+    }
+    double  c  = 1.0;
+    int16_t s1 = 0;
+    if (parse_kept_scalar_factor(p, &c, &s1) == 0 && cur_eval()->type == TOK_OP_STAR)
+    {
+        advance_eval();
+        if (cur_eval()->type == TOK_IMAGE && strcmp(cur_eval()->sval, dst->name) == 0)
+        {
+            advance_eval();
+            *beta_c  = sign * c;
+            *beta_s1 = s1;
+            return 0;
+        }
+    }
+    cli_calc_tok_seek(pos);
+    return -1;
+}
+
+/**
+ * parse_kept_blas_term - Parse `[alpha *] (matmul|gemm|gemv|ger|outer|syrk)(...) [* alpha2]`
+ * @k:    Kept statement structure to populate
+ * @dst:  Destination image
+ * @sign: Leading `+1.0` or `-1.0` term sign
+ *
+ * Return: 0 on match, -1 otherwise (rewinding token cursor).
+ */
+static int parse_kept_blas_term(fkept *k, const IMAGE *dst, double sign)
+{
+    int pos = cli_calc_tok_pos();
+    while (cur_eval()->type == TOK_OP_MINUS)
+    {
+        advance_eval();
+        sign = -sign;
+    }
+    double  alpha_c  = sign;
+    int16_t alpha_s1 = 0;
+    int     p2       = cli_calc_tok_pos();
+    double  fc       = 1.0;
+    int16_t fs1      = 0;
+    if (parse_kept_scalar_factor(&k->p, &fc, &fs1) == 0)
+    {
+        if (cur_eval()->type == TOK_OP_STAR)
+        {
+            advance_eval();
+            alpha_c *= fc;
+            alpha_s1 = fs1;
+        }
+        else
+        {
+            cli_calc_tok_seek(p2);
+        }
+    }
+    while (cur_eval()->type == TOK_OP_MINUS)
+    {
+        advance_eval();
+        alpha_c = -alpha_c;
+    }
+    if (cur_eval()->type != TOK_FUNC_IMIM_IM)
+    {
+        cli_calc_tok_seek(pos);
+        return -1;
+    }
+    const char *fn = cur_eval()->sval;
+    if (strcmp(fn, "matmul(") == 0)
+    {
+        advance_eval();
+        IMAGE *imA    = NULL;
+        IMAGE *imB    = NULL;
+        int    transA = 0;
+        int    transB = 0;
+        if (parse_kept_img_or_trans(&imA, &transA) != 0 || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (parse_kept_img_or_trans(&imB, &transB) != 0 || cur_eval()->type != TOK_RPAREN)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (imA == imB && transA != transB && cli_calc_syrk_check(imA, transA, dst) == 0)
+        {
+            k->kind     = FKEPT_SYRK;
+            k->transA   = transA;
+            k->p.img[0] = imA;
+            k->p.nimg   = 1;
+        }
+        else if (cli_calc_matmul_check(imA, transA, imB, transB, dst, 0) == 0)
+        {
+            k->kind          = FKEPT_MATMUL;
+            k->transA        = transA;
+            k->transB        = transB;
+            k->allow_reshape = 0;
+            k->p.img[0]      = imA;
+            k->p.img[1]      = imB;
+            k->p.nimg        = 2;
+        }
+        else
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+    }
+    else if (strcmp(fn, "outer(") == 0)
+    {
+        advance_eval();
+        IMAGE *imX = NULL;
+        IMAGE *imY = NULL;
+        int    tX  = 0;
+        int    tY  = 0;
+        if (parse_kept_img_or_trans(&imX, &tX) != 0 || tX || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (parse_kept_img_or_trans(&imY, &tY) != 0 || tY || cur_eval()->type != TOK_RPAREN ||
+            cli_calc_ger_check(imX, imY, dst) != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        k->kind     = FKEPT_GER;
+        k->p.img[0] = imX;
+        k->p.img[1] = imY;
+        k->p.nimg   = 2;
+    }
+    else if (strcmp(fn, "gemm(") == 0 || strcmp(fn, "gemv(") == 0)
+    {
+        int is_gemv = (strcmp(fn, "gemv(") == 0);
+        advance_eval();
+        double  ac  = 1.0;
+        int16_t as1 = 0;
+        if (parse_kept_scalar_factor(&k->p, &ac, &as1) != 0 || (alpha_s1 != 0 && as1 != 0) ||
+            cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        alpha_c *= ac;
+        if (as1 != 0)
+        {
+            alpha_s1 = as1;
+        }
+        advance_eval();
+        IMAGE *imA    = NULL;
+        IMAGE *imB    = NULL;
+        int    transA = 0;
+        int    transB = 0;
+        if (parse_kept_img_or_trans(&imA, &transA) != 0 || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (parse_kept_img_or_trans(&imB, &transB) != 0 || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        double  bc  = 0.0;
+        int16_t bs1 = 0;
+        if (parse_kept_scalar_factor(&k->p, &bc, &bs1) != 0 || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (cur_eval()->type != TOK_IMAGE || strcmp(cur_eval()->sval, dst->name) != 0 ||
+            k->beta_c != 0.0 || k->beta_s1 != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (cur_eval()->type != TOK_RPAREN ||
+            cli_calc_matmul_check(imA, transA, imB, transB, dst, 0) != 0 ||
+            (is_gemv && dst->md[0].naxis == 2 && dst->md[0].size[1] != 1 && imA->md[0].naxis != 3))
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        k->beta_c        = bc;
+        k->beta_s1       = bs1;
+        k->kind          = FKEPT_MATMUL;
+        k->transA        = transA;
+        k->transB        = transB;
+        k->allow_reshape = 0;
+        k->p.img[0]      = imA;
+        k->p.img[1]      = imB;
+        k->p.nimg        = 2;
+    }
+    else if (strcmp(fn, "ger(") == 0)
+    {
+        advance_eval();
+        double  ac  = 1.0;
+        int16_t as1 = 0;
+        if (parse_kept_scalar_factor(&k->p, &ac, &as1) != 0 || (alpha_s1 != 0 && as1 != 0) ||
+            cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        alpha_c *= ac;
+        if (as1 != 0)
+        {
+            alpha_s1 = as1;
+        }
+        advance_eval();
+        IMAGE *imX = NULL;
+        IMAGE *imY = NULL;
+        int    tX  = 0;
+        int    tY  = 0;
+        if (parse_kept_img_or_trans(&imX, &tX) != 0 || tX || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (parse_kept_img_or_trans(&imY, &tY) != 0 || tY || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (cur_eval()->type != TOK_IMAGE || strcmp(cur_eval()->sval, dst->name) != 0 ||
+            k->beta_c != 0.0 || k->beta_s1 != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (cur_eval()->type != TOK_RPAREN || cli_calc_ger_check(imX, imY, dst) != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        k->beta_c   = 1.0;
+        k->kind     = FKEPT_GER;
+        k->p.img[0] = imX;
+        k->p.img[1] = imY;
+        k->p.nimg   = 2;
+    }
+    else if (strcmp(fn, "syrk(") == 0)
+    {
+        advance_eval();
+        double  ac  = 1.0;
+        int16_t as1 = 0;
+        if (parse_kept_scalar_factor(&k->p, &ac, &as1) != 0 || (alpha_s1 != 0 && as1 != 0) ||
+            cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        alpha_c *= ac;
+        if (as1 != 0)
+        {
+            alpha_s1 = as1;
+        }
+        advance_eval();
+        IMAGE *imA    = NULL;
+        int    transA = 0;
+        if (parse_kept_img_or_trans(&imA, &transA) != 0 || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        double  bc  = 0.0;
+        int16_t bs1 = 0;
+        if (parse_kept_scalar_factor(&k->p, &bc, &bs1) != 0 || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (cur_eval()->type != TOK_IMAGE || strcmp(cur_eval()->sval, dst->name) != 0 ||
+            k->beta_c != 0.0 || k->beta_s1 != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (cur_eval()->type != TOK_RPAREN || cli_calc_syrk_check(imA, transA, dst) != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        k->beta_c   = bc;
+        k->beta_s1  = bs1;
+        k->kind     = FKEPT_SYRK;
+        k->transA   = transA;
+        k->p.img[0] = imA;
+        k->p.nimg   = 1;
+    }
+    else
+    {
+        cli_calc_tok_seek(pos);
+        return -1;
+    }
+
+    if (cur_eval()->type == TOK_OP_STAR)
+    {
+        advance_eval();
+        double  tc  = 1.0;
+        int16_t ts1 = 0;
+        if (parse_kept_scalar_factor(&k->p, &tc, &ts1) != 0 || (alpha_s1 != 0 && ts1 != 0))
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        alpha_c *= tc;
+        if (ts1 != 0)
+        {
+            alpha_s1 = ts1;
+        }
+    }
+    k->alpha_c  = alpha_c;
+    k->alpha_s1 = alpha_s1;
     return 0;
 }
 
@@ -1445,139 +1881,312 @@ static int parse_kept_reshape_dims(uint64_t nel, const IMAGE *dst)
 }
 
 /**
- * compile_kept_matrix_op - Try to compile a top-level `transpose`, `matmul`, or `reshape` into @k
- * @k:   Kept-statement structure to populate
- * @dst: Destination image assigned by the statement
+ * compile_kept_matrix_op - Try to compile a top-level matrix or reshape assignment into @k
+ * @k:               Kept-statement structure to populate
+ * @dst:             Destination image assigned by the statement
+ * @aop:             Assignment operator (`=`, `+=`, or `-=`)
+ * @strict_local_dt: Non-zero to require local @dst datatype to match natural output precision
  *
- * Recognizes `dst = transpose(A)`, `dst = matmul(A, B)` (with optional
- * `transpose()` on either operand), `dst = reshape(matmul(...), ...)`, and
- * `dst = reshape(A, ...)` so `milk.calc` can run them directly into @dst
- * without per-frame temporary allocations.
+ * Recognizes `dst = transpose(A)`, `dst = reshape(...)`, and BLAS forms
+ * (`dst = alpha * matmul(A, B) + beta * dst`, `dst += alpha * matmul(A, B)`,
+ * `ger`, `syrk`, `gemm`, `gemv`) so both one-shot `@calc` and `milk.calc`
+ * execute them directly into @dst without temporary allocations.
  *
  * Return: 0 on successful compilation, -1 if the RHS is not a supported matrix/reshape op
  */
-static int compile_kept_matrix_op(fkept *k, IMAGE *dst)
+static int compile_kept_matrix_op(fkept *k, IMAGE *dst, cli_token_type aop, int strict_local_dt)
 {
     int pos = cli_calc_tok_pos();
-    if (cur_eval()->type != TOK_FUNC_IMIM_IM)
+    if (aop != TOK_EQUAL && aop != TOK_OP_PLUS_EQ && aop != TOK_OP_MINUS_EQ)
     {
         return -1;
     }
-    if (strcmp(cur_eval()->sval, "transpose(") == 0)
+    if (aop == TOK_EQUAL && cur_eval()->type == TOK_FUNC_IMIM_IM)
     {
-        advance_eval();
-        if (cur_eval()->type != TOK_IMAGE || strchr(cur_eval()->sval, '[') != NULL)
-        {
-            cli_calc_tok_seek(pos);
-            return -1;
-        }
-        imageID id = image_ID(cur_eval()->sval, data.core.image, data.core.NB_MAX_IMAGE);
-        advance_eval();
-        if (id == -1 || cur_eval()->type != TOK_RPAREN)
-        {
-            cli_calc_tok_seek(pos);
-            return -1;
-        }
-        advance_eval();
-        if ((cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE) ||
-            cli_calc_transpose_check(&data.core.image[id], dst) != 0)
-        {
-            cli_calc_tok_seek(pos);
-            return -1;
-        }
-        k->kind     = FKEPT_TRANSPOSE;
-        k->p.img[0] = &data.core.image[id];
-        k->p.nimg   = 1;
-        return 0;
-    }
-    if (strcmp(cur_eval()->sval, "matmul(") == 0)
-    {
-        advance_eval();
-        IMAGE *imA    = NULL;
-        IMAGE *imB    = NULL;
-        int    transA = 0;
-        int    transB = 0;
-        if (parse_kept_img_or_trans(&imA, &transA) != 0 || cur_eval()->type != TOK_COMMA)
-        {
-            cli_calc_tok_seek(pos);
-            return -1;
-        }
-        advance_eval();
-        if (parse_kept_img_or_trans(&imB, &transB) != 0 || cur_eval()->type != TOK_RPAREN)
-        {
-            cli_calc_tok_seek(pos);
-            return -1;
-        }
-        advance_eval();
-        if ((cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE) ||
-            cli_calc_matmul_check(imA, transA, imB, transB, dst, 0) != 0)
-        {
-            cli_calc_tok_seek(pos);
-            return -1;
-        }
-        k->kind          = FKEPT_MATMUL;
-        k->transA        = transA;
-        k->transB        = transB;
-        k->allow_reshape = 0;
-        k->p.img[0]      = imA;
-        k->p.img[1]      = imB;
-        k->p.nimg        = 2;
-        return 0;
-    }
-    if (strcmp(cur_eval()->sval, "reshape(") == 0)
-    {
-        advance_eval();
-        if (cur_eval()->type == TOK_FUNC_IMIM_IM && strcmp(cur_eval()->sval, "matmul(") == 0)
+        if (strcmp(cur_eval()->sval, "transpose(") == 0)
         {
             advance_eval();
-            IMAGE *imA    = NULL;
-            IMAGE *imB    = NULL;
-            int    transA = 0;
-            int    transB = 0;
-            if (parse_kept_img_or_trans(&imA, &transA) != 0 || cur_eval()->type != TOK_COMMA)
+            if (cur_eval()->type != TOK_IMAGE || strchr(cur_eval()->sval, '[') != NULL)
             {
                 cli_calc_tok_seek(pos);
                 return -1;
             }
-            advance_eval();
-            if (parse_kept_img_or_trans(&imB, &transB) != 0 || cur_eval()->type != TOK_RPAREN)
-            {
-                cli_calc_tok_seek(pos);
-                return -1;
-            }
-            advance_eval();
-            if (cli_calc_matmul_check(imA, transA, imB, transB, dst, 1) != 0 ||
-                parse_kept_reshape_dims(dst->md[0].nelement, dst) != 0)
-            {
-                cli_calc_tok_seek(pos);
-                return -1;
-            }
-            k->kind          = FKEPT_MATMUL;
-            k->transA        = transA;
-            k->transB        = transB;
-            k->allow_reshape = 1;
-            k->p.img[0]      = imA;
-            k->p.img[1]      = imB;
-            k->p.nimg        = 2;
-            return 0;
-        }
-        if (cur_eval()->type == TOK_IMAGE && strchr(cur_eval()->sval, '[') == NULL)
-        {
             imageID id = image_ID(cur_eval()->sval, data.core.image, data.core.NB_MAX_IMAGE);
             advance_eval();
-            if (id == -1 || cli_calc_reshape_check(&data.core.image[id], dst) != 0 ||
-                parse_kept_reshape_dims(dst->md[0].nelement, dst) != 0)
+            if (id == -1 || cur_eval()->type != TOK_RPAREN)
             {
                 cli_calc_tok_seek(pos);
                 return -1;
             }
-            k->kind     = FKEPT_RESHAPE;
-            k->p.img[0] = &data.core.image[id];
+            advance_eval();
+            IMAGE  *src = &data.core.image[id];
+            uint8_t exp_dt =
+                (src->md[0].datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
+            if ((cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE) ||
+                cli_calc_transpose_check(src, dst) != 0 ||
+                (strict_local_dt && dst->md[0].datatype != exp_dt))
+            {
+                cli_calc_tok_seek(pos);
+                return -1;
+            }
+            k->kind     = FKEPT_TRANSPOSE;
+            k->p.img[0] = src;
             k->p.nimg   = 1;
             return 0;
         }
+        if (strcmp(cur_eval()->sval, "reshape(") == 0)
+        {
+            advance_eval();
+            if (cur_eval()->type == TOK_FUNC_IMIM_IM && strcmp(cur_eval()->sval, "matmul(") == 0)
+            {
+                advance_eval();
+                IMAGE *imA    = NULL;
+                IMAGE *imB    = NULL;
+                int    transA = 0;
+                int    transB = 0;
+                if (parse_kept_img_or_trans(&imA, &transA) != 0 || cur_eval()->type != TOK_COMMA)
+                {
+                    cli_calc_tok_seek(pos);
+                    return -1;
+                }
+                advance_eval();
+                if (parse_kept_img_or_trans(&imB, &transB) != 0 || cur_eval()->type != TOK_RPAREN)
+                {
+                    cli_calc_tok_seek(pos);
+                    return -1;
+                }
+                advance_eval();
+                uint8_t exp_dt = (imA->md[0].datatype == _DATATYPE_DOUBLE ||
+                                  imB->md[0].datatype == _DATATYPE_DOUBLE)
+                                     ? _DATATYPE_DOUBLE
+                                     : _DATATYPE_FLOAT;
+                if (cli_calc_matmul_check(imA, transA, imB, transB, dst, 1) != 0 ||
+                    parse_kept_reshape_dims(dst->md[0].nelement, dst) != 0 ||
+                    (strict_local_dt && dst->md[0].datatype != exp_dt))
+                {
+                    cli_calc_tok_seek(pos);
+                    return -1;
+                }
+                k->kind          = FKEPT_MATMUL;
+                k->transA        = transA;
+                k->transB        = transB;
+                k->allow_reshape = 1;
+                k->alpha_c       = 1.0;
+                k->beta_c        = 0.0;
+                k->p.img[0]      = imA;
+                k->p.img[1]      = imB;
+                k->p.nimg        = 2;
+                return 0;
+            }
+            if (cur_eval()->type == TOK_IMAGE && strchr(cur_eval()->sval, '[') == NULL)
+            {
+                imageID id = image_ID(cur_eval()->sval, data.core.image, data.core.NB_MAX_IMAGE);
+                advance_eval();
+                if (id == -1 || cli_calc_reshape_check(&data.core.image[id], dst) != 0 ||
+                    parse_kept_reshape_dims(dst->md[0].nelement, dst) != 0 ||
+                    (strict_local_dt && dst->md[0].datatype != data.core.image[id].md[0].datatype))
+                {
+                    cli_calc_tok_seek(pos);
+                    return -1;
+                }
+                k->kind     = FKEPT_RESHAPE;
+                k->p.img[0] = &data.core.image[id];
+                k->p.nimg   = 1;
+                return 0;
+            }
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+    }
+
+    cli_calc_tok_seek(pos);
+    k->alpha_c  = 1.0;
+    k->alpha_s1 = 0;
+    k->beta_c   = (aop == TOK_EQUAL) ? 0.0 : 1.0;
+    k->beta_s1  = 0;
+    double sign = (aop == TOK_OP_MINUS_EQ) ? -1.0 : 1.0;
+
+    if (aop == TOK_EQUAL)
+    {
+        double  bc  = 0.0;
+        int16_t bs1 = 0;
+        if (parse_kept_dst_term(&k->p, dst, 1.0, &bc, &bs1) == 0)
+        {
+            if (cur_eval()->type != TOK_OP_PLUS && cur_eval()->type != TOK_OP_MINUS)
+            {
+                cli_calc_tok_seek(pos);
+                return -1;
+            }
+            sign = (cur_eval()->type == TOK_OP_MINUS) ? -1.0 : 1.0;
+            advance_eval();
+            k->beta_c  = bc;
+            k->beta_s1 = bs1;
+            if (parse_kept_blas_term(k, dst, sign) != 0)
+            {
+                cli_calc_tok_seek(pos);
+                return -1;
+            }
+        }
+        else
+        {
+            if (parse_kept_blas_term(k, dst, 1.0) != 0)
+            {
+                cli_calc_tok_seek(pos);
+                return -1;
+            }
+            if ((cur_eval()->type == TOK_OP_PLUS || cur_eval()->type == TOK_OP_MINUS) &&
+                k->beta_c == 0.0 && k->beta_s1 == 0)
+            {
+                double bsign = (cur_eval()->type == TOK_OP_MINUS) ? -1.0 : 1.0;
+                advance_eval();
+                if (parse_kept_dst_term(&k->p, dst, bsign, &k->beta_c, &k->beta_s1) != 0)
+                {
+                    cli_calc_tok_seek(pos);
+                    return -1;
+                }
+            }
+        }
+    }
+    else
+    {
+        if (parse_kept_blas_term(k, dst, sign) != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+    }
+
+    if (cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE)
+    {
         cli_calc_tok_seek(pos);
         return -1;
+    }
+    if (strict_local_dt)
+    {
+        int any_d = 0;
+        for (int i = 0; i < k->p.nimg; i++)
+        {
+            if (k->p.img[i]->md[0].datatype == _DATATYPE_DOUBLE)
+            {
+                any_d = 1;
+            }
+        }
+        uint8_t exp_dt = any_d ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
+        if (dst->md[0].datatype != exp_dt)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * exec_kept_matrix_op - Execute a compiled matrix or reshape operation directly into `k->dst`
+ * @k: Compiled `fkept` descriptor (`FKEPT_MATMUL`, `FKEPT_GER`, `FKEPT_SYRK`, `FKEPT_TRANSPOSE`, or `FKEPT_RESHAPE`)
+ *
+ * Evaluates live `alpha` / `beta` scalar multipliers when present, validates
+ * dimensions, writes directly into `k->dst`, and updates shared stream metadata.
+ *
+ * Return: 0 on success, -1 if an image changed shape/type or execution failed.
+ */
+static double read_kept_var(int16_t s1)
+{
+    const VARIABLE *v = &data.core.variable[s1 - 1];
+    return (v->type == 1) ? (double) v->value.l : v->value.f;
+}
+
+static int exec_kept_matrix_op(fkept *k)
+{
+    double alpha = (k->alpha_s1 > 0) ? (read_kept_var(k->alpha_s1) * k->alpha_c) : k->alpha_c;
+    double beta  = (k->beta_s1 > 0) ? (read_kept_var(k->beta_s1) * k->beta_c) : k->beta_c;
+
+    if (k->kind == FKEPT_MATMUL)
+    {
+        if (cli_calc_matmul_check(k->p.img[0], k->transA, k->p.img[1], k->transB, k->dst,
+                                  k->allow_reshape) != 0)
+        {
+            snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr),
+                     "matmul: %s or input changed size or type", k->dst->name);
+            return -1;
+        }
+        k->dst->md[0].write = 1;
+        if (cli_calc_gemm_into(k->p.img[0], k->transA, k->p.img[1], k->transB, alpha, beta,
+                               k->dst) != 0)
+        {
+            k->dst->md[0].write = 0;
+            return -1;
+        }
+        processinfo_update_output_stream(NULL, k->dst, NULL);
+        return 0;
+    }
+    if (k->kind == FKEPT_GER)
+    {
+        if (cli_calc_ger_check(k->p.img[0], k->p.img[1], k->dst) != 0)
+        {
+            snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr),
+                     "ger: %s or input changed size or type", k->dst->name);
+            return -1;
+        }
+        k->dst->md[0].write = 1;
+        if (cli_calc_ger_into(k->p.img[0], k->p.img[1], alpha, beta, k->dst) != 0)
+        {
+            k->dst->md[0].write = 0;
+            return -1;
+        }
+        processinfo_update_output_stream(NULL, k->dst, NULL);
+        return 0;
+    }
+    if (k->kind == FKEPT_SYRK)
+    {
+        if (cli_calc_syrk_check(k->p.img[0], k->transA, k->dst) != 0)
+        {
+            snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr),
+                     "syrk: %s or input changed size or type", k->dst->name);
+            return -1;
+        }
+        k->dst->md[0].write = 1;
+        if (cli_calc_syrk_into(k->p.img[0], k->transA, alpha, beta, k->dst) != 0)
+        {
+            k->dst->md[0].write = 0;
+            return -1;
+        }
+        processinfo_update_output_stream(NULL, k->dst, NULL);
+        return 0;
+    }
+    if (k->kind == FKEPT_TRANSPOSE)
+    {
+        if (cli_calc_transpose_check(k->p.img[0], k->dst) != 0)
+        {
+            snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr),
+                     "transpose: %s or input changed size or type", k->dst->name);
+            return -1;
+        }
+        k->dst->md[0].write = 1;
+        if (cli_calc_transpose_into(k->p.img[0], k->dst) != 0)
+        {
+            k->dst->md[0].write = 0;
+            return -1;
+        }
+        processinfo_update_output_stream(NULL, k->dst, NULL);
+        return 0;
+    }
+    if (k->kind == FKEPT_RESHAPE)
+    {
+        if (cli_calc_reshape_check(k->p.img[0], k->dst) != 0)
+        {
+            snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr),
+                     "reshape: %s or input changed size or type", k->dst->name);
+            return -1;
+        }
+        k->dst->md[0].write = 1;
+        if (cli_calc_reshape_into(k->p.img[0], k->dst) != 0)
+        {
+            k->dst->md[0].write = 0;
+            return -1;
+        }
+        processinfo_update_output_stream(NULL, k->dst, NULL);
+        return 0;
     }
     return -1;
 }
@@ -1603,7 +2212,10 @@ void *cli_calc_fuse_keep(IMAGE *dst, cli_token_type aop)
     {
         return NULL;
     }
-    if (aop == TOK_EQUAL && compile_kept_matrix_op(k, dst) == 0)
+    keep_vars = 1;
+    int mrc   = compile_kept_matrix_op(k, dst, aop, 0);
+    keep_vars = 0;
+    if (mrc == 0)
     {
         k->dst = dst;
         for (int i = 0; i < k->p.nimg; i++)
@@ -1613,6 +2225,7 @@ void *cli_calc_fuse_keep(IMAGE *dst, cli_token_type aop)
         clock_gettime(CLOCK_MONOTONIC_COARSE, &k->last_check);
         return k;
     }
+    memset(k, 0, sizeof(*k));
     if (!is_real_datatype(dst->md[0].datatype))
     {
         free(k);
@@ -1712,57 +2325,9 @@ int cli_calc_fused_run(void *kept)
             return -1;
         }
     }
-    if (k->kind == FKEPT_MATMUL)
+    if (k->kind != FKEPT_ELEMWISE)
     {
-        if (cli_calc_matmul_check(k->p.img[0], k->transA, k->p.img[1], k->transB, k->dst,
-                                  k->allow_reshape) != 0)
-        {
-            snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr),
-                     "matmul: %s or input changed size or type", k->dst->name);
-            return -1;
-        }
-        k->dst->md[0].write = 1;
-        if (cli_calc_matmul_into(k->p.img[0], k->transA, k->p.img[1], k->transB, k->dst) != 0)
-        {
-            k->dst->md[0].write = 0;
-            return -1;
-        }
-        processinfo_update_output_stream(NULL, k->dst, NULL);
-        return 0;
-    }
-    if (k->kind == FKEPT_TRANSPOSE)
-    {
-        if (cli_calc_transpose_check(k->p.img[0], k->dst) != 0)
-        {
-            snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr),
-                     "transpose: %s or input changed size or type", k->dst->name);
-            return -1;
-        }
-        k->dst->md[0].write = 1;
-        if (cli_calc_transpose_into(k->p.img[0], k->dst) != 0)
-        {
-            k->dst->md[0].write = 0;
-            return -1;
-        }
-        processinfo_update_output_stream(NULL, k->dst, NULL);
-        return 0;
-    }
-    if (k->kind == FKEPT_RESHAPE)
-    {
-        if (cli_calc_reshape_check(k->p.img[0], k->dst) != 0)
-        {
-            snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr),
-                     "reshape: %s or input changed size or type", k->dst->name);
-            return -1;
-        }
-        k->dst->md[0].write = 1;
-        if (cli_calc_reshape_into(k->p.img[0], k->dst) != 0)
-        {
-            k->dst->md[0].write = 0;
-            return -1;
-        }
-        processinfo_update_output_stream(NULL, k->dst, NULL);
-        return 0;
+        return exec_kept_matrix_op(k);
     }
     k->dst->md[0].write = 1;
     run_program(&k->p, k->dst);
@@ -1787,9 +2352,21 @@ int cli_calc_fuse_assign(IMAGE *dst, cli_token_type aop)
     {
         return 0;
     }
+    int   pos = cli_calc_tok_pos();
+    fkept km;
+    memset(&km, 0, sizeof(km));
+    if (compile_kept_matrix_op(&km, dst, aop, aop == TOK_EQUAL && dst->md[0].shared != 1) == 0)
+    {
+        km.dst = dst;
+        if (exec_kept_matrix_op(&km) == 0)
+        {
+            return 1;
+        }
+        cli_calc_tok_seek(pos);
+        return 0;
+    }
     static fprog p;
     fval         v;
-    int          pos = cli_calc_tok_pos();
     if (compile(&p, 0, &v) != 0)
     {
         return 0;

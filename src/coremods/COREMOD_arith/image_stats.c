@@ -672,3 +672,158 @@ double arith_image_argmin(const char *ID_name)
     IMGID imgin = imgid_make_from_name(ID_name);
     return argext(&imgin, -1.0);
 }
+
+/**
+ * arith_image_iamax_IMGID - Linear index of the first element with largest absolute value
+ * @imgin: Input image descriptor
+ *
+ * Implements the BLAS `isamax` / `idamax` reduction across all elements of @imgin,
+ * skipping NaNs and returning -1.0 when no valid element exists.
+ *
+ * Return: 0-based linear element index as `double`, or `-1.0` if empty/all-NaN.
+ */
+double MILK_HOT arith_image_iamax_IMGID(IMGID *imgin)
+{
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgin->ID == -1)
+    {
+        return -1.0;
+    }
+
+    uint64_t nelement = imgin->md[0].nelement;
+    uint8_t  datatype = imgin->md[0].datatype;
+    int64_t  best     = -1;
+    double   bestv    = -1.0;
+
+#define IAMAX_BODY(MBR)                                          \
+    {                                                            \
+        __typeof__(imgin->im->array.MBR[0]) *MILK_RESTRICT ptr = \
+            MILK_ASSUME_ALIGNED(imgin->im->array.MBR);           \
+        for (uint64_t ii = 0; ii < nelement; ii++)               \
+        {                                                        \
+            double v = fabs((double) ptr[ii]);                   \
+            if (v == v && (best < 0 || v > bestv))               \
+            {                                                    \
+                bestv = v;                                       \
+                best  = (int64_t) ii;                            \
+            }                                                    \
+        }                                                        \
+    }
+
+    MILK_FOR_EACH_DATATYPE(datatype, IAMAX_BODY, IAMAX_BODY(D))
+#undef IAMAX_BODY
+
+    return (double) best;
+}
+
+/**
+ * arith_image_iamax - Linear index of the element with largest absolute value by image name
+ * @ID_name: Image name
+ *
+ * Return: 0-based linear element index as `double`, or `-1.0` on error.
+ */
+double arith_image_iamax(const char *ID_name)
+{
+    IMGID imgin = imgid_make_from_name(ID_name);
+    return arith_image_iamax_IMGID(&imgin);
+}
+
+/**
+ * arith_image_asum_IMGID - Sum of absolute pixel values (BLAS `sasum` / `dasum` L1 norm)
+ * @imgin: Input image descriptor
+ *
+ * Accumulates `|x_i|` in `double` precision with OpenMP SIMD parallelism.
+ *
+ * Return: Sum of absolute values across @imgin, or `0.0` on error.
+ */
+double MILK_HOT arith_image_asum_IMGID(IMGID *imgin)
+{
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgin->ID == -1)
+    {
+        return 0.0;
+    }
+
+    uint64_t nelement = imgin->md[0].nelement;
+    double   sum2     = 0.0;
+    uint8_t  datatype = imgin->md[0].datatype;
+
+#define ASUM_BODY(MBR)                                           \
+    {                                                            \
+        __typeof__(imgin->im->array.MBR[0]) *MILK_RESTRICT ptr = \
+            MILK_ASSUME_ALIGNED(imgin->im->array.MBR);           \
+        MILK_PRAGMA_OMP_SUM2                                     \
+        for (uint64_t ii = 0; ii < nelement; ii++)               \
+        {                                                        \
+            sum2 += fabs((double) ptr[ii]);                      \
+        }                                                        \
+    }
+
+    MILK_FOR_EACH_DATATYPE(datatype, ASUM_BODY, ASUM_BODY(D))
+#undef ASUM_BODY
+
+    return sum2;
+}
+
+/**
+ * arith_image_asum - Sum of absolute pixel values (L1 norm) by image name
+ * @ID_name: Image name
+ *
+ * Return: Sum of absolute values across @ID_name.
+ */
+double arith_image_asum(const char *ID_name)
+{
+    IMGID imgin = imgid_make_from_name(ID_name);
+    return arith_image_asum_IMGID(&imgin);
+}
+
+/**
+ * arith_image_trace_IMGID - Sum of main-diagonal elements of a 1-D or 2-D matrix image
+ * @imgin: Input image descriptor
+ *
+ * Sums `A[i, i]` for `0 <= i < min(M, N)` in `double` precision.
+ *
+ * Return: Matrix trace as `double`, or `0.0` on error.
+ */
+double MILK_HOT arith_image_trace_IMGID(IMGID *imgin)
+{
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgin->ID == -1)
+    {
+        return 0.0;
+    }
+
+    uint64_t M        = imgin->md[0].size[0];
+    uint64_t N        = (imgin->md[0].naxis >= 2) ? imgin->md[0].size[1] : 1;
+    uint64_t diag_len = (M < N) ? M : N;
+    uint64_t stride   = M + 1;
+    double   sum2     = 0.0;
+    uint8_t  datatype = imgin->md[0].datatype;
+
+#define TRACE_BODY(MBR)                                          \
+    {                                                            \
+        __typeof__(imgin->im->array.MBR[0]) *MILK_RESTRICT ptr = \
+            MILK_ASSUME_ALIGNED(imgin->im->array.MBR);           \
+        for (uint64_t ii = 0; ii < diag_len; ii++)               \
+        {                                                        \
+            sum2 += (double) ptr[ii * stride];                   \
+        }                                                        \
+    }
+
+    MILK_FOR_EACH_DATATYPE(datatype, TRACE_BODY, TRACE_BODY(D))
+#undef TRACE_BODY
+
+    return sum2;
+}
+
+/**
+ * arith_image_trace - Sum of main-diagonal elements by image name
+ * @ID_name: Image name
+ *
+ * Return: Matrix trace as `double`.
+ */
+double arith_image_trace(const char *ID_name)
+{
+    IMGID imgin = imgid_make_from_name(ID_name);
+    return arith_image_trace_IMGID(&imgin);
+}
