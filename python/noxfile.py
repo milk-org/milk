@@ -22,6 +22,14 @@ and whether the tests are run from pyMilk dir or externally. This matters due to
 _GCOV = shutil.which("gcov")
 
 
+def get_project_root() -> pathlib.Path:
+    this_path = pathlib.Path(os.path.abspath(os.getcwd()))
+    return this_path.parent
+
+
+PROJECT_ROOT = get_project_root()  # before we start playing with cwd.
+
+
 def milk_build_and_test(
     session: nox.Session,
     *,
@@ -33,14 +41,12 @@ def milk_build_and_test(
     session.install("setuptools", "coverage", "pytest", "pytest-timeout")
     session.run(*("uv pip install -e .").split())  # install milk
 
-    this_path = pathlib.Path(os.path.abspath(os.getcwd()))
-    project_root = this_path.parent
     milk_build(
-        session, project_root, use_cuda=use_cuda, lto_level=lto_level, use_cli=use_cli
+        session, PROJECT_ROOT, use_cuda=use_cuda, lto_level=lto_level, use_cli=use_cli
     )
 
-    session.chdir(project_root / "python")  # otherwise pytest is somewhat upset...
-    session.run("pytest", str(project_root / "python"))
+    session.chdir(PROJECT_ROOT / "python")  # otherwise pytest is somewhat upset...
+    session.run("pytest", str(PROJECT_ROOT / "python"))
 
 
 def milk_build(
@@ -64,7 +70,7 @@ def milk_build(
 
     if not os.path.islink("./pyMilk"):
         session.run(
-            *(f"ln -sf {os.environ['MILK_ROOT']}/python/pyMilk ./pyMilk").split(),
+            *(f"ln -sf {PROJECT_ROOT}/python/pyMilk ./pyMilk").split(),
             external=True,
         )
     session.run(*("uv pip install ./pyMilk").split())  # install pyMilk
