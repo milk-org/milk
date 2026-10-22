@@ -38,8 +38,8 @@ def test_E8_calc_once_makes_a_stream_and_declared_parameters(tmp_path):
     """
     res = milk_bash(
         HELPERS
-        + 'milk-fpsexec-milk-calc -n u1 exec "out = cam * gain + 1; tot = itot(out)" "" '
-        '"gain:float=3 n:int=2 on:bool=1 off:bool=false ex:int=5 tot:float=0" >/dev/null 2>&1\n'
+        + 'milk-fpsexec-milk-calc -n u1 -e "out = cam * gain + 1; tot = itot(out)" '
+        '-p "gain:float=3 n:int=2 on:bool=1 off:bool=false ex:int=5 tot:float=0" exec >/dev/null 2>&1\n'
         'echo "rc=$?"\n'
         'echo "out=$(@get s.out.mean) shared=$(@get s.out.shared)"\n'
         'echo "p=$(@get f.u1.gain),$(@get f.u1.n),$(@get f.u1.on),$(@get f.u1.off),$(@get f.u1.ex)"\n'
@@ -55,18 +55,18 @@ def test_E8_calc_once_makes_a_stream_and_declared_parameters(tmp_path):
 def test_E8_calc_bad_declarations_and_long_values(tmp_path):
     res = milk_bash(
         HELPERS
-        + 'milk-fpsexec-milk-calc -n b1 fpsinit "out = cam" "" "g:float=x" 2>&1; echo "badval=$?"\n'
-        'milk-fpsexec-milk-calc -n b2 fpsinit "out = cam" "" "expr:int=1" 2>&1; echo "reserved=$?"\n'
-        'milk-fpsexec-milk-calc -n b3 fpsinit "out = cam" "" "1x:int" 2>&1; echo "badname=$?"\n'
-        f'milk-fpsexec-milk-calc -n b4 fpsinit "out = cam + {"1 + " * 20}1" 2>&1; echo "long=$?"',
+        + 'milk-fpsexec-milk-calc -n b1 -e "out = cam" -p "g:float=x" fpsinit 2>&1; echo "badval=$?"\n'
+        'milk-fpsexec-milk-calc -n b2 -e "out = cam" -p "expr:int=1" fpsinit 2>&1; echo "reserved=$?"\n'
+        'milk-fpsexec-milk-calc -n b3 -e "out = cam" -p "1x:int" fpsinit 2>&1; echo "badname=$?"\n'
+        f'milk-fpsexec-milk-calc -n b4 -e "out = cam + {"1 + " * 20}1" fpsinit 2>&1; echo "long=$?"',
         tmp_path,
     )
     assert [
         value(res.stdout, k) for k in ("badval", "reserved", "badname", "long")
-    ] == ["1"] * 4, (res.stdout + res.stderr)
+    ] == ["2"] * 4, (res.stdout + res.stderr)
     assert "bad parameter 'g:float=x'" in res.stdout
     assert "'expr': reserved" in res.stdout
-    assert "write the statements in a file (.file)" in res.stdout
+    assert "write the statements in a file (-f)" in res.stdout
 
 
 def test_E8_calc_loop_follows_frames_and_live_changes(tmp_path):
@@ -75,7 +75,7 @@ def test_E8_calc_loop_follows_frames_and_live_changes(tmp_path):
     stops the loop with the reason in .error."""
     res = milk_bash(
         HELPERS
-        + 'milk-fpsexec-milk-calc -n u2 fpsinit "out2 = cam * gain" cam "gain:float=2" >/dev/null\n'
+        + 'milk-fpsexec-milk-calc -n u2 -t cam -p "gain:float=2" -e "out2 = cam * gain" fpsinit >/dev/null\n'
         "milk-fpsexec-milk-calc -n u2 runstart >run.log 2>&1 & pid=$!\n"
         "until_file out2; sleep 0.3\n"
         'frame 5; echo "a=$(@get s.out2.mean)"\n'
@@ -109,7 +109,7 @@ def test_E8_calc_program_file_delay_loop_and_stop(tmp_path):
     )
     res = milk_bash(
         HELPERS
-        + 'milk-fpsexec-milk-calc -n u3 fpsinit . "" "k:int=0 avg:float=0" prog.calc >/dev/null\n'
+        + 'milk-fpsexec-milk-calc -n u3 -p "k:int=0 avg:float=0" -f prog.calc fpsinit >/dev/null\n'
         "milk-fpsexec-milk-calc -n u3 -loopd 0.02 runstart >run.log 2>&1 & pid=$!\n"
         "until_file img; sleep 0.5; stop $pid\n"
         'echo "k=$(@get f.u3.k) avg=$(@get f.u3.avg) img=$(@get s.img.mean)"\n'
@@ -134,8 +134,8 @@ def test_E8_calc_init_and_initfile_and_frame_vars(tmp_path):
     (tmp_path / "init.calc").write_text("acc = cam * 0; k0 = 10\n")
     res = milk_bash(
         HELPERS
-        + 'milk-fpsexec-milk-calc -n u4 fpsinit "acc = acc + cam; fn = _n; ft = _t; fdt = _dt" '
-        'cam "k0:int=0 fn:int=-1 ft:float=-1 fdt:float=-1" . . init.calc >/dev/null\n'
+        + 'milk-fpsexec-milk-calc -n u4 -e "acc = acc + cam; fn = _n; ft = _t; fdt = _dt" '
+        '-t cam -p "k0:int=0 fn:int=-1 ft:float=-1 fdt:float=-1" -I init.calc fpsinit >/dev/null\n'
         "milk-fpsexec-milk-calc -n u4 runstart >run.log 2>&1 & pid=$!\n"
         "until_file acc; sleep 0.3\n"
         'echo "f0=$(@get s.acc.mean),$(@get f.u4.k0),$(@get f.u4.fn)"\n'
@@ -145,7 +145,7 @@ def test_E8_calc_init_and_initfile_and_frame_vars(tmp_path):
         '@set f.u4.initfile="" f.u4.init="acc = cam * 0 + 100"; frame 2\n'
         'echo "f3=$(@get s.acc.mean),$(@get f.u4.fn)"\n'
         "stop $pid\n"
-        'milk-fpsexec-milk-calc -n ubad exec "_n = 5" >/dev/null 2>&1; echo "ro=$(@get f.ubad.error)"',
+        'milk-fpsexec-milk-calc -n ubad -e "_n = 5" exec >/dev/null 2>&1; echo "ro=$(@get f.ubad.error)"',
         tmp_path,
     )
     got = [value(res.stdout, k) for k in ("f0", "f1", "f2", "f3", "ro")]
@@ -172,7 +172,7 @@ def test_E8_calc_isnan_isfinite_and_stale_stream_remap(tmp_path):
         '@calc "bad = cam * 1.0; bad[0,0] = sqrt(-1); clean = where(isnan(bad), 99, bad)"\n'
         'echo "cl=$(@get l.clean.tot)"\n'
         'mem.mk2Dim "@S:cal" 4 4 >/dev/null; @calc "cal = 3"\n'
-        'milk-fpsexec-milk-calc -n u5 fpsinit "out5 = cam + cal" cam >/dev/null\n'
+        'milk-fpsexec-milk-calc -n u5 -t cam -e "out5 = cam + cal" fpsinit >/dev/null\n'
         "milk-fpsexec-milk-calc -n u5 runstart >run.log 2>&1 & pid=$!\n"
         "until_file out5; sleep 0.3\n"
         'frame 2; echo "before=$(@get s.out5.mean)"\n'
@@ -200,12 +200,73 @@ def test_E8_calc_matmul_and_transpose(tmp_path):
         '@calc "p3 = matmul(mA, transpose(mA))"\n'
         'echo "shapes=$(@get l.mAt.xsize)x$(@get l.mAt.ysize),$(@get l.p3.xsize)x$(@get l.p3.ysize)"\n'
         'echo "tots=$(@get l.p1.tot),$(@get l.p2.tot),$(@get l.p3.tot)"\n'
-        'milk-fpsexec-milk-calc -n u6 exec "outm = matmul(mA, vB); outt = transpose(mA)" >/dev/null\n'
+        'milk-fpsexec-milk-calc -n u6 -e "outm = matmul(mA, vB); outt = transpose(mA)" exec >/dev/null\n'
         'echo "unit=$(@get s.outm.tot),$(@get s.outt.xsize)x$(@get s.outt.ysize)"',
         tmp_path,
     )
     got = [value(res.stdout, k) for k in ("shapes", "tots", "unit")]
     assert got == ["2x3,3x3", "360,360,261", "360,2x3"], res.stdout + res.stderr
+
+
+def test_E8_calc_values_set_declared_parameters(tmp_path):
+    """The values after the command word set the parameters -p declares (in order, or .name=value,
+    negative numbers included); -e on an existing FPS updates it, -p cannot change; a bad, unknown or
+    extra value is a usage error that changes nothing; -h lists the declared parameters.
+    """
+    res = milk_bash(
+        HELPERS + 'C="milk-fpsexec-milk-calc -n v1"\n'
+        '$C -t cam -p "gain:float=1 off:float=0 n:int=0" -e "out = cam * gain + off" fpsinit '
+        '3.5 .n=-4 >/dev/null; echo "init=$?"\n'
+        'echo "p0=$(@get f.v1.gain),$(@get f.v1.off),$(@get f.v1.n)"\n'
+        '$C set . -1.5 >/dev/null; echo "p1=$(@get f.v1.gain),$(@get f.v1.off)"\n'
+        '$C set 1 2 3 4 >/dev/null 2>err1; echo "many=$?"\n'
+        '$C set .gain=abc >/dev/null 2>err2; echo "bad=$?"\n'
+        '$C set .nosuch=1 >/dev/null 2>err3; echo "unknown=$?"\n'
+        'echo "p2=$(@get f.v1.gain),$(@get f.v1.off),$(@get f.v1.n)"\n'
+        '$C -e "out = cam - off" set >/dev/null; echo "expr=$(@get f.v1.expr)"\n'
+        '$C -p "k:int=1" set >/dev/null 2>err4; echo "redeclare=$?"\n'
+        '$C -hm | grep -E "^ +[0-9]+ (gain|off|n) " | tr -s " " | tr "\\n" "|"; echo\n'
+        "cat err1 err2 err3 err4",
+        tmp_path,
+    )
+    got = [
+        value(res.stdout, k)
+        for k in ("init", "p0", "p1", "many", "bad", "unknown", "p2")
+    ]
+    assert got == ["0", "3.5,0,-4", "3.5,-1.5", "2", "2", "2", "3.5,-1.5,-4"], (
+        res.stdout + res.stderr
+    )
+    assert value(res.stdout, "expr") == "out = cam - off", res.stdout
+    assert value(res.stdout, "redeclare") == "2", res.stdout
+    assert (
+        " 0 gain FLOAT64 3.5" in res.stdout and " 2 n INT64 -4" in res.stdout
+    ), res.stdout
+    assert (
+        "too many values, from '4' on: gain off n take positional values" in res.stdout
+    )
+    assert "invalid value 'abc' for parameter 'gain': expected a number" in res.stdout
+    assert "no parameter 'nosuch'" in res.stdout
+    assert "run fpsinit to declare other parameters" in res.stdout
+
+
+def test_fpsexec_values_by_name_negative_and_errors(tmp_path):
+    """Any fpsexec: positional values fill the indexed parameters not set by name, .name=value sets any
+    parameter, negative numbers are values, -loopd's value is not a positional value, and errors
+    (status 2) change nothing."""
+    res = milk_bash(
+        "X=milk-fpsexec-clitest\n"
+        '$X -n vx fpsinit -12 .p_float64=-2.5 .p_onoff=on >/dev/null; echo "init=$?"\n'
+        'echo "a=$(@get f.vx.p_int32),$(@get f.vx.p_float64),$(@get f.vx.p_onoff)"\n'
+        '$X -n vx set .p_int32=5 camX >/dev/null; echo "b=$(@get f.vx.p_int32),$(@get f.vx.p_streamname)"\n'
+        '$X -n vx set 1 cam 3 >/dev/null 2>&1; echo "many=$?"\n'
+        '$X -n vx set .p_uint32=-1 >/dev/null 2>&1; echo "neguint=$?"\n'
+        '$X -n vx set -z >/dev/null 2>&1; echo "opt=$?"\n'
+        '$X -n vy fpsinit -loopd 0.5 >/dev/null 2>&1; echo "loopd=$? $(@get f.vy.p_int32)"\n',
+        tmp_path,
+    )
+    got = [value(res.stdout, k) for k in ("init", "a", "b", "many", "neguint", "opt")]
+    assert got == ["0", "-12,-2.5,ON", "5,camX", "2", "2", "2"], res.stdout + res.stderr
+    assert value(res.stdout, "loopd") == "0 123", res.stdout + res.stderr
 
 
 # ------------------------------------------------------------- E8a: milk.script
@@ -214,7 +275,7 @@ def test_E8_calc_matmul_and_transpose(tmp_path):
 def test_E8_script_runs_per_frame_follows_cmd_and_stops_on_failure(tmp_path):
     res = milk_bash(
         HELPERS
-        + "milk-fpsexec-milk-script -n s1 fpsinit '@get s.cam.mean >> log' cam >/dev/null\n"
+        + "milk-fpsexec-milk-script -n s1 -t cam -c '@get s.cam.mean >> log' fpsinit >/dev/null\n"
         "milk-fpsexec-milk-script -n s1 runstart >run.log 2>&1 & pid=$!\n"
         "for _ in $(seq 50); do @calc 'cam = 1'; sleep 0.1; [ -s log ] && break; done; sleep 0.3; : > log\n"
         'frame 3; frame 4; echo "log=$(tr "\\n" , < log)"\n'
@@ -235,7 +296,7 @@ def test_E8_script_stop_interrupts_a_long_tick(tmp_path):
     """SIGINT during a tick ends it, the loop and the shell (none left behind) without an error."""
     res = milk_bash(
         HELPERS
-        + "milk-fpsexec-milk-script -n s2 -loopd 0.05 exec 'sleep 30' >run.log 2>&1 & pid=$!\n"
+        + "milk-fpsexec-milk-script -n s2 -loopd 0.05 -c 'sleep 30' exec >run.log 2>&1 & pid=$!\n"
         "for _ in $(seq 100); do sh=$(pgrep -P $pid -x bash) && break; sleep 0.05; done\n"
         "sleep 0.3; t0=$EPOCHREALTIME; stop $pid\n"
         'echo "ms=$(( (${EPOCHREALTIME/./} - ${t0/./}) / 1000 ))"\n'
@@ -265,7 +326,7 @@ def test_E8_calc_reshape_expi_vec_and_casts(tmp_path):
         '$(@get l.im_i8.dtype):$(@get l.im_i8.mean)"\n'
         'mem.mk2Dim "@S:mR" 4 2 >/dev/null; mem.mk2Dim "@S:vR" 2 1 >/dev/null\n'
         '@calc "mR = 2; vR = 3"\n'
-        'milk-fpsexec-milk-calc -n u7 exec "out_r = reshape(matmul(mR, vR), 2, 2); out_v = reshape(mR, 8)" >/dev/null\n'
+        'milk-fpsexec-milk-calc -n u7 -e "out_r = reshape(matmul(mR, vR), 2, 2); out_v = reshape(mR, 8)" exec >/dev/null\n'
         'echo "u7=$(@get s.out_r.xsize)x$(@get s.out_r.ysize):$(@get s.out_r.tot),$(@get s.out_v.xsize):$(@get s.out_v.naxis)"',
         tmp_path,
     )
@@ -315,7 +376,7 @@ def test_E8_calc_stream_params(tmp_path):
     """milk.calc supports stream parameters (in:stream=..., out:stream=...) with live rebinding."""
     res = milk_bash(
         HELPERS + 'mem.mk2Dim "@S:camB" 4 4 >/dev/null; @calc "camB = 10"\n'
-        'milk-fpsexec-milk-calc -n u8 fpsinit "out = in * gain" cam "in:stream=cam out:stream=outA gain:float=3" >/dev/null\n'
+        'milk-fpsexec-milk-calc -n u8 -t cam -p "in:stream=cam out:stream=outA gain:float=3" -e "out = in * gain" fpsinit >/dev/null\n'
         "milk-fpsexec-milk-calc -n u8 runstart >run.log 2>&1 & pid=$!\n"
         "until_file outA; sleep 0.3\n"
         'frame 2; echo "a=$(@get s.outA.mean)"\n'
@@ -337,8 +398,8 @@ def test_E8_script_params_file_and_args_types(tmp_path):
         HELPERS
         + "fn() { @args 's:stream:in stream' 'f:fits=cal.fits:fits file' -- \"$@\" || return; echo \"arg=$s,$f\"; }\n"
         "fn my_cam; fn my_cam flat.fits; fn 'bad stream' 2>/dev/null; echo \"badrc=$?\"\n"
-        "milk-fpsexec-milk-script -n s3 fpsinit '' cam 'gain:float=2.5 mode:str=fast in:stream=cam' "
-        "tick.milk >/dev/null\n"
+        "milk-fpsexec-milk-script -n s3 -t cam -p 'gain:float=2.5 mode:str=fast in:stream=cam' "
+        "-f tick.milk fpsinit >/dev/null\n"
         "milk-fpsexec-milk-script -n s3 runstart >run.log 2>&1 & pid=$!\n"
         "for _ in $(seq 50); do @calc 'cam = 1'; sleep 0.1; [ -s tick.log ] && break; done; sleep 0.2; : > tick.log\n"
         "frame 2\n"

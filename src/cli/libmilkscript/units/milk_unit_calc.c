@@ -11,9 +11,11 @@
  * "name:type[=default][:help] ...", as calculator variables that @set changes live; a statement that
  * assigns one writes it back to the FPS. Names in the statements are shared streams, and a new image
  * target becomes one. An error stops the loop and is kept in .error.
+ *
+ * On the command line the program is given with unit options (-e -t -p -f -i -I), and the values after
+ * the command word set the declared parameters, in declaration order, as for any fpsexec.
  */
 
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,20 +42,20 @@ static char init_expr[FUNCTION_PARAMETER_STRMAXLEN];
 static char initfile[FUNCTION_PARAMETER_STRMAXLEN];
 static char error[FUNCTION_PARAMETER_STRMAXLEN];
 
-/* Fixed parameters declared with X-macro; user-declared parameters are appended at runtime */
+/* Fixed parameters declared with X-macro, set by unit options (not positional values);
+ * user-declared parameters are appended at runtime */
 #define CALC_FIXED_PARAMS(X)                                                                   \
-    X(".expr", expr, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,                 \
-      "statements, ; between them")                                                            \
-    X(".trigger", trigger, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
-      "a frame of this stream runs them")                                                      \
-    X(".params", params, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT,                               \
-      "more parameters: name:type[=default]")                                                  \
-    X(".file", file, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,                 \
-      "statements from this file")                                                             \
-    X(".init", init_expr, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,            \
-      "statements run once at start")                                                          \
-    X(".initfile", initfile, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,         \
-      "init statements from this file")                                                        \
+    X(".expr", expr, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,                 \
+      "statements, ; between them (-e)")                                                       \
+    X(".trigger", trigger, FPTYPE_STREAMNAME, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
+      "a frame of this stream runs them (-t)")                                                 \
+    X(".params", params, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT, "declared parameters (-p)")   \
+    X(".file", file, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,                 \
+      "statements from this file (-f)")                                                        \
+    X(".init", init_expr, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,            \
+      "statements run once at start (-i)")                                                     \
+    X(".initfile", initfile, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,         \
+      "init statements from this file (-I)")                                                   \
     X(".error", error, FPTYPE_STRING, 0, FPFLAG_DEFAULT_OUTPUT, "why the loop stopped")
 
 static FPS_CLI_BINDING bindings[CALC_NFIXED + CALC_MAXPAR] = { CALC_FIXED_PARAMS(FPS_X_BINDING) };
@@ -85,10 +87,11 @@ static MILK_RUNNABLE unit_calc = {
         .cmdkey      = "calc",
         .description = "run calculator statements on each frame",
         .description_long =
-            "Runs the calculator statements of .expr, or of the file .file names, on each frame "
-            "of .trigger. .init or .initfile runs once before frame 0. .params declares more "
-            "parameters (name:type[=default][:help], types int uint float bool str stream fits) "
-            "that the statements read and @set changes while it runs.",
+            "Runs calculator statements (-e, or the file -f names) on each frame of the trigger "
+            "stream (-t), or once, or on each -loopd tick without one. -i or -I runs statements "
+            "once before frame 0. -p declares parameters that the statements read: the values "
+            "after the command word set them, in declaration order, and @set changes them while "
+            "it runs. Built-in variables: _n (frame index), _t and _dt (seconds).",
     },
     .srcfile     = __FILE__,
     .bindings    = bindings,
@@ -139,7 +142,8 @@ static int is_fixed(const char *name)
     return 0;
 }
 
-/** bind() - add declared parameter @name of @type (its value in pval[] stays to be set). */
+/** bind() - add declared parameter @name of @type, primary: positional values set it (its value in pval[]
+ * stays to be set). */
 static int bind(const char *name, uint64_t type, uint64_t fpflag, const char *descr)
 {
     int k = nbind - CALC_NFIXED;
@@ -153,7 +157,7 @@ static int bind(const char *name, uint64_t type, uint64_t fpflag, const char *de
     memset(&pval[k], 0, sizeof(pval[k]));
     snprintf(pkey[k], sizeof(pkey[k]), ".%s", name);
     snprintf(pdescr[k], sizeof(pdescr[k]), "%s", (descr != NULL) ? descr : "");
-    bindings[nbind++] = (FPS_CLI_BINDING) { pkey[k], &pval[k], type, 0, fpflag, pdescr[k], -2, -1 };
+    bindings[nbind++] = (FPS_CLI_BINDING) { pkey[k], &pval[k], type, 1, fpflag, pdescr[k], -2, -1 };
     cvars[k]          = (cli_calc_binding) { pkey[k] + 1, type, &pval[k] };
     return 0;
 }
@@ -209,7 +213,8 @@ static int declare(const char *text)
     return rc;
 }
 
-/** find_params() - bind the declared parameters of FPS @name: its one-level parameters that are not fixed. */
+/** find_params() - bind the declared parameters of FPS @name (its one-level parameters that are not fixed),
+ * with their current values. */
 static int find_params(const char *name)
 {
     FPS fps;
@@ -228,39 +233,14 @@ static int find_params(const char *name)
              p->type == FPTYPE_FITSFILENAME))
         {
             rc = bind(p->keyword[1], p->type, p->fpflag, p->description);
+            if (rc == 0)
+            {
+                sync_fps_to_local(&fps, i, &bindings[nbind - 1]);
+            }
         }
     }
     fps_disconnect(&fps);
     return rc;
-}
-
-/** create() - (re)create the FPS from the command line: .expr .trigger .params .file .init .initfile. */
-static int create(const milk_unit_args *a)
-{
-    char *fixed[] = { expr, trigger, params, file, init_expr, initfile };
-
-    for (int i = 0; i < 6; i++)
-    {
-        const char *v = milk_unit_pos(a, i);
-        snprintf(fixed[i], FUNCTION_PARAMETER_STRMAXLEN, "%s", (v != NULL) ? v : "");
-        if (v != NULL && strlen(v) >= FUNCTION_PARAMETER_STRMAXLEN)
-        {
-            fprintf(stderr, "milk.calc: %s is longer than %d characters%s\n",
-                    bindings[i].fpskeyword, FUNCTION_PARAMETER_STRMAXLEN - 1,
-                    (i == 0)   ? ": write the statements in a file (.file)"
-                    : (i == 4) ? ": write the statements in a file (.initfile)"
-                               : "");
-            if (i != 2) /* .params is read from the command line, and only shown */
-            {
-                return 1;
-            }
-        }
-    }
-    if (declare((milk_unit_pos(a, 2) != NULL) ? milk_unit_pos(a, 2) : "") != 0)
-    {
-        return 1;
-    }
-    return milk_unit_create(a, &unit_calc.app, bindings, nbind);
 }
 
 /** source_text() - @fpath's content when @fpath is set, else @inline_str; NULL (@err) if it cannot be read. */
@@ -457,44 +437,45 @@ static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
  * @argc: Command-line argument count
  * @argv: Command-line argument vector
  *
- * Parses unit arguments, resolves `.file` and `.initfile` paths to canonical paths,
- * creates or attaches dynamic FPS parameters, and delegates execution to
- * `milk_runnable_main()`.
+ * The unit options -e -t -p -f -i -I set the fixed parameters (.expr .trigger .params .file .init
+ * .initfile); milk_unit_main() creates or updates the FPS and delegates to `milk_runnable_main()`.
  *
- * Return: 0 on success, non-zero on error.
+ * Return: 0 on success, 2 on a usage error, non-zero on other errors.
  */
 int main(int argc, char **argv)
 {
-    milk_unit_args a;
-    int            init;
+    static const milk_unit_opt opts[] = {
+        { "-e", "--expr", 0, 0, "write the statements in a file (-f)" },
+        { "-t", "--trigger", 1, 0, NULL },
+        { "-p", "--params", 2, 0, NULL },
+        { "-f", "--file", 3, 1, NULL },
+        { "-i", "--init", 4, 0, "write the statements in a file (-I)" },
+        { "-I", "--initfile", 5, 1, NULL },
+    };
+    static const milk_unit_desc desc = {
+        .tag         = "milk.calc",
+        .unit        = &unit_calc,
+        .bindings    = bindings,
+        .nbind       = &nbind,
+        .opts        = opts,
+        .nopt        = (int) (sizeof(opts) / sizeof(opts[0])),
+        .params_opt  = 2,
+        .declare     = declare,
+        .find_params = find_params,
+        .help_options =
+            "  -e, --expr EXPR       statements, ; between them\n"
+            "  -t, --trigger STREAM  a frame of STREAM runs them (none: once, or per -loopd tick)\n"
+            "  -p, --params DECL     declare parameters: \"name:type[=default][:help] ...\",\n"
+            "                        types int uint float bool str stream fits\n"
+            "  -f, --file FILE       statements from FILE instead of -e (# starts a comment)\n"
+            "  -i, --init EXPR       statements run once before frame 0\n"
+            "  -I, --initfile FILE   init statements from FILE instead of -i\n"
+            "  fpsinit and exec create the FPS from them; on an existing FPS, -e -t -f -i -I\n"
+            "  update it (a running unit recompiles at its next frame) and -p cannot change.\n"
+            "  Example:\n"
+            "    milk-fpsexec-milk-calc -n dsub -t cam -p \"gain:float=1 off:float=0\" \\\n"
+            "        -e \"out = cam * gain + off\" exec 2.5 .off=-1\n",
+    };
 
-    milk_unit_args_read(argc, argv, unit_calc.app.fps_name, &a);
-    init = (strcmp(a.cmd, "fpsinit") == 0);
-    for (int p = 3; p <= 5;
-         p += 2) /* .file (3) and .initfile (5): also what milk_runnable_main() writes */
-    {
-        if (milk_unit_pos(&a, p) != NULL)
-        {
-            char path[PATH_MAX];
-            if (realpath(milk_unit_pos(&a, p), path) != NULL && strlen(path) < sizeof(file))
-            {
-                argv[a.posi[p]] = strdup(path);
-                a.pos[p]        = argv[a.posi[p]];
-            }
-        }
-    }
-    if (!a.help && (init || (strcmp(a.cmd, "exec") == 0 && !milk_unit_fps_exists(a.name))))
-    {
-        int rc = create(&a);
-        if (rc != 0 || init)
-        {
-            return rc; /* fpsinit is done here: the parameters come from this command line */
-        }
-    }
-    else if (!a.help && find_params(a.name) != 0)
-    {
-        return 1;
-    }
-    unit_calc.nb_bindings = nbind;
-    return milk_runnable_main(argc, argv, &unit_calc);
+    return milk_unit_main(argc, argv, &desc);
 }

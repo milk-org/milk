@@ -514,8 +514,10 @@ int fpsexec_main_function(int              argc,
         milk_help_banner(argv[0], APP_INFO->description, mh_color);
         /* ---- USAGE ---- */
         milk_help_section("Usage", mh_color);
-        printf("  %s %s %s%s\n\n", argv[0], MH(MH_OPT, "[options]"), MH(MH_OPT, "[fpsname:]"),
-               MH(MH_CMD, "<command>"));
+        printf("  %s %s %s%s %s%s%s\n\n", argv[0], MH(MH_OPT, "[options]"),
+               MH(MH_OPT, "[fpsname:]"), MH(MH_CMD, "<command>"), mh_color ? MH_ARG : "",
+               (fps_cli_unit_usage() != NULL) ? fps_cli_unit_usage() : "[values...]",
+               mh_color ? MH_RST : "");
         /* ---- DESCRIPTION ---- */
         {
             const char *_dl   = APP_INFO->description_long;
@@ -545,25 +547,57 @@ int fpsexec_main_function(int              argc,
         printf("  " MH_PAD_FMT "    Enable processinfo\n", MH_PAD(MH_OPT, "-procinfo", 15));
         printf("  " MH_PAD_FMT "    Infinite loop, semaphore trigger\n",
                MH_PAD(MH_OPT, "-loops", 15));
-        printf("  %s %s       Infinite loop, delay trigger\n", MH(MH_OPT, "-loopd"),
-               MH(MH_ARG, "SEC"));
-        printf("  %s %s        Set FPS instance name\n\n", MH(MH_OPT, "-n"), MH(MH_ARG, "NAME"));
+        printf("  " MH_PAD_FMT "    Infinite loop, delay trigger\n",
+               MH_PAD(MH_OPT, "-loopd SEC", 15));
+        printf("  " MH_PAD_FMT "    Set FPS instance name\n\n", MH_PAD(MH_OPT, "-n NAME", 15));
+        /* ---- UNIT OPTIONS (units with their own syntax) ---- */
+        if (fps_cli_unit_options() != NULL)
+        {
+            milk_help_section("Unit Options", mh_color);
+            printf("%s\n", fps_cli_unit_options());
+        }
         /* ---- COMMANDS ---- */
         milk_help_section("Commands", mh_color);
-        printf("  " MH_PAD_FMT "          Create the FPS\n", MH_PAD(MH_CMD, "fpsinit", 15));
-        printf("  " MH_PAD_FMT "          Print FPS content\n", MH_PAD(MH_CMD, "fps", 15));
-        printf("  " MH_PAD_FMT "          List matching FPS instances\n",
-               MH_PAD(MH_CMD, "fpslist", 15));
-        printf("  " MH_PAD_FMT "          Configuration loop\n", MH_PAD(MH_CMD, "confstart", 15));
-        printf("  " MH_PAD_FMT "          Single config step\n", MH_PAD(MH_CMD, "confstep", 15));
-        printf("  " MH_PAD_FMT "          Stop config loop\n", MH_PAD(MH_CMD, "confstop", 15));
-        printf("  " MH_PAD_FMT "          Main processing loop\n", MH_PAD(MH_CMD, "runstart", 15));
-        printf("  " MH_PAD_FMT "          Stop processing loop\n", MH_PAD(MH_CMD, "runstop", 15));
-        printf("  %s %s      Set positional args (. to skip)\n", MH(MH_CMD, "set"),
-               MH(MH_OPT, "[args]"));
-        printf("  %s %s     Auto-init + set"
-               " args + run\n\n",
-               MH(MH_CMD, "exec"), MH(MH_OPT, "[args]"));
+        {
+            static const char *const cmds[][2] = {
+                { "fpsinit [values]", "Create the FPS, then set values" },
+                { "fps", "Print FPS content" },
+                { "fpslist", "List matching FPS instances" },
+                { "confstart", "Configuration loop" },
+                { "confstep", "Single config step" },
+                { "confstop", "Stop config loop" },
+                { "runstart [values]", "Set values, then main processing loop" },
+                { "runstop", "Stop processing loop" },
+                { "set [values]", "Set values in the existing FPS" },
+                { "exec [values]", "Auto-init + set values + run" },
+            };
+            for (size_t k = 0; k < sizeof(cmds) / sizeof(cmds[0]); k++)
+            {
+                printf("  " MH_PAD_FMT "  %s\n", MH_PAD(MH_CMD, cmds[k][0], 18), cmds[k][1]);
+            }
+            printf("\n");
+        }
+        /* ---- VALUES ---- */
+        {
+            int nprim = 0;
+            for (int k = 0; k < nb_bindings; k++)
+            {
+                nprim += (bindings[k].is_primary != 0);
+            }
+            milk_help_section("Values", mh_color);
+            printf("  " MH_PAD_FMT "  the next parameter with an Idx below, in Idx order\n",
+                   MH_PAD(MH_ARG, "value", 18));
+            printf("  " MH_PAD_FMT "  any parameter, by keyword\n",
+                   MH_PAD(MH_ARG, ".name=value", 18));
+            printf("  " MH_PAD_FMT "  keep the current value (as a value or .name=.)\n",
+                   MH_PAD(MH_ARG, ".", 18));
+            printf("  Negative numbers are values. A bad or extra value is an error (status 2).\n");
+            if (nprim == 0)
+            {
+                printf("  No parameter takes a positional value here: use .name=value.\n");
+            }
+            printf("\n");
+        }
         /* ---- PARAMETERS ---- */
         struct HELPER_PRETTYPRINT pp = {
             .col_kw_w = 7, .col_tp_w = 4, .col_df_w = 7, .show_help_color = mh_color, .CLIargcnt = 0
@@ -595,6 +629,16 @@ int fpsexec_main_function(int              argc,
     {
         fprintf(stderr, "Error: Missing command argument.\n");
         return 1;
+    }
+    /* Commands that take values: check them all before doing anything */
+    if (strcmp(command, "fpsinit") == 0 || strcmp(command, "set") == 0 ||
+        strcmp(command, "exec") == 0 || strcmp(command, "runstart") == 0 ||
+        strcmp(command, "run") == 0)
+    {
+        if (fps_cli_check_values(bindings, nb_bindings) != 0)
+        {
+            return 2;
+        }
     }
     if (strcmp(command, "exec") != 0)
     {
@@ -758,8 +802,8 @@ int fpsexec_main_function(int              argc,
                             " FPFLAG_TRIGGER"
                             "_STREAM.\n");
         }
-        /* Sync CLI args into FPS before applying loop overrides. */
-        if (use_loop && rc_ == 0)
+        /* Sync CLI values into FPS, then apply loop overrides. */
+        if (rc_ == 0)
         {
             fps_sync_and_override_by_name(fps_name, bindings, nb_bindings, use_loop, loop_delay);
         }
