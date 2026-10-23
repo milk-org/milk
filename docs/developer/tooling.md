@@ -74,7 +74,7 @@ pip install pymdown-extensions \
 
 ```bash
 # Build and serve the website (here, called directly in my mamba session)
-mamba run -n mkdocs mkdocs serve
+mamba run -n mkdocsenv mkdocs serve
 # Access -- follow the link or:
 <browser> http://127.0.0.1:8000/
 ```

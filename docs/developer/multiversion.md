@@ -13,6 +13,7 @@ git clone --recursive https://github.com/milk-org/milk milk-2
 
 Then compile and install:
 ```bash
+mkdir -p ~/src/milk-1/_build ~/src/milk-2/_build
 cd ~/src/milk-1/_build
 cmake -DCMAKE_INSTALL_PREFIX=/usr/local/milk-1 ..
 sudo make install
@@ -24,7 +25,7 @@ sudo make install
 
 And e.g. make `milk-1` your system default:
 ```bash
-sudo ln -s /usr/local/milk-1 /usr/local/milk
+sudo ln -sfn "/usr/local/milk-1/milk-<version>" /usr/local/milk
 ```
 
 ??? note "Legacy linker configuration"

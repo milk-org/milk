@@ -109,7 +109,7 @@ Set in `.bashrc` or equivalent:
     `MILK_INSTALLDIR` should point to the installation.
     Generally we set a symbolic link once and for all:
     ```bash
-    ln -sf /usr/local/milk-<version> /usr/local/milk
+    sudo ln -sfn "/usr/local/milk-<version>" /usr/local/milk
     ```
 
 ---

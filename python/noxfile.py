@@ -54,7 +54,7 @@ def milk_build(
     if not os.path.islink("./pyMilk"):
         HOME = os.environ["HOME"]
         PYMILK_ROOT = os.environ.get("PYMILK_ROOT", f"{HOME}/src/pyMilk")
-        session.run(*(f"ln -sf {PYMILK_ROOT} ./pyMilk").split(), external=True)
+        session.run("ln", "-sf", PYMILK_ROOT, "./pyMilk", external=True)
     session.install("./pyMilk")  # install pyMilk
 
     os.makedirs("./build", exist_ok=True)
