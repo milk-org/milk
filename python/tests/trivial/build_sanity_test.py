@@ -26,6 +26,7 @@ def _find_fpsexecs() -> list[pathlib.Path]:
         for pattern in ("milk-fpsexec-*", "cacao-fpsexec-*")
         for p in bindir.glob(pattern)
         if p.is_file()
+        if p.name != "cacao-fpsexec-list"
     ]
     return sorted(exes)
 

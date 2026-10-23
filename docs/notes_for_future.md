@@ -30,7 +30,7 @@ A different approach, where MILK is a framework / dependency of external package
 
 ### 4. When it matters and when it don't
 
-For a normal _dynamic linkage_ build, the compiled libraries `*.so` need to be retrieved at runtime, and as such they need to be installed for fetching in `MILK_INSTALLDIR` (more or less, since they're in the `rpath` of executables, so maybe we could bypass the `LD_LIBRARY_PATH` for finding them).
+For a normal _dynamic linkage_ build, the compiled libraries `*.so` need to be retrieved at runtime, and as such they need to be installed for fetching in `MILK_INSTALLDIR` (they're found through the `rpath` of executables).
 
 In `USE_STATIC_LTO` mode, we're compiling `.a` static libraries; however, these are only internal to the build since they used for scrapping the useful portions and optimizing executables. If there's no exposing-to-consumer approach, they're neither needed at runtime, nor to be installed, nor to be exposed in a downstream CMake interface.
 
