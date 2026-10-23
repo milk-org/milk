@@ -21,8 +21,6 @@
 
 #include <libfps/IMGID.h>
 
-double Ptrunc(double a, double b, double c);
-
 
 /* ==========================================================
  * X-macro operation tables.

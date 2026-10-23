@@ -30,12 +30,11 @@ Arith functions on images
 | `image_set_row.c`             | Set image row pixels to a value          |
 | `image_setzero.c`             | Set all image pixels to zero             |
 | `image_slicenormalize.c`      | Image slicenormalize module              |
-| `image_stats.c`               | simple stats functions                   |
-| `image_total.c`               | sum image pixels                         |
+| `image_stats.c`               | statistical & reduction functions        |
 | `image_unfold.c`              | Image unfold module                      |
 | `image_vecmult.c`             | multiply image by vector                 |
 | `imfunctions.c`               | apply math functions to images           |
-| `mathfuncs.c`                 | simple math functions                    |
+| `mathfuncs.h`                 | inline scalar math wrappers              |
 
 ## Standalone Executables
 
