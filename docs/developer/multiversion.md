@@ -48,7 +48,7 @@ sudo ln -sfn "/usr/local/milk-1/milk-<version>" /usr/local/milk
         call fpsexec-<x> -tmux runstart (like this, or through milk pipelines)
      v-------
     fpsexec in humanic shell:
-        knows the correct overriden MILK_SHM_DIR
+        knows the correct overridden MILK_SHM_DIR
         dispatches fpsexec-<x> runstart (no tmux) into a tmux session
      v-------
     tmux's shell

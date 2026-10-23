@@ -125,7 +125,7 @@ bundle exec jekyll serve
 <summary>Expand contents</summary>
 
 Formatting is enforced by [pre-commit](https://pre-commit.com) hooks, configured in
-`.pre-commit-config.yaml`, and re-checked indentically in CI (`.github/workflows/pre-commit.yaml`).
+`.pre-commit-config.yaml`, and re-checked identically in CI (`.github/workflows/pre-commit.yaml`).
 
 | Hook summary:                        | Applies to     |
 | ------------------------------------ | -------------- |
@@ -492,7 +492,7 @@ you can now `make install`/`ninja install` milk without sudo permissions. The on
 !!! warning
     This trick is useful for development when you build, install, and remove the global install very often.
 
-    On a security note, it places non-root sanctionned code in `/usr/local`, which is non-critical but also not expected.
+    On a security note, it places non-root sanctioned code in `/usr/local`, which is non-critical but also not expected.
 
 </details>
 
