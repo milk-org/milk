@@ -11,6 +11,14 @@ VENV_BACKEND = "uv|virtualenv"
 _GCOV = shutil.which("gcov")
 
 
+def get_project_root() -> pathlib.Path:
+    this_path = pathlib.Path(os.path.abspath(os.getcwd()))
+    return this_path.parent
+
+
+PROJECT_ROOT = get_project_root()  # before we start playing with cwd.
+
+
 def milk_build_and_test(
     session: nox.Session,
     *,
@@ -22,14 +30,12 @@ def milk_build_and_test(
     session.install("setuptools", "coverage", "pytest", "pytest-timeout")
     session.install("-e", ".")  # install milk
 
-    this_path = pathlib.Path(os.path.abspath(os.getcwd()))
-    project_root = this_path.parent
     milk_build(
-        session, project_root, use_cuda=use_cuda, lto_level=lto_level, use_cli=use_cli
+        session, PROJECT_ROOT, use_cuda=use_cuda, lto_level=lto_level, use_cli=use_cli
     )
 
-    session.chdir(project_root / "python")  # otherwise pytest is somewhat upset...
-    session.run("pytest", str(project_root / "python"))
+    session.chdir(PROJECT_ROOT / "python")  # otherwise pytest is somewhat upset...
+    session.run("pytest", str(PROJECT_ROOT / "python"))
 
 
 def milk_build(
@@ -61,7 +67,13 @@ def milk_build(
     session.chdir("build")
 
     # Of note, we could have a mismatch of the available engine extensions (USE_CUDA in particular) between pyMilk and milk builds.
-    use_ninja = False
+    cache_path = pathlib.Path("CMakeCache.txt")
+    if cache_path.is_file():
+        use_ninja = (
+            "CMAKE_GENERATOR:INTERNAL=Ninja" in cache_path.read_text().splitlines()
+        )
+    else:
+        use_ninja = shutil.which("ninja") is not None
     session.run(
         *(
             f"cmake{' -GNinja' if use_ninja else ''} {PROJECT_ROOT} -DCMAKE_INSTALL_PREFIX={tmp_dir} "
