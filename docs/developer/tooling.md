@@ -467,12 +467,16 @@ export PATH="$MILK_INSTALLDIR/bin:$PATH"
 milk-check        # verifies MILK_ROOT, MILK_INSTALLDIR, MILK_SHM_DIR and PATH
 ```
 
-To remove it: `rm -rf _build/_install`.
+To remove it: `rm -rf _build/_install`, and unset the modified variables.
 
 <!-- prettier-ignore -->
-!!! note
+!!! note "-DCMAKE_INSTALL_PREFIX"
     Alternatively, configure with `-DCMAKE_INSTALL_PREFIX=$PWD/_install`. The libraries' `RPATH` then
     points to the install, at the cost of the layout becoming `_install/milk-<version>/`.
+
+!!! warning "This is global superseding"
+    This approach is designed to supersede the system-wide installation with a development build.
+    This is not the same as running multiple, isolated versions. See [multiple versions here](../multiversion.md)
 
 ### 6.2 Global install without sudo
 
