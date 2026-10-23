@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.cli.bash_integration_test import _install_dir, _isolated_shm_env
+from tests.cli.conftest import _install_dir, _isolated_shm_env
 from tests.tui.entities import Entities
 from tests.tui.milkctrl_driver import MilkCtrl, PtyRun, TuiPane
 

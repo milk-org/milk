@@ -202,23 +202,23 @@ go before the command, the command goes last.
 <summary><b>Options and commands</b></summary>
 
 - **Options**:
-    - `-h`, `--help`: detailed parameter bindings and command help.
-    - `-h1`, `--help-oneline`: one-line description and exit.
-    - `-h2`, `--help-description`: verbose description only (no color) and exit.
-    - `-hm`, `--help-mono`: full help, forced monochrome.
-    - `-tmux`: create a `tmux` session and dispatch the commands isolated from the main terminal.
-    - `-n`, `--name <fpsname>`: override the default FPS shared memory name.
-    - `-procinfo`: enable processinfo entries at `fpsinit`.
-    - `-loops`: infinite loop with stream semaphore trigger.
-    - `-loopd <sec>`: infinite loop with delay trigger (seconds).
+  - `-h`, `--help`: detailed parameter bindings and command help.
+  - `-h1`, `--help-oneline`: one-line description and exit.
+  - `-h2`, `--help-description`: verbose description only (no color) and exit.
+  - `-hm`, `--help-mono`: full help, forced monochrome.
+  - `-tmux`: create a `tmux` session and dispatch the commands isolated from the main terminal.
+  - `-n`, `--name <fpsname>`: override the default FPS shared memory name.
+  - `-procinfo`: enable processinfo entries at `fpsinit`.
+  - `-loops`: infinite loop with stream semaphore trigger.
+  - `-loopd <sec>`: infinite loop with delay trigger (seconds).
 - **Commands**:
-    - `fpsinit [values]`: create the FPS shared memory segment, then set values.
-    - `confstart`, `confstep`, `confstop`: manage the configuration loop.
-    - `runstart [values]`, `runstop`: manage the execution loop (`run` is an alias of `runstart`).
-    - `set [values]`: set values in the existing FPS.
-    - `fps`: print the content of the FPS.
-    - `fpslist`: list all FPS instances matching this executable.
-    - `exec [values]`: auto-init, set values and run (one-shot).
+  - `fpsinit [values]`: create the FPS shared memory segment, then set values.
+  - `confstart`, `confstep`, `confstop`: manage the configuration loop.
+  - `runstart [values]`, `runstop`: manage the execution loop (`run` is an alias of `runstart`).
+  - `set [values]`: set values in the existing FPS.
+  - `fps`: print the content of the FPS.
+  - `fpslist`: list all FPS instances matching this executable.
+  - `exec [values]`: auto-init, set values and run (one-shot).
 
 </details>
 

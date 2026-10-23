@@ -41,8 +41,7 @@ When a plugin registers a standalone executable (e.g., `milk-fpsexec-myplugin`),
 | `scripts/`       | Shell scripts and utilities (optional)                        |
 | `*.c` / `*.h`    | Source files, each holding one or several runnables           |
 
-Examples: core module `src/coremods/COREMOD_memory/`, plugin `plugins/milk-extra-src/fft/`, template
-`src/milk_module_example/`.
+Copy `src/milk_module_example/CMakeLists.txt`; its skeleton and rules are in the [Programmer's Guide](../arch/programmers_guide.md#6-cmakeliststxt-conventions).
 
 New plugins go in `plugins/<plugin>/` (or `plugins/<group>/<plugin>/`), never under
 `milk-extra-src/`, which is reserved for the plugins shipped in the `milk` repository. Everything

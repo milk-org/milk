@@ -16,6 +16,8 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
+- **2026-10-21** — The `cacao` modules (`AOloopControl*`, `computeCalib`, `pyramidWFStools`) migrated to `MILK_RUNNABLE`: each module has one registry and one header, the `cacao-fpsexec-*` executables are generated from `EXPORT_FPSEXEC`, and the `modalstatsTUI` sources are parked in `AOloopControl/tui/` `#api` `#build` `#refactor`
+
 - **2026-10-20** — `milk-streamCTRL` is now `milk-CTRL` opened on its streams view (an installed
   link; `-h` maps the old keys), and the old streamCTRL TUI is removed. F3 gains an inspector with
   INFO, SEMS (readers and writers of each semaphore), TRACE (writer chain with timing), KEYS and

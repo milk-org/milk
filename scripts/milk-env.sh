@@ -185,6 +185,20 @@ __milk_env_switch_fdev() {
         [ -d "$vdir/python" ] && __milk_path_remove PYTHONPATH "$vdir/python"
     done
 
+    # If already running inside a pane of the current TMUX_TMPDIR server (e.g. spawned by
+    # fpsexec -tmux, pytest, or nox), preserve the server's inherited paths and tmux socket.
+    if [ -n "$TMUX" ] && [ -n "$TMUX_TMPDIR" ] && [[ "$TMUX" == "$TMUX_TMPDIR/"* ]]; then
+        if [ -n "$MILK_INSTALLDIR" ] && [ "$MILK_INSTALLDIR" != "$_DEV_INSTALLDIR" ]; then
+            _FDEV_INSTALLDIR="$MILK_INSTALLDIR"
+        fi
+        if [ -n "$MILK_ROOT" ] && [ "$MILK_ROOT" != "$_DEV_ROOT" ]; then
+            _FDEV_ROOT="$MILK_ROOT"
+        fi
+        if [ -n "$MILK_SHM_DIR" ] && [ "$MILK_SHM_DIR" != "$_DEV_SHMDIR" ]; then
+            _FDEV_SHMDIR="$MILK_SHM_DIR"
+        fi
+    fi
+
     # 2. Add framework-dev paths
     __milk_path_prepend PATH "$_FDEV_INSTALLDIR/bin"
     __milk_path_prepend LD_LIBRARY_PATH "$_FDEV_INSTALLDIR/lib"
@@ -197,8 +211,12 @@ __milk_env_switch_fdev() {
     export MILK_INSTALLDIR="$_FDEV_INSTALLDIR"
     export MILK_SHM_DIR="$_FDEV_SHMDIR"
     export MILK_PROC_DIR="$_FDEV_SHMDIR"
-    export TMUX_TMPDIR="$_FDEV_SHMDIR"
-    unset TMUX
+    if [ -n "$TMUX" ] && [ -n "$TMUX_TMPDIR" ] && [[ "$TMUX" == "$TMUX_TMPDIR/"* ]]; then
+        export TMUX_TMPDIR
+    else
+        export TMUX_TMPDIR="$_FDEV_SHMDIR"
+        unset TMUX
+    fi
     export PATH
     export LD_LIBRARY_PATH
     export PKG_CONFIG_PATH

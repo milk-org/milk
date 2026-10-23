@@ -505,7 +505,7 @@ Measured on a recent desktop machine (see `test_latency_benchmark` in the regres
 | `@set s.cam.kw.FOO=1`                 | ~5 µs         |                                          |
 | `f() { @defer …; }; f`                | ~15 µs        | registered, then run when `f` returns    |
 | `x=@{s.cam.xsize}`, `y=@{1+2}`        | ~2–3 µs       | a statement of its own: bound with `-v`  |
-| `"frame @{s.cam.cnt0}"` (in a word)   | ~15 µs        | bash's `${| …; }` substitution, no fork  |
+| `"frame @{s.cam.cnt0}"` (in a word)   | ~15 µs        | bash's `${\| …; }` substitution, no fork |
 | `@calc "cam = cam * 2"` (images)      | ~30 µs        | one request to the server                |
 | `mem.listim`, other milk commands     | ~75 µs        | one request to the server                |
 | `y=$(@calc 1+2)`                      | ~0.8 ms       | `$( )` forks a subshell: avoid in loops  |

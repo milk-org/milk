@@ -104,6 +104,7 @@ nav:
     - Managing Dependencies: developer/dependency_system.md
     - Documenting Code: developer/DocumentingCode.md
     - Tooling: developer/tooling.md
+    - Multiple Versions: developer/multiversion.md
     - Working with Git: developer/WorkingWithGit.md
     - Code Assist: developer/code_assist.md
   - Architecture:

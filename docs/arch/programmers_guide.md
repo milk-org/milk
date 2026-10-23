@@ -281,7 +281,7 @@ add_test(NAME mymodule-myfunc-h1 COMMAND milk-fpsexec-myfunc -h1)
 - Plugins under `plugins/` are discovered automatically; no parent `CMakeLists.txt` edit is needed.
 - Module-specific logic goes in the `# CUSTOM ===` blocks of the template (before the glob, after `milk_add_runnable_module`, and in the executables section).
 - Extra executables with their own `main()` live in a `bin/` subfolder (not globbed) and are declared in the last `# CUSTOM` block.
-- Coremods pass `COREMOD` to `milk_add_runnable_module()`: they cannot link the `CLIcore` target nor the coremod libraries that depend on them.
+- Coremods cannot reference the `CLIcore` target (it links them); they use `$<TARGET_PROPERTY:milkfps,INCLUDE_DIRECTORIES>` instead.
 - `milk_add_runnable_module()` also builds the `_static` archive used by `USE_STATIC_LTO` (`cmake/milk_static_lto.cmake`).
 - Express optional dependencies with the `MILK_CMAKE_REQUEST_<X>` / `MILK_CMAKE_MANDATE_<X>` tags (see [Managing Dependencies](../developer/dependency_system.md)); do not hand-write include or link rules.
 - Each module installs only its own headers.

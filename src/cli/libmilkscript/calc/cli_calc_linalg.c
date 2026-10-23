@@ -764,13 +764,15 @@ int cli_calc_matmul_check(const IMAGE *im1,
              (int) M, (int) N, (int) K, alpha, A, (int) (tA ? K : M), B, (int) (tB ? N : K), beta, \
              C, (int) M);
 #else
+#    define MATMUL_OMP_PAR \
+        _Pragma("omp parallel for collapse(2) schedule(static) if(M*N*K>=262144)")
 #    define MATMUL_KERNEL_BODY(T, GEMV, GEMM, MBLK)                                            \
         if (!tA)                                                                               \
         {                                                                                      \
             const uint64_t mblk  = (MBLK);                                                     \
             uint64_t       nmblk = (M + mblk - 1) / mblk;                                      \
-            _Pragma("omp parallel for collapse(2) schedule(static) if (M * N * K >= "          \
-                    "262144)") for (uint64_t n = 0; n < N; n++)                                \
+            MATMUL_OMP_PAR                                                                     \
+            for (uint64_t n = 0; n < N; n++)                                                   \
             {                                                                                  \
                 for (uint64_t mb = 0; mb < nmblk; mb++)                                        \
                 {                                                                              \
@@ -803,8 +805,8 @@ int cli_calc_matmul_check(const IMAGE *im1,
         }                                                                                      \
         else if (!tB)                                                                          \
         {                                                                                      \
-            _Pragma("omp parallel for collapse(2) schedule(static) if (M * N * K >= "          \
-                    "262144)") for (uint64_t n = 0; n < N; n++)                                \
+            MATMUL_OMP_PAR                                                                     \
+            for (uint64_t n = 0; n < N; n++)                                                   \
             {                                                                                  \
                 for (uint64_t m = 0; m < M; m++)                                               \
                 {                                                                              \
@@ -822,8 +824,8 @@ int cli_calc_matmul_check(const IMAGE *im1,
         }                                                                                      \
         else                                                                                   \
         {                                                                                      \
-            _Pragma("omp parallel for collapse(2) schedule(static) if (M * N * K >= "          \
-                    "262144)") for (uint64_t n = 0; n < N; n++)                                \
+            MATMUL_OMP_PAR                                                                     \
+            for (uint64_t n = 0; n < N; n++)                                                   \
             {                                                                                  \
                 for (uint64_t m = 0; m < M; m++)                                               \
                 {                                                                              \

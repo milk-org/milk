@@ -48,41 +48,16 @@ Module includes key frameworks:
 
 For a comprehensive guide, see the [Documentation Index](docs/index.md).
 
-## Download
-
-```bash
-$ git clone --recursive https://github.com/milk-org/milk.git
-$ cd milk
-```
-
 ## Build
 
-### Quick start (full build)
-
-Builds everything: interactive CLI, TUI, all plugins, and
-standalone fpsexec programs.
+Minimal build (see [Installation](docs/quickstart/compile.md) for dependencies,
+download, and build tiers):
 
 ```bash
+$ git submodule update --init
 $ mkdir _build && cd _build
-$ cmake ..
-$ make -j$(nproc)
-$ sudo make install
+$ cmake .. && make -j$(nproc) && sudo make install
 ```
-
-### Build tiers
-
-The build system supports four tiers with decreasing
-dependency requirements:
-
-| Tier               | cmake command                               | External deps              |
-| ------------------ | ------------------------------------------- | -------------------------- |
-| **Engine**         | `cmake .. -DUSE_COREMODS=OFF -DUSE_CLI=OFF` | POSIX only                 |
-| **Core**           | `cmake .. -DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | POSIX only                 |
-| **Core + FITS**    | `cmake .. -DUSE_CLI=OFF`                    | cfitsio                    |
-| **Full** (default) | `cmake ..`                                  | cfitsio, readline, ncurses |
-
-For details on each tier, what gets built, and what is
-disabled, see [Build Tiers](docs/quickstart/build_tiers.md).
 
 ### CMake options
 
@@ -95,12 +70,6 @@ disabled, see [Build Tiers](docs/quickstart/build_tiers.md).
 | `USE_READLINE` | ON      | Enable readline for CLI input                     |
 | `USE_GSL`      | ON      | Enable GSL for plugins                            |
 | `USE_CUDA`     | OFF     | Enable CUDA GPU acceleration                      |
-
-### Build with Python module
-
-```bash
-$ ./compile.sh $PWD/local
-```
 
 ### Environment variables
 
@@ -117,9 +86,6 @@ Set in `.bashrc` or equivalent:
 ```bash
 $ milk-check
 ```
-
-For post-installation steps and dependency details, see
-[Installation](docs/quickstart/compile.md).
 
 ## Interactive tutorial
 

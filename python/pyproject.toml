@@ -25,6 +25,7 @@ testpaths = ["tests"]
 addopts = [
     "--import-mode=importlib",
     "--ignore=tests/mains",
+    "--ignore=pyMilk",
 ]
 
 [tool.coverage.run]
