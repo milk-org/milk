@@ -227,6 +227,29 @@ existing install; `nox` builds and installs `milk` in isolated environments, the
 
 We're trying to move away from scattered `ctest` and bash testing scripts.
 
+??? info "Running ctest"
+    However, if the `ctest` suite is still available (and part of the github CMake action) at the time of reading, here's how you can run them:
+
+    === "test of the global build"
+
+    ```bash
+    mkdir -p _build && cd build_
+    cmake .. # Pass your preferred build options
+    make -j 20 && sudo make install
+    ctest
+    ```
+
+    === "test in isolation"
+
+    ```bash
+    mkdir -p _build && cd build_
+    cmake .. -DCMAKE_INSTALL_PREFIX=. # install configured to _build/milk-1.03.00
+    make -j 20 && make install
+    PATH="$PWD/milk-1.03.00/bin:$PATH" ctest
+    ```
+
+
+
 The execution versatility provided by `pytest` is convenient for checking regressions, validating new code, debugging one or few tests efficiently, and even deploying temporary, reproducible work sessions.
 
 `nox` takes virtualization a step further: it creates autonomous sessions (a bit like docker but with narrower reach)
