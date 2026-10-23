@@ -14,7 +14,8 @@
 
 //int init_COREMOD_arith();
 
-#include "COREMOD_arith/execute_arith.h"
+#include "COREMOD_arith/image_coord.h"
+#include "COREMOD_arith/image_linalg.h"
 #include "COREMOD_arith/image_arith__Cim_Cim__Cim.h"
 #include "COREMOD_arith/image_arith__im__im.h"
 #include "COREMOD_arith/image_arith__im_f__im.h"

@@ -347,3 +347,29 @@ def test_calc_simd_random_generators(tmp_path):
     assert gmean == pytest.approx(10.0, abs=0.05), out
     assert gstd == pytest.approx(2.5, abs=0.05), out
     assert grep == 0.0 and gdiff > 0.5, out
+
+
+def test_calc_and_module_kernel_unification(tmp_path):
+    res = milk_cli_script(
+        "imgen.mkdist d_mod 16 16 8 8 >/dev/null\n"
+        "imgen.mkslopexy sl_mod 16 16 1.5 -0.5 >/dev/null\n"
+        "imgen.im2coord d_mod 0 cx_mod >/dev/null\n"
+        "imgen.im2coord d_mod 1 cy_mod >/dev/null\n"
+        "@calc 'd_calc = ir(d_mod, 8, 8)'\n"
+        "@calc 'sl_calc = 1.5 * ix(d_mod, 8, 8) - 0.5 * iy(d_mod, 8, 8)'\n"
+        "@calc 'cx_calc = ix(d_mod, 0, 0); cy_calc = iy(d_mod, 0, 0)'\n"
+        "@calc -v e_d,e_sl,e_cx,e_cy 'imax(abs(d_mod - d_calc)); imax(abs(sl_mod - sl_calc)); imax(abs(cx_mod - cx_calc)); imax(abs(cy_mod - cy_calc))'\n"
+        "@calc 'mA = reshape(vec(1, 2, 3, 4, 5, 6), 3, 2)'\n"
+        "imgbasic.imswapaxis2D mA mAt_mod >/dev/null\n"
+        "@calc 'mAt_calc = transpose(mA)'\n"
+        "@calc -v e_tr 'imax(abs(mAt_mod - mAt_calc))'\n"
+        "@calc 'cube = reshape(vec(1, 2, 3, 4, 5, 6, 7, 8), 2, 2, 2)'\n"
+        "imgbasic.cubecollapse cube cc_mod >/dev/null\n"
+        "@calc 'cc_calc = itot(cube, 2)'\n"
+        "@calc -v e_cc 'imax(abs(cc_mod - cc_calc))'\n"
+        'echo "unif=$e_d $e_sl $e_cx $e_cy $e_tr $e_cc"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    vals = [float(x) for x in value(res.stdout, "unif").split()]
+    assert vals == [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], out

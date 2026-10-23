@@ -827,3 +827,215 @@ double arith_image_trace(const char *ID_name)
     IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_trace_IMGID(&imgin);
 }
+
+/** Accumulate one sample @v into @acc for reduction @op. */
+static inline double reduce_step(double acc, double v, arith_reduce_op op)
+{
+    return (op == ARITH_RED_MIN)    ? fmin(acc, v)
+           : (op == ARITH_RED_MAX)  ? fmax(acc, v)
+           : (op == ARITH_RED_ASUM) ? acc + fabs(v)
+           : (op == ARITH_RED_NORM) ? acc + v * v
+                                    : acc + v;
+}
+
+/**
+ * arith_image_reduce_lane - Reduce @n strided elements of @im starting at @base
+ * @im:     Source image
+ * @dt:     ImageStreamIO datatype code
+ * @base:   Starting linear element offset
+ * @n:      Number of elements along the lane
+ * @stride: Step between consecutive elements
+ * @op:     Reduction operation (`ARITH_RED_SUM`..`ARITH_RED_ASUM`)
+ *
+ * Return: Reduced scalar value as `double`
+ */
+double arith_image_reduce_lane(const IMAGE    *im,
+                               uint8_t         dt,
+                               uint64_t        base,
+                               uint64_t        n,
+                               uint64_t        stride,
+                               arith_reduce_op op)
+{
+    double acc = (op == ARITH_RED_MIN) ? INFINITY : (op == ARITH_RED_MAX) ? -INFINITY : 0.0;
+#define LANE_PASS1(READ_K)                    \
+    for (uint64_t k = 0; k < n; k++)          \
+    {                                         \
+        acc = reduce_step(acc, (READ_K), op); \
+    }
+    if (dt == _DATATYPE_FLOAT)
+    {
+        const float *restrict p = im->array.F + base;
+        LANE_PASS1((double) p[k * stride]);
+    }
+    else if (dt == _DATATYPE_DOUBLE)
+    {
+        const double *restrict p = im->array.D + base;
+        LANE_PASS1(p[k * stride]);
+    }
+    else
+    {
+        LANE_PASS1(arith_read_im_pix(im, dt, base + k * stride));
+    }
+#undef LANE_PASS1
+
+    if (op == ARITH_RED_SUM || op == ARITH_RED_MIN || op == ARITH_RED_MAX || op == ARITH_RED_ASUM)
+    {
+        return acc;
+    }
+    if (op == ARITH_RED_NORM)
+    {
+        return sqrt(acc);
+    }
+    double mean = acc / (double) n;
+    if (op == ARITH_RED_MEAN)
+    {
+        return mean;
+    }
+    double s2 = 0.0;
+    for (uint64_t k = 0; k < n; k++)
+    {
+        double d = arith_read_im_pix(im, dt, base + k * stride) - mean;
+        s2 += d * d;
+    }
+    return (op == ARITH_RED_VAR) ? s2 / (double) n : sqrt(s2 / (double) n);
+}
+
+/**
+ * arith_image_reduce_axis_im - Reduce @im along @axis into pre-allocated image @oim
+ * @im:   Source real image
+ * @axis: Axis index (`0 <= axis < im->md[0].naxis`)
+ * @op:   Reduction operation (`ARITH_RED_SUM`..`ARITH_RED_ASUM`)
+ * @oim:  Destination `FLOAT` or `DOUBLE` image with `im->md[0].nelement / im->md[0].size[axis]` pixels
+ *
+ * Return: `RETURN_SUCCESS` or `RETURN_FAILURE`
+ */
+errno_t arith_image_reduce_axis_im(const IMAGE *im, long axis, arith_reduce_op op, IMAGE *oim)
+{
+    int     nax = im->md[0].naxis;
+    uint8_t dt  = im->md[0].datatype;
+    if (axis < 0 || axis >= nax)
+    {
+        return RETURN_FAILURE;
+    }
+
+    uint64_t inner = 1;
+    uint64_t outer = 1;
+    uint64_t n     = im->md[0].size[axis];
+    for (int a = 0; a < nax; a++)
+    {
+        if (a < axis)
+        {
+            inner *= im->md[0].size[a];
+        }
+        else if (a > axis)
+        {
+            outer *= im->md[0].size[a];
+        }
+    }
+
+    int      out_d = (oim->md[0].datatype == _DATATYPE_DOUBLE);
+    uint64_t total = outer * inner;
+
+#ifdef _OPENMP
+#    pragma omp parallel for schedule(static) if (total * n > OMP_NELEMENT_LIMIT)
+#endif
+    for (uint64_t idx = 0; idx < total; idx++)
+    {
+        uint64_t o = idx / inner;
+        uint64_t i = idx % inner;
+        double   r = arith_image_reduce_lane(im, dt, o * n * inner + i, n, inner, op);
+        if (out_d)
+        {
+            oim->array.D[idx] = r;
+        }
+        else
+        {
+            oim->array.F[idx] = (float) r;
+        }
+    }
+    return RETURN_SUCCESS;
+}
+
+/**
+ * arith_image_reduce_masked_im - Reduce pixels of @im where @mk is non-zero
+ * @im:   Source real image
+ * @mk:   Mask image (same element count as @im)
+ * @op:   Reduction operation (`ARITH_RED_SUM`..`ARITH_RED_PERC`)
+ * @frac: Percentile fraction in `[0, 1]` when @op is `ARITH_RED_PERC`
+ *
+ * Uses `quick_sort_double()` from `COREMOD_tools` for masked percentiles.
+ *
+ * Return: Reduced scalar value, or `NAN` when no mask pixel is non-zero (`0.0` for sum/asum/norm)
+ */
+double arith_image_reduce_masked_im(const IMAGE    *im,
+                                    const IMAGE    *mk,
+                                    arith_reduce_op op,
+                                    double          frac)
+{
+    uint64_t nel = im->md[0].nelement;
+    uint8_t  idt = im->md[0].datatype;
+    uint8_t  mdt = mk->md[0].datatype;
+    uint64_t n   = 0;
+
+    if (op == ARITH_RED_PERC)
+    {
+        double *v = (double *) malloc(sizeof(double) * nel);
+        if (v == NULL)
+        {
+            return NAN;
+        }
+        for (uint64_t i = 0; i < nel; i++)
+        {
+            if (arith_read_im_pix(mk, mdt, i) != 0.0)
+            {
+                v[n++] = arith_read_im_pix(im, idt, i);
+            }
+        }
+        double r = NAN;
+        if (n > 0)
+        {
+            long k = (long) (frac * (double) n);
+            quick_sort_double(v, n);
+            r = v[(k < 0) ? 0 : ((uint64_t) k >= n) ? (long) n - 1 : k];
+        }
+        free(v);
+        return r;
+    }
+
+    double acc = (op == ARITH_RED_MIN) ? INFINITY : (op == ARITH_RED_MAX) ? -INFINITY : 0.0;
+    for (uint64_t i = 0; i < nel; i++)
+    {
+        if (arith_read_im_pix(mk, mdt, i) != 0.0)
+        {
+            acc = reduce_step(acc, arith_read_im_pix(im, idt, i), op);
+            n++;
+        }
+    }
+    if (n == 0)
+    {
+        return (op == ARITH_RED_SUM || op == ARITH_RED_ASUM || op == ARITH_RED_NORM) ? 0.0 : NAN;
+    }
+    if (op == ARITH_RED_SUM || op == ARITH_RED_MIN || op == ARITH_RED_MAX || op == ARITH_RED_ASUM)
+    {
+        return acc;
+    }
+    if (op == ARITH_RED_NORM)
+    {
+        return sqrt(acc);
+    }
+    double mean = acc / (double) n;
+    if (op == ARITH_RED_MEAN)
+    {
+        return mean;
+    }
+    double s2 = 0.0;
+    for (uint64_t i = 0; i < nel; i++)
+    {
+        if (arith_read_im_pix(mk, mdt, i) != 0.0)
+        {
+            double d = arith_read_im_pix(im, idt, i) - mean;
+            s2 += d * d;
+        }
+    }
+    return (op == ARITH_RED_VAR) ? s2 / (double) n : sqrt(s2 / (double) n);
+}

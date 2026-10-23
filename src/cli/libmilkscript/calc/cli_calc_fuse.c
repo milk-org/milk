@@ -898,6 +898,9 @@ static void store_block_f(IMAGE *im, uint64_t off, int len, const float *restric
     __builtin_memcpy(im->array.F + off, v, (size_t) len * sizeof(float));
 }
 
+#define coord_block_d arith_coord_block_d
+#define coord_block_f arith_coord_block_f
+
 /* block kernels in double (any datatype; results converted on store) */
 #define FT double
 #define FK(name) name##_d
@@ -1310,6 +1313,128 @@ const char *cli_calc_select(const IMAGE *c, const IMAGE *t, double tc, const IMA
 }
 
 /**
+ * cli_calc_eval_binop_im - Evaluate a binary operator on same-shape real images or image+scalar
+ * @op: Operator token (`+`, `-`, `*`, `/`, `%`, `^`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, `||`)
+ * @li: Left image operand, or NULL when scalar @lc is used
+ * @lc: Left scalar value used when @li is NULL
+ * @ri: Right image operand, or NULL when scalar @rc is used
+ * @rc: Right scalar value used when @ri is NULL
+ *
+ * Return: Temporary output image name, or NULL if shapes differ or on error
+ */
+const char *cli_calc_eval_binop_im(cli_token_type op,
+                                   const IMAGE   *li,
+                                   double         lc,
+                                   const IMAGE   *ri,
+                                   double         rc)
+{
+    static fprog p;
+    IMAGE       *out;
+
+    memset(&p, 0, sizeof(p));
+    if ((li != NULL && add_image(&p, li) < 0) || (ri != NULL && add_image(&p, ri) < 0))
+    {
+        return NULL;
+    }
+    if (li != NULL)
+    {
+        p.ins[p.n++] = (fins) { .k = FI_IMG, .img = add_image(&p, li) };
+    }
+    if (ri != NULL)
+    {
+        p.ins[p.n++] = (fins) { .k = FI_IMG, .img = add_image(&p, ri) };
+    }
+    p.ins[p.n++]     = (fins) { .k    = FI_BIN,
+                                .op   = op,
+                                .cpos = (li == NULL)   ? 1
+                                        : (ri == NULL) ? 2
+                                                       : 0,
+                                .c    = (li == NULL) ? lc : rc };
+    const char *tmpn = new_output((li != NULL) ? li : ri, p.out_double, &out);
+    if (tmpn != NULL)
+    {
+        run_program(&p, out);
+    }
+    return tmpn;
+}
+
+/**
+ * cli_calc_eval_fn_im - Evaluate a 1-, 2-, or 3-argument math function on real images/scalars
+ * @nfn: Arity (`1` for `FI_FN1`, `2` for `FI_FN2`, `3` for `FI_FN3`)
+ * @fn:  Function pointer (`double (*)()`)
+ * @a:   First image operand, or NULL when scalar @ac is used
+ * @ac:  First scalar operand (or lower clamp bound for `nfn == 3`)
+ * @b:   Second image operand (for `nfn == 2`), or NULL when scalar @bc is used
+ * @bc:  Second scalar operand (for `nfn == 2`)
+ * @c2:  Upper clamp bound (for `nfn == 3`)
+ *
+ * Return: Temporary output image name, or NULL if shapes differ or on error
+ */
+const char *cli_calc_eval_fn_im(int nfn,
+                                double (*fn)(),
+                                const IMAGE *a,
+                                double       ac,
+                                const IMAGE *b,
+                                double       bc,
+                                double       c2)
+{
+    static fprog p;
+    IMAGE       *out;
+
+    memset(&p, 0, sizeof(p));
+    if ((a != NULL && add_image(&p, a) < 0) || (b != NULL && add_image(&p, b) < 0))
+    {
+        return NULL;
+    }
+    if (a != NULL)
+    {
+        p.ins[p.n++] = (fins) { .k = FI_IMG, .img = add_image(&p, a) };
+    }
+    if (b != NULL)
+    {
+        p.ins[p.n++] = (fins) { .k = FI_IMG, .img = add_image(&p, b) };
+    }
+    if (nfn == 1)
+    {
+        uint8_t cdt = cli_calc_cast_datatype(fn);
+        if (cdt != 0)
+        {
+            uint32_t    sz[3] = { a->md[0].size[0], a->md[0].size[1], a->md[0].size[2] };
+            const char *tmpn  = alloc_tmpname();
+            imageID     tid   = -1;
+            create_image_ID(tmpn, a->md[0].naxis, sz, cdt, 0, 10, 0, &tid);
+            if (tid == -1)
+            {
+                parse_errmsg("Failed to allocate output image");
+                return NULL;
+            }
+            run_program(&p, &data.core.image[tid]);
+            return tmpn;
+        }
+        p.ins[p.n++] = (fins) { .k = FI_FN1, .fn = fn };
+    }
+    else if (nfn == 2)
+    {
+        p.ins[p.n++] = (fins) { .k    = FI_FN2,
+                                .fn   = fn,
+                                .cpos = (a == NULL)   ? 1
+                                        : (b == NULL) ? 2
+                                                      : 0,
+                                .c    = (a == NULL) ? ac : bc };
+    }
+    else
+    {
+        p.ins[p.n++] = (fins) { .k = FI_FN3, .fn = fn, .c = ac, .c2 = c2 };
+    }
+    const char *tmpn = new_output((a != NULL) ? a : b, p.out_double, &out);
+    if (tmpn != NULL)
+    {
+        run_program(&p, out);
+    }
+    return tmpn;
+}
+
+/**
  * cli_calc_coord - Generate a coordinate image (`ix`, `iy`, `ir`, `itheta`) shaped like @ref
  * @ref:  Reference image providing output dimensions and precision
  * @kind: Coordinate selector (`CALC_COORD_X`, `CALC_COORD_Y`, `CALC_COORD_R`, `CALC_COORD_THETA`)
@@ -1324,42 +1449,13 @@ const char *cli_calc_select(const IMAGE *c, const IMAGE *t, double tc, const IMA
  */
 const char *cli_calc_coord(const IMAGE *ref, int kind, double cx, double cy)
 {
-    static fprog p;
-    IMAGE       *out;
-
-    memset(&p, 0, sizeof(p));
-    p.img[p.nimg++]  = ref;
-    p.ins[p.n++]     = (fins) { .k = FI_COORD, .img = 0, .cpos = kind, .c = cx, .c2 = cy };
+    IMAGE      *out;
     const char *tmpn = new_output(ref, ref->md[0].datatype == _DATATYPE_DOUBLE, &out);
     if (tmpn != NULL)
     {
-        run_program(&p, out);
+        arith_image_fill_coord(out, kind, cx, cy);
     }
     return tmpn;
-}
-
-/**
- * cli_calc_next_rng_seed - Return the next 32-bit seed for unseeded `rand()` / `randn()` calls
- *
- * Mixes the realtime clock and PID on first use and advances a Weyl sequence
- * on each call so consecutive `rand(im)` / `randn(im)` calls and `milk.calc`
- * frames produce independent random realizations.
- *
- * Return: Non-zero 32-bit seed value
- */
-uint32_t cli_calc_next_rng_seed(void)
-{
-    static uint32_t rng_state = 0;
-    if (rng_state == 0)
-    {
-        struct timespec ts;
-        clock_gettime(CLOCK_REALTIME, &ts);
-        uint32_t s =
-            (uint32_t) ts.tv_nsec ^ (uint32_t) ts.tv_sec ^ ((uint32_t) getpid() * 0x9e3779b9u);
-        rng_state = (s != 0) ? s : 0x6d2b79f5u;
-    }
-    rng_state += 0x9e3779b9u;
-    return cli_calc_hash32(rng_state);
 }
 
 /**

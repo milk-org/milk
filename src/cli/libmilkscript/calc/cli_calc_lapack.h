@@ -675,11 +675,6 @@ val_t cli_calc_func_trsm_op(void)
  */
 static int solve_lu_inplace(double *restrict A, uint64_t N, double *restrict X, uint64_t NRHS)
 {
-    uint64_t *piv = (uint64_t *) malloc((size_t) N * sizeof(uint64_t));
-    if (!piv)
-    {
-        return -1;
-    }
     double max_norm = 0.0;
     for (uint64_t i = 0; i < N * N; i++)
     {
@@ -691,11 +686,37 @@ static int solve_lu_inplace(double *restrict A, uint64_t N, double *restrict X, 
     }
     if (max_norm == 0.0)
     {
-        free(piv);
         return -1;
     }
     double tol = 1e-14 * max_norm;
 
+#ifdef HAVE_LAPACKE
+    lapack_int *ipiv = (lapack_int *) malloc((size_t) N * sizeof(lapack_int));
+    if (!ipiv)
+    {
+        return -1;
+    }
+    lapack_int info = LAPACKE_dgesv(LAPACK_COL_MAJOR, (lapack_int) N, (lapack_int) NRHS, A,
+                                    (lapack_int) N, ipiv, X, (lapack_int) N);
+    free(ipiv);
+    if (info != 0)
+    {
+        return -1;
+    }
+    for (uint64_t k = 0; k < N; k++)
+    {
+        if (fabs(A[k * N + k]) <= tol)
+        {
+            return -1;
+        }
+    }
+    return 0;
+#else
+    uint64_t *piv = (uint64_t *) malloc((size_t) N * sizeof(uint64_t));
+    if (!piv)
+    {
+        return -1;
+    }
     for (uint64_t k = 0; k < N; k++)
     {
         /* Find pivot row p in column k (rows k .. N-1) */
@@ -770,6 +791,7 @@ static int solve_lu_inplace(double *restrict A, uint64_t N, double *restrict X, 
         return -1;
     }
     return solve_triangular_inplace(A, N, 0, 1, 0, 1.0, X, NRHS);
+#endif
 }
 
 /**
@@ -813,6 +835,16 @@ static int solve_cholesky_inplace(double *restrict A, uint64_t N, double *restri
         }
     }
 
+#ifdef HAVE_LAPACKE
+    lapack_int info = LAPACKE_dpotrf(LAPACK_COL_MAJOR, 'L', (lapack_int) N, A, (lapack_int) N);
+    if (info != 0)
+    {
+        return -1;
+    }
+    info = LAPACKE_dpotrs(LAPACK_COL_MAJOR, 'L', (lapack_int) N, (lapack_int) NRHS, A,
+                          (lapack_int) N, X, (lapack_int) N);
+    return (info == 0) ? 0 : -1;
+#else
     /* Cholesky L L^T factorization in lower triangle */
     for (uint64_t j = 0; j < N; j++)
     {
@@ -855,6 +887,7 @@ static int solve_cholesky_inplace(double *restrict A, uint64_t N, double *restri
         return -1;
     }
     return solve_triangular_inplace(A, N, 1, 0, 0, 1.0, X, NRHS);
+#endif
 }
 
 /**
@@ -866,8 +899,8 @@ static int solve_cholesky_inplace(double *restrict A, uint64_t N, double *restri
  * @NRHS: Number of right-hand side columns
  * @X:    Output column-major `N x NRHS` solution buffer
  *
- * Uses Householder QR factorization when $M \ge N$ (least-squares) and Householder
- * QR of $A^T$ ($L Q$ factorization) when $M < N$ (minimum 2-norm solution).
+ * Uses LAPACKE_dgels when available, otherwise Householder QR factorization when
+ * $M \ge N$ (least-squares) and Householder QR of $A^T$ when $M < N$ (minimum 2-norm).
  *
  * Return: 0 on success, -1 if @A is rank-deficient.
  */
@@ -878,6 +911,55 @@ static int solve_qr_ls(double *restrict A,
                        uint64_t NRHS,
                        double *restrict X)
 {
+#ifdef HAVE_LAPACKE
+    uint64_t ldb = (M >= N) ? M : N;
+    uint64_t mn  = (M <= N) ? M : N;
+    double  *W   = (double *) calloc((size_t) (ldb * NRHS), sizeof(double));
+    if (!W)
+    {
+        return -1;
+    }
+    for (uint64_t r = 0; r < NRHS; r++)
+    {
+        __builtin_memcpy(W + r * ldb, B + r * M, (size_t) M * sizeof(double));
+    }
+    lapack_int info = LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', (lapack_int) M, (lapack_int) N,
+                                    (lapack_int) NRHS, A, (lapack_int) M, W, (lapack_int) ldb);
+    if (info != 0)
+    {
+        free(W);
+        return -1;
+    }
+    double max_r = 0.0;
+    for (uint64_t k = 0; k < mn; k++)
+    {
+        double d = fabs(A[k * M + k]);
+        if (d > max_r)
+        {
+            max_r = d;
+        }
+    }
+    double tol = 1e-13 * max_r;
+    if (max_r == 0.0)
+    {
+        free(W);
+        return -1;
+    }
+    for (uint64_t k = 0; k < mn; k++)
+    {
+        if (fabs(A[k * M + k]) <= tol)
+        {
+            free(W);
+            return -1;
+        }
+    }
+    for (uint64_t r = 0; r < NRHS; r++)
+    {
+        __builtin_memcpy(X + r * N, W + r * ldb, (size_t) N * sizeof(double));
+    }
+    free(W);
+    return 0;
+#else
     if (M >= N)
     {
         double *W      = (double *) malloc((size_t) (M * NRHS) * sizeof(double));
@@ -1110,6 +1192,7 @@ static int solve_qr_ls(double *restrict A,
     free(r_diag);
     free(beta);
     return 0;
+#endif
 }
 
 /**
@@ -1124,7 +1207,8 @@ static int solve_qr_ls(double *restrict A,
  *
  * Forms the smaller $\min(M, N) \times \min(M, N)$ Gram system ($A^T A + \lambda I_N$
  * when $M \ge N$, or $A A^T + \lambda I_M$ via the push-through identity when $M < N$)
- * and solves it with Cholesky factorization (or LU fallback if $\lambda < 0$).
+ * using `arith_matmul_kernel_d` and solves it with Cholesky factorization (or LU
+ * fallback if $\lambda < 0$).
  *
  * Return: 0 on success, -1 on failure.
  */
@@ -1139,42 +1223,17 @@ static int solve_ridge(const double *restrict A,
     if (M >= N)
     {
         /* (A^T A + reg * I_N) X = A^T B */
-        double *G = (double *) calloc((size_t) (N * N), sizeof(double));
+        double *G = (double *) malloc((size_t) (N * N) * sizeof(double));
         if (!G)
         {
             return -1;
         }
+        arith_matmul_kernel_d(A, 1, A, 0, 1.0, 0.0, G, N, M, N);
         for (uint64_t j = 0; j < N; j++)
         {
-            const double *restrict col_j = A + j * M;
-            for (uint64_t i = j; i < N; i++)
-            {
-                const double *restrict col_i = A + i * M;
-                double dot                   = 0.0;
-                for (uint64_t r = 0; r < M; r++)
-                {
-                    dot += col_i[r] * col_j[r];
-                }
-                G[j * N + i] = dot;
-                G[i * N + j] = dot;
-            }
             G[j * N + j] += reg;
         }
-        for (uint64_t r = 0; r < NRHS; r++)
-        {
-            const double *restrict b = B + r * M;
-            double *restrict x       = X + r * N;
-            for (uint64_t i = 0; i < N; i++)
-            {
-                const double *restrict col_i = A + i * M;
-                double dot                   = 0.0;
-                for (uint64_t k = 0; k < M; k++)
-                {
-                    dot += col_i[k] * b[k];
-                }
-                x[i] = dot;
-            }
-        }
+        arith_matmul_kernel_d(A, 1, B, 0, 1.0, 0.0, X, N, M, NRHS);
         int rc =
             (reg > 0.0) ? solve_cholesky_inplace(G, N, X, NRHS) : solve_lu_inplace(G, N, X, NRHS);
         free(G);
@@ -1182,7 +1241,7 @@ static int solve_ridge(const double *restrict A,
     }
 
     /* M < N: X = A^T (A A^T + reg * I_M)^{-1} B */
-    double *G = (double *) calloc((size_t) (M * M), sizeof(double));
+    double *G = (double *) malloc((size_t) (M * M) * sizeof(double));
     double *Y = (double *) malloc((size_t) (M * NRHS) * sizeof(double));
     if (!G || !Y)
     {
@@ -1191,45 +1250,15 @@ static int solve_ridge(const double *restrict A,
         return -1;
     }
     __builtin_memcpy(Y, B, (size_t) (M * NRHS) * sizeof(double));
-    for (uint64_t k = 0; k < N; k++)
-    {
-        const double *restrict col_k = A + k * M;
-        for (uint64_t j = 0; j < M; j++)
-        {
-            double akj             = col_k[j];
-            double *restrict col_g = G + j * M;
-            for (uint64_t i = j; i < M; i++)
-            {
-                col_g[i] += col_k[i] * akj;
-            }
-        }
-    }
+    arith_matmul_kernel_d(A, 0, A, 1, 1.0, 0.0, G, M, N, M);
     for (uint64_t j = 0; j < M; j++)
     {
         G[j * M + j] += reg;
-        for (uint64_t i = j + 1; i < M; i++)
-        {
-            G[i * M + j] = G[j * M + i];
-        }
     }
     int rc = (reg > 0.0) ? solve_cholesky_inplace(G, M, Y, NRHS) : solve_lu_inplace(G, M, Y, NRHS);
     if (rc == 0)
     {
-        for (uint64_t r = 0; r < NRHS; r++)
-        {
-            const double *restrict y = Y + r * M;
-            double *restrict x       = X + r * N;
-            for (uint64_t i = 0; i < N; i++)
-            {
-                const double *restrict col_i = A + i * M;
-                double dot                   = 0.0;
-                for (uint64_t k = 0; k < M; k++)
-                {
-                    dot += col_i[k] * y[k];
-                }
-                x[i] = dot;
-            }
-        }
+        arith_matmul_kernel_d(A, 1, Y, 0, 1.0, 0.0, X, N, M, NRHS);
     }
     free(G);
     free(Y);
@@ -1483,14 +1512,68 @@ static int compute_pinv_svd(const IMAGE *imA,
                             double       rtol,
                             double      *out)
 {
-    uint64_t a0   = (imA->md[0].naxis == 3) ? (uint64_t) imA->md[0].size[0] * imA->md[0].size[1]
-                                            : imA->md[0].size[0];
-    uint64_t a1   = (imA->md[0].naxis == 3)   ? imA->md[0].size[2]
-                    : (imA->md[0].naxis >= 2) ? imA->md[0].size[1]
-                                              : 1;
+    uint64_t a0 = (imA->md[0].naxis == 3) ? (uint64_t) imA->md[0].size[0] * imA->md[0].size[1]
+                                          : imA->md[0].size[0];
+    uint64_t a1 = (imA->md[0].naxis == 3)   ? imA->md[0].size[2]
+                  : (imA->md[0].naxis >= 2) ? imA->md[0].size[1]
+                                            : 1;
+    uint64_t Q  = (M <= N) ? M : N;
+
+#ifdef HAVE_LAPACKE
+    double *A     = copy_im_to_dmat(imA, a0, a1, transA);
+    double *U     = (double *) malloc((size_t) (M * Q) * sizeof(double));
+    double *VT    = (double *) malloc((size_t) (Q * N) * sizeof(double));
+    double *sigma = (double *) malloc((size_t) Q * sizeof(double));
+    if (!A || !U || !VT || !sigma)
+    {
+        free(A);
+        free(U);
+        free(VT);
+        free(sigma);
+        return -1;
+    }
+    lapack_int info = LAPACKE_dgesdd(LAPACK_COL_MAJOR, 'S', (lapack_int) M, (lapack_int) N, A,
+                                     (lapack_int) M, sigma, U, (lapack_int) M, VT, (lapack_int) Q);
+    free(A);
+    if (info == 0)
+    {
+        double sigma_max = (Q > 0) ? sigma[0] : 0.0;
+        double cutoff    = fabs(rtol) * sigma_max;
+        double lambda    = cutoff * cutoff;
+        for (uint64_t j = 0; j < Q; j++)
+        {
+            double sj = sigma[j];
+            double wj = 0.0;
+            if (rtol >= 0.0)
+            {
+                if (sj > cutoff && sj > 0.0)
+                {
+                    wj = 1.0 / sj;
+                }
+            }
+            else if (sj > 0.0)
+            {
+                wj = sj / (sj * sj + lambda);
+            }
+            double *restrict uj = U + j * M;
+            for (uint64_t i = 0; i < M; i++)
+            {
+                uj[i] *= wj;
+            }
+        }
+        arith_matmul_kernel_d(VT, 1, U, 1, 1.0, 0.0, out, N, Q, M);
+        free(U);
+        free(VT);
+        free(sigma);
+        return 0;
+    }
+    free(U);
+    free(VT);
+    free(sigma);
+#endif
+
     int      tall = (M >= N);
     uint64_t P    = tall ? M : N;
-    uint64_t Q    = tall ? N : M;
 
     /* Copy op(A) if tall (M >= N), or op(A)^T if wide (M < N), into P x Q column-major W */
     double *W     = copy_im_to_dmat(imA, a0, a1, tall ? transA : !transA);
@@ -1613,21 +1696,14 @@ static int compute_pinv_svd(const IMAGE *imA,
         }
     }
 
-    /* Assemble N x M pseudo-inverse in column-major layout (out[c * N + r]) */
-    memset(out, 0, (size_t) (N * M) * sizeof(double));
-    for (uint64_t j = 0; j < Q; j++)
+    /* Assemble N x M pseudo-inverse: tall -> V * W^T, wide -> W * V^T */
+    if (tall)
     {
-        const double *restrict col_r = tall ? (V + j * Q) : (W + j * P);
-        const double *restrict col_c = tall ? (W + j * P) : (V + j * Q);
-        for (uint64_t c = 0; c < M; c++)
-        {
-            double scale           = col_c[c];
-            double *restrict col_o = out + c * N;
-            for (uint64_t r = 0; r < N; r++)
-            {
-                col_o[r] += col_r[r] * scale;
-            }
-        }
+        arith_matmul_kernel_d(V, 0, W, 1, 1.0, 0.0, out, N, Q, M);
+    }
+    else
+    {
+        arith_matmul_kernel_d(W, 0, V, 1, 1.0, 0.0, out, N, Q, M);
     }
 
     free(W);

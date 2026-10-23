@@ -6,7 +6,9 @@ Arith functions on images
 
 | File                          | Description                              |
 | ----------------------------- | ---------------------------------------- |
-| `execute_arith.c`             | image arithmetic parser                  |
+| `im_complex.c`                | complex image conversions & kernels      |
+| `image_coord.c`               | coordinate & PRNG image generators       |
+| `image_linalg.c`              | tensor shape & BLAS Level 1-3 kernels    |
 | `image_arith__Cim_Cim__Cim.c` | arith functions                          |
 | `image_arith__im__im.c`       | arith functions                          |
 | `image_arith__im_f__im.c`     | arith functions                          |

@@ -15,6 +15,10 @@ include_directories("${PROJECT_SOURCE_DIR}/..")
 milk_add_runnable_module(${LIBNAME} SOURCES ${SOURCEFILES} COREMOD)
 milk_add_fpsexec_stubs(${LIBNAME})
 
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+  set_source_files_properties(image_coord.c PROPERTIES COMPILE_OPTIONS "-mno-recip")
+endif()
+
 # CUSTOM ===========
 # CLIcore does not exist at this tier: reuse the include dirs of libfps
 target_include_directories(

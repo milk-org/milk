@@ -10,6 +10,7 @@
 #include "milk_runnable.h"
 #include "computeunit.h"
 
+#include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 // Forward declaration
@@ -43,8 +44,12 @@ imageID image_basic_3Dto2D_byID(imageID ID)
     }
     else
     {
-        dcimg[ID].md[0].size[0] *= dcimg[ID].md[0].size[1];
-        dcimg[ID].md[0].size[1] = dcimg[ID].md[0].size[2];
+        uint64_t d0    = 0;
+        uint64_t d1    = 0;
+        int      is_3d = 0;
+        arith_image_flatten2d(&dcimg[ID], &d0, &d1, &is_3d);
+        dcimg[ID].md[0].size[0] = (uint32_t) d0;
+        dcimg[ID].md[0].size[1] = (uint32_t) d1;
         dcimg[ID].md[0].naxis   = 2;
     }
 

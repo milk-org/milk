@@ -16,6 +16,7 @@
 
 // MILK_CMAKE_REQUEST_BLAS
 
+#include "COREMOD_arith/image_linalg.h"
 #include "milk_blas_lapacke.h"
 
 #ifdef _OPENMP
@@ -74,9 +75,5 @@ void matrixMulCPU_plain_or_OPENMP(float *restrict cMat,
  */
 void matrixMulCPU(float *restrict cMat, float *restrict wfsVec, float *restrict dmVec, int M, int N)
 {
-#ifdef HAVE_BLAS
-    matrixMulCPU_BLAS(cMat, wfsVec, dmVec, M, N);
-#else
-    matrixMulCPU_plain_or_OPENMP(cMat, wfsVec, dmVec, M, N);
-#endif // #ifdef HAVE_BLAS #else
+    arith_matmul_kernel_f(cMat, 1, wfsVec, 0, 1.0f, 0.0f, dmVec, (uint64_t) M, (uint64_t) N, 1);
 }

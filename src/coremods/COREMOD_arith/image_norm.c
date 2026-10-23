@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "milk_runnable.h"
+#include "COREMOD_arith/image_stats.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 
@@ -51,22 +52,22 @@ static errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t slicea
     if (outimg->ID == -1)
     {
         imgid_copy(inimg, outimg);
-    }
-    for (uint8_t ax = 0; ax < inimg->md->naxis; ax++)
-    {
-        if (ax != sliceaxis)
+        for (uint8_t ax = 0; ax < inimg->md->naxis; ax++)
         {
-            outimg->mdt->size[ax] = 1;
+            if (ax != sliceaxis)
+            {
+                outimg->mdt->size[ax] = 1;
+            }
         }
-    }
-    outimg->mdt->datatype = _DATATYPE_FLOAT;
+        outimg->mdt->datatype = _DATATYPE_FLOAT;
 
-    /* Create output stream */
-    outimg->im = (IMAGE *) calloc(1, sizeof(IMAGE));
-    strncpy(outimg->name, norm_outimname, 79);
-    ImageStreamIO_createIm_gpu(outimg->im, outimg->name, outimg->mdt->naxis, outimg->mdt->size,
-                               outimg->mdt->datatype, -1, 1, 10, 0, 0, 0);
-    outimg->md = outimg->im->md;
+        /* Create output stream */
+        outimg->im = (IMAGE *) calloc(1, sizeof(IMAGE));
+        strncpy(outimg->name, norm_outimname, 79);
+        ImageStreamIO_createIm_gpu(outimg->im, outimg->name, outimg->mdt->naxis, outimg->mdt->size,
+                                   outimg->mdt->datatype, -1, 1, 10, 0, 0, 0);
+        outimg->md = outimg->im->md;
+    }
 
     uint32_t sizes[3] = { inimg->md->size[0], inimg->md->size[1], inimg->md->size[2] };
     if (inimg->md->naxis < 3)
@@ -77,24 +78,16 @@ static errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t slicea
     {
         sizes[1] = 1;
     }
+    uint8_t dt        = inimg->md->datatype;
     double *normarray = (double *) calloc(sizes[sliceaxis], sizeof(double));
-    for (uint32_t i = 0; i < sizes[0]; i++)
+    for (uint32_t k = 0; k < sizes[2]; k++)
     {
         for (uint32_t j = 0; j < sizes[1]; j++)
         {
-            for (uint32_t k = 0; k < sizes[2]; k++)
+            for (uint32_t i = 0; i < sizes[0]; i++)
             {
                 uint64_t idx = (uint64_t) k * sizes[1] * sizes[0] + (uint64_t) j * sizes[0] + i;
-                double   v   = 0;
-                switch (inimg->mdt->datatype)
-                {
-                case _DATATYPE_FLOAT:
-                    v = inimg->im->array.F[idx];
-                    break;
-                case _DATATYPE_DOUBLE:
-                    v = inimg->im->array.D[idx];
-                    break;
-                }
+                double   v   = arith_read_im_pix(inimg->im, dt, idx);
                 uint32_t coords[3] = { i, j, k };
                 normarray[coords[sliceaxis]] += v * v;
             }

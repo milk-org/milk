@@ -354,40 +354,14 @@ static val_t func_eval_d_d(const cli_token *ftok)
         {
             return mk_string("");
         }
-        uint8_t cdt = cli_calc_cast_datatype(ftok->fnctptr);
-        if (cdt != 0)
-        {
-            const IMAGE *src =
-                &data.core.image[image_ID(arg.sval, data.core.image, data.core.NB_MAX_IMAGE)];
-            uint32_t    sz[3] = { src->md[0].size[0], src->md[0].size[1], src->md[0].size[2] };
-            const char *tmpn  = alloc_tmpname();
-            imageID     tid   = -1;
-            create_image_ID(tmpn, src->md[0].naxis, sz, cdt, 0, 10, 0, &tid);
-            if (tid == -1 || cli_calc_inplace(&data.core.image[tid], TOK_EQUAL, src, 0.0) != 0)
-            {
-                if (tid == -1)
-                {
-                    parse_errmsg("Failed to allocate output image");
-                }
-                return mk_string("");
-            }
-            return mk_string(tmpn);
-        }
-        const char *tmpn = alloc_tmpname();
-        arith_image_function_im_im__d_d(arg.sval, tmpn, ftok->fnctptr);
-        if (data.core.Debug > 0)
-        {
-            printf("double_func(double)\n");
-        }
-        return mk_string(tmpn);
+        const IMAGE *src =
+            &data.core.image[image_ID(arg.sval, data.core.image, data.core.NB_MAX_IMAGE)];
+        const char *tmpn = cli_calc_eval_fn_im(1, ftok->fnctptr, src, 0.0, NULL, 0.0, 0.0);
+        return mk_string((tmpn != NULL) ? tmpn : "");
     }
 
     double darg = to_double(arg);
     double res  = ((double (*)(double)) ftok->fnctptr)(darg);
-    if (data.core.Debug > 0)
-    {
-        printf("double=func(double)\n");
-    }
     return mk_double(res);
 }
 
@@ -402,76 +376,60 @@ static val_t func_eval_dd_d(const cli_token *ftok)
         return mk_double(0);
     }
 
-    if (args[0].type == VAL_STRING && args[1].type == VAL_STRING)
+    if (args[0].type == VAL_STRING || args[1].type == VAL_STRING)
     {
-        if (!check_image(args[0].sval) || !check_image(args[1].sval))
+        const IMAGE *ia = NULL;
+        const IMAGE *ib = NULL;
+        if (args[0].type == VAL_STRING)
         {
-            return mk_string("");
+            if (!check_image(args[0].sval))
+            {
+                return mk_string("");
+            }
+            ia = &data.core.image[image_ID(args[0].sval, data.core.image, data.core.NB_MAX_IMAGE)];
         }
-        const char *tmpn = alloc_tmpname();
-        if (ftok->fnctptr == fmin)
+        if (args[1].type == VAL_STRING)
         {
-            arith_image_minv(args[0].sval, args[1].sval, tmpn);
+            if (!check_image(args[1].sval))
+            {
+                return mk_string("");
+            }
+            ib = &data.core.image[image_ID(args[1].sval, data.core.image, data.core.NB_MAX_IMAGE)];
         }
-        else if (ftok->fnctptr == fmax)
+        double      ac   = (ia == NULL) ? to_double(args[0]) : 0.0;
+        double      bc   = (ib == NULL) ? to_double(args[1]) : 0.0;
+        const char *tmpn = cli_calc_eval_fn_im(2, ftok->fnctptr, ia, ac, ib, bc, 0.0);
+        if (tmpn != NULL)
         {
-            arith_image_maxv(args[0].sval, args[1].sval, tmpn);
+            return mk_string(tmpn);
         }
-        else if (ftok->fnctptr == fmod)
+        if (ia != NULL && ib != NULL)
         {
-            arith_image_fmod(args[0].sval, args[1].sval, tmpn);
+            tmpn = alloc_tmpname();
+            if (ftok->fnctptr == fmin)
+            {
+                arith_image_minv(args[0].sval, args[1].sval, tmpn);
+            }
+            else if (ftok->fnctptr == fmax)
+            {
+                arith_image_maxv(args[0].sval, args[1].sval, tmpn);
+            }
+            else if (ftok->fnctptr == fmod)
+            {
+                arith_image_fmod(args[0].sval, args[1].sval, tmpn);
+            }
+            else if (ftok->fnctptr == pow)
+            {
+                arith_image_pow(args[0].sval, args[1].sval, tmpn);
+            }
+            else
+            {
+                parse_errmsg("Unsupported (image, image) function");
+                return mk_string("");
+            }
+            return mk_string(tmpn);
         }
-        else if (ftok->fnctptr == pow)
-        {
-            arith_image_pow(args[0].sval, args[1].sval, tmpn);
-        }
-        else
-        {
-            parse_errmsg("Unsupported (image, image) function");
-            return mk_string("");
-        }
-        return mk_string(tmpn);
-    }
-
-    if (args[0].type == VAL_STRING)
-    {
-        if (!check_image(args[0].sval))
-        {
-            return mk_string("");
-        }
-        const char *tmpn = alloc_tmpname();
-        arith_image_function_imd_im__dd_d(args[0].sval, to_double(args[1]), tmpn, ftok->fnctptr);
-        return mk_string(tmpn);
-    }
-
-    if (args[1].type == VAL_STRING) // (scalar, image)
-    {
-        if (!check_image(args[1].sval))
-        {
-            return mk_string("");
-        }
-        const char *tmpn = alloc_tmpname();
-        if (ftok->fnctptr == fmin || ftok->fnctptr == fmax || ftok->fnctptr == hypot) // commutative
-        {
-            arith_image_function_imd_im__dd_d(args[1].sval, to_double(args[0]), tmpn,
-                                              ftok->fnctptr);
-        }
-        else if (ftok->fnctptr == fmod)
-        {
-            char cst[32];
-            snprintf(cst, sizeof(cst), "%s", alloc_tmpname()); // constant image shaped like arg 2
-            char zero[32];
-            snprintf(zero, sizeof(zero), "%s", alloc_tmpname());
-            arith_image_cstmult(args[1].sval, 0.0, zero);
-            arith_image_cstadd(zero, to_double(args[0]), cst);
-            arith_image_fmod(cst, args[1].sval, tmpn);
-        }
-        else
-        {
-            parse_errmsg("Unsupported (scalar, image) function");
-            return mk_string("");
-        }
-        return mk_string(tmpn);
+        return mk_string("");
     }
 
     double d1 = to_double(args[0]);
@@ -496,10 +454,11 @@ static val_t func_eval_ddd_d(const cli_token *ftok)
         {
             return mk_string("");
         }
-        const char *tmpn = alloc_tmpname();
-        arith_image_function_imdd_im__ddd_d(args[0].sval, to_double(args[1]), to_double(args[2]),
-                                            tmpn, ftok->fnctptr);
-        return mk_string(tmpn);
+        const IMAGE *src =
+            &data.core.image[image_ID(args[0].sval, data.core.image, data.core.NB_MAX_IMAGE)];
+        const char *tmpn = cli_calc_eval_fn_im(3, ftok->fnctptr, src, to_double(args[1]), NULL, 0.0,
+                                               to_double(args[2]));
+        return mk_string((tmpn != NULL) ? tmpn : "");
     }
     if (args[1].type == VAL_STRING || args[2].type == VAL_STRING)
     {
@@ -511,68 +470,6 @@ static val_t func_eval_ddd_d(const cli_token *ftok)
     double d2 = to_double(args[1]);
     double d3 = to_double(args[2]);
     return mk_double(((double (*)(double, double, double)) ftok->fnctptr)(d1, d2, d3));
-}
-
-/** reduce_step() - accumulate one sample @v into @acc for reduction @op. */
-static inline double reduce_step(double acc, double v, reduce_op op)
-{
-    return (op == RED_MIN)    ? fmin(acc, v)
-           : (op == RED_MAX)  ? fmax(acc, v)
-           : (op == RED_ASUM) ? acc + fabs(v)
-           : (op == RED_NORM) ? acc + v * v
-                              : acc + v;
-}
-
-/** reduce_lane_im() - reduce @n values of @im starting at @base with @stride using @op. */
-static double reduce_lane_im(const IMAGE *im,
-                             uint8_t      dt,
-                             uint64_t     base,
-                             uint64_t     n,
-                             uint64_t     stride,
-                             reduce_op    op)
-{
-    double acc = (op == RED_MIN) ? INFINITY : (op == RED_MAX) ? -INFINITY : 0.0;
-#define LANE_PASS1(READ_K)                    \
-    for (uint64_t k = 0; k < n; k++)          \
-    {                                         \
-        acc = reduce_step(acc, (READ_K), op); \
-    }
-    if (dt == _DATATYPE_FLOAT)
-    {
-        const float *restrict p = im->array.F + base;
-        LANE_PASS1((double) p[k * stride]);
-    }
-    else if (dt == _DATATYPE_DOUBLE)
-    {
-        const double *restrict p = im->array.D + base;
-        LANE_PASS1(p[k * stride]);
-    }
-    else
-    {
-        LANE_PASS1(cli_calc_read_im_pix(im, dt, base + k * stride));
-    }
-#undef LANE_PASS1
-
-    if (op == RED_SUM || op == RED_MIN || op == RED_MAX || op == RED_ASUM)
-    {
-        return acc;
-    }
-    if (op == RED_NORM)
-    {
-        return sqrt(acc);
-    }
-    double mean = acc / (double) n;
-    if (op == RED_MEAN)
-    {
-        return mean;
-    }
-    double s2 = 0.0;
-    for (uint64_t k = 0; k < n; k++)
-    {
-        double d = cli_calc_read_im_pix(im, dt, base + k * stride) - mean;
-        s2 += d * d;
-    }
-    return (op == RED_VAR) ? s2 / (double) n : sqrt(s2 / (double) n);
 }
 
 /** reduce_axis() - reduce image @name along @axis into a temporary image with that axis removed. */
@@ -592,30 +489,19 @@ static val_t reduce_axis(const char *name, long axis, reduce_op op)
         return mk_double(0);
     }
 
-    uint64_t inner = 1;
-    uint64_t outer = 1;
-    uint64_t n     = im->md[0].size[axis];
     uint32_t osz[3];
     int      onax = 0;
     for (int a = 0; a < nax; a++)
     {
-        if (a < axis)
-        {
-            inner *= im->md[0].size[a];
-        }
-        else if (a > axis)
-        {
-            outer *= im->md[0].size[a];
-        }
         if (a != axis)
         {
             osz[onax++] = im->md[0].size[a];
         }
     }
 
-    if (onax == 0) // 1-D input: the result is a scalar
+    if (onax == 0)
     {
-        return mk_double(reduce_lane_im(im, dt, 0, n, 1, op));
+        return mk_double(arith_image_reduce_lane(im, dt, 0, im->md[0].size[axis], 1, op));
     }
 
     int         out_d = !(dt == _DATATYPE_FLOAT || dt == _DATATYPE_HALF || dt == _DATATYPE_UINT8 ||
@@ -628,39 +514,8 @@ static val_t reduce_axis(const char *name, long axis, reduce_op op)
         parse_errmsg("Failed to allocate output image");
         return mk_string("");
     }
-    IMAGE *oim = &data.core.image[tid];
-    for (uint64_t o = 0; o < outer; o++)
-    {
-        for (uint64_t i = 0; i < inner; i++)
-        {
-            double r = reduce_lane_im(im, dt, o * n * inner + i, n, inner, op);
-            if (out_d)
-            {
-                oim->array.D[o * inner + i] = r;
-            }
-            else
-            {
-                oim->array.F[o * inner + i] = (float) r;
-            }
-        }
-    }
+    arith_image_reduce_axis_im(im, axis, op, &data.core.image[tid]);
     return mk_string(tmpn);
-}
-
-/**
- * cmp_double - `qsort()` comparator for ascending `double` arrays
- * @a: Pointer to first `double`
- * @b: Pointer to second `double`
- *
- * Used by `reduce_masked()` when computing masked percentiles (`imedian`, `perc`).
- *
- * Return: -1 if `*a < *b`, 1 if `*a > *b`, 0 if equal.
- */
-static int cmp_double(const void *a, const void *b)
-{
-    double x = *(const double *) a;
-    double y = *(const double *) b;
-    return (x > y) - (x < y);
 }
 
 /**
@@ -669,12 +524,8 @@ static int cmp_double(const void *a, const void *b)
  */
 static val_t reduce_masked(const char *name, const char *mask, reduce_op op, double f)
 {
-    const IMAGE *im  = &data.core.image[image_ID(name, data.core.image, data.core.NB_MAX_IMAGE)];
-    const IMAGE *mk  = &data.core.image[image_ID(mask, data.core.image, data.core.NB_MAX_IMAGE)];
-    uint64_t     nel = im->md[0].nelement;
-    uint8_t      idt = im->md[0].datatype;
-    uint8_t      mdt = mk->md[0].datatype;
-    uint64_t     n   = 0;
+    const IMAGE *im = &data.core.image[image_ID(name, data.core.image, data.core.NB_MAX_IMAGE)];
+    const IMAGE *mk = &data.core.image[image_ID(mask, data.core.image, data.core.NB_MAX_IMAGE)];
 
     int same = (mk->md[0].naxis == im->md[0].naxis);
     for (int a = 0; same && a < im->md[0].naxis; a++)
@@ -686,69 +537,7 @@ static val_t reduce_masked(const char *name, const char *mask, reduce_op op, dou
         parse_errmsg("The mask must have the image's size");
         return mk_double(0);
     }
-
-    if (op == RED_PERC)
-    {
-        double *v = (double *) malloc(sizeof(double) * nel);
-        if (v == NULL)
-        {
-            parse_errmsg("Memory allocation failed");
-            return mk_double(0);
-        }
-        for (uint64_t i = 0; i < nel; i++)
-        {
-            if (cli_calc_read_im_pix(mk, mdt, i) != 0.0)
-            {
-                v[n++] = cli_calc_read_im_pix(im, idt, i);
-            }
-        }
-        double r = NAN;
-        if (n > 0)
-        {
-            long k = (long) (f * (double) n);
-            qsort(v, n, sizeof(double), cmp_double);
-            r = v[(k < 0) ? 0 : ((uint64_t) k >= n) ? (long) n - 1 : k];
-        }
-        free(v);
-        return mk_double(r);
-    }
-
-    double acc = (op == RED_MIN) ? INFINITY : (op == RED_MAX) ? -INFINITY : 0.0;
-    for (uint64_t i = 0; i < nel; i++)
-    {
-        if (cli_calc_read_im_pix(mk, mdt, i) != 0.0)
-        {
-            acc = reduce_step(acc, cli_calc_read_im_pix(im, idt, i), op);
-            n++;
-        }
-    }
-    if (n == 0)
-    {
-        return mk_double((op == RED_SUM || op == RED_ASUM || op == RED_NORM) ? 0.0 : NAN);
-    }
-    if (op == RED_SUM || op == RED_MIN || op == RED_MAX || op == RED_ASUM)
-    {
-        return mk_double(acc);
-    }
-    if (op == RED_NORM)
-    {
-        return mk_double(sqrt(acc));
-    }
-    double mean = acc / (double) n;
-    if (op == RED_MEAN)
-    {
-        return mk_double(mean);
-    }
-    double s2 = 0.0;
-    for (uint64_t i = 0; i < nel; i++)
-    {
-        if (cli_calc_read_im_pix(mk, mdt, i) != 0.0)
-        {
-            double d = cli_calc_read_im_pix(im, idt, i) - mean;
-            s2 += d * d;
-        }
-    }
-    return mk_double((op == RED_VAR) ? s2 / (double) n : sqrt(s2 / (double) n));
+    return mk_double(arith_image_reduce_masked_im(im, mk, op, f));
 }
 
 /** axis_reduce_op() - the reduce_op of reduction @fn, or -1 if it has no axis form. */

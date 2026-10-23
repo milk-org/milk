@@ -18,6 +18,9 @@
 #define CLI_CALC_INTERNAL_H
 
 #include "ImageStreamIO/ImageStruct.h"
+#include "COREMOD_arith/image_coord.h"
+#include "COREMOD_arith/image_linalg.h"
+#include "COREMOD_arith/image_stats.h"
 #include "cli_calc_scalar.h"
 #include "cli_calc_tokenizer.h"
 
@@ -85,72 +88,54 @@ int cli_calc_fuse_assign(IMAGE *dst, cli_token_type aop);
  * one pass; its name, or NULL when the images differ in size or are not real. */
 const char *cli_calc_select(const IMAGE *c, const IMAGE *t, double tc, const IMAGE *f, double fc);
 
+/** cli_calc_eval_binop_im() - evaluate a single binary operator on same-shape real images or image+scalar. */
+const char *cli_calc_eval_binop_im(cli_token_type op,
+                                   const IMAGE   *li,
+                                   double         lc,
+                                   const IMAGE   *ri,
+                                   double         rc);
+
+/** cli_calc_eval_fn_im() - evaluate a 1-, 2-, or 3-arg math function on same-shape real images or scalars. */
+const char *cli_calc_eval_fn_im(int nfn,
+                                double (*fn)(),
+                                const IMAGE *a,
+                                double       ac,
+                                const IMAGE *b,
+                                double       bc,
+                                double       c2);
+
 /** cli_calc_coord() - a new image of @ref's size: coordinate @kind (CALC_COORD_*) of each pixel about (cx, cy). */
 const char *cli_calc_coord(const IMAGE *ref, int kind, double cx, double cy);
 
 /** cli_calc_coord_kind() - CALC_COORD_* for function token @t (ix iy ir itheta rand randn). */
-int      cli_calc_coord_kind(const cli_token *t);
-uint32_t cli_calc_next_rng_seed(void);
-int      cli_calc_eval_const_scalar(double *out);
+int cli_calc_coord_kind(const cli_token *t);
+int cli_calc_eval_const_scalar(double *out);
 
-enum
-{
-    CALC_COORD_X,
-    CALC_COORD_Y,
-    CALC_COORD_R,
-    CALC_COORD_THETA,
-    CALC_COORD_RAND,
-    CALC_COORD_RANDN
-};
+#define CALC_COORD_X ARITH_COORD_X
+#define CALC_COORD_Y ARITH_COORD_Y
+#define CALC_COORD_R ARITH_COORD_R
+#define CALC_COORD_THETA ARITH_COORD_THETA
+#define CALC_COORD_RAND ARITH_COORD_RAND
+#define CALC_COORD_RANDN ARITH_COORD_RANDN
 
-/**
- * cli_calc_hash32 - Avalanching 32-bit integer hash finalizer
- * @h: Input 32-bit word
- *
- * Return: Mixed 32-bit hash value.
- */
-static inline uint32_t cli_calc_hash32(uint32_t h)
-{
-    h = ((h >> 16) ^ h) * 0x45d9f3bu;
-    h = ((h >> 16) ^ h) * 0x45d9f3bu;
-    return (h >> 16) ^ h;
-}
+#define cli_calc_hash32 arith_hash32
+#define cli_calc_rng_draw arith_rng_draw
+#define cli_calc_next_rng_seed arith_next_rng_seed
 
-/**
- * cli_calc_rng_draw - Evaluate a single uniform (`CALC_COORD_RAND`) or Gaussian (`CALC_COORD_RANDN`) draw
- * @kind: `CALC_COORD_RAND` or `CALC_COORD_RANDN`
- * @seed: 32-bit seed value
- *
- * Return: Pseudo-random `double` in `[0, 1)` for `CALC_COORD_RAND` or `N(0, 1)` for `CALC_COORD_RANDN`.
- */
-static inline double cli_calc_rng_draw(int kind, uint32_t seed)
-{
-    uint32_t h0 = cli_calc_hash32(seed ^ 0x9e3779b9u);
-    if (kind == CALC_COORD_RAND)
-    {
-        return (double) (int32_t) (h0 >> 8) * 5.9604644775390625e-8;
-    }
-    uint32_t h1  = cli_calc_hash32((seed ^ 0x9e3779b9u) ^ 0x85ebca6bu);
-    int32_t  sum = ((int32_t) h0 >> 22) + ((int32_t) (h0 << 10) >> 22) +
-                   ((int32_t) (h0 << 20) >> 22) + ((int32_t) h1 >> 22) +
-                   ((int32_t) (h1 << 10) >> 22) + ((int32_t) (h1 << 20) >> 22) + 3;
-    return (double) sum * 0.0013810685772936816;
-}
+typedef arith_reduce_op reduce_op;
+#define RED_SUM ARITH_RED_SUM
+#define RED_MEAN ARITH_RED_MEAN
+#define RED_MIN ARITH_RED_MIN
+#define RED_MAX ARITH_RED_MAX
+#define RED_STD ARITH_RED_STD
+#define RED_VAR ARITH_RED_VAR
+#define RED_NORM ARITH_RED_NORM
+#define RED_ASUM ARITH_RED_ASUM
+#define RED_COUNT ARITH_RED_COUNT
+#define RED_DOT ARITH_RED_DOT
+#define RED_PERC ARITH_RED_PERC
 
-typedef enum
-{
-    RED_SUM,
-    RED_MEAN,
-    RED_MIN,
-    RED_MAX,
-    RED_STD,
-    RED_VAR,
-    RED_NORM,
-    RED_ASUM,
-    RED_COUNT,
-    RED_DOT,
-    RED_PERC /* masked only: imedian, perc */
-} reduce_op;
+#define cli_calc_read_im_pix arith_read_im_pix
 
 /** cli_calc_fuse_reduce() - evaluate reduction @op over fused expression(s) in one pass:
  * 1 done, 0 fallback. */
@@ -178,45 +163,6 @@ int cli_calc_parse_func_argv(int nmin, int nmax, val_t *args, const char *comma_
 
 int cli_calc_reject_complex(const val_t *v, int n);
 
-/**
- * cli_calc_read_im_pix - Read linear element @idx of real image @im as `double`
- * @im:  Image structure
- * @dt:  ImageStreamIO datatype code (`_DATATYPE_*`)
- * @idx: Linear pixel index
- *
- * Provides a uniform scalar read fallback for mixed-datatype reductions and transposes.
- *
- * Return: Pixel value converted to `double`, or `0.0` for unsupported types.
- */
-static inline double cli_calc_read_im_pix(const IMAGE *im, uint8_t dt, uint64_t idx)
-{
-    switch (dt)
-    {
-    case _DATATYPE_FLOAT:
-        return (double) im->array.F[idx];
-    case _DATATYPE_DOUBLE:
-        return im->array.D[idx];
-    case _DATATYPE_UINT8:
-        return (double) im->array.UI8[idx];
-    case _DATATYPE_INT8:
-        return (double) im->array.SI8[idx];
-    case _DATATYPE_UINT16:
-        return (double) im->array.UI16[idx];
-    case _DATATYPE_INT16:
-        return (double) im->array.SI16[idx];
-    case _DATATYPE_UINT32:
-        return (double) im->array.UI32[idx];
-    case _DATATYPE_INT32:
-        return (double) im->array.SI32[idx];
-    case _DATATYPE_UINT64:
-        return (double) im->array.UI64[idx];
-    case _DATATYPE_INT64:
-        return (double) im->array.SI64[idx];
-    default:
-        return 0.0;
-    }
-}
-
 typedef struct
 {
     IMAGE  *img[2];
@@ -231,8 +177,8 @@ typedef struct
     int16_t beta_s1;
 } cli_calc_kept_matrix;
 
-void cli_calc_flatten2d(const IMAGE *im, uint64_t *d0, uint64_t *d1, int *is_3d);
-int  cli_calc_parse_matmul_arg(val_t *out, int *out_trans);
+#define cli_calc_flatten2d arith_image_flatten2d
+int cli_calc_parse_matmul_arg(val_t *out, int *out_trans);
 
 int cli_calc_compile_kept_matrix(cli_calc_kept_matrix *m,
                                  IMAGE                *dst,
@@ -240,29 +186,6 @@ int cli_calc_compile_kept_matrix(cli_calc_kept_matrix *m,
                                  int                   keep_vars,
                                  int                   strict_local_dt);
 int cli_calc_exec_kept_matrix(const cli_calc_kept_matrix *m, IMAGE *dst);
-
-int cli_calc_matmul_check(const IMAGE *im1,
-                          int          transA,
-                          const IMAGE *im2,
-                          int          transB,
-                          const IMAGE *dst,
-                          int          allow_reshape);
-int cli_calc_gemm_into(const IMAGE *im1,
-                       int          transA,
-                       const IMAGE *im2,
-                       int          transB,
-                       double       alpha,
-                       double       beta,
-                       IMAGE       *outim);
-int cli_calc_matmul_into(const IMAGE *im1, int transA, const IMAGE *im2, int transB, IMAGE *outim);
-int cli_calc_ger_check(const IMAGE *imX, const IMAGE *imY, const IMAGE *dst);
-int cli_calc_ger_into(const IMAGE *imX, const IMAGE *imY, double alpha, double beta, IMAGE *outim);
-int cli_calc_syrk_check(const IMAGE *imA, int transA, const IMAGE *dst);
-int cli_calc_syrk_into(const IMAGE *imA, int transA, double alpha, double beta, IMAGE *outim);
-int cli_calc_transpose_check(const IMAGE *src, const IMAGE *dst);
-int cli_calc_transpose_into(const IMAGE *src, IMAGE *dst);
-int cli_calc_reshape_check(const IMAGE *src, const IMAGE *dst);
-int cli_calc_reshape_into(const IMAGE *src, IMAGE *dst);
 
 val_t cli_calc_func_transpose(void);
 val_t cli_calc_func_reshape(void);

@@ -294,10 +294,7 @@ imageID image_gen_im2coord(const char *IDin_name, uint8_t axis, const char *IDou
             fflush(stdout);
             xsize = dcimg[IDin].md[0].size[0];
             create_1Dimage_ID(IDout_name, xsize, &IDout);
-            for (uint32_t ii = 0; ii < xsize; ii++)
-            {
-                dcimg[IDout].array.F[ii] = 1.0f * ii;
-            }
+            arith_image_fill_coord(&dcimg[IDout], ARITH_COORD_X, 0.0, 0.0);
         }
 
         if (naxis == 2)
@@ -311,30 +308,15 @@ imageID image_gen_im2coord(const char *IDin_name, uint8_t axis, const char *IDou
             switch (axis)
             {
             case 0:
-                for (uint32_t ii = 0; ii < xsize; ii++)
-                {
-                    for (uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout].array.F[jj * xsize + ii] = 1.0f * ii;
-                    }
-                }
+                arith_image_fill_coord(&dcimg[IDout], ARITH_COORD_X, 0.0, 0.0);
                 break;
             case 1:
-                for (uint32_t ii = 0; ii < xsize; ii++)
-                {
-                    for (uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout].array.F[jj * xsize + ii] = 1.0f * jj;
-                    }
-                }
+                arith_image_fill_coord(&dcimg[IDout], ARITH_COORD_Y, 0.0, 0.0);
                 break;
             default:
-                for (uint32_t ii = 0; ii < xsize; ii++)
+                for (uint64_t ii = 0; ii < (uint64_t) xsize * ysize; ii++)
                 {
-                    for (uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout].array.F[jj * xsize + ii] = 1.0 * jj * xsize + ii;
-                    }
+                    dcimg[IDout].array.F[ii] = (float) ii;
                 }
             }
         }
@@ -351,52 +333,25 @@ imageID image_gen_im2coord(const char *IDin_name, uint8_t axis, const char *IDou
             switch (axis)
             {
             case 0:
-                for (uint32_t ii = 0; ii < xsize; ii++)
-                {
-                    for (uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        for (uint32_t kk = 0; kk < zsize; kk++)
-                        {
-                            dcimg[IDout].array.F[kk * xsize * ysize + jj * xsize + ii] = 1.0 * ii;
-                        }
-                    }
-                }
+                arith_image_fill_coord(&dcimg[IDout], ARITH_COORD_X, 0.0, 0.0);
                 break;
             case 1:
-                for (uint32_t ii = 0; ii < xsize; ii++)
-                {
-                    for (uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        for (uint32_t kk = 0; kk < zsize; kk++)
-                        {
-                            dcimg[IDout].array.F[kk * xsize * ysize + jj * xsize + ii] = 1.0 * jj;
-                        }
-                    }
-                }
+                arith_image_fill_coord(&dcimg[IDout], ARITH_COORD_Y, 0.0, 0.0);
                 break;
             case 2:
-                for (uint32_t ii = 0; ii < xsize; ii++)
+                for (uint32_t kk = 0; kk < zsize; kk++)
                 {
-                    for (uint32_t jj = 0; jj < xsize; jj++)
+                    float *restrict slice = dcimg[IDout].array.F + (uint64_t) kk * xsize * ysize;
+                    for (uint64_t ii = 0; ii < (uint64_t) xsize * ysize; ii++)
                     {
-                        for (uint32_t kk = 0; kk < zsize; kk++)
-                        {
-                            dcimg[IDout].array.F[kk * xsize * ysize + jj * xsize + ii] = 1.0 * kk;
-                        }
+                        slice[ii] = (float) kk;
                     }
                 }
                 break;
             default:
-                for (uint32_t ii = 0; ii < xsize; ii++)
+                for (uint64_t ii = 0; ii < (uint64_t) xsize * ysize * zsize; ii++)
                 {
-                    for (uint32_t jj = 0; jj < xsize; jj++)
-                    {
-                        for (uint32_t kk = 0; kk < zsize; kk++)
-                        {
-                            dcimg[IDout].array.F[kk * xsize * ysize + jj * xsize + ii] =
-                                1.0 * kk * xsize * ysize + jj * xsize + ii;
-                        }
-                    }
+                    dcimg[IDout].array.F[ii] = (float) ii;
                 }
             }
         }
