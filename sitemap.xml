@@ -2,170 +2,154 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://milk-org.github.io/milk/</loc>
-         <lastmod>2026-10-08</lastmod>
-    </url>
-    <url>
-         <loc>https://milk-org.github.io/milk/Markdown_Index/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/notes_for_future/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/tags/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/whatsnew/</loc>
-         <lastmod>2026-10-08</lastmod>
-    </url>
-    <url>
-         <loc>https://milk-org.github.io/milk/arch/FPS_Standalone_CMD_Modes/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/arch/architecture/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/arch/dependency_graph/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/arch/programmers_guide/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/developer/DocumentingCode/</loc>
-         <lastmod>2026-10-08</lastmod>
-    </url>
-    <url>
-         <loc>https://milk-org.github.io/milk/developer/LoadingModules/</loc>
-         <lastmod>2026-10-08</lastmod>
-    </url>
-    <url>
-         <loc>https://milk-org.github.io/milk/developer/ModuleFiles/</loc>
-         <lastmod>2026-10-08</lastmod>
-    </url>
-    <url>
-         <loc>https://milk-org.github.io/milk/developer/TemplateSourceCode/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/developer/WorkingWithGit/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/developer/code_assist/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/developer/coding_standards/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/developer/dependency_system/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/developer/multiversion/</loc>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/developer/plugins/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/developer/tooling/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/developer/tutorial/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/CLIcore/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/fifo/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/fps/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/fpsCTRL_reference/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/helpreadline/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/procinfo/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/python/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/scripting/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/scripts/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/sequencer/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/slicing/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/streams/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/guide/valkey/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/includes/abbreviations/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/maintenance/pm_operations/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/operations/debugging/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/operations/performance/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/operations/pgo/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/quickstart/CLI_Overview/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/quickstart/build_tiers/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/quickstart/compile/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/quickstart/faq/</loc>
-         <lastmod>2026-10-08</lastmod>
+         <lastmod>2026-10-23</lastmod>
     </url>
 </urlset>
