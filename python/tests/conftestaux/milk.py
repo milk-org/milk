@@ -40,20 +40,24 @@ def ctfixt_change_tmux_server():
     if saved_tmux is not None:
         os.environ["TMUX"] = saved_tmux
 
+
 def test_check_if_executed():  # it's not!!!! Cuz of the filename.
     return 1 / 0
 
+
 @pytest.fixture(scope="session", autouse=True)
-def ctfixt_test_tmux_server_chage(ctfixt_change_tmux_server: str, ctfixt_change_MILK_SHM_DIR: str):
-    '''
+def ctfixt_test_tmux_server_chage(
+    ctfixt_change_tmux_server: str, ctfixt_change_MILK_SHM_DIR: str
+):
+    """
     Test the tmux server swap happened correctly
     Wrapped in a autouse fixture to crash the test session early.
-    '''
-    #TODO add info to doc.
+    """
+    # TODO add info to doc.
 
     TMUX_TMPDIR_SPOOF = ctfixt_change_tmux_server
 
-    full_info='''
+    full_info = """
 ============= WARNING: for pytest/nox to work entirely, ================
     You must allow environment variables to be passed to the
     testing tmux servers.
@@ -63,7 +67,7 @@ with:
     export MILK_SHM_DIR="${MILK_SHM_DIR:-/milk/shm}" # sets a default but passes a non-default
 but not:
     export MILK_SHM_DIR=/milk/shm
-'''
+"""
 
     import libtmux
 
@@ -93,7 +97,7 @@ but not:
             msg=f"{expected!r} not found in pane output. {full_info}",
         )
     finally:
-        #session.kill()
+        # session.kill()
         pass
 
     yield None
