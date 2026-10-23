@@ -4,16 +4,19 @@
 
 /**
  * @file cli_calc_linalg.c
- * @brief Calculator tensor shape and matrix multiplication operations (`transpose`, `reshape`, `vec`, `matmul`).
+ * @brief Calculator tensor shape, BLAS Level 1-3 (`matmul`, `gemm`, `gemv`, `ger`, `outer`,
+ *        `syrk`, `symv`, `axpy`, `scal`), and kept matrix-assignment lowering.
  *
  * Role & Goal:
  *   Implements in-place and temporary-allocating matrix transpose (`transpose()`),
- *   dimension reshaping (`reshape()`), 1-D vector literal construction (`vec()`),
- *   and BLAS/OpenMP matrix-vector and matrix-matrix multiplication (`matmul()`, `@`).
+ *   dimension reshaping (`reshape()`), 1-D/2-D constructors (`vec()`, `eye()`, `diag()`),
+ *   BLAS Level 1-3 operations, and direct destination lowering (`cli_calc_compile_kept_matrix()`,
+ *   `cli_calc_exec_kept_matrix()`) for `dst = alpha * op(A) * op(B) + beta * dst` forms.
  */
 
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -76,63 +79,48 @@ int cli_calc_transpose_into(const IMAGE *src, IMAGE *dst)
     uint64_t nel     = M * N;
     uint64_t tile_sz = 32;
 
+#define TRANSPOSE_TYPED(T, S_ARR, D_ARR)                                                           \
+    do                                                                                             \
+    {                                                                                              \
+        const T *restrict s = (S_ARR);                                                             \
+        T *restrict d       = (D_ARR);                                                             \
+        if (M == 1 || N == 1)                                                                      \
+        {                                                                                          \
+            __builtin_memcpy(d, s, sizeof(T) * nel);                                               \
+            return 0;                                                                              \
+        }                                                                                          \
+        _Pragma(                                                                                   \
+            "omp parallel for collapse(2) schedule(static) if (nel >= 65536)") for (uint64_t m0 =  \
+                                                                                        0;         \
+                                                                                    m0 < M;        \
+                                                                                    m0 += tile_sz) \
+        {                                                                                          \
+            for (uint64_t n0 = 0; n0 < N; n0 += tile_sz)                                           \
+            {                                                                                      \
+                uint64_t mend = (m0 + tile_sz < M) ? m0 + tile_sz : M;                             \
+                uint64_t nend = (n0 + tile_sz < N) ? n0 + tile_sz : N;                             \
+                for (uint64_t n = n0; n < nend; n++)                                               \
+                {                                                                                  \
+                    const T *restrict scol = &s[n * M];                                            \
+                    for (uint64_t m = m0; m < mend; m++)                                           \
+                    {                                                                              \
+                        d[m * N + n] = scol[m];                                                    \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+        }                                                                                          \
+        return 0;                                                                                  \
+    } while (0)
+
     if (src_dt == _DATATYPE_FLOAT && dst_dt == _DATATYPE_FLOAT)
     {
-        const float *restrict s = src->array.F;
-        float *restrict d       = dst->array.F;
-        if (M == 1 || N == 1)
-        {
-            __builtin_memcpy(d, s, sizeof(float) * nel);
-            return 0;
-        }
-#pragma omp parallel for collapse(2) schedule(static) if (nel >= 65536)
-        for (uint64_t m0 = 0; m0 < M; m0 += tile_sz)
-        {
-            for (uint64_t n0 = 0; n0 < N; n0 += tile_sz)
-            {
-                uint64_t mend = (m0 + tile_sz < M) ? m0 + tile_sz : M;
-                uint64_t nend = (n0 + tile_sz < N) ? n0 + tile_sz : N;
-                for (uint64_t n = n0; n < nend; n++)
-                {
-                    const float *restrict scol = &s[n * M];
-                    for (uint64_t m = m0; m < mend; m++)
-                    {
-                        d[m * N + n] = scol[m];
-                    }
-                }
-            }
-        }
-        return 0;
+        TRANSPOSE_TYPED(float, src->array.F, dst->array.F);
     }
-
     if (src_dt == _DATATYPE_DOUBLE && dst_dt == _DATATYPE_DOUBLE)
     {
-        const double *restrict s = src->array.D;
-        double *restrict d       = dst->array.D;
-        if (M == 1 || N == 1)
-        {
-            __builtin_memcpy(d, s, sizeof(double) * nel);
-            return 0;
-        }
-#pragma omp parallel for collapse(2) schedule(static) if (nel >= 65536)
-        for (uint64_t m0 = 0; m0 < M; m0 += tile_sz)
-        {
-            for (uint64_t n0 = 0; n0 < N; n0 += tile_sz)
-            {
-                uint64_t mend = (m0 + tile_sz < M) ? m0 + tile_sz : M;
-                uint64_t nend = (n0 + tile_sz < N) ? n0 + tile_sz : N;
-                for (uint64_t n = n0; n < nend; n++)
-                {
-                    const double *restrict scol = &s[n * M];
-                    for (uint64_t m = m0; m < mend; m++)
-                    {
-                        d[m * N + n] = scol[m];
-                    }
-                }
-            }
-        }
-        return 0;
+        TRANSPOSE_TYPED(double, src->array.D, dst->array.D);
     }
+#undef TRANSPOSE_TYPED
 
     for (uint64_t m = 0; m < M; m++)
     {
@@ -764,21 +752,96 @@ int cli_calc_matmul_check(const IMAGE *im1,
     return 0;
 }
 
+#ifdef HAVE_BLAS
+#    define MATMUL_KERNEL_BODY(T, GEMV, GEMM, MBLK)                                                \
+        if (N == 1 && !tB)                                                                         \
+        {                                                                                          \
+            GEMV(CblasColMajor, tA ? CblasTrans : CblasNoTrans, (int) (tA ? K : M),                \
+                 (int) (tA ? M : K), alpha, A, (int) (tA ? K : M), B, 1, beta, C, 1);              \
+            return;                                                                                \
+        }                                                                                          \
+        GEMM(CblasColMajor, tA ? CblasTrans : CblasNoTrans, tB ? CblasTrans : CblasNoTrans,        \
+             (int) M, (int) N, (int) K, alpha, A, (int) (tA ? K : M), B, (int) (tB ? N : K), beta, \
+             C, (int) M);
+#else
+#    define MATMUL_KERNEL_BODY(T, GEMV, GEMM, MBLK)                                            \
+        if (!tA)                                                                               \
+        {                                                                                      \
+            const uint64_t mblk  = (MBLK);                                                     \
+            uint64_t       nmblk = (M + mblk - 1) / mblk;                                      \
+            _Pragma("omp parallel for collapse(2) schedule(static) if (M * N * K >= "          \
+                    "262144)") for (uint64_t n = 0; n < N; n++)                                \
+            {                                                                                  \
+                for (uint64_t mb = 0; mb < nmblk; mb++)                                        \
+                {                                                                              \
+                    uint64_t m0      = mb * mblk;                                              \
+                    uint64_t mend    = (m0 + mblk < M) ? m0 + mblk : M;                        \
+                    uint64_t mlen    = mend - m0;                                              \
+                    T *restrict cblk = &C[n * M + m0];                                         \
+                    if (beta == (T) 0)                                                         \
+                    {                                                                          \
+                        memset(cblk, 0, sizeof(T) * mlen);                                     \
+                    }                                                                          \
+                    else if (beta != (T) 1)                                                    \
+                    {                                                                          \
+                        _Pragma("omp simd") for (uint64_t m = 0; m < mlen; m++)                \
+                        {                                                                      \
+                            cblk[m] *= beta;                                                   \
+                        }                                                                      \
+                    }                                                                          \
+                    for (uint64_t k = 0; k < K; k++)                                           \
+                    {                                                                          \
+                        T b_kn                 = alpha * (tB ? B[k * N + n] : B[n * K + k]);   \
+                        const T *restrict colA = &A[k * M + m0];                               \
+                        _Pragma("omp simd") for (uint64_t m = 0; m < mlen; m++)                \
+                        {                                                                      \
+                            cblk[m] += colA[m] * b_kn;                                         \
+                        }                                                                      \
+                    }                                                                          \
+                }                                                                              \
+            }                                                                                  \
+        }                                                                                      \
+        else if (!tB)                                                                          \
+        {                                                                                      \
+            _Pragma("omp parallel for collapse(2) schedule(static) if (M * N * K >= "          \
+                    "262144)") for (uint64_t n = 0; n < N; n++)                                \
+            {                                                                                  \
+                for (uint64_t m = 0; m < M; m++)                                               \
+                {                                                                              \
+                    const T *restrict rowA = &A[m * K];                                        \
+                    const T *restrict colB = &B[n * K];                                        \
+                    T acc                  = (T) 0;                                            \
+                    _Pragma("omp simd reduction(+ : acc)") for (uint64_t k = 0; k < K; k++)    \
+                    {                                                                          \
+                        acc += rowA[k] * colB[k];                                              \
+                    }                                                                          \
+                    C[n * M + m] =                                                             \
+                        (beta == (T) 0) ? (alpha * acc) : (alpha * acc + beta * C[n * M + m]); \
+                }                                                                              \
+            }                                                                                  \
+        }                                                                                      \
+        else                                                                                   \
+        {                                                                                      \
+            _Pragma("omp parallel for collapse(2) schedule(static) if (M * N * K >= "          \
+                    "262144)") for (uint64_t n = 0; n < N; n++)                                \
+            {                                                                                  \
+                for (uint64_t m = 0; m < M; m++)                                               \
+                {                                                                              \
+                    const T *restrict rowA = &A[m * K];                                        \
+                    T acc                  = (T) 0;                                            \
+                    for (uint64_t k = 0; k < K; k++)                                           \
+                    {                                                                          \
+                        acc += rowA[k] * B[k * N + n];                                         \
+                    }                                                                          \
+                    C[n * M + m] =                                                             \
+                        (beta == (T) 0) ? (alpha * acc) : (alpha * acc + beta * C[n * M + m]); \
+                }                                                                              \
+            }                                                                                  \
+        }
+#endif
+
 /**
  * matmul_kernel_f - Single-precision column-major BLAS GEMM `C = alpha * op(A) * op(B) + beta * C`
- * @A:     Left matrix buffer (`M x K` or `K x M` when @tA is set)
- * @tA:    Non-zero to transpose @A
- * @B:     Right matrix buffer (`K x N` or `N x K` when @tB is set)
- * @tB:    Non-zero to transpose @B
- * @alpha: Scalar multiplier on `op(A) * op(B)`
- * @beta:  Scalar multiplier on @C (`0.0f` overwrites @C without reading it)
- * @C:     Output matrix buffer (`M x N`)
- * @M:     Row count of `op(A)` and @C
- * @K:     Inner contraction dimension
- * @N:     Column count of `op(B)` and @C
- *
- * Dispatches to `cblas_sgemv` / `cblas_sgemm` when BLAS is available, or a
- * cache-blocked OpenMP SIMD fallback otherwise.
  */
 static void matmul_kernel_f(const float *restrict A,
                             int tA,
@@ -791,109 +854,11 @@ static void matmul_kernel_f(const float *restrict A,
                             uint64_t K,
                             uint64_t N)
 {
-#ifdef HAVE_BLAS
-    if (N == 1 && !tB)
-    {
-        cblas_sgemv(CblasColMajor, tA ? CblasTrans : CblasNoTrans, (int) (tA ? K : M),
-                    (int) (tA ? M : K), alpha, A, (int) (tA ? K : M), B, 1, beta, C, 1);
-        return;
-    }
-    cblas_sgemm(CblasColMajor, tA ? CblasTrans : CblasNoTrans, tB ? CblasTrans : CblasNoTrans,
-                (int) M, (int) N, (int) K, alpha, A, (int) (tA ? K : M), B, (int) (tB ? N : K),
-                beta, C, (int) M);
-#else
-    if (!tA)
-    {
-        const uint64_t mblk  = 128;
-        uint64_t       nmblk = (M + mblk - 1) / mblk;
-#    pragma omp parallel for collapse(2) schedule(static) if (M * N * K >= 262144)
-        for (uint64_t n = 0; n < N; n++)
-        {
-            for (uint64_t mb = 0; mb < nmblk; mb++)
-            {
-                uint64_t m0          = mb * mblk;
-                uint64_t mend        = (m0 + mblk < M) ? m0 + mblk : M;
-                uint64_t mlen        = mend - m0;
-                float *restrict cblk = &C[n * M + m0];
-                if (beta == 0.0f)
-                {
-                    memset(cblk, 0, sizeof(float) * mlen);
-                }
-                else if (beta != 1.0f)
-                {
-#    pragma omp simd
-                    for (uint64_t m = 0; m < mlen; m++)
-                    {
-                        cblk[m] *= beta;
-                    }
-                }
-                for (uint64_t k = 0; k < K; k++)
-                {
-                    float b_kn                 = alpha * (tB ? B[k * N + n] : B[n * K + k]);
-                    const float *restrict colA = &A[k * M + m0];
-#    pragma omp simd
-                    for (uint64_t m = 0; m < mlen; m++)
-                    {
-                        cblk[m] += colA[m] * b_kn;
-                    }
-                }
-            }
-        }
-    }
-    else if (!tB)
-    {
-#    pragma omp      parallel for collapse(2) schedule(static) if (M * N * K >= 262144)
-        for (uint64_t n = 0; n < N; n++)
-        {
-            for (uint64_t m = 0; m < M; m++)
-            {
-                const float *restrict rowA = &A[m * K];
-                const float *restrict colB = &B[n * K];
-                float acc                  = 0.0f;
-#    pragma omp simd reduction(+ : acc)
-                for (uint64_t k = 0; k < K; k++)
-                {
-                    acc += rowA[k] * colB[k];
-                }
-                C[n * M + m] = (beta == 0.0f) ? (alpha * acc) : (alpha * acc + beta * C[n * M + m]);
-            }
-        }
-    }
-    else
-    {
-#    pragma omp      parallel for collapse(2) schedule(static) if (M * N * K >= 262144)
-        for (uint64_t n = 0; n < N; n++)
-        {
-            for (uint64_t m = 0; m < M; m++)
-            {
-                const float *restrict rowA = &A[m * K];
-                float acc                  = 0.0f;
-                for (uint64_t k = 0; k < K; k++)
-                {
-                    acc += rowA[k] * B[k * N + n];
-                }
-                C[n * M + m] = (beta == 0.0f) ? (alpha * acc) : (alpha * acc + beta * C[n * M + m]);
-            }
-        }
-    }
-#endif
+    MATMUL_KERNEL_BODY(float, cblas_sgemv, cblas_sgemm, 128)
 }
 
 /**
  * matmul_kernel_d - Double-precision column-major BLAS GEMM `C = alpha * op(A) * op(B) + beta * C`
- * @A:     Left matrix buffer (`M x K` or `K x M` when @tA is set)
- * @tA:    Non-zero to transpose @A
- * @B:     Right matrix buffer (`K x N` or `N x K` when @tB is set)
- * @tB:    Non-zero to transpose @B
- * @alpha: Scalar multiplier on `op(A) * op(B)`
- * @beta:  Scalar multiplier on @C (`0.0` overwrites @C without reading it)
- * @C:     Output matrix buffer (`M x N`)
- * @M:     Row count of `op(A)` and @C
- * @K:     Inner contraction dimension
- * @N:     Column count of `op(B)` and @C
- *
- * Dispatches to `cblas_dgemv` / `cblas_dgemm` when BLAS is available, or a
- * cache-blocked OpenMP SIMD fallback otherwise.
  */
 static void matmul_kernel_d(const double *restrict A,
                             int tA,
@@ -906,93 +871,9 @@ static void matmul_kernel_d(const double *restrict A,
                             uint64_t K,
                             uint64_t N)
 {
-#ifdef HAVE_BLAS
-    if (N == 1 && !tB)
-    {
-        cblas_dgemv(CblasColMajor, tA ? CblasTrans : CblasNoTrans, (int) (tA ? K : M),
-                    (int) (tA ? M : K), alpha, A, (int) (tA ? K : M), B, 1, beta, C, 1);
-        return;
-    }
-    cblas_dgemm(CblasColMajor, tA ? CblasTrans : CblasNoTrans, tB ? CblasTrans : CblasNoTrans,
-                (int) M, (int) N, (int) K, alpha, A, (int) (tA ? K : M), B, (int) (tB ? N : K),
-                beta, C, (int) M);
-#else
-    if (!tA)
-    {
-        const uint64_t mblk  = 64;
-        uint64_t       nmblk = (M + mblk - 1) / mblk;
-#    pragma omp parallel for collapse(2) schedule(static) if (M * N * K >= 262144)
-        for (uint64_t n = 0; n < N; n++)
-        {
-            for (uint64_t mb = 0; mb < nmblk; mb++)
-            {
-                uint64_t m0           = mb * mblk;
-                uint64_t mend         = (m0 + mblk < M) ? m0 + mblk : M;
-                uint64_t mlen         = mend - m0;
-                double *restrict cblk = &C[n * M + m0];
-                if (beta == 0.0)
-                {
-                    memset(cblk, 0, sizeof(double) * mlen);
-                }
-                else if (beta != 1.0)
-                {
-#    pragma omp simd
-                    for (uint64_t m = 0; m < mlen; m++)
-                    {
-                        cblk[m] *= beta;
-                    }
-                }
-                for (uint64_t k = 0; k < K; k++)
-                {
-                    double b_kn                 = alpha * (tB ? B[k * N + n] : B[n * K + k]);
-                    const double *restrict colA = &A[k * M + m0];
-#    pragma omp simd
-                    for (uint64_t m = 0; m < mlen; m++)
-                    {
-                        cblk[m] += colA[m] * b_kn;
-                    }
-                }
-            }
-        }
-    }
-    else if (!tB)
-    {
-#    pragma omp      parallel for collapse(2) schedule(static) if (M * N * K >= 262144)
-        for (uint64_t n = 0; n < N; n++)
-        {
-            for (uint64_t m = 0; m < M; m++)
-            {
-                const double *restrict rowA = &A[m * K];
-                const double *restrict colB = &B[n * K];
-                double acc                  = 0.0;
-#    pragma omp simd reduction(+ : acc)
-                for (uint64_t k = 0; k < K; k++)
-                {
-                    acc += rowA[k] * colB[k];
-                }
-                C[n * M + m] = (beta == 0.0) ? (alpha * acc) : (alpha * acc + beta * C[n * M + m]);
-            }
-        }
-    }
-    else
-    {
-#    pragma omp      parallel for collapse(2) schedule(static) if (M * N * K >= 262144)
-        for (uint64_t n = 0; n < N; n++)
-        {
-            for (uint64_t m = 0; m < M; m++)
-            {
-                const double *restrict rowA = &A[m * K];
-                double acc                  = 0.0;
-                for (uint64_t k = 0; k < K; k++)
-                {
-                    acc += rowA[k] * B[k * N + n];
-                }
-                C[n * M + m] = (beta == 0.0) ? (alpha * acc) : (alpha * acc + beta * C[n * M + m]);
-            }
-        }
-    }
-#endif
+    MATMUL_KERNEL_BODY(double, cblas_dgemv, cblas_dgemm, 64)
 }
+#undef MATMUL_KERNEL_BODY
 
 /**
  * cli_calc_gemm_into - Compute `outim = alpha * op(im1) * op(im2) + beta * outim`
@@ -2065,6 +1946,826 @@ val_t cli_calc_func_scal(void)
     }
     processinfo_update_output_stream(NULL, imX, NULL);
     return mk_string(imX->name);
+}
+
+/**
+ * cli_calc_func_gemm_op - Zero-argument builtin entry point for `gemm(alpha, A, B, beta, C)`
+ */
+val_t cli_calc_func_gemm_op(void)
+{
+    return cli_calc_func_gemm(0);
+}
+
+/**
+ * cli_calc_func_gemv_op - Zero-argument builtin entry point for `gemv(alpha, A, x, beta, y)`
+ */
+val_t cli_calc_func_gemv_op(void)
+{
+    return cli_calc_func_gemm(1);
+}
+
+/* ------------------------------------------- kept matrix assignment lowering */
+
+enum
+{
+    FKEPT_ELEMWISE  = 0,
+    FKEPT_MATMUL    = 1,
+    FKEPT_TRANSPOSE = 2,
+    FKEPT_RESHAPE   = 3,
+    FKEPT_GER       = 4,
+    FKEPT_SYRK      = 5
+};
+
+/**
+ * parse_kept_img_or_trans - Parse `im` or `transpose(im)` as an operand of a kept matrix op
+ * @out_im:    Output pointer to the resolved `IMAGE`
+ * @out_trans: Output flag set to 1 if wrapped in `transpose(...)`, 0 otherwise
+ *
+ * Return: 0 on success, -1 if the tokens do not match `im` or `transpose(im)`
+ */
+static int parse_kept_img_or_trans(IMAGE **out_im, int *out_trans)
+{
+    int trans = 0;
+    if (cur_eval()->type == TOK_FUNC_IMIM_IM && strcmp(cur_eval()->sval, "transpose(") == 0)
+    {
+        advance_eval();
+        trans = 1;
+    }
+    if (cur_eval()->type != TOK_IMAGE || strchr(cur_eval()->sval, '[') != NULL)
+    {
+        return -1;
+    }
+    imageID id = image_ID(cur_eval()->sval, data.core.image, data.core.NB_MAX_IMAGE);
+    if (id == -1)
+    {
+        return -1;
+    }
+    advance_eval();
+    if (trans)
+    {
+        if (cur_eval()->type != TOK_RPAREN)
+        {
+            return -1;
+        }
+        advance_eval();
+    }
+    *out_im    = &data.core.image[id];
+    *out_trans = trans;
+    return 0;
+}
+
+/**
+ * parse_kept_scalar_factor - Parse a scalar constant or live variable factor for BLAS alpha/beta
+ * @keep_vars: Non-zero to record live variable indices instead of folding their current value
+ * @out_c:     Output constant multiplier
+ * @out_s1:    Output 1-based live variable slot (`0` when constant)
+ *
+ * Return: 0 on success, -1 if the current token is not a scalar factor.
+ */
+static int parse_kept_scalar_factor(int keep_vars, double *out_c, int16_t *out_s1)
+{
+    int    pos  = cli_calc_tok_pos();
+    double sign = 1.0;
+    while (cur_eval()->type == TOK_OP_MINUS)
+    {
+        advance_eval();
+        sign = -sign;
+    }
+    if (cur_eval()->type == TOK_LONG)
+    {
+        *out_c  = sign * (double) cur_eval()->val_l;
+        *out_s1 = 0;
+        advance_eval();
+        return 0;
+    }
+    if (cur_eval()->type == TOK_DOUBLE)
+    {
+        *out_c  = sign * cur_eval()->val_d;
+        *out_s1 = 0;
+        advance_eval();
+        return 0;
+    }
+    if ((cur_eval()->type == TOK_VAR || cur_eval()->type == TOK_NVAR) && !cur_eval()->literal &&
+        image_ID(cur_eval()->sval, data.core.image, data.core.NB_MAX_IMAGE) == -1)
+    {
+        if (keep_vars)
+        {
+            long vid = variable_ID(cur_eval()->sval);
+            if (vid >= 0 && data.core.variable[vid].type != 2)
+            {
+                *out_c  = sign;
+                *out_s1 = (int16_t) (vid + 1);
+                advance_eval();
+                return 0;
+            }
+        }
+        if (!(cur_eval()[1].type >= TOK_EQUAL && cur_eval()[1].type <= TOK_OP_SLASH_EQ))
+        {
+            val_t v = eval_existing_var_ref(cur_eval()->sval);
+            if (v.type == VAL_LONG || v.type == VAL_DOUBLE)
+            {
+                *out_c  = sign * to_double(v);
+                *out_s1 = 0;
+                advance_eval();
+                return 0;
+            }
+        }
+    }
+    cli_calc_tok_seek(pos);
+    return -1;
+}
+
+/**
+ * parse_kept_dst_term - Parse `[scalar *] dst [* scalar]` representing `beta * dst`
+ */
+static int parse_kept_dst_term(int          keep_vars,
+                               const IMAGE *dst,
+                               double       sign,
+                               double      *beta_c,
+                               int16_t     *beta_s1)
+{
+    int pos = cli_calc_tok_pos();
+    if (cur_eval()->type == TOK_OP_MINUS)
+    {
+        advance_eval();
+        sign = -sign;
+    }
+    if (cur_eval()->type == TOK_IMAGE && strcmp(cur_eval()->sval, dst->name) == 0)
+    {
+        advance_eval();
+        double  c  = 1.0;
+        int16_t s1 = 0;
+        if (cur_eval()->type == TOK_OP_STAR)
+        {
+            advance_eval();
+            if (parse_kept_scalar_factor(keep_vars, &c, &s1) != 0)
+            {
+                cli_calc_tok_seek(pos);
+                return -1;
+            }
+        }
+        *beta_c  = sign * c;
+        *beta_s1 = s1;
+        return 0;
+    }
+    double  c  = 1.0;
+    int16_t s1 = 0;
+    if (parse_kept_scalar_factor(keep_vars, &c, &s1) == 0 && cur_eval()->type == TOK_OP_STAR)
+    {
+        advance_eval();
+        if (cur_eval()->type == TOK_IMAGE && strcmp(cur_eval()->sval, dst->name) == 0)
+        {
+            advance_eval();
+            *beta_c  = sign * c;
+            *beta_s1 = s1;
+            return 0;
+        }
+    }
+    cli_calc_tok_seek(pos);
+    return -1;
+}
+
+/**
+ * parse_kept_alpha_arg - Parse leading `alpha,` argument inside `gemm(`, `gemv(`, `ger(`, or `syrk(`
+ */
+static int parse_kept_alpha_arg(int keep_vars, double *alpha_c, int16_t *alpha_s1)
+{
+    double  ac  = 1.0;
+    int16_t as1 = 0;
+    if (parse_kept_scalar_factor(keep_vars, &ac, &as1) != 0 || (*alpha_s1 != 0 && as1 != 0) ||
+        cur_eval()->type != TOK_COMMA)
+    {
+        return -1;
+    }
+    *alpha_c *= ac;
+    if (as1 != 0)
+    {
+        *alpha_s1 = as1;
+    }
+    advance_eval();
+    return 0;
+}
+
+/**
+ * parse_kept_beta_dst_args - Parse trailing `[beta,] dst)` arguments of `gemm`, `gemv`, `ger`, or `syrk`
+ */
+static int parse_kept_beta_dst_args(cli_calc_kept_matrix *m,
+                                    const IMAGE          *dst,
+                                    int                   keep_vars,
+                                    int                   has_beta)
+{
+    double  bc  = 1.0;
+    int16_t bs1 = 0;
+    if (has_beta)
+    {
+        if (parse_kept_scalar_factor(keep_vars, &bc, &bs1) != 0 || cur_eval()->type != TOK_COMMA)
+        {
+            return -1;
+        }
+        advance_eval();
+    }
+    if (cur_eval()->type != TOK_IMAGE || strcmp(cur_eval()->sval, dst->name) != 0 ||
+        m->beta_c != 0.0 || m->beta_s1 != 0)
+    {
+        return -1;
+    }
+    advance_eval();
+    if (cur_eval()->type != TOK_RPAREN)
+    {
+        return -1;
+    }
+    advance_eval();
+    m->beta_c  = bc;
+    m->beta_s1 = bs1;
+    return 0;
+}
+
+/**
+ * parse_kept_blas_term - Parse `[alpha *] (matmul|gemm|gemv|ger|outer|syrk)(...) [* alpha2]`
+ */
+static int parse_kept_blas_term(cli_calc_kept_matrix *m,
+                                const IMAGE          *dst,
+                                double                sign,
+                                int                   keep_vars)
+{
+    int pos = cli_calc_tok_pos();
+    while (cur_eval()->type == TOK_OP_MINUS)
+    {
+        advance_eval();
+        sign = -sign;
+    }
+    double  alpha_c  = sign;
+    int16_t alpha_s1 = 0;
+    int     p2       = cli_calc_tok_pos();
+    double  fc       = 1.0;
+    int16_t fs1      = 0;
+    if (parse_kept_scalar_factor(keep_vars, &fc, &fs1) == 0)
+    {
+        if (cur_eval()->type == TOK_OP_STAR)
+        {
+            advance_eval();
+            alpha_c *= fc;
+            alpha_s1 = fs1;
+        }
+        else
+        {
+            cli_calc_tok_seek(p2);
+        }
+    }
+    while (cur_eval()->type == TOK_OP_MINUS)
+    {
+        advance_eval();
+        alpha_c = -alpha_c;
+    }
+    if (cur_eval()->type != TOK_FUNC_IMIM_IM)
+    {
+        cli_calc_tok_seek(pos);
+        return -1;
+    }
+    const char *fn = cur_eval()->sval;
+    if (strcmp(fn, "matmul(") == 0)
+    {
+        advance_eval();
+        IMAGE *imA    = NULL;
+        IMAGE *imB    = NULL;
+        int    transA = 0;
+        int    transB = 0;
+        if (parse_kept_img_or_trans(&imA, &transA) != 0 || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (parse_kept_img_or_trans(&imB, &transB) != 0 || cur_eval()->type != TOK_RPAREN)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (imA == imB && transA != transB && cli_calc_syrk_check(imA, transA, dst) == 0)
+        {
+            m->kind   = FKEPT_SYRK;
+            m->transA = transA;
+            m->img[0] = imA;
+            m->nimg   = 1;
+        }
+        else if (cli_calc_matmul_check(imA, transA, imB, transB, dst, 0) == 0)
+        {
+            m->kind          = FKEPT_MATMUL;
+            m->transA        = transA;
+            m->transB        = transB;
+            m->allow_reshape = 0;
+            m->img[0]        = imA;
+            m->img[1]        = imB;
+            m->nimg          = 2;
+        }
+        else
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+    }
+    else if (strcmp(fn, "outer(") == 0)
+    {
+        advance_eval();
+        IMAGE *imX = NULL;
+        IMAGE *imY = NULL;
+        int    tX  = 0;
+        int    tY  = 0;
+        if (parse_kept_img_or_trans(&imX, &tX) != 0 || tX || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (parse_kept_img_or_trans(&imY, &tY) != 0 || tY || cur_eval()->type != TOK_RPAREN ||
+            cli_calc_ger_check(imX, imY, dst) != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        m->kind   = FKEPT_GER;
+        m->img[0] = imX;
+        m->img[1] = imY;
+        m->nimg   = 2;
+    }
+    else if (strcmp(fn, "gemm(") == 0 || strcmp(fn, "gemv(") == 0)
+    {
+        int is_gemv = (strcmp(fn, "gemv(") == 0);
+        advance_eval();
+        IMAGE *imA    = NULL;
+        IMAGE *imB    = NULL;
+        int    transA = 0;
+        int    transB = 0;
+        if (parse_kept_alpha_arg(keep_vars, &alpha_c, &alpha_s1) != 0 ||
+            parse_kept_img_or_trans(&imA, &transA) != 0 || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (parse_kept_img_or_trans(&imB, &transB) != 0 || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (parse_kept_beta_dst_args(m, dst, keep_vars, 1) != 0 ||
+            cli_calc_matmul_check(imA, transA, imB, transB, dst, 0) != 0 ||
+            (is_gemv && dst->md[0].naxis == 2 && dst->md[0].size[1] != 1 && imA->md[0].naxis != 3))
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        m->kind          = FKEPT_MATMUL;
+        m->transA        = transA;
+        m->transB        = transB;
+        m->allow_reshape = 0;
+        m->img[0]        = imA;
+        m->img[1]        = imB;
+        m->nimg          = 2;
+    }
+    else if (strcmp(fn, "ger(") == 0)
+    {
+        advance_eval();
+        IMAGE *imX = NULL;
+        IMAGE *imY = NULL;
+        int    tX  = 0;
+        int    tY  = 0;
+        if (parse_kept_alpha_arg(keep_vars, &alpha_c, &alpha_s1) != 0 ||
+            parse_kept_img_or_trans(&imX, &tX) != 0 || tX || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (parse_kept_img_or_trans(&imY, &tY) != 0 || tY || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (parse_kept_beta_dst_args(m, dst, keep_vars, 0) != 0 ||
+            cli_calc_ger_check(imX, imY, dst) != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        m->kind   = FKEPT_GER;
+        m->img[0] = imX;
+        m->img[1] = imY;
+        m->nimg   = 2;
+    }
+    else if (strcmp(fn, "syrk(") == 0)
+    {
+        advance_eval();
+        IMAGE *imA    = NULL;
+        int    transA = 0;
+        if (parse_kept_alpha_arg(keep_vars, &alpha_c, &alpha_s1) != 0 ||
+            parse_kept_img_or_trans(&imA, &transA) != 0 || cur_eval()->type != TOK_COMMA)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        advance_eval();
+        if (parse_kept_beta_dst_args(m, dst, keep_vars, 1) != 0 ||
+            cli_calc_syrk_check(imA, transA, dst) != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        m->kind   = FKEPT_SYRK;
+        m->transA = transA;
+        m->img[0] = imA;
+        m->nimg   = 1;
+    }
+    else
+    {
+        cli_calc_tok_seek(pos);
+        return -1;
+    }
+
+    if (cur_eval()->type == TOK_OP_STAR)
+    {
+        advance_eval();
+        double  tc  = 1.0;
+        int16_t ts1 = 0;
+        if (parse_kept_scalar_factor(keep_vars, &tc, &ts1) != 0 || (alpha_s1 != 0 && ts1 != 0))
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+        alpha_c *= tc;
+        if (ts1 != 0)
+        {
+            alpha_s1 = ts1;
+        }
+    }
+    m->alpha_c  = alpha_c;
+    m->alpha_s1 = alpha_s1;
+    return 0;
+}
+
+/**
+ * parse_kept_reshape_dims - Parse and validate target dimensions of a kept `reshape(...)` call
+ */
+static int parse_kept_reshape_dims(uint64_t nel, const IMAGE *dst)
+{
+    int      ndims    = 0;
+    long     dims[3]  = { 1, 1, 1 };
+    int      neg_idx  = -1;
+    uint64_t prod_pos = 1;
+
+    while (cur_eval()->type == TOK_COMMA && ndims < 3)
+    {
+        advance_eval();
+        double dv = 0.0;
+        if (cli_calc_eval_const_scalar(&dv) != 0)
+        {
+            return -1;
+        }
+        long d = llround(dv);
+        if (d == -1)
+        {
+            if (neg_idx != -1)
+            {
+                return -1;
+            }
+            neg_idx = ndims;
+        }
+        else if (d <= 0)
+        {
+            return -1;
+        }
+        else
+        {
+            dims[ndims] = d;
+            prod_pos *= (uint64_t) d;
+        }
+        ndims++;
+    }
+    if (ndims == 0 || cur_eval()->type != TOK_RPAREN)
+    {
+        return -1;
+    }
+    advance_eval();
+    if (cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE)
+    {
+        return -1;
+    }
+    if (neg_idx != -1)
+    {
+        if (prod_pos == 0 || nel % prod_pos != 0)
+        {
+            return -1;
+        }
+        dims[neg_idx] = (long) (nel / prod_pos);
+        prod_pos      = nel;
+    }
+    if (prod_pos != nel || dst->md[0].naxis != ndims)
+    {
+        return -1;
+    }
+    for (int i = 0; i < ndims; i++)
+    {
+        if (dst->md[0].size[i] != (uint32_t) dims[i])
+        {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * cli_calc_compile_kept_matrix - Try to compile a top-level matrix or reshape assignment into @m
+ * @m:               Kept-matrix descriptor to populate
+ * @dst:             Destination image assigned by the statement
+ * @aop:             Assignment operator (`=`, `+=`, or `-=`)
+ * @keep_vars:       Non-zero to record live scalar variable indices for `alpha` / `beta`
+ * @strict_local_dt: Non-zero to require local @dst datatype to match natural output precision
+ *
+ * Recognizes `dst = transpose(A)`, `dst = reshape(...)`, and BLAS forms
+ * (`dst = alpha * matmul(A, B) + beta * dst`, `dst += alpha * matmul(A, B)`,
+ * `ger`, `syrk`, `gemm`, `gemv`) so both one-shot `@calc` and `milk.calc`
+ * execute them directly into @dst without temporary allocations.
+ *
+ * Return: 0 on successful compilation, -1 if the RHS is not a supported matrix/reshape op
+ */
+int cli_calc_compile_kept_matrix(cli_calc_kept_matrix *m,
+                                 IMAGE                *dst,
+                                 cli_token_type        aop,
+                                 int                   keep_vars,
+                                 int                   strict_local_dt)
+{
+    memset(m, 0, sizeof(*m));
+    int pos = cli_calc_tok_pos();
+    if (aop != TOK_EQUAL && aop != TOK_OP_PLUS_EQ && aop != TOK_OP_MINUS_EQ)
+    {
+        return -1;
+    }
+    if (aop == TOK_EQUAL && cur_eval()->type == TOK_FUNC_IMIM_IM)
+    {
+        if (strcmp(cur_eval()->sval, "transpose(") == 0)
+        {
+            advance_eval();
+            if (cur_eval()->type != TOK_IMAGE || strchr(cur_eval()->sval, '[') != NULL)
+            {
+                cli_calc_tok_seek(pos);
+                return -1;
+            }
+            imageID id = image_ID(cur_eval()->sval, data.core.image, data.core.NB_MAX_IMAGE);
+            advance_eval();
+            if (id == -1 || cur_eval()->type != TOK_RPAREN)
+            {
+                cli_calc_tok_seek(pos);
+                return -1;
+            }
+            advance_eval();
+            IMAGE  *src = &data.core.image[id];
+            uint8_t exp_dt =
+                (src->md[0].datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
+            if ((cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE) ||
+                cli_calc_transpose_check(src, dst) != 0 ||
+                (strict_local_dt && dst->md[0].datatype != exp_dt))
+            {
+                cli_calc_tok_seek(pos);
+                return -1;
+            }
+            m->kind   = FKEPT_TRANSPOSE;
+            m->img[0] = src;
+            m->nimg   = 1;
+            return 0;
+        }
+        if (strcmp(cur_eval()->sval, "reshape(") == 0)
+        {
+            advance_eval();
+            if (cur_eval()->type == TOK_FUNC_IMIM_IM && strcmp(cur_eval()->sval, "matmul(") == 0)
+            {
+                advance_eval();
+                IMAGE *imA    = NULL;
+                IMAGE *imB    = NULL;
+                int    transA = 0;
+                int    transB = 0;
+                if (parse_kept_img_or_trans(&imA, &transA) != 0 || cur_eval()->type != TOK_COMMA)
+                {
+                    cli_calc_tok_seek(pos);
+                    return -1;
+                }
+                advance_eval();
+                if (parse_kept_img_or_trans(&imB, &transB) != 0 || cur_eval()->type != TOK_RPAREN)
+                {
+                    cli_calc_tok_seek(pos);
+                    return -1;
+                }
+                advance_eval();
+                uint8_t exp_dt = (imA->md[0].datatype == _DATATYPE_DOUBLE ||
+                                  imB->md[0].datatype == _DATATYPE_DOUBLE)
+                                     ? _DATATYPE_DOUBLE
+                                     : _DATATYPE_FLOAT;
+                if (cli_calc_matmul_check(imA, transA, imB, transB, dst, 1) != 0 ||
+                    parse_kept_reshape_dims(dst->md[0].nelement, dst) != 0 ||
+                    (strict_local_dt && dst->md[0].datatype != exp_dt))
+                {
+                    cli_calc_tok_seek(pos);
+                    return -1;
+                }
+                m->kind          = FKEPT_MATMUL;
+                m->transA        = transA;
+                m->transB        = transB;
+                m->allow_reshape = 1;
+                m->alpha_c       = 1.0;
+                m->beta_c        = 0.0;
+                m->img[0]        = imA;
+                m->img[1]        = imB;
+                m->nimg          = 2;
+                return 0;
+            }
+            if (cur_eval()->type == TOK_IMAGE && strchr(cur_eval()->sval, '[') == NULL)
+            {
+                imageID id = image_ID(cur_eval()->sval, data.core.image, data.core.NB_MAX_IMAGE);
+                advance_eval();
+                if (id == -1 || cli_calc_reshape_check(&data.core.image[id], dst) != 0 ||
+                    parse_kept_reshape_dims(dst->md[0].nelement, dst) != 0 ||
+                    (strict_local_dt && dst->md[0].datatype != data.core.image[id].md[0].datatype))
+                {
+                    cli_calc_tok_seek(pos);
+                    return -1;
+                }
+                m->kind   = FKEPT_RESHAPE;
+                m->img[0] = &data.core.image[id];
+                m->nimg   = 1;
+                return 0;
+            }
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+    }
+
+    cli_calc_tok_seek(pos);
+    m->alpha_c  = 1.0;
+    m->alpha_s1 = 0;
+    m->beta_c   = (aop == TOK_EQUAL) ? 0.0 : 1.0;
+    m->beta_s1  = 0;
+    double sign = (aop == TOK_OP_MINUS_EQ) ? -1.0 : 1.0;
+
+    if (aop == TOK_EQUAL)
+    {
+        double  bc  = 0.0;
+        int16_t bs1 = 0;
+        if (parse_kept_dst_term(keep_vars, dst, 1.0, &bc, &bs1) == 0)
+        {
+            if (cur_eval()->type != TOK_OP_PLUS && cur_eval()->type != TOK_OP_MINUS)
+            {
+                cli_calc_tok_seek(pos);
+                return -1;
+            }
+            sign = (cur_eval()->type == TOK_OP_MINUS) ? -1.0 : 1.0;
+            advance_eval();
+            m->beta_c  = bc;
+            m->beta_s1 = bs1;
+            if (parse_kept_blas_term(m, dst, sign, keep_vars) != 0)
+            {
+                cli_calc_tok_seek(pos);
+                return -1;
+            }
+        }
+        else
+        {
+            if (parse_kept_blas_term(m, dst, 1.0, keep_vars) != 0)
+            {
+                cli_calc_tok_seek(pos);
+                return -1;
+            }
+            if ((cur_eval()->type == TOK_OP_PLUS || cur_eval()->type == TOK_OP_MINUS) &&
+                m->beta_c == 0.0 && m->beta_s1 == 0)
+            {
+                double bsign = (cur_eval()->type == TOK_OP_MINUS) ? -1.0 : 1.0;
+                advance_eval();
+                if (parse_kept_dst_term(keep_vars, dst, bsign, &m->beta_c, &m->beta_s1) != 0)
+                {
+                    cli_calc_tok_seek(pos);
+                    return -1;
+                }
+            }
+        }
+    }
+    else
+    {
+        if (parse_kept_blas_term(m, dst, sign, keep_vars) != 0)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+    }
+
+    if (cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE)
+    {
+        cli_calc_tok_seek(pos);
+        return -1;
+    }
+    if (strict_local_dt)
+    {
+        int any_d = 0;
+        for (int i = 0; i < m->nimg; i++)
+        {
+            if (m->img[i]->md[0].datatype == _DATATYPE_DOUBLE)
+            {
+                any_d = 1;
+            }
+        }
+        uint8_t exp_dt = any_d ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
+        if (dst->md[0].datatype != exp_dt)
+        {
+            cli_calc_tok_seek(pos);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+static double read_kept_var(int16_t s1)
+{
+    const VARIABLE *v = &data.core.variable[s1 - 1];
+    return (v->type == 1) ? (double) v->value.l : v->value.f;
+}
+
+/**
+ * cli_calc_exec_kept_matrix - Execute a compiled matrix or reshape operation directly into @dst
+ * @m:   Compiled `cli_calc_kept_matrix` descriptor
+ * @dst: Destination image to write
+ *
+ * Return: 0 on success, -1 if an image changed shape/type or execution failed.
+ */
+int cli_calc_exec_kept_matrix(const cli_calc_kept_matrix *m, IMAGE *dst)
+{
+    double      alpha  = (m->alpha_s1 > 0) ? (read_kept_var(m->alpha_s1) * m->alpha_c) : m->alpha_c;
+    double      beta   = (m->beta_s1 > 0) ? (read_kept_var(m->beta_s1) * m->beta_c) : m->beta_c;
+    const char *opname = "matrix";
+    int         chk    = -1;
+
+    switch (m->kind)
+    {
+    case FKEPT_MATMUL:
+        opname = "matmul";
+        chk    = cli_calc_matmul_check(m->img[0], m->transA, m->img[1], m->transB, dst,
+                                       m->allow_reshape);
+        break;
+    case FKEPT_GER:
+        opname = "ger";
+        chk    = cli_calc_ger_check(m->img[0], m->img[1], dst);
+        break;
+    case FKEPT_SYRK:
+        opname = "syrk";
+        chk    = cli_calc_syrk_check(m->img[0], m->transA, dst);
+        break;
+    case FKEPT_TRANSPOSE:
+        opname = "transpose";
+        chk    = cli_calc_transpose_check(m->img[0], dst);
+        break;
+    case FKEPT_RESHAPE:
+        opname = "reshape";
+        chk    = cli_calc_reshape_check(m->img[0], dst);
+        break;
+    default:
+        return -1;
+    }
+    if (chk != 0)
+    {
+        snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr), "%s: %s or input changed size or type",
+                 opname, dst->name);
+        return -1;
+    }
+
+    dst->md[0].write = 1;
+    int rc           = -1;
+    switch (m->kind)
+    {
+    case FKEPT_MATMUL:
+        rc = cli_calc_gemm_into(m->img[0], m->transA, m->img[1], m->transB, alpha, beta, dst);
+        break;
+    case FKEPT_GER:
+        rc = cli_calc_ger_into(m->img[0], m->img[1], alpha, beta, dst);
+        break;
+    case FKEPT_SYRK:
+        rc = cli_calc_syrk_into(m->img[0], m->transA, alpha, beta, dst);
+        break;
+    case FKEPT_TRANSPOSE:
+        rc = cli_calc_transpose_into(m->img[0], dst);
+        break;
+    case FKEPT_RESHAPE:
+        rc = cli_calc_reshape_into(m->img[0], dst);
+        break;
+    default:
+        break;
+    }
+    if (rc != 0)
+    {
+        dst->md[0].write = 0;
+        return -1;
+    }
+    processinfo_update_output_stream(NULL, dst, NULL);
+    return 0;
 }
 
 #include "cli_calc_lapack.h"

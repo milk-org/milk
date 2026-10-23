@@ -10,7 +10,8 @@
  *   Shares the expression result value (`val_t`), active parser state (`parse_mode`,
  *   `parse_error`, `eval_error`), token stream accessors, and slice/function/binary
  *   evaluation helpers across `cli_calc_parser.c`, `cli_calc_eval.c`,
- *   `cli_calc_slice.c`, `cli_calc_functions.c`, and `cli_calc_binop.c`.
+ *   `cli_calc_slice.c`, `cli_calc_functions.c`, `cli_calc_binops.c`,
+ *   `cli_calc_linalg.c`, and `cli_calc_lapack.c`.
  */
 
 #ifndef CLI_CALC_INTERNAL_H
@@ -90,6 +91,7 @@ const char *cli_calc_coord(const IMAGE *ref, int kind, double cx, double cy);
 /** cli_calc_coord_kind() - CALC_COORD_* for function token @t (ix iy ir itheta rand randn). */
 int      cli_calc_coord_kind(const cli_token *t);
 uint32_t cli_calc_next_rng_seed(void);
+int      cli_calc_eval_const_scalar(double *out);
 
 enum
 {
@@ -100,6 +102,40 @@ enum
     CALC_COORD_RAND,
     CALC_COORD_RANDN
 };
+
+/**
+ * cli_calc_hash32 - Avalanching 32-bit integer hash finalizer
+ * @h: Input 32-bit word
+ *
+ * Return: Mixed 32-bit hash value.
+ */
+static inline uint32_t cli_calc_hash32(uint32_t h)
+{
+    h = ((h >> 16) ^ h) * 0x45d9f3bu;
+    h = ((h >> 16) ^ h) * 0x45d9f3bu;
+    return (h >> 16) ^ h;
+}
+
+/**
+ * cli_calc_rng_draw - Evaluate a single uniform (`CALC_COORD_RAND`) or Gaussian (`CALC_COORD_RANDN`) draw
+ * @kind: `CALC_COORD_RAND` or `CALC_COORD_RANDN`
+ * @seed: 32-bit seed value
+ *
+ * Return: Pseudo-random `double` in `[0, 1)` for `CALC_COORD_RAND` or `N(0, 1)` for `CALC_COORD_RANDN`.
+ */
+static inline double cli_calc_rng_draw(int kind, uint32_t seed)
+{
+    uint32_t h0 = cli_calc_hash32(seed ^ 0x9e3779b9u);
+    if (kind == CALC_COORD_RAND)
+    {
+        return (double) (int32_t) (h0 >> 8) * 5.9604644775390625e-8;
+    }
+    uint32_t h1  = cli_calc_hash32((seed ^ 0x9e3779b9u) ^ 0x85ebca6bu);
+    int32_t  sum = ((int32_t) h0 >> 22) + ((int32_t) (h0 << 10) >> 22) +
+                   ((int32_t) (h0 << 20) >> 22) + ((int32_t) h1 >> 22) +
+                   ((int32_t) (h1 << 10) >> 22) + ((int32_t) (h1 << 20) >> 22) + 3;
+    return (double) sum * 0.0013810685772936816;
+}
 
 typedef enum
 {
@@ -181,8 +217,29 @@ static inline double cli_calc_read_im_pix(const IMAGE *im, uint8_t dt, uint64_t 
     }
 }
 
+typedef struct
+{
+    IMAGE  *img[2];
+    int     nimg;
+    int     kind;
+    int     transA;
+    int     transB;
+    int     allow_reshape;
+    double  alpha_c;
+    double  beta_c;
+    int16_t alpha_s1;
+    int16_t beta_s1;
+} cli_calc_kept_matrix;
+
 void cli_calc_flatten2d(const IMAGE *im, uint64_t *d0, uint64_t *d1, int *is_3d);
 int  cli_calc_parse_matmul_arg(val_t *out, int *out_trans);
+
+int cli_calc_compile_kept_matrix(cli_calc_kept_matrix *m,
+                                 IMAGE                *dst,
+                                 cli_token_type        aop,
+                                 int                   keep_vars,
+                                 int                   strict_local_dt);
+int cli_calc_exec_kept_matrix(const cli_calc_kept_matrix *m, IMAGE *dst);
 
 int cli_calc_matmul_check(const IMAGE *im1,
                           int          transA,
@@ -215,6 +272,8 @@ val_t cli_calc_func_diag(void);
 val_t cli_calc_func_matmul(void);
 val_t cli_calc_func_outer(void);
 val_t cli_calc_func_gemm(int is_gemv);
+val_t cli_calc_func_gemm_op(void);
+val_t cli_calc_func_gemv_op(void);
 val_t cli_calc_func_ger(void);
 val_t cli_calc_func_syrk(void);
 val_t cli_calc_func_symv(void);
@@ -222,6 +281,8 @@ val_t cli_calc_func_axpy(void);
 val_t cli_calc_func_scal(void);
 
 val_t cli_calc_func_trsv(int is_trsm);
+val_t cli_calc_func_trsv_op(void);
+val_t cli_calc_func_trsm_op(void);
 val_t cli_calc_func_gesv(void);
 val_t cli_calc_func_posv(void);
 val_t cli_calc_func_gels(void);

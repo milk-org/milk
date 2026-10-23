@@ -75,145 +75,26 @@ static double clamp(double a, double lo, double hi)
     return (a > hi) ? hi : (a < lo) ? lo : a;
 }
 
-/**
- * cast_f32 - Round a double-precision scalar to single-precision `float`
- * @a: Input value
- *
- * Implements the calculator `f32(x)` scalar conversion and serves as the
- * function pointer tag for `_DATATYPE_FLOAT` image casts.
- *
- * Return: @a converted to `float` and widened back to `double`
- */
-static double cast_f32(double a)
-{
-    return (double) (float) a;
-}
+/* Explicit scalar and image datatype casts (`f32(x)` .. `i64(x)`) */
+#define CALC_CAST_TYPES(X)                                                     \
+    X(f32, _DATATYPE_FLOAT, (double) (float) a)                                \
+    X(f64, _DATATYPE_DOUBLE, a)                                                \
+    X(u8, _DATATYPE_UINT8, (double) (uint8_t) (int64_t) a)                     \
+    X(i8, _DATATYPE_INT8, (double) (int8_t) (int64_t) a)                       \
+    X(u16, _DATATYPE_UINT16, (double) (uint16_t) (int64_t) a)                  \
+    X(i16, _DATATYPE_INT16, (double) (int16_t) (int64_t) a)                    \
+    X(u32, _DATATYPE_UINT32, (double) (uint32_t) (int64_t) a)                  \
+    X(i32, _DATATYPE_INT32, (double) (int32_t) (int64_t) a)                    \
+    X(u64, _DATATYPE_UINT64, (double) (uint64_t) (a >= 0.0 ? a : (int64_t) a)) \
+    X(i64, _DATATYPE_INT64, (double) (int64_t) a)
 
-/**
- * cast_f64 - Identity conversion for double-precision `f64(x)` casts
- * @a: Input value
- *
- * Implements the calculator `f64(x)` conversion and serves as the function
- * pointer tag for `_DATATYPE_DOUBLE` image casts.
- *
- * Return: @a unchanged
- */
-static double cast_f64(double a)
-{
-    return a;
-}
-
-/**
- * cast_u8 - Truncate a scalar to an unsigned 8-bit integer (`u8(x)`)
- * @a: Input value
- *
- * Converts @a via `int64_t` to `uint8_t` and serves as the function pointer tag
- * for `_DATATYPE_UINT8` image casts.
- *
- * Return: @a cast to `uint8_t`, widened to `double`
- */
-static double cast_u8(double a)
-{
-    return (double) (uint8_t) (int64_t) a;
-}
-
-/**
- * cast_i8 - Truncate a scalar to a signed 8-bit integer (`i8(x)`)
- * @a: Input value
- *
- * Converts @a via `int64_t` to `int8_t` and serves as the function pointer tag
- * for `_DATATYPE_INT8` image casts.
- *
- * Return: @a cast to `int8_t`, widened to `double`
- */
-static double cast_i8(double a)
-{
-    return (double) (int8_t) (int64_t) a;
-}
-
-/**
- * cast_u16 - Truncate a scalar to an unsigned 16-bit integer (`u16(x)`)
- * @a: Input value
- *
- * Converts @a via `int64_t` to `uint16_t` and serves as the function pointer tag
- * for `_DATATYPE_UINT16` image casts.
- *
- * Return: @a cast to `uint16_t`, widened to `double`
- */
-static double cast_u16(double a)
-{
-    return (double) (uint16_t) (int64_t) a;
-}
-
-/**
- * cast_i16 - Truncate a scalar to a signed 16-bit integer (`i16(x)`)
- * @a: Input value
- *
- * Converts @a via `int64_t` to `int16_t` and serves as the function pointer tag
- * for `_DATATYPE_INT16` image casts.
- *
- * Return: @a cast to `int16_t`, widened to `double`
- */
-static double cast_i16(double a)
-{
-    return (double) (int16_t) (int64_t) a;
-}
-
-/**
- * cast_u32 - Truncate a scalar to an unsigned 32-bit integer (`u32(x)`)
- * @a: Input value
- *
- * Converts @a via `int64_t` to `uint32_t` and serves as the function pointer tag
- * for `_DATATYPE_UINT32` image casts.
- *
- * Return: @a cast to `uint32_t`, widened to `double`
- */
-static double cast_u32(double a)
-{
-    return (double) (uint32_t) (int64_t) a;
-}
-
-/**
- * cast_i32 - Truncate a scalar to a signed 32-bit integer (`i32(x)`)
- * @a: Input value
- *
- * Converts @a via `int64_t` to `int32_t` and serves as the function pointer tag
- * for `_DATATYPE_INT32` image casts.
- *
- * Return: @a cast to `int32_t`, widened to `double`
- */
-static double cast_i32(double a)
-{
-    return (double) (int32_t) (int64_t) a;
-}
-
-/**
- * cast_u64 - Truncate a scalar to an unsigned 64-bit integer (`u64(x)`)
- * @a: Input value
- *
- * Converts @a to `uint64_t` (routing negative values through `int64_t`) and
- * serves as the function pointer tag for `_DATATYPE_UINT64` image casts.
- *
- * Return: @a cast to `uint64_t`, widened to `double`
- */
-static double cast_u64(double a)
-{
-    return (double) (uint64_t) (a >= 0.0 ? a : (int64_t) a);
-}
-
-/**
- * cast_i64 - Truncate a scalar to a signed 64-bit integer (`i64(x)`)
- * @a: Input value
- *
- * Converts @a to `int64_t` and serves as the function pointer tag for
- * `_DATATYPE_INT64` image casts.
- *
- * Return: @a cast to `int64_t`, widened to `double`
- */
-static double cast_i64(double a)
-{
-    return (double) (int64_t) a;
-}
+#define DEF_CAST_FN(NAME, DT, EXPR)     \
+    static double cast_##NAME(double a) \
+    {                                   \
+        return (EXPR);                  \
+    }
+CALC_CAST_TYPES(DEF_CAST_FN)
+#undef DEF_CAST_FN
 
 /**
  * cli_calc_cast_datatype - Map a scalar cast function pointer to its ImageStreamIO datatype
@@ -227,46 +108,13 @@ static double cast_i64(double a)
  */
 uint8_t cli_calc_cast_datatype(double (*fn)())
 {
-    if (fn == (double (*)()) cast_f32)
-    {
-        return _DATATYPE_FLOAT;
+#define CHECK_CAST_DT(NAME, DT, EXPR)     \
+    if (fn == (double (*)()) cast_##NAME) \
+    {                                     \
+        return (DT);                      \
     }
-    if (fn == (double (*)()) cast_f64)
-    {
-        return _DATATYPE_DOUBLE;
-    }
-    if (fn == (double (*)()) cast_u8)
-    {
-        return _DATATYPE_UINT8;
-    }
-    if (fn == (double (*)()) cast_i8)
-    {
-        return _DATATYPE_INT8;
-    }
-    if (fn == (double (*)()) cast_u16)
-    {
-        return _DATATYPE_UINT16;
-    }
-    if (fn == (double (*)()) cast_i16)
-    {
-        return _DATATYPE_INT16;
-    }
-    if (fn == (double (*)()) cast_u32)
-    {
-        return _DATATYPE_UINT32;
-    }
-    if (fn == (double (*)()) cast_i32)
-    {
-        return _DATATYPE_INT32;
-    }
-    if (fn == (double (*)()) cast_u64)
-    {
-        return _DATATYPE_UINT64;
-    }
-    if (fn == (double (*)()) cast_i64)
-    {
-        return _DATATYPE_INT64;
-    }
+    CALC_CAST_TYPES(CHECK_CAST_DT)
+#undef CHECK_CAST_DT
     return 0;
 }
 

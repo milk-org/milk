@@ -11,7 +11,7 @@
  *   parser (`parse_expr()`) and a primary atom handler (`parse_primary()`).
  *   Delegates N-D image slice bounds and in-place assignments to `cli_calc_slice.c`,
  *   built-in function calls to `cli_calc_functions.c`, and binary operator
- *   dispatch to `cli_calc_binop.c`.
+ *   dispatch to `cli_calc_binops.c`.
  */
 
 #include <ctype.h>

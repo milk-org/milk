@@ -199,33 +199,6 @@ static val_t func_where(void)
     return cli_calc_where(args[0], args[1], args[2]);
 }
 
-/**
- * eval_rng_scalar - Evaluate a single uniform (`CALC_COORD_RAND`) or Gaussian (`CALC_COORD_RANDN`) draw
- * @kind: `CALC_COORD_RAND` or `CALC_COORD_RANDN`
- * @seed: 32-bit seed value
- *
- * Return: Pseudo-random `double` in `[0, 1)` for `CALC_COORD_RAND` or `N(0, 1)` for `CALC_COORD_RANDN`.
- */
-static double eval_rng_scalar(int kind, uint32_t seed)
-{
-    uint32_t h0 = seed ^ 0x9e3779b9u;
-    h0          = ((h0 >> 16) ^ h0) * 0x45d9f3bu;
-    h0          = ((h0 >> 16) ^ h0) * 0x45d9f3bu;
-    h0          = (h0 >> 16) ^ h0;
-    if (kind == CALC_COORD_RAND)
-    {
-        return (double) (int32_t) (h0 >> 8) * 5.9604644775390625e-8;
-    }
-    uint32_t h1 = (seed ^ 0x9e3779b9u) ^ 0x85ebca6bu;
-    h1          = ((h1 >> 16) ^ h1) * 0x45d9f3bu;
-    h1          = ((h1 >> 16) ^ h1) * 0x45d9f3bu;
-    h1          = (h1 >> 16) ^ h1;
-    int32_t sum = ((int32_t) h0 >> 22) + ((int32_t) (h0 << 10) >> 22) +
-                  ((int32_t) (h0 << 20) >> 22) + ((int32_t) h1 >> 22) +
-                  ((int32_t) (h1 << 10) >> 22) + ((int32_t) (h1 << 20) >> 22) + 3;
-    return (double) sum * 0.0013810685772936816;
-}
-
 /** func_coord() - ix/iy/ir/itheta(im[, cx, cy]) or rand/randn([im[, seed]]). */
 static val_t func_coord(const cli_token *ftok)
 {
@@ -239,7 +212,7 @@ static val_t func_coord(const cli_token *ftok)
         if (cur_func()->type == TOK_RPAREN)
         {
             advance_func();
-            return mk_double(eval_rng_scalar(kind, cli_calc_next_rng_seed()));
+            return mk_double(cli_calc_rng_draw(kind, cli_calc_next_rng_seed()));
         }
         int n = cli_calc_parse_func_argv(1, 2, args, "Expected ','");
         if (n < 0 || cli_calc_reject_complex(args, n))
@@ -249,7 +222,7 @@ static val_t func_coord(const cli_token *ftok)
         if (n == 1 && args[0].type != VAL_STRING)
         {
             uint32_t seed = (uint32_t) (int64_t) llround(to_double(args[0]));
-            return mk_double(eval_rng_scalar(kind, seed));
+            return mk_double(cli_calc_rng_draw(kind, seed));
         }
         if (args[0].type != VAL_STRING || (n == 2 && args[1].type == VAL_STRING))
         {
@@ -540,6 +513,16 @@ static val_t func_eval_ddd_d(const cli_token *ftok)
     return mk_double(((double (*)(double, double, double)) ftok->fnctptr)(d1, d2, d3));
 }
 
+/** reduce_step() - accumulate one sample @v into @acc for reduction @op. */
+static inline double reduce_step(double acc, double v, reduce_op op)
+{
+    return (op == RED_MIN)    ? fmin(acc, v)
+           : (op == RED_MAX)  ? fmax(acc, v)
+           : (op == RED_ASUM) ? acc + fabs(v)
+           : (op == RED_NORM) ? acc + v * v
+                              : acc + v;
+}
+
 /** reduce_lane_im() - reduce @n values of @im starting at @base with @stride using @op. */
 static double reduce_lane_im(const IMAGE *im,
                              uint8_t      dt,
@@ -549,81 +532,27 @@ static double reduce_lane_im(const IMAGE *im,
                              reduce_op    op)
 {
     double acc = (op == RED_MIN) ? INFINITY : (op == RED_MAX) ? -INFINITY : 0.0;
+#define LANE_PASS1(READ_K)                    \
+    for (uint64_t k = 0; k < n; k++)          \
+    {                                         \
+        acc = reduce_step(acc, (READ_K), op); \
+    }
     if (dt == _DATATYPE_FLOAT)
     {
         const float *restrict p = im->array.F + base;
-        for (uint64_t k = 0; k < n; k++)
-        {
-            double v = (double) p[k * stride];
-            acc      = (op == RED_MIN)    ? fmin(acc, v)
-                       : (op == RED_MAX)  ? fmax(acc, v)
-                       : (op == RED_ASUM) ? acc + fabs(v)
-                       : (op == RED_NORM) ? acc + v * v
-                                          : acc + v;
-        }
-        if (op == RED_SUM || op == RED_MIN || op == RED_MAX || op == RED_ASUM)
-        {
-            return acc;
-        }
-        if (op == RED_NORM)
-        {
-            return sqrt(acc);
-        }
-        double mean = acc / (double) n;
-        if (op == RED_MEAN)
-        {
-            return mean;
-        }
-        double s2 = 0.0;
-        for (uint64_t k = 0; k < n; k++)
-        {
-            double d = (double) p[k * stride] - mean;
-            s2 += d * d;
-        }
-        return (op == RED_VAR) ? s2 / (double) n : sqrt(s2 / (double) n);
+        LANE_PASS1((double) p[k * stride]);
     }
-    if (dt == _DATATYPE_DOUBLE)
+    else if (dt == _DATATYPE_DOUBLE)
     {
         const double *restrict p = im->array.D + base;
-        for (uint64_t k = 0; k < n; k++)
-        {
-            double v = p[k * stride];
-            acc      = (op == RED_MIN)    ? fmin(acc, v)
-                       : (op == RED_MAX)  ? fmax(acc, v)
-                       : (op == RED_ASUM) ? acc + fabs(v)
-                       : (op == RED_NORM) ? acc + v * v
-                                          : acc + v;
-        }
-        if (op == RED_SUM || op == RED_MIN || op == RED_MAX || op == RED_ASUM)
-        {
-            return acc;
-        }
-        if (op == RED_NORM)
-        {
-            return sqrt(acc);
-        }
-        double mean = acc / (double) n;
-        if (op == RED_MEAN)
-        {
-            return mean;
-        }
-        double s2 = 0.0;
-        for (uint64_t k = 0; k < n; k++)
-        {
-            double d = p[k * stride] - mean;
-            s2 += d * d;
-        }
-        return (op == RED_VAR) ? s2 / (double) n : sqrt(s2 / (double) n);
+        LANE_PASS1(p[k * stride]);
     }
-    for (uint64_t k = 0; k < n; k++)
+    else
     {
-        double v = cli_calc_read_im_pix(im, dt, base + k * stride);
-        acc      = (op == RED_MIN)    ? fmin(acc, v)
-                   : (op == RED_MAX)  ? fmax(acc, v)
-                   : (op == RED_ASUM) ? acc + fabs(v)
-                   : (op == RED_NORM) ? acc + v * v
-                                      : acc + v;
+        LANE_PASS1(cli_calc_read_im_pix(im, dt, base + k * stride));
     }
+#undef LANE_PASS1
+
     if (op == RED_SUM || op == RED_MIN || op == RED_MAX || op == RED_ASUM)
     {
         return acc;
@@ -789,12 +718,7 @@ static val_t reduce_masked(const char *name, const char *mask, reduce_op op, dou
     {
         if (cli_calc_read_im_pix(mk, mdt, i) != 0.0)
         {
-            double v = cli_calc_read_im_pix(im, idt, i);
-            acc      = (op == RED_MIN)    ? fmin(acc, v)
-                       : (op == RED_MAX)  ? fmax(acc, v)
-                       : (op == RED_ASUM) ? acc + fabs(v)
-                       : (op == RED_NORM) ? acc + v * v
-                                          : acc + v;
+            acc = reduce_step(acc, cli_calc_read_im_pix(im, idt, i), op);
             n++;
         }
     }
@@ -1178,91 +1102,7 @@ val_t parse_funccall(cli_token *ftok)
     case TOK_FUNC_COORD:
         return func_coord(ftok);
     case TOK_FUNC_IMIM_IM:
-        if (strcmp(ftok->sval, "transpose(") == 0)
-        {
-            return cli_calc_func_transpose();
-        }
-        if (strcmp(ftok->sval, "reshape(") == 0)
-        {
-            return cli_calc_func_reshape();
-        }
-        if (strcmp(ftok->sval, "vec(") == 0)
-        {
-            return cli_calc_func_vec();
-        }
-        if (strcmp(ftok->sval, "eye(") == 0)
-        {
-            return cli_calc_func_eye();
-        }
-        if (strcmp(ftok->sval, "diag(") == 0)
-        {
-            return cli_calc_func_diag();
-        }
-        if (strcmp(ftok->sval, "gemm(") == 0)
-        {
-            return cli_calc_func_gemm(0);
-        }
-        if (strcmp(ftok->sval, "gemv(") == 0)
-        {
-            return cli_calc_func_gemm(1);
-        }
-        if (strcmp(ftok->sval, "ger(") == 0)
-        {
-            return cli_calc_func_ger();
-        }
-        if (strcmp(ftok->sval, "outer(") == 0)
-        {
-            return cli_calc_func_outer();
-        }
-        if (strcmp(ftok->sval, "syrk(") == 0)
-        {
-            return cli_calc_func_syrk();
-        }
-        if (strcmp(ftok->sval, "symv(") == 0)
-        {
-            return cli_calc_func_symv();
-        }
-        if (strcmp(ftok->sval, "axpy(") == 0)
-        {
-            return cli_calc_func_axpy();
-        }
-        if (strcmp(ftok->sval, "scal(") == 0)
-        {
-            return cli_calc_func_scal();
-        }
-        if (strcmp(ftok->sval, "trsv(") == 0)
-        {
-            return cli_calc_func_trsv(0);
-        }
-        if (strcmp(ftok->sval, "trsm(") == 0)
-        {
-            return cli_calc_func_trsv(1);
-        }
-        if (strcmp(ftok->sval, "gesv(") == 0)
-        {
-            return cli_calc_func_gesv();
-        }
-        if (strcmp(ftok->sval, "posv(") == 0)
-        {
-            return cli_calc_func_posv();
-        }
-        if (strcmp(ftok->sval, "gels(") == 0)
-        {
-            return cli_calc_func_gels();
-        }
-        if (strcmp(ftok->sval, "solve(") == 0)
-        {
-            return cli_calc_func_solve();
-        }
-        if (strcmp(ftok->sval, "inv(") == 0)
-        {
-            return cli_calc_func_inv();
-        }
-        if (strcmp(ftok->sval, "pinv(") == 0)
-        {
-            return cli_calc_func_pinv();
-        }
-        return cli_calc_func_matmul();
+        return ((val_t (*)(void)) ftok->fnctptr)();
     case TOK_FUNC_IM_D:
     case TOK_FUNC_IM_L:
     case TOK_FUNC_IMD_D:

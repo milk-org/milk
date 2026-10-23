@@ -322,6 +322,54 @@ static int bind_vars(cli_calc_prog *p, const cli_calc_binding *vars, char *err, 
 }
 
 /**
+ * classify_stmt_target - Inspect a statement's LHS target and resolve bound variables
+ * @p:        Program being compiled or executed
+ * @stmt:     Statement string
+ * @vars:     Bound parameter descriptors
+ * @name:     Output buffer receiving the resolved target name
+ * @namesz:   Capacity of @name
+ * @out_op:   Receives assignment operator (`'='`, `'+'`, or `0`)
+ * @out_bind: Receives index in @vars (`p->nvars` if not a bound parameter)
+ * @err:      Error message buffer
+ * @errsz:    Capacity of @err
+ *
+ * Return: 0 on success, -1 if the statement assigns to a read-only variable (`_n`, `_t`, `_dt`).
+ */
+static int classify_stmt_target(cli_calc_prog          *p,
+                                const char             *stmt,
+                                const cli_calc_binding *vars,
+                                char                   *name,
+                                size_t                  namesz,
+                                int                    *out_op,
+                                int                    *out_bind,
+                                char                   *err,
+                                size_t                  errsz)
+{
+    int op = target(stmt, name, namesz);
+    if (op != 0 && (strcmp(name, "_n") == 0 || strcmp(name, "_t") == 0 || strcmp(name, "_dt") == 0))
+    {
+        snprintf(err, errsz, "cannot assign to read-only variable '%s'", name);
+        return -1;
+    }
+    int b = 0;
+    while (op != 0 && b < p->nvars && strcmp(vars[b].name, name) != 0)
+    {
+        b++;
+    }
+    if (op != 0 && b < p->nvars && vars[b].type != FPTYPE_STREAMNAME)
+    {
+        p->assigned[b] = 1;
+    }
+    else if (op != 0 && b < p->nvars && vars[b].type == FPTYPE_STREAMNAME)
+    {
+        snprintf(name, namesz, "%s", (const char *) vars[b].ptr);
+    }
+    *out_op   = op;
+    *out_bind = b;
+    return 0;
+}
+
+/**
  * cli_calc_prog_new - Parse, bind, and pre-compile a multi-statement calculator program
  * @text:  Source text containing `;`- or newline-separated calculator statements
  * @vars:  Array of variable bindings connecting FPS parameters to calculator names
@@ -357,27 +405,17 @@ cli_calc_prog *cli_calc_prog_new(const char             *text,
     for (int i = 0; i < p->n; i++)
     {
         char name[STRINGMAXLEN_IMAGE_NAME];
-        int  op = target(p->st[i].text, name, sizeof(name));
-        if (op != 0 &&
-            (strcmp(name, "_n") == 0 || strcmp(name, "_t") == 0 || strcmp(name, "_dt") == 0))
+        int  op = 0;
+        int  b  = 0;
+        if (classify_stmt_target(p, p->st[i].text, vars, name, sizeof(name), &op, &b, err, errsz) !=
+            0)
         {
-            snprintf(err, errsz, "cannot assign to read-only variable '%s'", name);
             cli_calc_prog_free(p);
             return NULL;
         }
-        int b = 0;
-        while (op != 0 && b < nvars && strcmp(vars[b].name, name) != 0)
-        {
-            b++;
-        }
         if (op != 0 && b < nvars && vars[b].type != FPTYPE_STREAMNAME)
         {
-            p->assigned[b] = 1; /* a result: evaluated as text */
             continue;
-        }
-        if (op != 0 && b < nvars && vars[b].type == FPTYPE_STREAMNAME)
-        {
-            snprintf(name, sizeof(name), "%s", (const char *) vars[b].ptr);
         }
         p->st[i].kept = cli_calc_keep_statement(p->st[i].text);
         if (p->st[i].kept != NULL || op != '=' ||
@@ -494,28 +532,11 @@ int cli_calc_prog_exec_once(const char             *text,
     for (int i = 0; i < p->n; i++)
     {
         char name[STRINGMAXLEN_IMAGE_NAME];
-        int  op = target(p->st[i].text, name, sizeof(name));
-        if (op != 0 &&
-            (strcmp(name, "_n") == 0 || strcmp(name, "_t") == 0 || strcmp(name, "_dt") == 0))
-        {
-            snprintf(err, errsz, "cannot assign to read-only variable '%s'", name);
-            cli_calc_prog_free(p);
-            return -1;
-        }
-        int b = 0;
-        while (op != 0 && b < nvars && strcmp(vars[b].name, name) != 0)
-        {
-            b++;
-        }
-        if (op != 0 && b < nvars && vars[b].type != FPTYPE_STREAMNAME)
-        {
-            p->assigned[b] = 1;
-        }
-        if (op != 0 && b < nvars && vars[b].type == FPTYPE_STREAMNAME)
-        {
-            snprintf(name, sizeof(name), "%s", (const char *) vars[b].ptr);
-        }
-        if (eval_text(p->st[i].text, err, errsz) != 0)
+        int  op = 0;
+        int  b  = 0;
+        if (classify_stmt_target(p, p->st[i].text, vars, name, sizeof(name), &op, &b, err, errsz) !=
+                0 ||
+            eval_text(p->st[i].text, err, errsz) != 0)
         {
             cli_calc_prog_free(p);
             return -1;

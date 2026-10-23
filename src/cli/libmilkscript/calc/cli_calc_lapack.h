@@ -1,24 +1,36 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
- * @file    cli_calc_lapack.h
- * @brief   BLAS triangular solvers and LAPACK linear system / inverse / SVD functions
+ * @file cli_calc_lapack.c
+ * @brief BLAS triangular solvers and LAPACK linear system, inverse, and SVD functions.
  *
- * Implements triangular solvers (`trsv`, `trsm`), general LU solver (`gesv`),
- * symmetric positive-definite Cholesky solver (`posv`), QR/LQ least-squares solver
- * (`gels`), unified solver (`solve` with optional Tikhonov regularization), matrix
- * inverse (`inv`), and SVD Moore-Penrose pseudo-inverse (`pinv`).
+ * Role & Goal:
+ *   Implements triangular solvers (`trsv`, `trsm`), general LU solver (`gesv`),
+ *   symmetric positive-definite Cholesky solver (`posv`), Householder QR/LQ
+ *   least-squares solver (`gels`), unified solver (`solve` with optional Tikhonov
+ *   regularization), matrix inverse (`inv`), and one-sided Jacobi SVD Moore-Penrose
+ *   pseudo-inverse (`pinv`).
  */
 
-#ifndef CLI_CALC_LAPACK_H
-#define CLI_CALC_LAPACK_H
-
 #include <ctype.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "cli_calc_internal.h"
 
 /**
  * copy_im_to_dmat - Copy an image into a newly allocated column-major `double` matrix
- * @im:     Source image
- * @rows:   Matrix row count (before optional transpose)
- * @cols:   Matrix column count (before optional transpose)
- * @trans:  Non-zero to transpose during copy (producing a `cols x rows` matrix)
+ * @im:    Source image
+ * @rows:  Matrix row count (before optional transpose)
+ * @cols:  Matrix column count (before optional transpose)
+ * @trans: Non-zero to transpose during copy (producing a `cols x rows` matrix)
  *
  * Return: Newly allocated `double` buffer of `rows * cols` elements, or NULL on failure.
  */
@@ -160,6 +172,135 @@ static int resolve_rhs_dims(const IMAGE *imA,
         *out_nax = 2;
     }
     (void) imA;
+    return 0;
+}
+
+typedef struct
+{
+    IMAGE   *imA;
+    IMAGE   *imB;
+    double  *A;
+    double  *B;
+    uint64_t M;
+    uint64_t N;
+    uint64_t NRHS;
+    long     out_nax;
+    uint32_t out_sz[3];
+    uint8_t  out_dt;
+    int      n_extra;
+    double   extra_scalar;
+} ab_solver_ctx;
+
+/**
+ * prepare_ab_solver - Parse and validate `(A, B[, extra])` arguments for `gesv`, `posv`, `gels`, `solve`
+ */
+static int prepare_ab_solver(const char    *fn,
+                             int            allow_trans,
+                             int            req_square,
+                             int            max_extra,
+                             const char    *sq_err,
+                             const char    *ex_err,
+                             ab_solver_ctx *ctx)
+{
+    memset(ctx, 0, sizeof(*ctx));
+    val_t argA;
+    int   transA = 0;
+    char  msg[96];
+
+    if (allow_trans)
+    {
+        if (cli_calc_parse_matmul_arg(&argA, &transA) != 0)
+        {
+            return -1;
+        }
+        if (cli_calc_cur_func()()->type != TOK_COMMA)
+        {
+            snprintf(msg, sizeof(msg), "%s: expected ','", fn);
+            parse_errmsg(msg);
+            return -1;
+        }
+        cli_calc_advance_func()();
+    }
+    else
+    {
+        argA = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return -1;
+        }
+        if (cli_calc_cur_func()()->type != TOK_COMMA)
+        {
+            snprintf(msg, sizeof(msg), "%s: expected ','", fn);
+            parse_errmsg(msg);
+            return -1;
+        }
+        cli_calc_advance_func()();
+    }
+
+    val_t rest[2];
+    snprintf(msg, sizeof(msg), "%s: expected '%c'", fn, max_extra > 0 ? ',' : ')');
+    int nrest = cli_calc_parse_func_argv(1, 1 + max_extra, rest, msg);
+    if (nrest < 0 || cli_calc_reject_complex(&argA, 1) || cli_calc_reject_complex(rest, nrest))
+    {
+        return -1;
+    }
+    if (argA.type != VAL_STRING || rest[0].type != VAL_STRING || !check_image(argA.sval) ||
+        !check_image(rest[0].sval))
+    {
+        if (argA.type != VAL_STRING || rest[0].type != VAL_STRING)
+        {
+            snprintf(msg, sizeof(msg), "%s: A and B must be images", fn);
+            parse_errmsg(msg);
+        }
+        return -1;
+    }
+    if (nrest == 2)
+    {
+        if (rest[1].type == VAL_STRING)
+        {
+            parse_errmsg(ex_err);
+            return -1;
+        }
+        ctx->n_extra      = 1;
+        ctx->extra_scalar = to_double(rest[1]);
+    }
+
+    ctx->imA    = &data.core.image[image_ID(argA.sval, data.core.image, data.core.NB_MAX_IMAGE)];
+    ctx->imB    = &data.core.image[image_ID(rest[0].sval, data.core.image, data.core.NB_MAX_IMAGE)];
+    uint64_t a0 = 0;
+    uint64_t a1 = 0;
+    int      is_3d_a = 0;
+    cli_calc_flatten2d(ctx->imA, &a0, &a1, &is_3d_a);
+    if (req_square && (is_3d_a || a0 != a1 || a0 == 0))
+    {
+        parse_errmsg(sq_err);
+        return -1;
+    }
+
+    ctx->M = transA ? a1 : a0;
+    ctx->N = transA ? a0 : a1;
+    if (resolve_rhs_dims(ctx->imA, !req_square && is_3d_a && !transA, ctx->M, ctx->N, ctx->imB,
+                         &ctx->NRHS, &ctx->out_nax, ctx->out_sz) != 0)
+    {
+        snprintf(msg, sizeof(msg), "%s: incompatible A and B dimensions", fn);
+        parse_errmsg(msg);
+        return -1;
+    }
+
+    ctx->A = copy_im_to_dmat(ctx->imA, a0, a1, transA);
+    ctx->B = copy_im_to_dmat(ctx->imB, ctx->M, ctx->NRHS, 0);
+    if (!ctx->A || !ctx->B)
+    {
+        free(ctx->A);
+        free(ctx->B);
+        snprintf(msg, sizeof(msg), "%s: out of memory", fn);
+        parse_errmsg(msg);
+        return -1;
+    }
+    ctx->out_dt = (ctx->imA->md[0].datatype == _DATATYPE_DOUBLE ||
+                   ctx->imB->md[0].datatype == _DATATYPE_DOUBLE)
+                      ? _DATATYPE_DOUBLE
+                      : _DATATYPE_FLOAT;
     return 0;
 }
 
@@ -505,6 +646,22 @@ val_t cli_calc_func_trsv(int is_trsm)
     free(A);
     free(X);
     return res;
+}
+
+/**
+ * cli_calc_func_trsv_op - Zero-argument builtin entry point for `trsv(...)`
+ */
+val_t cli_calc_func_trsv_op(void)
+{
+    return cli_calc_func_trsv(0);
+}
+
+/**
+ * cli_calc_func_trsm_op - Zero-argument builtin entry point for `trsm(...)`
+ */
+val_t cli_calc_func_trsm_op(void)
+{
+    return cli_calc_func_trsv(1);
 }
 
 /**
@@ -1089,81 +1246,22 @@ static int solve_ridge(const double *restrict A,
  */
 val_t cli_calc_func_gesv(void)
 {
-    val_t argA;
-    int   transA = 0;
-    if (cli_calc_parse_matmul_arg(&argA, &transA) != 0)
+    ab_solver_ctx ctx;
+    if (prepare_ab_solver("gesv", 1, 1, 0, "gesv: A must be a square 2D matrix", NULL, &ctx) != 0)
     {
         return mk_string("");
     }
-    if (cli_calc_cur_func()()->type != TOK_COMMA)
+    if (solve_lu_inplace(ctx.A, ctx.N, ctx.B, ctx.NRHS) != 0)
     {
-        parse_errmsg("gesv: expected ','");
-        return mk_string("");
-    }
-    cli_calc_advance_func()();
-
-    val_t argB;
-    if (cli_calc_parse_func_argv(1, 1, &argB, "gesv: expected ')'") < 0 ||
-        cli_calc_reject_complex(&argA, 1) || cli_calc_reject_complex(&argB, 1))
-    {
-        return mk_string("");
-    }
-    if (argA.type != VAL_STRING || argB.type != VAL_STRING || !check_image(argA.sval) ||
-        !check_image(argB.sval))
-    {
-        if (argA.type != VAL_STRING || argB.type != VAL_STRING)
-        {
-            parse_errmsg("gesv: A and B must be images");
-        }
-        return mk_string("");
-    }
-
-    IMAGE   *imA = &data.core.image[image_ID(argA.sval, data.core.image, data.core.NB_MAX_IMAGE)];
-    IMAGE   *imB = &data.core.image[image_ID(argB.sval, data.core.image, data.core.NB_MAX_IMAGE)];
-    uint64_t a0  = 0;
-    uint64_t a1  = 0;
-    int      is_3d_a = 0;
-    cli_calc_flatten2d(imA, &a0, &a1, &is_3d_a);
-    if (is_3d_a || a0 != a1 || a0 == 0)
-    {
-        parse_errmsg("gesv: A must be a square 2D matrix");
-        return mk_string("");
-    }
-
-    uint64_t N       = a0;
-    uint64_t NRHS    = 0;
-    long     out_nax = 1;
-    uint32_t out_sz[3];
-    if (resolve_rhs_dims(imA, 0, N, N, imB, &NRHS, &out_nax, out_sz) != 0)
-    {
-        parse_errmsg("gesv: incompatible A and B dimensions");
-        return mk_string("");
-    }
-
-    double *A = copy_im_to_dmat(imA, N, N, transA);
-    double *X = copy_im_to_dmat(imB, N, NRHS, 0);
-    if (!A || !X)
-    {
-        free(A);
-        free(X);
-        parse_errmsg("gesv: out of memory");
-        return mk_string("");
-    }
-    if (solve_lu_inplace(A, N, X, NRHS) != 0)
-    {
-        free(A);
-        free(X);
+        free(ctx.A);
+        free(ctx.B);
         parse_errmsg("gesv: singular matrix");
         return mk_string("");
     }
-
-    uint8_t out_dt =
-        (imA->md[0].datatype == _DATATYPE_DOUBLE || imB->md[0].datatype == _DATATYPE_DOUBLE)
-            ? _DATATYPE_DOUBLE
-            : _DATATYPE_FLOAT;
-    val_t res = write_dmat_to_new_im(X, N * NRHS, out_nax, out_sz, out_dt, "gesv");
-    free(A);
-    free(X);
+    val_t res =
+        write_dmat_to_new_im(ctx.B, ctx.N * ctx.NRHS, ctx.out_nax, ctx.out_sz, ctx.out_dt, "gesv");
+    free(ctx.A);
+    free(ctx.B);
     return res;
 }
 
@@ -1177,68 +1275,24 @@ val_t cli_calc_func_gesv(void)
  */
 val_t cli_calc_func_posv(void)
 {
-    val_t args[2];
-    int   nargs = cli_calc_parse_func_argv(2, 2, args, "posv: expected ','");
-    if (nargs < 0 || cli_calc_reject_complex(args, nargs))
+    ab_solver_ctx ctx;
+    if (prepare_ab_solver("posv", 0, 1, 0,
+                          "posv: A must be a square symmetric positive-definite matrix", NULL,
+                          &ctx) != 0)
     {
         return mk_string("");
     }
-    if (args[0].type != VAL_STRING || args[1].type != VAL_STRING || !check_image(args[0].sval) ||
-        !check_image(args[1].sval))
+    if (solve_cholesky_inplace(ctx.A, ctx.N, ctx.B, ctx.NRHS) != 0)
     {
-        if (args[0].type != VAL_STRING || args[1].type != VAL_STRING)
-        {
-            parse_errmsg("posv: A and B must be images");
-        }
-        return mk_string("");
-    }
-
-    IMAGE *imA  = &data.core.image[image_ID(args[0].sval, data.core.image, data.core.NB_MAX_IMAGE)];
-    IMAGE *imB  = &data.core.image[image_ID(args[1].sval, data.core.image, data.core.NB_MAX_IMAGE)];
-    uint64_t a0 = 0;
-    uint64_t a1 = 0;
-    int      is_3d_a = 0;
-    cli_calc_flatten2d(imA, &a0, &a1, &is_3d_a);
-    if (is_3d_a || a0 != a1 || a0 == 0)
-    {
-        parse_errmsg("posv: A must be a square symmetric positive-definite matrix");
-        return mk_string("");
-    }
-
-    uint64_t N       = a0;
-    uint64_t NRHS    = 0;
-    long     out_nax = 1;
-    uint32_t out_sz[3];
-    if (resolve_rhs_dims(imA, 0, N, N, imB, &NRHS, &out_nax, out_sz) != 0)
-    {
-        parse_errmsg("posv: incompatible A and B dimensions");
-        return mk_string("");
-    }
-
-    double *A = copy_im_to_dmat(imA, N, N, 0);
-    double *X = copy_im_to_dmat(imB, N, NRHS, 0);
-    if (!A || !X)
-    {
-        free(A);
-        free(X);
-        parse_errmsg("posv: out of memory");
-        return mk_string("");
-    }
-    if (solve_cholesky_inplace(A, N, X, NRHS) != 0)
-    {
-        free(A);
-        free(X);
+        free(ctx.A);
+        free(ctx.B);
         parse_errmsg("posv: matrix is not symmetric positive-definite");
         return mk_string("");
     }
-
-    uint8_t out_dt =
-        (imA->md[0].datatype == _DATATYPE_DOUBLE || imB->md[0].datatype == _DATATYPE_DOUBLE)
-            ? _DATATYPE_DOUBLE
-            : _DATATYPE_FLOAT;
-    val_t res = write_dmat_to_new_im(X, N * NRHS, out_nax, out_sz, out_dt, "posv");
-    free(A);
-    free(X);
+    val_t res =
+        write_dmat_to_new_im(ctx.B, ctx.N * ctx.NRHS, ctx.out_nax, ctx.out_sz, ctx.out_dt, "posv");
+    free(ctx.A);
+    free(ctx.B);
     return res;
 }
 
@@ -1253,80 +1307,24 @@ val_t cli_calc_func_posv(void)
  */
 val_t cli_calc_func_gels(void)
 {
-    val_t argA;
-    int   transA = 0;
-    if (cli_calc_parse_matmul_arg(&argA, &transA) != 0)
+    ab_solver_ctx ctx;
+    if (prepare_ab_solver("gels", 1, 0, 0, NULL, NULL, &ctx) != 0)
     {
         return mk_string("");
     }
-    if (cli_calc_cur_func()()->type != TOK_COMMA)
+    double *X = (double *) malloc((size_t) (ctx.N * ctx.NRHS) * sizeof(double));
+    if (!X || solve_qr_ls(ctx.A, ctx.M, ctx.N, ctx.B, ctx.NRHS, X) != 0)
     {
-        parse_errmsg("gels: expected ','");
-        return mk_string("");
-    }
-    cli_calc_advance_func()();
-
-    val_t argB;
-    if (cli_calc_parse_func_argv(1, 1, &argB, "gels: expected ')'") < 0 ||
-        cli_calc_reject_complex(&argA, 1) || cli_calc_reject_complex(&argB, 1))
-    {
-        return mk_string("");
-    }
-    if (argA.type != VAL_STRING || argB.type != VAL_STRING || !check_image(argA.sval) ||
-        !check_image(argB.sval))
-    {
-        if (argA.type != VAL_STRING || argB.type != VAL_STRING)
-        {
-            parse_errmsg("gels: A and B must be images");
-        }
-        return mk_string("");
-    }
-
-    IMAGE   *imA = &data.core.image[image_ID(argA.sval, data.core.image, data.core.NB_MAX_IMAGE)];
-    IMAGE   *imB = &data.core.image[image_ID(argB.sval, data.core.image, data.core.NB_MAX_IMAGE)];
-    uint64_t a0  = 0;
-    uint64_t a1  = 0;
-    int      is_3d_a = 0;
-    cli_calc_flatten2d(imA, &a0, &a1, &is_3d_a);
-
-    uint64_t M       = transA ? a1 : a0;
-    uint64_t N       = transA ? a0 : a1;
-    uint64_t NRHS    = 0;
-    long     out_nax = 1;
-    uint32_t out_sz[3];
-    if (resolve_rhs_dims(imA, is_3d_a && !transA, M, N, imB, &NRHS, &out_nax, out_sz) != 0)
-    {
-        parse_errmsg("gels: incompatible A and B dimensions");
-        return mk_string("");
-    }
-
-    double *A = copy_im_to_dmat(imA, a0, a1, transA);
-    double *B = copy_im_to_dmat(imB, M, NRHS, 0);
-    double *X = (double *) malloc((size_t) (N * NRHS) * sizeof(double));
-    if (!A || !B || !X)
-    {
-        free(A);
-        free(B);
+        parse_errmsg(X ? "gels: rank-deficient matrix" : "gels: out of memory");
+        free(ctx.A);
+        free(ctx.B);
         free(X);
-        parse_errmsg("gels: out of memory");
         return mk_string("");
     }
-    if (solve_qr_ls(A, M, N, B, NRHS, X) != 0)
-    {
-        free(A);
-        free(B);
-        free(X);
-        parse_errmsg("gels: rank-deficient matrix");
-        return mk_string("");
-    }
-
-    uint8_t out_dt =
-        (imA->md[0].datatype == _DATATYPE_DOUBLE || imB->md[0].datatype == _DATATYPE_DOUBLE)
-            ? _DATATYPE_DOUBLE
-            : _DATATYPE_FLOAT;
-    val_t res = write_dmat_to_new_im(X, N * NRHS, out_nax, out_sz, out_dt, "gels");
-    free(A);
-    free(B);
+    val_t res =
+        write_dmat_to_new_im(X, ctx.N * ctx.NRHS, ctx.out_nax, ctx.out_sz, ctx.out_dt, "gels");
+    free(ctx.A);
+    free(ctx.B);
     free(X);
     return res;
 }
@@ -1342,105 +1340,46 @@ val_t cli_calc_func_gels(void)
  */
 val_t cli_calc_func_solve(void)
 {
-    val_t argA;
-    int   transA = 0;
-    if (cli_calc_parse_matmul_arg(&argA, &transA) != 0)
+    ab_solver_ctx ctx;
+    if (prepare_ab_solver("solve", 1, 0, 1, NULL,
+                          "solve: regularization parameter must be a scalar", &ctx) != 0)
     {
         return mk_string("");
     }
-    if (cli_calc_cur_func()()->type != TOK_COMMA)
+    double *X = (double *) malloc((size_t) (ctx.N * ctx.NRHS) * sizeof(double));
+    if (!X)
     {
-        parse_errmsg("solve: expected ','");
-        return mk_string("");
-    }
-    cli_calc_advance_func()();
-
-    val_t rest[2];
-    int   nrest = cli_calc_parse_func_argv(1, 2, rest, "solve: expected ','");
-    if (nrest < 0 || cli_calc_reject_complex(&argA, 1) || cli_calc_reject_complex(rest, nrest))
-    {
-        return mk_string("");
-    }
-    if (argA.type != VAL_STRING || rest[0].type != VAL_STRING || !check_image(argA.sval) ||
-        !check_image(rest[0].sval))
-    {
-        if (argA.type != VAL_STRING || rest[0].type != VAL_STRING)
-        {
-            parse_errmsg("solve: A and B must be images");
-        }
-        return mk_string("");
-    }
-    double reg = 0.0;
-    if (nrest == 2)
-    {
-        if (rest[1].type == VAL_STRING)
-        {
-            parse_errmsg("solve: regularization parameter must be a scalar");
-            return mk_string("");
-        }
-        reg = to_double(rest[1]);
-    }
-
-    IMAGE *imA  = &data.core.image[image_ID(argA.sval, data.core.image, data.core.NB_MAX_IMAGE)];
-    IMAGE *imB  = &data.core.image[image_ID(rest[0].sval, data.core.image, data.core.NB_MAX_IMAGE)];
-    uint64_t a0 = 0;
-    uint64_t a1 = 0;
-    int      is_3d_a = 0;
-    cli_calc_flatten2d(imA, &a0, &a1, &is_3d_a);
-
-    uint64_t M       = transA ? a1 : a0;
-    uint64_t N       = transA ? a0 : a1;
-    uint64_t NRHS    = 0;
-    long     out_nax = 1;
-    uint32_t out_sz[3];
-    if (resolve_rhs_dims(imA, is_3d_a && !transA, M, N, imB, &NRHS, &out_nax, out_sz) != 0)
-    {
-        parse_errmsg("solve: incompatible A and B dimensions");
-        return mk_string("");
-    }
-
-    double *A = copy_im_to_dmat(imA, a0, a1, transA);
-    double *B = copy_im_to_dmat(imB, M, NRHS, 0);
-    double *X = (double *) malloc((size_t) (N * NRHS) * sizeof(double));
-    if (!A || !B || !X)
-    {
-        free(A);
-        free(B);
-        free(X);
+        free(ctx.A);
+        free(ctx.B);
         parse_errmsg("solve: out of memory");
         return mk_string("");
     }
-
     int rc = 0;
-    if (reg != 0.0)
+    if (ctx.extra_scalar != 0.0)
     {
-        rc = solve_ridge(A, M, N, B, NRHS, reg, X);
+        rc = solve_ridge(ctx.A, ctx.M, ctx.N, ctx.B, ctx.NRHS, ctx.extra_scalar, X);
     }
-    else if (M == N)
+    else if (ctx.M == ctx.N)
     {
-        __builtin_memcpy(X, B, (size_t) (N * NRHS) * sizeof(double));
-        rc = solve_lu_inplace(A, N, X, NRHS);
+        __builtin_memcpy(X, ctx.B, (size_t) (ctx.N * ctx.NRHS) * sizeof(double));
+        rc = solve_lu_inplace(ctx.A, ctx.N, X, ctx.NRHS);
     }
     else
     {
-        rc = solve_qr_ls(A, M, N, B, NRHS, X);
+        rc = solve_qr_ls(ctx.A, ctx.M, ctx.N, ctx.B, ctx.NRHS, X);
     }
     if (rc != 0)
     {
-        free(A);
-        free(B);
+        free(ctx.A);
+        free(ctx.B);
         free(X);
         parse_errmsg("solve: singular or rank-deficient matrix");
         return mk_string("");
     }
-
-    uint8_t out_dt =
-        (imA->md[0].datatype == _DATATYPE_DOUBLE || imB->md[0].datatype == _DATATYPE_DOUBLE)
-            ? _DATATYPE_DOUBLE
-            : _DATATYPE_FLOAT;
-    val_t res = write_dmat_to_new_im(X, N * NRHS, out_nax, out_sz, out_dt, "solve");
-    free(A);
-    free(B);
+    val_t res =
+        write_dmat_to_new_im(X, ctx.N * ctx.NRHS, ctx.out_nax, ctx.out_sz, ctx.out_dt, "solve");
+    free(ctx.A);
+    free(ctx.B);
     free(X);
     return res;
 }
@@ -1676,39 +1615,17 @@ static int compute_pinv_svd(const IMAGE *imA,
 
     /* Assemble N x M pseudo-inverse in column-major layout (out[c * N + r]) */
     memset(out, 0, (size_t) (N * M) * sizeof(double));
-    if (tall)
+    for (uint64_t j = 0; j < Q; j++)
     {
-        /* M >= N (P = M, Q = N): A^+ = V_scaled * U^T (N x M) */
-        for (uint64_t j = 0; j < Q; j++)
+        const double *restrict col_r = tall ? (V + j * Q) : (W + j * P);
+        const double *restrict col_c = tall ? (W + j * P) : (V + j * Q);
+        for (uint64_t c = 0; c < M; c++)
         {
-            const double *restrict uj = W + j * P;
-            const double *restrict vj = V + j * Q;
-            for (uint64_t c = 0; c < M; c++)
+            double scale           = col_c[c];
+            double *restrict col_o = out + c * N;
+            for (uint64_t r = 0; r < N; r++)
             {
-                double ujc             = uj[c];
-                double *restrict col_o = out + c * N;
-                for (uint64_t r = 0; r < N; r++)
-                {
-                    col_o[r] += vj[r] * ujc;
-                }
-            }
-        }
-    }
-    else
-    {
-        /* M < N (P = N, Q = M): A^+ = U * V_scaled^T (N x M) */
-        for (uint64_t j = 0; j < Q; j++)
-        {
-            const double *restrict uj = W + j * P;
-            const double *restrict vj = V + j * Q;
-            for (uint64_t c = 0; c < M; c++)
-            {
-                double vjc             = vj[c];
-                double *restrict col_o = out + c * N;
-                for (uint64_t r = 0; r < N; r++)
-                {
-                    col_o[r] += uj[r] * vjc;
-                }
+                col_o[r] += col_r[r] * scale;
             }
         }
     }
@@ -1803,5 +1720,3 @@ val_t cli_calc_func_pinv(void)
     free(out);
     return res;
 }
-
-#endif /* CLI_CALC_LAPACK_H */
