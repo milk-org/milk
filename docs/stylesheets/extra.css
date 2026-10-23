@@ -197,3 +197,7 @@ details summary {
 .md-footer {
   border-top: 2px solid rgba(0, 191, 165, 0.15);
 }
+
+/* Label the footer dates: first fact is last update, second is creation. */
+.md-source-file__fact:nth-child(1)::before { content: "Last modified: "; }
+.md-source-file__fact:nth-child(2)::before { content: "Created: "; }

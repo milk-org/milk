@@ -52,6 +52,7 @@ Documentation files will link to this website, other files will link directly to
 - [Dependency System: managing extra dependencies](developer/dependency_system.md) (dependency_system.md)
 - [Adding a Plugin to Milk](developer/plugins.md) (plugins.md)
 - [Developer tooling](developer/tooling.md) (tooling.md)
+- [Running multiple versions side by side](developer/multiversion.md) (multiversion.md)
 - [Developer Tutorial: Writing Your First Milk Module](developer/tutorial.md) (tutorial.md)
 
 ## docs/guide

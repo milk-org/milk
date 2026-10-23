@@ -242,11 +242,6 @@ in which we can build milk with different options, then run the tests; or use se
     - `tmux` and a writable `/tmp`: the tests spawn private tmux servers and shared-memory
       directories.
 
-<!-- prettier-ignore -->
-!!! warning "TODO"
-    `python/noxfile.py` currently hard-codes the `pyMilk` location. It is being changed to read the
-    `PYMILK_ROOT` environment variable.
-
 ### 4.1 Setup
 
 ```bash
@@ -300,6 +295,8 @@ pytest -k
     ```bash
     source $MILK_ROOT/python/tests/env.bash
     ```
+
+    See also [how to run multiple versions](./multiversion.md).
 
 !!! tip "Using pytest for reproducible testing / development configurations"
     The `tests/mains/` folder is meant to contain **pytest-excluded files** (just omit `_test` in their name).
@@ -407,7 +404,7 @@ the tests, not a pass/fail gate.
 <!-- prettier-ignore -->
 !!! question "Prerequisites"
     - `gcc` with `gcov`, and `gcovr` (`pip install gcovr`).
-    - Everything from [section 4](#4-python-tests-pytest-nox-and-pymilk).
+    - Everything from [section 4](#4-testing-through-a-standard-python-suite-pytest-and-nox).
     - `pyMilk` built with coverage too; otherwise its session-end hook prints
       `_gcov_dump not available` and its counters are not flushed.
 
@@ -465,7 +462,6 @@ cmake --install . --prefix _install
 
 export MILK_INSTALLDIR="$PWD/_install"
 export PATH="$MILK_INSTALLDIR/bin:$PATH"
-export LD_LIBRARY_PATH="$MILK_INSTALLDIR/lib:$LD_LIBRARY_PATH"
 
 milk-check        # verifies MILK_ROOT, MILK_INSTALLDIR, MILK_SHM_DIR and PATH
 ```
@@ -495,7 +491,7 @@ you can now `make install`/`ninja install` milk without sudo permissions. The on
 
 </details>
 
-## 7. Debugging a crashing fpsexec: gdb and valgrind
+## 7. Debugging a crashing `fpsexec`: gdb and valgrind
 
 <details class="plain" markdown="1" open>
 <summary>Expand contents</summary>
@@ -518,7 +514,7 @@ standalone executable (see [FPS standalone modes](../arch/FPS_Standalone_CMD_Mod
 ### 7.1 gdb
 
 ```bash
-gdb --args milk-fpsexec-mymodule exec <arg1> <arg2>
+gdb --args milk-fpsexec-mymodule exec <args...>
 (gdb) run
 # ... crash ...
 (gdb) bt full                    # backtrace with local variables

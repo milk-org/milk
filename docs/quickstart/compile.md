@@ -12,55 +12,24 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
 ## 1. Download and install milk
 
 <!-- prettier-ignore -->
-!!! warning
-    This page describes installation of the core package milk. If you install an application package
-    (cacao or coffee), replace "milk" with "cacao" in these instructions.
+!!! info
+    This page describes installation of the core package milk.
+    If you install an application package (cacao or coffee),
+    replace "milk" with "cacao" in these instructions.
 
-For download, build commands, and CMake options, see the
-[Quick Start section in README.md]({{ github_blob_url }}/README.md#download).
+??? abstract "Install dependencies"
 
-For configuring minimal or partial builds (engine-only, core without cfitsio, etc.), see
-[Build Tiers](build_tiers.md).
+    "Package installation commands (quickstart)"
 
-The sections below cover post-installation setup, dependencies, and optional configuration not
-covered in the README.
+    === "Ubuntu / Debian"
+        ```bash
+        sudo apt-get install gcc cmake pkg-config libcfitsio-dev libreadline-dev libfftw3-dev libgsl-dev tmux
+        ```
 
----
-
-## 2. Post-installation
-
-You may need to add `/usr/local/lib` to the linker search path:
-
-```bash
-$ echo "/usr/local/lib" > usrlocal.conf
-$ sudo mv usrlocal.conf /etc/ld.so.conf.d/
-$ sudo ldconfig -v
-```
-
----
-
-## 3. tmpfs (optional)
-
-Create a tmpfs disk for high-performance shared-memory I/O:
-
-```bash
-$ echo "tmpfs /milk/shm tmpfs rw,nosuid,nodev" | sudo tee -a /etc/fstab
-$ sudo mkdir -p /milk/shm
-$ sudo mount /milk/shm
-```
-
----
-
-## 4. Dependencies
-
-### 4.1. Required (full build)
-
-| Dependency       | Purpose                            |
-| ---------------- | ---------------------------------- |
-| **gcc**          | C compiler (C17)                   |
-| **cmake** ≥ 3.10 | Build system                       |
-| **pkg-config**   | Locates installed libraries        |
-| **pthreads**     | POSIX threading (provided by libc) |
+    === "CentOS / RHEL / Fedora"
+        ```bash
+        sudo yum install gcc cmake pkg-config cfitsio-devel readline-devel fftw3-devel gsl-devel tmux
+        ```
 
 ??? note "Optional dependencies"
 
@@ -85,45 +54,13 @@ $ sudo mount /milk/shm
     | **MAGMA**           | runtime | Linear algebra library over CUDA                            |
     | **tmux**            | runtime | Persistent shells for FPS compute units                     |
 
-    **tmux** is very often needed for all FPS operations in tmux screens. **lapacke** is
-    **required** but is provided by either MKL or OpenBLAS. If using neither, standalone lapacke is
-    needed: `apt install liblapacke-dev` or `yum install lapacke-devel`.
+    **lapacke** is often provided by either MKL or OpenBLAS.
+    If using neither, standalone lapacke is needed: `apt install liblapacke-dev` or `yum install lapacke-devel`.
 
 
-    !!! tip
-        For a minimal POSIX-only build, all optional dependencies can be skipped. See
-        [Build Tiers](build_tiers.md) for details.
-
-??? abstract "Package installation commands"
-
-    === "Ubuntu / Debian"
-        ```bash
-        sudo apt-get install \
-            libcfitsio-dev libreadline-dev \
-            libfftw3-dev libgsl-dev
-        ```
-
-    === "CentOS / RHEL / Fedora"
-        ```bash
-        sudo yum install \
-            cfitsio-devel readline-devel \
-            fftw3-devel gsl-devel
-        ```
-
-??? abstract "cfitsio from source (alternative)"
-
-    If your distribution does not package cfitsio, install it from source:
-
-    1. Download from [HEASARC](https://heasarc.gsfc.nasa.gov/fitsio/)
-    2. Build and install:
-
-    ```bash
-    tar xzf cfitsio-*.tar.gz
-    cd cfitsio-*
-    ./configure --prefix=/usr/local
-    make
-    sudo make install
-    ```
+!!! tip
+    For a minimal POSIX-only build, all optional dependencies can be skipped. See
+    [Build Tiers](build_tiers.md) for details.
 
 ??? abstract "GPU acceleration (optional)"
 
@@ -139,51 +76,60 @@ $ sudo mount /milk/shm
     export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
     ```
 
-??? danger "Running multiple versions side by side"
+```bash
+git clone --recursive https://github.com/milk-org/milk.git
+cd milk
+```
 
-    !!! warning
-        Untested — may require tweaking.
+```bash
+mkdir _build && cd _build
+cmake ..
+make -j$(nproc)
+sudo make install # The default install path is /usr/local/milk-<version>
+```
 
-    Install independent versions by specifying different prefixes:
+For minimal or partial builds (engine-only, core without cfitsio, etc.), see
+[Build Tiers](build_tiers.md).
 
+The sections below cover post-installation setup and optional configuration.
+
+---
+
+## 2. Environment variables
+
+Set in `.bashrc` or equivalent:
+
+| Variable          | Example               | Purpose                 |
+| ----------------- | --------------------- | ----------------------- |
+| `MILK_ROOT`       | `/home/user/src/milk` | Source code directory   |
+| `MILK_INSTALLDIR` | `/usr/local/milk`     | Installation directory  |
+| `MILK_SHM_DIR`    | `/milk/shm`           | Shared memory directory |
+
+!!! warning "MILK_INSTALLDIR"
+    `MILK_INSTALLDIR` should point to the installation.
+    Generally we set a symbolic link once and for all:
     ```bash
-    cd ~/src
-    git clone --recursive https://github.com/milk-org/milk milk-1
-    git clone --recursive https://github.com/milk-org/milk milk-2
+    ln -sf /usr/local/milk-<version> /usr/local/milk
     ```
 
-    ```bash
-    cd ~/src/milk-1/_build
-    cmake -DCMAKE_INSTALL_PREFIX=/usr/local/milk-1 ..
-    sudo make install
+---
 
-    cd ~/src/milk-2/_build
-    cmake -DCMAKE_INSTALL_PREFIX=/usr/local/milk-2 ..
-    sudo make install
-    ```
+## 3. tmpfs (optional but quite necessary to get performance)
 
-    Make version 1 the system default:
+Create a tmpfs disk for high-performance shared-memory I/O:
 
-    ```bash
-    sudo ln -s /usr/local/milk-1 /usr/local/milk
-    ```
+```bash
+$ echo "tmpfs /milk/shm tmpfs rw,nosuid,nodev" | sudo tee -a /etc/fstab
+$ sudo mkdir -p /milk/shm
+$ sudo mount /milk/shm
+```
 
-    Run version 2 explicitly:
+---
 
-    ```bash
-    LD_LIBRARY_PATH=/usr/local/milk-2/lib \
-      PATH=/usr/local/milk-2/bin \
-      milk-cli
-    ```
+## 4. Further reading:
 
-    Each version can also use its own shared-memory directory:
-
-    ```bash
-    MILK_SHM_DIR=/milk-2/shm \
-      LD_LIBRARY_PATH=/usr/local/milk-2/lib \
-      PATH=/usr/local/milk-2/bin \
-      milk-cli
-    ```
+- See [Build Tiers](build_tiers.md)
+- See [Running multiple versions side by side](../developer/multiversion.md).
 
 ---
 

@@ -76,17 +76,16 @@ underlying local `.git` repository.
    git checkout -b feat/my-next-cli-task
    ```
 
-<!-- prettier-ignore -->
-!!! tip
-   A helper script `milk-setup-worktrees` is available to automatically scaffold this directory layout
-   and initialize the build directories for you.
-
 ## 4. Releasing a New Version
 
 When releasing a new version from `framework-dev` (or the equivalent stable branch):
 
 - Update version number in `CMakeLists.txt`
 - Update version information in `README.md`
+
+!!! warning "For the future:"
+    There is quite a bit more to do in defining how we make a release of milk and cacao.
+    To be determined and spelled out in the future...
 
 Merge `framework-dev` into `main`, then tag:
 
