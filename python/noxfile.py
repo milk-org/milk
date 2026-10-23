@@ -67,7 +67,13 @@ def milk_build(
     session.chdir("build")
 
     # Of note, we could have a mismatch of the available engine extensions (USE_CUDA in particular) between pyMilk and milk builds.
-    use_ninja = shutil.which("ninja") is not None
+    cache_path = pathlib.Path("CMakeCache.txt")
+    if cache_path.is_file():
+        use_ninja = (
+            "CMAKE_GENERATOR:INTERNAL=Ninja" in cache_path.read_text().splitlines()
+        )
+    else:
+        use_ninja = shutil.which("ninja") is not None
     session.run(
         *(
             f"cmake{' -GNinja' if use_ninja else ''} {PROJECT_ROOT} -DCMAKE_INSTALL_PREFIX={tmp_dir} "
