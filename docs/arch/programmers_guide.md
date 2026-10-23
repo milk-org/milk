@@ -152,7 +152,8 @@ Working example with several units per file: `plugins/test-src/runnabletest`.
   `libprocessinfo`, and `libmilkdata`.
 - `src/tui/`: Engine-tier terminal UIs (`fpsCTRL`, `procCTRL`) and the shared `milkTUI_compat.h`.
 - `src/cli/`: User interfaces and scripting layer, including `libmilkscript` (core interpreter),
-  `CLIcore` (interactive shell), `overview` (system overview TUI), and `streamCTRL`.
+  `CLIcore` (interactive shell) and `overview` (milk-CTRL; `milk-streamCTRL` is a link that opens it on
+  its streams view).
 - `src/milk_module_example`: Compute unit templates (start here!).
 - `src/coremods/COREMOD_*/`: Core computation libraries (tools, iofits, arith, memory).
 - `plugins/milk-extra-src/`: General plugin modules (fft, linalgebra, image processing...).

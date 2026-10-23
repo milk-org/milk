@@ -12,5 +12,5 @@ imgformat.cred_ql_utr ..triggermode 1
 imgformat.cred_ql_utr ..loopcntMax -1
 imgformat.cred_ql_utr a b c 5000
 listim
-exitCLI
+exit
 EOF

@@ -10,7 +10,7 @@ esac
 MSdescr="execute milk-cli command"
 
 MSextdescr="Execute command string within milk-cli command line interface (CLI).
-Multiple commands separated by ; character"
+The string is a bash command line: separate commands with ; or newlines"
 
 source milk-script-std-config
 
@@ -48,8 +48,6 @@ echo "command string : ${cmdstring}"
 
 
 
-IFS=';' read -r -a array <<< "${cmdstring}"
-
 #fifoname="milkCLIfifo.${pname}"
 
 set +u
@@ -62,12 +60,8 @@ fi
 set -u
 
 SF="${SFDIR}/milkCLIstartup.${pname}.$$"
-echo "" > $SF
-for cmdstring in "${array[@]}"
-do
-    echo "${cmdstring}" >> $SF
-done
-echo "exitCLI" >> $SF
+# the bash engine parses the string itself (';' inside quotes stays literal)
+printf '%s\nexit\n' "${cmdstring}" > "${SF}"
 #cp ${SF} test.txt
 
 MILK_QUIET=1 milk-cli -n ${pname} -f -s ${SF}

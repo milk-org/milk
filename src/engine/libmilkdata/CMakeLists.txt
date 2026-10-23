@@ -1,8 +1,8 @@
 set(LIBNAME "milkdata")
 
-set(SOURCEFILES milkdata.c)
+set(SOURCEFILES milkdata.c milkdata_streamlist.c)
 
-set(INCLUDEFILES milkdata.h milkdata_macros.h)
+set(INCLUDEFILES milkdata.h milkdata_macros.h milkdata_streamlist.h)
 
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
@@ -24,8 +24,14 @@ install(
   TARGETS ${LIBNAME}
   EXPORT milkTargets
   DESTINATION lib)
-install(FILES milkdata.h milkdata_macros.h milkdata_clicmd.h
+install(FILES milkdata.h milkdata_macros.h milkdata_clicmd.h milkdata_streamlist.h
         DESTINATION include/libmilkdata)
+
+if(BUILD_TESTING)
+  add_executable(test-milkdata-streamlist tests/test_milkdata_streamlist.c)
+  target_link_libraries(test-milkdata-streamlist PRIVATE ${LIBNAME})
+  add_test(NAME milkdata_unit_streamlist COMMAND test-milkdata-streamlist)
+endif()
 
 # Static archive for standalone LTO builds
 if(USE_STATIC_LTO)

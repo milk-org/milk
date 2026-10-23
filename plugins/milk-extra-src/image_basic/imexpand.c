@@ -89,8 +89,7 @@ imageID basic_expand(const char *ID_name, const char *ID_name_out, int n1, int n
 
     IMGID imgout       = imgid_make_from_name_2D(ID_name_out, naxes_out[0], naxes_out[1]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     for (long jj = 0; jj < naxes[1]; jj++)
     {
@@ -140,8 +139,7 @@ imageID basic_expand3D(const char *ID_name, const char *ID_name_out, int n1, int
 
     IMGID imgout = imgid_make_from_name_3D(ID_name_out, naxes_out[0], naxes_out[1], naxes_out[2]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     list_image_ID();
 

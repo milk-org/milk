@@ -36,6 +36,10 @@ void fpsCTRL_crash_handler(int sig)
 
     if (ansi__raw_active)
     {
+        if (ansi__orig_flags >= 0)
+        {
+            fcntl(STDIN_FILENO, F_SETFL, ansi__orig_flags);
+        }
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &ansi__orig_termios);
     }
 
@@ -64,16 +68,11 @@ void print_usage(const char *progname)
     printf("  -n, --name NAME   "
            "Filter FPS by name mask "
            "(default: \"_ALL\")\n");
-    printf("  -f, --fifo FIFO   "
-           "Input FIFO name "
-           "(default: based on "
-           "terminal name)\n");
+    printf("  -f FIFO, -s       "
+           "Retired options, accepted and ignored\n");
     printf("  -q, --quiet       "
            "Quiet mode (suppress "
            "TUI output)\n");
-    printf("  -s, --stdio       "
-           "Use stdio line-by-line "
-           "display instead of TUI\n");
     printf("  -h, --help        "
            "Show this help message\n");
     printf("\n");
@@ -107,7 +106,7 @@ int main(int argc, char *argv[])
     int  opt;
     int  matchmode        = 0;
     char fpsnamemask[256] = "_ALL";
-    char fifoname[512]    = "";
+    int  retired          = 0; /* -f/-s given: accepted for old scripts, ignored */
 
     // Silence ImageStreamIO library
     // ImageStreamIO_set_verbosity(0);
@@ -156,13 +155,13 @@ int main(int argc, char *argv[])
             strncpy(fpsnamemask, optarg, sizeof(fpsnamemask) - 1);
             break;
         case 'f':
-            strncpy(fifoname, optarg, sizeof(fifoname) - 1);
+            retired = 1;
             break;
         case 'q':
             setenv("MILK_TUIPRINT_NONE", "1", 1);
             break;
         case 's':
-            setenv("MILK_TUIPRINT_STDIO", "1", 1);
+            retired = 1;
             break;
         case 'h':
             print_usage(argv[0]);
@@ -171,7 +170,7 @@ int main(int argc, char *argv[])
         default:
             printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
             print_usage(argv[0]);
-            return 1;
+            return 2;
         }
     }
 
@@ -181,22 +180,16 @@ int main(int argc, char *argv[])
         strncpy(fpsnamemask, argv[optind], sizeof(fpsnamemask) - 1);
     }
 
-    // Default FIFO name based on terminal
-    if (strlen(fifoname) == 0)
+    if (retired)
     {
-        char *term_name = ttyname(STDIN_FILENO);
-        if (term_name != NULL)
-        {
-            char shmdname[STRINGMAXLEN_SHMDIRNAME];
-            function_parameter_struct_shmdirname(shmdname);
-            char *term_base = basename(term_name);
-            snprintf(fifoname, sizeof(fifoname), "%s/fpsCTRL_%s.fifo", shmdname, term_base);
-        }
+        fprintf(stderr,
+                "milk-fpsCTRL: -f/--fifo and -s/--stdio are retired and ignored; use milk-fps-set "
+                "and milk-fps-{conf,run}{start,stop}\n");
     }
 
     // Call the main TUI function
     // functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fpsCTRLfifoname);
-    functionparameter_CTRLscreen((uint32_t) matchmode, fpsnamemask, fifoname, 0.0);
+    functionparameter_CTRLscreen((uint32_t) matchmode, fpsnamemask, "", 0.0);
 
     return 0;
 }

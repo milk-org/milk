@@ -141,8 +141,7 @@ imageID read_PGMimage(const char *__restrict fname, const char *__restrict ID_na
                 printf("Reading PGM image\n");
                 IMGID imgout       = imgid_make_from_name_2D(ID_name, xsize, ysize);
                 imgout.mdt->shared = 0;
-                imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-                imgid_mkimage(&imgout);
+                imgid_create_registered(&imgout);
                 ID = imgout.ID;
                 fgetc(fp);
                 for (jj = 0; jj < ysize; jj++)

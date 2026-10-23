@@ -92,30 +92,9 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             break;
         }
-        const OV_PROC *p = &m->procs[psel];
-        const char    *sl;
-        switch (p->loopstat)
-        {
-        case 0:
-            sl = "IDLE";
-            break;
-        case 1:
-            sl = "RUN";
-            break;
-        case 2:
-            sl = "PAUS";
-            break;
-        case 3:
-            sl = "TERM";
-            break;
-        case 4:
-            sl = "ERR";
-            break;
-        default:
-            sl = "??";
-            break;
-        }
-        char loopinfo[48];
+        const OV_PROC *p  = &m->procs[psel];
+        const char    *sl = ov_proc_status(p, NULL);
+        char           loopinfo[48];
         loopinfo[0] = '\0';
         if (p->nb_loops > 1)
         {
@@ -164,14 +143,15 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
     case OV_FOCUS_GRAPH:
     {
         label_color = OV_FG_LOOP;
-        if (lay->graph_tab_mode == 1 && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+        if (lay->subtab == OV_SUB_LOOPS && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+            lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
         {
-            const OV_LOOP *lp = &m->loops[lay->sel_loop];
-            len               = snprintf(
-                line, sizeof(line), " LOOP L%02d  %-20.20s  Nodes:%d (%ds, %dp)  Hz:%.1f  %s  %s",
-                lp->loop_id, lp->name, lp->nb_nodes, lp->nb_streams, lp->nb_procs + lp->nb_fps,
-                lp->min_hz, lp->is_running ? "RUN" : (lp->is_paused ? "PAUS" : "IDLE"),
-                (lp->overlap_mask != 0) ? "OVERLAPPING" : "EXCLUSIVE");
+            const OV_LOOP *lp = &m->loops[lay->sub[OV_SUB_LOOPS].sel];
+            len = snprintf(line, sizeof(line),
+                           " LOOP L%02d  %-20.20s  Nodes:%d (%ds, %dp)  Hz:%.1f  %s  %s",
+                           lp->loop_id, ov_loop_name(lp), lp->nb_nodes, lp->nb_streams,
+                           ov_loop_units(lp), lp->min_hz, ov_loop_status(lp, NULL),
+                           (lp->overlap_mask != 0) ? "OVERLAPPING" : "EXCLUSIVE");
         }
         break;
     }
@@ -183,7 +163,7 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
     {
         /* Label badge */
         ov_theme_bg(label_color);
-        ov_buf_fg(0, 0, 0);
+        ov_theme_fg(ov_rgb_on(label_color));
         ov_buf_bold();
         ov_buf_printf("%.*s", 5, line);
         ov_buf_reset_attr();
@@ -216,45 +196,63 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
         if (focus == OV_FOCUS_PROCS && psel >= 0 && psel < m->nb_procs)
         {
             const OV_PROC *p = &m->procs[psel];
-            /* Pause / Resume */
-            if (p->loopstat == 2)
+            if (p->active)
             {
-                btns[nb].label         = " [p] \xe2\x96\xb6 Resume ";
-                btns[nb].bg            = (ov_rgb_t) { 30, 120, 60 };
-                btns[nb].id            = OV_BTN_PROC_PAUSE;
+                /* Pause / Resume */
+                if (p->loopstat == 2)
+                {
+                    btns[nb].label         = " [p] \xe2\x96\xb6 Resume ";
+                    btns[nb].bg            = OV_BADGE_OK;
+                    btns[nb].id            = OV_BTN_PROC_PAUSE;
+                    btns[nb].always_active = 0;
+                    nb++;
+
+                    /* Step */
+                    btns[nb].label         = " [s] \xe2\x8f\xad Step ";
+                    btns[nb].bg            = OV_BADGE_WARN;
+                    btns[nb].id            = OV_BTN_PROC_STEP;
+                    btns[nb].always_active = 0;
+                    nb++;
+                }
+                else
+                {
+                    btns[nb].label         = " [p] \xe2\x8f\xb8 Pause ";
+                    btns[nb].bg            = OV_BADGE_INFO;
+                    btns[nb].id            = OV_BTN_PROC_PAUSE;
+                    btns[nb].always_active = 0;
+                    nb++;
+                }
+                /* Exit (clean stop) */
+                btns[nb].label         = " [e] \xe2\x8f\xbb Exit ";
+                btns[nb].bg            = OV_BADGE_WARN;
+                btns[nb].id            = OV_BTN_PROC_EXIT;
                 btns[nb].always_active = 0;
                 nb++;
-
-                /* Step */
-                btns[nb].label         = " [s] \xe2\x8f\xad Step ";
-                btns[nb].bg            = (ov_rgb_t) { 120, 100, 30 };
-                btns[nb].id            = OV_BTN_PROC_STEP;
+                /* Kill (SIGTERM) */
+                btns[nb].label         = " [k] \xe2\x98\xa0 Kill ";
+                btns[nb].bg            = OV_BADGE_DANGER;
+                btns[nb].id            = OV_BTN_PROC_KILL;
                 btns[nb].always_active = 0;
                 nb++;
             }
             else
             {
-                btns[nb].label         = " [p] \xe2\x8f\xb8 Pause ";
-                btns[nb].bg            = (ov_rgb_t) { 50, 90, 160 };
-                btns[nb].id            = OV_BTN_PROC_PAUSE;
+                /* Erase single dead process entry */
+                btns[nb].label         = " [^e] \xe2\x9c\x95 Erase ";
+                btns[nb].bg            = OV_BADGE_DANGER;
+                btns[nb].id            = OV_BTN_PROC_REMOVE;
                 btns[nb].always_active = 0;
                 nb++;
             }
-            /* Exit (clean stop) */
-            btns[nb].label         = " [e] \xe2\x8f\xbb Exit ";
-            btns[nb].bg            = (ov_rgb_t) { 160, 120, 30 };
-            btns[nb].id            = OV_BTN_PROC_EXIT;
-            btns[nb].always_active = 0;
-            nb++;
-            /* Kill (SIGTERM) */
-            btns[nb].label         = " [k] \xe2\x98\xa0 Kill ";
-            btns[nb].bg            = (ov_rgb_t) { 180, 40, 40 };
-            btns[nb].id            = OV_BTN_PROC_KILL;
+            /* Cleanup all dead process entries */
+            btns[nb].label         = " [C] Cleanup ";
+            btns[nb].bg            = OV_BADGE_WARN;
+            btns[nb].id            = OV_BTN_PROC_CLEANUP;
             btns[nb].always_active = 0;
             nb++;
             /* Inspect */
             btns[nb].label         = " [i] Inspect ";
-            btns[nb].bg            = (ov_rgb_t) { 50, 90, 160 };
+            btns[nb].bg            = OV_BADGE_INFO;
             btns[nb].id            = OV_BTN_INSPECT;
             btns[nb].always_active = 1;
             nb++;
@@ -264,25 +262,31 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             const OV_FPS *f = &m->fps[fsel];
             /* Conf toggle */
             btns[nb].label = f->conf_alive ? " [s] \xe2\x96\xa0 Conf " : " [s] \xe2\x96\xb6 Conf ";
-            btns[nb].bg = f->conf_alive ? (ov_rgb_t) { 160, 120, 30 } : (ov_rgb_t) { 30, 120, 60 };
-            btns[nb].id = OV_BTN_FPS_CONF;
+            btns[nb].bg    = f->conf_alive ? OV_BADGE_WARN : OV_BADGE_OK;
+            btns[nb].id    = OV_BTN_FPS_CONF;
             btns[nb].always_active = 0;
             nb++;
             /* Run toggle */
             btns[nb].label = f->run_alive ? " [r] \xe2\x96\xa0 Run " : " [r] \xe2\x96\xb6 Run ";
-            btns[nb].bg = f->run_alive ? (ov_rgb_t) { 160, 120, 30 } : (ov_rgb_t) { 30, 120, 60 };
-            btns[nb].id = OV_BTN_FPS_RUN;
+            btns[nb].bg    = f->run_alive ? OV_BADGE_WARN : OV_BADGE_OK;
+            btns[nb].id    = OV_BTN_FPS_RUN;
             btns[nb].always_active = 0;
             nb++;
             /* Kill */
             btns[nb].label         = " [k] \xe2\x98\xa0 Kill ";
-            btns[nb].bg            = (ov_rgb_t) { 180, 40, 40 };
+            btns[nb].bg            = OV_BADGE_DANGER;
             btns[nb].id            = OV_BTN_FPS_KILL;
+            btns[nb].always_active = 0;
+            nb++;
+            /* Erase */
+            btns[nb].label         = " [^e] \xe2\x9c\x95 Erase ";
+            btns[nb].bg            = OV_BADGE_DANGER;
+            btns[nb].id            = OV_BTN_FPS_ERASE;
             btns[nb].always_active = 0;
             nb++;
             /* Inspect */
             btns[nb].label         = " [i] Inspect ";
-            btns[nb].bg            = (ov_rgb_t) { 50, 90, 160 };
+            btns[nb].bg            = OV_BADGE_INFO;
             btns[nb].id            = OV_BTN_INSPECT;
             btns[nb].always_active = 1;
             nb++;
@@ -290,14 +294,14 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
         else if (focus == OV_FOCUS_STREAMS && ssel >= 0 && ssel < m->nb_streams)
         {
             /* Delete stream */
-            btns[nb].label         = " [DEL] \xe2\x9c\x95 Delete ";
-            btns[nb].bg            = (ov_rgb_t) { 180, 40, 40 };
+            btns[nb].label         = " [DEL] Delete ";
+            btns[nb].bg            = OV_BADGE_DANGER;
             btns[nb].id            = OV_BTN_STREAM_DEL;
             btns[nb].always_active = 0;
             nb++;
             /* Inspect */
             btns[nb].label         = " [i] Inspect ";
-            btns[nb].bg            = (ov_rgb_t) { 50, 90, 160 };
+            btns[nb].bg            = OV_BADGE_INFO;
             btns[nb].id            = OV_BTN_INSPECT;
             btns[nb].always_active = 1;
             nb++;
@@ -336,8 +340,8 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
                 ov_buf_pos(3, col);
                 if (btns[bi].always_active)
                 {
-                    ov_buf_bg(btns[bi].bg.r, btns[bi].bg.g, btns[bi].bg.b);
-                    ov_buf_fg(255, 255, 255);
+                    ov_theme_bg(btns[bi].bg);
+                    ov_theme_fg(ov_rgb_on(btns[bi].bg));
                 }
                 else if (!lay->ctrl_mode)
                 {
@@ -346,8 +350,8 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
                 }
                 else
                 {
-                    ov_buf_bg(btns[bi].bg.r, btns[bi].bg.g, btns[bi].bg.b);
-                    ov_buf_fg(255, 255, 255);
+                    ov_theme_bg(btns[bi].bg);
+                    ov_theme_fg(ov_rgb_on(btns[bi].bg));
                 }
                 ov_buf_bold();
                 ov_buf_printf("%s", btns[bi].label);
@@ -377,8 +381,8 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
         if (col > 1)
         {
             ov_buf_pos(3, col);
-            ov_buf_bg(60, 130, 200);
-            ov_buf_fg(255, 255, 255);
+            ov_theme_bg(OV_BADGE_INFO);
+            ov_theme_fg(ov_rgb_on(OV_BADGE_INFO));
             ov_buf_bold();
             ov_buf_printf("%s", badge);
         }

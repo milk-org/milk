@@ -33,6 +33,7 @@ typedef struct FPS_APP_INFO_
     const char *cmdkey;
     const char *description;
     const char *description_long;
+    const char *outvars; /* calculator variables set for the caller, space-separated (NULL: none) */
 } FPS_APP_INFO;
 
 

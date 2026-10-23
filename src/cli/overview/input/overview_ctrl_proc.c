@@ -8,8 +8,11 @@
  */
 
 #include "overview_input_internal.h"
-#include "processinfo_shm_list_create.h"
+#include "overview_data_internal.h"
+#include "milk_spawn.h"
+#include "processinfo_list.h"
 #include <errno.h>
+#include <limits.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
@@ -20,73 +23,107 @@
 #include <unistd.h>
 
 /**
- * pid_is_stopped - check if a process is in 'T' state.
- * @pid: process PID
- *
- * Reads /proc/[pid]/stat and returns 1 if the state
- * character is 'T' (stopped), 0 otherwise.
+ * plist_map - map the existing process registry read-only (slots are changed through processinfo_list_*).
+ * Return: the registry, or NULL (nothing is created when it does not exist).
  */
-int pid_is_stopped(pid_t pid)
+static const PROCESSINFOLIST *plist_map(ov_shm_map_t *m)
 {
-    if (pid <= 0)
+    char path[PATH_MAX];
+    snprintf(path, sizeof(path), "%s/processinfo.list.shm", ov_get_procdir());
+    if (ov_shm_map(m, path, 0, sizeof(PROCESSINFOLIST)) != 0)
     {
-        return 0;
+        return NULL;
     }
-    char path[64];
-    snprintf(path, sizeof(path), "/proc/%d/stat", pid);
-    FILE *fp = fopen(path, "r");
-    if (fp == NULL)
-    {
-        return 0;
-    }
-    int  p;
-    char comm[256];
-    char state = '?';
-    if (fscanf(fp, "%d %s %c", &p, comm, &state) != 3)
-    {
-        state = '?';
-    }
-    fclose(fp);
-    return (state == 'T');
+    return (const PROCESSINFOLIST *) m->addr;
 }
 
 /**
- * ov_ctrl_proc_kill - send SIGTERM to a process.
+ * proc_shm_path - path of @p's proc file, built from its registry slot as the scanner does.
+ * Return: 0, or -1 when the slot no longer holds @p's PID.
+ */
+static int proc_shm_path(const OV_PROC *p, char *buf, size_t len)
+{
+    ov_shm_map_t           m;
+    const PROCESSINFOLIST *pl = plist_map(&m);
+    int                    rc = -1;
+    if (pl != NULL && p->pindex >= 0 && p->pindex < PROCESSINFOLISTSIZE &&
+        pl->PIDarray[p->pindex] == p->PID)
+    {
+        snprintf(buf, len, "%s/proc.%.*s.%06d.shm", ov_get_procdir(),
+                 (int) sizeof(pl->pnamearray[0]), pl->pnamearray[p->pindex], (int) p->PID);
+        rc = 0;
+    }
+    ov_shm_unmap(&m);
+    return rc;
+}
+
+/**
+ * proc_map_rw - map @p's proc file read-write for one action. Return: the PROCESSINFO or NULL
+ * (reason logged).
+ */
+static PROCESSINFO *proc_map_rw(const OV_PROC *p, ov_shm_map_t *m, const char *what, OV_CMDLOG *log)
+{
+    char path[PATH_MAX];
+    if (proc_shm_path(p, path, sizeof(path)) != 0)
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                       "Process \"%s\" (PID %d): %s refused, registry entry changed", p->name,
+                       (int) p->PID, what);
+        return NULL;
+    }
+    if (ov_shm_map(m, path, 1, sizeof(PROCESSINFO)) != 0)
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\" (PID %d): %s failed: %s", p->name,
+                       (int) p->PID, what, strerror(errno));
+        return NULL;
+    }
+    return (PROCESSINFO *) m->addr;
+}
+
+/**
+ * proc_signal - send @sig to @p only if it is running and its PID still names the same process.
+ */
+static void proc_signal(const OV_PROC *p, int sig, const char *signame, OV_CMDLOG *log)
+{
+    if (p == NULL || p->PID <= 0)
+    {
+        return;
+    }
+    if (!p->active)
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\" (PID %d) is not running; not signalled",
+                       p->name, (int) p->PID);
+        return;
+    }
+    if (!pid_same_process(p->PID, p->start_ticks))
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\": PID %d was reused; not signalled",
+                       p->name, (int) p->PID);
+        return;
+    }
+    int rc = kill(p->PID, sig);
+    ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "Process \"%s\" (PID %d): %s %s",
+                   p->name, (int) p->PID, signame, rc == 0 ? "sent" : strerror(errno));
+}
+
+/**
+ * ov_ctrl_proc_kill - send SIGTERM to a process (refused for a reused PID).
  * @p:   process model entry
  * @log: command log (may be NULL)
  */
 void ov_ctrl_proc_kill(const OV_PROC *p, OV_CMDLOG *log)
 {
-    if (p == NULL || p->PID <= 0)
-    {
-        return;
-    }
-
-    int rc = kill(p->PID, SIGTERM);
-    if (log != NULL)
-    {
-        ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "💀 Process \"%s\" (PID %d) — SIGTERM", p->name, p->PID);
-    }
+    proc_signal(p, SIGTERM, "SIGTERM", log);
 }
 
 /**
- * ov_ctrl_proc_sigkill - send SIGKILL to a process.
+ * ov_ctrl_proc_sigkill - send SIGKILL to a process (refused for a reused PID).
  * @p:   process model entry
  * @log: command log (may be NULL)
  */
 void ov_ctrl_proc_sigkill(const OV_PROC *p, OV_CMDLOG *log)
 {
-    if (p == NULL || p->PID <= 0)
-    {
-        return;
-    }
-    int rc = kill(p->PID, SIGKILL);
-    if (log != NULL)
-    {
-        ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "Process \"%s\" (PID %d) — SIGKILL", p->name, p->PID);
-    }
+    proc_signal(p, SIGKILL, "SIGKILL", log);
 }
 
 /**
@@ -97,85 +134,22 @@ void ov_ctrl_proc_sigkill(const OV_PROC *p, OV_CMDLOG *log)
  */
 void ov_ctrl_proc_set_ctrlval(const OV_PROC *p, int val, OV_CMDLOG *log)
 {
+    static const char *const names[] = { "Resume", "Pause", "Step", "Exit request" };
+    ov_shm_map_t             m;
     if (p == NULL || p->PID <= 0 || !p->valid)
     {
         return;
     }
-
-    char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
-
-    int fd = open(fname, O_RDWR);
-    if (fd < 0)
+    PROCESSINFO *pinfo = proc_map_rw(p, &m, "CTRLval", log);
+    if (pinfo == NULL)
     {
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (open)", p->name);
-        }
         return;
     }
-
-    struct stat st;
-    if (fstat(fd, &st) < 0 || st.st_size < (off_t) sizeof(PROCESSINFO))
-    {
-        close(fd);
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (stat)", p->name);
-        }
-        return;
-    }
-
-    PROCESSINFO *pinfo =
-        (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (pinfo == MAP_FAILED)
-    {
-        close(fd);
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (mmap)", p->name);
-        }
-        return;
-    }
-
-    int old_val    = pinfo->CTRLval;
-    int new_val    = (val == -1) ? (old_val == 0 ? 1 : 0) : val;
+    int new_val    = (val == -1) ? (pinfo->CTRLval == 0 ? 1 : 0) : val;
     pinfo->CTRLval = new_val;
-
-    munmap(pinfo, sizeof(PROCESSINFO));
-    close(fd);
-
-    if (log != NULL)
-    {
-        const char *action;
-        const char *emoji = "⚡";
-        if (new_val == 0)
-        {
-            action = "Resume";
-            emoji  = "⏯️";
-        }
-        else if (new_val == 1)
-        {
-            action = "Pause";
-            emoji  = "⏸️";
-        }
-        else if (new_val == 2)
-        {
-            action = "Step";
-            emoji  = "⏭️";
-        }
-        else if (new_val == 3)
-        {
-            action = "Exit request";
-            emoji  = "⏹️";
-        }
-        else
-        {
-            action = "CTRLval updated";
-        }
-
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "%s Process \"%s\" — %s", emoji, p->name, action);
-    }
+    ov_shm_unmap(&m);
+    ov_cmdlog_push(log, OV_CMDLOG_OK, "Process \"%s\": %s", p->name,
+                   (new_val >= 0 && new_val <= 3) ? names[new_val] : "CTRLval updated");
 }
 
 /**
@@ -185,60 +159,23 @@ void ov_ctrl_proc_set_ctrlval(const OV_PROC *p, int val, OV_CMDLOG *log)
  */
 void ov_ctrl_proc_zero_counters(const OV_PROC *p, OV_CMDLOG *log)
 {
+    ov_shm_map_t m;
     if (p == NULL || p->PID <= 0 || !p->valid)
     {
         return;
     }
-
-    char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
-
-    int fd = open(fname, O_RDWR);
-    if (fd < 0)
+    PROCESSINFO *pinfo = proc_map_rw(p, &m, "zero counters", log);
+    if (pinfo == NULL)
     {
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (open)", p->name);
-        }
         return;
     }
-
-    struct stat st;
-    if (fstat(fd, &st) < 0 || st.st_size < (off_t) sizeof(PROCESSINFO))
-    {
-        close(fd);
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (stat)", p->name);
-        }
-        return;
-    }
-
-    PROCESSINFO *pinfo =
-        (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (pinfo == MAP_FAILED)
-    {
-        close(fd);
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (mmap)", p->name);
-        }
-        return;
-    }
-
     pinfo->loopcnt = 0;
-
-    munmap(pinfo, sizeof(PROCESSINFO));
-    close(fd);
-
-    if (log != NULL)
-    {
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "0️⃣ Process \"%s\" — Counters zeroed", p->name);
-    }
+    ov_shm_unmap(&m);
+    ov_cmdlog_push(log, OV_CMDLOG_OK, "Process \"%s\": counters zeroed", p->name);
 }
 
 /**
- * ov_ctrl_proc_remove - remove a single process from shm.
+ * ov_ctrl_proc_remove - remove the registry entry and proc file of a process that is gone.
  * @p:   process model entry
  * @log: command log (may be NULL)
  */
@@ -248,78 +185,27 @@ void ov_ctrl_proc_remove(const OV_PROC *p, OV_CMDLOG *log)
     {
         return;
     }
-
-    if (kill(p->PID, 0) == 0 || errno == EPERM)
+    if ((kill(p->PID, 0) == 0 || errno == EPERM) &&
+        (p->start_ticks == 0 || pid_same_process(p->PID, p->start_ticks)))
     {
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" (PID %d) is still alive",
-                           p->name, p->PID);
-        }
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\" (PID %d) is still alive", p->name,
+                       (int) p->PID);
         return;
     }
 
-    char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
-
-    int rc        = unlink(fname);
-    int file_gone = (rc == 0 || errno == ENOENT);
-
-    int deactivated = 0;
-    if (pinfolist == NULL)
+    char path[PATH_MAX];
+    if (proc_shm_path(p, path, sizeof(path)) != 0)
     {
-        long pindex_unused;
-        processinfo_shm_list_create(&pindex_unused);
-    }
-
-    if (pinfolist != NULL)
-    {
-        for (long i = 0; i < PROCESSINFOLISTSIZE; i++)
-        {
-            if (pinfolist->PIDarray[i] == p->PID)
-            {
-                pinfolist->active[i] = 0;
-                deactivated          = 1;
-                break;
-            }
-        }
-    }
-
-    if (log != NULL)
-    {
-        if (deactivated || file_gone)
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_OK, "🗑 Process \"%s\" (PID %d) entry removed", p->name,
-                           p->PID);
-        }
-        else
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "failed to remove entry for process \"%s\"",
-                           p->name);
-        }
-    }
-}
-
-/**
- * ov_ctrl_proc_pause_toggle - toggle SIGSTOP/SIGCONT.
- * @p:   process model entry
- * @log: command log (may be NULL)
- */
-void ov_ctrl_proc_pause_toggle(const OV_PROC *p, OV_CMDLOG *log)
-{
-    if (p == NULL || p->PID <= 0)
-    {
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\": registry entry changed; not removed",
+                       p->name);
         return;
     }
-    int stopped = pid_is_stopped(p->PID);
-    int sig     = stopped ? SIGCONT : SIGSTOP;
-    int rc      = kill(p->PID, sig);
-    if (log != NULL)
-    {
-        ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "%s Process \"%s\" (PID %d) — %s", stopped ? "⏯️" : "⏸️", p->name, p->PID,
-                       stopped ? "resumed" : "paused");
-    }
+    int file_gone   = (unlink(path) == 0 || errno == ENOENT);
+    int deactivated = (processinfo_list_clear_slot(p->pindex, p->PID) == 1);
+
+    ov_cmdlog_push(log, (deactivated && file_gone) ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
+                   "Process \"%s\" (PID %d): entry %s", p->name, (int) p->PID,
+                   (deactivated && file_gone) ? "removed" : "not fully removed");
 }
 
 /**
@@ -328,12 +214,24 @@ void ov_ctrl_proc_pause_toggle(const OV_PROC *p, OV_CMDLOG *log)
  */
 void ov_ctrl_procs_cleanup(OV_CMDLOG *log)
 {
-    /* Silently remove crashed/stopped procinfo entries */
-    int rc = system("milk-procinfo-rm -c </dev/null >/dev/null 2>&1");
-    if (log != NULL)
+    static const char *const argv[] = { "milk-procinfo-rm", "-c", NULL };
+    int                      rc     = milkspawn_run(argv, -1, -1);
+    int                      err    = errno;
+    int                      reaped = processinfo_list_reap(0);
+    if (rc < 0)
     {
-        ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "🧹 Process cleanup requested");
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process cleanup failed: milk-procinfo-rm: %s",
+                       strerror(err));
+    }
+    else if (rc != 0)
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process cleanup failed: milk-procinfo-rm exit %d", rc);
+    }
+    else
+    {
+        ov_cmdlog_push(log, reaped >= 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
+                       "Process cleanup: stale files removed, %d registry slot(s) settled",
+                       reaped > 0 ? reaped : 0);
     }
 }
 
@@ -349,22 +247,27 @@ void ov_ctrl_inspect_item(ov_focus_t panel, const void *item)
         return;
     }
 
-    char cmd[512] = { 0 };
-
+    /* argv only: names come from shm file names and must never reach a shell */
+    char        pid_str[16];
+    const char *argv[5] = { NULL };
     if (panel == OV_FOCUS_STREAMS)
     {
-        const OV_STREAM *s = (const OV_STREAM *) item;
-        snprintf(cmd, sizeof(cmd), "milk-stream-info %s", s->name);
+        argv[0] = "milk-stream-info";
+        argv[1] = "--";
+        argv[2] = ((const OV_STREAM *) item)->name;
     }
     else if (panel == OV_FOCUS_PROCS)
     {
-        const OV_PROC *p = (const OV_PROC *) item;
-        snprintf(cmd, sizeof(cmd), "milk-procinfo-info %s", p->name);
+        snprintf(pid_str, sizeof(pid_str), "%d", (int) ((const OV_PROC *) item)->PID);
+        argv[0] = "milk-procinfo-info";
+        argv[1] = "--pid";
+        argv[2] = pid_str;
     }
     else if (panel == OV_FOCUS_FPS)
     {
-        const OV_FPS *f = (const OV_FPS *) item;
-        snprintf(cmd, sizeof(cmd), "milk-fps-info %s", f->name);
+        argv[0] = "milk-fps-info";
+        argv[1] = "--";
+        argv[2] = ((const OV_FPS *) item)->name;
     }
     else
     {
@@ -373,12 +276,26 @@ void ov_ctrl_inspect_item(ov_focus_t panel, const void *item)
 
     /* Suspend TUI */
     ov_raw_mode_exit();
-    int rc_clear = system("clear");
-    (void) rc_clear;
+    fputs("\033[H\033[2J", stdout);
+    fflush(stdout);
 
-    /* Show the diagnostic output */
-    int rc_cmd = system(cmd);
-    (void) rc_cmd;
+    /* Show the diagnostic output; ^C stops the tool, not milk-CTRL (as system() did) */
+    struct sigaction ign, old_int, old_quit;
+    memset(&ign, 0, sizeof(ign));
+    ign.sa_handler = SIG_IGN;
+    sigaction(SIGINT, &ign, &old_int);
+    sigaction(SIGQUIT, &ign, &old_quit);
+    int rc = milkspawn_run(argv, STDOUT_FILENO, STDERR_FILENO);
+    if (rc < 0)
+    {
+        printf("\n%s: %s\n", argv[0], strerror(errno));
+    }
+    else if (rc > 0)
+    {
+        printf("\n%s exited with status %d\n", argv[0], rc);
+    }
+    sigaction(SIGINT, &old_int, NULL);
+    sigaction(SIGQUIT, &old_quit, NULL);
 
     /* Prompt the user to return */
     printf("\n\033[1;36m"

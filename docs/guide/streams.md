@@ -89,6 +89,7 @@ These are parsed by `imgid_make_from_name()`. Keyword count and circular buffer 
 
 Tools like `milk-streamCTRL` provide real-time introspection into active streams, displaying frame
 arrival rates, recent values, and the current state of semaphores without disrupting operations.
+To look at a stream's image in the terminal, use [`milk-termview`](termview.md).
 
 ## 5. C API (`IMGID`)
 
@@ -207,7 +208,8 @@ oldest ancestor in the chain.
 
 ### Viewing the Trace
 
-- In `streamCTRL`: select a stream and press `t` to see the full process trace.
+- In `milk-CTRL` (or `milk-streamCTRL`), F3: select a stream, press Right to open the inspector and
+  Right again until the TRACE page: each hop's process, trigger stream, mode and timing.
 - In `milk-CTRL` overview: the trace is used to draw stream→process→stream dependency graphs.
 
 ---

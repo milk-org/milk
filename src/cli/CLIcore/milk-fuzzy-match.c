@@ -196,6 +196,18 @@ static void print_help(const char *prog, int mh_color)
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
 }
 
+/**
+ * main - Entry point for the milk-fuzzy-match command-line utility
+ * @argc: Number of command-line arguments
+ * @argv: Array of command-line argument strings
+ *
+ * Parses command-line options (including `-t` threshold and standard milk help
+ * flags), computes character bigram sets for the query and each input line from
+ * a file or stdin, filters lines by Dice similarity coefficient, and prints
+ * matching lines sorted by descending score.
+ *
+ * Return: 0 on success, 1 on invalid arguments or file open error
+ */
 int main(int argc, char **argv)
 {
     int action = milk_help_init(argc, argv, FM_ONELINE, FM_DESC_LONG);

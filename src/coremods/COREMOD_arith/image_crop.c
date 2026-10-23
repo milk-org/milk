@@ -184,6 +184,15 @@ imageID arith_image_crop(const char *ID_name,
         naxesout[i] = end[i] - start[i];
     }
 
+    if (strcmp(ID_out, ID_name) == 0)
+    {
+        PRINT_ERROR("output image must differ from the input image %s", ID_name);
+        free(naxesout);
+        free(naxes);
+        return -1;
+    }
+    delete_image_ID(ID_out,
+                    DELETE_IMAGE_ERRMODE_IGNORE); // the output is re-created at the crop size
     IMGID imgout      = imgid_make_from_name(ID_out);
     imgout.mdt->naxis = naxis;
     for (int i = 0; i < naxis; i++)
@@ -195,6 +204,7 @@ imageID arith_image_crop(const char *ID_name,
     imgout.mdt->NBkw     = NB_KEYWNODE_MAX;
     imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
     imgid_mkimage(&imgout);
+    RegisterIMGID(&imgout, dcimg, dcnimg); // otherwise the cropped image is not in the image table
     imageID IDout = imgout.ID;
 
     int64_t start_c[3] = { 0, 0, 0 };

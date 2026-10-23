@@ -126,22 +126,12 @@ imageID make_rnd(const char *ID_name, uint32_t l1, uint32_t l2, const char *opti
     naxes[1] = dcimg[ID].md[0].size[1];
     nelement = naxes[0] * naxes[1];
 
-    // openMP is slow when calling gsl random number generator : do not use openMP here
-    if (distrib == 0)
+    if (distrib == 0 || distrib == 1)
     {
-        for (uint64_t ii = 0; ii < nelement; ii++)
-        {
-            dcimg[ID].array.F[ii] = (double) ran1();
-        }
+        arith_image_fill_coord(&dcimg[ID], (distrib == 1) ? ARITH_COORD_RANDN : ARITH_COORD_RAND,
+                               0.0, 0.0);
     }
-    if (distrib == 1)
-    {
-        for (uint64_t ii = 0; ii < nelement; ii++)
-        {
-            dcimg[ID].array.F[ii] = (double) gauss();
-        }
-    }
-    if (distrib == 2)
+    else if (distrib == 2)
     {
         for (uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -182,22 +172,12 @@ imageID make_rnd_double(const char *ID_name, uint32_t l1, uint32_t l2, const cha
     naxes[1] = dcimg[ID].md[0].size[1];
     nelement = naxes[0] * naxes[1];
 
-    // openMP is slow when calling gsl random number generator : do not use openMP here
-    if (distrib == 0)
+    if (distrib == 0 || distrib == 1)
     {
-        for (uint64_t ii = 0; ii < nelement; ii++)
-        {
-            dcimg[ID].array.D[ii] = (double) ran1();
-        }
+        arith_image_fill_coord(&dcimg[ID], (distrib == 1) ? ARITH_COORD_RANDN : ARITH_COORD_RAND,
+                               0.0, 0.0);
     }
-    if (distrib == 1)
-    {
-        for (uint64_t ii = 0; ii < nelement; ii++)
-        {
-            dcimg[ID].array.D[ii] = (double) gauss();
-        }
-    }
-    if (distrib == 2)
+    else if (distrib == 2)
     {
         for (uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -773,67 +753,21 @@ imageID gen_image_EZdisk(const char *ID_name,
 
 imageID make_slopexy(const char *ID_name, uint32_t l1, uint32_t l2, double sx, double sy)
 {
-    imageID  ID;
-    uint32_t naxes[2];
-    double   coeff;
-
-    create_2Dimage_ID(ID_name, l1, l2, &ID);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
-
-    coeff = sx * (naxes[0] / 2) + sy * (naxes[1] / 2);
-
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
-    {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
-        {
-            dcimg[ID].array.F[jj * naxes[0] + ii] = sx * ii + sy * jj - coeff;
-        }
-    }
-
-    return (ID);
+    return arith_make_slopexy(ID_name, l1, l2, sx, sy);
 }
 
 imageID make_dist(const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2)
 {
-    imageID  ID;
-    uint32_t naxes[2];
-
+    imageID ID;
     create_2Dimage_ID(ID_name, l1, l2, &ID);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
-
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
-    {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
-        {
-            dcimg[ID].array.F[jj * naxes[0] + ii] =
-                sqrt((f1 - ii) * (f1 - ii) + (f2 - jj) * (f2 - jj));
-        }
-    }
-
+    arith_image_fill_coord(&dcimg[ID], ARITH_COORD_R, f1, f2);
     return (ID);
 }
 
 imageID make_PosAngle(const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2)
 {
-    imageID  ID;
-    uint32_t naxes[2];
-
+    imageID ID;
     create_2Dimage_ID(ID_name, l1, l2, &ID);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
-
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
-    {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
-        {
-            double x, y;
-            x                                     = 1.0 * ii - f1;
-            y                                     = 1.0 * jj - f2;
-            dcimg[ID].array.F[jj * naxes[0] + ii] = atan2(y, x);
-        }
-    }
-
+    arith_image_fill_coord(&dcimg[ID], ARITH_COORD_THETA, f1, f2);
     return (ID);
 }

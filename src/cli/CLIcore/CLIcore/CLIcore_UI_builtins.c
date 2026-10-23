@@ -15,207 +15,31 @@
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
 #include "CLIcore_script.h"
-#include "CLIcore/cli_calc_parser.h"
+#include "milk_bash_engine.h"
+#include "cli_calc_parser.h"
 #include <glob.h>
 #include <sys/wait.h>
 
 #include "timeutils.h"
 #include "treesitter/cli_treesitter.h"
 
-
-/**
- * @brief CLI handler: watch <interval_ms> <command>
- *
- * Repeats a command at a fixed interval with
- * in-place terminal refresh. Press any key to stop.
- */
-errno_t cli_watch(void)
-{
-    if (data.cmdNBarg < 3)
-    {
-        printf("Usage: watch <interval_ms>"
-               " <command...>\n");
-        return RETURN_FAILURE;
-    }
-
-    long interval_ms = data.cmdargtoken[1].val.numl;
-    if (interval_ms < 10)
-    {
-        interval_ms = 10;
-    }
-
-    /* Build command from remaining args */
-    char watchcmd[STRINGMAXLEN_CLICMDLINE];
-    watchcmd[0] = '\0';
-    for (long a = 2; a < data.cmdNBarg; a++)
-    {
-        if (a > 2)
-        {
-            strncat(watchcmd, " ", STRINGMAXLEN_CLICMDLINE - strlen(watchcmd) - 1);
-        }
-        strncat(watchcmd, data.cmdargtoken[a].val.string,
-                STRINGMAXLEN_CLICMDLINE - strlen(watchcmd) - 1);
-    }
-
-    /* Switch terminal to raw mode so we can
-     * detect single keypresses without Enter.
-     * Readline leaves the terminal in cooked
-     * mode which buffers input. */
-    struct termios orig_termios;
-    struct termios raw_termios;
-    tcgetattr(STDIN_FILENO, &orig_termios);
-    raw_termios = orig_termios;
-    raw_termios.c_lflag &= ~((tcflag_t) ICANON | (tcflag_t) ECHO);
-    raw_termios.c_cc[VMIN]  = 0;
-    raw_termios.c_cc[VTIME] = 0;
-    tcsetattr(STDIN_FILENO, TCSANOW, &raw_termios);
-
-    /* Loop until keypress */
-    for (;;)
-    {
-        /* Clear screen, move cursor to top */
-        printf("\033[2J\033[H");
-
-        /* Print header */
-        {
-            time_t     now = time(NULL);
-            struct tm *tm  = localtime(&now);
-            printf("Every %ldms: %s   "
-                   "%02d:%02d:%02d"
-                   "  (press any key to stop)\n\n",
-                   interval_ms, watchcmd, tm->tm_hour, tm->tm_min, tm->tm_sec);
-        }
-
-        /* Execute the command */
-        strncpy(data.CLIcmdline, watchcmd, STRINGMAXLEN_CLICMDLINE - 1);
-        data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-        CLI_execute_line();
-
-        fflush(stdout);
-
-        /* Sleep in small increments, checking
-         * for keypress */
-        {
-            long slept = 0;
-            long step  = 50000; /* 50 ms */
-            while (slept < interval_ms * 1000)
-            {
-                struct timeval tv;
-                fd_set         fds;
-                tv.tv_sec  = 0;
-                tv.tv_usec = step;
-                FD_ZERO(&fds);
-                FD_SET(STDIN_FILENO, &fds);
-                int r = select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv);
-                if (r > 0)
-                {
-                    /* Consume the keypress */
-                    char discard;
-                    if (read(STDIN_FILENO, &discard, 1) > 0)
-                    {
-                        /* ignore value */
-                    }
-                    goto watch_done;
-                }
-                slept += step;
-            }
-        }
-    }
-
-watch_done:
-    /* Restore original terminal settings */
-    tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
-    printf("\nwatch stopped.\n");
-
-    return RETURN_SUCCESS;
-}
-
-
-/**
- * @brief Source ~/.milkrc on startup.
- *
- * Reads the user's milkrc file line-by-line and
- * executes each non-blank, non-comment line
- * through CLI_execute_line(). Silently skips
- * processing if the file does not exist.
- */
+/** cli_milkrc_load() - source ~/.milkrc in the bash engine, if it exists (interactive startup only). */
 void cli_milkrc_load(void)
 {
-    char rcpath[STRINGMAXLEN_FULLFILENAME];
-    snprintf(rcpath, STRINGMAXLEN_FULLFILENAME, "%s/.milkrc", getenv("HOME"));
+    const char *home = getenv("HOME");
+    char        rcpath[STRINGMAXLEN_FULLFILENAME];
 
-    FILE *fp = fopen(rcpath, "r");
-    if (fp == NULL)
+    if (home == NULL)
     {
         return;
     }
-
-    char line[STRINGMAXLEN_CLICMDLINE];
-    while (fgets(line, STRINGMAXLEN_CLICMDLINE, fp) != NULL)
+    snprintf(rcpath, sizeof(rcpath), "%s/.milkrc", home);
+    if (access(rcpath, R_OK) != 0)
     {
-        size_t len = strlen(line);
-        if (len > 0 && line[len - 1] == '\n')
-        {
-            line[len - 1] = '\0';
-        }
-        const char *p = line;
-        while (*p == ' ' || *p == '\t')
-        {
-            p++;
-        }
-        if (*p == '\0' || *p == '#')
-        {
-            continue;
-        }
-        strncpy(data.CLIcmdline, line, STRINGMAXLEN_CLICMDLINE - 1);
-        data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-        CLI_execute_line();
+        return;
     }
-    fclose(fp);
+    milk_bash_engine_exec_file(rcpath, NULL);
 }
-
-
-/**
- * @brief Measure and report wall-clock execution
- *        time of a command.
- *
- * Usage: time <command...>
- */
-errno_t cli_time(void)
-{
-    if (data.cmdNBarg < 2)
-    {
-        printf("Usage: time <command...>\n");
-        return RETURN_FAILURE;
-    }
-    char timecmd[STRINGMAXLEN_CLICMDLINE];
-    timecmd[0] = '\0';
-    for (long a = 1; a < data.cmdNBarg; a++)
-    {
-        if (a > 1)
-        {
-            strncat(timecmd, " ", STRINGMAXLEN_CLICMDLINE - strlen(timecmd) - 1);
-        }
-        strncat(timecmd, data.cmdargtoken[a].val.string,
-                STRINGMAXLEN_CLICMDLINE - strlen(timecmd) - 1);
-    }
-    struct timespec t0;
-    struct timespec t1;
-    clock_gettime(CLOCK_MONOTONIC, &t0);
-
-    strncpy(data.CLIcmdline, timecmd, STRINGMAXLEN_CLICMDLINE - 1);
-    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-    CLI_execute_line();
-
-    clock_gettime(CLOCK_MONOTONIC, &t1);
-    {
-        double elapsed =
-            (double) (t1.tv_sec - t0.tv_sec) + 1.0e-9 * (double) (t1.tv_nsec - t0.tv_nsec);
-        printf("\n\033[33mElapsed: %.6f s\033[0m\n", elapsed);
-    }
-    return RETURN_SUCCESS;
-}
-
 
 /**
  * @brief Display per-command invocation counts.
@@ -277,7 +101,7 @@ errno_t cli_cmdstats(void)
 /**
  * @brief Toggle command execution timing display.
  *
- * Usage: cli.timing [on|off]
+ * Usage: milk.timing [on|off]
  * With no args, toggles the current state.
  */
 errno_t cli_timing_toggle(void)
@@ -297,7 +121,7 @@ errno_t cli_timing_toggle(void)
         }
         else
         {
-            printf("Usage: cli.timing [on|off]\n");
+            printf("Usage: milk.timing [on|off]\n");
         }
     }
     else
@@ -337,7 +161,7 @@ errno_t cli_syntax_highlight_toggle(void)
         }
         else
         {
-            printf("Usage: synhl [on|off|0|1|2]\n");
+            printf("Usage: @config synhl [on|off|0|1|2]\n");
         }
     }
     else
@@ -377,7 +201,7 @@ errno_t cli_syntax_diag_toggle(void)
         }
         else
         {
-            printf("Usage: syndiag [on|off]\n");
+            printf("Usage: @config syndiag [on|off]\n");
         }
     }
     else
@@ -422,7 +246,7 @@ errno_t cli_auto_indent_toggle(void)
             }
             else
             {
-                printf("Usage: cliindent [on|off|<spaces>]\n");
+                printf("Usage: @config indent [on|off|<spaces>]\n");
             }
         }
     }
@@ -466,7 +290,7 @@ errno_t cli_showmatch_toggle(void)
         }
         else
         {
-            printf("Usage: showmatch [on|off]\n");
+            printf("Usage: @config showmatch [on|off]\n");
         }
     }
     else
@@ -480,303 +304,106 @@ errno_t cli_showmatch_toggle(void)
 
 
 /**
- * @brief Format script file or code with semantic AST indentation.
+ * read_file - Read the entire contents of a file into a heap-allocated string
+ * @fname: Path to the file to read
  *
- * Usage: cliformat [-i] [-w <spaces>] <filename>
- * Options:
- *   -i            In-place format (overwrite file)
- *   -w <spaces>   Number of spaces per indentation level (default: 4)
+ * Opens the file in binary mode, determines its byte length, and reads the
+ * contents into a NUL-terminated buffer allocated with malloc(). Used by the
+ * standalone script formatting and outline tools.
  *
- * @return RETURN_SUCCESS or RETURN_FAILURE
+ * Return: Newly allocated NUL-terminated buffer (caller must free), or NULL on error
  */
-errno_t cli_format_cmd(void)
+static char *read_file(const char *fname)
 {
-    if (data.cmdNBarg < 2)
-    {
-        printf("Usage: cliformat [-i] [-w <spaces>] <filename>\n");
-        return RETURN_SUCCESS;
-    }
-
-    int         in_place     = 0;
-    int         indent_width = data.auto_indent > 0 ? data.auto_indent : 4;
-    const char *fname        = NULL;
-
-    for (int i = 1; i < data.cmdNBarg; i++)
-    {
-        const char *arg = data.cmdargtoken[i].val.string;
-        if (strcmp(arg, "-i") == 0)
-        {
-            in_place = 1;
-        }
-        else if (strcmp(arg, "-w") == 0 && i + 1 < data.cmdNBarg)
-        {
-            indent_width = atoi(data.cmdargtoken[++i].val.string);
-        }
-        else if (arg[0] != '-')
-        {
-            fname = arg;
-        }
-    }
-
-    if (!fname)
-    {
-        printf("Error: no input script file specified\n");
-        return RETURN_FAILURE;
-    }
-
     FILE *f = fopen(fname, "rb");
-    if (!f)
+    char *buf;
+    long  sz;
+
+    if (f == NULL)
     {
-        printf("Error: cannot open file '%s'\n", fname);
-        return RETURN_FAILURE;
+        fprintf(stderr, "milk-cli: cannot open '%s'\n", fname);
+        return NULL;
     }
     fseek(f, 0, SEEK_END);
-    long sz = ftell(f);
+    sz = ftell(f);
     fseek(f, 0, SEEK_SET);
-
-    char *buf = (char *) malloc((size_t) sz + 1);
-    if (!buf)
+    buf = (sz >= 0) ? (char *) malloc((size_t) sz + 1) : NULL;
+    if (buf != NULL)
     {
-        fclose(f);
-        return RETURN_FAILURE;
+        buf[fread(buf, 1, (size_t) sz, f)] = '\0';
     }
-    size_t rd = fread(buf, 1, (size_t) sz, f);
-    buf[rd]   = '\0';
     fclose(f);
-
-    char *formatted = cli_ts_format_code(buf, indent_width);
-    free(buf);
-
-    if (!formatted)
-    {
-        printf("Error: formatting failed\n");
-        return RETURN_FAILURE;
-    }
-
-    if (in_place)
-    {
-        FILE *outf = fopen(fname, "wb");
-        if (!outf)
-        {
-            printf("Error: cannot write to '%s'\n", fname);
-            free(formatted);
-            return RETURN_FAILURE;
-        }
-        fputs(formatted, outf);
-        fclose(outf);
-        printf("Formatted '%s' in-place (%d spaces indent)\n", fname, indent_width);
-    }
-    else
-    {
-        printf("%s", formatted);
-    }
-
-    free(formatted);
-    return RETURN_SUCCESS;
+    return buf;
 }
 
 /**
- * @brief Print structural outline of AST blocks in a script.
+ * cli_format_file - Auto-format a milk/bash script file using Tree-sitter
+ * @fname:    Path to the script file to format
+ * @in_place: Non-zero to overwrite @fname in place, 0 to write to stdout
+ * @width:    Number of spaces per indentation level
  *
- * Traverses compound statement blocks (for, while, if, case, functions)
- * and prints line ranges, line counts, and header summaries.
- * Usage: clifold [<filename>]
+ * Reads the target script file, re-indents its lines according to the
+ * Tree-sitter bash syntax tree via cli_ts_format_code(), and outputs the
+ * formatted source either back to @fname or to standard output.
  *
- * @return RETURN_SUCCESS or RETURN_FAILURE
+ * Return: 0 on success, 1 on file I/O or formatting failure
  */
-errno_t cli_fold_cmd(void)
+int cli_format_file(const char *fname, int in_place, int width)
 {
-    if (data.cmdNBarg < 2)
-    {
-        printf("Usage: clifold <filename>\n");
-        return RETURN_SUCCESS;
-    }
+    char *buf       = read_file(fname);
+    char *formatted = (buf != NULL) ? cli_ts_format_code(buf, width) : NULL;
+    FILE *out;
 
-    const char *fname = data.cmdargtoken[1].val.string;
-    FILE       *f     = fopen(fname, "rb");
-    if (!f)
+    free(buf);
+    if (formatted == NULL)
     {
-        printf("Error: cannot open file '%s'\n", fname);
-        return RETURN_FAILURE;
+        return 1;
     }
-    fseek(f, 0, SEEK_END);
-    long sz = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    char *buf = (char *) malloc((size_t) sz + 1);
-    if (!buf)
+    out = in_place ? fopen(fname, "wb") : stdout;
+    if (out == NULL)
     {
-        fclose(f);
-        return RETURN_FAILURE;
+        fprintf(stderr, "milk-cli: cannot write '%s'\n", fname);
+        free(formatted);
+        return 1;
     }
-    size_t rd = fread(buf, 1, (size_t) sz, f);
-    buf[rd]   = '\0';
-    fclose(f);
+    fputs(formatted, out);
+    if (in_place)
+    {
+        fclose(out);
+    }
+    free(formatted);
+    return 0;
+}
 
+/**
+ * cli_outline_file - Print a structural block outline of a script file
+ * @fname: Path to the script file to inspect
+ *
+ * Reads the script file and invokes cli_ts_print_block_folds() to list all
+ * multi-line compound blocks (functions, loops, conditionals) along with their
+ * line ranges and summary count to stdout.
+ *
+ * Return: 0 on success, 1 if the file cannot be read
+ */
+int cli_outline_file(const char *fname)
+{
+    char *buf = read_file(fname);
+
+    if (buf == NULL)
+    {
+        return 1;
+    }
     int count = cli_ts_print_block_folds(buf, fname, stdout);
     if (count == 0)
     {
-        printf("No multi-line blocks found in '%s'.\n", fname);
+        printf("No multi-line blocks in '%s'.\n", fname);
     }
     else
     {
         printf("Total blocks: %d\n", count);
     }
-
     free(buf);
-    return RETURN_SUCCESS;
-}
-
-
-/**
- * @brief Execute a milk script file (source cmd).
- *
- * Opens the file and executes each line through
- * CLI_execute_line(). Maintains a source file
- * location stack for error reporting.
- *
- * Usage: source <filename>
- */
-errno_t cli_source(void)
-{
-    if (data.cmdNBarg < 2)
-    {
-        printf("Usage: source <filename>\n");
-        return RETURN_FAILURE;
-    }
-    const char *fname = data.cmdargtoken[1].val.string;
-    FILE       *fp    = fopen(fname, "r");
-    if (fp == NULL)
-    {
-        printf("source: cannot open '%s'\n", fname);
-        return RETURN_FAILURE;
-    }
-
-    /* Push source location */
-    int src_slot = -1;
-    if (cli_src_depth < CLI_SRC_STACK_DEPTH)
-    {
-        src_slot = cli_src_depth;
-        strncpy(cli_src_stack[src_slot].file, fname, sizeof(cli_src_stack[0].file) - 1);
-        cli_src_stack[src_slot].file[sizeof(cli_src_stack[0].file) - 1] = '\0';
-        cli_src_stack[src_slot].line                                    = 0;
-        cli_src_depth++;
-    }
-
-    char line[STRINGMAXLEN_CLICMDLINE];
-    int  lineno = 0;
-    while (fgets(line, STRINGMAXLEN_CLICMDLINE, fp) != NULL)
-    {
-        lineno++;
-        if (src_slot >= 0)
-        {
-            cli_src_stack[src_slot].line = lineno;
-        }
-        {
-            size_t len = strlen(line);
-            if (len > 0 && line[len - 1] == '\n')
-            {
-                line[len - 1] = '\0';
-            }
-        }
-        const char *p = line;
-        while (*p == ' ' || *p == '\t')
-        {
-            p++;
-        }
-        if (*p == '\0' || *p == '#')
-        {
-            continue;
-        }
-        strncpy(data.CLIcmdline, line, STRINGMAXLEN_CLICMDLINE - 1);
-        data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-        if (data.echo_input)
-        {
-            printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
-        }
-        errno_t ret = CLI_execute_line();
-        if (ret != RETURN_SUCCESS)
-        {
-            printf("\033[31m[source:%s:%d] "
-                   "error\033[0m\n",
-                   fname, lineno);
-            cli_print_source_trace();
-        }
-    }
-    fclose(fp);
-
-    /* Pop source location */
-    if (src_slot >= 0 && cli_src_depth > 0)
-    {
-        cli_src_depth--;
-    }
-
-    return RETURN_SUCCESS;
-}
-
-
-/**
- * @brief Write all CLI variables and user functions
- *        to a file that can be sourced later.
- *
- * Usage: savescript <filename>
- */
-errno_t cli_savescript(void)
-{
-    if (data.cmdNBarg < 2)
-    {
-        printf("Usage: savescript <filename>\n");
-        return RETURN_FAILURE;
-    }
-    const char *fname = data.cmdargtoken[1].val.string;
-    FILE       *fp    = fopen(fname, "w");
-    if (fp == NULL)
-    {
-        printf("savescript: cannot open "
-               "'%s' for writing\n",
-               fname);
-        return RETURN_FAILURE;
-    }
-
-    fprintf(fp, "# milk-cli script\n");
-    fprintf(fp, "# saved by savescript command\n\n");
-
-    /* Export variables */
-    int nv = 0;
-    for (int i = 0; i < CLI_MAX_VARS; i++)
-    {
-        if (cli_vars[i].used)
-        {
-            fprintf(fp, "%s=%s\n", cli_vars[i].name, cli_vars[i].val);
-            nv++;
-        }
-    }
-    if (nv > 0)
-    {
-        fprintf(fp, "\n");
-    }
-
-    /* Export user-defined functions */
-    int nf = 0;
-    for (int i = 0; i < CLI_MAX_FUNCS; i++)
-    {
-        if (cli_funcs[i].used)
-        {
-            fprintf(fp, "function %s {\n", cli_funcs[i].name);
-            for (int j = 0; j < cli_funcs[i].nbody; j++)
-            {
-                fprintf(fp, "%s\n", cli_funcs[i].body[j]);
-            }
-            fprintf(fp, "}\n\n");
-            nf++;
-        }
-    }
-
-    fclose(fp);
-    printf("Saved %d variables, %d functions "
-           "to '%s'\n",
-           nv, nf, fname);
-    return RETURN_SUCCESS;
+    return 0;
 }
 
 
@@ -796,7 +423,7 @@ errno_t cli_sessionlog(void)
 {
     if (data.cmdNBarg < 2)
     {
-        printf("Usage: sessionlog "
+        printf("Usage: @config sessionlog "
                "[on|off|<filename>]\n");
         printf("Status: %s\n", session_log_fp ? "ON" : "OFF");
         return RETURN_SUCCESS;
@@ -850,81 +477,4 @@ errno_t cli_sessionlog(void)
         fflush(session_log_fp);
     }
     return RETURN_SUCCESS;
-}
-
-/**
- * @brief Log a command to session log if active
- */
-void cli_session_log_cmd(const char *cmd)
-{
-    if (session_log_fp == NULL)
-    {
-        return;
-    }
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    double elapsed_ms = (double) (now.tv_sec - session_log_t0.tv_sec) * 1000.0 +
-                        (double) (now.tv_nsec - session_log_t0.tv_nsec) / 1.0e6;
-    {
-        time_t t = time(NULL);
-        char   tbuf[64];
-        strftime(tbuf, sizeof(tbuf), "%Y-%m-%dT%H:%M:%S", localtime(&t));
-        fprintf(session_log_fp, "[%s] [%10.1f ms] %s\n", tbuf, elapsed_ms, cmd);
-        fflush(session_log_fp);
-    }
-}
-
-/**
- * @brief Change the current working directory.
- *
- * Usage: cd [dir]  (defaults to $HOME)
- */
-errno_t cli_cd(void)
-{
-    const char *dir = getenv("HOME");
-    if (data.cmdNBarg >= 2)
-    {
-        dir = data.cmdargtoken[1].val.string;
-    }
-    if (dir != NULL)
-    {
-        if (chdir(dir) != 0)
-        {
-            printf("cd: %s: %s\n", dir, strerror(errno));
-            return RETURN_FAILURE;
-        }
-    }
-    return RETURN_SUCCESS;
-}
-
-/**
- * @brief Print the current working directory.
- */
-errno_t cli_pwd(void)
-{
-    if (data.cmdNBarg > 1)
-    {
-        for (int i = 1; i < data.cmdNBarg; i++)
-        {
-            const char *arg = data.cmdargtoken[i].val.string;
-            if (arg != NULL && strcmp(arg, "-L") != 0 && strcmp(arg, "-P") != 0)
-            {
-                printf("pwd: invalid option '%s'\n", arg);
-                printf("Usage: pwd [-L | -P]\n");
-                return RETURN_FAILURE;
-            }
-        }
-    }
-
-    char cwd[1024];
-    if (getcwd(cwd, sizeof(cwd)) != NULL)
-    {
-        printf("%s\n", cwd);
-        return RETURN_SUCCESS;
-    }
-    else
-    {
-        PRINT_ERROR("pwd: %s", strerror(errno));
-        return RETURN_FAILURE;
-    }
 }

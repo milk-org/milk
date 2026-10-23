@@ -74,7 +74,7 @@ def fixt_fpsinit_nopinfo():
 # ADD AFTER THIS LINE
 
 
-def test_fps_lifecycle(fixt_fpsinit_pinfo, tmux: bool = False):
+def test_fps_lifecycle(fixt_fpsinit_pinfo, tmux: bool = True):
     session: StreamDelayComputeSession = fixt_fpsinit_pinfo
     fps = session.fps
     assert fps
@@ -85,7 +85,7 @@ def test_fps_lifecycle(fixt_fpsinit_pinfo, tmux: bool = False):
     fps["procinfo.triggersname"] = "imin"
 
     session.confstart(tmux=tmux)
-    time.sleep(0.1)
+    time.sleep(1.0 if tmux else 0.1)
     assert fps.conf_isrunning()
 
     arr = np.random.randn(30, 40)

@@ -14,6 +14,7 @@
 #include <stdlib.h>
 
 #include "milk_runnable.h"
+#include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
@@ -439,29 +440,13 @@ errno_t computeSGEMM(IMGID  imginA,
 #endif
     }
 
-#ifdef HAVE_BLAS
     if (SGEMMcomputed == 0)
     {
-        //printf("[%d] Running SGEMM on CPU\n", GPUdev);
-        //fflush(stdout);
-
-        CBLAS_TRANSPOSE OPA = CblasNoTrans;
-        if (TranspA == 1)
-        {
-            OPA = CblasTrans;
-        }
-
-        CBLAS_TRANSPOSE OPB = CblasNoTrans;
-        if (TranspB == 1)
-        {
-            OPB = CblasTrans;
-        }
-
-        // TODO why are alpha and beta not used here like in the GPU case ?
-        cblas_sgemm(CblasColMajor, OPA, OPB, Mdim, Ndim, Kdim, 1.0, imarrayA, inA_Mdim, imarrayB,
-                    inB_Mdim, 0.0, outimg->im->array.F, outMdim);
+        arith_matmul_kernel_f(imarrayA, TranspA == 1, imarrayB, TranspB == 1, 1.0f, 0.0f,
+                              outimg->im->array.F, (uint64_t) Mdim, (uint64_t) Kdim,
+                              (uint64_t) Ndim);
+        SGEMMcomputed = 1;
     }
-#endif
 
     printf("Freeing float arrays\n");
     fflush(stdout);

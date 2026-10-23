@@ -2,6 +2,15 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file    CLIcore_UI_history.c
+ * @brief   Core history management — paths, load,
+ *          save, structured log init and logging.
+ *
+ * @see CLIcore_UI_history_display.c for display cmds.
+ * @see CLIcore_UI_history_cmds.c for expansion, etc.
+ */
+
 #ifndef _GNU_SOURCE
 #    define _GNU_SOURCE
 #endif
@@ -15,16 +24,6 @@
 #    include <readline/readline.h>
 #endif
 #include "CLIcore.h"
-
-/**
- * @file    CLIcore_UI_history.c
- * @brief   Core history management — paths, load,
- *          save, structured log init and logging.
- *
- * @see CLIcore_UI_history_display.c for display cmds.
- * @see CLIcore_UI_history_cmds.c for expansion, etc.
- */
-
 
 /**
  * @brief Return path to the readline history
@@ -185,19 +184,30 @@ static void cli_history_log_entry(const char *text, char type)
         }
     }
 
-    FILE *fp = fopen(CLI_history_log_file(), "a");
-    if (fp == NULL)
+    static FILE  *s_log_fp   = NULL;
+    static time_t s_last_sec = 0;
+    static char   s_tbuf[64] = "";
+
+    if (s_log_fp == NULL)
     {
-        return;
+        s_log_fp = fopen(CLI_history_log_file(), "ae");
+        if (s_log_fp == NULL)
+        {
+            return;
+        }
     }
 
     {
         time_t now = time(NULL);
-        char   tbuf[64];
-        strftime(tbuf, sizeof(tbuf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
-        fprintf(fp, "%s\t%s\t%s\t%c\t%s\n", tbuf, data.session_id, data.session_tty, type, text);
+        if (now != s_last_sec)
+        {
+            s_last_sec = now;
+            strftime(s_tbuf, sizeof(s_tbuf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
+        }
+        fprintf(s_log_fp, "%s\t%s\t%s\t%c\t%s\n", s_tbuf, data.session_id, data.session_tty, type,
+                text);
+        fflush(s_log_fp);
     }
-    fclose(fp);
 }
 
 /**

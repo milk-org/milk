@@ -70,10 +70,15 @@ extern int wcwidth(wchar_t c);
 #define OV_KEY_CTRL_SCROLL_UP 289
 #define OV_KEY_CTRL_SCROLL_DOWN 290
 #define OV_KEY_MOUSE_MOVE 291
+#define OV_KEY_PASTE_BEGIN 292 /* ESC [ 200 ~ (bracketed paste) */
+#define OV_KEY_PASTE_END 293   /* ESC [ 201 ~ */
+#define OV_KEY_PASTED 0x10000  /* flag on printable bytes inside a bracketed paste */
 
 extern int      ov_mouse_row;
 extern int      ov_mouse_col;
 extern uint32_t ov__default_bg;
+extern uint32_t ov__mono_reverse_bg[2]; /* backgrounds drawn as reverse video in monochrome */
+extern int      ov__color_level;        /* 0 mono, 1 16, 2 256, 3 truecolor; -1 not detected */
 extern int      ov_mouse_btn;
 extern int      ov_hover_row;
 extern int      ov_hover_col;
@@ -86,9 +91,9 @@ extern int      ov_hover_col;
  * Terminal state
  * ========================================================= */
 
-extern struct termios ov__orig_termios;
-extern int            ov__orig_flags;
-extern int            ov__raw_active;
+extern struct termios        ov__orig_termios;
+extern volatile sig_atomic_t ov__raw_active;
+extern int                   ov__tty_fd;
 
 
 /* =========================================================
@@ -97,12 +102,14 @@ extern int            ov__raw_active;
 
 void ov_raw_mode_enter(void);
 void ov_raw_mode_exit(void);
+void ov_term_restore_async(void);
+int  ov_term_capture_fd(void);
+int  ov_term_init_locale(void);
 void ov_set_mouse_hover(int enable);
 void ov_get_terminal_size(int *rows, int *cols);
 
 void ov_buf_force_clear(void);
 void ov_buf_reset_size(int rows, int cols);
-void ov_buf_reset(void);
 void ov_buf_append(const char *data, int len);
 void ov_buf_flush_internal(void);
 void ov_buf_flush_delta(int term_rows, int term_cols);
@@ -111,14 +118,18 @@ int  utf8_char_length(unsigned char c);
 int  ov_utf8_decode(const char *s, int len, uint32_t *cp);
 int  ov_utf8_next_cluster(const char *s, int max_len, int *bytes_out, int *width_out);
 int  ov_str_display_width(const char *s);
+int  ov_utf8_cluster_printable(const char *s, int bytes);
+void ov_str_sanitize(char *s);
+int  ov_utf8_fit(const char *s, int len, int max_cols, int *cols_out);
 void ov_buf_append_cluster(const char *utf8_seq, int bytes, int width);
 void ov_buf_append_char(const char *utf8_seq, int bytes);
 void ov_buf_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
-void ov_buf_hline(char ch, int len);
-void ov_buf_hline_utf8(const char *s, int len);
-void ov_detect_color_level(void);
-int  ov_get_key(void);
+void     ov_buf_hline(char ch, int len);
+void     ov_buf_hline_utf8(const char *s, int len);
+void     ov_detect_color_level(void);
+uint32_t ov_color_downgrade(uint32_t col, int level);
+int      ov_get_key(void);
 /* =========================================================
  * Buffered screen writer (Delta Rendering Shadow Buffer)
  * ========================================================= */
@@ -132,6 +143,7 @@ int  ov_get_key(void);
 
 #define OV_COLOR_256 0x01000000  // Flag for 256-color
 #define OV_COLOR_TRUE 0x02000000 // Flag for TrueColor
+#define OV_COLOR_16 0x04000000   // Flag for 16-colour index (flush-time downgrade only)
 
 #define OV_ATTR_BOLD (1 << 0)
 #define OV_ATTR_DIM (1 << 1)
@@ -167,42 +179,53 @@ extern uint32_t ov__current_ul;
 extern uint8_t  ov__current_attr;
 
 
+/**
+ * ov_buf_fg - Set active 24-bit truecolor foreground RGB color for subsequent draws
+ * @r: Red channel (`0..255`)
+ * @g: Green channel (`0..255`)
+ * @b: Blue channel (`0..255`)
+ */
 static inline void ov_buf_fg(int r, int g, int b)
 {
     ov__current_fg = OV_COLOR_TRUE | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
 }
 
+/**
+ * ov_buf_bg - Set active 24-bit truecolor background RGB color for subsequent draws
+ * @r: Red channel (`0..255`)
+ * @g: Green channel (`0..255`)
+ * @b: Blue channel (`0..255`)
+ */
 static inline void ov_buf_bg(int r, int g, int b)
 {
     ov__current_bg = OV_COLOR_TRUE | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
 }
 
-static inline void ov_buf_fg_256(int code)
-{
-    ov__current_fg = OV_COLOR_256 | (code & 0xFF);
-}
-
-static inline void ov_buf_bg_256(int code)
-{
-    ov__current_bg = OV_COLOR_256 | (code & 0xFF);
-}
-
+/**
+ * ov_buf_ul_color - Set active 24-bit truecolor underline RGB color for subsequent draws
+ * @r: Red channel (`0..255`)
+ * @g: Green channel (`0..255`)
+ * @b: Blue channel (`0..255`)
+ */
 static inline void ov_buf_ul_color(int r, int g, int b)
 {
     ov__current_ul = OV_COLOR_TRUE | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
 }
 
-static inline void ov_buf_ul_color_256(int code)
-{
-    ov__current_ul = OV_COLOR_256 | (code & 0xFF);
-}
-
+/**
+ * ov_buf_pos - Move virtual cell-buffer cursor to 1-based (`@row`, `@col`)
+ * @row: 1-based terminal row
+ * @col: 1-based terminal column
+ */
 static inline void ov_buf_pos(int row, int col)
 {
     ov__cursor_row = row;
     ov__cursor_col = col;
 }
 
+/**
+ * ov_buf_reset_attr - Reset foreground, background, underline colors, and style attributes
+ */
 static inline void ov_buf_reset_attr(void)
 {
     ov__current_fg   = OV_COLOR_NONE;
@@ -211,35 +234,20 @@ static inline void ov_buf_reset_attr(void)
     ov__current_attr = 0;
 }
 
+/**
+ * ov_buf_bold - Enable bold attribute bit (`OV_ATTR_BOLD`) for subsequent draws
+ */
 static inline void ov_buf_bold(void)
 {
     ov__current_attr |= OV_ATTR_BOLD;
 }
-static inline void ov_buf_dim(void)
-{
-    ov__current_attr |= OV_ATTR_DIM;
-}
-static inline void ov_buf_italic(void)
-{
-    ov__current_attr |= OV_ATTR_ITALIC;
-}
+
+/**
+ * ov_buf_underline - Enable underline attribute bit (`OV_ATTR_UNDERLINE`) for subsequent draws
+ */
 static inline void ov_buf_underline(void)
 {
     ov__current_attr |= OV_ATTR_UNDERLINE;
 }
-static inline void ov_buf_reverse(void)
-{
-    ov__current_attr |= OV_ATTR_REVERSE;
-}
-static inline void ov_buf_blink(void)
-{
-    ov__current_attr |= OV_ATTR_BLINK;
-}
-
-static inline void ov_buf_cls(void)
-{
-    ov_buf_force_clear();
-}
-
 
 #endif /* OVERVIEW_ANSI_H */

@@ -40,5 +40,5 @@ modex.imsum2 _RUNSTART_ \"05\"
 modex.imsum2 .
 
 # Exit CLI
-exitCLI
+exit
 "

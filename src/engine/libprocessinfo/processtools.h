@@ -28,6 +28,9 @@
 
 #include "processinfo.h"
 #include "processtools_trigger.h"
+#include "processinfo_labels.h"
+#include "processinfo_timing.h"
+#include "processinfo_list.h"
 
 #define PROCESSINFOLISTSIZE 50000
 
@@ -197,46 +200,46 @@ extern "C"
 #define PROCCTRL_DISPLAYMODE_IOTOP 7
 #define PROCCTRL_DISPLAYMODE_ATOP 8
 
-    PROCESSINFO *processinfo_setup(char       *pinfoname,
-                                   const char *descriptionstring,
-                                   const char *msgstring,
-                                   const char *functionname,
-                                   const char *filename,
-                                   int         linenumber);
+PROCESSINFO *processinfo_setup(char       *pinfoname,
+                               const char *descriptionstring,
+                               const char *msgstring,
+                               const char *functionname,
+                               const char *filename,
+                               int         linenumber);
 
-    errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring);
+errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring);
 
-    errno_t processinfo_loopstart(PROCESSINFO *processinfo);
+errno_t processinfo_loopstart(PROCESSINFO *processinfo);
 
-    int processinfo_loopstep(PROCESSINFO *processinfo);
+int processinfo_loopstep(PROCESSINFO *processinfo);
 
-    int processinfo_compute_status(PROCESSINFO *processinfo);
+int processinfo_compute_status(PROCESSINFO *processinfo);
 
-    PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval);
-    PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
-    int          processinfo_shm_close(PROCESSINFO *pinfo, int fd);
-    int          processinfo_cleanExit(PROCESSINFO *processinfo);
-    int          processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
+PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval);
+PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
+int          processinfo_shm_close(PROCESSINFO *pinfo, int fd);
+int          processinfo_cleanExit(PROCESSINFO *processinfo);
+int          processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
 
-    int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring);
+int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring);
 
-    int processinfo_WriteMessage_fmt(PROCESSINFO *processinfo, const char *format, ...);
+int processinfo_WriteMessage_fmt(PROCESSINFO *processinfo, const char *format, ...);
 
-    int processinfo_exec_start(PROCESSINFO *processinfo);
-    int processinfo_exec_end(PROCESSINFO *processinfo);
+int processinfo_exec_start(PROCESSINFO *processinfo);
+int processinfo_exec_end(PROCESSINFO *processinfo);
 
-    int processinfo_CatchSignals();
-    int processinfo_ProcessSignals(PROCESSINFO *processinfo);
+int processinfo_CatchSignals();
+int processinfo_ProcessSignals(PROCESSINFO *processinfo);
 
-    /**
+/**
  * @brief Update output stream metadata and telemetry at the end of a loop iteration.
  */
-    errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
-                                             IMAGE       *output_image,
-                                             IMAGE       *input_image);
+errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
+                                         IMAGE       *output_image,
+                                         IMAGE       *input_image);
 
 #ifdef USE_NCURSES
-    errno_t processinfo_CTRLscreen();
+errno_t processinfo_CTRLscreen();
 #endif
 
 #define PROCINFOLOOP_START                                 \

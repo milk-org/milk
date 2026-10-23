@@ -49,6 +49,8 @@
 
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
+#include "CLIcore_signals.h"
+#include "cli_calc_parser.h"
 #include "treesitter/cli_treesitter.h"
 
 
@@ -126,12 +128,30 @@ void set_pending_suggestion(const char *text, int replace_len)
  */
 int find_command_match(const char *firstword)
 {
+    if (firstword == NULL || firstword[0] == '\0')
+    {
+        return -1;
+    }
+    firstword += (firstword[0] == '@');
+
     for (uint32_t cmdi = 0; cmdi < data.NBcmd; cmdi++)
     {
         if (strcmp(firstword, data.cmd[cmdi].key) == 0)
         {
             data.cmdindex = cmdi;
             return (int) cmdi;
+        }
+        int midx = data.cmd[cmdi].moduleindex;
+        if (midx >= 0 && data.module[midx].shortname[0] != '\0')
+        {
+            char qname[256];
+            snprintf(qname, sizeof(qname), "%s.%s", data.module[midx].shortname,
+                     data.cmd[cmdi].key);
+            if (strcmp(firstword, qname) == 0)
+            {
+                data.cmdindex = cmdi;
+                return (int) cmdi;
+            }
         }
     }
     return -1;
@@ -343,7 +363,7 @@ void update_hint_area(void)
         int col = 0;
 
         /* 1. Real-time syntax diagnostics */
-        if (data.syntax_diagnostics)
+        if (data.syntax_diagnostics && !cli_calc_mode)
         {
             CLI_SYNTAX_DIAG diag;
             memset(&diag, 0, sizeof(diag));
@@ -446,6 +466,40 @@ void update_hint_area(void)
                             tidx++;
                         }
                     }
+
+                    /* Append live CLICMDARGDEF metadata for active argument */
+                    if (data.cmd[cmi].argdata != NULL && col < cached_term_cols - 8)
+                    {
+                        int cli_ai = 0;
+                        for (int ai = 0; ai < data.cmd[cmi].nbparam; ai++)
+                        {
+                            if (data.cmd[cmi].argdata[ai].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+                            {
+                                if (cli_ai == argidx)
+                                {
+                                    const CLICMDARGDATA *ad  = &data.cmd[cmi].argdata[ai];
+                                    const char          *tag = ad->fpstag;
+                                    while (*tag == '.')
+                                    {
+                                        tag++;
+                                    }
+                                    char meta_buf[192];
+                                    int  mlen =
+                                        snprintf(meta_buf, sizeof(meta_buf), "  [%s%s%s: %s]", tag,
+                                                 ad->example[0] ? "=" : "", ad->example, ad->descr);
+                                    int avail = cached_term_cols - 1 - col;
+                                    int plen  = mlen < avail ? mlen : avail;
+                                    if (plen > 0)
+                                    {
+                                        printf("\033[36m%.*s\033[0m", plen, meta_buf);
+                                        col += plen;
+                                    }
+                                    break;
+                                }
+                                cli_ai++;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -495,6 +549,15 @@ void CLI_redisplay(void)
         return;
     }
 #    endif
+
+    if (!cli_is_interactive_mode())
+    {
+        rl_redisplay_function = NULL;
+        rl_redisplay();
+        fflush(stdout);
+        rl_redisplay_function = CLI_redisplay;
+        return;
+    }
 
     /* Default or syntax-highlighted redisplay */
     rl_redisplay_function = NULL;
@@ -587,6 +650,69 @@ void CLI_redisplay(void)
     int  mode         = cli_ts_determine_completion_mode(rl_line_buffer, start, text, cmdname,
                                                          sizeof(cmdname), &argidx);
 
+    int cmdimatch = (cmdname[0] != '\0') ? find_command_match(cmdname) : -1;
+
+    /* When cursor is at an empty argument slot of a command with CLICMDARGDEF metadata,
+     * render inline ghost signature hints for remaining arguments and offer the default
+     * (.example) on Right Arrow. */
+    if (text[0] == '\0' && cmdimatch >= 0 && data.cmd[cmdimatch].argdata != NULL)
+    {
+        char        sig_ghost[256];
+        size_t      spos        = 0;
+        const char *cur_example = NULL;
+        int         cli_ai      = 0;
+
+        for (int ai = 0; ai < data.cmd[cmdimatch].nbparam; ai++)
+        {
+            if (!(data.cmd[cmdimatch].argdata[ai].fpflag & FPFLAG_PRIMARY_CLI_INPUT))
+            {
+                continue;
+            }
+            if (cli_ai >= argidx)
+            {
+                const CLICMDARGDATA *ad  = &data.cmd[cmdimatch].argdata[ai];
+                const char          *tag = ad->fpstag;
+                while (*tag == '.')
+                {
+                    tag++;
+                }
+                if (cli_ai == argidx && ad->example[0] != '\0')
+                {
+                    cur_example = ad->example;
+                }
+                int n =
+                    snprintf(sig_ghost + spos, sizeof(sig_ghost) - spos, "%s<%s%s%s>",
+                             (spos > 0) ? " " : "", tag, ad->example[0] ? "=" : "", ad->example);
+                if (n > 0 && spos + (size_t) n < sizeof(sig_ghost))
+                {
+                    spos += (size_t) n;
+                }
+            }
+            cli_ai++;
+        }
+
+        if (spos > 0)
+        {
+            int n = print_ghost("\033[38;5;245m", sig_ghost, budget);
+            if (n > 0)
+            {
+                total_ghost += n;
+                if (cur_example != NULL)
+                {
+                    set_pending_suggestion(cur_example, 0);
+                }
+            }
+            if (total_ghost > 0)
+            {
+                printf("\033[K");
+                printf("\033[%dD", total_ghost);
+                fflush(stdout);
+            }
+            update_hint_area();
+            return;
+        }
+    }
+
     if (mode >= 0)
     {
         data.CLImatchMode = mode;
@@ -606,13 +732,11 @@ void CLI_redisplay(void)
                  strcmp(cmdname, "tail") == 0 || strcmp(cmdname, "cp") == 0 ||
                  strcmp(cmdname, "mv") == 0 || strcmp(cmdname, "rm") == 0 ||
                  strcmp(cmdname, "less") == 0 || strcmp(cmdname, "more") == 0 ||
-                 strcmp(cmdname, "include_once") == 0 || strcmp(cmdname, "savescript") == 0 ||
-                 strcmp(cmdname, "savehistory") == 0 || strcmp(cmdname, "run") == 0)
+                 strcmp(cmdname, "savescript") == 0 || strcmp(cmdname, "run") == 0)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_FILES;
         }
-        else if (strcmp(cmdname, "fpsCTRL") == 0 || strcmp(cmdname, "fparam") == 0 ||
-                 strcmp(cmdname, "fpsload") == 0 || strcmp(cmdname, "dpsingle") == 0 ||
+        else if (strcmp(cmdname, "fpsCTRL") == 0 || strcmp(cmdname, "fpsload") == 0 ||
                  strcmp(cmdname, "fpsconf") == 0 || strcmp(cmdname, "fpsrun") == 0 ||
                  strcmp(cmdname, "fpsstop") == 0 || strcmp(cmdname, "waitfor_fps") == 0)
         {
@@ -626,7 +750,6 @@ void CLI_redisplay(void)
         }
         else
         {
-            int cmdimatch    = find_command_match(cmdname);
             int matched_mode = -1;
 
             if (cmdimatch >= 0 && data.cmd[cmdimatch].argdata != NULL)
@@ -721,6 +844,7 @@ void CLI_redisplay(void)
 void CLI_configure_readline()
 {
     rl_redisplay_function = CLI_redisplay;
+    rl_getc_function      = cli_custom_getc;
 
     if (data.autocomplete_history)
     {
@@ -738,6 +862,12 @@ void CLI_configure_readline()
     /* Bind Enter to clear ghost text first */
     rl_bind_key('\r', cli_accept_line);
     rl_bind_key('\n', cli_accept_line);
+
+    /* Enforce milk-cli completion settings independent of external inputrc */
+    rl_bind_key('\t', rl_complete);
+    rl_variable_bind("show-all-if-ambiguous", "on");
+    rl_variable_bind("bell-style", "none");
+    rl_variable_bind("page-completions", "off");
 }
 #else
 /* Stubs when readline is not available */

@@ -59,15 +59,15 @@ errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
 
                 if (sptisize > 0)
                 {
-                    // copy streamproctrace from input to output
-                    memcpy(&output_image->streamproctrace[1], &input_image->streamproctrace[0],
-                           sizeof(STREAM_PROC_TRACE) * sptisize);
+                    // copy streamproctrace from input to output (same image when in place)
+                    memmove(&output_image->streamproctrace[1], &input_image->streamproctrace[0],
+                            sizeof(STREAM_PROC_TRACE) * sptisize);
                 }
             }
 
             // write first streamproctrace entry
             DEBUG_TRACEPOINT("trigger info");
-            output_image->streamproctrace[0].trigsemindex = processinfo->triggermode;
+            output_image->streamproctrace[0].triggermode = processinfo->triggermode;
 
             output_image->streamproctrace[0].trigger_inode = processinfo->triggerstreaminode;
 

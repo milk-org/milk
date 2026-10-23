@@ -8,6 +8,44 @@
  */
 
 #include "overview_input_internal.h"
+#include <stdlib.h>
+
+/* F5 parameter-tree positions: the last directory per FPS, and the cursor per FPS directory */
+struct OV_INPUT_HISTORY
+{
+    struct
+    {
+        char fps_name[80];
+        char path[200];
+    } fps_last_path[200];
+    int nb_fps_last_path;
+
+    struct
+    {
+        char fps_name[80];
+        char path[200];
+        int  sel;
+        int  scroll;
+    } fps_dir_history[1000];
+    int nb_fps_dir_history;
+};
+
+/** ov_hist - the layout's history, allocated on first use (344 KB: kept off the stack), or NULL. */
+static OV_INPUT_HISTORY *ov_hist(OV_LAYOUT *lay)
+{
+    if (lay->hist == NULL)
+    {
+        lay->hist = calloc(1, sizeof(*lay->hist));
+    }
+    return lay->hist;
+}
+
+/** ov_input_history_free - release the layout's F5 tree history. */
+void ov_input_history_free(OV_LAYOUT *lay)
+{
+    free(lay->hist);
+    lay->hist = NULL;
+}
 
 /**
  * ov_input_save_dir_history - save cursor position and scroll for current FPS parameter directory.
@@ -17,16 +55,21 @@
  */
 void ov_input_save_dir_history(OV_LAYOUT *lay, const char *fps_name, const char *path)
 {
+    OV_INPUT_HISTORY *h = ov_hist(lay);
+    if (h == NULL)
+    {
+        return;
+    }
     if (fps_name == NULL || fps_name[0] == '\0')
     {
         return;
     }
 
     int found_idx = -1;
-    for (int i = 0; i < lay->nb_fps_dir_history; i++)
+    for (int i = 0; i < h->nb_fps_dir_history; i++)
     {
-        if (strcmp(lay->fps_dir_history[i].fps_name, fps_name) == 0 &&
-            strcmp(lay->fps_dir_history[i].path, path) == 0)
+        if (strcmp(h->fps_dir_history[i].fps_name, fps_name) == 0 &&
+            strcmp(h->fps_dir_history[i].path, path) == 0)
         {
             found_idx = i;
             break;
@@ -35,17 +78,17 @@ void ov_input_save_dir_history(OV_LAYOUT *lay, const char *fps_name, const char 
 
     if (found_idx == -1)
     {
-        if (lay->nb_fps_dir_history < 1000)
+        if (h->nb_fps_dir_history < 1000)
         {
-            found_idx = lay->nb_fps_dir_history;
-            lay->nb_fps_dir_history++;
-            strncpy(lay->fps_dir_history[found_idx].fps_name, fps_name,
-                    sizeof(lay->fps_dir_history[found_idx].fps_name) - 1);
-            lay->fps_dir_history[found_idx]
-                .fps_name[sizeof(lay->fps_dir_history[found_idx].fps_name) - 1] = '\0';
-            strncpy(lay->fps_dir_history[found_idx].path, path,
-                    sizeof(lay->fps_dir_history[found_idx].path) - 1);
-            lay->fps_dir_history[found_idx].path[sizeof(lay->fps_dir_history[found_idx].path) - 1] =
+            found_idx = h->nb_fps_dir_history;
+            h->nb_fps_dir_history++;
+            strncpy(h->fps_dir_history[found_idx].fps_name, fps_name,
+                    sizeof(h->fps_dir_history[found_idx].fps_name) - 1);
+            h->fps_dir_history[found_idx]
+                .fps_name[sizeof(h->fps_dir_history[found_idx].fps_name) - 1] = '\0';
+            strncpy(h->fps_dir_history[found_idx].path, path,
+                    sizeof(h->fps_dir_history[found_idx].path) - 1);
+            h->fps_dir_history[found_idx].path[sizeof(h->fps_dir_history[found_idx].path) - 1] =
                 '\0';
         }
         else
@@ -54,8 +97,8 @@ void ov_input_save_dir_history(OV_LAYOUT *lay, const char *fps_name, const char 
         }
     }
 
-    lay->fps_dir_history[found_idx].sel    = lay->fps_param_sel;
-    lay->fps_dir_history[found_idx].scroll = lay->fps_param_scroll;
+    h->fps_dir_history[found_idx].sel    = lay->fps_param_sel;
+    h->fps_dir_history[found_idx].scroll = lay->fps_param_scroll;
 }
 
 /**
@@ -66,16 +109,21 @@ void ov_input_save_dir_history(OV_LAYOUT *lay, const char *fps_name, const char 
  */
 void ov_input_load_dir_history(OV_LAYOUT *lay, const char *fps_name, const char *path)
 {
+    OV_INPUT_HISTORY *h = ov_hist(lay);
+    if (h == NULL)
+    {
+        return;
+    }
     if (fps_name == NULL || fps_name[0] == '\0')
     {
         return;
     }
 
     int found_idx = -1;
-    for (int i = 0; i < lay->nb_fps_dir_history; i++)
+    for (int i = 0; i < h->nb_fps_dir_history; i++)
     {
-        if (strcmp(lay->fps_dir_history[i].fps_name, fps_name) == 0 &&
-            strcmp(lay->fps_dir_history[i].path, path) == 0)
+        if (strcmp(h->fps_dir_history[i].fps_name, fps_name) == 0 &&
+            strcmp(h->fps_dir_history[i].path, path) == 0)
         {
             found_idx = i;
             break;
@@ -84,8 +132,8 @@ void ov_input_load_dir_history(OV_LAYOUT *lay, const char *fps_name, const char 
 
     if (found_idx != -1)
     {
-        lay->fps_param_sel    = lay->fps_dir_history[found_idx].sel;
-        lay->fps_param_scroll = lay->fps_dir_history[found_idx].scroll;
+        lay->fps_param_sel    = h->fps_dir_history[found_idx].sel;
+        lay->fps_param_scroll = h->fps_dir_history[found_idx].scroll;
     }
     else
     {
@@ -101,6 +149,11 @@ void ov_input_load_dir_history(OV_LAYOUT *lay, const char *fps_name, const char 
  */
 void ov_input_save_fps_history(OV_LAYOUT *lay, const char *fps_name)
 {
+    OV_INPUT_HISTORY *h = ov_hist(lay);
+    if (h == NULL)
+    {
+        return;
+    }
     if (fps_name == NULL || fps_name[0] == '\0')
     {
         return;
@@ -111,9 +164,9 @@ void ov_input_save_fps_history(OV_LAYOUT *lay, const char *fps_name)
 
     /* 2. Save the last path visited for this FPS */
     int found_idx = -1;
-    for (int i = 0; i < lay->nb_fps_last_path; i++)
+    for (int i = 0; i < h->nb_fps_last_path; i++)
     {
-        if (strcmp(lay->fps_last_path[i].fps_name, fps_name) == 0)
+        if (strcmp(h->fps_last_path[i].fps_name, fps_name) == 0)
         {
             found_idx = i;
             break;
@@ -122,14 +175,14 @@ void ov_input_save_fps_history(OV_LAYOUT *lay, const char *fps_name)
 
     if (found_idx == -1)
     {
-        if (lay->nb_fps_last_path < 200)
+        if (h->nb_fps_last_path < 200)
         {
-            found_idx = lay->nb_fps_last_path;
-            lay->nb_fps_last_path++;
-            strncpy(lay->fps_last_path[found_idx].fps_name, fps_name,
-                    sizeof(lay->fps_last_path[found_idx].fps_name) - 1);
-            lay->fps_last_path[found_idx]
-                .fps_name[sizeof(lay->fps_last_path[found_idx].fps_name) - 1] = '\0';
+            found_idx = h->nb_fps_last_path;
+            h->nb_fps_last_path++;
+            strncpy(h->fps_last_path[found_idx].fps_name, fps_name,
+                    sizeof(h->fps_last_path[found_idx].fps_name) - 1);
+            h->fps_last_path[found_idx].fps_name[sizeof(h->fps_last_path[found_idx].fps_name) - 1] =
+                '\0';
         }
         else
         {
@@ -137,9 +190,9 @@ void ov_input_save_fps_history(OV_LAYOUT *lay, const char *fps_name)
         }
     }
 
-    strncpy(lay->fps_last_path[found_idx].path, lay->fps_param_path,
-            sizeof(lay->fps_last_path[found_idx].path) - 1);
-    lay->fps_last_path[found_idx].path[sizeof(lay->fps_last_path[found_idx].path) - 1] = '\0';
+    strncpy(h->fps_last_path[found_idx].path, lay->fps_param_path,
+            sizeof(h->fps_last_path[found_idx].path) - 1);
+    h->fps_last_path[found_idx].path[sizeof(h->fps_last_path[found_idx].path) - 1] = '\0';
 }
 
 /**
@@ -149,6 +202,11 @@ void ov_input_save_fps_history(OV_LAYOUT *lay, const char *fps_name)
  */
 void ov_input_load_fps_history(OV_LAYOUT *lay, const char *fps_name)
 {
+    OV_INPUT_HISTORY *h = ov_hist(lay);
+    if (h == NULL)
+    {
+        return;
+    }
     if (fps_name == NULL || fps_name[0] == '\0')
     {
         return;
@@ -156,9 +214,9 @@ void ov_input_load_fps_history(OV_LAYOUT *lay, const char *fps_name)
 
     /* 1. Load the last path visited for this FPS */
     int found_idx = -1;
-    for (int i = 0; i < lay->nb_fps_last_path; i++)
+    for (int i = 0; i < h->nb_fps_last_path; i++)
     {
-        if (strcmp(lay->fps_last_path[i].fps_name, fps_name) == 0)
+        if (strcmp(h->fps_last_path[i].fps_name, fps_name) == 0)
         {
             found_idx = i;
             break;
@@ -167,7 +225,7 @@ void ov_input_load_fps_history(OV_LAYOUT *lay, const char *fps_name)
 
     if (found_idx != -1)
     {
-        strncpy(lay->fps_param_path, lay->fps_last_path[found_idx].path,
+        strncpy(lay->fps_param_path, h->fps_last_path[found_idx].path,
                 sizeof(lay->fps_param_path) - 1);
         lay->fps_param_path[sizeof(lay->fps_param_path) - 1] = '\0';
     }

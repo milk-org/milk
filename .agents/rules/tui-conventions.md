@@ -105,7 +105,7 @@ To deliver a premium visual aesthetic and high readability, TUIs must use a dark
 - **ASCII-Only Core**: Core library files, headers, comments, and general string literals must be
   strictly ASCII-only.
 - **TUI-Display Exceptions**: Unicode (non-ASCII) characters are **only** permitted inside TUI
-  display files (e.g., `overview_theme.h`, `streamCTRL_TUI.c`) for box-drawing characters, status
+  display files (e.g., `overview_theme.h`, `overview_render_insp.c`) for box-drawing characters, status
   indicators, and progress bars.
 - **Prohibited Emojis**: Do not use standard colorful emojis (e.g., 🔴, 🟢, ⚠️). They render with
   inconsistent widths in different terminals, leading to misaligned columns and layout corruption.

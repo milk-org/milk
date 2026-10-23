@@ -22,7 +22,6 @@
 #include "overview_defs.h"
 #include "overview_layout.h"
 #include "overview_theme.h"
-#include "processinfo_shm_list_create.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -33,14 +32,6 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-
-/* =========================================================
- * Global state (defined here, declared extern elsewhere)
- * ========================================================= */
-
-volatile sig_atomic_t ov_sigINT  = 0;
-volatile sig_atomic_t ov_sigTERM = 0;
-/* Global ANSI and terminal state is owned and defined in overview_ansi.c */
 
 /* =========================================================
  * Signal handlers
@@ -67,26 +58,12 @@ static void handle_sigterm(int sig)
 }
 
 /**
- * crash_handler - Crash signal handler for milkCTRL
+ * crash_handler - restore the terminal on a fatal signal, then re-raise it with the default action.
  * @sig: Signal number
- *
- * Captures SIGSEGV/SIGABRT, restores terminal,
- * and prints a diagnostic message.
  */
 static void crash_handler(int sig)
 {
-    static const char reset[] = "\033[?1049l\033[?25h\033[0m\n";
-    if (write(STDERR_FILENO, reset, sizeof(reset) - 1) < 0)
-    {
-    }
-    if (ov__raw_active)
-    {
-        if (ov__orig_flags >= 0)
-        {
-            fcntl(STDIN_FILENO, F_SETFL, ov__orig_flags);
-        }
-        tcsetattr(STDIN_FILENO, TCSAFLUSH, &ov__orig_termios);
-    }
+    ov_term_restore_async();
     struct sigaction sa;
     sa.sa_handler = SIG_DFL;
     sigemptyset(&sa.sa_mask);
@@ -104,31 +81,79 @@ extern void            ov_scan_stop(void);
 extern const OV_MODEL *ov_scan_get_model(void);
 extern void            ov_render_frame(const OV_LAYOUT *lay, const OV_MODEL *m);
 extern void            ov_render__sync_selection(OV_LAYOUT *lay, const OV_MODEL *m);
+extern int             ov_get_selected_stream_idx(const OV_LAYOUT *lay, const OV_MODEL *m);
 extern int             ov_handle_key(int key, OV_LAYOUT *lay, const OV_MODEL *m);
+
+/**
+ * milkctrl_inspect_hint - name the stream the F3 inspector shows to the scan thread, and scan at
+ * once, once the cursor has rested on it for 150 ms (holding a key down must not trigger a scan
+ * per row).
+ */
+static void milkctrl_inspect_hint(const OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    static char     sent[STRINGMAXLEN_IMAGE_NAME], want[STRINGMAXLEN_IMAGE_NAME];
+    static double   t_want;
+    struct timespec ts;
+    const char     *name = "";
+    int si = (m != NULL && lay->r_strm_insp.width > 0) ? ov_get_selected_stream_idx(lay, m) : -1;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    double now = (double) ts.tv_sec + 1e-9 * (double) ts.tv_nsec;
+    if (si >= 0)
+    {
+        name = m->streams[si].name;
+    }
+    if (strcmp(want, name) != 0)
+    {
+        snprintf(want, sizeof(want), "%s", name);
+        t_want = now;
+    }
+    if (strcmp(sent, want) != 0 && now - t_want >= 0.15)
+    {
+        snprintf(sent, sizeof(sent), "%s", want);
+        ov_scan_set_inspect(want);
+        ov_scan_force_update();
+    }
+}
 
 /* =========================================================
  * main
  * ========================================================= */
 
 /**
- * main - Entry point for milk-CTRL standalone TUI dashboard
+ * main - Entry point for the milk-CTRL standalone TUI dashboard
  * @argc: Command-line argument count
  * @argv: Command-line argument vector
  *
- * Return: 0 on clean exit, non-zero on error.
+ * Parses command-line options, initializes terminal raw mode, theme colors, signal
+ * handlers, and the background shared-memory scanner thread, then drives the event
+ * and rendering loop until termination.
+ *
+ * Return: 0 on clean exit, non-zero on initialization or argument error.
  */
 int main(int argc, char *argv[])
 {
-    const char *cli_theme = NULL;
-    int         opt_rc    = milkctrl_parse_options(argc, argv, &cli_theme);
+    OV_OPTS opts;
+    int     opt_rc = milkctrl_parse_options(argc, argv, &opts);
     if (opt_rc > 0)
     {
         return 0;
     }
     if (opt_rc < 0)
     {
+        return 2;
+    }
+    if (opts.shm_dir != NULL)
+    {
+        setenv("MILK_SHM_DIR", opts.shm_dir, 1);
+        setenv("MILK_PROC_DIR", opts.shm_dir, 1);
+    }
+    FILE *logf = NULL;
+    if (opts.log != NULL && (logf = fopen(opts.log, "a")) == NULL)
+    {
+        fprintf(stderr, "%s: --log %s: %s\n", argv[0], opts.log, strerror(errno));
         return 1;
     }
+    ov_cmdlog_mirror(logf, opts.debug);
 
     /* --- Require interactive terminal --- */
     if (!isatty(STDIN_FILENO))
@@ -136,6 +161,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "%s: interactive terminal required on stdin.\n", argv[0]);
         return 1;
     }
+    int utf8_locale = ov_term_init_locale();
 
     /* --- Install signal handlers --- */
     {
@@ -147,32 +173,29 @@ int main(int argc, char *argv[])
 
         sa.sa_handler = handle_sigterm;
         sigaction(SIGTERM, &sa, NULL);
+        sigaction(SIGHUP, &sa, NULL);
 
+        static const int fatal_sigs[] = {
+            SIGSEGV, SIGBUS, SIGABRT, SIGFPE, SIGILL, SIGQUIT, SIGPIPE
+        };
         sa.sa_handler = crash_handler;
-        sigaction(SIGSEGV, &sa, NULL);
-        sigaction(SIGBUS, &sa, NULL);
-        sigaction(SIGABRT, &sa, NULL);
+        for (size_t i = 0; i < sizeof(fatal_sigs) / sizeof(fatal_sigs[0]); i++)
+        {
+            sigaction(fatal_sigs[i], &sa, NULL);
+        }
     }
 
     /* --- Detect color level --- */
     ov_detect_color_level();
 
     /* --- Initialize color theme --- */
-    ov_theme_init(cli_theme);
+    int theme_rc = ov_theme_init(opts.theme);
+
+    /* --- Resolve directories while the terminal is still cooked (resolvers may print) --- */
+    ov_dirs_init();
 
     /* --- Enter raw mode --- */
     ov_raw_mode_enter();
-
-    /* --- Connect to process list shared memory --- */
-    {
-        long pindex_unused;
-        if (processinfo_shm_list_create(&pindex_unused) != RETURN_SUCCESS)
-        {
-            ov_raw_mode_exit();
-            PRINT_ERROR("failed to connect to process list shared memory");
-            return 1;
-        }
-    }
 
     /* --- Start background scanner --- */
     if (ov_scan_start() != 0)
@@ -202,24 +225,69 @@ int main(int argc, char *argv[])
     /* --- Initialize layout --- */
     OV_LAYOUT lay;
     memset(&lay, 0, sizeof(lay));
-    lay.view                  = OV_VIEW_DASHBOARD;
-    lay.focus                 = OV_FOCUS_STREAMS;
-    lay.cmdlog_rows           = 4;
-    lay.param_sel             = -1;
-    lay.fps_split_ratio       = 0.4f;
-    lay.fps_split_dragging    = 0;
-    lay.dash_split_v_ratio    = 0.5f;
-    lay.dash_split_h_ratio    = 0.5f;
-    lay.dash_split_v_dragging = 0;
-    lay.dash_split_h_dragging = 0;
+    lay.view                    = OV_VIEW_DASHBOARD;
+    lay.focus                   = OV_FOCUS_STREAMS;
+    lay.cmdlog_rows             = 4;
+    lay.sub[OV_SUB_DETAILS].sel = -1;
+    lay.fps_split_ratio         = 0.4f;
+    lay.strm_split_ratio        = 0.6f;
+    lay.fps_split_dragging      = 0;
+    lay.dash_split_v_ratio      = 0.5f;
+    lay.dash_split_h_ratio      = 0.5f;
+    lay.dash_split_v_dragging   = 0;
+    lay.dash_split_h_dragging   = 0;
+
+    lay.profile = opts.profile;
+    if (opts.view >= 0)
+    {
+        ov_set_view(&lay, (ov_view_t) opts.view);
+    }
+    if (opts.pattern != NULL) /* the view's list; DASH, CONN and LOOPS filter streams */
+    {
+        int             f  = ov_views[lay.view].default_focus;
+        OV_PANEL_STATE *ps = &lay.panel[(f >= 0 && f < OV_NB_LIST_PANELS) ? f : OV_FOCUS_STREAMS];
+        snprintf(ps->filter, sizeof(ps->filter), "%s", opts.pattern);
+        ps->filter_on     = 1;
+        lay.filter_active = 1;
+    }
+    if (opts.interval > 0)
+    {
+        ov_scan_set_interval((float) opts.interval);
+    }
 
     ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO, "Shared memory directory: %s", ov_get_shmdir());
+    if (opts.profile == OV_PROFILE_STREAMCTRL)
+    {
+        ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO,
+                       "milk-streamCTRL: Right inspects a stream (SEMS, TRACE, HOLDERS); -h maps "
+                       "the old keys%s",
+                       opts.wave ? "; -w does nothing" : "");
+    }
+    ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO,
+                   "h help \xc2\xb7 F2\xe2\x80\x93"
+                   "F7 views \xc2\xb7 / filter \xc2\xb7 c control \xc2\xb7 q quit");
+    if (strcmp(ov_get_procdir(), ov_get_shmdir()) != 0)
+    {
+        ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_WARN,
+                       "Process directory: %s (differs from shm directory)", ov_get_procdir());
+    }
+    if (!utf8_locale)
+    {
+        ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_WARN,
+                       "Locale is not UTF-8: glyphs may be garbled; widths use C.UTF-8");
+    }
+    if (theme_rc < 0)
+    {
+        ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_WARN,
+                       "MILK_CTRL_THEME=%s is not a theme, using %s (milk-CTRL -h lists them)",
+                       getenv("MILK_CTRL_THEME"), ov_theme_get(ov_theme_get_active_index())->id);
+    }
 
     /* --- Main TUI loop (~10 fps) --- */
     /* Clear screen once on startup */
     {
         const char cls[] = "\033[2J\033[H";
-        if (write(STDOUT_FILENO, cls, sizeof(cls) - 1) < 0)
+        if (write(ov__tty_fd, cls, sizeof(cls) - 1) < 0)
         {
         }
     }
@@ -242,7 +310,7 @@ int main(int argc, char *argv[])
             {
                 /* Size changed, force clear */
                 const char cls[] = "\033[2J\033[H";
-                if (write(STDOUT_FILENO, cls, sizeof(cls) - 1) < 0)
+                if (write(ov__tty_fd, cls, sizeof(cls) - 1) < 0)
                 {
                 }
             }
@@ -260,6 +328,29 @@ int main(int argc, char *argv[])
             m                    = ov_scan_get_model();
             if (m != prev)
             {
+                if (m != NULL)
+                {
+                    char stages[160];
+                    int  ns = 0;
+                    for (int st = 0; st < OV_STAGE_COUNT && ns >= 0 && (size_t) ns < sizeof(stages);
+                         st++)
+                    {
+                        ns += snprintf(stages + ns, sizeof(stages) - (size_t) ns, " %s %.2f",
+                                       ov_stage_name(st), m->stage_ms[st]);
+                    }
+                    ov_cmdlog_debug("scan %.1f ms: %d streams (%d pending), %d processes, %d FPS, "
+                                    "%u tmux polls; stages ms:%s",
+                                    m->scan_time_ms, m->nb_streams, m->streams_pending, m->nb_procs,
+                                    m->nb_fps, m->tmux_polls, stages);
+                }
+                static int cap_warned;
+                if (m != NULL && m->streams_capped && !cap_warned)
+                {
+                    cap_warned = 1;
+                    ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_WARN,
+                                   "More than %d streams in %s: the rest are not listed",
+                                   OV_MAX_STREAMS, ov_get_shmdir());
+                }
                 ov_render__sync_selection(&lay, m);
                 need_render = 1;
             }
@@ -282,6 +373,7 @@ int main(int argc, char *argv[])
                     break;
                 }
                 need_render = 1;
+                ov_cmdlog_debug("key %d", key);
                 if (ov_handle_key(key, &lay, m))
                 {
                     quit = 1;
@@ -294,16 +386,31 @@ int main(int argc, char *argv[])
             }
         }
 
+        /* Tell the scan thread what is on screen: pause stops scanning, tmux only for FPS panels */
+        ov_scan_set_hints((lay.paused ? OV_HINT_PAUSED : 0U) |
+                          (ov_view_has_panel(lay.view, OV_FOCUS_FPS) ? OV_HINT_FPS_VISIBLE : 0U) |
+                          ((lay.r_strm_insp.width > 0 && lay.strm_insp_tab == OV_INSP_HOLDERS)
+                               ? OV_HINT_HOLDERS
+                               : 0U));
+        milkctrl_inspect_hint(&lay, m);
+
+        /* Library output captured from fds 1/2 goes to the command log */
+        fflush(stdout);
+        if (ov_cmdlog_drain_fd(&lay.cmdlog, ov_term_capture_fd()) > 0)
+        {
+            need_render = 1;
+        }
+
         /* Check if theme selector popup timed out (1s inactivity) */
-        if (lay.theme_popup_active)
+        if (lay.theme_popup.active)
         {
             struct timespec now_ts;
             clock_gettime(CLOCK_MONOTONIC, &now_ts);
-            double elapsed = (now_ts.tv_sec - lay.theme_popup_ts.tv_sec) +
-                             (now_ts.tv_nsec - lay.theme_popup_ts.tv_nsec) * 1e-9;
+            double elapsed = (now_ts.tv_sec - lay.theme_popup.ts.tv_sec) +
+                             (now_ts.tv_nsec - lay.theme_popup.ts.tv_nsec) * 1e-9;
             if (elapsed >= 1.0)
             {
-                lay.theme_popup_active = 0;
+                lay.theme_popup.active = 0;
                 need_render            = 1;
             }
             else
@@ -316,6 +423,7 @@ int main(int argc, char *argv[])
         /* Render only when something changed */
         if (need_render)
         {
+            ov_layout_compute(&lay); /* keys may have switched view: draw with its rectangles */
             ov_render_frame(&lay, m);
             need_render = 0;
         }
@@ -356,9 +464,17 @@ int main(int argc, char *argv[])
         }
     }
 
-    /* --- Cleanup --- */
-    ov_scan_stop();
+    /* --- Cleanup: restore the tty first; a second Ctrl-C then kills a stuck scan join --- */
     ov_raw_mode_exit();
+    signal(SIGINT, SIG_DFL);
+    ov_scan_stop();
+    pid_perf_close();
+    ov_input_history_free(&lay);
+    ov_cmdlog_mirror(NULL, 0);
+    if (logf != NULL)
+    {
+        fclose(logf);
+    }
 
     return 0;
 }

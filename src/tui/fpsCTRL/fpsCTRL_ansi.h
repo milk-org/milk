@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file streamCTRL_ansi.h
- * @brief TrueColor ANSI terminal primitives for milk-streamCTRL
+ * @file fpsCTRL_ansi.h
+ * @brief TrueColor ANSI terminal primitives for milk-fpsCTRL
  *
  * Self-contained raw-terminal helpers: TrueColor fg/bg, cursor movement,
  * non-blocking keyboard input with ANSI escape sequence decoding, and
@@ -71,6 +71,7 @@
 
 extern struct termios ansi__orig_termios;
 extern int            ansi__raw_active;
+extern int            ansi__orig_flags; /* stdin F_GETFL before raw mode, -1 = unknown */
 
 /**
  * ansi_raw_mode_enter - switch stdin to raw non-canonical mode.
@@ -99,10 +100,11 @@ static inline void ansi_raw_mode_enter(void)
     raw.c_cc[VTIME] = 0;
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 
-    /* non-blocking stdin */
+    /* non-blocking stdin; the original flags come back in ansi_raw_mode_exit() */
+    ansi__orig_flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    if (ansi__orig_flags >= 0)
     {
-        int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
-        fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+        fcntl(STDIN_FILENO, F_SETFL, ansi__orig_flags | O_NONBLOCK);
     }
 
     /* hide cursor and disable line wrap */
@@ -128,6 +130,10 @@ static inline void ansi_raw_mode_exit(void)
     /* clear screen, home cursor */
     if (write(STDOUT_FILENO, "\033[2J\033[H", 7) < 0)
     {
+    }
+    if (ansi__orig_flags >= 0)
+    {
+        fcntl(STDIN_FILENO, F_SETFL, ansi__orig_flags); /* the shell expects a blocking stdin */
     }
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &ansi__orig_termios);
     ansi__raw_active = 0;

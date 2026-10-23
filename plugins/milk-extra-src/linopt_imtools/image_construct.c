@@ -68,8 +68,7 @@ errno_t linopt_imtools_image_construct(const char *IDmodes_name,
     IMGID imgout         = imgid_make_from_name_2D(ID_name, xsize, ysize);
     imgout.mdt->shared   = 0;
     imgout.mdt->datatype = datatype;
-    imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     IMGID imgcoeff = imgid_make_from_name(IDcoeff_name);
     resolveIMGID(&imgcoeff, ERRMODE_ABORT, dcimg, dcnimg);

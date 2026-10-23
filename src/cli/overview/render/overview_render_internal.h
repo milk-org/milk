@@ -58,17 +58,34 @@ typedef struct
     int8_t stream_depth[OV_MAX_STREAMS];
 } OV_RELATED;
 
+#include "overview_columns.h" /* needs OV_RELATED */
+#include "overview_keymap.h"
+void ov_cell_ancestry(OV_COLCELL *c, const OV_ROW_CTX *rc, int nb_loops, int written);
+void ov_cell_name(OV_COLCELL *c, const OV_ROW_CTX *rc, const char *name, ov_rgb_t fg);
+void ov_cell_pid(OV_COLCELL *c, const OV_ROW_CTX *rc, pid_t pid);
+
 /* ---- Shared render utilities ---- */
 
 void render_pad_spaces(int chars_written, int panel_width);
+void render_empty_rows(OV_RECT r, int row, int max_rows, ov_rgb_t fg, const char *msg);
+
+/* F3 stream inspector (overview_render_insp*.c) */
+void        ov_render_stream_inspector(OV_LAYOUT *lay, const OV_MODEL *m);
+int         ov_insp_tab_at(int mr, int mc);
+void        ov_insp_page_trace(const OV_MODEL *m, const OV_STREAM *s);
+void        ov_insp_page_keys(const OV_STREAM_DETAIL *d);
+void        ov_insp_page_holders(const OV_MODEL *m, const OV_STREAM_DETAIL *d);
+void        ov_insp_tab_step(OV_LAYOUT *lay, int step); /* input/overview_input_nav_insp.c */
+int         ov_input_nav_insp(int key, OV_LAYOUT *lay, const OV_MODEL *m);
+const char *ov_insp_tab_name(int t);
+void        ov_insp_line(ov_rgb_t fg, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+void        ov_insp_kv(const char *label, ov_rgb_t fg, const char *fmt, ...)
+    __attribute__((format(printf, 3, 4)));
 void render_pad_to_col(int end_col);
-int  ov_render_header_text(const char *text, int hs, int max_vis_width, ov_rgb_t base_fg);
-void ov_render_cell(int         logical_col,
-                    int         vis_col,
+void ov_render_cell(int         col,
                     ov_rgb_t    fg,
                     ov_rgb_t    bg,
                     const char *str,
-                    int        *hs_rem,
                     int        *printed,
                     int         avail,
                     int         highlighted_col,
@@ -80,6 +97,7 @@ void clear_row(int row, int col, int width, ov_rgb_t bg);
 
 int ov_filter_build(const char *pattern, const char **names, int count, int *out, int max_out);
 
+int        ov_filter_any_on(const OV_LAYOUT *lay);
 ov_focus_t ov_get_effective_filter_panel(const OV_LAYOUT *lay);
 
 int ov_has_panel_filter(const OV_LAYOUT *lay, ov_focus_t panel);
@@ -97,8 +115,6 @@ int ov_has_filter(const OV_LAYOUT *lay);
 int ov_is_filter_active(const OV_LAYOUT *lay);
 
 const char *ov_get_filter_pattern(const OV_LAYOUT *lay);
-
-const char *ov_get_active_filter(const OV_LAYOUT *lay);
 
 void ov_clear_all_filters(OV_LAYOUT *lay);
 
@@ -133,42 +149,47 @@ const char *render_dtype(uint8_t dt);
 int         dtype_bytesize(uint8_t dt);
 
 void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *rel);
+void ov_compute_related_frozen(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *rel);
+
+/* Selection identity and drawn-row resolver (overview_render_select.c) */
+void       ov_tgt_set(OV_TARGET *t, const OV_MODEL *m, ov_focus_t panel, int idx);
+int        ov_tgt_find(const OV_MODEL *m, ov_focus_t panel, const OV_TARGET *t);
+int        ov_rows(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int *fidx, int max);
+const int *ov_view_rows(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int *n);
+int        ov_view_row_of(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int idx);
+int        ov_row_to_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row);
+int        ov_sel_row(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int row);
+int        ov_sel_model(OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel, int idx);
+int        ov_sel_idx(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t panel);
+void       ov_sel_sync(OV_LAYOUT *lay, const OV_MODEL *m);
+int        ov_detail_target(const OV_LAYOUT *lay, const OV_MODEL *m, ov_focus_t *panel);
+int        ov_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m);
+const SG_TREE_NODE *ov_graph_rows(const OV_LAYOUT *lay, const OV_MODEL *m, int *n);
+int                 ov_msel_has(const OV_LAYOUT *lay, const char *name);
+void                ov_msel_set(OV_LAYOUT *lay, const char *name, int on);
+void                ov_msel_clear(OV_LAYOUT *lay);
+const char         *ov_msel_title(const OV_LAYOUT *lay, const OV_MODEL *m, char *buf, size_t n);
+void                ov_render_confirm(const OV_LAYOUT *lay, const OV_MODEL *m);
 
 void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc);
 
 void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m);
 void ov_render_theme_popup(OV_LAYOUT *lay);
 
-void render_highlighted_name(const char *name,
-                             int         max_len,
-                             regex_t    *re,
-                             int         has_re,
-                             ov_rgb_t    normal_fg,
-                             ov_rgb_t    row_bg);
+/* Process status label (STAL when stalled) and its colour; @fg may be NULL */
+const char *ov_proc_status(const OV_PROC *p, ov_rgb_t *fg);
+const char *ov_loop_status(const OV_LOOP *lp, ov_rgb_t *fg);
 
-/* Inline trigger-mode short label */
-static inline const char *render_trigmode_label(int mode)
+/* A state as shown: short and long names, theme colour */
+typedef struct
 {
-    switch (mode)
-    {
-    case 0:
-        return "IMM";
-    case 1:
-        return "CN0";
-    case 2:
-        return "CN1";
-    case 3:
-        return "SEM";
-    case 4:
-        return "DLY";
-    case 5:
-        return "SMP";
-    case 6:
-        return "CN2";
-    default:
-        return " - ";
-    }
-}
+    const char *sname;
+    const char *lname;
+    ov_rgb_t    fg;
+} OV_STATE_INFO;
+OV_STATE_INFO ov_state_info(ov_state_t st);
+ov_state_t    ov_proc_state(const OV_PROC *p);
+ov_state_t    ov_loop_state(const OV_LOOP *lp);
 
 /* Inline memory-size formatter */
 static inline void format_mem_kb(char *buf, size_t sz, int64_t kb)
@@ -191,42 +212,18 @@ static inline void format_mem_kb(char *buf, size_t sz, int64_t kb)
     }
 }
 
-/* Inline sort column label builder */
-static inline int sort_col_label(char       *buf,
-                                 int         bufsz,
-                                 const char *label,
-                                 int         col_key,
-                                 int         cur_key,
-                                 int         desc,
-                                 int         visual_width)
-{
-    if (col_key == cur_key)
-    {
-        snprintf(buf, bufsz, "\x01%s%s\x02", label, desc ? "\xe2\x96\xbc" : "\xe2\x96\xb2");
-        return visual_width + 4;
-    }
-    else
-    {
-        snprintf(buf, bufsz, "%s", label);
-        return visual_width;
-    }
-}
-
 /* Inline semaphore color helper */
 static inline ov_rgb_t ov_get_sem_color(int val)
 {
     if (val == 0)
     {
-        return (ov_rgb_t) { 0, 150, 0 };
+        return ov_rgb_lerp(OV_FG_DIM, OV_FG_ACTIVE, 0.5f);
     }
     if (val >= 10)
     {
-        return (ov_rgb_t) { 160, 90, 30 };
+        return OV_FG_ZOMBIE;
     }
-    int r = 100 + (val - 1) * (180 - 100) / 9;
-    int g = 120 - (val - 1) * (120 - 40) / 9;
-    int b = 30;
-    return (ov_rgb_t) { r, g, b };
+    return ov_rgb_lerp(OV_FG_ZOMBIE, OV_FG_ERROR, (float) (val - 1) / 9.0f);
 }
 
 /**
@@ -240,7 +237,7 @@ static inline ov_rgb_t ov_get_sem_color(int val)
  */
 static inline ov_rgb_t zebra_bg(ov_rgb_t base_bg, int row_idx)
 {
-    if (base_bg.r != 30 || base_bg.g != 32 || base_bg.b != 40)
+    if (base_bg.r != OV_BG_PANEL.r || base_bg.g != OV_BG_PANEL.g || base_bg.b != OV_BG_PANEL.b)
     {
         return base_bg;
     }
@@ -302,15 +299,54 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
 
 void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel);
 
-int ov_render_detail_panel(OV_LAYOUT *lay, const OV_MODEL *m);
+int         ov_render_detail_panel(OV_LAYOUT *lay, const OV_MODEL *m);
+void        ov_subtab_bar(const OV_LAYOUT *lay, ov_rgb_t color);
+const char *ov_subtab_status(ov_subtab_t t);
+void        ov_render_subtab(OV_LAYOUT *lay, const OV_MODEL *m);
 
 int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m);
 
-void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m);
+void              ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m);
+const int8_t     *ov_node_depths(const OV_MODEL *m, int root, sg_mode_t mode);
+const SG_LINEAGE *ov_lineage(const OV_MODEL *m, int si, sg_mode_t mode);
+const char       *ov_fmt_dt_ns(char *buf, size_t n, int64_t ns);
+const char       *ov_fmt_si(char *buf, size_t n, double v);
+
+/* Right-hand health of a CONNECTIONS row (ov_graph_row_health) */
+typedef struct
+{
+    char hz[8];    /* stream rate, SI */
+    int  mismatch; /* the reader runs slower than the stream */
+    const char
+            *state; /* reader state: RUN, STAL, CRSH..., OFF (FPS not running), "-" (no reader) */
+    ov_rgb_t state_fg;
+    int      stalled;  /* the reader's loop stopped counting */
+    char     miss[8];  /* missed triggers, % of iterations */
+    char     exec[12]; /* reader compute time on this input */
+    char     fps[32];  /* FPS the reader runs under */
+} OV_ROW_HEALTH;
+
+void ov_graph_row_health(const OV_MODEL *m, const SG_TREE_NODE *rn, OV_ROW_HEALTH *h);
+
+/* One item of a bar laid out by ov_bar_layout */
+typedef struct
+{
+    int w;       /* columns of the full form */
+    int w_short; /* columns of the short form, 0 = none */
+    int prio;    /* 0 = most important */
+    int shown;   /* result: 0 hidden, 1 full form, 2 short form */
+} OV_BAR_ITEM;
+
+int  ov_bar_layout(OV_BAR_ITEM *it, int n, int width);
+void ov_graph_stalls(const OV_MODEL     *m,
+                     const SG_TREE_NODE *rows,
+                     int                 n,
+                     int8_t             *cause,
+                     int8_t             *dim);
 
 void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m);
 
-void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m);
+void ov_render_status(OV_LAYOUT *lay, const OV_MODEL *m);
 
 void ov_render_cmdlog(const OV_LAYOUT *lay);
 
@@ -320,70 +356,46 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m);
 void ov_render_tabs(OV_LAYOUT *lay);
 void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m);
 void ov_draw_tooltip(OV_LAYOUT *lay);
+void ov_row_tooltip(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 void ov_render__sync_selection(OV_LAYOUT *lay, const OV_MODEL *m);
 void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m);
 
 /* Help panel utilities */
 void ov_help_open(OV_LAYOUT *lay);
-int  ov_help_nb_sections(void);
 int  ov_help_visible_count(const OV_LAYOUT *lay);
 int  ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
 int  ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand);
-int  ov_help_focus_section(ov_focus_t focus);
 int  ov_help_section_first_vis_row(const OV_LAYOUT *lay, int sec);
 int  ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc);
 
-extern float ov_scan_get_interval(void);
 
 /**
- * render_sparkline - draw a Unicode sparkline bar.
- * @hist:  circular buffer of values
- * @hidx:  next write index (points one past last)
- * @len:   buffer length (OV_SPARKLINE_LEN)
- * @width: number of characters to render
- * @fg:    foreground color
+ * ov_sparkline_str - @width-character Unicode sparkline of the circular buffer @hist (next write index
+ * @hidx, @len entries), scaled to its maximum, into @buf.
  */
-static inline void render_sparkline(const float *hist, int hidx, int len, int width, ov_rgb_t fg)
+static inline void ov_sparkline_str(char        *buf,
+                                    size_t       n,
+                                    const float *hist,
+                                    int          hidx,
+                                    int          len,
+                                    int          width)
 {
-    /* Unicode block elements: 1/8 to 8/8 */
     static const char *bars[] = { "\xe2\x96\x81", "\xe2\x96\x82", "\xe2\x96\x83", "\xe2\x96\x84",
                                   "\xe2\x96\x85", "\xe2\x96\x86", "\xe2\x96\x87", "\xe2\x96\x88" };
-    /* Find max in history for scaling */
-    float mx = 0.001f;
+    float              mx     = 0.001f;
+    size_t             used   = 0;
     for (int ii = 0; ii < len; ii++)
     {
-        if (hist[ii] > mx)
-        {
-            mx = hist[ii];
-        }
+        mx = (hist[ii] > mx) ? hist[ii] : mx;
     }
-    ov_theme_fg(fg);
-    int start = hidx - width;
-    if (start < 0)
+    int start = (hidx - width < 0) ? hidx - width + len : hidx - width;
+    buf[0]    = '\0';
+    for (int ii = 0; ii < width && used + 4 < n; ii++)
     {
-        start += len;
-    }
-    for (int ii = 0; ii < width; ii++)
-    {
-        int   idx   = (start + ii) % len;
-        float v     = hist[idx];
+        float v     = hist[(start + ii) % len];
         int   level = (int) (v / mx * 7.0f);
-        if (level < 0)
-        {
-            level = 0;
-        }
-        if (level > 7)
-        {
-            level = 7;
-        }
-        if (v < 0.001f)
-        {
-            ov_buf_printf(" ");
-        }
-        else
-        {
-            ov_buf_printf("%s", bars[level]);
-        }
+        level       = (level < 0) ? 0 : (level > 7) ? 7 : level;
+        used += (size_t) snprintf(buf + used, n - used, "%s", (v < 0.001f) ? " " : bars[level]);
     }
 }
 
@@ -420,7 +432,6 @@ static inline void format_uptime(char *buf, int sz, int64_t secs)
 
 
 /* Panel header and footer sub-renderers */
-void ov_fps__render_header(const OV_LAYOUT *lay, OV_RECT r);
 void ov_fps__render_footer(const OV_LAYOUT *lay,
                            const OV_MODEL  *m,
                            OV_RECT          r,
@@ -428,7 +439,6 @@ void ov_fps__render_footer(const OV_LAYOUT *lay,
                            int              filt_n,
                            int              max_rows);
 
-void ov_procs__render_header(const OV_LAYOUT *lay, OV_RECT r);
 void ov_procs__render_footer(const OV_LAYOUT *lay,
                              const OV_MODEL  *m,
                              OV_RECT          r,
@@ -448,7 +458,6 @@ void ov_procs_render_single_row(const OV_LAYOUT  *lay,
                                 const regex_t    *re,
                                 OV_RECT           r);
 
-void ov_streams__render_header(const OV_LAYOUT *lay, OV_RECT r);
 void ov_streams__render_footer(const OV_LAYOUT *lay,
                                const OV_MODEL  *m,
                                OV_RECT          r,

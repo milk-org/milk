@@ -11,20 +11,20 @@ and update them if they have become inconsistent.
 
 The project's help content lives in these locations:
 
-| #   | Type                 | Path(s)                                             | Topic                         |
-| --- | -------------------- | --------------------------------------------------- | ----------------------------- |
-| 1   | Help executable (C)  | `src/cli/CLIcore/milk-cli-help.c`, `milk-help.c`    | CLI usage, startup, piping    |
-| 2   | Help executable (C)  | `src/engine/libfps/tools/milk-fps-help.c`                 | FPS concepts & management     |
-| 3   | Help executable (C)  | `src/engine/libfps/tools/milk-fpsexec-help.c`             | fpsexec standalone usage      |
-| 4   | Help executable (C)  | `src/engine/libprocessinfo/milk-procinfo-help.c`    | Processinfo & real-time       |
-| 5   | Help executable (C)  | `src/cli/CLIcore/milk-cli-help-synchro.c`           | Synchronization overview      |
-| 6   | In-code help (C)     | `src/cli/CLIcore/CLIcore/CLIcore_help_*.c`          | Interactive `?`/`help`/`cmd?` |
-| 7   | Kernel-Doc / Doxygen | `@brief`/`@file` comments in `.c`/`.h` files        | Per-function API docs         |
-| 8   | Runnable descriptors | `.app.description` of each `MILK_RUNNABLE`          | One-line summaries (`-h1`)    |
-| 9   | Markdown docs        | `docs/guide/*.md` (fps.md, streams.md, procinfo.md) | User/developer reference      |
-| 10  | Module READMEs       | `src/*/README.md`                                   | Per-module overviews          |
-| 11  | Programmer's Guide   | `docs/arch/programmers_guide.md`                    | Architecture overview         |
-| 12  | Examples / tutorials | `src/milk_module_example/examples/`                 | Getting-started walkthroughs  |
+| #   | Type                 | Path(s)                                             | Topic                            |
+| --- | -------------------- | --------------------------------------------------- | -------------------------------- |
+| 1   | Help executable (C)  | `src/cli/CLIcore/milk-cli-help.c`, `milk-help.c`    | CLI usage, startup, piping       |
+| 2   | Help executable (C)  | `src/engine/libfps/tools/milk-fps-help.c`           | FPS concepts & management        |
+| 3   | Help executable (C)  | `src/engine/libfps/tools/milk-fpsexec-help.c`       | fpsexec standalone usage         |
+| 4   | Help executable (C)  | `src/engine/libprocessinfo/milk-procinfo-help.c`    | Processinfo & real-time          |
+| 5   | Help executable (C)  | `src/cli/CLIcore/milk-cli-help-synchro.c`           | Synchronization overview         |
+| 6   | In-code help (C)     | `src/cli/CLIcore/CLIcore/CLIcore_help_*.c`          | Interactive `@?`/`@help`/`@cmd?` |
+| 7   | Kernel-Doc / Doxygen | `@brief`/`@file` comments in `.c`/`.h` files        | Per-function API docs            |
+| 8   | Runnable descriptors | `.app.description` of each `MILK_RUNNABLE`          | One-line summaries (`-h1`)       |
+| 9   | Markdown docs        | `docs/guide/*.md` (fps.md, streams.md, procinfo.md) | User/developer reference         |
+| 10  | Module READMEs       | `src/*/README.md`                                   | Per-module overviews             |
+| 11  | Programmer's Guide   | `docs/arch/programmers_guide.md`                    | Architecture overview            |
+| 12  | Examples / tutorials | `src/milk_module_example/examples/`                 | Getting-started walkthroughs     |
 
 ## Cross-Reference Groups
 

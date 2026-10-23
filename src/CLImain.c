@@ -21,7 +21,7 @@
 
 #include "CLIcore.h"
 
-#include "CLIcore/CLIcore_UI_execute.h"
+#include "CLIcore_UI_execute.h"
 
 #define STYLE_BOLD "\033[1m"
 #define STYLE_NO_BOLD "\033[22m"
@@ -29,8 +29,53 @@
 #define STRINGMAXLEN_VERSIONSTRING 80
 #define STRINGMAXLEN_APPNAME 40
 
+__attribute__((constructor(101))) static void climain_pre_quiet(void)
+{
+    FILE *fp = fopen("/proc/self/cmdline", "r");
+    if (!fp)
+    {
+        return;
+    }
+
+    char   buf[4096];
+    size_t n = fread(buf, 1, sizeof(buf) - 1, fp);
+    fclose(fp);
+    if (n == 0)
+    {
+        return;
+    }
+    buf[n] = '\0';
+
+    size_t i = 0;
+    while (i < n && buf[i] != '\0')
+    {
+        i++;
+    }
+    i++;
+
+    while (i < n)
+    {
+        const char *tok = buf + i;
+        if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0 || strcmp(tok, "--server") == 0 ||
+            strncmp(tok, "--server=", 9) == 0 || strcmp(tok, "--catalog") == 0 ||
+            strcmp(tok, "--format") == 0 || strcmp(tok, "--format-in-place") == 0 ||
+            strcmp(tok, "--outline") == 0)
+        {
+            milk_data.quiet = 1;
+            setenv("MILK_QUIET", "1", 0);
+            break;
+        }
+        while (i < n && buf[i] != '\0')
+        {
+            i++;
+        }
+        i++;
+    }
+}
+
 int main(int argc, char *argv[])
 {
+    int is_server_or_dump = 0;
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-h1") == 0 || strcmp(argv[i], "--help-oneline") == 0)
@@ -44,7 +89,17 @@ int main(int argc, char *argv[])
             print_milk_cli_help();
             return 0;
         }
+
+        if (strcmp(argv[i], "--server") == 0 || strncmp(argv[i], "--server=", 9) == 0 ||
+            strcmp(argv[i], "--catalog") == 0 || strcmp(argv[i], "--format") == 0 ||
+            strcmp(argv[i], "--format-in-place") == 0 || strcmp(argv[i], "--outline") == 0)
+        {
+            is_server_or_dump = 1;
+            setenv("MILK_QUIET", "1", 1);
+        }
     }
+
+    setenv("_MILK_ENGINE", "cli", 1); /* front-end of the bash engine: picks the keyword set */
 
     char AppName[STRINGMAXLEN_APPNAME] = { 0 };
 
@@ -60,7 +115,7 @@ int main(int argc, char *argv[])
         AppName[STRINGMAXLEN_APPNAME - 1] = '\0';
     }
 
-    if (getenv("MILK_QUIET"))
+    if (getenv("MILK_QUIET") || is_server_or_dump)
     {
         dcquiet = 1;
     }
@@ -80,7 +135,10 @@ int main(int argc, char *argv[])
 
     // Allocate dctestptarr
 #ifndef NDEBUG
-    printf("        [ENABLED]  Code test point tracing\n");
+    if (!is_server_or_dump)
+    {
+        printf("        [ENABLED]  Code test point tracing\n");
+    }
     // allocate circular buffer memory
     dctestptarr = (CODETESTPOINT *) malloc(sizeof(CODETESTPOINT) * CODETESTPOINTARRAY_NBCNT);
     if (dctestptarr != NULL)
@@ -155,6 +213,15 @@ int main(int argc, char *argv[])
     if (dcexitcode == RETURN_SUCCESS && cli_status != RETURN_SUCCESS)
     {
         dcexitcode = cli_status;
+    }
+
+    if (is_server_or_dump)
+    {
+#ifndef NDEBUG
+        dctestptinit = 0;
+        free(dctestptarr);
+#endif
+        return dcexitcode;
     }
 
     //errno_t CLIretval = RETURN_SUCCESS;

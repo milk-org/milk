@@ -15,6 +15,10 @@ include_directories("${PROJECT_SOURCE_DIR}/..")
 milk_add_runnable_module(${LIBNAME} SOURCES ${SOURCEFILES} COREMOD)
 milk_add_fpsexec_stubs(${LIBNAME})
 
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+  set_source_files_properties(image_coord.c PROPERTIES COMPILE_OPTIONS "-mno-recip")
+endif()
+
 # CUSTOM ===========
 # CLIcore does not exist at this tier: reuse the include dirs of libfps
 target_include_directories(
@@ -48,33 +52,9 @@ install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 include(CTest)
 
 set(TESTNAME "CLIfunc-COREMOD_arith-module")
-add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "m?")
+add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "@help arith")
 set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLImodule")
 set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
 set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION
                                          "COREMOD_arith")
-
-list(
-  APPEND
-  commandlist
-  "extractim"
-  "extract3Dim"
-  "setpix"
-  "setpix1Drange"
-  "setrow"
-  "setcol"
-  "imzero"
-  "imtrunc"
-  "cropmask")
-
-foreach(CLIcmdname IN LISTS commandlist)
-
-  set(TESTCLIFUNC "${CLIcmdname}")
-  set(TESTNAME "CLIfunc-COREMOD_arith-${TESTCLIFUNC}")
-  add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "cmd? arith.${CLIcmdname}")
-  set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLIfunc")
-  set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
-  set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "src:")
-
-endforeach()
 # ==================

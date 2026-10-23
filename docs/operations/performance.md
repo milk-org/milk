@@ -41,7 +41,8 @@ Typical values on modern hardware:
 
 ### 1.3. Stream Timing
 
-Use `milk-streamCTRL` to observe per-stream frame rates and detect bottlenecks in the pipeline.
+Use `milk-streamCTRL` (milk-CTRL's streams view) to observe per-stream frame rates and detect bottlenecks
+in the pipeline; its F6 CONNECTIONS view marks where a pipeline stalls.
 
 ---
 

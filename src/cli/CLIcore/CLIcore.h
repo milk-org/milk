@@ -27,6 +27,7 @@
 #else /* full CLI mode */
 
 
+#    include <stdio.h>
 #    include <stdint.h>
 #    include <stdarg.h>
 #    include <string.h>
@@ -74,6 +75,15 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
 
 errno_t processinfo_CTRLscreen();
 #    else
+/**
+ * functionparameter_CTRLscreen - No-op FPS TUI stub when built without ncurses
+ * @mode:            TUI display mode (unused)
+ * @fpsnamemask:     FPS name filter mask (unused)
+ * @fpsCTRLfifoname: Control FIFO path (unused)
+ * @timeout_sec:     Refresh timeout in seconds (unused)
+ *
+ * Return: 0.
+ */
 static inline errno_t functionparameter_CTRLscreen(uint32_t mode,
                                                    char    *fpsnamemask,
                                                    char    *fpsCTRLfifoname,
@@ -85,10 +95,21 @@ static inline errno_t functionparameter_CTRLscreen(uint32_t mode,
     (void) timeout_sec;
     return 0;
 }
+
+/**
+ * processinfo_CTRLscreen - No-op processinfo TUI stub when built without ncurses
+ *
+ * Return: 0.
+ */
 static inline errno_t processinfo_CTRLscreen()
 {
     return 0;
 }
+
+/**
+ * TUI_printfw - Fallback formatted stdout writer when built without ncurses
+ * @fmt: `printf`-style format string
+ */
 static inline void TUI_printfw(const char *fmt, ...)
 {
     va_list args;
@@ -96,38 +117,85 @@ static inline void TUI_printfw(const char *fmt, ...)
     vprintf(fmt, args);
     va_end(args);
 }
+
+/**
+ * TUI_newline - Emit a newline to stdout when built without ncurses
+ */
 static inline void TUI_newline()
 {
     printf("\n");
 }
+
+/**
+ * screenprint_setreverse - No-op reverse-video attribute setter without ncurses
+ */
 static inline void screenprint_setreverse()
 {
 }
+
+/**
+ * screenprint_unsetreverse - No-op reverse-video attribute resetter without ncurses
+ */
 static inline void screenprint_unsetreverse()
 {
 }
+
+/**
+ * screenprint_setcolor - No-op color-pair setter without ncurses
+ * @pair: Color pair index (unused)
+ */
 static inline void screenprint_setcolor(int pair)
 {
     (void) pair;
 }
+
+/**
+ * screenprint_unsetcolor - No-op color-pair resetter without ncurses
+ * @pair: Color pair index (unused)
+ */
 static inline void screenprint_unsetcolor(int pair)
 {
     (void) pair;
 }
+
+/**
+ * TUI_set_screenprintmode - No-op screen print mode selector without ncurses
+ * @mode: Screen print mode (unused)
+ */
 static inline void TUI_set_screenprintmode(int mode)
 {
     (void) mode;
 }
+
+/**
+ * TUI_init_terminal - No-op terminal initializer without ncurses
+ * @wrow: Output row count pointer (unused)
+ * @wcol: Output column count pointer (unused)
+ *
+ * Return: 0.
+ */
 static inline errno_t TUI_init_terminal(short unsigned int *wrow, short unsigned int *wcol)
 {
     (void) wrow;
     (void) wcol;
     return 0;
 }
+
+/**
+ * get_singlechar_nonblock - Non-blocking character input stub without ncurses
+ *
+ * Return: Always -1 (no key available).
+ */
 static inline int get_singlechar_nonblock()
 {
     return -1;
 }
+
+/**
+ * TUI_exit - No-op terminal teardown stub without ncurses
+ *
+ * Return: 0.
+ */
 static inline errno_t TUI_exit()
 {
     return 0;
@@ -216,7 +284,6 @@ typedef struct
 #    define STRINGMAXLEN_CMD_INFO 1000
 #    define STRINGMAXLEN_CMD_SYNTAX 1000
 #    define STRINGMAXLEN_CMD_EXAMPLE 1000
-#    define STRINGMAXLEN_CMD_CCALL 1000
 #    define STRINGMAXLEN_CMD_SRCFILE 1000
 typedef struct
 {
@@ -232,19 +299,20 @@ typedef struct
     // command function pointer
     errno_t (*fp)();
 
-    // descriptor this command was registered from (NULL for legacy commands)
+    // descriptor this command was registered from
     const struct MILK_RUNNABLE_ *runnable;
 
     char info[STRINGMAXLEN_CMD_INFO];       // short description/help
     char syntax[STRINGMAXLEN_CMD_SYNTAX];   // command syntax
     char example[STRINGMAXLEN_CMD_EXAMPLE]; // command example
-    char Ccall[STRINGMAXLEN_CMD_CCALL];
 
     // command arguments and parameters
     int nbarg;   // Number of visible CLI arguments
     int nbparam; // Total number of parameters (visible + hidden)
 
     CLICMDARGDATA *argdata; // arguments and parameters to function
+
+    const char *outvars; // calculator variables it sets for the caller (CLICMDDATA.outvars)
 
     // defines static function capabilities and behavior
     //uint64_t flags;
@@ -305,6 +373,10 @@ extern uint8_t TYPESIZE[32];
 #    define CLICOMPLETIONMODE_VARS_SEQ 6
 #    define CLICOMPLETIONMODE_VARS_STREAM 7
 #    define CLICOMPLETIONMODE_VARS_ENV 8
+#    define CLICOMPLETIONMODE_VARS_PROC 9
+
+void cli_menu_display_matches(char **matches, int num_matches, int max_length);
+int  cli_custom_getc(FILE *stream);
 
 typedef struct
 {
@@ -405,8 +477,15 @@ typedef struct
 
 } DATA;
 
+#    ifdef MILK_BASH_CLIENT /* libmilkbash, the bash client: no engine state, no images of its own */
+extern DATA data;
+#        define MILK_LOCAL_IMAGES ((IMAGE *) NULL)
+#        define MILK_NB_LOCAL_IMAGES 0L
+#    else
 __attribute__((weak)) DATA data = { .core = { 0 } };
-//extern DATA data;
+#        define MILK_LOCAL_IMAGES (data.core.image)
+#        define MILK_NB_LOCAL_IMAGES (data.core.NB_MAX_IMAGE)
+#    endif
 
 #    include "CLIcore_utils.h"
 
@@ -414,13 +493,9 @@ errno_t set_signal_catch();
 
 void sig_handler(int signo);
 
-errno_t runCLItest(int argc, char *argv[], char *promptstring);
-
 errno_t runCLI(int argc, char *argv[], char *promptstring);
 
 errno_t CLI_execute_line();
-
-errno_t write_process_log();
 
 #endif /* !MILK_NO_CLI — full CLI mode */
 

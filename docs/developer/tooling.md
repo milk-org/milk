@@ -66,7 +66,7 @@ pip install pymdown-extensions \
 ### 1.2 Build and serve the documentation
 
 ??? tip "Test the doc build"
-    Build in strict mode: useful to __check for stale links__.
+    Build in strict mode: useful to **check for stale links**.
     ```bash
     mamba run -n mkdocsenv mkdocs build --strict
     #                      ^^^^^^^^^^^^^^^^^^^^^-- only this part if `mamba activate mkdocsenv` is still active
@@ -115,7 +115,7 @@ bundle exec jekyll serve
 !!! success "You now have the local Cacao v1 docs in your browser !"
     You can leave `jekyll serve` running in its terminal, and watch the render in the browser.
     The website will update as you modify `md` files in the `pages/` folder of the documentation repo
-    __and hit refresh in the browser__.
+    **and hit refresh in the browser**.
 
 </details>
 
@@ -160,7 +160,7 @@ pre-commit install
 
 The typical usage is the one that is forced upon the developer.
 Upon running `git commit`, the hook invokes `pre-commit run`.
-By default this applies the pre-commit hooks on all the __staged files__.
+By default this applies the pre-commit hooks on all the **staged files**.
 
 | Possible outcomes:                     | Then:                                                |
 | -------------------------------------- | ---------------------------------------------------- |
@@ -438,6 +438,7 @@ It is possible to run the coverage build directly in the main shell environment 
 install, run the tests, etc), but inconvenient due to managing the gcc tracking and counter files.
 
 We packaged all of it in a nox session, that produces two html reports, for python and for C/C++.
+
 ```bash
 nox -s tests_run_coverage           # run the coverage session, which is not in the defaults; See #5 below.
 ```
@@ -448,11 +449,14 @@ nox -s tests_run_coverage           # run the coverage session, which is not in 
     Fix in progress, nox session is broken.
 
 The python coverage report:
-```
+
+```text
 <browser> $MILK_ROOT/cov_py/index.html
 ```
+
 and the C coverage report:
-```
+
+```text
 <browser> $MILK_ROOT/cov_c/index.html
 ```
 
@@ -499,7 +503,7 @@ To remove it: `rm -rf _build/_install`, and unset the modified variables.
 
 !!! warning "This is global superseding"
     This approach is designed to supersede the system-wide installation with a development build.
-    This is not the same as running multiple, isolated versions. See [multiple versions here](../multiversion.md)
+    This is not the same as running multiple, isolated versions. See [multiple versions here](multiversion.md)
 
 ### 6.2 Global install without sudo
 
@@ -507,9 +511,11 @@ Follow the process for installing milk system-wide: the default recommendation i
 which is a symbolic link to `/usr/local/milk-<version>`.
 
 By changing ownership of that folder:
+
 ```bash
 sudo chown -R <user>:<user> /usr/local/milk-<version>
 ```
+
 you can now `make install`/`ninja install` milk without sudo permissions. The only bit that is missing and actually requires `sudo` is granting root capability to `milk-makecsetandrt`.
 
 !!! warning

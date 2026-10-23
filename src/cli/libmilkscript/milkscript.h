@@ -56,7 +56,7 @@ errno_t milkscript_execute(const char *cmdline);
  *
  * Reads lines from @p fp (typically stdin or a script
  * file), executing each via `milkscript_execute()`.
- * Exits when EOF is reached or "exitCLI" is entered.
+ * Exits when EOF is reached or "exit" is entered.
  *
  * @param fp  Input stream (use stdin for a basic REPL)
  * @return 0 on normal exit

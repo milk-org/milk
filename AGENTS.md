@@ -85,8 +85,7 @@ milk/
 │   ├── cli/                       ← User-facing tools
 │   │   ├── libmilkscript/         ← Standalone scripting engine
 │   │   ├── CLIcore/               ← Interactive shell framework
-│   │   ├── overview/              ← TUI monitoring tool
-│   │   └── streamCTRL/            ← Stream monitor tool
+│   │   └── overview/              ← milk-CTRL dashboard TUI (milk-streamCTRL: a link that opens it on F3)
 │   ├── coremods/                  ← Core computation modules
 │   │   └── COREMOD_{arith,memory,tools,iofits}/
 │   └── milk_module_example/       ← ★ START HERE for templates

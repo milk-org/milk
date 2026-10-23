@@ -6,6 +6,8 @@ set(SOURCEFILES
     processinfo_exec_end.c
     processinfo_exec_start.c
     processinfo_globals.c
+    processinfo_labels.c
+    processinfo_list.c
     processinfo_loopstep.c
     processinfo_procdirname.c
     processinfo_setup.c
@@ -13,6 +15,7 @@ set(SOURCEFILES
     processinfo_shm_create.c
     processinfo_shm_link.c
     processinfo_shm_list_create.c
+    processinfo_timing.c
     processinfo_SIGexit.c
     processinfo_signals.c
     processinfo_update_output_stream.c
@@ -62,6 +65,12 @@ if(USE_STATIC_LTO)
            $<INSTALL_INTERFACE:include>)
   target_link_libraries(${LIBNAME}_static PUBLIC ImageStreamIO_static
                                                       milkcommon rt pthread m)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(test-processinfo-helpers tests/test_processinfo_helpers.c)
+  target_link_libraries(test-processinfo-helpers PRIVATE milkprocessinfo)
+  add_test(NAME processinfo_unit_helpers COMMAND test-processinfo-helpers)
 endif()
 
 # Add milk-procinfo-help executable

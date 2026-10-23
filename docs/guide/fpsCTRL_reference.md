@@ -24,9 +24,9 @@ milk-fpsCTRL [OPTIONS] [fpsnamemask]
 | --------------- | -------------------------------------------- |
 | `-m`, `--match` | Enable match mode (filter by mask)           |
 | `-n`, `--name`  | Set FPS name filter mask                     |
-| `-f`, `--fifo`  | Specify input FIFO file                      |
+| `-f`, `--fifo`  | Retired: accepted and ignored (prints a notice); use `milk-fps-set` / `milk-fps-{conf,run}{start,stop}` |
 | `-q`, `--quiet` | Suppress TUI output (`MILK_TUIPRINT_NONE=1`) |
-| `-s`, `--stdio` | Line-by-line stdio mode                      |
+| `-s`, `--stdio` | Retired: accepted and ignored (prints a notice) |
 | `-h`, `--help`  | Print usage and exit                         |
 | `-h1`           | Print one-line description and exit          |
 

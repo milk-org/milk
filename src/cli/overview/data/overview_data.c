@@ -20,6 +20,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include <limits.h>
+#include <errno.h>
+
+#include "processtools_trigger.h"
 #include <signal.h>
 
 #include "overview_defs.h"
@@ -36,11 +40,36 @@
 #define OV_SHMDIR_MAXLEN STRINGMAXLEN_FPS_DIRNAME
 
 
+#include <stdatomic.h>
+
 #include "overview_data_internal.h"
 
 /* =========================================================
  * Full scan
  * ========================================================= */
+
+/* What the UI shows (OV_HINT_*); tools without a UI scan as if every panel were on screen */
+static atomic_uint s_scan_hints = OV_HINT_FPS_VISIBLE;
+
+/** ov_scan_hints - the hints last set by the UI. */
+unsigned ov_scan_hints(void)
+{
+    return atomic_load(&s_scan_hints);
+}
+
+/** ov_stage_name - short name of scan stage @stage ("" when out of range). */
+const char *ov_stage_name(int stage)
+{
+    static const char *const n[OV_STAGE_COUNT] = { "streams", "fps",    "tmux", "procs",
+                                                   "graph",   "enrich", "loops" };
+    return (stage >= 0 && stage < OV_STAGE_COUNT) ? n[stage] : "";
+}
+
+/** ov_scan_hints_swap - set the hints, returning the previous ones (ov_scan_set_hints wakes the scan). */
+unsigned ov_scan_hints_swap(unsigned hints)
+{
+    return atomic_exchange(&s_scan_hints, hints);
+}
 
 /**
  * ov_model_full_scan - Perform a full discovery and state scan into the model
@@ -57,8 +86,9 @@ void ov_model_full_scan(OV_MODEL *model)
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
 
-    /* Reset per-tick PID liveness cache */
+    /* Reset per-tick PID liveness cache; the arrays change, so the lookup indexes are stale until the graph */
     pid_cache_reset();
+    model->indexed = 0;
 
     /* Compute time delta for rate estimation
      * (used by scache_rate_update inside scan).
@@ -82,17 +112,34 @@ void ov_model_full_scan(OV_MODEL *model)
     model->nb_edges   = 0;
     model->nb_loops   = 0;
 
+    struct timespec ts = t0, te;
+#define OV_STAGE_END(st)                                                                        \
+    do                                                                                          \
+    {                                                                                           \
+        clock_gettime(CLOCK_MONOTONIC, &te);                                                    \
+        model->stage_ms[st] =                                                                   \
+            (double) (te.tv_sec - ts.tv_sec) * 1e3 + (double) (te.tv_nsec - ts.tv_nsec) * 1e-6; \
+        ts = te;                                                                                \
+    } while (0)
+
+    ov_scan_holders(model); /* before the streams: their rows copy the counts */
     ov_scan_streams(model);
+    ov_scan_inspect(model);
+    OV_STAGE_END(OV_STAGE_STREAMS);
     ov_scan_fps(model);
+    OV_STAGE_END(OV_STAGE_FPS);
     ov_scan_tmux_sessions(model);
+    OV_STAGE_END(OV_STAGE_TMUX);
     ov_scan_procs(model);
-
+    OV_STAGE_END(OV_STAGE_PROCS);
     ov_build_graph(model);
+    OV_STAGE_END(OV_STAGE_GRAPH);
+    ov_post_scan_enrich(model); /* per-item derived data first: loop health reads it */
+    OV_STAGE_END(OV_STAGE_ENRICH);
     ov_detect_loops(model, SG_MODE_FULL);
-
-    /* Post-scan enrichment: sparklines, uptime,
-     * stale detection, new-item flash */
-    ov_post_scan_enrich(model);
+    OV_STAGE_END(OV_STAGE_LOOPS);
+#undef OV_STAGE_END
+    model->scan_rate_hz = (s_scan_dt_sec > 0.0) ? 1.0 / s_scan_dt_sec : 0.0;
 
     clock_gettime(CLOCK_MONOTONIC, &t1);
     struct timespec dt    = ov_timespec_diff(t0, t1);
@@ -109,25 +156,53 @@ void ov_model_full_scan(OV_MODEL *model)
  * ========================================================= */
 
 /**
- * ov_model_export_snapshot - Export current model state to a text file in /tmp
- * @m: Pointer to data model snapshot
+ * ov_model_export_snapshot - Write the model to a new private file
+ * ${TMPDIR:-/tmp}/milk-CTRL_snapshot_<time>_XXXXXX.txt (O_EXCL, mode 0600).
+ * @m:      Pointer to data model snapshot
+ * @path:   Receives the file name
+ * @pathsz: Size of @path
+ *
+ * Return: 0, or -1 with errno set (nothing is left behind on failure).
  */
-void ov_model_export_snapshot(const OV_MODEL *m)
+int ov_model_export_snapshot(const OV_MODEL *m, char *path, size_t pathsz)
 {
-    if (m == NULL)
+    if (m == NULL || path == NULL)
     {
-        return;
+        errno = EINVAL;
+        return -1;
     }
 
-    time_t     now    = time(NULL);
-    struct tm *tm_ptr = localtime(&now);
-    char       fname[128];
-    strftime(fname, sizeof(fname), "/tmp/milk-CTRL_snapshot_%Y%m%d_%H%M%S.txt", tm_ptr);
+    time_t      now = time(NULL);
+    struct tm   tmv;
+    struct tm  *tm_ptr = localtime_r(&now, &tmv);
+    const char *dir    = getenv("TMPDIR");
+    char        stamp[32];
+    char        fname[PATH_MAX];
+    if (dir == NULL || dir[0] == '\0')
+    {
+        dir = "/tmp";
+    }
+    strftime(stamp, sizeof(stamp), "%Y%m%d_%H%M%S", tm_ptr);
+    int n = snprintf(fname, sizeof(fname), "%s/milk-CTRL_snapshot_%s_XXXXXX.txt", dir, stamp);
+    if (n < 0 || (size_t) n >= sizeof(fname) || (size_t) n >= pathsz)
+    {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
 
-    FILE *fp = fopen(fname, "w");
+    int fd = mkstemps(fname, 4);
+    if (fd < 0)
+    {
+        return -1;
+    }
+    FILE *fp = fdopen(fd, "w");
     if (fp == NULL)
     {
-        return;
+        int err = errno;
+        close(fd);
+        unlink(fname);
+        errno = err;
+        return -1;
     }
 
     char tstr[64];
@@ -155,29 +230,8 @@ void ov_model_export_snapshot(const OV_MODEL *m)
     fprintf(fp, "%-20s %7s %6s %8s %10s %s\n", "NAME", "PID", "STAT", "Hz", "MEM(KB)", "TRIGGER");
     for (int i = 0; i < m->nb_procs; i++)
     {
-        const OV_PROC *p = &m->procs[i];
-        const char    *sl;
-        switch (p->loopstat)
-        {
-        case 0:
-            sl = "IDLE";
-            break;
-        case 1:
-            sl = "RUN";
-            break;
-        case 2:
-            sl = "PAUS";
-            break;
-        case 3:
-            sl = "TERM";
-            break;
-        case 4:
-            sl = "ERR";
-            break;
-        default:
-            sl = "??";
-            break;
-        }
+        const OV_PROC *p  = &m->procs[i];
+        const char    *sl = ov_loopstat_label(p->loopstat, 0);
         fprintf(fp, "%-20s %7d %6s %8.1f %10" PRId64 " %s\n", p->name, (int) p->PID, sl, p->loop_hz,
                 (int64_t) p->mem_rss_kb, p->trigstreamname[0] ? p->trigstreamname : "-");
     }
@@ -200,10 +254,50 @@ void ov_model_export_snapshot(const OV_MODEL *m)
         if (e->src_node >= 0 && e->src_node < m->nb_nodes && e->tgt_node >= 0 &&
             e->tgt_node < m->nb_nodes)
         {
+            static const char *const kind[OV_EDGE_TYPE_COUNT] = { "writes", "triggers", "runs",
+                                                                  "input",  "output",   "reads" };
             fprintf(fp, "  %s -> %s  [%s]\n", m->nodes[e->src_node].name,
-                    m->nodes[e->tgt_node].name, e->label);
+                    m->nodes[e->tgt_node].name,
+                    ((unsigned) e->type < OV_EDGE_TYPE_COUNT) ? kind[e->type] : "?");
         }
     }
 
-    fclose(fp);
+    errno   = 0;
+    int bad = ferror(fp);
+    if (fclose(fp) != 0 || bad)
+    {
+        int err = errno ? errno : EIO;
+        unlink(fname);
+        errno = err;
+        return -1;
+    }
+    snprintf(path, pathsz, "%s", fname);
+    return 0;
+}
+
+/** ov_state_name - name of state @st, short (at most 4 chars) or long form: processinfo's, plus STAL and IDLE. */
+const char *ov_state_name(ov_state_t st, int long_form)
+{
+    static const char *const sn[] = { "STAL", "IDLE", "??" };
+    static const char *const ln[] = { "STALLED", "IDLE", "UNKNOWN" };
+    st                            = ((int) st < 0 || st >= OV_ST_COUNT) ? OV_ST_UNKNOWN : st;
+    if (st < OV_ST_STAL)
+    {
+        return processinfo_loopstat_name((int) st, long_form);
+    }
+    return long_form ? ln[st - OV_ST_STAL] : sn[st - OV_ST_STAL];
+}
+
+/** ov_state_of_loopstat - state of processinfo loop state @loopstat. */
+ov_state_t ov_state_of_loopstat(int loopstat)
+{
+    return (loopstat < PROCESSINFO_LOOPSTAT_INIT || loopstat > PROCESSINFO_LOOPSTAT_CRASHED)
+               ? OV_ST_UNKNOWN
+               : (ov_state_t) loopstat;
+}
+
+/** ov_loopstat_label - processinfo loop state name, short (4 chars) or long form. */
+const char *ov_loopstat_label(int loopstat, int long_form)
+{
+    return ov_state_name(ov_state_of_loopstat(loopstat), long_form);
 }

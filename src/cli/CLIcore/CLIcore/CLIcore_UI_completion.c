@@ -46,9 +46,11 @@
 
 #include "CLIcore.h"
 
+#include "milk_bash_engine.h"
 #include "CLIcore_script.h"
 #include "CLIcore_signals.h"
 #include "CLIcore_UI_execute.h"
+#include "cli_calc_parser.h"
 #include "treesitter/cli_treesitter.h"
 
 #include <fnmatch.h>
@@ -60,6 +62,7 @@
 
 #define COLORRED "\001\033[31m\002"
 #define COLORHBOLDCYAN "\001\e[0;96m\002"
+#define COLORCALC "\001\033[1;33m\002"
 #define COLORDIMYELLOW "\033[2;33m"
 #define COLORRST "\033[0m"
 #define RL_COLORRESET "\001\033[0m\002"
@@ -67,6 +70,15 @@
 
 /* ---- String utilities ---- */
 
+/**
+ * xmalloc - Allocate memory or terminate the process on allocation failure
+ * @size: Number of bytes to allocate
+ *
+ * Wraps malloc() with an out-of-memory check so callers in the readline
+ * completion subsystem do not need to handle NULL returns individually.
+ *
+ * Return: Pointer to the newly allocated memory block
+ */
 void *xmalloc(int size)
 {
     void *buf;
@@ -139,61 +151,23 @@ int cli_accept_line(int count, int key)
 }
 
 /**
- * @brief Readline callback handler — processes a
- *        completed input line.
+ * cli_execute_multiline - Execute an assembled command buffer with fault isolation
+ * @buffer: NUL-terminated single- or multi-line command string to execute
  *
- * Invoked by rl_callback_read_char() when the user
- * presses Enter. Copies the input into
- * data.CLIcmdline, handles backslash line
- * continuation (reading extra lines until no
- * trailing backslash), then dispatches the
- * assembled command via CLI_execute_line().
+ * Arms CLI signal fault isolation (SIGINT, SIGSEGV, SIGBUS, SIGABRT) around
+ * milk_bash_engine_exec() so that fatal signals or user interrupts abort only
+ * the running command and return cleanly to the interactive prompt.
  *
- * If linein is NULL (Ctrl-D / EOF), sets
- * data.CLIloopON=0 to exit the main loop.
- *
- * @param linein  Line text from readline
- *                (caller-allocated, freed here)
+ * Return: void
  */
-/**
- * @brief Execute a multi-line buffer statement by statement
- *
- * Splits the accumulated buffer by newlines occurring outside of quotes,
- * executing each line with fault isolation.
- *
- * @param buffer  Multi-line input buffer
- */
-static void cli_execute_single_segment(const char *cmd)
+static void cli_execute_multiline(const char *buffer)
 {
-    const char *p = cmd;
-    while (*p == ' ' || *p == '\t' || *p == '\r')
-    {
-        p++;
-    }
-    if (*p == '\0')
-    {
-        return;
-    }
-
-    strncpy(data.CLIcmdline, p, STRINGMAXLEN_CLICMDLINE - 1);
-    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-
-    size_t len = strlen(data.CLIcmdline);
-    while (len > 0 && (data.CLIcmdline[len - 1] == ' ' || data.CLIcmdline[len - 1] == '\t' ||
-                       data.CLIcmdline[len - 1] == '\r'))
-    {
-        data.CLIcmdline[--len] = '\0';
-    }
-    if (len == 0)
-    {
-        return;
-    }
-
-    cli_history_expand();
+    int exit_req = 0;
+    int rc       = 0;
     cli_fault_isolation_arm();
     if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
     {
-        CLI_execute_line();
+        rc = milk_bash_engine_exec(buffer, &exit_req);
     }
     else
     {
@@ -201,92 +175,13 @@ static void cli_execute_single_segment(const char *cmd)
         dcsigSEGV = 0;
         dcsigBUS  = 0;
         dcsigABRT = 0;
+        milk_bash_engine_abort();
         rl_on_new_line();
     }
     cli_fault_isolation_disarm();
-}
-
-static void cli_execute_multiline(const char *buffer)
-{
-    char   line[STRINGMAXLEN_CLICMDLINE];
-    size_t line_len    = 0;
-    int    in_dquote   = 0;
-    int    in_squote   = 0;
-    int    paren_depth = 0;
-
-    for (size_t i = 0; buffer[i] != '\0'; i++)
+    if (exit_req || (dcerrorexit && rc != 0))
     {
-        char c = buffer[i];
-
-        if (c == '\\' && buffer[i + 1] != '\0' && !in_squote)
-        {
-            if (line_len < sizeof(line) - 1)
-            {
-                line[line_len++] = c;
-            }
-            if (line_len < sizeof(line) - 1)
-            {
-                line[line_len++] = buffer[++i];
-            }
-            continue;
-        }
-
-        if (c == '"' && !in_squote)
-        {
-            in_dquote = !in_dquote;
-        }
-        else if (c == '\'' && !in_dquote)
-        {
-            in_squote = !in_squote;
-        }
-        else if (!in_dquote && !in_squote)
-        {
-            if (c == '(')
-            {
-                paren_depth++;
-            }
-            else if (c == ')' && paren_depth > 0)
-            {
-                paren_depth--;
-            }
-        }
-
-        /* Check for statement separator: newline or semicolon outside quotes/parens */
-        bool is_sep = false;
-        if (!in_dquote && !in_squote)
-        {
-            if (c == '\n')
-            {
-                is_sep = true;
-            }
-            else if (c == ';' && paren_depth == 0)
-            {
-                /* Keep ';;' in case statements together; split on second semicolon */
-                if (buffer[i + 1] != ';')
-                {
-                    is_sep = true;
-                }
-            }
-        }
-
-        if (is_sep)
-        {
-            line[line_len] = '\0';
-            cli_execute_single_segment(line);
-            line_len = 0;
-            continue;
-        }
-
-        if (line_len < sizeof(line) - 1)
-        {
-            line[line_len++] = c;
-        }
-    } // for (size_t i = 0; buffer[i] != '\0'; i++)
-
-    if (line_len > 0)
-    {
-        line[line_len] = '\0';
-        cli_execute_single_segment(line);
+        data.CLIloopON = 0;
     }
 }
 
@@ -400,11 +295,28 @@ static void cli_multiline_to_single_line(const char *multiline, char *single, si
 static int g_auto_indent_spaces     = 0;
 static int g_in_continuation_prompt = 0;
 
+/**
+ * cli_is_continuation_prompt - Check if readline is inside a PS2 continuation prompt
+ *
+ * Indicates whether the CLI is currently collecting additional lines for an
+ * incomplete multi-line construct so UI hooks can adjust display behavior.
+ *
+ * Return: Non-zero if reading a continuation line, 0 otherwise
+ */
 int cli_is_continuation_prompt(void)
 {
     return g_in_continuation_prompt;
 }
 
+/**
+ * cli_auto_indent_startup_hook - Insert leading indentation into a new readline line
+ *
+ * Installed as rl_startup_hook before invoking readline(PS2) during multi-line
+ * input. Inserts g_auto_indent_spaces spaces into the fresh line buffer based
+ * on the current Tree-sitter block nesting depth.
+ *
+ * Return: Always 0
+ */
 static int cli_auto_indent_startup_hook(void)
 {
     if (g_auto_indent_spaces > 0)
@@ -417,6 +329,18 @@ static int cli_auto_indent_startup_hook(void)
     return 0;
 }
 
+/**
+ * rl_cb_linehandler - Readline callback invoked when a complete input line is entered
+ * @linein:Newly allocated line string from readline (freed before returning), or NULL on EOF
+ *
+ * Handles EOF (Ctrl-D) by stopping the REPL loop. For non-empty input, checks
+ * whether the shell construct is incomplete (unclosed quotes, compound blocks,
+ * trailing operators, or backslashes) and interactively prompts with PS2 and
+ * automatic block indentation until the command is complete. Records flattened
+ * single-line history and dispatches execution via cli_execute_multiline().
+ *
+ * Return: void
+ */
 void rl_cb_linehandler(char *linein)
 {
     if (NULL == linein)
@@ -433,106 +357,122 @@ void rl_cb_linehandler(char *linein)
 
     int had_continuation = 0;
 
-    /* Handle multi-line continuation:
-     * both backslash continuation and tree-sitter syntactic continuation */
-    if (cli_ts_is_incomplete(multiline_buf))
+    /* Handle multi-line continuation (quotes, here-documents, compound commands, trailing
+     * operators and backslashes): milk_shell_incomplete() is the bash-aware check */
+    if (!cli_calc_mode && milk_shell_incomplete(multiline_buf))
     {
         had_continuation = 1;
         rl_callback_handler_remove();
 
-        while (cli_ts_is_incomplete(multiline_buf))
+        cli_fault_isolation_arm();
+        if (sigsetjmp(*cli_get_repl_env(), 1) != 0)
         {
-            size_t len       = strlen(multiline_buf);
-            int    is_bslash = (len > 0 && multiline_buf[len - 1] == '\\');
-            if (is_bslash)
-            {
-                multiline_buf[len - 1] = ' ';
-            }
-
-            const char *ps2 = cli_var_get("PS2");
-            if (ps2 == NULL || ps2[0] == '\0')
-            {
-                ps2 = "> ";
-            }
-
-            int depth         = cli_ts_compute_indent_depth(multiline_buf);
-            int indent_spaces = (data.auto_indent > 0) ? (depth * data.auto_indent) : 0;
-
-            g_auto_indent_spaces     = indent_spaces;
-            g_in_continuation_prompt = 1;
-            rl_startup_hook          = cli_auto_indent_startup_hook;
-            char *cont               = readline(ps2);
-            rl_startup_hook          = NULL;
+            /* Interrupted by Ctrl-C during multi-line continuation prompt */
+            dcsigINT                 = 0;
             g_in_continuation_prompt = 0;
             g_auto_indent_spaces     = 0;
-
-            if (cont == NULL)
-            {
-                /* Interrupted or EOF (Ctrl-C / Ctrl-D) */
-                multiline_buf[0] = '\0';
-                break;
-            }
-
-            /* Adjust indentation for closing tokens typed by user */
-            char line_to_add[4096];
-            line_to_add[0] = '\0';
-
-            const char *cstart = cont;
-            while (*cstart == ' ' || *cstart == '\t')
-            {
-                cstart++;
-            }
-
-            if (data.auto_indent > 0 && depth > 0 &&
-                (strncmp(cstart, "done", 4) == 0 || strncmp(cstart, "fi", 2) == 0 ||
-                 strncmp(cstart, "esac", 4) == 0 || strncmp(cstart, "}", 1) == 0 ||
-                 strncmp(cstart, "else", 4) == 0 || strncmp(cstart, "elif", 4) == 0))
-            {
-                int closer_depth = (depth > 0) ? (depth - 1) : 0;
-                int nsp          = closer_depth * data.auto_indent;
-                for (int s = 0; s < nsp && s < 64; s++)
-                {
-                    line_to_add[s]     = ' ';
-                    line_to_add[s + 1] = '\0';
-                }
-                strncat(line_to_add, cstart, sizeof(line_to_add) - strlen(line_to_add) - 1);
-            }
-            else
-            {
-                strncpy(line_to_add, cont, sizeof(line_to_add) - 1);
-                line_to_add[sizeof(line_to_add) - 1] = '\0';
-            }
-
-            size_t curlen  = strlen(multiline_buf);
-            size_t contlen = strlen(line_to_add);
-            if (curlen + 2 + contlen < sizeof(multiline_buf))
-            {
-                if (!is_bslash)
-                {
-                    /* Check if preceding non-space was pipe or logical op */
-                    size_t trimmed = curlen;
-                    while (trimmed > 0 && (multiline_buf[trimmed - 1] == ' ' ||
-                                           multiline_buf[trimmed - 1] == '\t'))
-                    {
-                        trimmed--;
-                    }
-                    int join_space = 0;
-                    if (trimmed > 0)
-                    {
-                        char lastc = multiline_buf[trimmed - 1];
-                        if (lastc == '|' || lastc == '&')
-                        {
-                            join_space = 1;
-                        }
-                    }
-                    multiline_buf[curlen++] = join_space ? ' ' : '\n';
-                    multiline_buf[curlen]   = '\0';
-                }
-                strncat(multiline_buf, line_to_add, sizeof(multiline_buf) - curlen - 1);
-            }
-            free(cont);
+            rl_startup_hook          = NULL;
+            multiline_buf[0]         = '\0';
+            rl_on_new_line();
         }
+        else
+        {
+            while (milk_shell_incomplete(multiline_buf))
+            {
+                size_t len       = strlen(multiline_buf);
+                int    is_bslash = (len > 0 && multiline_buf[len - 1] == '\\');
+                if (is_bslash)
+                {
+                    multiline_buf[len - 1] = ' ';
+                }
+
+                const char *ps2 = cli_var_get("PS2");
+                if (ps2 == NULL || ps2[0] == '\0')
+                {
+                    ps2 = "> ";
+                }
+
+                int depth         = cli_ts_compute_indent_depth(multiline_buf);
+                int indent_spaces = (data.auto_indent > 0) ? (depth * data.auto_indent) : 0;
+
+                g_auto_indent_spaces     = indent_spaces;
+                g_in_continuation_prompt = 1;
+                rl_startup_hook          = cli_auto_indent_startup_hook;
+                char *cont               = readline(ps2);
+                rl_startup_hook          = NULL;
+                g_in_continuation_prompt = 0;
+                g_auto_indent_spaces     = 0;
+
+                if (cont == NULL)
+                {
+                    /* Interrupted or EOF (Ctrl-C / Ctrl-D) */
+                    multiline_buf[0] = '\0';
+                    break;
+                }
+
+                /* Adjust indentation for closing tokens typed by user */
+                char line_to_add[4096];
+                line_to_add[0] = '\0';
+
+                const char *cstart = cont;
+                while (*cstart == ' ' || *cstart == '\t')
+                {
+                    cstart++;
+                }
+
+                if (data.auto_indent > 0 && depth > 0 &&
+                    (strncmp(cstart, "done", 4) == 0 || strncmp(cstart, "fi", 2) == 0 ||
+                     strncmp(cstart, "esac", 4) == 0 || strncmp(cstart, "}", 1) == 0 ||
+                     strncmp(cstart, "else", 4) == 0 || strncmp(cstart, "elif", 4) == 0))
+                {
+                    int closer_depth = (depth > 0) ? (depth - 1) : 0;
+                    int nsp          = closer_depth * data.auto_indent;
+                    for (int s = 0; s < nsp && s < 64; s++)
+                    {
+                        line_to_add[s]     = ' ';
+                        line_to_add[s + 1] = '\0';
+                    }
+                    strncat(line_to_add, cstart, sizeof(line_to_add) - strlen(line_to_add) - 1);
+                }
+                else
+                {
+                    strncpy(line_to_add, cont, sizeof(line_to_add) - 1);
+                    line_to_add[sizeof(line_to_add) - 1] = '\0';
+                }
+
+                size_t curlen  = strlen(multiline_buf);
+                size_t contlen = strlen(line_to_add);
+                if (curlen + 2 + contlen < sizeof(multiline_buf))
+                {
+                    if (!is_bslash)
+                    {
+                        /* Check if preceding non-space was pipe or logical op */
+                        size_t trimmed = curlen;
+                        while (trimmed > 0 && (multiline_buf[trimmed - 1] == ' ' ||
+                                               multiline_buf[trimmed - 1] == '\t'))
+                        {
+                            trimmed--;
+                        }
+                        int join_space = 0;
+                        if (trimmed > 0)
+                        {
+                            char lastc = multiline_buf[trimmed - 1];
+                            if (lastc == '|' || lastc == '&')
+                            {
+                                join_space = 1;
+                            }
+                        }
+                        multiline_buf[curlen++] = join_space ? ' ' : '\n';
+                        multiline_buf[curlen]   = '\0';
+                    }
+                    strncat(multiline_buf, line_to_add, sizeof(multiline_buf) - curlen - 1);
+                }
+                free(cont);
+            }
+        }
+        cli_fault_isolation_disarm();
     }
+
 
     if (multiline_buf[0] == '\0')
     {
@@ -553,10 +493,9 @@ void rl_cb_linehandler(char *linein)
     {
         add_history(history_entry);
         cli_history_log_prompt(history_entry);
-        if (data.autocomplete_history)
+        if (data.autocomplete_history && cli_is_interactive_mode())
         {
             append_history(1, CLI_history_file());
-            history_truncate_file(CLI_history_file(), 10000);
         }
     }
 
@@ -572,26 +511,69 @@ void rl_cb_linehandler(char *linein)
     {
         rl_callback_handler_install(cli_get_active_prompt(), (rl_vcpfunc_t *) &rl_cb_linehandler);
     }
+    else
+    {
+        rl_set_prompt(cli_get_active_prompt());
+    }
 
     free(linein);
 }
 
 static char cli_active_prompt[FPS_DIR_STRLENMAX] = "";
+static char cli_base_prompt[FPS_DIR_STRLENMAX]   = "";
 
+/**
+ * cli_set_active_prompt - Store the base and active readline prompt strings
+ * @prompt: NUL-terminated prompt string to set (ignored if NULL)
+ *
+ * Saves the caller-provided prompt into both cli_base_prompt and
+ * cli_active_prompt so subsequent mode transitions (such as toggling calc mode)
+ * can reconstruct the decorated prompt without losing the base string.
+ *
+ * Return: void
+ */
 void cli_set_active_prompt(const char *prompt)
 {
     if (prompt != NULL)
     {
+        strncpy(cli_base_prompt, prompt, sizeof(cli_base_prompt) - 1);
+        cli_base_prompt[sizeof(cli_base_prompt) - 1] = '\0';
         strncpy(cli_active_prompt, prompt, sizeof(cli_active_prompt) - 1);
         cli_active_prompt[sizeof(cli_active_prompt) - 1] = '\0';
     }
 }
 
+/**
+ * cli_get_active_prompt - Retrieve the current readline prompt string
+ *
+ * Lazily initializes cli_base_prompt via runCLI_prompt() if not yet set, and
+ * injects the "[calc]" indicator badge when calculator mode is active.
+ *
+ * Return: Pointer to the internal NUL-terminated active prompt buffer
+ */
 const char *cli_get_active_prompt(void)
 {
-    if (cli_active_prompt[0] == '\0')
+    if (cli_base_prompt[0] == '\0')
     {
-        runCLI_prompt("", cli_active_prompt);
+        runCLI_prompt("", cli_base_prompt);
+    }
+    if (!cli_calc_mode)
+    {
+        strncpy(cli_active_prompt, cli_base_prompt, sizeof(cli_active_prompt) - 1);
+        cli_active_prompt[sizeof(cli_active_prompt) - 1] = '\0';
+        return cli_active_prompt;
+    }
+    const char *gt = strstr(cli_base_prompt, " > ");
+    if (gt != NULL)
+    {
+        size_t pfx = (size_t) (gt - cli_base_prompt);
+        snprintf(cli_active_prompt, sizeof(cli_active_prompt),
+                 "%.*s " COLORCALC "[calc]" COLORHBOLDCYAN "%s", (int) pfx, cli_base_prompt, gt);
+    }
+    else
+    {
+        snprintf(cli_active_prompt, sizeof(cli_active_prompt),
+                 COLORCALC "[calc]" RL_COLORRESET " %s", cli_base_prompt);
     }
     return cli_active_prompt;
 }
@@ -600,46 +582,45 @@ const char *cli_get_active_prompt(void)
 /**
  * @brief Build the prompt string for the CLI
  *
- * Checks for a PS1 variable in CLI vars or the
- * environment. Falls back to the default colored
- * prompt with the process name.
+ * Checks for a PS1 variable in CLI vars. Falls back to the default
+ * colored prompt with the process name.
  */
 errno_t runCLI_prompt(char *promptstring, char *prompt)
 {
-    /* Use PS1 only from CLI vars (set inside
-     * milk-cli).  Do NOT fall back to
-     * getenv("PS1") — the bash PS1 contains
-     * shell-specific escapes like $(cmd) that
-     * cli_expand_env cannot evaluate, which
-     * would corrupt the prompt. */
     const char *ps1_val = cli_var_get("PS1");
 
     if (ps1_val != NULL && strlen(ps1_val) > 0)
     {
-        char expanded_ps1[FPS_DIR_STRLENMAX];
-        strncpy(expanded_ps1, ps1_val, FPS_DIR_STRLENMAX - 1);
-        expanded_ps1[FPS_DIR_STRLENMAX - 1] = '\0';
-        cli_expand_env(expanded_ps1, FPS_DIR_STRLENMAX);
-        strncpy(prompt, expanded_ps1, FPS_DIR_STRLENMAX - 1);
-        prompt[FPS_DIR_STRLENMAX - 1] = '\0';
+        if (cli_calc_mode)
+        {
+            snprintf(prompt, FPS_DIR_STRLENMAX, COLORCALC "[calc]" RL_COLORRESET " %s", ps1_val);
+        }
+        else
+        {
+            strncpy(prompt, ps1_val, FPS_DIR_STRLENMAX - 1);
+            prompt[FPS_DIR_STRLENMAX - 1] = '\0';
+        }
         return RETURN_SUCCESS;
     }
 
+    const char *tag = cli_calc_mode ? (" " COLORCALC "[calc]" COLORHBOLDCYAN) : "";
     if (strlen(promptstring) > 0)
     {
         if (data.processnameflag == 0)
         {
-            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s > " RL_COLORRESET, promptstring);
+            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s%s > " RL_COLORRESET,
+                     promptstring, tag);
         }
         else
         {
-            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s-%s > " RL_COLORRESET,
-                     promptstring, data.processname);
+            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s-%s%s > " RL_COLORRESET,
+                     promptstring, data.processname, tag);
         }
     }
     else
     {
-        snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s > " RL_COLORRESET, data.processname);
+        snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s%s > " RL_COLORRESET,
+                 data.processname, tag);
     }
 
     return RETURN_SUCCESS;

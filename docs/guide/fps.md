@@ -202,29 +202,47 @@ go before the command, the command goes last.
 <summary><b>Options and commands</b></summary>
 
 - **Options**:
-    - `-h`, `--help`: detailed parameter bindings and command help.
-    - `-h1`, `--help-oneline`: one-line description and exit.
-    - `-h2`, `--help-description`: verbose description only (no color) and exit.
-    - `-hm`, `--help-mono`: full help, forced monochrome.
-    - `-tmux`: create a `tmux` session and dispatch the commands isolated from the main terminal.
-    - `-n`, `--name <fpsname>`: override the default FPS shared memory name.
-    - `-procinfo`: enable processinfo entries at `fpsinit`.
-    - `-loops`: infinite loop with stream semaphore trigger.
-    - `-loopd <sec>`: infinite loop with delay trigger (seconds).
+  - `-h`, `--help`: detailed parameter bindings and command help.
+  - `-h1`, `--help-oneline`: one-line description and exit.
+  - `-h2`, `--help-description`: verbose description only (no color) and exit.
+  - `-hm`, `--help-mono`: full help, forced monochrome.
+  - `-tmux`: create a `tmux` session and dispatch the commands isolated from the main terminal.
+  - `-n`, `--name <fpsname>`: override the default FPS shared memory name.
+  - `-procinfo`: enable processinfo entries at `fpsinit`.
+  - `-loops`: infinite loop with stream semaphore trigger.
+  - `-loopd <sec>`: infinite loop with delay trigger (seconds).
 - **Commands**:
-    - `fpsinit`: create the FPS shared memory segment.
-    - `confstart`, `confstep`, `confstop`: manage the configuration loop.
-    - `runstart`, `runstop`: manage the execution loop (`run` is an alias of `runstart`).
-    - `set [args]`: set positional arguments in FPS (use `.` to skip a position).
-    - `fps`: print the content of the FPS.
-    - `fpslist`: list all FPS instances matching this executable.
-    - `exec [args]`: auto-init, set args and run (one-shot).
+  - `fpsinit [values]`: create the FPS shared memory segment, then set values.
+  - `confstart`, `confstep`, `confstop`: manage the configuration loop.
+  - `runstart [values]`, `runstop`: manage the execution loop (`run` is an alias of `runstart`).
+  - `set [values]`: set values in the existing FPS.
+  - `fps`: print the content of the FPS.
+  - `fpslist`: list all FPS instances matching this executable.
+  - `exec [values]`: auto-init, set values and run (one-shot).
 
 </details>
 
-Positional arguments that are not a command (e.g. `milk-fpsexec-mymod 2.5 100`) run the unit once: the
-executable connects to the FPS if it exists, otherwise creates a local one, maps the arguments onto
-the primary parameters, and runs the compute function exactly as `milk-cli` would.
+The words after the command set FPS parameters, as the arguments of module commands do:
+
+| Value | Sets |
+| --- | --- |
+| `value` | the next parameter that has an index (`Idx`) in `-h`, in index order |
+| `.name=value` | any parameter, by its keyword, in any order |
+| `.` | nothing: the parameter keeps its value (also `.name=.`) |
+
+Positional values fill the indexed parameters that are not set by name. Negative numbers (`-0.5`)
+are values, and options such as `-loopd 0.5` may also come after the command. An unknown parameter,
+a value that does not parse for its type (number, integer, `on`/`off`), or one value too many is a
+usage error (exit status 2) and changes nothing:
+
+```bash
+milk-fpsexec-clitest -n f00 fpsinit 42 .p_float64=-1.5   # p_int32=42, p_float64=-1.5
+milk-fpsexec-clitest -n f00 set . cam02                    # p_streamname=cam02, p_int32 unchanged
+```
+
+Units whose parameters are declared at run time (`milk-fpsexec-milk-calc`, `milk-fpsexec-milk-script`,
+see [Scripting](scripting.md#compute-units-without-c)) take their program as unit options, listed
+under **Unit Options** in their `-h`; the values then set the declared parameters.
 
 ---
 

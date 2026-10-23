@@ -3,4 +3,5 @@
 
 [default.extend-words]
 # Project-specific function/file names
+iy = "iy"
 permut = "permut"

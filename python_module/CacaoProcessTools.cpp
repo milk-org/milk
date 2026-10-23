@@ -116,10 +116,6 @@ PYBIND11_MODULE(CacaoProcessTools, m)
           R"pbdoc(Open the process control monitor
 )pbdoc");
 
-    m.def("streamCTRL", &streamCTRL_CTRLscreen,
-          R"pbdoc(Open the stream control monitor
-)pbdoc");
-
     m.def("fparamCTRL", &functionparameter_CTRLscreen,
           R"pbdoc(Open the function parameter monitor
 )pbdoc",

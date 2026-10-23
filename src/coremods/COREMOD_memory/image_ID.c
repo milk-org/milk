@@ -17,6 +17,22 @@
 #    include "milkDebugTools.h"
 #endif
 
+#include <fps_streamname_parse.h>
+
+static inline const char *strip_image_prefix(const char *name)
+{
+    if (name[0] == '@' || strncmp(name, "s.", 2) == 0 || strncmp(name, "stream.", 7) == 0 ||
+        strncmp(name, "l.", 2) == 0 || strncmp(name, "local.", 6) == 0)
+    {
+        FPS_STREAMNAME_PARSED sp = fps_streamname_parse(name);
+        if (!sp.error && sp.name != NULL && sp.name[0] != '\0')
+        {
+            return sp.name;
+        }
+    }
+    return name;
+}
+
 /* ID number corresponding to a name */
 imageID image_ID(const char *name, IMAGE *imagearray, long NB_images)
 {
@@ -28,6 +44,7 @@ imageID image_ID(const char *name, IMAGE *imagearray, long NB_images)
         return -1;
     }
 
+    name           = strip_image_prefix(name);
     size_t namelen = strlen(name);
     for (imageID i = 0; i < NB_images; i++)
     {
@@ -60,6 +77,7 @@ MILK_PURE imageID image_ID_noaccessupdate(const char *name, IMAGE *imagearray, l
         return -1;
     }
 
+    name           = strip_image_prefix(name);
     size_t namelen = strlen(name);
     for (imageID i = 0; i < NB_images; i++)
     {

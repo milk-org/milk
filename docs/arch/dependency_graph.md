@@ -52,7 +52,8 @@ graph TD
 
     FPSCTRL["milk-fpsCTRL"]:::exe
     PROCCTRL["milk-procCTRL"]:::exe
-    STREAMCTRL["milk-streamCTRL"]:::exe
+    MILKCTRLMODEL["milkctrl_model"]:::fw
+    MILKCTRL["milk-CTRL"]:::exe
     MILKEXE["milk-fpsexec-*"]:::exe
     CACAOEXE["cacao-fpsexec-*"]:::exe
     FPSTOOLS["milk-fps-set/list/..."]:::exe
@@ -79,6 +80,7 @@ graph TD
     ARITH -.->|USE_CFITSIO| IOFITS
     ARITH -.->|USE_CFITSIO| CFITSIO
     MEMORY --> FPS
+    MEMORY --> MILKDATA
     MEMORY --> COMPUTEUNIT
     MEMORY -.->|USE_CFITSIO| IOFITS
     MEMORY -.->|USE_CFITSIO| CFITSIO
@@ -106,8 +108,12 @@ graph TD
     FPSCTRL --> ISIO
     PROCCTRL --> PROCINFO
     PROCCTRL --> ISIO
-    STREAMCTRL --> PROCINFO
-    STREAMCTRL --> ISIO
+    MILKCTRLMODEL --> FPS
+    MILKCTRLMODEL --> COMPUTEUNIT
+    MILKCTRLMODEL --> PROCINFO
+    MILKCTRLMODEL --> ISIO
+    MILKCTRLMODEL --> MILKDATA
+    MILKCTRL --> MILKCTRLMODEL
     MILKEXE --> COMPUTEUNIT
     CACAOEXE --> COMPUTEUNIT
     FPSTOOLS --> FPS
@@ -357,22 +363,22 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 <details markdown="1">
 <summary><b>Framework Libraries</b></summary>
 
-| Target            | Links to                                                                                                        | Optional                                                   |
-| ----------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| milkscript        | COREMODs, milkfps, milkcomputeunit, milkfpsseq, milkdata, milkprocessinfo                                       | COREMODiofits (USE_CFITSIO)                                |
-| CLIcore           | COREMODarith, COREMODmemory, COREMODtools, milkfps, milkcomputeunit, milkfpsseq, milkdata, milkprocessinfo, milkscript, readline | COREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP |
+| Target     | Links to                                                                                                                        | Optional                                                   |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| milkscript | COREMODs, milkfps, milkcomputeunit, milkfpsseq, milkdata, milkprocessinfo                                                       | COREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP, OpenBLAS, MKL |
+| CLIcore    | COREMODarith, COREMODmemory, COREMODtools, milkfps, milkcomputeunit, milkfpsseq, milkdata, milkprocessinfo, milkscript, readline | COREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP |
 
 </details>
 
 <details markdown="1">
 <summary><b>Core Tier — COREMOD Libraries</b></summary>
 
-| Target            | Links to         | Conditional                          |
-| ----------------- | ---------------- | ------------------------------------ |
-| milkCOREMODtools  | milkfps, milkcomputeunit |                                      |
-| milkCOREMODmemory | milkfps, milkcomputeunit | cfitsio (USE_CFITSIO)                |
-| milkCOREMODarith  | milkfps, milkcomputeunit | COREMODiofits, cfitsio (USE_CFITSIO) |
-| milkCOREMODiofits | milkfps, milkcomputeunit, cfitsio | _only built with USE_CFITSIO_ |
+| Target            | Links to                            | Conditional                          |
+| ----------------- | ----------------------------------- | ------------------------------------ |
+| milkCOREMODtools  | milkfps, milkcomputeunit            |                                      |
+| milkCOREMODmemory | milkfps, milkcomputeunit, milkdata  | cfitsio (USE_CFITSIO)                |
+| milkCOREMODarith  | milkfps, milkcomputeunit            | COREMODiofits, cfitsio (USE_CFITSIO) |
+| milkCOREMODiofits | milkfps, milkcomputeunit, cfitsio   | _only built with USE_CFITSIO_        |
 
 </details>
 
@@ -419,15 +425,16 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 <details markdown="1">
 <summary><b>Executables</b></summary>
 
-| Target                       | Links to                                            |
-| ---------------------------- | --------------------------------------------------- |
-| milk-cli                     | CLIcore + all module libs                           |
-| milk-fpsCTRL                 | milkfpsseq, milkcomputeunit, milkfps, milkprocessinfo, ImageStreamIO |
-| milk-procCTRL                | milkprocessinfo, ImageStreamIO                      |
-| milk-streamCTRL              | ImageStreamIO, milkprocessinfo                      |
-| milk-fps-list/search/info/rm | milkfps                                             |
-| milk-fps-set/track           | milkfps                                             |
-| milk-fps-conf*/run*          | milkcomputeunit                                     |
+| Target                       | Links to                                                                          |
+| ---------------------------- | --------------------------------------------------------------------------------- |
+| milk-cli                     | CLIcore + all module libs                                                         |
+| milk-fpsCTRL                 | milkfpsseq, milkcomputeunit, milkfps, milkprocessinfo, ImageStreamIO              |
+| milk-procCTRL                | milkprocessinfo, ImageStreamIO                                                    |
+| milk-streamCTRL              | a link to milk-CTRL (opens its streams view)                                      |
+| milk-CTRL                    | milkctrl_model (milkfps, milkcomputeunit, milkprocessinfo, milkdata, ImageStreamIO) |
+| milk-fps-list/search/info/rm | milkfps, milkdata                                                                 |
+| milk-fps-set/track           | milkfps                                                                           |
+| milk-fps-conf*/run*          | milkcomputeunit                                                                   |
 
 </details>
 

@@ -25,6 +25,11 @@ errno_t list_image_ID_ofp_simple(FILE *fo);
 
 errno_t list_image_ID();
 
+errno_t list_image_ID_with_opts(int         json_mode,
+                                int         porcelain_mode,
+                                int         quiet_mode,
+                                const char *pattern);
+
 errno_t list_image_ID_file(const char *fname);
 
 errno_t list_variable_ID(const char *regexstr);

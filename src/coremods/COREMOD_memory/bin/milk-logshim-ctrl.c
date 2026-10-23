@@ -8,14 +8,13 @@
  *
  * Replaces the five thin bash wrapper scripts:
  *   milk-logshim       (start:  delegates to milk-streamFITSlog pstart)
- *   milk-logshimkill   (kill:   writes FPS FIFO commands)
- *   milk-logshimon     (on:     writes FPS FIFO commands)
- *   milk-logshimoff    (off:    writes FPS FIFO commands)
+ *   milk-logshimkill   (kill:   milk-fps-rm -f + tmux kill-session)
+ *   milk-logshimon     (on:     milk-fps-set)
+ *   milk-logshimoff    (off:    milk-fps-set)
  *   milk-logshimstat   (stat:   reads FPS SHM params)
  *
- * All actions that require running/stopping a process write
- * directly to the milkFITSlogger FIFO, matching the protocol
- * used by milk-streamFITSlog.
+ * on/off/offc/kill run the same milk-fps-* tools as milk-streamFITSlog,
+ * without a shell (the fpsCTRL FIFO they used to write is retired).
  *
  * The 'start' action delegates to milk-streamFITSlog (kept as
  * the orchestration layer for tmux + milk-cli setup).
@@ -43,6 +42,7 @@
 #include <unistd.h>
 
 #include "milk_help.h"
+#include "milk_spawn.h"
 
 #define LSC_DESC "control a streamFITSlog logging process"
 
@@ -53,9 +53,8 @@
     "The 'start' action delegates to milk-streamFITSlog for\n"      \
     "tmux session and FPS instance setup.\n"                        \
     "\n"                                                            \
-    "All other actions write commands directly to the\n"            \
-    "milkFITSlogger FIFO ($MILK_SHM_DIR/milkFITSlogger.fifo),\n"    \
-    "matching the protocol used by milk-streamFITSlog."
+    "on/off/offc set FPS parameters with milk-fps-set; kill runs\n" \
+    "milk-fps-rm -f and closes the FPS tmux session."
 
 /** FPS name prefix for streamFITSlog instances */
 #define FPS_PREFIX "streamFITSlog-"
@@ -142,173 +141,102 @@ static const char *get_shmdir(void)
 }
 
 /**
- * fifo_path() - Construct the milkFITSlogger FIFO path
- * @buf:    output buffer
- * @bufsz:  buffer size
- *
- * The FIFO is at $MILK_SHM_DIR/milkFITSlogger.fifo,
- * matching the path used by milk-streamFITSlog.
+ * run_tool() - run @argv (PATH lookup, no shell) with our stdout/stderr; return its exit status.
  */
-static void fifo_path(char *buf, size_t bufsz)
+static int run_tool(const char *const argv[])
 {
-    snprintf(buf, bufsz, "%s/milkFITSlogger.fifo", get_shmdir());
+    int rc = milkspawn_run(argv, STDOUT_FILENO, STDERR_FILENO);
+    if (rc < 0)
+    {
+        fprintf(stderr, "\033[1;31mERROR\033[0m: cannot run %s: %s\n", argv[0], strerror(errno));
+        return 1;
+    }
+    return rc;
 }
 
 /**
- * fifo_write() - Write a command line to the FPS FIFO
- * @fifo:   path to the FIFO file
- * @cmd:    null-terminated command string (no trailing newline needed)
- *
- * Opens the FIFO in non-blocking write-only mode, writes the
- * command, then closes. Returns 0 on success, 1 on error.
+ * fps_set() - milk-fps-set streamFITSlog-<stream>.<key> <val>
  */
-static int fifo_write(const char *fifo, const char *cmd)
+static int fps_set(const char *stream, const char *key, const char *val)
 {
-    /* Check FIFO exists */
-    struct stat st;
-    if (stat(fifo, &st) != 0 || !S_ISFIFO(st.st_mode))
-    {
-        fprintf(stderr,
-                "\033[1;31mERROR\033[0m: FIFO '%s' not found.\n"
-                "  Is the logging process running?\n"
-                "  Start it first with: milk-logshim-ctrl"
-                " start <stream> ...\n",
-                fifo);
-        return 1;
-    }
-
-    /*
-     * Open in blocking mode — the reader (milk-fpsCTRL) must be
-     * present to consume the write end.  Using O_WRONLY without
-     * O_NONBLOCK blocks until the reader opens its end.  We open
-     * with O_NONBLOCK first to detect a missing reader immediately.
-     */
-    int fd = open(fifo, O_WRONLY | O_NONBLOCK);
-    if (fd < 0)
-    {
-        if (errno == ENXIO)
-        {
-            fprintf(stderr,
-                    "\033[1;31mERROR\033[0m: No reader on"
-                    " FIFO '%s' — is milk-fpsCTRL running?\n",
-                    fifo);
-        }
-        else
-        {
-            fprintf(stderr, "\033[1;31mERROR\033[0m: open('%s'): %s\n", fifo, strerror(errno));
-        }
-        return 1;
-    }
-
-    /* Write command + newline */
-    char line[512];
-    int  n = snprintf(line, sizeof(line), "%s\n", cmd);
-
-    ssize_t written = write(fd, line, (size_t) n);
-    close(fd);
-
-    if (written < 0)
-    {
-        fprintf(stderr, "\033[1;31mERROR\033[0m: write to FIFO: %s\n", strerror(errno));
-        return 1;
-    }
-
-    return 0;
+    char param[512];
+    snprintf(param, sizeof(param), FPS_PREFIX "%s.%s", stream, key);
+    const char *const argv[] = { "milk-fps-set", param, val, NULL };
+    return run_tool(argv);
 }
 
 /**
  * action_on() - Enable FITS saving for a stream
  * @stream: stream name
  *
- * Sends: setval streamFITSlog-<stream>.saveON ON
+ * Runs: milk-fps-set streamFITSlog-<stream>.saveON ON
  */
 static int action_on(const char *stream)
 {
-    char fifo[512];
-    fifo_path(fifo, sizeof(fifo));
-
-    char cmd[256];
-    snprintf(cmd, sizeof(cmd), "setval " FPS_PREFIX "%s.saveON ON", stream);
-
     printf("logshim-ctrl on  %s: enabling saving\n", stream);
-    return fifo_write(fifo, cmd);
+    return fps_set(stream, "saveON", "ON");
 }
 
 /**
  * action_off() - Disable FITS saving for a stream
  * @stream: stream name
  *
- * Sends: setval streamFITSlog-<stream>.saveON OFF
+ * Runs: milk-fps-set streamFITSlog-<stream>.saveON OFF
  */
 static int action_off(const char *stream)
 {
-    char fifo[512];
-    fifo_path(fifo, sizeof(fifo));
-
-    char cmd[256];
-    snprintf(cmd, sizeof(cmd), "setval " FPS_PREFIX "%s.saveON OFF", stream);
-
     printf("logshim-ctrl off %s: disabling saving\n", stream);
-    return fifo_write(fifo, cmd);
+    return fps_set(stream, "saveON", "OFF");
 }
 
 /**
  * action_offc() - Disable saving after current cube completes
  * @stream: stream name
  *
- * Sends: setval streamFITSlog-<stream>.lastcubeON ON
+ * Runs: milk-fps-set streamFITSlog-<stream>.lastcubeON ON
  * (lastcubeON tells the logger to write one more cube then stop)
  */
 static int action_offc(const char *stream)
 {
-    char fifo[512];
-    fifo_path(fifo, sizeof(fifo));
-
-    char cmd[256];
-    snprintf(cmd, sizeof(cmd), "setval " FPS_PREFIX "%s.lastcubeON ON", stream);
-
     printf("logshim-ctrl offc %s:"
            " will stop after current cube\n",
            stream);
-    return fifo_write(fifo, cmd);
+    return fps_set(stream, "lastcubeON", "ON");
 }
 
 /**
  * action_kill() - Stop the logging run, remove FPS, kill tmux
  * @stream: stream name
  *
- * Sends (in order):
- *   runstop  streamFITSlog-<stream>
- *   confstop streamFITSlog-<stream>
- *   tmuxstop streamFITSlog-<stream>
- *   fpsrm    streamFITSlog-<stream>
- *   rescan
+ * Runs milk-fps-rm -f '^streamFITSlog-<stream>$' (kills the CONF and RUN
+ * processes, removes the FPS), then tmux kill-session on its session.
  *
  * Also removes the two log buffer SHM streams.
  */
 static int action_kill(const char *stream)
 {
-    char fifo[512];
-    fifo_path(fifo, sizeof(fifo));
-
-    char cmd[256];
-    int  errors = 0;
-
     printf("logshim-ctrl kill %s: stopping...\n", stream);
 
-    snprintf(cmd, sizeof(cmd), "runstop " FPS_PREFIX "%s", stream);
-    errors += fifo_write(fifo, cmd);
+    /* milk-fps-rm takes an unanchored regex: anchor it and escape the name */
+    char   re[600] = "^" FPS_PREFIX;
+    size_t k       = strlen(re);
+    for (const char *c = stream; *c != '\0' && k + 3 < sizeof(re); c++)
+    {
+        if (strchr(".[](){}*+?|^$\\", *c) != NULL)
+        {
+            re[k++] = '\\';
+        }
+        re[k++] = *c;
+    }
+    re[k++]                     = '$';
+    re[k]                       = '\0';
+    const char *const rm_argv[] = { "milk-fps-rm", "-f", re, NULL };
+    int               rc        = run_tool(rm_argv);
 
-    snprintf(cmd, sizeof(cmd), "confstop " FPS_PREFIX "%s", stream);
-    errors += fifo_write(fifo, cmd);
-
-    snprintf(cmd, sizeof(cmd), "tmuxstop " FPS_PREFIX "%s", stream);
-    errors += fifo_write(fifo, cmd);
-
-    snprintf(cmd, sizeof(cmd), "fpsrm " FPS_PREFIX "%s", stream);
-    errors += fifo_write(fifo, cmd);
-
-    fifo_write(fifo, "rescan"); /* best-effort */
+    char session[512];
+    snprintf(session, sizeof(session), "=" FPS_PREFIX "%s", stream);
+    const char *const tmux_argv[] = { "tmux", "kill-session", "-t", session, NULL };
+    (void) milkspawn_run(tmux_argv, -1, -1); /* no session is fine */
 
     /* Remove log buffer streams */
     const char *shmdir = get_shmdir();
@@ -325,7 +253,7 @@ static int action_kill(const char *stream)
         printf("  removed: %s_logbuff1\n", stream);
     }
 
-    return errors > 0 ? 1 : 0;
+    return rc;
 }
 
 /**
@@ -333,25 +261,18 @@ static int action_kill(const char *stream)
  * @stream: stream name
  *
  * Reads the FPS parameter file directly from SHM:
- *   $MILK_SHM_DIR/fps.streamFITSlog-<stream>.shm
- *
- * Falls back to listing the FIFO existence if SHM is not found.
+ *   $MILK_SHM_DIR/streamFITSlog-<stream>.fps.shm
  */
 static int action_stat(const char *stream)
 {
     const char *shmdir = get_shmdir();
 
-    /* FPS SHM file: fps.streamFITSlog-<stream>.shm */
+    /* FPS SHM file: streamFITSlog-<stream>.fps.shm (it was looked up as fps.<name>.shm: always ABSENT) */
     char shm_path[512];
-    snprintf(shm_path, sizeof(shm_path), "%s/fps." FPS_PREFIX "%s.shm", shmdir, stream);
-
-    /* FIFO path */
-    char fifo[512];
-    fifo_path(fifo, sizeof(fifo));
+    snprintf(shm_path, sizeof(shm_path), "%s/" FPS_PREFIX "%s.fps.shm", shmdir, stream);
 
     struct stat st;
-    int         fps_alive  = (stat(shm_path, &st) == 0);
-    int         fifo_alive = (stat(fifo, &st) == 0 && S_ISFIFO(st.st_mode));
+    int         fps_alive = (stat(shm_path, &st) == 0);
 
     printf("\n  Stream: %s\033[1m%s\033[0m\n\n", "", stream);
 
@@ -359,9 +280,6 @@ static int action_stat(const char *stream)
     printf("  FPS SHM  : %s%s\033[0m\n", fps_alive ? "\033[1;32m[ LIVE ] " : "\033[1;31m[ABSENT] ",
            shm_path);
 
-    /* FIFO status */
-    printf("  FIFO     : %s%s\033[0m\n", fifo_alive ? "\033[1;32m[ LIVE ] " : "\033[1;31m[ABSENT] ",
-           fifo);
 
     /* If FPS SHM exists, parse saveON by scanning for key */
     if (fps_alive)

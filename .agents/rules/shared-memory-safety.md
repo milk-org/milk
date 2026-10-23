@@ -36,7 +36,7 @@ stale SHM:
 - `processinfo` shows no heartbeat for the
   owning process.
 
-Use `streamCTRL` or `milk-streamCTRL` to inspect
+Use milk-CTRL's streams view (`milk-streamCTRL`, F3, with its inspector) to inspect
 stream health.
 
 ## Do Not Overwrite Other Users' SHM

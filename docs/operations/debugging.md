@@ -38,7 +38,9 @@ fields — if they show `0`, the corresponding loop is not running.
 
 ### 1.3. `milk-streamCTRL`
 
-Inspect shared memory streams in real time:
+Inspect shared memory streams in real time. `milk-streamCTRL` is milk-CTRL opened on its streams view
+(F3): the list on the left, and an inspector for the stream under the cursor (Right, then Right again
+for the next page: INFO, SEMS, TRACE, KEYS, HOLDERS). See the [milk-CTRL guide](../guide/milk-CTRL.md).
 
 ```bash
 $ milk-streamCTRL
@@ -124,7 +126,7 @@ $ gdb /usr/local/milk/bin/milk-fpsexec-mymodule \
 **Diagnosis:**
 
 ```bash
-# Check semaphore state
+# Check semaphore state: the SEMS column, or the inspector's SEMS page (values, readers, writers)
 $ milk-streamCTRL
 # Look for sem values > 0 on the input stream
 ```

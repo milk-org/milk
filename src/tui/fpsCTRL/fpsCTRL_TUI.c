@@ -402,23 +402,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
     fpsCTRLvar.milkseq_state   = NULL;
     fpsCTRLvar.milkseq_name[0] = '\0';
 
-    if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0)
-    {
-        // Create FIFO if it does not exist
-        if (access(fpsCTRLvar.fpsCTRLfifoname, F_OK) == -1)
-        {
-            if (mkfifo(fpsCTRLvar.fpsCTRLfifoname, 0666) == -1)
-            {
-                PRINT_ERROR("mkfifo: %s", strerror(errno));
-            }
-        }
-        fpsCTRLvar.fpsCTRLfifofd = open(fpsCTRLvar.fpsCTRLfifoname, O_RDWR | O_NONBLOCK);
-    }
-    else
-    {
-        fpsCTRLvar.fpsCTRLfifofd = -1;
-    }
-    long fifocmdcnt = 0;
+    fpsCTRLvar.fpsCTRLfifofd = -1; /* the command FIFO is retired: use milk-fps-set / milk-fps-* */
 
     for (int level_idx = 0; level_idx < MAXNBLEVELS; level_idx++)
     {
@@ -593,10 +577,8 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
                 TUI_printfw("======== FPSCTRL info  "
                             "(screen refresh cnt %7lld)\n",
                             loopcnt);
-                TUI_printfw("    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = "
-                            "%ld   NBtaskLaunched = %d -> %ld   [NB FPS = %d]\n",
-                            fpsCTRLvar.fpsCTRLfifoname, fpsCTRLvar.fpsCTRLfifofd, fifocmdcnt,
-                            NBtaskLaunched, NBtaskLaunchedcnt, fpsCTRLvar.NBfps);
+                TUI_printfw("    NBtaskLaunched = %d -> %ld   [NB FPS = %d]\n", NBtaskLaunched,
+                            NBtaskLaunchedcnt, fpsCTRLvar.NBfps);
 
                 DEBUG_TRACEPOINT(" ");
                 char logfname[STRINGMAXLEN_FULLFILENAME];
@@ -698,10 +680,6 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
     // free(keywnode);
 
     // No longer freeing local task queues
-    if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0)
-    {
-        unlink(fpsCTRLvar.fpsCTRLfifoname);
-    }
 
     // Free persistent scheduler sort buffers
     free(fpsCTRLvar.sched_sort_eval);

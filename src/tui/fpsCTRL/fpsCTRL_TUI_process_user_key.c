@@ -14,6 +14,7 @@
 
 #include "fps_CONFstart.h"
 #include "fps_FPSremove.h"
+#include "milk_spawn.h"
 
 #define ctrl(x) ((x) & 0x1f)
 
@@ -235,6 +236,34 @@ static int fpsCTRL_inline_edit_param(FPS *fps, int fps_idx, int p_idx)
     return 0;
 }
 
+/** fpsctrl_key_needs_fps - 1 for keys that act on the selected FPS (no-ops without a live one). */
+static int fpsctrl_key_needs_fps(int ch)
+{
+    switch (ch)
+    {
+    case ' ':
+    case 'u':
+    case 'y':
+    case 'T':
+    case 'E':
+    case 'R':
+    case 'r':
+    case 'C':
+    case 'O':
+    case 'c':
+    case 10:
+    case 13:
+    case ctrl('t'):
+    case ctrl('a'):
+    case ctrl('e'):
+    case ctrl('r'):
+    case ctrl('o'):
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 /**
  * @brief Process a keyboard event in the fpsCTRL TUI.
  *
@@ -254,20 +283,12 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
 
     if (ch != -1)
     {
-        if (fpsCTRLvar->NBfps > 0)
+        /* Without a live selected FPS (none loaded, or it was deleted), actions on it are no-ops;
+         * navigation and quit still work */
+        if (fpsCTRLvar->search_mode == 0 && fpsctrl_key_needs_fps(ch) &&
+            (fpsCTRLvar->NBfps == 0 || fps[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md == NULL))
         {
-            int selected_fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            if (fps[selected_fpsindex].md == NULL)
-            {
-                // If the selected FPS is invalid (was deleted), ignore commands that operate on it,
-                // but allow navigation and quit commands.
-                if (ch == ' ' || ch == 'T' || ch == ctrl('t') || ch == 'E' || ch == 'R' ||
-                    ch == 'r' || ch == 'C' || ch == 'O' || ch == 'c' || ch == ctrl('a') ||
-                    ch == ctrl('e') || ch == ctrl('r') || ch == ctrl('o'))
-                {
-                    return loopOK;
-                }
-            }
+            return loopOK;
         }
 
         if (fpsCTRLvar->search_mode > 0)
@@ -365,11 +386,8 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
                 snprintf(yankstr, sizeof(yankstr), "%s",
                          keywnode[fpsCTRLvar->nodeSelected].keywordfull);
             }
-            char cmd[1024];
-            snprintf(cmd, sizeof(cmd), "tmux set-buffer \"%s\" 2>/dev/null", yankstr);
-            if (system(cmd) != 0)
-            {
-            }
+            const char *const argv[] = { "tmux", "set-buffer", "--", yankstr, NULL };
+            (void) milkspawn_run(argv, -1, -1); /* no shell: the value is one argument */
         }
         break;
 
@@ -843,7 +861,8 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
             }
             printf("  TOTAL :  %d nodes\n\n", fpsCTRLvar->NBkwn);
             printf("Press Enter to Continue\n");
-            while (getchar() != '\n')
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF) /* EOF: stdin closed, do not spin */
             {
             }
             {

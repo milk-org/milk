@@ -217,21 +217,72 @@ static int sort_stream_by_ancestry(const void *a, const void *b)
     return sort_stream_by_name(a, b);
 }
 
-/** Number of sortable stream columns. */
-#define OV_STREAM_SORT_NCOL 7
+/** cmp_pid - PID order in the sort direction, unset (0) last. */
+static int cmp_pid(pid_t pa, pid_t pb)
+{
+    if ((pa > 0) != (pb > 0))
+    {
+        return (pa > 0) ? -1 : 1;
+    }
+    return ov_sort_dir_mul * ((pa > pb) - (pa < pb));
+}
 
 /**
- * ov_sort_streams - Sort streams array in model according to selected key and direction
+ * sort_stream_by_creator - Compare streams by their creator PID
+ * @a: Pointer to first `OV_STREAM`
+ * @b: Pointer to second `OV_STREAM`
+ *
+ * Orders streams by `creatorPID` in the active sort direction while placing
+ * streams without a recorded creator PID (`0`) last.
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
+static int sort_stream_by_creator(const void *a, const void *b)
+{
+    return cmp_pid(((const OV_STREAM *) a)->creatorPID, ((const OV_STREAM *) b)->creatorPID);
+}
+
+/**
+ * sort_stream_by_owner - Compare streams by their owner PID
+ * @a: Pointer to first `OV_STREAM`
+ * @b: Pointer to second `OV_STREAM`
+ *
+ * Orders streams by `ownerPID` in the active sort direction while placing
+ * streams without a recorded owner PID (`0`) last.
+ *
+ * Return: Negative, zero, or positive comparison result.
+ */
+static int sort_stream_by_owner(const void *a, const void *b)
+{
+    return cmp_pid(((const OV_STREAM *) a)->ownerPID, ((const OV_STREAM *) b)->ownerPID);
+}
+
+/* By the number of processes mapping the stream, most first in the default direction; unknown (-1) last */
+static int sort_stream_by_holders(const void *a, const void *b)
+{
+    int ha = ((const OV_STREAM *) a)->nb_holders, hb = ((const OV_STREAM *) b)->nb_holders;
+    if ((ha < 0) != (hb < 0))
+    {
+        return (ha < 0) ? 1 : -1;
+    }
+    return ov_sort_dir_mul * ((hb > ha) - (hb < ha));
+}
+
+/** tie_stream - name order (processes: then PID), the tie-break of every key. */
+static int tie_stream(const void *a, const void *b)
+{
+    return strcmp(((const OV_STREAM *) a)->name, ((const OV_STREAM *) b)->name);
+}
+
+/**
+ * ov_sort_streams - fill @order with the model indices in sort order (the model is not moved)
  * @model: Pointer to data model
  * @key:   Column sort key index
  * @dir:   Sort direction (0 for asc, 1 for desc)
+ * @order: Output, model->nb_streams entries
  */
-void ov_sort_streams(OV_MODEL *model, int key, int dir)
+void ov_sort_streams(const OV_MODEL *model, int key, int dir, int *order)
 {
-    if (model->nb_streams < 2)
-    {
-        return;
-    }
     ov_sort_dir_mul = dir ? -1 : 1;
     int (*cmp)(const void *, const void *);
     switch (key)
@@ -257,9 +308,18 @@ void ov_sort_streams(OV_MODEL *model, int key, int dir)
     case 7:
         cmp = sort_stream_by_ancestry;
         break;
+    case 8:
+        cmp = sort_stream_by_creator;
+        break;
+    case 9:
+        cmp = sort_stream_by_owner;
+        break;
+    case 10:
+        cmp = sort_stream_by_holders;
+        break;
     default:
         cmp = sort_stream_by_name;
         break;
     }
-    qsort(model->streams, (size_t) model->nb_streams, sizeof(OV_STREAM), cmp);
+    ov_sort_index(model->streams, sizeof(OV_STREAM), model->nb_streams, cmp, tie_stream, order);
 }

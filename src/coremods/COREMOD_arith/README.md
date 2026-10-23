@@ -6,7 +6,9 @@ Arith functions on images
 
 | File                          | Description                              |
 | ----------------------------- | ---------------------------------------- |
-| `execute_arith.c`             | image arithmetic parser                  |
+| `im_complex.c`                | complex image conversions & kernels      |
+| `image_coord.c`               | coordinate & PRNG image generators       |
+| `image_linalg.c`              | tensor shape & BLAS Level 1-3 kernels    |
 | `image_arith__Cim_Cim__Cim.c` | arith functions                          |
 | `image_arith__im__im.c`       | arith functions                          |
 | `image_arith__im_f__im.c`     | arith functions                          |
@@ -28,12 +30,11 @@ Arith functions on images
 | `image_set_row.c`             | Set image row pixels to a value          |
 | `image_setzero.c`             | Set all image pixels to zero             |
 | `image_slicenormalize.c`      | Image slicenormalize module              |
-| `image_stats.c`               | simple stats functions                   |
-| `image_total.c`               | sum image pixels                         |
+| `image_stats.c`               | statistical & reduction functions        |
 | `image_unfold.c`              | Image unfold module                      |
 | `image_vecmult.c`             | multiply image by vector                 |
 | `imfunctions.c`               | apply math functions to images           |
-| `mathfuncs.c`                 | simple math functions                    |
+| `mathfuncs.h`                 | inline scalar math wrappers              |
 
 ## Standalone Executables
 

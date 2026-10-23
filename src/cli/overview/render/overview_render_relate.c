@@ -8,6 +8,9 @@
  */
 
 #include "overview_render_internal.h"
+
+#define OV_EDGE_IS_WRITE(e) \
+    ((e)->type == OV_EDGE_PROC_WRITES_STREAM || (e)->type == OV_EDGE_FPS_OUTPUT_STREAM)
 #include <string.h>
 
 /**
@@ -66,9 +69,10 @@ int ov_filter_streams(const OV_LAYOUT  *lay,
         filt_n = new_filt_n;
     }
 
-    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    if (lay->loop_filter_active && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+        lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
     {
-        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        uint32_t active_mask = (UINT32_C(1) << lay->sub[OV_SUB_LOOPS].sel);
         int      new_filt_n  = 0;
         for (int i = 0; i < filt_n; i++)
         {
@@ -139,9 +143,10 @@ int ov_filter_procs(const OV_LAYOUT  *lay,
         filt_n = new_filt_n;
     }
 
-    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    if (lay->loop_filter_active && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+        lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
     {
-        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        uint32_t active_mask = (UINT32_C(1) << lay->sub[OV_SUB_LOOPS].sel);
         int      new_filt_n  = 0;
         for (int i = 0; i < filt_n; i++)
         {
@@ -212,9 +217,10 @@ int ov_filter_fps(const OV_LAYOUT  *lay,
         filt_n = new_filt_n;
     }
 
-    if (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
+    if (lay->loop_filter_active && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+        lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
     {
-        uint32_t active_mask = (UINT32_C(1) << lay->sel_loop);
+        uint32_t active_mask = (UINT32_C(1) << lay->sub[OV_SUB_LOOPS].sel);
         int      new_filt_n  = 0;
         for (int i = 0; i < filt_n; i++)
         {
@@ -227,87 +233,6 @@ int ov_filter_fps(const OV_LAYOUT  *lay,
     }
 
     return filt_n;
-}
-
-/**
- * ov_get_selected_stream_idx - resolve selected stream row to index in OV_MODEL.
- * @lay: Pointer to layout structure.
- * @m:   Current model snapshot.
- *
- * Return: Model stream index in 0..nb_streams-1, or -1 if none.
- */
-int ov_get_selected_stream_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
-{
-    if (lay == NULL || m == NULL || m->nb_streams <= 0)
-    {
-        return -1;
-    }
-    int ssel = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
-    if (ssel < 0)
-    {
-        return -1;
-    }
-    int fidx[OV_MAX_STREAMS];
-    int n = ov_filter_streams(lay, m, NULL, fidx, OV_MAX_STREAMS);
-    if (ssel < n)
-    {
-        return fidx[ssel];
-    }
-    return -1;
-}
-
-/**
- * ov_get_selected_proc_idx - resolve selected process row to index in OV_MODEL.
- * @lay: Pointer to layout structure.
- * @m:   Current model snapshot.
- *
- * Return: Model process index in 0..nb_procs-1, or -1 if none.
- */
-int ov_get_selected_proc_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
-{
-    if (lay == NULL || m == NULL || m->nb_procs <= 0)
-    {
-        return -1;
-    }
-    int psel = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
-    if (psel < 0)
-    {
-        return -1;
-    }
-    int fidx[OV_MAX_PROCS];
-    int n = ov_filter_procs(lay, m, NULL, fidx, OV_MAX_PROCS);
-    if (psel < n)
-    {
-        return fidx[psel];
-    }
-    return -1;
-}
-
-/**
- * ov_get_selected_fps_idx - resolve selected FPS row to index in OV_MODEL.
- * @lay: Pointer to layout structure.
- * @m:   Current model snapshot.
- *
- * Return: Model FPS index in 0..nb_fps-1, or -1 if none.
- */
-int ov_get_selected_fps_idx(const OV_LAYOUT *lay, const OV_MODEL *m)
-{
-    if (lay == NULL || m == NULL || m->nb_fps <= 0)
-    {
-        return -1;
-    }
-    int fsel = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
-    if (fsel < 0)
-    {
-        return -1;
-    }
-    int fidx[OV_MAX_FPS];
-    int n = ov_filter_fps(lay, m, NULL, fidx, OV_MAX_FPS);
-    if (fsel < n)
-    {
-        return fidx[fsel];
-    }
-    return -1;
 }
 
 /**
@@ -332,55 +257,101 @@ int bget(const uint64_t *words, int idx)
     return (words[idx / BITS_PER_WORD] >> (idx % BITS_PER_WORD)) & 1;
 }
 
+/** relate_mark - mark node @other, joined to the selection by a writes edge or not (@is_write), as related. */
+static void relate_mark(const OV_MODEL *m,
+                        OV_RELATED     *out,
+                        int             other,
+                        int             is_write,
+                        ov_focus_t      focus,
+                        int             sel_stream_idx)
+{
+    if (other < 0 || other >= m->nb_nodes)
+    {
+        return;
+    }
+
+    const OV_NODE *n = &m->nodes[other];
+    if (n->type == OV_NODE_STREAM && n->index >= 0 && n->index < m->nb_streams)
+    {
+        bset(out->streams, n->index);
+        if (is_write)
+        {
+            bset(out->stream_written, n->index);
+        }
+    }
+    else if (n->type == OV_NODE_FPS && n->index >= 0 && n->index < m->nb_fps)
+    {
+        int fi = n->index;
+        bset(out->fps, fi);
+        if (is_write)
+        {
+            bset(out->fps_writes, fi);
+        }
+
+        /* Find all stream params of this FPS that match sel_node */
+        if (focus == OV_FOCUS_STREAMS && sel_stream_idx >= 0 && sel_stream_idx < m->nb_streams)
+        {
+            const char   *sname = m->streams[sel_stream_idx].name;
+            const OV_FPS *f     = &m->fps[fi];
+            for (int sp = 0; sp < f->nb_stream_params; sp++)
+            {
+                if (strcmp(f->stream_param_value[sp], sname) == 0)
+                {
+                    out->fps_param_mask[fi] |= (UINT32_C(1) << sp);
+                }
+            }
+        }
+    }
+    else if (n->type == OV_NODE_PROC && n->index >= 0 && n->index < m->nb_procs)
+    {
+        bset(out->procs, n->index);
+        if (is_write)
+        {
+            bset(out->proc_writes, n->index);
+        }
+    }
+}
+
+/** relate_neighbours - mark the nodes joined to node @v by an edge, either way. */
+static void relate_neighbours(const OV_MODEL *m,
+                              OV_RELATED     *out,
+                              int             v,
+                              ov_focus_t      focus,
+                              int             sel_stream_idx)
+{
+    for (int k = OV_ADJ_B(m, out, v); k < OV_ADJ_E(m, out, v); k++)
+    {
+        const OV_EDGE *e = &m->edges[m->adj_out[k]];
+        relate_mark(m, out, e->tgt_node, OV_EDGE_IS_WRITE(e), focus, sel_stream_idx);
+    }
+    for (int k = OV_ADJ_B(m, in, v); k < OV_ADJ_E(m, in, v); k++)
+    {
+        const OV_EDGE *e = &m->edges[m->adj_in[k]];
+        relate_mark(m, out, e->src_node, OV_EDGE_IS_WRITE(e), focus, sel_stream_idx);
+    }
+}
+
 /**
- * ov_compute_related - identify connected items across panels for active selection.
- * @lay: Pointer to layout structure.
- * @m:   Pointer to data model snapshot.
- * @out: Output structure populated with highlight bitsets and selected IDs.
+ * ov_related_from - mark the entries connected to model entry @idx of panel @focus.
  */
-void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *out)
+static void ov_related_from(const OV_MODEL *m, ov_focus_t focus, int idx, OV_RELATED *out)
 {
     memset(out, 0, sizeof(*out));
 
-    ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
-    if (lay->mouse_hover && lay->hover_idx >= 0 && lay->hover_view != -1)
+    int sel_stream_idx = (focus == OV_FOCUS_STREAMS) ? idx : -1;
+    int sel_node       = -1;
+    if (focus == OV_FOCUS_STREAMS && idx >= 0 && idx < m->nb_streams)
     {
-        focus = lay->hover_view;
+        sel_node = m->streams[idx].node_idx;
     }
-
-    int sel_stream_idx = (lay->mouse_hover && lay->hover_global_stream >= 0)
-                             ? lay->hover_global_stream
-                             : ov_get_selected_stream_idx(lay, m);
-
-    /* Determine the graph node index of the selected item */
-    int sel_node = -1;
-    if (focus == OV_FOCUS_STREAMS)
+    else if (focus == OV_FOCUS_FPS && idx >= 0 && idx < m->nb_fps)
     {
-        if (sel_stream_idx >= 0 && sel_stream_idx < m->nb_streams)
-        {
-            sel_node = m->streams[sel_stream_idx].node_idx;
-        }
+        sel_node = m->fps[idx].node_idx;
     }
-    else if (focus == OV_FOCUS_FPS)
+    else if (focus == OV_FOCUS_PROCS && idx >= 0 && idx < m->nb_procs)
     {
-        int model_idx = (lay->mouse_hover && lay->hover_global_fps >= 0)
-                            ? lay->hover_global_fps
-                            : ov_get_selected_fps_idx(lay, m);
-        if (model_idx >= 0 && model_idx < m->nb_fps)
-        {
-            sel_node = m->fps[model_idx].node_idx;
-        }
-    }
-    else if (focus == OV_FOCUS_PROCS)
-    {
-        int model_idx = (lay->mouse_hover && lay->hover_global_proc >= 0)
-                            ? lay->hover_global_proc
-                            : ov_get_selected_proc_idx(lay, m);
-        if (model_idx >= 0 && model_idx < m->nb_procs)
-        {
-            sel_node     = m->procs[model_idx].node_idx;
-            out->sel_pid = m->procs[model_idx].PID;
-        }
+        sel_node     = m->procs[idx].node_idx;
+        out->sel_pid = m->procs[idx].PID;
     }
 
     if (sel_node < 0)
@@ -388,75 +359,87 @@ void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *out
         return;
     }
 
-    /* Walk all edges; mark neighbours of sel_node */
-    for (int ei = 0; ei < m->nb_edges; ei++)
+    /* An FPS and the process it runs act as one unit: the selection's neighbours are those of both */
+    int unit[1 + OV_MAX_PROCS], nunit = 0;
+    unit[nunit++] = sel_node;
+    for (int k = OV_ADJ_B(m, out, sel_node); k < OV_ADJ_E(m, out, sel_node); k++)
     {
-        const OV_EDGE *e          = &m->edges[ei];
-        int            other      = -1;
-        int            is_write   = 0; /* 1 = proc writes stream */
-        int            fps_is_src = 0;
-
-        if (e->src_node == sel_node)
+        const OV_EDGE *e = &m->edges[m->adj_out[k]];
+        if (e->type == OV_EDGE_FPS_RUNS_PROC && nunit <= OV_MAX_PROCS)
         {
-            other = e->tgt_node;
-            is_write =
-                (e->type == OV_EDGE_PROC_WRITES_STREAM) || (e->type == OV_EDGE_FPS_OUTPUT_STREAM);
-            fps_is_src = 0;
+            unit[nunit++] = e->tgt_node;
         }
-        else if (e->tgt_node == sel_node)
+    }
+    for (int k = OV_ADJ_B(m, in, sel_node); k < OV_ADJ_E(m, in, sel_node); k++)
+    {
+        const OV_EDGE *e = &m->edges[m->adj_in[k]];
+        if (e->type == OV_EDGE_FPS_RUNS_PROC && nunit <= OV_MAX_PROCS)
         {
-            other = e->src_node;
-            is_write =
-                (e->type == OV_EDGE_PROC_WRITES_STREAM) || (e->type == OV_EDGE_FPS_OUTPUT_STREAM);
-            fps_is_src = 1;
+            unit[nunit++] = e->src_node;
         }
+    }
+    for (int u = 0; u < nunit; u++)
+    {
+        relate_neighbours(m, out, unit[u], focus, sel_stream_idx);
+    }
 
-        if (other < 0 || other >= m->nb_nodes)
+    /* ...and so are the related processes and FPS: a stream relates to its writer's FPS too */
+    for (int pi = 0; pi < m->nb_procs; pi++)
+    {
+        int pn = m->procs[pi].node_idx;
+        for (int k = OV_ADJ_B(m, in, pn); bget(out->procs, pi) && k < OV_ADJ_E(m, in, pn); k++)
         {
-            continue;
-        }
-
-        const OV_NODE *n = &m->nodes[other];
-        if (n->type == OV_NODE_STREAM && n->index >= 0 && n->index < m->nb_streams)
-        {
-            bset(out->streams, n->index);
-            if (is_write)
+            const OV_EDGE *e = &m->edges[m->adj_in[k]];
+            if (e->type == OV_EDGE_FPS_RUNS_PROC)
             {
-                bset(out->stream_written, n->index);
-            }
-        }
-        else if (n->type == OV_NODE_FPS && n->index >= 0 && n->index < m->nb_fps)
-        {
-            int fi = n->index;
-            bset(out->fps, fi);
-            if (is_write)
-            {
-                bset(out->fps_writes, fi);
-            }
-
-            /* Find all stream params of this FPS that match sel_node */
-            if (focus == OV_FOCUS_STREAMS && sel_stream_idx >= 0 && sel_stream_idx < m->nb_streams)
-            {
-                const char   *sname = m->streams[sel_stream_idx].name;
-                const OV_FPS *f     = &m->fps[fi];
-                for (int sp = 0; sp < f->nb_stream_params; sp++)
-                {
-                    if (strcmp(f->stream_param_value[sp], sname) == 0)
-                    {
-                        out->fps_param_mask[fi] |= (UINT32_C(1) << sp);
-                    }
-                }
-            }
-
-            (void) fps_is_src;
-        }
-        else if (n->type == OV_NODE_PROC && n->index >= 0 && n->index < m->nb_procs)
-        {
-            bset(out->procs, n->index);
-            if (is_write)
-            {
-                bset(out->proc_writes, n->index);
+                relate_mark(m, out, e->src_node, bget(out->proc_writes, pi), focus, sel_stream_idx);
             }
         }
     }
+}
+
+/**
+ * ov_compute_related - connected items of the selected, frozen or hovered entry (highlighting).
+ * @lay: Pointer to layout structure.
+ * @m:   Pointer to data model snapshot.
+ * @out: Output structure populated with highlight bitsets and selected IDs.
+ */
+void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *out)
+{
+    ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
+    if (lay->mouse_hover && lay->hover_idx >= 0 && lay->hover_view != -1)
+    {
+        focus = lay->hover_view;
+    }
+    int idx = -1;
+    if (focus == OV_FOCUS_STREAMS)
+    {
+        idx = (lay->mouse_hover && lay->panel[OV_FOCUS_STREAMS].hover_idx >= 0)
+                  ? lay->panel[OV_FOCUS_STREAMS].hover_idx
+                  : ov_get_selected_stream_idx(lay, m);
+    }
+    else if (focus == OV_FOCUS_FPS)
+    {
+        idx = (lay->mouse_hover && lay->panel[OV_FOCUS_FPS].hover_idx >= 0)
+                  ? lay->panel[OV_FOCUS_FPS].hover_idx
+                  : ov_get_selected_fps_idx(lay, m);
+    }
+    else if (focus == OV_FOCUS_PROCS)
+    {
+        idx = (lay->mouse_hover && lay->panel[OV_FOCUS_PROCS].hover_idx >= 0)
+                  ? lay->panel[OV_FOCUS_PROCS].hover_idx
+                  : ov_get_selected_proc_idx(lay, m);
+    }
+    ov_related_from(m, focus, idx, out);
+}
+
+/**
+ * ov_compute_related_frozen - connected items of the frozen entry only (hover ignored), which
+ * decide the rows the other panels draw while frozen.
+ */
+void ov_compute_related_frozen(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *out)
+{
+    ov_focus_t focus = lay->freeze_focus;
+    int idx = (focus < OV_FOCUS_GRAPH) ? ov_tgt_find(m, focus, &lay->panel[focus].freeze_tgt) : -1;
+    ov_related_from(m, focus, idx, out);
 }

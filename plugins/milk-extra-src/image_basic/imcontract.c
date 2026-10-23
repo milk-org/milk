@@ -76,8 +76,7 @@ imageID basic_contract(const char *ID_name, const char *ID_name_out, int n1, int
 
     IMGID imgout       = imgid_make_from_name_2D(ID_name_out, naxes_out[0], naxes_out[1]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     for (uint32_t jj = 0; jj < naxes_out[1]; jj++)
     {
@@ -132,8 +131,7 @@ imageID basic_contract3D(const char *ID_name, const char *ID_name_out, int n1, i
         imgout.mdt->datatype = datatype;
     }
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     switch (datatype)
     {

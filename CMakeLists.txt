@@ -15,7 +15,7 @@ project(milk LANGUAGES C)
 # ncurses, bison, and flex.
 #
 # USE_NCURSES (default ON, requires USE_CLI): Enable ncurses TUI (milk-fpsCTRL,
-# streamCTRL).
+# milk-procCTRL).
 #
 # USE_READLINE (default ON, requires USE_CLI): Enable readline for interactive
 # CLI input.
@@ -253,7 +253,9 @@ endif()
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/libmilkscript/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/libmilkscript/calc)
 if(USE_CLI)
   list(APPEND libsrcdir src/cli/libmilkscript)
   list(APPEND libname milkscript)
@@ -267,7 +269,6 @@ else()
   # Provide CLI header paths so modules can find CLIcore.h (which redirects to
   # standalone stubs)
   include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tui/procCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libcomputeunit
@@ -285,7 +286,7 @@ else()
   # timeutils.h, milkDebugTools.h, and IMGID.h have moved to their respective
   # engine modules (libprocessinfo, libmilkcommon, libfps) which install them
   # unconditionally via their own CMakeLists.txt targets.
-  install(FILES src/cli/CLIcore/CLIcore/CLIcore_checkargs.h
+  install(FILES src/cli/libmilkscript/core/CLIcore_checkargs.h
     DESTINATION include/CommandLineInterface/CLIcore)
   # Create an INTERFACE library target named CLIcore so that existing
   # target_link_libraries(... CLIcore) calls in plugin CMakeLists work without
@@ -299,7 +300,7 @@ else()
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/libmilkscript/core>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/tui/procCTRL>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libcomputeunit>
@@ -703,9 +704,27 @@ if(USE_CLI)
     scripts/tmuxsessionname
     scripts/waitforfile
     scripts/milk-env.sh
+    scripts/milk.bash
     DESTINATION bin)
+
+  install(FILES scripts/milk.bash DESTINATION share/milk)
 
 endif(USE_CLI)
 
 # milk-cli script payloads (.milk files) – installed as data, not executables
 install(FILES scripts/makecircleofdisks.milk DESTINATION share/milk/scripts)
+
+# Command catalog, last: the commands of every installed module (share/milk/catalog.d, catalog.bash and
+# the libexec/milk/bin links for external tools). Plugins installed into the prefix later re-run it.
+if(USE_CLI)
+  install(CODE "
+    set(_milk_prefix \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}\")
+    execute_process(COMMAND \${CMAKE_COMMAND} -E env
+                            MILK_INSTALLDIR=\${_milk_prefix}
+                            LD_LIBRARY_PATH=\${_milk_prefix}/lib:\$ENV{LD_LIBRARY_PATH}
+                            \${_milk_prefix}/bin/milk-cli --catalog
+                    RESULT_VARIABLE _milk_rc)
+    if(NOT _milk_rc EQUAL 0)
+      message(WARNING \"milk: no command catalog (milk-cli --catalog returned \${_milk_rc})\")
+    endif()")
+endif()

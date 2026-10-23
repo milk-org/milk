@@ -3,7 +3,7 @@
 - [CacaoProcessTools](#cacaoprocesstools)
   - [Installation](#installation)
   - [Usage](#usage)
-  - [Open streamCTRL](#open-streamctrl)
+  - [Streams: milk-CTRL](#streams-milk-ctrl)
   - [Open processCTRL](#open-processctrl)
 
 ## Installation
@@ -24,10 +24,13 @@ Note2: If you update it, use the option `-U`
 import CacaoProcessTools as CPT
 ```
 
-## Open streamCTRL
+## Streams: milk-CTRL
+
+The stream monitor is the F3 view of milk-CTRL (`milk-streamCTRL` opens it there); start it as a program:
 
 ```python
->>> CPT.streamCTRL()
+>>> import subprocess
+>>> subprocess.run(["milk-streamCTRL"])
 ```
 
 ## Open processCTRL
