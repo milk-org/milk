@@ -61,28 +61,27 @@ For untyped generic copies, use `.raw` with `__builtin_memcpy`.
 
 ## 3. processinfo Macro Reference
 
-These macros wrap your compute loop to provide timing, semaphore triggering, and tmux status.
+These macros wrap the compute loop of a runnable (`self` is the `const MILK_RUNNABLE *` argument of its compute function) to provide timing, semaphore triggering, and tmux status.
 
-- `INSERT_STD_PROCINFO_COMPUTEFUNC_INIT`: Initializes the `processinfo` structure based on CLI options. Must be called before the loop.
-- `INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART`: Begins the `while(processloopOK)` loop and handles semaphore waiting.
-- `INSERT_STD_PROCINFO_COMPUTEFUNC_START`: Convenience macro combining `INIT` and `LOOPSTART`.
-- `INSERT_STD_PROCINFO_COMPUTEFUNC_END`: Closes the loop and cleans up.
+- `MILK_PROCINFO_INIT(self)`: Initializes the `processinfo` structure based on the FPS settings. Must be called before the loop.
+- `MILK_PROCINFO_LOOPSTART(self)`: Begins the `while(processloopOK)` loop and handles semaphore waiting.
+- `MILK_PROCINFO_END(self)`: Closes the loop and cleans up.
 
 A standard continuous-loop compute unit looks like:
 
 ```c
-INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+MILK_PROCINFO_INIT(self)
 
 // (Optional) custom setup here
 
-INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
-{
-    // Do computation here...
+MILK_PROCINFO_LOOPSTART(self)
 
-    // (Optional) If you wrote to outimg based on inimg's trigger:
-    processinfo_update_output_stream(processinfo, outimg.im, inimg.im);
-}
-INSERT_STD_PROCINFO_COMPUTEFUNC_END
+// Do computation here...
+
+// (Optional) If you wrote to outimg based on inimg's trigger:
+processinfo_update_output_stream(processinfo, outimg.im, inimg.im);
+
+MILK_PROCINFO_END(self)
 ```
 
 ## 4. Magic Context Variables
@@ -95,7 +94,7 @@ These global variables are defined by the framework and are always available in 
 | `dcfpsname`     | `char[]`       | `milkdata_macros.h`     | Name of the current FPS instance.                                                                              |
 | `dcimg`         | `IMAGE*`       | `milkdata_macros.h`     | The global image array (used in `resolveIMGID`).                                                               |
 | `dcnimg`        | `long`         | `milkdata_macros.h`     | Size of the `dcimg` array.                                                                                     |
-| `processinfo`   | `PROCESSINFO*` | `fps_procinfo_macros.h` | Struct tracking process timing, loop limits, and triggers. Injected by `INSERT_STD_PROCINFO_COMPUTEFUNC_INIT`. |
+| `processinfo`   | `PROCESSINFO*` | `fps_procinfo_macros.h` | Struct tracking process timing, loop limits, and triggers. Injected by `MILK_PROCINFO_INIT`. |
 | `processloopOK` | `int`          | `fps_procinfo_macros.h` | Loop condition variable. Injected by `INIT`, checked in `LOOPSTART`.                                           |
 
 ## 5. Stream Write Protocol
@@ -165,10 +164,9 @@ it uses. Here are the common APIs and their headers:
 | API / Function                                                                                           | Required `#include`                                          |
 | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | `IMGID`, `imgid_make_from_name`, `imgid_copy`, `imgid_free`, `imcreateIMGID`, `resolveIMGID`             | `"COREMOD_memory/COREMOD_memory.h"`                          |
-| `FPS_APP_INFO`, `FPS_PARAMS`, `FPS_MAIN_STANDALONE_V2`, `FPS_CLI_BINDING`, `FPS_X_BINDING`, `FPS_X_FARG` | `"fps.h"`                                                    |
-| `CLICMDDATA`, `CLICMDARGDEF`, `INSERT_STD_*` macros                                                      | `"CLIcore.h"` (or `"CLIcore_standalone.h"` if `MILK_NO_CLI`) |
-| `processinfo_update_output_stream`                                                                       | `"processtools.h"` (via `CLIcore.h`)                         |
+| `MILK_RUNNABLE`, `MILK_PARAMS_DEFINE`, `EXPORT_FPSEXEC`, `MILK_PROCINFO_*`, `FPS_APP_INFO`, `FPS_CLI_BINDING`, `CLICMDDATA`, `CLICMDARGDEF` | `"milk_runnable.h"` (first include of a unit; never `CLIcore.h`) |
+| `processinfo_update_output_stream`                                                                       | `"processtools.h"` (via `milk_runnable.h`)                  |
 | `cblas_sgemv`, `cblas_sgemm`                                                                             | `<cblas.h>` (link `${BLAS_LIBRARIES}`)                       |
 | `sqrtf`, `powf`, `sinf`, `cosf`                                                                          | `<math.h>` (link `-lm`)                                      |
-| `MILK_HOT`, `MILK_COLD`, `UNLIKELY`, `MILK_ASSUME_ALIGNED`                                               | `"milkDebugTools.h"` (via `CLIcore.h`)                       |
-| `DEBUG_TRACE_FSTART`, `DEBUG_TRACE_FEXIT`                                                                | `"milkDebugTools.h"` (via `CLIcore.h`)                       |
+| `MILK_HOT`, `MILK_COLD`, `UNLIKELY`, `MILK_ASSUME_ALIGNED`                                               | `"milkDebugTools.h"` (via `milk_runnable.h`)                 |
+| `DEBUG_TRACE_FSTART`, `DEBUG_TRACE_FEXIT`                                                                | `"milkDebugTools.h"` (via `milk_runnable.h`)                 |

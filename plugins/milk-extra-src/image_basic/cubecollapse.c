@@ -13,28 +13,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
 #include "cubecollapse.h"
-#include "fps.h"
+#include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "ImageStreamIO/ImageStreamIO.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "cubecollapse",
-    .cmdkey           = "cubecollapse",
-    .description      = "collapse a cube along z",
-    .description_long = "Collapse a 3D image cube along the z-axis by computing the mean, median, "
-                        "or sum of all slices. Produces a single 2D output image."
-};
 
 
 /* ================================================================
@@ -81,7 +64,6 @@ static void cube_collapse_step(IMAGE *imgin, IMAGE *imgout)
  * Public convenience function
  * ========================================= */
 
-#ifndef FPS_STANDALONE
 imageID cube_collapse(const char *ID_in_name, const char *ID_out_name)
 {
     IMGID in = imgid_make_from_name(ID_in_name);
@@ -91,61 +73,51 @@ imageID cube_collapse(const char *ID_in_name, const char *ID_out_name)
     ImageStreamIO_UpdateIm(out.im);
     return out.ID;
 }
-#endif
 
 
 /* ================================================================
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(cubecollapse, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t cubecollapse_compute(const MILK_RUNNABLE *self)
 {
     IMGID in = imgid_make_from_name(cubecollapse_inimname);
     resolveIMGID(&in, ERRMODE_ABORT, dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(cubecollapse_outimname, in.md->size[0], in.md->size[1]);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     cube_collapse_step(in.im, out.im);
     processinfo_update_output_stream(processinfo, out.im, in.im);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t __attribute__((cold)) CLIADDCMD_image_basic__cubecollapse()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_image_basic_cubecollapse = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "cubecollapse",
+                 .cmdkey           = "cubecollapse",
+                 .description      = "collapse a cube along z",
+                 .description_long = "Collapse a 3D image cube along the z-axis by computing the "
+                                     "mean, median, or sum of all slices. Produces a single 2D "
+                                     "output image." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(cubecollapse),
+    .compute = cubecollapse_compute,
+};
+EXPORT_FPSEXEC(milk, "imgbasic-cubecollapse", runnable_image_basic_cubecollapse);

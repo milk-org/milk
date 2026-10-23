@@ -9,12 +9,8 @@
 
 #include <sched.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -27,36 +23,17 @@ static char      p_stream[FUNCTION_PARAMETER_STRMAXLEN] = "imstream";
 static long long p_nframes                              = 100;
 static char      p_out[FUNCTION_PARAMETER_STRMAXLEN]    = "imrec";
 
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "imgstreamrec",
-                                     .cmdkey      = "imgstreamrec",
-                                     .description = "record stream of images",
-                                     .description_long =
-                                         "Record frames from a 2D shared memory stream into a 3D "
-                                         "cube or sequence of FITS files on disk." };
-
 #define FPS_PARAMS(X)                                                                    \
     X(".stream", p_stream, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input stream")   \
     X(".nframes", &p_nframes, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "number of frames") \
     X(".out_name", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(streamrecord, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t streamrecord_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     IMAGE_BASIC_streamrecord(p_stream, (long) p_nframes, p_out);
-    return RETURN_SUCCESS;
-}
-
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_basic__streamrecord()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -111,3 +88,15 @@ imageID IMAGE_BASIC_streamrecord(const char *__restrict streamname,
 
     return imgout.ID;
 }
+
+const MILK_RUNNABLE runnable_image_basic_streamrecord = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "imgstreamrec",
+                 .cmdkey           = "imgstreamrec",
+                 .description      = "record stream of images",
+                 .description_long = "Record frames from a 2D shared memory stream into a 3D cube "
+                                     "or sequence of FITS files on disk." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(streamrecord),
+    .compute = streamrecord_compute,
+};

@@ -7,12 +7,8 @@
  * @brief Permut image quadrants
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -63,38 +59,29 @@ int permut(const char *ID_name);
 
 static char p_imname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "permut",
-    .cmdkey           = "permut",
-    .description      = "permut image quadrants",
-    .description_long = "Permute image quadrants to shift the DC component to the center. Swaps "
-                        "the four quadrants of a 2D image for standard FFT display convention."
-};
-
 #define FPS_PARAMS(X) X(".in_name", p_imname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "image")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(permut, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t permut_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     permut(p_imname);
     return RETURN_SUCCESS;
 }
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_milkfft__permut()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_fft_permut = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "permut",
+                 .cmdkey      = "permut",
+                 .description = "permut image quadrants",
+                 .description_long =
+                     "Permute image quadrants to shift the DC component to the center. Swaps "
+                     "the four quadrants of a 2D image for standard FFT display convention." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(permut),
+    .compute = permut_compute,
+};
 
 
 int permut(const char *ID_name)

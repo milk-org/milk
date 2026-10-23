@@ -7,7 +7,9 @@
  * @brief Combine individual images into cube
  */
 
-errno_t CLIADDCMD_COREMOD_iofits__images2cube();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_iofits_images2cube;
 
 errno_t images_to_cube(const char *restrict img_name,
                        long nbframes,

@@ -37,7 +37,7 @@
 #include "COREMOD_memory/imageID.h"
 #include "list_image.h"
 #include "stream_sem.h"
-#include <fps.h>
+#include <computeunit.h>
 
 /**
  * @brief Create or reuse an image (IMGID API)

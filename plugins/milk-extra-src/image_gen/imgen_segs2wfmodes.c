@@ -7,14 +7,10 @@
  * @brief   segments to WF modes
  */
 
+#include "milk_runnable.h"
+#include "image_gen.h"
 #include "image_gen_internal.h"
 
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "segs2wfmodes",
-                                     .cmdkey      = "segs2wfmodes",
-                                     .description = "segments to WF modes",
-                                     .description_long =
-                                         "Convert segment piston/tip/tilt commands into wavefront "
-                                         "mode images for segmented-mirror telescope simulation." };
 
 /* ================================================================
  * 2.  LOCAL PARAMETER VARIABLES
@@ -36,42 +32,39 @@ static char    sw_out[FUNCTION_PARAMETER_STRMAXLEN] = "WFmodes";
 /* ================================================================
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(imgen_segs2wfmodes, FPS_PARAMS);
 
 /* ================================================================
  * 4/6. COMPUTE FUNCTION
  * ============================================================= */
-static errno_t compute_function(void)
+static MILK_HOT errno_t imgen_segs2wfmodes_compute(const MILK_RUNNABLE *self)
 {
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     IMAGE_gen_segments2WFmodes(sw_pfx, (long) sw_nd, sw_out);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
     return RETURN_SUCCESS;
 }
 
 /* ================================================================
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_gen__segs2wfmodes(void)
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+
+const MILK_RUNNABLE runnable_image_gen_imgen_segs2wfmodes = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "segs2wfmodes",
+                 .cmdkey           = "segs2wfmodes",
+                 .description      = "segments to WF modes",
+                 .description_long = "Convert segment piston/tip/tilt commands into wavefront "
+                                     "mode images for segmented-mirror telescope simulation." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imgen_segs2wfmodes),
+    .compute = imgen_segs2wfmodes_compute,
+};
+EXPORT_FPSEXEC(milk, "imggen-segs2wfmodes", runnable_image_gen_imgen_segs2wfmodes);

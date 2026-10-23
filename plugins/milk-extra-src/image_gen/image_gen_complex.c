@@ -15,12 +15,12 @@
 #else
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
-#    include "fps.h"
+#    include "computeunit.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_arith/COREMOD_arith.h"
-#include "fps.h"
+#include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_memory/create_image.h"
 #include "COREMOD_tools/COREMOD_tools.h"

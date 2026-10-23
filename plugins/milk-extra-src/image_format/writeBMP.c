@@ -10,25 +10,15 @@
 /** @file writeBMP.c
  */
 
-#include "CLIcore.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 const int BYTES_PER_PIXEL  = 3; /// red, green, & blue
 const int FILE_HEADER_SIZE = 14;
 const int INFO_HEADER_SIZE = 40;
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "mkBMPim",
-    .cmdkey      = "mkBMPim",
-    .description = "make BMP image",
-    .description_long =
-        "Write a 2D image as a BMP bitmap file for quick visual inspection without FITS viewers."
-};
 
 
 /* ================================================================
@@ -56,7 +46,7 @@ static char imBname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(writeBMP, FPS_PARAMS);
 
 static unsigned char *createBitmapFileHeader(int height, int stride)
 {
@@ -189,14 +179,15 @@ errno_t image_writeBMP(const char *__restrict IDnameR,
     return RETURN_SUCCESS;
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t writeBMP_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     image_writeBMP(imRname, imGname, imBname, BMPfname);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -204,29 +195,19 @@ static MILK_HOT errno_t compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_format__mkBMPimage()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_image_format_writeBMP = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "mkBMPim",
+                 .cmdkey      = "mkBMPim",
+                 .description = "make BMP image",
+                 .description_long =
+                     "Write a 2D image as a BMP bitmap file for quick visual inspection without "
+                     "FITS viewers." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(writeBMP),
+    .compute = writeBMP_compute,
+};
+EXPORT_FPSEXEC(milk, "imgfmt-writeBMP", runnable_image_format_writeBMP);

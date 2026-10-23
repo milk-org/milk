@@ -15,7 +15,7 @@ def milk_build_and_test(
     session: nox.Session,
     *,
     use_cuda: bool = False,
-    use_lto: bool = False,
+    lto_level: int = 1,
     use_cli: bool = False,
 ):
 
@@ -25,7 +25,7 @@ def milk_build_and_test(
     this_path = pathlib.Path(os.path.abspath(os.getcwd()))
     project_root = this_path.parent
     milk_build(
-        session, project_root, use_cuda=use_cuda, use_lto=use_lto, use_cli=use_cli
+        session, project_root, use_cuda=use_cuda, lto_level=lto_level, use_cli=use_cli
     )
 
     session.chdir(project_root / "python")  # otherwise pytest is somewhat upset...
@@ -37,11 +37,16 @@ def milk_build(
     PROJECT_ROOT: pathlib.Path,
     *,
     use_cuda: bool = False,
-    use_lto: bool = False,
+    lto_level: int = 1,
     use_cli: bool = False,
 ):
 
     on_off = lambda b: "ON" if b else "OFF"
+    lto_string = (
+        "-DUSE_LTO=OFF",
+        "-DUSE_LTO=ON -DUSE_STATIC_LTO=OFF",
+        "-DUSE_LTO=ON -DUSE_STATIC_LTO=ON",
+    )[lto_level]
 
     tmp_dir = os.path.abspath(session.create_tmp())
     session.chdir(tmp_dir)
@@ -61,7 +66,7 @@ def milk_build(
         *(
             f"cmake{' -GNinja' if use_ninja else ''} {PROJECT_ROOT} -DCMAKE_INSTALL_PREFIX={tmp_dir} "
             f"-DUSE_CUDA={on_off(use_cuda)} -DUSE_CLI={on_off(use_cli)} "
-            f"-DUSE_STATIC_LTO={on_off(use_lto)}"
+            f"{lto_string}"
         ).split(),
         external=True,
         silent=False,
@@ -92,22 +97,27 @@ def tests_run_coverage_lazybuild(session: nox.Session): ...
 
 @nox.session(venv_backend=VENV_BACKEND)
 def build_and_pytest_nocli_nolto(session: nox.Session):
-    milk_build_and_test(session, use_cli=False, use_lto=False)
+    milk_build_and_test(session, use_cli=False, lto_level=0)
 
 
 @nox.session(venv_backend=VENV_BACKEND)
 def build_and_pytest_nocli_lto(session: nox.Session):
-    milk_build_and_test(session, use_cli=False, use_lto=True)
+    milk_build_and_test(session, use_cli=False, lto_level=1)
 
 
 @nox.session(venv_backend=VENV_BACKEND)
 def build_and_pytest_cli_nolto(session: nox.Session):
-    milk_build_and_test(session, use_cli=True, use_lto=False)
+    milk_build_and_test(session, use_cli=True, lto_level=0)
 
 
 @nox.session(venv_backend=VENV_BACKEND)
 def build_and_pytest_cli_lto(session: nox.Session):
-    milk_build_and_test(session, use_cli=True, use_lto=True)
+    milk_build_and_test(session, use_cli=True, lto_level=1)
+
+
+@nox.session(venv_backend=VENV_BACKEND, default=False)
+def build_and_pytest_cli_ltostat(session: nox.Session):
+    milk_build_and_test(session, use_cli=True, lto_level=2)
 
 
 @nox.session(default=False)

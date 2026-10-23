@@ -13,7 +13,7 @@
  */
 
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include <math.h>
@@ -23,19 +23,6 @@
 
 // zonal WFS response
 //
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "mkzerc",
-    .cmdkey           = "mkzerc",
-    .description      = "make Zernike modes cube",
-    .description_long = "Generate a 3D cube of Zernike polynomial mode images. Each slice is one "
-                        "Zernike mode evaluated on a circular aperture."
-};
-
 
 /* ================================================================
  * 2.  LOCAL PARAMETER VARIABLES
@@ -69,9 +56,9 @@ static uint32_t *NBzermode        = NULL;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(mkzercube, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t mkzercube_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -87,7 +74,8 @@ static MILK_HOT errno_t compute_function()
     double *polar_theta;
 
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
     {
         polar_r = (double *) malloc(xysize * sizeof(double));
         if (polar_r == NULL)
@@ -151,7 +139,7 @@ static MILK_HOT errno_t compute_function()
             }
         }
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     free(polar_r);
     free(polar_theta);
@@ -163,29 +151,19 @@ static MILK_HOT errno_t compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE DESCRIPTOR
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_ZernikePolyn__mkzercube()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif // #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_ZernikePolyn_mkzercube = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "mkzerc",
+                 .cmdkey      = "mkzerc",
+                 .description = "make Zernike modes cube",
+                 .description_long =
+                     "Generate a 3D cube of Zernike polynomial mode images. Each slice is one "
+                     "Zernike mode evaluated on a circular aperture." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(mkzercube),
+    .compute = mkzercube_compute,
+};
+EXPORT_FPSEXEC(milk, "zernike-mkzercube", runnable_ZernikePolyn_mkzercube);

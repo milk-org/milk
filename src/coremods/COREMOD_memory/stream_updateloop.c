@@ -8,13 +8,13 @@
  */
 
 #include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
 
@@ -75,42 +75,38 @@ static long long p_timingmode                             = 0;
  *  CMD 1: streamburst (3 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_burst = {
-    .fps_name    = "streamburst",
-    .cmdkey      = "streamburst",
-    .description = "send burst of frames to stream",
-    .description_long =
-        "Continuously update a shared memory stream by re-posting its semaphores at a configurable "
-        "rate. Keeps downstream consumers active even when no new data arrives."
-};
-
 #define FPS_PARAMS_BURST(X)                                                                \
     X(".inname", p_inname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input cube")       \
     X(".outname", p_outname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_OUTPUT, "output stream") \
     X(".usperiod", &p_usperiod, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "period [us]")
 
-static CLICMDDATA CLIcmddata_burst = { "", "", CLICMD_FIELDS_NOPARAM };
-FPS_CMDSETTINGS_INIT(burst, CLIcmddata_burst, FPS_app_info_burst)
+MILK_PARAMS_DEFINE(streamburst, FPS_PARAMS_BURST);
 
-static errno_t __attribute__((unused)) compute_burst()
+static MILK_HOT errno_t streamburst_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     COREMOD_MEMORY_image_streamburst(p_inname, p_outname, p_usperiod);
     return RETURN_SUCCESS;
 }
+
+const MILK_RUNNABLE runnable_COREMOD_memory_streamburst = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "streamburst",
+                 .cmdkey      = "streamburst",
+                 .description = "send burst of frames to stream",
+                 .description_long =
+                     "Continuously update a shared memory stream by re-posting its semaphores at a "
+                     "configurable rate. Keeps downstream consumers active even when no new data "
+                     "arrives." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(streamburst),
+    .compute = streamburst_compute,
+};
 
 
 /* ================================================================
  *  CMD 2: creaimstream (9 args, primary)
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "creaimstream",
-    .cmdkey      = "creaimstream",
-    .description = "create 2D stream from 3D cube",
-    .description_long =
-        "Continuously update a shared memory stream by re-posting its semaphores at a configurable "
-        "rate. Keeps downstream consumers active even when no new data arrives."
-};
 
 #define FPS_PARAMS(X)                                                                          \
     X(".inname", p_inname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input 3D cube")        \
@@ -123,85 +119,64 @@ static FPS_APP_INFO FPS_app_info = {
     X(".semtrig", &p_semtrig, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "sem trigger index")      \
     X(".timingmode", &p_timingmode, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "timing mode")
 
-FPS_V2_SECTION5(FPS_PARAMS)
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+MILK_PARAMS_DEFINE(creaimstream, FPS_PARAMS);
+
+static MILK_HOT errno_t creaimstream_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
     COREMOD_MEMORY_image_streamupdateloop(p_inname, p_outname, p_usperiod, p_NBcubes, p_period,
                                           p_offsetus, p_syncname, p_semtrig, p_timingmode);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
+const MILK_RUNNABLE runnable_COREMOD_memory_creaimstream = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "creaimstream",
+                 .cmdkey      = "creaimstream",
+                 .description = "create 2D stream from 3D cube",
+                 .description_long =
+                     "Continuously update a shared memory stream by re-posting its semaphores at a "
+                     "configurable rate. Keeps downstream consumers active even when no new data "
+                     "arrives." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(creaimstream),
+    .compute = creaimstream_compute,
+};
 
 
 /* ================================================================
  *  CMD 3: creaimstreamstrig (7 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_strig = {
-    .fps_name    = "creaimstreamstrig",
-    .cmdkey      = "creaimstreamstrig",
-    .description = "create 2D stream from 3D cube "
-                   "(sem-triggered)",
-    .description_long =
-        "Continuously update a shared memory stream by re-posting its semaphores at a configurable "
-        "rate. Keeps downstream consumers active even when no new data arrives."
-};
+MILK_PARAMS_DEFINE(creaimstreamstrig, FPS_PARAMS);
 
-static CLICMDDATA CLIcmddata_strig = { "", "", CLICMD_FIELDS_NOPARAM };
-FPS_CMDSETTINGS_INIT(strig, CLIcmddata_strig, FPS_app_info_strig)
-
-static errno_t __attribute__((unused)) compute_strig()
+static MILK_HOT errno_t creaimstreamstrig_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     COREMOD_MEMORY_image_streamupdateloop_semtrig(p_inname, p_outname, p_period, p_offsetus,
                                                   p_syncname, p_semtrig, p_timingmode);
     return RETURN_SUCCESS;
 }
 
+const MILK_RUNNABLE runnable_COREMOD_memory_creaimstreamstrig = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "creaimstreamstrig",
+                 .cmdkey      = "creaimstreamstrig",
+                 .description = "create 2D stream from 3D cube (sem-triggered)",
+                 .description_long =
+                     "Continuously update a shared memory stream by re-posting its semaphores at a "
+                     "configurable rate. Keeps downstream consumers active even when no new data "
+                     "arrives." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(creaimstreamstrig),
+    .compute = creaimstreamstrig_compute,
+};
 
-/* ================================================================
- *  REGISTRATION
- * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-
-/* separate bindings for burst (3 args) */
-static FPS_CLI_BINDING bindings_burst[]  = { FPS_PARAMS_BURST(FPS_X_BINDING) };
-static const int       nb_bindings_burst = sizeof(bindings_burst) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg_burst[]      = { FPS_PARAMS_BURST(FPS_X_FARG) };
-
-static errno_t CLIfunction_burst(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_burst, farg_burst, &CLIcmddata_burst,
-                                        bindings_burst, nb_bindings_burst, compute_burst);
-}
-
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-static errno_t CLIfunction_strig(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_strig, farg, &CLIcmddata_strig, my_bindings,
-                                        nb_bindings, compute_strig);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__stream_updateloop()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC;
-
-    safe_fps_fill_farg_examples(farg_burst, bindings_burst, nb_bindings_burst);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_burst, CLIfunction_burst);
-
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_strig, CLIfunction_strig);
-
-    return RETURN_SUCCESS;
-}
-#endif
 /** @brief Send single burst of frames to stream
  *
  */

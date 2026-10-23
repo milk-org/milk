@@ -7,7 +7,11 @@
  * @brief Stream updateloop module
  */
 
-errno_t CLIADDCMD_COREMOD_memory__stream_updateloop();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_streamburst;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_creaimstream;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_creaimstreamstrig;
 
 imageID COREMOD_MEMORY_image_streamupdateloop(const char *IDinname,
                                               const char *IDoutname,

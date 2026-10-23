@@ -10,6 +10,8 @@
 #ifndef _FFT_H
 #define _FFT_H
 
+#include "milk_runnable.h"
+
 #include "fft/DFT.h"
 #include "fft/dofft.h"
 #include "fft/fft_autocorrelation.h"
@@ -22,6 +24,16 @@
 #include "fft/pup2foc.h"
 #include "fft/testfftspeed.h"
 #include "fft/wisdom.h"
+
+extern const MILK_RUNNABLE runnable_fft_init_fftwplan;
+extern const MILK_RUNNABLE runnable_fft_permut;
+extern const MILK_RUNNABLE runnable_fft_dofft;
+extern const MILK_RUNNABLE runnable_fft_dofft_1dfft;
+extern const MILK_RUNNABLE runnable_fft_dofft_1drfft;
+extern const MILK_RUNNABLE runnable_fft_testfftspeed;
+extern const MILK_RUNNABLE runnable_fft_ffttranslate;
+extern const MILK_RUNNABLE runnable_fft_fftcorrelation;
+extern const MILK_RUNNABLE runnable_fft_pup2foc;
 
 int fft_setoffsets(long o1, long o2);
 

@@ -112,7 +112,7 @@ Common crash locations and their causes:
 | Crash location                 | Likely cause                                         |
 | ------------------------------ | ---------------------------------------------------- |
 | `CLIcore_checkargs.c`          | `nbarg` mismatch, missing `FPFLAG_PRIMARY_CLI_INPUT` |
-| `RegisterCLIcmd`               | NULL function pointer, uninitialized `CLIcmddata`    |
+| `RegisterCLIcmd`               | `MILK_RUNNABLE` with NULL `.cli_func` / `.farg`, or `.nbarg` not matching `.farg` |
 | `cli_calc_eval.c`              | Stack underflow in expression evaluator              |
 | `cli_calc_tokenizer.c`         | Buffer overflow on long expressions                  |
 | `CLIcore_modules.c`            | Module load order, `dlopen` failure                  |
@@ -130,11 +130,11 @@ found" issues.
 1. CLIcore.c: main()
      → load_module_shared()        [for each .so]
        → dlopen(sofile)
-       → dlsym("initModule")
-       → initModule()
-         → CLIADDCMD_module__func()
-           → RegisterCLIcmd()
-             → populates data.cmd[i]
+       → dlsym("__milk_module_info")
+       → newstyle_milk_module_registration()
+         → for each MILK_RUNNABLE of the module registry
+           → milk_runnable_prepare() + RegisterCLIcmd()
+             → populates data.cmd[i], data.cmd[i].runnable
 ```
 
 ### Key data structures
@@ -146,17 +146,18 @@ found" issues.
 - `data.moduleindex` — **global** index of the
   module currently being loaded (source of race
   conditions)
-- `CLIcmddata` — per-function static struct
-  containing the command's CLI keyword, args, etc.
+- `MILK_RUNNABLE` — per-command descriptor (see
+  `src/engine/libcomputeunit/milk_runnable.h`); its
+  `rt->cmddata` holds the command's CLI keyword, args, etc.
 
 ### Common issues
 
-1. **Empty commands**: `CLIcmddata` initialized
-   by `__attribute__((constructor))` before
-   `initModule` runs. If the constructor runs in
-   a different load order than expected, the
-   static `CLIcmddata` may not be populated when
-   `RegisterCLIcmd` reads it.
+1. **Empty / missing commands**: the runnable is not
+   in the array given to `MILK_MODULE_RUNNABLES`, its
+   source file was dropped by an unmet
+   `MILK_CMAKE_MANDATE_*` (the entry is then a NULL
+   weak declaration, skipped silently), or `.app.cmdkey`
+   is empty.
 
 2. **Wrong module metadata**: `data.moduleindex`
    is a global that gets overwritten when modules

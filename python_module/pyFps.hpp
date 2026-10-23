@@ -11,11 +11,11 @@ extern "C"
 {
 #include "CLIcore.h"
 #include "CLIcore/CLIcore_datainit.h"
-#include "libfps/fps_CONFstart.h"
-#include "libfps/fps_CONFstop.h"
-#include "libfps/fps_RUNstart.h"
-#include "libfps/fps_RUNstop.h"
-#include "libfps/fps_tmux.h"
+#include "libcomputeunit/fps_CONFstart.h"
+#include "libcomputeunit/fps_CONFstop.h"
+#include "libcomputeunit/fps_RUNstart.h"
+#include "libcomputeunit/fps_RUNstop.h"
+#include "libcomputeunit/fps_tmux.h"
 #include "processtools.h"
 }
 

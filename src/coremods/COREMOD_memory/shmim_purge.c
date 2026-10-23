@@ -10,34 +10,20 @@
  */
 
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "CLIcore.h"
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#ifndef MILK_NO_CLI
-#    include "streamCTRL_find_streams.h"
-#endif
+#include "streamCTRL_find_streams.h"
 
 #include "image_ID.h"
 #include "read_shmim.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "shmimpurge",
-    .cmdkey      = "shmimpurge",
-    .description = "purge orphan streams",
-    .description_long =
-        "Scan /dev/shm for stale (orphaned) image streams and remove them. A stream is considered "
-        "stale if no process has it open or if its creator PID no longer exists."
-};
+#include "shmim_purge.h"
 
 
 /* ================================================================
@@ -62,16 +48,6 @@ static char stringfilter[FUNCTION_PARAMETER_STRMAXLEN] = "";
 /** @brief purge orphan shared memory streams */
 errno_t shmim_purge(const char *strfilter)
 {
-#ifdef MILK_NO_CLI
-    /* STREAMINFO and find_streams require
-     * CLI/TUI headers not available in
-     * standalone builds.
-     */
-    (void) strfilter;
-    printf("shmim_purge: not available in "
-           "standalone mode\n");
-    return RETURN_SUCCESS;
-#else
     int         NBstreamMAX = 10000;
     STREAMINFO *streaminfo;
 
@@ -131,54 +107,47 @@ errno_t shmim_purge(const char *strfilter)
     free(streaminfo);
 
     return RETURN_SUCCESS;
-#endif /* MILK_NO_CLI */
 }
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  BINDINGS AND FARG
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(shmim_purge, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t shmim_purge_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START shmim_purge(stringfilter);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    shmim_purge(stringfilter);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__shmim_purge()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_shmimpurge = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "shmimpurge",
+                 .cmdkey      = "shmimpurge",
+                 .description = "purge orphan streams",
+                 .description_long =
+                     "Scan /dev/shm for stale (orphaned) image streams and remove them. A stream "
+                     "is considered stale if no process has it open or if its creator PID no "
+                     "longer exists." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(shmim_purge),
+    .compute = shmim_purge_compute,
+};

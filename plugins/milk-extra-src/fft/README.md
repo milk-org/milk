@@ -28,5 +28,5 @@ Fourier Transforms using FFTW library.
 
 ## Dependencies
 
-- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
+- `milk_runnable.h` (`libcomputeunit`), which provides the FPS and processinfo macros
 - `fftw3`, `fftw3f` (single and double precision)

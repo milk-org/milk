@@ -26,6 +26,7 @@
 #define MODULE_DESCRIPTION "Image analysis/reduction routines"
 
 #include "img_reduce_internal.h"
+#include "milk_runnable.h"
 
 int    badpixclean_init = 0;
 long   badpixclean_NBop;
@@ -55,52 +56,31 @@ static char bpf_in[FUNCTION_PARAMETER_STRMAXLEN]  = "im";
 static char bpf_bp[FUNCTION_PARAMETER_STRMAXLEN]  = "bpmap";
 static char bpf_out[FUNCTION_PARAMETER_STRMAXLEN] = "outim";
 
-static FPS_APP_INFO FPS_app_info_bpf = {
-    .fps_name         = "rmbadpixfast",
-    .cmdkey           = "rmbadpixfast",
-    .description      = "remove bad pixels (fast algo)",
-    .description_long = "Reduce raw astronomical image data: apply dark subtraction, flat "
-                        "fielding, and bad pixel correction to image cubes."
-};
-
 #define FPS_PARAMS_BPF(X)                                                              \
     X(".in_name", bpf_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")   \
     X(".bp_name", bpf_bp, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "bad pixel map") \
     X(".out_name", bpf_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")
 
-#include "fps.h"
+MILK_PARAMS_DEFINE(bpf, FPS_PARAMS_BPF);
 
-static FPS_CLI_BINDING bpf_bindings[] = { FPS_PARAMS_BPF(FPS_X_BINDING) };
-static const int       bpf_nb         = sizeof(bpf_bindings) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg[]         = { FPS_PARAMS_BPF(FPS_X_FARG) };
-static CLICMDDATA      CLIcmddata     = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS     bpf_cms        = { 0 };
-
-static __attribute__((constructor)) void init_bpf_cms(void)
+static MILK_HOT errno_t bpf_compute(const MILK_RUNNABLE *self)
 {
-    strncpy(CLIcmddata.key, FPS_app_info_bpf.cmdkey, sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description, FPS_app_info_bpf.description,
-            sizeof(CLIcmddata.description) - 1);
-    CLIcmddata.nbarg         = sizeof(farg) / sizeof(CLICMDARGDEF);
-    CLIcmddata.funcfpscliarg = farg;
-    CLIcmddata.flags         = CLICMDFLAG_FPS;
-    if (CLIcmddata.cmdsettings == NULL)
-    {
-        CLIcmddata.cmdsettings = &bpf_cms;
-    }
-}
-
-static errno_t bpf_compute(void)
-{
+    (void) self;
     IMG_REDUCE_cleanbadpix_fast(bpf_in, bpf_bp, bpf_out, 0);
     return RETURN_SUCCESS;
 }
 
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_bpf, farg, &CLIcmddata, bpf_bindings, bpf_nb,
-                                        bpf_compute);
-}
+const MILK_RUNNABLE runnable_img_reduce_bpf = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app = { .fps_name         = "rmbadpixfast",
+             .cmdkey           = "rmbadpixfast",
+             .description      = "remove bad pixels (fast algo)",
+             .description_long = "Reduce raw astronomical image data: apply dark subtraction, flat "
+                                 "fielding, and bad pixel correction to image cubes." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(bpf),
+    .compute = bpf_compute,
+};
 
 /* ============================================
  * Command: rmbadpixfasts
@@ -110,49 +90,31 @@ static char bps_in[FUNCTION_PARAMETER_STRMAXLEN]  = "imstream";
 static char bps_bp[FUNCTION_PARAMETER_STRMAXLEN]  = "bpmap";
 static char bps_out[FUNCTION_PARAMETER_STRMAXLEN] = "outimstream";
 
-static FPS_APP_INFO FPS_app_info_bps = {
-    .fps_name         = "rmbadpixfasts",
-    .cmdkey           = "rmbadpixfasts",
-    .description      = "remove bad pixels (fast, stream)",
-    .description_long = "Reduce raw astronomical image data: apply dark subtraction, flat "
-                        "fielding, and bad pixel correction to image cubes."
-};
-
 #define FPS_PARAMS_BPS(X)                                                              \
     X(".in_name", bps_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input stream")  \
     X(".bp_name", bps_bp, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "bad pixel map") \
     X(".out_name", bps_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output stream")
 
-static FPS_CLI_BINDING bps_bindings[] = { FPS_PARAMS_BPS(FPS_X_BINDING) };
-static const int       bps_nb         = sizeof(bps_bindings) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    bps_farg[]     = { FPS_PARAMS_BPS(FPS_X_FARG) };
-static CLICMDDATA      bps_data       = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS     bps_cms        = { 0 };
+MILK_PARAMS_DEFINE(bps, FPS_PARAMS_BPS);
 
-static __attribute__((constructor)) void init_bps_cms(void)
+static MILK_HOT errno_t bps_compute(const MILK_RUNNABLE *self)
 {
-    strncpy(bps_data.key, FPS_app_info_bps.cmdkey, sizeof(bps_data.key) - 1);
-    strncpy(bps_data.description, FPS_app_info_bps.description, sizeof(bps_data.description) - 1);
-    bps_data.nbarg         = sizeof(bps_farg) / sizeof(CLICMDARGDEF);
-    bps_data.funcfpscliarg = bps_farg;
-    bps_data.flags         = CLICMDFLAG_FPS;
-    if (bps_data.cmdsettings == NULL)
-    {
-        bps_data.cmdsettings = &bps_cms;
-    }
-}
-
-static errno_t bps_compute(void)
-{
+    (void) self;
     IMG_REDUCE_cleanbadpix_fast(bps_in, bps_bp, bps_out, 1);
     return RETURN_SUCCESS;
 }
 
-static errno_t bps_CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_bps, bps_farg, &bps_data, bps_bindings,
-                                        bps_nb, bps_compute);
-}
+const MILK_RUNNABLE runnable_img_reduce_bps = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app = { .fps_name         = "rmbadpixfasts",
+             .cmdkey           = "rmbadpixfasts",
+             .description      = "remove bad pixels (fast, stream)",
+             .description_long = "Reduce raw astronomical image data: apply dark subtraction, flat "
+                                 "fielding, and bad pixel correction to image cubes." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(bps),
+    .compute = bps_compute,
+};
 
 /* ============================================
  * Command: cubesimplestat
@@ -162,47 +124,29 @@ imageID IMG_REDUCE_cubesimplestat(const char *IDin_name);
 
 static char css_in[FUNCTION_PARAMETER_STRMAXLEN] = "imcube";
 
-static FPS_APP_INFO FPS_app_info_css = {
-    .fps_name         = "cubesimplestat",
-    .cmdkey           = "cubesimplestat",
-    .description      = "simple data cube stats",
-    .description_long = "Reduce raw astronomical image data: apply dark subtraction, flat "
-                        "fielding, and bad pixel correction to image cubes."
-};
-
 #define FPS_PARAMS_CSS(X) \
     X(".in_name", css_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image cube")
 
-static FPS_CLI_BINDING css_bindings[] = { FPS_PARAMS_CSS(FPS_X_BINDING) };
-static const int       css_nb         = sizeof(css_bindings) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    css_farg[]     = { FPS_PARAMS_CSS(FPS_X_FARG) };
-static CLICMDDATA      css_data       = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS     css_cms        = { 0 };
+MILK_PARAMS_DEFINE(css, FPS_PARAMS_CSS);
 
-static __attribute__((constructor)) void init_css_cms(void)
+static MILK_HOT errno_t css_compute(const MILK_RUNNABLE *self)
 {
-    strncpy(css_data.key, FPS_app_info_css.cmdkey, sizeof(css_data.key) - 1);
-    strncpy(css_data.description, FPS_app_info_css.description, sizeof(css_data.description) - 1);
-    css_data.nbarg         = sizeof(css_farg) / sizeof(CLICMDARGDEF);
-    css_data.funcfpscliarg = css_farg;
-    css_data.flags         = CLICMDFLAG_FPS;
-    if (css_data.cmdsettings == NULL)
-    {
-        css_data.cmdsettings = &css_cms;
-    }
-}
-
-static errno_t css_compute(void)
-{
+    (void) self;
     IMG_REDUCE_cubesimplestat(css_in);
     return RETURN_SUCCESS;
 }
 
-static errno_t css_CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_css, css_farg, &css_data, css_bindings,
-                                        css_nb, css_compute);
-}
+const MILK_RUNNABLE runnable_img_reduce_css = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app = { .fps_name         = "cubesimplestat",
+             .cmdkey           = "cubesimplestat",
+             .description      = "simple data cube stats",
+             .description_long = "Reduce raw astronomical image data: apply dark subtraction, flat "
+                                 "fielding, and bad pixel correction to image cubes." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(css),
+    .compute = css_compute,
+};
 
 /* ============================================
  * Command: imcenternorm
@@ -228,14 +172,6 @@ static int64_t cn_ycs                               = 20;
 static int64_t cn_mode                              = 0;
 static int64_t cn_sem                               = 0;
 
-static FPS_APP_INFO FPS_app_info_cn = {
-    .fps_name         = "imcenternorm",
-    .cmdkey           = "imcenternorm",
-    .description      = "recenter and normalize image",
-    .description_long = "Reduce raw astronomical image data: apply dark subtraction, flat "
-                        "fielding, and bad pixel correction to image cubes."
-};
-
 #define FPS_PARAMS_CN(X)                                                                  \
     X(".in_name", cn_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")       \
     X(".ref_name", cn_ref, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "reference image") \
@@ -247,37 +183,27 @@ static FPS_APP_INFO FPS_app_info_cn = {
     X(".mode", &cn_mode, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "shared mem mode")        \
     X(".semtrig", &cn_sem, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "semaphore trigger")
 
-static FPS_CLI_BINDING cn_bindings[] = { FPS_PARAMS_CN(FPS_X_BINDING) };
-static const int       cn_nb         = sizeof(cn_bindings) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    cn_farg[]     = { FPS_PARAMS_CN(FPS_X_FARG) };
-static CLICMDDATA      cn_data       = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS     cn_cms        = { 0 };
+MILK_PARAMS_DEFINE(cn, FPS_PARAMS_CN);
 
-static __attribute__((constructor)) void init_cn_cms(void)
+static MILK_HOT errno_t cn_compute(const MILK_RUNNABLE *self)
 {
-    strncpy(cn_data.key, FPS_app_info_cn.cmdkey, sizeof(cn_data.key) - 1);
-    strncpy(cn_data.description, FPS_app_info_cn.description, sizeof(cn_data.description) - 1);
-    cn_data.nbarg         = sizeof(cn_farg) / sizeof(CLICMDARGDEF);
-    cn_data.funcfpscliarg = cn_farg;
-    cn_data.flags         = CLICMDFLAG_FPS;
-    if (cn_data.cmdsettings == NULL)
-    {
-        cn_data.cmdsettings = &cn_cms;
-    }
-}
-
-static errno_t cn_compute(void)
-{
+    (void) self;
     IMG_REDUCE_centernormim(cn_in, cn_ref, cn_out, (long) cn_xc0, (long) cn_yc0, (long) cn_xcs,
                             (long) cn_ycs, (int) cn_mode, (int) cn_sem);
     return RETURN_SUCCESS;
 }
 
-static errno_t cn_CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_cn, cn_farg, &cn_data, cn_bindings, cn_nb,
-                                        cn_compute);
-}
+const MILK_RUNNABLE runnable_img_reduce_cn = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app = { .fps_name         = "imcenternorm",
+             .cmdkey           = "imcenternorm",
+             .description      = "recenter and normalize image",
+             .description_long = "Reduce raw astronomical image data: apply dark subtraction, flat "
+                                 "fielding, and bad pixel correction to image cubes." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(cn),
+    .compute = cn_compute,
+};
 
 /* ============================================
  * Command: imgcubeprocess
@@ -287,82 +213,38 @@ int IMG_REDUCE_cubeprocess(const char *IDin_name);
 
 static char cp_in[FUNCTION_PARAMETER_STRMAXLEN] = "imcube";
 
-static FPS_APP_INFO FPS_app_info_cp = {
-    .fps_name         = "imgcubeprocess",
-    .cmdkey           = "imgcubeprocess",
-    .description      = "data cube process",
-    .description_long = "Reduce raw astronomical image data: apply dark subtraction, flat "
-                        "fielding, and bad pixel correction to image cubes."
-};
-
 #define FPS_PARAMS_CP(X) \
     X(".in_name", cp_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image cube")
 
-static FPS_CLI_BINDING cp_bindings[] = { FPS_PARAMS_CP(FPS_X_BINDING) };
-static const int       cp_nb         = sizeof(cp_bindings) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    cp_farg[]     = { FPS_PARAMS_CP(FPS_X_FARG) };
-static CLICMDDATA      cp_data       = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS     cp_cms        = { 0 };
+MILK_PARAMS_DEFINE(cp, FPS_PARAMS_CP);
 
-static __attribute__((constructor)) void init_cp_cms(void)
+static MILK_HOT errno_t cp_compute(const MILK_RUNNABLE *self)
 {
-    strncpy(cp_data.key, FPS_app_info_cp.cmdkey, sizeof(cp_data.key) - 1);
-    strncpy(cp_data.description, FPS_app_info_cp.description, sizeof(cp_data.description) - 1);
-    cp_data.nbarg         = sizeof(cp_farg) / sizeof(CLICMDARGDEF);
-    cp_data.funcfpscliarg = cp_farg;
-    cp_data.flags         = CLICMDFLAG_FPS;
-    if (cp_data.cmdsettings == NULL)
-    {
-        cp_data.cmdsettings = &cp_cms;
-    }
-}
-
-static errno_t cp_compute(void)
-{
+    (void) self;
     IMG_REDUCE_cubeprocess(cp_in);
     return RETURN_SUCCESS;
 }
 
-static errno_t cp_CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_cp, cp_farg, &cp_data, cp_bindings, cp_nb,
-                                        cp_compute);
-}
+const MILK_RUNNABLE runnable_img_reduce_cp = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app = { .fps_name         = "imgcubeprocess",
+             .cmdkey           = "imgcubeprocess",
+             .description      = "data cube process",
+             .description_long = "Reduce raw astronomical image data: apply dark subtraction, flat "
+                                 "fielding, and bad pixel correction to image cubes." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(cp),
+    .compute = cp_compute,
+};
 
 /* ============================================
- * Module init
+ * Module registry
  * ============================================ */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t init_module_CLI()
-{
-    /* rmbadpixfast */
-    safe_fps_fill_farg_examples(farg, bpf_bindings, bpf_nb);
-    INSERT_STD_CLIREGISTERFUNC;
+// Module registry: CLI exposure = membership here.
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_img_reduce_bpf, &runnable_img_reduce_bps, &runnable_img_reduce_css,
+    &runnable_img_reduce_cn,  &runnable_img_reduce_cp,
+};
 
-    /* rmbadpixfasts */
-    safe_fps_fill_farg_examples(bps_farg, bps_bindings, bps_nb);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(bps_data, bps_CLIfunction);
-
-    /* cubesimplestat */
-    safe_fps_fill_farg_examples(css_farg, css_bindings, css_nb);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(css_data, css_CLIfunction);
-
-    /* imcenternorm */
-    safe_fps_fill_farg_examples(cn_farg, cn_bindings, cn_nb);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(cn_data, cn_CLIfunction);
-
-    /* imgcubeprocess */
-    safe_fps_fill_farg_examples(cp_farg, cp_bindings, cp_nb);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(cp_data, cp_CLIfunction);
-
-
-    // add atexit functions here
-
-    return RETURN_SUCCESS;
-}
-
-// INITIALIZE MILK IMPORTABLE MODULE
-MILK_MODULE(img_reduce, init_module_CLI, NULL);
-
-#endif // #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+MILK_MODULE_RUNNABLES(img_reduce, NULL, runnables);

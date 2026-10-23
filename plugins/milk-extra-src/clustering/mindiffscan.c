@@ -9,7 +9,8 @@
 
 #include <math.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
+#include "clustering.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #ifdef USE_CFITSIO
@@ -21,13 +22,6 @@
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "mindiffscan",
-                                     .cmdkey      = "mindiffscan",
-                                     .description = "scan image cube for similar pairs",
-                                     .description_long =
-                                         "Scan an image cube for the most similar pair of slices "
-                                         "by minimizing the sum-of-squared differences." };
 
 
 /* ================================================================
@@ -55,7 +49,7 @@ static uint32_t *farg_kNNsize  = NULL;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(mindiffscan, FPS_PARAMS);
 
 
 static errno_t imcube_mindiffscan(IMGID img,
@@ -402,7 +396,7 @@ static errno_t imcube_mindiffscan(IMGID img,
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t mindiffscan_compute(__attribute__((unused)) const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -417,26 +411,20 @@ static MILK_HOT errno_t compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_clustering__imcube_mindiffscan()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
 
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_clustering_mindiffscan = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "mindiffscan",
+                 .cmdkey           = "mindiffscan",
+                 .description      = "scan image cube for similar pairs",
+                 .description_long = "Scan an image cube for the most similar pair of slices "
+                                     "by minimizing the sum-of-squared differences." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(mindiffscan),
+    .compute = mindiffscan_compute,
+};
+EXPORT_FPSEXEC(milk, "clustering-mindiffscan", runnable_clustering_mindiffscan);

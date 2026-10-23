@@ -5,8 +5,7 @@ Welcome to `milk`! This tutorial will guide you through creating your first modu
 `milk` core frameworks.
 
 See also: [Programmer's Guide](../arch/programmers_guide.md) · [Code Assist Tools](code_assist.md) ·
-[Adding Plugins](plugins.md) · [FPS](../guide/fps.md) ·
-[FPS Standalone Modes](../arch/FPS_Standalone_CMD_Modes.md)
+[Adding Plugins](plugins.md) · [FPS](../guide/fps.md)
 
 ## 1. Setting Up the Directory Structure
 
@@ -30,89 +29,95 @@ set(LIBNAME "my_first_module")
 set(SRCNAME "my_first_module")
 ```
 
-Source files are picked up automatically. Declare the standalone executables you want to build, and update the matching `add_test` lines:
+Source files are picked up automatically; the module is built by `milk_add_runnable_module()` and one
+executable is generated per `EXPORT_FPSEXEC` line of the sources (see below). Update the matching
+`add_test` lines to the executable ids you export.
 
-```cmake title="CMakeLists.txt"
-# add_milk_standalone(short_name source_file.c)
-add_milk_standalone(my-first-exec examplefunc2_FPS.c)
-```
-
-## 3. Writing an FPS Compute Block
+## 3. Writing a Compute Unit
 
 The Function Parameter Structure (FPS) is the standard way milk exposes configuration variables to
-the outside world (like the `milk-fpsCTRL` TUI).
+the outside world (like the `milk-fpsCTRL` TUI). A compute unit is a `MILK_RUNNABLE` descriptor that
+gathers an identity, a parameter table and a compute function. We write one in
+`my_first_module_fps.c`.
 
-Let's look at a basic FPS setup in `my_first_module_fps.c`. You need an info struct, a parameter
-mapping, and an execution loop.
+### A. Parameters
 
-### A. Define the Application Info
-
-Every `fpsexec` program needs an ID string, a command key, and a short description:
-
-```c title="my_first_module_fps.c"
-#include "fps.h"
-
-FPS_APP_INFO FPS_app_info = {
-    .fps_name = "myfirstexec", // SHM name on disk
-    .cmdkey = "myexec",        // CLI keyword
-    .description = "My very first milk compute block!"
-};
-```
-
-### B. Map Parameters
-
-Use the `FPS_PARAMS` X-Macro to define the configuration parameters you want to expose:
+Use an X-macro table to define the configuration parameters you want to expose; `MILK_PARAMS_DEFINE`
+expands it into the FPS bindings and the CLI argument definitions:
 
 ```c title="my_first_module_fps.c"
-// Local Variables
+#include "milk_runnable.h"
+
+// Local variables
 static int32_t param_iterations = 100;
-static float   param_gain = 0.5f;
+static float   param_gain       = 0.5f;
 
-// Parameter mapping (X-macro)
-#define FPS_PARAMS(X) \
-    X(".iterations", &param_iterations, \
-      FPTYPE_INT32, 1, \
-      FPFLAG_DEFAULT_INPUT, "Number of iterations") \
-    X(".gain", &param_gain, \
-      FPTYPE_FLOAT32, 1, \
+// Parameter table (X-macro)
+#define MYFIRST_PARAMS(X)                                                    \
+    X(".iterations", &param_iterations, FPTYPE_INT32, 1,                     \
+      FPFLAG_DEFAULT_INPUT, "Number of iterations")                          \
+    X(".gain", &param_gain, FPTYPE_FLOAT32, 1,                               \
       FPFLAG_DEFAULT_INPUT, "Loop gain")
+
+MILK_PARAMS_DEFINE(myfirst, MYFIRST_PARAMS);
 ```
 
-### C. Implement the Compute Function
+### B. Implement the Compute Function
 
-This is the core compute function. It is called after parameters are synced from FPS shared memory.
+This is the core compute function. It is called after parameters are synced from FPS shared memory;
+the processinfo macros provide the heartbeat, loop control and timing:
 
 ```c title="my_first_module_fps.c"
-static errno_t fpsexec(void) {
-    printf("Running with gain %f, %d iterations\n",
-           param_gain, param_iterations);
+static errno_t myfirst_compute(const MILK_RUNNABLE *self)
+{
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    {
+        printf("Running with gain %f, %d iterations\n", param_gain, param_iterations);
 
-    for (int i = 0; i < param_iterations; i++) {
-        // Do math here...
+        for (int i = 0; i < param_iterations; i++)
+        {
+            // Do math here...
+        }
     }
+    MILK_PROCINFO_END(self)
 
     return RETURN_SUCCESS;
 }
 ```
 
-### D. The Main Entry Point
+### C. The Descriptor
 
-The V2 macro generates the standalone `main()` function that handles the FPS lifecycle (create,
-exec, confstart, runstart, etc.):
+The descriptor gives the unit its identity. `EXPORT_FPSEXEC` makes CMake generate the
+`milk-fpsexec-my-first-exec` executable, with a `main()` that handles the FPS lifecycle (create, exec,
+confstart, runstart, etc.):
 
 ```c title="my_first_module_fps.c"
-// Processinfo-wrapped entry point
-static errno_t compute_function() {
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    fpsexec();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-    return RETURN_SUCCESS;
-}
+const MILK_RUNNABLE runnable_my_first_module_myfirst = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "myfirstexec",  // SHM name on disk
+                 .cmdkey      = "myexec",       // CLI keyword
+                 .description = "My very first milk compute block!" },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(myfirst),
+    .compute = myfirst_compute,
+};
+EXPORT_FPSEXEC(milk, "my-first-exec", runnable_my_first_module_myfirst);
+```
 
-// Standalone main (compiled with -DFPS_STANDALONE)
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+### D. Register the Unit in the Module
+
+List the unit in the module registry (`my_first_module.c`), which is what makes it a `milk-cli` command
+once the module is loaded:
+
+```c title="my_first_module.c"
+extern const MILK_RUNNABLE runnable_my_first_module_myfirst;
+
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_my_first_module_myfirst,
+};
+
+MILK_MODULE_RUNNABLES(my_first_module, NULL, runnables);
 ```
 
 ## 4. Compile and Run!
@@ -144,11 +149,9 @@ Congratulations! You've successfully written a milk module and an FPS compute bl
 Now that you've written your first module, you can automate this process and learn more advanced
 patterns using our built-in tools:
 
-- Run the `/create-plugin` workflow to scaffold new plugins automatically.
-- Run the `/create-fpsexec` workflow to scaffold new compute units.
+- Run the `/add-module` workflow to scaffold new plugins automatically.
+- Run the `/add-runnable` workflow to scaffold new compute units.
 - Consult the `api-quick-reference` skill for a cheat sheet on streams and FPS parameters.
-- Review the `pseudocode-to-compute-unit` skill to learn how to translate abstract algorithms into
-  V2 templates.
 
 ---
 

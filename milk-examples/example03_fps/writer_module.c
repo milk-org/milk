@@ -7,7 +7,8 @@
  * @brief Milk CLI module integration for the pattern generator writer.
  */
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "writer.h"
 
 /**
@@ -22,49 +23,36 @@ static CLICMDARGDEF farg[] = {
 };
 
 /** @brief Custom validation called during CLI configuration. */
-static errno_t customCONFcheck()
+static errno_t customCONFcheck(void)
 {
     writer03_validate();
     return RETURN_SUCCESS;
 }
 
-/** @brief Command metadata definition. */
-static CLICMDDATA CLIcmddata = { "writer03", "writer03 example with FPS", CLICMD_FIELDS_DEFAULTS };
+MILK_RUNNABLE_RT_DEFINE(writer03);
 
-/** @brief Displays detailed help when the user types 'writer03 -h' in the CLI. */
-static errno_t help_function()
-{
-    if (data.fpsptr != NULL && data.fpsptr->md != NULL)
-    {
-        printf("%s\n", data.fpsptr->md->helptext);
-    }
-    else
-    {
-        printf("Writer03: Pattern generation example.\n");
-    }
-    return RETURN_SUCCESS;
-}
+extern const MILK_RUNNABLE runnable_example03_writer03;
 
-/**
- * @brief Compute function wrapper for the Milk CLI.
- */
-static errno_t compute_function()
+/** @brief Called by the CLI core once the arguments are linked to the global parameter pointers. */
+static errno_t writer03_func(void)
 {
+    const MILK_RUNNABLE *self = &runnable_example03_writer03;
+
     DEBUG_TRACE_FSTART();
 
     // Resolve/Create output stream
-    IMGID outimg    = imgid_make_from_name(out_name_ptr);
-    outimg.naxis    = 2;
-    outimg.size[0]  = *width_ptr;
-    outimg.size[1]  = *height_ptr;
-    outimg.datatype = _DATATYPE_FLOAT;
+    IMGID outimg         = imgid_make_from_name(out_name_ptr);
+    outimg.mdt->naxis    = 2;
+    outimg.mdt->size[0]  = *width_ptr;
+    outimg.mdt->size[1]  = *height_ptr;
+    outimg.mdt->datatype = _DATATYPE_FLOAT;
     imcreateIMGID(&outimg);
 
-    // Standard ProcessInfo Loop Sequence
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     // Core shared computation
-    writer03_compute(data.fpsptr, processinfo, outimg.im);
+    writer03_compute(dcfpsptr, processinfo, outimg.im);
 
     // Update shared memory
     processinfo_update_output_stream(processinfo, outimg.im, NULL);
@@ -72,38 +60,21 @@ static errno_t compute_function()
     // Control loop frequency (100 Hz)
     usleep(10000);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-// Standard FPS integration function
-static errno_t CLIfunction(void)
-{
-    errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);
-    if (retval == RETURN_SUCCESS)
-    {
-        STD_FARG_LINKfunction return compute_function();
-    }
-    if (retval == RETURN_CLICHECKARGARRAY_HELP)
-    {
-        return RETURN_SUCCESS;
-    }
-    if (retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
-    {
-        return RETURN_SUCCESS;
-    }
-    return retval;
-}
-
-/**
- * @brief Registers the 'writer03' command with the Milk framework.
- * Called by the module initializer in example03fps_module.c.
- */
-errno_t CLIADDCMD_writer03()
-{
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
+const MILK_RUNNABLE runnable_example03_writer03 = {
+    .kind      = MILK_RUNNABLE_CLI,
+    .app       = { .fps_name    = "writer03",
+                   .cmdkey      = "writer03",
+                   .description = "writer03 example with FPS" },
+    .srcfile   = __FILE__,
+    .farg      = farg,
+    .nbarg     = (int) (sizeof(farg) / sizeof(farg[0])),
+    .confcheck = customCONFcheck,
+    .cli_func  = writer03_func,
+    .rt        = &writer03_rt,
+};

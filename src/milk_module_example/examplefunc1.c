@@ -12,7 +12,8 @@
  * See script milk-test-simplefunc for example usage.
  */
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
+#include "examplefunc1.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 // Local variables pointers
@@ -47,23 +48,13 @@ static double *scoeff; // matches CLIARG_FLOAT64
 // series of words separated by dot "."
 // For example: .input.xsize (note that first dot is optional)
 //
-static CLICMDARGDEF farg[] = {
-    { CLIARG_IMG, // type of argument
-      ".in_name", "input image", "im1",
-      (FPFLAG_DEFAULT_INPUT |
-       FPFLAG_CLI_INPUT), // This will be exposed as a function argument in the milk CLI, which has to be entered
-      (void **) &inimname, NULL },
-    { CLIARG_FLOAT64, ".scaling", "scaling coefficient", "1.0",
-      FPFLAG_DEFAULT_INPUT, // hidden argument is not part of CLI call, FPFLAG ignored
-      (void **) &scoeff, NULL }
-};
+static CLICMDARGDEF imsum1_farg[] = { { CLIARG_IMG, ".in_name", "input image", "im1",
+                                        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
+                                        (void **) &inimname, NULL },
+                                      { CLIARG_FLOAT64, ".scaling", "scaling coefficient", "1.0",
+                                        FPFLAG_DEFAULT_INPUT, (void **) &scoeff, NULL } };
 
-// CLI function initialization data
-static CLICMDDATA CLIcmddata = {
-    "imsum1",                          // keyword to call function in from the milk CLI
-    "compute total of image example1", // brief (1-line) description of what the function does
-    CLICMD_FIELDS_NOFPS                // do NOT use Function Parameter Structure (FPS)
-};
+MILK_RUNNABLE_RT_DEFINE(imsum1);
 
 
 /** @brief Compute function code
@@ -116,57 +107,37 @@ static errno_t example_compute_2Dimage_total(IMGID *imgptr, double scalingcoeff)
 }
 
 /**
- * @brief Wrapper function, used by all CLI calls
- *
- * Defines how local variables are fed to computation code.
- * Always local to this translation unit.
+ * @brief CLI command body; the CLI core has already linked the arguments.
  *
  * @return errno_t
  */
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t imsum1_func(void)
 {
     DEBUG_TRACE_FSTART();
 
-
-    // Note how we are accessing the image from its name.
+    // The IMGID is resolved from its name inside example_compute_2Dimage_total().
     IMGID img = imgid_make_from_name(inimname);
     // The function imgid_make_from_name takes the name as argument and forms an IMGID from it.
     // At this point the connection to the image has not been established. This will be done
     // on the first call of resolveIMGID inside the compute function.
-
     example_compute_2Dimage_total(&img, *scoeff);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-static errno_t CLIfunction(void)
-{
-    errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);
-    if (retval == RETURN_SUCCESS)
-    {
-        STD_FARG_LINKfunction return compute_function();
-    }
-    if (retval == RETURN_CLICHECKARGARRAY_HELP)
-    {
-        return RETURN_SUCCESS;
-    }
-    if (retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
-    {
-        return RETURN_SUCCESS;
-    }
-    return retval;
-}
-
-/** @brief Register CLI command
- *
- * Adds function to list of CLI commands.
- * Called by main module initialization function init_module_CLI().
- */
-errno_t CLIADDCMD_milk_module_example__simplefunc()
-{
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
+/*
+    Define the exported command
+    .kind = MILK_RUNNABLE_CLI exports only a CLI command, but no executable.
+*/
+const MILK_RUNNABLE runnable_modex_imsum1 = {
+    .kind     = MILK_RUNNABLE_CLI,
+    .app      = { .fps_name    = "imsum1",
+                  .cmdkey      = "imsum1",
+                  .description = "compute total of image example1" },
+    .srcfile  = __FILE__,
+    .farg     = imsum1_farg,
+    .nbarg    = (int) (sizeof(imsum1_farg) / sizeof(imsum1_farg[0])),
+    .cli_func = imsum1_func,
+    .rt       = &imsum1_rt,
+};

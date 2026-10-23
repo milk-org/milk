@@ -26,7 +26,7 @@ Optional dependencies: `docs/developer/dependency_system.md`.
 | Core       | Engine + COREMOD\_{arith,memory,tools}            |
 | Core+FITS  | Core + COREMOD_iofits, cfitsio                    |
 | Full       | Everything: CLIcore, all plugins                  |
-| Standalone | Engine + regular COREMOD libs, `-DMILK_NO_CLI`    |
+| Fpsexec    | Engine + regular COREMOD libs + module library    |
 
 Before adding a dependency, check
 `docs/arch/dependency_graph.md` to verify the link

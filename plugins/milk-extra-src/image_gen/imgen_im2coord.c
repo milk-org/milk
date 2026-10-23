@@ -7,16 +7,10 @@
  * @brief   make coordinate image
  */
 
+#include "milk_runnable.h"
+#include "image_gen.h"
 #include "image_gen_internal.h"
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "im2coord",
-    .cmdkey      = "im2coord",
-    .description = "make coordinate image",
-    .description_long =
-        "Create a coordinate image where each pixel value represents its (x, y) position. Useful "
-        "for generating spatial masks and geometric transformations."
-};
 
 /* ================================================================
  * 2.  LOCAL PARAMETER VARIABLES
@@ -38,42 +32,40 @@ static char    ic_out[FUNCTION_PARAMETER_STRMAXLEN] = "imy";
 /* ================================================================
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(imgen_im2coord, FPS_PARAMS);
 
 /* ================================================================
  * 4/6. COMPUTE FUNCTION
  * ============================================================= */
-static errno_t compute_function(void)
+static MILK_HOT errno_t imgen_im2coord_compute(const MILK_RUNNABLE *self)
 {
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     image_gen_im2coord(ic_in, (uint8_t) ic_ax, ic_out);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
     return RETURN_SUCCESS;
 }
 
 /* ================================================================
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_gen__im2coord(void)
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+
+const MILK_RUNNABLE runnable_image_gen_imgen_im2coord = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "im2coord",
+              .cmdkey           = "im2coord",
+              .description      = "make coordinate image",
+              .description_long = "Create a coordinate image where each pixel value represents its "
+                                  "(x, y) position. Useful "
+                                  "for generating spatial masks and geometric transformations." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imgen_im2coord),
+    .compute = imgen_im2coord_compute,
+};
+EXPORT_FPSEXEC(milk, "imggen-im2coord", runnable_image_gen_imgen_im2coord);

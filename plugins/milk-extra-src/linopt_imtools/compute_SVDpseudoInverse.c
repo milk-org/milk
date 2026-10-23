@@ -19,7 +19,7 @@
 #    include <lapacke.h> // OpenBLAS OR lapacke standalone
 #endif
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "COREMOD_iofits/savefits.h"
@@ -30,13 +30,6 @@
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "impsinvsvd",
-                                     .cmdkey      = "impsinvsvd",
-                                     .description = "compute pseudoinverse",
-                                     .description_long =
-                                         "Compute the pseudo-inverse of an image-to-mode matrix "
-                                         "using SVD with configurable singular value truncation." };
 
 
 /* ================================================================
@@ -67,7 +60,7 @@ static long   *useGPU         = NULL;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(compute_SVDpseudoInverse, FPS_PARAMS);
 
 
 /**
@@ -460,11 +453,12 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 }
 
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t compute_SVDpseudoInverse_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     if (*useGPU == 0)
     {
@@ -482,7 +476,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 #endif
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -493,26 +487,20 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_linopt_imtools__compute_SVDpseudoinverse()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
 
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_linopt_imtools_compute_SVDpseudoInverse = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "impsinvsvd",
+                 .cmdkey           = "impsinvsvd",
+                 .description      = "compute pseudoinverse",
+                 .description_long = "Compute the pseudo-inverse of an image-to-mode matrix "
+                                     "using SVD with configurable singular value truncation." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(compute_SVDpseudoInverse),
+    .compute = compute_SVDpseudoInverse_compute,
+};
+EXPORT_FPSEXEC(milk, "linopt-SVDpInverse", runnable_linopt_imtools_compute_SVDpseudoInverse);

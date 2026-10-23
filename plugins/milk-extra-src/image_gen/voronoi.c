@@ -10,12 +10,9 @@
 #include "ImageStreamIO/ImageStruct.h"
 #include <math.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#    include "COREMOD_memory/COREMOD_memory.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
+#include "image_gen.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 
 // input points positions, ASCII file
@@ -23,14 +20,6 @@
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "voronoi",
-    .cmdkey           = "voronoi",
-    .description      = "make Voronoi map from points file",
-    .description_long = "Compute a Voronoi tessellation from a set of seed points. Each pixel is "
-                        "assigned to the nearest seed, creating a segmented map."
-};
 
 
 /* ================================================================
@@ -57,7 +46,7 @@ static float          *gapsize = NULL;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(voronoi, FPS_PARAMS);
 
 /**
  * Create Voronoi map
@@ -256,7 +245,7 @@ imageID image_gen_make_voronoi_map(IMGID *imgpos,
 }
 
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t voronoi_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -271,7 +260,8 @@ static MILK_HOT errno_t compute_function()
     }
 
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     {
         image_gen_make_voronoi_map(&imgpos, &imgout,
@@ -282,7 +272,7 @@ static MILK_HOT errno_t compute_function()
 
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     imgid_free(&imgpos);
     imgid_free(&imgout);
@@ -296,26 +286,21 @@ static MILK_HOT errno_t compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_gen__voronoi()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
 
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_image_gen_voronoi = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "voronoi",
+                 .cmdkey      = "voronoi",
+                 .description = "make Voronoi map from points file",
+                 .description_long =
+                     "Compute a Voronoi tessellation from a set of seed points. Each pixel is "
+                     "assigned to the nearest seed, creating a segmented map." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(voronoi),
+    .compute = voronoi_compute,
+};
+EXPORT_FPSEXEC(milk, "imggen-voronoi", runnable_image_gen_voronoi);

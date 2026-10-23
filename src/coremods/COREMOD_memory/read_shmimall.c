@@ -9,39 +9,22 @@
  * Uses FPS V2 framework.
  */
 
-#include <fcntl.h>    // open
+#include <fcntl.h> // open
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/mman.h> // mmap
 #include <sys/stat.h>
 #include <unistd.h> // close
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_ID.h"
 #include "list_image.h"
 #include "read_shmim.h"
+#include "read_shmimall.h"
 
-#ifndef MILK_NO_CLI
-#    include "streamCTRL_find_streams.h"
-#endif
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "readshmimall",
-    .cmdkey           = "readshmimall",
-    .description      = "read all shared memory images",
-    .description_long = "Connect to all shared memory image streams currently present in /dev/shm. "
-                        "Maps every stream into the process address space."
-};
+#include "streamCTRL_find_streams.h"
 
 
 /* ================================================================
@@ -65,10 +48,6 @@ static char strfilter[FUNCTION_PARAMETER_STRMAXLEN] = "aol_";
 
 errno_t read_sharedmem_image_all(const char *strfilter)
 {
-#ifdef MILK_NO_CLI
-    (void) strfilter;
-    return RETURN_SUCCESS;
-#else
     int         NBstreamMAX = 10000;
     STREAMINFO *streaminfo;
 
@@ -87,49 +66,47 @@ errno_t read_sharedmem_image_all(const char *strfilter)
     free(streaminfo);
 
     return RETURN_SUCCESS;
-#endif
 }
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  BINDINGS AND FARG
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(readshmimall, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t readshmimall_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START FUNC_CHECK_RETURN(read_sharedmem_image_all(strfilter));
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    FUNC_CHECK_RETURN(read_sharedmem_image_all(strfilter));
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__read_shmimall()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_readshmimall = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "readshmimall",
+                 .cmdkey      = "readshmimall",
+                 .description = "read all shared memory images",
+                 .description_long =
+                     "Connect to all shared memory image streams currently present in /dev/shm. "
+                     "Maps every stream into the process address space." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(readshmimall),
+    .compute = readshmimall_compute,
+};

@@ -9,16 +9,17 @@
  * Uses FPS V2 framework.
  */
 
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sched.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "create_image.h"
@@ -60,15 +61,6 @@ static long long p_rtprio                               = 80;
  *  CMD 1: imudptransmit (5 args, primary)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "imudptransmit",
-    .cmdkey      = "imudptransmit",
-    .description = "transmit image over UDP network",
-    .description_long =
-        "Transmit or receive image stream data over UDP for low-latency network streaming. "
-        "Suitable for real-time telemetry where occasional packet loss is acceptable."
-};
-
 #define FPS_PARAMS(X)                                                                \
     X(".imname", p_imname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "image name") \
     X(".ipaddr", p_ipaddr, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "IP address")     \
@@ -76,78 +68,66 @@ static FPS_APP_INFO FPS_app_info = {
     X(".csync", &p_csync, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "counter sync")     \
     X(".rtprio", &p_rtprio, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "RT priority")
 
-FPS_V2_SECTION5(FPS_PARAMS)
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+MILK_PARAMS_DEFINE(imudptransmit, FPS_PARAMS);
+
+static MILK_HOT errno_t imudptransmit_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
     COREMOD_MEMORY_image_NETUDPtransmit(p_imname, p_ipaddr, p_port, p_csync, p_rtprio);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
+const MILK_RUNNABLE runnable_COREMOD_memory_imudptransmit = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "imudptransmit",
+                 .cmdkey      = "imudptransmit",
+                 .description = "transmit image over UDP network",
+                 .description_long =
+                     "Transmit or receive image stream data over UDP for low-latency network "
+                     "streaming. Suitable for real-time telemetry where occasional packet loss is "
+                     "acceptable." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imudptransmit),
+    .compute = imudptransmit_compute,
+};
 
 
 /* ================================================================
  *  CMD 2: imudpreceive (3 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_rx = {
-    .fps_name    = "imudpreceive",
-    .cmdkey      = "imudpreceive",
-    .description = "receive image(s) over UDP "
-                   "network",
-    .description_long =
-        "Transmit or receive image stream data over UDP for low-latency network streaming. "
-        "Suitable for real-time telemetry where occasional packet loss is acceptable."
-};
-
 #define FPS_PARAMS_RX(X)                                                         \
     X(".port", &p_port, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "port")           \
     X(".csync", &p_csync, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "counter sync") \
     X(".rtprio", &p_rtprio, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "RT priority")
 
-static CLICMDDATA CLIcmddata_rx = { "", "", CLICMD_FIELDS_NOPARAM };
-FPS_CMDSETTINGS_INIT(rx, CLIcmddata_rx, FPS_app_info_rx)
+MILK_PARAMS_DEFINE(imudpreceive, FPS_PARAMS_RX);
 
-static errno_t __attribute__((unused)) compute_rx()
+static MILK_HOT errno_t imudpreceive_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     COREMOD_MEMORY_image_NETUDPreceive(p_port, p_csync, p_rtprio);
     return RETURN_SUCCESS;
 }
 
+const MILK_RUNNABLE runnable_COREMOD_memory_imudpreceive = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "imudpreceive",
+                 .cmdkey      = "imudpreceive",
+                 .description = "receive image(s) over UDP network",
+                 .description_long =
+                     "Transmit or receive image stream data over UDP for low-latency network "
+                     "streaming. Suitable for real-time telemetry where occasional packet loss is "
+                     "acceptable." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(imudpreceive),
+    .compute = imudpreceive_compute,
+};
 
-/* ================================================================
- *  REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-
-static FPS_CLI_BINDING bindings_rx[]  = { FPS_PARAMS_RX(FPS_X_BINDING) };
-static const int       nb_bindings_rx = sizeof(bindings_rx) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg_rx[]      = { FPS_PARAMS_RX(FPS_X_FARG) };
-
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-static errno_t CLIfunction_rx(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_rx, farg_rx, &CLIcmddata_rx, bindings_rx,
-                                        nb_bindings_rx, compute_rx);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__stream_UDP()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC;
-    safe_fps_fill_farg_examples(farg_rx, bindings_rx, nb_bindings_rx);
-    INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata_rx, CLIfunction_rx);
-
-    return RETURN_SUCCESS;
-}
-#endif
 /** continuously transmits 2D image through TCP link
  * do_counter_sync = 1, force counter to be used for synchronization, ignore semaphores if they exist
  */

@@ -27,7 +27,6 @@ git log --oneline --name-only -n 30 -- \
   'src/cli/CLIcore/milk-cli-help*.c' \
   'src/cli/CLIcore/milk-help.c' \
   'src/cli/CLIcore/CLIcore/CLIcore_help.c' \
-  'src/cli/CLIcore/doc/help.txt' \
   'src/engine/libfps/milk-fps-help.c' \
   'src/engine/libfps/milk-fpsexec-help.c' \
   'src/engine/libprocessinfo/milk-procinfo-help.c' \
@@ -56,7 +55,7 @@ were detected in step 2.
 ## 4. Check fpsexec One-Liners
 
 Verify that every installed fpsexec has a meaningful
-`.description` in its `FPS_APP_INFO`. Run:
+`.app.description` in its `MILK_RUNNABLE`. Run:
 
 ```bash
 milk-fpsexec-list

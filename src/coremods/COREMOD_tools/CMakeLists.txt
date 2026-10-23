@@ -12,36 +12,31 @@ project(lib_${LIBNAME}_project)
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
 
-add_library(${LIBNAME} SHARED ${SOURCEFILES})
-# CLIcore does not exist at this tier: reuse the include dirs of libfps
-target_include_directories(
-  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:milkfps,INCLUDE_DIRECTORIES>)
-milk_apply_extensions(${LIBNAME})
+milk_add_runnable_module(${LIBNAME} SOURCES ${SOURCEFILES} COREMOD)
+milk_add_fpsexec_stubs(${LIBNAME})
 
 # CUSTOM ===========
+# CLIcore does not exist at this tier: reuse the include dirs of libfps
+target_include_directories(
+  ${LIBNAME}_objs PRIVATE $<TARGET_PROPERTY:milkfps,INCLUDE_DIRECTORIES>)
+
 find_package(PkgConfig REQUIRED)
 if(USE_CFITSIO)
   pkg_check_modules(CFITSIO cfitsio)
 endif()
 if(USE_CFITSIO AND ${CFITSIO_FOUND})
-  link_directories(${CFITSIO_LIBRARY_DIRS})
-  target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
-  target_include_directories(${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
+  milk_runnable_module_usage(
+    ${LIBNAME}
+    DEFINITIONS USE_CFITSIO=1
+    INCLUDES ${CFITSIO_INCLUDE_DIRS}
+    LINK_DIRS ${CFITSIO_LIBRARY_DIRS})
 endif()
 
-target_include_directories(
-  ${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-                    $<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME} PUBLIC m milkfps)
-
-milk_add_static_lto(${LIBNAME})
+milk_runnable_module_usage(
+  ${LIBNAME} INCLUDES $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+  $<INSTALL_INTERFACE:include>)
 # ==================
 
-install(
-  TARGETS ${LIBNAME}
-  EXPORT milkTargets
-  DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 

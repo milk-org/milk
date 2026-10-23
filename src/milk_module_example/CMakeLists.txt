@@ -32,13 +32,12 @@ project(lib_${LIBNAME}_project)
 include_directories("${PROJECT_SOURCE_DIR}/src") # milk/src
 include_directories("${PROJECT_SOURCE_DIR}/..") # milk/src or milk/plugins
 
-add_library(${LIBNAME} SHARED ${SOURCEFILES})
-target_include_directories(
-  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
+# Sources are compiled once (-DMILK_NO_CLI) into the shared library, which the CLI loads and the
+# generated fpsexec stubs link. Requests/mandates are resolved by milk_apply_extensions().
+milk_add_runnable_module(${LIBNAME} SOURCES ${SOURCEFILES})
 
-# Process the MILK dependency system: resolve MILK_CMAKE_REQUEST and MILK_CMAKE_MANDATE
-# And apply appropriate linkage
-milk_apply_extensions(${LIBNAME})
+# One milk-fpsexec-<id> per EXPORT_FPSEXEC(milk, "<id>", unit) line in the sources
+milk_add_fpsexec_stubs(${LIBNAME})
 
 # CUSTOM ===========
 # Module-specific compile definitions and external libraries, e.g.:
@@ -48,38 +47,15 @@ milk_apply_extensions(${LIBNAME})
 # target_link_libraries(${LIBNAME} PUBLIC ${FFTW_LIBRARIES} ${FFTWF_LIBRARIES})
 # ==================
 
-# Static archive for USE_STATIC_LTO builds (see cmake/milk_static_lto.cmake).
-# The function is a no-op unless USE_STATIC_LTO is ON.
-milk_add_static_lto(${LIBNAME})
-
-install(
-  TARGETS ${LIBNAME}
-  EXPORT milkTargets
-  DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 
-# -- Standalone executables -----------------------
-# V2 pattern: each is a single source file compiled with -DFPS_STANDALONE.
-# add_milk_standalone() handles linking, include paths, and install.
-# ${LIBNAME} is linked by the loop below.
-
-add_milk_standalone(clitest examplefunc_fps_cli_poc.c)
-add_milk_standalone(imsum2 examplefunc2_FPS.c)
-add_milk_standalone(streamprocess examplefunc4_streamprocess.c)
-
-# Link the module library into every standalone of this directory.
-get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  PROPERTY BUILDSYSTEM_TARGETS)
-foreach(_t IN LISTS _stdalones)
-  get_target_property(_type ${_t} TYPE)
-  if(_type STREQUAL "EXECUTABLE")
-    milk_link_module(${_t} ${LIBNAME})
-  endif()
-endforeach()
+# -- Executables ----------------------------------
+# milk-fpsexec-clitest, milk-fpsexec-imsum2 and milk-fpsexec-streamprocess are generated
+# from the EXPORT_FPSEXEC lines of the sources (see cmake/milk_runnable.cmake).
 
 # CUSTOM ===========
-# Extra executables (sources in bin/) and per-standalone links, e.g.:
+# Extra executables (sources in bin/) and per-executable links, e.g.:
 # add_executable(milk-mytool bin/milk-mytool.c)
 # target_link_libraries(milk-mytool PRIVATE ImageStreamIO)
 # install(TARGETS milk-mytool DESTINATION bin)

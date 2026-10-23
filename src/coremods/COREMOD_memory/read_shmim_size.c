@@ -9,34 +9,20 @@
  * Uses FPS V2 framework.
  */
 
+#include <errno.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_ID.h"
 #include "list_image.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "readshmimsize",
-    .cmdkey           = "readshmimsize",
-    .description      = "read shared memory image size",
-    .description_long = "Read only the size metadata of a shared memory stream without mapping the "
-                        "full pixel buffer. Lightweight probe for stream dimensions."
-};
+#include "read_shmim_size.h"
 
 
 /* ================================================================
@@ -149,49 +135,42 @@ imageID read_sharedmem_image_size(const char *name, const char *fname)
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  BINDINGS AND FARG
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(read_sharedmem_image_size, FPS_PARAMS);
 
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t read_sharedmem_image_size_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START read_sharedmem_image_size(insname, outfname);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    read_sharedmem_image_size(insname, outfname);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__read_sharedmem_image_size()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_readshmimsize = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "readshmimsize",
+                 .cmdkey      = "readshmimsize",
+                 .description = "read shared memory image size",
+                 .description_long =
+                     "Read only the size metadata of a shared memory stream without mapping the "
+                     "full pixel buffer. Lightweight probe for stream dimensions." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(read_sharedmem_image_size),
+    .compute = read_sharedmem_image_size_compute,
+};

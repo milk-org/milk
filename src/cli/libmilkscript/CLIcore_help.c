@@ -27,7 +27,7 @@
  * that conflict with milk_config.h. Undefine before including, then restore milk_config.h. */
 #include "ImageStreamIO/ImageStreamIO_config.h" // For IMAGESTRUCT_VERSION
 
-#include "fps.h"
+#include "computeunit.h"
 #include "fps_connect.h"
 
 

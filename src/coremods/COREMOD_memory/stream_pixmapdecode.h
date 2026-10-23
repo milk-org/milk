@@ -7,7 +7,9 @@
  * @brief Decode image stream via pixel map
  */
 
-errno_t CLIADDCMD_COREMOD_memory__stream_pixmapdecode();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_impixdecodeU;
 
 imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
                                       uint32_t    xsizeim,

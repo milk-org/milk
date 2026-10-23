@@ -7,21 +7,10 @@
  * @brief Image keyword add module
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
-#include "COREMOD_memory/COREMOD_memory.h"
 #include <stdlib.h>
 
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "imkwadd",
-                                     .cmdkey      = "imkwadd",
-                                     .description = "Add or update a keyword in an image" };
+#include "milk_runnable.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 /* ================================================================
  * 2.  LOCAL PARAMETER VARIABLES
@@ -73,38 +62,31 @@ static MILK_HOT errno_t fpsexec()
 /* ================================================================
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(image_keyword_add, FPS_PARAMS);
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER (processinfo loop support)
  * ============================================================= */
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_keyword_add_compute(const MILK_RUNNABLE *self)
 {
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START fpsexec();
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    fpsexec();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END return RETURN_SUCCESS;
+    MILK_PROCINFO_END(self)
+    return RETURN_SUCCESS;
 }
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  RUNNABLE
  * ============================================================= */
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__image_keyword_add()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_image_keyword_add = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "imkwadd",
+                 .cmdkey      = "imkwadd",
+                 .description = "Add or update a keyword in an image" },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_keyword_add),
+    .compute = image_keyword_add_compute,
+};
+EXPORT_FPSEXEC(milk, "imkwadd", runnable_COREMOD_memory_image_keyword_add);

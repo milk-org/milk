@@ -10,6 +10,8 @@
 #ifndef MILK_MODULE_EXAMPLE_FUNC3_H
 #define MILK_MODULE_EXAMPLE_FUNC3_H
 
-errno_t CLIADDCMD_milk_module_example__updatestreamloop();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_modex_streamupdate;
 
 #endif

@@ -10,7 +10,10 @@
 #ifndef _STREAM_TCP_H
 #define _STREAM_TCP_H
 
-errno_t CLIADDCMD_COREMOD_memory__stream_TCP();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imnetwtransmit;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imnetwreceive;
 
 errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname, int semtrig, int testmode);
 

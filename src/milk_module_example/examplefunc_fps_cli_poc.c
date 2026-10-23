@@ -4,33 +4,20 @@
 
 /**
  * @file    examplefunc_fps_cli_poc.c
- * @brief   Template for FPS V2 Compute Units
+ * @brief   Template for MILK_RUNNABLE FPS compute units
  *
  * This file is a TEMPLATE for writing compute units
  * (functions that can run as standalone executables
  * or as milk CLI commands) using the unified FPS-CLI
- * V2 architecture.
+ * MILK_RUNNABLE architecture.
  *
  * ARCHITECTURE OVERVIEW
  * ---------------------
- * The V2 framework unifies three execution modes into
- * a single source file:
- *
- *  (A) Standalone executable (milk-fpsexec-*)
- *      Built with -DFPS_STANDALONE.  The
- *      FPS_MAIN_STANDALONE_V2 macro generates main()
- *      and handles the FPS lifecycle (create, exec,
- *      confstart, confstop, runstart, runstop).
- *
- *  (B) milk CLI command
- *      When compiled as part of a shared library
- *      module (e.g. libmilkCOREMODarith.so), the
- *      CLIADDCMD function registers the command so
- *      it can be called from the milk CLI prompt.
- *
- *  (C) Direct C function call
- *      The fpsexec() function can be called directly
- *      from other C code in the same process.
+ * One MILK_RUNNABLE unit serves two entry points:
+ *   - the milk CLI command, when the module registry
+ *     (milk_module_example.c) lists the unit;
+ *   - the standalone executable milk-fpsexec-clitest,
+ *     generated from EXPORT_FPSEXEC (section 7).
  *
  * Parameters are defined ONCE in an X-macro
  * (FPS_PARAMS) and the framework automatically:
@@ -42,7 +29,7 @@
  * HOW TO CREATE A NEW COMPUTE UNIT
  * ---------------------------------
  * 1. Copy this file and rename it.
- * 2. Update section 1 (FPS_APP_INFO) with the new
+ * 2. Update the descriptor (section 7) with the new
  *    FPS name, CLI key, and description.
  * 3. Replace the local variables (section 2) with
  *    your parameters.
@@ -50,59 +37,36 @@
  *    matching your parameters.
  * 5. Replace fpsexec() (section 4) with your
  *    computation logic.
- * 6. Update the CLIADDCMD function name (section 7)
- *    and register it in your module's init function.
- * 7. Add the CMake targets for both the shared
- *    library (.so) and standalone executable.
+ * 6. Rename the unit in section 7 and list it in the
+ *    module registry (milk_module_example.c).
  *
- * FILE STRUCTURE (8 sections)
- * ---------------------------
- *   1. FPS_APP_INFO    - identity (names, description)
- *   2. Local variables - C variables for parameters
- *   3. FPS_PARAMS      - X-macro parameter table
- *   4. fpsexec()       - computation logic
- *   5. Bindings/farg   - generated from FPS_PARAMS
- *   6. compute_function - processinfo loop wrapper
- *   7. CLI registration - CLIADDCMD + CLIfunction
- *   8. Standalone main  - FPS_MAIN_STANDALONE_V2
+ * FILE STRUCTURE
+ * --------------
+ *   1. Identity         - descriptor fields (section 7)
+ *   2. Local variables  - C variables for parameters
+ *   3. FPS_PARAMS       - X-macro parameter table
+ *   4. fpsexec()        - computation logic
+ *   5. Bindings         - MILK_PARAMS_DEFINE
+ *   6. fpscli_compute   - processinfo loop wrapper
+ *   7. MILK_RUNNABLE    - descriptor and fpsexec export
  */
 
 /* ================================================================
  * INCLUDES
- *
- * Dependency structure:
- *   - fps.h: FPS types, X-macro expanders,
- *     FPS_MAIN_STANDALONE_V2 macro
- *   - CLIcore.h (full CLI build): CLICMDDATA,
- *     CLICMDARGDEF, INSERT_STD_* macros, module
- *     registration
- *   - CLIcore_standalone.h (standalone build):
- *     Provides stub types so the same source file
- *     compiles in both modes
- *
- * If your compute unit is PURE COMPUTATION (no
- * CLI registration, no INSERT_STD macros), you
- * can replace CLIcore.h with targeted includes:
- *   #include "libmilkdata/milkdata.h"
- *   #include "milkDebugTools.h"
+ * milk_runnable.h pulls in the FPS and processinfo macros.
  * ============================================================= */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
+#include "fps_cli_poc.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  *
- * FPS_APP_INFO is the single source of truth for the
- * compute unit's identity. All other references
- * (CLIcmddata, help text, FPS shm name) are derived
- * from these fields.
+ * The identity (fps_name, cmdkey, description) is set
+ * once, in the MILK_RUNNABLE descriptor (section 7).
+ * The FPS shm name and help text are derived from it.
  *
  * Fields:
  *   .fps_name    FPS shared-memory name (no spaces).
@@ -113,10 +77,6 @@
  *   .description One-line human-readable summary
  *                shown in help and fps-info output.
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = { .fps_name    = "exfpscli",
-                                     .cmdkey      = "fpsclitest",
-                                     .description = "Test FPS-CLI unification" };
 
 
 /* ================================================================
@@ -193,7 +153,8 @@ static char param_string_not_stream[FUNCTION_PARAMETER_STRMAXLEN] = "not_a_strea
  *                     (maps FPS keywords to C vars)
  *   FPS_X_FARG     -> CLICMDARGDEF array
  *                     (CLI argument definitions)
- *   X_HELP_PRINT_V2 -> help text for standalone --help
+ *
+ * The standalone --help text is generated from the bindings by fpsexec_main_function().
  *
  * COLUMN REFERENCE:
  *   X(keyword, ptr, type, is_primary, flag, descr)
@@ -328,12 +289,10 @@ static MILK_HOT errno_t fpsexec()
  * visibility/flags based on the current state of
  * other parameters.
  *
- * This function is registered by assigning it to
- * CLIcmddata.FPS_customCONFcheck in CLIADDCMD
- * (section 7).  The framework calls it automatically
- * during confstart / confstep.
+ * It is set as .confcheck in the descriptor (section 7)
+ * and called by the framework during confstart / confstep.
  *
- * In V2 compute units, parameter indices are NOT
+ * In compute units, parameter indices are NOT
  * known at compile time (no fpi_* variables).
  * Use functionparameter_GetParamIndex() to look up
  * the parray[] index by keyword string.
@@ -409,53 +368,13 @@ static MILK_COLD errno_t customCONFcheck()
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  PARAMETER BINDINGS
  *
- * These arrays are auto-generated from FPS_PARAMS
- * using the X-macro expansion.  In most cases you
- * do NOT need to modify this section — just change
- * FPS_PARAMS above and everything updates.
- *
- * my_bindings[] - Maps each FPS keyword to its local
- *   C variable pointer, type, and flags.  Used by
- *   the sync engine (fps_cli_sync.c) to copy values
- *   between FPS shared memory and local variables.
- *
- * farg[] - CLI argument definitions consumed by the
- *   milk CLI parser.  Determines how command-line
- *   arguments are parsed and validated.
- *
- * CLIcmddata - Command metadata (key, description).
- *   Populated from FPS_app_info at startup by the
- *   constructor below.  Used by INSERT_STD macros.
- *
- * ORDERING CONSTRAINT: This section MUST appear
- * before compute_function() because the
- * INSERT_STD_PROCINFO_COMPUTEFUNC_* macros
- * reference CLIcmddata.
+ * MILK_PARAMS_DEFINE generates fpscli_bind[] (FPS sync),
+ * fpscli_farg[] (CLI arguments) and fpscli_rt (state).
  * ============================================================= */
 
-static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
-
-static const int nb_bindings = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
-
-CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-
-/**
- * @brief Auto-initialize CLIcmddata from FPS_app_info.
- *
- * GCC constructor: runs before main().  Copies key
- * and description from FPS_app_info so that the
- * compute unit's identity is defined in ONE place.
- *
- * Also provides a valid cmdsettings object.  The
- * INSERT_STD_PROCINFO_COMPUTEFUNC_END macro
- * dereferences CLIcmddata.cmdsettings, which is NULL
- * from CLICMD_FIELDS_DEFAULTS.
- */
-FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
+MILK_PARAMS_DEFINE(fpscli, FPS_PARAMS);
 
 
 /* ================================================================
@@ -474,7 +393,7 @@ FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
  * runstart), the loop repeats until stopped.
  *
  * If your computation needs to resolve streams,
- * do so BEFORE INSERT_STD_PROCINFO_COMPUTEFUNC_START
+ * do so BEFORE MILK_PROCINFO_LOOPSTART(self)
  * (outside the loop).  Stream updates happen inside.
  * ============================================================= */
 
@@ -484,113 +403,43 @@ FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
  * Called by both the standalone lifecycle and the
  * milk CLI.  Do NOT call fpsexec() directly from
  * outside this file — always go through
- * compute_function() to get proper processinfo
+ * fpscli_compute() to get proper processinfo
  * tracking.
  */
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t fpscli_compute(const MILK_RUNNABLE *self)
 {
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     fpsexec();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     return RETURN_SUCCESS;
 }
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  MILK_RUNNABLE DESCRIPTOR AND FPSEXEC EXPORT
  *
- * This section is compiled only when building as
- * part of a milk shared library module (i.e. when
- * FPS_STANDALONE is NOT defined).
+ * The module registry (milk_module_example.c) lists
+ * runnable_modex_fpscli, which makes it a milk CLI
+ * command. The CLI core runs the FPS lifecycle and
+ * calls .confcheck and .compute.
  *
- * CLIfunction() is the entry point called when the
- * user types the command at the milk CLI prompt.
- * It delegates to safe_fps_generic_CLIfunction()
- * which handles the full FPS lifecycle:
- *   1. Parse CLI arguments
- *   2. Create/connect to FPS shared memory
- *   3. Sync CLI args -> FPS -> local variables
- *   4. Call compute_function()
- *
- * CLIADDCMD_* is called once at module load time
- * to register the command.  The function naming
- * convention is:
- *   CLIADDCMD_<module>__<function>
- * and must match the registration call in the
- * module's init function.
+ * EXPORT_FPSEXEC generates milk-fpsexec-clitest. Its
+ * main() drives the same lifecycle (create, exec,
+ * confstart, confstop, runstart, runstop, --help).
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-
-/**
- * @brief CLI entry point for this compute unit.
- *
- * Delegates to the generic FPS-CLI handler which
- * manages the full lifecycle.
- */
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-/**
- * @brief Register this compute unit with the milk CLI.
- *
- * Called from the module's init function.
- * safe_fps_fill_farg_examples() copies default values
- * from the bindings into farg[] so that --help shows
- * meaningful example values.
- */
-errno_t CLIADDCMD_milk_module_example__fpscli()
-{
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
-#endif /* !FPS_STANDALONE && !MILK_NO_CLI */
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- *
- * When compiled with -DFPS_STANDALONE, the
- * FPS_MAIN_STANDALONE_V2 macro generates a main()
- * function that provides the full standalone
- * executable lifecycle:
- *
- *   milk-fpsexec-<name> create [args...]
- *       Create a new FPS and set initial values
- *
- *   milk-fpsexec-<name> exec [args...]
- *       One-shot execution: create FPS, run once
- *
- *   milk-fpsexec-<name> confstart
- *       Start the configuration loop (watches FPS
- *       for parameter changes)
- *
- *   milk-fpsexec-<name> runstart
- *       Start the run loop (continuous processing)
- *
- *   milk-fpsexec-<name> confstop / runstop
- *       Stop the conf/run loop
- *
- *   milk-fpsexec-<name> --help
- *       Print help text with parameter descriptions
- *
- * The three arguments are:
- *   1. FPS_app_info     - compute unit identity
- *   2. FPS_PARAMS       - parameter X-macro
- *   3. compute_function - processinfo-wrapped entry
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2_CONFCHECK(FPS_app_info, FPS_PARAMS, compute_function, customCONFcheck)
-#endif
+const MILK_RUNNABLE runnable_modex_fpscli = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "exfpscli",
+                 .cmdkey      = "fpsclitest",
+                 .description = "Test FPS-CLI unification" },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(fpscli),
+    .compute   = fpscli_compute,
+    .confcheck = customCONFcheck,
+};
+EXPORT_FPSEXEC(milk, "clitest", runnable_modex_fpscli);

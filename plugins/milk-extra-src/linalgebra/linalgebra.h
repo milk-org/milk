@@ -82,8 +82,6 @@ errno_t PCAmatch(IMGID  imgmodesA,
                  IMGID *imgoutimB,
                  int    GPUdev);
 
-errno_t CLIADDCMD_linalgebra__ModalRemap();
-
 long CLINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
                                               const char *IDmatAinv_name,
                                               const char *IDmatOut_name);

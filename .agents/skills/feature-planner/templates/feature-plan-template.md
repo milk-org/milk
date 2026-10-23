@@ -5,7 +5,7 @@
 **Goal**: [One-sentence description of the feature]
 **Scope**: [Engine / Core / Full] · [New module /
 Extension / Modification]
-**Template**: [V2 compute unit / stream processor /
+**Template**: [MILK_RUNNABLE unit / stream processor /
 plain function / CLI builtin / none]
 
 ## Architecture Impact

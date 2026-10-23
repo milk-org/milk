@@ -4,47 +4,23 @@
 
 /**
  * @file    compilertest.c
- * @brief   Linear Algebra functions wrapper
- *
- *
+ * @brief   Registry of the CMake dependency-system test units (REQUEST / MANDATE)
  */
 
 #define MODULE_SHORTNAME_DEFAULT "compilertest"
 #define MODULE_DESCRIPTION "Cmake stack test"
 
-#include "CLIcore.h"
-// #include "COREMOD_memory/COREMOD_memory.h"
+#include "milk_runnable.h"
+#include "compilertest.h"
 
-// clang-format off
+// Mandated units: NULL when their file is dropped by an unmet MILK_CMAKE_MANDATE_*.
+MILK_RUNNABLE_WEAK_DECL(runnable_ct_mandatecuda);
+MILK_RUNNABLE_WEAK_DECL(runnable_ct_mandatelapacke);
 
-// These function NEED a week declaration: they MUST exist somewhere
-// if the corresponding C file missed the mandate.
-// so they exist here and do nothing.
-MILK_WEAK errno_t COMPILERTEST_CLIADDCMD_MANDATE_CUDA() {return 0;};
-MILK_WEAK errno_t COMPILERTEST_CLIADDCMD_MANDATE_LAPACKE() {return 0;};
+static const MILK_RUNNABLE *const runnables[] = {
+    &runnable_ct_requestcuda,
+    &runnable_ct_mandatecuda,
+    &runnable_ct_mandatelapacke,
+};
 
-
-// This function doesn't _need_ a weak definition, just a forward declaration
-// so that it can be invoked in init_module_CLI.
-// Since this function doesn't MANDATE anything, its definition in the C file always
-// exists.
-          errno_t COMPILERTEST_CLIADDCMD_REQUEST_CUDA();
-// clang-format on
-
-static errno_t init_module_CLI()
-{
-#ifdef HAVE_CUDA
-    // Add mandating initializers here ?
-#endif
-
-    // Add non-mandating initializers here ?
-    COMPILERTEST_CLIADDCMD_MANDATE_CUDA();
-    COMPILERTEST_CLIADDCMD_REQUEST_CUDA();
-    COMPILERTEST_CLIADDCMD_MANDATE_LAPACKE();
-
-    return RETURN_SUCCESS;
-}
-
-MILK_MODULE(compilertest, init_module_CLI, NULL);
-
-// Additional weak function definitions for things that need exported and miss a MANDATE
+MILK_MODULE_RUNNABLES(compilertest, NULL, runnables);

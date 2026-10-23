@@ -15,9 +15,9 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "savefits.h"
-#include "fps.h"
+#include "computeunit.h"
 #include "processinfo.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "COREMOD_iofits_common.h"
@@ -27,19 +27,6 @@
 #include "is_fits_file.h"
 
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "savefits",
-    .cmdkey           = "saveFITS",
-    .description      = "save image as FITS",
-    .description_long = "Save a shared memory image stream to a FITS file on disk. Preserves "
-                        "keywords, data type, and multi-dimensional structure."
-};
 
 
 /* ================================================================
@@ -58,6 +45,8 @@ char    savefits_inimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 char    savefits_outfname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 int32_t savefits_outbitpix                              = 0;
 char    savefits_inheader[FUNCTION_PARAMETER_STRMAXLEN] = "";
+
+MILK_PARAMS_DEFINE(savefits, FPS_PARAMS);
 
 
 /* =========================================
@@ -81,9 +70,7 @@ errno_t saveFITS_opt_trunc_IMGID(IMGID         *imgin,
     WRITE_FILENAME(fnametmp, "%s.%d.%ld.tmp", outputFITSname, (int) getpid(), (long) self_id);
     WRITE_FILENAME(fnametmpext, "%s%s", fnametmp, FITSIOext);
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
-#endif
     if (imgin->ID == -1)
     {
         return RETURN_SUCCESS;
@@ -131,7 +118,6 @@ errno_t saveFITS_opt_trunc_IMGID(IMGID         *imgin,
 }
 
 
-#ifndef FPS_STANDALONE
 /**
  * @brief Save a FITS file with optional truncation.
  *
@@ -194,7 +180,6 @@ errno_t save_fits(const char *inputimname, const char *outputFITSname)
 {
     return saveFITS(inputimname, outputFITSname, 0, NULL, NULL, 0);
 }
-#endif
 
 
 /* ================================================================
@@ -214,65 +199,33 @@ static MILK_HOT errno_t fpsexec(IMGID *imgin)
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
- * ============================================================= */
-
-static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
-
-static const int __attribute__((unused)) nb_bindings =
-    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
-
-#ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata = {
-#else
-static CLICMDDATA CLIcmddata = {
-#endif
-    "", "", CLICMD_FIELDS_DEFAULTS
-};
-
-FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
-
-
-/* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t savefits_compute(const MILK_RUNNABLE *self)
 {
     IMGID in = imgid_make_from_name(savefits_inimname);
     resolveIMGID(&in, ERRMODE_ABORT, dcimg, dcnimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START fpsexec(&in);
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
+    fpsexec(&in);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END return RETURN_SUCCESS;
+    MILK_PROCINFO_END(self)
+    return RETURN_SUCCESS;
 }
 
+const MILK_RUNNABLE runnable_COREMOD_iofits_savefits = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "savefits",
+                 .cmdkey           = "saveFITS",
+                 .description      = "save image as FITS",
+                 .description_long = "Save a shared memory image stream to a FITS file on disk. "
+                                     "Preserves keywords, data type, and multi-dimensional "
+                                     "structure." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(savefits),
+    .compute = savefits_compute,
+};
 
-/* ================================================================
- * 7.  MILK MODULE REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_iofits__saveFITS()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+EXPORT_FPSEXEC(milk, "iofits-saveFITS", runnable_COREMOD_iofits_savefits);

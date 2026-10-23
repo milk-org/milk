@@ -18,21 +18,6 @@
 #include "libfps/IMGID.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "fps_procinfo_macros.h" // Will define the macro that we undef later in this file.
-
-#undef INSERT_STD_CLIREGISTERFUNC_NAMED
-#define INSERT_STD_CLIREGISTERFUNC_NAMED(varCLIcmddata, varCLIfunction)            \
-    {                                                                              \
-        if (getenv("MILK_FPSPROCINFO"))                                            \
-        {                                                                          \
-            varCLIcmddata.flags |= CLICMDFLAG_PROCINFO;                            \
-        }                                                                          \
-        int cmdi                  = RegisterCLIcmd(varCLIcmddata, varCLIfunction); \
-        varCLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;                   \
-    }
-
-#undef INSERT_STD_CLIREGISTERFUNC
-#define INSERT_STD_CLIREGISTERFUNC INSERT_STD_CLIREGISTERFUNC_NAMED(CLIcmddata, CLIfunction)
-
+#include "fps_procinfo_macros.h"
 
 #endif // #ifndef CLICORE_UTILS_H

@@ -10,7 +10,9 @@
 #ifndef _PSF_H
 #define _PSF_H
 
-void __attribute__((constructor)) libinit_psf();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_psf_psf;
 
 imageID PSF_makeChromatPSF(const char *amp_name,
                            const char *pha_name,

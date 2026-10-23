@@ -65,11 +65,12 @@ pip install pymdown-extensions \
 
 ### 1.2 Build and serve the documentation
 
-```bash
-# Build in strict mode: useful to check for stale links.
-mamba run -n mkdocsenv mkdocs build --strict
-#                      ^^^^^^^^^^^^^^^^^^^^^-- only this part if `mamba activate mkdocsenv` is still active
-```
+??? tip "Test the doc build"
+    Build in strict mode: useful to __check for stale links__.
+    ```bash
+    mamba run -n mkdocsenv mkdocs build --strict
+    #                      ^^^^^^^^^^^^^^^^^^^^^-- only this part if `mamba activate mkdocsenv` is still active
+    ```
 
 ```bash
 # Build and serve the website (here, called directly in my mamba session)
@@ -497,8 +498,7 @@ you can now `make install`/`ninja install` milk without sudo permissions. The on
 <summary>Expand contents</summary>
 
 For attaching to running processes, tmux log inspection and core dumps, see
-[Debugging](../operations/debugging.md). This section adds the development workflow around a
-standalone executable (see [FPS standalone modes](../arch/FPS_Standalone_CMD_Modes.md)).
+[Debugging](../operations/debugging.md).
 
 <!-- prettier-ignore -->
 !!! question "Prerequisites"

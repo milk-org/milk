@@ -9,29 +9,12 @@
  * Uses FPS V2 framework.
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include <unistd.h>
+
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "stream_sem.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "streamhalfdiff",
-    .cmdkey      = "streamhalfdiff",
-    .description = "half-image difference",
-    .description_long =
-        "Compute the difference between the left and right halves of an image stream. Produces a "
-        "half-width output. Used for differential measurements in optical systems."
-};
 
 
 /* ================================================================
@@ -177,46 +160,35 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  RUNNABLE
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(streamhalfdiff, FPS_PARAMS);
 
-
-/* ================================================================
- * 6.  COMPUTE WRAPPER
- * ============================================================= */
-
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t streamhalfdiff_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     COREMOD_MEMORY_stream_halfimDiff(p_instream, p_outstream, p_semtrig);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    MILK_PROCINFO_END(self)
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-/* ================================================================
- * 7.  MILK MODULE REGISTRATION
- * ============================================================= */
-
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_COREMOD_memory__stream_halfimdiff()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
-#endif
+const MILK_RUNNABLE runnable_COREMOD_memory_streamhalfdiff = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "streamhalfdiff",
+                 .cmdkey      = "streamhalfdiff",
+                 .description = "half-image difference",
+                 .description_long =
+                     "Compute the difference between the left and right halves of an image stream. "
+                     "Produces a half-width output. Used for differential measurements in optical "
+                     "systems." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(streamhalfdiff),
+    .compute = streamhalfdiff_compute,
+};

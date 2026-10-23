@@ -7,7 +7,10 @@
  * @brief Save all images/streams to disk
  */
 
-errno_t CLIADDCMD_COREMOD_memory__saveall();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imsaveallsnap;
+extern const MILK_RUNNABLE runnable_COREMOD_memory_imsaveallseq;
 
 errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname);
 

@@ -7,12 +7,8 @@
  * @brief Collapse first 2 axis of 3D image
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include "milk_runnable.h"
+#include "computeunit.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -21,34 +17,14 @@ imageID image_basic_3Dto2D(const char *__restrict IDname);
 
 static char p_in[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "im3Dto2D",
-    .cmdkey           = "im3Dto2D",
-    .description      = "collapse first 2 axis of 3D image",
-    .description_long = "Collapse the first two axes of a 3D image into a single axis. Reshapes "
-                        "(x, y, z) into (x*y, z) for vectorized processing."
-};
-
 #define FPS_PARAMS(X) X(".in_name", p_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(im3Dto2D, FPS_PARAMS);
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t im3Dto2D_compute(const MILK_RUNNABLE *self)
 {
+    (void) self;
     image_basic_3Dto2D(p_in);
-    return RETURN_SUCCESS;
-}
-
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_basic__im3Dto2D()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -84,3 +60,15 @@ imageID image_basic_3Dto2D(const char *__restrict IDname)
 
     return ID;
 }
+
+const MILK_RUNNABLE runnable_image_basic_im3Dto2D = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "im3Dto2D",
+              .cmdkey           = "im3Dto2D",
+              .description      = "collapse first 2 axis of 3D image",
+              .description_long = "Collapse the first two axes of a 3D image into a single axis. "
+                                  "Reshapes (x, y, z) into (x*y, z) for vectorized processing." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(im3Dto2D),
+    .compute = im3Dto2D_compute,
+};

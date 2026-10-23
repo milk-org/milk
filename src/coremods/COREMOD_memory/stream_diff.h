@@ -7,7 +7,9 @@
  * @brief Compute stream difference
  */
 
-errno_t CLIADDCMD_COREMOD_memory__stream_diff();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_memory_streamdiff;
 
 imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
                                   const char *IDstream1_name,

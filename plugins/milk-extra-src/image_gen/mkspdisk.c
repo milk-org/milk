@@ -14,22 +14,11 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#    include "COREMOD_memory/COREMOD_memory.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "milk_runnable.h"
+#include "image_gen.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_gen/image_gen.h"
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "mkspdisk",
-    .cmdkey           = "mkspdisk",
-    .description      = "make subpixel disk image",
-    .description_long = "Generate a sub-pixel accurate disk pattern using anti-aliasing. More "
-                        "precise than mkdisk for small radii."
-};
 
 
 /* ================================================================
@@ -61,14 +50,14 @@ static double  outim_radius                             = 100.0;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(mkspdisk, FPS_PARAMS);
 
 
 /* ================================================================
  * 4/6. COMPUTE FUNCTION
  * ============================================================= */
 
-static errno_t compute_function(void)
+static MILK_HOT errno_t mkspdisk_compute(const MILK_RUNNABLE *self)
 {
     /* Pre-create output as shared memory stream.
      * make_subpixdisk() calls create_2Dimage_ID()
@@ -76,14 +65,15 @@ static errno_t compute_function(void)
     IMGID img = stream_connect_create_2D(outim_name, (uint32_t) outim_xsize, (uint32_t) outim_ysize,
                                          _DATATYPE_FLOAT);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
 
     make_subpixdisk(outim_name, (uint32_t) outim_xsize, (uint32_t) outim_ysize, outim_xcenter,
                     outim_ycenter, outim_radius);
 
     processinfo_update_output_stream(processinfo, img.im, NULL);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     return RETURN_SUCCESS;
 }
@@ -93,26 +83,21 @@ static errno_t compute_function(void)
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t __attribute__((unused)) CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_image_gen__mkspdisk(void)
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
 
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_image_gen_mkspdisk = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "mkspdisk",
+                 .cmdkey      = "mkspdisk",
+                 .description = "make subpixel disk image",
+                 .description_long =
+                     "Generate a sub-pixel accurate disk pattern using anti-aliasing. More "
+                     "precise than mkdisk for small radii." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(mkspdisk),
+    .compute = mkspdisk_compute,
+};
+EXPORT_FPSEXEC(milk, "imggen-mkspdisk", runnable_image_gen_mkspdisk);

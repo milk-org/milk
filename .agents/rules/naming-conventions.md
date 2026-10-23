@@ -54,9 +54,9 @@ Use the following patterns for script names.
 | -------------------------- | ---------------------------------- |
 | **Public API** (in `.h`)   | `<subsystem>_<verb>_<object>()`    |
 | **Module-internal static** | `<verb>_<object>()` or descriptive |
-| **CLI registration**       | `CLIADDCMD_<module>__<func>()`     |
-| **CLI entry point**        | `CLIfunction()`                    |
-| **Module init**            | `init_module_CLI()`                |
+| **Module registry**        | `MILK_MODULE_RUNNABLES(<module>, ...)` |
+| **Runnable symbol**        | `runnable_<module>_<stem>`         |
+| **Compute function**       | `<stem>_compute(const MILK_RUNNABLE *self)` |
 
 **Rules:**
 
@@ -67,12 +67,9 @@ Use the following patterns for script names.
   are preserved but not used for new APIs.
 - Static functions need no prefix. Use descriptive `snake_case`:
   `crop_region()`, `validate_input_stream()`.
-- The V2 template reserves these standard names:
-  - `fpsexec()` — core computation
-  - `compute_function()` — processinfo wrapper
-  - `CLIfunction()` — CLI entry
-  - `customCONFcheck()` — FPS config validator
-  - `customCONFsetup()` — FPS config one-time setup
+- Runnable units: the descriptor is `runnable_<module>_<stem>`,
+  its parameter table `MILK_PARAMS_DEFINE(<stem>, ...)`, and
+  `customCONFcheck()`-style callbacks are plain statics.
 
 ### 2.2 Verb Conventions
 

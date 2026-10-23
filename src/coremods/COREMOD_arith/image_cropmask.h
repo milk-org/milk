@@ -10,6 +10,8 @@
 #ifndef COREMOD_ARITH_CROPMASK_H
 #define COREMOD_ARITH_CROPMASK_H
 
-errno_t CLIADDCMD_COREMODE_arith__cropmask();
+#include "milk_runnable.h"
+
+extern const MILK_RUNNABLE runnable_COREMOD_arith_image_cropmask;
 
 #endif

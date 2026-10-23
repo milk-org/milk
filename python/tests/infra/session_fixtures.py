@@ -1,6 +1,7 @@
 from __future__ import annotations
 import pytest
 
+import os
 from milk.session import ComputeSession
 
 
@@ -28,19 +29,30 @@ def func_fpsinit(
     return session
 
 
-def tp(call):
+def tp(callable):
     try:
-        call()
+        callable()
     except:
         pass
 
 
-def func_session_cleanup(s: ComputeSession):
-    tp(s.runstop)
-    tp(s.confstop)
-    if s.fps:
-        tp(s.fps.tmux_stop)
-        tp(s.fps.destroy)
+import time
+
+
+def func_session_cleanup(session: ComputeSession):
+    tp(session.runstop)
+    tp(session.confstop)
+    if session.fps:
+        tp(session.fps.tmux_stop)
+        # Need to wait until not RUNisrunning to get there...
+        session.fps.run_stop(timeoutsync=5.0)
+        time.sleep(0.1)
+        with pytest.raises(ProcessLookupError):
+            os.kill(session.fps.fps.md().runpid, 0)
+        with pytest.raises(ProcessLookupError):
+            os.kill(session.fps.fps.md().confpid, 0)
+
+        tp(session.fps.destroy)
 
 
 def fixt_fpsinit_factory(session_cls: type[ComputeSession], pinfo: bool = True):

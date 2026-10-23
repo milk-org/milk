@@ -12,7 +12,8 @@
 // log all debug trace points to file
 #define DEBUGLOG
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
+#include "linopt_imtools.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
@@ -21,14 +22,6 @@
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "mkFouriermodes",
-    .cmdkey           = "mkFouriermodes",
-    .description      = "make basis of Fourier Modes",
-    .description_long = "Generate a basis of Fourier (CPA) modes within a pupil aperture. Creates "
-                        "sinusoidal modes at specified spatial frequencies."
-};
 
 
 /* ================================================================
@@ -77,7 +70,7 @@ static float    *extroffset         = NULL;
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(makeCPAmodes, FPS_PARAMS);
 
 errno_t linopt_imtools_makeCPAmodes(IMGID   *imgoutm,
                                     uint32_t sizex,
@@ -557,7 +550,7 @@ errno_t linopt_imtools_makeCPAmodes(IMGID   *imgoutm,
 }
 
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t makeCPAmodes_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -598,14 +591,15 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     IMGID imgoutm = imgid_make_from_name(outimname);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    MILK_PROCINFO_INIT(self)
+    MILK_PROCINFO_LOOPSTART(self)
     {
         linopt_imtools_makeCPAmodes(
             &imgoutm, *sizexout, *sizeyout, x0, y0, *rCPAminval, *rCPAmaxval, *CPAmaxval,
             *deltaCPAval, *radiusval, *radiusfactorlimval, *fpowerlaw, *fpowerlaw_minf,
             *fpowerlaw_maxf, *writefileval, NULL, imgmask, *extrfactor, *extroffset);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     imgid_free(&imgmask);
     imgid_free(&imgoutm);
@@ -619,26 +613,21 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_linopt_imtools__makeCPAmodes()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT
  * ============================================================= */
 
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_linopt_imtools_makeCPAmodes = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name    = "mkFouriermodes",
+                 .cmdkey      = "mkFouriermodes",
+                 .description = "make basis of Fourier Modes",
+                 .description_long =
+                     "Generate a basis of Fourier (CPA) modes within a pupil aperture. Creates "
+                     "sinusoidal modes at specified spatial frequencies." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(makeCPAmodes),
+    .compute = makeCPAmodes_compute,
+};
+EXPORT_FPSEXEC(milk, "linopt-mkCPAmodes", runnable_linopt_imtools_makeCPAmodes);

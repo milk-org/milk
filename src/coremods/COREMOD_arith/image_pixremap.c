@@ -7,24 +7,13 @@
  * @brief Image pixremap module
  */
 
-#include "ImageStreamIO/ImageStruct.h"
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
-#include "fps.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "libmilkcommon/pixel_dispatch.h"
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "pixremap",
-    .cmdkey           = "pixremap",
-    .description      = "pixel remapping of image",
-    .description_long = "Remap pixels from one image to another using an index map. Each output "
-                        "pixel is assigned the value of the input pixel at the index specified by "
-                        "the mapping array. Supports arbitrary geometric transformations."
-};
 
 // input image
 static char insname[FUNCTION_PARAMETER_STRMAXLEN];
@@ -44,10 +33,10 @@ static int32_t outshared = 0;
       "output shared (1) or not (0)")
 
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(image_pixremap, FPS_PARAMS);
 
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t image_pixremap_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -130,9 +119,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         }
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
+    MILK_PROCINFO_INIT(self)
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
 #define REMAP_CASE_(DT, ACC, CT)                           \
     case DT:                                               \
@@ -152,7 +141,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END free(map_outpixindex);
+    MILK_PROCINFO_END(self)
+    free(map_outpixindex);
     free(map_inpixindex);
     imgid_free(&imgin);
     imgid_free(&imgmap);
@@ -163,23 +153,17 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 }
 
 
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-// Register function in CLI
-errno_t CLIADDCMD_COREMODE_arith__pixremap()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
-}
-#endif
-
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_COREMOD_arith_image_pixremap = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = { .fps_name         = "pixremap",
+              .cmdkey           = "pixremap",
+              .description      = "pixel remapping of image",
+              .description_long = "Remap pixels from one image to another using an index map. "
+                                  "Each output pixel is assigned the value of the input pixel at "
+                                  "the index specified by the mapping array. Supports arbitrary "
+                                  "geometric transformations." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(image_pixremap),
+    .compute = image_pixremap_compute,
+};
+EXPORT_FPSEXEC(milk, "arith-pixremap", runnable_COREMOD_arith_image_pixremap);

@@ -13,22 +13,9 @@
 
 #include <math.h>
 
-#include "CLIcore.h"
+#include "milk_runnable.h"
 #include "ImageStreamIO/ImageStruct.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-
-
-/* ================================================================
- * 1.  FPS COMPONENT IDENTITY
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name         = "Qexpand",
-    .cmdkey           = "Qexpand",
-    .description      = "quadractic expansion of vector or matrix coeffs",
-    .description_long = "Compute the quadratic expansion of a vector or matrix of coefficients. "
-                        "Generates cross-term products for nonlinear modeling."
-};
 
 
 /* ================================================================
@@ -51,10 +38,10 @@ static int32_t *axis      = NULL;
 
 
 /* ================================================================
- * 5.  BINDINGS, FARG, AND CLI DATA
+ * 5.  PARAMETER BINDINGS
  * ============================================================= */
 
-FPS_V2_SECTION5(FPS_PARAMS)
+MILK_PARAMS_DEFINE(Qexpand, FPS_PARAMS);
 
 /**
  * @brief Quadratic expansion of vector(s)
@@ -175,7 +162,7 @@ errno_t Qexpand(IMGID imgincoeffM, IMGID *imgoutcoeffM, int axis)
 }
 
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t Qexpand_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
@@ -191,16 +178,16 @@ static MILK_HOT errno_t compute_function()
     IMGID imgoutcoeffM = imgid_make_from_name(outcoeffM);
 
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    MILK_PROCINFO_INIT(self)
 
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    MILK_PROCINFO_LOOPSTART(self)
     {
         Qexpand(imgincoeffM, &imgoutcoeffM, *axis);
 
         processinfo_update_output_stream(processinfo, imgoutcoeffM.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    MILK_PROCINFO_END(self)
 
     imgid_free(&imgincoeffM);
     imgid_free(&imgoutcoeffM);
@@ -211,29 +198,19 @@ static MILK_HOT errno_t compute_function()
 
 
 /* ================================================================
- * 7.  MILK MODULE REGISTRATION
+ * 7.  MILK_RUNNABLE DESCRIPTOR AND FPSEXEC EXPORT
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
-                                        compute_function);
-}
-
-errno_t CLIADDCMD_linalgebra__Qexpand()
-{
-    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
-}
-#endif
-
-
-/* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
-
-#ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
-#endif
+const MILK_RUNNABLE runnable_linalgebra_Qexpand = {
+    .kind    = MILK_RUNNABLE_FPS,
+    .app     = { .fps_name         = "Qexpand",
+                 .cmdkey           = "Qexpand",
+                 .description      = "quadractic expansion of vector or matrix coeffs",
+                 .description_long = "Compute the quadratic expansion of a vector or matrix of "
+                                     "coefficients. Generates cross-term products for nonlinear "
+                                     "modeling." },
+    .srcfile = __FILE__,
+    MILK_PARAMS_REF(Qexpand),
+    .compute = Qexpand_compute,
+};
+EXPORT_FPSEXEC(milk, "linalg-Qexpand", runnable_linalgebra_Qexpand);

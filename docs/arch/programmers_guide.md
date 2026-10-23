@@ -90,57 +90,67 @@ graph TD
 
 ## 3. Writing a Compute Unit
 
-When building a new compute task, `milk` enforces a standardized "V2" format. The canonical template
-is `src/milk_module_example/examplefunc_fps_cli_poc.c`.
+A compute unit is a `MILK_RUNNABLE` descriptor (`src/engine/libcomputeunit/milk_runnable.h`). The
+canonical template is `src/milk_module_example/examplefunc_fps_cli_poc.c`:
+
+| Template file                    | Purpose                                                      |
+| -------------------------------- | ------------------------------------------------------------ |
+| `examplefunc_fps_cli_poc.c`      | **FPS unit**: CLI command and `milk-fpsexec-clitest`         |
+| `examplefunc1.c/h`               | CLI-only command, no FPS                                     |
+| `examplefunc2_FPS.c/h`           | FPS unit with processinfo and `milk-fpsexec-imsum2`          |
+| `examplefunc4_streamprocess.c/h` | Stream processing loop and `milk-fpsexec-streamprocess`      |
+| `milk_module_example.c/h`        | Module registry (`MILK_MODULE_RUNNABLES`)                    |
+
+Working example with several units per file: `plugins/test-src/runnabletest`.
 
 ### Step-by-Step
 
-1. **Copy the template**: Use `examplefunc_fps_cli_poc.c` as your starting point.
+1. **Copy the template**: use `examplefunc_fps_cli_poc.c` as your starting point.
 
-2. **Update identity** (section 1 — `FPS_APP_INFO`):
+2. **Update identity** (the `.app` field of the `MILK_RUNNABLE` descriptor):
    - `.fps_name` — SHM name on disk (no spaces)
    - `.cmdkey` — CLI keyword
    - `.description` — one-line summary (shown by `-h1`)
 
-3. **Define parameters** (sections 2–3):
-   - Add local C variables in section 2
-   - Map them in the `FPS_PARAMS` X-macro in section 3
+3. **Define parameters**:
+   - Add static C variables with their default values
+   - Map them in an X-macro table `X(keyword, ptr, type, is_primary, flag, descr)` and expand it with
+     `MILK_PARAMS_DEFINE(name, TABLE)`
    - Use `char var[FUNCTION_PARAMETER_STRMAXLEN]` for string-type params; pass `var` directly
    - Use `&variable` for scalars
 
-4. **Implement logic** (section 4 — `fpsexec()`):
-   - Pure computation; parameters are already synced
+4. **Implement the compute function** `<stem>_compute(const MILK_RUNNABLE *self)`: parameters are
+   already synced; the processinfo loop is `MILK_PROCINFO_INIT/LOOPSTART/END(self)`.
 
-5. **Add CMake targets**: In your module's `CMakeLists.txt` (see [§6](#6-cmakeliststxt-conventions)), add one line per executable:
+5. **Register and build**: list the unit in the module registry, add the source to the module's
+   `CMakeLists.txt` (see [§6](#6-cmakeliststxt-conventions)).
 
-   ```cmake
-   add_milk_standalone(myfunction myfunction.c)
-   # For cacao plugins:
-   add_cacao_standalone(myfunc myfunction.c)
-   # If the standalone uses plugin compute functions:
-   add_cacao_standalone_plugins(myfunc myfunction.c)          # all 4 plugins
-   add_cacao_standalone_plugins(myfunc myfunction.c fft)       # only fft
-   add_cacao_standalone_plugins(myfunc myfunction.c fft imagegen) # fft + imagegen
-   # Valid plugin names: fft, imagegen, imagefilter, imagebasic
-   ```
+### `MILK_RUNNABLE` units
 
-### The 8-Section Layout
-
-1. **`FPS_APP_INFO`:** Registration of metadata (name, command keyword, description).
-2. **Local parameters:** Definition of C variables.
-3. **`FPS_PARAMS` (X-macro):** Maps C variables to FPS shared memory parameters.
-4. **Compute Function (`fpsexec()`):** Pure calculation core.
-5. **`CLIcmddata`:** CLI registry scoping.
-6. **Compute wrapper:** Processinfo loop via `INSERT_STD_PROCINFO_COMPUTEFUNC_*` macros.
-7. **Module registration:** `CLIADDCMD_*` function for CLI mode. Register commands with `INSERT_STD_CLIREGISTERFUNC` (standard `CLIcmddata`/`CLIfunction` names) or `INSERT_STD_CLIREGISTERFUNC_NAMED(varCLIcmddata, varCLIfunction)` (other names, several commands per function/file).
-8. **Standalone `main()`:** `FPS_MAIN_STANDALONE_V2` (or `_V2_CONFCHECK` if a `customCONFcheck` is
-   needed) handles FPS lifecycle, `-h1`, `-tmux`.
+- A unit is one exported `const MILK_RUNNABLE`: a `MILK_RUNNABLE_FPS` unit is a CLI command and/or
+  fpsexec, a `MILK_RUNNABLE_CLI` unit is a CLI-only command with its own `cli_func`. Several units, each
+  with its own `X(...)` parameter table (`MILK_PARAMS_DEFINE(name, PARAMS)`), statics and
+  `compute(const MILK_RUNNABLE *self)`, may share a file; nothing is named implicitly.
+- **CLI:** list the unit in the array given to `MILK_MODULE_RUNNABLES(name, deps, array)`. The CLI core
+  registers it after `dlopen()`; module code never calls `RegisterCLIcmd`.
+- **fpsexec:** `EXPORT_FPSEXEC(milk, "id", unit);` on its own line. CMake scans the module sources and
+  generates a minimal `main()` per id (`milk_runnable_main()`), built as `<prefix>-fpsexec-<id>`
+  (prefix `milk` or `cacao`).
+- **CMake:** `milk_add_runnable_module()` compiles the sources once (`-DMILK_NO_CLI`, PIC) into an object
+  library feeding the shared library (and `_static` under `USE_STATIC_LTO`); `milk_add_fpsexec_stubs()`
+  creates the executables. PGO/LTO are therefore per module. See `cmake/milk_runnable.cmake`.
+- Processinfo loops use `MILK_PROCINFO_INIT/LOOPSTART/END(self)`.
+- **Optional dependencies:** a file with an unmet `MILK_CMAKE_MANDATE_X` is dropped; see
+  [Managing Dependencies](../developer/dependency_system.md) for the registry rules.
 
 ## 4. Directory Map
 
 - `src/engine/`: Core daemon logic, including `ImageStreamIO` (shared-memory data), `libfps` (FPS
-  core library), `libfpsseq` (FPS sequencer), `libmilkcommon` (common utilities, debug tools),
+  core library: struct, parameters, shared memory), `libcomputeunit` (FPS runtime: standalone
+  `main`, tmux, conf/run processes, bindings and standalone macros; depends on `libfps`, never the
+  reverse), `libfpsseq` (FPS sequencer), `libmilkcommon` (common utilities, debug tools),
   `libprocessinfo`, and `libmilkdata`.
+- `src/tui/`: Engine-tier terminal UIs (`fpsCTRL`, `procCTRL`) and the shared `milkTUI_compat.h`.
 - `src/cli/`: User interfaces and scripting layer, including `libmilkscript` (core interpreter),
   `CLIcore` (interactive shell), `overview` (system overview TUI), and `streamCTRL`.
 - `src/milk_module_example`: Compute unit templates (start here!).
@@ -163,80 +173,64 @@ Standalones are specifically designed to execute one compute unit in isolation w
 
 ### Header Hierarchy
 
-Compute unit source files use conditional includes to support both CLI and standalone builds:
+Runnable sources include `milk_runnable.h` first; they never include `CLIcore.h` directly. The module
+objects are compiled once with `-DMILK_NO_CLI`, which redirects the full-CLI headers to a
+lightweight stub header (`CLIcore_standalone.h`).
 
-```c
-#ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"   /* stub types for standalone */
-#else
-#include "CLIcore.h"              /* full CLI types */
-#endif
-#include "fps.h"                  /* FPS types (always needed) */
-```
-
-| Header                   | Provides                                             | When to use                                 |
-| ------------------------ | ---------------------------------------------------- | ------------------------------------------- |
-| `CLIcore.h`              | CLICMDDATA, CMDARGTOKEN, INSERT_STD macros           | Dual-mode files (CLI + standalone)          |
-| `CLIcore_standalone.h`   | Stub types, static inline no-ops                     | Auto-selected when `MILK_NO_CLI` is defined |
-| `fps.h`                  | FPS types, X-macro expanders, FPS_MAIN_STANDALONE_V2 | Always needed for FPS compute units         |
-| `libfps/IMGID.h`         | IMGID struct, imgid_make\*, imgid_connect            | Compute-only files that work with images    |
-| `libmilkdata/milkdata.h` | MILK_DATA struct, milk_data_init                     | Core data arrays, RNG, global state         |
-| `milkDebugTools.h`       | imageID typedef, PRINT_ERROR, DEBUG_TRACE\*          | Compute-only files that use debug macros    |
-
-</details>
+| Header                   | Provides                                              | When to use                                  |
+| ------------------------ | ----------------------------------------------------- | -------------------------------------------- |
+| `milk_runnable.h`        | `MILK_RUNNABLE`, `MILK_PARAMS_DEFINE`, `EXPORT_FPSEXEC`, `MILK_PROCINFO_*`, FPS and processinfo APIs | First include of every runnable source |
+| `CLIcore.h`              | Full CLI types and API                                | CLI core and CLI-tier modules only           |
+| `libfps/IMGID.h`         | IMGID struct, imgid_make\*, imgid_connect             | Compute-only files that work with images     |
+| `libmilkdata/milkdata.h` | MILK_DATA struct, milk_data_init                      | Core data arrays, RNG, global state          |
+| `milkDebugTools.h`       | imageID typedef, PRINT_ERROR, DEBUG_TRACE\*           | Compute-only files that use debug macros     |
 
 ### Library Link Patterns
 
-Each module builds a single regular library, shared by `milk-cli` and standalone executables alike. `MILK_NO_CLI`, applied to the `fpsexec` target, redirects `CLIcore.h` to the lightweight `CLIcore_standalone.h` stub for that executable's translation units.
+Each module builds a single regular library, shared by `milk-cli` and the fpsexecs generated for it.
 
 ??? note "Details"
-    For CLI execution of a CU:
+    For CLI execution of a unit:
     ```text
-    # CLI linkage
     milk-cli / milk-script
-        └-> Custom loading of <module>.so\
-            └-> RegisterModule() [from CLIcore.c]
-                └-> init_module_CLI() [from <module>.so, via MILK_MODULE passing the function pointer]
-            └-> RegisterCLICommand() [from CLIcore.c]
-            └-> CLIfunction() [from <module>.so]\
-                └-> Prepares the calling context
-                └-> compute_function(), via a function pointer.
+        └-> load_module_shared(): dlopen() of <module>.so
+            └-> reads __milk_module_info (MILK_MODULE_RUNNABLES)
+                └-> for each runnable: milk_runnable_prepare() + RegisterCLIcmd()
+                    └-> command run: fps_generic_CLIfunction() [libmilkscript]
+                        └-> prepares the calling context
+                        └-> compute() of the runnable, via milk_runnable_compute_thunk()
     ```
     And for `fpsexec` execution:
     ```text
-    milk-fpsexec-<myfunc>
-        └-> Automatic loading of <module>.so as a dependency.
-        |   # init_module_CLI(), RegisterCLICommand() etc. may exist (-DUSE_CLI=ON) but are NOT invoked.
-        └-> Invokes `main()`
-            └-> Invokes `main_impl()`
-                └-> prepares a statically defined calling context.
-                └-> compute_function() of <myfunc>, via a function pointer.
+    milk-fpsexec-<id>
+        └-> links <module>.so as a regular dependency (no CLIcore)
+        └-> main() [generated stub]
+            └-> milk_runnable_main()
+                └-> fpsexec_main_function() (milkcomputeunit, libcomputeunit/core/fps_standalone_main.c)
+                    └-> prepares a statically defined calling context
+                    └-> compute() of the runnable, via milk_runnable_compute_thunk()
     ```
 
+When `USE_STATIC_LTO=ON`, fpsexecs instead link `_static`-suffixed static archives (e.g. `milkCOREMODmemory_static`) of the same libraries, letting GCC's LTO inline and optimize across library boundaries. See [PGO & LTO](../operations/pgo.md) for details.
 
+**CMake helpers** (`cmake/milk_runnable.cmake`):
 
-When `USE_STATIC_LTO=ON`, standalone executables instead link `_static`-suffixed static archives (e.g. `milkCOREMODmemory_static`) of the same libraries, letting GCC's LTO inline and optimize across library boundaries. See [PGO & LTO](../operations/pgo.md) for details.
+| CMake function                  | Does                                                                        |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| `milk_add_runnable_module()`    | Compiles the module sources once; builds the shared library (+ `_static`)   |
+| `milk_runnable_module_usage()`  | Public compile definitions / includes / link dirs of the module             |
+| `milk_add_fpsexec_stubs()`      | Generates one `<prefix>-fpsexec-<id>` per `EXPORT_FPSEXEC` line             |
 
-**CMake standalone helpers:**
-
-| CMake function                   | Links                                          | Use for                                    |
-| -------------------------------- | ---------------------------------------------- | ------------------------------------------ |
-| `add_milk_standalone()`          | COREMOD libs, milkfps, milkdata, ImageStreamIO | milk-fpsexec-\* executables                |
-| `add_cacao_standalone()`         | Same as above                                  | cacao-fpsexec-\* (no plugin deps)          |
-| `add_cacao_standalone_plugins()` | Above + selected plugin libs                   | cacao-fpsexec-\* that use plugin functions |
-
-`add_milk_standalone()` / `add_cacao_standalone()` apply `-DMILK_NO_CLI` and link the common library set automatically; add a per-module library explicitly only if the executable calls a module-specific function.
-
-</details>
+The generated executables link the common framework library set automatically; add a library
+explicitly only if the unit needs a module-specific one.
 
 <details markdown="1">
 <summary><b>Compile-Time Guards</b></summary>
 
-| Macro            | Set by                     | Effect                                                      |
-| ---------------- | -------------------------- | ----------------------------------------------------------- |
-| `MILK_NO_CLI`    | CMake (`-DMILK_NO_CLI`)    | Excludes CLI registration code, uses `CLIcore_standalone.h` |
-| `FPS_STANDALONE` | CMake (`-DFPS_STANDALONE`) | Includes `main()` via `FPS_MAIN_STANDALONE_V2`              |
-| `USE_CLI`        | CMake option               | Controls whether CLI targets are built                      |
+| Macro         | Set by                  | Effect                                                      |
+| ------------- | ----------------------- | ----------------------------------------------------------- |
+| `MILK_NO_CLI` | CMake (`-DMILK_NO_CLI`) | Excludes CLI code, uses `CLIcore_standalone.h`              |
+| `USE_CLI`     | CMake option            | Controls whether CLI targets are built                      |
 
 </details>
 
@@ -268,32 +262,15 @@ project(lib_${LIBNAME}_project)
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
 
-add_library(${LIBNAME} SHARED ${SOURCEFILES})
-target_include_directories(
-  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
+# Compiles the sources once into the shared library (+ _static for USE_STATIC_LTO) and resolves
+# MILK_CMAKE_REQUEST / MILK_CMAKE_MANDATE.
+milk_add_runnable_module(${LIBNAME} SOURCES ${SOURCEFILES})
 
-# Resolves MILK_CMAKE_REQUEST / MILK_CMAKE_MANDATE and applies linkage.
-milk_apply_extensions(${LIBNAME})
-
-install(
-  TARGETS ${LIBNAME}
-  EXPORT milkTargets
-  DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 
-# One line per standalone: single source file, built with -DFPS_STANDALONE.
-add_milk_standalone(myfunc myfunc.c)
-
-# Link ${LIBNAME} into every standalone of this directory.
-get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  PROPERTY BUILDSYSTEM_TARGETS)
-foreach(_t IN LISTS _stdalones)
-  get_target_property(_type ${_t} TYPE)
-  if(_type STREQUAL "EXECUTABLE")
-    milk_link_module(${_t} ${LIBNAME})
-  endif()
-endforeach()
+# One milk-fpsexec-<id> per EXPORT_FPSEXEC(milk, "<id>", unit) line in the sources.
+milk_add_fpsexec_stubs(${LIBNAME})
 
 add_test(NAME mymodule-myfunc-h1 COMMAND milk-fpsexec-myfunc -h1)
 ```
@@ -301,26 +278,13 @@ add_test(NAME mymodule-myfunc-h1 COMMAND milk-fpsexec-myfunc -h1)
 **Key rules:**
 
 - Plugins under `plugins/` are discovered automatically; no parent `CMakeLists.txt` edit is needed.
-- Module-specific logic goes in the `# CUSTOM ===` blocks of the template (before the glob, after `milk_apply_extensions`, and after the standalone loop).
+- Module-specific logic goes in the `# CUSTOM ===` blocks of the template (before the glob, after `milk_add_runnable_module`, and in the executables section).
 - Extra executables with their own `main()` live in a `bin/` subfolder (not globbed) and are declared in the last `# CUSTOM` block.
 - Coremods cannot reference the `CLIcore` target (it links them); they use `$<TARGET_PROPERTY:milkfps,INCLUDE_DIRECTORIES>` instead.
-- `milk_add_static_lto(${LIBNAME} ...)` (`cmake/milk_static_lto.cmake`) builds the `_static` archive used by `USE_STATIC_LTO`.
+- `milk_add_runnable_module()` also builds the `_static` archive used by `USE_STATIC_LTO` (`cmake/milk_static_lto.cmake`).
 - Express optional dependencies with the `MILK_CMAKE_REQUEST_<X>` / `MILK_CMAKE_MANDATE_<X>` tags (see [Managing Dependencies](../developer/dependency_system.md)); do not hand-write include or link rules.
 - Each module installs only its own headers.
 - Keep lines ≤ 80 characters.
-
-</details>
-
-<details markdown="1">
-<summary><b>Standalone helper functions</b></summary>
-
-Defined in `cmake/milk_standalone.cmake` (included by root CMakeLists):
-
-| Function                                      | Creates              | Plugin deps |
-| --------------------------------------------- | -------------------- | ----------- |
-| `add_milk_standalone(name src)`               | `milk-fpsexec-name`  | None        |
-| `add_cacao_standalone(name src)`              | `cacao-fpsexec-name` | None        |
-| `add_cacao_standalone_plugins(name src [p…])` | `cacao-fpsexec-name` | Selected    |
 
 </details>
 
@@ -339,23 +303,6 @@ Every `.c` file should start with a kernel-doc header:
  * Longer description of algorithm, approach,
  * and key design choices.
  */
-```
-
-</details>
-
-<details markdown="1">
-<summary><b>Dual-mode files</b></summary>
-
-Files compiled both as part of a shared library (CLI mode) and as standalone executables use
-conditional includes:
-
-```c
-#ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#else
-#include "CLIcore.h"
-#endif
-#include "fps.h"
 ```
 
 </details>
@@ -387,16 +334,10 @@ Each module directory should have a `README.md` with:
 
 - One-line purpose
 - Table of source files with descriptions
-- Table of standalone executables (if any)
+- Table of fpsexec executables (if any)
 - External dependencies
 
 </details>
-
----
-
-_(This guide is automatically updated by your coding agent using the
-[/update-programmers-guide]({{ github_blob_url }}/.agents/workflows/update-programmers-guide.md)
-workflow)_
 
 ---
 

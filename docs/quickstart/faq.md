@@ -111,8 +111,7 @@ See also: [Streams](../guide/streams.md)
 
 ## 3. FPS / Process Control
 
-See also: [FPS](../guide/fps.md) · [Process Info](../guide/procinfo.md) ·
-[FPS Standalone Modes](../arch/FPS_Standalone_CMD_Modes.md)
+See also: [FPS](../guide/fps.md) · [Process Info](../guide/procinfo.md)
 
 ??? faq "FPS process won't start — \"FPS already exists\""
 
