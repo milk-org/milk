@@ -16,6 +16,7 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-10
 
+- **2026-10-21** — The `cacao` modules (`AOloopControl*`, `computeCalib`, `pyramidWFStools`) migrated to `MILK_RUNNABLE`: each module has one registry and one header, the `cacao-fpsexec-*` executables are generated from `EXPORT_FPSEXEC`, and the `modalstatsTUI` sources are parked in `AOloopControl/tui/` `#api` `#build` `#refactor`
 - **2026-10-15** — The macro-based "V2 8-section" compute unit framework is removed
   (`FPS_MAIN_STANDALONE_V2`, `INSERT_STD_PROCINFO_COMPUTEFUNC_*`, `CLIADDCMD_*`,
   `add_milk_standalone` / `add_cacao_standalone*`, `MILK_MODULE`/`init_module_CLI`): every compute

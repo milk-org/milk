@@ -52,24 +52,12 @@ Common issues and solutions when building, installing, and running `milk`.
         ```
 
 ??? faq "Library not found at runtime"
-
     ```text
     error while loading shared libraries: libImageStreamIO.so
     ```
 
-    **Solution:** Add the install directory to the linker path:
-
-    === "System-wide (ldconfig)"
-        ```bash
-        echo "/usr/local/lib" > usrlocal.conf
-        sudo mv usrlocal.conf /etc/ld.so.conf.d/
-        sudo ldconfig
-        ```
-
-    === "Per-user (LD_LIBRARY_PATH)"
-        ```bash
-        export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-        ```
+    This  generally relates to a stray legacy install. Try to locate and remove/isolate it.
+    The modern installation of milk does not require manipulating the linker path.
 
 ---
 
@@ -116,7 +104,7 @@ See also: [Streams](../guide/streams.md)
     The default shared memory directory is `/milk/shm`. Override with:
 
     ```bash
-    export MILK_SHM_DIR=/path/to/custom/shm
+    export MILK_SHM_DIR=/path/to/custom/shmdir
     ```
 
 ---

@@ -12,6 +12,7 @@ from milk.cliwrap import CLI, HAVE_CLI
 TIMEOUT = 1
 
 FPSEXEC_LINKS_CLICORE_EXCEPTIONS = [
+    "cacao-fpsexec-list"
     # There are no more exceptions !
 ]
 
@@ -26,6 +27,7 @@ def _find_fpsexecs() -> list[pathlib.Path]:
         for pattern in ("milk-fpsexec-*", "cacao-fpsexec-*")
         for p in bindir.glob(pattern)
         if p.is_file()
+        if p.name != "cacao-fpsexec-list"
     ]
     return sorted(exes)
 

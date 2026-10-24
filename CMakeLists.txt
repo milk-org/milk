@@ -466,8 +466,10 @@ include(${PROJECT_SOURCE_DIR}/cmake/milk_runnable.cmake)
 # INSTALL PATHS
 # =======================================
 
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
+add_link_options(-Wl,--disable-new-dtags) # RPATH instead of RUNPATH -- allows to supersede LD_LIBRARY_PATH
+
 
 # Expose architectural tiers globally so that legacy #include
 # =====================================================================
