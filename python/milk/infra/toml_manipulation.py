@@ -37,6 +37,7 @@ def load_pipeline_config(conf_folder: str | Path) -> PipelineConfig:
     config.loop_number = parsed.loop_number
     config.sessions = parsed.sessions
     config.dataloads = parsed.dataloads
+    config.systemlinkage = parsed.systemlinkage
     # Each session name is also a top-level table holding its own config
     config.session_configs = {  # type: ignore
         session_name: data[session_name] for session_name in config.sessions

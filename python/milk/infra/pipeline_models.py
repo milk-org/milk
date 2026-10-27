@@ -14,6 +14,9 @@ from dataclasses import dataclass, fields
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+# TODO we should be able to import pyMilk validator without hauling ImageStreamIOWrap here.
+from pyMilk.interfacing.shm import check_SHM_name
+
 
 @dataclass(frozen=True)
 class LOOP_INFO:
@@ -76,6 +79,24 @@ class PipelineConfigModel(BaseModel):
     sessions: dict[str, str]
     dataloads: list[DataLoadEntryModel] = Field(default_factory=list)
     session_configs_: dict[str, dict] = Field(default_factory=dict)
+    # mode name -> {local stream owned by this pipeline: remote stream it points to}
+    systemlinkage: dict[str, dict[str, str]] = Field(default_factory=dict)
+
+    @field_validator("systemlinkage")
+    @classmethod
+    def _check_systemlinkage(cls, v: dict[str, dict[str, str]]):
+        out: dict[str, dict[str, str]] = {}
+        for mode, links in v.items():
+            out[mode] = {}
+            for local, remote in links.items():
+                # TODO this where to focus if we eventually use various MILK_SHM_DIR
+                local, remote = check_SHM_name(local), check_SHM_name(remote)
+                if not local or not remote or local == remote:
+                    raise ValueError(
+                        f"systemlinkage.{mode}: invalid link {local!r} -> {remote!r}"
+                    )
+                out[mode][local] = remote
+        return out
 
     @field_validator("dataloads", mode="before")
     @classmethod
@@ -125,5 +146,8 @@ class PipelineConfig:
 
         # [dataloads] array: list of source/target entries
         self.dataloads: list[DataLoadEntryModel] = []
+
+        # [systemlinkage.<mode>] tables: mode -> {local stream: remote stream}
+        self.systemlinkage: dict[str, dict[str, str]] = {}
 
         # Really I want schemas and dynamic parsing...

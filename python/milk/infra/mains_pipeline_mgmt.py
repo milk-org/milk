@@ -2,10 +2,12 @@ from __future__ import annotations
 import typing as typ
 
 from ..pipeline import Pipeline
+from .exceptions import SystemLinkageException, UnknownSystemLinkageException
 
 from pathlib import Path
 
 import os
+import subprocess
 import click
 
 if typ.TYPE_CHECKING:
@@ -15,158 +17,202 @@ MILK_SAMPLES_DIR = os.environ["MILK_ROOT"] + "/milk-examples/pipelines/"
 CACAO_SAMPLES_DIR = os.environ["MILK_ROOT"] + "/plugins/cacao-src/examples/"
 
 
-@click.command(
-    context_settings={"help_option_names": ["-h", "--help"]},
-)
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+def milk_pipes():
+    """
+    Clone, initialize and spool up a milk/cacao pipeline.
+
+    \b
+    Subcommands:
+      clone   Clone a pipeline configuration to the current folder
+      init    Set up the folders of a cloned pipeline
+      spool   Deploy and start the processes of an initialized pipeline
+      sys     Apply a [systemlinkage] mode of a pipeline
+    """
+
+
+@milk_pipes.command("clone", context_settings={"help_option_names": ["-h", "--help"]})
 @click.option(
-    "-t",
-    "--task",
-    "task_arg",
-    metavar="TASK1,TASK2,...",
-    default=None,
-    help="Comma-separated list of tasks to apply to the pipeline",
+    "-m", "--milk", "milk_exs", is_flag=True, help="<name> is a milk example pipeline"
 )
 @click.option(
     "-c",
-    "--configure",
-    "configure_flag",
+    "--cacao",
+    "cacao_exs",
     is_flag=True,
-    help='Shorthand for -t "configure"',
+    help="<name> is a cacao example pipeline",
 )
 @click.option(
-    "-r",
-    "--run",
-    "run_flag",
+    "-f",
+    "--full-path",
+    "full_path",
     is_flag=True,
-    help='Shorthand for -t "run"',
+    help="<name> is the path to a pipeline configuration folder",
 )
-@click.option(
+@click.argument("name", required=False)
+def milk_pipes_clone(
+    milk_exs: bool,
+    cacao_exs: bool,
+    full_path: bool,
+    name: str | None,
+):
+    """
+    Clone a pipeline configuration into the current folder.
+
+    Exactly one of -m, -c, -f must be given. With -m/-c, <name> is looked up
+    in the milk/cacao examples. With -f, <name> is the path to the
+    configuration (`<path>/<name>-conf` or `<path>/<name>`).
+    Without <name>, the available configurations are listed.
+
+    Commit the clone in its own Git repository, respecting .gitignore.
+    Existing repositories must be clean; updates append clone-rsync.log.
+    No commit is created when there are no staged changes.
+    Git identity and signing must already be configured. Failed commits
+    leave the copied files in place for inspection.
+    """
+    # TODO milk-pipes clone <full_path> should be allowed.
+    # TODO a --to <destination folder> should be allowed.
+    # TODO add a name resolution for <conf_name> <loop_name> <folder_name>
+    # TODO -l to get a list of clonables
+    # TODO add a confname, aoname, aonum override during the cloning
+    if sum([milk_exs, cacao_exs, full_path]) != 1:
+        raise click.UsageError(
+            "Exactly one of -m/--milk, -c/--cacao, -f/--full-path " "is required"
+        )
+
+    if name is None:
+        if milk_exs:
+            browse_and_print_conf_folders(MILK_SAMPLES_DIR)
+        elif cacao_exs:
+            browse_and_print_conf_folders(CACAO_SAMPLES_DIR)
+        else:
+            raise click.UsageError("-f/--full-path requires <name>")
+        return
+
+    milk_pipes_clone_function(name, milk_exs, cacao_exs, full_path)
+
+
+def milk_pipes_clone_function(
+    name: str,
+    milk_exs: bool = False,
+    cacao_exs: bool = False,
+    full_path: bool = False,
+    dest_folder: str | Path | None = None,
+) -> Pipeline:
+    """Clone to dest_folder (default cwd), then record the returned pipeline in Git."""
+    if milk_exs:
+        parent, long_name = Path(MILK_SAMPLES_DIR), name
+    elif cacao_exs:
+        parent, long_name = Path(CACAO_SAMPLES_DIR), name
+    elif full_path:
+        full = Path(name.rstrip("/"))
+        parent, long_name = full.parent, full.name.removesuffix("-conf")
+    else:
+        raise click.UsageError("One of milk_exs, cacao_exs, full_path needed")
+
+    dest = Path(dest_folder) if dest_folder is not None else Path.cwd()
+    pp = Pipeline(parent, long_name)  # Raise on missing folder
+    target = dest / f"{long_name}-conf"
+    if pp.conf_folder.resolve() == target.resolve():
+        raise click.UsageError(
+            f"{long_name}-conf is already in {dest}; nothing to clone."
+        )
+
+    try:
+        Pipeline.check_clone_target(target)
+        cloned = pp.clone_to(dest)
+        cloned.update_local_git()
+    except subprocess.CalledProcessError as error:
+        detail = error.stderr or error.stdout or str(error)
+        raise click.ClickException(
+            f"Clone/Git recording failed for {target}: {detail.strip()}"
+        ) from error
+    except (OSError, ValueError) as error:
+        raise click.ClickException(
+            f"Clone/Git recording failed for {target}: {error}"
+        ) from error
+    print(f"Cloned {pp.conf_folder} to {cloned.conf_folder}")
+    return cloned
+
+
+_folder_option = click.option(
     "--folder",
     "folder",
     type=click.Path(),
     default=None,
     help="Parent folder to the pipeline configuration (defaults to cwd)",
 )
-@click.option(
-    "--cacao-exs",
-    "cacao_exs",
-    is_flag=True,
-    help="Use a cacao example pipeline instead of --folder",
-)
-@click.option(
-    "--milk-exs",
-    "milk_exs",
-    is_flag=True,
-    help="Use a milk example pipeline instead of --folder",
-)
-@click.argument("_positional", nargs=-1)
-def milk_pipes(
-    task_arg: str | None,
-    configure_flag: bool,
-    run_flag: bool,
+
+
+@milk_pipes.command("init", context_settings={"help_option_names": ["-h", "--help"]})
+@_folder_option
+@click.argument("name", required=False)
+def milk_pipes_init(folder: str | None, name: str | None):
+    """
+    Perform the initial folder setup of a cloned pipeline <name>.
+
+    Without <name>, the pipelines found in the folder are listed.
+    """
+    if name is None:
+        browse_and_print_conf_folders(folder or os.getcwd())
+        return
+    milk_pipes_init_function(name, folder)
+
+
+@milk_pipes.command("spool", context_settings={"help_option_names": ["-h", "--help"]})
+@_folder_option
+@click.argument("name", required=False)
+def milk_pipes_spool(folder: str | None, name: str | None):
+    """
+    Deploy FPSs, start conf processes and load data files of pipeline <name>.
+
+    Without <name>, the pipelines found in the folder are listed.
+    """
+    if name is None:
+        browse_and_print_conf_folders(folder or os.getcwd())
+        return
+    milk_pipes_spool_function(name, folder)
+
+
+@milk_pipes.command("sys", context_settings={"help_option_names": ["-h", "--help"]})
+@_folder_option
+@click.argument("name")
+@click.argument("linkage")
+def milk_pipes_sys(folder: str | None, name: str, linkage: str):
+    """
+    Apply the [systemlinkage.<LINKAGE>] symlinks of pipeline <name>.
+    """
+    milk_pipes_sys_function(name, linkage, folder)
+
+
+def milk_pipes_sys_function(name: str, linkage: str, folder: str | None = None) -> None:
+    pp = Pipeline(folder if folder is not None else os.getcwd(), name)
+    try:
+        pp.apply_system_linkage(linkage)
+    except (UnknownSystemLinkageException, SystemLinkageException) as error:
+        raise click.ClickException(str(error)) from error
+
+
+def milk_pipes_init_function(name: str, folder: str | None = None) -> None:
+    _run_tasks(name, folder, _get_tasks_configure())
+
+
+def milk_pipes_spool_function(name: str, folder: str | None = None) -> None:
+    _run_tasks(name, folder, _get_tasks_run())
+
+
+def _run_tasks(
+    name: str,
     folder: str | None,
-    cacao_exs: bool,
-    milk_exs: bool,
-    _positional: tuple[str, ...],
-):
-    """
-    Deploy and/or manage a milk/cacao pipeline.
-
-    Usage:
-      milk-pipes [-t task1,task2,...|-c|-r]
-                 [--folder <pipefolder>|--cacao-exs|--milk-exs]
-                 <pipename>
-
-    Run `milk-pipes tasks` for a detailed list of tasks.
-    """
-    if len(_positional) == 0:
-        print(milk_pipes.get_help(click.get_current_context()) + "\n")
-        if milk_exs:
-            browse_and_print_conf_folders(MILK_SAMPLES_DIR)
-        if cacao_exs:
-            browse_and_print_conf_folders(CACAO_SAMPLES_DIR)
-        if folder is None:
-            browse_and_print_conf_folders(os.getcwd())
-        else:
-            browse_and_print_conf_folders(folder)
-        return
-
-    return milk_pipes_function(
-        task_arg, configure_flag, run_flag, folder, cacao_exs, milk_exs, _positional
-    )
-
-
-def milk_pipes_function(
-    task_arg: str | None = None,
-    configure_flag: bool = False,
-    run_flag: bool = False,
-    folder: str | None = None,
-    cacao_exs: bool = False,
-    milk_exs: bool = False,
-    _positional: tuple[str, ...] = (),
-):
-
-    assert len(_positional) == 1  # temp
-    (_positional_str,) = _positional  # unpack, since len is 1 for now.
-    if _positional == "tasks":
-        return milk_pipes_tasks_help()
-
-    pipe_conf_name = _positional_str
-
-    if sum([bool(task_arg), configure_flag, run_flag]) > 1:
-        raise click.UsageError(
-            "-t/--task, -c/--configure and -r/--run are mutually exclusive"
-        )
-
-    # TODO replace this with a task lookup relating to the pipeline
-    tasks: list[type[SimpleTask]]
-    if task_arg is not None:
-        tasks = _parse_tasks([t.strip() for t in task_arg.split(",") if t.strip()])
-    elif configure_flag:
-        tasks = _get_tasks_configure()
-    elif run_flag:
-        tasks = _get_tasks_run()
-    else:
-        tasks = []  # TODO probably also an error
-
-    if sum([bool(folder), milk_exs, cacao_exs]) > 1:
-        raise click.UsageError(
-            "--cacao-exs, --milk-exs and --folder are mutually exclusive"
-        )
-
-    if folder is not None:
-        pipe_parent_folder = folder
-    else:
-        assert os.path.isdir(os.environ.get("MILK_ROOT", ""))
-        if milk_exs:
-            pipe_parent_folder = MILK_SAMPLES_DIR
-        elif cacao_exs:  # cacao-exs
-            pipe_parent_folder = CACAO_SAMPLES_DIR
-        else:
-            pipe_parent_folder = os.getcwd()
-
-    pp = Pipeline(pipe_parent_folder, pipe_conf_name)  # Raise on missing folder
-
-    if configure_flag:
-        pp = pp.clone_to(os.getcwd())
-
-    if tasks is None:
-        print("No tasks to perform. Exiting.")
-        return
+    tasks: list[type[SimpleTask]],
+) -> None:
+    pp = Pipeline(
+        folder if folder is not None else os.getcwd(), name
+    )  # Raise on missing folder
 
     for Task in tasks:
         print(f"Executing task {Task.__name__}...")
         pp.task_do(Task)
-
-
-def milk_pipes_tasks_help():
-    print("""
-        milk-pipes tasks
-
-        Tasks that can be invoked with the
-            milk-pipe [-t/--tasks task1,task2,...]
-        syntax:
-        """)
 
 
 def _get_tasks_configure() -> list[type[SimpleTask]]:
@@ -174,6 +220,7 @@ def _get_tasks_configure() -> list[type[SimpleTask]]:
 
 
 def _get_tasks_run() -> list[type[SimpleTask]]:
+    # TODO: "some sort of PRELOAD"
     return _parse_tasks(["DeployFPS", "StartConfProcesses", "LoadDataFiles"])
 
 
@@ -205,19 +252,3 @@ def browse_and_print_conf_folders(folder: str | Path):
         ):
             print(f" -    {subfolder}")
     print("---")
-
-
-def deploy_pipeline_by_path(parent_folder: str | Path, long_name: str) -> Pipeline:
-    """
-    Deploy a pipeline from a fullname to the configuration
-    """
-    ...
-
-
-def deploy_pipeline_from_examples(example_kind: str, long_name: str) -> Pipeline:
-    """
-    Deploy a pipeline from the examples
-
-    Find the example folder, clone it to pwd (or to target), then deploy
-    """
-    ...

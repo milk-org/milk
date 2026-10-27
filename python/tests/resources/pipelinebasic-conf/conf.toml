@@ -14,6 +14,7 @@ delaysec = 0.01
 in_name = 'input'
 out_name = 'middle'
 procinfo.enabled = true
+procinfo.loopcntMax = -1
 procinfo.triggersname = '{delay0.in_name}'
 procinfo.triggermode = 3
 
@@ -24,5 +25,10 @@ delaysec = 0.01
 in_name = '{delay0.out_name}'
 out_name = 'output'
 procinfo.enabled = true
+procinfo.loopcntMax = -1
 procinfo.triggersname = '{delay0.out_name}'
 procinfo.triggermode = 3
+
+[systemlinkage.loopback]
+input = 'source_point'
+output = 'source_point'

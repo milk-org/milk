@@ -42,6 +42,8 @@ from .exceptions import FPSExecException
 import subprocess
 
 
+# TODO note for future: a good task is idempotent -- would alleviate calls to can/success.
+# TODO note for future: do we keep
 class InitialFolderSetup(SimpleTask):
 
     def can(self) -> bool:
@@ -51,9 +53,7 @@ class InitialFolderSetup(SimpleTask):
 
     def success(self) -> bool:
         root_dir = self.pipeline.root_folder
-        if not os.path.isdir(root_dir):
-            return False
-        if not os.path.isfile(root_dir / "conf.toml"):
+        if not os.path.isdir(root_dir) or not os.path.isfile(root_dir / "conf.toml"):
             return False
 
         # More ?

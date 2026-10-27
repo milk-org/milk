@@ -136,8 +136,8 @@ class TestMilkPipes:
     def test_no_pipelines(self):
         # No folder
         with pytest.raises(exc.PipelineConfFolderNotFoundException):
-            mgmt.milk_pipes_function(_positional=("yolo",))
+            mgmt.milk_pipes_init_function("yolo")
         # No conf.toml
         os.mkdir("yolo-conf")
         with pytest.raises(exc.PipelineTomlNotFoundException):
-            mgmt.milk_pipes_function(_positional=("yolo",))
+            mgmt.milk_pipes_init_function("yolo")

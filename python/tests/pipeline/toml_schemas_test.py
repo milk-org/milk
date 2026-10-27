@@ -33,6 +33,18 @@ def test_valid_config(load_raw_toml):
     assert conf.loop_number == 0
 
 
+def test_systemlinkage(load_modeled_toml):
+    assert load_modeled_toml.systemlinkage["standalone"] == {}
+    assert load_modeled_toml.systemlinkage["shared"]["input"] == "otherloop_output"
+
+
+@pytest.mark.parametrize("local, remote", [("a", "a"), ("a", "a.im.shm"), ("a", "")])
+def test_systemlinkage_bad(load_raw_toml, local, remote):
+    load_raw_toml["systemlinkage"]["shared"] = {local: remote}
+    with pytest.raises(pydantic.ValidationError):
+        pconf.PipelineConfigModel(**load_raw_toml)
+
+
 def test_missing_toml_basic(load_raw_toml):
     del load_raw_toml["loop_number"]
     with pytest.raises(pydantic.ValidationError):

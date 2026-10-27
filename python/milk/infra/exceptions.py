@@ -13,6 +13,14 @@ class PipelineTomlNotFoundException(FileNotFoundError):
     ...
 
 
+class UnknownSystemLinkageException(KeyError):
+    """Raised when a linkage mode is not declared in [systemlinkage]."""
+
+
+class SystemLinkageException(RuntimeError):
+    """Raised when a linkage cannot be applied or removed safely."""
+
+
 class FPSExecException(RuntimeError):
     """Raised when a milk-fpsexec-* CLI subprocess exits with non-zero status."""
 
