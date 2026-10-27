@@ -15,9 +15,9 @@ Always point to duplicate or similar:
 Never duplicate between these folders, always link the agent to the human doc.
 
 You are TO NEVER use any `git` feature that:
-- manipulates branch, HEAD, tag pointers
 - interacts with github
 - overwrites any file in the working tree
+- you may create sub-branches and use speckit-foolery as upstream, and merge back into speckit_foolery branch.
 
 ## Scope discipline
 
