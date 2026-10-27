@@ -34,7 +34,7 @@ import shutil
 from pathlib import Path
 
 from .task_models import SimpleTask
-from ..session import ComputeSession
+from ..compute_unit import ComputeUnit
 
 from .toml_manipulation import denest_toml_dicts
 from .. import env
@@ -164,9 +164,9 @@ class DeployFPS(SimpleTask):
 
     def success(self) -> bool:
         p = self.pipeline
-        for session_name, exec in p.sessions.items():
-            session = ComputeSession(exec, session_name + f"_{p.loop_number:03d}")
-            if not session.fps or not session.fps.is_valid():
+        for cu, spec in p.compute_units.items():
+            compu = ComputeUnit(spec.exec, p.config.fps_name(cu))
+            if not compu.fps or not compu.fps.is_valid():
                 return False
         return True
 
@@ -176,20 +176,19 @@ class DeployFPS(SimpleTask):
 
         # Probably should ensure that cwd is the config's ROOTDIR
 
-        for session_name, exec in p.sessions.items():
-            session_fps_config = p.session_configs[session_name]
-            session = ComputeSession(exec, session_name + f"_{p.loop_number:03d}")
+        for cu, spec in p.compute_units.items():
+            compu = ComputeUnit(spec.exec, p.config.fps_name(cu))
 
             with contextlib.chdir(p.work_folder):
-                session.fpsinit()
+                compu.fpsinit()
 
-            assert session.fps
+            assert compu.fps
 
-            # TODO probably a method on the Session should provide the denested iterator.
-            denested_fps_config = denest_toml_dicts(session_fps_config)
+            # TODO probably a method on the CompU should provide the denested iterator.
+            denested_fps_config = denest_toml_dicts(spec.fps)
 
             for fp_name, fp_value in denested_fps_config.items():
-                session.fps[fp_name] = fp_value  # type: ignore[arg-type]
+                compu.fps[fp_name] = fp_value  # type: ignore[arg-type]
 
 
 class StartConfProcesses(SimpleTask):
@@ -208,53 +207,47 @@ class StartConfProcesses(SimpleTask):
             self.failure_reason = f"{p.work_folder} does not exist."
             return False
 
-        # Every session's FPS must exist and be a well-formed deployment
-        for session_name, exec in p.sessions.items():
-            session = ComputeSession(exec, session_name + f"_{p.loop_number:03d}")
-            if session.fps is None:
-                self.failure_reason = (
-                    f'FPS for {session_name + f"_{p.loop_number:03d}"} not found.'
-                )
+        # Every compute unit's FPS must exist and be a well-formed deployment
+        for cu, spec in p.compute_units.items():
+            fps_name = p.config.fps_name(cu)
+            compu = ComputeUnit(spec.exec, fps_name)
+            if compu.fps is None:
+                self.failure_reason = f"FPS for {fps_name} not found."
                 return False
-            if not session.fps.is_valid():
-                self.failure_reason = (
-                    f'FPS for {session_name + f"_{p.loop_number:03d}"} is invalid.'
-                )
+            if not compu.fps.is_valid():
+                self.failure_reason = f"FPS for {fps_name} is invalid."
 
         # TODO get & check the rootdir for all FPSs
 
         return True
 
     def success(self) -> bool:
-        # TODO I deffo want a Pipeline.sessions property now
         p = self.pipeline
-        sessions = [
-            ComputeSession(exec, s_name + f"_{p.loop_number:03d}")
-            for (s_name, exec) in p.sessions.items()
+        compus = [
+            ComputeUnit(spec.exec, p.config.fps_name(cu))
+            for cu, spec in p.compute_units.items()
         ]
-        if any([s.fps is None for s in sessions]):
+        if any([c.fps is None for c in compus]):
             return False
-        return all([s.fps is not None and s.fps.conf_isrunning() for s in sessions])
+        return all([c.fps is not None and c.fps.conf_isrunning() for c in compus])
 
     def forward(self) -> None:
-        from ..session import ComputeSession
-
         p = self.pipeline
 
         # Probably should ensure that cwd is the config's ROOTDIR
         # The below could also probably be handled by a FPSManager of pyMilk
-        sessions: list[ComputeSession] = []  # cache to apply global timeout
-        for session_name, exec in p.sessions.items():
-            session = ComputeSession(exec, session_name + f"_{p.loop_number:03d}")
+        compus: list[ComputeUnit] = []  # cache to apply global timeout
+        for cu, spec in p.compute_units.items():
+            compu = ComputeUnit(spec.exec, p.config.fps_name(cu))
             # TODO breaks if tmux is busy already (in particular poor cleaning of repeated tests.)
-            session.confstart(tmux=True)  # TODO dispatch env to tmuxes !!
-            sessions += [session]
+            compu.confstart(tmux=True)  # TODO dispatch env to tmuxes !!
+            compus += [compu]
 
         import time
 
         start = time.monotonic()
         while time.monotonic() - start < self.TIMEOUT_ALL:
-            if all([s.fps.conf_isrunning() for s in sessions]):  # type: ignore
+            if all([c.fps.conf_isrunning() for c in compus]):  # type: ignore
                 break
             time.sleep(0.01)
         else:  # Should it raise ? We're gonna call self.success for that

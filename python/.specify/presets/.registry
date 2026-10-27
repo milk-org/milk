@@ -7,9 +7,17 @@
       "manifest_hash": "sha256:d316b3ad5f41988d51fe2b7faedab9c942edc68b44cf6970d5e26ef5a8522751",
       "enabled": true,
       "priority": 10,
-      "registered_commands": {},
+      "registered_commands": {
+        "claude": [
+          "speckit.specify",
+          "speckit.plan",
+          "speckit.tasks",
+          "speckit.implement",
+          "speckit.constitution"
+        ]
+      },
       "registered_skills": {
-        "copilot": [
+        "claude": [
           "speckit-specify",
           "speckit-plan",
           "speckit-tasks",

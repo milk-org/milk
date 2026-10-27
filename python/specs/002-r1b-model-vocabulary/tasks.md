@@ -25,7 +25,7 @@ milk-tagged tests need it.
 
 ## Phase 1: Setup
 
-- [ ] T001 Run `pytest` from `python/` with `MILK_INSTALLDIR` set and record the baseline (passed,
+- [x] T001 Run `pytest` from `python/` with `MILK_INSTALLDIR` set and record the baseline (passed,
   failed, skipped), so that later phases can be compared against it
 
 ---
@@ -36,7 +36,7 @@ milk-tagged tests need it.
 (`pipeline_models.py`, `deploy_tasks.py`, `pipeline.py`), so they ship together here and are
 checked by separate tests in Phases 3 and 4.
 
-- [ ] T002 `milk/infra/pipeline_models.py`: delete `LOOP_INFO`, `PipelineConfigModel`, the plain
+- [x] T002 `milk/infra/pipeline_models.py`: delete `LOOP_INFO`, `PipelineConfigModel`, the plain
   `PipelineConfig` and `DataLoadEntryModel.from_str` with its `before` validator. Add
   `ComputeUnitSpec` (`extra="forbid"`, frozen; `exec: str`, `fps: dict[str, Any] = {}`; a field
   validator runs `ProcessInfoData.model_validate(fps["procinfo"])` when the key is present,
@@ -46,36 +46,36 @@ checked by separate tests in Phases 3 and 4.
   `long_name`, `name`, `loop_number`, `compute_units`, `dataloads`, `systemlinkage`; move
   `_check_systemlinkage` onto it unchanged). `DataLoadEntryModel` becomes `extra="forbid"`,
   `source` and `target` only. Keep `ProcessInfoData` unchanged.
-- [ ] T003 `milk/infra/pipeline_models.py` (after T002): add `PipelineConfig.fps_name(cu)` returning
+- [x] T003 `milk/infra/pipeline_models.py` (after T002): add `PipelineConfig.fps_name(cu)` returning
   `f"{self.name}_{cu}"`, with a docstring saying why (D-19). It is the only place the expression
   exists.
-- [ ] T004 `milk/infra/toml_manipulation.py` (after T002): `load_pipeline_config` keeps its
+- [x] T004 `milk/infra/toml_manipulation.py` (after T002): `load_pipeline_config` keeps its
   signature and the unchanged `substitute_toml_variables_in_nested`; then
   `PipelineConfig.model_validate(data)`, re-raising `pydantic.ValidationError` as
   `ConfigError(str(err), path=toml_path) from err`. Delete the field-copying block and the
   `session_configs` construction.
-- [ ] T005 [P] `milk/pipeline.py` `Pipeline.__init__`: `self.compute_units =
+- [x] T005 [P] `milk/pipeline.py` `Pipeline.__init__`: `self.compute_units =
   self.config.compute_units`; remove `self.sessions` and `self.session_configs`; keep `dataloads`,
   `systemlinkage`, `short_name`, `loop_number`. Delete `get_session_abs_name` and `get_session`.
   Update `is_running` and `nuke` to build `ComputeSession(spec.exec, self.config.fps_name(cu))`
   from `self.compute_units.items()` (the class is renamed in Phase 5).
-- [ ] T006 [P] `milk/infra/deploy_tasks.py`: every `ComputeSession(exec, s + f"_{p.loop_number:03d}")`
+- [x] T006 [P] `milk/infra/deploy_tasks.py`: every `ComputeSession(exec, s + f"_{p.loop_number:03d}")`
   becomes `ComputeSession(spec.exec, p.config.fps_name(cu))`, iterating
   `p.compute_units.items()`; `ConfigureFPSs` denests `spec.fps` instead of
   `p.session_configs[…]`; the "FPS … not found/invalid" messages use `fps_name`. Remove the
   `TODO … Pipeline.sessions property` comment (R1c's).
-- [ ] T007 [P] Migrate `tests/resources/pipelinebasic-conf/conf.toml`: drop `tasks` and
+- [x] T007 [P] Migrate `tests/resources/pipelinebasic-conf/conf.toml`: drop `tasks` and
   `[sessions]`; `[delay0]`/`[delay1]` → `[compute_units.<cu>]` with `exec`, `.fps` and
   `.fps.procinfo` (same values); refs → `{compute_units.delay0.fps.in_name}` / `.out_name`,
   including `systemlinkage.shared.middle`.
-- [ ] T008 [P] Migrate `tests/resources/simulator-rootdir/conf.toml`: drop `tasks`, `[sessions]` and
+- [x] T008 [P] Migrate `tests/resources/simulator-rootdir/conf.toml`: drop `tasks`, `[sessions]` and
   the empty tables; three `[compute_units.<cu>]` tables with `exec` only.
-- [ ] T009 [P] Migrate `../milk-examples/pipelines/aolinearsimulator-conf/conf.toml`: drop `tasks`,
+- [x] T009 [P] Migrate `../milk-examples/pipelines/aolinearsimulator-conf/conf.toml`: drop `tasks`,
   `_ln`, `[sessions]`; nest the CompU tables as in T007 (`option.MODENORM` stays a dotted key under
   `.fps`); `immodes = 'aol{loop_number}_simu_modes'`; refs `{mvm.outcoeff}` →
   `{compute_units.mvm.fps.outcoeff}`; dataloads → `[[dataloads]]` with
   `source = "sim_matrix_flat1.fits"`, `target = "aol1_simu_modes"` (literal, plan Flag 1).
-- [ ] T010 Grep `milk/` and `tests/` for `PipelineConfigModel`, `LOOP_INFO`, `session_configs`,
+- [x] T010 Grep `milk/` and `tests/` for `PipelineConfigModel`, `LOOP_INFO`, `session_configs`,
   `.sessions`, `get_session`, `from_str`, `loop_number:03d`; fix any leftover use outside the test
   files handled in Phases 3–4 (after T002–T006).
 
@@ -90,24 +90,24 @@ checked by separate tests in Phases 3 and 4.
 
 **Independent Test**: `tests/pipeline/toml_schemas_test.py` passes.
 
-- [ ] T011 [US1] Rewrite `tests/pipeline/toml_schemas_test.py` on `PipelineConfig`, via
+- [x] T011 [US1] Rewrite `tests/pipeline/toml_schemas_test.py` on `PipelineConfig`, via
   `PipelineConfig.model_validate` (expecting `pydantic.ValidationError`): valid config
   (acceptance 1: `compute_units` maps to `ComputeUnitSpec`); systemlinkage good and bad; missing
   identity key; missing `exec` (error names the CompU and `exec`); procinfo typo under
   `compute_units.delay0.fps.procinfo` (names the field); string-form dataload refused; CompU
   without `.fps` valid (`fps == {}`, `procinfo is None`); CompU named `tasks` valid; the model is
   frozen.
-- [ ] T012 [US1] Add to `tests/pipeline/toml_schemas_test.py` (SC-002): through
+- [x] T012 [US1] Add to `tests/pipeline/toml_schemas_test.py` (SC-002): through
   `load_pipeline_config` on a `tmp_path` copy of `pipelinebasic-conf`, parametrize an extra
   top-level key (`foo`, `tasks`, `sessions`, `delay0`, `kind`) and assert `ConfigError` whose
   message contains the key and whose `path` is the TOML file; also a key left directly under a
   CompU table (`exec` alongside an old-shape key) is refused. Add loader-level cases for scalar
   and array procinfo values; assert `ConfigError`, a message identifying the offending field,
   the TOML file in `path`, and the underlying `pydantic.ValidationError` in `__cause__`.
-- [ ] T013 [US1] Add to `tests/pipeline/toml_schemas_test.py` (SC-005): `PipelineConfigModel` and
+- [x] T013 [US1] Add to `tests/pipeline/toml_schemas_test.py` (SC-005): `PipelineConfigModel` and
   `LOOP_INFO` are absent from `milk.infra.pipeline_models`, and `PipelineConfig` is the pydantic
   model (`issubclass(…, BaseModel)`).
-- [ ] T014 [US1] Run `pytest tests/pipeline/toml_schemas_test.py`; also load all three migrated
+- [x] T014 [US1] Run `pytest tests/pipeline/toml_schemas_test.py`; also load all three migrated
   configs via `load_pipeline_config` as a smoke check (FR-007, the example one by path).
 
 **Checkpoint**: US1 is testable on its own.
@@ -121,20 +121,20 @@ checked by separate tests in Phases 3 and 4.
 **Independent Test**: `tests/trivial/fps_name_test.py` and the updated
 `tests/pipeline/deploy_pipeline_test.py` pass.
 
-- [ ] T015 [P] [US2] Create `tests/trivial/fps_name_test.py` (py-safe, SC-003): `ast`-walk
+- [x] T015 [P] [US2] Create `tests/trivial/fps_name_test.py` (py-safe, SC-003): `ast`-walk
   `milk/**/*.py`; exactly one `FunctionDef` named `fps_name`; no source contains
   `loop_number:03d`; `PipelineConfig(...).fps_name("delay0") == "basic_delay0"` for `name="basic"`.
   Supplement these tests with an explicit audit of all package sites constructing or requesting
   FPS names: deploy, start, stop and check paths use `PipelineConfig.fps_name`, and no site
   independently constructs `<name>_<cu>`. Record the audit result alongside the naming tests.
-- [ ] T016 [US2] Update `tests/pipeline/deploy_pipeline_test.py` (milk): substitution assertions
+- [x] T016 [US2] Update `tests/pipeline/deploy_pipeline_test.py` (milk): substitution assertions
   read `pp.compute_units["delay0"].fps[...]` instead of `pp.session_configs`; FPS loops and the
   tmux-kill loop use `pp.config.fps_name(cu)` instead of `get_session_abs_name`/`get_session`; after
   deploy, assert the live FPS names are exactly `{"basic_delay0", "basic_delay1"}` (US2
   acceptance 3). Keep `ComputeSession` use until Phase 5.
-- [ ] T017 [US2] Grep `tests/` for hard-coded old FPS names (`_000`, `delay0_`, `delay1_`) and
+- [x] T017 [US2] Grep `tests/` for hard-coded old FPS names (`_000`, `delay0_`, `delay1_`) and
   update them to `<name>_<cu>`.
-- [ ] T018 [US2] Run `pytest tests/trivial/fps_name_test.py tests/pipeline` with `MILK_INSTALLDIR`;
+- [x] T018 [US2] Run `pytest tests/trivial/fps_name_test.py tests/pipeline` with `MILK_INSTALLDIR`;
   everything but the Phase 5 renames must be green.
 
 **Checkpoint**: US1 and US2 pass. Vocabulary is still the old one.
@@ -149,39 +149,39 @@ text remains.
 **Independent Test**: the "session" check in `tests/trivial/fps_name_test.py` and a grep of
 `milk/` and `tests/` (SC-004).
 
-- [ ] T019 [US3] `mv milk/session.py milk/compute_unit.py`; rename `ComputeSession` →
+- [x] T019 [US3] `mv milk/session.py milk/compute_unit.py`; rename `ComputeSession` →
   `ComputeUnit`; `__str__`/`__repr__` print `ComputeUnit …` instead of `Session …`; rename the
   `session`-named locals and docstring words to `compu`/CompU. Update every import in `milk/`
   (`pipeline.py`, `infra/deploy_tasks.py`) and the local variables there (`session`, `sessions`,
   `session_name`, `s_name` → `compu`, `compus`, `cu`).
-- [ ] T020 [P] [US3] `milk/infra/mains_pipeline_mgmt.py`: `milk-pipes nuke` help "on all sessions"
+- [x] T020 [P] [US3] `milk/infra/mains_pipeline_mgmt.py`: `milk-pipes nuke` help "on all sessions"
   → "on all compute units (CompUs)" (both occurrences); check every other subcommand help for the
   same concept. `milk/pipeline.py`: the "trylink sessions" comment likewise.
-- [ ] T021 [P] [US3] `mv tests/session tests/compute_unit` (with `__init__.py`; delete stale
+- [x] T021 [P] [US3] `mv tests/session tests/compute_unit` (with `__init__.py`; delete stale
   `__pycache__/` under the old path); in `deployment_test.py`: `StreamDelayComputeSession` →
   `StreamDelayComputeUnit`, `func_session_cleanup` → `func_compute_unit_cleanup`, `session`
   locals → `compu`, imports from `milk.compute_unit`. Same import and local-name updates in
   `paramsync_test.py`, `stability_test.py`.
-- [ ] T022 [P] [US3] `mv tests/infra/session_fixtures.py tests/infra/compute_unit_fixtures.py`;
+- [x] T022 [P] [US3] `mv tests/infra/session_fixtures.py tests/infra/compute_unit_fixtures.py`;
   `session_cls` → `compu_cls`, `func_session_cleanup` → `func_compute_unit_cleanup`,
   `ComputeSession` → `ComputeUnit`.
-- [ ] T023 [US3] (after T022) `mv tests/infra/session_deployment_test.py
+- [x] T023 [US3] (after T022) `mv tests/infra/session_deployment_test.py
   tests/infra/compute_unit_deployment_test.py` and `mv tests/infra/session_fps_runtime_sync_test.py
   tests/infra/compute_unit_fps_runtime_sync_test.py`; update their imports (`.compute_unit_fixtures`,
   `milk.compute_unit`), base classes (`StreamDelayCU`, `FPSTestCU` derive from `ComputeUnit`) and
   `session` locals/comments.
-- [ ] T024 [P] [US3] `tests/trivial/errors_location_test.py`: `from milk import compute_unit`,
+- [x] T024 [P] [US3] `tests/trivial/errors_location_test.py`: `from milk import compute_unit`,
   `compute_unit.ComputeUnit("sh", "myfps")`. `tests/pipeline/deploy_pipeline_test.py`:
   `ComputeSession` → `ComputeUnit` import and use, `sname`/`sesh` → `cu`/`compu`.
   `tests/mains/experiment_deploy.py` already uses "session" for the tmux session named after the
   FPS: leave it.
-- [ ] T025 [US3] Extend `tests/trivial/fps_name_test.py` (SC-004): `ast`-walk `milk/**/*.py`; no
+- [x] T025 [US3] Extend `tests/trivial/fps_name_test.py` (SC-004): `ast`-walk `milk/**/*.py`; no
   module file name, class, function, argument or attribute name contains `session`
   (case-insensitive), with an explicit tmux allowlist (empty in `milk/` today).
-- [ ] T026 [US3] Grep `milk/` and `tests/` (excluding `__pycache__`) for "session" and "Session";
+- [x] T026 [US3] Grep `milk/` and `tests/` (excluding `__pycache__`) for "session" and "Session";
   every remaining hit concerns tmux, pytest scope, nox or `start_new_session`. Grep for
   `milk.session`, `ComputeSession`, `get_session`. `milk.egg-info/` is generated; do not edit.
-- [ ] T027 [US3] Run `pytest` from `python/` with `MILK_INSTALLDIR` set (SC-001); compare with the
+- [x] T027 [US3] Run `pytest` from `python/` with `MILK_INSTALLDIR` set (SC-001); compare with the
   T001 baseline.
 
 **Checkpoint**: US1–US3 pass.
@@ -195,16 +195,16 @@ text remains.
 **Independent Test**: file exists, link resolves, grep for "CU" finds no compute-unit meaning
 (SC-006).
 
-- [ ] T028 [P] [US4] Create `../docs/pipelines_glossary.md`: one-line header stating it is the
+- [x] T028 [P] [US4] Create `../docs/pipelines_glossary.md`: one-line header stating it is the
   published copy of design-v7 §0, then the §0 table with terms and definitions verbatim. Do not add
   it to the `mkdocs.yml` nav (consistent with `pipelines.md`). Do not edit `design-v7.md`.
-- [ ] T029 [US4] `../docs/pipelines.md` (after T028): link the glossary near the top. Mermaid:
+- [x] T029 [US4] `../docs/pipelines.md` (after T028): link the glossary near the top. Mermaid:
   `Compute Unit (CU)` → `Compute Unit (CompU)`, node ids `CUG`/`CU` → `CompUG`/`CompU`, label
   "CompU Orchestration". Text "CUs" → "CompUs". "CU sections (main and subs)" →
   "`[compute_units.<cu>]` tables (`exec`, `.fps`, `.fps.procinfo`)". Deployment paragraph: "all
   sessions" → "all CompUs", and state that FPS names are `<name>_<cu>`. Check the page's config
   examples against Appendix A.1 shapes; link, do not duplicate, design-v7.
-- [ ] T030 [US4] Grep `../docs/` and `../AGENTS.md` for `\bCU\b`/`CUs`; none may mean compute
+- [x] T030 [US4] Grep `../docs/` and `../AGENTS.md` for `\bCU\b`/`CUs`; none may mean compute
   unit (AGENTS.md is expected to have none). Compare the glossary against design-v7 §0 term by
   term.
 
@@ -214,11 +214,11 @@ text remains.
 
 ## Phase 7: Polish and closing (constitution VIII, IX)
 
-- [ ] T032 Run the full `pytest` from `python/` with `MILK_INSTALLDIR`; SC-001 to SC-006 must hold.
-- [ ] T033 From `python/`, in order: `git add .`, `pre-commit run`, `git restore --staged .`
+- [x] T032 Run the full `pytest` from `python/` with `MILK_INSTALLDIR`; SC-001 to SC-006 must hold.
+- [x] T033 From `python/`, in order: `git add .`, `pre-commit run`, `git restore --staged .`
   (constitution IX). A "files were modified by this hook" result needs no action; report any other
   hook failure to Vincent instead of looping.
-- [ ] T031 (after T030, T032 and T033 succeed) `specs/pipelines/ROADMAP.md`, row R1b: set Status
+- [x] T031 (after T030, T032 and T033 succeed) `specs/pipelines/ROADMAP.md`, row R1b: set Status
   to `done` and Sub-spec to `specs/002-r1b-model-vocabulary/` (edit only those two cells).
 
 ---
@@ -251,3 +251,18 @@ Nothing in the out-of-scope list is implemented (includes, kinds, hooks, plans, 
 substitution changes, the `Pipeline.compute_units` view property, rundir claim, bugs other than B2).
 The cacao example `../plugins/cacao-src/examples/dmcomb-conf/conf.toml` is not migrated (other
 repository).
+
+---
+
+## Phase 8: Convergence
+
+- [x] T034 Strengthen the FPS-name audit in `tests/trivial/fps_name_test.py` (`test_deploy_and_pipeline_sites_use_fps_name` only checks that `fps_name(` appears in `pipeline.py` and `infra/deploy_tasks.py`): `ast`-walk `milk/**/*.py` and assert that every `ComputeUnit(...)` call takes its FPS name from `.fps_name(...)`, and that no f-string outside `PipelineConfig.fps_name` builds `<name>_<cu>`; record the audit result in the test docstring per US2/AC2, SC-003 (partial)
+- [x] T035 Add the explicit (empty) tmux allowlist to `test_no_session_vocabulary_in_package` in `tests/trivial/fps_name_test.py`, and correct its comment reference from SC-005 to SC-004 per plan: Tests (milk) / T025 (partial)
+- [x] T036 In `../docs/pipelines.md` Mermaid diagram, rename the subgraph id `CUG` to `CompUG` per plan: Docs & roadmap / T029 (partial)
+
+---
+
+## Phase 9: Convergence
+
+- [x] T037 In `tests/pipeline/deploy_pipeline_test.py` (`cloned_pipeline` fixture, the tmux-kill loop), reword the comment "TODO better tmux API integrated directly with session/pipeline" so that "session" no longer names the compute unit (e.g. "…integrated directly with CompU/pipeline") per FR-006, US3/AC1 (partial)
+- [x] T038 In `../docs/pipelines.md` "Pipelines conf.toml features" list, align the items with the implemented Appendix A.1 keys: "datalinks" → `[[dataloads]]` (`source`, `target`) and `[systemlinkage.<mode>]`; drop or mark "pre-files and post-files" as not yet available (includes are R2) per T029, FR-008 (partial)

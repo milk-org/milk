@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 import milk
-from milk import session
+from milk import compute_unit
 from milk.errors import (
     BestEffortError,
     ComputeUnitError,
@@ -71,10 +71,10 @@ def test_compute_unit_error_context(monkeypatch):
     def _no_fps(name):
         raise _NoFPS
 
-    monkeypatch.setattr(session, "FPS", _no_fps)
-    monkeypatch.setattr(session, "FPSDoesntExistError", _NoFPS)
+    monkeypatch.setattr(compute_unit, "FPS", _no_fps)
+    monkeypatch.setattr(compute_unit, "FPSDoesntExistError", _NoFPS)
     # `sh <fpsname>:<cmd>` fails: no such script, with a message on stderr
-    compu = session.ComputeSession("sh", "myfps")
+    compu = compute_unit.ComputeUnit("sh", "myfps")
     with pytest.raises(ComputeUnitError) as exc:
         compu._subprocess_complete("fps")
     err = exc.value

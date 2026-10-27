@@ -11,7 +11,7 @@ from milk.errors import (
     TaskDidNotSucceedError,
 )
 from milk.pipeline import Pipeline
-from milk.session import ComputeSession
+from milk.compute_unit import ComputeUnit
 from milk.infra.task_models import SimpleTask
 
 
@@ -36,9 +36,9 @@ def cloned_pipeline(pipeline: Pipeline):
 
     # Kill all the tmuxes that are associated with the pipeline
     tsrv = libtmux.Server()
-    for sname in cloned.sessions:
-        # TODO better tmux API integrated directly with session/pipeline
-        abs_name = cloned.get_session_abs_name(sname)
+    for cu in cloned.compute_units:
+        # TODO better tmux API integrated directly with CompU/pipeline
+        abs_name = cloned.config.fps_name(cu)
         session = tsrv.sessions.get(session_name=abs_name, default=None)
         if session is not None:
             session.kill()
@@ -67,16 +67,16 @@ class TestManualPipeline:
         assert pp.long_name == "pipelinebasic"
 
         assert (
-            pp.session_configs["delay0"]["procinfo"]["triggersname"]
-            == pp.session_configs["delay0"]["in_name"]
+            pp.compute_units["delay0"].fps["procinfo"]["triggersname"]
+            == pp.compute_units["delay0"].fps["in_name"]
         )
         assert (
-            pp.session_configs["delay1"]["procinfo"]["triggersname"]
-            == pp.session_configs["delay0"]["out_name"]
+            pp.compute_units["delay1"].fps["procinfo"]["triggersname"]
+            == pp.compute_units["delay0"].fps["out_name"]
         )
         assert (
-            pp.session_configs["delay1"]["in_name"]
-            == pp.session_configs["delay0"]["out_name"]
+            pp.compute_units["delay1"].fps["in_name"]
+            == pp.compute_units["delay0"].fps["out_name"]
         )
 
     def test_make_cloned_pipeline(self, cloned_pipeline):
@@ -107,14 +107,14 @@ class TestManualPipeline:
         assert "does not exist" in str(cannot.value)  # the task's failure_reason
         pp.task_do(InitialFolderSetup).task_do(DeployFPS)
 
-        for sname in pp.sessions:
-            sesh = pp.get_session(sname)
-            assert sesh.fps is not None
-            assert sesh.fps.is_valid()
+        for cu, spec in pp.compute_units.items():
+            compu = ComputeUnit(spec.exec, pp.config.fps_name(cu))
+            assert compu.fps is not None
+            assert compu.fps.is_valid()
 
-            assert sesh.fps.name == pp.get_session_abs_name(sname)
+            assert compu.fps.name == pp.config.fps_name(cu)
 
-            sesh.fps.destroy()
+            compu.fps.destroy()
 
     def test_task_not_succeeding(self, cloned_pipeline: Pipeline):
         class Never(SimpleTask):
@@ -144,10 +144,13 @@ class TestManualPipeline:
         pp.task_do(DeployFPS)
         pp.task_do(StartConfProcesses)
 
-        for sname in pp.sessions:  # TODO this is bad naming urgh
-            sesh = pp.get_session(sname)
-            assert sesh.fps
-            assert sesh.fps.conf_isrunning()
+        live_names = set()
+        for cu, spec in pp.compute_units.items():
+            compu = ComputeUnit(spec.exec, pp.config.fps_name(cu))
+            assert compu.fps
+            assert compu.fps.conf_isrunning()
+            live_names.add(compu.fps.name)
+        assert live_names == {"basic_delay0", "basic_delay1"}
 
 
 from milk.infra import mains_pipeline_mgmt as mgmt

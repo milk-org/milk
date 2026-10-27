@@ -9,7 +9,7 @@ Deploy 3 pipelines:
 # How deploy ?
 # fpsexec -> cwd + exec name + name
 
-# trylink sessions
+# trylink compute units
 # if exist by name, find pwd
 # if not, use a pwd to do the deploy
 
@@ -24,7 +24,7 @@ Deploy 3 pipelines:
 
 from __future__ import annotations
 
-from .session import ComputeSession
+from .compute_unit import ComputeUnit
 from .infra.toml_manipulation import load_pipeline_config
 from .infra.task_models import SimpleTask
 from . import env
@@ -97,8 +97,7 @@ class Pipeline:
             )
         self.config = load_pipeline_config(self.conf_folder)  # Raises if not existing
 
-        self.sessions = self.config.sessions
-        self.session_configs = self.config.session_configs
+        self.compute_units = self.config.compute_units
         self.dataloads = self.config.dataloads
         self.systemlinkage = self.config.systemlinkage
 
@@ -236,19 +235,10 @@ class Pipeline:
 
     def task_undo(self): ...
 
-    def get_session_abs_name(self, session_relative_name: str) -> str:
-        # TODO UNLESS it's a DM session !!
-        return session_relative_name + f"_{self.loop_number:03d}"
-
-    def get_session(self, session_relative_name: str) -> ComputeSession:
-        absolute_name = self.get_session_abs_name(session_relative_name)
-
-        return ComputeSession(self.sessions[session_relative_name], absolute_name)
-
     def is_running(self) -> bool:
-        for name in self.sessions:
+        for cu, spec in self.compute_units.items():
             # TODO: check this question has sense: is the pipeline in a correct state?
-            fps = self.get_session(name).fps
+            fps = ComputeUnit(spec.exec, self.config.fps_name(cu)).fps
             if fps is not None and fps.run_isrunning():
                 return True
         return False
@@ -316,23 +306,23 @@ class Pipeline:
             except Exception as error:
                 failures.append((label, error))
 
-        for name in self.sessions:
-            session = self.get_session(name)
-            if session.fps is not None:
-                attempt(f"runstop {name}", session.runstop)
+        for cu, spec in self.compute_units.items():
+            compu = ComputeUnit(spec.exec, self.config.fps_name(cu))
+            if compu.fps is not None:
+                attempt(f"runstop {cu}", compu.runstop)
         for linkage in self.systemlinkage:
             attempt(
                 f"deapply system linkage {linkage}",
                 lambda linkage=linkage: self.deapply_system_linkage(linkage),
             )
-        for name in self.sessions:
-            session = self.get_session(name)
-            if session.fps is not None:
-                attempt(f"confstop {name}", session.confstop)
-        for name in self.sessions:
-            session = self.get_session(name)
-            if session.fps is not None:
-                session.fps.destroy()
+        for cu, spec in self.compute_units.items():
+            compu = ComputeUnit(spec.exec, self.config.fps_name(cu))
+            if compu.fps is not None:
+                attempt(f"confstop {cu}", compu.confstop)
+        for cu, spec in self.compute_units.items():
+            compu = ComputeUnit(spec.exec, self.config.fps_name(cu))
+            if compu.fps is not None:
+                compu.fps.destroy()
         if self.root_folder.exists() or self.root_folder.is_symlink():
             attempt(
                 f"rm -rf {self.root_folder}", lambda: shutil.rmtree(self.root_folder)

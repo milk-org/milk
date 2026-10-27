@@ -2,14 +2,18 @@
   "version": "1.2.3",
   "integration_state_schema": 1,
   "installed_integrations": [
-    "copilot"
+    "claude"
   ],
   "integration_settings": {
-    "copilot": {
+    "claude": {
       "script": "sh",
+      "raw_options": "--no-model-invocation",
+      "parsed_options": {
+        "no_model_invocation": true
+      },
       "invoke_separator": "-"
     }
   },
-  "integration": "copilot",
-  "default_integration": "copilot"
+  "integration": "claude",
+  "default_integration": "claude"
 }

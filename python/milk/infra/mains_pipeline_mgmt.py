@@ -209,9 +209,9 @@ def milk_pipes_nuke(folder: str | None, name: str):
 
     \b
     Runs, without confirmation:
-      1. runstop on all sessions
+      1. runstop on all compute units (CompUs)
       2. deapply all system linkages
-      3. confstop on all sessions
+      3. confstop on all compute units (CompUs)
       4. rm -rf the pipeline root directory
     """
     milk_pipes_nuke_function(name, folder)

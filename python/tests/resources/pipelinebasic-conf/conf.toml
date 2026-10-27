@@ -1,30 +1,29 @@
 long_name = "pipelinebasic"
 name = "basic"
 loop_number = 0
-tasks = [ "init_folders", "fetch_assets", "fps_init", "conf_start" ]
 
-[sessions]
-delay0 = 'milk-fpsexec-mem-streamdelay'
-delay1 = 'milk-fpsexec-mem-streamdelay'
+[compute_units.delay0]
+exec = 'milk-fpsexec-mem-streamdelay'
 
-
-[delay0]
+[compute_units.delay0.fps]
 naive_mode = true
 delaysec = 0.01
 in_name = 'input'
 out_name = 'middle'
 procinfo.enabled = true
-procinfo.triggersname = '{delay0.in_name}'
+procinfo.triggersname = '{compute_units.delay0.fps.in_name}'
 procinfo.triggermode = 3
 
+[compute_units.delay1]
+exec = 'milk-fpsexec-mem-streamdelay'
 
-[delay1]
+[compute_units.delay1.fps]
 naive_mode = true
 delaysec = 0.01
-in_name = '{delay0.out_name}'
+in_name = '{compute_units.delay0.fps.out_name}'
 out_name = 'output'
 procinfo.enabled = true
-procinfo.triggersname = '{delay0.out_name}'
+procinfo.triggersname = '{compute_units.delay0.fps.out_name}'
 procinfo.triggermode = 3
 
 [systemlinkage.loopback]
@@ -34,6 +33,6 @@ output = 'source_point'
 # shared and standalone are only for tests.
 [systemlinkage.shared]
 input = 'otherloop_output'
-middle = '{delay0.in_name}_remote'
+middle = '{compute_units.delay0.fps.in_name}_remote'
 
 [systemlinkage.standalone]

@@ -9,23 +9,13 @@ Really it needs what comes from cacaovars.bash
 """
 
 from pathlib import Path
+from typing import Any
 
-from dataclasses import dataclass, fields
-
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
+import pydantic
 
 # TODO we should be able to import pyMilk validator without hauling ImageStreamIOWrap here.
 from pyMilk.interfacing.shm import check_SHM_name
-
-
-@dataclass(frozen=True)
-class LOOP_INFO:
-    full_name: str
-    n: int
-
-    # Defining __iter__ to allow unpacking a LOOP_INFO object as if a tuple
-    def __iter__(self):
-        return (getattr(self, field.name) for field in fields(self))
 
 
 class ProcessInfoData(BaseModel):
@@ -56,29 +46,42 @@ class DataLoadEntryModel(BaseModel):
     source: str
     target: str
 
+
+class ComputeUnitSpec(BaseModel):
+    """One ``[compute_units.<cu>]`` table: its executable and its FPS parameters."""
+
+    model_config = {"extra": "forbid", "frozen": True}
+
+    exec: str
+    fps: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("fps")
     @classmethod
-    def from_str(cls, raw: str) -> DataLoadEntryModel:
-        """Parse a "source -- target" formatted dataloads entry."""
-        parts = raw.split("--")
-        if len(parts) != 2:
-            raise ValueError(
-                f"dataloads entry {raw!r} must be formatted as 'source -- target'"
-            )
-        source, target = (p.strip() for p in parts)
-        return cls(source=source, target=target)
+    def _check_procinfo(cls, v: dict[str, Any]) -> dict[str, Any]:
+        if "procinfo" in v:
+            try:
+                ProcessInfoData.model_validate(v["procinfo"])
+            except pydantic.ValidationError as err:
+                raise ValueError(f"procinfo: {err}") from err
+        return v
+
+    @property
+    def procinfo(self) -> ProcessInfoData | None:
+        if "procinfo" not in self.fps:
+            return None
+        return ProcessInfoData.model_validate(self.fps["procinfo"])
 
 
-class PipelineConfigModel(BaseModel):
-    """Schema for conf.toml: validates required top-level keys."""
+class PipelineConfig(BaseModel):
+    """Validated conf.toml. Top-level keys outside these fields are refused."""
 
-    model_config = {"extra": "allow"}
+    model_config = {"extra": "forbid", "frozen": True}
 
     long_name: str
     name: str
     loop_number: int
-    sessions: dict[str, str]
+    compute_units: dict[str, ComputeUnitSpec] = Field(default_factory=dict)
     dataloads: list[DataLoadEntryModel] = Field(default_factory=list)
-    session_configs_: dict[str, dict] = Field(default_factory=dict)
     # mode name -> {local stream owned by this pipeline: remote stream it points to}
     systemlinkage: dict[str, dict[str, str]] = Field(default_factory=dict)
 
@@ -98,56 +101,9 @@ class PipelineConfigModel(BaseModel):
                 out[mode][local] = remote
         return out
 
-    @field_validator("dataloads", mode="before")
-    @classmethod
-    def _parse_dataloads(cls, v):
-        if not isinstance(v, list):
-            return v
-        return [
-            DataLoadEntryModel.from_str(item) if isinstance(item, str) else item
-            for item in v
-        ]
+    def fps_name(self, cu: str) -> str:
+        """FPS name of compute unit ``cu``, ``<name>_<cu>`` (design-v7 D-19).
 
-    @model_validator(mode="after")
-    def _check_session_configs_exist(self) -> PipelineConfigModel:
-        extra = self.model_extra or {}
-        missing = [name for name in self.sessions if name not in extra]
-        if missing:
-            raise ValueError(
-                f"session(s) {missing} declared in [sessions] have no matching config table"
-            )
-        return self
-
-    @model_validator(mode="after")
-    def _parse_session_dicts_and_check_procinfo_specs(self) -> PipelineConfigModel:
-        for name in self.sessions:
-            if self.model_extra and name in self.model_extra:
-                self.session_configs_[name] = self.model_extra[name]
-                if "procinfo" in self.session_configs_[name]:
-                    # Trigger schema errors but don't override the dict
-                    ProcessInfoData(**self.session_configs_[name]["procinfo"])
-        return self
-
-
-class PipelineConfig:
-
-    def __init__(self):
-        # no long name, long name is the folder loading.
-        # However, should probably still store it here...
-        self.name: str = "shortloopname"
-
-        self.loop_number: int = 0
-        self.dm_number: int | None = None
-
-        # [sessions] table: session name -> executable name
-        self.sessions: dict[str, str] = {}
-        # per-session config table, e.g. [delay0]
-        self.session_configs: dict[str, dict] = {}
-
-        # [dataloads] array: list of source/target entries
-        self.dataloads: list[DataLoadEntryModel] = []
-
-        # [systemlinkage.<mode>] tables: mode -> {local stream: remote stream}
-        self.systemlinkage: dict[str, dict[str, str]] = {}
-
-        # Really I want schemas and dynamic parsing...
+        The only place this expression is written.
+        """
+        return f"{self.name}_{cu}"

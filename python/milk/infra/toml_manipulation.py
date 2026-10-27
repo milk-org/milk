@@ -7,7 +7,9 @@ import os
 import tomli
 from pathlib import Path
 
-from .pipeline_models import PipelineConfig, PipelineConfigModel
+import pydantic
+
+from .pipeline_models import PipelineConfig
 from ..errors import ConfigError
 
 if typ.TYPE_CHECKING:
@@ -30,21 +32,10 @@ def load_pipeline_config(conf_folder: str | Path) -> PipelineConfig:
 
     data = substitute_toml_variables_in_nested(pre_sub_data)
 
-    # This will raise a ValidationError if the toml isn't good
-    parsed = PipelineConfigModel(**data)  # type: ignore
-
-    config = PipelineConfig()
-    config.name = parsed.name
-    config.loop_number = parsed.loop_number
-    config.sessions = parsed.sessions
-    config.dataloads = parsed.dataloads
-    config.systemlinkage = parsed.systemlinkage
-    # Each session name is also a top-level table holding its own config
-    config.session_configs = {  # type: ignore
-        session_name: data[session_name] for session_name in config.sessions
-    }
-
-    return config
+    try:
+        return PipelineConfig.model_validate(data)
+    except pydantic.ValidationError as err:
+        raise ConfigError(str(err), path=toml_path) from err
 
 
 def denest_toml_dicts(fp_param_dict: dict[str, FPValNest]) -> dict[str, FPValFlat]:
