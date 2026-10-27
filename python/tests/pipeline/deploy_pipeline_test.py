@@ -5,8 +5,14 @@ import libtmux
 import pytest
 from pathlib import Path
 
+from milk.errors import (
+    ConfigError,
+    TaskCannotRunError,
+    TaskDidNotSucceedError,
+)
 from milk.pipeline import Pipeline
 from milk.session import ComputeSession
+from milk.infra.task_models import SimpleTask
 
 
 @pytest.fixture
@@ -92,11 +98,13 @@ class TestManualPipeline:
         pp = cloned_pipeline
 
         from milk.infra.deploy_tasks import DeployFPS, InitialFolderSetup
-        from milk.infra.task_models import NoCanTaskError
 
         # Now forbidden because it MUST have a rootdir to perform a DeployFPS
-        with pytest.raises(NoCanTaskError):
+        with pytest.raises(TaskCannotRunError) as cannot:
             pp.task_do(DeployFPS)
+        assert cannot.value.task == "DeployFPS"
+        assert cannot.value.pipeline == pp.short_name
+        assert "does not exist" in str(cannot.value)  # the task's failure_reason
         pp.task_do(InitialFolderSetup).task_do(DeployFPS)
 
         for sname in pp.sessions:
@@ -107,6 +115,21 @@ class TestManualPipeline:
             assert sesh.fps.name == pp.get_session_abs_name(sname)
 
             sesh.fps.destroy()
+
+    def test_task_not_succeeding(self, cloned_pipeline: Pipeline):
+        class Never(SimpleTask):
+            def can(self) -> bool:
+                return True
+
+            def success(self) -> bool:
+                return False
+
+            def forward(self) -> None: ...
+
+        with pytest.raises(TaskDidNotSucceedError) as failed:
+            cloned_pipeline.task_do(Never)
+        assert failed.value.task == "Never"
+        assert failed.value.pipeline == cloned_pipeline.short_name
 
     def test_deploy_fps_call_by_instance(self, cloned_pipeline: Pipeline):
         pp = cloned_pipeline
@@ -128,16 +151,15 @@ class TestManualPipeline:
 
 
 from milk.infra import mains_pipeline_mgmt as mgmt
-from milk.infra import exceptions as exc
 
 
 class TestMilkPipes:
 
     def test_no_pipelines(self):
         # No folder
-        with pytest.raises(exc.PipelineConfFolderNotFoundException):
+        with pytest.raises(ConfigError):
             mgmt.milk_pipes_init_function("yolo")
         # No conf.toml
         os.mkdir("yolo-conf")
-        with pytest.raises(exc.PipelineTomlNotFoundException):
+        with pytest.raises(ConfigError):
             mgmt.milk_pipes_init_function("yolo")

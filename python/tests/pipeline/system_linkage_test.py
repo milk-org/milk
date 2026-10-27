@@ -5,7 +5,7 @@ import shutil
 
 import pytest
 
-from milk.infra import exceptions as exc
+from milk.errors import LinkageError
 from milk.pipeline import Pipeline
 
 
@@ -40,13 +40,13 @@ def test_apply_and_deapply(pipeline, tmp_path):
 
 
 def test_unknown_linkage(pipeline):
-    with pytest.raises(exc.UnknownSystemLinkageException):
+    with pytest.raises(LinkageError):
         pipeline.apply_system_linkage("nope")
 
 
 @pytest.mark.xfail(reason="Probably symlinking on a missing image should be allowed.")
 def test_missing_remote(pipeline, tmp_path):
-    with pytest.raises(exc.SystemLinkageException):
+    with pytest.raises(LinkageError):
         pipeline.apply_system_linkage("shared")
     assert not (tmp_path / "input.im.shm").is_symlink()
 
@@ -57,14 +57,14 @@ def test_missing_remote(pipeline, tmp_path):
 def test_refuses_real_file(pipeline, tmp_path):
     _make_remotes(tmp_path)
     (tmp_path / "input.im.shm").write_bytes(b"real")
-    with pytest.raises(exc.SystemLinkageException):
+    with pytest.raises(LinkageError):
         pipeline.apply_system_linkage("shared")
 
 
 def test_running_refused(pipeline, monkeypatch, tmp_path):
     _make_remotes(tmp_path)
     monkeypatch.setattr(pipeline, "is_running", lambda: True)
-    with pytest.raises(exc.SystemLinkageException):
+    with pytest.raises(LinkageError):
         pipeline.apply_system_linkage("shared")
 
 

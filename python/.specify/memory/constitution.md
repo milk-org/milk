@@ -1,50 +1,55 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# milk python pipeline layer Constitution
+
+Scope: package `milk` in `python/`. This constitution points to its sources; it does not restate them.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Design Contract
+[design-v7.md](../../specs/pipelines/design-v7.md) and
+[design-v7-appendix-a.md](../../specs/pipelines/design-v7-appendix-a.md) are normative and frozen.
+Terms are used exactly as defined in design-v7 §0, with no synonyms (notably "compute unit"/CompU,
+never "session" except for tmux). Decisions D-1…D-26 (design-v7 §3) are binding. Only Vincent can
+amend the design (it becomes v8); agents never edit it.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Repository Rules
+The Critical Rules in [CLAUDE.md](../../../CLAUDE.md) apply to every agent: no git operations that
+move branches/HEAD/tags, touch GitHub, or overwrite working-tree files; no scope creep; ask when
+ambiguous; flag duplicate infrastructure, features or docs. [docs/](../../../docs/) is the human
+source of truth: link to it, never duplicate it.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Scope Discipline
+One feature = one slice of [ROADMAP.md](../../specs/pipelines/ROADMAP.md), and its spec cites the
+slice ID. Items listed as "not to be specified" or "anticipated" (ROADMAP, design-v7 §5) must not
+be implemented. A conflict between any artifact and design-v7 stops work until Vincent decides.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Lean and Readable
+Per design-v7 §4.8.1–2: low-volume docs with clear intent; docstrings say why. Flat control flow,
+early returns and guard clauses, small intent-named functions. Indirection only at the declared
+protocols of design-v7 §4.9 (Task, ConfHook, ConfArtifact, PipelineKind), except for lazy loading
+needed to keep imports safe while preserving existing accessors. Vincent approved this exception
+on 2026-10-27; it permits module-level `__getattr__` for that purpose, not unrelated indirection.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. No API Duplication
+Per design-v7 §4.8.3: reuse or extend before adding. One construction point for compute units
+(`Pipeline.compute_units`), one way to get a config (confresolve), one exception module, one
+registry. CLIs only parse arguments and call the API.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### VI. Exception Contract
+Per design-v7 §4.7 rules 1–4: all exception classes live in `milk/errors.py` under `MilkError`.
+Library code never prints, exits or swallows errors; best-effort operations raise one aggregate
+error. Exceptions carry structured context. pyMilk exceptions propagate unwrapped.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### VII. Tests
+The existing pytest suite stays green at every slice. New behaviour ships with tests in the
+environment the ROADMAP names (py or milk).
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### VIII. Delivery
+Lean workflow: `spec.md`, `plan.md` and `tasks.md` per feature. Flow-forward persistence: finished
+feature folders are frozen records. Each slice ends by updating [docs/](../../../docs/) and the
+slice's Status/Sub-spec cells in the ROADMAP.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+Vincent ratifies and amends this constitution.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.1.0 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-10-27

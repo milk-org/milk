@@ -2,7 +2,8 @@ from __future__ import annotations
 import typing as typ
 
 from ..pipeline import Pipeline
-from .exceptions import SystemLinkageException, UnknownSystemLinkageException
+from .. import env
+from ..errors import BestEffortError, LinkageError
 
 from pathlib import Path
 
@@ -13,8 +14,13 @@ import click
 if typ.TYPE_CHECKING:
     from .task_models import SimpleTask
 
-MILK_SAMPLES_DIR = os.environ["MILK_ROOT"] + "/milk-examples/pipelines/"
-CACAO_SAMPLES_DIR = os.environ["MILK_ROOT"] + "/plugins/cacao-src/examples/"
+
+def _milk_samples_dir() -> str:
+    return str(env.root()) + "/milk-examples/pipelines/"
+
+
+def _cacao_samples_dir() -> str:
+    return str(env.root()) + "/plugins/cacao-src/examples/"
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -83,9 +89,9 @@ def milk_pipes_clone(
 
     if name is None:
         if milk_exs:
-            browse_and_print_conf_folders(MILK_SAMPLES_DIR)
+            browse_and_print_conf_folders(_milk_samples_dir())
         elif cacao_exs:
-            browse_and_print_conf_folders(CACAO_SAMPLES_DIR)
+            browse_and_print_conf_folders(_cacao_samples_dir())
         else:
             raise click.UsageError("-f/--full-path requires <name>")
         return
@@ -102,9 +108,9 @@ def milk_pipes_clone_function(
 ) -> Pipeline:
     """Clone to dest_folder (default cwd), then record the returned pipeline in Git."""
     if milk_exs:
-        parent, long_name = Path(MILK_SAMPLES_DIR), name
+        parent, long_name = Path(_milk_samples_dir()), name
     elif cacao_exs:
-        parent, long_name = Path(CACAO_SAMPLES_DIR), name
+        parent, long_name = Path(_cacao_samples_dir()), name
     elif full_path:
         full = Path(name.rstrip("/"))
         parent, long_name = full.parent, full.name.removesuffix("-conf")
@@ -190,7 +196,7 @@ def milk_pipes_sys_function(name: str, linkage: str, folder: str | None = None) 
     pp = Pipeline(folder if folder is not None else os.getcwd(), name)
     try:
         pp.apply_system_linkage(linkage)
-    except (UnknownSystemLinkageException, SystemLinkageException) as error:
+    except LinkageError as error:
         raise click.ClickException(str(error)) from error
 
 
@@ -212,7 +218,12 @@ def milk_pipes_nuke(folder: str | None, name: str):
 
 
 def milk_pipes_nuke_function(name: str, folder: str | None = None) -> None:
-    Pipeline(folder if folder is not None else os.getcwd(), name).nuke()
+    pp = Pipeline(folder if folder is not None else os.getcwd(), name)
+    try:
+        pp.nuke()
+    except BestEffortError as error:
+        for label, failure in error.failures:
+            click.echo(f"{label}\n  warning: {failure}")
 
 
 def milk_pipes_init_function(name: str, folder: str | None = None) -> None:

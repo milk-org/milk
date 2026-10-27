@@ -64,14 +64,3 @@ class ReversibleTask(SimpleTask):
         The state may be mingled, dont raise.
         """
         ...
-
-
-class NoCanTaskError(Exception):
-    def __init__(self, task: SimpleTask) -> None:
-        message = (
-            f"Task {type(task).__name__} cannot be executed:\n    {task.failure_reason}"
-        )
-        super().__init__(message)
-
-
-class NoSuccessTaskError(Exception): ...

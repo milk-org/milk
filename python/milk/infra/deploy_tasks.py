@@ -37,7 +37,7 @@ from .task_models import SimpleTask
 from ..session import ComputeSession
 
 from .toml_manipulation import denest_toml_dicts
-from .exceptions import FPSExecException
+from .. import env
 
 import subprocess
 
@@ -67,16 +67,12 @@ class InitialFolderSetup(SimpleTask):
         conf_dir = pp.conf_folder
         root_dir = pp.root_folder
 
-        print(f"CACAO_LOOPNAME    : {loop_name}")
-        print(f"CONFDIR           : {conf_dir}")
-        print(f"CACAO_LOOPROOTDIR : {root_dir}")
-
         root_dir.mkdir(parents=True, exist_ok=False)
 
         # ---- logging ----
         (root_dir / "fpsCTRL.log").unlink(missing_ok=True)
         (root_dir / "fpsCTRL.log").symlink_to(
-            os.environ["MILK_SHM_DIR"] + f"/fpsCTRL-{loop_name}.log"
+            env.shm_dir() / f"fpsCTRL-{loop_name}.log"
         )
 
         pp.log_folder.mkdir(parents=True, exist_ok=True)
@@ -132,7 +128,7 @@ class LoadDataFiles(SimpleTask):
 
     def success(self) -> bool:
         # TODO this is pretty poor checking.
-        shm_dir = os.environ["MILK_SHM_DIR"]
+        shm_dir = env.shm_dir()
         for entry in self.pipeline.dataloads:
             if not os.path.isfile(f"{shm_dir}/{entry.target}.im.shm"):
                 return False

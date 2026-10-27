@@ -1,19 +1,25 @@
 from __future__ import annotations
 
+import functools
 import shutil, os
 import re
 import subprocess
 import typing as typ
 import ctypes
 
+from . import env
+from .errors import EnvError, MilkError
 
+
+@functools.cache
 def _find_build_tags() -> dict[str, str]:
-    MILK_INSTALLDIR = os.environ["MILK_INSTALLDIR"]
-    libpath = MILK_INSTALLDIR + "/lib/libmilkcommon.so"
-    dll = ctypes.CDLL(libpath)
-
-    char_buffer = ctypes.c_char * 1024
-    val = char_buffer.in_dll(dll, "_milk_build_tag_")
+    libpath = env.lib("libmilkcommon.so")
+    try:
+        dll = ctypes.CDLL(str(libpath))
+        char_buffer = ctypes.c_char * 1024
+        val = char_buffer.in_dll(dll, "_milk_build_tag_")
+    except (OSError, ValueError) as error:
+        raise EnvError("Cannot load the milk build tags", path=libpath) from error
 
     taglist = val.value.decode("utf8")[12:].split(",")[:-1]
     tagdict = {s.split("=")[0]: s.split("=")[1] for s in taglist}
@@ -21,22 +27,51 @@ def _find_build_tags() -> dict[str, str]:
     return tagdict
 
 
-def _clicore_has_treesitter() -> bool:
-    # CLIcore only links libtree-sitter when it was found at build time.
-    path = os.path.join(os.environ["MILK_INSTALLDIR"], "lib", "libCLIcore.so")
+@functools.cache
+def have_cli() -> bool:
     try:
-        with open(path, "rb") as f:
-            return b"libtree-sitter" in f.read()
+        return bool(int(_find_build_tags()["CLI"]))
+    except EnvError:
+        return False
+
+
+@functools.cache
+def have_treesitter() -> bool:
+    # CLIcore only links libtree-sitter when it was found at build time.
+    if not have_cli():
+        return False
+    path = env.installdir() / "lib" / "libCLIcore.so"
+    try:
+        return b"libtree-sitter" in path.read_bytes()
     except FileNotFoundError:
         return False
 
 
-MILK_BUILD_TAGS = _find_build_tags()
-HAVE_CLI = bool(int(MILK_BUILD_TAGS["CLI"]))
-HAVE_TREESITTER = HAVE_CLI and _clicore_has_treesitter()
+@functools.cache
+def cli_exec() -> str | None:
+    return shutil.which("milk-cli") if have_cli() else None
 
 
-MILK_CLI_EXEC = shutil.which("milk-cli") if HAVE_CLI else None
+def clear_caches() -> None:
+    """Forget the discovered build tags, e.g. after the environment changed."""
+    for cached in (_find_build_tags, have_cli, have_treesitter, cli_exec):
+        cached.cache_clear()
+
+
+_LAZY_ATTRS = {
+    "MILK_BUILD_TAGS": _find_build_tags,
+    "HAVE_CLI": have_cli,
+    "HAVE_TREESITTER": have_treesitter,
+    "MILK_CLI_EXEC": cli_exec,
+}
+
+
+def __getattr__(name: str) -> typ.Any:
+    # Lazy module constants (PEP 562): importing milk must not need a milk install.
+    if name in _LAZY_ATTRS:
+        return _LAZY_ATTRS[name]()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 # milk-cli always ends its prompt with this suffix, with no trailing newline.
 _PROMPT_SUFFIX = " >"
@@ -49,24 +84,19 @@ def _strip_ansi(text: str) -> str:
     return _ANSI_RE.sub("", text)
 
 
-class MilkBuildException(Exception): ...
-
-
-class CLICrashError(Exception):
-    """Raised when milk-cli was killed by a signal (CRASH)."""
+_NO_CLI_MESSAGE = "MILK built without CLI support. Must build with -DUSE_CLI=ON."
 
 
 class CLI:
     open: bool = False
 
     def __init__(self, strip_ansi: bool = True) -> None:
-        if MILK_CLI_EXEC is None:
-            raise MilkBuildException(
-                "MILK built without CLI support. Must build with -DUSE_CLI=ON."
-            )
+        exe = cli_exec()
+        if exe is None:
+            raise EnvError(_NO_CLI_MESSAGE)
 
         self._proc = subprocess.Popen(
-            [MILK_CLI_EXEC],
+            [exe],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -137,7 +167,7 @@ class CLICommands:
     """Run a batch of commands via ``milk-cli -s <temp_file>``.
 
     Context manager whose ``__enter__`` returns the ``CompletedProcess``
-    (stdout, stderr, returncode). Raises :class:`CLICrashError` when the
+    (stdout, stderr, returncode). Raises :class:`~milk.errors.MilkError` when the
     shell is killed by a signal. ``__exit__`` kills the shell if it has
     not already exited.
     """
@@ -149,10 +179,8 @@ class CLICommands:
         strip_ansi: bool = True,
         quiet: bool = True,
     ) -> None:
-        if MILK_CLI_EXEC is None or not HAVE_CLI:
-            raise MilkBuildException(
-                "MILK built without CLI support. Must build with -DUSE_CLI=ON."
-            )
+        if cli_exec() is None:
+            raise EnvError(_NO_CLI_MESSAGE)
         self.commands = commands
         self.strip_ansi = strip_ansi
         self.quiet = quiet
@@ -172,11 +200,12 @@ class CLICommands:
 
     def _enter_exception_unsafe(self) -> subprocess.CompletedProcess[str]:
 
-        assert MILK_CLI_EXEC is not None and HAVE_CLI
-        env = dict(os.environ)
+        exe = cli_exec()
+        assert exe is not None
+        proc_env = dict(os.environ)
         # TODO MILK_QUIET is broken and disables stdout/stderr.
         # if self.quiet:
-        #    env["MILK_QUIET"] = "1"
+        #    proc_env["MILK_QUIET"] = "1"
         import time
 
         self.script_filename = (
@@ -186,11 +215,11 @@ class CLICommands:
             f.writelines([c + "\n" for c in self.commands])
         self._proc = subprocess.Popen(
             # [MILK_CLI_EXEC, "-c", ";".join(self.commands)],
-            [MILK_CLI_EXEC, "-s", self.script_filename],
+            [exe, "-s", self.script_filename],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            env=env,
+            env=proc_env,
         )
         stdout, stderr = self._proc.communicate()
         if self.strip_ansi:
@@ -208,9 +237,11 @@ class CLICommands:
         )
         # Negative return code == killed by signal (bash CRASH: exit >= 128)
         if returncode < 0:
-            raise CLICrashError(
+            raise MilkError(
                 f"milk-cli killed by signal {-returncode}: "
-                f"{';'.join(self.commands)!r}"
+                f"{';'.join(self.commands)!r}",
+                cmd=self._proc.args,
+                stderr=stderr,
             )
         return self.result
 

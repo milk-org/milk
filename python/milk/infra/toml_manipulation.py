@@ -8,7 +8,7 @@ import tomli
 from pathlib import Path
 
 from .pipeline_models import PipelineConfig, PipelineConfigModel
-from . import exceptions as exc
+from ..errors import ConfigError
 
 if typ.TYPE_CHECKING:
     from pyMilk.interfacing.fps import FPVal
@@ -20,8 +20,9 @@ if typ.TYPE_CHECKING:
 def load_pipeline_config(conf_folder: str | Path) -> PipelineConfig:
     toml_path = Path(conf_folder) / "conf.toml"
     if not os.path.isfile(toml_path):
-        raise exc.PipelineTomlNotFoundException(
-            f"Pipeline from {conf_folder}: missing conf.toml file."
+        raise ConfigError(
+            f"Pipeline from {conf_folder}: missing conf.toml file.",
+            path=toml_path,
         )
     with open(toml_path, "rb") as f:
         pre_sub_data = tomli.load(f)

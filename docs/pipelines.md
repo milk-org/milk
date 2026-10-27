@@ -102,3 +102,11 @@ milk-config-load
 TBC.
 
 But everything from the aorun framework should get in there really.
+
+## Environment and errors
+
+`milk.env` is the only reader of `MILK_*` variables; every accessor is lazy and raises
+`EnvError` naming what is missing, so `import milk` works without a milk install.
+`milk/errors.py` holds the whole exception hierarchy under `MilkError`, with optional context
+attributes (`pipeline`, `compu`, `task`, `path`, `cmd`, `stderr`). pyMilk exceptions propagate
+unwrapped. Contract: design-v7 §4.7 (`python/specs/pipelines/design-v7.md`).

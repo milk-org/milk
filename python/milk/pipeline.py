@@ -26,17 +26,21 @@ from __future__ import annotations
 
 from .session import ComputeSession
 from .infra.toml_manipulation import load_pipeline_config
-from .infra.task_models import SimpleTask, NoCanTaskError, NoSuccessTaskError
+from .infra.task_models import SimpleTask
+from . import env
+from .errors import (
+    BestEffortError,
+    ConfigError,
+    LinkageError,
+    TaskCannotRunError,
+    TaskDidNotSucceedError,
+)
 
 import os
 import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
-
-from pyMilk.interfacing.shm import MILK_SHM_DIR
-
-from .infra import exceptions as exc
 
 _CLONE_LOG = "clone-rsync.log"
 _LINKAGE_TAG = "systemlinkage.tag"
@@ -87,8 +91,9 @@ class Pipeline:
 
         self.conf_folder = self.parent_folder / f"{self.long_name}-conf"
         if not os.path.isdir(self.conf_folder):
-            raise exc.PipelineConfFolderNotFoundException(
-                f"Pipeline from {self.conf_folder}: folder does not exist."
+            raise ConfigError(
+                f"Pipeline from {self.conf_folder}: folder does not exist.",
+                path=self.conf_folder,
             )
         self.config = load_pipeline_config(self.conf_folder)  # Raises if not existing
 
@@ -212,11 +217,20 @@ class Pipeline:
         if task.can():
             task.forward()
         else:
-            raise NoCanTaskError(task)
+            raise TaskCannotRunError(
+                f"Task {type(task).__name__} cannot be executed:\n"
+                f"    {task.failure_reason}",
+                task=type(task).__name__,
+                pipeline=self.short_name,
+            )
 
         if not task.success():
             # TODO if partial success is tolerated ?
-            raise NoSuccessTaskError(f"Task {task} did not complete to success")
+            raise TaskDidNotSucceedError(
+                f"Task {task} did not complete to success",
+                task=type(task).__name__,
+                pipeline=self.short_name,
+            )
 
         return self  # So as to be able to chain
 
@@ -241,8 +255,10 @@ class Pipeline:
 
     def _linkage_paths(self, linkage_name: str) -> list[tuple[Path, Path]]:
         if linkage_name not in self.systemlinkage:
-            raise exc.UnknownSystemLinkageException(linkage_name)
-        shm = Path(MILK_SHM_DIR())
+            raise LinkageError(
+                f"Unknown system linkage {linkage_name!r}", pipeline=self.short_name
+            )
+        shm = env.shm_dir()
         return [
             (shm / f"{local}.im.shm", shm / f"{remote}.im.shm")
             for local, remote in self.systemlinkage[linkage_name].items()
@@ -252,16 +268,18 @@ class Pipeline:
         """Point each local stream file at its remote one, replacing existing symlinks."""
         pairs = self._linkage_paths(linkage_name)
         if self.is_running():
-            raise exc.SystemLinkageException("Pipeline is running; stop it first")
+            raise LinkageError(
+                "Pipeline is running; stop it first", pipeline=self.short_name
+            )
         # TODO assert no other incompatible linkage is configured
 
         # Check everything first so a failure leaves nothing half-applied.
         for local, remote in pairs:
             # TODO: make these warnings, or have a strict mode.
             # if not remote.exists():
-            #     raise exc.SystemLinkageException(f"Remote stream missing: {remote}")
+            #     raise LinkageError(f"Remote stream missing: {remote}")
             # if local.exists() and not local.is_symlink():
-            #     raise exc.SystemLinkageException(
+            #     raise LinkageError(
             #         f"Refusing to replace real file: {local}"
             #     )
             pass
@@ -277,7 +295,9 @@ class Pipeline:
         """Remove the linkage's symlinks, leaving any that point elsewhere."""
         pairs = self._linkage_paths(linkage_name)
         if self.is_running():
-            raise exc.SystemLinkageException("Pipeline is running; stop it first")
+            raise LinkageError(
+                "Pipeline is running; stop it first", pipeline=self.short_name
+            )
         for local, remote in pairs:
             if local.is_symlink() and Path(os.readlink(local)) == remote:
                 local.unlink()
@@ -285,16 +305,16 @@ class Pipeline:
     def nuke(self) -> None:
         """Unconditionally tear down: runstop, deapply linkages, confstop, rm -rf root.
 
-        Meant for test machines. Every step is best-effort: failures are reported
-        and the next step still runs.
+        Meant for test machines. Every step is best-effort: a failure does not stop the
+        next step, and all failures are raised together as a BestEffortError at the end.
         """
+        failures: list[tuple[str, Exception]] = []
 
         def attempt(label: str, fn) -> None:
-            print(label)
             try:
                 fn()
             except Exception as error:
-                print(f"  warning: {error}")
+                failures.append((label, error))
 
         for name in self.sessions:
             session = self.get_session(name)
@@ -317,6 +337,8 @@ class Pipeline:
             attempt(
                 f"rm -rf {self.root_folder}", lambda: shutil.rmtree(self.root_folder)
             )
+        if failures:
+            raise BestEffortError(failures, pipeline=self.short_name)
 
 
 class DMCombPipeline: ...

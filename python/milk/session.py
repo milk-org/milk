@@ -4,7 +4,7 @@ import subprocess
 
 from pyMilk.interfacing.fps import FPS, FPSDoesntExistError
 
-from .infra.exceptions import FPSExecException
+from .errors import ComputeUnitError
 
 
 def fpslist(exec_name: str):
@@ -89,7 +89,16 @@ class ComputeSession:
         proc = self._subprocess_start(command, *args, wrap_in_shell=wrap_in_shell)
         retcode = proc.wait()
         if retcode != 0:
-            raise FPSExecException(proc)
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait()
+            stderr = proc.stderr.read() if proc.stderr else b""
+            raise ComputeUnitError(
+                f"Command {proc.args!r} exited with status {retcode}",
+                compu=self.fpsname,
+                cmd=proc.args,
+                stderr=stderr.decode().rstrip(),
+            )
         return proc
 
     def fpsinit(self, procinfo: bool = True) -> None:
