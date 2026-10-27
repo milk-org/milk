@@ -32,6 +32,10 @@ expand scope to compensate. Instead ask, e.g.:
 - "Should I do exactly this literally, and just flag edge cases I
   see, rather than handling them?"
 
+## Python work
+
+When work is labeled as "[python]", restrict scoping to the python directory as much as reasonable to reduce context creep.
+
 ## More
 
 Read `AGENTS.md` for full onboarding context and
