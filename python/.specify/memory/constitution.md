@@ -48,8 +48,19 @@ Lean workflow: `spec.md`, `plan.md` and `tasks.md` per feature. Flow-forward per
 feature folders are frozen records. Each slice ends by updating [docs/](../../../docs/) and the
 slice's Status/Sub-spec cells in the ROADMAP.
 
+### IX. Formatting
+Formatting is delegated to pre-commit. Do not spend effort formatting Python by hand: no manual line
+wrapping, import sorting or style passes, and no formatting-only edits or tasks. At the end of each
+implement phase, run from this folder, in order: `git add .`, `pre-commit run`,
+`git restore --staged .`. The repository's hooks (configured in ../.pre-commit-config.yaml) then
+format what changed. A pre-commit failure that only reports "files were modified by this hook" is
+expected and needs no action. Report any other hook failure to Vincent instead of looping on it.
+This sequence is a sanctioned exception to the ../CLAUDE.md git rules: it touches only the index and
+lets hooks rewrite files, and it never commits, moves branches/HEAD/tags or contacts GitHub. Use no
+other git commands.
+
 ## Governance
 
 Vincent ratifies and amends this constitution.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-10-27
+**Version**: 1.2.0 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-10-27
