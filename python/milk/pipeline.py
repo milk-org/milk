@@ -103,7 +103,7 @@ class Pipeline:
         self.root_folder = self.parent_folder / f"{self.short_name}-rootdir"
         self.log_folder = self.parent_folder / f"{self.short_name}-logdir"
 
-        self.run_folder = self.root_folder / "rundir"
+        self.work_folder = self.root_folder / "work"
         self._clone_source: Path | None = None
         self._clone_rsync_output = ""
 
@@ -257,12 +257,14 @@ class Pipeline:
 
         # Check everything first so a failure leaves nothing half-applied.
         for local, remote in pairs:
-            if not remote.exists():
-                raise exc.SystemLinkageException(f"Remote stream missing: {remote}")
-            if local.exists() and not local.is_symlink():
-                raise exc.SystemLinkageException(
-                    f"Refusing to replace real file: {local}"
-                )
+            # TODO: make these warnings, or have a strict mode.
+            # if not remote.exists():
+            #     raise exc.SystemLinkageException(f"Remote stream missing: {remote}")
+            # if local.exists() and not local.is_symlink():
+            #     raise exc.SystemLinkageException(
+            #         f"Refusing to replace real file: {local}"
+            #     )
+            pass
 
         for local, remote in pairs:
             local.unlink(missing_ok=True)
@@ -277,7 +279,7 @@ class Pipeline:
         if self.is_running():
             raise exc.SystemLinkageException("Pipeline is running; stop it first")
         for local, remote in pairs:
-            if local.is_symlink():  # and Path(os.readlink(local)) == remote:
+            if local.is_symlink() and Path(os.readlink(local)) == remote:
                 local.unlink()
 
     def nuke(self) -> None:

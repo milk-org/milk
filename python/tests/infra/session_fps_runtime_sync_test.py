@@ -49,7 +49,7 @@ def test_fpssynctest(fixt_fpsinit_pinfo_fpstest):
     # breakpoint()
     session: FPSTestCU = fixt_fpsinit_pinfo_fpstest
     fps = session.fps
-    assert fps
+    assert isinstance(fps, FPS)
 
     fps["procinfo.loopcntMax"] = -1
     fps["procinfo.triggermode"] = 4  # delay
@@ -65,21 +65,8 @@ def test_fpssynctest(fixt_fpsinit_pinfo_fpstest):
 
     print("Poll runstart:", poll_until_or_fail(fps.run_isrunning, t=0.5))
 
-    pinfo = ProcessInfo()
-    pinfo_file = (
-        f"{os.environ['MILK_PROC_DIR']}/"
-        f"proc.fpssynctest.{fps.fps.md().runpid:06d}.shm"
-    )
-    assert os.path.isfile(pinfo_file)
-    pinfo.link(pinfo_file)
+    pinfo = fps.pinfo_struct
 
-    # assert pinfo.loopcnt == 0 # We should have been fast enough to link at iter 1.
-
-    def busywait_until_incr(lastvalue: int):
-        while pinfo.loopcnt == lastvalue:
-            ...
-
-    last_pinfo_cnt = pinfo.loopcnt
     for param_name, _, base_value, target_value in FPS_TEST_PARAMS:
         value = fps[param_name]
         if isinstance(value, int):
@@ -92,7 +79,7 @@ def test_fpssynctest(fixt_fpsinit_pinfo_fpstest):
             assert False
 
         fps[param_name] = target_value
-        busywait_until_incr(pinfo.loopcnt)
+        pinfo.busywait_until_loopcnt(pinfo.loopcnt)
         value = fps[param_name]
         if isinstance(value, int):
             assert value == target_value
@@ -104,7 +91,7 @@ def test_fpssynctest(fixt_fpsinit_pinfo_fpstest):
             assert False
 
         fps[param_name] = base_value
-        busywait_until_incr(pinfo.loopcnt)
+        pinfo.busywait_until_loopcnt(pinfo.loopcnt)
         value = fps[param_name]
         if isinstance(value, int):
             assert value == base_value

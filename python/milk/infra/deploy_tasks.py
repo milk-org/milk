@@ -83,7 +83,7 @@ class InitialFolderSetup(SimpleTask):
         (root_dir / "logdir").unlink(missing_ok=True)
         (root_dir / "logdir").symlink_to(pp.log_folder)
 
-        pp.run_folder.mkdir(parents=True, exist_ok=True)
+        pp.work_folder.mkdir(parents=True, exist_ok=True)
 
         fpstmuxenv = conf_dir / "fpstmuxenv"
         if fpstmuxenv.exists():
@@ -161,8 +161,8 @@ class DeployFPS(SimpleTask):
         if not os.path.isdir(p.root_folder):
             self.failure_reason = f"{p.root_folder} does not exist."
             return False
-        if not os.path.isdir(p.run_folder):
-            self.failure_reason = f"{p.run_folder} does not exist."
+        if not os.path.isdir(p.work_folder):
+            self.failure_reason = f"{p.work_folder} does not exist."
             return False
         return True
 
@@ -184,7 +184,7 @@ class DeployFPS(SimpleTask):
             session_fps_config = p.session_configs[session_name]
             session = ComputeSession(exec, session_name + f"_{p.loop_number:03d}")
 
-            with contextlib.chdir(p.run_folder):
+            with contextlib.chdir(p.work_folder):
                 session.fpsinit()
 
             assert session.fps
@@ -208,8 +208,8 @@ class StartConfProcesses(SimpleTask):
         if not os.path.isdir(p.root_folder):
             self.failure_reason = f"{p.root_folder} does not exist."
             return False
-        if not os.path.isdir(p.run_folder):
-            self.failure_reason = f"{p.run_folder} does not exist."
+        if not os.path.isdir(p.work_folder):
+            self.failure_reason = f"{p.work_folder} does not exist."
             return False
 
         # Every session's FPS must exist and be a well-formed deployment

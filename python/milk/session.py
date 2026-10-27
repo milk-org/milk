@@ -37,8 +37,6 @@ class ComputeSession:
         self.exec_name = exec_name
         self.fpsname = fpsname
 
-        self.has_procinfo: bool
-
         self.fps: FPS | None = None
         self._trylink_fps()
 

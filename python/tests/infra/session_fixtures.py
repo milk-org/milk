@@ -16,11 +16,11 @@ def func_fpsinit(
     assert session.fps
 
     if pinfo:
-        assert session.has_procinfo is True
+        assert session.procinfo
         assert "procinfo.enabled" in session.fps
         assert session.fps["procinfo.enabled"]
     else:
-        assert session.has_procinfo is False
+        assert session.procinfo is None
         assert not "procinfo.enabled" in session.fps
 
     # Configure

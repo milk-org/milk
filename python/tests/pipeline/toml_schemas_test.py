@@ -4,7 +4,7 @@ import pytest
 import tomli
 import pydantic
 
-from python.milk.infra import pipeline_models as pconf
+from milk.infra import pipeline_models as pconf
 
 
 @pytest.fixture
