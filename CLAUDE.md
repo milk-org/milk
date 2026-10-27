@@ -18,6 +18,7 @@ You are TO NEVER use any `git` feature that:
 - interacts with github
 - overwrites any file in the working tree
 - you may create sub-branches and use speckit-foolery as upstream, and merge back into speckit_foolery branch.
+- `speckit-git-remote`, `speckit-git-initialize` cannot be used.
 
 ## Scope discipline
 
