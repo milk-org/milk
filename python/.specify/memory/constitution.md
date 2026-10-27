@@ -41,7 +41,9 @@ error. Exceptions carry structured context. pyMilk exceptions propagate unwrappe
 
 ### VII. Tests
 The existing pytest suite stays green at every slice. New behaviour ships with tests in the
-environment the ROADMAP names (py or milk).
+environment the ROADMAP names (py or milk). The test rules in
+[copilot-instructions](../../.github/copilot-instructions.md) bind (no meta-testing of source text,
+no systematic `ast`, shared fixtures in `tests/conftestaux/`).
 
 ### VIII. Delivery
 Lean workflow: `spec.md`, `plan.md` and `tasks.md` per feature. Flow-forward persistence: finished
@@ -63,4 +65,4 @@ other git commands.
 
 Vincent ratifies and amends this constitution.
 
-**Version**: 1.2.0 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-10-27
+**Version**: 1.3.0 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-10-27

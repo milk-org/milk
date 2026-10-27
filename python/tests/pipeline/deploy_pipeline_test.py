@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import os, shutil
-import libtmux
+import os
 import pytest
 from pathlib import Path
 
@@ -18,32 +17,6 @@ from milk.infra.task_models import SimpleTask
 @pytest.fixture
 def pipeline(pytestconfig):
     return Pipeline(pytestconfig.rootpath / "tests" / "resources", "pipelinebasic")
-
-
-@pytest.fixture
-def cloned_pipeline(pipeline: Pipeline):
-    # We're probably in some temp pwd.
-    os.makedirs("AOloop/", exist_ok=True)
-
-    cloned = pipeline.clone_to("./AOloop")  # new cloned pipeline obj
-    yield cloned
-
-    assert cloned.parent_folder.is_relative_to(os.getcwd())
-    if ".nox" in cloned.parent_folder.parts:
-        assert "tmp" in cloned.parent_folder.parts
-    else:
-        assert cloned.parent_folder.is_relative_to("/tmp")
-
-    # Kill all the tmuxes that are associated with the pipeline
-    tsrv = libtmux.Server()
-    for cu in cloned.compute_units:
-        # TODO better tmux API integrated directly with CompU/pipeline
-        abs_name = cloned.config.fps_name(cu)
-        session = tsrv.sessions.get(session_name=abs_name, default=None)
-        if session is not None:
-            session.kill()
-
-    shutil.rmtree(cloned.conf_folder)
 
 
 class TestManualPipeline:

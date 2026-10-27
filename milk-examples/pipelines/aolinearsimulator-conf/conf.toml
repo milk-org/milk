@@ -2,49 +2,44 @@
 long_name = "aolinearsimulator"
 name = "simulator"
 loop_number = 1
-tasks = [ "init_folders", "fetch_assets", "fps_init", "conf_start" ] # TODO auto-parse this and run it.
-
-# Aliases
-_ln = "{loop_number}"
 
 # This loop is a test loop for the typical AO linear simulator
 # DM stream => delay -> MVM -> camera simulator ==> WFS
 
-# Global # TODO this needs nesting rather than top level
-dataloads = [
-    "sim_matrix_flat1.fits -- aol{_ln}_simu_modes"
-]
+[[dataloads]]
+source = "sim_matrix_flat1.fits"
+target = "aol1_simu_modes"
 
-# [preload-files]
+[compute_units.delay]
+exec = 'milk-fpsexec-mem-streamdelay'
 
-# [postload-files]
-
-[sessions]
-delay = 'milk-fpsexec-mem-streamdelay'
-mvm = 'milk-fpsexec-linalg-MVMextract'
-wfscamsim = 'cacao-fpsexec-cacaoiot-wfscamsim'
-
-[delay]
+[compute_units.delay.fps]
 in_name = 'dmvolt'
 out_name = 'dmvolt_delayed'
 procinfo.loopcntMax = -1
 delaysec = 0.033
 
-[mvm]
+[compute_units.mvm]
+exec = 'milk-fpsexec-linalg-MVMextract'
+
+[compute_units.mvm.fps]
 procinfo.enabled = true
 procinfo.loopcntMax = -1
 procinfo.triggermode = 3
 procinfo.triggersname = 'dmvolt_delayed'
 GPUindex = 99
 insname = 'dmvolt_delayed'
-immodes = 'aol{_ln}_simu_modes' # todo reinterpret as f-string
+immodes = 'aol{loop_number}_simu_modes' # todo reinterpret as f-string
 axmode = 1
 option.MODENORM = false
 outcoeff = 'wfssim_clean'
 
-[wfscamsim]
-procinfo.triggersname = '{mvm.outcoeff}'
-wfssignal = '{mvm.outcoeff}'
+[compute_units.wfscamsim]
+exec = 'cacao-fpsexec-cacaoiot-wfscamsim'
+
+[compute_units.wfscamsim.fps]
+procinfo.triggersname = '{compute_units.mvm.fps.outcoeff}'
+wfssignal = '{compute_units.mvm.fps.outcoeff}'
 wfscamim = 'wfssim'
 procinfo.enabled = true
 procinfo.loopcntMax = -1

@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-import ast
-from pathlib import Path
-
 import pytest
 
-import milk
 from milk import compute_unit
 from milk.errors import (
     BestEffortError,
@@ -14,31 +10,6 @@ from milk.errors import (
     TaskCannotRunError,
     TaskError,
 )
-
-
-def _base_name(base: ast.expr) -> str:
-    if isinstance(base, ast.Attribute):
-        return base.attr
-    if isinstance(base, ast.Name):
-        return base.id
-    return ""
-
-
-def test_only_errors_module_defines_exceptions():
-    root = Path(milk.__file__).parent
-    offenders = []
-    for path in root.rglob("*.py"):
-        if path == root / "errors.py":
-            continue
-        for node in ast.walk(ast.parse(path.read_text())):
-            if not isinstance(node, ast.ClassDef):
-                continue
-            for base in map(_base_name, node.bases):
-                if base in ("Exception", "BaseException") or base.endswith(
-                    ("Error", "Exception")
-                ):
-                    offenders.append(f"{path.relative_to(root)}:{node.name}")
-    assert not offenders
 
 
 def test_milk_error_context_in_str():

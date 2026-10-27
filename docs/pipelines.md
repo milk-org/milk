@@ -1,5 +1,7 @@
 # **Pipeline** layer and python API
 
+Terms used here (pipeline, confdir, rootdir, compute unit (CompU), and others) are defined in the [pipelines glossary](pipelines_glossary.md).
+
 ```mermaid
 ---
 title: MILK subsystems hierarchy
@@ -12,16 +14,16 @@ graph LR
     P["`**Pipeline**`"]
     P2["Other pipelines..."]
     Sys --> P2
-    subgraph CUG ["Compute Unit (CU)"]
-        CU[CU Orchestration]
+    subgraph CompUG ["Compute Unit (CompU)"]
+        CompU[CompU Orchestration]
         St[Streams]
         FPS[FPS]
         Proc[Processes]
-        CU --> St
-        CU --> FPS
-        CU --> Proc
+        CompU --> St
+        CompU --> FPS
+        CompU --> Proc
     end
-    P --> CU
+    P --> CompU
 
     style P fill:pink,stroke:red
 ```
@@ -30,14 +32,14 @@ A __pipeline__ is a set of MILK __compute units__ orchestrated and operated join
 
 __Pipelines__ provided namespacing and functionality isolation for multiple common sets of tasks initiated by the AO operator:
 - __Initialization__: create a pipeline from a static set of toml configuration files.
-- __Deployment__: spin up and connect all the relevant CUs on a cold RTC.
+- __Deployment__: spin up and connect all the relevant CompUs on a cold RTC.
 - __Configuration__: store and load configuration files (e.g. AO calibrations).
 - __Operations__: provide the needed primitives to execute complex actions (AO user control, AO reconfiguration, pipeline restart, real-time resources monitoring)
 
 
-__Downwards__, the pipeline layer coordinates the manipulation of it member CUs and their connectivity:
-- Control the CU runtime orchestration (conf and run processes, tmuxes)
-- Control and modify FPS attributes of the CUs
+__Downwards__, the pipeline layer coordinates the manipulation of it member CompUs and their connectivity:
+- Control the CompU runtime orchestration (conf and run processes, tmuxes)
+- Control and modify FPS attributes of the CompUs
 - Orchestrate streams (initialization, destruction, sanitization and runtime checks) that are used for the core real-time data flow.
 
 __Upwards__, the pipeline layer is controlled by the system layer:
@@ -72,9 +74,8 @@ The __initialization__ step consists on the copying of the `conf` folder to its 
 Maybe make this a foldable box with key info, then link to another page with "conf.toml features"
 Pipelines conf.toml features:
 - main variable section
-- datalinks
-- CU sections (main and subs)
-- pre-files and post-files (which are transitive, careful !)
+- `[[dataloads]]` (`source`, `target`) and `[systemlinkage.<mode>]`
+- `[compute_units.<cu>]` tables (`exec`, `.fps`, `.fps.procinfo`)
 
 ```bash
 milk-pipes -c --folder ~/src/milk-standalone/python/tests/resources/ pipelinebasic
@@ -86,9 +87,11 @@ milk-pipes -r pipelinebasic
 `milk-pipes -r` information
 
 `milk-pipes nuke [--folder F] <name>` is destructive and meant for test machines.
-Without confirmation, it runs `runstop` on all sessions, deapplies all system linkages,
-runs `confstop` on all sessions, then deletes the pipeline root directory.
+Without confirmation, it runs `runstop` on all CompUs, deapplies all system linkages,
+runs `confstop` on all CompUs, then deletes the pipeline root directory.
 Failures in a step are reported and do not prevent the following steps.
+
+FPS names are `<name>_<cu>` (for example `basic_delay0`), derived from the pipeline short name and the CompU key.
 
 ## Configuration
 
