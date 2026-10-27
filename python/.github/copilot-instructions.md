@@ -26,3 +26,11 @@ This workspace is the `python/` folder of the milk repository. Before any task:
 
 Tests: `pytest` from this folder. The **milk**-tagged slices also need `MILK_INSTALLDIR` and a
 milk build (see `tests/conftestaux/milk.py`). The existing suite must stay green.
+
+**Code rules (important):**
+- No new abstraction (class, protocol, registry, factory) unless it has two real callers now.
+- Validate only at boundaries: config load, the CLIs, the pyMilk seam. Internal code trusts its
+  inputs.
+- No options, flags or hooks that nothing in the current slice uses.
+- Prefer deleting to adding. Report the net line count of every change. The slice brief sets the
+  budget (default +300 net LOC); if you will exceed it, stop and ask.
