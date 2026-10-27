@@ -29,6 +29,7 @@ from .infra.toml_manipulation import load_pipeline_config
 from .infra.task_models import SimpleTask, NoCanTaskError, NoSuccessTaskError
 
 import os
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -276,8 +277,44 @@ class Pipeline:
         if self.is_running():
             raise exc.SystemLinkageException("Pipeline is running; stop it first")
         for local, remote in pairs:
-            if local.is_symlink() and Path(os.readlink(local)) == remote:
+            if local.is_symlink():  # and Path(os.readlink(local)) == remote:
                 local.unlink()
+
+    def nuke(self) -> None:
+        """Unconditionally tear down: runstop, deapply linkages, confstop, rm -rf root.
+
+        Meant for test machines. Every step is best-effort: failures are reported
+        and the next step still runs.
+        """
+
+        def attempt(label: str, fn) -> None:
+            print(label)
+            try:
+                fn()
+            except Exception as error:
+                print(f"  warning: {error}")
+
+        for name in self.sessions:
+            session = self.get_session(name)
+            if session.fps is not None:
+                attempt(f"runstop {name}", session.runstop)
+        for linkage in self.systemlinkage:
+            attempt(
+                f"deapply system linkage {linkage}",
+                lambda linkage=linkage: self.deapply_system_linkage(linkage),
+            )
+        for name in self.sessions:
+            session = self.get_session(name)
+            if session.fps is not None:
+                attempt(f"confstop {name}", session.confstop)
+        for name in self.sessions:
+            session = self.get_session(name)
+            if session.fps is not None:
+                session.fps.destroy()
+        if self.root_folder.exists() or self.root_folder.is_symlink():
+            attempt(
+                f"rm -rf {self.root_folder}", lambda: shutil.rmtree(self.root_folder)
+            )
 
 
 class DMCombPipeline: ...

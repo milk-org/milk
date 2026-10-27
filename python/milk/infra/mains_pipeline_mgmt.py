@@ -28,6 +28,7 @@ def milk_pipes():
       init    Set up the folders of a cloned pipeline
       spool   Deploy and start the processes of an initialized pipeline
       sys     Apply a [systemlinkage] mode of a pipeline
+      nuke    Stop, unlink and delete the root directory of a pipeline (destructive)
     """
 
 
@@ -191,6 +192,27 @@ def milk_pipes_sys_function(name: str, linkage: str, folder: str | None = None) 
         pp.apply_system_linkage(linkage)
     except (UnknownSystemLinkageException, SystemLinkageException) as error:
         raise click.ClickException(str(error)) from error
+
+
+@milk_pipes.command("nuke", context_settings={"help_option_names": ["-h", "--help"]})
+@_folder_option
+@click.argument("name")
+def milk_pipes_nuke(folder: str | None, name: str):
+    """
+    Unconditionally tear down pipeline <name>, for test machines.
+
+    \b
+    Runs, without confirmation:
+      1. runstop on all sessions
+      2. deapply all system linkages
+      3. confstop on all sessions
+      4. rm -rf the pipeline root directory
+    """
+    milk_pipes_nuke_function(name, folder)
+
+
+def milk_pipes_nuke_function(name: str, folder: str | None = None) -> None:
+    Pipeline(folder if folder is not None else os.getcwd(), name).nuke()
 
 
 def milk_pipes_init_function(name: str, folder: str | None = None) -> None:
