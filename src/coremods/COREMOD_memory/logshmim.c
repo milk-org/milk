@@ -721,3 +721,6 @@ const MILK_RUNNABLE runnable_COREMOD_memory_logshmim = {
     .compute   = logshmim_compute,
     .confcheck = customCONFcheck,
 };
+
+/* milk-fpsexec-mem-streamFITSlog: the logger unit that milk-streamFITSlog starts and stops */
+EXPORT_FPSEXEC(milk, "mem-streamFITSlog", runnable_COREMOD_memory_logshmim);

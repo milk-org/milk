@@ -5,13 +5,7 @@
 /**
  * @file    image_arith__Cim_Cim__Cim.c
  * @brief   Complex-image arithmetic (add/sub/mult/div)
- *
- * input : complex image, complex image
- * output: complex image
- *
- * All four operations generated via X-macro table.
  */
-
 
 #ifdef MILK_NO_CLI
 #    include "CLIcore_standalone.h"
@@ -21,50 +15,61 @@
 #endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "imgid_arith_helpers.h"
+#include "image_arith__Cim_Cim__Cim.h"
 
-#include "imfunctions.h"
-#include "mathfuncs.h"
+/** Allocate and register a complex output image shaped like @img1 and run `arith_complex_binop_im`. */
+static errno_t run_complex_named_op(int         op,
+                                    const char *ID1_name,
+                                    const char *ID2_name,
+                                    const char *ID_out)
+{
+    IMGID img1 = imgid_make_from_name(ID1_name);
+    resolveIMGID(&img1, ERRMODE_ABORT, dcimg, dcnimg);
+    IMGID img2 = imgid_make_from_name(ID2_name);
+    resolveIMGID(&img2, ERRMODE_ABORT, dcimg, dcnimg);
 
+    uint8_t dt1 = img1.md->datatype;
+    uint8_t dt2 = img2.md->datatype;
+    if (!arith_is_complex_dt(dt1) || dt1 != dt2)
+    {
+        imgid_free(&img1);
+        imgid_free(&img2);
+        PRINT_ERROR("data types do not match");
+        return RETURN_FAILURE;
+    }
 
-/* -------------------------------------------------------
- * X-macro table: (name, CF func ptr, CD func ptr)
- * ------------------------------------------------------- */
-#define COMPLEX_OPS(X)                   \
-    X(Cadd, CPadd_CF_CF, CPadd_CD_CD)    \
-    X(Csub, CPsub_CF_CF, CPsub_CD_CD)    \
-    X(Cmult, CPmult_CF_CF, CPmult_CD_CD) \
-    X(Cdiv, CPdiv_CF_CF, CPdiv_CD_CD)
+    IMGID imgout      = imgid_make_from_name(ID_out);
+    imgout.mdt->naxis = img1.md->naxis;
+    for (uint8_t i = 0; i < img1.md->naxis; i++)
+    {
+        imgout.mdt->size[i] = img1.md->size[i];
+    }
+    imgout.mdt->datatype = dt1;
+    imgout.mdt->shared   = dcshareddft;
+    imgout.mdt->NBkw     = NB_KEYWNODE_MAX;
+    imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
 
+    arith_complex_binop_im(op, img1.im, 0.0, img2.im, 0.0, imgout.im);
 
-/* -------------------------------------------------------
- * Stamp macro — one function per operation
- * ------------------------------------------------------- */
-#define DEFINE_COMPLEX_OP(name, cf_fn, cd_fn)                                                  \
+    RegisterIMGID(&imgout, dcimg, dcnimg);
+    imgid_free(&img1);
+    imgid_free(&img2);
+    imgid_free(&imgout);
+    return RETURN_SUCCESS;
+}
+
+#define COMPLEX_OPS(X)       \
+    X(Cadd, ARITH_CPLX_ADD)  \
+    X(Csub, ARITH_CPLX_SUB)  \
+    X(Cmult, ARITH_CPLX_MUL) \
+    X(Cdiv, ARITH_CPLX_DIV)
+
+#define DEFINE_COMPLEX_OP(name, op_code)                                                       \
     errno_t arith_image_##name(const char *ID1_name, const char *ID2_name, const char *ID_out) \
     {                                                                                          \
-        IMGID img1 = imgid_make_from_name(ID1_name);                                           \
-        resolveIMGID(&img1, ERRMODE_ABORT, dcimg, dcnimg);                                     \
-        IMGID img2 = imgid_make_from_name(ID2_name);                                           \
-        resolveIMGID(&img2, ERRMODE_ABORT, dcimg, dcnimg);                                     \
-                                                                                               \
-        uint8_t dt1 = img1.md->datatype;                                                       \
-        uint8_t dt2 = img2.md->datatype;                                                       \
-                                                                                               \
-        imgid_free(&img1);                                                                     \
-        imgid_free(&img2);                                                                     \
-                                                                                               \
-        if (dt1 == _DATATYPE_COMPLEX_FLOAT && dt2 == _DATATYPE_COMPLEX_FLOAT)                  \
-        {                                                                                      \
-            arith_image_function_CF_CF__CF(ID1_name, ID2_name, ID_out, &cf_fn);                \
-            return RETURN_SUCCESS;                                                             \
-        }                                                                                      \
-        if (dt1 == _DATATYPE_COMPLEX_DOUBLE && dt2 == _DATATYPE_COMPLEX_DOUBLE)                \
-        {                                                                                      \
-            arith_image_function_CD_CD__CD(ID1_name, ID2_name, ID_out, &cd_fn);                \
-            return RETURN_SUCCESS;                                                             \
-        }                                                                                      \
-        PRINT_ERROR("data types do not match");                                                \
-        return RETURN_FAILURE;                                                                 \
+        return run_complex_named_op(op_code, ID1_name, ID2_name, ID_out);                      \
     }
 
 COMPLEX_OPS(DEFINE_COMPLEX_OP)

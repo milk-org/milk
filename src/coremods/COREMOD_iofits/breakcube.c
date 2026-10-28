@@ -64,8 +64,7 @@ imageID break_cube(const char *restrict ID_name)
 
         IMGID imgfr       = imgid_make_from_name_2D(framename, xsize, ysize);
         imgfr.mdt->shared = 0;
-        imgfr.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgfr);
+        imgid_create_registered(&imgfr);
 
         for (uint32_t ii = 0; ii < xsize; ii++)
         {

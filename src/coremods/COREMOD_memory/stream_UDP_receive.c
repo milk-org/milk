@@ -244,8 +244,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(int                         port,
             imgrcv.mdt->datatype = imgmd[0].datatype;
             imgrcv.mdt->shared   = imgmd[0].shared;
             imgrcv.mdt->NBkw     = nbkw;
-            imgrcv.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgrcv);
+            imgid_create_registered(&imgrcv);
             ID = imgrcv.ID;
         }
         printf("Created image stream %s - shared = %d\n", imgmd[0].name, imgmd[0].shared);

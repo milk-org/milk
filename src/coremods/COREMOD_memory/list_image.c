@@ -15,7 +15,7 @@
  *    parseable
  *
  * Note: the interactive "mmon" TUI has been
- * moved to the streamCTRL CLI tools suite.
+ * moved to milk-CTRL (streams view, F3).
  */
 
 
@@ -25,6 +25,8 @@
 #include "compute_image_memory.h"
 #include "compute_nb_image.h"
 #include "image_ID.h"
+#include <fnmatch.h>
+#include <unistd.h>
 
 #define STYPESIZE 10
 
@@ -51,15 +53,25 @@ errno_t list_variable_ID_file(const char *fname);
 
 MILK_RUNNABLE_RT_DEFINE(listim);
 
-static MILK_HOT errno_t listim_compute(const MILK_RUNNABLE *self)
+errno_t list_image_ID_with_opts(int         json_mode,
+                                int         porcelain_mode,
+                                int         quiet_mode,
+                                const char *pattern)
 {
-    (void) self;
-
-    // No CLI option sets these yet
-    int json_mode      = 0;
-    int porcelain_mode = 0;
-
-    if (json_mode)
+    if (quiet_mode)
+    {
+        for (long i = 0; i < dcnimg; i++)
+        {
+            if (dcimg[i].used == 1)
+            {
+                if (pattern == NULL || fnmatch(pattern, dcimg[i].name, 0) == 0)
+                {
+                    printf("%s\n", dcimg[i].name);
+                }
+            }
+        }
+    }
+    else if (json_mode)
     {
         list_image_ID_ofp_json(stdout);
     }
@@ -72,6 +84,12 @@ static MILK_HOT errno_t listim_compute(const MILK_RUNNABLE *self)
         list_image_ID();
     }
     return RETURN_SUCCESS;
+}
+
+static MILK_HOT errno_t listim_compute(const MILK_RUNNABLE *self)
+{
+    (void) self;
+    return list_image_ID_with_opts(0, 0, 0, NULL);
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_listim = {
@@ -89,7 +107,8 @@ const MILK_RUNNABLE runnable_COREMOD_memory_listim = {
 
 errno_t list_image_ID_ofp(FILE *fo)
 {
-    unsigned long long sizeb = compute_image_memory();
+    unsigned long long sizeb     = compute_image_memory();
+    int                use_color = (fo != NULL && isatty(fileno(fo)) && getenv("NO_COLOR") == NULL);
 
     struct timespec timenow;
     clock_gettime(CLOCK_MILK, &timenow);
@@ -108,15 +127,15 @@ errno_t list_image_ID_ofp(FILE *fo)
             long long tmp_long =
                 ((long long) (dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
-            if (dcimg[i].md[0].shared == 1)
+            if (use_color)
             {
-                fprintf(fo, "%4ld %c[%d;%dm%14s%c[%d;m ", i, (char) 27, 1, 34, dcimg[i].name,
-                        (char) 27, 0);
+                int color_code = (dcimg[i].md[0].shared == 1) ? 34 : 33;
+                fprintf(fo, "%4ld %c[%d;%dm%14s%c[%d;m ", i, (char) 27, 1, color_code,
+                        dcimg[i].name, (char) 27, 0);
             }
             else
             {
-                fprintf(fo, "%4ld %c[%d;%dm%14s%c[%d;m ", i, (char) 27, 1, 33, dcimg[i].name,
-                        (char) 27, 0);
+                fprintf(fo, "%4ld %14s ", i, dcimg[i].name);
             }
             //fprintf(fo, "%s", str);
 

@@ -56,38 +56,40 @@ errno_t mk_amph_from_complex_IMGID(IMGID *imgin, IMGID *imgamp, IMGID *imgpha)
     imgpha->mdt->naxis = naxis;
 
     uint64_t nelement = imgin->md[0].nelement;
+    int      nth      = milk_omp_team_size(nelement, 262144);
 
-#define MK_AMPH_LOOP(DTYPE_OUT, TYPE_IN, TYPE_OUT, UNION_IN, UNION_OUT, SQRT_FUNC, ATAN2_FUNC) \
-    {                                                                                          \
-        imgamp->mdt->datatype = DTYPE_OUT;                                                     \
-        if (imgamp->ID == -1)                                                                  \
-            createimagefromIMGID(imgamp);                                                      \
-        imgpha->mdt->datatype = DTYPE_OUT;                                                     \
-        if (imgpha->ID == -1)                                                                  \
-            createimagefromIMGID(imgpha);                                                      \
-        imgamp->md[0].write            = 1;                                                    \
-        imgpha->md[0].write            = 1;                                                    \
-        TYPE_IN *MILK_RESTRICT  ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.UNION_IN);       \
-        TYPE_OUT *MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imgamp->im->array.UNION_OUT);     \
-        TYPE_OUT *MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imgpha->im->array.UNION_OUT);     \
-        _Pragma("omp parallel if (nelement > OMP_NELEMENT_LIMIT)")                             \
-        {                                                                                      \
-            _Pragma("omp for simd") for (uint64_t ii = 0; ii < nelement; ii++)                 \
-            {                                                                                  \
-                TYPE_OUT re_val = ptr_in[ii].re;                                               \
-                TYPE_OUT im_val = ptr_in[ii].im;                                               \
-                ptr_am[ii]      = SQRT_FUNC(re_val * re_val + im_val * im_val);                \
-                ptr_ph[ii]      = ATAN2_FUNC(im_val, re_val);                                  \
-            }                                                                                  \
-        }                                                                                      \
-        if (imgamp->md[0].shared == 1)                                                         \
-            COREMOD_MEMORY_image_set_sempost_byID(imgamp->ID, -1);                             \
-        if (imgpha->md[0].shared == 1)                                                         \
-            COREMOD_MEMORY_image_set_sempost_byID(imgpha->ID, -1);                             \
-        imgamp->md[0].cnt0++;                                                                  \
-        imgpha->md[0].cnt0++;                                                                  \
-        imgamp->md[0].write = 0;                                                               \
-        imgpha->md[0].write = 0;                                                               \
+#define MK_AMPH_LOOP(DTYPE_OUT, TYPE_IN, TYPE_OUT, UNION_IN, UNION_OUT, SQRT_FUNC, ATAN2_FUNC)    \
+    {                                                                                             \
+        imgamp->mdt->datatype = DTYPE_OUT;                                                        \
+        if (imgamp->ID == -1)                                                                     \
+            createimagefromIMGID(imgamp);                                                         \
+        imgpha->mdt->datatype = DTYPE_OUT;                                                        \
+        if (imgpha->ID == -1)                                                                     \
+            createimagefromIMGID(imgpha);                                                         \
+        imgamp->md[0].write            = 1;                                                       \
+        imgpha->md[0].write            = 1;                                                       \
+        TYPE_IN *MILK_RESTRICT  ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.UNION_IN);          \
+        TYPE_OUT *MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imgamp->im->array.UNION_OUT);        \
+        TYPE_OUT *MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imgpha->im->array.UNION_OUT);        \
+        _Pragma(                                                                                  \
+            "omp parallel for simd num_threads(nth) if (parallel : nth > 1)") for (uint64_t ii =  \
+                                                                                       0;         \
+                                                                                   ii < nelement; \
+                                                                                   ii++)          \
+        {                                                                                         \
+            TYPE_OUT re_val = ptr_in[ii].re;                                                      \
+            TYPE_OUT im_val = ptr_in[ii].im;                                                      \
+            ptr_am[ii]      = SQRT_FUNC(re_val * re_val + im_val * im_val);                       \
+            ptr_ph[ii]      = ATAN2_FUNC(im_val, re_val);                                         \
+        }                                                                                         \
+        if (imgamp->md[0].shared == 1)                                                            \
+            COREMOD_MEMORY_image_set_sempost_byID(imgamp->ID, -1);                                \
+        if (imgpha->md[0].shared == 1)                                                            \
+            COREMOD_MEMORY_image_set_sempost_byID(imgpha->ID, -1);                                \
+        imgamp->md[0].cnt0++;                                                                     \
+        imgpha->md[0].cnt0++;                                                                     \
+        imgamp->md[0].write = 0;                                                                  \
+        imgpha->md[0].write = 0;                                                                  \
     }
 
     if (datatype == _DATATYPE_COMPLEX_FLOAT)
