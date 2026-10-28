@@ -23,8 +23,9 @@ Rules:
 | R4 | Rootdir operations | Operate a pipeline from its rootdir | In: rundir (A.4) with claim + FPS list + uniqueness; cold/inconsistent model; per-plan consistency check; `state()`; `Task` protocol with CompU subsets; plans as data with `on_failure`; plan runner; plans deploy/start/stop/teardown; `milk-pipes` with plan subcommands + `state`/`link`/`unlink`; FPS workdir `rootdir/work/`; linkage pairs in the rundir; `plans` TOML key; old `spool/sys/nuke` removed. Deferred: kinds (R5) | R3b | milk | planned | — |
 | R5 | Kind infrastructure | Extend pipelines without touching the core | In: `PipelineKind` protocol (§4.3), registration, `generic` kind, kind defaults feeding confresolve, kind plans as subcommands, one stub kind defined outside the core package. Deferred: standard-kind content (Vincent, manually) | R4 | milk | planned | — |
 | R6 | pyMilk boundary | One narrow, tested seam to pyMilk | In: a narrow interface module, a pure-Python SHM-name validator (config validation no longer imports `ImageStreamIOWrap`), an ISIO/FPS ABI version contract test. pyMilk errors propagate unwrapped. Deferred: repo merge | R1a | milk | planned | — |
+| R7 | Waitable test states | Tests wait on observable states, not guessed sleeps | In: replace guessed sleeps in CompU tests with predicate polls; dedupe CompU fixtures into conftestaux. Deferred: library wait primitive (R4); cli_hardening pacing | R1c | milk | in-progress | `specs/005-r7-waitable-tests/brief.md` |
 
-Order: R1a → R1b → R1c → R2 → R3a → R3b → R4 → R5. R6 can run any time after R1a.
+Order: R1a → R1b → R1c → R2 → R3a → R3b → R4 → R5. R6 can run any time after R1a. R7 can run any time after R1c.
 
 **Not to be specified in this round** (do not implement or invent): the CLI top-level error
 handler; concurrent long-running AO tasks; atomic init/resync; the confresolve cache; the
