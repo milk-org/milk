@@ -16,6 +16,7 @@
 #include "computeunit.h"
 #include "fps_apply_process_settings.h"
 #include "fps_checkparameter.h"
+#include "fps_unit.h"
 
 
 #include "fps_globals.h"
@@ -130,7 +131,31 @@ int fps_generic_init(const char      *fps_name,
         return 0;
     }
 
-    /* Shared-memory mode */
+    /* Shared-memory mode: not while the unit runs (U9) */
+    int lockfd = fps_unit_lock(fps_name, 1); // -1 while the FPS does not exist yet
+    if (lockfd >= 0)
+    {
+        FPS fc  = { 0 };
+        fc.SMfd = -1;
+        if (fps_connect(fps_name, &fc, FPSCONNECT_SIMPLE) != -1)
+        {
+            for (int r = FPS_UNIT_RUN; r <= FPS_UNIT_CONF; r++)
+            {
+                FPS_UNIT_STATUS st;
+                fps_unit_status_fps(&fc, (FPS_UNIT_ROLE) r, &st, FPS_UNIT_LOCKED);
+                if (fps_unit_state_alive(st.state))
+                {
+                    fprintf(stderr, "%s %s: running, pid %d: stop it before fpsinit\n", fps_name,
+                            fps_unit_role_name((FPS_UNIT_ROLE) r), (int) st.pid);
+                    fps_disconnect(&fc);
+                    fps_unit_unlock(lockfd);
+                    return -1;
+                }
+            }
+            fps_disconnect(&fc);
+        }
+    }
+
     FPS fps;
     // So the FPS v2 init macro inject code that calls this function that injects more macro code ?
     // As I was saying, WTF?
@@ -148,6 +173,14 @@ int fps_generic_init(const char      *fps_name,
     fps_autopopulate_trigger_stream(&fps, bindings, nb_b);
 
     fps_disconnect(&fps);
+
+    /* Whoever starts the unit later, its worker gets this environment (U8) */
+    if (fps_unit_env_capture(fps_name) != 0)
+    {
+        fprintf(stderr, "%s: cannot write the environment snapshot: %s\n", fps_name,
+                strerror(errno));
+    }
+    fps_unit_unlock(lockfd);
     return 0;
 }
 
@@ -336,15 +369,24 @@ int fps_generic_conf_cb(const char *fps_name, int loop, errno_t (*confcheck_fn)(
     loop ? printf("Starting configuration process loop for '%s'\n", fps_name)
          : printf("Running single configuration step for '%s'\n", fps_name);
 
+    /* the conf loop is the unit's conf role; a single step is not */
+    if (loop && fps_unit_role_begin(fps_name, FPS_UNIT_CONF) != 0)
+    {
+        return 1;
+    }
     fps =
         function_parameter_FPCONFsetup(fps_name, loop ? FPSCMDCODE_CONFSTART : FPSCMDCODE_FPSINIT);
     // BLOCK_VAR_MAP // {}
+    fps_unit_notify_connected();
 
     // FPS_LOCALSTATUS_CONFLOOP is == to loop, by means of function_parameter_FPCONFsetup
     // let's do one iter in all cases
     do
     {
-        if (!function_parameter_FPCONFloopstep(&fps))
+        int updated = function_parameter_FPCONFloopstep(&fps);
+        fps_unit_notify_ready(); /* the first step is done */
+        fps_unit_tick(-1);
+        if (!updated)
         {
             continue;
         }
@@ -360,6 +402,10 @@ int fps_generic_conf_cb(const char *fps_name, int loop, errno_t (*confcheck_fn)(
     } while (loop && (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP));
 
     function_parameter_FPCONFexit(&fps);
+    if (loop)
+    {
+        fps_unit_role_end(0);
+    }
     return RETURN_SUCCESS;
 }
 
@@ -378,26 +424,7 @@ int fps_generic_conf(const char *fps_name, int loop)
 }
 
 
-/**
- * @brief Execute the FPS compute function.
- *
- * Connects to the FPS, applies CLI arguments via
- * fps_process_argv_and_sync(), then invokes the
- * compute function.  For local FPS names, creates
- * the FPS in-process if it doesn't exist yet.
- * For shared-memory FPS, performs a two-phase
- * connect (SIMPLE for CLI sync, then RUN for
- * stream loading).
- *
- * @param fps_name    FPS name
- * @param app_info    Application identity
- * @param farg        CLI argument definitions
- * @param bindings    Parameter bindings
- * @param nb_b        Number of bindings
- * @param compute_fn  Compute function of the runnable
- *                    (MILK_PROCINFO_* loop)
- * @return 0 on success, 1 if FPS not found
- */
+/** @brief Print the parameter errors CheckParametersAll() left in @fps. */
 static void print_parameter_validation_errors(const FPS *fps)
 {
     for (long ii = 0; ii < fps->md->msgcnt; ii++)
@@ -423,28 +450,31 @@ static void print_parameter_validation_errors(const FPS *fps)
  * @brief Execute the FPS compute function.
  *
  * Connects to the FPS, applies argv via
- * fps_process_argv_and_sync(), then invokes the
- * compute function.  For local FPS names, creates
+ * fps_process_argv_and_sync(), checks the parameters
+ * (confcheck_fn, then CheckParametersAll), then invokes
+ * the compute function.  For local FPS names, creates
  * the FPS in-process if it doesn't exist yet.
  * For shared-memory FPS, performs a two-phase
  * connect (SIMPLE for CLI sync, then RUN for
- * stream loading).
+ * stream loading), and runs as the unit's run role.
  *
- * @param fps_name    FPS name
- * @param app_info    Application identity
- * @param bindings    Parameter bindings
- * @param nb_b        Number of bindings
- * @param compute_fn  Compute function of the runnable
- *                    (MILK_PROCINFO_* loop)
- * @return 0 on success, 1 if FPS not found
+ * @param fps_name      FPS name
+ * @param app_info      Application identity
+ * @param bindings      Parameter bindings
+ * @param nb_b          Number of bindings
+ * @param compute_fn    Compute function of the runnable
+ *                      (MILK_PROCINFO_* loop)
+ * @param confcheck_fn  Optional custom parameter check
+ * @return 0 on success, 1 on failure
  */
 int fps_generic_run(const char      *fps_name,
                     FPS_APP_INFO    *app_info,
                     FPS_CLI_BINDING *bindings,
                     int              nb_b,
-                    fps_compute_fn   compute_fn)
+                    fps_compute_fn   compute_fn,
+                    fps_confcheck_fn confcheck_fn)
 {
-    FPS fps;
+    FPS fps = { 0 };
 
     if (fps_name[0] == '_')
     {
@@ -472,31 +502,54 @@ int fps_generic_run(const char      *fps_name,
     }
     else
     {
+        if (fps_unit_role_begin(fps_name, FPS_UNIT_RUN) != 0)
+        {
+            return 1;
+        }
         /* Phase 1: connect SIMPLE to apply CLI
          * args before streams are loaded. */
+        fps.SMfd = -1;
         if (fps_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1)
         {
             PRINT_ERROR("FPS '%s' not found. Run 'fpsinit' first.", fps_name);
+            fps_unit_notify_failed(ENOENT, "FPS not found");
+            fps_unit_role_end(1);
             return 1;
         }
         fps_process_argv_and_sync(&fps, bindings, nb_b);
 
-        /* Validate parameters and check the CHECKOK flag */
+        /* Validate parameters once, in the process that runs (U5) */
+        if (confcheck_fn != NULL)
+        {
+            dcfpsptr = &fps;
+            confcheck_fn();
+            dcfpsptr = NULL;
+        }
         functionparameter_CheckParametersAll(&fps);
         if (!(fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK))
         {
             PRINT_ERROR("FPS '%s' parameter validation failed (%lu errors). Cannot run.", fps_name,
                         (unsigned long) fps.md->conferrcnt);
             print_parameter_validation_errors(&fps);
+            fps_unit_notify_failed(EINVAL, "parameter check failed (%lu errors)",
+                                   (unsigned long) fps.md->conferrcnt);
             fps_disconnect(&fps);
+            fps_unit_role_end(1);
             return 1;
         }
 
         fps_disconnect(&fps);
+        fps_unit_notify_connected();
 
         /* Phase 2: reconnect as RUN -- streams
          * now load with CLI-updated values. */
-        FPS_RUN_STD_PREAMBLE(fps_name, fps, {});
+        if (fps_connect(fps_name, &fps, FPSCONNECT_RUN) == -1)
+        {
+            PRINT_ERROR("Error: FPS '%s' not found. Run 'fpsinit' first.", fps_name);
+            fps_unit_notify_failed(ENOENT, "FPS not found");
+            fps_unit_role_end(1);
+            return 1;
+        }
     }
 
     fflush(stdout);
@@ -535,19 +588,26 @@ int fps_generic_run(const char      *fps_name,
     dcfpsbindings  = bindings;
     dcfpsnbindings = nb_b;
 
-    compute_fn();
+    int rc = (compute_fn() == RETURN_SUCCESS) ? 0 : 1;
 
     dcfpsptr       = NULL;
     dcfpsbindings  = NULL;
     dcfpsnbindings = 0;
+    printf("ran as PID %ld\n", (long) getpid());
     if (fps_name[0] != '_')
     {
+        /* the run is over: no commanded run, no loop, no run process left in the FPS */
+        fps.md->status &=
+            ~(FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN | FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP);
+        if (fps.md->runpid == getpid())
+        {
+            fps.md->runpid = 0;
+        }
         fps_disconnect(&fps);
+        fps_unit_role_end(rc);
     }
 
-    printf("ran as PID %ld\n", (long) getpid());
-
-    return 0;
+    return rc;
 }
 
 
@@ -556,10 +616,6 @@ int fps_generic_run(const char      *fps_name,
  */
 int fps_generic_runstop(const char *fps_name)
 {
-    FPS fps;
-
-    printf("Stopping run process for '%s'\n", fps_name);
-
     if (fps_name[0] == '_')
     {
         printf("Local FPS '%s' -- stop signal "
@@ -568,36 +624,7 @@ int fps_generic_runstop(const char *fps_name)
                fps_name);
         return 0;
     }
-
-    if (fps_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1)
-    {
-        PRINT_ERROR("FPS '%s' not found.", fps_name);
-        return 1;
-    }
-
-    /*
-     * Do NOT call functionparameter_RUNstop() here.
-     * That function dispatches a "runstop" command
-     * to the tmux :ctrl window via send-keys, but
-     * fps_generic_runstop() is itself invoked FROM
-     * the :ctrl window -- calling RUNstop() creates
-     * an infinite tmux command loop.
-     *
-     * Instead, perform the stop actions directly:
-     * 1. Send C-c to the :run window (interrupt)
-     * 2. Clear the CMDRUN status flag
-     * 3. Signal the GUI to update
-     */
-    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run C-c"
-                                   " 2>/dev/null",
-                                   fps.md->name);
-
-    fps.md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
-    fps.md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
-
-    fps_disconnect(&fps);
-    functionparameter_FPS_processinfo_signal(fps_name, 3);
-    return 0;
+    return fps_unit_stop(fps_name, FPS_UNIT_RUN, 0);
 }
 
 
@@ -606,12 +633,6 @@ int fps_generic_runstop(const char *fps_name)
  */
 int fps_generic_confstop(const char *fps_name)
 {
-    FPS fps;
-
-    printf("Stopping configuration process "
-           "for '%s'\n",
-           fps_name);
-
     if (fps_name[0] == '_')
     {
         printf("Local FPS '%s' -- stop signal "
@@ -620,13 +641,5 @@ int fps_generic_confstop(const char *fps_name)
                fps_name);
         return 0;
     }
-
-    if (fps_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1)
-    {
-        PRINT_ERROR("FPS '%s' not found.", fps_name);
-        return 1;
-    }
-    functionparameter_CONFstop(&fps);
-    fps_disconnect(&fps);
-    return 0;
+    return fps_unit_stop(fps_name, FPS_UNIT_CONF, 0);
 }

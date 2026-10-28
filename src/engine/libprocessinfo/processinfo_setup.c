@@ -94,6 +94,8 @@ PROCESSINFO *processinfo_setup(
 
     DEBUG_TRACEPOINT(" ");
 
+    processinfo_self = processinfo;
+
     DEBUG_TRACE_FEXIT();
 
     return processinfo;
@@ -126,7 +128,7 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
     processinfo->loopcnt  = 0;
     processinfo->loopstat = 1;
 
-    if (processinfo->RT_priority > -1)
+    if (processinfo->RT_priority > 0) /* 0 and -1: no real-time scheduling */
     {
         struct sched_param schedpar;
         schedpar.sched_priority = processinfo->RT_priority;

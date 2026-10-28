@@ -2,12 +2,37 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+#include <pthread.h>
+#include <unistd.h>
+
 #include "processinfo_internal.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
 #ifndef CLOCK_MILK
 #    define CLOCK_MILK CLOCK_REALTIME
 #endif
+
+/* getpid() is a real syscall on glibc >= 2.25: cache it, reset in a forked child */
+static pid_t g_pid = 0;
+
+static void pid_fork_child(void)
+{
+    g_pid = 0;
+}
+
+__attribute__((constructor)) static void pid_register_atfork(void)
+{
+    pthread_atfork(NULL, NULL, pid_fork_child);
+}
+
+static inline pid_t cached_pid(void)
+{
+    if (g_pid == 0)
+    {
+        g_pid = getpid();
+    }
+    return g_pid;
+}
 
 /**
  * @brief Update output stream metadata and telemetry at the end of a loop iteration.
@@ -31,7 +56,7 @@ errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
             exit(EXIT_FAILURE);
         }
 
-        output_image->streamproctrace[0].procwrite_PID   = getpid();
+        output_image->streamproctrace[0].procwrite_PID   = cached_pid();
         output_image->streamproctrace[0].ts_streamupdate = ts;
 
         DEBUG_TRACEPOINT(" ");
@@ -59,15 +84,15 @@ errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
 
                 if (sptisize > 0)
                 {
-                    // copy streamproctrace from input to output
-                    memcpy(&output_image->streamproctrace[1], &input_image->streamproctrace[0],
-                           sizeof(STREAM_PROC_TRACE) * sptisize);
+                    // copy streamproctrace from input to output (same image when in place)
+                    memmove(&output_image->streamproctrace[1], &input_image->streamproctrace[0],
+                            sizeof(STREAM_PROC_TRACE) * sptisize);
                 }
             }
 
             // write first streamproctrace entry
             DEBUG_TRACEPOINT("trigger info");
-            output_image->streamproctrace[0].trigsemindex = processinfo->triggermode;
+            output_image->streamproctrace[0].triggermode = processinfo->triggermode;
 
             output_image->streamproctrace[0].trigger_inode = processinfo->triggerstreaminode;
 

@@ -81,13 +81,17 @@ int main(int argc, char *argv[])
            "   Monitor live parameter changes\n\n");
 
     printf(C_HDR "Managing Execution\n" C_RST);
-    printf("  Each FPS may have a config loop"
-           " (conf) and a run loop:\n"
-           "    " C_CMD "milk-fps-confstart " C_FPS "<fpsname>" C_RST "   Start config loop\n"
-           "    " C_CMD "milk-fps-confstop  " C_FPS "<fpsname>" C_RST "   Stop config loop\n"
-           "    " C_CMD "milk-fps-confstep  " C_FPS "<fpsname>" C_RST "   Single config step\n"
-           "    " C_CMD "milk-fps-runstart  " C_FPS "<fpsname>" C_RST "   Start run loop\n"
-           "    " C_CMD "milk-fps-runstop   " C_FPS "<fpsname>" C_RST "   Stop run loop\n\n");
+    printf(
+        "  Each FPS may have a config loop"
+        " (conf) and a run loop:\n"
+        "    " C_CMD "milk-fps-confstart " C_FPS "<fpsname>" C_RST "   Start config loop\n"
+        "    " C_CMD "milk-fps-confstop  " C_FPS "<fpsname>" C_RST "   Stop config loop\n"
+        "    " C_CMD "milk-fps-confstep  " C_FPS "<fpsname>" C_RST "   Single config step\n"
+        "    " C_CMD "milk-fps-runstart  " C_FPS "<fpsname>" C_RST "   Start run loop\n"
+        "    " C_CMD "milk-fps-runstop   " C_FPS "<fpsname>" C_RST "   Stop run loop\n"
+        "    " C_CMD "milk-fps-run       " C_FPS "<fpsname>" C_RST
+        "   Run loop in the foreground, for a service manager\n"
+        "                                   (systemd: share/milk/systemd/milk-unit@.service)\n\n");
 
     printf(C_HDR "Removing FPS\n" C_RST);
     printf("  " C_CMD "milk-fps-rm " C_FPS "<fpsname>" C_RST "     Remove FPS shared memory\n"

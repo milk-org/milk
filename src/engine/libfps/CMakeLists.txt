@@ -11,6 +11,7 @@ set(SOURCEFILES
     core/fps_globals.c
     core/fps_struct_create.c
     core/fps_ID.c
+    core/fps_unit_state.c
     io/fps_save2disk.c
     io/fps_WriteParameterToDisk.c
     io/fps_loadstream.c
@@ -90,9 +91,9 @@ target_include_directories(
   milk-fpsexec-list
   PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+target_link_libraries(milk-fpsexec-list PRIVATE milkcommon)
 install(TARGETS milk-fpsexec-list DESTINATION bin)
 
-install(PROGRAMS scripts/milk-demopipeline DESTINATION bin)
 install(PROGRAMS scripts/milk-latency-audit DESTINATION bin)
 
 add_executable(milk-fps-help tools/milk-fps-help.c)
@@ -112,22 +113,28 @@ add_executable(
   milk-fps-info
   tools/milk-fps-info.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data.c
+  ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_adj.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_cache.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_cache_fps.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_graph.c
+  ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_index.c
+  ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_pid.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_loops.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_loops_names.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_loops_reg.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_scan.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_scan_streams.c
+  ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_stream_err.c
+  ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_inspect.c
+  ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_holders.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_scan_fps.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_scan_procs.c
-  ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_scan_tmux.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_sort.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_sort_streams.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_sort_procs.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_sort_fps.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_sys.c
+  ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_trace.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_sys_proc.c
   ${CMAKE_SOURCE_DIR}/src/cli/overview/data/overview_data_sys_perf.c)
 target_compile_definitions(milk-fps-info PRIVATE FPS_INFO_CONNECTIONS)
@@ -135,16 +142,13 @@ target_include_directories(
   milk-fps-info
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
           ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
+          ${CMAKE_SOURCE_DIR}/src/engine/libmilkdata
           ${CMAKE_SOURCE_DIR}/src/cli/overview
           ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
           ${CMAKE_SOURCE_DIR}/src/cli/overview/data)
 target_link_libraries(milk-fps-info PUBLIC ${LIBNAME} ImageStreamIO
-                                           milkprocessinfo pthread m rt)
+                                           milkprocessinfo milkdata pthread m rt)
 install(TARGETS milk-fps-info DESTINATION bin)
-
-add_executable(milk-fps-rm tools/milk-fps-rm.c)
-target_link_libraries(milk-fps-rm PUBLIC ${LIBNAME} pthread m)
-install(TARGETS milk-fps-rm DESTINATION bin)
 
 # --- milk-fps-set ---
 

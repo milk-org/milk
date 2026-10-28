@@ -8,7 +8,7 @@
  *
  * Replaces the bash script milk-fpsexec-list.
  * Discovers commands by scanning PATH directories with glob(3).
- * Fetches descriptions via popen("-h1").
+ * Fetches descriptions from each command's -h1 (milkspawn, no shell).
  * Supports regex (default) and fuzzy subsequence filtering.
  */
 
@@ -21,6 +21,8 @@
 #include <sys/stat.h>
 
 #include "milk_help.h"
+#include "milk_os.h"
+#include "milk_spawn.h"
 
 #define FEL_DESC "list installed milk-fpsexec-* standalone compute units"
 
@@ -112,12 +114,23 @@ static void print_help(const char *progname, int mh_color)
  * -------------------------------------------------------------- */
 static int fetch_description(const char *cmd, char *desc, size_t descsz)
 {
-    char cmdline[256];
-    snprintf(cmdline, sizeof(cmdline), "%s -h1 2>/dev/null", cmd);
+    const char *argv[] = { cmd, "-h1", NULL };
+    int         p[2];
 
-    FILE *fp = popen(cmdline, "r");
+    if (milkos_pipe_cloexec(p) != 0)
+    {
+        return 0;
+    }
+    pid_t pid = milkspawn_start(argv, p[1], -1);
+    close(p[1]);
+    FILE *fp = (pid > 0) ? fdopen(p[0], "r") : NULL;
     if (fp == NULL)
     {
+        close(p[0]);
+        if (pid > 0)
+        {
+            milkspawn_wait(pid);
+        }
         return 0;
     }
 
@@ -132,7 +145,8 @@ static int fetch_description(const char *cmd, char *desc, size_t descsz)
         }
         ok = (strlen(desc) > 0);
     }
-    pclose(fp);
+    fclose(fp); // the rest of the output: a broken pipe for the command
+    milkspawn_wait(pid);
     return ok;
 }
 

@@ -28,10 +28,9 @@
 #include "fps_RUNstart.h"
 #include "fps_RUNstop.h"
 
-#include "fps_execFPScmd.h"
-#include "fps_tmux.h"
 #include "fps_processinfo.h"
 #include "fps_processinfo_entries.h"
+#include "fps_unit.h"
 
 /**
  * @brief Command-line driver of every fpsexec; implemented in core/fps_standalone_main.c.
@@ -102,7 +101,8 @@ int fpsexec_main_function(int              argc,
                                            : PROCESSINFO_TRIGGERMODE_IMMEDIATE,               \
                                        -1);                                                   \
     fps_to_processinfo(&(VARfps), VARprocessinfo);                                            \
-    processinfo_loopstart(VARprocessinfo);
+    processinfo_loopstart(VARprocessinfo);                                                    \
+    fps_unit_notify_ready();
 
 /**
  * @brief Standard loop for FPSRUN
@@ -115,7 +115,10 @@ int fpsexec_main_function(int              argc,
         loopOK = processinfo_loopstep(VARprocessinfo);                                     \
         if (!loopOK)                                                                       \
             break;                                                                         \
+        fps_unit_tick(VARprocessinfo->loopcnt);                                            \
         processinfo_waitoninputstream(VARprocessinfo);                                     \
+        if (processinfo_exit_requested(VARprocessinfo))                                    \
+            break;                                                                         \
         if (VARprocessinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)           \
             continue;                                                                      \
         processinfo_exec_start(VARprocessinfo);                                            \

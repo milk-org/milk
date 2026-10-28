@@ -6,15 +6,16 @@
  * @file milk-fps-cmd.c
  * @brief FPS lifecycle command dispatcher.
  *
- * Compiled 5x with different binary names:
+ * Compiled 6x with different binary names:
  *   milk-fps-confstart, milk-fps-confstop, milk-fps-confstep,
- *   milk-fps-runstart, milk-fps-runstop.
+ *   milk-fps-runstart, milk-fps-runstop, and milk-fps-run (for service managers, U17).
  */
 
 #include <libgen.h>
 
 #include "computeunit.h"
 #include "fps_globals.h"
+#include "milk_spawn.h"
 
 /* ---------------------------------------------------------
  * Per-variant descriptions
@@ -42,6 +43,10 @@ static const char *cmd_desc(const char *prog)
     {
         return "stop FPS run loop";
     }
+    if (strcmp(prog, "milk-fps-run") == 0)
+    {
+        return "run a unit in the foreground, for a service manager";
+    }
     return "send lifecycle command to FPS";
 }
 
@@ -55,17 +60,14 @@ static const char *cmd_desc_long(const char *prog)
 {
     if (strcmp(prog, "milk-fps-confstart") == 0)
     {
-        return "Start the configuration loop for a Function Parameter Structure\n"
-               "(FPS). The conf loop reads FPS parameters from shared memory and\n"
-               "applies them to the running compute unit, allowing live parameter\n"
-               "updates without restarting the process. Use -tmux to dispatch\n"
-               "into the FPS tmux 'conf' window so it runs in the background.";
+        return "Start the configuration loop of a unit in the background, and return once\n"
+               "it runs. The conf loop checks the FPS parameters as they change. Exit status:\n"
+               "0 running (or already running), 1 failed (the loop's messages are printed),\n"
+               "124 not running yet after the timeout. Its output goes to the unit's conf.out.";
     }
     if (strcmp(prog, "milk-fps-confstop") == 0)
     {
-        return "Stop the configuration loop for a Function Parameter Structure\n"
-               "(FPS). Sends the confstop signal to the running compute unit.\n"
-               "Use -tmux to dispatch the stop command via the tmux session.";
+        return "Stop the configuration loop of a unit, and return once it is gone.";
     }
     if (strcmp(prog, "milk-fps-confstep") == 0)
     {
@@ -76,18 +78,24 @@ static const char *cmd_desc_long(const char *prog)
     }
     if (strcmp(prog, "milk-fps-runstart") == 0)
     {
-        return "Start the run loop for a Function Parameter Structure (FPS).\n"
-               "The run loop executes the compute function continuously (or\n"
-               "semaphore-triggered), using the current FPS parameters. Use\n"
-               "-tmux to dispatch into the FPS tmux 'run' window so the loop\n"
-               "runs in the background independently of the terminal.";
+        return "Start the run loop of a unit in the background, and return once the loop is\n"
+               "active. The unit's fpsexec runs detached, with the environment captured at\n"
+               "fpsinit; its output goes to the unit's run.out (milk-fps-log). Exit status:\n"
+               "0 running (or already running), 1 failed (the worker's messages are printed),\n"
+               "124 not active yet after the timeout.";
     }
     if (strcmp(prog, "milk-fps-runstop") == 0)
     {
-        return "Stop the run loop for a Function Parameter Structure (FPS).\n"
-               "Sends the runstop signal to the running compute unit, causing\n"
-               "it to exit its main loop cleanly. Use -tmux to dispatch via\n"
-               "the tmux session.";
+        return "Stop the run loop of a unit, and return once the process is gone: the loop\n"
+               "is asked to exit, then signalled (SIGINT, SIGTERM, SIGKILL) if it does not.";
+    }
+    if (strcmp(prog, "milk-fps-run") == 0)
+    {
+        return "Check a unit (an fpsexec's FPS, owned by the caller, not running), then run\n"
+               "its run (or conf) loop in the foreground: the ExecStart= of a systemd service\n"
+               "(share/milk/systemd/milk-unit@.service). Under systemd the unit records its\n"
+               "service, and milk-fps-runstart, milk-fps-runstop and the TUIs then go through\n"
+               "systemctl; --release returns it to milk's own start and stop.";
     }
     return "Send a lifecycle command (confstart/confstop/confstep/runstart/\n"
            "runstop) to a Function Parameter Structure (FPS).";
@@ -103,10 +111,13 @@ static void print_help(const char *progname, int mh_color)
 {
     milk_help_banner(progname, cmd_desc(progname), mh_color);
 
+    int run = (strcmp(progname, "milk-fps-run") == 0);
+
     milk_help_section("Usage", mh_color);
-    printf("  %s%s%s [%s-tmux%s] %s<fpsname>%s\n\n", mh_color ? MH_CMD : "", progname,
-           mh_color ? MH_RST : "", mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
-           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    printf("  %s%s%s [%s%s%s] %s<fpsname>%s%s\n\n", mh_color ? MH_CMD : "", progname,
+           mh_color ? MH_RST : "", mh_color ? MH_OPT : "", run ? "--release" : "--timeout S",
+           mh_color ? MH_RST : "", mh_color ? MH_ARG : "", run ? " [run|conf]" : "",
+           mh_color ? MH_RST : "");
 
     milk_help_section("Description", mh_color);
     printf("  %s\n\n", cmd_desc_long(progname));
@@ -124,21 +135,28 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_RST : "", "Print verbose description and exit");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-hm, --help-mono", mh_color ? MH_RST : "",
            "Full help, no ANSI color");
-    printf("  %s%-25s%s %s\n\n", mh_color ? MH_OPT : "", "-tmux", mh_color ? MH_RST : "",
-           "Dispatch via FPS tmux session (runs in background)");
+    if (run)
+    {
+        printf("  %s%-25s%s %s\n\n", mh_color ? MH_OPT : "", "--release", mh_color ? MH_RST : "",
+               "Forget the systemd services that run the unit");
+    }
+    else
+    {
+        printf("  %s%-25s%s %s\n\n", mh_color ? MH_OPT : "", "--timeout S", mh_color ? MH_RST : "",
+               "Start: readiness timeout (MILK_UNIT_START_TIMEOUT, default 10)");
+    }
 
     milk_help_section("Examples", mh_color);
-    printf("  %s$ %s%s%s %smyfps00%s\n", mh_color ? MH_DIM : "", mh_color ? MH_CMD : "", progname,
+    printf("  %s$ %s%s%s %smyfps00%s\n\n", mh_color ? MH_DIM : "", mh_color ? MH_CMD : "", progname,
            mh_color ? MH_RST : "", mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
-    printf("  %s$ %s%s%s -tmux %smyfps00%s\n\n", mh_color ? MH_DIM : "", mh_color ? MH_CMD : "",
-           progname, mh_color ? MH_RST : "", mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
 
     const char *see_also[] = { "milk-fps-list:list active FPS instances",
+                               "milk-fps-log:show the output of a unit",
                                "milk-fps-info:inspect FPS directory contents",
                                "milk-fps-set:set an FPS parameter value",
                                "milk-fpsCTRL:launch the FPS dashboard TUI",
                                "milk-fpsexec-help:print detailed FPS framework info" };
-    milk_help_see_also(see_also, 5, mh_color);
+    milk_help_see_also(see_also, 6, mh_color);
 }
 
 /* ---------------------------------------------------------
@@ -170,18 +188,36 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    int         use_tmux = 0;
-    const char *fpsname  = NULL;
+    double      timeout = 0.0;
+    const char *fpsname = NULL;
+    const char *role    = NULL;
+    int         release = 0;
+    int         run     = (strcmp(progname, "milk-fps-run") == 0);
 
     for (int ii = 1; ii < argc; ii++)
     {
         if (strcmp(argv[ii], "-tmux") == 0)
         {
-            use_tmux = 1;
+            fprintf(stderr, "Error: -tmux is gone: units start in the background (fpsexec run or "
+                            "--fg keeps one in the foreground)\n");
+            return 2;
+        }
+        else if (strcmp(argv[ii], "--timeout") == 0 && ii + 1 < argc && !run)
+        {
+            timeout = atof(argv[++ii]);
+        }
+        else if (strcmp(argv[ii], "--release") == 0 && run)
+        {
+            release = 1;
         }
         else if (fpsname == NULL)
         {
             fpsname = argv[ii];
+        }
+        else if (run && role == NULL &&
+                 (strcmp(argv[ii], "run") == 0 || strcmp(argv[ii], "conf") == 0))
+        {
+            role = argv[ii];
         }
         else
         {
@@ -198,83 +234,59 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    FPS fps;
-    fps.SMfd = -1;
+    if (run)
+    {
+        return release ? fps_unit_release(fpsname)
+                       : fps_unit_exec_service(fpsname, (role != NULL && strcmp(role, "conf") == 0)
+                                                            ? FPS_UNIT_CONF
+                                                            : FPS_UNIT_RUN);
+    }
+    if (strcmp(progname, "milk-fps-confstart") == 0)
+    {
+        return fps_unit_start(fpsname, FPS_UNIT_CONF, timeout, 0);
+    }
+    if (strcmp(progname, "milk-fps-confstop") == 0)
+    {
+        return fps_unit_stop(fpsname, FPS_UNIT_CONF, 0);
+    }
+    if (strcmp(progname, "milk-fps-runstart") == 0)
+    {
+        return fps_unit_start(fpsname, FPS_UNIT_RUN, timeout, 0);
+    }
+    if (strcmp(progname, "milk-fps-runstop") == 0)
+    {
+        return fps_unit_stop(fpsname, FPS_UNIT_RUN, 0);
+    }
+    if (strcmp(progname, "milk-fps-confstep") != 0)
+    {
+        fprintf(stderr, "Error: unknown command \"%s\".\n", progname);
+        return 1;
+    }
 
-    if (fps_connect(fpsname, &fps, 0) == -1)
+    /* confstep: one step by the unit's own fpsexec, in the foreground */
+    FPS fps  = { 0 };
+    fps.SMfd = -1;
+    if (fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE) == -1)
     {
         fprintf(stderr, "Error: cannot connect to FPS \"%s\".\n", fpsname);
         return 1;
     }
-
-    char *command = NULL;
-    if (strcmp(progname, "milk-fps-confstart") == 0)
-    {
-        command = "confstart";
-    }
-    else if (strcmp(progname, "milk-fps-confstop") == 0)
-    {
-        command = "confstop";
-    }
-    else if (strcmp(progname, "milk-fps-runstart") == 0)
-    {
-        command = "runstart";
-    }
-    else if (strcmp(progname, "milk-fps-runstop") == 0)
-    {
-        command = "runstop";
-    }
-    else if (strcmp(progname, "milk-fps-confstep") == 0)
-    {
-        command = "confstep";
-    }
-
-    if (command == NULL)
-    {
-        fprintf(stderr, "Error: unknown command \"%s\".\n", progname);
-        fps_disconnect(&fps);
-        return 1;
-    }
-
-    if (strlen(fps.md->execfullpath) == 0 || strcmp(fps.md->execfullpath, "unknown") == 0)
+    char exe[sizeof(fps.md->execfullpath)];
+    char target[STRINGMAXLEN_FPS_NAME + 16];
+    snprintf(exe, sizeof(exe), "%s", fps.md->execfullpath);
+    fps_disconnect(&fps);
+    if (exe[0] != '/')
     {
         fprintf(stderr, "Error: execfullpath not set for FPS \"%s\".\n", fpsname);
-        fps_disconnect(&fps);
         return 1;
     }
-
-    if (use_tmux)
+    snprintf(target, sizeof(target), "%s:confstep", fpsname);
+    const char *cargv[] = { exe, target, NULL };
+    int         rc      = milkspawn_run(cargv, STDOUT_FILENO, STDERR_FILENO);
+    if (rc < 0)
     {
-        functionparameter_FPS_tmux_ensure(&fps);
-
-        char extra_args[256];
-        snprintf(extra_args, sizeof(extra_args), " %s:%s", fpsname, command);
-
-        if (functionparameter_FPS_tmux_send_dispatch(fpsname, command, fps.md->execfullpath,
-                                                     extra_args) != 0)
-        {
-            fprintf(stderr,
-                    "Warning: '%s' not recognized for tmux dispatch,"
-                    " running locally...\n",
-                    command);
-            char cmdline[1024];
-            snprintf(cmdline, sizeof(cmdline), "%s %s:%s", fps.md->execfullpath, fpsname, command);
-            printf("Executing locally: %s\n", cmdline);
-            int ret = system(cmdline);
-            fps_disconnect(&fps);
-            return WEXITSTATUS(ret);
-        }
+        fprintf(stderr, "Error: cannot run %s: %s\n", exe, strerror(errno));
+        return 1;
     }
-    else
-    {
-        char cmdline[1024];
-        snprintf(cmdline, sizeof(cmdline), "%s %s:%s", fps.md->execfullpath, fpsname, command);
-        printf("Executing locally: %s\n", cmdline);
-        int ret = system(cmdline);
-        fps_disconnect(&fps);
-        return WEXITSTATUS(ret);
-    }
-
-    fps_disconnect(&fps);
-    return 0;
+    return rc;
 }

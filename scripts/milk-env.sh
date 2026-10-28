@@ -48,6 +48,13 @@ __milk_path_prepend() {
     fi
 }
 
+# Return the filesystem type (e.g. tmpfs, ext4) backing a path
+__milk_shm_fstype() {
+    local target="$1"
+    [ -z "$target" ] && return 0
+    df -P -T "$target" 2>/dev/null | awk 'NR==2 {print $2}'
+}
+
 # Locate repository roots
 __milk_find_fdev_root() {
     if [ -n "$MILK_FDEV_ROOT" ]; then
@@ -153,11 +160,19 @@ __milk_env_status() {
     fi
 
     # Check SHM directory status
-    if [ -d "${MILK_SHM_DIR:-/milk/shm}" ]; then
-        if [ -w "${MILK_SHM_DIR:-/milk/shm}" ]; then
-            echo -e "  SHM Status:      \033[0;32mexists, writable\033[0m"
+    local shmdir="${MILK_SHM_DIR:-/milk/shm}"
+    if [ -d "$shmdir" ]; then
+        local fstype
+        fstype="$(__milk_shm_fstype "$shmdir")"
+        if [ -w "$shmdir" ]; then
+            if [ "$fstype" = "tmpfs" ]; then
+                echo -e "  SHM Status:      \033[0;32mexists, writable (tmpfs)\033[0m"
+            else
+                echo -e "  SHM Status:      \033[1;33mexists, writable (${fstype:-unknown} - WARNING: not mounted as tmpfs!)\033[0m"
+                echo -e "                   \033[0;33mMount as tmpfs: echo \"tmpfs ${shmdir} tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab && sudo mount ${shmdir}\033[0m"
+            fi
         else
-            echo -e "  SHM Status:      \033[0;31mexists, NOT writable\033[0m"
+            echo -e "  SHM Status:      \033[0;31mexists, NOT writable (${fstype:-unknown})\033[0m"
         fi
     else
         echo -e "  SHM Status:      \033[1;33mdoes not exist\033[0m"
@@ -185,6 +200,20 @@ __milk_env_switch_fdev() {
         [ -d "$vdir/python" ] && __milk_path_remove PYTHONPATH "$vdir/python"
     done
 
+    # If already running inside a pane of the current TMUX_TMPDIR server (e.g. spawned by
+    # pytest or nox), preserve the server's inherited paths and tmux socket.
+    if [ -n "$TMUX" ] && [ -n "$TMUX_TMPDIR" ] && [[ "$TMUX" == "$TMUX_TMPDIR/"* ]]; then
+        if [ -n "$MILK_INSTALLDIR" ] && [ "$MILK_INSTALLDIR" != "$_DEV_INSTALLDIR" ]; then
+            _FDEV_INSTALLDIR="$MILK_INSTALLDIR"
+        fi
+        if [ -n "$MILK_ROOT" ] && [ "$MILK_ROOT" != "$_DEV_ROOT" ]; then
+            _FDEV_ROOT="$MILK_ROOT"
+        fi
+        if [ -n "$MILK_SHM_DIR" ] && [ "$MILK_SHM_DIR" != "$_DEV_SHMDIR" ]; then
+            _FDEV_SHMDIR="$MILK_SHM_DIR"
+        fi
+    fi
+
     # 2. Add framework-dev paths
     __milk_path_prepend PATH "$_FDEV_INSTALLDIR/bin"
     __milk_path_prepend LD_LIBRARY_PATH "$_FDEV_INSTALLDIR/lib"
@@ -197,26 +226,63 @@ __milk_env_switch_fdev() {
     export MILK_INSTALLDIR="$_FDEV_INSTALLDIR"
     export MILK_SHM_DIR="$_FDEV_SHMDIR"
     export MILK_PROC_DIR="$_FDEV_SHMDIR"
-    export TMUX_TMPDIR="$_FDEV_SHMDIR"
-    unset TMUX
+    if [ -n "$TMUX" ] && [ -n "$TMUX_TMPDIR" ] && [[ "$TMUX" == "$TMUX_TMPDIR/"* ]]; then
+        export TMUX_TMPDIR
+    else
+        export TMUX_TMPDIR="$_FDEV_SHMDIR"
+        unset TMUX
+    fi
     export PATH
     export LD_LIBRARY_PATH
     export PKG_CONFIG_PATH
     export PYTHONPATH
 
-    # Ensure shared memory directory exists and check permissions
+    # Ensure shared memory directory exists and is mounted as tmpfs
     if [ ! -d "$MILK_SHM_DIR" ]; then
-        mkdir -p "$MILK_SHM_DIR" 2>/dev/null || true
-        if [ ! -d "$MILK_SHM_DIR" ]; then
-            echo -e "\033[1;31m[WARNING] Shared memory directory '${MILK_SHM_DIR}' does not exist and cannot be created without root.\033[0m"
-            echo -e "\033[1;33mPlease create it once on the machine: sudo mkdir -m 1777 ${MILK_SHM_DIR}\033[0m"
-            if [ -d "/milk/shm" ]; then
-                echo -e "\033[0;33mFalling back temporarily to /milk/shm/fdev...\033[0m"
-                mkdir -p /milk/shm/fdev 2>/dev/null || true
-                export MILK_SHM_DIR="/milk/shm/fdev"
-                export MILK_PROC_DIR="/milk/shm/fdev"
+        local parent_dir
+        parent_dir="$(dirname "$MILK_SHM_DIR")"
+        # Only auto-create subdir if the parent is already on tmpfs (e.g. /milk/shm/fdev or /dev/shm/fdev)
+        if [ -d "$parent_dir" ] && [ "$(__milk_shm_fstype "$parent_dir")" = "tmpfs" ]; then
+            mkdir -p "$MILK_SHM_DIR" 2>/dev/null || true
+        fi
+    fi
+
+    local shm_fstype=""
+    if [ -d "$MILK_SHM_DIR" ]; then
+        shm_fstype="$(__milk_shm_fstype "$MILK_SHM_DIR")"
+    fi
+
+    if [ ! -d "$MILK_SHM_DIR" ] || [ ! -w "$MILK_SHM_DIR" ]; then
+        echo -e "\033[1;31m[WARNING] Shared memory directory '${MILK_SHM_DIR}' is missing or not writable.\033[0m"
+        echo -e "\033[1;33mPlease create and mount it as tmpfs once on this machine:\033[0m"
+        echo -e "  sudo mkdir -p ${MILK_SHM_DIR}"
+        echo -e "  echo \"tmpfs ${MILK_SHM_DIR} tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab"
+        echo -e "  sudo mount ${MILK_SHM_DIR}"
+        if [ -d "/milk/shm" ] && [ -w "/milk/shm" ]; then
+            echo -e "\033[0;33mFalling back temporarily to /milk/shm/fdev...\033[0m"
+            mkdir -p /milk/shm/fdev 2>/dev/null || true
+            export MILK_SHM_DIR="/milk/shm/fdev"
+            export MILK_PROC_DIR="/milk/shm/fdev"
+            if [ -z "$TMUX" ]; then
                 export TMUX_TMPDIR="/milk/shm/fdev"
             fi
+            shm_fstype="$(__milk_shm_fstype "$MILK_SHM_DIR")"
+        fi
+    elif [ -n "$shm_fstype" ] && [ "$shm_fstype" != "tmpfs" ]; then
+        echo -e "\033[1;31m[WARNING] '${MILK_SHM_DIR}' is on '${shm_fstype}', NOT a tmpfs RAM disk!\033[0m"
+        echo -e "\033[1;33mPlease mount it as tmpfs once on this machine:\033[0m"
+        echo -e "  rm -rf ${MILK_SHM_DIR}/* ${MILK_SHM_DIR}/.[!.]* 2>/dev/null"
+        echo -e "  echo \"tmpfs ${MILK_SHM_DIR} tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab"
+        echo -e "  sudo mount ${MILK_SHM_DIR}"
+        if [ -d "/milk/shm" ] && [ -w "/milk/shm" ] && [ "$(__milk_shm_fstype "/milk/shm")" = "tmpfs" ]; then
+            echo -e "\033[0;33mFalling back temporarily to /milk/shm/fdev (tmpfs)...\033[0m"
+            mkdir -p /milk/shm/fdev 2>/dev/null || true
+            export MILK_SHM_DIR="/milk/shm/fdev"
+            export MILK_PROC_DIR="/milk/shm/fdev"
+            if [ -z "$TMUX" ]; then
+                export TMUX_TMPDIR="/milk/shm/fdev"
+            fi
+            shm_fstype="tmpfs"
         fi
     fi
 
@@ -243,7 +309,7 @@ __milk_env_switch_fdev() {
     fi
 
     echo -e "\033[1;32mSwitched to \033[1;31mframework-dev\033[1;32m environment.\033[0m"
-    echo -e "  MILK_SHM_DIR:    $MILK_SHM_DIR"
+    echo -e "  MILK_SHM_DIR:    $MILK_SHM_DIR (${shm_fstype:-unknown})"
     echo -e "  MILK_INSTALLDIR: $MILK_INSTALLDIR"
     echo -e "  MILK_ROOT:       $MILK_ROOT"
     echo -e "  TMUX_TMPDIR:     $TMUX_TMPDIR (fenced)"
@@ -313,8 +379,10 @@ __milk_env_switch_dev() {
         PS1="${PS1/"$_FDEV_PROMPT_TAG"/}"
     done
 
+    local dev_shm_fstype
+    dev_shm_fstype="$(__milk_shm_fstype "$MILK_SHM_DIR")"
     echo -e "\033[1;32mSwitched to \033[1;32mdev\033[1;32m environment.\033[0m"
-    echo -e "  MILK_SHM_DIR:    $MILK_SHM_DIR"
+    echo -e "  MILK_SHM_DIR:    $MILK_SHM_DIR (${dev_shm_fstype:-unknown})"
     echo -e "  MILK_INSTALLDIR: $MILK_INSTALLDIR"
     echo -e "  MILK_ROOT:       $MILK_ROOT"
     echo -e "  TMUX_TMPDIR:     unset (system default, visible to tmux ls)"
@@ -349,6 +417,7 @@ case "$1" in
 esac
 
 # Clean up helper function definitions from the interactive environment
+unset -f __milk_path_remove __milk_path_prepend __milk_shm_fstype
 unset -f __milk_find_fdev_root __milk_find_dev_root
 unset -f __milk_find_fdev_installdir __milk_find_dev_installdir
 unset -f __milk_env_status __milk_env_switch_fdev __milk_env_switch_dev

@@ -29,7 +29,7 @@ typedef long imageID;
 #define STRINGMAXLEN_PROCESSINFO_NAME 80
 #define STRINGMAXLEN_PROCESSINFO_SRCFUNC 200
 #define STRINGMAXLEN_PROCESSINFO_SRCFILE 200
-#define STRINGMAXLEN_PROCESSINFO_TMUXNAME 100
+#define STRINGMAXLEN_PROCESSINFO_UNITNAME 100
 #define STRINGMAXLEN_PROCESSINFO_STATUSMSG 200
 #define STRINGMAXLEN_PROCESSINFO_LOGFILENAME 250
 #define STRINGMAXLEN_PROCESSINFO_DESCRIPTION 200
@@ -106,9 +106,8 @@ typedef struct PROCESSINFO
     // 2: increment single step (will go back to 1)
     // 3: exit loop
 
-    char tmuxname[STRINGMAXLEN_PROCESSINFO_TMUXNAME];
-    // name of tmux session in which process is running, or
-    // "NULL"
+    char unitname[STRINGMAXLEN_PROCESSINFO_UNITNAME];
+    // unit the process runs ($MILK_UNIT_NAME), else the processinfo name
 
     int loopstat;
     // 0: INIT       Initialization before loop

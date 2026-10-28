@@ -23,6 +23,7 @@
 
 /* Global core data instance */
 MILK_DATA milk_data;
+uint64_t  milk_table_gen = 1;
 
 
 /* Buffer for variable reallocation */

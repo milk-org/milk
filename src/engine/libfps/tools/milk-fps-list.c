@@ -8,7 +8,6 @@
  */
 
 #include <getopt.h>
-#include <signal.h>
 #include <regex.h>
 
 #include "fps_globals.h"
@@ -29,9 +28,29 @@
 #define FL_DESC "list Function Parameter Structures (FPS) in shared memory"
 #define FL_DESC_LONG                                                      \
     "Scan /dev/shm for active FPS instances and print a summary table.\n" \
-    "Each row shows FPS name, executable, CLI key, conf/run PIDs,\n"      \
-    "tmux status, and short description.\n"                               \
+    "Each row shows FPS name, executable, CLI key, the state and PID\n"   \
+    "of its conf and run processes, and short description.\n"             \
     "An optional regex pattern filters which FPS names are shown."
+
+/* "<state> <pid>" of @role, the pid while alive; failed in red */
+static void role_str(FPS *fps, FPS_UNIT_ROLE role, char *buf, size_t size)
+{
+    FPS_UNIT_STATUS st;
+    char            pid[16] = "";
+
+    fps_unit_status_fps(fps, role, &st, FPS_UNIT_REPAIR);
+    int alive = fps_unit_state_alive(st.state);
+    if (alive)
+    {
+        snprintf(pid, sizeof(pid), "%d", (int) st.pid);
+    }
+    snprintf(buf, size, "%s%-8s %7s%s",
+             alive                           ? COLORCOMMAND
+             : (st.state == FPS_UNIT_FAILED) ? C_ERR
+                                             : "",
+             fps_unit_state_name(st.state), pid,
+             (alive || st.state == FPS_UNIT_FAILED) ? COLORRESET : "");
+}
 
 /**
  * @brief Print help message for milk-fps-list.
@@ -173,8 +192,8 @@ int main(int argc, char *argv[])
     // mode 0: scan all
     functionparameter_scan_fps(0, "_ALL", fpsarray, keywnode, &NBkwn, &NBfps, &NBpindex, verbose);
 
-    printf(C_TITLE "%-25s %-30s %-20s %s %s %s   %s" C_RST "\n", "FPS Name", "Executable",
-           "Cmd Key", "   CONF", "    RUN", "P", "Description");
+    printf(C_TITLE "%-25s %-30s %-20s %-16s %-16s %s   %s" C_RST "\n", "FPS Name", "Executable",
+           "Cmd Key", "CONF", "RUN", "P", "Description");
 
     printf(C_DIM);
     for (int ii = 0; ii < 116; ii++)
@@ -194,11 +213,10 @@ int main(int argc, char *argv[])
                 continue;
             }
 
-            char status_str[256]  = "";
-            char conf_pid_str[32] = "";
-            char run_pid_str[32]  = "";
-            char tmux_str[32]     = "";
-            char proc_str[32]     = "";
+            char status_str[256] = "";
+            char conf_str[64]    = "";
+            char run_str[64]     = "";
+            char proc_str[32]    = "";
 
             // Extract executable basename
 
@@ -212,40 +230,8 @@ int main(int argc, char *argv[])
                 exec_basename = fpsarray[ii].md->execfullpath;
             }
 
-            // Check CONF process
-            pid_t confpid = fpsarray[ii].md->confpid;
-            if (confpid > 0 && kill(confpid, 0) == 0)
-            {
-                snprintf(conf_pid_str, 32, "%s%7d%s", COLORCOMMAND, (int) confpid, COLORRESET);
-            }
-            else
-            {
-                snprintf(conf_pid_str, 32, "%7d", (int) confpid);
-            }
-
-            // Check RUN process
-            pid_t runpid = fpsarray[ii].md->runpid;
-            if (runpid > 0 && kill(runpid, 0) == 0)
-            {
-                snprintf(run_pid_str, 32, "%s%7d%s", COLORCOMMAND, (int) runpid, COLORRESET);
-            }
-            else
-            {
-                snprintf(run_pid_str, 32, "%7d", (int) runpid);
-            }
-
-            // Check tmux session
-            char tmux_cmd[256];
-            snprintf(tmux_cmd, sizeof(tmux_cmd), "tmux has-session -t %s 2> /dev/null",
-                     fpsarray[ii].md->name);
-            if (system(tmux_cmd) == 0)
-            {
-                snprintf(tmux_str, 32, "[%stmu%s]", COLORCOMMAND, COLORRESET);
-            }
-            else
-            {
-                snprintf(tmux_str, 32, "[---]");
-            }
+            role_str(&fpsarray[ii], FPS_UNIT_CONF, conf_str, sizeof(conf_str));
+            role_str(&fpsarray[ii], FPS_UNIT_RUN, run_str, sizeof(run_str));
 
             // Check processinfo
             if (fpsarray[ii].parray != NULL &&
@@ -258,8 +244,7 @@ int main(int argc, char *argv[])
                 snprintf(proc_str, 32, "%s-%s", C_DIM, C_RST);
             }
 
-            snprintf(status_str, 256, "%s %s %s  %s ", conf_pid_str, run_pid_str, tmux_str,
-                     proc_str);
+            snprintf(status_str, 256, "%s %s %s ", conf_str, run_str, proc_str);
 
 
             if (show_exec)

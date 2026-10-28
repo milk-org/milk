@@ -43,6 +43,7 @@ int function_parameter_printlist(FPS_PARAM *funcparamarray, long NBparamMAX);
 #include "fps_save2disk.h"
 #include "fps_scan.h"
 #include "fps_shmdirname.h"
+#include "fps_unit_state.h"
 #include "fps_WriteParameterToDisk.h"
 
 #include "fps_local_store.h"
