@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import pytest
-import time, os
 
 from pyMilk.interfacing.fps import FPS
 from pyMilk.interfacing.pinfo import ProcessInfo
 
 from milk.compute_unit import ComputeUnit
 from tests.conftestaux.polling import poll_until_or_fail
-from .compute_unit_fixtures import fixt_fpsinit_factory
+from tests.conftestaux.compute_unit import fixt_fpsinit_factory
 
 
 class FPSTestCU(ComputeUnit):

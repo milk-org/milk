@@ -13,6 +13,7 @@ out_name = 'middle'
 procinfo.enabled = true
 procinfo.triggersname = '{compute_units.delay0.fps.in_name}'
 procinfo.triggermode = 3
+procinfo.triggertimeout = 0.1
 
 [compute_units.delay1]
 exec = 'milk-fpsexec-mem-streamdelay'
@@ -25,6 +26,7 @@ out_name = 'output'
 procinfo.enabled = true
 procinfo.triggersname = '{compute_units.delay0.fps.out_name}'
 procinfo.triggermode = 3
+procinfo.triggertimeout = 0.1
 
 [systemlinkage.loopback]
 input = 'source_point'

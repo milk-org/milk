@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os, time
-
 import pytest
 
 pmp = pytest.mark.parametrize
@@ -12,6 +10,9 @@ import numpy as np
 
 from milk.compute_unit import ComputeUnit
 
+from tests.conftestaux.compute_unit import fixt_fpsinit_factory
+from tests.conftestaux.polling import poll_until_or_fail
+
 
 class StreamDelayComputeUnit(ComputeUnit):
 
@@ -19,56 +20,7 @@ class StreamDelayComputeUnit(ComputeUnit):
         super().__init__("milk-fpsexec-mem-streamdelay", fpsname)
 
 
-def func_fpsinit(pinfo: bool = True) -> StreamDelayComputeUnit:
-    # As fixture
-    compu = StreamDelayComputeUnit()
-    assert compu.fps is None
-
-    compu.fpsinit(pinfo)
-    assert compu.fps
-
-    if pinfo:
-        assert compu.procinfo
-        assert "procinfo.enabled" in compu.fps
-        assert compu.fps["procinfo.enabled"]
-    else:
-        assert compu.procinfo is None
-        assert not "procinfo.enabled" in compu.fps
-
-    # Configure
-    # default imin, imout, delaysec = 0.1 ms, naive = OFF, timebuffsize = 1000
-
-    return compu
-
-
-def tp(call):
-    # Call the callable and silently catch any exception - good for fixturized cleanups
-    try:
-        call()
-    except:
-        pass
-
-
-def func_compute_unit_cleanup(s: ComputeUnit):
-    tp(s.runstop)
-    tp(s.confstop)
-    if s.fps:
-        tp(s.fps.tmux_stop)
-        tp(s.fps.destroy)
-
-
-@pytest.fixture
-def fixt_fpsinit_pinfo():
-    s = func_fpsinit(True)
-    yield s
-    func_compute_unit_cleanup(s)
-
-
-@pytest.fixture
-def fixt_fpsinit_nopinfo():
-    s = func_fpsinit(False)
-    yield s
-    func_compute_unit_cleanup(s)
+fixt_fpsinit_pinfo = fixt_fpsinit_factory(StreamDelayComputeUnit, pinfo=True)
 
 
 # ADD AFTER THIS LINE
@@ -82,21 +34,22 @@ def test_fps_lifecycle(fixt_fpsinit_pinfo, tmux: bool = False):
     fps["naive_mode"] = True
     fps["procinfo.loopcntMax"] = -1
     fps["procinfo.triggermode"] = 3
+    # runstop is only noticed when the semaphore wait times out (default 2 s).
+    fps["procinfo.triggertimeout"] = 0.1
     fps["procinfo.triggersname"] = "imin"
 
     compu.confstart(tmux=tmux)
-    time.sleep(0.1)
-    assert fps.conf_isrunning()
+    poll_until_or_fail(fps.conf_isrunning, t=5.0, msg="conf not running")
 
     arr = np.random.randn(30, 40)
     in_shm = SHM("imin", arr * 0)
 
     compu.runstart(tmux=tmux)
-    time.sleep(1.0)
-    assert fps.run_isrunning()  # Wait this should NOT have asserted.
+    poll_until_or_fail(fps.run_isrunning, t=5.0, msg="run not running")
 
     out_shm = SHM("imout")
 
+    # Negative window: no output before any input.
     assert out_shm.get_data(True, timeout=0.1, return_none_on_timeout=True) is None
     in_shm.set_data(arr)
     arr2 = out_shm.get_data(True)
@@ -113,11 +66,11 @@ def test_loops(fixt_fpsinit_pinfo, loopmode: int, tmux: bool):
     compu.fps["naive_mode"] = True
     compu.fps["procinfo.triggersname"] = "imin"
     compu.fps["in_name"] = "imin"
+    compu.fps["procinfo.triggertimeout"] = 0.1
     # This should be enough and loops should autoconf the semaphore trigger freerun
 
     compu.confstart()
-    time.sleep(0.1)
-    assert compu.fps.conf_isrunning()
+    poll_until_or_fail(compu.fps.conf_isrunning, t=5.0, msg="conf not running")
 
     arr = np.random.randn(30, 40)
     in_shm = SHM("imin", arr * 0)
@@ -131,28 +84,38 @@ def test_loops(fixt_fpsinit_pinfo, loopmode: int, tmux: bool):
     else:
         raise ValueError(f"loopmode [0,1,2] - got {loopmode}")
 
-    time.sleep(1.0)
-
-    in_shm.set_data(in_shm.get_data())
-    time.sleep(0.1)
-    in_shm.set_data(in_shm.get_data())
+    poll_until_or_fail(compu.fps.run_isrunning, t=5.0, msg="run not running")
     out_shm = SHM("imout")
 
+    def primed() -> bool:
+        # Triggers posted before the run loop is ready may be flushed: repost until one lands.
+        if out_shm.md.cnt0 >= 1:
+            return True
+        in_shm.set_data(arr)
+        return False
+
+    poll_until_or_fail(primed, t=5.0, interval=0.01, msg="no output cnt0 >= 1")
+
     if loopmode == 0:
-        for _ in range(100):
-            print(compu.fps.run_isrunning())
-            time.sleep(0.01)
-        assert not compu.fps.run_isrunning()
+        poll_until_or_fail(
+            lambda: not compu.fps.run_isrunning(), t=5.0, msg="run still running"
+        )
         assert compu.fps["procinfo.loopcntMax"] == 1
         assert out_shm.md.cnt0 == 1
     elif loopmode == 1:
+        c = out_shm.md.cnt0
+        in_shm.set_data(arr)
+        poll_until_or_fail(
+            lambda: out_shm.md.cnt0 == c + 1, t=5.0, msg=f"cnt0 never reached {c + 1}"
+        )
         assert compu.fps.run_isrunning()
         assert compu.fps["procinfo.loopcntMax"] == -1
-        assert out_shm.md.cnt0 == 2
     elif loopmode == 2:
+        poll_until_or_fail(
+            lambda: out_shm.md.cnt0 >= 50, t=5.0, msg="cnt0 never reached 50"
+        )
         assert compu.fps.run_isrunning()
         assert compu.fps["procinfo.loopcntMax"] == -1
-        assert out_shm.md.cnt0 >= 50
 
     out_shm.destroy()
 

@@ -62,4 +62,4 @@ instead of priming. Don't spend more than a quick look on finding out.
 
 | | Before | After |
 |--|--|--|
-| durations total (s) | | |
+| durations total (s) | 17.59 | 7.37 |

@@ -4,6 +4,8 @@ import pytest
 import os
 from milk.compute_unit import ComputeUnit
 
+from tests.conftestaux.polling import poll_until_or_fail
+
 
 def func_fpsinit(compu_cls: type[ComputeUnit], pinfo: bool = True) -> ComputeUnit:
     # As fixture
@@ -34,7 +36,12 @@ def tp(callable):
         pass
 
 
-import time
+def pid_is_dead(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return True
+    return False
 
 
 def func_compute_unit_cleanup(compu: ComputeUnit):
@@ -42,13 +49,11 @@ def func_compute_unit_cleanup(compu: ComputeUnit):
     tp(compu.confstop)
     if compu.fps:
         tp(compu.fps.tmux_stop)
-        # Need to wait until not RUNisrunning to get there...
-        compu.fps.run_stop(timeoutsync=5.0)
-        time.sleep(0.1)
-        with pytest.raises(ProcessLookupError):
-            os.kill(compu.fps.fps.md().runpid, 0)
-        with pytest.raises(ProcessLookupError):
-            os.kill(compu.fps.fps.md().confpid, 0)
+        md = compu.fps.fps.md()
+        for pid in (md.runpid, md.confpid):
+            if pid == 0:  # never started
+                continue
+            poll_until_or_fail(lambda: pid_is_dead(pid), t=1.0, msg=f"pid {pid} alive")
 
         tp(compu.fps.destroy)
 
