@@ -88,13 +88,18 @@ errno_t linopt_imtools_vec_to_2DImage(const char *IDvec_name,
 
     IMGID imgout       = imgid_make_from_name_2D(ID_name, xsize, ysize);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
+    const float *restrict vecptr = imgvec.im->array.F;
+    const float *restrict mptr   = imgpixm.im->array.F;
+    const int64_t *restrict pixi = imgpixi.im->array.SI64;
+    float *restrict outptr       = imgout.im->array.F;
+    int nth                      = milk_omp_team_size((uint64_t) NBpix, 262144);
+
+#pragma omp parallel for num_threads(nth) if (nth > 1)
     for (long k = 0; k < NBpix; k++)
     {
-        imgout.im->array.F[imgpixi.im->array.SI64[k]] =
-            imgvec.im->array.F[k] / imgpixm.im->array.F[k];
+        outptr[pixi[k]] = vecptr[k] / mptr[k];
     }
 
     if (outID != NULL)

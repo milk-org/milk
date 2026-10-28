@@ -35,7 +35,10 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 
     snprintf(timestring, 200, "%02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min,
              tstoptm->tm_sec, (int) (0.000001 * (tstop.tv_nsec)));
-    processinfo->loopstat = 3; // clean exit
+    processinfo->loopstat =
+        (SignalNumber == SIGINT || SignalNumber == SIGTERM || SignalNumber == SIGHUP)
+            ? PROCESSINFO_LOOPSTAT_STOP
+            : PROCESSINFO_LOOPSTAT_CRASHED;
 
     char SIGstr[12];
     int  SIGflag = 0;

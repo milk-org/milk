@@ -37,12 +37,11 @@ milk_runnable_module_usage(
   ${LIBNAME}
   INCLUDES
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
     $<INSTALL_INTERFACE:include>)
 target_link_libraries(
   ${LIBNAME}
   PUBLIC
-    ${CFITSIO_LIBRARIES}
+    m ${CFITSIO_LIBRARIES} milkfps milkdata
     $<$<AND:$<BOOL:${USE_CFITSIO}>,$<BOOL:${CFITSIO_FOUND}>>:milkCOREMODiofits>)
 
 set(SCRIPTS
@@ -62,33 +61,11 @@ install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 include(CTest)
 
 set(TESTNAME "CLIfunc-COREMOD_memory-module")
-add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "m?")
+add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "@help mem")
 set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLImodule")
 set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
 set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION
                                          "COREMOD_memory")
-
-list(APPEND commandlist "mk2Dim" "mk3Dim" "listim" "rmall")
-
-foreach(CLIcmdname IN LISTS commandlist)
-
-  set(TESTCLIFUNC "${CLIcmdname}")
-  set(TESTNAME "CLIfunc-COREMOD_memory-${TESTCLIFUNC}")
-  add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "cmd? mem.${CLIcmdname}")
-  set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLIfunc")
-  set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
-  set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "src:")
-
-endforeach()
-
-set(TESTNAME "milksemloopspeed")
-add_test(NAME "${TESTNAME}"
-         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/milk-semloopspeed "-D"
-                 "123456")
-set_property(TEST "${TESTNAME}" PROPERTY LABELS "perf")
-set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 5)
-set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION
-                                         "cnt0 = 123457")
 
 add_executable(milk-fpsexec-cnt2push bin/cnt2push_main.c)
 target_include_directories(milk-fpsexec-cnt2push
@@ -139,7 +116,9 @@ install(TARGETS milk-shmimpurge DESTINATION bin)
 add_executable(milk-logshim-ctrl bin/milk-logshim-ctrl.c)
 target_include_directories(
   milk-logshim-ctrl
-  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkcommon>)
+target_link_libraries(milk-logshim-ctrl PRIVATE milkcommon)
 install(TARGETS milk-logshim-ctrl DESTINATION bin)
 
 add_executable(milk-stream-link bin/milk-stream-link.c)

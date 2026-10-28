@@ -8,6 +8,7 @@
  */
 
 #include "fps.h"
+#include "milk_path.h"
 
 
 /** @brief get parameter file name
@@ -22,7 +23,7 @@ int functionparameter_GetFileName(FPS *fps, FPS_PARAM *fparam, char *outfname, c
     // Create FPS directory
     {
         WRITE_DIRNAME(ffname, "%s/%s/fps/", fps->md->workdir, fps->md->datadir);
-        EXECUTE_SYSTEM_COMMAND_NOCHECK("mkdir -p %s", ffname);
+        milkpath_mkdir_p(ffname, 0755);
     }
 
     // Build up directory name, construct final filename, and copy to output buffer

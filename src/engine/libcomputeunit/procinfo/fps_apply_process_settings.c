@@ -6,59 +6,23 @@
  * @file    fps_apply_process_settings.c
  * @brief   Apply FPS process settings to the current process
  *
- * When a V2 standalone executable runs directly (bypassing
- * tmux dispatch), the cset/taskset/OMP_NUM_THREADS settings
- * stored in FPS shared memory are not applied.  This module
- * reads those parameters and applies them programmatically:
+ * Reads the placement settings stored in the FPS and applies them to the running process:
  *
- *   1. OMP_NUM_THREADS  — setenv() before compute_fn()
- *   2. taskset (CPU affinity) — COREMOD_TOOLS_mvProcTset()
- *   3. cset (cgroup)          — COREMOD_TOOLS_mvProcCPUset()
- *   4. RT priority            — COREMOD_TOOLS_mvProcRTPrio()
+ *   1. taskset (CPU affinity) — milk-makecsetandrt
+ *   2. cset (cgroup)          — milk-makecsetandrt
+ *   3. RT priority            — milk-makecsetandrt
+ *
+ * OMP_NUM_THREADS (.procinfo.NBthread) is not set here: libgomp reads it when it loads, so a
+ * unit's starter puts it in the worker's environment instead (fps_unit_start()). Under systemd the
+ * cpuset move is skipped: on cgroup v2 it takes the process out of its service (U17).
  */
 
-#include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "milk_rt.h"
 #include "fps_apply_process_settings.h"
-
-
-/**
- * apply_omp_num_threads - Set OMP_NUM_THREADS from FPS
- * @fps: Connected FPS
- */
-static void apply_omp_num_threads(FPS *fps)
-{
-    long pindex = functionparameter_GetParamIndex(fps, ".procinfo.NBthread");
-    if (pindex < 0)
-    {
-        return;
-    }
-
-    long nbthread = functionparameter_GetParamValue_INT64(fps, ".procinfo.NBthread");
-    if (nbthread <= 0)
-    {
-        return;
-    }
-
-    char buf[32];
-    snprintf(buf, sizeof(buf), "%ld", nbthread);
-
-    if (setenv("OMP_NUM_THREADS", buf, 1) == 0)
-    {
-        printf("  OMP_NUM_THREADS = %s\n", buf);
-    }
-    else
-    {
-        fprintf(stderr,
-                "WARNING: setenv OMP_NUM_THREADS"
-                " failed: %s\n",
-                strerror(errno));
-    }
-}
+#include "fps_unit.h"
 
 
 /**
@@ -98,6 +62,17 @@ static void apply_cset(FPS *fps)
     const char *cset_name = fps->parray[pindex].val.string[0];
     if (cset_name[0] == '\0' || strcmp(cset_name, "system") == 0)
     {
+        return;
+    }
+    char unit[128];
+    int  user;
+    if (fps_unit_systemd_service(unit, sizeof(unit), &user))
+    {
+        fprintf(
+            stderr,
+            "warning: .procinfo.cset %s ignored: %s runs this process, and the move would take it "
+            "out of the service (place it with AllowedCPUs= in the unit)\n",
+            cset_name, unit);
         return;
     }
 
@@ -140,7 +115,6 @@ errno_t fps_apply_process_settings(FPS *fps)
         return RETURN_FAILURE;
     }
 
-    apply_omp_num_threads(fps);
     apply_cset(fps);
     apply_taskset(fps);
     apply_rt_priority(fps);

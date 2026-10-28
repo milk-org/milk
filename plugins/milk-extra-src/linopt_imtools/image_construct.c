@@ -11,6 +11,7 @@
 #include "milk_runnable.h"
 #include "linopt_imtools.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "milk_blas_lapacke.h"
 
 
 /* ================================================================
@@ -68,35 +69,21 @@ errno_t linopt_imtools_image_construct(const char *IDmodes_name,
     IMGID imgout         = imgid_make_from_name_2D(ID_name, xsize, ysize);
     imgout.mdt->shared   = 0;
     imgout.mdt->datatype = datatype;
-    imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     IMGID imgcoeff = imgid_make_from_name(IDcoeff_name);
     resolveIMGID(&imgcoeff, ERRMODE_ABORT, dcimg, dcnimg);
 
     if (datatype == _DATATYPE_FLOAT)
     {
-        memset(imgout.im->array.F, 0, sizeof(float) * imgout.md->nelement);
-        for (uint32_t kk = 0; kk < zsize; kk++)
-        {
-            for (uint64_t ii = 0; ii < sizexy; ii++)
-            {
-                imgout.im->array.F[ii] +=
-                    imgcoeff.im->array.F[kk] * imgmodes.im->array.F[kk * sizexy + ii];
-            }
-        }
+        cblas_sgemv(CblasRowMajor, CblasTrans, (int) zsize, (int) sizexy, 1.0f,
+                    imgmodes.im->array.F, (int) sizexy, imgcoeff.im->array.F, 1, 0.0f,
+                    imgout.im->array.F, 1);
     }
     else
     {
-        memset(imgout.im->array.D, 0, sizeof(double) * imgout.md->nelement);
-        for (uint32_t kk = 0; kk < zsize; kk++)
-        {
-            for (uint64_t ii = 0; ii < sizexy; ii++)
-            {
-                imgout.im->array.D[ii] +=
-                    imgcoeff.im->array.D[kk] * imgmodes.im->array.D[kk * sizexy + ii];
-            }
-        }
+        cblas_dgemv(CblasRowMajor, CblasTrans, (int) zsize, (int) sizexy, 1.0, imgmodes.im->array.D,
+                    (int) sizexy, imgcoeff.im->array.D, 1, 0.0, imgout.im->array.D, 1);
     }
 
     if (outID != NULL)

@@ -29,7 +29,7 @@
 static char     inimname[FUNCTION_PARAMETER_STRMAXLEN]  = "imin";
 static char     outimname[FUNCTION_PARAMETER_STRMAXLEN] = "imout";
 static float    delaysec                                = 0.001;
-static uint8_t  naive_mode                              = 0;
+static int32_t  naive_mode                              = 0; // ON/OFF values are copied as int32
 static uint64_t timebuffsize                            = 1000;
 static int32_t  avemode                                 = 0;
 static uint64_t avedtns                                 = 0;

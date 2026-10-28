@@ -109,8 +109,7 @@ imageID FFT_do1dfft(const char *__restrict in_name, const char *__restrict out_n
     imgout.mdt->datatype = datatype;
     imgout.mdt->shared   = dcshareddft;
     imgout.mdt->NBkw     = NB_KEYWNODE_MAX;
-    imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     if (naxis == 1)
     {
@@ -325,8 +324,7 @@ imageID do1drfft(const char *__restrict in_name, const char *__restrict out_name
     imgout.mdt->datatype = outtype;
     imgout.mdt->shared   = dcshareddft;
     imgout.mdt->NBkw     = NB_KEYWNODE_MAX;
-    imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     if (naxis == 2)
     {

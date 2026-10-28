@@ -33,8 +33,10 @@
 #    include <readline/readline.h>
 #endif
 
+#include "milk_lexicon.h"
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
+#include "cli_calc_parser.h"
 #include "treesitter/cli_treesitter.h"
 
 
@@ -59,29 +61,10 @@ int cli_is_command(const char *word)
         }
     }
 
-    /* Built-in scripting keywords, intercept
-     * commands, and shell builtins.
-     * Covers: is_internal_cmd keywords,
-     * cli_script_intercept dispatch chain,
-     * and cli_handle_shell_builtins. */
-    static const char *builtins[] = {
-        /* Flow control keywords */
-        "if", "elif", "else", "fi", "for", "while", "until", "do", "done", "case", "esac", "select",
-        "function", ".", "source", "break", "continue", "return", "true", "false",
-        /* Script intercept commands */
-        "exit", "shift", "assert", "assigncheck", "dpdigits", "set", "export", "readonly", "local",
-        "declare", "let", "eval", "type", "command", "trap", "watch", "time", "timeout", "wait",
-        "printf", "echo", "getopts", "mapfile", "alias", "unalias", "basename", "dirname", "pushd",
-        "popd", "dirs", "seq", "[[",
-        /* Process and FPS commands */
-        "procctl", "procwait", "procstat", "waitfor_stream", "waitfor_fps",
-        /* Shell builtins */
-        "on_update", "on_fpschange", "include_once", "savescript", "savehistory", NULL
-    };
-
-    for (int k = 0; builtins[k] != NULL; k++)
+    /* bash words (milk_lexicon.h) */
+    for (int k = 0; milk_lexicon_bash_words()[k] != NULL; k++)
     {
-        if (strcmp(word, builtins[k]) == 0)
+        if (strcmp(word, milk_lexicon_bash_words()[k]) == 0)
         {
             return 1;
         }
@@ -115,7 +98,7 @@ void cli_highlight_redisplay(void)
     }
 
 #    ifdef USE_TREESITTER
-    if (data.syntax_highlight >= 2)
+    if (data.syntax_highlight >= 2 && !cli_calc_mode)
     {
         // Tree-sitter performs its own rendering
         // including cursor save/restore
@@ -190,7 +173,14 @@ void cli_highlight_redisplay(void)
 
     /* Pick color */
     const char *col;
-    if (cli_is_command(firstword))
+    if (cli_calc_mode && firstword[0] != '@' && strcmp(firstword, "exit") != 0 &&
+        strcmp(firstword, "quit") != 0)
+    {
+        fflush(rl_outstream);
+        return;
+    }
+    else if (cli_is_command(firstword) ||
+             (cli_calc_mode && (strcmp(firstword, "exit") == 0 || strcmp(firstword, "quit") == 0)))
     {
         col = "\033[32m"; /* green */
     }

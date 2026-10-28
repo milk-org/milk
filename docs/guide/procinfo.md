@@ -130,10 +130,10 @@ by the developer:
 | ------------------- | ----------- | ---------------------------------------- |
 | `name`              | `char[80]`  | Short process name (no spaces, no dots)  |
 | `description`       | `char[200]` | Human-readable description string        |
-| `tmuxname`          | `char[100]` | Name of the tmux session hosting process |
+| `unitname`          | `char[100]` | Unit the process runs (`MILK_UNIT_NAME`) |
 | `MeasureTiming`     | `int`       | Enable loop timing measurement           |
 | `RT_priority`       | `int`       | RT priority 0–99 (higher = more urgent)  |
-| `loopcntMax`        | `int64_t`   | Max loop iterations (−1 = infinite)      |
+| `loopcntMax`        | `long`      | Max loop iterations (−1 = infinite)      |
 | `CPUmask`           | `cpu_set_t` | CPU affinity mask for core pinning       |
 | `triggermode`       | `int`       | Trigger type (semaphore, cnt, delay)     |
 | `triggerstreamname` | `char[80]`  | Name of input trigger stream             |
@@ -169,11 +169,13 @@ static errno_t my_compute(const MILK_RUNNABLE *self)
 After writing to an output stream, call:
 
 ```c
-processinfo_update_output_stream(processinfo, img.im);
+processinfo_update_output_stream(processinfo, img.im, NULL);
 ```
 
-This posts semaphores, increments `cnt0`/`cnt1`, clears the `write` flag, and updates timing
-metadata. Always set `img.im->md->write = 1` before modifying pixels.
+Pass the triggering input `IMAGE *` as the third argument (or `NULL` if there is no upstream
+trigger stream) to propagate stream process trace ancestry. This posts semaphores, increments
+`cnt0`/`cnt1`, clears the `write` flag, and updates timing metadata. Always set
+`img.im->md->write = 1` before modifying pixels.
 
 ### Input Stream Triggers
 
@@ -181,7 +183,7 @@ To wait on an input stream:
 
 ```c
 processinfo_waitoninputstream_init(
-    processinfo, imgin.im, TRIGGERMODE_SEMAPHORE, -1);
+    processinfo, imgin.im, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
 // ... inside loop:
 processinfo_waitoninputstream(processinfo);
 ```

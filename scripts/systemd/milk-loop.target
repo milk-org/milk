@@ -1,0 +1,12 @@
+# milk units started and stopped together (example, see docs/operations/systemd.md).
+# List them in Wants=, and give each a drop-in (systemctl --user edit milk-unit@NAME) with
+#
+#   [Unit]
+#   PartOf=milk-loop.target
+#   After=milk-unit@UPSTREAM.service
+#
+# so that stopping the target stops them, and each starts after the unit that feeds it.
+
+[Unit]
+Description=milk loop
+Wants=milk-unit@cam.service milk-unit@dsub.service

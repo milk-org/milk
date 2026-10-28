@@ -7,8 +7,7 @@
  * @brief Shared ANSI frame-buffer TUI rendering primitives
  *
  * Drop-in replacement for ncurses TUItools.h used by all
- * standalone TUI tools (milk-fpsCTRL, milk-procCTRL,
- * milk-streamCTRL).
+ * standalone TUI tools (milk-fpsCTRL, milk-procCTRL).
  *
  * Prerequisites: include your tool-specific *_ansi.h
  * header BEFORE this file. That header must provide:

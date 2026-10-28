@@ -56,6 +56,7 @@
     X(testne, optimized)         \
     X(testle, optimized)         \
     X(testge, optimized)         \
+    X(testgt, optimized)         \
     X(and, optimized)            \
     X(or, optimized)
 

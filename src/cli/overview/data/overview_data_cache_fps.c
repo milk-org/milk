@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "overview_data_internal.h"
+#include <errno.h>
+#include <limits.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +28,56 @@ static OV_FPS_PARAMS s_active_fps_params;
  * ========================================================= */
 
 /**
+ * fcache_param - cache entry and parameter index behind display row @disp_idx (s_fcache_mutex held).
+ * Return: the entry, or NULL when the row no longer maps to a parameter.
+ */
+static ov_fps_cache_t *fcache_param(const char *fps_name, int disp_idx, int *pindex)
+{
+    int ci = fcache_find(fps_name);
+    if (ci < 0 || disp_idx < 0 || disp_idx >= s_fcache[ci].dparam_nb)
+    {
+        return NULL;
+    }
+    ov_fps_cache_t *ce = &s_fcache[ci];
+    if (ce->fps.md == NULL || ce->fps.parray == NULL)
+    {
+        return NULL;
+    }
+    long nb = (ce->fps.md->NBparamMAX < ce->nbparam_fit) ? ce->fps.md->NBparamMAX : ce->nbparam_fit;
+    *pindex = ce->dparam_idx[disp_idx];
+    return (*pindex >= 0 && *pindex < nb) ? ce : NULL;
+}
+
+/**
+ * fcache_connect_rw - connect read-write, for one edit, to the FPS the cache entry maps, and check
+ * that parameter @pindex is still @kw. Return: 0 (caller fps_disconnect()s), OV_PARAM_RO_FILE, or
+ * OV_PARAM_MOVED when the FPS was re-created or the parameter moved since the user saw it.
+ */
+static int fcache_connect_rw(const ov_fps_cache_t *ce, int pindex, const char *kw, FPS *fps)
+{
+    struct stat st;
+    char        path[PATH_MAX];
+    memset(fps, 0, sizeof(*fps));
+    fps->SMfd = -1;
+    snprintf(path, sizeof(path), "%s/%s.fps.shm", ov_get_fpsdir(), ce->fname);
+    if (access(path, W_OK) != 0 && errno != ENOENT)
+    {
+        return OV_PARAM_RO_FILE;
+    }
+    if (fps_connect(ce->fname, fps, FPSCONNECT_SIMPLE) < 0)
+    {
+        return OV_PARAM_MOVED;
+    }
+    if (fstat(fps->SMfd, &st) != 0 || !ov_shm_same_file(&ce->map, &st) ||
+        pindex >= fps->md->NBparamMAX || strcmp(fps->parray[pindex].keywordfull, kw) != 0)
+    {
+        fps_disconnect(fps);
+        return OV_PARAM_MOVED;
+    }
+    return 0;
+}
+
+/**
  * @brief Fetch parameter metadata safely under cache lock.
  *
  * @param[in]  fps_name Name of the FPS
@@ -42,37 +94,51 @@ int ov_fcache_get_param_info(const char *fps_name, int disp_idx, ov_fps_param_in
     memset(info, 0, sizeof(*info));
 
     pthread_mutex_lock(&s_fcache_mutex);
-    int ci = fcache_find(fps_name);
-    if (ci < 0 || disp_idx < 0 || disp_idx >= s_fcache[ci].dparam_nb)
+    int             pindex = -1;
+    ov_fps_cache_t *ce     = fcache_param(fps_name, disp_idx, &pindex);
+    if (ce == NULL)
     {
         pthread_mutex_unlock(&s_fcache_mutex);
         return -1;
     }
-
-    ov_fps_cache_t *ce = &s_fcache[ci];
-    if (!ce->sparam_cached)
-    {
-        fcache_build_params(ce);
-    }
-
     FPS *fps = &ce->fps;
-    if (fps->md == NULL || fps->parray == NULL)
-    {
-        pthread_mutex_unlock(&s_fcache_mutex);
-        return -1;
-    }
-
-    int pindex = ce->dparam_idx[disp_idx];
-    if (pindex < 0 || pindex >= fps->md->NBparamMAX)
-    {
-        pthread_mutex_unlock(&s_fcache_mutex);
-        return -1;
-    }
 
     FPS_PARAM *fp     = &fps->parray[pindex];
     info->type        = fp->type;
     info->fpflag      = fp->fpflag;
     info->is_writable = (fp->fpflag & FPFLAG_WRITESTATUS) ? 1 : 0;
+    info->has_min     = (fp->fpflag & FPFLAG_MINLIMIT) != 0;
+    info->has_max     = (fp->fpflag & FPFLAG_MAXLIMIT) != 0;
+    switch (fp->type)
+    {
+    case FPTYPE_INT32:
+        info->vmin = fp->val.i32[1];
+        info->vmax = fp->val.i32[2];
+        break;
+    case FPTYPE_UINT32:
+        info->vmin = fp->val.ui32[1];
+        info->vmax = fp->val.ui32[2];
+        break;
+    case FPTYPE_INT64:
+        info->vmin = (double) fp->val.i64[1];
+        info->vmax = (double) fp->val.i64[2];
+        break;
+    case FPTYPE_UINT64:
+        info->vmin = (double) fp->val.ui64[1];
+        info->vmax = (double) fp->val.ui64[2];
+        break;
+    case FPTYPE_FLOAT32:
+        info->vmin = fp->val.f32[1];
+        info->vmax = fp->val.f32[2];
+        break;
+    case FPTYPE_FLOAT64:
+        info->vmin = fp->val.f64[1];
+        info->vmax = fp->val.f64[2];
+        break;
+    default:
+        info->has_min = info->has_max = 0; /* limits apply to numbers only */
+        break;
+    }
 
     strncpy(info->keyword, fp->keywordfull, sizeof(info->keyword) - 1);
     info->keyword[sizeof(info->keyword) - 1] = '\0';
@@ -94,14 +160,14 @@ int ov_fcache_get_param_info(const char *fps_name, int disp_idx, ov_fps_param_in
 }
 
 /**
- * @brief Toggle an ONOFF parameter under cache lock.
+ * @brief Toggle an ONOFF parameter through an on-demand read-write connection.
  *
  * @param[in]  fps_name    Name of the FPS
  * @param[in]  disp_idx    Display parameter index
  * @param[out] out_keyword Optional buffer to receive parameter keyword (can be NULL)
  * @param[in]  kw_size     Size of out_keyword buffer
  * @param[out] out_newval  Optional pointer to receive new value (0 or 1, can be NULL)
- * @return 0 on success, -1 on error
+ * @return 0 on success, -1 on error, or OV_PARAM_MOVED / OV_PARAM_RO_FILE / OV_PARAM_LOCKED
  */
 int ov_fcache_toggle_param(const char *fps_name,
                            int         disp_idx,
@@ -109,132 +175,115 @@ int ov_fcache_toggle_param(const char *fps_name,
                            size_t      kw_size,
                            int        *out_newval)
 {
+    int pindex = -1;
+    FPS fps;
     if (fps_name == NULL)
     {
         return -1;
     }
 
     pthread_mutex_lock(&s_fcache_mutex);
-    int ci = fcache_find(fps_name);
-    if (ci < 0 || disp_idx < 0 || disp_idx >= s_fcache[ci].dparam_nb)
+    ov_fps_cache_t *ce = fcache_param(fps_name, disp_idx, &pindex);
+    if (ce == NULL || ce->fps.parray[pindex].type != FPTYPE_ONOFF)
     {
         pthread_mutex_unlock(&s_fcache_mutex);
         return -1;
     }
-
-    ov_fps_cache_t *ce  = &s_fcache[ci];
-    FPS            *fps = &ce->fps;
-    if (fps->md == NULL || fps->parray == NULL)
+    if (!(ce->fps.parray[pindex].fpflag & FPFLAG_WRITESTATUS))
     {
         pthread_mutex_unlock(&s_fcache_mutex);
-        return -1;
+        return OV_PARAM_LOCKED;
     }
-
-    int pindex = ce->dparam_idx[disp_idx];
-    if (pindex < 0 || pindex >= fps->md->NBparamMAX)
+    char kw[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    snprintf(kw, sizeof(kw), "%s", ce->fps.parray[pindex].keywordfull);
+    int rc = fcache_connect_rw(ce, pindex, kw, &fps);
+    pthread_mutex_unlock(&s_fcache_mutex);
+    if (rc != 0)
     {
-        pthread_mutex_unlock(&s_fcache_mutex);
-        return -1;
+        return rc;
     }
 
-    FPS_PARAM *fp = &fps->parray[pindex];
-    if (fp->type != FPTYPE_ONOFF)
-    {
-        pthread_mutex_unlock(&s_fcache_mutex);
-        return -1;
-    }
-
-    int current = (fp->fpflag & FPFLAG_ONOFF) ? 1 : 0;
-    int newval  = current ? 0 : 1;
-    functionparameter_SetParamValue_ONOFF(fps, fp->keywordfull, newval);
-    fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
-
+    FPS_PARAM *fp     = &fps.parray[pindex];
+    int        newval = (fp->fpflag & FPFLAG_ONOFF) ? 0 : 1;
+    functionparameter_SetParamValue_ONOFF(&fps, fp->keywordfull, newval);
+    fps.md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
     if (fp->fpflag & FPFLAG_SAVEONCHANGE)
     {
-        functionparameter_WriteParameterToDisk(fps, pindex, "setval", "milk-CTRL_toggle");
-        functionparameter_SaveFPS2disk(fps);
+        functionparameter_WriteParameterToDisk(&fps, pindex, "setval", "milk-CTRL_toggle");
+        functionparameter_SaveFPS2disk(&fps);
     }
+    fps_disconnect(&fps);
 
     if (out_keyword != NULL && kw_size > 0)
     {
-        strncpy(out_keyword, fp->keywordfull, kw_size - 1);
-        out_keyword[kw_size - 1] = '\0';
+        snprintf(out_keyword, kw_size, "%s", kw);
     }
     if (out_newval != NULL)
     {
         *out_newval = newval;
     }
-
-    pthread_mutex_unlock(&s_fcache_mutex);
     return 0;
 }
 
 /**
- * @brief Set an FPS parameter value string under cache lock.
+ * @brief Set an FPS parameter from a value string through an on-demand read-write connection.
  *
  * @param[in] fps_name Name of the FPS
  * @param[in] disp_idx Display parameter index
+ * @param[in] kw       keywordfull the user edited (checked against the live FPS)
  * @param[in] valstr   New value string to parse and apply
- * @return 0 on success, -1 on error or invalid value
+ * @return 0 on success, -1 on error or invalid value, or OV_PARAM_MOVED / OV_PARAM_RO_FILE /
+ *         OV_PARAM_LOCKED
  */
-int ov_fcache_set_param_value(const char *fps_name, int disp_idx, const char *valstr)
+int ov_fcache_set_param_value(const char *fps_name,
+                              int         disp_idx,
+                              const char *kw,
+                              const char *valstr)
 {
-    if (fps_name == NULL || valstr == NULL)
+    int pindex = -1;
+    FPS fps;
+    if (fps_name == NULL || kw == NULL || valstr == NULL)
     {
         return -1;
     }
 
     pthread_mutex_lock(&s_fcache_mutex);
-    int ci = fcache_find(fps_name);
-    if (ci < 0 || disp_idx < 0 || disp_idx >= s_fcache[ci].dparam_nb)
+    ov_fps_cache_t *ce = fcache_param(fps_name, disp_idx, &pindex);
+    if (ce == NULL)
     {
         pthread_mutex_unlock(&s_fcache_mutex);
         return -1;
     }
-
-    ov_fps_cache_t *ce  = &s_fcache[ci];
-    FPS            *fps = &ce->fps;
-    if (fps->md == NULL || fps->parray == NULL)
+    if (!(ce->fps.parray[pindex].fpflag & FPFLAG_WRITESTATUS))
     {
         pthread_mutex_unlock(&s_fcache_mutex);
-        return -1;
+        return OV_PARAM_LOCKED;
     }
-
-    int pindex = ce->dparam_idx[disp_idx];
-    if (pindex < 0 || pindex >= fps->md->NBparamMAX)
-    {
-        pthread_mutex_unlock(&s_fcache_mutex);
-        return -1;
-    }
-
-    FPS_PARAM *fp = &fps->parray[pindex];
-    if (!(fp->fpflag & FPFLAG_WRITESTATUS))
-    {
-        pthread_mutex_unlock(&s_fcache_mutex);
-        return -1;
-    }
-
-    if (functionparameter_SetParamValue_fromString(fps, pindex, valstr) != 0)
-    {
-        pthread_mutex_unlock(&s_fcache_mutex);
-        return -1;
-    }
-
-    fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
-
-    if (strncmp(fp->keywordfull, ".procinfo.", 10) == 0)
-    {
-        fps->md->processinfo_change_cnt++;
-    }
-
-    if (fp->fpflag & FPFLAG_SAVEONCHANGE)
-    {
-        functionparameter_WriteParameterToDisk(fps, pindex, "setval", "milk-CTRL_SetParamValue");
-        functionparameter_SaveFPS2disk(fps);
-    }
-
+    int rc = fcache_connect_rw(ce, pindex, kw, &fps);
     pthread_mutex_unlock(&s_fcache_mutex);
-    return 0;
+    if (rc != 0)
+    {
+        return rc;
+    }
+
+    FPS_PARAM *fp = &fps.parray[pindex];
+    rc = (functionparameter_SetParamValue_fromString(&fps, pindex, valstr) == 0) ? 0 : -1;
+    if (rc == 0)
+    {
+        fps.md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+        if (strncmp(fp->keywordfull, ".procinfo.", 10) == 0)
+        {
+            fps.md->processinfo_change_cnt++;
+        }
+        if (fp->fpflag & FPFLAG_SAVEONCHANGE)
+        {
+            functionparameter_WriteParameterToDisk(&fps, pindex, "setval",
+                                                   "milk-CTRL_SetParamValue");
+            functionparameter_SaveFPS2disk(&fps);
+        }
+    }
+    fps_disconnect(&fps);
+    return rc;
 }
 
 /**

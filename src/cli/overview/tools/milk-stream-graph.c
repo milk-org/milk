@@ -19,8 +19,6 @@
 #include <string.h>
 #include <unistd.h>
 
-volatile sig_atomic_t ov_sigINT  = 0;
-volatile sig_atomic_t ov_sigTERM = 0;
 
 /**
  * print_usage - Print command-line usage information for milk-stream-graph

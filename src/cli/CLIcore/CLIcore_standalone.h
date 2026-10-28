@@ -135,6 +135,13 @@ extern DATA data;
  * CLI function stubs (no-op)
  * ===================================== */
 
+/**
+ * CLI_checkarg - Standalone no-op stub that rejects legacy CLI argument checks
+ * @argnum:  Argument index (unused)
+ * @argtype: Expected argument type mask (unused)
+ *
+ * Return: Always 1 (validation failure in `MILK_NO_CLI` builds).
+ */
 static inline int CLI_checkarg(int      argnum __attribute__((unused)),
                                uint32_t argtype __attribute__((unused)))
 {
@@ -143,18 +150,40 @@ static inline int CLI_checkarg(int      argnum __attribute__((unused)),
                  executing in standalone */
 }
 
+/**
+ * CLI_checkarg_noerrmsg - Quiet standalone stub for `CLI_checkarg_noerrmsg()`
+ * @argnum:  Argument index (unused)
+ * @argtype: Expected argument type mask (unused)
+ *
+ * Return: Always 1.
+ */
 static inline int CLI_checkarg_noerrmsg(int      argnum __attribute__((unused)),
                                         uint32_t argtype __attribute__((unused)))
 {
     return 1;
 }
 
+/**
+ * CLI_checkarg_array - Standalone stub for batch CLI argument descriptor validation
+ * @fca:   Argument descriptor array (unused)
+ * @nbarg: Number of argument descriptors (unused)
+ *
+ * Return: Always 1.
+ */
 static inline errno_t CLI_checkarg_array(CLICMDARGDEF *fca __attribute__((unused)),
                                          int           nbarg __attribute__((unused)))
 {
     return 1;
 }
 
+/**
+ * CLIargs_to_FPSparams_setval - Standalone stub for copying CLI args into FPS parameters
+ * @fca: Argument descriptor array (unused)
+ * @n:   Number of descriptors (unused)
+ * @fps: Target FPS structure (unused)
+ *
+ * Return: 0.
+ */
 static inline int CLIargs_to_FPSparams_setval(CLICMDARGDEF *fca __attribute__((unused)),
                                               int           n __attribute__((unused)),
                                               FPS          *fps __attribute__((unused)))
@@ -162,22 +191,44 @@ static inline int CLIargs_to_FPSparams_setval(CLICMDARGDEF *fca __attribute__((u
     return 0;
 }
 
+/**
+ * CMDargs_to_FPSparams_create - Standalone stub for creating FPS parameters from CLI args
+ * @fps: Target FPS structure (unused)
+ *
+ * Return: 0.
+ */
 static inline int CMDargs_to_FPSparams_create(FPS *fps __attribute__((unused)))
 {
     return 0;
 }
 
+/**
+ * get_farg_ptr - Standalone stub for looking up a CLI function argument pointer by tag
+ * @tag:  Argument tag name (unused)
+ * @fpsi: Output parameter index pointer (unused)
+ *
+ * Return: Always NULL.
+ */
 static inline void *get_farg_ptr(char *tag __attribute__((unused)),
                                  long *fpsi __attribute__((unused)))
 {
     return NULL;
 }
 
+/**
+ * set_signal_catch - Standalone no-op stub for installing CLI signal handlers
+ *
+ * Return: 0.
+ */
 static inline errno_t set_signal_catch(void)
 {
     return 0;
 }
 
+/**
+ * sig_handler - Standalone no-op signal handler stub
+ * @signo: Signal number (unused)
+ */
 static inline void sig_handler(int signo __attribute__((unused)))
 {
 }

@@ -415,8 +415,7 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
             }
             imgout_tmp.mdt->datatype = _DATATYPE_FLOAT;
             imgout_tmp.mdt->shared   = 1;
-            imgout_tmp.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgout_tmp);
+            imgid_create_registered(&imgout_tmp);
             IDout = imgout_tmp.ID;
         }
         else
@@ -428,8 +427,7 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
                 imgout_tmp.mdt->size[i] = sizearray[i];
             }
             imgout_tmp.mdt->datatype = _DATATYPE_FLOAT;
-            imgout_tmp.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgout_tmp);
+            imgid_create_registered(&imgout_tmp);
             IDout = imgout_tmp.ID;
         }
     }
@@ -634,8 +632,7 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
                 imgout_tmp.mdt->datatype = _DATATYPE_FLOAT;
                 imgout_tmp.mdt->shared   = 1;
                 imgout_tmp.mdt->NBkw     = 1;
-                imgout_tmp.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-                imgid_mkimage(&imgout_tmp);
+                imgid_create_registered(&imgout_tmp);
                 IDout = imgout_tmp.ID;
             }
             free(imsizearray);

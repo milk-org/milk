@@ -108,6 +108,7 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
     }
 
     uint64_t xysize = (uint64_t) img0.md->size[0] * (img0.md->size[1] / 2);
+    int      nth    = milk_omp_team_size(xysize, 262144);
 
     unsigned long long cnt = 0;
 
@@ -133,14 +134,20 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
          * Casts operands to OCT before subtraction to
          * avoid unsigned wrap for UINT32/UINT64 inputs.
          */
-#define HALFDIFF_CASE(DT_IN, IACC, ICT, DT_OUT, OACC, OCT)                    \
-    case DT_IN:                                                               \
-    {                                                                         \
-        ICT *MILK_RESTRICT pin  = MILK_ASSUME_ALIGNED(img0.im->array.IACC);   \
-        OCT *MILK_RESTRICT pout = MILK_ASSUME_ALIGNED(imgout.im->array.OACC); \
-        for (uint64_t ii = 0; ii < xysize; ii++)                              \
-            pout[ii] = (OCT) pin[ii] - (OCT) pin[xysize + ii];                \
-        break;                                                                \
+#define HALFDIFF_CASE(DT_IN, IACC, ICT, DT_OUT, OACC, OCT)                                       \
+    case DT_IN:                                                                                  \
+    {                                                                                            \
+        ICT *MILK_RESTRICT pin  = MILK_ASSUME_ALIGNED(img0.im->array.IACC);                      \
+        OCT *MILK_RESTRICT pout = MILK_ASSUME_ALIGNED(imgout.im->array.OACC);                    \
+        _Pragma(                                                                                 \
+            "omp parallel for simd num_threads(nth) if (parallel : nth > 1)") for (uint64_t ii = \
+                                                                                       0;        \
+                                                                                   ii < xysize;  \
+                                                                                   ii++)         \
+        {                                                                                        \
+            pout[ii] = (OCT) pin[ii] - (OCT) pin[xysize + ii];                                   \
+        }                                                                                        \
+        break;                                                                                   \
     }
 
         switch (datatype)

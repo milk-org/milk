@@ -27,7 +27,6 @@
 #include "fps_connect.h"
 #include "fps_disconnect.h"
 #include "fps_RUNexit.h"
-#include "fps_tmux.h"
 #include "fps_processinfo.h"
 
 // ProcessInfo headers

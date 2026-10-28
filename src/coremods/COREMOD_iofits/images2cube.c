@@ -103,8 +103,7 @@ errno_t images_to_cube(const char *restrict img_name, long nbframes, const char 
 
     IMGID imgcube       = imgid_make_from_name_3D(cube_name, xsize, ysize, nbframes);
     imgcube.mdt->shared = 0;
-    imgcube.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgcube);
+    imgid_create_registered(&imgcube);
 
     for (uint32_t ii = 0; ii < xsize; ii++)
     {

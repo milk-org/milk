@@ -36,21 +36,16 @@ def tp(callable):
         pass
 
 
-import time
-
-
 def func_session_cleanup(session: ComputeSession):
+    # runstop and confstop return once the processes are gone
     tp(session.runstop)
     tp(session.confstop)
     if session.fps:
-        tp(session.fps.tmux_stop)
-        # Need to wait until not RUNisrunning to get there...
-        session.fps.run_stop(timeoutsync=5.0)
-        time.sleep(0.1)
-        with pytest.raises(ProcessLookupError):
-            os.kill(session.fps.fps.md().runpid, 0)
-        with pytest.raises(ProcessLookupError):
-            os.kill(session.fps.fps.md().confpid, 0)
+        md = session.fps.fps.md()
+        for pid in (md.runpid, md.confpid):
+            if pid > 0:  # an exited run clears its pid
+                with pytest.raises(ProcessLookupError):
+                    os.kill(pid, 0)
 
         tp(session.fps.destroy)
 

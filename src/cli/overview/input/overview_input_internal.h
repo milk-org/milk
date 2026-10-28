@@ -35,23 +35,20 @@
 #include "fps_WriteParameterToDisk.h"
 #include "fps_save2disk.h"
 
+#include "overview_input_keys.h"
+
 #define INSIDE(R, MR, MC)                                                 \
     ((MR) >= (R).row && (MR) < (R).row + (R).height && (MC) >= (R).col && \
      (MC) < (R).col + (R).width)
 
 /* External scan and help API */
-float ov_scan_get_interval(void);
-void  ov_scan_set_interval(float s);
-void  ov_help_open(OV_LAYOUT *lay);
-int   ov_help_visible_count(const OV_LAYOUT *lay);
-int   ov_help_nb_sections(void);
-int   ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
-int   ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand);
-int   ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc);
+void ov_help_open(OV_LAYOUT *lay);
+int  ov_help_visible_count(const OV_LAYOUT *lay);
+int  ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
+int  ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand);
+int  ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc);
 
 /* Shared selection and navigation helpers */
-int              ov_input_get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m);
-int              ov_input_hit_panel_tab(int mc, int panel_col, const char **tabs, int num_tabs);
 const OV_STREAM *ov_input_get_sel_stream(const OV_LAYOUT *lay, const OV_MODEL *m);
 const OV_PROC   *ov_input_get_sel_proc(const OV_LAYOUT *lay, const OV_MODEL *m);
 const OV_FPS    *ov_input_get_sel_fps(const OV_LAYOUT *lay, const OV_MODEL *m);
@@ -59,15 +56,16 @@ int              ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, co
 
 /* Modal & text input handling */
 int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay, const OV_MODEL *m);
-int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, OV_MODEL *m);
-int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, OV_MODEL *m);
+int ov_input__handle_loop_rename(int key, OV_LAYOUT *lay, const OV_MODEL *m);
+int ov_input__handle_loop_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 
 /* Hit-test & mouse resolution */
 void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc);
 void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m);
-void ov_input__streams_header_click(OV_LAYOUT *lay, int mc);
-void ov_input__procs_header_click(OV_LAYOUT *lay, int mc);
-void ov_input__fps_header_click(OV_LAYOUT *lay, int mc);
+void ov_input__subtab_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc, int is_dbl);
+int  ov_input__handle_subtab_keys(int key, OV_LAYOUT *lay, const OV_MODEL *m);
+void ov_input__detail_scroll_to(OV_LAYOUT *lay, int top);
+int  ov_input__table_header_click(OV_LAYOUT *lay, ov_focus_t panel, int mc);
 void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODEL *m);
 
 /* Mouse dispatch & helpers */
@@ -77,13 +75,23 @@ int ov_input_mouse_wheel(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 int ov_input_mouse_panel_click(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc, int is_dbl);
 
 /* View switching, sorting, highlights, and toggles */
-int ov_input__handle_view_switch(int key, OV_LAYOUT *lay);
+int ov_input__handle_view_switch(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m);
-int ov_input__handle_column_highlights(int key, OV_LAYOUT *lay, const OV_MODEL *m);
-int ov_input__handle_sorting(int key, OV_LAYOUT *lay);
+int ov_input__handle_global_keys(int key, OV_LAYOUT *lay, const OV_MODEL *m);
+int ov_input__handle_column_keys(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 
-/* Actions: stream delete, proc kill/pause/step, FPS tmux */
+/* Actions: stream delete, proc kill/pause/step, unit start/stop */
 int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m);
+
+/* y/N confirmation for destructive and batch verbs */
+void ov_confirm_open(OV_LAYOUT      *lay,
+                     const OV_MODEL *m,
+                     ov_act_t        verb,
+                     int             arg,
+                     ov_focus_t      panel,
+                     int             idx);
+int  ov_confirm_batch_arg(const OV_LAYOUT *lay, const OV_MODEL *m, int conf);
+int  ov_input__handle_confirm(int key, OV_LAYOUT *lay, const OV_MODEL *m);
 
 /* Navigation: cursor movement, paging, scrolling */
 int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m);

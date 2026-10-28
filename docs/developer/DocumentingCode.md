@@ -14,9 +14,10 @@ See also: [Programmer's Guide](../arch/programmers_guide.md) · [Working with Gi
 
 ## 1. Building and serving the documentation
 
-The documentation website is generated using the `mkdoc` package; `mkdoc` is installed in a python package manager, the core package plus a few extensions.
+The documentation website is generated using the `mkdocs` package; `mkdocs` is installed in a
+Python environment along with the Material theme and extensions.
 
-With mkdocs installed, start a local doc server with `mkdoc serve`.
+With `mkdocs` installed, start a local doc server with `mkdocs serve`.
 
 Refer to [Developer tooling](tooling.md) for more information.
 
@@ -27,7 +28,7 @@ Refer to [Developer tooling](tooling.md) for more information.
 General instructional documentation, architectural overviews, and tutorials should be placed in the
 `docs/` folder in standard-ish GitHub Flavored Markdown (`.md`).
 
-We use the following extensions to `mkdoc`:
+We use the following conventions with `mkdocs`:
 
 - Use MkDocs admonitions (`!!! note`, `!!! warning`, `!!! tip`) to call out important information.
   Indent the body by four spaces. Due to an unresolved interaction with the `prettier` hook for markdown linting, prefix the admonition with `<!-- prettier-ignore -->`.
@@ -83,32 +84,35 @@ More info [at this link](https://squidfunk.github.io/mkdocs-material/reference/a
 
 ---
 
-## 3. Documenting Source Code (Doxygen)
+## 3. Documenting Source Code (Kernel-Doc / Doxygen)
 
-The `milk` C/C++ source code uses Doxygen tags to generate the API reference.
+The `milk` C/C++ source code uses Kernel-Doc style comments (also compatible with Doxygen) to
+document functions and structures.
 
-Doxygen comments should be placed directly above the function implementations in the `.c` files, or
-above the struct definitions in the `.h` files.
+Place a brief API-facing description above declarations in `.h` files, and the full Kernel-Doc
+comment directly above function definitions in `.c` files.
 
 ### 3.1 Standard Function Documentation
 
-Use the standard `@param`, `@return`, and `@brief` tags to describe the function behavior.
+Use Kernel-Doc format (`function_name() - short description`, `@arg:` parameter descriptions, and
+`Return:` section), or Doxygen `@param`/`@return` tags where already used in a module:
 
 ```c
 /**
- * @ingroup processing_module
- * @brief Computes the sum of two integers.
+ * compute_sum() - Compute the sum of two integers and format as a string.
+ * @a:      First integer operand.
+ * @b:      Second integer operand.
+ * @output: Output string buffer where the decimal sum is written.
  *
  * Detailed description of the computation can go here.
- * You can also include formulas or extended methodology.
  *
- * @param[in]  a first number
- * @param[in]  b second number to be added to first one
- * @param[out] output string buffer where the result is written
- *
- * @return error code, #RETURN_SUCCESS if OK
+ * Return: RETURN_SUCCESS on success, or an error code on failure.
  */
-inline static errno_t compute_sum(int a, int b, char *output) {
+static inline errno_t compute_sum(
+    int   a,
+    int   b,
+    char *output)
+{
     int sum = a + b;
     sprintf(output, "%d", sum);
     return RETURN_SUCCESS;
@@ -117,8 +121,8 @@ inline static errno_t compute_sum(int a, int b, char *output) {
 
 ### 3.2 Grouping Modules
 
-Use `@defgroup` and `@ingroup` to group related functions into unified modules in the generated HTML
-reference.
+Use `@defgroup` and `@ingroup` when grouping related functions into modules for Doxygen HTML
+reference generation:
 
 ```c
 /**
@@ -129,13 +133,13 @@ reference.
 
 ---
 
-## 4. Building the Doxygen HTML Reference
+## 4. Building a Doxygen HTML Reference (Optional)
 
-If you wish to view the generated C API documentation locally, you can build it using Doxygen.
+If you wish to generate a local C API reference using Doxygen:
 
 ### 4.1 Initial Requirements
 
-Ensure you have Doxygen installed on your system:
+Ensure you have Doxygen and Graphviz installed on your system:
 
 ```bash
 # Ubuntu/Debian
@@ -147,29 +151,17 @@ sudo yum install doxygen graphviz
 
 ### 4.2 Generating the Documentation
 
-A tracked `Doxyfile` is maintained at the repository root. It is also used by CI
-(`.github/workflows/docs.yml`) to deploy the API reference to GitHub Pages on every push to `main`
-or `framework-dev`.
-
-To generate the documentation locally:
-
-1. Navigate to the repository root.
-2. Run Doxygen:
+Generate a default `Doxyfile` (or use `plugins/cacao-src/doc/Doxyfile` for `cacao`) and run
+`doxygen`:
 
 ```bash
+doxygen -g Doxyfile
 doxygen Doxyfile
 ```
 
-1. Open the generated output:
-
-```bash
-xdg-open docs/doxygen/html/index.html
-```
-
-<!-- prettier-ignore -->
-!!! tip
-    The CI workflow automatically deploys to GitHub Pages. Check the repository's Pages settings for the
-    live URL.
+> [!NOTE]
+> The MkDocs documentation site (`mkdocs.yml`) is built and deployed to GitHub Pages by
+> `.github/workflows/docs-deploy.yaml` on pushes to `framework-dev`.
 
 ---
 

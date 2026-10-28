@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import contextlib
 import os, shutil
-import libtmux
 import pytest
 from pathlib import Path
 
@@ -28,14 +28,14 @@ def cloned_pipeline(pipeline: Pipeline):
     else:
         assert cloned.parent_folder.is_relative_to("/tmp")
 
-    # Kill all the tmuxes that are associated with the pipeline
-    tsrv = libtmux.Server()
+    # Stop the units the pipeline started
     for sname in cloned.sessions:
-        # TODO better tmux API integrated directly with session/pipeline
-        abs_name = cloned.get_session_abs_name(sname)
-        session = tsrv.sessions.get(session_name=abs_name, default=None)
-        if session is not None:
-            session.kill()
+        sesh = cloned.get_session(sname)
+        if sesh.fps is not None:
+            with contextlib.suppress(Exception):
+                sesh.runstop()
+            with contextlib.suppress(Exception):
+                sesh.confstop()
 
     shutil.rmtree(cloned.conf_folder)
 

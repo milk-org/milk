@@ -43,10 +43,6 @@
 #define FPSCMDCODE_CONFSTOP 0x00000002
 #define FPSCMDCODE_FPSINIT 0x00000004
 #define FPSCMDCODE_FPSINITCREATE 0x00000008
-#define FPSCMDCODE_RUNSTART 0x00000010
-#define FPSCMDCODE_RUNSTOP 0x00000020
-#define FPSCMDCODE_TMUXSTART 0x00000100
-#define FPSCMDCODE_TMUXSTOP 0x00000200
 #define FPSCMDCODE_IGNORE 0x00001000
 
 /* ===== Parameter keyword limits ===== */
@@ -174,6 +170,7 @@
 #define FPFLAG_STREAM_TEST_DATATYPE_INT64 0x0000010000000000
 
 #define FPFLAG_PRIMARY_CLI_INPUT 0x0000000000000008
+#define FPFLAG_CLI_OPTIONAL 0x0000000000000800 /* trailing primary CLI input that may be left out */
 #define FPFLAG_CLI_INPUT 0x0000020000000000
 #define FPFLAG_STREAM_TEST_DATATYPE_HALF 0x0000020000000000
 #define FPFLAG_STREAM_TEST_DATATYPE_FLOAT 0x0000040000000000
@@ -268,7 +265,7 @@ typedef struct
 
 #define STRINGMAXLEN_FPS_NAME 100
 
-#define STRINGMAXLEN_PROCESSINFO_TMUXNAME 100
+#define STRINGMAXLEN_FPS_SESSION 100
 
 #define FUNCTION_PARAMETER_STRUCT_MSG_SIZE 500
 
@@ -281,9 +278,6 @@ typedef struct
 #define FUNCTION_PARAMETER_STRUCT_STATUS_CHECKERR 0x0400
 #define FUNCTION_PARAMETER_STRUCT_STATUS_SAVE 0x0800
 
-#define FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCONF 0x1000
-#define FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN 0x2000
-#define FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCTRL 0x4000
 
 #define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN 0x0001
 #define FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE 0x0004
@@ -327,7 +321,7 @@ typedef struct
     char            pname[FPS_PNAME_STRMAXLEN];
     char            callprogname[FPS_CALLPROGNAME_STRMAXLEN];
     char            callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];
-    char            tmuxname[STRINGMAXLEN_PROCESSINFO_TMUXNAME];
+    char            session[STRINGMAXLEN_FPS_SESSION]; /* the starter's milk-cli session (D37) */
     char            nameindexW[16][10];
     int             NBnameindex;
     pid_t           confpid;
@@ -367,50 +361,6 @@ typedef struct
     struct timespec triggerdelay[2];
 } FPS2PROCINFOMAP;
 
-/* ===== Task scheduler types ===== */
-
-#define NB_FPSCTRL_TASK_MAX 5000
-#define NB_FPSCTRL_TASK_PURGESIZE 50
-
-#define FPSTASK_STATUS_ACTIVE 0x0000000000000001
-#define FPSTASK_STATUS_SHOW 0x0000000000000002
-#define FPSTASK_STATUS_RUNNING 0x0000000000000004
-#define FPSTASK_STATUS_COMPLETED 0x0000000000000008
-
-#define FPSTASK_STATUS_WAITING 0x0000000000000010
-#define FPSTASK_STATUS_RECEIVED 0x0000000000000020
-#define FPSTASK_STATUS_CMDNOTFOUND 0x0000000000000040
-#define FPSTASK_STATUS_CMDFAIL 0x0000000000000080
-#define FPSTASK_STATUS_ERR_ARGTYPE 0x0000000000000100
-#define FPSTASK_STATUS_ERR_TYPECONV 0x0000000000000200
-#define FPSTASK_STATUS_ERR_NBARG 0x0000000000000400
-#define FPSTASK_STATUS_ERR_NOFPS 0x0000000000000800
-#define FPSTASK_STATUS_CMDOK 0x0000000000001000
-
-#define FPSTASK_FLAG_WAITONRUN 0x0000000000000001
-#define FPSTASK_FLAG_WAITONCONF 0x0000000000000002
-#define FPSTASK_FLAG_WAIT_FOR_FPS_NORUN 0x0000000000000004
-
-#define NB_FPSCTRL_TASKQUEUE_MAX 100
-
-typedef struct
-{
-    int priority;
-} FPSCTRL_TASK_QUEUE;
-
-typedef struct
-{
-    char            cmdstring[STRINGMAXLEN_FPS_CMDLINE];
-    uint64_t        inputindex;
-    uint32_t        queue;
-    uint64_t        status;
-    uint64_t        flag;
-    int             fpsindex;
-    struct timespec creationtime;
-    struct timespec activationtime;
-    struct timespec completiontime;
-} FPSCTRL_TASK_ENTRY;
-
 typedef struct
 {
     int      exitloop;
@@ -428,20 +378,12 @@ typedef struct
     int      currentlevel;
     int      directorynodeSelected;
     int      pindexSelected;
-    char     fpsCTRLfifoname[200];
-    int      fpsCTRLfifofd;
     int      direction;
-    int      scheduler_wrowstart;
     int      help_wrowstart;
     int      display_offset[100];
-    char     milkseq_name[64];
-    void    *milkseq_state; // cast to MILKSEQ_STATE* where needed
     char     search_string[100];
     int      search_mode;
     int      sort_mode;
-    double  *sched_sort_eval;  // persistent sort key array
-    long    *sched_sort_index; // persistent sort index array
-    long     sched_sort_cap;   // current allocation capacity
 } FPSCTRL_PROCESS_VARS;
 
 #define NB_KEYWNODE_MAX 6000

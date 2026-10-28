@@ -10,10 +10,7 @@
 
 #include "computeunit.h"
 #include "fpsCTRL_TUIcompat.h"
-#include "engine/libfpsseq/fpsseq.h"
-
-#include "fps_CONFstart.h"
-#include "fps_FPSremove.h"
+#include "fpsCTRL_units.h"
 
 #define ctrl(x) ((x) & 0x1f)
 
@@ -235,6 +232,32 @@ static int fpsCTRL_inline_edit_param(FPS *fps, int fps_idx, int p_idx)
     return 0;
 }
 
+/** fpsctrl_key_needs_fps - 1 for keys that act on the selected FPS (no-ops without a live one). */
+static int fpsctrl_key_needs_fps(int ch)
+{
+    switch (ch)
+    {
+    case ' ':
+    case 'u':
+    case 'y':
+    case 'E':
+    case 'R':
+    case 'r':
+    case 'C':
+    case 'O':
+    case 'c':
+    case 10:
+    case 13:
+    case ctrl('a'):
+    case ctrl('e'):
+    case ctrl('r'):
+    case ctrl('o'):
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 /**
  * @brief Process a keyboard event in the fpsCTRL TUI.
  *
@@ -244,30 +267,47 @@ static int fpsCTRL_inline_edit_param(FPS *fps, int fps_idx, int p_idx)
 int fpsCTRL_TUI_process_user_key(int                   ch,
                                  FPS                  *fps,
                                  KEYWORD_TREE_NODE    *keywnode,
-                                 FPSCTRL_TASK_ENTRY   *fpsctrltasklist __attribute__((unused)),
-                                 FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist __attribute__((unused)),
                                  FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {
     int loopOK = 1;
     int fps_idx;
     int p_idx;
 
+    if (ch != -1 && fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_OUTPUT)
+    {
+        // the output view follows one unit: its keys act on that unit
+        switch (ch)
+        {
+        case 3: // Ctrl+C
+            fpsctrl_unit_act(fpsctrl_output_name(), "runstop");
+            break;
+        case 'r':
+            fpsctrl_unit_restart(fpsctrl_output_name());
+            break;
+        case 'x':
+            loopOK = 0;
+            break;
+        case 27: // ESC
+        case 'q':
+        case ctrl('a'):
+        case ANSI_KEY_F2:
+            fpsCTRLvar->fpsCTRL_DisplayMode = 3;
+            if (write(STDOUT_FILENO, "\033[2J", 4) < 0)
+            {
+            }
+            break;
+        }
+        return loopOK;
+    }
+
     if (ch != -1)
     {
-        if (fpsCTRLvar->NBfps > 0)
+        /* Without a live selected FPS (none loaded, or it was deleted), actions on it are no-ops;
+         * navigation and quit still work */
+        if (fpsCTRLvar->search_mode == 0 && fpsctrl_key_needs_fps(ch) &&
+            (fpsCTRLvar->NBfps == 0 || fps[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md == NULL))
         {
-            int selected_fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            if (fps[selected_fpsindex].md == NULL)
-            {
-                // If the selected FPS is invalid (was deleted), ignore commands that operate on it,
-                // but allow navigation and quit commands.
-                if (ch == ' ' || ch == 'T' || ch == ctrl('t') || ch == 'E' || ch == 'R' ||
-                    ch == 'r' || ch == 'C' || ch == 'O' || ch == 'c' || ch == ctrl('a') ||
-                    ch == ctrl('e') || ch == ctrl('r') || ch == ctrl('o'))
-                {
-                    return loopOK;
-                }
-            }
+            return loopOK;
         }
 
         if (fpsCTRLvar->search_mode > 0)
@@ -348,7 +388,7 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
         case '[': // Toggle sort direction (future)
             break;
 
-        case 'y': // Yank to tmux buffer
+        case 'y': // copy to the terminal's clipboard
         {
             fps_idx           = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
             p_idx             = keywnode[fpsCTRLvar->nodeSelected].pindex;
@@ -365,53 +405,10 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
                 snprintf(yankstr, sizeof(yankstr), "%s",
                          keywnode[fpsCTRLvar->nodeSelected].keywordfull);
             }
-            char cmd[1024];
-            snprintf(cmd, sizeof(cmd), "tmux set-buffer \"%s\" 2>/dev/null", yankstr);
-            if (system(cmd) != 0)
-            {
-            }
+            fpsctrl_copy(yankstr);
+            fpsctrl_unit_say(0, "copied: %s", yankstr);
         }
         break;
-
-        case '\t':
-            if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
-            {
-                char names[20][FPSSEQ_NAME_MAX];
-                int  count = milkseq_list(names, 20);
-                if (count > 0)
-                {
-                    int current_idx = -1;
-                    if (fpsCTRLvar->milkseq_state != NULL)
-                    {
-                        for (int seq_idx = 0; seq_idx < count; seq_idx++)
-                        {
-                            if (strcmp(names[seq_idx], fpsCTRLvar->milkseq_name) == 0)
-                            {
-                                current_idx = seq_idx;
-                                break;
-                            }
-                        }
-                    }
-                    int next_idx = (current_idx + 1) % count;
-                    if (fpsCTRLvar->milkseq_state != NULL)
-                    {
-                        milkseq_disconnect((MILKSEQ_STATE *) fpsCTRLvar->milkseq_state);
-                        fpsCTRLvar->milkseq_state = NULL;
-                    }
-                    fpsCTRLvar->milkseq_state = milkseq_connect(names[next_idx]);
-                    if (fpsCTRLvar->milkseq_state)
-                    {
-                        strncpy(fpsCTRLvar->milkseq_name, names[next_idx],
-                                sizeof(fpsCTRLvar->milkseq_name) - 1);
-                        fpsCTRLvar->milkseq_name[sizeof(fpsCTRLvar->milkseq_name) - 1] = '\0';
-                    }
-                    else
-                    {
-                        fpsCTRLvar->milkseq_name[0] = '\0';
-                    }
-                }
-            }
-            break;
 
             // ============ SCREENS
 
@@ -440,16 +437,9 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
             }
             break;
 
-        case ANSI_KEY_F3: // scheduler
-            fpsCTRLvar->fpsCTRL_DisplayMode = 4;
-            if (write(STDOUT_FILENO, "\033[2J", 4) < 0)
-            {
-            }
-            break;
-
         case ANSI_KEY_CTRL_RIGHT:
             fpsCTRLvar->fpsCTRL_DisplayMode++;
-            if (fpsCTRLvar->fpsCTRL_DisplayMode > 4)
+            if (fpsCTRLvar->fpsCTRL_DisplayMode > 3)
             {
                 fpsCTRLvar->fpsCTRL_DisplayMode = 1;
             }
@@ -462,7 +452,7 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
             fpsCTRLvar->fpsCTRL_DisplayMode--;
             if (fpsCTRLvar->fpsCTRL_DisplayMode < 1)
             {
-                fpsCTRLvar->fpsCTRL_DisplayMode = 4;
+                fpsCTRLvar->fpsCTRL_DisplayMode = 3;
             }
             if (write(STDOUT_FILENO, "\033[2J", 4) < 0)
             {
@@ -476,56 +466,25 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
             TUI_clearscreen(NULL, NULL);
             break;
 
-        case ctrl('e'): // stop conf/run, then erase FPS
+        case ctrl('e'): // stop conf and run, then erase the FPS (milk-fps-rm; the rescan follows)
+        case 'E':
             fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_CONFstop(&fps[fps_idx]);
-            functionparameter_RUNstop(&fps[fps_idx]);
-            functionparameter_FPSremove(&fps[fps_idx]);
-
-            functionparameter_scan_fps(fpsCTRLvar->mode, fpsCTRLvar->fpsnamemask, fps, keywnode,
-                                       &fpsCTRLvar->NBkwn, &(fpsCTRLvar->NBfps),
-                                       &fpsCTRLvar->NBindex, 0);
-            TUI_clearscreen(NULL, NULL);
-            fpsCTRLvar->run_display      = 0; // skip next display
-            fpsCTRLvar->fpsindexSelected = 0; // safeguard
+            fpsctrl_unit_act(fps[fps_idx].md->name, "rm");
             break;
 
-
-        case 'T': // initialize tmux session
-            fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_FPS_tmux_init(&fps[fps_idx]);
+        case 'T':
+        case ctrl('t'):
+            fpsctrl_unit_say(1, "T and Ctrl+t are gone: units have no tmux session (R/O start "
+                                "them, Ctrl+a shows their output)");
             break;
 
-        case ctrl('t'): // kill tmux session
+        case ctrl('a'): // the output view, following the unit's run.out
             fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_FPS_tmux_kill(&fps[fps_idx]);
-            break;
-
-        case ctrl('a'): // attach to tmux session
-        {
-            fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            TUI_exit();
-            functionparameter_FPS_tmux_attach(&fps[fps_idx]);
+            fpsctrl_output_open(fps[fps_idx].md->name);
+            fpsCTRLvar->fpsCTRL_DisplayMode = DISPLAYMODE_OUTPUT;
+            if (write(STDOUT_FILENO, "\033[2J", 4) < 0)
             {
-                short unsigned int wrow = 0, wcol = 0;
-                TUI_init_terminal(&wrow, &wcol);
             }
-        }
-        break;
-
-
-        case 'E': // Stop conf/run, erase FPS, kill tmux
-            fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_CONFstop(&fps[fps_idx]);
-            functionparameter_RUNstop(&fps[fps_idx]);
-
-            functionparameter_FPSremove(&fps[fps_idx]);
-            functionparameter_scan_fps(fpsCTRLvar->mode, fpsCTRLvar->fpsnamemask, fps, keywnode,
-                                       &fpsCTRLvar->NBkwn, &fpsCTRLvar->NBfps, &fpsCTRLvar->NBindex,
-                                       0);
-            TUI_clearscreen(NULL, NULL);
-            // safeguard in case current selection disappears
-            fpsCTRLvar->fpsindexSelected = 0;
             break;
 
         case ANSI_KEY_UP:
@@ -541,10 +500,6 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
                 {
                     fpsCTRLvar->GUIlineSelected[l] = 0;
                 }
-            }
-            if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
-            {
-                fpsCTRLvar->scheduler_wrowstart--;
             }
             if (fpsCTRLvar->fpsCTRL_DisplayMode == 1)
             {
@@ -573,10 +528,6 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
                         keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
                 }
             }
-            if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
-            {
-                fpsCTRLvar->scheduler_wrowstart++;
-            }
             if (fpsCTRLvar->fpsCTRL_DisplayMode == 1)
             {
                 fpsCTRLvar->help_wrowstart++;
@@ -596,10 +547,6 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
                 {
                     fpsCTRLvar->GUIlineSelected[l] = 0;
                 }
-            }
-            if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
-            {
-                fpsCTRLvar->scheduler_wrowstart -= 10;
             }
             if (fpsCTRLvar->fpsCTRL_DisplayMode == 1)
             {
@@ -626,10 +573,6 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
                     fpsCTRLvar->GUIlineSelected[l] =
                         keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
                 }
-            }
-            if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
-            {
-                fpsCTRLvar->scheduler_wrowstart += 10;
             }
             if (fpsCTRLvar->fpsCTRL_DisplayMode == 1)
             {
@@ -730,18 +673,18 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
 
             if (fps[fps_idx].parray[p_idx].type == FPTYPE_EXECFILENAME)
             {
-                char cmd[512];
-                snprintf(cmd, sizeof(cmd), "tmux send-keys -t %s:run \"cd %s\" C-m",
-                         fps[fps_idx].md->name, fps[fps_idx].md->workdir);
-                if (system(cmd) != 0)
+                // detached in the unit's work directory, output to its exec.out (U11)
+                const char *script = fps[fps_idx].parray[p_idx].val.string[0];
+                if (fps_unit_script(fps[fps_idx].md->name, script, FPS_UNIT_QUIET) == 0)
                 {
-                } // Corrected escaping for "cd %s"
-                snprintf(cmd, sizeof(cmd), "tmux send-keys -t %s:run \"%s %s/%s.fps\" C-m",
-                         fps[fps_idx].md->name, fps[fps_idx].parray[p_idx].val.string[0],
-                         fps[fps_idx].md->datadir, fps[fps_idx].md->name);
-                if (system(cmd) != 0)
+                    fpsctrl_unit_say(0, "%s: %s started (output in %s.fps.d/exec.out)",
+                                     fps[fps_idx].md->name, script, fps[fps_idx].md->name);
+                }
+                else
                 {
-                } // Corrected escaping for "%s %s/%s.fps"
+                    fpsctrl_unit_say(1, "%s: cannot run %s (see %s.fps.d/exec.out)",
+                                     fps[fps_idx].md->name, script, fps[fps_idx].md->name);
+                }
             }
 
             break;
@@ -753,78 +696,28 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
                 FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
             break;
 
+        // starts and stops run as milk-fps-* tools: the screen keeps refreshing meanwhile
         case 'R': // start run process
-        {
-            fps_idx           = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            FPS *selected_fps = &fps[fps_idx];
-            functionparameter_FPS_tmux_ensure(selected_fps);
-            char progexec[1024];
-            if ((strlen(selected_fps->md->execfullpath) > 0) &&
-                (strcmp(selected_fps->md->execfullpath, "unknown") != 0))
-            {
-                strncpy(progexec, selected_fps->md->execfullpath, 1023);
-            }
-            else
-            {
-                snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
-            }
-
-            EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" cd %s\" C-m",
-                                           selected_fps->md->name, selected_fps->md->workdir);
-            EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" %s %s:runstart\" C-m",
-                                           selected_fps->md->name, progexec,
-                                           selected_fps->md->name);
-        }
-        break;
+            fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+            fpsctrl_unit_act(fps[fps_idx].md->name, "runstart");
+            break;
 
         case ctrl('r'): // stop run process
+        case 'r':       // legacy
             fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_RUNstop(&fps[fps_idx]);
-            break;
-
-        case 'r': // legacy stop run process
-            fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_RUNstop(&fps[fps_idx]);
-            break;
-
-
-        case 'C': // legacy start conf process
-            fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_CONFstart(&fps[fps_idx]);
+            fpsctrl_unit_act(fps[fps_idx].md->name, "runstop");
             break;
 
         case 'O': // start conf process
-        {
-            fps_idx           = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            FPS *selected_fps = &fps[fps_idx];
-            functionparameter_FPS_tmux_ensure(selected_fps);
-            char progexec[1024];
-            if ((strlen(selected_fps->md->execfullpath) > 0) &&
-                (strcmp(selected_fps->md->execfullpath, "unknown") != 0))
-            {
-                strncpy(progexec, selected_fps->md->execfullpath, 1023);
-            }
-            else
-            {
-                snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
-            }
-
-            EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" cd %s\" C-m",
-                                           selected_fps->md->name, selected_fps->md->workdir);
-            EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" %s %s:confstart\" C-m",
-                                           selected_fps->md->name, progexec,
-                                           selected_fps->md->name);
-        }
-        break;
-
-        case ctrl('o'): // stop conf process
+        case 'C': // legacy
             fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_CONFstop(&fps[fps_idx]);
+            fpsctrl_unit_act(fps[fps_idx].md->name, "confstart");
             break;
 
-        case 'c': // kill conf process
+        case ctrl('o'): // stop conf process
+        case 'c':       // legacy
             fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_CONFstop(&fps[fps_idx]);
+            fpsctrl_unit_act(fps[fps_idx].md->name, "confstop");
             break;
 
         case 'l': // list all parameters
@@ -843,7 +736,8 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
             }
             printf("  TOTAL :  %d nodes\n\n", fpsCTRLvar->NBkwn);
             printf("Press Enter to Continue\n");
-            while (getchar() != '\n')
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF) /* EOF: stdin closed, do not spin */
             {
             }
             {

@@ -230,9 +230,9 @@ ls /dev/shm/*.im.shm /dev/shm/fps.* \
 rm /dev/shm/fps.<name>.shm
 rm /dev/shm/<stream>.im.shm
 
-# Kill orphaned tmux sessions
-tmux ls 2>/dev/null
-tmux kill-session -t <name>
+# Stop and remove leftover units
+milk-fps-list
+milk-fps-rm -f <name>
 ```
 
 ## Source File Reference

@@ -43,6 +43,11 @@ int processinfo_loopstep(PROCESSINFO *processinfo)
         loopstatus = 0;
     }
 
+    if (processinfo_signal_TERM == 1) // stop request (runstop, kill)
+    {
+        loopstatus = 0;
+    }
+
     if (processinfo_signal_HUP == 1) // terminal has disappeared
     {
         loopstatus = 0;

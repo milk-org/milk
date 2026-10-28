@@ -260,7 +260,8 @@ int main(int argc, char *argv[])
                                             { "help-oneline", no_argument, 0, '1' },
                                             { 0, 0, 0, 0 } };
 
-    while ((opt = getopt_long(argc, argv, "h1", long_options, &option_index)) != -1)
+    // '+': options stop at <FPSname>.<paramkey>, so a value such as -1 is not read as an option
+    while ((opt = getopt_long(argc, argv, "+h1", long_options, &option_index)) != -1)
     {
         switch (opt)
         {

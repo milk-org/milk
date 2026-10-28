@@ -21,7 +21,7 @@ This script uses standard bash for argument parsing and prerequisite checks,
 and then drops into a native milk-cli heredoc block for zero-overhead execution."
 
 # Prerequisites
-RequiredCommands=(tmux milk-cli)
+RequiredCommands=(milk-cli)
 RequiredFiles=()
 RequiredDirs=()
 RequiredPipes=()
@@ -45,36 +45,31 @@ source milk-argparse
 # ==============================================================================
 # 2. NATIVE EXECUTION: Zero-Overhead milk-cli Block
 # ==============================================================================
-# Note the single quotes around 'EOF'. We want milk-cli to expand variables
-# natively, not bash. This prevents syntax collisions and enables native fast paths.
+# The quoted 'EOF' keeps bash from expanding the block here: milk-script expands it, with
+# $STREAMNAME and $GAIN exported by milk-argparse.
 
-milk-cli -s << 'EOF'
+milk-script -q - << 'EOF'
 
 # --- A. Orchestration & Waiting ---
-echo "Waiting natively for stream: $STREAMNAME..."
-waitfor_stream $STREAMNAME 10
-if [ $? -ne 0 ]; then
+echo "Waiting for stream: $STREAMNAME..."
+if ! @waitfor "s.$STREAMNAME" -t 10; then
     echo "Timeout waiting for $STREAMNAME"
     exit 1
 fi
 
-# Native dot-expansion for stream metadata
-echo "Stream is online. Shape is: ${$STREAMNAME.xsize}x${$STREAMNAME.ysize}"
+# --- B. Stream metadata ---
+nx=@s.${STREAMNAME}.xsize
+ny=@s.${STREAMNAME}.ysize
+echo "Stream is online. Shape is: ${nx}x${ny}"
 
-# --- C. Native Image Math ---
-# Allocate an image natively and perform algebra without spawning cacao plugins
+# --- C. Image math ---
 echo "Allocating mask image..."
-mem.mk2Dim mask_img ${$STREAMNAME.xsize} ${$STREAMNAME.ysize}
-mask_img = mask_img * 0.0 + 1.0
+mem.mk2Dim "@L:mask_img" "$nx" "$ny"
+@calc "mask_img = mask_img * 0.0 + 1.0"
 
 # --- D. Event trigger ---
 echo "Waiting for the next frame..."
-on_update $STREAMNAME {
-    echo "Frame arrived!"
-    # Execute fast native math or logging here
-    # Make sure to exit after processing the frame for this example script
-    # exit
-}
+@waitfor "s.$STREAMNAME" -t 10 && echo "Frame arrived!"
 
 echo "Script complete."
 EOF

@@ -8,18 +8,26 @@
 
     Some care is needed with header packaging.
 
-As discussed in [Build Tiers](../quickstart/build_tiers.md), some optional dependencies are expected by
-MILK and enable additional features
+As discussed in [Build Tiers](../quickstart/build_tiers.md), optional dependencies are detected by
+MILK and enable additional features:
 
-| Option         | Default | Description                           |
-| -------------- | ------- | ------------------------------------- |
-| `USE_READLINE` | ON      | Enable readline for CLI input         |
-| `USE_GSL`      | ON      | Enable GSL for plugins                |
-| `USE_CUDA`     | OFF     | CUDA GPU computations                 |
-| `USE_MAGMA`    | OFF     | MAGMA linear algebra on GPU routines  |
-| `USE_OPENBLAS` | OFF     | BLAS: multicore linear algebra on CPU |
-| `USE_MKL`      | OFF     | Intel MKL compute library             |
-| `USE_LAPACKE`  | OFF     | Lapacke linear algebra library        |
+| Option         | Default | Extension Token `<X>` | Description                                       |
+| -------------- | ------- | --------------------- | ------------------------------------------------- |
+| `USE_CFITSIO`  | ON      | `CFITSIO`             | FITS file I/O                                     |
+| `USE_OPENBLAS` | ON      | `BLAS`, `LAPACKE`     | BLAS (and optionally LAPACKE) via OpenBLAS        |
+| `USE_LAPACKE`  | ON      | `LAPACKE`             | LAPACKE linear algebra routines                   |
+| `USE_MKL`      | OFF     | `BLAS`, `LAPACKE`     | Intel MKL (provides both `BLAS` and `LAPACKE`)    |
+| `USE_CUDA`     | OFF     | `CUDA`                | CUDA GPU computations                             |
+| `USE_MAGMA`    | OFF     | `MAGMA`               | MAGMA linear algebra on GPU routines              |
+
+The five valid `<X>` extension tokens recognized by `// MILK_CMAKE_REQUEST_<X>` and
+`// MILK_CMAKE_MANDATE_<X>` are:
+
+- `BLAS` (provided by OpenBLAS or MKL, defines `HAVE_BLAS`)
+- `LAPACKE` (provided by LAPACKE, OpenBLAS, or MKL, defines `HAVE_LAPACKE`)
+- `CUDA` (defines `HAVE_CUDA`)
+- `MAGMA` (defines `HAVE_MAGMA`)
+- `CFITSIO` (defines `USE_CFITSIO`)
 
 ## 1. User build requests and CMake symbols
 

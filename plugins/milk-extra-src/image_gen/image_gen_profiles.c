@@ -20,6 +20,7 @@
 #endif
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_arith/COREMOD_arith.h"
+#include "COREMOD_arith/image_elem_block.h"
 #include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_memory/create_image.h"
@@ -144,25 +145,37 @@ imageID make_psf_from_profile(const char *profile_name,
 imageID make_offsetHyperGaussian(uint32_t size, double a, double b, long n, const char *IDname)
 {
     imageID ID;
-
     create_2Dimage_ID(IDname, size, size, &ID);
-    for (uint32_t ii = 0; ii < size; ii++)
-    {
-        for (uint32_t jj = 0; jj < size; jj++)
-        {
-            double x, y, dist;
+    uint64_t             nelement = (uint64_t) size * (uint64_t) size;
+    uint64_t             nblk     = (nelement + ARITH_ELEM_BLK - 1) / ARITH_ELEM_BLK;
+    int                  nth      = milk_omp_team_size(nelement, 65536);
+    float *MILK_RESTRICT out      = MILK_ASSUME_ALIGNED(dcimg[ID].array.F);
+    const double         cxy      = (double) (size / 2);
+    const float          af       = (float) a;
+    const float          inv_b    = (float) (1.0 / b);
 
-            x    = 1.0 * ii - size / 2;
-            y    = 1.0 * jj - size / 2;
-            dist = sqrt(x * x + y * y);
-            if (dist < a)
-            {
-                dcimg[ID].array.F[jj * size + ii] = 0.0f;
-            }
-            else
-            {
-                dcimg[ID].array.F[jj * size + ii] = 1.0f - expf(-powf((dist - a) / b, n));
-            }
+#ifdef _OPENMP
+#    pragma omp parallel for schedule(static) num_threads(nth) if (nth > 1)
+#endif
+    for (uint64_t blk = 0; blk < nblk; blk++)
+    {
+        MILK_ALIGNED(64) float rbuf[ARITH_ELEM_BLK];
+        MILK_ALIGNED(64) float pbuf[ARITH_ELEM_BLK];
+        uint64_t               off = blk * ARITH_ELEM_BLK;
+        int len = (int) ((nelement - off < ARITH_ELEM_BLK) ? (nelement - off) : ARITH_ELEM_BLK);
+        arith_coord_block_f_inline(ARITH_COORD_R, size, size, cxy, cxy, off, len, rbuf);
+#pragma omp simd
+        for (int j = 0; j < len; j++)
+        {
+            float d = rbuf[j] - af;
+            pbuf[j] = (d > 0.0f) ? (d * inv_b) : 0.0f;
+        }
+        arith_elem_pow_const_f_inline(pbuf, pbuf, (double) n, len);
+        float *MILK_RESTRICT dst = out + off;
+#pragma omp simd
+        for (int j = 0; j < len; j++)
+        {
+            dst[j] = (rbuf[j] < af) ? 0.0f : (1.0f - expf(-pbuf[j]));
         }
     }
 
@@ -172,29 +185,32 @@ imageID make_offsetHyperGaussian(uint32_t size, double a, double b, long n, cons
 imageID make_cosapoedgePupil(uint32_t size, double a, double b, const char *IDname)
 {
     imageID ID;
-
     create_2Dimage_ID(IDname, size, size, &ID);
-    for (uint32_t ii = 0; ii < size; ii++)
-    {
-        for (uint32_t jj = 0; jj < size; jj++)
-        {
-            double x, y, dist;
+    uint64_t             nelement = (uint64_t) size * (uint64_t) size;
+    uint64_t             nblk     = (nelement + ARITH_ELEM_BLK - 1) / ARITH_ELEM_BLK;
+    int                  nth      = milk_omp_team_size(nelement, 65536);
+    float *MILK_RESTRICT out      = MILK_ASSUME_ALIGNED(dcimg[ID].array.F);
+    const double         cxy      = (double) (size / 2);
+    const float          af       = (float) a;
+    const float          bf       = (float) b;
+    const float          scale    = (b != a) ? (float) (PI / (b - a)) : 0.0f;
 
-            x    = 1.0 * ii - size / 2;
-            y    = 1.0 * jj - size / 2;
-            dist = sqrt(x * x + y * y);
-            if (dist < a)
-            {
-                dcimg[ID].array.F[jj * size + ii] = 1.0f;
-            }
-            else if (dist > b)
-            {
-                dcimg[ID].array.F[jj * size + ii] = 0.0f;
-            }
-            else
-            {
-                dcimg[ID].array.F[jj * size + ii] = 0.5 * (cos(PI * (dist - a) / (b - a)) + 1.0);
-            }
+#ifdef _OPENMP
+#    pragma omp parallel for schedule(static) num_threads(nth) if (nth > 1)
+#endif
+    for (uint64_t blk = 0; blk < nblk; blk++)
+    {
+        MILK_ALIGNED(64) float rbuf[ARITH_ELEM_BLK];
+        uint64_t               off = blk * ARITH_ELEM_BLK;
+        int len = (int) ((nelement - off < ARITH_ELEM_BLK) ? (nelement - off) : ARITH_ELEM_BLK);
+        arith_coord_block_f_inline(ARITH_COORD_R, size, size, cxy, cxy, off, len, rbuf);
+        float *MILK_RESTRICT dst = out + off;
+#pragma omp simd
+        for (int j = 0; j < len; j++)
+        {
+            float d = rbuf[j];
+            float c = 0.5f * (cosf((d - af) * scale) + 1.0f);
+            dst[j]  = (d < af) ? 1.0f : ((d > bf) ? 0.0f : c);
         }
     }
 
@@ -294,10 +310,7 @@ imageID image_gen_im2coord(const char *IDin_name, uint8_t axis, const char *IDou
             fflush(stdout);
             xsize = dcimg[IDin].md[0].size[0];
             create_1Dimage_ID(IDout_name, xsize, &IDout);
-            for (uint32_t ii = 0; ii < xsize; ii++)
-            {
-                dcimg[IDout].array.F[ii] = 1.0f * ii;
-            }
+            arith_image_fill_coord(&dcimg[IDout], ARITH_COORD_X, 0.0, 0.0);
         }
 
         if (naxis == 2)
@@ -311,30 +324,15 @@ imageID image_gen_im2coord(const char *IDin_name, uint8_t axis, const char *IDou
             switch (axis)
             {
             case 0:
-                for (uint32_t ii = 0; ii < xsize; ii++)
-                {
-                    for (uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout].array.F[jj * xsize + ii] = 1.0f * ii;
-                    }
-                }
+                arith_image_fill_coord(&dcimg[IDout], ARITH_COORD_X, 0.0, 0.0);
                 break;
             case 1:
-                for (uint32_t ii = 0; ii < xsize; ii++)
-                {
-                    for (uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout].array.F[jj * xsize + ii] = 1.0f * jj;
-                    }
-                }
+                arith_image_fill_coord(&dcimg[IDout], ARITH_COORD_Y, 0.0, 0.0);
                 break;
             default:
-                for (uint32_t ii = 0; ii < xsize; ii++)
+                for (uint64_t ii = 0; ii < (uint64_t) xsize * ysize; ii++)
                 {
-                    for (uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout].array.F[jj * xsize + ii] = 1.0 * jj * xsize + ii;
-                    }
+                    dcimg[IDout].array.F[ii] = (float) ii;
                 }
             }
         }
@@ -351,52 +349,25 @@ imageID image_gen_im2coord(const char *IDin_name, uint8_t axis, const char *IDou
             switch (axis)
             {
             case 0:
-                for (uint32_t ii = 0; ii < xsize; ii++)
-                {
-                    for (uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        for (uint32_t kk = 0; kk < zsize; kk++)
-                        {
-                            dcimg[IDout].array.F[kk * xsize * ysize + jj * xsize + ii] = 1.0 * ii;
-                        }
-                    }
-                }
+                arith_image_fill_coord(&dcimg[IDout], ARITH_COORD_X, 0.0, 0.0);
                 break;
             case 1:
-                for (uint32_t ii = 0; ii < xsize; ii++)
-                {
-                    for (uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        for (uint32_t kk = 0; kk < zsize; kk++)
-                        {
-                            dcimg[IDout].array.F[kk * xsize * ysize + jj * xsize + ii] = 1.0 * jj;
-                        }
-                    }
-                }
+                arith_image_fill_coord(&dcimg[IDout], ARITH_COORD_Y, 0.0, 0.0);
                 break;
             case 2:
-                for (uint32_t ii = 0; ii < xsize; ii++)
+                for (uint32_t kk = 0; kk < zsize; kk++)
                 {
-                    for (uint32_t jj = 0; jj < xsize; jj++)
+                    float *restrict slice = dcimg[IDout].array.F + (uint64_t) kk * xsize * ysize;
+                    for (uint64_t ii = 0; ii < (uint64_t) xsize * ysize; ii++)
                     {
-                        for (uint32_t kk = 0; kk < zsize; kk++)
-                        {
-                            dcimg[IDout].array.F[kk * xsize * ysize + jj * xsize + ii] = 1.0 * kk;
-                        }
+                        slice[ii] = (float) kk;
                     }
                 }
                 break;
             default:
-                for (uint32_t ii = 0; ii < xsize; ii++)
+                for (uint64_t ii = 0; ii < (uint64_t) xsize * ysize * zsize; ii++)
                 {
-                    for (uint32_t jj = 0; jj < xsize; jj++)
-                    {
-                        for (uint32_t kk = 0; kk < zsize; kk++)
-                        {
-                            dcimg[IDout].array.F[kk * xsize * ysize + jj * xsize + ii] =
-                                1.0 * kk * xsize * ysize + jj * xsize + ii;
-                        }
-                    }
+                    dcimg[IDout].array.F[ii] = (float) ii;
                 }
             }
         }

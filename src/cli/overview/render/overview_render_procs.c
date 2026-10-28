@@ -27,7 +27,7 @@ static int ov_procs__filter(const OV_LAYOUT  *lay,
                             int              *has_re,
                             regex_t          *re)
 {
-    int         filt_n        = ov_filter_procs(lay, m, rel, filt_idx, OV_MAX_PROCS);
+    int         filt_n        = ov_rows(lay, m, OV_FOCUS_PROCS, filt_idx, OV_MAX_PROCS);
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
 
     *has_re = 0;
@@ -67,14 +67,16 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
     memset(local_depth, 0, sizeof(local_depth));
     {
         int eff_sel = -1;
-        if (lay->freeze && lay->freeze_focus == OV_FOCUS_PROCS && lay->freeze_sel_proc >= 0 &&
-            lay->freeze_sel_proc < filt_n)
+        if (lay->freeze && lay->freeze_focus == OV_FOCUS_PROCS &&
+            lay->panel[OV_FOCUS_PROCS].freeze_row >= 0 &&
+            lay->panel[OV_FOCUS_PROCS].freeze_row < filt_n)
         {
-            eff_sel = lay->freeze_sel_proc;
+            eff_sel = lay->panel[OV_FOCUS_PROCS].freeze_row;
         }
-        else if (lay->focus == OV_FOCUS_PROCS && lay->sel_proc >= 0 && lay->sel_proc < filt_n)
+        else if (lay->focus == OV_FOCUS_PROCS && lay->panel[OV_FOCUS_PROCS].sel >= 0 &&
+                 lay->panel[OV_FOCUS_PROCS].sel < filt_n)
         {
-            eff_sel = lay->sel_proc;
+            eff_sel = lay->panel[OV_FOCUS_PROCS].sel;
         }
         if (eff_sel >= 0)
         {
@@ -82,8 +84,7 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
             int root_node = m->procs[root_pi].node_idx;
             if (root_node >= 0)
             {
-                int8_t node_depths[OV_MAX_NODES];
-                sg_compute_node_depths(m, root_node, SG_MODE_FULL, node_depths);
+                const int8_t *node_depths = ov_node_depths(m, root_node, SG_MODE_FULL);
                 for (int pi = 0; pi < m->nb_procs; pi++)
                 {
                     int n = m->procs[pi].node_idx;
@@ -97,23 +98,24 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
     }
 
     int max_rows = r.height - 4;
-    int start    = lay->scroll_proc;
+    int start    = lay->panel[OV_FOCUS_PROCS].scroll;
 
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_PROCS);
-    if (filt_n == 0 && active_filter[0] != '\0')
+    if (filt_n == 0)
     {
-        int row = hrow + 2;
-        ov_buf_pos(row, r.col + 1);
-        ov_theme_bg(OV_BG_PANEL);
-        ov_theme_fg(OV_FG_WARN);
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No matching processes for '/%s/'", active_filter);
-        ov_buf_printf("%s", msg);
-        render_pad_spaces((int) strlen(msg), r.width);
-        for (int i = 1; i < max_rows; i++)
+        char msg[192];
+        if (active_filter[0] != '\0')
         {
-            clear_row(hrow + 2 + i, r.col + 1, r.width - 2, OV_BG_PANEL);
+            snprintf(msg, sizeof(msg), "  No matching processes for '/%s/'", active_filter);
         }
+        else
+        {
+            snprintf(msg, sizeof(msg),
+                     "  No processes \xe2\x80\x94 start a pipeline, or milk-CTRL -d DIR (now %s)",
+                     ov_get_procdir());
+        }
+        render_empty_rows(r, hrow + 2, max_rows,
+                          (active_filter[0] != '\0') ? OV_FG_WARN : OV_FG_DIM, msg);
         render_scroll_indicators(r, 0, max_rows, 0, OV_FG_PROC);
         return;
     }
@@ -133,7 +135,7 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
             clear_row(row, r.col + 1, r.width - 2, OV_BG_PANEL);
         }
     }
-    render_scroll_indicators(r, lay->scroll_proc, max_rows, filt_n, OV_FG_PROC);
+    render_scroll_indicators(r, lay->panel[OV_FOCUS_PROCS].scroll, max_rows, filt_n, OV_FG_PROC);
     ov_buf_reset_attr();
 }
 
@@ -152,16 +154,23 @@ void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_REL
     regex_t re;
     int     filt_n = ov_procs__filter(lay, m, rel, filt_idx, &has_re, &re);
 
-    int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-                      ? m->loops[lay->sel_loop].loop_id
-                      : -1;
-    ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "PROCESSINFO", OV_FG_PROC,
+    int  loop_id    = (lay->loop_filter_active && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+                       lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
+                          ? m->loops[lay->sub[OV_SUB_LOOPS].sel].loop_id
+                          : -1;
+    char ptitle[48] = "PROCESSINFO";
+    if (m->nb_procs_hidden > 0)
+    {
+        snprintf(ptitle, sizeof(ptitle), "PROCESSINFO +%d hidden", m->nb_procs_hidden);
+    }
+    ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, ptitle, OV_FG_PROC,
                                 lay->focus == OV_FOCUS_PROCS, 0, lay->ctrl_blink, loop_id,
-                                lay->filter_proc, lay->filter_proc_active, filt_n, m->nb_procs);
+                                lay->panel[OV_FOCUS_PROCS].filter,
+                                lay->panel[OV_FOCUS_PROCS].filter_on, filt_n, m->nb_procs);
 
     int hrow = r.row + 1;
 
-    ov_procs__render_header(lay, r);
+    ov_table_header(&ov_procs_table, lay, r, OV_FG_PROC_HDR);
     ov_procs__render_rows(lay, m, rel, hrow, r, filt_idx, filt_n, has_re, &re);
 
     int max_rows = r.height - 4;

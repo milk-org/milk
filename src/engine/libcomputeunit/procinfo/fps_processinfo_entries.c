@@ -53,7 +53,8 @@ errno_t fps_add_processinfo_entries(FPS *fps)
                                  FPFLAG, NULL, NULL);
 
     // value = -1 indicates no RT priority
-    long RTprio_default[4] = { fps->cmdset.RT_priority, -1, 49, 20 };
+    long RTprio_default[4] = { (fps->cmdset.RT_priority > 0) ? fps->cmdset.RT_priority : -1, -1, 49,
+                               20 };
     long pindex_RTprio     = -1;
     function_parameter_add_entry(fps, ".procinfo.RTprio", "RTprio", FPTYPE_INT64, FPFLAG,
                                  &RTprio_default, &pindex_RTprio);
@@ -69,11 +70,12 @@ errno_t fps_add_processinfo_entries(FPS *fps)
                                  NULL);
 
     // taskset
-    function_parameter_add_entry(fps, ".procinfo.taskset", "CPUs mask", FPTYPE_STRING, FPFLAG,
-                                 "1-127", NULL);
+    function_parameter_add_entry(fps, ".procinfo.taskset", "CPUs mask", FPTYPE_STRING, FPFLAG, "",
+                                 NULL); /* empty: keep the mask the process was started with */
 
-    // value = 0 indicates process will adjust to available nb cores
-    long maxNBthread_default[4] = { 1, 0, 128, 1 };
+    // value = 0: the team policy decides (milk_omp_team_size: image size, physical cores, affinity);
+    // a positive value caps OpenMP teams (and OpenBLAS) at that many threads
+    long maxNBthread_default[4] = { 0, 0, 128, 0 };
     long pindex_NBthread        = -1;
     function_parameter_add_entry(fps, ".procinfo.NBthread", "max NB threads", FPTYPE_INT64, FPFLAG,
                                  &maxNBthread_default, &pindex_NBthread);

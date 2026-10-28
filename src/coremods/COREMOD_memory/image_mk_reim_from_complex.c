@@ -55,36 +55,38 @@ errno_t mk_reim_from_complex_IMGID(IMGID *imgin, IMGID *imgre, IMGID *imgim)
     imgim->mdt->naxis = naxis;
 
     uint64_t nelement = imgin->md[0].nelement;
+    int      nth      = milk_omp_team_size(nelement, 262144);
 
-#define MK_REIM_LOOP(DTYPE_OUT, TYPE_IN, TYPE_OUT, UNION_IN, UNION_OUT)                   \
-    {                                                                                     \
-        imgre->mdt->datatype = DTYPE_OUT;                                                 \
-        if (imgre->ID == -1)                                                              \
-            createimagefromIMGID(imgre);                                                  \
-        imgim->mdt->datatype = DTYPE_OUT;                                                 \
-        if (imgim->ID == -1)                                                              \
-            createimagefromIMGID(imgim);                                                  \
-        imgre->md[0].write             = 1;                                               \
-        imgim->md[0].write             = 1;                                               \
-        TYPE_IN *MILK_RESTRICT  ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.UNION_IN);  \
-        TYPE_OUT *MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.UNION_OUT); \
-        TYPE_OUT *MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.UNION_OUT); \
-        _Pragma("omp parallel if (nelement > OMP_NELEMENT_LIMIT)")                        \
-        {                                                                                 \
-            _Pragma("omp for simd") for (uint64_t ii = 0; ii < nelement; ii++)            \
-            {                                                                             \
-                ptr_re[ii] = ptr_in[ii].re;                                               \
-                ptr_im[ii] = ptr_in[ii].im;                                               \
-            }                                                                             \
-        }                                                                                 \
-        if (imgre->md[0].shared == 1)                                                     \
-            COREMOD_MEMORY_image_set_sempost_byID(imgre->ID, -1);                         \
-        if (imgim->md[0].shared == 1)                                                     \
-            COREMOD_MEMORY_image_set_sempost_byID(imgim->ID, -1);                         \
-        imgre->md[0].cnt0++;                                                              \
-        imgim->md[0].cnt0++;                                                              \
-        imgre->md[0].write = 0;                                                           \
-        imgim->md[0].write = 0;                                                           \
+#define MK_REIM_LOOP(DTYPE_OUT, TYPE_IN, TYPE_OUT, UNION_IN, UNION_OUT)                           \
+    {                                                                                             \
+        imgre->mdt->datatype = DTYPE_OUT;                                                         \
+        if (imgre->ID == -1)                                                                      \
+            createimagefromIMGID(imgre);                                                          \
+        imgim->mdt->datatype = DTYPE_OUT;                                                         \
+        if (imgim->ID == -1)                                                                      \
+            createimagefromIMGID(imgim);                                                          \
+        imgre->md[0].write             = 1;                                                       \
+        imgim->md[0].write             = 1;                                                       \
+        TYPE_IN *MILK_RESTRICT  ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.UNION_IN);          \
+        TYPE_OUT *MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.UNION_OUT);         \
+        TYPE_OUT *MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.UNION_OUT);         \
+        _Pragma(                                                                                  \
+            "omp parallel for simd num_threads(nth) if (parallel : nth > 1)") for (uint64_t ii =  \
+                                                                                       0;         \
+                                                                                   ii < nelement; \
+                                                                                   ii++)          \
+        {                                                                                         \
+            ptr_re[ii] = ptr_in[ii].re;                                                           \
+            ptr_im[ii] = ptr_in[ii].im;                                                           \
+        }                                                                                         \
+        if (imgre->md[0].shared == 1)                                                             \
+            COREMOD_MEMORY_image_set_sempost_byID(imgre->ID, -1);                                 \
+        if (imgim->md[0].shared == 1)                                                             \
+            COREMOD_MEMORY_image_set_sempost_byID(imgim->ID, -1);                                 \
+        imgre->md[0].cnt0++;                                                                      \
+        imgim->md[0].cnt0++;                                                                      \
+        imgre->md[0].write = 0;                                                                   \
+        imgim->md[0].write = 0;                                                                   \
     }
 
     if (datatype == _DATATYPE_COMPLEX_FLOAT)

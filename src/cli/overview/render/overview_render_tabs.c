@@ -8,81 +8,78 @@
  */
 
 #include "overview_render_internal.h"
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
-/**
- * ov_render_tabs - render dedicated tab selection bar and prominent help button.
- * @lay: layout state
- *
- * Renders on row 2 (lay->r_tabs.row). Left side displays function key view tabs
- * ([F2:DASH] .. [F7:LOOPS]), and right side displays prominent [h: HELP] button
- * with slow blink color when idle, and active pill styling when help is open.
- */
-void ov_render_tabs(OV_LAYOUT *lay)
+/* Tab bar cells as last drawn (1-based screen column, width): the views, then the help button */
+static struct
 {
-    OV_RECT r = lay->r_tabs;
-    ov_buf_pos(r.row, r.col);
+    int col;
+    int w;
+} s_tab[OV_VIEW_COUNT + 1];
+
+/** ov_tabbar_hit - view tab under screen column @mc as last drawn, OV_TABBAR_HELP, or -1. */
+int ov_tabbar_hit(int mc)
+{
+    for (int v = 0; v <= OV_VIEW_COUNT; v++)
+    {
+        if (s_tab[v].w > 0 && mc >= s_tab[v].col && mc < s_tab[v].col + s_tab[v].w)
+        {
+            return (v == OV_VIEW_COUNT) ? OV_TABBAR_HELP : v;
+        }
+    }
+    return -1;
+}
+
+/* Tab forms by width level: 0 " [ F2:DASH ] " (pill when current), 1 " F2:DASH ", 2 " F2 " */
+static int tab_text(char *buf, size_t sz, int v, int level)
+{
+    if (level >= 2)
+    {
+        return snprintf(buf, sz, " F%d ", ov_views[v].fkey);
+    }
+    return snprintf(buf, sz, " F%d:%s ", ov_views[v].fkey, ov_views[v].label);
+}
+
+/* Draw one view tab at @level; current view as a pill (level 0) or reversed text */
+static void draw_tab(int v, int level, int current)
+{
+    char t[48];
+    tab_text(t, sizeof(t), v, level);
     ov_theme_bg(OV_BG_HEADER);
-
-    /* Render view tabs */
-    int tabs_total_width = 0;
-    int tab_widths[OV_VIEW_COUNT];
-    for (int v = 0; v < OV_VIEW_COUNT; v++)
+    if (level == 0)
     {
-        tab_widths[v] = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
-        tabs_total_width += tab_widths[v];
+        ov_theme_fg(current ? OV_FG_TITLE : OV_FG_DIM);
+        ov_buf_printf(" %s", current ? OV_LCARS_LEFT : "[");
     }
-
-    for (int v = 0; v < OV_VIEW_COUNT; v++)
+    if (current)
     {
-        if (v == (int) lay->view)
-        {
-            ov_theme_bg(OV_BG_HEADER);
-            ov_theme_fg(OV_FG_TITLE);
-            ov_buf_printf(" %s", OV_LCARS_LEFT);
-            ov_theme_bg(OV_FG_TITLE);
-            ov_theme_fg(OV_BG_TERMINAL);
-            ov_buf_bold();
-            ov_buf_printf(" F%d:%s ", v + 2, ov_view_label((ov_view_t) v));
-            ov_buf_reset_attr();
-            ov_theme_bg(OV_BG_HEADER);
-            ov_theme_fg(OV_FG_TITLE);
-            ov_buf_printf("%s ", OV_LCARS_RIGHT);
-        }
-        else
-        {
-            ov_theme_bg(OV_BG_HEADER);
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf(" [");
-            ov_theme_fg(OV_FG_TEXT);
-            ov_buf_bold();
-            ov_buf_printf(" F%d:%s ", v + 2, ov_view_label((ov_view_t) v));
-            ov_buf_reset_attr();
-            ov_theme_bg(OV_BG_HEADER);
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf("] ");
-        }
-    }
-
-    /* Help button [h: HELP] - prominent with slow blink */
-    int help_width = 11; /* visual width of " [h: HELP] " */
-    int pad        = r.width - tabs_total_width - help_width;
-    if (pad > 0)
-    {
-        ov_theme_bg(OV_BG_HEADER);
-        ov_buf_hline(' ', pad);
+        ov_theme_bg(OV_FG_TITLE);
+        ov_theme_fg(OV_BG_TERMINAL);
     }
     else
     {
-        pad = 0;
+        ov_theme_fg(OV_FG_TEXT);
     }
-
-    /* Render prominent help button */
-    if (lay->show_help)
+    ov_buf_bold();
+    ov_buf_printf("%s", t);
+    ov_buf_reset_attr();
+    ov_theme_bg(OV_BG_HEADER);
+    if (level == 0)
     {
-        /* Active state when help overlay is visible: light-blue solid pill */
-        ov_theme_bg(OV_BG_HEADER);
+        ov_theme_fg(current ? OV_FG_TITLE : OV_FG_DIM);
+        ov_buf_printf("%s ", current ? OV_LCARS_RIGHT : "]");
+    }
+}
+
+/* Draw the help button " [h: HELP] " (11 columns): a pill while help is open, else a slow blink */
+static void draw_help(const OV_LAYOUT *lay)
+{
+    ov_theme_bg(OV_BG_HEADER);
+    if (lay->help.show)
+    {
         ov_theme_fg(OV_FG_TITLE);
         ov_buf_printf(" %s", OV_LCARS_LEFT);
         ov_theme_bg(OV_FG_TITLE);
@@ -93,41 +90,93 @@ void ov_render_tabs(OV_LAYOUT *lay)
         ov_theme_bg(OV_BG_HEADER);
         ov_theme_fg(OV_FG_TITLE);
         ov_buf_printf("%s ", OV_LCARS_RIGHT);
+        return;
+    }
+    struct timespec now_ts;
+    clock_gettime(CLOCK_MONOTONIC, &now_ts);
+    ov_buf_printf(" ");
+    if ((now_ts.tv_sec % 2) == 0)
+    {
+        ov_theme_bg(OV_BADGE_WARN);
+        ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
     }
     else
     {
-        /* Slow blinking prominent amber badge (1s bright, 1s dim) */
-        struct timespec now_ts;
-        clock_gettime(CLOCK_MONOTONIC, &now_ts);
-        ov_theme_bg(OV_BG_HEADER);
-        ov_buf_printf(" ");
-        if ((now_ts.tv_sec % 2) == 0)
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_WARN);
+    }
+    ov_buf_bold();
+    ov_buf_printf("[h: HELP]");
+    ov_buf_reset_attr();
+    ov_theme_bg(OV_BG_HEADER);
+    ov_buf_printf(" ");
+}
+
+/**
+ * ov_tabbar_level - widest tab form whose bar, help button included, fits @width columns (2 if none does).
+ */
+int ov_tabbar_level(int width)
+{
+    for (int level = 0; level < 2; level++)
+    {
+        int w = OV_TABBAR_HELP_W;
+        for (int v = 0; v < OV_VIEW_COUNT; v++)
         {
-            /* Bright prominent state: vibrant gold/amber bg, dark crisp text */
-            ov_buf_bg(240, 175, 20);
-            ov_buf_fg(20, 20, 25);
+            char t[48];
+            w += tab_text(t, sizeof(t), v, level) + (level == 0 ? 4 : 0);
         }
-        else
+        if (w <= width)
         {
-            /* Dim prominent state themed to panel bg with warning text */
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_WARN);
+            return level;
         }
-        ov_buf_bold();
-        ov_buf_printf("[h: HELP]");
-        ov_buf_reset_attr();
-        ov_theme_bg(OV_BG_HEADER);
-        ov_buf_printf(" ");
+    }
+    return 2;
+}
+
+/**
+ * ov_render_tabs - render the view tabs on the left and the help button on the right of row lay->r_tabs.
+ * Narrow terminals get shorter tab forms (ov_tabbar_level); the help button is always kept.
+ */
+void ov_render_tabs(OV_LAYOUT *lay)
+{
+    OV_RECT r     = lay->r_tabs;
+    int     level = ov_tabbar_level(r.width);
+    int     used  = 0;
+    ov_buf_pos(r.row, r.col);
+    for (int v = 0; v < OV_VIEW_COUNT; v++)
+    {
+        char t[48];
+        int  w = tab_text(t, sizeof(t), v, level) + (level == 0 ? 4 : 0);
+        if (used + w + OV_TABBAR_HELP_W > r.width)
+        {
+            s_tab[v].w = 0;
+            continue;
+        }
+        s_tab[v].col = r.col + used;
+        s_tab[v].w   = w;
+        used += w;
+        draw_tab(v, level, v == (int) lay->view);
     }
 
-    /* Pad trailing space if line not completely filled */
-    int rendered_w = tabs_total_width + pad + help_width;
-    if (rendered_w < r.width)
-    {
-        ov_theme_bg(OV_BG_HEADER);
-        ov_buf_hline(' ', r.width - rendered_w);
-    }
+    int pad = r.width - used - OV_TABBAR_HELP_W;
+    pad     = (pad > 0) ? pad : 0;
     ov_theme_bg(OV_BG_HEADER);
+    ov_buf_hline(' ', pad);
+    s_tab[OV_VIEW_COUNT].col = r.col + used + pad;
+    s_tab[OV_VIEW_COUNT].w   = OV_TABBAR_HELP_W;
+    draw_help(lay);
+    ov_theme_bg(OV_BG_HEADER);
+}
+
+static char s_row_tooltip[256]; /* set by the row under the mouse while the frame is drawn */
+
+/** ov_row_tooltip - set the tooltip of the hovered row for this frame (overrides the hit-test text). */
+void ov_row_tooltip(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(s_row_tooltip, sizeof(s_row_tooltip), fmt, ap);
+    va_end(ap);
 }
 
 /**
@@ -136,12 +185,14 @@ void ov_render_tabs(OV_LAYOUT *lay)
  */
 void ov_draw_tooltip(OV_LAYOUT *lay)
 {
-    if (!lay->mouse_hover || lay->hover_tooltip[0] == '\0')
+    const char *text = (s_row_tooltip[0] != '\0') ? s_row_tooltip : lay->hover_tooltip;
+    if (!lay->mouse_hover || text[0] == '\0')
     {
+        s_row_tooltip[0] = '\0';
         return;
     }
 
-    int len = (int) strlen(lay->hover_tooltip);
+    int len = (int) strlen(text);
     if (len == 0)
     {
         return;
@@ -169,13 +220,9 @@ void ov_draw_tooltip(OV_LAYOUT *lay)
     ov_buf_pos(tr, tc);
     ov_theme_bg(OV_BG_HEADER); /* Pop out visually */
     ov_theme_fg(OV_FG_WARN);
-    ov_buf_printf(" %s ", lay->hover_tooltip);
+    ov_buf_printf(" %s ", text);
 
     /* Reset for next frame */
     lay->hover_tooltip[0] = '\0';
+    s_row_tooltip[0]      = '\0';
 }
-
-/**
- * ov_render_theme_popup - render interactive color theme selection popup.
- * @lay: Pointer to layout structure.
- */

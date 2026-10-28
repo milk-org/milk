@@ -7,6 +7,7 @@
  * @brief Processinfo signals module
  */
 
+#include <pthread.h>
 #include <signal.h>
 
 #include "processinfo_internal.h"
@@ -17,6 +18,47 @@
 #ifndef CLOCK_MILK
 #    define CLOCK_MILK CLOCK_REALTIME
 #endif
+
+/* The first PI_NB_STOP_SIGNALS end the loop through flags; the others are faults. */
+static const int pi_signals[] = { SIGTERM, SIGINT,  SIGHUP, SIGPIPE, SIGSEGV,
+                                  SIGBUS,  SIGABRT, SIGFPE, SIGILL };
+#define PI_NB_SIGNALS ((int) (sizeof(pi_signals) / sizeof(pi_signals[0])))
+#define PI_NB_STOP_SIGNALS 4
+
+static struct sigaction pi_prev[PI_NB_SIGNALS]; // dispositions before the first CatchSignals()
+static int              pi_depth = 0;           // CatchSignals() calls not yet restored
+static pthread_mutex_t  pi_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static volatile sig_atomic_t pi_crash_info_fd = -1; // processinfo_set_crash_record()
+static volatile sig_atomic_t pi_crash_out_fd  = -1;
+
+void processinfo_set_crash_record(int info_fd, int out_fd)
+{
+    pi_crash_info_fd = info_fd;
+    pi_crash_out_fd  = out_fd;
+}
+
+/* async-signal-safe: write @a @b "\n" to @fd */
+static void pi_crash_line(int fd, const char *a, const char *b)
+{
+    char   line[64];
+    size_t n = 0;
+
+    if (fd < 0)
+    {
+        return;
+    }
+    for (const char *s = a; *s != '\0' && n < sizeof(line) - 1; s++)
+    {
+        line[n++] = *s;
+    }
+    for (const char *s = b; *s != '\0' && n < sizeof(line) - 1; s++)
+    {
+        line[n++] = *s;
+    }
+    line[n++] = '\n';
+    (void) !write(fd, line, n);
+}
 
 /**
  * @brief Signal handler for process info processes.
@@ -55,44 +97,103 @@ void processinfo_sig_handler(int signo)
     }
 }
 
-/**
- * @brief Registers signal handlers for the process info system.
- */
+static const char *fatal_signal_name(int signo)
+{
+    switch (signo)
+    {
+    case SIGSEGV:
+        return "SIGSEGV";
+    case SIGBUS:
+        return "SIGBUS";
+    case SIGABRT:
+        return "SIGABRT";
+    case SIGFPE:
+        return "SIGFPE";
+    case SIGILL:
+        return "SIGILL";
+    }
+    return "fatal signal";
+}
+
+/* Returning would re-run a faulting instruction forever: record the crash with plain stores (the
+ * only async-signal-safe way), then hand the signal to the previous disposition. */
+static void MILK_COLD processinfo_fatal_handler(int signo)
+{
+    PROCESSINFO *pi   = processinfo_self;
+    const char  *name = fatal_signal_name(signo);
+    pi_crash_line(pi_crash_info_fd, "signal=", name);
+    pi_crash_line(pi_crash_out_fd, "=== killed by ", name);
+    if (pi != NULL)
+    {
+        int n        = 0;
+        pi->loopstat = PROCESSINFO_LOOPSTAT_CRASHED;
+        for (; name[n] != '\0' && n < STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1; n++)
+        {
+            pi->statusmsg[n] = name[n];
+        }
+        pi->statusmsg[n] = '\0';
+    }
+
+    struct sigaction next;
+    sigemptyset(&next.sa_mask);
+    next.sa_flags   = 0;
+    next.sa_handler = SIG_DFL;
+    for (int i = PI_NB_STOP_SIGNALS; i < PI_NB_SIGNALS; i++)
+    {
+        if (pi_signals[i] == signo && pi_prev[i].sa_handler != SIG_IGN)
+        {
+            next = pi_prev[i]; // e.g. milk-cli's crash report
+        }
+    }
+    sigaction(signo, &next, NULL);
+    raise(signo); // pending until this handler returns
+}
+
 int processinfo_CatchSignals()
 {
-    struct sigaction sigact;
-    sigemptyset(&sigact.sa_mask);
-    sigact.sa_flags   = 0;
-    sigact.sa_handler = processinfo_sig_handler;
+    struct sigaction stop_act;
+    struct sigaction fatal_act;
 
-    if (sigaction(SIGTERM, &sigact, NULL) == -1)
+    sigemptyset(&stop_act.sa_mask);
+    stop_act.sa_flags   = 0;
+    stop_act.sa_handler = processinfo_sig_handler;
+    sigemptyset(&fatal_act.sa_mask);
+    fatal_act.sa_flags   = SA_ONSTACK; // uses the caller's alternate stack if it set one
+    fatal_act.sa_handler = processinfo_fatal_handler;
+
+    pthread_mutex_lock(&pi_mutex);
+    if (pi_depth++ == 0)
     {
-        printf("\ncan't catch SIGTERM\n");
+        // a stop requested during an earlier loop of this process must not end this one
+        processinfo_signal_TERM = 0;
+        processinfo_signal_INT  = 0;
+        processinfo_signal_HUP  = 0;
+        processinfo_signal_PIPE = 0;
+        for (int i = 0; i < PI_NB_SIGNALS; i++)
+        {
+            if (sigaction(pi_signals[i], (i < PI_NB_STOP_SIGNALS) ? &stop_act : &fatal_act,
+                          &pi_prev[i]) == -1)
+            {
+                printf("\ncan't catch signal %d\n", pi_signals[i]);
+            }
+        }
     }
-    if (sigaction(SIGINT, &sigact, NULL) == -1)
+    pthread_mutex_unlock(&pi_mutex);
+
+    return 0;
+}
+
+int processinfo_RestoreSignals()
+{
+    pthread_mutex_lock(&pi_mutex);
+    if (pi_depth > 0 && --pi_depth == 0)
     {
-        printf("\ncan't catch SIGINT\n");
+        for (int i = 0; i < PI_NB_SIGNALS; i++)
+        {
+            sigaction(pi_signals[i], &pi_prev[i], NULL);
+        }
     }
-    if (sigaction(SIGABRT, &sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGABRT\n");
-    }
-    if (sigaction(SIGBUS, &sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGBUS\n");
-    }
-    if (sigaction(SIGSEGV, &sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGSEGV\n");
-    }
-    if (sigaction(SIGHUP, &sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGHUP\n");
-    }
-    if (sigaction(SIGPIPE, &sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGPIPE\n");
-    }
+    pthread_mutex_unlock(&pi_mutex);
 
     return 0;
 }
@@ -191,6 +292,11 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
     WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, processinfo->name,
                        processinfo->PID);
     remove(SM_fname);
+
+    if (processinfo_self == processinfo)
+    {
+        processinfo_self = NULL; // its file is gone: a later crash has nothing to record
+    }
 
     return 0;
 }

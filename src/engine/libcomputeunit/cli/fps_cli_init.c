@@ -25,7 +25,8 @@
  *
  * Creates each parameter in the FPS using the type,
  * description, and flags specified in the binding
- * array. Called during fpsinit.
+ * array. Called during fpsinit. An ON/OFF parameter
+ * takes its variable's value as default.
  */
 errno_t fps_init_from_bindings(FPS             *fps,
                                const char      *cmdkey,
@@ -40,7 +41,7 @@ errno_t fps_init_from_bindings(FPS             *fps,
 
     for (int bind_idx = 0; bind_idx < nb_b; bind_idx++)
     {
-        long     pindex;
+        long     pindex    = -1;
         uint64_t fpflag    = bindings[bind_idx].fpflag;
         int      cli_index = -1;
 
@@ -54,6 +55,19 @@ errno_t fps_init_from_bindings(FPS             *fps,
                                      bindings[bind_idx].type, fpflag, bindings[bind_idx].ptr,
                                      &pindex);
         functionparameter_SetParamCLIindex(fps, pindex, cli_index);
+
+        /* add_entry starts an ON/OFF entry OFF (the flag is its value): apply the default, read as
+         * an int32 like the resync does */
+        if (bindings[bind_idx].type == FPTYPE_ONOFF && pindex >= 0 &&
+            bindings[bind_idx].ptr != NULL)
+        {
+            int32_t on = *(int32_t *) bindings[bind_idx].ptr ? 1 : 0;
+            if (on)
+            {
+                fps->parray[pindex].fpflag |= FPFLAG_ONOFF;
+            }
+            fps->parray[pindex].val.i64[0] = on;
+        }
     }
     return RETURN_SUCCESS;
 }

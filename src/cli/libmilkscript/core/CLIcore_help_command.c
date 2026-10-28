@@ -1,0 +1,585 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * @file    CLIcore_help_command.c
+ * @brief   Per-command help and search functions
+ *
+ * Contains help_command(), help(), and help_module().
+ *
+ * @see CLIcore_help.c for system info and listings.
+ */
+
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#endif
+
+#include <libgen.h>
+#include <malloc.h>
+
+#include <fitsio.h>
+#include <regex.h>
+
+#include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <sys/ioctl.h>
+#include "CLIcore.h"
+
+#include "computeunit.h"
+#include "fps_connect.h"
+#include "milk_cmd_args.h"
+#include "milk_lexicon.h"
+#include "milk_entity_ns.h"
+#include "milk_cmd_index.h"
+
+#define C_RST "\033[0m"
+#define C_TITLE "\033[1;36m"
+#define C_HDR "\033[1;35m"
+#define C_CMD "\033[32m"
+#define C_BOLD "\033[1m"
+#define C_NOTE "\033[33m"
+#define C_ERR "\033[1;31m"
+
+#ifndef COLORRESET
+#    define COLORRESET C_RST
+#endif
+#ifndef COLORCMD
+#    define COLORCMD C_CMD
+#endif
+#ifndef COLORINFO
+#    define COLORINFO "\033[32m"
+#endif
+#ifndef COLORARGCLI
+#    define COLORARGCLI "\033[36m"
+#endif
+#ifndef COLORARGnotCLI
+#    define COLORARGnotCLI "\033[35m"
+#endif
+
+extern int help_format_mode;
+
+/** cmd_shortname() - module short name of command @cmdi, "" for a command without a module. */
+static const char *cmd_shortname(unsigned int cmdi)
+{
+    int midx = data.cmd[cmdi].moduleindex;
+    return (midx >= 0) ? data.module[midx].shortname : "";
+}
+
+/**
+ * @brief Check if a 64-bit flag contains a specific bit.
+ */
+static int checkFlag64(uint64_t flags, uint64_t testflag, char *flagdescription)
+{
+    int rval = 0;
+
+    // printf("--------- flags: %ld\n", flags);
+
+    if (flags & testflag)
+    {
+        rval = 1;
+        printf("    [%c[%d;%dm ON%c[%dm]  %s\n", (char) 27, 1, 32, (char) 27, 0, flagdescription);
+    }
+    else
+    {
+        rval = 0;
+        printf("    [%c[%d;%dmOFF%c[%dm]  %s\n", (char) 27, 1, 31, (char) 27, 0, flagdescription);
+    }
+    return rval;
+}
+
+/** help_milk_bash_primitive() - print the help of language keyword @cmdkey ("@" means calc); -1 if none. */
+static int help_milk_bash_primitive(const char *cmdkey)
+{
+    const milk_keyword_t *k =
+        milk_lexicon_keyword((cmdkey != NULL && strcmp(cmdkey, "@") == 0) ? "calc" : cmdkey);
+    if (k == NULL)
+    {
+        return -1;
+    }
+    milk_lexicon_print_help(k, stdout);
+    return 0;
+}
+
+/**
+ * @brief command help\n
+ *
+ * @param[in] cmdkey Commmand name
+ */
+
+errno_t help_command(const char *__restrict cmdkey)
+{
+    int cOK = 0;
+
+    if (cmdkey != NULL && cmdkey[0] == '@' && cmdkey[1] != '\0')
+    {
+        cmdkey++;
+    }
+
+    if (help_milk_bash_primitive(cmdkey) == 0)
+    {
+        return RETURN_SUCCESS;
+    }
+
+    for (unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
+    {
+        const char *dot = strchr(data.cmd[cmdi].key, '.');
+        int is_match    = (!strcmp(cmdkey, data.cmd[cmdi].key)) ||
+                          (strchr(cmdkey, '.') == NULL && dot != NULL && !strcmp(cmdkey, dot + 1));
+        if (is_match)
+        {
+            printf("\n");
+            printf(COLORCMD "%s" COLORRESET " in %s [%s]\n"
+                            "\t" COLORINFO "%s\n" COLORRESET,
+                   data.cmd[cmdi].key, data.cmd[cmdi].module, cmd_shortname(cmdi),
+                   data.cmd[cmdi].info);
+
+            printf("\t\033[33mexample>\033[0m"
+                   " \033[1m%s\033[0m\n",
+                   data.cmd[cmdi].example);
+            printf("\t\033[2msrc: %s\033[0m"
+                   "\n",
+                   data.cmd[cmdi].srcfile);
+
+            int FPSsupport =
+                checkFlag64(data.cmd[cmdi].cmdsettings.flags, CLICMDFLAG_FPS, "FPS support");
+            if (FPSsupport == 1)
+            {
+                if (checkFlag64(data.cmd[cmdi].cmdsettings.flags, CLICMDFLAG_PROCINFO,
+                                "processinfo support (..procinfo 0/1)") == 1)
+                {
+                    printf("        loopcntMax         : %ld\n",
+                           data.cmd[cmdi].cmdsettings.procinfo_loopcntMax);
+                    printf("      Triggering:\n");
+
+                    printf("        triggermode        : %d ",
+                           data.cmd[cmdi].cmdsettings.triggermode);
+                    switch (data.cmd[cmdi].cmdsettings.triggermode)
+                    {
+                    case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
+                        printf("IMMEDIATE");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_CNT0:
+                        printf("CNT0");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_CNT1:
+                        printf("CNT1");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
+                        printf("SEMAPHORE");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_DELAY:
+                        printf("DELAY");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_CNT2:
+                        printf("CNT2");
+                        break;
+                    default:
+                        printf("unknown");
+                        break;
+                    }
+                    printf("\n");
+
+                    printf("        triggerstreamname  : %s\n",
+                           data.cmd[cmdi].cmdsettings.triggerstreamname);
+
+                    printf("        semindexrequested  : %d\n",
+                           data.cmd[cmdi].cmdsettings.semindexrequested);
+
+                    printf("        triggerdelay       : "
+                           "%lld.%09ld\n",
+                           (long long) data.cmd[cmdi].cmdsettings.triggerdelay.tv_sec,
+                           data.cmd[cmdi].cmdsettings.triggerdelay.tv_nsec);
+
+                    printf("        triggertimeout     : "
+                           "%lld.%09ld\n",
+                           (long long) data.cmd[cmdi].cmdsettings.triggertimeout.tv_sec,
+                           data.cmd[cmdi].cmdsettings.triggertimeout.tv_nsec);
+
+                    printf("      Resources:\n");
+                    printf("        RT_priority        : %d\n",
+
+                           data.cmd[cmdi].cmdsettings.RT_priority);
+
+                    printf("        CPUmask            : ");
+
+                    int nproc = sysconf(_SC_NPROCESSORS_ONLN);
+                    for (int cpu = 0; cpu < nproc; cpu++)
+                    {
+                        printf(" %d", CPU_ISSET(cpu, &data.cmd[cmdi].cmdsettings.CPUmask));
+                    }
+                    printf("\n");
+                    printf("        MeasureTiming      : %d\n",
+                           data.cmd[cmdi].cmdsettings.procinfo_MeasureTiming);
+                }
+            }
+
+            printf("\n");
+            printf("  CLI call arguments:\n");
+            //printf("  CLI#       tagname             Value         description\n");
+
+            int CLIargcnt = 0;
+            for (int argi = 0; argi < data.cmd[cmdi].nbparam; argi++)
+            {
+                char valuestring[STRINGMAXLEN_CLICMDARG] = "???";
+
+                switch (data.cmd[cmdi].argdata[argi].type)
+                {
+                case CLIARG_FLOAT32:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[float32]  %f",
+                                   data.cmd[cmdi].argdata[argi].val.f32);
+                    break;
+
+                case CLIARG_FLOAT64:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[float64]  %lf",
+                                   data.cmd[cmdi].argdata[argi].val.f64);
+                    break;
+
+                case CLIARG_ONOFF:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ONOFF]  %ld",
+                                   data.cmd[cmdi].argdata[argi].val.ui64);
+                    break;
+
+                case CLIARG_INT32:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[int32]  %d",
+                                   data.cmd[cmdi].argdata[argi].val.i32);
+                    break;
+
+                case CLIARG_UINT32:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[uint32]  %u",
+                                   data.cmd[cmdi].argdata[argi].val.ui32);
+                    break;
+
+                case CLIARG_INT64:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[int64]  %ld",
+                                   data.cmd[cmdi].argdata[argi].val.i64);
+                    break;
+
+                case CLIARG_UINT64:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[uint64]  %lu",
+                                   data.cmd[cmdi].argdata[argi].val.ui64);
+                    break;
+
+                case CLIARG_STR_NOT_IMG:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[STRnI]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+
+                case CLIARG_IMG:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[STREAM]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+
+                case FPTYPE_FITSFILENAME:
+                case FPTYPE_FILENAME:
+                case FPTYPE_DIRNAME:
+                case FPTYPE_EXECFILENAME:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[FILE ]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+
+                case FPTYPE_STRING:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[STRING]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+
+                case FPTYPE_PID:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ PID ]  %ld",
+                                   data.cmd[cmdi].argdata[argi].val.i64);
+                    break;
+
+                case FPTYPE_TIMESPEC:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[TIME ]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+
+                case FPTYPE_PROCESS:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[PROCESS]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+
+                case FPTYPE_FPSNAME:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[FPSNAME]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+                }
+
+                const char *note = "";
+                if (milk_args_session_get((int) cmdi, argi) != NULL)
+                {
+                    note = "  (session default)";
+                }
+                else if (data.cmd[cmdi].argdata[argi].fpflag & FPFLAG_CLI_OPTIONAL)
+                {
+                    note = "  (optional)";
+                }
+                if (data.cmd[cmdi].argdata[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+                {
+                    printf("%6d   " COLORARGCLI " %-16s" COLORRESET " %-24s %s%s\n", CLIargcnt,
+                           data.cmd[cmdi].argdata[argi].fpstag, valuestring,
+                           data.cmd[cmdi].argdata[argi].descr, note);
+                    CLIargcnt++;
+                }
+                else
+                {
+                    printf("[hidden] " COLORARGnotCLI " %-16s" COLORRESET " %-24s %s%s\n",
+                           data.cmd[cmdi].argdata[argi].fpstag, valuestring,
+                           data.cmd[cmdi].argdata[argi].descr, note);
+                }
+            }
+            if (data.cmd[cmdi].nbparam > 0)
+            {
+                printf("\n  Call: values in order, .tag=value anywhere, '.' = default;"
+                       " --save=NAME --load=NAME --default --no-run\n");
+                milk_args_preset_list((int) cmdi, stdout);
+            }
+
+            printf("\n");
+
+            cOK = 1;
+        }
+    }
+
+    int foundsubstring  = 0;
+    int foundregexmatch = 0;
+    if (cOK == 0)
+    {
+        printf("Command \"%s\" does not exist. Partial matches:\n", cmdkey);
+
+        regex_t regex;
+        int     reti;
+        /* Compile regular expression */
+        reti = regcomp(&regex, cmdkey, REG_EXTENDED);
+        if (reti)
+        {
+            PRINT_ERROR("Could not compile regex : \"%s\"", cmdkey);
+            return RETURN_FAILURE;
+        }
+        int        maxGroups = 8;
+        regmatch_t groupArray[maxGroups];
+
+        for (unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
+        {
+            int matchsubstring = 0;
+            // look for substring match
+
+            if (strstr(data.cmd[cmdi].key, cmdkey) != NULL)
+            {
+                foundsubstring = 1;
+                matchsubstring = 1;
+                printf(COLORCMD "%s" COLORRESET " in %s [%s]\n\t" COLORINFO "%s\n" COLORRESET,
+                       data.cmd[cmdi].key, data.cmd[cmdi].module, cmd_shortname(cmdi),
+                       data.cmd[cmdi].info);
+            }
+
+            // Regular expression search
+            if (matchsubstring == 0)
+            {
+                // Regular expression search
+                reti = regexec(&regex, data.cmd[cmdi].key, maxGroups, groupArray, 0);
+                if (!reti)
+                {
+                    foundregexmatch = 1;
+                    printf(COLORCMD "%s" COLORRESET " in %s [%s]\n\t" COLORINFO "%s\n" COLORRESET,
+                           data.cmd[cmdi].key, data.cmd[cmdi].module, cmd_shortname(cmdi),
+                           data.cmd[cmdi].info);
+
+                    char        *cursor = data.cmd[cmdi].key;
+                    unsigned int offset = 0;
+                    for (int g = 0; g < maxGroups; g++)
+                    {
+                        if (groupArray[g].rm_so == (regoff_t) ((size_t) -1))
+                        {
+                            break; // No more groups
+                        }
+
+                        if (g == 0)
+                        {
+                            offset = groupArray[g].rm_eo;
+                        }
+
+                        char cursorCopy[strlen(cursor) + 1];
+                        memcpy(cursorCopy, cursor, strlen(cursor) + 1);
+                        cursorCopy[groupArray[g].rm_eo] = 0;
+                        /*printf("\t    Match Group %u: [%2u-%2u]: %s\n",
+                               g, groupArray[g].rm_so, groupArray[g].rm_eo,
+                               cursorCopy + groupArray[g].rm_so);*/
+                    }
+                    cursor += offset;
+                }
+                else if (reti == REG_NOMATCH)
+                {
+                    //puts("No match");
+                }
+                else
+                {
+                    char msgbuf[100];
+                    regerror(reti, &regex, msgbuf, sizeof(msgbuf));
+                    PRINT_ERROR("Regex match failed: %s", msgbuf);
+                    regfree(&regex);
+                    return RETURN_FAILURE;
+                }
+            }
+        }
+
+        regfree(&regex);
+
+        if (foundsubstring == 0)
+        {
+            if (foundregexmatch == 0)
+            {
+                printf("\tNo substring or regex "
+                       "match to \"%s\"\n",
+                       cmdkey);
+            }
+        }
+        return RETURN_FAILURE;
+    }
+
+    return RETURN_SUCCESS;
+}
+
+/* `@help --tui` (milk-cli sets it: the fuzzy finder lives with readline) */
+errno_t (*milk_help_tui_hook)(void) = NULL;
+
+/** ns_topic() - the help topic of entity namespace @name (s, l, f, p and long forms), or NULL. */
+static const char *ns_topic(const char *name)
+{
+    switch (milk_entity_ns_lookup(name, strlen(name)))
+    {
+    case MILK_NS_STREAM:
+    case MILK_NS_LOCAL:
+        return "streams";
+    case MILK_NS_FPS:
+        return "fps";
+    case MILK_NS_PROC:
+        return "procinfo";
+    default:
+        return NULL;
+    }
+}
+
+/** help_search() - keywords and commands whose name or description matches regex @pattern. */
+static errno_t help_search(const char *pattern)
+{
+    regex_t re;
+    if (regcomp(&re, pattern, REG_EXTENDED | REG_ICASE | REG_NOSUB) != 0)
+    {
+        fprintf(stderr, "@help -k: invalid regular expression '%s'\n", pattern);
+        return RETURN_FAILURE;
+    }
+    int found = 0;
+    for (const milk_keyword_t *k = milk_lexicon_keywords(); k->name != NULL; k++)
+    {
+        if (regexec(&re, k->name, 0, NULL, 0) == 0 || regexec(&re, k->summary, 0, NULL, 0) == 0)
+        {
+            printf(COLORCMD "@%-24s" COLORRESET " %s\n", k->name, k->summary);
+            found++;
+        }
+    }
+    for (unsigned int i = 0; i < data.NBcmd; i++)
+    {
+        if (data.cmd[i].moduleindex >= 0 && (regexec(&re, data.cmd[i].key, 0, NULL, 0) == 0 ||
+                                             regexec(&re, data.cmd[i].info, 0, NULL, 0) == 0))
+        {
+            printf(COLORCMD "%-25s" COLORRESET " %s\n", data.cmd[i].key, data.cmd[i].info);
+            found++;
+        }
+    }
+    regfree(&re);
+    if (found == 0)
+    {
+        printf("no keyword or command matches '%s'\n", pattern);
+    }
+    return RETURN_SUCCESS;
+}
+
+/**
+ * help() - `@help [subject] [--json|--porcelain] | @help -k <regex> | @help --tui`: the index, or the
+ * help of a topic, keyword, entity namespace, module or command (RETURN_FAILURE if unknown).
+ */
+errno_t help()
+{
+    int         json_mode      = 0;
+    int         porcelain_mode = 0;
+    const char *topic          = NULL;
+
+    for (int arg = 1; arg < data.cmdNBarg; arg++)
+    {
+        const char *a = data.cmdargtoken[arg].val.string;
+        if (data.cmdargtoken[arg].type != CMDARGTOKEN_TYPE_STRING &&
+            data.cmdargtoken[arg].type != CMDARGTOKEN_TYPE_RAWSTRING)
+        {
+            continue;
+        }
+        if (strcmp(a, "--json") == 0)
+        {
+            json_mode = 1;
+        }
+        else if (strcmp(a, "--porcelain") == 0)
+        {
+            porcelain_mode = 1;
+        }
+        else if (strcmp(a, "-k") == 0)
+        {
+            if (arg + 1 >= data.cmdNBarg)
+            {
+                fprintf(stderr, "Usage: @help -k <regex>\n");
+                return RETURN_FAILURE;
+            }
+            return help_search(data.cmdargtoken[arg + 1].val.string);
+        }
+        else if (strcmp(a, "--tui") == 0)
+        {
+            if (milk_help_tui_hook == NULL)
+            {
+                fprintf(stderr, "@help --tui: only in the milk-cli REPL\n");
+                return RETURN_FAILURE;
+            }
+            return milk_help_tui_hook();
+        }
+        else if (a[0] != '\0')
+        {
+            topic = a;
+        }
+    }
+
+    help_format_mode = json_mode ? 1 : (porcelain_mode ? 2 : 0);
+    if (topic == NULL)
+    {
+        print_milk_top_help();
+        return RETURN_SUCCESS;
+    }
+    if (topic[0] == '@' && topic[1] != '\0')
+    {
+        topic++;
+    }
+    const char *nst = ns_topic(topic);
+    if (help_topic_dispatch((nst != NULL) ? nst : topic) == 0 ||
+        help_milk_bash_primitive(topic) == 0)
+    {
+        return RETURN_SUCCESS;
+    }
+    if (milk_cmd_lookup(topic) >= 0)
+    {
+        return help_command(topic);
+    }
+    for (int m = 0; m < data.NBmodule; m++)
+    {
+        if (strcmp(topic, data.module[m].name) == 0 || strcmp(topic, data.module[m].shortname) == 0)
+        {
+            list_commands_module(topic);
+            return RETURN_SUCCESS;
+        }
+    }
+    if (help_format_mode == 0)
+    {
+        fprintf(stderr, C_ERR "@help: no topic, keyword, module or command \"%s\"" C_RST "\n",
+                topic);
+        print_help_topic_list();
+    }
+    return RETURN_FAILURE;
+}

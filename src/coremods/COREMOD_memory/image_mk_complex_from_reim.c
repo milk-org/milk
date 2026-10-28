@@ -57,23 +57,25 @@ errno_t mk_complex_from_reim_IMGID(IMGID *imgre, IMGID *imgim, IMGID *imgout)
         imgout->mdt->size[i] = imgre->md[0].size[i];
     }
     uint64_t nelement = imgre->md[0].nelement;
+    int      nth      = milk_omp_team_size(nelement, 262144);
 
-#define MK_COMPLEX_LOOP(DTYPE_OUT, TYPE_RE, TYPE_IM, TYPE_OUT, UNION_RE, UNION_IM, UNION_OUT) \
-    {                                                                                         \
-        datatype_out          = DTYPE_OUT;                                                    \
-        imgout->mdt->datatype = datatype_out;                                                 \
-        createimagefromIMGID(imgout);                                                         \
-        TYPE_RE *MILK_RESTRICT  ptr_re  = MILK_ASSUME_ALIGNED(imgre->im->array.UNION_RE);     \
-        TYPE_IM *MILK_RESTRICT  ptr_im  = MILK_ASSUME_ALIGNED(imgim->im->array.UNION_IM);     \
-        TYPE_OUT *MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgout->im->array.UNION_OUT);   \
-        _Pragma("omp parallel if (nelement > OMP_NELEMENT_LIMIT)")                            \
-        {                                                                                     \
-            _Pragma("omp for simd") for (uint64_t ii = 0; ii < nelement; ii++)                \
-            {                                                                                 \
-                ptr_out[ii].re = ptr_re[ii];                                                  \
-                ptr_out[ii].im = ptr_im[ii];                                                  \
-            }                                                                                 \
-        }                                                                                     \
+#define MK_COMPLEX_LOOP(DTYPE_OUT, TYPE_RE, TYPE_IM, TYPE_OUT, UNION_RE, UNION_IM, UNION_OUT)     \
+    {                                                                                             \
+        datatype_out          = DTYPE_OUT;                                                        \
+        imgout->mdt->datatype = datatype_out;                                                     \
+        createimagefromIMGID(imgout);                                                             \
+        TYPE_RE *MILK_RESTRICT  ptr_re  = MILK_ASSUME_ALIGNED(imgre->im->array.UNION_RE);         \
+        TYPE_IM *MILK_RESTRICT  ptr_im  = MILK_ASSUME_ALIGNED(imgim->im->array.UNION_IM);         \
+        TYPE_OUT *MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgout->im->array.UNION_OUT);       \
+        _Pragma(                                                                                  \
+            "omp parallel for simd num_threads(nth) if (parallel : nth > 1)") for (uint64_t ii =  \
+                                                                                       0;         \
+                                                                                   ii < nelement; \
+                                                                                   ii++)          \
+        {                                                                                         \
+            ptr_out[ii].re = ptr_re[ii];                                                          \
+            ptr_out[ii].im = ptr_im[ii];                                                          \
+        }                                                                                         \
     }
 
     if ((datatype_re == _DATATYPE_FLOAT) && (datatype_im == _DATATYPE_FLOAT))

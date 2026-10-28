@@ -12,19 +12,20 @@ See also: [Programmer's Guide](../arch/programmers_guide.md) · [Code Assist Too
 ## 1. Where do plugins go?
 
 All plugins belong inside the `plugins/` directory at the root of the project. Milk's configuration
-script uses `find -mindepth 2 -maxdepth 2` inside `plugins/` to discover subdirectories containing a
+script uses `find -mindepth 1 -maxdepth 2` inside `plugins/` to discover subdirectories containing a
 `CMakeLists.txt`.
 
-Typically, plugins are placed inside an intermediate group folder such as:
+Plugins can be placed directly in `plugins/<your_plugin>` or inside an intermediate group folder:
 
-- `plugins/milk-extra-src/<your_plugin>`
-- `plugins/cacao-src/<your_plugin>` (For `cacao` AO loop modules)
+- `plugins/<your_plugin>` or `plugins/<your_group>/<your_plugin>` (for custom or third-party plugins)
+- `plugins/cacao-src/<module>` (for `cacao` AO loop modules)
+- `plugins/milk-extra-src/<module>` (reserved for core plugins shipped in the `milk` repository)
 
 <!-- prettier-ignore -->
 !!! note
     Because plugins are decoupled, it's very common for them to be their own isolated git repositories.
     You can add them under `plugins/` via standard copying, as a git submodule, or even via symbolic
-links.
+    links.
 
 ### Standalone Executables Relation to Core
 
@@ -60,8 +61,9 @@ conventions are in the [Programmer's Guide](../arch/programmers_guide.md#6-cmake
 A plugin is written like any core module, as a set of `MILK_RUNNABLE` units (see the
 [Programmer's Guide](../arch/programmers_guide.md#3-writing-a-compute-unit)), starting from
 `src/milk_module_example/examplefunc_fps_cli_poc.c`. Source files include `milk_runnable.h` and do
-not include `CLIcore.h`. Declare the module dependencies with `MODULE_DEPS("milkfft", ...)` before
-`MILK_MODULE_RUNNABLES`, see [Managing Dependencies](dependency_system.md).
+not include `CLIcore.h`. Declare module dependencies with `MODULE_DEPS("milkfft", ...)` before
+`MILK_MODULE_RUNNABLES(myplugin, _module_deps, runnables)` (or pass `NULL` as the second argument if
+there are no extra module dependencies), see [Managing Dependencies](dependency_system.md).
 
 For `cacao` plugins, mark the units with `EXPORT_FPSEXEC(cacao, "id", unit);`, which builds
 `cacao-fpsexec-<id>`.
@@ -72,7 +74,7 @@ Once your `CMakeLists.txt` and C sources are in progress:
 
 1. Navigate back to the main `milk` build directory.
 2. Run `cmake ..`
-3. Look for the message `ADDING SUBDIR = plugins/milk-extra-src/my_new_plugin`. If you see that,
+3. Look for the message `ADDING SUBDIR = plugins/my_new_plugin`. If you see that,
    `milk` has successfully hooked your plugin into the global project.
 
 ---

@@ -46,7 +46,7 @@ The `milk` project adheres to strong defensive programming practices to guarante
 
 ## 8. Time-of-Check to Time-of-Use (TOCTOU) in Shared Memory
 
-- **Concurrent mutation:** When dealing with `/dev/shm` IPC, understand that shared memory can change between the time you check it and the time you use it. Another tmux session or compute unit might alter a stream's dimensions or state while you are reading it.
+- **Concurrent mutation:** When dealing with `/dev/shm` IPC, understand that shared memory can change between the time you check it and the time you use it. Another process or compute unit might alter a stream's dimensions or state while you are reading it.
 - **Enforcement:** Rely on atomic operations, semaphores (as detailed in `concurrency-practices.md`), or local caching of immutable state before entering your compute loops.
 
 ## 9. Safe Signal Handling

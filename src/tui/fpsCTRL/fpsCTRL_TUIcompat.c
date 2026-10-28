@@ -23,5 +23,6 @@ int  sc_term_cols    = 80;
 
 struct termios ansi__orig_termios;
 int            ansi__raw_active = 0;
+int            ansi__orig_flags = -1;
 
 /* Signal flags */

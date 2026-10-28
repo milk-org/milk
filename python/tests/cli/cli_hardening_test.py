@@ -9,21 +9,17 @@ killed and all fds are closed, whatever happens in the test body.
 from __future__ import annotations
 
 import contextlib
-import fcntl
 import os
-import pty
-import select
 import signal
 import subprocess
-import termios
 import threading
 import time
-import typing as typ
 from pathlib import Path
 
 import pytest
 
-from milk.cliwrap import HAVE_CLI, HAVE_TREESITTER, MILK_CLI_EXEC
+from milk.cliwrap import HAVE_CLI, HAVE_TREESITTER
+from tests.cli.conftest import assert_no_crash, milk_proc, run_milk
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
@@ -37,125 +33,6 @@ PROMPT = b"milk-cli > "
 needs_treesitter = pytest.mark.skipif(
     not HAVE_TREESITTER, reason="milk-cli built without tree-sitter"
 )
-
-
-class _Milk:
-    """Handle yielded by `milk_proc`."""
-
-    def __init__(self, proc: subprocess.Popen, master: int | None) -> None:
-        self.proc = proc
-        self.master = master
-        self.log = b""  # everything read from the PTY so far
-
-    def write(self, data: bytes) -> None:
-        assert self.master is not None
-        os.write(self.master, data)
-
-    def _read_chunk(self, wait: float) -> bytes | None:
-        """None on timeout, b"" on EOF/hangup."""
-        assert self.master is not None
-        ready, _, _ = select.select([self.master], [], [], wait)
-        if not ready:
-            return None
-        try:
-            return os.read(self.master, 4096)
-        except OSError:  # EIO once the slave side is closed
-            return b""
-
-    def read_until(self, pattern: bytes | None, timeout: float = 3.0) -> bytes:
-        """Read until `pattern` shows up; with None, until EOF."""
-        buf = b""
-        end = time.monotonic() + timeout
-        while (pattern is None or pattern not in buf) and time.monotonic() < end:
-            chunk = self._read_chunk(0.05)
-            if chunk == b"":
-                break
-            buf += chunk or b""
-        self.log += buf
-        return buf
-
-    def drain(self, quiet: float = 0.2, timeout: float = 3.0) -> bytes:
-        """Read until the PTY has been silent for `quiet` seconds."""
-        buf = b""
-        end = time.monotonic() + timeout
-        while time.monotonic() < end:
-            chunk = self._read_chunk(quiet)
-            if not chunk:
-                break
-            buf += chunk
-        self.log += buf
-        return buf
-
-
-@contextlib.contextmanager
-def milk_proc(
-    args: list[str],
-    *,
-    pty_mode: bool = False,
-    env: dict[str, str] | None = None,
-    stdin: int = subprocess.DEVNULL,
-) -> typ.Generator[_Milk]:
-    """Spawn milk-cli in its own session; always reap it and its children."""
-    assert MILK_CLI_EXEC is not None
-    master = slave = None
-    proc = None
-    try:
-        if pty_mode:
-            master, slave = pty.openpty()
-            io: dict[str, typ.Any] = dict(stdin=slave, stdout=slave, stderr=slave)
-        else:
-            io = dict(
-                stdin=stdin,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                errors="replace",
-            )
-        proc = subprocess.Popen(
-            [MILK_CLI_EXEC, *args],
-            env={**os.environ, "TERM": "xterm-256color", **(env or {})},
-            start_new_session=True,  # pgid == pid, so killpg reaches children
-            # Without a controlling tty, Ctrl+C never becomes a SIGINT.
-            preexec_fn=(
-                (lambda: fcntl.ioctl(0, termios.TIOCSCTTY, 0)) if pty_mode else None
-            ),
-            **io,
-        )
-        if slave is not None:
-            os.close(slave)
-            slave = None
-        yield _Milk(proc, master)
-    finally:
-        if proc is not None:
-            with contextlib.suppress(ProcessLookupError):
-                os.killpg(proc.pid, signal.SIGKILL)
-            proc.wait()
-            for stream in (proc.stdin, proc.stdout, proc.stderr):
-                if stream is not None:
-                    stream.close()
-        for fd in (master, slave):
-            if fd is not None:
-                os.close(fd)
-
-
-def assert_no_crash(returncode: int) -> None:
-    # Negative: killed by signal. >=128: shell-style signal exit.
-    assert 0 <= returncode < 128, f"milk-cli crashed (exit {returncode})"
-
-
-def run_milk(
-    args: list[str], *, stdin_text: str | None = None, timeout: float = 10
-) -> tuple[int, str]:
-    """Run milk-cli to completion; fail on crash or hang."""
-    with milk_proc(
-        args, stdin=subprocess.DEVNULL if stdin_text is None else subprocess.PIPE
-    ) as m:
-        try:
-            out, _ = m.proc.communicate(stdin_text, timeout=timeout)
-        except subprocess.TimeoutExpired:
-            pytest.fail(f"milk-cli hung: {args!r}")
-    assert_no_crash(m.proc.returncode)
-    return m.proc.returncode, out
 
 
 # --- Section 1: startup options ---------------------------------------------
@@ -175,23 +52,24 @@ def test_unknown_option_errors_cleanly():
 def test_function_recursion_bounded(tmp_path):
     script = tmp_path / "rec_func.milk"
     script.write_text("function rec {\n    rec\n}\nrec\n")
-    _, out = run_milk(["-s", str(script)])
-    assert "recursion" in out.lower()
+    rc, out = run_milk(["-s", str(script)])
+    assert "maximum function nesting level exceeded" in out
+    assert rc == 1
 
 
 def test_source_recursion_bounded(tmp_path):
     script = tmp_path / "rec_source.milk"
-    script.write_text(f"source {script}\n")
+    script.write_text(f"@source {script}\n")
     _, out = run_milk(["-s", str(script)])
     assert "recursion" in out.lower()
 
 
 # --- Sections 3-4: arithmetic edge cases & expansion buffers ----------------
 NOCRASH_CMDS = [
-    "calc -9223372036854775808 % -1",
-    "calc -9223372036854775808 / -1",
-    "calc 100 / 0",
-    "calc 100 % 0",
+    "@calc '-9223372036854775808 % -1'",
+    "@calc '-9223372036854775808 / -1'",
+    "@calc '100 / 0'",
+    "@calc '100 % 0'",
     'cat <<< "herestring test"',
 ]
 
@@ -207,7 +85,7 @@ OK_CMDS = [
     ("echo $(( 1 >> 100 ))", None),
     ("echo {1..100000}", None),
     ("(echo sub1) && (echo sub2)", "sub2"),
-    ("showmatch; showmatch off; showmatch on", "Showmatch ON"),
+    ("@config showmatch; @config showmatch off; @config showmatch on", "Showmatch ON"),
 ]
 
 
@@ -282,7 +160,7 @@ def test_pty_ctrl_c_cancels_command():
 def test_cliindent_toggle(tmp_path):
     script = tmp_path / "indent_toggle.milk"
     script.write_text(
-        "cliindent\ncliindent off\ncliindent on\ncliindent 2\ncliindent\n"
+        "@config indent\n@config indent off\n@config indent on\n@config indent 2\n@config indent\n"
     )
     _, out = run_milk(["-s", str(script)])
     assert "Auto-indentation is ON (2 spaces)" in out
@@ -291,7 +169,7 @@ def test_cliindent_toggle(tmp_path):
 @needs_treesitter
 def test_clifold_block_outline():
     script = REPO_ROOT / "scripts" / "makecircleofdisks.milk"
-    _, out = run_milk([], stdin_text=f"clifold {script}\nexit\n")
+    _, out = run_milk(["--outline", str(script)])
     assert "Total blocks: 4" in out
 
 
@@ -299,7 +177,7 @@ def test_clifold_block_outline():
 def test_cliformat_reindents(tmp_path):
     script = tmp_path / "unformatted_loop.milk"
     script.write_text("for i in 1 2; do\necho $i\ndone\n")
-    _, out = run_milk([], stdin_text=f"cliformat {script}\nexit\n")
+    _, out = run_milk(["--format", str(script)])
     assert "    echo $i" in out
 
 
@@ -335,7 +213,7 @@ def test_pty_showmatch_highlights():
         m.write(b"\n")
         m.drain()
 
-        m.write(b"showmatch off\n")
+        m.write(b"@config showmatch off\n")
         m.read_until(b"Showmatch OFF")
         m.drain()
         m.write(b"(1)")
@@ -346,7 +224,10 @@ def test_pty_showmatch_highlights():
 
 # --- Section 9: real-time syntax diagnostics (syndiag) ----------------------
 def test_syndiag_toggle():
-    rc, _ = run_milk([], stdin_text="syndiag\nsyndiag off\nsyndiag on\nexit\n")
+    rc, _ = run_milk(
+        [],
+        stdin_text="@config syndiag\n@config syndiag off\n@config syndiag on\nexit\n",
+    )
     assert rc == 0
 
 
@@ -368,10 +249,31 @@ def test_pty_syndiag_unclosed_quote():
 
         m.write(b"\n")
         m.drain()
-        m.write(b"syndiag off\n")
+        m.write(b"@config syndiag off\n")
         m.read_until(b"Syntax diagnostics OFF")
         m.drain()
         m.write(b'echo "uncl sfr')
         assert underline not in m.drain(), "underline still on after off"
 
         m.write(b"\nexit\n")
+
+
+# --- Section 11: Standalone math expression and continuation escape ---------
+def test_math_expression_no_multiline():
+    rc, out = run_milk([], stdin_text="@calc 1-3\nexit\n")
+    assert rc == 0
+    assert "-2" in out
+    assert "\n> " not in out
+
+
+@needs_treesitter
+def test_pty_continuation_prompt_ctrl_c():
+    with milk_proc([], pty_mode=True) as m:
+        m.read_until(PROMPT, 5)
+        m.write(b"for i in 1 2; do\n")
+        m.read_until(b"> ", 5)
+        m.write(b"\x03")  # Ctrl-C
+        m.read_until(PROMPT, 5)
+        m.write(b"echo recovered\n")
+        m.read_until(b"recovered", 5)
+        m.write(b"exit\n")

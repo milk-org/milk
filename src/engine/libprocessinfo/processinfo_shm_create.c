@@ -115,61 +115,12 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
 
     pinfolist->active[pindex] = 1;
 
-    enum
+    // name of the unit this process runs, set by its starter; the processinfo name otherwise
     {
-        tmuxnamestrlen = 100
-    };
-    char  tmuxname[tmuxnamestrlen];
-    FILE *fpout;
-    int   notmux = 0;
-
-    fpout = popen("tmuxsessionname", "r");
-    if (fpout == NULL)
-    {
-        // printf("WARNING: cannot run command \"tmuxsessionname\"\n");
-        notmux = 1;
+        const char *unit = getenv("MILK_UNIT_NAME");
+        snprintf(pinfo->unitname, sizeof(pinfo->unitname), "%s",
+                 (unit != NULL && unit[0] != '\0') ? unit : pname);
     }
-    else
-    {
-        if (fgets(tmuxname, tmuxnamestrlen, fpout) == NULL)
-        {
-            //printf("WARNING: fgets error\n");
-            notmux = 1;
-        }
-        pclose(fpout);
-    }
-    // remove line feed
-    if (strlen(tmuxname) > 0)
-    {
-        //  printf("tmux name : %s\n", tmuxname);
-        //  printf("len: %d\n", (int) strlen(tmuxname));
-        fflush(stdout);
-
-        if (tmuxname[strlen(tmuxname) - 1] == '\n')
-        {
-            tmuxname[strlen(tmuxname) - 1] = '\0';
-        }
-        else
-        {
-            // printf("tmux name empty\n");
-        }
-    }
-    else
-    {
-        notmux = 1;
-    }
-
-    if (notmux == 1)
-    {
-        snprintf(tmuxname, tmuxnamestrlen, " ");
-    }
-
-    // force last char to be term, just in case
-    tmuxname[99] = '\0';
-
-    DEBUG_TRACEPOINT("tmux name : %s\n", tmuxname);
-
-    strncpy(pinfo->tmuxname, tmuxname, tmuxnamestrlen - 1);
 
     // set control value (default 0)
     // 1 : pause

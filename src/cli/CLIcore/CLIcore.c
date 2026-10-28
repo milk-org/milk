@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 #include <sys/resource.h> // getrlimit
 #include <termios.h>
@@ -41,11 +42,13 @@
 #include <getopt.h>
 #include <math.h>
 #include <ncurses.h>
+#include <poll.h>
 #include <stdbool.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/prctl.h>
+#include <sys/syscall.h>
 #include <sys/ioctl.h>
 #include <sched.h>
 #include <signal.h>
@@ -90,7 +93,12 @@
 #include "CLIcore_modules.h"
 #include "CLIcore_setSHMdir.h"
 #include "CLIcore_signals.h"
-#include "../libmilkscript/milkscript.h"
+#include "cli_calc_parser.h"
+#include "milk_bash_engine.h"
+#include "milk_catalog.h"
+#include "milk_server.h"
+#include "milk_srvlog.h"
+#include "milkscript.h"
 #include "treesitter/cli_treesitter.h"
 
 #include "milk_path.h"
@@ -110,10 +118,20 @@ int Verbose    = 0;
 int Listimfile = 0;
 
 
-char CLIstartupfilename[STRINGMAXLEN_CLISTARTUPFILENAME] = "CLIstartup.txt";
+char CLIstartupfilename[STRINGMAXLEN_CLISTARTUPFILENAME] = ""; // set by -s
 
 static int  single_command_flag = 0;
 static char single_command_string[STRINGMAXLEN_CLICMDLINE];
+
+static char server_sockpath[512] = "";
+static int  server_owner_fd      = -1;
+static int  server_ready_fd      = -1;
+static long server_owner_pid     = 0;  /* --owner-pid or --creator: the owner the session records */
+static long server_idle_s        = 0;  /* --idle-timeout: end after this long without a command */
+static char cli_session[64]      = ""; /* --session NAME: the named session milk-cli's bash joins */
+static int  catalog_flag         = 0;  /* --catalog: write the install-time command catalog */
+static int  script_tool = 0; /* --format (1), --format-in-place (2), --outline (3) <file> */
+static char script_tool_file[1024];
 
 // fifo input
 static fd_set cli_fdin_set;
@@ -153,17 +171,19 @@ void    cli_fifo_close(void);
 int     cli_fifo_open(const char *path);
 errno_t cli_fifo(void);
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                    FUNCTIONS SOURCE CODE                                        */
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name CLIcore functions */
-
-/// CLI functions
 
 static int exitCLI_done = 0;
 
+/**
+ * exitCLI - Perform graceful shutdown of the interactive CLI session
+ *
+ * Cleans up the terminal scroll region, closes and unlinks any active command
+ * FIFO, removes temporary image list files, persists the command history to
+ * disk, and clears the main REPL loop flag so the process can exit cleanly.
+ * Guarded by an internal flag to ensure idempotency if called multiple times.
+ *
+ * Return: RETURN_SUCCESS
+ */
 errno_t exitCLI()
 {
     if (exitCLI_done)
@@ -191,90 +211,22 @@ errno_t exitCLI()
     {
         printf("Closing PID %ld (prompt process)\n", (long) getpid());
     }
-    //    exit(0);
+
     cli_history_save();
     data.CLIloopON = 0; // stop CLI loop
 
     return RETURN_SUCCESS;
 }
 
-errno_t load_so__cli()
-{
-    load_sharedobj(data.cmdargtoken[1].val.string);
-    return CLICMD_SUCCESS;
-}
-
-errno_t load_module__cli()
-{
-    if (data.cmdargtoken[1].type == 3)
-    {
-        load_module_shared(data.cmdargtoken[1].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
-
-errno_t CLIcore__load_module_as__cli()
-{
-    DEBUG_TRACEPOINT("calling CLI_checkarg");
-    if (0 + CLI_checkarg(1, CLIARG_STR) + CLI_checkarg(2, CLIARG_STR) == 0)
-    {
-        strncpy(data.moduleshortname, data.cmdargtoken[2].val.string,
-                STRINGMAXLEN_MODULE_SHORTNAME - 1);
-        load_module_shared(data.cmdargtoken[1].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
-
-errno_t set_processinfoON()
-{
-    dcprocinfo = 1;
-
-    return RETURN_SUCCESS;
-}
-
-errno_t set_processinfoOFF()
-{
-    dcprocinfo = 0;
-
-    return RETURN_SUCCESS;
-}
-
-errno_t set_default_precision_single()
-{
-    dcprecision = 0;
-
-    return RETURN_SUCCESS;
-}
-
-errno_t set_default_precision_double()
-{
-    dcprecision = 1;
-
-    return RETURN_SUCCESS;
-}
-
-errno_t milk_usleep__cli()
-{
-    if (data.cmdargtoken[1].type == 2)
-    {
-        usleep(data.cmdargtoken[1].val.numl);
-        return RETURN_SUCCESS;
-    }
-    else
-    {
-        return RETURN_FAILURE;
-    }
-}
-
-
+/**
+ * function_parameter_structure_load__cli - CLI wrapper to load an FPS from shared memory
+ *
+ * Validates that the first CLI command argument is a string naming a Function
+ * Parameter Structure (FPS) and loads it into the current session via
+ * function_parameter_structure_load().
+ *
+ * Return: CLICMD_SUCCESS on valid argument, CLICMD_INVALID_ARG otherwise
+ */
 errno_t function_parameter_structure_load__cli()
 {
     DEBUG_TRACEPOINT("calling CLI_checkarg");
@@ -287,11 +239,6 @@ errno_t function_parameter_structure_load__cli()
     {
         return CLICMD_INVALID_ARG;
     }
-}
-
-
-void fnExit_fifoclose()
-{
 }
 
 /**
@@ -371,14 +318,20 @@ void cli_fifo_close(void)
     data.fifoname[0] = '\0';
 }
 
+/**
+ * CLI_startup - Initialize the interactive CLI overlay and runtime defaults
+ *
+ * Records the CLI process ID, prints OpenMP/OpenACC runtime configuration when
+ * not in quiet mode, initializes the core runtime subsystem via
+ * CLI_runtime_init(), and sets default interactive UI preferences
+ * (autocompletion, history suggestions, argument hints, fuzzy matching, syntax
+ * diagnostics, auto-indentation, and delimiter matching).
+ *
+ * Return: RETURN_SUCCESS
+ */
 errno_t CLI_startup()
 {
     DEBUG_TRACE_FSTART();
-
-    if (dcquiet == 1)
-    {
-        // ImageStreamIO_set_verbosity(0);
-    }
 
     // get PID and write it to shell env variable MILK_CLI_PID
     CLIPID = getpid();
@@ -390,8 +343,6 @@ errno_t CLI_startup()
                                        "Cpus_allowed_list",
                                        CLIPID);
     }
-
-    //	printf("    _SC_CLK_TCK = %d\n", sysconf(_SC_CLK_TCK));
 
     if (Verbose)
     {
@@ -422,62 +373,8 @@ errno_t CLI_startup()
     }
 #endif
 
-    // to take advantage of kernel priority:
-    // owner=root mode=4755
-    getresuid(&dcruid, &dceuid, &dcsuid);
+    CLI_runtime_init();
 
-    // Initialize random-number generator
-    // Pure-C xorshift64* (replaces GSL)
-    milk_rng_init((uint64_t) time(NULL));
-
-    // warm up
-    //for(i=0; i<10; i++)
-    //    v1 = gsl_rng_uniform (dcrndgen);
-
-    dcprogstatus = 0;
-
-    // Initialize installdir
-    char *installdir_env = getenv("MILK_INSTALLDIR");
-    if (installdir_env != NULL)
-    {
-        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, installdir_env);
-    }
-    else
-    {
-#ifdef INSTALLDIR
-        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, INSTALLDIR);
-#else
-        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, "/usr/local/milk");
-#endif
-    }
-
-    // Initialize sourcedir
-    char *sourcedir_env = getenv("MILK_SOURCEDIR");
-    if (sourcedir_env != NULL)
-    {
-        strncpy(dcsourcedir, sourcedir_env, STRINGMAXLEN_DIRNAME - 1);
-    }
-    else
-    {
-#ifdef SOURCEDIR
-        strncpy(dcsourcedir, SOURCEDIR, STRINGMAXLEN_DIRNAME - 1);
-#else
-        strncpy(dcsourcedir, "", STRINGMAXLEN_DIRNAME - 1);
-#endif
-    }
-
-
-    dcdebug     = 0;
-    dcoverwrite = 0;
-    dcprecision = 0; // float is default precision
-    dcshareddft = 0; // do not allocate shared memory for images
-    snprintf(dcsavedir, STRINGMAXLEN_DIRNAME, ".");
-
-    data.CLIlogON             = 0; // log every command
-    data.fifoON               = 0;
-    data.fifofd               = -1;
-    dcprocinfo                = 1; // process info for intensive processes
-    dcprocinfoact             = 0; // toggles to 1 when process is logged
     data.autocomplete         = 1; // autocomplete preview ON by default
     data.autocomplete_history = 1; // history suggestions ON
     data.autocomplete_arghint = 1; // argument hint line ON
@@ -486,47 +383,19 @@ errno_t CLI_startup()
     data.auto_indent          = 4; // auto-indentation spaces (4 spaces)
     data.show_match           = 1; // structural delimiter & keyword matching ON
 
-    // signal handling
-
-    dcsigact.sa_handler = sig_handler;
-    sigemptyset(&dcsigact.sa_mask);
-    dcsigact.sa_flags = 0;
-
-    // Request the kernel for a sigint if parent dies
-    // This is useful if stdin is a pipe from the parent process
-    // and the parent dies suddenly. This confuses libreadline.
-    prctl(PR_SET_PDEATHSIG, SIGINT);
-
-    dcsigUSR1 = 0;
-    dcsigUSR2 = 0;
-    dcsigTERM = 0;
-    dcsigINT  = 0;
-    dcsigBUS  = 0;
-    dcsigSEGV = 0;
-    dcsigABRT = 0;
-    dcsigHUP  = 0;
-    dcsigPIPE = 0;
-
-    if (sigaction(SIGUSR1, &dcsigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGUSR1\n");
-    }
-    if (sigaction(SIGUSR2, &dcsigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGUSR2\n");
-    }
-
-    set_signal_catch();
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-// RegisterCLIcmd duplicate removed
-
-
-/* Handle SIGWINCH and window size changes when readline is not active and
-   reading a character. */
+/**
+ * sighandler - Record terminal window size change signals (SIGWINCH)
+ * @sig: Signal number received (unused)
+ *
+ * Sets an atomic flag when SIGWINCH arrives while readline is idle so the main
+ * select() loop can query the updated terminal dimensions and resize readline.
+ *
+ * Return: void
+ */
 static void sighandler(int sig)
 {
     (void) sig;
@@ -550,8 +419,28 @@ static void readline_lazy_init(const char *prompt, int *flag)
     *flag = 1;
 #ifdef USE_READLINE
     DEBUG_TRACEPOINT("initialize readline");
-    rl_attempted_completion_function = CLI_completion;
-    rl_initialize();
+    rl_attempted_completion_function   = CLI_completion;
+    rl_completion_display_matches_hook = cli_menu_display_matches;
+    rl_getc_function                   = cli_custom_getc;
+
+    /* Isolate readline initialization from external ~/.inputrc */
+    {
+        char *saved_inputrc = getenv("INPUTRC");
+        char *saved_copy    = (saved_inputrc != NULL) ? strdup(saved_inputrc) : NULL;
+
+        setenv("INPUTRC", "/dev/null", 1);
+        rl_initialize();
+
+        if (saved_copy != NULL)
+        {
+            setenv("INPUTRC", saved_copy, 1);
+            free(saved_copy);
+        }
+        else
+        {
+            unsetenv("INPUTRC");
+        }
+    }
     {
         struct sigaction sa_winch;
         sa_winch.sa_handler = sighandler;
@@ -633,7 +522,28 @@ static int handle_fifo_input(const char *prompt)
             {
                 buf1[total_bytes] = '\0';
             }
-            strncpy(data.CLIcmdline, buf1, STRINGMAXLEN_CLICMDLINE - 1);
+
+            /* a multi-line construct (here-document, if/for, open quote) waits for the rest */
+            static char  *acc     = NULL;
+            static size_t acc_len = 0;
+            size_t        ll      = strlen(buf1);
+            char         *na      = (char *) realloc(acc, acc_len + ll + 2);
+            if (na == NULL)
+            {
+                break;
+            }
+            acc = na;
+            memcpy(acc + acc_len, buf1, ll);
+            acc_len += ll;
+            acc[acc_len++] = '\n';
+            acc[acc_len]   = '\0';
+            if (milk_shell_incomplete(acc))
+            {
+                break;
+            }
+            acc[--acc_len] = '\0';
+
+            strncpy(data.CLIcmdline, acc, STRINGMAXLEN_CLICMDLINE - 1);
             data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
             printf("\033[36m[fifo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
@@ -642,7 +552,17 @@ static int handle_fifo_input(const char *prompt)
             clock_gettime(CLOCK_MONOTONIC, &ft0);
 
             cli_history_log_prompt(data.CLIcmdline);
-            CLI_execute_line();
+            {
+                int exit_req = 0;
+                int rc       = milk_bash_engine_exec(acc, &exit_req);
+                if (exit_req || (dcerrorexit && rc != 0))
+                {
+                    data.CLIloopON = 0;
+                }
+            }
+            free(acc);
+            acc     = NULL;
+            acc_len = 0;
 
             clock_gettime(CLOCK_MONOTONIC, &ft1);
             {
@@ -657,6 +577,245 @@ static int handle_fifo_input(const char *prompt)
         }
     }
     return 1;
+}
+
+/**
+ * print_non_tty_prompt - Emit the CLI prompt without readline escape delimiters
+ * @prompt: Prompt string containing optional `\001` / `\002` readline markers
+ *
+ * Used when stdin is a pipe or file (`!isatty(STDIN_FILENO)`) and quiet mode is
+ * off so external line-oriented drivers (such as `milk.cliwrap.CLI`) still
+ * observe the expected prompt without initializing readline.
+ *
+ * Return: void
+ */
+static void print_non_tty_prompt(const char *prompt)
+{
+    if (prompt == NULL)
+    {
+        return;
+    }
+    for (const char *p = prompt; *p != '\0'; p++)
+    {
+        if (*p != '\001' && *p != '\002')
+        {
+            putchar((unsigned char) *p);
+        }
+    }
+    fflush(stdout);
+}
+
+/** batch_tail_bash() - 1 if @batch leaves the engine in bash mode, with @tail at the start of its last
+ * bash-mode run: only there can an unfinished construct hold the batch back (a bare `@calc` line
+ * toggles, `exit`/`quit` leave calc mode, as the engine does). */
+static int batch_tail_bash(const char *batch, const char **tail)
+{
+    int mode = cli_calc_mode;
+    *tail    = batch;
+    for (const char *p = batch; *p != '\0';)
+    {
+        const char *nl   = strchr(p, '\n');
+        const char *next = (nl != NULL) ? nl + 1 : p + strlen(p);
+        const char *a    = p;
+        const char *b    = (nl != NULL) ? nl : next;
+        while (a < b && isspace((unsigned char) *a))
+        {
+            a++;
+        }
+        while (b > a && isspace((unsigned char) b[-1]))
+        {
+            b--;
+        }
+        size_t n = (size_t) (b - a);
+        if (n == 5 && strncmp(a, "@calc", 5) == 0)
+        {
+            mode = !mode;
+            if (!mode)
+            {
+                *tail = next;
+            }
+        }
+        else if (mode && n == 4 && (strncmp(a, "exit", 4) == 0 || strncmp(a, "quit", 4) == 0))
+        {
+            mode  = 0;
+            *tail = next;
+        }
+        p = next;
+    }
+    return !mode;
+}
+
+/**
+ * handle_non_tty_stdin - Read and batch-execute piped or redirected stdin lines
+ * @promptstring: Base prompt string passed to `runCLI()`
+ * @prompt:       Active prompt buffer updated after command execution
+ *
+ * Drains all currently readable bytes from `STDIN_FILENO` in 64 KiB chunks and
+ * dispatches complete lines (or the entire remaining buffer at EOF) to
+ * `milk_bash_engine_exec()` in a single batch, bypassing per-character readline
+ * callbacks and per-line IPC round-trips.
+ *
+ * Return: void
+ */
+static void handle_non_tty_stdin(char *promptstring, char *prompt)
+{
+    static char  *acc     = NULL;
+    static size_t acc_len = 0;
+    static size_t acc_cap = 0;
+
+    struct pollfd pfd = { STDIN_FILENO, POLLIN, 0 };
+    char          chunk[65536];
+    int           got_eof = 0;
+
+    for (;;)
+    {
+        ssize_t r = read(STDIN_FILENO, chunk, sizeof(chunk));
+        if (r > 0)
+        {
+            if (acc_len + (size_t) r + 1 > acc_cap)
+            {
+                size_t ncap = (acc_cap == 0) ? 65536 : acc_cap * 2;
+                while (ncap < acc_len + (size_t) r + 1)
+                {
+                    ncap *= 2;
+                }
+                char *na = (char *) realloc(acc, ncap);
+                if (na == NULL)
+                {
+                    break;
+                }
+                acc     = na;
+                acc_cap = ncap;
+            }
+            memcpy(acc + acc_len, chunk, (size_t) r);
+            acc_len += (size_t) r;
+            acc[acc_len] = '\0';
+
+            /* keep draining while input is ready, up to 1 MiB: a producer faster than this loop
+             * (`yes cmd | milk-cli`) must still see its lines run and not grow the buffer forever */
+            if (acc_len < (1u << 20) && poll(&pfd, 1, 0) > 0 &&
+                (pfd.revents & (POLLIN | POLLHUP | POLLERR)))
+            {
+                continue;
+            }
+            break;
+        }
+        else if (r == 0)
+        {
+            got_eof = 1;
+            break;
+        }
+        else
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            break;
+        }
+    }
+
+    if (acc_len == 0)
+    {
+        if (got_eof)
+        {
+            free(acc);
+            acc            = NULL;
+            acc_cap        = 0;
+            data.CLIloopON = 0;
+        }
+        return;
+    }
+
+    size_t consume_len = acc_len;
+    size_t batch_len   = acc_len;
+    if (!got_eof)
+    {
+        const char *last_nl = (const char *) memrchr(acc, '\n', acc_len);
+        if (last_nl == NULL)
+        {
+            return;
+        }
+        batch_len   = (size_t) (last_nl - acc);
+        consume_len = batch_len + 1;
+    }
+    else if (batch_len > 0 && acc[batch_len - 1] == '\n')
+    {
+        batch_len--;
+    }
+
+    char *batch = (char *) malloc(batch_len + 1);
+    if (batch == NULL)
+    {
+        return;
+    }
+    memcpy(batch, acc, batch_len);
+    batch[batch_len] = '\0';
+
+    const char *tail;
+    if (!got_eof && batch_tail_bash(batch, &tail) && milk_shell_incomplete(tail))
+    {
+        free(batch);
+        return;
+    }
+
+    size_t rem = acc_len - consume_len;
+    if (rem > 0)
+    {
+        memmove(acc, acc + consume_len, rem);
+    }
+    acc_len      = rem;
+    acc[acc_len] = '\0';
+
+    if (dcquiet == 0)
+    {
+        putchar('\n');
+        fflush(stdout);
+    }
+
+    if (batch[0] != '\0')
+    {
+        if (data.echo_input)
+        {
+            printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", batch);
+        }
+        cli_history_log_prompt_lines(batch); /* every line, as the tty path logs each prompt */
+        int exit_req = 0;
+        int rc       = 0;
+        cli_fault_isolation_arm();
+        if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
+        {
+            rc = milk_bash_engine_exec(batch, &exit_req);
+        }
+        else
+        {
+            dcsigINT  = 0;
+            dcsigSEGV = 0;
+            dcsigBUS  = 0;
+            dcsigABRT = 0;
+            milk_bash_engine_abort();
+        }
+        cli_fault_isolation_disarm();
+        if (exit_req || (dcerrorexit && rc != 0))
+        {
+            data.CLIloopON = 0;
+        }
+    }
+    free(batch);
+
+    if (got_eof)
+    {
+        free(acc);
+        acc            = NULL;
+        acc_len        = 0;
+        acc_cap        = 0;
+        data.CLIloopON = 0;
+    }
+    else if (data.CLIloopON == 1 && dcquiet == 0 && data.fifoON == 0)
+    {
+        runCLI_prompt(promptstring, prompt);
+        print_non_tty_prompt(prompt);
+    }
 }
 
 
@@ -686,9 +845,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     int initstartup = 0; /// becomes 1 after startup
 
-    int            blockCLIinput = 0;
-    int            cliwaitus     = 100;
-    struct timeval tv; // sleep 100 us after reading FIFO
+    int blockCLIinput = 0;
+    /* select() timeout of the input loop: input, the bash engine and signals wake it at once, so
+     * this only bounds how late a dynamically opened fifo is picked up */
+    int            cliwaitus = 50000;
+    struct timeval tv;
 
     strncpy(data.processname, argv[0], STRINGMAXLEN_PROCESSNAME - 1);
 
@@ -710,9 +871,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // CLI interactive overlay (signals, autocomplete)
     CLI_startup();
 
-    // Load persistent command aliases
-    cli_alias_load();
-
     // Initialize tree-sitter parser/query
     cli_ts_init();
 
@@ -723,17 +881,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // Disable command timing by default
     data.print_cmd_timing = 0;
 
-    // Load startup script (~/.milkrc)
-    cli_milkrc_load();
-
     // Load persistent command history
     cli_history_load();
 
     // Initialize structured history log
     cli_history_log_init();
-
-    // Load persistent bookmarks
-    cli_bookmark_load();
 
     // (SHM directory setup is handled by milkscript_init)
 
@@ -749,39 +901,27 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         DEBUG_TRACE_FEXIT();
         return EXIT_FAILURE;
     }
+    if (server_sockpath[0] != '\0')
+    {
+        // a server's output is a file: fully buffered, its last lines before a crash would be lost
+        setvbuf(stdout, NULL, _IOLBF, 0);
+    }
+
+    if (script_tool != 0) /* script tools: no session */
+    {
+        int trc = (script_tool == 3) ? cli_outline_file(script_tool_file)
+                                     : cli_format_file(script_tool_file, script_tool == 2, 4);
+        DEBUG_TRACE_FEXIT();
+        return (trc == 0) ? RETURN_SUCCESS : RETURN_FAILURE;
+    }
 
     dcprogstatus = 1;
-    printf("\n");
-
-    // (Module loading is now handled centrally by milkscript_init)
-
-    // load other libs specified by environment variable MILKCLI_ADD_LIBS
+    if (!catalog_flag && server_sockpath[0] == '\0')
     {
-        char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
-        if (CLI_ADD_LIBS != NULL)
-        {
-            if (dcquiet == 0)
-            {
-                printf("        MILKCLI_ADD_LIBS '%s'\n", CLI_ADD_LIBS);
-            }
-
-            char *libname = strtok(CLI_ADD_LIBS, " ,;");
-            while (libname != NULL)
-            {
-                DEBUG_TRACEPOINT("--- CLI Adding library: %s", libname);
-                load_module_shared(libname);
-                libname = strtok(NULL, " ,;");
-            }
-            printf("\n");
-        }
-        else
-        {
-            if (dcquiet == 0)
-            {
-                printf("        MILKCLI_ADD_LIBS not set -> no additional module loaded\n");
-            }
-        }
+        printf("\n");
     }
+
+    // (modules, the milk module and the help commands are registered by milkscript_init)
 
     DEBUG_TRACEPOINT("Initialize data control block");
     CLI_data_init();
@@ -792,6 +932,52 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     }
 
     runCLI_cmd_init();
+
+    if (catalog_flag)
+    {
+        int cat_rc = milk_catalog_build(dcinstalldir);
+        cli_ts_cleanup();
+        DEBUG_TRACE_FEXIT();
+        return (cat_rc == 0) ? RETURN_SUCCESS : RETURN_FAILURE;
+    }
+
+    if (server_sockpath[0] != '\0' && cli_session[0] != '\0')
+    {
+        fprintf(stderr, "milk-cli: --session joins a session, --server runs one: not both\n");
+        return RETURN_FAILURE;
+    }
+    if (cli_session[0] != '\0') // its bash joins session NAME, started if it does not run
+    {
+        char    sock[256];
+        char    self[PATH_MAX];
+        ssize_t n = readlink("/proc/self/exe", self, sizeof(self) - 1);
+        if (n > 0)
+        {
+            self[n] = '\0';
+        }
+        int jrc = milk_srvlog_session_join(cli_session, (n > 0) ? self : NULL, sock, sizeof(sock));
+        if (jrc != 0)
+        {
+            exit(jrc);
+        }
+        milk_bash_engine_set_session(sock);
+    }
+
+    if (server_sockpath[0] != '\0')
+    {
+        int srv_rc = milk_server_run(server_sockpath, server_owner_fd, server_ready_fd,
+                                     (pid_t) server_owner_pid,
+                                     (server_idle_s > 0) ? (unsigned) server_idle_s : 0U);
+        cli_ts_cleanup();
+        DEBUG_TRACE_FEXIT();
+        return srv_rc;
+    }
+
+    // ~/.milkrc: interactive sessions only, once every module and command is registered
+    if (!single_command_flag && CLIstartupfilename[0] == '\0' && isatty(fileno(stdin)))
+    {
+        cli_milkrc_load();
+    }
 
     // fifo
     fdmax = fileno(stdin);
@@ -812,7 +998,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     data.CLIloopON = 1; // start CLI loop
 
-    int realine_initialized = 0;
+    int realine_initialized    = 0;
+    int non_tty_prompt_printed = 0;
+    int stdin_is_tty           = isatty(fileno(stdin));
 
     while (data.CLIloopON == 1)
     {
@@ -854,27 +1042,30 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             exit(EXIT_FAILURE);
         }
 
-        compute_image_memory();
-        compute_nb_image();
-
-        // If fifo is on and file CLIstatup.txt exists, load it
+        // Run the -s startup file (fed through the fifo when fifo input is on)
         if (initstartup == 0)
         {
             if (single_command_flag)
             {
-                strncpy(data.CLIcmdline, single_command_string, STRINGMAXLEN_CLICMDLINE - 1);
-                CLI_execute_line();
+                int exit_req   = 0;
+                int rc         = milk_bash_engine_exec(single_command_string, &exit_req);
+                dcexitcode     = rc;
                 data.CLIloopON = 0;
                 break;
             }
+            else if (CLIstartupfilename[0] == '\0')
+            {
+                // no startup file
+            }
             else if (data.fifoON == 1)
             {
-                EXECUTE_SYSTEM_COMMAND_NOCHECK("file %s",
-                                               CLIstartupfilename); //TEST
-                EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s",
-                                               CLIstartupfilename); //TEST
-                EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s > %s 2> /dev/null", CLIstartupfilename,
-                                               data.fifoname);
+                char qfile[2 * STRINGMAXLEN_CLISTARTUPFILENAME + 8];
+                char qfifo[4 * STRINGMAXLEN_FULLFILENAME + 8];
+                if (milkpath_shell_quote(qfile, sizeof(qfile), CLIstartupfilename) == 0 &&
+                    milkpath_shell_quote(qfifo, sizeof(qfifo), data.fifoname) == 0)
+                {
+                    EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s > %s 2> /dev/null", qfile, qfifo);
+                }
 
                 if (dcquiet == 0)
                 {
@@ -889,25 +1080,21 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 if (fp != NULL)
                 {
                     fclose(fp);
-                    strncpy(data.cmdargtoken[0].val.string, "source",
-                            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
-                    strncpy(data.cmdargtoken[1].val.string, CLIstartupfilename,
-                            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
-                    data.cmdNBarg = 2;
-                    cli_source();
-
-                    // Exit the interactive loop, as shebang scripts should terminate upon completion
-                    if (strcmp(CLIstartupfilename, "CLIstartup.txt") != 0)
-                    {
-                        data.CLIloopON = 0;
-                        break;
-                    }
+                    milk_bash_engine_exec_file(CLIstartupfilename, NULL);
                 }
+                else
+                {
+                    fprintf(stderr, "milk-cli: cannot open '%s': %s\n", CLIstartupfilename,
+                            strerror(errno));
+                    dcexitcode = 1;
+                }
+                data.CLIloopON = 0; // -s runs the file and exits
+                break;
             }
         }
         initstartup = 1;
 
-        if (single_command_flag == 0 && data.fifoON == 0 && isatty(fileno(stdin)))
+        if (single_command_flag == 0 && data.fifoON == 0 && stdin_is_tty)
         {
             cli_set_interactive_mode(1);
         }
@@ -927,10 +1114,23 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         FD_SET(
             fileno(stdin),
             &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+        if (milk_bash_engine_listen_fd() >= 0)
+        {
+            FD_SET(milk_bash_engine_listen_fd(), &cli_fdin_set); // background jobs calling milk
+        }
 
         if (data.fifoON == 0)
         {
-            readline_lazy_init(prompt, &realine_initialized);
+            if (stdin_is_tty)
+            {
+                readline_lazy_init(prompt, &realine_initialized);
+            }
+            else if (dcquiet == 0 && !non_tty_prompt_printed)
+            {
+                runCLI_prompt(promptstring, prompt);
+                print_non_tty_prompt(prompt);
+                non_tty_prompt_printed = 1;
+            }
         }
 
         DEBUG_TRACEPOINT("loop entry");
@@ -942,13 +1142,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 // stop CLI input loop
                 data.CLIloopON = 0;
             }
-
+            if (milk_bash_engine_ended())
             {
-                // CLI loop delay to keep CPU load light
-                struct timespec nsts;
-                nsts.tv_sec  = 0;
-                nsts.tv_nsec = 3000000; // 3 ms delay
-                nanosleep(&nsts, NULL);
+                fprintf(stderr, "\nmilk-cli: this session was ended (@session end)\n");
+                data.CLIloopON = 0;
+                continue;
             }
 
             if (sigwinch_received)
@@ -972,6 +1170,10 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             {
                 fdmax = data.fifofd;
             }
+            if (milk_bash_engine_listen_fd() > fdmax)
+            {
+                fdmax = milk_bash_engine_listen_fd();
+            }
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
 
             if (n == 0) // nothing received, need to re-init and go back to select call
@@ -985,7 +1187,28 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     FD_SET(data.fifofd, &cli_fdin_set);
                 }
                 FD_SET(fileno(stdin), &cli_fdin_set);
+                if (milk_bash_engine_listen_fd() >= 0)
+                {
+                    FD_SET(milk_bash_engine_listen_fd(), &cli_fdin_set);
+                }
                 continue;
+            }
+            if (n > 0 && milk_bash_engine_listen_fd() >= 0 &&
+                FD_ISSET(milk_bash_engine_listen_fd(), &cli_fdin_set))
+            {
+                milk_bash_engine_serve();
+                if (!FD_ISSET(fileno(stdin), &cli_fdin_set) &&
+                    !(data.fifoON == 1 && data.fifofd >= 0 && FD_ISSET(data.fifofd, &cli_fdin_set)))
+                {
+                    FD_ZERO(&cli_fdin_set);
+                    if (data.fifoON == 1 && data.fifofd >= 0)
+                    {
+                        FD_SET(data.fifofd, &cli_fdin_set);
+                    }
+                    FD_SET(fileno(stdin), &cli_fdin_set);
+                    FD_SET(milk_bash_engine_listen_fd(), &cli_fdin_set);
+                    continue;
+                }
             }
             if (n == -1)
             {
@@ -1021,7 +1244,10 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             if (blockCLIinput == 0) /* fifo cleared */
             {
                 DEBUG_TRACEPOINT("fifo cleared");
-                readline_lazy_init(prompt, &realine_initialized);
+                if (stdin_is_tty)
+                {
+                    readline_lazy_init(prompt, &realine_initialized);
+                }
             }
 
             //printf("fifo cleared, accepting user input through CLI\n");
@@ -1031,34 +1257,51 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 // revert to default mode
                 if (FD_ISSET(fileno(stdin), &cli_fdin_set))
                 {
-#ifdef USE_READLINE
-                    DEBUG_TRACEPOINT("readline callback");
-                    rl_callback_read_char();
-#else
-                    // Fallback: no readline
-                    if (fgets(data.CLIcmdline, sizeof(data.CLIcmdline), stdin))
+                    if (!stdin_is_tty)
                     {
-                        data.CLIcmdline[strcspn(data.CLIcmdline, "\n")] = 0; // strip newline
-                        cli_history_log_prompt(data.CLIcmdline);
-                        cli_fault_isolation_arm();
-                        if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
-                        {
-                            CLI_execute_line();
-                        }
-                        else
-                        {
-                            dcsigINT  = 0;
-                            dcsigSEGV = 0;
-                            dcsigBUS  = 0;
-                            dcsigABRT = 0;
-                        }
-                        cli_fault_isolation_disarm();
+                        handle_non_tty_stdin(promptstring, prompt);
+                        data.CLIexecuteCMDready = 1;
                     }
                     else
                     {
-                        data.CLIloopON = 0;
-                    }
+#ifdef USE_READLINE
+                        DEBUG_TRACEPOINT("readline callback");
+                        rl_callback_read_char();
+#else
+                        // Fallback: no readline
+                        if (fgets(data.CLIcmdline, sizeof(data.CLIcmdline), stdin))
+                        {
+                            data.CLIcmdline[strcspn(data.CLIcmdline, "\n")] = 0; // strip newline
+                            cli_history_log_prompt(data.CLIcmdline);
+                            {
+                                int exit_req = 0;
+                                int rc       = 0;
+                                cli_fault_isolation_arm();
+                                if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
+                                {
+                                    rc = milk_bash_engine_exec(data.CLIcmdline, &exit_req);
+                                }
+                                else
+                                {
+                                    dcsigINT  = 0;
+                                    dcsigSEGV = 0;
+                                    dcsigBUS  = 0;
+                                    dcsigABRT = 0;
+                                    milk_bash_engine_abort();
+                                }
+                                cli_fault_isolation_disarm();
+                                if (exit_req || (dcerrorexit && rc != 0))
+                                {
+                                    data.CLIloopON = 0;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            data.CLIloopON = 0;
+                        }
 #endif
+                    }
                 }
             }
         }
@@ -1067,13 +1310,16 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     exitCLI();
 
 #ifdef USE_READLINE
-    CLI_cleanup_scroll_region();
-    rl_callback_handler_remove();
+    if (realine_initialized)
+    {
+        CLI_cleanup_scroll_region();
+        rl_callback_handler_remove();
+    }
 #endif
 
     cli_set_interactive_mode(0);
 
-    cli_trap_run_exit();
+    milk_bash_engine_shutdown();
 
     cli_ts_cleanup();
 
@@ -1082,14 +1328,14 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 }
 
 
-/*
- * runCLI_cmd_init() and its static helper callbacks
- * have been extracted to CLIcore_cmd_registry.c.
- * The function prototype is forward-declared above.
+/**
+ * runCLI_free - Release dynamically allocated CLI runtime tables and RNG state
+ *
+ * Frees the image table, variable table, FPS array, and random number generator
+ * state when dynamic data allocation is used.
+ *
+ * Return: void
  */
-
-/* Body moved to CLIcore_cmd_registry.c */
-
 static void __attribute__((unused)) runCLI_free()
 {
 #ifndef DATA_STATIC_ALLOC
@@ -1116,6 +1362,14 @@ static void __attribute__((unused)) runCLI_free()
     milk_rng_free();
 }
 
+/**
+ * user_function - Placeholder user callback that prints a two-dash progress marker
+ *
+ * Legacy hook retained for compatibility with external callers expecting a
+ * default user_function() symbol.
+ *
+ * Return: Always 0
+ */
 int user_function()
 {
     printf("-");
@@ -1135,6 +1389,19 @@ void fnExit1(void)
 }
 
 
+/**
+ * command_line_process_options - Parse CLI command-line flags and configure session state
+ * @argc: Number of command-line arguments passed to the process
+ * @argv: Array of command-line argument strings
+ *
+ * Processes short and long getopt options (`-h`, `-v`, `-i`, `-o`, `-e`, `-q`,
+ * `-Z`, `-A`, `-d`, `-n`, `-p`, `-f`, `-F`, `-c`, `-s`, and long-only server,
+ * catalog, and script-tool flags). Sets the process name (defaulting to
+ * `<timestamp>p<pid>` when `-n` is omitted) and updates the OS thread title via
+ * prctl(PR_SET_NAME).
+ *
+ * Return: RETURN_SUCCESS on valid options, RETURN_FAILURE on unrecognized option
+ */
 static int command_line_process_options(int argc, char **argv)
 {
     int  option_index = 0;
@@ -1156,6 +1423,18 @@ static int command_line_process_options(int argc, char **argv)
                                             { "no-history-suggest", no_argument, 0, 0x101 },
                                             { "no-arg-hints", no_argument, 0, 0x102 },
                                             { "no-fuzzy", no_argument, 0, 0x103 },
+                                            { "server", required_argument, 0, 0x104 },
+                                            { "owner-fd", required_argument, 0, 0x105 },
+                                            { "ready-fd", required_argument, 0, 0x106 },
+                                            { "catalog", no_argument, 0, 0x107 },
+                                            { "format", required_argument, 0, 0x109 },
+                                            { "format-in-place", required_argument, 0, 0x10a },
+                                            { "outline", required_argument, 0, 0x10b },
+                                            { "owner-pid", required_argument, 0, 0x108 },
+                                            { "creator", required_argument, 0, 0x10c },
+                                            { "idle-timeout", required_argument, 0, 0x10d },
+                                            { "session", required_argument, 0, 0x10e },
+                                            { "quiet", no_argument, 0, 'q' },
                                             { "fifoflag", no_argument, 0, 'f' },
                                             { "command", required_argument, 0, 'c' },
                                             { "debug", required_argument, 0, 'd' },
@@ -1173,7 +1452,7 @@ static int command_line_process_options(int argc, char **argv)
     {
         int c;
 
-        c = getopt_long(argc, argv, "hvic:d:oen:p:fF:s:A", long_options, &option_index);
+        c = getopt_long(argc, argv, "hvic:d:oen:p:fF:s:Aq", long_options, &option_index);
 
         /* Detect the end of the options. */
         if (c == -1)
@@ -1225,6 +1504,10 @@ static int command_line_process_options(int argc, char **argv)
             dcerrorexit = 1;
             break;
 
+        case 'q':
+            dcquiet = 1;
+            break;
+
         case 'Z':
             printf("Idle mode: only runs process when X is idle (pid "
                    "%ld)\n",
@@ -1258,6 +1541,71 @@ static int command_line_process_options(int argc, char **argv)
 
         case 0x103:
             data.autocomplete_fuzzy = 0;
+            break;
+
+        case 0x104:
+            if (optarg != NULL)
+            {
+                snprintf(server_sockpath, sizeof(server_sockpath), "%s", optarg);
+                dcquiet = 1;
+            }
+            break;
+
+        case 0x105:
+            if (optarg != NULL)
+            {
+                server_owner_fd = atoi(optarg);
+                fcntl(server_owner_fd, F_SETFD, FD_CLOEXEC); // not for what the server runs
+            }
+            break;
+
+        case 0x108: // exit when that process exits (pidfd polled like the owner pipe)
+            if (optarg != NULL)
+            {
+                server_owner_pid = atol(optarg);
+                int pfd          = (int) syscall(SYS_pidfd_open, (pid_t) atol(optarg), 0);
+                if (pfd < 0 && errno == ESRCH)
+                {
+                    exit(0);
+                }
+                if (pfd >= 0)
+                {
+                    fcntl(pfd, F_SETFD, FD_CLOEXEC);
+                    server_owner_fd = pfd;
+                }
+            }
+            break;
+
+        case 0x10c: // the shell that created a named session: recorded, not tied
+            server_owner_pid = (optarg != NULL) ? atol(optarg) : 0;
+            break;
+
+        case 0x10d:
+            server_idle_s = (optarg != NULL) ? atol(optarg) : 0;
+            break;
+
+        case 0x10e:
+            snprintf(cli_session, sizeof(cli_session), "%s", (optarg != NULL) ? optarg : "");
+            break;
+
+        case 0x106:
+            if (optarg != NULL)
+            {
+                server_ready_fd = atoi(optarg);
+                fcntl(server_ready_fd, F_SETFD, FD_CLOEXEC);
+            }
+            break;
+
+        case 0x107:
+            catalog_flag = 1;
+            dcquiet      = 1;
+            break;
+
+        case 0x109:
+        case 0x10a:
+        case 0x10b:
+            script_tool = c - 0x108;
+            snprintf(script_tool_file, sizeof(script_tool_file), "%s", optarg);
             break;
 
 

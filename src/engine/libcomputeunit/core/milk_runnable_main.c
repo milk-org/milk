@@ -9,6 +9,7 @@
  * Compiled into libcomputeunit; has no CLI dependency.
  */
 
+#include "milk_os.h"
 #include "milk_runnable.h"
 
 int milk_runnable_main(int argc, char *argv[], const MILK_RUNNABLE *r)
@@ -20,6 +21,7 @@ int milk_runnable_main(int argc, char *argv[], const MILK_RUNNABLE *r)
         return 1;
     }
 
+    milkos_malloc_keep(); /* buffers a loop frees and allocates again are not faulted in each time */
     milk_runnable_prepare(r);
 
     const MILK_RUNNABLE *prev = milk_runnable_set_current(r);

@@ -14,6 +14,7 @@
 
 #include "milk_types.h"
 #include "fps.h"
+#include "fps_unit.h"
 
 imageID image_ID(const char *apzname, IMAGE *dcimage_array, long dcnbimg);
 
@@ -196,11 +197,13 @@ typedef struct
         processinfo->CPUmask       = CLIcmddata.cmdsettings->CPUmask;                              \
         processinfo->MeasureTiming = CLIcmddata.cmdsettings->procinfo_MeasureTiming;               \
         processinfo_loopstart(processinfo);                                                        \
+        processinfo_CatchSignals(); /* restored by _MILK_PROCINFO_END_IMPL */                      \
     }                                                                                              \
     if (dcfpsptr != NULL)                                                                          \
     {                                                                                              \
         /* proc.<name>.<pid>.shm exists past this point */                                         \
         dcfpsptr->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP;                          \
+        fps_unit_notify_ready(); /* a unit's starter returns now (U4) */                           \
     }
 
 #define _MILK_PROCINFO_LOOPSTART_IMPL(CLIcmddata)                                    \
@@ -210,8 +213,20 @@ typedef struct
         {                                                                            \
             DEBUG_TRACEPOINT("loopstep");                                            \
             processloopOK = processinfo_loopstep(processinfo);                       \
+            fps_unit_tick(processinfo->loopcnt);                                     \
+            /* a stop request ends the loop before the wait and without computing */ \
+            if (UNLIKELY(processinfo_exit_requested(processinfo)))                   \
+            {                                                                        \
+                processloopOK = 0;                                                   \
+                continue;                                                            \
+            }                                                                        \
             DEBUG_TRACEPOINT("waitoninputstream");                                   \
             processinfo_waitoninputstream(processinfo);                              \
+            if (UNLIKELY(processinfo_exit_requested(processinfo)))                   \
+            {                                                                        \
+                processloopOK = 0;                                                   \
+                continue;                                                            \
+            }                                                                        \
             if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT &&  \
                 processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE)       \
             {                                                                        \
@@ -282,6 +297,7 @@ typedef struct
     if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                                 \
     {                                                                                        \
         processinfo_cleanExit(processinfo);                                                  \
+        processinfo_RestoreSignals();                                                        \
     }                                                                                        \
     if (dcfpsptr != NULL)                                                                    \
     {                                                                                        \

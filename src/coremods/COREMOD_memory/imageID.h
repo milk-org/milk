@@ -116,6 +116,16 @@ static inline imageID _resolveIMGID_impl(const char *caller_file,
                                          IMAGE      *imagearray __attribute__((unused)),
                                          long        NB_images __attribute__((unused)))
 {
+    if (img->stream_parse_error)
+    {
+        img->ID = -1;
+        if (ERRMODE == ERRMODE_ABORT)
+        {
+            abort();
+        }
+        return -1;
+    }
+
     // IF:
     // Not resolved before OR create counter mismatch OR not used.
     // Note: we are comparing img->createcnt to dcimg[img->ID].createcnt to check if the
@@ -126,6 +136,24 @@ static inline imageID _resolveIMGID_impl(const char *caller_file,
         img->ID = image_ID(img->name, dcimg, dcnimg);
         if (img->ID > -1) // Resolve success !
         {
+            if (img->stream_datatype != 0 && ERRMODE != ERRMODE_NULL &&
+                imagearray[img->ID].md[0].datatype != img->stream_datatype)
+            {
+                fprintf(stderr,
+                        "ERROR: stream \"%s\" datatype mismatch "
+                        "(expected %s, found %s)\n",
+                        img->name, ImageStreamIO_typename(img->stream_datatype),
+                        ImageStreamIO_typename(imagearray[img->ID].md[0].datatype));
+                img->ID = -1;
+                img->im = NULL;
+                img->md = NULL;
+                if (ERRMODE == ERRMODE_ABORT)
+                {
+                    abort();
+                }
+                return -1;
+            }
+
             img->im        = &imagearray[img->ID];
             img->md        = &imagearray[img->ID].md[0];
             img->createcnt = imagearray[img->ID].createcnt;
@@ -265,12 +293,16 @@ static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
 static inline IMGID stream_connect(const char *__restrict imname)
 {
     IMGID img = imgid_make_from_name(imname);
+    if (img.stream_parse_error)
+    {
+        return img;
+    }
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
-    if (img.ID == -1)
+    if (img.ID == -1 && img.stream_loc != 'L')
     {
         // try to connect to shared memory if not in local memory already
-        read_sharedmem_image(imname, dcimg, dcnimg);
+        read_sharedmem_image(img.name, dcimg, dcnimg);
         resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     }
 
@@ -292,6 +324,11 @@ static inline IMGID stream_connect(const char *__restrict imname)
  */
 static inline imageID createimagefromIMGID(IMGID *img)
 {
+    if (img->stream_parse_error)
+    {
+        img->ID = -1;
+        return -1;
+    }
     create_image_ID(img->name, img->mdt->naxis, img->mdt->size, img->mdt->datatype,
                     img->mdt->shared, img->mdt->NBkw, img->mdt->CBsize, &img->ID);
 
@@ -316,6 +353,14 @@ static inline imageID createimagefromIMGID(IMGID *img)
  */
 static inline imageID imcreatelikewiseIMGID(IMGID *target_img, IMGID *source_img)
 {
+    if (target_img->stream_parse_error)
+    {
+        target_img->ID = -1;
+        target_img->im = NULL;
+        target_img->md = NULL;
+        return -1;
+    }
+
     if (target_img->ID == -1)
     {
         /* Save createcnt of existing image (if
@@ -332,10 +377,22 @@ static inline imageID imcreatelikewiseIMGID(IMGID *target_img, IMGID *source_img
             old_createcnt = dcimg[old_id].createcnt;
         }
 
+        uint8_t out_datatype = (target_img->stream_datatype != 0) ? target_img->stream_datatype
+                                                                  : source_img->mdt->datatype;
+        int     out_shared   = source_img->mdt->shared;
+        if (target_img->stream_loc == 'L')
+        {
+            out_shared = 0;
+        }
+        else if (target_img->stream_loc == 'S')
+        {
+            out_shared = 1;
+        }
+
         DEBUG_TRACEPOINT("Creating 2D image");
         create_image_ID(target_img->name, source_img->mdt->naxis, source_img->mdt->size,
-                        source_img->mdt->datatype, source_img->mdt->shared, source_img->mdt->NBkw,
-                        source_img->mdt->CBsize, &target_img->ID);
+                        out_datatype, out_shared, source_img->mdt->NBkw, source_img->mdt->CBsize,
+                        &target_img->ID);
         DEBUG_TRACEPOINT(" ");
 
         if (target_img->ID != -1)
@@ -361,17 +418,19 @@ static inline imageID imcreatelikewiseIMGID(IMGID *target_img, IMGID *source_img
                        "\033[33mCreating\033[0m"
                        " from %s,"
                        " shared=%d, kw=%d\n",
-                       source_img->name, source_img->mdt->shared, source_img->mdt->NBkw);
+                       source_img->name, out_shared, source_img->mdt->NBkw);
             }
             else
             {
                 printf("  "
                        "\033[33mCreating\033[0m"
                        " shared=%d, kw=%d\n",
-                       source_img->mdt->shared, source_img->mdt->NBkw);
+                       out_shared, source_img->mdt->NBkw);
             }
 
-            target_img->mdt->size[0] = source_img->mdt->size[0];
+            target_img->mdt->datatype = out_datatype;
+            target_img->mdt->shared   = out_shared;
+            target_img->mdt->size[0]  = source_img->mdt->size[0];
             if (source_img->mdt->naxis > 1)
             {
                 target_img->mdt->size[1] = source_img->mdt->size[1];

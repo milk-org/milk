@@ -490,6 +490,21 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
 }
 
 /**
+ * load_fits_into_table() - load_fits_IMGID() and add the image to the image table (replacing an image of the
+ * same name). load_fits_IMGID() alone leaves it out of the table, for callers that own the image.
+ */
+static errno_t load_fits_into_table(const char *file_name, IMGID *imgout, int errmode)
+{
+    delete_image_ID(imgout->name, DELETE_IMAGE_ERRMODE_IGNORE);
+    errno_t retval = load_fits_IMGID(file_name, imgout, errmode);
+    if (retval == RETURN_SUCCESS && imgout->im != NULL && imgout->md != NULL && imgout->ID == -1)
+    {
+        RegisterIMGID(imgout, dcimg, dcnimg);
+    }
+    return retval;
+}
+
+/**
  * @brief Load a FITS file into the image array.
  *
  * Legacy interface returning an imageID integer.
@@ -501,7 +516,7 @@ errno_t load_fits(const char *__restrict file_name,
 {
     IMGID imgout = imgid_make_from_name(ID_name);
 
-    errno_t retval = load_fits_IMGID(file_name, &imgout, errmode);
+    errno_t retval = load_fits_into_table(file_name, &imgout, errmode);
 
     if (IDout != NULL)
     {
@@ -518,7 +533,7 @@ static MILK_HOT errno_t loadfits_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
     IMGID imgout = imgid_make_from_name(outimname);
-    FUNC_CHECK_RETURN(load_fits_IMGID(infilename, &imgout, FITSIOerrmode));
+    FUNC_CHECK_RETURN(load_fits_into_table(infilename, &imgout, FITSIOerrmode));
 
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();

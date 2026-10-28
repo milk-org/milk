@@ -49,16 +49,13 @@
 #include <string.h>
 
 #include "CLIcore_script.h"
+#include "milk_bash_engine.h"
+#include "milk_os.h"
 #include "milkscript.h"
 
 /* milkdata_macros.h provides dcquiet, dcdebug, data, etc. */
 #include "milkdata_macros.h"
 #include "milkdata.h"
-
-/* Exposed from libmilkscript for flag control */
-extern int cli_flag_errexit;
-extern int cli_flag_xtrace;
-
 
 /**
  * milkscript_pre_quiet - early quiet detection constructor
@@ -160,40 +157,82 @@ static void milkscript_main_usage(const char *prog)
     printf("  #!/usr/bin/env -S milk-script -e\n");
 }
 
-/**
- * set_positional_args - expose script arguments as $1..$N
- * @argc:  number of remaining arguments
- * @argv:  array of argument strings
- *
- * Sets $0 (script name), $1..$N (arguments), and $# (count).
- * Unsets any leftover positional variables beyond $N.
- */
-static void set_positional_args(int argc, char **argv)
+/** struct sbuf - growable string for building the bash prologue. */
+struct sbuf
 {
-    char nbuf[32];
+    char  *s;
+    size_t len;
+    size_t cap;
+};
 
-    /* $0 = script name (argv[0] here is the script file or "") */
-    cli_var_set("0", argc > 0 ? argv[0] : "");
-
-    /* $1..$N */
-    for (int i = 1; i < argc; i++)
+/** sbuf_add() - append @n bytes of @src; returns -1 on allocation failure. */
+static int sbuf_add(struct sbuf *b, const char *src, size_t n)
+{
+    if (b->len + n + 1 > b->cap)
     {
-        snprintf(nbuf, sizeof(nbuf), "%d", i);
-        cli_var_set(nbuf, argv[i]);
+        size_t ncap = (b->len + n + 1) * 2;
+        char  *ns   = (char *) realloc(b->s, ncap);
+        if (ns == NULL)
+        {
+            return -1;
+        }
+        b->s   = ns;
+        b->cap = ncap;
     }
-
-    /* Unset any extras from a previous invocation */
-    for (int i = argc; i <= 9; i++)
-    {
-        snprintf(nbuf, sizeof(nbuf), "%d", i);
-        cli_var_unset(nbuf);
-    }
-
-    /* $# = number of script arguments (not counting $0) */
-    snprintf(nbuf, sizeof(nbuf), "%d", argc > 0 ? argc - 1 : 0);
-    cli_var_set("#", nbuf);
+    memcpy(b->s + b->len, src, n);
+    b->len += n;
+    b->s[b->len] = '\0';
+    return 0;
 }
 
+/** sbuf_add_quoted() - append @arg as one single-quoted bash word. */
+static int sbuf_add_quoted(struct sbuf *b, const char *arg)
+{
+    int rc = sbuf_add(b, "'", 1);
+    for (const char *c = arg; *c && rc == 0; c++)
+    {
+        rc = (*c == '\'') ? sbuf_add(b, "'\\''", 4) : sbuf_add(b, c, 1);
+    }
+    return rc | sbuf_add(b, "'", 1);
+}
+
+/**
+ * script_prologue() - set $0, $1..$N (and set -x) in the bash engine before the script runs.
+ */
+static int script_prologue(int argc, char **argv, int xtrace)
+{
+    struct sbuf b  = { NULL, 0, 0 };
+    int         rc = sbuf_add(&b, "BASH_ARGV0=", 11);
+    rc |= sbuf_add_quoted(&b, argc > 0 ? argv[0] : "milk-script");
+    rc |= sbuf_add(&b, "; set --", 8);
+    for (int i = 1; i < argc; i++)
+    {
+        rc |= sbuf_add(&b, " ", 1);
+        rc |= sbuf_add_quoted(&b, argv[i]);
+    }
+    if (xtrace)
+    {
+        rc |= sbuf_add(&b, "; set -x", 8);
+    }
+    if (rc == 0)
+    {
+        rc = milk_bash_engine_exec(b.s, NULL);
+    }
+    free(b.s);
+    return rc;
+}
+
+/**
+ * main - Entry point for the `milk-script` standalone script interpreter
+ * @argc: Number of command-line arguments
+ * @argv: Command-line argument vector
+ *
+ * Parses interpreter options (`-e`, `-x`, `-E`, `-q`, `-d`, `-n`), initializes
+ * `libmilkscript`, forwards positional arguments into the Bash engine, and executes
+ * the target script file or standard input.
+ *
+ * Return: Exit code of the executed script
+ */
 int main(int argc, char **argv)
 {
     /* Handle -h1/--help-oneline before getopt so "-h1" is not
@@ -204,6 +243,8 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    setenv("_MILK_ENGINE", "script", 1); /* front-end of the bash engine: picks the keyword set */
+    milkos_malloc_keep(); /* temporaries freed and allocated again are not faulted in each time */
 
     int         opt_errexit = 0;
     int         opt_xtrace  = 0;
@@ -213,23 +254,6 @@ int main(int argc, char **argv)
     const char *opt_name    = NULL;
 
     {
-        /* Pre-scan for -q/--quiet BEFORE getopt so that MILK_QUIET is set
-         * before any module constructors run (they check getenv("MILK_QUIET"))
-         * and before milkscript_init() prints its startup banner. */
-        for (int i = 1; i < argc; i++)
-        {
-            if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0)
-            {
-                setenv("MILK_QUIET", "1", 0);
-                break;
-            }
-            /* Stop scanning at first non-option argument */
-            if (argv[i][0] != '-' || argv[i][1] == '\0')
-            {
-                break;
-            }
-        }
-
         static const struct option long_options[] = {
             { "help", no_argument, NULL, 'h' },   { "errexit", no_argument, NULL, 'e' },
             { "xtrace", no_argument, NULL, 'x' }, { "echo", no_argument, NULL, 'E' },
@@ -301,11 +325,7 @@ int main(int argc, char **argv)
     /* Apply flags after init (init resets most globals to defaults) */
     if (opt_errexit)
     {
-        cli_flag_errexit = 1;
-    }
-    if (opt_xtrace)
-    {
-        cli_flag_xtrace = 1;
+        dcerrorexit = 1;
     }
     if (opt_echo)
     {
@@ -317,7 +337,11 @@ int main(int argc, char **argv)
     }
 
     /* Expose script arguments as $0 $1 ... $# */
-    set_positional_args(script_argc, script_argv);
+    if (script_prologue(script_argc, script_argv, opt_xtrace) != 0)
+    {
+        PRINT_ERROR("milk-script: cannot set script arguments");
+        return 1;
+    }
 
     /* Run from file or stdin.
      * A leading "-" as the first non-option argument means stdin

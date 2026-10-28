@@ -10,21 +10,17 @@
  */
 
 #include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "milk_runnable.h"
-#include "gaussfilter.h"
+#include "COREMOD_arith/image_spatial.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "gaussfilter.h"
 
 
 /* ================================================================
@@ -55,9 +51,14 @@ static int32_t gaussfilt_filtersize                              = 0;
  * 4.  COMPUTATION LOGIC
  * ============================================================= */
 
-static void gauss_filter_step(IMAGE *imgin, IMAGE *imgout, float sigma, int filter_size)
+static void gauss_filter_step(IMAGE  *imgin,
+                              IMAGE  *imgout,
+                              float   sigma,
+                              int     filter_size,
+                              void  **scratch_buf,
+                              size_t *scratch_cap)
 {
-    if (imgin == NULL || imgout == NULL || imgin->array.F == NULL || imgout->array.F == NULL)
+    if (imgin == NULL || imgout == NULL || imgin->array.raw == NULL || imgout->array.raw == NULL)
     {
         return;
     }
@@ -72,87 +73,25 @@ static void gauss_filter_step(IMAGE *imgin, IMAGE *imgout, float sigma, int filt
     }
     if (fsize > (int) nx / 2 - 1)
     {
-        fsize = nx / 2 - 1;
+        fsize = (int) nx / 2 - 1;
     }
     if (fsize > (int) ny / 2 - 1)
     {
-        fsize = ny / 2 - 1;
+        fsize = (int) ny / 2 - 1;
     }
 
     if (sigma <= 0.0f || fsize <= 0)
     {
-        if (imgin->array.F != imgout->array.F)
+        if (imgin->array.raw != imgout->array.raw)
         {
-            uint32_t byte_copy_size = nx * ny * nz * sizeof(float);
-            __builtin_memcpy(imgout->array.F, imgin->array.F, byte_copy_size);
+            size_t byte_copy_size = (size_t) nx * (size_t) ny * (size_t) nz * sizeof(float);
+            __builtin_memcpy(imgout->array.raw, imgin->array.raw, byte_copy_size);
         }
         return;
     }
 
-    float *array = (float *) malloc((2 * fsize + 1) * sizeof(float));
-    if (array == NULL)
-    {
-        return;
-    }
-    float sum = 0.0;
-    for (int i = 0; i < (2 * fsize + 1); i++)
-    {
-        array[i] = exp(-((i - fsize) * (i - fsize)) / sigma / sigma);
-        sum += array[i];
-    }
-    if (sum > 0.0f)
-    {
-        for (int i = 0; i < (2 * fsize + 1); i++)
-        {
-            array[i] /= sum;
-        }
-    }
-    else
-    {
-        for (int i = 0; i < (2 * fsize + 1); i++)
-        {
-            array[i] = 0.0f;
-        }
-        array[fsize] = 1.0f;
-    }
-
-    float *tmp = (float *) calloc(nx * ny, sizeof(float));
-    if (tmp == NULL)
-    {
-        free(array);
-        return;
-    }
-    uint32_t ufsize = (uint32_t) fsize;
-    for (uint32_t k = 0; k < nz; k++)
-    {
-        float *pl_in  = imgin->array.F + k * nx * ny;
-        float *pl_out = imgout->array.F + k * nx * ny;
-        memset(tmp, 0, nx * ny * sizeof(float));
-        for (uint32_t j = 0; j < ny; j++)
-        {
-            for (uint32_t i = ufsize; i < nx - ufsize; i++)
-            {
-                for (int ii = -fsize; ii <= fsize; ii++)
-                {
-                    tmp[j * nx + i] += array[ii + fsize] * pl_in[j * nx + i + ii];
-                }
-            }
-        }
-        for (uint32_t i = 0; i < nx; i++)
-        {
-            for (uint32_t j = ufsize; j < ny - ufsize; j++)
-            {
-                float v = 0;
-                for (int jj = -fsize; jj <= fsize; jj++)
-                {
-                    v += array[jj + fsize] * tmp[(j + jj) * nx + i];
-                }
-                pl_out[j * nx + i] = v;
-            }
-        }
-    }
-    free(tmp);
-    free(array);
+    arith_image_gauss2d_im(imgin, imgout, (double) sigma, (double) sigma, fsize, scratch_buf,
+                           scratch_cap);
 }
 
 
@@ -165,7 +104,7 @@ imageID gauss_filter(const char *ID_name, const char *out_name, float sigma, int
     IMGID in = imgid_make_from_name(ID_name);
     resolveIMGID(&in, ERRMODE_ABORT, dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(out_name, in.md->size[0], in.md->size[1]);
-    gauss_filter_step(in.im, out.im, sigma, filter_size);
+    gauss_filter_step(in.im, out.im, sigma, filter_size, NULL, NULL);
     ImageStreamIO_UpdateIm(out.im);
     imageID out_id = out.ID;
     imgid_free(&in);
@@ -205,14 +144,20 @@ static MILK_HOT errno_t gaussfilter_compute(const MILK_RUNNABLE *self)
         return RETURN_FAILURE;
     }
 
+    void  *scratch_buf = NULL;
+    size_t scratch_cap = 0;
+
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    gauss_filter_step(in.im, out.im, gaussfilt_sigma, gaussfilt_filtersize);
+    out.md->write = 1;
+    gauss_filter_step(in.im, out.im, gaussfilt_sigma, gaussfilt_filtersize, &scratch_buf,
+                      &scratch_cap);
     processinfo_update_output_stream(processinfo, out.im, in.im);
 
     MILK_PROCINFO_END(self)
 
+    free(scratch_buf);
     imgid_free(&in);
     imgid_free(&out);
 

@@ -80,13 +80,14 @@ Initialize the FPS shared memory segments:
 ./milk-example-03-processor fpsinit -d "Processor Init"
 ```
 
-Start the background loops (recommended to use `-tmux` to spawn managed sessions):
+Start the loops in the background (each command returns once its loop runs; `milk-fps-log NAME`
+shows a unit's output, `runstop` and `confstop` stop it):
 
 ```bash
-./milk-example-03-writer    runstart -tmux
-./milk-example-03-writer    confstart -tmux
-./milk-example-03-processor runstart -tmux
-./milk-example-03-processor confstart -tmux
+./milk-example-03-writer    runstart
+./milk-example-03-writer    confstart
+./milk-example-03-processor runstart
+./milk-example-03-processor confstart
 ```
 
 ### 2. Milk CLI Mode (Integrated Control)

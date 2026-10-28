@@ -49,8 +49,7 @@ imageID FFT_do2dfft(const char *in_name, const char *out_name, int dir)
     imgout.mdt->datatype = datatype;
     imgout.mdt->shared   = dcshareddft;
     imgout.mdt->NBkw     = NB_KEYWNODE_MAX;
-    imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     /* swap first 2 axes for fftw */
     if (naxis > 1)
@@ -279,8 +278,7 @@ imageID FFT_do2drfft(const char *__restrict in_name, const char *__restrict out_
     imgtmp.mdt->datatype = datatypeout;
     imgtmp.mdt->shared   = dcshareddft;
     imgtmp.mdt->NBkw     = NB_KEYWNODE_MAX;
-    imgtmp.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgtmp);
+    imgid_create_registered(&imgtmp);
 
     IMGID imgout      = imgid_make_from_name(out_name);
     imgout.mdt->naxis = naxis;
@@ -291,8 +289,7 @@ imageID FFT_do2drfft(const char *__restrict in_name, const char *__restrict out_
     imgout.mdt->datatype = datatypeout;
     imgout.mdt->shared   = dcshareddft;
     imgout.mdt->NBkw     = NB_KEYWNODE_MAX;
-    imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     if (naxis == 2)
     {

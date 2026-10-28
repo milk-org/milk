@@ -110,8 +110,7 @@ imageID linopt_imtools_make1Dpolynomials(const char *IDout_name,
 
     IMGID imgout       = imgid_make_from_name_3D(IDout_name, NBpts, 1, MaxOrder);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     for (long kk = 0; kk < MaxOrder; kk++)
     {

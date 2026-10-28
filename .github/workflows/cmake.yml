@@ -50,6 +50,15 @@ jobs:
         # Execute the build.  You can specify a specific target with "--target <NAME>"
         run: cmake --build . --config $BUILD_TYPE
 
+      - name: Strict POSIX engine build
+        shell: bash
+        # Engine libraries as POSIX.1-2024 with XSI, except the files listed in cmake/milk_engine_guards.cmake
+        run: |
+          cmake -E make_directory ${{github.workspace}}/build-posix
+          cd ${{github.workspace}}/build-posix
+          cmake $GITHUB_WORKSPACE -DMILK_STRICT_POSIX=ON -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+          cmake --build . --config $BUILD_TYPE --target milkcommon milkprocessinfo milkfps milkcomputeunit
+
       - name: Install
         working-directory: ${{github.workspace}}/build
         shell: bash
@@ -68,5 +77,5 @@ jobs:
           export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${MILK_INSTALLDIR}/lib/pkgconfig
           echo $PATH
           export TERM=xterm-256color
-          ctest -C $BUILD_TYPE -D Experimental -LE perf
+          ctest -C $BUILD_TYPE -D Experimental -LE perf --output-on-failure
 

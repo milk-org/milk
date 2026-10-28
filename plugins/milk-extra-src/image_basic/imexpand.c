@@ -10,6 +10,7 @@
 #include "milk_runnable.h"
 #include "computeunit.h"
 
+#include "COREMOD_arith/image_spatial.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 // Forward declarations
@@ -89,23 +90,9 @@ imageID basic_expand(const char *ID_name, const char *ID_name_out, int n1, int n
 
     IMGID imgout       = imgid_make_from_name_2D(ID_name_out, naxes_out[0], naxes_out[1]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
-    for (long jj = 0; jj < naxes[1]; jj++)
-    {
-        for (long ii = 0; ii < naxes[0]; ii++)
-        {
-            for (int i = 0; i < n1; i++)
-            {
-                for (int j = 0; j < n2; j++)
-                {
-                    imgout.im->array.F[(jj * n2 + j) * naxes_out[0] + ii * n1 + i] =
-                        imgin.im->array.F[jj * naxes[0] + ii];
-                }
-            }
-        }
-    }
+    (void) arith_image_expand3d_im(imgin.im, imgout.im, n1, n2, 1);
 
     DEBUG_TRACE_FEXIT();
     return imgout.ID;
@@ -134,38 +121,11 @@ imageID basic_expand3D(const char *ID_name, const char *ID_name_out, int n1, int
     naxes_out[1] = naxes[1] * n2;
     naxes_out[2] = naxes[2] * n3;
 
-    printf(" %ld %ld %ld"
-           " -> %ld %ld %ld\n",
-           naxes[0], naxes[1], naxes[2], naxes_out[0], naxes_out[1], naxes_out[2]);
-
     IMGID imgout = imgid_make_from_name_3D(ID_name_out, naxes_out[0], naxes_out[1], naxes_out[2]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
-    list_image_ID();
-
-    for (long kk = 0; kk < naxes[2]; kk++)
-    {
-        for (long jj = 0; jj < naxes[1]; jj++)
-        {
-            for (long ii = 0; ii < naxes[0]; ii++)
-            {
-                for (int i = 0; i < n1; i++)
-                {
-                    for (int j = 0; j < n2; j++)
-                    {
-                        for (int k = 0; k < n3; k++)
-                        {
-                            imgout.im->array.F[(kk * n3 + k) * naxes_out[0] * naxes_out[1] +
-                                               (jj * n2 + j) * naxes_out[0] + ii * n1 + i] =
-                                imgin.im->array.F[kk * naxes[0] * naxes[1] + jj * naxes[0] + ii];
-                        }
-                    }
-                }
-            }
-        }
-    }
+    (void) arith_image_expand3d_im(imgin.im, imgout.im, n1, n2, n3);
 
     return imgout.ID;
 }

@@ -126,22 +126,12 @@ imageID make_rnd(const char *ID_name, uint32_t l1, uint32_t l2, const char *opti
     naxes[1] = dcimg[ID].md[0].size[1];
     nelement = naxes[0] * naxes[1];
 
-    // openMP is slow when calling gsl random number generator : do not use openMP here
-    if (distrib == 0)
+    if (distrib == 0 || distrib == 1)
     {
-        for (uint64_t ii = 0; ii < nelement; ii++)
-        {
-            dcimg[ID].array.F[ii] = (double) ran1();
-        }
+        arith_image_fill_coord(&dcimg[ID], (distrib == 1) ? ARITH_COORD_RANDN : ARITH_COORD_RAND,
+                               0.0, 0.0);
     }
-    if (distrib == 1)
-    {
-        for (uint64_t ii = 0; ii < nelement; ii++)
-        {
-            dcimg[ID].array.F[ii] = (double) gauss();
-        }
-    }
-    if (distrib == 2)
+    else if (distrib == 2)
     {
         for (uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -182,22 +172,12 @@ imageID make_rnd_double(const char *ID_name, uint32_t l1, uint32_t l2, const cha
     naxes[1] = dcimg[ID].md[0].size[1];
     nelement = naxes[0] * naxes[1];
 
-    // openMP is slow when calling gsl random number generator : do not use openMP here
-    if (distrib == 0)
+    if (distrib == 0 || distrib == 1)
     {
-        for (uint64_t ii = 0; ii < nelement; ii++)
-        {
-            dcimg[ID].array.D[ii] = (double) ran1();
-        }
+        arith_image_fill_coord(&dcimg[ID], (distrib == 1) ? ARITH_COORD_RANDN : ARITH_COORD_RAND,
+                               0.0, 0.0);
     }
-    if (distrib == 1)
-    {
-        for (uint64_t ii = 0; ii < nelement; ii++)
-        {
-            dcimg[ID].array.D[ii] = (double) gauss();
-        }
-    }
-    if (distrib == 2)
+    else if (distrib == 2)
     {
         for (uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -259,24 +239,32 @@ int make_rnd1(const char *ID_name, long l1, long l2, const char *options)
 
 imageID make_gauss(const char *ID_name, uint32_t l1, uint32_t l2, double a, double A)
 {
-    imageID  ID;
-    uint32_t naxes[2];
-    double   distsq;
-
+    imageID ID;
     create_2Dimage_ID(ID_name, l1, l2, &ID);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
+    uint32_t             nx       = dcimg[ID].md[0].size[0];
+    uint32_t             ny       = dcimg[ID].md[0].size[1];
+    uint64_t             nelement = (uint64_t) nx * (uint64_t) ny;
+    int                  nth      = milk_omp_team_size(nelement, 65536);
+    float *MILK_RESTRICT out      = MILK_ASSUME_ALIGNED(dcimg[ID].array.F);
+    const float          cx       = (float) (nx / 2);
+    const float          cy       = (float) (ny / 2);
+    const float          inv_a2   = (float) (-1.0 / (a * a));
+    const float          amp      = (float) A;
 
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+#ifdef _OPENMP
+#    pragma omp parallel for schedule(static) num_threads(nth) if (nth > 1)
+#endif
+    for (uint32_t jj = 0; jj < ny; jj++)
     {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
+        const float          dy2 = ((float) jj - cy) * ((float) jj - cy);
+        float *MILK_RESTRICT row = out + (uint64_t) jj * nx;
+#pragma omp simd
+        for (uint32_t ii = 0; ii < nx; ii++)
         {
-            distsq                                = (ii - naxes[0] / 2) * (ii - naxes[0] / 2) +
-                                                    (jj - naxes[1] / 2) * (jj - naxes[1] / 2);
-            dcimg[ID].array.F[jj * naxes[0] + ii] = (double) A * exp(-distsq / a / a);
+            const float dx = (float) ii - cx;
+            row[ii]        = amp * expf((dx * dx + dy2) * inv_a2);
         }
     }
-    /*  printf("FWHM = %f\n",2.0*a*sqrt(log(2)));*/
     return (ID);
 }
 
@@ -387,23 +375,36 @@ imageID make_2axis_gauss(const char *ID_name,
                          double      E,
                          double      PA)
 {
-    imageID  ID;
-    uint32_t naxes[2];
-    double   distsq;
-    double   iin, jjn;
-
+    imageID ID;
     create_2Dimage_ID(ID_name, l1, l2, &ID);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
+    uint32_t             nx       = dcimg[ID].md[0].size[0];
+    uint32_t             ny       = dcimg[ID].md[0].size[1];
+    uint64_t             nelement = (uint64_t) nx * (uint64_t) ny;
+    int                  nth      = milk_omp_team_size(nelement, 65536);
+    float *MILK_RESTRICT out      = MILK_ASSUME_ALIGNED(dcimg[ID].array.F);
+    const float          cx       = (float) (nx / 2);
+    const float          cy       = (float) (ny / 2);
+    const float          cpa      = cosf((float) PA);
+    const float          spa      = sinf((float) PA);
+    const float          inv_e    = (float) (1.0 / (1.0 + E));
+    const float          inv_a2   = (float) (-1.0 / (a * a));
+    const float          amp      = (float) A;
 
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+#ifdef _OPENMP
+#    pragma omp parallel for schedule(static) num_threads(nth) if (nth > 1)
+#endif
+    for (uint32_t jj = 0; jj < ny; jj++)
     {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
+        const float          dy  = (float) jj - cy;
+        float *MILK_RESTRICT row = out + (uint64_t) jj * nx;
+#pragma omp simd
+        for (uint32_t ii = 0; ii < nx; ii++)
         {
-            iin    = 1.0 * (ii - naxes[0] / 2) * cos(PA) + 1.0 * (jj - naxes[1] / 2) * sin(PA);
-            jjn    = 1.0 * (jj - naxes[1] / 2) * cos(PA) - 1.0 * (ii - naxes[0] / 2) * sin(PA);
-            distsq = iin * iin + (1.0 / (1.0 + E)) * jjn * jjn;
-            dcimg[ID].array.F[jj * naxes[0] + ii] = (double) A * exp(-distsq / a / a);
+            const float dx     = (float) ii - cx;
+            const float iin    = dx * cpa + dy * spa;
+            const float jjn    = dy * cpa - dx * spa;
+            const float distsq = iin * iin + inv_e * jjn * jjn;
+            row[ii]            = amp * expf(distsq * inv_a2);
         }
     }
 
@@ -773,67 +774,21 @@ imageID gen_image_EZdisk(const char *ID_name,
 
 imageID make_slopexy(const char *ID_name, uint32_t l1, uint32_t l2, double sx, double sy)
 {
-    imageID  ID;
-    uint32_t naxes[2];
-    double   coeff;
-
-    create_2Dimage_ID(ID_name, l1, l2, &ID);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
-
-    coeff = sx * (naxes[0] / 2) + sy * (naxes[1] / 2);
-
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
-    {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
-        {
-            dcimg[ID].array.F[jj * naxes[0] + ii] = sx * ii + sy * jj - coeff;
-        }
-    }
-
-    return (ID);
+    return arith_make_slopexy(ID_name, l1, l2, sx, sy);
 }
 
 imageID make_dist(const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2)
 {
-    imageID  ID;
-    uint32_t naxes[2];
-
+    imageID ID;
     create_2Dimage_ID(ID_name, l1, l2, &ID);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
-
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
-    {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
-        {
-            dcimg[ID].array.F[jj * naxes[0] + ii] =
-                sqrt((f1 - ii) * (f1 - ii) + (f2 - jj) * (f2 - jj));
-        }
-    }
-
+    arith_image_fill_coord(&dcimg[ID], ARITH_COORD_R, f1, f2);
     return (ID);
 }
 
 imageID make_PosAngle(const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2)
 {
-    imageID  ID;
-    uint32_t naxes[2];
-
+    imageID ID;
     create_2Dimage_ID(ID_name, l1, l2, &ID);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
-
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
-    {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
-        {
-            double x, y;
-            x                                     = 1.0 * ii - f1;
-            y                                     = 1.0 * jj - f2;
-            dcimg[ID].array.F[jj * naxes[0] + ii] = atan2(y, x);
-        }
-    }
-
+    arith_image_fill_coord(&dcimg[ID], ARITH_COORD_THETA, f1, f2);
     return (ID);
 }

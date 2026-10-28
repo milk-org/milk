@@ -9,25 +9,26 @@ See also: [Programmer's Guide](../arch/programmers_guide.md) · [Documenting Cod
 
 ## General C Code Style
 
-- **Linux Kernel Style:** Use the
-  [Linux kernel's C coding style](https://www.kernel.org/doc/html/v4.10/process/coding-style.html)
-  as the baseline for indentation and formatting, wherever it doesn't conflict with the rules below.
-- **Short Lines:** Keep lines short, generally **no more than 100 characters**.
-- **Scope limitation:** Use code blocks (`{ ... }`) to reduce the scope of variables as much as
-  possible.
+- **Brace Style (Allman):** Place the opening brace `{` on its own line for both function
+  definitions and control-flow statements (`if`, `for`, `while`, `do`, `switch`), as enforced by the
+  repository `.clang-format`.
+- **Linux Kernel Conventions:** Follow Linux kernel C conventions for naming, variable scope, and
+  control flow (`goto` cleanup, early exit to minimize indentation).
+- **Short Lines:** Keep lines short, **no more than 100 characters**.
+- **Scope Limitation:** Use code blocks (`{ ... }`) to reduce the scope of variables as much as
+  possible, with a brief comment before the block explaining its purpose.
 
 ## Function Signatures
 
-- **Multi-line Prototypes:** Function prototypes with arguments should be formatted across multiple
-  lines, with exactly **one line per argument**. This greatly improves diff readability and
-  annotation.
+- **Multi-line, Column-Aligned Prototypes:** Function prototypes with arguments are formatted across
+  multiple lines, with **one line per argument** and parameter names column-aligned:
 
 ```c
-inline static errno_t example_compute_sum(
-    int a,
-    int b,
-    char *output
-)
+static inline errno_t example_compute_sum(
+    int   a,
+    int   b,
+    char *output)
+{
 ```
 
 ## Documentation Rules

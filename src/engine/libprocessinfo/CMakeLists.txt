@@ -6,6 +6,8 @@ set(SOURCEFILES
     processinfo_exec_end.c
     processinfo_exec_start.c
     processinfo_globals.c
+    processinfo_labels.c
+    processinfo_list.c
     processinfo_loopstep.c
     processinfo_procdirname.c
     processinfo_setup.c
@@ -13,6 +15,7 @@ set(SOURCEFILES
     processinfo_shm_create.c
     processinfo_shm_link.c
     processinfo_shm_list_create.c
+    processinfo_timing.c
     processinfo_SIGexit.c
     processinfo_signals.c
     processinfo_update_output_stream.c
@@ -64,6 +67,15 @@ if(USE_STATIC_LTO)
                                                       milkcommon rt pthread m)
 endif()
 
+if(BUILD_TESTING)
+  add_executable(test-processinfo-helpers tests/test_processinfo_helpers.c)
+  target_link_libraries(test-processinfo-helpers PRIVATE milkprocessinfo)
+  add_test(NAME processinfo_unit_helpers COMMAND test-processinfo-helpers)
+  add_executable(test-processinfo-signals tests/test_processinfo_signals.c)
+  target_link_libraries(test-processinfo-signals PRIVATE milkprocessinfo)
+  add_test(NAME processinfo_unit_signals COMMAND test-processinfo-signals)
+endif()
+
 # Add milk-procinfo-help executable
 add_executable(milk-procinfo-help milk-procinfo-help.c)
 install(TARGETS milk-procinfo-help DESTINATION bin)
@@ -84,23 +96,27 @@ target_link_libraries(milk-procinfo-list PUBLIC ${LIBNAME} ImageStreamIO
                                                 pthread m)
 install(TARGETS milk-procinfo-list DESTINATION bin)
 
-install(
-  FILES processinfo.h
-        processtools.h
-        processtools_trigger.h
-        processinfo_exec_end.h
-        processinfo_exec_start.h
-        processinfo_loopstep.h
-        processinfo_procdirname.h
-        processinfo_setup.h
-        processinfo_shm_close.h
-        processinfo_shm_create.h
-        processinfo_shm_link.h
-        processinfo_shm_list_create.h
-        processinfo_SIGexit.h
-        processinfo_signals.h
-        processinfo_update_output_stream.h
-        processinfo_WriteMessage.h
-        quicksort.h
-        timeutils.h
-  DESTINATION include)
+set(PROCESSINFO_HEADERS
+    processinfo.h
+    processinfo_labels.h
+    processinfo_list.h
+    processinfo_timing.h
+    processtools.h
+    processtools_trigger.h
+    processinfo_exec_end.h
+    processinfo_exec_start.h
+    processinfo_loopstep.h
+    processinfo_procdirname.h
+    processinfo_setup.h
+    processinfo_shm_close.h
+    processinfo_shm_create.h
+    processinfo_shm_link.h
+    processinfo_shm_list_create.h
+    processinfo_SIGexit.h
+    processinfo_signals.h
+    processinfo_update_output_stream.h
+    processinfo_WriteMessage.h
+    quicksort.h
+    timeutils.h)
+install(FILES ${PROCESSINFO_HEADERS} DESTINATION include)
+install(FILES ${PROCESSINFO_HEADERS} DESTINATION include/libprocessinfo)

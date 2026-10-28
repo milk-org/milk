@@ -53,7 +53,6 @@ def func_session_cleanup(s: ComputeSession):
     tp(s.runstop)
     tp(s.confstop)
     if s.fps:
-        tp(s.fps.tmux_stop)
         tp(s.fps.destroy)
 
 
@@ -74,7 +73,7 @@ def fixt_fpsinit_nopinfo():
 # ADD AFTER THIS LINE
 
 
-def test_fps_lifecycle(fixt_fpsinit_pinfo, tmux: bool = False):
+def test_fps_lifecycle(fixt_fpsinit_pinfo):
     session: StreamDelayComputeSession = fixt_fpsinit_pinfo
     fps = session.fps
     assert fps
@@ -84,16 +83,14 @@ def test_fps_lifecycle(fixt_fpsinit_pinfo, tmux: bool = False):
     fps["procinfo.triggermode"] = 3
     fps["procinfo.triggersname"] = "imin"
 
-    session.confstart(tmux=tmux)
-    time.sleep(0.1)
+    session.confstart()  # returns once the conf loop runs
     assert fps.conf_isrunning()
 
     arr = np.random.randn(30, 40)
     in_shm = SHM("imin", arr * 0)
 
-    session.runstart(tmux=tmux)
-    time.sleep(1.0)
-    assert fps.run_isrunning()  # Wait this should NOT have asserted.
+    session.runstart()  # returns once the loop is active
+    assert fps.run_isrunning()
 
     out_shm = SHM("imout")
 
@@ -106,8 +103,7 @@ def test_fps_lifecycle(fixt_fpsinit_pinfo, tmux: bool = False):
 
 
 @pmp("loopmode", [0, 1, 2])
-@pmp("tmux", (False, True))
-def test_loops(fixt_fpsinit_pinfo, loopmode: int, tmux: bool):
+def test_loops(fixt_fpsinit_pinfo, loopmode: int):
     session: StreamDelayComputeSession = fixt_fpsinit_pinfo
     assert session.fps
     session.fps["naive_mode"] = True
@@ -123,11 +119,11 @@ def test_loops(fixt_fpsinit_pinfo, loopmode: int, tmux: bool):
     in_shm = SHM("imin", arr * 0)
 
     if loopmode == 0:
-        session.runstart(tmux=tmux)
+        session.runstart()
     elif loopmode == 1:
-        session.runstart(tmux=tmux, loops=True)
+        session.runstart(loops=True)
     elif loopmode == 2:
-        session.runstart(tmux=tmux, loopd=0.01)
+        session.runstart(loopd=0.01)
     else:
         raise ValueError(f"loopmode [0,1,2] - got {loopmode}")
 
@@ -179,7 +175,4 @@ def test_str(fixt_fpsinit_pinfo):
     assert "procinfo.cset" in s
 
     # Test confstart, runstart, runstop, confstop
-    # test both in tmux and with subprocesses
-
-    # What are confstop and runstop supposed to do when there's no tmux ?
     ...

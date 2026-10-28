@@ -9,7 +9,6 @@
  * Compiled into libcomputeunit; has no CLI dependency.
  */
 
-#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -254,8 +253,8 @@ static void X_HELP_PRINT_V2_LOOP(FPS_CLI_BINDING            bindings[],
 
 /* ----------------------------------------------------------------
  * Helpers factoring out the "connect, sync CLI args, apply -loops/
- * -loopd override, disconnect" pattern repeated across fpsinit,
- * exec, runstart and their -tmux dispatch counterparts below.
+ * -loopd override, disconnect" pattern shared by fpsinit, exec,
+ * run and runstart below.
  * ---------------------------------------------------------------- */
 
 /** @brief Sync CLI args into an already-connected FPS, then apply -loops/-loopd. */
@@ -288,47 +287,6 @@ static void fps_sync_and_override_by_name(const char      *fps_name,
     {
         fps_apply_cli_sync_and_loop_overrides(&fps, bindings, nb_b, use_loop, loop_delay);
         fps_disconnect(&fps);
-    }
-}
-
-/** @brief Append " -procinfo"/" -loops"/" -loopd SEC" to buf, mirroring the parsed CLI flags. */
-static void fps_append_loop_flags(char  *buf,
-                                  size_t bufsize,
-                                  int    use_procinfo,
-                                  int    use_loop,
-                                  double loop_delay)
-{
-    if (use_procinfo)
-    {
-        strncat(buf, " -procinfo", bufsize - strlen(buf) - 1);
-    }
-    if (use_loop == 1)
-    {
-        strncat(buf, " -loops", bufsize - strlen(buf) - 1);
-    }
-    else if (use_loop == 2)
-    {
-        char ld[64];
-        snprintf(ld, sizeof(ld), " -loopd %.6f", loop_delay);
-        strncat(buf, ld, bufsize - strlen(buf) - 1);
-    }
-}
-
-/** @brief Append " fpsname:command" (custom name) or " command" (default name) to buf. */
-static void fps_append_dispatch_target(char       *buf,
-                                       size_t      bufsize,
-                                       const char *fps_name,
-                                       const char *default_name,
-                                       const char *command)
-{
-    size_t l = strlen(buf);
-    if (strcmp(fps_name, default_name) != 0)
-    {
-        snprintf(buf + l, bufsize - l, " %s:%s", fps_name, command);
-    }
-    else
-    {
-        snprintf(buf + l, bufsize - l, " %s", command);
     }
 }
 
@@ -391,12 +349,11 @@ int fpsexec_main_function(int              argc,
     char fps_name[STRINGMAXLEN_FPS_NAME] = "";
     strncpy(fps_name, APP_INFO->fps_name, STRINGMAXLEN_FPS_NAME - 1);
     char arg_fps_name[STRINGMAXLEN_FPS_NAME] = "";
-    int  use_tmux                            = 0;
-    int  use_procinfo                        = 0;
-    if (getenv("MILK_FPSPROCINFO") != NULL)
-    {
-        use_procinfo = 1;
-    }
+    int  use_procinfo                        = 1; /* --no-procinfo: a one-shot unit */
+    /* confstart/runstart stay in the foreground: --fg, MILK_UNIT_FG=1, and always in a worker */
+    const char *fg_env = getenv("MILK_UNIT_FG");
+    int use_fg = (fg_env != NULL && strcmp(fg_env, "1") == 0) || getenv("MILK_UNIT_WORKER") != NULL;
+    double timeout     = 0.0;
     int    use_loop    = 0;
     double loop_delay  = -1.0;
     int    show_help   = 0;
@@ -421,11 +378,25 @@ int fpsexec_main_function(int              argc,
         }
         else if (strcmp(argv[ii], "-tmux") == 0)
         {
-            use_tmux = 1;
+            fprintf(stderr, MH_ERR "Error:" MH_RST " -tmux is gone: units start in the background; "
+                                   "use --fg to stay in the foreground\n");
+            return 2;
+        }
+        else if (strcmp(argv[ii], "--fg") == 0)
+        {
+            use_fg = 1;
+        }
+        else if (strcmp(argv[ii], "--timeout") == 0 && ii + 1 < argc)
+        {
+            timeout = atof(argv[++ii]);
         }
         else if (strcmp(argv[ii], "-procinfo") == 0 || strcmp(argv[ii], "--procinfo") == 0)
         {
             use_procinfo = 1;
+        }
+        else if (strcmp(argv[ii], "--no-procinfo") == 0)
+        {
+            use_procinfo = 0;
         }
         else if (strcmp(argv[ii], "-loops") == 0 || strcmp(argv[ii], "--loops") == 0)
         {
@@ -514,8 +485,10 @@ int fpsexec_main_function(int              argc,
         milk_help_banner(argv[0], APP_INFO->description, mh_color);
         /* ---- USAGE ---- */
         milk_help_section("Usage", mh_color);
-        printf("  %s %s %s%s\n\n", argv[0], MH(MH_OPT, "[options]"), MH(MH_OPT, "[fpsname:]"),
-               MH(MH_CMD, "<command>"));
+        printf("  %s %s %s%s %s%s%s\n\n", argv[0], MH(MH_OPT, "[options]"),
+               MH(MH_OPT, "[fpsname:]"), MH(MH_CMD, "<command>"), mh_color ? MH_ARG : "",
+               (fps_cli_unit_usage() != NULL) ? fps_cli_unit_usage() : "[values...]",
+               mh_color ? MH_RST : "");
         /* ---- DESCRIPTION ---- */
         {
             const char *_dl   = APP_INFO->description_long;
@@ -541,46 +514,94 @@ int fpsexec_main_function(int              argc,
         printf("  " MH_PAD_FMT "    One-line description\n", MH_PAD(MH_OPT, "-h1", 15));
         printf("  " MH_PAD_FMT "    Verbose description\n", MH_PAD(MH_OPT, "-h2", 15));
         printf("  " MH_PAD_FMT "    Monochrome help\n", MH_PAD(MH_OPT, "-hm", 15));
-        printf("  " MH_PAD_FMT "    Run inside tmux session\n", MH_PAD(MH_OPT, "-tmux", 15));
-        printf("  " MH_PAD_FMT "    Enable processinfo\n", MH_PAD(MH_OPT, "-procinfo", 15));
+        printf("  " MH_PAD_FMT "    One-shot unit: no processinfo entries (fpsinit, exec)\n",
+               MH_PAD(MH_OPT, "--no-procinfo", 15));
         printf("  " MH_PAD_FMT "    Infinite loop, semaphore trigger\n",
                MH_PAD(MH_OPT, "-loops", 15));
-        printf("  %s %s       Infinite loop, delay trigger\n", MH(MH_OPT, "-loopd"),
-               MH(MH_ARG, "SEC"));
-        printf("  %s %s        Set FPS instance name\n\n", MH(MH_OPT, "-n"), MH(MH_ARG, "NAME"));
+        printf("  " MH_PAD_FMT "    Infinite loop, delay trigger\n",
+               MH_PAD(MH_OPT, "-loopd SEC", 15));
+        printf("  " MH_PAD_FMT "    confstart/runstart in the foreground (also MILK_UNIT_FG=1)\n",
+               MH_PAD(MH_OPT, "--fg", 15));
+        printf("  " MH_PAD_FMT "    Readiness timeout of confstart/runstart (default 10)\n",
+               MH_PAD(MH_OPT, "--timeout S", 15));
+        printf("  " MH_PAD_FMT "    Set FPS instance name\n\n", MH_PAD(MH_OPT, "-n NAME", 15));
+        /* ---- UNIT OPTIONS (units with their own syntax) ---- */
+        if (fps_cli_unit_options() != NULL)
+        {
+            milk_help_section("Unit Options", mh_color);
+            printf("%s\n", fps_cli_unit_options());
+        }
         /* ---- COMMANDS ---- */
         milk_help_section("Commands", mh_color);
-        printf("  " MH_PAD_FMT "          Create the FPS\n", MH_PAD(MH_CMD, "fpsinit", 15));
-        printf("  " MH_PAD_FMT "          Print FPS content\n", MH_PAD(MH_CMD, "fps", 15));
-        printf("  " MH_PAD_FMT "          List matching FPS instances\n",
-               MH_PAD(MH_CMD, "fpslist", 15));
-        printf("  " MH_PAD_FMT "          Configuration loop\n", MH_PAD(MH_CMD, "confstart", 15));
-        printf("  " MH_PAD_FMT "          Single config step\n", MH_PAD(MH_CMD, "confstep", 15));
-        printf("  " MH_PAD_FMT "          Stop config loop\n", MH_PAD(MH_CMD, "confstop", 15));
-        printf("  " MH_PAD_FMT "          Main processing loop\n", MH_PAD(MH_CMD, "runstart", 15));
-        printf("  " MH_PAD_FMT "          Stop processing loop\n", MH_PAD(MH_CMD, "runstop", 15));
-        printf("  %s %s      Set positional args (. to skip)\n", MH(MH_CMD, "set"),
-               MH(MH_OPT, "[args]"));
-        printf("  %s %s     Auto-init + set"
-               " args + run\n\n",
-               MH(MH_CMD, "exec"), MH(MH_OPT, "[args]"));
+        {
+            static const char *const cmds[][2] = {
+                { "fpsinit [values]", "Create the FPS, then set values" },
+                { "fps", "Print FPS content" },
+                { "fpslist", "List matching FPS instances" },
+                { "confstart", "Start the configuration loop in the background" },
+                { "confstep", "Single config step" },
+                { "confstop", "Stop the configuration loop" },
+                { "runstart [values]", "Set values, start the loop in the background" },
+                { "runstop", "Stop the processing loop" },
+                { "run [values]", "Set values, run the loop in the foreground" },
+                { "set [values]", "Set values in the existing FPS" },
+                { "exec [values]", "Auto-init + set values + run" },
+            };
+            for (size_t k = 0; k < sizeof(cmds) / sizeof(cmds[0]); k++)
+            {
+                printf("  " MH_PAD_FMT "  %s\n", MH_PAD(MH_CMD, cmds[k][0], 18), cmds[k][1]);
+            }
+            printf("\n");
+        }
+        /* ---- VALUES ---- */
+        {
+            int first_p = fps_cli_unit_first_param();
+            int nprim   = 0;
+            for (int k = first_p; k < nb_bindings; k++)
+            {
+                nprim += (bindings[k].is_primary != 0);
+            }
+            milk_help_section("Values", mh_color);
+            printf("  " MH_PAD_FMT "  the next parameter with an Idx below, in Idx order\n",
+                   MH_PAD(MH_ARG, "value", 18));
+            printf("  " MH_PAD_FMT "  any parameter, by keyword\n",
+                   MH_PAD(MH_ARG, ".name=value", 18));
+            printf("  " MH_PAD_FMT "  keep the current value (as a value or .name=.)\n",
+                   MH_PAD(MH_ARG, ".", 18));
+            printf("  Negative numbers are values. A bad or extra value is an error (status 2).\n");
+            if (nprim == 0 && first_p == 0)
+            {
+                printf("  No parameter takes a positional value here: use .name=value.\n");
+            }
+            printf("\n");
+        }
         /* ---- PARAMETERS ---- */
-        struct HELPER_PRETTYPRINT pp = {
-            .col_kw_w = 7, .col_tp_w = 4, .col_df_w = 7, .show_help_color = mh_color, .CLIargcnt = 0
-        };
-        //PARAMS_MACRO(X_HELP_MEASURE_V2)
+        {
+            int                       first_p = fps_cli_unit_first_param();
+            int                       n_p     = (nb_bindings > first_p) ? nb_bindings - first_p : 0;
+            struct HELPER_PRETTYPRINT pp      = { .col_kw_w        = 7,
+                                                  .col_tp_w        = 4,
+                                                  .col_df_w        = 7,
+                                                  .show_help_color = mh_color,
+                                                  .CLIargcnt       = 0 };
 
-        X_HELP_MEASURE_V2_LOOP(bindings, nb_bindings, &pp);
-
-        milk_help_section("Parameters", mh_color);
-        printf("  %-3s %-*s %-*s %-*s %s\n", "Idx", pp.col_kw_w, "Keyword", pp.col_tp_w, "Type",
-               pp.col_df_w, "Default", "Description");
-        printf("  %-3s %-*s %-*s %-*s %s\n", "---", pp.col_kw_w, "-------", pp.col_tp_w, "----",
-               pp.col_df_w, "-------", "-----------");
-
-        //PARAMS_MACRO(X_HELP_PRINT_V2)
-        X_HELP_PRINT_V2_LOOP(bindings, nb_bindings, &pp);
-        printf("\n");
+            milk_help_section("Parameters", mh_color);
+            if (n_p == 0 && first_p > 0)
+            {
+                printf("  (none declared -- use -p \"name:type[=default][:help] ...\""
+                       " or -n NAME for an existing FPS)\n\n");
+            }
+            else
+            {
+                X_HELP_MEASURE_V2_LOOP(bindings + first_p, n_p, &pp);
+                printf("  %-3s %-*s %-*s %-*s %s\n", "Idx", pp.col_kw_w, "Keyword", pp.col_tp_w,
+                       "Type", pp.col_df_w, "Default", "Description");
+                printf("  %-3s %-*s %-*s %-*s %s\n", "---", pp.col_kw_w, "-------", pp.col_tp_w,
+                       "----", pp.col_df_w, "-------", "-----------");
+                X_HELP_PRINT_V2_LOOP(bindings + first_p, n_p, &pp);
+                printf("\n");
+            }
+        }
         /* ---- SEE ALSO ---- */
         {
             const char *_sa[] = { "milk-fpsexec-help:print detailed FPS framework info",
@@ -595,6 +616,16 @@ int fpsexec_main_function(int              argc,
     {
         fprintf(stderr, "Error: Missing command argument.\n");
         return 1;
+    }
+    /* Commands that take values: check them all before doing anything */
+    if (strcmp(command, "fpsinit") == 0 || strcmp(command, "set") == 0 ||
+        strcmp(command, "exec") == 0 || strcmp(command, "runstart") == 0 ||
+        strcmp(command, "run") == 0)
+    {
+        if (fps_cli_check_values(bindings, nb_bindings) != 0)
+        {
+            return 2;
+        }
     }
     if (strcmp(command, "exec") != 0)
     {
@@ -692,55 +723,6 @@ int fpsexec_main_function(int              argc,
         free(fpsarray);
         return 0;
     }
-    if (use_tmux)
-    {
-        char path[PATH_MAX];
-        if (functionparameter_FPS_get_executable_path(path, sizeof(path)) == NULL)
-        {
-            if (realpath(argv[0], path) == NULL)
-            {
-                strncpy(path, argv[0], 1023);
-            }
-        }
-        functionparameter_FPS_tmux_standalone_setup(fps_name);
-
-        int is_exec = (strcmp(command, "exec") == 0);
-        if (is_exec || strcmp(command, "runstart") == 0 || strcmp(command, "run") == 0)
-        {
-            /* exec always dispatches as "runstart" (auto-init, then run);
-             * "run" isn't a recognized tmux window, so it falls through below. */
-            const char *dispatch_cmd = is_exec ? "runstart" : command;
-            if (is_exec)
-            {
-                fps_exec_autoinit(fps_name, APP_INFO, bindings, nb_bindings, use_procinfo);
-            }
-            /* Persist the loop config in FPS shared memory now (works even if the
-             * tmux child doesn't re-parse -loops/-loopd), and also forward the
-             * flags so the child re-applies them for consistency. */
-            fps_sync_and_override_by_name(fps_name, bindings, nb_bindings, use_loop, loop_delay);
-
-            char dispatch_arg[512] = "";
-            fps_append_loop_flags(dispatch_arg, sizeof(dispatch_arg), use_procinfo, use_loop,
-                                  loop_delay);
-            fps_append_dispatch_target(dispatch_arg, sizeof(dispatch_arg), fps_name,
-                                       APP_INFO->fps_name, dispatch_cmd);
-            if (functionparameter_FPS_tmux_send_dispatch(fps_name, dispatch_cmd, path,
-                                                         dispatch_arg) == 0)
-            {
-                return 0;
-            }
-        }
-        else
-        {
-            char name_arg[256] = "";
-            fps_append_dispatch_target(name_arg, sizeof(name_arg), fps_name, APP_INFO->fps_name,
-                                       command);
-            if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0)
-            {
-                return 0;
-            }
-        }
-    }
     if (strcmp(command, "fpsinit") == 0)
     {
         int rc_ = fps_generic_init(fps_name, APP_INFO, bindings, nb_bindings, use_procinfo);
@@ -758,8 +740,8 @@ int fpsexec_main_function(int              argc,
                             " FPFLAG_TRIGGER"
                             "_STREAM.\n");
         }
-        /* Sync CLI args into FPS before applying loop overrides. */
-        if (use_loop && rc_ == 0)
+        /* Sync CLI values into FPS, then apply loop overrides. */
+        if (rc_ == 0)
         {
             fps_sync_and_override_by_name(fps_name, bindings, nb_bindings, use_loop, loop_delay);
         }
@@ -767,7 +749,8 @@ int fpsexec_main_function(int              argc,
     }
     else if (strcmp(command, "confstart") == 0)
     {
-        return fps_generic_conf_cb(fps_name, 1, CONFCHECK_FN);
+        return (use_fg || fps_name[0] == '_') ? fps_generic_conf_cb(fps_name, 1, CONFCHECK_FN)
+                                              : fps_unit_start(fps_name, FPS_UNIT_CONF, timeout, 0);
     }
     else if (strcmp(command, "confstep") == 0)
     {
@@ -800,8 +783,13 @@ int fpsexec_main_function(int              argc,
         {
             fps_exec_autoinit(fps_name, APP_INFO, bindings, nb_bindings, use_procinfo);
         }
+        /* the values reach the FPS here; a background worker runs with what the FPS holds */
         fps_sync_and_override_by_name(fps_name, bindings, nb_bindings, use_loop, loop_delay);
-        return fps_generic_run(fps_name, APP_INFO, bindings, nb_bindings, COMPUTE_FN);
+        if (strcmp(command, "runstart") == 0 && !use_fg && fps_name[0] != '_')
+        {
+            return fps_unit_start(fps_name, FPS_UNIT_RUN, timeout, 0);
+        }
+        return fps_generic_run(fps_name, APP_INFO, bindings, nb_bindings, COMPUTE_FN, CONFCHECK_FN);
     }
     else if (strcmp(command, "runstop") == 0)
     {

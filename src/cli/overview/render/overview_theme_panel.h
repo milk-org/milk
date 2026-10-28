@@ -195,20 +195,20 @@ static inline void ov_draw_panel_border_filter(int         row,
             {
                 if ((ctrl_blink % 4) < 2)
                 {
-                    ov_buf_bg(255, 190, 0); /* bright amber/gold */
-                    ov_buf_fg(20, 20, 20);  /* dark text */
+                    ov_theme_bg(OV_BADGE_WARN);
+                    ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
                 }
                 else
                 {
-                    ov_buf_bg(230, 80, 20);   /* vibrant red-orange */
-                    ov_buf_fg(255, 255, 255); /* white text */
+                    ov_theme_bg(OV_BADGE_DANGER);
+                    ov_theme_fg(ov_rgb_on(OV_BADGE_DANGER));
                 }
             }
             else
             {
                 /* Unselected panel: solid vivid amber-orange pill */
-                ov_buf_bg(220, 130, 20);
-                ov_buf_fg(255, 255, 255);
+                ov_theme_bg(OV_BADGE_WARN);
+                ov_theme_fg(ov_rgb_on(OV_BADGE_WARN));
             }
             ov_buf_printf(" [FILTER ON: /%.12s/] ", filter_pat);
             ov_buf_reset_attr();

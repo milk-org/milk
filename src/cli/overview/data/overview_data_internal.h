@@ -5,6 +5,8 @@
 #ifndef OVERVIEW_DATA_INTERNAL_H
 #define OVERVIEW_DATA_INTERNAL_H
 
+#define OV_FILE_RECHECK_S 10.0 /* period (s) of the per-file check of cached FPS mappings */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,8 +24,7 @@
 #include "overview_data.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "fps_shmdirname.h"
-#include "processinfo_shm_list_create.h"
-#include "processinfo_shm_link.h"
+#include "processinfo.h"
 #include "processinfo_procdirname.h"
 
 long fps_connect(const char *name, FPS *fps, int fpsconnectmode);
@@ -31,22 +32,66 @@ int  fps_disconnect(FPS *fps);
 
 #define OV_SHMDIR_MAXLEN STRINGMAXLEN_FPS_DIRNAME
 
+/* A read-only (or on-demand read-write) mapping of a whole shm file, with its identity */
+typedef struct
+{
+    void  *addr;
+    size_t len;
+    dev_t  dev;
+    ino_t  ino;
+} ov_shm_map_t;
+
+/* Rate of a counter: per step, and averaged over blocks of at least 1 s */
+typedef struct
+{
+    uint64_t prev; /* counter at the previous step */
+    int      has_prev;
+    uint64_t blk_start; /* counter at the start of the current block */
+    double   blk_dt;    /* seconds into the current block */
+    double   avg;       /* rate over the last completed block, -1 before the first */
+    double   since_chg; /* seconds since the counter last changed */
+} OV_RATE;
+
+void ov_rate_step(OV_RATE *r,
+                  uint64_t cnt,
+                  double   dt,
+                  double  *inst,
+                  double  *avg,
+                  int     *changed,
+                  int     *flash);
+
 // Cache structures
 typedef struct
 {
-    char     name[STRINGMAXLEN_IMAGE_NAME];
-    ino_t    inode;
-    IMAGE    img;
-    int      in_use;
-    uint64_t prev_cnt0;
-    int      has_prev;
-    float    spark_max;
-    float    spark_rate[OV_SPARKLINE_LEN];
-    int      spark_idx;
+    char    name[STRINGMAXLEN_IMAGE_NAME];
+    ino_t   inode;
+    IMAGE   img;
+    int     in_use;
+    OV_RATE rate;
+    int     is_new;       /* scans left to highlight a new stream */
+    int     mapped;       /* img is mapped (else listed only, waiting for OV_MAP_PER_SCAN) */
+    char    size_str[32]; /* "WxH": the geometry of a mapping does not change */
+    int     err; /* ov_stream_err_t of the last mapping attempt; retried when the file changes */
+    struct timespec err_mtime; /* the file's mtime when it failed */
+    int             is_link, alias;
+    int             nb_holders; /* -1 = no HOLDERS pass yet */
+    pid_t           holder[OV_MAX_HOLDERS];
+    char            link_target[STRINGMAXLEN_IMAGE_NAME];
 } ov_stream_cache_t;
 
 extern ov_stream_cache_t s_scache[OV_MAX_STREAMS];
-extern int               s_scache_nb;
+
+struct dirent;
+int        ov_stream_dirent(const char          *dir,
+                            const struct dirent *ep,
+                            ino_t               *ino,
+                            int                 *is_link,
+                            char                *target,
+                            size_t               n);
+int        ov_stream_map_err(int rc, int version_ok);
+void       ov_scan_inspect(OV_MODEL *model);
+void       ov_scan_holders(OV_MODEL *model);
+extern int s_scache_nb;
 
 typedef struct
 {
@@ -63,17 +108,40 @@ typedef struct
     int  dparam_nb;
 
     int sparam_cached;
+
+    ov_shm_map_t map;         /* read-only mapping of <fpsdir>/<fname>.fps.shm */
+    pid_t        tk_conf_pid; /* start ticks of the conf/run PIDs, refreshed when a PID changes */
+    pid_t        tk_run_pid;
+    uint64_t     tk_conf;
+    uint64_t     tk_run;
+    long         nbparam_fit; /* parameters that fit in the mapped length */
+
+    float hz_hist[OV_SPARKLINE_LEN]; /* run-process Hz history, kept across scans */
+    int   hz_hist_idx;
+    int   is_new;
 } ov_fps_cache_t;
 
 extern ov_fps_cache_t s_fcache[OV_MAX_FPS];
 extern int            s_fcache_nb;
 
+
+int  ov_shm_map(ov_shm_map_t *m, const char *path, int rw, size_t minsize);
+void ov_shm_unmap(ov_shm_map_t *m);
+int  ov_shm_same_file(const ov_shm_map_t *m, const struct stat *st);
+
+extern ov_shm_map_t s_plist_map;
+
 typedef struct
 {
-    pid_t        pid;
-    PROCESSINFO *pinfo;
-    int          fd;
-    int          in_use;
+    pid_t              pid;
+    long               pindex; /* registry slot */
+    const PROCESSINFO *pinfo;  /* NULL: file absent or unmappable */
+    ov_shm_map_t       map;
+    int                seen_dead; /* once dead, a reused PID never revives this entry */
+    int                in_use;
+    int                stale_count; /* consecutive scans active without a loopcnt change */
+    uint64_t           start_ticks; /* /proc start time of the process when first seen alive */
+    int                is_new;
 
     uint64_t prev_utime;
     uint64_t prev_stime;
@@ -100,20 +168,21 @@ extern struct timespec s_proc_mtime;
 
 // Function declarations
 void        pid_cache_reset(void);
-int         pid_check_zombie(pid_t pid);
+const char *pid_stat_fields(pid_t pid, char *buf, size_t sz);
+const char *pid_stat_skip(const char *p, int n);
+uint64_t    pid_get_start_ticks(pid_t pid);
+int         pid_same_process(pid_t pid, uint64_t ticks);
 int64_t     pid_get_rss_kb(pid_t pid);
 int         pid_is_alive(pid_t pid);
 int         pid_get_cpu_ticks(pid_t pid, uint64_t *utime, uint64_t *stime);
 const char *ov_datatype_name(uint8_t dt);
 
 int  scache_find(const char *name);
-void scache_evict(int ci);
 void scache_evict_locked(int ci);
 void scache_evict_by_name(const char *name);
 int  fcache_find(const char *name);
-void fcache_evict(int ci);
 void fcache_evict_locked(int ci);
-int  pcache_find_pid(pid_t pid);
+int  pcache_find(long pindex, pid_t pid);
 void pcache_evict(int ci);
 
 typedef struct
@@ -124,7 +193,14 @@ typedef struct
     uint32_t type;
     uint64_t fpflag;
     int      is_writable;
+    int      has_min, has_max; /* FPFLAG_MINLIMIT / MAXLIMIT on a numeric type */
+    double   vmin, vmax;
 } ov_fps_param_info_t;
+
+/* Parameter write refusals, beyond -1 (not found / value rejected by libfps) */
+#define OV_PARAM_MOVED -2   /* FPS re-created or parameter moved since it was shown */
+#define OV_PARAM_RO_FILE -3 /* shm file not writable by this user */
+#define OV_PARAM_LOCKED -4  /* WRITESTATUS clear: not writable in the FPS's current state */
 
 /** Fetch parameter metadata safely under cache lock */
 int ov_fcache_get_param_info(const char *fps_name, int disp_idx, ov_fps_param_info_t *info);
@@ -137,7 +213,10 @@ int ov_fcache_toggle_param(const char *fps_name,
                            int        *out_newval);
 
 /** Set an FPS parameter value string under cache lock */
-int ov_fcache_set_param_value(const char *fps_name, int disp_idx, const char *valstr);
+int ov_fcache_set_param_value(const char *fps_name,
+                              int         disp_idx,
+                              const char *kw,
+                              const char *valstr);
 
 /** Post-scan enrichment: sparklines, uptime, stale, new-item */
 void ov_post_scan_enrich(OV_MODEL *model);
@@ -146,7 +225,11 @@ void ov_post_scan_enrich(OV_MODEL *model);
 double ov_sys_get_cpu_usage(void);
 
 /** Ordering and rank sorting */
-void ov_sort_freeze_snapshot(const OV_MODEL *mm);
-void ov_sort_apply_ranks(OV_MODEL *mm);
+void ov_sort_index(const void *base,
+                   size_t      elsz,
+                   int         n,
+                   int (*cmp)(const void *, const void *),
+                   int (*tie)(const void *, const void *),
+                   int *order);
 
 #endif // OVERVIEW_DATA_INTERNAL_H

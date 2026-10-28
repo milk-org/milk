@@ -248,8 +248,7 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
         imgvt.mdt->size[0]  = arraysizetmp[0];
         imgvt.mdt->size[1]  = arraysizetmp[1];
         imgvt.mdt->datatype = _DATATYPE_FLOAT;
-        imgvt.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgvt);
+        imgid_create_registered(&imgvt);
         ID_VTmatrix = imgvt.ID;
     }
 
@@ -294,8 +293,7 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
             imgcm.mdt->size[a] = arraysizetmp[a];
         }
         imgcm.mdt->datatype = datatype;
-        imgcm.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgcm);
+        imgid_create_registered(&imgcm);
         ID_Cmatrix = imgcm.ID;
     }
 

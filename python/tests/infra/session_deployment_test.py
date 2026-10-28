@@ -39,7 +39,7 @@ def test_fps_lifecycle(fixt_fpsinit_pinfo_streamdelay):
     arr = np.random.randn(30, 40)
     in_shm = SHM("imin", arr * 0)
 
-    session.runstart(tmux=False)
+    session.runstart()
     time.sleep(1.0)
     assert fps.run_isrunning()  # Wait this should NOT have asserted.
 
@@ -58,9 +58,6 @@ def test_fps_lifecycle(fixt_fpsinit_pinfo_streamdelay):
 
 def test_lifecycle():
     # Test confstart, runstart, runstop, confstop
-    # test both in tmux and with subprocesses
-
-    # What are confstop and runstop supposed to do when there's no tmux ?
     ...
 
 

@@ -15,7 +15,7 @@ project(milk LANGUAGES C)
 # ncurses, bison, and flex.
 #
 # USE_NCURSES (default ON, requires USE_CLI): Enable ncurses TUI (milk-fpsCTRL,
-# streamCTRL).
+# milk-procCTRL).
 #
 # USE_READLINE (default ON, requires USE_CLI): Enable readline for interactive
 # CLI input.
@@ -42,7 +42,6 @@ project(milk LANGUAGES C)
 option(USE_COREMODS "Build core modules (COREMOD_*)" ON)
 option(USE_CFITSIO "Build FITS I/O (needs cfitsio)" ON)
 option(USE_CLI "Build interactive CLI (milk-cli)" ON)
-option(USE_SEQ "Build sequencer module (requires CLI)" ON)
 option(USE_NCURSES "Enable ncurses and TUI support" ON)
 option(USE_READLINE "Enable readline support" ON)
 option(USE_TREESITTER "Enable tree-sitter syntax highlighting (CLI)" ON)
@@ -54,14 +53,6 @@ if(USE_CLI AND NOT USE_COREMODS)
   message(STATUS "USE_CLI requires USE_COREMODS; enabling USE_COREMODS")
   set(USE_COREMODS
     ON
-    CACHE BOOL "" FORCE)
-endif()
-
-# USE_SEQ requires USE_CLI since it relies on CLIcore for commands
-if(USE_SEQ AND NOT USE_CLI)
-  message(STATUS "USE_SEQ requires USE_CLI; disabling USE_SEQ")
-  set(USE_SEQ
-    OFF
     CACHE BOOL "" FORCE)
 endif()
 
@@ -186,10 +177,20 @@ set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 option(USE_CUDA "Use CUDA" OFF)
 option(USE_MAGMA "Use MAGMA" OFF)
 
-# BLAS + LAPACKE Options
+# BLAS + LAPACKE Options (default ON when detected via pkg-config)
+pkg_check_modules(_OPENBLAS_PROBE QUIET openblas)
+pkg_check_modules(_LAPACKE_PROBE QUIET lapacke)
+set(_DEFAULT_USE_OPENBLAS OFF)
+set(_DEFAULT_USE_LAPACKE OFF)
+if(_OPENBLAS_PROBE_FOUND)
+  set(_DEFAULT_USE_OPENBLAS ON)
+endif()
+if(_LAPACKE_PROBE_FOUND OR _OPENBLAS_PROBE_FOUND)
+  set(_DEFAULT_USE_LAPACKE ON)
+endif()
 option(USE_MKL "Use MKL" OFF)
-option(USE_OPENBLAS "Use OpenBLAS" OFF)
-option(USE_LAPACKE "Use LAPACKE" OFF)
+option(USE_OPENBLAS "Use OpenBLAS" ${_DEFAULT_USE_OPENBLAS})
+option(USE_LAPACKE "Use LAPACKE" ${_DEFAULT_USE_LAPACKE})
 
 if(USE_CUDA)
   # --> Either HAVE_CUDA or USE_CUDA=OFF
@@ -253,7 +254,9 @@ endif()
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/libmilkscript/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/libmilkscript/calc)
 if(USE_CLI)
   list(APPEND libsrcdir src/cli/libmilkscript)
   list(APPEND libname milkscript)
@@ -267,7 +270,6 @@ else()
   # Provide CLI header paths so modules can find CLIcore.h (which redirects to
   # standalone stubs)
   include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tui/procCTRL
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libcomputeunit
@@ -285,7 +287,7 @@ else()
   # timeutils.h, milkDebugTools.h, and IMGID.h have moved to their respective
   # engine modules (libprocessinfo, libmilkcommon, libfps) which install them
   # unconditionally via their own CMakeLists.txt targets.
-  install(FILES src/cli/CLIcore/CLIcore/CLIcore_checkargs.h
+  install(FILES src/cli/libmilkscript/core/CLIcore_checkargs.h
     DESTINATION include/CommandLineInterface/CLIcore)
   # Create an INTERFACE library target named CLIcore so that existing
   # target_link_libraries(... CLIcore) calls in plugin CMakeLists work without
@@ -299,7 +301,7 @@ else()
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/libmilkscript/core>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/tui/procCTRL>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libcomputeunit>
@@ -330,12 +332,6 @@ if(USE_COREMODS)
   endforeach()
 else()
   message(STATUS "USE_COREMODS=OFF: skipping COREMOD_*")
-endif()
-
-if(USE_SEQ)
-  list(APPEND libsrcdir src/sequencer)
-  list(APPEND libname milksequencer)
-  message("======= adding module  sequencer")
 endif()
 
 # =======================================
@@ -526,13 +522,15 @@ endif()
 add_subdirectory(src/engine/libmilkcommon)
 add_subdirectory(src/engine/libfps)
 add_subdirectory(src/engine/libcomputeunit)
-add_subdirectory(src/engine/libfpsseq)
 
 # add libmilkdata (core data layer, no CLI dependency)
 add_subdirectory(src/engine/libmilkdata)
 
 # add libprocessinfo
 add_subdirectory(src/engine/libprocessinfo)
+
+# no shell, no tmux and only listed non-POSIX calls in the engine libraries
+include(cmake/milk_engine_guards.cmake)
 
 # engine-tier TUIs
 add_subdirectory(src/tui)
@@ -676,17 +674,16 @@ if(USE_CLI)
   install(
     PROGRAMS scripts/milk-cli-all
     scripts/milk-argparse
+    scripts/milk-cc
     scripts/milk-check
     scripts/milk-completion.sh
     scripts/milk-commands
     scripts/milk-cubeslice2shm
+    scripts/milk-demopipeline
     scripts/milk-exec
-    scripts/milk-fpslist-addentry
     scripts/milk-cr2tofits
     scripts/milk-FITS2shm
     scripts/milk-fitsheader
-    scripts/milk-fpsmkcmd
-    scripts/milk-fpsinit
     scripts/milk-logshim
     scripts/milk-logshimkill
     scripts/milk-logshimoff
@@ -699,13 +696,65 @@ if(USE_CLI)
     scripts/milk-script-std-config
     scripts/milk-streamlink
     scripts/milk-shm2FITSloop
-    scripts/tmuxkillall
-    scripts/tmuxsessionname
     scripts/waitforfile
     scripts/milk-env.sh
+    scripts/milk.bash
     DESTINATION bin)
+
+  install(FILES scripts/milk.bash DESTINATION share/milk)
 
 endif(USE_CLI)
 
 # milk-cli script payloads (.milk files) – installed as data, not executables
 install(FILES scripts/makecircleofdisks.milk DESTINATION share/milk/scripts)
+
+# Example systemd units (unit-lifecycle U17): milk-unit@.service names this install's milk-fps-run
+# and the shm directory of its units
+if(DEFINED ENV{MILK_SHM_DIR})
+  set(_milk_unit_shm "$ENV{MILK_SHM_DIR}")
+else()
+  set(_milk_unit_shm "/milk/shm")
+endif()
+set(MILK_UNIT_SHM_DIR
+    "${_milk_unit_shm}"
+    CACHE STRING "shm directory named by the example systemd unit milk-unit@.service")
+configure_file(scripts/systemd/milk-unit@.service.in
+               ${CMAKE_CURRENT_BINARY_DIR}/systemd/milk-unit@.service @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/systemd/milk-unit@.service
+              scripts/systemd/milk-unit-rt.conf scripts/systemd/milk-loop.target
+        DESTINATION share/milk/systemd)
+
+# Removed tools and headers: a reinstall into a prefix that has them drops them, before the catalog
+# is built (a stale module would bring its commands back, a stale script would run instead of the
+# removal hint). milk-seq (unit-lifecycle Phase 1b); the unit scripts, the tmux API and the command
+# FIFO (Phase 3).
+install(
+  CODE [[
+  set(_milk_prefix "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}")
+  file(REMOVE "${_milk_prefix}/bin/milk-seq" "${_milk_prefix}/bin/milk-seq-help"
+       "${_milk_prefix}/lib/libmilkfpsseq.so" "${_milk_prefix}/lib/libmilksequencer.so"
+       "${_milk_prefix}/share/milk/catalog.d/milksequencer.tsv")
+  file(REMOVE_RECURSE "${_milk_prefix}/include/libfpsseq" "${_milk_prefix}/include/sequencer")
+  file(REMOVE "${_milk_prefix}/bin/milk-fpsinit" "${_milk_prefix}/bin/milk-fpsmkcmd"
+       "${_milk_prefix}/bin/milk-fpslist-addentry" "${_milk_prefix}/bin/tmuxsessionname"
+       "${_milk_prefix}/bin/tmuxkillall")
+  foreach(_h fps_tmux.h fps_execFPScmd.h fps_process_fpsCMDarray.h fps_processcmdline.h
+             fps_read_fpsCMD_fifo.h)
+    file(REMOVE "${_milk_prefix}/include/libcomputeunit/${_h}")
+  endforeach()
+]])
+
+# Command catalog, last: the commands of every installed module (share/milk/catalog.d, catalog.bash and
+# the libexec/milk/bin links for external tools). Plugins installed into the prefix later re-run it.
+if(USE_CLI)
+  install(CODE "
+    set(_milk_prefix \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}\")
+    execute_process(COMMAND \${CMAKE_COMMAND} -E env
+                            MILK_INSTALLDIR=\${_milk_prefix}
+                            LD_LIBRARY_PATH=\${_milk_prefix}/lib:\$ENV{LD_LIBRARY_PATH}
+                            \${_milk_prefix}/bin/milk-cli --catalog
+                    RESULT_VARIABLE _milk_rc)
+    if(NOT _milk_rc EQUAL 0)
+      message(WARNING \"milk: no command catalog (milk-cli --catalog returned \${_milk_rc})\")
+    endif()")
+endif()
