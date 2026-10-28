@@ -18,3 +18,7 @@ list at each slice boundary.
 - [R4] In semaphore trigger mode a run process only notices `runstop` when its wait times out
   (`procinfo.triggertimeout`, default 2 s), so stopping takes up to about 2 timeouts. RunStop's
   wait bound must allow for it. R7 sets the timeout to 0.1 s in `test_fps_lifecycle`.
+- [R4] `tests/mains/pipeline_linsim_test.py` (ignored by pytest) still calls the removed
+  `Pipeline.clone_to`; port it to `milk.provision.clone` when R4 rewrites the operate layer.
+- [repo merge] `specs/006-r6-pymilk-boundary/draft_pymilk_boundary_test.py` still imports
+  `milk.infra.pipeline_models`, moved to `milk.config.model` by R3a step 0.

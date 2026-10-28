@@ -36,7 +36,7 @@ from pathlib import Path
 from .task_models import SimpleTask
 from ..errors import TaskDidNotSucceedError
 
-from .toml_manipulation import denest_toml_dicts
+from ..config.substitute import denest_toml_dicts
 from .. import env
 
 import subprocess

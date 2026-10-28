@@ -54,6 +54,10 @@ class ConfigError(MilkError):
     """A pipeline configuration folder or file is missing or unusable."""
 
 
+class ProvisionError(MilkError):
+    """A confdir file operation (fingerprint, conf hook, clone) failed or was refused."""
+
+
 class TaskError(MilkError):
     """A pipeline task failed."""
 

@@ -12,9 +12,9 @@ from pathlib import Path
 import pydantic
 import tomli
 
-from .errors import ConfigError
-from .infra.pipeline_models import PipelineConfig
-from .infra.toml_manipulation import substitute_toml_variables_in_nested
+from ..errors import ConfigError
+from .model import PipelineConfig
+from .substitute import substitute_toml_variables_in_nested
 
 IDENTITY_KEYS = ("long_name", "name", "loop_number")
 
@@ -55,6 +55,16 @@ def _set_override(data: dict, dotted: str, value: object, toml: Path) -> None:
             )
         node[head] = node = dict(child)
     node[leaf] = value
+
+
+def list_pipeline_dirs(folder: Path) -> list[str]:
+    """Sorted names of the confdirs (``*-conf`` with a conf.toml) and ``*-rootdir`` in folder."""
+    return sorted(
+        p.name
+        for p in Path(folder).iterdir()
+        if (p.name.endswith("-conf") and (p / "conf.toml").is_file())
+        or (p.name.endswith("-rootdir") and p.is_dir())
+    )
 
 
 def confresolve(

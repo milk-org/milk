@@ -1,145 +1,29 @@
 from __future__ import annotations
 import typing as typ
 
+from ..config.resolve import list_pipeline_dirs
 from ..pipeline import Pipeline
-from .. import env
 from ..errors import BestEffortError, LinkageError
 
-from pathlib import Path
-
 import os
-import subprocess
 import click
 
 if typ.TYPE_CHECKING:
     from .task_models import SimpleTask
 
 
-def _milk_samples_dir() -> str:
-    return str(env.root()) + "/milk-examples/pipelines/"
-
-
-def _cacao_samples_dir() -> str:
-    return str(env.root()) + "/plugins/cacao-src/examples/"
-
-
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 def milk_pipes():
     """
-    Clone, initialize and spool up a milk/cacao pipeline.
+    Initialize and spool up a milk/cacao pipeline.
 
     \b
     Subcommands:
-      clone   Clone a pipeline configuration to the current folder
       init    Set up the folders of a cloned pipeline
       spool   Deploy and start the processes of an initialized pipeline
       sys     Apply a [systemlinkage] mode of a pipeline
       nuke    Stop, unlink and delete the root directory of a pipeline (destructive)
     """
-
-
-@milk_pipes.command("clone", context_settings={"help_option_names": ["-h", "--help"]})
-@click.option(
-    "-m", "--milk", "milk_exs", is_flag=True, help="<name> is a milk example pipeline"
-)
-@click.option(
-    "-c",
-    "--cacao",
-    "cacao_exs",
-    is_flag=True,
-    help="<name> is a cacao example pipeline",
-)
-@click.option(
-    "-f",
-    "--full-path",
-    "full_path",
-    is_flag=True,
-    help="<name> is the path to a pipeline configuration folder",
-)
-@click.argument("name", required=False)
-def milk_pipes_clone(
-    milk_exs: bool,
-    cacao_exs: bool,
-    full_path: bool,
-    name: str | None,
-):
-    """
-    Clone a pipeline configuration into the current folder.
-
-    Exactly one of -m, -c, -f must be given. With -m/-c, <name> is looked up
-    in the milk/cacao examples. With -f, <name> is the path to the
-    configuration (`<path>/<name>-conf` or `<path>/<name>`).
-    Without <name>, the available configurations are listed.
-
-    Commit the clone in its own Git repository, respecting .gitignore.
-    Existing repositories must be clean; updates append clone-rsync.log.
-    No commit is created when there are no staged changes.
-    Git identity and signing must already be configured. Failed commits
-    leave the copied files in place for inspection.
-    """
-    # TODO milk-pipes clone <full_path> should be allowed.
-    # TODO a --to <destination folder> should be allowed.
-    # TODO add a name resolution for <conf_name> <loop_name> <folder_name>
-    # TODO -l to get a list of clonables
-    # TODO add a confname, aoname, aonum override during the cloning
-    if sum([milk_exs, cacao_exs, full_path]) != 1:
-        raise click.UsageError(
-            "Exactly one of -m/--milk, -c/--cacao, -f/--full-path " "is required"
-        )
-
-    if name is None:
-        if milk_exs:
-            browse_and_print_conf_folders(_milk_samples_dir())
-        elif cacao_exs:
-            browse_and_print_conf_folders(_cacao_samples_dir())
-        else:
-            raise click.UsageError("-f/--full-path requires <name>")
-        return
-
-    milk_pipes_clone_function(name, milk_exs, cacao_exs, full_path)
-
-
-def milk_pipes_clone_function(
-    name: str,
-    milk_exs: bool = False,
-    cacao_exs: bool = False,
-    full_path: bool = False,
-    dest_folder: str | Path | None = None,
-) -> Pipeline:
-    """Clone to dest_folder (default cwd), then record the returned pipeline in Git."""
-    if milk_exs:
-        parent, long_name = Path(_milk_samples_dir()), name
-    elif cacao_exs:
-        parent, long_name = Path(_cacao_samples_dir()), name
-    elif full_path:
-        full = Path(name.rstrip("/"))
-        parent, long_name = full.parent, full.name.removesuffix("-conf")
-    else:
-        raise click.UsageError("One of milk_exs, cacao_exs, full_path needed")
-
-    dest = Path(dest_folder) if dest_folder is not None else Path.cwd()
-    pp = Pipeline(parent, long_name)  # Raise on missing folder
-    target = dest / f"{long_name}-conf"
-    if pp.conf_folder.resolve() == target.resolve():
-        raise click.UsageError(
-            f"{long_name}-conf is already in {dest}; nothing to clone."
-        )
-
-    try:
-        Pipeline.check_clone_target(target)
-        cloned = pp.clone_to(dest)
-        cloned.update_local_git()
-    except subprocess.CalledProcessError as error:
-        detail = error.stderr or error.stdout or str(error)
-        raise click.ClickException(
-            f"Clone/Git recording failed for {target}: {detail.strip()}"
-        ) from error
-    except (OSError, ValueError) as error:
-        raise click.ClickException(
-            f"Clone/Git recording failed for {target}: {error}"
-        ) from error
-    print(f"Cloned {pp.conf_folder} to {cloned.conf_folder}")
-    return cloned
 
 
 _folder_option = click.option(
@@ -161,7 +45,7 @@ def milk_pipes_init(folder: str | None, name: str | None):
     Without <name>, the pipelines found in the folder are listed.
     """
     if name is None:
-        browse_and_print_conf_folders(folder or os.getcwd())
+        click.echo("\n".join(list_pipeline_dirs(folder or os.getcwd())))
         return
     milk_pipes_init_function(name, folder)
 
@@ -176,7 +60,7 @@ def milk_pipes_spool(folder: str | None, name: str | None):
     Without <name>, the pipelines found in the folder are listed.
     """
     if name is None:
-        browse_and_print_conf_folders(folder or os.getcwd())
+        click.echo("\n".join(list_pipeline_dirs(folder or os.getcwd())))
         return
     milk_pipes_spool_function(name, folder)
 
@@ -268,21 +152,3 @@ def _parse_tasks(task_names: list[str]) -> list[type[SimpleTask]]:
         "StartConfProcesses": _d.StartConfProcesses,
     }
     return [TASK_DB[name] for name in task_names]
-
-
-def browse_and_print_conf_folders(folder: str | Path):
-    folder = Path(folder)
-    if not os.path.isdir(folder):
-        print(f"{folder} is not a directory.")
-        return
-
-    print(f"Valid configurations found in {folder}:")
-    for sf in os.listdir(folder):
-        subfolder = Path(sf)
-        if (
-            sf.endswith("-conf")
-            and os.path.isdir(folder / subfolder)
-            and os.path.isfile(folder / subfolder / "conf.toml")
-        ):
-            print(f" -    {subfolder}")
-    print("---")

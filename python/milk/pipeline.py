@@ -25,7 +25,7 @@ Deploy 3 pipelines:
 from __future__ import annotations
 
 from .compute_unit import ComputeUnit
-from .confresolve import confresolve
+from .config import confresolve
 from .infra.task_models import SimpleTask
 from . import env
 from .errors import (
@@ -38,45 +38,10 @@ from .errors import (
 
 import os
 import shutil
-import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-_CLONE_LOG = "clone-rsync.log"
 _LINKAGE_TAG = "systemlinkage.tag"
-
-
-def _git(folder: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    # Inherited Git routing must not redirect operations outside the clone.
-    env = os.environ.copy()
-    for key in (
-        "GIT_DIR",
-        "GIT_WORK_TREE",
-        "GIT_INDEX_FILE",
-        "GIT_COMMON_DIR",
-        "GIT_OBJECT_DIRECTORY",
-        "GIT_ALTERNATE_OBJECT_DIRECTORIES",
-    ):
-        env.pop(key, None)
-    return subprocess.run(
-        ["git", "-C", str(folder), *args],
-        check=True,
-        capture_output=True,
-        text=True,
-        env=env,
-    )
-
-
-def _has_local_git(folder: Path) -> bool:
-    metadata = folder / ".git"
-    if metadata.is_symlink():
-        raise ValueError(f"Refusing symlinked Git metadata: {metadata}")
-    if not metadata.exists():
-        return False
-    root = Path(_git(folder, "rev-parse", "--show-toplevel").stdout.strip())
-    if root.resolve() != folder.resolve():
-        raise ValueError(f"Git repository is not rooted at {folder}")
-    return True
 
 
 class Pipeline:
@@ -107,97 +72,6 @@ class Pipeline:
         self.log_folder = self.parent_folder / f"{self.short_name}-logdir"
 
         self.work_folder = self.root_folder / "work"
-        self._clone_source: Path | None = None
-        self._clone_rsync_output = ""
-
-    @staticmethod
-    def check_clone_target(conf_folder: str | Path) -> None:
-        """Reject a dirty destination repository before copying any files."""
-        folder = Path(conf_folder)
-        if (folder / _CLONE_LOG).is_symlink():
-            raise ValueError(f"Refusing symlinked clone log: {folder / _CLONE_LOG}")
-        if _has_local_git(folder):
-            status = _git(
-                folder,
-                "status",
-                "--porcelain",
-                "--untracked-files=all",
-            ).stdout
-            if status:
-                raise ValueError(
-                    f"Clone target has uncommitted changes: {folder}\n{status}"
-                )
-
-    def clone_to(self, new_parent_folder: str | Path) -> Pipeline:
-        """Copy the configuration, retaining rsync output but performing no Git operations."""
-        new_parent_folder = Path(new_parent_folder)
-        new_conf_folder = new_parent_folder / f"{self.long_name}-conf"
-        new_conf_folder.mkdir(parents=True, exist_ok=True)
-
-        # trailing slashes: copy conf_folder's contents, not the folder itself
-        result = subprocess.run(
-            [
-                "rsync",
-                "-a",
-                "--itemize-changes",
-                "--exclude=.git",
-                f"--exclude=/{_CLONE_LOG}",
-                "--",
-                f"{self.conf_folder}/",
-                f"{new_conf_folder}/",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-
-        cloned = Pipeline(new_parent_folder, self.long_name)
-        cloned._clone_source = self.conf_folder.resolve()
-        cloned._clone_rsync_output = result.stdout
-        return cloned
-
-    def update_local_git(self) -> None:
-        """Commit clone changes; skip the commit when no staged changes exist.
-
-        Call check_clone_target before clone_to to reject uncommitted destination changes.
-        Update logs are appended only when rsync reports changes. Git identity and signing
-        settings are inherited. Failures leave copied files in place.
-        """
-        if self._clone_source is None:
-            raise ValueError(
-                "Git clone recording requires a pipeline returned by clone_to"
-            )
-
-        folder = self.conf_folder.resolve()
-        existing = _has_local_git(folder)
-        source = self._clone_source
-        if existing:
-            if self._clone_rsync_output:
-                log = folder / _CLONE_LOG
-                if log.is_symlink():
-                    raise ValueError(f"Refusing symlinked clone log: {log}")
-                with log.open("a", encoding="utf-8") as stream:
-                    stream.write(
-                        f"\nClone at {datetime.now(timezone.utc).isoformat()}"
-                        f" from {source} to {folder}\n{self._clone_rsync_output}"
-                    )
-        else:
-            _git(folder, "init")
-
-        _git(folder, "add", "--all", "--", ".")
-        if existing and self._clone_rsync_output:
-            _git(folder, "add", "--force", "--", _CLONE_LOG)
-
-        try:
-            _git(folder, "diff", "--cached", "--quiet")
-        except subprocess.CalledProcessError as error:
-            if error.returncode != 1:
-                raise
-        else:
-            return
-
-        prefix = "Update clone" if existing else "Initial commit -- clone"
-        _git(folder, "commit", "-m", f"{prefix} from {source} to {folder}")
 
     def task_do(self, task: SimpleTask | type[SimpleTask]) -> Pipeline:
         if isinstance(task, SimpleTask):

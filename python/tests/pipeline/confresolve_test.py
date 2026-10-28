@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-import milk.confresolve
-from milk.confresolve import confresolve
+import milk.config.resolve
+from milk.config import confresolve
 from milk.errors import ConfigError
 from milk.pipeline import Pipeline
 
@@ -91,7 +91,7 @@ def test_table_arrays_are_replaced_whole(tmp_path):
 
 def test_kind_defaults_are_the_lowest_layer(tmp_path, monkeypatch):
     defaults = {"compute_units": {"cu": {"fps": {"delaysec": 9.0, "timebuff": 7}}}}
-    monkeypatch.setattr(milk.confresolve, "kind_defaults", lambda kind: defaults)
+    monkeypatch.setattr(milk.config.resolve, "kind_defaults", lambda kind: defaults)
     fps = _fps(confresolve(_confset(tmp_path)))
     assert fps["timebuff"] == 7
     assert fps["delaysec"] == 0.01

@@ -8,8 +8,8 @@ import pydantic
 from pydantic import BaseModel
 
 from milk.errors import ConfigError
-from milk.infra import pipeline_models as pconf
-from milk.confresolve import confresolve
+from milk.config import model as pconf
+from milk.config import confresolve
 
 
 @pytest.fixture

@@ -12,6 +12,7 @@ import libtmux
 import pytest
 
 from milk.pipeline import Pipeline
+from milk.provision import clone
 
 RESOURCES = Path(__file__).parents[1] / "resources"
 
@@ -35,7 +36,8 @@ def make_tmp_pipeline(tmp_path):
 def cloned_pipeline():
     """pipelinebasic cloned under the session's tmp cwd; best-effort nuked before and after."""
     os.makedirs("AOloop/", exist_ok=True)
-    cloned = Pipeline(RESOURCES, "pipelinebasic").clone_to("./AOloop")
+    clone(RESOURCES / "pipelinebasic-conf", Path("AOloop"))
+    cloned = Pipeline("AOloop", "pipelinebasic")
     with contextlib.suppress(Exception):
         cloned.nuke()
     yield cloned

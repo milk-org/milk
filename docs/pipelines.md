@@ -82,6 +82,51 @@ milk-pipes -c --folder ~/src/milk-standalone/python/tests/resources/ pipelinebas
 milk-pipes -r pipelinebasic
 ```
 
+### Confdir layout
+
+```
+<long_name>-conf/
+  conf.toml          the pipeline description
+  *.toml, inc/*.toml includes, listed in conf.toml `includes = [...]`
+  scripts/           any files, copied as-is
+  data/              conf-hook products, each with its <product>.tag; never cloned
+  .gitignore         `data/`, written by clone
+```
+
+The conf files are every `*.toml` outside `data/` plus every file under `scripts/`.
+A conf hook is a `[[hooks]]` entry with an `id`, a `type` and one `product` (a plain name under `data/`):
+
+```toml
+[[hooks]]
+id      = "dm_flat"
+type    = "fetch"                      # rsync -a --delete <source> data/<product>
+source  = "calib/dm_flat.fits"         # relative to the confdir, absolute, or an rsync URL
+product = "dm_flat.fits"
+
+[[hooks]]
+id      = "gen"
+type    = "command"                    # argv run with cwd data/; must create <product>
+command = ["python", "../scripts/gen.py"]
+product = "gen.npy"
+```
+
+`data/<product>.tag` (TOML) records `hook_id`, `decl_digest`, `content_hash`, `size`, `source`
+and `time`. A hook is re-run when its product is missing, its bytes changed, or its declaration
+changed. Symlinks in products are refused.
+
+### `milk-pipeinit`
+
+File operations on confdirs; it never touches the live system.
+
+| Command | Effect |
+|---|---|
+| `milk-pipeinit list [DIR]` | List the confdirs and rootdirs in DIR (default cwd). Examples: `milk-pipeinit list $MILK_ROOT/milk-examples/pipelines`. |
+| `milk-pipeinit clone SRC [DEST_PARENT]` | Copy the conf files of SRC to `DEST_PARENT/<SRC name>`. Refuses an existing target; runs no hooks and no git. |
+| `milk-pipeinit consolidate CONFDIR` | Run the pending conf hooks; print the ids that ran. |
+| `milk-pipeinit resolve CONFDIR` | Print the resolved configuration as TOML. |
+
+The Python API is `milk.provision` (`clone`, `consolidate`, `fingerprint`, `status`, ...).
+
 ## Deployment
 
 `milk-pipes -r` information
@@ -95,7 +140,7 @@ FPS names are `<name>_<cu>` (for example `basic_delay0`), derived from the pipel
 
 ## Configuration
 
-`milk.confresolve.confresolve(confdir, overrides)` is the only way to get a `PipelineConfig`; it re-reads the files on every call.
+`milk.config.confresolve(confdir, overrides)` is the only way to get a `PipelineConfig`; it re-reads the files on every call.
 Layers, lowest to highest: kind defaults (`kind`, default `generic`), `includes` (paths relative to the confdir, one level), `conf.toml`, then `overrides` (dotted keys; `long_name`, `name`, `loop_number` cannot be overridden).
 Tables merge recursively; lists and `[[table arrays]]` are replaced whole.
 `{dotted.key}` substitution runs on the merged result (never inside table arrays), then validation; failures raise `ConfigError`.
@@ -117,3 +162,15 @@ But everything from the aorun framework should get in there really.
 `milk/errors.py` holds the whole exception hierarchy under `MilkError`, with optional context
 attributes (`pipeline`, `compu`, `task`, `path`, `cmd`, `stderr`). pyMilk exceptions propagate
 unwrapped. Contract: design-v7 §4.7 (`python/specs/pipelines/design-v7.md`).
+
+## Python package layout
+
+```
+milk/
+  errors.py  env.py  cliwrap.py   shared; cliwrap is the milk-cli test harness
+  config/      what a pipeline is: model, {var} substitution, confresolve. Pure data.
+  provision/   milk-pipeinit: file operations, never the live system
+  operate/     milk-pipes: SHM, FPS, tmux, processes (today still pipeline.py, compute_unit.py, infra/)
+```
+
+Dependencies go one way: `provision` and `operate` import `config`; they never import each other.

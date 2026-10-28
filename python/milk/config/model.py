@@ -9,7 +9,7 @@ Really it needs what comes from cacaovars.bash
 """
 
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 import pydantic
@@ -72,6 +72,37 @@ class ComputeUnitSpec(BaseModel):
         return ProcessInfoData.model_validate(self.fps["procinfo"])
 
 
+class _HookDecl(BaseModel):
+    """One ``[[hooks]]`` entry; its product is a plain name under ``data/``."""
+
+    model_config = {"extra": "forbid", "frozen": True}
+
+    id: str
+    product: str
+
+    @field_validator("product")
+    @classmethod
+    def _check_product(cls, v: str) -> str:
+        if v in ("", ".", "..") or "/" in v or v.endswith(".tag"):
+            raise ValueError(
+                f"hook product {v!r} must be a plain name not ending in .tag"
+            )
+        return v
+
+
+class FetchHookDecl(_HookDecl):
+    type: Literal["fetch"]
+    source: str
+
+
+class CommandHookDecl(_HookDecl):
+    type: Literal["command"]
+    command: list[str]
+
+
+HookDecl = Annotated[FetchHookDecl | CommandHookDecl, Field(discriminator="type")]
+
+
 class PipelineConfig(BaseModel):
     """Validated conf.toml. Top-level keys outside these fields are refused."""
 
@@ -85,6 +116,16 @@ class PipelineConfig(BaseModel):
     dataloads: list[DataLoadEntryModel] = Field(default_factory=list)
     # mode name -> {local stream owned by this pipeline: remote stream it points to}
     systemlinkage: dict[str, dict[str, str]] = Field(default_factory=dict)
+    hooks: list[HookDecl] = Field(default_factory=list)
+
+    @field_validator("hooks")
+    @classmethod
+    def _check_hooks_unique(cls, v: list[HookDecl]) -> list[HookDecl]:
+        for key in ("id", "product"):
+            values = [getattr(hook, key) for hook in v]
+            if len(set(values)) != len(values):
+                raise ValueError(f"hooks: duplicate {key} in {values}")
+        return v
 
     @field_validator("systemlinkage")
     @classmethod
