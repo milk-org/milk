@@ -82,10 +82,6 @@ class InitialFolderSetup(SimpleTask):
 
         pp.run_folder.mkdir(parents=True, exist_ok=True)
 
-        fpstmuxenv = conf_dir / "fpstmuxenv"
-        if fpstmuxenv.exists():
-            shutil.copy(fpstmuxenv, root_dir)
-
         data_dir = conf_dir / "data"
         if data_dir.exists():
             shutil.copytree(data_dir, root_dir / "data", dirs_exist_ok=True)
@@ -181,8 +177,7 @@ class StartConfProcesses(SimpleTask):
         sessions: list[ComputeSession] = []  # cache to apply global timeout
         for session_name, exec in p.sessions.items():
             session = ComputeSession(exec, session_name + f"_{p.loop_number:03d}")
-            # TODO breaks if tmux is busy already (in particular poor cleaning of repeated tests.)
-            session.confstart(tmux=True)  # TODO dispatch env to tmuxes !!
+            session.confstart()  # its environment is the one fpsinit captured
             sessions += [session]
 
         import time

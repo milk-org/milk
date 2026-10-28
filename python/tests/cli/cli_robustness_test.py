@@ -33,10 +33,6 @@ ERROR_REGEX = re.compile(
     re.IGNORECASE,
 )
 
-# TODO see below -- this passes but should error.
-# ["pwd --invalid-option-xyz"], ## TODO this is the only one that passes in the EXPECT_ERROR
-# TODO -- there's also all the grep tests that are xfail'd
-
 # ==========================================================================
 # EXPECT_OK: command runs to completion without crash/hang (returncode 0).
 # ==========================================================================
@@ -47,27 +43,24 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ["# This is a comment"],
     ["echo"],
     # --- Section 2: Help and discovery ---
-    ["?"],
-    ["help"],
-    ["lm?"],
-    ["m?"],
-    ["ci"],
-    ["cmd? echo"],
-    ["cmd? mem.listim"],
+    ["@help"],
+    ["@help mem"],
+    ["@help --json"],
+    ["milk.ci"],
+    ["mem.listim -h"],
     # --- Section 3: Built-in commands ---
     ["mem.listim"],
     ["pwd"],
     ["cd /tmp"],
     ["cd"],
-    ["usleep 1000"],
-    ["dpsingle"],
-    ["dpdouble"],
+    ["@sleep 0.001"],
+    ["@config precision single"],
+    ["@config precision double"],
     ["mem.mk2Dim _clitest_im1 32 32"],
     ["mem.listim"],
     ["mem.rm _clitest_im1"],
-    # --- Section 4: Missing / wrong arguments (graceful) ---
-    ["mem.mk2Dim"],
-    ["mem.rm"],
+    ["@ls 's.*'"],
+    ["mem.fpslist"],
     # --- Section 5: Variables ---
     ["_testvar1=hello"],
     ["echo $_testvar1"],
@@ -77,7 +70,6 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ["unset _testvar1"],
     ["echo $_testvar1"],
     ["echo $?"],
-    ["vars"],
     ["echo ${_teststr:0:3}"],
     ["echo ${_teststr^^}"],
     ["unset _testvar2", "unset _teststr", "unset _TESTUP", "unset _defvar"],
@@ -94,8 +86,7 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ["if [ -f /etc/hostname ]; then echo file_exists; fi"],
     ["unset _fc_x", "unset _fc_n", "unset _fc_m", "unset _fc_k", "unset _fc_sum", "unset _fc_j", "unset _fc_mode", "unset _fc_s", "unset _fc_empty"],
     # --- Section 8: User functions ---
-    ["function _testfunc_greet { echo greeting_$1; }"],
-    ["_testfunc_greet world"],
+    ["function _testfunc_greet { echo greeting_$1; }", "_testfunc_greet world"],
     ["unset _gvar", "unset _result"],
     # --- Section 10: Shell features ---
     ["echo redirect_test > /tmp/_clitest_redir.txt"],
@@ -105,7 +96,7 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ['read _hs_val <<< "here_string_test"', "echo $_hs_val"],
     ["unset _subst_val", "unset _hs_val"],
     # --- Section 11: Error conditions (graceful toggles) ---
-    ["synhl off", "synhl on"],
+    ["@config synhl off", "@config synhl on"],
     # --- Section 12: Set flags ---
     ["set -x"],
     ["set +x"],
@@ -113,38 +104,30 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ["readonly _RO_PI=3"],
     ["declare -i _decl_count=0"],
     ["unset _decl_count"],
-    # --- Section 14: Calculator & math (numeric formatting varies) ---
-    ["_calc_a = 2 + 3 * 4", "echo $_calc_a"],
-    ["_calc_a = 2 + 3 * 4", "_calc_b = _calc_a > 10", "_calc_c = (_calc_a == 14)", "_calc_d = _calc_b && _calc_c", "echo $_calc_d"],
-    ["_calc_e = min(abs(-5), max(3, fmod(17, 5)))", "echo $_calc_e"],
-    ["_calc_e = min(abs(-5), max(3, fmod(17, 5)))", "_calc_f = where(_calc_e > 2, 100, -100)", "echo $_calc_f"],
-    ["mem.mk2Dim _calc_imtest 10 10", "_calc_imtest = _calc_imtest * 0.0 + 5.0", "_calc_imtest_plus = _calc_imtest + 3", "_calc_imtest_mask = (_calc_imtest_plus == 8)", "_calc_g = itot(_calc_imtest_mask)", "echo $_calc_g"],
-    ["_calc_im_where = where(_calc_imtest_mask, _calc_imtest, -_calc_imtest)", "_calc_h = imean(_calc_im_where)", "echo $_calc_h"],
-    ["_calc_d_im = dot(_calc_imtest, _calc_imtest)", "_calc_n_im = norm(_calc_imtest)", "echo $_calc_d_im"],
+    # --- Section 14: Calculator & math (milk-cli @ shorthand syntax) ---
+    ["@calc -v _calc_a \"2 + 3 * 4\"", "echo $_calc_a"],
+    ["@calc \"_calc_a = 2 + 3 * 4\"", "@calc \"_calc_b = _calc_a > 10\"", "@calc \"_calc_c = (_calc_a == 14)\"", "@calc -v _calc_d \"_calc_b && _calc_c\"", "echo $_calc_d"],
+    ["@calc -v _calc_e \"min(abs(-5), max(3, fmod(17, 5)))\"", "echo $_calc_e"],
+    ["@calc \"_calc_e = min(abs(-5), max(3, fmod(17, 5)))\"", "@calc -v _calc_f \"where(_calc_e > 2, 100, -100)\"", "echo $_calc_f"],
+    ["mem.mk2Dim _calc_imtest 10 10", "@calc \"_calc_imtest = _calc_imtest * 0.0 + 5.0\"", "@calc \"_calc_imtest_plus = _calc_imtest + 3\"", "@calc \"_calc_imtest_mask = (_calc_imtest_plus == 8)\"", "@calc -v _calc_g \"itot(_calc_imtest_mask)\"", "echo $_calc_g"],
+    ["@calc \"_calc_im_where = where(_calc_imtest_mask, _calc_imtest, -_calc_imtest)\"", "@calc -v _calc_h \"imean(_calc_im_where)\"", "echo $_calc_h"],
+    ["@calc -v _calc_d_im \"dot(_calc_imtest, _calc_imtest)\"", "@calc \"_calc_n_im = norm(_calc_imtest)\"", "echo $_calc_d_im"],
     ["unset _calc_a", "unset _calc_b", "unset _calc_c", "unset _calc_d", "unset _calc_e", "unset _calc_f", "unset _calc_g", "unset _calc_h", "unset _calc_d_im", "unset _calc_n_im", "mem.rm _calc_imtest", "mem.rm _calc_imtest_plus", "mem.rm _calc_imtest_mask", "mem.rm _calc_im_where"],
     # --- Section 17: Extreme arguments ---
     ["echo " + "a" * 194],
     ["echo " + " ".join(str(i) for i in range(1, 31))],
-    # --- Section 18b: SHM-aware test operators ---
-    ["if [ -S _clitest_nostream_xyz ]; then echo FAIL_stream_found; fi"],
-    ["if [ -F _clitest_nofps_xyz ]; then echo FAIL_fps_found; fi"],
-    ["if [ -P _clitest_noproc_xyz ]; then echo FAIL_proc_found; fi"],
+    # --- Section 18b: SHM-aware @exists checks ---
+    ["if @exists s._clitest_nostream_xyz; then echo FAIL_stream_found; fi"],
+    ["if @exists f._clitest_nofps_xyz; then echo FAIL_fps_found; fi"],
+    ["if @exists p._clitest_noproc_xyz; then echo FAIL_proc_found; fi"],
     ["mem.rm _clitest_shm_s"],
-    # --- Section 18c: Assigncheck (never exits without -e) ---
-    ["assigncheck _ac_test 10 0"],
-    ["assigncheck _ac_test 10 0.1"],
-    ["assigncheck _ac_test 10.05 0.1"],
-    ["assigncheck _ac_test 20 0.1"],
-    ["assigncheck _ac_test 20"],
-    ["assigncheck _ac_test 20 /0"],
-    ["unset _ac_test"],
-    # --- Section 19: Cleanup / defer ---
-    ["! rm -f /tmp/_clitest_redir.txt"],
-    ["mem.mk2Dim _defertest 4 4", "defer mem.rm _defertest"],
+    # --- Section 19: Cleanup / @defer ---
+    ["rm -f /tmp/_clitest_redir.txt"],
+    ["mem.mk2Dim _defertest 4 4", '@defer "mem.rm _defertest"'],
     # --- Section 20-21: Env sync / command substitution ---
     ["echo $PATH"],
-    ['BDIR_SYNC_VAR="hello_frommilk"', '! test "$BDIR_SYNC_VAR" = "hello_frommilk"'],
-    ['test_subshell_var=$(echo "success_from_subshell")', '! test "$test_subshell_var" = "success_from_subshell"'],
+    ['BDIR_SYNC_VAR="hello_frommilk"', 'test "$BDIR_SYNC_VAR" = "hello_frommilk"'],
+    ['test_subshell_var=$(echo "success_from_subshell")', 'test "$test_subshell_var" = "success_from_subshell"'],
     # --- Section 22: Advanced variable expansions ---
     ["echo ${_sub_str:-5:5}"],
     # --- Section 23: Advanced test evaluator (host files) ---
@@ -154,25 +137,20 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     # --- Section 28: Array length (relies on prior array) ---
     ["echo ${#_test_arr[@]}"],
     # --- Section 30: Listim glob ---
-    ["listim _nonexist_*"],
-    ["mem.mk2Dim _globtest_a 4 4", "mem.mk2Dim _globtest_b 4 4", "listim _globtest_*", "mem.rm _globtest_a", "mem.rm _globtest_b"],
-    ["listim _nonexist_?"],
+    ["mem.listim _nonexist_*"],
+    ["mem.mk2Dim _globtest_a 4 4", "mem.mk2Dim _globtest_b 4 4", "mem.listim _globtest_*", "mem.rm _globtest_a", "mem.rm _globtest_b"],
+    ["mem.listim _nonexist_?"],
     # --- Section 32: Stream slicing ---
-    ["mem.mk2Dim _slicetest 64 64", "listim _slicetest"],
-    ["_sliceout = _slicetest[0:9,0:9] + 0.0"],
-    ["_sliceout2 = _slicetest[*,*] + 0.0"],
-    ["_sliceout3 = _slicetest[*,-*] + 0.0"],
-    ["_sliceout4 = _slicetest[0:63::2,*] + 0.0"],
-    ["mem.rm _slicetest", "mem.rm _sliceout", "mem.rm _sliceout2", "mem.rm _sliceout3", "mem.rm _sliceout4"],
-    # --- Section 33: Alias system ---
-    ['alias _testalias "echo alias_works"'],
-    ["_testalias"],
-    ["unalias _testalias"],
+    ["mem.mk2Dim _slicetest 64 64", "mem.listim _slicetest"],
+    ["mem.mk2Dim _slicetest 64 64", "@calc \"_sliceout = _slicetest[0:9,0:9] + 0.0\""],
+    ["mem.mk2Dim _slicetest 64 64", "@calc \"_sliceout2 = _slicetest[*,*] + 0.0\""],
+    ["mem.mk2Dim _slicetest 64 64", "@calc \"_sliceout3 = _slicetest[*,-*] + 0.0\""],
+    ["mem.mk2Dim _slicetest 64 64", "@calc \"_sliceout4 = _slicetest[0:63::2,*] + 0.0\""],
+    # --- Section 33: Alias system (standard bash alias name=val) ---
+    ['alias _testalias="echo alias_works"', "_testalias", "unalias _testalias"],
     ["unalias _no_such_alias_xyz"],
     ["alias"],
     # --- Section 34: Bookmark system ---
-    ["bookmark list"],
-    ["bookmark rm _tbm"],
     # --- Section 35: printf ---
     [r'printf "a\tb\n"'],
     # --- Section 36: sleep ---
@@ -181,97 +159,76 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ['trap "echo trap_set" EXIT'],
     ["trap -l"],
     # --- Section 38: savehistory ---
-    ["savehistory /tmp/_clitest_hist.txt"],
-    ["! rm -f /tmp/_clitest_hist.txt"],
+    ["@history save /tmp/_clitest_hist.txt"],
+    ["rm -f /tmp/_clitest_hist.txt"],
     # --- Section 39: History commands ---
-    ["lhistory"],
-    ["ghistory"],
-    ["ghistory 5"],
-    ["lhistory -t cmd"],
-    # --- Section 43: include_once idempotency ---
-    ['! echo "echo sourced_once" > /tmp/_clitest_inc.milk', "include_once /tmp/_clitest_inc.milk", "include_once /tmp/_clitest_inc.milk", "! rm -f /tmp/_clitest_inc.milk"],
+    ["@history --local"],
+    ["@history --global"],
+    ["@history --global 5"],
+    ["@history --local -t cmd"],
+    # --- Section 43: @source --once idempotency ---
+    ['echo "echo sourced_once" > /tmp/_clitest_inc.milk', "@source --once /tmp/_clitest_inc.milk", "@source --once /tmp/_clitest_inc.milk", "rm -f /tmp/_clitest_inc.milk"],
     # --- Section 44: Edge cases ---
     ["while [ 0 -eq 1 ]; do echo never; done"],
-    ["_neg = -5 + 3", "echo $_neg"],
-    ["dpdouble", "mem.mk2Dim _dbl_test 4 4", "_dbl_test = _dbl_test * 0.0 + 1.5", "mem.rm _dbl_test", "dpsingle"],
-    # --- Compound assignment (calc engine, formatting varies) ---
-    ["_ca = 10", "_ca += 5", "echo $_ca"],
-    ["_cs = 20", "_cs -= 3", "echo $_cs"],
-    ["_cm = 4", "_cm *= 3", "echo $_cm"],
-    ["_cd = 12", "_cd /= 4", "echo $_cd"],
+    ["@calc -v _neg \"-5 + 3\"", "echo $_neg"],
+    ["@config precision double", "mem.mk2Dim _dbl_test 4 4", "@calc \"_dbl_test = _dbl_test * 0.0 + 1.5\"", "mem.rm _dbl_test", "@config precision single"],
+    # --- Compound assignment (@calc engine) ---
+    ["@calc -v _ca \"10\"", "@calc -v _ca \"_ca + (5)\"", "echo $_ca"],
+    ["@calc -v _cs \"20\"", "@calc -v _cs \"_cs - (3)\"", "echo $_cs"],
+    ["@calc -v _cm \"4\"", "@calc -v _cm \"_cm * (3)\"", "echo $_cm"],
+    ["@calc -v _cd \"12\"", "@calc -v _cd \"_cd / (4)\"", "echo $_cd"],
     # --- Ternary operator ---
-    ["_tt = (1 > 0) ? 10 : 20", "echo $_tt"],
-    ["_tf = (0 > 1) ? 10 : 20", "echo $_tf"],
+    ["@calc -v _tt \"(1 > 0) ? 10 : 20\"", "echo $_tt"],
+    ["@calc -v _tf \"(0 > 1) ? 10 : 20\"", "echo $_tf"],
     # --- Integer literal formats ---
-    ["_hx = 0xff", "echo $_hx"],
-    ["_oc = 0o77", "echo $_oc"],
-    ["_bn = 0b1010", "echo $_bn"],
+    ["@calc -v _hx \"0xff\"", "echo $_hx"],
+    ["@calc -v _oc \"0o77\"", "echo $_oc"],
+    ["@calc -v _bn \"0b1010\"", "echo $_bn"],
     # --- strlen builtin ---
-    ['_str="hello"', '_sl = strlen("hello")', "echo $_sl"],
+    ['_str="hello"', '@calc "_sl = strlen(\\"hello\\")"', "echo $_sl"],
     # --- until loop ---
-    ["_uc = 0", "until [ $_uc -ge 3 ]; do _uc = $(( $_uc + 1 )); done", "echo $_uc"],
-    # --- Bitwise operators (calc engine) ---
-    ["_ba = 0xff & 0x0f", "echo $_ba"],
-    ["_bo = 0x0f | 0xf0", "echo $_bo"],
-    ["_bx = 0xff ^^ 0x0f", "echo $_bx"],
-    ["_bn = ~0", "echo $_bn"],
-    ["_ls = 1 << 4", "echo $_ls"],
-    ["_rs = 256 >> 4", "echo $_rs"],
-    # --- Format conversions (formatting varies) ---
-    ["_hf = hex(255)", "echo $_hf"],
-    ["_of = oct(255)", "echo $_of"],
-    ["_bf = bin(10)", "echo $_bf"],
-    # --- assert statement (never exits) ---
-    ['assert [ 1 -eq 1 ] "should pass"'],
-    ['assert [ 1 -eq 2 ] "expected failure"'],
-    ["_av=1.23", "assert _av=1.23"],
-    ["_av=1.23", "assert _av=1.25 ~0.1"],
-    ["_av=1.23", "assert _av=1.25 ~0.01"],
-    ["_av=1.23", "assert _av=5.0"],
-    ["_bv=(437.06+58.47)/5", "assert _bv=99.106 ~0.001"],
-    ["assert noequals"],
-    ["_av=1.23", "assert _av<2"],
-    ["assert _av<1"],
-    ["assert _av>1"],
-    ["assert _av>2"],
-    ["assert _av<=1.23"],
-    ["assert _av>=1.23"],
-    ["assert 0<_av<2"],
-    ["assert 0<_av<1"],
-    ["assert 1<=_av<=2"],
-    ["unset _av", "unset _bv"],
+    ["_uc=0", "until [ $_uc -ge 3 ]; do _uc=$(( $_uc + 1 )); done", "echo $_uc"],
+    # --- Bitwise operators (@calc engine) ---
+    ["@calc -v _ba \"0xff & 0x0f\"", "echo $_ba"],
+    ["@calc -v _bo \"0x0f | 0xf0\"", "echo $_bo"],
+    ["@calc -v _bx \"0xff ^^ 0x0f\"", "echo $_bx"],
+    ["@calc -v _bn \"~0\"", "echo $_bn"],
+    ["@calc -v _ls \"1 << 4\"", "echo $_ls"],
+    ["@calc -v _rs \"256 >> 4\"", "echo $_rs"],
+    # --- Format conversions ---
+    ["@calc -v _hf \"hex(255)\"", "echo $_hf"],
+    ["@calc -v _of \"oct(255)\"", "echo $_of"],
+    ["@calc -v _bf \"bin(10)\"", "echo $_bf"],
     # --- dpdigits ---
-    ["dpdigits"],
-    ["dpdigits 6"],
-    ["dpdigits 3"],
-    ["dpdigits 0"],
-    ["dpdigits 99"],
-    ["dpdigits 15"],
+    ["@config digits"],
+    ["@config digits 6"],
+    ["@config digits 3"],
+    ["@config digits 15"],
     # --- trap ERR ---
     ["trap 'echo error_caught' ERR"],
     # --- Processinfo integration ---
     ["echo $PROCINFO_NCPU"],
     ["echo $PROCINFO_NPROC"],
-    ["procstat"],
-    ["procctl _nonexistent_proc_ stop"],
+    ["@ls -l 'p.*'"],
     # --- Issue verifications (FITS round trip) ---
     ["mem.mk2Dim im2D 256 256", 'iofits.saveFITS im2D "im2D.fits"', 'rm "im2D.fits"'],
     ["mem.mk2Dim im2D_lf 128 128", 'iofits.saveFITS im2D_lf "im2D_lf.fits"', 'iofits.loadfits "im2D_lf.fits" im2D_lf_loaded 2', 'rm "im2D_lf.fits"', 'mem.rm "im2D_lf_loaded"'],
     # --- Section 45: JSON output modes ---
-    ["streamlist --json"],
-    ["streamlist --json _nonexist_*"],
-    ["streamlist -l --json"],
-    ["streamlist --json _nonexist_*"],
-    ["proclist --json"],
-    ["proclist -l --json"],
-    ["fpslist --json"],
-    ["fpslist --json _nonexist_*"],
-    ["milkquery"],
-    ["milkquery --fps"],
-    ["milkquery --fps _nonexist_*"],
-    ["milkquery --streams"],
-    ["milkquery --procs"],
-    ["milkquery --fps --streams --procs"],
+    ["@ls --json 's.*'"],
+    ["@ls --json 's._nonexist_*'"],
+    ["@ls -l --json 's.*'"],
+    ["@ls --json 'p.*'"],
+    ["@ls -l --json 'p.*'"],
+    ["mem.fpslist --json"],
+    ["mem.fpslist --json _nonexist_*"],
+    ["@ls --json"],
+    ["@ls --json 'f.*'"],
+    ["@ls --json 'f._nonexist_*'"],
+    # --- Section 46: Quiet (-q) list modes and @TF32: type modifiers ---
+    ["mem.fpslist -q"],
+    ["@ls -q 's.*'"],
+    ["mem.listim -q"],
+    ["mem.mk2Dim @TF32:_mod_f32 8 8", "mem.mk2Dim @TF64:_mod_f64 8 8", "mem.mk2Dim @TU16:_mod_u16 8 8", "mem.rm _mod_f32", "mem.rm _mod_f64", "mem.rm _mod_u16"],
 ]
 # fmt: on
 
@@ -281,73 +238,60 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
 # fmt: off
 TESTLIST_EXPECT_ERROR: list[list[str]] = [
     # --- Section 2/3: unknown command / bad cd ---
-    ["cmd? nonexistent_command_xyz"],
+    ["@help nonexistent_command_xyz"],
     ["cd /nonexistent_directory_xyz_123"],
-    # --- Section 4: missing / wrong arguments ---
+    # --- Section 4: missing / wrong arguments (usage errors, status 2) ---
+    ["mem.mk2Dim"],
+    ["mem.rm"],
     ["mem.mk2Dim _clitest_partial"],
     ["mem.mk2Dim _clitest_partial 32"],
     ["source"],
-    ["source /tmp/nonexistent_file_xyz_456.milk"],
-    ["savescript"],
-    ["time"],
-    ["watch"],
-    ["watch 1000"],
+    ["@source /tmp/nonexistent_file_xyz_456.milk"],
     # --- Section 8: undefined function ---
     ["_nonexistent_function_xyz"],
     # --- Section 11: error conditions ---
     ["mem.lisim"],
     ["xyzzy_nonexistent_command"],
-    ["source /tmp/_clitest_no_such_file.milk"],
-    ["include_once /tmp/_clitest_no_such_f2.milk"],
+    ["@source /tmp/_clitest_no_such_file.milk"],
+    ["@source --once /tmp/_clitest_no_such_f2.milk"],
+    ["@config digits 0"],
+    ["@config digits 99"],
+    ["@set p._nonexistent_proc_.ctrl=stop"],
     # --- Section 16: bad syntax ---
     ["ls 'unclosed"],
     ['ls "unclosed'],
     ["ls $( ls"],
     ["( ls"],
-    # --- Section 17: bad option ---
-    # TODO
-    # ["pwd --invalid-option-xyz"], ## TODO this is the only one that passes in the EXPECT_ERROR
-    # TODO
     # --- Section 18: invalid calculator math ---
-    ["_calc_err = 1 / 0"],
-    ["_calc_err = ( 2 + 3"],
-    ["_calc_err = 2 +"],
-    ["_calc_err = non_existent_function(5)"],
-    ["_calc_err = min(5)"],
-    ["_calc_err = abs(1, 2)"],
-    # --- Section 19: defer max limit ---
-    ["defer echo %d" % i for i in range(1, 34)],
+    ["@calc \"_calc_err = 1 / 0\""],
+    ["@calc \"_calc_err = ( 2 + 3\""],
+    ["@calc \"_calc_err = 2 +\""],
+    ["@calc \"_calc_err = non_existent_function(5)\""],
+    ["@calc \"_calc_err = min(5)\""],
+    ["@calc \"_calc_err = abs(1, 2)\""],
     # --- Section 22: error-if-empty expansion ---
     ["echo ${_empty_err:?variable_is_missing}"],
-    # --- Section 29: pipeline with nonexistent stream ---
-    ["_nostream_xyz |> mem.rm"],
     # --- Section 31: source error context ---
-    ["source /tmp/_clitest_no_trace.milk"],
-    ["on_fpschange nodot { echo x }"],
+    ["@source /tmp/_clitest_no_trace.milk"],
     # --- Section 32: bad slice syntax ---
-    ["_bad = _slicetest[0:9 + 0.0"],
-    # --- Section 34: bookmark errors ---
-    ["bookmark frobnicate"],
-    ["bookmark run _no_such_bm_xyz"],
+    ["@calc \"_bad = _slicetest[0:9 + 0.0\""],
     # --- Section 36: sleep usage ---
     ["sleep"],
     # --- Section 38: savehistory usage ---
-    ["savehistory"],
-    # --- Section 40: fpsset error paths ---
-    ["fpsset"],
-    ["fpsset nodotparam 42"],
-    ["fpsset nosuchfps_xyz.param 42"],
-    # --- Section 41: on_update error paths ---
-    ["on_update _no_such_stream_xyz { echo x }"],
-    ["on_update"],
-    # --- Section 42: shell bypass nonexistent ---
-    ["! nonexistent_cmd_xyz_456"],
+    ["@history save"],
+    # --- Section 40: @set error paths ---
+    ["@set"],
+    ["@set nodotparam 42"],
+    ["@set f.nosuchfps_xyz.param 42"],
+    # --- Section 41: @on error paths ---
+    ["@on"],
     # --- Section 45: fpsdump error paths ---
-    ["fpsdump"],
-    ["fpsdump _no_such_fps_"],
-    ["fpsdump --json _no_such_fps_"],
-    ["fpsdump -t --json _no_such_fps_"],
-    ["milkquery foo"],
+    ["milk.fpsdump"],
+    ["milk.fpsdump _no_such_fps_"],
+    ["milk.fpsdump --json _no_such_fps_"],
+    ["milk.fpsdump -t --json _no_such_fps_"],
+    # --- Section 46: invalid @X: modifier ---
+    ["mem.mk2Dim @BADMOD:_bad_mod_im 8 8"],
 ]
 # fmt: on
 
@@ -400,8 +344,8 @@ TESTLIST_EXPECT_GREP_WORKING: list[tuple[list[str], str]] = [
     # --- Section 13: let arithmetic ---
     (['let "_decl_count=5+3"', "echo $_decl_count"], "8"),
     # --- Section 18b: SHM stream present ---
-    (["mem.mk2Dim _clitest_shm_s 8 8", "if [ -S _clitest_shm_s ]; then echo stream_exists; fi"], "stream_exists"),
-    (["if [ ! -S _clitest_nostream_xyz ]; then echo stream_absent; fi"], "stream_absent"),
+    (["mem.mk2Dim _clitest_shm_s 8 8", "if @exists s._clitest_shm_s; then echo stream_exists; fi"], "stream_exists"),
+    (["if ! @exists s._clitest_nostream_xyz; then echo stream_absent; fi"], "stream_absent"),
     # --- Section 19: final marker ---
     (["echo CLI_ROBUSTNESS_TESTS_COMPLETE"], "CLI_ROBUSTNESS_TESTS_COMPLETE"),
     # --- Section 22: advanced expansions ---
@@ -417,22 +361,15 @@ TESTLIST_EXPECT_GREP_WORKING: list[tuple[list[str], str]] = [
     # --- Section 25: C-style loop ---
     (["_c_loop_sum=0", "for (( i=0; i<3; i++ )); do _c_loop_sum=$(( _c_loop_sum + i )); done", "echo $_c_loop_sum"], "3"),
     # --- Section 27: regex matching ---
-    (['if [ "hello_world" =~ ^hello ]; then echo matched; fi'], "matched"),
+    (['if [[ "hello_world" =~ ^hello ]]; then echo matched; fi'], "matched"),
     # --- Section 28: array splat ---
     (["_test_arr[0]=a", "_test_arr[1]=b", "_test_arr[2]=c", "echo ${_test_arr[@]}"], "a b c"),
-    # --- Section 29: stream pipeline ---
-    (["mem.mk2Dim _spipe_test 16 16", "_spipe_test |> mem.rm", "echo pipeline_done"], "pipeline_done"),
-    (["mem.mk2Dim _spipe_a 8 8", "mem.mk2Dim _spipe_b 8 8", "_spipe_a |> mem.rm", "_spipe_b |> mem.rm", "echo pipe_cleanup_done"], "pipe_cleanup_done"),
     # --- Section 33: alias overwrite/run ---
-    (['alias _testalias "echo alias_works"', 'alias _testalias "echo overwritten"', "_testalias"], "overwritten"),
-    # --- Section 34: bookmark run ---
-    (['bookmark save _tbm "echo bookmark_ok"', "bookmark run _tbm"], "bookmark_ok"),
+    (['alias _testalias="echo alias_works"', 'alias _testalias="echo overwritten"', "_testalias"], "overwritten"),
     # --- Section 35: printf ---
     ([r'printf "%s=%d\n" hello 42'], "hello=42"),
     ([r'printf "%.3f\n" 3.14159'], "3.142"),
     ([r'printf "literal\n"'], "literal"),
-    # --- Section 42: shell bypass valid ---
-    (["! echo shell_bypass_test"], "shell_bypass_test"),
     # --- Section 44: edge cases ---
     (["_var123abc=test_digits", "echo $_var123abc"], "test_digits"),
     (["_deep=$(( ((1 + 2) * (3 + 4)) + ((5 - 6) * 7) ))", "echo $_deep"], "14"),
@@ -450,8 +387,8 @@ TESTLIST_EXPECT_GREP_WORKING: list[tuple[list[str], str]] = [
     # --- shift builtin ---
     (["function _test_shift { echo $1; shift; echo $1; }", "_test_shift alpha beta"], "beta"),
     # --- string functions ---
-    (['_su = "hello"', "_up = toupper(_su)", "echo $_up"], "HELLO"),
-    (['_sl = "HELLO"', "_lo = tolower(_sl)", "echo $_lo"], "hello"),
+    (['@calc "_su = \\"hello\\""', "@calc -v _up \"toupper(_su)\"", "echo $_up"], "HELLO"),
+    (['@calc "_sl = \\"HELLO\\""', "@calc -v _lo \"tolower(_sl)\"", "echo $_lo"], "hello"),
     # --- default parameter expansion ---
     (['_unsetvar123=""', '_dv="${_unsetvar123:-fallback}"', "echo $_dv"], "fallback"),
     (['_unsetvar456=""', '_iv="${_unsetvar456:=assigned}"', "echo $_unsetvar456"], "assigned"),
@@ -463,6 +400,14 @@ TESTLIST_EXPECT_GREP_WORKING: list[tuple[list[str], str]] = [
     # --- comment handling ---
     (["echo comment_ok # this is a comment and should not error"], "comment_ok"),
     (["echo indented_comment_ok   # indented comment"], "indented_comment_ok"),
+    # --- Section 19: @defer has no entry cap; the entries run at exit, last registered first ---
+    ([f'@defer "echo {i}"' for i in range(1, 34)], "33\n32\n31\n"),
+    # --- Section 46: Phase 0 calc & slice features ---
+    (["mem.mk2Dim _p0_im 4 4", "@calc \"_p0_im = 5.0\"", "@calc \"_p0_im += 2.0\"", "@calc -v _p0_tot \"itot(_p0_im)\"", "echo $_p0_tot", "mem.rm _p0_im"], "112"),
+    (["mem.mk2Dim _p0_sl 4 4", "@calc \"_p0_sl = 0.0\"", "@calc \"_p0_sl[1, 2] = 42.0\"", "@calc -v _p0_v \"_p0_sl[1, 2]\"", "echo $_p0_v", "mem.rm _p0_sl"], "42"),
+    (["mem.mk2Dim _p0_vb 8 8", "@calc \"_p0_vb = 1.0\"", "x0=2", "r=1", "@calc \"_p0_sub = _p0_vb[x0-r:x0+r, 0:1]\"", "@calc -v _p0_st \"itot(_p0_sub)\"", "echo $_p0_st", "mem.rm _p0_vb", "mem.rm _p0_sub"], "6"),
+    (["mem.mk2Dim _p0_st 4 4", "@calc \"_p0_st = 7.0\"", "@calc -v _p0_med \"imedian(_p0_st)\"", "@calc -v _p0_rms \"irms(_p0_st)\"", "echo $_p0_med $_p0_rms", "mem.rm _p0_st"], "7"),
+    (["mem.mk2Dim _p0_mA 2 2", "mem.mk2Dim _p0_mB 2 2", "@calc \"_p0_mA = 2.0\"", "@calc \"_p0_mB = 3.0\"", "@calc \"_p0_mC = matmul(_p0_mA, _p0_mB)\"", "@calc -v _p0_mt \"itot(_p0_mC)\"", "echo $_p0_mt", "mem.rm _p0_mA", "mem.rm _p0_mB", "mem.rm _p0_mC"], "48"),
 ]
 TESTLIST_EXPECT_GREP_XFAILING: list[tuple[list[str], str]] = []
 # fmt: on
@@ -482,8 +427,6 @@ def test_expect_ok(milk_cmds: list[str]):
 @pytest.mark.timeout(TIMEOUT)
 @pytest.mark.parametrize("milk_cmds", TESTLIST_EXPECT_ERROR)
 def test_expect_error(milk_cmds: list[str]):
-    if milk_cmds == ["pwd --invalid-option-xyz"]:
-        pytest.mark.xfail(reason=f'the test for "pwd --invalid-option-xyz" is broken.')
     joined_cmd = ";".join(milk_cmds)
     with CLICommands(milk_cmds) as result:
         combined = result.stdout + result.stderr
