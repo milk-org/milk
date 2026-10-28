@@ -4,88 +4,86 @@
 
 /**
  * @file medianfilter.c
- * @brief Medianfilter module
+ * @brief 2D median filter using COREMOD_arith SIMD Young-tableau kernels (3x3, 5x5, 7x7) and OpenMP
  */
 
-/** @file medianfilter.c
- */
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <unistd.h>
+#include <stdlib.h>
 
 #ifdef MILK_NO_CLI
 #    include "CLIcore_standalone.h"
 #else
+#    include "ImageStreamIO/ImageStreamIO.h"
+#    include "computeunit.h"
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
-#    include "computeunit.h"
-#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
-#include "COREMOD_iofits/COREMOD_iofits.h"
+#include "COREMOD_arith/imfunctions.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
+#include "libmilkcommon/milk_compiler.h"
 
 imageID median_filter(const char *__restrict ID_name,
                       const char *__restrict out_name,
                       int filter_size)
 {
-    imageID ID;
-    imageID IDout;
-    float  *array;
-    long    ii, jj;
-    long    naxes[2];
-    int     i, j;
-
-    /*  printf("Median filter...");
-        fflush(stdout);*/
-    save_fl_fits(ID_name, "mf_in.fits");
-
-    array = (float *) malloc((2 * filter_size + 1) * (2 * filter_size + 1) * sizeof(float));
-    if (array == NULL)
+    imageID ID = image_ID(ID_name, dcimg, dcnimg);
+    if (ID == -1)
     {
-        PRINT_ERROR("malloc returns NULL pointer");
-        abort();
+        return -1;
     }
 
-    ID       = image_ID(ID_name, dcimg, dcnimg);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
-    printf("name = %s, ID = %ld, Size = %ld %ld (%d)\n", ID_name, ID, naxes[0], naxes[1],
-           filter_size);
-    fflush(stdout);
     copy_image_ID(ID_name, out_name, 0);
-    IDout = image_ID(out_name, dcimg, dcnimg);
-
-    for (jj = filter_size; jj < naxes[1] - filter_size; jj++)
+    imageID IDout = image_ID(out_name, dcimg, dcnimg);
+    if (IDout == -1)
     {
-        for (ii = filter_size; ii < naxes[0] - filter_size; ii++)
+        return -1;
+    }
+
+    if (filter_size >= 0 && filter_size <= 3)
+    {
+        arith_image_medfilt2d_im(&dcimg[ID], &dcimg[IDout], filter_size);
+        return IDout;
+    }
+
+    const long   nx  = (long) dcimg[ID].md[0].size[0];
+    const long   ny  = (long) dcimg[ID].md[0].size[1];
+    const int    K   = 2 * filter_size + 1;
+    const int    K2  = K * K;
+    const float *in  = dcimg[ID].array.F;
+    float       *out = dcimg[IDout].array.F;
+    int          nth = milk_omp_team_size((uint64_t) nx * (uint64_t) ny, 16384);
+
+#ifdef _OPENMP
+#    pragma omp parallel num_threads(nth) if (nth > 1)
+#endif
+    {
+        float *array = (float *) malloc((size_t) K2 * sizeof(float));
+        if (array != NULL)
         {
-            for (i = 0; i < (2 * filter_size + 1); i++)
+#ifdef _OPENMP
+#    pragma omp for schedule(static)
+#endif
+            for (long jj = filter_size; jj < ny - filter_size; jj++)
             {
-                for (j = 0; j < (2 * filter_size + 1); j++)
+                for (long ii = filter_size; ii < nx - filter_size; ii++)
                 {
-                    array[i * (2 * filter_size + 1) + j] =
-                        dcimg[ID]
-                            .array.F[(jj - filter_size + j) * naxes[0] + (ii - filter_size + i)];
+                    for (int j = 0; j < K; j++)
+                    {
+                        const float *row = in + (jj - filter_size + j) * nx + (ii - filter_size);
+                        for (int i = 0; i < K; i++)
+                        {
+                            array[j * K + i] = row[i];
+                        }
+                    }
+                    quick_sort_float(array, K2);
+                    out[jj * nx + ii] = array[(K2 - 1) / 2];
                 }
             }
-            quick_sort_float(array, (2 * filter_size + 1) * (2 * filter_size + 1));
-            dcimg[IDout].array.F[jj * naxes[0] + ii] =
-                array[((2 * filter_size + 1) * (2 * filter_size + 1) - 1) / 2];
+            free(array);
         }
     }
-    free(array);
-
-    save_fl_fits(out_name, "mf_out.fits");
-
-    /*  printf("Done\n");
-        fflush(stdout);*/
 
     return IDout;
 }

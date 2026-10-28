@@ -28,10 +28,7 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 
 #include "image_gen.h"
-#include "COREMOD_memory/COREMOD_memory.h"
-#include <math.h>
-#include <string.h>
-#include <stdlib.h>
+#include "libmilkcommon/milk_compiler.h"
 
 
 /** @brief creates a double star */
@@ -66,192 +63,78 @@ imageID make_disk(const char *ID_name,
                   double      radius)
 {
     imageID  ID;
-    uint32_t ii, jj;
     uint32_t naxes[2];
     long     x1, x2, y1, y2;
-    long     x1i, x2i, y1i, y2i;
     double   r2;
-    /*
-      int i,j;
-      double r;
-      double tot;
-      int subgrid=100;
-      double x,y;
-    */
 
     create_2Dimage_ID(ID_name, l1, l2, &ID);
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
 
-    x1  = (long) (x_center - radius - 2);
-    x2  = (long) (x_center + radius + 2);
-    y1  = (long) (y_center - radius - 2);
-    y2  = (long) (y_center + radius + 2);
-    x1i = (long) (x_center - 0.707106781 * radius + 2);
-    x2i = (long) (x_center + 0.707106781 * radius - 2);
-    y1i = (long) (y_center - 0.707106781 * radius + 2);
-    y2i = (long) (y_center + 0.707106781 * radius - 2);
+    x1 = (long) (x_center - radius - 2);
+    x2 = (long) (x_center + radius + 2);
+    y1 = (long) (y_center - radius - 2);
+    y2 = (long) (y_center + radius + 2);
 
     if (x1 < 0)
     {
         x1 = 0;
     }
-    if (x1 > naxes[0])
+    if (x1 > (long) naxes[0])
     {
-        x1 = naxes[0];
+        x1 = (long) naxes[0];
     }
 
     if (x2 < 0)
     {
         x2 = 0;
     }
-    if (x2 > naxes[0])
+    if (x2 > (long) naxes[0])
     {
-        x2 = naxes[0];
+        x2 = (long) naxes[0];
     }
 
     if (y1 < 0)
     {
         y1 = 0;
     }
-    if (y1 > naxes[1])
+    if (y1 > (long) naxes[1])
     {
-        y1 = naxes[1];
+        y1 = (long) naxes[1];
     }
 
-    if (y2 > naxes[1])
+    if (y2 < 0)
     {
-        y2 = naxes[1];
+        y2 = 0;
     }
-
-    if (x1i < 0)
+    if (y2 > (long) naxes[1])
     {
-        x1i = 0;
-    }
-    if (x1i > naxes[0])
-    {
-        x1i = naxes[0];
-    }
-
-    if (x2i < 0)
-    {
-        x2i = 0;
-    }
-    if (x2i > naxes[0])
-    {
-        x2i = naxes[0];
-    }
-
-    if (y1i < 0)
-    {
-        y1i = 0;
-    }
-    if (y1i > naxes[1])
-    {
-        y1i = naxes[1];
-    }
-
-    if (y2i < 0)
-    {
-        y2i = 0;
-    }
-    if (y2i > naxes[1])
-    {
-        y2i = naxes[1];
+        y2 = (long) naxes[1];
     }
 
     r2 = radius * radius;
 
-    for (ii = x1i; ii < x2i; ii++)
+    float *MILK_RESTRICT out = MILK_ASSUME_ALIGNED(dcimg[ID].array.F);
+    int nth = milk_omp_team_size((uint64_t) (y2 - y1) * (uint64_t) (x2 - x1), 262144);
+#ifdef _OPENMP
+#    pragma omp parallel for schedule(static) num_threads(nth) if (nth > 1)
+#endif
+    for (long jj = y1; jj < y2; jj++)
     {
-        for (jj = y1i; jj < y2i; jj++)
+        float *row = out + (uint64_t) jj * naxes[0];
+        double dy  = (double) jj - y_center;
+        double dy2 = dy * dy;
+#pragma omp simd
+        for (long ii = x1; ii < x2; ii++)
         {
-            dcimg[ID].array.F[jj * naxes[0] + ii] = 1;
-        }
-    }
-
-    for (ii = x1; ii < x1i; ii++)
-    {
-        for (jj = y1; jj < y2; jj++)
-        {
-            if (((ii - x_center) * (ii - x_center) + (jj - y_center) * (jj - y_center)) < r2)
+            double dx = (double) ii - x_center;
+            if (dx * dx + dy2 < r2)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1;
+                row[ii] = 1.0f;
             }
         }
     }
 
-    for (ii = x2i; ii < x2; ii++)
-    {
-        for (jj = y1; jj < y2; jj++)
-        {
-            if (((ii - x_center) * (ii - x_center) + (jj - y_center) * (jj - y_center)) < r2)
-            {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1;
-            }
-        }
-    }
-
-    for (ii = x1i; ii < x2i; ii++)
-    {
-        for (jj = y1; jj < y1i; jj++)
-        {
-            if (((ii - x_center) * (ii - x_center) + (jj - y_center) * (jj - y_center)) < r2)
-            {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1;
-            }
-        }
-    }
-
-    for (ii = x1i; ii < x2i; ii++)
-    {
-        for (jj = y2i; jj < y2; jj++)
-        {
-            if (((ii - x_center) * (ii - x_center) + (jj - y_center) * (jj - y_center)) < r2)
-            {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1;
-            }
-        }
-    }
-
-    /*
-    for (jj = x1; jj < x2; jj++)
-      for (ii = y1; ii < y2; ii++)
-        {
-    if (((ii-x_center)*(ii-x_center)+(jj-y_center)*(jj-y_center))<r2)
-      dcimg[ID].array.F[jj*naxes[0]+ii] = 1;
-        }
-    */
-    /*
-      for (jj = 0; jj < naxes[1]; jj++)
-      for (ii = 0; ii < naxes[0]; ii++)
-      {
-      r = sqrt(((ii-x_center)*(ii-x_center)+(jj-y_center)*(jj-y_center)));
-
-      if (r<radius)
-      dcimg[ID].array.F[jj*naxes[0]+ii] = 1.0f;
-      else
-      dcimg[ID].array.F[jj*naxes[0]+ii] = 0.0f;
-
-      if(((radius-r)*(radius-r))<1.5)
-      {
-      tot = 0;
-      for (j = 0; j < subgrid; j++)
-      for (i = 0; i < subgrid; i++)
-      {
-      x = 1.0*ii-0.5+0.5/subgrid+1.0*i/subgrid;
-      y = 1.0*jj-0.5+0.5/subgrid+1.0*j/subgrid;
-      r = sqrt((x-1.0*x_center)*(x-1.0*x_center)+(y-1.0*y_center)*(y-1.0*y_center));
-      if (r < radius)
-      tot = tot + 1.0;
-      else
-      tot = tot + 0.0;
-      }
-      tot = tot/subgrid/subgrid;
-      dcimg[ID].array.F[jj*naxes[0]+ii] = tot;
-      }
-      }
-    */
     return (ID);
 }
 
@@ -263,245 +146,98 @@ imageID make_subpixdisk(const char *ID_name,
                         double      radius)
 {
     imageID  ID;
-    uint32_t ii, jj;
     uint32_t naxes[2];
-    int      i, j;
-    double   r;
-    double   tot;
     int      subgrid = 55;
-    double   grid[55]; // same number of points as subgrid
-    double   x, y;
+    double   grid[55];
     long     x1, x2, y1, y2;
-    long     x1i, x2i, y1i, y2i;
-    double   r2, r2ref;
-    double   xdiff, ydiff;
-    double   subgrid2;
 
     create_2Dimage_ID(ID_name, l1, l2, &ID);
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
 
-    x1  = (long) (x_center - radius - 2);
-    x2  = (long) (x_center + radius + 2);
-    y1  = (long) (y_center - radius - 2);
-    y2  = (long) (y_center + radius + 2);
-    x1i = (long) (x_center - 0.707106781 * radius + 2);
-    x2i = (long) (x_center + 0.707106781 * radius - 2);
-    y1i = (long) (y_center - 0.707106781 * radius + 2);
-    y2i = (long) (y_center + 0.707106781 * radius - 2);
+    x1 = (long) (x_center - radius - 2);
+    x2 = (long) (x_center + radius + 2);
+    y1 = (long) (y_center - radius - 2);
+    y2 = (long) (y_center + radius + 2);
 
     if (x1 < 0)
     {
         x1 = 0;
     }
-    if (x1 > naxes[0])
+    if (x1 > (long) naxes[0])
     {
-        x1 = naxes[0];
+        x1 = (long) naxes[0];
     }
     if (x2 < 0)
     {
         x2 = 0;
     }
-    if (x2 > naxes[0])
+    if (x2 > (long) naxes[0])
     {
-        x2 = naxes[0];
+        x2 = (long) naxes[0];
     }
 
     if (y1 < 0)
     {
         y1 = 0;
     }
-    if (y1 > naxes[1])
+    if (y1 > (long) naxes[1])
     {
-        y1 = naxes[1];
+        y1 = (long) naxes[1];
     }
     if (y2 < 0)
     {
         y2 = 0;
     }
-    if (y2 > naxes[1])
+    if (y2 > (long) naxes[1])
     {
-        y2 = naxes[1];
+        y2 = (long) naxes[1];
     }
 
-    if (x1i < 0)
+    for (int i = 0; i < subgrid; i++)
     {
-        x1i = 0;
-    }
-    if (x1i > naxes[0] - 1)
-    {
-        x1i = naxes[0] - 1;
-    }
-    if (x2i < 0)
-    {
-        x2i = 0;
-    }
-    if (x2i > naxes[0] - 1)
-    {
-        x2i = naxes[0] - 1;
+        grid[i] = 0.5 - 0.5 / subgrid - (double) i / subgrid;
     }
 
-    if (y1i < 0)
-    {
-        y1i = 0;
-    }
-    if (y1i > naxes[1] - 1)
-    {
-        y1i = naxes[1] - 1;
-    }
-    if (y2i < 0)
-    {
-        y2i = 0;
-    }
-    if (y2i > naxes[1] - 1)
-    {
-        y2i = naxes[1] - 1;
-    }
+    const double         r2ref        = radius * radius;
+    const double         r_lo         = (radius > 1.5) ? (radius - 1.5) : 0.0;
+    const double         r_lo2        = r_lo * r_lo;
+    const double         r_hi2        = (radius + 1.5) * (radius + 1.5);
+    const double         inv_subgrid2 = 1.0 / ((double) subgrid * (double) subgrid);
+    float *MILK_RESTRICT out          = MILK_ASSUME_ALIGNED(dcimg[ID].array.F);
+    int nth = milk_omp_team_size((uint64_t) (y2 - y1) * (uint64_t) (x2 - x1), 16384);
 
-    r2ref    = radius * radius;
-    subgrid2 = subgrid * subgrid;
-
-    for (ii = x1i; ii < x2i; ii++)
+#ifdef _OPENMP
+#    pragma omp parallel for schedule(dynamic, 4) num_threads(nth) if (nth > 1)
+#endif
+    for (long jj = y1; jj < y2; jj++)
     {
-        for (jj = y1i; jj < y2i; jj++)
+        float       *row   = out + (uint64_t) jj * naxes[0];
+        const double ydiff = y_center - (double) jj;
+        const double y2_d  = ydiff * ydiff;
+        for (long ii = x1; ii < x2; ii++)
         {
-            dcimg[ID].array.F[jj * naxes[0] + ii] = 1;
-        }
-    }
-
-    for (i = 0; i < subgrid; i++)
-    {
-        grid[i] = (0.5 - 0.5 / subgrid - 1.0 * i / subgrid);
-    }
-
-    for (ii = x1; ii < x1i; ii++)
-    {
-        for (jj = y1; jj < y2; jj++)
-        {
-            xdiff = x_center - ii;
-            ydiff = y_center - jj;
-            r2    = xdiff * xdiff + ydiff * ydiff;
-            if (r2 < r2ref)
+            const double xdiff = x_center - (double) ii;
+            const double r2    = xdiff * xdiff + y2_d;
+            if (r2 <= r_lo2 && radius > 1.5)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
+                row[ii] = 1.0f;
             }
-            if (fabs(sqrt(r2) - sqrt(r2ref)) < 1.5)
+            else if (r2 < r_hi2)
             {
-                tot = 0;
-                for (j = 0; j < subgrid; j++)
+                int tot = 0;
+                for (int j = 0; j < subgrid; j++)
                 {
-                    for (i = 0; i < subgrid; i++)
+                    const double y   = ydiff + grid[j];
+                    const double yy2 = y * y;
+#pragma omp simd reduction(+ : tot)
+                    for (int i = 0; i < subgrid; i++)
                     {
-                        x = xdiff + grid[i];
-                        y = ydiff + grid[j];
-                        r = x * x + y * y;
-                        if (r < r2ref)
-                        {
-                            tot += 1.0;
-                        }
+                        const double x = xdiff + grid[i];
+                        tot += (x * x + yy2 < r2ref) ? 1 : 0;
                     }
                 }
-                tot                                   = tot / subgrid2;
-                dcimg[ID].array.F[jj * naxes[0] + ii] = tot;
-            }
-        }
-    }
-
-    for (ii = x2i; ii < x2; ii++)
-    {
-        for (jj = y1; jj < y2; jj++)
-        {
-            xdiff = x_center - ii;
-            ydiff = y_center - jj;
-            r2    = xdiff * xdiff + ydiff * ydiff;
-            if (r2 < r2ref)
-            {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
-            }
-            if (fabs(sqrt(r2) - sqrt(r2ref)) < 1.5)
-            {
-                tot = 0;
-                for (j = 0; j < subgrid; j++)
-                {
-                    for (i = 0; i < subgrid; i++)
-                    {
-                        x = xdiff + grid[i];
-                        y = ydiff + grid[j];
-                        r = x * x + y * y;
-                        if (r < r2ref)
-                        {
-                            tot += 1.0;
-                        }
-                    }
-                }
-                tot                                   = tot / subgrid2;
-                dcimg[ID].array.F[jj * naxes[0] + ii] = tot;
-            }
-        }
-    }
-
-    for (ii = x1i; ii < x2i; ii++)
-    {
-        for (jj = y1; jj < y1i; jj++)
-        {
-            xdiff = x_center - ii;
-            ydiff = y_center - jj;
-            r2    = xdiff * xdiff + ydiff * ydiff;
-            if (r2 < r2ref)
-            {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
-            }
-            if (fabs(sqrt(r2) - sqrt(r2ref)) < 1.5)
-            {
-                tot = 0;
-                for (j = 0; j < subgrid; j++)
-                {
-                    for (i = 0; i < subgrid; i++)
-                    {
-                        x = xdiff + grid[i];
-                        y = ydiff + grid[j];
-                        r = x * x + y * y;
-                        if (r < r2ref)
-                        {
-                            tot += 1.0;
-                        }
-                    }
-                }
-                tot                                   = tot / subgrid2;
-                dcimg[ID].array.F[jj * naxes[0] + ii] = tot;
-            }
-        }
-    }
-
-    for (ii = x1i; ii < x2i; ii++)
-    {
-        for (jj = y2i; jj < y2; jj++)
-        {
-            xdiff = x_center - ii;
-            ydiff = y_center - jj;
-            r2    = xdiff * xdiff + ydiff * ydiff;
-            if (r2 < r2ref)
-            {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
-            }
-            if (fabs(sqrt(r2) - sqrt(r2ref)) < 1.5)
-            {
-                tot = 0;
-                for (j = 0; j < subgrid; j++)
-                {
-                    for (i = 0; i < subgrid; i++)
-                    {
-                        x = xdiff + grid[i];
-                        y = ydiff + grid[j];
-                        r = x * x + y * y;
-                        if (r < r2ref)
-                        {
-                            tot += 1.0;
-                        }
-                    }
-                }
-                tot                                   = tot / subgrid2;
-                dcimg[ID].array.F[jj * naxes[0] + ii] = tot;
+                row[ii] = (float) ((double) tot * inv_subgrid2);
             }
         }
     }
@@ -864,26 +600,7 @@ imageID make_square(const char *ID_name,
                     double      y_center,
                     double      radius)
 {
-    imageID  ID;
-    uint32_t naxes[2];
-
-    create_2Dimage_ID(ID_name, l1, l2, &ID);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
-
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
-    {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
-        {
-            if ((((ii - x_center) * (ii - x_center)) < (radius * radius)) &&
-                (((jj - y_center) * (jj - y_center)) < (radius * radius)))
-            {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1;
-            }
-        }
-    }
-
-    return (ID);
+    return make_rectangle(ID_name, l1, l2, x_center, y_center, radius, radius);
 }
 
 imageID make_rectangle(const char *ID_name,
@@ -901,14 +618,28 @@ imageID make_rectangle(const char *ID_name,
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
 
+    const double         r1sq = radius1 * radius1;
+    const double         r2sq = radius2 * radius2;
+    float *MILK_RESTRICT out  = MILK_ASSUME_ALIGNED(dcimg[ID].array.F);
+    int                  nth  = milk_omp_team_size((uint64_t) naxes[0] * naxes[1], 262144);
+
+#ifdef _OPENMP
+#    pragma omp parallel for schedule(static) num_threads(nth) if (nth > 1)
+#endif
     for (uint32_t jj = 0; jj < naxes[1]; jj++)
     {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
+        double dy = (double) jj - y_center;
+        if (dy * dy < r2sq)
         {
-            if ((((ii - x_center) * (ii - x_center)) < (radius1 * radius1)) &&
-                (((jj - y_center) * (jj - y_center)) < (radius2 * radius2)))
+            float *row = out + (uint64_t) jj * naxes[0];
+#pragma omp simd
+            for (uint32_t ii = 0; ii < naxes[0]; ii++)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1;
+                double dx = (double) ii - x_center;
+                if (dx * dx < r1sq)
+                {
+                    row[ii] = 1.0f;
+                }
             }
         }
     }
@@ -927,37 +658,35 @@ imageID make_line(const char *IDname,
                   double      t)
 {
     imageID  ID;
-    double   x, y, xr, yr, r0;
-    double   PA0;
     uint32_t naxes[2];
 
     create_2Dimage_ID(IDname, l1, l2, &ID);
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
 
-    r0  = sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-    PA0 = atan2((y2 - y1), (x2 - x1));
+    const double         r0     = sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+    const double         PA0    = atan2((y2 - y1), (x2 - x1));
+    const double         inv_r0 = (r0 != 0.0) ? (1.0 / r0) : 0.0;
+    const double         c_r0   = cos(PA0) * inv_r0;
+    const double         s_r0   = sin(PA0) * inv_r0;
+    const double         half_t = 0.5 * t * inv_r0;
+    float *MILK_RESTRICT out    = MILK_ASSUME_ALIGNED(dcimg[ID].array.F);
+    int                  nth    = milk_omp_team_size((uint64_t) naxes[0] * naxes[1], 262144);
+
+#ifdef _OPENMP
+#    pragma omp parallel for schedule(static) num_threads(nth) if (nth > 1)
+#endif
     for (uint32_t jj = 0; jj < naxes[1]; jj++)
     {
+        float *row = out + (uint64_t) jj * naxes[0];
+        double y   = (double) jj - y1;
+#pragma omp simd
         for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
-            x = 1.0 * ii;
-            y = 1.0 * jj;
-            x -= x1;
-            y -= y1;
-            xr = x * cos(PA0) + y * sin(PA0);
-            yr = -x * sin(PA0) + y * cos(PA0);
-            //r=sqrt(xr*xr+yr*yr);
-            xr /= r0;
-            yr /= r0;
-            if ((xr > 0) && (xr < 1.0) && (yr < 0.5 * t / r0) && (yr > -0.5 * t / r0))
-            {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
-            }
-            else
-            {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0f;
-            }
+            double x  = (double) ii - x1;
+            double xr = x * c_r0 + y * s_r0;
+            double yr = -x * s_r0 + y * c_r0;
+            row[ii]   = (xr > 0.0 && xr < 1.0 && yr < half_t && yr > -half_t) ? 1.0f : 0.0f;
         }
     }
 

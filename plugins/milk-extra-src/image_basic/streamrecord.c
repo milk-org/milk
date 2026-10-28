@@ -58,8 +58,7 @@ imageID IMAGE_BASIC_streamrecord(const char *__restrict streamname,
 
     IMGID imgout       = imgid_make_from_name_3D(IDname, xsize, ysize, NBframes);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     unsigned long cnt         = imgin.md->cnt0;
     long          kk          = 0;

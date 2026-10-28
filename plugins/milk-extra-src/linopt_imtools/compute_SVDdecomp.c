@@ -113,8 +113,7 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
     /* Write eigenvalues */
     IMGID imgcoeff       = imgid_make_from_name_2D(IDcoeff_name, m, 1);
     imgcoeff.mdt->shared = 0;
-    imgcoeff.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgcoeff);
+    imgid_create_registered(&imgcoeff);
 
     for (long k = 0; k < m; k++)
     {
@@ -132,8 +131,7 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
 
     IMGID imgVT       = imgid_make_from_name_2D("SVD_VTm", m, m);
     imgVT.mdt->shared = 0;
-    imgVT.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgVT);
+    imgid_create_registered(&imgVT);
 
     for (long ii = 0; ii < m; ii++)
     {
@@ -147,8 +145,7 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
     IMGID imgout       = imgid_make_from_name_3D(IDout_name, imgin.md->size[0], imgin.md->size[1],
                                                  imgin.md->size[2]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     for (long kk = 0; kk < m; kk++)
     {

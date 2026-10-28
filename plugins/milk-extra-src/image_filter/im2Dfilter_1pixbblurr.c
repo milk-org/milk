@@ -10,9 +10,8 @@
  */
 
 #include "milk_runnable.h"
+#include "COREMOD_arith/image_spatial.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-
-#include "libmilkcommon/pixel_dispatch.h"
 
 
 /* ================================================================
@@ -47,13 +46,9 @@ MILK_PARAMS_DEFINE(im2Dfilter_1pixbblurr, FPS_PARAMS);
 static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, long NBiter)
 {
     DEBUG_TRACE_FSTART();
-    // custom stream process function code
 
-    // resolve imgpos
     resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
 
-
-    // create eigenvalues array if needed
     if (imgout->ID == -1)
     {
         imgout->mdt->naxis = 2;
@@ -68,75 +63,10 @@ static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, lo
         createimagefromIMGID(imgout);
     }
 
-
-    uint32_t xsize = imgin.md->size[0];
-    uint32_t ysize = imgin.md->size[1];
-
-
-    float coeff1 = amp;                           // side pixels (x4)
-    float coeff2 = amp * amp;                     // corner pixels (x4)
-    float coeff0 = 1.0 - 4.0 * (coeff1 + coeff2); // central pixel
-
-
-    // temp arrays
-    float *tmpfim0 = (float *) malloc(sizeof(float) * xsize * ysize);
-    float *tmpfim1 = (float *) malloc(sizeof(float) * xsize * ysize);
-
-
-    // copy input to tmpfim0
-    //
-#define COPY_IN_CASE(DT, ACC, CTYPE)                       \
-    case DT:                                               \
-        for (uint32_t ii = 0; ii < xsize * ysize; ii++)    \
-        {                                                  \
-            tmpfim0[ii] = (float) imgin.im->array.ACC[ii]; \
-        }                                                  \
-        break;
-
-    switch (imgin.md->datatype)
+    if (arith_image_bblur1pix_im(imgin.im, imgout->im, (double) amp, (int) NBiter) != 0)
     {
-        FOREACH_REAL_DATATYPE(COPY_IN_CASE)
-    default:
-        break;
+        return RETURN_FAILURE;
     }
-#undef COPY_IN_CASE
-
-
-    for (int iter = 0; iter < NBiter; iter++)
-    {
-        memset(tmpfim1, 0, sizeof(float) * xsize * ysize);
-
-        _Pragma("omp parallel for") for (uint32_t jj = 1; jj < ysize - 1; jj++)
-        {
-            _Pragma("omp simd") for (uint32_t ii = 1; ii < xsize - 1; ii++)
-            {
-                float val = 0.0f;
-                // central
-                val += coeff0 * tmpfim0[jj * xsize + ii];
-
-                // sides
-                val += coeff1 * tmpfim0[jj * xsize + ii + 1];
-                val += coeff1 * tmpfim0[jj * xsize + ii - 1];
-                val += coeff1 * tmpfim0[(jj + 1) * xsize + ii];
-                val += coeff1 * tmpfim0[(jj - 1) * xsize + ii];
-
-                // corners
-                val += coeff2 * tmpfim0[(jj + 1) * xsize + ii + 1];
-                val += coeff2 * tmpfim0[(jj + 1) * xsize + ii - 1];
-                val += coeff2 * tmpfim0[(jj - 1) * xsize + ii + 1];
-                val += coeff2 * tmpfim0[(jj - 1) * xsize + ii - 1];
-
-                tmpfim1[jj * xsize + ii] = val;
-            }
-        }
-        memcpy(tmpfim0, tmpfim1, sizeof(float) * xsize * ysize);
-    }
-
-    memcpy(imgout->im->array.F, tmpfim0, sizeof(float) * xsize * ysize);
-
-    free(tmpfim0);
-    free(tmpfim1);
-
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

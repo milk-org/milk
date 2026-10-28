@@ -350,8 +350,7 @@ imageID LINARFILTERPRED_SelectBlock(const char *IDin_name,
             imgout_tmp.mdt->size[a] = sizearray[a];
         }
         imgout_tmp.mdt->datatype = _DATATYPE_FLOAT;
-        imgout_tmp.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgout_tmp);
+        imgid_create_registered(&imgout_tmp);
         IDout = imgout_tmp.ID;
     }
 
@@ -441,8 +440,7 @@ imageID linARfilterPred_repeat_shift_X(const char *IDin_name, long NBstep, const
         imgout_tmp.mdt->size[1]  = imsizeout[1];
         imgout_tmp.mdt->datatype = _DATATYPE_FLOAT;
         imgout_tmp.mdt->shared   = 1;
-        imgout_tmp.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgout_tmp);
+        imgid_create_registered(&imgout_tmp);
         IDout = imgout_tmp.ID;
     }
     free(imsizeout);

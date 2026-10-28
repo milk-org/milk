@@ -92,52 +92,72 @@ errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
     {
         imgvec             = imgid_make_from_name_2D(IDvec_name, NBpix, 1);
         imgvec.mdt->shared = 0;
-        imgvec.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgvec);
+        imgid_create_registered(&imgvec);
 
+        const float *restrict inptr  = imgin.im->array.F;
+        const float *restrict mptr   = imgpixm.im->array.F;
+        const int64_t *restrict pixi = imgpixi.im->array.SI64;
+        float *restrict vecptr       = imgvec.im->array.F;
+        int nth                      = milk_omp_team_size((uint64_t) NBpix, 262144);
+
+#pragma omp parallel for simd num_threads(nth) if (parallel : nth > 1)
         for (long k = 0; k < NBpix; k++)
         {
-            imgvec.im->array.F[k] =
-                imgpixm.im->array.F[k] * imgin.im->array.F[imgpixi.im->array.SI64[k]];
+            vecptr[k] = mptr[k] * inptr[pixi[k]];
         }
     }
     else
     {
-        long sizexy = imgin.md->size[0] * imgin.md->size[1];
+        long     sizexy = (long) imgin.md->size[0] * (long) imgin.md->size[1];
+        uint32_t zsize  = imgin.md->size[2];
 
         if (datatype == _DATATYPE_FLOAT)
         {
-            imgvec             = imgid_make_from_name_2D(IDvec_name, NBpix, imgin.md->size[2]);
+            imgvec             = imgid_make_from_name_2D(IDvec_name, NBpix, zsize);
             imgvec.mdt->shared = 0;
-            imgvec.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgvec);
+            imgid_create_registered(&imgvec);
 
-            for (uint32_t kk = 0; kk < imgin.md->size[2]; kk++)
+            const float *restrict inptr  = imgin.im->array.F;
+            const float *restrict mptr   = imgpixm.im->array.F;
+            const int64_t *restrict pixi = imgpixi.im->array.SI64;
+            float *restrict vecptr       = imgvec.im->array.F;
+            int nth = milk_omp_team_size((uint64_t) zsize * (uint64_t) NBpix, 262144);
+
+#pragma omp parallel for num_threads(nth) if (nth > 1)
+            for (uint32_t kk = 0; kk < zsize; kk++)
             {
+                const float *restrict slice = inptr + (uint64_t) kk * (uint64_t) sizexy;
+                float *restrict vout        = vecptr + (uint64_t) kk * (uint64_t) NBpix;
+#pragma omp simd
                 for (long k = 0; k < NBpix; k++)
                 {
-                    imgvec.im->array.F[kk * NBpix + k] =
-                        imgpixm.im->array.F[k] *
-                        imgin.im->array.F[kk * sizexy + imgpixi.im->array.SI64[k]];
+                    vout[k] = mptr[k] * slice[pixi[k]];
                 }
             }
         }
-        if (datatype == _DATATYPE_COMPLEX_FLOAT)
+        else if (datatype == _DATATYPE_COMPLEX_FLOAT)
         {
-            imgvec             = imgid_make_from_name_2D(IDvec_name, NBpix * 2, imgin.md->size[2]);
+            imgvec             = imgid_make_from_name_2D(IDvec_name, NBpix * 2, zsize);
             imgvec.mdt->shared = 0;
-            imgvec.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgvec);
+            imgid_create_registered(&imgvec);
 
-            for (uint32_t kk = 0; kk < imgin.md->size[2]; kk++)
+            const complex_float *restrict inptr = imgin.im->array.CF;
+            const float *restrict mptr          = imgpixm.im->array.F;
+            const int64_t *restrict pixi        = imgpixi.im->array.SI64;
+            float *restrict vecptr              = imgvec.im->array.F;
+            int nth = milk_omp_team_size((uint64_t) zsize * (uint64_t) NBpix * 2, 262144);
+
+#pragma omp parallel for num_threads(nth) if (nth > 1)
+            for (uint32_t kk = 0; kk < zsize; kk++)
             {
+                const complex_float *restrict slice = inptr + (uint64_t) kk * (uint64_t) sizexy;
+                float *restrict vout                = vecptr + (uint64_t) kk * (uint64_t) NBpix * 2;
                 for (long k = 0; k < NBpix; k++)
                 {
-                    long idx = imgpixi.im->array.SI64[k];
-                    imgvec.im->array.F[kk * NBpix * 2 + 2 * k] =
-                        imgpixm.im->array.F[k] * imgin.im->array.CF[kk * sizexy + idx].re;
-                    imgvec.im->array.F[kk * NBpix * 2 + 2 * k + 1] =
-                        imgpixm.im->array.F[k] * imgin.im->array.CF[kk * sizexy + idx].im;
+                    long  idx       = pixi[k];
+                    float mult      = mptr[k];
+                    vout[2 * k]     = mult * slice[idx].re;
+                    vout[2 * k + 1] = mult * slice[idx].im;
                 }
             }
         }

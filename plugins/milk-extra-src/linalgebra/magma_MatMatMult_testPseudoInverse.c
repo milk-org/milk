@@ -189,8 +189,7 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
         imgout.mdt->size[0]  = arraysizetmp[0];
         imgout.mdt->size[1]  = arraysizetmp[1];
         imgout.mdt->datatype = _DATATYPE_FLOAT;
-        imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgout);
+        imgid_create_registered(&imgout);
         IDmatOut = imgout.ID;
     }
 

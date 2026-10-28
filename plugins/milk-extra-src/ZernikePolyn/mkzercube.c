@@ -70,71 +70,65 @@ static MILK_HOT errno_t mkzercube_compute(const MILK_RUNNABLE *self)
     uint64_t xysize = *xsize;
     xysize *= *ysize;
 
-    double *polar_r;
-    double *polar_theta;
-
+    double *polar_r     = (double *) malloc(xysize * sizeof(double));
+    double *polar_theta = (double *) malloc(xysize * sizeof(double));
+    if ((polar_r == NULL) || (polar_theta == NULL))
+    {
+        free(polar_r);
+        free(polar_theta);
+        PRINT_ERROR("malloc returns NULL pointer");
+        abort();
+    }
 
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
     {
-        polar_r = (double *) malloc(xysize * sizeof(double));
-        if (polar_r == NULL)
-        {
-            PRINT_ERROR("malloc returns NULL pointer");
-            abort();
-        }
+        uint32_t nx     = *xsize;
+        uint32_t ny     = *ysize;
+        uint32_t nmodes = *NBzermode;
+        float    xc     = *xcent;
+        float    yc     = *ycent;
+        double   invrad = 1.0 / (double) (*radius);
+        float    rmask  = (radiusmaskfactor != NULL) ? *radiusmaskfactor : 1.0f;
+        float    ttfact = (TTfactor != NULL) ? *TTfactor : 1.0f;
 
-        polar_theta = (double *) malloc(xysize * sizeof(double));
-        if (polar_theta == NULL)
-        {
-            PRINT_ERROR("malloc returns NULL pointer");
-            abort();
-        }
+        int nth2d = milk_omp_team_size(xysize, 65536);
 
-        if ((polar_r == NULL) || (polar_theta == NULL))
+        // polar coordinates (row-major traversal)
+#pragma omp parallel for num_threads(nth2d) if (nth2d > 1)
+        for (uint32_t jj = 0; jj < ny; jj++)
         {
-            printf("error in memory allocation !!!\n");
-        }
-
-        // polar coordinates
-        //
-        for (uint32_t ii = 0; ii < *xsize; ii++)
-        {
-            float x = (*xcent) - ii;
-            for (uint32_t jj = 0; jj < *ysize; jj++)
+            double y              = (double) yc - (double) jj;
+            double y2             = y * y;
+            double *restrict rrow = polar_r + (uint64_t) jj * nx;
+            double *restrict trow = polar_theta + (uint64_t) jj * nx;
+            for (uint32_t ii = 0; ii < nx; ii++)
             {
-                float y                     = (*ycent) - jj;
-                polar_r[jj * (*xsize) + ii] = sqrt(x * x + y * y) / (*radius);
-
-                polar_theta[jj * (*xsize) + ii] = atan2(y, x);
+                double x = (double) xc - (double) ii;
+                rrow[ii] = sqrt(x * x + y2) * invrad;
+                trow[ii] = atan2(y, x);
             }
         }
-
 
         // Make Zernikes
-        //
-        for (uint32_t zi = 0; zi < (*NBzermode); zi++)
+        float *restrict outptr = imgout.im->array.F;
+        int nth3d              = milk_omp_team_size((uint64_t) nmodes * xysize, 65536);
+
+#pragma omp parallel for num_threads(nth3d) if (nth3d > 1)
+        for (uint32_t zi = 0; zi < nmodes; zi++)
         {
-            float ampl = 1.0;
-            if ((zi == 0) || (zi == 1))
+            float ampl            = ((zi == 0) || (zi == 1)) ? ttfact : 1.0f;
+            float *restrict slice = outptr + (uint64_t) zi * xysize;
+            for (uint64_t ii = 0; ii < xysize; ii++)
             {
-                ampl = *TTfactor;
-            }
-            else
-            {
-                ampl = 1.0;
-            }
-            for (uint32_t ii = 0; ii < xysize; ii++)
-            {
-                float r = polar_r[ii];
-                if (r < (*radiusmaskfactor))
+                double r = polar_r[ii];
+                if (r < (double) rmask)
                 {
-                    imgout.im->array.F[zi * xysize + ii] =
-                        ampl * Zernike_value(zi + 1, r, polar_theta[ii]);
+                    slice[ii] = (float) (ampl * Zernike_value((long) zi + 1, r, polar_theta[ii]));
                 }
                 else
                 {
-                    imgout.im->array.F[ii] = 0.0;
+                    slice[ii] = 0.0f;
                 }
             }
         }

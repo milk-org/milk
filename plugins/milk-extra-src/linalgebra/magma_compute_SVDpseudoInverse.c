@@ -1058,8 +1058,7 @@ static void svdpinv_create_output(svdpinv_ctx *ctx, const char *ID_Cmatrix_name)
                 imgcm.mdt->size[a] = arraysizetmp[a];
             }
             imgcm.mdt->datatype = ctx->datatype;
-            imgcm.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgcm);
+            imgid_create_registered(&imgcm);
             ctx->ID_Cmatrix = imgcm.ID;
         }
 

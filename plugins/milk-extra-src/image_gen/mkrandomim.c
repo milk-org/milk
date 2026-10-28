@@ -5,6 +5,7 @@
 #include "ImageStreamIO/ImageStruct.h"
 #include "milk_runnable.h"
 #include "image_gen.h"
+#include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "statistic/statistic.h" // ran1, gauss, gauss_trc
 
@@ -65,30 +66,19 @@ static imageID make_image_random(IMGID *img, int pdf)
     // Create image if needed
     //imcreateIMGID(img);
 
-    // openMP is slow when calling gsl random
-    // number generator : do not use openMP here
-    if (pdf == 0)
+    if (pdf == 0 || pdf == 1)
     {
-        for (uint64_t ii = 0; ii < img->md->nelement; ii++)
-        {
-            img->im->array.F[ii] = (float) ran1();
-        }
+        arith_image_fill_coord(img->im, (pdf == 1) ? ARITH_COORD_RANDN : ARITH_COORD_RAND, 0.0,
+                               0.0);
     }
-    if (pdf == 1)
-    {
-        for (uint64_t ii = 0; ii < img->md->nelement; ii++)
-        {
-            img->im->array.F[ii] = (float) gauss();
-        }
-    }
-    if (pdf == 2)
+    else if (pdf == 2)
     {
         for (uint64_t ii = 0; ii < img->md->nelement; ii++)
         {
             img->im->array.F[ii] = (float) gauss_trc();
         }
     }
-    if (pdf == 3) // test pattern
+    else if (pdf == 3) // test pattern
     {
         static uint64_t ii   = 0;
         img->im->array.F[ii] = 1.0 - img->im->array.F[ii];

@@ -4,57 +4,70 @@
 
 /**
  * @file naninf2zero.c
- * @brief Naninf2zero module
+ * @brief Replace NaN and Inf pixel values with zero using IEEE-754 bit inspection and OpenMP SIMD
  */
 
-/** @file naninf2zero.c
- */
-
-#include <math.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <unistd.h>
+#include <stdio.h>
 
 #ifdef MILK_NO_CLI
 #    include "CLIcore_standalone.h"
 #else
+#    include "ImageStreamIO/ImageStreamIO.h"
+#    include "computeunit.h"
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
-#    include "computeunit.h"
-#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
+#include "COREMOD_arith/image_stats.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "libmilkcommon/milk_compiler.h"
 
 /* set all nan and inf pixel values to zero */
 int basic_naninf2zero(const char *ID_name)
 {
-    imageID  ID;
-    uint32_t naxes[2];
-    long     cnt = 0;
-
-    ID       = image_ID(ID_name, dcimg, dcnimg);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
-
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+    imageID ID = image_ID(ID_name, dcimg, dcnimg);
+    if (ID == -1)
     {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
+        return RETURN_FAILURE;
+    }
+
+    uint64_t nelement = dcimg[ID].md[0].nelement;
+    uint8_t  dt       = dcimg[ID].md[0].datatype;
+    int      nth      = milk_omp_team_size(nelement, 262144);
+    long     cnt      = 0;
+
+    if (dt == _DATATYPE_DOUBLE)
+    {
+        double *MILK_RESTRICT p = MILK_ASSUME_ALIGNED(dcimg[ID].array.D);
+#ifdef _OPENMP
+#    pragma omp parallel for simd reduction(+ : cnt) num_threads(nth) if (parallel : nth > 1)
+#endif
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
-            if (!(fabsf(dcimg[ID].array.F[jj * naxes[0] + ii]) < HUGE_VAL))
-            {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0f;
-                cnt++;
-            }
+            int bad = !arith_isfinite_d(p[ii]);
+            p[ii]   = bad ? 0.0 : p[ii];
+            cnt += bad;
+        }
+    }
+    else
+    {
+        float *MILK_RESTRICT p = MILK_ASSUME_ALIGNED(dcimg[ID].array.F);
+#ifdef _OPENMP
+#    pragma omp parallel for simd reduction(+ : cnt) num_threads(nth) if (parallel : nth > 1)
+#endif
+        for (uint64_t ii = 0; ii < nelement; ii++)
+        {
+            int bad = !arith_isfinite_f(p[ii]);
+            p[ii]   = bad ? 0.0f : p[ii];
+            cnt += bad;
         }
     }
 
-    printf("%ld values replaced\n", cnt);
+    if (dcdebug > 0)
+    {
+        printf("%ld values replaced\n", cnt);
+    }
 
-    return (0);
+    return 0;
 }

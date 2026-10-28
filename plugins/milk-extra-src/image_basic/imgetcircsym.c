@@ -12,6 +12,7 @@
 #include "milk_runnable.h"
 #include "computeunit.h"
 
+#include "COREMOD_arith/image_spatial.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 // Forward declaration
@@ -49,8 +50,6 @@ imageID IMAGE_BASIC_get_circsym_component(const char *__restrict ID_name,
                                           float xcenter,
                                           float ycenter)
 {
-    float step = 1.0;
-
     IMGID imgin = imgid_make_from_name(ID_name);
     resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
     if (imgin.ID == -1)
@@ -59,103 +58,14 @@ imageID IMAGE_BASIC_get_circsym_component(const char *__restrict ID_name,
     }
 
     uint32_t naxes[2];
-    naxes[0]     = imgin.md->size[0];
-    naxes[1]     = imgin.md->size[1];
-    long nb_step = naxes[0] / 2;
-
-    float *dist = (float *) malloc(sizeof(float) * nb_step);
-    if (dist == NULL)
-    {
-        C_ERRNO = errno;
-        PRINT_ERROR("malloc() error");
-        exit(0);
-    }
-
-    float *mean = (float *) malloc(sizeof(float) * nb_step);
-    if (mean == NULL)
-    {
-        C_ERRNO = errno;
-        PRINT_ERROR("malloc() error");
-        exit(0);
-    }
-
-    float *rms = (float *) malloc(sizeof(float) * nb_step);
-    if (rms == NULL)
-    {
-        C_ERRNO = errno;
-        PRINT_ERROR("malloc() error");
-        exit(0);
-    }
-
-    long *counts = (long *) malloc(sizeof(long) * nb_step);
-    if (counts == NULL)
-    {
-        C_ERRNO = errno;
-        PRINT_ERROR("malloc() error");
-        exit(0);
-    }
-
-    for (long i = 0; i < nb_step; i++)
-    {
-        dist[i]   = 0;
-        mean[i]   = 0;
-        rms[i]    = 0;
-        counts[i] = 0;
-    }
-
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
-    {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
-        {
-            float distance = sqrtf((1.0 * ii - xcenter) * (1.0 * ii - xcenter) +
-                                   (1.0 * jj - ycenter) * (1.0 * jj - ycenter));
-            long  i        = (long) (1.0 * distance / step + 0.5);
-            if (i < nb_step)
-            {
-                dist[i] += distance;
-                mean[i] += imgin.im->array.F[jj * naxes[0] + ii];
-                rms[i] +=
-                    imgin.im->array.F[jj * naxes[0] + ii] * imgin.im->array.F[jj * naxes[0] + ii];
-                counts[i] += 1;
-            }
-        }
-    }
-
-    for (long i = 0; i < nb_step; i++)
-    {
-        dist[i] /= counts[i];
-        mean[i] /= counts[i];
-        rms[i] = sqrt(rms[i] - 1.0 * counts[i] * mean[i] * mean[i]) / sqrt(counts[i]);
-    }
-
-    printf("%u %u\n", naxes[0], naxes[1]);
+    naxes[0] = imgin.md->size[0];
+    naxes[1] = imgin.md->size[1];
 
     IMGID imgout       = imgid_make_from_name_2D(ID_out_name, naxes[0], naxes[1]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
-    {
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
-        {
-            float distance = sqrtf((1.0 * ii - xcenter) * (1.0 * ii - xcenter) +
-                                   (1.0 * jj - ycenter) * (1.0 * jj - ycenter));
-            long  i        = (long) (1.0 * distance / step);
-            float ifloat   = 1.0 * distance / step;
-            float x        = ifloat - i;
-
-            if ((i + 1) < nb_step)
-            {
-                imgout.im->array.F[jj * naxes[0] + ii] = ((1.0 - x) * mean[i] + x * mean[i + 1]);
-            }
-        }
-    }
-
-    free(counts);
-    free(dist);
-    free(mean);
-    free(rms);
+    (void) arith_image_circsym_im(imgin.im, imgout.im, (double) xcenter, (double) ycenter, 0);
 
     return imgout.ID;
 }

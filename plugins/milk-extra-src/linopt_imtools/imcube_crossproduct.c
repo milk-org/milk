@@ -79,26 +79,34 @@ static errno_t imcube_crossproduct(IMGID imgcube0, IMGID imgcube1, IMGID imgmask
     IMGID imgout = imgid_make_from_name_2D(imoutname, zsize0, zsize1);
     createimagefromIMGID(&imgout);
 
+    const float *restrict mptr = imgmask.im->array.F;
+    const float *restrict c0   = imgcube0.im->array.F;
+    const float *restrict c1   = imgcube1.im->array.F;
+    float *restrict out        = imgout.im->array.F;
+
     // compute mask sum
     double masksum = 0.0;
+#pragma omp simd reduction(+ : masksum)
     for (uint64_t pixi = 0; pixi < xysize; pixi++)
     {
-        masksum += imgmask.im->array.F[pixi];
+        masksum += mptr[pixi];
     }
 
+    int nth = milk_omp_team_size((uint64_t) zsize0 * (uint64_t) zsize1 * xysize, 262144);
+#pragma omp      parallel for schedule(dynamic, 1) num_threads(nth) if (nth > 1)
     for (uint32_t kk0 = 0; kk0 < zsize0; kk0++)
     {
+        const float *restrict s0 = c0 + xysize * kk0;
         for (uint32_t kk1 = kk0; kk1 < zsize1; kk1++)
         {
-            double   tmpv     = 0.0;
-            uint64_t z0offset = xysize * kk0;
-            uint64_t z1offset = xysize * kk1;
+            const float *restrict s1 = c1 + xysize * kk1;
+            double tmpv              = 0.0;
+#pragma omp simd reduction(+ : tmpv)
             for (uint64_t pixi = 0; pixi < xysize; pixi++)
             {
-                tmpv += imgmask.im->array.F[pixi] * (imgcube0.im->array.F[z0offset + pixi] *
-                                                     imgcube1.im->array.F[z1offset + pixi]);
+                tmpv += mptr[pixi] * (s0[pixi] * s1[pixi]);
             }
-            imgout.im->array.F[kk1 * zsize0 + kk0] = tmpv / masksum;
+            out[kk1 * zsize0 + kk0] = (float) (tmpv / masksum);
         }
     }
     imgid_free(&imgout);

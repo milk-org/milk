@@ -14,18 +14,18 @@ CLIinput="
 MILK_QUIET="1" milk
 
 # Load modules
-mload milkmoduleexample
-mload milkimagegen
+@module load milkmoduleexample
+@module load milkimagegen
 
 # Create disk image
 imgen.mkdisk imd1 256 256 128 128 50
 
 # get function info
-cmd? modex.imsum1
+@cmd? modex.imsum1
 
 # Run function
 modex.imsum1 imd1
 
 # Exit CLI
-exitCLI
+exit
 "
