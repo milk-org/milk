@@ -60,6 +60,11 @@ const ov_theme_t ov_theme_dark = {
     .grad_hi     = { 100, 200, 255 },
     .grad_cpu_lo = { 60, 180, 60 },
     .grad_cpu_hi = { 240, 60, 60 },
+
+    .fg_type_int   = { 100, 160, 220 },
+    .fg_type_float = { 180, 200, 100 },
+    .fg_type_str   = { 200, 160, 120 },
+    .fg_accent     = { 255, 215, 80 },
 };
 
 /* 1. Observatory Red (Monochrome red for dark adaptation) */
@@ -113,6 +118,11 @@ const ov_theme_t ov_theme_night = {
     .grad_hi     = { 255, 80, 80 },
     .grad_cpu_lo = { 140, 50, 50 },
     .grad_cpu_hi = { 255, 40, 40 },
+
+    .fg_type_int   = { 220, 120, 100 },
+    .fg_type_float = { 240, 150, 80 },
+    .fg_type_str   = { 200, 110, 110 },
+    .fg_accent     = { 255, 170, 60 },
 };
 
 /* 2. High-Contrast CVD (Color-blind friendly) */
@@ -166,6 +176,11 @@ const ov_theme_t ov_theme_accessible = {
     .grad_hi     = { 86, 180, 233 },
     .grad_cpu_lo = { 86, 180, 233 },
     .grad_cpu_hi = { 213, 94, 0 },
+
+    .fg_type_int   = { 120, 170, 230 },
+    .fg_type_float = { 0, 158, 115 },
+    .fg_type_str   = { 230, 159, 0 },
+    .fg_accent     = { 240, 228, 66 },
 };
 
 /* 3. Paper Light (Daylight & publication figures) */
@@ -219,6 +234,11 @@ const ov_theme_t ov_theme_light = {
     .grad_hi     = { 30, 80, 180 },
     .grad_cpu_lo = { 30, 150, 50 },
     .grad_cpu_hi = { 210, 40, 40 },
+
+    .fg_type_int   = { 30, 90, 170 },
+    .fg_type_float = { 90, 120, 10 },
+    .fg_type_str   = { 140, 90, 40 },
+    .fg_accent     = { 170, 110, 0 },
 };
 
 /* 4. Nordic Slate (Cool arctic dark palette) */
@@ -272,4 +292,9 @@ const ov_theme_t ov_theme_nordic = {
     .grad_hi     = { 136, 192, 208 },
     .grad_cpu_lo = { 163, 190, 140 },
     .grad_cpu_hi = { 191, 97, 106 },
+
+    .fg_type_int   = { 129, 161, 193 },
+    .fg_type_float = { 163, 190, 140 },
+    .fg_type_str   = { 208, 135, 112 },
+    .fg_accent     = { 235, 203, 139 },
 };

@@ -104,9 +104,10 @@ int ov_utf8_next_cluster(const char *s, int max_len, int *bytes_out, int *width_
             has_vs16 = 1;
             total_bytes += nb;
         }
-        else if (next_cp == 0x20E3 || next_cp == 0xFE0E)
+        else if (next_cp == 0x20E3 || next_cp == 0xFE0E ||
+                 (next_cp >= 0x300 && wcwidth((wchar_t) next_cp) == 0))
         {
-            total_bytes += nb;
+            total_bytes += nb; /* combining marks and ZWJ stay with their base character */
         }
         else
         {
@@ -127,9 +128,9 @@ int ov_utf8_next_cluster(const char *s, int max_len, int *bytes_out, int *width_
     else if (cp0 >= 0x2600 && cp0 <= 0x27BF)
     {
         if (cp0 == 0x2705 || cp0 == 0x274C || cp0 == 0x274E || (cp0 >= 0x2753 && cp0 <= 0x2755) ||
-            cp0 == 0x2757 || cp0 == 0x2728 || cp0 == 0x26A0 || cp0 == 0x26A1 || cp0 == 0x26BD ||
-            cp0 == 0x26BE || cp0 == 0x26C4 || cp0 == 0x26C5 || cp0 == 0x26D4 || cp0 == 0x26EA ||
-            cp0 == 0x26F2 || cp0 == 0x26F3 || cp0 == 0x26F5 || cp0 == 0x26FA || cp0 == 0x26FD)
+            cp0 == 0x2757 || cp0 == 0x2728 || cp0 == 0x26A1 || cp0 == 0x26BD || cp0 == 0x26BE ||
+            cp0 == 0x26C4 || cp0 == 0x26C5 || cp0 == 0x26D4 || cp0 == 0x26EA || cp0 == 0x26F2 ||
+            cp0 == 0x26F3 || cp0 == 0x26F5 || cp0 == 0x26FA || cp0 == 0x26FD)
         {
             w = 2;
         }
@@ -176,4 +177,98 @@ int ov_str_display_width(const char *s)
         pos += b;
     }
     return total_w;
+}
+
+/**
+ * ov_utf8_cluster_printable - 1 if @s[0..@bytes) is well-formed UTF-8 with no C0, DEL or C1 control.
+ */
+int ov_utf8_cluster_printable(const char *s, int bytes)
+{
+    int i = 0;
+    while (i < bytes)
+    {
+        unsigned char c = (unsigned char) s[i];
+        int           n;
+        if (c >= 0x20 && c < 0x7F)
+        {
+            n = 1;
+        }
+        else if (c >= 0xC2 && c <= 0xDF)
+        {
+            n = 2;
+        }
+        else if (c >= 0xE0 && c <= 0xEF)
+        {
+            n = 3;
+        }
+        else if (c >= 0xF0 && c <= 0xF4)
+        {
+            n = 4;
+        }
+        else
+        {
+            return 0;
+        }
+        if (i + n > bytes)
+        {
+            return 0;
+        }
+        for (int k = 1; k < n; k++)
+        {
+            if ((((unsigned char) s[i + k]) & 0xC0) != 0x80)
+            {
+                return 0;
+            }
+        }
+        if (c == 0xC2 && (unsigned char) s[i + 1] < 0xA0) /* C1 controls U+0080..U+009F */
+        {
+            return 0;
+        }
+        i += n;
+    }
+    return bytes > 0;
+}
+
+/**
+ * ov_str_sanitize - replace in place each byte of invalid UTF-8 or of a control character with '?'.
+ */
+void ov_str_sanitize(char *s)
+{
+    int len = (int) strlen(s);
+    int i   = 0;
+    while (i < len)
+    {
+        int n = utf8_char_length((unsigned char) s[i]);
+        if (i + n > len || !ov_utf8_cluster_printable(s + i, n))
+        {
+            s[i++] = '?';
+            continue;
+        }
+        i += n;
+    }
+}
+
+/**
+ * ov_utf8_fit - byte length of the longest cluster-aligned prefix of @s that fits in @max_cols.
+ * @cols_out: receives the columns that prefix occupies (may be NULL).
+ */
+int ov_utf8_fit(const char *s, int len, int max_cols, int *cols_out)
+{
+    int bytes = 0;
+    int cols  = 0;
+    while (bytes < len)
+    {
+        int b = 0, w = 1;
+        if (!ov_utf8_next_cluster(s + bytes, len - bytes, &b, &w) || b <= 0 || cols + w > max_cols)
+        {
+            break;
+        }
+        cols += w;
+        bytes += b;
+    }
+    if (cols_out != NULL)
+    {
+        *cols_out = cols;
+    }
+    return bytes;
 }

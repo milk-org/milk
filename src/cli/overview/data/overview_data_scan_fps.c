@@ -3,7 +3,44 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "overview_data_internal.h"
+#include "fps_unit_state.h"
 
+#include <limits.h>
+
+
+/**
+ * fcache_map_ro - map an FPS file read-only for the scan cache; unlike fps_connect() it writes
+ * nothing into the FPS and keeps no fd. Return: 0, or -1 (nothing mapped).
+ */
+static int fcache_map_ro(ov_fps_cache_t *ce, const char *path)
+{
+    if (ov_shm_map(&ce->map, path, 0, sizeof(FUNCTION_PARAMETER_STRUCT_MD)) != 0)
+    {
+        return -1;
+    }
+    FUNCTION_PARAMETER_STRUCT_MD *md = (FUNCTION_PARAMETER_STRUCT_MD *) ce->map.addr;
+    ce->nbparam_fit                  = (long) ((ce->map.len - sizeof(*md)) / sizeof(FPS_PARAM));
+    if (md->NBparamMAX < 0 || md->NBparamMAX > ce->nbparam_fit)
+    {
+        ov_shm_unmap(&ce->map);
+        return -1;
+    }
+    ce->fps.md     = md;
+    ce->fps.parray = (FPS_PARAM *) (md + 1);
+    ce->fps.SMfd   = -1;
+    return 0;
+}
+
+/**
+ * fcache_same_file - 1 if the cache entry still maps <fpsdir>/<fname>.fps.shm (same dev/ino/size).
+ */
+static int fcache_same_file(const ov_fps_cache_t *ce)
+{
+    char        path[PATH_MAX];
+    struct stat st;
+    snprintf(path, sizeof(path), "%s/%s.fps.shm", ov_get_fpsdir(), ce->fname);
+    return stat(path, &st) == 0 && ov_shm_same_file(&ce->map, &st);
+}
 
 /**
  * fcache_build_params - discover param indices and cache them.
@@ -24,7 +61,8 @@ void fcache_build_params(ov_fps_cache_t *ce)
         return;
     }
 
-    int nb_params = fpsp->md->NBparamMAX;
+    long nb_params =
+        (fpsp->md->NBparamMAX < ce->nbparam_fit) ? fpsp->md->NBparamMAX : ce->nbparam_fit;
     if (nb_params > 10000)
     {
         nb_params = 10000;
@@ -98,6 +136,13 @@ static void fill_fps_from_struct(OV_FPS *f, ov_fps_cache_t *ce)
     memset(f, 0, sizeof(OV_FPS));
     strncpy(f->name, ce->fname, sizeof(f->name) - 1);
     f->valid = 1;
+    memcpy(f->hz_hist, ce->hz_hist, sizeof(f->hz_hist));
+    f->hz_hist_idx = ce->hz_hist_idx;
+    f->is_new      = ce->is_new;
+    if (ce->is_new > 0)
+    {
+        ce->is_new--;
+    }
 
     if (fpsp->md == NULL)
     {
@@ -105,12 +150,34 @@ static void fill_fps_from_struct(OV_FPS *f, ov_fps_cache_t *ce)
         return;
     }
 
-    f->md_status  = fpsp->md->status;
-    f->confpid    = fpsp->md->confpid;
-    f->runpid     = fpsp->md->runpid;
-    f->mem_rss_kb = (f->runpid > 0) ? pid_get_rss_kb(f->runpid) : 0;
-    f->conf_alive = (pid_get_status(f->confpid) == OV_PID_ALIVE);
-    f->run_alive  = pid_is_alive(f->runpid);
+    f->md_status = fpsp->md->status;
+    f->confpid   = fpsp->md->confpid;
+    f->runpid    = fpsp->md->runpid;
+
+    // the unit's state (U10): what alive means here; this mapping is read-only, so stale bits are
+    // not repaired here
+    FPS_UNIT_STATUS us;
+    fps_unit_status_fps(fpsp, FPS_UNIT_RUN, &us, 0);
+    f->run_state  = (uint8_t) us.state;
+    f->run_uptime = us.uptime;
+    snprintf(f->run_last, sizeof(f->run_last), "%s", us.last);
+    fps_unit_status_fps(fpsp, FPS_UNIT_CONF, &us, 0);
+    f->conf_state = (uint8_t) us.state;
+    f->conf_alive = fps_unit_state_alive((FPS_UNIT_STATE) f->conf_state);
+    f->run_alive  = fps_unit_state_alive((FPS_UNIT_STATE) f->run_state);
+    f->mem_rss_kb = f->run_alive ? pid_get_rss_kb(f->runpid) : 0; /* not a dead or reused PID's */
+    if (f->confpid != ce->tk_conf_pid)
+    {
+        ce->tk_conf_pid = f->confpid;
+        ce->tk_conf     = f->conf_alive ? pid_get_start_ticks(f->confpid) : 0;
+    }
+    if (f->runpid != ce->tk_run_pid)
+    {
+        ce->tk_run_pid = f->runpid;
+        ce->tk_run     = f->run_alive ? pid_get_start_ticks(f->runpid) : 0;
+    }
+    f->conf_start_ticks = ce->tk_conf;
+    f->run_start_ticks  = ce->tk_run;
 
     if (!ce->sparam_cached)
     {
@@ -144,8 +211,7 @@ static void fill_fps_from_struct(OV_FPS *f, ov_fps_cache_t *ce)
  */
 void ov_scan_fps(OV_MODEL *model)
 {
-    char shmdir[OV_SHMDIR_MAXLEN];
-    function_parameter_struct_shmdirname(shmdir);
+    const char *shmdir = ov_get_fpsdir();
 
     /* Check directory mtime to skip readdir */
     struct stat dirstat;
@@ -158,9 +224,26 @@ void ov_scan_fps(OV_MODEL *model)
     int dir_changed = (dirstat.st_mtim.tv_sec != s_fps_mtime.tv_sec) ||
                       (dirstat.st_mtim.tv_nsec != s_fps_mtime.tv_nsec);
 
-    if (!dir_changed && s_fcache_nb > 0)
+    /* Re-creating a file changes the directory mtime; the files themselves are checked as a safety net */
+    static int      s_scanned;    /* a full scan was done: the fast path holds even with no FPS */
+    static double   s_file_check; /* last per-file check */
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    double t = (double) now.tv_sec + 1e-9 * (double) now.tv_nsec;
+    if (!dir_changed && s_scanned && t - s_file_check >= OV_FILE_RECHECK_S)
     {
-        /* Fast path: no files added/removed */
+        s_file_check = t;
+        pthread_mutex_lock(&s_fcache_mutex);
+        int all_same = 1;
+        for (int ci = 0; ci < s_fcache_nb && all_same; ci++)
+        {
+            all_same = fcache_same_file(&s_fcache[ci]);
+        }
+        pthread_mutex_unlock(&s_fcache_mutex);
+        dir_changed = !all_same;
+    }
+    if (!dir_changed && s_scanned)
+    {
         pthread_mutex_lock(&s_fcache_mutex);
         int idx = 0;
         for (int ci = 0; ci < s_fcache_nb && idx < OV_MAX_FPS; ci++)
@@ -174,7 +257,9 @@ void ov_scan_fps(OV_MODEL *model)
     }
 
     /* Full path: directory changed */
-    s_fps_mtime = dirstat.st_mtim;
+    s_fps_mtime  = dirstat.st_mtim;
+    s_scanned    = 1;
+    s_file_check = t;
 
     DIR *dp = opendir(shmdir);
     if (dp == NULL)
@@ -216,8 +301,13 @@ void ov_scan_fps(OV_MODEL *model)
         memcpy(fname, ep->d_name, (size_t) fnlen);
         fname[fnlen] = '\0';
 
-        /* Look up in cache */
+        /* Look up in cache; an FPS re-created under the same name gets a fresh mapping */
         int ci = fcache_find(fname);
+        if (ci >= 0 && !fcache_same_file(&s_fcache[ci]))
+        {
+            fcache_evict_locked(ci);
+            ci = -1;
+        }
 
         if (ci >= 0)
         {
@@ -236,14 +326,16 @@ void ov_scan_fps(OV_MODEL *model)
             memset(&s_fcache[ci], 0, sizeof(ov_fps_cache_t));
             s_fcache[ci].fps.SMfd = -1;
 
-            long fpsID = fps_connect(fname, &s_fcache[ci].fps, FPSCONNECT_SIMPLE);
-            if (fpsID < 0)
+            char fpath[PATH_MAX];
+            snprintf(fpath, sizeof(fpath), "%s/%s", shmdir, ep->d_name);
+            if (fcache_map_ro(&s_fcache[ci], fpath) != 0)
             {
                 continue;
             }
 
             strncpy(s_fcache[ci].fname, fname, sizeof(s_fcache[ci].fname) - 1);
             s_fcache[ci].in_use = 1;
+            s_fcache[ci].is_new = (s_scan_dt_sec > 0.0) ? OV_NEW_SCANS : 0;
             s_fcache_nb++;
         }
 

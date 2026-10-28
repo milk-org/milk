@@ -9,15 +9,204 @@
 
 #include "overview_help_data.h"
 
+/* Section headers and the rows that are not keys (overview, mouse gestures, colour legend) */
 /* clang-format off */
-const help_entry_t g_help_entries[] =
-{
-#include "overview_help_data_nav.inc"
-#include "overview_help_data_panels.inc"
+static const help_entry_t help_prose[] = {
+    {
+        NULL,
+        "Introduction: What is milk-CTRL & Features",
+        "milk-CTRL is the unified, real-time diagnostic and control dashboard for the milk framework. It "
+        "monitors and orchestrates three core shared-memory pillars: ImageStreamIO (streams), FPS (compute "
+        "modules & parameters), and processinfo (telemetry & loop rates). Press 1, 'i', or ENTER to open the "
+        "interactive guide.",
+        HF_SECTION,
+        HS_INTRO,
+    },
+    {
+        "Overview",
+        "High-performance adaptive optics dashboard",
+        "Designed for microsecond-latency adaptive optics and image processing pipelines. Provides "
+        "single-pane-of-glass observability and control across all streams, processes, and FPS compute units "
+        "without impacting compute loop latency.",
+        HF_ENTRY,
+        HS_INTRO,
+    },
+    {
+        "Pillars",
+        "ImageStreamIO, FPS, and processinfo",
+        "1. ImageStreamIO: Zero-copy SHM circular buffers and semaphores (/milk/shm/). 2. FPS: Standardized "
+        "compute units with parameter trees, each run as a detached process. 3. processinfo: Real-time telemetry, loop "
+        "frequencies, and CPU core affinities.",
+        HF_ENTRY,
+        HS_INTRO,
+    },
+    {
+        "Features",
+        "Topology graphs, loops, and control mode",
+        "Features include dataflow connection graphs (F6), closed feedback loop detection (F7), live parameter "
+        "tree editing (F5), Control Mode actions (press 'c'), regex filtering ('/'), and command logging ('G').",
+        HF_ENTRY,
+        HS_INTRO,
+    },
+    {
+        NULL,
+        "Global & Navigation",
+        "Global controls available from any view or panel. Includes view switching (F2-F7), panel focus cycling "
+        "(TAB), real-time scan rate tuning, display pause, regex filtering, snapshot export, and application "
+        "exit.",
+        HF_SECTION,
+        HS_NAV,
+    },
+    {
+        NULL,
+        "Streams Panel (STRM)",
+        "ImageStreamIO shared memory panel. Displays all active image streams (*.im.shm) in the SHM directory. "
+        "Shows dimensions, datatype, write timestamps, update rates (Hz), throughput (MB/s), and reader "
+        "semaphores.",
+        HF_SECTION,
+        HS_STREAMS,
+    },
+    {
+        NULL,
+        "Processes Panel (PROC)",
+        "Process registry monitor. Tracks all compute units and scripts registered in processinfo.list.shm. "
+        "Displays process PID, loop count, iteration frequency, duty cycle, CPU%, memory RSS, and running "
+        "status. Allows sending POSIX signals.",
+        HF_SECTION,
+        HS_PROCS,
+    },
+    {
+        NULL,
+        "FPS Panel (FPS)",
+        "Function Parameter Structure management. Tracks FPS modules, shared configuration parameters, and "
+        "execution state. In F5 view, provides full interactive tree view for inspecting and editing live "
+        "runtime parameters in shared memory.",
+        HF_SECTION,
+        HS_FPS,
+    },
+    {
+        NULL,
+        "Graph & Lineage Panel (CONN)",
+        "Visual dataflow graph and dependency tracker. Traces directed edges between streams and processes. "
+        "Distinguishes trigger streams (driving compute loops) from passive input streams and output products.",
+        HF_SECTION,
+        HS_GRAPH,
+    },
+    {
+        NULL,
+        "Command Log & Display",
+        "Real-time audit log and layout configuration. Shows timestamped records of user commands, process "
+        "signaling, state changes, and error warnings. Provides interactive panel split resizing.",
+        HF_SECTION,
+        HS_CMDLOG,
+    },
+    {
+        NULL,
+        "Mouse Interactions",
+        "Full terminal mouse support. Enables direct point-and-click selection, wheel scrolling, drag-to-resize "
+        "panel borders, and column sorting.",
+        HF_SECTION,
+        HS_MOUSE,
+    },
+    {
+        "Left Click",
+        "Select item / Focus panel",
+        "Clicking anywhere on a row focuses that panel and selects the clicked item. Clicking tabs (DASH, STRM, "
+        "etc.) switches views; clicking [h: HELP] toggles help.",
+        HF_ENTRY,
+        HS_MOUSE,
+    },
+    {
+        "Double Click",
+        "Open detailed inspection pane",
+        "Double-clicking any stream, process, or FPS module immediately opens its full inspection pane or "
+        "parameter editor.",
+        HF_ENTRY,
+        HS_MOUSE,
+    },
+    {
+        "Mouse Wheel",
+        "Scroll focused list or table",
+        "Spinning the mouse scroll wheel scrolls the hovered list up or down without needing to press keyboard "
+        "arrow keys.",
+        HF_ENTRY,
+        HS_MOUSE,
+    },
+    {
+        "Header Click",
+        "Click column header to sort",
+        "Clicking on any column heading (e.g. NAME, TYPE, HZ, CPU%) automatically sorts the table by that "
+        "column. Clicking again reverses the sort.",
+        HF_ENTRY,
+        HS_MOUSE,
+    },
+    {
+        "Border Drag",
+        "Click and drag borders to resize",
+        "Clicking on any panel separator border and dragging with the mouse dynamically resizes panel "
+        "proportions in real time.",
+        HF_ENTRY,
+        HS_MOUSE,
+    },
+    {
+        NULL,
+        "Theme & Color Legend",
+        "Color coding conventions and selectable theme styles in milk-CTRL. Supports 10 dark, light, "
+        "high-contrast, and vibrant palettes.",
+        HF_SECTION,
+        HS_COLORS,
+    },
+    {
+        "Legend",
+        "System color semantics",
+        "Stream (SHM)  |  Process (procinfo)  |  FPS module\nActive / Running  |  Idle / Paused\nStale / Warning "
+        " |  Error / Crashed / Signal Kill",
+        HF_ENTRY | HF_COLORS,
+        HS_COLORS,
+    },
 };
 /* clang-format on */
 
-const int g_help_total = (int) (sizeof(g_help_entries) / sizeof(g_help_entries[0]));
+static help_entry_t help_list[HS_COUNT * 2 + 160];
+const help_entry_t *g_help_entries = help_list;
+int                 g_help_total;
+
+/** help_build - lay out the help list: each section's header, its keys, then its other rows. */
+__attribute__((constructor)) static void help_build(void)
+{
+    const int np = (int) (sizeof(help_prose) / sizeof(help_prose[0]));
+    const int nl = (int) (sizeof(help_list) / sizeof(help_list[0]));
+    int       n  = 0;
+    for (int sec = 0; sec < HS_COUNT; sec++)
+    {
+        for (int i = 0; i < np && n < nl; i++)
+        {
+            if (help_prose[i].section == sec && (help_prose[i].flags & HF_SECTION))
+            {
+                help_list[n++] = help_prose[i];
+            }
+        }
+        for (int i = 0; i < ov_nb_keys && n < nl; i++)
+        {
+            const OV_KEYDEF *k = &ov_keys[i];
+            if (k->section == sec)
+            {
+                help_list[n++] =
+                    (help_entry_t) { k->display, k->label,
+                                     (k->detail != NULL) ? k->detail : k->label,
+                                     HF_ENTRY | ((k->flags & OV_KF_CTRL) ? HF_CTRL_MODE : 0), sec };
+            }
+        }
+        for (int i = 0; i < np && n < nl; i++)
+        {
+            if (help_prose[i].section == sec && !(help_prose[i].flags & HF_SECTION))
+            {
+                help_list[n++] = help_prose[i];
+            }
+        }
+    }
+    g_help_total = n;
+}
 
 /* clang-format off */
 const intro_item_t g_intro_items[] = {
@@ -42,7 +231,7 @@ const intro_item_t g_intro_items[] = {
 
     { IL_SUBHEADER, "2. FPS — Function Processing System (FPS — FPS / F5)", NULL },
     { IL_BULLET,    "• Compute Units: ", "Modular compute engines for algorithms & AO." },
-    { IL_BULLET,    "• Tmux Isolation: ", "Runs compute tasks in isolated tmux sessions." },
+    { IL_BULLET,    "• Detached Units: ", "Each unit runs as its own process; OUTPUT shows what it writes." },
     { IL_BULLET,    "• Dual Loops: ", "Separates parameter config (conf) from processing (run)." },
     { IL_BULLET,    "• Parameter Trees: ", "Hierarchical parameter directories editable live." },
     { IL_BLANK,     NULL, NULL },
@@ -50,7 +239,7 @@ const intro_item_t g_intro_items[] = {
     { IL_SUBHEADER, "3. processinfo (Processes — PROC / F4)", NULL },
     { IL_BULLET,    "• Telemetry: ", "Heartbeat registration, loop frequencies (Hz) & jitter." },
     { IL_BULLET,    "• Resources: ", "CPU core pinning masks, RSS memory, & cycle times." },
-    { IL_BULLET,    "• Lifecycle: ", "Tracks RUNNING, PAUSED, STOPPED, & CRASHED states." },
+    { IL_BULLET,    "• States: ", OV_STATE_LEGEND },
     { IL_BLANK,     NULL, NULL },
 
     { IL_HEADER,    "■ WHAT CAN milk-CTRL DO?", NULL },
@@ -66,10 +255,10 @@ const intro_item_t g_intro_items[] = {
 
     { IL_HEADER,    "■ QUICK START & KEYSTROKES", NULL },
     { IL_KEY,       "  1 / i", "Toggle this Introduction guide on or off" },
-    { IL_KEY,       "  2 / k", "Switch to the Controls & Keybindings reference" },
+    { IL_KEY,       "  2", "Switch to the Controls & Keybindings reference" },
     { IL_KEY,       "  F2 - F7", "Switch view panels (DASH, STRM, PROC, FPS, CONN, LOOPS)" },
     { IL_KEY,       "  TAB", "Cycle active panel focus (Streams -> Procs -> FPS -> Graph)" },
-    { IL_KEY,       "  ↑ / ↓ (j / k)", "Navigate items in focused list, or scroll this guide" },
+    { IL_KEY,       "  ↑ / ↓", "Navigate items in focused list, or scroll this guide" },
     { IL_KEY,       "  c", "Toggle Control Mode ON to enable management actions" },
     { IL_KEY,       "  /", "Search topics in help, or regex filter in dashboard" },
     { IL_KEY,       "  f", "Toggle regex filter ON/OFF for focused panel" },
@@ -80,16 +269,6 @@ const intro_item_t g_intro_items[] = {
 /* clang-format on */
 
 const int g_intro_total = (int) (sizeof(g_intro_items) / sizeof(g_intro_items[0]));
-
-/**
- * ov_help_nb_sections - get the total number of help sections.
- *
- * Return: Number of help sections (HS_COUNT).
- */
-int ov_help_nb_sections(void)
-{
-    return HS_COUNT;
-}
 
 /**
  * ov_help_section_name - get human-readable name of a section.
@@ -121,29 +300,6 @@ const char *ov_help_section_name(int sec)
         return "Colors";
     default:
         return "Help";
-    }
-}
-
-/**
- * ov_help_focus_section - map layout focus to its corresponding help section.
- * @focus: Active panel focus enum.
- *
- * Return: Corresponding section index (HS_STREAMS, HS_PROCS, etc.).
- */
-int ov_help_focus_section(ov_focus_t focus)
-{
-    switch (focus)
-    {
-    case OV_FOCUS_STREAMS:
-        return HS_STREAMS;
-    case OV_FOCUS_PROCS:
-        return HS_PROCS;
-    case OV_FOCUS_FPS:
-        return HS_FPS;
-    case OV_FOCUS_GRAPH:
-        return HS_GRAPH;
-    default:
-        return HS_NAV;
     }
 }
 
@@ -191,7 +347,7 @@ ov_rgb_t ov_help_section_color(int sec)
     switch (sec)
     {
     case HS_INTRO:
-        return (ov_rgb_t) { 255, 215, 80 };
+        return OV_FG_ACCENT;
     case HS_NAV:
         return OV_FG_TITLE;
     case HS_STREAMS:
@@ -203,11 +359,11 @@ ov_rgb_t ov_help_section_color(int sec)
     case HS_GRAPH:
         return OV_FG_CONN;
     case HS_CMDLOG:
-        return (ov_rgb_t) { 180, 210, 170 };
+        return OV_FG_MUTED;
     case HS_MOUSE:
         return OV_FG_WARN;
     case HS_COLORS:
-        return (ov_rgb_t) { 230, 130, 255 };
+        return OV_FG_LOOP;
     default:
         return OV_FG_DIM;
     }

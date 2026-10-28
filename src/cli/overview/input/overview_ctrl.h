@@ -14,6 +14,15 @@
 #include "overview_layout.h"
 
 /**
+ * ov_ctrl_unit_act - run `milk-fps-<op> @name` in the background; ov_ctrl_jobs_poll() logs its result.
+ * Return: 0, or -1 (reason logged).
+ */
+int ov_ctrl_unit_act(const char *name, const char *op, OV_CMDLOG *log);
+
+/** ov_ctrl_jobs_poll - log the unit actions that ended, and rescan if one did. Return: 1 if one ended. */
+int ov_ctrl_jobs_poll(OV_CMDLOG *log);
+
+/**
  * ov_ctrl_fps_run_toggle - start or stop the FPS run process.
  * @f:   FPS model entry
  * @log: command log (may be NULL)
@@ -56,14 +65,8 @@ void ov_ctrl_proc_sigkill(const OV_PROC *p, OV_CMDLOG *log);
 void ov_ctrl_proc_remove(const OV_PROC *p, OV_CMDLOG *log);
 
 /**
- * ov_ctrl_proc_pause_toggle - toggle SIGSTOP/SIGCONT.
- * @p:   process model entry
- * @log: command log (may be NULL)
- */
-void ov_ctrl_proc_pause_toggle(const OV_PROC *p, OV_CMDLOG *log);
-
-/**
- * ov_ctrl_proc_set_ctrlval - mutate process CTRLval.
+ * ov_ctrl_proc_set_ctrlval - mutate process CTRLval; an exit request (3) to a unit's run process
+ * stops the unit instead (request, then signals).
  * @p:   process model entry
  * @val: new value (-1 to toggle between 0 and 1)
  * @log: command log (may be NULL)
@@ -84,14 +87,6 @@ void ov_ctrl_proc_zero_counters(const OV_PROC *p, OV_CMDLOG *log);
  * @log: command log (may be NULL)
  */
 void ov_ctrl_fps_signal_pid(const OV_FPS *f, int sig, OV_CMDLOG *log);
-
-/**
- * ov_ctrl_fps_pause_toggle - toggle SIGSTOP/SIGCONT
- * for FPS processes.
- * @f:   FPS model entry
- * @log: command log (may be NULL)
- */
-void ov_ctrl_fps_pause_toggle(const OV_FPS *f, OV_CMDLOG *log);
 
 /**
  * ov_ctrl_fps_remove - stop conf/run and remove the

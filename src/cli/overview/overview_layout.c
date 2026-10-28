@@ -112,6 +112,22 @@ void ov_layout_compute(OV_LAYOUT *lay)
         lay->r_fps     = lay->r_streams;
         lay->r_graph   = lay->r_streams;
 
+        /* F3 split: list | inspector, or list over inspector on narrow terminals */
+        lay->r_strm_insp = (OV_RECT) { 0, 0, 0, 0 };
+        if (lay->view == OV_VIEW_STREAMS && W >= 100)
+        {
+            int lw           = (int) (W * lay->strm_split_ratio);
+            lw               = (lw < 40) ? 40 : (lw > W - 34) ? W - 34 : lw;
+            lay->r_streams   = (OV_RECT) { body_top, 1, body_h, lw };
+            lay->r_strm_insp = (OV_RECT) { body_top, lw + 1, body_h, W - lw };
+        }
+        else if (lay->view == OV_VIEW_STREAMS && body_h >= 16)
+        {
+            int lh           = body_h * 11 / 20;
+            lay->r_streams   = (OV_RECT) { body_top, 1, lh, W };
+            lay->r_strm_insp = (OV_RECT) { body_top + lh, 1, body_h - lh, W };
+        }
+
         /* F5 split */
         if (lay->view == OV_VIEW_FPS)
         {

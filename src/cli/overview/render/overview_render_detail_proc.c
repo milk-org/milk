@@ -23,9 +23,7 @@ int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
 {
     const OV_PROC *p = &m->procs[psel];
 
-    const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_PROC,
-                       lay->focus == OV_FOCUS_GRAPH);
+    ov_subtab_bar(lay, OV_FG_PROC);
 
     int ri       = 0;
     int line_idx = 0;
@@ -50,32 +48,16 @@ int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
 
     /* Status + loop info */
     {
-        const char *sl;
-        switch (p->loopstat)
-        {
-        case 0:
-            sl = "IDLE";
-            break;
-        case 1:
-            sl = "RUNNING";
-            break;
-        case 2:
-            sl = "PAUSED";
-            break;
-        case 3:
-            sl = "TERMINATING";
-            break;
-        case 4:
-            sl = "ERROR";
-            break;
-        default:
-            sl = "UNKNOWN";
-            break;
-        }
+        OV_STATE_INFO si = ov_state_info(ov_proc_state(p));
+        const char   *sl = si.lname;
         H_ov_buf_pos(row + ri, r.col + 1);
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_TEXT);
-        H_ov_buf_printf(" Status: %s  Loops: ", sl);
+        H_ov_buf_printf(" Status: ");
+        H_ov_theme_fg(si.fg);
+        H_ov_buf_printf("%s", sl);
+        H_ov_theme_fg(OV_FG_TEXT);
+        H_ov_buf_printf("  Loops: ");
         H_ov_theme_fg(p->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM);
         H_ov_buf_printf("%" PRId64, (int64_t) p->loopcnt);
         H_ov_theme_fg(OV_FG_DIM);
@@ -114,10 +96,10 @@ int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_CONN);
         const char *tstream = (p->trigstreamname[0] != '\0') ? p->trigstreamname : "-";
-        int         n = snprintf(NULL, 0, " Trigger: %s  stream: %s  sem: %d",
-                                 render_trigmode_label(p->triggermode), tstream, p->triggersem);
-        H_ov_buf_printf(" Trigger: %s  stream: %s  sem: %d", render_trigmode_label(p->triggermode),
-                        tstream, p->triggersem);
+        int n = snprintf(NULL, 0, " Trigger: %s  stream: %s  sem: %d",
+                         processinfo_triggermode_name(p->triggermode, 0), tstream, p->triggersem);
+        H_ov_buf_printf(" Trigger: %s  stream: %s  sem: %d",
+                        processinfo_triggermode_name(p->triggermode, 0), tstream, p->triggersem);
         H_render_pad_spaces(n, r.width);
         if (!skip_draw)
         {
