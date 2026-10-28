@@ -34,7 +34,7 @@ import shutil
 from pathlib import Path
 
 from .task_models import SimpleTask
-from ..compute_unit import ComputeUnit
+from ..errors import TaskDidNotSucceedError
 
 from .toml_manipulation import denest_toml_dicts
 from .. import env
@@ -47,9 +47,13 @@ import subprocess
 class InitialFolderSetup(SimpleTask):
 
     def can(self) -> bool:
-        # check logdir does NOT exist
-        # check rootdir does NOT exist
-        return True  # TODO
+        # task_do has already found success False, so an existing rootdir is partial.
+        if self.pipeline.root_folder.exists():
+            self.failure_reason = (
+                f"partial rootdir {self.pipeline.root_folder}; remove it"
+            )
+            return False
+        return True
 
     def success(self) -> bool:
         root_dir = self.pipeline.root_folder
@@ -127,11 +131,28 @@ class LoadDataFiles(SimpleTask):
         return True
 
     def success(self) -> bool:
-        # TODO this is pretty poor checking.
-        shm_dir = env.shm_dir()
-        for entry in self.pipeline.dataloads:
-            if not os.path.isfile(f"{shm_dir}/{entry.target}.im.shm"):
+        p = self.pipeline
+        if not p.dataloads:
+            return True
+
+        # TODO potential insert of dataloads abstraction here.
+        from astropy.io import fits
+        from pyMilk.interfacing.shm import SHM
+
+        for entry in p.dataloads:
+            if not os.path.isfile(f"{env.shm_dir()}/{entry.target}.im.shm"):
                 return False
+            expected = fits.getdata(str(p.root_folder / "data" / entry.source))
+            shm = SHM(entry.target, symcode=0)  # same axis order as forward()
+            try:
+                # Ignore byte order: FITS is big-endian.
+                if (
+                    shm.shape != expected.shape
+                    or shm.nptype != expected.dtype.newbyteorder("=")
+                ):
+                    return False
+            finally:
+                shm.close()
         return True
 
     def forward(self) -> None:
@@ -164,11 +185,9 @@ class DeployFPS(SimpleTask):
 
     def success(self) -> bool:
         p = self.pipeline
-        for cu, spec in p.compute_units.items():
-            compu = ComputeUnit(spec.exec, p.config.fps_name(cu))
-            if not compu.fps or not compu.fps.is_valid():
-                return False
-        return True
+        return all(
+            c.fps is not None and c.fps.is_valid() for c in p.compute_units.values()
+        )
 
     def forward(self) -> None:
 
@@ -176,8 +195,8 @@ class DeployFPS(SimpleTask):
 
         # Probably should ensure that cwd is the config's ROOTDIR
 
-        for cu, spec in p.compute_units.items():
-            compu = ComputeUnit(spec.exec, p.config.fps_name(cu))
+        for cu_name, compu in p.compute_units.items():
+            spec = p.config.compute_units[cu_name]
 
             with contextlib.chdir(p.work_folder):
                 compu.fpsinit()
@@ -208,53 +227,45 @@ class StartConfProcesses(SimpleTask):
             return False
 
         # Every compute unit's FPS must exist and be a well-formed deployment
-        for cu, spec in p.compute_units.items():
-            fps_name = p.config.fps_name(cu)
-            compu = ComputeUnit(spec.exec, fps_name)
+        for compu in p.compute_units.values():
             if compu.fps is None:
-                self.failure_reason = f"FPS for {fps_name} not found."
+                self.failure_reason = f"FPS for {compu.fpsname} not found."
                 return False
             if not compu.fps.is_valid():
-                self.failure_reason = f"FPS for {fps_name} is invalid."
+                self.failure_reason = f"FPS for {compu.fpsname} is invalid."
+                return False
 
         # TODO get & check the rootdir for all FPSs
 
         return True
 
     def success(self) -> bool:
-        p = self.pipeline
-        compus = [
-            ComputeUnit(spec.exec, p.config.fps_name(cu))
-            for cu, spec in p.compute_units.items()
-        ]
-        if any([c.fps is None for c in compus]):
-            return False
-        return all([c.fps is not None and c.fps.conf_isrunning() for c in compus])
+        compus = self.pipeline.compute_units.values()
+        return all(c.fps is not None and c.fps.conf_isrunning() for c in compus)
 
     def forward(self) -> None:
         p = self.pipeline
 
         # Probably should ensure that cwd is the config's ROOTDIR
         # The below could also probably be handled by a FPSManager of pyMilk
-        compus: list[ComputeUnit] = []  # cache to apply global timeout
-        for cu, spec in p.compute_units.items():
-            compu = ComputeUnit(spec.exec, p.config.fps_name(cu))
+        compus = p.compute_units.values()
+        for compu in compus:
             # TODO breaks if tmux is busy already (in particular poor cleaning of repeated tests.)
             compu.confstart(tmux=True)  # TODO dispatch env to tmuxes !!
-            compus += [compu]
 
         import time
 
         start = time.monotonic()
         while time.monotonic() - start < self.TIMEOUT_ALL:
-            if all([c.fps.conf_isrunning() for c in compus]):  # type: ignore
-                break
+            if all(c.fps.conf_isrunning() for c in compus):  # type: ignore
+                return
             time.sleep(0.01)
-        else:  # Should it raise ? We're gonna call self.success for that
-            ...
-            # raise TimeoutError(
-            #    f"Timeout on StartConfProcesses for {self.pipeline.short_name} [loop {self.pipeline.loop_number}]"
-            # )
+        stuck = [c.fpsname for c in compus if not c.fps.conf_isrunning()]  # type: ignore
+        raise TaskDidNotSucceedError(
+            f"Conf processes not running for {', '.join(stuck)} (tmux session busy?)",
+            task=type(self).__name__,
+            pipeline=p.short_name,
+        )
 
 
 class CompoundTask(SimpleTask):

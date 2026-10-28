@@ -212,7 +212,8 @@ def milk_pipes_nuke(folder: str | None, name: str):
       1. runstop on all compute units (CompUs)
       2. deapply all system linkages
       3. confstop on all compute units (CompUs)
-      4. rm -rf the pipeline root directory
+      4. destroy the FPSs of all compute units (CompUs)
+      5. rm -rf the pipeline root directory # TODO TBC ? Maybe we want a slightly less aggressive teardown.
     """
     milk_pipes_nuke_function(name, folder)
 

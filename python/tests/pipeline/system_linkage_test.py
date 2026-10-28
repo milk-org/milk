@@ -13,7 +13,7 @@ from milk.pipeline import Pipeline
 def pipeline(pytestconfig, tmp_path, monkeypatch):
     monkeypatch.setenv("MILK_SHM_DIR", str(tmp_path))
     pipe = Pipeline(pytestconfig.rootpath / "tests" / "resources", "pipelinebasic")
-    monkeypatch.setattr(pipe, "is_running", lambda: False)
+    monkeypatch.setattr(pipe, "any_run_active", lambda: False)
     pipe.root_folder = tmp_path / "rootdir"
     os.makedirs(pipe.root_folder, exist_ok=True)
     return pipe
@@ -63,7 +63,7 @@ def test_refuses_real_file(pipeline, tmp_path):
 
 def test_running_refused(pipeline, monkeypatch, tmp_path):
     _make_remotes(tmp_path)
-    monkeypatch.setattr(pipeline, "is_running", lambda: True)
+    monkeypatch.setattr(pipeline, "any_run_active", lambda: True)
     with pytest.raises(LinkageError):
         pipeline.apply_system_linkage("shared")
 
@@ -82,7 +82,7 @@ def test_cli_sys(pipeline, tmp_path, pytestconfig, monkeypatch):
     from milk.infra import mains_pipeline_mgmt as mgmt
 
     _make_remotes(tmp_path)
-    monkeypatch.setattr(Pipeline, "is_running", lambda self: False)
+    monkeypatch.setattr(Pipeline, "any_run_active", lambda self: False)
     # Copy the conf so the rootdir tag lands in tmp_path, not the repo.
     shutil.copytree(
         pytestconfig.rootpath / "tests" / "resources" / "pipelinebasic-conf",

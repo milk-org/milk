@@ -10,7 +10,6 @@ from milk.errors import (
     TaskDidNotSucceedError,
 )
 from milk.pipeline import Pipeline
-from milk.compute_unit import ComputeUnit
 from milk.infra.task_models import SimpleTask
 
 
@@ -39,18 +38,16 @@ class TestManualPipeline:
         assert pp.loop_number == 0
         assert pp.long_name == "pipelinebasic"
 
+        cus = pp.config.compute_units
         assert (
-            pp.compute_units["delay0"].fps["procinfo"]["triggersname"]
-            == pp.compute_units["delay0"].fps["in_name"]
+            cus["delay0"].fps["procinfo"]["triggersname"]
+            == cus["delay0"].fps["in_name"]
         )
         assert (
-            pp.compute_units["delay1"].fps["procinfo"]["triggersname"]
-            == pp.compute_units["delay0"].fps["out_name"]
+            cus["delay1"].fps["procinfo"]["triggersname"]
+            == cus["delay0"].fps["out_name"]
         )
-        assert (
-            pp.compute_units["delay1"].fps["in_name"]
-            == pp.compute_units["delay0"].fps["out_name"]
-        )
+        assert cus["delay1"].fps["in_name"] == cus["delay0"].fps["out_name"]
 
     def test_make_cloned_pipeline(self, cloned_pipeline):
         """
@@ -80,8 +77,7 @@ class TestManualPipeline:
         assert "does not exist" in str(cannot.value)  # the task's failure_reason
         pp.task_do(InitialFolderSetup).task_do(DeployFPS)
 
-        for cu, spec in pp.compute_units.items():
-            compu = ComputeUnit(spec.exec, pp.config.fps_name(cu))
+        for cu, compu in pp.compute_units.items():
             assert compu.fps is not None
             assert compu.fps.is_valid()
 
@@ -90,7 +86,9 @@ class TestManualPipeline:
             compu.fps.destroy()
 
     def test_task_not_succeeding(self, cloned_pipeline: Pipeline):
+
         class Never(SimpleTask):
+
             def can(self) -> bool:
                 return True
 
@@ -118,8 +116,7 @@ class TestManualPipeline:
         pp.task_do(StartConfProcesses)
 
         live_names = set()
-        for cu, spec in pp.compute_units.items():
-            compu = ComputeUnit(spec.exec, pp.config.fps_name(cu))
+        for compu in pp.compute_units.values():
             assert compu.fps
             assert compu.fps.conf_isrunning()
             live_names.add(compu.fps.name)

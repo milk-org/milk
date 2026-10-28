@@ -97,7 +97,6 @@ class Pipeline:
             )
         self.config = load_pipeline_config(self.conf_folder)  # Raises if not existing
 
-        self.compute_units = self.config.compute_units
         self.dataloads = self.config.dataloads
         self.systemlinkage = self.config.systemlinkage
 
@@ -235,13 +234,20 @@ class Pipeline:
 
     def task_undo(self): ...
 
-    def is_running(self) -> bool:
-        for cu, spec in self.compute_units.items():
-            # TODO: check this question has sense: is the pipeline in a correct state?
-            fps = ComputeUnit(spec.exec, self.config.fps_name(cu)).fps
-            if fps is not None and fps.run_isrunning():
-                return True
-        return False
+    @property
+    def compute_units(self) -> dict[str, ComputeUnit]:
+        """Fresh views keyed like config.compute_units. The only ComputeUnit construction in milk/."""
+        return {
+            cu: ComputeUnit(spec.exec, self.config.fps_name(cu))
+            for cu, spec in self.config.compute_units.items()
+        }
+
+    def any_run_active(self) -> bool:
+        # TODO: check this question has sense: is the pipeline in a correct state?
+        return any(
+            c.fps is not None and c.fps.run_isrunning()
+            for c in self.compute_units.values()
+        )
 
     def _linkage_paths(self, linkage_name: str) -> list[tuple[Path, Path]]:
         if linkage_name not in self.systemlinkage:
@@ -257,7 +263,7 @@ class Pipeline:
     def apply_system_linkage(self, linkage_name: str) -> None:
         """Point each local stream file at its remote one, replacing existing symlinks."""
         pairs = self._linkage_paths(linkage_name)
-        if self.is_running():
+        if self.any_run_active():
             raise LinkageError(
                 "Pipeline is running; stop it first", pipeline=self.short_name
             )
@@ -284,7 +290,7 @@ class Pipeline:
     def deapply_system_linkage(self, linkage_name: str) -> None:
         """Remove the linkage's symlinks, leaving any that point elsewhere."""
         pairs = self._linkage_paths(linkage_name)
-        if self.is_running():
+        if self.any_run_active():
             raise LinkageError(
                 "Pipeline is running; stop it first", pipeline=self.short_name
             )
@@ -306,8 +312,8 @@ class Pipeline:
             except Exception as error:
                 failures.append((label, error))
 
-        for cu, spec in self.compute_units.items():
-            compu = ComputeUnit(spec.exec, self.config.fps_name(cu))
+        compus = self.compute_units
+        for cu, compu in compus.items():
             if compu.fps is not None:
                 attempt(f"runstop {cu}", compu.runstop)
         for linkage in self.systemlinkage:
@@ -315,14 +321,12 @@ class Pipeline:
                 f"deapply system linkage {linkage}",
                 lambda linkage=linkage: self.deapply_system_linkage(linkage),
             )
-        for cu, spec in self.compute_units.items():
-            compu = ComputeUnit(spec.exec, self.config.fps_name(cu))
+        for cu, compu in compus.items():
             if compu.fps is not None:
                 attempt(f"confstop {cu}", compu.confstop)
-        for cu, spec in self.compute_units.items():
-            compu = ComputeUnit(spec.exec, self.config.fps_name(cu))
+        for cu, compu in compus.items():
             if compu.fps is not None:
-                compu.fps.destroy()
+                attempt(f"destroy {cu}", compu.fps.destroy)
         if self.root_folder.exists() or self.root_folder.is_symlink():
             attempt(
                 f"rm -rf {self.root_folder}", lambda: shutil.rmtree(self.root_folder)
