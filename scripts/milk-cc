@@ -1,0 +1,196 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+#
+# milk-cc — Single-command compiler for user C compute units (Tier 3 MILK_RUNNABLE)
+#           and milk.calc extensions (Tier 1/2 milk_calc_ext.h).
+
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage:
+  milk-cc [options] <source.c> [extra gcc/ld flags...]
+
+Description:
+  Compiles a standalone MILK_RUNNABLE compute unit (containing EXPORT_FPSEXEC)
+  into a self-contained `<prefix>-fpsexec-<id>` executable, or compiles a
+  `milk_calc_ext.h` extension (containing MILK_CALC_EXT_EXPORT) into `<name>.so`.
+
+Options:
+  -o <output>   Output binary or shared library path
+  --shared      Force building a shared library (.so)
+  -v, --verbose Print the compiler invocation
+  -h, --help    Show this help message
+
+Examples:
+  milk-cc shwfs_cog.c                    # -> ./milk-fpsexec-milk-shwfs-cog
+  milk-cc shwfs_cog.c -lblas -llapack    # -> link extra libraries
+  milk-cc despike.c                      # -> ./despike.so (milk.calc extension)
+EOF
+}
+
+OUT=""
+FORCE_SHARED=0
+VERBOSE=0
+SRC=""
+EXTRA_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        -o)
+            if [[ $# -lt 2 ]]; then
+                echo "milk-cc: -o requires an argument" >&2
+                exit 2
+            fi
+            OUT="$2"
+            shift 2
+            ;;
+        --shared)
+            FORCE_SHARED=1
+            shift
+            ;;
+        -v|--verbose)
+            VERBOSE=1
+            shift
+            ;;
+        *.c)
+            if [[ -z "$SRC" ]]; then
+                SRC="$1"
+            else
+                EXTRA_ARGS+=("$1")
+            fi
+            shift
+            ;;
+        *)
+            EXTRA_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if [[ -z "$SRC" ]]; then
+    usage >&2
+    exit 2
+fi
+
+if [[ ! -f "$SRC" ]]; then
+    echo "milk-cc: source file not found: $SRC" >&2
+    exit 1
+fi
+
+# Locate MILK installation prefix
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PREFIX="${MILK_INSTALLDIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+
+if [[ ! -d "$PREFIX/include" && ! -d "$PREFIX/lib" ]]; then
+    echo "milk-cc: cannot locate milk include/lib under $PREFIX (set MILK_INSTALLDIR)" >&2
+    exit 1
+fi
+
+CC_BIN="${CC:-gcc}"
+
+# Collect include directories under $PREFIX/include
+INC_FLAGS=("-I$PREFIX/include")
+for sub in "$PREFIX"/include/*; do
+    if [[ -d "$sub" ]]; then
+        INC_FLAGS+=("-I$sub")
+    fi
+done
+if [[ -d "$PREFIX/include/CommandLineInterface/CLIcore" ]]; then
+    INC_FLAGS+=("-I$PREFIX/include/CommandLineInterface/CLIcore")
+fi
+
+# Detect whether $SRC is a MILK_RUNNABLE (EXPORT_FPSEXEC) or a milk.calc extension
+EXPORT_LINE="$(grep -E '^[[:space:]]*EXPORT_FPSEXEC[[:space:]]*\(' "$SRC" | head -n 1 || true)"
+
+if [[ "$FORCE_SHARED" -eq 1 || -z "$EXPORT_LINE" ]]; then
+    # Build shared library (.so) for milk.calc (-l)
+    if [[ -z "$OUT" ]]; then
+        STEM="$(basename "$SRC" .c)"
+        OUT="./${STEM}.so"
+    fi
+    CMD=(
+        "$CC_BIN"
+        -O3 -march=native -ffast-math -fopenmp-simd
+        -shared -fPIC
+        -Wall -Wextra -Wno-unused-parameter
+        "${INC_FLAGS[@]}"
+        "$SRC"
+        -o "$OUT"
+        "${EXTRA_ARGS[@]}"
+        -lm
+    )
+    if [[ "$VERBOSE" -eq 1 ]]; then
+        echo "${CMD[*]}"
+    fi
+    "${CMD[@]}"
+    echo "$OUT"
+    exit 0
+fi
+
+# Parse EXPORT_FPSEXEC(prefix, "id", unit_sym)
+PREFIX_NAME="$(echo "$EXPORT_LINE" | sed -E 's/.*EXPORT_FPSEXEC[[:space:]]*\([[:space:]]*([A-Za-z0-9_]+)[[:space:]]*,[[:space:]]*"([^"]+)"[[:space:]]*,[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*\).*/\1/')"
+UNIT_ID="$(echo "$EXPORT_LINE" | sed -E 's/.*EXPORT_FPSEXEC[[:space:]]*\([[:space:]]*([A-Za-z0-9_]+)[[:space:]]*,[[:space:]]*"([^"]+)"[[:space:]]*,[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*\).*/\2/')"
+UNIT_SYM="$(echo "$EXPORT_LINE" | sed -E 's/.*EXPORT_FPSEXEC[[:space:]]*\([[:space:]]*([A-Za-z0-9_]+)[[:space:]]*,[[:space:]]*"([^"]+)"[[:space:]]*,[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*\).*/\3/')"
+
+if [[ -z "$PREFIX_NAME" || -z "$UNIT_ID" || -z "$UNIT_SYM" ]]; then
+    echo "milk-cc: malformed EXPORT_FPSEXEC in $SRC: $EXPORT_LINE" >&2
+    exit 1
+fi
+
+if [[ -z "$OUT" ]]; then
+    OUT="./${PREFIX_NAME}-fpsexec-${UNIT_ID}"
+fi
+
+STUB_FILE="$(mktemp "${TMPDIR:-/tmp}/milk_cc_stub_XXXXXX.c")"
+trap 'rm -f "$STUB_FILE"' EXIT
+
+cat > "$STUB_FILE" <<EOF
+#include "milk_skinny_runnable.h"
+
+extern const MILK_RUNNABLE ${UNIT_SYM};
+
+int main(int argc, char *argv[])
+{
+    return MILK_FPSEXEC_MAIN(argc, argv, &${UNIT_SYM});
+}
+EOF
+
+LIB_FLAGS=(
+    "-L$PREFIX/lib"
+    "-Wl,-rpath,$PREFIX/lib"
+    "-Wl,--disable-new-dtags"
+)
+
+for lib in milkCOREMODmemory milkCOREMODtools milkCOREMODarith milkCOREMODiofits \
+           milkfps milkcomputeunit milkprocessinfo ImageStreamIO milkdata milkcommon; do
+    if [[ -f "$PREFIX/lib/lib${lib}.so" || -f "$PREFIX/lib/lib${lib}.a" ]]; then
+        LIB_FLAGS+=("-l${lib}")
+    fi
+done
+LIB_FLAGS+=("-lm" "-lpthread" "-ldl" "-lrt")
+
+CMD=(
+    "$CC_BIN"
+    -O3 -march=native -ffast-math -fopenmp
+    -DMILK_NO_CLI
+    -Wall -Wextra -Wno-unused-parameter
+    "${INC_FLAGS[@]}"
+    "$SRC" "$STUB_FILE"
+    -o "$OUT"
+    "${LIB_FLAGS[@]}"
+    "${EXTRA_ARGS[@]}"
+)
+
+if [[ "$VERBOSE" -eq 1 ]]; then
+    echo "${CMD[*]}"
+fi
+
+"${CMD[@]}"
+echo "$OUT"

@@ -17,7 +17,7 @@
 /**
  * @brief Maximum number of tokens per input line
  */
-#define CLI_CALC_MAX_TOKENS 64
+#define CLI_CALC_MAX_TOKENS 256
 
 /**
  * @brief Maximum length of a token string value
@@ -30,19 +30,20 @@
 typedef enum
 {
     TOK_EOF = 0,
-    TOK_LONG,        /**< integer literal          */
-    TOK_DOUBLE,      /**< floating-point literal    */
-    TOK_FUNC_D_D,    /**< func(double)->double      */
-    TOK_FUNC_DD_D,   /**< func(d,d)->double         */
-    TOK_FUNC_DDD_D,  /**< func(d,d,d)->double       */
-    TOK_FUNC_IM_D,   /**< func(image)->double        */
-    TOK_FUNC_IMD_D,  /**< func(image,double)->double */
-    TOK_FUNC_IMIM_D, /**< func(im,im)->double        */
-    TOK_FUNC_WHERE,  /**< where(cond, a, b)          */
-    TOK_VAR,         /**< existing variable          */
-    TOK_IMAGE,       /**< existing image             */
-    TOK_COMMAND,     /**< registered CLI command     */
-    TOK_NVAR,        /**< new variable name          */
+    TOK_LONG,         /**< integer literal          */
+    TOK_DOUBLE,       /**< floating-point literal    */
+    TOK_FUNC_D_D,     /**< func(double)->double      */
+    TOK_FUNC_DD_D,    /**< func(d,d)->double         */
+    TOK_FUNC_DDD_D,   /**< func(d,d,d)->double       */
+    TOK_FUNC_IM_D,    /**< func(image)->double        */
+    TOK_FUNC_IMD_D,   /**< func(image,double)->double */
+    TOK_FUNC_IMIM_D,  /**< func(im,im)->double        */
+    TOK_FUNC_IMIM_IM, /**< func(im,im)->image        */
+    TOK_FUNC_WHERE,   /**< where(cond, a, b)          */
+    TOK_VAR,          /**< existing variable          */
+    TOK_IMAGE,        /**< existing image             */
+    TOK_COMMAND,      /**< registered CLI command     */
+    TOK_NVAR,         /**< new variable name          */
     TOK_OP_PLUS,
     TOK_OP_MINUS,
     TOK_OP_STAR,
@@ -82,7 +83,20 @@ typedef enum
     TOK_FUNC_SDD_S, /**< func(s,d,d)->string  */
     TOK_FUNC_SSS_S, /**< func(s,s,s)->string  */
     /* Format conversions */
-    TOK_FUNC_D_S, /**< func(double)->string */
+    TOK_FUNC_D_S,      /**< func(double)->string */
+    TOK_FUNC_IM_L,     /**< func(image)->long (count, index) */
+    TOK_FUNC_CPLX,     /**< real/imag/arg/conj/cplx: complex images */
+    TOK_FUNC_COORD,    /**< ix/iy/ir/itheta(im[, cx, cy]): coordinate images */
+    TOK_FUNC_SHIFT,    /**< shift(im, dx[, dy]): 2D clamped neighbor stencil */
+    TOK_FUNC_LUT,      /**< lut(im, tbl[, x0, dx]): 1D lookup table interp */
+    TOK_FUNC_MEDFILT,  /**< medfilt3/5/7(im): 2D exact median filter */
+    TOK_FUNC_PIXREMAP, /**< pixremap(im, map[, fill]): indexed gather */
+    TOK_FUNC_PIXUNMAP, /**< pixunmap(im, map[, n]) / rprof(im[, cx, cy]) */
+    TOK_FUNC_GAUSS,    /**< gauss(im, sigma[, sigmay]): separable 2D Gaussian */
+    TOK_FUNC_CUMSUM,   /**< cumsum(im[, axis]): cumulative sum along an axis */
+    TOK_FUNC_INTERP2,  /**< interp2(im, xmap, ymap): 2D bilinear gather */
+    TOK_FUNC_UDEF,     /**< user-defined inline function def f(...) = ... */
+    TOK_FUNC_USER,     /**< compiled C kernel / operator from milk_calc_ext.h */
     TOK_NEWLINE
 } cli_token_type;
 
@@ -95,7 +109,8 @@ typedef struct
     long           val_l;
     double         val_d;
     double (*fnctptr)();
-    char sval[CLI_CALC_TOKEN_MAXLEN];
+    char          sval[CLI_CALC_TOKEN_MAXLEN];
+    unsigned char literal; /**< 1 for a quoted "string" (never an undefined identifier) */
 } cli_token;
 
 /**
