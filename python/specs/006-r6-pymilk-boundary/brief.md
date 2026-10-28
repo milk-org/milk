@@ -1,5 +1,11 @@
 # R6 brief: pyMilk boundary
 
+> **Status: deferred (Vincent, 2026-10-27).** It moves to the future milk/pyMilk repo-merge round,
+> under a unified naming and architecture. That round consolidates the engine libs, the bindings
+> build and the version checks on the SHM/FPS structs, all of which involve repo architecture
+> and C changes. This brief and `draft_pymilk_boundary_test.py` stay as input for that round. Do
+> not implement them now.
+
 Roadmap: R6 · Design: design-v7 §2.3, §4.5, D-13 · Depends on: R1a · Tests: py + milk
 Workflow: lean; prompts in `specs/pipelines/lean-prompts.md`. This brief and its tests replace
 spec/plan/tasks, which overrides constitution §VIII for this slice.
