@@ -2,9 +2,19 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file    CLIcore_UI_history.c
+ * @brief   Core history management — paths, load,
+ *          save, structured log init and logging.
+ *
+ * @see CLIcore_UI_history_display.c for display cmds.
+ * @see CLIcore_UI_history_cmds.c for expansion, etc.
+ */
+
 #ifndef _GNU_SOURCE
 #    define _GNU_SOURCE
 #endif
+#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -15,16 +25,9 @@
 #    include <readline/readline.h>
 #endif
 #include "CLIcore.h"
-
-/**
- * @file    CLIcore_UI_history.c
- * @brief   Core history management — paths, load,
- *          save, structured log init and logging.
- *
- * @see CLIcore_UI_history_display.c for display cmds.
- * @see CLIcore_UI_history_cmds.c for expansion, etc.
- */
-
+#include "CLIcore_UI_execute.h"
+#include "milk_bash_engine.h"
+#include "milk_server.h"
 
 /**
  * @brief Return path to the readline history
@@ -62,30 +65,45 @@ const char *CLI_history_file(void)
 
 /**
  * @brief Load persistent history from
- *        ~/.milk_history into readline.
+ *        ~/.milk_history into readline (made if missing: lines are appended to it as they run).
  */
 void cli_history_load(void)
 {
 #ifdef USE_READLINE
-    char hpath[STRINGMAXLEN_FULLFILENAME];
-    snprintf(hpath, STRINGMAXLEN_FULLFILENAME, "%s/.milk_history", getenv("HOME"));
-    read_history(hpath);
+    int fd = open(CLI_history_file(), O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0600);
+    if (fd >= 0)
+    {
+        close(fd);
+    }
+    read_history(CLI_history_file());
 #endif
 }
 
 /**
- * @brief Save readline history to
- *        ~/.milk_history, truncating to
- *        MILK_HISTORY_MAXLINES.
+ * @brief At exit: cap ~/.milk_history to MILK_HISTORY_MAXLINES. It is never rewritten from this
+ *        session's list, which would drop the lines other sessions appended meanwhile (D39).
  */
 void cli_history_save(void)
 {
 #ifdef USE_READLINE
-    char hpath[STRINGMAXLEN_FULLFILENAME];
-    snprintf(hpath, STRINGMAXLEN_FULLFILENAME, "%s/.milk_history", getenv("HOME"));
-    write_history(hpath);
-    history_truncate_file(hpath, MILK_HISTORY_MAXLINES);
+    history_truncate_file(CLI_history_file(), MILK_HISTORY_MAXLINES);
 #endif
+}
+
+const char *cli_history_session(void)
+{
+    static char own[16];
+    const char *s = milk_bash_engine_session(); // the session milk-cli's bash uses
+    if (s[0] == '\0')
+    {
+        s = milk_server_session_name(); // this process's own
+    }
+    if (s[0] == '\0') // milk-cli's own, before it listens: named after its pid
+    {
+        snprintf(own, sizeof(own), "%d", (int) getpid());
+        s = own;
+    }
+    return s;
 }
 
 
@@ -163,7 +181,10 @@ void cli_history_log_init(void)
  * @param text   The entry text to log.
  * @param type   Single-character type code.
  */
-static void cli_history_log_entry(const char *text, char type)
+static FILE *s_log_fp = NULL;
+
+/** log_entry_nf() - cli_history_log_entry() without the flush: a batch flushes once. */
+static void log_entry_nf(const char *text, char type)
 {
     if (text == NULL || text[0] == '\0')
     {
@@ -185,19 +206,72 @@ static void cli_history_log_entry(const char *text, char type)
         }
     }
 
-    FILE *fp = fopen(CLI_history_log_file(), "a");
-    if (fp == NULL)
+    static time_t s_last_sec = 0;
+    static char   s_tbuf[64] = "";
+
+    if (s_log_fp == NULL)
     {
-        return;
+        s_log_fp = fopen(CLI_history_log_file(), "ae");
+        if (s_log_fp == NULL)
+        {
+            return;
+        }
     }
 
     {
         time_t now = time(NULL);
-        char   tbuf[64];
-        strftime(tbuf, sizeof(tbuf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
-        fprintf(fp, "%s\t%s\t%s\t%c\t%s\n", tbuf, data.session_id, data.session_tty, type, text);
+        if (now != s_last_sec)
+        {
+            s_last_sec = now;
+            strftime(s_tbuf, sizeof(s_tbuf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
+        }
+        fprintf(s_log_fp, "%s\t%s\t%s\t%c\t%s\n", s_tbuf, cli_history_session(), data.session_tty,
+                type, text);
     }
-    fclose(fp);
+}
+
+static void cli_history_log_entry(const char *text, char type)
+{
+    log_entry_nf(text, type);
+    if (s_log_fp != NULL)
+    {
+        fflush(s_log_fp);
+    }
+}
+
+void cli_history_log_prompt_lines(const char *text)
+{
+    char  sbuf[256];
+    char *heap = NULL;
+    for (const char *p = text; p != NULL && *p != '\0';)
+    {
+        const char *nl  = strchr(p, '\n');
+        size_t      len = (nl != NULL) ? (size_t) (nl - p) : strlen(p);
+        char       *line;
+        if (len < sizeof(sbuf))
+        {
+            memcpy(sbuf, p, len);
+            sbuf[len] = '\0';
+            line      = sbuf;
+        }
+        else
+        {
+            free(heap);
+            heap = strndup(p, len);
+            line = heap;
+        }
+        if (line != NULL)
+        {
+            log_entry_nf(line, 'P');
+            cli_session_log_cmd(line);
+        }
+        p = (nl != NULL) ? nl + 1 : p + len;
+    }
+    free(heap);
+    if (s_log_fp != NULL)
+    {
+        fflush(s_log_fp);
+    }
 }
 
 /**
@@ -218,6 +292,7 @@ void cli_history_log_cmd(const char *cmd)
 void cli_history_log_prompt(const char *prompt)
 {
     cli_history_log_entry(prompt, 'P');
+    cli_session_log_cmd(prompt);
 }
 
 /**

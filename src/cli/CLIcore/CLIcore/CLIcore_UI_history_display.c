@@ -2,17 +2,6 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#ifndef _GNU_SOURCE
-#    define _GNU_SOURCE
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <time.h>
-#include <fnmatch.h>
-#include "CLIcore.h"
-
 /**
  * @file    CLIcore_UI_history_display.c
  * @brief   History log display and query commands.
@@ -23,6 +12,18 @@
  *
  * @see CLIcore_UI_history.c for core log management.
  */
+
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
+#include <fnmatch.h>
+#include "CLIcore.h"
+#include "CLIcore_UI_execute.h"
 
 /* Forward declaration — defined in
  * CLIcore_UI_history.c */
@@ -362,8 +363,8 @@ void history_log_display(const HistDisplayOpts *opts)
         }
 
         /* Is this the current session? */
-        int self = (sid_len == (int) strlen(data.session_id) &&
-                    strncmp(sid_start, data.session_id, (size_t) sid_len) == 0);
+        const char *me = cli_history_session();
+        int self = (sid_len == (int) strlen(me) && strncmp(sid_start, me, (size_t) sid_len) == 0);
 
         /* Store */
         if (total >= cap)
@@ -648,7 +649,7 @@ errno_t cli_ghistory(void)
             printf("ghistory: unknown "
                    "option '%s'\n",
                    a);
-            printf("Usage: ghistory [N]\n"
+            printf("Usage: @history --global [N]\n"
                    "  -n N       last N\n"
                    "  -s SID     session\n"
                    "  -t TYPE    prompt/cmd/"
@@ -687,7 +688,7 @@ errno_t cli_lhistory(void)
 {
     HistDisplayOpts opts;
     memset(&opts, 0, sizeof(opts));
-    opts.filter_session = data.session_id;
+    opts.filter_session = cli_history_session();
     opts.max_entries    = 0;
 
     int    argc = 0;
@@ -780,7 +781,7 @@ errno_t cli_lhistory(void)
             printf("lhistory: unknown "
                    "option '%s'\n",
                    a);
-            printf("Usage: lhistory [N]\n"
+            printf("Usage: @history --local [N]\n"
                    "  -n N       last N\n"
                    "  -t TYPE    prompt/cmd/"
                    "shell\n"

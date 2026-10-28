@@ -94,7 +94,6 @@ setup(
     author_email=["oliv.guyon@gmail.com", "arnaud.sevin@obspm.fr"],
     description="",
     long_description="",
-    scripts=["bin/tmuxsessionname"],
     ext_modules=[CMakeExtension("CacaoProcessTools")],
     cmdclass={"build_ext": CMakeBuildExt},
     zip_safe=False,
