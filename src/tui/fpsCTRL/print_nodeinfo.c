@@ -9,6 +9,7 @@
 
 #include "fps.h"
 #include "fpsCTRL_TUIcompat.h"
+#include "fpsCTRL_units.h"
 
 /**
  * @brief Print detailed info for the selected tree node.
@@ -65,56 +66,42 @@ void fpsCTRLscreen_print_nodeinfo(FPS               *fps,
     TUI_printfw("    %-16s: %s\n", "Data Dir", fps[fpsindexSelected].md->datadir);
     TUI_printfw("    %-16s: %s\n", "Conf Dir", fps[fpsindexSelected].md->confdir);
 
-    TUI_printfw("    %-16s: ", "Sessions");
-
-    char cmd[512];
-
-    snprintf(cmd, sizeof(cmd), "tmux has-session -t %s:ctrl 2> /dev/null",
-             fps[fpsindexSelected].md->name);
-    if (system(cmd) == 0)
+    for (int r = FPS_UNIT_RUN; r <= FPS_UNIT_CONF; r++)
     {
-        screenprint_setcolor(COLOR_OK);
-        TUI_printfw("[ctrl] ");
-        screenprint_unsetcolor(COLOR_OK);
+        FPS_UNIT_STATUS st;
+        fpsctrl_unit_status(&fps[fpsindexSelected], (FPS_UNIT_ROLE) r, &st);
+        TUI_printfw("    %-16s: ", (r == FPS_UNIT_RUN) ? "Run process" : "Conf process");
+        int col = (st.state == FPS_UNIT_RUNNING)   ? COLOR_OK
+                  : (st.state == FPS_UNIT_FAILED)  ? 4
+                  : fps_unit_state_alive(st.state) ? 3
+                                                   : 0;
+        if (col != 0)
+        {
+            screenprint_setcolor(col);
+        }
+        TUI_printfw("%s", fps_unit_state_name(st.state));
+        if (col != 0)
+        {
+            screenprint_unsetcolor(col);
+        }
+        if (st.pid > 0)
+        {
+            TUI_printfw(", pid %d", (int) st.pid);
+        }
+        if (fps_unit_state_alive(st.state) && st.uptime > 0)
+        {
+            TUI_printfw(", up %.0f s", st.uptime);
+        }
+        if (st.last[0] != '\0')
+        {
+            TUI_printfw(" (%s)", st.last);
+        }
+        if (st.session[0] != '\0')
+        {
+            TUI_printfw(", session %s", st.session);
+        }
+        TUI_printfw("\n");
     }
-    else
-    {
-        screenprint_setcolor(4);
-        TUI_printfw(" ctrl  ");
-        screenprint_unsetcolor(4);
-    }
-
-    snprintf(cmd, sizeof(cmd), "tmux has-session -t %s:conf 2> /dev/null",
-             fps[fpsindexSelected].md->name);
-    if (system(cmd) == 0)
-    {
-        screenprint_setcolor(COLOR_OK);
-        TUI_printfw("[conf] ");
-        screenprint_unsetcolor(COLOR_OK);
-    }
-    else
-    {
-        screenprint_setcolor(4);
-        TUI_printfw(" conf  ");
-        screenprint_unsetcolor(4);
-    }
-
-    snprintf(cmd, sizeof(cmd), "tmux has-session -t %s:run 2> /dev/null",
-             fps[fpsindexSelected].md->name);
-    if (system(cmd) == 0)
-    {
-        screenprint_setcolor(COLOR_OK);
-        TUI_printfw("[run] ");
-        screenprint_unsetcolor(COLOR_OK);
-    }
-    else
-    {
-        screenprint_setcolor(4);
-        TUI_printfw(" run  ");
-        screenprint_unsetcolor(4);
-    }
-    TUI_newline();
-
     TUI_newline();
     screenprint_setbold();
     screenprint_setcolor(7); // Cyan

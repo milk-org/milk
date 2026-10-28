@@ -522,21 +522,15 @@ errno_t processinfo_CTRLscreen()
             ctx.pindexActiveSelected = NBactive - 1;
         }
 
+        /* Before keys are handled: a destructive key targets what the last frame highlighted */
         if (NBactive > 0 && ctx.scan_shm != NULL)
         {
-            if (ctx.procinfoproc->sort_col[m] > 0)
-            {
-                ctx.pindexSelected =
-                    ctx.procinfoproc->local_sorted_pindex[ctx.pindexActiveSelected];
-            }
-            else
-            {
-                ctx.pindexSelected = ctx.scan_shm->sorted_pindex[ctx.pindexActiveSelected];
-            }
+            procctrl_follow_cursor(&ctx, NBactive);
         }
         else
         {
             ctx.pindexSelected = -1;
+            ctx.cur_found      = 0;
         }
 
         if (ch != -1)
