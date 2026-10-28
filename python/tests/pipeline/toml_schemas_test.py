@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from milk.errors import ConfigError
 from milk.infra import pipeline_models as pconf
-from milk.infra.toml_manipulation import load_pipeline_config
+from milk.confresolve import confresolve
 
 
 @pytest.fixture
@@ -99,13 +99,13 @@ def test_pipeline_config_is_frozen(load_modeled_toml):
         load_modeled_toml.name = "other"
 
 
-@pytest.mark.parametrize("key", ["foo", "tasks", "sessions", "delay0", "kind"])
+@pytest.mark.parametrize("key", ["foo", "tasks", "sessions", "delay0"])
 def test_loader_refuses_unknown_top_level_key(tmp_path, conf_dir, key):
     toml_path = tmp_path / "conf.toml"
     toml_path.write_text(f"{key} = 1\n" + (conf_dir / "conf.toml").read_text())
 
     with pytest.raises(ConfigError) as err:
-        load_pipeline_config(tmp_path)
+        confresolve(tmp_path)
     assert key in str(err.value)
     assert err.value.path == toml_path
 
@@ -120,7 +120,7 @@ def test_loader_refuses_old_key_under_cu(tmp_path, conf_dir):
     toml_path.write_text(text)
 
     with pytest.raises(ConfigError) as err:
-        load_pipeline_config(tmp_path)
+        confresolve(tmp_path)
     assert "kind" in str(err.value)
     assert err.value.path == toml_path
 
@@ -139,7 +139,7 @@ def test_loader_refuses_bad_procinfo_shape(tmp_path, value):
     )
 
     with pytest.raises(ConfigError) as err:
-        load_pipeline_config(tmp_path)
+        confresolve(tmp_path)
     assert "procinfo" in str(err.value)
     assert err.value.path == toml_path
     assert isinstance(err.value.__cause__, pydantic.ValidationError)

@@ -80,6 +80,7 @@ class PipelineConfig(BaseModel):
     long_name: str
     name: str
     loop_number: int
+    kind: str = "generic"
     compute_units: dict[str, ComputeUnitSpec] = Field(default_factory=dict)
     dataloads: list[DataLoadEntryModel] = Field(default_factory=list)
     # mode name -> {local stream owned by this pipeline: remote stream it points to}

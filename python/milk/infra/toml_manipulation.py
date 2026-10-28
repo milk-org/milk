@@ -3,39 +3,11 @@ from __future__ import annotations
 import re
 import typing as typ
 
-import os
-import tomli
-from pathlib import Path
-
-import pydantic
-
-from .pipeline_models import PipelineConfig
-from ..errors import ConfigError
-
 if typ.TYPE_CHECKING:
     from pyMilk.interfacing.fps import FPVal
 
     FPValFlat: typ.TypeAlias = "FPVal | list[FPVal]"
     FPValNest: typ.TypeAlias = FPValFlat | dict[str, "FPValNest"]
-
-
-def load_pipeline_config(conf_folder: str | Path) -> PipelineConfig:
-    toml_path = Path(conf_folder) / "conf.toml"
-    if not os.path.isfile(toml_path):
-        raise ConfigError(
-            f"Pipeline from {conf_folder}: missing conf.toml file.",
-            path=toml_path,
-        )
-    with open(toml_path, "rb") as f:
-        pre_sub_data = tomli.load(f)
-    # TODO recurse dependencies of consecutive toml files.
-
-    data = substitute_toml_variables_in_nested(pre_sub_data)
-
-    try:
-        return PipelineConfig.model_validate(data)
-    except pydantic.ValidationError as err:
-        raise ConfigError(str(err), path=toml_path) from err
 
 
 def denest_toml_dicts(fp_param_dict: dict[str, FPValNest]) -> dict[str, FPValFlat]:

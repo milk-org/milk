@@ -25,7 +25,7 @@ Deploy 3 pipelines:
 from __future__ import annotations
 
 from .compute_unit import ComputeUnit
-from .infra.toml_manipulation import load_pipeline_config
+from .confresolve import confresolve
 from .infra.task_models import SimpleTask
 from . import env
 from .errors import (
@@ -95,7 +95,7 @@ class Pipeline:
                 f"Pipeline from {self.conf_folder}: folder does not exist.",
                 path=self.conf_folder,
             )
-        self.config = load_pipeline_config(self.conf_folder)  # Raises if not existing
+        self.config = confresolve(self.conf_folder)  # Raises if not existing
 
         self.dataloads = self.config.dataloads
         self.systemlinkage = self.config.systemlinkage

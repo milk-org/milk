@@ -95,7 +95,11 @@ FPS names are `<name>_<cu>` (for example `basic_delay0`), derived from the pipel
 
 ## Configuration
 
-TBC.
+`milk.confresolve.confresolve(confdir, overrides)` is the only way to get a `PipelineConfig`; it re-reads the files on every call.
+Layers, lowest to highest: kind defaults (`kind`, default `generic`), `includes` (paths relative to the confdir, one level), `conf.toml`, then `overrides` (dotted keys; `long_name`, `name`, `loop_number` cannot be overridden).
+Tables merge recursively; lists and `[[table arrays]]` are replaced whole.
+`{dotted.key}` substitution runs on the merged result (never inside table arrays), then validation; failures raise `ConfigError`.
+Contract: [design-v7](../python/specs/pipelines/design-v7.md) D-5.
 
 milk-config-store
 milk-config-load

@@ -34,3 +34,15 @@ milk build (see `tests/conftestaux/milk.py`). The existing suite must stay green
 - No options, flags or hooks that nothing in the current slice uses.
 - Prefer deleting to adding. Report the net line count of every change. The slice brief sets the
   budget (default +300 net LOC); if you will exceed it, stop and ask.
+
+**Test rules (important):**
+- **No meta-testing.** Tests exercise behaviour through the Python API, the CLIs or the live system.
+  Never read, grep or analyze the text of the source tree to assert on code. That rules out checks
+  such as which arguments an FPS declaration passes, where a constructor is called, where a class is
+  defined, or which module imports what. Structural rules (one construction point, one exception
+  module, no duplication) are enforced in review, not in tests.
+- `ast` is off-limits for any systematic use. It may occasionally parse a single expression under
+  test, never the source tree.
+- Fixtures shared across test files live in `tests/conftestaux/` and are registered in
+  `tests/conftest.py` (`pytest_plugins`). Do not add `conftest.py` files in subfolders. Reuse an
+  existing fixture before writing a new one.
