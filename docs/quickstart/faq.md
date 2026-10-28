@@ -39,11 +39,16 @@ Common issues and solutions when building, installing, and running `milk`.
     fatal error: readline/readline.h: No such file or directory
     ```
 
-    **Solution:** Install the development headers, or build without CLI:
+    **Solution:** Install the development headers, disable readline, or build without CLI:
 
     === "Install headers"
         ```bash
         sudo apt-get install libreadline-dev
+        ```
+
+    === "Disable readline (keep CLI)"
+        ```bash
+        cmake .. -DUSE_READLINE=OFF
         ```
 
     === "Build standalone-only (No CLI)"
@@ -93,7 +98,7 @@ See also: [Streams](../guide/streams.md)
 
     ```bash
     milk-shmimpurge              # (1)!
-    milk-shmim-rm <streamname>   # (2)!
+    milk-stream-rm <streamname>  # (2)!
     ```
 
     1. Remove all stale SHM files.
@@ -122,7 +127,7 @@ See also: [FPS](../guide/fps.md) · [Process Info](../guide/procinfo.md)
     **Solution:** Remove the stale FPS, then retry:
 
     ```bash
-    milk-fps-set <fpsname> ..delete
+    milk-fps-rm <fpsname>
     ```
 
 ??? faq "milk-fpsCTRL shows no processes"
@@ -137,13 +142,14 @@ See also: [FPS](../guide/fps.md) · [Process Info](../guide/procinfo.md)
     1. Check for processinfo files
     2. Scan for processes
 
-??? faq "tmux dispatch not working"
+??? faq "A unit does not start"
 
-    If standalone executables launched with `-tmux` don't appear:
+    `runstart` (or `confstart`) prints why the worker failed and exits with status 1; status 124
+    means it was not ready within the timeout (`--timeout S`) and keeps starting:
 
-    1. Ensure `tmux` is installed: `which tmux`
-    2. Check if the tmux session exists: `tmux ls`
-    3. Verify the FPS name has no spaces or special characters.
+    1. Read what it printed: `milk-fps-log NAME` (`run.out`), and `NAME.fps.d/run.info`.
+    2. Check its state: `milk-fps-list`.
+    3. Run it in the foreground to watch it start: `<fpsexec> -n NAME run`.
 
 ---
 
@@ -166,8 +172,8 @@ See also: [CLI Reference](../guide/CLIcore.md)
     **Solution:** Check that the module is loaded:
 
     ```text
-    milk-cli > m?                      # (1)!
-    milk-cli > h? mycommand            # (2)!
+    milk-cli > @module list            # (1)!
+    milk-cli > @help -k mycommand      # (2)!
     ```
 
     1. List all loaded modules
@@ -205,9 +211,9 @@ See also: [CLI Reference](../guide/CLIcore.md)
 
 ## 6. Getting Help
 
-- **CLI help:** Type `?` or `help` at the `milk-cli >` prompt
-- **Command help:** `cmd? <command>` for detailed usage
-- **Module list:** `m?` to list all loaded modules
+- **CLI help:** Type `@help` at the `milk-cli >` prompt
+- **Command help:** `@help <module>.<command>` or `<module>.<command> -h` for detailed usage
+- **Module list:** `@module list` to list all loaded modules
 - **Documentation:** See [docs/index.md](../index.md)
 - **Issues:** Report on [GitHub Issues](https://github.com/milk-org/milk/issues)
 

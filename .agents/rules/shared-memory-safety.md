@@ -36,7 +36,7 @@ stale SHM:
 - `processinfo` shows no heartbeat for the
   owning process.
 
-Use `streamCTRL` or `milk-streamCTRL` to inspect
+Use milk-CTRL's streams view (`milk-streamCTRL`, F3, with its inspector) to inspect
 stream health.
 
 ## Do Not Overwrite Other Users' SHM
@@ -49,14 +49,14 @@ explicit confirmation. Check ownership with:
 ls -la /dev/shm/*.im.shm
 ```
 
-## tmux Session Cleanup
+## Unit Cleanup
 
-Standalone executables with `-tmux` create tmux
-sessions. Clean up orphaned sessions:
+A unit started with `runstart` keeps running after
+its starter exits. Stop and remove leftover units:
 
 ```bash
-tmux ls 2>/dev/null
-tmux kill-session -t <name>
+milk-fps-list
+milk-fps-rm -f <name>
 ```
 
 ## Stream Creation Best Practices

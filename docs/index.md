@@ -200,7 +200,7 @@ Who might you be?
 
     ***
 
-    GDB, tmux logs, procinfo diagnostics, common failures.
+    GDB, unit output, procinfo diagnostics, common failures.
 
     [⮕ Debugging](operations/debugging.md)
 
@@ -213,10 +213,17 @@ Who might you be?
 ## :link: More Resources
 
 - **[What's New](whatsnew.md)** — recent features and upgrades
-- [CLI Syntax Reference](guide/CLIcore.md) · [Readline Keys](guide/helpreadline.md)
+- [CLI Syntax Reference](guide/CLIcore.md) · [Scripting](guide/scripting.md) ·
+  [Calculator & Compute Units](guide/calculator.md) · [Sessions](guide/sessions.md) ·
+  [C Extensions (`milk_calc_ext.h` & `milk-cc`)](guide/calc_c_extensions.md) ·
+  [Stream Slicing](guide/slicing.md) · [FIFO Control](guide/fifo.md) ·
+  [Readline Keys](guide/helpreadline.md)
+- [milk-CTRL](guide/milk-CTRL.md) · [fpsCTRL Reference](guide/fpsCTRL_reference.md) ·
+  [Stream Viewer (`milk-termview`)](guide/termview.md)
 - [Scripts Reference](guide/scripts.md) · [Python API](guide/python.md) · [Valkey Integration](guide/valkey.md)
 - [Programmer's Guide](arch/programmers_guide.md) · [Dependency Graph](arch/dependency_graph.md) ·
-  [fpsCTRL Reference](guide/fpsCTRL_reference.md)
-- [Working with Git](developer/WorkingWithGit.md) · [Code Assist Tools](developer/code_assist.md) ·
-  [Multiple Versions](developer/multiversion.md)
-- [Tag Index](tags.md)
+  [Unit Lifecycle](arch/unit_lifecycle.md) · [systemd Services](operations/systemd.md)
+- [Dependency System](developer/dependency_system.md) · [Documenting Code](developer/DocumentingCode.md) ·
+  [Developer Tooling](developer/tooling.md) · [Working with Git](developer/WorkingWithGit.md) ·
+  [Code Assist Tools](developer/code_assist.md) · [Multiple Versions](developer/multiversion.md)
+- [Project Management Operations](maintenance/pm_operations.md) · [Notes for the Future](notes_for_future.md)

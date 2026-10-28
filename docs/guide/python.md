@@ -23,7 +23,7 @@ The C-extension bindings are built automatically when `milk` is compiled with Py
 
 ```bash
 $ cd _build
-$ cmake .. -DUSE_PYTHON=ON
+$ cmake .. -Dbuild_python_module=ON
 $ make -j$(nproc)
 $ sudo make install
 ```
@@ -98,15 +98,15 @@ This uses the same semaphore mechanism as the C API, providing microsecond-level
 
 ```python
 # Get stream dimensions
-print(shm.mtdata["size"])
+print(shm.shape)
 
 # Get frame counter
-print(shm.mtdata["cnt0"])
+print(shm.get_counter())
 
-# Get keywords
+# Get keywords (returned as a dict)
 keywords = shm.get_keywords()
-for kw in keywords:
-    print(kw["name"], kw["value"])
+for name, value in keywords.items():
+    print(name, value)
 ```
 
 ---
@@ -170,11 +170,12 @@ while True:
 ## 6. CacaoProcessTools
 
 The `python_module/` directory contains `CacaoProcessTools`, a set of Python utilities for
-controlling `cacao` processes:
+controlling `milk` and `cacao` processes (`fps`, `processinfo`, `stream`). It is built and installed
+to `$MILK_INSTALLDIR/python` when `-Dbuild_python_module=ON` is passed to CMake:
 
 ```bash
-$ cd python_module
-$ pip install .
+$ export PYTHONPATH="$MILK_INSTALLDIR/python:$PYTHONPATH"
+$ python3 -c "import CacaoProcessTools"
 ```
 
 See [`python_module/README.md`]({{ github_blob_url }}/python_module/README.md) for usage details.

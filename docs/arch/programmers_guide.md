@@ -27,9 +27,9 @@ The architecture orbits around two primary concepts:
 
 2. **Function Processing System (FPS):**
    - The control and parameter layer. FPS manages configuration parameters, state, and commands for
-     compute units. FPS instances reside in shared memory (`/dev/shm/fps.*`), allowing for real-time
-     adjustments via the CLI, GUI, or other automated processes without restarting the compute
-     module itself.
+     compute units. FPS instances reside in shared memory (`$MILK_SHM_DIR/*.fps.shm` and
+     `*.fps.d/`), allowing for real-time adjustments via the CLI, GUI, or other automated processes
+     without restarting the compute module itself.
 
 ```mermaid
 graph TD
@@ -40,9 +40,9 @@ graph TD
         SCTRL["milk-streamCTRL<br/>(stream monitor)"]
     end
 
-    subgraph "/dev/shm (Shared Memory)"
+    subgraph "$MILK_SHM_DIR (Shared Memory)"
         SHM["ImageStreamIO Streams<br/>*.im.shm"]
-        FPSSHM["FPS Instances<br/>fps.*.shm"]
+        FPSSHM["FPS Instances<br/>*.fps.shm"]
         PINFO["processinfo<br/>proc.*.shm"]
     end
 
@@ -52,8 +52,8 @@ graph TD
         SC["cacao-fpsexec-C<br/>(standalone)"]
     end
 
-    subgraph "Process Isolation"
-        TMUX["tmux sessions<br/>(fault isolation)"]
+    subgraph "Unit Files"
+        UDIR["NAME.fps.d/<br/>(output, run.info, env)"]
     end
 
     SA -- "read/write frames" --> SHM
@@ -71,19 +71,20 @@ graph TD
     TUI -- "status" --> PINFO
     SCTRL -- "inspect" --> SHM
 
-    TMUX -. "isolates" .-> SA
-    TMUX -. "isolates" .-> SB
-    TMUX -. "isolates" .-> SC
+    SA -. "output" .-> UDIR
+    SB -. "output" .-> UDIR
+    SC -. "output" .-> UDIR
 ```
 
 ## 2. Process Management
 
-`milk` isolates its execution environments utilizing `tmux` and its own framework:
+`milk` runs each compute unit as its own detached process:
 
-- **Isolated Execution:** When an FPS script is launched via a standalone program (e.g.,
-  `milk-fps-deploy` or via the `milk-fpsexec-<name>` executables), `milk` places these instances
-  inside dedicated `tmux` sessions. This ensures that failures in one component do not drag down the
-  whole system, while maintaining accessibility for debugging standard error/output.
+- **Isolated Execution:** `milk-fpsexec-<name> -n NAME runstart` (or `milk-fps-runstart NAME`,
+  `@set f.NAME.run=start`, a TUI key) starts the unit's loop detached from whoever started it, in its
+  own session and process group, and returns once the loop runs. Its output goes to
+  `NAME.fps.d/run.out` (`milk-fps-log NAME`): a failing unit does not drag down the whole system,
+  and its last output is kept. See [FPS](../guide/fps.md).
 - **Processinfo (`procinfo`):** Every FPS instance tracks its heartbeat, state (idle, computing,
   waiting), loops per second, and error conditions in the system. The `milk-procinfo-list` command
   depends on these heartbeat counters properly updating.
@@ -93,13 +94,14 @@ graph TD
 A compute unit is a `MILK_RUNNABLE` descriptor (`src/engine/libcomputeunit/milk_runnable.h`). The
 canonical template is `src/milk_module_example/examplefunc_fps_cli_poc.c`:
 
-| Template file                    | Purpose                                                      |
-| -------------------------------- | ------------------------------------------------------------ |
-| `examplefunc_fps_cli_poc.c`      | **FPS unit**: CLI command and `milk-fpsexec-clitest`         |
-| `examplefunc1.c/h`               | CLI-only command, no FPS                                     |
-| `examplefunc2_FPS.c/h`           | FPS unit with processinfo and `milk-fpsexec-imsum2`          |
-| `examplefunc4_streamprocess.c/h` | Stream processing loop and `milk-fpsexec-streamprocess`      |
-| `milk_module_example.c/h`        | Module registry (`MILK_MODULE_RUNNABLES`)                    |
+| Template file                     | Purpose                                                      |
+| --------------------------------- | ------------------------------------------------------------ |
+| `examplefunc_fps_cli_poc.c`       | **FPS unit**: CLI command and `milk-fpsexec-clitest`         |
+| `examplefunc1.c/h`                | CLI-only command, no FPS                                     |
+| `examplefunc2_FPS.c/h`            | FPS unit with processinfo and `milk-fpsexec-imsum2`          |
+| `examplefunc3_updatestreamloop.c/h` | CLI unit with `PROCESSINFO` loop, no FPS                   |
+| `examplefunc4_streamprocess.c/h`  | Stream processing loop and `milk-fpsexec-streamprocess`      |
+| `milk_module_example.c/h`         | Module registry (`MILK_MODULE_RUNNABLES`)                    |
 
 Working example with several units per file: `plugins/test-src/runnabletest`.
 
@@ -147,12 +149,12 @@ Working example with several units per file: `plugins/test-src/runnabletest`.
 
 - `src/engine/`: Core daemon logic, including `ImageStreamIO` (shared-memory data), `libfps` (FPS
   core library: struct, parameters, shared memory), `libcomputeunit` (FPS runtime: standalone
-  `main`, tmux, conf/run processes, bindings and standalone macros; depends on `libfps`, never the
-  reverse), `libfpsseq` (FPS sequencer), `libmilkcommon` (common utilities, debug tools),
-  `libprocessinfo`, and `libmilkdata`.
+  `main`, unit start and stop, conf/run processes, bindings and standalone macros; depends on `libfps`, never the
+  reverse), `libmilkcommon` (common utilities, debug tools), `libprocessinfo`, and `libmilkdata`.
 - `src/tui/`: Engine-tier terminal UIs (`fpsCTRL`, `procCTRL`) and the shared `milkTUI_compat.h`.
 - `src/cli/`: User interfaces and scripting layer, including `libmilkscript` (core interpreter),
-  `CLIcore` (interactive shell), `overview` (system overview TUI), and `streamCTRL`.
+  `CLIcore` (interactive shell) and `overview` (milk-CTRL; `milk-streamCTRL` is a link that opens it on
+  its streams view).
 - `src/milk_module_example`: Compute unit templates (start here!).
 - `src/coremods/COREMOD_*/`: Core computation libraries (tools, iofits, arith, memory).
 - `plugins/milk-extra-src/`: General plugin modules (fft, linalgebra, image processing...).
@@ -163,7 +165,7 @@ Working example with several units per file: `plugins/test-src/runnabletest`.
 ### Standalone Executables vs Core Modules
 
 `milk` provides both an interactive prompt (`milk-cli`) and independent executable programs known as standalone executables (`milk-fpsexec-*` and `cacao-fpsexec-*`).
-Standalones are specifically designed to execute one compute unit in isolation without relying on the broader CLI environment. They act as native Linux processes managed via `tmux` and `fpsCTRL`.
+Standalones are specifically designed to execute one compute unit in isolation without relying on the broader CLI environment. They run as native Linux processes, started and stopped by their own verbs, the `milk-fps-*` tools and `fpsCTRL`.
 
 !!! tip
     **Writing a custom plugin?** See [plugins.md](../developer/plugins.md) for a complete guide on how to
@@ -284,7 +286,7 @@ add_test(NAME mymodule-myfunc-h1 COMMAND milk-fpsexec-myfunc -h1)
 - `milk_add_runnable_module()` also builds the `_static` archive used by `USE_STATIC_LTO` (`cmake/milk_static_lto.cmake`).
 - Express optional dependencies with the `MILK_CMAKE_REQUEST_<X>` / `MILK_CMAKE_MANDATE_<X>` tags (see [Managing Dependencies](../developer/dependency_system.md)); do not hand-write include or link rules.
 - Each module installs only its own headers.
-- Keep lines ≤ 80 characters.
+- Keep lines ≤ 100 characters.
 
 </details>
 

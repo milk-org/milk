@@ -9,12 +9,13 @@ See also: [Programmer's Guide](../arch/programmers_guide.md) · [Code Assist Too
 
 ## 1. Setting Up the Directory Structure
 
-The easiest way to start is by copying the provided example module. We will create a new module
-named `my_first_module`.
+The easiest way to start is by copying the provided example module into `plugins/` (outside
+`milk-extra-src/`, which is reserved for built-in plugins). We will create a new module named
+`my_first_module`:
 
 ```bash
-cd milk/plugins/milk-extra-src/
-cp -r ../../src/milk_module_example my_first_module
+cd milk/plugins/
+cp -r ../src/milk_module_example my_first_module
 cd my_first_module
 ```
 
@@ -111,6 +112,11 @@ List the unit in the module registry (`my_first_module.c`), which is what makes 
 once the module is loaded:
 
 ```c title="my_first_module.c"
+#define MODULE_SHORTNAME_DEFAULT "myfirst"
+#define MODULE_DESCRIPTION       "My first milk module"
+
+#include "milk_runnable.h"
+
 extern const MILK_RUNNABLE runnable_my_first_module_myfirst;
 
 static const MILK_RUNNABLE *const runnables[] = {
@@ -122,24 +128,29 @@ MILK_MODULE_RUNNABLES(my_first_module, NULL, runnables);
 
 ## 4. Compile and Run!
 
-Go back to the root `milk` directory and re-run standard compilation. `CMake` will automatically
-discover your newly linked plugin.
+Go back to the root `milk` directory, re-run CMake so it discovers your new plugin, and install:
 
 ```bash
-cd ../../../
+cd ../../
 bash compile.sh $PWD/local
+make -C _build install
+export MILK_INSTALLDIR="$PWD/local/milk"
+export PATH="$MILK_INSTALLDIR/bin:$PATH"
 ```
 
-Now, launch your standalone FPS compute block!
+Now, create your FPS compute block and start it in the background (`runstart` returns once its loop
+runs):
 
 ```bash
-milk-fpsexec-my-first-exec -tmux
+milk-fpsexec-my-first-exec fpsinit
+milk-fpsexec-my-first-exec runstart
 ```
 
-Open a new terminal and inspect your running parameter tree:
+Inspect your running parameter tree, and what the unit prints:
 
 ```bash
 milk-fpsCTRL myfirstexec
+milk-fps-log -f myfirstexec
 ```
 
 Congratulations! You've successfully written a milk module and an FPS compute block.

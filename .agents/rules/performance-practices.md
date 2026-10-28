@@ -156,6 +156,21 @@ size)`. This allows GCC to emit optimal inline
 - Use `#pragma omp for simd` (not bare
   `#pragma omp for`) on element-wise pixel
   loops — combines threading + SIMD.
+- **Qualify `if(...)` with `parallel:` on combined
+  `parallel for simd` constructs.** In OpenMP 5.0+
+  (GCC 10+), an unqualified `if (cond)` on
+  `#pragma omp parallel for simd` applies to **both**
+  `parallel` and `simd`. When `cond` is false (e.g.
+  small images below the OpenMP thread threshold),
+  `if(simd: false)` explicitly disables SIMD
+  vectorization and forces scalar execution. Always
+  write `if (parallel: cond)`:
+  ```c
+  #pragma omp parallel for simd num_threads(nth) if (parallel: nth > 1)
+  ```
+  Or branch on `if (nth <= 1)` in C to run a plain
+  `#pragma omp simd` loop without `GOMP_parallel`
+  call overhead.
 - Place `MILK_IVDEP` before non-OMP loops you
   **know** have no loop-carried dependencies.
 - Add `restrict` to local pixel pointer aliases:

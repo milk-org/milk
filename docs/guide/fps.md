@@ -13,15 +13,16 @@ parameters, states, and commands for compute units. FPS instances provide a high
 standardized interface directly in shared memory.
 
 See also: [Streams](streams.md) · [Process Info](procinfo.md) ·
-[Programmer's Guide](../arch/programmers_guide.md) ·
-[FPS Sequencer](sequencer.md)
+[Programmer's Guide](../arch/programmers_guide.md)
 
 ## 1. Architecture and Location
 
-An FPS instance creates a shared memory directory structure typically residing under
-`/dev/shm/fps.<fps_name>.datadir/` and `/dev/shm/fps.<fps_name>.confdir/`. This allows multiple
-independent processes, CLIs, and GUIs to read and modify a running module's behavior simultaneously
-without overhead.
+An FPS instance resides in shared memory under `$MILK_SHM_DIR/<fps_name>.fps.shm` (typically
+`/dev/shm/<fps_name>.fps.shm`), with its unit state and log directory at
+`$MILK_SHM_DIR/<fps_name>.fps.d/`. On disk, auxiliary configuration and output directories
+`fps.<fps_name>.datadir/` and `fps.<fps_name>.confdir/` are created in the working directory when
+used by the module. This shared-memory layout allows multiple independent processes, CLIs, and TUIs
+to read and modify a running module's parameters simultaneously without overhead.
 
 ## 2. Key Features
 
@@ -37,65 +38,72 @@ without overhead.
    (TUI) to interact with FPS instances in real-time. This provides an instant "dashboard" for any
    correctly built compute module.
 
-4. **Tmux Dispatch and Isolation:** When an FPS process is launched standalone (usually using
-   `milk-fpsexec-<name>`, `cacao-fps-deploy`, or with the `-tmux` flag), the command is wrapped and
-   dispatched into its own `tmux` session. This provides complete fault isolation. If one component
-   segmentation faults, it does not bring down the entire pipeline, and its terminal output can be
-   easily examined for debugging.
+4. **Units:** an FPS made by an fpsexec binary is a *unit*. Its conf and run processes run detached
+   from whoever started them, each in its own session and process group, and write their output to
+   files. A crash takes down that process only, and its last output is kept.
 
 ```mermaid
 sequenceDiagram
-    participant User as CLI User (or Deploy Script)
-    participant Tmux as Tmux Session
-    participant FPSData as /dev/shm/fps.* (Shared Config)
-    participant FPS as Standalone fpsexec process
+    participant User as Shell, script, TUI
+    participant Tool as milk-fps-runstart NAME
+    participant Worker as fpsexec NAME:runstart --fg
+    participant FPS as FPS + processinfo, NAME.fps.d/
 
-    User->>Tmux: _run_<module> -tmux
-    Tmux->>FPS: Execute Module Runloop
-    FPS->>FPSData: Sync State (run/stop/conf)
+    User->>Tool: start (TUIs: in the background)
+    Tool->>FPS: lock, owner and state checks
+    Tool->>Worker: detached start (double fork), environment from the unit's snapshot
+    Worker->>FPS: connect, check parameters, record run.info
+    Worker-->>Tool: READY=1 once the loop runs (or why it failed)
+    Tool-->>User: exit status 0, 1, or 124 (not ready in time)
 
     loop Real-time configuration
-        User->>FPSData: Change Parameter via fpsCTRL
-        FPSData-->>FPS: Synchronous Read
-        FPS->>FPS: Adapt Compute Behavior
+        User->>FPS: change a parameter (milk-fps-set, @set, fpsCTRL)
+        FPS-->>Worker: read on the next iteration
     end
 ```
 
-## 3. Usage Utilities
+## 3. Running Units
 
-To use FPS-enabled functions from the command line efficiently, the typical workflow is:
+Units are started and stopped by their fpsexec binary, by the `milk-fps-*` tools, by `@set` in
+milk scripts, or by the TUIs; all of them do the same thing.
 
-1. Define functions and their requested FPS names in `fpslist.txt`.
-2. Generate command scripts using `milk-fpsmkcmd`.
-3. Launch and manage them via `milk-fpsCTRL`.
-
-### The `fpslist.txt` and `fpsmkcmd` workflow
-
-Create a space-delimited text file named `fpslist.txt` in your working directory. Lines starting
-with `#` are comments. Each non-comment line has the format:
-
-```text
-fpsrootname  CLIcommand  [optarg0 ...]
+```bash
+milk-fpsexec-milk-calc -n dsub -t cam -e "out = cam - dark" fpsinit   # make the unit's FPS
+milk-fps-runstart dsub              # start its loop in the background; returns once it runs
+milk-fps-list                       # the units and their states
+milk-fps-log -f dsub                # follow what it prints
+milk-fps-runstop dsub               # stop it: a request, then signals if needed
+milk-fps-rm -f dsub                 # stop it and remove its FPS
 ```
 
-Example:
+- **Start**: `runstart` (and `confstart`) returns once the loop runs (exit status 0), with the
+  worker's messages when it fails (1: a parameter check, a missing stream, a crash at start), or
+  with status 124 when it is not ready within 10 s (`--timeout S`, `MILK_UNIT_START_TIMEOUT`); the
+  unit then keeps starting. A unit that already runs is left alone (status 0).
+- **Stop**: `runstop` asks the loop to exit (and wakes it), then sends SIGINT, SIGTERM and SIGKILL
+  if it does not; `MILK_UNIT_STOP_TIMEOUTS=T2,T3` sets the waits. It returns once the process is gone.
+- **State**: each role of a unit is `stopped`, `starting`, `running`, `stopping`, `exited` or
+  `failed`. `milk-fps-list`, `milk-fps-info`, `@get f.NAME.status`, `@waitfor f.NAME running` and
+  the TUIs all read the same state.
+- **Unit directory**: `<MILK_SHM_DIR>/NAME.fps.d/` (or under `MILK_UNIT_DIR`) holds `run.out` and
+  `conf.out` (the output, rotated to `.1` at each start and above `MILK_UNIT_OUT_MAX`, 1 MiB by
+  default), `run.info` and `conf.info` (the process, how it started and ended), `env` and
+  `exec.out`. Removing the FPS removes it.
+- **Environment**: `fpsinit` saves the environment of the shell that runs it in `NAME.fps.d/env`;
+  every start uses it, whoever starts the unit (`milk-fps-info --env NAME` shows it).
+- **Foreground**: `run` (or `--fg`, or `MILK_UNIT_FG=1`) runs the loop in the calling terminal, for
+  gdb or valgrind.
+- **Owner**: a unit runs as the owner of its FPS file; root may start and stop any unit.
+- **systemd**: a unit can also run as a systemd service (`milk-unit@NAME`); milk's tools then start
+  and stop it through `systemctl`. See [systemd Services](../operations/systemd.md).
 
-```text
-# FPS root name   CLI command   Optional arguments
-fpsrootname0       CLIcommand0
-fpsrootname1       CLIcommand1   optarg00 optarg01
-```
-
-Then run `milk-fpsmkcmd`, which reads `fpslist.txt` from the current directory and generates
-per-function scripts in the `fpscmd/` subdirectory: `<fpsrootname>-fpsinit`,
-`<fpsrootname>-confstart`, `<fpsrootname>-confstop`, `<fpsrootname>-runstart`,
-`<fpsrootname>-runstop`. It also writes the resolved FPS names to `fpscmd/fpslist.txt`, which is the
-file `milk-fpsCTRL` reads when scanning with `-m _ALL`.
+Only an FPS made by an fpsexec binary is a unit: an FPS that milk-cli creates for its own commands
+is a parameter set, which `runstart` refuses.
 
 ### `milk-fpsCTRL`
 
-The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _ALL` scans and
-manages all FPS instances listed in `fpscmd/fpslist.txt`.
+The primary TUI control tool is `milk-fpsCTRL`: it shows the FPS, their parameters and the states
+of their units, and starts and stops units in the background.
 
 For complete keyboard shortcuts and display modes, see [fpsCTRL Reference](fpsCTRL_reference.md).
 
@@ -183,16 +191,7 @@ For complete keyboard shortcuts and display modes, see [fpsCTRL Reference](fpsCT
     See the [Programmer's Guide](../arch/programmers_guide.md#3-writing-a-compute-unit) and
     `src/milk_module_example/examplefunc_fps_cli_poc.c` for a complete unit.
 
-### 5. Sequencer Integration
-
-FPS instances can be highly coordinated via the `milk-seq` standalone sequencer, which provides
-cross-process synchronization (`wait_fps`), robust error handling, loops, and condition-based
-execution.
-
-See the dedicated **[FPS Sequencer Documentation](sequencer.md)** for details on the `milk-seq`
-daemon, script syntax, and integrating `seq.*` commands from within `milk-cli`.
-
-## 6. Standalone Executables (`fpsexec`)
+## 5. Standalone Executables (`fpsexec`)
 
 A compute unit marked with `EXPORT_FPSEXEC` is built as `milk-fpsexec-<id>` (or `cacao-fpsexec-<id>`).
 It takes native `argv`, and drives the FPS lifecycle of its shared-memory FPS. Command-line options
@@ -202,29 +201,51 @@ go before the command, the command goes last.
 <summary><b>Options and commands</b></summary>
 
 - **Options**:
-    - `-h`, `--help`: detailed parameter bindings and command help.
-    - `-h1`, `--help-oneline`: one-line description and exit.
-    - `-h2`, `--help-description`: verbose description only (no color) and exit.
-    - `-hm`, `--help-mono`: full help, forced monochrome.
-    - `-tmux`: create a `tmux` session and dispatch the commands isolated from the main terminal.
-    - `-n`, `--name <fpsname>`: override the default FPS shared memory name.
-    - `-procinfo`: enable processinfo entries at `fpsinit`.
-    - `-loops`: infinite loop with stream semaphore trigger.
-    - `-loopd <sec>`: infinite loop with delay trigger (seconds).
+  - `-h`, `--help`: detailed parameter bindings and command help.
+  - `-h1`, `--help-oneline`: one-line description and exit.
+  - `-h2`, `--help-description`: verbose description only (no color) and exit.
+  - `-hm`, `--help-mono`: full help, forced monochrome.
+  - `-n`, `--name <fpsname>`: override the default FPS shared memory name.
+  - `--fg`: `confstart`/`runstart` in the foreground (also `MILK_UNIT_FG=1`).
+  - `--timeout S`: readiness timeout of `confstart`/`runstart` (default 10 s).
+  - `--no-procinfo`: a one-shot unit, without processinfo entries (`fpsinit`, `exec`); processinfo
+    is on by default.
+  - `-loops`: infinite loop with stream semaphore trigger.
+  - `-loopd <sec>`: infinite loop with delay trigger (seconds).
+  - `-tmux` is gone (status 2): units start in the background.
 - **Commands**:
-    - `fpsinit`: create the FPS shared memory segment.
-    - `confstart`, `confstep`, `confstop`: manage the configuration loop.
-    - `runstart`, `runstop`: manage the execution loop (`run` is an alias of `runstart`).
-    - `set [args]`: set positional arguments in FPS (use `.` to skip a position).
-    - `fps`: print the content of the FPS.
-    - `fpslist`: list all FPS instances matching this executable.
-    - `exec [args]`: auto-init, set args and run (one-shot).
+  - `fpsinit [values]`: create the FPS shared memory segment, then set values.
+  - `confstart`, `confstep`, `confstop`: manage the configuration loop.
+  - `runstart [values]`, `runstop`: start the execution loop in the background, stop it.
+  - `run [values]`: run the loop in the foreground.
+  - `set [values]`: set values in the existing FPS.
+  - `fps`: print the content of the FPS.
+  - `fpslist`: list all FPS instances matching this executable.
+  - `exec [values]`: auto-init, set values and run in the foreground.
 
 </details>
 
-Positional arguments that are not a command (e.g. `milk-fpsexec-mymod 2.5 100`) run the unit once: the
-executable connects to the FPS if it exists, otherwise creates a local one, maps the arguments onto
-the primary parameters, and runs the compute function exactly as `milk-cli` would.
+The words after the command set FPS parameters, as the arguments of module commands do:
+
+| Value | Sets |
+| --- | --- |
+| `value` | the next parameter that has an index (`Idx`) in `-h`, in index order |
+| `.name=value` | any parameter, by its keyword, in any order |
+| `.` | nothing: the parameter keeps its value (also `.name=.`) |
+
+Positional values fill the indexed parameters that are not set by name. Negative numbers (`-0.5`)
+are values, and options such as `-loopd 0.5` may also come after the command. An unknown parameter,
+a value that does not parse for its type (number, integer, `on`/`off`), or one value too many is a
+usage error (exit status 2) and changes nothing:
+
+```bash
+milk-fpsexec-clitest -n f00 fpsinit 42 .p_float64=-1.5   # p_int32=42, p_float64=-1.5
+milk-fpsexec-clitest -n f00 set . cam02                    # p_streamname=cam02, p_int32 unchanged
+```
+
+Units whose parameters are declared at run time (`milk-fpsexec-milk-calc`, `milk-fpsexec-milk-script`,
+see [Scripting](scripting.md#compute-units-without-c)) take their program as unit options, listed
+under **Unit Options** in their `-h`; the values then set the declared parameters.
 
 ---
 

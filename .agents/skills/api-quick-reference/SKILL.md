@@ -61,7 +61,7 @@ For untyped generic copies, use `.raw` with `__builtin_memcpy`.
 
 ## 3. processinfo Macro Reference
 
-These macros wrap the compute loop of a runnable (`self` is the `const MILK_RUNNABLE *` argument of its compute function) to provide timing, semaphore triggering, and tmux status.
+These macros wrap the compute loop of a runnable (`self` is the `const MILK_RUNNABLE *` argument of its compute function) to provide timing, semaphore triggering, and loop status.
 
 - `MILK_PROCINFO_INIT(self)`: Initializes the `processinfo` structure based on the FPS settings. Must be called before the loop.
 - `MILK_PROCINFO_LOOPSTART(self)`: Begins the `while(processloopOK)` loop and handles semaphore waiting.

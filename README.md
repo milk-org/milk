@@ -44,6 +44,7 @@ Module includes key frameworks:
 - [**Image streams**](docs/guide/streams.md) — low-latency shared memory streams
 - [**processinfo**](docs/guide/procinfo.md) — process management and control
 - [**Function Parameter Structure (FPS)**](docs/guide/fps.md) — reading/writing function parameters, standalone command line.
+- [**milk-CTRL**](docs/guide/milk-CTRL.md) — terminal dashboard of the streams, FPS and processes, with their links and CONTROL-mode actions
 
 For a comprehensive guide, see the [Documentation Index](docs/index.md).
 
@@ -65,7 +66,7 @@ $ cmake .. && make -j$(nproc) && sudo make install
 | `USE_COREMODS` | ON      | Build core modules (COREMOD\_\*)                  |
 | `USE_CFITSIO`  | ON      | Build FITS I/O (requires cfitsio)                 |
 | `USE_CLI`      | ON      | Build interactive CLI (`milk-cli`), TUI, scripts  |
-| `USE_NCURSES`  | ON      | Enable ncurses TUI (`milk-fpsCTRL`, `streamCTRL`) |
+| `USE_NCURSES`  | ON      | Enable ncurses TUI (`milk-fpsCTRL`, `milk-procCTRL`) |
 | `USE_READLINE` | ON      | Enable readline for CLI input                     |
 | `USE_GSL`      | ON      | Enable GSL for plugins                            |
 | `USE_CUDA`     | OFF     | Enable CUDA GPU acceleration                      |

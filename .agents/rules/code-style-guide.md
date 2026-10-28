@@ -108,7 +108,7 @@ trigger: always_on
   guaranteed non-aliasing. See `performance-practices.md`
   for full performance guidelines.
 - **Non-ASCII characters** are only permitted in **TUI
-  display code** (e.g., `streamCTRL`, `overview`,
+  display code** (e.g., `overview`, `procCTRL`,
   `fpsCTRL`) for box-drawing symbols, status indicators,
   and progress bars. All other source files, headers,
   comments, and string literals must use ASCII only.

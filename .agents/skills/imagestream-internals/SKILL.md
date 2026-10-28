@@ -233,8 +233,8 @@ ImageStreamIO_createIm(
 Every stream carries an array of
 `STREAM_PROC_TRACE` entries that records the
 chain of processes that produced the data.
-This is the mechanism that lets `streamCTRL`
-and `milk-CTRL` display which process wrote
+This is the mechanism that lets `milk-CTRL`
+(F3 inspector, TRACE page) display which process wrote
 a stream and which upstream stream triggered
 that process.
 
@@ -319,9 +319,9 @@ requirements are:
 
 ### Viewing Ancestry
 
-Use `streamCTRL` (press `t` on a selected
-stream) to see the full process trace chain,
-or view it in `milk-CTRL` overview.
+Use `milk-CTRL` (or `milk-streamCTRL`): F3, Right on a
+stream, then Right until the TRACE page, to see the
+full process trace chain with timing.
 
 ## Source Files
 
@@ -352,7 +352,7 @@ echo "imseminfo mystream" | milk-cli 2>/dev/null
 
 ### Monitor Stream Activity
 
-Use `streamCTRL` or `milk-streamCTRL` to see
+Use `milk-streamCTRL` (milk-CTRL's streams view) to see
 real-time frame rates and semaphore states.
 
 ### Clean Up Stale Streams

@@ -27,7 +27,7 @@ communicate through zero-copy shared memory, enabling microsecond-latency data p
 | Principle                       | How it manifests                                                                                                       |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | **Shared-memory microservices** | Each compute unit is a standalone process; data is exchanged via `/dev/shm/` with no serialization overhead.           |
-| **Fault isolation**             | Every process runs in its own `tmux` session — a crash never brings down the rest of the pipeline.                     |
+| **Fault isolation**             | Every unit runs detached, its output in a file — a crash never brings down the rest of the pipeline.                   |
 | **Live reconfiguration**        | Parameters live in shared memory (FPS); any process, CLI, or TUI can change them while the pipeline runs.              |
 | **Layered build**               | The build system is tiered (Engine → Core → Full) so embedded or headless deployments only compile the minimal subset. |
 
@@ -39,9 +39,9 @@ All runtime communication in `milk` flows through three shared-memory subsystems
 
 ```mermaid
 graph TD
-    subgraph "/dev/shm  —  Shared Memory"
+    subgraph "$MILK_SHM_DIR  —  Shared Memory"
         STREAMS["ImageStreamIO<br/>*.im.shm<br/>─────────<br/>Zero-copy tensors<br/>(images, cubes)"]
-        FPS["FPS<br/>fps.*.shm<br/>─────────<br/>Parameters, state,<br/>commands"]
+        FPS["FPS<br/>*.fps.shm · *.fps.d/<br/>─────────<br/>Parameters, state,<br/>unit lifecycle"]
         PINFO["processinfo<br/>proc.*.shm<br/>─────────<br/>Heartbeat, loop Hz,<br/>error flags"]
     end
 
@@ -65,11 +65,11 @@ graph TD
     class CLI,TUI,SCTRL ui
 ```
 
-| Pillar                               | Shared Memory Path | Deep-Dive Doc                       |
-| ------------------------------------ | ------------------ | ----------------------------------- |
-| **ImageStreamIO** (Streams)          | `*.im.shm`         | [streams.md](../guide/streams.md)   |
-| **FPS** (Function Processing System) | `fps.*.shm`        | [fps.md](../guide/fps.md)           |
-| **processinfo**                      | `proc.*.shm`       | [procinfo.md](../guide/procinfo.md) |
+| Pillar                               | Shared Memory Path          | Deep-Dive Doc                       |
+| ------------------------------------ | --------------------------- | ----------------------------------- |
+| **ImageStreamIO** (Streams)          | `*.im.shm`                  | [streams.md](../guide/streams.md)   |
+| **FPS** (Function Processing System) | `*.fps.shm`, `*.fps.d/`     | [fps.md](../guide/fps.md)           |
+| **processinfo**                      | `proc.*.shm`                | [procinfo.md](../guide/procinfo.md) |
 
 ---
 
@@ -81,35 +81,36 @@ ones.
 ```text
 ┌──────────────────────────────────────────┐
 │            User Interfaces               │
-│  milk-cli · milk-fpsCTRL · streamCTRL    │
+│  milk-cli · milk-CTRL · milk-fpsCTRL     │
+│  milk-script · milk.bash · milk-termview │
 ├──────────────────────────────────────────┤
-│            Plugins                       │
+│            CLI & Scripting Framework     │
+│  CLIcore · milkscript · milkbash         │
+├──────────────────────────────────────────┤
+│            Plugins (USE_COREMODS)        │
 │  milk-extra (fft, linalgebra, image*…)   │
 │  cacao (AO loop control modules)         │
 ├──────────────────────────────────────────┤
-│            Core Modules                  │
+│            Core Modules (USE_COREMODS)   │
 │  COREMOD_arith · COREMOD_memory          │
 │  COREMOD_tools · COREMOD_iofits          │
 ├──────────────────────────────────────────┤
-│            Framework                     │
-│  CLIcore · milkscript                    │
-│  milkcomputeunit (FPS runtime)           │
-├──────────────────────────────────────────┤
 │            Engine  (POSIX only)          │
-│  ImageStreamIO · milkfps                 │
-│  milkprocessinfo · milkdata              │
+│  ImageStreamIO · milkcommon · milkfps    │
+│  milkcomputeunit · milkprocessinfo       │
+│  milkdata · milk-fpsCTRL · milk-procCTRL │
 └──────────────────────────────────────────┘
          ▼  External: cfitsio, FFTW, OpenBLAS, CUDA (optional)
 ```
 
 Each layer corresponds to a **build tier** that can be compiled independently:
 
-| Tier          | CMake Flags                        | What is built                                     |
-| ------------- | ---------------------------------- | ------------------------------------------------- |
-| **Engine**    | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, milkfps, milkdata, milkprocessinfo |
-| **Core**      | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | Engine + COREMOD arith, memory, tools             |
-| **Core+FITS** | `-DUSE_CLI=OFF`                    | Core + COREMOD_iofits                             |
-| **Full**      | _(defaults)_                       | Everything: CLI + all plugins                     |
+| Tier            | CMake Flags                        | What is built                                                                      |
+| --------------- | ---------------------------------- | ---------------------------------------------------------------------------------- |
+| **Engine**      | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, milkcommon, milkfps, milkcomputeunit, milkdata, milkprocessinfo, engine TUIs (`milk-fpsCTRL`, `milk-procCTRL`) |
+| **Core − FITS** | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | Engine + COREMOD arith, memory, tools + non-FITS plugins and `fpsexec` binaries    |
+| **Core**        | `-DUSE_CLI=OFF`                    | Core − FITS + COREMOD_iofits + FITS-dependent plugins and `fpsexec` binaries       |
+| **Full**        | _(defaults)_                       | Everything: Core + `milk-cli`, `milk-script`, `milk.bash`, `milk-CTRL`, `milk-termview` |
 
 → Details: [Build Tiers](../quickstart/build_tiers.md) · [Dependency Graph](dependency_graph.md)
 
@@ -122,25 +123,27 @@ milk/
 ├── src/
 │   ├── engine/                        ← Engine tier
 │   │   ├── ImageStreamIO/             Zero-copy shared memory streams
+│   │   ├── libmilkcommon/             Common OS/debug/SIMD utilities
 │   │   ├── libfps/                    FPS core (parameter management)
-│   │   ├── libcomputeunit/            FPS runtime: standalone main, tmux, conf/run
-│   │   ├── libfpsseq/                 FPS sequencer
+│   │   ├── libcomputeunit/            FPS runtime: standalone main, units, conf/run
 │   │   ├── libprocessinfo/            Heartbeat + process tracking
-│   │   └── libmilkdata/              IMGID struct, image utilities
+│   │   └── libmilkdata/               IMGID struct, image utilities
 │   │
 │   ├── tui/                           ← Engine-tier TUIs (fpsCTRL, procCTRL)
 │   │
 │   ├── cli/                           ← User-facing tools
-│   │   ├── CLIcore/                   Interactive shell framework
-│   │   └── streamCTRL/               Stream monitor tool
+│   │   ├── libmilkscript/             Scripting, calculator, sessions & bash engine
+│   │   ├── CLIcore/                   Interactive shell framework & milk-termview
+│   │   └── overview/                  milk-CTRL dashboard (milk-streamCTRL opens it on F3)
 │   │
 │   ├── coremods/                      ← Core computation modules
-│   │   ├── COREMOD_arith/            Arithmetic operations
-│   │   ├── COREMOD_memory/           Memory management
-│   │   ├── COREMOD_tools/            Utility functions
-│   │   └── COREMOD_iofits/           FITS file I/O (requires cfitsio)
+│   │   ├── COREMOD_arith/             Arithmetic operations
+│   │   ├── COREMOD_memory/            Memory management
+│   │   ├── COREMOD_tools/             Utility functions
+│   │   └── COREMOD_iofits/            FITS file I/O (requires cfitsio)
 │   │
 │   ├── milk_module_example/           ← Template / reference module
+│   ├── perfbench/                     Performance benchmarks
 │   ├── fpsvalkey/                     Valkey bridge (optional)
 │   └── isio-tools/                    Low-level stream utilities
 │
@@ -212,7 +215,7 @@ Each box in this pipeline is an independent process:
 - Connected only through shared-memory streams
 - Configured via its own FPS instance
 - Monitored via processinfo heartbeats
-- Running inside a dedicated tmux session
+- Running detached, its output in `NAME.fps.d/run.out`
 
 ---
 
@@ -251,7 +254,7 @@ They can run in two modes:
 
 - **CLI mode**: loaded as a shared library inside `milk-cli`
 - **Standalone mode**: independent binary (`milk-fpsexec-*`, `cacao-fpsexec-*`), see
-  [FPS](../guide/fps.md#6-standalone-executables-fpsexec)
+  [FPS](../guide/fps.md#5-standalone-executables-fpsexec)
 
 → Details: [Programmer's Guide](programmers_guide.md)
 
@@ -259,13 +262,15 @@ They can run in two modes:
 
 ## 8. Plugin System
 
-`milk` uses a plugin architecture where additional functionality is compiled as shared libraries and
-loaded at runtime by `CLIcore`.
+`milk` uses a plugin architecture where additional functionality is compiled as shared libraries
+with `-DMILK_NO_CLI` (`milk_add_runnable_module()`). Each plugin exports a declarative
+`MILK_MODULE_RUNNABLES` table without linking `CLIcore`; at runtime, `libmilkscript` loads plugins
+via `dlopen()` and registers their commands, while standalone `fpsexec` binaries link the plugin
+library directly.
 
 ### milk-extra plugins
 
 General-purpose libraries for signal processing, linear algebra, image manipulation, and statistics.
-Each plugin registers its CLI commands on load.
 
 ### cacao
 
@@ -276,9 +281,9 @@ FFT, image processing, and optimization.
 ```mermaid
 graph TD
     subgraph "milk core"
-        ENGINE["Engine<br/>(ImageStreamIO, FPS,<br/>procinfo, milkdata)"]
+        ENGINE["Engine<br/>(ImageStreamIO, FPS,<br/>computeunit, procinfo, milkdata)"]
         COREMODS["Core Modules<br/>(arith, memory,<br/>tools, iofits)"]
-        CLI["CLIcore"]
+        CLI["CLIcore / milkscript<br/>(loads modules via dlopen)"]
     end
 
     subgraph "milk-extra plugins"
@@ -298,11 +303,16 @@ graph TD
 
     ENGINE --> COREMODS
     COREMODS --> CLI
-    CLI --> FFT
-    CLI --> LINALG
-    CLI --> IMGPROC
-    CLI --> STAT
-    CLI --> OTHER
+    COREMODS --> FFT
+    COREMODS --> LINALG
+    COREMODS --> IMGPROC
+    COREMODS --> STAT
+    COREMODS --> OTHER
+    FFT -. "dlopen" .-> CLI
+    LINALG -. "dlopen" .-> CLI
+    IMGPROC -. "dlopen" .-> CLI
+    STAT -. "dlopen" .-> CLI
+    OTHER -. "dlopen" .-> CLI
 
     FFT --> AODM
     IMGPROC --> AODM
@@ -325,14 +335,16 @@ graph TD
 
 ## 9. User Interfaces
 
-| Tool              | Purpose                                                                      | Interacts with            |
-| ----------------- | ---------------------------------------------------------------------------- | ------------------------- |
-| `milk-cli`        | Interactive shell for running commands, loading modules, scripting pipelines | FPS, Streams              |
-| `milk-fpsCTRL`    | TUI dashboard for monitoring and editing FPS parameters in real time         | FPS, processinfo          |
-| `milk-procCTRL`   | TUI for process health monitoring                                            | processinfo               |
-| `milk-streamCTRL` | TUI for inspecting live stream metadata, frame rates, semaphore state        | Streams                   |
-| `milk-fpsexec-*`  | Standalone compute executables (one per function)                            | FPS, Streams, processinfo |
-| `milk-fps-*`      | CLI utilities for FPS operations (set, list, search, deploy)                 | FPS                       |
+| Tool                         | Purpose                                                                      | Interacts with            |
+| ---------------------------- | ---------------------------------------------------------------------------- | ------------------------- |
+| `milk-cli`                   | Interactive shell for running commands, loading modules, scripting pipelines | FPS, Streams, processinfo |
+| `milk-script` / `milk.bash`  | Script interpreter and plain-bash integration                                | FPS, Streams, processinfo |
+| `milk-CTRL` (`milk-streamCTRL`) | Unified TUI dashboard for processes, FPS, and streams                     | FPS, Streams, processinfo |
+| `milk-fpsCTRL`               | Engine-tier TUI dashboard for monitoring and editing FPS parameters          | FPS, processinfo          |
+| `milk-procCTRL`              | Engine-tier TUI for process health monitoring                                | processinfo               |
+| `milk-termview`              | Terminal live stream and FITS image viewer                                   | Streams                   |
+| `milk-fpsexec-*`             | Standalone compute executables (one per function)                            | FPS, Streams, processinfo |
+| `milk-fps-*`                 | CLI utilities for FPS operations (`set`, `list`, `search`, `info`, `log`, `rm`, `runstart`, `runstop`, `confstart`, `confstop`) | FPS |
 
 → Details: [CLI Overview](../quickstart/CLI_Overview.md) · [Scripts Reference](../guide/scripts.md)
 
@@ -361,11 +373,12 @@ Host A  ←──►  Valkey Server  ←──►  Host B
 | **This document**                                   | System-level architecture overview                  |
 | [Programmer's Guide](programmers_guide.md)          | Writing compute units, C API, CMake conventions     |
 | [Dependency Graph](dependency_graph.md)             | Library-level build dependencies (mermaid diagrams) |
+| [Unit Lifecycle](unit_lifecycle.md)                 | How units start, stop and report their state        |
 | [Streams](../guide/streams.md)                      | ImageStreamIO API, IMGID, semaphore model           |
 | [FPS](../guide/fps.md)                              | Parameter types, fpsCTRL, fpsexec command line      |
 | [Process Info](../guide/procinfo.md)                | Heartbeat API, loop profiling                       |
 | [Performance Tuning](../operations/performance.md)  | CPU pinning, RT scheduling, GPU, network            |
-| [Debugging](../operations/debugging.md)             | GDB, tmux logs, common failures                     |
+| [Debugging](../operations/debugging.md)             | GDB, unit output, common failures                   |
 | [Valkey Integration](../guide/valkey.md)            | Multi-host parameter sync                           |
 | [Build Tiers](../quickstart/build_tiers.md)         | Compilation tier configuration                      |
 | [Adding Plugins](../developer/plugins.md)           | Plugin module creation guide                        |

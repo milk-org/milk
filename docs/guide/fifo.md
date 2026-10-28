@@ -7,27 +7,29 @@ tags:
 
 # FIFO Command Input
 
-milk-cli supports **command FIFO** (named pipe) input, allowing external processes to inject
-commands into a running CLI session. This enables powerful automation workflows where shell
-pipelines feed commands into milk-cli in real time.
+`milk-cli` supports **command FIFO** (named pipe) input, allowing external processes to inject
+commands into a running interactive `milk-cli` process.
+
+<!-- prettier-ignore -->
+!!! tip
+    To share images, variables, and commands across multiple shells or scripts without a named pipe,
+    use named sessions (`@session new NAME` / `@session use NAME`; see
+    [Sessions](sessions.md)).
 
 ## Quick Start
 
 ```text
-milk> fifo create
-[fifo] opened: /milk/shm/.milk.fifo.12345 (fd=4)
-
-milk> echo $MCLIFIFO
-/milk/shm/.milk.fifo.12345
+milk-cli > milk.fifo create /tmp/myctl.fifo
+[fifo] opened: /tmp/myctl.fifo (fd=4)
 ```
 
 From another terminal:
 
 ```bash
-echo "mem.listim" > /milk/shm/.milk.fifo.12345
+echo "mem.listim" > /tmp/myctl.fifo
 ```
 
-The milk-cli session shows ingestion feedback:
+The `milk-cli` session shows ingestion feedback:
 
 ```text
 [fifo] ← "mem.listim"
@@ -35,51 +37,46 @@ The milk-cli session shows ingestion feedback:
 [fifo] ✓ (0.003s)
 ```
 
-## The `fifo` Command
+## The `milk.fifo` Command
 
-| Sub-command          | Description                                                 |
-| -------------------- | ----------------------------------------------------------- |
-| `fifo create [path]` | Create and open a new FIFO. Auto-generates path if omitted. |
-| `fifo open <path>`   | Connect to an existing FIFO at the given path.              |
-| `fifo close`         | Close and remove the current FIFO.                          |
-| `fifo on`            | Re-enable FIFO input (after `fifo off`).                    |
-| `fifo off`           | Temporarily disable FIFO input without destroying the pipe. |
-| `fifo status`        | Print current FIFO state, path, and file descriptor.        |
-| `fifo`               | Same as `fifo status`.                                      |
+| Sub-command               | Description                                                 |
+| ------------------------- | ----------------------------------------------------------- |
+| `milk.fifo create [path]` | Create and open a new FIFO. Auto-generates path if omitted. |
+| `milk.fifo open <path>`   | Connect to an existing FIFO at the given path.              |
+| `milk.fifo close`         | Close and remove the current FIFO.                          |
+| `milk.fifo on`            | Re-enable FIFO input (after `milk.fifo off`).               |
+| `milk.fifo off`           | Temporarily disable FIFO input without destroying the pipe. |
+| `milk.fifo status`        | Print current FIFO state, path, and file descriptor.        |
+| `milk.fifo`               | Same as `milk.fifo status`.                                 |
 
-## The `$MCLIFIFO` Variable
-
-The special variable `$MCLIFIFO` expands to the current FIFO path when a FIFO is active, or an empty
-string when no FIFO is open. This makes it easy to reference the FIFO in shell commands:
-
-```text
-milk> fifo create
-milk> !echo "echo hello" > $MCLIFIFO
-```
+When `milk.fifo create` is called without a path (or `-f` is passed at startup), the default path is
+`$MILK_SHM_DIR/.<processname>.fifo.<07d-PID>` (for example, `/milk/shm/.myctl.fifo.0012345` when
+started with `milk-cli -n myctl -f`).
 
 ## Startup Flags
 
 FIFOs can also be enabled at startup:
 
-| Flag        | Description                                             |
-| ----------- | ------------------------------------------------------- |
-| `-f`        | Auto-create a FIFO (path based on process name and PID) |
-| `-F <path>` | Create a FIFO at the specified path                     |
+| Flag        | Description                                                             |
+| ----------- | ----------------------------------------------------------------------- |
+| `-f`        | Auto-create a FIFO (`$MILK_SHM_DIR/.<processname>.fifo.<07d-PID>`)      |
+| `-F <path>` | Create a FIFO at the specified path                                     |
 
-These are equivalent to running `fifo create` or `fifo create <path>` immediately after startup.
+These are equivalent to running `milk.fifo create` or `milk.fifo create <path>` immediately after
+startup.
 
 ## Examples
 
 ### Batch Command Injection
 
-Feed a list of commands from a file into a running milk-cli session:
+Feed a list of commands from a file into a running `milk-cli` session:
 
 ```bash
-# Terminal 1: start milk-cli with FIFO
-milk-cli -f
+# Terminal 1: start milk-cli with a custom FIFO path
+milk-cli -F /tmp/myctl.fifo
 
 # Terminal 2: send commands
-cat commands.milk > $(cat /milk/shm/.milk.fifo.*)
+cat commands.milk > /tmp/myctl.fifo
 ```
 
 ### Dynamic Processing with awk
@@ -87,8 +84,8 @@ cat commands.milk > $(cat /milk/shm/.milk.fifo.*)
 Process a list of images and save specific ones based on metadata:
 
 ```text
-milk> fifo create
-milk> !awk '{if ($4>200) print "iofits.saveFITS " $2 " " $2 "_save.fits"}' imlist.txt > $MCLIFIFO
+milk-cli > milk.fifo create /tmp/myctl.fifo
+milk-cli > awk '{if ($4>200) print "iofits.saveFITS " $2 " " $2 "_save.fits"}' imlist.txt > /tmp/myctl.fifo
 ```
 
 Each generated command appears with ingestion feedback:
@@ -105,47 +102,44 @@ Each generated command appears with ingestion feedback:
 Temporarily disable FIFO input while doing interactive work, then re-enable it:
 
 ```text
-milk> fifo create
-milk> fifo off
+milk-cli > milk.fifo create /tmp/myctl.fifo
+milk-cli > milk.fifo off
 [fifo] input disabled
 
-milk> # ... do interactive work ...
+milk-cli > # ... do interactive work ...
 
-milk> fifo on
+milk-cli > milk.fifo on
 [fifo] input enabled
 ```
 
-### Connecting to Another Session's FIFO
+### Connecting to an Existing FIFO
 
-If another milk-cli session has a FIFO open, you can connect to it:
+Connect to an existing named pipe:
 
 ```text
-milk> fifo open /milk/shm/.othersession.fifo.54321
-[fifo] opened: /milk/shm/.othersession.fifo.54321 (fd=4)
+milk-cli > milk.fifo open /tmp/shared.fifo
+[fifo] opened: /tmp/shared.fifo (fd=4)
 ```
 
 ### Using with xargs
 
-Combine `find`, `xargs`, and FIFO to batch-process files:
+Combine `find`, `xargs`, and a FIFO to batch-process files:
 
 ```text
-milk> fifo create
-milk> !find /data/frames -name "*.fits" | xargs -I {} echo "iofits.loadfits {} frame" > $MCLIFIFO
+milk-cli > milk.fifo create /tmp/myctl.fifo
+milk-cli > find /data/frames -name "*.fits" | xargs -I {} echo "iofits.loadfits {} frame" > /tmp/myctl.fifo
 ```
 
 ### Scripted FIFO Workflow
 
-Create a shell script that starts milk-cli and feeds commands through the FIFO:
+Create a shell script that starts `milk-cli` and feeds commands through the FIFO:
 
 ```bash
 #!/bin/bash
-# Start milk-cli with FIFO in the background
-milk-cli -f &
+FIFO="/tmp/milk.fifo.$$"
+milk-cli -F "$FIFO" &
 MILKPID=$!
 sleep 1
-
-# Find the FIFO path
-FIFO=$(ls /milk/shm/.milk.fifo.${MILKPID})
 
 # Send commands
 echo "mem.mk2Dim im1 128 128" > "$FIFO"

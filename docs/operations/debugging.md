@@ -38,7 +38,9 @@ fields — if they show `0`, the corresponding loop is not running.
 
 ### 1.3. `milk-streamCTRL`
 
-Inspect shared memory streams in real time:
+Inspect shared memory streams in real time. `milk-streamCTRL` is milk-CTRL opened on its streams view
+(F3): the list on the left, and an inspector for the stream under the cursor (Right, then Right again
+for the next page: INFO, SEMS, TRACE, KEYS, HOLDERS). See the [milk-CTRL guide](../guide/milk-CTRL.md).
 
 ```bash
 $ milk-streamCTRL
@@ -49,24 +51,28 @@ semaphore counts are not accumulating (which would indicate a stalled consumer).
 
 ---
 
-## 2. Tmux Log Inspection
+## 2. Unit Output
 
-When processes are launched with `-tmux`, each runs in its own tmux session. To inspect output:
+A unit's conf and run processes write to files in its unit directory,
+`<MILK_SHM_DIR>/NAME.fps.d/`:
 
 ```bash
-# List all milk-related tmux sessions
-$ tmux ls | grep milk
+# What the run process printed (-f follows it; add "conf" for the conf process)
+$ milk-fps-log NAME
+$ milk-fps-log -f NAME
 
-# Attach to a specific session
-$ tmux attach -t <session-name>
+# States of the units, then how the last run started and ended
+$ milk-fps-list
+$ cat $MILK_SHM_DIR/NAME.fps.d/run.info
 
-# Scroll up in tmux (Ctrl-b [, then PgUp)
+# The environment the unit's processes get
+$ milk-fps-info --env NAME
 ```
 
 <!-- prettier-ignore -->
 !!! tip
-    Each tmux session typically has three windows: `ctrl` (control commands), `run` (the main loop), and
-    `conf` (the configuration loop). Switch windows with `Ctrl-b 0`, `Ctrl-b 1`, `Ctrl-b 2`.
+    `run.out` is rotated to `run.out.1` at each start, so the output of a run that crashed is still
+    there after a restart. milk-fpsCTRL (`Ctrl+a`) and milk-CTRL (the OUTPUT sub-tab) show it too.
 
 ---
 
@@ -90,8 +96,10 @@ $ sudo gdb -p <PID>
 
 ### 3.2. Running Under GDB from Start
 
+`run` keeps the loop in your terminal (as `runstart --fg` or `MILK_UNIT_FG=1` do):
+
 ```bash
-$ gdb --args milk-fpsexec-mymodule fpsinit
+$ gdb --args milk-fpsexec-mymodule -n NAME run
 (gdb) run
 ```
 
@@ -124,7 +132,7 @@ $ gdb /usr/local/milk/bin/milk-fpsexec-mymodule \
 **Diagnosis:**
 
 ```bash
-# Check semaphore state
+# Check semaphore state: the SEMS column, or the inspector's SEMS page (values, readers, writers)
 $ milk-streamCTRL
 # Look for sem values > 0 on the input stream
 ```
@@ -134,24 +142,29 @@ semaphore.
 
 ### 4.2. Shared Memory Leaks
 
-**Symptom:** `/dev/shm/` fills up with stale `.im.shm` and `fps.*.shm` files.
+**Symptom:** `$MILK_SHM_DIR` (`/dev/shm/`) fills up with stale `.im.shm` and `.fps.shm` files.
 
 **Cleanup:**
 
 ```bash
-# List stale streams
-$ ls /dev/shm/*.im.shm
+# List streams and FPS instances
+$ ls $MILK_SHM_DIR/*.im.shm $MILK_SHM_DIR/*.fps.shm
 
-# Remove orphaned streams
-$ rm /dev/shm/mystale_stream.im.shm
+# Cleanly remove a stream or FPS (stops running unit processes and removes .fps.d/)
+$ milk-stream-rm mystale_stream
+$ milk-fps-rm -f mystale_fps
+
+# Or purge all orphaned shared memory segments
+$ milk-shmimpurge
 ```
 
 ### 4.3. Segfault in Stream Access
 
 **Symptom:** `SIGSEGV` when accessing `img.im->array.F`.
 
-**Likely cause:** The `IMGID` was not resolved or the stream was deleted. Always check the return
-value of `mkIMGID_from_name()` and verify `img.im != NULL` before accessing pixel data.
+**Likely cause:** The `IMGID` was not connected/resolved or the stream was deleted. Always check the
+return value of `resolveIMGID(&img, ERRMODE_ABORT)` (or `imgid_connect()`) and verify
+`img.im != NULL` before accessing pixel data.
 
 ---
 

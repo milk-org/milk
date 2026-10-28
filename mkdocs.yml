@@ -84,12 +84,16 @@ nav:
   - User Guide:
     - Streams: guide/streams.md
     - Stream Slicing: guide/slicing.md
+    - Stream Viewer: guide/termview.md
+    - Dashboard (milk-CTRL): guide/milk-CTRL.md
     - FPS: guide/fps.md
     - fpsCTRL TUI: guide/fpsCTRL_reference.md
-    - FPS Sequencer: guide/sequencer.md
     - Process Info: guide/procinfo.md
     - CLI Syntax: guide/CLIcore.md
     - Scripting: guide/scripting.md
+    - Calculator & Compute Units: guide/calculator.md
+    - Sessions: guide/sessions.md
+    - "C Extensions (milk.calc & milk-cc)": guide/calc_c_extensions.md
     - FIFO Command Input: guide/fifo.md
     - Readline Keys: guide/helpreadline.md
     - Scripts: guide/scripts.md
@@ -109,10 +113,12 @@ nav:
     - Overview: arch/architecture.md
     - "Programmer's Guide": arch/programmers_guide.md
     - Dependency Graph: arch/dependency_graph.md
+    - Unit Lifecycle: arch/unit_lifecycle.md
   - Operations:
     - Performance Tuning: operations/performance.md
     - PGO & LTO: operations/pgo.md
     - Debugging: operations/debugging.md
+    - systemd Services: operations/systemd.md
   - Maintenance: maintenance/pm_operations.md
   - "What's New": whatsnew.md
   #- Tags Index: tags.md

@@ -50,8 +50,10 @@ through a shared-memory parameter system.
 | **FPS** (Function Processing System) | Real-time parameter sync, state control (run/stop/conf)     | `/dev/shm/fps.*`    |
 | **processinfo**                      | Heartbeat telemetry, loop rate profiling, health monitoring | `/dev/shm/proc.*`   |
 
-Compute units run inside **tmux sessions** for fault
-isolation — a crash in one unit never takes down others.
+Compute units run as detached background processes
+(**units**) for fault isolation — a crash in one unit
+never takes down others, and its output stays in
+`NAME.fps.d/run.out` (`milk-fps-log NAME`).
 
 ---
 
@@ -62,9 +64,10 @@ isolation — a crash in one unit never takes down others.
 | 🔴 **1st** | [`docs/arch/programmers_guide.md`](docs/arch/programmers_guide.md) | Architecture overview, `MILK_RUNNABLE` compute units, directory map, CMake conventions, header hierarchy |
 | 🔴 **2nd** | [`docs/arch/dependency_graph.md`](docs/arch/dependency_graph.md)   | Full build-tier diagrams, library link tables, standalone executable cmake patterns                 |
 | 🟠 **3rd** | [`docs/guide/streams.md`](docs/guide/streams.md)                     | `IMGID` C API, stream creation/connection, semaphore model, stream modifiers (`@S:`, `@L:`)         |
-| 🟠 **4th** | [`docs/guide/fps.md`](docs/guide/fps.md)                             | FPS parameter types, tmux dispatch, `milk-fpsCTRL`, `fpslist.txt` workflow                          |
-| 🟡 **5th** | [`docs/developer/code_assist.md`](docs/developer/code_assist.md)             | Index of all agent rules and workflows                                                              |
-| 🟡 **6th** | [`docs/guide/procinfo.md`](docs/guide/procinfo.md)                   | `PROCESSINFO` C API, loop profiling                                                                 |
+| 🟠 **4th** | [`docs/guide/fps.md`](docs/guide/fps.md)                             | FPS parameter types, units (start, stop, states, output), `milk-fpsCTRL`                            |
+| 🟠 **5th** | [`docs/guide/scripting.md`](docs/guide/scripting.md)                 | `.milk` / `milk.bash` scripting summary; links to [`calculator.md`](docs/guide/calculator.md) and [`sessions.md`](docs/guide/sessions.md) |
+| 🟡 **6th** | [`docs/developer/code_assist.md`](docs/developer/code_assist.md)             | Index of all agent rules and workflows                                                              |
+| 🟡 **7th** | [`docs/guide/procinfo.md`](docs/guide/procinfo.md)                   | `PROCESSINFO` C API, loop profiling                                                                 |
 
 ---
 
@@ -76,8 +79,7 @@ milk/
 │   ├── engine/                    ← Core libraries (POSIX only, no CLI)
 │   │   ├── ImageStreamIO/         ← Zero-copy shared memory streams
 │   │   ├── libfps/                ← FPS core (parameter management)
-│   │   ├── libcomputeunit/        ← FPS runtime (standalone main, tmux, conf/run)
-│   │   ├── libfpsseq/             ← FPS sequencer library
+│   │   ├── libcomputeunit/        ← FPS runtime (standalone main, units, conf/run)
 │   │   ├── libmilkcommon/         ← Common utilities, debug macros
 │   │   ├── libprocessinfo/        ← Heartbeat + process tracking
 │   │   └── libmilkdata/           ← IMGID struct, image utilities
@@ -85,8 +87,7 @@ milk/
 │   ├── cli/                       ← User-facing tools
 │   │   ├── libmilkscript/         ← Standalone scripting engine
 │   │   ├── CLIcore/               ← Interactive shell framework
-│   │   ├── overview/              ← TUI monitoring tool
-│   │   └── streamCTRL/            ← Stream monitor tool
+│   │   └── overview/              ← milk-CTRL dashboard TUI (milk-streamCTRL: a link that opens it on F3)
 │   ├── coremods/                  ← Core computation modules
 │   │   └── COREMOD_{arith,memory,tools,iofits}/
 │   └── milk_module_example/       ← ★ START HERE for templates

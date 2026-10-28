@@ -63,23 +63,44 @@ supported directly inside the stream string. E.g. passing `myImage@L:` to a modu
   need to be visible externally.
 - `@E:` (Exists): The stream must already exist. Returns an error if not found.
 - `@N:` (New): The stream must **not** exist. Returns an error if it already exists.
+- `@F:<path>`: Connect to or create a FITS-backed image at `<path>`.
+- `@T<type>:`: Set creation data type (e.g., `@TF32:im1`, `@TUI16:im2`, `@TCF32:im3`).
+
+Entity-path prefixes are also recognized in stream names: `s.im1` or `stream.im1` selects shared
+memory (`@S:`), while `l.im1` or `local.im1` selects local process memory (`@L:`).
 
 > [!NOTE]
 > FITS configuration files (`./conf/shmim.<name>.fits`) are checked automatically in the default
 > search order when connecting to a stream. No explicit modifier is needed.
 
-Modifiers are composable: `@LE:name` means "local memory, must exist".
+Modifiers are composable: `@LE:name` means "local memory, must exist", and `@STF32:im1` means
+"shared memory, float32".
 
 _When writing modules using `fpsexec` patterns, passing a non-existent or disallowed modifier
 automatically alerts the user and aborts the module spin-up to prevent silent failures._
 
-### `>` Type Prefix
+### `@T<type>:` Type Modifier
 
-A `>` separator introduces inline creation hints embedded in the stream name string:
+The `@T<type>:` modifier embeds creation type hints directly in the stream name string:
 
-| Prefix  | Example    | Effect                  |
-| ------- | ---------- | ----------------------- |
-| `t...>` | `tf32>im1` | Set data type (float32) |
+| Modifier               | Example      | Data Type             |
+| ---------------------- | ------------ | --------------------- |
+| `@TUI8:` / `@TUINT8:`  | `@TUI8:im1`  | `uint8`               |
+| `@TI8:` / `@TINT8:`    | `@TI8:im1`   | `int8`                |
+| `@TUI16:` / `@TUINT16:`| `@TUI16:im1` | `uint16`              |
+| `@TI16:` / `@TINT16:`  | `@TI16:im1`  | `int16`               |
+| `@TUI32:` / `@TUINT32:`| `@TUI32:im1` | `uint32`              |
+| `@TI32:` / `@TINT32:`  | `@TI32:im1`  | `int32`               |
+| `@TUI64:` / `@TUINT64:`| `@TUI64:im1` | `uint64`              |
+| `@TI64:` / `@TINT64:`  | `@TI64:im1`  | `int64`               |
+| `@TF16:`               | `@TF16:im1`  | `float16` (half)      |
+| `@TF32:` / `@TFLOAT:`  | `@TF32:im1`  | `float32`             |
+| `@TF64:` / `@TDOUBLE:` | `@TF64:im1`  | `float64` (double)    |
+| `@TCF32:`              | `@TCF32:im1` | `complex_float`       |
+| `@TCF64:`              | `@TCF64:im1` | `complex_double`      |
+
+> [!NOTE]
+> The legacy `t<type>>` prefix syntax (e.g., `tf32>im1`) is deprecated; use `@T<type>:im1` instead.
 
 These are parsed by `imgid_make_from_name()`. Keyword count and circular buffer size are set via
 `mdt->NBkw` and `mdt->CBsize` before calling `imgid_mkimage()`. Shared memory is the default; use
@@ -89,6 +110,7 @@ These are parsed by `imgid_make_from_name()`. Keyword count and circular buffer 
 
 Tools like `milk-streamCTRL` provide real-time introspection into active streams, displaying frame
 arrival rates, recent values, and the current state of semaphores without disrupting operations.
+To look at a stream's image in the terminal, use [`milk-termview`](termview.md).
 
 ## 5. C API (`IMGID`)
 
@@ -139,7 +161,7 @@ images and streams as function arguments.
     }
     ```
 
-    Name prefixes like `tf32>im1` set the data type automatically. Use `@S:` / `@L:` modifiers for
+    Type modifiers like `@TF32:im1` set the data type automatically. Use `@S:` / `@L:` modifiers for
     location control (see section 3 above).
 
 === "Format-checked"
@@ -207,7 +229,8 @@ oldest ancestor in the chain.
 
 ### Viewing the Trace
 
-- In `streamCTRL`: select a stream and press `t` to see the full process trace.
+- In `milk-CTRL` (or `milk-streamCTRL`), F3: select a stream, press Right to open the inspector and
+  Right again until the TRACE page: each hop's process, trigger stream, mode and timing.
 - In `milk-CTRL` overview: the trace is used to draw stream→process→stream dependency graphs.
 
 ---

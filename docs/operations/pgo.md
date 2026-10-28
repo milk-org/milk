@@ -39,10 +39,10 @@ With static LTO (`USE_STATIC_LTO=ON`), the same libraries are linked as static a
 can now inline across all library boundaries:
 
 ```text
-fpsexec.c  →  fpsexec.o  ───┐
-libmilkfps.a  ──────────────┼→  LTO link  →  fpsexec
-libImageStreamIO.a  ────────┤   (full visibility)
-libCOREMODmemory.a ─────────┘
+fpsexec.c  →  fpsexec.o  ───────┐
+libmilkfps.a  ──────────────────┼→  LTO link  →  fpsexec
+libImageStreamIO.a  ────────────┤   (full visibility)
+libmilkCOREMODmemory_static.a ──┘
 ```
 
 ### 1.2. Why Static Linking Is Faster
@@ -162,19 +162,19 @@ sudo make install
 
 `milk-perfbench` build tag: **`O3 LTO-static [x86_64]`**
 
-#### Option B — Dynamic LTO (manual flags)
+#### Option B — Dynamic LTO (default when `USE_LTO=ON`)
 
-Keeps the default dynamic `.so` linking but passes `-flto` explicitly. LTO operates only within the
-executable's own compilation units — cross-library inlining is **not** available, but the
-executable's hot path is still LTO-optimized.
+`USE_LTO` defaults to `ON` in `CMakeLists.txt`, which adds `-flto=auto` to targets while keeping the
+default dynamic `.so` linking. LTO operates within each target's own compilation units —
+cross-library inlining into `.so` dependencies is **not** available, but each executable and shared
+library is LTO-optimized internally.
 
 ```bash
 cmake .. \
   -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_LTO=ON \
   -DUSE_STATIC_LTO=OFF \
-  -DCMAKE_C_FLAGS="-O3 -march=native -flto=auto" \
-  -DCMAKE_EXE_LINKER_FLAGS="-flto=auto -Wl,-O2" \
-  -DCMAKE_SHARED_LINKER_FLAGS="-flto=auto"
+  -DCMAKE_C_FLAGS="-O3 -march=native"
 
 make -j$(nproc)
 sudo make install
@@ -255,7 +255,7 @@ $ cmake .. -DUSE_PGO=GENERATE
 $ make -j$(nproc) && sudo make install
 
 ## Step 2 — Run representative workloads
-$ milk-fpsexec-streamcopy -n scopy01
+$ milk-fpsexec-mem-streamcopy -n scopy01 exec in_stream out_stream
 $ # ... exercise your typical AO loop patterns
 
 ## Step 3 — Rebuild with profiles
@@ -277,10 +277,10 @@ Each standalone binary gets its own profile subdirectory under `_build/pgo/`:
 
 ```text
 _build/pgo/
-├── shared/                          ← shared libs
-├── milk-fpsexec-streamcopy/         ← streamcopy
-├── milk-fpsexec-linalg-SGEMM/       ← SGEMM
-├── cacao-fpsexec-cacaoloop-WFS/     ← WFS
+├── shared/                              ← shared libs
+├── milk-fpsexec-mem-streamcopy/         ← streamcopy
+├── milk-fpsexec-linalg-SGEMM/           ← SGEMM
+├── cacao-fpsexec-cacaoiot-acquireWFS/   ← acquireWFS
 └── ...
 ```
 
@@ -298,9 +298,9 @@ $ make -j$(nproc) && sudo make install
 
 ## Step 2 — Run ONLY the executables you want to
 ##          optimize, with realistic workloads
-$ milk-fpsexec-streamcopy -n scopy01
+$ milk-fpsexec-mem-streamcopy -n scopy01 run
 $ # let it process several thousand frames, then ^C
-$ cacao-fpsexec-cacaoloop-WFS -n wfs01
+$ cacao-fpsexec-cacaoiot-acquireWFS -n wfs01 run
 $ # exercise another workload
 
 ## Step 3 — Rebuild with profiles
@@ -385,14 +385,13 @@ Each `milk` module compiles a single regular library, shared by the interactive 
 
 ```text
 libmilkfps.so
-libCOREMODmemory.so
-libCOREMODarith.so
+libmilkCOREMODmemory.so
+libmilkCOREMODarith.so
 ...
 ```
 
-- Linked by `milk-cli` upon `mload`, dependent module shared libraries, the module's fpsexec executables.
-- Contain full CLI registration code (if `-DUSE_CLI=ON`; `RegisterModule`, `RegisterCLIcommand`, etc.), but that code is written to stay off the compute path so it's safe for fpsexec consumers
-- Module sources are compiled once, with `-DMILK_NO_CLI`, which redirects `CLIcore.h` to the `CLIcore_standalone.h` stub.
+- Linked by `milk-cli` (and loaded dynamically upon `@module load`), dependent module shared libraries, and the module's fpsexec executables.
+- Module sources are compiled once, with `-DMILK_NO_CLI`, which redirects `CLIcore.h` to the `CLIcore_standalone.h` stub and exports `MILK_RUNNABLE` descriptors.
 - Loaded at runtime in the CLI via `dlopen()`.
 
 ### 4.2. Static Archives (`.a`) — for Static LTO
@@ -400,15 +399,16 @@ libCOREMODarith.so
 When `USE_STATIC_LTO=ON`, a `_static`-suffixed archive variant is built for each library and linked into standalone executables instead of the `.so`:
 
 ```text
-libImageStreamIO.a
-libmilkfps.a
-libmilkcomputeunit.a
-libmilkdata.a
-libmilkprocessinfo.a
-libCOREMODmemory_static.a
-libCOREMODarith_static.a
-libCOREMODtools_static.a
-libCOREMODiofits_static.a
+libImageStreamIO_static.a
+libmilkcommon_static.a
+libmilkfps_static.a
+libmilkcomputeunit_static.a
+libmilkdata_static.a
+libmilkprocessinfo_static.a
+libmilkCOREMODmemory_static.a
+libmilkCOREMODarith_static.a
+libmilkCOREMODtools_static.a
+libmilkCOREMODiofits_static.a
 ```
 
 - Static archives contain the same `.o` files as the regular shared libraries, archived for static linking
@@ -446,6 +446,7 @@ libCOREMODiofits_static.a
 
 | Option           | Default       | Effect                                            |
 | ---------------- | ------------- | ------------------------------------------------- |
+| `USE_LTO`        | `ON`          | Enable `-flto=auto` on libraries and executables  |
 | `USE_PGO`        | _(off)_       | `GENERATE` or `USE` — profile-guided optimization |
 | `USE_STATIC_LTO` | `OFF`         | Static archives + LTO for standalones             |
 | `PGO_DIR`        | `_build/pgo/` | Profile data directory                            |
@@ -630,21 +631,7 @@ Because the binary is fully self-contained, no library installation is needed on
 | `BUILD_SHARED_LIBS`      | `OFF`      | Prevents cmake from building `.so` targets that would fail the static link       |
 | `-D_GNU_SOURCE` (C flag) | set        | Exposes `cpu_set_t`, `pthread_setaffinity_np` and other POSIX extensions in musl |
 
-### 8.6. Known Warnings (Non-Fatal)
-
-**LTO type mismatch on `copy_image_ID`:**
-
-```text
-warning: type of 'copy_image_ID' does not match original declaration [-Wlto-type-mismatch]
-image_copy.h: return value: imageID vs int
-```
-
-`fps_loadmemstream_lite.c` declares `copy_image_ID` as `int` while `image_copy.h` uses
-`typedef imageID`. This is a pre-existing mismatch in the codebase (not introduced by the musl
-build). The binary is correct because `imageID` is `typedef long` which matches GCC's `int` ABI on
-the return path. No runtime impact.
-
-### 8.7. Limitations Compared to Standard Static LTO
+### 8.6. Limitations Compared to Standard Static LTO
 
 | Feature                | Standard static LTO | musl static       |
 | ---------------------- | ------------------- | ----------------- |
@@ -655,7 +642,7 @@ the return path. No runtime impact.
 | Binary portability     | Same glibc version  | Any Linux x86-64  |
 | PGO compatible         | ✓                   | ✓ (same workflow) |
 
-### 8.8. musl vs glibc `strerror_r` ABI
+### 8.7. musl vs glibc `strerror_r` ABI
 
 musl implements the POSIX (XSI) variant of `strerror_r` which returns `int`, whereas glibc defaults
 to the GNU variant returning `char *`. The milk source correctly detects this via

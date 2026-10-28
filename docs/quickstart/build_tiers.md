@@ -11,31 +11,30 @@
 
 The default build is the **Full build**, but without extra dependencies.
 
-| Build layer     | Code pulled in         | Dependencies                                                                                       |
-| --------------- | ---------------------- | -------------------------------------------------------------------------------------------------- |
-| **Full build**  | CLI (`milk-cli`)       | ncurses, readline                                                                                  |
-|                 | plugins                | Per-need (see [CMake system](../developer/dependency_system.md)) - CUDA, MAGMA, OpenBLAS, MKL, ... |
-| **Core + FITS** | COREMOD_iofits         | cfitsio                                                                                            |
-| **Core**        | COREMOD_memory         |                                                                                                    |
-|                 | COREMOD_arith          |                                                                                                    |
-|                 | COREMOD_tools          |                                                                                                    |
-| **Engine**      | milk engine libs       | All POSIX-only                                                                                     |
-|                 | ImageStreamIO          |                                                                                                    |
-|                 | libprocessinfo, libfps |                                                                                                    |
+| Build layer     | Code pulled in                                                                 | Dependencies                                                                                       |
+| --------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| **Full build**  | CLI (`milk-cli`, `milk-script`, `milk-call`, `milk.bash`, `milk-CTRL`)         | readline, tree-sitter (bundled), ncurses                                                           |
+| **Core + FITS** | `COREMOD_iofits`, plugins, `fpsexec` compute units                             | cfitsio, per-plugin deps (see [CMake system](../developer/dependency_system.md))                   |
+| **Core**        | `COREMOD_memory`, `COREMOD_arith`, `COREMOD_tools`, plugins, `fpsexec`s        |                                                                                                    |
+| **Engine**      | `ImageStreamIO`, `libmilkcommon`, `libprocessinfo`, `libfps`, `libcomputeunit`, `libmilkdata`, engine TUIs (`milk-fpsCTRL`, `milk-procCTRL`) | POSIX-only (+ ncurses for TUIs)                                                                    |
 
 ## Optional dependencies
 
-Some optional dependencies are expected by MILK and enable additional features
+Some optional dependencies are detected by MILK and enable additional features:
 
-| Option         | Default | Description                           |
-| -------------- | ------- | ------------------------------------- |
-| `USE_READLINE` | ON      | Enable readline for CLI input         |
-| `USE_GSL`      | ON      | Enable GSL for plugins                |
-| `USE_CUDA`     | OFF     | CUDA GPU computations                 |
-| `USE_MAGMA`    | OFF     | MAGMA linear algebra on GPU routines  |
-| `USE_OPENBLAS` | OFF     | BLAS: multicore linear algebra on CPU |
-| `USE_MKL`      | OFF     | Intel MKL compute library             |
-| `USE_LAPACKE`  | OFF     | Lapacke linear algebra library        |
+| Option           | Default | Description                                        |
+| ---------------- | ------- | -------------------------------------------------- |
+| `USE_READLINE`   | ON      | Enable readline for interactive CLI input          |
+| `USE_NCURSES`    | ON      | Enable ncurses for TUI dashboards                  |
+| `USE_TREESITTER` | ON      | Enable tree-sitter syntax highlighting in CLI      |
+| `USE_CFITSIO`    | ON      | Enable FITS file I/O (`COREMOD_iofits`)            |
+| `USE_OPENBLAS`   | ON      | BLAS: multicore linear algebra on CPU (if found)   |
+| `USE_LAPACKE`    | ON      | LAPACKE linear algebra routines (if found)         |
+| `USE_MKL`        | OFF     | Intel MKL compute library                          |
+| `USE_CUDA`       | OFF     | CUDA GPU computations                              |
+| `USE_MAGMA`      | OFF     | MAGMA linear algebra on GPU routines               |
+| `USE_LTO`        | ON      | Enable Link-Time Optimization (`-flto=auto`)       |
+| `USE_STATIC_LTO` | OFF     | Link standalone `fpsexec`s against static archives |
 
 If you have the dependency `<X>` installed, you may request MILK to fetch it with `-DUSE_<X>=ON`.
 
@@ -54,13 +53,13 @@ dependencies as a developer.
 
 ## How to build each tier of MILK
 
-| Tier               | cmake command                               | What you get                                      |
-| ------------------ | ------------------------------------------- | ------------------------------------------------- |
-| **Engine**         | `cmake .. -DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, processinfo, FPS, standalone tools |
-| **Core**           | `cmake .. -DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | + COREMOD_arith, memory, tools (no cfitsio)       |
-| **Core + FITS**    | `cmake .. -DUSE_CLI=OFF`                    | + COREMOD_iofits (requires cfitsio)               |
-| **Full**           | `cmake ..`                                  | + CLI, all plugins, example module                |
-| **Full + options** | `cmake .. -DUSE_<X_OPTIONAL_DEP>=ON`        | + GPU acceleration                                |
+| Tier               | cmake command                               | What you get                                                       |
+| ------------------ | ------------------------------------------- | ------------------------------------------------------------------ |
+| **Engine**         | `cmake .. -DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, processinfo, FPS, computeunit, milkdata, engine TUIs |
+| **Core**           | `cmake .. -DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | + COREMOD_arith, memory, tools, non-FITS plugins and `fpsexec`s    |
+| **Core + FITS**    | `cmake .. -DUSE_CLI=OFF`                    | + COREMOD_iofits and FITS-enabled plugins / `fpsexec`s             |
+| **Full**           | `cmake ..`                                  | + `milk-cli`, `milk-script`, `milk.bash`, `milk-CTRL`, all plugins |
+| **Full + options** | `cmake .. -DUSE_<X_OPTIONAL_DEP>=ON`        | + GPU acceleration (CUDA, MAGMA) or Intel MKL                      |
 
 All tiers are built with:
 
@@ -99,4 +98,3 @@ $ sudo make install
 ---
 
 ← [Documentation Index](../index.md)
-,

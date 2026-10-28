@@ -21,10 +21,10 @@ Each section explains prerequisites, setup, and usage.
 <details class="plain" markdown="1" open>
 <summary>Expand contents</summary>
 
-The milk v2 documentation is build from markdown files using [mkdocs](https://www.mkdocs.org).
+The milk v2 documentation is built from markdown files using [mkdocs](https://www.mkdocs.org).
 
 !!! note "Contributing"
-    See [here] # TODO add link.
+    See [Documenting Code](DocumentingCode.md) for Markdown and Kernel-Doc conventions.
 
 ??? tip "Markdown preview in the IDE/editor"
     The documentation is all markdown files, so any markdown visualization item (e.g. vscode's markdown preview) would work to view content.
@@ -66,7 +66,7 @@ pip install pymdown-extensions \
 ### 1.2 Build and serve the documentation
 
 ??? tip "Test the doc build"
-    Build in strict mode: useful to __check for stale links__.
+    Build in strict mode: useful to **check for stale links**.
     ```bash
     mamba run -n mkdocsenv mkdocs build --strict
     #                      ^^^^^^^^^^^^^^^^^^^^^-- only this part if `mamba activate mkdocsenv` is still active
@@ -115,7 +115,7 @@ bundle exec jekyll serve
 !!! success "You now have the local Cacao v1 docs in your browser !"
     You can leave `jekyll serve` running in its terminal, and watch the render in the browser.
     The website will update as you modify `md` files in the `pages/` folder of the documentation repo
-    __and hit refresh in the browser__.
+    **and hit refresh in the browser**.
 
 </details>
 
@@ -160,7 +160,7 @@ pre-commit install
 
 The typical usage is the one that is forced upon the developer.
 Upon running `git commit`, the hook invokes `pre-commit run`.
-By default this applies the pre-commit hooks on all the __staged files__.
+By default this applies the pre-commit hooks on all the **staged files**.
 
 | Possible outcomes:                     | Then:                                                |
 | -------------------------------------- | ---------------------------------------------------- |
@@ -233,7 +233,7 @@ We're trying to move away from scattered `ctest` and bash testing scripts.
     === "test of the global build"
 
     ```bash
-    mkdir -p _build && cd build_
+    mkdir -p _build && cd _build
     cmake .. # Pass your preferred build options
     make -j 20 && sudo make install
     ctest
@@ -242,7 +242,7 @@ We're trying to move away from scattered `ctest` and bash testing scripts.
     === "test in isolation"
 
     ```bash
-    mkdir -p _build && cd build_
+    mkdir -p _build && cd _build
     cmake .. -DCMAKE_INSTALL_PREFIX=. # install configured to _build/milk-1.03.00
     make -j 20 && make install
     PATH="$PWD/milk-1.03.00/bin:$PATH" ctest
@@ -263,8 +263,8 @@ in which we can build milk with different options, then run the tests; or use se
       with its path exported as `PYMILK_ROOT`. Some tests use `pyMilk` to interact with SHMs and FPSs.
     - An installed `milk` python-package: `cd $MILK_ROOT/python && pip install -e .`. TODO: be better at naming
     - A built and locally installed `milk`, with `MILK_INSTALLDIR` pointing to it.
-    - `tmux` and a writable `/tmp`: the tests spawn private tmux servers and shared-memory
-      directories.
+    - A writable `/tmp` (the test suite redirects `MILK_SHM_DIR` and `MILK_PROC_DIR` there), and `tmux`
+      when running the TUI tests under `python/tests/tui/`.
 
 ### 4.1 Setup
 
@@ -378,12 +378,13 @@ We use it to run the milk tests with various build options, or to run coverage r
 The default sessions install `milk` and `pyMilk`, configures and builds milk
 in a temporary directory, installs it there, and runs `pytest`. The build variants are:
 
-| Default sessions               | `USE_CLI` | `USE_STATIC_LTO` |
-| ------------------------------ | --------- | ---------------- |
-| `build_and_pytest_nocli_nolto` | OFF       | OFF              |
-| `build_and_pytest_nocli_lto`   | OFF       | ON               |
-| `build_and_pytest_cli_nolto`   | ON        | OFF              |
-| `build_and_pytest_cli_lto`     | ON        | ON               |
+| Default sessions                 | `USE_CLI` | `USE_LTO` | `USE_STATIC_LTO` |
+| -------------------------------- | --------- | --------- | ---------------- |
+| `build_and_pytest_nocli_nolto`   | OFF       | OFF       | OFF              |
+| `build_and_pytest_nocli_lto`     | OFF       | ON        | OFF              |
+| `build_and_pytest_cli_nolto`     | ON        | OFF       | OFF              |
+| `build_and_pytest_cli_lto`       | ON        | ON        | OFF              |
+| `build_and_pytest_cli_ltostat`   | ON        | ON        | ON               |
 
 
 ```bash
@@ -412,8 +413,8 @@ nox -s tests_run_coverage           # run the coverage session, which is not in 
     nox -N [-s <session>]
     ```
 
-    Rebuilding the 4 default sessions from scratch takes ~5 minutes on a 2020 6-core 4 GHz laptop.
-    Running them with no building (zero-diff incremental build).
+    Rebuilding the 5 default sessions from scratch takes ~5 minutes on a 2020 6-core 4 GHz laptop.
+    Re-running them with no source changes performs a fast incremental check and test run.
 
 </details>
 
@@ -438,6 +439,7 @@ It is possible to run the coverage build directly in the main shell environment 
 install, run the tests, etc), but inconvenient due to managing the gcc tracking and counter files.
 
 We packaged all of it in a nox session, that produces two html reports, for python and for C/C++.
+
 ```bash
 nox -s tests_run_coverage           # run the coverage session, which is not in the defaults; See #5 below.
 ```
@@ -448,11 +450,14 @@ nox -s tests_run_coverage           # run the coverage session, which is not in 
     Fix in progress, nox session is broken.
 
 The python coverage report:
-```
+
+```text
 <browser> $MILK_ROOT/cov_py/index.html
 ```
+
 and the C coverage report:
-```
+
+```text
 <browser> $MILK_ROOT/cov_c/index.html
 ```
 
@@ -499,7 +504,7 @@ To remove it: `rm -rf _build/_install`, and unset the modified variables.
 
 !!! warning "This is global superseding"
     This approach is designed to supersede the system-wide installation with a development build.
-    This is not the same as running multiple, isolated versions. See [multiple versions here](../multiversion.md)
+    This is not the same as running multiple, isolated versions. See [multiple versions here](multiversion.md)
 
 ### 6.2 Global install without sudo
 
@@ -507,9 +512,11 @@ Follow the process for installing milk system-wide: the default recommendation i
 which is a symbolic link to `/usr/local/milk-<version>`.
 
 By changing ownership of that folder:
+
 ```bash
 sudo chown -R <user>:<user> /usr/local/milk-<version>
 ```
+
 you can now `make install`/`ninja install` milk without sudo permissions. The only bit that is missing and actually requires `sudo` is granting root capability to `milk-makecsetandrt`.
 
 !!! warning
@@ -524,7 +531,7 @@ you can now `make install`/`ninja install` milk without sudo permissions. The on
 <details class="plain" markdown="1" open>
 <summary>Expand contents</summary>
 
-For attaching to running processes, tmux log inspection and core dumps, see
+For attaching to running processes, unit output and core dumps, see
 [Debugging](../operations/debugging.md).
 
 <!-- prettier-ignore -->
@@ -532,11 +539,11 @@ For attaching to running processes, tmux log inspection and core dumps, see
     - `gdb` and `valgrind` installed (`apt install gdb valgrind`).
     - A **Debug** build (`MILK_BUILD_TYPE=Debug ./compile.sh`, or `-DCMAKE_BUILD_TYPE=Debug`): in
       the default `Release` build (`-Ofast`) backtraces are missing frames and variables.
-    - Reproduce in the foreground: do not use `-tmux`, which runs the process inside a tmux session
-      where `gdb`/`valgrind` do not wrap it. The `exec` command (auto-init, set arguments, run) does
-      this in one process.
-    - A stale shared-memory state can mask or fake a crash: delete leftover
-      `$MILK_SHM_DIR/fps.<name>.*` before retrying.
+    - Reproduce in the foreground: `runstart` runs the loop in a background worker that
+      `gdb`/`valgrind` do not wrap; use `run` (or `runstart --fg`). The `exec` command (auto-init,
+      set arguments, run) does this in one process.
+    - A stale shared-memory state can mask or fake a crash: remove leftover FPS state with
+      `milk-fps-rm -f <name>` (or delete `$MILK_SHM_DIR/<name>.fps.*`) before retrying.
 
 ### 7.1 gdb
 
@@ -626,7 +633,7 @@ Run `reuse lint` before opening a PR that adds files. For files that cannot hold
 
 ## 9. Where to go next
 
-- [Debugging](../operations/debugging.md): running processes, tmux, core dumps.
+- [Debugging](../operations/debugging.md): running processes, unit output, core dumps.
 - [Performance tuning](../operations/performance.md) and
   [PGO and LTO](../operations/pgo.md): `perf`, `milk-perfbench`, optimized builds.
 - [Code assist tools](code_assist.md): agent rules, skills and workflows.

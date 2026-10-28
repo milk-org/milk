@@ -97,8 +97,8 @@ and the codes must satisfy
   `PRINT_ERROR`. Use this by default.
 - `EXECUTE_SYSTEM_COMMAND_NOCHECK(format, ...)` is the
   opt-in silent variant. Use it only when the exit
-  status genuinely doesn't matter (e.g. a `tmux
-kill-session` whose absence is expected) and document
+  status genuinely doesn't matter (e.g. removing a
+  file whose absence is expected) and document
   the reason in a one-line comment above the call.
 - New code reaches for the checked default. Existing
   `_NOCHECK` call sites should be audited
