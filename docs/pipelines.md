@@ -78,8 +78,8 @@ Pipelines conf.toml features:
 - `[compute_units.<cu>]` tables (`exec`, `.fps`, `.fps.procinfo`)
 
 ```bash
-milk-pipes -c --folder ~/src/milk-standalone/python/tests/resources/ pipelinebasic
-milk-pipes -r pipelinebasic
+milk-pipeinit init ~/src/milk-standalone/python/tests/resources/pipelinebasic-conf --parent .
+milk-pipes spool basic
 ```
 
 ### Confdir layout
@@ -122,19 +122,83 @@ File operations on confdirs; it never touches the live system.
 |---|---|
 | `milk-pipeinit list [DIR]` | List the confdirs and rootdirs in DIR (default cwd). Examples: `milk-pipeinit list $MILK_ROOT/milk-examples/pipelines`. |
 | `milk-pipeinit clone SRC [DEST_PARENT]` | Copy the conf files of SRC to `DEST_PARENT/<SRC name>`. Refuses an existing target; runs no hooks and no git. |
-| `milk-pipeinit consolidate CONFDIR` | Run the pending conf hooks; print the ids that ran. |
-| `milk-pipeinit resolve CONFDIR` | Print the resolved configuration as TOML. |
+| `milk-pipeinit consolidate CONFDIR [--refetch ID ...] [--refetch-all]` | Run the pending conf hooks; print the ids that ran. `--refetch` reruns a hook even when resolved: upstream changes (for example a new file at an rsync source) are not detected otherwise. |
+| `milk-pipeinit resolve DIR` | Print the resolved configuration of a confdir or a rootdir as TOML. |
+| `milk-pipeinit init CONFDIR [--parent DIR] [--set K=V ...]` | Consolidate CONFDIR and build `<DIR>/<name>-rootdir` (DIR defaults to CONFDIR's parent). Refuses an existing rootdir. |
+| `milk-pipeinit drift ROOTDIR` | One line per drifted artifact, then the resolved diff, then `STRUCTURAL:` lines. |
+| `milk-pipeinit resync ROOTDIR [--artifact KEY ...] [--set K=V ...] [--overwrite-local]` | Bring confdir changes into the rootdir. Always ends with the "teardown → deploy may be needed" banner and the structural lines. |
 
-The Python API is `milk.provision` (`clone`, `consolidate`, `fingerprint`, `status`, ...).
+`--set` values are parsed as TOML values (`0.5`, `true`, `[1, 2]`); anything else is taken as a
+string. Identity keys (`long_name`, `name`, `loop_number`) cannot be overridden.
+
+The Python API is `milk.provision` (`clone`, `consolidate`, `fingerprint`, `status`, ...) and
+`milk.provision.rootdir` (`init`, `drift`, `resync`).
+
+### Rootdir layout
+
+The rootdir is authoritative: after `init`, the operating layer (`Pipeline`, tasks,
+`milk-pipes`) reads only the rootdir, never the confdir, and hand edits under `conf/` are live.
+`resync` is the only way confdir changes reach it.
+
+```
+<name>-rootdir/
+  conf/            the conf files, copied
+  initdata/        <product> and <product>.tag of each hook, copied from the confdir's data/
+  provenance.toml  milk version, source confdir, dates, recorded overrides, one record per artifact
+  work/            FPS workdir
+  logs/
+```
+
+Folders are told apart by name and content: a confdir is named `*-conf` and has `conf.toml` and
+no `provenance.toml`; a rootdir is named `*-rootdir` and has `provenance.toml` and
+`conf/conf.toml`. Resolving a rootdir
+replays the overrides recorded in `provenance.toml`.
+
+Artifact keys are a conf file's relative path (`conf.toml`, `scripts/a.sh`) or `data/<product>`
+for a hook product (`initdata/<product>` in the rootdir).
+
+### Drift
+
+Each artifact has two statuses against its record in `provenance.toml`:
+
+| Field | Compares | Statuses |
+|---|---|---|
+| `source` | record vs the confdir now; for hooks also the recorded declaration digest vs the confdir's current declaration | `modified`, `added`, `removed`; `stale` when only a hook declaration changed. Upstream content is not watched: run `consolidate --refetch`. |
+| `local` | record vs the rootdir now | `modified`, `added`, `removed` (a local edit) |
+
+The drift report also gives the resolved diff (dotted keys, `(rootdir, confdir)`; the confdir is
+resolved with the recorded overrides, so overrides never show as drift), the structural changes
+(CompUs added or removed, or whose `exec` changed), and the milk version if it differs from
+the recorded one.
+
+### Resync
+
+Checks run before any write; after them, resync is not atomic and `drift` shows a partial state.
+
+1. A running CompU refuses the resync.
+2. An identity key that differs between the rootdir and the confdir refuses it: init a new
+   rootdir instead.
+3. The confdir is consolidated.
+4. Each artifact whose `source` drifted, optionally restricted by `--artifact`, is copied (or
+   deleted) and recorded, in key order. An artifact that also has a `local` edit is refused,
+   unless `--overwrite-local`; a refusal does not stop the others.
+5. `--set` overrides are merged into the recorded ones.
+
+resync never tears down or deploys.
 
 ## Deployment
 
 `milk-pipes -r` information
 
-`milk-pipes nuke [--folder F] <name>` is destructive and meant for test machines.
-Without confirmation, it runs `runstop` on all CompUs, deapplies all system linkages,
-runs `confstop` on all CompUs, then deletes the pipeline root directory.
-Failures in a step are reported and do not prevent the following steps.
+`milk-pipes spool|sys|teardown|nuke TARGET [--parent DIR]`: TARGET is a rootdir path, or a
+short name for `<cwd>/<TARGET>-rootdir` (`<DIR>/<TARGET>-rootdir` with `--parent`). In Python,
+`Pipeline(target)`, `Pipeline.from_folder(rootdir)` and `Pipeline.from_parent(parent, short_name)`.
+
+`milk-pipes teardown TARGET` runs `runstop` on all CompUs, deapplies all system linkages, runs
+`confstop` and destroys the FPSs. It keeps the rootdir and `work/`.
+`milk-pipes nuke TARGET` is teardown, then deletes the rootdir even if teardown failed. It asks
+to type the short name first; `--yes` skips that.
+In both, failures in a step are reported and do not prevent the following steps.
 
 FPS names are `<name>_<cu>` (for example `basic_delay0`), derived from the pipeline short name and the CompU key.
 

@@ -13,13 +13,14 @@ import pytest
 
 from milk.pipeline import Pipeline
 from milk.provision import clone
+from milk.provision.rootdir import init
 
 RESOURCES = Path(__file__).parents[1] / "resources"
 
 
 @pytest.fixture
 def make_tmp_pipeline(tmp_path):
-    """A pipelinebasic copy in tmp_path, with extra TOML appended to its conf.toml."""
+    """A pipelinebasic copy in tmp_path, with extra TOML appended to its conf.toml, then init."""
 
     def make(extra_toml: str = "") -> Pipeline:
         conf = tmp_path / "pipelinebasic-conf"
@@ -27,29 +28,30 @@ def make_tmp_pipeline(tmp_path):
         if extra_toml:
             with (conf / "conf.toml").open("a") as stream:
                 stream.write(extra_toml)
-        return Pipeline(tmp_path, "pipelinebasic")
+        return Pipeline(init(conf))
 
     return make
 
 
 @pytest.fixture
 def cloned_pipeline():
-    """pipelinebasic cloned under the session's tmp cwd; best-effort nuked before and after."""
+    """pipelinebasic cloned and inited under the session's tmp cwd; best-effort torn down
+    before, nuked after."""
     os.makedirs("AOloop/", exist_ok=True)
-    clone(RESOURCES / "pipelinebasic-conf", Path("AOloop"))
-    cloned = Pipeline("AOloop", "pipelinebasic")
+    conf = clone(RESOURCES / "pipelinebasic-conf", Path("AOloop")).absolute()
+    cloned = Pipeline(init(conf))
     with contextlib.suppress(Exception):
-        cloned.nuke()
+        cloned.teardown()
     yield cloned
 
     # Guard: never rmtree outside the session tmp tree.
-    assert cloned.parent_folder.is_relative_to(os.getcwd())
-    if ".nox" in cloned.parent_folder.parts:
-        assert "tmp" in cloned.parent_folder.parts
+    assert cloned.root_folder.is_relative_to(os.getcwd())
+    if ".nox" in cloned.root_folder.parts:
+        assert "tmp" in cloned.root_folder.parts
     else:
-        assert cloned.parent_folder.is_relative_to("/tmp")
+        assert cloned.root_folder.is_relative_to("/tmp")
     with contextlib.suppress(Exception):
-        cloned.nuke()
+        cloned.nuke_unsafe()
     tsrv = libtmux.Server()
     for cu in cloned.config.compute_units:
         session = tsrv.sessions.get(
@@ -57,7 +59,7 @@ def cloned_pipeline():
         )
         if session is not None:
             session.kill()
-    shutil.rmtree(cloned.conf_folder)
+    shutil.rmtree(conf)
 
 
 def _fake_compu(fpsname: str) -> SimpleNamespace:

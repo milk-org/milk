@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -62,6 +63,8 @@ def status(
     current_decl: str | None = None,
 ) -> str:
     """Drift status of one artifact: changed bytes win over a changed declaration."""
+    if recorded is None and current is None:
+        return "unchanged"
     if current is None:
         return "removed"
     if recorded is None:
@@ -71,3 +74,11 @@ def status(
     if recorded_decl != current_decl:
         return "stale"
     return "unchanged"
+
+
+def remove(path: Path) -> None:
+    """Delete a file, symlink or directory tree, if present."""
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    else:
+        path.unlink(missing_ok=True)

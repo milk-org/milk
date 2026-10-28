@@ -26,6 +26,7 @@ from __future__ import annotations
 
 from .compute_unit import ComputeUnit
 from .config import confresolve
+from .config.layout import is_rootdir
 from .infra.task_models import SimpleTask
 from . import env
 from .errors import (
@@ -48,30 +49,37 @@ class Pipeline:
     # Or should it be a _deployed pipeline_ ?
     # Or should deployed / deployable / undeployable different things ?
 
-    def __init__(self, parent_folder: str | Path, long_name: str = "") -> None:
+    def __init__(self, target: str | Path) -> None:
+        """target: a rootdir path, or a short name whose rootdir is <cwd>/<target>-rootdir."""
+        root = Path(target)
+        if not is_rootdir(root):
+            root = Path.cwd() / f"{target}-rootdir"
+            if not is_rootdir(root):
+                raise ConfigError(
+                    f"Pipeline {target}: neither {Path(target)} nor {root} is a rootdir.",
+                    path=root,
+                )
+        self.root_folder = root.absolute()
+        self.config = confresolve(self.root_folder)
 
-        self.parent_folder = Path(parent_folder).absolute()
-
-        self.long_name = long_name
-
-        self.conf_folder = self.parent_folder / f"{self.long_name}-conf"
-        if not os.path.isdir(self.conf_folder):
-            raise ConfigError(
-                f"Pipeline from {self.conf_folder}: folder does not exist.",
-                path=self.conf_folder,
-            )
-        self.config = confresolve(self.conf_folder)  # Raises if not existing
-
+        self.long_name = self.config.long_name
         self.dataloads = self.config.dataloads
         self.systemlinkage = self.config.systemlinkage
 
         self.short_name = self.config.name
         self.loop_number = self.config.loop_number
 
-        self.root_folder = self.parent_folder / f"{self.short_name}-rootdir"
-        self.log_folder = self.parent_folder / f"{self.short_name}-logdir"
-
         self.work_folder = self.root_folder / "work"
+
+    @classmethod
+    def from_folder(cls, rootdir: str | Path) -> Pipeline:
+        if not is_rootdir(rootdir):
+            raise ConfigError(f"{rootdir} is not a rootdir.", path=Path(rootdir))
+        return cls(Path(rootdir).absolute())
+
+    @classmethod
+    def from_parent(cls, parent: str | Path, short_name: str) -> Pipeline:
+        return cls.from_folder(Path(parent) / f"{short_name}-rootdir")
 
     def task_do(self, task: SimpleTask | type[SimpleTask]) -> Pipeline:
         if isinstance(task, SimpleTask):
@@ -172,11 +180,11 @@ class Pipeline:
             if local.is_symlink() and Path(os.readlink(local)) == remote:
                 local.unlink()
 
-    def nuke(self) -> None:
-        """Unconditionally tear down: runstop, deapply linkages, confstop, rm -rf root.
+    def teardown(self) -> None:
+        """Deconfigure: runstop, deapply linkages, confstop, destroy FPSs. Keeps the rootdir.
 
-        Meant for test machines. Every step is best-effort: a failure does not stop the
-        next step, and all failures are raised together as a BestEffortError at the end.
+        Every step is best-effort: a failure does not stop the next step, and all failures
+        are raised together as a BestEffortError at the end.
         """
         failures: list[tuple[str, Exception]] = []
 
@@ -201,12 +209,15 @@ class Pipeline:
         for cu, compu in compus.items():
             if compu.fps is not None:
                 attempt(f"destroy {cu}", compu.fps.destroy)
-        if self.root_folder.exists() or self.root_folder.is_symlink():
-            attempt(
-                f"rm -rf {self.root_folder}", lambda: shutil.rmtree(self.root_folder)
-            )
         if failures:
             raise BestEffortError(failures, pipeline=self.short_name)
+
+    def nuke_unsafe(self) -> None:
+        """teardown(), then rm -rf the rootdir even if teardown failed. Never prompts."""
+        try:
+            self.teardown()
+        finally:
+            shutil.rmtree(self.root_folder)
 
 
 class DMCombPipeline: ...

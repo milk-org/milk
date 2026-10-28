@@ -1,21 +1,17 @@
 from __future__ import annotations
 
-import os
 import pytest
-from pathlib import Path
 
-from milk.errors import (
-    ConfigError,
-    TaskCannotRunError,
-    TaskDidNotSucceedError,
-)
+from milk.errors import TaskDidNotSucceedError
 from milk.pipeline import Pipeline
+from milk.provision.rootdir import init
 from milk.infra.task_models import SimpleTask
 
 
 @pytest.fixture
-def pipeline(pytestconfig):
-    return Pipeline(pytestconfig.rootpath / "tests" / "resources", "pipelinebasic")
+def pipeline(pytestconfig, tmp_path):
+    conf = pytestconfig.rootpath / "tests" / "resources" / "pipelinebasic-conf"
+    return Pipeline(init(conf, parent=tmp_path))
 
 
 class TestManualPipeline:
@@ -27,11 +23,6 @@ class TestManualPipeline:
         pp: Pipeline = pipeline
         assert pp.loop_number == 0
         assert pp.long_name == "pipelinebasic"
-
-        assert pp.parent_folder.is_absolute()
-        # Check the pipeline is the one directly from this repos' test sources
-        # In the python/tests/resources folder
-        assert pp.parent_folder.is_relative_to(Path(__file__).parent.parent)
 
     def test_pipeline_var_substitution(self, pipeline):
         pp: Pipeline = pipeline
@@ -57,25 +48,12 @@ class TestManualPipeline:
         assert pp.loop_number == 0
         assert pp.long_name == "pipelinebasic"
 
-        assert pp.parent_folder.is_absolute()
-        assert pp.parent_folder.is_relative_to(os.getcwd())
-        if ".nox" in pp.parent_folder.parts:
-            assert "tmp" in pp.parent_folder.parts
-        else:
-            assert pp.parent_folder.is_relative_to("/tmp")
-
     def test_deploy_fps_call_by_class(self, cloned_pipeline: Pipeline):
         pp = cloned_pipeline
 
-        from milk.infra.deploy_tasks import DeployFPS, InitialFolderSetup
+        from milk.infra.deploy_tasks import DeployFPS
 
-        # Now forbidden because it MUST have a rootdir to perform a DeployFPS
-        with pytest.raises(TaskCannotRunError) as cannot:
-            pp.task_do(DeployFPS)
-        assert cannot.value.task == "DeployFPS"
-        assert cannot.value.pipeline == pp.short_name
-        assert "does not exist" in str(cannot.value)  # the task's failure_reason
-        pp.task_do(InitialFolderSetup).task_do(DeployFPS)
+        pp.task_do(DeployFPS)
 
         for cu, compu in pp.compute_units.items():
             assert compu.fps is not None
@@ -105,13 +83,8 @@ class TestManualPipeline:
     def test_deploy_fps_call_by_instance(self, cloned_pipeline: Pipeline):
         pp = cloned_pipeline
 
-        from milk.infra.deploy_tasks import (
-            DeployFPS,
-            InitialFolderSetup,
-            StartConfProcesses,
-        )
+        from milk.infra.deploy_tasks import DeployFPS, StartConfProcesses
 
-        pp.task_do(InitialFolderSetup)
         pp.task_do(DeployFPS)
         pp.task_do(StartConfProcesses)
 
@@ -121,18 +94,3 @@ class TestManualPipeline:
             assert compu.fps.conf_isrunning()
             live_names.add(compu.fps.name)
         assert live_names == {"basic_delay0", "basic_delay1"}
-
-
-from milk.infra import mains_pipeline_mgmt as mgmt
-
-
-class TestMilkPipes:
-
-    def test_no_pipelines(self):
-        # No folder
-        with pytest.raises(ConfigError):
-            mgmt.milk_pipes_init_function("yolo")
-        # No conf.toml
-        os.mkdir("yolo-conf")
-        with pytest.raises(ConfigError):
-            mgmt.milk_pipes_init_function("yolo")

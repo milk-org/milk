@@ -24,33 +24,10 @@ from milk.provision import (
     status,
 )
 from milk.provision.cli import milk_pipeinit
+from milk.provision.rootdir import init
+from tests.conftestaux.provision import fetch_hook, make_confdir
 
 TAG_KEYS = {"hook_id", "decl_digest", "content_hash", "size", "source", "time"}
-
-
-def _confdir(parent: Path, hooks: str = "", name: str = "mini") -> Path:
-    """A one-CompU confdir <name>-conf under parent, with optional [[hooks]] TOML appended."""
-    conf = parent / f"{name}-conf"
-    conf.mkdir(parents=True)
-    (conf / "conf.toml").write_text(
-        f'long_name = "{name}"\nname = "{name}"\nloop_number = 3\n'
-        '[compute_units.cu]\nexec = "milk-fpsexec-mem-streamdelay"\n'
-        '[compute_units.cu.fps]\nin_name = "in"\nout_name = "{compute_units.cu.fps.in_name}_out"\n'
-        f"{hooks}\n"
-    )
-    return conf
-
-
-def _fetch_hook(source: Path, product: str = "flat.bin", hook_id: str = "flat") -> str:
-    return f'[[hooks]]\nid = "{hook_id}"\ntype = "fetch"\nsource = "{source}"\nproduct = "{product}"\n'
-
-
-@pytest.fixture
-def src_file(tmp_path) -> Path:
-    path = tmp_path / "src" / "flat.bin"
-    path.parent.mkdir()
-    path.write_bytes(b"\x00\x01" * 100)
-    return path
 
 
 # ---- Fingerprints ----
@@ -98,7 +75,7 @@ def test_symlinks_refused(tmp_path):
 
 
 def test_conf_files(tmp_path):
-    conf = _confdir(tmp_path)
+    conf = make_confdir(tmp_path)
     for rel in [
         "inc/streams.toml",
         "scripts/a.sh",
@@ -152,7 +129,7 @@ def test_decl_digest():
 
 
 def test_fetch_file_and_tag(tmp_path, src_file):
-    conf = _confdir(tmp_path, _fetch_hook(src_file))
+    conf = make_confdir(tmp_path, fetch_hook(src_file))
     assert consolidate(conf) == ["flat"]
     product = conf / "data" / "flat.bin"
     assert product.read_bytes() == src_file.read_bytes()
@@ -172,7 +149,7 @@ def test_fetch_directory(tmp_path):
     src = tmp_path / "srcdir"
     (src / "sub").mkdir(parents=True)
     (src / "sub" / "m.fits").write_bytes(b"m")
-    conf = _confdir(tmp_path, _fetch_hook(src, product="mats"))
+    conf = make_confdir(tmp_path, fetch_hook(src, product="mats"))
     assert consolidate(conf) == ["flat"]
     assert (conf / "data" / "mats" / "sub" / "m.fits").read_bytes() == b"m"
     assert fingerprint(conf / "data" / "mats") == fingerprint(src)
@@ -180,7 +157,7 @@ def test_fetch_directory(tmp_path):
 
 def test_command_hook(tmp_path):
     hook = '[[hooks]]\nid = "gen"\ntype = "command"\ncommand = ["sh", "-c", "echo hi > gen.txt"]\nproduct = "gen.txt"\n'
-    conf = _confdir(tmp_path, hook)
+    conf = make_confdir(tmp_path, hook)
     assert consolidate(conf) == ["gen"]
     assert (conf / "data" / "gen.txt").read_text() == "hi\n"
     assert consolidate(conf) == []
@@ -189,11 +166,11 @@ def test_command_hook(tmp_path):
 def test_command_without_product_refused(tmp_path):
     hook = '[[hooks]]\nid = "gen"\ntype = "command"\ncommand = ["true"]\nproduct = "gen.txt"\n'
     with pytest.raises(ProvisionError, match="gen"):
-        consolidate(_confdir(tmp_path, hook))
+        consolidate(make_confdir(tmp_path, hook))
 
 
 def test_stale_declaration_reruns(tmp_path, src_file):
-    conf = _confdir(tmp_path, _fetch_hook(src_file))
+    conf = make_confdir(tmp_path, fetch_hook(src_file))
     consolidate(conf)
     twin = tmp_path / "twin.bin"
     twin.write_bytes(src_file.read_bytes())  # same bytes, new declaration
@@ -204,7 +181,7 @@ def test_stale_declaration_reruns(tmp_path, src_file):
 
 
 def test_modified_product_is_refetched(tmp_path, src_file):
-    conf = _confdir(tmp_path, _fetch_hook(src_file))
+    conf = make_confdir(tmp_path, fetch_hook(src_file))
     consolidate(conf)
     (conf / "data" / "flat.bin").write_bytes(b"local edit")
     assert consolidate(conf) == ["flat"]
@@ -217,7 +194,7 @@ def test_fetched_symlink_refused(tmp_path):
     (src / "real").write_text("r")
     (src / "link").symlink_to(src / "real")
     with pytest.raises(ProvisionError):
-        consolidate(_confdir(tmp_path, _fetch_hook(src, product="d")))
+        consolidate(make_confdir(tmp_path, fetch_hook(src, product="d")))
 
 
 @pytest.mark.parametrize(
@@ -245,14 +222,14 @@ def test_fetched_symlink_refused(tmp_path):
 )
 def test_bad_hook_declarations_refused_at_load(tmp_path, hooks):
     with pytest.raises(ConfigError):
-        consolidate(_confdir(tmp_path, hooks))
+        consolidate(make_confdir(tmp_path, hooks))
 
 
 # ---- Clone ----
 
 
 def test_clone(tmp_path, src_file):
-    src = _confdir(tmp_path / "a", _fetch_hook(src_file))
+    src = make_confdir(tmp_path / "a", fetch_hook(src_file))
     (src / "scripts").mkdir()
     (src / "scripts" / "align.sh").write_text("#!/bin/sh\n")
     (src / "README.md").write_text("not conf")
@@ -268,7 +245,7 @@ def test_clone(tmp_path, src_file):
 
 
 def test_clone_refuses_existing_target(tmp_path):
-    src = _confdir(tmp_path / "a")
+    src = make_confdir(tmp_path / "a")
     (tmp_path / "b" / "mini-conf").mkdir(parents=True)
     with pytest.raises(ProvisionError):
         clone(src, tmp_path / "b")
@@ -279,8 +256,8 @@ def test_clone_refuses_existing_target(tmp_path):
 
 
 def test_cli_list(tmp_path):
-    _confdir(tmp_path, name="one")
-    (tmp_path / "two-rootdir").mkdir()
+    make_confdir(tmp_path, name="one")
+    init(make_confdir(tmp_path / "src", name="two"), parent=tmp_path)
     (tmp_path / "junk-conf").mkdir()  # no conf.toml: not a confdir
     result = CliRunner().invoke(milk_pipeinit, ["list", str(tmp_path)])
     assert result.exit_code == 0, result.output
@@ -289,7 +266,7 @@ def test_cli_list(tmp_path):
 
 
 def test_cli_clone_and_consolidate(tmp_path, src_file):
-    src = _confdir(tmp_path / "a", _fetch_hook(src_file))
+    src = make_confdir(tmp_path / "a", fetch_hook(src_file))
     runner = CliRunner()
     result = runner.invoke(milk_pipeinit, ["clone", str(src), str(tmp_path / "b")])
     assert result.exit_code == 0, result.output
@@ -301,7 +278,7 @@ def test_cli_clone_and_consolidate(tmp_path, src_file):
 
 
 def test_cli_resolve(tmp_path):
-    conf = _confdir(tmp_path)
+    conf = make_confdir(tmp_path)
     result = CliRunner().invoke(milk_pipeinit, ["resolve", str(conf)])
     assert result.exit_code == 0, result.output
     assert (

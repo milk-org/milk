@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import os
 import shlex
-import shutil
 import subprocess
+from collections.abc import Collection
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
 
 import tomli
 import tomli_w
@@ -16,7 +17,7 @@ from pydantic import BaseModel, ValidationError
 from ..config import confresolve
 from ..config.model import CommandHookDecl, FetchHookDecl
 from ..errors import ProvisionError
-from .artifacts import Fingerprint, decl_digest, fingerprint, status
+from .artifacts import Fingerprint, decl_digest, fingerprint, remove, status
 
 
 def _tagfile(product: Path) -> Path:
@@ -79,24 +80,34 @@ def _command(decl: CommandHookDecl, confdir: Path) -> None:
 RUNNERS = {"fetch": _fetch, "command": _command}
 
 
-def consolidate(confdir: Path) -> list[str]:
-    """Run the pending hooks of ``confdir``; returns their ids, in declaration order."""
+def consolidate(
+    confdir: Path, refetch: Collection[str] | Literal["all"] | None = None
+) -> list[str]:
+    """Run the pending hooks of ``confdir``, and those in ``refetch`` (or all) even when
+    resolved; returns their ids, in declaration order."""
     confdir = Path(confdir)
     data = confdir / "data"
+    decls = confresolve(confdir).hooks
+    if refetch == "all":
+        refetch = [decl.id for decl in decls]
+    unknown = set(refetch or ()) - {decl.id for decl in decls}
+    if unknown:
+        raise ProvisionError(f"Unknown hook ids to refetch: {sorted(unknown)}.")
     ran = []
-    for decl in confresolve(confdir).hooks:
+    for decl in decls:
         product = data / decl.product
         digest = decl_digest(decl.model_dump(mode="json"))
         tag = _load_tag(product)
         recorded = tag and tag.fingerprint
         current = fingerprint(product) if os.path.lexists(product) else None
-        if status(recorded, current, tag and tag.decl_digest, digest) == "unchanged":
+        pending = (
+            current is None
+            or status(recorded, current, tag and tag.decl_digest, digest) != "unchanged"
+        )
+        if not pending and decl.id not in (refetch or ()):
             continue
 
-        if product.is_dir() and not product.is_symlink():
-            shutil.rmtree(product)
-        else:
-            product.unlink(missing_ok=True)
+        remove(product)
         data.mkdir(exist_ok=True)
         RUNNERS[decl.type](decl, confdir)
         if not os.path.lexists(product):

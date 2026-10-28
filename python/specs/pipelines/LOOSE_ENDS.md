@@ -22,3 +22,5 @@ list at each slice boundary.
   `Pipeline.clone_to`; port it to `milk.provision.clone` when R4 rewrites the operate layer.
 - [repo merge] `specs/006-r6-pymilk-boundary/draft_pymilk_boundary_test.py` still imports
   `milk.infra.pipeline_models`, moved to `milk.config.model` by R3a step 0.
+- [R4+] No global scan of rundirs to find the configured pipelines (R3b D2).
+- [R4] `tests/mains/pipeline_linsim_test.py` (not collected) still imports `InitialFolderSetup`, removed by R3b.

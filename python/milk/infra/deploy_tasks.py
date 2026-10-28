@@ -29,8 +29,6 @@ from __future__ import annotations
 import typing as typ
 
 import os, contextlib
-import glob
-import shutil
 from pathlib import Path
 
 from .task_models import SimpleTask
@@ -40,68 +38,6 @@ from ..config.substitute import denest_toml_dicts
 from .. import env
 
 import subprocess
-
-
-# TODO note for future: a good task is idempotent -- would alleviate calls to can/success.
-# TODO note for future: do we keep
-class InitialFolderSetup(SimpleTask):
-
-    def can(self) -> bool:
-        # task_do has already found success False, so an existing rootdir is partial.
-        if self.pipeline.root_folder.exists():
-            self.failure_reason = (
-                f"partial rootdir {self.pipeline.root_folder}; remove it"
-            )
-            return False
-        return True
-
-    def success(self) -> bool:
-        root_dir = self.pipeline.root_folder
-        if not os.path.isdir(root_dir) or not os.path.isfile(root_dir / "conf.toml"):
-            return False
-
-        # More ?
-
-        return True
-
-    def forward(self):
-        pp = self.pipeline
-
-        loop_name = pp.short_name
-        conf_dir = pp.conf_folder
-        root_dir = pp.root_folder
-
-        root_dir.mkdir(parents=True, exist_ok=False)
-
-        # ---- logging ----
-        (root_dir / "fpsCTRL.log").unlink(missing_ok=True)
-        (root_dir / "fpsCTRL.log").symlink_to(
-            env.shm_dir() / f"fpsCTRL-{loop_name}.log"
-        )
-
-        pp.log_folder.mkdir(parents=True, exist_ok=True)
-        (root_dir / "logdir").unlink(missing_ok=True)
-        (root_dir / "logdir").symlink_to(pp.log_folder)
-
-        pp.work_folder.mkdir(parents=True, exist_ok=True)
-
-        fpstmuxenv = conf_dir / "fpstmuxenv"
-        if fpstmuxenv.exists():
-            shutil.copy(fpstmuxenv, root_dir)
-
-        data_dir = conf_dir / "data"
-        if data_dir.exists():
-            shutil.copytree(data_dir, root_dir / "data", dirs_exist_ok=True)
-
-        shutil.copy(conf_dir / "conf.toml", root_dir / f"conf.toml")
-
-        for fname in glob.glob(str(conf_dir / "aorun-*")):
-            shutil.copy(fname, root_dir)
-
-        scripts_dir = root_dir / "scripts"
-        scripts_dir.mkdir(parents=True, exist_ok=True)
-        for fname in glob.glob(str(conf_dir / "scripts" / "*")):
-            shutil.copy(fname, scripts_dir)
 
 
 class TestConfig(SimpleTask):
@@ -114,7 +50,7 @@ class TestConfig(SimpleTask):
 
 class LoadDataFiles(SimpleTask):
     """
-    Loads every [dataloads] entry source file (from the deployed rootdir/data)
+    Loads every [dataloads] entry source file (from rootdir/initdata)
     into target SHM streams.
     """
 
@@ -124,7 +60,7 @@ class LoadDataFiles(SimpleTask):
             self.failure_reason = f"{p.root_folder} does not exist."
             return False
         for entry in p.dataloads:
-            source_path = p.root_folder / "data" / entry.source
+            source_path = p.root_folder / "initdata" / entry.source
             if not os.path.isfile(source_path):
                 self.failure_reason = f"{source_path} does not exist."
                 return False
@@ -142,7 +78,7 @@ class LoadDataFiles(SimpleTask):
         for entry in p.dataloads:
             if not os.path.isfile(f"{env.shm_dir()}/{entry.target}.im.shm"):
                 return False
-            expected = fits.getdata(str(p.root_folder / "data" / entry.source))
+            expected = fits.getdata(str(p.root_folder / "initdata" / entry.source))
             shm = SHM(entry.target, symcode=0)  # same axis order as forward()
             try:
                 # Ignore byte order: FITS is big-endian.
@@ -162,7 +98,7 @@ class LoadDataFiles(SimpleTask):
             from pyMilk.interfacing.shm import SHM
 
         for entry in p.dataloads:
-            source_path = p.root_folder / "data" / entry.source
+            source_path = p.root_folder / "initdata" / entry.source
             # TODO milk-FITS2shm should absolutely not be a fpsexec lol
             # TODO TODO write docs on the capabilities of milk-pipes and the default pipelines (aosim, dmcomb, aoloop)
             import numpy as np

@@ -10,6 +10,7 @@ import milk.config.resolve
 from milk.config import confresolve
 from milk.errors import ConfigError
 from milk.pipeline import Pipeline
+from milk.provision.rootdir import init
 
 RESOURCES = Path(__file__).parents[1] / "resources"
 
@@ -48,10 +49,9 @@ def test_resolves_pipelinebasic():
     assert conf.compute_units["delay1"].fps["in_name"] == "middle"
 
 
-def test_pipeline_config_comes_from_confresolve():
-    assert Pipeline(RESOURCES, "pipelinebasic").config == confresolve(
-        RESOURCES / "pipelinebasic-conf"
-    )
+def test_pipeline_config_comes_from_confresolve(tmp_path):
+    rootdir = init(RESOURCES / "pipelinebasic-conf", parent=tmp_path)
+    assert Pipeline(rootdir).config == confresolve(RESOURCES / "pipelinebasic-conf")
 
 
 def test_every_call_reresolves(tmp_path):

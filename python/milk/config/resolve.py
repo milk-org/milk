@@ -13,6 +13,7 @@ import pydantic
 import tomli
 
 from ..errors import ConfigError
+from .layout import is_rootdir
 from .model import PipelineConfig
 from .substitute import substitute_toml_variables_in_nested
 
@@ -57,21 +58,14 @@ def _set_override(data: dict, dotted: str, value: object, toml: Path) -> None:
     node[leaf] = value
 
 
-def list_pipeline_dirs(folder: Path) -> list[str]:
-    """Sorted names of the confdirs (``*-conf`` with a conf.toml) and ``*-rootdir`` in folder."""
-    return sorted(
-        p.name
-        for p in Path(folder).iterdir()
-        if (p.name.endswith("-conf") and (p / "conf.toml").is_file())
-        or (p.name.endswith("-rootdir") and p.is_dir())
-    )
-
-
 def confresolve(
     confset: Path, overrides: Mapping[str, object] | None = None
 ) -> PipelineConfig:
-    """confset = the folder holding conf.toml (a confdir, or later rootdir/conf/)."""
+    """confset = the folder holding conf.toml, or a rootdir: then its conf/ with the recorded overrides."""
     confset = Path(confset)
+    if is_rootdir(confset):
+        recorded = _load(confset / "provenance.toml").get("overrides", {})
+        return confresolve(confset / "conf", {**recorded, **(overrides or {})})
     toml = confset / "conf.toml"
     top = _load(toml)
 
