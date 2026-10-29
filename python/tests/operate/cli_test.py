@@ -38,7 +38,7 @@ def calls(monkeypatch):
     """Record run_plan(pipeline, name) calls made by the CLI instead of running them."""
     seen: list[tuple[str, str]] = []
     monkeypatch.setattr(
-        "milk.operate.cli.run_plan",
+        "milk.operate.plans.run_plan",
         lambda pipeline, name: seen.append((str(pipeline.root_folder), name)),
     )
     return seen
@@ -106,7 +106,7 @@ def test_best_effort_failures_are_warnings_and_exit_1(pp, monkeypatch):
     def failing(pipeline, name):
         raise BestEffortError([("RunStop", RuntimeError("boom"))], pipeline="basic")
 
-    monkeypatch.setattr("milk.operate.cli.run_plan", failing)
+    monkeypatch.setattr("milk.operate.plans.run_plan", failing)
     result = _invoke("teardown", str(pp.root_folder))
     assert result.exit_code == 1
     assert "RunStop" in result.output and "boom" in result.output

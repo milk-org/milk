@@ -1,20 +1,25 @@
+"""The ``milk-pipes`` console script.
+
+NB: Prefer lazy imports, this file is a net cost on the CLI startup time.
+"""
+
 from __future__ import annotations
 
 import contextlib
+from typing import TYPE_CHECKING
 
 import click
 
-from ..errors import BestEffortError, MilkError
-from ..provision.rootdir import drift
-from .pipeline import Pipeline
-from .plans import PLANS, run_plan
-from .state import state
+if TYPE_CHECKING:
+    from .pipeline import Pipeline
 
 
 class _PlansGroup(click.Group):
     """The fixed commands, plus one command per PLANS name, read at call time."""
 
     def _plans(self) -> list[str]:
+        from .plans import PLANS
+
         clash = [name for name in PLANS.names() if name in self.commands]
         if clash:
             raise click.ClickException(f"Plans {clash} clash with fixed commands.")
@@ -49,12 +54,16 @@ _parent_option = click.option(
 
 
 def _pipeline(target: str, parent: str | None) -> Pipeline:
+    from .pipeline import Pipeline
+
     return Pipeline(target) if parent is None else Pipeline.from_parent(parent, target)
 
 
 @contextlib.contextmanager
 def _user_errors():
     """BestEffortError: one warning per failure, exit 1. Other MilkErrors: a ClickException."""
+    from ..errors import BestEffortError, MilkError
+
     try:
         yield
     except BestEffortError as error:
@@ -70,6 +79,8 @@ def _plan_command(name: str) -> click.Command:
     @_parent_option
     @click.argument("target")
     def command(parent: str | None, target: str):
+        from .plans import run_plan
+
         with _user_errors():
             run_plan(_pipeline(target, parent), name)
 
@@ -83,6 +94,10 @@ def milk_pipes_state(parent: str | None, target: str):
     """
     Show the state of pipeline TARGET, why, and a summary of its drift from its confdir.
     """
+    from ..errors import MilkError
+    from ..provision.rootdir import drift
+    from .state import state
+
     with _user_errors():
         pp = _pipeline(target, parent)
         st = state(pp)
