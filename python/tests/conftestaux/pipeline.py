@@ -13,7 +13,7 @@ import pytest
 
 from milk.operate.plans import run_plan
 from milk.operate.pipeline import Pipeline
-from milk.provision import clone
+from milk.provision.clone import clone
 from milk.provision.rootdir import init
 
 RESOURCES = Path(__file__).parents[1] / "resources"

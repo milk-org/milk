@@ -14,7 +14,7 @@ import tomli
 import tomli_w
 from pydantic import BaseModel, ValidationError
 
-from ..config import confresolve
+from ..config.resolve import confresolve
 from ..config.model import CommandHookDecl, FetchHookDecl
 from ..errors import ProvisionError
 from ..registry import Registry

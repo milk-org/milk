@@ -13,9 +13,10 @@ import tomli
 from click.testing import CliRunner
 
 
-from milk.config import confresolve
+from milk.config.resolve import confresolve
 from milk.errors import ConfigError, ProvisionError
-from milk.provision import consolidate, fingerprint, status
+from milk.provision.artifacts import fingerprint, status
+from milk.provision.hooks import consolidate
 from milk.provision.cli import milk_pipeinit
 from milk.provision.provenance import read_provenance
 from milk.provision.rootdir import drift, init, resync

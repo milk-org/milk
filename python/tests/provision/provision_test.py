@@ -13,16 +13,15 @@ import tomli
 from click.testing import CliRunner
 
 from milk.errors import ConfigError, ProvisionError
-from milk.provision import (
+from milk.provision.artifacts import (
     Fingerprint,
-    clone,
     conf_files,
-    consolidate,
     decl_digest,
     fingerprint,
-    read_tag,
     status,
 )
+from milk.provision.clone import clone
+from milk.provision.hooks import consolidate, read_tag
 from milk.provision.cli import milk_pipeinit
 from milk.provision.rootdir import init
 from tests.conftestaux.provision import fetch_hook, make_confdir

@@ -14,7 +14,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ..config import PipelineConfig, confresolve
+from ..config.model import PipelineConfig
+from ..config.resolve import confresolve
 from ..config.resolve import IDENTITY_KEYS
 from ..config.substitute import denest_toml_dicts
 from ..errors import ProvisionError

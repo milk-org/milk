@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .compute_unit import ComputeUnit
-from ..config import confresolve
+from ..config.resolve import confresolve
 from ..config.layout import is_rootdir
 from .plans import run_plan
 from .state import State, require

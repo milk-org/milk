@@ -1,4 +1,7 @@
-"""The ``milk-pipeinit`` console script (design-v7 A.5). Errors propagate."""
+"""The ``milk-pipeinit`` console script (design-v7 A.5). Errors propagate.
+
+NB: Prefer lazy imports, this file is a net cost on the CLI startup time.
+"""
 
 from __future__ import annotations
 
@@ -7,13 +10,6 @@ from pathlib import Path
 import click
 import tomli
 import tomli_w
-
-from ..config import confresolve
-from ..config.layout import list_pipeline_dirs
-from ..operate.pipeline import Pipeline
-from .clone import clone
-from .hooks import consolidate
-from .rootdir import drift, init, resync
 
 _dir = click.Path(exists=True, file_okay=False, path_type=Path)
 
@@ -44,6 +40,8 @@ def milk_pipeinit():
 @click.argument("folder", type=_dir, default=".")
 def pipeinit_list(folder: Path):
     """List the confdirs and rootdirs in FOLDER (default: cwd)."""
+    from ..config.layout import list_pipeline_dirs
+
     click.echo("\n".join(list_pipeline_dirs(folder)))
 
 
@@ -52,6 +50,8 @@ def pipeinit_list(folder: Path):
 @click.argument("dest_parent", type=click.Path(path_type=Path), default=".")
 def pipeinit_clone(src: Path, dest_parent: Path):
     """Copy the conf files of confdir SRC into DEST_PARENT (default: cwd)."""
+    from .clone import clone
+
     click.echo(f"Cloned {src} to {clone(src, dest_parent)}")
 
 
@@ -61,6 +61,8 @@ def pipeinit_clone(src: Path, dest_parent: Path):
 @click.option("--refetch-all", is_flag=True, help="Rerun every hook.")
 def pipeinit_consolidate(confdir: Path, refetch: tuple[str, ...], refetch_all: bool):
     """Run the pending conf hooks of CONFDIR; print the ids of those that ran."""
+    from .rootdir import consolidate
+
     for hook_id in consolidate(confdir, "all" if refetch_all else refetch):
         click.echo(hook_id)
 
@@ -69,6 +71,9 @@ def pipeinit_consolidate(confdir: Path, refetch: tuple[str, ...], refetch_all: b
 @click.argument("confdir", type=_dir)
 def pipeinit_resolve(confdir: Path):
     """Print the resolved configuration of CONFDIR (or a rootdir) as TOML."""
+
+    from ..config.resolve import confresolve
+
     config = confresolve(confdir)
     click.echo(
         tomli_w.dumps(config.model_dump(mode="json", exclude_none=True)), nl=False
@@ -83,6 +88,8 @@ def pipeinit_resolve(confdir: Path):
 @_set_option
 def pipeinit_init(confdir: Path, parent: Path | None, overrides: dict):
     """Consolidate CONFDIR and copy it into a new <name>-rootdir."""
+    from .rootdir import init
+
     click.echo(f"Initialized {init(confdir, parent, overrides)}")
 
 
@@ -97,6 +104,8 @@ def _echo_diff(resolved_diff: dict, structural: list[str]) -> None:
 @click.argument("rootdir", type=_dir)
 def pipeinit_drift(rootdir: Path):
     """Print what differs between ROOTDIR, its records and its confdir."""
+    from .rootdir import drift
+
     report = drift(rootdir)
     for row in report.artifacts:
         if (row.source, row.local) != ("unchanged", "unchanged"):
@@ -117,6 +126,9 @@ def pipeinit_resync(
     rootdir: Path, artifacts: tuple[str, ...], overrides: dict, overwrite_local: bool
 ):
     """Bring the confdir's changes into ROOTDIR. Never deploys."""
+    from .rootdir import resync
+    from ..operate.pipeline import Pipeline
+
     report = resync(
         rootdir,
         run_active=lambda: Pipeline(rootdir).any_run_active(),

@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from milk.errors import ConfigError
 from milk.config import model as pconf
-from milk.config import confresolve
+from milk.config.resolve import confresolve
 
 
 @pytest.fixture

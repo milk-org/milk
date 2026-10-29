@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 import milk.config.resolve
-from milk.config import confresolve
+from milk.config.resolve import confresolve
 from milk.errors import ConfigError
 from milk.operate.pipeline import Pipeline
 from milk.provision.rootdir import init
