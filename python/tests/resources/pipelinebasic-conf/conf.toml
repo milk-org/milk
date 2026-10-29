@@ -1,6 +1,7 @@
 long_name = "pipelinebasic"
 name = "basic"
 loop_number = 0
+teardown_kill_tmux = true
 
 [compute_units.delay0]
 exec = 'milk-fpsexec-mem-streamdelay'

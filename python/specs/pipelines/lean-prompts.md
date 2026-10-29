@@ -13,7 +13,11 @@ Read those, then the code they touch. Read design-v7 only if the brief is ambigu
 - Make the slice tests pass and keep the whole suite green (`pytest`).
 - Do not edit the slice tests. If one looks wrong, stop and tell me why.
 - Edit existing tests only as the brief's Touch section allows.
-- Follow the code rules and test rules in .github/copilot-instructions.md.
+- Follow the code rules, test rules and stop rule in .github/copilot-instructions.md.
+- If a failure looks external (milk/pyMilk, binaries, tmux, OS, races in external processes, the
+  test environment), stop after at most two attempts: no retries, sleeps, loosened asserts,
+  skips/xfails or redesigns. Report the symptom, the evidence, what you tried and 2-3 options,
+  then wait for me.
 - Settle the brief's "Decisions for Vincent" as written; if one does not hold up in the code,
   stop and ask.
 - If you stop short of something, add one line to specs/pipelines/LOOSE_ENDS.md instead of
@@ -32,6 +36,7 @@ Make it smaller and plainer without changing behaviour: inline single-use helper
 remove defensive checks that are not at a boundary, comments that restate the code, and unused
 imports; prefer early returns. Apply the code rules in .github/copilot-instructions.md.
 The tests must stay green. Do not touch tests/. Report the net line count before and after.
+If something fails for an external reason, stop and report (stop rule); do not work around it.
 ```
 
 ## P3: Close out

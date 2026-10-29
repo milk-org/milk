@@ -5,7 +5,7 @@ import pytest
 from milk.errors import TaskDidNotSucceedError
 from milk.pipeline import Pipeline
 from milk.provision.rootdir import init
-from milk.infra.task_models import SimpleTask
+from milk.operate.tasks import Task
 
 
 @pytest.fixture
@@ -51,9 +51,9 @@ class TestManualPipeline:
     def test_deploy_fps_call_by_class(self, cloned_pipeline: Pipeline):
         pp = cloned_pipeline
 
-        from milk.infra.deploy_tasks import DeployFPS
+        from milk.operate.tasks import InitFPS
 
-        pp.task_do(DeployFPS)
+        pp.task_do(InitFPS)
 
         for cu, compu in pp.compute_units.items():
             assert compu.fps is not None
@@ -65,7 +65,7 @@ class TestManualPipeline:
 
     def test_task_not_succeeding(self, cloned_pipeline: Pipeline):
 
-        class Never(SimpleTask):
+        class Never(Task):
 
             def can(self) -> bool:
                 return True
@@ -83,10 +83,10 @@ class TestManualPipeline:
     def test_deploy_fps_call_by_instance(self, cloned_pipeline: Pipeline):
         pp = cloned_pipeline
 
-        from milk.infra.deploy_tasks import DeployFPS, StartConfProcesses
+        from milk.operate.tasks import ConfStart, InitFPS
 
-        pp.task_do(DeployFPS)
-        pp.task_do(StartConfProcesses)
+        pp.task_do(InitFPS)
+        pp.task_do(ConfStart)
 
         live_names = set()
         for compu in pp.compute_units.values():

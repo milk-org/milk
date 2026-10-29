@@ -17,6 +17,7 @@ from pydantic import BaseModel, ValidationError
 from ..config import confresolve
 from ..config.model import CommandHookDecl, FetchHookDecl
 from ..errors import ProvisionError
+from ..registry import Registry
 from .artifacts import Fingerprint, decl_digest, fingerprint, remove, status
 
 
@@ -77,7 +78,9 @@ def _command(decl: CommandHookDecl, confdir: Path) -> None:
     _run(decl.id, decl.command, confdir / "data")
 
 
-RUNNERS = {"fetch": _fetch, "command": _command}
+HOOK_RUNNERS = Registry("hook runner")
+HOOK_RUNNERS.register("fetch", _fetch)
+HOOK_RUNNERS.register("command", _command)
 
 
 def consolidate(
@@ -109,7 +112,7 @@ def consolidate(
 
         remove(product)
         data.mkdir(exist_ok=True)
-        RUNNERS[decl.type](decl, confdir)
+        HOOK_RUNNERS[decl.type](decl, confdir)
         if not os.path.lexists(product):
             raise ProvisionError(
                 f"Hook {decl.id!r} did not create {product}.", path=product

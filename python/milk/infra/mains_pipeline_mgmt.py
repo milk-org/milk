@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from ..pipeline import Pipeline
-from ..errors import BestEffortError, LinkageError
+from ..operate.plans import run_plan
+from ..errors import BestEffortError, LinkageError, StateError
 
 import click
 
@@ -49,14 +50,9 @@ def _warn_failures(fn) -> None:
 @click.argument("target")
 def milk_pipes_spool(parent: str | None, target: str):
     """
-    Deploy FPSs, start conf processes and load data files of pipeline TARGET.
+    Run the deploy plan of pipeline TARGET: claim its rundir, init FPSs, load data, start conf.
     """
-    from . import deploy_tasks as _d
-
-    pp = _pipeline(target, parent)
-    for Task in (_d.DeployFPS, _d.StartConfProcesses, _d.LoadDataFiles):
-        print(f"Executing task {Task.__name__}...")
-        pp.task_do(Task)
+    run_plan(_pipeline(target, parent), "deploy")
 
 
 @milk_pipes.command("sys", context_settings={"help_option_names": ["-h", "--help"]})
@@ -68,8 +64,8 @@ def milk_pipes_sys(parent: str | None, target: str, linkage: str):
     Apply the [systemlinkage.<LINKAGE>] symlinks of pipeline TARGET.
     """
     try:
-        _pipeline(target, parent).apply_system_linkage(linkage)
-    except LinkageError as error:
+        _pipeline(target, parent).link(linkage)
+    except (LinkageError, StateError) as error:
         raise click.ClickException(str(error)) from error
 
 
@@ -80,11 +76,12 @@ def milk_pipes_sys(parent: str | None, target: str, linkage: str):
 @click.argument("target")
 def milk_pipes_teardown(parent: str | None, target: str):
     """
-    Best-effort runstop, deapply linkages, confstop and destroy FPSs of pipeline TARGET.
+    Run the teardown plan of pipeline TARGET: stop, unlink and destroy its FPSs, release its rundir.
 
     The rootdir and its work/ folder are kept.
     """
-    _warn_failures(_pipeline(target, parent).teardown)
+    pp = _pipeline(target, parent)
+    _warn_failures(lambda: run_plan(pp, "teardown"))
 
 
 @milk_pipes.command("nuke", context_settings={"help_option_names": ["-h", "--help"]})

@@ -11,6 +11,7 @@ from types import SimpleNamespace
 import libtmux
 import pytest
 
+from milk.operate.plans import run_plan
 from milk.pipeline import Pipeline
 from milk.provision import clone
 from milk.provision.rootdir import init
@@ -41,7 +42,7 @@ def cloned_pipeline():
     conf = clone(RESOURCES / "pipelinebasic-conf", Path("AOloop")).absolute()
     cloned = Pipeline(init(conf))
     with contextlib.suppress(Exception):
-        cloned.teardown()
+        run_plan(cloned, "teardown")
     yield cloned
 
     # Guard: never rmtree outside the session tmp tree.

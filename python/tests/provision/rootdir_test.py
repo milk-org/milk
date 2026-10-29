@@ -475,13 +475,14 @@ def test_pipeline_targets(rootdir, monkeypatch, tmp_path):
         Pipeline("mini")
 
 
-def test_teardown_keeps_the_rootdir(rootdir, fake_compus, monkeypatch, tmp_path):
+def test_teardown_keeps_the_rootdir(rootdir, monkeypatch, tmp_path):
+    from milk.operate.plans import run_plan
     from milk.pipeline import Pipeline
 
     monkeypatch.setenv("MILK_SHM_DIR", str(tmp_path))
     (rootdir / "work" / "fps.cu.datadir").mkdir()
-    Pipeline(rootdir).teardown()
-    assert all("destroy" in f.calls for f in fake_compus.values())
+    run_plan(Pipeline(rootdir), "teardown")  # on a cold pipeline
+    assert (rootdir / "work").is_dir()
     assert (rootdir / "work" / "fps.cu.datadir").is_dir()  # reusable data survives
     assert (rootdir / "provenance.toml").is_file()
 
@@ -511,14 +512,14 @@ def test_cli_nuke_yes_and_parent(confdir, monkeypatch, tmp_path):
 
 
 def test_dataloads_read_from_initdata(tmp_path, src_file):
-    from milk.infra.deploy_tasks import LoadDataFiles
+    from milk.operate.tasks import LoadData
     from milk.pipeline import Pipeline
 
     conf = make_confdir(
         tmp_path,
         fetch_hook(src_file) + '[[dataloads]]\nsource = "flat.bin"\ntarget = "flat"\n',
     )
-    task = LoadDataFiles(Pipeline(init(conf)))
+    task = LoadData(Pipeline(init(conf)))
     assert task.can(), task.failure_reason
 
 

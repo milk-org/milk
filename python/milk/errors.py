@@ -78,6 +78,18 @@ class LinkageError(MilkError):
     """A system linkage is unknown, or cannot be applied or removed safely."""
 
 
+class StateError(MilkError):
+    """The derived pipeline state does not allow the operation."""
+
+
+class ColdSystemError(StateError):
+    """The pipeline is not deployed."""
+
+
+class InconsistentStateError(StateError):
+    """The rundir and the live FPSs disagree."""
+
+
 class BestEffortError(MilkError):
     """Aggregate of the failures of a best-effort loop that attempted every item.
 

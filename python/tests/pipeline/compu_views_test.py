@@ -8,8 +8,8 @@ import numpy as np
 import pytest
 
 from milk.compute_unit import ComputeUnit
-from milk.errors import BestEffortError, TaskDidNotSucceedError
-from milk.infra.deploy_tasks import DeployFPS, LoadDataFiles, StartConfProcesses
+from milk.errors import TaskDidNotSucceedError
+from milk.operate.tasks import ConfStart, InitFPS, LoadData
 
 # ---- X3: compute units come from the pipeline ----
 
@@ -29,7 +29,7 @@ def test_compute_units_are_read_only_views(make_tmp_pipeline):
 def test_compute_units_refresh(cloned_pipeline):
     """milk: a destroyed FPS drops out of the next view; a redeployed one is relinked."""
     pp = cloned_pipeline
-    pp.task_do(DeployFPS)
+    pp.task_do(InitFPS)
     assert all(
         c.fps is not None and c.fps.is_valid() for c in pp.compute_units.values()
     )
@@ -59,7 +59,7 @@ def test_any_run_active(make_tmp_pipeline, fake_compus):
 def test_B1_invalid_fps_cannot_confstart(make_tmp_pipeline, fake_compus):
     pp = make_tmp_pipeline()
     fake_compus["delay1"].fps.is_valid = lambda: False
-    task = StartConfProcesses(pp)
+    task = ConfStart(pp)
     assert not task.can()
     assert "basic_delay1" in task.failure_reason
 
@@ -73,12 +73,12 @@ def test_B5_loaded_data_must_match_shape_and_dtype(make_tmp_pipeline):
     )
     data = np.arange(96, dtype=np.float32).reshape(8, 12)
     fits.writeto(pp.root_folder / "initdata" / "flat.fits", data)
-    task = LoadDataFiles(pp)
+    task = LoadData(pp)
     try:
         SHM("r1c_flat", np.zeros((4, 4), np.float32)).close()
         assert not task.success()  # wrong shape
 
-        pp.task_do(LoadDataFiles)
+        pp.task_do(LoadData)
         assert task.success()
 
         SHM("r1c_flat", data.astype(np.float64)).close()
@@ -88,26 +88,20 @@ def test_B5_loaded_data_must_match_shape_and_dtype(make_tmp_pipeline):
 
 
 def test_B6_confstart_timeout_names_compus(make_tmp_pipeline, fake_compus, monkeypatch):
-    monkeypatch.setattr(StartConfProcesses, "TIMEOUT_ALL", 0.05)
+    monkeypatch.setattr(ConfStart, "TIMEOUT", 0.05)
     pp = make_tmp_pipeline()
     with pytest.raises(TaskDidNotSucceedError) as err:
-        pp.task_do(StartConfProcesses)
+        pp.task_do(ConfStart)
     assert "basic_delay0" in str(err.value) and "basic_delay1" in str(err.value)
     assert all("confstart" in f.calls for f in fake_compus.values())
 
 
-def test_B7_nuke_attempts_every_step(
-    make_tmp_pipeline, fake_compus, tmp_path, monkeypatch
-):
-    monkeypatch.setenv("MILK_SHM_DIR", str(tmp_path))
+def test_B7_nuke_removes_the_rootdir_even_on_failure(make_tmp_pipeline, monkeypatch):
+    def failing(pipeline, name):
+        raise TaskDidNotSucceedError("boom")
+
+    monkeypatch.setattr("milk.pipeline.run_plan", failing)
     pp = make_tmp_pipeline()
-    for fake in fake_compus.values():
-        fake.destroy_error = RuntimeError("boom")
-
-    with pytest.raises(BestEffortError) as err:
+    with pytest.raises(TaskDidNotSucceedError):
         pp.nuke_unsafe()
-
-    labels = [label for label, _ in err.value.failures]
-    assert len(labels) == 2 and all("destroy" in label for label in labels)
-    assert all("destroy" in f.calls for f in fake_compus.values())
     assert not pp.root_folder.exists()

@@ -61,8 +61,14 @@ This sequence is a sanctioned exception to the ../CLAUDE.md git rules: it touche
 lets hooks rewrite files, and it never commits, moves branches/HEAD/tags or contacts GitHub. Use no
 other git commands.
 
+### X. Stop on External Causes
+When a failure looks caused by something outside this package (milk C code or binaries, pyMilk,
+the build, tmux, the OS, timing in external processes, the test environment), agents stop after at
+most two attempts and ask Vincent, as the stop rule in
+[copilot-instructions](../../.github/copilot-instructions.md) says. They do not work around it.
+
 ## Governance
 
 Vincent ratifies and amends this constitution.
 
-**Version**: 1.3.0 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-10-27
+**Version**: 1.4.0 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-10-28

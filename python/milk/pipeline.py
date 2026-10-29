@@ -27,10 +27,11 @@ from __future__ import annotations
 from .compute_unit import ComputeUnit
 from .config import confresolve
 from .config.layout import is_rootdir
-from .infra.task_models import SimpleTask
+from .operate.plans import run_plan
+from .operate.state import State, require
+from .operate.tasks import Task
 from . import env
 from .errors import (
-    BestEffortError,
     ConfigError,
     LinkageError,
     TaskCannotRunError,
@@ -39,10 +40,7 @@ from .errors import (
 
 import os
 import shutil
-from datetime import datetime, timezone
 from pathlib import Path
-
-_LINKAGE_TAG = "systemlinkage.tag"
 
 
 class Pipeline:
@@ -81,15 +79,13 @@ class Pipeline:
     def from_parent(cls, parent: str | Path, short_name: str) -> Pipeline:
         return cls.from_folder(Path(parent) / f"{short_name}-rootdir")
 
-    def task_do(self, task: SimpleTask | type[SimpleTask]) -> Pipeline:
-        if isinstance(task, SimpleTask):
+    def task_do(self, task: Task | type[Task]) -> Pipeline:
+        if isinstance(task, Task):
             pass
-        elif issubclass(task, SimpleTask):
+        elif issubclass(task, Task):
             task = task(self)
         else:
-            raise ValueError(
-                f"Bad argument: subclass or instance of SimpleTask required."
-            )
+            raise ValueError(f"Bad argument: subclass or instance of Task required.")
         if task.success():
             # log unneeded
             return self
@@ -113,8 +109,6 @@ class Pipeline:
             )
 
         return self  # So as to be able to chain
-
-    def task_undo(self): ...
 
     @property
     def compute_units(self) -> dict[str, ComputeUnit]:
@@ -142,80 +136,38 @@ class Pipeline:
             for local, remote in self.systemlinkage[linkage_name].items()
         ]
 
-    def apply_system_linkage(self, linkage_name: str) -> None:
-        """Point each local stream file at its remote one, replacing existing symlinks."""
-        pairs = self._linkage_paths(linkage_name)
-        if self.any_run_active():
+    def _linked_paths(self, linkage_name: str) -> list[Path]:
+        """The local stream files of the linkage that still point at its remote."""
+        return [
+            local
+            for local, remote in self._linkage_paths(linkage_name)
+            if local.is_symlink() and Path(os.readlink(local)) == remote
+        ]
+
+    def link(self, name: str) -> None:
+        """Point each local stream file of linkage ``name`` at its remote one."""
+        st = require(self, "consistent")
+        if st.state in (State.RUNNING, State.MIXED):
             raise LinkageError(
                 "Pipeline is running; stop it first", pipeline=self.short_name
             )
-        # TODO assert no other incompatible linkage is configured
-
-        # Check everything first so a failure leaves nothing half-applied.
-        for local, remote in pairs:
-            # TODO: make these warnings, or have a strict mode.
-            # if not remote.exists():
-            #     raise LinkageError(f"Remote stream missing: {remote}")
-            # if local.exists() and not local.is_symlink():
-            #     raise LinkageError(
-            #         f"Refusing to replace real file: {local}"
-            #     )
-            pass
-
-        for local, remote in pairs:
+        for local, remote in self._linkage_paths(name):
             local.unlink(missing_ok=True)
             local.symlink_to(remote)
 
-        stamp = datetime.now(timezone.utc).isoformat()
-        (self.root_folder / _LINKAGE_TAG).write_text(f"{linkage_name}\n{stamp}\n")
-
-    def deapply_system_linkage(self, linkage_name: str) -> None:
+    def unlink(self, name: str) -> None:
         """Remove the linkage's symlinks, leaving any that point elsewhere."""
-        pairs = self._linkage_paths(linkage_name)
-        if self.any_run_active():
-            raise LinkageError(
-                "Pipeline is running; stop it first", pipeline=self.short_name
-            )
-        for local, remote in pairs:
-            if local.is_symlink() and Path(os.readlink(local)) == remote:
-                local.unlink()
+        for local in self._linked_paths(name):
+            local.unlink()
 
-    def teardown(self) -> None:
-        """Deconfigure: runstop, deapply linkages, confstop, destroy FPSs. Keeps the rootdir.
-
-        Every step is best-effort: a failure does not stop the next step, and all failures
-        are raised together as a BestEffortError at the end.
-        """
-        failures: list[tuple[str, Exception]] = []
-
-        def attempt(label: str, fn) -> None:
-            try:
-                fn()
-            except Exception as error:
-                failures.append((label, error))
-
-        compus = self.compute_units
-        for cu, compu in compus.items():
-            if compu.fps is not None:
-                attempt(f"runstop {cu}", compu.runstop)
-        for linkage in self.systemlinkage:
-            attempt(
-                f"deapply system linkage {linkage}",
-                lambda linkage=linkage: self.deapply_system_linkage(linkage),
-            )
-        for cu, compu in compus.items():
-            if compu.fps is not None:
-                attempt(f"confstop {cu}", compu.confstop)
-        for cu, compu in compus.items():
-            if compu.fps is not None:
-                attempt(f"destroy {cu}", compu.fps.destroy)
-        if failures:
-            raise BestEffortError(failures, pipeline=self.short_name)
+    def linked(self) -> list[str]:
+        """The configured linkages that have a symlink in place."""
+        return [name for name in self.systemlinkage if self._linked_paths(name)]
 
     def nuke_unsafe(self) -> None:
-        """teardown(), then rm -rf the rootdir even if teardown failed. Never prompts."""
+        """run_plan("teardown"), then rm -rf the rootdir even if teardown failed. Never prompts."""
         try:
-            self.teardown()
+            run_plan(self, "teardown")
         finally:
             shutil.rmtree(self.root_folder)
 
