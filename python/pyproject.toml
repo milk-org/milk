@@ -31,6 +31,7 @@ addopts = [
     "--import-mode=importlib",
     "--ignore=tests/mains",
     "--ignore=pyMilk",
+    "--ignore=specs",
 ]
 
 [tool.coverage.run]
