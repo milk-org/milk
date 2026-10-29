@@ -20,6 +20,7 @@ list at each slice boundary.
   (akin to `scripts/`), copied to the rootdir as conf artifacts, then discovered, checked and
   registered into TASKS/PLANS at Pipeline load. Open points: load/sandbox policy, per-pipeline
   scoping of the registries, drift treatment of code. See the project doc `claude/r4-decisions.md`.
-- [milk] Conf-start race: `confpid` is set at connect (`fps_connect.c`), so `conf_isrunning()`
-  is true before the first loop step re-sets `SIGNAL_CONFRUN` (`fps_FPCONFloopstep.c:33`); a
-  `confstop` sent in between is lost. Teardown right after deploy hits it (R4a, open).
+- [milk] `md->signal` is updated with non-atomic read-modify-writes by the conf loop
+  (`fps_FPCONFloopstep.c:67,73`, `fps_checkparameter.c:540`) and by `CONFstop`, so a `confstop`
+  sent during the first conf iteration can still be lost (~1 in 10 with no pause after deploy).
+  pyMilk's `CONFrunning` now waits for `STATUS_CONF`, which narrows the window; the R4a tests pass.
