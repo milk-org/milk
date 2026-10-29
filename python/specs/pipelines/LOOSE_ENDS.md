@@ -21,3 +21,36 @@ list at each slice boundary.
   (`fps_FPCONFloopstep.c:67,73`, `fps_checkparameter.c:540`) and by `CONFstop`, so a `confstop`
   sent during the first conf iteration can still be lost (~1 in 10 with no pause after deploy).
   pyMilk's `CONFrunning` now waits for `STATUS_CONF`, which narrows the window; the R4a tests pass.
+
+## NIT
+
+Readability nits from the R4b review, logged at `75e5f946c9`.
+
+- [ ] `plans.py` `run_plan`: bare `PLANS[listed]` validates the config `plans` list by side effect
+  only. Make it an explicit check, or drop it.
+- [ ] `Pipeline.compute_units` / `Task.compute_units` map FPSs on read, so a debugger evaluating
+  them has side effects (see the `[R4?]` entry above).
+- [ ] `ComputeUnit.__str__` runs a milk binary and can raise; `__repr__` mutates `self.fps`.
+- [ ] `ConfStart.success()` writes `failure_reason`: a predicate with side effects.
+- [ ] `TASKS` is filled from `Task.__subclasses__()`: implicit, not greppable, direct subclasses
+  only.
+- [ ] Plans are written as `tuple(map(Step, "A B".split()))` with positional `"abort"`/`"any"`;
+  use keyword arguments and a list of names.
+- [ ] `Pipeline` mirrors `config.long_name/dataloads/systemlinkage/loop_number`, and `short_name`
+  duplicates `config.name`. Tests pin the mirrors.
+- [ ] `Task.compus_names` vs `Step.compus`: one concept, two names (`operate_test.py` pins
+  `compus_names`).
+- [ ] The milk version change is shown in two formats: `provision/cli.py` (`a -> b`) and
+  `operate/cli.py` (`rootdir made with a, installed b`).
+- [ ] Dead code: module `fpslist()` and `ComputeUnit.fpslist()`; `ComputeUnit.procinfo` is read
+  only by test fixtures.
+- [ ] `_subprocess_start(wrap_in_shell=True)` builds the `bash -c` string with `" ".join(argv)`;
+  use `shlex.join`.
+- [ ] Background `confstart`/`runstart` (no tmux) send output to pipes nothing reads; the child
+  blocks once a pipe fills.
+- [ ] `_subprocess_complete` calls `wait()` and then reads the pipes, which can deadlock on large
+  output; use `communicate()`.
+- [ ] `ComputeUnit.runstart` checks its arguments with `assert`, which `-O` strips.
+- [ ] `Pipeline.from_folder` checks `is_rootdir`, then `__init__` checks it again.
+- [ ] `milk-pipes nuke` raises `ClickException` inside `_user_errors()`; it passes through only
+  because it is not a `MilkError`.
