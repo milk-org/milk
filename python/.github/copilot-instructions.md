@@ -46,3 +46,13 @@ milk build (see `tests/conftestaux/milk.py`). The existing suite must stay green
 - Fixtures shared across test files live in `tests/conftestaux/` and are registered in
   `tests/conftest.py` (`pytest_plugins`). Do not add `conftest.py` files in subfolders. Reuse an
   existing fixture before writing a new one.
+
+**Stop rule (important):**
+- If a failure looks caused by something outside this package (milk C code or binaries, pyMilk,
+  the build, tmux, the OS, timing or races in external processes, the test environment), stop
+  after at most two attempts. Do not retry in a loop, add sleeps or longer timeouts, loosen
+  assertions, add skips/xfails, or redesign around it.
+- The same applies when a brief or decision relies on external behaviour that turns out not to
+  hold.
+- Report to Vincent: the symptom, the evidence that it is external (command, output, smallest
+  repro), what you tried, and 2–3 options with a recommendation. Then wait for guidance.

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from pyMilk.interfacing.fps import FPS
 
@@ -14,6 +14,9 @@ from . import rundir
 
 if TYPE_CHECKING:
     from ..pipeline import Pipeline
+
+
+Accepts = Literal["cold_or_consistent", "consistent", "any"]
 
 
 class State(str, Enum):
@@ -70,15 +73,17 @@ def state(pipeline: Pipeline) -> PipelineState:
     run = [s[1] for s in status.values()]
     if all(run):
         st = State.RUNNING
-    elif any(run) or any(conf) and not all(conf):
-        st = State.MIXED
+    elif not any(run) and all(conf):
+        st = State.CONFIGURED
+    elif not any(run) and not any(conf):
+        st = State.DEPLOYED
     else:
-        st = State.CONFIGURED if all(conf) else State.DEPLOYED
+        st = State.MIXED
     return PipelineState(st, reasons)
 
 
-def gate(name: str, st: PipelineState, accepts: str) -> None:
-    """Raise unless ``st`` is acceptable: "any", "cold_or_consistent" or "consistent"."""
+def gate(name: str, st: PipelineState, accepts: Accepts) -> None:
+    """Raise unless ``st`` is acceptable to ``accepts``."""
     if accepts == "any":
         return
     if st.state is State.INCONSISTENT:
@@ -90,7 +95,7 @@ def gate(name: str, st: PipelineState, accepts: str) -> None:
         raise ColdSystemError(f"Pipeline {name} is cold; run deploy.", pipeline=name)
 
 
-def require(pipeline: Pipeline, accepts: str) -> PipelineState:
+def require(pipeline: Pipeline, accepts: Accepts) -> PipelineState:
     st = state(pipeline)
     gate(pipeline.short_name, st, accepts)
     return st

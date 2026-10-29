@@ -12,18 +12,20 @@ from typing import TYPE_CHECKING
 from .. import env
 from ..compute_unit import ComputeUnit
 from ..config.substitute import denest_toml_dicts
-from ..errors import ConfigError, TaskDidNotSucceedError
+from ..errors import ConfigError
 from ..registry import Registry
 from ..wait import wait_until
 from . import rundir
 
 if TYPE_CHECKING:
+    from pyMilk.interfacing.fps import FPS
+
     from ..pipeline import Pipeline
 
 
 class Task(abc.ABC):
-    TIMEOUT: float = 10.0  # bound for the wait inside forward()
-    failure_reason: str = "no failure."
+    TIMEOUT: float = 10.0  # bound for forward()'s wait on success()
+    failure_reason: str = "no reason given."
 
     def __init__(
         self, pipeline: Pipeline, compus: Collection[str] | None = None
@@ -45,15 +47,9 @@ class Task(abc.ABC):
             if self.compus is None or cu in self.compus
         }
 
-    def _existing(self) -> list[ComputeUnit]:
-        return [c for c in self.compute_units.values() if c.fps is not None]
-
-    def _stop(self, running, stop) -> None:
-        """``stop`` the existing CompUs whose FPS is ``running``, then wait until none is."""
-        targets = [c for c in self._existing() if running(c.fps)]
-        for compu in targets:
-            stop(compu)
-        wait_until(lambda: not any(running(c.fps) for c in targets), self.TIMEOUT)
+    def _existing(self) -> list[tuple[ComputeUnit, FPS]]:
+        """The subset's CompUs whose FPS exists, with that FPS."""
+        return [(c, c.fps) for c in self.compute_units.values() if c.fps is not None]
 
     @abc.abstractmethod
     def can(self) -> bool: ...
@@ -168,24 +164,20 @@ class ConfStart(Task):
         return True
 
     def forward(self) -> None:
-        compus = self.compute_units.values()
-        for compu in compus:
-            if not compu.fps.conf_isrunning():  # type: ignore[union-attr]
+        for compu, fps in self._existing():
+            if not fps.conf_isrunning():
                 compu.confstart(tmux=True)
-        running = lambda: all(c.fps.conf_isrunning() for c in compus)  # type: ignore[union-attr]
-        if not wait_until(running, self.TIMEOUT):
-            stuck = [c.fpsname for c in compus if not c.fps.conf_isrunning()]  # type: ignore[union-attr]
-            raise TaskDidNotSucceedError(
-                f"Conf processes not running for {', '.join(stuck)} (tmux session busy?)",
-                task=type(self).__name__,
-                pipeline=self.pipeline.short_name,
-            )
+        wait_until(self.success, self.TIMEOUT)
 
     def success(self) -> bool:
-        return all(
-            c.fps is not None and c.fps.conf_isrunning()
+        stuck = [
+            c.fpsname
             for c in self.compute_units.values()
-        )
+            if c.fps is None or not c.fps.conf_isrunning()
+        ]
+        if stuck:
+            self.failure_reason = f"Conf processes not running for {', '.join(stuck)} (tmux session busy?)"
+        return not stuck
 
 
 class RunStop(Task):
@@ -193,10 +185,13 @@ class RunStop(Task):
         return True
 
     def forward(self) -> None:
-        self._stop(lambda fps: fps.run_isrunning(), lambda c: c.runstop())
+        for compu, fps in self._existing():
+            if fps.run_isrunning():
+                compu.runstop()
+        wait_until(self.success, self.TIMEOUT)
 
     def success(self) -> bool:
-        return not any(c.fps.run_isrunning() for c in self._existing())  # type: ignore[union-attr]
+        return not any(fps.run_isrunning() for _, fps in self._existing())
 
 
 class DeapplyLinkages(Task):
@@ -216,10 +211,13 @@ class ConfStop(Task):
         return True
 
     def forward(self) -> None:
-        self._stop(lambda fps: fps.conf_isrunning(), lambda c: c.confstop())
+        for compu, fps in self._existing():
+            if fps.conf_isrunning():
+                compu.confstop()
+        wait_until(self.success, self.TIMEOUT)
 
     def success(self) -> bool:
-        return not any(c.fps.conf_isrunning() for c in self._existing())  # type: ignore[union-attr]
+        return not any(fps.conf_isrunning() for _, fps in self._existing())
 
 
 def _tmux_has(session: str) -> bool:
@@ -249,8 +247,8 @@ class DestroyFPS(Task):
         return True
 
     def forward(self) -> None:
-        for compu in self._existing():
-            compu.fps.destroy()  # type: ignore[union-attr]
+        for _, fps in self._existing():
+            fps.destroy()
 
     def success(self) -> bool:
         return not self._existing()

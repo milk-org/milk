@@ -103,7 +103,8 @@ class Pipeline:
         if not task.success():
             # TODO if partial success is tolerated ?
             raise TaskDidNotSucceedError(
-                f"Task {task} did not complete to success",
+                f"Task {type(task).__name__} did not succeed:\n"
+                f"    {task.failure_reason}",
                 task=type(task).__name__,
                 pipeline=self.short_name,
             )

@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from ..errors import BestEffortError, ConfigError
+from ..errors import BestEffortError, ConfigError, MilkError
 from ..registry import Registry
-from .state import gate, state
+from .state import Accepts, gate, state
 from .tasks import TASKS
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ class Plan:
     name: str
     steps: tuple[Step, ...]
     on_failure: Literal["abort", "best_effort"] = "abort"
-    accepts: Literal["cold_or_consistent", "consistent", "any"] = "consistent"
+    accepts: Accepts = "consistent"
 
 
 PLANS: Registry[Plan] = Registry("plan")
@@ -55,7 +55,7 @@ def run_plan(pipeline: Pipeline, name: str) -> None:
     for step in plan.steps:
         try:
             pipeline.task_do(TASKS[step.task](pipeline, step.compus))
-        except Exception as error:
+        except MilkError as error:
             if plan.on_failure == "abort":
                 raise
             failures.append((step.label, error))
