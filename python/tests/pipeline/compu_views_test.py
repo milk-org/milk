@@ -7,7 +7,7 @@ import contextlib
 import numpy as np
 import pytest
 
-from milk.compute_unit import ComputeUnit
+from milk.operate.compute_unit import ComputeUnit
 from milk.errors import TaskDidNotSucceedError
 from milk.operate.tasks import ConfStart, InitFPS, LoadData
 
@@ -100,7 +100,7 @@ def test_B7_nuke_removes_the_rootdir_even_on_failure(make_tmp_pipeline, monkeypa
     def failing(pipeline, name):
         raise TaskDidNotSucceedError("boom")
 
-    monkeypatch.setattr("milk.pipeline.run_plan", failing)
+    monkeypatch.setattr("milk.operate.pipeline.run_plan", failing)
     pp = make_tmp_pipeline()
     with pytest.raises(TaskDidNotSucceedError):
         pp.nuke_unsafe()

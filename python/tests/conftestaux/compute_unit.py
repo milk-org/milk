@@ -2,7 +2,7 @@ from __future__ import annotations
 import pytest
 
 import os
-from milk.compute_unit import ComputeUnit
+from milk.operate.compute_unit import ComputeUnit
 
 from tests.conftestaux.polling import poll_until_or_fail
 

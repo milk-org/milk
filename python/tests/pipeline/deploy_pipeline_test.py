@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from milk.errors import TaskDidNotSucceedError
-from milk.pipeline import Pipeline
+from milk.operate.pipeline import Pipeline
 from milk.provision.rootdir import init
 from milk.operate.tasks import Task
 

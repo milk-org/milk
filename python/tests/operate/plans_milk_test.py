@@ -19,7 +19,7 @@ from milk.operate import rundir
 from milk.operate.plans import run_plan
 from milk.operate.state import State, state
 from milk.operate.tasks import ClaimRundir, InitFPS
-from milk.pipeline import Pipeline
+from milk.operate.pipeline import Pipeline
 from milk.provision.rootdir import init
 
 RESOURCES = Path(__file__).parents[1] / "resources"

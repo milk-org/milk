@@ -452,7 +452,7 @@ def test_cli_drift_and_resync_banner(confdir, rootdir):
 
 
 def test_pipeline_reads_the_rootdir_only(confdir, rootdir):
-    from milk.pipeline import Pipeline
+    from milk.operate.pipeline import Pipeline
 
     shutil.rmtree(confdir)
     pp = Pipeline(rootdir)
@@ -461,7 +461,7 @@ def test_pipeline_reads_the_rootdir_only(confdir, rootdir):
 
 
 def test_pipeline_targets(rootdir, monkeypatch, tmp_path):
-    from milk.pipeline import Pipeline
+    from milk.operate.pipeline import Pipeline
 
     assert Pipeline.from_folder(rootdir).root_folder == rootdir
     assert Pipeline.from_parent(rootdir.parent, "mini").root_folder == rootdir
@@ -475,11 +475,10 @@ def test_pipeline_targets(rootdir, monkeypatch, tmp_path):
         Pipeline("mini")
 
 
-def test_teardown_keeps_the_rootdir(rootdir, monkeypatch, tmp_path):
+def test_teardown_keeps_the_rootdir(rootdir, shm_dir_cleanafter):
     from milk.operate.plans import run_plan
-    from milk.pipeline import Pipeline
+    from milk.operate.pipeline import Pipeline
 
-    monkeypatch.setenv("MILK_SHM_DIR", str(tmp_path))
     (rootdir / "work" / "fps.cu.datadir").mkdir()
     run_plan(Pipeline(rootdir), "teardown")  # on a cold pipeline
     assert (rootdir / "work").is_dir()
@@ -487,10 +486,9 @@ def test_teardown_keeps_the_rootdir(rootdir, monkeypatch, tmp_path):
     assert (rootdir / "provenance.toml").is_file()
 
 
-def test_cli_nuke_asks_for_the_short_name(rootdir, monkeypatch, tmp_path):
-    from milk.infra.mains_pipeline_mgmt import milk_pipes
+def test_cli_nuke_asks_for_the_short_name(rootdir, shm_dir_cleanafter):
+    from milk.operate.cli import milk_pipes
 
-    monkeypatch.setenv("MILK_SHM_DIR", str(tmp_path))
     runner = CliRunner()
     result = runner.invoke(milk_pipes, ["nuke", str(rootdir)], input="wrong\n")
     assert result.exit_code != 0 and rootdir.is_dir()
@@ -499,10 +497,9 @@ def test_cli_nuke_asks_for_the_short_name(rootdir, monkeypatch, tmp_path):
     assert not rootdir.exists()
 
 
-def test_cli_nuke_yes_and_parent(confdir, monkeypatch, tmp_path):
-    from milk.infra.mains_pipeline_mgmt import milk_pipes
+def test_cli_nuke_yes_and_parent(confdir, shm_dir_cleanafter):
+    from milk.operate.cli import milk_pipes
 
-    monkeypatch.setenv("MILK_SHM_DIR", str(tmp_path))
     rootdir = init(confdir)
     result = CliRunner().invoke(
         milk_pipes, ["nuke", "mini", "--parent", str(rootdir.parent), "--yes"]
@@ -513,7 +510,7 @@ def test_cli_nuke_yes_and_parent(confdir, monkeypatch, tmp_path):
 
 def test_dataloads_read_from_initdata(tmp_path, src_file):
     from milk.operate.tasks import LoadData
-    from milk.pipeline import Pipeline
+    from milk.operate.pipeline import Pipeline
 
     conf = make_confdir(
         tmp_path,
@@ -524,6 +521,6 @@ def test_dataloads_read_from_initdata(tmp_path, src_file):
 
 
 def test_milk_pipes_init_is_gone():
-    from milk.infra.mains_pipeline_mgmt import milk_pipes
+    from milk.operate.cli import milk_pipes
 
     assert CliRunner().invoke(milk_pipes, ["init", "-h"]).exit_code != 0

@@ -8,7 +8,7 @@ from pyMilk.interfacing.fps import FPS, FPSDoesntExistError
 from pyMilk.interfacing.shm import SHM
 import numpy as np
 
-from milk.compute_unit import ComputeUnit
+from milk.operate.compute_unit import ComputeUnit
 
 from tests.conftestaux.compute_unit import fixt_fpsinit_factory
 from tests.conftestaux.polling import poll_until_or_fail

@@ -5,7 +5,7 @@ import pytest
 from pyMilk.interfacing.fps import FPS
 from pyMilk.interfacing.pinfo import ProcessInfo
 
-from milk.compute_unit import ComputeUnit
+from milk.operate.compute_unit import ComputeUnit
 from tests.conftestaux.polling import poll_until_or_fail
 from tests.conftestaux.compute_unit import fixt_fpsinit_factory
 

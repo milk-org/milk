@@ -1,7 +1,7 @@
 """R4a acceptance tests (py): registry, rundir and claim, state(), runner, plans, linkages.
 
 See specs/009-r4a-rundir-state-plans/brief.md. No milk binaries: FPSs are simulated by the `paper`
-fixture (tests/conftestaux/operate.py); rundirs live in a private MILK_SHM_DIR (`shm`).
+fixture (tests/conftestaux/operate.py); rundirs live in a self-cleaning MILK_SHM_DIR (`shm_dir_cleanafter`).
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ FPS = {"basic_delay0", "basic_delay1"}
 
 
 @pytest.fixture
-def pp(make_tmp_pipeline, shm, boot, paper):
+def pp(make_tmp_pipeline, shm_dir_cleanafter, boot, paper):
     """pipelinebasic, initialized, cold, with a private SHM dir and simulated FPSs."""
     return make_tmp_pipeline()
 
@@ -42,7 +42,7 @@ def _deploy_on_paper(pp, paper, conf=False, run=False):
 
 def _with_conf(pp, replace: tuple[str, str] | None = None, prepend: str = ""):
     """The same rootdir with its conf.toml hand-edited (live), resolved afresh."""
-    from milk.pipeline import Pipeline
+    from milk.operate.pipeline import Pipeline
 
     toml = pp.root_folder / "conf" / "conf.toml"
     text = toml.read_text()
@@ -107,9 +107,9 @@ def test_generic_plans_shape():
 # ---- rundir and claim ----
 
 
-def test_claim_writes_the_rundir(pp, shm):
+def test_claim_writes_the_rundir(pp, shm_dir_cleanafter):
     pp.task_do(ClaimRundir)
-    path = shm / "pipe_rundirs" / "basic"
+    path = shm_dir_cleanafter / "pipe_rundirs" / "basic"
     assert (path / "boot_id").read_text().strip() == "boot-A"
     claim = tomli.loads((path / "claim.toml").read_text())  # A.4 is TOML
     assert claim["name"] == "basic" and claim["loop_number"] == 0
@@ -117,7 +117,7 @@ def test_claim_writes_the_rundir(pp, shm):
     assert rundir.read_claim("basic").rootdir == str(pp.root_folder)
 
 
-def test_claim_refuses_same_loop_number(pp, shm):
+def test_claim_refuses_same_loop_number(pp, shm_dir_cleanafter):
     rundir.write_claim(
         rundir.Claim.new(name="other", loop_number=0, rootdir="/elsewhere")
     )
@@ -125,7 +125,7 @@ def test_claim_refuses_same_loop_number(pp, shm):
         pp.task_do(ClaimRundir)
 
 
-def test_claim_refuses_a_rundir_owned_by_another_rootdir(pp, shm):
+def test_claim_refuses_a_rundir_owned_by_another_rootdir(pp, shm_dir_cleanafter):
     rundir.write_claim(
         rundir.Claim.new(name="basic", loop_number=0, rootdir="/elsewhere")
     )
@@ -133,10 +133,10 @@ def test_claim_refuses_a_rundir_owned_by_another_rootdir(pp, shm):
         pp.task_do(ClaimRundir)
 
 
-def test_release_removes_the_rundir(pp, shm):
+def test_release_removes_the_rundir(pp, shm_dir_cleanafter):
     pp.task_do(ClaimRundir)
     pp.task_do(ReleaseRundir)
-    assert not (shm / "pipe_rundirs" / "basic").exists()
+    assert not (shm_dir_cleanafter / "pipe_rundirs" / "basic").exists()
 
 
 # ---- state ----
@@ -207,7 +207,7 @@ class _Probe(Task):
 
     def forward(self) -> None:
         self.ran = True
-        _Probe.log.append(f"{type(self).__name__}:{self.compus}")
+        _Probe.log.append(f"{type(self).__name__}:{self.compus_names}")
 
     def success(self) -> bool:
         return self.ran or self.ok_before
@@ -330,51 +330,51 @@ def test_teardown_kill_tmux_key():
 # ---- linkages ----
 
 
-def _remotes(shm):
+def _remotes(shm_dir_cleanafter):
     for name in ("otherloop_output", "input_remote"):
-        (shm / f"{name}.im.shm").write_bytes(b"")
+        (shm_dir_cleanafter / f"{name}.im.shm").write_bytes(b"")
 
 
-def test_link_requires_a_deployed_pipeline(pp, shm):
-    _remotes(shm)
+def test_link_requires_a_deployed_pipeline(pp, shm_dir_cleanafter):
+    _remotes(shm_dir_cleanafter)
     with pytest.raises(ColdSystemError, match="deploy"):
         pp.link("shared")
 
 
-def test_link_refused_while_running(pp, paper, shm):
-    _remotes(shm)
+def test_link_refused_while_running(pp, paper, shm_dir_cleanafter):
+    _remotes(shm_dir_cleanafter)
     _deploy_on_paper(pp, paper, conf=True, run=True)
     with pytest.raises(LinkageError, match="stop"):
         pp.link("shared")
 
 
-def test_link_and_unlink(pp, paper, shm):
-    _remotes(shm)
+def test_link_and_unlink(pp, paper, shm_dir_cleanafter):
+    _remotes(shm_dir_cleanafter)
     _deploy_on_paper(pp, paper, conf=True)
     pp.link("shared")
-    assert (shm / "input.im.shm").resolve() == (
-        shm / "otherloop_output.im.shm"
+    assert (shm_dir_cleanafter / "input.im.shm").resolve() == (
+        shm_dir_cleanafter / "otherloop_output.im.shm"
     ).resolve()
     pp.link("shared")  # idempotent
     pp.unlink("shared")
-    assert not (shm / "input.im.shm").is_symlink()
+    assert not (shm_dir_cleanafter / "input.im.shm").is_symlink()
 
 
-def test_unlink_keeps_foreign_symlinks(pp, paper, shm):
-    _remotes(shm)
+def test_unlink_keeps_foreign_symlinks(pp, paper, shm_dir_cleanafter):
+    _remotes(shm_dir_cleanafter)
     _deploy_on_paper(pp, paper, conf=True)
     pp.link("shared")
-    (shm / "input.im.shm").unlink()
-    (shm / "input.im.shm").symlink_to(
-        shm / "input_remote.im.shm"
+    (shm_dir_cleanafter / "input.im.shm").unlink()
+    (shm_dir_cleanafter / "input.im.shm").symlink_to(
+        shm_dir_cleanafter / "input_remote.im.shm"
     )  # someone else's link now
     pp.unlink("shared")
-    assert (shm / "input.im.shm").is_symlink()
+    assert (shm_dir_cleanafter / "input.im.shm").is_symlink()
 
 
-def test_deapply_removes_configured_links(pp, paper, shm):
-    _remotes(shm)
+def test_deapply_removes_configured_links(pp, paper, shm_dir_cleanafter):
+    _remotes(shm_dir_cleanafter)
     _deploy_on_paper(pp, paper, conf=True)
     pp.link("shared")
     pp.task_do(DeapplyLinkages)
-    assert not (shm / "input.im.shm").is_symlink()
+    assert not (shm_dir_cleanafter / "input.im.shm").is_symlink()

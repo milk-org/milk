@@ -9,7 +9,7 @@ import pytest
 import milk.config.resolve
 from milk.config import confresolve
 from milk.errors import ConfigError
-from milk.pipeline import Pipeline
+from milk.operate.pipeline import Pipeline
 from milk.provision.rootdir import init
 
 RESOURCES = Path(__file__).parents[1] / "resources"

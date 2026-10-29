@@ -1,7 +1,7 @@
 """R4b acceptance tests (py): the milk-pipes CLI over the plan registry.
 
-See specs/010-r4b-operate-cli/brief.md. FPSs are simulated (`paper`), rundirs live in a private
-MILK_SHM_DIR (`shm`), and the boot id is pinned (`boot`); see tests/conftestaux/operate.py.
+See specs/010-r4b-operate-cli/brief.md. FPSs are simulated (`paper`), rundirs live in a self-cleaning
+MILK_SHM_DIR (`shm_dir_cleanafter`), and the boot id is pinned (`boot`); see tests/conftestaux/operate.py.
 """
 
 from __future__ import annotations
@@ -9,8 +9,6 @@ from __future__ import annotations
 import pytest
 from click.testing import CliRunner
 
-# Parked until R4b starts, so that runs of other slices still collect. P1 deletes this line first.
-pytest.importorskip("milk.operate.cli")
 
 from milk.errors import BestEffortError
 from milk.operate.cli import milk_pipes
@@ -21,7 +19,7 @@ FPS = ("basic_delay0", "basic_delay1")
 
 
 @pytest.fixture
-def pp(make_tmp_pipeline, shm, boot, paper):
+def pp(make_tmp_pipeline, shm_dir_cleanafter, boot, paper):
     """pipelinebasic, initialized from tmp_path/pipelinebasic-conf, cold, simulated FPSs."""
     return make_tmp_pipeline()
 
@@ -166,16 +164,16 @@ def test_state_reports_milk_version_change(pp):
 # ---- link / unlink ----
 
 
-def test_link_and_unlink(pp, paper, shm):
+def test_link_and_unlink(pp, paper, shm_dir_cleanafter):
     for name in ("otherloop_output", "input_remote"):
-        (shm / f"{name}.im.shm").write_bytes(b"")
+        (shm_dir_cleanafter / f"{name}.im.shm").write_bytes(b"")
     _deploy_on_paper(pp, paper)
     result = _invoke("link", str(pp.root_folder), "shared")
     assert result.exit_code == 0, _text(result)
-    assert (shm / "input.im.shm").is_symlink()
+    assert (shm_dir_cleanafter / "input.im.shm").is_symlink()
     result = _invoke("unlink", str(pp.root_folder), "shared")
     assert result.exit_code == 0, _text(result)
-    assert not (shm / "input.im.shm").is_symlink()
+    assert not (shm_dir_cleanafter / "input.im.shm").is_symlink()
 
 
 def test_unknown_linkage(pp, paper):

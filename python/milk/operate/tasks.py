@@ -10,7 +10,7 @@ from collections.abc import Collection
 from typing import TYPE_CHECKING
 
 from .. import env
-from ..compute_unit import ComputeUnit
+from .compute_unit import ComputeUnit
 from ..config.substitute import denest_toml_dicts
 from ..errors import ConfigError
 from ..registry import Registry
@@ -20,7 +20,7 @@ from . import rundir
 if TYPE_CHECKING:
     from pyMilk.interfacing.fps import FPS
 
-    from ..pipeline import Pipeline
+    from .pipeline import Pipeline
 
 
 class Task(abc.ABC):
@@ -37,14 +37,14 @@ class Task(abc.ABC):
                 pipeline=pipeline.short_name,
             )
         self.pipeline = pipeline
-        self.compus = compus
+        self.compus_names = compus
 
     @property
     def compute_units(self) -> dict[str, ComputeUnit]:
         return {
             cu: c
             for cu, c in self.pipeline.compute_units.items()
-            if self.compus is None or cu in self.compus
+            if self.compus_names is None or cu in self.compus_names
         }
 
     def _existing(self) -> list[tuple[ComputeUnit, FPS]]:

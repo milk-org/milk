@@ -18,7 +18,7 @@ dependencies = ["tomli>=2.4", "tomli_w>=1.2", "pydantic>=2.12", "click>=8.1"]
 ## ENTRYPOINTS
 
 [project.scripts]
-milk-pipes = "milk.infra.mains_pipeline_mgmt:milk_pipes"
+milk-pipes = "milk.operate.cli:milk_pipes"
 milk-pipeinit = "milk.provision.cli:milk_pipeinit"
 
 [tool.setuptools.packages.find]

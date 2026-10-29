@@ -79,7 +79,7 @@ Pipelines conf.toml features:
 
 ```bash
 milk-pipeinit init ~/src/milk-standalone/python/tests/resources/pipelinebasic-conf --parent .
-milk-pipes spool basic
+milk-pipes deploy basic
 ```
 
 ### Confdir layout
@@ -188,17 +188,7 @@ resync never tears down or deploys.
 
 ## Deployment
 
-`milk-pipes -r` information
-
-`milk-pipes spool|sys|teardown|nuke TARGET [--parent DIR]`: TARGET is a rootdir path, or a
-short name for `<cwd>/<TARGET>-rootdir` (`<DIR>/<TARGET>-rootdir` with `--parent`). In Python,
-`Pipeline(target)`, `Pipeline.from_folder(rootdir)` and `Pipeline.from_parent(parent, short_name)`.
-
-`milk-pipes teardown TARGET` runs `runstop` on all CompUs, deapplies all system linkages, runs
-`confstop` and destroys the FPSs. It keeps the rootdir and `work/`.
-`milk-pipes nuke TARGET` is teardown, then deletes the rootdir even if teardown failed. It asks
-to type the short name first; `--yes` skips that.
-In both, failures in a step are reported and do not prevent the following steps.
+See [Operating a pipeline: `milk-pipes`](pipelines_operate.md).
 
 FPS names are `<name>_<cu>` (for example `basic_delay0`), derived from the pipeline short name and the CompU key.
 
@@ -234,7 +224,8 @@ milk/
   errors.py  env.py  cliwrap.py   shared; cliwrap is the milk-cli test harness
   config/      what a pipeline is: model, {var} substitution, confresolve. Pure data.
   provision/   milk-pipeinit: file operations, never the live system
-  operate/     milk-pipes: SHM, FPS, tmux, processes (today still pipeline.py, compute_unit.py, infra/)
+  operate/     milk-pipes: SHM, FPS, tmux, processes
 ```
 
 Dependencies go one way: `provision` and `operate` import `config`; they never import each other.
+The CLI modules (`provision/cli.py`, `operate/cli.py`) are composition roots and may import both.

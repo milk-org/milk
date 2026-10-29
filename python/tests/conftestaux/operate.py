@@ -1,22 +1,32 @@
-"""Operate-layer fixtures (R4): a private SHM dir, a fixed boot id, and a simulated FPS world.
+"""Operate-layer fixtures (R4): a self-cleaning SHM dir, a fixed boot id, and a simulated FPS world.
 
 Nothing here imports milk.operate at module level, so the plugin loads before R4a exists.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
 
 @pytest.fixture
-def shm(tmp_path, monkeypatch) -> Path:
-    """A private $MILK_SHM_DIR for one test (rundirs land in shm/pipe_rundirs/)."""
-    path = tmp_path / "shm"
-    path.mkdir()
-    monkeypatch.setenv("MILK_SHM_DIR", str(path))
-    return path
+def shm_dir_cleanafter() -> Iterator[Path]:
+    """The session $MILK_SHM_DIR; whatever the test adds to it is removed afterwards.
+
+    Never repoint MILK_SHM_DIR per test: libfps reads it once per process.
+    """
+    from milk import env
+
+    path = env.shm_dir()
+    before = set(path.rglob("*"))
+    yield path
+    for p in sorted(set(path.rglob("*")) - before, reverse=True):  # children first
+        if p.is_dir() and not p.is_symlink():
+            p.rmdir()
+        else:
+            p.unlink()
 
 
 @pytest.fixture

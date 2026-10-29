@@ -10,7 +10,7 @@ import tomli_w
 
 from ..config import confresolve
 from ..config.layout import list_pipeline_dirs
-from ..pipeline import Pipeline
+from ..operate.pipeline import Pipeline
 from .clone import clone
 from .hooks import consolidate
 from .rootdir import drift, init, resync

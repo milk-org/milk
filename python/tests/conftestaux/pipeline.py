@@ -12,7 +12,7 @@ import libtmux
 import pytest
 
 from milk.operate.plans import run_plan
-from milk.pipeline import Pipeline
+from milk.operate.pipeline import Pipeline
 from milk.provision import clone
 from milk.provision.rootdir import init
 

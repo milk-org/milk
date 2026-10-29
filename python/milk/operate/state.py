@@ -13,7 +13,7 @@ from ..errors import ColdSystemError, InconsistentStateError
 from . import rundir
 
 if TYPE_CHECKING:
-    from ..pipeline import Pipeline
+    from .pipeline import Pipeline
 
 
 Accepts = Literal["cold_or_consistent", "consistent", "any"]

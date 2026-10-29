@@ -1,37 +1,13 @@
-"""
-Goals for today
-
-Deploy 3 pipelines:
-1) DMComb
-2) DMSim -> linsim -> WFSSim
-3) AOloop
-
-# How deploy ?
-# fpsexec -> cwd + exec name + name
-
-# trylink compute units
-# if exist by name, find pwd
-# if not, use a pwd to do the deploy
-
-# Do factory functions as alternate constructors
-# factory:: from_scan
-# factory:: from_conf_file
-
-
-
-# Levels of deployment akin to cacao-loop-deploy
-"""
-
 from __future__ import annotations
 
 from .compute_unit import ComputeUnit
-from .config import confresolve
-from .config.layout import is_rootdir
-from .operate.plans import run_plan
-from .operate.state import State, require
-from .operate.tasks import Task
-from . import env
-from .errors import (
+from ..config import confresolve
+from ..config.layout import is_rootdir
+from .plans import run_plan
+from .state import State, require
+from .tasks import Task
+from .. import env
+from ..errors import (
     ConfigError,
     LinkageError,
     TaskCannotRunError,
@@ -44,9 +20,6 @@ from pathlib import Path
 
 
 class Pipeline:
-    # Or should it be a _deployed pipeline_ ?
-    # Or should deployed / deployable / undeployable different things ?
-
     def __init__(self, target: str | Path) -> None:
         """target: a rootdir path, or a short name whose rootdir is <cwd>/<target>-rootdir."""
         root = Path(target)
@@ -80,35 +53,25 @@ class Pipeline:
         return cls.from_folder(Path(parent) / f"{short_name}-rootdir")
 
     def task_do(self, task: Task | type[Task]) -> Pipeline:
-        if isinstance(task, Task):
-            pass
-        elif issubclass(task, Task):
+        if isinstance(task, type):
             task = task(self)
-        else:
-            raise ValueError(f"Bad argument: subclass or instance of Task required.")
         if task.success():
-            # log unneeded
             return self
-
-        if task.can():
-            task.forward()
-        else:
+        name = type(task).__name__
+        if not task.can():
             raise TaskCannotRunError(
-                f"Task {type(task).__name__} cannot be executed:\n"
-                f"    {task.failure_reason}",
-                task=type(task).__name__,
+                f"Task {name} cannot be executed:\n    {task.failure_reason}",
+                task=name,
                 pipeline=self.short_name,
             )
-
+        task.forward()
         if not task.success():
             # TODO if partial success is tolerated ?
             raise TaskDidNotSucceedError(
-                f"Task {type(task).__name__} did not succeed:\n"
-                f"    {task.failure_reason}",
-                task=type(task).__name__,
+                f"Task {name} did not succeed:\n    {task.failure_reason}",
+                task=name,
                 pipeline=self.short_name,
             )
-
         return self  # So as to be able to chain
 
     @property
@@ -171,15 +134,3 @@ class Pipeline:
             run_plan(self, "teardown")
         finally:
             shutil.rmtree(self.root_folder)
-
-
-class DMCombPipeline: ...
-
-
-class AOSimPipeline: ...
-
-
-class AOPipeline:
-    # What's an AO pipeline ?
-    # Anything that contains an mfilt.
-    ...

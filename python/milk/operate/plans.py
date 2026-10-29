@@ -11,7 +11,7 @@ from .state import Accepts, gate, state
 from .tasks import TASKS
 
 if TYPE_CHECKING:
-    from ..pipeline import Pipeline
+    from .pipeline import Pipeline
 
 
 @dataclass(frozen=True)
@@ -42,7 +42,7 @@ PLANS: Registry[Plan] = Registry("plan")
 def run_plan(pipeline: Pipeline, name: str) -> None:
     plan = PLANS[name]
     allowed = pipeline.config.plans
-    if allowed is not None:
+    if allowed is not None:  # TODO entire point of this block ???
         for listed in allowed:
             PLANS[listed]
         if name not in allowed:

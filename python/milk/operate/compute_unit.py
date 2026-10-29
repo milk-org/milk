@@ -4,7 +4,7 @@ import subprocess
 
 from pyMilk.interfacing.fps import FPS, FPSDoesntExistError
 
-from .errors import ComputeUnitError
+from ..errors import ComputeUnitError
 
 
 def fpslist(exec_name: str):
@@ -29,8 +29,6 @@ class ComputeUnit:
       confstop         Stop config loop
       runstart         Main processing loop
       runstop          Stop processing loop
-      # set [args]       Set positional args (. to skip) # NotImplemented
-      # exec [args]      Auto-init + set args + run      # NotImplemented
     """
 
     def __init__(self, exec_name: str, fpsname: str) -> None:
@@ -41,14 +39,9 @@ class ComputeUnit:
         self._trylink_fps()
 
     def _trylink_fps(self, raise_on_miss: bool = False) -> None:
-        """Try to link to the named FPS, raising only if except_ is True."""
-
-        if self.fps is not None:
-            if self.fps.is_valid():
-                return
-            else:
-                self.fps = None
-
+        """Try to link to the named FPS, raising FPSDoesntExistError only if raise_on_miss."""
+        if self.fps is not None and self.fps.is_valid():
+            return
         try:
             self.fps = FPS(self.fpsname)
         except FPSDoesntExistError:
@@ -89,9 +82,6 @@ class ComputeUnit:
         proc = self._subprocess_start(command, *args, wrap_in_shell=wrap_in_shell)
         retcode = proc.wait()
         if retcode != 0:
-            if proc.poll() is None:
-                proc.kill()
-                proc.wait()
             stderr = proc.stderr.read() if proc.stderr else b""
             raise ComputeUnitError(
                 f"Command {proc.args!r} exited with status {retcode}",
@@ -111,13 +101,13 @@ class ComputeUnit:
         # Guarantees FPS exists
 
     def __str__(self) -> str:
-        self._trylink_fps(False)
+        self._trylink_fps()
         if self.fps is None:
             return f"ComputeUnit {self.exec_name} {self.fpsname} [FPS unlinked]"
         return self._subprocess_complete("fps").stdout.read().decode()  # type: ignore
 
     def __repr__(self) -> str:
-        self._trylink_fps(False)
+        self._trylink_fps()
         fps_ok = "unlinked" if self.fps is None else "OK"
         return f"ComputeUnit {self.fpsname} ({self.exec_name}) [FPS {fps_ok}]"
 
@@ -130,7 +120,7 @@ class ComputeUnit:
         int fps_generic_conf_cb(const char *fps_name, int loop, errno_t (*confcheck_fn)(void))
         with loop = 1
         """
-        self._trylink_fps(True)
+        self._trylink_fps(raise_on_miss=True)
         # timeout ? guaranteed completion ? return pid ?
         if tmux:
             self._subprocess_complete("confstart", "-tmux")
@@ -143,17 +133,17 @@ class ComputeUnit:
         int fps_generic_conf_cb(const char *fps_name, int loop, errno_t (*confcheck_fn)(void))
         with loop = 0
         """
-        self._trylink_fps(True)
+        self._trylink_fps(raise_on_miss=True)
         self._subprocess_complete("confstep")
 
     def confstop(self) -> None:
-        self._trylink_fps(True)
+        self._trylink_fps(raise_on_miss=True)
         self._subprocess_complete("confstop")
 
     def runstart(
         self, tmux: bool = False, loopd: float | None = None, loops: bool = False
     ) -> None:
-        self._trylink_fps(True)
+        self._trylink_fps(raise_on_miss=True)
         assert loopd is None or not loops
         if loops:
             args = ("-loops",)
@@ -168,15 +158,5 @@ class ComputeUnit:
             self._subprocess_start("runstart", *args, wrap_in_shell=True)
 
     def runstop(self) -> None:
-        self._trylink_fps(True)
+        self._trylink_fps(raise_on_miss=True)
         self._subprocess_complete("runstop")
-
-    '''
-    def set(self, *args: str) -> None:
-        """Set positional args in the FPS ('.' to skip a position)."""
-        self._run("set", *args)
-
-    def exec(self, *args: str) -> None:
-        """Auto-init + set args + run, one-shot."""
-        self._run("exec", *args)
-    '''

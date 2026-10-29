@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from milk import compute_unit
+from milk.operate import compute_unit
 from milk.errors import (
     BestEffortError,
     ComputeUnitError,

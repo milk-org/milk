@@ -290,6 +290,6 @@ def test_cli_resolve(tmp_path):
 
 
 def test_milk_pipes_clone_is_gone():
-    from milk.infra.mains_pipeline_mgmt import milk_pipes
+    from milk.operate.cli import milk_pipes
 
     assert CliRunner().invoke(milk_pipes, ["clone", "-h"]).exit_code != 0
