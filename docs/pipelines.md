@@ -149,7 +149,7 @@ File operations on confdirs; it never touches the live system.
 | Command | Effect |
 |---|---|
 | `milk-pipeinit list [DIR]` | List the confdirs and rootdirs in DIR (default cwd). Examples: `milk-pipeinit list $MILK_ROOT/milk-examples/pipelines`. |
-| `milk-pipeinit clone SRC [DEST_PARENT]` | Copy the conf files of SRC to `DEST_PARENT/<SRC name>`. Refuses an existing target; runs no hooks and no git. |
+| `milk-pipeinit clone SRC [DEST_PARENT] [-u\|-d]` | Copy the conf files of SRC to `DEST_PARENT/<SRC name>`. Refuses an existing target unless `-u`/`--update` (copy over it) or `-d`/`--override` (first delete all but its `.git`, leaving a fresh clone whose changes git tracks). Runs no hooks and no git. |
 | `milk-pipeinit consolidate CONFDIR [--refetch ID ...] [--refetch-all]` | Run the pending conf hooks; print the ids that ran. `--refetch` reruns a hook even when resolved: upstream changes (for example a new file at an rsync source) are not detected otherwise. |
 | `milk-pipeinit resolve DIR` | Print the resolved configuration of a confdir or a rootdir as TOML. |
 | `milk-pipeinit init CONFDIR [--parent DIR] [--set K=V ...]` | Consolidate CONFDIR and build `<DIR>/<name>-rootdir` (DIR defaults to CONFDIR's parent). Refuses an existing rootdir. |
@@ -225,7 +225,7 @@ FPS names are `<name>_<cu>` (for example `basic_delay0`), derived from the pipel
 `milk.config.resolve.confresolve(confdir, overrides)` is the only way to get a `PipelineConfig`; it re-reads the files on every call.
 Layers, lowest to highest: kind defaults (`kind`, default `generic`), `includes` (paths relative to the confdir, one level), `conf.toml`, then `overrides` (dotted keys; `long_name`, `name`, `loop_number` cannot be overridden).
 Tables merge recursively; lists and `[[table arrays]]` are replaced whole.
-`{dotted.key}` substitution runs on the merged result (never inside table arrays), then validation; failures raise `ConfigError`.
+`{dotted.key}` substitution runs on the merged result (never inside table arrays), then validation; failures raise `ConfigError`, with one `dotted.key: <why>` line per invalid key.
 Contract: [design-v7](../python/specs/pipelines/design-v7.md) D-5.
 
 milk-config-store
@@ -245,11 +245,25 @@ But everything from the aorun framework should get in there really.
 attributes (`pipeline`, `compu`, `task`, `path`, `cmd`, `stderr`). pyMilk exceptions propagate
 unwrapped. Contract: design-v7 §4.7 (`python/specs/pipelines/design-v7.md`).
 
+`milk-pipes` and `milk-pipeinit` print any error as `Error: <message>`, without a stack trace,
+and exit 1; a `MilkError` message carries its context lines, e.g.:
+
+```
+$ milk-pipeinit resolve aoloop-conf
+Error: Invalid config:
+  _ln: Extra inputs are not permitted
+path: aoloop-conf/conf.toml
+```
+
+`--errstack`, placed before the command (`milk-pipeinit --errstack resolve aoloop-conf`), lets the
+exception propagate with its stack trace.
+
 ## Python package layout
 
 ```
 milk/
   errors.py  env.py  cliwrap.py   shared; cliwrap is the milk-cli test harness
+  cli.py       the error handling and --errstack shared by both console scripts
   config/      what a pipeline is: model, {var} substitution, confresolve. Pure data.
   provision/   milk-pipeinit: file operations, never the live system
   operate/     milk-pipes: SHM, FPS, tmux, processes

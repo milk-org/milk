@@ -9,12 +9,26 @@ from ..errors import ProvisionError
 from .artifacts import conf_files
 
 
-def clone(src: Path, dest_parent: Path) -> Path:
-    """Copy conf_files(src) to dest_parent / src.name. Runs no hooks and no git."""
+def clone(
+    src: Path, dest_parent: Path, update: bool = False, override: bool = False
+) -> Path:
+    """Copy conf_files(src) to dest_parent / src.name. Runs no hooks and no git.
+
+    update: copy over an existing target. override: also first delete everything
+    in the target but its .git, so it ends up as a fresh clone.
+    """
     src = Path(src)
     dest = Path(dest_parent) / src.name
-    if dest.exists() or dest.is_symlink():
+    if dest.is_symlink() or (dest.exists() and not (update or override)):
         raise ProvisionError(f"Clone target {dest} already exists.", path=dest)
+    if override and dest.exists():
+        for entry in dest.iterdir():
+            if entry.name == ".git":
+                continue
+            if entry.is_dir() and not entry.is_symlink():
+                shutil.rmtree(entry)
+            else:
+                entry.unlink()
     for rel in conf_files(src):
         (dest / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src / rel, dest / rel)

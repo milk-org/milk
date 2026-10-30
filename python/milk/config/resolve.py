@@ -86,5 +86,11 @@ def confresolve(
 
     try:
         return PipelineConfig.model_validate(substitute_toml_variables_in_nested(data))
-    except (ValueError, pydantic.ValidationError) as err:
+    except pydantic.ValidationError as err:
+        keys = (
+            f"  {'.'.join(map(str, e['loc'])) or '<root>'}: {e['msg']}"
+            for e in err.errors()
+        )
+        raise ConfigError("Invalid config:\n" + "\n".join(keys), path=toml) from err
+    except ValueError as err:
         raise ConfigError(str(err), path=toml) from err

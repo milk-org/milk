@@ -1,0 +1,15 @@
+[compute_units.acquWFS.fps]
+procinfo.enabled = true
+procinfo.triggersname = 'aol{_ln}_wfsim'
+procinfo.triggermode = 3
+procinfo.triggertimeout = 0.1
+
+[compute_units.wfs2modes.fps]
+
+[compute_units.mfilt.fps]
+
+[compute_units.modes2dm.fps]
+
+[compute_units.mlat.fps]
+
+[compute_units.measlinresp.fps]

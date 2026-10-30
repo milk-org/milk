@@ -251,6 +251,23 @@ def test_clone_refuses_existing_target(tmp_path):
     assert list((tmp_path / "b" / "mini-conf").iterdir()) == []
 
 
+def test_clone_update_and_override(tmp_path):
+    src = make_confdir(tmp_path / "a")
+    dest = clone(src, tmp_path / "b")
+    (dest / ".git").mkdir()
+    (dest / ".git" / "HEAD").write_text("ref")
+    (dest / "stale.toml").write_text("")
+    (dest / "data").mkdir()
+
+    assert clone(src, tmp_path / "b", update=True) == dest
+    assert (dest / "stale.toml").exists()
+
+    clone(src, tmp_path / "b", override=True)
+    assert conf_files(dest) == conf_files(src)
+    assert not (dest / "data").exists()
+    assert (dest / ".git" / "HEAD").read_text() == "ref"
+
+
 # ---- milk-pipeinit ----
 
 
@@ -285,7 +302,11 @@ def test_cli_resolve(tmp_path):
     )
 
     (conf / "conf.toml").write_text("bogus = 1\n")
-    assert CliRunner().invoke(milk_pipeinit, ["resolve", str(conf)]).exit_code != 0
+    result = CliRunner().invoke(milk_pipeinit, ["resolve", str(conf)])
+    assert result.exit_code == 1 and "bogus: Extra inputs" in result.output
+    assert not isinstance(result.exception, ConfigError)
+    result = CliRunner().invoke(milk_pipeinit, ["--errstack", "resolve", str(conf)])
+    assert isinstance(result.exception, ConfigError)
 
 
 def test_milk_pipes_clone_is_gone():

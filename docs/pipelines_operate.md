@@ -69,7 +69,8 @@ milk-pipes nuke    [-p PIPE] [--yes]  teardown, then rm -rf the rootdir
 - **`nuke`** asks you to type the short name; `--yes` skips that. It deletes the rootdir even if
   teardown fails.
 
-Errors print `Error: <message>` and exit 1. A best-effort plan prints one
+Errors print `Error: <message>` and exit 1; `--errstack` shows the stack trace (see
+[Environment and errors](pipelines.md#environment-and-errors)). A best-effort plan prints one
 `warning: <step>: <error>` line per failed step, after running all of them, and exits 1.
 
 ## Example session

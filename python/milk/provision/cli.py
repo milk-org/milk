@@ -1,4 +1,4 @@
-"""The ``milk-pipeinit`` console script (design-v7 A.5). Errors propagate.
+"""The ``milk-pipeinit`` console script (design-v7 A.5).
 
 NB: Prefer lazy imports, this file is a net cost on the CLI startup time.
 """
@@ -10,6 +10,8 @@ from pathlib import Path
 import click
 import tomli
 import tomli_w
+
+from ..cli import ErrstackGroup
 
 _dir = click.Path(exists=True, file_okay=False, path_type=Path)
 
@@ -31,7 +33,9 @@ _set_option = click.option(
 )
 
 
-@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+@click.group(
+    cls=ErrstackGroup, context_settings={"help_option_names": ["-h", "--help"]}
+)
 def milk_pipeinit():
     """Clone, consolidate, resolve and init confdirs; drift and resync rootdirs."""
 
@@ -48,11 +52,18 @@ def pipeinit_list(folder: Path):
 @milk_pipeinit.command("clone")
 @click.argument("src", type=_dir)
 @click.argument("dest_parent", type=click.Path(path_type=Path), default=".")
-def pipeinit_clone(src: Path, dest_parent: Path):
+@click.option("-u", "--update", is_flag=True, help="Reclone into an existing target.")
+@click.option(
+    "-d",
+    "--override",
+    is_flag=True,
+    help="Reclone, deleting all but the target's .git.",
+)
+def pipeinit_clone(src: Path, dest_parent: Path, update: bool, override: bool):
     """Copy the conf files of confdir SRC into DEST_PARENT (default: cwd)."""
     from .clone import clone
 
-    click.echo(f"Cloned {src} to {clone(src, dest_parent)}")
+    click.echo(f"Cloned {src} to {clone(src, dest_parent, update, override)}")
 
 
 @milk_pipeinit.command("consolidate")

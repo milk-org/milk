@@ -5,17 +5,18 @@ NB: Prefer lazy imports, this file is a net cost on the CLI startup time.
 
 from __future__ import annotations
 
-import contextlib
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import click
 
+from ..cli import ErrstackGroup
+
 if TYPE_CHECKING:
     from .pipeline import Pipeline
 
 
-class _PlansGroup(click.Group):
+class _PlansGroup(ErrstackGroup):
     """The fixed commands, plus one command per PLANS name, read at call time."""
 
     def _plans(self) -> list[str]:
@@ -93,29 +94,13 @@ def _pipeline(pipe: str | None) -> Pipeline:
     return pp
 
 
-@contextlib.contextmanager
-def _user_errors():
-    """BestEffortError: one warning per failure, exit 1. Other MilkErrors: a ClickException."""
-    from ..errors import BestEffortError, MilkError
-
-    try:
-        yield
-    except BestEffortError as error:
-        for label, failure in error.failures:
-            click.echo(f"warning: {label}: {failure}")
-        raise click.exceptions.Exit(1) from error
-    except MilkError as error:
-        raise click.ClickException(str(error)) from error
-
-
 def _plan_command(name: str) -> click.Command:
     @click.command(name, help=f"Run the {name} plan.")
     @_pipe_option
     def command(pipe: str | None):
         from .plans import run_plan
 
-        with _user_errors():
-            run_plan(_pipeline(pipe), name)
+        run_plan(_pipeline(pipe), name)
 
     return command
 
@@ -130,9 +115,8 @@ def milk_pipes_state(pipe: str | None):
     from ..provision.rootdir import drift
     from .state import state
 
-    with _user_errors():
-        pp = _pipeline(pipe)
-        st = state(pp)
+    pp = _pipeline(pipe)
+    st = state(pp)
     click.echo(f"{pp.short_name}: {st.state.value}")
     for reason in st.reasons:
         click.echo(f"  reason: {reason}")
@@ -164,13 +148,12 @@ def milk_pipes_link(pipe: str | None, linkage: str | None):
 
     Without LINKAGE, list the configured linkages.
     """
-    with _user_errors():
-        pp = _pipeline(pipe)
-        if linkage is None:
-            for name in pp.systemlinkage:
-                click.echo(name)
-            return
-        pp.link(linkage)
+    pp = _pipeline(pipe)
+    if linkage is None:
+        for name in pp.systemlinkage:
+            click.echo(name)
+        return
+    pp.link(linkage)
 
 
 @milk_pipes.command("unlink")
@@ -180,8 +163,7 @@ def milk_pipes_unlink(pipe: str | None, linkage: str):
     """
     Remove the [systemlinkage.<LINKAGE>] symlinks of the pipeline; `all`: of every linkage.
     """
-    with _user_errors():
-        _pipeline(pipe).unlink(linkage)
+    _pipeline(pipe).unlink(linkage)
 
 
 @milk_pipes.command("nuke")
@@ -193,12 +175,11 @@ def milk_pipes_nuke(pipe: str | None, yes: bool):
 
     Asks to type the pipeline's short name first, unless --yes.
     """
-    with _user_errors():
-        pp = _pipeline(pipe)
-        if (
-            not yes
-            and click.prompt(f"Type {pp.short_name!r} to delete {pp.root_folder}")
-            != pp.short_name
-        ):
-            raise click.ClickException("Short name mismatch; nothing deleted.")
-        pp.nuke_unsafe()
+    pp = _pipeline(pipe)
+    if (
+        not yes
+        and click.prompt(f"Type {pp.short_name!r} to delete {pp.root_folder}")
+        != pp.short_name
+    ):
+        raise click.ClickException("Short name mismatch; nothing deleted.")
+    pp.nuke_unsafe()
