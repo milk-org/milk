@@ -79,7 +79,7 @@ Pipelines conf.toml features:
 
 ```bash
 milk-pipeinit init ~/src/milk-standalone/python/tests/resources/pipelinebasic-conf --parent .
-milk-pipes deploy basic
+milk-pipes deploy -p basic
 ```
 
 ### Confdir layout

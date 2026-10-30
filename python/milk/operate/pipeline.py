@@ -48,10 +48,6 @@ class Pipeline:
             raise ConfigError(f"{rootdir} is not a rootdir.", path=Path(rootdir))
         return cls(Path(rootdir).absolute())
 
-    @classmethod
-    def from_parent(cls, parent: str | Path, short_name: str) -> Pipeline:
-        return cls.from_folder(Path(parent) / f"{short_name}-rootdir")
-
     def task_do(self, task: Task | type[Task]) -> Pipeline:
         if isinstance(task, type):
             task = task(self)

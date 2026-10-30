@@ -6,6 +6,7 @@ NB: Prefer lazy imports, this file is a net cost on the CLI startup time.
 from __future__ import annotations
 
 import contextlib
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import click
@@ -40,23 +41,23 @@ def milk_pipes():
     Operate an initialized milk/cacao pipeline (see `milk-pipeinit init`).
 
     \b
-    TARGET is a rootdir path, or a short name: <cwd>/<TARGET>-rootdir,
-    or <DIR>/<TARGET>-rootdir with --parent DIR.
+    -p/--pipe PIPE is a rootdir path, or a short name: <cwd>/<PIPE>-rootdir.
+    Without -p, cwd must be a rootdir.
     """
 
 
-_parent_option = click.option(
-    "--parent",
-    type=click.Path(file_okay=False),
-    default=None,
-    help="Folder holding <TARGET>-rootdir.",
+_pipe_option = click.option(
+    "-p", "--pipe", default=None, help="Rootdir path or short name; default: cwd."
 )
 
 
-def _pipeline(target: str, parent: str | None) -> Pipeline:
+def _pipeline(pipe: str | None) -> Pipeline:
+    """Resolve -p/--pipe to a Pipeline and say which rootdir it is."""
     from .pipeline import Pipeline
 
-    return Pipeline(target) if parent is None else Pipeline.from_parent(parent, target)
+    pp = Pipeline.from_folder(Path.cwd()) if pipe is None else Pipeline(pipe)
+    click.echo(f"rootdir: {pp.root_folder}")
+    return pp
 
 
 @contextlib.contextmanager
@@ -76,30 +77,28 @@ def _user_errors():
 
 def _plan_command(name: str) -> click.Command:
     @click.command(name, help=f"Run the {name} plan.")
-    @_parent_option
-    @click.argument("target")
-    def command(parent: str | None, target: str):
+    @_pipe_option
+    def command(pipe: str | None):
         from .plans import run_plan
 
         with _user_errors():
-            run_plan(_pipeline(target, parent), name)
+            run_plan(_pipeline(pipe), name)
 
     return command
 
 
 @milk_pipes.command("state")
-@_parent_option
-@click.argument("target")
-def milk_pipes_state(parent: str | None, target: str):
+@_pipe_option
+def milk_pipes_state(pipe: str | None):
     """
-    Show the state of pipeline TARGET, why, and a summary of its drift from its confdir.
+    Show the state of the pipeline, why, and a summary of its drift from its confdir.
     """
     from ..errors import MilkError
     from ..provision.rootdir import drift
     from .state import state
 
     with _user_errors():
-        pp = _pipeline(target, parent)
+        pp = _pipeline(pipe)
         st = state(pp)
     click.echo(f"{pp.short_name}: {st.state.value}")
     for reason in st.reasons:
@@ -124,41 +123,38 @@ def milk_pipes_state(parent: str | None, target: str):
 
 
 @milk_pipes.command("link")
-@_parent_option
-@click.argument("target")
+@_pipe_option
 @click.argument("linkage")
-def milk_pipes_link(parent: str | None, target: str, linkage: str):
+def milk_pipes_link(pipe: str | None, linkage: str):
     """
-    Apply the [systemlinkage.<LINKAGE>] symlinks of pipeline TARGET.
+    Apply the [systemlinkage.<LINKAGE>] symlinks of the pipeline.
     """
     with _user_errors():
-        _pipeline(target, parent).link(linkage)
+        _pipeline(pipe).link(linkage)
 
 
 @milk_pipes.command("unlink")
-@_parent_option
-@click.argument("target")
+@_pipe_option
 @click.argument("linkage")
-def milk_pipes_unlink(parent: str | None, target: str, linkage: str):
+def milk_pipes_unlink(pipe: str | None, linkage: str):
     """
-    Remove the [systemlinkage.<LINKAGE>] symlinks of pipeline TARGET.
+    Remove the [systemlinkage.<LINKAGE>] symlinks of the pipeline.
     """
     with _user_errors():
-        _pipeline(target, parent).unlink(linkage)
+        _pipeline(pipe).unlink(linkage)
 
 
 @milk_pipes.command("nuke")
-@_parent_option
+@_pipe_option
 @click.option("--yes", is_flag=True, help="Do not ask for the short name.")
-@click.argument("target")
-def milk_pipes_nuke(parent: str | None, yes: bool, target: str):
+def milk_pipes_nuke(pipe: str | None, yes: bool):
     """
-    teardown pipeline TARGET, then rm -rf its rootdir, even if teardown fails.
+    teardown the pipeline, then rm -rf its rootdir, even if teardown fails.
 
     Asks to type the pipeline's short name first, unless --yes.
     """
     with _user_errors():
-        pp = _pipeline(target, parent)
+        pp = _pipeline(pipe)
         if (
             not yes
             and click.prompt(f"Type {pp.short_name!r} to delete {pp.root_folder}")

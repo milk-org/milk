@@ -9,16 +9,16 @@ move between them are drawn in the design's
 ## Commands
 
 ```
-milk-pipes <plan> TARGET [--parent DIR]          run plan <plan>: deploy, teardown, ...
-milk-pipes state  TARGET [--parent DIR]          state, reasons, drift summary, milk version change
-milk-pipes link   TARGET LINKAGE [--parent DIR]  apply [systemlinkage.<LINKAGE>]
-milk-pipes unlink TARGET LINKAGE [--parent DIR]  remove its symlinks
-milk-pipes nuke   TARGET [--parent DIR] [--yes]  teardown, then rm -rf the rootdir
+milk-pipes <plan>  [-p PIPE]          run plan <plan>: deploy, teardown, ...
+milk-pipes state   [-p PIPE]          state, reasons, drift summary, milk version change
+milk-pipes link    LINKAGE [-p PIPE]  apply [systemlinkage.<LINKAGE>]
+milk-pipes unlink  LINKAGE [-p PIPE]  remove its symlinks
+milk-pipes nuke    [-p PIPE] [--yes]  teardown, then rm -rf the rootdir
 ```
 
-- **TARGET** is a rootdir path, or a short name meaning `<cwd>/<TARGET>-rootdir`
-  (`<DIR>/<TARGET>-rootdir` with `--parent DIR`). In Python: `Pipeline(target)` and
-  `Pipeline.from_parent(parent, short_name)`.
+- **`-p/--pipe PIPE`** is a rootdir path, or a short name meaning `<cwd>/<PIPE>-rootdir`.
+  Without `-p`, the current directory must be a rootdir. Every command first prints
+  `rootdir: <path>`, the rootdir it acts on. In Python: `Pipeline(pipe)`.
 - **Plan commands** are one per registered plan (`milk-pipes --help` lists them). `deploy` runs
   ClaimRundir → InitFPS → LoadData → ConfStart and is idempotent. `teardown` runs RunStop →
   DeapplyLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir, best effort, and keeps the
@@ -39,24 +39,34 @@ Errors print `Error: <message>` and exit 1. A best-effort plan prints one
 $ milk-pipeinit clone $MILK_ROOT/milk-examples/pipelines/pipelinebasic-conf ~/pipes
 $ milk-pipeinit init ~/pipes/pipelinebasic-conf            # → ~/pipes/basic-rootdir
 $ cd ~/pipes
-$ milk-pipes state basic
+$ milk-pipes state -p basic
+rootdir: /home/vdeo/pipes/basic-rootdir
 basic: cold
 drift: none
-$ milk-pipes deploy basic                                  # ClaimRundir → InitFPS → LoadData → ConfStart
-$ milk-pipes state basic
+$ milk-pipes deploy -p basic                               # ClaimRundir → InitFPS → LoadData → ConfStart
+rootdir: /home/vdeo/pipes/basic-rootdir
+$ milk-pipes state -p basic
+rootdir: /home/vdeo/pipes/basic-rootdir
 basic: configured
 drift: none
-$ milk-pipes link basic loopback                           # needs a deployed, non-running pipeline
-$ milk-pipes deploy basic                                  # idempotent: every step already succeeded
+$ milk-pipes link loopback -p basic                        # needs a deployed, non-running pipeline
+rootdir: /home/vdeo/pipes/basic-rootdir
+$ milk-pipes deploy -p basic                               # idempotent: every step already succeeded
+rootdir: /home/vdeo/pipes/basic-rootdir
 $ vi pipelinebasic-conf/conf.toml                          # edit the source confdir
-$ milk-pipes state basic
+$ milk-pipes state -p basic
+rootdir: /home/vdeo/pipes/basic-rootdir
 basic: configured
 drift: 1 artifact(s); run `milk-pipeinit drift /home/vdeo/pipes/basic-rootdir`
-$ milk-pipes teardown basic                                # best effort; keeps the rootdir and work/
+$ milk-pipes teardown -p basic                             # best effort; keeps the rootdir and work/
+rootdir: /home/vdeo/pipes/basic-rootdir
 $ milk-pipeinit resync basic-rootdir                       # prints the teardown → deploy banner
-$ milk-pipes deploy basic
-$ milk-pipes state basic --parent /elsewhere               # a pipeline outside cwd
-$ milk-pipes nuke basic                                    # asks you to type 'basic'
+$ milk-pipes deploy -p basic
+rootdir: /home/vdeo/pipes/basic-rootdir
+$ milk-pipes state -p /elsewhere/basic-rootdir             # a pipeline outside cwd
+rootdir: /elsewhere/basic-rootdir
+$ milk-pipes nuke -p basic                                 # asks you to type 'basic'
+rootdir: /home/vdeo/pipes/basic-rootdir
 Type 'basic' to delete /home/vdeo/pipes/basic-rootdir: basic
 ```
 
@@ -66,11 +76,14 @@ For the drift details and resync, see [Drift](pipelines.md#drift) and
 ## Failures
 
 ```console
-$ milk-pipes link basic loopback                           # cold pipeline
+$ milk-pipes link loopback -p basic                        # cold pipeline
+rootdir: /home/vdeo/pipes/basic-rootdir
 Error: Pipeline basic is cold; run deploy.
-$ milk-pipes deploy basic                                  # an FPS was destroyed by hand
+$ milk-pipes deploy -p basic                               # an FPS was destroyed by hand
+rootdir: /home/vdeo/pipes/basic-rootdir
 Error: Pipeline basic is inconsistent (FPS missing: basic_delay1); run teardown.
-$ milk-pipes teardown basic                                # one step failed, the others ran
+$ milk-pipes teardown -p basic                             # one step failed, the others ran
+rootdir: /home/vdeo/pipes/basic-rootdir
 warning: ConfStop: <error>
 $ echo $?
 1

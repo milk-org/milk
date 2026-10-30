@@ -465,7 +465,6 @@ def test_pipeline_targets(rootdir, monkeypatch, tmp_path):
     from milk.operate.pipeline import Pipeline
 
     assert Pipeline.from_folder(rootdir).root_folder == rootdir
-    assert Pipeline.from_parent(rootdir.parent, "mini").root_folder == rootdir
     monkeypatch.chdir(rootdir.parent)
     assert Pipeline("mini").root_folder == rootdir  # short name: <cwd>/<name>-rootdir
     assert (
@@ -491,20 +490,19 @@ def test_cli_nuke_asks_for_the_short_name(rootdir, shm_dir_cleanafter):
     from milk.operate.cli import milk_pipes
 
     runner = CliRunner()
-    result = runner.invoke(milk_pipes, ["nuke", str(rootdir)], input="wrong\n")
+    result = runner.invoke(milk_pipes, ["nuke", "-p", str(rootdir)], input="wrong\n")
     assert result.exit_code != 0 and rootdir.is_dir()
-    result = runner.invoke(milk_pipes, ["nuke", str(rootdir)], input="mini\n")
+    result = runner.invoke(milk_pipes, ["nuke", "-p", str(rootdir)], input="mini\n")
     assert result.exit_code == 0, result.output
     assert not rootdir.exists()
 
 
-def test_cli_nuke_yes_and_parent(confdir, shm_dir_cleanafter):
+def test_cli_nuke_yes_and_short_name(confdir, shm_dir_cleanafter, monkeypatch):
     from milk.operate.cli import milk_pipes
 
     rootdir = init(confdir)
-    result = CliRunner().invoke(
-        milk_pipes, ["nuke", "mini", "--parent", str(rootdir.parent), "--yes"]
-    )
+    monkeypatch.chdir(rootdir.parent)
+    result = CliRunner().invoke(milk_pipes, ["nuke", "-p", "mini", "--yes"])
     assert result.exit_code == 0, result.output
     assert not rootdir.exists()
 
