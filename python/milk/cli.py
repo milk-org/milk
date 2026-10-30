@@ -16,6 +16,7 @@ class ErrstackGroup(click.Group):
     """A group whose errors print as one message, without stack trace, unless --errstack.
 
     BestEffortError prints one warning per failure. Every error exits 1.
+    ``milk`` log records print to stderr.
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -32,8 +33,15 @@ class ErrstackGroup(click.Group):
         )
 
     def invoke(self, ctx: click.Context):
+        import logging
+
         from .errors import BestEffortError, MilkError
 
+        log = logging.getLogger("milk")
+        handler = logging.StreamHandler()  # the current sys.stderr
+        handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        log.addHandler(handler)
+        log.setLevel(logging.INFO)
         try:
             return super().invoke(ctx)
         except (click.ClickException, click.exceptions.Exit, click.Abort):
@@ -43,10 +51,12 @@ class ErrstackGroup(click.Group):
                 raise
             if isinstance(error, BestEffortError):
                 for label, failure in error.failures:
-                    click.echo(f"warning: {label}: {failure}")
+                    log.warning("%s: %s", label, failure)
                 raise click.exceptions.Exit(1) from error
             if isinstance(error, MilkError):
                 raise click.ClickException(str(error)) from error
             raise click.ClickException(
                 f"{type(error).__name__}: {error}\n(--errstack for the stack trace)"
             ) from error
+        finally:
+            log.removeHandler(handler)

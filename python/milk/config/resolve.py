@@ -6,6 +6,7 @@ substitution and validation. No side effects, no cache.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -16,6 +17,9 @@ from ..errors import ConfigError
 from .layout import is_rootdir
 from .model import PipelineConfig
 from .substitute import substitute_toml_variables_in_nested
+
+_log = logging.getLogger(__name__)
+_MODELS_CACHE: set[int] = set()  # config fingerprints already logged in this process
 
 IDENTITY_KEYS = ("long_name", "name", "loop_number")
 
@@ -85,7 +89,14 @@ def confresolve(
         _set_override(data, dotted, value, toml)
 
     try:
-        return PipelineConfig.model_validate(substitute_toml_variables_in_nested(data))
+        config = PipelineConfig.model_validate(
+            substitute_toml_variables_in_nested(data)
+        )
+        fingerprint = hash((config.model_dump_json(), toml.absolute()))
+        if config.model_extra and fingerprint not in _MODELS_CACHE:
+            _MODELS_CACHE.add(fingerprint)
+            _log.info("%s: extra keys %s", toml, sorted(config.model_extra))
+        return config
     except pydantic.ValidationError as err:
         keys = (
             f"  {'.'.join(map(str, e['loc'])) or '<root>'}: {e['msg']}"

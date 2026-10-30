@@ -301,9 +301,16 @@ def test_cli_resolve(tmp_path):
         tomli.loads(result.output)["compute_units"]["cu"]["fps"]["out_name"] == "in_out"
     )
 
+    text = (conf / "conf.toml").read_text()
+    (conf / "conf.toml").write_text("_bogus = 1\n" + text)
+    result = CliRunner().invoke(milk_pipeinit, ["resolve", str(conf)])
+    assert result.exit_code == 0, result.output
+    assert tomli.loads(result.stdout)["_bogus"] == 1
+    assert "_bogus" in result.stderr
+
     (conf / "conf.toml").write_text("bogus = 1\n")
     result = CliRunner().invoke(milk_pipeinit, ["resolve", str(conf)])
-    assert result.exit_code == 1 and "bogus: Extra inputs" in result.output
+    assert result.exit_code == 1 and "name: Field required" in result.output
     assert not isinstance(result.exception, ConfigError)
     result = CliRunner().invoke(milk_pipeinit, ["--errstack", "resolve", str(conf)])
     assert isinstance(result.exception, ConfigError)

@@ -11,11 +11,15 @@ Really it needs what comes from cacaovars.bash
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 import pydantic
 
 # TODO we should be able to import pyMilk validator without hauling ImageStreamIOWrap here.
 from pyMilk.interfacing.shm import check_SHM_name
+
+import logging
+
+_log = logging.getLogger(__name__)
 
 
 class ProcessInfoData(BaseModel):
@@ -104,9 +108,10 @@ HookDecl = Annotated[FetchHookDecl | CommandHookDecl, Field(discriminator="type"
 
 
 class PipelineConfig(BaseModel):
-    """Validated conf.toml. Top-level keys outside these fields are refused."""
+    """Validated conf.toml. Top-level keys outside these fields are refused,
+    except ``_``-prefixed ones (kept in model_extra)."""
 
-    model_config = {"extra": "forbid", "frozen": True}
+    model_config = {"extra": "allow", "frozen": True}
 
     long_name: str
     name: str
@@ -119,6 +124,16 @@ class PipelineConfig(BaseModel):
     hooks: list[HookDecl] = Field(default_factory=list)
     plans: list[str] | None = None  # restricts run_plan to these names
     teardown_kill_tmux: bool = False
+
+    @model_validator(mode="after")
+    def _check_extra_keys(self) -> PipelineConfig:
+        unknown = sorted(k for k in self.model_extra or {} if not k.startswith("_"))
+        if unknown:
+            raise ValueError(
+                f"unknown top-level keys {unknown} (only _-prefixed extras are allowed)"
+            )
+
+        return self
 
     @field_validator("hooks")
     @classmethod

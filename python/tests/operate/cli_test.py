@@ -124,7 +124,7 @@ def test_best_effort_failures_are_warnings_and_exit_1(pp, monkeypatch):
     monkeypatch.setattr("milk.operate.plans.run_plan", failing)
     result = _invoke("teardown", "-p", str(pp.root_folder))
     assert result.exit_code == 1
-    assert "RunStop" in result.output and "boom" in result.output
+    assert "RunStop" in result.stderr and "boom" in result.stderr
 
 
 # ---- state ----

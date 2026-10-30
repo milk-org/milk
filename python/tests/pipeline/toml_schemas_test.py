@@ -116,6 +116,16 @@ def test_loader_refuses_unknown_top_level_key(tmp_path, conf_dir, key):
     assert err.value.path == toml_path
 
 
+def test_loader_keeps_underscore_top_level_key(tmp_path, conf_dir, caplog):
+    toml_path = tmp_path / "conf.toml"
+    toml_path.write_text("_foo = 1\n" + (conf_dir / "conf.toml").read_text())
+
+    with caplog.at_level("INFO", logger="milk"):
+        config = confresolve(tmp_path)
+    assert config.model_extra == {"_foo": 1}
+    assert "_foo" in caplog.text
+
+
 def test_loader_refuses_old_key_under_cu(tmp_path, conf_dir):
     shutil.copy(conf_dir / "conf.toml", tmp_path / "conf.toml")
     toml_path = tmp_path / "conf.toml"
