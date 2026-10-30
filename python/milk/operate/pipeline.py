@@ -116,9 +116,10 @@ class Pipeline:
             local.symlink_to(remote)
 
     def unlink(self, name: str) -> None:
-        """Remove the linkage's symlinks, leaving any that point elsewhere."""
-        for local in self._linked_paths(name):
-            local.unlink()
+        """Remove the linkage's symlinks, leaving any that point elsewhere; ``all``: every linkage."""
+        for linkage in self.systemlinkage if name == "all" else [name]:
+            for local in self._linked_paths(linkage):
+                local.unlink()
 
     def linked(self) -> list[str]:
         """The configured linkages that have a symlink in place."""

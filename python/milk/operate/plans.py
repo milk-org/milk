@@ -75,7 +75,7 @@ for _plan in (
         tuple(
             map(
                 Step,
-                "RunStop DeapplyLinkages ConfStop KillTmux DestroyFPS ReleaseRundir".split(),
+                "RunStop DeapplyAllLinkages ConfStop KillTmux DestroyFPS ReleaseRundir".split(),
             )
         ),
         "best_effort",

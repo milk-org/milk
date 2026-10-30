@@ -194,13 +194,12 @@ class RunStop(Task):
         return not any(fps.run_isrunning() for _, fps in self._existing())
 
 
-class DeapplyLinkages(Task):
+class DeapplyAllLinkages(Task):
     def can(self) -> bool:
         return True
 
     def forward(self) -> None:
-        for name in self.pipeline.systemlinkage:
-            self.pipeline.unlink(name)
+        self.pipeline.unlink("all")
 
     def success(self) -> bool:
         return not self.pipeline.linked()

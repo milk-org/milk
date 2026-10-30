@@ -134,6 +134,10 @@ class PipelineConfig(BaseModel):
     def _check_systemlinkage(cls, v: dict[str, dict[str, str]]):
         out: dict[str, dict[str, str]] = {}
         for mode, links in v.items():
+            if mode == "all":
+                raise ValueError(
+                    "systemlinkage: 'all' is reserved (milk-pipes unlink all)"
+                )
             out[mode] = {}
             for local, remote in links.items():
                 # TODO this where to focus if we eventually use various MILK_SHM_DIR

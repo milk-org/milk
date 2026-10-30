@@ -50,6 +50,12 @@ def test_systemlinkage_bad(load_raw_toml, local, remote):
         pconf.PipelineConfig.model_validate(load_raw_toml)
 
 
+def test_systemlinkage_all_is_reserved(load_raw_toml):
+    load_raw_toml["systemlinkage"]["all"] = {}
+    with pytest.raises(pydantic.ValidationError):
+        pconf.PipelineConfig.model_validate(load_raw_toml)
+
+
 def test_missing_identity_key(load_raw_toml):
     del load_raw_toml["loop_number"]
     with pytest.raises(pydantic.ValidationError):

@@ -21,7 +21,13 @@ from milk.errors import (
 from milk.operate import rundir
 from milk.operate.plans import PLANS, Plan, Step, run_plan
 from milk.operate.state import State, state
-from milk.operate.tasks import TASKS, ClaimRundir, DeapplyLinkages, ReleaseRundir, Task
+from milk.operate.tasks import (
+    TASKS,
+    ClaimRundir,
+    DeapplyAllLinkages,
+    ReleaseRundir,
+    Task,
+)
 from milk.registry import Registry
 
 FPS = {"basic_delay0", "basic_delay1"}
@@ -76,7 +82,7 @@ def test_registries_are_populated():
         "LoadData",
         "ConfStart",
         "RunStop",
-        "DeapplyLinkages",
+        "DeapplyAllLinkages",
         "ConfStop",
         "KillTmux",
         "DestroyFPS",
@@ -95,7 +101,7 @@ def test_generic_plans_shape():
     assert (deploy.on_failure, deploy.accepts) == ("abort", "cold_or_consistent")
     assert [s.task for s in teardown.steps] == [
         "RunStop",
-        "DeapplyLinkages",
+        "DeapplyAllLinkages",
         "ConfStop",
         "KillTmux",
         "DestroyFPS",
@@ -376,5 +382,5 @@ def test_deapply_removes_configured_links(pp, paper, shm_dir_cleanafter):
     _remotes(shm_dir_cleanafter)
     _deploy_on_paper(pp, paper, conf=True)
     pp.link("shared")
-    pp.task_do(DeapplyLinkages)
+    pp.task_do(DeapplyAllLinkages)
     assert not (shm_dir_cleanafter / "input.im.shm").is_symlink()

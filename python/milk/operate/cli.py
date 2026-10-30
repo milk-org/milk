@@ -34,6 +34,35 @@ class _PlansGroup(click.Group):
             return _plan_command(name)
         return self.commands.get(name)
 
+    def format_commands(
+        self, ctx: click.Context, formatter: click.HelpFormatter
+    ) -> None:
+        """Each command's short help, then its signature on a second line."""
+        names = self.list_commands(ctx)
+        limit = formatter.width - 6 - max(map(len, names))
+        rows = []
+        for name in names:
+            cmd = self.get_command(ctx, name)
+            rows += [
+                (name, cmd.get_short_help_str(limit)),
+                ("", f"     {_signature(ctx, cmd)}"),
+            ]
+        with formatter.section("Commands"):
+            formatter.write_dl(rows)
+
+
+def _signature(ctx: click.Context, cmd: click.Command) -> str:
+    """``name ARG [-o METAVAR] [--flag]``, from the command's own parameters."""
+    pieces = [cmd.name]
+    for param in cmd.params:
+        if isinstance(param, click.Argument):
+            pieces.append(param.make_metavar(ctx))
+        elif param.is_flag:
+            pieces.append(f"[{param.opts[0]}]")
+        else:
+            pieces.append(f"[{param.opts[0]} {param.make_metavar(ctx)}]")
+    return " ".join(pieces)
+
 
 @click.group(cls=_PlansGroup, context_settings={"help_option_names": ["-h", "--help"]})
 def milk_pipes():
@@ -47,7 +76,11 @@ def milk_pipes():
 
 
 _pipe_option = click.option(
-    "-p", "--pipe", default=None, help="Rootdir path or short name; default: cwd."
+    "-p",
+    "--pipe",
+    default=None,
+    metavar="PIPE",
+    help="Rootdir path or short name; default: cwd.",
 )
 
 
@@ -124,13 +157,20 @@ def milk_pipes_state(pipe: str | None):
 
 @milk_pipes.command("link")
 @_pipe_option
-@click.argument("linkage")
-def milk_pipes_link(pipe: str | None, linkage: str):
+@click.argument("linkage", required=False)
+def milk_pipes_link(pipe: str | None, linkage: str | None):
     """
     Apply the [systemlinkage.<LINKAGE>] symlinks of the pipeline.
+
+    Without LINKAGE, list the configured linkages.
     """
     with _user_errors():
-        _pipeline(pipe).link(linkage)
+        pp = _pipeline(pipe)
+        if linkage is None:
+            for name in pp.systemlinkage:
+                click.echo(name)
+            return
+        pp.link(linkage)
 
 
 @milk_pipes.command("unlink")
@@ -138,7 +178,7 @@ def milk_pipes_link(pipe: str | None, linkage: str):
 @click.argument("linkage")
 def milk_pipes_unlink(pipe: str | None, linkage: str):
     """
-    Remove the [systemlinkage.<LINKAGE>] symlinks of the pipeline.
+    Remove the [systemlinkage.<LINKAGE>] symlinks of the pipeline; `all`: of every linkage.
     """
     with _user_errors():
         _pipeline(pipe).unlink(linkage)

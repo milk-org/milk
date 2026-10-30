@@ -11,8 +11,8 @@ move between them are drawn in the design's
 ```
 milk-pipes <plan>  [-p PIPE]          run plan <plan>: deploy, teardown, ...
 milk-pipes state   [-p PIPE]          state, reasons, drift summary, milk version change
-milk-pipes link    LINKAGE [-p PIPE]  apply [systemlinkage.<LINKAGE>]
-milk-pipes unlink  LINKAGE [-p PIPE]  remove its symlinks
+milk-pipes link    [LINKAGE] [-p PIPE]  apply [systemlinkage.<LINKAGE>]; none: list them
+milk-pipes unlink  LINKAGE [-p PIPE]  remove its symlinks; `all`: of every linkage
 milk-pipes nuke    [-p PIPE] [--yes]  teardown, then rm -rf the rootdir
 ```
 
@@ -21,7 +21,7 @@ milk-pipes nuke    [-p PIPE] [--yes]  teardown, then rm -rf the rootdir
   `rootdir: <path>`, the rootdir it acts on. In Python: `Pipeline(pipe)`.
 - **Plan commands** are one per registered plan (`milk-pipes --help` lists them). `deploy` runs
   ClaimRundir → InitFPS → LoadData → ConfStart and is idempotent. `teardown` runs RunStop →
-  DeapplyLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir, best effort, and keeps the
+  DeapplyAllLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir, best effort, and keeps the
   rootdir and `work/`.
 - **`state`** never fails because of the pipeline's state. It prints the state with its reasons,
   then `drift: none`, `drift: <n> artifact(s); run ...` or `drift: unavailable (<why>)` (for

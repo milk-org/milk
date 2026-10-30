@@ -67,6 +67,8 @@ def test_help_lists_plans_and_fixed_commands():
     assert result.exit_code == 0, result.output
     for name in ("deploy", "teardown", "state", "link", "unlink", "nuke"):
         assert name in result.output
+    assert "deploy [-p PIPE]" in result.output
+    assert "unlink [-p PIPE] LINKAGE" in result.output
     for gone in ("spool", "sys"):
         assert _invoke(gone, "-h").exit_code != 0
 
@@ -189,10 +191,24 @@ def test_link_and_unlink(pp, paper, shm_dir_cleanafter):
     assert not (shm_dir_cleanafter / "input.im.shm").is_symlink()
 
 
+def test_unlink_all(pp, paper, shm_dir_cleanafter):
+    _deploy_on_paper(pp, paper)
+    assert _invoke("link", "-p", str(pp.root_folder), "shared").exit_code == 0
+    result = _invoke("unlink", "-p", str(pp.root_folder), "all")
+    assert result.exit_code == 0, result.output
+    assert pp.linked() == []
+
+
 def test_unknown_linkage(pp, paper):
     _deploy_on_paper(pp, paper)
     result = _invoke("link", "-p", str(pp.root_folder), "nope")
     assert result.exit_code != 0 and "nope" in _text(result)
+
+
+def test_link_without_linkage_lists_them(pp):
+    result = _invoke("link", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, result.output
+    assert result.output.splitlines()[1:] == list(pp.systemlinkage)
 
 
 # ---- nuke ----
