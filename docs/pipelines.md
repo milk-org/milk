@@ -114,6 +114,34 @@ product = "gen.npy"
 and `time`. A hook is re-run when its product is missing, its bytes changed, or its declaration
 changed. Symlinks in products are refused.
 
+From a source confdir to a rootdir, with the two hooks above; every file shown is an artifact:
+
+```mermaid
+flowchart LR
+    EX["source confdir<br/>e.g. under milk-examples/pipelines/<br/>conf.toml, inc/, scripts/, data/"]
+    EX -- "clone<br/>conf files only: no data/;<br/>writes .gitignore" --> CD
+    subgraph CD ["&lt;long_name&gt;-conf/"]
+        direction TB
+        subgraph CF ["conf files"]
+            T["conf.toml"]
+            I["inc/*.toml"]
+            S["scripts/gen.py"]
+        end
+        subgraph HK ["[[hooks]], declared in conf.toml"]
+            H1["dm_flat<br/>type = fetch"]
+            H2["gen<br/>type = command"]
+        end
+        subgraph DT ["data/"]
+            P1["dm_flat.fits + dm_flat.fits.tag"]
+            P2["gen.npy + gen.npy.tag"]
+        end
+        H1 -- "consolidate<br/>rsync source" --> P1
+        H2 -- "consolidate<br/>run argv in data/" --> P2
+    end
+    CD -- "init<br/>consolidate, copy into conf/ + initdata/,<br/>write provenance.toml" --> RD["&lt;name&gt;-rootdir/"]
+    CD -- "resync<br/>consolidate, copy the drifted artifacts,<br/>update provenance.toml" --> RD
+```
+
 ### `milk-pipeinit`
 
 File operations on confdirs; it never touches the live system.

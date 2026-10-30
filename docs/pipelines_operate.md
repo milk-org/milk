@@ -2,9 +2,48 @@
 
 `milk-pipes` operates an initialized pipeline from its rootdir: it deploys, links and tears
 down. To build or update a rootdir, use [`milk-pipeinit`](pipelines.md#milk-pipeinit). Terms
-are defined in the [pipelines glossary](pipelines_glossary.md). The states and the plans that
-move between them are drawn in the design's
-[operating lifecycle](../python/specs/pipelines/design-v7.md#41-pipeline-identity-and-state).
+are defined in the [pipelines glossary](pipelines_glossary.md).
+
+## Lifecycle
+
+The states are those printed by `milk-pipes state`; the arrows are commands and plans. The rundir
+is the deploy's claim for this boot, `$MILK_SHM_DIR/pipe_rundirs/<name>/`.
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    cold : cold
+    cold : rundir absent, no FPS
+    deployed : deployed
+    deployed : rundir claimed, all FPS, conf stopped
+    configured : configured
+    configured : rundir claimed, all FPS, conf running
+    running : running
+    running : rundir claimed, all FPS, run running
+    inconsistent : inconsistent
+    inconsistent : FPS without rundir, or stale rundir, or rundir with FPS missing
+    cold --> configured : deploy
+    cold --> cold : deploy fails at ClaimRundir
+    cold --> deployed : deploy fails after all FPS exist
+    cold --> inconsistent : deploy fails before all FPS exist
+    deployed --> configured : deploy (resumes)
+    configured --> configured : deploy (no-op)
+    configured --> running : RunStart (Python API)
+    running --> configured : RunStop (Python API)
+    deployed --> cold : teardown
+    configured --> cold : teardown
+    running --> cold : teardown
+    inconsistent --> cold : teardown
+    cold --> [*] : nuke (teardown, then rm -rf rootdir)
+    note right of cold
+        reboot wipes rundir + FPS, back to cold;
+        a stale rundir (boot_id mismatch) is inconsistent
+    end note
+```
+
+Only `deploy` and `teardown` are plans; running is reached through the Python API. Some CompUs
+running and others not is `mixed`. A rundir claimed by another rootdir adds a reason, not a state.
+`milk-pipeinit resync` refuses while a CompU runs.
 
 ## Commands
 
