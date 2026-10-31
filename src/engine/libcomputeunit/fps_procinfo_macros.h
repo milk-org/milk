@@ -17,8 +17,6 @@
 
 imageID image_ID(const char *apzname, IMAGE *dcimage_array, long dcnbimg);
 
-typedef const char *__restrict CONST_WORD;
-
 #define RETURN_CLICHECKARGARRAY_SUCCESS 0
 #define RETURN_CLICHECKARGARRAY_FAILURE 1
 #define RETURN_CLICHECKARGARRAY_FUNCPARAMSET 2
