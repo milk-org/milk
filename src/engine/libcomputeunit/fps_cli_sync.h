@@ -42,15 +42,6 @@ errno_t fps_process_argv_and_sync(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
 
 
 /**
- * @brief Copy a single FPS parameter value back into
- *        the module-local C variable via the binding.
- *
- * Defined in params/fps_modulevars_resync.c.
- */
-void sync_fps_to_local(FPS *fps, long pindex, FPS_CLI_BINDING *b);
-
-
-/**
  * @brief Copy the module-local C variable value back into
  *        the FPS parameter slot via the binding, if it
  *        actually differs from the current FPS value.

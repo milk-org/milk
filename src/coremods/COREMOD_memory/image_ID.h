@@ -11,8 +11,13 @@
  * @file    image_ID.h
  */
 
+#ifndef MILK_COREMOD_MEMORY_IMAGE_ID_H
+#define MILK_COREMOD_MEMORY_IMAGE_ID_H
+
 imageID image_ID(const char *name, IMAGE *imagearray, long NB_images);
 
 MILK_PURE imageID image_ID_noaccessupdate(const char *name, IMAGE *imagearray, long NB_images);
 
 imageID next_avail_image_ID(imageID preferredID);
+
+#endif // MILK_COREMOD_MEMORY_IMAGE_ID_H
