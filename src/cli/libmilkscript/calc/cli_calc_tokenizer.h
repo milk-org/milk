@@ -48,7 +48,6 @@ typedef enum
     TOK_OP_MINUS,
     TOK_OP_STAR,
     TOK_OP_SLASH,
-    TOK_OP_CARET,
     TOK_OP_MOD,
     TOK_OP_LT,
     TOK_OP_LE,
@@ -74,7 +73,7 @@ typedef enum
     /* Bitwise operators */
     TOK_OP_BAND,   /**< & (bitwise AND) */
     TOK_OP_BOR,    /**< | (bitwise OR)  */
-    TOK_OP_BXOR,   /**< ^ (bitwise XOR) */
+    TOK_OP_BXOR,   /**< ^^ (bitwise XOR) */
     TOK_OP_BNOT,   /**< ~ (bitwise NOT) */
     TOK_OP_LSHIFT, /**< <<              */
     TOK_OP_RSHIFT, /**< >>              */

@@ -186,7 +186,7 @@ def test_fused_vs_fallback_parity(tmp_path: Path):
             if kind < 0.90:
                 p = rng.choice(["2", "3", "0.5", "1.5"])
                 sub = gen_expr(depth - 1)
-                return f"((abs({sub}) + 0.2) ^ {p})"
+                return f"pow(abs({sub}) + 0.2, {p})"
             c1 = gen_expr(depth - 1)
             c2 = gen_expr(depth - 1)
             t_br = gen_expr(depth - 1)
@@ -276,11 +276,11 @@ def test_milk_calc_threads_scaling(tmp_path: Path):
         "mem.mk2Dim imB 2048 2048",
         "mem.mk2Dim imC 2048 2048",
         '@calc "imA = 0.5 + 0.5 * urand(imA, 7); imB = 0.2 + 0.5 * urand(imB, 13)"',
-        '@calc "imC = imA^1.7"',
+        '@calc "imC = pow(imA, 1.7)"',
         "best_ms=1e9",
         "for rep in 1 2 3; do",
         "  t0=$EPOCHREALTIME",
-        '  for ((i=0; i<8; i++)); do @calc "imC = imA^1.7"; done',
+        '  for ((i=0; i<8; i++)); do @calc "imC = pow(imA, 1.7)"; done',
         "  t1=$EPOCHREALTIME",
         '  @calc -v best_ms "min($best_ms, ($t1 - $t0) * 1e3 / 8)"',
         "done",
@@ -319,7 +319,7 @@ def test_milk_calc_threads_scaling(tmp_path: Path):
     if len(os.sched_getaffinity(0)) >= 4 and ms1 < 30.0:
         assert (
             ms4 < ms1 * 0.75
-        ), f"Expected 4-thread speedup on 2048^2 imA^1.7: 1t={ms1:.2f}ms, 4t={ms4:.2f}ms"
+        ), f"Expected 4-thread speedup on 2048^2 pow(imA, 1.7): 1t={ms1:.2f}ms, 4t={ms4:.2f}ms"
 
 
 def test_stmt_cache_invalidation(tmp_path: Path):
@@ -736,18 +736,18 @@ def test_non_pow2_coord_stats_and_fused_complex_part(tmp_path: Path):
             '@calc "npA = sin(itheta(npA, 49.5, 68.0)) + ir(npA, 49.5, 68.0) * 0.01"',
             '@calc "npB = sin(itheta(npA[::1b], 49.5, 68.0)) + ir(npA[::1b], 49.5, 68.0) * 0.01"',
             '@calc -v err_coord "imax(abs(npA - npB))"',
-            '@calc -v err_rms "abs(irms(npA^2 + 0.5) - irms(npA[::1b]^2 + 0.5))"',
+            '@calc -v err_rms "abs(irms(pow(npA, 2) + 0.5) - irms(pow(npA[::1b], 2) + 0.5))"',
             # 2. Fused FI_CPART (real, imag, abs, arg) in float32 and float64 vs non-fused complex expr
             '@calc "zA = cplx(npA + 1.5, npB + 0.5); zB = cplx(npA * 0.5, npB * 0.25)"',
-            '@calc "cF = abs(zA)^2 + real(zB) * 0.5 - imag(zA) + cos(arg(zA))"',
-            '@calc "cS = abs(zA + 0)^2 + real(zB + 0) * 0.5 - imag(zA + 0) + cos(arg(zA + 0))"',
+            '@calc "cF = pow(abs(zA), 2) + real(zB) * 0.5 - imag(zA) + cos(arg(zA))"',
+            '@calc "cS = pow(abs(zA + 0), 2) + real(zB + 0) * 0.5 - imag(zA + 0) + cos(arg(zA + 0))"',
             '@calc -v err_cf32 "imax(abs(cF - cS))"',
-            '@calc -v err_red32 "abs(itot(abs(zA)^2) - itot(abs(zA + 0)^2))"',
+            '@calc -v err_red32 "abs(itot(pow(abs(zA), 2)) - itot(pow(abs(zA + 0), 2)))"',
             '@calc "zAd = cplx(f64(npA) + 1.5, f64(npB) + 0.5); zBd = cplx(f64(npA) * 0.5, f64(npB) * 0.25)"',
-            '@calc "cFd = abs(zAd)^2 + real(zBd) * 0.5 - imag(zAd) + cos(arg(zAd))"',
-            '@calc "cSd = abs(zAd + 0)^2 + real(zBd + 0) * 0.5 - imag(zAd + 0) + cos(arg(zAd + 0))"',
+            '@calc "cFd = pow(abs(zAd), 2) + real(zBd) * 0.5 - imag(zAd) + cos(arg(zAd))"',
+            '@calc "cSd = pow(abs(zAd + 0), 2) + real(zBd + 0) * 0.5 - imag(zAd + 0) + cos(arg(zAd + 0))"',
             '@calc -v err_cf64 "imax(abs(cFd - cSd))"',
-            '@calc -v err_red64 "abs(itot(abs(zAd)^2) - itot(abs(zAd + 0)^2))"',
+            '@calc -v err_red64 "abs(itot(pow(abs(zAd), 2)) - itot(pow(abs(zAd + 0), 2)))"',
             'echo "NP_coord=$err_coord"',
             'echo "NP_rms=$err_rms"',
             'echo "NP_cf32=$err_cf32"',

@@ -456,9 +456,9 @@ static void classify_identifier(cli_token *tok, const char *after_p, int nt)
         {
             after++;
         }
-        if (*after == '=' || *after == '+' || *after == '*' || *after == '/' || *after == '^' ||
-            *after == '%' || *after == '<' || *after == '>' || *after == '!' || *after == '&' ||
-            *after == '|' || *after == '?' ||
+        if (*after == '=' || *after == '+' || *after == '*' || *after == '/' ||
+            (after[0] == '^' && after[1] == '^') || *after == '%' || *after == '<' ||
+            *after == '>' || *after == '!' || *after == '&' || *after == '|' || *after == '?' ||
             (*after == '-' && !isalpha((unsigned char) *(after + 1))))
         {
             allow_autoconnect = 1;
@@ -678,6 +678,11 @@ int cli_tokenize(const char *input, cli_token *tokens, int max_tok)
             tokens[nt++].type = optype;
             p += oplen;
             continue;
+        }
+        if (*p == '^')
+        {
+            parse_errmsg("'^' is not an operator: write pow(a, b) (^^ is xor)");
+            return -1;
         }
         size_t nlen =
             cli_calc_scan_number(p, &tokens[nt].type, &tokens[nt].val_l, &tokens[nt].val_d);

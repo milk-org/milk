@@ -370,6 +370,12 @@ static val_t func_eval_dd_d(const cli_token *ftok)
         return mk_string("");
     }
 
+    if (ftok->fnctptr == pow)
+    {
+        val_t r;
+        cli_calc_scalar_pow(&args[0], &args[1], &r);
+        return r;
+    }
     double d1 = to_double(args[0]);
     double d2 = to_double(args[1]);
     return mk_double(((double (*)(double, double)) ftok->fnctptr)(d1, d2));

@@ -370,17 +370,20 @@ static inline uint64_t fprog_effective_nel(const fprog *p)
         else if (in->k == FI_FN2)
         {
             double (*f)(double, double) = (double (*)(double, double)) in->fn;
-            cost += (f == fmin || f == fmax) ? 1 : (f == hypot) ? 3 : 8;
+            if (f == pow)
+            {
+                cost += (in->cpos == 2 && (in->c == 2.0 || in->c == 0.5 || in->c == 1.0)) ? 2 : 8;
+            }
+            else
+            {
+                cost += (f == fmin || f == fmax) ? 1 : (f == hypot) ? 3 : 8;
+            }
         }
         else if (in->k == FI_COORD &&
                  (in->cpos == CALC_COORD_RAND || in->cpos == CALC_COORD_RANDN ||
                   in->cpos == CALC_COORD_R || in->cpos == CALC_COORD_THETA))
         {
             cost += 6;
-        }
-        else if (in->k == FI_BIN && in->op == TOK_OP_CARET)
-        {
-            cost += (in->cpos == 2 && (in->c == 2.0 || in->c == 0.5 || in->c == 1.0)) ? 2 : 8;
         }
         else if (in->k == FI_LUT || in->k == FI_SHIFT || in->k == FI_GATHER)
         {
@@ -534,8 +537,6 @@ static inline double scalar_bin(cli_token_type op, double a, double b)
         return a / b;
     case TOK_OP_MOD:
         return fmod(a, b);
-    case TOK_OP_CARET:
-        return pow(a, b);
     case TOK_OP_LT:
         return a < b;
     case TOK_OP_LE:

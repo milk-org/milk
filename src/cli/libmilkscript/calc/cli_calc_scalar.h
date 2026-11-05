@@ -45,8 +45,11 @@ typedef struct
 /** cli_calc_op_prec() - binding power of binary operator @t (0 lowest), or -1 if @t is none. */
 int cli_calc_op_prec(cli_token_type t);
 
-/** cli_calc_op_right_assoc() - 1 if operator @t groups right to left (`^`, `?:`, assignments). */
+/** cli_calc_op_right_assoc() - 1 if operator @t groups right to left (`?:`, assignments). */
 int cli_calc_op_right_assoc(cli_token_type t);
+
+/** cli_calc_scalar_pow() - @a to the power @b into *@out (exact int64 for non-negative longs, double on overflow). */
+void cli_calc_scalar_pow(const val_t *a, const val_t *b, val_t *out);
 
 /** cli_calc_scalar_binop() - number @l @op number @r into *@out; NULL, or the error to report. */
 const char *cli_calc_scalar_binop(cli_token_type op, const val_t *l, const val_t *r, val_t *out);

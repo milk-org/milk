@@ -109,7 +109,7 @@ def test_inline_expansion_and_calc_parity(tmp_path):
         'x=old; x=@{s.nosuch.xsize}; echo "b=[$x] rc=$?"\n'
         'i=1; i=@{i + 1}; echo "d=$i"\n'
         '@config digits 4 >/dev/null; @calc -v v "1/3"; echo "v=$v"\n'
-        '@calc "one = 1"; @calc -v c1 "2^10 + sqrt(16)"; @calc -v c2 "(2^10 + sqrt(16)) * one"\n'
+        '@calc "one = 1"; @calc -v c1 "pow(2, 10) + sqrt(16)"; @calc -v c2 "(pow(2, 10) + sqrt(16)) * one"\n'
         'echo "par=$c1,$c2"',
         tmp_path,
     )

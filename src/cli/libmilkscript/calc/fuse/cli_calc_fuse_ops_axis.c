@@ -90,6 +90,15 @@ int cli_calc_fuse_c_func(fprog *p, const cli_token *ft, fval *out)
         if (a[0].s1 == 0 && (nargs < 2 || a[1].s1 == 0) && (nargs < 3 || a[2].s1 == 0))
         {
             out->s1 = 0;
+            if (nargs == 2 && ft->fnctptr == (double (*)()) pow && a[0].lng && a[1].lng)
+            {
+                val_t lr;
+                cli_calc_scalar_pow(&(val_t) { .type = VAL_LONG, .lval = (long) a[0].c },
+                                    &(val_t) { .type = VAL_LONG, .lval = (long) a[1].c }, &lr);
+                out->lng = (lr.type == VAL_LONG);
+                out->c   = out->lng ? (double) lr.lval : lr.dval;
+                return 0;
+            }
             out->c =
                 (nargs == 1) ? ((double (*)(double)) ft->fnctptr)(a[0].c)
                 : (nargs == 2)
@@ -97,14 +106,16 @@ int cli_calc_fuse_c_func(fprog *p, const cli_token *ft, fval *out)
                     : ((double (*)(double, double, double)) ft->fnctptr)(a[0].c, a[1].c, a[2].c);
             return 0;
         }
-        return emit_scalar(p,
-                           (fsins) { .k  = (nargs == 1)   ? FI_FN1
-                                           : (nargs == 2) ? FI_FN2
-                                                          : FI_FN3,
-                                     .fn = ft->fnctptr,
-                                     .s  = { a[0].s1, a[1].s1, a[2].s1 },
-                                     .c  = { a[0].c, a[1].c, a[2].c } },
-                           out);
+        return emit_scalar(
+            p,
+            (fsins) { .k  = (nargs == 1)   ? FI_FN1
+                            : (nargs == 2) ? FI_FN2
+                                           : FI_FN3,
+                      .fn = ft->fnctptr,
+                      .s  = { a[0].s1, a[1].s1, a[2].s1 },
+                      .c  = { a[0].c, a[1].c, a[2].c },
+                      .cl = { (uint8_t) a[0].lng, (uint8_t) a[1].lng, (uint8_t) a[2].lng } },
+            out);
     }
     if (ft->type == TOK_FUNC_D_D)
     {
@@ -138,8 +149,7 @@ int cli_calc_fuse_c_func(fprog *p, const cli_token *ft, fval *out)
     int both       = a[0].vec && a[1].vec;
     int cmut       = (fn == (double (*)()) fmin || fn == (double (*)()) fmax ||
                       fn == (double (*)()) fmod || fn == (double (*)()) hypot);
-    if ((both && !cmut && fn != (double (*)()) pow && fn != (double (*)()) atan2) ||
-        (!a[0].vec && !cmut && fn != (double (*)()) atan2))
+    if (!cmut && fn != (double (*)()) pow && fn != (double (*)()) atan2 && (both || !a[0].vec))
     {
         return -1;
     }

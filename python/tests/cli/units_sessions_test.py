@@ -397,10 +397,10 @@ def test_E8_calc_reshape_expi_vec_and_casts(tmp_path):
 
 
 def test_E8_calc_fused_fastmath_and_zero_alloc_reductions(tmp_path):
-    """Fused fast-math opcodes (^2, ^0.5, ^3, ^-1, min, max, clamp, round) and zero-alloc reductions."""
+    """Fused fast-math opcodes (pow(..., 2/0.5/3/-1), min, max, clamp, round) and zero-alloc reductions."""
     res = milk_bash(
         HELPERS + '@calc "a = reshape(vec(1, 4, 9, 16), 2, 2)"\n'
-        '@calc "fm = (a^0.5)^2 + a^3 - 144*(a^-1) + min(a, 5) + max(a, 10) + clamp(a, 2, 8) + round(a * 0.5)"\n'
+        '@calc "fm = pow(pow(a, 0.5), 2) + pow(a, 3) - 144*pow(a, -1) + min(a, 5) + max(a, 10) + clamp(a, 2, 8) + round(a * 0.5)"\n'
         'echo "fm=$(@get l.fm.tot)"\n'
         '@calc "ax0 = itot(a, 0); ax1 = imean(a, 1); msk = a > 2"\n'
         '@calc -v mtot,mmean3,mmin,mmax "itot(a, msk); round(imean(a, msk) * 3); imin(a, msk); imax(a, msk)"\n'

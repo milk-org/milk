@@ -14,6 +14,14 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ## framework-dev
 
+### 2026-11
+
+- **2026-11-05** — Calculator logarithm and power functions align with C (`<math.h>`) and Python:
+  `log(x)` is now the natural logarithm (with `ln(x)` kept as an alias) and `log10(x)` is the
+  base-10 logarithm; `pow(a, b)` replaces the `^` operator (with integer exactness preserved for
+  non-negative integer arguments and a clear error message if a lone `^` is written; `^^` remains
+  bitwise XOR) `#cli` `#docs`
+
 ### 2026-10
 
 - **2026-10-26** — Sessions and calculator, after an audit of their docs. An image as the condition

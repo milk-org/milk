@@ -272,20 +272,27 @@ static val_t lprimary(lexp_t *x, int live)
     case TOK_FUNC_DD_D:
     case TOK_FUNC_DDD_D:
     {
-        double a[3] = { 0.0, 0.0, 0.0 };
+        val_t  va[3] = { 0 };
+        double a[3]  = { 0.0, 0.0, 0.0 };
         for (int i = 0; i < k->fn->nargs && !x->bail; i++)
         {
             if (i > 0)
             {
                 expect(x, TOK_COMMA);
             }
-            v    = lexpr(x, 0, live);
-            a[i] = num(&v);
+            va[i] = lexpr(x, 0, live);
+            a[i]  = num(&va[i]);
         }
         expect(x, TOK_RPAREN);
         if (!live || x->bail)
         {
             return num_d(0.0);
+        }
+        if (k->fn->nargs == 2 && strcmp(k->fn->name, "pow(") == 0)
+        {
+            val_t r;
+            cli_calc_scalar_pow(&va[0], &va[1], &r);
+            return r;
         }
         return num_d((k->fn->nargs == 1) ? ((double (*)(double)) k->fn->fn)(a[0])
                      : (k->fn->nargs == 2)

@@ -50,9 +50,6 @@ static int binop_img_img(cli_token_type op, const char *lname, const char *rname
     case TOK_OP_MOD:
         arith_image_fmod(lname, rname, tmpn);
         break;
-    case TOK_OP_CARET:
-        arith_image_pow(lname, rname, tmpn);
-        break;
     case TOK_OP_LT:
         arith_image_testlt(lname, rname, tmpn);
         break;

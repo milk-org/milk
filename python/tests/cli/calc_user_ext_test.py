@@ -546,7 +546,7 @@ def test_builtin_module_exported_kernels(tmp_path):
     res = milk_bash(
         """
 mem.mk2Dim "@S:im_in" 16 16 >/dev/null
-@calc "im_in = exp(-0.1 * ((ix(im_in) - 8)^2 + (iy(im_in) - 8)^2))"
+@calc "im_in = exp(-0.1 * (pow(ix(im_in) - 8, 2) + pow(iy(im_in) - 8, 2)))"
 
 # 1. Built-in module kernels usable directly in @calc without -l
 @calc "im_rot0 = rotate2d(im_in, angle = 0.0)"

@@ -137,7 +137,8 @@ static const cli_calc_scalar_fn_t scalar_fns[] = { { "sin(", 1, (double (*)()) s
                                                    { "exp(", 1, (double (*)()) exp },
                                                    { "exp2(", 1, (double (*)()) exp2 },
                                                    { "ln(", 1, (double (*)()) log },
-                                                   { "log(", 1, (double (*)()) log10 },
+                                                   { "log(", 1, (double (*)()) log },
+                                                   { "log10(", 1, (double (*)()) log10 },
                                                    { "log2(", 1, (double (*)()) log2 },
                                                    { "tan(", 1, (double (*)()) tan },
                                                    { "sinh(", 1, (double (*)()) sinh },
@@ -170,6 +171,7 @@ static const cli_calc_scalar_fn_t scalar_fns[] = { { "sin(", 1, (double (*)()) s
                                                    { "i32(", 1, (double (*)()) cast_i32 },
                                                    { "u64(", 1, (double (*)()) cast_u64 },
                                                    { "i64(", 1, (double (*)()) cast_i64 },
+                                                   { "pow(", 2, (double (*)()) pow },
                                                    { "atan2(", 2, (double (*)()) atan2 },
                                                    { "hypot(", 2, (double (*)()) hypot },
                                                    { "fmod(", 2, (double (*)()) fmod },
@@ -243,8 +245,6 @@ int cli_calc_op_prec(cli_token_type t)
     case TOK_OP_SLASH:
     case TOK_OP_MOD:
         return 10;
-    case TOK_OP_CARET:
-        return 11;
     case TOK_EQUAL:
     case TOK_OP_PLUS_EQ:
     case TOK_OP_MINUS_EQ:
@@ -260,7 +260,7 @@ int cli_calc_op_prec(cli_token_type t)
  * cli_calc_op_right_assoc - Check whether an operator token is right-associative
  * @t: Operator token type
  *
- * Identifies exponentiation (`^`), assignments (`=`, `op=`), and ternary (`?`)
+ * Identifies assignments (`=`, `op=`) and ternary (`?`)
  * so precedence climbing uses `prec` instead of `prec + 1` for the right-hand
  * recursive call.
  *
@@ -268,9 +268,8 @@ int cli_calc_op_prec(cli_token_type t)
  */
 int cli_calc_op_right_assoc(cli_token_type t)
 {
-    return (t == TOK_OP_CARET) || (t == TOK_EQUAL) || (t == TOK_OP_PLUS_EQ) ||
-           (t == TOK_OP_MINUS_EQ) || (t == TOK_OP_STAR_EQ) || (t == TOK_OP_SLASH_EQ) ||
-           (t == TOK_OP_QUESTION);
+    return (t == TOK_EQUAL) || (t == TOK_OP_PLUS_EQ) || (t == TOK_OP_MINUS_EQ) ||
+           (t == TOK_OP_STAR_EQ) || (t == TOK_OP_SLASH_EQ) || (t == TOK_OP_QUESTION);
 }
 
 /**
@@ -371,10 +370,6 @@ int cli_calc_long_binop(cli_token_type op, long a, long b, val_t *out, const cha
         *out = num_l((b == 0 || (a == LONG_MIN && b == -1)) ? 0 : a % b);
         *err = (b == 0) ? "Modulo by zero" : NULL;
         return 1;
-    case TOK_OP_CARET:
-        *out =
-            (b < 0 || ipow_checked(a, b, &r) != 0) ? num_d(pow((double) a, (double) b)) : num_l(r);
-        return 1;
     case TOK_OP_LT:
         *out = num_l(a < b);
         return 1;
@@ -417,6 +412,25 @@ int cli_calc_long_binop(cli_token_type op, long a, long b, val_t *out, const cha
     default:
         return 0;
     }
+}
+
+/**
+ * cli_calc_scalar_pow - Compute scalar power @a^@b preserving exact int64 when possible
+ * @a:   Base value
+ * @b:   Exponent value
+ * @out: Destination result value
+ */
+void cli_calc_scalar_pow(const val_t *a, const val_t *b, val_t *out)
+{
+    long r = 0;
+
+    if (a->type == VAL_LONG && b->type == VAL_LONG && b->lval >= 0 &&
+        ipow_checked(a->lval, b->lval, &r) == 0)
+    {
+        *out = num_l(r);
+        return;
+    }
+    *out = num_d(pow(num(a), num(b)));
 }
 
 /**
@@ -466,9 +480,6 @@ const char *cli_calc_scalar_binop(cli_token_type op, const val_t *l, const val_t
     case TOK_OP_MOD:
         res = num_d((rv == 0.0) ? 0.0 : fmod(lv, rv));
         err = (rv == 0.0) ? "Modulo by zero" : NULL;
-        break;
-    case TOK_OP_CARET:
-        res = num_d(pow(lv, rv));
         break;
     case TOK_OP_LT:
         res = num_l(lv < rv);
@@ -542,13 +553,13 @@ cli_token_type cli_calc_scan_op(const char *p, int *len)
                 { "+=", TOK_OP_PLUS_EQ },  { "-=", TOK_OP_MINUS_EQ }, { "*=", TOK_OP_STAR_EQ },
                 { "/=", TOK_OP_SLASH_EQ }, { "<<", TOK_OP_LSHIFT },   { ">>", TOK_OP_RSHIFT },
                 { "^^", TOK_OP_BXOR } };
-    static const char           one_s[] = "+-*/^%<>!()|&~,=?:";
-    static const cli_token_type one_t[] = {
-        TOK_OP_PLUS, TOK_OP_MINUS, TOK_OP_STAR, TOK_OP_SLASH, TOK_OP_CARET,    TOK_OP_MOD,
-        TOK_OP_LT,   TOK_OP_GT,    TOK_OP_NOT,  TOK_LPAREN,   TOK_RPAREN,      TOK_OP_BOR,
-        TOK_OP_BAND, TOK_OP_BNOT,  TOK_COMMA,   TOK_EQUAL,    TOK_OP_QUESTION, TOK_OP_COLON
-    };
-    const char *c;
+    static const char           one_s[] = "+-*/%<>!()|&~,=?:";
+    static const cli_token_type one_t[] = { TOK_OP_PLUS, TOK_OP_MINUS, TOK_OP_STAR, TOK_OP_SLASH,
+                                            TOK_OP_MOD,  TOK_OP_LT,    TOK_OP_GT,   TOK_OP_NOT,
+                                            TOK_LPAREN,  TOK_RPAREN,   TOK_OP_BOR,  TOK_OP_BAND,
+                                            TOK_OP_BNOT, TOK_COMMA,    TOK_EQUAL,   TOK_OP_QUESTION,
+                                            TOK_OP_COLON };
+    const char                 *c;
 
     for (size_t i = 0; i < sizeof(two) / sizeof(two[0]); i++)
     {

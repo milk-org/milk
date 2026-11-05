@@ -160,7 +160,7 @@ def test_user_defined_functions_and_lut(tmp_path):
         '@calc -v b_neg,b_one,b_hi,cerr "b[2,0]; b[5,0]; b[7,0]; imax(abs(c - cref))"\n'
         # 1D LUT: tbl has 5 entries [10, 20, 40, 80, 160]
         "mem.mk2Dim tbl 5 1 >/dev/null\n"
-        '@calc "tbl = 10 * (2 ^ (ix(tbl) + 2))"\n'
+        '@calc "tbl = 10 * pow(2, ix(tbl) + 2)"\n'
         '@calc "u = zeros(4, 1); u[0,0] = -1; u[1,0] = 0.5; u[2,0] = 2.25; u[3,0] = 99"\n'
         '@calc "lu = lut(u, tbl)"\n'
         '@calc -v l0,l1,l2,l3 "lu[0,0]; lu[1,0]; lu[2,0]; lu[3,0]"\n'

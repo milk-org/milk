@@ -803,7 +803,7 @@ int cli_calc_fuse_c_expr(fprog *p, int min_prec, fval *out)
         }
         adv();
         fval r;
-        if (cli_calc_fuse_c_expr(p, (op == TOK_OP_CARET) ? prec : prec + 1, &r) != 0)
+        if (cli_calc_fuse_c_expr(p, prec + 1, &r) != 0)
         {
             return -1;
         }
@@ -845,7 +845,7 @@ int cli_calc_fuse_c_expr(fprog *p, int min_prec, fval *out)
         }
         if ((guard_depth == 0 && !r.vec && r.s1 == 0 && (op == TOK_OP_SLASH || op == TOK_OP_MOD) &&
              r.c == 0.0) ||
-            (!out->vec && (op == TOK_OP_MOD || op == TOK_OP_CARET)))
+            (!out->vec && op == TOK_OP_MOD))
         {
             return -1;
         }

@@ -80,11 +80,11 @@ Operators, loosest first:
 | `\|`, `^^`, `&`                 | bitwise or, xor, and (on scalars and per pixel on images)        |
 | `==` `!=`, `<` `<=` `>` `>=`    | 1 or 0; on images, a 0/1 mask per pixel                          |
 | `<<` `>>`, `+` `-`, `*` `/` `%` | bit shifts (a count outside $0..63$ gives 0); `"a" + "b"` concatenates strings |
-| `^`                             | power, right-associative                                         |
-| unary `-` `~` `!`               | bind tighter than `^`: `-2^2` is 4; `~` is bitwise NOT           |
+| unary `-` `~` `!`               | unary negation, bitwise NOT (`~`), logical NOT (`!`)             |
 
-Integer operands give an integer result, except `/` and a negative power (`2^62 + 1` is exact,
-`2^-1` is 0.5); an integer result that overflows becomes a double. A number divided by 0, or `% 0`,
+`^` is not an operator (write `pow(a, b)`; `^^` is bitwise XOR). Integer operands give an integer
+result, except `/` and a negative power (`pow(2, 62) + 1` is exact, `pow(2, -1)` is 0.5); an
+integer result that overflows becomes a double. A number divided by 0, or `% 0`,
 is an error, and so is an image divided by the number 0; an image divided by an image gives `inf`
 where the divisor is 0. Numbers may be written `0x1f`, `0o17`, `0b101`. Bitwise operators (`&`,
 `|`, `^^`, `~`, `<<`, `>>`) also fuse into image expressions via `int64_t` casts (promoting the
@@ -98,8 +98,8 @@ Functions (the math ones also apply per pixel to an image):
 
 | Kind             | Functions                                                                                |
 | ---------------- | ---------------------------------------------------------------------------------------- |
-| Math             | `sin cos tan asin acos atan sinh cosh tanh exp exp2 ln log log2 sqrt cbrt ceil floor round abs fabs sign posi erf erfc isnan isfinite`; `ln` is the natural logarithm, `log` base 10 |
-| Math, 2-3 args   | `atan2(y,x)`, `hypot(x,y)`, `fmod(a,b)`, `min(a,b)`, `max(a,b)`, `clamp(x,lo,hi)` (also `trunc(x,lo,hi)`) |
+| Math             | `sin cos tan asin acos atan sinh cosh tanh exp exp2 log ln log10 log2 sqrt cbrt ceil floor round abs fabs sign posi erf erfc isnan isfinite`; `log` and `ln` are the natural logarithm, `log10` is base 10 |
+| Math, 2-3 args   | `pow(a,b)`, `atan2(y,x)`, `hypot(x,y)`, `fmod(a,b)`, `min(a,b)`, `max(a,b)`, `clamp(x,lo,hi)` (also `trunc(x,lo,hi)`) |
 | Datatype casts   | `f32 f64 u8 i8 u16 i16 u32 i32 u64 i64`: cast a scalar or produce an image of that type  |
 | Image to number  | `itot imin imax imean istd ivar imedian norm nrm2 asum`, `perc(im,f)`, `dot(a,b)`, `trace(A)`; `irms` = `istd` |
 | Image to tuple   | `m, s[, lo, hi] = istats(im)`: mean, std, min, and max; `cx, cy[, flux] = icentroid(im[, th])`: thresholded flux-weighted CoG |

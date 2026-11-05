@@ -223,6 +223,16 @@ static int eval_one_scalar(fprog    *p,
         sval[i] = ((double (*)(double)) s->fn)(a);
         break;
     case FI_FN2:
+        if (s->fn == (double (*)()) pow && al && bl)
+        {
+            val_t r;
+            cli_calc_scalar_pow(&(val_t) { .type = VAL_LONG, .lval = (long) la },
+                                &(val_t) { .type = VAL_LONG, .lval = (long) lb }, &r);
+            is_long = (r.type == VAL_LONG);
+            lres    = r.lval;
+            sval[i] = is_long ? (double) r.lval : r.dval;
+            break;
+        }
         sval[i] = ((double (*)(double, double)) s->fn)(a, b);
         break;
     default:

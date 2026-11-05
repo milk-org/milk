@@ -85,16 +85,6 @@ static void FK(run_bin)(const fins *in, FT *restrict l, const FT *restrict r, in
     case TOK_OP_MOD:
         BIN_LOOPS(FM(fmod)(a, b));
         break;
-    case TOK_OP_CARET:
-        if (in->cpos == 2)
-        {
-            FK(elem_pow_const)(l, l, in->c, len);
-        }
-        else
-        {
-            BIN_LOOPS(FM(pow)(a, b));
-        }
-        break;
     case TOK_OP_LT:
         BIN_LOOPS((FT) (a < b));
         break;
