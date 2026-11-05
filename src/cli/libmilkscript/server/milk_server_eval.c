@@ -27,6 +27,7 @@
 #include "CLIcore.h"
 #include "CLIcore_memory.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "calc_select.h"
 #include "cli_calc_parser.h"
 #include "cli_calc_prog.h"
 #include "milk_cmd_index.h"
@@ -59,7 +60,7 @@ static int eval_scalar_subexpr(const char *subexpr, char *out, size_t outsz)
     int eval_rc = 2;
     int saved_q = dcquiet;
     dcquiet     = 1;
-    cli_calc_eval_bash(assign, 0, &eval_rc);
+    calc_select_eval_bash(assign, 0, &eval_rc);
     dcquiet   = saved_q;
     long vidx = variable_ID("_milk_asrt_tmp");
     if (eval_rc == 0 && vidx != -1)
@@ -613,7 +614,7 @@ int milk_server_assert(int argc, char **argv)
     char expanded[8192];
     milk_server_expand_entities_in_expr(expr, expanded, sizeof(expanded));
     int eval_rc = 2;
-    cli_calc_eval_bash(expanded, 1, &eval_rc);
+    calc_select_eval_bash(expanded, 1, &eval_rc);
     if (eval_rc == 0)
     {
         return 0;
@@ -714,7 +715,7 @@ static int try_exec_entity_lhs_assignment(const char *expr, int *out_rc)
     int saved_om      = cli_calc_out_mode;
     dcquiet           = 1;
     cli_calc_out_mode = CLI_CALC_OUT_VALUES;
-    cli_calc_eval_bash(assign_expr, 0, &eval_rc);
+    calc_select_eval_bash(assign_expr, 0, &eval_rc);
     cli_calc_out_mode = saved_om;
     dcquiet           = saved_q;
     long vidx         = variable_ID("_milk_ent_rhs");
@@ -822,7 +823,7 @@ static int exec_batch_calc_expr(const char *expr, int is_test, char *last_img, s
         char expanded[8192];
         milk_server_expand_entities_in_expr(expr, expanded, sizeof(expanded));
         int eval_rc = 2;
-        cli_calc_eval_bash(expanded, is_test, &eval_rc);
+        calc_select_eval_bash(expanded, is_test, &eval_rc);
         rc = eval_rc;
         if (rc == 0 && !is_test)
         {
@@ -1201,7 +1202,7 @@ static int calc_stmt_cb(char *seg, void *ctx)
         char expanded[8192];
         milk_server_expand_entities_in_expr(seg, expanded, sizeof(expanded));
         int eval_rc = 2;
-        cli_calc_eval_bash(expanded, is_test, &eval_rc);
+        calc_select_eval_bash(expanded, is_test, &eval_rc);
         rc = eval_rc;
     }
     return rc;
@@ -1250,7 +1251,7 @@ int milk_server_exec_calc_or_test(int            client_fd,
     if (!is_test && strncmp(expr, "__explain ", 10) == 0)
     {
         /* `@calc --explain`: the whole text is one program, not split at `;` */
-        int xrc = cli_calc_prog_explain(expr + 10, stdout);
+        int xrc = calc_select_prog_explain(expr + 10, stdout);
         fflush(stdout);
         return xrc;
     }

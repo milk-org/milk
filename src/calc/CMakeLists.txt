@@ -3,10 +3,19 @@ set(LIBNAME "milkcalc")
 set(SOURCEFILES
     mc_ext_registry.c
     mc_ext_builtin.c
+    mc_func.c
+    mc_lex.c
+    mc_parse.c
+    mc_resolve.c
+    mc_scalar.c
+    mc_local.c
+    mc_eval.c
     milk_argval.c
     units/milk_unit.c)
 
 set(INCLUDEFILES
+    mcalc.h
+    mcalc_host.h
     milk_calc_ext.h
     milk_argval.h
     units/milk_unit.h)

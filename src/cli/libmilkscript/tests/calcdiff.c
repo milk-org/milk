@@ -36,6 +36,9 @@
 #include "cli_calc_parser.h"
 #include "cli_calc_prog.h"
 #include "cli_calc_scalar.h"
+#include "mc_func.h"
+#include "mcalc.h"
+#include "mcalc_host.h"
 #include "milkscript.h"
 
 #define CALCDIFF_MAX_SETUP 256
@@ -81,6 +84,7 @@ typedef struct
 {
     int          ok;
     int          rc;
+    int          not_impl;
     char         out[CALCDIFF_OUT_SZ];
     state_snap_t post;
 } eval_rec_t;
@@ -114,9 +118,13 @@ static uint64_t now_ns(void)
     return (uint64_t) ts.tv_sec * 1000000000ULL + (uint64_t) ts.tv_nsec;
 }
 
-/* Return 1 if @name is one of the predefined session constants (_PI, _e, ...). */
+/* Return 1 if @name is one of the predefined session constants (_PI, _e, ...) or internal loop vars. */
 static int is_predefined_var(const char *name)
 {
+    if (strncmp(name, "__fstop", 7) == 0 || strncmp(name, "__fstep", 7) == 0)
+    {
+        return 1;
+    }
     static const char *const names[] = { "_PI", "_e",  "_gamma", "_c", "_h",
                                          "_k",  "_pc", "_ly",    "_AU" };
     for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++)
@@ -201,6 +209,7 @@ static void snap_free(state_snap_t *snap)
 static void workspace_clear(void)
 {
     cli_calc_tmp_cleanup();
+    mcalc_tmp_cleanup();
     for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
     {
         if (data.core.image[i].used)
@@ -249,15 +258,19 @@ static void workspace_clear(void)
     }
     milk_table_bump();
     cli_calc_udef_clear();
-    cli_float_digits  = 6;
-    dcprecision       = 0;
-    cli_calc_out_mode = CLI_CALC_OUT_VALUES;
+    mcalc_udef_clear();
+    cli_float_digits   = 6;
+    mcalc_float_digits = 6;
+    dcprecision        = 0;
+    cli_calc_out_mode  = CLI_CALC_OUT_VALUES;
+    mcalc_out_mode     = MCALC_OUT_VALUES;
 }
 
 /* Delete any lingering _tmpcalc* or _tmpcalcpool* images so pool state starts clean. */
 static void clear_tmp_pool(void)
 {
     cli_calc_tmp_cleanup();
+    mcalc_tmp_cleanup();
     for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
     {
         if (data.core.image[i].used && is_internal_img(data.core.image[i].name))
@@ -267,6 +280,19 @@ static void clear_tmp_pool(void)
             delete_image_ID(nm, DELETE_IMAGE_ERRMODE_IGNORE);
         }
     }
+}
+
+/* Find image @name in @snap, or NULL if absent. */
+static const img_snap_t *find_img(const state_snap_t *snap, const char *name)
+{
+    for (int i = 0; i < snap->nimgs; i++)
+    {
+        if (strcmp(snap->imgs[i].name, name) == 0)
+        {
+            return &snap->imgs[i];
+        }
+    }
+    return NULL;
 }
 
 /* Capture all user images, variables, and udefs into @snap. */
@@ -383,8 +409,62 @@ static void snap_restore(const state_snap_t *snap)
 {
     int saved[2];
     silence_begin(saved);
-    workspace_clear();
+    clear_tmp_pool();
 
+    int had_shared = 0;
+    for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+    {
+        const IMAGE *im = &data.core.image[i];
+        if (!im->used)
+        {
+            continue;
+        }
+        const img_snap_t *s = find_img(snap, im->name);
+        uint32_t          y = (im->md != NULL && im->md[0].naxis > 1) ? im->md[0].size[1] : 1;
+        uint32_t          z = (im->md != NULL && im->md[0].naxis > 2) ? im->md[0].size[2] : 1;
+        if (s == NULL || s->shared != 0 || im->md == NULL || im->md[0].shared != 0 ||
+            im->md[0].naxis != s->naxis || im->md[0].datatype != s->datatype ||
+            im->md[0].size[0] != s->size[0] || y != s->size[1] || z != s->size[2] ||
+            im->md[0].NBkw < s->nbkw)
+        {
+            if (im->md != NULL && im->md[0].shared != 0)
+            {
+                had_shared = 1;
+            }
+            char nm[STRINGMAXLEN_IMAGE_NAME];
+            snprintf(nm, sizeof(nm), "%s", im->name);
+            delete_image_ID(nm, DELETE_IMAGE_ERRMODE_IGNORE);
+        }
+    }
+    if (had_shared && g_tmpdir[0] != '\0')
+    {
+        DIR *d = opendir(g_tmpdir);
+        if (d != NULL)
+        {
+            struct dirent *de;
+            while ((de = readdir(d)) != NULL)
+            {
+                if (strstr(de->d_name, ".im.shm") != NULL)
+                {
+                    char p[PATH_MAX];
+                    snprintf(p, sizeof(p), "%s/%s", g_tmpdir, de->d_name);
+                    unlink(p);
+                }
+            }
+            closedir(d);
+        }
+    }
+
+    for (long i = 0; data.core.variable != NULL && i < data.core.NB_MAX_VARIABLE; i++)
+    {
+        VARIABLE *v = &data.core.variable[i];
+        if (v->used && !is_predefined_var(v->name))
+        {
+            v->used    = 0;
+            v->type    = -1;
+            v->name[0] = '\0';
+        }
+    }
     for (int i = 0; i < snap->nvars; i++)
     {
         const var_snap_t *vs = &snap->vars[i];
@@ -406,13 +486,13 @@ static void snap_restore(const state_snap_t *snap)
     for (int i = 0; i < snap->nimgs; i++)
     {
         const img_snap_t *s  = &snap->imgs[i];
-        imageID           id = -1;
-        uint32_t          sz[3];
-        sz[0] = s->size[0];
-        sz[1] = s->size[1];
-        sz[2] = s->size[2];
-        create_image_ID(s->name, s->naxis, sz, s->datatype, s->shared, s->nbkw > 0 ? s->nbkw : 10,
-                        0, &id);
+        imageID           id = image_ID(s->name, data.core.image, data.core.NB_MAX_IMAGE);
+        if (id < 0)
+        {
+            uint32_t sz[3] = { s->size[0], s->size[1], s->size[2] };
+            create_image_ID(s->name, s->naxis, sz, s->datatype, s->shared,
+                            s->nbkw > 0 ? s->nbkw : 10, 0, &id);
+        }
         if (id >= 0 && s->nbytes > 0)
         {
             memcpy(data.core.image[id].array.raw, s->data, s->nbytes);
@@ -420,19 +500,31 @@ static void snap_restore(const state_snap_t *snap)
         if (id >= 0 && data.core.image[id].md != NULL)
         {
             data.core.image[id].md[0].cnt0 = s->cnt0;
-        }
-        if (id >= 0 && s->nbkw > 0 && s->kw != NULL && data.core.image[id].kw != NULL)
-        {
-            memcpy(data.core.image[id].kw, s->kw, (size_t) s->nbkw * sizeof(IMAGE_KEYWORD));
+            if (data.core.image[id].kw != NULL && data.core.image[id].md[0].NBkw > 0)
+            {
+                memset(data.core.image[id].kw, 0,
+                       (size_t) data.core.image[id].md[0].NBkw * sizeof(IMAGE_KEYWORD));
+                if (s->nbkw > 0 && s->kw != NULL)
+                {
+                    memcpy(data.core.image[id].kw, s->kw, (size_t) s->nbkw * sizeof(IMAGE_KEYWORD));
+                }
+            }
         }
     }
 
     cli_calc_udef_clear();
+    mcalc_udef_clear();
     for (int i = 0; i < snap->nudefs; i++)
     {
         const cli_calc_udef_t *u = &snap->udefs[i];
         cli_calc_udef_add(u->name, u->nargs, (const char (*)[64]) u->arg_names, u->body);
+        mcalc_udef_add(u->name, u->nargs, (const char (*)[64]) u->arg_names, u->body);
     }
+    cli_float_digits   = 6;
+    mcalc_float_digits = 6;
+    dcprecision        = 0;
+    cli_calc_out_mode  = CLI_CALC_OUT_VALUES;
+    mcalc_out_mode     = MCALC_OUT_VALUES;
     milk_table_bump();
     silence_end(saved);
 }
@@ -512,6 +604,7 @@ static void build_base_images(uint32_t N, uint32_t NY)
     }
     set_lvar("H", (long) (N / 2) - 1);
     cli_calc_try_parse_udef("def soft_thresh(x, t) = where(abs(x) > t, x, 0.0)");
+    mcalc_udef_try_parse("def soft_thresh(x, t) = where(abs(x) > t, x, 0.0)");
 }
 
 /* Populate scalar variables used by generated expressions and benchmarks. */
@@ -783,14 +876,20 @@ static const char *skip_ws(const char *p)
     return p;
 }
 
-/* Evaluate @input on the old engine, splitting top-level `;` unless `if`/`for`. */
-static int eval_old_stmts(const char *input, int is_test, int *out_rc, char *out, size_t outsz)
+/* Evaluate @input on engine @which (0 = old, 1 = new), splitting top-level `;` unless `if`/`for`. */
+static int eval_stmts_on(int         which,
+                         const char *input,
+                         int         is_test,
+                         int        *out_rc,
+                         char       *out,
+                         size_t      outsz)
 {
     const char *lp = skip_ws(input);
     if ((strncmp(lp, "if", 2) == 0 && (isspace((unsigned char) lp[2]) || lp[2] == '(')) ||
         (strncmp(lp, "for", 3) == 0 && isspace((unsigned char) lp[3])) || strchr(lp, ';') == NULL)
     {
-        return cli_calc_eval_str(input, is_test, out_rc, out, outsz);
+        return (which == 0) ? cli_calc_eval_str(input, is_test, out_rc, out, outsz)
+                            : mcalc_eval_str(input, is_test, out_rc, out, outsz);
     }
 
     char  *copy  = strdup(input);
@@ -823,11 +922,11 @@ static int eval_old_stmts(const char *input, int is_test, int *out_rc, char *out
         {
             quote = c;
         }
-        else if (c == '(' || c == '[')
+        else if (c == '(' || c == '[' || c == '{')
         {
             depth++;
         }
-        else if ((c == ')' || c == ']') && depth > 0)
+        else if ((c == ')' || c == ']' || c == '}') && depth > 0)
         {
             depth--;
         }
@@ -839,7 +938,10 @@ static int eval_old_stmts(const char *input, int is_test, int *out_rc, char *out
             {
                 char seg_out[4096] = "";
                 int  seg_rc        = 0;
-                int  seg_ok = cli_calc_eval_str(seg, is_test, &seg_rc, seg_out, sizeof(seg_out));
+                int  seg_ok =
+                    (which == 0)
+                        ? cli_calc_eval_str(seg, is_test, &seg_rc, seg_out, sizeof(seg_out))
+                        : mcalc_eval_str(seg, is_test, &seg_rc, seg_out, sizeof(seg_out));
                 if (!seg_ok || seg_rc != 0)
                 {
                     ok      = seg_ok;
@@ -901,7 +1003,7 @@ static void run_setup_stmt(const char *s)
     {
         char out[1024];
         int  rc = 0;
-        eval_old_stmts(s, 0, &rc, out, sizeof(out));
+        eval_stmts_on(0, s, 0, &rc, out, sizeof(out));
     }
     silence_end(saved);
 }
@@ -915,12 +1017,16 @@ static void run_one_engine(int which, const char *stmt, int is_test, eval_rec_t 
     silence_begin(saved);
     if (which == 0)
     {
-        rec->ok = eval_old_stmts(stmt, is_test, &rec->rc, rec->out, sizeof(rec->out));
+        rec->ok = eval_stmts_on(0, stmt, is_test, &rec->rc, rec->out, sizeof(rec->out));
     }
     else
     {
-        rec->ok = 0;
-        rec->rc = 2;
+        mcalc_lasterr[0] = '\0';
+        rec->ok          = eval_stmts_on(1, stmt, is_test, &rec->rc, rec->out, sizeof(rec->out));
+        if (!rec->ok && strcmp(mcalc_lasterr, "not implemented in the new engine") == 0)
+        {
+            rec->not_impl = 1;
+        }
     }
     silence_end(saved);
     snap_capture(&rec->post);
@@ -1013,19 +1119,6 @@ static int outputs_match(const char *o1, const char *o2, double rel_tol)
         p2 = (nl2 != NULL) ? (nl2 + 1) : (p2 + l2);
     }
     return *p1 == '\0' && *p2 == '\0';
-}
-
-/* Find image @name in @snap, or NULL if absent. */
-static const img_snap_t *find_img(const state_snap_t *snap, const char *name)
-{
-    for (int i = 0; i < snap->nimgs; i++)
-    {
-        if (strcmp(snap->imgs[i].name, name) == 0)
-        {
-            return &snap->imgs[i];
-        }
-    }
-    return NULL;
 }
 
 /* Find variable @name in @snap, or NULL if absent. */
@@ -1159,11 +1252,16 @@ static int compare_img_data(const img_snap_t *a, const img_snap_t *b, char *deta
 static int compare_records(const eval_rec_t *r1,
                            const eval_rec_t *r2,
                            int               is_test,
+                           int               strict_mode,
                            char             *reason,
                            size_t            reasonsz,
                            char             *detail,
                            size_t            detailsz)
 {
+    if (!strict_mode && r2->not_impl)
+    {
+        return 0;
+    }
     if (is_test)
     {
         int st1 = (!r1->ok || r1->rc == 2) ? 2 : r1->rc;
@@ -1186,8 +1284,8 @@ static int compare_records(const eval_rec_t *r1,
         if (fail1 != fail2)
         {
             snprintf(reason, reasonsz, "status_mismatch");
-            snprintf(detail, detailsz, "eval status old=(ok=%d rc=%d) new=(ok=%d rc=%d)", r1->ok,
-                     r1->rc, r2->ok, r2->rc);
+            snprintf(detail, detailsz, "eval status old=(ok=%d rc=%d) new=(ok=%d rc=%d err='%s')",
+                     r1->ok, r1->rc, r2->ok, r2->rc, mcalc_lasterr);
             return -1;
         }
         if (fail1 && fail2)
@@ -1724,96 +1822,52 @@ static int run_bench_mode(uint32_t size, int iters, const char *engine, const ch
     return 0;
 }
 
+/* Map an mc_func_t entry to its gen_expr.py kind string. */
+static const char *fn_kind_str(const mc_func_t *fn)
+{
+    if (fn->cast_dt != 0)
+    {
+        return "cast";
+    }
+    switch (fn->kind)
+    {
+    case MC_FN_SCALAR:
+        return "elem";
+    case MC_FN_WHERE:
+        return "where";
+    case MC_FN_COORD:
+        return "coord";
+    case MC_FN_PRNG:
+        return "rng";
+    case MC_FN_SHIFT:
+        return "shift";
+    case MC_FN_REDUCE_D:
+    case MC_FN_REDUCE_L:
+    case MC_FN_DOT:
+    case MC_FN_EAGER_RED:
+        return "reduce";
+    case MC_FN_ISTATS:
+    case MC_FN_ICENTROID:
+        return "multi_red";
+    case MC_FN_CPLX:
+        return "complex";
+    case MC_FN_STR:
+        return "str";
+    default:
+        return "other";
+    }
+}
+
 /* Dump the function table as JSON lines for gen_expr.py (`--dump-functions`). */
 static int dump_functions(void)
 {
-    static const struct
+    int              nfn = 0;
+    const mc_func_t *tbl = mc_func_table(&nfn);
+    for (int i = 0; i < nfn; i++)
     {
-        const char *name;
-        int         min_args;
-        int         max_args;
-        const char *kind;
-    } fns[] = { { "sin", 1, 1, "elem" },
-                { "cos", 1, 1, "elem" },
-                { "tan", 1, 1, "elem" },
-                { "asin", 1, 1, "elem" },
-                { "acos", 1, 1, "elem" },
-                { "atan", 1, 1, "elem" },
-                { "sinh", 1, 1, "elem" },
-                { "cosh", 1, 1, "elem" },
-                { "tanh", 1, 1, "elem" },
-                { "exp", 1, 1, "elem" },
-                { "exp2", 1, 1, "elem" },
-                { "ln", 1, 1, "elem" },
-                { "log", 1, 1, "elem" },
-                { "log10", 1, 1, "elem" },
-                { "log2", 1, 1, "elem" },
-                { "sqrt", 1, 1, "elem" },
-                { "cbrt", 1, 1, "elem" },
-                { "abs", 1, 1, "elem" },
-                { "fabs", 1, 1, "elem" },
-                { "floor", 1, 1, "elem" },
-                { "ceil", 1, 1, "elem" },
-                { "round", 1, 1, "elem" },
-                { "erf", 1, 1, "elem" },
-                { "erfc", 1, 1, "elem" },
-                { "posi", 1, 1, "elem" },
-                { "sign", 1, 1, "elem" },
-                { "isnan", 1, 1, "elem" },
-                { "isfinite", 1, 1, "elem" },
-                { "f32", 1, 1, "cast" },
-                { "f64", 1, 1, "cast" },
-                { "u8", 1, 1, "cast" },
-                { "i8", 1, 1, "cast" },
-                { "u16", 1, 1, "cast" },
-                { "i16", 1, 1, "cast" },
-                { "u32", 1, 1, "cast" },
-                { "i32", 1, 1, "cast" },
-                { "u64", 1, 1, "cast" },
-                { "i64", 1, 1, "cast" },
-                { "pow", 2, 2, "elem" },
-                { "atan2", 2, 2, "elem" },
-                { "hypot", 2, 2, "elem" },
-                { "fmod", 2, 2, "elem" },
-                { "min", 2, 2, "elem" },
-                { "max", 2, 2, "elem" },
-                { "clamp", 3, 3, "elem" },
-                { "trunc", 3, 3, "elem" },
-                { "where", 3, 3, "where" },
-                { "ix", 1, 3, "coord" },
-                { "iy", 1, 3, "coord" },
-                { "ir", 1, 3, "coord" },
-                { "itheta", 1, 3, "coord" },
-                { "rand", 1, 2, "rng" },
-                { "randn", 1, 2, "rng" },
-                { "urand", 1, 2, "rng" },
-                { "grand", 1, 2, "rng" },
-                { "shift", 3, 4, "shift" },
-                { "isum", 1, 2, "reduce" },
-                { "imean", 1, 2, "reduce" },
-                { "imin", 1, 2, "reduce" },
-                { "imax", 1, 2, "reduce" },
-                { "istd", 1, 2, "reduce" },
-                { "irms", 1, 2, "reduce" },
-                { "ivar", 1, 2, "reduce" },
-                { "iamax", 1, 2, "reduce" },
-                { "icount", 1, 1, "reduce" },
-                { "iargmax", 1, 1, "reduce" },
-                { "iargmin", 1, 1, "reduce" },
-                { "dot", 2, 2, "reduce" },
-                { "istats", 1, 1, "multi_red" },
-                { "icentroid", 1, 2, "multi_red" },
-                { "re", 1, 1, "complex" },
-                { "im", 1, 1, "complex" },
-                { "arg", 1, 1, "complex" },
-                { "conj", 1, 1, "complex" },
-                { "cplx", 2, 2, "complex" },
-                { "amph", 2, 2, "complex" },
-                { NULL, 0, 0, NULL } };
-    for (int i = 0; fns[i].name != NULL; i++)
-    {
-        printf("{\"name\":\"%s\",\"min_args\":%d,\"max_args\":%d,\"kind\":\"%s\"}\n", fns[i].name,
-               fns[i].min_args, fns[i].max_args, fns[i].kind);
+        printf("{\"name\":\"%s\",\"min_args\":%d,\"max_args\":%d,\"kind\":\"%s\",\"in_old\":%d}\n",
+               tbl[i].name, tbl[i].min_args, tbl[i].max_args, fn_kind_str(&tbl[i]),
+               (int) tbl[i].in_old);
     }
     return 0;
 }
@@ -1822,6 +1876,8 @@ int main(int argc, char **argv)
 {
     int         bench_mode  = 0;
     int         old_vs_old  = 0;
+    int         strict_mode = 0;
+    int         test_local  = 0;
     uint32_t    bench_size  = 256;
     int         bench_iters = 2000;
     const char *bench_eng   = "old";
@@ -1836,6 +1892,14 @@ int main(int argc, char **argv)
         else if (strcmp(argv[i], "--old-vs-old") == 0)
         {
             old_vs_old = 1;
+        }
+        else if (strcmp(argv[i], "--strict") == 0)
+        {
+            strict_mode = 1;
+        }
+        else if (strcmp(argv[i], "--test-local") == 0)
+        {
+            test_local = 1;
         }
         else if (strcmp(argv[i], "--bench") == 0)
         {
@@ -1852,11 +1916,6 @@ int main(int argc, char **argv)
         else if (strcmp(argv[i], "--engine") == 0 && i + 1 < argc)
         {
             bench_eng = argv[++i];
-            if (!bench_mode && strcmp(bench_eng, "new") == 0)
-            {
-                fprintf(stdout, "not available\n");
-                return 2;
-            }
         }
         else if (bench_mode && bench_stmts == NULL)
         {
@@ -1875,16 +1934,14 @@ int main(int argc, char **argv)
         return run_bench_mode(bench_size, bench_iters, bench_eng, bench_stmts);
     }
 
-    if (!old_vs_old)
-    {
-        fprintf(stdout, "not available\n");
-        return 2;
-    }
-
     if (init_engine() != 0)
     {
         return 1;
     }
+
+    char         cached_ds_name[64] = "";
+    state_snap_t cached_ds_snap;
+    memset(&cached_ds_snap, 0, sizeof(cached_ds_snap));
 
     char   *line = NULL;
     size_t  cap  = 0;
@@ -1912,29 +1969,130 @@ int main(int argc, char **argv)
             continue;
         }
 
-        workspace_clear();
-        build_dataset(dataset != NULL ? dataset : "default");
-        for (int k = 0; k < nsetup; k++)
+        const char *ds_name = (dataset != NULL && dataset[0] != '\0') ? dataset : "default";
+        if (test_local)
         {
-            run_setup_stmt(setup[k]);
+            if (nsetup == 0)
+            {
+                if (strcmp(ds_name, cached_ds_name) != 0)
+                {
+                    snap_free(&cached_ds_snap);
+                    workspace_clear();
+                    build_dataset(ds_name);
+                    snap_capture(&cached_ds_snap);
+                    snprintf(cached_ds_name, sizeof(cached_ds_name), "%s", ds_name);
+                }
+            }
+            else
+            {
+                cached_ds_name[0] = '\0';
+                workspace_clear();
+                build_dataset(ds_name);
+                for (int k = 0; k < nsetup; k++)
+                {
+                    run_setup_stmt(setup[k]);
+                }
+            }
+
+            char out1[4096] = "";
+            char out2[4096] = "";
+            int  tr1        = -1;
+            int  tr2        = -1;
+            int  rc1        = cli_calc_local(stmt, 6, out1, sizeof(out1), &tr1);
+            int  rc2        = mcalc_local(stmt, 6, out2, sizeof(out2), &tr2);
+
+            char reason[64]  = "";
+            char detail[512] = "";
+            int  diff        = 0;
+            if (rc1 != rc2)
+            {
+                diff = 1;
+                snprintf(reason, sizeof(reason), "local_decision_mismatch");
+                snprintf(detail, sizeof(detail), "old_rc=%d new_rc=%d", rc1, rc2);
+            }
+            else if (rc1 == 1)
+            {
+                if (tr1 != tr2)
+                {
+                    diff = 1;
+                    snprintf(reason, sizeof(reason), "local_truth_mismatch");
+                    snprintf(detail, sizeof(detail), "old_truth=%d new_truth=%d", tr1, tr2);
+                }
+                else if (!outputs_match(out1, out2, 1e-12))
+                {
+                    diff = 1;
+                    snprintf(reason, sizeof(reason), "local_output_mismatch");
+                    snprintf(detail, sizeof(detail), "old_out='%s' new_out='%s'", out1, out2);
+                }
+            }
+            if (diff)
+            {
+                fputs("{\"dataset\":", stdout);
+                print_json_str(stdout, ds_name);
+                fputs(",\"stmt\":", stdout);
+                print_json_str(stdout, stmt);
+                fputs(",\"reason\":", stdout);
+                print_json_str(stdout, reason);
+                fputs(",\"detail\":", stdout);
+                print_json_str(stdout, detail);
+                fputs("}\n", stdout);
+                fflush(stdout);
+            }
+            free(dataset);
+            for (int k = 0; k < nsetup; k++)
+            {
+                free(setup[k]);
+            }
+            free(stmt);
+            continue;
         }
 
-        state_snap_t snap;
-        snap_capture(&snap);
+        state_snap_t        snap;
+        const state_snap_t *base_snap = NULL;
+        memset(&snap, 0, sizeof(snap));
+
+        if (nsetup == 0)
+        {
+            if (strcmp(ds_name, cached_ds_name) != 0)
+            {
+                snap_free(&cached_ds_snap);
+                workspace_clear();
+                build_dataset(ds_name);
+                snap_capture(&cached_ds_snap);
+                snprintf(cached_ds_name, sizeof(cached_ds_name), "%s", ds_name);
+            }
+            else
+            {
+                snap_restore(&cached_ds_snap);
+            }
+            base_snap = &cached_ds_snap;
+        }
+        else
+        {
+            workspace_clear();
+            build_dataset(ds_name);
+            for (int k = 0; k < nsetup; k++)
+            {
+                run_setup_stmt(setup[k]);
+            }
+            snap_capture(&snap);
+            base_snap = &snap;
+        }
 
         eval_rec_t r1;
         eval_rec_t r2;
         int        eng2 = old_vs_old ? 0 : 1;
         run_one_engine(0, stmt, is_test, &r1);
-        snap_restore(&snap);
+        snap_restore(base_snap);
         run_one_engine(eng2, stmt, is_test, &r2);
 
         char reason[64]  = "";
         char detail[512] = "";
-        if (compare_records(&r1, &r2, is_test, reason, sizeof(reason), detail, sizeof(detail)) != 0)
+        if (compare_records(&r1, &r2, is_test, strict_mode, reason, sizeof(reason), detail,
+                            sizeof(detail)) != 0)
         {
             fputs("{\"dataset\":", stdout);
-            print_json_str(stdout, dataset != NULL ? dataset : "default");
+            print_json_str(stdout, ds_name);
             fputs(",\"stmt\":", stdout);
             print_json_str(stdout, stmt);
             fputs(",\"reason\":", stdout);
@@ -1955,6 +2113,7 @@ int main(int argc, char **argv)
         }
         free(stmt);
     }
+    snap_free(&cached_ds_snap);
     free(line);
     return 0;
 }

@@ -26,7 +26,9 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
+#include "CLIcore_script.h"
 #include "CLIcore_signals.h"
+#include "mcalc_host.h"
 #include "milk_path.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -55,6 +57,9 @@ errno_t CLI_data_init()
 
     /* Sync: data.core shares milk_data's arrays */
     data.core = milk_data;
+
+    mcalc_host_ops calc_host = { cli_var_get, cli_var_set };
+    mcalc_set_host(&calc_host);
 
     create_variable_ID("_PI", 3.14159265358979323846264338328);
     create_variable_ID("_e", exp(1));

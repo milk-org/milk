@@ -7,8 +7,20 @@
  * @brief Built-in `MILK_CALC_REG_IMG` spatial kernels registered by `milkcalc`.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include "ImageStreamIO/ImageStreamIO.h"
+#include "libfps/fps_streamname_parse.h"
+#include "libmilkcommon/milkDebugTools.h"
+#include "libmilkdata/milkdata.h"
 #include "COREMOD_arith/image_spatial.h"
-#include "milkDebugTools.h"
+#include "COREMOD_memory/image_ID.h"
+#include "COREMOD_memory/variable_ID.h"
+#include "mc_ast.h"
 #include "milk_calc_ext.h"
 
 #define BBLUR_EXT_PARAMS(X)                                                                    \
@@ -60,3 +72,98 @@ MILK_CALC_MODULE_EXPORT(milkcalc_builtin,
                         MILK_CALC_REG_IMG(rotate2d, rotate2d_ext_img, rotate2d),
                         MILK_CALC_REG_IMG(circsym, circsym_ext_img, circsym),
                         MILK_CALC_REG_IMG(circasym, circasym_ext_img, circsym));
+
+int mc_is_numeric_env_var(const char *s)
+{
+    const char *ev   = getenv(s);
+    char       *endp = NULL;
+    return (ev != NULL && ev[0] != '\0' && (strtod(ev, &endp), endp != ev && *endp == '\0'));
+}
+
+long mc_resolve_or_autoconnect_image(const char *name)
+{
+    if (milk_data.image == NULL || milk_data.NB_MAX_IMAGE <= 0)
+    {
+        return -1;
+    }
+    FPS_STREAMNAME_PARSED sp = fps_streamname_parse(name);
+    if (sp.error)
+    {
+        return -1;
+    }
+    const char *bare = (sp.name != NULL && sp.name[0] != '\0') ? sp.name : name;
+    imageID     id   = image_ID(bare, milk_data.image, milk_data.NB_MAX_IMAGE);
+    char        shmpath[512];
+    struct stat st;
+
+    if (id != -1)
+    {
+        IMAGE *im = &milk_data.image[id];
+        if (im->used && im->md != NULL && im->md[0].shared == 1 &&
+            ImageStreamIO_filename(shmpath, sizeof(shmpath), im->name) == IMAGESTREAMIO_SUCCESS &&
+            stat(shmpath, &st) == 0 && st.st_ino != im->md[0].inode)
+        {
+            IMAGE fresh = { 0 };
+            if (ImageStreamIO_read_sharedmem_image_toIMAGE(im->name, &fresh) ==
+                IMAGESTREAMIO_SUCCESS)
+            {
+                ImageStreamIO_closeIm(im);
+                memcpy(im, &fresh, sizeof(IMAGE));
+                im->used = 1;
+                milk_table_bump();
+            }
+        }
+        return id;
+    }
+    if (sp.loc == 'L' ||
+        ImageStreamIO_filename(shmpath, sizeof(shmpath), bare) != IMAGESTREAMIO_SUCCESS ||
+        access(shmpath, R_OK) != 0)
+    {
+        return -1;
+    }
+    IMAGE tmp_im = { 0 };
+    if (ImageStreamIO_read_sharedmem_image_toIMAGE(bare, &tmp_im) == IMAGESTREAMIO_SUCCESS)
+    {
+        id = next_avail_image_ID(-1);
+        if (id != -1)
+        {
+            memcpy(&milk_data.image[id], &tmp_im, sizeof(IMAGE));
+            milk_data.image[id].used = 1;
+            milk_table_bump();
+        }
+        else
+        {
+            ImageStreamIO_closeIm(&tmp_im);
+        }
+    }
+    return id;
+}
+
+void mc_parse_ident_streamname(char *name, char *bare, char *loc)
+{
+    long svid = variable_ID(name);
+    if (svid != -1 && milk_data.variable[svid].type == 3 &&
+        milk_data.variable[svid].value.s[0] != '\0')
+    {
+        snprintf(name, MC_TOK_STR_MAX, "%s", milk_data.variable[svid].value.s);
+    }
+    FPS_STREAMNAME_PARSED sp = fps_streamname_parse(name);
+    if (loc != NULL)
+    {
+        *loc = sp.loc;
+    }
+    snprintf(bare, MC_TOK_STR_MAX, "%s",
+             (!sp.error && sp.name != NULL && sp.name[0] != '\0') ? sp.name : name);
+}
+
+void mc_set_expr_from_im(mc_expr_t *e, const void *im_ptr)
+{
+    const IMAGE *im = (const IMAGE *) im_ptr;
+    e->res_kind     = MC_RES_IMAGE;
+    e->res_dt       = im->md[0].datatype;
+    e->res_naxis    = im->md[0].naxis;
+    e->res_size[0]  = (im->md[0].naxis > 0) ? im->md[0].size[0] : 1;
+    e->res_size[1]  = (im->md[0].naxis > 1) ? im->md[0].size[1] : 1;
+    e->res_size[2]  = (im->md[0].naxis > 2) ? im->md[0].size[2] : 1;
+    e->needs_image  = 1;
+}

@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
+#include "calc_select.h"
 #include "cli_calc_parser.h"
 #include "CLIcore_script.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -134,7 +135,7 @@ static void var_set(const char *name, const char *val, int eval)
                 int    mtype;
                 long   mlval;
                 double mdval;
-                if (eval && cli_calc_eval_math_to_val(valbuf, &mtype, &mlval, &mdval))
+                if (eval && calc_select_eval_math_to_val(valbuf, &mtype, &mlval, &mdval))
                 {
                     if (mtype == 1)
                     {

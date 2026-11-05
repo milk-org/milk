@@ -24,8 +24,7 @@
 
 #include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "cli_calc_engines.h"
-#include "cli_calc_prog.h"
+#include "calc_select.h"
 #include "fps_modulevars_resync.h"
 #include "milk_argval.h"
 #include "milk_unit.h"
@@ -79,16 +78,16 @@ static union
     int32_t  b;
     char     s[FUNCTION_PARAMETER_STRMAXLEN];
 } pval[CALC_MAXPAR];
-static char             pkey[CALC_MAXPAR][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN + 1];
-static char             pdescr[CALC_MAXPAR][FUNCTION_PARAMETER_DESCR_STRMAXLEN];
-static cli_calc_binding cvars[CALC_MAXPAR + CALC_NBUILTIN];
-static int64_t          frame_n    = 0;
-static double           frame_t    = 0.0;
-static double           frame_dt   = 0.0;
-static int64_t          frame_cnt0 = 0; /* _cnt0: the trigger frame's counter */
-static double  frame_ts     = 0.0; /* _ts: the trigger frame's write time (s, CLOCK_REALTIME) */
-static int64_t frame_missed = 0;   /* _missed: trigger frames skipped before this one */
-static int64_t frame_torn   = 0; /* _torn: kept passes re-run because an input was being written */
+static char          pkey[CALC_MAXPAR][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN + 1];
+static char          pdescr[CALC_MAXPAR][FUNCTION_PARAMETER_DESCR_STRMAXLEN];
+static mcalc_binding cvars[CALC_MAXPAR + CALC_NBUILTIN];
+static int64_t       frame_n    = 0;
+static double        frame_t    = 0.0;
+static double        frame_dt   = 0.0;
+static int64_t       frame_cnt0 = 0;   /* _cnt0: the trigger frame's counter */
+static double        frame_ts   = 0.0; /* _ts: the trigger frame's write time (s, CLOCK_REALTIME) */
+static int64_t       frame_missed = 0; /* _missed: trigger frames skipped before this one */
+static int64_t frame_torn = 0; /* _torn: kept passes re-run because an input was being written */
 
 static errno_t compute(const MILK_RUNNABLE *self);
 
@@ -184,7 +183,7 @@ static int bind(const char *name, uint64_t type, uint64_t fpflag, const char *de
     snprintf(pdescr[k], sizeof(pdescr[k]), "%s", (descr != NULL) ? descr : "");
     bindings[nbind++] =
         (FPS_CLI_BINDING) { pkey[k], &pval[k], type, primary, fpflag, pdescr[k], -2, -1 };
-    cvars[k] = (cli_calc_binding) { pkey[k] + 1, type, &pval[k] };
+    cvars[k] = (mcalc_binding) { pkey[k] + 1, type, &pval[k] };
     return 0;
 }
 
@@ -307,10 +306,10 @@ static int declare(const char *text)
     }
     free(buf);
 
-    if (rc == 0 && (libs[0] != '\0' || cli_calc_ext_count() > 0))
+    if (rc == 0 && (libs[0] != '\0' || calc_select_ext_count() > 0))
     {
         char err[512] = "";
-        if (libs[0] != '\0' && cli_calc_ext_load_list(libs, err, sizeof(err)) != 0)
+        if (libs[0] != '\0' && calc_select_ext_load_list(libs, err, sizeof(err)) != 0)
         {
             fprintf(stderr, "milk.calc: %s\n", err);
             return -1;
@@ -322,10 +321,10 @@ static int declare(const char *text)
             (expr[0] != '\0' || file[0] != '\0') ? source_text(expr, file, err, sizeof(err)) : NULL;
         if (itext == NULL && etext == NULL && libs[0] != '\0')
         {
-            int next = cli_calc_ext_count();
+            int next = calc_select_ext_count();
             for (int i = 0; i < next && rc == 0; i++)
             {
-                const milk_calc_ext_entry_t *e = cli_calc_ext_get(i);
+                const milk_calc_ext_entry_t *e = calc_select_ext_get(i);
                 const milk_calc_param_set_t *ps =
                     (e != NULL && e->get_params != NULL) ? e->get_params() : NULL;
                 if (ps != NULL)
@@ -341,11 +340,11 @@ static int declare(const char *text)
         {
             if (itext != NULL)
             {
-                cli_calc_ext_scan_source(itext, on_ext_param, on_ext_scalar_out, &rc);
+                calc_select_ext_scan_source(itext, on_ext_param, on_ext_scalar_out, &rc);
             }
             if (etext != NULL && rc == 0)
             {
-                cli_calc_ext_scan_source(etext, on_ext_param, on_ext_scalar_out, &rc);
+                calc_select_ext_scan_source(etext, on_ext_param, on_ext_scalar_out, &rc);
             }
         }
         free(itext);
@@ -369,7 +368,7 @@ static int find_params(const char *name)
     if (pl >= 0 && fps.parray[pl].val.string[0][0] != '\0')
     {
         char err[512] = "";
-        if (cli_calc_ext_load_list(fps.parray[pl].val.string[0], err, sizeof(err)) != 0)
+        if (calc_select_ext_load_list(fps.parray[pl].val.string[0], err, sizeof(err)) != 0)
         {
             fprintf(stderr, "milk.calc: %s\n", err);
             fps_disconnect(&fps);
@@ -446,20 +445,20 @@ static void report(PROCESSINFO *pi, const char *msg)
 
 typedef struct
 {
-    cli_calc_prog *prog;
-    long           pe;
-    long           pf;
-    long           pi;
-    long           pif;
-    long           pl;
-    uint64_t       built[2];
-    uint64_t       init_built[2];
-    uint64_t       libs_built;
-    uint64_t       stream_built[CALC_MAXPAR];
-    int            init_done;
-    double         t_start;
-    double         t_prev;
-    int            npar;
+    void    *prog;
+    long     pe;
+    long     pf;
+    long     pi;
+    long     pif;
+    long     pl;
+    uint64_t built[2];
+    uint64_t init_built[2];
+    uint64_t libs_built;
+    uint64_t stream_built[CALC_MAXPAR];
+    int      init_done;
+    double   t_start;
+    double   t_prev;
+    int      npar;
 } calc_loop_ctx;
 
 /** run_unit_init_if_needed - Execute `.unit.init` / `.unit.initfile` when first run or modified. */
@@ -481,15 +480,15 @@ static int run_unit_init_if_needed(calc_loop_ctx *ctx, char *err, size_t errsz)
     ctx->init_done     = 1;
     ctx->init_built[0] = pi_cnt;
     ctx->init_built[1] = pif_cnt;
-    cli_calc_prog_free(ctx->prog);
+    calc_select_prog_free(ctx->prog);
     ctx->prog = NULL;
 
     if (init_expr[0] != '\0' || initfile[0] != '\0')
     {
         unsigned char assigned[CALC_MAXPAR + CALC_NBUILTIN] = { 0 };
         char         *itext = source_text(init_expr, initfile, err, errsz);
-        if (itext == NULL || cli_calc_prog_exec_once(itext, cvars, ctx->npar + CALC_NBUILTIN,
-                                                     assigned, err, errsz) != 0)
+        if (itext == NULL || calc_select_prog_exec_once(itext, cvars, ctx->npar + CALC_NBUILTIN,
+                                                        assigned, err, errsz) != 0)
         {
             free(itext);
             return -1;
@@ -524,7 +523,7 @@ static int run_unit_frame_step(PROCESSINFO   *processinfo,
     frame_cnt0   = frame_n;
     frame_ts     = 0.0;
     frame_missed = 0;
-    frame_torn   = (int64_t) cli_calc_torn_count();
+    frame_torn   = (int64_t) calc_select_torn_count();
 
     if (processinfo != NULL && processinfo->trigger_image != NULL &&
         processinfo->trigger_image->md != NULL)
@@ -547,11 +546,11 @@ static int run_unit_frame_step(PROCESSINFO   *processinfo,
     if (ctx->prog == NULL || stream_changed || pe_cnt != ctx->built[0] || pf_cnt != ctx->built[1])
     {
         char *text = source_text(expr, file, err, errsz);
-        cli_calc_prog_free(ctx->prog);
+        calc_select_prog_free(ctx->prog);
         ctx->prog = (text != NULL)
-                        ? cli_calc_prog_new(text, cvars, ctx->npar + CALC_NBUILTIN, err, errsz)
+                        ? calc_select_prog_new(text, cvars, ctx->npar + CALC_NBUILTIN, err, errsz)
                         : NULL;
-        cli_calc_prog_set_processinfo(ctx->prog, processinfo);
+        calc_select_prog_set_processinfo(ctx->prog, processinfo);
         ctx->built[0] = pe_cnt;
         ctx->built[1] = pf_cnt;
         for (int k = 0; k < ctx->npar; k++)
@@ -564,13 +563,13 @@ static int run_unit_frame_step(PROCESSINFO   *processinfo,
         }
         free(text);
     }
-    if (ctx->prog == NULL || cli_calc_prog_run(ctx->prog, err, errsz) != 0)
+    if (ctx->prog == NULL || calc_select_prog_run(ctx->prog, err, errsz) != 0)
     {
         return -1;
     }
     for (int k = 0; k < ctx->npar; k++)
     {
-        if (cli_calc_prog_assigns(ctx->prog, k))
+        if (calc_select_prog_assigns(ctx->prog, k))
         {
             sync_local_to_fps(dcfpsptr, bindings[CALC_NFIXED + k]._fps_pindex,
                               &bindings[CALC_NFIXED + k]);
@@ -599,15 +598,15 @@ static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
     ctx.pl   = functionparameter_GetParamIndex(dcfpsptr, ".unit.libs");
     ctx.npar = nbind - CALC_NFIXED;
 
-    cvars[ctx.npar + 0] = (cli_calc_binding) { "_n", FPTYPE_INT64, &frame_n };
-    cvars[ctx.npar + 1] = (cli_calc_binding) { "_t", FPTYPE_FLOAT64, &frame_t };
-    cvars[ctx.npar + 2] = (cli_calc_binding) { "_dt", FPTYPE_FLOAT64, &frame_dt };
-    cvars[ctx.npar + 3] = (cli_calc_binding) { "_cnt0", FPTYPE_INT64, &frame_cnt0 };
-    cvars[ctx.npar + 4] = (cli_calc_binding) { "_ts", FPTYPE_FLOAT64, &frame_ts };
-    cvars[ctx.npar + 5] = (cli_calc_binding) { "_missed", FPTYPE_INT64, &frame_missed };
-    cvars[ctx.npar + 6] = (cli_calc_binding) { "_torn", FPTYPE_INT64, &frame_torn };
+    cvars[ctx.npar + 0] = (mcalc_binding) { "_n", FPTYPE_INT64, &frame_n };
+    cvars[ctx.npar + 1] = (mcalc_binding) { "_t", FPTYPE_FLOAT64, &frame_t };
+    cvars[ctx.npar + 2] = (mcalc_binding) { "_dt", FPTYPE_FLOAT64, &frame_dt };
+    cvars[ctx.npar + 3] = (mcalc_binding) { "_cnt0", FPTYPE_INT64, &frame_cnt0 };
+    cvars[ctx.npar + 4] = (mcalc_binding) { "_ts", FPTYPE_FLOAT64, &frame_ts };
+    cvars[ctx.npar + 5] = (mcalc_binding) { "_missed", FPTYPE_INT64, &frame_missed };
+    cvars[ctx.npar + 6] = (mcalc_binding) { "_torn", FPTYPE_INT64, &frame_torn };
 
-    cli_calc_prog_attach();
+    calc_select_prog_attach();
     error[0] = '\0';
     functionparameter_SetParamValue_STRING(dcfpsptr, ".unit.error", "");
     if (tname[0] != '\0' && image_ID(tname, dcimg, dcnimg) == -1)
@@ -624,7 +623,7 @@ static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
              (ctx.pl >= 0 && dcfpsptr->parray[ctx.pl].value_cnt != ctx.libs_built)))
         {
             ctx.libs_built = (ctx.pl >= 0) ? dcfpsptr->parray[ctx.pl].value_cnt : 0;
-            if (cli_calc_ext_load_list(libs, err, sizeof(err)) != 0)
+            if (calc_select_ext_load_list(libs, err, sizeof(err)) != 0)
             {
                 report(processinfo, err);
                 processloopOK = 0;
@@ -643,7 +642,7 @@ static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
     }
     MILK_PROCINFO_END(self)
 
-    cli_calc_prog_free(ctx.prog);
+    calc_select_prog_free(ctx.prog);
     return (err[0] != '\0') ? RETURN_FAILURE : RETURN_SUCCESS;
 }
 
@@ -722,7 +721,7 @@ int main(int argc, char **argv)
                          (strcmp(argv[j], "-l") == 0 || strcmp(argv[j], "--lib") == 0))
                 {
                     char err[512] = "";
-                    if (cli_calc_ext_load_list(argv[++j], err, sizeof(err)) != 0)
+                    if (calc_select_ext_load_list(argv[++j], err, sizeof(err)) != 0)
                     {
                         fprintf(stderr, "milk.calc: %s\n", err);
                         return 1;
@@ -733,7 +732,7 @@ int main(int argc, char **argv)
                     pat = argv[j];
                 }
             }
-            return cli_calc_print_engines(pat, json_mode, cli_calc_ext_get, cli_calc_ext_count());
+            return calc_select_print_catalog(pat, json_mode);
         }
     }
 

@@ -244,7 +244,13 @@ def extract_from_markdown_file(path: pathlib.Path) -> list[CorpusEntry]:
                 in_fence = False
                 block = "\n".join(fence_lines)
                 blk_entries, _ = _extract_from_script_block(
-                    block, f"{rel}:{fence_start}"
+                    block,
+                    f"{rel}:{fence_start}",
+                    initial_setup=[
+                        "@cmd:mk2Dim cam 64 64",
+                        "@cmd:mk2Dim dark 64 64",
+                        "@cmd:mk2Dim im 64 64",
+                    ],
                 )
                 entries.extend(blk_entries)
         elif in_fence:

@@ -102,6 +102,7 @@ set(MILKSCRIPT_SOURCES
     bash/milk_bash_coproc.c
     bash/milk_bash_exec.c
     bash/milk_bash_cmdfile.c
+    calc_select.c
     milkscript_stubs.c
     milkscript_api.c)
 
@@ -228,6 +229,11 @@ add_library(
   ipc/milk_srv_manager.c
   core/milk_lexicon.c
   ../../calc/milk_argval.c
+  ../../calc/mc_ext_registry.c
+  ../../calc/mc_func.c
+  ../../calc/mc_lex.c
+  ../../calc/mc_local.c
+  calc_select.c
   core/milk_renames.c
   core/CLIcore_inspect.c
   calc/prog/cli_calc_engines.c

@@ -89,7 +89,8 @@ int cli_calc_fuse_c_func(fprog *p, const cli_token *ft, fval *out)
     {
         if (a[0].s1 == 0 && (nargs < 2 || a[1].s1 == 0) && (nargs < 3 || a[2].s1 == 0))
         {
-            out->s1 = 0;
+            out->s1  = 0;
+            out->lng = 0;
             if (nargs == 2 && ft->fnctptr == (double (*)()) pow && a[0].lng && a[1].lng)
             {
                 val_t lr;

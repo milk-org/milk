@@ -41,7 +41,9 @@ def _load_allowlist() -> dict[str, str]:
 
 
 def _run_calcdiff(
-    json_lines: list[str], force_old_vs_old: bool = False
+    json_lines: list[str],
+    force_old_vs_old: bool = False,
+    extra_args: list[str] | None = None,
 ) -> list[dict[str, str]]:
     """Run `milk-calcdiff` on @json_lines, falling back to `--old-vs-old` before Phase 4."""
     exe = _calcdiff_bin()
@@ -51,6 +53,8 @@ def _run_calcdiff(
     cmd = [str(exe)]
     if force_old_vs_old:
         cmd.append("--old-vs-old")
+    if extra_args:
+        cmd.extend(extra_args)
 
     proc = subprocess.run(
         cmd,
@@ -62,7 +66,7 @@ def _run_calcdiff(
     )
     if not force_old_vs_old and proc.returncode == 2 and "not available" in proc.stdout:
         proc = subprocess.run(
-            [str(exe), "--old-vs-old"],
+            [str(exe), "--old-vs-old"] + (extra_args or []),
             input=payload,
             capture_output=True,
             text=True,
@@ -162,5 +166,35 @@ def test_generated_expressions_diff():
     assert (
         not diffs
     ), f"{len(diffs)} unexpected diff(s) in generated expressions:\n" + "\n".join(
+        json.dumps(d) for d in diffs[:20]
+    )
+
+
+def test_generated_scalar_strict_diff():
+    """Run generated scalar expressions with `--strict` (no fallback to old allowed)."""
+    cases = list(
+        generate_cases(count=5000, seed=42, kind="scalar", calcdiff_bin=_calcdiff_bin())
+    )
+    lines = [json.dumps(c, separators=(",", ":")) for c in cases]
+    diffs = _run_calcdiff(lines, extra_args=["--strict"])
+    assert (
+        not diffs
+    ), f"{len(diffs)} unexpected diff(s) in strict scalar expressions:\n" + "\n".join(
+        json.dumps(d) for d in diffs[:20]
+    )
+
+
+def test_local_evaluator_parity():
+    """Verify `mcalc_eval_local` matches `mcalc_eval` across corpus and scalar expressions."""
+    corpus = collect_corpus()
+    lines = [e.to_json_line() for e in corpus]
+    cases = list(
+        generate_cases(count=2000, seed=42, kind="scalar", calcdiff_bin=_calcdiff_bin())
+    )
+    lines.extend(json.dumps(c, separators=(",", ":")) for c in cases)
+    diffs = _run_calcdiff(lines, extra_args=["--test-local"])
+    assert (
+        not diffs
+    ), f"{len(diffs)} unexpected diff(s) in local evaluator parity:\n" + "\n".join(
         json.dumps(d) for d in diffs[:20]
     )

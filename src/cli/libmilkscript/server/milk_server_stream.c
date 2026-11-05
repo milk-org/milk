@@ -40,6 +40,7 @@
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "calc_select.h"
 #include "cli_calc_parser.h"
 #include "milk_shm_cache.h"
 #include "milk_shm_prop.h"
@@ -146,7 +147,7 @@ static int waitfor_expr_cond(const char            *target,
         int  eval_rc = 2;
         ops->lock(ops->ctx);
         milk_server_expand_entities_in_expr(target, expanded, sizeof(expanded));
-        cli_calc_eval_bash(expanded, 1, &eval_rc);
+        calc_select_eval_bash(expanded, 1, &eval_rc);
         int on_image = cli_calc_test_image;
         ops->unlock(ops->ctx);
         if (eval_rc == 0)

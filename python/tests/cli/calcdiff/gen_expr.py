@@ -178,6 +178,10 @@ def _gen_scalar_expr(
             return f"{fn}(clamp({arg}, -0.9, 0.9))"
         if fn in ("exp", "exp2", "sinh", "cosh"):
             return f"{fn}(clamp({arg}, -4.0, 4.0))"
+        if fn in ("u8", "u16", "u32", "u64"):
+            return f"{fn}(clamp(abs({arg}), 0.0, 100.0))"
+        if fn in ("i8", "i16", "i32", "i64"):
+            return f"{fn}(clamp({arg}, -100.0, 100.0))"
         return f"{fn}({arg})"
 
     fn = rng.choice(binary_fns) if binary_fns else "hypot"
@@ -256,6 +260,10 @@ def _gen_image_expr(
             return f"{fn}(clamp({arg}, -0.9, 0.9))"
         if fn in ("exp", "exp2", "sinh", "cosh"):
             return f"{fn}(clamp({arg}, -3.0, 3.0))"
+        if fn in ("u8", "u16", "u32", "u64"):
+            return f"{fn}(clamp(abs({arg}), 0.0, 100.0))"
+        if fn in ("i8", "i16", "i32", "i64"):
+            return f"{fn}(clamp({arg}, -100.0, 100.0))"
         return f"{fn}({arg})"
     if choice < 0.93:
         im0 = rng.choice(imgs)
@@ -296,7 +304,7 @@ def generate_cases(
 ) -> Iterator[dict[str, object]]:
     """Yield @count seeded calculator test-case dicts for `milk-calcdiff`."""
     rng = random.Random(seed)
-    fns = load_functions(calcdiff_bin)
+    fns = [f for f in load_functions(calcdiff_bin) if f.get("in_old", 1)]
     unary_fns = [
         str(f["name"])
         for f in fns
@@ -333,6 +341,9 @@ def generate_cases(
         if kind == "scalar" or (kind == "all" and rng.random() < 0.35):
             depth = rng.randint(1, 6)
             expr = _gen_scalar_expr(rng, depth, unary_fns, binary_fns)
+            while len(expr) > 300:
+                depth = max(1, depth - 1)
+                expr = _gen_scalar_expr(rng, depth, unary_fns, binary_fns)
             r = rng.random()
             if r < 0.55:
                 stmt = f"v = {expr}"
@@ -340,7 +351,9 @@ def generate_cases(
                 aop = rng.choice(["+=", "-=", "*="])
                 stmt = f"v {aop} {expr}"
             elif r < 0.88:
-                e2 = _gen_scalar_expr(rng, max(1, depth - 1), unary_fns, binary_fns)
+                e2 = _gen_scalar_expr(
+                    rng, min(3, max(1, depth - 1)), unary_fns, binary_fns
+                )
                 stmt = f"m, s = {expr}, {e2}"
             else:
                 stmt = expr
