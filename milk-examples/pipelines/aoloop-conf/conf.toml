@@ -10,7 +10,7 @@ wfs2modes.exec = 'milk-fpsexec-linalg-MVMextract'
 mfilt.exec     = 'cacao-fpsexec-mfilt'
 modes2dm.exec  = 'milk-fpsexec-linalg-MVMextract'
 
-mlat.exec      = 'cacao-fpsexec-cacaoopt-mlat'
+mlat.exec      = 'cacao-fpsexec-cacaopt-mlat'
 measlinresp.exec    = 'cacao-fpsexec-cacaoac-measlinresp'
 
 #include fps_details.toml

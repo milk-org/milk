@@ -64,8 +64,11 @@ def cloned_pipeline():
 
 
 def _fake_compu(fpsname: str) -> SimpleNamespace:
-    """Stand-in for a deployed, valid, idle ComputeUnit; tests flip its attributes."""
-    compu = SimpleNamespace(fpsname=fpsname, calls=[], destroy_error=None)
+    """Stand-in for a deployed, valid, idle ComputeUnit; tests flip its attributes
+    (``conf``/``run`` are its conf and run flags; runstart/runstop set ``run``)."""
+    compu = SimpleNamespace(
+        fpsname=fpsname, calls=[], destroy_error=None, conf=False, run=False
+    )
 
     def destroy() -> None:
         compu.calls.append("destroy")
@@ -74,13 +77,20 @@ def _fake_compu(fpsname: str) -> SimpleNamespace:
 
     compu.fps = SimpleNamespace(
         is_valid=lambda: True,
-        conf_isrunning=lambda: False,
-        run_isrunning=lambda: False,
+        conf_isrunning=lambda: compu.conf,
+        run_isrunning=lambda: compu.run,
         destroy=destroy,
     )
     compu.confstart = lambda tmux=False: compu.calls.append("confstart")
     compu.confstop = lambda: compu.calls.append("confstop")
-    compu.runstop = lambda: compu.calls.append("runstop")
+    compu.runstart = lambda tmux=False: (
+        compu.calls.append("runstart"),
+        setattr(compu, "run", True),
+    )
+    compu.runstop = lambda: (
+        compu.calls.append("runstop"),
+        setattr(compu, "run", False),
+    )
     return compu
 
 

@@ -24,6 +24,7 @@ Rules:
 | R5 | Kind infrastructure | Extend pipelines without touching the core | In: `PipelineKind` protocol (§4.3), registration, `generic` kind, kind defaults feeding confresolve, kind plans as subcommands, one stub kind defined outside the core package. Deferred: standard-kind content (Vincent, manually) | R4 | milk | planned | — |
 | R6 | pyMilk boundary | One narrow, tested seam to pyMilk | In (repo-merge round): narrow pyMilk seam, pure-Python SHM-name validator, ISIO/FPS struct version checks, engine-lib and bindings-build consolidation. Deferred now: requires repo architecture and C changes | R1a | milk | deferred | `specs/006-r6-pymilk-boundary/brief.md` (draft) |
 | R7 | Waitable test states | Tests wait on observable states, not guessed sleeps | In: replace guessed sleeps in CompU tests with predicate polls; dedupe CompU fixtures into conftestaux. Deferred: library wait primitive (R4); cli_hardening pacing | R1c | milk | done | `specs/005-r7-waitable-tests/brief.md` |
+| O1 | Steps as plans + RunStart | Run any task list from Python; start/stop/wait on CompU subsets; mlat goal line | In: `plans.run()`, RunStart, WaitRunEnd, `milk-show mlat`, `tests/resources/mlatsim-conf`. Deferred: CLI `run`, facts, step params, recording, named start/stop plans | R4 | py+milk | planned | `specs/011-o1-steps-runstart-mlat/brief.md` |
 
 Order: R1a → R1b → R1c → R2 → R3a → R3b → R4 → R5. R6 is deferred to the repo-merge round. R7 can run any time after R1c.
 

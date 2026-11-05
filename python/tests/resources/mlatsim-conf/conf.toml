@@ -1,0 +1,52 @@
+# mlat over a simulated DM -> WFS path (design-v7 Appendix A.1 shapes).
+#
+#   mlatsim_dm --[wfssim: streamdelay, ~1 kHz, delaysec]--> mlatsim_wfs
+#        ^                                                       |
+#        +---------------- mlat pokes dm, watches wfs -----------+
+#
+# Session: see specs/011-o1-steps-runstart-mlat/brief.md.
+long_name = "mlatsim"
+name = "mlatsim"
+loop_number = 7
+teardown_kill_tmux = true
+
+[[hooks]]                     # writes data/dm.fits: 16x16 float32 zeros
+id = "dm"
+type = "command"
+command = ["python3", "../scripts/mkdm.py", "dm.fits"]
+product = "dm.fits"
+
+[[dataloads]]                 # the DM stream must exist before wfssim and mlat start
+source = "dm.fits"
+target = "mlatsim_dm"
+
+[compute_units.wfssim]        # the "camera": copies the DM, delaysec late, every triggerdelay
+exec = "milk-fpsexec-mem-streamdelay"
+
+[compute_units.wfssim.fps]
+in_name = "mlatsim_dm"
+out_name = "mlatsim_wfs"
+delaysec = 0.003
+naive_mode = true
+procinfo.enabled = true
+procinfo.loopcntMax = -1
+procinfo.triggermode = 4      # delay: one frame every triggerdelay
+procinfo.triggerdelay = 0.001
+
+[compute_units.mlat]          # one measurement per run; the run ends by itself
+exec = "cacao-fpsexec-cacaopt-mlat"
+
+[compute_units.mlat.fps]
+dmstream = "{compute_units.wfssim.fps.in_name}"
+wfsstream = "{compute_units.wfssim.fps.out_name}"
+pokemap = "null"
+OPDamp = 1.0
+CPA = 2.0
+frameratewait = 0.5
+NBiter = 10
+wfsNBframemax = 50
+option.saveseq = false
+option.seqNBframe = 20
+procinfo.enabled = true
+procinfo.loopcntMax = 0       # a single pass (milk counts from 0)
+procinfo.triggermode = 0      # immediate
