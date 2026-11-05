@@ -1,0 +1,14 @@
+[
+  {
+    "stmt": "u = rand(u, 123); u2 = urand(u, 123); u3 = rand(u)",
+    "rule": "docs/guide/calculator.md §Math & Element-Wise Functions: 1-argument rand(im) without a seed chooses a fresh non-repeating seed on every call."
+  },
+  {
+    "stmt": "g = 10.0 + 2.5 * randn(g, 99); g2 = 10.0 + 2.5 * grand(g, 99); g3 = randn(g)",
+    "rule": "docs/guide/calculator.md §Math & Element-Wise Functions: 1-argument randn(im) without a seed chooses a fresh non-repeating seed on every call."
+  },
+  {
+    "stmt": "imean(g); istd(g); imax(abs(g - g2)); imax(abs(g3 - randn(g)))",
+    "rule": "docs/guide/calculator.md §Math & Element-Wise Functions: 1-argument randn(im) without a seed chooses a fresh non-repeating seed on every call."
+  }
+]

@@ -263,3 +263,12 @@ target_include_directories(
                    ${CMAKE_CURRENT_SOURCE_DIR}/../CLIcore)
 set_target_properties(milk-call PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
 install(TARGETS milk-call DESTINATION bin)
+
+# Differential calculator test harness and benchmark runner (Phase 3-9; deleted in Phase 10)
+add_executable(milk-calcdiff tests/calcdiff.c)
+target_link_libraries(milk-calcdiff PRIVATE milkscript milkcalc milkprocessinfo milkdata m)
+target_include_directories(
+  milk-calcdiff PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+                       ${CMAKE_CURRENT_SOURCE_DIR}/../CLIcore)
+set_target_properties(milk-calcdiff PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
+install(TARGETS milk-calcdiff DESTINATION bin)
