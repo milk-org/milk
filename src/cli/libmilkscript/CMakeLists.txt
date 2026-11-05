@@ -41,7 +41,6 @@ set(MILKSCRIPT_SOURCES
     core/milk_catalog.c
     core/milk_catalog_build.c
     core/milk_cmd_args.c
-    core/milk_argval.c
     core/milk_cmd_index.c
     core/milk_lexicon.c
     core/milk_renames.c
@@ -82,11 +81,6 @@ set(MILKSCRIPT_SOURCES
     calc/ext/cli_calc_ext.c
     calc/ext/cli_calc_fuse_user_kern.c
     calc/ext/cli_calc_fuse_user_op.c
-    shm_prop/milk_shm_prop.c
-    shm_prop/milk_shm_prop_stream.c
-    shm_prop/milk_shm_prop_fps.c
-    shm_prop/milk_shm_prop_proc.c
-    shm_prop/milk_shm_cache.c
     ipc/milk_ipc_common.c
     ipc/milk_client_conn.c
     ipc/milk_client_ops.c
@@ -141,6 +135,8 @@ target_link_libraries(
          rt
          ${CMAKE_THREAD_LIBS_INIT}
          ${CFITSIO_LIBRARIES}
+         milkcalc
+         milkprop
          milkCOREMODarith
          $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits>
          milkCOREMODmemory
@@ -155,7 +151,9 @@ target_include_directories(
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/core>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/calc>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/shm_prop>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/prop>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/calc>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/calc/units>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ipc>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/server>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/bash>
@@ -190,8 +188,6 @@ install(
         core/CLIcore_utils.h
         calc/cli_calc_parser.h
         calc/cli_calc_tokenizer.h
-        ../../coremods/COREMOD_arith/milk_calc_ext.h
-        shm_prop/milk_shm_prop.h
         ipc/milk_proto.h
         ipc/milk_srvlog.h
         ipc/milk_client.h
@@ -201,8 +197,6 @@ install(
         script_includes.h
         milkscript.h
   DESTINATION include/${SRCNAME})
-
-install(FILES ../../coremods/COREMOD_arith/milk_calc_ext.h DESTINATION include)
 
 add_executable(milk-script milkscript_main.c)
 target_link_libraries(milk-script PRIVATE milkscript milkprocessinfo milkdata)
@@ -232,13 +226,8 @@ add_library(
   ipc/milk_waitfor.c
   ipc/milk_srvlog_shm.c
   ipc/milk_srv_manager.c
-  shm_prop/milk_shm_prop.c
-  shm_prop/milk_shm_prop_stream.c
-  shm_prop/milk_shm_prop_fps.c
-  shm_prop/milk_shm_prop_proc.c
-  shm_prop/milk_shm_cache.c
   core/milk_lexicon.c
-  core/milk_argval.c
+  ../../calc/milk_argval.c
   core/milk_renames.c
   core/CLIcore_inspect.c
   calc/prog/cli_calc_engines.c
@@ -251,7 +240,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
   target_compile_options(milkbash PRIVATE -fopenmp-simd)
 endif()
 target_link_libraries(
-  milkbash PRIVATE milkfps milkcomputeunit milkprocessinfo milkdata m dl rt
+  milkbash PRIVATE milkprop milkfps milkcomputeunit milkprocessinfo milkdata m dl rt
                    ${CMAKE_THREAD_LIBS_INIT})
 set_target_properties(milkbash PROPERTIES C_VISIBILITY_PRESET hidden INSTALL_RPATH "$ORIGIN")
 target_link_options(milkbash PRIVATE "-Wl,--disable-new-dtags" "-Wl,--no-undefined")
@@ -260,7 +249,7 @@ install(TARGETS milkbash DESTINATION lib)
 # Compute units without C code (milk.calc, milk.script): fpsexec binaries that run calculator statements or
 # a bash snippet on each frame; the calculator and milk.bash come from libmilkscript.
 foreach(_unit calc script)
-  add_executable(milk-fpsexec-milk-${_unit} units/milk_unit_${_unit}.c units/milk_unit.c)
+  add_executable(milk-fpsexec-milk-${_unit} units/milk_unit_${_unit}.c)
   target_compile_definitions(milk-fpsexec-milk-${_unit} PRIVATE MILK_NO_CLI)
   milk_configure_fpsexec(milk-fpsexec-milk-${_unit} PREFIX milk)
   target_link_libraries(milk-fpsexec-milk-${_unit} PUBLIC milkscript)

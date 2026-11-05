@@ -55,7 +55,6 @@ target_link_libraries(
 # ==================
 
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
-install(FILES milk_calc_ext.h DESTINATION include)
 
 # CUSTOM ===========
 include(CTest)

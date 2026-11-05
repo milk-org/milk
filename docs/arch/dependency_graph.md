@@ -43,6 +43,8 @@ graph TD
         ARITH["milkCOREMODarith"]:::coremod
         MEMORY["milkCOREMODmemory"]:::coremod
         TOOLS["milkCOREMODtools"]:::coremod
+        PROP["milkprop"]:::coremod
+        CALC["milkcalc"]:::coremod
     end
 
     IOFITS["milkCOREMODiofits"]:::coremod_fits
@@ -92,7 +94,16 @@ graph TD
     MEMORY -.->|USE_CFITSIO| CFITSIO
     TOOLS --> FPS
     TOOLS --> COMPUTEUNIT
+    PROP --> COMPUTEUNIT
+    PROP --> FPS
+    PROP --> PROCINFO
+    PROP --> MILKDATA
+    CALC --> PROP
+    CALC --> ARITH
+    CALC --> MEMORY
 
+    MILKSCRIPT --> CALC
+    MILKSCRIPT --> PROP
     MILKSCRIPT --> ARITH
     MILKSCRIPT --> MEMORY
     MILKSCRIPT --> TOOLS
@@ -102,6 +113,7 @@ graph TD
     MILKSCRIPT --> PROCINFO
     MILKSCRIPT --> MILKDATA
 
+    MILKBASH --> PROP
     MILKBASH --> COMPUTEUNIT
     MILKBASH --> FPS
     MILKBASH --> PROCINFO

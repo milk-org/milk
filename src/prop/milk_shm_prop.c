@@ -21,8 +21,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "CLIcore.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 #include "fps_GetParamIndex.h"
+#include "libfps/fps.h"
+#include "libmilkdata/milkdata.h"
+#include "libprocessinfo/processinfo.h"
 #include "milk_entity_ns.h"
 #include "milk_shm_cache.h"
 #include "milk_shm_prop.h"

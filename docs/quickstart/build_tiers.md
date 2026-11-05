@@ -15,7 +15,7 @@ The default build is the **Full build**, but without extra dependencies.
 | --------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | **Full build**  | CLI (`milk-cli`, `milk-script`, `milk-call`, `milk.bash`, `milk-CTRL`)         | readline, tree-sitter (bundled), ncurses                                                           |
 | **Core + FITS** | `COREMOD_iofits`, plugins, `fpsexec` compute units                             | cfitsio, per-plugin deps (see [CMake system](../developer/dependency_system.md))                   |
-| **Core**        | `COREMOD_memory`, `COREMOD_arith`, `COREMOD_tools`, plugins, `fpsexec`s        |                                                                                                    |
+| **Core**        | `COREMOD_memory`, `COREMOD_arith`, `COREMOD_tools`, `milkprop`, `milkcalc`, plugins, `fpsexec`s |                                                                                                    |
 | **Engine**      | `ImageStreamIO`, `libmilkcommon`, `libprocessinfo`, `libfps`, `libcomputeunit`, `libmilkdata`, engine TUIs (`milk-fpsCTRL`, `milk-procCTRL`) | POSIX-only (+ ncurses for TUIs)                                                                    |
 
 ## Optional dependencies
@@ -56,7 +56,7 @@ dependencies as a developer.
 | Tier               | cmake command                               | What you get                                                       |
 | ------------------ | ------------------------------------------- | ------------------------------------------------------------------ |
 | **Engine**         | `cmake .. -DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, processinfo, FPS, computeunit, milkdata, engine TUIs |
-| **Core**           | `cmake .. -DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | + COREMOD_arith, memory, tools, non-FITS plugins and `fpsexec`s    |
+| **Core**           | `cmake .. -DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | + COREMOD_arith, memory, tools, milkprop, milkcalc, non-FITS plugins and `fpsexec`s |
 | **Core + FITS**    | `cmake .. -DUSE_CLI=OFF`                    | + COREMOD_iofits and FITS-enabled plugins / `fpsexec`s             |
 | **Full**           | `cmake ..`                                  | + `milk-cli`, `milk-script`, `milk.bash`, `milk-CTRL`, all plugins |
 | **Full + options** | `cmake .. -DUSE_<X_OPTIONAL_DEP>=ON`        | + GPU acceleration (CUDA, MAGMA) or Intel MKL                      |

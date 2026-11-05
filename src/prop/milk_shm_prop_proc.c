@@ -23,10 +23,11 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "CLIcore.h"
-#include "processinfo_timing.h"
+#include "libmilkdata/milkdata.h"
+#include "milk_shm_prop.h"
 #include "milk_shm_prop_internal.h"
 #include "processinfo.h"
+#include "processinfo_timing.h"
 #include "processtools_trigger.h"
 
 extern PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);

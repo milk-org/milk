@@ -15,7 +15,8 @@
 #ifndef MILK_SHM_CACHE_H
 #define MILK_SHM_CACHE_H
 
-#include "CLIcore.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+#include "libfps/fps.h"
 #include "fps_types.h"
 
 IMAGE *milk_shm_cache_stream(const char *name);

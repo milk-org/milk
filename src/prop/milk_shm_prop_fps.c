@@ -28,13 +28,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "CLIcore.h"
 #include "computeunit.h"
 #include "fps.h"
 #include "fps_GetParamIndex.h"
 #include "fps_connect.h"
 #include "fps_paramvalue.h"
 #include "fps_printparameter_valuestring.h"
+#include "libmilkdata/milkdata.h"
 #include "milk_shm_cache.h"
 #include "milk_shm_prop.h"
 #include "milk_shm_prop_internal.h"

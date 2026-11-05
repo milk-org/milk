@@ -513,6 +513,8 @@ endforeach()
 
 # example module and isio-tools depend on coremods
 if(USE_COREMODS)
+  add_subdirectory(src/prop)
+  add_subdirectory(src/calc)
   add_subdirectory(src/milk_module_example)
   add_subdirectory(src/isio-tools)
   add_subdirectory(src/perfbench)
@@ -531,6 +533,7 @@ add_subdirectory(src/engine/libprocessinfo)
 
 # no shell, no tmux and only listed non-POSIX calls in the engine libraries
 include(cmake/milk_engine_guards.cmake)
+include(cmake/milk_layer_guards.cmake)
 
 # engine-tier TUIs
 add_subdirectory(src/tui)

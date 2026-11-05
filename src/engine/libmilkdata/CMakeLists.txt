@@ -13,10 +13,7 @@ target_include_directories(
 target_include_directories(
   ${LIBNAME}
   PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
-          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
-          # fps.h -> fps_cli_binding.h -> CLIcore/CLIcore_checkargs.h TODO:
-          # remove when CLICMDARGDEF moves to engine tier
-          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>)
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>)
 
 target_link_libraries(${LIBNAME} PUBLIC ImageStreamIO milkcommon m rt)
 
@@ -43,8 +40,7 @@ if(USE_STATIC_LTO)
   target_include_directories(
     ${LIBNAME}_static
     PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
-            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
-            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>)
+            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>)
   target_link_libraries(${LIBNAME}_static PUBLIC ImageStreamIO_static
                                                  milkcommon m rt)
 endif()

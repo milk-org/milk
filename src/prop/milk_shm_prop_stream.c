@@ -23,12 +23,12 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "CLIcore.h"
 #include "ImageStreamIO/ImageStreamIO.h"
-#include "milk_shm_prop.h"
-#include "milk_shm_cache.h"
-#include "milk_shm_prop_internal.h"
 #include "libmilkdata/milk_type_dispatch.h"
+#include "libmilkdata/milkdata.h"
+#include "milk_shm_cache.h"
+#include "milk_shm_prop.h"
+#include "milk_shm_prop_internal.h"
 
 /**
  * @brief Locate an active local image or open a shared-memory stream.

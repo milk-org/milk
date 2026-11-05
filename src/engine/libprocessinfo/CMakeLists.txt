@@ -58,10 +58,7 @@ if(USE_STATIC_LTO)
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkcommon>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
            $<INSTALL_INTERFACE:include>)
   target_link_libraries(${LIBNAME}_static PUBLIC ImageStreamIO_static
                                                       milkcommon rt pthread m)

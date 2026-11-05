@@ -5,10 +5,18 @@
 #ifndef IMAGEID_H
 #define IMAGEID_H
 
-#include "CLIcore.h"
-#include "image_ID.h"
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include "libfps/IMGID.h"
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+
+#include "create_image.h"
+#include "delete_image.h"
+#include "image_ID.h"
+#include "read_shmim.h"
 
 /**
  * @brief Register an IMGID in the CLI image array.

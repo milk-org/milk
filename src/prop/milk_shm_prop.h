@@ -27,6 +27,17 @@
 #include <stddef.h>
 
 #include "ImageStreamIO/ImageStruct.h"
+#include "libmilkdata/milkdata.h"
+
+#ifndef MILK_LOCAL_IMAGES
+#    ifdef MILK_BASH_CLIENT
+#        define MILK_LOCAL_IMAGES ((IMAGE *) NULL)
+#        define MILK_NB_LOCAL_IMAGES 0L
+#    else
+#        define MILK_LOCAL_IMAGES dcimg
+#        define MILK_NB_LOCAL_IMAGES dcnimg
+#    endif
+#endif
 
 /**
  * @brief Locate an active local image or open a shared-memory stream.
