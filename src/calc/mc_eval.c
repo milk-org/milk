@@ -850,9 +850,12 @@ int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
 int mcalc_eval_str(const char *input, int is_test, int *out_rc, char *out, size_t outsz)
 {
     (void) (out != NULL && outsz > 0 && (out[0] = '\0', 1));
+    int saved_mode = mcalc_out_mode;
+    mcalc_out_mode = MCALC_OUT_VALUES;
     g_calc_out = out, g_calc_sz = outsz;
     int r      = mcalc_eval_bash(input, is_test, out_rc);
     g_calc_out = NULL, g_calc_sz = 0;
+    mcalc_out_mode = saved_mode;
     return r;
 }
 
@@ -871,8 +874,8 @@ int mcalc_eval_math_to_val(const char *input, int *out_type, long *out_lval, dou
     mc_stmt_t *s        = mc_parse_stmt(&s_tl, err, sizeof(err));
     mc_val_t   v;
     if (s == NULL || s->kind != MC_STMT_EXPR || s->u.expr == NULL ||
-        mc_resolve_stmt(s, err, sizeof(err)) != 0 || s->needs_image ||
-        mc_scalar_eval_expr(s->u.expr, &v, err, sizeof(err)) != 0 ||
+        s->u.expr->kind == MC_EXPR_ASSIGN || mc_resolve_stmt(s, err, sizeof(err)) != 0 ||
+        s->needs_image || mc_scalar_eval_expr(s->u.expr, &v, err, sizeof(err)) != 0 ||
         (v.type != MC_VAL_LONG && v.type != MC_VAL_DOUBLE))
     {
         mc_stmt_free(s);

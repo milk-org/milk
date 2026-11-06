@@ -20,7 +20,13 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
+#include "CLIcore_script.h"
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+#include "calc/mcalc.h"
 #include "milk_cmd_args.h"
+#include "milk_entity_ns.h"
+#include "milk_shm_prop.h"
 
 #define MILK_CALL_DEPTH \
     8 /* nested dispatches tracked; deeper calls get CLI_checkarg_array's fallback */
@@ -701,4 +707,288 @@ void milk_args_print_call(int cmdi, int session, FILE *fp)
         put_quoted(session ? sv : v, fp);
     }
     fputc('\n', fp);
+}
+
+static void refresh_shared_image_arg(IMAGE *im)
+{
+    if (im == NULL || !im->used || im->md == NULL || im->md[0].shared != 1)
+    {
+        return;
+    }
+    char        shmpath[512];
+    struct stat st;
+    if (ImageStreamIO_filename(shmpath, sizeof(shmpath), im->name) == IMAGESTREAMIO_SUCCESS &&
+        stat(shmpath, &st) == 0 && st.st_ino != im->md[0].inode)
+    {
+        IMAGE fresh;
+        memset(&fresh, 0, sizeof(fresh));
+        if (ImageStreamIO_read_sharedmem_image_toIMAGE(im->name, &fresh) == IMAGESTREAMIO_SUCCESS)
+        {
+            ImageStreamIO_closeIm(im);
+            memcpy(im, &fresh, sizeof(IMAGE));
+            im->used = 1;
+            milk_table_bump();
+        }
+    }
+}
+
+static imageID resolve_arg_image(const char *name, int allow_autoconnect)
+{
+    if (data.core.image == NULL || data.core.NB_MAX_IMAGE <= 0)
+    {
+        return -1;
+    }
+    FPS_STREAMNAME_PARSED sp = fps_streamname_parse(name);
+    if (sp.error)
+    {
+        return -1;
+    }
+    const char *bare = (sp.name != NULL && sp.name[0] != '\0') ? sp.name : name;
+    imageID     id   = image_ID(bare, data.core.image, data.core.NB_MAX_IMAGE);
+    if (id != -1)
+    {
+        refresh_shared_image_arg(&data.core.image[id]);
+    }
+    if (id != -1 || !allow_autoconnect || sp.loc == 'L')
+    {
+        return id;
+    }
+    char shmpath[512];
+    if (ImageStreamIO_filename(shmpath, sizeof(shmpath), bare) == IMAGESTREAMIO_SUCCESS &&
+        access(shmpath, R_OK) == 0)
+    {
+        IMAGE tmp_im;
+        memset(&tmp_im, 0, sizeof(tmp_im));
+        if (ImageStreamIO_read_sharedmem_image_toIMAGE(bare, &tmp_im) == IMAGESTREAMIO_SUCCESS)
+        {
+            id = next_avail_image_ID(-1);
+            if (id != -1)
+            {
+                memcpy(&data.core.image[id], &tmp_im, sizeof(IMAGE));
+                data.core.image[id].used = 1;
+            }
+            else
+            {
+                ImageStreamIO_closeIm(&tmp_im);
+            }
+        }
+    }
+    return id;
+}
+
+static int is_plain_ident_arg(const char *s)
+{
+    if (s == NULL || s[0] == '\0')
+    {
+        return 0;
+    }
+    unsigned char c0 = (unsigned char) s[0];
+    if (!(isalpha(c0) || c0 == '_' || c0 == '?' ||
+          (c0 == '.' && !isdigit((unsigned char) s[1]) && s[1] != '\0')))
+    {
+        return 0;
+    }
+    for (const char *p = s; *p != '\0'; p++)
+    {
+        unsigned char c = (unsigned char) *p;
+        if (!(isalnum(c) || c == '_' || c == '.' || c == '$' || c == ':' || c == '?'))
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+void milk_cmd_classify_arg(const char *arg, int is_slice)
+{
+    CMDARGTOKEN *tok = &data.cmdargtoken[data.cmdNBarg];
+    if (arg == NULL || arg[0] == '\0')
+    {
+        return;
+    }
+
+    size_t len = strlen(arg);
+    if (len >= 2 && arg[0] == '"' && arg[len - 1] == '"' && memchr(arg + 1, '"', len - 2) == NULL)
+    {
+        size_t slen = len - 2;
+        if (slen >= STRINGMAXLEN_CMDARGTOKEN_VAL)
+        {
+            slen = STRINGMAXLEN_CMDARGTOKEN_VAL - 1;
+        }
+        memcpy(tok->val.string, arg + 1, slen);
+        tok->val.string[slen] = '\0';
+        tok->type             = CMDARGTOKEN_TYPE_STRING;
+        return;
+    }
+
+    if (!is_slice && is_plain_ident_arg(arg))
+    {
+        char sbuf[STRINGMAXLEN_CMDARGTOKEN_VAL];
+        if ((arg[0] == 'L' || arg[0] == 'S') && arg[1] == ':')
+        {
+            snprintf(sbuf, sizeof(sbuf), "@%s", arg);
+        }
+        else
+        {
+            snprintf(sbuf, sizeof(sbuf), "%s", arg);
+        }
+
+        long svid = variable_ID(sbuf);
+        if (svid != -1 && data.core.variable[svid].type == 3 &&
+            data.core.variable[svid].value.s[0] != '\0')
+        {
+            snprintf(sbuf, sizeof(sbuf), "%s", data.core.variable[svid].value.s);
+            svid = variable_ID(sbuf);
+        }
+
+        if (svid != -1 && data.core.variable[svid].type != 3)
+        {
+            if (data.core.variable[svid].type == 1)
+            {
+                tok->type     = CMDARGTOKEN_TYPE_LONG;
+                tok->val.numl = data.core.variable[svid].value.l;
+            }
+            else if (data.core.variable[svid].type == 2)
+            {
+                snprintf(tok->val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s",
+                         data.core.variable[svid].value.s);
+            }
+            else
+            {
+                tok->type     = CMDARGTOKEN_TYPE_FLOAT;
+                tok->val.numf = data.core.variable[svid].value.f;
+            }
+            return;
+        }
+
+        if (resolve_arg_image(sbuf, 0) != -1)
+        {
+            FPS_STREAMNAME_PARSED sp = fps_streamname_parse(sbuf);
+            const char           *bare =
+                (!sp.error && sp.name != NULL && sp.name[0] != '\0') ? sp.name : sbuf;
+            tok->type = CMDARGTOKEN_TYPE_EXISTINGIMAGE;
+            snprintf(tok->val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s", bare);
+            return;
+        }
+
+        const char *dot1 = strchr(sbuf, '.');
+        if (dot1 != NULL && strchr(dot1 + 1, '.') != NULL &&
+            milk_entity_ns_kind(sbuf, NULL) != MILK_NS_NONE)
+        {
+            double dv     = 0.0;
+            long   lv     = 0;
+            int    islong = 0;
+            if (milk_shm_prop_get_num(sbuf, &dv, &lv, &islong) == 0)
+            {
+                if (islong)
+                {
+                    tok->type     = CMDARGTOKEN_TYPE_LONG;
+                    tok->val.numl = lv;
+                }
+                else
+                {
+                    tok->type     = CMDARGTOKEN_TYPE_FLOAT;
+                    tok->val.numf = dv;
+                }
+                return;
+            }
+            char pstr[256];
+            if (milk_shm_prop_get(sbuf, pstr, sizeof(pstr)) == 0)
+            {
+                snprintf(tok->val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s", pstr);
+                return;
+            }
+        }
+
+        tok->type = CMDARGTOKEN_TYPE_STRING;
+        snprintf(tok->val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s", sbuf);
+        return;
+    }
+
+    if (is_slice)
+    {
+        const char *bk = strchr(arg, '[');
+        char        bare[256];
+        char        sbuf[512];
+        size_t      bn = (bk != NULL) ? (size_t) (bk - arg) : 0;
+        if (bn == 0 || bn >= sizeof(bare))
+        {
+            tok->type = CMDARGTOKEN_TYPE_RAWSTRING;
+            snprintf(tok->val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s", arg);
+            return;
+        }
+        memcpy(bare, arg, bn);
+        bare[bn]  = '\0';
+        long bvid = variable_ID(bare);
+        if (bvid != -1 && data.core.variable[bvid].type == 3 &&
+            data.core.variable[bvid].value.s[0] != '\0')
+        {
+            snprintf(bare, sizeof(bare), "%s", data.core.variable[bvid].value.s);
+        }
+        if (resolve_arg_image(bare, 1) == -1)
+        {
+            tok->type = CMDARGTOKEN_TYPE_STRING;
+            snprintf(tok->val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s%s", bare, bk);
+            return;
+        }
+        FPS_STREAMNAME_PARSED sp = fps_streamname_parse(bare);
+        const char *rbare = (!sp.error && sp.name != NULL && sp.name[0] != '\0') ? sp.name : bare;
+        snprintf(sbuf, sizeof(sbuf), "%s%s", rbare, bk);
+
+        int    mtype = 0;
+        long   mlval = 0;
+        double mdval = 0.0;
+        if (mcalc_eval_math_to_val(sbuf, &mtype, &mlval, &mdval))
+        {
+            if (mtype == 1)
+            {
+                tok->type     = CMDARGTOKEN_TYPE_LONG;
+                tok->val.numl = mlval;
+            }
+            else
+            {
+                tok->type     = CMDARGTOKEN_TYPE_FLOAT;
+                tok->val.numf = mdval;
+            }
+            return;
+        }
+
+        int  eval_rc = 0;
+        char outbuf[256];
+        outbuf[0] = '\0';
+        int ok    = mcalc_eval_str(sbuf, 0, &eval_rc, outbuf, sizeof(outbuf));
+        if (ok && eval_rc == 0 && outbuf[0] != '\0' &&
+            image_ID(outbuf, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+        {
+            tok->type = CMDARGTOKEN_TYPE_EXISTINGIMAGE;
+            snprintf(tok->val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s", outbuf);
+        }
+        else
+        {
+            tok->type = CMDARGTOKEN_TYPE_RAWSTRING;
+            snprintf(tok->val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s", arg);
+        }
+        return;
+    }
+
+    int    mtype = 0;
+    long   mlval = 0;
+    double mdval = 0.0;
+    if (mcalc_eval_math_to_val(arg, &mtype, &mlval, &mdval))
+    {
+        if (mtype == 1)
+        {
+            tok->type     = CMDARGTOKEN_TYPE_LONG;
+            tok->val.numl = mlval;
+        }
+        else
+        {
+            tok->type     = CMDARGTOKEN_TYPE_FLOAT;
+            tok->val.numf = mdval;
+        }
+        return;
+    }
+
+    tok->type = CMDARGTOKEN_TYPE_RAWSTRING;
+    snprintf(tok->val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s", arg);
 }

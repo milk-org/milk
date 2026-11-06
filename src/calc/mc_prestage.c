@@ -244,8 +244,11 @@ int mc_exec_prestage(mcalc_prog_t    *prog,
     {
         return -1;
     }
+    int is_ax = !is_pu && !is_rp && strcmp(fn, "ema") != 0 && strcmp(fn, "cumsum") != 0 &&
+                strcmp(fn, "gauss") != 0 && strcmp(fn, "conv2") != 0 && strcmp(fn, "boxmean") != 0;
     uint8_t pref_dt =
-        (s1.dt == _DATATYPE_DOUBLE || s1.dt == _DATATYPE_INT64 || s1.dt == _DATATYPE_UINT64)
+        (s1.dt == _DATATYPE_DOUBLE || s1.dt == _DATATYPE_INT64 || s1.dt == _DATATYPE_UINT64 ||
+         (is_ax && (s1.dt == _DATATYPE_INT32 || s1.dt == _DATATYPE_UINT32)))
             ? _DATATYPE_DOUBLE
             : _DATATYPE_FLOAT;
     uint8_t out_dt = select_out_dt(slot, pref_dt);

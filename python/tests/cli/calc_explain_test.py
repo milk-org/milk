@@ -61,7 +61,7 @@ def test_explain_reports_how_each_statement_runs(tmp_path):
     ), out
     z = _line_after(res.stdout, "z = cplx(out, out)")
     s = _line_after(res.stdout, "s = out[::2b]")
-    if os.environ.get("MILK_CALC_ENGINE") == "new":
+    if os.environ.get("MILK_CALC_ENGINE", "new") != "old":
         assert (
             z.startswith("kept: fused pass over 64x64x1") and "complex float32" in z
         ), out
@@ -78,7 +78,7 @@ def test_explain_reports_how_each_statement_runs(tmp_path):
     assert _line_after(res.stdout, "y = f(out)").startswith(
         "kept: fused pass over 64x64x1"
     ), out
-    if os.environ.get("MILK_CALC_ENGINE") == "new":
+    if os.environ.get("MILK_CALC_ENGINE", "new") != "old":
         assert "8 statements kept, 0 evaluated as text" in res.stdout, out
     else:
         assert "6 statements kept, 2 evaluated as text" in res.stdout, out

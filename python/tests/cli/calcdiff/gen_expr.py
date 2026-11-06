@@ -132,46 +132,48 @@ def _gen_scalar_expr(
     depth: int,
     unary_fns: list[str],
     binary_fns: list[str],
+    sc_vars: list[str] | None = None,
 ) -> str:
     """Generate a scalar expression of depth at most @depth (depth <= 6)."""
+    vpool = sc_vars if sc_vars is not None else SCALAR_VARS
     if depth <= 1 or rng.random() < 0.32:
-        if rng.random() < 0.55:
+        if sc_vars is None and rng.random() < 0.55:
             return rng.choice(SCALAR_LITS)
-        return rng.choice(SCALAR_VARS)
+        return rng.choice(vpool)
 
     choice = rng.random()
     if choice < 0.15:
         op = rng.choice(["-", "!"])
-        sub = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns)
+        sub = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
         return f"({op}({sub}))"
     if choice < 0.50:
         op = rng.choice(ARITH_OPS)
-        lhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns)
-        rhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns)
+        lhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
+        rhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
         if op == "/":
             return f"({lhs} / (abs({rhs}) + 0.5))"
         return f"({lhs} {op} {rhs})"
     if choice < 0.62:
         # Parenthesized binary relational comparison per §6.3
         op = rng.choice(REL_OPS)
-        lhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns)
-        rhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns)
+        lhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
+        rhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
         return f"({lhs} {op} {rhs})"
     if choice < 0.70:
         op = rng.choice(LOG_OPS)
-        lhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns)
-        rhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns)
+        lhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
+        rhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
         return f"(({lhs}) {op} ({rhs}))"
     if choice < 0.78:
-        c1 = _gen_scalar_expr(rng, max(1, depth - 2), unary_fns, binary_fns)
-        c2 = _gen_scalar_expr(rng, max(1, depth - 2), unary_fns, binary_fns)
+        c1 = _gen_scalar_expr(rng, max(1, depth - 2), unary_fns, binary_fns, sc_vars)
+        c2 = _gen_scalar_expr(rng, max(1, depth - 2), unary_fns, binary_fns, sc_vars)
         rop = rng.choice(REL_OPS)
-        t_br = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns)
-        f_br = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns)
+        t_br = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
+        f_br = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
         return f"(({c1} {rop} {c2}) ? ({t_br}) : ({f_br}))"
     if choice < 0.90 and unary_fns:
         fn = rng.choice(unary_fns)
-        arg = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns)
+        arg = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
         if fn in ("sqrt", "ln", "log", "log10", "log2"):
             return f"{fn}(abs({arg}) + 0.125)"
         if fn in ("asin", "acos"):
@@ -185,8 +187,8 @@ def _gen_scalar_expr(
         return f"{fn}({arg})"
 
     fn = rng.choice(binary_fns) if binary_fns else "hypot"
-    a1 = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns)
-    a2 = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns)
+    a1 = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
+    a2 = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
     if fn == "pow":
         exp_lit = rng.choice(["2", "3", "0.5", "1.5"])
         return f"pow(abs({a1}) + 0.1, {exp_lit})"
@@ -321,8 +323,9 @@ def generate_cases(
 
     tpl_bank: list[str] = []
     tpl_bank2: list[str] = []
+    sc_tpl_bank: list[str] = []
     bulk_schedule: list[str] = []
-    if count > 2000 and kind == "elementwise":
+    if count > 2000 and kind in ("elementwise", "all", "scalar"):
         tpl_rng = random.Random(seed ^ 0xA5A5A5A5)
         slots = ["__IM0__", "__IM1__", "__IM2__"]
         for k in range(64):
@@ -331,6 +334,12 @@ def generate_cases(
         for k in range(16):
             d = (k % 3) + 1
             tpl_bank2.append(_gen_image_expr(tpl_rng, d, slots, unary_fns, binary_fns))
+        sc_slots = ["__SC0__", "__SC1__", "__SC2__"]
+        for k in range(256):
+            d = (k % 6) + 1
+            sc_tpl_bank.append(
+                _gen_scalar_expr(tpl_rng, d, unary_fns, binary_fns, sc_slots)
+            )
         heavy_ds = {
             "offset_0",
             "offset_1e3",
@@ -386,11 +395,23 @@ def generate_cases(
             continue
 
         if kind == "scalar" or (kind == "all" and rng.random() < 0.35):
-            depth = rng.randint(1, 6)
-            expr = _gen_scalar_expr(rng, depth, unary_fns, binary_fns)
-            while len(expr) > 300:
-                depth = max(1, depth - 1)
+            if sc_tpl_bank:
+                sc_pool = SCALAR_LITS + SCALAR_VARS
+                s0 = rng.choice(sc_pool)
+                s1 = rng.choice(sc_pool)
+                s2 = rng.choice(sc_pool)
+                expr = (
+                    sc_tpl_bank[i % len(sc_tpl_bank)]
+                    .replace("__SC0__", s0)
+                    .replace("__SC1__", s1)
+                    .replace("__SC2__", s2)
+                )
+            else:
+                depth = rng.randint(1, 6)
                 expr = _gen_scalar_expr(rng, depth, unary_fns, binary_fns)
+                while len(expr) > 300:
+                    depth = max(1, depth - 1)
+                    expr = _gen_scalar_expr(rng, depth, unary_fns, binary_fns)
             r = rng.random()
             if r < 0.55:
                 stmt = f"v = {expr}"
@@ -398,9 +419,17 @@ def generate_cases(
                 aop = rng.choice(["+=", "-=", "*="])
                 stmt = f"v {aop} {expr}"
             elif r < 0.88:
-                e2 = _gen_scalar_expr(
-                    rng, min(3, max(1, depth - 1)), unary_fns, binary_fns
-                )
+                if sc_tpl_bank:
+                    e2 = (
+                        sc_tpl_bank[(i + 7) % len(sc_tpl_bank)]
+                        .replace("__SC0__", s1)
+                        .replace("__SC1__", s2)
+                        .replace("__SC2__", s0)
+                    )
+                else:
+                    e2 = _gen_scalar_expr(
+                        rng, min(3, max(1, depth - 1)), unary_fns, binary_fns
+                    )
                 stmt = f"m, s = {expr}, {e2}"
             else:
                 stmt = expr

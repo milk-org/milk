@@ -174,12 +174,8 @@ static mcalc_prog_t *get_or_build_sub_prog(const mc_expr_t *expr, char *err, siz
     if (g_sub_cache[slot].prog != NULL)
     {
         mcalc_prog_t *old      = g_sub_cache[slot].prog;
-        g_sub_cache[slot].prog = NULL;
-        g_sub_cache[slot].expr = NULL;
-        if (old->ast_head != NULL)
-        {
-            old->ast_head->u.expr = NULL;
-        }
+        g_sub_cache[slot].prog = NULL, g_sub_cache[slot].expr = NULL;
+        (void) (old->ast_head != NULL && (old->ast_head->u.expr = NULL, 1));
         mcalc_prog_free(old);
     }
     g_sub_cache[slot].expr = expr, g_sub_cache[slot].prog = p;
@@ -192,6 +188,23 @@ void mc_release_red_src(mc_red_src_t *s)
     s->tmp_id = -1;
 }
 
+static int fill_red_src_im(mc_red_src_t *out, imageID id, char *err, size_t errsz)
+{
+    out->im        = &milk_data.image[id];
+    out->dt        = out->im->md[0].datatype;
+    out->naxis     = out->im->md[0].naxis;
+    out->ishape[0] = out->im->md[0].size[0];
+    out->ishape[1] = (out->naxis > 1) ? out->im->md[0].size[1] : 1;
+    out->ishape[2] = (out->naxis > 2) ? out->im->md[0].size[2] : 1;
+    out->nel       = out->im->md[0].nelement;
+    return is_complex_dt(out->dt)
+               ? (mc_release_red_src(out),
+                  red_err(err, errsz,
+                          "Function of real pixels applied to a complex image; use real(), "
+                          "imag() or abs() first"))
+               : 0;
+}
+
 int mc_prepare_red_src(const mc_expr_t *e,
                        const mc_expr_t *call_site,
                        imageID          avoid_id,
@@ -200,9 +213,8 @@ int mc_prepare_red_src(const mc_expr_t *e,
                        char            *err,
                        size_t           errsz)
 {
-    memset(out, 0, sizeof(*out));
-    out->tmp_id = -1;
-    e           = unwrap_def_arg(e, call_site);
+    out->im = NULL, out->pass = NULL, out->tmp_id = -1;
+    e = unwrap_def_arg(e, call_site);
     if (e == NULL)
     {
         return red_err(err, errsz, "null image expression");
@@ -219,27 +231,11 @@ int mc_prepare_red_src(const mc_expr_t *e,
         {
             return red_err(err, errsz, "unknown image '%s'", e->u.ident.name);
         }
-        if (id == avoid_id)
+        if (id == avoid_id && (id = out->tmp_id = clone_to_tmp(id)) < 0)
         {
-            id = out->tmp_id = clone_to_tmp(id);
-            if (id < 0)
-            {
-                return red_err(err, errsz, "failed to clone aliased image");
-            }
+            return red_err(err, errsz, "failed to clone aliased image");
         }
-        out->im        = &milk_data.image[id];
-        out->dt        = out->im->md[0].datatype;
-        out->naxis     = out->im->md[0].naxis;
-        out->ishape[0] = out->im->md[0].size[0];
-        out->ishape[1] = (out->naxis > 1) ? out->im->md[0].size[1] : 1;
-        out->ishape[2] = (out->naxis > 2) ? out->im->md[0].size[2] : 1;
-        out->nel       = out->im->md[0].nelement;
-        return is_complex_dt(out->dt)
-                   ? (mc_release_red_src(out),
-                      red_err(err, errsz,
-                              "Function of real pixels applied to a complex image; use real(), "
-                              "imag() or abs() first"))
-                   : 0;
+        return fill_red_src_im(out, id, err, errsz);
     }
 
     mcalc_prog_t *sub = get_or_build_sub_prog(e, err, errsz);
@@ -256,8 +252,8 @@ int mc_prepare_red_src(const mc_expr_t *e,
         uint64_t   nel    = 0;
         uint8_t    nax    = 0;
         uint32_t   ish[3] = { 1, 1, 1 };
-        out->out_op       = pa->outs[0].op_idx;
-        out->dt           = pa->outs[0].out_dt;
+        out->out_op = pa->outs[0].op_idx, out->dt = pa->outs[0].out_dt;
+        memset(out->ops, 0, (size_t) pa->nops * sizeof(mc_operand_t));
         can_l1 &= (out->dt == _DATATYPE_FLOAT || out->dt == _DATATYPE_DOUBLE);
         for (int i = 0; can_l1 && i < pa->nops; i++)
         {
@@ -301,12 +297,9 @@ int mc_prepare_red_src(const mc_expr_t *e,
             }
             sub->slots[d->slot_idx].im_id = id;
             const IMAGE *im               = &milk_data.image[id];
-            nel                           = im->md[0].nelement;
-            nax                           = im->md[0].naxis;
-            ish[0]                        = im->md[0].size[0];
-            ish[1]                        = (nax > 1) ? im->md[0].size[1] : 1;
-            ish[2]                        = (nax > 2) ? im->md[0].size[2] : 1;
-            out->ops[i].base              = im->array.raw;
+            nel = im->md[0].nelement, nax = im->md[0].naxis;
+            ish[0] = im->md[0].size[0], ish[1] = (nax > 1) ? im->md[0].size[1] : 1;
+            ish[2] = (nax > 2) ? im->md[0].size[2] : 1, out->ops[i].base = im->array.raw;
         }
         if (can_l1 && nel > 0)
         {
@@ -322,23 +315,8 @@ int mc_prepare_red_src(const mc_expr_t *e,
     }
     out->tmp_id = clone_to_tmp(sub->last_im_id);
     mc_tmp_release(sub->last_im_id);
-    if (out->tmp_id < 0)
-    {
-        return red_err(err, errsz, "failed to allocate temporary image");
-    }
-    out->im        = &milk_data.image[out->tmp_id];
-    out->dt        = out->im->md[0].datatype;
-    out->naxis     = out->im->md[0].naxis;
-    out->ishape[0] = out->im->md[0].size[0];
-    out->ishape[1] = (out->naxis > 1) ? out->im->md[0].size[1] : 1;
-    out->ishape[2] = (out->naxis > 2) ? out->im->md[0].size[2] : 1;
-    out->nel       = out->im->md[0].nelement;
-    return is_complex_dt(out->dt)
-               ? (mc_release_red_src(out),
-                  red_err(err, errsz,
-                          "Function of real pixels applied to a complex image; use real(), "
-                          "imag() or abs() first"))
-               : 0;
+    return (out->tmp_id < 0) ? red_err(err, errsz, "failed to allocate temporary image")
+                             : fill_red_src_im(out, out->tmp_id, err, errsz);
 }
 
 static inline void eval_src_block_f(const mc_red_src_t *s,
@@ -403,7 +381,19 @@ static inline void stat_block_sterbenz_f(arith_reduce_op op,
                                          int               len,
                                          arith_stat_acc_t *acc)
 {
-    if (m != NULL && (op == ARITH_RED_SUM || op == ARITH_RED_MEAN || op == ARITH_RED_COUNT))
+    if (op == ARITH_RED_DOT)
+    {
+        float s = 0.0f;
+#pragma omp simd reduction(+ : s)
+        for (int j = 0; j < len; j++)
+        {
+            s += v[j] * m[j];
+        }
+        acc->sum += (double) s, acc->n += (uint64_t) len;
+        return;
+    }
+    if (m != NULL && len == MC_RED_BLK &&
+        (op == ARITH_RED_SUM || op == ARITH_RED_MEAN || op == ARITH_RED_COUNT))
     {
         float bsum = 0.0f, bcnt = 0.0f;
 #pragma omp simd reduction(+ : bsum, bcnt)
@@ -503,9 +493,7 @@ static void stat_job_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
     }
     if (nth > 1)
     {
-        arith_team_lock();
-        arith_stat_merge_inline(&j->acc, &loc);
-        arith_team_unlock();
+        arith_team_lock(), arith_stat_merge_inline(&j->acc, &loc), arith_team_unlock();
     }
     else
     {
@@ -528,12 +516,26 @@ static int run_stat_reduce(const mc_red_src_t *s1,
     }
     uint64_t nblk = (s1->nel + MC_RED_BLK - 1) / MC_RED_BLK;
     int      nth  = milk_omp_team_size(s1->nel, 262144);
-    if ((uint64_t) nth > nblk)
+    nth           = ((uint64_t) nth > nblk) ? (int) nblk : nth;
+    if (nth <= 1 && s1->im != NULL && s1->dt == _DATATYPE_FLOAT &&
+        (!s2 || (s2->im != NULL && s2->dt == _DATATYPE_FLOAT)))
     {
-        nth = (int) nblk;
+        arith_stat_acc_t loc = { 0, 0.0, 0.0, 0.0, NAN, NAN };
+        const float     *p1 = s1->im->array.F, *p2 = s2 ? s2->im->array.F : NULL;
+        for (uint64_t b = 0; b < nblk; b++)
+        {
+            uint64_t off = b * MC_RED_BLK;
+            int      len = (int) ((s1->nel - off < MC_RED_BLK) ? (s1->nel - off) : MC_RED_BLK);
+            stat_block_sterbenz_f(op, p1 + off, p2 ? (p2 + off) : NULL, len, &loc);
+        }
+        *out_acc = loc;
+        return 0;
     }
-    int        flt = (s1->dt == _DATATYPE_FLOAT) && (s2 == NULL || s2->dt == _DATATYPE_FLOAT);
-    stat_job_t job = { s1, s2, op, s1->nel, flt, { 0, 0.0, 0.0, 0.0, NAN, NAN } };
+    int d1 = (s1->dt == _DATATYPE_FLOAT || s1->dt == _DATATYPE_UINT8 || s1->dt == _DATATYPE_INT8 ||
+              s1->dt == _DATATYPE_UINT16 || s1->dt == _DATATYPE_INT16);
+    int d2 = (s2 == NULL || s2->dt == _DATATYPE_FLOAT || s2->dt == _DATATYPE_UINT8 ||
+              s2->dt == _DATATYPE_INT8 || s2->dt == _DATATYPE_UINT16 || s2->dt == _DATATYPE_INT16);
+    stat_job_t job = { s1, s2, op, s1->nel, d1 && d2, { 0, 0.0, 0.0, 0.0, NAN, NAN } };
     arith_team_run(nth, nblk, stat_job_cb, &job);
     *out_acc = job.acc;
     return 0;
@@ -542,12 +544,9 @@ static int run_stat_reduce(const mc_red_src_t *s1,
 int mc_run_stat_max(const mc_red_src_t *s, double *out_max, char *err, size_t errsz)
 {
     arith_stat_acc_t acc;
-    if (run_stat_reduce(s, NULL, ARITH_RED_MAX, &acc, err, errsz) != 0)
-    {
-        return -1;
-    }
-    *out_max = arith_stat_finish_inline(&acc, ARITH_RED_MAX, 0);
-    return 0;
+    return (run_stat_reduce(s, NULL, ARITH_RED_MAX, &acc, err, errsz) != 0)
+               ? -1
+               : ((*out_max = arith_stat_finish_inline(&acc, ARITH_RED_MAX, 0)), 0);
 }
 
 typedef struct
@@ -608,12 +607,9 @@ static int run_argext_reduce(const mc_red_src_t *s1,
     {
         return red_err(err, errsz, "The mask must have the image's size");
     }
-    uint64_t nblk = (s1->nel + MC_RED_BLK - 1) / MC_RED_BLK;
-    int      nth  = milk_omp_team_size(s1->nel, 262144);
-    if ((uint64_t) nth > nblk)
-    {
-        nth = (int) nblk;
-    }
+    uint64_t nblk    = (s1->nel + MC_RED_BLK - 1) / MC_RED_BLK;
+    int      nth     = milk_omp_team_size(s1->nel, 262144);
+    nth              = ((uint64_t) nth > nblk) ? (int) nblk : nth;
     argext_job_t job = { s1, s2, mode, s1->nel, 0.0, -1 };
     arith_team_run(nth, nblk, argext_job_cb, &job);
     *out_idx = job.best_i;
@@ -624,7 +620,8 @@ int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, 
 {
     const char  *fn    = call_expr->u.call.fn->name;
     int          nargs = call_expr->u.call.nargs, rc = 0;
-    mc_red_src_t s1 = { .tmp_id = -1 }, s2 = { .tmp_id = -1 };
+    mc_red_src_t s1, s2;
+    s1.tmp_id = s2.tmp_id = -1;
 
     if (strcmp(fn, "imedian") == 0 || strcmp(fn, "perc") == 0 || strcmp(fn, "trace") == 0)
     {
@@ -663,7 +660,7 @@ int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, 
             res = arith_image_percentile(s1.im->name, frac);
         }
         mc_release_red_src(&s1), mc_release_red_src(&s2);
-        *out = (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = res };
+        out->type = MC_VAL_DOUBLE, out->dval = res;
         return rc;
     }
 
@@ -694,7 +691,7 @@ int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, 
         int     mode = (strcmp(fn, "iargmin") == 0) ? 1 : (strcmp(fn, "iamax") == 0) ? 2 : 0;
         rc           = run_argext_reduce(&s1, has_im2 ? &s2 : NULL, mode, &idx, err, errsz);
         mc_release_red_src(&s1), mc_release_red_src(&s2);
-        *out = (mc_val_t) { .type = MC_VAL_LONG, .lval = (long) idx };
+        out->type = MC_VAL_LONG, out->lval = (long) idx;
         return rc;
     }
 
@@ -703,9 +700,8 @@ int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, 
     int              is_long = (call_expr->u.call.fn->kind == MC_FN_REDUCE_L);
     rc                       = run_stat_reduce(&s1, has_im2 ? &s2 : NULL, op, &acc, err, errsz);
     mc_release_red_src(&s1), mc_release_red_src(&s2);
-    double r = (rc == 0) ? arith_stat_finish_inline(&acc, op, is_long) : 0.0;
-    *out     = is_long ? (mc_val_t) { .type = MC_VAL_LONG, .lval = (long) r }
-                       : (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = r };
+    double r  = (rc == 0) ? arith_stat_finish_inline(&acc, op, is_long) : 0.0;
+    out->type = is_long ? MC_VAL_LONG : MC_VAL_DOUBLE, out->lval = (long) r, out->dval = r;
     return rc;
 }
 
@@ -723,8 +719,9 @@ int mc_exec_reduce_pair(const mc_expr_t *c0,
     {
         return -1;
     }
-    mc_red_src_t     s1 = { .tmp_id = -1 };
+    mc_red_src_t     s1;
     arith_stat_acc_t acc;
+    s1.tmp_id = -1;
     if (mc_prepare_red_src(c0->u.call.args[0], NULL, -1, 1, &s1, err, errsz) != 0)
     {
         return -1;
@@ -815,8 +812,9 @@ int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t er
     const mc_expr_t *call = s->u.multi.rhs[0];
     const char      *fn   = call->u.call.fn->name;
     int              nlhs = s->u.multi.nlhs, nargs = call->u.call.nargs, rc = 0;
-    mc_red_src_t     s1 = { .tmp_id = -1 }, s2 = { .tmp_id = -1 };
+    mc_red_src_t     s1, s2;
     mc_val_t         vals[4];
+    s1.tmp_id = s2.tmp_id = -1;
 
     if (mc_prepare_red_src(call->u.call.args[0], NULL, -1, 1, &s1, err, errsz) != 0)
     {
@@ -836,8 +834,7 @@ int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t er
         rc = run_stat_reduce(&s1, (nargs == 2) ? &s2 : NULL, ARITH_RED_ALL, &acc, err, errsz);
         for (int j = 0; rc == 0 && j < nlhs; j++)
         {
-            vals[j] = (mc_val_t) { .type = MC_VAL_DOUBLE,
-                                   .dval = arith_stat_finish_inline(&acc, ops[j], 0) };
+            vals[j].type = MC_VAL_DOUBLE, vals[j].dval = arith_stat_finish_inline(&acc, ops[j], 0);
         }
     }
     else if (strcmp(fn, "icentroid") == 0)
@@ -848,20 +845,16 @@ int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t er
             mc_release_red_src(&s1);
             return -1;
         }
-        uint64_t nblk = (s1.nel + MC_RED_BLK - 1) / MC_RED_BLK;
-        int      nth  = milk_omp_team_size(s1.nel, 262144);
-        if ((uint64_t) nth > nblk)
-        {
-            nth = (int) nblk;
-        }
-        cent_job_t job = { &s1, s1.ishape[0], s1.ishape[1], th, { 0.0, 0.0, 0.0 } };
-        arith_team_run(nth, nblk, cent_job_cb, &job);
+        uint64_t   nblk = (s1.nel + MC_RED_BLK - 1) / MC_RED_BLK;
+        int        nth  = milk_omp_team_size(s1.nel, 262144);
+        cent_job_t job  = { &s1, s1.ishape[0], s1.ishape[1], th, { 0.0, 0.0, 0.0 } };
+        arith_team_run(((uint64_t) nth > nblk) ? (int) nblk : nth, nblk, cent_job_cb, &job);
         double si    = job.sums[0];
         double cv[3] = { (si > 0.0) ? (job.sums[1] / si) : NAN,
                          (si > 0.0) ? (job.sums[2] / si) : NAN, (si > 0.0) ? si : 0.0 };
         for (int j = 0; j < nlhs; j++)
         {
-            vals[j] = (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = cv[j] };
+            vals[j].type = MC_VAL_DOUBLE, vals[j].dval = cv[j];
         }
     }
     else
@@ -884,7 +877,7 @@ int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t er
                               (flat < 0) ? -1 : (flat / (nx * ny)) };
         for (int j = 0; j < nlhs; j++)
         {
-            vals[j] = (mc_val_t) { .type = MC_VAL_LONG, .lval = (long) coords[j] };
+            vals[j].type = MC_VAL_LONG, vals[j].lval = (long) coords[j];
         }
     }
     mc_release_red_src(&s1), mc_release_red_src(&s2);
@@ -892,7 +885,7 @@ int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t er
     {
         mc_expr_t *lhs = s->u.multi.lhs[j];
         mc_store_scalar_var(lhs->u.ident.bare, &lhs->u.ident.var_id, &vals[j]);
-        *out = vals[j];
+        out->type = vals[j].type, out->lval = vals[j].lval, out->dval = vals[j].dval;
     }
     return rc;
 }

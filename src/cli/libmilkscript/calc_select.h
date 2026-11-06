@@ -11,7 +11,7 @@
 
 #include "mcalc.h"
 
-/** calc_select_use_new() - return 1 when MILK_CALC_ENGINE=new, 0 otherwise (default old). */
+/** calc_select_use_new() - return 1 when using the new engine (default), 0 when MILK_CALC_ENGINE=old. */
 int calc_select_use_new(void);
 
 /** calc_select_local() - dispatch local scalar fast path to mcalc_local or cli_calc_local. */

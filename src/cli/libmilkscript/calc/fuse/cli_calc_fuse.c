@@ -774,6 +774,7 @@ int cli_calc_fuse_c_expr(fprog *p, int min_prec, fval *out)
     cli_token *(*cur)(void) = cli_calc_cur_func();
     cli_token *(*adv)(void) = cli_calc_advance_func();
 
+    *out = (fval) { 0, 0, 0.0, 0 };
     if (c_primary(p, out) != 0)
     {
         return -1;

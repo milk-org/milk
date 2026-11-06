@@ -91,4 +91,7 @@ void milk_args_preset_list(int cmdi, FILE *fp);
 /** milk_args_print_call() - print `key .tag=value ...` (shell-quoted); @session: session defaults only. */
 void milk_args_print_call(int cmdi, int session, FILE *fp);
 
+/** milk_cmd_classify_arg() - classify CLI command argument @arg into data.cmdargtoken[data.cmdNBarg]. */
+void milk_cmd_classify_arg(const char *arg, int is_slice);
+
 #endif /* MILK_CMD_ARGS_H */

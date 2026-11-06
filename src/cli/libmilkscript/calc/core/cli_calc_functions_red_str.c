@@ -320,6 +320,20 @@ val_t cli_calc_func_eval_image_reduction(const cli_token *ftok)
     {
         return mk_double(0);
     }
+    const IMAGE *im0 =
+        &data.core.image[image_ID(args[0].sval, data.core.image, data.core.NB_MAX_IMAGE)];
+    const IMAGE *im1 =
+        &data.core.image[image_ID(args[1].sval, data.core.image, data.core.NB_MAX_IMAGE)];
+    int same = (im0->md[0].naxis == im1->md[0].naxis);
+    for (int a = 0; same && a < im0->md[0].naxis; a++)
+    {
+        same = (im0->md[0].size[a] == im1->md[0].size[a]);
+    }
+    if (!same)
+    {
+        parse_errmsg("dot: images must have the same dimensions");
+        return mk_double(0);
+    }
     double res =
         ((double (*)(const char *, const char *)) ftok->fnctptr)(args[0].sval, args[1].sval);
     return mk_double(res);

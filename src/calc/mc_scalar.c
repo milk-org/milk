@@ -467,8 +467,17 @@ static int eval_assign(const mc_expr_t *e, mc_val_t *out, char *err, size_t errs
 {
     const mc_expr_t *target = e->u.assign.target;
     mc_tok_type_t    op     = e->u.assign.op;
-    mc_val_t         rv;
-
+    const char      *bare   = (target->kind == MC_EXPR_IDENT && target->u.ident.bare[0] != '\0')
+                                  ? target->u.ident.bare
+                                  : target->u.ident.name;
+    if (op == MC_TOK_ASSIGN && target->kind == MC_EXPR_IDENT &&
+        target->u.ident.id_kind != MC_ID_PROP)
+    {
+        return (mc_scalar_eval_expr(e->u.assign.rhs, out, err, errsz) != 0)
+                   ? -1
+                   : (mc_store_scalar_var(bare, &((mc_expr_t *) target)->u.ident.var_id, out), 0);
+    }
+    mc_val_t rv;
     if (mc_scalar_eval_expr(e->u.assign.rhs, &rv, err, errsz) != 0)
     {
         return -1;
@@ -500,28 +509,16 @@ static int eval_assign(const mc_expr_t *e, mc_val_t *out, char *err, size_t errs
         write_im_pix_val(im, ii, nv, rv.lval,
                          rv.type == MC_VAL_LONG && op == MC_TOK_ASSIGN &&
                              is_int_dt(im->md[0].datatype));
-        if (!im->md[0].shared)
-        {
-            im->md[0].write = 0;
-            im->md[0].cnt0++;
-        }
-        else
-        {
-            processinfo_update_output_stream(NULL, im, NULL);
-        }
+        (void) (!im->md[0].shared ? ((im->md[0].write = 0), im->md[0].cnt0++, 1)
+                                  : (processinfo_update_output_stream(NULL, im, NULL), 1));
         out->type = (rv.type == MC_VAL_LONG && op == MC_TOK_ASSIGN) ? MC_VAL_LONG : MC_VAL_DOUBLE;
-        out->lval = rv.lval;
-        out->dval = nv;
+        out->lval = rv.lval, out->dval = nv;
         return 0;
     }
-
     if (target->kind != MC_EXPR_IDENT)
     {
         return sc_err(err, errsz, "invalid assignment target");
     }
-
-    const char *bare =
-        target->u.ident.bare[0] != '\0' ? target->u.ident.bare : target->u.ident.name;
     mc_val_t final_v = rv;
     if (op != MC_TOK_ASSIGN)
     {
@@ -755,12 +752,7 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
     case MC_STMT_EXPR:
     {
         mc_val_t v;
-        if (mc_scalar_eval_expr(s->u.expr, &v, err, errsz) != 0)
-        {
-            return -1;
-        }
-        (void) (out != NULL && (*out = v, 1));
-        return 0;
+        return mc_scalar_eval_expr(s->u.expr, out ? out : &v, err, errsz);
     }
 
     case MC_STMT_MULTI_ASSIGN:

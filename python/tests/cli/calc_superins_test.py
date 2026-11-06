@@ -11,6 +11,7 @@ destination (which unfuses the read into its register slot).
 
 from __future__ import annotations
 
+import os
 import re
 
 import pytest
@@ -30,18 +31,23 @@ stop() { kill -INT "$1" 2>/dev/null; for _ in $(seq 60); do kill -0 "$1" 2>/dev/
 """
 
 
-def _ops(out: str, stmt: str) -> int:
+def _report(out: str, stmt: str) -> str:
     lines = out.splitlines()
     for i, ln in enumerate(lines):
         if ln.strip().endswith(stmt) and i + 1 < len(lines):
-            m = re.search(r"(\d+) vector op", lines[i + 1])
-            assert m, lines[i + 1]
-            return int(m.group(1))
+            return lines[i + 1].strip()
     raise AssertionError(f"no report line for {stmt!r} in:\n{out}")
 
 
+def _ops(out: str, stmt: str) -> int:
+    rep = _report(out, stmt)
+    m = re.search(r"(\d+) vector op", rep)
+    assert m, rep
+    return int(m.group(1))
+
+
 def test_peephole_shortens_the_tape(tmp_path):
-    """Each statement on its own (so none merges): the op counts the peephole leaves."""
+    """Each statement on its own (so none merges): fused pass in new, peephole op count in old."""
     cases = [
         ("o1 = a*2.5 + b*0.5", 2),
         ("o2 = a + b", 1),
@@ -57,7 +63,12 @@ def test_peephole_shortens_the_tape(tmp_path):
     res = milk_bash(script, tmp_path)
     out = res.stdout + res.stderr
     for st, n in cases:
-        assert _ops(res.stdout, st) == n, (st, out)
+        if os.environ.get("MILK_CALC_ENGINE", "new") != "old":
+            assert _report(res.stdout, st).startswith(
+                "kept: fused pass over 64x64x1 (float32, 1D,"
+            ), (st, out)
+        else:
+            assert _ops(res.stdout, st) == n, (st, out)
 
 
 def test_superinstructions_match_fallback(tmp_path):

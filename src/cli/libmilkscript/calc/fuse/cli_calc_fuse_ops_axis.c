@@ -84,7 +84,12 @@ int cli_calc_fuse_c_func(fprog *p, const cli_token *ft, fval *out)
     {
         return -1;
     }
-    out->vec = a[0].vec || (nargs > 1 && a[1].vec) || (nargs > 2 && a[2].vec);
+    *out = (fval) {
+        .vec = a[0].vec || (nargs > 1 && a[1].vec) || (nargs > 2 && a[2].vec),
+        .s1  = 0,
+        .c   = 0.0,
+        .lng = 0,
+    };
     if (!out->vec)
     {
         if (a[0].s1 == 0 && (nargs < 2 || a[1].s1 == 0) && (nargs < 3 || a[2].s1 == 0))
@@ -181,10 +186,10 @@ int cli_calc_fuse_c_select(fprog *p, fval t, fval f, fval *out)
     return emit(p,
                 (fins) { .k    = FI_SEL,
                          .cpos = t.vec | (f.vec << 1),
-                         .s1   = t.s1,
-                         .c    = t.c,
-                         .s2   = f.s1,
-                         .c2   = f.c },
+                         .s1   = t.vec ? 0 : t.s1,
+                         .c    = t.vec ? 0.0 : t.c,
+                         .s2   = f.vec ? 0 : f.s1,
+                         .c2   = f.vec ? 0.0 : f.c },
                 -(t.vec + f.vec));
 }
 

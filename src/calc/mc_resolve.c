@@ -511,12 +511,16 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
                          ? "This function takes no mask argument"
                          : "This function takes no axis argument");
         }
-        e->res_dt = any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
         e->res_kind =
             (fn->kind == MC_FN_REDUCE_D && a1 && a1->res_kind != MC_RES_IMAGE && a0->res_naxis != 1)
                 ? MC_RES_IMAGE
             : (fn->kind == MC_FN_REDUCE_L) ? MC_RES_SCALAR_L
                                            : MC_RES_SCALAR_D;
+        int ax_dbl = (e->res_kind == MC_RES_IMAGE &&
+                      (a0->kind == MC_EXPR_IDENT || a0->kind == MC_EXPR_SLICE) &&
+                      (a0->res_dt == _DATATYPE_INT32 || a0->res_dt == _DATATYPE_UINT32 ||
+                       a0->res_dt == _DATATYPE_INT64 || a0->res_dt == _DATATYPE_UINT64));
+        e->res_dt  = (any_dbl || ax_dbl) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
         if (e->res_kind == MC_RES_IMAGE && a0->res_naxis >= 2 && a1->kind == MC_EXPR_LONG)
         {
             long ax = a1->u.lval;

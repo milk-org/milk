@@ -26,7 +26,7 @@ int calc_select_use_new(void)
     if (g_engine_sel < 0)
     {
         const char *ev = getenv("MILK_CALC_ENGINE");
-        g_engine_sel   = (ev != NULL && strcmp(ev, "new") == 0) ? 1 : 0;
+        g_engine_sel   = (ev != NULL && strcmp(ev, "old") == 0) ? 0 : 1;
     }
     return g_engine_sel;
 }
@@ -84,15 +84,20 @@ int calc_select_eval_bash(const char *input, int is_test, int *out_rc)
 
 int calc_select_eval_str(const char *input, int is_test, int *out_rc, char *out, size_t outsz)
 {
+    int saved_mode    = cli_calc_out_mode;
+    cli_calc_out_mode = CLI_CALC_OUT_VALUES;
     if (calc_select_use_new())
     {
         ensure_mcalc_host();
         int r               = mcalc_eval_str(input, is_test, out_rc, out, outsz);
         cli_calc_test_image = mcalc_test_image;
         snprintf(cli_calc_lasterr, sizeof(cli_calc_lasterr), "%s", mcalc_lasterr);
+        cli_calc_out_mode = saved_mode;
         return r;
     }
-    return cli_calc_eval_str(input, is_test, out_rc, out, outsz);
+    int r             = cli_calc_eval_str(input, is_test, out_rc, out, outsz);
+    cli_calc_out_mode = saved_mode;
+    return r;
 }
 
 int calc_select_eval_math_to_val(const char *input, int *out_type, long *out_lval, double *out_dval)

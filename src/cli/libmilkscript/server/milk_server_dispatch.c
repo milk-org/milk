@@ -42,7 +42,6 @@
 #include "CLIcore_signals.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "calc_select.h"
-#include "cli_calc_parser.h"
 #include "milk_shm_prop.h"
 #include "milk_ipc_common.h"
 #include "milk_entity_ns.h"
@@ -697,9 +696,7 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
         }
         else
         {
-            char tokstr[512];
-            snprintf(tokstr, sizeof(tokstr), "%s\n", arg);
-            cli_parse(tokstr);
+            milk_cmd_classify_arg(arg, is_slice);
             if (!is_slice && data.cmdargtoken[data.cmdNBarg].type == CMDARGTOKEN_TYPE_STRING)
             {
                 char shmpath[512];

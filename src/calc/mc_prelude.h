@@ -5,7 +5,7 @@
 #ifndef MILK_CALC_MC_PRELUDE_H
 #define MILK_CALC_MC_PRELUDE_H
 
-#define MC_PRELUDE_VERSION 10
+#define MC_PRELUDE_VERSION 14
 
 static const char MC_PRELUDE_SRC[] =
     "#ifndef __FAST_MATH__\n"
@@ -56,6 +56,10 @@ static const char MC_PRELUDE_SRC[] =
     "static inline double mc_clampd(double x, double lo, double hi) {\n"
     "    return mc_mind(mc_maxd(x, lo), hi);\n"
     "}\n"
+    "#pragma omp declare simd notinbranch\n"
+    "static inline float mc_hypotf(float a, float b) { return sqrtf(fmaf(a, a, b * b)); }\n"
+    "#pragma omp declare simd notinbranch\n"
+    "static inline double mc_hypotd(double a, double b) { return sqrt(fma(a, a, b * b)); }\n"
     "#pragma omp declare simd notinbranch\n"
     "static inline float mc_posif(float x) { return x > 0.0f ? 1.0f : 0.0f; }\n"
     "#pragma omp declare simd notinbranch\n"

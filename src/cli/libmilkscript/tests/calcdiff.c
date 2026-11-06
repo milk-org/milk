@@ -1961,6 +1961,10 @@ static int run_bench_mode(uint32_t size, int iters, const char *engine, const ch
     workspace_clear();
     build_base_images(size, size);
     build_base_scalars();
+    {
+        double warm = 0.0;
+        (void) bench_one_old(8, "C = A + B", &warm);
+    }
 
     if (stmts != NULL)
     {
@@ -2233,6 +2237,11 @@ int main(int argc, char **argv)
         }
         if (cached_ds == NULL && nds_cache < 32)
         {
+            if (has_prev_post)
+            {
+                snap_free(&prev_post);
+                has_prev_post = 0;
+            }
             workspace_clear();
             build_dataset(ds_name);
             snap_capture(&ds_cache_snaps[nds_cache]);

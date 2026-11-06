@@ -233,11 +233,9 @@ typedef struct
     char                *err;
     size_t               errsz;
     const mc_comp_gen_t *comp_gens;
-    int                  ncomp_gens;
     const mcalc_udef_t  *def_stk[4];
     mc_expr_t *const    *def_args[4];
-    int                  def_depth;
-    int                  in_guarded;
+    int                  ncomp_gens, def_depth, in_guarded;
 } plan_walk_ctx_t;
 
 static int walk_pass_expr(plan_walk_ctx_t *w,
@@ -495,22 +493,28 @@ static int add_pass_out(mcalc_prog_t    *prog,
     if (sidx < 0 || (keep_t && !is_complex_dt(slot->orig_dt) && is_complex_dt(rhs->res_dt)))
     {
         return plan_err(err, errsz,
-                        (sidx < 0)
-                            ? "failed to allocate slot"
-                            : "Cannot store a complex image in a real one; use real(), imag() "
-                              "or abs() first");
+                        (sidx < 0) ? "failed to allocate slot"
+                                   : "Cannot store a complex image in a real one; use real(), "
+                                     "imag() or abs() first");
     }
     uint8_t         out_dt = keep_t ? slot->orig_dt : (rhs->res_dt ? rhs->res_dt : _DATATYPE_FLOAT);
     plan_walk_ctx_t w      = { .prog = prog, .pass = pass, .err = err, .errsz = errsz };
-    if (walk_pass_expr(&w, rhs,
-                       (assign_op == MC_TOK_DIV_ASSIGN && rhs->res_kind != MC_RES_IMAGE) ? 1 : 0, 0,
-                       0) != 0 ||
+    if (walk_pass_expr(&w, rhs, (assign_op == MC_TOK_DIV_ASSIGN && rhs->res_kind != MC_RES_IMAGE),
+                       0, 0) != 0 ||
         (lhs_sl != NULL && lhs_sl->u.slice.is_mask_index &&
          walk_pass_expr(&w, lhs_sl->u.slice.axes[0].start, 0, 0, 0) != 0))
     {
         return plan_err(err, errsz, "failed to plan pass expression");
     }
-    pass                      = w.pass;
+    pass = w.pass;
+    for (int j = 0; !keep_t && out_dt == _DATATYPE_FLOAT &&
+                    !(rhs->kind == MC_EXPR_CALL && rhs->u.call.fn && rhs->u.call.fn->cast_dt) &&
+                    j < pass->nops;
+         j++)
+    {
+        (void) (!pass->ops[j].is_scalar && !pass->ops[j].is_out && !pass->ops[j].is_table_arg &&
+                pass->ops[j].dt == _DATATYPE_DOUBLE && (out_dt = _DATATYPE_DOUBLE));
+    }
     prog->slots[sidx].plan_dt = out_dt;
 
     mc_op_desc_t od = { 0 };

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import json
 import pathlib
 import subprocess
@@ -184,17 +185,62 @@ def test_generated_scalar_strict_diff():
     )
 
 
+def _gen_and_run_chunk(args: tuple[str, int, int, str]) -> list[dict[str, str]]:
+    """Worker that generates a seeded chunk of cases and streams them into `milk-calcdiff`."""
+    exe_str, count, seed, kind = args
+    proc = subprocess.Popen(
+        [exe_str, "--strict"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    assert proc.stdin is not None
+    buf: list[str] = []
+    for c in generate_cases(count=count, seed=seed, kind=kind, calcdiff_bin=exe_str):
+        buf.append(json.dumps(c, separators=(",", ":")) + "\n")
+        if len(buf) >= 4096:
+            proc.stdin.writelines(buf)
+            buf.clear()
+    if buf:
+        proc.stdin.writelines(buf)
+        buf.clear()
+    stdout, stderr = proc.communicate(timeout=180)
+    assert (
+        proc.returncode == 0
+    ), f"milk-calcdiff failed (rc={proc.returncode}): {stderr}"
+    diffs: list[dict[str, str]] = []
+    for line in stdout.splitlines():
+        line = line.strip()
+        if line.startswith("{"):
+            diffs.append(json.loads(line))
+    return diffs
+
+
 def test_generated_elementwise_100k_diff():
     """Run 100,000 generated elementwise statements across all §6.2 datasets with `--strict`."""
-    cases = list(
-        generate_cases(
-            count=100000, seed=42, kind="elementwise", calcdiff_bin=_calcdiff_bin()
-        )
-    )
-    lines = [json.dumps(c, separators=(",", ":")) for c in cases]
-    diffs = _run_calcdiff(lines, extra_args=["--strict"])
+    exe_str = str(_calcdiff_bin())
+    chunks = [(exe_str, 25000, 42 + w, "elementwise") for w in range(4)]
+    diffs: list[dict[str, str]] = []
+    with concurrent.futures.ProcessPoolExecutor(max_workers=4) as pool:
+        for d in pool.map(_gen_and_run_chunk, chunks):
+            diffs.extend(d)
     assert not diffs, (
         f"{len(diffs)} unexpected diff(s) in 100,000 generated elementwise statements:\n"
+        + "\n".join(json.dumps(d) for d in diffs[:20])
+    )
+
+
+def test_generated_1m_diff():
+    """Run 1,000,000 generated statements across all §6.2 datasets with `--strict` (§5 Phase 9)."""
+    exe_str = str(_calcdiff_bin())
+    chunks = [(exe_str, 125000, 1000 + w, "all") for w in range(8)]
+    diffs: list[dict[str, str]] = []
+    with concurrent.futures.ProcessPoolExecutor(max_workers=8) as pool:
+        for d in pool.map(_gen_and_run_chunk, chunks):
+            diffs.extend(d)
+    assert not diffs, (
+        f"{len(diffs)} unexpected diff(s) in 1,000,000 generated statements:\n"
         + "\n".join(json.dumps(d) for d in diffs[:20])
     )
 
@@ -311,7 +357,7 @@ def test_phase7_library_and_spatial_ops(tmp_path):
     script = (
         "mem.mk2Dim A 8 8 >/dev/null\n"
         "mem.mk2Dim B 8 8 >/dev/null\n"
-        '@calc "A = 1.0 + 0.1 * ix(A) + 0.2 * iy(A); B = 0.5 - 0.05 * ix(B) + 0.15 * iy(B)"\n'
+        '@calc "A = 2.0 + 0.1 * ix(A) + 0.2 * iy(A); B = 1.5 - 0.05 * ix(B) + 0.15 * iy(B)"\n'
         '@calc "M1 = A @ B; M2 = matmul(A, B); err_mm = imax(abs(M1 - M2))"\n'
         '@calc "T1 = A.T @ B; T2 = matmul(transpose(A), B); err_tr = imax(abs(T1 - T2))"\n'
         "@calc 'E1 = einsum(\"ij,jk->ik\", A, B); err_ein = imax(abs(E1 - M2))'\n"

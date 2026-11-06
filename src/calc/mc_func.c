@@ -178,7 +178,7 @@ static const mc_func_t g_mc_funcs[] = {
       "Power a^b (exact int64 when b >= 0 fits in int64)" },
     { "atan2", 2, 2, 1, 1, MC_FN_SCALAR, 0, 1, 1, NULL, atan2, NULL, "atan2f", "atan2",
       "atan2(y, x)", "Four-quadrant inverse tangent" },
-    { "hypot", 2, 2, 1, 1, MC_FN_SCALAR, 0, 1, 1, NULL, hypot, NULL, "hypotf", "hypot",
+    { "hypot", 2, 2, 1, 1, MC_FN_SCALAR, 0, 1, 1, NULL, hypot, NULL, "mc_hypotf", "mc_hypotd",
       "hypot(x, y)", "Euclidean norm sqrt(x^2 + y^2)" },
     { "fmod", 2, 2, 1, 1, MC_FN_SCALAR, 0, 1, 1, NULL, fmod, NULL, "fmodf", "fmod", "fmod(x, y)",
       "Floating-point remainder" },
