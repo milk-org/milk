@@ -545,8 +545,9 @@ gdb --args milk-fpsexec-mymodule exec <args...>
 (gdb) run
 # ... crash ...
 (gdb) bt full                    # backtrace with local variables
-(gdb) frame 2
-(gdb) print img.im->md->size[0]
+(gdb) frame 2                    # select a frame from the backtrace
+(gdb) print img.im->md->size[0]  # print info on one variable
+(gdb) info locals                # show local variables in the frame
 (gdb) info threads
 (gdb) thread apply all bt
 ```
