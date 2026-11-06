@@ -73,6 +73,17 @@ static mc_expr_t *alloc_expr(mc_expr_kind_t kind, const mc_tok_t *tok)
         e->kind = kind;
         e->line = (tok != NULL) ? tok->line : 1;
         e->col  = (tok != NULL) ? tok->col : 1;
+        if (kind == MC_EXPR_IDENT)
+        {
+            e->u.ident.im_id         = -1;
+            e->u.ident.var_id        = -1;
+            e->u.ident.def_param_idx = -1;
+        }
+        else if (kind == MC_EXPR_CALL)
+        {
+            e->u.call.udef_id = -1;
+            e->u.call.ext_id  = -1;
+        }
     }
     return e;
 }
@@ -692,6 +703,20 @@ static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx)
             s->col       = t->col;
             return s;
         }
+    }
+
+    if (t->type == MC_TOK_IDENT && strcmp(t->sval, "def") == 0)
+    {
+        mc_stmt_t *s = (mc_stmt_t *) calloc(1, sizeof(mc_stmt_t));
+        s->kind      = MC_STMT_DEF;
+        s->line      = t->line;
+        s->col       = t->col;
+        while (cur_tok(ctx)->type != MC_TOK_EOF && cur_tok(ctx)->type != MC_TOK_NEWLINE &&
+               cur_tok(ctx)->type != MC_TOK_SEMI && cur_tok(ctx)->type != MC_TOK_RBRACE)
+        {
+            advance_tok(ctx);
+        }
+        return s;
     }
 
     if (t->type == MC_TOK_IDENT && strcmp(t->sval, "if") == 0)

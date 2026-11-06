@@ -9,6 +9,13 @@ set(SOURCEFILES
     mc_resolve.c
     mc_scalar.c
     mc_local.c
+    mc_cc.c
+    mc_views.c
+    mc_out.c
+    mc_plan.c
+    mc_emit.c
+    mc_exec.c
+    mc_prog.c
     mc_eval.c
     milk_argval.c
     units/milk_unit.c)
@@ -22,7 +29,10 @@ set(INCLUDEFILES
 
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
-target_compile_definitions(${LIBNAME} PRIVATE MILK_NO_CLI)
+target_compile_definitions(
+  ${LIBNAME}
+  PRIVATE MILK_NO_CLI
+          MILK_DEFAULT_CC="${CMAKE_C_COMPILER}")
 
 target_include_directories(
   ${LIBNAME}

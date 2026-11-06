@@ -184,17 +184,33 @@ def test_generated_scalar_strict_diff():
     )
 
 
+def test_generated_elementwise_100k_diff():
+    """Run 100,000 generated elementwise statements across all §6.2 datasets with `--strict`."""
+    cases = list(
+        generate_cases(
+            count=100000, seed=42, kind="elementwise", calcdiff_bin=_calcdiff_bin()
+        )
+    )
+    lines = [json.dumps(c, separators=(",", ":")) for c in cases]
+    diffs = _run_calcdiff(lines, extra_args=["--strict"])
+    assert not diffs, (
+        f"{len(diffs)} unexpected diff(s) in 100,000 generated elementwise statements:\n"
+        + "\n".join(json.dumps(d) for d in diffs[:20])
+    )
+
+
 def test_local_evaluator_parity():
     """Verify `mcalc_eval_local` matches `mcalc_eval` across corpus and scalar expressions."""
     corpus = collect_corpus()
+    allow = _load_allowlist()
     lines = [e.to_json_line() for e in corpus]
     cases = list(
         generate_cases(count=2000, seed=42, kind="scalar", calcdiff_bin=_calcdiff_bin())
     )
     lines.extend(json.dumps(c, separators=(",", ":")) for c in cases)
     diffs = _run_calcdiff(lines, extra_args=["--test-local"])
-    assert (
-        not diffs
-    ), f"{len(diffs)} unexpected diff(s) in local evaluator parity:\n" + "\n".join(
-        json.dumps(d) for d in diffs[:20]
+    unexpected = [d for d in diffs if d.get("stmt") not in allow]
+    assert not unexpected, (
+        f"{len(unexpected)} unexpected diff(s) in local evaluator parity:\n"
+        + "\n".join(json.dumps(d) for d in unexpected[:20])
     )

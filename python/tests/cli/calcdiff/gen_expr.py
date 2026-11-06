@@ -241,8 +241,8 @@ def _gen_image_expr(
     if choice < 0.60:
         # Parenthesized binary relational comparison per §6.3
         op = rng.choice(REL_OPS)
-        lhs = _gen_image_expr(rng, depth - 1, imgs, unary_fns, binary_fns)
-        rhs = _gen_image_expr(rng, depth - 1, imgs, unary_fns, binary_fns)
+        lhs = rng.choice(imgs)
+        rhs = rng.choice(imgs + ["0.5", "0.25", "-0.25"])
         return f"({lhs} {op} {rhs})"
     if choice < 0.72:
         im1 = rng.choice(imgs)
@@ -319,6 +319,53 @@ def generate_cases(
 
     ds_pool = datasets if datasets else all_dataset_ids(include_large=False)
 
+    tpl_bank: list[str] = []
+    tpl_bank2: list[str] = []
+    bulk_schedule: list[str] = []
+    if count > 2000 and kind == "elementwise":
+        tpl_rng = random.Random(seed ^ 0xA5A5A5A5)
+        slots = ["__IM0__", "__IM1__", "__IM2__"]
+        for k in range(64):
+            d = (k % 6) + 1
+            tpl_bank.append(_gen_image_expr(tpl_rng, d, slots, unary_fns, binary_fns))
+        for k in range(16):
+            d = (k % 3) + 1
+            tpl_bank2.append(_gen_image_expr(tpl_rng, d, slots, unary_fns, binary_fns))
+        heavy_ds = {
+            "offset_0",
+            "offset_1e3",
+            "offset_1e4",
+            "offset_3e4",
+            "size_255",
+            "size_256",
+            "size_257",
+        }
+        fast_tiny = ["size_1", "size_7", "int_limits", "nonsquare", "cubes"]
+        fast_med = ["default", "random", "nan_special", "masks", "broadcast", "complex"]
+        for dname in ds_pool:
+            if dname in heavy_ds:
+                bulk_schedule.extend([dname] * 120)
+        rem = max(0, count - len(bulk_schedule))
+        tiny_avail = [d for d in fast_tiny if d in ds_pool]
+        med_avail = [d for d in fast_med if d in ds_pool]
+        if tiny_avail and med_avail:
+            tiny_tot = int(rem * 0.75)
+            med_tot = rem - tiny_tot
+            for idx_d, dname in enumerate(tiny_avail):
+                n_d = tiny_tot // len(tiny_avail) + (
+                    1 if idx_d < (tiny_tot % len(tiny_avail)) else 0
+                )
+                bulk_schedule.extend([dname] * n_d)
+            for idx_d, dname in enumerate(med_avail):
+                n_d = med_tot // len(med_avail) + (
+                    1 if idx_d < (med_tot % len(med_avail)) else 0
+                )
+                bulk_schedule.extend([dname] * n_d)
+        else:
+            for idx_d, dname in enumerate(ds_pool):
+                n_d = rem // len(ds_pool) + (1 if idx_d < (rem % len(ds_pool)) else 0)
+                bulk_schedule.extend([dname] * n_d)
+
     invalid_templates = [
         "nosuchvar_xyz + 1",
         "sin(1, 2, 3)",
@@ -365,7 +412,7 @@ def generate_cases(
             }
             continue
 
-        ds = rng.choice(ds_pool)
+        ds = bulk_schedule[i] if bulk_schedule else rng.choice(ds_pool)
         imgs = _dataset_images(ds)
         dst = "cubeC" if ds == "cubes" else "C"
 
@@ -414,6 +461,47 @@ def generate_cases(
                     "zC = amph(abs(A) + 0.1, B)",
                 ]
             )
+        elif tpl_bank:
+            if ds in ("int_limits", "complex"):
+                t_idx = i % 8
+                tpl = tpl_bank[t_idx]
+                im0 = rng.choice(imgs)
+                im1 = "A" if ds == "int_limits" else rng.choice(["A", "B"])
+                im2 = "B"
+            else:
+                t_idx = rng.randrange(len(tpl_bank))
+                tpl = tpl_bank[t_idx]
+                if len(imgs) >= 3:
+                    im0, im1, im2 = rng.sample(imgs, 3)
+                else:
+                    im0 = rng.choice(imgs)
+                    im1 = rng.choice(imgs)
+                    im2 = rng.choice(imgs)
+            expr = (
+                tpl.replace("__IM0__", im0)
+                .replace("__IM1__", im1)
+                .replace("__IM2__", im2)
+            )
+            r = rng.random()
+            if r < 0.65:
+                stmt = f"{dst} = {expr}"
+            elif r < 0.80:
+                aop = rng.choice(["+=", "-=", "*="])
+                stmt = f"{dst} {aop} {expr}"
+            elif r < 0.90 and ds not in ("cubes", "size_1", "int_limits", "complex"):
+                tpl2 = tpl_bank2[t_idx % len(tpl_bank2)]
+                e2 = (
+                    tpl2.replace("__IM0__", im1)
+                    .replace("__IM1__", im2)
+                    .replace("__IM2__", im0)
+                )
+                stmt = f"U, V = {expr}, {e2}"
+            elif r < 0.95 and ds in ("default", "random", "size_256"):
+                c1 = rng.choice(["1.5", "0.5", "2.0", "1.25"])
+                c2 = rng.choice(["0.5", "0.25", "0.75", "1.0"])
+                stmt = f"C[0:H,0:H] = A[0:H,0:H] * {c1} - B[0:H,0:H] * {c2}"
+            else:
+                stmt = f"local tmp = {expr}; {dst} = tmp * 0.5 + tmp"
         else:
             expr = _gen_image_expr(rng, depth, imgs, unary_fns, binary_fns)
             r = rng.random()

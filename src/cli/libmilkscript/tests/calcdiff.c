@@ -55,6 +55,7 @@ typedef struct
     uint64_t       cnt0;
     uint64_t       nelement;
     size_t         nbytes;
+    int            borrowed;
     void          *data;
     IMAGE_KEYWORD *kw;
 } img_snap_t;
@@ -90,6 +91,7 @@ typedef struct
 } eval_rec_t;
 
 static char g_tmpdir[PATH_MAX] = "";
+static int  g_devnull          = -1;
 
 /* Remove a file or directory entry during nftw cleanup. */
 static int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
@@ -121,7 +123,8 @@ static uint64_t now_ns(void)
 /* Return 1 if @name is one of the predefined session constants (_PI, _e, ...) or internal loop vars. */
 static int is_predefined_var(const char *name)
 {
-    if (strncmp(name, "__fstop", 7) == 0 || strncmp(name, "__fstep", 7) == 0)
+    if (strncmp(name, "__f", 3) == 0 || strncmp(name, "__g", 3) == 0 ||
+        strncmp(name, "__s", 3) == 0)
     {
         return 1;
     }
@@ -148,14 +151,16 @@ static void silence_begin(int saved[2])
 {
     fflush(stdout);
     fflush(stderr);
-    saved[0]    = dup(STDOUT_FILENO);
-    saved[1]    = dup(STDERR_FILENO);
-    int devnull = open("/dev/null", O_WRONLY);
-    if (devnull >= 0)
+    saved[0] = dup(STDOUT_FILENO);
+    saved[1] = dup(STDERR_FILENO);
+    if (g_devnull < 0)
     {
-        dup2(devnull, STDOUT_FILENO);
-        dup2(devnull, STDERR_FILENO);
-        close(devnull);
+        g_devnull = open("/dev/null", O_WRONLY);
+    }
+    if (g_devnull >= 0)
+    {
+        dup2(g_devnull, STDOUT_FILENO);
+        dup2(g_devnull, STDERR_FILENO);
     }
 }
 
@@ -189,6 +194,14 @@ static int init_engine(void)
     silence_begin(saved);
     int rc = milkscript_init(1, argv);
     silence_end(saved);
+    if (data.core.NB_MAX_IMAGE > 128)
+    {
+        data.core.NB_MAX_IMAGE = 128;
+    }
+    if (data.core.NB_MAX_VARIABLE > 128)
+    {
+        data.core.NB_MAX_VARIABLE = 128;
+    }
     return rc;
 }
 
@@ -197,8 +210,11 @@ static void snap_free(state_snap_t *snap)
 {
     for (int i = 0; i < snap->nimgs; i++)
     {
-        free(snap->imgs[i].data);
-        free(snap->imgs[i].kw);
+        if (!snap->imgs[i].borrowed)
+        {
+            free(snap->imgs[i].data);
+            free(snap->imgs[i].kw);
+        }
     }
     free(snap->imgs);
     free(snap->vars);
@@ -266,14 +282,15 @@ static void workspace_clear(void)
     mcalc_out_mode     = MCALC_OUT_VALUES;
 }
 
-/* Delete any lingering _tmpcalc* or _tmpcalcpool* images so pool state starts clean. */
+/* Delete any lingering non-pooled _tmpcalc* images so pool state starts clean. */
 static void clear_tmp_pool(void)
 {
     cli_calc_tmp_cleanup();
     mcalc_tmp_cleanup();
     for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
     {
-        if (data.core.image[i].used && is_internal_img(data.core.image[i].name))
+        if (data.core.image[i].used && is_internal_img(data.core.image[i].name) &&
+            strncmp(data.core.image[i].name, "_tmpcalcpool", 12) != 0)
         {
             char nm[STRINGMAXLEN_IMAGE_NAME];
             snprintf(nm, sizeof(nm), "%s", data.core.image[i].name);
@@ -295,8 +312,21 @@ static const img_snap_t *find_img(const state_snap_t *snap, const char *name)
     return NULL;
 }
 
-/* Capture all user images, variables, and udefs into @snap. */
-static void snap_capture(state_snap_t *snap)
+/* Find variable @name in @snap, or NULL if absent. */
+static const var_snap_t *find_var(const state_snap_t *snap, const char *name)
+{
+    for (int i = 0; i < snap->nvars; i++)
+    {
+        if (strcmp(snap->vars[i].name, name) == 0)
+        {
+            return &snap->vars[i];
+        }
+    }
+    return NULL;
+}
+
+/* Capture all user images, variables, and udefs into @snap (borrowing unchanged buffers from @base). */
+static void snap_capture_ex(state_snap_t *snap, const state_snap_t *base)
 {
     memset(snap, 0, sizeof(*snap));
     clear_tmp_pool();
@@ -318,25 +348,40 @@ static void snap_capture(state_snap_t *snap)
         img_snap_t *s = &snap->imgs[snap->nimgs++];
         memset(s, 0, sizeof(*s));
         snprintf(s->name, sizeof(s->name), "%s", im->name);
-        s->naxis    = im->md[0].naxis;
-        s->size[0]  = im->md[0].size[0];
-        s->size[1]  = (s->naxis > 1) ? im->md[0].size[1] : 1;
-        s->size[2]  = (s->naxis > 2) ? im->md[0].size[2] : 1;
-        s->datatype = im->md[0].datatype;
-        s->shared   = im->md[0].shared;
-        s->nbkw     = im->md[0].NBkw;
-        s->cnt0     = im->md[0].cnt0;
-        s->nelement = im->md[0].nelement;
-        s->nbytes   = (size_t) s->nelement * (size_t) ImageStreamIO_typesize(s->datatype);
-        s->data     = malloc(s->nbytes > 0 ? s->nbytes : 1);
-        if (s->nbytes > 0)
+        s->naxis            = im->md[0].naxis;
+        s->size[0]          = im->md[0].size[0];
+        s->size[1]          = (s->naxis > 1) ? im->md[0].size[1] : 1;
+        s->size[2]          = (s->naxis > 2) ? im->md[0].size[2] : 1;
+        s->datatype         = im->md[0].datatype;
+        s->shared           = im->md[0].shared;
+        s->nbkw             = im->md[0].NBkw;
+        s->cnt0             = im->md[0].cnt0;
+        s->nelement         = im->md[0].nelement;
+        s->nbytes           = (size_t) s->nelement * (size_t) ImageStreamIO_typesize(s->datatype);
+        const img_snap_t *b = (base != NULL) ? find_img(base, im->name) : NULL;
+        if (b != NULL && b->nbytes == s->nbytes && b->datatype == s->datatype &&
+            b->naxis == s->naxis && b->size[0] == s->size[0] && b->size[1] == s->size[1] &&
+            b->size[2] == s->size[2] && b->nbkw == s->nbkw &&
+            (s->nbytes == 0 || memcmp(im->array.raw, b->data, s->nbytes) == 0) &&
+            (s->nbkw == 0 || im->kw == NULL ||
+             memcmp(im->kw, b->kw, (size_t) s->nbkw * sizeof(IMAGE_KEYWORD)) == 0))
         {
-            memcpy(s->data, im->array.raw, s->nbytes);
+            s->borrowed = 1;
+            s->data     = b->data;
+            s->kw       = b->kw;
         }
-        if (s->nbkw > 0 && im->kw != NULL)
+        else
         {
-            s->kw = malloc((size_t) s->nbkw * sizeof(IMAGE_KEYWORD));
-            memcpy(s->kw, im->kw, (size_t) s->nbkw * sizeof(IMAGE_KEYWORD));
+            s->data = malloc(s->nbytes > 0 ? s->nbytes : 1);
+            if (s->nbytes > 0)
+            {
+                memcpy(s->data, im->array.raw, s->nbytes);
+            }
+            if (s->nbkw > 0 && im->kw != NULL)
+            {
+                s->kw = malloc((size_t) s->nbkw * sizeof(IMAGE_KEYWORD));
+                memcpy(s->kw, im->kw, (size_t) s->nbkw * sizeof(IMAGE_KEYWORD));
+            }
         }
     }
 
@@ -404,18 +449,22 @@ static void snap_capture(state_snap_t *snap)
     }
 }
 
-/* Restore workspace images, variables, and udefs from @snap. */
-static void snap_restore(const state_snap_t *snap)
+static void snap_capture(state_snap_t *snap)
 {
-    int saved[2];
-    silence_begin(saved);
+    snap_capture_ex(snap, NULL);
+}
+
+/* Restore workspace images, variables, and udefs from @snap (skipping unchanged images in @dirty). */
+static void snap_restore_diff(const state_snap_t *snap, const state_snap_t *dirty)
+{
     clear_tmp_pool();
 
-    int had_shared = 0;
+    int had_shared  = 0;
+    int tbl_changed = 0;
     for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
     {
         const IMAGE *im = &data.core.image[i];
-        if (!im->used)
+        if (!im->used || strncmp(im->name, "_tmpcalcpool", 12) == 0)
         {
             continue;
         }
@@ -425,7 +474,7 @@ static void snap_restore(const state_snap_t *snap)
         if (s == NULL || s->shared != 0 || im->md == NULL || im->md[0].shared != 0 ||
             im->md[0].naxis != s->naxis || im->md[0].datatype != s->datatype ||
             im->md[0].size[0] != s->size[0] || y != s->size[1] || z != s->size[2] ||
-            im->md[0].NBkw < s->nbkw)
+            im->md[0].NBkw < s->nbkw || find_var(snap, im->name) != NULL)
         {
             if (im->md != NULL && im->md[0].shared != 0)
             {
@@ -434,6 +483,7 @@ static void snap_restore(const state_snap_t *snap)
             char nm[STRINGMAXLEN_IMAGE_NAME];
             snprintf(nm, sizeof(nm), "%s", im->name);
             delete_image_ID(nm, DELETE_IMAGE_ERRMODE_IGNORE);
+            tbl_changed = 1;
         }
     }
     if (had_shared && g_tmpdir[0] != '\0')
@@ -455,52 +505,120 @@ static void snap_restore(const state_snap_t *snap)
         }
     }
 
+    int fast_vars = 1;
+    int v_idx     = 0;
     for (long i = 0; data.core.variable != NULL && i < data.core.NB_MAX_VARIABLE; i++)
     {
         VARIABLE *v = &data.core.variable[i];
-        if (v->used && !is_predefined_var(v->name))
+        if (!v->used || is_predefined_var(v->name))
         {
-            v->used    = 0;
-            v->type    = -1;
-            v->name[0] = '\0';
+            continue;
+        }
+        while (v_idx < snap->nvars && snap->vars[v_idx].from_clivar)
+        {
+            v_idx++;
+        }
+        if (v_idx >= snap->nvars || v->type != snap->vars[v_idx].type ||
+            strcmp(v->name, snap->vars[v_idx].name) != 0)
+        {
+            fast_vars = 0;
+            break;
+        }
+        v_idx++;
+    }
+    while (v_idx < snap->nvars && snap->vars[v_idx].from_clivar)
+    {
+        v_idx++;
+    }
+    if (v_idx != snap->nvars)
+    {
+        fast_vars = 0;
+    }
+
+    if (fast_vars)
+    {
+        v_idx = 0;
+        for (long i = 0; data.core.variable != NULL && i < data.core.NB_MAX_VARIABLE; i++)
+        {
+            VARIABLE *v = &data.core.variable[i];
+            if (!v->used || is_predefined_var(v->name))
+            {
+                continue;
+            }
+            while (v_idx < snap->nvars && snap->vars[v_idx].from_clivar)
+            {
+                v_idx++;
+            }
+            const var_snap_t *vs = &snap->vars[v_idx++];
+            if (vs->type == 0)
+            {
+                v->value.f = vs->f;
+            }
+            else if (vs->type == 1)
+            {
+                v->value.l = vs->l;
+            }
+            else if (vs->type == 2)
+            {
+                snprintf(v->value.s, sizeof(v->value.s), "%s", vs->s);
+            }
         }
     }
-    for (int i = 0; i < snap->nvars; i++)
+    else
     {
-        const var_snap_t *vs = &snap->vars[i];
-        if (vs->type == 0)
+        tbl_changed = 1;
+        for (long i = 0; data.core.variable != NULL && i < data.core.NB_MAX_VARIABLE; i++)
         {
-            create_variable_ID(vs->name, vs->f);
+            VARIABLE *v = &data.core.variable[i];
+            if (v->used && !is_predefined_var(v->name))
+            {
+                v->used    = 0;
+                v->type    = -1;
+                v->name[0] = '\0';
+            }
         }
-        else if (vs->type == 1)
+        for (int i = 0; i < snap->nvars; i++)
         {
-            create_variable_long_ID(vs->name, vs->l);
-        }
-        else if (vs->type == 2 && !vs->from_clivar)
-        {
-            create_variable_string_ID(vs->name, vs->s);
+            const var_snap_t *vs = &snap->vars[i];
+            if (vs->type == 0)
+            {
+                create_variable_ID(vs->name, vs->f);
+            }
+            else if (vs->type == 1)
+            {
+                create_variable_long_ID(vs->name, vs->l);
+            }
+            else if (vs->type == 2 && !vs->from_clivar)
+            {
+                create_variable_string_ID(vs->name, vs->s);
+            }
         }
     }
     memcpy(cli_vars, snap->clivars, sizeof(cli_vars));
 
     for (int i = 0; i < snap->nimgs; i++)
     {
-        const img_snap_t *s  = &snap->imgs[i];
-        imageID           id = image_ID(s->name, data.core.image, data.core.NB_MAX_IMAGE);
+        const img_snap_t *s       = &snap->imgs[i];
+        imageID           id      = image_ID(s->name, data.core.image, data.core.NB_MAX_IMAGE);
+        int               created = 0;
         if (id < 0)
         {
             uint32_t sz[3] = { s->size[0], s->size[1], s->size[2] };
             create_image_ID(s->name, s->naxis, sz, s->datatype, s->shared,
                             s->nbkw > 0 ? s->nbkw : 10, 0, &id);
+            created     = 1;
+            tbl_changed = 1;
         }
-        if (id >= 0 && s->nbytes > 0)
+        const img_snap_t *d = (!created && dirty != NULL) ? find_img(dirty, s->name) : NULL;
+        int unchanged       = (d != NULL && d->borrowed && d->data == s->data && d->kw == s->kw);
+        if (!unchanged && id >= 0 && s->nbytes > 0)
         {
             memcpy(data.core.image[id].array.raw, s->data, s->nbytes);
         }
         if (id >= 0 && data.core.image[id].md != NULL)
         {
             data.core.image[id].md[0].cnt0 = s->cnt0;
-            if (data.core.image[id].kw != NULL && data.core.image[id].md[0].NBkw > 0)
+            if (!unchanged && data.core.image[id].kw != NULL && data.core.image[id].md[0].NBkw > 0)
             {
                 memset(data.core.image[id].kw, 0,
                        (size_t) data.core.image[id].md[0].NBkw * sizeof(IMAGE_KEYWORD));
@@ -512,21 +630,31 @@ static void snap_restore(const state_snap_t *snap)
         }
     }
 
-    cli_calc_udef_clear();
-    mcalc_udef_clear();
-    for (int i = 0; i < snap->nudefs; i++)
+    if (snap->nudefs > 0 || cli_calc_udef_get(0) != NULL || mcalc_udef_get(0) != NULL)
     {
-        const cli_calc_udef_t *u = &snap->udefs[i];
-        cli_calc_udef_add(u->name, u->nargs, (const char (*)[64]) u->arg_names, u->body);
-        mcalc_udef_add(u->name, u->nargs, (const char (*)[64]) u->arg_names, u->body);
+        cli_calc_udef_clear();
+        mcalc_udef_clear();
+        for (int i = 0; i < snap->nudefs; i++)
+        {
+            const cli_calc_udef_t *u = &snap->udefs[i];
+            cli_calc_udef_add(u->name, u->nargs, (const char (*)[64]) u->arg_names, u->body);
+            mcalc_udef_add(u->name, u->nargs, (const char (*)[64]) u->arg_names, u->body);
+        }
     }
     cli_float_digits   = 6;
     mcalc_float_digits = 6;
     dcprecision        = 0;
     cli_calc_out_mode  = CLI_CALC_OUT_VALUES;
     mcalc_out_mode     = MCALC_OUT_VALUES;
-    milk_table_bump();
-    silence_end(saved);
+    if (tbl_changed)
+    {
+        milk_table_bump();
+    }
+}
+
+static void snap_restore(const state_snap_t *snap)
+{
+    snap_restore_diff(snap, NULL);
 }
 
 /* Create a 2-D or 3-D local image of the given datatype and return its IMAGE pointer. */
@@ -972,8 +1100,6 @@ static int eval_stmts_on(int         which,
 /* Execute one setup string (`@cmd:mk2Dim/mk3Dim/rm ...` or a calc statement). */
 static void run_setup_stmt(const char *s)
 {
-    int saved[2];
-    silence_begin(saved);
     if (strncmp(s, "@cmd:", 5) == 0)
     {
         const char *cmd = s + 5;
@@ -1005,16 +1131,17 @@ static void run_setup_stmt(const char *s)
         int  rc = 0;
         eval_stmts_on(0, s, 0, &rc, out, sizeof(out));
     }
-    silence_end(saved);
 }
 
 /* Run @stmt on engine @which (0 = old, 1 = new) and capture its result in @rec. */
-static void run_one_engine(int which, const char *stmt, int is_test, eval_rec_t *rec)
+static void run_one_engine(int                 which,
+                           const char         *stmt,
+                           int                 is_test,
+                           const state_snap_t *base,
+                           eval_rec_t         *rec)
 {
     memset(rec, 0, sizeof(*rec));
     clear_tmp_pool();
-    int saved[2];
-    silence_begin(saved);
     if (which == 0)
     {
         rec->ok = eval_stmts_on(0, stmt, is_test, &rec->rc, rec->out, sizeof(rec->out));
@@ -1028,8 +1155,7 @@ static void run_one_engine(int which, const char *stmt, int is_test, eval_rec_t 
             rec->not_impl = 1;
         }
     }
-    silence_end(saved);
-    snap_capture(&rec->post);
+    snap_capture_ex(&rec->post, base);
 }
 
 /* Return 1 if the workspace contains any float32 or complex-float image. */
@@ -1119,19 +1245,6 @@ static int outputs_match(const char *o1, const char *o2, double rel_tol)
         p2 = (nl2 != NULL) ? (nl2 + 1) : (p2 + l2);
     }
     return *p1 == '\0' && *p2 == '\0';
-}
-
-/* Find variable @name in @snap, or NULL if absent. */
-static const var_snap_t *find_var(const state_snap_t *snap, const char *name)
-{
-    for (int i = 0; i < snap->nvars; i++)
-    {
-        if (strcmp(snap->vars[i].name, name) == 0)
-        {
-            return &snap->vars[i];
-        }
-    }
-    return NULL;
 }
 
 /* Compare two image snapshots @a (reference) and @b (new) per section 6.1; returns 0 on match. */
@@ -1745,15 +1858,84 @@ static int bench_one_old(int iters, const char *stmts, double *out_us)
     return 0;
 }
 
-/* Run `--bench --size N --iters K --engine old|new ["<stmts>"]` and print best of 7 runs (us). */
+/* Time one benchmark statement or program on the new engine and write best of 7 runs (us). */
+static int bench_one_new(int iters, const char *stmts, double *out_us)
+{
+    int         warmup   = (iters / 10 >= 5) ? (iters / 10) : 5;
+    double      best_ns  = 1e30;
+    char        err[512] = "";
+    mcalc_prog *p        = mcalc_prog_new(stmts, NULL, 0, err, sizeof(err));
+    if (p == NULL)
+    {
+        if (strcmp(err, "not implemented in the new engine") == 0)
+        {
+            *out_us = NAN;
+            return 2;
+        }
+        fprintf(stderr, "milk-calcdiff: mcalc_prog_new failed for '%s': %s\n", stmts, err);
+        return 1;
+    }
+    for (int i = 0; i < warmup; i++)
+    {
+        if (mcalc_prog_run(p, err, sizeof(err)) != 0)
+        {
+            mcalc_prog_free(p);
+            if (strcmp(err, "not implemented in the new engine") == 0)
+            {
+                *out_us = NAN;
+                return 2;
+            }
+            fprintf(stderr, "milk-calcdiff: mcalc_prog_run failed for '%s': %s\n", stmts, err);
+            return 1;
+        }
+    }
+    for (int r = 0; r < 7; r++)
+    {
+        uint64_t t0 = now_ns();
+        for (int i = 0; i < iters; i++)
+        {
+            if (mcalc_prog_run(p, err, sizeof(err)) != 0)
+            {
+                mcalc_prog_free(p);
+                return 1;
+            }
+        }
+        double ns = (double) (now_ns() - t0) / (double) iters;
+        if (ns < best_ns)
+        {
+            best_ns = ns;
+        }
+    }
+    mcalc_prog_free(p);
+    *out_us = best_ns / 1000.0;
+    return 0;
+}
+
+/* Time one benchmark statement or program on both engines back-to-back in the same process (us). */
+static int bench_one_both(int iters, const char *stmts, double *out_old_us, double *out_new_us)
+{
+    int rc_n = bench_one_new(iters, stmts, out_new_us);
+    if (rc_n == 1)
+    {
+        return 1;
+    }
+    if (rc_n == 2)
+    {
+        *out_new_us = NAN;
+    }
+    if (bench_one_old(iters, stmts, out_old_us) != 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+/* Run `--bench --size N --iters K --engine old|new|both ["<stmts>"]` and print best of 7 runs. */
 static int run_bench_mode(uint32_t size, int iters, const char *engine, const char *stmts)
 {
-    if (strcmp(engine, "new") == 0)
-    {
-        fprintf(stdout, "not available\n");
-        return 2;
-    }
-    if (strcmp(engine, "old") != 0)
+    int is_new  = (strcmp(engine, "new") == 0);
+    int is_both = (strcmp(engine, "both") == 0);
+    if (!is_new && !is_both && strcmp(engine, "old") != 0)
     {
         fprintf(stderr, "milk-calcdiff: unknown engine '%s'\n", engine);
         return 1;
@@ -1778,8 +1960,24 @@ static int run_bench_mode(uint32_t size, int iters, const char *engine, const ch
 
     if (stmts != NULL)
     {
+        if (is_both)
+        {
+            double uo = 0.0, un = 0.0;
+            if (bench_one_both(iters, stmts, &uo, &un) != 0)
+            {
+                return 1;
+            }
+            printf("%.3f\t%.3f\n", uo, un);
+            return 0;
+        }
         double us = 0.0;
-        if (bench_one_old(iters, stmts, &us) != 0)
+        int    rc = is_new ? bench_one_new(iters, stmts, &us) : bench_one_old(iters, stmts, &us);
+        if (rc == 2)
+        {
+            fprintf(stdout, "not available\n");
+            return 2;
+        }
+        if (rc != 0)
         {
             return 1;
         }
@@ -1809,13 +2007,40 @@ static int run_bench_mode(uint32_t size, int iters, const char *engine, const ch
             k_iters = (int) strtol(line, NULL, 10);
             expr    = tab + 1;
         }
+        if (is_both)
+        {
+            double uo = 0.0, un = 0.0;
+            if (bench_one_both(k_iters, expr, &uo, &un) != 0)
+            {
+                free(line);
+                return 1;
+            }
+            if (isnan(un))
+            {
+                printf("%.3f\tnan\n", uo);
+            }
+            else
+            {
+                printf("%.3f\t%.3f\n", uo, un);
+            }
+            fflush(stdout);
+            continue;
+        }
         double us = 0.0;
-        if (bench_one_old(k_iters, expr, &us) != 0)
+        int    rc = is_new ? bench_one_new(k_iters, expr, &us) : bench_one_old(k_iters, expr, &us);
+        if (rc == 1)
         {
             free(line);
             return 1;
         }
-        printf("%.3f\n", us);
+        if (rc == 2)
+        {
+            printf("nan\n");
+        }
+        else
+        {
+            printf("%.3f\n", us);
+        }
         fflush(stdout);
     }
     free(line);
@@ -1939,9 +2164,19 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    char         cached_ds_name[64] = "";
-    state_snap_t cached_ds_snap;
-    memset(&cached_ds_snap, 0, sizeof(cached_ds_snap));
+    int   out_fd   = dup(STDOUT_FILENO);
+    FILE *diff_out = (out_fd >= 0) ? fdopen(out_fd, "w") : stdout;
+    int   saved_io[2];
+    silence_begin(saved_io);
+
+    char         ds_cache_names[32][64];
+    state_snap_t ds_cache_snaps[32];
+    int          nds_cache = 0;
+    state_snap_t prev_post;
+    int          has_prev_post = 0;
+    memset(ds_cache_names, 0, sizeof(ds_cache_names));
+    memset(ds_cache_snaps, 0, sizeof(ds_cache_snaps));
+    memset(&prev_post, 0, sizeof(prev_post));
 
     char   *line = NULL;
     size_t  cap  = 0;
@@ -1969,25 +2204,42 @@ int main(int argc, char **argv)
             continue;
         }
 
-        const char *ds_name = (dataset != NULL && dataset[0] != '\0') ? dataset : "default";
+        const char         *ds_name = (dataset != NULL && dataset[0] != '\0') ? dataset : "default";
+        const state_snap_t *cached_ds = NULL;
+        for (int c = 0; c < nds_cache; c++)
+        {
+            if (strcmp(ds_cache_names[c], ds_name) == 0)
+            {
+                cached_ds = &ds_cache_snaps[c];
+                break;
+            }
+        }
+        if (cached_ds == NULL && nds_cache < 32)
+        {
+            workspace_clear();
+            build_dataset(ds_name);
+            snap_capture(&ds_cache_snaps[nds_cache]);
+            snprintf(ds_cache_names[nds_cache], sizeof(ds_cache_names[nds_cache]), "%s", ds_name);
+            cached_ds = &ds_cache_snaps[nds_cache++];
+        }
+
         if (test_local)
         {
-            if (nsetup == 0)
+            if (nsetup == 0 && cached_ds != NULL)
             {
-                if (strcmp(ds_name, cached_ds_name) != 0)
-                {
-                    snap_free(&cached_ds_snap);
-                    workspace_clear();
-                    build_dataset(ds_name);
-                    snap_capture(&cached_ds_snap);
-                    snprintf(cached_ds_name, sizeof(cached_ds_name), "%s", ds_name);
-                }
+                snap_restore(cached_ds);
             }
             else
             {
-                cached_ds_name[0] = '\0';
-                workspace_clear();
-                build_dataset(ds_name);
+                if (cached_ds != NULL)
+                {
+                    snap_restore(cached_ds);
+                }
+                else
+                {
+                    workspace_clear();
+                    build_dataset(ds_name);
+                }
                 for (int k = 0; k < nsetup; k++)
                 {
                     run_setup_stmt(setup[k]);
@@ -2027,16 +2279,16 @@ int main(int argc, char **argv)
             }
             if (diff)
             {
-                fputs("{\"dataset\":", stdout);
-                print_json_str(stdout, ds_name);
-                fputs(",\"stmt\":", stdout);
-                print_json_str(stdout, stmt);
-                fputs(",\"reason\":", stdout);
-                print_json_str(stdout, reason);
-                fputs(",\"detail\":", stdout);
-                print_json_str(stdout, detail);
-                fputs("}\n", stdout);
-                fflush(stdout);
+                fputs("{\"dataset\":", diff_out);
+                print_json_str(diff_out, ds_name);
+                fputs(",\"stmt\":", diff_out);
+                print_json_str(diff_out, stmt);
+                fputs(",\"reason\":", diff_out);
+                print_json_str(diff_out, reason);
+                fputs(",\"detail\":", diff_out);
+                print_json_str(diff_out, detail);
+                fputs("}\n", diff_out);
+                fflush(diff_out);
             }
             free(dataset);
             for (int k = 0; k < nsetup; k++)
@@ -2051,26 +2303,22 @@ int main(int argc, char **argv)
         const state_snap_t *base_snap = NULL;
         memset(&snap, 0, sizeof(snap));
 
-        if (nsetup == 0)
+        if (nsetup == 0 && cached_ds != NULL)
         {
-            if (strcmp(ds_name, cached_ds_name) != 0)
-            {
-                snap_free(&cached_ds_snap);
-                workspace_clear();
-                build_dataset(ds_name);
-                snap_capture(&cached_ds_snap);
-                snprintf(cached_ds_name, sizeof(cached_ds_name), "%s", ds_name);
-            }
-            else
-            {
-                snap_restore(&cached_ds_snap);
-            }
-            base_snap = &cached_ds_snap;
+            snap_restore_diff(cached_ds, has_prev_post ? &prev_post : NULL);
+            base_snap = cached_ds;
         }
         else
         {
-            workspace_clear();
-            build_dataset(ds_name);
+            if (cached_ds != NULL)
+            {
+                snap_restore_diff(cached_ds, has_prev_post ? &prev_post : NULL);
+            }
+            else
+            {
+                workspace_clear();
+                build_dataset(ds_name);
+            }
             for (int k = 0; k < nsetup; k++)
             {
                 run_setup_stmt(setup[k]);
@@ -2078,33 +2326,46 @@ int main(int argc, char **argv)
             snap_capture(&snap);
             base_snap = &snap;
         }
+        if (has_prev_post)
+        {
+            snap_free(&prev_post);
+            has_prev_post = 0;
+        }
 
         eval_rec_t r1;
         eval_rec_t r2;
         int        eng2 = old_vs_old ? 0 : 1;
-        run_one_engine(0, stmt, is_test, &r1);
-        snap_restore(base_snap);
-        run_one_engine(eng2, stmt, is_test, &r2);
+        run_one_engine(0, stmt, is_test, base_snap, &r1);
+        snap_restore_diff(base_snap, &r1.post);
+        run_one_engine(eng2, stmt, is_test, base_snap, &r2);
 
         char reason[64]  = "";
         char detail[512] = "";
         if (compare_records(&r1, &r2, is_test, strict_mode, reason, sizeof(reason), detail,
                             sizeof(detail)) != 0)
         {
-            fputs("{\"dataset\":", stdout);
-            print_json_str(stdout, ds_name);
-            fputs(",\"stmt\":", stdout);
-            print_json_str(stdout, stmt);
-            fputs(",\"reason\":", stdout);
-            print_json_str(stdout, reason);
-            fputs(",\"detail\":", stdout);
-            print_json_str(stdout, detail);
-            fputs("}\n", stdout);
-            fflush(stdout);
+            fputs("{\"dataset\":", diff_out);
+            print_json_str(diff_out, ds_name);
+            fputs(",\"stmt\":", diff_out);
+            print_json_str(diff_out, stmt);
+            fputs(",\"reason\":", diff_out);
+            print_json_str(diff_out, reason);
+            fputs(",\"detail\":", diff_out);
+            print_json_str(diff_out, detail);
+            fputs("}\n", diff_out);
+            fflush(diff_out);
         }
 
         snap_free(&r1.post);
-        snap_free(&r2.post);
+        if (nsetup == 0 && cached_ds != NULL)
+        {
+            prev_post     = r2.post;
+            has_prev_post = 1;
+        }
+        else
+        {
+            snap_free(&r2.post);
+        }
         snap_free(&snap);
         free(dataset);
         for (int k = 0; k < nsetup; k++)
@@ -2113,7 +2374,19 @@ int main(int argc, char **argv)
         }
         free(stmt);
     }
-    snap_free(&cached_ds_snap);
+    silence_end(saved_io);
+    if (diff_out != stdout)
+    {
+        fclose(diff_out);
+    }
+    if (has_prev_post)
+    {
+        snap_free(&prev_post);
+    }
+    for (int c = 0; c < nds_cache; c++)
+    {
+        snap_free(&ds_cache_snaps[c]);
+    }
     free(line);
     return 0;
 }

@@ -159,3 +159,78 @@ def test_unit_keeps_sliced_destination_ring_buffer_and_axis_reduction(tmp_path):
     # slot k holds src + n of the last frame n = k (mod 4); src itself grows by 1 per frame, so
     # consecutive slots differ by 2 (or by -6 across the wrap)
     assert float(h2) - float(h1) in (2.0, -6.0), (h1, h2)
+
+
+def test_phase5_masked_lhs_and_end_slices(tmp_path):
+    """Masked LHS assignments (=, +=, -=, *=, /=) and `end` in slice bounds (§3.2 rules 1, 7)."""
+    res = milk_bash(
+        SETUP + '@calc "m = a; m[a > 0] = -1; ref = where(a > 0, -1, a)"\n'
+        '@calc -v em1 "imax(abs(m - ref))"; echo "em1=$em1"\n'
+        '@calc "m = a; m[a > 0] += 10; m[a <= 0] -= 5; m[b > 100] *= 2; m[b <= 100] /= 2"\n'
+        '@calc "ref2 = where(a > 0, a + 10, a - 5); ref2 = where(b > 100, ref2 * 2, ref2 / 2)"\n'
+        '@calc -v em2 "imax(abs(m - ref2))"; echo "em2=$em2"\n'
+        '@calc "s_end = a[1:end-1, 0:end-2]; s_num = a[1:6, 0:3]"\n'
+        '@calc -v eend "imax(abs(s_end - s_num))"; echo "eend=$eend"\n'
+        '@calc "d_end = a; d_end[end-1:end, 1:end-1] = 77; d_num = a; d_num[6:7, 1:4] = 77"\n'
+        '@calc -v edend "imax(abs(d_end - d_num))"; echo "edend=$edend"\n',
+        tmp_path,
+        extra_env={"MILK_CALC_ENGINE": "new"},
+    )
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert float(value(res.stdout, "em1")) == 0.0
+    assert float(value(res.stdout, "em2")) < 1e-5
+    assert float(value(res.stdout, "eend")) == 0.0
+    assert float(value(res.stdout, "edend")) == 0.0
+
+
+def test_phase5_comprehensions_literals_and_linspace(tmp_path):
+    """Array comprehensions, vector literals, and linspace (§3.2 rules 4, 5)."""
+    res = milk_bash(
+        '@calc "c1 = [k * k for k = 0:4]; c1rev = [k for k = 6:0:-2]"\n'
+        '@calc "c2 = [x + 10 * y for x = 0:3, y = 0:2]"\n'
+        '@calc "c3 = [x + 10 * y + 100 * z for x = 0:1, y = 0:2, z = 0:1]"\n'
+        '@calc "vlit = [1.5, -2.0, 3.25, 4.0]; ls = linspace(0.0, 1.0, 5)"\n'
+        '@calc -v v1,v2,v3,v4,v5 "c1[3]; c1rev[2]; c2[2,1]; c3[1,2,1]; vlit[2] + ls[1]"\n'
+        'echo "vals=$v1,$v2,$v3,$v4,$v5"\n'
+        'echo "sh=$(@get l.c2.xsize)x$(@get l.c2.ysize)_$(@get l.ls.xsize)"\n',
+        tmp_path,
+        extra_env={"MILK_CALC_ENGINE": "new"},
+    )
+    assert res.returncode == 0, res.stdout + res.stderr
+    v1, v2, v3, v4, v5 = [float(x) for x in value(res.stdout, "vals").split(",")]
+    assert (v1, v2, v3, v4, v5) == (9.0, 2.0, 12.0, 121.0, 3.5)
+    assert value(res.stdout, "sh") == "4x3_5"
+
+
+def test_phase5_roll_chained_cmp_constants_and_math(tmp_path):
+    """roll, chained comparisons, pi/nan/inf, wrap_pi, and sinc (§3.2 rules 6, 8, 12, 13, 14)."""
+    res = milk_bash(
+        SETUP + '@calc "r1 = roll(a, 2, -1)"\n'
+        '@calc -v rp0,ra0,rp1,ra1 "r1[0,0]; a[6,1]; r1[3,5]; a[1,0]"\n'
+        'echo "roll=$rp0,$ra0,$rp1,$ra1"\n'
+        '@calc "ch = (-1 <= ix(a) <= 1) && (0 <= iy(a) < 2); ch_ref = (ix(a) >= -1 && ix(a) <= 1) && (iy(a) >= 0 && iy(a) < 2)"\n'
+        '@calc -v ech "imax(abs(ch - ch_ref))"; echo "ech=$ech"\n'
+        '@calc -v sc_ch "(1 < 2 <= 2 < 5) * 10 + (1 < 3 < 2)"; echo "sc_ch=$sc_ch"\n'
+        '@calc "im_c = [pi, nan, inf, -inf]"\n'
+        '@calc -v c_pi,c_nan,c_inf "abs(im_c[0] - 3.14159265); isnan(im_c[1]) && isnan(nan); !isfinite(im_c[2]) && !isfinite(inf)"\n'
+        'echo "consts=$c_pi,$c_nan,$c_inf"\n'
+        '@calc "w = wrap_pi([0.0, 1.5 * pi, -1.5 * pi, 2.25 * pi]); s = sinc([0.0, 0.5, 1.0, -0.5])"\n'
+        '@calc -v w1,w2,w3,s0,s1,s2 "w[1]; w[2]; w[3]; s[0]; s[1]; abs(s[2])"\n'
+        'echo "ws=$w1,$w2,$w3,$s0,$s1,$s2"\n',
+        tmp_path,
+        extra_env={"MILK_CALC_ENGINE": "new"},
+    )
+    assert res.returncode == 0, res.stdout + res.stderr
+    rp0, ra0, rp1, ra1 = [float(x) for x in value(res.stdout, "roll").split(",")]
+    assert rp0 == ra0 and rp1 == ra1
+    assert float(value(res.stdout, "ech")) == 0.0
+    assert float(value(res.stdout, "sc_ch")) == 10.0
+    c_pi, c_nan, c_inf = [float(x) for x in value(res.stdout, "consts").split(",")]
+    assert c_pi < 1e-6 and c_nan == 1.0 and c_inf == 1.0
+    w1, w2, w3, s0, s1, s2 = [float(x) for x in value(res.stdout, "ws").split(",")]
+    import math
+
+    assert abs(w1 - (-0.5 * math.pi)) < 1e-5
+    assert abs(w2 - (0.5 * math.pi)) < 1e-5
+    assert abs(w3 - (0.25 * math.pi)) < 1e-5
+    assert s0 == 1.0 and abs(s1 - 2.0 / math.pi) < 1e-6 and s2 < 1e-6

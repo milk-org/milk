@@ -371,11 +371,17 @@ int mc_resolve_prog(mc_stmt_t *prog, char *err, size_t errsz);
 /** mc_scalar_eval_expr() - evaluate a resolved scalar expression @e into @out (0 on ok, -1 on err). */
 int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz);
 
+/** mc_scalar_set_slice_end() - set active slice axis 'end' bound (-1 when inactive). */
+void mc_scalar_set_slice_end(long end_val);
+
 /** mc_scalar_exec_stmt() - execute a resolved scalar statement @s into @out (0 on ok, -1 on err). */
 int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t errsz);
 
 /** mc_scalar_exec_prog() - execute a resolved scalar program list @prog (0 on ok, -1 on err). */
 int mc_scalar_exec_prog(const mc_stmt_t *prog, char *err, size_t errsz);
+
+/** mc_exec_stmt_list() - resolve, plan, and execute a statement list @head (0 on ok, -1 on err). */
+int mc_exec_stmt_list(mc_stmt_t *head, char *err, size_t errsz);
 
 /** mc_scalar_binop() - apply binary operator @op to scalar values @l and @r (NULL on ok, else err). */
 const char *mc_scalar_binop(mc_tok_type_t op, const mc_val_t *l, const mc_val_t *r, mc_val_t *out);

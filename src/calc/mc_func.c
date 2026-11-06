@@ -352,7 +352,7 @@ static const mc_func_t g_mc_funcs[] = {
       "Swap half-spaces along all axes to center DC at (nx/2, ny/2)" },
     { "eye", 1, 2, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "eye(n[, m])",
       "Identity matrix" },
-    { "diag", 1, 1, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "diag(v)",
+    { "diag", 1, 2, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "diag(v[, k])",
       "Extract diagonal or build diagonal matrix" },
     { "transpose", 1, 1, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "transpose(A)",
       "2D matrix transpose (or batched 3D)" },

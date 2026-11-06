@@ -521,6 +521,24 @@ static int lex_local(const char *s, mc_lexp_t *x)
         {
             p += n;
         }
+        else if (strncmp(p, "pi", 2) == 0 && !isalnum((unsigned char) p[2]) && p[2] != '_' &&
+                 p[2] != '.')
+        {
+            if (lpush(x, MC_TOK_DOUBLE, 0, M_PI, NULL) != 0)
+            {
+                return -1;
+            }
+            p += 2;
+        }
+        else if ((strncmp(p, "nan", 3) == 0 || strncmp(p, "inf", 3) == 0) &&
+                 !isalnum((unsigned char) p[3]) && p[3] != '_' && p[3] != '.')
+        {
+            if (lpush(x, MC_TOK_DOUBLE, 0, (p[0] == 'n') ? NAN : INFINITY, NULL) != 0)
+            {
+                return -1;
+            }
+            p += 3;
+        }
         else
         {
             return -1;
@@ -649,6 +667,32 @@ static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live)
             continue;
         }
         mc_val_t right = eval_local_expr(x, next, live);
+        if (mc_is_rel_tok(op) && mc_is_rel_tok(x->t[x->pos].type))
+        {
+            mc_val_t cmp = { 0 };
+            if (live && !x->bail && mc_scalar_binop(op, &left, &right, &cmp) != NULL)
+            {
+                x->bail = 1;
+            }
+            int      all_ok = live && !x->bail && val_num(&cmp) != 0.0;
+            mc_val_t prev   = right;
+            while (!x->bail && mc_is_rel_tok(x->t[x->pos].type))
+            {
+                mc_tok_type_t cop = x->t[x->pos++].type;
+                mc_val_t      cur = eval_local_expr(x, prec + 1, all_ok);
+                if (all_ok && !x->bail)
+                {
+                    if (mc_scalar_binop(cop, &prev, &cur, &cmp) != NULL)
+                    {
+                        x->bail = 1;
+                    }
+                    all_ok = (val_num(&cmp) != 0.0);
+                    prev   = cur;
+                }
+            }
+            left = mk_l(all_ok);
+            continue;
+        }
         if (live && !x->bail && mc_scalar_binop(op, &left, &right, &left) != NULL)
         {
             x->bail = 1;
