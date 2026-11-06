@@ -19,54 +19,8 @@
 
 #define MC_RED_BLK 1024
 
-typedef struct
-{
-    const mc_expr_t *expr;
-    mcalc_prog_t    *prog;
-} sub_cache_entry_t;
-
-static sub_cache_entry_t g_sub_cache[16];
-static int               g_in_cache_clear = 0;
-
 void mc_reduce_cache_clear(void)
 {
-    if (g_in_cache_clear)
-    {
-        return;
-    }
-    g_in_cache_clear = 1;
-    for (int i = 0; i < 16; i++)
-    {
-        if (g_sub_cache[i].prog != NULL)
-        {
-            (void) (g_sub_cache[i].prog->ast_head != NULL &&
-                    (g_sub_cache[i].prog->ast_head->u.expr = NULL, 1));
-            mcalc_prog_free(g_sub_cache[i].prog);
-            g_sub_cache[i].prog = NULL;
-        }
-        g_sub_cache[i].expr = NULL;
-    }
-    g_in_cache_clear = 0;
-}
-
-void mc_reduce_cache_evict_expr(const mc_expr_t *e)
-{
-    if (e == NULL || g_in_cache_clear)
-    {
-        return;
-    }
-    g_in_cache_clear = 1;
-    for (int i = 0; i < 16; i++)
-    {
-        if (g_sub_cache[i].expr == e && g_sub_cache[i].prog != NULL)
-        {
-            (void) (g_sub_cache[i].prog->ast_head != NULL &&
-                    (g_sub_cache[i].prog->ast_head->u.expr = NULL, 1));
-            mcalc_prog_free(g_sub_cache[i].prog);
-            g_sub_cache[i].prog = NULL, g_sub_cache[i].expr = NULL;
-        }
-    }
-    g_in_cache_clear = 0;
 }
 
 __attribute__((format(printf, 3, 4))) static int red_err(char       *err,
@@ -138,18 +92,33 @@ static imageID clone_to_tmp(imageID src_id)
     return tid;
 }
 
-static mcalc_prog_t *get_or_build_sub_prog(const mc_expr_t *expr, char *err, size_t errsz)
+mcalc_prog_t *mc_get_or_build_sub_prog(const mc_expr_t *expr, char *err, size_t errsz)
 {
-    for (int i = 0; i < 16; i++)
+    static int g_sub_seq = 0;
+    if (expr == NULL)
     {
-        if (g_sub_cache[i].expr == expr && g_sub_cache[i].prog != NULL)
+        return NULL;
+    }
+    int need_re_resolve = 0;
+    if (expr->sub_prog != NULL)
+    {
+        uint64_t tgen     = milk_table_generation();
+        int      same_gen = (expr->sub_prog->plan_gen == tgen && tgen != 0);
+        if (mc_prog_slots_valid(expr->sub_prog, same_gen))
         {
-            return g_sub_cache[i].prog;
+            expr->sub_prog->plan_gen = tgen;
+            return expr->sub_prog;
         }
+        mcalc_sub_prog_free(expr->sub_prog);
+        ((mc_expr_t *) expr)->sub_prog = NULL;
+        need_re_resolve                = 1;
     }
     mcalc_prog_t *p = calloc(1, sizeof(*p));
     mc_stmt_t    *s = calloc(1, sizeof(*s));
-    p->stmt_to_step = malloc(sizeof(int));
+    if (p != NULL)
+    {
+        p->stmt_to_step = malloc(sizeof(int));
+    }
     if (!p || !s || !p->stmt_to_step)
     {
         free(s), mcalc_prog_free(p);
@@ -157,28 +126,21 @@ static mcalc_prog_t *get_or_build_sub_prog(const mc_expr_t *expr, char *err, siz
     }
     s->kind = MC_STMT_EXPR, s->u.expr = (mc_expr_t *) expr, s->needs_image = 1;
     p->ast_head = s, p->nstmts = 1, p->stmt_to_step[0] = -1, p->last_im_id = -1;
-    if (mc_plan_build(p, 0, err, errsz) != 0)
+    if ((need_re_resolve && mc_resolve_prog_ex(s, mc_prog_in_unit(), err, errsz) != 0) ||
+        mc_plan_build(p, 0, err, errsz) != 0)
     {
         s->u.expr = NULL, mcalc_prog_free(p);
         return NULL;
     }
-    int slot = 15;
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < p->nslots; i++)
     {
-        if (g_sub_cache[i].prog == NULL)
+        if (strcmp(p->slots[i].bare, "_tmpcalc0") == 0)
         {
-            slot = i;
-            break;
+            snprintf(p->slots[i].name, sizeof(p->slots[i].name), "_tmpcalcsub%d", ++g_sub_seq);
+            snprintf(p->slots[i].bare, sizeof(p->slots[i].bare), "%s", p->slots[i].name);
         }
     }
-    if (g_sub_cache[slot].prog != NULL)
-    {
-        mcalc_prog_t *old      = g_sub_cache[slot].prog;
-        g_sub_cache[slot].prog = NULL, g_sub_cache[slot].expr = NULL;
-        (void) (old->ast_head != NULL && (old->ast_head->u.expr = NULL, 1));
-        mcalc_prog_free(old);
-    }
-    g_sub_cache[slot].expr = expr, g_sub_cache[slot].prog = p;
+    ((mc_expr_t *) expr)->sub_prog = p;
     return p;
 }
 
@@ -238,7 +200,7 @@ int mc_prepare_red_src(const mc_expr_t *e,
         return fill_red_src_im(out, id, err, errsz);
     }
 
-    mcalc_prog_t *sub = get_or_build_sub_prog(e, err, errsz);
+    mcalc_prog_t *sub = mc_get_or_build_sub_prog(e, err, errsz);
     if (sub == NULL)
     {
         return -1;
@@ -313,8 +275,14 @@ int mc_prepare_red_src(const mc_expr_t *e,
     {
         return -1;
     }
-    out->tmp_id = clone_to_tmp(sub->last_im_id);
-    mc_tmp_release(sub->last_im_id);
+    const mc_step_t *last = (sub->nsteps > 0) ? &sub->steps[sub->nsteps - 1] : NULL;
+    int              sidx = !last                          ? -1
+                            : (last->kind == MC_STEP_CTOR) ? last->ctor.slot_idx
+                            : (last->kind == MC_STEP_PASS && last->pass.nouts > 0)
+                                ? last->pass.outs[last->pass.nouts - 1].slot_idx
+                                : -1;
+    out->tmp_id =
+        (sidx >= 0) ? mc_tmp_steal_slot(&sub->slots[sidx]) : clone_to_tmp(sub->last_im_id);
     return (out->tmp_id < 0) ? red_err(err, errsz, "failed to allocate temporary image")
                              : fill_red_src_im(out, out->tmp_id, err, errsz);
 }

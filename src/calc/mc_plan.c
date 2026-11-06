@@ -887,14 +887,12 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
 
     for (int st = 0; st < p->nsteps; st++)
     {
-        mc_pass_t *pa = &p->steps[st].pass;
         if (p->steps[st].kind == MC_STEP_PASS &&
-            (mc_emit_pass(p, pa, err, errsz) != 0 ||
-             (pa->fn = mc_cc_compile(pa->c_src, pa->so_path, sizeof(pa->so_path), err, errsz)) ==
-                 NULL))
+            mc_emit_pass(p, &p->steps[st].pass, err, errsz) != 0)
         {
             return -1;
         }
     }
-    return 0;
+    return (mc_cc_compile_prog(p, err, errsz) != 0) ? -1
+                                                    : ((p->plan_gen = milk_table_generation()), 0);
 }

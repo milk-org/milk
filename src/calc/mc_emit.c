@@ -91,7 +91,8 @@ typedef struct
     const mcalc_udef_t *def_stk[4];
     mc_expr_t *const   *def_args[4];
     const mc_expr_t    *sub_t0;
-    int                 def_depth, cur_out_idx, chain_seq, fast_x_interior;
+    int                 def_depth, cur_out_idx, chain_seq, fast_x_interior, fast_div;
+    int                 used_complex, used_coord_shift, used_spatial;
 } emit_ctx_t;
 
 static int find_earlier_out_in_pass(const emit_ctx_t *c, int sidx)
@@ -225,6 +226,8 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
                     (emit_expr(c, e->u.call.args[0]), 1));
             return;
         }
+        c->used_complex |=
+            (is_c0 || strcmp(fn->name, "cplx") == 0 || strcmp(fn->name, "expi") == 0);
         cfn = (strcmp(fn->name, "real") == 0)   ? (wd ? "creal" : "crealf")
               : (strcmp(fn->name, "imag") == 0) ? (wd ? "cimag" : "cimagf")
               : (strcmp(fn->name, "conj") == 0) ? (wd ? "conj" : "conjf")
@@ -237,12 +240,13 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
 
     case MC_FN_COORD:
     {
-        int op_idx = resolve_im_arg_op(c, e->u.call.args[0], 0);
-        int ref_op = (op_idx >= 0) ? op_idx : c->pass->outs[c->cur_out_idx].op_idx;
-        int mode   = (strcmp(fn->name, "ix") == 0)   ? 0
-                     : (strcmp(fn->name, "iy") == 0) ? 1
-                     : (strcmp(fn->name, "ir") == 0) ? 2
-                                                     : 3;
+        c->used_coord_shift = 1;
+        int op_idx          = resolve_im_arg_op(c, e->u.call.args[0], 0);
+        int ref_op          = (op_idx >= 0) ? op_idx : c->pass->outs[c->cur_out_idx].op_idx;
+        int mode            = (strcmp(fn->name, "ix") == 0)   ? 0
+                              : (strcmp(fn->name, "iy") == 0) ? 1
+                              : (strcmp(fn->name, "ir") == 0) ? 2
+                                                              : 3;
         eb_printf(c->eb, "%s(_vnx%d, _vny%d, (int32_t)x, (int32_t)y, ",
                   wd ? "mc_coordd" : "mc_coordf", ref_op, ref_op);
         (void) ((nargs == 3 && (emit_scalar_arg(c, e->u.call.args[1], 0), eb_printf(c->eb, ", "),
@@ -262,6 +266,7 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
 
     case MC_FN_SHIFT:
     {
+        c->used_coord_shift = 1;
         int         op_idx  = resolve_im_arg_op(c, e->u.call.args[0], 0);
         int         is_roll = (strcmp(fn->name, "roll") == 0), sh_id = ++c->chain_seq;
         emit_buf_t *saved_eb = c->eb;
@@ -299,6 +304,7 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
     case MC_FN_LUT:
     case MC_FN_GATHER:
     {
+        c->used_spatial    = 1;
         int         is_lut = (fn->kind == MC_FN_LUT), is_i2 = (strcmp(fn->name, "interp2") == 0);
         int         tbl_op = resolve_im_arg_op(c, e->u.call.args[is_lut ? 1 : 0], 1);
         const char *sfx =
@@ -334,6 +340,7 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
 
     case MC_FN_STENCIL_LIB:
     {
+        c->used_spatial    = 1;
         int         op_idx = resolve_im_arg_op(c, e->u.call.args[0], 0);
         const char *sfx =
             get_dt_info((op_idx >= 0) ? c->pass->ops[op_idx].dt : _DATATYPE_FLOAT)->sfx;
@@ -353,7 +360,8 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
         if ((strcmp(fn->name, "abs") == 0 || strcmp(fn->name, "fabs") == 0) &&
             is_complex_dt(e->u.call.args[0]->res_dt))
         {
-            cfn = wd ? "mc_cabsd" : "mc_cabsf";
+            c->used_complex = 1;
+            cfn             = wd ? "mc_cabsd" : "mc_cabsf";
         }
         else if (strcmp(fn->name, "pow") == 0 && is_const_num(e->u.call.args[1], &exp_v) &&
                  (exp_v == 0.0 || exp_v == 1.0 || exp_v == 2.0 || exp_v == 3.0 || exp_v == -1.0 ||
@@ -475,8 +483,9 @@ static void emit_expr(emit_ctx_t *c, const mc_expr_t *e)
     {
         mc_tok_type_t op   = e->u.binary.op;
         int           cplx = is_complex_dt(e->res_dt), wd = c->pass->work_double;
-        char          pre[64], mid[64];
-        const char   *post = "))";
+        c->used_complex |= cplx;
+        char        pre[64], mid[64];
+        const char *post = "))";
         if (cplx && (op == MC_TOK_MUL || op == MC_TOK_DIV))
         {
             snprintf(pre, sizeof(pre), "%s((%s)(",
@@ -622,7 +631,7 @@ static void emit_out_write(emit_ctx_t *c, int out_idx, int phase)
 
     char dst_lval[256];
     format_dst_lval(c, out, dst_lval, sizeof(dst_lval));
-    (void) (out->assign_op == MC_TOK_DIV_ASSIGN &&
+    (void) (!c->fast_div && out->assign_op == MC_TOK_DIV_ASSIGN &&
             (eb_printf(c->eb, "        if (_r%d == 0) { ops[%d].scalar = 1.0; } else {\n", out_idx,
                        out->op_idx),
              1));
@@ -656,7 +665,8 @@ static void emit_out_write(emit_ctx_t *c, int out_idx, int phase)
                   st_m ? st_m : ctype, out_idx);
     }
 
-    (void) (out->assign_op == MC_TOK_DIV_ASSIGN && (eb_printf(c->eb, "        }\n"), 1));
+    (void) (!c->fast_div && out->assign_op == MC_TOK_DIV_ASSIGN &&
+            (eb_printf(c->eb, "        }\n"), 1));
     (void) (is_masked && (eb_printf(c->eb, "        }\n"), 1));
 }
 
@@ -681,20 +691,19 @@ static void emit_all_outs(emit_ctx_t *c)
 
 int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t errsz)
 {
-    emit_buf_t eb = { 0 };
-    emit_ctx_t c  = { 0 };
-    c.prog = prog, c.pass = pass, c.eb = &eb;
+    emit_buf_t eb = { 0 }, k_eb = { 0 };
+    emit_ctx_t c = { 0 };
+    c.prog = prog, c.pass = pass, c.eb = &k_eb, c.used_complex = pass->is_complex;
     c.wt = pass->work_double ? "double" : "float";
     c.ct = pass->work_double ? "double _Complex" : "float _Complex";
 
-    eb_printf(&eb, "%svoid mc_k(mc_operand_t * restrict ops, uint64_t y0, uint64_t y1) {\n",
-              MC_PRELUDE_SRC);
+    eb_printf(&k_eb, "void mc_k(mc_operand_t * restrict ops, uint64_t y0, uint64_t y1) {\n");
 
     for (int i = 0; i < pass->nops; i++)
     {
         if (pass->ops[i].is_scalar)
         {
-            eb_printf(&eb,
+            eb_printf(&k_eb,
                       "    const %s _sc%d = (%s)ops[%d].scalar; "
                       "const int64_t _ish%d = (int64_t)llround(ops[%d].scalar); "
                       "(void)_sc%d; (void)_ish%d;\n",
@@ -704,11 +713,11 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
         {
             const char *ct = get_dt_info(pass->ops[i].dt)->ct,
                        *q  = pass->ops[i].is_out ? "" : "const ";
-            eb_printf(&eb, "    %s%s * restrict _p%d = (%s%s *)ops[%d].base; (void)_p%d;\n", q, ct,
-                      i, q, ct, i, i);
+            eb_printf(&k_eb, "    %s%s * restrict _p%d = (%s%s *)ops[%d].base; (void)_p%d;\n", q,
+                      ct, i, q, ct, i, i);
             (void) (!pass->is_1d_contig &&
                     (eb_printf(
-                         &eb,
+                         &k_eb,
                          "    const int64_t _st%d_0 = ops[%d].st[0], _st%d_1 = ops[%d].st[1], "
                          "_st%d_2 = ops[%d].st[2];\n"
                          "    const uint32_t _vnx%d = ops[%d].vnx, _vny%d = ops[%d].vny, "
@@ -728,14 +737,18 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
             (pass->comp_expr->u.comp.gens[g].step != NULL)
                 ? mc_find_scalar_op(pass, pass->comp_expr->u.comp.gens[g].step, NULL, g * 3 + 2)
                 : -1;
-        eb_printf(&eb,
+        eb_printf(&k_eb,
                   (kt >= 0) ? "    const %s _g_start%d = _sc%d, _g_step%d = _sc%d;\n"
                             : "    const %s _g_start%d = _sc%d, _g_step%d = 1;\n",
                   c.wt, g, ks, g, kt);
     }
 
+    int fast_div =
+        (pass->is_1d_contig && !pass->is_complex && pass->nouts == 1 &&
+         pass->outs[0].assign_op == MC_TOK_DIV_ASSIGN && pass->outs[0].lhs_slice == NULL);
+    c.fast_div   = fast_div;
     int can_simd = !pass->is_complex;
-    for (int i = 0; i < pass->nouts; i++)
+    for (int i = 0; !fast_div && i < pass->nouts; i++)
     {
         can_simd &= (pass->outs[i].assign_op != MC_TOK_DIV_ASSIGN);
     }
@@ -749,30 +762,42 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
         }
         if (mt)
         {
-            eb_printf(&eb, "    for (uint64_t _b = y0; _b < y1; _b += 1024) {\n"
-                           "        const uint64_t _be = (_b + 1024 < y1) ? (_b + 1024) : y1;\n");
+            eb_printf(&k_eb, "    for (uint64_t _b = y0; _b < y1; _b += 1024) {\n"
+                             "        const uint64_t _be = (_b + 1024 < y1) ? (_b + 1024) : y1;\n");
             for (int i = 0; i < pass->nouts; i++)
             {
                 c.cur_out_idx = i;
-                eb_printf(&eb, "        #pragma omp simd\n"
-                               "        for (uint64_t _i = _b; _i < _be; _i++) {\n");
+                eb_printf(&k_eb, "        #pragma omp simd\n"
+                                 "        for (uint64_t _i = _b; _i < _be; _i++) {\n");
                 emit_out_write(&c, i, 0);
-                eb_printf(&eb, "        }\n");
+                eb_printf(&k_eb, "        }\n");
             }
-            eb_printf(&eb, "    }\n}\n");
+            eb_printf(&k_eb, "    }\n}\n");
         }
         else
         {
-            (void) (can_simd && (eb_printf(&eb, "    #pragma omp simd\n"), 1));
-            eb_printf(&eb, "    for (uint64_t _i = y0; _i < y1; _i++) {\n");
+            if (fast_div)
+            {
+                eb_printf(&k_eb, "    int _zdiv = 0;\n"
+                                 "    #pragma omp simd reduction(|:_zdiv)\n"
+                                 "    for (uint64_t _i = y0; _i < y1; _i++) {\n"
+                                 "        _zdiv |= ((");
+                emit_expr(&c, pass->outs[0].rhs_expr);
+                eb_printf(&k_eb,
+                          ") == 0);\n    }\n"
+                          "    if (_zdiv) { ops[%d].scalar = 1.0; return; }\n",
+                          pass->outs[0].op_idx);
+            }
+            (void) (can_simd && (eb_printf(&k_eb, "    #pragma omp simd\n"), 1));
+            eb_printf(&k_eb, "    for (uint64_t _i = y0; _i < y1; _i++) {\n");
             emit_all_outs(&c);
-            eb_printf(&eb, "    }\n}\n");
+            eb_printf(&k_eb, "    }\n}\n");
         }
     }
     else
     {
         int ref_op = pass->outs[pass->nouts - 1].op_idx;
-        eb_printf(&eb,
+        eb_printf(&k_eb,
                   "    const uint32_t _nx = _vnx%d, _ny = _vny%d;\n"
                   "    int _fast_x = %d; int64_t _x0 = 0, _x1 = (int64_t)_nx;\n",
                   ref_op, ref_op, can_simd);
@@ -780,7 +805,7 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
         {
             if (!pass->ops[i].is_scalar && !pass->ops[i].is_table_arg)
             {
-                eb_printf(&eb,
+                eb_printf(&k_eb,
                           pass->ops[i].is_x_bcast
                               ? "    _fast_x &= (_st%d_0 == 0);\n"
                               : "    _fast_x &= (_st%d_0 == 1 && _vnx%d == _nx);\n",
@@ -788,53 +813,72 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
             }
             else if (pass->ops[i].is_scalar && pass->ops[i].is_non_pointwise)
             {
-                eb_printf(&eb,
+                eb_printf(&k_eb,
                           "    { int64_t _a = _ish%d < 0 ? -_ish%d : _ish%d; "
                           "if (_a > _x0) _x0 = _a; "
                           "if ((int64_t)_nx - _a < _x1) _x1 = (int64_t)_nx - _a; }\n",
                           i, i, i);
             }
         }
-        eb_printf(&eb,
+        eb_printf(&k_eb,
                   "    if (!_fast_x || _x0 >= _x1) { _x0 = (int64_t)_nx; _x1 = (int64_t)_nx; }\n"
+                  "    uint64_t z = _ny ? (y0 / _ny) : 0, y = _ny ? (y0 %% _ny) : 0;\n"
+                  "    (void)z; (void)y;\n"
                   "    for (uint64_t _yz = y0; _yz < y1; _yz++) {\n"
-                  "        const uint64_t z = _yz / _ny, y = _yz %% _ny, _row_base = _yz * _nx;\n"
-                  "        (void)z; (void)y;\n");
+                  "        const uint64_t _row_base = _yz * _nx;\n");
         for (int i = 0; i < pass->nops; i++)
         {
             (void) (!pass->ops[i].is_scalar && !pass->ops[i].is_table_arg &&
-                    (eb_printf(&eb,
+                    (eb_printf(&k_eb,
                                "        const int64_t _ro%d = (int64_t)y * _st%d_1 + "
                                "(int64_t)z * _st%d_2; (void)_ro%d;\n",
                                i, i, i, i),
                      1));
         }
-        eb_printf(&eb, "        for (int _seg = 0; _seg < 2; _seg++) {\n"
-                       "            const uint64_t _xb = _seg ? (uint64_t)_x1 : 0, "
-                       "_xe = _seg ? _nx : (uint64_t)_x0;\n"
-                       "            for (uint64_t x = _xb; x < _xe; x++) {\n"
-                       "                const uint64_t _i = _row_base + x; (void)_i;\n");
+        eb_printf(&k_eb, "        for (int _seg = 0; _seg < 2; _seg++) {\n"
+                         "            const uint64_t _xb = _seg ? (uint64_t)_x1 : 0, "
+                         "_xe = _seg ? _nx : (uint64_t)_x0;\n"
+                         "            for (uint64_t x = _xb; x < _xe; x++) {\n"
+                         "                const uint64_t _i = _row_base + x; (void)_i;\n");
         c.fast_x_interior = 0;
         emit_all_outs(&c);
-        eb_printf(&eb, "            }\n        }\n");
+        eb_printf(&k_eb, "            }\n        }\n");
         if (can_simd)
         {
             emit_buf_t pre_eb = { 0 }, body_eb = { 0 };
             c.pre_eb = &pre_eb, c.eb = &body_eb, c.fast_x_interior = 1;
             emit_all_outs(&c);
-            c.pre_eb = NULL, c.eb = &eb;
-            (void) (pre_eb.buf != NULL && (eb_printf(&eb, "%s", pre_eb.buf), 1));
-            eb_printf(&eb,
+            c.pre_eb = NULL, c.eb = &k_eb;
+            (void) (pre_eb.buf != NULL && (eb_printf(&k_eb, "%s", pre_eb.buf), 1));
+            eb_printf(&k_eb,
                       "        #pragma omp simd\n"
                       "        for (int32_t x = (int32_t)_x0; x < (int32_t)_x1; x++) {\n"
                       "            const uint64_t _i = _row_base + (uint64_t)x; (void)_i;\n%s"
                       "        }\n",
                       body_eb.buf ? body_eb.buf : "");
-            eb.oom |= pre_eb.oom | body_eb.oom;
+            k_eb.oom |= pre_eb.oom | body_eb.oom;
             free(pre_eb.buf), free(body_eb.buf);
         }
-        eb_printf(&eb, "    }\n}\n");
+        eb_printf(&k_eb, "        if (++y == _ny) { y = 0; z++; }\n    }\n}\n");
     }
+    eb_printf(&eb, "%s%s%s%s", MC_PRELUDE_CORE_SRC, c.used_complex ? MC_PRELUDE_COMPLEX_SRC : "",
+              (c.used_coord_shift || c.used_spatial) ? MC_PRELUDE_COORD_SHIFT_SRC : "",
+              c.used_spatial ? MC_PRELUDE_SPATIAL_MACRO_SRC : "");
+    for (int i = 0, seen = 0; c.used_spatial && i <= pass->nops; i++)
+    {
+        uint8_t dt = (i < pass->nops && !pass->ops[i].is_scalar && !is_complex_dt(pass->ops[i].dt))
+                         ? pass->ops[i].dt
+                         : _DATATYPE_FLOAT;
+        if ((seen & (1 << (dt & 31))) == 0)
+        {
+            seen |= (1 << (dt & 31));
+            const dt_info_t *d = get_dt_info(dt);
+            eb_printf(&eb, "MC_DEF_SPATIAL(%s, %s)\n", d->sfx, d->ct);
+        }
+    }
+    eb_printf(&eb, "\n%s", k_eb.buf ? k_eb.buf : "");
+    eb.oom |= k_eb.oom;
+    free(k_eb.buf);
     if (eb.oom)
     {
         free(eb.buf);

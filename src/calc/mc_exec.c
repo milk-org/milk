@@ -89,46 +89,32 @@ static imageID eval_expr_to_tmp_im(const mc_expr_t *expr,
                                    char            *err,
                                    size_t           errsz)
 {
-    mc_stmt_t fake_stmt = { .kind = MC_STMT_EXPR, .u.expr = (mc_expr_t *) expr, .needs_image = 1 };
-    int       step_map = -1, rc = 0;
-    mcalc_prog_t p      = { .ast_head = &fake_stmt, .nstmts = 1, .stmt_to_step = &step_map };
-    imageID      res_id = -1;
-
-    if (mc_plan_build(&p, 0, err, errsz) == 0)
+    mcalc_prog_t *p = mc_get_or_build_sub_prog(expr, err, errsz);
+    if (p == NULL)
     {
-        for (int s = 0; s < p.nsteps && rc == 0; s++)
-        {
-            mc_val_t v;
-            (void) (unsqueeze_red && p.steps[s].kind == MC_STEP_CTOR &&
-                    (p.steps[s].ctor.is_anon = 2));
-            rc = (p.steps[s].kind == MC_STEP_SCALAR)
-                     ? mc_scalar_exec_stmt(p.steps[s].scalar_stmt, &v, err, errsz)
-                 : (p.steps[s].kind == MC_STEP_CTOR)
-                     ? mc_exec_ctor(&p, &p.steps[s].ctor, in_unit, err, errsz)
-                     : mc_exec_pass(&p, &p.steps[s].pass, in_unit, err, errsz);
-        }
-        const mc_step_t *last = (rc == 0 && p.nsteps > 0) ? &p.steps[p.nsteps - 1] : NULL;
-        int              sidx = !last                          ? -1
-                                : (last->kind == MC_STEP_CTOR) ? last->ctor.slot_idx
-                                : (last->kind == MC_STEP_PASS && last->pass.nouts > 0)
-                                    ? last->pass.outs[last->pass.nouts - 1].slot_idx
-                                    : -1;
-        if (sidx >= 0 && p.slots[sidx].im_id >= 0)
-        {
-            res_id = clone_to_tmp(p.slots[sidx].im_id);
-            mc_tmp_release(p.slots[sidx].im_id);
-        }
+        return -1;
     }
-    for (int s = 0; s < p.nsteps; s++)
+    int rc = 0;
+    for (int s = 0; s < p->nsteps && rc == 0; s++)
     {
-        (void) (p.steps[s].kind == MC_STEP_CTOR && (mc_ctor_step_free(&p.steps[s].ctor), 1));
-        (void) (p.steps[s].kind == MC_STEP_PASS &&
-                (free(p.steps[s].pass.ops), free(p.steps[s].pass.outs), free(p.steps[s].pass.c_src),
-                 1));
+        mc_val_t v;
+        if (p->steps[s].kind == MC_STEP_CTOR && p->steps[s].ctor.is_anon != 0)
+        {
+            p->steps[s].ctor.is_anon = unsqueeze_red ? 2 : 1;
+        }
+        rc = (p->steps[s].kind == MC_STEP_SCALAR)
+                 ? mc_scalar_exec_stmt(p->steps[s].scalar_stmt, &v, err, errsz)
+             : (p->steps[s].kind == MC_STEP_CTOR)
+                 ? mc_exec_ctor(p, &p->steps[s].ctor, in_unit, err, errsz)
+                 : mc_exec_pass(p, &p->steps[s].pass, in_unit, err, errsz);
     }
-    free(p.steps);
-    free(p.slots);
-    return res_id;
+    const mc_step_t *last = (rc == 0 && p->nsteps > 0) ? &p->steps[p->nsteps - 1] : NULL;
+    int              sidx = !last                          ? -1
+                            : (last->kind == MC_STEP_CTOR) ? last->ctor.slot_idx
+                            : (last->kind == MC_STEP_PASS && last->pass.nouts > 0)
+                                ? last->pass.outs[last->pass.nouts - 1].slot_idx
+                                : -1;
+    return (sidx >= 0) ? mc_tmp_steal_slot(&p->slots[sidx]) : -1;
 }
 
 static const mc_expr_t *unwrap_def_arg(const mc_expr_t *e, const mc_expr_t *call_site)
@@ -711,8 +697,6 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         mc_slot_t *slot = &prog->slots[out->slot_idx];
         if (out->lhs_slice != NULL || out->assign_op != MC_TOK_ASSIGN)
         {
-            (void) (out->assign_op == MC_TOK_DIV_ASSIGN &&
-                    (div_snap[j] = clone_to_tmp(slot->im_id), 1));
             for (int k = 0;
                  out->lhs_slice != NULL && out->lhs_slice->u.slice.is_mask_index && k < pass->nops;
                  k++)
@@ -760,6 +744,12 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
             goto cleanup;
         }
         (void) (!pass->ops[i].is_table_arg && (mc_view_apply_broadcast(&views[i], vsz), 1));
+        if (views[i].dt != pass->ops[i].dt ||
+            (pass->is_1d_contig && !pass->ops[i].is_table_arg && !views[i].is_contig))
+        {
+            rc = exec_err(err, errsz, "stream datatype or shape changed since plan");
+            goto cleanup;
+        }
         ops[i].base = (uint8_t *) milk_data.image[views[i].im_id].array.raw +
                       views[i].offset_elem * (int64_t) ImageStreamIO_typesize(views[i].dt);
         memcpy(ops[i].st, views[i].st, sizeof(ops[i].st));
@@ -768,6 +758,14 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
 
     uint64_t nitems = pass->is_1d_contig ? nelem : (uint64_t) vsz[1] * (uint64_t) vsz[2];
     int      nth = milk_omp_team_size(nelem, 262144), is_sh_in[64] = { 0 };
+    for (int j = 0; j < pass->nouts; j++)
+    {
+        const mc_pass_out_t *out = &pass->outs[j];
+        int fast_div             = (pass->is_1d_contig && !pass->is_complex && pass->nouts == 1 &&
+                                    out->lhs_slice == NULL && nth <= 1);
+        (void) (!out->is_elided && out->assign_op == MC_TOK_DIV_ASSIGN && !fast_div &&
+                (div_snap[j] = clone_to_tmp(prog->slots[out->slot_idx].im_id), 1));
+    }
     for (int i = 0; i < pass->nops; i++)
     {
         int is_out_im = 0;
@@ -800,14 +798,12 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
             if (pass->outs[j].assign_op == MC_TOK_DIV_ASSIGN &&
                 ops[pass->outs[j].op_idx].scalar != 0.0)
             {
-                IMAGE *dst = (div_snap[j] >= 0)
-                                 ? &milk_data.image[prog->slots[pass->outs[j].slot_idx].im_id]
-                                 : NULL;
-                (void) (dst != NULL &&
-                        (memcpy(dst->array.raw, milk_data.image[div_snap[j]].array.raw,
-                                (size_t) dst->md[0].nelement *
-                                    (size_t) ImageStreamIO_typesize(dst->md[0].datatype)),
-                         (dst->md[0].write = 0), 1));
+                IMAGE *dst       = &milk_data.image[prog->slots[pass->outs[j].slot_idx].im_id];
+                dst->md[0].write = 0;
+                (void) (div_snap[j] >= 0 &&
+                        memcpy(dst->array.raw, milk_data.image[div_snap[j]].array.raw,
+                               (size_t) dst->md[0].nelement *
+                                   (size_t) ImageStreamIO_typesize(dst->md[0].datatype)));
                 rc = exec_err(err, errsz, "Division by zero");
                 goto cleanup;
             }

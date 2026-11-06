@@ -174,6 +174,7 @@ typedef struct mcalc_prog
     unsigned char *assigned;
     int            nvars;
     void          *processinfo;
+    uint64_t       plan_gen;    /* milk_table_generation() at plan time */
     imageID        last_im_id;  /* last produced/updated imageID */
     mc_val_t       last_scalar; /* last scalar value if final step was scalar */
     int            last_was_im; /* 1 if final step produced an image */
@@ -239,6 +240,12 @@ imageID mc_tmp_image(uint8_t naxis, const uint32_t size[3], uint8_t dt);
 
 /* Return a temporary image `_tmpcalcN` to the 4-slot pool or delete it. */
 void mc_tmp_release(imageID tid);
+
+/* Force-release a slot-owned `_tmpcalc*` image when freeing a program. */
+void mc_tmp_release_force(imageID tid);
+
+/* Detach a temporary output image from @slot (pinned for `_tmpcalcsub*`, cloned if named). */
+imageID mc_tmp_steal_slot(mc_slot_t *slot);
 
 /* Publish an updated image (`md->write=0`, `cnt0++`, post semaphores if shared). */
 void mc_out_post(imageID id);
@@ -352,5 +359,11 @@ void mc_prog_load_vars(mcalc_prog_t *p);
 
 /* Sync assigned bound variables from `milk_data.variable` back to their pointers. */
 void mc_prog_store_vars(mcalc_prog_t *p);
+
+/* Return 1 if all image slots in @p still match their planned datatype and shape. */
+int mc_prog_slots_valid(mcalc_prog_t *p, int same_gen);
+
+/* Compile all elementwise passes in @p, batching cache misses into a single compiler call. */
+int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz);
 
 #endif /* MILK_CALC_MC_PLAN_H */

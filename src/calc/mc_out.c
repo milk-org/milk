@@ -15,7 +15,6 @@
 #include "COREMOD_memory/create_image.h"
 #include "COREMOD_memory/delete_image.h"
 #include "COREMOD_memory/image_ID.h"
-#include "COREMOD_memory/image_copy.h"
 #include "COREMOD_memory/variable_ID.h"
 #include "mc_plan.h"
 #include "mcalc.h"
@@ -60,7 +59,6 @@ static int pool_put(imageID id)
     IMAGE *im    = &milk_data.image[id];
     size_t total = 0;
     int    slot  = -1;
-    char   name[32];
 
     if (im->md == NULL || im->md[0].shared != 0 || im->array.raw == NULL)
     {
@@ -82,12 +80,7 @@ static int pool_put(imageID id)
     {
         return 0;
     }
-    snprintf(name, sizeof(name), "_tmpcalcpool%d", slot);
-    chname_image_ID(im->name, name);
-    if (strcmp(im->name, name) != 0)
-    {
-        return 0;
-    }
+    snprintf(im->name, STRINGMAXLEN_IMAGE_NAME, "_tmpcalcpool%d", slot);
     g_pool_ids[slot] = id;
     return 1;
 }
@@ -109,11 +102,7 @@ imageID mc_tmp_image(uint8_t naxis, const uint32_t size[3], uint8_t dt)
         {
             continue;
         }
-        chname_image_ID(im->name, tmpname);
-        if (strcmp(im->name, tmpname) != 0)
-        {
-            continue;
-        }
+        snprintf(im->name, STRINGMAXLEN_IMAGE_NAME, "%s", tmpname);
         imageID id      = g_pool_ids[k];
         g_pool_ids[k]   = -1;
         im->md[0].cnt0  = 0;
@@ -132,7 +121,7 @@ imageID mc_tmp_image(uint8_t naxis, const uint32_t size[3], uint8_t dt)
     return id;
 }
 
-void mc_tmp_release(imageID tid)
+void mc_tmp_release_force(imageID tid)
 {
     if (milk_data.image == NULL || tid < 0 || tid >= milk_data.NB_MAX_IMAGE ||
         !milk_data.image[tid].used)
@@ -143,6 +132,44 @@ void mc_tmp_release(imageID tid)
     {
         delete_image_ID(milk_data.image[tid].name, DELETE_IMAGE_ERRMODE_WARNING);
     }
+}
+
+void mc_tmp_release(imageID tid)
+{
+    if (milk_data.image == NULL || tid < 0 || tid >= milk_data.NB_MAX_IMAGE ||
+        !milk_data.image[tid].used || strncmp(milk_data.image[tid].name, "_tmpcalcsub", 11) == 0)
+    {
+        return;
+    }
+    mc_tmp_release_force(tid);
+}
+
+imageID mc_tmp_steal_slot(mc_slot_t *slot)
+{
+    if (slot == NULL || slot->im_id < 0 || slot->im_id >= milk_data.NB_MAX_IMAGE ||
+        !milk_data.image[slot->im_id].used)
+    {
+        return -1;
+    }
+    if (strncmp(slot->bare, "_tmpcalcsub", 11) == 0)
+    {
+        return slot->im_id;
+    }
+    if (strncmp(slot->bare, "_tmpcalc", 8) != 0)
+    {
+        IMAGE  *src = &milk_data.image[slot->im_id];
+        imageID tid = mc_tmp_image(src->md[0].naxis, src->md[0].size, src->md[0].datatype);
+        if (tid >= 0)
+        {
+            memcpy(milk_data.image[tid].array.raw, src->array.raw, im_bytes(src));
+        }
+        return tid;
+    }
+    imageID id        = slot->im_id;
+    slot->im_id       = -1;
+    slot->checked_gen = 0;
+    snprintf(milk_data.image[id].name, STRINGMAXLEN_IMAGE_NAME, "_tmpcalc%ld", g_tmp_seq++);
+    return id;
 }
 
 void mc_ensure_pool_warm(uint8_t naxis, const uint32_t size[3], uint8_t dt)
@@ -196,7 +223,8 @@ imageID mc_out_prepare(mc_slot_t     *slot,
     imageID id   = -1;
 
     if (slot->im_id >= 0 && slot->im_id < milk_data.NB_MAX_IMAGE &&
-        milk_data.image[slot->im_id].used && slot->checked_gen == tgen && tgen != 0)
+        milk_data.image[slot->im_id].used && slot->checked_gen == tgen && tgen != 0 &&
+        strcmp(milk_data.image[slot->im_id].name, bare) == 0)
     {
         id = slot->im_id;
     }
@@ -206,10 +234,11 @@ imageID mc_out_prepare(mc_slot_t     *slot,
                     milk_data.image[slot->im_id].used &&
                     strcmp(milk_data.image[slot->im_id].name, bare) == 0)
                        ? slot->im_id
-                       : ((is_tmp || slot->loc == 2 || slot->is_local)
-                              ? image_ID(bare, milk_data.image, milk_data.NB_MAX_IMAGE)
-                              : mc_resolve_or_autoconnect_image(slot->name));
-        long vid = variable_ID(bare);
+                   : is_tmp ? -1
+                   : (slot->loc == 2 || slot->is_local)
+                       ? image_ID(bare, milk_data.image, milk_data.NB_MAX_IMAGE)
+                       : mc_resolve_or_autoconnect_image(slot->name);
+        long vid = is_tmp ? -1 : variable_ID(bare);
         if (vid >= 0 && milk_data.variable[vid].type != 3)
         {
             if (err != NULL && errsz > 0)
@@ -292,7 +321,7 @@ imageID mc_out_prepare(mc_slot_t     *slot,
         id = mc_tmp_image(naxis, sz, dt);
         if (id != -1 && strcmp(milk_data.image[id].name, bare) != 0)
         {
-            chname_image_ID(milk_data.image[id].name, bare);
+            snprintf(milk_data.image[id].name, STRINGMAXLEN_IMAGE_NAME, "%s", bare);
         }
     }
     else
@@ -306,6 +335,13 @@ imageID mc_out_prepare(mc_slot_t     *slot,
             snprintf(err, errsz, "cannot create image '%s'", bare);
         }
         return -1;
+    }
+    if (!slot->existed_at_plan && !is_tmp && dt == slot->plan_dt &&
+        (slot->plan_naxis == 0 ||
+         (naxis == slot->plan_naxis && memcmp(sz, slot->plan_size, sizeof(sz)) == 0)))
+    {
+        slot->existed_at_plan = 1;
+        slot->orig_dt         = dt;
     }
     milk_data.image[id].md[0].write = 1;
     slot->im_id                     = id;
@@ -354,12 +390,27 @@ void mc_out_post(imageID id)
 
 void mc_post_defer(int on)
 {
-    g_post_defer = on;
-    g_post_n     = 0;
+    if (on)
+    {
+        if (g_post_defer++ == 0)
+        {
+            g_post_n = 0;
+        }
+    }
+    else
+    {
+        g_post_defer = 0;
+        g_post_n     = 0;
+    }
 }
 
 void mc_post_flush(void *processinfo)
 {
+    if (g_post_defer > 1)
+    {
+        g_post_defer--;
+        return;
+    }
     g_post_defer = 0;
     for (int i = 0; i < g_post_n; i++)
     {

@@ -503,38 +503,7 @@ static int validate_cached_prog(mcalc_prog_t *p, int same_gen)
             return 0;
         }
     }
-    for (int i = 0; i < p->nslots; i++)
-    {
-        mc_slot_t *s = &p->slots[i];
-        imageID    id =
-            (s->im_id >= 0 && s->im_id < milk_data.NB_MAX_IMAGE && milk_data.image[s->im_id].used &&
-             (same_gen || strcmp(milk_data.image[s->im_id].name, s->bare) == 0))
-                ? s->im_id
-                : mc_resolve_or_autoconnect_image(s->name);
-        long vid = (same_gen || id >= 0) ? -1 : variable_ID(s->bare);
-        if (vid >= 0 && milk_data.variable[vid].type != 3)
-        {
-            return 0;
-        }
-        if ((id >= 0) != (s->existed_at_plan != 0))
-        {
-            return 0;
-        }
-        if (s->existed_at_plan)
-        {
-            const IMAGE_METADATA *md = (id >= 0) ? &milk_data.image[id].md[0] : NULL;
-            uint32_t sz[3] = { md ? md->size[0] : 0, (md && md->naxis >= 2) ? md->size[1] : 1,
-                               (md && md->naxis >= 3) ? md->size[2] : 1 };
-            if (!md || md->datatype != s->orig_dt ||
-                (s->plan_naxis > 0 &&
-                 (md->naxis != s->plan_naxis || memcmp(sz, s->plan_size, sizeof(sz)) != 0)))
-            {
-                return 0;
-            }
-        }
-        s->im_id = id;
-    }
-    return 1;
+    return mc_prog_slots_valid(p, same_gen);
 }
 
 static int try_stmt_cache_hit(const char *input, uint64_t in_hash, size_t in_len, int *out_rc)

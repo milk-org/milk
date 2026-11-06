@@ -174,11 +174,12 @@ struct mc_expr
     int            col;
 
     /* Resolved type and shape */
-    mc_res_kind_t res_kind;
-    uint8_t       res_dt;      /* _DATATYPE_* when MC_RES_IMAGE */
-    int           res_naxis;   /* 1..3 when MC_RES_IMAGE */
-    uint32_t      res_size[3]; /* extents when MC_RES_IMAGE */
-    int           needs_image; /* 1 if subtree involves any image operation */
+    mc_res_kind_t      res_kind;
+    uint8_t            res_dt;      /* _DATATYPE_* when MC_RES_IMAGE */
+    int                res_naxis;   /* 1..3 when MC_RES_IMAGE */
+    uint32_t           res_size[3]; /* extents when MC_RES_IMAGE */
+    int                needs_image; /* 1 if subtree involves any image operation */
+    struct mcalc_prog *sub_prog;    /* cached sub-program when evaluated as image sub-expr */
 
     union
     {
@@ -364,8 +365,8 @@ mc_stmt_t *mc_parse_prog(mc_tok_list_t *tl, char *err, size_t errsz);
 /** mc_expr_free() - recursively free an AST expression node. */
 void mc_expr_free(mc_expr_t *e);
 
-/** mc_reduce_cache_evict_expr() - evict @e from the reduction sub-program cache before freeing. */
-void mc_reduce_cache_evict_expr(const mc_expr_t *e);
+/** mc_get_or_build_sub_prog() - return or build cached sub-program attached to @expr. */
+struct mcalc_prog *mc_get_or_build_sub_prog(const mc_expr_t *expr, char *err, size_t errsz);
 
 /** mc_stmt_free() - recursively free a linked list of AST statements. */
 void mc_stmt_free(mc_stmt_t *s);

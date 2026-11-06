@@ -14,20 +14,13 @@
 #include "mc_ast.h"
 #include "mc_plan.h"
 
-static void append_str(char *buf, size_t bufsz, size_t *len, const char *s)
-{
-    if (*len + 1 < bufsz)
-    {
-        int w = snprintf(buf + *len, bufsz - *len, "%s", s);
-        if (w > 0)
-        {
-            *len = (*len + (size_t) w < bufsz) ? (*len + (size_t) w) : (bufsz - 1);
-        }
-    }
-}
-
 static int eval_bound_int(const mc_expr_t *be, long *out_val, char *err, size_t errsz)
 {
+    if (be->kind == MC_EXPR_LONG)
+    {
+        *out_val = be->u.lval;
+        return 0;
+    }
     mc_val_t v;
     if (mc_scalar_eval_expr(be, &v, err, errsz) != 0)
     {
@@ -42,39 +35,50 @@ static int eval_bound_int(const mc_expr_t *be, long *out_val, char *err, size_t 
     return 0;
 }
 
-static int eval_slice_btext(const mc_expr_t *slice_expr,
-                            const IMAGE     *im,
-                            char            *btext,
-                            size_t           bsz,
-                            char            *err,
-                            size_t           errsz)
+static int eval_slice_direct(const mc_expr_t *slice_expr,
+                             const IMAGE     *im,
+                             IMGID_SLICE     *slc,
+                             char            *err,
+                             size_t           errsz)
 {
-    size_t len    = 0;
-    int    im_nax = (int) im->md[0].naxis;
-    btext[0]      = '\0';
+    memset(slc, 0, sizeof(*slc));
+    int nax = slice_expr->u.slice.naxis;
+    if (nax <= 0)
+    {
+        return 0;
+    }
+    if (nax > IMGID_SLICE_MAXAXIS)
+    {
+        snprintf(err, errsz, "more than %d axes in slice", IMGID_SLICE_MAXAXIS);
+        return -1;
+    }
+    slc->has_slice = 1;
+    slc->naxis     = (uint8_t) nax;
+    for (int aa = 0; aa < IMGID_SLICE_MAXAXIS; aa++)
+    {
+        slc->start[aa] = 0;
+        slc->end[aa]   = -1;
+        slc->step[aa]  = 1;
+        slc->bin[aa]   = 0;
+    }
 
-    for (int ax = 0; ax < slice_expr->u.slice.naxis; ax++)
+    int im_nax = (int) im->md[0].naxis;
+    for (int ax = 0; ax < nax; ax++)
     {
         const mc_slice_axis_t *sa      = &slice_expr->u.slice.axes[ax];
         long                   end_val = (ax < im_nax) ? ((long) im->md[0].size[ax] - 1) : 0;
         mc_scalar_set_slice_end(end_val);
 
-        if (ax > 0)
-        {
-            append_str(btext, bsz, &len, ",");
-        }
         if (sa->is_rev_full)
         {
-            append_str(btext, bsz, &len, "-*");
+            slc->step[ax] = -1;
             continue;
         }
         if (sa->is_full && !sa->has_step)
         {
-            append_str(btext, bsz, &len, "*");
             continue;
         }
 
-        char nbuf[64];
         long bval = 0;
         if (sa->start != NULL)
         {
@@ -83,36 +87,36 @@ static int eval_slice_btext(const mc_expr_t *slice_expr,
                 mc_scalar_set_slice_end(-1);
                 return -1;
             }
-            snprintf(nbuf, sizeof(nbuf), "%ld", bval);
-            append_str(btext, bsz, &len, nbuf);
+            slc->start[ax] = (int32_t) bval;
         }
-        if (sa->has_colon)
+        if (!sa->has_colon)
         {
-            append_str(btext, bsz, &len, ":");
-            if (sa->stop != NULL)
+            if (sa->start != NULL)
             {
-                if (eval_bound_int(sa->stop, &bval, err, errsz) != 0)
-                {
-                    mc_scalar_set_slice_end(-1);
-                    return -1;
-                }
-                snprintf(nbuf, sizeof(nbuf), "%ld", bval);
-                append_str(btext, bsz, &len, nbuf);
+                slc->end[ax] = slc->start[ax];
             }
-            if (sa->has_step)
+            continue;
+        }
+        if (sa->stop != NULL)
+        {
+            if (eval_bound_int(sa->stop, &bval, err, errsz) != 0)
             {
-                append_str(btext, bsz, &len, ":");
-                if (sa->step != NULL)
-                {
-                    if (eval_bound_int(sa->step, &bval, err, errsz) != 0)
-                    {
-                        mc_scalar_set_slice_end(-1);
-                        return -1;
-                    }
-                    snprintf(nbuf, sizeof(nbuf), "%ld%s", bval, sa->is_binned ? "b" : "");
-                    append_str(btext, bsz, &len, nbuf);
-                }
+                mc_scalar_set_slice_end(-1);
+                return -1;
             }
+            slc->end[ax] = (int32_t) bval;
+        }
+        if (sa->has_step)
+        {
+            if (sa->step == NULL || eval_bound_int(sa->step, &bval, err, errsz) != 0 || bval == 0)
+            {
+                mc_scalar_set_slice_end(-1);
+                (void) ((sa->step == NULL || bval == 0) &&
+                        snprintf(err, errsz, "invalid axis %d spec", ax));
+                return -1;
+            }
+            slc->step[ax] = (int32_t) bval;
+            slc->bin[ax]  = sa->is_binned ? 1 : 0;
         }
     }
     mc_scalar_set_slice_end(-1);
@@ -185,19 +189,9 @@ int mc_view_resolve(const mc_expr_t *expr,
         return 0;
     }
 
-    char btext[256];
-    if (eval_slice_btext(expr, im, btext, sizeof(btext), err, errsz) != 0)
-    {
-        return -1;
-    }
-
-    IMGID_SLICE slc = imgid_slice_parse(btext);
-    if (slc.error)
-    {
-        snprintf(err, errsz, "%s", slc.errmsg);
-        return -1;
-    }
-    if (validate_slice_neg_bounds(&slc, snax, ssz, err, errsz) != 0)
+    IMGID_SLICE slc;
+    if (eval_slice_direct(expr, im, &slc, err, errsz) != 0 ||
+        validate_slice_neg_bounds(&slc, snax, ssz, err, errsz) != 0)
     {
         return -1;
     }

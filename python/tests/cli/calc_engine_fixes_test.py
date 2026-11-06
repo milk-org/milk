@@ -235,3 +235,64 @@ def test_C4_unguarded_zero_divisor_still_fails(tmp_path):
         'echo "has=$(@get s.bad4u.cnt0)"',
     )
     assert value(res.stdout, "error") != "[]", out
+
+
+def test_jit_live_stream_datatype_and_shape_replan(tmp_path):
+    """Kept programs and cached sub-programs automatically re-plan when an input image changes datatype or shape."""
+    res = milk_bash(
+        'mem.mk2Dim s2 8 8 >/dev/null; @calc "s2 = 3.0"\n'
+        'for _ in 1 2; do @calc "o2 = s2 * 2.0 + 1.0; sh2 = shift(s2 + 1.0, 1, 0)"; done\n'
+        '@calc -v m1,ms1 "imean(o2); imean(sh2)"; echo "f32=$m1:$ms1:$(@get s.o2.xsize)"\n'
+        # Recreate s2 as 16x16 float64
+        'mem.rmshmim s2 >/dev/null; mem.mk2Dim s2 16 16 >/dev/null; @calc "s2 = f64(s2) + 4.25"\n'
+        '@calc "o2 = s2 * 2.0 + 1.0; sh2 = shift(s2 + 1.0, 1, 0)"\n'
+        '@calc -v m2,ms2 "imean(o2); imean(sh2)"; echo "f64=$m2:$ms2:$(@get s.o2.xsize)"\n'
+        # Recreate s2 as 12x10 uint16
+        'mem.rmshmim s2 >/dev/null; mem.mk2Dim s2 12 10 >/dev/null; @calc "s2 = u16(s2) + 10"\n'
+        '@calc "o2 = s2 * 2.0 + 1.0; sh2 = shift(s2 + 1.0, 1, 0)"\n'
+        '@calc -v m3,ms3 "imean(o2); imean(sh2)"; echo "u16=$m3:$ms3:$(@get s.o2.xsize)x$(@get s.o2.ysize)"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "f32") == "7:4:8", out
+    assert value(res.stdout, "f64") == "9.5:5.25:16", out
+    assert value(res.stdout, "u16") == "21:11:12x10", out
+
+
+def test_jit_differential_math_and_multipass_batch(tmp_path):
+    """Differential test for libmvec SIMD transcendentals, NaN/negative-pow, vectorized /= rollback, and batch compilation."""
+    cache_dir = tmp_path / "jit_cache"
+    cache_dir.mkdir()
+    res = milk_bash(
+        f'export MILK_CALC_CACHE="{cache_dir}"\n'
+        "mem.mk2Dim a 16 12 >/dev/null; mem.mk2Dim b 16 12 >/dev/null\n"
+        '@calc "a = (abs(ix(a)) + 1.0) * 0.1; b = (abs(iy(b)) + 1.0) * 0.05"\n'
+        # 1. Multi-pass batch compile (3 distinct passes) + verify reuse from disk cache
+        '@calc "t1 = a * 2.5 + b; t2 = shift(t1, 1, 0) * 1.5; c_batch = shift(t2, 0, 1) - a"\n'
+        '@calc "t2_only = shift(t1, 1, 0) * 1.5"\n'
+        '@calc -v eb "imax(abs(t2 - t2_only))"; echo "eb=$eb"\n'
+        # 2. Transcendentals & negative-base pow (no -ffast-math finite-only / exp(y*log(x)) breakage)
+        '@calc "tr = sin(a) * sin(a) + cos(a) * cos(a)"\n'
+        '@calc -v etr "imax(abs(tr - 1.0))"; echo "etr=$etr"\n'
+        '@calc "neg = a * 0.0 - 2.0; p3 = pow(neg, 3.0)"\n'
+        '@calc -v mp3 "imean(p3)"; echo "mp3=$mp3"\n'
+        # 3. Vectorized /= fast path and atomic rollback when last pixel of divisor is 0
+        '@calc "c_div = a + 0.0"; @calc "c_div /= b"; @calc "ref_div = a / b"\n'
+        '@calc -v ediv "imax(abs(c_div - ref_div))"; echo "ediv=$ediv"\n'
+        '@calc "zdiv = b + 0.0; zdiv[15, 11] = 0.0; c_rol = a + 5.0"\n'
+        '@calc "c_rol /= zdiv" 2>/dev/null; echo "zrc=$?"\n'
+        '@calc -v erol "imax(abs(c_rol - (a + 5.0)))"; echo "erol=$erol"\n'
+        # 4. Sliced fused views + compound sub-expressions
+        '@calc "c_sl = a * 0.0"\n'
+        '@calc "c_sl[2:14, 1:10] = a[2:14, 1:10] * 3.0 + b[2:14, 1:10]"\n'
+        '@calc -v esl "imax(abs(c_sl[2:14, 1:10] - (a[2:14, 1:10] * 3.0 + b[2:14, 1:10])))"; echo "esl=$esl"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert float(value(res.stdout, "eb")) < 1e-6, out
+    assert float(value(res.stdout, "etr")) < 1e-5, out
+    assert value(res.stdout, "mp3") == "-8", out
+    assert float(value(res.stdout, "ediv")) < 1e-6, out
+    assert value(res.stdout, "zrc") != "0", out
+    assert float(value(res.stdout, "erol")) == 0.0, out
+    assert float(value(res.stdout, "esl")) < 1e-6, out

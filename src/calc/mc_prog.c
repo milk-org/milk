@@ -509,20 +509,35 @@ void mcalc_sub_prog_free(struct mcalc_prog *p)
 {
     if (p != NULL)
     {
-        p->ast_head = NULL;
+        if (p->ast_head != NULL && p->ast_head->kind == MC_STMT_EXPR && p->ast_head->next == NULL &&
+            p->ast_head->u.expr != NULL && p->ast_head->u.expr->sub_prog == p)
+        {
+            p->ast_head->u.expr = NULL;
+        }
+        else
+        {
+            p->ast_head = NULL;
+        }
         mcalc_prog_free(p);
     }
 }
 
-void mcalc_prog_free(mcalc_prog *p)
+static void clear_prog_plan(mcalc_prog_t *p)
 {
-    if (p == NULL)
+    for (int i = 0; i < p->nslots; i++)
     {
-        return;
+        imageID id = p->slots[i].im_id;
+        if (strncmp(p->slots[i].bare, "_tmpcalc", 8) == 0 &&
+            strncmp(p->slots[i].bare, "_tmpcalc0", 9) != 0 && id >= 0 && milk_data.image != NULL &&
+            id < milk_data.NB_MAX_IMAGE && milk_data.image[id].used &&
+            strcmp(milk_data.image[id].name, p->slots[i].bare) == 0)
+        {
+            mc_tmp_release_force(id);
+        }
     }
-    free(p->src_text);
-    mc_stmt_free(p->ast_head);
     free(p->slots);
+    p->slots  = NULL;
+    p->nslots = p->cap_slots = 0;
     for (int i = 0; i < p->nsteps; i++)
     {
         if (p->steps[i].kind == MC_STEP_CTOR)
@@ -537,6 +552,69 @@ void mcalc_prog_free(mcalc_prog *p)
         }
     }
     free(p->steps);
+    p->steps  = NULL;
+    p->nsteps = p->cap_steps = 0;
+}
+
+int mc_prog_slots_valid(mcalc_prog_t *p, int same_gen)
+{
+    for (int i = 0; p != NULL && i < p->nslots; i++)
+    {
+        mc_slot_t *s = &p->slots[i];
+        if (strncmp(s->bare, "_tmpcalc", 8) == 0)
+        {
+            continue;
+        }
+        imageID id =
+            (s->im_id >= 0 && s->im_id < milk_data.NB_MAX_IMAGE && milk_data.image[s->im_id].used &&
+             (same_gen || strcmp(milk_data.image[s->im_id].name, s->bare) == 0))
+                ? s->im_id
+                : mc_resolve_or_autoconnect_image(s->name);
+        long vid = (same_gen || id >= 0) ? -1 : variable_ID(s->bare);
+        if ((vid >= 0 && milk_data.variable[vid].type != 3) ||
+            (id >= 0) != (s->existed_at_plan != 0))
+        {
+            return 0;
+        }
+        if (s->existed_at_plan)
+        {
+            const IMAGE_METADATA *md = (id >= 0) ? &milk_data.image[id].md[0] : NULL;
+            uint32_t sz[3] = { md ? md->size[0] : 0, (md && md->naxis >= 2) ? md->size[1] : 1,
+                               (md && md->naxis >= 3) ? md->size[2] : 1 };
+            if (!md || md->datatype != s->orig_dt ||
+                (s->plan_naxis > 0 &&
+                 (md->naxis != s->plan_naxis || memcmp(sz, s->plan_size, sizeof(sz)) != 0)))
+            {
+                return 0;
+            }
+        }
+        s->im_id = id;
+    }
+    return 1;
+}
+
+static int replan_prog_in_place(mcalc_prog_t *p, int in_unit, char *err, size_t errsz)
+{
+    clear_prog_plan(p);
+    for (int i = 0; p->stmt_to_step != NULL && i < p->nstmts; i++)
+    {
+        p->stmt_to_step[i] = -1;
+    }
+    return (mc_resolve_prog_ex(p->ast_head, in_unit, err, errsz) == 0 &&
+            mc_plan_build(p, in_unit, err, errsz) == 0)
+               ? 0
+               : -1;
+}
+
+void mcalc_prog_free(mcalc_prog *p)
+{
+    if (p == NULL)
+    {
+        return;
+    }
+    free(p->src_text);
+    mc_stmt_free(p->ast_head);
+    clear_prog_plan(p);
     free(p->stmt_to_step);
     if (p->stmt_texts != NULL)
     {
@@ -654,7 +732,14 @@ int mc_exec_sub_prog(struct mcalc_prog **io_prog, mc_stmt_t *head, char *err, si
             *io_prog = sub;
         }
     }
+    else if (!mc_prog_slots_valid(sub,
+                                  sub->plan_gen == milk_table_generation() && sub->plan_gen != 0) &&
+             replan_prog_in_place(sub, in_unit, err, errsz) != 0)
+    {
+        return -1;
+    }
     int rc = run_prog_steps(sub, in_unit, err, errsz);
+    (void) (rc == 0 && (sub->plan_gen = milk_table_generation()));
     if (io_prog == NULL)
     {
         mcalc_sub_prog_free(sub);
@@ -679,7 +764,12 @@ int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
     {
         g_prog_unit_depth++;
     }
-    int rc = run_prog_steps(p, in_unit, err, errsz);
+    int same_gen = (p->plan_gen == milk_table_generation() && p->plan_gen != 0);
+    int rc =
+        (!mc_prog_slots_valid(p, same_gen) && replan_prog_in_place(p, in_unit, err, errsz) != 0)
+            ? -1
+            : run_prog_steps(p, in_unit, err, errsz);
+    (void) (rc == 0 && (p->plan_gen = milk_table_generation()));
     if (in_unit)
     {
         g_prog_unit_depth--;
