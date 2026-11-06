@@ -239,14 +239,13 @@ def test_calc_engine_bench(size: int):
 
     assert new_times is not None
     elem_ids = [cid for cid, grp, _, _ in BENCH_CASES if grp == "elementwise"]
-    for cid in elem_ids:
+    red_ids = [cid for cid, grp, _, _ in BENCH_CASES if grp == "reduction"]
+    for cid in elem_ids + red_ids:
         t_old = old_times[cid]
         t_new = new_times[cid]
-        assert not math.isnan(
-            t_new
-        ), f"Elementwise case {cid} returned NaN on new engine"
+        assert not math.isnan(t_new), f"Case {cid} returned NaN on new engine"
         assert t_new <= t_old * 1.05, (
-            f"Elementwise case {cid} at {size}^2 is >5% slower than old: "
+            f"Case {cid} at {size}^2 is >5% slower than old: "
             f"old={t_old:.3f} us, new={t_new:.3f} us"
         )
     if size == 256:

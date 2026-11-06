@@ -8,6 +8,8 @@ set(SOURCEFILES
     mc_parse.c
     mc_resolve.c
     mc_scalar.c
+    mc_reduce.c
+    mc_prestage.c
     mc_local.c
     mc_cc.c
     mc_views.c

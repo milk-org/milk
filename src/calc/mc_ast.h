@@ -359,6 +359,9 @@ mc_stmt_t *mc_parse_prog(mc_tok_list_t *tl, char *err, size_t errsz);
 /** mc_expr_free() - recursively free an AST expression node. */
 void mc_expr_free(mc_expr_t *e);
 
+/** mc_reduce_cache_evict_expr() - evict @e from the reduction sub-program cache before freeing. */
+void mc_reduce_cache_evict_expr(const mc_expr_t *e);
+
 /** mc_stmt_free() - recursively free a linked list of AST statements. */
 void mc_stmt_free(mc_stmt_t *s);
 
@@ -373,6 +376,9 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
 
 /** mc_scalar_set_slice_end() - set active slice axis 'end' bound (-1 when inactive). */
 void mc_scalar_set_slice_end(long end_val);
+
+/** mc_scalar_sync_host() - adjust active `mcalc_eval_bash` depth for host string sync. */
+int mc_scalar_sync_host(int delta);
 
 /** mc_scalar_exec_stmt() - execute a resolved scalar statement @s into @out (0 on ok, -1 on err). */
 int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t errsz);

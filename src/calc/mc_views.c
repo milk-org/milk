@@ -380,8 +380,10 @@ int mc_find_im_op(const mc_pass_t *pass,
     for (int i = 0; i < pass->nops; i++)
     {
         const mc_op_desc_t *o = &pass->ops[i];
-        if (!o->is_out && !o->is_scalar && o->slot_idx == sidx && o->has_slice == has_slice &&
-            o->slice_expr == slice_expr && o->is_table_arg == tbl && o->is_expr_im == is_eim)
+        if (!o->is_out && !o->is_scalar && o->has_slice == has_slice &&
+            o->slice_expr == slice_expr && o->is_table_arg == tbl &&
+            (is_eim ? (o->is_expr_im || o->slot_idx >= 0)
+                    : (o->slot_idx == sidx && !o->is_expr_im)))
         {
             return i;
         }
@@ -401,4 +403,88 @@ int mc_find_scalar_op(const mc_pass_t *pass, const mc_expr_t *se, const mc_expr_
         }
     }
     return -1;
+}
+
+int mc_can_merge_passes(const mc_pass_t *a, const mc_pass_t *b)
+{
+    int bad =
+        (a->is_comp || b->is_comp || a->no_dst_bcast || b->no_dst_bcast ||
+         a->is_complex != b->is_complex || a->nouts + b->nouts > 8 || a->vnx == 0 || b->vnx == 0 ||
+         a->naxis != b->naxis || a->vnx != b->vnx || a->vny != b->vny || a->vnz != b->vnz);
+    for (int i = 0; i < a->nouts; i++)
+    {
+        bad |= (a->outs[i].lhs_slice != NULL);
+    }
+    for (int i = 0; i < b->nouts; i++)
+    {
+        bad |= (b->outs[i].lhs_slice != NULL);
+        for (int j = 0; j < a->nouts; j++)
+        {
+            bad |= (b->outs[i].slot_idx == a->outs[j].slot_idx);
+        }
+        for (int j = 0; j < a->nops; j++)
+        {
+            bad |= (!a->ops[j].is_out && a->ops[j].slot_idx == b->outs[i].slot_idx);
+        }
+    }
+    for (int i = 0; i < b->nops; i++)
+    {
+        bad |= (!b->ops[i].is_out && b->ops[i].is_expr_im);
+        for (int j = 0; !b->ops[i].is_out && j < a->nouts; j++)
+        {
+            bad |= (b->ops[i].slot_idx == a->outs[j].slot_idx &&
+                    (b->ops[i].is_non_pointwise || b->ops[i].has_slice ||
+                     a->outs[j].assign_op != MC_TOK_ASSIGN || a->outs[j].lhs_slice != NULL));
+        }
+    }
+    return !bad;
+}
+
+int mc_has_bcast_stencil(const mc_expr_t *e, const uint32_t dsz[3])
+{
+    int r = (e != NULL) &&
+            ((e->kind == MC_EXPR_UNARY && mc_has_bcast_stencil(e->u.unary.operand, dsz)) ||
+             (e->kind == MC_EXPR_BINARY && (mc_has_bcast_stencil(e->u.binary.left, dsz) ||
+                                            mc_has_bcast_stencil(e->u.binary.right, dsz))) ||
+             (e->kind == MC_EXPR_TERNARY && (mc_has_bcast_stencil(e->u.ternary.cond, dsz) ||
+                                             mc_has_bcast_stencil(e->u.ternary.t_expr, dsz) ||
+                                             mc_has_bcast_stencil(e->u.ternary.f_expr, dsz))) ||
+             (e->kind == MC_EXPR_CALL &&
+              ((e->u.call.fn != NULL && e->u.call.fn->kind == MC_FN_SHIFT && e->u.call.nargs >= 1 &&
+                memcmp(e->u.call.args[0]->res_size, dsz, 3 * sizeof(uint32_t)) != 0) ||
+               mc_has_bcast_stencil(e->u.call.udef_body, dsz))));
+    for (int i = 0; !r && e != NULL && e->kind == MC_EXPR_CALL && i < e->u.call.nargs; i++)
+    {
+        r |= mc_has_bcast_stencil(e->u.call.args[i], dsz);
+    }
+    return r;
+}
+
+void mc_elide_unused_locals(mcalc_prog_t *prog)
+{
+    for (int st = 0; st < prog->nsteps; st++)
+    {
+        mc_pass_t *pa = (prog->steps[st].kind == MC_STEP_PASS && prog->steps[st].pass.nouts > 1)
+                            ? &prog->steps[st].pass
+                            : NULL;
+        for (int i = 0; pa != NULL && i < pa->nouts - 1; i++)
+        {
+            int        sidx = pa->outs[i].slot_idx, used_later = 0;
+            mc_slot_t *slot = &prog->slots[sidx];
+            if (!slot->is_local || slot->existed_at_plan ||
+                pa->outs[i].assign_op != MC_TOK_ASSIGN || pa->outs[i].lhs_slice != NULL)
+            {
+                continue;
+            }
+            for (int st2 = 0; st2 < prog->nsteps && !used_later; st2++)
+            {
+                used_later |= (st2 != st && prog->steps[st2].kind != MC_STEP_PASS);
+                for (int k = 0; st2 != st && !used_later && k < prog->steps[st2].pass.nops; k++)
+                {
+                    used_later |= (prog->steps[st2].pass.ops[k].slot_idx == sidx);
+                }
+            }
+            (void) (!used_later && ((pa->outs[i].is_elided = 1), (slot->is_elided = 1)));
+        }
+    }
 }

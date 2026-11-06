@@ -43,7 +43,9 @@ typedef struct
     uint64_t      hash;
     size_t        len;
     int           udef_cnt;
+    uint64_t      table_gen;
     uint64_t      lru_tick;
+    int           is_im_stmt;
     int           is_assign;
     int           is_multi;
     char          lhs_name[256];
@@ -124,6 +126,11 @@ void mc_host_str_clear(void)
 {
     memset(g_fb_vars, 0, sizeof(g_fb_vars));
     stmt_cache_clear();
+}
+
+int mc_host_has_str_sink(void)
+{
+    return g_host.str_set != NULL;
 }
 
 /* User-defined inline function table (def f(x, ...) = body) */
@@ -487,19 +494,19 @@ static int emit_image_result(imageID im_id, int is_assign, int is_multi, const c
     return 0;
 }
 
-static int validate_cached_prog(mcalc_prog_t *p)
+static int validate_cached_prog(mcalc_prog_t *p, int same_gen)
 {
     for (int i = 0; i < p->nslots; i++)
     {
         mc_slot_t *s   = &p->slots[i];
-        long       vid = variable_ID(s->bare);
+        long       vid = same_gen ? -1 : variable_ID(s->bare);
         if (vid >= 0 && milk_data.variable[vid].type != 3)
         {
             return 0;
         }
         imageID id =
             (s->im_id >= 0 && s->im_id < milk_data.NB_MAX_IMAGE && milk_data.image[s->im_id].used &&
-             strcmp(milk_data.image[s->im_id].name, s->bare) == 0)
+             (same_gen || strcmp(milk_data.image[s->im_id].name, s->bare) == 0))
                 ? s->im_id
                 : mc_resolve_or_autoconnect_image(s->name);
         if ((id >= 0) != (s->existed_at_plan != 0))
@@ -539,11 +546,11 @@ static int try_stmt_cache_hit(const char *input, uint64_t in_hash, size_t in_len
         {
             continue;
         }
-        if (!validate_cached_prog(e->prog))
+        int same_gen = (e->table_gen == milk_table_generation() && e->table_gen != 0);
+        if ((!e->is_im_stmt && !same_gen) || !validate_cached_prog(e->prog, same_gen))
         {
             mcalc_prog_free(e->prog);
-            e->prog = NULL;
-            e->len  = 0;
+            e->prog = NULL, e->len = 0;
             return 0;
         }
         char err[256] = "";
@@ -553,14 +560,26 @@ static int try_stmt_cache_hit(const char *input, uint64_t in_hash, size_t in_len
             report_err(input, err[0] != '\0' ? err : "evaluation error");
             return -1;
         }
-        if (emit_image_result(e->prog->last_im_id, e->is_assign, e->is_multi, e->lhs_name) != 0)
+        e->table_gen = milk_table_generation();
+        if (e->is_im_stmt)
         {
-            return -1;
+            if (emit_image_result(e->prog->last_im_id, e->is_assign, e->is_multi, e->lhs_name) != 0)
+            {
+                return -1;
+            }
         }
-        if (out_rc != NULL)
+        else if (e->is_multi)
         {
-            *out_rc = 0;
+            if (mcalc_out_mode == MCALC_OUT_BIND)
+            {
+                printf("\n"), fflush(stdout);
+            }
         }
+        else
+        {
+            emit_scalar_result(&e->prog->last_scalar, e->is_assign, e->lhs_name);
+        }
+        (void) (out_rc != NULL && (*out_rc = 0, 1));
         return 1;
     }
     return 0;
@@ -569,6 +588,7 @@ static int try_stmt_cache_hit(const char *input, uint64_t in_hash, size_t in_len
 static void store_stmt_cache(const char   *input,
                              uint64_t      in_hash,
                              size_t        in_len,
+                             int           is_im_stmt,
                              int           is_assign,
                              int           is_multi,
                              const char   *lhs_name,
@@ -595,17 +615,14 @@ static void store_stmt_cache(const char   *input,
     mc_stmt_cache_t *e = &g_stmt_cache[victim];
     mcalc_prog_free(e->prog);
     memcpy(e->text, input, in_len + 1);
-    e->hash      = in_hash;
-    e->len       = in_len;
-    e->udef_cnt  = mcalc_udef_count();
-    e->lru_tick  = ++g_stmt_lru_clock;
-    e->is_assign = is_assign;
-    e->is_multi  = is_multi;
+    e->hash = in_hash, e->len = in_len, e->udef_cnt = mcalc_udef_count();
+    e->table_gen = milk_table_generation(), e->lru_tick = ++g_stmt_lru_clock;
+    e->is_im_stmt = is_im_stmt, e->is_assign = is_assign, e->is_multi = is_multi;
     snprintf(e->lhs_name, sizeof(e->lhs_name), "%s", lhs_name != NULL ? lhs_name : "");
     e->prog = prog;
 }
 
-int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
+static int eval_bash_inner(const char *input, int is_test, int *out_rc)
 {
     mcalc_test_image = 0;
     if (out_rc != NULL)
@@ -747,9 +764,9 @@ int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
         return 0;
     }
 
-    if (is_im_stmt)
+    if (is_im_stmt || (s->needs_image && !is_test))
     {
-        if (s->kind == MC_STMT_EXPR && s->u.expr->kind == MC_EXPR_IDENT)
+        if (is_im_stmt && s->kind == MC_STMT_EXPR && s->u.expr->kind == MC_EXPR_IDENT)
         {
             imageID id = s->u.expr->u.ident.im_id;
             mc_stmt_free(s);
@@ -757,10 +774,7 @@ int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
             {
                 return 0;
             }
-            if (out_rc != NULL)
-            {
-                *out_rc = 0;
-            }
+            (void) (out_rc != NULL && (*out_rc = 0, 1));
             return 1;
         }
         mc_stmt_free(s);
@@ -771,16 +785,28 @@ int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
             report_err(input, err[0] != '\0' ? err : "evaluation error");
             return 0;
         }
-        imageID res_im = prog->last_im_id;
-        store_stmt_cache(input, in_hash, in_len, is_assign, is_multi, lhs_name, prog);
-        if (emit_image_result(res_im, is_assign, is_multi, lhs_name) != 0)
+        imageID  res_im  = prog->last_im_id;
+        mc_val_t res_val = prog->last_scalar;
+        store_stmt_cache(input, in_hash, in_len, is_im_stmt, is_assign, is_multi, lhs_name, prog);
+        if (is_im_stmt)
         {
-            return 0;
+            if (emit_image_result(res_im, is_assign, is_multi, lhs_name) != 0)
+            {
+                return 0;
+            }
         }
-        if (out_rc != NULL)
+        else if (is_multi)
         {
-            *out_rc = 0;
+            if (mcalc_out_mode == MCALC_OUT_BIND)
+            {
+                printf("\n"), fflush(stdout);
+            }
         }
+        else
+        {
+            emit_scalar_result(&res_val, is_assign, lhs_name);
+        }
+        (void) (out_rc != NULL && (*out_rc = 0, 1));
         return 1;
     }
 
@@ -795,34 +821,19 @@ int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
 
     if (is_test)
     {
-        int truthy = 0;
-        if (result.type == MC_VAL_LONG)
-        {
-            truthy = (result.lval != 0);
-        }
-        else if (result.type == MC_VAL_DOUBLE)
-        {
-            truthy = (result.dval != 0.0 && !isnan(result.dval));
-        }
-        else if (result.type == MC_VAL_STRING)
-        {
-            truthy = (result.sval[0] != '\0' && strcmp(result.sval, "0") != 0);
-        }
+        int truthy = (result.type == MC_VAL_LONG) ? (result.lval != 0)
+                     : (result.type == MC_VAL_DOUBLE)
+                         ? (result.dval != 0.0 && !isnan(result.dval))
+                         : (result.type == MC_VAL_STRING && result.sval[0] != '\0' &&
+                            strcmp(result.sval, "0") != 0);
         mc_stmt_free(s);
-        if (out_rc != NULL)
-        {
-            *out_rc = truthy ? 0 : 1;
-        }
+        (void) (out_rc != NULL && (*out_rc = truthy ? 0 : 1, 1));
         return 1;
     }
 
     if (s->kind == MC_STMT_MULTI_ASSIGN)
     {
-        if (mcalc_out_mode == MCALC_OUT_BIND)
-        {
-            printf("\n");
-            fflush(stdout);
-        }
+        (void) (mcalc_out_mode == MCALC_OUT_BIND && (printf("\n"), fflush(stdout), 1));
     }
     else
     {
@@ -830,24 +841,24 @@ int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
     }
 
     mc_stmt_free(s);
-    if (out_rc != NULL)
-    {
-        *out_rc = 0;
-    }
+    (void) (out_rc != NULL && (*out_rc = 0, 1));
     return 1;
+}
+
+int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
+{
+    mc_scalar_sync_host(1);
+    int r = eval_bash_inner(input, is_test, out_rc);
+    mc_scalar_sync_host(-1);
+    return r;
 }
 
 int mcalc_eval_str(const char *input, int is_test, int *out_rc, char *out, size_t outsz)
 {
-    if (out != NULL && outsz > 0)
-    {
-        out[0] = '\0';
-    }
-    g_calc_out = out;
-    g_calc_sz  = outsz;
+    (void) (out != NULL && outsz > 0 && (out[0] = '\0', 1));
+    g_calc_out = out, g_calc_sz = outsz;
     int r      = mcalc_eval_bash(input, is_test, out_rc);
-    g_calc_out = NULL;
-    g_calc_sz  = 0;
+    g_calc_out = NULL, g_calc_sz = 0;
     return r;
 }
 

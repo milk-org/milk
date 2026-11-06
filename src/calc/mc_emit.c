@@ -17,8 +17,7 @@
 typedef struct
 {
     char  *buf;
-    size_t len;
-    size_t cap;
+    size_t len, cap;
     int    oom;
 } emit_buf_t;
 
@@ -40,15 +39,9 @@ __attribute__((format(printf, 2, 3))) static void eb_printf(emit_buf_t *b, const
             ncap *= 2;
         }
         char *nb = realloc(b->buf, ncap);
-        if (nb != NULL)
-        {
-            b->buf = nb, b->cap = ncap;
-            vsnprintf(b->buf + b->len, b->cap - b->len, fmt, ap2);
-        }
-        else
-        {
-            need = -1;
-        }
+        (void) ((nb != NULL && (b->buf = nb, b->cap = ncap,
+                                vsnprintf(b->buf + b->len, b->cap - b->len, fmt, ap2), 1)) ||
+                (need = -1));
     }
     va_end(ap2);
     (void) ((need < 0 && (b->oom = 1)) || (b->len += (size_t) need));
@@ -93,16 +86,12 @@ typedef struct
 {
     const mcalc_prog_t *prog;
     const mc_pass_t    *pass;
-    emit_buf_t         *eb;
-    emit_buf_t         *pre_eb;
-    const char         *wt;
-    const char         *ct;
+    emit_buf_t         *eb, *pre_eb;
+    const char         *wt, *ct;
     const mcalc_udef_t *def_stk[4];
     mc_expr_t *const   *def_args[4];
-    int                 def_depth;
-    int                 cur_out_idx;
-    int                 chain_seq;
-    int                 fast_x_interior;
+    const mc_expr_t    *sub_t0;
+    int                 def_depth, cur_out_idx, chain_seq, fast_x_interior;
 } emit_ctx_t;
 
 static int find_earlier_out_in_pass(const emit_ctx_t *c, int sidx)
@@ -134,13 +123,11 @@ static void emit_scalar_arg(emit_ctx_t *c, const mc_expr_t *e, int is_int)
     if (k >= 0)
     {
         eb_printf(c->eb, is_int ? "_ish%d" : "_sc%d", k);
+        return;
     }
-    else
-    {
-        (void) (is_int && (eb_printf(c->eb, "llround((double)("), 1));
-        emit_expr(c, e);
-        (void) (is_int && (eb_printf(c->eb, "))"), 1));
-    }
+    (void) (is_int && (eb_printf(c->eb, "llround((double)("), 1));
+    emit_expr(c, e);
+    (void) (is_int && (eb_printf(c->eb, "))"), 1));
 }
 
 static void emit_im_read(emit_ctx_t *c, int op_idx)
@@ -148,8 +135,10 @@ static void emit_im_read(emit_ctx_t *c, int op_idx)
     const char *cast = is_complex_dt(c->pass->ops[op_idx].dt) ? c->ct : c->wt;
     eb_printf(c->eb,
               c->pass->is_1d_contig ? "((%s)_p%d[_i])"
-              : c->fast_x_interior  ? "((%s)_p%d[_ro%d + (int64_t)x])"
-                                    : "((%s)_p%d[_ro%d + (int64_t)x * _st%d_0])",
+              : c->fast_x_interior
+                  ? (c->pass->ops[op_idx].is_x_bcast ? "((%s)_p%d[_ro%d])"
+                                                     : "((%s)_p%d[_ro%d + (int64_t)x])")
+                  : "((%s)_p%d[_ro%d + (int64_t)x * _st%d_0])",
               cast, op_idx, op_idx, op_idx);
 }
 
@@ -188,13 +177,8 @@ static void emit_ternary(emit_ctx_t      *c,
                          const mc_expr_t *t_e,
                          const mc_expr_t *f_e)
 {
-    eb_printf(c->eb, "(((");
-    emit_expr(c, cond);
-    eb_printf(c->eb, ") != 0) ? (");
-    emit_expr(c, t_e);
-    eb_printf(c->eb, ") : (");
-    emit_expr(c, f_e);
-    eb_printf(c->eb, "))");
+    eb_printf(c->eb, "((("), emit_expr(c, cond), eb_printf(c->eb, ") != 0) ? (");
+    emit_expr(c, t_e), eb_printf(c->eb, ") : ("), emit_expr(c, f_e), eb_printf(c->eb, "))");
 }
 
 static int is_const_num(const mc_expr_t *e, double *out_v)
@@ -204,13 +188,10 @@ static int is_const_num(const mc_expr_t *e, double *out_v)
         *out_v = (e->kind == MC_EXPR_LONG) ? (double) e->u.lval : e->u.dval;
         return 1;
     }
-    if (e->kind == MC_EXPR_UNARY && e->u.unary.op == MC_TOK_MINUS &&
-        is_const_num(e->u.unary.operand, out_v))
-    {
-        *out_v = -(*out_v);
-        return 1;
-    }
-    return 0;
+    return (e->kind == MC_EXPR_UNARY && e->u.unary.op == MC_TOK_MINUS &&
+            is_const_num(e->u.unary.operand, out_v))
+               ? (*out_v = -(*out_v), 1)
+               : 0;
 }
 
 static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
@@ -219,9 +200,7 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
     {
         c->def_stk[c->def_depth]    = mcalc_udef_get(e->u.call.udef_id);
         c->def_args[c->def_depth++] = e->u.call.args;
-        eb_printf(c->eb, "(");
-        emit_expr(c, e->u.call.udef_body);
-        eb_printf(c->eb, ")");
+        eb_printf(c->eb, "("), emit_expr(c, e->u.call.udef_body), eb_printf(c->eb, ")");
         c->def_depth--;
         return;
     }
@@ -265,16 +244,9 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
                                                      : 3;
         eb_printf(c->eb, "%s(&ops[%d], x, y, ", wd ? "mc_coordd" : "mc_coordf",
                   (op_idx >= 0) ? op_idx : 0);
-        if (nargs == 3)
-        {
-            emit_scalar_arg(c, e->u.call.args[1], 0);
-            eb_printf(c->eb, ", ");
-            emit_scalar_arg(c, e->u.call.args[2], 0);
-        }
-        else
-        {
-            eb_printf(c->eb, "0, 0");
-        }
+        (void) ((nargs == 3 && (emit_scalar_arg(c, e->u.call.args[1], 0), eb_printf(c->eb, ", "),
+                                emit_scalar_arg(c, e->u.call.args[2], 0), 1)) ||
+                (eb_printf(c->eb, "0, 0"), 1));
         eb_printf(c->eb, ", %d, %d)", (nargs == 3), mode);
         return;
     }
@@ -533,7 +505,7 @@ static void emit_expr(emit_ctx_t *c, const mc_expr_t *e)
             int is_log = (op == MC_TOK_AND || op == MC_TOK_OR);
             snprintf(pre, sizeof(pre), is_log ? "((%s)(((" : "((%s)((", c->wt);
             snprintf(mid, sizeof(mid), is_log ? ") != 0) %s ((" : ") %s (",
-                     is_log ? ((op == MC_TOK_AND) ? "&&" : "||") : rel_op_str(op));
+                     is_log ? ((op == MC_TOK_AND) ? "&" : "|") : rel_op_str(op));
             post = is_log ? ") != 0)))" : ")))";
         }
         else
@@ -750,22 +722,15 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
     for (int g = 0; pass->is_comp && pass->comp_expr != NULL && g < pass->comp_expr->u.comp.ngens;
          g++)
     {
-        int k_start =
-            mc_find_scalar_op(pass, pass->comp_expr->u.comp.gens[g].start, NULL, g * 3 + 0);
-        int k_step =
+        int ks = mc_find_scalar_op(pass, pass->comp_expr->u.comp.gens[g].start, NULL, g * 3 + 0);
+        int kt =
             (pass->comp_expr->u.comp.gens[g].step != NULL)
                 ? mc_find_scalar_op(pass, pass->comp_expr->u.comp.gens[g].step, NULL, g * 3 + 2)
                 : -1;
-        if (k_step >= 0)
-        {
-            eb_printf(&eb, "    const %s _g_start%d = _sc%d, _g_step%d = _sc%d;\n", c.wt, g,
-                      k_start, g, k_step);
-        }
-        else
-        {
-            eb_printf(&eb, "    const %s _g_start%d = _sc%d, _g_step%d = 1;\n", c.wt, g, k_start,
-                      g);
-        }
+        eb_printf(&eb,
+                  (kt >= 0) ? "    const %s _g_start%d = _sc%d, _g_step%d = _sc%d;\n"
+                            : "    const %s _g_start%d = _sc%d, _g_step%d = 1;\n",
+                  c.wt, g, ks, g, kt);
     }
 
     int can_simd = !pass->is_complex;
@@ -776,13 +741,12 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
 
     if (pass->is_1d_contig)
     {
-        int multi_tile = (can_simd && pass->nouts > 1);
-        for (int i = 0; multi_tile && i < pass->nouts; i++)
+        int mt = (can_simd && pass->nouts > 1);
+        for (int i = 0; mt && i < pass->nouts; i++)
         {
-            multi_tile &=
-                (!pass->outs[i].is_elided && pass->outs[i].stmt_idx == pass->outs[0].stmt_idx);
+            mt &= (!pass->outs[i].is_elided && pass->outs[i].stmt_idx == pass->outs[0].stmt_idx);
         }
-        if (multi_tile)
+        if (mt)
         {
             eb_printf(&eb, "    for (uint64_t _b = y0; _b < y1; _b += 1024) {\n"
                            "        const uint64_t _be = (_b + 1024 < y1) ? (_b + 1024) : y1;\n");
@@ -815,7 +779,11 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
         {
             if (!pass->ops[i].is_scalar && !pass->ops[i].is_table_arg)
             {
-                eb_printf(&eb, "    _fast_x &= (_st%d_0 == 1 && _vnx%d == _nx);\n", i, i);
+                eb_printf(&eb,
+                          pass->ops[i].is_x_bcast
+                              ? "    _fast_x &= (_st%d_0 == 0);\n"
+                              : "    _fast_x &= (_st%d_0 == 1 && _vnx%d == _nx);\n",
+                          i, i);
             }
             else if (pass->ops[i].is_scalar && pass->ops[i].is_non_pointwise)
             {

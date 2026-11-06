@@ -12,7 +12,7 @@ from milk.cliwrap import HAVE_CLI
 from tests.cli.calcdiff.datasets import DATASETS, all_dataset_ids, offset_dataset_ids
 from tests.cli.calcdiff.extract_corpus import collect_corpus
 from tests.cli.calcdiff.gen_expr import generate_cases, load_functions
-from tests.cli.conftest import _install_dir
+from tests.cli.conftest import _install_dir, milk_bash, value
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
@@ -214,3 +214,78 @@ def test_local_evaluator_parity():
         f"{len(unexpected)} unexpected diff(s) in local evaluator parity:\n"
         + "\n".join(json.dumps(d) for d in unexpected[:20])
     )
+
+
+def test_offset_datasets_reduction_accuracy(tmp_path):
+    """Verify `istd`, `istats` and z-score within 1e-6 of a double reference at offsets 0..3e4."""
+    stmts = (
+        "v = imean(A)",
+        "v = istd(A)",
+        "v = ivar(A)",
+        "m, s, lo, hi = istats(A)",
+        "C = (A - imean(A)) / istd(A)",
+        "C = A - imean(A, 0)",
+        "C = A - imean(A, 1)",
+    )
+    lines = [
+        json.dumps({"dataset": ds, "stmt": st}, separators=(",", ":"))
+        for ds in offset_dataset_ids()
+        for st in stmts
+    ]
+    diffs = _run_calcdiff(lines, extra_args=["--strict"])
+    assert not diffs, "Unexpected diff(s) on offset datasets:\n" + "\n".join(
+        json.dumps(d) for d in diffs[:20]
+    )
+
+    script = (
+        "mem.mk2Dim A 256 256 >/dev/null\n"
+        "for off in 0 1000 10000 30000; do\n"
+        '  @calc "A = $off + sin(0.37 * ix(A)) + cos(0.21 * iy(A)); Ad = f64(A)"\n'
+        '  @calc "s32 = istd(A); s64 = istd(Ad); m32, st32, lo32, hi32 = istats(A); '
+        'm64, st64, lo64, hi64 = istats(Ad)"\n'
+        '  @calc "Z32 = (A - imean(A)) / istd(A); Z64 = f32((Ad - imean(Ad)) / istd(Ad)); '
+        'zerr = imax(abs(Z32 - Z64)) / imax(abs(Z64))"\n'
+        '  @calc "serr = abs(s32 - s64) / s64; sterr = abs(st32 - st64) / st64; '
+        'merr = abs(m32 - m64) / max(abs(m64), 1.0)"\n'
+        '  @calc -v serr,sterr,merr,zerr "serr; sterr; merr; zerr"\n'
+        '  echo "off_$off=$serr,$sterr,$merr,$zerr"\n'
+        "done\n"
+    )
+    res = milk_bash(script, tmp_path, extra_env={"MILK_CALC_ENGINE": "new"})
+    assert res.returncode == 0, res.stdout + res.stderr
+    for off in (0, 1000, 10000, 30000):
+        vals = [float(x) for x in value(res.stdout, f"off_{off}").split(",")]
+        assert len(vals) == 4
+        for err_val in vals:
+            assert (
+                err_val <= 1e-6
+            ), f"Offset {off} exceeded 1e-6 relative error vs double ref: {vals}"
+
+
+def test_iargmax_iargmin_coord_unpack(tmp_path):
+    """Verify 2-D and 3-D coordinate unpacking on `iargmax` and `iargmin` (§3.2 rule 11)."""
+    script = (
+        "mem.mk2Dim im2 16 12 >/dev/null\n"
+        "mem.mk3Dim im3 8 6 4 >/dev/null\n"
+        '@calc "im2 = ix(im2) + 10 * iy(im2); im2[5, 9] = 999.0; im2[11, 3] = -500.0"\n'
+        '@calc "mx2, my2 = iargmax(im2); nx2, ny2 = iargmin(im2); flat2 = iargmax(im2)"\n'
+        '@calc "im3 = ix(im3) + 10 * iy(im3); '
+        'im3[3, 4, 2] = 9999.0; im3[6, 1, 3] = -9999.0"\n'
+        '@calc "mx3, my3, mz3 = iargmax(im3); nx3, ny3, nz3 = iargmin(im3)"\n'
+        '@calc "nan2 = im2 * nan; nanx, nany = iargmax(nan2)"\n'
+        '@calc -v mx2,my2,nx2,ny2,flat2 "mx2; my2; nx2; ny2; flat2"\n'
+        '@calc -v mx3,my3,mz3,nx3,ny3,nz3,nanx,nany "mx3; my3; mz3; nx3; ny3; nz3; nanx; nany"\n'
+        'echo "c2=$mx2,$my2,$nx2,$ny2,$flat2"\n'
+        'echo "c3=$mx3,$my3,$mz3,$nx3,$ny3,$nz3,$nanx,$nany"\n'
+    )
+    res = milk_bash(script, tmp_path, extra_env={"MILK_CALC_ENGINE": "new"})
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert value(res.stdout, "c2") == "5,9,11,3,149"
+    assert value(res.stdout, "c3") == "3,4,2,6,1,3,-1,-1"
+
+    bad = milk_bash(
+        'mem.mk2Dim im2 8 8 >/dev/null; @calc "px, py, pz = iargmax(im2)"',
+        tmp_path,
+        extra_env={"MILK_CALC_ENGINE": "new"},
+    )
+    assert bad.returncode != 0

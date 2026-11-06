@@ -27,18 +27,15 @@ __attribute__((format(printf, 3, 4))) static int plan_err(char       *err,
     }
     return -1;
 }
-
 static inline int is_float_exact_dt(uint8_t dt)
 {
     return dt == _DATATYPE_FLOAT || dt == _DATATYPE_UINT8 || dt == _DATATYPE_INT8 ||
            dt == _DATATYPE_UINT16 || dt == _DATATYPE_INT16;
 }
-
 static inline int is_complex_dt(uint8_t dt)
 {
     return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
 }
-
 static void mark_assigned_var(mcalc_prog_t *p, const char *bare)
 {
     for (int i = 0; p != NULL && bare != NULL && i < p->nvars; i++)
@@ -46,7 +43,6 @@ static void mark_assigned_var(mcalc_prog_t *p, const char *bare)
         (void) (strcmp(p->vars[i].name, bare) == 0 && (p->assigned[i] = 1));
     }
 }
-
 static int is_ctor_fn(const mc_func_t *fn)
 {
     return fn != NULL && (fn->kind == MC_FN_LINSPACE ||
@@ -56,25 +52,29 @@ static int is_ctor_fn(const mc_func_t *fn)
                             strcmp(fn->name, "reshape") == 0 || strcmp(fn->name, "vec") == 0 ||
                             strcmp(fn->name, "outer") == 0)));
 }
-
 static int is_inline_stencil_fn(const mc_func_t *fn)
 {
     return fn != NULL && fn->kind == MC_FN_STENCIL_LIB &&
            (strncmp(fn->name, "medfilt", 7) == 0 || strcmp(fn->name, "imin3") == 0 ||
             strcmp(fn->name, "imax3") == 0);
 }
+static int is_prestage_stencil_fn(const mc_func_t *fn)
+{
+    return fn != NULL && fn->kind == MC_FN_STENCIL_LIB &&
+           (strcmp(fn->name, "cumsum") == 0 || strcmp(fn->name, "gauss") == 0 ||
+            strcmp(fn->name, "pixunmap") == 0 || strcmp(fn->name, "rprof") == 0);
+}
 
 static int is_ctor_call(const mc_expr_t *e)
 {
-    if (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.udef_id >= 0 &&
-        e->u.call.udef_body != NULL)
-    {
-        return is_ctor_call(e->u.call.udef_body);
-    }
     const mc_func_t *fn = (e != NULL && e->kind == MC_EXPR_CALL) ? e->u.call.fn : NULL;
-    return (e != NULL && e->kind == MC_EXPR_VEC_LIT) || is_ctor_fn(fn) ||
-           (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.ext_id >= 0) ||
-           (fn != NULL && fn->kind == MC_FN_REDUCE_D && e->res_kind == MC_RES_IMAGE);
+    return (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.udef_id >= 0 &&
+            e->u.call.udef_body != NULL)
+               ? is_ctor_call(e->u.call.udef_body)
+               : ((e != NULL && e->kind == MC_EXPR_VEC_LIT) || is_ctor_fn(fn) ||
+                  is_prestage_stencil_fn(fn) ||
+                  (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.ext_id >= 0) ||
+                  (fn != NULL && fn->kind == MC_FN_REDUCE_D && e->res_kind == MC_RES_IMAGE));
 }
 
 static int expr_uses_def_param(const mc_expr_t *e)
@@ -113,42 +113,37 @@ static int check_expr_supported(const mc_expr_t *e, char *err, size_t errsz)
                                           check_expr_supported(e->u.ternary.f_expr, err, errsz))
         : (e->kind == MC_EXPR_ASSIGN)  ? (check_expr_supported(e->u.assign.target, err, errsz) ||
                                           check_expr_supported(e->u.assign.rhs, err, errsz))
+        : (e->kind == MC_EXPR_COMP)    ? check_expr_supported(e->u.comp.body, err, errsz)
                                        : 0;
-    for (int i = 0; e->kind == MC_EXPR_CHAIN && i <= e->u.chain.nops && rc == 0; i++)
+    for (int i = 0; e->kind == MC_EXPR_CHAIN && i <= e->u.chain.nops && !rc; i++)
     {
         rc = check_expr_supported(e->u.chain.operands[i], err, errsz);
     }
-    for (int a = 0; e->kind == MC_EXPR_SLICE && a < e->u.slice.naxis && rc == 0; a++)
+    for (int a = 0; e->kind == MC_EXPR_SLICE && a < e->u.slice.naxis && !rc; a++)
     {
         rc = check_expr_supported(e->u.slice.axes[a].start, err, errsz) ||
              check_expr_supported(e->u.slice.axes[a].stop, err, errsz) ||
              check_expr_supported(e->u.slice.axes[a].step, err, errsz);
     }
-    for (int i = 0; e->kind == MC_EXPR_VEC_LIT && i < e->u.vec_lit.nelem && rc == 0; i++)
+    for (int i = 0; e->kind == MC_EXPR_VEC_LIT && i < e->u.vec_lit.nelem && !rc; i++)
     {
         rc = check_expr_supported(e->u.vec_lit.elems[i], err, errsz);
     }
-    for (int g = 0; e->kind == MC_EXPR_COMP && g < e->u.comp.ngens && rc == 0; g++)
+    for (int g = 0; e->kind == MC_EXPR_COMP && g < e->u.comp.ngens && !rc; g++)
     {
         rc = check_expr_supported(e->u.comp.gens[g].start, err, errsz) ||
              check_expr_supported(e->u.comp.gens[g].stop, err, errsz) ||
              check_expr_supported(e->u.comp.gens[g].step, err, errsz);
     }
-    if (e->kind == MC_EXPR_COMP)
-    {
-        return rc ? rc : check_expr_supported(e->u.comp.body, err, errsz);
-    }
-    if (e->kind != MC_EXPR_CALL || rc != 0)
-    {
-        return rc;
-    }
-    for (int i = 0; i < e->u.call.nargs && rc == 0; i++)
+    for (int i = 0; e->kind == MC_EXPR_CALL && i < e->u.call.nargs && !rc; i++)
     {
         rc = check_expr_supported(e->u.call.args[i], err, errsz);
     }
-    if (rc != 0 || e->u.call.udef_id >= 0)
+    if (e->kind != MC_EXPR_CALL || rc != 0 || e->u.call.udef_id >= 0)
     {
-        return rc ? rc : check_expr_supported(e->u.call.udef_body, err, errsz);
+        return (rc || e->kind != MC_EXPR_CALL)
+                   ? rc
+                   : check_expr_supported(e->u.call.udef_body, err, errsz);
     }
     const milk_calc_ext_entry_t *ext =
         (e->u.call.ext_id >= 0) ? mcalc_ext_get(e->u.call.ext_id) : NULL;
@@ -159,7 +154,9 @@ static int check_expr_supported(const mc_expr_t *e, char *err, size_t errsz)
     return (ext_ok || fk == MC_FN_SCALAR || fk == MC_FN_WHERE || fk == MC_FN_CPLX ||
             fk == MC_FN_COORD || fk == MC_FN_PRNG || fk == MC_FN_LUT || fk == MC_FN_SHIFT ||
             fk == MC_FN_GATHER || is_ctor_fn(e->u.call.fn) || is_inline_stencil_fn(e->u.call.fn) ||
-            fk == MC_FN_STR || fk == MC_FN_REDUCE_D)
+            is_prestage_stencil_fn(e->u.call.fn) || fk == MC_FN_STR || fk == MC_FN_REDUCE_D ||
+            fk == MC_FN_REDUCE_L || fk == MC_FN_DOT || fk == MC_FN_ISTATS ||
+            fk == MC_FN_ICENTROID || fk == MC_FN_EAGER_RED)
                ? 0
                : plan_err(err, errsz, "not implemented in the new engine");
 }
@@ -288,11 +285,44 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
     {
         return add_scalar_op(w->pass, e, w->in_guarded ? 0 : div_check, non_pt, -1);
     }
+    if (is_ctor_call(e) && !(w->def_depth > 0 && expr_uses_def_param(e)))
+    {
+        mcalc_prog_t *p = w->prog;
+        char          ps_nm[32];
+        snprintf(ps_nm, sizeof(ps_nm), "_tmpcalcps%d", p->nslots);
+        int ps_sidx =
+            find_or_add_slot(p, ps_nm, ps_nm, 'L', 1, -1, e->res_dt, e->res_naxis, e->res_size);
+        if (p->nsteps >= p->cap_steps)
+        {
+            p->cap_steps = (p->cap_steps == 0) ? 8 : p->cap_steps * 2;
+            p->steps     = realloc(p->steps, (size_t) p->cap_steps * sizeof(*p->steps));
+        }
+        int stmt_idx              = p->steps[p->nsteps - 1].first_stmt_idx;
+        p->steps[p->nsteps]       = p->steps[p->nsteps - 1];
+        p->stmt_to_step[stmt_idx] = p->nsteps;
+        mc_step_t *cs             = &p->steps[p->nsteps - 1];
+        memset(cs, 0, sizeof(*cs));
+        cs->kind = MC_STEP_CTOR, cs->first_stmt_idx = cs->last_stmt_idx = stmt_idx;
+        cs->ctor.slot_idx = ps_sidx, cs->ctor.is_anon = 1, cs->ctor.assign_op = MC_TOK_ASSIGN;
+        cs->ctor.rhs_expr = e, p->nsteps++;
+        w->pass           = &p->steps[p->nsteps - 1].pass, w->pass->prestage_cnt++;
+        mc_op_desc_t d    = { .slot_idx         = ps_sidx,
+                              .dt               = p->slots[ps_sidx].plan_dt,
+                              .is_non_pointwise = non_pt,
+                              .is_table_arg     = tbl,
+                              .slice_expr       = e,
+                              .comp_gen_idx     = -1 };
+        return (add_pass_op(w->pass, &d) < 0) ? -1 : 0;
+    }
     if (is_ctor_call(e) || (non_pt && e->kind != MC_EXPR_IDENT && e->kind != MC_EXPR_SLICE))
     {
-        mc_op_desc_t d = { 0 };
-        d.slot_idx = -1, d.dt = e->res_dt ? e->res_dt : _DATATYPE_FLOAT, d.comp_gen_idx = -1;
-        d.is_non_pointwise = non_pt, d.is_table_arg = tbl, d.is_expr_im = 1, d.slice_expr = e;
+        mc_op_desc_t d = { .slot_idx         = -1,
+                           .dt               = e->res_dt ? e->res_dt : _DATATYPE_FLOAT,
+                           .is_non_pointwise = non_pt,
+                           .is_table_arg     = tbl,
+                           .is_expr_im       = 1,
+                           .slice_expr       = e,
+                           .comp_gen_idx     = -1 };
         return (add_pass_op(w->pass, &d) < 0) ? -1 : 0;
     }
 
@@ -308,10 +338,13 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
                                      e->u.slice.im_id, e->res_dt, 0, NULL)
                   : find_or_add_slot(w->prog, e->u.ident.name, e->u.ident.bare, e->u.ident.loc, 0,
                                      e->u.ident.im_id, e->res_dt, e->res_naxis, e->res_size);
-        mc_op_desc_t d = { 0 };
-        d.slot_idx = sidx, d.dt = (sidx >= 0) ? w->prog->slots[sidx].plan_dt : 0;
-        d.is_non_pointwise = non_pt, d.is_table_arg = tbl, d.has_slice = is_sl;
-        d.slice_expr = is_sl ? e : NULL, d.comp_gen_idx = -1;
+        mc_op_desc_t d = { .slot_idx         = sidx,
+                           .dt               = (sidx >= 0) ? w->prog->slots[sidx].plan_dt : 0,
+                           .is_non_pointwise = non_pt,
+                           .is_table_arg     = tbl,
+                           .has_slice        = is_sl,
+                           .slice_expr       = is_sl ? e : NULL,
+                           .comp_gen_idx     = -1 };
         return (sidx < 0 || add_pass_op(w->pass, &d) < 0) ? -1 : 0;
     }
     case MC_EXPR_UNARY:
@@ -343,9 +376,7 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
         return rc;
     case MC_EXPR_COMP:
         w->pass->is_comp = w->pass->uses_coords_or_stencil = 1;
-        w->pass->comp_expr                                 = e;
-        w->comp_gens                                       = e->u.comp.gens;
-        w->ncomp_gens                                      = e->u.comp.ngens;
+        w->pass->comp_expr = e, w->comp_gens = e->u.comp.gens, w->ncomp_gens = e->u.comp.ngens;
         for (int g = 0; g < e->u.comp.ngens && rc == 0; g++)
         {
             rc = (e->u.comp.gens[g].start &&
@@ -364,10 +395,8 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
             {
                 return -1;
             }
-            w->def_stk[w->def_depth]    = u;
-            w->def_args[w->def_depth++] = e->u.call.args;
-            rc                          = walk_pass_expr(w, e->u.call.udef_body, 0, 0, 0);
-            w->def_depth--;
+            w->def_stk[w->def_depth] = u, w->def_args[w->def_depth++] = e->u.call.args;
+            rc = walk_pass_expr(w, e->u.call.udef_body, 0, 0, 0), w->def_depth--;
             return rc;
         }
         if (e->u.call.fn == NULL)
@@ -387,11 +416,12 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
         case MC_FN_PRNG:
         {
             w->pass->uses_coords_or_stencil = 1;
-            mc_op_desc_t d                  = { 0 };
-            d.slot_idx = -1, d.is_scalar = 1, d.slice_expr = e, d.comp_gen_idx = -1;
-            d.scalar_expr = (e->u.call.nargs >= 2) ? e->u.call.args[1] : NULL;
-            return (walk_pass_expr(w, e->u.call.args[0], 0, 0, 0) != 0 ||
-                    add_pass_op(w->pass, &d) < 0)
+            mc_op_desc_t d = { .slot_idx     = -1,
+                               .is_scalar    = 1,
+                               .slice_expr   = e,
+                               .comp_gen_idx = -1,
+                               .scalar_expr  = (e->u.call.nargs >= 2) ? e->u.call.args[1] : NULL };
+            return (walk_pass_expr(w, e->u.call.args[0], 0, 0, 0) || add_pass_op(w->pass, &d) < 0)
                        ? -1
                        : 0;
         }
@@ -496,6 +526,7 @@ static int add_pass_out(mcalc_prog_t    *prog,
     {
         return plan_err(err, errsz, "failed to plan pass expression");
     }
+    pass                      = w.pass;
     prog->slots[sidx].plan_dt = out_dt;
 
     mc_op_desc_t od = { 0 };
@@ -515,15 +546,30 @@ static int add_pass_out(mcalc_prog_t    *prog,
     return (op_idx < 0 || pass->outs == NULL) ? -1 : 0;
 }
 
+static const mc_expr_t *unwrap_ax_red(const mc_op_desc_t *o)
+{
+    const mc_expr_t *se =
+        (!o->is_scalar && !o->is_out && !o->has_slice && !o->is_expr_im) ? o->slice_expr : NULL;
+    const mc_expr_t *ub =
+        (se && se->kind == MC_EXPR_CALL && se->u.call.udef_id >= 0 && se->u.call.udef_body)
+            ? se->u.call.udef_body
+            : se;
+    return (ub && ub->kind == MC_EXPR_CALL && ub->u.call.fn &&
+            ub->u.call.fn->kind == MC_FN_REDUCE_D && ub->u.call.nargs == 2)
+               ? ub
+               : NULL;
+}
+
 static void finalize_pass_meta(mcalc_prog_t *prog, mc_pass_t *pass)
 {
-    int is_cplx = 0, need_d = 0;
+    int is_cplx = 0, need_d = 0, has_non_red_im = 0;
     for (int i = 0; i < pass->nouts; i++)
     {
         uint8_t dt = pass->outs[i].out_dt, rdt = pass->outs[i].rhs_expr->res_dt;
         is_cplx |= (is_complex_dt(dt) || is_complex_dt(rdt));
         need_d |= (!is_float_exact_dt(dt) && dt != _DATATYPE_COMPLEX_FLOAT) ||
                   rdt == _DATATYPE_DOUBLE || rdt == _DATATYPE_COMPLEX_DOUBLE;
+        has_non_red_im |= (pass->outs[i].lhs_slice != NULL);
     }
     for (int i = 0; i < pass->nops; i++)
     {
@@ -537,6 +583,33 @@ static void finalize_pass_meta(mcalc_prog_t *prog, mc_pass_t *pass)
              ((o->scalar_expr->kind == MC_EXPR_LONG && labs(o->scalar_expr->u.lval) > 16777216L) ||
               (o->scalar_expr->kind == MC_EXPR_DOUBLE &&
                fabs(o->scalar_expr->u.dval) > 16777216.0)));
+        const mc_slot_t *os = (o->slot_idx >= 0) ? &prog->slots[o->slot_idx] : NULL;
+        has_non_red_im |=
+            (!o->is_scalar && !o->is_out && !o->is_table_arg && !unwrap_ax_red(o) &&
+             (!os || os->plan_size[0] != 1 || os->plan_size[1] != 1 || os->plan_size[2] != 1));
+    }
+    for (int i = 0; has_non_red_im && i < pass->nops; i++)
+    {
+        mc_op_desc_t    *o  = &pass->ops[i];
+        const mc_expr_t *ub = unwrap_ax_red(o);
+        for (int s = 0; ub != NULL && s < prog->nsteps; s++)
+        {
+            (void) (prog->steps[s].kind == MC_STEP_CTOR &&
+                    prog->steps[s].ctor.slot_idx == o->slot_idx &&
+                    (prog->steps[s].ctor.is_anon = 2));
+        }
+        const mc_expr_t *a0 = ub ? ub->u.call.args[0] : NULL;
+        long             ax =
+            (ub && ub->u.call.args[1]->kind == MC_EXPR_LONG) ? ub->u.call.args[1]->u.lval : -1;
+        (void) (ub && (o->is_x_bcast = (ax == 0), 1));
+        mc_slot_t *sl = &prog->slots[o->slot_idx];
+        if (a0 && a0->res_naxis > 0 && a0->res_size[0] > 0 && ax >= 0 && ax < a0->res_naxis)
+        {
+            sl->plan_naxis   = a0->res_naxis;
+            sl->plan_size[0] = (ax == 0) ? 1 : a0->res_size[0];
+            sl->plan_size[1] = (ax == 1) ? 1 : ((a0->res_naxis > 1) ? a0->res_size[1] : 1);
+            sl->plan_size[2] = (ax == 2) ? 1 : ((a0->res_naxis > 2) ? a0->res_size[2] : 1);
+        }
     }
     pass->is_complex = is_cplx, pass->work_double = need_d;
 
@@ -551,12 +624,9 @@ static void finalize_pass_meta(mcalc_prog_t *prog, mc_pass_t *pass)
     {
         const mc_op_desc_t *o = &pass->ops[i];
         contig &= (o->is_scalar || !o->is_non_pointwise);
-        if (!o->is_scalar && (o->has_slice || o->is_expr_im))
-        {
-            contig = 0, dyn_sz = 1;
-            continue;
-        }
-        if (o->is_scalar || o->is_table_arg || o->is_out || o->slot_idx < 0)
+        (void) (!o->is_scalar && (o->has_slice || o->is_expr_im) && ((contig = 0), (dyn_sz = 1)));
+        if (o->is_scalar || o->is_table_arg || o->is_out || o->slot_idx < 0 || o->has_slice ||
+            o->is_expr_im)
         {
             continue;
         }
@@ -566,9 +636,19 @@ static void finalize_pass_meta(mcalc_prog_t *prog, mc_pass_t *pass)
             nax = s->plan_naxis, memcpy(sz, s->plan_size, sizeof(sz));
         }
         else if (s->plan_naxis == 0 || s->plan_size[0] == 0 || s->plan_naxis != nax ||
-                 memcmp(sz, s->plan_size, sizeof(sz)) != 0)
+                 (s->plan_size[0] != sz[0] && s->plan_size[0] != 1 && sz[0] != 1) ||
+                 (s->plan_size[1] != sz[1] && s->plan_size[1] != 1 && sz[1] != 1) ||
+                 (s->plan_size[2] != sz[2] && s->plan_size[2] != 1 && sz[2] != 1))
         {
             contig = 0, dyn_sz = 1;
+        }
+        else if (memcmp(sz, s->plan_size, sizeof(sz)) != 0)
+        {
+            contig = 0;
+            for (int a = 0; a < 3; a++)
+            {
+                sz[a] = (sz[a] > s->plan_size[a]) ? sz[a] : s->plan_size[a];
+            }
         }
     }
     const mc_slot_t *s0 =
@@ -600,41 +680,6 @@ static void finalize_pass_meta(mcalc_prog_t *prog, mc_pass_t *pass)
     pass->is_1d_contig = (contig && sz[0] > 0);
 }
 
-static int can_merge_passes(const mc_pass_t *a, const mc_pass_t *b)
-{
-    int bad =
-        (a->is_comp || b->is_comp || a->no_dst_bcast || b->no_dst_bcast ||
-         a->is_complex != b->is_complex || a->nouts + b->nouts > 8 || a->vnx == 0 || b->vnx == 0 ||
-         a->naxis != b->naxis || a->vnx != b->vnx || a->vny != b->vny || a->vnz != b->vnz);
-    for (int i = 0; i < a->nouts; i++)
-    {
-        bad |= (a->outs[i].lhs_slice != NULL);
-    }
-    for (int i = 0; i < b->nouts; i++)
-    {
-        bad |= (b->outs[i].lhs_slice != NULL);
-        for (int j = 0; j < a->nouts; j++)
-        {
-            bad |= (b->outs[i].slot_idx == a->outs[j].slot_idx);
-        }
-        for (int j = 0; j < a->nops; j++)
-        {
-            bad |= (!a->ops[j].is_out && a->ops[j].slot_idx == b->outs[i].slot_idx);
-        }
-    }
-    for (int i = 0; i < b->nops; i++)
-    {
-        bad |= (!b->ops[i].is_out && b->ops[i].is_expr_im);
-        for (int j = 0; !b->ops[i].is_out && j < a->nouts; j++)
-        {
-            bad |= (b->ops[i].slot_idx == a->outs[j].slot_idx &&
-                    (b->ops[i].is_non_pointwise || b->ops[i].has_slice ||
-                     a->outs[j].assign_op != MC_TOK_ASSIGN || a->outs[j].lhs_slice != NULL));
-        }
-    }
-    return !bad;
-}
-
 static void merge_passes_and_elide_locals(mcalc_prog_t *prog)
 {
     int w = 0;
@@ -642,7 +687,7 @@ static void merge_passes_and_elide_locals(mcalc_prog_t *prog)
     {
         if (w > 0 && prog->steps[w - 1].kind == MC_STEP_PASS &&
             prog->steps[r].kind == MC_STEP_PASS &&
-            can_merge_passes(&prog->steps[w - 1].pass, &prog->steps[r].pass))
+            mc_can_merge_passes(&prog->steps[w - 1].pass, &prog->steps[r].pass))
         {
             mc_pass_t *pa = &prog->steps[w - 1].pass, *pb = &prog->steps[r].pass;
             for (int i = 0; i < pb->nops; i++)
@@ -686,32 +731,7 @@ static void merge_passes_and_elide_locals(mcalc_prog_t *prog)
         w++;
     }
     prog->nsteps = w;
-
-    for (int st = 0; st < prog->nsteps; st++)
-    {
-        mc_pass_t *pa = (prog->steps[st].kind == MC_STEP_PASS && prog->steps[st].pass.nouts > 1)
-                            ? &prog->steps[st].pass
-                            : NULL;
-        for (int i = 0; pa != NULL && i < pa->nouts - 1; i++)
-        {
-            int        sidx = pa->outs[i].slot_idx, used_later = 0;
-            mc_slot_t *slot = &prog->slots[sidx];
-            if (!slot->is_local || slot->existed_at_plan ||
-                pa->outs[i].assign_op != MC_TOK_ASSIGN || pa->outs[i].lhs_slice != NULL)
-            {
-                continue;
-            }
-            for (int st2 = 0; st2 < prog->nsteps && !used_later; st2++)
-            {
-                used_later |= (st2 != st && prog->steps[st2].kind != MC_STEP_PASS);
-                for (int k = 0; st2 != st && !used_later && k < prog->steps[st2].pass.nops; k++)
-                {
-                    used_later |= (prog->steps[st2].pass.ops[k].slot_idx == sidx);
-                }
-            }
-            (void) (!used_later && ((pa->outs[i].is_elided = 1), (slot->is_elided = 1)));
-        }
-    }
+    mc_elide_unused_locals(prog);
 }
 
 static mc_step_t *alloc_step(mcalc_prog_t *p, mc_step_kind_t kind, int stmt_idx)
@@ -728,29 +748,6 @@ static mc_step_t *alloc_step(mcalc_prog_t *p, mc_step_kind_t kind, int stmt_idx)
     return st;
 }
 
-static int has_bcast_stencil(const mc_expr_t *e, const uint32_t dsz[3])
-{
-    if (e == NULL)
-    {
-        return 0;
-    }
-    int r = (e->kind == MC_EXPR_UNARY && has_bcast_stencil(e->u.unary.operand, dsz)) ||
-            (e->kind == MC_EXPR_BINARY && (has_bcast_stencil(e->u.binary.left, dsz) ||
-                                           has_bcast_stencil(e->u.binary.right, dsz))) ||
-            (e->kind == MC_EXPR_TERNARY && (has_bcast_stencil(e->u.ternary.cond, dsz) ||
-                                            has_bcast_stencil(e->u.ternary.t_expr, dsz) ||
-                                            has_bcast_stencil(e->u.ternary.f_expr, dsz))) ||
-            (e->kind == MC_EXPR_CALL &&
-             ((e->u.call.fn != NULL && e->u.call.fn->kind == MC_FN_SHIFT && e->u.call.nargs >= 1 &&
-               memcmp(e->u.call.args[0]->res_size, dsz, 3 * sizeof(uint32_t)) != 0) ||
-              has_bcast_stencil(e->u.call.udef_body, dsz)));
-    for (int i = 0; !r && e->kind == MC_EXPR_CALL && i < e->u.call.nargs; i++)
-    {
-        r |= has_bcast_stencil(e->u.call.args[i], dsz);
-    }
-    return r;
-}
-
 int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
 {
     int idx = 0;
@@ -760,15 +757,13 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
         {
             continue;
         }
-        if (s->kind == MC_STMT_SKIP ||
-            ((s->kind == MC_STMT_IF || s->kind == MC_STMT_FOR) && has_vars) ||
-            (s->kind == MC_STMT_MULTI_ASSIGN && s->u.multi.nrhs != s->u.multi.nlhs))
+        int bad_s = (s->kind == MC_STMT_SKIP ||
+                     ((s->kind == MC_STMT_IF || s->kind == MC_STMT_FOR) && has_vars) ||
+                     (s->kind == MC_STMT_MULTI_ASSIGN && s->u.multi.nrhs != s->u.multi.nlhs &&
+                      !(s->u.multi.nrhs == 1 && s->u.multi.nlhs >= 2)));
+        if (bad_s || (s->kind == MC_STMT_EXPR && check_expr_supported(s->u.expr, err, errsz) != 0))
         {
-            return plan_err(err, errsz, "not implemented in the new engine");
-        }
-        if (s->kind == MC_STMT_EXPR && check_expr_supported(s->u.expr, err, errsz) != 0)
-        {
-            return -1;
+            return bad_s ? plan_err(err, errsz, "not implemented in the new engine") : -1;
         }
         for (int j = 0; s->kind == MC_STMT_MULTI_ASSIGN && j < s->u.multi.nrhs; j++)
         {
@@ -779,6 +774,7 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
         }
 
         if (!s->needs_image || s->kind == MC_STMT_IF || s->kind == MC_STMT_FOR ||
+            (s->kind == MC_STMT_MULTI_ASSIGN && s->u.multi.nrhs == 1 && s->u.multi.nlhs >= 2) ||
             (s->kind == MC_STMT_EXPR && s->u.expr->res_kind != MC_RES_IMAGE &&
              !(s->u.expr->kind == MC_EXPR_ASSIGN &&
                s->u.expr->u.assign.target->res_kind == MC_RES_IMAGE)))
@@ -816,12 +812,13 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
                 st->ctor.is_anon = !tid, st->ctor.assign_op = aop, st->ctor.rhs_expr = rhs;
                 continue;
             }
-            mc_step_t *st = alloc_step(p, MC_STEP_PASS, idx);
-            if (add_pass_out(p, &st->pass, idx, loc_fl, 0, aop, target, rhs, err, errsz) != 0)
+            alloc_step(p, MC_STEP_PASS, idx);
+            if (add_pass_out(p, &p->steps[p->nsteps - 1].pass, idx, loc_fl, 0, aop, target, rhs,
+                             err, errsz) != 0)
             {
                 return -1;
             }
-            finalize_pass_meta(p, &st->pass);
+            finalize_pass_meta(p, &p->steps[p->nsteps - 1].pass);
             continue;
         }
         int any_im = 0, any_sc = 0;
@@ -859,9 +856,9 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
                              (id >= 0 && md->shared != 1 && md->datatype != fdt) ||
                              (j > 0 && memcmp(dsz, s3, sizeof(dsz)) != 0));
             (void) (j == 0 && memcpy(dsz, s3, sizeof(dsz)));
-            multi_fused &= !has_bcast_stencil(rhs, dsz);
+            multi_fused &= !mc_has_bcast_stencil(rhs, dsz);
         }
-        mc_step_t *st = multi_fused ? alloc_step(p, MC_STEP_PASS, idx) : NULL;
+        (void) (multi_fused && (alloc_step(p, MC_STEP_PASS, idx), 1));
         for (int j = 0; any_im && j < s->u.multi.nlhs; j++)
         {
             const mc_expr_t *lhs = s->u.multi.lhs[j], *rhs = s->u.multi.rhs[j];
@@ -870,16 +867,15 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
             {
                 continue;
             }
-            (void) (!multi_fused &&
-                    ((st = alloc_step(p, MC_STEP_PASS, idx)), (st->pass.no_dst_bcast = 1)));
-            if (add_pass_out(p, &st->pass, idx, s->is_local, multi_fused, MC_TOK_ASSIGN, lhs, rhs,
-                             err, errsz) != 0)
+            (void) (!multi_fused && (alloc_step(p, MC_STEP_PASS, idx)->pass.no_dst_bcast = 1));
+            if (add_pass_out(p, &p->steps[p->nsteps - 1].pass, idx, s->is_local, multi_fused,
+                             MC_TOK_ASSIGN, lhs, rhs, err, errsz) != 0)
             {
                 return -1;
             }
-            (void) (!multi_fused && (finalize_pass_meta(p, &st->pass), 1));
+            (void) (!multi_fused && (finalize_pass_meta(p, &p->steps[p->nsteps - 1].pass), 1));
         }
-        (void) (multi_fused && (finalize_pass_meta(p, &st->pass), 1));
+        (void) (multi_fused && (finalize_pass_meta(p, &p->steps[p->nsteps - 1].pass), 1));
         (void) (any_sc && (alloc_step(p, MC_STEP_SCALAR, idx)->scalar_stmt = s, 1));
     }
 

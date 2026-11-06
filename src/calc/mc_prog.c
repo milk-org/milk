@@ -446,7 +446,11 @@ void mcalc_prog_free(mcalc_prog *p)
     free(p->slots);
     for (int i = 0; i < p->nsteps; i++)
     {
-        if (p->steps[i].kind == MC_STEP_PASS)
+        if (p->steps[i].kind == MC_STEP_CTOR)
+        {
+            mc_ctor_step_free(&p->steps[i].ctor);
+        }
+        else if (p->steps[i].kind == MC_STEP_PASS)
         {
             free(p->steps[i].pass.ops);
             free(p->steps[i].pass.outs);
@@ -557,7 +561,11 @@ int mc_exec_stmt_list(mc_stmt_t *head, char *err, size_t errsz)
                  : -1;
     for (int i = 0; i < p.nsteps; i++)
     {
-        if (p.steps[i].kind == MC_STEP_PASS)
+        if (p.steps[i].kind == MC_STEP_CTOR)
+        {
+            mc_ctor_step_free(&p.steps[i].ctor);
+        }
+        else if (p.steps[i].kind == MC_STEP_PASS)
         {
             free(p.steps[i].pass.ops);
             free(p.steps[i].pass.outs);
@@ -589,6 +597,63 @@ int mcalc_prog_exec_once(const char          *text,
     }
     mcalc_prog_free(p);
     return rc;
+}
+
+static void count_scalar_ops_reds(const mc_expr_t *e, int *ops, int *reds)
+{
+    if (e == NULL)
+    {
+        return;
+    }
+    if (e->kind == MC_EXPR_ASSIGN)
+    {
+        count_scalar_ops_reds(e->u.assign.rhs, ops, reds);
+        return;
+    }
+    if (e->kind == MC_EXPR_CALL)
+    {
+        const mc_func_t *fn = e->u.call.fn;
+        if (fn != NULL && (fn->kind == MC_FN_REDUCE_D || fn->kind == MC_FN_REDUCE_L ||
+                           fn->kind == MC_FN_DOT || fn->kind == MC_FN_EAGER_RED ||
+                           fn->kind == MC_FN_ISTATS || fn->kind == MC_FN_ICENTROID))
+        {
+            (*reds)++;
+            (*ops)++;
+            return;
+        }
+        (*ops)++;
+        for (int i = 0; i < e->u.call.nargs; i++)
+        {
+            count_scalar_ops_reds(e->u.call.args[i], ops, reds);
+        }
+        return;
+    }
+    if (e->kind == MC_EXPR_UNARY)
+    {
+        (*ops)++;
+        count_scalar_ops_reds(e->u.unary.operand, ops, reds);
+    }
+    else if (e->kind == MC_EXPR_BINARY)
+    {
+        (*ops)++;
+        count_scalar_ops_reds(e->u.binary.left, ops, reds);
+        count_scalar_ops_reds(e->u.binary.right, ops, reds);
+    }
+    else if (e->kind == MC_EXPR_TERNARY)
+    {
+        (*ops)++;
+        count_scalar_ops_reds(e->u.ternary.cond, ops, reds);
+        count_scalar_ops_reds(e->u.ternary.t_expr, ops, reds);
+        count_scalar_ops_reds(e->u.ternary.f_expr, ops, reds);
+    }
+    else if (e->kind == MC_EXPR_CHAIN)
+    {
+        (*ops) += e->u.chain.nops;
+        for (int i = 0; i <= e->u.chain.nops; i++)
+        {
+            count_scalar_ops_reds(e->u.chain.operands[i], ops, reds);
+        }
+    }
 }
 
 int mcalc_prog_explain(const char *text, FILE *out)
@@ -633,11 +698,17 @@ int mcalc_prog_explain(const char *text, FILE *out)
                 }
                 else
                 {
+                    char ps_buf[64] = "";
+                    if (st->pass.prestage_cnt > 0)
+                    {
+                        snprintf(ps_buf, sizeof(ps_buf), ", %d pre-stage%s", st->pass.prestage_cnt,
+                                 (st->pass.prestage_cnt == 1) ? "" : "s");
+                    }
                     snprintf(how, sizeof(how),
-                             "kept: compiled C pass (%s, %s, %d operand%s, %d output%s)", wtype,
+                             "kept: compiled C pass (%s, %s, %d operand%s, %d output%s%s)", wtype,
                              st->pass.is_1d_contig ? "1D" : "ND", st->pass.nops,
                              (st->pass.nops == 1) ? "" : "s", st->pass.nouts,
-                             (st->pass.nouts == 1) ? "" : "s");
+                             (st->pass.nouts == 1) ? "" : "s", ps_buf);
                 }
             }
             else if (st->kind == MC_STEP_CTOR)
@@ -646,7 +717,25 @@ int mcalc_prog_explain(const char *text, FILE *out)
             }
             else
             {
-                snprintf(how, sizeof(how), "kept: scalar step");
+                int nops = 0, nreds = 0;
+                if (st->scalar_stmt != NULL && st->scalar_stmt->kind == MC_STMT_EXPR)
+                {
+                    count_scalar_ops_reds(st->scalar_stmt->u.expr, &nops, &nreds);
+                }
+                else if (st->scalar_stmt != NULL && st->scalar_stmt->kind == MC_STMT_MULTI_ASSIGN)
+                {
+                    for (int j = 0; j < st->scalar_stmt->u.multi.nrhs; j++)
+                    {
+                        count_scalar_ops_reds(st->scalar_stmt->u.multi.rhs[j], &nops, &nreds);
+                    }
+                }
+                if (nops == 0)
+                {
+                    nops = 1;
+                }
+                snprintf(how, sizeof(how),
+                         "kept: scalar tape: %d op%s, %d reduction%s, 0 pre-stages", nops,
+                         (nops == 1) ? "" : "s", nreds, (nreds == 1) ? "" : "s");
             }
         }
         if (out != NULL)

@@ -24,4 +24,7 @@ void mc_host_str_set(const char *name, const char *val);
 /** mc_host_str_clear() - clear the internal fallback string variable table. */
 void mc_host_str_clear(void);
 
+/** mc_host_has_str_sink() - return 1 if an external host string sink is registered. */
+int mc_host_has_str_sink(void);
+
 #endif /* MILK_MCALC_HOST_H */

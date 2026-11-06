@@ -58,6 +58,7 @@ typedef struct
     const mc_expr_t *scalar_expr;      /* scalar AST node when is_scalar == 1 */
     int              check_div_kind;   /* 1 = check != 0 (/ or /=), 2 = check != 0 (%) */
     int              comp_gen_idx;     /* >= 0 if comprehension generator variable */
+    int              is_x_bcast;       /* 1 if axis-0 broadcast (st[0] == 0) */
 } mc_op_desc_t;
 
 /* Planned output write inside an elementwise pass. */
@@ -90,6 +91,7 @@ typedef struct
     int              no_dst_bcast;           /* 1 = do not broadcast pass to dst shape */
     int              uses_coords_or_stencil; /* 1 = needs 2D/3D (x, y, z) loop */
     int              is_comp;                /* 1 = comprehension pass */
+    int              prestage_cnt;           /* number of hoisted pre-stage steps */
     const mc_expr_t *comp_expr;              /* MC_EXPR_COMP node when is_comp == 1 */
     uint8_t          naxis;
     uint32_t         vnx, vny, vnz;
@@ -130,6 +132,9 @@ typedef struct
     mc_tok_type_t    assign_op;
     const mc_expr_t *lhs_slice;
     const mc_expr_t *rhs_expr;
+    void            *csr;         /* cached arith_scatter_csr_t* for pixunmap */
+    double          *scratch_buf; /* cached scratch buffer for rprof */
+    size_t           scratch_cap;
 } mc_ctor_step_t;
 
 /* Execution step in a planned program. */
@@ -207,6 +212,12 @@ int mc_find_im_op(const mc_pass_t *pass,
 /* Find a scalar or PRNG operand index in @pass matching the given parameters, or -1. */
 int mc_find_scalar_op(const mc_pass_t *pass, const mc_expr_t *se, const mc_expr_t *prng_e, int cg);
 
+/* Return 1 if passes @a and @b can be fused into a single elementwise pass. */
+int mc_can_merge_passes(const mc_pass_t *a, const mc_pass_t *b);
+
+/* Return 1 if @e contains a `shift`/`roll` on an operand whose shape differs from @dsz. */
+int mc_has_bcast_stencil(const mc_expr_t *e, const uint32_t dsz[3]);
+
 /* Prepare or resize destination image for a slot and return its imageID. */
 imageID mc_out_prepare(mc_slot_t     *slot,
                        uint8_t        naxis,
@@ -252,8 +263,82 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
 /* Execute a constructor/shape step @cs. */
 int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err, size_t errsz);
 
-/* Evaluate a scalar reduction call (`MC_FN_REDUCE_D`) into @out. */
+/* Store scalar value @v into variable @bare, updating cached variable ID *@io_vid. */
+void mc_store_scalar_var(const char *bare, long *io_vid, const mc_val_t *v);
+
+/* Evaluate a scalar reduction call (`MC_FN_REDUCE_*`, `dot`, `imedian`, etc.) into @out. */
 int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, size_t errsz);
+
+/* Evaluate two scalar reductions on the same input image in a single pass. */
+int mc_exec_reduce_pair(const mc_expr_t *c0,
+                        const mc_expr_t *c1,
+                        double          *o0,
+                        double          *o1,
+                        char            *err,
+                        size_t           errsz);
+
+/* Evaluate a multi-return reduction (`istats`, `icentroid`, `iargmax`, `iargmin`). */
+int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t errsz);
+
+/* Execute a pre-stage / non-elementwise reduction or stencil constructor step. */
+int mc_exec_prestage(mcalc_prog_t    *prog,
+                     mc_ctor_step_t  *cs,
+                     imageID          src_id,
+                     const mc_expr_t *call_site,
+                     int              in_unit,
+                     char            *err,
+                     size_t           errsz);
+
+/* Free any cached CSR or scratch buffers attached to @cs. */
+void mc_ctor_step_free(mc_ctor_step_t *cs);
+
+/* Clear the cached compound reduction sub-program table. */
+void mc_reduce_cache_clear(void);
+
+/* Mark unused local intermediate pass outputs as elided across @prog. */
+void mc_elide_unused_locals(mcalc_prog_t *prog);
+
+/* Source descriptor for scalar and prestage reductions (direct image or L1 sub-pass). */
+typedef struct
+{
+    const IMAGE *im;
+    mc_pass_t   *pass;
+    mc_operand_t ops[32];
+    int          out_op;
+    uint8_t      dt;
+    uint8_t      naxis;
+    uint32_t     ishape[3];
+    uint64_t     nel;
+    imageID      tmp_id;
+} mc_red_src_t;
+
+/* Prepare reduction source @out from expression @e (materializing or L1-binding as needed). */
+int mc_prepare_red_src(const mc_expr_t *e,
+                       const mc_expr_t *call_site,
+                       imageID          avoid_id,
+                       int              allow_sub_pass,
+                       mc_red_src_t    *out,
+                       char            *err,
+                       size_t           errsz);
+
+/* Release any temporary image allocated by `mc_prepare_red_src`. */
+void mc_release_red_src(mc_red_src_t *s);
+
+/* Evaluate a block [off, off + len) of reduction source @s as double into @dst. */
+void mc_eval_src_block_d(const mc_red_src_t *s, uint64_t off, int len, double *restrict dst);
+
+/* Evaluate scalar expression @e (unwrapping `def` call site @call_site) into *@out. */
+int mc_eval_scalar_d(const mc_expr_t *e,
+                     const mc_expr_t *call_site,
+                     double          *out,
+                     char            *err,
+                     size_t           errsz);
+
+/* Map a reduction function name to its `arith_reduce_op` enum value. */
+int mc_map_reduce_op(const char *name);
+
+/* Compute the maximum finite value of reduction source @s into *@out_max. */
+int mc_run_stat_max(const mc_red_src_t *s, double *out_max, char *err, size_t errsz);
 
 /* Sync bound FPS/unit variables into `milk_data.variable` before execution. */
 void mc_prog_load_vars(mcalc_prog_t *p);

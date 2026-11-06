@@ -47,18 +47,6 @@ static inline int is_complex_dt(uint8_t dt)
     return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
 }
 
-static arith_reduce_op map_reduce_op(const char *name)
-{
-    return (strcmp(name, "itot") == 0)                                ? ARITH_RED_SUM
-           : (strcmp(name, "imean") == 0)                             ? ARITH_RED_MEAN
-           : (strcmp(name, "imin") == 0)                              ? ARITH_RED_MIN
-           : (strcmp(name, "imax") == 0)                              ? ARITH_RED_MAX
-           : (strcmp(name, "istd") == 0 || strcmp(name, "irms") == 0) ? ARITH_RED_STD
-           : (strcmp(name, "ivar") == 0)                              ? ARITH_RED_VAR
-           : (strcmp(name, "norm") == 0 || strcmp(name, "nrm2") == 0) ? ARITH_RED_NORM
-                                                                      : ARITH_RED_ASUM;
-}
-
 static void write_im_pix(IMAGE *im, uint8_t dt, uint64_t idx, double v)
 {
     int64_t  si = llround(v);
@@ -132,6 +120,7 @@ static imageID eval_expr_to_tmp_im(const mc_expr_t *expr,
     }
     for (int s = 0; s < p.nsteps; s++)
     {
+        (void) (p.steps[s].kind == MC_STEP_CTOR && (mc_ctor_step_free(&p.steps[s].ctor), 1));
         (void) (p.steps[s].kind == MC_STEP_PASS &&
                 (free(p.steps[s].pass.ops), free(p.steps[s].pass.outs), free(p.steps[s].pass.c_src),
                  1));
@@ -201,64 +190,6 @@ static int eval_scalar_d(const mc_expr_t *e,
     return 0;
 }
 
-int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, size_t errsz)
-{
-    int             nargs = call_expr->u.call.nargs, im_tmp = 0, mk_tmp = 0, rc = 0;
-    arith_reduce_op op    = map_reduce_op(call_expr->u.call.fn->name);
-    imageID         im_id = -1, mk_id = -1;
-    double          res = 0.0, axd = 0.0;
-
-    if (resolve_or_eval_im(call_expr->u.call.args[0], NULL, -1, 0, &im_id, &im_tmp, err, errsz) !=
-        0)
-    {
-        return -1;
-    }
-    const IMAGE *im = &milk_data.image[im_id];
-    if (is_complex_dt(im->md[0].datatype))
-    {
-        rc = exec_err(err, errsz,
-                      "Function of real pixels applied to a complex image; use real(), imag() "
-                      "or abs() first");
-    }
-    else if (nargs == 1)
-    {
-        res = arith_image_reduce_lane(im, im->md[0].datatype, 0, im->md[0].nelement, 1, op);
-    }
-    else if (call_expr->u.call.args[1]->res_kind == MC_RES_IMAGE)
-    {
-        if (resolve_or_eval_im(call_expr->u.call.args[1], NULL, -1, 0, &mk_id, &mk_tmp, err,
-                               errsz) != 0)
-        {
-            rc = -1;
-        }
-        else
-        {
-            const IMAGE *mk = &milk_data.image[mk_id];
-            int          ok =
-                (mk->md[0].naxis == im->md[0].naxis && mk->md[0].nelement == im->md[0].nelement &&
-                 !is_complex_dt(mk->md[0].datatype) && mk->md[0].size[0] == im->md[0].size[0] &&
-                 (im->md[0].naxis <= 1 || mk->md[0].size[1] == im->md[0].size[1]) &&
-                 (im->md[0].naxis <= 2 || mk->md[0].size[2] == im->md[0].size[2]));
-            rc  = ok ? 0 : exec_err(err, errsz, "The mask must have the image's size");
-            res = ok ? arith_image_reduce_masked_im(im, mk, op, 0.5) : 0.0;
-        }
-    }
-    else
-    {
-        rc  = (eval_scalar_d(call_expr->u.call.args[1], NULL, &axd, err, errsz) != 0 ||
-               llround(axd) != 0)
-                  ? exec_err(err, errsz, "Axis out of range")
-                  : 0;
-        res = (rc == 0)
-                  ? arith_image_reduce_lane(im, im->md[0].datatype, 0, im->md[0].nelement, 1, op)
-                  : 0.0;
-    }
-    (void) (im_tmp && (mc_tmp_release(im_id), 1));
-    (void) (mk_tmp && (mc_tmp_release(mk_id), 1));
-    *out = (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = res };
-    return rc;
-}
-
 static uint8_t select_ctor_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
 {
     return (slot->existed_at_plan && slot->im_id >= 0 && milk_data.image[slot->im_id].used &&
@@ -280,6 +211,12 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
                         strcmp(milk_data.image[slot->im_id].name, slot->bare) == 0)
                            ? slot->im_id
                            : image_ID(slot->bare, milk_data.image, milk_data.NB_MAX_IMAGE);
+
+    if (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
+        (rhs->u.call.fn->kind == MC_FN_REDUCE_D || rhs->u.call.fn->kind == MC_FN_STENCIL_LIB))
+    {
+        return mc_exec_prestage(prog, cs, avoid_id, call_site, in_unit, err, errsz);
+    }
 
     if (rhs->kind == MC_EXPR_VEC_LIT ||
         (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
@@ -518,39 +455,45 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
         }
         mc_out_post(oid);
     }
-    else
-    {
-        double axd = 0.0;
-        if (eval_scalar_d(rhs->u.call.args[1], call_site, &axd, err, errsz) != 0 ||
-            llround(axd) < 0 || llround(axd) >= (long) src->md[0].naxis)
-        {
-            rc = (llround(axd) < 0 || llround(axd) >= (long) src->md[0].naxis)
-                     ? exec_err(err, errsz, "Axis out of range")
-                     : -1;
-            goto done_src;
-        }
-        long     ax = llround(axd), nax = src->md[0].naxis;
-        uint32_t sz[3] = { 1, 1, 1 };
-        int      k     = 0;
-        for (int a = 0; a < (int) nax; a++)
-        {
-            (void) ((cs->is_anon == 2) ? (sz[a] = (a == ax) ? 1 : src->md[0].size[a])
-                                       : (a != ax && (sz[k++] = src->md[0].size[a])));
-        }
-        uint8_t pref =
-            (src->md[0].datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
-        imageID oid = mc_out_prepare(slot, (uint8_t) (cs->is_anon == 2 ? nax : (k > 0 ? k : 1)), sz,
-                                     select_ctor_out_dt(slot, pref), in_unit, err, errsz);
-        rc = (oid < 0 || arith_image_reduce_axis_im(src, ax, map_reduce_op(fn),
-                                                    &milk_data.image[oid]) != RETURN_SUCCESS)
-                 ? -1
-                 : (mc_out_post(oid), 0);
-    }
 
 done_src:
     (void) (src_tmp && (mc_tmp_release(src_id), 1));
     (void) (src2_tmp && (mc_tmp_release(src2_id), 1));
     return rc;
+}
+
+static int expr_equiv(const mc_expr_t *a, const mc_expr_t *b)
+{
+    if (a == b)
+    {
+        return 1;
+    }
+    if (!a || !b || a->kind != b->kind)
+    {
+        return 0;
+    }
+    if (a->kind == MC_EXPR_IDENT)
+    {
+        return strcmp(a->u.ident.bare, b->u.ident.bare) == 0;
+    }
+    if (a->kind == MC_EXPR_LONG)
+    {
+        return a->u.lval == b->u.lval;
+    }
+    if (a->kind == MC_EXPR_DOUBLE)
+    {
+        return a->u.dval == b->u.dval;
+    }
+    if (a->kind == MC_EXPR_UNARY)
+    {
+        return a->u.unary.op == b->u.unary.op && expr_equiv(a->u.unary.operand, b->u.unary.operand);
+    }
+    if (a->kind == MC_EXPR_BINARY)
+    {
+        return a->u.binary.op == b->u.binary.op && expr_equiv(a->u.binary.left, b->u.binary.left) &&
+               expr_equiv(a->u.binary.right, b->u.binary.right);
+    }
+    return 0;
 }
 
 typedef struct
@@ -587,6 +530,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
     memset(snap_ims, 0xff, (size_t) pass->nops * sizeof(imageID));
     memset(div_snap, 0xff, (size_t) pass->nouts * sizeof(imageID));
 
+    int sc_done[64] = { 0 };
     for (int i = 0; i < pass->nops; i++)
     {
         views[i].im_id = views[i].owned_tmp_id = -1;
@@ -595,19 +539,44 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         {
             continue;
         }
-        ops[i].scalar = (d->slice_expr != NULL && d->scalar_expr == NULL)
-                            ? (double) arith_next_rng_seed()
-                            : 0.0;
-        if ((d->scalar_expr != NULL &&
-             eval_scalar_d(d->scalar_expr, NULL, &ops[i].scalar, err, errsz) != 0) ||
-            (d->check_div_kind != 0 && ops[i].scalar == 0.0))
+        const mc_expr_t *se = d->scalar_expr;
+        if (!sc_done[i] && se != NULL && se->kind == MC_EXPR_CALL && se->u.call.fn != NULL &&
+            se->u.call.fn->kind == MC_FN_REDUCE_D && se->u.call.nargs == 1)
         {
-            rc = (d->check_div_kind != 0 && ops[i].scalar == 0.0)
-                     ? exec_err(err, errsz,
-                                (d->check_div_kind == 1)   ? "Division by zero"
-                                : (d->check_div_kind == 2) ? "Modulo by zero"
-                                                           : "lut: dx must be non-zero")
-                     : -1;
+            for (int j = i + 1; j < pass->nops; j++)
+            {
+                const mc_expr_t *sj = pass->ops[j].is_scalar ? pass->ops[j].scalar_expr : NULL;
+                if (!sc_done[j] && sj != NULL && sj->kind == MC_EXPR_CALL &&
+                    sj->u.call.fn != NULL && sj->u.call.fn->kind == MC_FN_REDUCE_D &&
+                    sj->u.call.nargs == 1 && expr_equiv(se->u.call.args[0], sj->u.call.args[0]))
+                {
+                    if (mc_exec_reduce_pair(se, sj, &ops[i].scalar, &ops[j].scalar, err, errsz) !=
+                        0)
+                    {
+                        rc = -1;
+                        goto cleanup;
+                    }
+                    sc_done[i] = sc_done[j] = 1;
+                    break;
+                }
+            }
+        }
+        if (!sc_done[i])
+        {
+            ops[i].scalar =
+                (d->slice_expr != NULL && se == NULL) ? (double) arith_next_rng_seed() : 0.0;
+            if (se != NULL && eval_scalar_d(se, NULL, &ops[i].scalar, err, errsz) != 0)
+            {
+                rc = -1;
+                goto cleanup;
+            }
+        }
+        if (d->check_div_kind != 0 && ops[i].scalar == 0.0)
+        {
+            rc = exec_err(err, errsz,
+                          (d->check_div_kind == 1)   ? "Division by zero"
+                          : (d->check_div_kind == 2) ? "Modulo by zero"
+                                                     : "lut: dx must be non-zero");
             goto cleanup;
         }
     }
@@ -658,12 +627,14 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         has_lhs_anchor = 1;
     }
 
-    for (int phase = 0; phase < 2; phase++)
+    int has_expr_im = 0;
+    for (int phase = 0; phase < 2 && (phase == 0 || has_expr_im); phase++)
     {
         int unsqueeze = (has_lhs_anchor || vsz[0] > 1 || vsz[1] > 1 || vsz[2] > 1);
         for (int i = 0; i < pass->nops; i++)
         {
             const mc_op_desc_t *d = &pass->ops[i];
+            has_expr_im |= d->is_expr_im;
             if (d->is_scalar || d->is_out || (d->is_expr_im != phase))
             {
                 continue;
@@ -707,7 +678,9 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
                 rc = -1;
                 goto cleanup;
             }
-            (void) (d->is_expr_im && !unsqueeze && (vnaxis = views[i].naxis));
+            (void) ((d->is_expr_im ||
+                     strncmp(prog->slots[d->slot_idx].bare, "_tmpcalcps", 10) == 0) &&
+                    !unsqueeze && (vnaxis = views[i].naxis));
         }
     }
 
@@ -809,7 +782,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
     }
 
     uint64_t nitems = pass->is_1d_contig ? nelem : (uint64_t) vsz[1] * (uint64_t) vsz[2];
-    int      nth = milk_omp_team_size(nelem, 65536), is_sh_in[64] = { 0 };
+    int      nth = milk_omp_team_size(nelem, 262144), is_sh_in[64] = { 0 };
     for (int i = 0; i < pass->nops; i++)
     {
         int is_out_im = 0;

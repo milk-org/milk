@@ -23,23 +23,18 @@
 
 typedef struct
 {
-    const mcalc_udef_t *u;
-    mc_expr_t *const   *args;
-} mc_def_res_frame_t;
-
-typedef struct
-{
-    char              *err;
-    size_t             errsz;
-    int                in_lazy_branch;
-    int                slice_ax_size;
-    char               created_vars[MC_MAX_CREATED_VARS][256];
-    uint8_t            created_dt[MC_MAX_CREATED_VARS]; /* 255 = scalar var, >0 = image dt */
-    int                ncreated;
-    char               comp_vars[3][64];
-    int                ncomp_vars;
-    mc_def_res_frame_t def_stk[MC_UDEF_MAX_DEPTH];
-    int                def_depth;
+    char               *err;
+    size_t              errsz;
+    int                 in_lazy_branch;
+    int                 slice_ax_size;
+    char                created_vars[MC_MAX_CREATED_VARS][256];
+    uint8_t             created_dt[MC_MAX_CREATED_VARS]; /* 255 = scalar var, >0 = image dt */
+    int                 ncreated;
+    char                comp_vars[3][64];
+    int                 ncomp_vars;
+    const mcalc_udef_t *def_u[MC_UDEF_MAX_DEPTH];
+    mc_expr_t *const   *def_args[MC_UDEF_MAX_DEPTH];
+    int                 def_depth;
 } mc_resolve_ctx_t;
 
 __attribute__((format(printf, 2, 3))) static int res_err(mc_resolve_ctx_t *ctx,
@@ -49,9 +44,7 @@ __attribute__((format(printf, 2, 3))) static int res_err(mc_resolve_ctx_t *ctx,
     if (ctx->err != NULL && ctx->errsz > 0 && ctx->err[0] == '\0')
     {
         va_list ap;
-        va_start(ap, fmt);
-        vsnprintf(ctx->err, ctx->errsz, fmt, ap);
-        va_end(ap);
+        va_start(ap, fmt), vsnprintf(ctx->err, ctx->errsz, fmt, ap), va_end(ap);
     }
     return -1;
 }
@@ -60,31 +53,23 @@ static inline int is_complex_dt(uint8_t dt)
 {
     return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
 }
-
 static inline int is_int_dt(uint8_t dt)
 {
     return dt == _DATATYPE_UINT8 || dt == _DATATYPE_INT8 || dt == _DATATYPE_UINT16 ||
            dt == _DATATYPE_INT16 || dt == _DATATYPE_UINT32 || dt == _DATATYPE_INT32 ||
            dt == _DATATYPE_UINT64 || dt == _DATATYPE_INT64;
 }
-
 static void set_expr_im(mc_expr_t *e, const IMAGE *im, uint8_t dt)
 {
-    e->res_kind    = MC_RES_IMAGE;
-    e->res_dt      = dt;
-    e->needs_image = 1;
+    e->res_kind = MC_RES_IMAGE, e->res_dt = dt, e->needs_image = 1;
     (void) (im != NULL && (mc_set_expr_from_im(e, im), 1));
 }
-
 static void copy_res_meta(mc_expr_t *dst, const mc_expr_t *src)
 {
-    dst->res_kind    = src->res_kind;
-    dst->res_dt      = src->res_dt;
-    dst->res_naxis   = src->res_naxis;
-    dst->needs_image = src->needs_image;
+    dst->res_kind = src->res_kind, dst->res_dt = src->res_dt, dst->res_naxis = src->res_naxis;
+    dst->needs_image = src->needs_image,
     memcpy(dst->res_size, src->res_size, sizeof(dst->res_size));
 }
-
 static int created_var_op(mc_resolve_ctx_t *ctx, const char *bare, int add_dt)
 {
     for (int i = 0; i < ctx->ncreated; i++)
@@ -104,9 +89,9 @@ static int created_var_op(mc_resolve_ctx_t *ctx, const char *bare, int add_dt)
 
 static int lookup_def_param(const mc_resolve_ctx_t *ctx, const char *bare)
 {
-    for (int j = 0; ctx->def_depth > 0 && j < ctx->def_stk[ctx->def_depth - 1].u->nargs; j++)
+    for (int j = 0; ctx->def_depth > 0 && j < ctx->def_u[ctx->def_depth - 1]->nargs; j++)
     {
-        if (strcmp(ctx->def_stk[ctx->def_depth - 1].u->arg_names[j], bare) == 0)
+        if (strcmp(ctx->def_u[ctx->def_depth - 1]->arg_names[j], bare) == 0)
         {
             return j;
         }
@@ -128,14 +113,13 @@ static int resolve_lazy(mc_resolve_ctx_t *ctx, mc_expr_t *e, int lazy)
 static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
 {
     mc_parse_ident_streamname(e->u.ident.name, e->u.ident.bare, &e->u.ident.loc);
-    const char *bare         = e->u.ident.bare;
-    e->u.ident.var_id        = -1;
-    e->u.ident.im_id         = -1;
+    const char *bare  = e->u.ident.bare;
+    e->u.ident.var_id = -1, e->u.ident.im_id = -1;
     int pidx                 = (e->u.ident.loc == 0) ? lookup_def_param(ctx, bare) : -1;
     e->u.ident.def_param_idx = pidx;
     if (pidx >= 0)
     {
-        const mc_expr_t *ae = ctx->def_stk[ctx->def_depth - 1].args[pidx];
+        const mc_expr_t *ae = ctx->def_args[ctx->def_depth - 1][pidx];
         e->u.ident.id_kind  = MC_ID_DEF_PARAM;
         e->u.ident.im_id    = (ae->kind == MC_EXPR_IDENT) ? ae->u.ident.im_id : -1;
         copy_res_meta(e, ae);
@@ -145,8 +129,7 @@ static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     {
         if (strcmp(ctx->comp_vars[g], bare) == 0)
         {
-            e->u.ident.id_kind = MC_ID_VAR;
-            set_expr_im(e, NULL, _DATATYPE_FLOAT);
+            e->u.ident.id_kind = MC_ID_VAR, set_expr_im(e, NULL, _DATATYPE_FLOAT);
             return 0;
         }
     }
@@ -154,18 +137,15 @@ static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     if (vid != -1 && milk_data.variable[vid].type != 3)
     {
         int vt             = milk_data.variable[vid].type;
-        e->u.ident.id_kind = MC_ID_VAR;
-        e->u.ident.var_id  = vid;
-        e->res_kind    = (vt == 1) ? MC_RES_SCALAR_L : (vt == 2) ? MC_RES_STRING : MC_RES_SCALAR_D;
-        e->needs_image = 0;
+        e->u.ident.id_kind = MC_ID_VAR, e->u.ident.var_id = vid, e->needs_image = 0;
+        e->res_kind = (vt == 1) ? MC_RES_SCALAR_L : (vt == 2) ? MC_RES_STRING : MC_RES_SCALAR_D;
         return 0;
     }
     imageID imid = mc_resolve_or_autoconnect_image(e->u.ident.name);
     int     cdt  = (imid == -1) ? created_var_op(ctx, bare, 0) : 0;
     if (imid != -1 || (cdt > 0 && cdt != 255))
     {
-        e->u.ident.id_kind = MC_ID_IMAGE;
-        e->u.ident.im_id   = imid;
+        e->u.ident.id_kind = MC_ID_IMAGE, e->u.ident.im_id = imid;
         set_expr_im(e, (imid != -1) ? &milk_data.image[imid] : NULL, (uint8_t) cdt);
         return 0;
     }
@@ -174,8 +154,7 @@ static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     if (cval != NULL || cdt == 255)
     {
         char *ep1 = NULL, *ep2 = NULL;
-        (void) (cval && strtol(cval, &ep1, 0));
-        (void) (cval && strtod(cval, &ep2));
+        (void) (cval && (strtol(cval, &ep1, 0), strtod(cval, &ep2), 1));
         e->u.ident.id_kind = MC_ID_VAR;
         e->res_kind        = !cval                           ? MC_RES_SCALAR_D
                              : (ep1 != cval && *ep1 == '\0') ? MC_RES_SCALAR_L
@@ -201,14 +180,12 @@ static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     if (e->u.ident.loc == 0 &&
         (strcmp(bare, "pi") == 0 || strcmp(bare, "nan") == 0 || strcmp(bare, "inf") == 0))
     {
-        e->u.ident.id_kind   = MC_ID_CONST;
+        e->u.ident.id_kind = MC_ID_CONST, e->res_kind = MC_RES_SCALAR_D;
         e->u.ident.const_val = (bare[0] == 'p') ? M_PI : (bare[0] == 'n') ? NAN : INFINITY;
-        e->res_kind          = MC_RES_SCALAR_D;
         return 0;
     }
     const char *g      = milk_entity_ns_removed(e->u.ident.name);
-    e->u.ident.id_kind = MC_ID_UNRESOLVED;
-    e->res_kind        = MC_RES_SCALAR_D;
+    e->u.ident.id_kind = MC_ID_UNRESOLVED, e->res_kind = MC_RES_SCALAR_D;
     return ctx->in_lazy_branch ? 0
                                : res_err(ctx, "undefined identifier '%s'%s%s", e->u.ident.name,
                                          g ? ": " : "", g ? g : "");
@@ -218,7 +195,7 @@ static int resolve_slice(mc_resolve_ctx_t *ctx, mc_expr_t *e, int is_lhs)
 {
     mc_parse_ident_streamname(e->u.slice.name, e->u.slice.bare, NULL);
     int              pidx = lookup_def_param(ctx, e->u.slice.bare);
-    const mc_expr_t *ae   = (pidx >= 0) ? ctx->def_stk[ctx->def_depth - 1].args[pidx] : NULL;
+    const mc_expr_t *ae   = (pidx >= 0) ? ctx->def_args[ctx->def_depth - 1][pidx] : NULL;
     imageID          imid = (ae != NULL && ae->kind == MC_EXPR_IDENT && ae->u.ident.im_id != -1)
                                 ? ae->u.ident.im_id
                                 : mc_resolve_or_autoconnect_image(e->u.slice.bare);
@@ -235,11 +212,10 @@ static int resolve_slice(mc_resolve_ctx_t *ctx, mc_expr_t *e, int is_lhs)
                             : (ae != NULL) ? (ae->res_dt ? ae->res_dt : _DATATYPE_FLOAT)
                                            : _DATATYPE_FLOAT;
     int          im_naxis = im ? (int) im->md[0].naxis : 3;
-    e->u.slice.im_id      = imid;
-    set_expr_im(e, im, dt);
+    e->u.slice.im_id      = imid, set_expr_im(e, im, dt);
     int saved_slice_ax_sz = ctx->slice_ax_size;
-    int single            = im && (e->u.slice.naxis == im_naxis) && !is_complex_dt(dt);
-    int bad_bnd           = 0;
+    int single = im && (e->u.slice.naxis == im_naxis) && !is_complex_dt(dt), bad_bnd = 0;
+    int nrange = (im && im_naxis > e->u.slice.naxis) ? (im_naxis - e->u.slice.naxis) : 0;
 
     for (int ax = 0; ax < e->u.slice.naxis; ax++)
     {
@@ -258,6 +234,7 @@ static int resolve_slice(mc_resolve_ctx_t *ctx, mc_expr_t *e, int is_lhs)
         }
         single &= !(sa->has_colon || sa->is_full || sa->is_rev_full || sa->start == NULL ||
                     sa->start->needs_image);
+        nrange += (sa->has_colon || sa->is_full || sa->is_rev_full);
     }
     ctx->slice_ax_size = saved_slice_ax_sz;
 
@@ -268,20 +245,17 @@ static int resolve_slice(mc_resolve_ctx_t *ctx, mc_expr_t *e, int is_lhs)
         e->u.slice.is_mask_index = 1;
         return 0;
     }
-
     if (e->u.slice.naxis > im_naxis || bad_bnd)
     {
         return (e->u.slice.naxis > im_naxis)
                    ? res_err(ctx, "slice axis %d > naxis %d", e->u.slice.naxis - 1, im_naxis)
                    : res_err(ctx, "Invalid slice bound expression");
     }
-
     e->u.slice.is_single_pixel = single;
-    if (single && !is_lhs)
-    {
-        e->res_kind    = is_int_dt(dt) ? MC_RES_SCALAR_L : MC_RES_SCALAR_D;
-        e->needs_image = 0;
-    }
+    (void) ((single && !is_lhs)
+                ? ((e->res_kind = is_int_dt(dt) ? MC_RES_SCALAR_L : MC_RES_SCALAR_D),
+                   (e->needs_image = 0))
+                : (!e->u.slice.is_mask_index && nrange > 0 && (e->res_naxis = (uint8_t) nrange)));
     return 0;
 }
 
@@ -294,12 +268,11 @@ static int resolve_udef_call(mc_resolve_ctx_t *ctx, mc_expr_t *e)
                    ? res_err(ctx, "wrong number of arguments for '%s'", e->u.call.name)
                    : res_err(ctx, "User function call depth exceeded");
     }
-    ctx->def_stk[ctx->def_depth] = (mc_def_res_frame_t) { u, e->u.call.args };
-    mc_tok_list_t *btl           = calloc(1, sizeof(mc_tok_list_t));
+    ctx->def_u[ctx->def_depth] = u, ctx->def_args[ctx->def_depth] = e->u.call.args;
+    mc_tok_list_t *btl = calloc(1, sizeof(mc_tok_list_t));
     if (btl == NULL || mc_lex(u->body, btl) != 0)
     {
-        res_err(ctx, "%s", btl ? btl->errmsg : "out of memory");
-        free(btl);
+        res_err(ctx, "%s", btl ? btl->errmsg : "out of memory"), free(btl);
         return -1;
     }
     mc_stmt_t *bst = mc_parse_stmt(btl, ctx->err, ctx->errsz);
@@ -314,10 +287,8 @@ static int resolve_udef_call(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     ctx->def_depth--;
     if (brc == 0)
     {
-        copy_res_meta(e, bst->u.expr);
-        mc_expr_free(e->u.call.udef_body);
-        e->u.call.udef_body = bst->u.expr;
-        bst->u.expr         = NULL;
+        copy_res_meta(e, bst->u.expr), mc_expr_free(e->u.call.udef_body);
+        e->u.call.udef_body = bst->u.expr, bst->u.expr = NULL;
     }
     mc_stmt_free(bst);
     return brc;
@@ -353,14 +324,10 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
         }
     }
 
-    if (e->u.call.udef_id >= 0)
+    if (e->u.call.udef_id >= 0 || e->u.call.ext_id >= 0)
     {
-        return resolve_udef_call(ctx, e);
-    }
-    if (e->u.call.ext_id >= 0)
-    {
-        set_expr_im(e, NULL, _DATATYPE_FLOAT);
-        return 0;
+        return (e->u.call.udef_id >= 0) ? resolve_udef_call(ctx, e)
+                                        : (set_expr_im(e, NULL, _DATATYPE_FLOAT), 0);
     }
 
     const mc_func_t *fn    = e->u.call.fn;
@@ -405,6 +372,12 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
              e->u.call.args[2]->res_kind == MC_RES_IMAGE))
         {
             return res_err(ctx, "Only the first argument may be an image");
+        }
+        for (int i = 0; any_im && i < nargs && e->res_naxis == 0; i++)
+        {
+            (void) (e->u.call.args[i]->res_naxis > 0 &&
+                    ((e->res_naxis = e->u.call.args[i]->res_naxis),
+                     memcpy(e->res_size, e->u.call.args[i]->res_size, sizeof(e->res_size))));
         }
         e->needs_image = any_im;
         e->res_dt      = fn->cast_dt ? fn->cast_dt : (any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
@@ -474,7 +447,7 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
                                     ? "substr: first arg must be string"
                                     : "replace: all args must be strings");
         }
-        e->needs_image = 0;
+        e->needs_image = 0,
         e->res_kind    = (strcmp(fn->name, "strlen") == 0) ? MC_RES_SCALAR_L : MC_RES_STRING;
         return 0;
 
@@ -484,22 +457,73 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     case MC_FN_ICENTROID:
     case MC_FN_EAGER_RED:
     case MC_FN_DOT:
-        if (e->u.call.args[0]->res_kind != MC_RES_IMAGE ||
-            (fn->kind == MC_FN_DOT && e->u.call.args[1]->res_kind != MC_RES_IMAGE) ||
-            (nargs >= 2 && e->u.call.args[1]->res_kind == MC_RES_STRING))
+    case MC_FN_STENCIL_LIB:
+    {
+        const mc_expr_t *a0 = e->u.call.args[0], *a1 = (nargs >= 2) ? e->u.call.args[1] : NULL;
+        const mc_expr_t *a2 = (nargs >= 3) ? e->u.call.args[2] : NULL;
+        if (fn->kind == MC_FN_STENCIL_LIB)
         {
-            return res_err(ctx, (fn->kind == MC_FN_DOT) ? "Expected two image arguments"
-                                                        : "Expected image argument");
+            int is_pu = (strcmp(fn->name, "pixunmap") == 0),
+                is_rp = (strcmp(fn->name, "rprof") == 0);
+            if (a0->res_kind != MC_RES_IMAGE ||
+                (is_pu && (a1->res_kind != MC_RES_IMAGE || (a2 && a2->res_kind == MC_RES_IMAGE))) ||
+                (is_rp && (nargs == 2 || (a1 && a1->res_kind == MC_RES_IMAGE) ||
+                           (a2 && a2->res_kind == MC_RES_IMAGE))) ||
+                (!is_pu && !is_rp && strcmp(fn->name, "conv2") != 0 &&
+                 ((a1 && a1->res_kind == MC_RES_IMAGE) || (a2 && a2->res_kind == MC_RES_IMAGE))))
+            {
+                return res_err(ctx, is_pu   ? "pixunmap: expected pixunmap(im, map[, n])"
+                                    : is_rp ? "rprof: expected rprof(im[, cx, cy])"
+                                            : "Expected image argument and scalar parameters");
+            }
+            set_expr_im(e, NULL, any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
+            (void) (!is_pu && !is_rp && a0->res_naxis > 0 &&
+                    ((e->res_naxis = a0->res_naxis),
+                     memcpy(e->res_size, a0->res_size, sizeof(e->res_size))));
+            return 0;
+        }
+        if (a0->res_kind != MC_RES_IMAGE ||
+            (fn->kind == MC_FN_DOT && a1->res_kind != MC_RES_IMAGE) ||
+            (a1 && a1->res_kind == MC_RES_STRING) || (fn->kind == MC_FN_REDUCE_L && a1) ||
+            (strcmp(fn->name, "imedian") == 0 && a1 && a1->res_kind != MC_RES_IMAGE) ||
+            (strcmp(fn->name, "perc") == 0 &&
+             (a1->res_kind == MC_RES_IMAGE || (a2 && a2->res_kind != MC_RES_IMAGE))) ||
+            (fn->kind == MC_FN_ICENTROID && a1 && a1->res_kind == MC_RES_IMAGE) ||
+            (fn->kind == MC_FN_ISTATS && a1 && a1->res_kind != MC_RES_IMAGE))
+        {
+            return res_err(
+                ctx, (fn->kind == MC_FN_DOT) ? "Expected two image arguments"
+                     : (a0->res_kind != MC_RES_IMAGE || (a1 && a1->res_kind == MC_RES_STRING))
+                         ? "Expected image argument"
+                     : (strcmp(fn->name, "perc") == 0) ? "Expected perc(image, fraction[, mask])"
+                     : (fn->kind == MC_FN_ICENTROID)   ? "icentroid: threshold must be a scalar"
+                     : (fn->kind == MC_FN_ISTATS)      ? "istats: second argument must be a mask"
+                     : (fn->kind == MC_FN_REDUCE_L && a1->res_kind == MC_RES_IMAGE)
+                         ? "This function takes no mask argument"
+                         : "This function takes no axis argument");
         }
         e->res_dt = any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
         e->res_kind =
-            (fn->kind == MC_FN_REDUCE_D && nargs == 2 &&
-             e->u.call.args[1]->res_kind != MC_RES_IMAGE && e->u.call.args[0]->res_naxis != 1)
+            (fn->kind == MC_FN_REDUCE_D && a1 && a1->res_kind != MC_RES_IMAGE && a0->res_naxis != 1)
                 ? MC_RES_IMAGE
             : (fn->kind == MC_FN_REDUCE_L) ? MC_RES_SCALAR_L
                                            : MC_RES_SCALAR_D;
+        if (e->res_kind == MC_RES_IMAGE && a0->res_naxis >= 2 && a1->kind == MC_EXPR_LONG)
+        {
+            long ax = a1->u.lval;
+            if (ax < 0 || ax >= a0->res_naxis)
+            {
+                return res_err(ctx, "%s: axis out of range", fn->name);
+            }
+            e->res_naxis = (a0->res_naxis == 2 && ax == 1) ? 1 : 2, e->res_size[2] = 1;
+            e->res_size[0] = (a0->res_naxis == 2) ? ((ax == 0) ? 1 : a0->res_size[0])
+                                                  : ((ax == 0) ? a0->res_size[1] : a0->res_size[0]);
+            e->res_size[1] = (a0->res_naxis == 2) ? ((ax == 0) ? a0->res_size[1] : 1)
+                                                  : ((ax == 2) ? a0->res_size[1] : a0->res_size[2]);
+        }
         e->needs_image = (e->res_kind == MC_RES_IMAGE);
         return 0;
+    }
 
     default:
         set_expr_im(e, NULL, any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
@@ -511,20 +535,16 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
 {
     mc_expr_t    *target = e->u.assign.target, *rhs = e->u.assign.rhs;
     mc_tok_type_t op = e->u.assign.op;
-    if (resolve_expr(ctx, rhs, 1) != 0)
+    if (resolve_expr(ctx, rhs, 1) != 0 ||
+        (target->kind == MC_EXPR_SLICE && resolve_slice(ctx, target, 1) != 0))
     {
         return -1;
     }
     if (target->kind == MC_EXPR_SLICE)
     {
-        if (resolve_slice(ctx, target, 1) != 0)
-        {
-            return -1;
-        }
         int spix       = target->u.slice.is_single_pixel && !rhs->needs_image &&
                          rhs->res_kind != MC_RES_IMAGE && rhs->res_kind != MC_RES_STRING;
-        e->needs_image = !spix;
-        e->res_dt      = target->res_dt;
+        e->needs_image = !spix, e->res_dt = target->res_dt;
         e->res_kind = !spix                                                       ? MC_RES_IMAGE
                       : (rhs->res_kind == MC_RES_SCALAR_L && op == MC_TOK_ASSIGN) ? MC_RES_SCALAR_L
                                                                                   : MC_RES_SCALAR_D;
@@ -534,8 +554,7 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     {
         return res_err(ctx, "invalid assignment target");
     }
-    target->u.ident.im_id = target->u.ident.def_param_idx = -1;
-    target->u.ident.var_id                                = -1;
+    target->u.ident.im_id = target->u.ident.def_param_idx = -1, target->u.ident.var_id = -1;
     mc_parse_ident_streamname(target->u.ident.name, target->u.ident.bare, &target->u.ident.loc);
     const char *bare = target->u.ident.bare, *dot1 = strchr(target->u.ident.name, '.');
     int         is_prop = (dot1 != NULL && strchr(dot1 + 1, '.') != NULL &&
@@ -550,10 +569,8 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
                                    : "'%s' is a variable (calculator or bash), not an image",
                            bare);
         }
-        target->u.ident.id_kind = is_prop ? MC_ID_PROP : MC_ID_VAR;
-        target->u.ident.var_id  = vid;
-        e->needs_image          = rhs->needs_image;
-        e->res_kind             = rhs->res_kind;
+        target->u.ident.id_kind = is_prop ? MC_ID_PROP : MC_ID_VAR, target->u.ident.var_id = vid;
+        e->needs_image = rhs->needs_image, e->res_kind = rhs->res_kind;
         return 0;
     }
     imageID imid = mc_resolve_or_autoconnect_image(target->u.ident.name);
@@ -615,18 +632,12 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
         if (variable_ID("end") != -1 || mc_host_str_get("end") != NULL ||
             created_var_op(ctx, "end", 0) || lookup_def_param(ctx, "end") >= 0)
         {
-            e->kind = MC_EXPR_IDENT;
-            snprintf(e->u.ident.name, sizeof(e->u.ident.name), "end");
+            e->kind = MC_EXPR_IDENT, snprintf(e->u.ident.name, sizeof(e->u.ident.name), "end");
             return resolve_ident(ctx, e);
         }
-        if (ctx->slice_ax_size <= 0)
-        {
-            return res_err(ctx, "unexpected 'end' outside slice brackets");
-        }
-        e->u.lval      = (long) ctx->slice_ax_size - 1;
-        e->res_kind    = MC_RES_SCALAR_L;
-        e->needs_image = 0;
-        return 0;
+        return (ctx->slice_ax_size <= 0) ? res_err(ctx, "unexpected 'end' outside slice brackets")
+                                         : ((e->u.lval = (long) ctx->slice_ax_size - 1),
+                                            (e->res_kind = MC_RES_SCALAR_L), (e->needs_image = 0));
 
     case MC_EXPR_IDENT:
     case MC_EXPR_SLICE:
@@ -663,16 +674,17 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
 
     case MC_EXPR_BINARY:
     {
-        if (resolve_expr(ctx, e->u.binary.left, 1) != 0 ||
-            resolve_lazy(ctx, e->u.binary.right,
+        mc_expr_t *le = e->u.binary.left, *re = e->u.binary.right;
+        if (resolve_expr(ctx, le, 1) != 0 ||
+            resolve_lazy(ctx, re,
                          (e->u.binary.op == MC_TOK_AND || e->u.binary.op == MC_TOK_OR) &&
-                             !e->u.binary.left->needs_image) != 0)
+                             !le->needs_image) != 0)
         {
             return -1;
         }
         mc_tok_type_t op = e->u.binary.op;
-        mc_res_kind_t lk = e->u.binary.left->res_kind, rk = e->u.binary.right->res_kind;
-        uint8_t       ldt = e->u.binary.left->res_dt, rdt = e->u.binary.right->res_dt;
+        mc_res_kind_t lk = le->res_kind, rk = re->res_kind;
+        uint8_t       ldt = le->res_dt, rdt = re->res_dt;
         int           cplx = (lk == MC_RES_IMAGE && is_complex_dt(ldt)) ||
                              (rk == MC_RES_IMAGE && is_complex_dt(rdt));
         if (cplx && op != MC_TOK_PLUS && op != MC_TOK_MINUS && op != MC_TOK_MUL && op != MC_TOK_DIV)
@@ -680,7 +692,16 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
             return res_err(ctx, "Operator not supported for complex images; use real(), imag() or "
                                 "abs() first");
         }
-        e->needs_image = (e->u.binary.left->needs_image || e->u.binary.right->needs_image);
+        const mc_expr_t *s_im =
+            (le->res_naxis > 0 && (re->res_naxis == 0 ||
+                                   (le->res_naxis == re->res_naxis &&
+                                    memcmp(le->res_size, re->res_size, sizeof(le->res_size)) == 0)))
+                ? le
+            : (le->res_naxis == 0 && re->res_naxis > 0) ? re
+                                                        : NULL;
+        (void) (s_im && ((e->res_naxis = s_im->res_naxis),
+                         memcpy(e->res_size, s_im->res_size, sizeof(e->res_size))));
+        e->needs_image = (le->needs_image || re->needs_image);
         int dbl =
             (lk == MC_RES_IMAGE && (ldt == _DATATYPE_DOUBLE || ldt == _DATATYPE_COMPLEX_DOUBLE)) ||
             (rk == MC_RES_IMAGE && (rdt == _DATATYPE_DOUBLE || rdt == _DATATYPE_COMPLEX_DOUBLE));
@@ -702,22 +723,17 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
 
     case MC_EXPR_CHAIN:
     {
-        if (resolve_expr(ctx, e->u.chain.operands[0], 1) != 0)
+        int any_im = 0;
+        for (int i = 0; i <= e->u.chain.nops; i++)
         {
-            return -1;
-        }
-        int any_im = e->u.chain.operands[0]->needs_image;
-        for (int i = 1; i <= e->u.chain.nops; i++)
-        {
-            if (resolve_lazy(ctx, e->u.chain.operands[i], !any_im) != 0)
+            if (resolve_lazy(ctx, e->u.chain.operands[i], i > 0 && !any_im) != 0)
             {
                 return -1;
             }
             any_im |= e->u.chain.operands[i]->needs_image;
         }
-        e->needs_image = any_im;
-        e->res_kind    = any_im ? MC_RES_IMAGE : MC_RES_SCALAR_L;
-        e->res_dt      = _DATATYPE_FLOAT;
+        e->needs_image = any_im, e->res_kind = any_im ? MC_RES_IMAGE : MC_RES_SCALAR_L;
+        e->res_dt = _DATATYPE_FLOAT;
         return 0;
     }
 
@@ -749,10 +765,8 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
                            : -1;
             }
         }
-        set_expr_im(e, NULL, _DATATYPE_FLOAT);
-        e->res_naxis   = 1;
-        e->res_size[0] = (uint32_t) e->u.vec_lit.nelem;
-        e->res_size[1] = e->res_size[2] = 1;
+        set_expr_im(e, NULL, _DATATYPE_FLOAT), e->res_naxis = 1;
+        e->res_size[0] = (uint32_t) e->u.vec_lit.nelem, e->res_size[1] = e->res_size[2] = 1;
         return 0;
 
     case MC_EXPR_COMP:
@@ -768,8 +782,7 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
         }
         ctx->ncomp_vars = e->u.comp.ngens;
         int crc         = resolve_expr(ctx, e->u.comp.body, 1);
-        ctx->ncomp_vars = 0;
-        set_expr_im(e, NULL, _DATATYPE_FLOAT);
+        ctx->ncomp_vars = 0, set_expr_im(e, NULL, _DATATYPE_FLOAT);
         return crc;
     }
     return -1;
@@ -783,25 +796,20 @@ static int resolve_stmt_list(mc_resolve_ctx_t *ctx, mc_stmt_t *s)
 
     for (; s != NULL; s = s->next)
     {
-        switch (s->kind)
+        s->needs_image = 0;
+        if (s->kind == MC_STMT_EMPTY || s->kind == MC_STMT_DEF || s->kind == MC_STMT_SKIP ||
+            s->kind == MC_STMT_EXPR)
         {
-        case MC_STMT_EMPTY:
-        case MC_STMT_DEF:
-        case MC_STMT_SKIP:
-            s->needs_image = 0;
-            break;
-
-        case MC_STMT_EXPR:
-            if (resolve_expr(ctx, s->u.expr, 1) != 0)
+            if (s->kind == MC_STMT_EXPR && resolve_expr(ctx, s->u.expr, 1) != 0)
             {
                 return -1;
             }
-            s->needs_image = s->u.expr->needs_image;
-            break;
-
-        case MC_STMT_MULTI_ASSIGN:
+            (void) (s->kind == MC_STMT_EXPR && (s->needs_image = s->u.expr->needs_image));
+            continue;
+        }
+        if (s->kind == MC_STMT_MULTI_ASSIGN)
         {
-            int any_im = 0, nrhs = s->u.multi.nrhs, nlhs = s->u.multi.nlhs;
+            int nrhs = s->u.multi.nrhs, nlhs = s->u.multi.nlhs;
             if (nrhs != nlhs && !(nrhs == 1 && s->u.multi.rhs[0]->kind == MC_EXPR_CALL))
             {
                 return res_err(ctx, "Expected ',' in multi-target assignment");
@@ -812,7 +820,7 @@ static int resolve_stmt_list(mc_resolve_ctx_t *ctx, mc_stmt_t *s)
                 {
                     return -1;
                 }
-                any_im |= s->u.multi.rhs[j]->needs_image;
+                s->needs_image |= s->u.multi.rhs[j]->needs_image;
             }
             for (int j = 0; j < nlhs; j++)
             {
@@ -827,18 +835,16 @@ static int resolve_stmt_list(mc_resolve_ctx_t *ctx, mc_stmt_t *s)
                 lhs->u.ident.id_kind = (imid != -1) ? MC_ID_IMAGE : rhs_im ? MC_ID_NEW : MC_ID_VAR;
                 lhs->u.ident.im_id   = imid;
                 lhs->u.ident.var_id  = (imid != -1 || rhs_im) ? -1 : variable_ID(lhs->u.ident.bare);
-                any_im |= (imid != -1 || rhs_im);
+                s->needs_image |= (imid != -1 || rhs_im);
                 uint8_t rdt = rhs_im ? (s->u.multi.rhs[j]->res_dt ? s->u.multi.rhs[j]->res_dt
                                                                   : _DATATYPE_FLOAT)
                                      : 255;
                 (void) (imid == -1 && created_var_op(ctx, lhs->u.ident.bare, rdt));
             }
-            s->needs_image = any_im;
-            break;
+            continue;
         }
-
-        case MC_STMT_IF:
-            s->needs_image = 0;
+        if (s->kind == MC_STMT_IF)
+        {
             for (int b = 0; b < s->u.if_stmt.nbranches; b++)
             {
                 mc_if_branch_t *br = &s->u.if_stmt.branches[b];
@@ -858,29 +864,22 @@ static int resolve_stmt_list(mc_resolve_ctx_t *ctx, mc_stmt_t *s)
                     return -1;
                 }
             }
-            break;
-
-        case MC_STMT_FOR:
-        {
-            mc_expr_t *fe[3] = { s->u.for_stmt.start, s->u.for_stmt.stop, s->u.for_stmt.step };
-            s->needs_image   = 0;
-            for (int j = 0; j < 3; j++)
-            {
-                if (fe[j] != NULL &&
-                    (resolve_expr(ctx, fe[j], 1) != 0 || fe[j]->res_kind == MC_RES_IMAGE))
-                {
-                    return (fe[j]->res_kind == MC_RES_IMAGE) ? res_err(ctx, "%s", k_im_cond_err)
-                                                             : -1;
-                }
-                s->needs_image |= (fe[j] != NULL && fe[j]->needs_image);
-            }
-            created_var_op(ctx, s->u.for_stmt.var, 255);
-            if (resolve_stmt_list(ctx, s->u.for_stmt.body) != 0)
-            {
-                return -1;
-            }
-            break;
+            continue;
         }
+        mc_expr_t *fe[3] = { s->u.for_stmt.start, s->u.for_stmt.stop, s->u.for_stmt.step };
+        for (int j = 0; j < 3; j++)
+        {
+            if (fe[j] != NULL &&
+                (resolve_expr(ctx, fe[j], 1) != 0 || fe[j]->res_kind == MC_RES_IMAGE))
+            {
+                return (fe[j]->res_kind == MC_RES_IMAGE) ? res_err(ctx, "%s", k_im_cond_err) : -1;
+            }
+            s->needs_image |= (fe[j] != NULL && fe[j]->needs_image);
+        }
+        created_var_op(ctx, s->u.for_stmt.var, 255);
+        if (resolve_stmt_list(ctx, s->u.for_stmt.body) != 0)
+        {
+            return -1;
         }
     }
     return 0;
@@ -890,10 +889,10 @@ int mc_resolve_prog(mc_stmt_t *prog, char *err, size_t errsz)
 {
     (void) (err && errsz > 0 && (err[0] = '\0'));
     mc_resolve_ctx_t ctx = { .err = err, .errsz = errsz };
-    return resolve_stmt_list(&ctx, prog);
+    return (prog == NULL) ? -1 : resolve_stmt_list(&ctx, prog);
 }
 
 int mc_resolve_stmt(mc_stmt_t *s, char *err, size_t errsz)
 {
-    return (s == NULL) ? -1 : mc_resolve_prog(s, err, errsz);
+    return mc_resolve_prog(s, err, errsz);
 }

@@ -455,6 +455,7 @@ void mc_expr_free(mc_expr_t *e)
     {
         return;
     }
+    mc_reduce_cache_evict_expr(e);
     switch (e->kind)
     {
     case MC_EXPR_UNARY:

@@ -1861,7 +1861,7 @@ static int bench_one_old(int iters, const char *stmts, double *out_us)
 /* Time one benchmark statement or program on the new engine and write best of 7 runs (us). */
 static int bench_one_new(int iters, const char *stmts, double *out_us)
 {
-    int         warmup   = (iters / 10 >= 5) ? (iters / 10) : 5;
+    int         warmup   = (iters / 5 >= 16) ? (iters / 5) : 16;
     double      best_ns  = 1e30;
     char        err[512] = "";
     mcalc_prog *p        = mcalc_prog_new(stmts, NULL, 0, err, sizeof(err));
@@ -1875,7 +1875,7 @@ static int bench_one_new(int iters, const char *stmts, double *out_us)
         fprintf(stderr, "milk-calcdiff: mcalc_prog_new failed for '%s': %s\n", stmts, err);
         return 1;
     }
-    for (int i = 0; i < warmup; i++)
+    for (int i = 0; i <= warmup; i++)
     {
         if (mcalc_prog_run(p, err, sizeof(err)) != 0)
         {
@@ -2155,6 +2155,19 @@ int main(int argc, char **argv)
             fprintf(stderr,
                     "Usage: milk-calcdiff --bench --size N --iters K --engine old|new <stmts>\n");
             return 1;
+        }
+        if (getenv("MILK_CALCDIFF_BENCH_PINNED") == NULL)
+        {
+            setenv("OMP_NUM_THREADS", "1", 1);
+            setenv("MILK_CALC_THREADS", "1", 1);
+            setenv("OPENBLAS_NUM_THREADS", "1", 1);
+            setenv("MILK_CALC_SPIN_US", "0", 1);
+            setenv("MILK_CALCDIFF_BENCH_PINNED", "1", 1);
+            cpu_set_t cpuset;
+            CPU_ZERO(&cpuset);
+            CPU_SET(8, &cpuset);
+            (void) sched_setaffinity(0, sizeof(cpuset), &cpuset);
+            execv("/proc/self/exe", argv);
         }
         return run_bench_mode(bench_size, bench_iters, bench_eng, bench_stmts);
     }

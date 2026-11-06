@@ -38,10 +38,16 @@ typedef struct
 static mc_udef_frame_t g_udef_stk[MC_UDEF_MAX_DEPTH];
 static int             g_udef_depth    = 0;
 static long            g_slice_end_val = -1;
+static int             g_sync_host_cnt = 0;
 
 void mc_scalar_set_slice_end(long end_val)
 {
     g_slice_end_val = end_val;
+}
+
+int mc_scalar_sync_host(int delta)
+{
+    return (g_sync_host_cnt += delta);
 }
 
 __attribute__((format(printf, 3, 4))) static int sc_err(char       *err,
@@ -52,9 +58,7 @@ __attribute__((format(printf, 3, 4))) static int sc_err(char       *err,
     if (err != NULL && errsz > 0 && err[0] == '\0')
     {
         va_list ap;
-        va_start(ap, fmt);
-        vsnprintf(err, errsz, fmt, ap);
-        va_end(ap);
+        va_start(ap, fmt), vsnprintf(err, errsz, fmt, ap), va_end(ap);
     }
     return -1;
 }
@@ -74,9 +78,7 @@ static inline int is_int_dt(uint8_t dt)
 static void read_im_pix_val(const IMAGE *im, uint64_t ii, mc_val_t *out)
 {
     uint8_t dt = im->md[0].datatype;
-    out->type  = is_int_dt(dt) ? MC_VAL_LONG : MC_VAL_DOUBLE;
-    out->lval  = 0;
-    out->dval  = 0.0;
+    *out       = (mc_val_t) { .type = is_int_dt(dt) ? MC_VAL_LONG : MC_VAL_DOUBLE };
 #define READ_V_BODY(MBR) \
     out->lval = (long) im->array.MBR[ii], out->dval = (double) im->array.MBR[ii];
     MILK_FOR_EACH_DATATYPE(dt, READ_V_BODY, READ_V_BODY(D))
@@ -100,81 +102,87 @@ static void write_im_pix_val(IMAGE *im, uint64_t ii, double dval, long lval, int
 #undef WRITE_P_BODY
 }
 
-static void store_scalar_var(const char *bare, const mc_val_t *v)
+void mc_store_scalar_var(const char *bare, long *io_vid, const mc_val_t *v)
 {
     if (v->type == MC_VAL_STRING)
     {
         mc_host_str_set(bare, v->sval);
         return;
     }
-    char numv[64];
-    if (v->type == MC_VAL_LONG)
+    long vid =
+        (io_vid != NULL && *io_vid >= 0 && *io_vid < milk_data.NB_MAX_VARIABLE &&
+         milk_data.variable[*io_vid].used && strcmp(milk_data.variable[*io_vid].name, bare) == 0)
+            ? *io_vid
+            : -1;
+    double dv = to_double(v);
+    vid       = (v->type == MC_VAL_LONG)
+                    ? ((vid >= 0) ? ((milk_data.variable[vid].type = 1),
+                                     (milk_data.variable[vid].value.l = v->lval), vid)
+                                  : create_variable_long_ID(bare, v->lval))
+                    : ((vid >= 0) ? ((milk_data.variable[vid].type = 0),
+                                     (milk_data.variable[vid].value.f = dv), vid)
+                                  : create_variable_ID(bare, dv));
+    (void) (io_vid != NULL && (*io_vid = vid, 1));
+    if (g_sync_host_cnt > 0 && mc_host_has_str_sink())
     {
-        create_variable_long_ID(bare, v->lval);
-        snprintf(numv, sizeof(numv), "%ld", v->lval);
+        char numv[64];
+        if (v->type == MC_VAL_LONG)
+        {
+            snprintf(numv, sizeof(numv), "%ld", v->lval);
+        }
+        else
+        {
+            snprintf(numv, sizeof(numv), "%.*g", mcalc_float_digits, dv);
+        }
+        mc_host_str_set(bare, numv);
     }
-    else
-    {
-        double dv = to_double(v);
-        create_variable_ID(bare, dv);
-        snprintf(numv, sizeof(numv), "%.*g", mcalc_float_digits, dv);
-    }
-    mc_host_str_set(bare, numv);
 }
 
 static int eval_ident(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
 {
     const char *bare = e->u.ident.bare[0] != '\0' ? e->u.ident.bare : e->u.ident.name;
-
     if (e->u.ident.loc == 0 && g_udef_depth > 0)
     {
         const mc_udef_frame_t *fr = &g_udef_stk[g_udef_depth - 1];
-        if (e->u.ident.id_kind == MC_ID_DEF_PARAM && e->u.ident.def_param_idx >= 0 &&
-            e->u.ident.def_param_idx < fr->u->nargs)
-        {
-            *out = fr->args[e->u.ident.def_param_idx];
-            return 0;
-        }
         for (int j = 0; j < fr->u->nargs; j++)
         {
-            if (strcmp(fr->u->arg_names[j], bare) == 0)
+            if ((e->u.ident.id_kind == MC_ID_DEF_PARAM && e->u.ident.def_param_idx == j) ||
+                strcmp(fr->u->arg_names[j], bare) == 0)
             {
                 *out = fr->args[j];
                 return 0;
             }
         }
     }
-
     if (e->u.ident.id_kind == MC_ID_CONST)
     {
-        out->type = MC_VAL_DOUBLE;
-        out->dval = e->u.ident.const_val;
+        *out = (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = e->u.ident.const_val };
         return 0;
     }
-
     if (e->u.ident.id_kind == MC_ID_PROP)
     {
-        double dv     = 0.0;
-        long   lv     = 0;
-        int    islong = 0;
-        if (milk_shm_prop_get_num(e->u.ident.name, &dv, &lv, &islong) == 0)
+        double dv = 0.0;
+        long   lv = 0;
+        int    il = 0;
+        if (milk_shm_prop_get_num(e->u.ident.name, &dv, &lv, &il) == 0)
         {
-            *out =
-                (mc_val_t) { .type = islong ? MC_VAL_LONG : MC_VAL_DOUBLE, .lval = lv, .dval = dv };
+            *out = (mc_val_t) { .type = il ? MC_VAL_LONG : MC_VAL_DOUBLE, .lval = lv, .dval = dv };
             return 0;
         }
-        if (milk_shm_prop_get(e->u.ident.name, out->sval, sizeof(out->sval)) == 0)
-        {
-            out->type = MC_VAL_STRING;
-            return 0;
-        }
-        return sc_err(err, errsz, "property not found");
+        return (milk_shm_prop_get(e->u.ident.name, out->sval, sizeof(out->sval)) == 0)
+                   ? ((out->type = MC_VAL_STRING), 0)
+                   : sc_err(err, errsz, "property not found");
     }
 
-    long vid = variable_ID(bare);
+    long vid = (e->u.ident.var_id >= 0 && e->u.ident.var_id < milk_data.NB_MAX_VARIABLE &&
+                milk_data.variable[e->u.ident.var_id].used &&
+                strcmp(milk_data.variable[e->u.ident.var_id].name, bare) == 0)
+                   ? e->u.ident.var_id
+                   : variable_ID(bare);
     if (vid != -1 && milk_data.variable[vid].type != 3)
     {
-        const VARIABLE *vp = &milk_data.variable[vid];
+        ((mc_expr_t *) e)->u.ident.var_id = vid;
+        const VARIABLE *vp                = &milk_data.variable[vid];
         out->type = (vp->type == 1) ? MC_VAL_LONG : (vp->type == 2) ? MC_VAL_STRING : MC_VAL_DOUBLE;
         out->lval = vp->value.l;
         out->dval = vp->value.f;
@@ -345,7 +353,9 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
         return 0;
     }
 
-    if (fn->kind == MC_FN_REDUCE_D && e->res_kind != MC_RES_IMAGE)
+    if ((fn->kind == MC_FN_REDUCE_D || fn->kind == MC_FN_REDUCE_L || fn->kind == MC_FN_DOT ||
+         fn->kind == MC_FN_EAGER_RED) &&
+        e->res_kind != MC_RES_IMAGE)
     {
         return mc_exec_reduce_scalar(e, out, err, errsz);
     }
@@ -532,7 +542,7 @@ static int eval_assign(const mc_expr_t *e, mc_val_t *out, char *err, size_t errs
     }
     else
     {
-        store_scalar_var(bare, &final_v);
+        mc_store_scalar_var(bare, &((mc_expr_t *) target)->u.ident.var_id, &final_v);
     }
     *out = final_v;
     return 0;
@@ -757,6 +767,10 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
 
     case MC_STMT_MULTI_ASSIGN:
     {
+        if (s->u.multi.nrhs == 1 && s->u.multi.nlhs >= 2)
+        {
+            return mc_exec_multi_reduce(s, out, err, errsz);
+        }
         if (s->u.multi.nrhs != s->u.multi.nlhs)
         {
             return sc_err(err, errsz, "not implemented in the new engine");
@@ -774,12 +788,14 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
         }
         for (int j = 0; j < s->u.multi.nlhs; j++)
         {
-            const mc_expr_t *lhs = s->u.multi.lhs[j], *rhs = s->u.multi.rhs[j];
+            mc_expr_t       *lhs = s->u.multi.lhs[j];
+            const mc_expr_t *rhs = s->u.multi.rhs[j];
             if (lhs->u.ident.id_kind != MC_ID_IMAGE && lhs->u.ident.id_kind != MC_ID_NEW &&
                 rhs->res_kind != MC_RES_IMAGE)
             {
-                store_scalar_var(
-                    lhs->u.ident.bare[0] != '\0' ? lhs->u.ident.bare : lhs->u.ident.name, &vals[j]);
+                mc_store_scalar_var(lhs->u.ident.bare[0] != '\0' ? lhs->u.ident.bare
+                                                                 : lhs->u.ident.name,
+                                    &lhs->u.ident.var_id, &vals[j]);
             }
         }
         (void) (out != NULL && (*out = vals[s->u.multi.nlhs - 1], 1));
@@ -809,9 +825,9 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
         {
             return -1;
         }
-        store_scalar_var(s->u.for_stmt.var, &vstart);
-        long vid   = variable_ID(s->u.for_stmt.var);
-        int  iters = 0;
+        long vid = -1;
+        mc_store_scalar_var(s->u.for_stmt.var, &vid, &vstart);
+        int iters = 0;
         while (1)
         {
             mc_val_t vstop, vstep = { .type = MC_VAL_LONG, .lval = 1 };
@@ -850,7 +866,7 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
                                          vmut->value.l +
                                          ((vstep.type == MC_VAL_LONG) ? vstep.lval : (long) stpv) }
                       : (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = cur + stpv };
-            store_scalar_var(s->u.for_stmt.var, &nextv);
+            mc_store_scalar_var(s->u.for_stmt.var, &vid, &nextv);
         }
         return 0;
     }
