@@ -1,4 +1,4 @@
-"""Dataset catalog (§6.2) for milk-calcdiff differential testing."""
+"""Dataset catalog (§6.2) for calculator expression testing."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ BASE_SCALARS = (
 
 @dataclass(frozen=True)
 class DatasetSpec:
-    """Descriptor for one dataset built by milk-calcdiff (`build_dataset` in calcdiff.c)."""
+    """Descriptor for one calculator test dataset."""
 
     id: str
     description: str

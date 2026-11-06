@@ -50,7 +50,6 @@
 #include "CLIcore_script.h"
 #include "CLIcore_signals.h"
 #include "CLIcore_UI_execute.h"
-#include "cli_calc_parser.h"
 #include "treesitter/cli_treesitter.h"
 
 #include <fnmatch.h>

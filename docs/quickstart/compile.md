@@ -31,6 +31,9 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
         sudo yum install gcc cmake pkg-config cfitsio-devel readline-devel ncurses-devel fftw3-devel openblas-devel lapacke-devel
         ```
 
+    `gcc` (or the C compiler named in `MILK_CALC_CC`) is also invoked at runtime to compile
+    calculator image statements and `.c` extensions into cached `.so` kernels.
+
 ??? note "Optional dependencies"
 
     ### Core & CLI Options

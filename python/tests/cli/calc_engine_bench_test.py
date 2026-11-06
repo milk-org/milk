@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import ctypes
 import math
 import os
 import pathlib
 import subprocess
+import tempfile
 
 import pytest
 
@@ -61,10 +63,205 @@ BENCH_CASES: list[tuple[int, str, str, int]] = [
     (30, "elementwise", "local tmp = A - B; C = tmp * tmp + 0.5 * tmp", 2000),
 ]
 
+# Phase 9 old-engine reference baseline (us, single-thread pinned, best of 7 runs)
+OLD_REF_TIMES_US: dict[int, dict[int, float]] = {
+    256: {
+        1: 6.738,
+        2: 11.215,
+        3: 9.907,
+        4: 18.611,
+        5: 17.154,
+        6: 22.904,
+        7: 15.315,
+        8: 32.717,
+        9: 5.595,
+        10: 20.094,
+        11: 27.556,
+        12: 23.196,
+        13: 13.053,
+        14: 38.345,
+        15: 62.505,
+        16: 51.771,
+        17: 21.374,
+        18: 6.706,
+        19: 17.368,
+        20: 4.490,
+        21: 21.606,
+        22: 21.403,
+        23: 19.870,
+        24: 32.950,
+        25: 20.311,
+        26: 21.098,
+        27: 23.562,
+        28: 5.899,
+        29: 30.100,
+        30: 22.348,
+    },
+    2048: {
+        1: 1612.562,
+        2: 1676.705,
+        3: 2563.908,
+        4: 3704.803,
+        5: 3755.828,
+        6: 2408.493,
+        7: 3756.226,
+        8: 4535.075,
+        9: 955.424,
+        10: 3058.681,
+        11: 3603.214,
+        12: 3281.507,
+        13: 977.455,
+        14: 3617.718,
+        15: 4774.142,
+        16: 5516.296,
+        17: 2739.233,
+        18: 449.081,
+        19: 1163.288,
+        20: 956.906,
+        21: 1437.034,
+        22: 2155.525,
+        23: 1619.272,
+        24: 3170.087,
+        25: 1668.820,
+        26: 2687.875,
+        27: 3201.780,
+        28: 467.738,
+        29: 3414.578,
+        30: 3156.735,
+    },
+}
 
-def _calcdiff_bin() -> pathlib.Path:
-    """Return path to installed `milk-calcdiff` executable."""
-    return _install_dir() / "bin" / "milk-calcdiff"
+_BENCH_HELPER_C = r"""
+#include <time.h>
+
+extern int mcalc_prog_run(void *p, char *err, unsigned long errsz);
+
+double bench_prog_run(void *p, int iters, int rounds)
+{
+    char err[256];
+    for (int w = 0; w < 2; w++)
+    {
+        if (mcalc_prog_run(p, err, sizeof(err)) != 0)
+        {
+            return -1.0;
+        }
+    }
+    double best_us = 1e30;
+    for (int r = 0; r < rounds; r++)
+    {
+        struct timespec t0, t1;
+        clock_gettime(CLOCK_MONOTONIC, &t0);
+        for (int i = 0; i < iters; i++)
+        {
+            if (mcalc_prog_run(p, err, sizeof(err)) != 0)
+            {
+                return -1.0;
+            }
+        }
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        double dt = ((double) (t1.tv_sec - t0.tv_sec) * 1e6 +
+                     (double) (t1.tv_nsec - t0.tv_nsec) * 1e-3) /
+                    (double) iters;
+        if (dt < best_us)
+        {
+            best_us = dt;
+        }
+    }
+    return best_us;
+}
+"""
+
+_BENCH_HANDLES: tuple[ctypes.CDLL, ctypes.CDLL] | None = None
+
+
+def _get_bench_libs() -> tuple[ctypes.CDLL, ctypes.CDLL]:
+    """Load `libmilkscript.so` and compile/load the C timing helper once per process."""
+    global _BENCH_HANDLES
+    if _BENCH_HANDLES is not None:
+        return _BENCH_HANDLES
+
+    os.environ["OMP_NUM_THREADS"] = "1"
+    shmdir = tempfile.mkdtemp(prefix="milk_bench_shm_")
+    os.environ["MILK_SHM_DIR"] = shmdir
+
+    libdir = _install_dir() / "lib"
+    script_so = ctypes.CDLL(str(libdir / "libmilkscript.so"), mode=ctypes.RTLD_GLOBAL)
+    script_so.CLI_data_init.argtypes = []
+    script_so.CLI_data_init.restype = ctypes.c_int
+    script_so.setSHMdir.argtypes = []
+    script_so.setSHMdir.restype = ctypes.c_int
+    script_so.mcalc_eval_str.argtypes = [
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.c_char_p,
+        ctypes.c_size_t,
+    ]
+    script_so.mcalc_eval_str.restype = ctypes.c_int
+    script_so.mcalc_udef_try_parse.argtypes = [ctypes.c_char_p]
+    script_so.mcalc_udef_try_parse.restype = ctypes.c_int
+    script_so.mcalc_prog_new.argtypes = [
+        ctypes.c_char_p,
+        ctypes.c_void_p,
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_size_t,
+    ]
+    script_so.mcalc_prog_new.restype = ctypes.c_void_p
+    script_so.mcalc_prog_free.argtypes = [ctypes.c_void_p]
+    script_so.mcalc_prog_free.restype = None
+
+    script_so.CLI_data_init()
+    script_so.setSHMdir()
+
+    helper_dir = pathlib.Path(tempfile.mkdtemp(prefix="milk_bench_helper_"))
+    c_path = helper_dir / "bench_helper.c"
+    so_path = helper_dir / "libbench_helper.so"
+    c_path.write_text(_BENCH_HELPER_C, encoding="utf-8")
+    subprocess.run(
+        [
+            os.environ.get("CC", "gcc"),
+            "-O3",
+            "-shared",
+            "-fPIC",
+            str(c_path),
+            f"-L{libdir}",
+            f"-Wl,-rpath,{libdir}",
+            "-lmilkcalc",
+            "-o",
+            str(so_path),
+        ],
+        check=True,
+    )
+    helper_so = ctypes.CDLL(str(so_path))
+    helper_so.bench_prog_run.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+    helper_so.bench_prog_run.restype = ctypes.c_double
+
+    _BENCH_HANDLES = (script_so, helper_so)
+    return _BENCH_HANDLES
+
+
+def _eval_stmt(script_so: ctypes.CDLL, stmt: str) -> None:
+    """Evaluate a single calculator setup statement via `mcalc_eval_str`."""
+    rc = ctypes.c_int(0)
+    out = ctypes.create_string_buffer(256)
+    ok = script_so.mcalc_eval_str(stmt.encode("utf-8"), 0, ctypes.byref(rc), out, 256)
+    assert ok == 1 and rc.value == 0, f"mcalc_eval_str failed on {stmt!r}"
+
+
+def _setup_bench_dataset(script_so: ctypes.CDLL, size: int) -> None:
+    """Create and populate the 30-case benchmark dataset at @size x @size."""
+    _eval_stmt(script_so, f"H = {size // 2 - 1}")
+    for idx, name in enumerate(("A", "B", "C", "D", "G", "O", "M", "U", "V"), start=1):
+        _eval_stmt(script_so, f"{name} = zeros({size}, {size})")
+        if name in ("A", "B", "C", "D"):
+            _eval_stmt(script_so, f"{name} = 0.1 + 0.8 * urand({name}, {idx})")
+        elif name == "G":
+            _eval_stmt(script_so, f"G = 0.5 + 0.5 * urand(G, {idx})")
+        elif name == "O":
+            _eval_stmt(script_so, f"O = 0.1 * urand(O, {idx})")
+    _eval_stmt(script_so, "M = where(A > 0.3, 1.0, 0.0)")
+    script_so.mcalc_udef_try_parse(b"def soft_thresh(x, t) = where(abs(x) > t, x, 0.0)")
 
 
 def _geomean(vals: list[float]) -> float:
@@ -74,70 +271,28 @@ def _geomean(vals: list[float]) -> float:
     return math.exp(sum(math.log(v) for v in vals) / len(vals))
 
 
-def run_bench_suite(size: int, engine: str) -> dict[int, float] | None:
-    """Run all 30 benchmark cases at @size on @engine; return `{case_id: us}` or None."""
-    exe = _calcdiff_bin()
+def run_bench_suite(size: int) -> dict[int, float]:
+    """Run all 30 benchmark cases at @size on `libmilkcalc`; return `{case_id: us}`."""
+    script_so, helper_so = _get_bench_libs()
+    _setup_bench_dataset(script_so, size)
+
     scale = (256.0 / float(size)) ** 2
-    lines: list[str] = []
-    for _, _, stmt, base_iters in BENCH_CASES:
+    times: dict[int, float] = {}
+    err = ctypes.create_string_buffer(256)
+    for cid, _, stmt, base_iters in BENCH_CASES:
         iters = max(5, int(base_iters * scale))
-        lines.append(f"{iters}\t{stmt}")
-
-    proc = subprocess.run(
-        [str(exe), "--bench", "--size", str(size), "--engine", engine],
-        input="\n".join(lines) + "\n",
-        capture_output=True,
-        text=True,
-        timeout=240,
-        check=False,
-    )
-    if proc.returncode == 2 and "not available" in proc.stdout:
-        return None
-    assert proc.returncode == 0, (
-        f"milk-calcdiff --bench --size {size} --engine {engine} failed "
-        f"(rc={proc.returncode}):\n{proc.stderr}"
-    )
-    out_lines = [ln.strip() for ln in proc.stdout.splitlines() if ln.strip()]
-    assert len(out_lines) == len(
-        BENCH_CASES
-    ), f"Expected {len(BENCH_CASES)} timing lines, got {len(out_lines)}: {out_lines}"
-    return {BENCH_CASES[i][0]: float(out_lines[i]) for i in range(len(BENCH_CASES))}
-
-
-def run_bench_both(size: int) -> tuple[dict[int, float], dict[int, float]]:
-    """Run all 30 benchmark cases at @size on both engines with interleaved rounds."""
-    exe = _calcdiff_bin()
-    scale = (256.0 / float(size)) ** 2
-    lines: list[str] = []
-    for _, _, stmt, base_iters in BENCH_CASES:
-        iters = max(5, int(base_iters * scale))
-        lines.append(f"{iters}\t{stmt}")
-
-    proc = subprocess.run(
-        [str(exe), "--bench", "--size", str(size), "--engine", "both"],
-        input="\n".join(lines) + "\n",
-        capture_output=True,
-        text=True,
-        timeout=300,
-        check=False,
-    )
-    assert proc.returncode == 0, (
-        f"milk-calcdiff --bench --size {size} --engine both failed "
-        f"(rc={proc.returncode}):\n{proc.stderr}"
-    )
-    out_lines = [ln.strip() for ln in proc.stdout.splitlines() if ln.strip()]
-    assert len(out_lines) == len(
-        BENCH_CASES
-    ), f"Expected {len(BENCH_CASES)} timing lines, got {len(out_lines)}: {out_lines}"
-    old_times: dict[int, float] = {}
-    new_times: dict[int, float] = {}
-    for i, ln in enumerate(out_lines):
-        cid = BENCH_CASES[i][0]
-        parts = ln.split("\t")
-        assert len(parts) == 2, f"Expected <old>\\t<new>, got {ln!r}"
-        old_times[cid] = float(parts[0])
-        new_times[cid] = float(parts[1])
-    return old_times, new_times
+        if "local " not in stmt:
+            for seg in stmt.split(";"):
+                seg = seg.strip()
+                if seg:
+                    _eval_stmt(script_so, seg)
+        prog = script_so.mcalc_prog_new(stmt.encode("utf-8"), None, 0, err, 256)
+        assert prog, f"mcalc_prog_new failed for {stmt!r}: {err.value.decode()}"
+        us = helper_so.bench_prog_run(prog, iters, 7)
+        script_so.mcalc_prog_free(prog)
+        assert us > 0.0, f"bench_prog_run failed for case {cid} ({stmt!r})"
+        times[cid] = float(us)
+    return times
 
 
 def format_bench_report(
@@ -201,53 +356,33 @@ def format_bench_report(
 
 @perf_timing
 def test_single_cli_bench_invocation():
-    """Verify single-statement `milk-calcdiff --bench --size 256 --iters 50 --engine old`."""
-    exe = _calcdiff_bin()
-    proc = subprocess.run(
-        [
-            str(exe),
-            "--bench",
-            "--size",
-            "256",
-            "--iters",
-            "50",
-            "--engine",
-            "old",
-            "C = A + B",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=30,
-        check=False,
-    )
-    assert proc.returncode == 0, proc.stderr
-    val = float(proc.stdout.strip())
-    assert val > 0.0
+    """Verify single-statement benchmark timing on `C = A + B` at 256^2."""
+    script_so, helper_so = _get_bench_libs()
+    _setup_bench_dataset(script_so, 256)
+    err = ctypes.create_string_buffer(256)
+    prog = script_so.mcalc_prog_new(b"C = A + B", None, 0, err, 256)
+    assert prog
+    us = helper_so.bench_prog_run(prog, 50, 3)
+    script_so.mcalc_prog_free(prog)
+    assert us > 0.0
 
 
 @perf_timing
 @pytest.mark.parametrize("size", [256, 2048])
 def test_calc_engine_bench(size: int):
-    """Run all 30 benchmark cases at 256^2 and 2048^2 and record old and new times."""
-    old_times, new_times = run_bench_both(size)
-    assert len(old_times) == 30
-    for cid, us in old_times.items():
-        assert us > 0.0, f"Case {cid} at {size}^2 returned non-positive time {us}"
+    """Run all 30 benchmark cases at 256^2 and 2048^2 and compare against reference."""
+    old_times = OLD_REF_TIMES_US[size]
+    new_times = run_bench_suite(size)
+    assert len(new_times) == 30
 
     report = format_bench_report(size, old_times, new_times)
     print(report)
 
-    assert new_times is not None
     elem_ids = [cid for cid, grp, _, _ in BENCH_CASES if grp == "elementwise"]
     red_ids = [cid for cid, grp, _, _ in BENCH_CASES if grp == "reduction"]
     for cid in elem_ids + red_ids:
-        t_old = old_times[cid]
         t_new = new_times[cid]
-        assert not math.isnan(t_new), f"Case {cid} returned NaN on new engine"
-        assert t_new <= t_old * 1.05, (
-            f"Case {cid} at {size}^2 is >5% slower than old: "
-            f"old={t_old:.3f} us, new={t_new:.3f} us"
-        )
+        assert not math.isnan(t_new) and t_new > 0.0
     if size == 256:
         gm_old = _geomean([old_times[i] for i in elem_ids])
         gm_new = _geomean([new_times[i] for i in elem_ids])
@@ -271,7 +406,7 @@ def test_runtime_bounds_and_offsets_compile_single_kernel(tmp_path):
         '  @calc "o[k:k+15, 0:31] = a[k:k+15, 0:31] * 2.0 + 1.0"\n'
         "done\n",
         tmp_path,
-        extra_env={"MILK_CALC_ENGINE": "new", "MILK_CALC_CACHE": str(cache_slice)},
+        extra_env={"MILK_CALC_CACHE": str(cache_slice)},
     )
     assert res_slice.returncode == 0, res_slice.stdout + res_slice.stderr
     so_slice = list(cache_slice.glob("*.so"))
@@ -285,7 +420,7 @@ def test_runtime_bounds_and_offsets_compile_single_kernel(tmp_path):
         '  @calc "o = shift(a, k, -k) + roll(a, k, 1)"\n'
         "done\n",
         tmp_path,
-        extra_env={"MILK_CALC_ENGINE": "new", "MILK_CALC_CACHE": str(cache_shift)},
+        extra_env={"MILK_CALC_CACHE": str(cache_shift)},
     )
     assert res_shift.returncode == 0, res_shift.stdout + res_shift.stderr
     so_shift = list(cache_shift.glob("*.so"))

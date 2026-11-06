@@ -23,8 +23,8 @@ flowchart LR
 
 | Tier | What You Write | What `milk` Handles | Entry Point / Header |
 | :--- | :--- | :--- | :--- |
-| **0: Pure `.calc`** | A `.calc` program or `-e` expression | Compiles fused SIMD bytecode, runs on each trigger frame, manages FPS & `processinfo`, posts outputs | `milk-fpsexec-milk-calc` / `@calc` |
-| **1a: 1D SIMD Block Kernel** | A 1D per-pixel C function (`MILK_CALC_REG_BLK` / `MILK_CALC_REG_BLK2`) + parameter table | Fuses directly into the OpenMP L1 cache tile loop (`FUSE_BLK = 1024`), auto-exposes parameters in FPS | `#include "milk_calc_ext.h"` (`-l file.c`) |
+| **0: Pure `.calc`** | A `.calc` program or `-e` expression | Compiles fused SIMD/OpenMP C kernels, runs on each trigger frame, manages FPS & `processinfo`, posts outputs | `milk-fpsexec-milk-calc` / `@calc` |
+| **1a: 1D SIMD Block Kernel** | A 1D per-pixel C function (`MILK_CALC_REG_BLK` / `MILK_CALC_REG_BLK2`) + parameter table | Fuses directly into the 1024-pixel L1 cache tile loop, auto-exposes parameters in FPS | `#include "milk_calc_ext.h"` (`-l file.c`) |
 | **1b: 2D Stencil Kernel** | A $(2R+1)\times(2R+1)$ row-strip C function (`MILK_CALC_REG_STENCIL`, $R \in \{1,2,3\}$) | Pre-clamps image borders and feeds $2R+1$ row pointers of length $N + 2R$ per tile | `#include "milk_calc_ext.h"` (`-l file.c`) |
 | **1c: Whole-Image Kernel** | A 1-input / 1-output whole-image C function (`MILK_CALC_REG_IMG`) | Runs as an in-expression pre-stage with zero intermediate copy on bare `float32` streams | `#include "milk_calc_ext.h"` (`-l file.c`) |
 | **2: Stateful Multi-Port Operator** | `init` / `exec` / `free` C callbacks with named `IN`/`OUT` image & scalar ports (`MILK_CALC_OP_DECLARE`) | Allocates/resizes output streams (`milk_op_set_out_shape`), re-runs `init` on shape/CONF changes, exposes scalar outputs in FPS | `#include "milk_calc_ext.h"` (`-l file.c`) |
@@ -451,7 +451,7 @@ shared libraries (`<stem>.so`) when you prefer pre-compiling `.so` plugins ahead
 milk-cc wfskernels.c -o wfskernels.so
 milk-fpsexec-milk-calc -n wfsprep -l ./wfskernels.so -f wfsprep.calc exec
 
-# Inspect the pre-compiled bytecode engines and any loaded C extension kernels/params:
+# Inspect the built-in functions, operators, and any loaded C extension kernels/params:
 @calc -l wfskernels.c --list
 milk-fpsexec-milk-calc -l ./wfskernels.so --list
 ```

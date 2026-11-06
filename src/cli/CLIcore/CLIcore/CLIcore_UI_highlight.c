@@ -36,7 +36,7 @@
 #include "milk_lexicon.h"
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
-#include "cli_calc_parser.h"
+#include "CLIcore_script.h"
 #include "treesitter/cli_treesitter.h"
 
 

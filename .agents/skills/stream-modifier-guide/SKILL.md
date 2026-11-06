@@ -22,4 +22,4 @@ slices `im[a:b]`.
   the name (location `S` shared, `L` local, `F`; `E` must exist; `N` must be new; `T<type>` such as
   `@TF32:`) or an `s.`/`l.` namespace prefix. Returns the bare name without allocating.
 - `src/engine/libfps/IMGID.h` — `IMGID`, the image handle (name, template, connection).
-- `src/cli/libmilkscript/calc/cli_calc_slice.c` — slices in calculator expressions.
+- `src/calc/mc_slice.c` — slices in calculator expressions.

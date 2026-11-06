@@ -41,7 +41,7 @@
 #include "CLIcore_setSHMdir.h"
 #include "CLIcore_signals.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "calc_select.h"
+#include "mcalc.h"
 #include "milk_shm_prop.h"
 #include "milk_ipc_common.h"
 #include "milk_entity_ns.h"
@@ -614,7 +614,7 @@ static int try_dispatch_interceptor(const char *cmdname, int argc, char **argv, 
 static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
 {
     data.parseerror = 0;
-    calc_select_tmp_cleanup();
+    mcalc_tmp_cleanup();
     for (int i = 0; i < NB_ARG_MAX; i++)
     {
         data.cmdargtoken[i].type          = CMDARGTOKEN_TYPE_UNSOLVED;
@@ -1052,7 +1052,7 @@ int milk_server_dispatch_argv(int argc, char **argv)
     }
     if (usage)
     {
-        calc_select_tmp_cleanup();
+        mcalc_tmp_cleanup();
         return 2;
     }
 
@@ -1062,7 +1062,7 @@ int milk_server_dispatch_argv(int argc, char **argv)
                (char) 27, 0, data.cmd[cmdidx].key, data.CMDerrstatus);
     }
 
-    calc_select_tmp_cleanup();
+    mcalc_tmp_cleanup();
 
     return (data.CMDerrstatus == RETURN_SUCCESS) ? 0 : 1;
 }

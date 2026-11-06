@@ -27,9 +27,7 @@
 #include "CLIcore.h"
 #include "CLIcore_memory.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "calc_select.h"
-#include "cli_calc_parser.h"
-#include "cli_calc_prog.h"
+#include "mcalc.h"
 #include "milk_cmd_index.h"
 #include "milk_entity_ns.h"
 #include "milk_proto.h"
@@ -57,10 +55,11 @@ static int eval_scalar_subexpr(const char *subexpr, char *out, size_t outsz)
     milk_server_expand_entities_in_expr(subexpr, expanded, sizeof(expanded));
     char assign[4200];
     snprintf(assign, sizeof(assign), "_milk_asrt_tmp = (%s)", expanded);
-    int eval_rc = 2;
-    int saved_q = dcquiet;
-    dcquiet     = 1;
-    calc_select_eval_bash(assign, 0, &eval_rc);
+    int eval_rc        = 2;
+    int saved_q        = dcquiet;
+    dcquiet            = 1;
+    mcalc_float_digits = cli_float_digits;
+    mcalc_eval_bash(assign, 0, &eval_rc);
     dcquiet   = saved_q;
     long vidx = variable_ID("_milk_asrt_tmp");
     if (eval_rc == 0 && vidx != -1)
@@ -613,8 +612,9 @@ int milk_server_assert(int argc, char **argv)
 
     char expanded[8192];
     milk_server_expand_entities_in_expr(expr, expanded, sizeof(expanded));
-    int eval_rc = 2;
-    calc_select_eval_bash(expanded, 1, &eval_rc);
+    int eval_rc        = 2;
+    mcalc_float_digits = cli_float_digits;
+    mcalc_eval_bash(expanded, 1, &eval_rc);
     if (eval_rc == 0)
     {
         return 0;
@@ -700,7 +700,7 @@ static int try_exec_entity_lhs_assignment(const char *expr, int *out_rc)
     {
         exp_rhs[rlen - 1] = '\0';
         *out_rc           = (milk_shm_prop_set(lhs, exp_rhs + 1, NULL) == 0) ? 0 : 1;
-        if (*out_rc == 0 && cli_calc_out_mode == CLI_CALC_OUT_REPL)
+        if (*out_rc == 0 && mcalc_out_mode == MCALC_OUT_REPL)
         {
             printf("%s %s\n", lhs, exp_rhs + 1);
             fflush(stdout);
@@ -710,15 +710,16 @@ static int try_exec_entity_lhs_assignment(const char *expr, int *out_rc)
 
     char assign_expr[4200];
     snprintf(assign_expr, sizeof(assign_expr), "_milk_ent_rhs = %s", exp_rhs);
-    int eval_rc       = 2;
-    int saved_q       = dcquiet;
-    int saved_om      = cli_calc_out_mode;
-    dcquiet           = 1;
-    cli_calc_out_mode = CLI_CALC_OUT_VALUES;
-    calc_select_eval_bash(assign_expr, 0, &eval_rc);
-    cli_calc_out_mode = saved_om;
-    dcquiet           = saved_q;
-    long vidx         = variable_ID("_milk_ent_rhs");
+    int eval_rc        = 2;
+    int saved_q        = dcquiet;
+    int saved_om       = mcalc_out_mode;
+    dcquiet            = 1;
+    mcalc_out_mode     = MCALC_OUT_VALUES;
+    mcalc_float_digits = cli_float_digits;
+    mcalc_eval_bash(assign_expr, 0, &eval_rc);
+    mcalc_out_mode = saved_om;
+    dcquiet        = saved_q;
+    long vidx      = variable_ID("_milk_ent_rhs");
     if (eval_rc == 0 && vidx != -1)
     {
         char vbuf[128];
@@ -737,7 +738,7 @@ static int try_exec_entity_lhs_assignment(const char *expr, int *out_rc)
         }
         data.core.variable[vidx].used = 0;
         *out_rc                       = (milk_shm_prop_set(lhs, vbuf, NULL) == 0) ? 0 : 1;
-        if (*out_rc == 0 && cli_calc_out_mode == CLI_CALC_OUT_REPL)
+        if (*out_rc == 0 && mcalc_out_mode == MCALC_OUT_REPL)
         {
             printf("%s %s\n", lhs, vbuf);
             fflush(stdout);
@@ -746,7 +747,7 @@ static int try_exec_entity_lhs_assignment(const char *expr, int *out_rc)
     else
     {
         *out_rc = (milk_shm_prop_set(lhs, exp_rhs, NULL) == 0) ? 0 : 1;
-        if (*out_rc == 0 && cli_calc_out_mode == CLI_CALC_OUT_REPL)
+        if (*out_rc == 0 && mcalc_out_mode == MCALC_OUT_REPL)
         {
             printf("%s %s\n", lhs, exp_rhs);
             fflush(stdout);
@@ -822,8 +823,9 @@ static int exec_batch_calc_expr(const char *expr, int is_test, char *last_img, s
     {
         char expanded[8192];
         milk_server_expand_entities_in_expr(expr, expanded, sizeof(expanded));
-        int eval_rc = 2;
-        calc_select_eval_bash(expanded, is_test, &eval_rc);
+        int eval_rc        = 2;
+        mcalc_float_digits = cli_float_digits;
+        mcalc_eval_bash(expanded, is_test, &eval_rc);
         rc = eval_rc;
         if (rc == 0 && !is_test)
         {
@@ -1201,8 +1203,9 @@ static int calc_stmt_cb(char *seg, void *ctx)
     {
         char expanded[8192];
         milk_server_expand_entities_in_expr(seg, expanded, sizeof(expanded));
-        int eval_rc = 2;
-        calc_select_eval_bash(expanded, is_test, &eval_rc);
+        int eval_rc        = 2;
+        mcalc_float_digits = cli_float_digits;
+        mcalc_eval_bash(expanded, is_test, &eval_rc);
         rc = eval_rc;
     }
     return rc;
@@ -1251,16 +1254,17 @@ int milk_server_exec_calc_or_test(int            client_fd,
     if (!is_test && strncmp(expr, "__explain ", 10) == 0)
     {
         /* `@calc --explain`: the whole text is one program, not split at `;` */
-        int xrc = calc_select_prog_explain(expr + 10, stdout);
+        mcalc_float_digits = cli_float_digits;
+        int xrc            = mcalc_prog_explain(expr + 10, stdout);
         fflush(stdout);
         return xrc;
     }
-    cli_calc_out_mode = (flags & MILK_FLAG_PIXELS) ? CLI_CALC_OUT_PIXELS
-                        : (flags & MILK_FLAG_BIND) ? CLI_CALC_OUT_BIND
-                        : (flags & MILK_FLAG_REPL) ? CLI_CALC_OUT_REPL
-                                                   : CLI_CALC_OUT_VALUES;
-    int rc            = split_top_level(expr, 1, 0, calc_stmt_cb, &is_test);
-    cli_calc_out_mode = CLI_CALC_OUT_VALUES;
+    mcalc_out_mode = (flags & MILK_FLAG_PIXELS) ? MCALC_OUT_PIXELS
+                     : (flags & MILK_FLAG_BIND) ? MCALC_OUT_BIND
+                     : (flags & MILK_FLAG_REPL) ? MCALC_OUT_REPL
+                                                : MCALC_OUT_VALUES;
+    int rc         = split_top_level(expr, 1, 0, calc_stmt_cb, &is_test);
+    mcalc_out_mode = MCALC_OUT_VALUES;
     if (!is_test)
     {
         milk_server_mark_expr_vars_synced(expr);

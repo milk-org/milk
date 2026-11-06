@@ -169,8 +169,6 @@ install(
 install(
   FILES CLIcore.h
         CLIcore_standalone.h
-        ../libmilkscript/calc/cli_calc_parser.h
-        ../libmilkscript/calc/cli_calc_tokenizer.h
         cmdsettings.h
         ../../engine/libmilkcommon/milkDebugTools.h
         ../libmilkscript/standalone_dependencies.h

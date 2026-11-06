@@ -12,6 +12,8 @@ from __future__ import annotations
 import pytest
 
 from milk.cliwrap import HAVE_CLI
+from tests.cli.calcdiff.datasets import DATASETS, all_dataset_ids, offset_dataset_ids
+from tests.cli.calcdiff.gen_expr import generate_cases, load_functions
 from tests.cli.conftest import milk_bash, value
 
 pytestmark = [
@@ -174,7 +176,6 @@ def test_phase5_masked_lhs_and_end_slices(tmp_path):
         '@calc "d_end = a; d_end[end-1:end, 1:end-1] = 77; d_num = a; d_num[6:7, 1:4] = 77"\n'
         '@calc -v edend "imax(abs(d_end - d_num))"; echo "edend=$edend"\n',
         tmp_path,
-        extra_env={"MILK_CALC_ENGINE": "new"},
     )
     assert res.returncode == 0, res.stdout + res.stderr
     assert float(value(res.stdout, "em1")) == 0.0
@@ -194,7 +195,6 @@ def test_phase5_comprehensions_literals_and_linspace(tmp_path):
         'echo "vals=$v1,$v2,$v3,$v4,$v5"\n'
         'echo "sh=$(@get l.c2.xsize)x$(@get l.c2.ysize)_$(@get l.ls.xsize)"\n',
         tmp_path,
-        extra_env={"MILK_CALC_ENGINE": "new"},
     )
     assert res.returncode == 0, res.stdout + res.stderr
     v1, v2, v3, v4, v5 = [float(x) for x in value(res.stdout, "vals").split(",")]
@@ -218,7 +218,6 @@ def test_phase5_roll_chained_cmp_constants_and_math(tmp_path):
         '@calc -v w1,w2,w3,s0,s1,s2 "w[1]; w[2]; w[3]; s[0]; s[1]; abs(s[2])"\n'
         'echo "ws=$w1,$w2,$w3,$s0,$s1,$s2"\n',
         tmp_path,
-        extra_env={"MILK_CALC_ENGINE": "new"},
     )
     assert res.returncode == 0, res.stdout + res.stderr
     rp0, ra0, rp1, ra1 = [float(x) for x in value(res.stdout, "roll").split(",")]
@@ -234,3 +233,135 @@ def test_phase5_roll_chained_cmp_constants_and_math(tmp_path):
     assert abs(w2 - (0.5 * math.pi)) < 1e-5
     assert abs(w3 - (0.25 * math.pi)) < 1e-5
     assert s0 == 1.0 and abs(s1 - 2.0 / math.pi) < 1e-6 and s2 < 1e-6
+
+
+def test_offset_datasets_reduction_accuracy(tmp_path):
+    """Verify `istd`, `istats` and z-score within 1e-6 of a double reference at offsets 0..3e4."""
+    script = (
+        "mem.mk2Dim A 256 256 >/dev/null\n"
+        "for off in 0 1000 10000 30000; do\n"
+        '  @calc "A = $off + sin(0.37 * ix(A)) + cos(0.21 * iy(A)); Ad = f64(A)"\n'
+        '  @calc "s32 = istd(A); s64 = istd(Ad); m32, st32, lo32, hi32 = istats(A); '
+        'm64, st64, lo64, hi64 = istats(Ad)"\n'
+        '  @calc "Z32 = (A - imean(A)) / istd(A); Z64 = f32((Ad - imean(Ad)) / istd(Ad)); '
+        'zerr = imax(abs(Z32 - Z64)) / imax(abs(Z64))"\n'
+        '  @calc "serr = abs(s32 - s64) / s64; sterr = abs(st32 - st64) / st64; '
+        'merr = abs(m32 - m64) / max(abs(m64), 1.0)"\n'
+        '  @calc -v serr,sterr,merr,zerr "serr; sterr; merr; zerr"\n'
+        '  echo "off_$off=$serr,$sterr,$merr,$zerr"\n'
+        "done\n"
+    )
+    res = milk_bash(script, tmp_path)
+    assert res.returncode == 0, res.stdout + res.stderr
+    for off in (0, 1000, 10000, 30000):
+        vals = [float(x) for x in value(res.stdout, f"off_{off}").split(",")]
+        assert len(vals) == 4
+        for err_val in vals:
+            assert (
+                err_val <= 1e-6
+            ), f"Offset {off} exceeded 1e-6 relative error vs double ref: {vals}"
+
+
+def test_iargmax_iargmin_coord_unpack(tmp_path):
+    """Verify 2-D and 3-D coordinate unpacking on `iargmax` and `iargmin` (§3.2 rule 11)."""
+    script = (
+        "mem.mk2Dim im2 16 12 >/dev/null\n"
+        "mem.mk3Dim im3 8 6 4 >/dev/null\n"
+        '@calc "im2 = ix(im2) + 10 * iy(im2); im2[5, 9] = 999.0; im2[11, 3] = -500.0"\n'
+        '@calc "mx2, my2 = iargmax(im2); nx2, ny2 = iargmin(im2); flat2 = iargmax(im2)"\n'
+        '@calc "im3 = ix(im3) + 10 * iy(im3); '
+        'im3[3, 4, 2] = 9999.0; im3[6, 1, 3] = -9999.0"\n'
+        '@calc "mx3, my3, mz3 = iargmax(im3); nx3, ny3, nz3 = iargmin(im3)"\n'
+        '@calc "nan2 = im2 * nan; nanx, nany = iargmax(nan2)"\n'
+        '@calc -v mx2,my2,nx2,ny2,flat2 "mx2; my2; nx2; ny2; flat2"\n'
+        '@calc -v mx3,my3,mz3,nx3,ny3,nz3,nanx,nany "mx3; my3; mz3; nx3; ny3; nz3; nanx; nany"\n'
+        'echo "c2=$mx2,$my2,$nx2,$ny2,$flat2"\n'
+        'echo "c3=$mx3,$my3,$mz3,$nx3,$ny3,$nz3,$nanx,$nany"\n'
+    )
+    res = milk_bash(script, tmp_path)
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert value(res.stdout, "c2") == "5,9,11,3,149"
+    assert value(res.stdout, "c3") == "3,4,2,6,1,3,-1,-1"
+
+    bad = milk_bash(
+        'mem.mk2Dim im2 8 8 >/dev/null; @calc "px, py, pz = iargmax(im2)"',
+        tmp_path,
+    )
+    assert bad.returncode != 0
+
+
+def test_phase7_library_and_spatial_ops(tmp_path):
+    """Verify Phase 7 library calls, spatial ops, and new §3.2 features (§5 Phase 7)."""
+    script = (
+        "mem.mk2Dim A 8 8 >/dev/null\n"
+        "mem.mk2Dim B 8 8 >/dev/null\n"
+        '@calc "A = 2.0 + 0.1 * ix(A) + 0.2 * iy(A); B = 1.5 - 0.05 * ix(B) + 0.15 * iy(B)"\n'
+        '@calc "M1 = A @ B; M2 = matmul(A, B); err_mm = imax(abs(M1 - M2))"\n'
+        '@calc "T1 = A.T @ B; T2 = matmul(transpose(A), B); err_tr = imax(abs(T1 - T2))"\n'
+        "@calc 'E1 = einsum(\"ij,jk->ik\", A, B); err_ein = imax(abs(E1 - M2))'\n"
+        '@calc "U, S, Vt = svd(A); Sonly = svd(A); err_svd = imax(abs(S - Sonly))"\n'
+        '@calc "H = A + A.T; W, V = eigh(H); Wonly = eigh(H); err_eigh = imax(abs(W - Wonly))"\n'
+        '@calc "F = fft(A); R = real(ifft(F)); Fs = fftshift(F); err_fft = imax(abs(R - A))"\n'
+        '@calc "Hs = hstack(A, B); Vs = vstack(A, B); Ds = dstack(A, B); Cs = cat(0, A, B)"\n'
+        '@calc "err_cat = imax(abs(Hs - Cs)) + abs(icount(Hs) - 128) + abs(icount(Ds) - 128)"\n'
+        '@calc "R4 = rot90(rot90(A, 1), 3); R2 = rot90(rot90(A, 2), 2); '
+        'err_rot = imax(abs(R4 - A)) + imax(abs(R2 - A))"\n'
+        "mem.mk2Dim K 3 3 >/dev/null\n"
+        '@calc "K = 1.0 / 9.0; Cv = conv2(A, K); Bm = boxmean(A, 1); '
+        'err_conv = imax(abs(Cv[1:7, 1:7] - Bm[1:7, 1:7]))"\n'
+        '@calc "im = 10.0 + 0 * A; im[3, 4] = 50.0; im[6, 2] = 2.0"\n'
+        '@calc "mn = imin3(im); mx = imax3(im); bm = boxmean(im, 1)"\n'
+        '@calc "v_mx = mx[4, 4]; v_mn = mn[5, 2]; v_bm = bm[3, 4]"\n'
+        "@calc -v err_mm,err_tr,err_ein,err_svd,err_eigh,err_fft,err_cat,err_rot,err_conv "
+        '"err_mm; err_tr; err_ein; err_svd; err_eigh; err_fft; err_cat; err_rot; err_conv"\n'
+        '@calc -v v_mx,v_mn,v_bm "v_mx; v_mn; v_bm"\n'
+        'echo "errs=$err_mm,$err_tr,$err_ein,$err_svd,$err_eigh,$err_fft,$err_cat,$err_rot,$err_conv"\n'
+        'echo "res=$v_mx,$v_mn,$v_bm"\n'
+    )
+    res = milk_bash(script, tmp_path)
+    assert res.returncode == 0, res.stdout + res.stderr
+    errs = [float(x) for x in value(res.stdout, "errs").split(",")]
+    for e in errs:
+        assert e <= 1e-5, f"Phase 7 library op error exceeded tolerance: {errs}"
+    vals = [float(x) for x in value(res.stdout, "res").split(",")]
+    assert vals[0] == pytest.approx(50.0, rel=1e-6)
+    assert vals[1] == pytest.approx(2.0, rel=1e-6)
+    assert vals[2] == pytest.approx((8 * 10.0 + 50.0) / 9.0, rel=1e-5)
+
+
+def test_datasets_and_generated_expressions(tmp_path):
+    """Verify §6.2 datasets and §6.3 expression generator on the calculator engine."""
+    ids = all_dataset_ids(include_large=True)
+    for expected in ("default", "random", "offset_0", "offset_3e4", "cubes"):
+        assert expected in DATASETS and expected in ids
+    assert offset_dataset_ids() == [
+        "offset_0",
+        "offset_1e3",
+        "offset_1e4",
+        "offset_3e4",
+    ]
+    fns = {f["name"] for f in load_functions()}
+    for required in ("sin", "cos", "log", "pow", "where", "imean", "istd", "istats"):
+        assert required in fns
+
+    cases = list(
+        generate_cases(
+            count=25,
+            seed=42,
+            kind="elementwise",
+            datasets=["default"],
+            include_errors=False,
+        )
+    )
+    script_lines = [
+        '@calc "A = 0.2 + 0.5 * urand(zeros(16, 16), 1); B = 0.2 + 0.5 * urand(zeros(16, 16), 2); '
+        "C = zeros(16, 16); D = 0.3 + 0.4 * urand(zeros(16, 16), 3); "
+        "G = 0.5 + 0.5 * urand(zeros(16, 16), 4); O = 0.1 * urand(zeros(16, 16), 5); "
+        'M = where(A > 0.3, 1.0, 0.0); U = zeros(16, 16); V = zeros(16, 16); H = 7"\n'
+        '@calc "x = 1.5; y = -0.5; n = 4; k = 2; t = 0.25; alpha = 0.5"\n'
+        '@calc "def soft_thresh(x, t) = where(abs(x) > t, x, 0.0)"\n'
+    ]
+    for c in cases:
+        script_lines.append(f'@calc "{c["stmt"]}" >/dev/null\n')
+    res = milk_bash("".join(script_lines), tmp_path)
+    assert res.returncode == 0, res.stdout + res.stderr

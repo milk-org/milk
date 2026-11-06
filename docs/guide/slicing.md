@@ -27,12 +27,13 @@ Append `[axis0, axis1, axis2]` to any stream name. Each axis specification follo
 | _(empty)_          | Same as `*`                  |
 
 **Indexing is 0-based, inclusive on both ends.** In calculator text, a bound may be an expression
-with variables: `@calc "out = im[n:n+2, *]"`.
+with variables or `end` (`size[axis] - 1`): `@calc "out = im[n:n+2, 1:end-1]"`.
 
 ### Examples
 
 ```text
 im[0:19,10:29]       # 2D crop: x=0..19, y=10..29
+im[1:end-1,1:end-1]  # 2D interior: drop 1-pixel border on both axes
 im[*,-*]             # Flip Y axis
 im[0:99::2,*]        # X stride: every other column
 im[0:99::4b,*]       # X binning: average groups of 4
@@ -116,22 +117,22 @@ imgid_put_image(&imgin);
 
 ### Evaluation in `@calc` vs `imgid_get_image()`
 
-- **In `@calc` expressions**: Non-binned slices (crops, strides, flips, single-index reductions)
-  are evaluated directly as **zero-copy strided views** over the underlying image buffer without
-  allocating an intermediate image. Binned slices (`::Nb`) allocate a temporary reduced buffer for
-  the expression evaluation.
+- **In `@calc` expressions**: Slices (crops, strides, flips, single-index reductions, and `::Nb`
+  binned slices) are evaluated directly inside the compiled C kernel over the underlying image
+  buffer without allocating an intermediate image.
 - **Via `imgid_get_image()` in C**: Materialized slices are **local-only** buffers allocated once in
   process memory (`data.image` with `shared = 0`) and reused across frames whenever `cnt0` advances.
 
-### Output (LHS) Slicing
+### Output (LHS) Slicing and Masked Assignment
 
-Slicing can also be used on the left-hand side of assignments to write into a sub-region:
+Slicing or boolean masks can be used on the left-hand side of assignments (`=`, `+=`, `-=`, `*=`,
+`/=`) to write into a sub-region or masked pixel set in place:
 
 ```bash
-@calc "im[10:19,10:19] = 0.0"
+@calc "im[10:19,10:19] = 0.0"     # zero a 10x10 region inside im
+@calc "im[im > 4000] = 4000"      # clamp pixels where im > 4000 in place
+@calc "im[mask] *= flat[mask]"    # update only pixels where mask != 0
 ```
-
-This zeroes a 10×10 region inside the stream `im`.
 
 ## Performance
 

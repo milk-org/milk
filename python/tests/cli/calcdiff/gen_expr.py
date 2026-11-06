@@ -6,8 +6,6 @@ import argparse
 import json
 import pathlib
 import random
-import shutil
-import subprocess
 from typing import Iterator
 
 try:
@@ -103,27 +101,9 @@ LOG_OPS = ["&&", "||"]
 
 
 def load_functions(
-    calcdiff_bin: str | pathlib.Path | None = None,
+    _unused: str | pathlib.Path | None = None,
 ) -> list[dict[str, object]]:
-    """Load the calculator function table from `milk-calcdiff --dump-functions`."""
-    exe = str(calcdiff_bin) if calcdiff_bin else shutil.which("milk-calcdiff")
-    if exe:
-        try:
-            proc = subprocess.run(
-                [exe, "--dump-functions"],
-                capture_output=True,
-                text=True,
-                timeout=10,
-                check=False,
-            )
-            if proc.returncode == 0 and proc.stdout.strip():
-                return [
-                    json.loads(line)
-                    for line in proc.stdout.splitlines()
-                    if line.strip()
-                ]
-        except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
-            pass
+    """Return the calculator function table used for expression generation."""
     return list(FALLBACK_FUNCTIONS)
 
 
@@ -301,12 +281,11 @@ def generate_cases(
     seed: int = 42,
     kind: str = "all",
     datasets: list[str] | None = None,
-    calcdiff_bin: str | pathlib.Path | None = None,
     include_errors: bool = True,
 ) -> Iterator[dict[str, object]]:
-    """Yield @count seeded calculator test-case dicts for `milk-calcdiff`."""
+    """Yield @count seeded calculator test-case dicts."""
     rng = random.Random(seed)
-    fns = [f for f in load_functions(calcdiff_bin) if f.get("in_old", 1)]
+    fns = [f for f in load_functions() if f.get("in_old", 1)]
     unary_fns = [
         str(f["name"])
         for f in fns

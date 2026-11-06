@@ -75,22 +75,25 @@ Operators, loosest first:
 
 | Operators                       | Notes                                                            |
 | ------------------------------- | ---------------------------------------------------------------- |
-| `=` `+=` `-=` `*=` `/=`, `?:`   | `c ? a : b`: a scalar `c` evaluates only its branch (in a fused statement both run, a zero divisor in the other one is not an error); an image `c` selects per pixel |
+| `=` `+=` `-=` `*=` `/=`, `?:`   | `c ? a : b`: a scalar `c` evaluates only its branch (in a fused statement both run, a zero divisor in the other one is not an error); an image `c` selects per pixel; `im[mask] = expr` (also `+=` `-=` `*=` `/=`) writes only where `mask != 0` |
 | `\|\|`, `&&`                    | skip the right side once the result is known: `0 && (x = 1)`     |
 | `\|`, `^^`, `&`                 | bitwise or, xor, and (on scalars and per pixel on images)        |
-| `==` `!=`, `<` `<=` `>` `>=`    | 1 or 0; on images, a 0/1 mask per pixel                          |
-| `<<` `>>`, `+` `-`, `*` `/` `%` | bit shifts (a count outside $0..63$ gives 0); `"a" + "b"` concatenates strings |
-| unary `-` `~` `!`               | unary negation, bitwise NOT (`~`), logical NOT (`!`)             |
+| `==` `!=`, `<` `<=` `>` `>=`    | 1 or 0; on images, a 0/1 mask per pixel; comparisons may be chained (`0 <= x < n` evaluates `x` once as `(0 <= x) && (x < n)`) |
+| `<<` `>>`, `+` `-`, `*` `/` `%` `@` | bit shifts (a count outside $0..63$ gives 0); `"a" + "b"` concatenates strings; `A @ B` is matrix multiplication (`matmul(A, B)`) |
+| unary `-` `~` `!`, postfix `.T` | unary negation, bitwise NOT (`~`), logical NOT (`!`); `A.T` is `transpose(A)` |
 
-`^` is not an operator (write `pow(a, b)`; `^^` is bitwise XOR). Integer operands give an integer
-result, except `/` and a negative power (`pow(2, 62) + 1` is exact, `pow(2, -1)` is 0.5); an
-integer result that overflows becomes a double. A number divided by 0, or `% 0`,
-is an error, and so is an image divided by the number 0; an image divided by an image gives `inf`
-where the divisor is 0. Numbers may be written `0x1f`, `0o17`, `0b101`. Bitwise operators (`&`,
-`|`, `^^`, `~`, `<<`, `>>`) also fuse into image expressions via `int64_t` casts (promoting the
-block evaluator to `double` when constants exceed $2^{24}$). A kept scalar statement in a unit
+`^` is not an operator (write `pow(a, b)`; `^^` is bitwise XOR). Built-in constants `pi` ($\pi$),
+`nan` (`NAN`), and `inf` (`INFINITY`; `-inf` via unary `-`) are always defined unless shadowed by a
+variable or image of the same name. Integer operands give an integer result, except `/` and a
+negative power (`pow(2, 62) + 1` is exact, `pow(2, -1)` is 0.5); an integer result that overflows
+becomes a double. A number divided by 0, or `% 0`, is an error, and so is an image divided by the
+number 0; an image divided by an image gives `inf` where the divisor is 0 (except `im /= divisor`,
+where a zero divisor pixel is an error). Numbers may be written `0x1f`, `0o17`, `0b101`. Bitwise
+operators (`&`, `|`, `^^`, `~`, `<<`, `>>`) also fuse into image expressions via `int64_t` casts
+(promoting the pass to `double` when constants exceed $2^{24}$). A kept scalar statement in a unit
 carries integers on an exact 64-bit lane with the same rules, so `k * 3 % 1000` agrees with the
-text path for any integer variable or parameter `k` (a literal above $2^{53}$ is still read as a double).
+text path for any integer variable or parameter `k` (a literal above $2^{53}$ is still read as a
+double).
 
 ### Functions
 
@@ -98,18 +101,19 @@ Functions (the math ones also apply per pixel to an image):
 
 | Kind             | Functions                                                                                |
 | ---------------- | ---------------------------------------------------------------------------------------- |
-| Math             | `sin cos tan asin acos atan sinh cosh tanh exp exp2 log ln log10 log2 sqrt cbrt ceil floor round abs fabs sign posi erf erfc isnan isfinite`; `log` and `ln` are the natural logarithm, `log10` is base 10 |
+| Math             | `sin cos tan asin acos atan sinh cosh tanh exp exp2 log ln log10 log2 sqrt cbrt ceil floor round abs fabs sign posi erf erfc isnan isfinite wrap_pi sinc`; `log` and `ln` are the natural logarithm, `log10` is base 10, `wrap_pi(x)` wraps into $(-\pi, \pi]$, `sinc(x)` is $\sin(\pi x)/(\pi x)$ ($\text{sinc}(0)=1$) |
 | Math, 2-3 args   | `pow(a,b)`, `atan2(y,x)`, `hypot(x,y)`, `fmod(a,b)`, `min(a,b)`, `max(a,b)`, `clamp(x,lo,hi)` (also `trunc(x,lo,hi)`) |
 | Datatype casts   | `f32 f64 u8 i8 u16 i16 u32 i32 u64 i64`: cast a scalar or produce an image of that type  |
 | Image to number  | `itot imin imax imean istd ivar imedian norm nrm2 asum`, `perc(im,f)`, `dot(a,b)`, `trace(A)`; `irms` = `istd` |
-| Image to tuple   | `m, s[, lo, hi] = istats(im)`: mean, std, min, and max; `cx, cy[, flux] = icentroid(im[, th])`: thresholded flux-weighted CoG |
+| Image to tuple   | `m, s[, lo, hi] = istats(im)`: mean, std, min, and max; `cx, cy[, flux] = icentroid(im[, th])`: thresholded flux-weighted CoG; `px, py = iargmax(im)` / `iargmin(im)` (2-D) and `px, py, pz = iargmax(cube)` / `iargmin(cube)` (3-D; `-1` when all NaN) |
 | Image to integer | `icount(im)` (non-zero pixels), `iargmax(im)`, `iargmin(im)`, `iamax(im)` (index of $\max \|x_i\|$) |
 | Along one axis   | `itot imin imax imean istd ivar norm nrm2 asum`, `cumsum(im[,axis])` plus an axis: `imean(cube, 2)` is the mean frame |
-| Stencil / LUT    | `shift(im,dx[,dy])` (edge-clamped 2-D neighbor offset), `lut(x,tbl[,x0,dx])` (1-D linear LUT) |
-| Spatial / Remap  | `medfilt3(im)`, `medfilt5(im)`, `medfilt7(im)` ($3\times3$, $5\times5$, $7\times7$ median), `gauss(im,sx[,sy])`, `interp2(im,xmap,ymap)`, `pixremap(im,map[,fill])`, `pixunmap(im,map[,n])`, `rprof(im[,cx,cy])` |
-| Image to image   | `where(c,a,b)`, `transpose(im)`, `reshape(im,nx[,ny,nz])`, `vec(x0,...)`, `zeros(nx[,ny[,nz]])`, `eye(N[,M])`, `diag(X[,k])`, `matmul(A,B)`, `outer(x,y)` |
+| Stencil / LUT    | `shift(im,dx[,dy])` (edge-clamped 2-D neighbor offset), `roll(im,dx[,dy])` (periodic wrap-around 2-D shift), `lut(x,tbl[,x0,dx])` (1-D linear LUT) |
+| Spatial / Remap  | `medfilt3(im)`, `medfilt5(im)`, `medfilt7(im)` ($3\times3$, $5\times5$, $7\times7$ median), `imin3(im)`, `imax3(im)` ($3\times3$ min/max erosion/dilation), `boxmean(im,r)` (separable $(2r+1)\times(2r+1)$ box mean, $r \in \{1..16\}$), `conv2(im,K)` (2-D correlation with odd kernel `K` up to $15\times15$), `gauss(im,sx[,sy])`, `interp2(im,xmap,ymap)`, `pixremap(im,map[,fill])`, `pixunmap(im,map[,n])`, `rprof(im[,cx,cy])` |
+| Image to image   | `where(c,a,b)`, `transpose(im)` (or `im.T`), `reshape(im,nx[,ny,nz])`, `rot90(im[,k])`, `hstack(A,B,...)`, `vstack(A,B,...)`, `dstack(A,B,...)`, `cat(axis,A,B,...)`, `vec(x0,...)` (or `[x0, ...]`), `linspace(a,b,n)`, `[expr for x = a:b[:s], ...]`, `zeros(nx[,ny[,nz]])`, `eye(N[,M])`, `diag(X[,k])`, `matmul(A,B)` (or `A @ B`), `outer(x,y)`, `einsum("subscripts",A[,B])` |
 | BLAS (in-place)  | `scal(a,x)`, `axpy(a,x,y)`, `gemv(a,A,x,b,y)`, `symv(a,A,x,b,y)`, `ger(a,x,y,A)`, `syrk(a,A,b,C)`, `gemm(a,A,B,b,C)` |
-| LAPACK / Solvers | `trsv(A,b[,uplo[,diag]])`, `trsm(A,B[,uplo[,diag[,a]]])`, `solve(A,B[,reg])`, `gesv(A,B)`, `posv(A,B)`, `gels(A,B)`, `inv(A)`, `pinv(A[,rtol])` |
+| LAPACK / Solvers | `trsv(A,b[,uplo[,diag]])`, `trsm(A,B[,uplo[,diag[,a]]])`, `solve(A,B[,reg])`, `gesv(A,B)`, `posv(A,B)`, `gels(A,B)`, `inv(A)`, `pinv(A[,rtol])`, `s = svd(A)` / `U, s, Vt = svd(A)` (thin SVD), `w = eigh(C)` / `w, V = eigh(C)` (symmetric eigendecomposition, ascending) |
+| Spectral (FFTW)  | `fft(im)` (forward 1-D/2-D/3-D DFT to complex float), `ifft(im)` ($1/N$-normalized inverse DFT), `fftshift(im)` (swap half-spaces on all axes) |
 | Coordinates/PRNG | `ix iy ir itheta (im[, cx, cy])`: per pixel x, y, radius, angle from `(cx, cy)`, by default `(xsize/2, ysize/2)`; `rand([im[, seed]])` ($[0,1)$, also `urand`), `randn([im[, seed]])` ($\mathcal{N}(0,1)$, also `grand`) |
 | Strings          | `strlen toupper tolower`, `substr(s,start,len)`, `replace(s,old,new)`, `hex oct bin`     |
 | Complex images   | `cplx(re,im)`, `expi(phi)`, `real imag abs arg conj`; `+ - * /` and `-z` work on them    |
@@ -119,43 +123,61 @@ Functions (the math ones also apply per pixel to an image):
 `imedian` and `perc` do not handle NaN, which sorts anywhere: leave NaN pixels out with a mask,
 `imedian(im, isfinite(im))`. The other reductions propagate NaN. `imedian` of an even number of
 pixels is the upper of the two middle ones; `istd` (and `irms`) is the population standard
-deviation. `shift(im, dx, dy)` reads `im[x+dx, y+dy]`, the nearest edge pixel past the border.
-`icentroid` gives 0-based pixel coordinates.
+deviation. `shift(im, dx, dy)` reads `im[x+dx, y+dy]`, the nearest edge pixel past the border, while
+`roll(im, dx, dy)` wraps around periodically (`((x+dx) mod nx, (y+dy) mod ny)`). In slice bounds,
+`end` resolves to `size[axis] - 1` (`im[1:end-1, 0:end]`). `icentroid` gives 0-based pixel
+coordinates, and `iargmax`/`iargmin` unpack 2-D (`px, py = iargmax(im)`) or 3-D
+(`px, py, pz = iargmax(cube)`) coordinates directly (`-1` when all pixels are NaN).
 
 A second image argument is a mask: `imean(im, mask)` (also `itot imin imax istd ivar imedian norm
 nrm2 asum`) and `perc(im, f, mask)` reduce over the pixels where the mask is not zero; no pixel
-gives NaN, or 0 for `itot`/`asum`/`norm`. A number instead is an axis. `matmul`, `gemm`, `gemv`,
-`syrk`, `trsv`, `trsm`, `gesv`, `gels`, `solve`, `inv`, and `pinv` fold a top-level `transpose(A)`
-directly into the BLAS/LAPACK kernel without allocating an intermediate transposed image. The BLAS
-routines (`scal`, `axpy`, `gemv`, `symv`, `ger`, `syrk`, `gemm`) use strict BLAS parameter order and
-mutate their destination image in-place (`gemm(alpha, A, B, beta, C)` updates `C` with
-$\alpha\,\text{op}(A)\,\text{op}(B) + \beta\,C$), while algebraic assignments using `matmul(A, B)`
-and `outer(x, y)` (such as `C = alpha * matmul(A, B) + beta * C`,
-`dm = leak * dm - gain * matmul(Cmat, wfs)`, `A += alpha * outer(x, y)`, and
-`G = alpha * matmul(transpose(A), A) + beta * G`) automatically lower to the same single in-place
-BLAS pass. `reshape(im, nx[, ny, nz])` reinterprets the contiguous elements of `im` with new
-dimensions (up to one dimension may be `-1` to infer it from the total element count). `medfilt3`,
+gives NaN, or 0 for `itot`/`asum`/`norm`. A number instead is an axis. On the left-hand side of an
+assignment, `im[mask] = expr` (and `+=` `-=` `*=` `/=`) writes only the pixels where `mask` (an
+image or boolean expression of `im`'s shape) is non-zero, leaving other pixels untouched.
+`matmul` (or `@`), `gemm`, `gemv`, `syrk`, `trsv`, `trsm`, `gesv`, `gels`, `solve`, `inv`, and
+`pinv` fold a top-level `transpose(A)` or `A.T` directly into the BLAS/LAPACK kernel without
+allocating an intermediate transposed image. The BLAS routines (`scal`, `axpy`, `gemv`, `symv`,
+`ger`, `syrk`, `gemm`) use strict BLAS parameter order and mutate their destination image in-place
+(`gemm(alpha, A, B, beta, C)` updates `C` with $\alpha\,\text{op}(A)\,\text{op}(B) + \beta\,C$),
+while algebraic assignments using `matmul(A, B)`, `A @ B`, and `outer(x, y)` (such as
+`C = alpha * (A @ B) + beta * C`, `dm = leak * dm - gain * (Cmat @ wfs)`,
+`A += alpha * outer(x, y)`, and `G = alpha * (A.T @ A) + beta * G`) automatically lower to the same
+single in-place BLAS pass. `einsum("subscripts", A[, B])` evaluates Einstein summation contractions,
+reductions, traces, diagonals, and transposes over 1-D to 3-D tensors (routing standard 2-D matrix
+and vector contractions to BLAS). `reshape(im, nx[, ny, nz])` reinterprets the contiguous elements
+of `im` with new dimensions (up to one dimension may be `-1`), `rot90(im[, k])` rotates a 2-D image
+counter-clockwise by $90^\circ \times k$, and `hstack`, `vstack`, `dstack`, and `cat(axis, A, B, ...)`
+concatenate up to 8 images. `[e1, e2, ...]` constructs a 1-D vector (`vec(e1, e2, ...)`),
+`linspace(a, b, n)` builds an $n$-point linearly spaced vector, and array comprehensions
+`[expr for x = a:b[:s], ...]` build 1-D, 2-D, or 3-D float images from loop bounds. `medfilt3`,
 `medfilt5`, and `medfilt7` apply exact $3\times3$, $5\times5$, and $7\times7$ 2-D median filters
-with edge-clamped borders; `gauss(im, sigma[, sigmay])` runs a separable 2-pass 2-D Gaussian blur
-(radius $\min(\lceil 3\sigma\rceil, 32)$); `interp2(im, xmap, ymap)` gathers 2-D sub-pixel
-bilinearly interpolated values at `(xmap, ymap)`; `pixremap(im, map[, fill])` gathers
-`im[round(map)]` (filling out-of-range indices with `fill`, default `0`), while
+with edge-clamped borders; `imin3` and `imax3` apply $3\times3$ min/max filters; `boxmean(im, r)`
+runs a separable $(2r+1)\times(2r+1)$ box mean ($r \in \{1..16\}$); `conv2(im, K)` correlates `im`
+with an odd-sized 2-D kernel `K` (up to $15\times15$); `gauss(im, sigma[, sigmay])` runs a separable
+2-pass 2-D Gaussian blur (radius $\min(\lceil 3\sigma\rceil, 32)$); `interp2(im, xmap, ymap)`
+gathers 2-D sub-pixel bilinearly interpolated values at `(xmap, ymap)`; `pixremap(im, map[, fill])`
+gathers `im[round(map)]` (filling out-of-range indices with `fill`, default `0`), while
 `pixunmap(im, map[, n])` computes the per-bin mean into a 2-D `(n, 1)` image (`n` defaults to
 $\max(\text{map})+1$, negative indices ignored) and `rprof(im[, cx, cy])` computes the azimuthal
 radial profile around `(cx, cy)` (default `(xsize/2, ysize/2)`).
 
 ```bash
 @calc -v core 'imean(cam, ir(cam) < 10)'          # mean within 10 pixels of the centre
-@calc "cam = where(cam > 4000, 0, cam)"            # one pass; a NaN in the other branch stays out
-@calc --list                                       # list all pre-compiled bytecode engines & tokens
-@calc --explain "out = cam * g; z = cplx(out, out)" # how each statement would run in a unit
-@calc --list stencil                               # filter by keyword, opcode, or stage (--json for JSON)
+@calc "cam[cam > 4000] = 0"                        # masked LHS assignment in one pass
+@calc --list                                       # list built-in functions, operators & extensions
+@calc --explain "out = cam * g; z = cplx(out, out)" # show compiled C kernel / plan per statement
+@calc --list stencil                               # filter by keyword or category (--json for JSON)
 @calc "ramp = ix(cam, 0, 0) / s.cam.xsize"         # 0 ... 1 along x
 @calc "z = (cam - imean(cam)) / istd(cam)"         # multi-reduction in one fused expression
 @calc -v r "irms(cam - imean(cam))"                # nested reduction
 @calc "m, s, lo, hi = istats(cam)"                 # single-pass mean, std, min, max unpacking
 @calc "cx, cy, flux = icentroid(cam, 10.0)"        # thresholded sub-pixel center of gravity
+@calc "px, py = iargmax(cam)"                      # 2-D peak coordinates (px, py, pz on a 3-D cube)
 @calc "u, v = cam + 1, cam * 2"                    # single-pass multi-image assignment
+@calc "dm = leak * dm - gain * (Cmat @ wfs)"       # in-place BLAS gemv via @
+@calc "G = A.T @ A; U, s, Vt = svd(A)"             # syrk via .T and @; thin SVD unpacking
+@calc "win = [exp(-((x-32)^2+(y-32)^2)/50) for x = 0:63, y = 0:63]" # Note: use pow() instead of ^
+@calc "grid = [sin(2*pi*x/64) * cos(2*pi*y/64) for x = 0:63, y = 0:63]"
 @calc "lap = 4*cam - shift(cam,1,0) - shift(cam,-1,0) - shift(cam,0,1) - shift(cam,0,-1)"
 @calc "cal = lut(cam, resp_curve, 0.0, 0.5)"       # 1-D linear LUT interpolation
 @calc "clean = medfilt3(cam - dark)"               # exact 3x3 SIMD median filter
@@ -192,8 +214,9 @@ milk-fpsexec-milk-calc -n dsub set 3.0          # read by the next frame (same a
 @get f.dsub.unit.error                          # why the loop stopped (empty while it runs)
 milk-fpsexec-milk-calc -n dsub runstop
 
-# one-time initialization (-i) before frame 0, then per-frame leaky integrator, in this terminal
-milk-fpsexec-milk-calc -n ema -t cam -p "a:float=0.1" -i "acc = cam * 0" \
+# per-frame leaky integrator (acc is auto-created at zero on frame 0 if it does not yet exist,
+# or write out = ema(cam - dark, a) to maintain a hidden persistent state updated in the same pass)
+milk-fpsexec-milk-calc -n ema -t cam -p "a:float=0.1" \
     -e "acc = (1 - a) * acc + a * cam" exec .a=0.05
 
 # statements from a file, 100 ticks per second without a trigger stream
@@ -218,7 +241,7 @@ parameters under `Parameters`):
 | `-i`, `--init` | `.unit.init` | statements run once before frame 0 (and again if `.unit.init` is set live) |
 | `-I`, `--initfile` | `.unit.initfile` | read the init statements from this file instead |
 | `-l`, `--lib` | `.unit.libs` | a C extension to load, `.c` (compiled) or `.so` ([C extensions](calc_c_extensions.md)) |
-| `--list [PATTERN]` | | print the compiled engines, tokens and C extensions, as `@calc --list` |
+| `--list [PATTERN]` | | print the built-in functions, operators, constants, and C extensions, as `@calc --list` |
 | | `.unit.error` | set by the unit: why the loop stopped |
 
 - `fpsinit`, and `exec` when the FPS does not exist yet, create the FPS from the unit options. On an
@@ -228,7 +251,10 @@ parameters under `Parameters`):
   `.unit.file` is set (set `.unit.file` again to read the file again). `.unit.init` (or
   `.unit.initfile`) runs once before frame 0 to create accumulator streams or set initial values;
   changing `.unit.expr` or `.unit.file` live keeps that state intact, while setting `.unit.init` or
-  `.unit.initfile` runs the initialization again and resets the frame counters.
+  `.unit.initfile` runs the initialization again and resets the frame counters. When a unit
+  statement reads its own output stream (`acc = (1 - a) * acc + a * cam`) and that stream does not
+  yet exist on frame 0, it is automatically created and zero-initialized with the shape and datatype
+  of the expression's other image operands, so `-i "acc = cam * 0"` is optional.
 - Seven read-only variables are updated before each frame: `_n` (0-based frame index, `int`),
   `_t` (elapsed seconds since loop/init start, `float`), `_dt` (seconds since the previous
   frame, `float`, `0` on frame 0), from the trigger frame itself `_cnt0` (its counter),
@@ -252,16 +278,18 @@ parameters under `Parameters`):
   - `local name = <expr>` (or `L:name = <expr>` / `@L:name = <expr>`) creates a process-private
     scratch image that is not exported to `/dev/shm`. When a `local` image is consumed only by
     the immediately following compatible statement in the same basic block, the compiler merges
-    both statements into one cache-resident block pass and elides the intermediate memory write.
+    both statements into one cache-resident pass and elides the intermediate memory write.
   - `def f(x, a, ...) = <expr>` defines an inline function. When called with an image expression
-    argument, the argument is evaluated once per 1024-pixel L1d block into a register slot and
-    reused across all references in `<expr>`.
-  - `a, b = expr1, expr2` assigns multiple images (fused into a single block pass when compatible)
-    or multiple scalars; `m, s[, lo, hi] = istats(im)` unpacks mean, std, min, and max from one
+    argument, the argument is evaluated once per pixel into a C local variable and reused across
+    all references in `<expr>`.
+  - `ema(expr, alpha)` maintains a per-call-site persistent exponential moving average image or
+    scalar updated in the same fused pass as `s = (1 - alpha) * s + alpha * expr` (seeded with
+    `expr` on frame 0 after `init` or recompile).
+  - `a, b = expr1, expr2` assigns multiple images (fused into a single pass when compatible) or
+    multiple scalars; `m, s[, lo, hi] = istats(im)` unpacks mean, std, min, and max from one
     reduction pass.
   - `s.<im>.<prop>`, `f.<fps>.<param>` and `p.<proc>.<field>` can be read directly inside kept
-    expressions (`FI_PROP` binary fast-path) or assigned on the left-hand side
-    (`f.loop.gain = ...`, `s.out.kw.STREHL = ...`).
+    expressions or assigned on the left-hand side (`f.loop.gain = ...`, `s.out.kw.STREHL = ...`).
   - `skip` ends the tick: the statements after it do not run (the history rings are still
     updated); outputs already written are posted.
   - `post(name)` posts output `name` this tick even when no statement wrote it (readers waiting on
@@ -274,37 +302,33 @@ parameters under `Parameters`):
     processes read it too. A program has at most 8 rings and 128 statements.
   - `zeros(nx[, ny[, nz]])` makes a zero image of that shape (float; cast for another type,
     `out = f64(zeros(64, 64))`), so an output can be created with an explicit shape and type.
-- An element-wise image assignment (`out = a*b + c`, also `+=` `-=` `*=` `/=`), with slices,
-  broadcast operands (not for `/=`), bitwise operators, `shift()`, `lut()`, inline `def` functions,
-  and axis reductions on either side (`out[0:63,:] = cam[0:63,:] - dark`, `hist[:,:,_n % 8] = cam`,
-  `out = cam - imean(cam, 1)`), multi-image assignments (`u, v = expr1, expr2`),
-  `out = matmul(...)` / `gemm` / `gemv` / `ger` / `syrk` (including scaled
-  `out = alpha * matmul(...) + beta * out` and `+=` / `-=` forms), `out = transpose(...)`,
-  `out = reshape(...)`, `out = reshape(matmul(...), ...)`, up to four scalar or nested reductions
-  (`v = imean(cam)`, `v = irms(cam - imean(cam))`, `m, s, lo, hi = istats(cam)`, `v = dot(a, b)`,
-  `v = imean(cam, mask)`), or a scalar variable assignment (`=`, `+=`, `-=`, `*=`, `/=`) combining
-  numbers, parameters, variables, live SHM properties, and scalar reductions
-  (`ema = 0.9 * ema + 0.1 * irms(cam - dark)`) is compiled once and runs directly on each frame
-  without re-parsing; consecutive compatible element-wise assignments in the same basic block are
-  automatically fused into a single cache-resident pass. Other statements are evaluated as text on
-  each frame. `out /= image` is one of them: a zero pixel in the divisor is an error that stops the
-  unit (write `out = out * invflat` for a compiled division).
+- An element-wise image assignment (`out = a*b + c`, also `+=` `-=` `*=` `/=` and masked
+  `out[mask] = ...`), with slices (including binned `[::2b]` slices and `end`), broadcast operands
+  (not for `/=`), bitwise operators, complex arithmetic, `shift()`, `roll()`, `lut()`, `ema()`,
+  inline `def` functions, and axis reductions on either side (`out[0:63,:] = cam[0:63,:] - dark`,
+  `hist[:,:,_n % 8] = cam`, `out = cam - imean(cam, 1)`), multi-image assignments
+  (`u, v = expr1, expr2`), `out = matmul(...)` / `A @ B` / `gemm` / `gemv` / `ger` / `syrk`
+  (including scaled `out = alpha * (A @ B) + beta * out` and `+=` / `-=` forms),
+  `out = transpose(...)` / `A.T`, `out = reshape(...)`, `out = reshape(A @ B, ...)`, up to four
+  scalar or nested reductions (`v = imean(cam)`, `v = irms(cam - imean(cam))`,
+  `m, s, lo, hi = istats(cam)`, `px, py = iargmax(cam)`, `v = dot(a, b)`, `v = imean(cam, mask)`),
+  or a scalar variable assignment (`=`, `+=`, `-=`, `*=`, `/=`) combining numbers, parameters,
+  variables, live SHM properties, and scalar reductions (`ema = 0.9 * ema + 0.1 * irms(cam - dark)`)
+  is compiled once into native C code (`.so` via `gcc -O3 -march=native -ffast-math -fopenmp`) or a
+  scalar/BLAS plan and runs directly on each frame without re-parsing; consecutive compatible
+  element-wise assignments in the same basic block are automatically fused into a single
+  cache-resident pass. In `out /= image`, a zero pixel in the divisor is caught inside the fused
+  pass and stops the unit with an error.
 - An output written by several statements (`out = cam * g; out = out - imean(out)`) is posted once
   per frame, after the last statement that wrote it, so readers never see the intermediate values.
 - A trigger stream re-created by its owner is remapped at the next trigger timeout (2 s), and an
   owner that has exited is reported in the unit's status message; `p.<unit>.timeouts` counts the
   timeouts.
-- Threads: `.procinfo.NBthread` defaults to 0, which lets the team policy decide (one thread
-  below 512 K pixels, then one per 256 K pixels up to the physical cores allowed by the process's
-  affinity mask, so a unit pinned with `taskset` to one core stays single-threaded). A positive
-  value caps the team and OpenBLAS at that many threads. The calculator's threads are its own
-  persistent team, dispatched once per block loop (no fork/join per statement): after a job the
-  workers keep spinning for `MILK_CALC_SPIN_US` (default 2000 µs) before they sleep, so a unit
-  ticking faster than that never wakes a sleeping worker (a wake-up costs ~100 µs, a dispatch to
-  spinning workers ~1 µs). For a real-time unit at a lower rate, set `MILK_CALC_SPIN_US=-1` to keep
-  the workers spinning for the life of the process (they then burn their cores), and for a unit on
-  an isolated core set `MILK_CALC_SPIN_US=0` or `.procinfo.NBthread=1` so no idle worker spins at
-  all. `OMP_WAIT_POLICY` still governs the OpenBLAS and other OpenMP regions.
+- Threads: `.procinfo.NBthread` defaults to 0, which lets the thread policy decide (one thread
+  below 64 K pixels, then $\lceil \text{pixels} / 64\text{K}\rceil$ up to the physical cores allowed
+  by the process's affinity mask, so a unit pinned with `taskset` to one core stays
+  single-threaded). A positive value, or `MILK_CALC_THREADS=N`, caps the OpenMP and OpenBLAS thread
+  count at that many threads (`OMP_NUM_THREADS` is respected when neither is set).
 - `-loopd SEC` ticks on an absolute deadline (`clock_nanosleep`, timer slack 1 µs below 1 ms), so
   periods of a few tens of µs hold without drift; a tick that ran long resumes from now rather
   than bursting to catch up.
@@ -331,20 +355,26 @@ commands plus a pipe round trip (about 0.1 ms), which suits slow loops.
 
 ## Fusion & Cost Model
 
+Every image expression or reduction statement is lowered to a typed AST, normalized by algebraic and
+fusion passes, emitted as restricted C99 source with `#pragma omp parallel for simd` loops, compiled
+by `${MILK_CALC_CC:-gcc}` into `${MILK_CALC_CACHE:-${TMPDIR:-/tmp}/milk-calc-cache-<uid>}/mc_<hash>.so`
+(content-addressed by structural AST hash, LRU-evicted at 256 `.so` files), and cached in a
+64-entry in-memory LRU table. Runtime scalar values, slice bounds (`im[k:k+7, :]`), `shift`/`roll`
+offsets, and live SHM properties (`s.`, `f.`, `p.`) are passed in the kernel's call argument struct
+rather than baked into the C source, so changing a variable or slice offset in a loop reuses the
+already-loaded `.so` with zero recompilation.
+
 An expression made of same-size images, numbers, arithmetic, comparisons, bitwise operators, the
-per-pixel math functions, `where`, `?:` with an image condition, `shift`, `lut`, inline `def`
-functions, the coordinate/PRNG functions, live SHM numeric properties (`s.`, `f.`, `p.`), and
-up to four full-image, nested, or masked scalar reductions (`(a - imean(a)) / istd(a)`,
-`irms(a - imean(a))`, `imean(a, mask)`, `dot(a, b)`) runs in one fused SIMD/OpenMP pass without
-temporary images, however many operators it has (and an image load is folded into the operator
-that follows it, so `a*2.5 + b*0.5` is two sweeps of each block, not five) (1024×1024 floats: `x = (b*2 + c*3 - a) / 4`
-~0.2 ms, `a += 1` ~0.2 ms), and assigning it to an existing image of the same size and type writes
-in place. Multiple reductions over the same sub-expression (`(a - imin(a)) / (imax(a) - imin(a))`,
-`m, s, lo, hi = istats(a)`) are deduplicated into a single reduction pass. Repeated `@calc`
-statements reuse a 32-entry LRU compiled program cache, and OpenMP parallel regions (axis
-reductions, where every thread owns its outputs, segmented reductions, the Gaussian passes and the
-pixel loop) automatically size their thread team to the compute-weighted image size and physical
-core count (`MILK_CALC_THREADS=N` overrides it; `OMP_NUM_THREADS` can only lower it; OpenBLAS calls
+per-pixel math functions, complex operations, `where`, `?:` with an image condition, `shift`,
+`roll`, `lut`, `ema`, inline `def` functions, the coordinate/PRNG functions, live SHM numeric
+properties, and up to four full-image, nested, or masked scalar reductions
+(`(a - imean(a)) / istd(a)`, `irms(a - imean(a))`, `imean(a, mask)`, `dot(a, b)`) runs in one fused
+SIMD/OpenMP C pass without temporary images, however many operators it has, and assigning it to an
+existing image of the same size and type writes in place. Multiple reductions over the same
+sub-expression (`(a - imin(a)) / (imax(a) - imin(a))`, `m, s, lo, hi = istats(a)`) are deduplicated
+into a single reduction pass. OpenMP parallel regions automatically size their thread count to
+$\lceil \text{pixels} / 64\text{K}\rceil$ up to the physical core count (`MILK_CALC_THREADS=N` or
+`.procinfo.NBthread` overrides it; `OMP_NUM_THREADS` is used when neither is set; OpenBLAS calls
 size their pool the same way).
 
 A pass runs in float32 when every operand and destination is `float` or an 8- or 16-bit integer
@@ -353,27 +383,24 @@ A pass runs in float32 when every operand and destination is `float` or an 8- or
 keeps its pass in double. `@calc --explain` shows which.
 
 `@calc --explain "<statements>"` compiles the statements as a unit would and prints, per statement,
-whether it is kept (a fused pass with its operand count, precision and thread count, a pass merged
-into an earlier statement, a scalar tape, a BLAS kernel) or evaluated as text each tick and why (the
-limit or construct that stopped fusion); new targets are created as at a unit's start. A unit prints
-the same reason once, at compile, for every statement it will evaluate as text.
+how it executes (a compiled C `.so` pass with its operand count, precision, thread count, and
+generated C loop body, a pass merged into an earlier statement, a scalar tape, or a BLAS/library
+kernel); new targets are created as at a unit's start.
 
 Slices, broadcasting and axis reductions are part of the one pass too: a slice operand
-(`a[0:63,:]`, `cube[:,:,k]`, `a[::2,-*]`) is read through a view of its image (no copy), an
-operand whose extent is 1 on an axis is broadcast along it (`a - row - col`, `cube - dark`), a
-sliced left-hand side (`out[0:63,:] = …`, `hist[:,:,_n % 8] = cam`) is written through a view, and
-`imean(cube, 2)`, `istd(a, 0)` and the other axis forms are computed before the pixel loop and
-read as operands on their own axis (`a - imean(a, 1)` subtracts each column's mean, `a - imean(a, 0)`
-each row's, also when `a` is not square; assigned on their own they keep the squeezed shape, `ny`
-values for `imean(a, 0)`). `where(c, a, b)` and `c ? a : b` with a scalar `c` and image branches are
-fused too. Bounds that hold variables (`out[k:k+7,:]`, `ring[:,:,_n % 8]`, `prev(cam)`) are compiled
-into the statement's scalar tape and re-placed each run for about a microsecond, not re-parsed; a
-bound that would change the slice's shape is an error. Bounds that hold variables are resolved each time the
-statement runs, also in a unit. What still takes one pass per operator: binned slices (`[::2b]`),
-order statistics (`imedian`, `perc`), complex images, and a slice that selects one pixel (a
-scalar). Those passes write temporary images: the calculator keeps up to four of them (256 MiB) when
-a statement ends, so the statement run again, in a loop or a unit's frames, reuses them instead of
-allocating and zeroing new ones (`mem.listim` lists them as `_tmpcalcpool<k>`).
+(`a[0:63,:]`, `cube[:,:,k]`, `a[::2,-*]`, `a[::2b,*]`) is read through a strided or binned view of
+its image (no copy), an operand whose extent is 1 on an axis is broadcast along it
+(`a - row - col`, `cube - dark`), a sliced or masked left-hand side (`out[0:63,:] = …`,
+`hist[:,:,_n % 8] = cam`, `out[mask] = …`) is written in place, and `imean(cube, 2)`,
+`istd(a, 0)` and the other axis forms are computed in a pre-stage before the pixel loop and read as
+operands on their own axis (`a - imean(a, 1)` subtracts each column's mean, `a - imean(a, 0)` each
+row's, also when `a` is not square; assigned on their own they keep the squeezed shape, `ny` values
+for `imean(a, 0)`). `where(c, a, b)` and `c ? a : b` with a scalar `c` and image branches are fused
+too. Bounds that hold variables (`out[k:k+7,:]`, `ring[:,:,_n % 8]`, `prev(cam)`) are evaluated each
+time the statement runs and passed into the compiled C kernel; a bound that would change the slice's
+shape is an error. Order statistics (`imedian`, `perc`) and whole-image library operators
+(`medfilt*`, `gauss`, `conv2`, `fft`, `ifft`, `svd`, `eigh`, solvers) run as pre-stages into
+scratch images reused across frames from a 4-buffer (256 MiB) pool (`_tmpcalcpool<k>`).
 
 ## Bringing Your Own Compiled C Code (`milk_calc_ext.h` & `milk-cc`)
 
@@ -383,7 +410,7 @@ without editing CMake files.
 
 | Tier | Registration Macro | Best For |
 | ---- | ------------------ | -------- |
-| **1a: 1D SIMD Block Kernel** | `MILK_CALC_REG_BLK`, `MILK_CALC_REG_BLK2` | Per-pixel non-linearities, LUTs, 2-image blends fused into the L1 tile loop (`FUSE_BLK = 1024`) |
+| **1a: 1D SIMD Block Kernel** | `MILK_CALC_REG_BLK`, `MILK_CALC_REG_BLK2` | Per-pixel non-linearities, LUTs, 2-image blends fused into the 1024-pixel L1 tile loop |
 | **1b: 2D Neighborhood Stencil** | `MILK_CALC_REG_STENCIL` | $(2R+1)\times(2R+1)$ local neighborhood filters ($R \in \{1,2,3\}$) with pre-clamped row pointers |
 | **1c: Whole-Image Kernel** | `MILK_CALC_REG_IMG` | Single-function 1-in / 1-out global image algorithms (column/row de-meaning, custom transforms) |
 | **2: Stateful Multi-Port Operator** | `MILK_CALC_OP_DECLARE`, `MILK_CALC_REG_OP` | Multi-input / multi-output algorithms with `init` / `exec` / `free` state and custom output shapes |
@@ -393,7 +420,7 @@ without editing CMake files.
 
 Passing a `.c` file to `@calc -l my_kernels.c "..."` or
 `milk-fpsexec-milk-calc -l my_kernels.c ...` automatically compiles it into
-`${TMPDIR:-/tmp}/milk-calc-cache-<uid>/ext_<fnv1a64>.so` with
+`${MILK_CALC_CACHE:-${TMPDIR:-/tmp}/milk-calc-cache-<uid>}/ext_<fnv1a64>.so` with
 `-O3 -march=native -ffast-math -fopenmp-simd -fPIC -shared` and loads it via `dlopen()`. A `.c` file
 is compiled as C; there is no C++ path. `MILK_CALC_LIBS` (files separated by spaces, `,` or `:`)
 loads extensions in every calculator call, and a `loadlib <file>` statement loads one from

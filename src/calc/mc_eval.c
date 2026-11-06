@@ -18,7 +18,7 @@
 
 int  mcalc_out_mode     = MCALC_OUT_VALUES;
 int  mcalc_test_image   = 0;
-int  mcalc_float_digits = 6;
+int  mcalc_float_digits = 15;
 char mcalc_lasterr[256] = "";
 
 static mcalc_host_ops g_host     = { NULL, NULL };

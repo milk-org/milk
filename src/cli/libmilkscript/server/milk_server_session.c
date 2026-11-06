@@ -26,7 +26,7 @@
 #include "CLIcore.h"
 #include "CLIcore_modules.h"
 #include "CLIcore_script.h"
-#include "cli_calc_parser.h"
+#include "mcalc.h"
 #include "milk_catalog.h"
 #include "milk_cmd_args.h"
 #include "milk_cmd_index.h"
@@ -209,7 +209,8 @@ int milk_server_config(int argc, char **argv)
                 fprintf(stderr, "milk: @config digits: invalid value '%s' (1 to 17)\n", val);
                 return 2;
             }
-            cli_float_digits = (int) n;
+            cli_float_digits   = (int) n;
+            mcalc_float_digits = cli_float_digits;
         }
         printf("digits %d\n", cli_float_digits);
         return 0;

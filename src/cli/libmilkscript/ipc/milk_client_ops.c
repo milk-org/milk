@@ -38,7 +38,7 @@
 #include <unistd.h>
 
 #include "CLIcore_script.h"
-#include "calc_select.h"
+#include "mcalc.h"
 #include "milk_client.h"
 #include "milk_client_internal.h"
 #include "milk_entity_ns.h"
@@ -1492,7 +1492,7 @@ static void bind_values(const milk_client_hooks_t *hooks, const char *names, cha
  * @truth:  Output boolean truth value of the last statement
  *
  * Evaluates pure scalar arithmetic expressions and `/dev/shm` property reads
- * directly in the client process via `cli_calc_local()`, avoiding a socket
+ * directly in the client process via `mcalc_local()`, avoiding a socket
  * round-trip to the server.
  *
  * Return: Number of evaluated statements (`> 0`), or -1 if server evaluation is required.
@@ -1516,7 +1516,7 @@ static int calc_local_list(const char *expr, int digits, char vals[][256], int m
         memcpy(stmt, p, l);
         stmt[l] = '\0';
         if (stmt[strspn(stmt, " \t")] != '\0' &&
-            (n == maxn || !calc_select_local(stmt, digits, vals[n++], 256, truth)))
+            (n == maxn || !mcalc_local(stmt, digits, vals[n++], 256, truth)))
         {
             return -1;
         }
@@ -1778,7 +1778,7 @@ int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hook
         const char *env_libs = getenv("MILK_CALC_LIBS");
         if (nlibs == 0 && srv_fd < 0 && (env_libs == NULL || env_libs[0] == '\0'))
         {
-            return calc_select_print_catalog(pat, json_mode);
+            return mcalc_print_catalog(pat, json_mode);
         }
     }
     size_t tot = 64 + (size_t) nlibs * (PATH_MAX + 16);

@@ -11,9 +11,6 @@ destination (which unfuses the read into its register slot).
 
 from __future__ import annotations
 
-import os
-import re
-
 import pytest
 
 from milk.cliwrap import HAVE_CLI
@@ -39,36 +36,34 @@ def _report(out: str, stmt: str) -> str:
     raise AssertionError(f"no report line for {stmt!r} in:\n{out}")
 
 
-def _ops(out: str, stmt: str) -> int:
-    rep = _report(out, stmt)
-    m = re.search(r"(\d+) vector op", rep)
-    assert m, rep
-    return int(m.group(1))
-
-
 def test_peephole_shortens_the_tape(tmp_path):
-    """Each statement on its own (so none merges): fused pass in new, peephole op count in old."""
+    """Each statement on its own compiles to a single fused pass reported by `--explain`."""
     cases = [
-        ("o1 = a*2.5 + b*0.5", 2),
-        ("o2 = a + b", 1),
-        ("o3 = (a - b) * 2", 2),
-        ("o4 = 2 / a - b", 2),
-        ("o5 = a*2.5 + b*0.5 - a/4 + 1", 5),
-        ("o6 = (a + 1) * (b - 2)", 3),
-        ("o7 = a * b + 1", 2),
+        ("o1 = a*2.5 + b*0.5", "1 operand), writes o1", "2 operands), writes o1"),
+        ("o2 = a + b", "2 operands), writes o2", "2 operands), writes o2"),
+        ("o3 = (a - b) * 2", "2 operands), writes o3", "2 operands), writes o3"),
+        ("o4 = 2 / a - b", "2 operands), writes o4", "2 operands), writes o4"),
+        (
+            "o5 = a*2.5 + b*0.5 - a/4 + 1",
+            "2 operands), writes o5",
+            "2 operands), writes o5",
+        ),
+        ("o6 = (a + 1) * (b - 2)", "2 operands), writes o6", "2 operands), writes o6"),
+        ("o7 = a * b + 1", "2 operands), writes o7", "2 operands), writes o7"),
     ]
     script = 'mem.mk2Dim a 64 64 >/dev/null; mem.mk2Dim b 64 64 >/dev/null; @calc "a = 1; b = 2"\n'
-    for st, _ in cases:
+    for st, _, _ in cases:
         script += f'@calc --explain "{st}"\n'
     res = milk_bash(script, tmp_path)
     out = res.stdout + res.stderr
-    for st, n in cases:
-        if os.environ.get("MILK_CALC_ENGINE", "new") != "old":
-            assert _report(res.stdout, st).startswith(
-                "kept: fused pass over 64x64x1 (float32, 1D,"
-            ), (st, out)
-        else:
-            assert _ops(res.stdout, st) == n, (st, out)
+    for st, _, suffix in cases:
+        rep = _report(res.stdout, st)
+        assert rep.startswith(
+            "kept: fused pass over 64x64x1 (float32, 1D,"
+        ) and rep.endswith(suffix), (
+            st,
+            out,
+        )
 
 
 def test_superinstructions_match_fallback(tmp_path):

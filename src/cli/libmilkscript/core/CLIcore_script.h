@@ -38,6 +38,7 @@ typedef struct
 extern CLI_VAR cli_vars[CLI_MAX_VARS];
 extern int     cli_last_retval;
 extern int     cli_float_digits;
+extern int     cli_calc_mode;
 
 const char *cli_var_get(const char *name);
 

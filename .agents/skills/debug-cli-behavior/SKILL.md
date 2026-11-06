@@ -112,9 +112,9 @@ Common crash locations and their causes:
 | Crash location                 | Likely cause                                         |
 | ------------------------------ | ---------------------------------------------------- |
 | `CLIcore_checkargs.c`          | `nbarg` mismatch, missing `FPFLAG_PRIMARY_CLI_INPUT` |
-| `RegisterCLIcmd`               | `MILK_RUNNABLE` with NULL `.cli_func` / `.farg`, or `.nbarg` not matching `.farg` |
-| `cli_calc_eval.c`              | Stack underflow in expression evaluator              |
-| `cli_calc_tokenizer.c`         | Buffer overflow on long expressions                  |
+| `RegisterCLIcmd`               | `MILK_RUNNABLE` with NULL `.cli_func` / `.farg`      |
+| `mc_eval.c`                    | Expression evaluation in `src/calc/`                 |
+| `mc_lex.c` / `mc_parse.c`      | Lexer / Pratt parser in `src/calc/`                  |
 | `CLIcore_modules.c`            | Module load order, `dlopen` failure                  |
 | `image_ID()` / `variable_ID()` | Invalid image index, corrupted `data.image[]` array  |
 
@@ -180,7 +180,7 @@ When `milk-cli` receives input, it flows through:
 readline → intercept check
   → variable expansion (CLIcore_script_expand.c)
   → special-form check (if/while/for/function)
-  → calc expression check (cli_calc_parser.c)
+  → calc expression check (mc_eval.c)
   → CLI command lookup (CLIcore_UI_execute.c)
   → shell bypass (system())
 ```
@@ -249,7 +249,7 @@ Key files for CLI debugging:
 | `CLIcore/CLIcore_script_var.c`       | Variable assignment and lookup              |
 | `CLIcore/CLIcore_script_expand.c`    | Variable and command substitution           |
 | `CLIcore/CLIcore_checkargs.c`        | Argument validation                         |
-| `cli_calc_parser.c`                  | Arithmetic expression entry point           |
-| `cli_calc_tokenizer.c`               | Expression tokenizer                        |
-| `cli_calc_eval.c`                    | Expression evaluator (stack machine)        |
-| `cli_calc_functions.c`               | Built-in math functions                     |
+| `src/calc/mc_eval.c`                 | Arithmetic expression entry point           |
+| `src/calc/mc_lex.c`                  | Expression tokenizer                        |
+| `src/calc/mc_parse.c`                | Pratt parser                                |
+| `src/calc/mc_scalar.c`               | Built-in scalar math & string functions     |

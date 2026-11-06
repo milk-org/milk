@@ -93,7 +93,6 @@
 #include "CLIcore_modules.h"
 #include "CLIcore_setSHMdir.h"
 #include "CLIcore_signals.h"
-#include "cli_calc_parser.h"
 #include "milk_bash_engine.h"
 #include "milk_catalog.h"
 #include "milk_server.h"

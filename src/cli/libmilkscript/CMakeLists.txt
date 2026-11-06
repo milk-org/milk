@@ -45,42 +45,6 @@ set(MILKSCRIPT_SOURCES
     core/milk_lexicon.c
     core/milk_renames.c
     core/milk_session.c
-    calc/core/cli_calc_tokenizer.c
-    calc/core/cli_calc_parser.c
-    calc/core/cli_calc_parser_assign.c
-    calc/core/cli_calc_parser_state.c
-    calc/core/cli_calc_functions.c
-    calc/core/cli_calc_functions_red_str.c
-    calc/core/cli_calc_binops.c
-    calc/core/cli_calc_eval.c
-    calc/core/cli_calc_slice.c
-    calc/core/cli_calc_complex.c
-    calc/core/cli_calc_scalar.c
-    calc/core/cli_calc_scalar_temporal.c
-    calc/fuse/cli_calc_fuse.c
-    calc/fuse/cli_calc_fuse_views.c
-    calc/fuse/cli_calc_fuse_ops_spatial.c
-    calc/fuse/cli_calc_fuse_ops_axis.c
-    calc/fuse/cli_calc_fuse_exec.c
-    calc/fuse/cli_calc_fuse_exec_spatial.c
-    calc/fuse/cli_calc_fuse_prestage.c
-    calc/fuse/cli_calc_fuse_prestage_seg.c
-    calc/fuse/cli_calc_fuse_reduce.c
-    calc/fuse/cli_calc_fuse_kept.c
-    calc/fuse/cli_calc_fuse_merge.c
-    calc/linalg/cli_calc_linalg_construct.c
-    calc/linalg/cli_calc_linalg_blas.c
-    calc/linalg/cli_calc_linalg_kept.c
-    calc/linalg/cli_calc_lapack_triangular.c
-    calc/linalg/cli_calc_lapack_solve.c
-    calc/linalg/cli_calc_lapack_svd_qr.c
-    calc/prog/cli_calc_prog.c
-    calc/prog/cli_calc_prog_parse.c
-    calc/prog/cli_calc_prog_history.c
-    calc/prog/cli_calc_engines.c
-    calc/ext/cli_calc_ext.c
-    calc/ext/cli_calc_fuse_user_kern.c
-    calc/ext/cli_calc_fuse_user_op.c
     ipc/milk_ipc_common.c
     ipc/milk_client_conn.c
     ipc/milk_client_ops.c
@@ -102,7 +66,6 @@ set(MILKSCRIPT_SOURCES
     bash/milk_bash_coproc.c
     bash/milk_bash_exec.c
     bash/milk_bash_cmdfile.c
-    calc_select.c
     milkscript_stubs.c
     milkscript_api.c)
 
@@ -151,7 +114,6 @@ target_include_directories(
   milkscript
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/core>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/calc>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/prop>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/calc>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/calc/units>
@@ -187,8 +149,6 @@ install(
         core/CLIcore_script.h
         core/CLIcore_signals.h
         core/CLIcore_utils.h
-        calc/cli_calc_parser.h
-        calc/cli_calc_tokenizer.h
         ipc/milk_proto.h
         ipc/milk_srvlog.h
         ipc/milk_client.h
@@ -234,12 +194,8 @@ add_library(
   ../../calc/mc_func.c
   ../../calc/mc_lex.c
   ../../calc/mc_local.c
-  calc_select.c
   core/milk_renames.c
-  core/CLIcore_inspect.c
-  calc/prog/cli_calc_engines.c
-  calc/core/cli_calc_scalar.c
-  calc/core/cli_calc_scalar_temporal.c)
+  core/CLIcore_inspect.c)
 target_include_directories(
   milkbash PRIVATE $<TARGET_PROPERTY:milkscript,INTERFACE_INCLUDE_DIRECTORIES>)
 target_compile_definitions(milkbash PRIVATE MILK_BASH_CLIENT)
@@ -270,12 +226,3 @@ target_include_directories(
                    ${CMAKE_CURRENT_SOURCE_DIR}/../CLIcore)
 set_target_properties(milk-call PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
 install(TARGETS milk-call DESTINATION bin)
-
-# Differential calculator test harness and benchmark runner (Phase 3-9; deleted in Phase 10)
-add_executable(milk-calcdiff tests/calcdiff.c)
-target_link_libraries(milk-calcdiff PRIVATE milkscript milkcalc milkprocessinfo milkdata m)
-target_include_directories(
-  milk-calcdiff PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-                       ${CMAKE_CURRENT_SOURCE_DIR}/../CLIcore)
-set_target_properties(milk-calcdiff PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
-install(TARGETS milk-calcdiff DESTINATION bin)

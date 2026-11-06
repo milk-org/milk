@@ -13,7 +13,7 @@
  *      A string cache (`g_dcvar_cached_str`) of the text last sent to bash keeps 64-bit values exact
  *      when bash sends that text back unchanged.
  *   2. Expands the entity references (`s.<stream>.<prop>`, `f.<fps>.<param>`, `p.<proc>.<field>`)
- *      inside calc and test expressions before `cli_calc_eval_bash()` runs them.
+ *      inside calc and test expressions before `mcalc_eval_bash()` runs them.
  */
 
 #ifndef _GNU_SOURCE

@@ -45,7 +45,7 @@ class CorpusEntry:
     source: str = ""
 
     def to_json_line(self) -> str:
-        """Serialize as a JSON line for milk-calcdiff."""
+        """Serialize as a JSON line."""
         return json.dumps(
             {
                 "dataset": self.dataset,
