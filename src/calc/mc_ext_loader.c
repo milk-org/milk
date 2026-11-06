@@ -4,7 +4,22 @@
 
 /**
  * @file mc_ext_loader.c
- * @brief Dynamic `.c` / `.so` loader and call-site scanner for `milk_calc_ext`.
+ * @brief Dynamic `.c` / `.so` extension loader and static call-site scanner for `libmilkcalc`.
+ *
+ * Implements two subsystems supporting user-defined C extensions (`milk_calc_ext.h`):
+ *   1. **Dynamic compilation and loading (`mcalc_ext_load`, `mcalc_ext_load_list`)**:
+ *      Accepts either pre-compiled shared objects (`.so`) or raw `.c` source files (via `-l`,
+ *      `loadlib`, or `MILK_CALC_LIBS`). Raw `.c` files are hashed with 64-bit FNV-1a over the ABI
+ *      version, compiler name, and file contents, compiled once via `fork`/`execvp` (`gcc -O3
+ *      -march=native -ffast-math -fopenmp-simd -shared -fPIC`) into
+ *      `${TMPDIR:-/tmp}/milk-calc-cache-<uid>/ext_<hash>.so`, and loaded via `dlopen`. The exported
+ *      `__milk_calc_ext_table` symbol is then registered in the global extension registry.
+ *   2. **Static call-site scanner (`mcalc_ext_scan_source`)**:
+ *      Tokenizes a `milk.calc` unit program before execution to discover every call to a
+ *      registered extension (`func(...)` or `func:label(...)`). For any extension parameter not
+ *      bound inline at the call site, invokes `param_cb` so the `milk.calc` FPS setup stage can
+ *      auto-expose `<label>.<param>` in the unit's FPS parameter table, and invokes `scalar_out_cb`
+ *      for scalar output ports unpacked on the LHS.
  */
 
 #define _GNU_SOURCE
@@ -26,11 +41,24 @@
 #include "mcalc.h"
 #include "milk_calc_ext.h"
 
+/* Maximum number of canonical library paths tracked for idempotent loading. */
 #define CALC_EXT_MAX_LIBS 32
 
 static char loaded_libs[CALC_EXT_MAX_LIBS][PATH_MAX];
 static int  n_loaded_libs = 0;
 
+/* ============================================================================================== */
+/* Content Hashing and On-Demand `.c` -> `.so` Compilation                                        */
+/* ============================================================================================== */
+
+/**
+ * fnv1a_bytes - Update a 64-bit FNV-1a hash state over a byte buffer
+ * @h:   Initial or running 64-bit FNV-1a hash state
+ * @buf: Input byte buffer
+ * @len: Number of bytes in @buf
+ *
+ * Return: Updated 64-bit FNV-1a hash value
+ */
 static uint64_t fnv1a_bytes(uint64_t h, const void *buf, size_t len)
 {
     const unsigned char *p = (const unsigned char *) buf;
@@ -41,6 +69,19 @@ static uint64_t fnv1a_bytes(uint64_t h, const void *buf, size_t len)
     return h;
 }
 
+/**
+ * find_milk_include_dirs - Discover `-I` header search paths for compiling `.c` extensions
+ * @inc_dirs: Output array of up to 6 directory path strings
+ * @n_inc:    Output count of populated entries in @inc_dirs
+ *
+ * Collects include directories from three sources in order:
+ *   1. `$MILK_INSTALLDIR/include` and `$MILK_INSTALLDIR/include/milkcalc`.
+ *   2. The prefix adjacent to `libmilkcalc.so` discovered via `dladdr(&mcalc_ext_load)`.
+ *   3. The source tree directory containing `mc_ext_loader.c` and `../engine/libfps` (for
+ *      in-tree unit tests before install).
+ *
+ * Return: void
+ */
 static void find_milk_include_dirs(char inc_dirs[6][PATH_MAX], int *n_inc)
 {
     *n_inc          = 0;
@@ -63,10 +104,14 @@ static void find_milk_include_dirs(char inc_dirs[6][PATH_MAX], int *n_inc)
             if (p2 != NULL && strcmp(p2 + 1, "lib") == 0)
             {
                 *p2 = '\0';
-                (void) (*n_inc < 6 &&
-                        (snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s/include", rp), 1));
-                (void) (*n_inc < 6 &&
-                        (snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s/include/milkcalc", rp), 1));
+                if (*n_inc < 6)
+                {
+                    snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s/include", rp);
+                }
+                if (*n_inc < 6)
+                {
+                    snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s/include/milkcalc", rp);
+                }
             }
         }
     }
@@ -79,11 +124,28 @@ static void find_milk_include_dirs(char inc_dirs[6][PATH_MAX], int *n_inc)
         snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s", src_file);
         char repo_inc[PATH_MAX];
         snprintf(repo_inc, sizeof(repo_inc), "%s/../engine/libfps", src_file);
-        (void) (access(repo_inc, R_OK) == 0 && *n_inc < 6 &&
-                (snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s", repo_inc), 1));
+        if (access(repo_inc, R_OK) == 0 && *n_inc < 6)
+        {
+            snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s", repo_inc);
+        }
     }
 }
 
+/**
+ * compile_c_to_so - Compile a user `.c` extension source file into a cached `.so` shared library
+ * @c_path:    Path to the `.c` extension source file
+ * @so_out:    Output buffer receiving the compiled `.so` path
+ * @so_out_sz: Capacity of @so_out in bytes
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Hashes the ABI version, source path, compiler binary (`$CC` or `"gcc"`), and file bytes to
+ * derive a content-addressed cache path `ext_<hash>.so`. If the cached `.so` already exists on
+ * disk, returns immediately; otherwise compiles to a PID-qualified temporary file and atomically
+ * renames it into place.
+ *
+ * Return: 0 on success, -1 on file I/O or compilation error
+ */
 static int compile_c_to_so(const char *c_path,
                            char       *so_out,
                            size_t      so_out_sz,
@@ -111,7 +173,8 @@ static int compile_c_to_so(const char *c_path,
 
     const char *tmpdir = getenv("TMPDIR");
     tmpdir             = (tmpdir != NULL && tmpdir[0] != '\0') ? tmpdir : "/tmp";
-    char cache_dir[PATH_MAX], tmp_so[PATH_MAX];
+    char cache_dir[PATH_MAX];
+    char tmp_so[PATH_MAX];
     snprintf(cache_dir, sizeof(cache_dir), "%s/milk-calc-cache-%u", tmpdir, (unsigned) getuid());
     (void) mkdir(cache_dir, 0700);
     snprintf(so_out, so_out_sz, "%s/ext_%016llx.so", cache_dir, (unsigned long long) h);
@@ -122,8 +185,10 @@ static int compile_c_to_so(const char *c_path,
     snprintf(tmp_so, sizeof(tmp_so), "%s/ext_%016llx.%d.tmp.so", cache_dir, (unsigned long long) h,
              (int) getpid());
 
-    char inc_dirs[6][PATH_MAX], inc_flags[6][PATH_MAX + 4];
-    int  n_inc = 0, ac = 0;
+    char inc_dirs[6][PATH_MAX];
+    char inc_flags[6][PATH_MAX + 4];
+    int  n_inc = 0;
+    int  ac    = 0;
     find_milk_include_dirs(inc_dirs, &n_inc);
     const char *argv[32] = {
         cc,        "-O3",   "-march=native", "-ffast-math", "-fopenmp-simd",
@@ -163,13 +228,29 @@ static int compile_c_to_so(const char *c_path,
     return 0;
 }
 
+/* ============================================================================================== */
+/* Public Extension Library Loader API                                                            */
+/* ============================================================================================== */
+
+/**
+ * mcalc_ext_load - Load a `.c` or `.so` extension file and register its `__milk_calc_ext_table`
+ * @path:  Path to a `.c` source file or `.so` shared library
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Deduplicates canonicalized paths against `loaded_libs[]` so loading the same file repeatedly is
+ * a fast no-op.
+ *
+ * Return: 0 on success, -1 on compilation, `dlopen`, `dlsym`, or registration failure
+ */
 int mcalc_ext_load(const char *path, char *err, size_t errsz)
 {
     if (path == NULL || path[0] == '\0')
     {
         return 0;
     }
-    char        rpath_buf[PATH_MAX], so_path[PATH_MAX];
+    char        rpath_buf[PATH_MAX];
+    char        so_path[PATH_MAX];
     const char *canon = realpath(path, rpath_buf);
     canon             = (canon != NULL) ? canon : path;
     for (int i = 0; i < n_loaded_libs; i++)
@@ -199,16 +280,28 @@ int mcalc_ext_load(const char *path, char *err, size_t errsz)
         (const milk_calc_ext_table_t *) dlsym(dl, "__milk_calc_ext_table");
     if (tbl == NULL || milk_calc_ext_register_table(tbl, err, errsz) != 0)
     {
-        (void) (tbl == NULL &&
-                snprintf(err, errsz, "'%s' is missing MILK_CALC_EXT_EXPORT(...)", path));
+        if (tbl == NULL)
+        {
+            snprintf(err, errsz, "'%s' is missing MILK_CALC_EXT_EXPORT(...)", path);
+        }
         dlclose(dl);
         return -1;
     }
-    (void) (n_loaded_libs < CALC_EXT_MAX_LIBS &&
-            snprintf(loaded_libs[n_loaded_libs++], PATH_MAX, "%s", canon));
+    if (n_loaded_libs < CALC_EXT_MAX_LIBS)
+    {
+        snprintf(loaded_libs[n_loaded_libs++], PATH_MAX, "%s", canon);
+    }
     return 0;
 }
 
+/**
+ * mcalc_ext_load_list - Load a comma-, colon-, or whitespace-separated list of `.c`/`.so` paths
+ * @libs_str: Delimited list of extension library paths (may be NULL or empty)
+ * @err:      Error message buffer
+ * @errsz:    Capacity of @err in bytes
+ *
+ * Return: 0 if all libraries loaded successfully, -1 on the first failure
+ */
 int mcalc_ext_load_list(const char *libs_str, char *err, size_t errsz)
 {
     for (const char *p = (libs_str != NULL) ? libs_str : ""; *p != '\0';)
@@ -239,16 +332,41 @@ int mcalc_ext_load_list(const char *libs_str, char *err, size_t errsz)
     return 0;
 }
 
+/**
+ * mcalc_ext_count - Return the total number of registered C extension entries
+ *
+ * Return: Count of registered extensions
+ */
 int mcalc_ext_count(void)
 {
     return milk_calc_ext_count();
 }
 
+/**
+ * mcalc_ext_get - Retrieve a registered C extension entry by index
+ * @idx: Index in `[0, mcalc_ext_count())`
+ *
+ * Return: Pointer to `milk_calc_ext_entry_t`, or NULL if @idx is out of range
+ */
 const milk_calc_ext_entry_t *mcalc_ext_get(int idx)
 {
     return milk_calc_ext_get(idx);
 }
 
+/* ============================================================================================== */
+/* Static Source Call-Site Scanner for FPS Parameter Discovery                                    */
+/* ============================================================================================== */
+
+/**
+ * split_ext_call_name - Split an extension call token `"func:label"` into function name and label
+ * @raw:       Raw identifier token from lexer (e.g. `"bblur1pix:wfs"` or `"bblur1pix"`)
+ * @func_out:  Output buffer receiving the base extension function name
+ * @fsz:       Capacity of @func_out in bytes
+ * @label_out: Output buffer receiving the instance label (defaults to @func_out if no `:` present)
+ * @lsz:       Capacity of @label_out in bytes
+ *
+ * Return: void
+ */
 static void split_ext_call_name(const char *raw,
                                 char       *func_out,
                                 size_t      fsz,
@@ -272,6 +390,23 @@ static void split_ext_call_name(const char *raw,
     snprintf(label_out, lsz, "%s", (colon[1] != '\0') ? (colon + 1) : func_out);
 }
 
+/**
+ * scan_one_ext_call - Inspect one extension call token sequence and report unbound FPS parameters
+ * @toks:          Token array for the current statement
+ * @ntok:          Total number of tokens in @toks
+ * @call_idx:      Index of the function identifier token in @toks (`toks[call_idx + 1]` is `(`)
+ * @ndst:          Number of LHS assignment target identifiers on this statement
+ * @lhs:           Array of LHS target identifier strings
+ * @param_cb:      Callback invoked for each extension parameter not bound inline at the call site
+ * @scalar_out_cb: Callback invoked for each LHS target bound to a `MILK_PORT_SCALAR` output port
+ * @ud:            Opaque user data pointer forwarded to @param_cb and @scalar_out_cb
+ *
+ * Walks the argument tokens between `(` and its matching `)` to determine which parameters in
+ * `e->get_params()` are bound either by keyword (`param = val`) or by positional scalar argument.
+ * Any remaining unbound parameters are reported via `param_cb(label, &pset->specs[p], is_op, ud)`.
+ *
+ * Return: void
+ */
 static void scan_one_ext_call(const mc_tok_t           *toks,
                               int                       ntok,
                               int                       call_idx,
@@ -281,7 +416,8 @@ static void scan_one_ext_call(const mc_tok_t           *toks,
                               mcalc_ext_scalar_out_cb_t scalar_out_cb,
                               void                     *ud)
 {
-    char func_name[64], label[64];
+    char func_name[64];
+    char label[64];
     split_ext_call_name(toks[call_idx].sval, func_name, sizeof(func_name), label, sizeof(label));
     int                          ext_id = milk_calc_ext_find(func_name);
     const milk_calc_ext_entry_t *e      = milk_calc_ext_get(ext_id);
@@ -363,6 +499,19 @@ static void scan_one_ext_call(const mc_tok_t           *toks,
     }
 }
 
+/**
+ * scan_statement_tokens - Lex a single statement slice and scan all function calls within it
+ * @st:            Pointer to statement start in source text
+ * @len:           Length of the statement in bytes
+ * @param_cb:      Callback for unbound extension parameters
+ * @scalar_out_cb: Callback for scalar output ports unpacked into LHS variables
+ * @ud:            Opaque user data pointer
+ *
+ * Extracts any comma-separated LHS target identifiers preceding `=` and invokes
+ * `scan_one_ext_call()` on every `IDENT(` token pair in the statement.
+ *
+ * Return: void
+ */
 static void scan_statement_tokens(const char               *st,
                                   size_t                    len,
                                   mcalc_ext_param_cb_t      param_cb,
@@ -427,6 +576,18 @@ static void scan_statement_tokens(const char               *st,
     free(tl);
 }
 
+/**
+ * mcalc_ext_scan_source - Scan program source @src for extension calls and unbound FPS parameters
+ * @src:           Program source text
+ * @param_cb:      Callback invoked for each unbound extension parameter
+ * @scalar_out_cb: Callback invoked for each LHS variable receiving a scalar operator output port
+ * @ud:            Opaque user data pointer passed to callbacks
+ *
+ * Splits @src into individual statements (respecting quotes, comments, parentheses, and braces)
+ * and delegates each statement to `scan_statement_tokens()`.
+ *
+ * Return: void
+ */
 void mcalc_ext_scan_source(const char               *src,
                            mcalc_ext_param_cb_t      param_cb,
                            mcalc_ext_scalar_out_cb_t scalar_out_cb,

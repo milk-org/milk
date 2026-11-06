@@ -2,6 +2,32 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_ext_exec.c
+ * @brief Resolution, parameter packing, and runtime execution of `milk_calc_ext` kernels/operators.
+ *
+ * Bridges user-defined and built-in C extensions (`milk_calc_ext.h`) into the `libmilkcalc`
+ * resolver (`mc_resolve.c`) and constructor executor (`mc_exec.c`):
+ *   - **Call-site validation (`mc_ext_resolve_call`)**: Validates positional and keyword arguments
+ *     against the extension's `milk_calc_param_set_t` and `milk_calc_op_ports_t` tables, enforces
+ *     port arity and multi-LHS unpacking counts, and infers output `res_kind`, `res_dt`, and
+ *     dimensions when static.
+ *   - **Parameter struct packing (`pack_ext_params`)**: Assembles the 256-byte binary parameter
+ *     buffer `pbuf` (`MILK_CALC_PARAM_BYTES`) for each invocation by binding keyword arguments,
+ *     trailing positional scalar arguments, or live `<label>.<param>` FPS/calculator variables
+ *     (falling back to `<ext_name>.<param>` or creating `<label>.<param>` with the default value).
+ *   - **Tier 1 execution (`mc_exec_ext_ctor`)**:
+ *       - `MILK_EXT_IMG`: Whole-image callback `img_fn(out, in, pbuf)`.
+ *       - `MILK_EXT_STENCIL`: Parallel 2D row-strip execution via `arith_team_run()`, clamping
+ *         `2*R + 1` input rows with horizontal border replication into a per-thread pad buffer.
+ *       - `MILK_EXT_BLK1` / `MILK_EXT_BLK2`: Parallel 1D SIMD block execution over flat float32
+ *         arrays across `arith_team_run()`.
+ *   - **Tier 2 stateful operator execution (`exec_ext_op`, `mc_exec_multi_linalg_or_ext`)**:
+ *     Caches operator state (`op_cache_state_t`) on `cs->ext_state`, re-running `op_init()` only
+ *     when input dimensions or non-`FPFLAG_WRITERUN` parameters change, and binds multi-output
+ *     image and scalar ports.
+ */
+
 #include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -26,6 +52,18 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
                               char            *err,
                               size_t           errsz);
 
+/* ============================================================================================== */
+/* Diagnostics and Call-Site Resolution                                                           */
+/* ============================================================================================== */
+
+/**
+ * ext_err - Format a diagnostic message into @err if not already populated
+ * @err:   Destination error buffer (may be NULL)
+ * @errsz: Capacity of @err in bytes
+ * @fmt:   printf-style format string
+ *
+ * Return: Always -1 for convenient tail-return error propagation
+ */
 __attribute__((format(printf, 3, 4))) static int ext_err(char       *err,
                                                          size_t      errsz,
                                                          const char *fmt,
@@ -41,11 +79,33 @@ __attribute__((format(printf, 3, 4))) static int ext_err(char       *err,
     return -1;
 }
 
+/**
+ * strip_dot - Skip a leading `'.'` on a parameter name specification
+ * @s: Parameter or keyword string (may be NULL)
+ *
+ * Extension parameter specs may be declared with a leading dot (e.g. `".sigma"`); this helper
+ * normalizes both `".sigma"` and `"sigma"` to `"sigma"`.
+ *
+ * Return: Pointer to the normalized parameter name (never NULL)
+ */
 static const char *strip_dot(const char *s)
 {
     return (s != NULL && s[0] == '.') ? (s + 1) : (s != NULL ? s : "");
 }
 
+/**
+ * mc_ext_resolve_call - Validate and type-check an extension call AST node during resolution
+ * @e:     `MC_EXPR_CALL` node with `e->u.call.ext_id >= 0`
+ * @nlhs:  Number of LHS targets unpacking the call result (`1` for normal expressions)
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Checks that all keyword arguments match either a declared parameter in `ext->get_params()` or a
+ * named input port in `ext->get_ports()`, verifies required positional input counts and types,
+ * validates @nlhs against `pts->nout`, and populates `e->res_kind`, `e->res_dt`, and `e->res_size`.
+ *
+ * Return: 0 on success, -1 on validation error
+ */
 int mc_ext_resolve_call(mc_expr_t *e, int nlhs, char *err, size_t errsz)
 {
     const milk_calc_ext_entry_t *ext = milk_calc_ext_get(e->u.call.ext_id);
@@ -139,6 +199,21 @@ int mc_ext_resolve_call(mc_expr_t *e, int nlhs, char *err, size_t errsz)
     return 0;
 }
 
+/* ============================================================================================== */
+/* Binary Parameter Struct Packing and Float32 Input Conversion                                   */
+/* ============================================================================================== */
+
+/**
+ * write_param_field - Store a numeric value @val into field @sp of packed parameter buffer @pbuf
+ * @pbuf: Destination 256-byte parameter struct buffer
+ * @sp:   Parameter specification (`fptype`, `offset`, `size`)
+ * @val:  Evaluated double-precision parameter value
+ *
+ * Converts @val to the C type matching `sp->fptype` (`int64_t`, `uint64_t`, `int32_t`, `uint32_t`,
+ * `float`, or `double`) and copies it to `pbuf + sp->offset`.
+ *
+ * Return: void
+ */
 static void write_param_field(uint8_t *pbuf, const milk_calc_param_spec_t *sp, double val)
 {
     if (sp->offset + sp->size > MILK_CALC_PARAM_BYTES)
@@ -185,6 +260,13 @@ static void write_param_field(uint8_t *pbuf, const milk_calc_param_spec_t *sp, d
     }
 }
 
+/**
+ * lookup_calc_var_d - Read a numeric variable from `milk_data.variable[]` as double
+ * @name: Variable identifier to look up (e.g. `"myop.gain"`)
+ * @out:  Output pointer receiving the numeric value if found
+ *
+ * Return: 1 if @name exists and holds a float or integer value, 0 otherwise
+ */
 static int lookup_calc_var_d(const char *name, double *out)
 {
     long vid = variable_ID(name);
@@ -198,6 +280,24 @@ static int lookup_calc_var_d(const char *name, double *out)
     return milk_data.variable[vid].type == 0 || milk_data.variable[vid].type == 1;
 }
 
+/**
+ * pack_ext_params - Populate the binary parameter struct buffer @pbuf for an extension call
+ * @ext:       Registered extension entry
+ * @rhs:       Extension `MC_EXPR_CALL` AST node
+ * @call_site: Enclosing `def` call site for formal parameter substitution, or NULL
+ * @n_img_pos: Number of leading positional arguments consumed as image/port inputs
+ * @pbuf:      Output buffer of size `MILK_CALC_PARAM_BYTES`
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Resolution precedence for each parameter `p`:
+ *   1. Explicit keyword argument `pname = expr` in the call.
+ *   2. Positional scalar argument at index `n_img_pos + p`.
+ *   3. Live variable `<label>.<pname>` (or `<ext->name>.<pname>` if `<label>` is an instance tag
+ *      from `ext:label(...)`), auto-creating `<label>.<pname>` with `sp->def_num` if absent.
+ *
+ * Return: 0 on success, -1 if evaluating a scalar argument expression fails
+ */
 static int pack_ext_params(const milk_calc_ext_entry_t *ext,
                            const mc_expr_t             *rhs,
                            const mc_expr_t             *call_site,
@@ -260,13 +360,18 @@ static int pack_ext_params(const milk_calc_ext_entry_t *ext,
         }
         if (!bound)
         {
-            char vname[128], fbname[128];
+            char vname[128];
+            char fbname[128];
             snprintf(vname, sizeof(vname), "%s.%s", label, pname);
             if (!lookup_calc_var_d(vname, &val))
             {
-                if (strcmp(label, ext->name) == 0 ||
-                    (snprintf(fbname, sizeof(fbname), "%s.%s", ext->name, pname),
-                     !lookup_calc_var_d(fbname, &val)))
+                int found_fb = 0;
+                if (strcmp(label, ext->name) != 0)
+                {
+                    snprintf(fbname, sizeof(fbname), "%s.%s", ext->name, pname);
+                    found_fb = lookup_calc_var_d(fbname, &val);
+                }
+                if (!found_fb)
                 {
                     create_variable_ID(vname, sp->def_num);
                 }
@@ -277,6 +382,16 @@ static int pack_ext_params(const milk_calc_ext_entry_t *ext,
     return 0;
 }
 
+/**
+ * ensure_f32_im - Return a `_DATATYPE_FLOAT` `imageID` for @src_id, converting if necessary
+ * @src_id:  Input `imageID` in `milk_data.image[]`
+ * @out_tmp: Output flag set to 1 if a temporary float32 image was allocated, 0 if @src_id is used
+ *
+ * Tier 1 and Tier 2 extension callbacks operate on `float` buffers by default; non-float inputs
+ * are converted into a pooled temporary `_tmpcalcN` image.
+ *
+ * Return: Float32 `imageID` on success, or -1 on allocation failure
+ */
 static imageID ensure_f32_im(imageID src_id, int *out_tmp)
 {
     const IMAGE *src = &milk_data.image[src_id];
@@ -300,6 +415,20 @@ static imageID ensure_f32_im(imageID src_id, int *out_tmp)
     return tid;
 }
 
+/* ============================================================================================== */
+/* Parallel Worker Team Callbacks for Tier 1 Block and Stencil Kernels                            */
+/* ============================================================================================== */
+
+/**
+ * struct ext_team_job_t - Shared context for parallel `MILK_EXT_BLK*` and `MILK_EXT_STENCIL` jobs
+ * @ext:  Extension entry being executed
+ * @in0:  Primary float32 input pixel array
+ * @in1:  Secondary float32 input pixel array (`MILK_EXT_BLK2` only)
+ * @out:  Destination float32 output pixel array
+ * @pbuf: Packed binary parameter struct buffer
+ * @nx:   Image width (`size[0]`, used by stencil kernels)
+ * @ny:   Image height (`size[1]`, used by stencil kernels)
+ */
 typedef struct
 {
     const milk_calc_ext_entry_t *ext;
@@ -310,9 +439,20 @@ typedef struct
     uint32_t                     nx, ny;
 } ext_team_job_t;
 
+/**
+ * blk_team_cb - Worker callback invoking a 1D block kernel over element range `[lo, hi)`
+ * @ctx: Pointer to `ext_team_job_t`
+ * @tid: Worker thread index (unused)
+ * @nth: Total number of worker threads (unused)
+ * @lo:  Starting linear pixel index (inclusive)
+ * @hi:  Ending linear pixel index (exclusive)
+ *
+ * Return: void
+ */
 static void blk_team_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
 {
-    (void) (tid + nth);
+    (void) tid;
+    (void) nth;
     const ext_team_job_t *j = (const ext_team_job_t *) ctx;
     if (hi <= lo)
     {
@@ -328,13 +468,29 @@ static void blk_team_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
     }
 }
 
+/**
+ * stencil_team_cb - Worker callback invoking a 2D stencil kernel over image rows `[lo, hi)`
+ * @ctx: Pointer to `ext_team_job_t`
+ * @tid: Worker thread index (unused)
+ * @nth: Total number of worker threads (unused)
+ * @lo:  Starting image row `y` (inclusive)
+ * @hi:  Ending image row `y` (exclusive)
+ *
+ * Allocates a thread-local padded strip of `2*R + 1` rows of width `nx + 2*R`, clamps vertical
+ * (`cy`) and horizontal (`[0..R-1]` and `[R+nx..nx+2*R-1]`) borders by edge replication, and
+ * passes `rows[0..2*R]` to `ext->stencil_fn()`.
+ *
+ * Return: void
+ */
 static void stencil_team_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
 {
-    (void) (tid + nth);
-    const ext_team_job_t *j  = (const ext_team_job_t *) ctx;
-    int                   R  = j->ext->radius;
-    int                   nr = 2 * R + 1;
-    uint32_t              nx = j->nx, ny = j->ny;
+    (void) tid;
+    (void) nth;
+    const ext_team_job_t *j   = (const ext_team_job_t *) ctx;
+    int                   R   = j->ext->radius;
+    int                   nr  = 2 * R + 1;
+    uint32_t              nx  = j->nx;
+    uint32_t              ny  = j->ny;
     uint32_t              pw  = nx + 2 * (uint32_t) R;
     float                *pad = malloc(sizeof(float) * (size_t) nr * (size_t) pw);
     const float          *rows[15];
@@ -369,6 +525,21 @@ static void stencil_team_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t h
     free(pad);
 }
 
+/* ============================================================================================== */
+/* Tier 2 Stateful Operator Caching and Execution                                                 */
+/* ============================================================================================== */
+
+/**
+ * struct op_cache_state_t - Cached state and geometry signature for a Tier 2 `MILK_EXT_OP` step
+ * @ext:         Registered operator entry
+ * @op_state:    Opaque state pointer allocated by `ext->op_init()`
+ * @state_valid: 1 if `op_init()` has succeeded and `op_state` is live
+ * @last_params: Snapshot of packed parameter bytes at last `op_init()`
+ * @last_in_sz:  Per-input-port `[naxis, size[0], size[1], size[2]]` at last `op_init()`
+ * @out_naxis:   Cached output port axis counts set by `op_init()`
+ * @out_size:    Cached output port dimensions set by `op_init()`
+ * @out_dtype:   Cached output port datatypes set by `op_init()`
+ */
 typedef struct
 {
     const milk_calc_ext_entry_t *ext;
@@ -381,6 +552,14 @@ typedef struct
     uint8_t                      out_dtype[MILK_CALC_MAX_PORTS];
 } op_cache_state_t;
 
+/**
+ * free_op_cache_state - Destructor callback attached to `cs->ext_state_free`
+ * @ptr: Pointer to `op_cache_state_t`
+ *
+ * Invokes `ext->op_free(st->op_state)` if initialized and frees the wrapper struct.
+ *
+ * Return: void
+ */
 static void free_op_cache_state(void *ptr)
 {
     op_cache_state_t *st = (op_cache_state_t *) ptr;
@@ -395,6 +574,27 @@ static void free_op_cache_state(void *ptr)
     free(st);
 }
 
+/**
+ * exec_ext_op - Execute a Tier 2 multi-port stateful operator (`MILK_EXT_OP`)
+ * @prog:      Enclosing planned program (may be NULL for one-shot scalar evaluations)
+ * @cs:        Constructor step holding persistent `ext_state` cache (may be NULL)
+ * @ext:       Registered operator descriptor
+ * @rhs:       Operator `MC_EXPR_CALL` AST node
+ * @call_site: Enclosing `def` call site, or NULL
+ * @multi_s:   Enclosing `MC_STMT_MULTI_ASSIGN` statement when unpacking multiple outputs, or NULL
+ * @avoid_id:  Output `imageID` to avoid input aliasing with, or -1
+ * @in_unit:   1 when running inside a `milk.calc` unit
+ * @out_val:   Optional pointer receiving the last scalar output port value
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Binds all input image and scalar ports (by keyword or position), packs parameters, checks if
+ * `op_init()` must be called (on first run, input shape change, or init-time parameter change),
+ * prepares all output image ports (allocating temporary images for any unbound trailing ports),
+ * calls `ext->op_exec()`, and posts/stores all output ports.
+ *
+ * Return: 0 on success, -1 on error
+ */
 static int exec_ext_op(mcalc_prog_t                *prog,
                        mc_ctor_step_t              *cs,
                        const milk_calc_ext_entry_t *ext,
@@ -428,10 +628,13 @@ static int exec_ext_op(mcalc_prog_t                *prog,
 
     for (int p = 0; p < MILK_CALC_MAX_PORTS; p++)
     {
-        in_ids[p] = f32_ids[p] = -1;
-        in_tmp[p] = f32_tmp[p] = 0;
+        in_ids[p]  = -1;
+        f32_ids[p] = -1;
+        in_tmp[p]  = 0;
+        f32_tmp[p] = 0;
     }
 
+    /* Bind input ports by keyword match first, then by next available positional argument. */
     for (int p = 0; p < pts->nin; p++)
     {
         const mc_expr_t *arg = NULL;
@@ -516,6 +719,7 @@ static int exec_ext_op(mcalc_prog_t                *prog,
         }
     }
 
+    /* Check whether input shapes or init-time parameters changed since last `op_init()`. */
     int need_reinit = !st->state_valid;
     for (int p = 0; !need_reinit && p < pts->nin; p++)
     {
@@ -580,8 +784,8 @@ static int exec_ext_op(mcalc_prog_t                *prog,
     else
     {
         memcpy(ctx.out_naxis, st->out_naxis, sizeof(ctx.out_naxis));
-        memcpy(ctx.out_size, st->out_size, sizeof(ctx.out_size));
-        memcpy(ctx.out_dtype, st->out_dtype, sizeof(ctx.out_dtype));
+        memcpy(ctx.out_size, st->out_size, sizeof(st->out_size));
+        memcpy(ctx.out_dtype, st->out_dtype, sizeof(st->out_dtype));
     }
 
     int     nlhs = (multi_s != NULL) ? multi_s->u.multi.nlhs : 1;
@@ -672,7 +876,10 @@ static int exec_ext_op(mcalc_prog_t                *prog,
 done_out:
     for (int p = 0; p < pts->nout; p++)
     {
-        (void) (out_is_tmp[p] && out_ids[p] >= 0 && (mc_tmp_release(out_ids[p]), 1));
+        if (out_is_tmp[p] && out_ids[p] >= 0)
+        {
+            mc_tmp_release(out_ids[p]);
+        }
     }
     if (st == &local_st && local_st.state_valid && ext->op_free != NULL)
     {
@@ -682,12 +889,37 @@ done_out:
 done:
     for (int p = 0; p < MILK_CALC_MAX_PORTS; p++)
     {
-        (void) (f32_tmp[p] && f32_ids[p] >= 0 && (mc_tmp_release(f32_ids[p]), 1));
-        (void) (in_tmp[p] && in_ids[p] >= 0 && (mc_tmp_release(in_ids[p]), 1));
+        if (f32_tmp[p] && f32_ids[p] >= 0)
+        {
+            mc_tmp_release(f32_ids[p]);
+        }
+        if (in_tmp[p] && in_ids[p] >= 0)
+        {
+            mc_tmp_release(in_ids[p]);
+        }
     }
     return rc;
 }
 
+/* ============================================================================================== */
+/* Public Constructor and Multi-Assign Extension Entry Points                                     */
+/* ============================================================================================== */
+
+/**
+ * mc_exec_ext_ctor - Execute a single-output C extension constructor step (`MC_STEP_CTOR`)
+ * @prog:      Enclosing planned program
+ * @cs:        Constructor step descriptor
+ * @avoid_id:  Output `imageID` to avoid aliasing with when evaluating inputs, or -1
+ * @call_site: Enclosing `def` call site when inlined from a user function, or NULL
+ * @in_unit:   1 when running inside a `milk.calc` unit
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Delegates Tier 2 operators (`MILK_EXT_OP`) to `exec_ext_op()` and executes Tier 1 kernels
+ * (`MILK_EXT_IMG`, `MILK_EXT_STENCIL`, `MILK_EXT_BLK1`, `MILK_EXT_BLK2`).
+ *
+ * Return: 0 on success, -1 on error
+ */
 int mc_exec_ext_ctor(mcalc_prog_t    *prog,
                      mc_ctor_step_t  *cs,
                      imageID          avoid_id,
@@ -710,15 +942,25 @@ int mc_exec_ext_ctor(mcalc_prog_t    *prog,
     }
 
     int     n_img = (ext->kind == MILK_EXT_BLK2) ? 2 : 1;
-    imageID id0 = -1, id1 = -1, f0 = -1, f1 = -1;
-    int     tmp0 = 0, tmp1 = 0, ftmp0 = 0, ftmp1 = 0, rc = 0;
+    imageID id0   = -1;
+    imageID id1   = -1;
+    imageID f0    = -1;
+    imageID f1    = -1;
+    int     tmp0  = 0;
+    int     tmp1  = 0;
+    int     ftmp0 = 0;
+    int     ftmp1 = 0;
+    int     rc    = 0;
 
     if (mc_resolve_or_eval_im(rhs->u.call.args[0], call_site, avoid_id, in_unit, &id0, &tmp0, err,
                               errsz) != 0 ||
         (n_img == 2 && mc_resolve_or_eval_im(rhs->u.call.args[1], call_site, avoid_id, in_unit,
                                              &id1, &tmp1, err, errsz) != 0))
     {
-        (void) (tmp0 && (mc_tmp_release(id0), 1));
+        if (tmp0)
+        {
+            mc_tmp_release(id0);
+        }
         return -1;
     }
 
@@ -785,8 +1027,14 @@ int mc_exec_ext_ctor(mcalc_prog_t    *prog,
         };
         int nth = milk_omp_team_size(
             im0->md[0].nelement * (uint64_t) (ext->cost > 0 ? ext->cost : 4), 262144);
-        (void) ((nth <= 1) ? (stencil_team_cb(&job, 0, 1, 0, sz[1]), 1)
-                           : (arith_team_run(nth, sz[1], stencil_team_cb, &job), 1));
+        if (nth <= 1)
+        {
+            stencil_team_cb(&job, 0, 1, 0, sz[1]);
+        }
+        else
+        {
+            arith_team_run(nth, sz[1], stencil_team_cb, &job);
+        }
     }
     else
     {
@@ -799,19 +1047,52 @@ int mc_exec_ext_ctor(mcalc_prog_t    *prog,
         };
         uint64_t nel = im0->md[0].nelement;
         int      nth = milk_omp_team_size(nel * (uint64_t) (ext->cost > 0 ? ext->cost : 2), 262144);
-        (void) ((nth <= 1) ? (blk_team_cb(&job, 0, 1, 0, nel), 1)
-                           : (arith_team_run(nth, nel, blk_team_cb, &job), 1));
+        if (nth <= 1)
+        {
+            blk_team_cb(&job, 0, 1, 0, nel);
+        }
+        else
+        {
+            arith_team_run(nth, nel, blk_team_cb, &job);
+        }
     }
     mc_out_post(oid);
 
 done:
-    (void) (ftmp0 && f0 >= 0 && (mc_tmp_release(f0), 1));
-    (void) (ftmp1 && f1 >= 0 && (mc_tmp_release(f1), 1));
-    (void) (tmp0 && id0 >= 0 && (mc_tmp_release(id0), 1));
-    (void) (tmp1 && id1 >= 0 && (mc_tmp_release(id1), 1));
+    if (ftmp0 && f0 >= 0)
+    {
+        mc_tmp_release(f0);
+    }
+    if (ftmp1 && f1 >= 0)
+    {
+        mc_tmp_release(f1);
+    }
+    if (tmp0 && id0 >= 0)
+    {
+        mc_tmp_release(id0);
+    }
+    if (tmp1 && id1 >= 0)
+    {
+        mc_tmp_release(id1);
+    }
     return rc;
 }
 
+/**
+ * mc_exec_multi_linalg_or_ext - Execute a multi-LHS operator extension or `svd`/`eigh` statement
+ * @prog:    Enclosing planned program (may be NULL)
+ * @cs:      Constructor step holding cached operator state (may be NULL)
+ * @s:       `MC_STMT_MULTI_ASSIGN` statement
+ * @in_unit: 1 when running inside a `milk.calc` unit
+ * @out:     Optional output pointer receiving the last scalar output value
+ * @err:     Error message buffer
+ * @errsz:   Capacity of @err in bytes
+ *
+ * Routes multi-LHS Tier 2 operator calls (`a, b = my_op(...)`) to `exec_ext_op()` and multi-LHS
+ * matrix decompositions (`U, S, Vt = svd(A)` or `w, V = eigh(A)`) to `mc_exec_multi_svd_or_eigh()`.
+ *
+ * Return: 0 on success, -1 on error
+ */
 int mc_exec_multi_linalg_or_ext(mcalc_prog_t    *prog,
                                 mc_ctor_step_t  *cs,
                                 const mc_stmt_t *s,

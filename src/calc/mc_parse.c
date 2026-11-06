@@ -2,6 +2,31 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_parse.c
+ * @brief Pratt expression parser and recursive-descent statement parser for libmilkcalc.
+ *
+ * This module implements the second stage of the calculator front-end pipeline:
+ * consuming a flat `mc_tok_list_t` from `mc_lex()` and building an unresolved
+ * Abstract Syntax Tree (`mc_stmt_t` / `mc_expr_t`) for subsequent type and
+ * symbol resolution in `mc_resolve.c`.
+ *
+ * Key responsibilities:
+ * - Precedence-climbing (Pratt) expression parsing (`parse_expr`,
+ *   `parse_primary`) with support for unary operators, ternary `c ? a : b`,
+ *   chained relational comparisons (`a <= x <= b`), postfix `.T` (desugared to
+ *   `transpose(x)`), and infix `@` (desugared to `matmul(a, b)`).
+ * - Bracket syntax disambiguation between N-D image slices (`im[0:10:2b, *]`),
+ *   1-D vector literals (`[1, 2, 3]`), and array comprehensions
+ *   (`[expr for x = a:b[:s], ...]`).
+ * - Function call parsing with optional keyword arguments (`k=v`) for user C
+ *   extensions.
+ * - Statement and control-flow parsing for single-line (`if cond: stmt`),
+ *   braced (`if cond { ... }`), and keyword-terminated (`if ... elif ... else
+ *   ... end`, `for var = a:b[:s] ... end`) blocks, `local` declarations,
+ *   multi-target tuple assignments (`a, b = ...`), `def`, and `skip`.
+ */
+
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -10,6 +35,19 @@
 
 #include "mc_ast.h"
 
+/* ========================================================================= */
+/* Parser State and Token Stream Helpers                                     */
+/* ========================================================================= */
+
+/**
+ * struct mc_parse_ctx_t - Mutable state threaded through recursive-descent parsing
+ * @tl:               Token list being consumed (`tl->pos` tracks current cursor)
+ * @in_slice_bracket: Nesting depth inside `im[...]` slice brackets (enables `end` keyword)
+ * @err_flag:         Non-zero once the first syntax error has been recorded
+ * @err_line:         1-based source line of the first syntax error
+ * @err_col:          1-based source column of the first syntax error
+ * @errmsg:           Formatted diagnostic message for the first syntax error
+ */
 typedef struct
 {
     mc_tok_list_t *tl;
@@ -20,18 +58,32 @@ typedef struct
     char           errmsg[256];
 } mc_parse_ctx_t;
 
+/** cur_tok() - Return pointer to the current lookahead token without advancing. */
 static inline const mc_tok_t *cur_tok(const mc_parse_ctx_t *ctx)
 {
     return &ctx->tl->toks[ctx->tl->pos];
 }
 
+/** advance_tok() - Return current token and advance cursor unless at `MC_TOK_EOF`. */
 static inline const mc_tok_t *advance_tok(mc_parse_ctx_t *ctx)
 {
     const mc_tok_t *t = &ctx->tl->toks[ctx->tl->pos];
-    ctx->tl->pos += (t->type != MC_TOK_EOF);
+    if (t->type != MC_TOK_EOF)
+    {
+        ctx->tl->pos++;
+    }
     return t;
 }
 
+/**
+ * parse_err - Record the first syntax error encountered during parsing
+ * @ctx: Active parser context
+ * @tok: Offending token used for line/column location (may be NULL)
+ * @fmt: printf-style error message format string
+ *
+ * Subsequent calls after `ctx->err_flag` is set are ignored so that cascading
+ * recovery errors never overwrite the root-cause diagnostic.
+ */
 __attribute__((format(printf, 3, 4))) static void parse_err(mc_parse_ctx_t *ctx,
                                                             const mc_tok_t *tok,
                                                             const char     *fmt,
@@ -50,6 +102,12 @@ __attribute__((format(printf, 3, 4))) static void parse_err(mc_parse_ctx_t *ctx,
     va_end(ap);
 }
 
+/**
+ * expect_tok - Consume expected token type @t or record a syntax error
+ * @ctx: Active parser context
+ * @t:   Required token type
+ * @msg: Diagnostic message if the current token does not match @t
+ */
 static void expect_tok(mc_parse_ctx_t *ctx, mc_tok_type_t t, const char *msg)
 {
     if (!ctx->err_flag)
@@ -65,6 +123,16 @@ static void expect_tok(mc_parse_ctx_t *ctx, mc_tok_type_t t, const char *msg)
     }
 }
 
+/**
+ * alloc_expr - Allocate and zero-initialize an AST expression node
+ * @kind: Expression node discriminant
+ * @tok:  Token providing source line and column coordinates (may be NULL)
+ *
+ * Initializes sentinel IDs (`im_id`, `var_id`, `def_param_idx`, `udef_id`,
+ * `ext_id`) to -1 for identifier and call nodes.
+ *
+ * Return: Newly allocated `mc_expr_t` pointer, or NULL on allocation failure
+ */
 static mc_expr_t *alloc_expr(mc_expr_kind_t kind, const mc_tok_t *tok)
 {
     mc_expr_t *e = (mc_expr_t *) calloc(1, sizeof(mc_expr_t));
@@ -90,6 +158,18 @@ static mc_expr_t *alloc_expr(mc_expr_kind_t kind, const mc_tok_t *tok)
 
 static mc_expr_t *parse_expr(mc_parse_ctx_t *ctx, int min_prec);
 
+/**
+ * make_call - Synthesize a 1- or 2-argument built-in function call AST node
+ * @tok:     Operator token providing source coordinates
+ * @fn_name: Built-in function name (e.g. `"transpose"` or `"matmul"`)
+ * @arg0:    First argument expression
+ * @arg1:    Second argument expression, or NULL for unary calls
+ *
+ * Used to desugar postfix `.T` into `transpose(x)` and infix `@` into
+ * `matmul(a, b)`.
+ *
+ * Return: Newly allocated `MC_EXPR_CALL` node
+ */
 static mc_expr_t *make_call(const mc_tok_t *tok,
                             const char     *fn_name,
                             mc_expr_t      *arg0,
@@ -106,16 +186,34 @@ static mc_expr_t *make_call(const mc_tok_t *tok,
     return c;
 }
 
+/* ========================================================================= */
+/* Slice, Vector Literal, and Comprehension Parsing                          */
+/* ========================================================================= */
+
+/**
+ * parse_one_slice_axis - Parse a single axis specification inside `im[...]`
+ * @ctx: Active parser context
+ * @ax:  Output slice axis descriptor
+ *
+ * Supports full-axis wildcards (`:`, `*`, or empty before `,`/`]`), reversed
+ * full-axis (`-*`), single scalar index (`expr`), and range specifications
+ * (`[start]:[stop][:[step][b|B]]`, including `::step`).
+ *
+ * Return: 0 on success, -1 on syntax error
+ */
 static int parse_one_slice_axis(mc_parse_ctx_t *ctx, mc_slice_axis_t *ax)
 {
     memset(ax, 0, sizeof(*ax));
     const mc_tok_t *t = cur_tok(ctx);
 
+    /* Empty axis before ',' or ']' means full axis */
     if (t->type == MC_TOK_COMMA || t->type == MC_TOK_RBRACK)
     {
         ax->is_full = 1;
         return 0;
     }
+
+    /* '*' wildcard means full axis */
     if (t->type == MC_TOK_MUL && (ctx->tl->toks[ctx->tl->pos + 1].type == MC_TOK_COMMA ||
                                   ctx->tl->toks[ctx->tl->pos + 1].type == MC_TOK_RBRACK))
     {
@@ -123,15 +221,20 @@ static int parse_one_slice_axis(mc_parse_ctx_t *ctx, mc_slice_axis_t *ax)
         ax->is_full = 1;
         return 0;
     }
+
+    /* '-*' wildcard means reversed full axis */
     if (t->type == MC_TOK_MINUS && ctx->tl->toks[ctx->tl->pos + 1].type == MC_TOK_MUL &&
         (ctx->tl->toks[ctx->tl->pos + 2].type == MC_TOK_COMMA ||
          ctx->tl->toks[ctx->tl->pos + 2].type == MC_TOK_RBRACK))
     {
         advance_tok(ctx);
         advance_tok(ctx);
-        ax->is_full = ax->is_rev_full = 1;
+        ax->is_full     = 1;
+        ax->is_rev_full = 1;
         return 0;
     }
+
+    /* Optional start expression before ':' */
     if (cur_tok(ctx)->type != MC_TOK_COLON)
     {
         ax->start = parse_expr(ctx, 0);
@@ -140,6 +243,8 @@ static int parse_one_slice_axis(mc_parse_ctx_t *ctx, mc_slice_axis_t *ax)
             return -1;
         }
     }
+
+    /* Optional ':stop[:step[b]]' range suffix */
     if (cur_tok(ctx)->type == MC_TOK_COLON)
     {
         advance_tok(ctx);
@@ -181,6 +286,17 @@ static int parse_one_slice_axis(mc_parse_ctx_t *ctx, mc_slice_axis_t *ax)
     return 0;
 }
 
+/**
+ * parse_slice_expr - Parse an image slice or mask-indexing expression `ident[...]`
+ * @ctx:    Active parser context (positioned at `[`)
+ * @id_tok: Identifier token naming the sliced image
+ *
+ * Parses up to `MC_MAX_SLICE_AX` (3) comma-separated axis specifications while
+ * incrementing `ctx->in_slice_bracket` so that `end` inside bounds parses as
+ * `MC_EXPR_END`.
+ *
+ * Return: Newly allocated `MC_EXPR_SLICE` node
+ */
 static mc_expr_t *parse_slice_expr(mc_parse_ctx_t *ctx, const mc_tok_t *id_tok)
 {
     mc_expr_t *e = alloc_expr(MC_EXPR_SLICE, id_tok);
@@ -222,6 +338,19 @@ static mc_expr_t *parse_slice_expr(mc_parse_ctx_t *ctx, const mc_tok_t *id_tok)
     return e;
 }
 
+/**
+ * parse_bracket_primary - Parse a standalone `[...]` primary expression
+ * @ctx:        Active parser context (positioned immediately after `[`)
+ * @lbrack_tok: Opening `[` token for source location reporting
+ *
+ * Parses the first element expression, then inspects the following token:
+ * - If followed by `for`, parses an N-D array comprehension
+ *   `[body for var = start:stop[:step], ...]` (`MC_EXPR_COMP`).
+ * - Otherwise, parses a comma-separated 1-D vector literal `[e0, e1, ...]`
+ *   (`MC_EXPR_VEC_LIT`).
+ *
+ * Return: Newly allocated `MC_EXPR_COMP` or `MC_EXPR_VEC_LIT` node
+ */
 static mc_expr_t *parse_bracket_primary(mc_parse_ctx_t *ctx, const mc_tok_t *lbrack_tok)
 {
     if (cur_tok(ctx)->type == MC_TOK_RBRACK)
@@ -235,6 +364,7 @@ static mc_expr_t *parse_bracket_primary(mc_parse_ctx_t *ctx, const mc_tok_t *lbr
         return first;
     }
 
+    /* Array comprehension: [body for x = start:stop[:step], ...] */
     if (cur_tok(ctx)->type == MC_TOK_IDENT && strcmp(cur_tok(ctx)->sval, "for") == 0)
     {
         advance_tok(ctx);
@@ -277,6 +407,7 @@ static mc_expr_t *parse_bracket_primary(mc_parse_ctx_t *ctx, const mc_tok_t *lbr
         return comp;
     }
 
+    /* 1-D vector literal: [e0, e1, ...] */
     mc_expr_t *vec          = alloc_expr(MC_EXPR_VEC_LIT, lbrack_tok);
     vec->u.vec_lit.elems[0] = first;
     vec->u.vec_lit.nelem    = 1;
@@ -294,6 +425,22 @@ static mc_expr_t *parse_bracket_primary(mc_parse_ctx_t *ctx, const mc_tok_t *lbr
     return vec;
 }
 
+/* ========================================================================= */
+/* Primary and Precedence-Climbing Expression Parser                         */
+/* ========================================================================= */
+
+/**
+ * parse_primary - Parse a primary or prefix-unary expression, plus postfix ops
+ * @ctx: Active parser context
+ *
+ * Handles literals, prefix unary operators (`-`, `~`, `!`), parenthesized
+ * sub-expressions, bracketed vector literals / comprehensions, identifiers,
+ * function calls (`fn(...)`), slices (`im[...]`), postfix `.T` transposes, and
+ * assignment expressions (`target op= rhs`) when the primary is a valid LHS
+ * (`MC_EXPR_IDENT` or `MC_EXPR_SLICE`).
+ *
+ * Return: Newly allocated expression AST node
+ */
 static mc_expr_t *parse_primary(mc_parse_ctx_t *ctx)
 {
     if (ctx->err_flag)
@@ -351,6 +498,7 @@ static mc_expr_t *parse_primary(mc_parse_ctx_t *ctx)
         }
         else if (cur_tok(ctx)->type == MC_TOK_LPAREN && t->no_space_after)
         {
+            /* Function call: ident(arg0, arg1, k=v, ...) */
             advance_tok(ctx);
             node = alloc_expr(MC_EXPR_CALL, t);
             snprintf(node->u.call.name, sizeof(node->u.call.name), "%s", t->sval);
@@ -366,6 +514,8 @@ static mc_expr_t *parse_primary(mc_parse_ctx_t *ctx)
                 }
                 mc_expr_t *arg           = parse_expr(ctx, 0);
                 node->u.call.args[nargs] = arg;
+
+                /* Unpack keyword argument k=v parsed as an MC_EXPR_ASSIGN */
                 if (arg != NULL && arg->kind == MC_EXPR_ASSIGN &&
                     arg->u.assign.op == MC_TOK_ASSIGN &&
                     arg->u.assign.target->kind == MC_EXPR_IDENT)
@@ -405,11 +555,13 @@ static mc_expr_t *parse_primary(mc_parse_ctx_t *ctx)
         return alloc_expr(MC_EXPR_LONG, t);
     }
 
+    /* Postfix matrix transpose (.T -> transpose(node)) */
     while (!ctx->err_flag && cur_tok(ctx)->type == MC_TOK_DOT_T)
     {
         node = make_call(advance_tok(ctx), "transpose", node, NULL);
     }
 
+    /* Assignment expression when primary is an identifier or slice */
     if (!ctx->err_flag && (node->kind == MC_EXPR_IDENT || node->kind == MC_EXPR_SLICE) &&
         mc_is_assign_tok(cur_tok(ctx)->type))
     {
@@ -424,6 +576,19 @@ static mc_expr_t *parse_primary(mc_parse_ctx_t *ctx)
     return node;
 }
 
+/**
+ * parse_expr - Precedence-climbing parser for binary, chained, and ternary expressions
+ * @ctx:      Active parser context
+ * @min_prec: Minimum operator precedence to bind at this recursion level
+ *
+ * Parses a left-hand primary via `parse_primary()`, then consumes infix
+ * operators with precedence `>= @min_prec`. Handles right-associative ternary
+ * `? :`, desugars `@` into `matmul(left, right)`, and collapses adjacent
+ * relational operators (`<`, `<=`, `>`, `>=`) into a single `MC_EXPR_CHAIN`
+ * node (`a <= x <= b`).
+ *
+ * Return: Root `mc_expr_t` node of the parsed sub-expression
+ */
 static mc_expr_t *parse_expr(mc_parse_ctx_t *ctx, int min_prec)
 {
     mc_expr_t *left = parse_primary(ctx);
@@ -463,6 +628,8 @@ static mc_expr_t *parse_expr(mc_parse_ctx_t *ctx, int min_prec)
             left = make_call(op_tok, "matmul", left, right);
             continue;
         }
+
+        /* Chained relational comparison: a < b < c */
         if (mc_is_rel_tok(op) && mc_is_rel_tok(cur_tok(ctx)->type))
         {
             mc_expr_t *ch           = alloc_expr(MC_EXPR_CHAIN, op_tok);
@@ -496,6 +663,11 @@ static mc_expr_t *parse_expr(mc_parse_ctx_t *ctx, int min_prec)
     return left;
 }
 
+/* ========================================================================= */
+/* Statement and Control-Flow Block Parser                                   */
+/* ========================================================================= */
+
+/** skip_stmt_seps() - Advance past any consecutive newline or `;` tokens. */
 static void skip_stmt_seps(mc_parse_ctx_t *ctx)
 {
     while (cur_tok(ctx)->type == MC_TOK_NEWLINE || cur_tok(ctx)->type == MC_TOK_SEMI)
@@ -504,6 +676,12 @@ static void skip_stmt_seps(mc_parse_ctx_t *ctx)
     }
 }
 
+/**
+ * is_block_end_kw - Check whether token @t terminates an unbraced control block
+ * @t: Token to inspect
+ *
+ * Return: 1 if @t is the identifier `end`, `elif`, or `else`, 0 otherwise
+ */
 static int is_block_end_kw(const mc_tok_t *t)
 {
     return t->type == MC_TOK_IDENT &&
@@ -511,6 +689,15 @@ static int is_block_end_kw(const mc_tok_t *t)
             strcmp(t->sval, "else") == 0);
 }
 
+/**
+ * is_multi_lhs_start - Look ahead to check for a multi-target assignment `a, b = ...`
+ * @ctx: Active parser context
+ *
+ * Scans ahead without mutating `ctx->tl->pos` to verify a comma-separated list
+ * of 2 to `MC_MAX_LHS` identifiers followed immediately by `=`.
+ *
+ * Return: 1 if positioned at a multi-LHS assignment, 0 otherwise
+ */
 static int is_multi_lhs_start(const mc_parse_ctx_t *ctx)
 {
     int p = ctx->tl->pos;
@@ -534,6 +721,13 @@ static int is_multi_lhs_start(const mc_parse_ctx_t *ctx)
 
 static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx);
 
+/**
+ * parse_block_body - Parse a sequence of statements inside a block or program
+ * @ctx:    Active parser context
+ * @braced: 1 if the block is delimited by `{ ... }`, 0 if keyword/EOF-delimited
+ *
+ * Return: Head of the linked list of parsed `mc_stmt_t` nodes
+ */
 static mc_stmt_t *parse_block_body(mc_parse_ctx_t *ctx, int braced)
 {
     if (braced)
@@ -566,6 +760,18 @@ static mc_stmt_t *parse_block_body(mc_parse_ctx_t *ctx, int braced)
     return head.next;
 }
 
+/**
+ * parse_if_stmt - Parse an `if` / `elif` / `else` conditional statement
+ * @ctx:    Active parser context (positioned at `if`)
+ * @if_tok: The `if` token for line/column tracking
+ *
+ * Supports three forms:
+ * 1. Single-line `if <cond>: <stmt>`
+ * 2. Braced `if <cond> { ... } [elif <cond> { ... }]* [else { ... }]`
+ * 3. Keyword-terminated `if <cond> ... [elif <cond> ...]* [else ...] end`
+ *
+ * Return: Newly allocated `MC_STMT_IF` statement node
+ */
 static mc_stmt_t *parse_if_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *if_tok)
 {
     advance_tok(ctx);
@@ -580,6 +786,8 @@ static mc_stmt_t *parse_if_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *if_tok)
         mc_expr_free(cond);
         return s;
     }
+
+    /* Single-statement form: if <cond>: <stmt> */
     if (cur_tok(ctx)->type == MC_TOK_COLON)
     {
         advance_tok(ctx);
@@ -596,6 +804,7 @@ static mc_stmt_t *parse_if_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *if_tok)
         return s;
     }
 
+    /* Multi-statement block form (braced or 'end'-terminated) */
     mc_tok_type_t bt = cur_tok(ctx)->type;
     if (bt != MC_TOK_LBRACE && bt != MC_TOK_NEWLINE && bt != MC_TOK_SEMI)
     {
@@ -655,6 +864,16 @@ static mc_stmt_t *parse_if_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *if_tok)
     return s;
 }
 
+/**
+ * parse_for_stmt - Parse a `for <var> = <start>:<stop>[:<step>]` loop statement
+ * @ctx:     Active parser context (positioned at `for`)
+ * @for_tok: The `for` token for line/column tracking
+ *
+ * Supports both `{ ... }` braced bodies and `... end` keyword-terminated
+ * bodies.
+ *
+ * Return: Newly allocated `MC_STMT_FOR` statement node
+ */
 static mc_stmt_t *parse_for_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *for_tok)
 {
     advance_tok(ctx);
@@ -697,6 +916,17 @@ static mc_stmt_t *parse_for_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *for_tok)
     return s;
 }
 
+/**
+ * parse_stmt_one - Parse a single statement from the token stream
+ * @ctx: Active parser context
+ *
+ * Dispatches on leading keywords (`skip`, `def`, `if`, `for`, `local`),
+ * multi-LHS tuple assignments (`a, b = ...`), or general expression/assignment
+ * statements (`MC_STMT_EXPR`). When `local` precedes an assignment, rewrites
+ * unqualified LHS target names to carry the `@L:` process-local prefix.
+ *
+ * Return: Newly allocated `mc_stmt_t` node
+ */
 static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx)
 {
     skip_stmt_seps(ctx);
@@ -761,6 +991,7 @@ static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx)
         t        = cur_tok(ctx);
     }
 
+    /* Multi-target tuple assignment: a, b[, c] = rhs1[, rhs2...] */
     if (is_multi_lhs_start(ctx))
     {
         mc_stmt_t *s = (mc_stmt_t *) calloc(1, sizeof(mc_stmt_t));
@@ -834,6 +1065,22 @@ static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx)
     return s;
 }
 
+/* ========================================================================= */
+/* Public Parser Entry Points                                                */
+/* ========================================================================= */
+
+/**
+ * mc_parse_stmt - Parse a single calculator statement from a token list
+ * @tl:    Token list produced by `mc_lex()`
+ * @err:   Output buffer for syntax error message (may be NULL)
+ * @errsz: Size of @err buffer in bytes
+ *
+ * Verifies that no trailing tokens remain after the statement (apart from
+ * trailing `;` or newlines). On failure, frees any partially constructed AST
+ * and populates `@tl->err_line`, `@tl->err_col`, and `@err`.
+ *
+ * Return: Newly allocated `mc_stmt_t` node, or NULL on syntax error
+ */
 mc_stmt_t *mc_parse_stmt(mc_tok_list_t *tl, char *err, size_t errsz)
 {
     mc_parse_ctx_t ctx = { .tl = tl };
@@ -857,6 +1104,17 @@ mc_stmt_t *mc_parse_stmt(mc_tok_list_t *tl, char *err, size_t errsz)
     return s;
 }
 
+/**
+ * mc_parse_prog - Parse a multi-statement calculator program from a token list
+ * @tl:    Token list produced by `mc_lex()`
+ * @err:   Output buffer for syntax error message (may be NULL)
+ * @errsz: Size of @err buffer in bytes
+ *
+ * Parses a sequence of statements separated by newlines or `;` up to
+ * `MC_TOK_EOF`. On failure, frees the statement list and populates `@err`.
+ *
+ * Return: Head of linked `mc_stmt_t` list (NULL if empty or on syntax error)
+ */
 mc_stmt_t *mc_parse_prog(mc_tok_list_t *tl, char *err, size_t errsz)
 {
     mc_parse_ctx_t ctx  = { .tl = tl };

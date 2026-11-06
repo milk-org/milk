@@ -2,6 +2,37 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_exec.c
+ * @brief Runtime execution engine for constructors and elementwise passes in libmilkcalc.
+ *
+ * Implements the runtime execution of `MC_STEP_CTOR` (`mc_exec_ctor`) and
+ * `MC_STEP_PASS` (`mc_exec_pass`) steps inside a planned program:
+ *
+ * 1. **Constructor Execution (`mc_exec_ctor`)**: Dispatches vector literals,
+ *    `linspace`, `zeros`, `eye`, shape/layout operators (`vec`, `reshape`,
+ *    `transpose`, `outer`, `diag`), pre-stage reductions/stencils
+ *    (`mc_exec_prestage`), and BLAS/LAPACK/C-extension constructors
+ *    (`mc_exec_linalg_or_ext`). Automatically clones aliased source images
+ *    when an operation reads and writes the same `imageID`.
+ * 2. **Elementwise Pass Execution (`mc_exec_pass`)**:
+ *    - Evaluates hoisted scalar expressions (`is_scalar`) before launching the
+ *      kernel, fusing pairs of scalar reductions over the same input image into
+ *      a single memory traversal (`mc_exec_reduce_pair`) and checking non-zero
+ *      divisor constraints.
+ *    - Resolves input and output `mc_view_t` slices, infers and broadcasts the
+ *      3D iteration space `(vnx, vny, vnz)`, and clones in-place aliased inputs
+ *      when non-pointwise, sliced, or type-converting writes would clobber live
+ *      source pixels.
+ *    - Dispatches `pass->fn(ops, lo, hi)` across the persistent `arith_team`
+ *      worker pool (`milk_omp_team_size(nelem, 262144)`).
+ *    - Detects torn shared-memory frames by sampling `md[0].cnt0` before and
+ *      after the kernel (plus `md[0].write`) and retrying up to 4 times with a
+ *      100 us backoff while incrementing `g_torn_count`.
+ *    - Restores destination pixels from a pre-pass snapshot if a `/=` pass
+ *      encounters a zero divisor mid-array.
+ */
+
 #include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -21,13 +52,36 @@
 #include "linalg/mc_linalg.h"
 #include "mc_plan.h"
 
+/* ========================================================================== */
+/* Telemetry, Error Reporting & Pixel Write Helpers                           */
+/* ========================================================================== */
+
 static uint64_t g_torn_count = 0;
 
+/**
+ * mcalc_torn_count - Return the cumulative count of retried torn shared-memory reads
+ *
+ * Incremented atomically whenever `mc_exec_pass()` detects that a shared input
+ * stream's `cnt0` counter or `write` flag changed while a kernel pass was
+ * reading it.
+ *
+ * Return: Total number of torn-frame retries observed in this process
+ */
 uint64_t mcalc_torn_count(void)
 {
     return __atomic_load_n(&g_torn_count, __ATOMIC_RELAXED);
 }
 
+/**
+ * exec_err - Format the first runtime execution error message and return -1
+ * @err:   Destination error buffer (may be NULL)
+ * @errsz: Size of @err in bytes
+ * @fmt:   printf-style format string
+ *
+ * Preserves the earliest error message if @err is already non-empty.
+ *
+ * Return: Always -1
+ */
 __attribute__((format(printf, 3, 4))) static int exec_err(char       *err,
                                                           size_t      errsz,
                                                           const char *fmt,
@@ -43,46 +97,114 @@ __attribute__((format(printf, 3, 4))) static int exec_err(char       *err,
     return -1;
 }
 
+/**
+ * is_complex_dt - Check if an ImageStreamIO datatype is complex
+ * @dt: Datatype code (`_DATATYPE_*`)
+ *
+ * Return: 1 if complex float or complex double, 0 otherwise
+ */
 static inline int is_complex_dt(uint8_t dt)
 {
     return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
 }
 
+/**
+ * mc_write_im_pix - Convert and store a double value into pixel @idx of image @im
+ * @im:  Target `IMAGE` structure
+ * @dt:  Target datatype (`_DATATYPE_*`)
+ * @idx: Linear 0-based element index
+ * @v:   Value to store (rounded and clamped to range for 8/16/32-bit integer types)
+ *
+ * Return: void
+ */
 void mc_write_im_pix(IMAGE *im, uint8_t dt, uint64_t idx, double v)
 {
     int64_t  si = llround(v);
     uint64_t ui = (v <= 0.0) ? 0 : (uint64_t) (v + 0.5);
 #define CLAMP_S(lo, hi) ((si < (lo)) ? (lo) : (si > (hi)) ? (hi) : si)
-    (void) ((dt == _DATATYPE_FLOAT && ((im->array.F[idx] = (float) v), 1)) ||
-            (dt == _DATATYPE_DOUBLE && ((im->array.D[idx] = v), 1)) ||
-            (dt == _DATATYPE_UINT8 &&
-             ((im->array.UI8[idx] = (ui > 255) ? 255 : (uint8_t) ui), 1)) ||
-            (dt == _DATATYPE_INT8 && ((im->array.SI8[idx] = (int8_t) CLAMP_S(-128, 127)), 1)) ||
-            (dt == _DATATYPE_UINT16 &&
-             ((im->array.UI16[idx] = (ui > 65535) ? 65535 : (uint16_t) ui), 1)) ||
-            (dt == _DATATYPE_INT16 &&
-             ((im->array.SI16[idx] = (int16_t) CLAMP_S(-32768, 32767)), 1)) ||
-            (dt == _DATATYPE_UINT32 &&
-             ((im->array.UI32[idx] = (ui > 4294967295ULL) ? 4294967295U : (uint32_t) ui), 1)) ||
-            (dt == _DATATYPE_INT32 &&
-             ((im->array.SI32[idx] = (int32_t) CLAMP_S(-2147483648LL, 2147483647)), 1)) ||
-            (dt == _DATATYPE_UINT64 &&
-             ((im->array.UI64[idx] = (v <= 0.0) ? 0 : (uint64_t) v), 1)) ||
-            (dt == _DATATYPE_INT64 && ((im->array.SI64[idx] = (int64_t) v), 1)));
+    if (dt == _DATATYPE_FLOAT)
+    {
+        im->array.F[idx] = (float) v;
+    }
+    else if (dt == _DATATYPE_DOUBLE)
+    {
+        im->array.D[idx] = v;
+    }
+    else if (dt == _DATATYPE_UINT8)
+    {
+        im->array.UI8[idx] = (ui > 255) ? 255 : (uint8_t) ui;
+    }
+    else if (dt == _DATATYPE_INT8)
+    {
+        im->array.SI8[idx] = (int8_t) CLAMP_S(-128, 127);
+    }
+    else if (dt == _DATATYPE_UINT16)
+    {
+        im->array.UI16[idx] = (ui > 65535) ? 65535 : (uint16_t) ui;
+    }
+    else if (dt == _DATATYPE_INT16)
+    {
+        im->array.SI16[idx] = (int16_t) CLAMP_S(-32768, 32767);
+    }
+    else if (dt == _DATATYPE_UINT32)
+    {
+        im->array.UI32[idx] = (ui > 4294967295ULL) ? 4294967295U : (uint32_t) ui;
+    }
+    else if (dt == _DATATYPE_INT32)
+    {
+        im->array.SI32[idx] = (int32_t) CLAMP_S(-2147483648LL, 2147483647);
+    }
+    else if (dt == _DATATYPE_UINT64)
+    {
+        im->array.UI64[idx] = (v <= 0.0) ? 0 : (uint64_t) v;
+    }
+    else if (dt == _DATATYPE_INT64)
+    {
+        im->array.SI64[idx] = (int64_t) v;
+    }
 #undef CLAMP_S
 }
 
+/* ========================================================================== */
+/* Temporary Image Cloning & Sub-Expression Evaluation                        */
+/* ========================================================================== */
+
+/**
+ * clone_to_tmp - Copy an existing image into a freshly allocated pooled temporary image
+ * @src_id: Source `imageID` to clone
+ *
+ * Used to break read/write aliasing when an in-place operation or constructor
+ * reads from the same image slot it is about to overwrite or resize.
+ *
+ * Return: Temporary `imageID` on success, or -1 on failure
+ */
 static imageID clone_to_tmp(imageID src_id)
 {
     const IMAGE *src =
         (src_id >= 0 && milk_data.image[src_id].used) ? &milk_data.image[src_id] : NULL;
     imageID tid = src ? mc_tmp_image(src->md[0].naxis, src->md[0].size, src->md[0].datatype) : -1;
-    (void) (tid >= 0 && memcpy(milk_data.image[tid].array.raw, src->array.raw,
-                               (size_t) src->md[0].nelement *
-                                   (size_t) ImageStreamIO_typesize(src->md[0].datatype)));
+    if (tid >= 0)
+    {
+        memcpy(milk_data.image[tid].array.raw, src->array.raw,
+               (size_t) src->md[0].nelement * (size_t) ImageStreamIO_typesize(src->md[0].datatype));
+    }
     return tid;
 }
 
+/**
+ * eval_expr_to_tmp_im - Evaluate a compound image sub-expression into a temporary image
+ * @expr:          Image expression AST node to evaluate
+ * @in_unit:       1 if executing inside a persistent FPS unit
+ * @unsqueeze_red: 1 to preserve singleton reduced axes on axis reductions (`is_anon = 2`)
+ * @err:           Error message buffer
+ * @errsz:         Size of @err in bytes
+ *
+ * Retrieves or builds a cached sub-program (`mc_get_or_build_sub_prog`) for
+ * @expr, executes its steps, and steals or clones the final output slot as a
+ * temporary `imageID` owned by the caller.
+ *
+ * Return: Temporary `imageID` on success, or -1 on error
+ */
 static imageID eval_expr_to_tmp_im(const mc_expr_t *expr,
                                    int              in_unit,
                                    int              unsqueeze_red,
@@ -117,6 +239,13 @@ static imageID eval_expr_to_tmp_im(const mc_expr_t *expr,
     return (sidx >= 0) ? mc_tmp_steal_slot(&p->slots[sidx]) : -1;
 }
 
+/**
+ * unwrap_def_arg - Substitute a formal `def` parameter with the caller's argument AST
+ * @e:         Expression node (possibly a `def` formal parameter identifier)
+ * @call_site: Enclosing `def` call expression (or NULL)
+ *
+ * Return: Substituted argument expression if @e is a `def` parameter, otherwise @e
+ */
 static const mc_expr_t *unwrap_def_arg(const mc_expr_t *e, const mc_expr_t *call_site)
 {
     return (e != NULL && e->kind == MC_EXPR_IDENT && e->u.ident.def_param_idx >= 0 &&
@@ -126,6 +255,19 @@ static const mc_expr_t *unwrap_def_arg(const mc_expr_t *e, const mc_expr_t *call
                : e;
 }
 
+/**
+ * mc_resolve_or_eval_im - Resolve an image identifier or evaluate a compound image expression
+ * @e:         Image argument expression
+ * @call_site: Enclosing user-defined `def` call expression (or NULL)
+ * @avoid_id:  Destination `imageID` to avoid aliasing with (cloned if equal), or -1
+ * @in_unit:   1 if executing inside a persistent FPS unit
+ * @out_id:    Output `imageID`
+ * @is_tmp:    Output flag set to 1 if *@out_id is a temporary image that must be released
+ * @err:       Error message buffer
+ * @errsz:     Size of @err in bytes
+ *
+ * Return: 0 on success, -1 on error
+ */
 int mc_resolve_or_eval_im(const mc_expr_t *e,
                           const mc_expr_t *call_site,
                           imageID          avoid_id,
@@ -161,6 +303,20 @@ int mc_resolve_or_eval_im(const mc_expr_t *e,
                             : exec_err(err, errsz, "failed to clone aliased image");
 }
 
+/* ========================================================================== */
+/* Constructor Step Execution (`MC_STEP_CTOR`)                                */
+/* ========================================================================== */
+
+/**
+ * mc_select_ctor_out_dt - Choose output datatype for a constructor step
+ * @slot:    Destination program slot
+ * @pref_dt: Preferred output datatype (`_DATATYPE_*`, defaulting to float if 0)
+ *
+ * Preserves the existing shared-memory stream datatype when writing to a
+ * pre-existing shared stream so external readers are not disrupted.
+ *
+ * Return: Selected `_DATATYPE_*` code
+ */
 uint8_t mc_select_ctor_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
 {
     return (slot->existed_at_plan && slot->im_id >= 0 && milk_data.image[slot->im_id].used &&
@@ -169,6 +325,24 @@ uint8_t mc_select_ctor_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
                : (pref_dt ? pref_dt : _DATATYPE_FLOAT);
 }
 
+/**
+ * mc_exec_ctor - Execute a constructor, shape, prestage, or linear algebra step
+ * @prog:    Enclosing planned program
+ * @cs:      Constructor step descriptor
+ * @in_unit: 1 if executing inside a persistent FPS unit
+ * @err:     Error message buffer
+ * @errsz:   Size of @err in bytes
+ *
+ * Handles:
+ * - Multi-LHS decompositions (`svd`, `eig`, etc.) via `mc_exec_linalg_or_ext()`
+ * - Pre-staged reductions, separable stencils, and `ema()` via `mc_exec_prestage()`
+ * - 1D vector literals (`[e1, e2, ...]`) and scalar `vec(e1, e2, ...)`
+ * - Array generators (`linspace`, `zeros`, `eye`)
+ * - Shape and tensor constructors (`vec(im)`, `reshape`, `transpose`, `outer`, `diag`)
+ * - General BLAS/LAPACK and C extension calls via `mc_exec_linalg_or_ext()`
+ *
+ * Return: 0 on success, -1 on error
+ */
 int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err, size_t errsz)
 {
     if (cs->multi_stmt != NULL)
@@ -194,6 +368,7 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
         return mc_exec_prestage(prog, cs, avoid_id, call_site, in_unit, err, errsz);
     }
 
+    /* Vector literal `[a, b, c]` or multi-scalar `vec(a, b, c)` */
     if (rhs->kind == MC_EXPR_VEC_LIT ||
         (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
          strcmp(rhs->u.call.fn->name, "vec") == 0 &&
@@ -220,9 +395,12 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
         }
         return (oid < 0) ? -1 : (mc_out_post(oid), 0);
     }
+
     const char *fn =
         (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL) ? rhs->u.call.fn->name : "";
     int nargs = (rhs->kind == MC_EXPR_CALL) ? rhs->u.call.nargs : 0;
+
+    /* Analytic array generators: `linspace`, `zeros`, `eye` */
     if (strcmp(fn, "linspace") == 0 || strcmp(fn, "zeros") == 0 || strcmp(fn, "eye") == 0)
     {
         double v[3] = { 0.0, 0.0, 0.0 };
@@ -233,8 +411,9 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
                 return -1;
             }
         }
-        int      is_ls = (strcmp(fn, "linspace") == 0), is_eye = (strcmp(fn, "eye") == 0);
-        uint32_t sz[3] = { 1, 1, 1 };
+        int      is_ls  = (strcmp(fn, "linspace") == 0);
+        int      is_eye = (strcmp(fn, "eye") == 0);
+        uint32_t sz[3]  = { 1, 1, 1 };
         if (is_ls && (llround(v[2]) <= 0 || llround(v[2]) > 1048576))
         {
             return exec_err(err, errsz, "linspace: n must be in [1, 1048576]");
@@ -248,7 +427,10 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
             sz[i] = (uint32_t) llround(v[i]);
         }
         sz[0] = is_ls ? (uint32_t) llround(v[2]) : sz[0];
-        (void) (is_eye && nargs == 1 && (sz[1] = sz[0]));
+        if (is_eye && nargs == 1)
+        {
+            sz[1] = sz[0];
+        }
         uint8_t out_dt = mc_select_ctor_out_dt(slot, _DATATYPE_FLOAT);
         imageID oid = mc_out_prepare(slot, is_ls ? 1 : (is_eye ? 2 : (uint8_t) nargs), sz, out_dt,
                                      in_unit, err, errsz);
@@ -287,8 +469,11 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
         return mc_exec_linalg_or_ext(prog, cs, avoid_id, call_site, in_unit, err, errsz);
     }
 
-    imageID src_id = -1, src2_id = -1;
-    int     src_tmp = 0, src2_tmp = 0, rc = 0;
+    imageID src_id   = -1;
+    imageID src2_id  = -1;
+    int     src_tmp  = 0;
+    int     src2_tmp = 0;
+    int     rc       = 0;
     if (mc_resolve_or_eval_im(rhs->u.call.args[0], call_site, avoid_id, in_unit, &src_id, &src_tmp,
                               err, errsz) != 0)
     {
@@ -298,9 +483,10 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
 
     if (strcmp(fn, "vec") == 0 || strcmp(fn, "reshape") == 0)
     {
-        uint64_t nel = src->md[0].nelement, prod_pos = 1;
-        uint8_t  ndims = 1;
-        uint32_t sz[3] = { (uint32_t) nel, 1, 1 };
+        uint64_t nel      = src->md[0].nelement;
+        uint64_t prod_pos = 1;
+        uint8_t  ndims    = 1;
+        uint32_t sz[3]    = { (uint32_t) nel, 1, 1 };
         if (strcmp(fn, "reshape") == 0)
         {
             ndims        = (uint8_t) (nargs - 1);
@@ -326,14 +512,19 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
                 dims[i] = (d == -1) ? 1 : d;
                 prod_pos *= (uint64_t) dims[i];
             }
-            (void) (neg_idx != -1 && prod_pos > 0 && nel % prod_pos == 0 &&
-                    ((dims[neg_idx] = (long) (nel / prod_pos)), (prod_pos = nel)));
+            if (neg_idx != -1 && prod_pos > 0 && nel % prod_pos == 0)
+            {
+                dims[neg_idx] = (long) (nel / prod_pos);
+                prod_pos      = nel;
+            }
             if (prod_pos != nel)
             {
                 rc = exec_err(err, errsz, "reshape: element count mismatch");
                 goto done_src;
             }
-            sz[0] = (uint32_t) dims[0], sz[1] = (uint32_t) dims[1], sz[2] = (uint32_t) dims[2];
+            sz[0] = (uint32_t) dims[0];
+            sz[1] = (uint32_t) dims[1];
+            sz[2] = (uint32_t) dims[2];
         }
         uint8_t out_dt = mc_select_ctor_out_dt(slot, src->md[0].datatype);
         imageID oid    = mc_out_prepare(slot, ndims, sz, out_dt, in_unit, err, errsz);
@@ -359,7 +550,8 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
     }
     else if (strcmp(fn, "outer") == 0)
     {
-        uint64_t M = 0, N = 0;
+        uint64_t M = 0;
+        uint64_t N = 0;
         if (mc_resolve_or_eval_im(rhs->u.call.args[1], call_site, avoid_id, in_unit, &src2_id,
                                   &src2_tmp, err, errsz) != 0)
         {
@@ -394,13 +586,16 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
                      : -1;
             goto done_src;
         }
-        long     k = llround(kd), absk = (k < 0) ? -k : k;
-        uint8_t  sdt = src->md[0].datatype;
-        uint8_t  odt = mc_select_ctor_out_dt(slot, (sdt == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE
-                                                                             : _DATATYPE_FLOAT);
-        uint64_t r0 = (k < 0) ? (uint64_t) absk : 0, c0 = (k > 0) ? (uint64_t) absk : 0;
+        long     k     = llround(kd);
+        long     absk  = (k < 0) ? -k : k;
+        uint8_t  sdt   = src->md[0].datatype;
+        uint8_t  odt   = mc_select_ctor_out_dt(slot, (sdt == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE
+                                                                               : _DATATYPE_FLOAT);
+        uint64_t r0    = (k < 0) ? (uint64_t) absk : 0;
+        uint64_t c0    = (k > 0) ? (uint64_t) absk : 0;
         int      is_1d = (src->md[0].naxis == 1);
-        uint64_t M = src->md[0].size[0], N = is_1d ? (M + (uint64_t) absk) : src->md[0].size[1];
+        uint64_t M     = src->md[0].size[0];
+        uint64_t N     = is_1d ? (M + (uint64_t) absk) : src->md[0].size[1];
         if (!is_1d && (r0 >= M || c0 >= N))
         {
             rc = exec_err(err, errsz, "diag: diagonal offset out of range");
@@ -415,9 +610,11 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
             goto done_src;
         }
         IMAGE *out = &milk_data.image[oid];
-        (void) (is_1d &&
-                memset(out->array.raw, 0,
-                       (size_t) out->md[0].nelement * (size_t) ImageStreamIO_typesize(odt)));
+        if (is_1d)
+        {
+            memset(out->array.raw, 0,
+                   (size_t) out->md[0].nelement * (size_t) ImageStreamIO_typesize(odt));
+        }
         for (uint64_t i = 0; i < L; i++)
         {
             mc_write_im_pix(out, odt, is_1d ? ((c0 + i) * N + (r0 + i)) : i,
@@ -427,11 +624,33 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
     }
 
 done_src:
-    (void) (src_tmp && (mc_tmp_release(src_id), 1));
-    (void) (src2_tmp && (mc_tmp_release(src2_id), 1));
+    if (src_tmp)
+    {
+        mc_tmp_release(src_id);
+    }
+    if (src2_tmp)
+    {
+        mc_tmp_release(src2_id);
+    }
     return rc;
 }
 
+/* ========================================================================== */
+/* Elementwise Pass Execution (`MC_STEP_PASS`)                                */
+/* ========================================================================== */
+
+/**
+ * expr_equiv - Structurally compare two AST expressions for reduction-pair fusion
+ * @a: First expression tree
+ * @b: Second expression tree
+ *
+ * Used by `mc_exec_pass()` to detect when two hoisted scalar reductions in the
+ * same pass (e.g. `(im - imin(im)) / (imax(im) - imin(im))`) operate on the
+ * exact same argument expression so they can be evaluated together in a single
+ * memory pass via `mc_exec_reduce_pair()`.
+ *
+ * Return: 1 if structurally identical, 0 otherwise
+ */
 static int expr_equiv(const mc_expr_t *a, const mc_expr_t *b)
 {
     if (a == b)
@@ -466,28 +685,72 @@ static int expr_equiv(const mc_expr_t *a, const mc_expr_t *b)
     return 0;
 }
 
+/**
+ * struct pass_team_ctx_t - Worker team dispatch context for an elementwise kernel
+ * @fn:  Compiled C kernel function pointer
+ * @ops: Array of resolved runtime operand descriptors
+ */
 typedef struct
 {
     mc_kernel_fn  fn;
     mc_operand_t *ops;
 } pass_team_ctx_t;
 
+/**
+ * pass_team_cb - `arith_team_run` worker callback invoking the compiled C kernel
+ * @ctx: Pointer to `pass_team_ctx_t`
+ * @tid: Worker thread index (unused)
+ * @nth: Total number of worker threads (unused)
+ * @lo:  Start work item index (1D element index or 2D/3D flattened `yz` row index)
+ * @hi:  End work item index (exclusive)
+ *
+ * Return: void
+ */
 static void pass_team_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
 {
     (void) (tid + nth);
     const pass_team_ctx_t *job = (const pass_team_ctx_t *) ctx;
-    (void) (hi > lo && (job->fn(job->ops, lo, hi), 1));
+    if (hi > lo)
+    {
+        job->fn(job->ops, lo, hi);
+    }
 }
 
+/**
+ * mc_exec_pass - Resolve views, evaluate scalar parameters, and execute a compiled pass
+ * @prog:    Enclosing planned program
+ * @pass:    Compiled elementwise pass (`MC_STEP_PASS`)
+ * @in_unit: 1 if executing inside a persistent FPS unit
+ * @err:     Error message buffer
+ * @errsz:   Size of @err in bytes
+ *
+ * Execution sequence:
+ * 1. Evaluates all scalar operands (fusing matching 1-arg scalar reductions via
+ *    `mc_exec_reduce_pair()`) and validates non-zero divisors.
+ * 2. Computes comprehension generator extents or resolves LHS slice/in-place
+ *    anchor views.
+ * 3. Resolves all input image views (evaluating `is_expr_im` sub-programs and
+ *    cloning inputs that alias outputs in unsafe ways) and merges their shapes
+ *    into the pass iteration space `(vnx, vny, vnz)`.
+ * 4. Prepares output images via `mc_out_prepare()`, applies axis broadcasting
+ *    strides (`0` on singleton dimensions), and verifies that runtime datatypes
+ *    and contiguity still match the compiled kernel's assumptions.
+ * 5. Runs `pass->fn` on the `arith_team` worker pool with torn-frame detection
+ *    and retry on shared input streams, then posts all updated output streams.
+ *
+ * Return: 0 on success, -1 on error
+ */
 int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, size_t errsz)
 {
-    mc_operand_t ops_s[32],
-        *ops = (pass->nops <= 32) ? ops_s : calloc((size_t) pass->nops, sizeof(*ops));
-    mc_view_t views_s[32],
-        *views = (pass->nops <= 32) ? views_s : calloc((size_t) pass->nops, sizeof(*views));
-    imageID  expr_ims[64], snap_ims[64], div_snap[32];
-    uint64_t cnt0_pre[64];
-    int      rc = 0;
+    mc_operand_t  ops_s[32];
+    mc_operand_t *ops = (pass->nops <= 32) ? ops_s : calloc((size_t) pass->nops, sizeof(*ops));
+    mc_view_t     views_s[32];
+    mc_view_t *views = (pass->nops <= 32) ? views_s : calloc((size_t) pass->nops, sizeof(*views));
+    imageID    expr_ims[64];
+    imageID    snap_ims[64];
+    imageID    div_snap[32];
+    uint64_t   cnt0_pre[64];
+    int        rc = 0;
 
     if (!ops || !views || pass->nops > 64 || pass->nouts > 32)
     {
@@ -500,11 +763,13 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
     memset(snap_ims, 0xff, (size_t) pass->nops * sizeof(imageID));
     memset(div_snap, 0xff, (size_t) pass->nouts * sizeof(imageID));
 
+    /* Step 1: Evaluate hoisted scalar operands (with paired reduction fusion) */
     int sc_done[64] = { 0 };
     for (int i = 0; i < pass->nops; i++)
     {
-        views[i].im_id = views[i].owned_tmp_id = -1;
-        const mc_op_desc_t *d                  = &pass->ops[i];
+        views[i].im_id        = -1;
+        views[i].owned_tmp_id = -1;
+        const mc_op_desc_t *d = &pass->ops[i];
         if (!d->is_scalar)
         {
             continue;
@@ -526,7 +791,8 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
                         rc = -1;
                         goto cleanup;
                     }
-                    sc_done[i] = sc_done[j] = 1;
+                    sc_done[i] = 1;
+                    sc_done[j] = 1;
                     break;
                 }
             }
@@ -551,8 +817,11 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         }
     }
 
-    uint8_t  vnaxis = 0, rhs_naxis = 0;
-    uint32_t vsz[3] = { 1, 1, 1 }, rhs_sz[3] = { 1, 1, 1 };
+    /* Step 2: Compute comprehension grid extents if `pass->is_comp` */
+    uint8_t  vnaxis    = 0;
+    uint8_t  rhs_naxis = 0;
+    uint32_t vsz[3]    = { 1, 1, 1 };
+    uint32_t rhs_sz[3] = { 1, 1, 1 };
     for (int g = 0; pass->is_comp && pass->comp_expr != NULL && g < pass->comp_expr->u.comp.ngens;
          g++)
     {
@@ -561,9 +830,14 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         for (int i = 0; i < pass->nops; i++)
         {
             int gi = pass->ops[i].comp_gen_idx - g * 3;
-            (void) (gi >= 0 && gi < 3 && (bnd[gi] = ops[i].scalar, 1));
+            if (gi >= 0 && gi < 3)
+            {
+                bnd[gi] = ops[i].scalar;
+            }
         }
-        long la = llround(bnd[0]), lb = llround(bnd[1]), lst = llround(bnd[2]);
+        long la  = llround(bnd[0]);
+        long lb  = llround(bnd[1]);
+        long lst = llround(bnd[2]);
         if (lst == 0 || (lst > 0 && lb < la) || (lst < 0 && lb > la))
         {
             rc = exec_err(err, errsz,
@@ -574,6 +848,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         vsz[g] = (uint32_t) ((lst > 0) ? ((lb - la) / lst + 1) : ((la - lb) / (-lst) + 1));
     }
 
+    /* Step 3: Resolve LHS slice or compound-assignment anchor views */
     int has_lhs_anchor = 0;
     for (int j = 0; j < pass->nouts; j++)
     {
@@ -597,6 +872,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         has_lhs_anchor = 1;
     }
 
+    /* Step 4: Resolve RHS input views (phase 0: named slots, phase 1: expr_im sub-programs) */
     int has_expr_im = 0;
     for (int phase = 0; phase < 2 && (phase == 0 || has_expr_im); phase++)
     {
@@ -622,7 +898,10 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
                 rc = exec_err(err, errsz, "unknown image '%s'", prog->slots[d->slot_idx].name);
                 goto cleanup;
             }
-            (void) (!d->is_expr_im && (prog->slots[d->slot_idx].im_id = id, 1));
+            if (!d->is_expr_im)
+            {
+                prog->slots[d->slot_idx].im_id = id;
+            }
             for (int j = 0; !d->is_expr_im && j < pass->nouts; j++)
             {
                 IMAGE *oim = &milk_data.image[id];
@@ -635,7 +914,8 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
                        (vnaxis > 1 && oim->md[0].size[1] != vsz[1]) ||
                        (vnaxis > 2 && oim->md[0].size[2] != vsz[2])))))
                 {
-                    id = snap_ims[i] = clone_to_tmp(id);
+                    id          = clone_to_tmp(id);
+                    snap_ims[i] = id;
                     break;
                 }
             }
@@ -648,12 +928,15 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
                 rc = -1;
                 goto cleanup;
             }
-            (void) ((d->is_expr_im ||
-                     strncmp(prog->slots[d->slot_idx].bare, "_tmpcalcps", 10) == 0) &&
-                    !unsqueeze && (vnaxis = views[i].naxis));
+            if ((d->is_expr_im || strncmp(prog->slots[d->slot_idx].bare, "_tmpcalcps", 10) == 0) &&
+                !unsqueeze)
+            {
+                vnaxis = views[i].naxis;
+            }
         }
     }
 
+    /* Step 5: Allow scalar/broadcast RHS to inherit shape from an existing destination image */
     int can_bcast_dst = !pass->is_complex && !pass->no_dst_bcast;
     for (int i = 0; i < pass->nops; i++)
     {
@@ -687,6 +970,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         }
     }
 
+    /* Step 6: Prepare output images and validate mask geometry */
     for (int j = 0; j < pass->nouts; j++)
     {
         const mc_pass_out_t *out = &pass->outs[j];
@@ -723,7 +1007,10 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         }
     }
 
-    pass->vnx = vsz[0], pass->vny = vsz[1], pass->vnz = vsz[2];
+    /* Step 7: Finalize operand pointers, broadcast strides, and plan invariants */
+    pass->vnx      = vsz[0];
+    pass->vny      = vsz[1];
+    pass->vnz      = vsz[2];
     uint64_t nelem = (uint64_t) vsz[0] * (uint64_t) vsz[1] * (uint64_t) vsz[2];
     for (int i = 0; i < pass->nops; i++)
     {
@@ -743,7 +1030,10 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
             rc = exec_err(err, errsz, "Dimension mismatch in image assignment");
             goto cleanup;
         }
-        (void) (!pass->ops[i].is_table_arg && (mc_view_apply_broadcast(&views[i], vsz), 1));
+        if (!pass->ops[i].is_table_arg)
+        {
+            mc_view_apply_broadcast(&views[i], vsz);
+        }
         if (views[i].dt != pass->ops[i].dt ||
             (pass->is_1d_contig && !pass->ops[i].is_table_arg && !views[i].is_contig))
         {
@@ -753,18 +1043,24 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         ops[i].base = (uint8_t *) milk_data.image[views[i].im_id].array.raw +
                       views[i].offset_elem * (int64_t) ImageStreamIO_typesize(views[i].dt);
         memcpy(ops[i].st, views[i].st, sizeof(ops[i].st));
-        ops[i].vnx = views[i].vnx, ops[i].vny = views[i].vny, ops[i].vnz = views[i].vnz;
+        ops[i].vnx = views[i].vnx;
+        ops[i].vny = views[i].vny;
+        ops[i].vnz = views[i].vnz;
     }
 
-    uint64_t nitems = pass->is_1d_contig ? nelem : (uint64_t) vsz[1] * (uint64_t) vsz[2];
-    int      nth = milk_omp_team_size(nelem, 262144), is_sh_in[64] = { 0 };
+    /* Step 8: Dispatch kernel across worker threads with torn-frame retry */
+    uint64_t nitems       = pass->is_1d_contig ? nelem : (uint64_t) vsz[1] * (uint64_t) vsz[2];
+    int      nth          = milk_omp_team_size(nelem, 262144);
+    int      is_sh_in[64] = { 0 };
     for (int j = 0; j < pass->nouts; j++)
     {
         const mc_pass_out_t *out = &pass->outs[j];
         int fast_div             = (pass->is_1d_contig && !pass->is_complex && pass->nouts == 1 &&
                                     out->lhs_slice == NULL && nth <= 1);
-        (void) (!out->is_elided && out->assign_op == MC_TOK_DIV_ASSIGN && !fast_div &&
-                (div_snap[j] = clone_to_tmp(prog->slots[out->slot_idx].im_id), 1));
+        if (!out->is_elided && out->assign_op == MC_TOK_DIV_ASSIGN && !fast_div)
+        {
+            div_snap[j] = clone_to_tmp(prog->slots[out->slot_idx].im_id);
+        }
     }
     for (int i = 0; i < pass->nops; i++)
     {
@@ -782,16 +1078,26 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
     {
         for (int i = 0; i < pass->nops; i++)
         {
-            (void) (is_sh_in[i] &&
-                    (cnt0_pre[i] = __atomic_load_n(&milk_data.image[views[i].im_id].md[0].cnt0,
-                                                   __ATOMIC_ACQUIRE),
-                     1));
-            (void) (pass->ops[i].is_out && ((ops[i].scalar = 0.0), 1));
+            if (is_sh_in[i])
+            {
+                cnt0_pre[i] =
+                    __atomic_load_n(&milk_data.image[views[i].im_id].md[0].cnt0, __ATOMIC_ACQUIRE);
+            }
+            if (pass->ops[i].is_out)
+            {
+                ops[i].scalar = 0.0;
+            }
         }
 
         pass_team_ctx_t job = { .fn = pass->fn, .ops = ops };
-        (void) ((nth <= 1) ? (pass->fn(ops, 0, nitems), 1)
-                           : (arith_team_run(nth, nitems, pass_team_cb, &job), 1));
+        if (nth <= 1)
+        {
+            pass->fn(ops, 0, nitems);
+        }
+        else
+        {
+            arith_team_run(nth, nitems, pass_team_cb, &job);
+        }
 
         for (int j = 0; j < pass->nouts; j++)
         {
@@ -800,10 +1106,12 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
             {
                 IMAGE *dst       = &milk_data.image[prog->slots[pass->outs[j].slot_idx].im_id];
                 dst->md[0].write = 0;
-                (void) (div_snap[j] >= 0 &&
-                        memcpy(dst->array.raw, milk_data.image[div_snap[j]].array.raw,
-                               (size_t) dst->md[0].nelement *
-                                   (size_t) ImageStreamIO_typesize(dst->md[0].datatype)));
+                if (div_snap[j] >= 0)
+                {
+                    memcpy(dst->array.raw, milk_data.image[div_snap[j]].array.raw,
+                           (size_t) dst->md[0].nelement *
+                               (size_t) ImageStreamIO_typesize(dst->md[0].datatype));
+                }
                 rc = exec_err(err, errsz, "Division by zero");
                 goto cleanup;
             }
@@ -827,23 +1135,44 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
 
     for (int j = 0; j < pass->nouts; j++)
     {
-        (void) (!pass->outs[j].is_elided &&
-                (mc_out_post(prog->slots[pass->outs[j].slot_idx].im_id), 1));
+        if (!pass->outs[j].is_elided)
+        {
+            mc_out_post(prog->slots[pass->outs[j].slot_idx].im_id);
+        }
     }
-    (void) (pass->is_complex && vnaxis > 0 &&
-            (mc_ensure_pool_warm(vnaxis, vsz,
-                                 pass->work_double ? _DATATYPE_COMPLEX_DOUBLE
-                                                   : _DATATYPE_COMPLEX_FLOAT),
-             1));
+    if (pass->is_complex && vnaxis > 0)
+    {
+        mc_ensure_pool_warm(vnaxis, vsz,
+                            pass->work_double ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT);
+    }
 
 cleanup:
     for (int i = 0; i < pass->nops && i < 64; i++)
     {
-        (void) (views[i].owned_tmp_id >= 0 && (mc_tmp_release(views[i].owned_tmp_id), 1));
-        (void) (expr_ims[i] >= 0 && (mc_tmp_release(expr_ims[i]), 1));
-        (void) (snap_ims[i] >= 0 && (mc_tmp_release(snap_ims[i]), 1));
-        (void) (i < pass->nouts && i < 32 && div_snap[i] >= 0 && (mc_tmp_release(div_snap[i]), 1));
+        if (views[i].owned_tmp_id >= 0)
+        {
+            mc_tmp_release(views[i].owned_tmp_id);
+        }
+        if (expr_ims[i] >= 0)
+        {
+            mc_tmp_release(expr_ims[i]);
+        }
+        if (snap_ims[i] >= 0)
+        {
+            mc_tmp_release(snap_ims[i]);
+        }
+        if (i < pass->nouts && i < 32 && div_snap[i] >= 0)
+        {
+            mc_tmp_release(div_snap[i]);
+        }
     }
-    (void) (ops != ops_s && (free(ops), 1)), (void) (views != views_s && (free(views), 1));
+    if (ops != ops_s)
+    {
+        free(ops);
+    }
+    if (views != views_s)
+    {
+        free(views);
+    }
     return rc;
 }

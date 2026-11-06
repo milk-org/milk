@@ -4,7 +4,22 @@
 
 /**
  * @file mc_ext_registry.c
- * @brief In-memory registry for `milk_calc_ext` kernels and operators.
+ * @brief In-memory registry and ABI/parameter layout validator for `milk_calc_ext` extensions.
+ *
+ * Maintains the process-wide table (`ext_entries_storage`, up to `CALC_EXT_MAX_ENTRIES = 64`) of
+ * user-defined and built-in C extensions (`MILK_EXT_BLK1`, `MILK_EXT_BLK2`, `MILK_EXT_STENCIL`,
+ * `MILK_EXT_IMG`, and `MILK_EXT_OP`).
+ *
+ * When a library or module registers an extension entry (`milk_calc_ext_register`) or a full table
+ * (`milk_calc_ext_register_table`), this module:
+ *   - Verifies that `tbl->abi_version == MILK_CALC_EXT_ABI_VERSION`.
+ *   - Normalizes the extension name (stripping any accidental macro stringification quotes).
+ *   - Validates stencil radii (`1 .. 3`).
+ *   - Audits the `milk_calc_param_set_t` descriptor (`check_param_set`) to ensure parameter count
+ *     (`<= MILK_CALC_MAX_PARAMS`), total struct size (`<= MILK_CALC_PARAM_BYTES`), and each
+ *     field's `offset` and `size` match its declared numeric `FPTYPE_*` token.
+ *   - Overwrites any existing entry with the same name so hot-reloading an updated `.c`/`.so`
+ *     extension replaces its callbacks cleanly in place.
  */
 
 #include <stdint.h>
@@ -13,12 +28,23 @@
 
 #include "milk_calc_ext.h"
 
+/* Maximum number of registered extension kernels and operators per process. */
 #define CALC_EXT_MAX_ENTRIES 64
 
 static milk_calc_ext_entry_t ext_entries_storage[CALC_EXT_MAX_ENTRIES];
 static char                  ext_names_storage[CALC_EXT_MAX_ENTRIES][64];
 static int                   ext_nentries = 0;
 
+/* ============================================================================================== */
+/* Parameter Struct Layout Validation                                                             */
+/* ============================================================================================== */
+
+/**
+ * param_fptype_size - Return the expected C field byte size for an FPS numeric parameter type
+ * @fptype: `FPTYPE_*` token from `fps_types.h`
+ *
+ * Return: Expected field size in bytes (`4`, `8`, or `sizeof(int)`), or `0` if unsupported
+ */
 static size_t param_fptype_size(uint32_t fptype)
 {
     switch (fptype)
@@ -38,6 +64,19 @@ static size_t param_fptype_size(uint32_t fptype)
     }
 }
 
+/**
+ * check_param_set - Validate an extension's `milk_calc_param_set_t` specification table
+ * @cname: Normalized extension name for error reporting
+ * @e:     Extension entry being registered
+ * @err:   Error message buffer (may be NULL)
+ * @errsz: Capacity of @err in bytes
+ *
+ * Verifies that `ps->nparams <= MILK_CALC_MAX_PARAMS`, `ps->struct_size <= MILK_CALC_PARAM_BYTES`,
+ * and every parameter field has a supported numeric `FPTYPE_*` whose byte size and offset fit
+ * within `ps->struct_size`.
+ *
+ * Return: 0 if valid (or if the extension has no parameters), -1 on layout mismatch
+ */
 static int check_param_set(const char                  *cname,
                            const milk_calc_ext_entry_t *e,
                            char                        *err,
@@ -95,6 +134,22 @@ static int check_param_set(const char                  *cname,
     return 0;
 }
 
+/* ============================================================================================== */
+/* Public Extension Registry API                                                                  */
+/* ============================================================================================== */
+
+/**
+ * milk_calc_ext_register - Validate and register a single `milk_calc_ext_entry_t` descriptor
+ * @e:     Extension descriptor to register
+ * @err:   Error message buffer (may be NULL)
+ * @errsz: Capacity of @err in bytes
+ *
+ * Copies `e->name` into internal static storage (`ext_names_storage`) so the registered entry
+ * remains valid even if the caller's descriptor was temporary. If an entry with the same name is
+ * already registered, updates it in place.
+ *
+ * Return: 0 on success, -1 on validation error or registry full
+ */
 int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t errsz)
 {
     if (e == NULL || e->name == NULL || e->name[0] == '\0')
@@ -162,6 +217,14 @@ int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t err
     return 0;
 }
 
+/**
+ * milk_calc_ext_register_table - Verify ABI version and register all entries in @tbl
+ * @tbl:   Exported extension table (`__milk_calc_ext_table`)
+ * @err:   Error message buffer (may be NULL)
+ * @errsz: Capacity of @err in bytes
+ *
+ * Return: 0 if all entries in @tbl were registered, -1 on ABI mismatch or entry error
+ */
 int milk_calc_ext_register_table(const milk_calc_ext_table_t *tbl, char *err, size_t errsz)
 {
     if (tbl == NULL)
@@ -187,6 +250,12 @@ int milk_calc_ext_register_table(const milk_calc_ext_table_t *tbl, char *err, si
     return 0;
 }
 
+/**
+ * milk_calc_ext_find - Find a registered extension's index by name
+ * @name: Extension function name (without `:label` suffix)
+ *
+ * Return: Index in `[0, milk_calc_ext_count())` if found, or -1 if not registered
+ */
 int milk_calc_ext_find(const char *name)
 {
     if (name == NULL || name[0] == '\0')
@@ -203,11 +272,22 @@ int milk_calc_ext_find(const char *name)
     return -1;
 }
 
+/**
+ * milk_calc_ext_get - Retrieve a registered extension descriptor by index
+ * @idx: Index returned by `milk_calc_ext_find()` or in `[0, milk_calc_ext_count())`
+ *
+ * Return: Pointer to `milk_calc_ext_entry_t`, or NULL if @idx is out of range
+ */
 const milk_calc_ext_entry_t *milk_calc_ext_get(int idx)
 {
     return (idx >= 0 && idx < ext_nentries) ? &ext_entries_storage[idx] : NULL;
 }
 
+/**
+ * milk_calc_ext_count - Return the number of currently registered extensions
+ *
+ * Return: Count of registered extensions (`0 .. CALC_EXT_MAX_ENTRIES`)
+ */
 int milk_calc_ext_count(void)
 {
     return ext_nentries;

@@ -2,6 +2,35 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_out.c
+ * @brief Temporary image pool, output image preparation, semaphore batching, and formatting.
+ *
+ * Manages image allocation, reuse, publication, and CLI result formatting for
+ * the `libmilkcalc` execution engine:
+ *
+ * 1. **Temporary Image Pool (`_tmpcalcpool0..3`)**: Maintains a 4-slot, 256 MiB
+ *    pool of local `IMAGE` buffers (`mc_tmp_image`, `mc_tmp_release`) so
+ *    per-frame evaluations that need scratch images (aliased in-place clones,
+ *    binned slices, compound reduction inputs) avoid repeated `malloc`/`free`
+ *    and table scans. Sub-program slots (`_tmpcalcsub*`) stay pinned across
+ *    evaluations until `mc_tmp_release_force()` or `mcalc_tmp_cleanup()`.
+ * 2. **Output Preparation (`mc_out_prepare`)**: Resolves or creates the target
+ *    `IMAGE` for a planned slot, enforcing `@S:` (shared) vs `@L:`/`local`
+ *    storage rules, rejecting name collisions with scalar calculator/shell
+ *    variables, validating shared stream dimensions, and setting `md[0].write = 1`
+ *    prior to pixel writes. Uses `milk_table_generation()` (`checked_gen`) to
+ *    bypass hash lookups on repeated loop iterations.
+ * 3. **Deferred Stream Posting (`mc_out_post`, `mc_post_defer`, `mc_post_flush`)**:
+ *    Allows multi-step programs (or `for` loops) to batch shared-memory stream
+ *    updates (`processinfo_update_output_stream`) so downstream consumers are
+ *    woken once at the end of a transaction rather than on every intermediate
+ *    write.
+ * 4. **CLI Output Formatting (`mc_format_image_summary`, `mc_format_pixel_line`)**:
+ *    Formats human-readable image summaries (`name [dims] type`) and `-a`
+ *    space-separated pixel dumps.
+ */
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,17 +52,37 @@
 #define MC_POOL_BYTES ((size_t) 256 << 20)
 #define MC_MAX_PIXELS 1048576
 
+/* ========================================================================== */
+/* Temporary Image Pool (`_tmpcalcpool0..3`)                                  */
+/* ========================================================================== */
+
 static imageID g_pool_ids[MC_POOL_N] = { -1, -1, -1, -1 };
 static long    g_tmp_seq             = 1;
 static int     g_post_defer          = 0;
 static imageID g_post_ids[64];
 static int     g_post_n = 0;
 
+/**
+ * im_bytes - Compute total pixel buffer size in bytes for an `IMAGE`
+ * @im: Pointer to a valid `IMAGE`
+ *
+ * Return: Byte count (`nelement * typesize(datatype)`)
+ */
 static size_t im_bytes(const IMAGE *im)
 {
     return (size_t) im->md[0].nelement * (size_t) ImageStreamIO_typesize(im->md[0].datatype);
 }
 
+/**
+ * pool_im - Validate and return the `IMAGE` pointer for pool slot @k
+ * @k: Pool slot index (`0 .. MC_POOL_N - 1`)
+ *
+ * Verifies that `g_pool_ids[k]` still refers to a live image named
+ * `_tmpcalcpool<k>` in `milk_data.image[]`, resetting the slot to `-1` if it
+ * was externally deleted or overwritten.
+ *
+ * Return: Pointer to the pooled `IMAGE`, or NULL if slot @k is empty/stale
+ */
 static IMAGE *pool_im(int k)
 {
     char    name[32];
@@ -49,6 +98,16 @@ static IMAGE *pool_im(int k)
     return &milk_data.image[id];
 }
 
+/**
+ * pool_put - Attempt to park a local temporary image in the 4-slot reuse pool
+ * @id: `imageID` of the temporary image to recycle
+ *
+ * Rejects shared-memory images or images that would push total pooled memory
+ * above `MC_POOL_BYTES` (256 MiB). On success, renames the image in place to
+ * `_tmpcalcpool<slot>` so its pixel allocation stays warm.
+ *
+ * Return: 1 if parked in the pool, 0 if caller should delete @id instead
+ */
 static int pool_put(imageID id)
 {
     if (milk_data.image == NULL || id < 0 || id >= milk_data.NB_MAX_IMAGE ||
@@ -85,6 +144,19 @@ static int pool_put(imageID id)
     return 1;
 }
 
+/**
+ * mc_tmp_image - Allocate or reuse a local temporary image `_tmpcalc<seq>`
+ * @naxis: Number of axes (`1..3`)
+ * @size:  Axis extents `[3]`
+ * @dt:    ImageStreamIO datatype code (`_DATATYPE_*`)
+ *
+ * Scans `g_pool_ids[]` for a pooled image with matching @dt, @naxis, and @size.
+ * On a pool hit, renames it to `_tmpcalc<seq>`, resets counters and keywords,
+ * and returns its `imageID` without allocating memory. Otherwise creates a new
+ * local image via `create_image_ID()`.
+ *
+ * Return: Valid `imageID` on success, or -1 on allocation failure
+ */
 imageID mc_tmp_image(uint8_t naxis, const uint32_t size[3], uint8_t dt)
 {
     char tmpname[32];
@@ -121,6 +193,14 @@ imageID mc_tmp_image(uint8_t naxis, const uint32_t size[3], uint8_t dt)
     return id;
 }
 
+/**
+ * mc_tmp_release_force - Recycle or delete any temporary image (including `_tmpcalcsub*`)
+ * @tid: `imageID` of the temporary image to release
+ *
+ * Called when tearing down a planned program or clearing the sub-program cache.
+ *
+ * Return: void
+ */
 void mc_tmp_release_force(imageID tid)
 {
     if (milk_data.image == NULL || tid < 0 || tid >= milk_data.NB_MAX_IMAGE ||
@@ -134,6 +214,15 @@ void mc_tmp_release_force(imageID tid)
     }
 }
 
+/**
+ * mc_tmp_release - Return a transient `_tmpcalc*` image to the pool or delete it
+ * @tid: `imageID` of the temporary image to release
+ *
+ * No-op for pinned sub-program output images (`_tmpcalcsub*`) so cached
+ * reduction/constructor sub-programs retain their output buffer across frames.
+ *
+ * Return: void
+ */
 void mc_tmp_release(imageID tid)
 {
     if (milk_data.image == NULL || tid < 0 || tid >= milk_data.NB_MAX_IMAGE ||
@@ -144,6 +233,18 @@ void mc_tmp_release(imageID tid)
     mc_tmp_release_force(tid);
 }
 
+/**
+ * mc_tmp_steal_slot - Detach or clone the image produced by a sub-program's final slot
+ * @slot: Final output slot of a sub-program
+ *
+ * For pinned `_tmpcalcsub*` slots, returns `slot->im_id` directly (since
+ * `mc_tmp_release()` will leave it pinned). For transient `_tmpcalc*` slots,
+ * detaches ownership from @slot and assigns a fresh `_tmpcalc<seq>` name. For
+ * user-named slots, clones the image into a new temporary so the user's named
+ * image is not consumed.
+ *
+ * Return: Temporary `imageID` owned by caller, or -1 on error
+ */
 imageID mc_tmp_steal_slot(mc_slot_t *slot)
 {
     if (slot == NULL || slot->im_id < 0 || slot->im_id >= milk_data.NB_MAX_IMAGE ||
@@ -172,6 +273,17 @@ imageID mc_tmp_steal_slot(mc_slot_t *slot)
     return id;
 }
 
+/**
+ * mc_ensure_pool_warm - Ensure at least one pooled buffer exists for complex passes
+ * @naxis: Number of axes (`1..3`)
+ * @size:  Axis extents `[3]`
+ * @dt:    Complex datatype (`_DATATYPE_COMPLEX_FLOAT` or `_DATATYPE_COMPLEX_DOUBLE`)
+ *
+ * Pre-allocates and immediately recycles one temporary image when the pool is
+ * completely empty after a complex pass.
+ *
+ * Return: void
+ */
 void mc_ensure_pool_warm(uint8_t naxis, const uint32_t size[3], uint8_t dt)
 {
     for (int k = 0; k < MC_POOL_N; k++)
@@ -188,6 +300,14 @@ void mc_ensure_pool_warm(uint8_t naxis, const uint32_t size[3], uint8_t dt)
     }
 }
 
+/**
+ * mcalc_tmp_cleanup - Recycle or delete all non-pooled `_tmpcalc*` images in `milk_data`
+ *
+ * Sweeps `milk_data.image[]` after a top-level `mcalc_eval()` call to reclaim
+ * any unreferenced `_tmpcalc*` buffers while preserving `_tmpcalcpool*` slots.
+ *
+ * Return: void
+ */
 void mcalc_tmp_cleanup(void)
 {
     if (milk_data.image == NULL || milk_data.NB_MAX_IMAGE <= 0)
@@ -208,6 +328,30 @@ void mcalc_tmp_cleanup(void)
     g_tmp_seq = 1;
 }
 
+/* ========================================================================== */
+/* Output Image Preparation & Deferred Stream Publication                     */
+/* ========================================================================== */
+
+/**
+ * mc_out_prepare - Resolve, validate, or allocate the output `IMAGE` for a slot
+ * @slot:    Destination program slot
+ * @naxis:   Required number of axes (`1..3`)
+ * @size:    Required axis extents `[3]`
+ * @dt:      Required output datatype (`_DATATYPE_*`)
+ * @in_unit: 1 if executing inside a persistent FPS unit (defaults outputs to shared)
+ * @err:     Error message buffer
+ * @errsz:   Size of @err in bytes
+ *
+ * Fast-paths slot resolution when `slot->checked_gen == milk_table_generation()`.
+ * Verifies that @slot does not collide with an existing scalar variable. If the
+ * target image already exists:
+ * - Reuses shared streams in place if the element count matches (setting
+ *   `md[0].write = 1`), or errors on dimension mismatch.
+ * - Reuses local images in place if shape and datatype match, or deletes and
+ *   recreates them when resized or re-typed.
+ *
+ * Return: Prepared `imageID` with `md[0].write = 1`, or -1 on error
+ */
 imageID mc_out_prepare(mc_slot_t     *slot,
                        uint8_t        naxis,
                        const uint32_t size[3],
@@ -349,6 +493,16 @@ imageID mc_out_prepare(mc_slot_t     *slot,
     return id;
 }
 
+/**
+ * mc_out_post - Finalize and publish an updated output image
+ * @id: `imageID` of the modified image
+ *
+ * For local images, clears `md[0].write = 0` and increments `md[0].cnt0`. For
+ * shared-memory streams, either calls `processinfo_update_output_stream()`
+ * immediately or queues @id in `g_post_ids[]` when deferred posting is active.
+ *
+ * Return: void
+ */
 void mc_out_post(imageID id)
 {
     if (milk_data.image == NULL || id < 0 || id >= milk_data.NB_MAX_IMAGE ||
@@ -388,6 +542,12 @@ void mc_out_post(imageID id)
     }
 }
 
+/**
+ * mc_post_defer - Enable or disable deferred shared-stream semaphore posting
+ * @on: 1 to increment deferral nesting depth, 0 to reset deferral state
+ *
+ * Return: void
+ */
 void mc_post_defer(int on)
 {
     if (on)
@@ -404,6 +564,15 @@ void mc_post_defer(int on)
     }
 }
 
+/**
+ * mc_post_flush - Flush all queued shared-memory stream updates in a single batch
+ * @processinfo: Optional `PROCESSINFO *` handle (may be NULL)
+ *
+ * Decrements `g_post_defer`; when the outermost deferral scope exits, calls
+ * `processinfo_update_output_stream()` once for each unique queued `imageID`.
+ *
+ * Return: void
+ */
 void mc_post_flush(void *processinfo)
 {
     if (g_post_defer > 1)
@@ -427,6 +596,19 @@ void mc_post_flush(void *processinfo)
     g_post_n = 0;
 }
 
+/* ========================================================================== */
+/* CLI Image Summary & Pixel Line Formatting                                  */
+/* ========================================================================== */
+
+/**
+ * mc_format_image_summary - Format a concise `name [d0 x d1 ...] type` summary
+ * @id:          `imageID` to summarize
+ * @assign_name: Optional LHS name override (omits `_tmpcalc*` prefix when NULL/empty)
+ * @buf:         Output character buffer
+ * @bufsz:       Size of @buf in bytes
+ *
+ * Return: void
+ */
 void mc_format_image_summary(imageID id, const char *assign_name, char *buf, size_t bufsz)
 {
     if (milk_data.image == NULL || id < 0 || id >= milk_data.NB_MAX_IMAGE ||
@@ -478,6 +660,15 @@ void mc_format_image_summary(imageID id, const char *assign_name, char *buf, siz
     }
 }
 
+/**
+ * mc_format_pixel_line - Format all pixels of a real image as a space-separated string
+ * @id: `imageID` of the real image to format (up to `MC_MAX_PIXELS` elements)
+ *
+ * Used by `milk-calc -a` to print 1D/2D array elements on a single line.
+ * Rejects complex or half-precision images and images exceeding 1,048,576 pixels.
+ *
+ * Return: Newly heap-allocated NUL-terminated string (caller must `free()`), or NULL
+ */
 char *mc_format_pixel_line(imageID id)
 {
     if (milk_data.image == NULL || id < 0 || id >= milk_data.NB_MAX_IMAGE ||

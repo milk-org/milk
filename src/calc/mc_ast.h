@@ -2,6 +2,17 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_ast.h
+ * @brief Token, AST node, statement, and front-end resolution definitions for `libmilkcalc`.
+ *
+ * Defines the lexical token types (`mc_tok_type_t`), expression AST (`mc_expr_t`),
+ * statement AST (`mc_stmt_t`), and the front-end interfaces for lexing (`mc_lex`),
+ * Pratt parsing (`mc_parse_stmt`, `mc_parse_prog`), identifier/type/shape resolution
+ * (`mc_resolve_prog_ex`), scalar evaluation (`mc_scalar_*`), and `hist()`/`prev()`
+ * source rewriting (`mc_rewrite_history`).
+ */
+
 #ifndef MILK_MC_AST_H
 #define MILK_MC_AST_H
 

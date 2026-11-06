@@ -2,6 +2,29 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_local.c
+ * @brief Scalar arithmetic/string kernels and zero-heap `mcalc_local()` fast path.
+ *
+ * This module serves two closely related roles in `libmilkcalc`:
+ *
+ * 1. **Shared Scalar Arithmetic & String Operations**:
+ *    Provides overflow-checked 64-bit integer exponentiation (`mc_scalar_pow`),
+ *    hybrid integer/double binary operator evaluation with automatic float64
+ *    promotion on signed overflow (`mc_scalar_binop`), value-to-string
+ *    formatting (`mc_val_to_str`), and scalar string functions (`mc_scalar_str_fn`:
+ *    `strlen`, `toupper`, `tolower`, `substr`, `replace`, `hex`, `oct`, `bin`).
+ *
+ * 2. **Zero-Allocation `mcalc_local()` Fast Path**:
+ *    Evaluates pure scalar arithmetic expressions (including constants `pi`,
+ *    `nan`, `inf`, `in_local` math functions, and shared-memory entity
+ *    properties `s.<stream>.<prop>`, `f.<fps>.<prop>`, `p.<proc>.<prop>`)
+ *    entirely on the stack (`mc_lexp_t`) without allocating an AST or touching
+ *    `milk_data`. When an expression references calculator variables, images,
+ *    or assignments, `lex_local()` returns -1 so the caller seamlessly falls
+ *    back to the full AST pipeline.
+ */
+
 #include <ctype.h>
 #include <limits.h>
 #include <math.h>
@@ -14,6 +37,11 @@
 #include "milk_entity_ns.h"
 #include "milk_shm_prop.h"
 
+/* ========================================================================= */
+/* Scalar Value Constructors and Integer Exponentiation                      */
+/* ========================================================================= */
+
+/** mk_l() - Construct an `MC_VAL_LONG` scalar value holding @v. */
 static mc_val_t mk_l(long v)
 {
     mc_val_t r;
@@ -24,6 +52,7 @@ static mc_val_t mk_l(long v)
     return r;
 }
 
+/** mk_d() - Construct an `MC_VAL_DOUBLE` scalar value holding @v. */
 static mc_val_t mk_d(double v)
 {
     mc_val_t r;
@@ -34,11 +63,23 @@ static mc_val_t mk_d(double v)
     return r;
 }
 
+/** val_num() - Extract numeric value of @v as `double`. */
 static inline double val_num(const mc_val_t *v)
 {
     return (v->type == MC_VAL_LONG) ? (double) v->lval : v->dval;
 }
 
+/**
+ * ipow_checked - Compute integer power `b^e` with signed 64-bit overflow detection
+ * @b:   Base integer
+ * @e:   Non-negative exponent (`@e >= 0`)
+ * @out: Output pointer receiving exact `b^e` when no overflow occurs
+ *
+ * Uses binary exponentiation by squaring coupled with `__builtin_mul_overflow`
+ * so that any 64-bit signed overflow is caught before undefined behavior occurs.
+ *
+ * Return: 0 on exact fit in `long`, -1 on signed 64-bit overflow
+ */
 static int ipow_checked(long b, long e, long *out)
 {
     long r = 1;
@@ -58,6 +99,16 @@ static int ipow_checked(long b, long e, long *out)
     return 0;
 }
 
+/**
+ * mc_scalar_pow - Evaluate `pow(@a, @b)` preserving exact 64-bit integers when possible
+ * @a:   Base scalar value
+ * @b:   Exponent scalar value
+ * @out: Output scalar result (`MC_VAL_LONG` if exact integer fit, else `MC_VAL_DOUBLE`)
+ *
+ * When both @a and @b are `MC_VAL_LONG` with `@b->lval >= 0` and `@a^@b` fits in
+ * a signed 64-bit `long`, returns an exact `MC_VAL_LONG`; otherwise promotes
+ * both operands to `double` and calls `pow()`.
+ */
 void mc_scalar_pow(const mc_val_t *a, const mc_val_t *b, mc_val_t *out)
 {
     long r = 0;
@@ -70,6 +121,24 @@ void mc_scalar_pow(const mc_val_t *a, const mc_val_t *b, mc_val_t *out)
     *out = mk_d(pow(val_num(a), val_num(b)));
 }
 
+/* ========================================================================= */
+/* Binary Scalar Operators and String Functions                              */
+/* ========================================================================= */
+
+/**
+ * long_binop - Evaluate a binary operator on two `long` operands with overflow fallback
+ * @op:  Binary operator token (`MC_TOK_PLUS`, `MC_TOK_SHL`, etc.)
+ * @a:   Left integer operand
+ * @b:   Right integer operand
+ * @out: Output scalar value (`MC_VAL_LONG` or promoted `MC_VAL_DOUBLE` on overflow)
+ * @err: Output static error message string (set on modulo by zero, else NULL)
+ *
+ * Arithmetic (`+`, `-`, `*`) uses compiler overflow builtins and transparently
+ * promotes to `MC_VAL_DOUBLE` on 64-bit signed overflow. Shift counts outside
+ * `[0, 63]` and `LONG_MIN % -1` are guarded against undefined behavior.
+ *
+ * Return: 1 if @op was handled as an integer operation, 0 if caller should use float64
+ */
 static int long_binop(mc_tok_type_t op, long a, long b, mc_val_t *out, const char **err)
 {
     long r;
@@ -132,6 +201,19 @@ static int long_binop(mc_tok_type_t op, long a, long b, mc_val_t *out, const cha
     }
 }
 
+/**
+ * mc_scalar_binop - Apply binary operator @op to numeric scalar values @l and @r
+ * @op:  Binary operator token
+ * @l:   Left numeric operand
+ * @r:   Right numeric operand
+ * @out: Output scalar value
+ *
+ * Uses exact 64-bit integer arithmetic via `long_binop()` when both operands
+ * are `MC_VAL_LONG` (except `/` which always performs floating-point division),
+ * and falls back to `double` arithmetic otherwise.
+ *
+ * Return: NULL on success, or a static error string (e.g. `"Division by zero"`)
+ */
 const char *mc_scalar_binop(mc_tok_type_t op, const mc_val_t *l, const mc_val_t *r, mc_val_t *out)
 {
     const char *err = NULL;
@@ -214,6 +296,13 @@ const char *mc_scalar_binop(mc_tok_type_t op, const mc_val_t *l, const mc_val_t 
     return err;
 }
 
+/**
+ * mc_val_to_str - Format a runtime `mc_val_t` into a null-terminated string buffer
+ * @v:                Scalar or string value to format
+ * @buf:              Destination string buffer
+ * @bufsz:            Capacity of @buf in bytes
+ * @use_float_digits: Non-zero to format doubles with `mcalc_float_digits` precision
+ */
 void mc_val_to_str(const mc_val_t *v, char *buf, size_t bufsz, int use_float_digits)
 {
     if (v->type == MC_VAL_STRING)
@@ -235,6 +324,17 @@ void mc_val_to_str(const mc_val_t *v, char *buf, size_t bufsz, int use_float_dig
     }
 }
 
+/**
+ * mc_scalar_str_fn - Execute a built-in string or base-formatting function
+ * @fn:   Built-in function descriptor (`MC_FN_STR`)
+ * @args: Array of evaluated argument values
+ * @out:  Output value (`MC_VAL_LONG` for `strlen`, `MC_VAL_STRING` for all others)
+ *
+ * Implements `strlen(s)`, `toupper(s)`, `tolower(s)`, `substr(s, off, len)`,
+ * `replace(s, old, new)`, `hex(n)`, `oct(n)`, and `bin(n)`.
+ *
+ * Return: NULL on success, or a static error description on invalid argument types
+ */
 const char *mc_scalar_str_fn(const mc_func_t *fn, const mc_val_t *args, mc_val_t *out)
 {
     if (strcmp(fn->name, "strlen") == 0)
@@ -281,7 +381,9 @@ const char *mc_scalar_str_fn(const mc_func_t *fn, const mc_val_t *args, mc_val_t
         {
             return "replace: all args must be strings";
         }
-        char s0[MC_TOK_STR_MAX], s1[MC_TOK_STR_MAX], s2[MC_TOK_STR_MAX];
+        char s0[MC_TOK_STR_MAX];
+        char s1[MC_TOK_STR_MAX];
+        char s2[MC_TOK_STR_MAX];
         mc_val_to_str(&args[0], s0, sizeof(s0), 0);
         mc_val_to_str(&args[1], s1, sizeof(s1), 0);
         mc_val_to_str(&args[2], s2, sizeof(s2), 0);
@@ -315,6 +417,8 @@ const char *mc_scalar_str_fn(const mc_func_t *fn, const mc_val_t *args, mc_val_t
         *w = '\0';
         return NULL;
     }
+
+    /* Base-formatting functions: hex(n), oct(n), bin(n) */
     long iv   = (args[0].type == MC_VAL_LONG) ? args[0].lval : (long) val_num(&args[0]);
     out->type = MC_VAL_STRING;
     if (strcmp(fn->name, "hex") == 0 || strcmp(fn->name, "oct") == 0)
@@ -348,8 +452,19 @@ const char *mc_scalar_str_fn(const mc_func_t *fn, const mc_val_t *args, mc_val_t
     return NULL;
 }
 
+/* ========================================================================= */
+/* Zero-Allocation Stack Evaluator (mcalc_local)                             */
+/* ========================================================================= */
+
 #define MC_LOCAL_MAX_TOK 128
 
+/**
+ * struct mc_ltok_t - Compact stack token for `mcalc_local()`
+ * @type: Token type
+ * @l:    Integer literal value when `@type == MC_TOK_LONG`
+ * @d:    Floating-point value when `@type == MC_TOK_DOUBLE`
+ * @fn:   Resolved `in_local` function descriptor when `@type == MC_TOK_IDENT`
+ */
 typedef struct
 {
     mc_tok_type_t    type;
@@ -358,6 +473,13 @@ typedef struct
     const mc_func_t *fn;
 } mc_ltok_t;
 
+/**
+ * struct mc_lexp_t - Stack-allocated token stream and parser state for `mcalc_local()`
+ * @t:    Fixed-capacity array of compact tokens
+ * @n:    Number of tokens pushed into @t
+ * @pos:  Current consumption cursor during recursive evaluation
+ * @bail: Non-zero if syntax error or unsupported construct encountered
+ */
 typedef struct
 {
     mc_ltok_t t[MC_LOCAL_MAX_TOK];
@@ -366,6 +488,16 @@ typedef struct
     int       bail;
 } mc_lexp_t;
 
+/**
+ * lpush - Append one compact token to a stack `mc_lexp_t` stream
+ * @x:    Target local token stream
+ * @type: Token type
+ * @l:    Integer payload
+ * @d:    Double payload
+ * @fn:   Function pointer payload (for `MC_TOK_IDENT`)
+ *
+ * Return: 0 on success, -1 if `MC_LOCAL_MAX_TOK` capacity is reached
+ */
 static int lpush(mc_lexp_t *x, mc_tok_type_t type, long l, double d, const mc_func_t *fn)
 {
     if (x->n >= MC_LOCAL_MAX_TOK - 1)
@@ -376,6 +508,13 @@ static int lpush(mc_lexp_t *x, mc_tok_type_t type, long l, double d, const mc_fu
     return 0;
 }
 
+/**
+ * scan_local_op - Match an operator or punctuation token in `mcalc_local()`
+ * @p:   Input pointer positioned at candidate operator
+ * @len: Output byte length of matched token (1 or 2)
+ *
+ * Return: Matched `mc_tok_type_t`, or `MC_TOK_EOF` if not a local operator
+ */
 static mc_tok_type_t scan_local_op(const char *p, int *len)
 {
     static const struct
@@ -413,6 +552,17 @@ static mc_tok_type_t scan_local_op(const char *p, int *len)
     return MC_TOK_EOF;
 }
 
+/**
+ * match_local_fn - Match a built-in function call `name(` supported by `mcalc_local()`
+ * @p:      Input pointer positioned at candidate identifier
+ * @out_fn: Output pointer receiving the matched `mc_func_t` descriptor
+ *
+ * Only functions flagged with `fn->in_local == 1` are accepted; any other
+ * function returns 0 so `mcalc_local()` declines the expression and lets the
+ * full evaluator handle it.
+ *
+ * Return: Bytes consumed including the opening `(`, or 0 if not a local function
+ */
 static size_t match_local_fn(const char *p, const mc_func_t **out_fn)
 {
     size_t k = 0;
@@ -433,6 +583,16 @@ static size_t match_local_fn(const char *p, const mc_func_t **out_fn)
     return k + 1; /* include '(' */
 }
 
+/**
+ * lex_local_entity - Resolve a numeric shared-memory property `s/f/p.<name>.<prop>` inline
+ * @p: Input pointer positioned at candidate dotted entity reference
+ * @x: Target local token stream receiving the resolved numeric literal token(s)
+ *
+ * Queries `milk_shm_prop_get()` for shared-memory stream/FPS/process properties
+ * (`s.`, `f.`, `p.`) and pushes the parsed numeric value directly into @x.
+ *
+ * Return: Number of bytes consumed from @p, or 0 if not a numeric SHM property
+ */
 static size_t lex_local_entity(const char *p, mc_lexp_t *x)
 {
     size_t e     = 0;
@@ -472,9 +632,22 @@ static size_t lex_local_entity(const char *p, mc_lexp_t *x)
     return e;
 }
 
+/**
+ * lex_local - Tokenize a pure scalar expression into a stack `mc_lexp_t` buffer
+ * @s: Null-terminated expression string
+ * @x: Output stack token stream
+ *
+ * Rejects assignment operators, variables, image references, strings, and
+ * non-`in_local` functions by returning -1 so the caller falls back to the
+ * full calculator pipeline.
+ *
+ * Return: 0 if the entire expression was tokenized for local evaluation, -1 otherwise
+ */
 static int lex_local(const char *s, mc_lexp_t *x)
 {
-    x->n = x->pos = x->bail = 0;
+    x->n    = 0;
+    x->pos  = 0;
+    x->bail = 0;
     for (const char *p = s; *p != '\0';)
     {
         const mc_func_t *fn = NULL;
@@ -552,15 +725,31 @@ static int lex_local(const char *s, mc_lexp_t *x)
 
 static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live);
 
+/**
+ * lexpect - Consume expected token @t in `mcalc_local()` or set `x->bail`
+ * @x: Active local expression state
+ * @t: Expected token type
+ */
 static void lexpect(mc_lexp_t *x, mc_tok_type_t t)
 {
     if (!x->bail && x->t[x->pos].type != t)
     {
         x->bail = 1;
     }
-    x->pos += !x->bail;
+    if (!x->bail)
+    {
+        x->pos++;
+    }
 }
 
+/**
+ * eval_local_primary - Evaluate a primary or prefix-unary operand in `mcalc_local()`
+ * @x:    Active local expression state
+ * @live: 1 if side effects and division-by-zero checks are active, 0 when parsing
+ *        past a short-circuited branch
+ *
+ * Return: Evaluated `mc_val_t` (or dummy 0 when `@live == 0` or `x->bail` is set)
+ */
 static mc_val_t eval_local_primary(mc_lexp_t *x, int live)
 {
     const mc_ltok_t *k = &x->t[x->pos];
@@ -638,6 +827,18 @@ static mc_val_t eval_local_primary(mc_lexp_t *x, int live)
     }
 }
 
+/**
+ * eval_local_expr - Precedence-climbing evaluator for `mcalc_local()` token streams
+ * @x:        Active local expression state
+ * @min_prec: Minimum operator precedence to bind at this recursion level
+ * @live:     1 if evaluation is active, 0 if consuming tokens in an untaken branch
+ *
+ * Evaluates binary operators, chained relational comparisons (`a <= x <= b`),
+ * short-circuiting `&&`/`||`, and ternary `c ? t : f` directly on the token
+ * stream without building an AST.
+ *
+ * Return: Evaluated `mc_val_t`
+ */
 static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live)
 {
     mc_val_t left = eval_local_primary(x, live);
@@ -703,6 +904,20 @@ static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live)
     return left;
 }
 
+/**
+ * mcalc_local - Fast zero-heap evaluator for pure scalar and SHM-property expressions
+ * @expr:   Null-terminated expression string to evaluate
+ * @digits: Significant digits for `%.*g` floating-point formatting
+ * @out:    Output string buffer receiving the formatted scalar result
+ * @outsz:  Capacity of @out buffer in bytes
+ * @truth:  Optional output receiving boolean truth value (1 if non-zero and non-NaN, else 0)
+ *
+ * Evaluates @expr on the stack without touching `milk_data` or heap memory. If
+ * @expr uses variables, images, strings, assignments, or non-local functions,
+ * returns 0 so the caller can fall back to the full calculator engine.
+ *
+ * Return: 1 if evaluated locally into @out, 0 if caller must use the full engine
+ */
 int mcalc_local(const char *expr, int digits, char *out, size_t outsz, int *truth)
 {
     mc_lexp_t x;

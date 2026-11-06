@@ -2,6 +2,16 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_linalg.h
+ * @brief Internal interface for linear algebra, FFT, stacking, and spatial convolution in `libmilkcalc`.
+ *
+ * Declares shape/type resolution (`mc_resolve_linalg_call`) and runtime execution entry
+ * points (`mc_exec_blas_call`, `mc_exec_lapack_call`, `mc_exec_fft_or_stack`,
+ * `mc_exec_conv2_or_boxmean`, `mc_exec_ext_ctor`, `mc_exec_multi_linalg_or_ext`) for
+ * non-elementwise constructor steps.
+ */
+
 #ifndef MILK_MC_LINALG_H
 #define MILK_MC_LINALG_H
 

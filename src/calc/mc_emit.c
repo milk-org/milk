@@ -2,6 +2,36 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_emit.c
+ * @brief C kernel source code generator for elementwise passes in libmilkcalc.
+ *
+ * Translates a planned elementwise pass (`mc_pass_t`) and its expression ASTs
+ * into a self-contained C11 source string (`pass->c_src`) exporting the kernel
+ * entry point:
+ *
+ *     void mc_k(mc_operand_t * restrict ops, uint64_t y0, uint64_t y1)
+ *
+ * Key code generation strategies:
+ * 1. **Selective Prelude Inclusion**: Prepends only the required portions of
+ *    `mc_prelude.h` (`MC_PRELUDE_CORE_SRC`, plus optional complex math,
+ *    coordinate/shift helpers, and datatype-specialized `MC_DEF_SPATIAL`
+ *    instantiations) to keep GCC parse times minimal.
+ * 2. **1D Contiguous Fast Path**: When `pass->is_1d_contig` is true, emits a
+ *    flat `#pragma omp simd` loop over `[y0, y1)`. Multi-output passes from a
+ *    single statement are L1-strip-mined in blocks of 1024 elements so each
+ *    output loop vectorizes cleanly without register pressure spills.
+ * 3. **2D/3D Strided & Broadcast Loop**: When slices, broadcasts, coordinates,
+ *    or stencils are active, emits an outer loop over flattened `(y, z)` rows
+ *    in `[y0, y1)` and splits the inner `x` loop into two scalar boundary
+ *    segments `[0, _x0)` and `[_x1, _nx)` plus a `#pragma omp simd` interior
+ *    loop `[_x0, _x1)` with hoisted row offsets `_ro` and shift row bases `_sh`.
+ * 4. **Algebraic Peepholes**: Specializes `pow(x, c)` for `c` in `{0, 1, 2, 3,
+ *    -1, 0.5, -0.5}`, folds `real`/`imag`/`conj` on real inputs, and splits
+ *    multi-output passes into a read/compute phase followed by a write phase
+ *    to prevent read-after-write aliasing across fused outputs.
+ */
+
 #include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -14,21 +44,46 @@
 #include "mc_plan.h"
 #include "mc_prelude.h"
 
+/* ========================================================================== */
+/* Dynamic String Buffer & Datatype Metadata Table                            */
+/* ========================================================================== */
+
+/**
+ * struct emit_buf_t - Growable heap string buffer for C code generation
+ * @buf: NUL-terminated character buffer (malloc'd)
+ * @len: Current string length in bytes (excluding NUL)
+ * @cap: Allocated capacity of @buf in bytes
+ * @oom: Sticky out-of-memory flag (1 if any allocation failed)
+ */
 typedef struct
 {
     char  *buf;
-    size_t len, cap;
+    size_t len;
+    size_t cap;
     int    oom;
 } emit_buf_t;
 
+/**
+ * eb_printf - Append formatted text to a growable emit buffer
+ * @b:   Target emit buffer
+ * @fmt: printf-style format string
+ *
+ * Doubles buffer capacity on demand (starting at 8 KiB). Sets `b->oom = 1` on
+ * allocation or formatting failure so callers only need to check `oom` once at
+ * the end of code generation.
+ *
+ * Return: void
+ */
 __attribute__((format(printf, 2, 3))) static void eb_printf(emit_buf_t *b, const char *fmt, ...)
 {
     if (b->oom)
     {
         return;
     }
-    va_list ap, ap2;
-    va_start(ap, fmt), va_copy(ap2, ap);
+    va_list ap;
+    va_list ap2;
+    va_start(ap, fmt);
+    va_copy(ap2, ap);
     int need = vsnprintf(b->buf ? b->buf + b->len : NULL, b->cap - b->len, fmt, ap);
     va_end(ap);
     if (need >= 0 && b->len + (size_t) need + 1 > b->cap)
@@ -39,25 +94,61 @@ __attribute__((format(printf, 2, 3))) static void eb_printf(emit_buf_t *b, const
             ncap *= 2;
         }
         char *nb = realloc(b->buf, ncap);
-        (void) ((nb != NULL && (b->buf = nb, b->cap = ncap,
-                                vsnprintf(b->buf + b->len, b->cap - b->len, fmt, ap2), 1)) ||
-                (need = -1));
+        if (nb != NULL)
+        {
+            b->buf = nb;
+            b->cap = ncap;
+            vsnprintf(b->buf + b->len, b->cap - b->len, fmt, ap2);
+        }
+        else
+        {
+            need = -1;
+        }
     }
     va_end(ap2);
-    (void) ((need < 0 && (b->oom = 1)) || (b->len += (size_t) need));
+    if (need < 0)
+    {
+        b->oom = 1;
+    }
+    else
+    {
+        b->len += (size_t) need;
+    }
 }
 
+/**
+ * is_complex_dt - Check if an ImageStreamIO datatype is complex
+ * @dt: Datatype code (`_DATATYPE_*`)
+ *
+ * Return: 1 if complex float or complex double, 0 otherwise
+ */
 static inline int is_complex_dt(uint8_t dt)
 {
     return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
 }
 
+/**
+ * struct dt_info_t - C type and helper naming metadata for an ImageStreamIO datatype
+ * @dt:  ImageStreamIO datatype code (`_DATATYPE_*`, or 0 for default float)
+ * @ct:  C type specifier string (e.g. `"float"`, `"uint16_t"`, `"float _Complex"`)
+ * @sfx: Short suffix for typed spatial helpers (e.g. `"f32"`, `"u16"`)
+ * @stm: Saturating/rounding store helper name for integer types (e.g. `"mc_st_u16"`),
+ *       or NULL for floating-point/complex types that use a direct cast
+ */
 typedef struct
 {
     uint8_t     dt;
-    const char *ct, *sfx, *stm;
+    const char *ct;
+    const char *sfx;
+    const char *stm;
 } dt_info_t;
 
+/**
+ * get_dt_info - Look up C type and store helper metadata for a datatype
+ * @dt: ImageStreamIO datatype code (`_DATATYPE_*`)
+ *
+ * Return: Pointer to a static `dt_info_t` entry (falls back to `float` if unknown)
+ */
 static const dt_info_t *get_dt_info(uint8_t dt)
 {
     static const dt_info_t k_dt[] = {
@@ -82,19 +173,64 @@ static const dt_info_t *get_dt_info(uint8_t dt)
     return &k_dt[i];
 }
 
+/* ========================================================================== */
+/* Expression & Operand Code Emission                                         */
+/* ========================================================================== */
+
+/**
+ * struct emit_ctx_t - Code generation state for a single elementwise pass
+ * @prog:             Enclosing planned program
+ * @pass:             Pass being emitted
+ * @eb:               Active emit buffer receiving expression/statement code
+ * @pre_eb:           Optional row-preamble buffer for hoisting `_sh` shift bases
+ *                    before the inner SIMD `x` loop
+ * @wt:               Real working C type (`"float"` or `"double"`)
+ * @ct:               Complex working C type (`"float _Complex"` or `"double _Complex"`)
+ * @def_stk:          Stack of active user-defined `def` functions
+ * @def_args:         Stack of argument expression arrays for active `def` calls
+ * @sub_t0:           Reserved sub-expression pointer
+ * @def_depth:        Current `def` expansion nesting depth
+ * @cur_out_idx:      Index in `pass->outs[]` currently being emitted
+ * @chain_seq:        Monotonic counter for unique local variable names (`_ch`, `_sh`)
+ * @fast_x_interior:  1 when emitting the unit-stride interior `x` SIMD loop
+ * @fast_div:         1 when `/=` zero-divisor check was hoisted to a pre-loop reduction
+ * @used_complex:     1 if the kernel requires `MC_PRELUDE_COMPLEX_SRC`
+ * @used_coord_shift: 1 if the kernel requires `MC_PRELUDE_COORD_SHIFT_SRC`
+ * @used_spatial:     1 if the kernel requires `MC_PRELUDE_SPATIAL_MACRO_SRC`
+ */
 typedef struct
 {
     const mcalc_prog_t *prog;
     const mc_pass_t    *pass;
-    emit_buf_t         *eb, *pre_eb;
-    const char         *wt, *ct;
+    emit_buf_t         *eb;
+    emit_buf_t         *pre_eb;
+    const char         *wt;
+    const char         *ct;
     const mcalc_udef_t *def_stk[4];
     mc_expr_t *const   *def_args[4];
     const mc_expr_t    *sub_t0;
-    int                 def_depth, cur_out_idx, chain_seq, fast_x_interior, fast_div;
-    int                 used_complex, used_coord_shift, used_spatial;
+    int                 def_depth;
+    int                 cur_out_idx;
+    int                 chain_seq;
+    int                 fast_x_interior;
+    int                 fast_div;
+    int                 used_complex;
+    int                 used_coord_shift;
+    int                 used_spatial;
 } emit_ctx_t;
 
+/**
+ * find_earlier_out_in_pass - Find a prior output in the same pass writing slot @sidx
+ * @c:    Active emit context
+ * @sidx: Target slot index in `prog->slots[]`
+ *
+ * When two fused statements in the same pass write to and then read from the
+ * same slot (e.g. `local t = a + b; out = t * 2`), the later expression reads
+ * the register variable `_v<out_idx>` computed earlier in the loop body rather
+ * than reloading from memory.
+ *
+ * Return: Earlier output index in `c->pass->outs[]`, or -1 if none
+ */
 static int find_earlier_out_in_pass(const emit_ctx_t *c, int sidx)
 {
     for (int i = c->cur_out_idx - 1; i >= 0; i--)
@@ -111,6 +247,14 @@ static int find_earlier_out_in_pass(const emit_ctx_t *c, int sidx)
 
 static void emit_expr(emit_ctx_t *c, const mc_expr_t *e);
 
+/**
+ * emit_scalar_arg - Emit a scalar argument expression (using hoisted `_sc` / `_ish` if available)
+ * @c:      Active emit context
+ * @e:      Scalar argument expression
+ * @is_int: 1 to emit an integer shift offset (`_ish<k>` or `llround(...)`), 0 for float/double
+ *
+ * Return: void
+ */
 static void emit_scalar_arg(emit_ctx_t *c, const mc_expr_t *e, int is_int)
 {
     if (e->kind == MC_EXPR_IDENT && e->u.ident.def_param_idx >= 0 && c->def_depth > 0)
@@ -126,11 +270,30 @@ static void emit_scalar_arg(emit_ctx_t *c, const mc_expr_t *e, int is_int)
         eb_printf(c->eb, is_int ? "_ish%d" : "_sc%d", k);
         return;
     }
-    (void) (is_int && (eb_printf(c->eb, "llround((double)("), 1));
+    if (is_int)
+    {
+        eb_printf(c->eb, "llround((double)(");
+    }
     emit_expr(c, e);
-    (void) (is_int && (eb_printf(c->eb, "))"), 1));
+    if (is_int)
+    {
+        eb_printf(c->eb, "))");
+    }
 }
 
+/**
+ * emit_im_read - Emit an indexed pixel load for image operand @op_idx
+ * @c:      Active emit context
+ * @op_idx: Operand index in `c->pass->ops[]`
+ *
+ * Selects the optimal addressing mode for the active loop nest:
+ * - `_p<k>[_i]` in 1D contiguous passes
+ * - `_p<k>[_ro<k>]` for axis-0 broadcast operands in the fast interior `x` loop
+ * - `_p<k>[_ro<k> + (int64_t)x]` for unit-stride operands in the fast interior `x` loop
+ * - `_p<k>[_ro<k> + (int64_t)x * _st<k>_0]` in general strided/boundary loops
+ *
+ * Return: void
+ */
 static void emit_im_read(emit_ctx_t *c, int op_idx)
 {
     const char *cast = is_complex_dt(c->pass->ops[op_idx].dt) ? c->ct : c->wt;
@@ -143,6 +306,14 @@ static void emit_im_read(emit_ctx_t *c, int op_idx)
               cast, op_idx, op_idx, op_idx);
 }
 
+/**
+ * resolve_im_arg_op - Find the pass operand index corresponding to an image argument
+ * @c:   Active emit context
+ * @arg: Image argument AST node (unwrapping `def` parameters if needed)
+ * @tbl: 1 if looking up a table/source argument (`is_table_arg`), 0 otherwise
+ *
+ * Return: Operand index in `c->pass->ops[]`, or -1 if not found
+ */
 static int resolve_im_arg_op(emit_ctx_t *c, const mc_expr_t *arg, int tbl)
 {
     if (arg->kind == MC_EXPR_IDENT && arg->u.ident.def_param_idx >= 0 && c->def_depth > 0)
@@ -163,6 +334,12 @@ static int resolve_im_arg_op(emit_ctx_t *c, const mc_expr_t *arg, int tbl)
     return mc_find_im_op(c->pass, sidx, is_sl, is_sl ? arg : NULL, tbl, 0);
 }
 
+/**
+ * rel_op_str - Convert a relational operator token to its C operator string
+ * @op: Token type (`MC_TOK_LT`, `MC_TOK_LE`, `MC_TOK_GT`, `MC_TOK_GE`, `MC_TOK_NE`, `MC_TOK_EQ`)
+ *
+ * Return: Static C operator string literal
+ */
 static const char *rel_op_str(mc_tok_type_t op)
 {
     return (op == MC_TOK_LT)   ? "<"
@@ -173,15 +350,39 @@ static const char *rel_op_str(mc_tok_type_t op)
                                : "==";
 }
 
+/**
+ * emit_ternary - Emit a C conditional expression `(((cond) != 0) ? (t_e) : (f_e))`
+ * @c:    Active emit context
+ * @cond: Condition expression
+ * @t_e:  True-branch expression
+ * @f_e:  False-branch expression
+ *
+ * Return: void
+ */
 static void emit_ternary(emit_ctx_t      *c,
                          const mc_expr_t *cond,
                          const mc_expr_t *t_e,
                          const mc_expr_t *f_e)
 {
-    eb_printf(c->eb, "((("), emit_expr(c, cond), eb_printf(c->eb, ") != 0) ? (");
-    emit_expr(c, t_e), eb_printf(c->eb, ") : ("), emit_expr(c, f_e), eb_printf(c->eb, "))");
+    eb_printf(c->eb, "(((");
+    emit_expr(c, cond);
+    eb_printf(c->eb, ") != 0) ? (");
+    emit_expr(c, t_e);
+    eb_printf(c->eb, ") : (");
+    emit_expr(c, f_e);
+    eb_printf(c->eb, "))");
 }
 
+/**
+ * is_const_num - Extract a compile-time numeric literal value (including unary minus)
+ * @e:     Expression AST node to inspect
+ * @out_v: Output double receiving the constant value when returning 1
+ *
+ * Used to recognize small constant exponents in `pow(x, c)` so they can be
+ * replaced by inline multiplication, `sqrt`, or reciprocal helpers.
+ *
+ * Return: 1 if @e is a constant number, 0 otherwise
+ */
 static int is_const_num(const mc_expr_t *e, double *out_v)
 {
     if (e->kind == MC_EXPR_LONG || e->kind == MC_EXPR_DOUBLE)
@@ -189,26 +390,46 @@ static int is_const_num(const mc_expr_t *e, double *out_v)
         *out_v = (e->kind == MC_EXPR_LONG) ? (double) e->u.lval : e->u.dval;
         return 1;
     }
-    return (e->kind == MC_EXPR_UNARY && e->u.unary.op == MC_TOK_MINUS &&
-            is_const_num(e->u.unary.operand, out_v))
-               ? (*out_v = -(*out_v), 1)
-               : 0;
+    if (e->kind == MC_EXPR_UNARY && e->u.unary.op == MC_TOK_MINUS &&
+        is_const_num(e->u.unary.operand, out_v))
+    {
+        *out_v = -(*out_v);
+        return 1;
+    }
+    return 0;
 }
 
+/**
+ * emit_call - Emit C code for a function or macro call expression
+ * @c: Active emit context
+ * @e: `MC_EXPR_CALL` AST node
+ *
+ * Handles inline expansion of user-defined `def` functions, `where()`, complex
+ * constructors/projections (`real`, `imag`, `conj`, `cplx`, `expi`, `arg`),
+ * pixel coordinate generators (`ix`, `iy`, `ir`, `ia`), PRNG calls (`rand`,
+ * `randn`), `shift`/`roll` (hoisting `_sh` row base offsets in the interior
+ * SIMD loop), 1D/2D `lut`/`pixremap`/`interp2` table lookups, inline 3x3/5x5/7x7
+ * median/min/max stencils, and algebraic `pow(x, c)` specializations.
+ *
+ * Return: void
+ */
 static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
 {
     if (e->u.call.udef_id >= 0)
     {
         c->def_stk[c->def_depth]    = mcalc_udef_get(e->u.call.udef_id);
         c->def_args[c->def_depth++] = e->u.call.args;
-        eb_printf(c->eb, "("), emit_expr(c, e->u.call.udef_body), eb_printf(c->eb, ")");
+        eb_printf(c->eb, "(");
+        emit_expr(c, e->u.call.udef_body);
+        eb_printf(c->eb, ")");
         c->def_depth--;
         return;
     }
 
     const mc_func_t *fn    = e->u.call.fn;
-    int              nargs = e->u.call.nargs, wd = c->pass->work_double;
-    const char      *cfn = wd ? fn->c_f64 : fn->c_f32;
+    int              nargs = e->u.call.nargs;
+    int              wd    = c->pass->work_double;
+    const char      *cfn   = wd ? fn->c_f64 : fn->c_f32;
 
     switch (fn->kind)
     {
@@ -222,8 +443,14 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
         if (!is_c0 && (strcmp(fn->name, "imag") == 0 || strcmp(fn->name, "real") == 0 ||
                        strcmp(fn->name, "conj") == 0))
         {
-            (void) ((strcmp(fn->name, "imag") == 0 && (eb_printf(c->eb, "((%s)0)", c->wt), 1)) ||
-                    (emit_expr(c, e->u.call.args[0]), 1));
+            if (strcmp(fn->name, "imag") == 0)
+            {
+                eb_printf(c->eb, "((%s)0)", c->wt);
+            }
+            else
+            {
+                emit_expr(c, e->u.call.args[0]);
+            }
             return;
         }
         c->used_complex |=
@@ -249,9 +476,16 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
                                                               : 3;
         eb_printf(c->eb, "%s(_vnx%d, _vny%d, (int32_t)x, (int32_t)y, ",
                   wd ? "mc_coordd" : "mc_coordf", ref_op, ref_op);
-        (void) ((nargs == 3 && (emit_scalar_arg(c, e->u.call.args[1], 0), eb_printf(c->eb, ", "),
-                                emit_scalar_arg(c, e->u.call.args[2], 0), 1)) ||
-                (eb_printf(c->eb, "0, 0"), 1));
+        if (nargs == 3)
+        {
+            emit_scalar_arg(c, e->u.call.args[1], 0);
+            eb_printf(c->eb, ", ");
+            emit_scalar_arg(c, e->u.call.args[2], 0);
+        }
+        else
+        {
+            eb_printf(c->eb, "0, 0");
+        }
         eb_printf(c->eb, ", %d, %d)", (nargs == 3), mode);
         return;
     }
@@ -266,9 +500,10 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
 
     case MC_FN_SHIFT:
     {
-        c->used_coord_shift = 1;
-        int         op_idx  = resolve_im_arg_op(c, e->u.call.args[0], 0);
-        int         is_roll = (strcmp(fn->name, "roll") == 0), sh_id = ++c->chain_seq;
+        c->used_coord_shift  = 1;
+        int         op_idx   = resolve_im_arg_op(c, e->u.call.args[0], 0);
+        int         is_roll  = (strcmp(fn->name, "roll") == 0);
+        int         sh_id    = ++c->chain_seq;
         emit_buf_t *saved_eb = c->eb;
         if (c->fast_x_interior && c->pre_eb != NULL)
         {
@@ -305,7 +540,8 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
     case MC_FN_GATHER:
     {
         c->used_spatial    = 1;
-        int         is_lut = (fn->kind == MC_FN_LUT), is_i2 = (strcmp(fn->name, "interp2") == 0);
+        int         is_lut = (fn->kind == MC_FN_LUT);
+        int         is_i2  = (strcmp(fn->name, "interp2") == 0);
         int         tbl_op = resolve_im_arg_op(c, e->u.call.args[is_lut ? 1 : 0], 1);
         const char *sfx =
             get_dt_info((tbl_op >= 0) ? c->pass->ops[tbl_op].dt : _DATATYPE_FLOAT)->sfx;
@@ -369,8 +605,14 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
         {
             if (exp_v == 0.0 || exp_v == 1.0)
             {
-                (void) ((exp_v == 0.0 && (eb_printf(c->eb, "((%s)1)", c->wt), 1)) ||
-                        (emit_expr(c, e->u.call.args[0]), 1));
+                if (exp_v == 0.0)
+                {
+                    eb_printf(c->eb, "((%s)1)", c->wt);
+                }
+                else
+                {
+                    emit_expr(c, e->u.call.args[0]);
+                }
                 return;
             }
             nargs = 1;
@@ -386,12 +628,29 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
     eb_printf(c->eb, "%s(", cfn ? cfn : fn->name);
     for (int i = 0; i < nargs; i++)
     {
-        (void) (i > 0 && (eb_printf(c->eb, ", "), 1));
+        if (i > 0)
+        {
+            eb_printf(c->eb, ", ");
+        }
         emit_expr(c, e->u.call.args[i]);
     }
     eb_printf(c->eb, ")");
 }
 
+/**
+ * emit_expr - Recursively emit a C expression for an AST node inside a pass kernel
+ * @c: Active emit context
+ * @e: Expression AST node to emit
+ *
+ * Handles parameter substitution for `def` functions, comprehension generator
+ * coordinates (`_g_start + coord * _g_step`), pre-evaluated image and scalar
+ * operands, constants (`pi`, `nan`, `inf`), earlier-in-pass register forwarding
+ * (`_v<k>`), unary/binary/chained relational operators (using GCC statement
+ * expressions `({ ... })` to evaluate middle operands of `a < b < c` once),
+ * and function calls.
+ *
+ * Return: void
+ */
 static void emit_expr(emit_ctx_t *c, const mc_expr_t *e)
 {
     if (e == NULL)
@@ -456,9 +715,18 @@ static void emit_expr(emit_ctx_t *c, const mc_expr_t *e)
         int prev_out = (!is_sl && sidx >= 0) ? find_earlier_out_in_pass(c, sidx) : -1;
         int op_idx =
             (prev_out < 0) ? mc_find_im_op(c->pass, sidx, is_sl, is_sl ? e : NULL, 0, 0) : -1;
-        (void) ((prev_out >= 0 && (eb_printf(c->eb, "_v%d", prev_out), 1)) ||
-                (op_idx >= 0 && (emit_im_read(c, op_idx), 1)) ||
-                (eb_printf(c->eb, "((%s)0)", c->wt), 1));
+        if (prev_out >= 0)
+        {
+            eb_printf(c->eb, "_v%d", prev_out);
+        }
+        else if (op_idx >= 0)
+        {
+            emit_im_read(c, op_idx);
+        }
+        else
+        {
+            eb_printf(c->eb, "((%s)0)", c->wt);
+        }
         return;
     }
 
@@ -482,9 +750,11 @@ static void emit_expr(emit_ctx_t *c, const mc_expr_t *e)
     case MC_EXPR_BINARY:
     {
         mc_tok_type_t op   = e->u.binary.op;
-        int           cplx = is_complex_dt(e->res_dt), wd = c->pass->work_double;
+        int           cplx = is_complex_dt(e->res_dt);
+        int           wd   = c->pass->work_double;
         c->used_complex |= cplx;
-        char        pre[64], mid[64];
+        char        pre[64];
+        char        mid[64];
         const char *post = "))";
         if (cplx && (op == MC_TOK_MUL || op == MC_TOK_DIV))
         {
@@ -529,8 +799,10 @@ static void emit_expr(emit_ctx_t *c, const mc_expr_t *e)
             snprintf(mid, sizeof(mid), "), (double)(");
             post = ")))";
         }
-        eb_printf(c->eb, "%s", pre), emit_expr(c, e->u.binary.left);
-        eb_printf(c->eb, "%s", mid), emit_expr(c, e->u.binary.right);
+        eb_printf(c->eb, "%s", pre);
+        emit_expr(c, e->u.binary.left);
+        eb_printf(c->eb, "%s", mid);
+        emit_expr(c, e->u.binary.right);
         eb_printf(c->eb, "%s", post);
         return;
     }
@@ -548,7 +820,10 @@ static void emit_expr(emit_ctx_t *c, const mc_expr_t *e)
         eb_printf(c->eb, "(%s)(", c->wt);
         for (int i = 0; i < e->u.chain.nops; i++)
         {
-            (void) (i > 0 && (eb_printf(c->eb, " && "), 1));
+            if (i > 0)
+            {
+                eb_printf(c->eb, " && ");
+            }
             eb_printf(c->eb, "(_ch%d_%d %s _ch%d_%d)", id, i, rel_op_str(e->u.chain.ops[i]), id,
                       i + 1);
         }
@@ -574,6 +849,19 @@ static void emit_expr(emit_ctx_t *c, const mc_expr_t *e)
     }
 }
 
+/* ========================================================================== */
+/* Pass Output Store & Loop Nest Generation                                   */
+/* ========================================================================== */
+
+/**
+ * format_dst_lval - Format the C lvalue expression for an output pixel store
+ * @c:   Active emit context
+ * @out: Output descriptor in `c->pass->outs[]`
+ * @dst: Destination buffer receiving the formatted lvalue
+ * @dsz: Size of @dst in bytes
+ *
+ * Return: void
+ */
 static void format_dst_lval(const emit_ctx_t *c, const mc_pass_out_t *out, char *dst, size_t dsz)
 {
     int fast =
@@ -585,12 +873,26 @@ static void format_dst_lval(const emit_ctx_t *c, const mc_pass_out_t *out, char 
              out->op_idx, out->op_idx, out->op_idx);
 }
 
+/**
+ * emit_out_write - Emit evaluation and/or pixel store statements for one pass output
+ * @c:       Active emit context
+ * @out_idx: Index in `c->pass->outs[]`
+ * @phase:   0 = combined compute+store, 1 = compute into `_r<k>`/`_v<k>` only,
+ *           2 = store previously computed `_r<k>` to destination memory
+ *
+ * Splitting multi-output passes into phase 1 (compute) and phase 2 (store)
+ * ensures that all RHS reads from input arrays complete before any destination
+ * array is overwritten at pixel `x`, avoiding false aliasing hazards.
+ *
+ * Return: void
+ */
 static void emit_out_write(emit_ctx_t *c, int out_idx, int phase)
 {
     const mc_pass_out_t *out   = &c->pass->outs[out_idx];
     uint8_t              dt    = out->out_dt;
     const dt_info_t     *dti   = get_dt_info(dt);
-    const char          *ctype = dti->ct, *st_m = dti->stm;
+    const char          *ctype = dti->ct;
+    const char          *st_m  = dti->stm;
     const char          *vtype = is_complex_dt(dt) ? c->ct : c->wt;
 
     if (out->is_elided)
@@ -631,10 +933,11 @@ static void emit_out_write(emit_ctx_t *c, int out_idx, int phase)
 
     char dst_lval[256];
     format_dst_lval(c, out, dst_lval, sizeof(dst_lval));
-    (void) (!c->fast_div && out->assign_op == MC_TOK_DIV_ASSIGN &&
-            (eb_printf(c->eb, "        if (_r%d == 0) { ops[%d].scalar = 1.0; } else {\n", out_idx,
-                       out->op_idx),
-             1));
+    if (!c->fast_div && out->assign_op == MC_TOK_DIV_ASSIGN)
+    {
+        eb_printf(c->eb, "        if (_r%d == 0) { ops[%d].scalar = 1.0; } else {\n", out_idx,
+                  out->op_idx);
+    }
 
     if (out->assign_op == MC_TOK_ASSIGN)
     {
@@ -665,11 +968,25 @@ static void emit_out_write(emit_ctx_t *c, int out_idx, int phase)
                   st_m ? st_m : ctype, out_idx);
     }
 
-    (void) (!c->fast_div && out->assign_op == MC_TOK_DIV_ASSIGN &&
-            (eb_printf(c->eb, "        }\n"), 1));
-    (void) (is_masked && (eb_printf(c->eb, "        }\n"), 1));
+    if (!c->fast_div && out->assign_op == MC_TOK_DIV_ASSIGN)
+    {
+        eb_printf(c->eb, "        }\n");
+    }
+    if (is_masked)
+    {
+        eb_printf(c->eb, "        }\n");
+    }
 }
 
+/**
+ * emit_all_outs - Emit all output computations and stores for the inner pixel loop body
+ * @c: Active emit context
+ *
+ * Uses two-phase (compute all `_r<k>`, then store all `_r<k>`) emission when
+ * multiple unmasked `=` outputs share a loop body.
+ *
+ * Return: void
+ */
 static void emit_all_outs(emit_ctx_t *c)
 {
     int split = (c->pass->nouts > 1);
@@ -689,16 +1006,34 @@ static void emit_all_outs(emit_ctx_t *c)
     }
 }
 
+/**
+ * mc_emit_pass - Generate the complete C kernel source string for an elementwise pass
+ * @prog:  Enclosing planned program
+ * @pass:  Pass whose `c_src` field will be populated with a heap-allocated C string
+ * @err:   Error message buffer
+ * @errsz: Size of @err in bytes
+ *
+ * Emits operand pointer/stride unpacking, comprehension generator steps, the
+ * 1D contiguous or 2D/3D strided/interior-SIMD loop nest, and prepends only the
+ * prelude sections actually referenced during expression emission.
+ *
+ * Return: 0 on success, -1 on out-of-memory
+ */
 int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t errsz)
 {
-    emit_buf_t eb = { 0 }, k_eb = { 0 };
-    emit_ctx_t c = { 0 };
-    c.prog = prog, c.pass = pass, c.eb = &k_eb, c.used_complex = pass->is_complex;
-    c.wt = pass->work_double ? "double" : "float";
-    c.ct = pass->work_double ? "double _Complex" : "float _Complex";
+    emit_buf_t eb   = { 0 };
+    emit_buf_t k_eb = { 0 };
+    emit_ctx_t c    = { 0 };
+    c.prog          = prog;
+    c.pass          = pass;
+    c.eb            = &k_eb;
+    c.used_complex  = pass->is_complex;
+    c.wt            = pass->work_double ? "double" : "float";
+    c.ct            = pass->work_double ? "double _Complex" : "float _Complex";
 
     eb_printf(&k_eb, "void mc_k(mc_operand_t * restrict ops, uint64_t y0, uint64_t y1) {\n");
 
+    /* Unpack scalar parameters and `restrict`-qualified typed data pointers */
     for (int i = 0; i < pass->nops; i++)
     {
         if (pass->ops[i].is_scalar)
@@ -711,24 +1046,25 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
         }
         else
         {
-            const char *ct = get_dt_info(pass->ops[i].dt)->ct,
-                       *q  = pass->ops[i].is_out ? "" : "const ";
+            const char *ct = get_dt_info(pass->ops[i].dt)->ct;
+            const char *q  = pass->ops[i].is_out ? "" : "const ";
             eb_printf(&k_eb, "    %s%s * restrict _p%d = (%s%s *)ops[%d].base; (void)_p%d;\n", q,
                       ct, i, q, ct, i, i);
-            (void) (!pass->is_1d_contig &&
-                    (eb_printf(
-                         &k_eb,
-                         "    const int64_t _st%d_0 = ops[%d].st[0], _st%d_1 = ops[%d].st[1], "
-                         "_st%d_2 = ops[%d].st[2];\n"
-                         "    const uint32_t _vnx%d = ops[%d].vnx, _vny%d = ops[%d].vny, "
-                         "_vnz%d = ops[%d].vnz;\n"
-                         "    (void)_st%d_0; (void)_st%d_1; (void)_st%d_2; "
-                         "(void)_vnx%d; (void)_vny%d; (void)_vnz%d;\n",
-                         i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i),
-                     1));
+            if (!pass->is_1d_contig)
+            {
+                eb_printf(&k_eb,
+                          "    const int64_t _st%d_0 = ops[%d].st[0], _st%d_1 = ops[%d].st[1], "
+                          "_st%d_2 = ops[%d].st[2];\n"
+                          "    const uint32_t _vnx%d = ops[%d].vnx, _vny%d = ops[%d].vny, "
+                          "_vnz%d = ops[%d].vnz;\n"
+                          "    (void)_st%d_0; (void)_st%d_1; (void)_st%d_2; "
+                          "(void)_vnx%d; (void)_vny%d; (void)_vnz%d;\n",
+                          i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i);
+            }
         }
     }
 
+    /* Unpack comprehension generator start and step values */
     for (int g = 0; pass->is_comp && pass->comp_expr != NULL && g < pass->comp_expr->u.comp.ngens;
          g++)
     {
@@ -755,6 +1091,7 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
 
     if (pass->is_1d_contig)
     {
+        /* Fast 1D contiguous loop (with 1024-element L1 strip-mining for multi-output) */
         int mt = (can_simd && pass->nouts > 1);
         for (int i = 0; mt && i < pass->nouts; i++)
         {
@@ -788,7 +1125,10 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
                           "    if (_zdiv) { ops[%d].scalar = 1.0; return; }\n",
                           pass->outs[0].op_idx);
             }
-            (void) (can_simd && (eb_printf(&k_eb, "    #pragma omp simd\n"), 1));
+            if (can_simd)
+            {
+                eb_printf(&k_eb, "    #pragma omp simd\n");
+            }
             eb_printf(&k_eb, "    for (uint64_t _i = y0; _i < y1; _i++) {\n");
             emit_all_outs(&c);
             eb_printf(&k_eb, "    }\n}\n");
@@ -796,6 +1136,7 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
     }
     else
     {
+        /* 2D/3D strided loop with boundary scalar segments and interior SIMD `x` loop */
         int ref_op = pass->outs[pass->nouts - 1].op_idx;
         eb_printf(&k_eb,
                   "    const uint32_t _nx = _vnx%d, _ny = _vny%d;\n"
@@ -828,12 +1169,13 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
                   "        const uint64_t _row_base = _yz * _nx;\n");
         for (int i = 0; i < pass->nops; i++)
         {
-            (void) (!pass->ops[i].is_scalar && !pass->ops[i].is_table_arg &&
-                    (eb_printf(&k_eb,
-                               "        const int64_t _ro%d = (int64_t)y * _st%d_1 + "
-                               "(int64_t)z * _st%d_2; (void)_ro%d;\n",
-                               i, i, i, i),
-                     1));
+            if (!pass->ops[i].is_scalar && !pass->ops[i].is_table_arg)
+            {
+                eb_printf(&k_eb,
+                          "        const int64_t _ro%d = (int64_t)y * _st%d_1 + "
+                          "(int64_t)z * _st%d_2; (void)_ro%d;\n",
+                          i, i, i, i);
+            }
         }
         eb_printf(&k_eb, "        for (int _seg = 0; _seg < 2; _seg++) {\n"
                          "            const uint64_t _xb = _seg ? (uint64_t)_x1 : 0, "
@@ -845,11 +1187,18 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
         eb_printf(&k_eb, "            }\n        }\n");
         if (can_simd)
         {
-            emit_buf_t pre_eb = { 0 }, body_eb = { 0 };
-            c.pre_eb = &pre_eb, c.eb = &body_eb, c.fast_x_interior = 1;
+            emit_buf_t pre_eb  = { 0 };
+            emit_buf_t body_eb = { 0 };
+            c.pre_eb           = &pre_eb;
+            c.eb               = &body_eb;
+            c.fast_x_interior  = 1;
             emit_all_outs(&c);
-            c.pre_eb = NULL, c.eb = &k_eb;
-            (void) (pre_eb.buf != NULL && (eb_printf(&k_eb, "%s", pre_eb.buf), 1));
+            c.pre_eb = NULL;
+            c.eb     = &k_eb;
+            if (pre_eb.buf != NULL)
+            {
+                eb_printf(&k_eb, "%s", pre_eb.buf);
+            }
             eb_printf(&k_eb,
                       "        #pragma omp simd\n"
                       "        for (int32_t x = (int32_t)_x0; x < (int32_t)_x1; x++) {\n"
@@ -857,10 +1206,13 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
                       "        }\n",
                       body_eb.buf ? body_eb.buf : "");
             k_eb.oom |= pre_eb.oom | body_eb.oom;
-            free(pre_eb.buf), free(body_eb.buf);
+            free(pre_eb.buf);
+            free(body_eb.buf);
         }
         eb_printf(&k_eb, "        if (++y == _ny) { y = 0; z++; }\n    }\n}\n");
     }
+
+    /* Assemble final translation unit: required prelude sections + kernel function */
     eb_printf(&eb, "%s%s%s%s", MC_PRELUDE_CORE_SRC, c.used_complex ? MC_PRELUDE_COMPLEX_SRC : "",
               (c.used_coord_shift || c.used_spatial) ? MC_PRELUDE_COORD_SHIFT_SRC : "",
               c.used_spatial ? MC_PRELUDE_SPATIAL_MACRO_SRC : "");
@@ -882,7 +1234,10 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
     if (eb.oom)
     {
         free(eb.buf);
-        (void) (err && errsz > 0 && snprintf(err, errsz, "out of memory"));
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "out of memory");
+        }
         return -1;
     }
     pass->c_src = eb.buf;

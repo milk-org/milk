@@ -1,5 +1,27 @@
 // SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * @file mc_hist.c
+ * @brief Self-referential stream bootstrap, `hist()`/`prev()` ring rewriter, and `--explain`.
+ *
+ * Implements three compilation-support facilities for `libmilkcalc` programs:
+ *   1. **Self-referential recurrence bootstrap (`mc_expr_mentions_self`, `mc_self_init_create`)**:
+ *      Detects recurrence assignments where an uncreated target appears on its own RHS (e.g.
+ *      `avg = 0.9 * avg + 0.1 * im` or `n = n + 1`) and pre-creates the target image or scalar
+ *      variable zero-initialized using the shape/datatype of the non-self operand.
+ *   2. **History ring rewriter (`mc_rewrite_history`)**: Scans program source text before lexing
+ *      for `hist(stream, N)` declarations and `prev(stream[, k])` references. Allocates or
+ *      verifies the backing `(naxis + 1)`-D shared-memory ring buffer `<stream>_hist` of depth `N`
+ *      (default `2` when `prev(stream)` is used without an explicit `hist()`), rewrites every
+ *      `prev(stream, k)` call into `<stream>_hist[..., (_n + N - k) % N]`, and appends
+ *      `<stream>_hist[..., _n % N] = <stream>` update statements at the end of the program.
+ *   3. **Execution plan explainer (`mcalc_prog_explain`)**: Compiles and dry-runs a program, then
+ *      formats a human-readable breakdown of how each statement is executed (inlined `def`,
+ *      fused elementwise pass with dimensions/work-type/pre-stages, constructor step, or scalar
+ *      tape).
+ */
 
 #include <ctype.h>
 #include <stdio.h>
@@ -16,8 +38,15 @@
 #include "mc_plan.h"
 #include "mcalc.h"
 
+/* Maximum number of distinct streams with a `hist()` / `prev()` ring in a single program. */
 #define MC_HIST_MAX 16
 
+/**
+ * struct mc_hist_decl_t - Descriptor for a stream with an associated `<name>_hist` ring buffer
+ * @name:  Stream identifier
+ * @N:     Ring depth in frames (`>= 2`)
+ * @naxis: Dimensionality of the source stream (`1` or `2`; `0` before `hist_ring()` validation)
+ */
 typedef struct
 {
     char name[STRINGMAXLEN_IMAGE_NAME];
@@ -25,6 +54,24 @@ typedef struct
     int  naxis;
 } mc_hist_decl_t;
 
+/* ============================================================================================== */
+/* Self-Referential Recurrence Bootstrap                                                          */
+/* ============================================================================================== */
+
+/**
+ * mc_expr_mentions_self - Check whether RHS expression @e references LHS target @bare
+ * @e:      RHS expression AST node to inspect recursively
+ * @bare:   Bare identifier name of the LHS assignment target
+ * @out_im: Optional output pointer receiving the first non-self `IMAGE *` referenced in @e
+ *
+ * Used by the resolver (`mc_resolve.c`) when an assignment target does not yet exist: if @e
+ * mentions @bare alongside another existing image `*out_im`, the target can be auto-created with
+ * the dimensions and datatype of `*out_im` to bootstrap recurrence relations like
+ * `y = 0.95 * y + 0.05 * x`. Arguments inside scalar reductions (`imean(x)`, etc.) do not
+ * contribute a shape to `@out_im`.
+ *
+ * Return: 1 if @e references @bare, 0 otherwise
+ */
 int mc_expr_mentions_self(const mc_expr_t *e, const char *bare, const void **out_im)
 {
     if (e == NULL)
@@ -37,7 +84,8 @@ int mc_expr_mentions_self(const mc_expr_t *e, const char *bare, const void **out
     case MC_EXPR_IDENT:
     case MC_EXPR_SLICE:
     {
-        char nbuf[256], bbuf[256];
+        char nbuf[256];
+        char bbuf[256];
         snprintf(nbuf, sizeof(nbuf), "%s",
                  (e->kind == MC_EXPR_IDENT) ? e->u.ident.name : e->u.slice.name);
         mc_parse_ident_streamname(nbuf, bbuf, NULL);
@@ -99,6 +147,14 @@ int mc_expr_mentions_self(const mc_expr_t *e, const char *bare, const void **out
     }
 }
 
+/**
+ * mc_self_init_create - Pre-create a zero-initialized image or variable for a recurrence target
+ * @tb:       Bare identifier name of the recurrence target
+ * @is_local: 1 to create an `@L:` process-local image, 0 for an `@S:` shared-memory stream
+ * @rhs:      Resolved RHS expression providing the inferred result kind, shape, and datatype
+ *
+ * Return: void
+ */
 void mc_self_init_create(const char *tb, int is_local, const mc_expr_t *rhs)
 {
     if (tb == NULL || tb[0] == '\0' || rhs == NULL)
@@ -126,6 +182,16 @@ void mc_self_init_create(const char *tb, int is_local, const mc_expr_t *rhs)
     }
 }
 
+/* ============================================================================================== */
+/* `hist()` / `prev()` Ring Buffer Management and Source Rewriter                                 */
+/* ============================================================================================== */
+
+/**
+ * trim_hist - Trim leading and trailing ASCII whitespace in place
+ * @s: Mutable NUL-terminated string buffer
+ *
+ * Return: Pointer to the first non-whitespace character in @s
+ */
 static char *trim_hist(char *s)
 {
     while (isspace((unsigned char) *s))
@@ -140,6 +206,18 @@ static char *trim_hist(char *s)
     return s;
 }
 
+/**
+ * hist_ring - Validate source stream `d->name` and create or verify `<name>_hist`
+ * @d:     History declaration entry (populated with `d->naxis` on success)
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Source streams must be 1D or 2D (`naxis` 1 or 2) and ring depth `d->N` must be at least 2.
+ * Creates `<name>_hist` in shared memory with shape `(nx, N)` for 1D streams or `(nx, ny, N)` for
+ * 2D streams, or verifies that an existing `<name>_hist` matches those dimensions.
+ *
+ * Return: 0 on success, -1 on error
+ */
 static int hist_ring(mc_hist_decl_t *d, char *err, size_t errsz)
 {
     char    ring[STRINGMAXLEN_IMAGE_NAME];
@@ -183,6 +261,14 @@ static int hist_ring(mc_hist_decl_t *d, char *err, size_t errsz)
     return 0;
 }
 
+/**
+ * hist_find - Look up a stream name in the active `mc_hist_decl_t` table
+ * @decl: Array of history declarations
+ * @nd:   Number of valid entries in @decl
+ * @name: Stream name to search for
+ *
+ * Return: Index in `[0, nd)` if found, or -1 if not present
+ */
 static int hist_find(const mc_hist_decl_t *decl, int nd, const char *name)
 {
     for (int i = 0; i < nd; i++)
@@ -195,6 +281,16 @@ static int hist_find(const mc_hist_decl_t *decl, int nd, const char *name)
     return -1;
 }
 
+/**
+ * call_args - Parse the `(stream[, int_arg])` argument list of a `hist(` or `prev(` call
+ * @c:    Pointer immediately following the opening `(`
+ * @a1:   Output buffer receiving the trimmed stream identifier
+ * @a1sz: Capacity of @a1 in bytes
+ * @a2:   Output pointer receiving the integer second argument (or @def if omitted)
+ * @def:  Default value for *@a2 when the call has only one argument
+ *
+ * Return: Pointer to the character immediately after the closing `)`, or NULL on syntax error
+ */
 static const char *call_args(const char *c, char *a1, size_t a1sz, long *a2, long def)
 {
     const char *o     = c;
@@ -223,11 +319,29 @@ static const char *call_args(const char *c, char *a1, size_t a1sz, long *a2, lon
     return (*c == ')') ? c + 1 : NULL;
 }
 
+/**
+ * at_ident_start - Check whether pointer @c is at the start of a standalone identifier token
+ * @text: Beginning of the full source string
+ * @c:    Current scan position inside @text
+ *
+ * Prevents matching `my_hist(` or `xprev(` as `hist(` / `prev(`.
+ *
+ * Return: 1 if @c is not preceded by an identifier character, 0 otherwise
+ */
 static int at_ident_start(const char *text, const char *c)
 {
     return c == text || !(isalnum((unsigned char) c[-1]) || c[-1] == '_');
 }
 
+/**
+ * ensure_out_cap - Grow heap buffer `*out` so at least @extra bytes remain after @len
+ * @out:   In/out pointer to heap-allocated character buffer
+ * @cap:   In/out capacity of `*out` in bytes
+ * @len:   Current used length in bytes
+ * @extra: Additional bytes required
+ *
+ * Return: 0 on success, -1 on `realloc` failure
+ */
 static int ensure_out_cap(char **out, size_t *cap, size_t len, size_t extra)
 {
     if (len + extra < *cap)
@@ -240,10 +354,24 @@ static int ensure_out_cap(char **out, size_t *cap, size_t len, size_t extra)
     {
         return -1;
     }
-    *out = nb, *cap = new_cap;
+    *out = nb;
+    *cap = new_cap;
     return 0;
 }
 
+/**
+ * scan_hist_decls - Pass 1 scan collecting explicit `hist(stream, N)` declarations
+ * @text:  Program source text
+ * @decl:  Output array of history declarations (`MC_HIST_MAX`)
+ * @nd:    In/out count of declarations in @decl
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Skips string literals and `#` comments so `hist(...)` inside strings or comments is ignored.
+ * Rejects conflicting depth declarations for the same stream.
+ *
+ * Return: 0 on success, -1 on duplicate conflicting depth or table overflow
+ */
 static int scan_hist_decls(const char *text, mc_hist_decl_t *decl, int *nd, char *err, size_t errsz)
 {
     char name[STRINGMAXLEN_IMAGE_NAME];
@@ -303,6 +431,23 @@ static int scan_hist_decls(const char *text, mc_hist_decl_t *decl, int *nd, char
     return 0;
 }
 
+/**
+ * expand_prev_call - Rewrite a single `prev(name, num)` call into a `<name>_hist[...]` slice
+ * @decl:  Active history declaration table
+ * @nd:    In/out count of entries in @decl (auto-adds depth-2 entry if @name was not declared)
+ * @name:  Stream name referenced by `prev()`
+ * @num:   Lookback lag in frames (`1 <= num < N`)
+ * @out:   In/out destination text buffer
+ * @cap:   In/out capacity of `*out`
+ * @len:   In/out current length of `*out`
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Ensures `<name>_hist` is created via `hist_ring()` and emits the slice expression
+ * `<name>_hist[:, (_n + N - num) % N]` (1D) or `<name>_hist[:,:, (_n + N - num) % N]` (2D).
+ *
+ * Return: 0 on success, -1 on lag out of range or stream error
+ */
 static int expand_prev_call(mc_hist_decl_t *decl,
                             int            *nd,
                             const char     *name,
@@ -340,6 +485,21 @@ static int expand_prev_call(mc_hist_decl_t *decl,
     return 0;
 }
 
+/**
+ * mc_rewrite_history - Expand `hist()` and `prev()` calls in @text into ring-buffer slice syntax
+ * @text:      Input program source text
+ * @out_nhist: Optional output pointer receiving the number of appended ring-update statements
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Performs a two-pass rewrite:
+ *   1. `scan_hist_decls()` gathers all explicit `hist(s, N)` declarations.
+ *   2. Strips `hist(...)` calls, expands `prev(s[, k])` into `<s>_hist[..., (_n + N - k) % N]`,
+ *      and appends one `<s>_hist[..., _n % N] = <s>` statement per history stream at the end of
+ *      the returned string.
+ *
+ * Return: Newly heap-allocated rewritten program string (caller must `free()`), or NULL on error
+ */
 char *mc_rewrite_history(const char *text, int *out_nhist, char *err, size_t errsz)
 {
     if (out_nhist != NULL)
@@ -444,6 +604,20 @@ char *mc_rewrite_history(const char *text, int *out_nhist, char *err, size_t err
     return out;
 }
 
+/* ============================================================================================== */
+/* Program Execution Plan Explainer (`mcalc_prog_explain`)                                        */
+/* ============================================================================================== */
+
+/**
+ * count_scalar_ops_reds - Count scalar operations and image reductions inside expression @e
+ * @e:    AST expression to inspect recursively
+ * @ops:  In/out counter incremented for each operator and function call
+ * @reds: In/out counter incremented for each scalar reduction call (`imean`, `istats`, etc.)
+ *
+ * Used by `mcalc_prog_explain()` to summarize `MC_STEP_SCALAR` steps.
+ *
+ * Return: void
+ */
 static void count_scalar_ops_reds(const mc_expr_t *e, int *ops, int *reds)
 {
     if (e == NULL)
@@ -462,7 +636,8 @@ static void count_scalar_ops_reds(const mc_expr_t *e, int *ops, int *reds)
                            fn->kind == MC_FN_DOT || fn->kind == MC_FN_EAGER_RED ||
                            fn->kind == MC_FN_ISTATS || fn->kind == MC_FN_ICENTROID))
         {
-            (*reds)++, (*ops)++;
+            (*reds)++;
+            (*ops)++;
             return;
         }
         (*ops)++;
@@ -500,6 +675,21 @@ static void count_scalar_ops_reds(const mc_expr_t *e, int *ops, int *reds)
     }
 }
 
+/**
+ * mcalc_prog_explain - Compile, execute once, and print the execution plan of @text to @out
+ * @text: Program source text to analyze
+ * @out:  Output `FILE *` stream (e.g. `stdout`)
+ *
+ * Prints each user statement (skipping synthesized `hist()` tail statements) followed by how the
+ * planner scheduled it:
+ *   - `def, inlined where it is called`
+ *   - `kept, merged into the fused pass of statement K`
+ *   - `kept: fused pass over NxMxK (<dtype>, 1D|ND, P operands[, Q pre-stages]), writes ...`
+ *   - `kept: constructor/library step`
+ *   - `kept: scalar tape: N ops, M reductions, 0 pre-stages`
+ *
+ * Return: 0 on success, 1 on compilation or execution error
+ */
 int mcalc_prog_explain(const char *text, FILE *out)
 {
     char        err[512] = "";
@@ -589,7 +779,8 @@ int mcalc_prog_explain(const char *text, FILE *out)
             }
             else
             {
-                int nops = 0, nreds = 0;
+                int nops  = 0;
+                int nreds = 0;
                 if (st->scalar_stmt != NULL && st->scalar_stmt->kind == MC_STMT_EXPR)
                 {
                     count_scalar_ops_reds(st->scalar_stmt->u.expr, &nops, &nreds);

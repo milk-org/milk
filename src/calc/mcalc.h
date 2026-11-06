@@ -2,6 +2,23 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mcalc.h
+ * @brief Public API for the milk expression and image calculator (`libmilkcalc`).
+ *
+ * Role & Goal:
+ *   Exposes the single-engine calculator entry points used by `milk-cli`, `milk-call`,
+ *   `libmilkbash.so`, `libmilkscript`, and the standalone `milk-fpsexec-milk-calc`
+ *   compute unit:
+ *     - Interactive and bash-mode expression evaluation (`mcalc_eval_bash`,
+ *       `mcalc_eval_str`, `mcalc_eval_math_to_val`).
+ *     - Client-side zero-RPC fast path for scalar and `s.`/`f.`/`p.` expressions
+ *       (`mcalc_local`).
+ *     - Multi-statement compiled programs (`mcalc_prog_new`, `mcalc_prog_run`,
+ *       `mcalc_prog_explain`) and user-defined inline functions (`mcalc_udef_*`).
+ *     - User C extension loading and FPS parameter discovery (`mcalc_ext_*`).
+ */
+
 #ifndef MILK_MCALC_H
 #define MILK_MCALC_H
 

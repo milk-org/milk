@@ -2,6 +2,32 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_views.c
+ * @brief Slice view resolution, broadcast geometry, and pass fusion analysis for libmilkcalc.
+ *
+ * Provides two groups of routines used during planning (`mc_plan.c`), C code
+ * emission (`mc_emit.c`), and pass execution (`mc_exec.c`):
+ *
+ * 1. **Runtime View & Broadcast Resolution**:
+ *    - `mc_view_resolve()` evaluates dynamic slice bounds (`start:stop:step` or
+ *      `::Nb` binned slices, supporting negative indices and the `end` keyword)
+ *      against a live `IMAGE` and computes the resulting 3D view extents
+ *      `(vnx, vny, vnz)`, base element offset (`offset_elem`), and signed
+ *      per-axis element strides (`st[3]`). Binned RHS slices (`::Nb`) are
+ *      materialized into temporary images via `imgid_slice_materialize()`.
+ *    - `mc_view_merge_shape()` and `mc_view_apply_broadcast()` implement
+ *      NumPy-style singleton-axis broadcasting, zeroing `st[a]` on axes where
+ *      `vnx/vny/vnz == 1` and `pass_size[a] > 1`.
+ * 2. **Pass Operand Lookup & Fusion/Elision Legality**:
+ *    - `mc_find_slot_by_bare()`, `mc_find_im_op()`, and `mc_find_scalar_op()`
+ *      locate planned slots and operands during C code generation.
+ *    - `mc_can_merge_passes()`, `mc_has_bcast_stencil()`, and
+ *      `mc_elide_unused_locals()` analyze data dependencies across statements
+ *      to determine when consecutive elementwise passes can be fused and when
+ *      `local` intermediate images can be kept purely in CPU registers.
+ */
+
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -14,6 +40,23 @@
 #include "mc_ast.h"
 #include "mc_plan.h"
 
+/* ========================================================================== */
+/* Slice Bound Evaluation & View Resolution                                   */
+/* ========================================================================== */
+
+/**
+ * eval_bound_int - Evaluate a slice bound expression (`start`, `stop`, or `step`) to a long
+ * @be:      Bound expression AST node
+ * @out_val: Output integer bound value
+ * @err:     Error message buffer
+ * @errsz:   Size of @err in bytes
+ *
+ * Fast-paths literal integer nodes (`MC_EXPR_LONG`) and falls back to the
+ * scalar evaluator (`mc_scalar_eval_expr`) for arbitrary arithmetic expressions
+ * (including the `end` keyword set via `mc_scalar_set_slice_end()`).
+ *
+ * Return: 0 on success, -1 on error
+ */
 static int eval_bound_int(const mc_expr_t *be, long *out_val, char *err, size_t errsz)
 {
     if (be->kind == MC_EXPR_LONG)
@@ -35,6 +78,20 @@ static int eval_bound_int(const mc_expr_t *be, long *out_val, char *err, size_t 
     return 0;
 }
 
+/**
+ * eval_slice_direct - Populate an `IMGID_SLICE` descriptor from an `MC_EXPR_SLICE` AST node
+ * @slice_expr: Slice AST node (`MC_EXPR_SLICE`)
+ * @im:         Target `IMAGE` being sliced (used to bind `end` per axis)
+ * @slc:        Output `IMGID_SLICE` structure
+ * @err:        Error message buffer
+ * @errsz:      Size of @err in bytes
+ *
+ * Evaluates each axis specification (`start`, `stop`, `step`, full-axis `:`,
+ * reversed `::-1`, or binned `::Nb`), binding the axis-local `end` symbol to
+ * `im->md[0].size[ax] - 1` during evaluation and resetting it to `-1` afterward.
+ *
+ * Return: 0 on success, -1 on error
+ */
 static int eval_slice_direct(const mc_expr_t *slice_expr,
                              const IMAGE     *im,
                              IMGID_SLICE     *slc,
@@ -111,8 +168,10 @@ static int eval_slice_direct(const mc_expr_t *slice_expr,
             if (sa->step == NULL || eval_bound_int(sa->step, &bval, err, errsz) != 0 || bval == 0)
             {
                 mc_scalar_set_slice_end(-1);
-                (void) ((sa->step == NULL || bval == 0) &&
-                        snprintf(err, errsz, "invalid axis %d spec", ax));
+                if (sa->step == NULL || bval == 0)
+                {
+                    snprintf(err, errsz, "invalid axis %d spec", ax);
+                }
                 return -1;
             }
             slc->step[ax] = (int32_t) bval;
@@ -123,6 +182,20 @@ static int eval_slice_direct(const mc_expr_t *slice_expr,
     return 0;
 }
 
+/**
+ * validate_slice_neg_bounds - Reject negative slice indices that underflow axis extents
+ * @slc:   Evaluated `IMGID_SLICE` structure
+ * @snax:  Number of axes in the source image
+ * @ssz:   Source axis extents `[3]`
+ * @err:   Error message buffer
+ * @errsz: Size of @err in bytes
+ *
+ * Note: `end[aa] == -1` denotes "default end of axis" in `IMGID_SLICE` when
+ * `sz >= 1`, whereas `sz + start < 0` or `sz + end < 0` is an out-of-bounds
+ * negative index.
+ *
+ * Return: 0 if valid, -1 if out of bounds
+ */
 static int validate_slice_neg_bounds(const IMGID_SLICE *slc,
                                      int                snax,
                                      const uint32_t    *ssz,
@@ -147,6 +220,23 @@ static int validate_slice_neg_bounds(const IMGID_SLICE *slc,
     return 0;
 }
 
+/**
+ * mc_view_resolve - Resolve an image or slice expression into a concrete `mc_view_t`
+ * @expr:       Optional `MC_EXPR_SLICE` expression (NULL for full-image view)
+ * @base_im_id: Underlying `imageID` in `milk_data.image[]`
+ * @is_lhs:     1 if resolving an assignment target view, 0 for an RHS input view
+ * @out_v:      Output resolved view structure
+ * @err:        Error message buffer
+ * @errsz:      Size of @err in bytes
+ *
+ * For un-sliced images (or masked LHS assignments `dst[mask] = rhs`), returns
+ * a natural contiguous view over @base_im_id. For strided slices, computes
+ * `offset_elem`, signed strides `st[0..2]`, and squeezed view dimensions. For
+ * binned RHS slices (`::Nb`), allocates a temporary image (`owned_tmp_id`) and
+ * materializes the binned pixels via `imgid_slice_materialize()`.
+ *
+ * Return: 0 on success, -1 on error
+ */
 int mc_view_resolve(const mc_expr_t *expr,
                     imageID          base_im_id,
                     int              is_lhs,
@@ -301,6 +391,25 @@ int mc_view_resolve(const mc_expr_t *expr,
     return 0;
 }
 
+/* ========================================================================== */
+/* Shape Merging & Broadcast Stride Adjustment                                */
+/* ========================================================================== */
+
+/**
+ * mc_view_merge_shape - Merge an operand view's extents into the pass iteration shape
+ * @io_naxis:       In/out pass dimension count (`1..3`)
+ * @io_size:        In/out pass iteration extents `[3]`
+ * @has_lhs_anchor: 1 if an LHS slice or compound assignment has already fixed @io_size
+ * @v:              Operand view to merge
+ * @err:            Error message buffer
+ * @errsz:          Size of @err in bytes
+ *
+ * Enforces standard broadcasting rules: along each axis `a`, `v`'s extent must
+ * either match `io_size[a]`, be `1` (broadcast to `io_size[a]`), or expand
+ * `io_size[a]` from `1` when `!has_lhs_anchor`.
+ *
+ * Return: 0 if compatible, -1 on dimension mismatch
+ */
 int mc_view_merge_shape(uint8_t         *io_naxis,
                         uint32_t         io_size[3],
                         int              has_lhs_anchor,
@@ -332,6 +441,17 @@ int mc_view_merge_shape(uint8_t         *io_naxis,
     return 0;
 }
 
+/**
+ * mc_view_apply_broadcast - Zero strides on singleton axes and update `is_contig`
+ * @v:         View to update in place
+ * @pass_size: Final 3D iteration extents of the pass
+ *
+ * Sets `v->st[a] = 0` on any axis where the view has extent 1, and recomputes
+ * `v->is_contig` by checking whether @v spans the full @pass_size at natural
+ * row-major strides from offset 0.
+ *
+ * Return: void
+ */
 void mc_view_apply_broadcast(mc_view_t *v, const uint32_t pass_size[3])
 {
     uint32_t      vs[3]  = { v->vnx, v->vny, v->vnz };
@@ -351,6 +471,18 @@ void mc_view_apply_broadcast(mc_view_t *v, const uint32_t pass_size[3])
     v->is_contig = nat_ok;
 }
 
+/* ========================================================================== */
+/* Slot/Operand Lookup & Pass Fusion / Local Elision Analysis                 */
+/* ========================================================================== */
+
+/**
+ * mc_find_slot_by_bare - Find a program slot index by bare or qualified image name
+ * @prog: Planned program
+ * @name: Qualified image name (fallback if @bare is empty)
+ * @bare: Bare image name without `@S:`/`@L:` prefix
+ *
+ * Return: Slot index in `prog->slots[]`, or -1 if not found
+ */
 int mc_find_slot_by_bare(const mcalc_prog_t *prog, const char *name, const char *bare)
 {
     const char *key = (bare != NULL && bare[0] != '\0') ? bare : name;
@@ -364,6 +496,18 @@ int mc_find_slot_by_bare(const mcalc_prog_t *prog, const char *name, const char 
     return -1;
 }
 
+/**
+ * mc_find_im_op - Find an input image operand index in a planned pass
+ * @pass:       Elementwise pass to search
+ * @sidx:       Target slot index in `prog->slots[]` (when @is_eim is 0)
+ * @has_slice:  1 if the operand is an `MC_EXPR_SLICE`
+ * @slice_expr: Slice or pre-staged expression pointer
+ * @tbl:        1 if searching for a table/source operand (`is_table_arg`)
+ * @is_eim:     1 if searching by expression pointer (`slice_expr`) for a pre-staged
+ *              or compound image operand
+ *
+ * Return: Operand index in `pass->ops[]`, or -1 if not found
+ */
 int mc_find_im_op(const mc_pass_t *pass,
                   int              sidx,
                   int              has_slice,
@@ -385,6 +529,15 @@ int mc_find_im_op(const mc_pass_t *pass,
     return -1;
 }
 
+/**
+ * mc_find_scalar_op - Find a hoisted scalar or PRNG operand index in a planned pass
+ * @pass:   Elementwise pass to search
+ * @se:     Scalar expression AST node (when @prng_e is NULL)
+ * @prng_e: PRNG call AST node (`rand`/`randn`), or NULL for regular scalars
+ * @cg:     Comprehension generator bound index (`g * 3 + {0,1,2}`), or -1
+ *
+ * Return: Operand index in `pass->ops[]`, or -1 if not found
+ */
 int mc_find_scalar_op(const mc_pass_t *pass, const mc_expr_t *se, const mc_expr_t *prng_e, int cg)
 {
     for (int i = 0; i < pass->nops; i++)
@@ -399,6 +552,24 @@ int mc_find_scalar_op(const mc_pass_t *pass, const mc_expr_t *se, const mc_expr_
     return -1;
 }
 
+/**
+ * mc_can_merge_passes - Check if two consecutive elementwise passes can be fused
+ * @a: First (earlier) elementwise pass
+ * @b: Second (later) elementwise pass
+ *
+ * Passes @a and @b can be fused into a single kernel invocation when:
+ * - Neither is a comprehension or `no_dst_bcast` pass, both share the same
+ *   complex mode and known static dimensions `(naxis, vnx, vny, vnz)`, and total
+ *   outputs do not exceed 8.
+ * - Neither pass uses LHS slice/mask assignments.
+ * - Pass @b does not overwrite any slot written or read by pass @a (preventing
+ *   WAR and WAW hazards across fused statements).
+ * - If pass @b reads a slot written by pass @a, that access is purely pointwise
+ *   and un-sliced (so `_v<out_idx>` can be forwarded in-register at the current
+ *   pixel without requiring neighboring pixels of @a's output to be in memory).
+ *
+ * Return: 1 if @a and @b can be safely fused, 0 otherwise
+ */
 int mc_can_merge_passes(const mc_pass_t *a, const mc_pass_t *b)
 {
     int bad =
@@ -434,6 +605,17 @@ int mc_can_merge_passes(const mc_pass_t *a, const mc_pass_t *b)
     return !bad;
 }
 
+/**
+ * mc_has_bcast_stencil - Check if an expression applies `shift`/`roll` to a broadcast input
+ * @e:   Expression AST node to inspect
+ * @dsz: Destination 3D shape `[3]` of the enclosing multi-assignment
+ *
+ * `shift`/`roll` wrap or clamp coordinates against the input operand's own
+ * view dimensions (`_vnx`, `_vny`, `_vnz`), so fusing a multi-assignment where
+ * one RHS shifts a smaller broadcast image would use the wrong wrap bounds.
+ *
+ * Return: 1 if @e contains a `shift`/`roll` on an image whose shape != @dsz, 0 otherwise
+ */
 int mc_has_bcast_stencil(const mc_expr_t *e, const uint32_t dsz[3])
 {
     int r = (e != NULL) &&
@@ -454,6 +636,18 @@ int mc_has_bcast_stencil(const mc_expr_t *e, const uint32_t dsz[3])
     return r;
 }
 
+/**
+ * mc_elide_unused_locals - Mark dead `local` intermediate outputs as register-only
+ * @prog: Planned program after pass fusion
+ *
+ * For every multi-output pass, checks whether each non-final output slot
+ * declared with `local` (that did not exist prior to planning) is ever referenced
+ * by any other step in @prog. If not, sets `pa->outs[i].is_elided = 1` and
+ * `slot->is_elided = 1` so `mc_emit_pass()` emits `const float _v<i> = ...;`
+ * without allocating or writing a backing `IMAGE` buffer.
+ *
+ * Return: void
+ */
 void mc_elide_unused_locals(mcalc_prog_t *prog)
 {
     for (int st = 0; st < prog->nsteps; st++)
@@ -463,8 +657,9 @@ void mc_elide_unused_locals(mcalc_prog_t *prog)
                             : NULL;
         for (int i = 0; pa != NULL && i < pa->nouts - 1; i++)
         {
-            int        sidx = pa->outs[i].slot_idx, used_later = 0;
-            mc_slot_t *slot = &prog->slots[sidx];
+            int        sidx       = pa->outs[i].slot_idx;
+            int        used_later = 0;
+            mc_slot_t *slot       = &prog->slots[sidx];
             if (!slot->is_local || slot->existed_at_plan ||
                 pa->outs[i].assign_op != MC_TOK_ASSIGN || pa->outs[i].lhs_slice != NULL)
             {
@@ -506,7 +701,11 @@ void mc_elide_unused_locals(mcalc_prog_t *prog)
                     used_later = 1;
                 }
             }
-            (void) (!used_later && ((pa->outs[i].is_elided = 1), (slot->is_elided = 1)));
+            if (!used_later)
+            {
+                pa->outs[i].is_elided = 1;
+                slot->is_elided       = 1;
+            }
         }
     }
 }

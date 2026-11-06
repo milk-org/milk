@@ -2,6 +2,30 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_lex.c
+ * @brief Lexical analyzer and AST node deallocator for libmilkcalc.
+ *
+ * This module implements the first stage of the calculator front-end pipeline:
+ * converting raw expression or program text into a flat token stream
+ * (`mc_tok_list_t`) consumed by the recursive-descent parser in `mc_parse.c`.
+ *
+ * Key responsibilities:
+ * - Operator precedence table (`mc_op_prec`) shared by the full AST parser
+ *   and the lightweight `mcalc_local()` evaluator.
+ * - Numeric literal scanning (`mc_scan_number`) supporting decimal integers,
+ *   floating-point numbers with scientific notation, and `0x`/`0o`/`0b` radix
+ *   prefixes.
+ * - Context-sensitive disambiguation of `@` (stream/local/FPS prefixes `@S:`,
+ *   `@L:`, `@F:` vs. infix matrix multiplication `@`) and `.T` (postfix matrix
+ *   transpose vs. dotted entity property names).
+ * - Tracking `no_space_after` on tokens so the parser can distinguish function
+ *   calls `f(x)` and slices `im[0]` from parenthesized expressions or vector
+ *   literals separated by whitespace.
+ * - Recursive teardown of expression (`mc_expr_free`) and statement
+ *   (`mc_stmt_free`) AST trees.
+ */
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +33,21 @@
 
 #include "mc_ast.h"
 
+/* ========================================================================= */
+/* Operator Precedence and Numeric Literal Scanning                          */
+/* ========================================================================= */
+
+/**
+ * mc_op_prec - Return binding precedence for a binary, ternary, or assignment token
+ * @t: Token type to query
+ *
+ * Higher values bind more tightly. Precedence levels follow C rules from
+ * multiplicative (`*`, `/`, `%`, `@` at 11) down to logical OR (`||` at 2),
+ * ternary conditional (`?` at 1), and assignment operators (`=`, `+=`, etc.
+ * at 0). Non-infix tokens return -1.
+ *
+ * Return: Precedence level in [0, 11], or -1 if @t is not an infix operator
+ */
 int mc_op_prec(mc_tok_type_t t)
 {
     switch (t)
@@ -55,6 +94,19 @@ int mc_op_prec(mc_tok_type_t t)
     }
 }
 
+/**
+ * mc_scan_number - Scan an integer or floating-point literal at the start of a string
+ * @p:        Input pointer positioned at the candidate literal
+ * @out_type: Output token type (`MC_TOK_LONG` or `MC_TOK_DOUBLE`)
+ * @out_l:    Output integer value when `@out_type == MC_TOK_LONG`
+ * @out_d:    Output double value when `@out_type == MC_TOK_DOUBLE`
+ *
+ * Recognizes hexadecimal (`0x`), octal (`0o`), and binary (`0b`) integer
+ * literals as `MC_TOK_LONG`, standard decimal integers as `MC_TOK_LONG`, and
+ * numbers containing a decimal point or exponent (`e`/`E`) as `MC_TOK_DOUBLE`.
+ *
+ * Return: Number of bytes consumed from @p, or 0 if @p does not start a number
+ */
 size_t mc_scan_number(const char *p, mc_tok_type_t *out_type, long *out_l, double *out_d)
 {
     const char *start    = p;
@@ -65,12 +117,24 @@ size_t mc_scan_number(const char *p, mc_tok_type_t *out_type, long *out_l, doubl
     {
         return 0;
     }
+
+    /* Check for 0x (hex), 0o (octal), or 0b (binary) integer radix prefixes */
     if (*p == '0' && p[1] != '\0' && !isdigit((unsigned char) p[1]) && p[1] != '.')
     {
-        int base = (p[1] == 'x' || p[1] == 'X')   ? 16
-                   : (p[1] == 'o' || p[1] == 'O') ? 8
-                   : (p[1] == 'b' || p[1] == 'B') ? 2
-                                                  : 0;
+        int base = 0;
+        if (p[1] == 'x' || p[1] == 'X')
+        {
+            base = 16;
+        }
+        else if (p[1] == 'o' || p[1] == 'O')
+        {
+            base = 8;
+        }
+        else if (p[1] == 'b' || p[1] == 'B')
+        {
+            base = 2;
+        }
+
         if (base != 0)
         {
             *out_type = MC_TOK_LONG;
@@ -79,10 +143,14 @@ size_t mc_scan_number(const char *p, mc_tok_type_t *out_type, long *out_l, doubl
             return (size_t) (end - start);
         }
     }
+
+    /* Scan integer significand digits */
     while (isdigit((unsigned char) *p))
     {
         p++;
     }
+
+    /* Optional fractional part */
     if (*p == '.')
     {
         is_float = 1;
@@ -92,16 +160,22 @@ size_t mc_scan_number(const char *p, mc_tok_type_t *out_type, long *out_l, doubl
             p++;
         }
     }
+
+    /* Optional scientific notation exponent */
     if (*p == 'e' || *p == 'E')
     {
         is_float = 1;
         p++;
-        p += (*p == '+' || *p == '-');
+        if (*p == '+' || *p == '-')
+        {
+            p++;
+        }
         while (isdigit((unsigned char) *p))
         {
             p++;
         }
     }
+
     *out_type = is_float ? MC_TOK_DOUBLE : MC_TOK_LONG;
     if (is_float)
     {
@@ -116,16 +190,33 @@ size_t mc_scan_number(const char *p, mc_tok_type_t *out_type, long *out_l, doubl
     return (size_t) (p - start);
 }
 
+/* ========================================================================= */
+/* Identifier and Operator Scanning Helpers                                  */
+/* ========================================================================= */
+
+/** is_ident_start() - Return non-zero if @c can start a calculator identifier. */
 static inline int is_ident_start(int c)
 {
     return isalpha(c) || c == '_' || c == '?' || c == '.';
 }
 
+/** is_ident_char() - Return non-zero if @c can continue a calculator identifier. */
 static inline int is_ident_char(int c)
 {
     return isalnum(c) || c == '_' || c == '.' || c == '$';
 }
 
+/**
+ * is_ns_prefix_only - Check if a scanned prefix is solely a namespace qualifier
+ * @start: Pointer to start of identifier token
+ * @len:   Number of bytes scanned so far before `.T`
+ *
+ * When an identifier begins with a namespace prefix (`s.`, `l.`, `f.`, `p.`,
+ * `@S:`, `@L:`, `@F:`, `S:`, `L:`), a following `T` (e.g. `s.T` or `@S:T`) is
+ * the stream name `T`, not the postfix transpose operator `.T`.
+ *
+ * Return: 1 if @start[0..@len-1] is only a namespace prefix, 0 otherwise
+ */
 static int is_ns_prefix_only(const char *start, size_t len)
 {
     if (len == 1 && (start[0] == 's' || start[0] == 'l' || start[0] == 'f' || start[0] == 'p'))
@@ -146,9 +237,22 @@ static int is_ns_prefix_only(const char *start, size_t len)
     return 0;
 }
 
+/**
+ * scan_ident - Scan an identifier, qualified stream name, or labeled extension call
+ * @start: Input pointer positioned at the start of the identifier
+ *
+ * Handles leading `@S:`, `@L:`, `@F:`, `S:`, and `L:` stream location
+ * modifiers, dotted property paths (`s.im.cnt0`), and labeled user extension
+ * calls (`my_op:label(...)`), while stopping before a postfix `.T` transpose
+ * suffix on a complete identifier.
+ *
+ * Return: Number of bytes in the identifier token
+ */
 static size_t scan_ident(const char *start)
 {
     const char *p = start;
+
+    /* Consume optional @S:, @L:, @F:, S:, or L: stream namespace prefix */
     if (*p == '@' && (p[1] == 'S' || p[1] == 'L' || p[1] == 'F') && p[2] == ':')
     {
         p += 3;
@@ -157,6 +261,7 @@ static size_t scan_ident(const char *start)
     {
         p += 2;
     }
+
     while (is_ident_char((unsigned char) *p))
     {
         if (p[0] == '.' && p[1] == 'T' && !is_ident_char((unsigned char) p[2]) && p > start &&
@@ -166,6 +271,7 @@ static size_t scan_ident(const char *start)
         }
         p++;
     }
+
     /* Support labeled extension calls like my_op:stage2( */
     if (*p == ':' && (isalpha((unsigned char) p[1]) || p[1] == '_'))
     {
@@ -182,6 +288,13 @@ static size_t scan_ident(const char *start)
     return (size_t) (p - start);
 }
 
+/**
+ * scan_op - Match a two-character or single-character operator/punctuation token
+ * @p:   Input pointer positioned at the candidate operator
+ * @len: Output length in bytes of the matched token (1 or 2)
+ *
+ * Return: Matched `mc_tok_type_t`, or `MC_TOK_EOF` if @p is not an operator
+ */
 static mc_tok_type_t scan_op(const char *p, int *len)
 {
     static const struct
@@ -220,6 +333,22 @@ static mc_tok_type_t scan_op(const char *p, int *len)
     return MC_TOK_EOF;
 }
 
+/* ========================================================================= */
+/* Main Tokenizer                                                            */
+/* ========================================================================= */
+
+/**
+ * mc_lex - Tokenize calculator source text into a flat token array
+ * @src: Null-terminated source expression or multi-line program (may be NULL)
+ * @out: Output token list populated with tokens and terminated by `MC_TOK_EOF`
+ *
+ * Strips `#` line comments and horizontal whitespace, preserves newlines as
+ * `MC_TOK_NEWLINE` statement separators, normalizes bare `S:name` / `L:name`
+ * prefixes to `@S:name` / `@L:name`, and records line/column coordinates on
+ * every token for diagnostic reporting.
+ *
+ * Return: 0 on success, -1 on lexical error (with `@out->errmsg` populated)
+ */
 int mc_lex(const char *src, mc_tok_list_t *out)
 {
     out->ntok      = 0;
@@ -241,11 +370,14 @@ int mc_lex(const char *src, mc_tok_list_t *out)
 
     while (*p != '\0' && nt < MC_MAX_TOKENS - 1)
     {
+        /* Skip horizontal whitespace */
         while (*p == ' ' || *p == '\t' || *p == '\r')
         {
             p++;
             col++;
         }
+
+        /* Skip '#' comment to end of line */
         if (*p == '#')
         {
             while (*p != '\0' && *p != '\n')
@@ -258,10 +390,12 @@ int mc_lex(const char *src, mc_tok_list_t *out)
         {
             break;
         }
+
         out->toks[nt].no_space_after = 0;
         out->toks[nt].lval           = 0;
         out->toks[nt].dval           = 0.0;
         out->toks[nt].sval[0]        = '\0';
+
         if (*p == '\n')
         {
             mc_tok_t *t = &out->toks[nt++];
@@ -289,7 +423,7 @@ int mc_lex(const char *src, mc_tok_list_t *out)
             continue;
         }
 
-        /* @S:, @L:, @F: prefix vs @ matrix multiply operator */
+        /* Disambiguate @S:, @L:, @F: prefix vs @ matrix multiply operator */
         if (*p == '@')
         {
             if (!((p[1] == 'S' || p[1] == 'L' || p[1] == 'F') && p[2] == ':') &&
@@ -326,6 +460,7 @@ int mc_lex(const char *src, mc_tok_list_t *out)
             }
         }
 
+        /* Operators and punctuation */
         int           oplen  = 0;
         mc_tok_type_t optype = scan_op(p, &oplen);
         if (optype != MC_TOK_EOF)
@@ -342,6 +477,7 @@ int mc_lex(const char *src, mc_tok_list_t *out)
             continue;
         }
 
+        /* Reject single '^' with a clear hint toward pow(a, b) or '^^' */
         if (*p == '^')
         {
             out->err_line = line;
@@ -351,6 +487,7 @@ int mc_lex(const char *src, mc_tok_list_t *out)
             return -1;
         }
 
+        /* Numeric literals */
         mc_tok_type_t ntype = MC_TOK_EOF;
         long          lval  = 0;
         double        dval  = 0.0;
@@ -372,6 +509,7 @@ int mc_lex(const char *src, mc_tok_list_t *out)
             continue;
         }
 
+        /* Double-quoted string literals */
         if (*p == '"')
         {
             mc_tok_t *t = &out->toks[nt++];
@@ -401,6 +539,7 @@ int mc_lex(const char *src, mc_tok_list_t *out)
             continue;
         }
 
+        /* Identifiers and stream-prefixed names */
         if (*p == '@' || is_ident_start((unsigned char) *p))
         {
             size_t idlen = scan_ident(p);
@@ -460,6 +599,17 @@ int mc_lex(const char *src, mc_tok_list_t *out)
     return 0;
 }
 
+/* ========================================================================= */
+/* AST Memory Deallocation                                                   */
+/* ========================================================================= */
+
+/**
+ * mc_expr_free - Recursively free an expression AST subtree
+ * @e: Expression node to free (safe if NULL)
+ *
+ * Releases any cached sub-program (`e->sub_prog`), recursively frees all child
+ * expressions according to `e->kind`, and frees @e itself.
+ */
 void mc_expr_free(mc_expr_t *e)
 {
     if (e == NULL)
@@ -528,6 +678,13 @@ void mc_expr_free(mc_expr_t *e)
     free(e);
 }
 
+/**
+ * mc_stmt_free - Recursively free a linked list of statement AST nodes
+ * @s: Head of statement list to free (safe if NULL)
+ *
+ * Walks the `s->next` chain, freeing all embedded expressions, nested
+ * `if`/`for` statement bodies, and cached sub-programs.
+ */
 void mc_stmt_free(mc_stmt_t *s)
 {
     while (s != NULL)

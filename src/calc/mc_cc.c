@@ -2,6 +2,37 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_cc.c
+ * @brief C kernel compiler driver and two-tier (memory + disk) `.so` cache for libmilkcalc.
+ *
+ * Compiles generated C11 kernel source strings (`pass->c_src`) into shared
+ * libraries (`.so`), loads them with `dlopen(RTLD_LAZY | RTLD_LOCAL)`, and
+ * resolves their `mc_k` entry points.
+ *
+ * Caching and compilation architecture:
+ * 1. **Environment-Salted 128-Bit Hashing**: `init_env_hash()` computes a
+ *    process-wide seed once via `pthread_once`, mixing `MC_PRELUDE_VERSION`,
+ *    the exact compiler flag string (`MC_CC_FLAGS_ID`), x86 CPUID feature bits
+ *    (leaves 1 and 7, since `-march=native` is used), and the compiler binary's
+ *    `(st_mtime, st_size, st_ino)`. `hash128()` mixes the compiler name and
+ *    C source text into a 128-bit FNV-1a/MurmurHash3-fmix digest formatted as a
+ *    32-character hex cache key.
+ * 2. **Tier-1 In-Memory Cache**: `g_mem_cache` is a 4096-slot, 8-way linear
+ *    probing table protected by `g_cc_lock` mapping `(h1, h2)` directly to an
+ *    already `dlopen`'d `mc_kernel_fn` pointer in ~20 ns.
+ * 3. **Tier-2 On-Disk Cache**: Persists compiled `.so` and `.c` files under
+ *    `$MILK_CALC_CACHE` or `$TMPDIR/milk-calc-cache-<euid>` (mode `0700`,
+ *    ownership-verified). Uses atomic write-then-rename (`*.tmp.<pid>.<seq>`)
+ *    so concurrent processes never observe partially written artifacts, and
+ *    prunes the oldest entries once the directory exceeds 4096 `.so` files.
+ * 4. **Multi-Pass Batch Compilation**: When a program contains multiple
+ *    cache-missing elementwise passes, `mc_cc_compile_prog()` merges their
+ *    bodies into a single batch `.c` file (sharing one prelude parse and one
+ *    `posix_spawn` compiler invocation) with `#define mc_k mc_k_<key>`, then
+ *    hard-links the resulting `.so` to each individual `<key>.so` cache path.
+ */
+
 #if defined(__x86_64__) || defined(__i386__)
 #    include <cpuid.h>
 #endif
@@ -37,6 +68,17 @@ extern char **environ;
 #define MC_DISK_MAX_ENTRIES 4096
 #define MC_DISK_PRUNE_COUNT 512
 
+/* ========================================================================== */
+/* In-Memory Cache State & 128-Bit Environment Hashing                        */
+/* ========================================================================== */
+
+/**
+ * struct mc_mem_entry_t - Entry in the in-memory compiled kernel hash table
+ * @h1:      Low 64 bits of the 128-bit kernel hash
+ * @h2:      High 64 bits of the 128-bit kernel hash
+ * @fn:      Loaded `mc_kernel_fn` function pointer (NULL if slot is empty)
+ * @so_path: Filesystem path to the backing `.so` file in the disk cache
+ */
 typedef struct
 {
     uint64_t     h1;
@@ -53,6 +95,18 @@ static mc_mem_entry_t  g_mem_cache[MC_MEM_CACHE_CAP];
 static int             g_mem_hand = 0;
 static unsigned long   g_tmp_seq  = 0;
 
+/**
+ * hash_bytes - Mix an arbitrary byte buffer into a pair of 64-bit hash accumulators
+ * @io_h1: First 64-bit hash state (updated in place)
+ * @io_h2: Second 64-bit hash state (updated in place)
+ * @buf:   Input byte buffer
+ * @len:   Number of bytes to hash
+ *
+ * Uses two independent 64-bit FNV/golden-ratio multipliers so @io_h1 and @io_h2
+ * accumulate uncorrelated 64-bit lanes.
+ *
+ * Return: void
+ */
 static void hash_bytes(uint64_t *io_h1, uint64_t *io_h2, const void *buf, size_t len)
 {
     const unsigned char *p  = (const unsigned char *) buf;
@@ -67,6 +121,14 @@ static void hash_bytes(uint64_t *io_h1, uint64_t *io_h2, const void *buf, size_t
     *io_h2 = h2;
 }
 
+/**
+ * get_compiler - Return the C compiler command or path to invoke
+ *
+ * Checks the `MILK_CALC_CC` environment variable first, falling back to the
+ * build-time `MILK_DEFAULT_CC` (`"gcc"`).
+ *
+ * Return: Non-NULL compiler command string
+ */
 static const char *get_compiler(void)
 {
     const char *env_cc = getenv("MILK_CALC_CC");
@@ -77,6 +139,20 @@ static const char *get_compiler(void)
     return MILK_DEFAULT_CC;
 }
 
+/**
+ * init_env_hash - Compute the one-time environment seed for kernel cache keys
+ *
+ * Invoked via `pthread_once(&g_env_once, init_env_hash)`. Mixes:
+ * - `MC_PRELUDE_VERSION` and `MC_CC_FLAGS_ID`
+ * - Host CPUID feature registers (leaves 1 and 7 on x86/x86_64)
+ * - Compiler executable `(st_mtime, st_size, st_ino)` resolved directly or via `$PATH`
+ *
+ * This guarantees that upgrading GCC, modifying prelude macros, or migrating a
+ * shared cache across different CPU microarchitectures automatically invalidates
+ * stale `.so` cache entries.
+ *
+ * Return: void
+ */
 static void init_env_hash(void)
 {
     uint64_t h1 = 0xcbf29ce484222325ULL ^ (uint64_t) MC_PRELUDE_VERSION;
@@ -86,7 +162,10 @@ static void init_env_hash(void)
 
 #if defined(__x86_64__) || defined(__i386__)
     {
-        unsigned eax = 0, ebx = 0, ecx = 0, edx = 0;
+        unsigned eax = 0;
+        unsigned ebx = 0;
+        unsigned ecx = 0;
+        unsigned edx = 0;
         if (__get_cpuid(1, &eax, &ebx, &ecx, &edx))
         {
             uint32_t regs1[4] = { eax, ebx, ecx, edx };
@@ -146,6 +225,18 @@ static void init_env_hash(void)
     g_env_h2 = h2;
 }
 
+/**
+ * hash128 - Compute the 128-bit cache key for a compiler command and C source string
+ * @cc:     Compiler command string
+ * @src:    Complete C kernel source code
+ * @out_h1: Output low 64-bit hash lane
+ * @out_h2: Output high 64-bit hash lane
+ *
+ * Seeds from `g_env_h1`/`g_env_h2`, hashes @cc and @src, and finishes with a
+ * MurmurHash3 64-bit avalanche finalizer on both lanes.
+ *
+ * Return: void
+ */
 static void hash128(const char *cc, const char *src, uint64_t *out_h1, uint64_t *out_h2)
 {
     pthread_once(&g_env_once, init_env_hash);
@@ -172,6 +263,18 @@ static void hash128(const char *cc, const char *src, uint64_t *out_h1, uint64_t 
     *out_h2 = h2;
 }
 
+/**
+ * mem_cache_lookup - Look up a compiled kernel in the Tier-1 in-memory cache
+ * @h1:          First 64-bit hash word
+ * @h2:          Second 64-bit hash word
+ * @so_path_out: Optional buffer receiving the `.so` path on a cache hit
+ * @so_path_sz:  Size of @so_path_out in bytes
+ *
+ * Context: Caller must hold `g_cc_lock`. Probes up to 8 consecutive slots
+ * starting at `h1 & (MC_MEM_CACHE_CAP - 1)`.
+ *
+ * Return: Cached `mc_kernel_fn` on hit, or NULL on miss
+ */
 static mc_kernel_fn mem_cache_lookup(uint64_t h1, uint64_t h2, char *so_path_out, size_t so_path_sz)
 {
     uint32_t mask = (uint32_t) (MC_MEM_CACHE_CAP - 1);
@@ -195,6 +298,18 @@ static mc_kernel_fn mem_cache_lookup(uint64_t h1, uint64_t h2, char *so_path_out
     return NULL;
 }
 
+/**
+ * mem_cache_insert - Insert a compiled kernel into the Tier-1 in-memory cache
+ * @h1:      First 64-bit hash word
+ * @h2:      Second 64-bit hash word
+ * @fn:      Resolved `mc_kernel_fn` pointer
+ * @so_path: Filesystem path to the compiled `.so`
+ *
+ * Context: Caller must hold `g_cc_lock`. Uses an 8-way set-associative window
+ * with round-robin eviction (`g_mem_hand`) if all 8 probe slots are occupied.
+ *
+ * Return: void
+ */
 static void mem_cache_insert(uint64_t h1, uint64_t h2, mc_kernel_fn fn, const char *so_path)
 {
     uint32_t mask   = (uint32_t) (MC_MEM_CACHE_CAP - 1);
@@ -215,6 +330,24 @@ static void mem_cache_insert(uint64_t h1, uint64_t h2, mc_kernel_fn fn, const ch
     snprintf(g_mem_cache[target].so_path, sizeof(g_mem_cache[target].so_path), "%s", so_path);
 }
 
+/* ========================================================================== */
+/* On-Disk Cache Directory Management & Pruning                               */
+/* ========================================================================== */
+
+/**
+ * ensure_cache_dir - Resolve, create, and validate the on-disk kernel cache directory
+ * @dir_out: Output buffer receiving the validated directory path
+ * @dir_sz:  Size of @dir_out in bytes
+ * @err:     Error message buffer
+ * @errsz:   Size of @err in bytes
+ *
+ * Uses `$MILK_CALC_CACHE` if set, otherwise `$TMPDIR/milk-calc-cache-<euid>`
+ * (defaulting to `/tmp`). Verifies with `lstat()` that the path is a real
+ * directory (not a symlink) owned by `geteuid()` with mode `0700` to prevent
+ * symlink/privilege-escalation attacks in `/tmp`.
+ *
+ * Return: 0 on success, -1 on error
+ */
 static int ensure_cache_dir(char *dir_out, size_t dir_sz, char *err, size_t errsz)
 {
     const char *env_dir = getenv("MILK_CALC_CACHE");
@@ -258,12 +391,24 @@ static int ensure_cache_dir(char *dir_out, size_t dir_sz, char *err, size_t errs
     return 0;
 }
 
+/**
+ * struct prune_item_t - Disk cache entry candidate for mtime-based eviction
+ * @name:  32-character hex key stem (without `.so` / `.c` extension)
+ * @mtime: Last modification timestamp (`st_mtime`)
+ */
 typedef struct
 {
     char   name[64];
     time_t mtime;
 } prune_item_t;
 
+/**
+ * cmp_prune_mtime - `qsort` comparator ordering `prune_item_t` from oldest to newest
+ * @a: First `prune_item_t` pointer
+ * @b: Second `prune_item_t` pointer
+ *
+ * Return: -1, 0, or 1
+ */
 static int cmp_prune_mtime(const void *a, const void *b)
 {
     const prune_item_t *pa = (const prune_item_t *) a;
@@ -271,6 +416,16 @@ static int cmp_prune_mtime(const void *a, const void *b)
     return (pa->mtime > pb->mtime) - (pa->mtime < pb->mtime);
 }
 
+/**
+ * maybe_prune_cache - Evict oldest `.so`/`.c` pairs if the disk cache exceeds capacity
+ * @dir_path: Path to the kernel cache directory
+ *
+ * When the count of `<32-hex>.so` files in @dir_path exceeds `MC_DISK_MAX_ENTRIES`
+ * (4096), sorts entries by `st_mtime` and unlinks the oldest entries down to
+ * `MC_DISK_MAX_ENTRIES - MC_DISK_PRUNE_COUNT` to amortize directory scans.
+ *
+ * Return: void
+ */
 static void maybe_prune_cache(const char *dir_path)
 {
     DIR *d = opendir(dir_path);
@@ -278,7 +433,8 @@ static void maybe_prune_cache(const char *dir_path)
     {
         return;
     }
-    int           cap = 256, cnt = 0;
+    int           cap   = 256;
+    int           cnt   = 0;
     prune_item_t *items = malloc((size_t) cap * sizeof(prune_item_t));
     if (items == NULL)
     {
@@ -336,6 +492,28 @@ static void maybe_prune_cache(const char *dir_path)
     free(items);
 }
 
+/* ========================================================================== */
+/* Atomic Source Writer, Subprocess Compiler & Dynamic Loader                 */
+/* ========================================================================== */
+
+/**
+ * write_source_atomically - Write C source to a temporary file and rename into place
+ * @cache_dir:  Target cache directory path
+ * @key:        32-character hex cache key
+ * @seq:        Unique per-invocation sequence number
+ * @src:        C source string to write
+ * @slen:       Length of @src in bytes
+ * @c_path_out: Output buffer receiving the final `<cache_dir>/<key>.c` path
+ * @c_path_sz:  Size of @c_path_out in bytes
+ * @err:        Error message buffer
+ * @errsz:      Size of @err in bytes
+ *
+ * Writes to `<key>.c.tmp.<pid>.<seq>` first and atomically renames to `<key>.c`
+ * so concurrent compilations of the same kernel never truncate an active source
+ * file being read by another `gcc` process.
+ *
+ * Return: 0 on success, -1 on write error
+ */
 static int write_source_atomically(const char   *cache_dir,
                                    const char   *key,
                                    unsigned long seq,
@@ -366,6 +544,22 @@ static int write_source_atomically(const char   *cache_dir,
     return 0;
 }
 
+/**
+ * run_compiler - Spawn the C compiler to build a shared object from @c_path
+ * @cc:      Compiler executable name or path
+ * @c_path:  Input `.c` source file path
+ * @so_tmp:  Output temporary `.so` file path
+ * @err_tmp: Temporary file path for capturing compiler `stderr`
+ * @err:     Error message buffer
+ * @errsz:   Size of @err in bytes
+ *
+ * Uses `posix_spawn` / `posix_spawnp` (avoiding `system()` shell overhead and
+ * quoting hazards) with `STDERR_FILENO` redirected to @err_tmp. On compiler
+ * failure, reads the first 255 bytes of diagnostics into @err and cleans up
+ * temporary files.
+ *
+ * Return: 0 on success, -1 on compilation failure
+ */
 static int run_compiler(const char *cc,
                         const char *c_path,
                         const char *so_tmp,
@@ -430,6 +624,19 @@ static int run_compiler(const char *cc,
     return 0;
 }
 
+/**
+ * load_so_kernel - `dlopen` a compiled `.so` and resolve its kernel entry point
+ * @so_path: Path to the shared object file
+ * @key:     32-character hex key (used to probe `mc_k_<key>` in batch-compiled `.so` files)
+ * @err:     Error message buffer
+ * @errsz:   Size of @err in bytes
+ *
+ * Probes `mc_k` first (single-pass compilation) and falls back to `mc_k_<key>`
+ * (when the `.so` was produced by a multi-pass batch compilation and hard-linked
+ * into the disk cache).
+ *
+ * Return: Resolved `mc_kernel_fn` pointer, or NULL on error
+ */
 static mc_kernel_fn load_so_kernel(const char *so_path, const char *key, char *err, size_t errsz)
 {
     void *dl = dlopen(so_path, RTLD_LAZY | RTLD_LOCAL);
@@ -455,6 +662,26 @@ static mc_kernel_fn load_so_kernel(const char *so_path, const char *key, char *e
     return fn;
 }
 
+/* ========================================================================== */
+/* Public Single-Pass & Multi-Pass Batch Compilation APIs                     */
+/* ========================================================================== */
+
+/**
+ * mc_cc_compile - Compile a single C kernel source string (with memory + disk caching)
+ * @c_src:       Complete C11 kernel source code
+ * @so_path_out: Optional buffer receiving the cached `.so` path
+ * @so_path_sz:  Size of @so_path_out in bytes
+ * @err:         Error message buffer
+ * @errsz:       Size of @err in bytes
+ *
+ * Checks the Tier-1 in-memory hash table first, then checks the Tier-2 on-disk
+ * cache directory for `<key>.so`. On a full cache miss, writes `<key>.c`,
+ * invokes the C compiler to produce a temporary `.so`, atomically renames it to
+ * `<key>.so`, loads the symbol via `dlopen`/`dlsym`, and inserts it into the
+ * in-memory cache.
+ *
+ * Return: Compiled `mc_kernel_fn` pointer on success, or NULL on error
+ */
 mc_kernel_fn mc_cc_compile(const char *c_src,
                            char       *so_path_out,
                            size_t      so_path_sz,
@@ -462,7 +689,8 @@ mc_kernel_fn mc_cc_compile(const char *c_src,
                            size_t      errsz)
 {
     const char *cc = get_compiler();
-    uint64_t    h1 = 0, h2 = 0;
+    uint64_t    h1 = 0;
+    uint64_t    h2 = 0;
     hash128(cc, c_src, &h1, &h2);
 
     pthread_mutex_lock(&g_cc_lock);
@@ -484,7 +712,8 @@ mc_kernel_fn mc_cc_compile(const char *c_src,
     char key[33];
     snprintf(key, sizeof(key), "%016llx%016llx", (unsigned long long) h1, (unsigned long long) h2);
 
-    char so_path[512], c_path[512];
+    char so_path[512];
+    char c_path[512];
     snprintf(so_path, sizeof(so_path), "%s/%s.so", cache_dir, key);
 
     if (access(so_path, R_OK) != 0)
@@ -494,7 +723,8 @@ mc_kernel_fn mc_cc_compile(const char *c_src,
         {
             return NULL;
         }
-        char so_tmp[544], err_tmp[544];
+        char so_tmp[544];
+        char err_tmp[544];
         int  pid = (int) getpid();
         snprintf(so_tmp, sizeof(so_tmp), "%s/%s.so.tmp.%d.%lu", cache_dir, key, pid, seq);
         snprintf(err_tmp, sizeof(err_tmp), "%s/%s.err.tmp.%d.%lu", cache_dir, key, pid, seq);
@@ -530,6 +760,16 @@ mc_kernel_fn mc_cc_compile(const char *c_src,
     return fn;
 }
 
+/**
+ * struct pass_job_t - Per-pass compilation tracking descriptor for `mc_cc_compile_prog`
+ * @pa:       Pointer to the elementwise pass in `p->steps[]`
+ * @h1:       Low 64-bit hash of `pa->c_src`
+ * @h2:       High 64-bit hash of `pa->c_src`
+ * @key:      32-character hex cache key
+ * @so_path:  Target `<cache_dir>/<key>.so` path
+ * @uniq_idx: Unique cache-miss index (`>= 0` for the first occurrence of a missing key,
+ *            or `-1` if satisfied from cache)
+ */
 typedef struct
 {
     mc_pass_t *pa;
@@ -540,6 +780,22 @@ typedef struct
     int        uniq_idx;
 } pass_job_t;
 
+/**
+ * mc_cc_compile_prog - Compile all elementwise passes in a program, batching cache misses
+ * @p:     Planned program whose `MC_STEP_PASS` steps have `c_src` populated
+ * @err:   Error message buffer
+ * @errsz: Size of @err in bytes
+ *
+ * Resolves all passes that hit in the in-memory or on-disk caches first. If 0
+ * or 1 unique passes miss the cache, delegates directly to `mc_cc_compile()`.
+ * When 2 or more unique passes miss the cache, combines the union of their
+ * required prelude sections and all `void mc_k(...)` bodies (renamed via
+ * `#define mc_k mc_k_<key>`) into a single temporary batch `.c` file, invokes
+ * the compiler once, hard-links the resulting `.so` to each `<key>.so` path,
+ * `dlopen`s it once, and resolves each `mc_k_<key>` symbol.
+ *
+ * Return: 0 on success, -1 on error
+ */
 int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
 {
     int npass = 0;
@@ -712,11 +968,14 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
         "MC_DEF_SPATIAL(u64, uint64_t)", "MC_DEF_SPATIAL(i64, int64_t)",
         "MC_DEF_SPATIAL(f32, float)",    "MC_DEF_SPATIAL(f64, double)"
     };
-    int    need_complex = 0, need_coord = 0, need_spatial = 0, sp_used[10] = { 0 };
-    int    last_miss_i = -1;
-    size_t batch_cap   = sizeof(MC_PRELUDE_CORE_SRC) + sizeof(MC_PRELUDE_COMPLEX_SRC) +
-                         sizeof(MC_PRELUDE_COORD_SHIFT_SRC) + sizeof(MC_PRELUDE_SPATIAL_MACRO_SRC) +
-                         sizeof(MC_PRELUDE_SPATIAL_ALL_SRC) + 256;
+    int    need_complex = 0;
+    int    need_coord   = 0;
+    int    need_spatial = 0;
+    int    sp_used[10]  = { 0 };
+    int    last_miss_i  = -1;
+    size_t batch_cap = sizeof(MC_PRELUDE_CORE_SRC) + sizeof(MC_PRELUDE_COMPLEX_SRC) +
+                       sizeof(MC_PRELUDE_COORD_SHIFT_SRC) + sizeof(MC_PRELUDE_SPATIAL_MACRO_SRC) +
+                       sizeof(MC_PRELUDE_SPATIAL_ALL_SRC) + 256;
     for (int i = 0; i < npass; i++)
     {
         if (jobs[i].pa->fn == NULL && jobs[i].uniq_idx >= 0)
@@ -780,7 +1039,9 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
     }
 
     int  pid = (int) getpid();
-    char batch_c[544], batch_so_tmp[544], err_tmp[544];
+    char batch_c[544];
+    char batch_so_tmp[544];
+    char err_tmp[544];
     snprintf(batch_c, sizeof(batch_c), "%s/batch.c.tmp.%d.%lu", cache_dir, pid, seq);
     snprintf(batch_so_tmp, sizeof(batch_so_tmp), "%s/batch.so.tmp.%d.%lu", cache_dir, pid, seq);
     snprintf(err_tmp, sizeof(err_tmp), "%s/batch.err.tmp.%d.%lu", cache_dir, pid, seq);

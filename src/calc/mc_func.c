@@ -2,6 +2,35 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_func.c
+ * @brief Built-in function registry, scalar math helpers, and `--list` catalog for libmilkcalc.
+ *
+ * This module defines the master descriptor table (`g_mc_funcs`) for every
+ * built-in calculator function and directive across all execution tiers:
+ * - Scalar and elementwise SIMD math (`sin`, `cos`, `pow`, `clamp`, explicit
+ *   datatype casts `f32`..`i64`, `where`).
+ * - Coordinate generators (`ix`, `iy`, `ir`, `itheta`), PRNGs (`rand`, `randn`),
+ *   complex number operations (`real`, `imag`, `arg`, `conj`, `cplx`, `expi`),
+ *   and `linspace`.
+ * - Spatial shifts (`shift`, `roll`), 1-D lookup tables (`lut`), and gather
+ *   interpolation (`pixremap`, `interp2`).
+ * - Fused and eager reductions (`itot`, `imean`, `istd`, `imin`, `imax`,
+ *   `norm`, `asum`, `icount`, `iargmax`, `iargmin`, `iamax`, `dot`, `istats`,
+ *   `icentroid`, `imedian`, `perc`, `trace`).
+ * - Neighborhood stencils and spatial pre-stages (`medfilt3/5/7`, `gauss`,
+ *   `conv2`, `imin3`, `imax3`, `boxmean`, `cumsum`, `pixunmap`, `rprof`).
+ * - CBLAS, LAPACK, FFTW, and tensor constructors (`matmul`, `gemm`, `svd`,
+ *   `eigh`, `einsum`, `fft`, `ifft`, `fftshift`, `transpose`, `reshape`, etc.).
+ * - String manipulation (`strlen`, `toupper`, `tolower`, `substr`, `replace`,
+ *   `hex`, `oct`, `bin`) and temporal unit directives (`post`, `hist`, `prev`,
+ *   `ema`).
+ *
+ * It also provides IEEE-754 bit-level scalar helpers (`mc_isnan`,
+ * `mc_isfinite`) that remain valid under `-ffast-math`, and implements
+ * `mcalc_print_catalog()` for `@calc --list` / `milk-fpsexec-milk-calc --list`.
+ */
+
 #ifndef _GNU_SOURCE
 #    define _GNU_SOURCE
 #endif
@@ -19,6 +48,19 @@
 #include "mcalc.h"
 #include "milk_calc_ext.h"
 
+/* ========================================================================= */
+/* Scalar Math and Datatype Cast Helpers                                     */
+/* ========================================================================= */
+
+/**
+ * mc_isnan - Bit-level IEEE-754 NaN test safe under `-ffast-math`
+ * @a: Double-precision value to inspect
+ *
+ * Inspects the raw 64-bit IEEE-754 representation so the check is not folded
+ * away when compiled with `-ffinite-math-only` / `-ffast-math`.
+ *
+ * Return: 1.0 if @a is NaN, 0.0 otherwise
+ */
 double mc_isnan(double a)
 {
     uint64_t u;
@@ -29,6 +71,12 @@ double mc_isnan(double a)
                : 0.0;
 }
 
+/**
+ * mc_isfinite - Bit-level IEEE-754 finite test safe under `-ffast-math`
+ * @a: Double-precision value to inspect
+ *
+ * Return: 1.0 if @a is finite (neither NaN nor +/-Inf), 0.0 otherwise
+ */
 double mc_isfinite(double a)
 {
     uint64_t u;
@@ -36,22 +84,46 @@ double mc_isfinite(double a)
     return ((u & 0x7ff0000000000000ULL) != 0x7ff0000000000000ULL) ? 1.0 : 0.0;
 }
 
+/**
+ * mc_posi - Heaviside unit step function
+ * @a: Input value
+ *
+ * Return: 1.0 if `@a > 0.0`, 0.0 otherwise
+ */
 double mc_posi(double a)
 {
     return (a > 0.0) ? 1.0 : 0.0;
 }
 
+/**
+ * mc_sign - Signum function
+ * @a: Input value
+ *
+ * Return: 1.0 if `@a > 0.0`, -1.0 if `@a < 0.0`, or 0.0 if `@a == 0.0` (or NaN)
+ */
 double mc_sign(double a)
 {
     return (double) ((a > 0.0) - (a < 0.0));
 }
 
+/**
+ * mc_wrap_pi - Wrap an angle in radians into the principal interval `[-pi, pi)`
+ * @a: Input angle in radians
+ *
+ * Return: Wrapped angle in `[-pi, pi)`
+ */
 double mc_wrap_pi(double a)
 {
     const double two_pi = 2.0 * M_PI;
     return a - two_pi * floor((a + M_PI) / two_pi);
 }
 
+/**
+ * mc_sinc - Normalized cardinal sine `sin(pi * a) / (pi * a)`
+ * @a: Input value
+ *
+ * Return: 1.0 when `@a == 0.0`, otherwise `sin(pi * a) / (pi * a)`
+ */
 double mc_sinc(double a)
 {
     if (a == 0.0)
@@ -62,11 +134,20 @@ double mc_sinc(double a)
     return sin(px) / px;
 }
 
+/**
+ * mc_clamp - Clamp a value to the closed interval `[@lo, @hi]`
+ * @a:  Input value
+ * @lo: Lower bound
+ * @hi: Upper bound
+ *
+ * Return: @lo if `@a < @lo`, @hi if `@a > @hi`, otherwise @a
+ */
 double mc_clamp(double a, double lo, double hi)
 {
     return (a > hi) ? hi : (a < lo) ? lo : a;
 }
 
+/* X-macro generating scalar C callbacks for explicit datatype cast functions */
 #define MC_CAST_TYPES(X)                                                       \
     X(f32, _DATATYPE_FLOAT, (double) (float) a)                                \
     X(f64, _DATATYPE_DOUBLE, a)                                                \
@@ -79,6 +160,7 @@ double mc_clamp(double a, double lo, double hi)
     X(u64, _DATATYPE_UINT64, (double) (uint64_t) (a >= 0.0 ? a : (int64_t) a)) \
     X(i64, _DATATYPE_INT64, (double) (int64_t) a)
 
+/** DEF_MC_CAST_FN() - Instantiate a static scalar cast callback `mc_cast_<NAME>()`. */
 #define DEF_MC_CAST_FN(NAME, DT, EXPR)     \
     static double mc_cast_##NAME(double a) \
     {                                      \
@@ -86,6 +168,10 @@ double mc_clamp(double a, double lo, double hi)
     }
 MC_CAST_TYPES(DEF_MC_CAST_FN)
 #undef DEF_MC_CAST_FN
+
+/* ========================================================================= */
+/* Master Built-In Function Table and Lookup API                             */
+/* ========================================================================= */
 
 /* Master function table: one entry per built-in calculator function */
 static const mc_func_t g_mc_funcs[] = {
@@ -404,6 +490,13 @@ static const mc_func_t g_mc_funcs[] = {
 
 #define MC_FUNC_COUNT ((int) (sizeof(g_mc_funcs) / sizeof(g_mc_funcs[0])))
 
+/**
+ * mc_func_find_len - Look up a built-in function descriptor by name slice
+ * @name: Pointer to function identifier characters (need not be null-terminated)
+ * @len:  Length of the identifier in bytes
+ *
+ * Return: Pointer to matching `mc_func_t` entry, or NULL if not found
+ */
 const mc_func_t *mc_func_find_len(const char *name, size_t len)
 {
     if (name == NULL || len == 0)
@@ -420,6 +513,12 @@ const mc_func_t *mc_func_find_len(const char *name, size_t len)
     return NULL;
 }
 
+/**
+ * mc_func_find - Look up a built-in function descriptor by null-terminated name
+ * @name: Function identifier string (without `(`)
+ *
+ * Return: Pointer to matching `mc_func_t` entry, or NULL if not found
+ */
 const mc_func_t *mc_func_find(const char *name)
 {
     if (name == NULL)
@@ -429,6 +528,12 @@ const mc_func_t *mc_func_find(const char *name)
     return mc_func_find_len(name, strlen(name));
 }
 
+/**
+ * mc_func_table - Return the complete built-in function table and entry count
+ * @out_count: Optional output pointer receiving `MC_FUNC_COUNT`
+ *
+ * Return: Pointer to the static `g_mc_funcs` array
+ */
 const mc_func_t *mc_func_table(int *out_count)
 {
     if (out_count != NULL)
@@ -438,7 +543,19 @@ const mc_func_t *mc_func_table(int *out_count)
     return g_mc_funcs;
 }
 
-/* Catalog display for @calc --list / milk-fpsexec-milk-calc --list */
+/* ========================================================================= */
+/* Calculator Catalog Display (--list / --list-json)                         */
+/* ========================================================================= */
+
+/**
+ * struct mc_catalog_entry_t - Grouped operator/function summary row for `--list`
+ * @category: Section heading grouping related operators/functions
+ * @syntax:   Human-readable syntax summary
+ * @token:    Legacy/symbolic token classification label
+ * @engine:   Execution opcode or engine family name
+ * @stage:    Execution pipeline stage (`fprog_simd`, `prestage`, `fused_reduce`, etc.)
+ * @descr:    Concise description of behavior
+ */
 typedef struct
 {
     const char *category;
@@ -552,6 +669,13 @@ static const mc_catalog_entry_t g_mc_catalog[] = {
     { NULL, NULL, NULL, NULL, NULL, NULL }
 };
 
+/**
+ * str_contains_ci - Case-insensitive substring search
+ * @haystack: String to search within (may be NULL)
+ * @needle:   Substring pattern to find (empty or NULL matches everything)
+ *
+ * Return: 1 if @needle appears in @haystack (case-insensitive), 0 otherwise
+ */
 static int str_contains_ci(const char *haystack, const char *needle)
 {
     if (needle == NULL || needle[0] == '\0')
@@ -584,6 +708,13 @@ static int str_contains_ci(const char *haystack, const char *needle)
     return 0;
 }
 
+/**
+ * catalog_entry_matches - Test whether a catalog row matches filter @pat
+ * @e:   Catalog row to inspect
+ * @pat: Optional case-insensitive filter substring (NULL or `""` matches all)
+ *
+ * Return: 1 if any column of @e matches @pat, 0 otherwise
+ */
 static int catalog_entry_matches(const mc_catalog_entry_t *e, const char *pat)
 {
     if (pat == NULL || pat[0] == '\0')
@@ -595,6 +726,12 @@ static int catalog_entry_matches(const mc_catalog_entry_t *e, const char *pat)
            str_contains_ci(e->stage, pat) || str_contains_ci(e->descr, pat);
 }
 
+/**
+ * ext_kind_opcode - Map a user C extension tier to its display engine opcode name
+ * @kind: Extension kind enum (`MILK_EXT_BLK1` .. `MILK_EXT_OP`)
+ *
+ * Return: Static opcode label string for catalog display
+ */
 static const char *ext_kind_opcode(milk_calc_ext_kind_t kind)
 {
     switch (kind)
@@ -614,6 +751,14 @@ static const char *ext_kind_opcode(milk_calc_ext_kind_t kind)
     }
 }
 
+/**
+ * format_ext_info - Format signature and description strings for a user C extension
+ * @e:       Registered user extension entry
+ * @sig:     Output buffer for call signature
+ * @sig_sz:  Size of @sig buffer in bytes
+ * @desc:    Output buffer for human-readable tier/parameter description
+ * @desc_sz: Size of @desc buffer in bytes
+ */
 static void format_ext_info(const milk_calc_ext_entry_t *e,
                             char                        *sig,
                             size_t                       sig_sz,
@@ -676,6 +821,13 @@ static void format_ext_info(const milk_calc_ext_entry_t *e,
     }
 }
 
+/**
+ * ext_matches - Test whether a registered user C extension matches filter @pat
+ * @e:   Registered user extension entry
+ * @pat: Optional case-insensitive filter substring
+ *
+ * Return: 1 if @e matches @pat, 0 otherwise
+ */
 static int ext_matches(const milk_calc_ext_entry_t *e, const char *pat)
 {
     if (pat == NULL || pat[0] == '\0')
@@ -690,6 +842,10 @@ static int ext_matches(const milk_calc_ext_entry_t *e, const char *pat)
            str_contains_ci("user", pat) || str_contains_ci("TOK_FUNC_USER", pat);
 }
 
+/**
+ * json_escape - Write a JSON-escaped double-quoted string literal to `stdout`
+ * @s: Input string (NULL treated as empty string)
+ */
 static void json_escape(const char *s)
 {
     putchar('"');
@@ -712,6 +868,16 @@ static void json_escape(const char *s)
     putchar('"');
 }
 
+/**
+ * mcalc_print_catalog - Print the calculator operator/function catalog to `stdout`
+ * @pattern:   Optional case-insensitive substring filter (NULL or `""` for all)
+ * @json_mode: Non-zero to emit machine-readable JSON (`--list-json`), 0 for table
+ *
+ * Lists built-in operators and functions grouped by category along with any
+ * dynamically loaded user C extensions (`-l` / `loadlib`).
+ *
+ * Return: 0 if at least one entry matched (or @pattern is empty), 1 if no matches
+ */
 int mcalc_print_catalog(const char *pattern, int json_mode)
 {
     int ext_count = milk_calc_ext_count();

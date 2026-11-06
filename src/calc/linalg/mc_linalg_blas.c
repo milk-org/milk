@@ -2,6 +2,33 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_linalg_blas.c
+ * @brief BLAS-level linear algebra, algebraic GEMM/GER lowering, and Einstein summation for
+ *        `libmilkcalc`.
+ *
+ * This module implements the BLAS and tensor contraction tier of the `milk.calc` expression
+ * engine (`libmilkcalc`):
+ *
+ * - **Compile-time call validation and type inference** (`mc_resolve_linalg_call()`,
+ *   `mc_multi_lhs_is_image()`): checks argument counts, result kinds, and promotes output
+ *   datatypes (`float32`, `float64`, `complex_float`, `complex_double`) for linear algebra,
+ *   FFT, and array-stacking built-in functions.
+ * - **Algebraic BLAS pattern recognition** (`mc_is_blas_or_linalg_ctor()`, `match_alg_blas()`):
+ *   inspects assignment ASTs (`=`, `+=`, `-=`) to recognize scaled matrix-matrix / matrix-vector
+ *   products (`matmul`) and outer products (`outer`) combined with optional destination
+ *   accumulation (`C = alpha * op(A) * op(B) + beta * C`). Matched expressions are lowered
+ *   directly into single in-place `GEMM`, `SYRK`, or `GER` calls without intermediate temporary
+ *   images.
+ * - **Direct BLAS built-ins** (`mc_exec_blas_call()`): executes explicit `matmul`, `scal`,
+ *   `axpy`, `ger`, `syrk`, `gemv`, `symv`, and `gemm` calls via the `COREMOD_arith` BLAS
+ *   wrappers.
+ * - **Einstein summation** (`exec_einsum()`): parses NumPy-style subscript specifications
+ *   (both explicit `"ij,jk->ik"` and implicit `"ij,jk"` modes) for 1D-3D tensors, fast-pathing
+ *   2D matrix products and 3D cube-matrix / cube-vector contractions to `arith_image_gemm_im()`
+ *   and falling back to a general stride-based contraction loop for arbitrary index patterns.
+ */
+
 // MILK_CMAKE_REQUEST_BLAS
 
 #include <ctype.h>
@@ -20,6 +47,21 @@
 #include "linalg/mc_linalg.h"
 #include "milk_calc_ext.h"
 
+/* ============================================================================
+ * Error Reporting and Call Type Resolution
+ * ============================================================================ */
+
+/**
+ * blas_err - Format a diagnostic message into @err (if still empty) and return -1
+ * @err:   Destination error buffer (may be NULL)
+ * @errsz: Capacity of @err in bytes
+ * @fmt:   printf-style format string
+ *
+ * Preserves the first error recorded during compilation or execution by only
+ * writing into @err when `err[0] == '\0'`.
+ *
+ * Return: Always -1 to allow concise `return blas_err(...);` error paths
+ */
 __attribute__((format(printf, 3, 4))) static int blas_err(char       *err,
                                                           size_t      errsz,
                                                           const char *fmt,
@@ -35,6 +77,17 @@ __attribute__((format(printf, 3, 4))) static int blas_err(char       *err,
     return -1;
 }
 
+/**
+ * mc_multi_lhs_is_image - Check whether a specific LHS target of a multi-output call is an image
+ * @rhs0:    Right-hand-side call expression of the multi-assignment statement
+ * @lhs_idx: Zero-based index of the left-hand-side target being queried
+ *
+ * Queries the port descriptor table for registered `MILK_EXT_OP` extensions, or
+ * checks built-in multi-output decompositions (`svd` and `eigh`, all of whose
+ * outputs are images/vectors).
+ *
+ * Return: 1 if LHS target @lhs_idx receives an image result, 0 if scalar or invalid
+ */
 int mc_multi_lhs_is_image(const mc_expr_t *rhs0, int lhs_idx)
 {
     if (rhs0 == NULL || rhs0->kind != MC_EXPR_CALL)
@@ -53,6 +106,23 @@ int mc_multi_lhs_is_image(const mc_expr_t *rhs0, int lhs_idx)
                                        strcmp(rhs0->u.call.fn->name, "eigh") == 0);
 }
 
+/**
+ * mc_resolve_linalg_call - Validate arguments and infer output type for a `MC_FN_LINALG` call
+ * @e:        Call expression node to validate and annotate in place
+ * @nlhs:     Number of left-hand-side assignment targets receiving this call's output
+ * @any_im:   Non-zero if any argument to the call is an image expression (unused)
+ * @any_cplx: Non-zero if any argument has a complex datatype
+ * @any_dbl:  Non-zero if any argument has double precision (`float64` or `complex_double`)
+ * @err:      Error message buffer populated on validation failure
+ * @errsz:    Size of @err in bytes
+ *
+ * Enforces function-specific structural constraints (e.g. `svd` requires 1 or 3 LHS
+ * targets, `eigh` requires 1 or 2, `einsum` requires a leading subscript string,
+ * `cat` requires a leading integer axis followed by images) and annotates @e with
+ * `MC_RES_IMAGE` and the promoted ImageStreamIO datatype.
+ *
+ * Return: 0 on success, -1 on validation error (with @err populated)
+ */
 int mc_resolve_linalg_call(mc_expr_t *e,
                            int        nlhs,
                            int        any_im,
@@ -65,11 +135,14 @@ int mc_resolve_linalg_call(mc_expr_t *e,
     int         nargs = e->u.call.nargs;
     (void) any_im;
 
+    /* Validate multi-LHS arity for matrix decompositions */
     if ((strcmp(fn, "svd") == 0 && nlhs != 1 && nlhs != 3) ||
         (strcmp(fn, "eigh") == 0 && nlhs != 1 && nlhs != 2))
     {
         return blas_err(err, errsz, "%s: wrong number of LHS targets", fn);
     }
+
+    /* Validate argument kinds per built-in family */
     if (strcmp(fn, "einsum") == 0 && (e->u.call.args[0]->res_kind != MC_RES_STRING ||
                                       e->u.call.args[1]->res_kind != MC_RES_IMAGE ||
                                       (nargs == 3 && e->u.call.args[2]->res_kind != MC_RES_IMAGE)))
@@ -115,7 +188,9 @@ int mc_resolve_linalg_call(mc_expr_t *e,
         return blas_err(err, errsz, "%s: expected image argument", fn);
     }
 
-    e->needs_image = 1, e->res_kind = MC_RES_IMAGE;
+    /* Mark result as an image and infer output element datatype */
+    e->needs_image = 1;
+    e->res_kind    = MC_RES_IMAGE;
     if (strcmp(fn, "fft") == 0 || strcmp(fn, "ifft") == 0)
     {
         e->res_dt = any_dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT;
@@ -137,6 +212,21 @@ int mc_resolve_linalg_call(mc_expr_t *e,
     return 0;
 }
 
+/* ============================================================================
+ * Algebraic BLAS Pattern Matching (GEMM / SYRK / GER Lowering)
+ * ============================================================================ */
+
+/**
+ * unwrap_transpose - Follow user-function parameter bindings and strip an outer `transpose(X)`
+ * @e:         Operand expression to inspect
+ * @call_site: Enclosing user-defined function call site for parameter substitution (or NULL)
+ * @out_trans: Output flag set to 1 if an outer `transpose(...)` wrapper was stripped, else 0
+ *
+ * Allows BLAS routines that accept a transpose flag (`CblasTrans`) to consume
+ * `transpose(A)` directly without materializing a transposed temporary image.
+ *
+ * Return: Underlying operand expression inside `transpose(...)`, or @e (after param resolution)
+ */
 static const mc_expr_t *unwrap_transpose(const mc_expr_t *e,
                                          const mc_expr_t *call_site,
                                          int             *out_trans)
@@ -157,12 +247,26 @@ static const mc_expr_t *unwrap_transpose(const mc_expr_t *e,
     return e;
 }
 
+/**
+ * is_scalar_subexpr - Test whether expression @e evaluates to a numeric scalar
+ * @e: Expression node to test
+ *
+ * Return: 1 if @e is a non-NULL scalar expression, 0 if image, string, or NULL
+ */
 static int is_scalar_subexpr(const mc_expr_t *e)
 {
     return e != NULL && !e->needs_image && e->res_kind != MC_RES_IMAGE &&
            e->res_kind != MC_RES_STRING;
 }
 
+/**
+ * is_mm_or_outer_call - Test whether @e is a 2-argument `matmul(A, B)` or `outer(x, y)` call
+ * @e:            Expression node to inspect
+ * @out_call:     Output pointer receiving @e when matched
+ * @out_is_outer: Output flag set to 1 for `outer`, 0 for `matmul`
+ *
+ * Return: 1 if @e is a `matmul` or `outer` call, 0 otherwise
+ */
 static int is_mm_or_outer_call(const mc_expr_t *e, const mc_expr_t **out_call, int *out_is_outer)
 {
     if (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.fn != NULL && e->u.call.nargs == 2 &&
@@ -175,6 +279,19 @@ static int is_mm_or_outer_call(const mc_expr_t *e, const mc_expr_t **out_call, i
     return 0;
 }
 
+/**
+ * match_scaled_mm - Match `[+|-] [alpha *] (matmul(A, B) | outer(x, y))`
+ * @e:            Sub-expression to match
+ * @out_call:     Output pointer to the matched `matmul` or `outer` call node
+ * @out_is_outer: Output flag set to 1 if `outer`, 0 if `matmul`
+ * @out_scale:    Output pointer to the scalar multiplier sub-expression (NULL if unscaled)
+ * @out_sign:     Output sign multiplier (+1.0 or -1.0) accumulated from unary operators
+ *
+ * Recognizes both `alpha * matmul(A, B)` and `matmul(A, B) * alpha` with any
+ * number of leading unary `+` or `-` signs.
+ *
+ * Return: 1 if @e matches a (possibly scaled/signed) `matmul` or `outer` term, 0 otherwise
+ */
 static int match_scaled_mm(const mc_expr_t  *e,
                            const mc_expr_t **out_call,
                            int              *out_is_outer,
@@ -190,26 +307,39 @@ static int match_scaled_mm(const mc_expr_t  *e,
     }
     if (is_mm_or_outer_call(e, out_call, out_is_outer))
     {
-        *out_scale = NULL, *out_sign = sgn;
+        *out_scale = NULL;
+        *out_sign  = sgn;
         return 1;
     }
     if (e != NULL && e->kind == MC_EXPR_BINARY && e->u.binary.op == MC_TOK_MUL)
     {
-        const mc_expr_t *l = e->u.binary.left, *r = e->u.binary.right;
+        const mc_expr_t *l = e->u.binary.left;
+        const mc_expr_t *r = e->u.binary.right;
         if (is_scalar_subexpr(l) && is_mm_or_outer_call(r, out_call, out_is_outer))
         {
-            *out_scale = l, *out_sign = sgn;
+            *out_scale = l;
+            *out_sign  = sgn;
             return 1;
         }
         if (is_scalar_subexpr(r) && is_mm_or_outer_call(l, out_call, out_is_outer))
         {
-            *out_scale = r, *out_sign = sgn;
+            *out_scale = r;
+            *out_sign  = sgn;
             return 1;
         }
     }
     return 0;
 }
 
+/**
+ * match_scaled_ident - Match `[+|-] [beta *] <target_bare>` for in-place beta accumulation
+ * @e:           Sub-expression to inspect
+ * @target_bare: Bare identifier name of the LHS destination image `C`
+ * @out_scale:   Output pointer to the scalar multiplier sub-expression `beta` (NULL if 1.0)
+ * @out_sign:    Output sign multiplier (+1.0 or -1.0) from unary operators
+ *
+ * Return: 1 if @e is @target_bare optionally multiplied by a scalar expression, 0 otherwise
+ */
 static int match_scaled_ident(const mc_expr_t  *e,
                               const char       *target_bare,
                               const mc_expr_t **out_scale,
@@ -224,28 +354,42 @@ static int match_scaled_ident(const mc_expr_t  *e,
     }
     if (e != NULL && e->kind == MC_EXPR_IDENT && strcmp(e->u.ident.bare, target_bare) == 0)
     {
-        *out_scale = NULL, *out_sign = sgn;
+        *out_scale = NULL;
+        *out_sign  = sgn;
         return 1;
     }
     if (e != NULL && e->kind == MC_EXPR_BINARY && e->u.binary.op == MC_TOK_MUL)
     {
-        const mc_expr_t *l = e->u.binary.left, *r = e->u.binary.right;
+        const mc_expr_t *l = e->u.binary.left;
+        const mc_expr_t *r = e->u.binary.right;
         if (is_scalar_subexpr(l) && r->kind == MC_EXPR_IDENT &&
             strcmp(r->u.ident.bare, target_bare) == 0)
         {
-            *out_scale = l, *out_sign = sgn;
+            *out_scale = l;
+            *out_sign  = sgn;
             return 1;
         }
         if (is_scalar_subexpr(r) && l->kind == MC_EXPR_IDENT &&
             strcmp(l->u.ident.bare, target_bare) == 0)
         {
-            *out_scale = r, *out_sign = sgn;
+            *out_scale = r;
+            *out_sign  = sgn;
             return 1;
         }
     }
     return 0;
 }
 
+/**
+ * struct alg_blas_match_t - Decomposed parameters of an algebraic BLAS assignment
+ * @call:       Matched `matmul(A, B)` or `outer(x, y)` call node
+ * @is_outer:   1 if @call is `outer(x, y)` (GER), 0 if `matmul(A, B)` (GEMM/GEMV/SYRK)
+ * @alpha_expr: Optional scalar expression multiplying the product term (NULL implies 1.0)
+ * @alpha_sign: Sign factor (+1.0 or -1.0) applied to the evaluated @alpha_expr
+ * @has_beta:   1 if the destination image `C` is accumulated into (`beta * C`), 0 otherwise
+ * @beta_expr:  Optional scalar expression multiplying `C` (NULL implies 1.0 when @has_beta is 1)
+ * @beta_sign:  Sign factor (+1.0 or -1.0) applied to the evaluated @beta_expr
+ */
 typedef struct
 {
     const mc_expr_t *call;
@@ -257,6 +401,21 @@ typedef struct
     double           beta_sign;
 } alg_blas_match_t;
 
+/**
+ * match_alg_blas - Attempt to decompose an assignment into a single BLAS GEMM/SYRK/GER operation
+ * @rhs:    Right-hand-side expression of the assignment
+ * @target: Left-hand-side target expression (must be an identifier)
+ * @aop:    Assignment operator token (`MC_TOK_ASSIGN`, `MC_TOK_ADD_ASSIGN`, `MC_TOK_SUB_ASSIGN`)
+ * @m:      Output match descriptor populated on success
+ *
+ * Matches the following algebraic forms:
+ * - `C += [alpha *] matmul(A, B)` or `C -= [alpha *] matmul(A, B)` (and `outer`)
+ * - `C = alpha * matmul(A, B)` (non-trivial scaling or negation of `matmul` / `outer`)
+ * - `C = [alpha *] matmul(A, B) +/- [beta *] C`
+ * - `C = [beta *] C +/- [alpha *] matmul(A, B)`
+ *
+ * Return: 1 if the assignment matches an algebraic BLAS pattern, 0 otherwise
+ */
 static int match_alg_blas(const mc_expr_t  *rhs,
                           const mc_expr_t  *target,
                           mc_tok_type_t     aop,
@@ -274,7 +433,9 @@ static int match_alg_blas(const mc_expr_t  *rhs,
             return 0;
         }
         m->alpha_sign = (aop == MC_TOK_SUB_ASSIGN) ? -m->alpha_sign : m->alpha_sign;
-        m->has_beta = 1, m->beta_expr = NULL, m->beta_sign = 1.0;
+        m->has_beta   = 1;
+        m->beta_expr  = NULL;
+        m->beta_sign  = 1.0;
         return 1;
     }
     if (aop != MC_TOK_ASSIGN)
@@ -289,30 +450,63 @@ static int match_alg_blas(const mc_expr_t  *rhs,
     if (rhs->kind == MC_EXPR_BINARY &&
         (rhs->u.binary.op == MC_TOK_PLUS || rhs->u.binary.op == MC_TOK_MINUS))
     {
-        const mc_expr_t *l = rhs->u.binary.left, *r = rhs->u.binary.right;
+        const mc_expr_t *l   = rhs->u.binary.left;
+        const mc_expr_t *r   = rhs->u.binary.right;
         double           rop = (rhs->u.binary.op == MC_TOK_MINUS) ? -1.0 : 1.0;
         if (match_scaled_mm(l, &m->call, &m->is_outer, &m->alpha_expr, &m->alpha_sign) &&
             match_scaled_ident(r, target->u.ident.bare, &m->beta_expr, &m->beta_sign))
         {
-            m->has_beta = 1, m->beta_sign *= rop;
+            m->has_beta = 1;
+            m->beta_sign *= rop;
             return 1;
         }
         if (match_scaled_ident(l, target->u.ident.bare, &m->beta_expr, &m->beta_sign) &&
             match_scaled_mm(r, &m->call, &m->is_outer, &m->alpha_expr, &m->alpha_sign))
         {
-            m->has_beta = 1, m->alpha_sign *= rop;
+            m->has_beta = 1;
+            m->alpha_sign *= rop;
             return 1;
         }
     }
     return 0;
 }
 
+/**
+ * mc_is_blas_or_linalg_ctor - Test whether an assignment lowers to an algebraic BLAS step
+ * @rhs:    Right-hand-side expression
+ * @target: Left-hand-side target identifier expression
+ * @aop:    Assignment token (`=`, `+=`, `-=`)
+ *
+ * Called by the planner (`mc_plan.c`) to decide whether an assignment should be
+ * scheduled as a `MC_STEP_CTOR` BLAS step rather than an element-wise fused kernel.
+ *
+ * Return: 1 if (@target, @aop, @rhs) matches an algebraic BLAS pattern, 0 otherwise
+ */
 int mc_is_blas_or_linalg_ctor(const mc_expr_t *rhs, const mc_expr_t *target, mc_tok_type_t aop)
 {
     alg_blas_match_t m;
     return match_alg_blas(rhs, target, aop, &m);
 }
 
+/* ============================================================================
+ * BLAS Execution Helpers
+ * ============================================================================ */
+
+/**
+ * finish_inplace_blas - Post semaphore updates and bind or copy an in-place BLAS destination
+ * @slot:    Destination program slot for the constructor step
+ * @is_anon: Non-zero if the statement was called without an explicit LHS assignment
+ * @dst_id:  Image ID of the in-place destination modified by the BLAS routine
+ * @in_unit: Non-zero when executing inside a persistent FPS compute unit
+ * @err:     Error buffer populated on failure
+ * @errsz:   Capacity of @err in bytes
+ *
+ * Posts metadata/semaphores on @dst_id. If the statement also assigned the result
+ * to a distinct LHS slot name (`D = gemm(alpha, A, B, beta, C)`), prepares `@slot`
+ * and copies the updated payload of @dst_id into it.
+ *
+ * Return: 0 on success, -1 on output preparation failure
+ */
 static int finish_inplace_blas(mc_slot_t *slot,
                                int        is_anon,
                                imageID    dst_id,
@@ -347,6 +541,20 @@ static int finish_inplace_blas(mc_slot_t *slot,
     return 0;
 }
 
+/**
+ * resolve_inplace_target - Resolve the destination image argument of an explicit in-place BLAS call
+ * @arg:       AST argument node naming the destination image
+ * @call_site: Enclosing user-defined function call site for parameter substitution (or NULL)
+ * @fn:        BLAS function name for error reporting
+ * @out_id:    Output image ID of the resolved destination image
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Follows any user-function parameter bindings on @arg, verifies that it is an
+ * image identifier, and resolves or autoconnects it in `milk_data.image` / `/dev/shm`.
+ *
+ * Return: 0 on success, -1 if @arg is not an existing image identifier
+ */
 static int resolve_inplace_target(const mc_expr_t *arg,
                                   const mc_expr_t *call_site,
                                   const char      *fn,
@@ -373,6 +581,25 @@ static int resolve_inplace_target(const mc_expr_t *arg,
     return 0;
 }
 
+/**
+ * exec_matmul_or_alg - Execute a `matmul(A, B)` call or lowered algebraic GEMM/SYRK/GER step
+ * @slot:      Destination slot to write or update
+ * @is_anon:   Non-zero if the step target is anonymous (unused; slot is always updated)
+ * @m:         Matched algebraic BLAS descriptor (`call`, `alpha`, `beta`, `is_outer`)
+ * @avoid_id:  Image ID to avoid clobbering when evaluating sub-expression temporaries
+ * @call_site: Enclosing user-defined function call site (or NULL)
+ * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Evaluates scalar multipliers `alpha` and `beta`, unwraps `transpose(...)` on
+ * operands, resolves or evaluates `A` and `B`, validates dimensions, and dispatches:
+ * - `arith_image_ger_im()` for `outer(x, y)`
+ * - `arith_image_syrk_im()` when `A` and `B` are the same image with opposite transposes
+ * - `arith_image_gemm_im()` for general matrix-matrix and matrix-vector products
+ *
+ * Return: 0 on success, -1 on dimension/type mismatch or BLAS error
+ */
 static int exec_matmul_or_alg(mc_slot_t              *slot,
                               int                     is_anon,
                               const alg_blas_match_t *m,
@@ -405,7 +632,10 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
     if (mc_resolve_or_eval_im(eA, call_site, avoid_id, in_unit, &idA, &tmpA, err, errsz) != 0 ||
         mc_resolve_or_eval_im(eB, call_site, avoid_id, in_unit, &idB, &tmpB, err, errsz) != 0)
     {
-        (void) (tmpA && (mc_tmp_release(idA), 1));
+        if (tmpA)
+        {
+            mc_tmp_release(idA);
+        }
         return -1;
     }
     const IMAGE *imA = &milk_data.image[idA], *imB = &milk_data.image[idB];
@@ -417,6 +647,7 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
         goto done;
     }
 
+    /* Compute output shape and validate inner contraction dimensions */
     uint64_t M = 0, N = 0, K = 0;
     long     out_naxis = 2;
     uint32_t out_sz[3] = { 1, 1, 1 };
@@ -427,7 +658,8 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
             rc = blas_err(err, errsz, "outer: expected 1D vector arguments");
             goto done;
         }
-        out_sz[0] = (uint32_t) M, out_sz[1] = (uint32_t) N;
+        out_sz[0] = (uint32_t) M;
+        out_sz[1] = (uint32_t) N;
     }
     else if (arith_image_matmul_dims(imA, transA, imB, transB, &transA, &transB, &M, &K, &N,
                                      &out_naxis, out_sz) != 0)
@@ -436,6 +668,7 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
         goto done;
     }
 
+    /* Resolve existing destination when accumulating (has_beta), else prepare output slot */
     imageID oid = -1;
     if (m->has_beta)
     {
@@ -467,6 +700,7 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
         }
     }
 
+    /* Dispatch to GER, SYRK (when A*A^T or A^T*A), or general GEMM */
     IMAGE *dst       = &milk_data.image[oid];
     dst->md[0].write = 1;
     rc               = m->is_outer ? arith_image_ger_im(imA, imB, alpha, beta, dst)
@@ -483,11 +717,43 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
     (void) is_anon;
 
 done:
-    (void) (tmpA && (mc_tmp_release(idA), 1));
-    (void) (tmpB && (mc_tmp_release(idB), 1));
+    if (tmpA)
+    {
+        mc_tmp_release(idA);
+    }
+    if (tmpB)
+    {
+        mc_tmp_release(idB);
+    }
     return rc;
 }
 
+/* ============================================================================
+ * Einstein Summation (einsum)
+ * ============================================================================ */
+
+/**
+ * exec_einsum - Execute a 1- or 2-operand `einsum("subscripts", A[, B])` tensor contraction
+ * @slot:      Destination slot to receive the contracted output tensor
+ * @rhs:       `einsum` call expression node
+ * @avoid_id:  Image ID to avoid clobbering when evaluating operand sub-expressions
+ * @call_site: Enclosing user-defined function call site (or NULL)
+ * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Parses the Einstein summation specification (`"ij,jk->ik"` or implicit `"ij,jk"`),
+ * validates axis ranks (1..3) and index dimensions, and checks for BLAS GEMM fast paths:
+ * - 2D x 2D -> 2D matrix multiplication (with any transpose combination on A and B)
+ * - 3D cube contracted over its first two spatial axes with a 2D slice (`"ijk,ij->k"`),
+ *   a 1D mode vector (`"ijk,k->ij"`), or another 3D cube (`"ijk,ijl->kl"`) by reshaping
+ *   the `(nx * ny)` spatial plane into a flat column-major matrix dimension.
+ *
+ * When no GEMM fast path applies (e.g. trace `"ii->"`, diagonal extraction `"ii->i"`,
+ * axis permutations, or general contractions), executes a stride-driven nested loop.
+ *
+ * Return: 0 on success, -1 on syntax/dimension error
+ */
 static int exec_einsum(mc_slot_t       *slot,
                        const mc_expr_t *rhs,
                        imageID          avoid_id,
@@ -508,18 +774,28 @@ static int exec_einsum(mc_slot_t       *slot,
         (nin == 2 && mc_resolve_or_eval_im(rhs->u.call.args[2], call_site, avoid_id, in_unit, &idB,
                                            &tmpB, err, errsz) != 0))
     {
-        (void) (tmpA && (mc_tmp_release(idA), 1));
+        if (tmpA)
+        {
+            mc_tmp_release(idA);
+        }
         return -1;
     }
-    const IMAGE *imA = &milk_data.image[idA], *imB = (nin == 2) ? &milk_data.image[idB] : NULL;
+    const IMAGE *imA = &milk_data.image[idA];
+    const IMAGE *imB = (nin == 2) ? &milk_data.image[idB] : NULL;
 
+    /* Strip whitespace from the subscript string and split around "->" if present */
     char   sub[128] = { 0 };
     size_t slen     = 0;
     for (const char *p = sv.sval; *p != '\0' && slen + 1 < sizeof(sub); p++)
     {
-        (void) (!isspace((unsigned char) *p) && (sub[slen++] = *p));
+        if (!isspace((unsigned char) *p))
+        {
+            sub[slen++] = *p;
+        }
     }
-    char *arrow = strstr(sub, "->"), lhs_s[64] = { 0 }, rhs_s[16] = { 0 };
+    char *arrow     = strstr(sub, "->");
+    char  lhs_s[64] = { 0 };
+    char  rhs_s[16] = { 0 };
     if (arrow != NULL)
     {
         size_t ll = (size_t) (arrow - sub);
@@ -528,14 +804,17 @@ static int exec_einsum(mc_slot_t       *slot,
             rc = blas_err(err, errsz, "einsum: subscript string too long");
             goto done;
         }
-        memcpy(lhs_s, sub, ll), strcpy(rhs_s, arrow + 2);
+        memcpy(lhs_s, sub, ll);
+        strcpy(rhs_s, arrow + 2);
     }
     else
     {
         snprintf(lhs_s, sizeof(lhs_s), "%s", sub);
     }
 
-    char *comma = strchr(lhs_s, ','), in_sub[2][8] = { { 0 }, { 0 } };
+    /* Split LHS subscript specification by ',' into per-operand index strings */
+    char *comma        = strchr(lhs_s, ',');
+    char  in_sub[2][8] = { { 0 }, { 0 } };
     if ((nin == 2 && (comma == NULL || strchr(comma + 1, ',') != NULL)) ||
         (nin == 1 && comma != NULL))
     {
@@ -553,9 +832,11 @@ static int exec_einsum(mc_slot_t       *slot,
         snprintf(in_sub[0], sizeof(in_sub[0]), "%s", lhs_s);
     }
 
+    /* Validate operand ranks and record dimension size and occurrence count per index label */
     const IMAGE *ims[2]      = { imA, imB };
     uint32_t     dim_of[256] = { 0 };
-    int          cnt_of[256] = { 0 }, nidx = 0;
+    int          cnt_of[256] = { 0 };
+    int          nidx        = 0;
     char         idx_list[8] = { 0 };
 
     for (int op = 0; op < nin; op++)
@@ -576,30 +857,42 @@ static int exec_einsum(mc_slot_t       *slot,
                 rc = blas_err(err, errsz, "einsum: invalid or mismatched index '%c'", (char) c);
                 goto done;
             }
-            (void) (cnt_of[c] == 0 &&
-                    ((dim_of[c] = im->md[0].size[d]), (idx_list[nidx++] = (char) c)));
+            if (cnt_of[c] == 0)
+            {
+                dim_of[c]        = im->md[0].size[d];
+                idx_list[nidx++] = (char) c;
+            }
             cnt_of[c]++;
         }
     }
 
+    /* In implicit mode (no "->"), output indices are non-repeated labels in alphabetical order */
     if (arrow == NULL)
     {
         int out_n = 0;
         for (int c = 'a'; c <= 'z'; c++)
         {
-            (void) (cnt_of[c] == 1 && (rhs_s[out_n++] = (char) c));
+            if (cnt_of[c] == 1)
+            {
+                rhs_s[out_n++] = (char) c;
+            }
         }
         for (int c = 'A'; c <= 'Z'; c++)
         {
-            (void) (cnt_of[c] == 1 && (rhs_s[out_n++] = (char) c));
+            if (cnt_of[c] == 1)
+            {
+                rhs_s[out_n++] = (char) c;
+            }
         }
         rhs_s[out_n] = '\0';
     }
 
+    /* Partition indices into output axes (out_sz) and contracted summation axes (sum_idx) */
     size_t   out_nd      = strlen(rhs_s);
-    int      in_out[256] = { 0 }, nsum = 0;
-    uint32_t out_sz[3]  = { 1, 1, 1 };
-    char     sum_idx[8] = { 0 };
+    int      in_out[256] = { 0 };
+    int      nsum        = 0;
+    uint32_t out_sz[3]   = { 1, 1, 1 };
+    char     sum_idx[8]  = { 0 };
     if (out_nd > 3)
     {
         rc = blas_err(err, errsz, "einsum: output rank > 3 is not supported");
@@ -613,15 +906,20 @@ static int exec_einsum(mc_slot_t       *slot,
             rc = blas_err(err, errsz, "einsum: invalid or repeated output index '%c'", (char) c);
             goto done;
         }
-        in_out[c] = 1, out_sz[d] = dim_of[c];
+        in_out[c] = 1;
+        out_sz[d] = dim_of[c];
     }
     for (int i = 0; i < nidx; i++)
     {
         unsigned char c = (unsigned char) idx_list[i];
-        (void) (!in_out[c] && (sum_idx[nsum++] = (char) c));
+        if (!in_out[c])
+        {
+            sum_idx[nsum++] = (char) c;
+        }
     }
 
-    uint8_t dtA = imA->md[0].datatype, dtB = imB ? imB->md[0].datatype : dtA;
+    uint8_t dtA    = imA->md[0].datatype;
+    uint8_t dtB    = imB ? imB->md[0].datatype : dtA;
     uint8_t out_dt = mc_select_ctor_out_dt(
         slot,
         (dtA == _DATATYPE_DOUBLE || dtB == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
@@ -634,6 +932,7 @@ static int exec_einsum(mc_slot_t       *slot,
     }
     IMAGE *out = &milk_data.image[oid];
 
+    /* Fast path 1: 2D matrix multiplication ("ij,jk->ik" and transposed variants) */
     if (nin == 2 && strlen(in_sub[0]) == 2 && strlen(in_sub[1]) == 2 && out_nd == 2 && nsum == 1 &&
         (dtA == _DATATYPE_FLOAT || dtA == _DATATYPE_DOUBLE) && dtA == dtB && out_dt == dtA)
     {
@@ -650,33 +949,45 @@ static int exec_einsum(mc_slot_t       *slot,
             goto done;
         }
     }
+
+    /* Fast path 2: 3D cube contractions over flattened spatial planes (nx * ny) via GEMM */
     if (nin == 2 && strlen(in_sub[0]) == 3 && (dtA == _DATATYPE_FLOAT || dtA == _DATATYPE_DOUBLE) &&
         dtA == dtB && out_dt == dtA)
     {
         IMAGE          vA = *imA, vB = *imB, vO = *out;
         IMAGE_METADATA mdA = imA->md[0], mdB = imB->md[0], mdO = out->md[0];
-        vA.md = &mdA, vB.md = &mdB, vO.md = &mdO;
+        vA.md        = &mdA;
+        vB.md        = &mdB;
+        vO.md        = &mdO;
         uint32_t nxy = imA->md[0].size[0] * imA->md[0].size[1];
-        mdA.naxis = 2, mdA.size[0] = nxy, mdA.size[1] = imA->md[0].size[2];
-        int ok = 0;
+        mdA.naxis    = 2;
+        mdA.size[0]  = nxy;
+        mdA.size[1]  = imA->md[0].size[2];
+        int ok       = 0;
         if (strlen(in_sub[1]) == 2 && out_nd == 1 && in_sub[0][0] == in_sub[1][0] &&
             in_sub[0][1] == in_sub[1][1] && in_sub[0][2] == rhs_s[0])
         {
-            mdB.naxis = 1, mdB.size[0] = nxy, mdB.size[1] = 1;
-            ok = (arith_image_gemm_im(&vA, 1, &vB, 0, 1.0, 0.0, &vO) == 0);
+            mdB.naxis   = 1;
+            mdB.size[0] = nxy;
+            mdB.size[1] = 1;
+            ok          = (arith_image_gemm_im(&vA, 1, &vB, 0, 1.0, 0.0, &vO) == 0);
         }
         else if (strlen(in_sub[1]) == 1 && out_nd == 2 && in_sub[0][0] == rhs_s[0] &&
                  in_sub[0][1] == rhs_s[1] && in_sub[0][2] == in_sub[1][0])
         {
-            mdO.naxis = 1, mdO.size[0] = nxy, mdO.size[1] = 1;
-            ok = (arith_image_gemm_im(&vA, 0, &vB, 0, 1.0, 0.0, &vO) == 0);
+            mdO.naxis   = 1;
+            mdO.size[0] = nxy;
+            mdO.size[1] = 1;
+            ok          = (arith_image_gemm_im(&vA, 0, &vB, 0, 1.0, 0.0, &vO) == 0);
         }
         else if (strlen(in_sub[1]) == 3 && out_nd == 2 && in_sub[0][0] == in_sub[1][0] &&
                  in_sub[0][1] == in_sub[1][1] && in_sub[0][2] == rhs_s[0] &&
                  in_sub[1][2] == rhs_s[1])
         {
-            mdB.naxis = 2, mdB.size[0] = nxy, mdB.size[1] = imB->md[0].size[2];
-            ok = (arith_image_gemm_im(&vA, 1, &vB, 0, 1.0, 0.0, &vO) == 0);
+            mdB.naxis   = 2;
+            mdB.size[0] = nxy;
+            mdB.size[1] = imB->md[0].size[2];
+            ok          = (arith_image_gemm_im(&vA, 1, &vB, 0, 1.0, 0.0, &vO) == 0);
         }
         if (ok)
         {
@@ -685,6 +996,7 @@ static int exec_einsum(mc_slot_t       *slot,
         }
     }
 
+    /* General fallback: stride-driven contraction loop over output and summed coordinates */
     uint64_t stA[3] = {
         1,
         imA->md[0].size[0],
@@ -705,27 +1017,45 @@ static int exec_einsum(mc_slot_t       *slot,
     };
 
     uint32_t coord[256] = { 0 };
-    size_t   ndA = strlen(in_sub[0]), ndB = (nin == 2) ? strlen(in_sub[1]) : 0;
+    size_t   ndA        = strlen(in_sub[0]);
+    size_t   ndB        = (nin == 2) ? strlen(in_sub[1]) : 0;
     for (uint32_t o2 = 0; o2 < out_sz[2]; o2++)
     {
-        (void) (out_nd > 2 && (coord[(unsigned char) rhs_s[2]] = o2, 1));
+        if (out_nd > 2)
+        {
+            coord[(unsigned char) rhs_s[2]] = o2;
+        }
         for (uint32_t o1 = 0; o1 < out_sz[1]; o1++)
         {
-            (void) (out_nd > 1 && (coord[(unsigned char) rhs_s[1]] = o1, 1));
+            if (out_nd > 1)
+            {
+                coord[(unsigned char) rhs_s[1]] = o1;
+            }
             for (uint32_t o0 = 0; o0 < out_sz[0]; o0++)
             {
-                (void) (out_nd > 0 && (coord[(unsigned char) rhs_s[0]] = o0, 1));
+                if (out_nd > 0)
+                {
+                    coord[(unsigned char) rhs_s[0]] = o0;
+                }
                 double acc = 0.0;
                 for (uint64_t s2 = 0; s2 < sum_dims[2]; s2++)
                 {
-                    (void) (nsum > 2 && (coord[(unsigned char) sum_idx[2]] = (uint32_t) s2, 1));
+                    if (nsum > 2)
+                    {
+                        coord[(unsigned char) sum_idx[2]] = (uint32_t) s2;
+                    }
                     for (uint64_t s1 = 0; s1 < sum_dims[1]; s1++)
                     {
-                        (void) (nsum > 1 && (coord[(unsigned char) sum_idx[1]] = (uint32_t) s1, 1));
+                        if (nsum > 1)
+                        {
+                            coord[(unsigned char) sum_idx[1]] = (uint32_t) s1;
+                        }
                         for (uint64_t s0 = 0; s0 < sum_dims[0]; s0++)
                         {
-                            (void) (nsum > 0 &&
-                                    (coord[(unsigned char) sum_idx[0]] = (uint32_t) s0, 1));
+                            if (nsum > 0)
+                            {
+                                coord[(unsigned char) sum_idx[0]] = (uint32_t) s0;
+                            }
                             uint64_t offA = 0, offB = 0;
                             for (size_t d = 0; d < ndA; d++)
                             {
@@ -750,11 +1080,39 @@ static int exec_einsum(mc_slot_t       *slot,
     mc_out_post(oid);
 
 done:
-    (void) (tmpA && (mc_tmp_release(idA), 1));
-    (void) (tmpB && (mc_tmp_release(idB), 1));
+    if (tmpA)
+    {
+        mc_tmp_release(idA);
+    }
+    if (tmpB)
+    {
+        mc_tmp_release(idB);
+    }
     return rc;
 }
 
+/* ============================================================================
+ * Top-Level BLAS Constructor Dispatcher
+ * ============================================================================ */
+
+/**
+ * mc_exec_blas_call - Execute a BLAS or `einsum` constructor step in a compiled `milk.calc` plan
+ * @prog:      Compiled calculator program holding the slot table
+ * @cs:        Constructor step descriptor to execute
+ * @avoid_id:  Image ID to avoid clobbering when evaluating temporary sub-expressions
+ * @call_site: Enclosing user-defined function call site (or NULL for top-level steps)
+ * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Dispatches:
+ * - Algebraic BLAS expressions and `matmul(A, B)` to `exec_matmul_or_alg()`
+ * - `einsum(...)` to `exec_einsum()`
+ * - Explicit in-place Level-1/2/3 BLAS primitives (`scal`, `axpy`, `ger`, `syrk`,
+ *   `gemv`, `symv`, `gemm`) to the corresponding `COREMOD_arith` functions.
+ *
+ * Return: 0 on success, -1 on evaluation or BLAS execution failure
+ */
 int mc_exec_blas_call(mcalc_prog_t    *prog,
                       mc_ctor_step_t  *cs,
                       imageID          avoid_id,
@@ -773,7 +1131,8 @@ int mc_exec_blas_call(mcalc_prog_t    *prog,
         if (rhs->kind == MC_EXPR_CALL)
         {
             memset(&m, 0, sizeof(m));
-            m.call = rhs, m.alpha_sign = 1.0;
+            m.call       = rhs;
+            m.alpha_sign = 1.0;
         }
         else if (!match_alg_blas(rhs, cs->target_expr, cs->assign_op, &m))
         {
@@ -817,7 +1176,10 @@ int mc_exec_blas_call(mcalc_prog_t    *prog,
             return -1;
         }
         rc = arith_image_axpy_im(alpha, &milk_data.image[idA], &milk_data.image[idC]);
-        (void) (tmpA && (mc_tmp_release(idA), 1));
+        if (tmpA)
+        {
+            mc_tmp_release(idA);
+        }
         return (rc == 0) ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
                          : blas_err(err, errsz,
                                     (rc == -2) ? "axpy: element count mismatch"
@@ -832,7 +1194,10 @@ int mc_exec_blas_call(mcalc_prog_t    *prog,
             mc_resolve_or_eval_im(rhs->u.call.args[2], call_site, idC, in_unit, &idB, &tmpB, err,
                                   errsz) != 0)
         {
-            (void) (tmpA && (mc_tmp_release(idA), 1));
+            if (tmpA)
+            {
+                mc_tmp_release(idA);
+            }
             return -1;
         }
         rc = (arith_image_ger_check(&milk_data.image[idA], &milk_data.image[idB],
@@ -841,8 +1206,14 @@ int mc_exec_blas_call(mcalc_prog_t    *prog,
                                  &milk_data.image[idC]) == 0)
                  ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
                  : blas_err(err, errsz, "ger: dimension or datatype mismatch");
-        (void) (tmpA && (mc_tmp_release(idA), 1));
-        (void) (tmpB && (mc_tmp_release(idB), 1));
+        if (tmpA)
+        {
+            mc_tmp_release(idA);
+        }
+        if (tmpB)
+        {
+            mc_tmp_release(idB);
+        }
         return rc;
     }
 
@@ -861,13 +1232,17 @@ int mc_exec_blas_call(mcalc_prog_t    *prog,
                                   &milk_data.image[idC]) == 0)
                  ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
                  : blas_err(err, errsz, "syrk: dimension or datatype mismatch");
-        (void) (tmpA && (mc_tmp_release(idA), 1));
+        if (tmpA)
+        {
+            mc_tmp_release(idA);
+        }
         return rc;
     }
 
     if (strcmp(fn, "gemv") == 0 || strcmp(fn, "symv") == 0 || strcmp(fn, "gemm") == 0)
     {
-        int              is_mm = (strcmp(fn, "gemm") == 0), is_symv = (strcmp(fn, "symv") == 0);
+        int              is_mm   = (strcmp(fn, "gemm") == 0);
+        int              is_symv = (strcmp(fn, "symv") == 0);
         int              transA = 0, transB = 0;
         const mc_expr_t *eA = is_symv ? rhs->u.call.args[1]
                                       : unwrap_transpose(rhs->u.call.args[1], call_site, &transA);
@@ -878,7 +1253,10 @@ int mc_exec_blas_call(mcalc_prog_t    *prog,
             mc_resolve_or_eval_im(eA, call_site, idC, in_unit, &idA, &tmpA, err, errsz) != 0 ||
             mc_resolve_or_eval_im(eB, call_site, idC, in_unit, &idB, &tmpB, err, errsz) != 0)
         {
-            (void) (tmpA && (mc_tmp_release(idA), 1));
+            if (tmpA)
+            {
+                mc_tmp_release(idA);
+            }
             return -1;
         }
         const IMAGE *imA = &milk_data.image[idA], *imB = &milk_data.image[idB];
@@ -890,8 +1268,14 @@ int mc_exec_blas_call(mcalc_prog_t    *prog,
                          arith_image_gemm_im(imA, transA, imB, transB, alpha, beta, imC) == 0)
                             ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
                             : blas_err(err, errsz, "%s: dimension or datatype mismatch", fn));
-        (void) (tmpA && (mc_tmp_release(idA), 1));
-        (void) (tmpB && (mc_tmp_release(idB), 1));
+        if (tmpA)
+        {
+            mc_tmp_release(idA);
+        }
+        if (tmpB)
+        {
+            mc_tmp_release(idB);
+        }
         return rc;
     }
 

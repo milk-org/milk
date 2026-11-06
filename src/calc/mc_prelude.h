@@ -2,6 +2,25 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_prelude.h
+ * @brief Embedded C99 prelude strings prepended to generated calculator `.so` kernels.
+ *
+ * Provides self-contained `static inline` C helpers for generated elementwise kernels so
+ * that compiled `.so` files do not need external header paths at runtime:
+ *   - `MC_PRELUDE_CORE_SRC`: `libmvec` SIMD math declarations, `mc_operand_t` ABI struct,
+ *     fast scalar/SIMD math helpers (`mc_sqf`, `mc_clampf`, `mc_wrap_pif`, `mc_sincf`,
+ *     bit-level `mc_isnanf`/`mc_isfinitef`), integer casts, and counter-based PRNG
+ *     (`mc_urandf`, `mc_grandf`).
+ *   - `MC_PRELUDE_COMPLEX_SRC`: C99 `_Complex` arithmetic and phase helpers.
+ *   - `MC_PRELUDE_COORD_SHIFT_SRC`: 2-D coordinate generators (`ix`, `iy`, `ir`, `itheta`)
+ *     and clamped/wrapped index helpers for `shift` and `roll`.
+ *   - `MC_PRELUDE_SPATIAL_MACRO_SRC` / `MC_PRELUDE_SPATIAL_ALL_SRC`: Typed inline helpers
+ *     for 1-D linear LUT (`mc_lut_*`), index gather (`mc_gather_*`), 2-D bilinear
+ *     interpolation (`mc_interp2_*`), median filters (`mc_medfilt_*`), and $3\times3$
+ *     erosion/dilation (`mc_minmax3_*`).
+ */
+
 #ifndef MILK_CALC_MC_PRELUDE_H
 #define MILK_CALC_MC_PRELUDE_H
 

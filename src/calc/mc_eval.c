@@ -2,6 +2,28 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_eval.c
+ * @brief Top-level statement evaluator, LRU program cache, and `def` table for `libmilkcalc`.
+ *
+ * Provides the interactive and scripting entry points (`mcalc_eval_bash`, `mcalc_eval_str`,
+ * `mcalc_eval_math_to_val`) used by `milk.bash` (`@calc`), `libmilkscript`, `CLIcore`, and the
+ * `milk-calc` REPL.
+ *
+ * Key responsibilities:
+ *   - **Host string variable bridge (`mc_host_str_*`)**: Forwards string variable reads and writes
+ *     to the registered host environment (`bash` shell variables or `milk-script` table) or falls
+ *     back to an internal 128-entry table (`g_fb_vars`) in standalone processes.
+ *   - **User-defined inline functions (`mcalc_udef_*`)**: Parses and stores `def f(x, ...) = expr`
+ *     definitions so subsequent statements inline the AST body at call sites.
+ *   - **64-entry LRU statement cache (`g_stmt_cache`)**: Caches compiled `mcalc_prog_t` objects
+ *     keyed by FNV-1a hash of the input string. Repeated executions of image expressions in shell
+ *     loops skip lexing, parsing, resolution, planning, and C kernel compilation whenever the
+ *     shared-memory table generation (`milk_table_generation()`) and slot shapes remain valid.
+ *   - **Output formatting (`emit_scalar_result`, `emit_image_result`)**: Formats scalar values or
+ *     image summaries according to `mcalc_out_mode` (`VALUES`, `REPL`, `PIXELS`, `BIND`, `NONE`).
+ */
+
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -16,17 +38,30 @@
 #include "mcalc.h"
 #include "mcalc_host.h"
 
+/* Global output formatting configuration and last error message buffer. */
 int  mcalc_out_mode     = MCALC_OUT_VALUES;
 int  mcalc_test_image   = 0;
 int  mcalc_float_digits = 15;
 char mcalc_lasterr[256] = "";
 
+/* Optional host environment callbacks and `mcalc_eval_str` output capture buffer. */
 static mcalc_host_ops g_host     = { NULL, NULL };
 static char          *g_calc_out = NULL;
 static size_t         g_calc_sz  = 0;
 
-/* Fallback string variable table when no host callbacks are registered */
+/* ============================================================================================== */
+/* Host String Variable Bridge and Fallback Table                                                 */
+/* ============================================================================================== */
+
+/* Maximum number of fallback string variables when no host callbacks are registered. */
 #define MC_FB_VARS_MAX 128
+
+/**
+ * struct mc_fb_var_t - Fallback in-memory string variable entry
+ * @name: Variable identifier
+ * @val:  Null-terminated string value
+ * @used: 1 if this slot is occupied, 0 if free
+ */
 typedef struct
 {
     char name[128];
@@ -36,8 +71,26 @@ typedef struct
 
 static mc_fb_var_t g_fb_vars[MC_FB_VARS_MAX];
 
-/* 64-entry LRU statement cache for single-statement image programs in `@calc` */
+/* ============================================================================================== */
+/* 64-Entry LRU Statement Cache                                                                   */
+/* ============================================================================================== */
+
 #define MC_STMT_CACHE_MAX 64
+
+/**
+ * struct mc_stmt_cache_t - Cached single-statement `mcalc_prog_t` entry for `@calc` loops
+ * @text:       Original statement source text
+ * @hash:       64-bit FNV-1a hash of @text
+ * @len:        Byte length of @text
+ * @udef_cnt:   Number of active `def` functions when this entry was compiled
+ * @table_gen:  `milk_table_generation()` snapshot after last successful run
+ * @lru_tick:   Monotonic access counter for LRU eviction
+ * @is_im_stmt: 1 if the statement produces an image result
+ * @is_assign:  1 if the statement is an assignment or in-place BLAS update
+ * @is_multi:   1 if the statement is a multi-LHS unpacking assignment
+ * @lhs_name:   Target identifier for REPL assignment display
+ * @prog:       Compiled `mcalc_prog_t` instance (NULL if slot is empty)
+ */
 typedef struct
 {
     char          text[1024];
@@ -56,6 +109,13 @@ typedef struct
 static mc_stmt_cache_t g_stmt_cache[MC_STMT_CACHE_MAX];
 static uint64_t        g_stmt_lru_clock = 0;
 
+/**
+ * stmt_cache_clear - Free and invalidate all entries in the single-statement LRU cache
+ *
+ * Called whenever user-defined functions (`def`) or fallback variables are reset.
+ *
+ * Return: void
+ */
 static void stmt_cache_clear(void)
 {
     for (int i = 0; i < MC_STMT_CACHE_MAX; i++)
@@ -69,11 +129,23 @@ static void stmt_cache_clear(void)
     }
 }
 
+/**
+ * mcalc_set_host - Register or clear host string variable callbacks
+ * @ops: Pointer to callback table (`str_get`, `str_set`), or NULL to detach
+ *
+ * Return: void
+ */
 void mcalc_set_host(const mcalc_host_ops *ops)
 {
     g_host = (ops != NULL) ? *ops : (mcalc_host_ops) { NULL, NULL };
 }
 
+/**
+ * mc_host_str_get - Look up a string variable by name in the host or fallback table
+ * @name: Variable identifier to query
+ *
+ * Return: Pointer to the string value if found, or NULL if undefined
+ */
 const char *mc_host_str_get(const char *name)
 {
     if (name == NULL || name[0] == '\0')
@@ -94,6 +166,13 @@ const char *mc_host_str_get(const char *name)
     return NULL;
 }
 
+/**
+ * mc_host_str_set - Assign a string variable in the host environment or fallback table
+ * @name: Variable identifier
+ * @val:  String value to store
+ *
+ * Return: void
+ */
 void mc_host_str_set(const char *name, const char *val)
 {
     if (name == NULL || name[0] == '\0' || val == NULL)
@@ -113,7 +192,10 @@ void mc_host_str_set(const char *name, const char *val)
             snprintf(g_fb_vars[i].val, sizeof(g_fb_vars[i].val), "%s", val);
             return;
         }
-        (void) (!g_fb_vars[i].used && free_slot < 0 && (free_slot = i));
+        if (!g_fb_vars[i].used && free_slot < 0)
+        {
+            free_slot = i;
+        }
     }
     if (free_slot >= 0)
     {
@@ -123,37 +205,78 @@ void mc_host_str_set(const char *name, const char *val)
     }
 }
 
+/**
+ * mc_host_str_clear - Clear all fallback string variables and flush the statement cache
+ *
+ * Return: void
+ */
 void mc_host_str_clear(void)
 {
     memset(g_fb_vars, 0, sizeof(g_fb_vars));
     stmt_cache_clear();
 }
 
+/**
+ * mc_host_has_str_sink - Check whether an external host string setter is registered
+ *
+ * Return: 1 if `g_host.str_set != NULL`, 0 otherwise
+ */
 int mc_host_has_str_sink(void)
 {
     return g_host.str_set != NULL;
 }
 
-/* User-defined inline function table (def f(x, ...) = body) */
+/* ============================================================================================== */
+/* User-Defined Inline Functions (`def f(x, ...) = body`)                                         */
+/* ============================================================================================== */
+
 static mcalc_udef_t g_udefs[MCALC_UDEF_MAX];
 static int          g_nudefs = 0;
 
+/**
+ * mcalc_udef_clear - Remove all user-defined inline functions and invalidate the statement cache
+ *
+ * Return: void
+ */
 void mcalc_udef_clear(void)
 {
     g_nudefs = 0;
     stmt_cache_clear();
 }
 
+/**
+ * mcalc_udef_count - Return the number of currently registered `def` functions
+ *
+ * Return: Count of registered `def` entries (`0 .. MCALC_UDEF_MAX`)
+ */
 int mcalc_udef_count(void)
 {
     return g_nudefs;
 }
 
+/**
+ * mcalc_udef_get - Retrieve a registered `def` function descriptor by index
+ * @idx: Index in `[0, mcalc_udef_count())`
+ *
+ * Return: Pointer to `mcalc_udef_t`, or NULL if @idx is out of range
+ */
 const mcalc_udef_t *mcalc_udef_get(int idx)
 {
     return (idx >= 0 && idx < g_nudefs) ? &g_udefs[idx] : NULL;
 }
 
+/**
+ * mcalc_udef_add - Register or replace a user-defined inline function
+ * @name:      Function identifier
+ * @nargs:     Number of formal parameters (`1 .. MCALC_UDEF_MAXARGS`)
+ * @arg_names: Array of formal parameter names
+ * @body:      Unparsed RHS expression string
+ *
+ * Replaces any existing `def` with the same @name and flushes `g_stmt_cache` so subsequent
+ * calls re-inline the updated body.
+ *
+ * Return: Table index (`>= 0`) on success, or -1 if arguments are invalid or the table is full
+ */
 int mcalc_udef_add(const char *name, int nargs, const char arg_names[][64], const char *body)
 {
     if (name == NULL || body == NULL || nargs < 1 || nargs > MCALC_UDEF_MAXARGS)
@@ -163,7 +286,10 @@ int mcalc_udef_add(const char *name, int nargs, const char arg_names[][64], cons
     int idx = -1;
     for (int i = 0; i < g_nudefs && idx < 0; i++)
     {
-        (void) (strcmp(g_udefs[i].name, name) == 0 && (idx = i));
+        if (strcmp(g_udefs[i].name, name) == 0)
+        {
+            idx = i;
+        }
     }
     if (idx < 0 && (idx = (g_nudefs < MCALC_UDEF_MAX) ? g_nudefs++ : -1) < 0)
     {
@@ -180,6 +306,13 @@ int mcalc_udef_add(const char *name, int nargs, const char arg_names[][64], cons
     return idx;
 }
 
+/**
+ * mcalc_udef_try_parse - Parse and register a `def name(a, b, ...) = expr` statement
+ * @stmt: Input statement text
+ *
+ * Return: 1 if @stmt is a valid `def` and was registered, 0 if @stmt does not start with `def`,
+ *         or -1 if @stmt starts with `def` but has invalid syntax
+ */
 int mcalc_udef_try_parse(const char *stmt)
 {
     if (stmt == NULL)
@@ -213,11 +346,14 @@ int mcalc_udef_try_parse(const char *stmt)
     {
         return -1;
     }
-    char fname[64], args[MCALC_UDEF_MAXARGS][64];
+
+    char fname[64];
+    char args[MCALC_UDEF_MAXARGS][64];
     int  nargs = 0;
     memcpy(fname, nstart, nlen);
     fname[nlen] = '\0';
     p++;
+
     while (*p != '\0' && *p != ')')
     {
         while (isspace((unsigned char) *p))
@@ -260,11 +396,24 @@ int mcalc_udef_try_parse(const char *stmt)
     {
         p++;
     }
-    return (*p == '\0')
-               ? -1
-               : ((mcalc_udef_add(fname, nargs, (const char (*)[64]) args, p) >= 0) ? 1 : -1);
+    if (*p == '\0')
+    {
+        return -1;
+    }
+    return (mcalc_udef_add(fname, nargs, (const char (*)[64]) args, p) >= 0) ? 1 : -1;
 }
 
+/* ============================================================================================== */
+/* Directives, Result Formatting, and Cache Validation                                            */
+/* ============================================================================================== */
+
+/**
+ * report_err - Record an error message in `mcalc_lasterr` and print a diagnostic to `stderr`
+ * @input: Source statement that triggered the error (may be NULL or empty)
+ * @msg:   Human-readable error description
+ *
+ * Return: void
+ */
 static void report_err(const char *input, const char *msg)
 {
     const char *m = (msg != NULL && msg[0] != '\0') ? msg : "syntax error";
@@ -279,6 +428,14 @@ static void report_err(const char *input, const char *msg)
     }
 }
 
+/**
+ * strip_arg_quotes - Trim surrounding whitespace and matching quotes from a directive argument
+ * @lp:    Input argument string
+ * @out:   Destination buffer
+ * @outsz: Capacity of @out in bytes
+ *
+ * Return: void
+ */
 static void strip_arg_quotes(const char *lp, char *out, size_t outsz)
 {
     while (*lp == ' ' || *lp == '\t')
@@ -304,6 +461,15 @@ static void strip_arg_quotes(const char *lp, char *out, size_t outsz)
     out[len] = '\0';
 }
 
+/**
+ * eval_special_directives - Handle top-level directives (`loadlib`, `listengines`, `def`, blocks)
+ * @input:   Raw statement string
+ * @is_test: 1 when evaluating a boolean `@test` condition, 0 for normal `@calc`
+ * @out_rc:  Optional output exit code (`0` on success)
+ *
+ * Return: 1 if a special directive was handled and succeeded, 0 if a directive failed, or -1 if
+ *         @input is a normal expression/statement
+ */
 static int eval_special_directives(const char *input, int is_test, int *out_rc)
 {
     const char *lp = input;
@@ -390,6 +556,14 @@ static int eval_special_directives(const char *input, int is_test, int *out_rc)
     return -1;
 }
 
+/**
+ * emit_scalar_result - Format and output a scalar evaluation result according to `mcalc_out_mode`
+ * @result:       Evaluated scalar value (`LONG`, `DOUBLE`, or `STRING`)
+ * @is_assign_op: 1 if the statement was an assignment (`x = ...`)
+ * @lhs_name:     Assigned variable name (used in `MCALC_OUT_REPL` mode)
+ *
+ * Return: void
+ */
 static void emit_scalar_result(const mc_val_t *result, int is_assign_op, const char *lhs_name)
 {
     char val_buf[MC_TOK_STR_MAX + 32] = "";
@@ -441,11 +615,24 @@ static void emit_scalar_result(const mc_val_t *result, int is_assign_op, const c
     }
 }
 
+/**
+ * emit_image_result - Format and output an image evaluation result according to `mcalc_out_mode`
+ * @im_id:     Resulting `imageID` in `milk_data.image[]`
+ * @is_assign: 1 if the statement assigned to a named image
+ * @is_multi:  1 if the statement unpacked into multiple LHS targets
+ * @lhs_name:  Assigned target name for REPL summary output
+ *
+ * Return: 0 on success, -1 if pixel formatting fails in `MCALC_OUT_PIXELS` mode
+ */
 static int emit_image_result(imageID im_id, int is_assign, int is_multi, const char *lhs_name)
 {
     if (is_multi || mcalc_out_mode == MCALC_OUT_BIND)
     {
-        (void) (mcalc_out_mode == MCALC_OUT_BIND && (printf("\n"), fflush(stdout), 1));
+        if (mcalc_out_mode == MCALC_OUT_BIND)
+        {
+            printf("\n");
+            fflush(stdout);
+        }
         return 0;
     }
     if (mcalc_out_mode == MCALC_OUT_PIXELS)
@@ -456,25 +643,45 @@ static int emit_image_result(imageID im_id, int is_assign, int is_multi, const c
             snprintf(mcalc_lasterr, sizeof(mcalc_lasterr), "pixel format error");
             return -1;
         }
-        printf("%s\n", pixels), fflush(stdout), free(pixels);
+        printf("%s\n", pixels);
+        fflush(stdout);
+        free(pixels);
         return 0;
     }
     if (mcalc_out_mode == MCALC_OUT_REPL)
     {
         char summary[256] = "";
         mc_format_image_summary(im_id, is_assign ? lhs_name : NULL, summary, sizeof(summary));
-        printf("%s\n", summary), fflush(stdout);
+        printf("%s\n", summary);
+        fflush(stdout);
         return 0;
     }
     if (!is_assign && im_id >= 0 && milk_data.image != NULL && milk_data.image[im_id].used)
     {
         const char *nm = milk_data.image[im_id].name;
-        (void) ((g_calc_out != NULL) ? snprintf(g_calc_out, g_calc_sz, "%s", nm)
-                                     : (printf("%s\n", nm), fflush(stdout), 0));
+        if (g_calc_out != NULL)
+        {
+            snprintf(g_calc_out, g_calc_sz, "%s", nm);
+        }
+        else
+        {
+            printf("%s\n", nm);
+            fflush(stdout);
+        }
     }
     return 0;
 }
 
+/**
+ * expr_has_shadowed_var - Check if any scalar variable in @e is now shadowed by a new image
+ * @e: AST expression node to inspect recursively
+ *
+ * When a cached statement originally resolved an identifier as a scalar variable (`MC_ID_VAR`),
+ * creating an image with the same name in `milk_data.image[]` must invalidate the cached plan so
+ * image semantics take precedence.
+ *
+ * Return: 1 if any `MC_ID_VAR` identifier in @e now matches a live image, 0 otherwise
+ */
 static int expr_has_shadowed_var(const mc_expr_t *e)
 {
     int r = (e != NULL) &&
@@ -494,6 +701,13 @@ static int expr_has_shadowed_var(const mc_expr_t *e)
     return r || (e && e->kind == MC_EXPR_CALL && expr_has_shadowed_var(e->u.call.udef_body));
 }
 
+/**
+ * validate_cached_prog - Verify that a cached `mcalc_prog_t` is still valid against current tables
+ * @p:        Cached program to validate
+ * @same_gen: 1 if `milk_table_generation()` has not changed since the program was last run
+ *
+ * Return: 1 if valid and ready to run, 0 if invalidated and must be re-compiled
+ */
 static int validate_cached_prog(mcalc_prog_t *p, int same_gen)
 {
     for (const mc_stmt_t *st = same_gen ? NULL : p->ast_head; st != NULL; st = st->next)
@@ -506,6 +720,16 @@ static int validate_cached_prog(mcalc_prog_t *p, int same_gen)
     return mc_prog_slots_valid(p, same_gen);
 }
 
+/**
+ * try_stmt_cache_hit - Look up and execute @input from the 64-entry LRU statement cache
+ * @input:   Source statement string
+ * @in_hash: Precomputed FNV-1a hash of @input
+ * @in_len:  Byte length of @input
+ * @out_rc:  Optional output exit code (`0` on success)
+ *
+ * Return: 1 if a valid cache entry was found and executed successfully, -1 if found but runtime
+ *         execution failed, or 0 on cache miss / invalidated entry
+ */
 static int try_stmt_cache_hit(const char *input, uint64_t in_hash, size_t in_len, int *out_rc)
 {
     int ucnt = mcalc_udef_count();
@@ -521,7 +745,8 @@ static int try_stmt_cache_hit(const char *input, uint64_t in_hash, size_t in_len
         if ((!e->is_im_stmt && !same_gen) || !validate_cached_prog(e->prog, same_gen))
         {
             mcalc_prog_free(e->prog);
-            e->prog = NULL, e->len = 0;
+            e->prog = NULL;
+            e->len  = 0;
             return 0;
         }
         char err[256] = "";
@@ -543,19 +768,38 @@ static int try_stmt_cache_hit(const char *input, uint64_t in_hash, size_t in_len
         {
             if (mcalc_out_mode == MCALC_OUT_BIND)
             {
-                printf("\n"), fflush(stdout);
+                printf("\n");
+                fflush(stdout);
             }
         }
         else
         {
             emit_scalar_result(&e->prog->last_scalar, e->is_assign, e->lhs_name);
         }
-        (void) (out_rc != NULL && (*out_rc = 0, 1));
+        if (out_rc != NULL)
+        {
+            *out_rc = 0;
+        }
         return 1;
     }
     return 0;
 }
 
+/**
+ * store_stmt_cache - Insert a newly compiled `mcalc_prog_t` into the 64-entry LRU cache
+ * @input:      Statement source string
+ * @in_hash:    FNV-1a hash of @input
+ * @in_len:     Byte length of @input
+ * @is_im_stmt: 1 if the statement produces an image
+ * @is_assign:  1 if the statement is an assignment
+ * @is_multi:   1 if the statement is a multi-LHS assignment
+ * @lhs_name:   Target identifier name
+ * @prog:       Compiled program (ownership transferred to the cache or freed if too long)
+ *
+ * Evicts the least-recently-used slot when all 64 slots are occupied.
+ *
+ * Return: void
+ */
 static void store_stmt_cache(const char   *input,
                              uint64_t      in_hash,
                              size_t        in_len,
@@ -586,13 +830,39 @@ static void store_stmt_cache(const char   *input,
     mc_stmt_cache_t *e = &g_stmt_cache[victim];
     mcalc_prog_free(e->prog);
     memcpy(e->text, input, in_len + 1);
-    e->hash = in_hash, e->len = in_len, e->udef_cnt = mcalc_udef_count();
-    e->table_gen = milk_table_generation(), e->lru_tick = ++g_stmt_lru_clock;
-    e->is_im_stmt = is_im_stmt, e->is_assign = is_assign, e->is_multi = is_multi;
+    e->hash       = in_hash;
+    e->len        = in_len;
+    e->udef_cnt   = mcalc_udef_count();
+    e->table_gen  = milk_table_generation();
+    e->lru_tick   = ++g_stmt_lru_clock;
+    e->is_im_stmt = is_im_stmt;
+    e->is_assign  = is_assign;
+    e->is_multi   = is_multi;
     snprintf(e->lhs_name, sizeof(e->lhs_name), "%s", lhs_name != NULL ? lhs_name : "");
     e->prog = prog;
 }
 
+/* ============================================================================================== */
+/* Top-Level Evaluator Entry Points                                                               */
+/* ============================================================================================== */
+
+/**
+ * eval_bash_inner - Core implementation of single-statement and directive evaluation
+ * @input:   Input expression or statement string
+ * @is_test: 1 when evaluating a boolean condition (`@test`), 0 for normal evaluation
+ * @out_rc:  Output pointer receiving shell-style exit status (`0` true/ok, `1` false, `2` error)
+ *
+ * Execution pipeline:
+ *   1. Auto-loads any extension libraries listed in `MILK_CALC_LIBS`.
+ *   2. Checks special directives (`loadlib`, `listengines`, `def`, `if`, `for`).
+ *   3. Probes the 64-entry LRU statement cache (`try_stmt_cache_hit`).
+ *   4. Lexes, parses, and resolves a single statement (`mc_parse_stmt`, `mc_resolve_stmt`).
+ *   5. Routes image-producing or image-consuming statements through `mcalc_prog_new` /
+ *      `mcalc_prog_run` (caching the resulting program), and pure scalar statements directly
+ *      through `mc_scalar_exec_stmt`.
+ *
+ * Return: 1 if evaluation succeeded without syntax/runtime error, 0 on error
+ */
 static int eval_bash_inner(const char *input, int is_test, int *out_rc)
 {
     mcalc_test_image = 0;
@@ -677,7 +947,8 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
         return 0;
     }
 
-    int  is_assign = (s->kind == MC_STMT_MULTI_ASSIGN), is_multi = is_assign;
+    int  is_assign     = (s->kind == MC_STMT_MULTI_ASSIGN);
+    int  is_multi      = is_assign;
     char lhs_name[256] = "";
     if (s->kind == MC_STMT_EXPR && s->u.expr != NULL && s->u.expr->kind == MC_EXPR_ASSIGN)
     {
@@ -698,8 +969,10 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
             strcmp(fnm, "scal") == 0)
         {
             is_assign = 1;
-            (void) (last->kind == MC_EXPR_IDENT &&
-                    snprintf(lhs_name, sizeof(lhs_name), "%s", last->u.ident.bare));
+            if (last->kind == MC_EXPR_IDENT)
+            {
+                snprintf(lhs_name, sizeof(lhs_name), "%s", last->u.ident.bare);
+            }
         }
     }
 
@@ -737,7 +1010,10 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
             {
                 return 0;
             }
-            (void) (out_rc != NULL && (*out_rc = 0, 1));
+            if (out_rc != NULL)
+            {
+                *out_rc = 0;
+            }
             return 1;
         }
         mc_stmt_free(s);
@@ -762,14 +1038,18 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
         {
             if (mcalc_out_mode == MCALC_OUT_BIND)
             {
-                printf("\n"), fflush(stdout);
+                printf("\n");
+                fflush(stdout);
             }
         }
         else
         {
             emit_scalar_result(&res_val, is_assign, lhs_name);
         }
-        (void) (out_rc != NULL && (*out_rc = 0, 1));
+        if (out_rc != NULL)
+        {
+            *out_rc = 0;
+        }
         return 1;
     }
 
@@ -790,13 +1070,20 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
                          : (result.type == MC_VAL_STRING && result.sval[0] != '\0' &&
                             strcmp(result.sval, "0") != 0);
         mc_stmt_free(s);
-        (void) (out_rc != NULL && (*out_rc = truthy ? 0 : 1, 1));
+        if (out_rc != NULL)
+        {
+            *out_rc = truthy ? 0 : 1;
+        }
         return 1;
     }
 
     if (s->kind == MC_STMT_MULTI_ASSIGN)
     {
-        (void) (mcalc_out_mode == MCALC_OUT_BIND && (printf("\n"), fflush(stdout), 1));
+        if (mcalc_out_mode == MCALC_OUT_BIND)
+        {
+            printf("\n");
+            fflush(stdout);
+        }
     }
     else
     {
@@ -804,10 +1091,24 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
     }
 
     mc_stmt_free(s);
-    (void) (out_rc != NULL && (*out_rc = 0, 1));
+    if (out_rc != NULL)
+    {
+        *out_rc = 0;
+    }
     return 1;
 }
 
+/**
+ * mcalc_eval_bash - Evaluate a calculator statement with host variable synchronization
+ * @input:   Expression or statement string to evaluate
+ * @is_test: 1 for boolean condition testing (`@test`), 0 for normal evaluation
+ * @out_rc:  Optional pointer receiving exit status (`0` success/true, `1` false, `2` error)
+ *
+ * Brackets `eval_bash_inner()` with `mc_scalar_sync_host(1)` and `mc_scalar_sync_host(-1)` so
+ * scalar reads/writes stay synchronized with the host environment (`bash` or `milk-script`).
+ *
+ * Return: 1 on success, 0 on syntax or evaluation error
+ */
 int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
 {
     mc_scalar_sync_host(1);
@@ -816,18 +1117,47 @@ int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
     return r;
 }
 
+/**
+ * mcalc_eval_str - Evaluate a calculator statement and capture its formatted output into @out
+ * @input:   Expression or statement string to evaluate
+ * @is_test: 1 for boolean condition testing, 0 for normal evaluation
+ * @out_rc:  Optional pointer receiving exit status
+ * @out:     Destination buffer receiving formatted value or image name
+ * @outsz:   Capacity of @out in bytes
+ *
+ * Temporarily switches `mcalc_out_mode` to `MCALC_OUT_VALUES` and redirects output to @out
+ * without printing to `stdout`.
+ *
+ * Return: 1 on success, 0 on error
+ */
 int mcalc_eval_str(const char *input, int is_test, int *out_rc, char *out, size_t outsz)
 {
-    (void) (out != NULL && outsz > 0 && (out[0] = '\0', 1));
+    if (out != NULL && outsz > 0)
+    {
+        out[0] = '\0';
+    }
     int saved_mode = mcalc_out_mode;
     mcalc_out_mode = MCALC_OUT_VALUES;
-    g_calc_out = out, g_calc_sz = outsz;
-    int r      = mcalc_eval_bash(input, is_test, out_rc);
-    g_calc_out = NULL, g_calc_sz = 0;
+    g_calc_out     = out;
+    g_calc_sz      = outsz;
+    int r          = mcalc_eval_bash(input, is_test, out_rc);
+    g_calc_out     = NULL;
+    g_calc_sz      = 0;
     mcalc_out_mode = saved_mode;
     return r;
 }
 
+/**
+ * mcalc_eval_math_to_val - Evaluate a pure scalar mathematical expression to numeric C values
+ * @input:    Arithmetic expression string (assignments and image expressions are rejected)
+ * @out_type: Optional output type indicator (`1` for `long`, `2` for `double`)
+ * @out_lval: Optional output pointer receiving integer value
+ * @out_dval: Optional output pointer receiving double value
+ *
+ * Used by `CLIcore` argument parsing to evaluate numeric expressions in command arguments.
+ *
+ * Return: 1 if @input evaluated to a numeric scalar, 0 otherwise
+ */
 int mcalc_eval_math_to_val(const char *input, int *out_type, long *out_lval, double *out_dval)
 {
     if (input == NULL)
@@ -854,8 +1184,17 @@ int mcalc_eval_math_to_val(const char *input, int *out_type, long *out_lval, dou
     int    is_l = (v.type == MC_VAL_LONG);
     double dv   = is_l ? (double) v.lval : v.dval;
     long   lv   = is_l ? v.lval : (long) v.dval;
-    (void) (out_type != NULL && (*out_type = is_l ? 1 : 2));
-    (void) (out_lval != NULL && (*out_lval = lv, 1));
-    (void) (out_dval != NULL && (*out_dval = dv, 1));
+    if (out_type != NULL)
+    {
+        *out_type = is_l ? 1 : 2;
+    }
+    if (out_lval != NULL)
+    {
+        *out_lval = lv;
+    }
+    if (out_dval != NULL)
+    {
+        *out_dval = dv;
+    }
     return 1;
 }

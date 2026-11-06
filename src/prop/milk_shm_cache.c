@@ -4,7 +4,29 @@
 
 /**
  * @file milk_shm_cache.c
- * @brief Cache of mapped shared-memory streams and FPS (see milk_shm_cache.h).
+ * @brief Process-wide LRU cache of mapped ImageStreamIO streams and FPS shared-memory segments
+ *        for `libmilkprop`.
+ *
+ * This module maintains a thread-safe, process-wide cache of open ImageStreamIO streams
+ * (`SHM_CACHE_NSTREAM = 64` slots) and Function Parameter Structure (FPS) segments
+ * (`SHM_CACHE_NFPS = 16` slots) used by `libmilkprop` property queries, `@waitfor` blocking
+ * waits, and `milk-script` / `milk.calc` runtime lookups:
+ *
+ * - **Inode-validated caching**: Every lookup `stat()`s the backing `/dev/shm/<name>.im.shm` or
+ *   `<name>.fps.shm` file and compares `st_ino` against the cached inode (`ent_hdr_t.ino`). If a
+ *   stream or FPS was recreated or deleted by an external process, the stale mapping is
+ *   transparently closed (or detached until unpinned) and remapped.
+ * - **Pinning and LRU eviction**: Long-lived operations (such as `@waitfor` semaphore waits) pin
+ *   stream entries via `milk_shm_cache_pin_stream()` so that concurrent cache lookups never
+ *   evict an actively awaited `IMAGE` struct. Unpinned slots are evicted in least-recently-used
+ *   (LRU) order tracked by a monotonic `g_tick` counter.
+ * - **Lock-free semaphore slot ownership**: `milk_shm_sem_claim()` and `milk_shm_sem_release()`
+ *   claim and release reader slots in `im->semReadPID[]` using atomic compare-and-exchange
+ *   operations, reclaiming slots left behind by dead processes (`getpgid(cur) < 0`) while
+ *   ensuring two concurrent waiters in the same process never share a semaphore slot.
+ * - **Fork and exit hygiene**: Registers `pthread_atfork()` handlers so child processes spawned
+ *   by `--async` or `@replay` reinitialize `g_cache_lock` cleanly, and an `atexit()` handler
+ *   (`shm_cache_atexit()`) to release any owned reader semaphore slots on process termination.
  */
 
 #include <pthread.h>
@@ -23,23 +45,48 @@
 #define SHM_CACHE_NSTREAM 64
 #define SHM_CACHE_NFPS 16
 
+/* ============================================================================
+ * Cache Data Structures and Process-Wide State
+ * ============================================================================ */
+
+/**
+ * struct ent_hdr_t - Common metadata header for stream and FPS cache entries
+ * @used:   Non-zero when this slot holds an active shared-memory mapping
+ * @pinned: Active reference/pin count preventing LRU eviction (0 when unpinned)
+ * @path:   Full filesystem path of the mapped `.im.shm` or `.fps.shm` file
+ *          (set to `""` when detached after a recreation while still pinned)
+ * @ino:    Filesystem inode (`st_ino`) of the backing file at the time it was mapped
+ * @tick:   Monotonic access timestamp (`g_tick`) used for LRU replacement
+ */
 typedef struct
 {
     int           used;
-    int           pinned;                                                    /* active pin count */
-    char          path[STRINGMAXLEN_DIRNAME + STRINGMAXLEN_IMAGE_NAME + 16]; /* backing file */
-    ino_t         ino;                                                       /* inode we mapped */
-    unsigned long tick;                                                      /* last use (LRU) */
+    int           pinned;
+    char          path[STRINGMAXLEN_DIRNAME + STRINGMAXLEN_IMAGE_NAME + 16];
+    ino_t         ino;
+    unsigned long tick;
 } ent_hdr_t;
 
+/**
+ * struct stream_ent_t - Cache slot for a mapped ImageStreamIO shared-memory stream
+ * @h:        Common cache entry header (must be the first member for `pick_slot()`)
+ * @semindex: Cached reader semaphore slot index in `im.semReadPID[]` (-1 if none)
+ * @sem_pid:  Process ID (`getpid()`) that claimed @semindex
+ * @im:       Mapped ImageStreamIO `IMAGE` structure
+ */
 typedef struct
 {
     ent_hdr_t h;
-    int       semindex; /* cached semaphore slot (-1 if none) */
-    pid_t     sem_pid;  /* PID that claimed semindex */
+    int       semindex;
+    pid_t     sem_pid;
     IMAGE     im;
 } stream_ent_t;
 
+/**
+ * struct fps_ent_t - Cache slot for a connected Function Parameter Structure (FPS)
+ * @h:   Common cache entry header (must be the first member for `pick_slot()`)
+ * @fps: Connected `FPS` handle
+ */
 typedef struct
 {
     ent_hdr_t h;
@@ -51,13 +98,37 @@ static stream_ent_t    g_stream[SHM_CACHE_NSTREAM];
 static fps_ent_t       g_fps[SHM_CACHE_NFPS];
 static unsigned long   g_tick              = 0;
 static int             g_atexit_registered = 0;
-static __thread int    g_cache_full        = 0; /* the last lookup found every stream slot pinned */
 
+/* Thread-local flag set when the last stream lookup found all 64 slots pinned */
+static __thread int g_cache_full = 0;
+
+/* ============================================================================
+ * Semaphore Slot Claim / Release and Cache Status
+ * ============================================================================ */
+
+/**
+ * milk_shm_cache_full - Query whether the calling thread's last stream lookup exhausted the cache
+ *
+ * Return: 1 if the most recent stream lookup on this thread failed because all
+ *         `SHM_CACHE_NSTREAM` (64) slots were pinned, 0 otherwise
+ */
 int milk_shm_cache_full(void)
 {
     return g_cache_full;
 }
 
+/**
+ * milk_shm_sem_claim - Atomically claim a free reader semaphore slot on stream @im
+ * @im: Mapped ImageStreamIO `IMAGE` whose `semReadPID` array will be scanned
+ *
+ * Scans `im->semReadPID[0 .. im->md->sem - 1]` for an unclaimed slot (`0`) or a
+ * slot owned by a dead process (`getpgid(cur) < 0`), skipping any slot already
+ * owned by this process (`cur == getpid()`) so that concurrent waiters within
+ * the same process never contend on the same semaphore. Claims the slot via
+ * `__atomic_compare_exchange_n()`.
+ *
+ * Return: Claimed semaphore index (`0 .. im->md->sem - 1`), or -1 if none available
+ */
 int milk_shm_sem_claim(IMAGE *im)
 {
     if (im == NULL || im->md == NULL || im->semReadPID == NULL)
@@ -68,7 +139,8 @@ int milk_shm_sem_claim(IMAGE *im)
     for (int i = 0; i < im->md->sem; i++)
     {
         pid_t cur = __atomic_load_n(&im->semReadPID[i], __ATOMIC_ACQUIRE);
-        if (cur == me || (cur != 0 && getpgid(cur) >= 0)) /* ours already, or a live reader's */
+        /* Skip slots already owned by this process or by another live reader process */
+        if (cur == me || (cur != 0 && getpgid(cur) >= 0))
         {
             continue;
         }
@@ -81,6 +153,16 @@ int milk_shm_sem_claim(IMAGE *im)
     return -1;
 }
 
+/**
+ * milk_shm_sem_release - Atomically release reader semaphore @slot on stream @im
+ * @im:   Mapped ImageStreamIO `IMAGE`
+ * @slot: Semaphore index previously obtained from `milk_shm_sem_claim()`
+ *
+ * Clears `im->semReadPID[slot]` back to `0` only if it is still owned by the
+ * calling process (`getpid()`).
+ *
+ * Return: void
+ */
 void milk_shm_sem_release(IMAGE *im, int slot)
 {
     if (im == NULL || im->md == NULL || im->semReadPID == NULL || slot < 0 || slot >= im->md->sem)
@@ -92,7 +174,14 @@ void milk_shm_sem_release(IMAGE *im, int slot)
                                 __ATOMIC_ACQUIRE);
 }
 
-/** release_stream_sem() - release the cached semaphore slot on @e if owned by this process. */
+/**
+ * release_stream_sem - Release the cached semaphore slot on stream entry @e if owned by us
+ * @e: Stream cache entry whose cached semaphore slot should be released
+ *
+ * Context: Caller must hold `g_cache_lock`.
+ *
+ * Return: void
+ */
 static void release_stream_sem(stream_ent_t *e)
 {
     pid_t me = getpid();
@@ -105,24 +194,52 @@ static void release_stream_sem(stream_ent_t *e)
     e->sem_pid  = 0;
 }
 
-/** cache_fork_prepare() / cache_fork_parent() / cache_fork_child() - keep g_cache_lock usable across a
- * fork(): a server child (`--async`, `@replay`) must not inherit it locked by a thread it does not have. */
+/* ============================================================================
+ * Fork Safety, Exit Cleanup, and LRU Slot Selection
+ * ============================================================================ */
+
+/**
+ * cache_fork_prepare - `pthread_atfork` prepare handler acquiring `g_cache_lock` before `fork()`
+ *
+ * Ensures that no other thread is midway through mutating the cache when a child
+ * process is forked (e.g. for `--async` or `@replay`).
+ *
+ * Return: void
+ */
 static void cache_fork_prepare(void)
 {
     pthread_mutex_lock(&g_cache_lock);
 }
 
+/**
+ * cache_fork_parent - `pthread_atfork` parent handler releasing `g_cache_lock` after `fork()`
+ *
+ * Return: void
+ */
 static void cache_fork_parent(void)
 {
     pthread_mutex_unlock(&g_cache_lock);
 }
 
+/**
+ * cache_fork_child - `pthread_atfork` child handler reinitializing `g_cache_lock` in the child
+ *
+ * Return: void
+ */
 static void cache_fork_child(void)
 {
     pthread_mutex_init(&g_cache_lock, NULL);
 }
 
-/** shm_cache_atexit() - release any semaphore slots held by this process on exit. */
+/**
+ * shm_cache_atexit - `atexit()` handler releasing all semaphore slots held by this process
+ *
+ * Iterates over all active stream cache entries under `g_cache_lock` and clears
+ * any `semReadPID` entries owned by this process so readers do not leak scarce
+ * semaphore slots after process exit.
+ *
+ * Return: void
+ */
 static void shm_cache_atexit(void)
 {
     pthread_mutex_lock(&g_cache_lock);
@@ -136,7 +253,16 @@ static void shm_cache_atexit(void)
     pthread_mutex_unlock(&g_cache_lock);
 }
 
-/** pick_slot() - index of a free slot, else of the least recently used unpinned one (-1 if all pinned). */
+/**
+ * pick_slot - Select a free cache slot or the least-recently-used unpinned slot
+ * @first:  Pointer to the `ent_hdr_t` header of element 0 in the cache array
+ * @n:      Total number of slots in the cache array
+ * @stride: Byte stride (`sizeof(stream_ent_t)` or `sizeof(fps_ent_t)`) between entries
+ *
+ * Context: Caller must hold `g_cache_lock`.
+ *
+ * Return: Slot index in `[0, n - 1]`, or -1 if every slot in the table is currently pinned
+ */
 static int pick_slot(const ent_hdr_t *first, int n, size_t stride)
 {
     int           best  = -1;
@@ -157,7 +283,28 @@ static int pick_slot(const ent_hdr_t *first, int n, size_t stride)
     return best;
 }
 
-/** lookup_or_open_stream_locked() - find or map stream @name under g_cache_lock. */
+/* ============================================================================
+ * Stream and FPS Cache Lookup / Pinning API
+ * ============================================================================ */
+
+/**
+ * lookup_or_open_stream_locked - Find a valid cached stream or map `@name` from `/dev/shm`
+ * @name: Bare stream name (without directory prefix or `.im.shm` suffix)
+ *
+ * Checks whether `@name` is already mapped in `g_stream[]` with a matching inode.
+ * If the backing file was recreated (`st_ino` changed) or removed:
+ * - Unpinned stale entries are closed immediately.
+ * - Pinned stale entries have `h.path` cleared (`""`) so they are ignored by
+ *   subsequent lookups and closed when the last pin is released.
+ *
+ * If no valid cached mapping is found and the `.im.shm` file exists, evicts an
+ * unpinned LRU slot via `pick_slot()` and maps the stream with
+ * `ImageStreamIO_openIm()`.
+ *
+ * Context: Caller must hold `g_cache_lock`.
+ *
+ * Return: Pointer to the valid `stream_ent_t`, or NULL if missing or cache is full
+ */
 static stream_ent_t *lookup_or_open_stream_locked(const char *name)
 {
     g_cache_full = 0;
@@ -194,7 +341,8 @@ static stream_ent_t *lookup_or_open_stream_locked(const char *name)
                 continue;
             }
             release_stream_sem(e);
-            ImageStreamIO_closeIm(&e->im); /* re-created or removed */
+            /* Stream was recreated or removed on disk; close stale mapping */
+            ImageStreamIO_closeIm(&e->im);
             e->h.used = 0;
             break;
         }
@@ -232,6 +380,15 @@ static stream_ent_t *lookup_or_open_stream_locked(const char *name)
     return e;
 }
 
+/**
+ * milk_shm_cache_stream - Look up or map shared-memory stream @name without pinning
+ * @name: Bare stream name
+ *
+ * Suitable for short-lived metadata/pixel reads that complete before another
+ * 64 distinct streams are opened.
+ *
+ * Return: Pointer to the cached `IMAGE`, or NULL if the stream does not exist
+ */
 IMAGE *milk_shm_cache_stream(const char *name)
 {
     pthread_mutex_lock(&g_cache_lock);
@@ -241,6 +398,20 @@ IMAGE *milk_shm_cache_stream(const char *name)
     return im;
 }
 
+/**
+ * milk_shm_cache_pin_stream - Map stream @name, increment its pin count, and claim a semaphore
+ * @name:         Bare stream name
+ * @req_sem:      Explicit semaphore index to use (`>= 0`), or `-1` to auto-claim a slot
+ * @out_semindex: Optional output receiving the resolved/claimed semaphore slot index
+ *
+ * Prevents the stream's cache entry from being evicted across blocking waits.
+ * When `@req_sem < 0`, the first pinner caches its claimed semaphore index in
+ * `e->semindex`; any concurrent additional pinner on the same stream claims a
+ * distinct semaphore slot via `milk_shm_sem_claim()` so two waiters never steal
+ * posts from each other.
+ *
+ * Return: Pointer to the pinned `IMAGE`, or NULL if not found or all cache slots are pinned
+ */
 IMAGE *milk_shm_cache_pin_stream(const char *name, int req_sem, int *out_semindex)
 {
     pthread_mutex_lock(&g_cache_lock);
@@ -269,8 +440,8 @@ IMAGE *milk_shm_cache_pin_stream(const char *name, int req_sem, int *out_seminde
         }
         else
         {
-            semindex =
-                milk_shm_sem_claim(&e->im); /* a second waiter never shares the first's slot */
+            /* A second concurrent waiter never shares the first waiter's semaphore slot */
+            semindex = milk_shm_sem_claim(&e->im);
         }
     }
     if (out_semindex != NULL)
@@ -282,6 +453,20 @@ IMAGE *milk_shm_cache_pin_stream(const char *name, int req_sem, int *out_seminde
     return im;
 }
 
+/**
+ * milk_shm_cache_unpin_stream - Decrement the pin count on @im and release its semaphore slot
+ * @im:       Pinned `IMAGE` pointer previously returned by `milk_shm_cache_pin_stream()`
+ * @req_sem:  The `@req_sem` argument originally passed to `milk_shm_cache_pin_stream()`
+ * @semindex: The semaphore index returned in `@out_semindex` by `milk_shm_cache_pin_stream()`
+ *
+ * Releases any secondary auto-claimed semaphore slot immediately, and when the
+ * pin count reaches 0, releases the primary semaphore slot back to the stream so
+ * idle processes do not hold scarce reader semaphore slots. If the entry was
+ * detached (`h.path[0] == '\0'`) while pinned because the backing file was
+ * recreated, closes the stale mapping when the last pin drops.
+ *
+ * Return: void
+ */
 void milk_shm_cache_unpin_stream(IMAGE *im, int req_sem, int semindex)
 {
     if (im == NULL)
@@ -306,8 +491,10 @@ void milk_shm_cache_unpin_stream(IMAGE *im, int req_sem, int semindex)
             }
             if (e->h.pinned == 0)
             {
-                /* the mapping stays; the semaphore slot goes back so idle shells do not hold the
-                 * stream's few slots (a C reader needs one; a waiter re-acquires in a 10-entry scan) */
+                /*
+                 * Keep the shared-memory mapping cached, but return the semaphore slot
+                 * so idle shells do not hold the stream's few reader slots.
+                 */
                 release_stream_sem(e);
                 if (e->h.path[0] == '\0')
                 {
@@ -321,6 +508,16 @@ void milk_shm_cache_unpin_stream(IMAGE *im, int req_sem, int semindex)
     pthread_mutex_unlock(&g_cache_lock);
 }
 
+/**
+ * milk_shm_cache_fps - Look up or connect to Function Parameter Structure (FPS) @name
+ * @name: Bare FPS name (without directory prefix or `.fps.shm` suffix)
+ *
+ * Checks `g_fps[]` under `g_cache_lock` for a cached connection whose backing
+ * `.fps.shm` file still exists with the same inode (`st_ino`). Reconnects or
+ * evicts the least-recently-used slot via `pick_slot()` when needed.
+ *
+ * Return: Pointer to the cached `FPS` structure, or NULL if `@name` does not exist
+ */
 FPS *milk_shm_cache_fps(const char *name)
 {
     if (name == NULL || name[0] == '\0')

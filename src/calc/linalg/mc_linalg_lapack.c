@@ -2,6 +2,33 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_linalg_lapack.c
+ * @brief LAPACK-level linear solvers, matrix inverses, SVD, and symmetric eigendecomposition
+ *        for `libmilkcalc`.
+ *
+ * This module implements the higher-level matrix decompositions and linear system solvers for
+ * the `milk.calc` expression engine (`libmilkcalc`):
+ *
+ * - **Triangular solvers (`trsv`, `trsm`)**: solves `op(A) * x = b` or `op(A) * X = alpha * B`
+ *   (and right-sided `X * op(A) = alpha * B`) using `cblas_dtrsv()` / `cblas_dtrsm()` when
+ *   compiled with BLAS, or an internal forward/backward substitution fallback
+ *   (`solve_tri_col_d()`).
+ * - **Linear system solvers (`gesv`, `posv`, `gels`, `solve`)**: dispatches square LU
+ *   (`LAPACKE_dgesv`), Cholesky (`LAPACKE_dposv`), and QR/LQ least-squares (`LAPACKE_dgels`)
+ *   solvers, with an automatic SVD-based minimum-norm solver fallback when compiled without
+ *   LAPACKE. Also supports Tikhonov-regularized solving (`solve(A, B, lambda)`), forming the
+ *   smaller normal system (`(A^T A + lambda I) X = A^T B` when `M >= N`, or dual
+ *   `(A A^T + lambda I) Y = B, X = A^T Y` when `M < N`) and solving via Cholesky.
+ * - **Matrix inverse and Moore-Penrose pseudoinverse (`inv`, `pinv`)**: computes exact square
+ *   inverses via `gesv(A, I)` and SVD-truncated pseudoinverses `V * diag(1/s_i) * U^T` with
+ *   user-supplied or default machine-epsilon `rcond` cutoff.
+ * - **Singular value and symmetric eigenvalue decompositions (`svd`, `eigh`)**: supports both
+ *   single-LHS value-only calls (`S = svd(A)`, `w = eigh(C)`) and multi-LHS factorizations
+ *   (`U, S, Vt = svd(A)`, `w, V = eigh(C)`) via `LAPACKE_dgesdd` / `LAPACKE_dsyevd` with
+ *   self-contained one-sided and two-sided Jacobi rotation fallbacks.
+ */
+
 // MILK_CMAKE_REQUEST_BLAS
 // MILK_CMAKE_REQUEST_LAPACKE
 
@@ -21,6 +48,21 @@
 #include "COREMOD_memory/image_ID.h"
 #include "linalg/mc_linalg.h"
 
+/* ============================================================================
+ * Error Reporting and Matrix Buffer Utilities
+ * ============================================================================ */
+
+/**
+ * lap_err - Format a diagnostic message into @err (if still empty) and return -1
+ * @err:   Destination error buffer (may be NULL)
+ * @errsz: Capacity of @err in bytes
+ * @fmt:   printf-style format string
+ *
+ * Preserves the first error recorded during execution by only writing into @err
+ * when `err[0] == '\0'`.
+ *
+ * Return: Always -1
+ */
 __attribute__((format(printf, 3, 4))) static int lap_err(char       *err,
                                                          size_t      errsz,
                                                          const char *fmt,
@@ -29,11 +71,21 @@ __attribute__((format(printf, 3, 4))) static int lap_err(char       *err,
     if (err != NULL && errsz > 0 && err[0] == '\0')
     {
         va_list ap;
-        va_start(ap, fmt), vsnprintf(err, errsz, fmt, ap), va_end(ap);
+        va_start(ap, fmt);
+        vsnprintf(err, errsz, fmt, ap);
+        va_end(ap);
     }
     return -1;
 }
 
+/**
+ * unwrap_trans - Follow user-function parameter bindings and strip an outer `transpose(X)`
+ * @e:         Operand expression to inspect
+ * @call_site: Enclosing user-defined function call site for parameter substitution (or NULL)
+ * @out_trans: Output flag set to 1 if an outer `transpose(...)` wrapper was stripped, else 0
+ *
+ * Return: Underlying operand expression inside `transpose(...)`, or @e (after param resolution)
+ */
 static const mc_expr_t *unwrap_trans(const mc_expr_t *e, const mc_expr_t *call_site, int *out_trans)
 {
     *out_trans = 0;
@@ -52,6 +104,19 @@ static const mc_expr_t *unwrap_trans(const mc_expr_t *e, const mc_expr_t *call_s
     return e;
 }
 
+/**
+ * eval_flag_char - Evaluate a string argument and extract a 1-character uppercase LAPACK option
+ * @e:         Expression node expected to evaluate to a single-character option string
+ * @call_site: Enclosing user-defined function call site (or NULL)
+ * @c1:        First allowed uppercase option character (e.g. `'U'`, `'N'`, `'L'`)
+ * @c2:        Second allowed uppercase option character (e.g. `'L'`, `'U'`, `'R'`)
+ * @fn:        Calling function name for diagnostic messages
+ * @out_c:     Output uppercase option character (`@c1` or `@c2`)
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Return: 0 on success, -1 if @e is not a string matching @c1 or @c2 (case-insensitive)
+ */
 static int eval_flag_char(const mc_expr_t *e,
                           const mc_expr_t *call_site,
                           char             c1,
@@ -70,11 +135,23 @@ static int eval_flag_char(const mc_expr_t *e,
         return lap_err(err, errsz, "%s: expected string flag \"%c\" or \"%c\"", fn, c1, c2);
     }
     char c = (char) toupper((unsigned char) v.sval[0]);
-    return (c != c1 && c != c2)
-               ? lap_err(err, errsz, "%s: flag must be \"%c\" or \"%c\"", fn, c1, c2)
-               : (*out_c = c, 0);
+    if (c != c1 && c != c2)
+    {
+        return lap_err(err, errsz, "%s: flag must be \"%c\" or \"%c\"", fn, c1, c2);
+    }
+    *out_c = c;
+    return 0;
 }
 
+/**
+ * mat_dims_2d - Compute the effective 2D matrix dimensions `(M, N)` of an image
+ * @im:    Input image (1D vector, 2D matrix, or 3D cube treated as `(nx*ny) x nz`)
+ * @trans: Non-zero if the logical matrix is transposed (`M` and `N` swapped)
+ * @M:     Output row count (axis 0 in column-major convention)
+ * @N:     Output column count (axis 1 in column-major convention)
+ *
+ * Return: void
+ */
 static void mat_dims_2d(const IMAGE *im, int trans, uint64_t *M, uint64_t *N)
 {
     uint64_t r = (im->md[0].naxis == 3)
@@ -83,9 +160,19 @@ static void mat_dims_2d(const IMAGE *im, int trans, uint64_t *M, uint64_t *N)
     uint64_t c = (im->md[0].naxis == 3)   ? im->md[0].size[2]
                  : (im->md[0].naxis == 2) ? im->md[0].size[1]
                                           : 1;
-    *M = trans ? c : r, *N = trans ? r : c;
+    *M         = trans ? c : r;
+    *N         = trans ? r : c;
 }
 
+/**
+ * alloc_mat_d - Allocate and populate a column-major `double` matrix buffer from @im
+ * @im:    Source image of any real numeric datatype
+ * @trans: If non-zero, transpose elements while copying into the `M x N` buffer
+ * @M:     Row count of the returned column-major buffer
+ * @N:     Column count of the returned column-major buffer
+ *
+ * Return: Heap-allocated `double` array of `M * N` elements, or NULL on allocation failure
+ */
 static double *alloc_mat_d(const IMAGE *im, int trans, uint64_t M, uint64_t N)
 {
     double *buf = malloc(sizeof(double) * (size_t) (M * N > 0 ? M * N : 1));
@@ -100,6 +187,23 @@ static double *alloc_mat_d(const IMAGE *im, int trans, uint64_t M, uint64_t N)
     return buf;
 }
 
+/**
+ * write_mat_slot_d - Prepare destination @slot and copy a `double` buffer into it
+ * @slot:    Destination program slot to prepare and populate
+ * @naxis:   Output image dimensionality (1 or 2)
+ * @sz:      Output dimension sizes `[nx, ny, nz]`
+ * @pref_dt: Preferred output datatype (`_DATATYPE_FLOAT` or `_DATATYPE_DOUBLE`)
+ * @buf:     Source column-major `double` buffer of `sz[0] * sz[1] * sz[2]` elements
+ * @in_unit: Non-zero when executing inside a persistent FPS compute unit
+ * @err:     Error message buffer
+ * @errsz:   Capacity of @err in bytes
+ *
+ * Converts @buf to `float32` if the resolved destination slot datatype is
+ * `_DATATYPE_FLOAT`, or copies directly when `_DATATYPE_DOUBLE`, then posts
+ * the output image semaphores.
+ *
+ * Return: 0 on success, -1 on output preparation failure
+ */
 static int write_mat_slot_d(mc_slot_t     *slot,
                             uint8_t        naxis,
                             const uint32_t sz[3],
@@ -117,15 +221,39 @@ static int write_mat_slot_d(mc_slot_t     *slot,
     }
     IMAGE   *out = &milk_data.image[oid];
     uint64_t nel = (uint64_t) sz[0] * (uint64_t) sz[1] * (uint64_t) sz[2];
-    (void) (out_dt == _DATATYPE_DOUBLE && memcpy(out->array.D, buf, sizeof(double) * (size_t) nel));
-    for (uint64_t i = 0; out_dt != _DATATYPE_DOUBLE && i < nel; i++)
+    if (out_dt == _DATATYPE_DOUBLE)
     {
-        out->array.F[i] = (float) buf[i];
+        memcpy(out->array.D, buf, sizeof(double) * (size_t) nel);
+    }
+    else
+    {
+        for (uint64_t i = 0; i < nel; i++)
+        {
+            out->array.F[i] = (float) buf[i];
+        }
     }
     mc_out_post(oid);
     return 0;
 }
 
+/* ============================================================================
+ * Triangular Solvers (trsv, trsm)
+ * ============================================================================ */
+
+/**
+ * solve_tri_col_d - Plain-C fallback to solve a single triangular column `op(A) * x = b` in place
+ * @N:      Matrix order (number of rows and columns of @A)
+ * @A:      Column-major `N x N` triangular matrix
+ * @transA: Non-zero to solve with `A^T` instead of `A`
+ * @uplo:   `'U'` if @A is upper triangular, `'L'` if lower triangular
+ * @diag:   `'U'` if @A is unit triangular (diagonal assumed 1.0), `'N'` otherwise
+ * @x:      In/out vector of length @N (enters as RHS `b`, exits as solution `x`)
+ *
+ * Performs forward substitution when the effective matrix (accounting for @uplo
+ * and @transA) is lower triangular, or backward substitution when upper triangular.
+ *
+ * Return: 0 on success, -1 if a zero diagonal pivot is encountered when `diag != 'U'`
+ */
 static int solve_tri_col_d(uint64_t N, const double *A, int transA, char uplo, char diag, double *x)
 {
     int eff_upper = (uplo == 'U') ? !transA : transA;
@@ -133,7 +261,8 @@ static int solve_tri_col_d(uint64_t N, const double *A, int transA, char uplo, c
     {
         uint64_t i  = eff_upper ? (N - 1 - step) : step;
         double   s  = x[i];
-        uint64_t lo = eff_upper ? (i + 1) : 0, hi = eff_upper ? N : i;
+        uint64_t lo = eff_upper ? (i + 1) : 0;
+        uint64_t hi = eff_upper ? N : i;
         for (uint64_t j = lo; j < hi; j++)
         {
             s -= (transA ? A[i * N + j] : A[j * N + i]) * x[j];
@@ -147,6 +276,23 @@ static int solve_tri_col_d(uint64_t N, const double *A, int transA, char uplo, c
     return 0;
 }
 
+/**
+ * exec_trsv_or_trsm - Execute `trsv(A, b[, uplo, diag])` or `trsm(A, B[, uplo, diag, alpha, side])`
+ * @slot:      Destination slot to receive the solved vector or matrix
+ * @rhs:       Call expression node for `trsv` or `trsm`
+ * @avoid_id:  Image ID to avoid clobbering when evaluating operand sub-expressions
+ * @call_site: Enclosing user-defined function call site (or NULL)
+ * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Evaluates optional flag arguments (`uplo`: `"U"`/`"L"`, `diag`: `"N"`/`"U"`,
+ * `alpha`, `side`: `"L"`/`"R"`), validates dimensions, and solves the triangular
+ * system via `cblas_dtrsv` / `cblas_dtrsm` (or `solve_tri_col_d()` when built
+ * without BLAS).
+ *
+ * Return: 0 on success, -1 on invalid flags, dimension mismatch, or allocation failure
+ */
 static int exec_trsv_or_trsm(mc_slot_t       *slot,
                              const mc_expr_t *rhs,
                              imageID          avoid_id,
@@ -155,13 +301,16 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
                              char            *err,
                              size_t           errsz)
 {
-    const char      *fn    = rhs->u.call.fn->name;
-    int              is_sm = (strcmp(fn, "trsm") == 0), nargs = rhs->u.call.nargs;
+    const char      *fn     = rhs->u.call.fn->name;
+    int              is_sm  = (strcmp(fn, "trsm") == 0);
+    int              nargs  = rhs->u.call.nargs;
     int              transA = 0, transB = 0;
     const mc_expr_t *eA = unwrap_trans(rhs->u.call.args[0], call_site, &transA);
     const mc_expr_t *eB =
         is_sm ? unwrap_trans(rhs->u.call.args[1], call_site, &transB) : rhs->u.call.args[1];
-    char   uplo = 'U', diag = 'N', side = 'L';
+    char   uplo  = 'U';
+    char   diag  = 'N';
+    char   side  = 'L';
     double alpha = 1.0;
 
     if ((nargs >= 3 &&
@@ -181,10 +330,14 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
     if (mc_resolve_or_eval_im(eA, call_site, avoid_id, in_unit, &idA, &tmpA, err, errsz) != 0 ||
         mc_resolve_or_eval_im(eB, call_site, avoid_id, in_unit, &idB, &tmpB, err, errsz) != 0)
     {
-        (void) (tmpA && (mc_tmp_release(idA), 1));
+        if (tmpA)
+        {
+            mc_tmp_release(idA);
+        }
         return -1;
     }
-    const IMAGE *imA = &milk_data.image[idA], *imB = &milk_data.image[idB];
+    const IMAGE *imA = &milk_data.image[idA];
+    const IMAGE *imB = &milk_data.image[idB];
     if (imA->md[0].naxis != 2 || imA->md[0].size[0] != imA->md[0].size[1])
     {
         rc = lap_err(err, errsz, "%s: A must be a 2D square matrix", fn);
@@ -208,10 +361,12 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
         }
     }
 
-    double *A_d = alloc_mat_d(imA, 0, K, K), *B_d = alloc_mat_d(imB, transB, M, N);
+    double *A_d = alloc_mat_d(imA, 0, K, K);
+    double *B_d = alloc_mat_d(imB, transB, M, N);
     if (A_d == NULL || B_d == NULL)
     {
-        free(A_d), free(B_d);
+        free(A_d);
+        free(B_d);
         rc = lap_err(err, errsz, "%s: out of memory", fn);
         goto done;
     }
@@ -252,14 +407,41 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
         rc = write_mat_slot_d(slot, (!is_sm || (imB->md[0].naxis == 1 && !transB)) ? 1 : 2, out_sz,
                               pref_dt, B_d, in_unit, err, errsz);
     }
-    free(A_d), free(B_d);
+    free(A_d);
+    free(B_d);
 
 done:
-    (void) (tmpA && (mc_tmp_release(idA), 1));
-    (void) (tmpB && (mc_tmp_release(idB), 1));
+    if (tmpA)
+    {
+        mc_tmp_release(idA);
+    }
+    if (tmpB)
+    {
+        mc_tmp_release(idB);
+    }
     return rc;
 }
 
+/* ============================================================================
+ * SVD, Symmetric Eigensolver, and Linear System Kernels
+ * ============================================================================ */
+
+/**
+ * jacobi_svd_d - Compute thin SVD `A = U * diag(S) * Vt` via one-sided Jacobi orthogonalization
+ * @m:      Number of rows of @A
+ * @n:      Number of columns of @A
+ * @A:      Input column-major `m x n` matrix
+ * @U_out:  Optional output column-major `m x min(m, n)` left singular vectors (may be NULL)
+ * @S_out:  Output array of `min(m, n)` singular values sorted in descending order
+ * @Vt_out: Optional output column-major `min(m, n) x n` right singular vectors `V^T` (may be NULL)
+ *
+ * Applies up to 60 sweeps of plane rotations to orthogonalize the columns of
+ * `W = A * V`, then normalizes the orthogonal columns to obtain `S` and `U` and
+ * sorts the singular triplets in descending order of singular value. Used as a
+ * self-contained fallback when LAPACKE is unavailable or fails.
+ *
+ * Return: 0 on success, -1 on memory allocation failure
+ */
 static int jacobi_svd_d(int m, int n, double *A, double *U_out, double *S_out, double *Vt_out)
 {
     int     q = (m < n) ? m : n;
@@ -267,7 +449,8 @@ static int jacobi_svd_d(int m, int n, double *A, double *U_out, double *S_out, d
     double *W = calloc((size_t) (m * n), sizeof(double));
     if (V == NULL || W == NULL)
     {
-        free(V), free(W);
+        free(V);
+        free(W);
         return -1;
     }
     memcpy(W, A, sizeof(double) * (size_t) (m * n));
@@ -275,6 +458,8 @@ static int jacobi_svd_d(int m, int n, double *A, double *U_out, double *S_out, d
     {
         V[i * n + i] = 1.0;
     }
+
+    /* Orthogonalize columns of W = A * V using one-sided Jacobi sweeps */
     for (int sweep = 0; sweep < 60; sweep++)
     {
         double max_off = 0.0;
@@ -285,8 +470,11 @@ static int jacobi_svd_d(int m, int n, double *A, double *U_out, double *S_out, d
                 double app = 0.0, akk = 0.0, apk = 0.0;
                 for (int i = 0; i < m; i++)
                 {
-                    double wp = W[p * m + i], wk = W[k * m + i];
-                    app += wp * wp, akk += wk * wk, apk += wp * wk;
+                    double wp = W[p * m + i];
+                    double wk = W[k * m + i];
+                    app += wp * wp;
+                    akk += wk * wk;
+                    apk += wp * wk;
                 }
                 max_off = (fabs(apk) > max_off) ? fabs(apk) : max_off;
                 if (fabs(apk) <= 1e-14 * sqrt(app * akk))
@@ -296,16 +484,21 @@ static int jacobi_svd_d(int m, int n, double *A, double *U_out, double *S_out, d
                 double tau = (akk - app) / (2.0 * apk);
                 double t   = (tau >= 0.0) ? (1.0 / (tau + hypot(1.0, tau)))
                                           : (-1.0 / (-tau + hypot(1.0, tau)));
-                double c = 1.0 / hypot(1.0, t), s = t * c;
+                double c   = 1.0 / hypot(1.0, t);
+                double s   = t * c;
                 for (int i = 0; i < m; i++)
                 {
-                    double wp = W[p * m + i], wk = W[k * m + i];
-                    W[p * m + i] = c * wp - s * wk, W[k * m + i] = s * wp + c * wk;
+                    double wp    = W[p * m + i];
+                    double wk    = W[k * m + i];
+                    W[p * m + i] = c * wp - s * wk;
+                    W[k * m + i] = s * wp + c * wk;
                 }
                 for (int i = 0; i < n; i++)
                 {
-                    double vp = V[p * n + i], vk = V[k * n + i];
-                    V[p * n + i] = c * vp - s * vk, V[k * n + i] = s * vp + c * vk;
+                    double vp    = V[p * n + i];
+                    double vk    = V[k * n + i];
+                    V[p * n + i] = c * vp - s * vk;
+                    V[k * n + i] = s * vp + c * vk;
                 }
             }
         }
@@ -314,6 +507,8 @@ static int jacobi_svd_d(int m, int n, double *A, double *U_out, double *S_out, d
             break;
         }
     }
+
+    /* Extract column norms as singular values and sort in descending order */
     double *nrms = calloc((size_t) n, sizeof(double));
     int    *ord  = calloc((size_t) n, sizeof(int));
     for (int j = 0; j < n; j++)
@@ -323,7 +518,8 @@ static int jacobi_svd_d(int m, int n, double *A, double *U_out, double *S_out, d
         {
             s += W[j * m + i] * W[j * m + i];
         }
-        nrms[j] = sqrt(s), ord[j] = j;
+        nrms[j] = sqrt(s);
+        ord[j]  = j;
     }
     for (int i = 0; i < n - 1; i++)
     {
@@ -332,7 +528,8 @@ static int jacobi_svd_d(int m, int n, double *A, double *U_out, double *S_out, d
             if (nrms[ord[j]] > nrms[ord[i]])
             {
                 int t  = ord[i];
-                ord[i] = ord[j], ord[j] = t;
+                ord[i] = ord[j];
+                ord[j] = t;
             }
         }
     }
@@ -350,10 +547,24 @@ static int jacobi_svd_d(int m, int n, double *A, double *U_out, double *S_out, d
             Vt_out[i * q + j] = V[col * n + i];
         }
     }
-    free(nrms), free(ord), free(V), free(W);
+    free(nrms);
+    free(ord);
+    free(V);
+    free(W);
     return 0;
 }
 
+/**
+ * run_svd_d - Compute thin SVD `A = U * diag(S) * Vt` via LAPACKE_dgesdd or Jacobi fallback
+ * @m:      Number of rows of @A
+ * @n:      Number of columns of @A
+ * @A:      Column-major `m x n` matrix (overwritten on exit when LAPACKE is used)
+ * @U_out:  Optional output `m x min(m, n)` left singular vectors (NULL for singular values only)
+ * @S_out:  Output array of `min(m, n)` singular values in descending order
+ * @Vt_out: Optional output `min(m, n) x n` transposed right singular vectors (NULL for S only)
+ *
+ * Return: 0 on success, -1 on failure
+ */
 static int run_svd_d(int m, int n, double *A, double *U_out, double *S_out, double *Vt_out)
 {
 #ifdef HAVE_LAPACKE
@@ -369,6 +580,18 @@ static int run_svd_d(int m, int n, double *A, double *U_out, double *S_out, doub
     return jacobi_svd_d(m, n, A, U_out, S_out, Vt_out);
 }
 
+/**
+ * run_eigh_d - Compute eigenvalues (and optionally eigenvectors) of a real symmetric matrix
+ * @n:      Order of the square matrix @C
+ * @C:      In/out `n x n` column-major symmetric matrix; overwritten with eigenvectors if @want_v
+ * @want_v: Non-zero to compute orthonormal eigenvectors into @C
+ * @w_out:  Output array of @n eigenvalues sorted in ascending order
+ *
+ * Symmetrizes @C in place (`0.5 * (C + C^T)`) before solving via `LAPACKE_dsyevd`,
+ * falling back to classical two-sided Jacobi diagonalization if LAPACKE is unavailable.
+ *
+ * Return: 0 on success, -1 on allocation failure
+ */
 static int run_eigh_d(int n, double *C, int want_v, double *w_out)
 {
     for (int j = 0; j < n; j++)
@@ -409,18 +632,25 @@ static int run_eigh_d(int n, double *C, int want_v, double *w_out)
                 double tau = (C[q * n + q] - C[p * n + p]) / (2.0 * apq);
                 double t   = (tau >= 0.0) ? (1.0 / (tau + hypot(1.0, tau)))
                                           : (-1.0 / (-tau + hypot(1.0, tau)));
-                double c = 1.0 / hypot(1.0, t), s = t * c;
+                double c   = 1.0 / hypot(1.0, t);
+                double s   = t * c;
                 for (int k = 0; k < n; k++)
                 {
-                    double ckp = C[p * n + k], ckq = C[q * n + k];
-                    C[p * n + k] = c * ckp - s * ckq, C[q * n + k] = s * ckp + c * ckq;
+                    double ckp   = C[p * n + k];
+                    double ckq   = C[q * n + k];
+                    C[p * n + k] = c * ckp - s * ckq;
+                    C[q * n + k] = s * ckp + c * ckq;
                 }
                 for (int k = 0; k < n; k++)
                 {
-                    double cpk = C[k * n + p], cqk = C[k * n + q];
-                    C[k * n + p] = c * cpk - s * cqk, C[k * n + q] = s * cpk + c * cqk;
-                    double vkp = V[p * n + k], vkq = V[q * n + k];
-                    V[p * n + k] = c * vkp - s * vkq, V[q * n + k] = s * vkp + c * vkq;
+                    double cpk   = C[k * n + p];
+                    double cqk   = C[k * n + q];
+                    C[k * n + p] = c * cpk - s * cqk;
+                    C[k * n + q] = s * cpk + c * cqk;
+                    double vkp   = V[p * n + k];
+                    double vkq   = V[q * n + k];
+                    V[p * n + k] = c * vkp - s * vkq;
+                    V[q * n + k] = s * vkp + c * vkq;
                 }
             }
         }
@@ -440,20 +670,43 @@ static int run_eigh_d(int n, double *C, int want_v, double *w_out)
             if (w_out[j] < w_out[i])
             {
                 double tw = w_out[i];
-                w_out[i] = w_out[j], w_out[j] = tw;
+                w_out[i]  = w_out[j];
+                w_out[j]  = tw;
                 for (int k = 0; k < n; k++)
                 {
                     double tv    = V[i * n + k];
-                    V[i * n + k] = V[j * n + k], V[j * n + k] = tv;
+                    V[i * n + k] = V[j * n + k];
+                    V[j * n + k] = tv;
                 }
             }
         }
     }
-    (void) (want_v && memcpy(C, V, sizeof(double) * (size_t) (n * n)));
+    if (want_v)
+    {
+        memcpy(C, V, sizeof(double) * (size_t) (n * n));
+    }
     free(V);
     return 0;
 }
 
+/**
+ * solve_linear_d - Solve `A * X = B` via Cholesky (`posv`), LU (`gesv`), QR/LQ (`gels`), or SVD
+ * @fn:    Solver name (`"posv"`, `"gesv"`, `"gels"`, or `"solve"`)
+ * @uplo:  Triangle selector (`'L'` or `'U'`) for `"posv"`
+ * @M:     Row count of @A (and @B)
+ * @N:     Column count of @A (and row count of @X_out)
+ * @NRHS:  Number of right-hand-side columns in @B
+ * @A:     Column-major `M x N` coefficient matrix (modified in place)
+ * @B:     Column-major `M x NRHS` right-hand-side matrix (modified in place)
+ * @X_out: Output column-major `N x NRHS` solution matrix
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * When built with `HAVE_LAPACKE`, dispatches to `LAPACKE_dposv`, `LAPACKE_dgesv`,
+ * or `LAPACKE_dgels`. Otherwise falls back to a truncated SVD pseudoinverse solve.
+ *
+ * Return: 0 on success, -1 if @A is singular, non-SPD, rank-deficient, or out of memory
+ */
 static int solve_linear_d(const char *fn,
                           char        uplo,
                           int         M,
@@ -514,7 +767,9 @@ static int solve_linear_d(const char *fn,
     double *Vt = calloc((size_t) (q * N), sizeof(double));
     if (!U || !S || !Vt || run_svd_d(M, N, A, U, S, Vt) != 0)
     {
-        free(U), free(S), free(Vt);
+        free(U);
+        free(S);
+        free(Vt);
         return lap_err(err, errsz, "%s: solver failed", fn);
     }
     double tol = 1e-12 * ((M > N) ? M : N) * (S[0] > 0.0 ? S[0] : 1.0);
@@ -534,11 +789,30 @@ static int solve_linear_d(const char *fn,
             }
         }
     }
-    free(U), free(S), free(Vt);
+    free(U);
+    free(S);
+    free(Vt);
     (void) uplo;
     return 0;
 }
 
+/**
+ * exec_pinv_or_inv - Execute `inv(A)` or `pinv(A[, rcond])` and write the inverse into @slot
+ * @slot:      Destination slot to receive the `N x M` inverse or pseudoinverse
+ * @rhs:       Call expression node for `inv` or `pinv`
+ * @avoid_id:  Image ID to avoid clobbering when evaluating operand sub-expressions
+ * @call_site: Enclosing user-defined function call site (or NULL)
+ * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * For `inv(A)`, solves `A * X = I` via LU factorization (`solve_linear_d("gesv", ...)`).
+ * For `pinv(A[, rcond])`, computes the thin SVD `A = U * diag(S) * Vt`, zeroes singular
+ * values at or below `rcond * S[0]` (defaulting to `eps * max(M, N) * S[0]`), scales the
+ * rows of `Vt` by `1 / S[k]`, and forms `Out = Vt^T * U^T`.
+ *
+ * Return: 0 on success, -1 on dimension mismatch, singular matrix, or allocation failure
+ */
 static int exec_pinv_or_inv(mc_slot_t       *slot,
                             const mc_expr_t *rhs,
                             imageID          avoid_id,
@@ -548,7 +822,8 @@ static int exec_pinv_or_inv(mc_slot_t       *slot,
                             size_t           errsz)
 {
     const char      *fn     = rhs->u.call.fn->name;
-    int              is_inv = (strcmp(fn, "inv") == 0), transA = 0, tmpA = 0, rc = 0;
+    int              is_inv = (strcmp(fn, "inv") == 0);
+    int              transA = 0, tmpA = 0, rc = 0;
     const mc_expr_t *eA    = unwrap_trans(rhs->u.call.args[0], call_site, &transA);
     double           rcond = -1.0;
     imageID          idA   = -1;
@@ -571,7 +846,8 @@ static int exec_pinv_or_inv(mc_slot_t       *slot,
     double *Out_d = calloc((size_t) (N * M > 0 ? N * M : 1), sizeof(double));
     if (A_d == NULL || Out_d == NULL)
     {
-        free(A_d), free(Out_d);
+        free(A_d);
+        free(Out_d);
         rc = lap_err(err, errsz, "%s: out of memory", fn);
         goto done;
     }
@@ -628,7 +904,9 @@ static int exec_pinv_or_inv(mc_slot_t       *slot,
             }
 #endif
         }
-        free(U), free(S), free(Vt);
+        free(U);
+        free(S);
+        free(Vt);
     }
 
     if (rc == 0)
@@ -639,13 +917,37 @@ static int exec_pinv_or_inv(mc_slot_t       *slot,
                                                                         : _DATATYPE_FLOAT,
                               Out_d, in_unit, err, errsz);
     }
-    free(A_d), free(Out_d);
+    free(A_d);
+    free(Out_d);
 
 done:
-    (void) (tmpA && (mc_tmp_release(idA), 1));
+    if (tmpA)
+    {
+        mc_tmp_release(idA);
+    }
     return rc;
 }
 
+/* ============================================================================
+ * Public LAPACK Execution Entry Points
+ * ============================================================================ */
+
+/**
+ * mc_exec_lapack_call - Execute a single-LHS LAPACK solver, inverse, SVD, or eigensolver step
+ * @prog:      Compiled calculator program holding the slot table
+ * @cs:        Constructor step descriptor to execute
+ * @avoid_id:  Image ID to avoid clobbering when evaluating operand sub-expressions
+ * @call_site: Enclosing user-defined function call site (or NULL)
+ * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Dispatches `trsv`, `trsm`, `inv`, `pinv`, 1-LHS `svd` / `eigh` (returning singular
+ * values or eigenvalues only), and linear system solvers `gesv`, `posv`, `gels`, and
+ * `solve(A, B[, lambda])`.
+ *
+ * Return: 0 on success, -1 on error
+ */
 int mc_exec_lapack_call(mcalc_prog_t    *prog,
                         mc_ctor_step_t  *cs,
                         imageID          avoid_id,
@@ -668,7 +970,8 @@ int mc_exec_lapack_call(mcalc_prog_t    *prog,
     }
     if (strcmp(fn, "svd") == 0 || strcmp(fn, "eigh") == 0)
     {
-        int     is_eigh = (strcmp(fn, "eigh") == 0), tmpA = 0, rc = 0;
+        int     is_eigh = (strcmp(fn, "eigh") == 0);
+        int     tmpA = 0, rc = 0;
         imageID idA = -1;
         if (mc_resolve_or_eval_im(rhs->u.call.args[0], call_site, avoid_id, in_unit, &idA, &tmpA,
                                   err, errsz) != 0)
@@ -680,7 +983,10 @@ int mc_exec_lapack_call(mcalc_prog_t    *prog,
         mat_dims_2d(imA, 0, &M, &N);
         if (imA->md[0].naxis != 2 || (is_eigh && M != N))
         {
-            (void) (tmpA && (mc_tmp_release(idA), 1));
+            if (tmpA)
+            {
+                mc_tmp_release(idA);
+            }
             return lap_err(err, errsz, "%s: expected 2D %smatrix", fn, is_eigh ? "square " : "");
         }
         uint64_t Q   = (M < N) ? M : N;
@@ -697,11 +1003,16 @@ int mc_exec_lapack_call(mcalc_prog_t    *prog,
                                                                             : _DATATYPE_FLOAT,
                                   S_d, in_unit, err, errsz);
         }
-        free(A_d), free(S_d);
-        (void) (tmpA && (mc_tmp_release(idA), 1));
+        free(A_d);
+        free(S_d);
+        if (tmpA)
+        {
+            mc_tmp_release(idA);
+        }
         return rc;
     }
 
+    /* Linear system solvers: gesv, posv, gels, solve */
     int              transA = 0, transB = 0;
     const mc_expr_t *eA   = unwrap_trans(rhs->u.call.args[0], call_site, &transA);
     const mc_expr_t *eB   = unwrap_trans(rhs->u.call.args[1], call_site, &transB);
@@ -721,10 +1032,14 @@ int mc_exec_lapack_call(mcalc_prog_t    *prog,
     if (mc_resolve_or_eval_im(eA, call_site, avoid_id, in_unit, &idA, &tmpA, err, errsz) != 0 ||
         mc_resolve_or_eval_im(eB, call_site, avoid_id, in_unit, &idB, &tmpB, err, errsz) != 0)
     {
-        (void) (tmpA && (mc_tmp_release(idA), 1));
+        if (tmpA)
+        {
+            mc_tmp_release(idA);
+        }
         return -1;
     }
-    const IMAGE *imA = &milk_data.image[idA], *imB = &milk_data.image[idB];
+    const IMAGE *imA = &milk_data.image[idA];
+    const IMAGE *imB = &milk_data.image[idB];
     uint64_t     M = 0, N = 0, MB = 0, NRHS = 1;
     mat_dims_2d(imA, transA, &M, &N);
     mat_dims_2d(imB, transB, &MB, &NRHS);
@@ -736,18 +1051,23 @@ int mc_exec_lapack_call(mcalc_prog_t    *prog,
         goto done_solve;
     }
 
-    double *A_d = alloc_mat_d(imA, transA, M, N), *B_d = alloc_mat_d(imB, transB, M, NRHS);
+    double *A_d = alloc_mat_d(imA, transA, M, N);
+    double *B_d = alloc_mat_d(imB, transB, M, NRHS);
     double *X_d = calloc((size_t) (N * NRHS > 0 ? N * NRHS : 1), sizeof(double));
     if (!A_d || !B_d || !X_d)
     {
-        free(A_d), free(B_d), free(X_d);
+        free(A_d);
+        free(B_d);
+        free(X_d);
         rc = lap_err(err, errsz, "%s: out of memory", fn);
         goto done_solve;
     }
 
+    /* Tikhonov-regularized solve: form smaller Gram matrix (N x N or M x M) + reg * I */
     if (strcmp(fn, "solve") == 0 && reg > 0.0)
     {
-        uint64_t K = (M >= N) ? N : M, L = (M >= N) ? M : N;
+        uint64_t K = (M >= N) ? N : M;
+        uint64_t L = (M >= N) ? M : N;
         double  *G = calloc((size_t) (K * K), sizeof(double));
         double  *R = calloc((size_t) (K * NRHS), sizeof(double));
 #ifdef HAVE_BLAS
@@ -806,7 +1126,8 @@ int mc_exec_lapack_call(mcalc_prog_t    *prog,
             }
 #endif
         }
-        free(G), free(R);
+        free(G);
+        free(R);
     }
     else
     {
@@ -823,14 +1144,36 @@ int mc_exec_lapack_call(mcalc_prog_t    *prog,
         rc = write_mat_slot_d(slot, (imB->md[0].naxis == 1 && !transB) ? 1 : 2, out_sz, pref_dt,
                               X_d, in_unit, err, errsz);
     }
-    free(A_d), free(B_d), free(X_d);
+    free(A_d);
+    free(B_d);
+    free(X_d);
 
 done_solve:
-    (void) (tmpA && (mc_tmp_release(idA), 1));
-    (void) (tmpB && (mc_tmp_release(idB), 1));
+    if (tmpA)
+    {
+        mc_tmp_release(idA);
+    }
+    if (tmpB)
+    {
+        mc_tmp_release(idB);
+    }
     return rc;
 }
 
+/**
+ * mc_exec_multi_svd_or_eigh - Execute a multi-LHS `U, S, Vt = svd(A)` or `w, V = eigh(C)` statement
+ * @prog:    Compiled calculator program holding the slot table (may be NULL in one-shot mode)
+ * @s:       Multi-assignment statement AST node
+ * @in_unit: Non-zero when executing inside a persistent FPS compute unit
+ * @err:     Error message buffer
+ * @errsz:   Capacity of @err in bytes
+ *
+ * Evaluates the input matrix, computes the full thin SVD (`U`, `S`, `Vt`) or
+ * symmetric eigendecomposition (`w`, `V`), and writes each factor into its
+ * corresponding LHS slot.
+ *
+ * Return: 0 on success, -1 on dimension/type mismatch, decomposition failure, or OOM
+ */
 int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
                               const mc_stmt_t *s,
                               int              in_unit,
@@ -839,7 +1182,8 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
 {
     const mc_expr_t *rhs     = s->u.multi.rhs[0];
     const char      *fn      = rhs->u.call.fn->name;
-    int              is_eigh = (strcmp(fn, "eigh") == 0), tmpA = 0, rc = 0;
+    int              is_eigh = (strcmp(fn, "eigh") == 0);
+    int              tmpA = 0, rc = 0;
     imageID          idA = -1;
 
     if (mc_resolve_or_eval_im(rhs->u.call.args[0], NULL, -1, in_unit, &idA, &tmpA, err, errsz) != 0)
@@ -851,7 +1195,10 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
     mat_dims_2d(imA, 0, &M, &N);
     if (imA->md[0].naxis != 2 || (is_eigh && M != N))
     {
-        (void) (tmpA && (mc_tmp_release(idA), 1));
+        if (tmpA)
+        {
+            mc_tmp_release(idA);
+        }
         return lap_err(err, errsz, "%s: expected 2D %smatrix", fn, is_eigh ? "square " : "");
     }
     uint8_t out_dt = (imA->md[0].datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
@@ -878,10 +1225,14 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
     for (int j = 0; rc == 0 && j < nlhs; j++)
     {
         const mc_expr_t *lhs      = s->u.multi.lhs[j];
-        mc_slot_t        tmp_slot = { 0 }, *sl = NULL;
+        mc_slot_t        tmp_slot = { 0 };
+        mc_slot_t       *sl       = NULL;
         for (int k = 0; prog != NULL && k < prog->nslots && sl == NULL; k++)
         {
-            sl = (strcmp(prog->slots[k].bare, lhs->u.ident.bare) == 0) ? &prog->slots[k] : NULL;
+            if (strcmp(prog->slots[k].bare, lhs->u.ident.bare) == 0)
+            {
+                sl = &prog->slots[k];
+            }
         }
         if (sl == NULL)
         {
@@ -894,7 +1245,13 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
         rc = write_mat_slot_d(sl, nax[j], szs[j], out_dt, bufs[j], in_unit, err, errsz);
     }
 
-    free(A_d), free(S_d), free(U_d), free(Vt_d);
-    (void) (tmpA && (mc_tmp_release(idA), 1));
+    free(A_d);
+    free(S_d);
+    free(U_d);
+    free(Vt_d);
+    if (tmpA)
+    {
+        mc_tmp_release(idA);
+    }
     return rc;
 }

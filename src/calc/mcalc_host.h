@@ -2,6 +2,17 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mcalc_host.h
+ * @brief Host-environment bridge for string variables in `libmilkcalc`.
+ *
+ * Allows the upper CLI/scripting tier (`libmilkscript`) to register its variable
+ * table callbacks (`cli_var_get` / `cli_var_set`) without introducing an upward link
+ * dependency from `libmilkcalc` (Core tier) to `libmilkscript` (CLI tier). When no
+ * host is registered (e.g. in standalone `milk-fpsexec-milk-calc`), `libmilkcalc`
+ * falls back to its own process-local string variable table.
+ */
+
 #ifndef MILK_MCALC_HOST_H
 #define MILK_MCALC_HOST_H
 

@@ -2,6 +2,21 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_plan.h
+ * @brief Planner, C kernel ABI, view geometry, and program execution structures for `libmilkcalc`.
+ *
+ * Defines the intermediate representation lowered from a resolved AST:
+ *   - `mc_operand_t`: ABI-stable runtime operand descriptor passed to compiled `.so` kernels.
+ *   - `mc_view_t`: Resolved n-D slice/stride/binning geometry for an image operand.
+ *   - `mc_pass_t`: Fused elementwise pass (operands, outputs, precision, generated C source,
+ *     and `dlopen()`-loaded `mc_kernel_fn`).
+ *   - `mc_ctor_step_t`: Whole-image library step (BLAS, LAPACK, FFT, spatial filter, reduction
+ *     pre-stage, or user C extension).
+ *   - `mcalc_prog_t`: Compiled multi-statement program with image slots, bound FPS variables,
+ *     and execution steps.
+ */
+
 #ifndef MILK_CALC_MC_PLAN_H
 #define MILK_CALC_MC_PLAN_H
 

@@ -2,6 +2,15 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file mc_func.h
+ * @brief Built-in calculator function catalog and scalar math helper declarations.
+ *
+ * Classifies every built-in calculator function into a semantic category (`mc_fn_kind_t`)
+ * with its argument/LHS arity bounds, scalar C function pointers (`fn1`/`fn2`/`fn3`),
+ * and C-codegen prelude symbol names (`c_f32`/`c_f64`) used by the planner and emitter.
+ */
+
 #ifndef MILK_MC_FUNC_H
 #define MILK_MC_FUNC_H
 

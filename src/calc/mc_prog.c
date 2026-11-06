@@ -1,5 +1,32 @@
 // SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * @file mc_prog.c
+ * @brief Multi-statement program compilation, variable binding, and execution for `libmilkcalc`.
+ *
+ * Implements the `mcalc_prog` lifecycle (`mcalc_prog_new`, `mcalc_prog_run`, `mcalc_prog_free`,
+ * `mcalc_prog_exec_once`) used by the `milk.calc` FPS compute unit and by multi-statement or
+ * image-producing expressions in `@calc` / `milk-script`.
+ *
+ * Key responsibilities:
+ *   - **FPS parameter binding (`bind_prog_vars`, `mc_prog_load_vars`, `mc_prog_store_vars`)**:
+ *     Maps `mcalc_binding` descriptors (from `milk.calc` unit parameters and loop variables like
+ *     `_n`, `_t`, `_dt`, `_cnt0`) into `milk_data.variable[]` before each frame and copies modified
+ *     values back to their FPS pointers after execution.
+ *   - **Read-only variable protection (`is_readonly_unit_var`, `scan_assigned_stmts`)**: Statically
+ *     scans the AST at compile time to reject assignments to unit telemetry variables (`_n`, `_t`,
+ *     `_dt`, `_cnt0`, `_ts`, `_missed`, `_torn`) and records which bound variables are written.
+ *   - **History ring expansion**: Invokes `mc_rewrite_history()` before lexing so `hist()` and
+ *     `prev()` calls are desugared into `<stream>_hist` ring buffer slices.
+ *   - **Adaptive re-planning (`mc_prog_slots_valid`, `replan_prog_in_place`)**: Validates before
+ *     each `mcalc_prog_run()` that every referenced image slot still has the shape and datatype
+ *     assumed by the compiled plan; if an upstream stream was recreated or resized, the program
+ *     transparently re-resolves and rebuilds its execution plan in place.
+ *   - **Deferred stream posting (`mc_post_defer`, `mc_post_flush`)**: Batches output semaphore
+ *     posts across all steps of a program so downstream consumers see a coherent frame update.
+ */
 
 #include <ctype.h>
 #include <math.h>
@@ -16,28 +43,72 @@
 #include "COREMOD_memory/variable_ID.h"
 #include "mc_plan.h"
 
+/* Thread-local skip flag (`skip()` builtin) and nesting depth inside a `milk.calc` unit. */
 static _Thread_local int g_prog_skip       = 0;
 static _Thread_local int g_prog_unit_depth = 0;
 
+/* ============================================================================================== */
+/* Thread-Local Execution State and FPS Variable Synchronization                                  */
+/* ============================================================================================== */
+
+/**
+ * mc_prog_set_skip - Set or clear the current frame's `skip()` flag
+ * @on: 1 to skip remaining non-history steps in the current program run, 0 to clear
+ *
+ * Triggered by the `skip()` builtin inside an `if` branch or conditional expression to abort
+ * output updates for the current frame while still updating `hist()` ring buffers.
+ *
+ * Return: void
+ */
 void mc_prog_set_skip(int on)
 {
     g_prog_skip = on;
 }
 
+/**
+ * mc_prog_skip_active - Query whether `skip()` has been triggered in the current frame
+ *
+ * Return: 1 if skipping is active, 0 otherwise
+ */
 int mc_prog_skip_active(void)
 {
     return g_prog_skip;
 }
 
+/**
+ * mc_prog_in_unit - Check whether the current thread is executing inside a `milk.calc` unit
+ *
+ * When inside a unit (`g_prog_unit_depth > 0`), newly created images default to shared memory
+ * (`@S:`) rather than process-local memory (`@L:`).
+ *
+ * Return: 1 if executing inside a unit context, 0 otherwise
+ */
 int mc_prog_in_unit(void)
 {
     return g_prog_unit_depth > 0;
 }
 
+/**
+ * mcalc_prog_attach - Legacy hook for attaching shared-memory state to a program
+ *
+ * Retained as a no-op for ABI compatibility; stream attachment is handled lazily per slot.
+ *
+ * Return: void
+ */
 void mcalc_prog_attach(void)
 {
 }
 
+/**
+ * mc_prog_load_vars - Copy bound external C / FPS variables into `milk_data.variable[]`
+ * @p: Planned program with optional `vars` bindings
+ *
+ * Synchronizes each `p->vars[i]` pointer into its corresponding `milk_data.variable[p->var_ids[i]]`
+ * slot prior to executing a frame. For `FPTYPE_STREAMNAME` bindings, also auto-connects the named
+ * shared-memory image if not yet loaded in `milk_data.image[]`.
+ *
+ * Return: void
+ */
 void mc_prog_load_vars(mcalc_prog_t *p)
 {
     if (p == NULL || p->vars == NULL || p->var_ids == NULL)
@@ -103,6 +174,15 @@ void mc_prog_load_vars(mcalc_prog_t *p)
     }
 }
 
+/**
+ * mc_prog_store_vars - Write modified `milk_data.variable[]` values back to bound C / FPS pointers
+ * @p: Planned program whose `assigned[]` mask marks variables written by the program
+ *
+ * Only variables marked in `p->assigned[i]` (and not of type `FPTYPE_STREAMNAME`) are written
+ * back, preventing read-only inputs from being clobbered.
+ *
+ * Return: void
+ */
 void mc_prog_store_vars(mcalc_prog_t *p)
 {
     if (p == NULL || p->vars == NULL || p->var_ids == NULL || p->assigned == NULL)
@@ -155,6 +235,19 @@ void mc_prog_store_vars(mcalc_prog_t *p)
     }
 }
 
+/* ============================================================================================== */
+/* Compile-Time Assignment Analysis and Variable Binding                                          */
+/* ============================================================================================== */
+
+/**
+ * is_readonly_unit_var - Check whether @name is a built-in read-only `milk.calc` unit variable
+ * @name: Bare variable identifier
+ *
+ * The loop telemetry variables `_n`, `_t`, `_dt`, `_cnt0`, `_ts`, `_missed`, and `_torn` are
+ * populated by the unit runner each iteration and must not be assigned to by user expressions.
+ *
+ * Return: 1 if @name is a read-only unit variable, 0 otherwise
+ */
 static int is_readonly_unit_var(const char *name)
 {
     return (strcmp(name, "_n") == 0 || strcmp(name, "_t") == 0 || strcmp(name, "_dt") == 0 ||
@@ -162,13 +255,26 @@ static int is_readonly_unit_var(const char *name)
             strcmp(name, "_missed") == 0 || strcmp(name, "_torn") == 0);
 }
 
+/**
+ * mark_assigned_name - Record that target identifier @name is written by program @p
+ * @p:     Program being compiled
+ * @name:  LHS variable or image identifier
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Rejects assignments to read-only unit telemetry variables when `p->vars != NULL` and sets
+ * `p->assigned[i] = 1` for any matching bound variable.
+ *
+ * Return: 0 on success, -1 if @name is a read-only variable
+ */
 static int mark_assigned_name(mcalc_prog_t *p, const char *name, char *err, size_t errsz)
 {
     if (name == NULL || name[0] == '\0')
     {
         return 0;
     }
-    char nbuf[256], bare[256];
+    char nbuf[256];
+    char bare[256];
     snprintf(nbuf, sizeof(nbuf), "%s", name);
     mc_parse_ident_streamname(nbuf, bare, NULL);
     const char *key = (bare[0] != '\0') ? bare : name;
@@ -190,6 +296,15 @@ static int mark_assigned_name(mcalc_prog_t *p, const char *name, char *err, size
     return 0;
 }
 
+/**
+ * scan_assigned_stmts - Recursively walk statement list @s to mark all assigned variable names
+ * @p:     Program being compiled
+ * @s:     Head of statement linked list (top-level or nested inside `for`/`if`)
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Return: 0 on success, -1 if any statement assigns to a read-only unit variable
+ */
 static int scan_assigned_stmts(mcalc_prog_t *p, const mc_stmt_t *s, char *err, size_t errsz)
 {
     for (; s != NULL; s = s->next)
@@ -244,6 +359,20 @@ static int scan_assigned_stmts(mcalc_prog_t *p, const mc_stmt_t *s, char *err, s
     return 0;
 }
 
+/**
+ * bind_prog_vars - Allocate and initialize bound variable tables on @p
+ * @p:     Program being constructed
+ * @vars:  Array of `nvars` variable bindings (may be NULL)
+ * @nvars: Number of entries in @vars
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Ensures each bound variable exists in `milk_data.variable[]` with the appropriate scalar or
+ * string type and performs an initial `mc_prog_load_vars(p)` so AST resolution sees current
+ * stream names and values.
+ *
+ * Return: 0 on success, -1 on allocation or variable creation failure
+ */
 static int bind_prog_vars(mcalc_prog_t        *p,
                           const mcalc_binding *vars,
                           int                  nvars,
@@ -288,6 +417,17 @@ static int bind_prog_vars(mcalc_prog_t        *p,
     return 0;
 }
 
+/**
+ * split_stmt_texts - Split rewritten program source @text into per-statement strings
+ * @p:    Program whose `stmt_texts[]` array will be populated
+ * @text: Rewritten program text
+ *
+ * Tracks quote state and parenthesis/bracket/brace nesting depth so semicolons and newlines
+ * inside blocks or strings do not split a top-level statement. Used by `mcalc_prog_explain()` and
+ * for attaching `" in '<stmt>'"` context to unit error messages.
+ *
+ * Return: void
+ */
 static void split_stmt_texts(mcalc_prog_t *p, const char *text)
 {
     if (p->nstmts <= 0 || text == NULL)
@@ -368,6 +508,31 @@ static void split_stmt_texts(mcalc_prog_t *p, const char *text)
     }
 }
 
+/* ============================================================================================== */
+/* Program Lifecycle, Plan Validation, and Execution                                              */
+/* ============================================================================================== */
+
+/**
+ * mcalc_prog_new - Compile a multi-statement calculator program into an executable plan
+ * @text:  Source text containing one or more statements separated by `;` or newlines
+ * @vars:  Optional array of bound FPS / C variables (NULL for standalone scripts)
+ * @nvars: Number of entries in @vars
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Compilation pipeline:
+ *   1. Binds @vars into `milk_data.variable[]`.
+ *   2. Expands `hist()` and `prev()` calls via `mc_rewrite_history()`.
+ *   3. Lexes (`mc_lex`) and parses (`mc_parse_prog`) into an AST statement list (up to 128 user
+ *      statements plus synthesized history update statements).
+ *   4. Registers any inline `def` statements and checks for illegal assignments to read-only unit
+ *      variables (`scan_assigned_stmts`).
+ *   5. Resolves types, shapes, and stream IDs (`mc_resolve_prog_ex`).
+ *   6. Builds fused elementwise passes, pre-stage constructors, and compiled `.so` kernels
+ *      (`mc_plan_build`).
+ *
+ * Return: Newly allocated `mcalc_prog *` on success, or NULL on error (with @err populated)
+ */
 mcalc_prog *mcalc_prog_new(const char          *text,
                            const mcalc_binding *vars,
                            int                  nvars,
@@ -462,7 +627,10 @@ mcalc_prog *mcalc_prog_new(const char          *text,
             if (s->kind == MC_STMT_DEF && (p->stmt_texts == NULL || p->stmt_texts[idx] == NULL ||
                                            mcalc_udef_try_parse(p->stmt_texts[idx]) <= 0))
             {
-                (void) (err != NULL && errsz > 0 && snprintf(err, errsz, "invalid def syntax"));
+                if (err != NULL && errsz > 0)
+                {
+                    snprintf(err, errsz, "invalid def syntax");
+                }
                 free(rt);
                 mcalc_prog_free(p);
                 return NULL;
@@ -480,7 +648,8 @@ mcalc_prog *mcalc_prog_new(const char          *text,
         if (vars != NULL && err != NULL && err[0] != '\0' && strstr(err, " in '") == NULL &&
             p->stmt_texts != NULL)
         {
-            int fail_idx = -1, idx = 0;
+            int fail_idx = -1;
+            int idx      = 0;
             for (mc_stmt_t *s = p->ast_head; s != NULL; s = s->next, idx++)
             {
                 if (s->needs_image != -1)
@@ -505,6 +674,15 @@ mcalc_prog *mcalc_prog_new(const char          *text,
     return p;
 }
 
+/**
+ * mcalc_sub_prog_free - Free a sub-program without freeing its borrowed parent AST nodes
+ * @p: Sub-program attached to an `mc_expr_t` or `mc_stmt_t` (`for`/`if` body)
+ *
+ * Detaches `p->ast_head` (or `p->ast_head->u.expr`) before calling `mcalc_prog_free()` so the
+ * owning parent AST retains ownership of the expression/statement tree.
+ *
+ * Return: void
+ */
 void mcalc_sub_prog_free(struct mcalc_prog *p)
 {
     if (p != NULL)
@@ -522,6 +700,15 @@ void mcalc_sub_prog_free(struct mcalc_prog *p)
     }
 }
 
+/**
+ * clear_prog_plan - Release all planned slots, temporary images, and execution steps on @p
+ * @p: Program whose plan is being torn down or rebuilt
+ *
+ * Preserves `p->ast_head`, `p->vars`, and `p->stmt_texts` so `replan_prog_in_place()` can rebuild
+ * the execution plan from the existing AST.
+ *
+ * Return: void
+ */
 static void clear_prog_plan(mcalc_prog_t *p)
 {
     for (int i = 0; i < p->nslots; i++)
@@ -536,8 +723,9 @@ static void clear_prog_plan(mcalc_prog_t *p)
         }
     }
     free(p->slots);
-    p->slots  = NULL;
-    p->nslots = p->cap_slots = 0;
+    p->slots     = NULL;
+    p->nslots    = 0;
+    p->cap_slots = 0;
     for (int i = 0; i < p->nsteps; i++)
     {
         if (p->steps[i].kind == MC_STEP_CTOR)
@@ -552,10 +740,22 @@ static void clear_prog_plan(mcalc_prog_t *p)
         }
     }
     free(p->steps);
-    p->steps  = NULL;
-    p->nsteps = p->cap_steps = 0;
+    p->steps     = NULL;
+    p->nsteps    = 0;
+    p->cap_steps = 0;
 }
 
+/**
+ * mc_prog_slots_valid - Verify that all image slots in @p still match their planned metadata
+ * @p:        Planned program to check
+ * @same_gen: 1 if `milk_table_generation()` matches `p->plan_gen`
+ *
+ * Checks that every non-temporary slot still resolves to an image (or non-existent target) with
+ * the same datatype, axis count, and dimensions recorded when the plan was built, and has not
+ * been shadowed by a scalar variable.
+ *
+ * Return: 1 if all slots are valid, 0 if re-planning is required
+ */
 int mc_prog_slots_valid(mcalc_prog_t *p, int same_gen)
 {
     for (int i = 0; p != NULL && i < p->nslots; i++)
@@ -593,6 +793,15 @@ int mc_prog_slots_valid(mcalc_prog_t *p, int same_gen)
     return 1;
 }
 
+/**
+ * replan_prog_in_place - Tear down and rebuild the execution plan of @p after a stream change
+ * @p:       Program to re-plan
+ * @in_unit: 1 if running inside a `milk.calc` unit
+ * @err:     Error message buffer
+ * @errsz:   Capacity of @err in bytes
+ *
+ * Return: 0 on success, -1 on resolution or planning error
+ */
 static int replan_prog_in_place(mcalc_prog_t *p, int in_unit, char *err, size_t errsz)
 {
     clear_prog_plan(p);
@@ -606,6 +815,12 @@ static int replan_prog_in_place(mcalc_prog_t *p, int in_unit, char *err, size_t 
                : -1;
 }
 
+/**
+ * mcalc_prog_free - Free a compiled `mcalc_prog` and all associated AST, plan, and binding data
+ * @p: Program to free (may be NULL)
+ *
+ * Return: void
+ */
 void mcalc_prog_free(mcalc_prog *p)
 {
     if (p == NULL)
@@ -630,11 +845,25 @@ void mcalc_prog_free(mcalc_prog *p)
     free(p);
 }
 
+/**
+ * mcalc_prog_assigns - Query whether bound variable @i is assigned to by program @p
+ * @p: Compiled program
+ * @i: Bound variable index in `[0, p->nvars)`
+ *
+ * Return: 1 if `p->vars[i]` is modified by @p, 0 otherwise
+ */
 int mcalc_prog_assigns(const mcalc_prog *p, int i)
 {
     return (p != NULL && p->assigned != NULL && i >= 0 && i < p->nvars) ? p->assigned[i] : 0;
 }
 
+/**
+ * mcalc_prog_set_processinfo - Attach a `PROCESSINFO *` handle to @p for stream update telemetry
+ * @p:           Compiled program
+ * @processinfo: Opaque `PROCESSINFO *` pointer passed to `mc_post_flush()`
+ *
+ * Return: void
+ */
 void mcalc_prog_set_processinfo(mcalc_prog *p, void *processinfo)
 {
     if (p != NULL)
@@ -643,6 +872,18 @@ void mcalc_prog_set_processinfo(mcalc_prog *p, void *processinfo)
     }
 }
 
+/**
+ * run_prog_steps - Execute the planned sequence of steps (`SCALAR`, `CTOR`, `PASS`) in @p
+ * @p:       Planned program
+ * @in_unit: 1 if running inside a `milk.calc` unit
+ * @err:     Error message buffer
+ * @errsz:   Capacity of @err in bytes
+ *
+ * Respects `g_prog_skip`: once `skip()` is called, subsequent steps are skipped unless marked
+ * `st->is_hist_step` (so `hist()` ring buffers remain synchronized with `_n`).
+ *
+ * Return: 0 on success, non-zero on runtime evaluation error
+ */
 static int run_prog_steps(mcalc_prog_t *p, int in_unit, char *err, size_t errsz)
 {
     int rc = 0;
@@ -688,6 +929,18 @@ static int run_prog_steps(mcalc_prog_t *p, int in_unit, char *err, size_t errsz)
     return rc;
 }
 
+/**
+ * mc_exec_sub_prog - Compile (on first call) and run a nested block sub-program (`for` / `if`)
+ * @io_prog: In/out pointer caching the compiled sub-program on the parent AST node (may be NULL)
+ * @head:    First statement of the block body
+ * @err:     Error message buffer
+ * @errsz:   Capacity of @err in bytes
+ *
+ * When `@io_prog != NULL`, the compiled `mcalc_prog_t` is cached across loop iterations and
+ * automatically re-planned in place if any slot metadata changes.
+ *
+ * Return: 0 on success, -1 on error
+ */
 int mc_exec_sub_prog(struct mcalc_prog **io_prog, mc_stmt_t *head, char *err, size_t errsz)
 {
     if (head == NULL)
@@ -739,7 +992,10 @@ int mc_exec_sub_prog(struct mcalc_prog **io_prog, mc_stmt_t *head, char *err, si
         return -1;
     }
     int rc = run_prog_steps(sub, in_unit, err, errsz);
-    (void) (rc == 0 && (sub->plan_gen = milk_table_generation()));
+    if (rc == 0)
+    {
+        sub->plan_gen = milk_table_generation();
+    }
     if (io_prog == NULL)
     {
         mcalc_sub_prog_free(sub);
@@ -747,6 +1003,18 @@ int mc_exec_sub_prog(struct mcalc_prog **io_prog, mc_stmt_t *head, char *err, si
     return rc;
 }
 
+/**
+ * mcalc_prog_run - Execute one full iteration of a compiled `mcalc_prog`
+ * @p:     Compiled program to run
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Loads bound FPS variables, enables deferred semaphore posting, validates (and if necessary
+ * re-plans) all image slots, executes all program steps, flushes deferred stream posts, and writes
+ * modified variables back to their bound pointers.
+ *
+ * Return: 0 on success, -1 on error
+ */
 int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
 {
     if (p == NULL)
@@ -769,7 +1037,10 @@ int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
         (!mc_prog_slots_valid(p, same_gen) && replan_prog_in_place(p, in_unit, err, errsz) != 0)
             ? -1
             : run_prog_steps(p, in_unit, err, errsz);
-    (void) (rc == 0 && (p->plan_gen = milk_table_generation()));
+    if (rc == 0)
+    {
+        p->plan_gen = milk_table_generation();
+    }
     if (in_unit)
     {
         g_prog_unit_depth--;
@@ -783,11 +1054,30 @@ int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
     return rc;
 }
 
+/**
+ * mc_exec_stmt_list - Execute an uncached linked list of statements
+ * @head:  First statement in the list
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Return: 0 on success, -1 on error
+ */
 int mc_exec_stmt_list(mc_stmt_t *head, char *err, size_t errsz)
 {
     return mc_exec_sub_prog(NULL, head, err, errsz);
 }
 
+/**
+ * mcalc_prog_exec_once - Compile, execute once, and free a multi-statement program
+ * @text:         Program source text
+ * @vars:         Optional array of bound variables
+ * @nvars:        Number of entries in @vars
+ * @assigned_out: Optional output array of length @nvars receiving `1` for modified variables
+ * @err:          Error message buffer
+ * @errsz:        Capacity of @err in bytes
+ *
+ * Return: 0 on success, -1 on compilation or runtime error
+ */
 int mcalc_prog_exec_once(const char          *text,
                          const mcalc_binding *vars,
                          int                  nvars,
