@@ -22,7 +22,7 @@
  * the structure. If the FPS already exists, connects
  * to it instead.
  */
-errno_t function_parameter_struct_create(int NBparamMAX, const char *name)
+errno_t function_parameter_struct_create(long NBparamMAX, const char *name)
 {
     errno_t rv         = RETURN_FAILURE;
     char   *mapv       = NULL;
@@ -44,7 +44,7 @@ errno_t function_parameter_struct_create(int NBparamMAX, const char *name)
     if (getenv("FPS_DEBUG"))
     {
         printf("DEBUG: [%s:%d] Creating file %s, "
-               "NBparamMAX = %d\n",
+               "NBparamMAX = %ld\n",
                __FILE__, __LINE__, SM_fname, NBparamMAX);
     }
     fflush(stdout);

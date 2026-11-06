@@ -45,7 +45,7 @@ uint32_t *functionparameter_GetParamPtr_UINT32(FPS *fps, const char *paramname);
 // Creates variable "_varname"
 //
 #define FPS_GETPARAM_UINT32(varname, pname)                               \
-    int32_t _##varname = 0;                                               \
+    uint32_t _##varname = 0;                                              \
     do                                                                    \
     {                                                                     \
         _##varname = functionparameter_GetParamValue_UINT32(&fps, pname); \
@@ -85,7 +85,7 @@ uint64_t *functionparameter_GetParamPtr_UINT64(FPS *fps, const char *paramname);
 // Creates variable "_varname"
 //
 #define FPS_GETPARAM_UINT64(varname, pname)                               \
-    int64_t _##varname = 0;                                               \
+    uint64_t _##varname = 0;                                              \
     do                                                                    \
     {                                                                     \
         _##varname = functionparameter_GetParamValue_UINT64(&fps, pname); \

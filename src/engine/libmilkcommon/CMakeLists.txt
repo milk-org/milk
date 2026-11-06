@@ -1,6 +1,7 @@
 set(LIBNAME "milkcommon")
 
 add_library(${LIBNAME} SHARED milk_compiler.c milk_rt.c milk_path.c)
+set_target_properties(${LIBNAME} PROPERTIES UNITY_BUILD ON)
 
 target_include_directories(
   ${LIBNAME}
