@@ -79,38 +79,41 @@ The codebase is organized in strict dependency layers. Lower layers have no know
 ones.
 
 ```text
-┌──────────────────────────────────────────┐
-│            User Interfaces               │
-│  milk-cli · milk-CTRL · milk-fpsCTRL     │
-│  milk-script · milk.bash · milk-termview │
-├──────────────────────────────────────────┤
-│            CLI & Scripting Framework     │
-│  CLIcore · milkscript · milkbash         │
-├──────────────────────────────────────────┤
-│            Plugins (USE_COREMODS)        │
-│  milk-extra (fft, linalgebra, image*…)   │
-│  cacao (AO loop control modules)         │
-├──────────────────────────────────────────┤
-│            Core Modules (USE_COREMODS)   │
-│  COREMOD_arith · COREMOD_memory          │
-│  COREMOD_tools · COREMOD_iofits          │
-├──────────────────────────────────────────┤
-│            Engine  (POSIX only)          │
-│  ImageStreamIO · milkcommon · milkfps    │
-│  milkcomputeunit · milkprocessinfo       │
-│  milkdata · milk-fpsCTRL · milk-procCTRL │
-└──────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│                    User Interfaces                     │
+│  milk-cli · milk-CTRL · milk-script · milk.bash        │
+│  milk-termview · milk-fpsCTRL · milk-procCTRL          │
+├────────────────────────────────────────────────────────┤
+│             CLI & Scripting Framework (USE_CLI)        │
+│  CLIcore · milkscript · milkbash                       │
+├───────────────────────────┬────────────────────────────┤
+│  Plugins (USE_PLUGINS)    │  Calc & JIT (USE_CALC)     │
+│  milk-extra (fft, image*…)│  milkprop · milkcalc (JIT) │
+│  cacao (AO loop control)  │  milk-fpsexec-milk-calc    │
+├───────────────────────────┴────────────────────────────┤
+│               Core Modules (USE_COREMODS)              │
+│  COREMOD_arith · COREMOD_memory                        │
+│  COREMOD_tools · COREMOD_iofits (USE_CFITSIO)          │
+├────────────────────────────────────────────────────────┤
+│                 Engine (POSIX only)                    │
+│  ImageStreamIO · milkcommon · milkfps                  │
+│  milkcomputeunit · milkprocessinfo · milkdata          │
+│  milk-fps-* · milk-fpsCTRL · milk-procCTRL             │
+└────────────────────────────────────────────────────────┘
          ▼  External: cfitsio, FFTW, OpenBLAS, CUDA (optional)
 ```
 
 Each layer corresponds to a **build tier** that can be compiled independently:
 
-| Tier            | CMake Flags                        | What is built                                                                      |
-| --------------- | ---------------------------------- | ---------------------------------------------------------------------------------- |
-| **Engine**      | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, milkcommon, milkfps, milkcomputeunit, milkdata, milkprocessinfo, engine TUIs (`milk-fpsCTRL`, `milk-procCTRL`) |
-| **Core − FITS** | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | Engine + COREMOD arith, memory, tools + non-FITS plugins and `fpsexec` binaries    |
-| **Core**        | `-DUSE_CLI=OFF`                    | Core − FITS + COREMOD_iofits + FITS-dependent plugins and `fpsexec` binaries       |
-| **Full**        | _(defaults)_                       | Everything: Core + `milk-cli`, `milk-script`, `milk.bash`, `milk-CTRL`, `milk-termview` |
+| Tier            | CMake Flags                                                        | What is built                                                                                        |
+| --------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| **Engine**      | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF`                                 | ImageStreamIO, milkcommon, milkfps, milkcomputeunit, milkdata, milkprocessinfo, standalone tools     |
+| **Core − FITS** | `-DUSE_CLI=OFF -DUSE_PLUGINS=OFF -DUSE_CALC=OFF -DUSE_CFITSIO=OFF` | Engine + COREMOD arith, memory, tools                                                                |
+| **Core**        | `-DUSE_CLI=OFF -DUSE_PLUGINS=OFF -DUSE_CALC=OFF`                   | Core − FITS + `COREMOD_iofits`                                                                       |
+| **Plugins**     | `-DUSE_CLI=OFF -DUSE_CALC=OFF`                                     | Core + `milk-extra` and `cacao` plugins + plugin `fpsexec` binaries                                  |
+| **Calc & JIT**  | `-DUSE_CLI=OFF -DUSE_PLUGINS=OFF`                                  | Core + `milkprop` + `milkcalc` (JIT + `milk-fpsexec-milk-calc`)                                      |
+| **Standalone**  | `-DUSE_CLI=OFF`                                                    | Core + Plugins + Calc & JIT (all standalone `fpsexec` binaries, no CLI)                              |
+| **Full**        | _(defaults)_                                                       | Everything: Standalone + `milk-cli`, `milk-script`, `milk.bash`, `milk-CTRL`, `milk-termview`        |
 
 → Details: [Build Tiers](../quickstart/build_tiers.md) · [Dependency Graph](dependency_graph.md)
 
@@ -130,9 +133,11 @@ milk/
 │   │   └── libmilkdata/               IMGID struct, image utilities
 │   │
 │   ├── tui/                           ← Engine-tier TUIs (fpsCTRL, procCTRL)
+│   ├── prop/                          ← Shared-memory entity properties (milkprop)
+│   ├── calc/                          ← Calculator, C-codegen JIT & milk.calc unit (milkcalc)
 │   │
 │   ├── cli/                           ← User-facing tools
-│   │   ├── libmilkscript/             Scripting, calculator, sessions & bash engine
+│   │   ├── libmilkscript/             Scripting, sessions & bash engine
 │   │   ├── CLIcore/                   Interactive shell framework & milk-termview
 │   │   └── overview/                  milk-CTRL dashboard (milk-streamCTRL opens it on F3)
 │   │

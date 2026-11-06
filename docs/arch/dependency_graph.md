@@ -43,11 +43,14 @@ graph TD
         ARITH["milkCOREMODarith"]:::coremod
         MEMORY["milkCOREMODmemory"]:::coremod
         TOOLS["milkCOREMODtools"]:::coremod
-        PROP["milkprop"]:::coremod
-        CALC["milkcalc"]:::coremod
     end
 
     IOFITS["milkCOREMODiofits"]:::coremod_fits
+
+    subgraph calctier ["Calculator & JIT Tier — USE_CALC"]
+        PROP["milkprop"]:::fw
+        CALC["milkcalc (AST + C JIT)"]:::fw
+    end
 
     MILKSCRIPT["milkscript"]:::fw
     MILKBASH["milkbash"]:::fw
@@ -59,6 +62,7 @@ graph TD
     MILKCTRL["milk-CTRL"]:::exe
     MILKCLI["milk-cli"]:::exe
     MILKSCRIPTEXE["milk-script / milk-call"]:::exe
+    CALCEXE["milk-fpsexec-milk-calc"]:::exe
     TERMVIEW["milk-termview"]:::exe
     MILKEXE["milk-fpsexec-*"]:::exe
     CACAOEXE["cacao-fpsexec-*"]:::exe
@@ -148,6 +152,7 @@ graph TD
     MILKCTRL --> MILKCTRLMODEL
     MILKCLI --> CLICORE
     MILKSCRIPTEXE --> MILKSCRIPT
+    CALCEXE --> CALC
     TERMVIEW --> ISIO
     MILKEXE --> COMPUTEUNIT
     CACAOEXE --> COMPUTEUNIT
@@ -163,11 +168,12 @@ graph TD
 
 ---
 
-## 2. Plugins & Cacao
+## 2. Plugins & Cacao (`USE_PLUGINS`)
 
-> Built whenever `USE_COREMODS=ON`. Every plugin and cacao module is compiled with `-DMILK_NO_CLI`
+> Built when `USE_COREMODS=ON` and `USE_PLUGINS=ON`. Plugins sit in their own tier above Core
+> (parallel to `milkcalc`/JIT): every plugin and cacao module is compiled with `-DMILK_NO_CLI`
 > (`milk_add_runnable_module()`) and links the runnable base libraries (`milkfps`, `milkcomputeunit`,
-> `milkprocessinfo`, `ImageStreamIO`, `milkdata`, `milkCOREMOD*`) — **never** `CLIcore`.
+> `milkprocessinfo`, `ImageStreamIO`, `milkdata`, `milkCOREMOD*`) — **never** `milkcalc` or `CLIcore`.
 
 ```mermaid
 graph TD
@@ -369,35 +375,77 @@ graph TD
 
 ---
 
-## 4. Build Tiers at a Glance
+## 4. Calculator & JIT Runtime (`USE_CALC`)
 
-| Tier            | CMake flags                        | What is built                                                                                                |
-| --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **Engine**      | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, milkcommon, milkprocessinfo, milkfps, milkcomputeunit, milkdata, `milk-fpsCTRL`, `milk-procCTRL` |
-| **Core**        | `-DUSE_CLI=OFF`                    | Engine + COREMODs (arith, memory, tools, iofits) + `milkprop` + `milkcalc` (`milk-fpsexec-milk-calc`) + plugins + `fpsexec` binaries |
-| **Core − FITS** | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | Engine + COREMODs (arith, memory, tools) + `milkprop` + `milkcalc` + non-FITS plugins + `fpsexec` binaries   |
-| **Full**        | _(defaults)_                       | Core + CLI (`milk-cli`, `milk-script`, `milk.bash`, `milk-CTRL`, `milk-termview`)                            |
+> Built when `USE_COREMODS=ON` and `USE_CALC=ON` (independent of `USE_PLUGINS` and `USE_CLI`).
+> `milkcalc` compiles fused pixel/stencil/reduction expressions to C11 (`mc_emit.c`), caches
+> shared objects in `/tmp/milk-calc-cache-<uid>/` (`mc_cc.c`), and loads user C extensions
+> (`milk_calc_ext.h`, `mc_ext_loader.c`).
 
-```text
-cfitsio (headers only, optional)
-  ╌╌ ImageStreamIO                    ← Engine
-       ├─ milkdata      (+ milkcommon)
-       └─ milkprocessinfo (+ milkcommon)
-            └─ milkfps
-                 └─ milkcomputeunit    (standalone runtime)
-                      └─ milkprop      (shared-memory entity properties)
-                           └─ milkcalc (calculator + milk-fpsexec-milk-calc)
-                                └─ CLIcore / milkscript (full CLI)
+```mermaid
+flowchart LR
+    EXPR[".calc expression\n(@calc / milk-fpsexec-milk-calc)"]:::fw
+    EXTSRC["User C extension\n(-l file.c / file.so)"]:::fw
+    PLAN["milkcalc Planner\n(mc_plan.c)"]:::fw
+    PRESTAGE["Pre-stages\n(BLAS / LAPACK / FFTW / spatial)"]:::coremod
+    EMIT["C11 Emitter & Hash\n(mc_emit.c + mc_cc.c)"]:::jit
+    GCC["gcc -O3 -march=native\n-fopenmp-simd -shared -fPIC"]:::ext
+    CACHE["/tmp/milk-calc-cache-UID/\n(<hash32>.so & ext_<hash16>.so)"]:::jit
+    EXEC["OpenMP L1-Tiled Executor\n(mc_exec.c -> ImageStreamIO)"]:::core
 
-milkCOREMODarith  ─┐
-milkCOREMODmemory ─┼─ Core             ← USE_COREMODS (+ milkprop, milkcalc, plugins & fpsexecs)
-milkCOREMODtools  ─┘
-milkCOREMODiofits ─── Core (USE_CFITSIO)
+    EXPR --> PLAN
+    PLAN --> PRESTAGE
+    PLAN --> EMIT
+    EMIT -->|cache miss| GCC
+    GCC --> CACHE
+    EMIT -->|cache hit| CACHE
+    EXTSRC -->|".c"| GCC
+    EXTSRC -->|".so"| CACHE
+    CACHE -->|"dlopen + dlsym"| EXEC
+    PRESTAGE --> EXEC
+
+    classDef ext fill:#566573,stroke:#333,color:#fff
+    classDef core fill:#1a5276,stroke:#123,color:#fff
+    classDef coremod fill:#1e8449,stroke:#145,color:#fff
+    classDef fw fill:#2e86c1,stroke:#1a5,color:#fff
+    classDef jit fill:#9c640c,stroke:#7e5109,color:#fff
 ```
 
 ---
 
-## 5. Detailed Dependency Tables
+## 5. Build Tiers at a Glance
+
+| Tier            | CMake flags                                                        | What is built                                                                                                |
+| --------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| **Engine**      | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF`                                 | ImageStreamIO, milkcommon, milkprocessinfo, milkfps, milkcomputeunit, milkdata, `milk-fpsCTRL`, `milk-procCTRL` |
+| **Core − FITS** | `-DUSE_CLI=OFF -DUSE_PLUGINS=OFF -DUSE_CALC=OFF -DUSE_CFITSIO=OFF` | Engine + COREMODs (arith, memory, tools) + core `fpsexec` binaries                                           |
+| **Core**        | `-DUSE_CLI=OFF -DUSE_PLUGINS=OFF -DUSE_CALC=OFF`                   | Core − FITS + `COREMOD_iofits`                                                                               |
+| **Plugins**     | `-DUSE_CLI=OFF -DUSE_CALC=OFF`                                     | Core + `milk-extra` and `cacao` plugins + plugin `fpsexec` binaries                                          |
+| **Calc & JIT**  | `-DUSE_CLI=OFF -DUSE_PLUGINS=OFF`                                  | Core + `milkprop` + `milkcalc` (JIT + `milk-fpsexec-milk-calc`)                                              |
+| **Standalone**  | `-DUSE_CLI=OFF`                                                    | Core + Plugins + Calc & JIT (all standalone `fpsexec` binaries, no CLI)                                      |
+| **Full**        | _(defaults)_                                                       | Standalone + CLI (`milk-cli`, `milk-script`, `milk.bash`, `milk-CTRL`, `milk-termview`)                      |
+
+```text
+cfitsio (headers only, optional)
+  ╌╌ ImageStreamIO                    ← Engine (POSIX-only)
+       ├─ milkdata      (+ milkcommon)
+       └─ milkprocessinfo (+ milkcommon)
+            └─ milkfps
+                 └─ milkcomputeunit    (standalone runtime + milk-fpsCTRL / milk-procCTRL)
+                      │
+                      ├─ milkCOREMODarith  ─┐
+                      ├─ milkCOREMODmemory ─┼─ Core       ← USE_COREMODS (+ milkCOREMODiofits with USE_CFITSIO)
+                      └─ milkCOREMODtools  ─┘
+                           │
+                           ├─ Plugins (milk-extra, cacao) ← USE_PLUGINS (pure AOT C fpsexecs)
+                           │
+                           └─ milkprop + milkcalc (JIT)   ← USE_CALC (milk-fpsexec-milk-calc)
+                                └─ CLIcore / milkscript   ← USE_CLI (full CLI & milk.bash)
+```
+
+---
+
+## 6. Detailed Dependency Tables
 
 <details markdown="1">
 <summary><b>Engine Tier — Core Libraries</b></summary>
@@ -414,27 +462,35 @@ milkCOREMODiofits ─── Core (USE_CFITSIO)
 </details>
 
 <details markdown="1">
-<summary><b>Framework Libraries</b></summary>
+<summary><b>Core Tier — COREMOD Libraries (`USE_COREMODS`)</b></summary>
 
-| Target     | Links to                                                                                                                               | Optional                                                                                  |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| milkscript | milkcalc, milkprop, milkCOREMODarith, milkCOREMODmemory, milkCOREMODtools, milkfps, milkcomputeunit, milkdata, milkprocessinfo         | milkCOREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP, OpenBLAS, MKL, lapacke    |
-| milkbash   | milkcalc, milkprop, milkfps, milkcomputeunit, milkprocessinfo, milkdata                                                                |                                                                                           |
-| CLIcore    | milkscript, milkCOREMODarith, milkCOREMODmemory, milkCOREMODtools, milkfps, milkcomputeunit, milkdata, milkprocessinfo, milkcommon     | milkCOREMODiofits (USE_CFITSIO), cfitsio, readline, ncurses, tree-sitter, OpenMP          |
+| Target            | Links to                                                                              | Conditional                                                    |
+| ----------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| milkCOREMODtools  | milkfps, milkcomputeunit, milkprocessinfo, ImageStreamIO, milkdata                    |                                                                |
+| milkCOREMODmemory | milkfps, milkcomputeunit, milkprocessinfo, ImageStreamIO, milkdata                    | milkCOREMODiofits, cfitsio (USE_CFITSIO)                       |
+| milkCOREMODarith  | milkCOREMODmemory, milkfps, milkcomputeunit, milkprocessinfo, ImageStreamIO, milkdata | milkCOREMODiofits, cfitsio (USE_CFITSIO), OpenMP, OpenBLAS/MKL |
+| milkCOREMODiofits | milkfps, milkcomputeunit, milkprocessinfo, ImageStreamIO, milkdata, cfitsio           | _only built with USE_CFITSIO_                                  |
 
 </details>
 
 <details markdown="1">
-<summary><b>Core Tier — COREMOD, Property & Calculator Libraries</b></summary>
+<summary><b>Calculator & JIT Tier (`USE_CALC`)</b></summary>
 
-| Target            | Links to                                                                                      | Conditional                                                  |
-| ----------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| milkCOREMODtools  | milkfps, milkcomputeunit, milkprocessinfo, ImageStreamIO, milkdata                            |                                                              |
-| milkCOREMODmemory | milkfps, milkcomputeunit, milkprocessinfo, ImageStreamIO, milkdata                            | milkCOREMODiofits, cfitsio (USE_CFITSIO)                     |
-| milkCOREMODarith  | milkCOREMODmemory, milkfps, milkcomputeunit, milkprocessinfo, ImageStreamIO, milkdata         | milkCOREMODiofits, cfitsio (USE_CFITSIO), OpenMP, OpenBLAS/MKL |
-| milkCOREMODiofits | milkfps, milkcomputeunit, milkprocessinfo, ImageStreamIO, milkdata, cfitsio                   | _only built with USE_CFITSIO_                                |
-| milkprop          | milkcomputeunit, milkfps, milkprocessinfo, milkdata, ImageStreamIO, milkcommon                |                                                              |
-| milkcalc          | milkprop, milkCOREMODarith, milkCOREMODmemory, milkfps, milkcomputeunit, milkprocessinfo, milkdata | OpenMP, OpenBLAS/MKL, lapacke, fftw3/fftw3f              |
+| Target   | Links to                                                                                           | Conditional                                      |
+| -------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| milkprop | milkcomputeunit, milkfps, milkprocessinfo, milkdata, ImageStreamIO, milkcommon                     |                                                  |
+| milkcalc | milkprop, milkCOREMODarith, milkCOREMODmemory, milkfps, milkcomputeunit, milkprocessinfo, milkdata | OpenMP, OpenBLAS/MKL, lapacke, fftw3/fftw3f, gcc |
+
+</details>
+
+<details markdown="1">
+<summary><b>Framework & CLI Libraries (`USE_CLI`)</b></summary>
+
+| Target     | Links to                                                                                                                       | Optional                                                                               |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| milkscript | milkcalc, milkprop, milkCOREMODarith, milkCOREMODmemory, milkCOREMODtools, milkfps, milkcomputeunit, milkdata, milkprocessinfo | milkCOREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP, OpenBLAS, MKL, lapacke |
+| milkbash   | milkprop, milkfps, milkcomputeunit, milkprocessinfo, milkdata _(compiles scalar calc subset in-tree)_                          |                                                                                        |
+| CLIcore    | milkscript, milkCOREMODarith, milkCOREMODmemory, milkCOREMODtools, milkfps, milkcomputeunit, milkdata, milkprocessinfo, milkcommon | milkCOREMODiofits (USE_CFITSIO), cfitsio, readline, ncurses, tree-sitter, OpenMP   |
 
 </details>
 

@@ -14,8 +14,8 @@ project(milk LANGUAGES C)
 # standalone fpsexec executables are built. This removes the need for readline,
 # ncurses, bison, and flex.
 #
-# USE_NCURSES (default ON, requires USE_CLI): Enable ncurses TUI (milk-fpsCTRL,
-# milk-procCTRL).
+# USE_NCURSES (default ON, requires USE_CLI): Enable ncurses support (CLI help
+# TUI, milkinfo).
 #
 # USE_READLINE (default ON, requires USE_CLI): Enable readline for interactive
 # CLI input.
@@ -23,35 +23,57 @@ project(milk LANGUAGES C)
 # USE_CFITSIO (default ON): Enable FITS file I/O (COREMOD_iofits). Requires
 # cfitsio. Disable for a POSIX-only core build.
 #
+# USE_PLUGINS (default ON, requires USE_COREMODS): Build plugin modules
+# (plugins/milk-extra-src, plugins/cacao-src) and their fpsexec binaries.
+#
+# USE_CALC (default ON, requires USE_COREMODS): Build the calculator and JIT
+# engine (milkprop, milkcalc, milk-fpsexec-milk-calc).
+#
 
 # Build tiers (see docs/quickstart/build_tiers.md):
 #
-# Engine-only (POSIX deps only): cmake .. -DUSE_COREMODS=OFF -DUSE_CLI=OFF
+# Engine-only (POSIX deps only):
+#   cmake .. -DUSE_COREMODS=OFF -DUSE_CLI=OFF
 #
-# Core (engine + coremods, no CLI/plugins): cmake .. -DUSE_CLI=OFF
+# Core only (engine + COREMOD_*, no plugins/calc/CLI):
+#   cmake .. -DUSE_CLI=OFF -DUSE_PLUGINS=OFF -DUSE_CALC=OFF
 #
-# Core without cfitsio: cmake .. -DUSE_CLI=OFF -DUSE_CFITSIO=OFF
+# Core without cfitsio:
+#   cmake .. -DUSE_CLI=OFF -DUSE_PLUGINS=OFF -DUSE_CALC=OFF -DUSE_CFITSIO=OFF
 #
-# Full build (default): cmake ..
+# Standalone compute (engine + coremods + plugins + calc/JIT, no CLI):
+#   cmake .. -DUSE_CLI=OFF
 #
-# Full build with CUDA: cmake .. -DUSE_CUDA=ON
+# Full build (default):
+#   cmake ..
+#
+# Full build with CUDA:
+#   cmake .. -DUSE_CUDA=ON
 #
 # Debug build:     -DCMAKE_BUILD_TYPE=Debug Coverage build:
 # -DCMAKE_BUILD_TYPE=Coverage
 
 option(USE_COREMODS "Build core modules (COREMOD_*)" ON)
 option(USE_CFITSIO "Build FITS I/O (needs cfitsio)" ON)
+option(USE_PLUGINS "Build plugin modules (plugins/*)" ON)
+option(USE_CALC "Build calculator and JIT engine (milkcalc)" ON)
 option(USE_CLI "Build interactive CLI (milk-cli)" ON)
-option(USE_NCURSES "Enable ncurses and TUI support" ON)
+option(USE_NCURSES "Enable ncurses support" ON)
 option(USE_READLINE "Enable readline support" ON)
 option(USE_TREESITTER "Enable tree-sitter syntax highlighting (CLI)" ON)
 
 option(USE_STATIC_LTO "Static-link standalone exes for full LTO" OFF)
 
-# Enforce dependency chain: USE_CLI requires USE_COREMODS
+# Enforce dependency chain: USE_CLI requires USE_COREMODS and USE_CALC
 if(USE_CLI AND NOT USE_COREMODS)
   message(STATUS "USE_CLI requires USE_COREMODS; enabling USE_COREMODS")
   set(USE_COREMODS
+    ON
+    CACHE BOOL "" FORCE)
+endif()
+if(USE_CLI AND NOT USE_CALC)
+  message(STATUS "USE_CLI requires USE_CALC; enabling USE_CALC")
+  set(USE_CALC
     ON
     CACHE BOOL "" FORCE)
 endif()
@@ -485,8 +507,8 @@ include_directories(${CMAKE_BINARY_DIR}/config)
 # SOURCE DIRECTORIES
 # =======================================
 # Core modules (libsrcdir) and plugins (libextradir) are discovered and added as
-# subdirectories. Discover plugins (only when coremods are enabled)
-if(USE_COREMODS)
+# subdirectories. Discover plugins when both USE_COREMODS and USE_PLUGINS are ON.
+if(USE_COREMODS AND USE_PLUGINS)
   execute_process(
     COMMAND
     bash -c
@@ -511,10 +533,14 @@ foreach(lsrcdir IN LISTS libsrcdir libextradir)
   endif()
 endforeach()
 
-# example module and isio-tools depend on coremods
-if(USE_COREMODS)
+# Calculator & JIT layer (milkprop + milkcalc + milk-fpsexec-milk-calc)
+if(USE_COREMODS AND USE_CALC)
   add_subdirectory(src/prop)
   add_subdirectory(src/calc)
+endif()
+
+# example module and isio-tools depend on coremods
+if(USE_COREMODS)
   add_subdirectory(src/milk_module_example)
   add_subdirectory(src/isio-tools)
   add_subdirectory(src/perfbench)
