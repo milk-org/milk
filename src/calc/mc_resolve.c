@@ -12,6 +12,7 @@
 #include "libmilkcommon/milkDebugTools.h"
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_memory/variable_ID.h"
+#include "linalg/mc_linalg.h"
 #include "mc_ast.h"
 #include "mcalc_host.h"
 #include "milk_calc_ext.h"
@@ -327,7 +328,7 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     if (e->u.call.udef_id >= 0 || e->u.call.ext_id >= 0)
     {
         return (e->u.call.udef_id >= 0) ? resolve_udef_call(ctx, e)
-                                        : (set_expr_im(e, NULL, _DATATYPE_FLOAT), 0);
+                                        : mc_ext_resolve_call(e, nlhs, ctx->err, ctx->errsz);
     }
 
     const mc_func_t *fn    = e->u.call.fn;
@@ -469,6 +470,7 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
                 (is_pu && (a1->res_kind != MC_RES_IMAGE || (a2 && a2->res_kind == MC_RES_IMAGE))) ||
                 (is_rp && (nargs == 2 || (a1 && a1->res_kind == MC_RES_IMAGE) ||
                            (a2 && a2->res_kind == MC_RES_IMAGE))) ||
+                (strcmp(fn->name, "conv2") == 0 && a1->res_kind != MC_RES_IMAGE) ||
                 (!is_pu && !is_rp && strcmp(fn->name, "conv2") != 0 &&
                  ((a1 && a1->res_kind == MC_RES_IMAGE) || (a2 && a2->res_kind == MC_RES_IMAGE))))
             {
@@ -526,8 +528,7 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     }
 
     default:
-        set_expr_im(e, NULL, any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
-        return 0;
+        return mc_resolve_linalg_call(e, nlhs, any_im, any_cplx, any_dbl, ctx->err, ctx->errsz);
     }
 }
 
@@ -831,14 +832,14 @@ static int resolve_stmt_list(mc_resolve_ctx_t *ctx, mc_stmt_t *s)
                 }
                 mc_parse_ident_streamname(lhs->u.ident.name, lhs->u.ident.bare, &lhs->u.ident.loc);
                 imageID imid   = mc_resolve_or_autoconnect_image(lhs->u.ident.name);
-                int     rhs_im = (nrhs == nlhs && s->u.multi.rhs[j]->res_kind == MC_RES_IMAGE);
+                int     rhs_im = (nrhs == nlhs) ? (s->u.multi.rhs[j]->res_kind == MC_RES_IMAGE)
+                                                : mc_multi_lhs_is_image(s->u.multi.rhs[0], j);
                 lhs->u.ident.id_kind = (imid != -1) ? MC_ID_IMAGE : rhs_im ? MC_ID_NEW : MC_ID_VAR;
                 lhs->u.ident.im_id   = imid;
                 lhs->u.ident.var_id  = (imid != -1 || rhs_im) ? -1 : variable_ID(lhs->u.ident.bare);
                 s->needs_image |= (imid != -1 || rhs_im);
-                uint8_t rdt = rhs_im ? (s->u.multi.rhs[j]->res_dt ? s->u.multi.rhs[j]->res_dt
-                                                                  : _DATATYPE_FLOAT)
-                                     : 255;
+                const mc_expr_t *re  = s->u.multi.rhs[(nrhs == nlhs) ? j : 0];
+                uint8_t          rdt = rhs_im ? (re->res_dt ? re->res_dt : _DATATYPE_FLOAT) : 255;
                 (void) (imid == -1 && created_var_op(ctx, lhs->u.ident.bare, rdt));
             }
             continue;

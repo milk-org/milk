@@ -15,6 +15,7 @@
 #include "COREMOD_arith/arith_team.h"
 #include "COREMOD_arith/image_spatial.h"
 #include "COREMOD_arith/image_stats.h"
+#include "linalg/mc_linalg.h"
 #include "mc_plan.h"
 
 #define MC_RED_BLK 1024
@@ -43,6 +44,11 @@ void mc_ctor_step_free(mc_ctor_step_t *cs)
         arith_csr_cache_free((arith_csr_cache_t *) cs->csr);
         free(cs->csr);
         cs->csr = NULL;
+    }
+    if (cs->ext_state != NULL && cs->ext_state_free != NULL)
+    {
+        cs->ext_state_free(cs->ext_state);
+        cs->ext_state = NULL;
     }
     free(cs->scratch_buf);
     cs->scratch_buf = NULL;
@@ -295,6 +301,14 @@ int mc_exec_prestage(mcalc_prog_t    *prog,
                                                 (void **) &cs->scratch_buf, &cs->scratch_cap);
         mc_release_red_src(&s1);
         return (rc == 0) ? (mc_out_post(oid), 0) : -1;
+    }
+
+    if (strcmp(fn, "conv2") == 0 || strcmp(fn, "boxmean") == 0)
+    {
+        rc = mc_exec_conv2_or_boxmean(slot, rhs, call_site, &s1, out_dt, avoid_id, in_unit, err,
+                                      errsz);
+        mc_release_red_src(&s1);
+        return rc;
     }
 
     if (is_pu || is_rp)

@@ -131,10 +131,14 @@ typedef struct
     int              is_anon;
     mc_tok_type_t    assign_op;
     const mc_expr_t *lhs_slice;
+    const mc_expr_t *target_expr;
     const mc_expr_t *rhs_expr;
+    const mc_stmt_t *multi_stmt;
     void            *csr;         /* cached arith_scatter_csr_t* for pixunmap */
     double          *scratch_buf; /* cached scratch buffer for rprof */
     size_t           scratch_cap;
+    void            *ext_state;
+    void (*ext_state_free)(void *);
 } mc_ctor_step_t;
 
 /* Execution step in a planned program. */

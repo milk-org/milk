@@ -1066,7 +1066,11 @@ static int eval_stmts_on(int         which,
             {
                 char seg_out[4096] = "";
                 int  seg_rc        = 0;
-                int  seg_ok =
+                if (which == 0)
+                {
+                    memset(eval_tokens, 0, sizeof(eval_tokens));
+                }
+                int seg_ok =
                     (which == 0)
                         ? cli_calc_eval_str(seg, is_test, &seg_rc, seg_out, sizeof(seg_out))
                         : mcalc_eval_str(seg, is_test, &seg_rc, seg_out, sizeof(seg_out));

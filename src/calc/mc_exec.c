@@ -18,6 +18,7 @@
 #include "COREMOD_arith/image_linalg.h"
 #include "COREMOD_arith/image_stats.h"
 #include "COREMOD_memory/image_ID.h"
+#include "linalg/mc_linalg.h"
 #include "mc_plan.h"
 
 static uint64_t g_torn_count = 0;
@@ -47,7 +48,7 @@ static inline int is_complex_dt(uint8_t dt)
     return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
 }
 
-static void write_im_pix(IMAGE *im, uint8_t dt, uint64_t idx, double v)
+void mc_write_im_pix(IMAGE *im, uint8_t dt, uint64_t idx, double v)
 {
     int64_t  si = llround(v);
     uint64_t ui = (v <= 0.0) ? 0 : (uint64_t) (v + 0.5);
@@ -139,14 +140,14 @@ static const mc_expr_t *unwrap_def_arg(const mc_expr_t *e, const mc_expr_t *call
                : e;
 }
 
-static int resolve_or_eval_im(const mc_expr_t *e,
-                              const mc_expr_t *call_site,
-                              imageID          avoid_id,
-                              int              in_unit,
-                              imageID         *out_id,
-                              int             *is_tmp,
-                              char            *err,
-                              size_t           errsz)
+int mc_resolve_or_eval_im(const mc_expr_t *e,
+                          const mc_expr_t *call_site,
+                          imageID          avoid_id,
+                          int              in_unit,
+                          imageID         *out_id,
+                          int             *is_tmp,
+                          char            *err,
+                          size_t           errsz)
 {
     e       = unwrap_def_arg(e, call_site);
     *out_id = -1;
@@ -174,23 +175,7 @@ static int resolve_or_eval_im(const mc_expr_t *e,
                             : exec_err(err, errsz, "failed to clone aliased image");
 }
 
-static int eval_scalar_d(const mc_expr_t *e,
-                         const mc_expr_t *call_site,
-                         double          *out,
-                         char            *err,
-                         size_t           errsz)
-{
-    mc_val_t v;
-    if (mc_scalar_eval_expr(unwrap_def_arg(e, call_site), &v, err, errsz) != 0 ||
-        v.type == MC_VAL_STRING)
-    {
-        return (v.type == MC_VAL_STRING) ? exec_err(err, errsz, "expected numeric argument") : -1;
-    }
-    *out = (v.type == MC_VAL_LONG) ? (double) v.lval : v.dval;
-    return 0;
-}
-
-static uint8_t select_ctor_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
+uint8_t mc_select_ctor_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
 {
     return (slot->existed_at_plan && slot->im_id >= 0 && milk_data.image[slot->im_id].used &&
             milk_data.image[slot->im_id].md[0].shared == 1)
@@ -200,6 +185,10 @@ static uint8_t select_ctor_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
 
 int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err, size_t errsz)
 {
+    if (cs->multi_stmt != NULL)
+    {
+        return mc_exec_linalg_or_ext(prog, cs, -1, NULL, in_unit, err, errsz);
+    }
     mc_slot_t       *slot = &prog->slots[cs->slot_idx];
     const mc_expr_t *rhs  = cs->rhs_expr;
     const mc_expr_t *call_site =
@@ -230,28 +219,29 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
         double vals[MC_MAX_ARGS];
         for (int i = 0; i < n; i++)
         {
-            if (eval_scalar_d(elems[i], call_site, &vals[i], err, errsz) != 0)
+            if (mc_eval_scalar_d(elems[i], call_site, &vals[i], err, errsz) != 0)
             {
                 return -1;
             }
         }
         uint32_t sz[3]  = { (uint32_t) n, 1, 1 };
-        uint8_t  out_dt = select_ctor_out_dt(slot, _DATATYPE_FLOAT);
+        uint8_t  out_dt = mc_select_ctor_out_dt(slot, _DATATYPE_FLOAT);
         imageID  oid    = mc_out_prepare(slot, 1, sz, out_dt, in_unit, err, errsz);
         for (int i = 0; oid >= 0 && i < n; i++)
         {
-            write_im_pix(&milk_data.image[oid], out_dt, (uint64_t) i, vals[i]);
+            mc_write_im_pix(&milk_data.image[oid], out_dt, (uint64_t) i, vals[i]);
         }
         return (oid < 0) ? -1 : (mc_out_post(oid), 0);
     }
-    const char *fn    = (rhs->u.call.fn != NULL) ? rhs->u.call.fn->name : "";
-    int         nargs = rhs->u.call.nargs;
+    const char *fn =
+        (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL) ? rhs->u.call.fn->name : "";
+    int nargs = (rhs->kind == MC_EXPR_CALL) ? rhs->u.call.nargs : 0;
     if (strcmp(fn, "linspace") == 0 || strcmp(fn, "zeros") == 0 || strcmp(fn, "eye") == 0)
     {
         double v[3] = { 0.0, 0.0, 0.0 };
         for (int i = 0; i < nargs; i++)
         {
-            if (eval_scalar_d(rhs->u.call.args[i], call_site, &v[i], err, errsz) != 0)
+            if (mc_eval_scalar_d(rhs->u.call.args[i], call_site, &v[i], err, errsz) != 0)
             {
                 return -1;
             }
@@ -272,7 +262,7 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
         }
         sz[0] = is_ls ? (uint32_t) llround(v[2]) : sz[0];
         (void) (is_eye && nargs == 1 && (sz[1] = sz[0]));
-        uint8_t out_dt = select_ctor_out_dt(slot, _DATATYPE_FLOAT);
+        uint8_t out_dt = mc_select_ctor_out_dt(slot, _DATATYPE_FLOAT);
         imageID oid = mc_out_prepare(slot, is_ls ? 1 : (is_eye ? 2 : (uint8_t) nargs), sz, out_dt,
                                      in_unit, err, errsz);
         if (oid < 0)
@@ -286,7 +276,7 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
                    (size_t) out->md[0].nelement * (size_t) ImageStreamIO_typesize(out_dt));
             for (uint32_t i = 0, dlen = (sz[0] < sz[1]) ? sz[0] : sz[1]; is_eye && i < dlen; i++)
             {
-                write_im_pix(out, out_dt, (uint64_t) i * sz[0] + i, 1.0);
+                mc_write_im_pix(out, out_dt, (uint64_t) i * sz[0] + i, 1.0);
             }
             mc_out_post(oid);
             return 0;
@@ -294,40 +284,32 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
         double step = (sz[0] > 1) ? (v[1] - v[0]) / (double) (sz[0] - 1) : 0.0;
         for (uint32_t i = 0; i < sz[0]; i++)
         {
-            write_im_pix(out, out_dt, i,
-                         (sz[0] == 1)       ? v[0]
-                         : (i == sz[0] - 1) ? v[1]
-                                            : v[0] + step * (double) i);
+            mc_write_im_pix(out, out_dt, i,
+                            (sz[0] == 1)       ? v[0]
+                            : (i == sz[0] - 1) ? v[1]
+                                               : v[0] + step * (double) i);
         }
         mc_out_post(oid);
         return 0;
     }
 
+    if (rhs->kind != MC_EXPR_CALL || rhs->u.call.ext_id >= 0 ||
+        (strcmp(fn, "vec") != 0 && strcmp(fn, "reshape") != 0 && strcmp(fn, "transpose") != 0 &&
+         strcmp(fn, "outer") != 0 && strcmp(fn, "diag") != 0))
+    {
+        return mc_exec_linalg_or_ext(prog, cs, avoid_id, call_site, in_unit, err, errsz);
+    }
+
     imageID src_id = -1, src2_id = -1;
     int     src_tmp = 0, src2_tmp = 0, rc = 0;
-    if (resolve_or_eval_im(rhs->u.call.args[0], call_site, avoid_id, in_unit, &src_id, &src_tmp,
-                           err, errsz) != 0)
+    if (mc_resolve_or_eval_im(rhs->u.call.args[0], call_site, avoid_id, in_unit, &src_id, &src_tmp,
+                              err, errsz) != 0)
     {
         return -1;
     }
     const IMAGE *src = &milk_data.image[src_id];
 
-    if (rhs->u.call.ext_id >= 0)
-    {
-        const milk_calc_ext_entry_t *ext = milk_calc_ext_get(rhs->u.call.ext_id);
-        uint32_t sz[3] = { src->md[0].size[0], (src->md[0].naxis > 1) ? src->md[0].size[1] : 1,
-                           (src->md[0].naxis > 2) ? src->md[0].size[2] : 1 };
-        imageID  oid =
-            (ext != NULL && ext->blk1_fn != NULL && src->md[0].datatype == _DATATYPE_FLOAT)
-                ? mc_out_prepare(slot, src->md[0].naxis, sz, _DATATYPE_FLOAT, in_unit, err, errsz)
-                : -1;
-        uint8_t pbuf[MILK_CALC_PARAM_BYTES] = { 0 };
-        rc = (oid < 0) ? -1
-                       : (ext->blk1_fn(milk_data.image[oid].array.F, src->array.F, pbuf,
-                                       (int) src->md[0].nelement),
-                          mc_out_post(oid), 0);
-    }
-    else if (strcmp(fn, "vec") == 0 || strcmp(fn, "reshape") == 0)
+    if (strcmp(fn, "vec") == 0 || strcmp(fn, "reshape") == 0)
     {
         uint64_t nel = src->md[0].nelement, prod_pos = 1;
         uint8_t  ndims = 1;
@@ -340,7 +322,7 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
             for (int i = 0; i < (int) ndims; i++)
             {
                 double dv = 0.0;
-                if (eval_scalar_d(rhs->u.call.args[i + 1], call_site, &dv, err, errsz) != 0)
+                if (mc_eval_scalar_d(rhs->u.call.args[i + 1], call_site, &dv, err, errsz) != 0)
                 {
                     rc = -1;
                     goto done_src;
@@ -366,7 +348,7 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
             }
             sz[0] = (uint32_t) dims[0], sz[1] = (uint32_t) dims[1], sz[2] = (uint32_t) dims[2];
         }
-        uint8_t out_dt = select_ctor_out_dt(slot, src->md[0].datatype);
+        uint8_t out_dt = mc_select_ctor_out_dt(slot, src->md[0].datatype);
         imageID oid    = mc_out_prepare(slot, ndims, sz, out_dt, in_unit, err, errsz);
         rc             = (oid < 0 || arith_image_reshape_im(src, &milk_data.image[oid]) != 0)
                              ? -1
@@ -381,7 +363,7 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
         }
         uint32_t sz[3] = { (src->md[0].naxis == 2) ? src->md[0].size[1] : 1, src->md[0].size[0],
                            1 };
-        uint8_t  odt   = select_ctor_out_dt(
+        uint8_t  odt   = mc_select_ctor_out_dt(
             slot, (src->md[0].datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
         imageID oid = mc_out_prepare(slot, 2, sz, odt, in_unit, err, errsz);
         rc          = (oid < 0 || arith_image_transpose_im(src, &milk_data.image[oid]) != 0)
@@ -391,8 +373,8 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
     else if (strcmp(fn, "outer") == 0)
     {
         uint64_t M = 0, N = 0;
-        if (resolve_or_eval_im(rhs->u.call.args[1], call_site, avoid_id, in_unit, &src2_id,
-                               &src2_tmp, err, errsz) != 0)
+        if (mc_resolve_or_eval_im(rhs->u.call.args[1], call_site, avoid_id, in_unit, &src2_id,
+                                  &src2_tmp, err, errsz) != 0)
         {
             rc = -1;
             goto done_src;
@@ -404,10 +386,10 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
             goto done_src;
         }
         uint32_t sz[3] = { (uint32_t) M, (uint32_t) N, 1 };
-        uint8_t  odt   = select_ctor_out_dt(slot, (src->md[0].datatype == _DATATYPE_DOUBLE ||
-                                                   src2->md[0].datatype == _DATATYPE_DOUBLE)
-                                                      ? _DATATYPE_DOUBLE
-                                                      : _DATATYPE_FLOAT);
+        uint8_t  odt   = mc_select_ctor_out_dt(slot, (src->md[0].datatype == _DATATYPE_DOUBLE ||
+                                                      src2->md[0].datatype == _DATATYPE_DOUBLE)
+                                                         ? _DATATYPE_DOUBLE
+                                                         : _DATATYPE_FLOAT);
         imageID  oid   = mc_out_prepare(slot, 2, sz, odt, in_unit, err, errsz);
         rc = (oid < 0 || arith_image_ger_im(src, src2, 1.0, 0.0, &milk_data.image[oid]) != 0)
                  ? -1
@@ -416,7 +398,8 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
     else if (strcmp(fn, "diag") == 0)
     {
         double kd = 0.0;
-        if ((nargs == 2 && eval_scalar_d(rhs->u.call.args[1], call_site, &kd, err, errsz) != 0) ||
+        if ((nargs == 2 &&
+             mc_eval_scalar_d(rhs->u.call.args[1], call_site, &kd, err, errsz) != 0) ||
             (src->md[0].naxis != 1 && src->md[0].naxis != 2))
         {
             rc = (src->md[0].naxis != 1 && src->md[0].naxis != 2)
@@ -426,8 +409,8 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
         }
         long     k = llround(kd), absk = (k < 0) ? -k : k;
         uint8_t  sdt = src->md[0].datatype;
-        uint8_t  odt = select_ctor_out_dt(slot, (sdt == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE
-                                                                          : _DATATYPE_FLOAT);
+        uint8_t  odt = mc_select_ctor_out_dt(slot, (sdt == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE
+                                                                             : _DATATYPE_FLOAT);
         uint64_t r0 = (k < 0) ? (uint64_t) absk : 0, c0 = (k > 0) ? (uint64_t) absk : 0;
         int      is_1d = (src->md[0].naxis == 1);
         uint64_t M = src->md[0].size[0], N = is_1d ? (M + (uint64_t) absk) : src->md[0].size[1];
@@ -450,8 +433,8 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
                        (size_t) out->md[0].nelement * (size_t) ImageStreamIO_typesize(odt)));
         for (uint64_t i = 0; i < L; i++)
         {
-            write_im_pix(out, odt, is_1d ? ((c0 + i) * N + (r0 + i)) : i,
-                         arith_read_im_pix(src, sdt, is_1d ? i : ((c0 + i) * M + (r0 + i))));
+            mc_write_im_pix(out, odt, is_1d ? ((c0 + i) * N + (r0 + i)) : i,
+                            arith_read_im_pix(src, sdt, is_1d ? i : ((c0 + i) * M + (r0 + i))));
         }
         mc_out_post(oid);
     }
@@ -565,7 +548,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         {
             ops[i].scalar =
                 (d->slice_expr != NULL && se == NULL) ? (double) arith_next_rng_seed() : 0.0;
-            if (se != NULL && eval_scalar_d(se, NULL, &ops[i].scalar, err, errsz) != 0)
+            if (se != NULL && mc_eval_scalar_d(se, NULL, &ops[i].scalar, err, errsz) != 0)
             {
                 rc = -1;
                 goto cleanup;

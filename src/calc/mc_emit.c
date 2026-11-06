@@ -238,12 +238,13 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
     case MC_FN_COORD:
     {
         int op_idx = resolve_im_arg_op(c, e->u.call.args[0], 0);
+        int ref_op = (op_idx >= 0) ? op_idx : c->pass->outs[c->cur_out_idx].op_idx;
         int mode   = (strcmp(fn->name, "ix") == 0)   ? 0
                      : (strcmp(fn->name, "iy") == 0) ? 1
                      : (strcmp(fn->name, "ir") == 0) ? 2
                                                      : 3;
-        eb_printf(c->eb, "%s(&ops[%d], x, y, ", wd ? "mc_coordd" : "mc_coordf",
-                  (op_idx >= 0) ? op_idx : 0);
+        eb_printf(c->eb, "%s(_vnx%d, _vny%d, (int32_t)x, (int32_t)y, ",
+                  wd ? "mc_coordd" : "mc_coordf", ref_op, ref_op);
         (void) ((nargs == 3 && (emit_scalar_arg(c, e->u.call.args[1], 0), eb_printf(c->eb, ", "),
                                 emit_scalar_arg(c, e->u.call.args[2], 0), 1)) ||
                 (eb_printf(c->eb, "0, 0"), 1));
@@ -825,7 +826,7 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
             (void) (pre_eb.buf != NULL && (eb_printf(&eb, "%s", pre_eb.buf), 1));
             eb_printf(&eb,
                       "        #pragma omp simd\n"
-                      "        for (int64_t x = _x0; x < _x1; x++) {\n"
+                      "        for (int32_t x = (int32_t)_x0; x < (int32_t)_x1; x++) {\n"
                       "            const uint64_t _i = _row_base + (uint64_t)x; (void)_i;\n%s"
                       "        }\n",
                       body_eb.buf ? body_eb.buf : "");

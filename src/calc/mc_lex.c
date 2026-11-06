@@ -222,9 +222,15 @@ static mc_tok_type_t scan_op(const char *p, int *len)
 
 int mc_lex(const char *src, mc_tok_list_t *out)
 {
-    memset(out, 0, sizeof(*out));
+    out->ntok      = 0;
+    out->pos       = 0;
+    out->err_line  = 0;
+    out->err_col   = 0;
+    out->errmsg[0] = '\0';
     if (src == NULL)
     {
+        out->toks[0].type    = MC_TOK_EOF;
+        out->toks[0].sval[0] = '\0';
         return 0;
     }
 
@@ -252,6 +258,10 @@ int mc_lex(const char *src, mc_tok_list_t *out)
         {
             break;
         }
+        out->toks[nt].no_space_after = 0;
+        out->toks[nt].lval           = 0;
+        out->toks[nt].dval           = 0.0;
+        out->toks[nt].sval[0]        = '\0';
         if (*p == '\n')
         {
             mc_tok_t *t = &out->toks[nt++];
@@ -442,10 +452,11 @@ int mc_lex(const char *src, mc_tok_list_t *out)
         return -1;
     }
 
-    out->toks[nt].type = MC_TOK_EOF;
-    out->toks[nt].line = line;
-    out->toks[nt].col  = col;
-    out->ntok          = nt;
+    out->toks[nt].type    = MC_TOK_EOF;
+    out->toks[nt].line    = line;
+    out->toks[nt].col     = col;
+    out->toks[nt].sval[0] = '\0';
+    out->ntok             = nt;
     return 0;
 }
 

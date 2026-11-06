@@ -372,6 +372,9 @@ static mc_expr_t *parse_primary(mc_parse_ctx_t *ctx)
                 {
                     snprintf(node->u.call.kw_names[nargs], sizeof(node->u.call.kw_names[nargs]),
                              "%s", arg->u.assign.target->u.ident.name);
+                    node->u.call.args[nargs] = arg->u.assign.rhs;
+                    arg->u.assign.rhs        = NULL;
+                    mc_expr_free(arg);
                 }
                 node->u.call.nargs = ++nargs;
                 if (cur_tok(ctx)->type != MC_TOK_COMMA)

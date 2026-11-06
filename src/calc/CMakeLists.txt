@@ -2,7 +2,9 @@ set(LIBNAME "milkcalc")
 
 set(SOURCEFILES
     mc_ext_registry.c
+    mc_ext_loader.c
     mc_ext_builtin.c
+    mc_ext_exec.c
     mc_func.c
     mc_lex.c
     mc_parse.c
@@ -19,6 +21,9 @@ set(SOURCEFILES
     mc_exec.c
     mc_prog.c
     mc_eval.c
+    linalg/mc_linalg_blas.c
+    linalg/mc_linalg_lapack.c
+    linalg/mc_fft_stack.c
     milk_argval.c
     units/milk_unit.c)
 
@@ -30,6 +35,24 @@ set(INCLUDEFILES
     units/milk_unit.h)
 
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
+milk_apply_extensions(${LIBNAME})
+
+find_package(OpenMP)
+if(OpenMP_C_FOUND)
+  target_link_libraries(${LIBNAME} PUBLIC OpenMP::OpenMP_C)
+endif()
+
+find_package(PkgConfig QUIET)
+if(PKG_CONFIG_FOUND)
+  pkg_check_modules(FFTW QUIET fftw3)
+  pkg_check_modules(FFTWF QUIET fftw3f)
+  if(FFTW_FOUND AND FFTWF_FOUND)
+    target_compile_definitions(${LIBNAME} PRIVATE HAVE_FFTW3=1)
+    target_include_directories(${LIBNAME} PRIVATE ${FFTW_INCLUDE_DIRS} ${FFTWF_INCLUDE_DIRS})
+    target_link_directories(${LIBNAME} PRIVATE ${FFTW_LIBRARY_DIRS} ${FFTWF_LIBRARY_DIRS})
+    target_link_libraries(${LIBNAME} PRIVATE ${FFTW_LIBRARIES} ${FFTWF_LIBRARIES})
+  endif()
+endif()
 
 target_compile_definitions(
   ${LIBNAME}

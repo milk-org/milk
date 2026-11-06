@@ -289,3 +289,57 @@ def test_iargmax_iargmin_coord_unpack(tmp_path):
         extra_env={"MILK_CALC_ENGINE": "new"},
     )
     assert bad.returncode != 0
+
+
+def test_phase7_library_and_spatial_ops(tmp_path):
+    """Verify Phase 7 library calls, spatial ops, and new §3.2 features (§5 Phase 7)."""
+    diff_stmts = (
+        "C = matmul(A, B)",
+        "C = matmul(transpose(A), B)",
+        "C = 0.5 * matmul(A, B) + 0.25 * C",
+        "Mf = medfilt3(A)",
+    )
+    lines = [
+        json.dumps({"dataset": "default", "stmt": st}, separators=(",", ":"))
+        for st in diff_stmts
+    ]
+    diffs = _run_calcdiff(lines, extra_args=["--strict"])
+    assert not diffs, "Unexpected diff(s) in Phase 7 library ops:\n" + "\n".join(
+        json.dumps(d) for d in diffs[:20]
+    )
+
+    script = (
+        "mem.mk2Dim A 8 8 >/dev/null\n"
+        "mem.mk2Dim B 8 8 >/dev/null\n"
+        '@calc "A = 1.0 + 0.1 * ix(A) + 0.2 * iy(A); B = 0.5 - 0.05 * ix(B) + 0.15 * iy(B)"\n'
+        '@calc "M1 = A @ B; M2 = matmul(A, B); err_mm = imax(abs(M1 - M2))"\n'
+        '@calc "T1 = A.T @ B; T2 = matmul(transpose(A), B); err_tr = imax(abs(T1 - T2))"\n'
+        "@calc 'E1 = einsum(\"ij,jk->ik\", A, B); err_ein = imax(abs(E1 - M2))'\n"
+        '@calc "U, S, Vt = svd(A); Sonly = svd(A); err_svd = imax(abs(S - Sonly))"\n'
+        '@calc "H = A + A.T; W, V = eigh(H); Wonly = eigh(H); err_eigh = imax(abs(W - Wonly))"\n'
+        '@calc "F = fft(A); R = real(ifft(F)); Fs = fftshift(F); err_fft = imax(abs(R - A))"\n'
+        '@calc "Hs = hstack(A, B); Vs = vstack(A, B); Ds = dstack(A, B); Cs = cat(0, A, B)"\n'
+        '@calc "err_cat = imax(abs(Hs - Cs)) + abs(icount(Hs) - 128) + abs(icount(Ds) - 128)"\n'
+        '@calc "R4 = rot90(rot90(A, 1), 3); R2 = rot90(rot90(A, 2), 2); '
+        'err_rot = imax(abs(R4 - A)) + imax(abs(R2 - A))"\n'
+        "mem.mk2Dim K 3 3 >/dev/null\n"
+        '@calc "K = 1.0 / 9.0; Cv = conv2(A, K); Bm = boxmean(A, 1); '
+        'err_conv = imax(abs(Cv[1:7, 1:7] - Bm[1:7, 1:7]))"\n'
+        '@calc "im = 10.0 + 0 * A; im[3, 4] = 50.0; im[6, 2] = 2.0"\n'
+        '@calc "mn = imin3(im); mx = imax3(im); bm = boxmean(im, 1)"\n'
+        '@calc "v_mx = mx[4, 4]; v_mn = mn[5, 2]; v_bm = bm[3, 4]"\n'
+        "@calc -v err_mm,err_tr,err_ein,err_svd,err_eigh,err_fft,err_cat,err_rot,err_conv "
+        '"err_mm; err_tr; err_ein; err_svd; err_eigh; err_fft; err_cat; err_rot; err_conv"\n'
+        '@calc -v v_mx,v_mn,v_bm "v_mx; v_mn; v_bm"\n'
+        'echo "errs=$err_mm,$err_tr,$err_ein,$err_svd,$err_eigh,$err_fft,$err_cat,$err_rot,$err_conv"\n'
+        'echo "res=$v_mx,$v_mn,$v_bm"\n'
+    )
+    res = milk_bash(script, tmp_path, extra_env={"MILK_CALC_ENGINE": "new"})
+    assert res.returncode == 0, res.stdout + res.stderr
+    errs = [float(x) for x in value(res.stdout, "errs").split(",")]
+    for e in errs:
+        assert e <= 1e-5, f"Phase 7 library op error exceeded tolerance: {errs}"
+    vals = [float(x) for x in value(res.stdout, "res").split(",")]
+    assert vals[0] == pytest.approx(50.0, rel=1e-6)
+    assert vals[1] == pytest.approx(2.0, rel=1e-6)
+    assert vals[2] == pytest.approx((8 * 10.0 + 50.0) / 9.0, rel=1e-5)

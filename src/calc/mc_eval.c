@@ -668,16 +668,11 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
         }
     }
 
-    mc_tok_list_t *tl = calloc(1, sizeof(mc_tok_list_t));
-    if (tl == NULL)
-    {
-        report_err(input, "out of memory");
-        return 0;
-    }
+    static _Thread_local mc_tok_list_t s_tl;
+    mc_tok_list_t                     *tl = &s_tl;
     if (mc_lex(input, tl) != 0)
     {
         report_err(input, tl->errmsg[0] != '\0' ? tl->errmsg : "syntax error");
-        free(tl);
         return 0;
     }
 
@@ -689,7 +684,6 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
     }
     if (p0 >= tl->ntok || tl->toks[p0].type == MC_TOK_EOF)
     {
-        free(tl);
         if (out_rc != NULL)
         {
             *out_rc = is_test ? 1 : 0;
@@ -699,7 +693,6 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
 
     char       err[256] = "";
     mc_stmt_t *s        = mc_parse_stmt(tl, err, sizeof(err));
-    free(tl);
     if (s == NULL)
     {
         report_err(input, err[0] != '\0' ? err : "syntax error");
@@ -713,42 +706,41 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
         return 0;
     }
 
-    int  is_assign     = (s->kind == MC_STMT_MULTI_ASSIGN);
-    int  is_multi      = (s->kind == MC_STMT_MULTI_ASSIGN);
+    int  is_assign = (s->kind == MC_STMT_MULTI_ASSIGN), is_multi = is_assign;
     char lhs_name[256] = "";
     if (s->kind == MC_STMT_EXPR && s->u.expr != NULL && s->u.expr->kind == MC_EXPR_ASSIGN)
     {
         is_assign             = 1;
         const mc_expr_t *tget = s->u.expr->u.assign.target;
-        if (tget->kind == MC_EXPR_IDENT)
+        snprintf(lhs_name, sizeof(lhs_name), "%s",
+                 (tget->kind == MC_EXPR_IDENT)
+                     ? (tget->u.ident.bare[0] != '\0' ? tget->u.ident.bare : tget->u.ident.name)
+                     : ((tget->kind == MC_EXPR_SLICE) ? tget->u.slice.name : ""));
+    }
+    else if (s->kind == MC_STMT_EXPR && s->u.expr != NULL && s->u.expr->kind == MC_EXPR_CALL &&
+             s->u.expr->u.call.fn != NULL && s->u.expr->u.call.nargs >= 2)
+    {
+        const char      *fnm  = s->u.expr->u.call.fn->name;
+        const mc_expr_t *last = s->u.expr->u.call.args[s->u.expr->u.call.nargs - 1];
+        if (strcmp(fnm, "gemm") == 0 || strcmp(fnm, "gemv") == 0 || strcmp(fnm, "symv") == 0 ||
+            strcmp(fnm, "syrk") == 0 || strcmp(fnm, "ger") == 0 || strcmp(fnm, "axpy") == 0 ||
+            strcmp(fnm, "scal") == 0)
         {
-            snprintf(lhs_name, sizeof(lhs_name), "%s",
-                     tget->u.ident.bare[0] != '\0' ? tget->u.ident.bare : tget->u.ident.name);
-        }
-        else if (tget->kind == MC_EXPR_SLICE)
-        {
-            snprintf(lhs_name, sizeof(lhs_name), "%s", tget->u.slice.name);
+            is_assign = 1;
+            (void) (last->kind == MC_EXPR_IDENT &&
+                    snprintf(lhs_name, sizeof(lhs_name), "%s", last->u.ident.bare));
         }
     }
 
-    int is_im_stmt = 0;
-    if (s->kind == MC_STMT_EXPR && s->u.expr != NULL)
+    int is_im_stmt = (s->kind == MC_STMT_EXPR && s->u.expr != NULL &&
+                      (s->u.expr->res_kind == MC_RES_IMAGE ||
+                       (s->u.expr->kind == MC_EXPR_ASSIGN &&
+                        s->u.expr->u.assign.target->res_kind == MC_RES_IMAGE)));
+    for (int j = 0; s->kind == MC_STMT_MULTI_ASSIGN && j < s->u.multi.nlhs; j++)
     {
-        is_im_stmt = (s->u.expr->res_kind == MC_RES_IMAGE ||
-                      (s->u.expr->kind == MC_EXPR_ASSIGN &&
-                       s->u.expr->u.assign.target->res_kind == MC_RES_IMAGE));
-    }
-    else if (s->kind == MC_STMT_MULTI_ASSIGN)
-    {
-        for (int j = 0; j < s->u.multi.nlhs; j++)
-        {
-            const mc_expr_t *lhs = s->u.multi.lhs[j];
-            if (lhs->u.ident.id_kind == MC_ID_IMAGE || lhs->u.ident.id_kind == MC_ID_NEW ||
-                (j < s->u.multi.nrhs && s->u.multi.rhs[j]->res_kind == MC_RES_IMAGE))
-            {
-                is_im_stmt = 1;
-            }
-        }
+        const mc_expr_t *lhs = s->u.multi.lhs[j];
+        is_im_stmt |= (lhs->u.ident.id_kind == MC_ID_IMAGE || lhs->u.ident.id_kind == MC_ID_NEW ||
+                       (j < s->u.multi.nrhs && s->u.multi.rhs[j]->res_kind == MC_RES_IMAGE));
     }
 
     if (is_test && is_im_stmt)
@@ -868,16 +860,14 @@ int mcalc_eval_math_to_val(const char *input, int *out_type, long *out_lval, dou
     {
         return 0;
     }
-    mc_tok_list_t *tl = calloc(1, sizeof(mc_tok_list_t));
-    if (tl == NULL || mc_lex(input, tl) != 0)
+    static _Thread_local mc_tok_list_t s_tl;
+    if (mc_lex(input, &s_tl) != 0)
     {
-        free(tl);
         return 0;
     }
     char       err[256] = "";
-    mc_stmt_t *s        = mc_parse_stmt(tl, err, sizeof(err));
-    free(tl);
-    mc_val_t v;
+    mc_stmt_t *s        = mc_parse_stmt(&s_tl, err, sizeof(err));
+    mc_val_t   v;
     if (s == NULL || s->kind != MC_STMT_EXPR || s->u.expr == NULL ||
         mc_resolve_stmt(s, err, sizeof(err)) != 0 || s->needs_image ||
         mc_scalar_eval_expr(s->u.expr, &v, err, sizeof(err)) != 0 ||

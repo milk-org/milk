@@ -13,6 +13,7 @@
 #include "libfps/fps_types.h"
 #include "libmilkcommon/milkDebugTools.h"
 #include "libmilkdata/milkdata.h"
+#include "linalg/mc_linalg.h"
 #include "mc_plan.h"
 
 __attribute__((format(printf, 3, 4))) static int plan_err(char       *err,
@@ -45,12 +46,7 @@ static void mark_assigned_var(mcalc_prog_t *p, const char *bare)
 }
 static int is_ctor_fn(const mc_func_t *fn)
 {
-    return fn != NULL && (fn->kind == MC_FN_LINSPACE ||
-                          (fn->kind == MC_FN_LINALG &&
-                           (strcmp(fn->name, "zeros") == 0 || strcmp(fn->name, "eye") == 0 ||
-                            strcmp(fn->name, "diag") == 0 || strcmp(fn->name, "transpose") == 0 ||
-                            strcmp(fn->name, "reshape") == 0 || strcmp(fn->name, "vec") == 0 ||
-                            strcmp(fn->name, "outer") == 0)));
+    return fn != NULL && (fn->kind == MC_FN_LINSPACE || fn->kind == MC_FN_LINALG);
 }
 static int is_inline_stencil_fn(const mc_func_t *fn)
 {
@@ -60,9 +56,7 @@ static int is_inline_stencil_fn(const mc_func_t *fn)
 }
 static int is_prestage_stencil_fn(const mc_func_t *fn)
 {
-    return fn != NULL && fn->kind == MC_FN_STENCIL_LIB &&
-           (strcmp(fn->name, "cumsum") == 0 || strcmp(fn->name, "gauss") == 0 ||
-            strcmp(fn->name, "pixunmap") == 0 || strcmp(fn->name, "rprof") == 0);
+    return fn != NULL && fn->kind == MC_FN_STENCIL_LIB && !is_inline_stencil_fn(fn);
 }
 
 static int is_ctor_call(const mc_expr_t *e)
@@ -100,12 +94,9 @@ static int expr_uses_def_param(const mc_expr_t *e)
 
 static int check_expr_supported(const mc_expr_t *e, char *err, size_t errsz)
 {
-    if (e == NULL || e->kind <= MC_EXPR_END)
-    {
-        return 0;
-    }
     int rc =
-        (e->kind == MC_EXPR_UNARY)     ? check_expr_supported(e->u.unary.operand, err, errsz)
+        (e == NULL || e->kind <= MC_EXPR_END) ? 0
+        : (e->kind == MC_EXPR_UNARY)          ? check_expr_supported(e->u.unary.operand, err, errsz)
         : (e->kind == MC_EXPR_BINARY)  ? (check_expr_supported(e->u.binary.left, err, errsz) ||
                                           check_expr_supported(e->u.binary.right, err, errsz))
         : (e->kind == MC_EXPR_TERNARY) ? (check_expr_supported(e->u.ternary.cond, err, errsz) ||
@@ -115,48 +106,39 @@ static int check_expr_supported(const mc_expr_t *e, char *err, size_t errsz)
                                           check_expr_supported(e->u.assign.rhs, err, errsz))
         : (e->kind == MC_EXPR_COMP)    ? check_expr_supported(e->u.comp.body, err, errsz)
                                        : 0;
-    for (int i = 0; e->kind == MC_EXPR_CHAIN && i <= e->u.chain.nops && !rc; i++)
+    for (int i = 0; e && e->kind == MC_EXPR_CHAIN && i <= e->u.chain.nops && !rc; i++)
     {
         rc = check_expr_supported(e->u.chain.operands[i], err, errsz);
     }
-    for (int a = 0; e->kind == MC_EXPR_SLICE && a < e->u.slice.naxis && !rc; a++)
+    for (int a = 0; e && e->kind == MC_EXPR_SLICE && a < e->u.slice.naxis && !rc; a++)
     {
         rc = check_expr_supported(e->u.slice.axes[a].start, err, errsz) ||
              check_expr_supported(e->u.slice.axes[a].stop, err, errsz) ||
              check_expr_supported(e->u.slice.axes[a].step, err, errsz);
     }
-    for (int i = 0; e->kind == MC_EXPR_VEC_LIT && i < e->u.vec_lit.nelem && !rc; i++)
+    for (int i = 0; e && e->kind == MC_EXPR_VEC_LIT && i < e->u.vec_lit.nelem && !rc; i++)
     {
         rc = check_expr_supported(e->u.vec_lit.elems[i], err, errsz);
     }
-    for (int g = 0; e->kind == MC_EXPR_COMP && g < e->u.comp.ngens && !rc; g++)
+    for (int g = 0; e && e->kind == MC_EXPR_COMP && g < e->u.comp.ngens && !rc; g++)
     {
         rc = check_expr_supported(e->u.comp.gens[g].start, err, errsz) ||
              check_expr_supported(e->u.comp.gens[g].stop, err, errsz) ||
              check_expr_supported(e->u.comp.gens[g].step, err, errsz);
     }
-    for (int i = 0; e->kind == MC_EXPR_CALL && i < e->u.call.nargs && !rc; i++)
+    for (int i = 0; e && e->kind == MC_EXPR_CALL && i < e->u.call.nargs && !rc; i++)
     {
         rc = check_expr_supported(e->u.call.args[i], err, errsz);
     }
-    if (e->kind != MC_EXPR_CALL || rc != 0 || e->u.call.udef_id >= 0)
+    if (!e || e->kind != MC_EXPR_CALL || rc != 0 || e->u.call.udef_id >= 0)
     {
-        return (rc || e->kind != MC_EXPR_CALL)
+        return (rc || !e || e->kind != MC_EXPR_CALL)
                    ? rc
                    : check_expr_supported(e->u.call.udef_body, err, errsz);
     }
-    const milk_calc_ext_entry_t *ext =
-        (e->u.call.ext_id >= 0) ? mcalc_ext_get(e->u.call.ext_id) : NULL;
-    int ext_ok = (ext != NULL && ext->kind == MILK_EXT_BLK1 && ext->blk1_fn != NULL &&
-                  e->u.call.nargs == 1 && e->u.call.kw_names[0][0] == '\0');
     const mc_fn_kind_t fk =
         (e->u.call.ext_id < 0 && e->u.call.fn) ? e->u.call.fn->kind : (mc_fn_kind_t) -1;
-    return (ext_ok || fk == MC_FN_SCALAR || fk == MC_FN_WHERE || fk == MC_FN_CPLX ||
-            fk == MC_FN_COORD || fk == MC_FN_PRNG || fk == MC_FN_LUT || fk == MC_FN_SHIFT ||
-            fk == MC_FN_GATHER || is_ctor_fn(e->u.call.fn) || is_inline_stencil_fn(e->u.call.fn) ||
-            is_prestage_stencil_fn(e->u.call.fn) || fk == MC_FN_STR || fk == MC_FN_REDUCE_D ||
-            fk == MC_FN_REDUCE_L || fk == MC_FN_DOT || fk == MC_FN_ISTATS ||
-            fk == MC_FN_ICENTROID || fk == MC_FN_EAGER_RED)
+    return (e->u.call.ext_id >= 0 || (fk >= 0 && fk != MC_FN_PROG))
                ? 0
                : plan_err(err, errsz, "not implemented in the new engine");
 }
@@ -773,6 +755,26 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
             }
         }
 
+        if (s->kind == MC_STMT_MULTI_ASSIGN && s->u.multi.nrhs == 1 && s->u.multi.nlhs >= 2 &&
+            mc_multi_lhs_is_image(s->u.multi.rhs[0], 0))
+        {
+            mc_step_t *st       = alloc_step(p, MC_STEP_CTOR, idx);
+            st->ctor.multi_stmt = s, st->ctor.rhs_expr = s->u.multi.rhs[0];
+            for (int j = 0; j < s->u.multi.nlhs; j++)
+            {
+                const mc_expr_t *lhs = s->u.multi.lhs[j];
+                mark_assigned_var(p, lhs->u.ident.bare);
+                if (mc_multi_lhs_is_image(s->u.multi.rhs[0], j))
+                {
+                    int sidx = find_or_add_slot(p, lhs->u.ident.name, lhs->u.ident.bare,
+                                                lhs->u.ident.loc, s->is_local, lhs->u.ident.im_id,
+                                                s->u.multi.rhs[0]->res_dt, 0, NULL);
+                    (void) (j == 0 && (st->ctor.slot_idx = sidx, 1));
+                }
+            }
+            continue;
+        }
+
         if (!s->needs_image || s->kind == MC_STMT_IF || s->kind == MC_STMT_FOR ||
             (s->kind == MC_STMT_MULTI_ASSIGN && s->u.multi.nrhs == 1 && s->u.multi.nlhs >= 2) ||
             (s->kind == MC_STMT_EXPR && s->u.expr->res_kind != MC_RES_IMAGE &&
@@ -798,8 +800,9 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
             mc_tok_type_t    aop    = (e->kind == MC_EXPR_ASSIGN) ? e->u.assign.op : MC_TOK_ASSIGN;
             int loc_fl = s->is_local || (e->kind == MC_EXPR_ASSIGN && e->u.assign.is_local);
 
-            if (is_ctor_call(rhs) && aop == MC_TOK_ASSIGN &&
-                (target == NULL || target->kind == MC_EXPR_IDENT))
+            if ((is_ctor_call(rhs) && aop == MC_TOK_ASSIGN &&
+                 (target == NULL || target->kind == MC_EXPR_IDENT)) ||
+                mc_is_blas_or_linalg_ctor(rhs, target, aop))
             {
                 mc_step_t  *st  = alloc_step(p, MC_STEP_CTOR, idx);
                 int         tid = (target != NULL);
@@ -809,7 +812,8 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
                                                      br, tid ? target->u.ident.loc : 'L', loc_fl,
                                                      tid ? target->u.ident.im_id : -1, rhs->res_dt,
                                                      rhs->res_naxis, rhs->res_size);
-                st->ctor.is_anon = !tid, st->ctor.assign_op = aop, st->ctor.rhs_expr = rhs;
+                st->ctor.is_anon = !tid, st->ctor.assign_op = aop, st->ctor.target_expr = target;
+                st->ctor.rhs_expr = rhs;
                 continue;
             }
             alloc_step(p, MC_STEP_PASS, idx);

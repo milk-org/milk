@@ -39,10 +39,8 @@ void mc_reduce_cache_clear(void)
     {
         if (g_sub_cache[i].prog != NULL)
         {
-            if (g_sub_cache[i].prog->ast_head != NULL)
-            {
-                g_sub_cache[i].prog->ast_head->u.expr = NULL;
-            }
+            (void) (g_sub_cache[i].prog->ast_head != NULL &&
+                    (g_sub_cache[i].prog->ast_head->u.expr = NULL, 1));
             mcalc_prog_free(g_sub_cache[i].prog);
             g_sub_cache[i].prog = NULL;
         }
@@ -62,13 +60,10 @@ void mc_reduce_cache_evict_expr(const mc_expr_t *e)
     {
         if (g_sub_cache[i].expr == e && g_sub_cache[i].prog != NULL)
         {
-            if (g_sub_cache[i].prog->ast_head != NULL)
-            {
-                g_sub_cache[i].prog->ast_head->u.expr = NULL;
-            }
+            (void) (g_sub_cache[i].prog->ast_head != NULL &&
+                    (g_sub_cache[i].prog->ast_head->u.expr = NULL, 1));
             mcalc_prog_free(g_sub_cache[i].prog);
-            g_sub_cache[i].prog = NULL;
-            g_sub_cache[i].expr = NULL;
+            g_sub_cache[i].prog = NULL, g_sub_cache[i].expr = NULL;
         }
     }
     g_in_cache_clear = 0;
@@ -408,6 +403,22 @@ static inline void stat_block_sterbenz_f(arith_reduce_op op,
                                          int               len,
                                          arith_stat_acc_t *acc)
 {
+    if (m != NULL && (op == ARITH_RED_SUM || op == ARITH_RED_MEAN || op == ARITH_RED_COUNT))
+    {
+        float bsum = 0.0f, bcnt = 0.0f;
+#pragma omp simd reduction(+ : bsum, bcnt)
+        for (int j = 0; j < len; j++)
+        {
+            float mj = (m[j] != 0.0f) ? 1.0f : 0.0f;
+            bsum += v[j] * mj, bcnt += mj;
+        }
+        if (LIKELY(arith_isfinite_f(bsum)))
+        {
+            acc->n += (uint64_t) bcnt, acc->sum += (double) bsum;
+            acc->mean = (acc->n > 0) ? (acc->sum / (double) acc->n) : NAN;
+            return;
+        }
+    }
     if (m != NULL || (op != ARITH_RED_STD && op != ARITH_RED_VAR && op != ARITH_RED_ALL))
     {
         arith_stat_block_f_inline(op, v, m, len, acc);
@@ -421,23 +432,16 @@ static inline void stat_block_sterbenz_f(arith_reduce_op op,
 #pragma omp simd reduction(+ : ds, dm2) reduction(min : bmin) reduction(max : bmax)
         for (int j = 0; j < slen; j++)
         {
-            float x = sv[j];
-            float d = x - ref;
-            ds += d;
-            dm2 += d * d;
-            bmin = (x < bmin) ? x : bmin;
-            bmax = (x > bmax) ? x : bmax;
+            float x = sv[j], d = x - ref;
+            ds += d, dm2 += d * d, bmin = (x < bmin) ? x : bmin, bmax = (x > bmax) ? x : bmax;
         }
         if (UNLIKELY(!arith_isfinite_f(ref) || !arith_isfinite_f(ds) || !arith_isfinite_f(dm2)))
         {
             arith_stat_block_f_inline(op, sv, NULL, slen, acc);
             continue;
         }
-        double           dn  = (double) slen;
-        double           dds = (double) ds;
-        double           sb  = dn * (double) ref + dds;
-        double           bm  = (double) ref + dds / dn;
-        double           m2  = (double) dm2 - (dds * dds) / dn;
+        double           dn = (double) slen, dds = (double) ds, sb = dn * (double) ref + dds;
+        double           bm = (double) ref + dds / dn, m2 = (double) dm2 - (dds * dds) / dn;
         arith_stat_acc_t blk = { (uint64_t) slen, sb,           bm, (m2 > 0.0) ? m2 : 0.0,
                                  (double) bmin,   (double) bmax };
         arith_stat_merge_inline(acc, &blk);

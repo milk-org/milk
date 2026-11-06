@@ -230,6 +230,7 @@ add_library(
   core/milk_lexicon.c
   ../../calc/milk_argval.c
   ../../calc/mc_ext_registry.c
+  ../../calc/mc_ext_loader.c
   ../../calc/mc_func.c
   ../../calc/mc_lex.c
   ../../calc/mc_local.c
